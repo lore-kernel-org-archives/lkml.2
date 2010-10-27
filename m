@@ -1,87 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756338Ab0J0X2n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 19:28:43 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:45385 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737Ab0J0X2k (ORCPT
+	id S1757460Ab0J0XaT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 19:30:19 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:38036 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751737Ab0J0XaP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 19:28:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=yHpneGwuf5aZhNHtVjiF0XStc7PEECHKqeDkmirOo3L3lz2R70yglYalEpff5tEqc3
-         Hnuy+ez4mQD2/fhxEmDCZrbnzlKIpMzgmeE9m6xlDbNSRZjzvnL7rlfw7dzfsCYBSM/f
-         juwLDVvPYYraw4fzB9K/ZQPEL19uxbAr6Ieg8=
-Message-ID: <4CC8B5A1.6080703@garzik.org>
-Date: Wed, 27 Oct 2010 19:28:33 -0400
-From: Jeff Garzik <jeff@garzik.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+	Wed, 27 Oct 2010 19:30:15 -0400
+Date: Thu, 28 Oct 2010 00:30:12 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: situation with signals
+Message-ID: <20101027233012.GJ19804@ZenIV.linux.org.uk>
+References: <20100923221141.GK19804@ZenIV.linux.org.uk>
+ <9lYpY1#WLHA.1516@exchange1.tad.internal.tilera.com>
+ <4CC89352.7020808@tilera.com>
+ <20101027213745.GI19804@ZenIV.linux.org.uk>
+ <4CC8ACE0.1040407@tilera.com>
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: James Bottomley <James.Bottomley@suse.de>, Andi Kleen <ak@linux.intel.com>,
-        Mike Anderson <andmike@linux.vnet.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>,
-        James Smart <james.smart@emulex.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
-        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
-        Brian King <brking@linux.vnet.ibm.com>,
-        Christof Schmitt <christof.schmitt@de.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [ANNOUNCE] Status of unlocked_qcmds=1 operation for .37
-References: <1287607774.10283.78.camel@haakon2.linux-iscsi.org> <20101021150840.GA24309@linux.vnet.ibm.com> <1288130914.5169.97.camel@haakon2.linux-iscsi.org> <1288132071.8283.689.camel@mulgrave.site> <1288132464.5169.112.camel@haakon2.linux-iscsi.org> <1288133450.8283.723.camel@mulgrave.site> <1288134048.5169.132.camel@haakon2.linux-iscsi.org> <1288134713.19649.11.camel@mulgrave.site> <1288135918.5169.149.camel@haakon2.linux-iscsi.org> <20101027075349.GA32585@gargoyle.fritz.box> <1288189658.4692.13.camel@mulgrave.site> <1288202802.5169.202.camel@haakon2.linux-iscsi.org>
-In-Reply-To: <1288202802.5169.202.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CC8ACE0.1040407@tilera.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2010 02:06 PM, Nicholas A. Bellinger wrote:
-> On Wed, 2010-10-27 at 09:27 -0500, James Bottomley wrote:
->> On Wed, 2010-10-27 at 09:53 +0200, Andi Kleen wrote:
->>>> This sounds like a pretty reasonable compromise that I think is slightly
->>>> less risky for the LLDs with the ghosts and cob-webs hanging off of
->>>> them.
->>>
->>> They won't get tested either next release cycle. Essentially
->>> near nobody uses them.
->>>
->>>>
->>>> What do you think..?
->>>
->>> Standard linux practice is to simply push the locks down. That's a pretty
->>> mechanical operation and shouldn't be too risky
->>>
->>> With some luck you could even do it with coccinelle.
->>
->> Precisely ... if we can do the push down now as a mechanical
->> transformation we can put it in the current merge window as a low risk
->> API change.
->
-> I disagree that touching every single legacy LLD's SHT->queuecommand()
-> and failure paths in that code is a low rist change.
+On Wed, Oct 27, 2010 at 06:51:12PM -0400, Chris Metcalf wrote:
 
-Think of changes like steps in a math proof.  You want to make a series 
-of equivalent transformations such that, each transformation takes the 
-code (proof) one step closer to your goal.
+> > BTW, is everything in your pt_regs safe to modify?
+> 
+> What an interesting observation. :-)  In fact, it would be possible to
+> overwrite the privilege level (the ex1 register) from within the signal
+> handler and then return to run arbitrary code at kernel PL.  I'll fix it.
 
-unlocked_qcmds does nothing but increase complexity, as opposed to an 
-equivalent-transformation mechanical code change much more easily 
-provable as correct (or broken). unlocked_qcmds is the type of 
-transition step you always want to avoid if possible.  Conditional 
-locking logic tends to be complexity at its worst... and in this case, 
-it's all avoidable.
-
-	Jeff
-
-
+Then you need to be careful with that in your ptrace as well (POKEUSR and
+SETREGS).
