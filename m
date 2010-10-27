@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179Ab0J0Qwt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 12:52:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55215 "EHLO mx1.redhat.com"
+	id S1752197Ab0J0Q75 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 12:59:57 -0400
+Received: from king.tilera.com ([72.1.168.226]:10610 "EHLO king.tilera.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751899Ab0J0Qwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 12:52:47 -0400
-Message-ID: <4CC858B1.6090408@redhat.com>
-Date: Wed, 27 Oct 2010 14:52:01 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
-MIME-Version: 1.0
-To: Jiri Slaby <jirislaby@gmail.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael Krufky <mkrufky@kernellabs.com>
-Subject: Re: [GIT PULL for 2.6.37-rc1] V4L/DVB updates
-References: <4CC8380D.3040802@redhat.com> <4CC84597.4000204@gmail.com> <4CC84846.6020304@redhat.com> <4CC84B14.1030303@gmail.com> <4CC8550B.4060403@redhat.com> <4CC8558C.3000209@gmail.com>
-In-Reply-To: <4CC8558C.3000209@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1751899Ab0J0Q74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 12:59:56 -0400
+Message-Id: <201010271659.o9RGxrMc009847@farm-0002.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Wed, 27 Oct 2010 12:54:27 -0400
+Subject: [PATCH] drivers/char/hvc_console.c: reduce max idle timeout
+To: linux-kernel@vger.kernel.org
+To: linuxppc-dev@lists.ozlabs.org
+X-OriginalArrivalTime: 27 Oct 2010 16:59:55.0319 (UTC) FILETIME=[6131E470:01CB75F8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 27-10-2010 14:38, Jiri Slaby escreveu:
-> On 10/27/2010 06:36 PM, Mauro Carvalho Chehab wrote:
->> Basically, af9015 broke due to (3), as .small_i2c = 1 means nothing. It should be using
->> .small_i2c = TDA18271_16_BYTE_CHUNK_INIT, instead.
->>
->> What I don't understand is why a patch doing this change didn't fix the issue. Please
->> test the patch I posted on the original -next thread. Let's try to identify why
->> tda18271_write_regs() is not breaking the data into smaller writes.
-> 
-> It helps, but one needs to unplug and replug the device. So care to
-> respin the pull request with the patch included?
+The tile architecture uses this framework for our serial console,
+and our users complain that the delay of up to two seconds feels like
+the machine has gone non-responsive and is disturbing.  By contrast,
+a delay of up to half a second feels like just the normal sort of
+delay caused by swapping, network lag, etc. and is not noticeable.
+The overhead is obviously not much greater.
 
-AH! Yes, this is sometimes needed on some hardware: when a longer or wrong I2C transaction
-is received, the hardware simply stops working. You need to replug it for it to return to
-life.
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
 
-Ok, I'll add the patch that changes it to .small_i2c = TDA18271_16_BYTE_CHUNK_INIT
-to the series.
+I'm happy to push this via the tile tree if the linuxppc-dev folks
+want to give me an acked-by, or you can take it into your tree.  Thanks!
 
-Thanks,
-Mauro.
+ drivers/char/hvc_console.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/char/hvc_console.c b/drivers/char/hvc_console.c
+index 3afd62e..1df5431 100644
+--- a/drivers/char/hvc_console.c
++++ b/drivers/char/hvc_console.c
+@@ -565,11 +565,11 @@ static int hvc_chars_in_buffer(struct tty_struct *tty)
+  * and during console activity we will use a default MIN_TIMEOUT of 10.  When
+  * the console is idle, we increase the timeout value on each pass through
+  * msleep until we reach the max.  This may be noticeable as a brief (average
+- * one second) delay on the console before the console responds to input when
++ * 0.25 second) delay on the console before the console responds to input when
+  * there has been no input for some time.
+  */
+ #define MIN_TIMEOUT		(10)
+-#define MAX_TIMEOUT		(2000)
++#define MAX_TIMEOUT		(500)
+ static u32 timeout = MIN_TIMEOUT;
+ 
+ #define HVC_POLL_READ	0x00000001
+-- 
+1.6.5.2
+
