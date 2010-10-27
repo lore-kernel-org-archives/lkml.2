@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760776Ab0J0BBD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 21:01:03 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:50692 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760748Ab0J0BBC (ORCPT
+	id S1760785Ab0J0BJQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 21:09:16 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:42419 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760761Ab0J0BJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 21:01:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=references:in-reply-to:mime-version:content-transfer-encoding
-         :content-type:message-id:cc:x-mailer:from:subject:date:to;
-        b=Z6H+BHv3+LyojoL1z0qqnM2Ql6QoYIPIZFrF9GJrtNI+FRLG5BlrTP0Aar196wvlxP
-         uYhCP187MxBCZOFaFGJQzObUu/VRLRCYqD4xWJt2pcm6NxZJKmvbbKQT7ccJFU55bvWx
-         qnxYSsP6Hgo9FAX/fdYym/D7s9sdvhYz2VntA=
-References: <cover.1288059486.git.joe@perches.com> <20101026155028.GA13097@core.coreip.homeip.net> <1288135531.4145.59.camel@Joe-Laptop> <201010261740.13566.dmitry.torokhov@gmail.com> <1288140416.4145.76.camel@Joe-Laptop>
-In-Reply-To: <1288140416.4145.76.camel@Joe-Laptop>
-Mime-Version: 1.0 (iPhone Mail 8B117)
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <BFA186FD-32F7-4E1A-9193-CA1575248B73@gmail.com>
-Cc: Jiri Kosina <trivial@kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-X-Mailer: iPhone Mail (8B117)
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH 06/10] drivers/input/serio/i8042: Use pr_<level>, pr_fmt. Fix dbg and __FILE__ use
-Date: Tue, 26 Oct 2010 18:00:44 -0700
-To: Joe Perches <joe@perches.com>
+	Tue, 26 Oct 2010 21:09:14 -0400
+X-Sasl-enc: /1e6ip9nS4OSmXbuxcDbYAusxd3j8GHBXAnK96bOg22A 1288141753
+Date: Tue, 26 Oct 2010 23:09:08 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Julia Lawall <julia@diku.dk>
+Cc: Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        kernel-janitors@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        ibm-acpi-devel@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 8/14] drivers/platform/x86/thinkpad_acpi.c: delete
+ double assignment
+Message-ID: <20101027010908.GA29299@khazad-dum.debian.net>
+References: <1288088743-3725-1-git-send-email-julia@diku.dk>
+ <1288088743-3725-9-git-send-email-julia@diku.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288088743-3725-9-git-send-email-julia@diku.dk>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Oct 26, 2010, at 5:46 PM, Joe Perches <joe@perches.com> wrote:
-
-> On Tue, 2010-10-26 at 17:40 -0700, Dmitry Torokhov wrote:
->>> Mind if I move the time to the front like this?
->>> +#define dbg(format, arg...)                                            \
->>> +do {                                    \
->>> +    if (i8042_debug)                        \
->>> +        printk(KERN_DEBUG KBUILD_MODNAME ": [%d]" format),    \
->>> +                      (int)(jiffies - i8042_start_time), ##arg);    \
->>> +} while (0)
->> Another option would be to leave '\n' in dbg() and leave most of the
->> callers as is.
+On Tue, 26 Oct 2010, Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
 > 
-> That's really error prone though.
-> 
+> Delete successive assignments to the same location.
 
-In what way?
+There are often results of mismerges or other assorted screw ups, often
+done by the maintainer itself (e.g. me in thinkpad-acpi's case) during
+development.
+
+The patch is correct, and I thank you for the head's up.  But let me
+track down what caused it first, hmm?  I also highly recommend that this
+should be done in all cases you find, instead of just blindly fixing the
+assignment.  I suggest using git --blame to track down what added the
+duplicated assignments, and check if it looks sane...
+
+It is often a VERY BAD IDEA to remove such markers of potential
+brokennes without checking out if they're actually helpfully trying to
+warn you of worse badness :p
+
+But hey, maybe you've already done that.  If you did, I apologise for
+preaching to the choir.
 
 -- 
-Dmitry
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
