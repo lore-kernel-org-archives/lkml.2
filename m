@@ -1,205 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751594Ab0J0QmX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 12:42:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48225 "EHLO mx1.redhat.com"
+	id S1751840Ab0J0Qpy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 12:45:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17984 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751101Ab0J0QmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 12:42:21 -0400
-Date: Wed, 27 Oct 2010 18:41:38 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 4/7] vmscan: narrowing synchrounous lumply reclaim
- condition
-Message-ID: <20101027164138.GD29304@random.random>
-References: <20100805150624.31B7.A69D9226@jp.fujitsu.com>
- <20100805151341.31C3.A69D9226@jp.fujitsu.com>
+	id S1751101Ab0J0Qpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 12:45:52 -0400
+Date: Wed, 27 Oct 2010 12:45:22 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Huang Ying <ying.huang@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: Re: [PATCH -v3 3/6] x86, NMI, Rewrite NMI handler
+Message-ID: <20101027164522.GA25738@redhat.com>
+References: <1286844650.7768.137.camel@yhuang-dev>
+ <1286863479.2336.1451.camel@twins>
+ <1286864080.7768.179.camel@yhuang-dev>
+ <1286865071.2336.1478.camel@twins>
+ <1286865447.7768.184.camel@yhuang-dev>
+ <1286865629.2336.1490.camel@twins>
+ <1286865923.7768.188.camel@yhuang-dev>
+ <1286866193.2336.1503.camel@twins>
+ <20101012135112.GE20436@basil.fritz.box>
+ <1286892927.29097.42.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100805151341.31C3.A69D9226@jp.fujitsu.com>
+In-Reply-To: <1286892927.29097.42.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Oct 12, 2010 at 04:15:27PM +0200, Peter Zijlstra wrote:
+> On Tue, 2010-10-12 at 15:51 +0200, Andi Kleen wrote:
+> > > No, its not making sense, there's only one event source - the NMI, it
+> > > doesn't make any sense what so ever to then artificially split it in
+> > > two.
+> > 
+> > I can see that "unknown NMI" is a different kind of event than
+> > "NMI event triggered"
+> > 
+> > e.g. the debugger would only hook into "unknown NMI"
+> 
+> Sure, I'm not arguing about DIE_NMI vs DIE_NMI_UNKNOWN. I simply don't
+> see the point of DIE_NMI_IPI.
 
-On Thu, Aug 05, 2010 at 03:14:13PM +0900, KOSAKI Motohiro wrote:
-> @@ -265,6 +271,36 @@ unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
->  	return ret;
->  }
->  
-> +static void set_lumpy_reclaim_mode(int priority, struct scan_control *sc,
-> +				   bool sync)
-> +{
-> +	enum lumpy_mode mode = sync ? LUMPY_MODE_SYNC : LUMPY_MODE_ASYNC;
-> +
-> +	/*
-> +	 * Some reclaim have alredy been failed. No worth to try synchronous
-> +	 * lumpy reclaim.
-> +	 */
-> +	if (sync && sc->lumpy_reclaim_mode == LUMPY_MODE_NONE)
-> +		return;
-> +
-> +	/*
-> +	 * If we need a large contiguous chunk of memory, or have
-> +	 * trouble getting a small set of contiguous pages, we
-> +	 * will reclaim both active and inactive pages.
-> +	 */
-> +	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
-> +		sc->lumpy_reclaim_mode = mode;
-> +	else if (sc->order && priority < DEF_PRIORITY - 2)
-> +		sc->lumpy_reclaim_mode = mode;
-> +	else
-> +		sc->lumpy_reclaim_mode = LUMPY_MODE_NONE;
-> +}
-> +
-> +static void disable_lumpy_reclaim_mode(struct scan_control *sc)
-> +{
-> +	sc->lumpy_reclaim_mode = LUMPY_MODE_NONE;
-> +}
-> +
->  static inline int is_page_cache_freeable(struct page *page)
->  {
->  	/*
-> @@ -275,7 +311,8 @@ static inline int is_page_cache_freeable(struct page *page)
->  	return page_count(page) - page_has_private(page) == 2;
->  }
->  
-> -static int may_write_to_queue(struct backing_dev_info *bdi)
-> +static int may_write_to_queue(struct backing_dev_info *bdi,
-> +			      struct scan_control *sc)
->  {
->  	if (current->flags & PF_SWAPWRITE)
->  		return 1;
-> @@ -283,6 +320,10 @@ static int may_write_to_queue(struct backing_dev_info *bdi)
->  		return 1;
->  	if (bdi == current->backing_dev_info)
->  		return 1;
-> +
-> +	/* lumpy reclaim for hugepage often need a lot of write */
-> +	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
-> +		return 1;
->  	return 0;
->  }
->  
-> @@ -307,12 +348,6 @@ static void handle_write_error(struct address_space *mapping,
->  	unlock_page(page);
->  }
->  
-> -/* Request for sync pageout. */
-> -enum pageout_io {
-> -	PAGEOUT_IO_ASYNC,
-> -	PAGEOUT_IO_SYNC,
-> -};
-> -
->  /* possible outcome of pageout() */
->  typedef enum {
->  	/* failed to write page out, page is locked */
-> @@ -330,7 +365,7 @@ typedef enum {
->   * Calls ->writepage().
->   */
->  static pageout_t pageout(struct page *page, struct address_space *mapping,
-> -						enum pageout_io sync_writeback)
-> +			 struct scan_control *sc)
->  {
->  	/*
->  	 * If the page is dirty, only perform writeback if that write
-> @@ -366,8 +401,10 @@ static pageout_t pageout(struct page *page, struct address_space *mapping,
->  	}
->  	if (mapping->a_ops->writepage == NULL)
->  		return PAGE_ACTIVATE;
-> -	if (!may_write_to_queue(mapping->backing_dev_info))
-> +	if (!may_write_to_queue(mapping->backing_dev_info, sc)) {
-> +		disable_lumpy_reclaim_mode(sc);
->  		return PAGE_KEEP;
-> +	}
->  
->  	if (clear_page_dirty_for_io(page)) {
->  		int res;
-> @@ -394,7 +431,8 @@ static pageout_t pageout(struct page *page, struct address_space *mapping,
->  		 * direct reclaiming a large contiguous area and the
->  		 * first attempt to free a range of pages fails.
->  		 */
-> -		if (PageWriteback(page) && sync_writeback == PAGEOUT_IO_SYNC)
-> +		if (PageWriteback(page) &&
-> +		    sc->lumpy_reclaim_mode == LUMPY_MODE_SYNC)
->  			wait_on_page_writeback(page);
->  
->  		if (!PageWriteback(page)) {
-> @@ -402,7 +440,7 @@ static pageout_t pageout(struct page *page, struct address_space *mapping,
->  			ClearPageReclaim(page);
->  		}
->  		trace_mm_vmscan_writepage(page,
-> -			sync_writeback == PAGEOUT_IO_SYNC);
-> +				sc->lumpy_reclaim_mode == LUMPY_MODE_SYNC);
->  		inc_zone_page_state(page, NR_VMSCAN_WRITE);
->  		return PAGE_SUCCESS;
->  	}
-> @@ -580,7 +618,7 @@ static enum page_references page_check_references(struct page *page,
->  	referenced_page = TestClearPageReferenced(page);
->  
->  	/* Lumpy reclaim - ignore references */
-> -	if (sc->lumpy_reclaim_mode)
-> +	if (sc->lumpy_reclaim_mode != LUMPY_MODE_NONE)
->  		return PAGEREF_RECLAIM;
->  
->  	/*
-> @@ -644,8 +682,7 @@ static noinline_for_stack void free_page_list(struct list_head *free_pages)
->   * shrink_page_list() returns the number of reclaimed pages
->   */
->  static unsigned long shrink_page_list(struct list_head *page_list,
-> -					struct scan_control *sc,
-> -					enum pageout_io sync_writeback)
-> +				      struct scan_control *sc)
->  {
->  	LIST_HEAD(ret_pages);
->  	LIST_HEAD(free_pages);
-> @@ -665,7 +702,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  		page = lru_to_page(page_list);
->  		list_del(&page->lru);
->  
-> -		if (sync_writeback == PAGEOUT_IO_SYNC)
-> +		if (sc->lumpy_reclaim_mode == LUMPY_MODE_SYNC)
->  			lock_page(page);
->  		else if (!trylock_page(page))
->  			goto keep;
-> @@ -696,10 +733,13 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  			 * for any page for which writeback has already
->  			 * started.
->  			 */
-> -			if (sync_writeback == PAGEOUT_IO_SYNC && may_enter_fs)
-> +			if (sc->lumpy_reclaim_mode == LUMPY_MODE_SYNC &&
-> +			    may_enter_fs)
->  				wait_on_page_writeback(page);
-> -			else
-> -				goto keep_locked;
-> +			else {
-> +				unlock_page(page);
-> +				goto keep_lumpy;
-> +			}
->  		}
->  
->  		references = page_check_references(page, sc);
+I threw together a patch last week and did some panic and perf testing on
+it.  Things still seemed to work correctly.  This patch goes on top of the
+3/6 patch in this thread.
 
-[...]
+I assume this is sorta of what Peter was looking for.
 
-this rejects on THP code, lumpy is unusable with hugepages, it grinds
-the system to an halt, and there's no reason to let it survive. Lumpy
-is like compaction done with an hammer while blindfolded.
+Cheers,
+Don
 
-I don't know why community insists on improving lumpy when it has to
-be removed completely, especially now that we have memory compaction.
 
-I'll keep deleting on my tree...
-
-I hope lumpy work stops here and that it goes away whenever THP is
-merged.
-
-Thanks,
-Andrea
+diff --git a/arch/x86/include/asm/kdebug.h b/arch/x86/include/asm/kdebug.h
+index 5bdfca8..e28ec43 100644
+--- a/arch/x86/include/asm/kdebug.h
++++ b/arch/x86/include/asm/kdebug.h
+@@ -18,7 +18,6 @@ enum die_val {
+ 	DIE_TRAP,
+ 	DIE_GPF,
+ 	DIE_CALL,
+-	DIE_NMI_IPI,
+ 	DIE_PAGE_FAULT,
+ 	DIE_NMIUNKNOWN,
+ };
+diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
+index cefd694..7f9e3ac 100644
+--- a/arch/x86/kernel/apic/hw_nmi.c
++++ b/arch/x86/kernel/apic/hw_nmi.c
+@@ -53,7 +53,6 @@ arch_trigger_all_cpu_backtrace_handler(struct notifier_block *self,
+ 
+ 	switch (cmd) {
+ 	case DIE_NMI:
+-	case DIE_NMI_IPI:
+ 		break;
+ 
+ 	default:
+diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
+index f744f54..1f657a2 100644
+--- a/arch/x86/kernel/apic/x2apic_uv_x.c
++++ b/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -602,7 +602,7 @@ void __cpuinit uv_cpu_init(void)
+  */
+ int uv_handle_nmi(struct notifier_block *self, unsigned long reason, void *data)
+ {
+-	if (reason != DIE_NMI_IPI)
++	if (reason != DIE_NMIUNKNOWN)
+ 		return NOTIFY_OK;
+ 
+ 	if (in_crash_kexec)
+diff --git a/arch/x86/kernel/cpu/mcheck/mce-inject.c b/arch/x86/kernel/cpu/mcheck/mce-inject.c
+index e7dbde7..7e0dba6 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce-inject.c
++++ b/arch/x86/kernel/cpu/mcheck/mce-inject.c
+@@ -83,7 +83,7 @@ static int mce_raise_notify(struct notifier_block *self,
+ 	struct die_args *args = (struct die_args *)data;
+ 	int cpu = smp_processor_id();
+ 	struct mce *m = &__get_cpu_var(injectm);
+-	if (val != DIE_NMI_IPI || !cpumask_test_cpu(cpu, mce_inject_cpumask))
++	if (val != DIE_NMI || !cpumask_test_cpu(cpu, mce_inject_cpumask))
+ 		return NOTIFY_DONE;
+ 	cpumask_clear_cpu(cpu, mce_inject_cpumask);
+ 	if (m->inject_flags & MCJ_EXCEPTION)
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index da98b6d..ccd3b6d 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1226,7 +1226,7 @@ perf_event_nmi_handler(struct notifier_block *self,
+ 		return NOTIFY_DONE;
+ 
+ 	switch (cmd) {
+-	case DIE_NMI_IPI:
++	case DIE_NMI:
+ 		break;
+ 	case DIE_NMIUNKNOWN:
+ 		this_nmi = percpu_read(irq_stat.__nmi_count);
+diff --git a/arch/x86/kernel/kgdb.c b/arch/x86/kernel/kgdb.c
+index 852b819..805c5ab 100644
+--- a/arch/x86/kernel/kgdb.c
++++ b/arch/x86/kernel/kgdb.c
+@@ -523,10 +523,6 @@ static int __kgdb_notify(struct die_args *args, unsigned long cmd)
+ 		}
+ 		return NOTIFY_DONE;
+ 
+-	case DIE_NMI_IPI:
+-		/* Just ignore, we will handle the roundup on DIE_NMI. */
+-		return NOTIFY_DONE;
+-
+ 	case DIE_NMIUNKNOWN:
+ 		if (was_in_debug_nmi[raw_smp_processor_id()]) {
+ 			was_in_debug_nmi[raw_smp_processor_id()] = 0;
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index e3af342..fd7dc85 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -753,7 +753,7 @@ static int crash_nmi_callback(struct notifier_block *self,
+ {
+ 	int cpu;
+ 
+-	if (val != DIE_NMI_IPI)
++	if (val != DIE_NMI)
+ 		return NOTIFY_OK;
+ 
+ 	cpu = raw_smp_processor_id();
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index d8acab3..9e56e3d 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -395,8 +395,7 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+ 	 * CPU-specific NMI: send to specific CPU or NMI sources must
+ 	 * be processed on specific CPU
+ 	 */
+-	if (notify_die(DIE_NMI_IPI, "nmi_ipi", regs, 0, 2, SIGINT)
+-	    == NOTIFY_STOP)
++	if (notify_die(DIE_NMI, "nmi_ipi", regs, 0, 2, SIGINT) == NOTIFY_STOP)
+ 		return;
+ 
+ 	/* Non-CPU-specific NMI: NMI sources can be processed on any CPU */
+@@ -405,9 +404,6 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+ 	if (!cpu) {
+ 		reason = get_nmi_reason();
+ 		if (reason & NMI_REASON_MASK) {
+-			if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT)
+-			    == NOTIFY_STOP)
+-				return;
+ 			if (reason & NMI_REASON_SERR)
+ 				pci_serr_error(reason, regs);
+ 			else if (reason & NMI_REASON_IOCHK)
+@@ -423,9 +419,6 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+ 		}
+ 	}
+ 
+-	if (notify_die(DIE_NMI, "nmi", regs, 0, 2, SIGINT) == NOTIFY_STOP)
+-		return;
+-
+ #if defined(CONFIG_X86_LOCAL_APIC) && !defined(CONFIG_LOCKUP_DETECTOR)
+ 	if (nmi_watchdog_tick(regs, reason))
+ 		return;
+diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
+index 57f01bb..dd0039c 100644
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -64,7 +64,7 @@ static int profile_exceptions_notify(struct notifier_block *self,
+ 	int ret = NOTIFY_DONE;
+ 
+ 	switch (val) {
+-	case DIE_NMI_IPI:
++	case DIE_NMI:
+ 		if (ctr_running)
+ 			model->check_ctrs(args->regs, &__get_cpu_var(cpu_msrs));
+ 		else if (!nmi_enabled)
+diff --git a/arch/x86/oprofile/nmi_timer_int.c b/arch/x86/oprofile/nmi_timer_int.c
+index ab72a21..e3ecb71 100644
+--- a/arch/x86/oprofile/nmi_timer_int.c
++++ b/arch/x86/oprofile/nmi_timer_int.c
+@@ -25,7 +25,7 @@ static int profile_timer_exceptions_notify(struct notifier_block *self,
+ 	int ret = NOTIFY_DONE;
+ 
+ 	switch (val) {
+-	case DIE_NMI_IPI:
++	case DIE_NMI:
+ 		oprofile_add_sample(args->regs, 0);
+ 		ret = NOTIFY_STOP;
+ 		break;
