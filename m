@@ -1,115 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760908Ab0J0KvE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 06:51:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63218 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751639Ab0J0KvB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 06:51:01 -0400
-Date: Wed, 27 Oct 2010 12:50:57 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 6/8] KVM: simply wakup async pf
-Message-ID: <20101027105057.GP26191@redhat.com>
-References: <4CC7EA7D.5020901@cn.fujitsu.com>
- <4CC7EBD4.6070105@cn.fujitsu.com>
+	id S1753761Ab0J0K4S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 06:56:18 -0400
+Received: from exprod5og112.obsmtp.com ([64.18.0.24]:55940 "EHLO
+	exprod5og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005Ab0J0K4P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 06:56:15 -0400
+Message-ID: <4CC804FF.9050908@ge.com>
+Date: Wed, 27 Oct 2010 11:54:55 +0100
+From: Martyn Welch <martyn.welch@ge.com>
+Organization: GE Intelligent Platforms
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.14) Gecko/20101006 Thunderbird/3.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CC7EBD4.6070105@cn.fujitsu.com>
+To: "Emilio G. Cota" <cota@braap.org>
+CC: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
+        devel@driverdev.osuosl.org,
+        Juan David Gonzalez Cobas <david.cobas@gmail.com>,
+        Bill Pemberton <wfp5p@virginia.edu>
+Subject: Re: [PATCH 09/30] staging/vme: fill in struct device's .release,
+ even if it's a NOOP
+References: <1288055476-19438-1-git-send-email-cota@braap.org> <1288055476-19438-10-git-send-email-cota@braap.org>
+In-Reply-To: <1288055476-19438-10-git-send-email-cota@braap.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 27 Oct 2010 10:56:13.0612 (UTC) FILETIME=[9271A6C0:01CB75C5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 05:07:32PM +0800, Xiao Guangrong wrote:
-> The current way is queued a complete async pf with:
-> 	asyc_pf.page = bad_page
-> 	async_pf.arch.gfn = 0
+On 26/10/10 02:10, Emilio G. Cota wrote:
+> From: Emilio G. Cota <cota@braap.org>
 > 
-> It has two problems while kvm_check_async_pf_completion handle this
-> async_pf:
-> - since !async_pf.page, it can retry a pseudo #PF
-kvm_arch_async_page_ready checks for is_error_page()
-
-> - it can delete gfn 0 from vcpu->arch.apf.gfns[]
-kvm_arch_async_page_present() checks for is_error_page() too and,
-in case of PV guest, injects special token if it is true. 
-
-After your patch special token will not be injected and migration will
-not work.
-
-> Actually, we can simply record this wakeup request and let
-> kvm_check_async_pf_completion simply break the wait
+> Without it we get 32 warnings, one per device being released, when
+> removing a bridge module.
 > 
-May be wakeup_all function naming is misleading. It means wake up all PV
-guest processes by sending broadcast async pf notification. It is not
-about waking host vcpu thread.
+> After applying this patch, bridge modules can at last be removed
+> without any apparent hiccup.
+> 
+> [Note: tested only on the tsi148, it's the only bridge I've got]
+> 
 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+I guess this is an artifact of the current lack of refcounting?
+
+This is definitely an issue, however I don't think masking it by adding
+an empty function is the correct way to go.
+
+Martyn
+
+> Signed-off-by: Emilio G. Cota <cota@braap.org>
 > ---
->  include/linux/kvm_host.h |    1 +
->  virt/kvm/async_pf.c      |   21 ++++++---------------
->  2 files changed, 7 insertions(+), 15 deletions(-)
+>  drivers/staging/vme/vme.c |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
 > 
-> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> index 0c1b7c5..d91add9 100644
-> --- a/include/linux/kvm_host.h
-> +++ b/include/linux/kvm_host.h
-> @@ -131,6 +131,7 @@ struct kvm_vcpu {
->  		struct list_head queue;
->  		struct list_head done;
->  		spinlock_t lock;
-> +		bool wakeup;
->  	} async_pf;
->  #endif
->  
-> diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
-> index 5307a32..0d1f6c4 100644
-> --- a/virt/kvm/async_pf.c
-> +++ b/virt/kvm/async_pf.c
-> @@ -124,6 +124,11 @@ bool kvm_check_async_pf_completion(struct kvm_vcpu *vcpu)
->  {
->  	struct kvm_async_pf *work;
->  
-> +	if (vcpu->async_pf.wakeup) {
-> +		vcpu->async_pf.wakeup = false;
-> +		return true;
-> +	}
-> +
->  	if (list_empty_careful(&vcpu->async_pf.done) ||
->  	    !kvm_arch_can_inject_async_page_present(vcpu))
->  		return false;
-> @@ -197,20 +202,6 @@ retry_sync:
->  
->  int kvm_async_pf_wakeup_all(struct kvm_vcpu *vcpu)
->  {
-> -	struct kvm_async_pf *work;
-> -
-> -	if (!list_empty(&vcpu->async_pf.done))
-> -		return 0;
-> -
-> -	work = kmem_cache_zalloc(async_pf_cache, GFP_ATOMIC);
-> -	if (!work)
-> -		return -ENOMEM;
-> -
-> -	work->page = bad_page;
-> -	get_page(bad_page);
-> -	INIT_LIST_HEAD(&work->queue); /* for list_del to work */
-> -
-> -	list_add_tail(&work->link, &vcpu->async_pf.done);
-> -	vcpu->async_pf.queued++;
-> +	vcpu->async_pf.wakeup = true;
->  	return 0;
+> diff --git a/drivers/staging/vme/vme.c b/drivers/staging/vme/vme.c
+> index afd2dbd..59650dd 100644
+> --- a/drivers/staging/vme/vme.c
+> +++ b/drivers/staging/vme/vme.c
+> @@ -1352,6 +1352,11 @@ static void vme_free_bus_num(int bus)
+>  	mutex_unlock(&vme_bus_num_mtx);
 >  }
-> -- 
-> 1.7.0.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>  
+> +/* Note: device_release(dev) throws a warning if dev->release isn't filled in */
+> +static void vme_dev_release(struct device *dev)
+> +{
+> +}
+> +
+>  int vme_register_bridge(struct vme_bridge *bridge)
+>  {
+>  	struct device *dev;
+> @@ -1372,6 +1377,7 @@ int vme_register_bridge(struct vme_bridge *bridge)
+>  
+>  		dev->parent = bridge->parent;
+>  		dev->bus = &vme_bus_type;
+> +		dev->release = vme_dev_release;
+>  		/*
+>  		 * We save a pointer to the bridge in platform_data so that we
+>  		 * can get to it later. We keep driver_data for use by the
 
---
-			Gleb.
+
+-- 
+Martyn Welch (Principal Software Engineer)   |   Registered in England and
+GE Intelligent Platforms                     |   Wales (3828642) at 100
+T +44(0)127322748                            |   Barbirolli Square,
+Manchester,
+E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
