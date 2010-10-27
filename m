@@ -1,37 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754012Ab0J0SxC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 14:53:02 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35651 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752046Ab0J0Sw7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 14:52:59 -0400
+	id S1754938Ab0J0SxX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 14:53:23 -0400
+Received: from claw.goop.org ([74.207.240.146]:41817 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752793Ab0J0SxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 14:53:21 -0400
+Message-ID: <4CC8751E.40306@goop.org>
+Date: Wed, 27 Oct 2010 11:53:18 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimZSj7Y8KUic-VLSgrPFTf5wc_KRdfedzLAkNKT@mail.gmail.com>
-References: <20101026164549.GD19445@fieldses.org> <AANLkTinTXoGiFap-vfu0P_SXb5xS+gMsHOwQtN3Hra3r@mail.gmail.com>
- <20101027174016.GA18974@fieldses.org> <201010272020.33049.arnd@arndb.de> <AANLkTimZSj7Y8KUic-VLSgrPFTf5wc_KRdfedzLAkNKT@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 27 Oct 2010 11:43:59 -0700
-Message-ID: <AANLkTin53pdmfaBahExgi79XjaeFtP5wCS=rrKxfrAHs@mail.gmail.com>
-Subject: Re: nfsd changes for 2.6.37
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Glauber Costa <glommer@redhat.com>
+CC: "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        kvm-devel <kvm@vger.kernel.org>, Eelco Dolstra <e.dolstra@tudelft.nl>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Virtualization <virtualization@lists.linux-foundation.org>,
+        Olivier Hanesse <olivier.hanesse@gmail.com>,
+        Avi Kivity <avi@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [Xen-devel] Re: [PATCH] x86/pvclock-xen: zero last_value on resume
+References: <4CC708DE.1070000@goop.org> <1288115334.3530.7.camel@mothafucka.localdomain>
+In-Reply-To: <1288115334.3530.7.camel@mothafucka.localdomain>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 11:42 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+ On 10/26/2010 10:48 AM, Glauber Costa wrote:
+> On Tue, 2010-10-26 at 09:59 -0700, Jeremy Fitzhardinge wrote:
+>> If the guest domain has been suspend/resumed or migrated, then the
+>> system clock backing the pvclock clocksource may revert to a smaller
+>> value (ie, can be non-monotonic across the migration/save-restore).
+>> Make sure we zero last_value in that case so that the domain
+>> continues to see clock updates.
+>>
+>> [ I don't know if kvm needs an analogous fix or not. ]
+> After migration, save/restore, etc, we issue an ioctl where we tell
+> the host the last clock value. That (in theory) guarantees monotonicity.
 >
-> Feel free to edit the message/patch to your hearts content.
+> I am not opposed to this patch in any way, however.
 
-Oh, and if you want me to just commit this part, I can do so. It
-doesn't make much sense without the other parts to actually make it
-useful, though, so it probably makes more sense to come with them.
+Thanks.
 
-                    Linus
+HPA, do you want to take this, or shall I send it on?
+
+Thanks,
+    J
