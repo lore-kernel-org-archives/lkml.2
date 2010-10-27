@@ -1,116 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760811Ab0J0KZN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 06:25:13 -0400
-Received: from exprod5og106.obsmtp.com ([64.18.0.182]:44000 "EHLO
-	exprod5og106.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760747Ab0J0KZL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 06:25:11 -0400
-Message-ID: <4CC7FDB7.5000004@ge.com>
-Date: Wed, 27 Oct 2010 11:23:51 +0100
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.14) Gecko/20101006 Thunderbird/3.0.9
-MIME-Version: 1.0
-To: "Emilio G. Cota" <cota@braap.org>
-CC: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
-        devel@driverdev.osuosl.org,
-        Juan David Gonzalez Cobas <david.cobas@gmail.com>,
-        Bill Pemberton <wfp5p@virginia.edu>
-Subject: Re: [PATCH 08/30] staging/vme/tsi148: fix warning in free_irq
-References: <1288055476-19438-1-git-send-email-cota@braap.org> <1288055476-19438-9-git-send-email-cota@braap.org>
-In-Reply-To: <1288055476-19438-9-git-send-email-cota@braap.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Oct 2010 10:25:09.0253 (UTC) FILETIME=[3B330B50:01CB75C1]
+	id S1760826Ab0J0K2F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 06:28:05 -0400
+Received: from mga14.intel.com ([143.182.124.37]:12717 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750889Ab0J0K2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 06:28:03 -0400
+Message-Id: <849307$a582r7@azsmga001.ch.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,245,1286175600"; 
+   d="scan'208";a="341052263"
+Date: Wed, 27 Oct 2010 11:27:57 +0100
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 0/5] mm, highmem: kmap_atomic rework -v3
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org
+References: <20100918155326.478277313@chello.nl>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <20100918155326.478277313@chello.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/10/10 02:10, Emilio G. Cota wrote:
-> From: Emilio G. Cota <cota@braap.org>
+On Sat, 18 Sep 2010 17:53:26 +0200, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> Next version of the kmap_atomic rework using Andrew's fancy CPP trickery to
+> avoid having to convert the whole tree at once.
 > 
-> The cookie passed to request_irq isn't the same as the one passed
-> to free_irq, which results in the following warning:
-> 
-> [   63.243533] WARNING: at kernel/irq/manage.c:899 __free_irq+0x9b/0x17d()
-> [   63.243533] Hardware name:
-> [   63.243533] Trying to free already-free IRQ 17
-> [   63.243533] Modules linked in: vme_tsi148(-) vme e1000e iTCO_wdt iTCO_vendor_support [last unloaded: scsi_wait_scan]
-> [   63.243533] Pid: 2013, comm: rmmod Not tainted 2.6.35 #2
-> [   63.243533] Call Trace:
-> [   63.243533]  [<ffffffff81036ea3>] warn_slowpath_common+0x80/0x98
-> [   63.243533]  [<ffffffff81036f4f>] warn_slowpath_fmt+0x41/0x43
-> [   63.243533]  [<ffffffff810678c4>] __free_irq+0x9b/0x17d
-> [   63.243533]  [<ffffffff810679d9>] free_irq+0x33/0x4e
-> [   63.243533]  [<ffffffffa004a897>] tsi148_irq_exit+0x6b/0x70 [vme_tsi148]
-> [...]
-> [   63.243533] ---[ end trace bbf92311d969efb4 ]---
-> 
-> Fix it by passing the same cookie to both functions.
-> 
-> Signed-off-by: Emilio G. Cota <cota@braap.org>
+> This is compile tested for i386-allmodconfig, frv, mips-sb1250-swarm,
+> powerpc-ppc6xx_defconfig, sparc32_defconfig, arm-omap3 (all with
+> HIGHEM=y).
 
-Acked-by: Martyn Welch <martyn.welch@ge.com>
+This break on x86, HIGHMEM=n:
 
-> ---
->  drivers/staging/vme/bridges/vme_tsi148.c   |   10 ++++++----
->  1 files changed, 6 insertions(+), 4 deletions(-)
->  create mode 100644 drivers/staging/vme/bridges/Module.symvers
-> 
-> diff --git a/drivers/staging/vme/bridges/Module.symvers b/drivers/staging/vme/bridges/Module.symvers
-> new file mode 100644
-> index 0000000..e69de29
-> diff --git a/drivers/staging/vme/bridges/vme_tsi148.c b/drivers/staging/vme/bridges/vme_tsi148.c
-> index acfbd59..5bb999f 100644
-> --- a/drivers/staging/vme/bridges/vme_tsi148.c
-> +++ b/drivers/staging/vme/bridges/vme_tsi148.c
-> @@ -374,8 +374,10 @@ static int tsi148_irq_init(struct vme_bridge *tsi148_bridge)
->  	return 0;
->  }
->  
-> -static void tsi148_irq_exit(struct tsi148_driver *bridge, struct pci_dev *pdev)
-> +static void tsi148_irq_exit(struct vme_bridge *tsi148_bridge, struct pci_dev *pdev)
->  {
-> +	struct tsi148_driver *bridge = tsi148_bridge->driver_priv;
-> +
->  	/* Turn off interrupts */
->  	iowrite32be(0x0, bridge->base + TSI148_LCSR_INTEO);
->  	iowrite32be(0x0, bridge->base + TSI148_LCSR_INTEN);
-> @@ -384,7 +386,7 @@ static void tsi148_irq_exit(struct tsi148_driver *bridge, struct pci_dev *pdev)
->  	iowrite32be(0xFFFFFFFF, bridge->base + TSI148_LCSR_INTC);
->  
->  	/* Detach interrupt handler */
-> -	free_irq(pdev->irq, pdev);
-> +	free_irq(pdev->irq, tsi148_bridge);
->  }
->  
->  /*
-> @@ -2512,7 +2514,7 @@ err_master:
->  		kfree(master_image);
->  	}
->  
-> -	tsi148_irq_exit(tsi148_device, pdev);
-> +	tsi148_irq_exit(tsi148_bridge, pdev);
->  err_irq:
->  err_test:
->  	iounmap(tsi148_device->base);
-> @@ -2584,7 +2586,7 @@ static void tsi148_remove(struct pci_dev *pdev)
->  	iowrite32be(0x0, bridge->base + TSI148_LCSR_INTM1);
->  	iowrite32be(0x0, bridge->base + TSI148_LCSR_INTM2);
->  
-> -	tsi148_irq_exit(bridge, pdev);
-> +	tsi148_irq_exit(tsi148_bridge, pdev);
->  
->  	vme_unregister_bridge(tsi148_bridge);
->  
+arch/x86/mm/iomap_32.c: In function ‘kmap_atomic_prot_pfn’:
+arch/x86/mm/iomap_32.c:64: error: implicit declaration of function
+‘kmap_atomic_idx_push’
+arch/x86/mm/iomap_32.c: In function ‘iounmap_atomic’:
+arch/x86/mm/iomap_32.c:101: error: implicit declaration of function
+‘kmap_atomic_idx_pop’
 
+The use of the kmap idx there looks a little delicate so I'm not sure how
+to fix this.
+-Chris
 
 -- 
-Martyn Welch (Principal Software Engineer)   |   Registered in England and
-GE Intelligent Platforms                     |   Wales (3828642) at 100
-T +44(0)127322748                            |   Barbirolli Square,
-Manchester,
-E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
+Chris Wilson, Intel Open Source Technology Centre
