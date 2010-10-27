@@ -1,111 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760862Ab0J0KoB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 06:44:01 -0400
-Received: from exprod5og108.obsmtp.com ([64.18.0.186]:57575 "EHLO
-	exprod5og108.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760838Ab0J0KoA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 06:44:00 -0400
-Message-ID: <4CC80220.6010609@ge.com>
-Date: Wed, 27 Oct 2010 11:42:40 +0100
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.14) Gecko/20101006 Thunderbird/3.0.9
+	id S1760872Ab0J0KrR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 06:47:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26346 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754009Ab0J0KrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 06:47:15 -0400
+Date: Wed, 27 Oct 2010 12:44:12 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 5/8] KVM: don't touch vcpu stat after async pf is
+ complete
+Message-ID: <20101027104412.GO26191@redhat.com>
+References: <4CC7EA7D.5020901@cn.fujitsu.com>
+ <4CC7EB75.9030709@cn.fujitsu.com>
 MIME-Version: 1.0
-To: greg@kroah.com
-CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: vme: Fix warning in free_irq for ca91cx42
-References: <20101027103806.2783.47604.stgit@ES-BJ21R4J>
-In-Reply-To: <20101027103806.2783.47604.stgit@ES-BJ21R4J>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Oct 2010 10:43:57.0487 (UTC) FILETIME=[DBADE3F0:01CB75C3]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CC7EB75.9030709@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg,
-
-Please dis-regard this patch - trying to do to many things at once leads
-to mistakes...
-
-Martyn
-
-On 27/10/10 11:38, Martyn Welch wrote:
-> As discovered by Emilio Cota for the tsi148, the cookie passed to request_irq
-> isn't the same as the one passed to free_irq.
+On Wed, Oct 27, 2010 at 05:05:57PM +0800, Xiao Guangrong wrote:
+> Don't make a KVM_REQ_UNHALT request after async pf is completed since it
+> can break guest's 'halt' instruction.
 > 
-> Fix it by passing the same cookie to both functions.
-> 
-> Signed-off-by: Martyn Welch <martyn.welch@ge.com>
+Why is it a problem? CPU may be unhalted by different events so OS
+shouldn't depend on it.
+
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 > ---
+>  arch/x86/include/asm/kvm_host.h |    1 +
+>  arch/x86/kvm/x86.c              |    5 +++++
+>  virt/kvm/async_pf.c             |    1 +
+>  virt/kvm/kvm_main.c             |    7 +++++--
+>  4 files changed, 12 insertions(+), 2 deletions(-)
 > 
->  drivers/staging/vme/bridges/vme_ca91cx42.c |   10 ++++++----
->  1 files changed, 6 insertions(+), 4 deletions(-)
-> 
-> 
-> diff --git a/drivers/staging/vme/bridges/vme_ca91cx42.c b/drivers/staging/vme/bridges/vme_ca91cx42.c
-> index 1f2089f..5f7f458 100644
-> --- a/drivers/staging/vme/bridges/vme_ca91cx42.c
-> +++ b/drivers/staging/vme/bridges/vme_ca91cx42.c
-> @@ -242,9 +242,11 @@ static int ca91cx42_irq_init(struct vme_bridge *ca91cx42_bridge)
->  	return 0;
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index 1be0058..d01677b 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -822,6 +822,7 @@ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
+>  				 struct kvm_async_pf *work);
+>  void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu,
+>  			       struct kvm_async_pf *work);
+> +void kvm_arch_async_pf_completion(struct kvm_vcpu *vcpu);
+>  bool kvm_arch_can_inject_async_page_present(struct kvm_vcpu *vcpu);
+>  extern bool kvm_find_async_pf_gfn(struct kvm_vcpu *vcpu, gfn_t gfn);
+>  
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 0b2c420..c0e7ad0 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -6280,6 +6280,11 @@ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
+>  	}
 >  }
 >  
-> -static void ca91cx42_irq_exit(struct ca91cx42_driver *bridge,
-> +static void ca91cx42_irq_exit(struct vme_driver *ca91cx42_bridge,
->  	struct pci_dev *pdev)
->  {
-> +	struct ca91cx42_driver *bridge = ca91cx42_bridge->driver_priv;
+> +void kvm_arch_async_pf_completion(struct kvm_vcpu *vcpu)
+> +{
+> +	vcpu->arch.apf.halted = false;
+> +}
 > +
->  	/* Disable interrupts from PCI to VME */
->  	iowrite32(0, bridge->base + VINT_EN);
+>  bool kvm_arch_can_inject_async_page_present(struct kvm_vcpu *vcpu)
+>  {
+>  	if (!(vcpu->arch.apf.msr_val & KVM_ASYNC_PF_ENABLED))
+> diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
+> index e213ca4..5307a32 100644
+> --- a/virt/kvm/async_pf.c
+> +++ b/virt/kvm/async_pf.c
+> @@ -142,6 +142,7 @@ bool kvm_check_async_pf_completion(struct kvm_vcpu *vcpu)
+>  	if (work->page)
+>  		put_page(work->page);
+>  	kmem_cache_free(async_pf_cache, work);
+> +	kvm_arch_async_pf_completion(vcpu);
 >  
-> @@ -253,7 +255,7 @@ static void ca91cx42_irq_exit(struct ca91cx42_driver *bridge,
->  	/* Clear Any Pending PCI Interrupts */
->  	iowrite32(0x00FFFFFF, bridge->base + LINT_STAT);
->  
-> -	free_irq(pdev->irq, pdev);
-> +	free_irq(pdev->irq, ca91cx42_bridge);
+>  	return true;
 >  }
+> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> index d9aed28..23a8b06 100644
+> --- a/virt/kvm/kvm_main.c
+> +++ b/virt/kvm/kvm_main.c
+> @@ -1347,11 +1347,14 @@ void kvm_vcpu_block(struct kvm_vcpu *vcpu)
+>  	for (;;) {
+>  		prepare_to_wait(&vcpu->wq, &wait, TASK_INTERRUPTIBLE);
 >  
->  /*
-> @@ -1815,7 +1817,7 @@ err_master:
->  		kfree(master_image);
->  	}
->  
-> -	ca91cx42_irq_exit(ca91cx42_device, pdev);
-> +	ca91cx42_irq_exit(ca91cx42_bridge, pdev);
->  err_irq:
->  err_test:
->  	iounmap(ca91cx42_device->base);
-> @@ -1899,7 +1901,7 @@ void ca91cx42_remove(struct pci_dev *pdev)
->  		kfree(master_image);
->  	}
->  
-> -	ca91cx42_irq_exit(bridge, pdev);
-> +	ca91cx42_irq_exit(ca91cx42_bridge, pdev);
->  
->  	iounmap(bridge->base);
->  
-> 
+> -		if (kvm_arch_vcpu_runnable(vcpu) ||
+> -		     kvm_check_async_pf_completion(vcpu)) {
+> +		if (kvm_arch_vcpu_runnable(vcpu)) {
+>  			kvm_make_request(KVM_REQ_UNHALT, vcpu);
+>  			break;
+>  		}
+> +
+> +		if (kvm_check_async_pf_completion(vcpu))
+> +			break;
+> +
+>  		if (kvm_cpu_has_pending_timer(vcpu))
+>  			break;
+>  		if (signal_pending(current))
+> -- 
+> 1.7.0.4
 > 
 > --
-> Martyn Welch (Principal Software Engineer)   |   Registered in England and
-> GE Intelligent Platforms                     |   Wales (3828642) at 100
-> T +44(0)127322748                            |   Barbirolli Square, Manchester,
-> E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-
--- 
-Martyn Welch (Principal Software Engineer)   |   Registered in England and
-GE Intelligent Platforms                     |   Wales (3828642) at 100
-T +44(0)127322748                            |   Barbirolli Square,
-Manchester,
-E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
+--
+			Gleb.
