@@ -1,112 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754966Ab0J0Hmh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 03:42:37 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:54620 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754365Ab0J0Hmf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 03:42:35 -0400
-From: <samu.p.onkalo@nokia.com>
-To: <linus.ml.walleij@gmail.com>
-CC: <akpm@linux-foundation.org>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>
-Date: Wed, 27 Oct 2010 09:41:32 +0200
-Subject: RE: [PATCHv4 1/5] misc: Driver for bh1770glc / sfh7770 ALS and
- proximity sensor
-Thread-Topic: [PATCHv4 1/5] misc: Driver for bh1770glc / sfh7770 ALS and
- proximity sensor
-Thread-Index: Act1HMgNz3e9ouN/RcKqfD9/fXc21wAjJ+cw
-Message-ID: <62697B07E9803846BC582181BD6FB6B836EB299181@NOK-EUMSG-02.mgdnok.nokia.com>
-References: <1287472188-10101-1-git-send-email-samu.p.onkalo@nokia.com>
-	<1287472188-10101-2-git-send-email-samu.p.onkalo@nokia.com>
- <AANLkTikWvRKzr+kffcpTHTs3q3TLeUPzdwzuQSR_tSU2@mail.gmail.com>
-In-Reply-To: <AANLkTikWvRKzr+kffcpTHTs3q3TLeUPzdwzuQSR_tSU2@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1755173Ab0J0HnO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 03:43:14 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:47774 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752629Ab0J0HnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 03:43:13 -0400
+Date: Wed, 27 Oct 2010 09:42:54 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, n-horiguchi@ah.jp.nec.com, x86@kernel.org
+Subject: Re: [GIT PULL] Please pull hwpoison updates for 2.6.37
+Message-ID: <20101027074254.GA809@elte.hu>
+References: <20101026100923.GA5118@basil.fritz.box>
 MIME-Version: 1.0
-X-OriginalArrivalTime: 27 Oct 2010 07:41:35.0773 (UTC) FILETIME=[61E8D4D0:01CB75AA]
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101026100923.GA5118@basil.fritz.box>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
 
->-----Original Message-----
->From: linux-i2c-owner@vger.kernel.org [mailto:linux-i2c-
->owner@vger.kernel.org] On Behalf Of ext Linus Walleij
->Sent: 26 October, 2010 17:48
->To: Onkalo Samu.P (Nokia-MS/Tampere)
->Cc: akpm@linux-foundation.org; linux-i2c@vger.kernel.org; linux-
->kernel@vger.kernel.org; linux-input@vger.kernel.org
->Subject: Re: [PATCHv4 1/5] misc: Driver for bh1770glc / sfh7770 ALS and
->proximity sensor
+* Andi Kleen <andi@firstfloor.org> wrote:
+
+> [...]
 >
->010/10/19 Samu Onkalo <samu.p.onkalo@nokia.com>:
->
->> This is a driver for ROHM BH1770GLC and OSRAM SFH7770 combined
->> ALS and proximity sensor.
->>
->> Interface is sysfs based. The driver uses interrupts to provide new
->data.
->> The driver supports pm_runtime and regulator frameworks.
->> (...)
->> +static DEVICE_ATTR(prox0_raw_en, S_IRUGO | S_IWUSR,
->bh1770_prox_enable_show,
->> +
->bh1770_prox_enable_store);
->> +static DEVICE_ATTR(prox0_thresh_above1_value, S_IRUGO | S_IWUSR,
->> +
->bh1770_prox_abs_thres_show,
->> +
->bh1770_prox_abs_thres_store);
->> +static DEVICE_ATTR(prox0_thresh_above0_value, S_IRUGO | S_IWUSR,
->> +                                               bh1770_get_prox_thres,
->> +
->bh1770_set_prox_thres);
->> +static DEVICE_ATTR(prox0_raw, S_IRUGO, bh1770_prox_result_show,
->NULL);
->
->So you have sysfs entries for enabling, calibrating hysteris
->(above/below) and the reading the raw value which I assume
->will be 0 (if nothing is in proximity) or 1 (if it is in proximity).
+> - x86 hwpoison signal reporting fix. I tried to get an ack for that,
+>   but wasn't able to motivate the x86 maintainers to reply to their emails.
 
-Actually raw gives 0 or 1023 (==sensor_range) when
-the reporting mode is "trigger"
-or
-0 threshold_abovevalue..1023 in periodic mode.
+Hm, you sent it once two weeks before the merge window and we missed that.
 
-But for Boolean type behavior: 0 is no proximity and != 0 means
-proximity 
+Patch looks ok. (I'd personally not expose an #ifdef in the middle of a function 
+like that but that's a detail that doesnt affect correctness.)
 
->
->These entries are pretty OK I think, but the transition from
->0 to 1 which I assume will generate an interrupt and generate
->a new value in this attribute.
+Thanks,
 
-It uses sysfs_notify to indicate userspace about the change
-
->
->But should it not hook into the input framework and generate
->a SW_FRONT_PROXIMITY event as well?
->
->I think this could be pretty helpful for generic userspace
->applications like X that want to use this event.
->
->Of course I can send a patch for this later, but I'd like
->to hear whether you agree on this or not.
->
-
-I think that is makes sense to provide it.
-
--Samu
-
-
-
-
+	Ingo
