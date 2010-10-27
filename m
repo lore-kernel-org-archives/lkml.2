@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab0J0Sn2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 14:43:28 -0400
-Received: from asmtpout025.mac.com ([17.148.16.100]:33370 "EHLO
-	asmtpout025.mac.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754909Ab0J0Sn1 (ORCPT
+	id S1755421Ab0J0SoK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 14:44:10 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:22243 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755248Ab0J0SoH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 14:43:27 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=us-ascii
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0
- ipscore=0 suspectscore=0 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
- adjust=0 reason=mlx engine=6.0.2-1004200000 definitions=main-1010270096
-X-Proofpoint-Virus-Version: vendor=fsecure
- engine=2.50.10432:5.2.15,1.0.148,0.0.0000
- definitions=2010-10-27_09:2010-10-27,2010-10-27,1970-01-01 signatures=0
-From: Elvis Dowson <elvis.dowson@mac.com>
-Subject: sdio ids for wl12xx
-Date: Wed, 27 Oct 2010 22:42:48 +0400
-Message-id: <5B495C0D-66BE-4A48-ADC0-6F8C74FF70D9@mac.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-X-Mailer: Apple Mail (2.1081)
+	Wed, 27 Oct 2010 14:44:07 -0400
+MIME-Version: 1.0
+Message-ID: <7b34b3ea-9436-4077-a35e-a5eaabd59813@default>
+Date: Wed, 27 Oct 2010 11:37:47 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Ping? RE: [GIT PULL] mm/vfs/fs:cleancache for 2.6.37 merge window
+References: <ec76a6ed-a1dc-4e8b-a4ac-1e72ab367d0f@default>
+In-Reply-To: <ec76a6ed-a1dc-4e8b-a4ac-1e72ab367d0f@default>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.2.1.2  (406224) [OL
+ 12.0.6539.5000]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ohad,
-                  I was wondering, don't you need the sdio_ids for TI WL12xx as follows? Do you think the LSR TiWi SDIO ids would be different? 
+> From: Dan Magenheimer
+> To: torvalds@linux-foundation.org
+> Cc: linux-kernel@vger.kernel.org
+> Subject: [GIT PULL] mm/vfs/fs:cleancache for 2.6.37 merge window
+> 
+> Hi Linus --
+> 
+> Please pull:
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/djm/tmem.git for-linus
+> 
+> since git commit cb655d0f3d57c23db51b981648e452988c0223f9:
+> Linus Torvalds (1):
+> 
+>     Linux 2.6.36-rc7
+> 
+> This cleancache patchset crosses multiple subsystem boundaries and
+> at the recent filesystem/storage/mm summit, people suggested that
+> I should just submit it to linux-next (done), and directly to you
+> at the next merge window.  Previous lkml postings received a great
+> deal of review and comment from a wide variety of maintainers, as
+> documented in the commit logs.
 
-diff --git a/include/linux/mmc/sdio_ids.h b/include/linux/mmc/sdio_ids.h
-index 33b2ea0..66f9e3e 100644
---- a/include/linux/mmc/sdio_ids.h
-+++ b/include/linux/mmc/sdio_ids.h
-@@ -43,4 +43,7 @@
- #define SDIO_DEVICE_ID_SIANO_NOVA_A0		0x1100
- #define SDIO_DEVICE_ID_SIANO_STELLAR 		0x5347
- 
-+#define SDIO_VENDOR_ID_TI				0x104c
-+#define SDIO_DEVICE_ID_TI_WL12xx		0x9066
-+
- #endif
+<snip>
 
-Best regards,
+Ping?  I hope you are still considering this.  If not or if
+there are any questions I can answer, please let me know.
 
-Elvis Dowson
-
+Thanks,
+Dan
