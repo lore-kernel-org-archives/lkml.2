@@ -1,56 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759656Ab0J0PnN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 11:43:13 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:52211 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755142Ab0J0PnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 11:43:11 -0400
-Date: Wed, 27 Oct 2010 17:43:02 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Tejun Heo <tj@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Brian Gerst <brgerst@gmail.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86-32: Allocate irq stacks seperate from percpu area
-Message-ID: <20101027154302.GA22816@elte.hu>
-References: <AANLkTinnc3vBSmewf7ixuOSDYxG+5VNiGaB-vSrDNRiO@mail.gmail.com>
- <1288158182-1753-1-git-send-email-brgerst@gmail.com>
- <AANLkTim_3vhuJt2gYQEM5p=wxVU1Jsm6reTgQZsu_o7B@mail.gmail.com>
- <20101027153053.GA20243@elte.hu>
- <20101027153331.GA21789@elte.hu>
- <4CC847D9.3080805@kernel.org>
+	id S1760824Ab0J0PnV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 11:43:21 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:60389 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760749Ab0J0PnS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 11:43:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=pJj7KGQPIQRM9vcm0p+PaEXr2HfeWqOOSaJ3iMYhOxK1xcRGBrR+P30V2xHNRy0hN7
+         p5Dv1oNvujjI5WGVu6EkpObdt7s6rPATbkfsl75b4yeTZbU1Xy3qGrQfpia8JfA8SM+I
+         O+3pImnaBhNu7AJfbN06T2phFGYZDQ6lZ5jaI=
+Date: Wed, 27 Oct 2010 19:43:12 +0400
+From: Vasiliy Kulikov <segooon@gmail.com>
+To: "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>
+Cc: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        ISS StorageDev <iss_storagedev@hp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] block: cciss: fix information leak to userland
+Message-ID: <20101027154312.GA9008@albatros>
+References: <1287822311-14783-1-git-send-email-segooon@gmail.com>
+ <0F5B06BAB751E047AB5C87D1F77A77887D0E2807DF@GVW0547EXC.americas.hpqcorp.net>
+ <0F5B06BAB751E047AB5C87D1F77A77887D0E280943@GVW0547EXC.americas.hpqcorp.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CC847D9.3080805@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <0F5B06BAB751E047AB5C87D1F77A77887D0E280943@GVW0547EXC.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Mike,
 
-* Tejun Heo <tj@kernel.org> wrote:
-
-> Hello, Ingo, Linus.
+On Mon, Oct 25, 2010 at 16:36 +0000, Miller, Mike (OS Dev) wrote:
 > 
-> On 10/27/2010 05:33 PM, Ingo Molnar wrote:
-> > Btw., the NUMA stuff never really worked percpu alloc, as per Eric's observation:
 > 
-> Oh, it works in general.  In this case, it's probably because the NUMA 
-> configuration is rather weird in 32bit (but then again NUMA on 32bit is supposed 
-> to be so).  I think it's just 32bit init code setting up early_cpu_to_node() 
-> differently.
+> > -----Original Message-----
+> > From: Miller, Mike (OS Dev)
+> > Sent: Monday, October 25, 2010 9:41 AM
+> > To: Vasiliy Kulikov; kernel-janitors@vger.kernel.org
+> > Cc: Jens Axboe; Stephen M. Cameron; Andrew Morton; ISS StorageDev;
+> > linux-kernel@vger.kernel.org
+> > Subject: RE: [PATCH 1/2] block: cciss: fix information leak to userland
+> > 
+> > 
+> > 
+> > > -----Original Message-----
+> > > From: Vasiliy Kulikov [mailto:segooon@gmail.com]
+> > > Sent: Saturday, October 23, 2010 3:25 AM
+> > > To: kernel-janitors@vger.kernel.org
+> > > Cc: Miller, Mike (OS Dev); Jens Axboe; Stephen M. Cameron;
+> > > Andrew Morton; ISS StorageDev; linux-kernel@vger.kernel.org
+> > > Subject: [PATCH 1/2] block: cciss: fix information leak to userland
+> > >
+> > > Structure IOCTL_Command_struct is copied to userland with
+> > > some padding fields at the end of the struct unitialized.
+> > > It leads to leaking of stack memory.
+> > >
+> > > Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+> > > ---
+> > >  drivers/block/cciss.c |    1 +
+> > >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > >
+> > > diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+> > > index 762a81a..cd08324 100644
+> > > --- a/drivers/block/cciss.c
+> > > +++ b/drivers/block/cciss.c
+> > > @@ -1142,6 +1142,7 @@ static int
+> > > cciss_ioctl32_passthru(struct block_device *bdev, fmode_t mode,
+> > >  	int err;
+> > >  	u32 cp;
+> > >
+> > > +	memset(&arg64, 0, sizeof(arg64));
+> > >  	err = 0;
+> > >  	err |=
+> > >  	    copy_from_user(&arg64.LUN_info, &arg32->LUN_info,
+> > > --
+> > 
+> > Acked-by: Mike Miller <mike.miller@hp.com>
+> 
+> BTW: this change needs to go into the cciss_ioctl32_big_passthru
 
-Yeah, i meant on x86 32-bit only - which the whole thread is about.
+I've sent the patch, thanks.
+
+> and the other passthru ioctls, also.
+
+I don't see problems with them, they do copy_from_user() before
+filling the structure.
+
+> 
+> -- mikem
+> 
+> > 
+> > > 1.7.0.4
+> > >
+> > >
 
 Thanks,
 
-	Ingo
+-- 
+Vasiliy
