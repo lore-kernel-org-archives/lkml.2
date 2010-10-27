@@ -1,31 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761024Ab0J0MAr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 08:00:47 -0400
-Received: from verein.lst.de ([213.95.11.210]:40718 "EHLO verein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759948Ab0J0MAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 08:00:46 -0400
-Date: Wed, 27 Oct 2010 13:59:46 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: akpm@linux-foundation.org
-Cc: torvalds@linux-foundation.org, eric.dumazet@gmail.com, davem@davemloft.net,
-        hch@lst.de, holt@sgi.com, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 116/176] fs: allow for more than 2^31 files
-Message-ID: <20101027115946.GA26335@lst.de>
-References: <201010262122.o9QLMiZG016728@imap1.linux-foundation.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201010262122.o9QLMiZG016728@imap1.linux-foundation.org>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: -0.001 () BAYES_44
+	id S1761044Ab0J0MBI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 08:01:08 -0400
+Received: from mail.windriver.com ([147.11.1.11]:52334 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751697Ab0J0MBG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 08:01:06 -0400
+Message-ID: <4CC813DB.4090001@windriver.com>
+Date: Wed, 27 Oct 2010 06:58:19 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: Rabin Vincent <rabin@rab.in>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        stable@kernel.org, kgdb-bugreport@lists.sourceforge.net
+Subject: Re: [PATCH] kgdb,arm: fix register dump
+References: <1288115392-23383-1-git-send-email-rabin@rab.in>
+In-Reply-To: <1288115392-23383-1-git-send-email-rabin@rab.in>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 27 Oct 2010 11:58:20.0414 (UTC) FILETIME=[3FCA81E0:01CB75CE]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch breaks the binary sysctl ABI.  It probably doesn't matter
-as no one actually used it, but it might be better idea to just remove
-this node from the binary sysctl tree.
+On 10/26/2010 12:49 PM, Rabin Vincent wrote:
+> DBG_MAX_REG_NUM incorrectly had the number of indices in the GDB regs
+> array rather than the number of registers, leading to an oops when the
+> "rd" command is used in KDB.
+>
+>   
 
+Thanks!
+
+I have queued this to be merged in 2.6.37.
+
+Cheers,
+Jason.
