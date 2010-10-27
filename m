@@ -1,57 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757156Ab0J0W0u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 18:26:50 -0400
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:26388 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751031Ab0J0W0r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 18:26:47 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: V34MVJ4VM1mBLsPr2E24Wp4gUZ7p7TRP1h8zxoqWHRUYoBb
- nnQ9y3MU8RInrtN5kGZWM2IsOwIG2qAN3SA7lo4OmEORpVrLOSuLpKTsonSG
- 086OSwtmkhzNf8mXDMiJtsH5BSw6YAPy5aI3ejYxBN3SD_70ZRcRN0UML_nQ
- qMTabxx45zD8w_LvyZ7ieur2EjCWa55EQQj8PNaj84rbeBI3KwODVFvx7HhS
- _
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 27 Oct 2010 17:26:44 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Martin Nybo Andersen <tweek@tweek.dk>
-cc: Dragoslav Zaric <zaricdragoslav@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: Tickles scheduler
-In-Reply-To: <alpine.DEB.2.00.1010260959250.10975@odin.tweek.dk>
-Message-ID: <alpine.DEB.2.00.1010271725260.9704@router.home>
-References: <AANLkTimzEDtfUKajFPgGOhifPhyRQboZbKNbypBaKpKO@mail.gmail.com> <alpine.DEB.2.00.1010260959250.10975@odin.tweek.dk>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1756254Ab0J0W2H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 18:28:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53206 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752745Ab0J0W2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 18:28:06 -0400
+X-User-Agent: K-9 Mail for Android
+References: <cover.1288212485.git.jbaron@redhat.com> <2de96f2012e81597079ab0b09a1487e7061b9cc6.1288212486.git.jbaron@redhat.com>
+In-Reply-To: <2de96f2012e81597079ab0b09a1487e7061b9cc6.1288212486.git.jbaron@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+ charset=utf-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 1/2] move arch_init_ideal_nop5 later
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 27 Oct 2010 15:24:05 -0700
+To: Jason Baron <jbaron@redhat.com>, rostedt@goodmis.org, mingo@elte.hu
+CC: mathieu.desnoyers@polymtl.ca, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com,
+        ddaney@caviumnetworks.com, dsd@laptop.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <e35a5b13-ea12-42d2-b569-ff1d69ef58d1@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Oct 2010, Martin Nybo Andersen wrote:
+The exception test is broken anyway for reasons I already explained, so it would be better to just drop it.
 
-> On Tue, 26 Oct 2010, Dragoslav Zaric wrote:
+"Jason Baron" <jbaron@redhat.com> wrote:
+
+>arch_init_ideal_nop5() was being called from setup_arch() before
+>the exception table was setup. Move it later into
+>alternative_instructions().
 >
-> > [...]
-> >
-> > Is it at all possible to implement kernel without ticking, spin system
-> > by events and periods ?
+>Fixes a boot hang on OLPC's XO-1 laptop based on Geode LX
+>processor.
 >
-> You can compile with CONFIG_NO_HZ=n if you want a ticking kernel.
+>
+>Reported-by: Daniel Drake <dsd@laptop.org>
+>Signed-off-by: Jason Baron <jbaron@redhat.com>
+>---
+> arch/x86/include/asm/alternative.h |    1 -
+>arch/x86/kernel/alternative.c      |  132
+>++++++++++++++++++------------------
+> arch/x86/kernel/setup.c            |    6 --
+> 3 files changed, 67 insertions(+), 72 deletions(-)
+>
+>diff --git a/arch/x86/include/asm/alternative.h
+>b/arch/x86/include/asm/alternative.h
+>index 76561d2..2a7f618 100644
+>--- a/arch/x86/include/asm/alternative.h
+>+++ b/arch/x86/include/asm/alternative.h
+>@@ -186,7 +186,6 @@ extern void *text_poke_smp(void *addr, const void
+>*opcode, size_t len);
+> #if defined(CONFIG_DYNAMIC_FTRACE) || defined(HAVE_JUMP_LABEL)
+> #define IDEAL_NOP_SIZE_5 5
+> extern unsigned char ideal_nop5[IDEAL_NOP_SIZE_5];
+>-extern void arch_init_ideal_nop5(void);
+> #else
+> static inline void arch_init_ideal_nop5(void) {}
+> #endif
+>diff --git a/arch/x86/kernel/alternative.c
+>b/arch/x86/kernel/alternative.c
+>index a36bb90..9f39a1c 100644
+>--- a/arch/x86/kernel/alternative.c
+>+++ b/arch/x86/kernel/alternative.c
+>@@ -452,6 +452,71 @@ extern struct paravirt_patch_site
+>__start_parainstructions[],
+> 	__stop_parainstructions[];
+> #endif	/* CONFIG_PARAVIRT */
+> 
+>+#if defined(CONFIG_DYNAMIC_FTRACE) || defined(HAVE_JUMP_LABEL)
+>+
+>+unsigned char ideal_nop5[IDEAL_NOP_SIZE_5];
+>+
+>+static void __init arch_init_ideal_nop5(void)
+>+{
+>+	extern const unsigned char ftrace_test_p6nop[];
+>+	extern const unsigned char ftrace_test_nop5[];
+>+	extern const unsigned char ftrace_test_jmp[];
+>+	int faulted = 0;
+>+
+>+	/*
+>+	 * There is no good nop for all x86 archs.
+>+	 * We will default to using the P6_NOP5, but first we
+>+	 * will test to make sure that the nop will actually
+>+	 * work on this CPU. If it faults, we will then
+>+	 * go to a lesser efficient 5 byte nop. If that fails
+>+	 * we then just use a jmp as our nop. This isn't the most
+>+	 * efficient nop, but we can not use a multi part nop
+>+	 * since we would then risk being preempted in the middle
+>+	 * of that nop, and if we enabled tracing then, it might
+>+	 * cause a system crash.
+>+	 *
+>+	 * TODO: check the cpuid to determine the best nop.
+>+	 */
+>+	asm volatile (
+>+		"ftrace_test_jmp:"
+>+		"jmp ftrace_test_p6nop\n"
+>+		"nop\n"
+>+		"nop\n"
+>+		"nop\n"  /* 2 byte jmp + 3 bytes */
+>+		"ftrace_test_p6nop:"
+>+		P6_NOP5
+>+		"jmp 1f\n"
+>+		"ftrace_test_nop5:"
+>+		".byte 0x66,0x66,0x66,0x66,0x90\n"
+>+		"1:"
+>+		".section .fixup, \"ax\"\n"
+>+		"2:	movl $1, %0\n"
+>+		"	jmp ftrace_test_nop5\n"
+>+		"3:	movl $2, %0\n"
+>+		"	jmp 1b\n"
+>+		".previous\n"
+>+		_ASM_EXTABLE(ftrace_test_p6nop, 2b)
+>+		_ASM_EXTABLE(ftrace_test_nop5, 3b)
+>+		: "=r"(faulted) : "0" (faulted));
+>+
+>+	switch (faulted) {
+>+	case 0:
+>+		pr_info("converting mcount calls to 0f 1f 44 00 00\n");
+>+		memcpy(ideal_nop5, ftrace_test_p6nop, IDEAL_NOP_SIZE_5);
+>+		break;
+>+	case 1:
+>+		pr_info("converting mcount calls to 66 66 66 66 90\n");
+>+		memcpy(ideal_nop5, ftrace_test_nop5, IDEAL_NOP_SIZE_5);
+>+		break;
+>+	case 2:
+>+		pr_info("converting mcount calls to jmp . + 5\n");
+>+		memcpy(ideal_nop5, ftrace_test_jmp, IDEAL_NOP_SIZE_5);
+>+		break;
+>+	}
+>+
+>+}
+>+#endif
+>+
+> void __init alternative_instructions(void)
+> {
+>	/* The patching is not fully atomic, so try to avoid local
+>interruptions
+>@@ -508,6 +573,8 @@ void __init alternative_instructions(void)
+> 				(unsigned long)__smp_locks_end);
+> 
+> 	restart_nmi();
+>+
+>+	arch_init_ideal_nop5();
+> }
+> 
+> /**
+>@@ -641,68 +708,3 @@ void *__kprobes text_poke_smp(void *addr, const
+>void *opcode, size_t len)
+> 	__stop_machine(stop_machine_text_poke, (void *)&tpp, NULL);
+> 	return addr;
+> }
+>-
+>-#if defined(CONFIG_DYNAMIC_FTRACE) || defined(HAVE_JUMP_LABEL)
+>-
+>-unsigned char ideal_nop5[IDEAL_NOP_SIZE_5];
+>-
+>-void __init arch_init_ideal_nop5(void)
+>-{
+>-	extern const unsigned char ftrace_test_p6nop[];
+>-	extern const unsigned char ftrace_test_nop5[];
+>-	extern const unsigned char ftrace_test_jmp[];
+>-	int faulted = 0;
+>-
+>-	/*
+>-	 * There is no good nop for all x86 archs.
+>-	 * We will default to using the P6_NOP5, but first we
+>-	 * will test to make sure that the nop will actually
+>-	 * work on this CPU. If it faults, we will then
+>-	 * go to a lesser efficient 5 byte nop. If that fails
+>-	 * we then just use a jmp as our nop. This isn't the most
+>-	 * efficient nop, but we can not use a multi part nop
+>-	 * since we would then risk being preempted in the middle
+>-	 * of that nop, and if we enabled tracing then, it might
+>-	 * cause a system crash.
+>-	 *
+>-	 * TODO: check the cpuid to determine the best nop.
+>-	 */
+>-	asm volatile (
+>-		"ftrace_test_jmp:"
+>-		"jmp ftrace_test_p6nop\n"
+>-		"nop\n"
+>-		"nop\n"
+>-		"nop\n"  /* 2 byte jmp + 3 bytes */
+>-		"ftrace_test_p6nop:"
+>-		P6_NOP5
+>-		"jmp 1f\n"
+>-		"ftrace_test_nop5:"
+>-		".byte 0x66,0x66,0x66,0x66,0x90\n"
+>-		"1:"
+>-		".section .fixup, \"ax\"\n"
+>-		"2:	movl $1, %0\n"
+>-		"	jmp ftrace_test_nop5\n"
+>-		"3:	movl $2, %0\n"
+>-		"	jmp 1b\n"
+>-		".previous\n"
+>-		_ASM_EXTABLE(ftrace_test_p6nop, 2b)
+>-		_ASM_EXTABLE(ftrace_test_nop5, 3b)
+>-		: "=r"(faulted) : "0" (faulted));
+>-
+>-	switch (faulted) {
+>-	case 0:
+>-		pr_info("converting mcount calls to 0f 1f 44 00 00\n");
+>-		memcpy(ideal_nop5, ftrace_test_p6nop, IDEAL_NOP_SIZE_5);
+>-		break;
+>-	case 1:
+>-		pr_info("converting mcount calls to 66 66 66 66 90\n");
+>-		memcpy(ideal_nop5, ftrace_test_nop5, IDEAL_NOP_SIZE_5);
+>-		break;
+>-	case 2:
+>-		pr_info("converting mcount calls to jmp . + 5\n");
+>-		memcpy(ideal_nop5, ftrace_test_jmp, IDEAL_NOP_SIZE_5);
+>-		break;
+>-	}
+>-
+>-}
+>-#endif
+>diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+>index 0ac571d..850059d 100644
+>--- a/arch/x86/kernel/setup.c
+>+++ b/arch/x86/kernel/setup.c
+>@@ -112,7 +112,6 @@
+> #include <asm/numa_64.h>
+> #endif
+> #include <asm/mce.h>
+>-#include <asm/alternative.h>
+> 
+> /*
+>* end_pfn only includes RAM, while max_pfn_mapped includes all e820
+>entries.
+>@@ -695,7 +694,6 @@ void __init setup_arch(char **cmdline_p)
+> {
+> 	int acpi = 0;
+> 	int k8 = 0;
+>-	unsigned long flags;
+> 
+> #ifdef CONFIG_X86_32
+> 	memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
+>@@ -1055,10 +1053,6 @@ void __init setup_arch(char **cmdline_p)
+> 	x86_init.oem.banner();
+> 
+> 	mcheck_init();
+>-
+>-	local_irq_save(flags);
+>-	arch_init_ideal_nop5();
+>-	local_irq_restore(flags);
+> }
+> 
+> #ifdef CONFIG_X86_32
+>-- 
+>1.7.1
 
-The kernel always ticks when a process is running CONFIG_NO_HZ does
-nothing for that.
-
-> > Maybe ticking is still best solution to have fast responding system ?
-
-I think we need a tickless kernel.... Yes....
-
-> My guesses are that it has already been benchmarked for speed, but you can
-> still test it yourself.
-> At least power usage/battery times is much better with a tickless kernel.
-
-Well yes CONFIG_NO_HZ really should say CONFIG_NO_HZ_IDLE. You have
-no ticks when a cpu is idle. Otherwise we are ticking...
-
+-- 
+Sent from my mobile phone.  Please pardon any lack of formatting.
