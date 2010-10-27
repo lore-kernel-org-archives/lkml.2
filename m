@@ -1,240 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933289Ab0J0Ncu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 09:32:50 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:55092 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933189Ab0J0Nct (ORCPT
+	id S933315Ab0J0Ndd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 09:33:33 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60391 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932178Ab0J0Ndb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 09:32:49 -0400
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=ZDzuQiiN56AA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=SyI_GHdlAAAA:8 a=WPyIoOwQAAAA:8 a=eJfxgxciAAAA:8 a=QrkToWCIdyvkeyof2uQA:9 a=avqPpWNFwDmBWuKQzbgA:7 a=trESRPPI9tPrv3O4GWeOsoSXo3IA:4 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=UQxMgyrMzRwA:10 a=1DbiqZag68YA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 1/3] ftrace/MIPS: Add MIPS64 support for C version of
- recordmcount
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Wu Zhangjin <wuzhangjin@gmail.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, John Reiser <jreiser@bitwagon.com>,
-        "Maciej W. Rozycki" <macro@linux-mips.org>,
-        David Daney <ddaney@caviumnetworks.com>
-In-Reply-To: <910dc2d5ae1ed042df4f96815fe4a433078d1c2a.1288176026.git.wuzhangjin@gmail.com>
-References: <cover.1288176026.git.wuzhangjin@gmail.com>
-	 <910dc2d5ae1ed042df4f96815fe4a433078d1c2a.1288176026.git.wuzhangjin@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 27 Oct 2010 09:32:46 -0400
-Message-ID: <1288186366.18238.125.camel@gandalf.stny.rr.com>
+	Wed, 27 Oct 2010 09:33:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=tqBXUM/VPqyaPTJ1V98+/bhOfd8y/AwfYA1UU7WNSRG82GZ1v+w2qMZgZrIvTIxQYB
+         Ek+DyLtV7+Uw72EZv+S0Qvv1kmF/WvTyKYaWzh8fMYazrclsqyZF/5WcPQX9NHRPbzkt
+         ADuDQUxrQ3BGLTgx+UF+AxmugkZHkKc3P3F/c=
+Subject: Re: [PATCH] x86-32: Allocate irq stacks seperate from percpu area
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Brian Gerst <brgerst@gmail.com>, tj@kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        mingo@elte.hu
+In-Reply-To: <1288173442.15336.1490.camel@twins>
+References: <AANLkTinnc3vBSmewf7ixuOSDYxG+5VNiGaB-vSrDNRiO@mail.gmail.com>
+	 <1288158182-1753-1-git-send-email-brgerst@gmail.com>
+	 <1288159670.2652.181.camel@edumazet-laptop>
+	 <1288173442.15336.1490.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Oct 2010 15:33:25 +0200
+Message-ID: <1288186405.2709.117.camel@edumazet-laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-27 at 18:59 +0800, Wu Zhangjin wrote:
-> From: Wu Zhangjin <wuzhangjin@gmail.com>
-
-The From above states that you wrote this. Did you modify what John and
-Maciej did? If so, please state clearly what each author has done, and
-how you modified it. If you did not write this, please change the From
-to the correct author.
-
-If you did modify it, then state something like this in the change log.
-
-Original version written by John Reiser <jreiser@BitWagon.com>
-
-Usage of "union mips_r_info" and the functions MIPS64_r_sym() and
-MIPS64_r_info() written by Maciej W. Rozycki <macro@linux-mips.org>
-
-Then state the changes you made.
-
+Le mercredi 27 octobre 2010 à 11:57 +0200, Peter Zijlstra a écrit :
+> On Wed, 2010-10-27 at 08:07 +0200, Eric Dumazet wrote:
+> > > -     irqctx = &per_cpu(hardirq_stack, cpu);
+> > > +     irqctx = (union irq_ctx *)__get_free_pages(THREAD_FLAGS, THREAD_ORDER);
+> > 
+> > Hmm, then we lose NUMA affinity for stacks. 
 > 
-> MIPS64 has 'weird' Elf64_Rel.r_info[1,2], which must be used instead of
-> the generic Elf64_Rel.r_info, otherwise, the C version of recordmcount
-> will not work for "segmentation fault".
+> I guess we could use:
 > 
-> ----
-> [1] http://techpubs.sgi.com/library/manuals/4000/007-4658-001/pdf/007-4658-001.pdf
-> [2] arch/mips/include/asm/module.h
+>   alloc_pages_node(cpu_to_node(cpu), THREAD_FLAGS, THREAD_ORDER);
 > 
-> Signed-off-by: John Reiser <jreiser@BitWagon.com>
-> Signed-off-by: Maciej W. Rozycki <macro@linux-mips.org>
-> Tested-by: Wu Zhangjin <wuzhangjin@gmail.com>
-
-Again, if you made changes, you need a SoB yourself.
-
-Thanks!
-
--- Steve
-
-
-> ---
->  scripts/recordmcount.c |   41 +++++++++++++++++++++++++++++++++++++++++
->  scripts/recordmcount.h |   34 ++++++++++++++++++++++++++++++----
->  2 files changed, 71 insertions(+), 4 deletions(-)
 > 
-> diff --git a/scripts/recordmcount.c b/scripts/recordmcount.c
-> index 26e1271..2d32b9c 100644
-> --- a/scripts/recordmcount.c
-> +++ b/scripts/recordmcount.c
-> @@ -217,6 +217,39 @@ is_mcounted_section_name(char const *const txtname)
->  #define RECORD_MCOUNT_64
->  #include "recordmcount.h"
->  
-> +/* 64-bit EM_MIPS has weird ELF64_Rela.r_info.
-> + * http://techpubs.sgi.com/library/manuals/4000/007-4658-001/pdf/007-4658-001.pdf
-> + * We interpret Table 29 Relocation Operation (Elf64_Rel, Elf64_Rela) [p.40]
-> + * to imply the order of the members; the spec does not say so.
-> + *	typedef unsigned char Elf64_Byte;
-> + * fails on MIPS64 because their <elf.h> already has it!
-> + */
-> +
-> +typedef uint8_t myElf64_Byte;		/* Type for a 8-bit quantity.  */
-> +
-> +union mips_r_info {
-> +	Elf64_Xword r_info;
-> +	struct {
-> +		Elf64_Word r_sym;		/* Symbol index.  */
-> +		myElf64_Byte r_ssym;		/* Special symbol.  */
-> +		myElf64_Byte r_type3;		/* Third relocation.  */
-> +		myElf64_Byte r_type2;		/* Second relocation.  */
-> +		myElf64_Byte r_type;		/* First relocation.  */
-> +	} r_mips;
-> +};
-> +
-> +static uint64_t MIPS64_r_sym(Elf64_Rel const *rp)
-> +{
-> +	return w(((union mips_r_info){ .r_info = rp->r_info }).r_mips.r_sym);
-> +}
-> +
-> +static void MIPS64_r_info(Elf64_Rel *const rp, unsigned sym, unsigned type)
-> +{
-> +	rp->r_info = ((union mips_r_info){
-> +		.r_mips = { .r_sym = w(sym), .r_type = type }
-> +	}).r_info;
-> +}
-> +
->  static void
->  do_file(char const *const fname)
->  {
-> @@ -268,6 +301,7 @@ do_file(char const *const fname)
->  	case EM_386:	 reltype = R_386_32;                   break;
->  	case EM_ARM:	 reltype = R_ARM_ABS32;                break;
->  	case EM_IA_64:	 reltype = R_IA64_IMM64;   gpfx = '_'; break;
-> +	case EM_MIPS:	 /* reltype: e_class    */ gpfx = '_'; break;
->  	case EM_PPC:	 reltype = R_PPC_ADDR32;   gpfx = '_'; break;
->  	case EM_PPC64:	 reltype = R_PPC64_ADDR64; gpfx = '_'; break;
->  	case EM_S390:    /* reltype: e_class    */ gpfx = '_'; break;
-> @@ -291,6 +325,8 @@ do_file(char const *const fname)
->  		}
->  		if (EM_S390 == w2(ehdr->e_machine))
->  			reltype = R_390_32;
-> +		if (EM_MIPS == w2(ehdr->e_machine))
-> +			reltype = R_MIPS_32;
->  		do32(ehdr, fname, reltype);
->  	} break;
->  	case ELFCLASS64: {
-> @@ -303,6 +339,11 @@ do_file(char const *const fname)
->  		}
->  		if (EM_S390 == w2(ghdr->e_machine))
->  			reltype = R_390_64;
-> +		if (EM_MIPS == w2(ghdr->e_machine)) {
-> +			reltype = R_MIPS_64;
-> +			Elf64_r_sym = MIPS64_r_sym;
-> +			Elf64_r_info = MIPS64_r_info;
-> +		}
->  		do64(ghdr, fname, reltype);
->  	} break;
->  	}  /* end switch */
-> diff --git a/scripts/recordmcount.h b/scripts/recordmcount.h
-> index 7f39d09..190fd18 100644
-> --- a/scripts/recordmcount.h
-> +++ b/scripts/recordmcount.h
-> @@ -31,8 +31,12 @@
->  #undef Elf_Rela
->  #undef Elf_Sym
->  #undef ELF_R_SYM
-> +#undef Elf_r_sym
->  #undef ELF_R_INFO
-> +#undef Elf_r_info
->  #undef ELF_ST_BIND
-> +#undef fn_ELF_R_SYM
-> +#undef fn_ELF_R_INFO
->  #undef uint_t
->  #undef _w
->  #undef _align
-> @@ -52,8 +56,12 @@
->  # define Elf_Rela		Elf64_Rela
->  # define Elf_Sym		Elf64_Sym
->  # define ELF_R_SYM		ELF64_R_SYM
-> +# define Elf_r_sym		Elf64_r_sym
->  # define ELF_R_INFO		ELF64_R_INFO
-> +# define Elf_r_info		Elf64_r_info
->  # define ELF_ST_BIND		ELF64_ST_BIND
-> +# define fn_ELF_R_SYM		fn_ELF64_R_SYM
-> +# define fn_ELF_R_INFO		fn_ELF64_R_INFO
->  # define uint_t			uint64_t
->  # define _w			w8
->  # define _align			7u
-> @@ -72,14 +80,32 @@
->  # define Elf_Rela		Elf32_Rela
->  # define Elf_Sym		Elf32_Sym
->  # define ELF_R_SYM		ELF32_R_SYM
-> +# define Elf_r_sym		Elf32_r_sym
->  # define ELF_R_INFO		ELF32_R_INFO
-> +# define Elf_r_info		Elf32_r_info
->  # define ELF_ST_BIND		ELF32_ST_BIND
-> +# define fn_ELF_R_SYM		fn_ELF32_R_SYM
-> +# define fn_ELF_R_INFO		fn_ELF32_R_INFO
->  # define uint_t			uint32_t
->  # define _w			w
->  # define _align			3u
->  # define _size			4
->  #endif
->  
-> +/* Functions and pointers that 64-bit EM_MIPS can override. */
-> +static uint_t fn_ELF_R_SYM(Elf_Rel const *rp)
-> +{
-> +	return ELF_R_SYM(_w(rp->r_info));
-> +}
-> +static uint_t (*Elf_r_sym)(Elf_Rel const *rp) = fn_ELF_R_SYM;
-> +
-> +static void fn_ELF_R_INFO(Elf_Rel *const rp, unsigned sym, unsigned type)
-> +{
-> +	rp->r_info = ELF_R_INFO(sym, type);
-> +}
-> +static void (*Elf_r_info)(Elf_Rel *const rp, unsigned sym, unsigned type) = fn_ELF_R_INFO;
-> +
-> +
->  /* Append the new shstrtab, Elf_Shdr[], __mcount_loc and its relocations. */
->  static void append_func(Elf_Ehdr *const ehdr,
->  			Elf_Shdr *const shstr,
-> @@ -197,22 +223,22 @@ static uint_t *sift_rel_mcount(uint_t *mlocp,
->  	for (t = nrel; t; --t) {
->  		if (!mcountsym) {
->  			Elf_Sym const *const symp =
-> -				&sym0[ELF_R_SYM(_w(relp->r_info))];
-> +				&sym0[Elf_r_sym(relp)];
->  			char const *symname = &str0[w(symp->st_name)];
->  
->  			if ('.' == symname[0])
->  				++symname;  /* ppc64 hack */
->  			if (0 == strcmp((('_' == gpfx) ? "_mcount" : "mcount"),
->  					symname))
-> -				mcountsym = ELF_R_SYM(_w(relp->r_info));
-> +				mcountsym = Elf_r_sym(relp);
->  		}
->  
-> -		if (mcountsym == ELF_R_SYM(_w(relp->r_info))) {
-> +		if (mcountsym == Elf_r_sym(relp)) {
->  			uint_t const addend = _w(_w(relp->r_offset) - recval);
->  
->  			mrelp->r_offset = _w(offbase
->  				+ ((void *)mlocp - (void *)mloc0));
-> -			mrelp->r_info = _w(ELF_R_INFO(recsym, reltype));
-> +			Elf_r_info(mrelp, recsym, reltype);
->  			if (sizeof(Elf_Rela) == rel_entsize) {
->  				((Elf_Rela *)mrelp)->r_addend = addend;
->  				*mlocp++ = 0;
+
+Anyway, I just discovered per_cpu data on my machine (NUMA capable) all
+sit on a single node, if 32bit kernel used.
+
+# cat /proc/buddyinfo 
+Node 0, zone      DMA      0      1      0      1      2      1      1      0      1      1      3 
+Node 0, zone   Normal     94    251     81     16      3      2      1      2      1      2    187 
+Node 0, zone  HighMem    113     88     47     36     18      5      4      3      2      0    268 
+Node 1, zone  HighMem    154     97     43     16      9      4      3      2      3      2    482 
+
+# dmesg | grep pcpu
+[    0.000000] pcpu-alloc: s41920 r0 d23616 u65536 alloc=1*2097152
+[    0.000000] pcpu-alloc: [0] 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 
+
+
+dual socket machine (E5540  @ 2.53GHz), total of 8 cores, 16 threads.
+
+# dmesg | grep irqstack
+[    0.000000] CPU 0 irqstacks, hard=f4a00000 soft=f4a02000
+[    0.173397] CPU 1 irqstacks, hard=f4a10000 soft=f4a12000
+[    0.284939] CPU 2 irqstacks, hard=f4a20000 soft=f4a22000
+[    0.392908] CPU 3 irqstacks, hard=f4a30000 soft=f4a32000
+[    0.500757] CPU 4 irqstacks, hard=f4a40000 soft=f4a42000
+[    0.608713] CPU 5 irqstacks, hard=f4a50000 soft=f4a52000
+[    0.716665] CPU 6 irqstacks, hard=f4a60000 soft=f4a62000
+[    0.828668] CPU 7 irqstacks, hard=f4a70000 soft=f4a72000
+[    0.936555] CPU 8 irqstacks, hard=f4a80000 soft=f4a82000
+[    1.044525] CPU 9 irqstacks, hard=f4a90000 soft=f4a92000
+[    1.152470] CPU 10 irqstacks, hard=f4aa0000 soft=f4aa2000
+[    1.260367] CPU 11 irqstacks, hard=f4ab0000 soft=f4ab2000
+[    1.368313] CPU 12 irqstacks, hard=f4ac0000 soft=f4ac2000
+[    1.476313] CPU 13 irqstacks, hard=f4ad0000 soft=f4ad2000
+[    1.584167] CPU 14 irqstacks, hard=f4ae0000 soft=f4ae2000
+[    1.692222] CPU 15 irqstacks, hard=f4af0000 soft=f4af2000
+
+
+With a 64bit kernel its fine :
+
+[    0.000000] pcpu-alloc: s76992 r8192 d21312 u131072 alloc=1*2097152
+[    0.000000] pcpu-alloc: [0] 00 02 04 06 08 10 12 14 17 19 21 23 25 27 29 31 
+[    0.000000] pcpu-alloc: [1] 01 03 05 07 09 11 13 15 16 18 20 22 24 26 28 30 
+
+I presume node 1 having only HighMem could be the reason ?
+
 
 
