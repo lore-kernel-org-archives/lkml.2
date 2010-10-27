@@ -1,235 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752083Ab0J0QqV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 12:46:21 -0400
-Received: from fieldses.org ([174.143.236.118]:52308 "EHLO fieldses.org"
+	id S1752162Ab0J0Qr1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 12:47:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23762 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751101Ab0J0QqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 12:46:17 -0400
-Date: Wed, 27 Oct 2010 12:46:06 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: nfsd changes for 2.6.37
-Message-ID: <20101027164606.GF6328@fieldses.org>
-References: <20101026164549.GD19445@fieldses.org>
- <20101027145538.GC6328@fieldses.org>
- <20101027145929.GA5788@infradead.org>
- <201010271723.59734.arnd@arndb.de>
- <AANLkTinTm-LwjfBfoFUyp5Dj8S2hexnHGQGpZiOWqyMY@mail.gmail.com>
+	id S1751101Ab0J0QrZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 12:47:25 -0400
+Message-ID: <4CC85771.2080307@redhat.com>
+Date: Wed, 27 Oct 2010 14:46:41 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinTm-LwjfBfoFUyp5Dj8S2hexnHGQGpZiOWqyMY@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Devin Heitmueller <dheitmueller@kernellabs.com>
+CC: Jiri Slaby <jirislaby@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michael Krufky <mkrufky@kernellabs.com>
+Subject: Re: [GIT PULL for 2.6.37-rc1] V4L/DVB updates
+References: <4CC8380D.3040802@redhat.com>	<4CC84597.4000204@gmail.com>	<4CC84846.6020304@redhat.com> <AANLkTim=RfR3Dq0w+ACYjhGTHCSgapdf35wGW8QoZ38n@mail.gmail.com>
+In-Reply-To: <AANLkTim=RfR3Dq0w+ACYjhGTHCSgapdf35wGW8QoZ38n@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 09:12:06AM -0700, Linus Torvalds wrote:
-> On Wed, Oct 27, 2010 at 8:23 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> >
-> > locks_delete_lock is also called with lock_flocks held and calls
-> > fasync_helper...
+Em 27-10-2010 13:48, Devin Heitmueller escreveu:
+> On Wed, Oct 27, 2010 at 11:41 AM, Mauro Carvalho Chehab
 > 
-> We don't really have to use fasync_helper.
+> Have you looked at the code for how the Conexant guys got the xc5000
+> firmware load to work (which uses 64 bytes at a time).  I suspect what
+> *really* needs to happen is that needs to be made generic so that the
+> stop bit is properly set (which would allow a single i2c transaction
+> to span across multiple USB control messages).
 > 
-> In fact, the whole interface is pretty broken for something like file
-> locking, which isn't actually "fasync()". That whole "on/off as an
-> argument" is just crazy. It would be _trivial_ to expose a version of
-> fasync_helper() that takes a pre-allocated fasync_struct for add, and
-> that has separate helper functions for the add/delete case so that you
-> don't have the pointless crazy arguments (for "delete" the "fd"
-> argument is useless, and I do hate "modal" functions that take what
-> they should do as a flag).
+> Note that the xc5000 hack is actually two changes merged together -
+> one uses a GPIO mode in certain cases to handle clock stretching
+> properly (which probably has to stay there for now), and the other
+> allows for larger i2c transactions.  I am referring to the latter
+> change.
 > 
-> Then fcntl_setlease() would trivially just allocate the dang thing before.
-> 
-> Something like the attached (UNTESTED!) perhaps?
+> If we fix the cx231xx i2c master, then we can go back to the original
+> 18271 config, which avoids the risk of regression for other devices.
 
-Makes sense to me.  Testing....
+The original code is broken, as it doesn't properly honour a max size of 8.
+Even if we do some optimization at cx231xx, we still need to fix the tda18271
+code, as it is trying to use more than 8 bytes on some writes.
 
---b.
+Also, as you noticed, the way cx231xx sends large firmwares to xc5000 is a hack:
+it requires to identify that the I2C device is a xc5000 and do an special
+treatment for it.
 
-> 
->                            Linus
+We may actually move all those small_i2c logic to the bridge drivers, adding
+those hacks inside the I2C adapter part, but this means that they'll need to 
+have some complex-logic that are dependent on what device is connected to it,
+damaging the benefits that the I2C bus abstraction brings.
 
->  fs/fcntl.c         |   66 +++++++++++++++++++++++++++++++++++++++------------
->  fs/locks.c         |   17 ++++++++++++-
->  include/linux/fs.h |    5 ++++
->  3 files changed, 71 insertions(+), 17 deletions(-)
-> 
-> diff --git a/fs/fcntl.c b/fs/fcntl.c
-> index f8cc34f..dcdbc6f 100644
-> --- a/fs/fcntl.c
-> +++ b/fs/fcntl.c
-> @@ -640,7 +640,7 @@ static void fasync_free_rcu(struct rcu_head *head)
->   * match the state "is the filp on a fasync list".
->   *
->   */
-> -static int fasync_remove_entry(struct file *filp, struct fasync_struct **fapp)
-> +int fasync_remove_entry(struct file *filp, struct fasync_struct **fapp)
->  {
->  	struct fasync_struct *fa, **fp;
->  	int result = 0;
-> @@ -666,21 +666,28 @@ static int fasync_remove_entry(struct file *filp, struct fasync_struct **fapp)
->  	return result;
->  }
->  
-> +struct fasync_struct *fasync_alloc(void)
-> +{
-> +	return kmem_cache_alloc(fasync_cache, GFP_KERNEL);
-> +}
-> +
->  /*
-> - * Add a fasync entry. Return negative on error, positive if
-> - * added, and zero if did nothing but change an existing one.
-> - *
-> - * NOTE! It is very important that the FASYNC flag always
-> - * match the state "is the filp on a fasync list".
-> + * NOTE! This can be used only for unused fasync entries:
-> + * entries that actually got inserted on the fasync list
-> + * need to be released by rcu - see fasync_remove_entry.
->   */
-> -static int fasync_add_entry(int fd, struct file *filp, struct fasync_struct **fapp)
-> +void fasync_free(struct fasync_struct *new)
->  {
-> -	struct fasync_struct *new, *fa, **fp;
-> -	int result = 0;
-> +	kmem_cache_free(fasync_cache, new);
-> +}
->  
-> -	new = kmem_cache_alloc(fasync_cache, GFP_KERNEL);
-> -	if (!new)
-> -		return -ENOMEM;
-> +/*
-> + * Insert a new entry into the fasync list.  Return the pointer to the
-> + * old one if we didn't use the new one.
-> + */
-> +struct fasync_struct *fasync_insert_entry(int fd, struct file *filp, struct fasync_struct **fapp, struct fasync_struct *new)
-> +{
-> +        struct fasync_struct *fa, **fp;
->  
->  	spin_lock(&filp->f_lock);
->  	spin_lock(&fasync_lock);
-> @@ -691,8 +698,6 @@ static int fasync_add_entry(int fd, struct file *filp, struct fasync_struct **fa
->  		spin_lock_irq(&fa->fa_lock);
->  		fa->fa_fd = fd;
->  		spin_unlock_irq(&fa->fa_lock);
-> -
-> -		kmem_cache_free(fasync_cache, new);
->  		goto out;
->  	}
->  
-> @@ -702,13 +707,42 @@ static int fasync_add_entry(int fd, struct file *filp, struct fasync_struct **fa
->  	new->fa_fd = fd;
->  	new->fa_next = *fapp;
->  	rcu_assign_pointer(*fapp, new);
-> -	result = 1;
->  	filp->f_flags |= FASYNC;
->  
->  out:
->  	spin_unlock(&fasync_lock);
->  	spin_unlock(&filp->f_lock);
-> -	return result;
-> +	return fa;
-> +}
-> +
-> +/*
-> + * Add a fasync entry. Return negative on error, positive if
-> + * added, and zero if did nothing but change an existing one.
-> + *
-> + * NOTE! It is very important that the FASYNC flag always
-> + * match the state "is the filp on a fasync list".
-> + */
-> +static int fasync_add_entry(int fd, struct file *filp, struct fasync_struct **fapp)
-> +{
-> +	struct fasync_struct *new;
-> +
-> +	new = fasync_alloc();
-> +	if (!new)
-> +		return -ENOMEM;
-> +
-> +	/*
-> +	 * fasync_insert_entry() returns the old (update) entry if
-> +	 * it existed.
-> +	 *
-> +	 * So free the (unused) new entry and return 0 to let the
-> +	 * caller know that we didn't add any new fasync entries.
-> +	 */
-> +	if (fasync_insert_entry(fd, filp, fapp, new)) {
-> +		fasync_free(new);
-> +		return 0;
-> +	}
-> +
-> +	return 1;
->  }
->  
->  /*
-> diff --git a/fs/locks.c b/fs/locks.c
-> index 4de3a26..9ff3f66 100644
-> --- a/fs/locks.c
-> +++ b/fs/locks.c
-> @@ -1515,6 +1515,7 @@ EXPORT_SYMBOL_GPL(vfs_setlease);
->  int fcntl_setlease(unsigned int fd, struct file *filp, long arg)
->  {
->  	struct file_lock fl, *flp = &fl;
-> +	struct fasync_struct *new;
->  	struct inode *inode = filp->f_path.dentry->d_inode;
->  	int error;
->  
-> @@ -1523,13 +1524,25 @@ int fcntl_setlease(unsigned int fd, struct file *filp, long arg)
->  	if (error)
->  		return error;
->  
-> +	new = fasync_alloc();
-> +	if (!new)
-> +		return -ENOMEM;
-> +
->  	lock_flocks();
->  
->  	error = __vfs_setlease(filp, arg, &flp);
->  	if (error || arg == F_UNLCK)
->  		goto out_unlock;
->  
-> -	error = fasync_helper(fd, filp, 1, &flp->fl_fasync);
-> +	/*
-> +	 * fasync_insert_entry() returns the old entry if any.
-> +	 * If there was no old entry, then it used 'new' and
-> +	 * inserted it into the fasync list. Clear new so that
-> +	 * we don't release it here.
-> +	 */
-> +	if (!fasync_insert_entry(fd, filp, &flp->fl_fasync, new))
-> +		new = NULL;
-> +
->  	if (error < 0) {
->  		/* remove lease just inserted by setlease */
->  		flp->fl_type = F_UNLCK | F_INPROGRESS;
-> @@ -1541,6 +1554,8 @@ int fcntl_setlease(unsigned int fd, struct file *filp, long arg)
->  	error = __f_setown(filp, task_pid(current), PIDTYPE_PID, 0);
->  out_unlock:
->  	unlock_flocks();
-> +	if (new)
-> +		fasync_free(new);
->  	return error;
->  }
->  
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 240eb1d..d487772 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -1310,6 +1310,11 @@ struct fasync_struct {
->  
->  /* SMP safe fasync helpers: */
->  extern int fasync_helper(int, struct file *, int, struct fasync_struct **);
-> +extern struct fasync_struct *fasync_insert_entry(int, struct file *, struct fasync_struct **, struct fasync_struct *);
-> +extern int fasync_remove_entry(struct file *, struct fasync_struct **);
-> +extern struct fasync_struct *fasync_alloc(void);
-> +extern void fasync_free(struct fasync_struct *);
-> +
->  /* can be called from interrupts */
->  extern void kill_fasync(struct fasync_struct **, int, int);
->  
+Instead of polluting bridge drivers with I2C-device specific code, the proper
+way seems to use parameters to adjust the maximum size, eventually flagging
+the broken messages in a way that the I2C adapter won't sent a stop transaction
+in the middle of a larger initialization like this one.
 
+Cheers,
+Mauro
