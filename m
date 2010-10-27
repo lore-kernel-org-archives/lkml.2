@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756444Ab0J0F2y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 01:28:54 -0400
-Received: from mga09.intel.com ([134.134.136.24]:19326 "EHLO mga09.intel.com"
+	id S1754815Ab0J0F2v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 01:28:51 -0400
+Received: from mga09.intel.com ([134.134.136.24]:16914 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753685Ab0J0F2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 01:28:49 -0400
+	id S1752604Ab0J0F2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 01:28:43 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.58,244,1286175600"; 
-   d="scan'208";a="671269869"
+   d="scan'208";a="671269843"
 From: Huang Ying <ying.huang@intel.com>
 To: Len Brown <lenb@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
         ying.huang@intel.com, linux-acpi@vger.kernel.org
-Subject: [PATCH -v3 6/8] ACPI, APEI, Use ERST for hardware error persisting before panic
-Date: Wed, 27 Oct 2010 13:28:30 +0800
-Message-Id: <1288157312-10441-7-git-send-email-ying.huang@intel.com>
+Subject: [PATCH -v3 2/8] lib, Make gen_pool memory allocator lock-less
+Date: Wed, 27 Oct 2010 13:28:26 +0800
+Message-Id: <1288157312-10441-3-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1288157312-10441-1-git-send-email-ying.huang@intel.com>
 References: <1288157312-10441-1-git-send-email-ying.huang@intel.com>
@@ -23,282 +23,390 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Corrected/Recoverable hardware errors can usually be saved into disk
-and/or sent to network for logging.  But if uncorrected/fatal hardware
-errors occur, system may not reliable enough for desk and/or network
-accessing and needs to go panic as soon as possible for error
-containment.  In this situation, ERST can be used to save the valuable
-error records into some persistent storage such as flash.
+Multiple users can allocate/free memory in the pool simultaneously
+without lock.  This also makes gen_pool memory allocator can be used
+to allocate/free memory in IRQ/NMI handler. This is useful for
+hardware error handling, which needs to collect hardware error
+information in IRQ/NMI handler.
 
-This patch implements herr_persist interface using ERST.  So that
-hardware error device core can use ERST to save hardware error record
-before panic.
+To support lock-less allocate/free operation, lock-less bitmap
+set/clear operations are implemented.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 Reviewed-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/acpi/apei/Kconfig |    1 
- drivers/acpi/apei/cper.c  |   19 +++++
- drivers/acpi/apei/erst.c  |  169 ++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/cper.h      |    1 
- 4 files changed, 190 insertions(+)
+ include/linux/bitmap.h   |    1 
+ include/linux/genalloc.h |   32 +++++--
+ lib/bitmap.c             |    2 
+ lib/genalloc.c           |  211 +++++++++++++++++++++++++++++++++++++----------
+ 4 files changed, 195 insertions(+), 51 deletions(-)
+ create mode 100644 include/linux/llalloc.h
+ create mode 100644 lib/llalloc.c
 
---- a/drivers/acpi/apei/cper.c
-+++ b/drivers/acpi/apei/cper.c
-@@ -29,6 +29,25 @@
- #include <linux/time.h>
- #include <linux/cper.h>
- #include <linux/acpi.h>
-+#include <linux/herror_record.h>
-+
-+int herr_severity_to_cper(int herr_severity)
-+{
-+	switch (herr_severity) {
-+	case HERR_SEV_NONE:
-+		return CPER_SEV_INFORMATIONAL;
-+	case HERR_SEV_CORRECTED:
-+		return CPER_SEV_CORRECTED;
-+	case HERR_SEV_RECOVERABLE:
-+		return CPER_SEV_RECOVERABLE;
-+	case HERR_SEV_FATAL:
-+		return CPER_SEV_FATAL;
-+	default:
-+		BUG();
-+		return CPER_SEV_FATAL;
-+	}
-+}
-+EXPORT_SYMBOL_GPL(herr_severity_to_cper);
- 
+--- a/lib/genalloc.c
++++ b/lib/genalloc.c
+@@ -1,8 +1,8 @@
  /*
-  * CPER record ID need to be unique even after reboot, because record
---- a/drivers/acpi/apei/erst.c
-+++ b/drivers/acpi/apei/erst.c
-@@ -33,6 +33,7 @@
- #include <linux/uaccess.h>
- #include <linux/cper.h>
- #include <linux/nmi.h>
-+#include <linux/herror.h>
- #include <linux/hardirq.h>
- #include <acpi/apei.h>
+- * Basic general purpose allocator for managing special purpose memory
+- * not managed by the regular kmalloc/kfree interface.
+- * Uses for this includes on-device special memory, uncached memory
+- * etc.
++ * Basic general purpose allocator for managing special purpose
++ * memory, for example, memory that is not managed by the regular
++ * kmalloc/kfree interface.  Uses for this includes on-device special
++ * memory, uncached memory etc.
+  *
+  * Copyright 2005 (C) Jes Sorensen <jes@trained-monkey.org>
+  *
+@@ -13,8 +13,107 @@
+ #include <linux/slab.h>
+ #include <linux/module.h>
+ #include <linux/bitmap.h>
++#include <linux/rculist.h>
+ #include <linux/genalloc.h>
  
-@@ -88,6 +89,12 @@ static struct erst_erange {
-  */
- static DEFINE_SPINLOCK(erst_lock);
- 
-+static void *erst_buf;
-+static unsigned int erst_buf_len;
-+
-+/* Prevent erst_buf from being accessed simultaneously */
-+static DEFINE_MUTEX(erst_buf_mutex);
-+
- static inline int erst_errno(int command_status)
- {
- 	switch (command_status) {
-@@ -774,6 +781,12 @@ static int __erst_write_to_nvram(const s
- 	return -ENOSYS;
- }
- 
-+static int __erst_write_herr_record_to_nvram(const struct herr_record *ercd)
++static inline int set_bits_ll(unsigned long *addr, unsigned long mask_to_set)
 +{
-+	/* do not print message, because printk is not safe for NMI */
-+	return -ENOSYS;
++	unsigned long val, nval;
++
++	nval = *addr;
++	do {
++		val = nval;
++		if (val & mask_to_set)
++			return -EBUSY;
++	} while ((nval = cmpxchg(addr, val, val | mask_to_set)) != val);
++
++	return 0;
 +}
 +
- static int __erst_read_to_erange_from_nvram(u64 record_id, u64 *offset)
- {
- 	pr_unimpl_nvram();
-@@ -910,6 +923,156 @@ out:
- }
- EXPORT_SYMBOL_GPL(erst_clear);
- 
-+#define CPER_CREATOR_ERST						\
-+	UUID_LE(0xEACBBA0C, 0x803A, 0x4096, 0xB1, 0x1D, 0xC3, 0xC7,	\
-+		0x6E, 0xE7, 0x94, 0xF9)
-+
-+#define CPER_SEC_HERR_RECORD						\
-+	UUID_LE(0x633AB656, 0x6703, 0x11DF, 0x87, 0xCF, 0x00, 0x19,	\
-+		0xD1, 0x2A, 0x29, 0xEF)
-+
-+static ssize_t erst_herr_record_to_cper(struct cper_record_header *crcd,
-+					size_t buf_size,
-+					const struct herr_record *ercd)
++static inline int clear_bits_ll(unsigned long *addr,
++				unsigned long mask_to_clear)
 +{
-+	struct cper_section_descriptor *csec;
-+	unsigned int crcd_len;
-+	void *csec_data;
++	unsigned long val, nval;
 +
-+	crcd_len = sizeof(*crcd) + sizeof(*csec) + ercd->length;
-+	if (crcd_len > buf_size)
-+		return crcd_len;
++	nval = *addr;
++	do {
++		val = nval;
++		if ((val & mask_to_clear) != mask_to_clear)
++			return -EBUSY;
++	} while ((nval = cmpxchg(addr, val, val & ~mask_to_clear)) != val);
 +
-+	memset(crcd, 0, crcd_len);
-+	memcpy(crcd->signature, CPER_SIG_RECORD, CPER_SIG_SIZE);
-+	crcd->revision = CPER_RECORD_REV;
-+	crcd->signature_end = CPER_SIG_END;
-+	crcd->error_severity = herr_severity_to_cper(ercd->severity);
-+	/* timestamp, platform_id, partition_id is invalid */
-+	crcd->validation_bits = 0;
-+	crcd->creator_id = CPER_CREATOR_ERST;
-+	crcd->section_count = 1;
-+	crcd->record_length = crcd_len;
-+	crcd->record_id = ercd->id;
-+
-+	csec = (struct cper_section_descriptor *)(crcd + 1);
-+	csec_data = csec + 1;
-+
-+	csec->section_length = ercd->length;
-+	csec->revision = CPER_SEC_REV;
-+	csec->section_type = CPER_SEC_HERR_RECORD;
-+	csec->section_severity = crcd->error_severity;
-+	csec->section_offset = (void *)csec_data - (void *)crcd;
-+
-+	memcpy(csec_data, ercd, ercd->length);
-+
-+	return crcd_len;
++	return 0;
 +}
 +
-+static int erst_write_herr_record(const struct herr_record *ercd)
++/*
++ * bitmap_set_ll - set the specified number of bits at the specified position
++ * @map: pointer to a bitmap
++ * @start: a bit position in @map
++ * @nr: number of bits to set
++ *
++ * Set @nr bits start from @start in @map lock-lessly. Several users
++ * can set/clear the same bitmap simultaneously without lock. If two
++ * users set the same bit, one user will return remain bits, otherwise
++ * return 0.
++ */
++static int bitmap_set_ll(unsigned long *map, int start, int nr)
 +{
-+	struct cper_record_header *crcd;
-+	ssize_t crcd_len;
-+	unsigned long flags;
-+	int rc;
++	unsigned long *p = map + BIT_WORD(start);
++	const int size = start + nr;
++	int bits_to_set = BITS_PER_LONG - (start % BITS_PER_LONG);
++	unsigned long mask_to_set = BITMAP_FIRST_WORD_MASK(start);
 +
-+	if (!spin_trylock_irqsave(&erst_lock, flags))
-+		return -EBUSY;
-+
-+	if (erst_erange.attr & ERST_RANGE_NVRAM) {
-+		rc = __erst_write_herr_record_to_nvram(ercd);
-+		goto out;
++	while (nr - bits_to_set >= 0) {
++		if (set_bits_ll(p, mask_to_set))
++			return nr;
++		nr -= bits_to_set;
++		bits_to_set = BITS_PER_LONG;
++		mask_to_set = ~0UL;
++		p++;
++	}
++	if (nr) {
++		mask_to_set &= BITMAP_LAST_WORD_MASK(size);
++		if (set_bits_ll(p, mask_to_set))
++			return nr;
 +	}
 +
-+	rc = -EINVAL;
-+	crcd_len = erst_herr_record_to_cper(erst_erange.vaddr,
-+					    erst_erange.size, ercd);
-+	if (crcd_len > erst_erange.size)
-+		goto out;
-+	crcd = erst_erange.vaddr;
-+	/* signature for serialization system */
-+	memcpy(&crcd->persistence_information, "ER", 2);
-+	rc = __erst_write_to_storage(0);
-+out:
-+	spin_unlock_irqrestore(&erst_lock, flags);
-+
-+	return rc;
++	return 0;
 +}
 +
-+static ssize_t erst_persist_peek_user(u64 *record_id, char __user *ubuf,
-+				      size_t usize)
++/*
++ * bitmap_clear_ll - clear the specified number of bits at the specified position
++ * @map: pointer to a bitmap
++ * @start: a bit position in @map
++ * @nr: number of bits to set
++ *
++ * Clear @nr bits start from @start in @map lock-lessly. Several users
++ * can set/clear the same bitmap simultaneously without lock. If two
++ * users clear the same bit, one user will return remain bits,
++ * otherwise return 0.
++ */
++static int bitmap_clear_ll(unsigned long *map, int start, int nr)
 +{
-+	int rc, pos;
-+	ssize_t len, clen;
-+	u64 id;
-+	struct cper_record_header *crcd;
-+	struct cper_section_descriptor *csec;
-+	struct herr_record *ercd;
++	unsigned long *p = map + BIT_WORD(start);
++	const int size = start + nr;
++	int bits_to_clear = BITS_PER_LONG - (start % BITS_PER_LONG);
++	unsigned long mask_to_clear = BITMAP_FIRST_WORD_MASK(start);
 +
-+	if (mutex_lock_interruptible(&erst_buf_mutex) != 0)
-+		return -EINTR;
-+	erst_get_record_id_begin(&pos);
-+retry_next:
-+	len = 0;
-+	rc = erst_get_record_id_next(&pos, &id);
-+	if (rc)
-+		goto out;
-+	/* no more record */
-+	if (id == APEI_ERST_INVALID_RECORD_ID)
-+		goto out;
-+retry:
-+	rc = clen = erst_read(id, erst_buf, erst_buf_len);
-+	/* someone else has cleared the record, try next one */
-+	if (rc == -ENOENT)
-+		goto retry_next;
-+	else if (rc < 0)
-+		goto out;
-+	else if (clen > erst_buf_len) {
-+		void *p;
-+		rc = -ENOMEM;
-+		p = kmalloc(clen, GFP_KERNEL);
-+		if (!p)
-+			goto out;
-+		kfree(erst_buf);
-+		erst_buf = p;
-+		erst_buf_len = clen;
-+		goto retry;
++	while (nr - bits_to_clear >= 0) {
++		if (clear_bits_ll(p, mask_to_clear))
++			return nr;
++		nr -= bits_to_clear;
++		bits_to_clear = BITS_PER_LONG;
++		mask_to_clear = ~0UL;
++		p++;
++	}
++	if (nr) {
++		mask_to_clear &= BITMAP_LAST_WORD_MASK(size);
++		if (clear_bits_ll(p, mask_to_clear))
++			return nr;
 +	}
 +
-+	crcd = erst_buf;
-+	csec = (struct cper_section_descriptor *)(crcd + 1);
-+	if (crcd->section_count != 1 ||
-+	    uuid_le_cmp(crcd->creator_id, CPER_CREATOR_ERST) ||
-+	    uuid_le_cmp(csec->section_type, CPER_SEC_HERR_RECORD))
-+		goto retry_next;
-+
-+	ercd = (struct herr_record *)(csec + 1);
-+	len = ercd->length;
-+
-+	rc = -EINVAL;
-+	if (len > usize)
-+		goto out;
-+
-+	ercd->flags |= HERR_RCD_PREV | HERR_RCD_PERSIST;
-+
-+	rc = -EFAULT;
-+	if (copy_to_user(ubuf, ercd, len))
-+		goto out;
-+	*record_id = id;
-+	rc = 0;
-+out:
-+	erst_get_record_id_end();
-+	mutex_unlock(&erst_buf_mutex);
-+	return rc ? rc : len;
++	return 0;
 +}
-+
-+static struct herr_persist erst_persist = {
-+	.name		= "ERST",
-+	.in		= erst_write_herr_record,
-+	.peek_user	= erst_persist_peek_user,
-+	.clear		= erst_clear,
-+};
-+
- static int __init setup_erst_disable(char *str)
- {
- 	erst_disable = 1;
-@@ -1007,11 +1170,17 @@ static int __init erst_init(void)
- 	if (!erst_erange.vaddr)
- 		goto err_release_erange;
  
-+	rc = herr_persist_register(&erst_persist);
-+	if (rc)
-+		goto err_unmap_erange;
-+
- 	pr_info(ERST_PFX
- 	"Error Record Serialization Table (ERST) support is initialized.\n");
+ /**
+  * gen_pool_create - create a new special memory pool
+@@ -30,7 +129,7 @@ struct gen_pool *gen_pool_create(int min
+ 
+ 	pool = kmalloc_node(sizeof(struct gen_pool), GFP_KERNEL, nid);
+ 	if (pool != NULL) {
+-		rwlock_init(&pool->lock);
++		spin_lock_init(&pool->lock);
+ 		INIT_LIST_HEAD(&pool->chunks);
+ 		pool->min_alloc_order = min_alloc_order;
+ 	}
+@@ -58,15 +157,15 @@ int gen_pool_add(struct gen_pool *pool,
+ 
+ 	chunk = kmalloc_node(nbytes, GFP_KERNEL | __GFP_ZERO, nid);
+ 	if (unlikely(chunk == NULL))
+-		return -1;
++		return -ENOMEM;
+ 
+-	spin_lock_init(&chunk->lock);
+ 	chunk->start_addr = addr;
+ 	chunk->end_addr = addr + size;
++	atomic_set(&chunk->avail, size);
+ 
+-	write_lock(&pool->lock);
+-	list_add(&chunk->next_chunk, &pool->chunks);
+-	write_unlock(&pool->lock);
++	spin_lock(&pool->lock);
++	list_add_rcu(&chunk->next_chunk, &pool->chunks);
++	spin_unlock(&pool->lock);
  
  	return 0;
+ }
+@@ -112,39 +211,39 @@ EXPORT_SYMBOL(gen_pool_destroy);
+  */
+ unsigned long gen_pool_alloc(struct gen_pool *pool, size_t size)
+ {
+-	struct list_head *_chunk;
+ 	struct gen_pool_chunk *chunk;
+-	unsigned long addr, flags;
++	unsigned long addr;
+ 	int order = pool->min_alloc_order;
+-	int nbits, start_bit, end_bit;
++	int nbits, start_bit = 0, end_bit, remain;
  
-+err_unmap_erange:
-+	iounmap(erst_erange.vaddr);
- err_release_erange:
- 	release_mem_region(erst_erange.base, erst_erange.size);
- err_unmap_reg:
---- a/include/linux/cper.h
-+++ b/include/linux/cper.h
-@@ -309,6 +309,7 @@ struct cper_sec_mem_err {
- /* Reset to default packing */
- #pragma pack()
+ 	if (size == 0)
+ 		return 0;
  
-+int herr_severity_to_cper(int herr_severity);
- u64 cper_next_record_id(void);
+ 	nbits = (size + (1UL << order) - 1) >> order;
  
- #endif
---- a/drivers/acpi/apei/Kconfig
-+++ b/drivers/acpi/apei/Kconfig
-@@ -1,6 +1,7 @@
- config ACPI_APEI
- 	bool "ACPI Platform Error Interface (APEI)"
- 	depends on X86
-+	select HERR_DEV_CORE
- 	help
- 	  APEI allows to report errors (for example from the chipset)
- 	  to the operating system. This improves NMI handling
+-	read_lock(&pool->lock);
+-	list_for_each(_chunk, &pool->chunks) {
+-		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
++	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
++		if (size > atomic_read(&chunk->avail))
++			continue;
+ 
+ 		end_bit = (chunk->end_addr - chunk->start_addr) >> order;
+-
+-		spin_lock_irqsave(&chunk->lock, flags);
+-		start_bit = bitmap_find_next_zero_area(chunk->bits, end_bit, 0,
+-						nbits, 0);
+-		if (start_bit >= end_bit) {
+-			spin_unlock_irqrestore(&chunk->lock, flags);
++retry:
++		start_bit = bitmap_find_next_zero_area(chunk->bits, end_bit,
++						       start_bit, nbits, 0);
++		if (start_bit >= end_bit)
+ 			continue;
++		remain = bitmap_set_ll(chunk->bits, start_bit, nbits);
++		if (remain) {
++			remain = bitmap_clear_ll(chunk->bits, start_bit,
++						 nbits - remain);
++			BUG_ON(remain);
++			goto retry;
+ 		}
+ 
+ 		addr = chunk->start_addr + ((unsigned long)start_bit << order);
+-
+-		bitmap_set(chunk->bits, start_bit, nbits);
+-		spin_unlock_irqrestore(&chunk->lock, flags);
+-		read_unlock(&pool->lock);
++		size = nbits << order;
++		atomic_sub(size, &chunk->avail);
+ 		return addr;
+ 	}
+-	read_unlock(&pool->lock);
+ 	return 0;
+ }
+ EXPORT_SYMBOL(gen_pool_alloc);
+@@ -159,29 +258,57 @@ EXPORT_SYMBOL(gen_pool_alloc);
+  */
+ void gen_pool_free(struct gen_pool *pool, unsigned long addr, size_t size)
+ {
+-	struct list_head *_chunk;
+ 	struct gen_pool_chunk *chunk;
+-	unsigned long flags;
+ 	int order = pool->min_alloc_order;
+-	int bit, nbits;
++	int start_bit, nbits, remain;
+ 
+ 	nbits = (size + (1UL << order) - 1) >> order;
+ 
+-	read_lock(&pool->lock);
+-	list_for_each(_chunk, &pool->chunks) {
+-		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
+-
++	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
+ 		if (addr >= chunk->start_addr && addr < chunk->end_addr) {
+ 			BUG_ON(addr + size > chunk->end_addr);
+-			spin_lock_irqsave(&chunk->lock, flags);
+-			bit = (addr - chunk->start_addr) >> order;
+-			while (nbits--)
+-				__clear_bit(bit++, chunk->bits);
+-			spin_unlock_irqrestore(&chunk->lock, flags);
+-			break;
++			start_bit = (addr - chunk->start_addr) >> order;
++			remain = bitmap_clear_ll(chunk->bits, start_bit, nbits);
++			BUG_ON(remain);
++			size = nbits << order;
++			atomic_add(size, &chunk->avail);
++			return;
+ 		}
+ 	}
+-	BUG_ON(nbits > 0);
+-	read_unlock(&pool->lock);
++	BUG();
+ }
+ EXPORT_SYMBOL(gen_pool_free);
++
++/**
++ * gen_pool_avail - get available free space of the pool
++ * @pool: pool to get available free space
++ *
++ * Return available free space of the specified pool.
++ */
++size_t gen_pool_avail(struct gen_pool *pool)
++{
++	struct gen_pool_chunk *chunk;
++	size_t avail = 0;
++
++	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk)
++		avail += atomic_read(&chunk->avail);
++	return avail;
++}
++EXPORT_SYMBOL_GPL(gen_pool_avail);
++
++/**
++ * gen_pool_size - get size in bytes of memory managed by the pool
++ * @pool: pool to get size
++ *
++ * Return size in bytes of memory managed by the pool.
++ */
++size_t gen_pool_size(struct gen_pool *pool)
++{
++	struct gen_pool_chunk *chunk;
++	size_t size = 0;
++
++	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk)
++		size += chunk->end_addr - chunk->start_addr;
++	return size;
++}
++EXPORT_SYMBOL_GPL(gen_pool_size);
+--- a/include/linux/genalloc.h
++++ b/include/linux/genalloc.h
+@@ -1,19 +1,26 @@
++#ifndef GENALLOC_H
++#define GENALLOC_H
+ /*
+- * Basic general purpose allocator for managing special purpose memory
+- * not managed by the regular kmalloc/kfree interface.
+- * Uses for this includes on-device special memory, uncached memory
+- * etc.
++ * Basic general purpose allocator for managing special purpose
++ * memory, for example, memory not managed by the regular
++ * kmalloc/kfree interface.  Uses for this includes on-device special
++ * memory, uncached memory etc.
++ *
++ * The gen_pool_alloc, gen_pool_free, gen_pool_avail and gen_pool_size
++ * implementation is lock-less, that is, multiple users can
++ * allocate/free memory in the pool simultaneously without lock.  This
++ * also makes the gen_pool memory allocator can be used to
++ * allocate/free memory in IRQ/NMI handler.
+  *
+  * This source code is licensed under the GNU General Public License,
+  * Version 2.  See the file COPYING for more details.
+  */
+ 
+-
+ /*
+  *  General purpose special memory pool descriptor.
+  */
+ struct gen_pool {
+-	rwlock_t lock;
++	spinlock_t lock;
+ 	struct list_head chunks;	/* list of chunks in this pool */
+ 	int min_alloc_order;		/* minimum allocation order */
+ };
+@@ -22,15 +29,26 @@ struct gen_pool {
+  *  General purpose special memory pool chunk descriptor.
+  */
+ struct gen_pool_chunk {
+-	spinlock_t lock;
+ 	struct list_head next_chunk;	/* next chunk in pool */
++	atomic_t avail;
+ 	unsigned long start_addr;	/* starting address of memory chunk */
+ 	unsigned long end_addr;		/* ending address of memory chunk */
+ 	unsigned long bits[0];		/* bitmap for allocating memory chunk */
+ };
+ 
++/**
++ * gen_pool_for_each_chunk - iterate over chunks of generic memory pool
++ * @chunk:	the struct gen_pool_chunk * to use as a loop cursor
++ * @pool:	the generic memory pool
++ */
++#define gen_pool_for_each_chunk(chunk, pool)			\
++	list_for_each_entry(chunk, &pool->chunks, next_chunk)
++
+ extern struct gen_pool *gen_pool_create(int, int);
+ extern int gen_pool_add(struct gen_pool *, unsigned long, size_t, int);
+ extern void gen_pool_destroy(struct gen_pool *);
+ extern unsigned long gen_pool_alloc(struct gen_pool *, size_t);
+ extern void gen_pool_free(struct gen_pool *, unsigned long, size_t);
++extern size_t gen_pool_avail(struct gen_pool *);
++extern size_t gen_pool_size(struct gen_pool *);
++#endif /* GENALLOC_H */
+--- a/lib/bitmap.c
++++ b/lib/bitmap.c
+@@ -271,8 +271,6 @@ int __bitmap_weight(const unsigned long
+ }
+ EXPORT_SYMBOL(__bitmap_weight);
+ 
+-#define BITMAP_FIRST_WORD_MASK(start) (~0UL << ((start) % BITS_PER_LONG))
+-
+ void bitmap_set(unsigned long *map, int start, int nr)
+ {
+ 	unsigned long *p = map + BIT_WORD(start);
+--- a/include/linux/bitmap.h
++++ b/include/linux/bitmap.h
+@@ -142,6 +142,7 @@ extern void bitmap_release_region(unsign
+ extern int bitmap_allocate_region(unsigned long *bitmap, int pos, int order);
+ extern void bitmap_copy_le(void *dst, const unsigned long *src, int nbits);
+ 
++#define BITMAP_FIRST_WORD_MASK(start) (~0UL << ((start) % BITS_PER_LONG))
+ #define BITMAP_LAST_WORD_MASK(nbits)					\
+ (									\
+ 	((nbits) % BITS_PER_LONG) ?					\
