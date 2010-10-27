@@ -1,44 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760542Ab0J0DTo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 23:19:44 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:45798 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751863Ab0J0DTi (ORCPT
+	id S932754Ab0J0DXj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 23:23:39 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40970 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751863Ab0J0DXd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 23:19:38 -0400
-Date: Wed, 27 Oct 2010 04:19:36 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>
-Subject: fix braino in fs: do not assign default i_ino in new_inode
-Message-ID: <20101027031936.GD19804@ZenIV.linux.org.uk>
-References: <20101026231725.GB19804@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101026231725.GB19804@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	Tue, 26 Oct 2010 23:23:33 -0400
+Date: Tue, 26 Oct 2010 20:23:07 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH] tools: add x86_energy_perf_policy to program
+ MSR_IA32_ENERGY_PERF_BIAS
+Message-Id: <20101026202307.c028e26c.akpm@linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1010230035360.29399@localhost.localdomain>
+References: <alpine.LFD.2.00.1006161659140.24913@localhost.localdomain>
+	<alpine.LFD.2.00.1009281143070.14962@localhost.localdomain>
+	<alpine.LFD.2.00.1010230035360.29399@localhost.localdomain>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-usbfs_get_inode() is something completely different...
+On Sat, 23 Oct 2010 00:40:18 -0400 (EDT) Len Brown <lenb@kernel.org> wrote:
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
----
+> MSR_IA32_ENERGY_PERF_BIAS first became available on Westmere Xeon.
+> It is implemented in all Sandy Bridge processors -- mobile, desktop and server.
+> It is expected to become increasingly important in subsequent generations.
+> 
+> x86_energy_perf_policy is a user-space utility to set this
+> hardware energy vs performance policy hint in the processor.
+> Most systems would benefit from "x86_energy_perf_policy normal"
+> at system startup, as the hardware default is maximum performance
+> at the expense of energy efficiency.  See the comments
+> in the source code for more information.
+> 
+> Linux-2.6.36 added "epb" to /proc/cpuinfo to indicate
+> if an x86 processor supports MSR_IA32_ENERGY_PERF_BIAS,
+> though the kernel does not actually program the MSR.
+> 
+> In March, Venkatesh Pallipadi proposed a small driver
+> that programmed MSR_IA32_ENERGY_PERF_BIAS, based on
+> the cpufreq governor in use.  It also offered
+> a boot-time cmdline option to override.
+> http://lkml.org/lkml/2010/3/4/457
+> But hiding the hardware policy behind the
+> governor choice was deemed "kinda icky".
+> 
+> So in June, I proposed a generic user/kernel API to
+> consolidate the power/performance policy trade-off.
+> "RFC: /sys/power/policy_preference"
+> http://lkml.org/lkml/2010/6/16/399
+> That is my preference for implementing this capability,
+> but I received no support on the list.
+> 
+> So in September, I sent x86_energy_perf_policy.c to LKML,
+> a user-space utility that scribbles directly to the MSR.
+> http://lkml.org/lkml/2010/9/28/246
+> 
+> Here is the same utility re-sent, this time proposed
+> to reside in the kernel tools directory.
+> 
+> Signed-off-by: Len Brown <len.brown@intel.com>
+> ---
+>  tools/power/x86/x86_energy_perf_policy/Makefile    |    7 +
+>  .../x86_energy_perf_policy.c                       |  358 ++++++++++++++++++++
+>  2 files changed, 365 insertions(+), 0 deletions(-)
+>  create mode 100644 tools/power/x86/x86_energy_perf_policy/Makefile
+>  create mode 100644 tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c
 
-diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
-index 38f8f0f..4a830df 100644
---- a/drivers/usb/gadget/f_fs.c
-+++ b/drivers/usb/gadget/f_fs.c
-@@ -980,7 +980,7 @@ ffs_sb_make_inode(struct super_block *sb, void *data,
- 	if (likely(inode)) {
- 		struct timespec current_time = CURRENT_TIME;
- 
--		inode->i_ino	 = usbfs_get_inode();
-+		inode->i_ino	 = get_next_ino();
- 		inode->i_mode    = perms->mode;
- 		inode->i_uid     = perms->uid;
- 		inode->i_gid     = perms->gid;
+tools/power/x86, eh?  It seems a better place than under
+Documentation/, where such things have thus far landed!
+
+I looked briefly, wondering about the kbuild situation.  It doesn't
+appear to be wired up, so one has to manually enter that directory and
+type `make'?
+
+I guess that's OK as an interim thing but longer-term I suppose we
+should have some more complete build and deployment system.  So
+(thinking out loud) a `make' would invoke a `make tools', and that
+`make tools' would build the tools which are specific to the target
+arch[*], and any generic ones.  And a `make tools_install' would install
+those tools in, I guess, /lib/modules/$(uname -r)/bin.
+
+Or something else.  We'd need input from the distro guys to get this
+right.
+
+[*]: building tools for the `target arch' would require a far more
+extensive cross-build environment than is needed for just kernel
+cross-compilation.  This is perhaps Just Too Hard and perhaps a `make
+tools_install' should copy the *source* into /lib/modules/$(uname
+-r)/src and you then finish the build on the target.  Or something
+else.  The mind boggles.
+
+So for now, just parking the source down in ./tools/ and deferring the
+problem sounds a fine idea ;)
+
+A number of programs down under Documentation/ should be moved into
+tools/ as well.
+
