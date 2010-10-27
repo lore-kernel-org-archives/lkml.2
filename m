@@ -1,43 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933637Ab0J0PPm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 11:15:42 -0400
-Received: from beaker.bytemark.co.uk ([80.68.81.2]:42255 "EHLO
-	beaker.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933518Ab0J0PPk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 11:15:40 -0400
-Date: Wed, 27 Oct 2010 11:15:28 -0400
-From: "Emilio G. Cota" <cota@braap.org>
-To: Martyn Welch <martyn.welch@ge.com>
-Cc: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
-        devel@driverdev.osuosl.org,
-        Juan David Gonzalez Cobas <david.cobas@gmail.com>,
-        Bill Pemberton <wfp5p@virginia.edu>
-Subject: Re: [PATCH 09/30] staging/vme: fill in struct device's .release,
- even if it's a NOOP
-Message-ID: <20101027151528.GS10869@flamenco.cs.columbia.edu>
-References: <1288055476-19438-1-git-send-email-cota@braap.org>
- <1288055476-19438-10-git-send-email-cota@braap.org>
- <4CC804FF.9050908@ge.com>
- <20101027144642.GP10869@flamenco.cs.columbia.edu>
- <4CC83F28.4070802@ge.com>
+	id S933655Ab0J0PQv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 11:16:51 -0400
+Received: from fieldses.org ([174.143.236.118]:48572 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933382Ab0J0PQt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 11:16:49 -0400
+Date: Wed, 27 Oct 2010 11:16:46 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: nfsd changes for 2.6.37
+Message-ID: <20101027151645.GD6328@fieldses.org>
+References: <20101026164549.GD19445@fieldses.org>
+ <20101027083924.GA28129@infradead.org>
+ <20101027133924.GB6328@fieldses.org>
+ <201010271546.09036.arnd@arndb.de>
+ <20101027145538.GC6328@fieldses.org>
+ <20101027145929.GA5788@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CC83F28.4070802@ge.com>
+In-Reply-To: <20101027145929.GA5788@infradead.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 16:03:04 +0100, Martyn Welch wrote:
-> Ok, I'm not going to ack this for now as I'd like to discuss
-> modifications to the approach that is being taken for binding devices
-> and this patch seems to fall under the scope of this.
+On Wed, Oct 27, 2010 at 10:59:29AM -0400, Christoph Hellwig wrote:
+> On Wed, Oct 27, 2010 at 10:55:39AM -0400, J. Bruce Fields wrote:
+> > Hm, two problems:
+> > 	- We introduce the possibility of fcntl(fd, F_SETLEASE, F_UNLCK)
+> > 	  failing with ENOMEM.
+> 
+> splitt ->setlease into ->add_least and ->delete_lease.  No need to pass
+> in a structure for the later.  No need to return one either.
 
-No problem, just bear in mind that without this patch, the current
-code throws a warning when removing drivers and bridges.
+Sounds fine to me.
 
-		Emilio
+> 
+> > 	- fasync_helper(.,.,1,.) sleeps.  Argh.
+> 
+> That's not new..
 
+So we could do
+
+	unlock_flocks();
+	error = fasync_helper(fd, filp, 1, &fl->fl_fasync);
+	lock_flocks();
+
+and say, hey, we didn't introduce any new bug there.  But....
+
+I don't know, maybe add a version of fasync_add_entry() that takes a
+preallocated fasync_struct??
+
+--b.
