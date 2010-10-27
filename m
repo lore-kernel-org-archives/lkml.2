@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754166Ab0J0H3Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 03:29:25 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:42316 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752117Ab0J0H3Y convert rfc822-to-8bit (ORCPT
+	id S1754596Ab0J0Hau (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 03:30:50 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:33827 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752223Ab0J0Has (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 03:29:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=UEPCm7P2D5ORJjY5tH7qaM6UCU8vHsmB080tO+RMcIZi1qVml6u5uRIuifnSgLxlgk
-         rxjid+vc0y0WWezU1q4NFynXocLECzd2mg2B5sXJsojXJ6SvMaF73bJpEqZclsH5gTCA
-         bcFfisbjFHhrtc0SX5CJwXJDcezr1+Z34OOxM=
+	Wed, 27 Oct 2010 03:30:48 -0400
+X-Auth-Info: iaTNN45N7kN0cOL4ig8UT3Cu4H1GMjDWUTr2KYoYEcY=
+Message-ID: <4CC7D566.7090707@grandegger.com>
+Date: Wed, 27 Oct 2010 09:31:50 +0200
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-In-Reply-To: <20101027113341.e77169cc.sfr@canb.auug.org.au>
-References: <20101027113341.e77169cc.sfr@canb.auug.org.au>
-Date: Wed, 27 Oct 2010 10:29:22 +0300
-X-Google-Sender-Auth: nP4_j_WIeq8QsZ4zNyPc1MiZw6I
-Message-ID: <AANLkTinVmdWkG5zDgbPN0V=2Z2rQM=oksdxevcS_xdmz@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the slab tree
-From: Pekka Enberg <penberg@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        socketcan-core@lists.berlios.de, sameo@linux.intel.com,
+        21cnbao@gmail.com, chripell@fsfe.org, w.sang@pengutronix.de,
+        andrew.chih.howe.khor@intel.com, qi.wang@intel.com,
+        margie.foster@intel.com, yong.y.wang@intel.com, kok.howg.ewe@intel.com,
+        David Miller <davem@davemloft.net>, joel.clark@intel.com
+Subject: Re: can: About Socket CAN with MSI issue
+References: <4CC61B1B.3090602@dsn.okisemi.com>	<20101026.105206.15244527.davem@davemloft.net> <002801cb758f$876aaf00$66f8800a@maildom.okisemi.com>
+In-Reply-To: <002801cb758f$876aaf00$66f8800a@maildom.okisemi.com>
+X-Enigmail-Version: 1.0.1
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 3:33 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> After merging the slab tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
->
-> gcc: /scratch/sfr/next/Documentation/vm/slabinfo.c: No such file or directory
-> gcc: no input files
->
-> Caused by commit f5ac4916e9840292edd33c7a52b10364526547f3 ("slub: move
-> slabinfo.c to tools/slub/slabinfo.c").  Missing update to
-> Documentation/vm/Makefile?
+On 10/27/2010 06:29 AM, Tomoya MORINAGA wrote:
+> We have faced issue when our CAN diriver whose MSI is enabled, after installing the driver,
+> once remove the driver and install the driver again,
+> As a result, interupt handler of the driver is not called again.
+> 
+> Do you have any information or suggestion about the above issue?
 
-Oh, we have one of those. Sorry about the breakage, I'll fix it up later today.
+Not really, the remove functions looks ok, apart from the fact, that
+pch_can_reset() is called *after* pci_iounmap().
+
+Wolfgang.
