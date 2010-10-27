@@ -1,86 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754698Ab0J0SLx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 14:11:53 -0400
-Received: from mga01.intel.com ([192.55.52.88]:54289 "EHLO mga01.intel.com"
+	id S1754560Ab0J0SQu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 14:16:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33297 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754428Ab0J0SLk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 14:11:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,247,1286175600"; 
-   d="scan'208";a="851601529"
-Message-ID: <4CC86B4A.2050408@linux.intel.com>
-Date: Wed, 27 Oct 2010 11:11:22 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Borislav Petkov <bp@alien8.de>, Ian Campbell <ian.campbell@citrix.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH] x86: use pgd accessors when cloning a pgd range.
-References: <1288169413-29065-1-git-send-email-ian.campbell@citrix.com> <20101027104020.GA16954@a1.tnic> <4CC85839.4000507@goop.org> <4CC85EE6.7030608@linux.intel.com> <4CC861F9.8080200@goop.org> <4CC8649F.5060408@linux.intel.com> <4CC866B0.8000802@goop.org>
-In-Reply-To: <4CC866B0.8000802@goop.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1754404Ab0J0SQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 14:16:48 -0400
+Subject: Re: [ANNOUNCE] Status of unlocked_qcmds=1 operation for .37
+From: James Bottomley <James.Bottomley@suse.de>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Andi Kleen <ak@linux.intel.com>,
+        Mike Anderson <andmike@linux.vnet.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
+        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Christof Schmitt <christof.schmitt@de.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <1288202802.5169.202.camel@haakon2.linux-iscsi.org>
+References: <1287607774.10283.78.camel@haakon2.linux-iscsi.org>
+	 <20101021150840.GA24309@linux.vnet.ibm.com>
+	 <1288130914.5169.97.camel@haakon2.linux-iscsi.org>
+	 <1288132071.8283.689.camel@mulgrave.site>
+	 <1288132464.5169.112.camel@haakon2.linux-iscsi.org>
+	 <1288133450.8283.723.camel@mulgrave.site>
+	 <1288134048.5169.132.camel@haakon2.linux-iscsi.org>
+	 <1288134713.19649.11.camel@mulgrave.site>
+	 <1288135918.5169.149.camel@haakon2.linux-iscsi.org>
+	 <20101027075349.GA32585@gargoyle.fritz.box>
+	 <1288189658.4692.13.camel@mulgrave.site>
+	 <1288202802.5169.202.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Oct 2010 13:16:36 -0500
+Message-ID: <1288203396.6886.19.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2010 10:51 AM, Jeremy Fitzhardinge wrote:
->>
->> This is what makes me absolutely hate paravirt with a passion...
->> "let's hid things away in<obscure place>  and make it absolutely
->> impossible to either follow the code flow or figure out what the
->> intended semantics are supposed to be."
->
-> Its not really an obscure place; it's where x86-32 does the rest of its
-> boot-time pagetable adjustments (like cleaning out the low identity
-> maps, etc).  Having those clone_pgd_ranges() floating around in
-> setup_arch() is out of place.
->
+On Wed, 2010-10-27 at 11:06 -0700, Nicholas A. Bellinger wrote:
+> On Wed, 2010-10-27 at 09:27 -0500, James Bottomley wrote:
+> > On Wed, 2010-10-27 at 09:53 +0200, Andi Kleen wrote:
+> > > > This sounds like a pretty reasonable compromise that I think is slightly
+> > > > less risky for the LLDs with the ghosts and cob-webs hanging off of
+> > > > them.
+> > > 
+> > > They won't get tested either next release cycle. Essentially
+> > > near nobody uses them.
+> > > 
+> > > > 
+> > > > What do you think..?
+> > > 
+> > > Standard linux practice is to simply push the locks down. That's a pretty
+> > > mechanical operation and shouldn't be too risky
+> > > 
+> > > With some luck you could even do it with coccinelle.
+> > 
+> > Precisely ... if we can do the push down now as a mechanical
+> > transformation we can put it in the current merge window as a low risk
+> > API change.
+> 
+> I disagree that touching every single legacy LLD's SHT->queuecommand()
+> and failure paths in that code is a low rist change.
 
-"Cleaning out the low identity maps" is part of what this patchset 
-eliminates.  This is exactly a good reason why paravirt_ops damages the 
-kernel -- it makes it impossible to make forward process.
+It can be done mechanically.
 
->> (Let not even get me started on how ill-defined the semantics of some
->> of the paravirt operations are.)  In this case, at the most you need a
->> single flag of state... or you could even just ignore this low-level
->> data structure that you will never use in the first place.  Ian's
->> message just mentioned "a failure" and never described in any way what
->> kind of "failure" it was.
->
-> It would be a pagefault from Xen preventing a direct write to the pgd
-> level of an active pagetable.  At the point in setup_arch() where it
-> does the first clone_pgd_range() we're already running on swapper_pg_dir
-> and the copy from initial_page_table is outright wrong.
->
-> As Ian suggests, we could switch Xen to use initial_page_table at boot
-> then move to swapper_pg_dir in the same way native does.
+> >   This gives us optimal exposure to the rc sequence to sort
+> > out any problems that arise (or drivers that got missed) with the lowest
+> > risk of such problems actually arising.
+> 
+> Yes, 
+> 
+> > Given the corner cases and the
+> > late arrival of fixes, the serial number changes are just too risky for
+> > the current merge window.
+> 
+> I think with andmike's testing and ACKs for the necessary scsi_error.c
+> changes this would be an acceptable risk.
 
-Once the failure was explained, it makes more sense.  Either that or 
-just skip this setting if we're already running on swapper_pg_dir.
+I already said why I didn't like this change.  Without the serial
+number, there's no problem.
 
-Let me state this clearly: if Xen is going to continue to live as a 
-merged platform, it has to have an obligation to follow changes on the 
-native platform.  This is not unique to Xen, but rather a universal rule 
-for integrated platforms.  Xen is more widely used than a lot of the 
-other minority platforms, which means it legitimately gets allowed more 
-slack, but that is moderated by its tremendous invasiveness.
+> > Having an API that changes depending on a
+> > flag is also a high risk process because it's prone to further sources
+> > of error.
+> > 
+> 
+> I think this would be considered high risk if the setting of the flag
+> explictly was required to obtain the default legacy operation.  With
+> this series that is not the case, as the default SHT->unlocked_qcmd=0
+> will allow legacy LLDs to function exactly the manner they expect, while
+> allowing modern LLDs to run in host_lock-less mode.
 
-Quite frankly, the single biggest thing you could improve is to improve 
-documentation about what you expect in terms of semantics of various 
-entry points.  There are a number of cleanups which we currently cannot 
-do because they are directly mapped to paravirt_ops which unclear or 
-nonsensical semantics.  Having a more explicit description of the design 
-space would help there.
+Having a variable API based on a flag elsewhere is always a bad idea.
 
-paravirt_ops is fundamentally misdesigned as a large monolithic 
-driverization layer which combines a lot of unrelated things.  In a 
-whole lot of cases it directly duplicates driverization layers already 
-in the kernel, meaning we take the cost both in cost clarity and 
-performance multiple times.  The patching technology is nice, and it 
-would be good to have that available to other platform layers as well, 
-but paravirt_ops as it currently sits is going to have to go at some point.
+James
 
-	-hpa
+
