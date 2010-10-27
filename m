@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761340Ab0J0P2i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 11:28:38 -0400
-Received: from fieldses.org ([174.143.236.118]:58035 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760867Ab0J0P2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 11:28:35 -0400
-Date: Wed, 27 Oct 2010 11:28:29 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: nfsd changes for 2.6.37
-Message-ID: <20101027152829.GE6328@fieldses.org>
-References: <20101026164549.GD19445@fieldses.org>
- <20101027145538.GC6328@fieldses.org>
- <20101027145929.GA5788@infradead.org>
- <201010271723.59734.arnd@arndb.de>
+	id S933188Ab0J0Pai (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 11:30:38 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:64838 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752301Ab0J0Pag (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 11:30:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=EG5b8BjOwnpDxssM9CHdwb+rboyZzZ+TQJQmcNVkZx00g9wfBqXjhVNf4mD2r9N4NS
+         NBDhNKPrebb2A3T58ktkAECxWri1qDQzp3Q/8PmrZL31CNvpIPIoFRJA/eXuZzaXnJ56
+         0zQxOybT2ZTD9CltQEHMbYxNMp7A2mFLozQ10=
+Message-ID: <4CC84597.4000204@gmail.com>
+Date: Wed, 27 Oct 2010 17:30:31 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201010271723.59734.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL for 2.6.37-rc1] V4L/DVB updates
+References: <4CC8380D.3040802@redhat.com>
+In-Reply-To: <4CC8380D.3040802@redhat.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 05:23:59PM +0200, Arnd Bergmann wrote:
-> On Wednesday 27 October 2010, Christoph Hellwig wrote:
-> > On Wed, Oct 27, 2010 at 10:55:39AM -0400, J. Bruce Fields wrote:
-> > > Hm, two problems:
-> > > 	- We introduce the possibility of fcntl(fd, F_SETLEASE, F_UNLCK)
-> > > 	  failing with ENOMEM.
-> > 
-> > splitt ->setlease into ->add_least and ->delete_lease.  No need to pass
-> > in a structure for the later.  No need to return one either.
+On 10/27/2010 04:32 PM, Mauro Carvalho Chehab wrote:
+> Linus,
 > 
-> That sounds like a good way to get rid of a lot of special cases, too.
-> 
-> > > 	- fasync_helper(.,.,1,.) sleeps.  Argh.
-> > 
-> > That's not new..
-> 
-> It comes back to the original problem with Bruce's patch though:
-> fcntl_setlease wants to atomically add a lease or fail. If
-> fasync_helper fails, we want to remove the lease that was
-> just added before anyone can see it. At the very least we need
-> to keep the flock from getting freed in another thread while
-> we call fasync_helper without the lock.
-> 
-> locks_delete_lock is also called with lock_flocks held and calls
-> fasync_helper...
+> Please pull from
+> 	ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
+...
+> Mauro Carvalho Chehab (72):
+...
+>       [media] tda18271: allow restricting max out to 4 bytes
 
-Yeah, but just the fasync_remove_entry() case.
+Even though you know this one breaks at least one driver you want it merged?
 
-It would really seem nicer to me if people called
-fasync_{add,remove}_entry() instead of having this silly fasync_helper()
-and making the reader remember what the third argument means.
-
---b.
+regards,
+-- 
+js
