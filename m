@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933603Ab0J0AuN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 20:50:13 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:29173 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757459Ab0J0AuM (ORCPT
+	id S933621Ab0J0Auc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 20:50:32 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51676 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933609Ab0J0Aub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 20:50:12 -0400
-Message-ID: <00de01cb7570$e88ca730$66f8800a@maildom.okisemi.com>
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "Wolfgang Grandegger" <wg@grandegger.com>,
-        "David Miller" <davem@davemloft.net>
-Cc: <w.sang@pengutronix.de>, <chripell@fsfe.org>, <21cnbao@gmail.com>,
-        <sameo@linux.intel.com>, <socketcan-core@lists.berlios.de>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <qi.wang@intel.com>, <yong.y.wang@intel.com>,
-        <andrew.chih.howe.khor@intel.com>, <joel.clark@intel.com>,
-        <kok.howg.ewe@intel.com>, <margie.foster@intel.com>,
-        <socketcan-core-request@lists.berlios.de>
-References: <4CC61B1B.3090602@dsn.okisemi.com>	<20101026.105206.15244527.davem@davemloft.net> <20101026.105545.200376685.davem@davemloft.net> <4CC71DA4.3020600@grandegger.com>
-Subject: Re: [PATCH net-next-2.6 v2] can: Topcliff: PCH_CAN driver: Fix build warnings
-Date: Wed, 27 Oct 2010 09:50:08 +0900
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-1"
+	Tue, 26 Oct 2010 20:50:31 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 27 Oct 2010 09:45:02 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: subrata@linux.vnet.ibm.com
+Cc: Li Zefan <lizf@cn.fujitsu.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linuxppc-dev <Linuxppc-dev@ozlabs.org>,
+        ltp-list <ltp-list@lists.sf.net>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Subject: Re: [linux-2.6.36-git7: Power7] LTP Memory CGROUP Controller
+ functional test creates Backtrace, OOMKill & rcu_sched_state detected stall
+ jiffies
+Message-Id: <20101027094502.208c1207.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1288089237.5010.9.camel@subratamodak.linux.ibm.com>
+References: <1288089237.5010.9.camel@subratamodak.linux.ibm.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfgang and Marc,
+On Tue, 26 Oct 2010 16:03:56 +0530
+Subrata Modak <subrata@linux.vnet.ibm.com> wrote:
 
-On Wednesday, October 27, 2010 3:27 AM, Wolfgang Grandegger wrote:
-> for the inconvenience, but the original author should have received it.
-> Tomoya, could you (or somebody else) please also fix the remaining
-> issues quickly?
-
-"masa-korg@dsn.okisemi.com" left this project. and this mail-address will be deleted soon.
-I (tomoya-linux@dsn.okisemi.com) have taken over "pch can drive" from him.
-
-I will modify your comments ASAP.
-
----
-Hi David,
-
-On Wednesday, October 27, 2010 2:52 AM, David Miller wrote:
-> There are still problems.
+> If you run LTP Memory CGROUP Controller functional test on
+> linux-2.6.36-git7, the following Backtrace, OOMKill & rcu_sched_state
+> detected stall jiffies are created. The machine is not reachable
+> thereafter. Ways to reproduce this problem:
 > 
-> This is beyond frustrating.
+> 1) Build and boot kernel 2.6.36-git7 on Power7 machine with attached
+> config file,
+> 2) Fetch, build and install LTP:
+> 	git clone git://ltp.git.sourceforge.net/gitroot/ltp/ltp
+> 	cd ltp
+> 	./configure
+> 	make
+> 	make install
+> 3) Create a LTP runtest file /opt/ltp/runtest/memcg_function_test with
+> the following entry:
+> memcg_function          memcg_function_test.sh
+> <<EOF>>
+> 	cd /opt/ltp
+> 	./runltp -f memcg_function_test
 > 
-> > index 55ec324..2889e11 100755
-> 
-> Why does the pch_can.c file have execute permission in your tree?
-> It doesn't in net-next-2.6 and that is what you should be generating
-> patches against.
-Sorry for the inconvenience.
-After updating maintainer's comments and yours, I will post again.
 
----
-Thanks, Tomoya(OKI SEMICONDUCTOR CO., LTD.)
+IIUC, memcg test includes intentional OOM-Kill test by setting the limit to 0.
+And it has another test to set the limit to PAGE_SIZE.
+
+In your environemnt, I think page size is 64kb...right ?
+
+About rcu_sched_state()....I have no idea at this stage. I reviewed memcontrol.c
+and oom_kill.c again and coundn't found anything in quick review.
+
+Could you try again after -rc1 shipped ?
+I think Andrew Morton sent some amount of updates for oom_kill and memcg, vmscan
+to Linus, today.
+
+Thanks,
+-Kame
 
