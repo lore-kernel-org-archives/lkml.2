@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756089Ab0J0Pka (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 11:40:30 -0400
-Received: from hera.kernel.org ([140.211.167.34]:58611 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752503Ab0J0Pk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 11:40:28 -0400
-Message-ID: <4CC847D9.3080805@kernel.org>
-Date: Wed, 27 Oct 2010 17:40:09 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.11) Gecko/20101013 Lightning/1.0b2 Thunderbird/3.1.5
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Brian Gerst <brgerst@gmail.com>, x86@kernel.org,
+	id S1756706Ab0J0Pk5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 11:40:57 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:64860 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756187Ab0J0Pkz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 11:40:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=thLzhVm9WXOllU9ssgxBosBTbLpAvQoxPGIWag/lg7HjN4lseA6deJcbEsbN2v43ZA
+         nPsutGR2KI47Isn2wMk4N1zOBYFyMh8fRmchxEYtphkVaOtzobjG0EKr4moq273NOaZa
+         /7aGs9Y9QJxT3hI7TQyn+pRcKwyQcbwYPag9I=
+From: Vasiliy Kulikov <segooon@gmail.com>
+To: kernel-janitors@vger.kernel.org
+Cc: Mike Miller <mike.miller@hp.com>, Jens Axboe <jaxboe@fusionio.com>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>, iss_storagedev@hp.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86-32: Allocate irq stacks seperate from percpu area
-References: <AANLkTinnc3vBSmewf7ixuOSDYxG+5VNiGaB-vSrDNRiO@mail.gmail.com> <1288158182-1753-1-git-send-email-brgerst@gmail.com> <AANLkTim_3vhuJt2gYQEM5p=wxVU1Jsm6reTgQZsu_o7B@mail.gmail.com> <20101027153053.GA20243@elte.hu> <20101027153331.GA21789@elte.hu>
-In-Reply-To: <20101027153331.GA21789@elte.hu>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 27 Oct 2010 15:40:10 +0000 (UTC)
+Subject: [PATCH] block: cciss: fix information leak to userland
+Date: Wed, 27 Oct 2010 19:40:48 +0400
+Message-Id: <1288194048-9233-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Ingo, Linus.
+Structure IOCTL_Command_struct is copied to userland with
+some padding fields at the end of the struct unitialized.
+It leads to leaking of contents of kernel stack memory.
 
-On 10/27/2010 05:33 PM, Ingo Molnar wrote:
-> Btw., the NUMA stuff never really worked percpu alloc, as per Eric's observation:
+Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+---
+ Compile tested.
 
-Oh, it works in general.  In this case, it's probably because the NUMA
-configuration is rather weird in 32bit (but then again NUMA on 32bit
-is supposed to be so).  I think it's just 32bit init code setting up
-early_cpu_to_node() differently.
+ drivers/block/cciss.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
->  | Anyway, I just discovered per_cpu data on my machine (NUMA capable) all sit on a 
->  | single node, if 32bit kernel used.
-> 
-> ... and in practice it's not really relevant on 32-bit anyway. So we can decouple 
-> the two issues just fine.
-
-Yeah, the two issues are separate and as I wrote in the other message
-the end result is correct (as much as it could be).  I'll try to dig
-down what exactly is going on but I don't think there's anything to be
-alarmed about.
-
-Thanks.
-
+diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+index f09e6df..13d87a0 100644
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -1184,6 +1184,7 @@ static int cciss_ioctl32_big_passthru(struct block_device *bdev, fmode_t mode,
+ 	int err;
+ 	u32 cp;
+ 
++	memset(&arg64, 0, sizeof(arg64));
+ 	err = 0;
+ 	err |=
+ 	    copy_from_user(&arg64.LUN_info, &arg32->LUN_info,
 -- 
-tejun
+1.7.0.4
+
