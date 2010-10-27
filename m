@@ -1,233 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761251Ab0J0Nac (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 09:30:32 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:34127 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756723Ab0J0Nab (ORCPT
+	id S1761269Ab0J0Nbj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 09:31:39 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:56719 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761261Ab0J0Nbh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 09:30:31 -0400
+	Wed, 27 Oct 2010 09:31:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Nf6DWKAVmBIjZx2zN5hGZr/vke7uaw6+ThjExQ2jZ3YuQbe2cKVPqKI2fhh1um2187
+         JaxKswbrob0iozeWLmC1lBBu8Y8WUnLvmg3kJrxX5pz4EzmRO9HcuN2yNvD2yK1yaHM7
+         h8mYK2DpU01G8m9KpUm2ecbb4ExuvXjSVMgKE=
 MIME-Version: 1.0
-X-Originating-IP: [89.235.167.66]
-Date: Wed, 27 Oct 2010 17:30:27 +0400
-Message-ID: <AANLkTik8w1ODK2dFNTsuzGJiZENHuxuJhx=Y3Etaxqkg@mail.gmail.com>
-Subject: [PATCH 4/5] tcp: syncookie stats counter
-From: Dmitry Popov <dp@highloadlab.com>
-To: "David S. Miller" <davem@davemloft.net>, William.Allen.Simpson@gmail.com,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Andreas Petlund <apetlund@simula.no>,
-        Shan Wei <shanwei@cn.fujitsu.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Octavian Purdila <opurdila@ixiacom.com>,
-        =?ISO-8859-1?Q?Ilpo_J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, Evgeniy Polyakov <zbr@ioremap.net>,
-        Laurent Chavey <chavey@google.com>,
-        Gilad Ben-Yossef <gilad@codefidence.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "Steven J. Magnani" <steve@digidescorp.com>,
-        Joe Perches <joe@perches.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Yony Amit <yony@comsleep.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Artyom Gavrichenkov <ag@highloadlab.com>
+In-Reply-To: <20101026025608.23512.60938.stgit@warthog.procyon.org.uk>
+References: <20101026025301.23512.24525.stgit@warthog.procyon.org.uk>
+	<20101026025608.23512.60938.stgit@warthog.procyon.org.uk>
+Date: Wed, 27 Oct 2010 22:31:35 +0900
+Message-ID: <AANLkTim80mTPKN7HFk0-H_C4xmg0ySt--gMX_L9_qQrc@mail.gmail.com>
+Subject: Re: [Linux-am33-list] [PATCH 35/43] MN10300: And Panasonic AM34
+ subarch and implement SMP
+From: Suzuki Takashi <suzuki.takashi@gmail.com>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-am33-list@redhat.com, linux-kernel@vger.kernel.org,
+        Akira Takeuchi <takeuchi.akr@jp.panasonic.com>,
+        Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Popov <dp@highloadlab.com>
+Hi.
 
-Estimation of amount of sent SYNACKs used to choose between
-syn_backlog and syn_cookies added.
+On Tue, Oct 26, 2010 at 11:56 AM, David Howells <dhowells@redhat.com> wrote:
+> From: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+>
+> Implement the Panasonic MN10300 AM34 CPU subarch and implement SMP support for
+> MN10300.  Also implement support for the MN2WS0060 processor and the ASB2364
+> evaluation board which are AM34 based.
+>
+> Signed-off-by: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+> Signed-off-by: Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> ---
+>
+(snip)
+>  arch/mn10300/proc-mn2ws0050/Makefile               |    5
+>  arch/mn10300/proc-mn2ws0050/include/proc/cache.h   |   48 +
+>  arch/mn10300/proc-mn2ws0050/include/proc/clock.h   |   20
+>  .../proc-mn2ws0050/include/proc/dmactl-regs.h      |  103 ++
+>  .../proc-mn2ws0050/include/proc/intctl-regs.h      |   29 +
+>  arch/mn10300/proc-mn2ws0050/include/proc/irq.h     |   49 +
+>  .../proc-mn2ws0050/include/proc/nand-regs.h        |  120 ++
+>  arch/mn10300/proc-mn2ws0050/include/proc/proc.h    |   18
+>  .../mn10300/proc-mn2ws0050/include/proc/smp-regs.h |   51 +
+>  arch/mn10300/proc-mn2ws0050/proc-init.c            |  134 ++
 
-Estimation is made within TCP_TIMEOUT_INIT period. tcp_syncookie_stats
-struct is added to tcp_sock.
+Are these specific to mn2ws0050 or common among AM34 based SoCs?
+Please dig a proc- directory using proc- group name, not specific SoC name.
 
-Signed-off-by: Dmitry Popov <dp@highloadlab.com>
----
- include/linux/tcp.h                |   15 +++++++++++++++
- include/net/inet_connection_sock.h |    7 +++++++
- include/net/request_sock.h         |    8 ++++++++
- include/net/tcp.h                  |   29 +++++++++++++++++++++++++++++
- net/ipv4/tcp_ipv4.c                |   12 ++++++++++--
- net/ipv6/tcp_ipv6.c                |   16 ++++++++++++----
- 6 files changed, 81 insertions(+), 6 deletions(-)
-diff --git a/include/linux/tcp.h b/include/linux/tcp.h
-index 3436176..7445d17 100644
---- a/include/linux/tcp.h
-+++ b/include/linux/tcp.h
-@@ -288,6 +288,17 @@ static inline struct tcp_request_sock
-*tcp_rsk(const struct request_sock *req)
- 	return (struct tcp_request_sock *)req;
- }
-
-+/* This structure is used to estimate amount of SYNs under (possible) SYNflood.
-+ * @cookies_sent[@clock_hand] is incremented for each cookie sent.
-+ * This counter is used while jiffies < @expires[@clock_hand],
-+ * then clock_hand is switched (clock_hand ^= 1).
-+ */
-+struct tcp_syncookie_stats {
-+	unsigned long expires[2];
-+	u32 cookies_sent[2];
-+	u8 clock_hand;
-+};
-+
- struct tcp_sock {
- 	/* inet_connection_sock has to be the first member of tcp_sock */
- 	struct inet_connection_sock	inet_conn;
-@@ -471,6 +482,10 @@ struct tcp_sock {
- 	 * So readers which hold this lock may omit rcu_reader_lock.
- 	 */
- 	struct tcp_cookie_values  *cookie_values;
-+
-+#ifdef CONFIG_SYN_COOKIES
-+	struct tcp_syncookie_stats syncookie_stats;
-+#endif
- };
-
- static inline struct tcp_sock *tcp_sk(const struct sock *sk)
-diff --git a/include/net/inet_connection_sock.h
-b/include/net/inet_connection_sock.h
-index 430b58f..7c63bb0 100644
---- a/include/net/inet_connection_sock.h
-+++ b/include/net/inet_connection_sock.h
-@@ -293,6 +293,13 @@ static inline int
-inet_csk_reqsk_queue_young(const struct sock *sk)
- 	return reqsk_queue_len_young(&inet_csk(sk)->icsk_accept_queue);
- }
-
-+static inline int inet_csk_reqsk_queue_is_delta_full(const struct sock *sk,
-+						     int delta)
-+{
-+	const struct request_sock_queue *aq = &inet_csk(sk)->icsk_accept_queue;
-+	return reqsk_queue_is_delta_full(aq, delta);
-+}
-+
- static inline int inet_csk_reqsk_queue_is_full(const struct sock *sk)
- {
- 	return reqsk_queue_is_full(&inet_csk(sk)->icsk_accept_queue);
-diff --git a/include/net/request_sock.h b/include/net/request_sock.h
-index 870c46b..1154277 100644
---- a/include/net/request_sock.h
-+++ b/include/net/request_sock.h
-@@ -272,6 +272,14 @@ static inline int reqsk_queue_len_young(const
-struct request_sock_queue *queue)
- 	return queue->listen_opt->qlen_young;
- }
-
-+static inline int
-+	reqsk_queue_is_delta_full(const struct request_sock_queue *queue,
-+				  int delta)
-+{
-+	struct listen_sock *lopt = queue->listen_opt;
-+	return (lopt->qlen + delta) >> lopt->max_qlen_log;
-+}
-+
- static inline int reqsk_queue_is_full(const struct request_sock_queue *queue)
- {
- 	return queue->listen_opt->qlen >> queue->listen_opt->max_qlen_log;
-diff --git a/include/net/tcp.h b/include/net/tcp.h
-index 08e6ce1..c25d4a5 100644
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -1542,6 +1542,35 @@ static inline int tcp_s_data_size(const struct
-tcp_sock *tp)
- 		: 0;
- }
-
-+/* Updates syn cookie statistics,
-+ * should be called after new cookie(SYNACK) is sent.
-+ */
-+static inline void tcp_inc_syncookie_stats(struct tcp_syncookie_stats *stats)
-+{
-+	u8 hand = stats->clock_hand;
-+
-+	if (unlikely(time_after(jiffies, stats->expires[hand]))) {
-+		hand ^= 1;
-+		stats->expires[hand] = jiffies + TCP_TIMEOUT_INIT;
-+		stats->cookies_sent[hand] = 0;
-+		stats->clock_hand = hand;
-+	}
-+	++stats->cookies_sent[hand];
-+}
-+
-+/* Returns previous syncookie stats(amount of cookies sent). */
-+static inline u32 tcp_get_syncookie_stats(struct tcp_syncookie_stats *stats)
-+{
-+	u8 old_hand = stats->clock_hand ^ 1;
-+
-+	if (time_before(jiffies,
-+			stats->expires[old_hand] + 2 * TCP_TIMEOUT_INIT))
-+		/* old stats are not too old */
-+		return stats->cookies_sent[old_hand];
-+	else
-+		return 0;
-+}
-+
- /**
-  *	struct tcp_extend_values - tcp_ipv?.c to tcp_output.c workspace.
-  *
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index c7e9b2a..1e641b0 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -1344,13 +1344,21 @@ int tcp_v4_conn_request(struct sock *sk,
-struct sk_buff *skb)
- 	 * limitations, they conserve resources and peer is
- 	 * evidently real one.
- 	 */
--	if (inet_csk_reqsk_queue_is_full(sk) && !isn) {
-+#ifdef CONFIG_SYN_COOKIES
-+	if (inet_csk_reqsk_queue_is_delta_full(sk,
-+		tcp_get_syncookie_stats(&tp->syncookie_stats)) &&
-+		!isn)
-+	{
- 		if (net_ratelimit())
- 			syn_flood_warning(skb);
--#ifdef CONFIG_SYN_COOKIES
- 		if (sysctl_tcp_syncookies) {
-+			tcp_inc_syncookie_stats(&tp->syncookie_stats);
- 			want_cookie = 1;
- 		} else
-+#else
-+	if (inet_csk_reqsk_queue_is_full(sk) && !isn) {
-+		if (net_ratelimit())
-+			syn_flood_warning(skb);
- #endif
- 		goto drop;
- 	}
-diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
-index a3fa1f9..767dfde 100644
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -1275,13 +1275,21 @@ static int tcp_v6_conn_request(struct sock
-*sk, struct sk_buff *skb)
- 	if (!ipv6_unicast_destination(skb))
- 		goto drop;
-
--	if (inet_csk_reqsk_queue_is_full(sk) && !isn) {
-+#ifdef CONFIG_SYN_COOKIES
-+	if (inet_csk_reqsk_queue_is_delta_full(sk,
-+		tcp_get_syncookie_stats(&tp->syncookie_stats)) &&
-+		!isn)
-+	{
- 		if (net_ratelimit())
- 			syn_flood_warning(skb);
--#ifdef CONFIG_SYN_COOKIES
--		if (sysctl_tcp_syncookies)
-+		if (sysctl_tcp_syncookies) {
-+			tcp_inc_syncookie_stats(&tp->syncookie_stats);
- 			want_cookie = 1;
--		else
-+		} else
-+#else
-+	if (inet_csk_reqsk_queue_is_full(sk) && !isn) {
-+		if (net_ratelimit())
-+			syn_flood_warning(skb);
- #endif
- 		goto drop;
- 	}
+-- 
+Suzuki Takashi
