@@ -1,70 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757265Ab0J0VE7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 17:04:59 -0400
-Received: from c-67-162-90-113.hsd1.in.comcast.net ([67.162.90.113]:58292 "HELO
-	kosh.dhis.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1757156Ab0J0VE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 17:04:58 -0400
-Message-ID: <20101027210457.23673.qmail@kosh.dhis.org>
-From: pacman@kosh.dhis.org
-Subject: Re: Pegasos OHCI bug (was Re: PROBLEM: memory corrupting bug,
-To: olaf@aepfle.de (Olaf Hering)
-Date: Wed, 27 Oct 2010 16:04:57 -0500 (GMT+5)
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20101027101351.GA28218@aepfle.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S932280Ab0J0VGF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 17:06:05 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:53868 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756705Ab0J0VGD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 17:06:03 -0400
+Subject: Re: [RFC PATCH 0/1] vhost: Reduce TX used buffer signal for
+ performance
+From: Shirley Ma <mashirle@us.ibm.com>
+To: "mst@redhat.com" <mst@redhat.com>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1288213257.17571.25.camel@localhost.localdomain>
+References: <1288213257.17571.25.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Oct 2010 14:05:57 -0700
+Message-ID: <1288213557.17571.28.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Olaf Hering writes:
-> 
-> On Wed, Oct 27, pacman@kosh.dhis.org wrote:
-> 
-> > |1. How do I locate all usb nodes in the device tree?
-> > |
-> > |2. How do I know if a particular usb node is OHCI?
-> 
-> In the installed system, run 'lspci | grep -i usb', this gives the pci
-> bus numbers.  Then run 'find /sys -name devspec', and look or the bus
+This patch changes vhost TX used buffer signal to guest from one by
+one to up to 3/4 of vring size. This change improves vhost TX message 
+size from 256 to 8K performance for both bandwidth and CPU utilization 
+without inducing any regression.
 
-Once the system is running, I have no problem figuring it out. What I meant
-was how do I write some code to identify OHCI devices correctly, from within
-the limited environment of the Forth interpreter, which will work in the
-general case.
+Signed-off-by: Shirley Ma <xma@us.ibm.com>
+---
 
-I already know that /pci@80000000/usb@5 and /pci@80000000/usb@5,1 are the
-problem nodes on my machine. And I've learned enough about OF to do a full
-recursive device tree search to find the USB nodes, so the first question is
-answered.
+ drivers/vhost/net.c   |   19 ++++++++++++++++++-
+ drivers/vhost/vhost.c |   31 +++++++++++++++++++++++++++++++
+ drivers/vhost/vhost.h |    3 +++
+ 3 files changed, 52 insertions(+), 1 deletions(-)
 
-But the UHCI and OHCI nodes look very much alike in the OF properties. "name"
-is just "usb" and there's no "compatible".
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 4b4da5b..bd1ba71 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -198,7 +198,24 @@ static void handle_tx(struct vhost_net *net)
+ 		if (err != len)
+ 			pr_debug("Truncated TX packet: "
+ 				 " len %d != %zd\n", err, len);
+-		vhost_add_used_and_signal(&net->dev, vq, head, 0);
++		/*
++		 * if no pending buffer size allocate, signal used buffer
++		 * one by one, otherwise, signal used buffer when reaching
++		 * 3/4 ring size to reduce CPU utilization.
++		 */
++		if (unlikely(vq->pend))
++			vhost_add_used_and_signal(&net->dev, vq, head, 0);
++		else {
++			vq->pend[vq->num_pend].id = head;
++			vq->pend[vq->num_pend].len = 0;
++			++vq->num_pend;
++			if (vq->num_pend == (vq->num - (vq->num >> 2))) {
++				vhost_add_used_and_signal_n(&net->dev, vq,
++							    vq->pend,
++							    vq->num_pend);
++				vq->num_pend = 0;
++			}
++		}
+ 		total_len += len;
+ 		if (unlikely(total_len >= VHOST_NET_WEIGHT)) {
+ 			vhost_poll_queue(&vq->poll);
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index 94701ff..47696d2 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -170,6 +170,16 @@ static void vhost_vq_reset(struct vhost_dev *dev,
+ 	vq->call_ctx = NULL;
+ 	vq->call = NULL;
+ 	vq->log_ctx = NULL;
++	/* signal pending used buffers */
++	if (vq->pend) {
++		if (vq->num_pend != 0) {
++			vhost_add_used_and_signal_n(dev, vq, vq->pend,
++						    vq->num_pend);
++			vq->num_pend = 0;
++		}
++		kfree(vq->pend);
++	}
++	vq->pend = NULL;
+ }
+ 
+ static int vhost_worker(void *data)
+@@ -273,7 +283,13 @@ long vhost_dev_init(struct vhost_dev *dev,
+ 		dev->vqs[i].heads = NULL;
+ 		dev->vqs[i].dev = dev;
+ 		mutex_init(&dev->vqs[i].mutex);
++		dev->vqs[i].num_pend = 0;
++		dev->vqs[i].pend = NULL;
+ 		vhost_vq_reset(dev, dev->vqs + i);
++		/* signal 3/4 of ring size used buffers */
++		dev->vqs[i].pend = kmalloc((dev->vqs[i].num -
++					   (dev->vqs[i].num >> 2)) *
++					   sizeof *vq->peed, GFP_KERNEL);
+ 		if (dev->vqs[i].handle_kick)
+ 			vhost_poll_init(&dev->vqs[i].poll,
+ 					dev->vqs[i].handle_kick, POLLIN, dev);
+@@ -599,6 +615,21 @@ static long vhost_set_vring(struct vhost_dev *d, int ioctl, void __user *argp)
+ 			r = -EINVAL;
+ 			break;
+ 		}
++		if (vq->num != s.num) {
++			/* signal used buffers first */
++			if (vq->pend) {
++				if (vq->num_pend != 0) {
++					vhost_add_used_and_signal_n(vq->dev, vq,
++								    vq->pend,
++								    vq->num_pend);
++					vq->num_pend = 0;
++				}
++				kfree(vq->pend);
++			}
++			/* realloc pending used buffers size */
++			vq->pend = kmalloc((s.num - (s.num >> 2)) *
++					   sizeof *vq->pend, GFP_KERNEL);
++		}
+ 		vq->num = s.num;
+ 		break;
+ 	case VHOST_SET_VRING_BASE:
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index 073d06a..78949c0 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -108,6 +108,9 @@ struct vhost_virtqueue {
+ 	/* Log write descriptors */
+ 	void __user *log_base;
+ 	struct vhost_log *log;
++	/* delay multiple used buffers to signal once */
++	int num_pend;
++	struct vring_used_elem *pend;
+ };
+ 
+ struct vhost_dev {
 
-The big question that I'm still stumbling over is how to access the device
-registers. The "reg" property looks like this:
-             phys                 size
- -------------------------- -----------------
- 00002800 00000000 00000000 00000000 00000000
- 02002810 00000000 00000000 00000000 00001000
-so I take the second group of 5 words, which should be the device registers,
-and try to map it to a virtual address. The members are unpacked on the stack
-like this:
-  00000000 00000000 02002810 00000000 00001000
-which looks like this stack diagram from OF spec:
-  map-in ( phys.lo ... phys.hi size -- virt )
-and the method call goes like this:
-  " map-in" $call-parent
-The result: "invalid pointer". But I notice it only popped 4 items. I think
-maybe the "size" for map-in is not the same as the "size" found in the reg
-property. Maybe #size-cells applies in one place but not the other. Thanks
-for not documenting that! Try again:
-  00000000 00000000 02002810 00001000 " map-in" $call-parent
-This one doesn't complain, but leaves me a 0 on the stack as its answer. The
-OHCI registers have been mapped to virtual address 0? Doesn't seem likely.
 
--- 
-Alan Curry
