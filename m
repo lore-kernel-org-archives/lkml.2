@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756039Ab0J0WUo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 18:20:44 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:39431 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751031Ab0J0WUm (ORCPT
+	id S1756838Ab0J0WYv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 18:24:51 -0400
+Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:38991 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754016Ab0J0WYs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 18:20:42 -0400
-Date: Wed, 27 Oct 2010 23:19:48 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Timur Tabi <timur@freescale.com>
-Cc: gregkh <gregkh@suse.de>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Writing a console/tty driver -- how to use tty_port?
-Message-ID: <20101027231948.5e62dd09@lxorguk.ukuu.org.uk>
-In-Reply-To: <4CC893CD.7020701@freescale.com>
-References: <4CC893CD.7020701@freescale.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Oct 2010 18:24:48 -0400
+Date: Thu, 28 Oct 2010 09:24:44 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] fs: Lock the inode LRU list separately
+Message-ID: <20101027222444.GC2715@dastard>
+References: <1288153384-8878-1-git-send-email-david@fromorbit.com>
+ <1288153384-8878-4-git-send-email-david@fromorbit.com>
+ <20101027090530.GB16443@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101027090530.GB16443@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Oct 2010 16:04:13 -0500
-Timur Tabi <timur@freescale.com> wrote:
-
-> Greg,
+On Wed, Oct 27, 2010 at 05:05:30AM -0400, Christoph Hellwig wrote:
+> > @@ -537,15 +545,10 @@ void evict_inodes(struct super_block *sb)
+> >  		}
+> >  
+> >  		inode->i_state |= I_FREEING;
+> > -		if (!(inode->i_state & (I_DIRTY | I_SYNC)))
+> > -			percpu_counter_dec(&nr_inodes_unused);
+> > +		inode_lru_list_del(inode);
+> >  		spin_unlock(&inode->i_lock);
+> >  
+> > -		/*
+> > -		 * Move the inode off the IO lists and LRU once I_FREEING is
+> > -		 * set so that it won't get moved back on there if it is dirty.
+> > -		 */
+> > -		list_move(&inode->i_lru, &dispose);
+> > +		list_add(&inode->i_lru, &dispose);
+> >  	}
+> >  	spin_unlock(&inode_lock);
+> >  
+> > @@ -582,15 +585,10 @@ int invalidate_inodes(struct super_block *sb)
+> >  		}
+> >  
+> >  		inode->i_state |= I_FREEING;
+> > -		if (!(inode->i_state & (I_DIRTY | I_SYNC)))
+> > -			percpu_counter_dec(&nr_inodes_unused);
+> > +		inode_lru_list_del(inode);
+> >  		spin_unlock(&inode->i_lock);
 > 
-> Do you have an updated version of Tiny TTY that uses tty_port structures?  I'm
-> trying to write a new TTY driver for a device that is not a UART, and I'm having
-> a hard time finding a good example.  I suspect I need to understand the tty_port
-> structure, but I can't find any documentation for it.
-> 
-> One specific problem I'm having is that I can't figure out how to get a
-> tty_struct pointer in my interrupt handler.  The ISR gets called whenever there
-> is new input, and it needs to call tty_insert_flip_string().  But it appears
-> that it's possible to have my driver opened multiple times, each time creating a
-> new TTY.  But since I can only have one interrupt handler, I don't know how to
-> determine which of the tty_structs to use.  I figure tty_port is a way to
-> resolve this problem, but I don't know how to use it exactly.
+> with this scheme we now decrement nr_inodes_unused twice - once in
+> invalidate_inodes/evict_inodes and once in dispose_one_inode. 
 
-You only have one tty struct for the multiple opens.
+That doesn't happen because the counter is only modified when
+the inode is moved on/off the list and there are checks to avoid
+removing an inode that is not on the list. Also, the inode is not
+removed from the LRU in dispose_one_inode - it is always done when
+the inode is marked I_FREEING while the i_lock is held before
+calling dispose_one_inode().
 
-Basically
+Basically I wanted to remove the strange "inode is not on the LRU if
+it is dirty or under writeback" accounting checks and make the
+accounting symmetric with adding/removing the inodes from the LRU.
+These are protected by list_empty() checks, so should always end up
+with the correct accounting.
 
-		tty_port	-	lifetime of hardware being loaded
-		tty_struct	-	lifetime open/close (and a bit
-					beyond for refs)
+hence the only special case now is prune_icache() which already
+holds the inode_lru_lock() so can't call the helper. Besides, we
+don't need any checks there because we know the inode is on the LRU
+already....
 
+Cheers,
 
-So you can use tty_port_tty_get() which also knows about all the ghastly
-internal locking rules.
-
-Eventually the rx buffer should be moved to the tty_port which will make
-the world vastly saner.
-
-drivers/mmc/card/sdio_uart.c
-
-is in some ways the best example, it handles all the horrible cases
-including unloading of hardware v open races, its way more than you'd
-need but does illustrate it all.
-
-I've also got a draft tty_kfifo layer which is designed to be tty_port
-with kfifo queues as a helper. Remind me next week if it would be useful
-and I'll dig it back out.
-
-Alan
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
