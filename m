@@ -1,96 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761203Ab0J0QH5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 12:07:57 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:32860 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752503Ab0J0QHx (ORCPT
+	id S1761257Ab0J0QJB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 12:09:01 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:50474 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760843Ab0J0QI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 12:07:53 -0400
+	Wed, 27 Oct 2010 12:08:59 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=L/P9iagwgKjD9GrM5vq/FS6ogAafs7prOzoULsPDInY0ETlVXmJOPkB6xltjpiZFPA
-         utFM8CKiy6Ssqm1sA6HZSGPELcdOUq/XvgRS94DAFjj0JvIoLP8l7C/S1O0udz/OHDxp
-         eeWuplpNXo6aLJXR5BgkbMQ1RMDvrPrWRK6Tw=
-Subject: Re: [PATCH] x86-32: Allocate irq stacks seperate from percpu area
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Brian Gerst <brgerst@gmail.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, mingo@elte.hu
-In-Reply-To: <4CC846D5.50106@kernel.org>
-References: <AANLkTinnc3vBSmewf7ixuOSDYxG+5VNiGaB-vSrDNRiO@mail.gmail.com>
-	 <1288158182-1753-1-git-send-email-brgerst@gmail.com>
-	 <1288159670.2652.181.camel@edumazet-laptop>
-	 <1288173442.15336.1490.camel@twins>
-	 <1288186405.2709.117.camel@edumazet-laptop>  <4CC82C2F.1020707@kernel.org>
-	 <1288187870.2709.128.camel@edumazet-laptop>  <4CC83067.5000009@kernel.org>
-	 <1288189461.2709.144.camel@edumazet-laptop>
-	 <1288190387.2709.147.camel@edumazet-laptop>  <4CC83A85.3070608@kernel.org>
-	 <1288192868.2709.152.camel@edumazet-laptop>  <4CC846D5.50106@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 27 Oct 2010 18:07:48 +0200
-Message-ID: <1288195668.2709.167.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+        h=date:from:to:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=AK2cqYq2S4OQp6jJzOlGBPiKod6IAsXy1rJIGPS2nOPXdc+EEFDkVHJaFEsAXOdq5P
+         oPbvgmM0bvSSWnNqUk0nY9q01LiMKV7KUSxTBe8tx9Aaiwdg2LjtiAfVzkzoOyYfIUtT
+         EHIBousTFkI0f7emWGdAYXfOqDeHQ/ezkhyu0=
+Date: Wed, 27 Oct 2010 09:08:42 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Samuel Thibault <sthibault@debian.org>, Tom Vier <tom@triadsys.com>,
+        "594089@bugs.debian.org" <594089@bugs.debian.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: Bug#594089: keyboard-configuration: caps lock keycode problem
+Message-ID: <20101027160842.GB8745@core.coreip.homeip.net>
+References: <20101025045003.GA1438@core.coreip.homeip.net>
+ <4CC58816.3090301@triadsys.com>
+ <20101025180320.GA4725@const.famille.thibault.fr>
+ <4CC6E9D8.8010201@triadsys.com>
+ <20101026161820.GE13097@core.coreip.homeip.net>
+ <4CC7426C.8040502@triadsys.com>
+ <20101027091029.GB28895@core.coreip.homeip.net>
+ <20101027120513.GT4725@const.famille.thibault.fr>
+ <99F91536-4413-430C-9932-7CEF6AB656DB@gmail.com>
+ <20101027152242.GO4725@const.famille.thibault.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101027152242.GO4725@const.famille.thibault.fr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 27 octobre 2010 Ã  17:35 +0200, Tejun Heo a Ã©crit :
-
-> Hmmm, okay.  Can you please print out early_cpu_to_node() output for
-> each cpu from arch/x86/kernel/setup_percpu.c::setup_per_cpu_areas()?
-> BTW, some clarifications.
+On Wed, Oct 27, 2010 at 05:22:42PM +0200, Samuel Thibault wrote:
+> Dmitry Torokhov, le Wed 27 Oct 2010 08:06:26 -0700, a écrit :
+> > On Oct 27, 2010, at 5:05 AM, Samuel Thibault <sthibault@debian.org> wrote:
+> > 
+> > 
+> >     Dmitry Torokhov, le Wed 27 Oct 2010 02:10:29 -0700, a écrit :
+> > 
+> >         Also, based on evtest data I only see presses/releases for one key
+> >         (Caps Lock, Right Shift, etc.) I do not see the presses for the additional
+> >         keys in the evtest stream so I am baffled as to where the additional
+> >         scancode is coming from... Do you have some funky keymap loaded?
+> >         Anything interesting in dumpkeys?
+> > 
+> > 
+> >     Err, since the duplicates appear in scancodes already, is the content of
+> >     dumpkeys really involved?
+> > 
+> > Evtest data does not show any additional events, so the additional scancodes
+> > must be coming from the legacy keyboard driver. 
 > 
-> * In the pcpu-alloc debug message, the n of [n] might not necessarily
->   match the NUMA node.
-> 
-> * I was confused before.  If CPU distance reported by
->   early_cpu_to_node() is greater than LOCAL_DISTANCE (ie. NUMA
->   configuration), cpus will always belong to different [n].  What gets
->   adjusted is the size of each unit.
-> 
-> * No matter what, here, the end result is correct.  As there's no low
->   memory on node 1, it doesn't matter how the groups are organized in
->   the first chunk as long as embedding is used.  And for other chunks,
->   pages for each cpu are allocated separatedly w/ cpu_to_node() anyway
->   so NUMA affinity will be correct, again, regardless of the group
->   organization.
-> 
-> Thanks.
-> 
+> Sure, but dumpkeys shows the table from scancodes to keycodes, not from
+> input events to scancodes.
 
-Will do in a few moment, once I recover from frozen machine  :(
-(See end of this mail)
+I am just wondering if some of the translation is leaking even though
+the keyboard is in raw mode...
 
-Thanks !
+OK, scratch that... Are there any other input devices? Anything
+connected via uinput and listening? What does /proc/bus/input/devices
+show? Maybe if Tom could compile and load evbug module it would show us
+where the additional events are coming form, becaus ethey surely are not
+generated by the keyboard itself (otherwise we'd have seen them in
+evtest output for that device).
 
-By the way, booting with hashdist=1 to make alloc_large_system_hash()
-use vmalloc() show that only pages from node 0 were used at boot.
-
-# grep alloc_large /proc/vmallocinfo 
-0xf7a01000-0xf7a82000  528384 alloc_large_system_hash+0x144/0x1d9 pages=128 vmalloc N0=128
-0xf7a83000-0xf7ac4000  266240 alloc_large_system_hash+0x144/0x1d9 pages=64 vmalloc N0=64
-0xf7b11000-0xf7b32000  135168 alloc_large_system_hash+0x144/0x1d9 pages=32 vmalloc N0=32
-0xf7b33000-0xf7c34000 1052672 alloc_large_system_hash+0x144/0x1d9 pages=256 vmalloc N0=256
-0xf7c39000-0xf7cba000  528384 alloc_large_system_hash+0x144/0x1d9 pages=128 vmalloc N0=128
-0xf7cbb000-0xf7cc0000   20480 alloc_large_system_hash+0x144/0x1d9 pages=4 vmalloc N0=4
-0xf7cc1000-0xf7cc6000   20480 alloc_large_system_hash+0x144/0x1d9 pages=4 vmalloc N0=4
-
-
-So I tried following experiment :
-
-# swapoff
-# numactl --membind=0 swapon -a
-# grep swap /proc/vmallocinfo 
-0xf9bf3000-0xf9cf4000 1052672 sys_swapon+0x4aa/0xb24 pages=256 vmalloc N0=256
-# swapoff -a
-# numactl --membind=1 swapon -a
-
-<<FREEZE>>
-
-
+-- 
+Dmitry
