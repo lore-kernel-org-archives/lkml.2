@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815Ab0J0F2v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 01:28:51 -0400
-Received: from mga09.intel.com ([134.134.136.24]:16914 "EHLO mga09.intel.com"
+	id S1755760Ab0J0F2w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 01:28:52 -0400
+Received: from mga09.intel.com ([134.134.136.24]:19326 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752604Ab0J0F2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 01:28:43 -0400
+	id S1753191Ab0J0F2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 01:28:47 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.58,244,1286175600"; 
-   d="scan'208";a="671269843"
+   d="scan'208";a="671269861"
 From: Huang Ying <ying.huang@intel.com>
 To: Len Brown <lenb@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
         ying.huang@intel.com, linux-acpi@vger.kernel.org
-Subject: [PATCH -v3 2/8] lib, Make gen_pool memory allocator lock-less
-Date: Wed, 27 Oct 2010 13:28:26 +0800
-Message-Id: <1288157312-10441-3-git-send-email-ying.huang@intel.com>
+Subject: [PATCH -v3 5/8] Hardware error record persistent support
+Date: Wed, 27 Oct 2010 13:28:29 +0800
+Message-Id: <1288157312-10441-6-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1288157312-10441-1-git-send-email-ying.huang@intel.com>
 References: <1288157312-10441-1-git-send-email-ying.huang@intel.com>
@@ -23,390 +23,383 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Multiple users can allocate/free memory in the pool simultaneously
-without lock.  This also makes gen_pool memory allocator can be used
-to allocate/free memory in IRQ/NMI handler. This is useful for
-hardware error handling, which needs to collect hardware error
-information in IRQ/NMI handler.
+Normally, corrected hardware error records will go through the kernel
+processing and be logged to disk or network finally.  But for
+uncorrected errors, system may go panic directly for better error
+containment, disk or network is not usable in this half-working
+system.  To avoid losing these valuable hardware error records, the
+error records are saved into some kind of simple persistent storage
+such as flash before panic, so that they can be read out after system
+reboot successfully.
 
-To support lock-less allocate/free operation, lock-less bitmap
-set/clear operations are implemented.
+Different kind of simple persistent storage implementation mechanisms
+are provided on different platforms, so an abstract interface for
+persistent storage is defined.  Different implementations of the
+interface can be registered.
+
+This patch is designed by Andi Kleen and Huang Ying.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 Reviewed-by: Andi Kleen <ak@linux.intel.com>
 ---
- include/linux/bitmap.h   |    1 
- include/linux/genalloc.h |   32 +++++--
- lib/bitmap.c             |    2 
- lib/genalloc.c           |  211 +++++++++++++++++++++++++++++++++++++----------
- 4 files changed, 195 insertions(+), 51 deletions(-)
- create mode 100644 include/linux/llalloc.h
- create mode 100644 lib/llalloc.c
+ drivers/char/herror/Makefile        |    2 
+ drivers/char/herror/herr-core.c     |   39 +++++++-
+ drivers/char/herror/herr-internal.h |   12 ++
+ drivers/char/herror/herr-persist.c  |  174 ++++++++++++++++++++++++++++++++++++
+ include/linux/Kbuild                |    1 
+ include/linux/herror.h              |   48 +++++++++
+ 6 files changed, 271 insertions(+), 5 deletions(-)
+ create mode 100644 drivers/char/herror/herr-internal.h
+ create mode 100644 drivers/char/herror/herr-persist.c
 
---- a/lib/genalloc.c
-+++ b/lib/genalloc.c
-@@ -1,8 +1,8 @@
- /*
-- * Basic general purpose allocator for managing special purpose memory
-- * not managed by the regular kmalloc/kfree interface.
-- * Uses for this includes on-device special memory, uncached memory
-- * etc.
-+ * Basic general purpose allocator for managing special purpose
-+ * memory, for example, memory that is not managed by the regular
-+ * kmalloc/kfree interface.  Uses for this includes on-device special
-+ * memory, uncached memory etc.
-  *
-  * Copyright 2005 (C) Jes Sorensen <jes@trained-monkey.org>
-  *
-@@ -13,8 +13,107 @@
- #include <linux/slab.h>
- #include <linux/module.h>
- #include <linux/bitmap.h>
-+#include <linux/rculist.h>
+--- a/drivers/char/herror/Makefile
++++ b/drivers/char/herror/Makefile
+@@ -1 +1 @@
+-obj-y				+= herr-core.o
++obj-y				+= herr-core.o herr-persist.o
+--- a/drivers/char/herror/herr-core.c
++++ b/drivers/char/herror/herr-core.c
+@@ -43,9 +43,9 @@
  #include <linux/genalloc.h>
+ #include <linux/herror.h>
  
-+static inline int set_bits_ll(unsigned long *addr, unsigned long mask_to_set)
-+{
-+	unsigned long val, nval;
-+
-+	nval = *addr;
-+	do {
-+		val = nval;
-+		if (val & mask_to_set)
-+			return -EBUSY;
-+	} while ((nval = cmpxchg(addr, val, val | mask_to_set)) != val);
-+
-+	return 0;
-+}
-+
-+static inline int clear_bits_ll(unsigned long *addr,
-+				unsigned long mask_to_clear)
-+{
-+	unsigned long val, nval;
-+
-+	nval = *addr;
-+	do {
-+		val = nval;
-+		if ((val & mask_to_clear) != mask_to_clear)
-+			return -EBUSY;
-+	} while ((nval = cmpxchg(addr, val, val & ~mask_to_clear)) != val);
-+
-+	return 0;
-+}
-+
-+/*
-+ * bitmap_set_ll - set the specified number of bits at the specified position
-+ * @map: pointer to a bitmap
-+ * @start: a bit position in @map
-+ * @nr: number of bits to set
-+ *
-+ * Set @nr bits start from @start in @map lock-lessly. Several users
-+ * can set/clear the same bitmap simultaneously without lock. If two
-+ * users set the same bit, one user will return remain bits, otherwise
-+ * return 0.
-+ */
-+static int bitmap_set_ll(unsigned long *map, int start, int nr)
-+{
-+	unsigned long *p = map + BIT_WORD(start);
-+	const int size = start + nr;
-+	int bits_to_set = BITS_PER_LONG - (start % BITS_PER_LONG);
-+	unsigned long mask_to_set = BITMAP_FIRST_WORD_MASK(start);
-+
-+	while (nr - bits_to_set >= 0) {
-+		if (set_bits_ll(p, mask_to_set))
-+			return nr;
-+		nr -= bits_to_set;
-+		bits_to_set = BITS_PER_LONG;
-+		mask_to_set = ~0UL;
-+		p++;
-+	}
-+	if (nr) {
-+		mask_to_set &= BITMAP_LAST_WORD_MASK(size);
-+		if (set_bits_ll(p, mask_to_set))
-+			return nr;
+-#define HERR_NOTIFY_BIT			0
++#include "herr-internal.h"
+ 
+-static unsigned long herr_flags;
++unsigned long herr_flags;
+ 
+ /*
+  * Record list management and error reporting
+@@ -545,6 +545,7 @@ static ssize_t herr_mix_read(struct file
+ {
+ 	int rc;
+ 	static DEFINE_MUTEX(read_mutex);
++	u64 record_id;
+ 
+ 	if (*off != 0)
+ 		return -EINVAL;
+@@ -552,7 +553,14 @@ static ssize_t herr_mix_read(struct file
+ 	rc = mutex_lock_interruptible(&read_mutex);
+ 	if (rc)
+ 		return rc;
++	rc = herr_persist_peek_user(&record_id, ubuf, usize);
++	if (rc > 0) {
++		herr_persist_clear(record_id);
++		goto out;
 +	}
 +
-+	return 0;
-+}
-+
-+/*
-+ * bitmap_clear_ll - clear the specified number of bits at the specified position
-+ * @map: pointer to a bitmap
-+ * @start: a bit position in @map
-+ * @nr: number of bits to set
-+ *
-+ * Clear @nr bits start from @start in @map lock-lessly. Several users
-+ * can set/clear the same bitmap simultaneously without lock. If two
-+ * users clear the same bit, one user will return remain bits,
-+ * otherwise return 0.
-+ */
-+static int bitmap_clear_ll(unsigned long *map, int start, int nr)
-+{
-+	unsigned long *p = map + BIT_WORD(start);
-+	const int size = start + nr;
-+	int bits_to_clear = BITS_PER_LONG - (start % BITS_PER_LONG);
-+	unsigned long mask_to_clear = BITMAP_FIRST_WORD_MASK(start);
-+
-+	while (nr - bits_to_clear >= 0) {
-+		if (clear_bits_ll(p, mask_to_clear))
-+			return nr;
-+		nr -= bits_to_clear;
-+		bits_to_clear = BITS_PER_LONG;
-+		mask_to_clear = ~0UL;
-+		p++;
-+	}
-+	if (nr) {
-+		mask_to_clear &= BITMAP_LAST_WORD_MASK(size);
-+		if (clear_bits_ll(p, mask_to_clear))
-+			return nr;
-+	}
-+
-+	return 0;
-+}
+ 	rc = herr_rcd_lists_read(ubuf, usize, &read_mutex);
++out:
+ 	mutex_unlock(&read_mutex);
  
- /**
-  * gen_pool_create - create a new special memory pool
-@@ -30,7 +129,7 @@ struct gen_pool *gen_pool_create(int min
- 
- 	pool = kmalloc_node(sizeof(struct gen_pool), GFP_KERNEL, nid);
- 	if (pool != NULL) {
--		rwlock_init(&pool->lock);
-+		spin_lock_init(&pool->lock);
- 		INIT_LIST_HEAD(&pool->chunks);
- 		pool->min_alloc_order = min_alloc_order;
- 	}
-@@ -58,15 +157,15 @@ int gen_pool_add(struct gen_pool *pool,
- 
- 	chunk = kmalloc_node(nbytes, GFP_KERNEL | __GFP_ZERO, nid);
- 	if (unlikely(chunk == NULL))
--		return -1;
-+		return -ENOMEM;
- 
--	spin_lock_init(&chunk->lock);
- 	chunk->start_addr = addr;
- 	chunk->end_addr = addr + size;
-+	atomic_set(&chunk->avail, size);
- 
--	write_lock(&pool->lock);
--	list_add(&chunk->next_chunk, &pool->chunks);
--	write_unlock(&pool->lock);
-+	spin_lock(&pool->lock);
-+	list_add_rcu(&chunk->next_chunk, &pool->chunks);
-+	spin_unlock(&pool->lock);
- 
+ 	return rc;
+@@ -561,15 +569,40 @@ static ssize_t herr_mix_read(struct file
+ static unsigned int herr_mix_poll(struct file *file, poll_table *wait)
+ {
+ 	poll_wait(file, &herr_mix_wait, wait);
+-	if (!herr_rcd_lists_is_empty())
++	if (!herr_rcd_lists_is_empty() || !herr_persist_read_done())
+ 		return POLLIN | POLLRDNORM;
  	return 0;
  }
-@@ -112,39 +211,39 @@ EXPORT_SYMBOL(gen_pool_destroy);
-  */
- unsigned long gen_pool_alloc(struct gen_pool *pool, size_t size)
- {
--	struct list_head *_chunk;
- 	struct gen_pool_chunk *chunk;
--	unsigned long addr, flags;
-+	unsigned long addr;
- 	int order = pool->min_alloc_order;
--	int nbits, start_bit, end_bit;
-+	int nbits, start_bit = 0, end_bit, remain;
  
- 	if (size == 0)
- 		return 0;
++static long herr_mix_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
++{
++	void __user *p = (void __user *)arg;
++	int rc;
++	u64 record_id;
++	struct herr_persist_buffer buf;
++
++	switch (cmd) {
++	case HERR_PERSIST_PEEK:
++		rc = copy_from_user(&buf, p, sizeof(buf));
++		if (rc)
++			return -EFAULT;
++		return herr_persist_peek_user(&record_id, buf.buf,
++					      buf.buf_size);
++	case HERR_PERSIST_CLEAR:
++		rc = copy_from_user(&record_id, p, sizeof(record_id));
++		if (rc)
++			return -EFAULT;
++		return herr_persist_clear(record_id);
++	default:
++		return -ENOTTY;
++	}
++}
++
+ static const struct file_operations herr_mix_dev_fops = {
+ 	.owner		= THIS_MODULE,
+ 	.read		= herr_mix_read,
+ 	.poll		= herr_mix_poll,
++	.unlocked_ioctl	= herr_mix_ioctl,
+ };
  
- 	nbits = (size + (1UL << order) - 1) >> order;
- 
--	read_lock(&pool->lock);
--	list_for_each(_chunk, &pool->chunks) {
--		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
-+	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
-+		if (size > atomic_read(&chunk->avail))
+ static int __init herr_mix_dev_init(void)
+--- /dev/null
++++ b/drivers/char/herror/herr-internal.h
+@@ -0,0 +1,12 @@
++#ifndef HERR_INTERNAL_H
++#define HERR_INTERNAL_H
++
++#define HERR_NOTIFY_BIT			0
++
++extern unsigned long herr_flags;
++
++int herr_persist_read_done(void);
++ssize_t herr_persist_peek_user(u64 *record_id, char __user *ercd,
++			       size_t bufsiz);
++int herr_persist_clear(u64 record_id);
++#endif /* HERR_INTERNAL_H */
+--- /dev/null
++++ b/drivers/char/herror/herr-persist.c
+@@ -0,0 +1,174 @@
++/*
++ * Hardware error record persistent support
++ *
++ * Normally, corrected hardware error records will go through the
++ * kernel processing and be logged to disk or network finally.  But
++ * for uncorrected errors, system may go panic directly for better
++ * error containment, disk or network is not usable in this
++ * half-working system.  To avoid losing these valuable hardware error
++ * records, the error records are saved into some kind of simple
++ * persistent storage such as flash before panic, so that they can be
++ * read out after system reboot successfully.
++ *
++ * Copyright 2010 Intel Corp.
++ *   Author: Huang Ying <ying.huang@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License version
++ * 2 as published by the Free Software Foundation;
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/rculist.h>
++#include <linux/mutex.h>
++
++#include <linux/herror.h>
++
++#include "herr-internal.h"
++
++/*
++ * Simple persistent storage provider list, herr_persists_mutex is
++ * used for writer side mutual exclusion, RCU is used to implement
++ * lock-less reader side.
++ */
++static LIST_HEAD(herr_persists);
++static DEFINE_MUTEX(herr_persists_mutex);
++
++int herr_persist_register(struct herr_persist *persist)
++{
++	if (!persist->peek_user)
++		return -EINVAL;
++	persist->read_done = 0;
++	if (mutex_lock_interruptible(&herr_persists_mutex))
++		return -EINTR;
++	list_add_rcu(&persist->list, &herr_persists);
++	mutex_unlock(&herr_persists_mutex);
++	/*
++	 * There may be hardware error records of previous boot in
++	 * persistent storage, notify the user space error daemon to
++	 * check.
++	 */
++	set_bit(HERR_NOTIFY_BIT, &herr_flags);
++	herr_notify();
++	return 0;
++}
++EXPORT_SYMBOL_GPL(herr_persist_register);
++
++void herr_persist_unregister(struct herr_persist *persist)
++{
++	mutex_lock(&herr_persists_mutex);
++	list_del_rcu(&persist->list);
++	mutex_unlock(&herr_persists_mutex);
++	synchronize_rcu();
++}
++EXPORT_SYMBOL_GPL(herr_persist_unregister);
++
++/* Can be used in atomic context including NMI */
++int herr_persist_in(const struct herr_record *ercd)
++{
++	struct herr_persist *persist;
++	int rc = -ENODEV;
++
++	rcu_read_lock();
++	list_for_each_entry_rcu(persist, &herr_persists, list) {
++		if (!persist->in)
 +			continue;
- 
- 		end_bit = (chunk->end_addr - chunk->start_addr) >> order;
--
--		spin_lock_irqsave(&chunk->lock, flags);
--		start_bit = bitmap_find_next_zero_area(chunk->bits, end_bit, 0,
--						nbits, 0);
--		if (start_bit >= end_bit) {
--			spin_unlock_irqrestore(&chunk->lock, flags);
-+retry:
-+		start_bit = bitmap_find_next_zero_area(chunk->bits, end_bit,
-+						       start_bit, nbits, 0);
-+		if (start_bit >= end_bit)
- 			continue;
-+		remain = bitmap_set_ll(chunk->bits, start_bit, nbits);
-+		if (remain) {
-+			remain = bitmap_clear_ll(chunk->bits, start_bit,
-+						 nbits - remain);
-+			BUG_ON(remain);
-+			goto retry;
- 		}
- 
- 		addr = chunk->start_addr + ((unsigned long)start_bit << order);
--
--		bitmap_set(chunk->bits, start_bit, nbits);
--		spin_unlock_irqrestore(&chunk->lock, flags);
--		read_unlock(&pool->lock);
-+		size = nbits << order;
-+		atomic_sub(size, &chunk->avail);
- 		return addr;
- 	}
--	read_unlock(&pool->lock);
- 	return 0;
- }
- EXPORT_SYMBOL(gen_pool_alloc);
-@@ -159,29 +258,57 @@ EXPORT_SYMBOL(gen_pool_alloc);
-  */
- void gen_pool_free(struct gen_pool *pool, unsigned long addr, size_t size)
- {
--	struct list_head *_chunk;
- 	struct gen_pool_chunk *chunk;
--	unsigned long flags;
- 	int order = pool->min_alloc_order;
--	int bit, nbits;
-+	int start_bit, nbits, remain;
- 
- 	nbits = (size + (1UL << order) - 1) >> order;
- 
--	read_lock(&pool->lock);
--	list_for_each(_chunk, &pool->chunks) {
--		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
--
-+	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
- 		if (addr >= chunk->start_addr && addr < chunk->end_addr) {
- 			BUG_ON(addr + size > chunk->end_addr);
--			spin_lock_irqsave(&chunk->lock, flags);
--			bit = (addr - chunk->start_addr) >> order;
--			while (nbits--)
--				__clear_bit(bit++, chunk->bits);
--			spin_unlock_irqrestore(&chunk->lock, flags);
--			break;
-+			start_bit = (addr - chunk->start_addr) >> order;
-+			remain = bitmap_clear_ll(chunk->bits, start_bit, nbits);
-+			BUG_ON(remain);
-+			size = nbits << order;
-+			atomic_add(size, &chunk->avail);
-+			return;
- 		}
- 	}
--	BUG_ON(nbits > 0);
--	read_unlock(&pool->lock);
-+	BUG();
- }
- EXPORT_SYMBOL(gen_pool_free);
-+
-+/**
-+ * gen_pool_avail - get available free space of the pool
-+ * @pool: pool to get available free space
-+ *
-+ * Return available free space of the specified pool.
-+ */
-+size_t gen_pool_avail(struct gen_pool *pool)
-+{
-+	struct gen_pool_chunk *chunk;
-+	size_t avail = 0;
-+
-+	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk)
-+		avail += atomic_read(&chunk->avail);
-+	return avail;
++		rc = persist->in(ercd);
++		if (!rc)
++			break;
++	}
++	rcu_read_unlock();
++	return rc;
 +}
-+EXPORT_SYMBOL_GPL(gen_pool_avail);
++EXPORT_SYMBOL_GPL(herr_persist_in);
 +
-+/**
-+ * gen_pool_size - get size in bytes of memory managed by the pool
-+ * @pool: pool to get size
-+ *
-+ * Return size in bytes of memory managed by the pool.
-+ */
-+size_t gen_pool_size(struct gen_pool *pool)
++int herr_persist_read_done(void)
 +{
-+	struct gen_pool_chunk *chunk;
-+	size_t size = 0;
++	struct herr_persist *persist;
++	int rc = 1;
 +
-+	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk)
-+		size += chunk->end_addr - chunk->start_addr;
-+	return size;
++	rcu_read_lock();
++	list_for_each_entry_rcu(persist, &herr_persists, list) {
++		if (!persist->read_done) {
++			rc = 0;
++			break;
++		}
++	}
++	rcu_read_unlock();
++	return rc;
 +}
-+EXPORT_SYMBOL_GPL(gen_pool_size);
---- a/include/linux/genalloc.h
-+++ b/include/linux/genalloc.h
-@@ -1,19 +1,26 @@
-+#ifndef GENALLOC_H
-+#define GENALLOC_H
- /*
-- * Basic general purpose allocator for managing special purpose memory
-- * not managed by the regular kmalloc/kfree interface.
-- * Uses for this includes on-device special memory, uncached memory
-- * etc.
-+ * Basic general purpose allocator for managing special purpose
-+ * memory, for example, memory not managed by the regular
-+ * kmalloc/kfree interface.  Uses for this includes on-device special
-+ * memory, uncached memory etc.
-+ *
-+ * The gen_pool_alloc, gen_pool_free, gen_pool_avail and gen_pool_size
-+ * implementation is lock-less, that is, multiple users can
-+ * allocate/free memory in the pool simultaneously without lock.  This
-+ * also makes the gen_pool memory allocator can be used to
-+ * allocate/free memory in IRQ/NMI handler.
-  *
-  * This source code is licensed under the GNU General Public License,
-  * Version 2.  See the file COPYING for more details.
-  */
- 
--
- /*
-  *  General purpose special memory pool descriptor.
-  */
- struct gen_pool {
--	rwlock_t lock;
-+	spinlock_t lock;
- 	struct list_head chunks;	/* list of chunks in this pool */
- 	int min_alloc_order;		/* minimum allocation order */
- };
-@@ -22,15 +29,26 @@ struct gen_pool {
-  *  General purpose special memory pool chunk descriptor.
-  */
- struct gen_pool_chunk {
--	spinlock_t lock;
- 	struct list_head next_chunk;	/* next chunk in pool */
-+	atomic_t avail;
- 	unsigned long start_addr;	/* starting address of memory chunk */
- 	unsigned long end_addr;		/* ending address of memory chunk */
- 	unsigned long bits[0];		/* bitmap for allocating memory chunk */
- };
- 
-+/**
-+ * gen_pool_for_each_chunk - iterate over chunks of generic memory pool
-+ * @chunk:	the struct gen_pool_chunk * to use as a loop cursor
-+ * @pool:	the generic memory pool
-+ */
-+#define gen_pool_for_each_chunk(chunk, pool)			\
-+	list_for_each_entry(chunk, &pool->chunks, next_chunk)
 +
- extern struct gen_pool *gen_pool_create(int, int);
- extern int gen_pool_add(struct gen_pool *, unsigned long, size_t, int);
- extern void gen_pool_destroy(struct gen_pool *);
- extern unsigned long gen_pool_alloc(struct gen_pool *, size_t);
- extern void gen_pool_free(struct gen_pool *, unsigned long, size_t);
-+extern size_t gen_pool_avail(struct gen_pool *);
-+extern size_t gen_pool_size(struct gen_pool *);
-+#endif /* GENALLOC_H */
---- a/lib/bitmap.c
-+++ b/lib/bitmap.c
-@@ -271,8 +271,6 @@ int __bitmap_weight(const unsigned long
- }
- EXPORT_SYMBOL(__bitmap_weight);
++/* Read next error record from persist storage, don't remove it */
++ssize_t herr_persist_peek_user(u64 *record_id, char __user *ercd,
++			       size_t bufsiz)
++{
++	struct herr_persist *persist;
++	ssize_t rc = 0;
++
++	if (mutex_lock_interruptible(&herr_persists_mutex))
++		return -EINTR;
++	list_for_each_entry(persist, &herr_persists, list) {
++		if (persist->read_done)
++			continue;
++		rc = persist->peek_user(record_id, ercd, bufsiz);
++		if (rc > 0)
++			break;
++		else if (rc != -EINTR && rc != -EAGAIN && rc != -EINVAL)
++			persist->read_done = 1;
++	}
++	mutex_unlock(&herr_persists_mutex);
++	return rc;
++}
++
++/* Clear specified error record from persist storage */
++int herr_persist_clear(u64 record_id)
++{
++	struct herr_persist *persist;
++	int rc = -ENOENT;
++
++	if (mutex_lock_interruptible(&herr_persists_mutex))
++		return -EINTR;
++	list_for_each_entry(persist, &herr_persists, list) {
++		if (!persist->clear)
++			continue;
++		rc = persist->clear(record_id);
++		if (!rc)
++			break;
++		/*
++		 * Failed to clear, mark as read_done, because we can
++		 * not skip this one
++		 */
++		else if (rc != -EINTR && rc != -EAGAIN && rc != -ENOENT)
++			persist->read_done = 1;
++	}
++	mutex_unlock(&herr_persists_mutex);
++	return rc;
++}
++
++static int herr_persist_record(struct herr_record *ercd, void *data)
++{
++	int *severity = data;
++
++	if (ercd->severity == *severity)
++		return herr_persist_in(ercd);
++	return 0;
++}
++
++void herr_persist_all_records(void)
++{
++	int severity;
++
++	for (severity = HERR_SEV_FATAL; severity >= HERR_SEV_NONE; severity--)
++		herr_for_each_record(herr_persist_record, &severity);
++}
++EXPORT_SYMBOL_GPL(herr_persist_all_records);
+--- a/include/linux/Kbuild
++++ b/include/linux/Kbuild
+@@ -141,6 +141,7 @@ header-y += hdlc.h
+ header-y += hdlcdrv.h
+ header-y += hdreg.h
+ header-y += herror_record.h
++header-y += herror.h
+ header-y += hid.h
+ header-y += hiddev.h
+ header-y += hidraw.h
+--- a/include/linux/herror.h
++++ b/include/linux/herror.h
+@@ -1,10 +1,22 @@
+ #ifndef LINUX_HERROR_H
+ #define LINUX_HERROR_H
  
--#define BITMAP_FIRST_WORD_MASK(start) (~0UL << ((start) % BITS_PER_LONG))
--
- void bitmap_set(unsigned long *map, int start, int nr)
- {
- 	unsigned long *p = map + BIT_WORD(start);
---- a/include/linux/bitmap.h
-+++ b/include/linux/bitmap.h
-@@ -142,6 +142,7 @@ extern void bitmap_release_region(unsign
- extern int bitmap_allocate_region(unsigned long *bitmap, int pos, int order);
- extern void bitmap_copy_le(void *dst, const unsigned long *src, int nbits);
++#include <linux/ioctl.h>
++#include <linux/herror_record.h>
++
++struct herr_persist_buffer {
++	void __user *buf;
++	unsigned int buf_size;
++};
++
++#define HERR_PERSIST_PEEK	_IOW('H', 1, struct herr_persist_buffer)
++#define HERR_PERSIST_CLEAR	_IOW('H', 2, u64)
++
++#ifdef __KERNEL__
++
+ #include <linux/types.h>
+ #include <linux/list.h>
+ #include <linux/device.h>
+-#include <linux/herror_record.h>
  
-+#define BITMAP_FIRST_WORD_MASK(start) (~0UL << ((start) % BITS_PER_LONG))
- #define BITMAP_LAST_WORD_MASK(nbits)					\
- (									\
- 	((nbits) % BITS_PER_LONG) ?					\
+ /*
+  * Hardware error reporting
+@@ -66,4 +78,38 @@ static inline void herr_dev_put(struct h
+ 
+ int herr_dev_register(struct herr_dev *dev);
+ void herr_dev_unregister(struct herr_dev *dev);
++
++
++/*
++ * Simple Persistent Storage
++ */
++
++struct herr_persist;
++/* Put an error record into simple persistent storage */
++int herr_persist_in(const struct herr_record *ercd);
++/* Save all error records not yet consumed in persistent storage */
++void herr_persist_all_records(void);
++
++/*
++ * Simple Persistent Storage Provider Management
++ */
++struct herr_persist {
++	struct list_head list;
++	char *name;
++	unsigned int read_done:1;
++	/* Put an error record into storage, must be NMI-safe */
++	int (*in)(const struct herr_record *ercd);
++	/*
++	 * Read out an error record from storage to user space, don't
++	 * remove it, the HERR_RCD_PERSIST must be set in record flags
++	 */
++	ssize_t (*peek_user)(u64 *record_id, char __user *ubuf, size_t usize);
++	/* Clear an error record */
++	int (*clear)(u64 record_id);
++};
++
++/* Register (un-register) simple persistent storage provider */
++int herr_persist_register(struct herr_persist *persist);
++void herr_persist_unregister(struct herr_persist *persist);
++#endif
+ #endif
