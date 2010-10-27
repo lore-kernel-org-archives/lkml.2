@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758961Ab0J0P4I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 11:56:08 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:60431 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756039Ab0J0P4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 11:56:06 -0400
-Date: Wed, 27 Oct 2010 08:56:03 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Dmitry Popov <dp@highloadlab.com>
-Cc: "David S. Miller" <davem@davemloft.net>, William.Allen.Simpson@gmail.com,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Andreas Petlund <apetlund@simula.no>,
-        Ilpo =?ISO-8859-1?B?SuRydmluZW4=?= <ilpo.jarvinen@helsinki.fi>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Gilad Ben-Yossef <gilad@codefidence.com>,
-        Yony Amit <yony@comsleep.com>, Zhu Yi <yi.zhu@intel.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] tcp: md5 signature check scaling
-Message-ID: <20101027085603.490e326b@nehalam>
-In-Reply-To: <AANLkTi=U1smX6XXDMyBTicyqbUU5V-t56jmH7qtX2XW5@mail.gmail.com>
-References: <AANLkTi=U1smX6XXDMyBTicyqbUU5V-t56jmH7qtX2XW5@mail.gmail.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1760902Ab0J0P4X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 11:56:23 -0400
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:11327 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760749Ab0J0P4S convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 11:56:18 -0400
+X-Greylist: delayed 410 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Oct 2010 11:56:18 EDT
+From: "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>
+To: Vasiliy Kulikov <segooon@gmail.com>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+CC: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        ISS StorageDev <iss_storagedev@hp.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 27 Oct 2010 15:47:57 +0000
+Subject: RE: [PATCH] scsi: hpsa: fix information leak to userland
+Thread-Topic: [PATCH] scsi: hpsa: fix information leak to userland
+Thread-Index: Act17VrPvR/9k5kyTaCCgMBeOTO5RQAAOjwA
+Message-ID: <0F5B06BAB751E047AB5C87D1F77A77887D0E579A63@GVW0547EXC.americas.hpqcorp.net>
+References: <1288194054-9276-1-git-send-email-segooon@gmail.com>
+In-Reply-To: <1288194054-9276-1-git-send-email-segooon@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Oct 2010 16:52:30 +0400
-Dmitry Popov <dp@highloadlab.com> wrote:
 
-> From: Dmitry Popov <dp@highloadlab.com>
-> 
-> TCP MD5 signature checking without socket lock.
-> 
-> Each tcp_sock has 2 RCU-protected arrays (tcp[46]_md5sig_info) of
-> tcp[46]_md5sig_key address-key pairs.
-> Each key (tcp_md5sig_key) has kref struct so that there is no need to
-> lock the whole array to work with one key.
-> 
-> MD5 functions were rewritten according to above statement and hash
-> check (tcp_v4_inbound_md5_hash) was moved before socket lock.
-> 
-> Signed-off-by: Dmitry Popov <dp@highloadlab.com>
 
-You traded locking for ref counting which may not be as big
-a win as your think.
+> -----Original Message-----
+> From: Vasiliy Kulikov [mailto:segooon@gmail.com]
+> Sent: Wednesday, October 27, 2010 10:41 AM
+> To: kernel-janitors@vger.kernel.org
+> Cc: Stephen M. Cameron; James E.J. Bottomley; Miller, Mike (OS Dev);
+> ISS StorageDev; linux-scsi@vger.kernel.org; linux-
+> kernel@vger.kernel.org
+> Subject: [PATCH] scsi: hpsa: fix information leak to userland
+> 
+> Structure IOCTL_Command_struct is copied to userland with
+> some padding fields at the end of the struct unitialized.
+> It leads to leaking of contents of kernel stack memory.
+> 
+> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+> ---
+>  Compile tested.
+> 
+>  drivers/scsi/hpsa.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+> index c5d0606..641a38c 100644
+> --- a/drivers/scsi/hpsa.c
+> +++ b/drivers/scsi/hpsa.c
+> @@ -2298,6 +2298,7 @@ static int hpsa_ioctl32_passthru(struct
+> scsi_device *dev, int cmd, void *arg)
+>  	int err;
+>  	u32 cp;
+> 
+> +	memset(&arg64, 0, sizeof(arg64));
+>  	err = 0;
+>  	err |= copy_from_user(&arg64.LUN_info, &arg32->LUN_info,
+>  			   sizeof(arg64.LUN_info));
+> @@ -2334,6 +2335,7 @@ static int hpsa_ioctl32_big_passthru(struct
+> scsi_device *dev,
+>  	int err;
+>  	u32 cp;
+> 
+> +	memset(&arg64, 0, sizeof(arg64));
+>  	err = 0;
+>  	err |= copy_from_user(&arg64.LUN_info, &arg32->LUN_info,
+>  			   sizeof(arg64.LUN_info));
+> --
+> 1.7.0.4
 
-Also, the overhead of RCU here might impact tests that involve
-lots of socket creation and destruction.
+Acked-by: Mike Milelr <mike.miller@hp.com>
 
--- 
