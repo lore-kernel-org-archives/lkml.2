@@ -1,36 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760920Ab0J0LPw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 07:15:52 -0400
-Received: from mga02.intel.com ([134.134.136.20]:10998 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755732Ab0J0LPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 07:15:50 -0400
-Message-Id: <b9dded$gtgeib@orsmga002.jf.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,246,1286175600"; 
-   d="scan'208";a="567818827"
-Date: Wed, 27 Oct 2010 12:15:45 +0100
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] mm,x86: fix kmap_atomic_push vs ioremap_32.c
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
-References: <20100918155326.478277313@chello.nl> <849307$a582r7@azsmga001.ch.intel.com> <1288175638.15336.1538.camel@twins>
-From: Chris Wilson <chris@chris-wilson.co.uk>
-In-Reply-To: <1288175638.15336.1538.camel@twins>
+	id S1755732Ab0J0LWc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 07:22:32 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:60519 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751857Ab0J0LW2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 07:22:28 -0400
+Date: Wed, 27 Oct 2010 04:22:08 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: Dan Carpenter <error27@gmail.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] configfs: documentation: remove unneeded check
+Message-ID: <20101027112207.GA17439@mail.oracle.com>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
+	linux-doc@vger.kernel.org, kernel-janitors@vger.kernel.org
+References: <20101027100735.GE6062@bicker>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101027100735.GE6062@bicker>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Oct 2010 12:33:58 +0200, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> Christoph just complained about the same on IRC, the below seems to cure
-> things for i386-defconfig with CONFIG_HIGHMEM=n
+On Wed, Oct 27, 2010 at 12:07:35PM +0200, Dan Carpenter wrote:
+> If "p" is NULL then it will cause an oops when we pass it to
+> simple_strtoul().  In this case "p" can not be NULL so I removed the
+> check and cleaned up the rest of the if condition as well.
+> 
+> Signed-off-by: Dan Carpenter <error27@gmail.com>
+> 
+> diff --git a/Documentation/filesystems/configfs/configfs_example_explicit.c b/Documentation/filesystems/configfs/configfs_example_explicit.c
+> index d428cc9..63ff248 100644
+> --- a/Documentation/filesystems/configfs/configfs_example_explicit.c
+> +++ b/Documentation/filesystems/configfs/configfs_example_explicit.c
+> @@ -89,7 +89,7 @@ static ssize_t childless_storeme_write(struct childless *childless,
+>  	char *p = (char *) page;
+>  
+>  	tmp = simple_strtoul(p, &p, 10);
+> -	if (!p || (*p && (*p != '\n')))
+> +	if (*p != '\0' && *p != '\n')
+>  		return -EINVAL;
 
-Compiles and boots on the misbehaving box.
-Thanks,
--Chris
+	If you're going to prefer "*p != '\0'" to "*p" as a test, I'd
+like you to include parens: "if ((*p != '\0') && (*p != '\n'))"  While
+the order of precedence is correct in your change, it makes folks have
+to stop and think about order of precedence in the first place.
+
+Joel
 
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+
+Life's Little Instruction Book #444
+
+	"Never underestimate the power of a kind word or deed."
+
+Joel Becker
+Senior Development Manager
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
