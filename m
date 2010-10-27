@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761077Ab0J0MnL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 08:43:11 -0400
-Received: from mga02.intel.com ([134.134.136.20]:65066 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755232Ab0J0MnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 08:43:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,246,1286175600"; 
-   d="scan'208";a="567836360"
-Date: Wed, 27 Oct 2010 12:48:16 +0100
-From: Alan Cox <alan@linux.intel.com>
-To: samu.p.onkalo@nokia.com
-Cc: gregkh@suse.de, Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: sysfs and power management
-Message-ID: <20101027124816.7087436a@linux.intel.com>
-In-Reply-To: <1288177143.12206.22.camel@4fid08082>
-References: <1288177143.12206.22.camel@4fid08082>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	id S1756418Ab0J0MqK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 08:46:10 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:50983 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755232Ab0J0MqI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 08:46:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=f9qUfWP2WFjHlR6zs15moiawdvN3CJZJjZSdB982Ib+RWDr/RGeH5F6qfjEJLpIMpz
+         47BGb05yZxTD5quIU0KrIHInE+/MlgyoTpyBEZ88HI3D+zIIHufVi+r+q1x1z45g7ZmB
+         wpC3WFueANKnLZx5+a+Ct2mgY64hCPvSOYyPc=
+Subject: Re: [patch 116/176] fs: allow for more than 2^31 files
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christoph Hellwig <hch@lst.de>
+Cc: akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        davem@davemloft.net, holt@sgi.com, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20101027115946.GA26335@lst.de>
+References: <201010262122.o9QLMiZG016728@imap1.linux-foundation.org>
+	 <20101027115946.GA26335@lst.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Oct 2010 14:46:02 +0200
+Message-ID: <1288183562.2709.94.camel@edumazet-laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I started to wonder if it makes sense to enhance sysfs so that it
-> optionally prodives open / close call backs. Internally sysfs has
-> some bookkeeping about the refcount but this is not visible to the
-> driver. Of course majority of the sysfs users doesn't need that at all
-> and for them this is just overhead. 
+Le mercredi 27 octobre 2010 à 13:59 +0200, Christoph Hellwig a écrit :
+> This patch breaks the binary sysctl ABI.  It probably doesn't matter
+> as no one actually used it, but it might be better idea to just remove
+> this node from the binary sysctl tree.
+> 
 
-I think we need it. There doesn't need to be much overhead however as
-there is no need (or sense) in providing per sysfs node open/close
-hooks.
+Good point
 
-The pm layer also lacks a clean race-free way to actually ascertain
-when the device was last kicked out of pm saving.
+To be precise, sysctl() truncates the value to low order 32bit value,
+because it internally uses simple_strtoul(), then a put_user()
+
+An old binary using sysctl() to fetch FS_MAXFILE could break on SGI
+machines. I am not sure we should remove sysctl FS_MAXFILE because of
+this rare case.
+
+
+
