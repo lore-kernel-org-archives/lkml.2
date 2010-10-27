@@ -1,62 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608Ab0J0TTi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 15:19:38 -0400
-Received: from DMZ-MAILSEC-SCANNER-8.MIT.EDU ([18.7.68.37]:63025 "EHLO
-	dmz-mailsec-scanner-8.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755385Ab0J0TTh (ORCPT
+	id S1755702Ab0J0TUu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 15:20:50 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:36195 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755551Ab0J0TUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 15:19:37 -0400
-X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Oct 2010 15:19:37 EDT
-X-AuditID: 12074425-b7c98ae000000a04-df-4cc87a1a71fe
-From: Nelson Elhage <nelhage@ksplice.com>
-To: Robert Olsson <robert.olsson@its.uu.se>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Eugene Teo <eugene@redhat.com>, Nelson Elhage <nelhage@ksplice.com>
-Subject: [PATCH] pktgen: Remove a dangerous debug print.
-Date: Wed, 27 Oct 2010 15:13:08 -0400
-Message-Id: <1288206788-21063-1-git-send-email-nelhage@ksplice.com>
-X-Mailer: git-send-email 1.7.1.31.g6297e
-X-Brightmail-Tracker: AAAAARZ9Dm4=
+	Wed, 27 Oct 2010 15:20:47 -0400
+Date: Wed, 27 Oct 2010 12:20:25 -0700
+From: Mike Anderson <andmike@linux.vnet.ibm.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: James Bottomley <James.Bottomley@suse.de>, Andi Kleen <ak@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
+        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Christof Schmitt <christof.schmitt@de.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [ANNOUNCE] Status of unlocked_qcmds=1 operation for .37
+Message-ID: <20101027192025.GA1349@linux.vnet.ibm.com>
+References: <1288130914.5169.97.camel@haakon2.linux-iscsi.org>
+ <1288132071.8283.689.camel@mulgrave.site>
+ <1288132464.5169.112.camel@haakon2.linux-iscsi.org>
+ <1288133450.8283.723.camel@mulgrave.site>
+ <1288134048.5169.132.camel@haakon2.linux-iscsi.org>
+ <1288134713.19649.11.camel@mulgrave.site>
+ <1288135918.5169.149.camel@haakon2.linux-iscsi.org>
+ <20101027075349.GA32585@gargoyle.fritz.box>
+ <1288189658.4692.13.camel@mulgrave.site>
+ <1288202802.5169.202.camel@haakon2.linux-iscsi.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288202802.5169.202.camel@haakon2.linux-iscsi.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We were allocating an arbitrarily-large buffer on the stack, which would allow a
-buggy or malicious userspace program to overflow the kernel stack.
+Nicholas A. Bellinger <nab@linux-iscsi.org> wrote:
+> On Wed, 2010-10-27 at 09:27 -0500, James Bottomley wrote:
+> > On Wed, 2010-10-27 at 09:53 +0200, Andi Kleen wrote:
+> > > > This sounds like a pretty reasonable compromise that I think is slightly
+> > > > less risky for the LLDs with the ghosts and cob-webs hanging off of
+> > > > them.
+> > > 
+> > > They won't get tested either next release cycle. Essentially
+> > > near nobody uses them.
+> > > 
+> > > > 
+> > > > What do you think..?
+> > > 
+> > > Standard linux practice is to simply push the locks down. That's a pretty
+> > > mechanical operation and shouldn't be too risky
+> > > 
+> > > With some luck you could even do it with coccinelle.
+> > 
+> > Precisely ... if we can do the push down now as a mechanical
+> > transformation we can put it in the current merge window as a low risk
+> > API change.
+> 
+> I disagree that touching every single legacy LLD's SHT->queuecommand()
+> and failure paths in that code is a low rist change.
+> 
+> >   This gives us optimal exposure to the rc sequence to sort
+> > out any problems that arise (or drivers that got missed) with the lowest
+> > risk of such problems actually arising.
+> 
+> Yes, 
+> 
+> > Given the corner cases and the
+> > late arrival of fixes, the serial number changes are just too risky for
+> > the current merge window.
+> 
+> I think with andmike's testing and ACKs for the necessary scsi_error.c
+> changes this would be an acceptable risk.
+> 
 
-Since the debug printk() was just printing exactly the text passed from
-userspace, it's probably just as easy for anyone who might use it to augment (or
-just strace(1)) the program writing to the pktgen file, so let's just not bother
-trying to print the whole buffer.
+Adding SCSI_EH_SOFTIRQ_DONE in scsi_softirq_done is not going to provide
+value in scsi_try_to_abort_cmd. scsi_softirq_done calls scsi_eh_scmd_add
+without the SCSI_EH_CANCEL_CMD flag set which will stop
+scsi_try_to_abort_cmd from being called.
 
-Signed-off-by: Nelson Elhage <nelhage@ksplice.com>
----
- net/core/pktgen.c |   11 +++--------
- 1 files changed, 3 insertions(+), 8 deletions(-)
+Removing the serial_number check in scsi_try_to_abort_cmd and not
+replacing it may be the correct action as we should be relying on the
+block complete checking. That said what James has indicated about
+splitting the serial number change out seems like the lower risk approach
+at this time.
 
-diff --git a/net/core/pktgen.c b/net/core/pktgen.c
-index 10a1ea7..de8e0da 100644
---- a/net/core/pktgen.c
-+++ b/net/core/pktgen.c
-@@ -888,14 +888,9 @@ static ssize_t pktgen_if_write(struct file *file,
- 
- 	i += len;
- 
--	if (debug) {
--		char tb[count + 1];
--		if (copy_from_user(tb, user_buffer, count))
--			return -EFAULT;
--		tb[count] = 0;
--		printk(KERN_DEBUG "pktgen: %s,%lu  buffer -:%s:-\n", name,
--		       (unsigned long)count, tb);
--	}
-+	if (debug)
-+		printk(KERN_DEBUG "pktgen: %s,%lu\n", name,
-+		       (unsigned long)count);
- 
- 	if (!strcmp(name, "min_pkt_size")) {
- 		len = num_arg(&user_buffer[i], 10, &value);
--- 
-1.7.1.31.g6297e
-
+-andmike
+--
+Michael Anderson
+andmike@linux.vnet.ibm.com
