@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933593Ab0J0BKV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 21:10:21 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:60448 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751251Ab0J0BKU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 21:10:20 -0400
-Date: Tue, 26 Oct 2010 21:10:18 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Benjamin Poirier <benjamin.poirier@polymtl.ca>
-Cc: ltt-dev@lists.casi.polymtl.ca, linux-kernel@vger.kernel.org
-Subject: [RELEASE] LTTng 0.235 for kernel 2.6.36
-Message-ID: <20101027011018.GA28612@Krystal>
-References: <20101026020544.GA26701@Krystal> <4CC779AE.1040506@polymtl.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CC779AE.1040506@polymtl.ca>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 21:07:47 up 34 days,  5:09,  4 users,  load average: 0.13, 0.11,
-	0.09
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S933616Ab0J0BK3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 21:10:29 -0400
+Received: from mail.perches.com ([173.55.12.10]:3622 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933607Ab0J0BK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 21:10:27 -0400
+Subject: Re: [PATCH 06/10] drivers/input/serio/i8042: Use pr_<level>,
+ pr_fmt. Fix dbg and __FILE__ use
+From: Joe Perches <joe@perches.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Jiri Kosina <trivial@kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <BFA186FD-32F7-4E1A-9193-CA1575248B73@gmail.com>
+References: <cover.1288059486.git.joe@perches.com>
+	 <20101026155028.GA13097@core.coreip.homeip.net>
+	 <1288135531.4145.59.camel@Joe-Laptop>
+	 <201010261740.13566.dmitry.torokhov@gmail.com>
+	 <1288140416.4145.76.camel@Joe-Laptop>
+	 <BFA186FD-32F7-4E1A-9193-CA1575248B73@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 26 Oct 2010 18:10:25 -0700
+Message-ID: <1288141825.4145.83.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Benjamin Poirier (benjamin.poirier@polymtl.ca) wrote:
-> On 25/10/10 10:05 PM, Mathieu Desnoyers wrote:
-> > LTTng, the Linux Trace Toolkit Next Generation, is a project that aims at
-> > producing a highly efficient full system tracing solution.  It is composed of
-> > several components to allow tracing of the kernel, of userspace, trace viewing
-> > and analysis and trace streaming.  LTTng is open source software. It is being
-> > actively developed with the community.
-> > 
-> > Changelog:
-> > 
-> > * Remove duplicated old-napi duplicated device instrumentation.
-> 
-> There's a tracepoint that went MIA compared to 0.232.
+On Tue, 2010-10-26 at 18:00 -0700, Dmitry Torokhov wrote:
+> On Oct 26, 2010, at 5:46 PM, Joe Perches <joe@perches.com> wrote:
+> > On Tue, 2010-10-26 at 17:40 -0700, Dmitry Torokhov wrote:
+> >>> Mind if I move the time to the front like this?
+> >>> +#define dbg(format, arg...)                                            \
+> >>> +do {                                    \
+> >>> +    if (i8042_debug)                        \
+> >>> +        printk(KERN_DEBUG KBUILD_MODNAME ": [%d]" format),    \
+> >>> +                      (int)(jiffies - i8042_start_time), ##arg);    \
+> >>> +} while (0)
+> >> Another option would be to leave '\n' in dbg() and leave most of the
+> >> callers as is.
+> > That's really error prone though.
+> In what way?
 
-Ah, yes, you are right. There has been quite a few changes in net/core/dev.c
-between 2.6.35 and 2.6.36, and it has been especially messy for patch hunks.
+$ grep -w dbg drivers/input/serio/i8042.c | cat -n
+     1			dbg("%02x <- i8042 (flush, %s)", data,
+     2		dbg("%02x -> i8042 (command)", command & 0xff);
+     3			dbg("%02x -> i8042 (parameter)", param[i]);
+     4				dbg("     -- i8042 (timeout)");
+     5				dbg("     -- i8042 (auxerr)");
+     6			dbg("%02x <- i8042 (return)", param[i]);
+     7			dbg("%02x -> i8042 (kbd-data)", c);
+     8				dbg("Extra keyboard ACK - filtered out\n");
+     9			dbg("Filtered out by platform filter\n");
+    10			if (irq) dbg("Interrupt %d, without any data", irq);
+    11				dbg("MUX error, status is %02x, data is %02x", str, data);
+    12		dbg("%02x <- i8042 (interrupt, %d, %d%s%s)",
+    13			dbg("%02x <- i8042 (aux_test_irq, %s)",
+    14			dbg("     -- i8042 (aux irq test timeout)");
+    15		dbg("%02x -> i8042 (panic blink)", 0xed);
+    16		dbg("%02x -> i8042 (panic blink)", led);
 
-LTTng 0.235 fixes this.
+I think 2 defects in 16 uses is a pretty high error rate.
 
-Thanks for spotting it!
 
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
