@@ -1,110 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab0J0SQu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 14:16:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33297 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754404Ab0J0SQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 14:16:48 -0400
-Subject: Re: [ANNOUNCE] Status of unlocked_qcmds=1 operation for .37
-From: James Bottomley <James.Bottomley@suse.de>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Andi Kleen <ak@linux.intel.com>,
-        Mike Anderson <andmike@linux.vnet.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>,
-        James Smart <james.smart@emulex.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
-        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
-        Brian King <brking@linux.vnet.ibm.com>,
-        Christof Schmitt <christof.schmitt@de.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-In-Reply-To: <1288202802.5169.202.camel@haakon2.linux-iscsi.org>
-References: <1287607774.10283.78.camel@haakon2.linux-iscsi.org>
-	 <20101021150840.GA24309@linux.vnet.ibm.com>
-	 <1288130914.5169.97.camel@haakon2.linux-iscsi.org>
-	 <1288132071.8283.689.camel@mulgrave.site>
-	 <1288132464.5169.112.camel@haakon2.linux-iscsi.org>
-	 <1288133450.8283.723.camel@mulgrave.site>
-	 <1288134048.5169.132.camel@haakon2.linux-iscsi.org>
-	 <1288134713.19649.11.camel@mulgrave.site>
-	 <1288135918.5169.149.camel@haakon2.linux-iscsi.org>
-	 <20101027075349.GA32585@gargoyle.fritz.box>
-	 <1288189658.4692.13.camel@mulgrave.site>
-	 <1288202802.5169.202.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 27 Oct 2010 13:16:36 -0500
-Message-ID: <1288203396.6886.19.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+	id S1754726Ab0J0SUs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 14:20:48 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:61994 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754206Ab0J0SUp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 14:20:45 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Subject: Re: nfsd changes for 2.6.37
+Date: Wed, 27 Oct 2010 20:20:32 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36+; KDE/4.5.1; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <20101026164549.GD19445@fieldses.org> <AANLkTinTXoGiFap-vfu0P_SXb5xS+gMsHOwQtN3Hra3r@mail.gmail.com> <20101027174016.GA18974@fieldses.org>
+In-Reply-To: <20101027174016.GA18974@fieldses.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201010272020.33049.arnd@arndb.de>
+X-Provags-ID: V02:K0:M7J/9cZ9DKXE3XLpjBX2PetVD7aRuLnCZZMuPpxpvzw
+ 6C217QpWCOshxfcwGzblBvBJ43r2wR6LxXCx/o1zc8Ja8srdxm
+ geLWq0PPXuZlKzYSeGnOyLBJ4r8gZ357W8Zm8U2aoBtCNp2p9N
+ 47FMyeWy4U9JaDFxhT4tB4C6LnS7GGTb2ee7WypNr/1xg2kPWN
+ LMsHTkugaTMC+Ujsaj+Ng==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-27 at 11:06 -0700, Nicholas A. Bellinger wrote:
-> On Wed, 2010-10-27 at 09:27 -0500, James Bottomley wrote:
-> > On Wed, 2010-10-27 at 09:53 +0200, Andi Kleen wrote:
-> > > > This sounds like a pretty reasonable compromise that I think is slightly
-> > > > less risky for the LLDs with the ghosts and cob-webs hanging off of
-> > > > them.
-> > > 
-> > > They won't get tested either next release cycle. Essentially
-> > > near nobody uses them.
-> > > 
-> > > > 
-> > > > What do you think..?
-> > > 
-> > > Standard linux practice is to simply push the locks down. That's a pretty
-> > > mechanical operation and shouldn't be too risky
-> > > 
-> > > With some luck you could even do it with coccinelle.
-> > 
-> > Precisely ... if we can do the push down now as a mechanical
-> > transformation we can put it in the current merge window as a low risk
-> > API change.
+On Wednesday 27 October 2010 19:40:16 J. Bruce Fields wrote:
+> Doesn't matter to me.  What I've currently got (Arnd's patches with some
+> minor fixes from me, and your patch, all in a poorly changelogged
+> jumble) is in
 > 
-> I disagree that touching every single legacy LLD's SHT->queuecommand()
-> and failure paths in that code is a low rist change.
-
-It can be done mechanically.
-
-> >   This gives us optimal exposure to the rc sequence to sort
-> > out any problems that arise (or drivers that got missed) with the lowest
-> > risk of such problems actually arising.
+>         git://linux-nfs.org/~bfields/linux-topics.git TMP-BKL-TESTING
 > 
-> Yes, 
-> 
-> > Given the corner cases and the
-> > late arrival of fixes, the serial number changes are just too risky for
-> > the current merge window.
-> 
-> I think with andmike's testing and ACKs for the necessary scsi_error.c
-> changes this would be an acceptable risk.
+> You wouldn't want to merge that as is, but it does seem to work.
 
-I already said why I didn't like this change.  Without the serial
-number, there's no problem.
+Ok, then let's use your tree with proper changelogs. That should be the
+easiest way to make sure that the code you test is the one that gets in.
 
-> > Having an API that changes depending on a
-> > flag is also a high risk process because it's prone to further sources
-> > of error.
-> > 
-> 
-> I think this would be considered high risk if the setting of the flag
-> explictly was required to obtain the default legacy operation.  With
-> this series that is not the case, as the default SHT->unlocked_qcmd=0
-> will allow legacy LLDs to function exactly the manner they expect, while
-> allowing modern LLDs to run in host_lock-less mode.
-
-Having a variable API based on a flag elsewhere is always a bad idea.
-
-James
-
-
+	Arnd
