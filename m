@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759083Ab0J0LBp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 07:01:45 -0400
-Received: from hera.kernel.org ([140.211.167.34]:45543 "EHLO hera.kernel.org"
+	id S1760759Ab0J0LCX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 07:02:23 -0400
+Received: from hera.kernel.org ([140.211.167.34]:45597 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753581Ab0J0LBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 07:01:40 -0400
-Date: Wed, 27 Oct 2010 11:01:05 GMT
-From: tip-bot for Matt Fleming <matt@console-pimps.org>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        mingo@redhat.com, tzanussi@gmail.com, peterz@infradead.org,
-        fweisbec@gmail.com, matt@console-pimps.org, tglx@linutronix.de,
-        acme@felicio.ghostprotocols.net, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, tzanussi@gmail.com, peterz@infradead.org,
-        fweisbec@gmail.com, matt@console-pimps.org, tglx@linutronix.de,
-        acme@felicio.ghostprotocols.net, mingo@elte.hu
-In-Reply-To: <89e77b54659bc3798b23a5596c2debb7f6f4cf27.1283010281.git.matt@console-pimps.org>
-References: <89e77b54659bc3798b23a5596c2debb7f6f4cf27.1283010281.git.matt@console-pimps.org>
+	id S1753876Ab0J0LCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 07:02:19 -0400
+Date: Wed, 27 Oct 2010 11:01:50 GMT
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
+        peterz@infradead.org, efault@gmx.de, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
+        efault@gmx.de, peterz@infradead.org, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <new-submission>
+References: <new-submission>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf record: Remove newline character from perror() argument
-Message-ID: <tip-0ab7368f8dad561b6164b3e942cab00f9565bd37@git.kernel.org>
-Git-Commit-ID: 0ab7368f8dad561b6164b3e942cab00f9565bd37
+Subject: [tip:perf/urgent] perf python scripting: Fixup cut'n'paste error in sctop script
+Message-ID: <tip-22d0594b31046793dfb58b7ce866d7cb0a9862e5@git.kernel.org>
+Git-Commit-ID: 22d0594b31046793dfb58b7ce866d7cb0a9862e5
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 27 Oct 2010 11:01:07 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 27 Oct 2010 11:01:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0ab7368f8dad561b6164b3e942cab00f9565bd37
-Gitweb:     http://git.kernel.org/tip/0ab7368f8dad561b6164b3e942cab00f9565bd37
-Author:     Matt Fleming <matt@console-pimps.org>
-AuthorDate: Sat, 28 Aug 2010 16:46:19 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@felicio.ghostprotocols.net>
-CommitDate: Tue, 26 Oct 2010 13:03:09 -0200
+Commit-ID:  22d0594b31046793dfb58b7ce866d7cb0a9862e5
+Gitweb:     http://git.kernel.org/tip/22d0594b31046793dfb58b7ce866d7cb0a9862e5
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Tue, 26 Oct 2010 15:21:15 -0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 26 Oct 2010 15:21:15 -0200
 
-perf record: Remove newline character from perror() argument
+perf python scripting: Fixup cut'n'paste error in sctop script
 
-If we include a newline character in the string argument to perror()
-then the output will be split across two lines like so,
-
-    Unable to read perf file descriptor
-    : No space left on device
-
-Deleting the newline character prints a much more readable error,
-
-    Unable to read perf file descriptor: No space left on device
-
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
 Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <89e77b54659bc3798b23a5596c2debb7f6f4cf27.1283010281.git.matt@console-pimps.org>
-Signed-off-by: Matt Fleming <matt@console-pimps.org>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@felicio.ghostprotocols.net>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/scripts/python/sctop.py |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index ff77b80..b530bee 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -353,7 +353,7 @@ try_again:
- 		}
+diff --git a/tools/perf/scripts/python/sctop.py b/tools/perf/scripts/python/sctop.py
+index 547cbe9..7a6ec2c 100644
+--- a/tools/perf/scripts/python/sctop.py
++++ b/tools/perf/scripts/python/sctop.py
+@@ -17,7 +17,7 @@ from perf_trace_context import *
+ from Core import *
+ from Util import *
  
- 		if (read(fd[nr_cpu][counter][thread_index], &read_data, sizeof(read_data)) == -1) {
--			perror("Unable to read perf file descriptor\n");
-+			perror("Unable to read perf file descriptor");
- 			exit(-1);
- 		}
+-usage = "perf trace -s syscall-counts.py [comm] [interval]\n";
++usage = "perf trace -s sctop.py [comm] [interval]\n";
  
-@@ -626,7 +626,7 @@ static int __cmd_record(int argc, const char **argv)
- 
- 	nr_cpus = read_cpu_map(cpu_list);
- 	if (nr_cpus < 1) {
--		perror("failed to collect number of CPUs\n");
-+		perror("failed to collect number of CPUs");
- 		return -1;
- 	}
- 
+ for_comm = None
+ default_interval = 3
