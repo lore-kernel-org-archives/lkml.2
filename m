@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761276Ab0J0NkB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 09:40:01 -0400
-Received: from 30.mail-out.ovh.net ([213.186.62.213]:53337 "HELO
-	30.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1761262Ab0J0NkA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 09:40:00 -0400
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Oct 2010 09:39:59 EDT
-Message-ID: <4CC82A13.8000909@eukrea.com>
-Date: Wed, 27 Oct 2010 15:33:07 +0200
-From: =?ISO-8859-15?Q?Eric_B=E9nard?= <eric@eukrea.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; fr; rv:1.9.2.11) Gecko/20101013 Thunderbird/3.1.5
+	id S1761266Ab0J0Nm4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 09:42:56 -0400
+Received: from hera.kernel.org ([140.211.167.34]:32855 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756827Ab0J0Nmy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 09:42:54 -0400
+Message-ID: <4CC82C2F.1020707@kernel.org>
+Date: Wed, 27 Oct 2010 15:42:07 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.11) Gecko/20101013 Lightning/1.0b2 Thunderbird/3.1.5
 MIME-Version: 1.0
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: Grant Likely <grant.likely@secretlab.ca>, amit.kucheria@canonical.com,
-        linux@arm.linux.org.uk, Dinh.Nguyen@freescale.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        daniel@caiaq.de,
-        =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        valentin.longchamp@epfl.ch
-Subject: Re: [PATCH] ARM: imx: Add some core definitions for MX53
-References: <1288119235-7036-1-git-send-email-Dinh.Nguyen@freescale.com>	<20101027082958.GA6797@angua.secretlab.ca>	<20101027090921.GB8554@pengutronix.de>	<20101027102253.GA7822@angua.secretlab.ca> <20101027132213.GJ6017@pengutronix.de>
-In-Reply-To: <20101027132213.GJ6017@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Brian Gerst <brgerst@gmail.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, mingo@elte.hu
+Subject: Re: [PATCH] x86-32: Allocate irq stacks seperate from percpu area
+References: <AANLkTinnc3vBSmewf7ixuOSDYxG+5VNiGaB-vSrDNRiO@mail.gmail.com>	 <1288158182-1753-1-git-send-email-brgerst@gmail.com>	 <1288159670.2652.181.camel@edumazet-laptop>	 <1288173442.15336.1490.camel@twins> <1288186405.2709.117.camel@edumazet-laptop>
+In-Reply-To: <1288186405.2709.117.camel@edumazet-laptop>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 3031766976237448593
-X-Ovh-Remote: 82.240.38.71 (pac33-2-82-240-38-71.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.50001/N
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 27 Oct 2010 13:42:09 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello,
 
-Le 27/10/2010 15:22, Sascha Hauer a �crit :
- > That's a way we can go but only if the common name is not MX5 or MX5x.
- > We've done it with the mx21/27 and it failed when the mx25 came out
- > which was completely incompatible. Since then everybody looking at
- > the code must know that mx2x is mx21/27 but not mx25. I suggest
- > something like MX513 instead.
- >
-MX513 is the partnumber of a member of the i.MX51 family so that's maybe not 
-the best choice.
-http://www.freescale.com/webapp/sps/site/prod_summary.jsp?code=i.MX513
+On 10/27/2010 03:33 PM, Eric Dumazet wrote:
+> Le mercredi 27 octobre 2010 à 11:57 +0200, Peter Zijlstra a écrit :
+>> On Wed, 2010-10-27 at 08:07 +0200, Eric Dumazet wrote:
+>>>> -     irqctx = &per_cpu(hardirq_stack, cpu);
+>>>> +     irqctx = (union irq_ctx *)__get_free_pages(THREAD_FLAGS, THREAD_ORDER);
+>>>
+>>> Hmm, then we lose NUMA affinity for stacks. 
+>>
+>> I guess we could use:
+>>
+>>   alloc_pages_node(cpu_to_node(cpu), THREAD_FLAGS, THREAD_ORDER);
+>>
+>>
+> 
+> Anyway, I just discovered per_cpu data on my machine (NUMA capable) all
+> sit on a single node, if 32bit kernel used.
+> 
+> # cat /proc/buddyinfo 
+> Node 0, zone      DMA      0      1      0      1      2      1      1      0      1      1      3 
+> Node 0, zone   Normal     94    251     81     16      3      2      1      2      1      2    187 
+> Node 0, zone  HighMem    113     88     47     36     18      5      4      3      2      0    268 
+> Node 1, zone  HighMem    154     97     43     16      9      4      3      2      3      2    482 
+...
+> 
+> I presume node 1 having only HighMem could be the reason ?
 
-Eric
+What does cpu_to_node() on each cpu say?  Also, do you know why
+num_possible_cpus() is 32, not 16?
+
+Thanks.
+
+-- 
+tejun
