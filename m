@@ -1,48 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757753Ab0J0LsE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 07:48:04 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:45681 "EHLO
+	id S1760468Ab0J0Lui (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 07:50:38 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:45688 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737Ab0J0LsB (ORCPT
+	with ESMTP id S1755194Ab0J0Lug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 07:48:01 -0400
+	Wed, 27 Oct 2010 07:50:36 -0400
 From: Jiri Slaby <jslaby@suse.cz>
-To: mchehab@redhat.com
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com, Devin Heitmueller <dheitmueller@hauppauge.com>
-Subject: [PATCH 1/4] V4L: cx231xx, fix lock imbalance
-Date: Wed, 27 Oct 2010 13:47:37 +0200
-Message-Id: <1288180057-19656-1-git-send-email-jslaby@suse.cz>
+To: sfrench@samba.org
+Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        linux-cifs@vger.kernel.org
+Subject: [PATCH 2/4] FS: cifs, remove unneeded NULL tests
+Date: Wed, 27 Oct 2010 13:50:20 +0200
+Message-Id: <1288180220-19869-1-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stanse found that there is mutex_lock in a fail path of
-cx231xx_i2c_xfer instead of mutex_unlock (i.e. double lock + leaving a
-function in locked state). So fix that.
+Stanse found that pSMBFile in cifs_ioctl and file->f_path.dentry in
+cifs_user_write are dereferenced prior their test to NULL.
+
+The alternative is not to dereference them before the tests. The patch is
+to point out the problem, you have to decide.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Devin Heitmueller <dheitmueller@hauppauge.com>
+Cc: Steve French <sfrench@samba.org>
+Cc: linux-cifs@vger.kernel.org
 ---
- drivers/media/video/cx231xx/cx231xx-i2c.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ fs/cifs/file.c  |    2 +-
+ fs/cifs/ioctl.c |    4 ----
+ 2 files changed, 1 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/media/video/cx231xx/cx231xx-i2c.c b/drivers/media/video/cx231xx/cx231xx-i2c.c
-index cce74e5..8356706 100644
---- a/drivers/media/video/cx231xx/cx231xx-i2c.c
-+++ b/drivers/media/video/cx231xx/cx231xx-i2c.c
-@@ -372,7 +372,7 @@ static int cx231xx_i2c_xfer(struct i2c_adapter *i2c_adap,
- 			rc = cx231xx_i2c_check_for_device(i2c_adap, &msgs[i]);
- 			if (rc < 0) {
- 				dprintk2(2, " no device\n");
--				mutex_lock(&dev->i2c_lock);
-+				mutex_unlock(&dev->i2c_lock);
- 				return rc;
- 			}
+diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+index 45af003..db7eaf7 100644
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -1031,7 +1031,7 @@ ssize_t cifs_user_write(struct file *file, const char __user *write_data,
+ 	cifs_stats_bytes_written(pTcon, total_written);
  
+ 	/* since the write may have blocked check these pointers again */
+-	if ((file->f_path.dentry) && (file->f_path.dentry->d_inode)) {
++	if (file->f_path.dentry->d_inode) {
+ 		struct inode *inode = file->f_path.dentry->d_inode;
+ /* Do not update local mtime - server will set its actual value on write
+  *		inode->i_ctime = inode->i_mtime =
+diff --git a/fs/cifs/ioctl.c b/fs/cifs/ioctl.c
+index 077bf75..2fa22f2 100644
+--- a/fs/cifs/ioctl.c
++++ b/fs/cifs/ioctl.c
+@@ -63,8 +63,6 @@ long cifs_ioctl(struct file *filep, unsigned int command, unsigned long arg)
+ #ifdef CONFIG_CIFS_POSIX
+ 		case FS_IOC_GETFLAGS:
+ 			if (CIFS_UNIX_EXTATTR_CAP & caps) {
+-				if (pSMBFile == NULL)
+-					break;
+ 				rc = CIFSGetExtAttr(xid, tcon, pSMBFile->netfid,
+ 					&ExtAttrBits, &ExtAttrMask);
+ 				if (rc == 0)
+@@ -80,8 +78,6 @@ long cifs_ioctl(struct file *filep, unsigned int command, unsigned long arg)
+ 					rc = -EFAULT;
+ 					break;
+ 				}
+-				if (pSMBFile == NULL)
+-					break;
+ 				/* rc= CIFSGetExtAttr(xid,tcon,pSMBFile->netfid,
+ 					extAttrBits, &ExtAttrMask);*/
+ 			}
 -- 
 1.7.3.1
 
