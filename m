@@ -1,409 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933235Ab0J0Nc2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 09:32:28 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:51163 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756640Ab0J0Nc0 (ORCPT
+	id S933289Ab0J0Ncu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 09:32:50 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:55092 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933189Ab0J0Nct (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 09:32:26 -0400
-MIME-Version: 1.0
-X-Originating-IP: [89.235.167.66]
-Date: Wed, 27 Oct 2010 17:32:23 +0400
-Message-ID: <AANLkTikRsOevLBHn0xb0S_YvfPMWpAdw373bxQUc+xbV@mail.gmail.com>
-Subject: [PATCH 5/5] tcp: ipv4 listen state scaled
-From: Dmitry Popov <dp@highloadlab.com>
-To: "David S. Miller" <davem@davemloft.net>, William.Allen.Simpson@gmail.com,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Andreas Petlund <apetlund@simula.no>,
-        Shan Wei <shanwei@cn.fujitsu.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Octavian Purdila <opurdila@ixiacom.com>,
-        =?ISO-8859-1?Q?Ilpo_J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, Evgeniy Polyakov <zbr@ioremap.net>,
-        Laurent Chavey <chavey@google.com>,
-        Gilad Ben-Yossef <gilad@codefidence.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "Steven J. Magnani" <steve@digidescorp.com>,
-        Joe Perches <joe@perches.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Yony Amit <yony@comsleep.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Artyom Gavrichenkov <ag@highloadlab.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 27 Oct 2010 09:32:49 -0400
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=ZDzuQiiN56AA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=SyI_GHdlAAAA:8 a=WPyIoOwQAAAA:8 a=eJfxgxciAAAA:8 a=QrkToWCIdyvkeyof2uQA:9 a=avqPpWNFwDmBWuKQzbgA:7 a=trESRPPI9tPrv3O4GWeOsoSXo3IA:4 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=UQxMgyrMzRwA:10 a=1DbiqZag68YA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 1/3] ftrace/MIPS: Add MIPS64 support for C version of
+ recordmcount
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Wu Zhangjin <wuzhangjin@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, John Reiser <jreiser@bitwagon.com>,
+        "Maciej W. Rozycki" <macro@linux-mips.org>,
+        David Daney <ddaney@caviumnetworks.com>
+In-Reply-To: <910dc2d5ae1ed042df4f96815fe4a433078d1c2a.1288176026.git.wuzhangjin@gmail.com>
+References: <cover.1288176026.git.wuzhangjin@gmail.com>
+	 <910dc2d5ae1ed042df4f96815fe4a433078d1c2a.1288176026.git.wuzhangjin@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 27 Oct 2010 09:32:46 -0400
+Message-ID: <1288186366.18238.125.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Popov <dp@highloadlab.com>
+On Wed, 2010-10-27 at 18:59 +0800, Wu Zhangjin wrote:
+> From: Wu Zhangjin <wuzhangjin@gmail.com>
 
-Fast path for TCP_LISTEN state processing added.
+The From above states that you wrote this. Did you modify what John and
+Maciej did? If so, please state clearly what each author has done, and
+how you modified it. If you did not write this, please change the From
+to the correct author.
 
-tcp_v4_rcv_listen is called from tcp_v4_rcv without socket lock.
-However, it may acquire main socket lock in 3 cases:
-1) To check syn_table in tcp_v4_hnd_req.
-2) To check syn_table and modify accept queue in tcp_v4_conn_request.
-3) To modify accept queue in get_cookie_sock.
+If you did modify it, then state something like this in the change log.
 
-In cases 1 and 2 we check for user lock and add skb to sk_backlog if
-socket is locked.
-In case 3 we don't check for user lock and it may lead to wrong
-behavior. That's why we need socket locking in tcp_set_state(sk,
-TCP_CLOSE).
+Original version written by John Reiser <jreiser@BitWagon.com>
 
-Additional state in sk->sk_lock.owned is needed to prevent infinite
-loop in backlog processing.
+Usage of "union mips_r_info" and the functions MIPS64_r_sym() and
+MIPS64_r_info() written by Maciej W. Rozycki <macro@linux-mips.org>
 
-Signed-off-by: Dmitry Popov <dp@highloadlab.com>
----
- include/net/sock.h    |    6 ++-
- net/core/sock.c       |    4 +-
- net/ipv4/syncookies.c |   20 +++++-
- net/ipv4/tcp.c        |    5 ++
- net/ipv4/tcp_ipv4.c   |  159 +++++++++++++++++++++++++++++++++++++++++--------
- 5 files changed, 162 insertions(+), 32 deletions(-)
-diff --git a/include/net/sock.h b/include/net/sock.h
-index adab9dc..b6d0ca1 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -994,7 +994,11 @@ static inline void sk_wmem_free_skb(struct sock
-*sk, struct sk_buff *skb)
-  * Since ~2.3.5 it is also exclusive sleep lock serializing
-  * accesses from user process context.
-  */
--#define sock_owned_by_user(sk)	((sk)->sk_lock.owned)
-+#define sock_owned_by_user(sk)		((sk)->sk_lock.owned)
-+/* backlog processing, see __release_sock(sk) */
-+#define sock_owned_by_backlog(sk)	((sk)->sk_lock.owned < 0)
-+/* sock owned by user, but not for backlog processing */
-+#define __sock_owned_by_user(sk)	((sk)->sk_lock.owned > 0)
+Then state the changes you made.
 
- /*
-  * Macro so as to not evaluate some arguments when
-diff --git a/net/core/sock.c b/net/core/sock.c
-index e73dfe3..f4233c7 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -2015,8 +2015,10 @@ void release_sock(struct sock *sk)
- 	mutex_release(&sk->sk_lock.dep_map, 1, _RET_IP_);
+> 
+> MIPS64 has 'weird' Elf64_Rel.r_info[1,2], which must be used instead of
+> the generic Elf64_Rel.r_info, otherwise, the C version of recordmcount
+> will not work for "segmentation fault".
+> 
+> ----
+> [1] http://techpubs.sgi.com/library/manuals/4000/007-4658-001/pdf/007-4658-001.pdf
+> [2] arch/mips/include/asm/module.h
+> 
+> Signed-off-by: John Reiser <jreiser@BitWagon.com>
+> Signed-off-by: Maciej W. Rozycki <macro@linux-mips.org>
+> Tested-by: Wu Zhangjin <wuzhangjin@gmail.com>
 
- 	spin_lock_bh(&sk->sk_lock.slock);
--	if (sk->sk_backlog.tail)
-+	if (sk->sk_backlog.tail) {
-+		sk->sk_lock.owned = -1;
- 		__release_sock(sk);
-+	}
- 	sk->sk_lock.owned = 0;
- 	if (waitqueue_active(&sk->sk_lock.wq))
- 		wake_up(&sk->sk_lock.wq);
-diff --git a/net/ipv4/syncookies.c b/net/ipv4/syncookies.c
-index 650cace..a37f8e8 100644
---- a/net/ipv4/syncookies.c
-+++ b/net/ipv4/syncookies.c
-@@ -211,10 +211,22 @@ static inline struct sock
-*get_cookie_sock(struct sock *sk, struct sk_buff *skb,
- 	struct inet_connection_sock *icsk = inet_csk(sk);
- 	struct sock *child;
+Again, if you made changes, you need a SoB yourself.
 
--	child = icsk->icsk_af_ops->syn_recv_sock(sk, skb, req, dst);
--	if (child)
--		inet_csk_reqsk_queue_add(sk, req, child);
--	else
-+	bh_lock_sock_nested(sk);
-+	/* TODO: move syn_recv_sock before this lock */
-+	spin_lock(&icsk->icsk_accept_queue.rskq_accept_lock);
-+
-+	if (likely(icsk->icsk_accept_queue.rskq_active)) {
-+		child = icsk->icsk_af_ops->syn_recv_sock(sk, skb, req, dst);
-+		if (child)
-+			inet_csk_reqsk_queue_do_add(sk, req, child);
-+	} else {
-+		child = NULL;
-+	}
-+
-+	spin_unlock(&icsk->icsk_accept_queue.rskq_accept_lock);
-+	bh_unlock_sock(sk);
-+
-+	if (unlikely(child == NULL))
- 		reqsk_free(req);
+Thanks!
 
- 	return child;
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index ebb9d80..417f2d9 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -1812,10 +1812,15 @@ void tcp_set_state(struct sock *sk, int state)
- 		if (oldstate == TCP_CLOSE_WAIT || oldstate == TCP_ESTABLISHED)
- 			TCP_INC_STATS(sock_net(sk), TCP_MIB_ESTABRESETS);
-
-+		if (oldstate == TCP_LISTEN)
-+			/* We have to prevent race condition in syn_recv_sock */
-+			bh_lock_sock_nested(sk);
- 		sk->sk_prot->unhash(sk);
- 		if (inet_csk(sk)->icsk_bind_hash &&
- 		    !(sk->sk_userlocks & SOCK_BINDPORT_LOCK))
- 			inet_put_port(sk);
-+		if (oldstate == TCP_LISTEN)
-+			bh_unlock_sock(sk);
- 		/* fall through */
- 	default:
- 		if (oldstate == TCP_ESTABLISHED)
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index 1e641b0..f22931d 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -1338,7 +1338,24 @@ int tcp_v4_conn_request(struct sock *sk, struct
-sk_buff *skb)
-
- 	/* Never answer to SYNs send to broadcast or multicast */
- 	if (skb_rtable(skb)->rt_flags & (RTCF_BROADCAST | RTCF_MULTICAST))
-+		return 0;
-+
-+	bh_lock_sock_nested(sk);
-+
-+	if (__sock_owned_by_user(sk)) {
-+		/* Some inefficiency: it leads to double syn_table lookup */
-+		if (likely(!sk_add_backlog(sk, skb)))
-+			skb_get(skb);
-+		else
-+			NET_INC_STATS_BH(dev_net(skb->dev),
-+					 LINUX_MIB_TCPBACKLOGDROP);
- 		goto drop;
-+	}
-+
-+	if (inet_csk(sk)->icsk_accept_queue.listen_opt == NULL) {
-+		/* socket is closing */
-+		goto drop;
-+	}
-
- 	/* TW buckets are converted to open requests without
- 	 * limitations, they conserve resources and peer is
-@@ -1353,6 +1370,7 @@ int tcp_v4_conn_request(struct sock *sk, struct
-sk_buff *skb)
- 			syn_flood_warning(skb);
- 		if (sysctl_tcp_syncookies) {
- 			tcp_inc_syncookie_stats(&tp->syncookie_stats);
-+			bh_unlock_sock(sk);
- 			want_cookie = 1;
- 		} else
- #else
-@@ -1405,9 +1423,6 @@ int tcp_v4_conn_request(struct sock *sk, struct
-sk_buff *skb)
- 		while (l-- > 0)
- 			*c++ ^= *hash_location++;
-
--#ifdef CONFIG_SYN_COOKIES
--		want_cookie = 0;	/* not our kind of cookie */
--#endif
- 		tmp_ext.cookie_out_never = 0; /* false */
- 		tmp_ext.cookie_plus = tmp_opt.cookie_plus;
- 		tmp_ext.cookie_in_always = tp->rx_opt.cookie_in_always;
-@@ -1494,6 +1509,7 @@ int tcp_v4_conn_request(struct sock *sk, struct
-sk_buff *skb)
- 		goto drop_and_free;
-
- 	inet_csk_reqsk_queue_hash_add(sk, req, TCP_TIMEOUT_INIT);
-+	bh_unlock_sock(sk);
- 	return 0;
-
- drop_and_release:
-@@ -1501,6 +1517,8 @@ drop_and_release:
- drop_and_free:
- 	reqsk_free(req);
- drop:
-+	if (!want_cookie)
-+		bh_unlock_sock(sk);
- 	return 0;
- }
- EXPORT_SYMBOL(tcp_v4_conn_request);
-@@ -1588,10 +1606,35 @@ static struct sock *tcp_v4_hnd_req(struct sock
-*sk, struct sk_buff *skb)
- 	struct sock *nsk;
- 	struct request_sock **prev;
- 	/* Find possible connection requests. */
--	struct request_sock *req = inet_csk_search_req(sk, &prev, th->source,
-+	struct request_sock *req;
-+
-+	bh_lock_sock_nested(sk);
-+
-+	if (__sock_owned_by_user(sk)) {
-+		if (likely(!sk_add_backlog(sk, skb)))
-+			skb_get(skb);
-+		else
-+			NET_INC_STATS_BH(dev_net(skb->dev),
-+					 LINUX_MIB_TCPBACKLOGDROP);
-+		bh_unlock_sock(sk);
-+		return NULL;
-+	}
-+
-+	if (inet_csk(sk)->icsk_accept_queue.listen_opt == NULL) {
-+		/* socket is closing */
-+		bh_unlock_sock(sk);
-+		return NULL;
-+	}
-+
-+	req = inet_csk_search_req(sk, &prev, th->source,
- 						       iph->saddr, iph->daddr);
--	if (req)
--		return tcp_check_req(sk, skb, req, prev);
-+	if (req) {
-+		nsk = tcp_check_req(sk, skb, req, prev);
-+		bh_unlock_sock(sk);
-+		return nsk;
-+	} else {
-+		bh_unlock_sock(sk);
-+	}
-
- 	nsk = inet_lookup_established(sock_net(sk), &tcp_hashinfo, iph->saddr,
- 			th->source, iph->daddr, th->dest, inet_iif(skb));
-@@ -1633,6 +1676,72 @@ static __sum16 tcp_v4_checksum_init(struct sk_buff *skb)
- 	return 0;
- }
-
-+/* Beware! This may be called without socket lock.
-+ * TCP Checksum should be checked before this call.
-+ */
-+int tcp_v4_rcv_listen(struct sock *sk, struct sk_buff *skb)
-+{
-+	struct sock *nsk;
-+	struct sock *rsk;
-+	struct tcphdr *th = tcp_hdr(skb);
-+
-+	nsk = tcp_v4_hnd_req(sk, skb);
-+
-+	if (!nsk)
-+		goto discard;
-+
-+	if (nsk != sk) {
-+		/* Probable SYN-ACK */
-+		if (tcp_child_process(sk, nsk, skb)) {
-+			rsk = nsk;
-+			goto reset;
-+		}
-+		return 0;
-+	}
-+
-+	/* Probable SYN */
-+	TCP_CHECK_TIMER(sk);
-+
-+	if (th->ack) {
-+		rsk = sk;
-+		goto reset;
-+	}
-+
-+	if (!th->rst && th->syn) {
-+		if (inet_csk(sk)->icsk_af_ops->conn_request(sk, skb) < 0) {
-+			rsk = sk;
-+			goto reset;
-+		}
-+		/* Now we have several options: In theory there is
-+		 * nothing else in the frame. KA9Q has an option to
-+		 * send data with the syn, BSD accepts data with the
-+		 * syn up to the [to be] advertised window and
-+		 * Solaris 2.1 gives you a protocol error. For now
-+		 * we just ignore it, that fits the spec precisely
-+		 * and avoids incompatibilities. It would be nice in
-+		 * future to drop through and process the data.
-+		 *
-+		 * Now that TTCP is starting to be used we ought to
-+		 * queue this data.
-+		 * But, this leaves one open to an easy denial of
-+		 * service attack, and SYN cookies can't defend
-+		 * against this problem. So, we drop the data
-+		 * in the interest of security over speed unless
-+		 * it's still in use.
-+		 */
-+	}
-+
-+	TCP_CHECK_TIMER(sk);
-+
-+discard:
-+	kfree_skb(skb);
-+	return 0;
-+
-+reset:
-+	tcp_v4_send_reset(rsk, skb);
-+	goto discard;
-+}
-+
-
- /* The socket must have it's spinlock held when we get
-  * here.
-@@ -1644,15 +1753,11 @@ static __sum16 tcp_v4_checksum_init(struct sk_buff *skb)
-  */
- int tcp_v4_do_rcv(struct sock *sk, struct sk_buff *skb)
- {
--	struct sock *rsk;
--
- 	if (sk->sk_state == TCP_ESTABLISHED) { /* Fast path */
- 		sock_rps_save_rxhash(sk, skb->rxhash);
- 		TCP_CHECK_TIMER(sk);
--		if (tcp_rcv_established(sk, skb, tcp_hdr(skb), skb->len)) {
--			rsk = sk;
-+		if (tcp_rcv_established(sk, skb, tcp_hdr(skb), skb->len))
- 			goto reset;
--		}
- 		TCP_CHECK_TIMER(sk);
- 		return 0;
- 	}
-@@ -1660,32 +1765,23 @@ int tcp_v4_do_rcv(struct sock *sk, struct sk_buff *skb)
- 	if (skb->len < tcp_hdrlen(skb) || tcp_checksum_complete(skb))
- 		goto csum_err;
-
--	if (sk->sk_state == TCP_LISTEN) {
--		struct sock *nsk = tcp_v4_hnd_req(sk, skb);
--		if (!nsk)
--			goto discard;
--
--		if (nsk != sk) {
--			if (tcp_child_process(sk, nsk, skb)) {
--				rsk = nsk;
--				goto reset;
--			}
--			return 0;
--		}
--	} else
-+	if (sk->sk_state == TCP_LISTEN)
-+		/* This is for IPv4-mapped IPv6 addresses
-+		   and backlog processing */
-+		return tcp_v4_rcv_listen(sk, skb);
-+	else
- 		sock_rps_save_rxhash(sk, skb->rxhash);
+-- Steve
 
 
- 	TCP_CHECK_TIMER(sk);
- 	if (tcp_rcv_state_process(sk, skb, tcp_hdr(skb), skb->len)) {
--		rsk = sk;
- 		goto reset;
- 	}
- 	TCP_CHECK_TIMER(sk);
- 	return 0;
+> ---
+>  scripts/recordmcount.c |   41 +++++++++++++++++++++++++++++++++++++++++
+>  scripts/recordmcount.h |   34 ++++++++++++++++++++++++++++++----
+>  2 files changed, 71 insertions(+), 4 deletions(-)
+> 
+> diff --git a/scripts/recordmcount.c b/scripts/recordmcount.c
+> index 26e1271..2d32b9c 100644
+> --- a/scripts/recordmcount.c
+> +++ b/scripts/recordmcount.c
+> @@ -217,6 +217,39 @@ is_mcounted_section_name(char const *const txtname)
+>  #define RECORD_MCOUNT_64
+>  #include "recordmcount.h"
+>  
+> +/* 64-bit EM_MIPS has weird ELF64_Rela.r_info.
+> + * http://techpubs.sgi.com/library/manuals/4000/007-4658-001/pdf/007-4658-001.pdf
+> + * We interpret Table 29 Relocation Operation (Elf64_Rel, Elf64_Rela) [p.40]
+> + * to imply the order of the members; the spec does not say so.
+> + *	typedef unsigned char Elf64_Byte;
+> + * fails on MIPS64 because their <elf.h> already has it!
+> + */
+> +
+> +typedef uint8_t myElf64_Byte;		/* Type for a 8-bit quantity.  */
+> +
+> +union mips_r_info {
+> +	Elf64_Xword r_info;
+> +	struct {
+> +		Elf64_Word r_sym;		/* Symbol index.  */
+> +		myElf64_Byte r_ssym;		/* Special symbol.  */
+> +		myElf64_Byte r_type3;		/* Third relocation.  */
+> +		myElf64_Byte r_type2;		/* Second relocation.  */
+> +		myElf64_Byte r_type;		/* First relocation.  */
+> +	} r_mips;
+> +};
+> +
+> +static uint64_t MIPS64_r_sym(Elf64_Rel const *rp)
+> +{
+> +	return w(((union mips_r_info){ .r_info = rp->r_info }).r_mips.r_sym);
+> +}
+> +
+> +static void MIPS64_r_info(Elf64_Rel *const rp, unsigned sym, unsigned type)
+> +{
+> +	rp->r_info = ((union mips_r_info){
+> +		.r_mips = { .r_sym = w(sym), .r_type = type }
+> +	}).r_info;
+> +}
+> +
+>  static void
+>  do_file(char const *const fname)
+>  {
+> @@ -268,6 +301,7 @@ do_file(char const *const fname)
+>  	case EM_386:	 reltype = R_386_32;                   break;
+>  	case EM_ARM:	 reltype = R_ARM_ABS32;                break;
+>  	case EM_IA_64:	 reltype = R_IA64_IMM64;   gpfx = '_'; break;
+> +	case EM_MIPS:	 /* reltype: e_class    */ gpfx = '_'; break;
+>  	case EM_PPC:	 reltype = R_PPC_ADDR32;   gpfx = '_'; break;
+>  	case EM_PPC64:	 reltype = R_PPC64_ADDR64; gpfx = '_'; break;
+>  	case EM_S390:    /* reltype: e_class    */ gpfx = '_'; break;
+> @@ -291,6 +325,8 @@ do_file(char const *const fname)
+>  		}
+>  		if (EM_S390 == w2(ehdr->e_machine))
+>  			reltype = R_390_32;
+> +		if (EM_MIPS == w2(ehdr->e_machine))
+> +			reltype = R_MIPS_32;
+>  		do32(ehdr, fname, reltype);
+>  	} break;
+>  	case ELFCLASS64: {
+> @@ -303,6 +339,11 @@ do_file(char const *const fname)
+>  		}
+>  		if (EM_S390 == w2(ghdr->e_machine))
+>  			reltype = R_390_64;
+> +		if (EM_MIPS == w2(ghdr->e_machine)) {
+> +			reltype = R_MIPS_64;
+> +			Elf64_r_sym = MIPS64_r_sym;
+> +			Elf64_r_info = MIPS64_r_info;
+> +		}
+>  		do64(ghdr, fname, reltype);
+>  	} break;
+>  	}  /* end switch */
+> diff --git a/scripts/recordmcount.h b/scripts/recordmcount.h
+> index 7f39d09..190fd18 100644
+> --- a/scripts/recordmcount.h
+> +++ b/scripts/recordmcount.h
+> @@ -31,8 +31,12 @@
+>  #undef Elf_Rela
+>  #undef Elf_Sym
+>  #undef ELF_R_SYM
+> +#undef Elf_r_sym
+>  #undef ELF_R_INFO
+> +#undef Elf_r_info
+>  #undef ELF_ST_BIND
+> +#undef fn_ELF_R_SYM
+> +#undef fn_ELF_R_INFO
+>  #undef uint_t
+>  #undef _w
+>  #undef _align
+> @@ -52,8 +56,12 @@
+>  # define Elf_Rela		Elf64_Rela
+>  # define Elf_Sym		Elf64_Sym
+>  # define ELF_R_SYM		ELF64_R_SYM
+> +# define Elf_r_sym		Elf64_r_sym
+>  # define ELF_R_INFO		ELF64_R_INFO
+> +# define Elf_r_info		Elf64_r_info
+>  # define ELF_ST_BIND		ELF64_ST_BIND
+> +# define fn_ELF_R_SYM		fn_ELF64_R_SYM
+> +# define fn_ELF_R_INFO		fn_ELF64_R_INFO
+>  # define uint_t			uint64_t
+>  # define _w			w8
+>  # define _align			7u
+> @@ -72,14 +80,32 @@
+>  # define Elf_Rela		Elf32_Rela
+>  # define Elf_Sym		Elf32_Sym
+>  # define ELF_R_SYM		ELF32_R_SYM
+> +# define Elf_r_sym		Elf32_r_sym
+>  # define ELF_R_INFO		ELF32_R_INFO
+> +# define Elf_r_info		Elf32_r_info
+>  # define ELF_ST_BIND		ELF32_ST_BIND
+> +# define fn_ELF_R_SYM		fn_ELF32_R_SYM
+> +# define fn_ELF_R_INFO		fn_ELF32_R_INFO
+>  # define uint_t			uint32_t
+>  # define _w			w
+>  # define _align			3u
+>  # define _size			4
+>  #endif
+>  
+> +/* Functions and pointers that 64-bit EM_MIPS can override. */
+> +static uint_t fn_ELF_R_SYM(Elf_Rel const *rp)
+> +{
+> +	return ELF_R_SYM(_w(rp->r_info));
+> +}
+> +static uint_t (*Elf_r_sym)(Elf_Rel const *rp) = fn_ELF_R_SYM;
+> +
+> +static void fn_ELF_R_INFO(Elf_Rel *const rp, unsigned sym, unsigned type)
+> +{
+> +	rp->r_info = ELF_R_INFO(sym, type);
+> +}
+> +static void (*Elf_r_info)(Elf_Rel *const rp, unsigned sym, unsigned type) = fn_ELF_R_INFO;
+> +
+> +
+>  /* Append the new shstrtab, Elf_Shdr[], __mcount_loc and its relocations. */
+>  static void append_func(Elf_Ehdr *const ehdr,
+>  			Elf_Shdr *const shstr,
+> @@ -197,22 +223,22 @@ static uint_t *sift_rel_mcount(uint_t *mlocp,
+>  	for (t = nrel; t; --t) {
+>  		if (!mcountsym) {
+>  			Elf_Sym const *const symp =
+> -				&sym0[ELF_R_SYM(_w(relp->r_info))];
+> +				&sym0[Elf_r_sym(relp)];
+>  			char const *symname = &str0[w(symp->st_name)];
+>  
+>  			if ('.' == symname[0])
+>  				++symname;  /* ppc64 hack */
+>  			if (0 == strcmp((('_' == gpfx) ? "_mcount" : "mcount"),
+>  					symname))
+> -				mcountsym = ELF_R_SYM(_w(relp->r_info));
+> +				mcountsym = Elf_r_sym(relp);
+>  		}
+>  
+> -		if (mcountsym == ELF_R_SYM(_w(relp->r_info))) {
+> +		if (mcountsym == Elf_r_sym(relp)) {
+>  			uint_t const addend = _w(_w(relp->r_offset) - recval);
+>  
+>  			mrelp->r_offset = _w(offbase
+>  				+ ((void *)mlocp - (void *)mloc0));
+> -			mrelp->r_info = _w(ELF_R_INFO(recsym, reltype));
+> +			Elf_r_info(mrelp, recsym, reltype);
+>  			if (sizeof(Elf_Rela) == rel_entsize) {
+>  				((Elf_Rela *)mrelp)->r_addend = addend;
+>  				*mlocp++ = 0;
 
- reset:
--	tcp_v4_send_reset(rsk, skb);
-+	tcp_v4_send_reset(sk, skb);
- discard:
- 	kfree_skb(skb);
- 	/* Be careful here. If this function gets more complicated and
-@@ -1779,6 +1875,17 @@ process:
- 		goto discard_and_relse;
- #endif
 
-+	if (sk->sk_state == TCP_LISTEN) {
-+		/* Fast path for listening socket */
-+		if (skb->len < tcp_hdrlen(skb) || tcp_checksum_complete(skb)) {
-+			TCP_INC_STATS_BH(sock_net(sk), TCP_MIB_INERRS);
-+			goto discard_and_relse;
-+		}
-+		tcp_v4_rcv_listen(sk, skb);
-+		sock_put(sk);
-+		return 0;
-+	}
-+
- 	bh_lock_sock_nested(sk);
- 	ret = 0;
- 	if (!sock_owned_by_user(sk)) {
