@@ -1,102 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440Ab0J0SIf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 14:08:35 -0400
-Received: from nm21-vm0.bullet.mail.ac4.yahoo.com ([98.139.53.216]:37413 "HELO
-	nm21-vm0.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753367Ab0J0SId (ORCPT
+	id S1754583Ab0J0SJC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 14:09:02 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:45258 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754201Ab0J0SI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 14:08:33 -0400
-X-Yahoo-Newman-Id: 750257.92678.bm@omp1052.mail.ac4.yahoo.com
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: XF7CehMVM1m19nvNMHXKhzeyamPtTJ4F.3n6eqqDsd1NGTV
- ZREvv_qOLTXsElBve_qFASlfIYk.oflZMCQDpit8rUjyTbIiexREV5eDhzn8
- qvgZANsDsqmsAEJoRtfsdkohf0f46h8lILPBVF9yqSpaCREzYuL6mj3.dk.h
- .T3OZ_0ZCwMhG6G8K.VTwHdAIyoK_r04va67QT__cKn2XuEqDkA.Eu1mntTD
- 2wpeTnUjGM5xMcWZBh18-
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [ANNOUNCE] Status of unlocked_qcmds=1 operation for .37
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: James Bottomley <James.Bottomley@suse.de>,
-        Mike Anderson <andmike@linux.vnet.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>,
-        James Smart <james.smart@emulex.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
-        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
-        Brian King <brking@linux.vnet.ibm.com>,
-        Christof Schmitt <christof.schmitt@de.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-In-Reply-To: <20101027075349.GA32585@gargoyle.fritz.box>
-References: <1287607774.10283.78.camel@haakon2.linux-iscsi.org>
-	 <20101021150840.GA24309@linux.vnet.ibm.com>
-	 <1288130914.5169.97.camel@haakon2.linux-iscsi.org>
-	 <1288132071.8283.689.camel@mulgrave.site>
-	 <1288132464.5169.112.camel@haakon2.linux-iscsi.org>
-	 <1288133450.8283.723.camel@mulgrave.site>
-	 <1288134048.5169.132.camel@haakon2.linux-iscsi.org>
-	 <1288134713.19649.11.camel@mulgrave.site>
-	 <1288135918.5169.149.camel@haakon2.linux-iscsi.org>
-	 <20101027075349.GA32585@gargoyle.fritz.box>
-Content-Type: text/plain
-Date: Wed, 27 Oct 2010 11:03:34 -0700
-Message-Id: <1288202614.5169.197.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Oct 2010 14:08:58 -0400
+X-IronPort-AV: E=Sophos;i="4.58,247,1286150400"; 
+   d="scan'208";a="2557321"
+Date: Wed, 27 Oct 2010 19:08:04 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [GIT PULL] xen PV on HVM and initial domain
+In-Reply-To: <alpine.DEB.2.00.1010261207180.1407@kaball-desktop>
+Message-ID: <alpine.DEB.2.00.1010271901350.1407@kaball-desktop>
+References: <alpine.DEB.2.00.1010261207180.1407@kaball-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-27 at 09:53 +0200, Andi Kleen wrote:
-> > This sounds like a pretty reasonable compromise that I think is slightly
-> > less risky for the LLDs with the ghosts and cob-webs hanging off of
-> > them.
+Linus,
+I added another commit at the end of the branch to fix MSI setup issues
+when Linux is running as initial domain on Xen.
+The shortlog and the diffstat are slightly different now:
+
+Jeremy Fitzhardinge (5):
+      acpi: use indirect call to register gsi in different modes
+      xen: add xen hvm acpi_register_gsi variant
+      xen: remap GSIs as pirqs when running as initial domain
+      xen: map a dummy page for local apic and ioapic in xen_set_fixmap
+      xen: make hvc_xen console work for dom0.
+
+Juan Quintela (2):
+      xen: Initialize xenbus for dom0.
+      xen: add the direct mapping area for ISA bus access
+
+Qing He (1):
+      xen: remap MSIs into pirqs when running as initial domain
+
+Stefano Stabellini (10):
+      xen: support pirq != irq
+      xen: get the maximum number of pirqs from xen
+      xen: implement xen_hvm_register_pirq
+      xen: support GSI -> pirq remapping in PV on HVM guests
+      xen: map MSIs into pirqs
+      xen: introduce XEN_DOM0 as a silent option
+      xen: use vcpu_ops to setup cpu masks
+      xen: mask the MTRR feature from the cpuid
+      xen: add a missing #include to arch/x86/pci/xen.c
+      xen: initialize cpu masks for pv guests in xen_smp_init
+
+Weidong Han (1):
+      xen: register xen pci notifier
+
+ arch/x86/include/asm/acpi.h       |    3 +
+ arch/x86/include/asm/xen/pci.h    |   12 ++
+ arch/x86/kernel/acpi/boot.c       |   60 +++++--
+ arch/x86/pci/xen.c                |  308 ++++++++++++++++++++++++++++++++++--
+ arch/x86/xen/Kconfig              |   10 ++
+ arch/x86/xen/enlighten.c          |    2 +
+ arch/x86/xen/mmu.c                |   47 ++++++-
+ arch/x86/xen/setup.c              |    3 +
+ arch/x86/xen/smp.c                |   26 +++
+ drivers/char/hvc_xen.c            |   98 ++++++++----
+ drivers/xen/Makefile              |    1 +
+ drivers/xen/events.c              |  195 +++++++++++++++++++++---
+ drivers/xen/pci.c                 |  117 ++++++++++++++
+ drivers/xen/xenbus/xenbus_probe.c |   29 ++++-
+ include/xen/events.h              |    8 +
+ include/xen/interface/features.h  |    3 +
+ include/xen/interface/physdev.h   |   67 ++++++++
+ 17 files changed, 897 insertions(+), 92 deletions(-)
+
+
+The branch is still:
+
+git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git for-linus
+
+otherwise if you prefer the old branch, without this commit, pull this:
+
+git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 2.6.36-rc8-initial-domain-v7
+
+
+Many thanks in advance,
+
+Stefano
+
+On Tue, 26 Oct 2010, Stefano Stabellini wrote:
+> Linus,
+> I have two patch series that I would like you to pull:
 > 
-> They won't get tested either next release cycle. Essentially
-> near nobody uses them.
+> PV on HVM: receive interrupts as xen events [1]
+> xen: initial domain support [2]
 > 
-
-This is exactly my point.  Using this series does not introduce
-distruptive changes into LLDs that will be getting little or no testing
-wrt the changes to enable lock-less operation with the modern LLDs that
-we actually care about.  When running with the default of
-SHT->unlocked_qcmd=0, the legacy LLDs will continue to function
-*exactly* the same, minus those that are now using the explict
-scsi_cmd_get_serial() call because they use cmd->serial_number for
-something beyond simple informational purposes.
-
-> > 
-> > What do you think..?
+> Please pull from the following branch:
 > 
-> Standard linux practice is to simply push the locks down. That's a pretty
-> mechanical operation and shouldn't be too risky
+> git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git for-linus
 > 
-
-No disagreements here whatsoever, as I think that pushing the locks
-approach does make alot sense as the final goal.  The question is if
-starting with this series is less disruptive and less error prone than
-adding a new host_lock -> lock() and unlock() in SHT->queuecommand() of
-every single legacy LLD and every single failure path for that legacy
-code.
-
-The benfits on this series is having to add less LOC, not having to
-touch lots legacy LLD code ->queuecommand() that will get little or no
-testing, and the 'by default' setting of using SHT->unlocked_qcmd=0 (eg:
-legacy mode).  I believe it makes sense that merging this approach first
-and then transitioning to pushing the locks in per LLDs specific
-SHT->queuecommand() would be the most logical two steps for a graceful
-transition to optional host_lock less scsi_dispatch_cmd().
-
-Best,
-
---nab
-
+> it contains both series rebased on Konrad's xen-pcifront series [3]
+> (they depend on it, unfortunately I cannot produce a working series
+> without it) on Linux 2.6.36 rc8; my two patch series start after git
+> commit 67ba37293e938208795d6a3562201bdb0cf43393.
+> 
+> The first patch series introduces some performance improvements for Xen
+> PV on HVM guests: interacting with the emulated APIC is slow because it
+> causes traps in the hypervisor while receiving Xen events using the
+> vector callback mechanism allow us to skip all that. For this reason we
+> remap interrupts and MSIs into Xen pirqs so that from that point on we
+> can receive them as Xen events instead.
+> 
+> The second patch series implements the basic support needed to boot
+> Linux as initial domain on Xen: the target is not to add full featured
+> dom0 support in the kernel but to be able to boot Linux on Xen on
+> native.
+> 
+> I have just added a last minute fix at end to solve a vcpu
+> initialization problem for pv guests (they would see only a single vcpu
+> even though they are given more than one [4]).
+> 
+> 
+> All together the two series introduce the following changes:
+> 
+> Jeremy Fitzhardinge (5):
+>       acpi: use indirect call to register gsi in different modes
+>       xen: add xen hvm acpi_register_gsi variant
+>       xen: remap GSIs as pirqs when running as initial domain
+>       xen: map a dummy page for local apic and ioapic in xen_set_fixmap
+>       xen: make hvc_xen console work for dom0.
+> 
+> Juan Quintela (2):
+>       xen: Initialize xenbus for dom0.
+>       xen: add the direct mapping area for ISA bus access
+> 
+> Qing He (1):
+>       xen: remap MSIs into pirqs when running as initial domain
+> 
+> Stefano Stabellini (10):
+>       xen: support pirq != irq
+>       xen: get the maximum number of pirqs from xen
+>       xen: implement xen_hvm_register_pirq
+>       xen: support GSI -> pirq remapping in PV on HVM guests
+>       xen: map MSIs into pirqs
+>       xen: introduce XEN_DOM0 as a silent option
+>       xen: use vcpu_ops to setup cpu masks
+>       xen: mask the MTRR feature from the cpuid
+>       xen: add a missing #include to arch/x86/pci/xen.c
+>       xen: initialize cpu masks for pv guests in xen_smp_init
+> 
+>  arch/x86/include/asm/acpi.h       |    3 +
+>  arch/x86/include/asm/xen/pci.h    |   12 ++
+>  arch/x86/kernel/acpi/boot.c       |   60 +++++--
+>  arch/x86/pci/xen.c                |  308 ++++++++++++++++++++++++++++++++++--
+>  arch/x86/xen/Kconfig              |   10 ++
+>  arch/x86/xen/enlighten.c          |    2 +
+>  arch/x86/xen/mmu.c                |   47 ++++++-
+>  arch/x86/xen/setup.c              |    3 +
+>  arch/x86/xen/smp.c                |   26 +++
+>  drivers/char/hvc_xen.c            |   98 ++++++++----
+>  drivers/xen/events.c              |  195 +++++++++++++++++++++---
+>  drivers/xen/xenbus/xenbus_probe.c |   29 ++++-
+>  include/xen/events.h              |    8 +
+>  include/xen/interface/features.h  |    3 +
+>  include/xen/interface/physdev.h   |   46 ++++++
+>  15 files changed, 758 insertions(+), 92 deletions(-)
+> 
+> Cheers,
+> 
+> Stefano
+> 
+> ---
+> [1] http://lkml.org/lkml/2010/10/12/246 
+> [2] http://lkml.org/lkml/2010/10/19/199
+> [3] http://lkml.org/lkml/2010/10/26/231
+> [4] http://lkml.org/lkml/2010/10/26/369 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
