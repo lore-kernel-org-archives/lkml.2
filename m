@@ -1,161 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755371Ab0J0Snz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 14:43:55 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51525 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755095Ab0J0Snw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 14:43:52 -0400
+	id S1752934Ab0J0SvM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 14:51:12 -0400
+Received: from claw.goop.org ([74.207.240.146]:38068 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751782Ab0J0SvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 14:51:10 -0400
+Message-ID: <4CC87499.9050207@goop.org>
+Date: Wed, 27 Oct 2010 11:51:05 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <201010272020.33049.arnd@arndb.de>
-References: <20101026164549.GD19445@fieldses.org> <AANLkTinTXoGiFap-vfu0P_SXb5xS+gMsHOwQtN3Hra3r@mail.gmail.com>
- <20101027174016.GA18974@fieldses.org> <201010272020.33049.arnd@arndb.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 27 Oct 2010 11:42:55 -0700
-Message-ID: <AANLkTimZSj7Y8KUic-VLSgrPFTf5wc_KRdfedzLAkNKT@mail.gmail.com>
-Subject: Re: nfsd changes for 2.6.37
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=000325574d6635374704939d99e4
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+CC: Borislav Petkov <bp@alien8.de>, Ian Campbell <ian.campbell@citrix.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH] x86: use pgd accessors when cloning a pgd range.
+References: <1288169413-29065-1-git-send-email-ian.campbell@citrix.com> <20101027104020.GA16954@a1.tnic> <4CC85839.4000507@goop.org> <4CC85EE6.7030608@linux.intel.com> <4CC861F9.8080200@goop.org> <4CC8649F.5060408@linux.intel.com> <4CC866B0.8000802@goop.org> <4CC86B4A.2050408@linux.intel.com>
+In-Reply-To: <4CC86B4A.2050408@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---000325574d6635374704939d99e4
-Content-Type: text/plain; charset=ISO-8859-1
-
-On Wed, Oct 27, 2010 at 11:20 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+ On 10/27/2010 11:11 AM, H. Peter Anvin wrote:
+> On 10/27/2010 10:51 AM, Jeremy Fitzhardinge wrote:
+>>>
+>>> This is what makes me absolutely hate paravirt with a passion...
+>>> "let's hid things away in<obscure place>  and make it absolutely
+>>> impossible to either follow the code flow or figure out what the
+>>> intended semantics are supposed to be."
+>>
+>> Its not really an obscure place; it's where x86-32 does the rest of its
+>> boot-time pagetable adjustments (like cleaning out the low identity
+>> maps, etc).  Having those clone_pgd_ranges() floating around in
+>> setup_arch() is out of place.
+>>
 >
-> Ok, then let's use your tree with proper changelogs. That should be the
-> easiest way to make sure that the code you test is the one that gets in.
+> "Cleaning out the low identity maps" is part of what this patchset
+> eliminates.
 
-Half of them are yours, and the one that is mine needs the comment
-fixup. Can you organize it all for me to pull?
+Sorry, I didn't look closely enough; its actually removing mappings
+beyond the end of physical memory (though I'm not sure why it is 32-bit
+only?).
 
-Here's my patch again, with the comment move and a suggested commit
-message (and my sign-off and Bruce's tested-by: the only thing that
-changed in the patch was literally some comment placement so the
-tested-by should still be perfectly valid).
+>   This is exactly a good reason why paravirt_ops damages the kernel --
+> it makes it impossible to make forward process.
 
-Feel free to edit the message/patch to your hearts content.
+I don't follow.  Why is it impossible to make forward progress?  How
+specifically does pvops make it impossible?
 
-  Thanks,
-        Linus
+>> It would be a pagefault from Xen preventing a direct write to the pgd
+>> level of an active pagetable.  At the point in setup_arch() where it
+>> does the first clone_pgd_range() we're already running on swapper_pg_dir
+>> and the copy from initial_page_table is outright wrong.
+>>
+>> As Ian suggests, we could switch Xen to use initial_page_table at boot
+>> then move to swapper_pg_dir in the same way native does.
+>
+> Once the failure was explained, it makes more sense.  Either that or
+> just skip this setting if we're already running on swapper_pg_dir.
 
---000325574d6635374704939d99e4
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gfsjxlk30
+Yes, that's probably the simplest answer (Ian just proposed it
+independently).
 
-RnJvbTogTGludXMgVG9ydmFsZHMgPHRvcnZhbGRzQGxpbnV4LWZvdW5kYXRpb24ub3JnPgpTdWJq
-ZWN0OiBmYXN5bmM6IHJlLW9yZ2FuaXplIGZhc3luYyBlbnRyeSBpbnNlcnRpb24gdG8gYWxsb3cg
-aXQgdW5kZXIgYSBzcGlubG9jawoKWW91IGN1cnJlbnRseSBjYW5ub3QgdXNlICJmYXN5bmNfaGVs
-cGVyKCkiIGluIGFuIGF0b21pYyBlbnZpcm9ubWVudCB0bwppbnNlcnQgYSBuZXcgZmFzeW5jIGVu
-dHJ5LCBiZWNhdXNlIGl0IHdpbGwgbmVlZCB0byBhbGxvY2F0ZSB0aGUgbmV3CiJzdHJ1Y3QgZmFz
-eW5jX3N0cnVjdCIuIAoKWWV0IGZjbnRsX3NldGxlYXNlKCkgd2FudHMgdG8gY2FsbCB0aGlzIHVu
-ZGVyIGxvY2tfZmxvY2tzKCksIHdoaWNoIGlzIGluCnRoZSBwcm9jZXNzIG9mIGJlaW5nIGNvbnZl
-cnRlZCBmcm9tIHRoZSBCS0wgdG8gYSBzcGlubG9jay4gCgpJbiBvcmRlciB0byBmaXggdGhpcywg
-dGhpcyBhYnN0cmFjdHMgb3V0IHRoZSBhY3R1YWwgZmFzeW5jIGxpc3QKaW5zZXJ0aW9uIGFuZCB0
-aGUgZmFzeW5jIGFsbG9jYXRpb25zIGludG8gZnVuY3Rpb25zIG9mIHRoZWlyIG93biwgYW5kCnRl
-YWNoZXMgZnMvbG9ja3MuYyB0byBwcmUtYWxsb2NhdGUgdGhlIGZhc3luY19zdHJ1Y3QgZW50cnku
-ICBUaGF0IHdheQp0aGUgYWN0dWFsIGxpc3QgaW5zZXJ0aW9uIGNhbiBoYXBwZW4gd2hpbGUgaG9s
-ZGluZyB0aGUgcmVxdWlyZWQKc3BpbmxvY2suIAoKU2lnbmVkLW9mZi1ieTogTGludXMgVG9ydmFs
-ZHMgPHRvcnZhbGRzQGxpbnV4LWZvdW5kYXRpb24ub3JnPgpUZXN0ZWQtYnk6IEJydWNlIEZpZWxk
-cyA8YmZpZWxkc0BmaWVsZHNlcy5vcmc+Ci0tLQogZnMvZmNudGwuYyAgICAgICAgIHwgICA2MiAr
-KysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrLS0tLS0tLS0tLS0KIGZzL2xv
-Y2tzLmMgICAgICAgICB8ICAgMTcgKysrKysrKysrKysrKy0KIGluY2x1ZGUvbGludXgvZnMuaCB8
-ICAgIDUgKysrKwogMyBmaWxlcyBjaGFuZ2VkLCA2OSBpbnNlcnRpb25zKCspLCAxNSBkZWxldGlv
-bnMoLSkKCmRpZmYgLS1naXQgYS9mcy9mY250bC5jIGIvZnMvZmNudGwuYwppbmRleCBmOGNjMzRm
-Li5lY2M4YjM5IDEwMDY0NAotLS0gYS9mcy9mY250bC5jCisrKyBiL2ZzL2ZjbnRsLmMKQEAgLTY0
-MCw3ICs2NDAsNyBAQCBzdGF0aWMgdm9pZCBmYXN5bmNfZnJlZV9yY3Uoc3RydWN0IHJjdV9oZWFk
-ICpoZWFkKQogICogbWF0Y2ggdGhlIHN0YXRlICJpcyB0aGUgZmlscCBvbiBhIGZhc3luYyBsaXN0
-Ii4KICAqCiAgKi8KLXN0YXRpYyBpbnQgZmFzeW5jX3JlbW92ZV9lbnRyeShzdHJ1Y3QgZmlsZSAq
-ZmlscCwgc3RydWN0IGZhc3luY19zdHJ1Y3QgKipmYXBwKQoraW50IGZhc3luY19yZW1vdmVfZW50
-cnkoc3RydWN0IGZpbGUgKmZpbHAsIHN0cnVjdCBmYXN5bmNfc3RydWN0ICoqZmFwcCkKIHsKIAlz
-dHJ1Y3QgZmFzeW5jX3N0cnVjdCAqZmEsICoqZnA7CiAJaW50IHJlc3VsdCA9IDA7CkBAIC02NjYs
-MjEgKzY2NiwzMSBAQCBzdGF0aWMgaW50IGZhc3luY19yZW1vdmVfZW50cnkoc3RydWN0IGZpbGUg
-KmZpbHAsIHN0cnVjdCBmYXN5bmNfc3RydWN0ICoqZmFwcCkKIAlyZXR1cm4gcmVzdWx0OwogfQog
-CitzdHJ1Y3QgZmFzeW5jX3N0cnVjdCAqZmFzeW5jX2FsbG9jKHZvaWQpCit7CisJcmV0dXJuIGtt
-ZW1fY2FjaGVfYWxsb2MoZmFzeW5jX2NhY2hlLCBHRlBfS0VSTkVMKTsKK30KKwogLyoKLSAqIEFk
-ZCBhIGZhc3luYyBlbnRyeS4gUmV0dXJuIG5lZ2F0aXZlIG9uIGVycm9yLCBwb3NpdGl2ZSBpZgot
-ICogYWRkZWQsIGFuZCB6ZXJvIGlmIGRpZCBub3RoaW5nIGJ1dCBjaGFuZ2UgYW4gZXhpc3Rpbmcg
-b25lLgorICogTk9URSEgVGhpcyBjYW4gYmUgdXNlZCBvbmx5IGZvciB1bnVzZWQgZmFzeW5jIGVu
-dHJpZXM6CisgKiBlbnRyaWVzIHRoYXQgYWN0dWFsbHkgZ290IGluc2VydGVkIG9uIHRoZSBmYXN5
-bmMgbGlzdAorICogbmVlZCB0byBiZSByZWxlYXNlZCBieSByY3UgLSBzZWUgZmFzeW5jX3JlbW92
-ZV9lbnRyeS4KKyAqLwordm9pZCBmYXN5bmNfZnJlZShzdHJ1Y3QgZmFzeW5jX3N0cnVjdCAqbmV3
-KQoreworCWttZW1fY2FjaGVfZnJlZShmYXN5bmNfY2FjaGUsIG5ldyk7Cit9CisKKy8qCisgKiBJ
-bnNlcnQgYSBuZXcgZW50cnkgaW50byB0aGUgZmFzeW5jIGxpc3QuICBSZXR1cm4gdGhlIHBvaW50
-ZXIgdG8gdGhlCisgKiBvbGQgb25lIGlmIHdlIGRpZG4ndCB1c2UgdGhlIG5ldyBvbmUuCiAgKgog
-ICogTk9URSEgSXQgaXMgdmVyeSBpbXBvcnRhbnQgdGhhdCB0aGUgRkFTWU5DIGZsYWcgYWx3YXlz
-CiAgKiBtYXRjaCB0aGUgc3RhdGUgImlzIHRoZSBmaWxwIG9uIGEgZmFzeW5jIGxpc3QiLgogICov
-Ci1zdGF0aWMgaW50IGZhc3luY19hZGRfZW50cnkoaW50IGZkLCBzdHJ1Y3QgZmlsZSAqZmlscCwg
-c3RydWN0IGZhc3luY19zdHJ1Y3QgKipmYXBwKQorc3RydWN0IGZhc3luY19zdHJ1Y3QgKmZhc3lu
-Y19pbnNlcnRfZW50cnkoaW50IGZkLCBzdHJ1Y3QgZmlsZSAqZmlscCwgc3RydWN0IGZhc3luY19z
-dHJ1Y3QgKipmYXBwLCBzdHJ1Y3QgZmFzeW5jX3N0cnVjdCAqbmV3KQogewotCXN0cnVjdCBmYXN5
-bmNfc3RydWN0ICpuZXcsICpmYSwgKipmcDsKLQlpbnQgcmVzdWx0ID0gMDsKLQotCW5ldyA9IGtt
-ZW1fY2FjaGVfYWxsb2MoZmFzeW5jX2NhY2hlLCBHRlBfS0VSTkVMKTsKLQlpZiAoIW5ldykKLQkJ
-cmV0dXJuIC1FTk9NRU07CisgICAgICAgIHN0cnVjdCBmYXN5bmNfc3RydWN0ICpmYSwgKipmcDsK
-IAogCXNwaW5fbG9jaygmZmlscC0+Zl9sb2NrKTsKIAlzcGluX2xvY2soJmZhc3luY19sb2NrKTsK
-QEAgLTY5MSw4ICs3MDEsNiBAQCBzdGF0aWMgaW50IGZhc3luY19hZGRfZW50cnkoaW50IGZkLCBz
-dHJ1Y3QgZmlsZSAqZmlscCwgc3RydWN0IGZhc3luY19zdHJ1Y3QgKipmYQogCQlzcGluX2xvY2tf
-aXJxKCZmYS0+ZmFfbG9jayk7CiAJCWZhLT5mYV9mZCA9IGZkOwogCQlzcGluX3VubG9ja19pcnEo
-JmZhLT5mYV9sb2NrKTsKLQotCQlrbWVtX2NhY2hlX2ZyZWUoZmFzeW5jX2NhY2hlLCBuZXcpOwog
-CQlnb3RvIG91dDsKIAl9CiAKQEAgLTcwMiwxMyArNzEwLDM5IEBAIHN0YXRpYyBpbnQgZmFzeW5j
-X2FkZF9lbnRyeShpbnQgZmQsIHN0cnVjdCBmaWxlICpmaWxwLCBzdHJ1Y3QgZmFzeW5jX3N0cnVj
-dCAqKmZhCiAJbmV3LT5mYV9mZCA9IGZkOwogCW5ldy0+ZmFfbmV4dCA9ICpmYXBwOwogCXJjdV9h
-c3NpZ25fcG9pbnRlcigqZmFwcCwgbmV3KTsKLQlyZXN1bHQgPSAxOwogCWZpbHAtPmZfZmxhZ3Mg
-fD0gRkFTWU5DOwogCiBvdXQ6CiAJc3Bpbl91bmxvY2soJmZhc3luY19sb2NrKTsKIAlzcGluX3Vu
-bG9jaygmZmlscC0+Zl9sb2NrKTsKLQlyZXR1cm4gcmVzdWx0OworCXJldHVybiBmYTsKK30KKwor
-LyoKKyAqIEFkZCBhIGZhc3luYyBlbnRyeS4gUmV0dXJuIG5lZ2F0aXZlIG9uIGVycm9yLCBwb3Np
-dGl2ZSBpZgorICogYWRkZWQsIGFuZCB6ZXJvIGlmIGRpZCBub3RoaW5nIGJ1dCBjaGFuZ2UgYW4g
-ZXhpc3Rpbmcgb25lLgorICovCitzdGF0aWMgaW50IGZhc3luY19hZGRfZW50cnkoaW50IGZkLCBz
-dHJ1Y3QgZmlsZSAqZmlscCwgc3RydWN0IGZhc3luY19zdHJ1Y3QgKipmYXBwKQoreworCXN0cnVj
-dCBmYXN5bmNfc3RydWN0ICpuZXc7CisKKwluZXcgPSBmYXN5bmNfYWxsb2MoKTsKKwlpZiAoIW5l
-dykKKwkJcmV0dXJuIC1FTk9NRU07CisKKwkvKgorCSAqIGZhc3luY19pbnNlcnRfZW50cnkoKSBy
-ZXR1cm5zIHRoZSBvbGQgKHVwZGF0ZSkgZW50cnkgaWYKKwkgKiBpdCBleGlzdGVkLgorCSAqCisJ
-ICogU28gZnJlZSB0aGUgKHVudXNlZCkgbmV3IGVudHJ5IGFuZCByZXR1cm4gMCB0byBsZXQgdGhl
-CisJICogY2FsbGVyIGtub3cgdGhhdCB3ZSBkaWRuJ3QgYWRkIGFueSBuZXcgZmFzeW5jIGVudHJp
-ZXMuCisJICovCisJaWYgKGZhc3luY19pbnNlcnRfZW50cnkoZmQsIGZpbHAsIGZhcHAsIG5ldykp
-IHsKKwkJZmFzeW5jX2ZyZWUobmV3KTsKKwkJcmV0dXJuIDA7CisJfQorCisJcmV0dXJuIDE7CiB9
-CiAKIC8qCmRpZmYgLS1naXQgYS9mcy9sb2Nrcy5jIGIvZnMvbG9ja3MuYwppbmRleCA0ZGUzYTI2
-Li45ZmYzZjY2IDEwMDY0NAotLS0gYS9mcy9sb2Nrcy5jCisrKyBiL2ZzL2xvY2tzLmMKQEAgLTE1
-MTUsNiArMTUxNSw3IEBAIEVYUE9SVF9TWU1CT0xfR1BMKHZmc19zZXRsZWFzZSk7CiBpbnQgZmNu
-dGxfc2V0bGVhc2UodW5zaWduZWQgaW50IGZkLCBzdHJ1Y3QgZmlsZSAqZmlscCwgbG9uZyBhcmcp
-CiB7CiAJc3RydWN0IGZpbGVfbG9jayBmbCwgKmZscCA9ICZmbDsKKwlzdHJ1Y3QgZmFzeW5jX3N0
-cnVjdCAqbmV3OwogCXN0cnVjdCBpbm9kZSAqaW5vZGUgPSBmaWxwLT5mX3BhdGguZGVudHJ5LT5k
-X2lub2RlOwogCWludCBlcnJvcjsKIApAQCAtMTUyMywxMyArMTUyNCwyNSBAQCBpbnQgZmNudGxf
-c2V0bGVhc2UodW5zaWduZWQgaW50IGZkLCBzdHJ1Y3QgZmlsZSAqZmlscCwgbG9uZyBhcmcpCiAJ
-aWYgKGVycm9yKQogCQlyZXR1cm4gZXJyb3I7CiAKKwluZXcgPSBmYXN5bmNfYWxsb2MoKTsKKwlp
-ZiAoIW5ldykKKwkJcmV0dXJuIC1FTk9NRU07CisKIAlsb2NrX2Zsb2NrcygpOwogCiAJZXJyb3Ig
-PSBfX3Zmc19zZXRsZWFzZShmaWxwLCBhcmcsICZmbHApOwogCWlmIChlcnJvciB8fCBhcmcgPT0g
-Rl9VTkxDSykKIAkJZ290byBvdXRfdW5sb2NrOwogCi0JZXJyb3IgPSBmYXN5bmNfaGVscGVyKGZk
-LCBmaWxwLCAxLCAmZmxwLT5mbF9mYXN5bmMpOworCS8qCisJICogZmFzeW5jX2luc2VydF9lbnRy
-eSgpIHJldHVybnMgdGhlIG9sZCBlbnRyeSBpZiBhbnkuCisJICogSWYgdGhlcmUgd2FzIG5vIG9s
-ZCBlbnRyeSwgdGhlbiBpdCB1c2VkICduZXcnIGFuZAorCSAqIGluc2VydGVkIGl0IGludG8gdGhl
-IGZhc3luYyBsaXN0LiBDbGVhciBuZXcgc28gdGhhdAorCSAqIHdlIGRvbid0IHJlbGVhc2UgaXQg
-aGVyZS4KKwkgKi8KKwlpZiAoIWZhc3luY19pbnNlcnRfZW50cnkoZmQsIGZpbHAsICZmbHAtPmZs
-X2Zhc3luYywgbmV3KSkKKwkJbmV3ID0gTlVMTDsKKwogCWlmIChlcnJvciA8IDApIHsKIAkJLyog
-cmVtb3ZlIGxlYXNlIGp1c3QgaW5zZXJ0ZWQgYnkgc2V0bGVhc2UgKi8KIAkJZmxwLT5mbF90eXBl
-ID0gRl9VTkxDSyB8IEZfSU5QUk9HUkVTUzsKQEAgLTE1NDEsNiArMTU1NCw4IEBAIGludCBmY250
-bF9zZXRsZWFzZSh1bnNpZ25lZCBpbnQgZmQsIHN0cnVjdCBmaWxlICpmaWxwLCBsb25nIGFyZykK
-IAllcnJvciA9IF9fZl9zZXRvd24oZmlscCwgdGFza19waWQoY3VycmVudCksIFBJRFRZUEVfUElE
-LCAwKTsKIG91dF91bmxvY2s6CiAJdW5sb2NrX2Zsb2NrcygpOworCWlmIChuZXcpCisJCWZhc3lu
-Y19mcmVlKG5ldyk7CiAJcmV0dXJuIGVycm9yOwogfQogCmRpZmYgLS1naXQgYS9pbmNsdWRlL2xp
-bnV4L2ZzLmggYi9pbmNsdWRlL2xpbnV4L2ZzLmgKaW5kZXggMjQwZWIxZC4uZDQ4Nzc3MiAxMDA2
-NDQKLS0tIGEvaW5jbHVkZS9saW51eC9mcy5oCisrKyBiL2luY2x1ZGUvbGludXgvZnMuaApAQCAt
-MTMxMCw2ICsxMzEwLDExIEBAIHN0cnVjdCBmYXN5bmNfc3RydWN0IHsKIAogLyogU01QIHNhZmUg
-ZmFzeW5jIGhlbHBlcnM6ICovCiBleHRlcm4gaW50IGZhc3luY19oZWxwZXIoaW50LCBzdHJ1Y3Qg
-ZmlsZSAqLCBpbnQsIHN0cnVjdCBmYXN5bmNfc3RydWN0ICoqKTsKK2V4dGVybiBzdHJ1Y3QgZmFz
-eW5jX3N0cnVjdCAqZmFzeW5jX2luc2VydF9lbnRyeShpbnQsIHN0cnVjdCBmaWxlICosIHN0cnVj
-dCBmYXN5bmNfc3RydWN0ICoqLCBzdHJ1Y3QgZmFzeW5jX3N0cnVjdCAqKTsKK2V4dGVybiBpbnQg
-ZmFzeW5jX3JlbW92ZV9lbnRyeShzdHJ1Y3QgZmlsZSAqLCBzdHJ1Y3QgZmFzeW5jX3N0cnVjdCAq
-Kik7CitleHRlcm4gc3RydWN0IGZhc3luY19zdHJ1Y3QgKmZhc3luY19hbGxvYyh2b2lkKTsKK2V4
-dGVybiB2b2lkIGZhc3luY19mcmVlKHN0cnVjdCBmYXN5bmNfc3RydWN0ICopOworCiAvKiBjYW4g
-YmUgY2FsbGVkIGZyb20gaW50ZXJydXB0cyAqLwogZXh0ZXJuIHZvaWQga2lsbF9mYXN5bmMoc3Ry
-dWN0IGZhc3luY19zdHJ1Y3QgKiosIGludCwgaW50KTsKIAo=
---000325574d6635374704939d99e4--
+> Let me state this clearly: if Xen is going to continue to live as a
+> merged platform, it has to have an obligation to follow changes on the
+> native platform.  This is not unique to Xen, but rather a universal
+> rule for integrated platforms.  Xen is more widely used than a lot of
+> the other minority platforms, which means it legitimately gets allowed
+> more slack, but that is moderated by its tremendous invasiveness.
+>
+> Quite frankly, the single biggest thing you could improve is to
+> improve documentation about what you expect in terms of semantics of
+> various entry points.  There are a number of cleanups which we
+> currently cannot do because they are directly mapped to paravirt_ops
+> which unclear or nonsensical semantics.  
+
+What do you have in mind?  I'm always pro-cleanup.
+
+> Having a more explicit description of the design space would help there.
+
+I agree.  The hot-path pvops (interrupt control, context switch, mmu
+updates, etc) are fairly easily defined, but the init time ops are
+pretty ad-hoc and often defy simple definition. 
+
+> paravirt_ops is fundamentally misdesigned as a large monolithic
+> driverization layer which combines a lot of unrelated things.  In a
+> whole lot of cases it directly duplicates driverization layers already
+> in the kernel, meaning we take the cost both in cost clarity and
+> performance multiple times.
+
+Again, do you have something specific in mind?  We always adopted the
+view that we should use an existing abstraction if one is available,
+rather than always extending pvops. If a new common layer comes into
+existence that subsumes or obsoletes pvops (or can be easily adoped to
+do so), then I'm always eager to do that.
+
+>   The patching technology is nice, and it would be good to have that
+> available to other platform layers as well, but paravirt_ops as it
+> currently sits is going to have to go at some point.
+
+"pvops" as a single thing is a bit of a misnomer these days, in that it
+has been devolving into a number of different functional pieces specific
+to different problem domains, with the only unifying thing is that they
+share the patching machinery.  They're also all controlled by a single
+fat CONFIG_PARAVIRT, but someone posted a patch to separate them out
+into distinct config options so they could be enabled/disabled
+independently as needed, but it seems it was never merged.  I even
+remember acking it.
+
+Aside from that, the notion of pvops has been extending into this
+broader notion of supporting non-traditional x86 platforms, and indeed
+the hooks I'm referring to here are now part of that (or at least tglx
+factored them out of the pvops infrastructure at the same time as the
+things like timers and the like).  So really what you're complaining
+about is that we have lots of indirection and late binding - and yes,
+well, there is rather a lot of that in the kernel overall.
+
+    J
