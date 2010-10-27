@@ -1,83 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761352Ab0J0QMn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 12:12:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57358 "EHLO mx1.redhat.com"
+	id S932565Ab0J0QMv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 12:12:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28737 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761158Ab0J0QMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 12:12:41 -0400
-Date: Wed, 27 Oct 2010 12:13:38 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: sfrench@samba.org, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        linux-cifs@vger.kernel.org
-Subject: Re: [PATCH 2/4] FS: cifs, remove unneeded NULL tests
-Message-ID: <20101027121338.2984b9d8@corrin.poochiereds.net>
-In-Reply-To: <1288180220-19869-1-git-send-email-jslaby@suse.cz>
-References: <1288180220-19869-1-git-send-email-jslaby@suse.cz>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1761298Ab0J0QMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 12:12:48 -0400
+Message-ID: <4CC84F60.7000409@redhat.com>
+Date: Wed, 27 Oct 2010 14:12:16 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
+MIME-Version: 1.0
+To: Jiri Slaby <jirislaby@gmail.com>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mm-commits@vger.kernel.org, Antti Palosaari <crope@iki.fi>,
+        Greg KH <gregkh@suse.de>, USB list <linux-usb@vger.kernel.org>
+Subject: Re: DVB: af9015 defunct [was: mmotm 2010-10-20-15-01 uploaded]
+References: <201010202233.o9KMXNoL008303@imap1.linux-foundation.org> <4CC07DB4.20205@gmail.com> <4CC1577F.9060207@gmail.com> <4CC19804.1080109@redhat.com> <4CC19A6E.8010909@gmail.com>
+In-Reply-To: <4CC19A6E.8010909@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Oct 2010 13:50:20 +0200
-Jiri Slaby <jslaby@suse.cz> wrote:
-
-> Stanse found that pSMBFile in cifs_ioctl and file->f_path.dentry in
-> cifs_user_write are dereferenced prior their test to NULL.
+Em 22-10-2010 12:06, Jiri Slaby escreveu:
+> On 10/22/2010 03:56 PM, Mauro Carvalho Chehab wrote:
+>> --- a/drivers/media/dvb/dvb-usb/af9015.c
+>> +++ b/drivers/media/dvb/dvb-usb/af9015.c
+>> @@ -1144,7 +1144,7 @@ static struct qt1010_config af9015_qt1010_config = {
+>>  
+>>  static struct tda18271_config af9015_tda18271_config = {
+>>  	.gate = TDA18271_GATE_DIGITAL,
+>> -	.small_i2c = 1,
+>> +	.small_i2c = TDA18271_16_BYTE_CHUNK_INIT;,
 > 
-> The alternative is not to dereference them before the tests. The patch is
-> to point out the problem, you have to decide.
-> 
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> Cc: Steve French <sfrench@samba.org>
-> Cc: linux-cifs@vger.kernel.org
-> ---
->  fs/cifs/file.c  |    2 +-
->  fs/cifs/ioctl.c |    4 ----
->  2 files changed, 1 insertions(+), 5 deletions(-)
-> 
-> diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-> index 45af003..db7eaf7 100644
-> --- a/fs/cifs/file.c
-> +++ b/fs/cifs/file.c
-> @@ -1031,7 +1031,7 @@ ssize_t cifs_user_write(struct file *file, const char __user *write_data,
->  	cifs_stats_bytes_written(pTcon, total_written);
->  
->  	/* since the write may have blocked check these pointers again */
-> -	if ((file->f_path.dentry) && (file->f_path.dentry->d_inode)) {
-> +	if (file->f_path.dentry->d_inode) {
+> No, it doesn't help (note the i2c line which prints the small_i2c entry):
+> dvb-usb: found a 'Leadtek WinFast DTV Dongle Gold' in cold state, will
+> try to load a firmware
+> dvb-usb: downloading firmware from file 'dvb-usb-af9015.fw'
+> dvb-usb: found a 'Leadtek WinFast DTV Dongle Gold' in warm state.
+> dvb-usb: will pass the complete MPEG2 transport stream to the software
+> demuxer.
+> DVB: registering new adapter (Leadtek WinFast DTV Dongle Gold)
+> af9013: firmware version:4.95.0.0
+> DVB: registering adapter 0 frontend 0 (Afatech AF9013 DVB-T)...
+> af9015_tuner_attach: i2c 16
+> tda18271 16-00c0: creating new instance
+> TDA18271HD/C2 detected @ 16-00c0
+> af9015: command failed:1
 
-		^^^^^^
-	This check is bogus too. An open filp on a negative dentry
-	isn't possible, right?
+> tda18271_write_regs: [16-00c0|M] ERROR: idx = 0x0, len = 39,
+> i2c_transfer returned: -1
 
->  		struct inode *inode = file->f_path.dentry->d_inode;
->  /* Do not update local mtime - server will set its actual value on write
->   *		inode->i_ctime = inode->i_mtime =
-> diff --git a/fs/cifs/ioctl.c b/fs/cifs/ioctl.c
-> index 077bf75..2fa22f2 100644
-> --- a/fs/cifs/ioctl.c
-> +++ b/fs/cifs/ioctl.c
-> @@ -63,8 +63,6 @@ long cifs_ioctl(struct file *filep, unsigned int command, unsigned long arg)
->  #ifdef CONFIG_CIFS_POSIX
->  		case FS_IOC_GETFLAGS:
->  			if (CIFS_UNIX_EXTATTR_CAP & caps) {
-> -				if (pSMBFile == NULL)
-> -					break;
->  				rc = CIFSGetExtAttr(xid, tcon, pSMBFile->netfid,
->  					&ExtAttrBits, &ExtAttrMask);
->  				if (rc == 0)
-> @@ -80,8 +78,6 @@ long cifs_ioctl(struct file *filep, unsigned int command, unsigned long arg)
->  					rc = -EFAULT;
->  					break;
->  				}
-> -				if (pSMBFile == NULL)
-> -					break;
->  				/* rc= CIFSGetExtAttr(xid,tcon,pSMBFile->netfid,
->  					extAttrBits, &ExtAttrMask);*/
->  			}
+Hmm...
 
-Acked-by: Jeff Layton <jlayton@redhat.com>
+int tda18271_write_regs(struct dvb_frontend *fe, int idx, int len)
+{
+...
+        switch (priv->small_i2c) {
+        case TDA18271_03_BYTE_CHUNK_INIT:
+                max = 3;
+                break;
+        case TDA18271_08_BYTE_CHUNK_INIT:
+                max = 8;
+                break;
+        case TDA18271_16_BYTE_CHUNK_INIT:
+                max = 16;
+                break;
+        case TDA18271_39_BYTE_CHUNK_INIT:
+        default:
+                max = 39;
+        }
+
+
+with small_i2c = 1, the driver will not restrict the maximum length size.
+
+It's weird that the patch didn't fix it. Are you sure that reverting this
+patch is enough to make the driver work?
+
+Please test this one.
+
+It will properly log the size of the message the driver tried to use, and will
+reduce the max number of bytes per I2C transfer to 8.
+
+Cheers,
+Mauro
+
+---
+
+Fix tda18271 usage with af9015 
+
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+
+diff --git a/drivers/media/common/tuners/tda18271-common.c b/drivers/media/common/tuners/tda18271-common.c
+index 195b30e..5466d47 100644
+--- a/drivers/media/common/tuners/tda18271-common.c
++++ b/drivers/media/common/tuners/tda18271-common.c
+@@ -237,7 +237,7 @@ int tda18271_write_regs(struct dvb_frontend *fe, int idx, int len)
+ 
+ 	if (ret != 1)
+ 		tda_err("ERROR: idx = 0x%x, len = %d, "
+-			"i2c_transfer returned: %d\n", idx, len, ret);
++			"i2c_transfer returned: %d\n", idx, max, ret);
+ 
+ 	return (ret == 1 ? 0 : ret);
+ }
+diff --git a/drivers/media/dvb/dvb-usb/af9015.c b/drivers/media/dvb/dvb-usb/af9015.c
+index 3ef19a8..e3c9bb5 100644
+--- a/drivers/media/dvb/dvb-usb/af9015.c
++++ b/drivers/media/dvb/dvb-usb/af9015.c
+@@ -1131,7 +1131,7 @@ static struct qt1010_config af9015_qt1010_config = {
+ 
+ static struct tda18271_config af9015_tda18271_config = {
+ 	.gate = TDA18271_GATE_DIGITAL,
+-	.small_i2c = 1,
++	.small_i2c = TDA18271_08_BYTE_CHUNK_INIT,
+ };
+ 
+ static struct mxl5005s_config af9015_mxl5003_config = {
+
+	
