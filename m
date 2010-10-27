@@ -1,157 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933151Ab0J0NVr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 09:21:47 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:42532 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757705Ab0J0NVo (ORCPT
+	id S933204Ab0J0NWT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 09:22:19 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:59668 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933177Ab0J0NWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 09:21:44 -0400
-X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=Uoo-rjBb3gMA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=jEnMGsa9k_QRxKMtkHMA:9 a=DKkHwUe2l3tZksxFhSMA:7 a=gWxUUVEqoajy3rcN417AED3S9ysA:4 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] ftrace: Speed up recordmcount
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Wu Zhangjin <wuzhangjin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu,
-        John Reiser <jreiser@bitwagon.com>, Michal Marek <mmarek@suse.cz>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Sam Ravnborg <sam@ravnborg.org>
-In-Reply-To: <f603e1dc44524b81ebc423dd226eb44d837a37be.1288175801.git.wuzhangjin@gmail.com>
-References: <f603e1dc44524b81ebc423dd226eb44d837a37be.1288175801.git.wuzhangjin@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 27 Oct 2010 09:21:40 -0400
-Message-ID: <1288185700.18238.117.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Oct 2010 09:22:18 -0400
+Date: Wed, 27 Oct 2010 15:22:13 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Uwe =?iso-8859-15?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Dinh.Nguyen@freescale.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        valentin.longchamp@epfl.ch, daniel@caiaq.de,
+        amit.kucheria@canonical.com
+Subject: Re: [PATCH] ARM: imx: Add some core definitions for MX53
+Message-ID: <20101027132213.GJ6017@pengutronix.de>
+References: <1288119235-7036-1-git-send-email-Dinh.Nguyen@freescale.com> <20101027082958.GA6797@angua.secretlab.ca> <20101027090921.GB8554@pengutronix.de> <20101027102253.GA7822@angua.secretlab.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101027102253.GA7822@angua.secretlab.ca>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 15:09:34 up 116 days,  4:20, 50 users,  load average: 0.10, 0.31,
+	0.32
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Added kbuild maintainers ]
-
-On Wed, 2010-10-27 at 18:39 +0800, Wu Zhangjin wrote:
-> From: Wu Zhangjin <wuzhangjin@gmail.com>
+On Wed, Oct 27, 2010 at 11:22:53AM +0100, Grant Likely wrote:
+> On Wed, Oct 27, 2010 at 11:09:21AM +0200, Uwe Kleine-König wrote:
+> > Hello,
+> > 
+> > On Wed, Oct 27, 2010 at 09:29:59AM +0100, Grant Likely wrote:
+> > > > ---
+> > > >  arch/arm/plat-mxc/include/mach/iomux-mx53.h |  301 +++++++++++++++++++
+> > > >  arch/arm/plat-mxc/include/mach/mx53.h       |  433 +++++++++++++++++++++++++++
+> > > 
+> > > Hi Dinh.
+> > > 
+> > > In general, these definitions should not be added until they are
+> > > actually needed by driver code.
+> > ack.
+> > 
+> > > Also, from my understanding, the mx53 is very similar to the mx51.
+> > > If I'm correct, then they should be sharing the same set of #defines.
+> > Note, I asked for a seperate header file.  See
+> > http://thread.gmane.org/gmane.linux.kernel/1051001/focus=1051352
 > 
-> cmd_record_mcount is only needed for the targets who are compiled with
-> -pg, so, only define it when CONFIG_FTRACE_MCOUNT_RECORD is defined and
-> only use it for the targets who are compiled with -pg.
+> For the record, I disagree with that approach.  The approach I would
+> take is for the imx53 code to use the imx51 defines by default, and to
+> only define imx53 variants where there are differences.  Otherwise the
+> code to support imx53 has to be completely divergent from imx51
+> because the defines are different symbols.
 
-Thanks! I was going to do this myself, but just have not gotten around
-to it.
+That's a way we can go but only if the common name is not MX5 or MX5x.
+We've done it with the mx21/27 and it failed when the mx25 came out
+which was completely incompatible. Since then everybody looking at
+the code must know that mx2x is mx21/27 but not mx25. I suggest
+something like MX513 instead.
 
-> 
-> Signed-off-by: Wu Zhangjin <wuzhangjin@gmail.com>
+On the other hand I think there won't be much divergency. The way
+devices are registered won't produce much overhead in sourcecode
+and none in binary size.
 
-I need a SoB from Michal to apply it.
+Sascha
 
-> ---
->  Makefile               |   11 ++++++++---
->  scripts/Makefile.build |   26 ++++++++++++++++----------
->  2 files changed, 24 insertions(+), 13 deletions(-)
-> 
-> diff --git a/Makefile b/Makefile
-> index 3e43805..60d7a87 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -576,9 +576,14 @@ endif
->  ifdef CONFIG_FUNCTION_TRACER
->  KBUILD_CFLAGS	+= -pg
->  ifdef CONFIG_DYNAMIC_FTRACE
-> -	ifdef CONFIG_HAVE_C_RECORDMCOUNT
-> -		BUILD_C_RECORDMCOUNT := y
-> -		export BUILD_C_RECORDMCOUNT
-> +	ifdef CONFIG_FTRACE_MCOUNT_RECORD
-
-FTRACE_MCOUNT_RECORD depends on DYNAMIC_FTRACE, so if you require
-FTRACE_MCOUNT_RECORD, you can remove the ifdef CONFIG_DYNAMIC_FTRACE.
-
-
-> +		DEFINE_CMD_RECORD_MCOUNT := y
-> +		export DEFINE_CMD_RECORD_MCOUNT
-> +
-> +		ifdef CONFIG_HAVE_C_RECORDMCOUNT
-> +			BUILD_C_RECORDMCOUNT := y
-> +			export BUILD_C_RECORDMCOUNT
-> +		endif
->  	endif
->  endif
->  endif
-> diff --git a/scripts/Makefile.build b/scripts/Makefile.build
-> index 5ad25e1..ceb5175 100644
-> --- a/scripts/Makefile.build
-> +++ b/scripts/Makefile.build
-> @@ -208,22 +208,28 @@ cmd_modversions =								\
->  	fi;
->  endif
->  
-> -ifdef CONFIG_FTRACE_MCOUNT_RECORD
-> +ifdef DEFINE_CMD_RECORD_MCOUNT
->  ifdef BUILD_C_RECORDMCOUNT
->  # Due to recursion, we must skip empty.o.
->  # The empty.o file is created in the make process in order to determine
->  #  the target endianness and word size. It is made before all other C
->  #  files, including recordmcount.
-> -cmd_record_mcount = if [ $(@) != "scripts/mod/empty.o" ]; then			\
-> -			$(objtree)/scripts/recordmcount "$(@)";			\
-> -		    fi;
-> +cmd_record_mcount =							\
-> +	if [ "$(findstring -pg,$(KBUILD_CFLAGS))" == "-pg" ]; then	\
-> +		if [ $(@) != "scripts/mod/empty.o" ]; then		\
-> +			$(objtree)/scripts/recordmcount "$(@)";		\
-> +		fi;							\
-> +	fi;
->  else
-> -cmd_record_mcount = set -e ; perl $(srctree)/scripts/recordmcount.pl "$(ARCH)" \
-> -	"$(if $(CONFIG_CPU_BIG_ENDIAN),big,little)" \
-> -	"$(if $(CONFIG_64BIT),64,32)" \
-> -	"$(OBJDUMP)" "$(OBJCOPY)" "$(CC) $(KBUILD_CFLAGS)" \
-> -	"$(LD)" "$(NM)" "$(RM)" "$(MV)" \
-> -	"$(if $(part-of-module),1,0)" "$(@)";
-> +cmd_record_mcount = 							\
-> +	if [ "$(findstring -pg,$(KBUILD_CFLAGS))" == "-pg" ]; then	\
-> +		set -e ; perl $(srctree)/scripts/recordmcount.pl "$(ARCH)" \
-> +		"$(if $(CONFIG_CPU_BIG_ENDIAN),big,little)" 		\
-> +		"$(if $(CONFIG_64BIT),64,32)" 				\
-> +		"$(OBJDUMP)" "$(OBJCOPY)" "$(CC) $(KBUILD_CFLAGS)" 	\
-> +		"$(LD)" "$(NM)" "$(RM)" "$(MV)" 			\
-> +		"$(if $(part-of-module),1,0)" "$(@)";			\
-> +	fi;
->  endif
->  endif
->  
-
-
-Note, this does not catch objects that have the -pg stripped by
-CFLAGS_REMOVE_object.o
-
-
-How about something like this:
-
-ifdef DEFINE_CMD_RECORD_MCOUNT
-ifdef BUILD_C_RECORDMCOUNT
-sub_cmd_record_mcount = if [ $(@) != "scripts/mod/empty.o" ]; then		\
-			$(objtree)/scripts/recordmcount "$(@)";			\
-		    fi;
-else
-sub_cmd_record_mcount = set -e ; perl $(srctree)/scripts/recordmcount.pl "$(ARCH)" \
-	"$(if $(CONFIG_CPU_BIG_ENDIAN),big,little)"			\
-	"$(if $(CONFIG_64BIT),64,32)"					\
-	"$(OBJDUMP)" "$(OBJCOPY)" "$(CC) $(KBUILD_CFLAGS)"		\
-	"$(LD)" "$(NM)" "$(RM)" "$(MV)"					\
-	"$(if $(part-of-module),1,0)" "$(@)";
-endif
-cmd_record_mcount =							\
-	if [ "$(findstring -pg, $(_c_flags))" == "-pg" ]; then		\
-		$(sub_cmd_record_mcount)				\
-	fi;
-endif
-
-
-I tested the above and it seemed to work (although, I did it on another
-machine, and copied it here by hand, so this version may have a typo).
-
--- Steve
-
-
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
