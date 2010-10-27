@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755629Ab0J0Jus (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 05:50:48 -0400
-Received: from exprod5og112.obsmtp.com ([64.18.0.24]:57921 "EHLO
-	exprod5og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752128Ab0J0Jur (ORCPT
+	id S1757118Ab0J0Jv0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 05:51:26 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:42857 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754132Ab0J0JvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 05:50:47 -0400
-Message-ID: <4CC7F5A7.4070505@ge.com>
-Date: Wed, 27 Oct 2010 10:49:27 +0100
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.14) Gecko/20101006 Thunderbird/3.0.9
+	Wed, 27 Oct 2010 05:51:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=VTgcC1X17eGqq9eaXmSqg8MNU95bqkylS8+MYzRYZe9TJwCyXVpfG7cly3aecVrots
+         ZVO4YfwnQm27yeJKGGSyN9L3noilEQ2/DOg8XBPleeVy3RbARCIEpVFxae5DIpe4K1Cg
+         QBTUrHehU7flRwGPa0xBrh61FQAZSPkCaqIZM=
+Message-ID: <4CC7F616.5060404@suse.cz>
+Date: Wed, 27 Oct 2010 11:51:18 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.11) Gecko/20101013 SUSE/3.1.5 Thunderbird/3.1.5
 MIME-Version: 1.0
-To: "Emilio G. Cota" <cota@braap.org>
-CC: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
-        devel@driverdev.osuosl.org,
-        Juan David Gonzalez Cobas <david.cobas@gmail.com>,
-        Bill Pemberton <wfp5p@virginia.edu>
-Subject: Re: [PATCH 05/30] staging/vme: fix bogus clearing of the bus number
- in vme_free_bus_num
-References: <1288055476-19438-1-git-send-email-cota@braap.org> <1288055476-19438-6-git-send-email-cota@braap.org>
-In-Reply-To: <1288055476-19438-6-git-send-email-cota@braap.org>
-X-Enigmail-Version: 1.0.1
+To: Al Viro <viro@ZenIV.linux.org.uk>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Dr. Werner Fink" <werner@suse.de>
+Subject: Re: [PATCH 28/49] tty: Add a new file /proc/tty/consoles
+References: <20101022175112.GC13489@kroah.com> <1287771688-14805-28-git-send-email-gregkh@suse.de> <4CC2C9A8.1040003@suse.cz> <20101025075125.GA29179@boole.suse.de> <20101027005045.GC19804@ZenIV.linux.org.uk> <20101027092744.GA27071@boole.suse.de>
+In-Reply-To: <20101027092744.GA27071@boole.suse.de>
+X-Enigmail-Version: 1.1.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Oct 2010 09:50:45.0357 (UTC) FILETIME=[6D0581D0:01CB75BC]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/10/10 02:10, Emilio G. Cota wrote:
-> From: Emilio G. Cota <cota@braap.org>
-> 
-> Signed-off-by: Emilio G. Cota <cota@braap.org>
+On 10/27/2010 11:27 AM, Dr. Werner Fink wrote:
+> Such a list would be very helpful e.g. to extend sulogin
+> to be able to prompt for maintenance on all terminal lines
+> of the system console after e.g. failed fsck.  Currently
+> only the preferred terminal line is prompted for maintenance.
 
-Acked-by: Martyn Welch <martyn.welch@ge.com>
+I think nobody objects to the /proc/tty/consoles. This is a good thing
+to have. The patch just needs to be fixed (and you already did and sent
+me in private).
 
-> ---
->  drivers/staging/vme/vme.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/staging/vme/vme.c b/drivers/staging/vme/vme.c
-> index 9fa0609..afd2dbd 100644
-> --- a/drivers/staging/vme/vme.c
-> +++ b/drivers/staging/vme/vme.c
-> @@ -1348,7 +1348,7 @@ static int vme_alloc_bus_num(int *bus)
->  static void vme_free_bus_num(int bus)
->  {
->  	mutex_lock(&vme_bus_num_mtx);
-> -	vme_bus_numbers |= ~(0x1 << bus);
-> +	vme_bus_numbers &= ~(0x1 << bus);
->  	mutex_unlock(&vme_bus_num_mtx);
->  }
->  
+The objections are against the way how you find out the real tty behind
+/dev/console. The method to walk through fd, guessing private_data etc.
+is simply unacceptable.
 
+Actually couldn't you just use one of:
+1) ttyprintk driver (well, this will insert mess into klog)
+2) send the output to all enabled consoles in /proc/tty/consoles
+?
 
+regards,
 -- 
-Martyn Welch (Principal Software Engineer)   |   Registered in England and
-GE Intelligent Platforms                     |   Wales (3828642) at 100
-T +44(0)127322748                            |   Barbirolli Square,
-Manchester,
-E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
+js
+suse labs
