@@ -1,42 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755658Ab0J0Kit (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 06:38:49 -0400
-Received: from ozlabs.org ([203.10.76.45]:43368 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751639Ab0J0Kir convert rfc822-to-8bit (ORCPT
+	id S1760834Ab0J0Kj2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 06:39:28 -0400
+Received: from exprod5og103.obsmtp.com ([64.18.0.145]:53179 "EHLO
+	exprod5og103.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751639Ab0J0Kj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 06:38:47 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PULL] Minor module changes
-Date: Wed, 27 Oct 2010 21:08:43 +1030
-User-Agent: KMail/1.13.5 (Linux/2.6.35-22-generic; KDE/4.5.1; i686; ; )
-Cc: linux-kernel@vger.kernel.org
+	Wed, 27 Oct 2010 06:39:26 -0400
+Subject: [PATCH] Staging: vme: Fix warning in free_irq for ca91cx42
+To: greg@kroah.com
+From: Martyn Welch <martyn.welch@ge.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Wed, 27 Oct 2010 11:38:06 +0100
+Message-ID: <20101027103806.2783.47604.stgit@ES-BJ21R4J>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201010272108.44164.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit f9ba5375a8aae4aeea6be15df77e24707a429812:
+As discovered by Emilio Cota for the tsi148, the cookie passed to request_irq
+isn't the same as the one passed to free_irq.
 
-  Merge branch 'ima-memory-use-fixes' (2010-10-26 11:37:48 -0700)
+Fix it by passing the same cookie to both functions.
 
-are available in the git repository at:
+Signed-off-by: Martyn Welch <martyn.welch@ge.com>
+---
 
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/rusty/linux-2.6-for-linus.git module
+ drivers/staging/vme/bridges/vme_ca91cx42.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
-Dzianis Kahanovich (1):
-      NULL-terminate all pci_device_id tables
 
-Michał Mirosław (1):
-      (trivial) Fix compiler warning in kernel/modules.c
+diff --git a/drivers/staging/vme/bridges/vme_ca91cx42.c b/drivers/staging/vme/bridges/vme_ca91cx42.c
+index 1f2089f..5f7f458 100644
+--- a/drivers/staging/vme/bridges/vme_ca91cx42.c
++++ b/drivers/staging/vme/bridges/vme_ca91cx42.c
+@@ -242,9 +242,11 @@ static int ca91cx42_irq_init(struct vme_bridge *ca91cx42_bridge)
+ 	return 0;
+ }
+ 
+-static void ca91cx42_irq_exit(struct ca91cx42_driver *bridge,
++static void ca91cx42_irq_exit(struct vme_driver *ca91cx42_bridge,
+ 	struct pci_dev *pdev)
+ {
++	struct ca91cx42_driver *bridge = ca91cx42_bridge->driver_priv;
++
+ 	/* Disable interrupts from PCI to VME */
+ 	iowrite32(0, bridge->base + VINT_EN);
+ 
+@@ -253,7 +255,7 @@ static void ca91cx42_irq_exit(struct ca91cx42_driver *bridge,
+ 	/* Clear Any Pending PCI Interrupts */
+ 	iowrite32(0x00FFFFFF, bridge->base + LINT_STAT);
+ 
+-	free_irq(pdev->irq, pdev);
++	free_irq(pdev->irq, ca91cx42_bridge);
+ }
+ 
+ /*
+@@ -1815,7 +1817,7 @@ err_master:
+ 		kfree(master_image);
+ 	}
+ 
+-	ca91cx42_irq_exit(ca91cx42_device, pdev);
++	ca91cx42_irq_exit(ca91cx42_bridge, pdev);
+ err_irq:
+ err_test:
+ 	iounmap(ca91cx42_device->base);
+@@ -1899,7 +1901,7 @@ void ca91cx42_remove(struct pci_dev *pdev)
+ 		kfree(master_image);
+ 	}
+ 
+-	ca91cx42_irq_exit(bridge, pdev);
++	ca91cx42_irq_exit(ca91cx42_bridge, pdev);
+ 
+ 	iounmap(bridge->base);
+ 
 
- drivers/dma/pch_dma.c           |    1 +
- drivers/i2c/busses/scx200_acb.c |    3 ++-
- kernel/module.c                 |    2 +-
- 3 files changed, 4 insertions(+), 2 deletions(-)
+
+--
+Martyn Welch (Principal Software Engineer)   |   Registered in England and
+GE Intelligent Platforms                     |   Wales (3828642) at 100
+T +44(0)127322748                            |   Barbirolli Square, Manchester,
+E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
