@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761241Ab0J0Njh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 09:39:37 -0400
-Received: from fieldses.org ([174.143.236.118]:40707 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755897Ab0J0Nje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 09:39:34 -0400
-Date: Wed, 27 Oct 2010 09:39:25 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: nfsd changes for 2.6.37
-Message-ID: <20101027133924.GB6328@fieldses.org>
-References: <20101026164549.GD19445@fieldses.org>
- <20101026214441.GC1842@fieldses.org>
- <20101026221156.GD1842@fieldses.org>
- <201010270921.37032.arnd@arndb.de>
- <20101027083924.GA28129@infradead.org>
+	id S1761276Ab0J0NkB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 09:40:01 -0400
+Received: from 30.mail-out.ovh.net ([213.186.62.213]:53337 "HELO
+	30.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1761262Ab0J0NkA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 09:40:00 -0400
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Oct 2010 09:39:59 EDT
+Message-ID: <4CC82A13.8000909@eukrea.com>
+Date: Wed, 27 Oct 2010 15:33:07 +0200
+From: =?ISO-8859-15?Q?Eric_B=E9nard?= <eric@eukrea.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; fr; rv:1.9.2.11) Gecko/20101013 Thunderbird/3.1.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101027083924.GA28129@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Sascha Hauer <s.hauer@pengutronix.de>
+CC: Grant Likely <grant.likely@secretlab.ca>, amit.kucheria@canonical.com,
+        linux@arm.linux.org.uk, Dinh.Nguyen@freescale.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        daniel@caiaq.de,
+        =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        valentin.longchamp@epfl.ch
+Subject: Re: [PATCH] ARM: imx: Add some core definitions for MX53
+References: <1288119235-7036-1-git-send-email-Dinh.Nguyen@freescale.com>	<20101027082958.GA6797@angua.secretlab.ca>	<20101027090921.GB8554@pengutronix.de>	<20101027102253.GA7822@angua.secretlab.ca> <20101027132213.GJ6017@pengutronix.de>
+In-Reply-To: <20101027132213.GJ6017@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 3031766976237448593
+X-Ovh-Remote: 82.240.38.71 (pac33-2-82-240-38-71.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.50001/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann wrote:
-> > If you don't hold lock_flocks throughout fcntl_setlease, the flp variable
-> > points to a flock that may get modified by another thread and you call
-> > time_out_leases() without holding lock_flocks, which it requires.
+Hi,
 
-Whoops, thanks for catching that.
+Le 27/10/2010 15:22, Sascha Hauer a écrit :
+ > That's a way we can go but only if the common name is not MX5 or MX5x.
+ > We've done it with the mx21/27 and it failed when the mx25 came out
+ > which was completely incompatible. Since then everybody looking at
+ > the code must know that mx2x is mx21/27 but not mx25. I suggest
+ > something like MX513 instead.
+ >
+MX513 is the partnumber of a member of the i.MX51 family so that's maybe not 
+the best choice.
+http://www.freescale.com/webapp/sps/site/prod_summary.jsp?code=i.MX513
 
-On Wed, Oct 27, 2010 at 04:39:24AM -0400, Christoph Hellwig wrote:
-> Do locks_alloc_lock and initialization of the heap struct file_lock
-> in the caller.  This also avoids an entirely useless copy of the
-> lock structure.  free the passed in structure if we are modifying
-> an existing lock structure.
-
-That sounds good; I'll give it a try.
-
---b.
+Eric
