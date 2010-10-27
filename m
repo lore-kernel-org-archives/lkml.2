@@ -1,51 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933626Ab0J0Aus (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 20:50:48 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60102 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933591Ab0J0Auq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 20:50:46 -0400
-Date: Wed, 27 Oct 2010 01:50:45 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Jiri Slaby <jslaby@suse.cz>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, "Dr. Werner Fink" <werner@suse.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 28/49] tty: Add a new file /proc/tty/consoles
-Message-ID: <20101027005045.GC19804@ZenIV.linux.org.uk>
-References: <20101022175112.GC13489@kroah.com>
- <1287771688-14805-28-git-send-email-gregkh@suse.de>
- <4CC2C9A8.1040003@suse.cz>
- <20101025075125.GA29179@boole.suse.de>
+	id S1760743Ab0J0Azp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 20:55:45 -0400
+Received: from smtp2.tech.numericable.fr ([82.216.111.38]:33222 "EHLO
+	smtp2.tech.numericable.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751231Ab0J0Azo convert rfc822-to-8bit (ORCPT
+	<rfc822;Linux-Kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 20:55:44 -0400
+From: "Dr. Robert William" <pascale.vial@noos.fr>
+To: pascale.vial@noos.fr
+Date: Wed, 27 Oct 2010 02:55:40 +0200 (CEST)
+Subject: Yours Faithfully
+X-Priority: 3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101025075125.GA29179@boole.suse.de>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Mailer: COMS/EA2.3.4
+Message-ID: <ea-mime-4cc7788c-1268-20d7ee4b@webmail.numericable.fr>
+Content-Type: text/plain;
+	charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 25, 2010 at 09:51:25AM +0200, Dr. Werner Fink wrote:
-> > Maybe I wouldn't bother with marking the "current" console by star at
-> > all as it seems not to pay off.
-> 
-> This is the main reason for what I've done this patch:
-> To see on which console line the reading process is
-> located. Please do not skip this part as this is
-> currently the only way to detect the real console below
-> /dev/console ... it could be used in user space: e.g. in
-> plymouth or bootlogd (to deterime the main console) or
-> sulogin (to be able to provide a prompt on all console
-> lines).
+Good News My Dear Friend,
+ 
+I'm happy to inform you about my success in getting those funds transferred under the co-operation of a new partner from Paraguay. Presently i'm in Paraguay for investment projects with my own share of the total sum. meanwhile,i didn't forget your past efforts and attempts to assist me in transferring those funds despite that it failed us some how.
+Now contact my secretary in Benin Republic
 
-You've got to be kidding.  So all this stuff is about getting TIOCGDEV
-into the mainline?  In a form that would, presumably, be more acceptable
-than an ioctl?
+His name is Mr. Timothy Adams
+Phone Number: +229 97373889
+Email:  timothyadams90@gmail.com
+ 
+Please do let me know immediately you receive it so that we can share the joy after all the sufferings at that time. in the moment, I'm very busy here because of the investment projects which me and the new partner are having at hand, finally, remember that I had forwarded instruction to the secretary on your behalf to receive that money, so feel free to get in touch with Mr. Timothy Adams on timothyadams90@gmail.com, he will send the amount to you without any delay.
+ 
+Yours Faithfully
+Dr Robert William
 
-> -- 
->   "Having a smoking section in a restaurant is like having
->           a peeing section in a swimming pool." -- Edward Burr
 
-Ironic, innit?
