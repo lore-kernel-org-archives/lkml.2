@@ -1,111 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754977Ab0J0S0O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 14:26:14 -0400
-Received: from smtp-out-239.synserver.de ([212.40.180.239]:1077 "HELO
-	smtp-out-231.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1754739Ab0J0S0M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 14:26:12 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: markus@trippelsdorf.de
-X-SynServer-PPID: 26612
-Date: Wed, 27 Oct 2010 20:26:08 +0200
-To: john stultz <johnstul@us.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@amd64.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        heiko.carstens@de.ibm.com, a.p.zijlstra@chello.nl, avi@redhat.com,
-        mtosatti@redhat.com
-Subject: Re: [bisected] Clocksource tsc unstable git
-Message-ID: <20101027182608.GA1580@arch.trippelsdorf.de>
-References: <20101026112052.GA1672@arch.trippelsdorf.de>
- <20101026131843.GC17852@aftab>
- <20101026135808.GB1672@arch.trippelsdorf.de>
- <alpine.LFD.2.00.1010261747250.3115@localhost6.localdomain6>
- <1288120736.2645.9.camel@localhost>
- <20101027142622.GA1555@arch.trippelsdorf.de>
+	id S1755134Ab0J0S1V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 14:27:21 -0400
+Received: from sabe.cs.wisc.edu ([128.105.6.20]:40749 "EHLO sabe.cs.wisc.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755079Ab0J0S1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 14:27:19 -0400
+Message-ID: <4CC86E36.8060102@cs.wisc.edu>
+Date: Wed, 27 Oct 2010 13:23:50 -0500
+From: Mike Christie <michaelc@cs.wisc.edu>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101027142622.GA1555@arch.trippelsdorf.de>
-m: Markus Trippelsdorf <markus@trippelsdorf.de>
-From: markus@trippelsdorf.de
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jens Axboe <jaxboe@fusionio.com>, James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
+        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
+        MPTFusionLinux <DL-MPTFusionLinux@lsi.com>,
+        "eata.c maintainer" <dario.ballabio@inwind.it>,
+        Luben Tuikov <ltuikov@yahoo.com>, mvsas maintainer <kewei@marvell.com>,
+        pm8001 maintainer Jack Wang <jack_wang@usish.com>
+Subject: Re: [PATCH] scsi: Add SHT->unlocked_qcmd for host_lock less SHT->queuecommand()
+ dispatch
+References: <1288139559-12019-1-git-send-email-nab@linux-iscsi.org>
+In-Reply-To: <1288139559-12019-1-git-send-email-nab@linux-iscsi.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 04:26:22PM +0200, Markus Trippelsdorf wrote:
-> On Tue, Oct 26, 2010 at 12:18:56PM -0700, john stultz wrote:
-> > On Tue, 2010-10-26 at 17:48 +0200, Thomas Gleixner wrote:
-> > > On Tue, 26 Oct 2010, Markus Trippelsdorf wrote:
-> > > > On Tue, Oct 26, 2010 at 03:18:43PM +0200, Borislav Petkov wrote:
-> > > > > otherwise, I don't see anything strange in your dmesg. Unless tglx has a
-> > > > > better idea, I'd ask you to bisect it. 5618 changesets shouldn't be that
-> > > > > much but I don't know, if the issue appears every several hours it could
-> > > > > still be tedious.
-> > > > 
-> > > > That would be a several week long process, as the issue appears ~ every
-> > > > 2 days here on this machine running 24/7.
-> > > 
-> > > There is only a single commit in that area post 2.6.36:
-> > > 
-> > >       8af3c153baf95374eff20a37f00c59a295b52756 
-> > > 
-> > > But I have a hard time how this should make this happen. John ?
-> > 
-> > Yea, that one doesn't look connected to me.
-> > 
-> > There have been a few cases that I've seen where we can get false
-> > positives for bad TSCs due to the watchdog clocksource having problems
-> > (or the clocksource watchdog thread getting delayed for such a long time
-> > the watchdog clocksource wraps and we then can't validly compare the two
-> > - although this would be hard to trigger with non-rt kernels).
-> 
-> I think the remark above points in the right direction, because the
-> mysterious slowness happened again today (and this time on a vanilla git
-> kernel). But this time no "Clocksource tsc unstable" message appeared in
-> the kernel log. My system recovered by itself and after 2 minutes of
-> slowness it was usable again. (The symptoms were the same as desribed in
-> my first mail: Second long delays when typing and switching from X to
-> the console took many seconds.)
-> 
-> Is there anything I can do to pinpoint the cause of this slowdown should
-> it happen again? (Maybe a perf timechart?)
+On 10/26/2010 07:32 PM, Nicholas A. Bellinger wrote:
+> diff --git a/drivers/scsi/iscsi_tcp.c b/drivers/scsi/iscsi_tcp.c
+> index fec47de..f5933dd 100644
+> --- a/drivers/scsi/iscsi_tcp.c
+> +++ b/drivers/scsi/iscsi_tcp.c
+> @@ -882,6 +882,7 @@ static struct scsi_host_template iscsi_sw_tcp_sht = {
+>   	.target_alloc		= iscsi_target_alloc,
+>   	.proc_name		= "iscsi_tcp",
+>   	.this_id		= -1,
+> +	.unlocked_qcmd		= 1,
+>   };
+>
+>   static struct iscsi_transport iscsi_sw_tcp_transport = {
+> diff --git a/drivers/scsi/libiscsi.c b/drivers/scsi/libiscsi.c
+> index 633e090..7e4134e 100644
+> --- a/drivers/scsi/libiscsi.c
+> +++ b/drivers/scsi/libiscsi.c
+> @@ -1615,7 +1615,6 @@ int iscsi_queuecommand(struct scsi_cmnd *sc, void (*done)(struct scsi_cmnd *))
+>
+>   	host = sc->device->host;
+>   	ihost = shost_priv(host);
+> -	spin_unlock(host->host_lock);
+>
+>   	cls_session = starget_to_session(scsi_target(sc->device));
+>   	session = cls_session->dd_data;
+> @@ -1706,7 +1705,6 @@ int iscsi_queuecommand(struct scsi_cmnd *sc, void (*done)(struct scsi_cmnd *))
+>
+>   	session->queued_cmdsn++;
+>   	spin_unlock(&session->lock);
+> -	spin_lock(host->host_lock);
+>   	return 0;
+>
+>   prepd_reject:
+> @@ -1716,7 +1714,6 @@ reject:
+>   	spin_unlock(&session->lock);
+>   	ISCSI_DBG_SESSION(session, "cmd 0x%x rejected (%d)\n",
+>   			  sc->cmnd[0], reason);
+> -	spin_lock(host->host_lock);
+>   	return SCSI_MLQUEUE_TARGET_BUSY;
+>
+>   prepd_fault:
+> @@ -1733,7 +1730,6 @@ fault:
+>   		scsi_in(sc)->resid = scsi_in(sc)->length;
+>   	}
+>   	done(sc);
+> -	spin_lock(host->host_lock);
+>   	return 0;
+>   }
+>   EXPORT_SYMBOL_GPL(iscsi_queuecommand);
 
-During my search for a reliable testcase I found out that kvm guests also
-showed random hangs (that didn't happen in v2.6.36) here. These hangs last a
-few seconds each, during which the mouse is not movable at all.
 
-So I ran git-bisect with this testcase and the result of the bisection is:
+Hey,
 
-34f971f6f7988be4d014eec3e3526bee6d007ffa is the first bad commit
-commit 34f971f6f7988be4d014eec3e3526bee6d007ffa
-Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date:   Wed Sep 22 13:53:15 2010 +0200
-
-    sched: Create special class for stop/migrate work
-
-    In order to separate the stop/migrate work thread from the SCHED_FIFO
-    implementation, create a special class for it that is of higher priority than
-    SCHED_FIFO itself.
-
-    This currently solves a problem where cpu-hotplug consumes so much cpu-time
-    that the SCHED_FIFO class gets throttled, but has the bandwidth replenishment
-    timer pending on the now dead cpu.
-
-    It is also required for when we add the planned deadline scheduling class above
-    SCHED_FIFO, as the stop/migrate thread still needs to transcent those tasks.
-
-    Tested-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-    Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-    LKML-Reference: <1285165776.2275.1022.camel@laptop>
-    Signed-off-by: Ingo Molnar <mingo@elte.hu>
-
-Reverting the commit solves the kvm hang issue.
-(If this issue is related to my original tsc problem is of course open for
-debate, but I have a strong hunch it is.)
--- 
-Markus
+iscsi_tcp, drivers/infiniband/ulp/iser/ib_iser, drivers/scsi/cxgb3i, 
+drivers/scsi/bnx2i, and drivers/scsi/be2iscsi use libiscsi's 
+iscsi_queuecommand function, so they should all use the same setting 
+unlocked_qcmd=1.
