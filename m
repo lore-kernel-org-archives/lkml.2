@@ -1,343 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933642Ab0J0Oyj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 10:54:39 -0400
-Received: from fep17.mx.upcmail.net ([62.179.121.37]:53938 "EHLO
-	fep17.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933629Ab0J0Oyh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 10:54:37 -0400
-X-SourceIP: 80.56.199.130
-Subject: [RFT][PATCH] mm: Fix race in kunmap_atomic()
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-kernel@vger.kernel.org,
+	id S1759671Ab0J0Ozs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 10:55:48 -0400
+Received: from fieldses.org ([174.143.236.118]:55165 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752013Ab0J0Ozq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 10:55:46 -0400
+Date: Wed, 27 Oct 2010 10:55:39 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Christoph Hellwig <hch@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, linux-arch <linux-arch@vger.kernel.org>,
-        riel <riel@redhat.com>
-In-Reply-To: <20101027125154.GA23679@infradead.org>
-References: <20101027125154.GA23679@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 27 Oct 2010 16:54:21 +0200
-Message-ID: <1288191261.15336.1953.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Cloudmark-Analysis: v=1.1 cv=xhnIrgVimuy9wQ+RkywzulFXCq7zNkI+ObDjxzBho7Y= c=1 sm=0 a=hoDV--4XdqQA:10 a=IkcTkHD0fZMA:10 a=JfrnYn6hAAAA:8 a=Q5nckAW6HB8oszKD490A:9 a=t0ohVWyq5yd_qLPmVTIA:7 a=RaC_qpNWUxqUGqf6aPOphdh36Y4A:4 a=QEXdDO2ut3YA:10 a=3Rfx1nUSh_UA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+        Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: nfsd changes for 2.6.37
+Message-ID: <20101027145538.GC6328@fieldses.org>
+References: <20101026164549.GD19445@fieldses.org>
+ <20101027083924.GA28129@infradead.org>
+ <20101027133924.GB6328@fieldses.org>
+ <201010271546.09036.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201010271546.09036.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-27 at 08:51 -0400, Christoph Hellwig wrote:
-> I haven't tracked it down to the kmap_atomic rework but it seems
-> rather likely:
+On Wed, Oct 27, 2010 at 03:46:08PM +0200, Arnd Bergmann wrote:
+> On Wednesday 27 October 2010, J. Bruce Fields wrote:
+> > On Wed, Oct 27, 2010 at 04:39:24AM -0400, Christoph Hellwig wrote:
+> > > Do locks_alloc_lock and initialization of the heap struct file_lock
+> > > in the caller.  This also avoids an entirely useless copy of the
+> > > lock structure.  free the passed in structure if we are modifying
+> > > an existing lock structure.
+> > 
+> > That sounds good; I'll give it a try.
 > 
-> [ 2111.896469] ------------[ cut here ]------------
-> [ 2111.898408] kernel BUG at /home/hch/work/linux-2.6/arch/x86/mm/highmem_32.c:46!
-> [ 2111.900385] invalid opcode: 0000 [#1] SMP 
-> [ 2111.900385] last sysfs file: /sys/devices/virtio-pci/virtio1/block/vdb/removable
-> [ 2111.900385] Modules linked in:
-> [ 2111.900385] 
-> [ 2111.900385] Pid: 10286, comm: aio-stress Not tainted 2.6.36+ #32 /Bochs
-> [ 2111.900385] EIP: 0060:[<c0158e5c>] EFLAGS: 00010006 CPU: 0
-> [ 2111.900385] EIP is at kmap_atomic_prot+0xec/0xf0
-> [ 2111.900385] EAX: f75df040 EBX: 00000001 ECX: 3c6d7163 EDX: 00000163
-> [ 2111.900385] ESI: fffffffc EDI: 00000001 EBP: f6801e5c ESP: f6801e4c
-> [ 2111.900385]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-> [ 2111.900385] Process aio-stress (pid: 10286, ti=f6800000 task=f13c8280task.ti=f1356000)
-> [ 2111.900385] Stack:
-> [ 2111.900385]  fffff000 f2840ef0 f20ac690 00010000 f6801e64 c0158e6e f6801e9c c024ee0d
-> [ 2111.900385] <0> ffffffff 00000000 f6801eac 00000046 f13c870c 00000002 00000000 00000096
-> [ 2111.900385] <0> f20ac6d8 d4c23950 00010000 00000000 f6801ed0 c0244be7 d4c23a24 00000096
-> [ 2111.900385] Call Trace:
-> [ 2111.900385]  [<c0158e6e>] ? __kmap_atomic+0xe/0x10
-> [ 2111.900385]  [<c024ee0d>] ? aio_complete+0xdd/0x1a0
-> [ 2111.900385]  [<c0244be7>] ? dio_complete+0x107/0x110
-> [ 2111.900385]  [<c0244c35>] ? dio_bio_end_aio+0x45/0xa0
-> [ 2111.900385]  [<c0244c5b>] ? dio_bio_end_aio+0x6b/0xa0
-> [ 2111.900385]  [<c02407a5>] ? bio_endio+0x15/0x30
-> [ 2111.900385]  [<c071b4c2>] ? req_bio_endio+0xa2/0x100
-> [ 2111.900385]  [<c071bdfe>] ? blk_update_request+0x17e/0x420
-> [ 2111.900385]  [<c071bd69>] ? blk_update_request+0xe9/0x420
-> [ 2111.900385]  [<c071bdfe>] ? blk_update_request+0x17e/0x420
-> [ 2111.900385]  [<c021320e>] ? kfree+0xfe/0x170
-> [ 2111.900385]  [<c071c0b6>] ? blk_update_bidi_request+0x16/0x80
-> [ 2111.900385]  [<c071da55>] ? __blk_end_request_all+0x25/0x50
-> [ 2111.900385]  [<c07bf212>] ? blk_done+0x42/0xd0
-> [ 2111.900385]  [<c0787ec4>] ? vring_interrupt+0x24/0x40
-> [ 2111.900385]  [<c01ba684>] ? handle_IRQ_event+0x44/0x160
-> [ 2111.900385]  [<c01bc5ac>] ? handle_edge_irq+0x9c/0x140
-> [ 2111.900385]  [<c01bc5b6>] ? handle_edge_irq+0xa6/0x140
-> [ 2111.900385]  [<c01bc510>] ? handle_edge_irq+0x0/0x140
-> [ 2111.900385]  <IRQ> 
-> [ 2111.900385]  [<c0135dd4>] ? do_IRQ+0x44/0xc0
-> [ 2111.900385]  [<c017b556>] ? run_timer_softirq+0xd6/0x350
-> [ 2111.900385]  [<c01739d0>] ? __do_softirq+0x0/0x1f0
-> [ 2111.900385]  [<c013502e>] ? common_interrupt+0x2e/0x34
-> [ 2111.900385]  [<c01367c4>] ? do_softirq+0x94/0xe0
-> [ 2111.900385]  [<c01739d0>] ? __do_softirq+0x0/0x1f0
-> [ 2111.900385]  [<c0173a20>] ? __do_softirq+0x50/0x1f0
-> [ 2111.900385]  [<c0173a22>] ? __do_softirq+0x52/0x1f0
-> [ 2111.900385]  [<c01739d0>] ? __do_softirq+0x0/0x1f0
-> [ 2111.900385]  <IRQ> 
-> [ 2111.900385]  [<c017384d>] ? irq_exit+0x6d/0x80
-> [ 2111.900385]  [<c014b3b6>] ? smp_apic_timer_interrupt+0x56/0x90
-> [ 2111.900385]  [<c0736f04>] ? trace_hardirqs_off_thunk+0xc/0x18
-> [ 2111.900385]  [<c0a07167>] ? apic_timer_interrupt+0x2f/0x34
-> [ 2111.900385]  [<c0153691>] ? native_set_pte_at+0x1/0x10
-> [ 2111.900385]  [<c0158cc0>] ? __kunmap_atomic+0x70/0xa0
-> [ 2111.900385]  [<c024e32a>] ? aio_read_evt+0xca/0xf0
-> [ 2111.900385]  [<c024f16f>] ? read_events+0xcf/0x340
-> [ 2111.900385]  [<c019ff0b>] ? trace_hardirqs_on+0xb/0x10
-> [ 2111.900385]  [<c0153f65>] ? pvclock_clocksource_read+0xf5/0x190
-> [ 2111.900385]  [<c0169660>] ? default_wake_function+0x0/0x10
-> [ 2111.900385]  [<c024f423>] ? sys_io_getevents+0x43/0x90
-> [ 2111.900385]  [<c0a06cdd>] ? syscall_call+0x7/0xb
+> I've already started, this is what I've come up with. I don't have
+> a good way to test it though, and don't know as much as you about this
+> code. Feel free to use it as a starting point if you like.
+> It does look correct to me, but I'm not very confident in this.
 
-Ooh, nice.. I think the below patch cures this but haven't actually
-managed to install xfstest inside a qemu thing yet.
+Hm, two problems:
+	- We introduce the possibility of fcntl(fd, F_SETLEASE, F_UNLCK)
+	  failing with ENOMEM.
+	- fasync_helper(.,.,1,.) sleeps.  Argh.
 
----
-Subject: mm: Fix race in kunmap_atomic()
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Wed Oct 27 16:42:10 CEST 2010
-
-Christoph reported a nice splat which illustrated a race in the new
-stack based kmap_atomic implementation.
-
-The problem is that we pop our stack slot before we're completely done
-resetting its state -- in particular clearing the PTE (sometimes that's
-CONFIG_DEBUG_HIGHMEM). If an interrupt happens before we actually clear
-the PTE used for the last slot, that interrupt can reuse the slot in a
-dirty state, which triggers a BUG in kmap_atomic().
-
-Fix this by introducing kmap_atomic_idx() which reports the current slot
-index without actually releasing it and use that to find the PTE and
-delay the _pop() until after we're completely done.
-
-Reported-by: Christoph Hellwig <hch@infradead.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- arch/arm/mm/highmem.c              |    3 ++-
- arch/frv/mm/highmem.c              |    3 ++-
- arch/mips/mm/highmem.c             |    3 ++-
- arch/mn10300/include/asm/highmem.h |    4 +++-
- arch/powerpc/mm/highmem.c          |    4 +++-
- arch/sparc/mm/highmem.c            |    4 +++-
- arch/tile/mm/highmem.c             |    3 ++-
- arch/x86/mm/highmem_32.c           |    3 ++-
- arch/x86/mm/iomap_32.c             |    3 ++-
- include/linux/highmem.h            |    5 +++++
- 10 files changed, 26 insertions(+), 9 deletions(-)
-
-Index: linux-2.6/arch/arm/mm/highmem.c
-===================================================================
---- linux-2.6.orig/arch/arm/mm/highmem.c
-+++ linux-2.6/arch/arm/mm/highmem.c
-@@ -89,7 +89,7 @@ void __kunmap_atomic(void *kvaddr)
- 	int idx, type;
- 
- 	if (kvaddr >= (void *)FIXADDR_START) {
--		type = kmap_atomic_idx_pop();
-+		type = kmap_atomic_idx();
- 		idx = type + KM_TYPE_NR * smp_processor_id();
- 
- 		if (cache_is_vivt())
-@@ -101,6 +101,7 @@ void __kunmap_atomic(void *kvaddr)
- #else
- 		(void) idx;  /* to kill a warning */
- #endif
-+		kmap_atomic_idx_pop();
- 	} else if (vaddr >= PKMAP_ADDR(0) && vaddr < PKMAP_ADDR(LAST_PKMAP)) {
- 		/* this address was obtained through kmap_high_get() */
- 		kunmap_high(pte_page(pkmap_page_table[PKMAP_NR(vaddr)]));
-Index: linux-2.6/arch/frv/mm/highmem.c
-===================================================================
---- linux-2.6.orig/arch/frv/mm/highmem.c
-+++ linux-2.6/arch/frv/mm/highmem.c
-@@ -68,7 +68,7 @@ EXPORT_SYMBOL(__kmap_atomic);
- 
- void __kunmap_atomic(void *kvaddr)
- {
--	int type = kmap_atomic_idx_pop();
-+	int type = kmap_atomic_idx();
- 	switch (type) {
- 	case 0:		__kunmap_atomic_primary(4, 6);	break;
- 	case 1:		__kunmap_atomic_primary(5, 7);	break;
-@@ -83,6 +83,7 @@ void __kunmap_atomic(void *kvaddr)
- 	default:
- 		BUG();
- 	}
-+	kmap_atomic_idx_pop();
- 	pagefault_enable();
- }
- EXPORT_SYMBOL(__kunmap_atomic);
-Index: linux-2.6/arch/mips/mm/highmem.c
-===================================================================
---- linux-2.6.orig/arch/mips/mm/highmem.c
-+++ linux-2.6/arch/mips/mm/highmem.c
-@@ -74,7 +74,7 @@ void __kunmap_atomic(void *kvaddr)
- 		return;
- 	}
- 
--	type = kmap_atomic_idx_pop();
-+	type = kmap_atomic_idx();
- #ifdef CONFIG_DEBUG_HIGHMEM
- 	{
- 		int idx = type + KM_TYPE_NR * smp_processor_id();
-@@ -89,6 +89,7 @@ void __kunmap_atomic(void *kvaddr)
- 		local_flush_tlb_one(vaddr);
- 	}
- #endif
-+	kmap_atomic_idx_pop();
- 	pagefault_enable();
- }
- EXPORT_SYMBOL(__kunmap_atomic);
-Index: linux-2.6/arch/mn10300/include/asm/highmem.h
-===================================================================
---- linux-2.6.orig/arch/mn10300/include/asm/highmem.h
-+++ linux-2.6/arch/mn10300/include/asm/highmem.h
-@@ -101,7 +101,7 @@ static inline void __kunmap_atomic(unsig
- 		return;
- 	}
- 
--	type = kmap_atomic_idx_pop();
-+	type = kmap_atomic_idx();
- 
- #if HIGHMEM_DEBUG
- 	{
-@@ -119,6 +119,8 @@ static inline void __kunmap_atomic(unsig
- 		__flush_tlb_one(vaddr);
- 	}
- #endif
-+
-+	kmap_atomic_idx_pop();
- 	pagefault_enable();
- }
- #endif /* __KERNEL__ */
-Index: linux-2.6/arch/powerpc/mm/highmem.c
-===================================================================
---- linux-2.6.orig/arch/powerpc/mm/highmem.c
-+++ linux-2.6/arch/powerpc/mm/highmem.c
-@@ -62,7 +62,7 @@ void __kunmap_atomic(void *kvaddr)
- 		return;
- 	}
- 
--	type = kmap_atomic_idx_pop();
-+	type = kmap_atomic_idx();
- 
- #ifdef CONFIG_DEBUG_HIGHMEM
- 	{
-@@ -79,6 +79,8 @@ void __kunmap_atomic(void *kvaddr)
- 		local_flush_tlb_page(NULL, vaddr);
- 	}
- #endif
-+
-+	kmap_atomic_idx_pop();
- 	pagefault_enable();
- }
- EXPORT_SYMBOL(__kunmap_atomic);
-Index: linux-2.6/arch/sparc/mm/highmem.c
-===================================================================
---- linux-2.6.orig/arch/sparc/mm/highmem.c
-+++ linux-2.6/arch/sparc/mm/highmem.c
-@@ -75,7 +75,7 @@ void __kunmap_atomic(void *kvaddr)
- 		return;
- 	}
- 
--	type = kmap_atomic_idx_pop();
-+	type = kmap_atomic_idx();
- 
- #ifdef CONFIG_DEBUG_HIGHMEM
- 	{
-@@ -104,6 +104,8 @@ void __kunmap_atomic(void *kvaddr)
- #endif
- 	}
- #endif
-+
-+	kmap_atomic_idx_pop();
- 	pagefault_enable();
- }
- EXPORT_SYMBOL(__kunmap_atomic);
-Index: linux-2.6/arch/tile/mm/highmem.c
-===================================================================
---- linux-2.6.orig/arch/tile/mm/highmem.c
-+++ linux-2.6/arch/tile/mm/highmem.c
-@@ -241,7 +241,7 @@ void __kunmap_atomic(void *kvaddr)
- 		pte_t pteval = *pte;
- 		int idx, type;
- 
--		type = kmap_atomic_idx_pop();
-+		type = kmap_atomic_idx();
- 		idx = type + KM_TYPE_NR*smp_processor_id();
- 
- 		/*
-@@ -252,6 +252,7 @@ void __kunmap_atomic(void *kvaddr)
- 		BUG_ON(!pte_present(pteval) && !pte_migrating(pteval));
- 		kmap_atomic_unregister(pte_page(pteval), vaddr);
- 		kpte_clear_flush(pte, vaddr);
-+		kmap_atomic_idx_pop();
- 	} else {
- 		/* Must be a lowmem page */
- 		BUG_ON(vaddr < PAGE_OFFSET);
-Index: linux-2.6/arch/x86/mm/highmem_32.c
-===================================================================
---- linux-2.6.orig/arch/x86/mm/highmem_32.c
-+++ linux-2.6/arch/x86/mm/highmem_32.c
-@@ -74,7 +74,7 @@ void __kunmap_atomic(void *kvaddr)
- 	    vaddr <= __fix_to_virt(FIX_KMAP_BEGIN)) {
- 		int idx, type;
- 
--		type = kmap_atomic_idx_pop();
-+		type = kmap_atomic_idx();
- 		idx = type + KM_TYPE_NR * smp_processor_id();
- 
- #ifdef CONFIG_DEBUG_HIGHMEM
-@@ -87,6 +87,7 @@ void __kunmap_atomic(void *kvaddr)
- 		 * attributes or becomes a protected page in a hypervisor.
- 		 */
- 		kpte_clear_flush(kmap_pte-idx, vaddr);
-+		kmap_atomic_idx_pop();
- 	}
- #ifdef CONFIG_DEBUG_HIGHMEM
- 	else {
-Index: linux-2.6/arch/x86/mm/iomap_32.c
-===================================================================
---- linux-2.6.orig/arch/x86/mm/iomap_32.c
-+++ linux-2.6/arch/x86/mm/iomap_32.c
-@@ -98,7 +98,7 @@ iounmap_atomic(void __iomem *kvaddr)
- 	    vaddr <= __fix_to_virt(FIX_KMAP_BEGIN)) {
- 		int idx, type;
- 
--		type = kmap_atomic_idx_pop();
-+		type = kmap_atomic_idx();
- 		idx = type + KM_TYPE_NR * smp_processor_id();
- 
- #ifdef CONFIG_DEBUG_HIGHMEM
-@@ -111,6 +111,7 @@ iounmap_atomic(void __iomem *kvaddr)
- 		 * attributes or becomes a protected page in a hypervisor.
- 		 */
- 		kpte_clear_flush(kmap_pte-idx, vaddr);
-+		kmap_atomic_idx_pop();
- 	}
- 
- 	pagefault_enable();
-Index: linux-2.6/include/linux/highmem.h
-===================================================================
---- linux-2.6.orig/include/linux/highmem.h
-+++ linux-2.6/include/linux/highmem.h
-@@ -88,6 +88,11 @@ static inline int kmap_atomic_idx_push(v
- 	return idx;
- }
- 
-+static inline int kmap_atomic_idx(void)
-+{
-+	return __get_cpu_var(__kmap_atomic_idx) - 1;
-+}
-+
- static inline int kmap_atomic_idx_pop(void)
- {
- 	int idx = --__get_cpu_var(__kmap_atomic_idx);
-
-
+--b.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+> 
+> diff --git a/fs/locks.c b/fs/locks.c
+> index 8b2b6ad..c5ec771 100644
+> --- a/fs/locks.c
+> +++ b/fs/locks.c
+> @@ -162,10 +162,11 @@ EXPORT_SYMBOL_GPL(unlock_flocks);
+>  static struct kmem_cache *filelock_cache __read_mostly;
+>  
+>  /* Allocate an empty lock structure. */
+> -static struct file_lock *locks_alloc_lock(void)
+> +struct file_lock *locks_alloc_lock(void)
+>  {
+>  	return kmem_cache_alloc(filelock_cache, GFP_KERNEL);
+>  }
+> +EXPORT_SYMBOL_GPL(locks_alloc_lock);
+>  
+>  void locks_release_private(struct file_lock *fl)
+>  {
+> @@ -1365,7 +1366,6 @@ int fcntl_getlease(struct file *filp)
+>  int generic_setlease(struct file *filp, long arg, struct file_lock **flp)
+>  {
+>  	struct file_lock *fl, **before, **my_before = NULL, *lease;
+> -	struct file_lock *new_fl = NULL;
+>  	struct dentry *dentry = filp->f_path.dentry;
+>  	struct inode *inode = dentry->d_inode;
+>  	int error, rdlease_count = 0, wrlease_count = 0;
+> @@ -1385,11 +1385,6 @@ int generic_setlease(struct file *filp, long arg, struct file_lock **flp)
+>  	lease = *flp;
+>  
+>  	if (arg != F_UNLCK) {
+> -		error = -ENOMEM;
+> -		new_fl = locks_alloc_lock();
+> -		if (new_fl == NULL)
+> -			goto out;
+> -
+>  		error = -EAGAIN;
+>  		if ((arg == F_RDLCK) && (atomic_read(&inode->i_writecount) > 0))
+>  			goto out;
+> @@ -1434,23 +1429,19 @@ int generic_setlease(struct file *filp, long arg, struct file_lock **flp)
+>  		goto out;
+>  	}
+>  
+> -	error = 0;
+>  	if (arg == F_UNLCK)
+> -		goto out;
+> +		goto out_unlck;
+>  
+>  	error = -EINVAL;
+>  	if (!leases_enable)
+>  		goto out;
+>  
+> -	locks_copy_lock(new_fl, lease);
+> -	locks_insert_lock(before, new_fl);
+> -
+> -	*flp = new_fl;
+> +	locks_insert_lock(before, lease);
+> +out_unlck:
+>  	return 0;
+>  
+>  out:
+> -	if (new_fl != NULL)
+> -		locks_free_lock(new_fl);
+> +	locks_free_lock(lease);
+>  	return error;
+>  }
+>  EXPORT_SYMBOL(generic_setlease);
+> @@ -1514,26 +1505,31 @@ EXPORT_SYMBOL_GPL(vfs_setlease);
+>   */
+>  int fcntl_setlease(unsigned int fd, struct file *filp, long arg)
+>  {
+> -	struct file_lock fl, *flp = &fl;
+> +	struct file_lock *fl;
+>  	struct inode *inode = filp->f_path.dentry->d_inode;
+>  	int error;
+>  
+> -	locks_init_lock(&fl);
+> -	error = lease_init(filp, arg, &fl);
+> -	if (error)
+> +	fl = locks_alloc_lock();
+> +	if (!fl)
+> +		return -ENOMEM;
+> +
+> +	locks_init_lock(fl);
+> +	error = lease_init(filp, arg, fl);
+> +	if (error) {
+> +		locks_free_lock(fl);
+>  		return error;
+> +	}
+>  
+>  	lock_flocks();
+> -
+> -	error = __vfs_setlease(filp, arg, &flp);
+> +	error = __vfs_setlease(filp, arg, &fl);
+>  	if (error || arg == F_UNLCK)
+>  		goto out_unlock;
+>  
+> -	error = fasync_helper(fd, filp, 1, &flp->fl_fasync);
+> +	error = fasync_helper(fd, filp, 1, &fl->fl_fasync);
+>  	if (error < 0) {
+>  		/* remove lease just inserted by setlease */
+> -		flp->fl_type = F_UNLCK | F_INPROGRESS;
+> -		flp->fl_break_time = jiffies - 10;
+> +		fl->fl_type = F_UNLCK | F_INPROGRESS;
+> +		fl->fl_break_time = jiffies - 10;
+>  		time_out_leases(inode);
+>  		goto out_unlock;
+>  	}
+> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+> index 9019e8e..56347e0 100644
+> --- a/fs/nfsd/nfs4state.c
+> +++ b/fs/nfsd/nfs4state.c
+> @@ -2614,7 +2614,7 @@ nfs4_open_delegation(struct svc_fh *fh, struct nfsd4_open *open, struct nfs4_sta
+>  	struct nfs4_delegation *dp;
+>  	struct nfs4_stateowner *sop = stp->st_stateowner;
+>  	int cb_up = atomic_read(&sop->so_client->cl_cb_set);
+> -	struct file_lock fl, *flp = &fl;
+> +	struct file_lock *fl;
+>  	int status, flag = 0;
+>  
+>  	flag = NFS4_OPEN_DELEGATE_NONE;
+> @@ -2648,20 +2648,24 @@ nfs4_open_delegation(struct svc_fh *fh, struct nfsd4_open *open, struct nfs4_sta
+>  		flag = NFS4_OPEN_DELEGATE_NONE;
+>  		goto out;
+>  	}
+> -	locks_init_lock(&fl);
+> -	fl.fl_lmops = &nfsd_lease_mng_ops;
+> -	fl.fl_flags = FL_LEASE;
+> -	fl.fl_type = flag == NFS4_OPEN_DELEGATE_READ? F_RDLCK: F_WRLCK;
+> -	fl.fl_end = OFFSET_MAX;
+> -	fl.fl_owner =  (fl_owner_t)dp;
+> -	fl.fl_file = find_readable_file(stp->st_file);
+> -	BUG_ON(!fl.fl_file);
+> -	fl.fl_pid = current->tgid;
+> +	status = -ENOMEM;
+> +	fl = locks_alloc_lock();
+> +	if (!fl)
+> +		goto out;
+> +	locks_init_lock(fl);
+> +	fl->fl_lmops = &nfsd_lease_mng_ops;
+> +	fl->fl_flags = FL_LEASE;
+> +	fl->fl_type = flag == NFS4_OPEN_DELEGATE_READ? F_RDLCK: F_WRLCK;
+> +	fl->fl_end = OFFSET_MAX;
+> +	fl->fl_owner =  (fl_owner_t)dp;
+> +	fl->fl_file = find_readable_file(stp->st_file);
+> +	BUG_ON(!fl->fl_file);
+> +	fl->fl_pid = current->tgid;
+>  
+>  	/* vfs_setlease checks to see if delegation should be handed out.
+>  	 * the lock_manager callbacks fl_mylease and fl_change are used
+>  	 */
+> -	if ((status = vfs_setlease(fl.fl_file, fl.fl_type, &flp))) {
+> +	if ((status = vfs_setlease(fl->fl_file, fl->fl_type, &fl))) {
+>  		dprintk("NFSD: setlease failed [%d], no delegation\n", status);
+>  		unhash_delegation(dp);
+>  		flag = NFS4_OPEN_DELEGATE_NONE;
