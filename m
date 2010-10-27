@@ -1,40 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756023Ab0J0J5o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 05:57:44 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58131 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752301Ab0J0J5n convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 05:57:43 -0400
-Subject: Re: [PATCH] x86-32: Allocate irq stacks seperate from percpu area
-From: Peter Zijlstra <peterz@infradead.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Brian Gerst <brgerst@gmail.com>, tj@kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        mingo@elte.hu
-In-Reply-To: <1288159670.2652.181.camel@edumazet-laptop>
-References: <AANLkTinnc3vBSmewf7ixuOSDYxG+5VNiGaB-vSrDNRiO@mail.gmail.com>
-	 <1288158182-1753-1-git-send-email-brgerst@gmail.com>
-	 <1288159670.2652.181.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 27 Oct 2010 11:57:22 +0200
-Message-ID: <1288173442.15336.1490.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755059Ab0J0J72 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 05:59:28 -0400
+Received: from ozlabs.org ([203.10.76.45]:54582 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754334Ab0J0J70 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 05:59:26 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: x86@kernel.org
+Subject: [PATCH] cpumask: remove obsolete cpu operation in x86/kernel/apb_timer.c
+Date: Wed, 27 Oct 2010 20:29:21 +1030
+User-Agent: KMail/1.13.5 (Linux/2.6.35-22-generic; KDE/4.5.1; i686; ; )
+Cc: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010272029.22150.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-27 at 08:07 +0200, Eric Dumazet wrote:
-> > -     irqctx = &per_cpu(hardirq_stack, cpu);
-> > +     irqctx = (union irq_ctx *)__get_free_pages(THREAD_FLAGS, THREAD_ORDER);
-> 
-> Hmm, then we lose NUMA affinity for stacks. 
+first_cpu -> cpumask_first
 
-I guess we could use:
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+---
+ arch/x86/kernel/apb_timer.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-  alloc_pages_node(cpu_to_node(cpu), THREAD_FLAGS, THREAD_ORDER);
-
-
+diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
+--- a/arch/x86/kernel/apb_timer.c
++++ b/arch/x86/kernel/apb_timer.c
+@@ -431,7 +431,7 @@ static void apbt_set_mode(enum clock_eve
+ 
+ 	timer_num = adev->num;
+ 	pr_debug("%s CPU %d timer %d mode=%d\n",
+-		 __func__, first_cpu(*evt->cpumask), timer_num, mode);
++		 __func__, cpumask_first(evt->cpumask), timer_num, mode);
+ 
+ 	switch (mode) {
+ 	case CLOCK_EVT_MODE_PERIODIC:
