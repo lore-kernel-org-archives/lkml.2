@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753761Ab0J0K4S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 06:56:18 -0400
-Received: from exprod5og112.obsmtp.com ([64.18.0.24]:55940 "EHLO
-	exprod5og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752005Ab0J0K4P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 06:56:15 -0400
-Message-ID: <4CC804FF.9050908@ge.com>
-Date: Wed, 27 Oct 2010 11:54:55 +0100
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.14) Gecko/20101006 Thunderbird/3.0.9
+	id S1755224Ab0J0K67 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 06:58:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44993 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752521Ab0J0K65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 06:58:57 -0400
+Date: Wed, 27 Oct 2010 12:58:49 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 8/8] KVM: add debugfs file to show the number of async
+ pf
+Message-ID: <20101027105849.GQ26191@redhat.com>
+References: <4CC7EA7D.5020901@cn.fujitsu.com>
+ <4CC7EC9B.6020507@cn.fujitsu.com>
 MIME-Version: 1.0
-To: "Emilio G. Cota" <cota@braap.org>
-CC: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
-        devel@driverdev.osuosl.org,
-        Juan David Gonzalez Cobas <david.cobas@gmail.com>,
-        Bill Pemberton <wfp5p@virginia.edu>
-Subject: Re: [PATCH 09/30] staging/vme: fill in struct device's .release,
- even if it's a NOOP
-References: <1288055476-19438-1-git-send-email-cota@braap.org> <1288055476-19438-10-git-send-email-cota@braap.org>
-In-Reply-To: <1288055476-19438-10-git-send-email-cota@braap.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Oct 2010 10:56:13.0612 (UTC) FILETIME=[9271A6C0:01CB75C5]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CC7EC9B.6020507@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/10/10 02:10, Emilio G. Cota wrote:
-> From: Emilio G. Cota <cota@braap.org>
+On Wed, Oct 27, 2010 at 05:10:51PM +0800, Xiao Guangrong wrote:
+> It can help us to see the state of async pf
 > 
-> Without it we get 32 warnings, one per device being released, when
-> removing a bridge module.
-> 
-> After applying this patch, bridge modules can at last be removed
-> without any apparent hiccup.
-> 
-> [Note: tested only on the tsi148, it's the only bridge I've got]
-> 
+I have patch to add three async pf statistics:
+apf_not_present
+apf_present
+apf_doublefault
 
-I guess this is an artifact of the current lack of refcounting?
+But Avi now wants to deprecate debugfs interface completely and move
+towards ftrace, so I had to drop it.
 
-This is definitely an issue, however I don't think masking it by adding
-an empty function is the correct way to go.
-
-Martyn
-
-> Signed-off-by: Emilio G. Cota <cota@braap.org>
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 > ---
->  drivers/staging/vme/vme.c |    6 ++++++
->  1 files changed, 6 insertions(+), 0 deletions(-)
+>  arch/x86/kvm/x86.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
 > 
-> diff --git a/drivers/staging/vme/vme.c b/drivers/staging/vme/vme.c
-> index afd2dbd..59650dd 100644
-> --- a/drivers/staging/vme/vme.c
-> +++ b/drivers/staging/vme/vme.c
-> @@ -1352,6 +1352,11 @@ static void vme_free_bus_num(int bus)
->  	mutex_unlock(&vme_bus_num_mtx);
->  }
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index c0e7ad0..2dd8059 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -88,6 +88,8 @@ static u64 __read_mostly efer_reserved_bits = 0xfffffffffffffffeULL;
 >  
-> +/* Note: device_release(dev) throws a warning if dev->release isn't filled in */
-> +static void vme_dev_release(struct device *dev)
-> +{
-> +}
-> +
->  int vme_register_bridge(struct vme_bridge *bridge)
->  {
->  	struct device *dev;
-> @@ -1372,6 +1377,7 @@ int vme_register_bridge(struct vme_bridge *bridge)
+>  #define VM_STAT(x) offsetof(struct kvm, stat.x), KVM_STAT_VM
+>  #define VCPU_STAT(x) offsetof(struct kvm_vcpu, stat.x), KVM_STAT_VCPU
+> +#define VCPU_ASYNC_PF_STAT offsetof(struct kvm_vcpu, async_pf.queued), \
+> +							KVM_STAT_VCPU
 >  
->  		dev->parent = bridge->parent;
->  		dev->bus = &vme_bus_type;
-> +		dev->release = vme_dev_release;
->  		/*
->  		 * We save a pointer to the bridge in platform_data so that we
->  		 * can get to it later. We keep driver_data for use by the
+>  static void update_cr8_intercept(struct kvm_vcpu *vcpu);
+>  static int kvm_dev_ioctl_get_supported_cpuid(struct kvm_cpuid2 *cpuid,
+> @@ -141,6 +143,7 @@ struct kvm_stats_debugfs_item debugfs_entries[] = {
+>  	{ "insn_emulation_fail", VCPU_STAT(insn_emulation_fail) },
+>  	{ "irq_injections", VCPU_STAT(irq_injections) },
+>  	{ "nmi_injections", VCPU_STAT(nmi_injections) },
+> +	{ "async_pf_queued", VCPU_ASYNC_PF_STAT},
+>  	{ "mmu_shadow_zapped", VM_STAT(mmu_shadow_zapped) },
+>  	{ "mmu_pte_write", VM_STAT(mmu_pte_write) },
+>  	{ "mmu_pte_updated", VM_STAT(mmu_pte_updated) },
+> -- 
+> 1.7.0.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-
--- 
-Martyn Welch (Principal Software Engineer)   |   Registered in England and
-GE Intelligent Platforms                     |   Wales (3828642) at 100
-T +44(0)127322748                            |   Barbirolli Square,
-Manchester,
-E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
+--
+			Gleb.
