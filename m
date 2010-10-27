@@ -1,96 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755134Ab0J0S1V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 14:27:21 -0400
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:40749 "EHLO sabe.cs.wisc.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755079Ab0J0S1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 14:27:19 -0400
-Message-ID: <4CC86E36.8060102@cs.wisc.edu>
-Date: Wed, 27 Oct 2010 13:23:50 -0500
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	id S1755108Ab0J0Sej (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 14:34:39 -0400
+Received: from smtp201.iad.emailsrvr.com ([207.97.245.201]:43503 "EHLO
+	smtp201.iad.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754931Ab0J0Seh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 14:34:37 -0400
+Message-ID: <4CC870BB.2050000@triadsys.com>
+Date: Wed, 27 Oct 2010 14:34:35 -0400
+From: Tom Vier <tom@triadsys.com>
+Organization: Triad Systems Engineering, Inc.
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100913 Icedove/3.0.7
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jens Axboe <jaxboe@fusionio.com>, James Smart <james.smart@emulex.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
-        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
-        MPTFusionLinux <DL-MPTFusionLinux@lsi.com>,
-        "eata.c maintainer" <dario.ballabio@inwind.it>,
-        Luben Tuikov <ltuikov@yahoo.com>, mvsas maintainer <kewei@marvell.com>,
-        pm8001 maintainer Jack Wang <jack_wang@usish.com>
-Subject: Re: [PATCH] scsi: Add SHT->unlocked_qcmd for host_lock less SHT->queuecommand()
- dispatch
-References: <1288139559-12019-1-git-send-email-nab@linux-iscsi.org>
-In-Reply-To: <1288139559-12019-1-git-send-email-nab@linux-iscsi.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Samuel Thibault <sthibault@debian.org>,
+        "594089@bugs.debian.org" <594089@bugs.debian.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: Bug#594089: keyboard-configuration: caps lock keycode problem
+References: <20101025045003.GA1438@core.coreip.homeip.net> <4CC58816.3090301@triadsys.com> <20101025180320.GA4725@const.famille.thibault.fr> <4CC6E9D8.8010201@triadsys.com> <20101026161820.GE13097@core.coreip.homeip.net> <4CC7426C.8040502@triadsys.com> <20101027091029.GB28895@core.coreip.homeip.net> <20101027120513.GT4725@const.famille.thibault.fr> <99F91536-4413-430C-9932-7CEF6AB656DB@gmail.com> <20101027152242.GO4725@const.famille.thibault.fr> <20101027160842.GB8745@core.coreip.homeip.net>
+In-Reply-To: <20101027160842.GB8745@core.coreip.homeip.net>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2010 07:32 PM, Nicholas A. Bellinger wrote:
-> diff --git a/drivers/scsi/iscsi_tcp.c b/drivers/scsi/iscsi_tcp.c
-> index fec47de..f5933dd 100644
-> --- a/drivers/scsi/iscsi_tcp.c
-> +++ b/drivers/scsi/iscsi_tcp.c
-> @@ -882,6 +882,7 @@ static struct scsi_host_template iscsi_sw_tcp_sht = {
->   	.target_alloc		= iscsi_target_alloc,
->   	.proc_name		= "iscsi_tcp",
->   	.this_id		= -1,
-> +	.unlocked_qcmd		= 1,
->   };
->
->   static struct iscsi_transport iscsi_sw_tcp_transport = {
-> diff --git a/drivers/scsi/libiscsi.c b/drivers/scsi/libiscsi.c
-> index 633e090..7e4134e 100644
-> --- a/drivers/scsi/libiscsi.c
-> +++ b/drivers/scsi/libiscsi.c
-> @@ -1615,7 +1615,6 @@ int iscsi_queuecommand(struct scsi_cmnd *sc, void (*done)(struct scsi_cmnd *))
->
->   	host = sc->device->host;
->   	ihost = shost_priv(host);
-> -	spin_unlock(host->host_lock);
->
->   	cls_session = starget_to_session(scsi_target(sc->device));
->   	session = cls_session->dd_data;
-> @@ -1706,7 +1705,6 @@ int iscsi_queuecommand(struct scsi_cmnd *sc, void (*done)(struct scsi_cmnd *))
->
->   	session->queued_cmdsn++;
->   	spin_unlock(&session->lock);
-> -	spin_lock(host->host_lock);
->   	return 0;
->
->   prepd_reject:
-> @@ -1716,7 +1714,6 @@ reject:
->   	spin_unlock(&session->lock);
->   	ISCSI_DBG_SESSION(session, "cmd 0x%x rejected (%d)\n",
->   			  sc->cmnd[0], reason);
-> -	spin_lock(host->host_lock);
->   	return SCSI_MLQUEUE_TARGET_BUSY;
->
->   prepd_fault:
-> @@ -1733,7 +1730,6 @@ fault:
->   		scsi_in(sc)->resid = scsi_in(sc)->length;
->   	}
->   	done(sc);
-> -	spin_lock(host->host_lock);
->   	return 0;
->   }
->   EXPORT_SYMBOL_GPL(iscsi_queuecommand);
+On 10/27/2010 12:08 PM, Dmitry Torokhov wrote:
+ > On Wed, Oct 27, 2010 at 05:22:42PM +0200, Samuel Thibault wrote:
+ >> Dmitry Torokhov, le Wed 27 Oct 2010 08:06:26 -0700, a écrit :
+ >> Sure, but dumpkeys shows the table from scancodes to keycodes, not from
+ >> input events to scancodes.
+ >
+ > I am just wondering if some of the translation is leaking even though
+ > the keyboard is in raw mode...
+ >
+ > OK, scratch that... Are there any other input devices? Anything
+ > connected via uinput and listening? What does /proc/bus/input/devices
+ > show? Maybe if Tom could compile and load evbug module it would show us
+ > where the additional events are coming form, becaus ethey surely are not
+ > generated by the keyboard itself (otherwise we'd have seen them in
+ > evtest output for that device).
+
+Minor correction to what I wrote earlier about the scroll wheel. That is 
+actually my mouse. It says Dell but it's really made by Logitech.
+
+I just tried the console and what's funny is Favorites actually works as 
+Capslock and Previous works as right-shift. X has the opposite problem.
+
+In case anyone missed it, Debian Stable works fine with this keyboard. 
+The keyboard on the working Stable machine is exactly the same (same usb 
+id's). I'm not familiar with the input stack, but in case it is a kernel 
+problem, the difference is:
+
+Stable dist, working:
+Linux zero 2.6.26-2-amd64 #1 SMP Thu Sep 16 15:56:38 UTC 2010 x86_64 
+GNU/Linux
+
+Testing dist, not working:
+Linux tom 2.6.32-5-amd64 #1 SMP Fri Sep 17 21:50:19 UTC 2010 x86_64 
+GNU/Linux
 
 
-Hey,
+/proc/bus/input/devices on the problem machine:
 
-iscsi_tcp, drivers/infiniband/ulp/iser/ib_iser, drivers/scsi/cxgb3i, 
-drivers/scsi/bnx2i, and drivers/scsi/be2iscsi use libiscsi's 
-iscsi_queuecommand function, so they should all use the same setting 
-unlocked_qcmd=1.
+I: Bus=0017 Vendor=0001 Product=0001 Version=0100
+N: Name="Macintosh mouse button emulation"
+P: Phys=
+S: Sysfs=/devices/virtual/input/input0
+U: Uniq=
+H: Handlers=mouse0 event0
+B: EV=7
+B: KEY=70000 0 0 0 0
+B: REL=3
+
+I: Bus=0003 Vendor=046d Product=c016 Version=0110
+N: Name="Logitech Optical USB Mouse"
+P: Phys=usb-0000:00:13.0-1/input0
+S: Sysfs=/devices/pci0000:00/0000:00:13.0/usb5/5-1/5-1:1.0/input/input1
+U: Uniq=
+H: Handlers=mouse1 event1
+B: EV=17
+B: KEY=70000 0 0 0 0
+B: REL=103
+B: MSC=10
+
+I: Bus=0019 Vendor=0000 Product=0001 Version=0000
+N: Name="Power Button"
+P: Phys=PNP0C0C/button/input0
+S: Sysfs=/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0C:00/input/input4
+U: Uniq=
+H: Handlers=kbd event4
+B: EV=3
+B: KEY=10000000000000 0
+
+I: Bus=0019 Vendor=0000 Product=0001 Version=0000
+N: Name="Power Button"
+P: Phys=LNXPWRBN/button/input0
+S: Sysfs=/devices/LNXSYSTM:00/LNXPWRBN:00/input/input5
+U: Uniq=
+H: Handlers=kbd event5
+B: EV=3
+B: KEY=10000000000000 0
+
+I: Bus=0010 Vendor=001f Product=0001 Version=0100
+N: Name="PC Speaker"
+P: Phys=isa0061/input0
+S: Sysfs=/devices/platform/pcspkr/input/input6
+U: Uniq=
+H: Handlers=kbd event6
+B: EV=40001
+B: SND=6
+
+I: Bus=0003 Vendor=046d Product=c30a Version=0110
+N: Name="Logitech Logitech USB Keyboard"
+P: Phys=usb-0000:00:13.0-2/input0
+S: Sysfs=/devices/pci0000:00/0000:00:13.0/usb5/5-2/5-2:1.0/input/input9
+U: Uniq=
+H: Handlers=kbd event2
+B: EV=120013
+B: KEY=1000000000007 ff800000000007ff febeffdfffefffff fffffffffffffffe
+B: MSC=10
+B: LED=1f
+
+I: Bus=0003 Vendor=046d Product=c30a Version=0110
+N: Name="Logitech Logitech USB Keyboard"
+P: Phys=usb-0000:00:13.0-2/input1
+S: Sysfs=/devices/pci0000:00/0000:00:13.0/usb5/5-2/5-2:1.1/input/input10
+U: Uniq=
+H: Handlers=kbd mouse2 event3
+B: EV=17
+B: KEY=fffffffffffff f8403340000 60d8fafd01d008 1f000000000000 0
+B: REL=103
+B: MSC=10
+
+
+--
+Tom Vier <tom@triadsys.com>
+Senior Net/Sys Admin
+Triad Systems Engineering, Inc.
+
