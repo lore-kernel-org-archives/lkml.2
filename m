@@ -1,112 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760872Ab0J0KrR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 06:47:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26346 "EHLO mx1.redhat.com"
+	id S1760896Ab0J0KuO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 06:50:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8825 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754009Ab0J0KrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 06:47:15 -0400
-Date: Wed, 27 Oct 2010 12:44:12 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 5/8] KVM: don't touch vcpu stat after async pf is
- complete
-Message-ID: <20101027104412.GO26191@redhat.com>
-References: <4CC7EA7D.5020901@cn.fujitsu.com>
- <4CC7EB75.9030709@cn.fujitsu.com>
+	id S1751639Ab0J0KuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 06:50:12 -0400
+Message-ID: <4CC803DD.2010508@redhat.com>
+Date: Wed, 27 Oct 2010 12:50:05 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CC7EB75.9030709@cn.fujitsu.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Andi Kleen <andi@firstfloor.org>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: fyi: gcc33-hammer crashes when compiling kvm emulate.c
+References: <20101026123828.GA30434@basil.fritz.box> <4CC70333.80400@zytor.com> <20101026163748.GB29961@basil.fritz.box> <4CC705ED.1020105@zytor.com> <20101026170142.GD29961@basil.fritz.box> <4CC71B94.2010802@zytor.com> <20101026202734.GB2603@basil.fritz.box> <4CC73C07.3030704@zytor.com>
+In-Reply-To: <4CC73C07.3030704@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 05:05:57PM +0800, Xiao Guangrong wrote:
-> Don't make a KVM_REQ_UNHALT request after async pf is completed since it
-> can break guest's 'halt' instruction.
-> 
-Why is it a problem? CPU may be unhalted by different events so OS
-shouldn't depend on it.
+  On 10/26/2010 10:37 PM, H. Peter Anvin wrote:
+> On 10/26/2010 01:27 PM, Andi Kleen wrote:
+> >>  That is an issue too, as 3.x does a lot fewer optimizations than 4.x.
+> >
+> >  Well to be fair the default -Os build disables most of the fancy stuff
+> >  (and the resulting code is often terrible)
+> >
+> >  I guess it doesn't matter too much, at least not with the
+> >  CONFIG_CC_OPTIMIZE_SIZE default.
+> >
+>
+> Yes, it would be nice to have a setting which is "optimize but don't
+> bloat excessively."
+>
 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-> ---
->  arch/x86/include/asm/kvm_host.h |    1 +
->  arch/x86/kvm/x86.c              |    5 +++++
->  virt/kvm/async_pf.c             |    1 +
->  virt/kvm/kvm_main.c             |    7 +++++--
->  4 files changed, 12 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index 1be0058..d01677b 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -822,6 +822,7 @@ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
->  				 struct kvm_async_pf *work);
->  void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu,
->  			       struct kvm_async_pf *work);
-> +void kvm_arch_async_pf_completion(struct kvm_vcpu *vcpu);
->  bool kvm_arch_can_inject_async_page_present(struct kvm_vcpu *vcpu);
->  extern bool kvm_find_async_pf_gfn(struct kvm_vcpu *vcpu, gfn_t gfn);
->  
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 0b2c420..c0e7ad0 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -6280,6 +6280,11 @@ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
->  	}
->  }
->  
-> +void kvm_arch_async_pf_completion(struct kvm_vcpu *vcpu)
-> +{
-> +	vcpu->arch.apf.halted = false;
-> +}
-> +
->  bool kvm_arch_can_inject_async_page_present(struct kvm_vcpu *vcpu)
->  {
->  	if (!(vcpu->arch.apf.msr_val & KVM_ASYNC_PF_ENABLED))
-> diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
-> index e213ca4..5307a32 100644
-> --- a/virt/kvm/async_pf.c
-> +++ b/virt/kvm/async_pf.c
-> @@ -142,6 +142,7 @@ bool kvm_check_async_pf_completion(struct kvm_vcpu *vcpu)
->  	if (work->page)
->  		put_page(work->page);
->  	kmem_cache_free(async_pf_cache, work);
-> +	kvm_arch_async_pf_completion(vcpu);
->  
->  	return true;
->  }
-> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> index d9aed28..23a8b06 100644
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -1347,11 +1347,14 @@ void kvm_vcpu_block(struct kvm_vcpu *vcpu)
->  	for (;;) {
->  		prepare_to_wait(&vcpu->wq, &wait, TASK_INTERRUPTIBLE);
->  
-> -		if (kvm_arch_vcpu_runnable(vcpu) ||
-> -		     kvm_check_async_pf_completion(vcpu)) {
-> +		if (kvm_arch_vcpu_runnable(vcpu)) {
->  			kvm_make_request(KVM_REQ_UNHALT, vcpu);
->  			break;
->  		}
-> +
-> +		if (kvm_check_async_pf_completion(vcpu))
-> +			break;
-> +
->  		if (kvm_cpu_has_pending_timer(vcpu))
->  			break;
->  		if (signal_pending(current))
-> -- 
-> 1.7.0.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Would be good to have __fastpath and __slowpath function attributes.
 
---
-			Gleb.
+__fastpath would always be optimized for speed, __slowpath always for 
+size, and everything else would use the default (determined by 
+CONFIG_CC_OPTIMIZE_FOR_SIZE).
+
+Looks like gcc has support for this, with __attribute__((hot)), 
+__attribute__((cold)), and __attribute__((optimize)).
+
+-- 
+error compiling committee.c: too many arguments to function
+
