@@ -1,63 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826Ab0J0FZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 01:25:26 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41518 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751928Ab0J0FZW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 01:25:22 -0400
-Date: Wed, 27 Oct 2010 06:25:20 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] fs: remove inode_lock from iput_final and
- prune_icache
-Message-ID: <20101027052520.GF19804@ZenIV.linux.org.uk>
-References: <1288153384-8878-1-git-send-email-david@fromorbit.com>
- <1288153384-8878-5-git-send-email-david@fromorbit.com>
- <20101027044038.GE19804@ZenIV.linux.org.uk>
- <1288154866.2652.84.camel@edumazet-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288154866.2652.84.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1752776Ab0J0F2n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 01:28:43 -0400
+Received: from mga09.intel.com ([134.134.136.24]:11279 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751138Ab0J0F2l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 01:28:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,244,1286175600"; 
+   d="scan'208";a="671269831"
+From: Huang Ying <ying.huang@intel.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        ying.huang@intel.com, linux-acpi@vger.kernel.org
+Subject: [PATCH -v3 0/8] ACPI, APEI patches for 2.6.37
+Date: Wed, 27 Oct 2010 13:28:24 +0800
+Message-Id: <1288157312-10441-1-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 06:47:46AM +0200, Eric Dumazet wrote:
-> Le mercredi 27 octobre 2010 ?? 05:40 +0100, Al Viro a ??crit :
-> > On Wed, Oct 27, 2010 at 03:23:04PM +1100, Dave Chinner wrote:
-> > > From: Dave Chinner <dchinner@redhat.com>
-> > > 
-> > > Now that inode state changes are protected by the inode->i_lock and
-> > > the inode LRU manipulations by the inode_lru_lock, we can remove the
-> > > inode_lock from prune_icache and the initial part of iput_final().
-> > > 
-> > > instead of using the inode_lock to protect the inode during
-> > > iput_final, use the inode->i_lock instead. This protects the inode
-> > > against new references being taken while we change the inode state
-> > > to I_FREEING, as well as preventing prune_icache from grabbing the
-> > > inode while we are manipulating it. Hence we no longer need the
-> > > i???ode_lock in iput_final prior to setting I_FREEING on the inode.
-> >   ^^^^^^^^^^^^
-> > 
-> > ... the hell?  There's more such damage elsewhere in the thread; what's
-> > going on?
-> > --
-> 
-> Maybe its on your side, no problem here on my copy.
+v3:
 
-"i\xe1\xb9\x89ode_lock", i.e. 'n' turned into U+1E49, aka "latin small letter
-n with line below".  I doubt that it's MTA braindamage.
+- Rework lock-less memory allocator and lock-less list.
 
-In the first patch there's 
+v2:
 
-- * invalidate_inodes    - attempt to free all inodes on a
-+ * nvalidate_inodes    - attempt to free all inodes on a
+- Some minor changes according to Andi's comments.
 
-and I _really_ doubt that anything in mail system is capable of something
-that elaborate.
+[PATCH -v3 1/8] ACPI, APEI, Add ERST record ID cache
+[PATCH -v3 2/8] lib, Make gen_pool memory allocator lock-less
+[PATCH -v3 3/8] lib, Add lock-less NULL terminated single list
+[PATCH -v3 4/8] Hardware error device core
+[PATCH -v3 5/8] Hardware error record persistent support
+[PATCH -v3 6/8] ACPI, APEI, Use ERST for hardware error persisting before panic
+[PATCH -v3 7/8] ACPI, APEI, Report GHES error record with hardware error device core
+[PATCH -v3 8/8] ACPI, APEI, Generic Hardware Error Source POLL/IRQ/NMI notification type support
