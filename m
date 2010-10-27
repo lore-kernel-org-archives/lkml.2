@@ -1,168 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760625Ab0J0JFR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 05:05:17 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:54737 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755088Ab0J0JFO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 05:05:14 -0400
-Message-ID: <4CC7EC55.7070201@cn.fujitsu.com>
-Date: Wed, 27 Oct 2010 17:09:41 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	id S1760740Ab0J0JFf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 05:05:35 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:36611 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752636Ab0J0JFc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 05:05:32 -0400
+Date: Wed, 27 Oct 2010 05:05:30 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] fs: Lock the inode LRU list separately
+Message-ID: <20101027090530.GB16443@infradead.org>
+References: <1288153384-8878-1-git-send-email-david@fromorbit.com>
+ <1288153384-8878-4-git-send-email-david@fromorbit.com>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: [PATCH 7/8] KVM: make async_pf work queue lockless
-References: <4CC7EA7D.5020901@cn.fujitsu.com>
-In-Reply-To: <4CC7EA7D.5020901@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288153384-8878-4-git-send-email-david@fromorbit.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The async_pf number is very few since only pending interrupt can
-let it re-enter to the guest mode.
+> @@ -30,10 +30,13 @@
+>   *
+>   * inode->i_lock protects:
+>   *   i_state
+> + * inode_lru_lock protects:
+> + *   inode_lru, i_lru
+>   *
+>   * Lock ordering:
+>   * inode_lock
+>   *   inode->i_lock
+> + *     inode_lru_lock
+>   */
 
-During my test(Host 4 CPU + 4G, Guest 4 VCPU + 6G), it's no
-more than 10 requests in the system.
+Always writing the inode fields as inode->i_foo might be better.
 
-So, we can only increase the completion counter in the work queue
-context, and walk vcpu->async_pf.queue list to get all completed
-async_pf
+> @@ -537,15 +545,10 @@ void evict_inodes(struct super_block *sb)
+>  		}
+>  
+>  		inode->i_state |= I_FREEING;
+> -		if (!(inode->i_state & (I_DIRTY | I_SYNC)))
+> -			percpu_counter_dec(&nr_inodes_unused);
+> +		inode_lru_list_del(inode);
+>  		spin_unlock(&inode->i_lock);
+>  
+> -		/*
+> -		 * Move the inode off the IO lists and LRU once I_FREEING is
+> -		 * set so that it won't get moved back on there if it is dirty.
+> -		 */
+> -		list_move(&inode->i_lru, &dispose);
+> +		list_add(&inode->i_lru, &dispose);
+>  	}
+>  	spin_unlock(&inode_lock);
+>  
+> @@ -582,15 +585,10 @@ int invalidate_inodes(struct super_block *sb)
+>  		}
+>  
+>  		inode->i_state |= I_FREEING;
+> -		if (!(inode->i_state & (I_DIRTY | I_SYNC)))
+> -			percpu_counter_dec(&nr_inodes_unused);
+> +		inode_lru_list_del(inode);
+>  		spin_unlock(&inode->i_lock);
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- include/linux/kvm_host.h |    4 +--
- virt/kvm/async_pf.c      |   50 +++++++++++++++++++--------------------------
- 2 files changed, 22 insertions(+), 32 deletions(-)
-
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index d91add9..33c03c3 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -78,7 +78,6 @@ int kvm_io_bus_unregister_dev(struct kvm *kvm, enum kvm_bus bus_idx,
- #ifdef CONFIG_KVM_ASYNC_PF
- struct kvm_async_pf {
- 	struct work_struct work;
--	struct list_head link;
- 	struct list_head queue;
- 	struct kvm_vcpu *vcpu;
- 	struct mm_struct *mm;
-@@ -127,10 +126,9 @@ struct kvm_vcpu {
- 
- #ifdef CONFIG_KVM_ASYNC_PF
- 	struct {
-+		atomic_t done;
- 		u32 queued;
- 		struct list_head queue;
--		struct list_head done;
--		spinlock_t lock;
- 		bool wakeup;
- 	} async_pf;
- #endif
-diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
-index 0d1f6c4..f10de1e 100644
---- a/virt/kvm/async_pf.c
-+++ b/virt/kvm/async_pf.c
-@@ -49,9 +49,7 @@ void kvm_async_pf_deinit(void)
- 
- void kvm_async_pf_vcpu_init(struct kvm_vcpu *vcpu)
- {
--	INIT_LIST_HEAD(&vcpu->async_pf.done);
- 	INIT_LIST_HEAD(&vcpu->async_pf.queue);
--	spin_lock_init(&vcpu->async_pf.lock);
- }
- 
- static void async_pf_execute(struct work_struct *work)
-@@ -72,11 +70,9 @@ static void async_pf_execute(struct work_struct *work)
- 	up_read(&mm->mmap_sem);
- 	unuse_mm(mm);
- 
--	spin_lock(&vcpu->async_pf.lock);
--	list_add_tail(&apf->link, &vcpu->async_pf.done);
- 	apf->page = page;
- 	apf->done = true;
--	spin_unlock(&vcpu->async_pf.lock);
-+	atomic_inc(&vcpu->async_pf.done);
- 
- 	/*
- 	 * apf may be freed by kvm_check_async_pf_completion() after
-@@ -101,52 +97,48 @@ void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu)
- 				   typeof(*work), queue);
- 		cancel_work_sync(&work->work);
- 		list_del(&work->queue);
--		if (!work->done) /* work was canceled */
--			kmem_cache_free(async_pf_cache, work);
--	}
--
--	spin_lock(&vcpu->async_pf.lock);
--	while (!list_empty(&vcpu->async_pf.done)) {
--		struct kvm_async_pf *work =
--			list_entry(vcpu->async_pf.done.next,
--				   typeof(*work), link);
--		list_del(&work->link);
- 		if (work->page)
- 			put_page(work->page);
- 		kmem_cache_free(async_pf_cache, work);
- 	}
--	spin_unlock(&vcpu->async_pf.lock);
- 
- 	vcpu->async_pf.queued = 0;
-+	atomic_set(&vcpu->async_pf.done, 0);
- }
- 
- bool kvm_check_async_pf_completion(struct kvm_vcpu *vcpu)
- {
- 	struct kvm_async_pf *work;
-+	struct list_head *pos, *temp;
- 
- 	if (vcpu->async_pf.wakeup) {
- 		vcpu->async_pf.wakeup = false;
- 		return true;
- 	}
- 
--	if (list_empty_careful(&vcpu->async_pf.done) ||
-+	if (!atomic_read(&vcpu->async_pf.done) ||
- 	    !kvm_arch_can_inject_async_page_present(vcpu))
- 		return false;
- 
--	spin_lock(&vcpu->async_pf.lock);
--	work = list_first_entry(&vcpu->async_pf.done, typeof(*work), link);
--	list_del(&work->link);
--	spin_unlock(&vcpu->async_pf.lock);
-+	list_for_each_safe(pos, temp, &vcpu->async_pf.queue) {
-+		work = list_entry(pos, typeof(*work), queue);
-+		if (!work->done)
-+			continue;
- 
--	if (work->page)
--		kvm_arch_async_page_ready(vcpu, work);
--	kvm_arch_async_page_present(vcpu, work);
-+		if (work->page) {
-+			kvm_arch_async_page_ready(vcpu, work);
-+			put_page(work->page);
-+		}
-+
-+		kvm_arch_async_page_present(vcpu, work);
-+
-+		list_del(&work->queue);
-+		vcpu->async_pf.queued--;
-+		kmem_cache_free(async_pf_cache, work);
-+		if (atomic_dec_and_test(&vcpu->async_pf.done))
-+			break;
-+	}
- 
--	list_del(&work->queue);
--	vcpu->async_pf.queued--;
--	if (work->page)
--		put_page(work->page);
--	kmem_cache_free(async_pf_cache, work);
- 	kvm_arch_async_pf_completion(vcpu);
- 
- 	return true;
--- 
-1.7.0.4
+with this scheme we now decrement nr_inodes_unused twice - once in
+invalidate_inodes/evict_inodes and once in dispose_one_inode.  I think
+you just want to use an opencoded list_move under the lru lock to
+move the inode to the temporary list for now, similar to what
+prune_icache does.
 
