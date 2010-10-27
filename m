@@ -1,106 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932754Ab0J0DXj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 23:23:39 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40970 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751863Ab0J0DXd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 23:23:33 -0400
-Date: Tue, 26 Oct 2010 20:23:07 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH] tools: add x86_energy_perf_policy to program
- MSR_IA32_ENERGY_PERF_BIAS
-Message-Id: <20101026202307.c028e26c.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1010230035360.29399@localhost.localdomain>
-References: <alpine.LFD.2.00.1006161659140.24913@localhost.localdomain>
-	<alpine.LFD.2.00.1009281143070.14962@localhost.localdomain>
-	<alpine.LFD.2.00.1010230035360.29399@localhost.localdomain>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	id S1760623Ab0J0DYr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 23:24:47 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:45289 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1752702Ab0J0DYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 23:24:41 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/trvdZTbrtbv41OQ8aUXmyfGoFpIT6upeQhD5i+J
+	mpVk9JNJ+xe7ZW
+Subject: Re: Clocksource tsc unstable (delta = -8589361717 ns) in current
+ git
+From: Mike Galbraith <efault@gmx.de>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Borislav Petkov <bp@amd64.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+In-Reply-To: <20101026135808.GB1672@arch.trippelsdorf.de>
+References: <20101026112052.GA1672@arch.trippelsdorf.de>
+	 <20101026131843.GC17852@aftab> <20101026135808.GB1672@arch.trippelsdorf.de>
+Content-Type: text/plain
+Date: Wed, 27 Oct 2010 05:24:36 +0200
+Message-Id: <1288149876.7296.3.camel@marge.simson.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.24.1.1 
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 23 Oct 2010 00:40:18 -0400 (EDT) Len Brown <lenb@kernel.org> wrote:
+On Tue, 2010-10-26 at 15:58 +0200, Markus Trippelsdorf wrote:
 
-> MSR_IA32_ENERGY_PERF_BIAS first became available on Westmere Xeon.
-> It is implemented in all Sandy Bridge processors -- mobile, desktop and server.
-> It is expected to become increasingly important in subsequent generations.
+> > > Initializing cgroup subsys cpu
+> > > Linux version 2.6.36-05618-gb18cae4-dirty (markus@arch.trippelsdorf.de) (gcc version 4.5.1 (GCC) ) #41 SMP PREEMPT Tue Oct 26 06:51:47 CEST 2010
+> > 
+> >  ...-dirty means you have some changes ontop of b18cae4. What are those?
 > 
-> x86_energy_perf_policy is a user-space utility to set this
-> hardware energy vs performance policy hint in the processor.
-> Most systems would benefit from "x86_energy_perf_policy normal"
-> at system startup, as the hardware default is maximum performance
-> at the expense of energy efficiency.  See the comments
-> in the source code for more information.
-> 
-> Linux-2.6.36 added "epb" to /proc/cpuinfo to indicate
-> if an x86 processor supports MSR_IA32_ENERGY_PERF_BIAS,
-> though the kernel does not actually program the MSR.
-> 
-> In March, Venkatesh Pallipadi proposed a small driver
-> that programmed MSR_IA32_ENERGY_PERF_BIAS, based on
-> the cpufreq governor in use.  It also offered
-> a boot-time cmdline option to override.
-> http://lkml.org/lkml/2010/3/4/457
-> But hiding the hardware policy behind the
-> governor choice was deemed "kinda icky".
-> 
-> So in June, I proposed a generic user/kernel API to
-> consolidate the power/performance policy trade-off.
-> "RFC: /sys/power/policy_preference"
-> http://lkml.org/lkml/2010/6/16/399
-> That is my preference for implementing this capability,
-> but I received no support on the list.
-> 
-> So in September, I sent x86_energy_perf_policy.c to LKML,
-> a user-space utility that scribbles directly to the MSR.
-> http://lkml.org/lkml/2010/9/28/246
-> 
-> Here is the same utility re-sent, this time proposed
-> to reside in the kernel tools directory.
-> 
-> Signed-off-by: Len Brown <len.brown@intel.com>
-> ---
->  tools/power/x86/x86_energy_perf_policy/Makefile    |    7 +
->  .../x86_energy_perf_policy.c                       |  358 ++++++++++++++++++++
->  2 files changed, 365 insertions(+), 0 deletions(-)
->  create mode 100644 tools/power/x86/x86_energy_perf_policy/Makefile
->  create mode 100644 tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c
+> The SCHED_AUTOGROUP patches from Mike Galbraith.
 
-tools/power/x86, eh?  It seems a better place than under
-Documentation/, where such things have thus far landed!
+Turns out that patch is still racy btw.  Very hard to trigger, but you
+should remove it for safety and test result integrity anyway.
 
-I looked briefly, wondering about the kbuild situation.  It doesn't
-appear to be wired up, so one has to manually enter that directory and
-type `make'?
-
-I guess that's OK as an interim thing but longer-term I suppose we
-should have some more complete build and deployment system.  So
-(thinking out loud) a `make' would invoke a `make tools', and that
-`make tools' would build the tools which are specific to the target
-arch[*], and any generic ones.  And a `make tools_install' would install
-those tools in, I guess, /lib/modules/$(uname -r)/bin.
-
-Or something else.  We'd need input from the distro guys to get this
-right.
-
-[*]: building tools for the `target arch' would require a far more
-extensive cross-build environment than is needed for just kernel
-cross-compilation.  This is perhaps Just Too Hard and perhaps a `make
-tools_install' should copy the *source* into /lib/modules/$(uname
--r)/src and you then finish the build on the target.  Or something
-else.  The mind boggles.
-
-So for now, just parking the source down in ./tools/ and deferring the
-problem sounds a fine idea ;)
-
-A number of programs down under Documentation/ should be moved into
-tools/ as well.
+	-Mike
 
