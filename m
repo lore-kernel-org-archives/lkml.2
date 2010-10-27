@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933677Ab0J0PWq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 11:22:46 -0400
-Received: from solo.fdn.fr ([80.67.169.19]:35517 "EHLO solo.fdn.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933342Ab0J0PWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 11:22:44 -0400
-Date: Wed, 27 Oct 2010 17:22:42 +0200
-From: Samuel Thibault <sthibault@debian.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Tom Vier <tom@triadsys.com>,
-        "594089@bugs.debian.org" <594089@bugs.debian.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: Re: Bug#594089: keyboard-configuration: caps lock keycode problem
-Message-ID: <20101027152242.GO4725@const.famille.thibault.fr>
-Mail-Followup-To: Samuel Thibault <sthibault@debian.org>,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	Tom Vier <tom@triadsys.com>,
-	"594089@bugs.debian.org" <594089@bugs.debian.org>,
-	"linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	Jiri Kosina <jkosina@suse.cz>
-References: <20101024144150.GV24091@const.famille.thibault.fr> <20101025045003.GA1438@core.coreip.homeip.net> <4CC58816.3090301@triadsys.com> <20101025180320.GA4725@const.famille.thibault.fr> <4CC6E9D8.8010201@triadsys.com> <20101026161820.GE13097@core.coreip.homeip.net> <4CC7426C.8040502@triadsys.com> <20101027091029.GB28895@core.coreip.homeip.net> <20101027120513.GT4725@const.famille.thibault.fr> <99F91536-4413-430C-9932-7CEF6AB656DB@gmail.com>
+	id S933682Ab0J0PYv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 11:24:51 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:56266 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933342Ab0J0PYs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 11:24:48 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Christoph Hellwig <hch@infradead.org>
+Subject: Re: nfsd changes for 2.6.37
+Date: Wed, 27 Oct 2010 17:23:59 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-16-generic; KDE/4.5.1; x86_64; ; )
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <20101026164549.GD19445@fieldses.org> <20101027145538.GC6328@fieldses.org> <20101027145929.GA5788@infradead.org>
+In-Reply-To: <20101027145929.GA5788@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <99F91536-4413-430C-9932-7CEF6AB656DB@gmail.com>
-User-Agent: Mutt/1.5.12-2006-07-14
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010271723.59734.arnd@arndb.de>
+X-Provags-ID: V02:K0:4EGyENZNNtkM1Z+UlbCpRwOc4Cm3oR9GTl61SfJu49k
+ LAFBCOG0JixCQla4t8dT18SAfEtmnQZYVupkwuGrdsgTCVDKPJ
+ Jqk22pSaS/0Mcw5lJIuoNIufEWBmZQQAYjxE4izzgES/1vFVp4
+ Zko/CFTZcxxBhoGCoTYhMYemzfBVOrV6Crgmj007J0iVSIOyrD
+ e2dmikk5twut69Igl+Gcw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Torokhov, le Wed 27 Oct 2010 08:06:26 -0700, a écrit :
-> On Oct 27, 2010, at 5:05 AM, Samuel Thibault <sthibault@debian.org> wrote:
+On Wednesday 27 October 2010, Christoph Hellwig wrote:
+> On Wed, Oct 27, 2010 at 10:55:39AM -0400, J. Bruce Fields wrote:
+> > Hm, two problems:
+> > 	- We introduce the possibility of fcntl(fd, F_SETLEASE, F_UNLCK)
+> > 	  failing with ENOMEM.
 > 
-> 
->     Dmitry Torokhov, le Wed 27 Oct 2010 02:10:29 -0700, a écrit :
-> 
->         Also, based on evtest data I only see presses/releases for one key
->         (Caps Lock, Right Shift, etc.) I do not see the presses for the additional
->         keys in the evtest stream so I am baffled as to where the additional
->         scancode is coming from... Do you have some funky keymap loaded?
->         Anything interesting in dumpkeys?
-> 
-> 
->     Err, since the duplicates appear in scancodes already, is the content of
->     dumpkeys really involved?
-> 
-> Evtest data does not show any additional events, so the additional scancodes
-> must be coming from the legacy keyboard driver. 
+> splitt ->setlease into ->add_least and ->delete_lease.  No need to pass
+> in a structure for the later.  No need to return one either.
 
-Sure, but dumpkeys shows the table from scancodes to keycodes, not from
-input events to scancodes.
+That sounds like a good way to get rid of a lot of special cases, too.
 
-Samuel
+> > 	- fasync_helper(.,.,1,.) sleeps.  Argh.
+> 
+> That's not new..
+
+It comes back to the original problem with Bruce's patch though:
+fcntl_setlease wants to atomically add a lease or fail. If
+fasync_helper fails, we want to remove the lease that was
+just added before anyone can see it. At the very least we need
+to keep the flock from getting freed in another thread while
+we call fasync_helper without the lock.
+
+locks_delete_lock is also called with lock_flocks held and calls
+fasync_helper...
+
+	Arnd
