@@ -1,83 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933559Ab0J0Afs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 20:35:48 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:53917 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754975Ab0J0Afp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 20:35:45 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: hadi@cyberus.ca
-Cc: Daniel Lezcano <daniel.lezcano@free.fr>,
-        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
-        Linux Containers <containers@lists.osdl.org>, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Ulrich Drepper <drepper@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        David Miller <davem@davemloft.net>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        Ben Greear <greearb@candelatech.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Jonathan Corbet <corbet@lwn.net>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>
-References: <m1ocborgq7.fsf@fess.ebiederm.org>
-	<m1bp7oq1u8.fsf@fess.ebiederm.org> <4C9B162E.7040201@parallels.com>
-	<1285240797.5036.5.camel@bigi> <4C9B3B06.900@parallels.com>
-	<1285242055.5036.9.camel@bigi> <4C9B3F9C.8080506@parallels.com>
-	<4CA7A07C.5030504@free.fr> <1286113441.3812.229.camel@bigi>
-	<1287145855.3642.30.camel@bigi> <1288126326.2094.131.camel@mojatatu>
-Date: Tue, 26 Oct 2010 17:27:47 -0700
-In-Reply-To: <1288126326.2094.131.camel@mojatatu> (jamal's message of "Tue, 26
-	Oct 2010 16:52:06 -0400")
-Message-ID: <m1aam032f0.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 98.207.157.188
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;hadi@cyberus.ca
-X-Spam-Relay-Country: 
-Subject: Re: netns patches WAS( Re: [PATCH 8/8] net: Implement socketat.
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	id S933568Ab0J0Agb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 20:36:31 -0400
+Received: from mga02.intel.com ([134.134.136.20]:29122 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933331Ab0J0Aga (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 20:36:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,243,1286175600"; 
+   d="scan'208";a="671203817"
+Subject: Re: [PATCH] apds9802als: add runtime PM support
+From: Hong Liu <hong.liu@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Alan Cox <alan@linux.intel.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
+In-Reply-To: <Pine.LNX.4.44L0.1010260944270.1634-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1010260944270.1634-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel
+Date: Wed, 27 Oct 2010 08:39:21 +0800
+Message-ID: <1288139961.19329.401.camel@hongdev>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-jamal <hadi@cyberus.ca> writes:
+On Tue, 2010-10-26 at 21:51 +0800, Alan Stern wrote:
+> On Tue, 26 Oct 2010, Hong Liu wrote:
+> 
+> > > > diff --git a/drivers/misc/apds9802als.c b/drivers/misc/apds9802als.c
+> > > > index fbe4960..15f9436 100644
+> > > > --- a/drivers/misc/apds9802als.c
+> > > > +++ b/drivers/misc/apds9802als.c
+> > > 
+> > > > @@ -265,13 +274,34 @@ static int apds9802als_suspend(struct i2c_client *client, pm_message_t mesg)
+> > > >  
+> > > >  static int apds9802als_resume(struct i2c_client *client)
+> > > >  {
+> > > > -	struct als_data *data = i2c_get_clientdata(client);
+> > > > +	als_set_default_config(client);
+> > > > +
+> > > > +	pm_runtime_get(&client->dev);
+> > > > +	pm_runtime_put(&client->dev);
+> > > > +	return 0;
+> > > > +}
+> > > 
+> > 
+> > Hi, Alan
+> > 
+> > Thanks for your review.
+> > 
+> > > This almost certainly does not do what you think.
+> > > 
+> > > pm_runtime_get() will increment the device's usage count and queue an 
+> > > asynchronous resume request.  However, since the PM workqueue is frozen 
+> > > during system sleep transitions, the device will remain suspended.
+> > > 
+> > > The pm_runtime_put() will decrement the usage count again, but since
+> > > there is already an async resume on the queue it will not queue an
+> > > async suspend.  The final result will be that when tasks are unfrozen,
+> > > the device will finally be resumed -- long after it should have been.
+> > > 
+> > > It looks like what you want to do here is simply call
+> > > apds9802als_runtime_resume() directly.  
+> > 
+> > You mean apds9802als_runtime_suspend()?
+> 
+> This is about the function listed above: apds9802als_resume().  It
+> should call apds9802als_runtime_resume() directly.  I don't see any
+> reason why you would want it to call apds9802als_runtime_suspend() --
+> having a resume function that actually suspends the device doesn't make
+> any sense.
 
-> Eric,
->
-> Ping?
-> If you are too busy to push these in maybe have
-> someone clueful like Daniel help out submitting? I think it
-> should probably be reasonable to leave out the sockeat
-> patch initially if it is deemed controversial..
+In apds9802als_resume, I just want to power up the device, do some
+configuration, and then runtime_suspend the device.
 
-This merge cycle I am too busy, and my patches did not make it into
-linux-next before the merge window.
+We don't have runtime_idle() implemented, the driver exported sysfs
+entries to user space for data reading, and we do runtime_resume,
+measaure data, runtime_suspend in the read/write funciton of those sysfs
+entries. This is why I want to put the device into runtime suspend
+manually whenever possible.
 
-Everything except socketat at seems non-controversial.  socketat makes
-sense to post-pone a little bit until we start converting applications,
-and there is a little real world experience about what is needed.
 
-I anticipate some time freeing up in the next couple of weeks so I
-should be ready for the next merge window.
+> 
+> > I want to put the device into
+> > runtime suspended state, can I just call pm_runtime_suspend() directly?
+> 
+> Why do you want apds9802als_resume() to put the device into a suspended 
+> state?  Shouldn't it _resume_ the device?
+> 
+> > > And according to the advice in
+> > > Documentation/power/runtime_pm.txt section 6, you should also call
+> 
+> Have you read that document?
+> 
+> > > 	pm_runtime_disable(dev);
+> > > 	pm_runtime_set_active(dev);
+> > > 	pm_runtime_enable(dev);
+> > > 
+> > > You probably also do not want the asynchronous calls to 
+> > > pm_runtime_get() and pm_runtime_put() in apds9802als_probe().  A more 
+> > > common sequence is:
+> > > 
+> > > 	pm_runtime_set_active(dev);
+> > > 	pm_runtime_enable(dev);
+> > 
+> > I want to put the device into runtime suspend state after probe, so
+> > pm_runtime_suspend() after these two calls is OK?
+> 
+> No.  Try doing what I said.  You should find that the device _does_ get
+> runtime-suspended when the probe function returns.  Assuming you have
+> defined a proper apds9802als_runtime_idle() function.
 
-Eric
+We don't have runtime_idle() implemented, so I have to manually put the
+device into runtime suspend.
+
+Thanks,
+Hong
+
+> 
+> Alan Stern
+> 
+
+
