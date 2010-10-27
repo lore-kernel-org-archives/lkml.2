@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757044Ab0J0GJj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 02:09:39 -0400
-Received: from caiajhbdcaid.dreamhost.com ([208.97.132.83]:48668 "EHLO
-	homiemail-a4.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751926Ab0J0GJf convert rfc822-to-8bit
+	id S1757303Ab0J0GUU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 02:20:20 -0400
+Received: from web37604.mail.mud.yahoo.com ([209.191.87.87]:35526 "HELO
+	web37604.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753250Ab0J0GUS convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 02:09:35 -0400
-Subject: Re: [PATCH 4/4] fs: remove inode_lock from iput_final and
- prune_icache
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Dave Chinner <david@fromorbit.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1288158623.2652.161.camel@edumazet-laptop>
-References: <1288153384-8878-1-git-send-email-david@fromorbit.com>
-	 <1288153384-8878-5-git-send-email-david@fromorbit.com>
-	 <20101027044038.GE19804@ZenIV.linux.org.uk>
-	 <1288154866.2652.84.camel@edumazet-laptop>
-	 <20101027052520.GF19804@ZenIV.linux.org.uk>
-	 <1288158623.2652.161.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 27 Oct 2010 03:09:22 -0300
-Message-ID: <1288159762.1985.5.camel@cowboy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 27 Oct 2010 02:20:18 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=f0buXcms1trcCpJFYmvQ8h8Q2I0LLzugVFQyFSpZdaPH9HwHuVa3kF6LlUUyEDa6w5907lNYpzYPujQeNfLvda/91bPZ7Ectlx7oYKfpJfX+52rcvQ3vhWuLxxGbp53AW7dTOmdW71a6Tqw5g2Du9vnROv+dtIrwGvIuPdBO3GQ=;
+Message-ID: <882321.18802.qm@web37604.mail.mud.yahoo.com>
+X-YMail-OSG: GQ.XEUoVM1kcA0g.NVO1_EZxohSQq84OMMkDkq9NGoG58Fu
+ 1sLQ3CNIQMkaL.da7hksHEiFs8GxSG52O5aTMvhlViF_seVjBxvxkkoFJRzy
+ XTDjN0qQbGli5.r1CgxXTFXdD6GVZjyOiHB0f.WITEoE04NC8WVvyhBeUggG
+ Gk9wsGfCuq_ID4IBx8sjQ8LY56jEF3ma2bvmOeNaFWsAa58dDudpYHvGuBO3
+ JtZO8BahJEfIeqIDaZYc9uuv_W.rWLx.USxAa38jsakfNf9RNSLKYE1ZAl2a
+ Xbe_8s3QkPIZ7OJbgdEjvdLgztvTirdDQA5LRJ5a1wtUouZbHrsFxjA--
+X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.284920
+Date: Tue, 26 Oct 2010 23:20:16 -0700 (PDT)
+From: Alex Dubov <oakad@yahoo.com>
+Subject: Re: memstick: Alternative approach to proposed fixes
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <1288133739.15918.3.camel@maxim-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-27 at 07:50 +0200, Eric Dumazet wrote:
-> Le mercredi 27 octobre 2010 à 06:25 +0100, Al Viro a écrit :
-> > "i\xe1\xb9\x89ode_lock", i.e. 'n' turned into U+1E49, aka "latin small letter
-> > n with line below".  I doubt that it's MTA braindamage.
-> > 
-> > In the first patch there's 
-> > 
-> > - * invalidate_inodes    - attempt to free all inodes on a
-> > + * nvalidate_inodes    - attempt to free all inodes on a
-> > 
-> > and I _really_ doubt that anything in mail system is capable of something
-> > that elaborate.
-> 
-> Again, I can not see it in my copy, I checked lkml archives too :
-> 
-Neither can I, the patch is good (from a character point of view).
 
+> All the changes in this patchset are really minor and
+> optional.
+> I could have dropped them.
+
+These are the only substantial fixes you patchset has. The rest of the
+large submission is your unilateral decision to rewrite the whole thing
+almost from scratch. I proposed, multiple times, to fix the small things
+first, then discuss the long term evolution.
+
+> 
+> 
+> I did much more that that.
+> I made the memstick code readable so not only you could
+> understand it
+> I also wrote ms_block.c while adding common support.
+> I made your code use that support.
+> 
+> It is really sad that you are doing that.
+> 
+> 
+> 
+> 
+
+
+      
