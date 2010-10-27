@@ -1,87 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760349Ab0J0I0H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 04:26:07 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:33058 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755425Ab0J0I0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 04:26:03 -0400
-Date: Wed, 27 Oct 2010 10:25:37 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Borislav Petkov <petkovbb@googlemail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Don Zickus <dzickus@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [NAK] Re: [PATCH -v2 9/9] ACPI, APEI, Generic Hardware Error
- Source POLL/IRQ/NMI notification type support
-Message-ID: <20101027082537.GA23945@elte.hu>
-References: <20101025084553.GA27119@elte.hu>
- <1287997112.2862.322.camel@yhuang-dev>
- <20101025091913.GA17622@basil.fritz.box>
- <20101025111530.GA27659@elte.hu>
- <20101025123753.GB17622@basil.fritz.box>
- <20101025125531.GA6075@elte.hu>
- <20101025131127.GC17622@basil.fritz.box>
- <20101025134740.GA8888@elte.hu>
- <20101025151427.GD17622@basil.fritz.box>
- <20101025171022.GA29803@elte.hu>
+	id S1760617Ab0J0I1J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 04:27:09 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:51753 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755425Ab0J0I1H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 04:27:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=oPvhN1zo8Ac2GHAPA09s9fWcMEn+tiaYROCNl7dwaTeoOHspO3M37/zIc8Wt573nrz
+         QoKCqWQ46zW3RKHSeuMdUaaQfzAhUxLyEFogEiFqmd+l28BtYQQWee7BI1F6ruw2kX8U
+         zzhb2rsnVrSuaODRwVT7xSFOywYoGMqwoJfIY=
+Date: Wed, 27 Oct 2010 01:26:58 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/in,put/mouse/psmouse-base.c: fix messages to
+ point to existing file
+Message-ID: <20101027082657.GA28895@core.coreip.homeip.net>
+References: <4CC7D1CC.8090008@toshiba.co.jp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101025171022.GA29803@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <4CC7D1CC.8090008@toshiba.co.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Yoshitake,
 
-Btw., just for the record. Two days ago you started getting personal:
+On Wed, Oct 27, 2010 at 08:16:28AM +0100, KOBAYASHI Yoshitake wrote:
+> This patch makes it easier to find the file.
+> 
+> Signed-off-by: Yoshitake Kobayashi <yoshitake.kobayashi@toshiba.co.jp>
+> ---
+>  drivers/input/mouse/psmouse-base.c |   36 ++++++++++++++++++++++++------------
+>  1 files changed, 24 insertions(+), 12 deletions(-)
+> 
+> diff --git a/drivers/input/mouse/psmouse-base.c b/drivers/input/mouse/psmouse-base.c
+> index 73a7af2..ecc476d 100644
+> --- a/drivers/input/mouse/psmouse-base.c
+> +++ b/drivers/input/mouse/psmouse-base.c
+> @@ -251,11 +251,13 @@ static int psmouse_handle_byte(struct psmouse *psmouse)
+>  	switch (rc) {
+>  	case PSMOUSE_BAD_DATA:
+>  		if (psmouse->state == PSMOUSE_ACTIVATED) {
+> -			printk(KERN_WARNING "psmouse.c: %s at %s lost sync at byte %d\n",
+> +			printk(KERN_WARNING
+> +				"psmouse-base.c: %s at %s lost sync at byte %d\n",
+>  				psmouse->name, psmouse->phys, psmouse->pktcnt);
+>  			if (++psmouse->out_of_sync_cnt == psmouse->resetafter) {
+>  				__psmouse_set_state(psmouse, PSMOUSE_IGNORE);
+> -				printk(KERN_NOTICE "psmouse.c: issuing reconnect request\n");
+> +				printk(KERN_NOTICE
+> +					"psmouse-base.c: issuing reconnect request\n");
 
-* Andi Kleen <andi@firstfloor.org> wrote:
+Thank you very much for your patch, however I have a patch from Joe
+Perches in my queue that converts input devices to use pr_err() and
+similar helpers and KBUILD_BASENAME as format prefix. This will produce
+result similar to your patch but is more maintenable since the messages
+need not be updated if they are moved or source file is renamed.
 
-> That's not really the old Ingo I used to know.
+Thanks.
 
-But when i (again) outlayed all the technical reasons for the NAK, you did not 
-answer. You also did not answer Thomas's technical mail either.
-
-I've seen this behavior many times from you: when the technical argument goes 
-against you, when many people are telling you that you are mostly wrong, you do not 
-concede, you do not argue in support of your position, you simply ignore the 
-discussion from that point on and you pretend that the discussion does not exist 
-anymore.
-
-Then a few weeks/months down the line this same pattern repeats: there's another 
-similar incident somewhere else, and i'm (or others) are forced to NAK the hard way. 
-You then claim it's unreasonable and you act as if the prior discussions did not 
-happen at all. Rinse and repeat. Most people dont remember so it even looks 
-plausible to the casual observer.
-
-The thing is, upstream NAKs need to be addressed in good faith.
-
-Again: i'm NAK-ing the use of the x86 NMI notifier chain in this fashion and i'm 
-NAK-ing the exports that this patch is adding to arch/x86/. It's not the proper 
-approach for the many reasons we outlined - debug facilities want to be organized in 
-the core, not spread out to vendor-specific fringes.
-
-I wouldnt mind as much if this was a driver for hw few people care about - but this 
-looks like a useful piece of Intel hardware whose Linux support you are messing up 
-thoroughly by exporting an ABI in the worst possible way. We can and should do 
-better than this.
-
-Thanks,
-
-	Ingo
+-- 
+Dmitry
