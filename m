@@ -1,40 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756688Ab0J0USi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 16:18:38 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:54704 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752328Ab0J0USg (ORCPT
+	id S1756771Ab0J0UTO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 16:19:14 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:50886 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752328Ab0J0UTM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 16:18:36 -0400
-Date: Wed, 27 Oct 2010 21:18:33 +0100 (BST)
-From: "Maciej W. Rozycki" <macro@linux-mips.org>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
-        Don Zickus <dzickus@redhat.com>
-Subject: Re: [rfc -tip 0/2] Implementing self IPI with NMI destination
-In-Reply-To: <20101027195352.996250316@openvz.org>
-Message-ID: <alpine.LFD.2.00.1010272113001.6079@eddie.linux-mips.org>
-References: <20101027195352.996250316@openvz.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Wed, 27 Oct 2010 16:19:12 -0400
+From: "Dr. Martin Rogge" <marogge@onlinehome.de>
+To: linux-kernel@vger.kernel.org
+Subject: Re: several problems with intel graphics since 2.6.36
+Date: Wed, 27 Oct 2010 22:19:10 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-ck1; KDE/4.5.1; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201010272219.10225.marogge@onlinehome.de>
+X-Provags-ID: V02:K0:o3FmLEWDnSmwWCMwrRTM8AxAXeJ/vhr/thXN49xut/I
+ yobSBfnrPSzmSlhpMgJhGvfPf357b0qjA2jCQdzfIE0fWhYCgH
+ hPBc6Y0Dnm8xDm9plDqA4QV9X5nZh9p/eM/MGWEoCcawCCJCO1
+ BS1mfZAKDyKgyJBwnStD1o3XyKLNsh61ZN34R8IvtJgzQnWlhy
+ m2QQRekMs1/X9azuEhB0Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Oct 2010, Cyrill Gorcunov wrote:
+Norbert Preining wrote:
 
->  Here is self-IPI with NMI destination implemented. Don was testing
-> perf NMI's and we found that we don't have a simple call for self-nmi IPI.
+> Dear all,
+> 
+> I have the feeling that 2.6.36 has introduced many regressions
+> concerning Intel graphics card.
+> 
 
- I'm completely swamped with binutils stuff these days, and I've got a 
-couple of outstanding issues to deal with before the imminent 2.21 release 
--- I'll try to pinch some time and have a look at your patches over the 
-weekend, but please forgive me if I don't (and ping me sometime next week 
-then).
+my experience is slightly different: 2.6.35 introduced a sporadic suspend 
+issue on a laptop (GM45 based) that has never been fixed but disappeared early 
+on in 2.6.36. (https://bugzilla.kernel.org/show_bug.cgi?id=16532)
 
-  Maciej
+on another machine (i3 Clarkdale based) 2.6.36 introduced a sporadic cold X 
+freeze, somtimes logging a kernel bug, sometimes affecting the process 
+scheduler. (https://bugzilla.kernel.org/show_bug.cgi?id=20452)
+
+>From the day I built that i3 machine (2.6.33 or 2.6.34) it has had issues with 
+the 64 bit flash plugin, resulting in an X crash eventually when repeatedly 
+maximising/minimising a flash video. However, this issue might not be kernel 
+related. (https://bugs.freedesktop.org/show_bug.cgi?id=26937 )
+
+One of the vblank fixes (presumably) in 2.6.35 or 2.6.36 now causes a few dark 
+periods during initialisation. (no bug report)
+
+I try and bisect where I can, but often the issues are sporadic and bisecting 
+just ends up being a waste of time.
+
+Martin
