@@ -1,143 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932280Ab0J0VGF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 17:06:05 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:53868 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756705Ab0J0VGD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 17:06:03 -0400
-Subject: Re: [RFC PATCH 0/1] vhost: Reduce TX used buffer signal for
- performance
-From: Shirley Ma <mashirle@us.ibm.com>
-To: "mst@redhat.com" <mst@redhat.com>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1288213257.17571.25.camel@localhost.localdomain>
-References: <1288213257.17571.25.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 27 Oct 2010 14:05:57 -0700
-Message-ID: <1288213557.17571.28.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S932328Ab0J0VHt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 17:07:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46308 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932230Ab0J0VHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 17:07:47 -0400
+Date: Wed, 27 Oct 2010 17:07:08 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: rostedt@goodmis.org, mingo@elte.hu
+Cc: mathieu.desnoyers@polymtl.ca, hpa@zytor.com, tglx@linutronix.de,
+        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org,
+        tony@bakeyournoodle.com, ddaney@caviumnetworks.com, dsd@laptop.org,
+        linux-kernel@vger.kernel.org
+Message-Id: <cover.1288212485.git.jbaron@redhat.com>
+Subject: [PATCH 0/2] jump label updates
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes vhost TX used buffer signal to guest from one by
-one to up to 3/4 of vring size. This change improves vhost TX message 
-size from 256 to 8K performance for both bandwidth and CPU utilization 
-without inducing any regression.
+Hi,
 
-Signed-off-by: Shirley Ma <xma@us.ibm.com>
----
+So we finally tracked down the jump label crashes and it turned out that there
+was a a bug in the compiler in the implementation of 'asm goto'. As the fix has
+not yet been committed yet to gcc, and I don't have a simple test case to
+check if the bug has been fixed, we are going to disable jump labels pending
+a better test to detect that gcc has been fixed.
 
- drivers/vhost/net.c   |   19 ++++++++++++++++++-
- drivers/vhost/vhost.c |   31 +++++++++++++++++++++++++++++++
- drivers/vhost/vhost.h |    3 +++
- 3 files changed, 52 insertions(+), 1 deletions(-)
+The second patch fixes a hang on Geode LX, b/c the no-op probing was done too
+early - before the exception tables had even been setup.
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 4b4da5b..bd1ba71 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -198,7 +198,24 @@ static void handle_tx(struct vhost_net *net)
- 		if (err != len)
- 			pr_debug("Truncated TX packet: "
- 				 " len %d != %zd\n", err, len);
--		vhost_add_used_and_signal(&net->dev, vq, head, 0);
-+		/*
-+		 * if no pending buffer size allocate, signal used buffer
-+		 * one by one, otherwise, signal used buffer when reaching
-+		 * 3/4 ring size to reduce CPU utilization.
-+		 */
-+		if (unlikely(vq->pend))
-+			vhost_add_used_and_signal(&net->dev, vq, head, 0);
-+		else {
-+			vq->pend[vq->num_pend].id = head;
-+			vq->pend[vq->num_pend].len = 0;
-+			++vq->num_pend;
-+			if (vq->num_pend == (vq->num - (vq->num >> 2))) {
-+				vhost_add_used_and_signal_n(&net->dev, vq,
-+							    vq->pend,
-+							    vq->num_pend);
-+				vq->num_pend = 0;
-+			}
-+		}
- 		total_len += len;
- 		if (unlikely(total_len >= VHOST_NET_WEIGHT)) {
- 			vhost_poll_queue(&vq->poll);
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index 94701ff..47696d2 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -170,6 +170,16 @@ static void vhost_vq_reset(struct vhost_dev *dev,
- 	vq->call_ctx = NULL;
- 	vq->call = NULL;
- 	vq->log_ctx = NULL;
-+	/* signal pending used buffers */
-+	if (vq->pend) {
-+		if (vq->num_pend != 0) {
-+			vhost_add_used_and_signal_n(dev, vq, vq->pend,
-+						    vq->num_pend);
-+			vq->num_pend = 0;
-+		}
-+		kfree(vq->pend);
-+	}
-+	vq->pend = NULL;
- }
- 
- static int vhost_worker(void *data)
-@@ -273,7 +283,13 @@ long vhost_dev_init(struct vhost_dev *dev,
- 		dev->vqs[i].heads = NULL;
- 		dev->vqs[i].dev = dev;
- 		mutex_init(&dev->vqs[i].mutex);
-+		dev->vqs[i].num_pend = 0;
-+		dev->vqs[i].pend = NULL;
- 		vhost_vq_reset(dev, dev->vqs + i);
-+		/* signal 3/4 of ring size used buffers */
-+		dev->vqs[i].pend = kmalloc((dev->vqs[i].num -
-+					   (dev->vqs[i].num >> 2)) *
-+					   sizeof *vq->peed, GFP_KERNEL);
- 		if (dev->vqs[i].handle_kick)
- 			vhost_poll_init(&dev->vqs[i].poll,
- 					dev->vqs[i].handle_kick, POLLIN, dev);
-@@ -599,6 +615,21 @@ static long vhost_set_vring(struct vhost_dev *d, int ioctl, void __user *argp)
- 			r = -EINVAL;
- 			break;
- 		}
-+		if (vq->num != s.num) {
-+			/* signal used buffers first */
-+			if (vq->pend) {
-+				if (vq->num_pend != 0) {
-+					vhost_add_used_and_signal_n(vq->dev, vq,
-+								    vq->pend,
-+								    vq->num_pend);
-+					vq->num_pend = 0;
-+				}
-+				kfree(vq->pend);
-+			}
-+			/* realloc pending used buffers size */
-+			vq->pend = kmalloc((s.num - (s.num >> 2)) *
-+					   sizeof *vq->pend, GFP_KERNEL);
-+		}
- 		vq->num = s.num;
- 		break;
- 	case VHOST_SET_VRING_BASE:
-diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-index 073d06a..78949c0 100644
---- a/drivers/vhost/vhost.h
-+++ b/drivers/vhost/vhost.h
-@@ -108,6 +108,9 @@ struct vhost_virtqueue {
- 	/* Log write descriptors */
- 	void __user *log_base;
- 	struct vhost_log *log;
-+	/* delay multiple used buffers to signal once */
-+	int num_pend;
-+	struct vring_used_elem *pend;
- };
- 
- struct vhost_dev {
+thanks,
 
+-Jason
+
+Jason Baron (2):
+  move arch_init_ideal_nop5 later
+  jump label: disable due to compiler bug
+
+ arch/x86/include/asm/alternative.h |    1 -
+ arch/x86/kernel/alternative.c      |  132 ++++++++++++++++++------------------
+ arch/x86/kernel/setup.c            |    6 --
+ include/linux/jump_label.h         |    9 +++
+ 4 files changed, 76 insertions(+), 72 deletions(-)
 
