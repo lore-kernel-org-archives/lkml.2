@@ -1,126 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761172Ab0J0Mzi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 08:55:38 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:48989 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756250Ab0J0Mzf convert rfc822-to-8bit (ORCPT
+	id S1761177Ab0J0NAN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 09:00:13 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:39432 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755368Ab0J0NAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 08:55:35 -0400
-From: <ilkka.koskinen@nokia.com>
-To: <dmitry.torokhov@gmail.com>
-CC: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <spi-devel-general@lists.sourceforge.net>, <ilkka.koskinen@nokia.com>,
-        <alan@lxorguk.ukuu.org.uk>, <grant.likely@secretlab.ca>
-Date: Wed, 27 Oct 2010 14:55:03 +0200
-Subject: RE: [PATCH] input: spi: Driver for SPI data stream driven vibrator
-Thread-Topic: [PATCH] input: spi: Driver for SPI data stream driven vibrator
-Thread-Index: Act1KDcGqGDjZsy8SJyQsi1HNG0L/gAo9LRw
-Message-ID: <F80267346F10C541946CBE8909F1C39E35935F4CBC@NOK-EUMSG-02.mgdnok.nokia.com>
-References: <1288013463-21722-1-git-send-email-ilkka.koskinen@nokia.com>
- <20101026160936.GD13097@core.coreip.homeip.net>
-In-Reply-To: <20101026160936.GD13097@core.coreip.homeip.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginalArrivalTime: 27 Oct 2010 12:55:05.0874 (UTC) FILETIME=[2D9A7720:01CB75D6]
-X-Nokia-AV: Clean
+	Wed, 27 Oct 2010 09:00:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=admIF3vvVJ5wleeT73DgWhzC9BR0DIZ5qwdw7wIMnBQHw0hyPRHQ7MZuXb7wAH0WuQ
+         SFkRZu6ZKYbdn1ESZFRfE1j3UQGxyGQzNPUsVYWCVjYhsPgdWKsVT0VO4vB7a3qySGWr
+         Th16jKD/QmEIk2wM63beYeZ8/HjGU3FpF+yc8=
+Subject: Re: [PATCH] tcp: md5 signature check scaling
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Dmitry Popov <dp@highloadlab.com>
+Cc: "David S. Miller" <davem@davemloft.net>, William.Allen.Simpson@gmail.com,
+        Andreas Petlund <apetlund@simula.no>,
+        Ilpo =?ISO-8859-1?Q?J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Gilad Ben-Yossef <gilad@codefidence.com>,
+        Yony Amit <yony@comsleep.com>, Zhu Yi <yi.zhu@intel.com>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+In-Reply-To: <AANLkTi=U1smX6XXDMyBTicyqbUU5V-t56jmH7qtX2XW5@mail.gmail.com>
+References: <AANLkTi=U1smX6XXDMyBTicyqbUU5V-t56jmH7qtX2XW5@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Oct 2010 15:00:05 +0200
+Message-ID: <1288184405.2709.108.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+Le mercredi 27 octobre 2010 à 16:52 +0400, Dmitry Popov a écrit :
+> From: Dmitry Popov <dp@highloadlab.com>
+> 
+> TCP MD5 signature checking without socket lock.
+> 
+> Each tcp_sock has 2 RCU-protected arrays (tcp[46]_md5sig_info) of
+> tcp[46]_md5sig_key address-key pairs.
+> Each key (tcp_md5sig_key) has kref struct so that there is no need to
+> lock the whole array to work with one key.
+> 
+> MD5 functions were rewritten according to above statement and hash
+> check (tcp_v4_inbound_md5_hash) was moved before socket lock.
+> 
+> Signed-off-by: Dmitry Popov <dp@highloadlab.com>
+> ---
+>  include/linux/tcp.h      |   14 ++-
+>  include/net/tcp.h        |   82 +++++++----
+>  net/ipv4/tcp_ipv4.c      |  370 ++++++++++++++++++++++++++++------------------
+>  net/ipv4/tcp_minisocks.c |   26 +--
+>  net/ipv4/tcp_output.c    |   12 +-
+>  net/ipv6/tcp_ipv6.c      |  358 +++++++++++++++++++++++++++-----------------
+>  6 files changed, 531 insertions(+), 331 deletions(-)
 
->From: ext Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
->Sent: 26 October, 2010 19:10
->To: Koskinen Ilkka (Nokia-MS/Tampere)
->Cc: linux-input@vger.kernel.org; linux-kernel@vger.kernel.org; spi-
->devel-general@lists.sourceforge.net
->Subject: Re: [PATCH] input: spi: Driver for SPI data stream driven
->vibrator
->
->Hi Ilkka,
->
->On Mon, Oct 25, 2010 at 04:31:02PM +0300, Ilkka Koskinen wrote:
->> This driver provides access to drive a vibrator connected
->> to SPI data line via Input layer's Force Feedback interface.
->>
->> Client application provides samples (data streams) to be
->> played as CUSTOM_DATA. The samples are stored in driver's
->> internal buffers.
->
->If device is able to do custom waveform can't it also do regular effects
->(constant, periodic, etc. Or is custom is actually random and you are
->doing something like rumble effect?
+This is a huge patch :(
 
-How about if I told about the vibration device a little? :)
+Reading changelog, I dont understand what you did, and why you did this.
 
-The device can only accept analog signal with relatively narrow
-frequency band. The bit stream consists of n-bit wide words that
-are interpreted as PWM pulses. PWM pulses are used to generate
-the desired waveform (close to sine wave).
+You want to avoid taking the socket lock ? But we need to take it anyway
+to process packets.
 
-One problem is that wave period needs to be symmetric in order
-to avoid DC-offset. Therefore, we always have to play complete
-periods. Another issue is that due to narrow frequency band,
-we'd like to minimize the gap (or at least keep it quite stable)
-between waves as that would affect the overall frequency once
-again. Narrow band also means that the overall mechanics plays a
-bigger role and probably needs more careful tuning.
 
-Due to tuning issues, I'd prefer custom data provided by user
-space. By that we would avoid compiling kernel unnecessarily.
-Calculating the waveforms in the driver with help from board
-specific functions sounds tempting as well, but would it be
-better approach after all? 
-
->>
->> The driver is not able to mix the given samples. Instead, it
->> remembers the currently played sample and next one to be played.
->>
->
->Why is this driver not using the memoryless FF  library (and extends it
->to handle FF_CUSTOM effects) but rather reimplements it in the driver
->itself?
-
-I don't know how I missed this one :( So if FF_CUSTOM is the
-option to take, it makes sense to move the buffers to the
-memoryless FF library.
-
->> Signed-off-by: Ilkka Koskinen <ilkka.koskinen@nokia.com>
->> ---
->>  drivers/input/misc/Kconfig     |    5 +
->>  drivers/input/misc/Makefile    |    2 +-
->>  drivers/input/misc/vibra_spi.c |  429
->++++++++++++++++++++++++++++++++++++++++
->>  include/linux/spi/vibra.h      |   34 ++++
->>  4 files changed, 469 insertions(+), 1 deletions(-)
->>  create mode 100644 drivers/input/misc/vibra_spi.c
->>  create mode 100644 include/linux/spi/vibra.h
->>
->> diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
->> index b49e233..3441832 100644
->> --- a/drivers/input/misc/Kconfig
->> +++ b/drivers/input/misc/Kconfig
->> @@ -438,4 +438,9 @@ config INPUT_ADXL34X_SPI
->>  	  To compile this driver as a module, choose M here: the
->>  	  module will be called adxl34x-spi.
->>
->> +config INPUT_SPI_VIBRA
->> +	tristate "Support for SPI driven Vibra module"
->> +	help
->> +	  Support for Vibra module that is connected to OMAP SPI bus.
->> +
->
->"To compile this driver as a module". Also please keep Kconfig and
->Makefile sorted alphabetically.
-
-I'll fix this.
-
-Cheers, Ilkka
 
