@@ -1,195 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757610Ab0J0XDU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 19:03:20 -0400
-Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:60476 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757302Ab0J0XDP (ORCPT
+	id S1756777Ab0J0XKc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 19:10:32 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:37586 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752599Ab0J0XKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 19:03:15 -0400
-From: Dave Chinner <david@fromorbit.com>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] fs: Lock the inode LRU list separately
-Date: Thu, 28 Oct 2010 10:02:17 +1100
-Message-Id: <1288220538-21476-4-git-send-email-david@fromorbit.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1288220538-21476-1-git-send-email-david@fromorbit.com>
-References: <1288220538-21476-1-git-send-email-david@fromorbit.com>
+	Wed, 27 Oct 2010 19:10:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=uz7rjY0MMw+uHtqbvaY/jCrDRZMfvRTdz3qZWbwK5kbquOPsQ+035Exe9faii2qHyp
+         e8A1xUvif10n9Oh/llhUcXXrxcjQR/TMALh3p2mBOBwmOz1B1CDpIEjFbaoA1Kdd6W0N
+         hs4Tw5pFijN4eGkcRP4U4anUDHOm4Mt0SBgI4=
+MIME-Version: 1.0
+In-Reply-To: <4CC8ABC7.5030003@suse.cz>
+References: <20100831082307.064687027@linux.vnet.ibm.com> <20100831083844.043619334@linux.vnet.ibm.com>
+ <AANLkTikCLHh5Uz-DRq9ws78We+SwCAqdurA6HfuJh-8Y@mail.gmail.com>
+ <20101018103729.GA4122@linux.vnet.ibm.com> <AANLkTikKJ25L=6b2resz+0SAg7ZYL5j=rHG7Lg4kFbwd@mail.gmail.com>
+ <20101019110801.GA4128@linux.vnet.ibm.com> <AANLkTimLi8BYy_u8NhD15s=+iiODzuG1H_CgZ-cd7jep@mail.gmail.com>
+ <20101019213112.GA11432@merkur.ravnborg.org> <AANLkTike6UQVWKSz-Njs5Rps690EHeResH3V+aSM+qdO@mail.gmail.com>
+ <AANLkTimn8R-qde8FH_cNa4JPcR2F=mkUAQhPVT-hOBhn@mail.gmail.com> <4CC8ABC7.5030003@suse.cz>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Wed, 27 Oct 2010 19:10:09 -0400
+Message-ID: <AANLkTimCoH1YA3sh3W_59QG42CwtRXQovgqUw2SndUO6@mail.gmail.com>
+Subject: Re: [PATCH] initramfs: Fix build break on symbol-prefixed archs
+To: Michal Marek <mmarek@suse.cz>
+Cc: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>, tabbott@ksplice.com,
+        vda.linux@googlemail.com, hpa@linux.intel.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com,
+        Sam Ravnborg <sam@ravnborg.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Chinner <dchinner@redhat.com>
+On Wed, Oct 27, 2010 at 18:46, Michal Marek wrote:
+> On 27.10.2010 20:23, Mike Frysinger wrote:
+>> can we get this change dropped from linux-next until someone gets a
+>> chance to fix it ?
+>
+> Sorry I missed this thread. So your last patch
+> (http://lkml.org/lkml/2010/10/19/488) did fix the Blackfin build
+> failure? Can you submit it with a proper Signed-off-by and changelog?
 
-Introduce the inode_lru_lock to protect the inode_lru list. This
-lock is nested inside the inode->i_lock to allow the inode to be
-added to the LRU list in iput_final without needing to deal with
-lock inversions. This keeps iput_final() clean and neat.
-
-Further, where marking the inode I_FREEING and removing it from the
-LRU, move the LRU list manipulation within the inode->i_lock to keep
-the list manipulation consistent with iput_final. This also means
-that most of the open coded LRU list removal + unused inode
-accounting can now use the inode_lru_list_del() wrappers which
-cleans the code up further.
-
-However, this locking change means what the LRU traversal in
-prune_icache() inverts this lock ordering and needs to use trylock
-semantics on the inode->i_lock to avoid deadlocking. In these cases,
-if we fail to lock the inode we move it to the back of the LRU to
-prevent spinning on it.
-
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
----
- fs/inode.c |   45 +++++++++++++++++++++++++++++----------------
- 1 files changed, 29 insertions(+), 16 deletions(-)
-
-diff --git a/fs/inode.c b/fs/inode.c
-index bd1688b..da741e7 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -30,10 +30,13 @@
-  *
-  * inode->i_lock protects:
-  *   inode->i_state, __iget()
-+ * inode_lru_lock protects:
-+ *   inode_lru, inode->i_lru
-  *
-  * Lock ordering:
-  * inode_lock
-  *   inode->i_lock
-+ *     inode_lru_lock
-  */
- 
- /*
-@@ -83,6 +86,7 @@ static unsigned int i_hash_shift __read_mostly;
-  */
- 
- static LIST_HEAD(inode_lru);
-+static DEFINE_SPINLOCK(inode_lru_lock);
- static struct hlist_head *inode_hashtable __read_mostly;
- 
- /*
-@@ -343,18 +347,22 @@ EXPORT_SYMBOL(ihold);
- 
- static void inode_lru_list_add(struct inode *inode)
- {
-+	spin_lock(&inode_lru_lock);
- 	if (list_empty(&inode->i_lru)) {
- 		list_add(&inode->i_lru, &inode_lru);
- 		percpu_counter_inc(&nr_inodes_unused);
- 	}
-+	spin_unlock(&inode_lru_lock);
- }
- 
- static void inode_lru_list_del(struct inode *inode)
- {
-+	spin_lock(&inode_lru_lock);
- 	if (!list_empty(&inode->i_lru)) {
- 		list_del_init(&inode->i_lru);
- 		percpu_counter_dec(&nr_inodes_unused);
- 	}
-+	spin_unlock(&inode_lru_lock);
- }
- 
- static inline void __inode_sb_list_add(struct inode *inode)
-@@ -521,15 +529,10 @@ void evict_inodes(struct super_block *sb)
- 		}
- 
- 		inode->i_state |= I_FREEING;
--		if (!(inode->i_state & (I_DIRTY | I_SYNC)))
--			percpu_counter_dec(&nr_inodes_unused);
-+		inode_lru_list_del(inode);
- 		spin_unlock(&inode->i_lock);
- 
--		/*
--		 * Move the inode off the LRU once I_FREEING is set so that it
--		 * won't get moved back on.
--		 */
--		list_move(&inode->i_lru, &dispose);
-+		list_add(&inode->i_lru, &dispose);
- 	}
- 	spin_unlock(&inode_lock);
- 
-@@ -566,15 +569,10 @@ int invalidate_inodes(struct super_block *sb)
- 		}
- 
- 		inode->i_state |= I_FREEING;
--		if (!(inode->i_state & (I_DIRTY | I_SYNC)))
--			percpu_counter_dec(&nr_inodes_unused);
-+		inode_lru_list_del(inode);
- 		spin_unlock(&inode->i_lock);
- 
--		/*
--		 * Move the inode off the LRU once I_FREEING is
--		 * set so that it won't get moved back on.
--		 */
--		list_move(&inode->i_lru, &dispose);
-+		list_add(&inode->i_lru, &dispose);
- 	}
- 	spin_unlock(&inode_lock);
- 
-@@ -621,6 +619,7 @@ static void prune_icache(int nr_to_scan)
- 
- 	down_read(&iprune_sem);
- 	spin_lock(&inode_lock);
-+	spin_lock(&inode_lru_lock);
- 	for (nr_scanned = 0; nr_scanned < nr_to_scan; nr_scanned++) {
- 		struct inode *inode;
- 
-@@ -630,10 +629,19 @@ static void prune_icache(int nr_to_scan)
- 		inode = list_entry(inode_lru.prev, struct inode, i_lru);
- 
- 		/*
-+		 * we are inverting the inode_lru_lock/inode->i_lock here,
-+		 * so use a trylock. If we fail to get the lock, just move the
-+		 * inode to the back of the list so we don't spin on it.
-+		 */
-+		if (!spin_trylock(&inode->i_lock)) {
-+			list_move(&inode->i_lru, &inode_lru);
-+			continue;
-+		}
-+
-+		/*
- 		 * Referenced or dirty inodes are still in use. Give them
- 		 * another pass through the LRU as we canot reclaim them now.
- 		 */
--		spin_lock(&inode->i_lock);
- 		if (atomic_read(&inode->i_count) ||
- 		    (inode->i_state & ~I_REFERENCED)) {
- 			spin_unlock(&inode->i_lock);
-@@ -652,17 +660,21 @@ static void prune_icache(int nr_to_scan)
- 		if (inode_has_buffers(inode) || inode->i_data.nrpages) {
- 			__iget(inode);
- 			spin_unlock(&inode->i_lock);
-+			spin_unlock(&inode_lru_lock);
- 			spin_unlock(&inode_lock);
- 			if (remove_inode_buffers(inode))
- 				reap += invalidate_mapping_pages(&inode->i_data,
- 								0, -1);
- 			iput(inode);
- 			spin_lock(&inode_lock);
-+			spin_lock(&inode_lru_lock);
- 
- 			if (inode != list_entry(inode_lru.next,
- 						struct inode, i_lru))
- 				continue;	/* wrong inode or list_empty */
--			spin_lock(&inode->i_lock);
-+			/* avoid lock inversions with trylock */
-+			if (!spin_trylock(&inode->i_lock))
-+				continue;
- 			if (!can_unuse(inode)) {
- 				spin_unlock(&inode->i_lock);
- 				continue;
-@@ -683,6 +695,7 @@ static void prune_icache(int nr_to_scan)
- 		__count_vm_events(KSWAPD_INODESTEAL, reap);
- 	else
- 		__count_vm_events(PGINODESTEAL, reap);
-+	spin_unlock(&inode_lru_lock);
- 	spin_unlock(&inode_lock);
- 
- 	dispose_list(&freeable);
--- 
-1.7.1
-
+it shouldnt be a sep change.  it should be squashed into the broken
+one so that the result works.
+-mike
