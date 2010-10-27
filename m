@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760728Ab0J0JJV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 05:09:21 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:39522 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754616Ab0J0JJS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 05:09:18 -0400
-Date: Wed, 27 Oct 2010 11:09:03 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, n-horiguchi@ah.jp.nec.com, x86@kernel.org
-Subject: Re: [GIT PULL] Please pull hwpoison updates for 2.6.37
-Message-ID: <20101027090903.GA16957@elte.hu>
-References: <20101026100923.GA5118@basil.fritz.box>
- <20101027074254.GA809@elte.hu>
- <20101027075846.GA2472@basil.fritz.box>
- <20101027081853.GA20196@elte.hu>
- <20101027090128.GC2472@basil.fritz.box>
+	id S1760768Ab0J0JJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 05:09:27 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46294 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760738Ab0J0JJX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 05:09:23 -0400
+Date: Wed, 27 Oct 2010 11:09:21 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Dinh.Nguyen@freescale.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        s.hauer@pengutronix.de, valentin.longchamp@epfl.ch, daniel@caiaq.de,
+        amit.kucheria@canonical.com
+Subject: Re: [PATCH] ARM: imx: Add some core definitions for MX53
+Message-ID: <20101027090921.GB8554@pengutronix.de>
+References: <1288119235-7036-1-git-send-email-Dinh.Nguyen@freescale.com> <20101027082958.GA6797@angua.secretlab.ca>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20101027090128.GC2472@basil.fritz.box>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101027082958.GA6797@angua.secretlab.ca>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-* Andi Kleen <andi@firstfloor.org> wrote:
-
-> > You are welcome! How about the cleanliness feedback that i gave?
-> > (the stuff in parentheses)
+On Wed, Oct 27, 2010 at 09:29:59AM +0100, Grant Likely wrote:
+> > ---
+> >  arch/arm/plat-mxc/include/mach/iomux-mx53.h |  301 +++++++++++++++++++
+> >  arch/arm/plat-mxc/include/mach/mx53.h       |  433 +++++++++++++++++++++++++++
 > 
-> Could move the ifdef into mm.h for the flags and let the optimizer
-> eliminate the code. I can do that in a followup patch.
+> Hi Dinh.
+> 
+> In general, these definitions should not be added until they are
+> actually needed by driver code.
+ack.
 
-Yeah. If it does not work out due to architectural differences then
-do not push it too hard (the code is small enough) - we only want to
-factor this out if it makes things cleaner.
+> Also, from my understanding, the mx53 is very similar to the mx51.
+> If I'm correct, then they should be sharing the same set of #defines.
+Note, I asked for a seperate header file.  See
+http://thread.gmane.org/gmane.linux.kernel/1051001/focus=1051352
 
-Thanks,
+> What is the diff between *mx51.h and *mx53.h?
+Just from a quick look at least some base addresses are different.
+(e.g. MX51_DEBUG_BASE_ADDRESS = 0x60000000, MX53_DEBUG_BASE_ADDRESS =
+0x40000000; SPBA0, AIPS1 and AIPS2 differ, too)
 
-	Ingo
+Thanks
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
