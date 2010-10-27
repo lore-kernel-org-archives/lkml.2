@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757164Ab0J0VBD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 17:01:03 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39665 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757079Ab0J0VBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 17:01:01 -0400
-X-User-Agent: K-9 Mail for Android
-References: <4CC708DE.1070000@goop.org> <1288115334.3530.7.camel@mothafucka.localdomain> <4CC8751E.40306@goop.org>
-In-Reply-To: <4CC8751E.40306@goop.org>
+	id S932220Ab0J0VCR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 17:02:17 -0400
+Received: from usmamail.tilera.com ([72.1.168.231]:48076 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757081Ab0J0VCP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 17:02:15 -0400
+Message-ID: <4CC89352.7020808@tilera.com>
+Date: Wed, 27 Oct 2010 17:02:10 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.11) Gecko/20101013 Thunderbird/3.1.5
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [Xen-devel] Re: [PATCH] x86/pvclock-xen: zero last_value on resume
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 27 Oct 2010 13:59:54 -0700
-To: Jeremy Fitzhardinge <jeremy@goop.org>, Glauber Costa <glommer@redhat.com>
-CC: "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        kvm-devel <kvm@vger.kernel.org>, Eelco Dolstra <e.dolstra@tudelft.nl>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        Olivier Hanesse <olivier.hanesse@gmail.com>,
-        Avi Kivity <avi@redhat.com>
-Message-ID: <95805e88-b6d5-4ae2-9351-9e458656cfb8@email.android.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Al Viro <viro@zeniv.linux.org.uk>, <linux-arch@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: situation with signals
+References: <20100923221141.GK19804@ZenIV.linux.org.uk> <9lYpY1#WLHA.1516@exchange1.tad.internal.tilera.com>
+In-Reply-To: <9lYpY1#WLHA.1516@exchange1.tad.internal.tilera.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'll check it this evening when I'm at a working network again :(
+On 9/24/2010 9:33 AM, Arnd Bergmann wrote:
+> On Friday 24 September 2010, Al Viro wrote:
+>>         There are several interesting issues in arch/*/*/*signal* (besides
+>> shoggoths starting to show up when one reads that code) and I'd been crawling
+>> through that area for the last few weeks.  Here are more or less common
+>> issues; there are really arch-specific bugs (e.g. roothole on frv that
+>> used to allow reading kernel memory by setting the right sa_handler), but
+>> that's a separate story.
+> 
+> I still plan to make a counterpart to the asm-generic headers with an
+> example architecture that new architectures can copy from. Signal handling
+> is one of the areas that I have very limited understanding of. Did you
+> encounter any architecture that basically gets signal handling right and that
+> can serve as a positive example to others?
+> 
+> arch/tile/kernel/signal.c was the last one that got merged and I tried
+> to direct the maintainer in the right direction as much as I could, but
+> there are a lot of things I didn't know about.
 
-"Jeremy Fitzhardinge" <jeremy@goop.org> wrote:
+(Sorry for the belated reply.)
 
-> On 10/26/2010 10:48 AM, Glauber Costa wrote:
->> On Tue, 2010-10-26 at 09:59 -0700, Jeremy Fitzhardinge wrote:
->>> If the guest domain has been suspend/resumed or migrated, then the
->>> system clock backing the pvclock clocksource may revert to a smaller
->>> value (ie, can be non-monotonic across the migration/save-restore).
->>> Make sure we zero last_value in that case so that the domain
->>> continues to see clock updates.
->>>
->>> [ I don't know if kvm needs an analogous fix or not. ]
->> After migration, save/restore, etc, we issue an ioctl where we tell
->> the host the last clock value. That (in theory) guarantees
->monotonicity.
->>
->> I am not opposed to this patch in any way, however.
->
->Thanks.
->
->HPA, do you want to take this, or shall I send it on?
->
->Thanks,
->    J
+I set aside this thread to look at when I had a minute, and I believe there
+is just one of the signal issues present in the tile code.  The fix is to
+reset regs->fault to something other than the "syscall" fault type when
+exiting from do_signal(), so I'll submit that up for 2.6.37 shortly.
 
+Otherwise I think tile is doing things right, though I admit, the signal
+support is pretty deep magic generally.
 -- 
-Sent from my mobile phone.  Please pardon any lack of formatting.
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
