@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756351Ab0J0ThX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 15:37:23 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:40461 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756300Ab0J0ThV convert rfc822-to-8bit (ORCPT
+	id S1756373Ab0J0Tlr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 15:41:47 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:65439 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756188Ab0J0Tlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 15:37:21 -0400
-Subject: Re: [bisected] Clocksource tsc unstable git
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: markus@trippelsdorf.de
-Cc: john stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Borislav Petkov <bp@amd64.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        heiko.carstens@de.ibm.com, avi@redhat.com, mtosatti@redhat.com
-In-Reply-To: <20101027182608.GA1580@arch.trippelsdorf.de>
-References: <20101026112052.GA1672@arch.trippelsdorf.de>
-	 <20101026131843.GC17852@aftab> <20101026135808.GB1672@arch.trippelsdorf.de>
-	 <alpine.LFD.2.00.1010261747250.3115@localhost6.localdomain6>
-	 <1288120736.2645.9.camel@localhost>
-	 <20101027142622.GA1555@arch.trippelsdorf.de>
-	 <20101027182608.GA1580@arch.trippelsdorf.de>
+	Wed, 27 Oct 2010 15:41:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=hrX31ftBaqZiA8MAysWZoMwhereQppOReEFXztozJ7vjdf1hKwIWDSbVLw/bFQ9R+W
+         y/4FxRmtlk7ryNQZSGyBH9jpnEgexPdLW+N9n/UMp5kcrozkPhorGZyHIeA9X4J5ur1c
+         wI/7mZ0ZPBWTp1Lwyzo6ze+l62waBh2baQ7fk=
+Subject: Re: [PATCH] pktgen: Remove a dangerous debug print.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Nelson Elhage <nelhage@ksplice.com>
+Cc: David Miller <davem@davemloft.net>, robert.olsson@its.uu.se,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        eugene@redhat.com
+In-Reply-To: <20101027192808.GP16803@ksplice.com>
+References: <1288206788-21063-1-git-send-email-nelhage@ksplice.com>
+	 <20101027.122143.02260950.davem@davemloft.net>
+	 <20101027192808.GP16803@ksplice.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 27 Oct 2010 21:36:55 +0200
-Message-ID: <1288208215.3673.16.camel@laptop>
+Date: Wed, 27 Oct 2010 21:41:39 +0200
+Message-ID: <1288208499.2658.19.camel@edumazet-laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-27 at 20:26 +0200, markus@trippelsdorf.de wrote:
-> 
-> 34f971f6f7988be4d014eec3e3526bee6d007ffa is the first bad commit
-> commit 34f971f6f7988be4d014eec3e3526bee6d007ffa
-> Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Date:   Wed Sep 22 13:53:15 2010 +0200
-> 
->     sched: Create special class for stop/migrate work
-> 
->     In order to separate the stop/migrate work thread from the SCHED_FIFO
->     implementation, create a special class for it that is of higher priority than
->     SCHED_FIFO itself.
-> 
->     This currently solves a problem where cpu-hotplug consumes so much cpu-time
->     that the SCHED_FIFO class gets throttled, but has the bandwidth replenishment
->     timer pending on the now dead cpu.
-> 
->     It is also required for when we add the planned deadline scheduling class above
->     SCHED_FIFO, as the stop/migrate thread still needs to transcent those tasks.
-> 
->     Tested-by: Heiko Carstens <heiko.carstens@de.ibm.com>
->     Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
->     LKML-Reference: <1285165776.2275.1022.camel@laptop>
->     Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> 
-> Reverting the commit solves the kvm hang issue.
-> (If this issue is related to my original tsc problem is of course open for
-> debate, but I have a strong hunch it is.) 
+Le mercredi 27 octobre 2010 à 15:28 -0400, Nelson Elhage a écrit :
+> How would you feel about limiting the debug print to at most, say, 512 or 1024
+> bytes? Even if it's only accessible to root by default, I don't a userspace
+> program should be able to accidentally corrupt the kernel stack by writing too
+> many bytes to a file in /proc.
 
-Too weird,.. what does the hang look like?
+Arent /proc writes limited to PAGE_SIZE anyway ?
 
-Can you generate a sysrq-t dump? The thing I'm looking for is the
-migration/# thread being runnable but not being current.
+On x86 at least, you cannot corrupt kernel stack, since its bigger than
+PAGE_SIZE.
 
-How can I reproduce this?
+I agree pktgen code is a bit ugly and needs a cleanup, but who
+cares ? :)
+
+
+
+
