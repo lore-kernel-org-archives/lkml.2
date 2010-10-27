@@ -1,48 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730Ab0J0Xd5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 19:33:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41631 "EHLO mx2.suse.de"
+	id S1757565Ab0J0XeG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 19:34:06 -0400
+Received: from gate.crashing.org ([63.228.1.57]:43278 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751737Ab0J0Xdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 19:33:55 -0400
-Message-ID: <4CC8B6E4.7070200@suse.cz>
-Date: Thu, 28 Oct 2010 01:33:56 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	id S1756983Ab0J0XeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 19:34:05 -0400
+Message-ID: <50748.84.105.60.153.1288222432.squirrel@gate.crashing.org>
+In-Reply-To: <20101027225855.25345.qmail@kosh.dhis.org>
+References: <20101027225855.25345.qmail@kosh.dhis.org>
+Date: Thu, 28 Oct 2010 01:33:52 +0200 (CEST)
+Subject: Re: Pegasos OHCI bug (was Re: PROBLEM: memory corrupting bug,
+From: "Segher Boessenkool" <segher@kernel.crashing.org>
+To: pacman@kosh.dhis.org
+Cc: "Segher Boessenkool" <segher@kernel.crashing.org>,
+        "Olaf Hering" <olaf@aepfle.de>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.10a-1.fc6
 MIME-Version: 1.0
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>, tabbott@ksplice.com,
-        vda.linux@googlemail.com, hpa@linux.intel.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com,
-        Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: [PATCH] initramfs: Fix build break on symbol-prefixed archs
-References: <20100831082307.064687027@linux.vnet.ibm.com> <20100831083844.043619334@linux.vnet.ibm.com> <AANLkTikCLHh5Uz-DRq9ws78We+SwCAqdurA6HfuJh-8Y@mail.gmail.com> <20101018103729.GA4122@linux.vnet.ibm.com> <AANLkTikKJ25L=6b2resz+0SAg7ZYL5j=rHG7Lg4kFbwd@mail.gmail.com> <20101019110801.GA4128@linux.vnet.ibm.com> <AANLkTimLi8BYy_u8NhD15s=+iiODzuG1H_CgZ-cd7jep@mail.gmail.com> <20101019213112.GA11432@merkur.ravnborg.org> <AANLkTike6UQVWKSz-Njs5Rps690EHeResH3V+aSM+qdO@mail.gmail.com> <AANLkTimn8R-qde8FH_cNa4JPcR2F=mkUAQhPVT-hOBhn@mail.gmail.com> <4CC8ABC7.5030003@suse.cz> <AANLkTimCoH1YA3sh3W_59QG42CwtRXQovgqUw2SndUO6@mail.gmail.com>
-In-Reply-To: <AANLkTimCoH1YA3sh3W_59QG42CwtRXQovgqUw2SndUO6@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28.10.2010 01:10, Mike Frysinger wrote:
-> On Wed, Oct 27, 2010 at 18:46, Michal Marek wrote:
->> On 27.10.2010 20:23, Mike Frysinger wrote:
->>> can we get this change dropped from linux-next until someone gets a
->>> chance to fix it ?
+>> 1) Figure out what exactly is going on;
+>
+> I thought we were past that.
+
+We are not.
+
+> The startup sequence leaves the device in a
+> bad
+> state (writing 1000 times per second to memory that the kernel believes is
+> not in use), so it needs to be given a reset command before the kernel
+> tries
+> to use that memory.
+
+The question now is what causes the firmware to do that, and then
+what is the best way to stop it from doing that.
+
+>> > The big question that I'm still stumbling over is how to access the
+>> device
+>> > registers. The "reg" property looks like this:
 >>
->> Sorry I missed this thread. So your last patch
->> (http://lkml.org/lkml/2010/10/19/488) did fix the Blackfin build
->> failure? Can you submit it with a proper Signed-off-by and changelog?
-> 
-> it shouldnt be a sep change.  it should be squashed into the broken
-> one so that the result works.
+>> You should look at "assigned-addresses", not "reg".  Well,
+>> you first need to look at "reg" to figure out what entry
+>> in "assigned-addresses" to use.
 
-The breakage already happened and I don't want to rewind the branch now.
-The worst that can happen is that if you bisect into ffe8018 you'll get
-a tree that does not build on Blackfin. The previous commit works and
-the next will do as well if you submit the patch.
+Ignore this part, I was confused.
 
-Michal
+> The properties look like this:
+>
+> /pci@80000000/usb@5/assigned-addresses
+>  02002810 00000000 80000000 00000000 00001000
+
+Lovely, incorrect data (it should start with 82002810, i.e.,
+not relocatable -- it is already an assigned address!).
+
+This means: 32-bit MMIO address space for bus 0 dev 5 fn 0,
+first BAR; assigned to address 80000000; size is 1000.
+
+You could try a boot script like this:
+
+
+dev /pci
+0 ffff04 DO 0 i config-w! -100 +LOOP
+device-end
+
+
+which should disable all PCI devices on all busses, on that
+PCI host bus (it disables every device behind pci-pci bridges
+separately, as long as every such bridge has a higher secondary
+bus number than primary bus number; if you only want to disable
+everything on the root bus (which should be sufficient), use
+ff04 instead of ffff04).
+
+
+Segher
+
