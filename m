@@ -1,89 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933680Ab0J0PVR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 11:21:17 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:39807 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933342Ab0J0PVO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 11:21:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=naoPMcLNMjcmV6vCeNXIP1SZ7Jkfao87Mz976T4B4wurvaVOxd8LVV36V439GDilXY
-         7B17YLMk3x4ojdJ1R7VNlEKtrsXfwmXwA/Xvtxz7DBYmNyJBtDN6fLb9LHbhczORLk90
-         LXv3KVyTS7vLEU+yO9yH/3+Kvdj/cC/dYdfEQ=
-Subject: Re: [PATCH] x86-32: Allocate irq stacks seperate from percpu area
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Brian Gerst <brgerst@gmail.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, mingo@elte.hu
-In-Reply-To: <4CC83A85.3070608@kernel.org>
-References: <AANLkTinnc3vBSmewf7ixuOSDYxG+5VNiGaB-vSrDNRiO@mail.gmail.com>
-	 <1288158182-1753-1-git-send-email-brgerst@gmail.com>
-	 <1288159670.2652.181.camel@edumazet-laptop>
-	 <1288173442.15336.1490.camel@twins>
-	 <1288186405.2709.117.camel@edumazet-laptop>  <4CC82C2F.1020707@kernel.org>
-	 <1288187870.2709.128.camel@edumazet-laptop>  <4CC83067.5000009@kernel.org>
-	 <1288189461.2709.144.camel@edumazet-laptop>
-	 <1288190387.2709.147.camel@edumazet-laptop>  <4CC83A85.3070608@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 27 Oct 2010 17:21:08 +0200
-Message-ID: <1288192868.2709.152.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S933677Ab0J0PWq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 11:22:46 -0400
+Received: from solo.fdn.fr ([80.67.169.19]:35517 "EHLO solo.fdn.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933342Ab0J0PWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 11:22:44 -0400
+Date: Wed, 27 Oct 2010 17:22:42 +0200
+From: Samuel Thibault <sthibault@debian.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Tom Vier <tom@triadsys.com>,
+        "594089@bugs.debian.org" <594089@bugs.debian.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: Bug#594089: keyboard-configuration: caps lock keycode problem
+Message-ID: <20101027152242.GO4725@const.famille.thibault.fr>
+Mail-Followup-To: Samuel Thibault <sthibault@debian.org>,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	Tom Vier <tom@triadsys.com>,
+	"594089@bugs.debian.org" <594089@bugs.debian.org>,
+	"linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Jiri Kosina <jkosina@suse.cz>
+References: <20101024144150.GV24091@const.famille.thibault.fr> <20101025045003.GA1438@core.coreip.homeip.net> <4CC58816.3090301@triadsys.com> <20101025180320.GA4725@const.famille.thibault.fr> <4CC6E9D8.8010201@triadsys.com> <20101026161820.GE13097@core.coreip.homeip.net> <4CC7426C.8040502@triadsys.com> <20101027091029.GB28895@core.coreip.homeip.net> <20101027120513.GT4725@const.famille.thibault.fr> <99F91536-4413-430C-9932-7CEF6AB656DB@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <99F91536-4413-430C-9932-7CEF6AB656DB@gmail.com>
+User-Agent: Mutt/1.5.12-2006-07-14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 27 octobre 2010 Ã  16:43 +0200, Tejun Heo a Ã©crit :
-
-> Ah, okay, that explains it.  So, your NUMA table is screwed up.  It
-> would be interesting to dig down where the difference between 32 and
-> 64bit comes from.  Maybe it's coming from differences in our init code
-> rather than from BIOS?
+Dmitry Torokhov, le Wed 27 Oct 2010 08:06:26 -0700, a écrit :
+> On Oct 27, 2010, at 5:05 AM, Samuel Thibault <sthibault@debian.org> wrote:
 > 
+> 
+>     Dmitry Torokhov, le Wed 27 Oct 2010 02:10:29 -0700, a écrit :
+> 
+>         Also, based on evtest data I only see presses/releases for one key
+>         (Caps Lock, Right Shift, etc.) I do not see the presses for the additional
+>         keys in the evtest stream so I am baffled as to where the additional
+>         scancode is coming from... Do you have some funky keymap loaded?
+>         Anything interesting in dumpkeys?
+> 
+> 
+>     Err, since the duplicates appear in scancodes already, is the content of
+>     dumpkeys really involved?
+> 
+> Evtest data does not show any additional events, so the additional scancodes
+> must be coming from the legacy keyboard driver. 
 
-I wish it could explain it.
-I upgraded BIOS to latest one from HP. no change.
+Sure, but dumpkeys shows the table from scancodes to keycodes, not from
+input events to scancodes.
 
-If I remove HOTPLUG support I still get :
-
-
-cpu=0 node=1
-cpu=1 node=0
-cpu=2 node=1
-cpu=3 node=0
-cpu=4 node=1
-cpu=5 node=0
-cpu=6 node=1
-cpu=7 node=0
-cpu=8 node=1
-cpu=9 node=0
-cpu=10 node=1
-cpu=11 node=0
-cpu=12 node=1
-cpu=13 node=0
-cpu=14 node=1
-cpu=15 node=0
-
-[    0.000000] SMP: Allowing 16 CPUs, 0 hotplug CPUs
-[    0.000000] nr_irqs_gsi: 64
-[    0.000000] Allocating PCI resources starting at e4000000 (gap: e4000000:1ac00000)
-[    0.000000] setup_percpu: NR_CPUS:64 nr_cpumask_bits:64 nr_cpu_ids:16 nr_node_ids:8
-[    0.000000] PERCPU: Embedded 16 pages/cpu @f4600000 s42752 r0 d22784 u131072
-[    0.000000] pcpu-alloc: s42752 r0 d22784 u131072 alloc=1*2097152
-[    0.000000] pcpu-alloc: [0] 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 
-
-
-# cat /proc/buddyinfo 
-Node 0, zone      DMA      0      1      1      1      2      1      1      0      1      1      3 
-Node 0, zone   Normal    362    205     46     13      5      2      2      3      3      3    186 
-Node 0, zone  HighMem    182    132    102     70     30      2      1      1      1      1    275 
-Node 1, zone  HighMem    140     86    107     41     13      3      4      3      2      2    489 
-
-
-
+Samuel
