@@ -1,84 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116Ab0J0SCQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 14:02:16 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:9135 "EHLO SMTP02.CITRIX.COM"
+	id S1754158Ab0J0SER (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 14:04:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38289 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753840Ab0J0SCP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 14:02:15 -0400
-X-IronPort-AV: E=Sophos;i="4.58,247,1286164800"; 
-   d="scan'208";a="119956956"
-Subject: Re: [PATCH] x86: use pgd accessors when cloning a pgd range.
-From: Ian Campbell <Ian.Campbell@eu.citrix.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-In-Reply-To: <4CC866B0.8000802@goop.org>
-References: <1288169413-29065-1-git-send-email-ian.campbell@citrix.com>
-	 <20101027104020.GA16954@a1.tnic> <4CC85839.4000507@goop.org>
-	 <4CC85EE6.7030608@linux.intel.com> <4CC861F9.8080200@goop.org>
-	 <4CC8649F.5060408@linux.intel.com>  <4CC866B0.8000802@goop.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Organization: Citrix Systems, Inc.
-Date: Wed, 27 Oct 2010 19:02:08 +0100
-Message-ID: <1288202528.10179.106.camel@localhost.localdomain>
+	id S1752978Ab0J0SEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 14:04:15 -0400
+Date: Wed, 27 Oct 2010 20:03:33 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 4/7] vmscan: narrowing synchrounous lumply reclaim
+ condition
+Message-ID: <20101027180333.GE29304@random.random>
+References: <20100805150624.31B7.A69D9226@jp.fujitsu.com>
+ <20100805151341.31C3.A69D9226@jp.fujitsu.com>
+ <20101027164138.GD29304@random.random>
+ <20101027171643.GA4896@csn.ul.ie>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101027171643.GA4896@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-27 at 18:51 +0100, Jeremy Fitzhardinge wrote:
-> On 10/27/2010 10:42 AM, H. Peter Anvin wrote:
+Hi Mel,
 
-> > Ian's message just mentioned "a failure" and never described in any way what
-> > kind of "failure" it was.
-> 
-> It would be a pagefault from Xen preventing a direct write to the pgd
-> level of an active pagetable.  At the point in setup_arch() where it
-> does the first clone_pgd_range() we're already running on swapper_pg_dir
-> and the copy from initial_page_table is outright wrong.
+On Wed, Oct 27, 2010 at 06:16:43PM +0100, Mel Gorman wrote:
+> The series drastically limits the level of hammering lumpy does to the
+> system. I'm currently keeping it alive because lumpy reclaim has received a lot
+> more testing than compaction has. While I ultimately see it going away, I am
+> resisting it being deleted until compaction has been around for a few releases.
 
-I'd missed that aspect, yes the contents of initial_page_table are
-wrong. I'm not sure now how my patch to clone_pgd_range even made a
-difference...
+I admit I didn't yet test this modification yet to verify how
+"drastical" is the drastical change. But "less unusable lumpy" I doubt
+will translate to "as usable as without lumpy". And I doubt lumpy will
+ever lead to something "usable" when order 9 allocations are the norm
+and more frequent than order 0 allocations.
 
-> As Ian suggests, we could switch Xen to use initial_page_table at boot
-> then move to swapper_pg_dir in the same way native does.
+> Simply because it has been tested and even with compaction there were cases
+> envisoned where it would be used - low memory or when compaction is not
+> configured in for example. The ideal is that compaction is used until lumpy
 
-Accidentally did that in private mail, for everyone else the gory
-details are:
+Compaction should always be configured in. All archs supports
+migration. Only reason to disable compaction is for debugging
+purposes, and should go in kernel hacking section. Or alternatively if
+it's not important that order >0 allocation succeeds (some embedded
+may be in that lucky situation and they can save some bytecode).
 
-> xen_setup_kernel_pagetable operates on initial_page_table instead of
-> swapper_pg_dir. We do not pin initial_page_table apart from the
-> implicit
-> one from writing it to cr3 (it is necessarily r/o though).
-> 
-> So we enter setup_arch running on initial_page_table and with
-> swapper_pg_dir mapped r/w, which is how it looks on native too. So at
-> this point the:
->         clone_pgd_range(swapper_pg_dir     + KERNEL_PGD_BOUNDARY,
->                         initial_page_table + KERNEL_PGD_BOUNDARY,
->                         KERNEL_PGD_PTRS);
-> works just fine and we reach:
->       load_cr3(swapper_pg_dir);
-> 
-> Then in __xen_write_cr3 we notice the first attempt to switch to
-> swapper_pg_dir and only at that point do we make it r/o and pin it.
-> When
-> we then actually do the switch to swapper_pg_dir that releases the
-> implicit pin on initial_page_table so we can make it r/o again.
-> 
-> The later on we reach the:
->        clone_pgd_range(initial_page_table + KERNEL_PGD_BOUNDARY,
->                         swapper_pg_dir     + KERNEL_PGD_BOUNDARY,
->                         KERNEL_PGD_PTRS);
-> which will succeed because initial_page_table is r/w again.
-> 
-> We don't care about the pin on initial_page_table because we should
-> never need it again.
+Keeping lumpy in and activated for all high order allocations like
+this, can only _hide_ bugs and inefficiencies in compaction in my view
+so in addition to damaging the runtime, it fragment userbase and
+debuggability and I see zero good out of lumpy for all normal
+allocations.
 
-Ian.
+> is necessary although this applies more to the static resizing of the huge
+> page pool than THP which I'd expect to backoff without using lumpy reclaim
+> i.e. fail the allocation rather than using lumpy reclaim.
 
+I agree lumpy is more drastic and aggressive than reclaim and it may
+be quicker to generate hugepages by throwing its blind hammer, in turn
+destroying everything else running and hanging the system for a long
+while. I wouldn't be so against lumpy if it was only activated by a
+special __GFP_LUMPY flag that only hugetlbfs pool resizing uses.
+hugetlbfs is the very special case, not all other normal
+allocations.
+
+> Uhhh, I have one more modification in mind when lumpy is involved and
+> it's to relax the zone watermark slightly to only obey up to
+> PAGE_ALLOC_COSTLY_ORDER. At the moment, it is freeing more pages than
+> are necessary to satisfy an allocation request and hits the system
+> harder than it should. Similar logic should apply to compaction.
+
+On a side note I want to remove the PAGE_ALLOC_COSTLY_ORDER too, that
+is a flawed concept in the first place. A VM that behaves radically
+(radically as in grinding system to an halt and being unusable and
+creating swap storms) different when the order of allocation raises
+from 3 to 4 is hackish and fundamentally incompatible with logics that
+uses frequent order 9 allocations and makes them the default.
+
+Basically anybody asking an order 9 during the normal runtime (not
+some magic sysfs control) has to be ok if it fails and only relay on
+compaction, or it's in some corner case and as such shall be threated
+instead of mandating the default VM behavior for >=4 order allocation
+for everything else.
+
+The PAGE_ALLOC_COSTLY_ORDER was in practice a not stack-local
+per-process equivalent of what I recommended as the way to trigger
+lumpy (i.e. __GFP_LUMPY), but it's not a good enough approximation
+anymore. So the "activation" for
+blindfolded-hammer-algorithm-creating-swap-storms has to be in
+function of the caller stack, and not in function of the allocation
+order. If that change is done, I won't be forced to drop lumpy
+anymore! But even then I find it hard to justify to keep lumpy alive
+unless it is proven to be more efficient than compaction. But I could
+avoid touching the lumpy code at least.
+
+My tree uses compaction in a fine way inside kswapd too and tons of
+systems are running without lumpy and floods of order 9 allocations
+with only compaction (in direct reclaim and kswapd) without the
+slighest problem. Furthermore I extended compaction for all
+allocations not just that PAGE_ALLOC_COSTLY_ORDER (maybe I already
+removed all PAGE_ALLOC_COSTLY_ORDER checks?). There's no good reason
+not to use compaction for every allocation including 1,2,3, and things
+works fine this way.
+
+For now, to fixup the reject I think I'll go ahead remove these new
+lumpy changes, which also guarantees me the most tested configuration
+that I'm sure works fine without having to test how "less unusable"
+lumpy has become. If later I'll be asked to retain lumpy in order to
+merge THP I'll simply add the __GFP_LUMPY and I'll restrict lumpy in
+the sysfs tweaking corner case.
+
+Thanks,
+Andrea
