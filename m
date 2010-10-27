@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757285Ab0J0VBS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 17:01:18 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:57605 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757103Ab0J0VBB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757164Ab0J0VBD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 17:01:03 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39665 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757079Ab0J0VBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 27 Oct 2010 17:01:01 -0400
-Subject: [RFC PATCH 0/1] vhost: Reduce TX used buffer signal for performance
-From: Shirley Ma <mashirle@us.ibm.com>
-To: "mst@redhat.com" <mst@redhat.com>, David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 27 Oct 2010 14:00:57 -0700
-Message-ID: <1288213257.17571.25.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+X-User-Agent: K-9 Mail for Android
+References: <4CC708DE.1070000@goop.org> <1288115334.3530.7.camel@mothafucka.localdomain> <4CC8751E.40306@goop.org>
+In-Reply-To: <4CC8751E.40306@goop.org>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=utf-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [Xen-devel] Re: [PATCH] x86/pvclock-xen: zero last_value on resume
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 27 Oct 2010 13:59:54 -0700
+To: Jeremy Fitzhardinge <jeremy@goop.org>, Glauber Costa <glommer@redhat.com>
+CC: "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        kvm-devel <kvm@vger.kernel.org>, Eelco Dolstra <e.dolstra@tudelft.nl>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Virtualization <virtualization@lists.linux-foundation.org>,
+        Olivier Hanesse <olivier.hanesse@gmail.com>,
+        Avi Kivity <avi@redhat.com>
+Message-ID: <95805e88-b6d5-4ae2-9351-9e458656cfb8@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch will change vhost TX used buffer guest signaling from one by
-one to 3/4 ring size. I have tried different size, like 4, 16, 1/4 size,
-1/2 size, and found that the large size is best for message size between
-256 - 4K with netperf TCP_STREAM test, so 3/4 of the ring size is picked
-up for signaling. 
+I'll check it this evening when I'm at a working network again :(
 
-Tested both UDP and TCP performance with guest 2vcpu. The 60 secs
-netperf run shows that guest to host performance for TCP.
+"Jeremy Fitzhardinge" <jeremy@goop.org> wrote:
 
-TCP_STREAM
+> On 10/26/2010 10:48 AM, Glauber Costa wrote:
+>> On Tue, 2010-10-26 at 09:59 -0700, Jeremy Fitzhardinge wrote:
+>>> If the guest domain has been suspend/resumed or migrated, then the
+>>> system clock backing the pvclock clocksource may revert to a smaller
+>>> value (ie, can be non-monotonic across the migration/save-restore).
+>>> Make sure we zero last_value in that case so that the domain
+>>> continues to see clock updates.
+>>>
+>>> [ I don't know if kvm needs an analogous fix or not. ]
+>> After migration, save/restore, etc, we issue an ioctl where we tell
+>> the host the last clock value. That (in theory) guarantees
+>monotonicity.
+>>
+>> I am not opposed to this patch in any way, however.
+>
+>Thanks.
+>
+>HPA, do you want to take this, or shall I send it on?
+>
+>Thanks,
+>    J
 
-Message size	Guest CPU(%)	BW (Mb/s)
-		before:after	before:after
-
-256		57.84:58.42	1678.47:1908.75
-512		68.68:60.21	1844.18:3387.33
-1024		68.01:58.70	1945.14:3384.72
-2048		65.36:54.25	2342.45:3799.31
-4096		63.25:54.62	3307.11:4451.78
-8192		59.57:57.89	6038.64:6694.04
-
-UDP_STREAM
-1024		49.64:26.69	1161.0:1687.6
-2048		49.88:29.25	2326.8:2850.9
-4096		49.59:29.15	3871.1:4880.3
-8192		46.09:32.66	6822.9:7825.1
-16K		42.90:34.96	11347.1:11767.4
-
-For large message size, 60 secs run remains almost the same. I guess the
-signal might not play a big role in large message transmission.
-
-Shirley
-
+-- 
+Sent from my mobile phone.  Please pardon any lack of formatting.
