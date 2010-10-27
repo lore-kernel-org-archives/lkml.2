@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376Ab0J0RjC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 13:39:02 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41501 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753056Ab0J0Ri7 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 13:38:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <20101027164606.GF6328@fieldses.org>
-References: <20101026164549.GD19445@fieldses.org> <20101027145538.GC6328@fieldses.org>
- <20101027145929.GA5788@infradead.org> <201010271723.59734.arnd@arndb.de>
- <AANLkTinTm-LwjfBfoFUyp5Dj8S2hexnHGQGpZiOWqyMY@mail.gmail.com> <20101027164606.GF6328@fieldses.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 27 Oct 2010 10:32:20 -0700
-Message-ID: <AANLkTinTXoGiFap-vfu0P_SXb5xS+gMsHOwQtN3Hra3r@mail.gmail.com>
-Subject: Re: nfsd changes for 2.6.37
-To: "J. Bruce Fields" <bfields@fieldses.org>
+	id S1753429Ab0J0Rku (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 13:40:50 -0400
+Received: from fieldses.org ([174.143.236.118]:35664 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753056Ab0J0Rks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 13:40:48 -0400
+Date: Wed, 27 Oct 2010 13:40:16 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
         Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Subject: Re: nfsd changes for 2.6.37
+Message-ID: <20101027174016.GA18974@fieldses.org>
+References: <20101026164549.GD19445@fieldses.org>
+ <20101027145538.GC6328@fieldses.org>
+ <20101027145929.GA5788@infradead.org>
+ <201010271723.59734.arnd@arndb.de>
+ <AANLkTinTm-LwjfBfoFUyp5Dj8S2hexnHGQGpZiOWqyMY@mail.gmail.com>
+ <20101027164606.GF6328@fieldses.org>
+ <AANLkTinTXoGiFap-vfu0P_SXb5xS+gMsHOwQtN3Hra3r@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinTXoGiFap-vfu0P_SXb5xS+gMsHOwQtN3Hra3r@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 9:46 AM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> On Wed, Oct 27, 2010 at 09:12:06AM -0700, Linus Torvalds wrote:
->>
->> Something like the attached (UNTESTED!) perhaps?
->
-> Makes sense to me.  Testing....
+On Wed, Oct 27, 2010 at 10:32:20AM -0700, Linus Torvalds wrote:
+> On Wed, Oct 27, 2010 at 9:46 AM, J. Bruce Fields <bfields@fieldses.org> wrote:
+> > On Wed, Oct 27, 2010 at 09:12:06AM -0700, Linus Torvalds wrote:
+> >>
+> >> Something like the attached (UNTESTED!) perhaps?
+> >
+> > Makes sense to me. Â Testing....
+> 
+> So I found a buglet in the patch: the
+> 
+>   NOTE! It is very important that the FASYNC flag always
+>   match the state "is the filp on a fasync list".
+> 
+> comment should be moved to be associated with "fasync_insert_entry()"
+> rather than "fasync_add_entry()", since it's the insert-entry thing
+> that does the actual FASYNC flag handling.
+> 
+> But that incorrect comment placement shouldn't affect testing, obviously ;)
+> 
+> Btw, who is going to collect these things assuming it passes testing?
+> Arnd? You? I'll happily sign off on the fasync patch (with the comment
+> movement) assuming it tests out ok, but there's all the other patches
+> too that have been passed around. I really do want to get this into
+> the merge window, because it would be a big shame if we couldn't
+> effectively get rid of the BKL now just because of these kinds of
+> smallish final details, so I'm just checking who wants to step up to
+> the plate to collect it all together and make sure I have it?
 
-So I found a buglet in the patch: the
+Doesn't matter to me.  What I've currently got (Arnd's patches with some
+minor fixes from me, and your patch, all in a poorly changelogged
+jumble) is in
 
-  NOTE! It is very important that the FASYNC flag always
-  match the state "is the filp on a fasync list".
+	git://linux-nfs.org/~bfields/linux-topics.git TMP-BKL-TESTING
 
-comment should be moved to be associated with "fasync_insert_entry()"
-rather than "fasync_add_entry()", since it's the insert-entry thing
-that does the actual FASYNC flag handling.
+You wouldn't want to merge that as is, but it does seem to work.
 
-But that incorrect comment placement shouldn't affect testing, obviously ;)
-
-Btw, who is going to collect these things assuming it passes testing?
-Arnd? You? I'll happily sign off on the fasync patch (with the comment
-movement) assuming it tests out ok, but there's all the other patches
-too that have been passed around. I really do want to get this into
-the merge window, because it would be a big shame if we couldn't
-effectively get rid of the BKL now just because of these kinds of
-smallish final details, so I'm just checking who wants to step up to
-the plate to collect it all together and make sure I have it?
-
-                      Linus
+--b.
