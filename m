@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756299Ab0J0WFj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 18:05:39 -0400
-Received: from gate.crashing.org ([63.228.1.57]:56425 "EHLO gate.crashing.org"
+	id S1754951Ab0J0WS1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 18:18:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40431 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754482Ab0J0WFh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 18:05:37 -0400
-Message-ID: <50654.84.105.60.153.1288217125.squirrel@gate.crashing.org>
-In-Reply-To: <20101027210457.23673.qmail@kosh.dhis.org>
-References: <20101027210457.23673.qmail@kosh.dhis.org>
-Date: Thu, 28 Oct 2010 00:05:25 +0200 (CEST)
-Subject: Re: Pegasos OHCI bug (was Re: PROBLEM: memory corrupting bug,
-From: "Segher Boessenkool" <segher@kernel.crashing.org>
-To: pacman@kosh.dhis.org
-Cc: "Olaf Hering" <olaf@aepfle.de>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.10a-1.fc6
+	id S1752481Ab0J0WSY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 18:18:24 -0400
+Message-ID: <4CC8A534.80504@suse.cz>
+Date: Thu, 28 Oct 2010 00:18:28 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Namhyung Kim <namhyung@gmail.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kbuild: check return value of asprintf()
+References: <1287757930-2766-1-git-send-email-namhyung@gmail.com> <4CC54E4D.7040401@suse.cz> <4CC59765.5080908@oracle.com>
+In-Reply-To: <4CC59765.5080908@oracle.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> > |1. How do I locate all usb nodes in the device tree?
->> > |
->> > |2. How do I know if a particular usb node is OHCI?
+On 25.10.2010 16:42, Randy Dunlap wrote:
+> On 10/25/10 02:30, Michal Marek wrote:
+>> (adding Randy to CC)
+> 
+> Thanks, Michal.
+> 
+> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-You look for compatible "usb-ohci".
+OK, applied to kbuild-2.6.git#misc.
 
-But this doesn't help you.  You do not know yet if the
-problem happens for all usb-ohci; for example, it could be
-that you have the console output device on usb; or as another
-example, it could be that this firmware leaves all pci devices
-in some active state.
-
-So as I see it you have only two options:
-
-1) Figure out what exactly is going on;
-or 2) make the kernel shut down all pci devices early (either
-in actual kernel code, or in an OF boot script).
-
-> The big question that I'm still stumbling over is how to access the device
-> registers. The "reg" property looks like this:
-
-You should look at "assigned-addresses", not "reg".  Well,
-you first need to look at "reg" to figure out what entry
-in "assigned-addresses" to use.
-
-
-Segher
+Michal
+> 
+> 
+>> On 22.10.2010 16:32, Namhyung Kim wrote:
+>>> Check return value of asprintf() in docsect() and exit if error
+>>> occurs. This removes following warning:
+>>>
+>>>   HOSTCC  scripts/basic/docproc
+>>> scripts/basic/docproc.c: In function ‘docsect’:
+>>> scripts/basic/docproc.c:336: warning: ignoring return value of ‘asprintf’,
+>>> 				declared with attribute warn_unused_result
+>>>
+>>> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+>>> ---
+>>> The patch is on top of v2.6.36, thanks.
+>>>
+>>>  scripts/basic/docproc.c |    5 ++++-
+>>>  1 files changed, 4 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/scripts/basic/docproc.c b/scripts/basic/docproc.c
+>>> index fc3b18d..98dec87 100644
+>>> --- a/scripts/basic/docproc.c
+>>> +++ b/scripts/basic/docproc.c
+>>> @@ -333,7 +333,10 @@ static void docsect(char *filename, char *line)
+>>>  		if (*s == '\n')
+>>>  			*s = '\0';
+>>>  
+>>> -	asprintf(&s, "DOC: %s", line);
+>>> +	if (asprintf(&s, "DOC: %s", line) < 0) {
+>>> +		perror("asprintf");
+>>> +		exit(1);
+>>> +	}
+>>>  	consume_symbol(s);
+>>>  	free(s);
+>>>  
+>>
+> 
+> 
 
