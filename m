@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972Ab0J0DpW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 23:45:22 -0400
-Received: from mx.citechco.net ([203.191.33.53]:34808 "EHLO bd2.citechco.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751251Ab0J0DpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 23:45:18 -0400
-Date: Wed, 27 Oct 2010 10:36:51 +0700 (BDST)
-From: Mr Jerry Ntai <skyplus@citechco.net>
-Reply-To: Mr Jerry Ntai <mrjerrynatai14@qatar.io>
-Message-ID: <18619698.2391.1288150611175.JavaMail.root@pop3>
-Subject: ***IMPORTANT NOTICE***
+	id S1759831Ab0J0DzM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 23:55:12 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:64158 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752522Ab0J0DzF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 23:55:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=scoPd02MWdaTDd2+ijEirZFgsxmUwvaDL7es8xHFVTvZB7ikkgJoW5zxc31nYWnuBd
+         SFvkgh00btiKV0Dw2+V4NYB10pVTLfJBh/Zgm0hKo1u8Ja+xkyd7T3a4cl04up6kApZd
+         5xzKafzPruoy7/22sw1wa2YB23rcMuwuU2pVw=
+Date: Wed, 27 Oct 2010 05:54:49 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Julia Lawall <julia@diku.dk>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        kernel-janitors@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        ibm-acpi-devel@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 8/14] drivers/platform/x86/thinkpad_acpi.c: delete
+	double assignment
+Message-ID: <20101027035449.GB6062@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+	Julia Lawall <julia@diku.dk>,
+	Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+	kernel-janitors@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+	ibm-acpi-devel@lists.sourceforge.net,
+	platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1288088743-3725-1-git-send-email-julia@diku.dk> <1288088743-3725-9-git-send-email-julia@diku.dk> <20101027010908.GA29299@khazad-dum.debian.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [163.15.183.254]
-X-Mailer: Zimbra 6.0.6_GA_2330.DEBIAN4.0 (zclient/6.0.6_GA_2330.DEBIAN4.0)
-To: undisclosed-recipients:;
-X-MailScanner: Found to be clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101027010908.GA29299@khazad-dum.debian.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MR.JERRY NTAI. 
-MEVAS BANK
-QUEEN`S ROAD
-CENTRAL BRANCH, 
-HONG KONG.
+On Tue, Oct 26, 2010 at 11:09:08PM -0200, Henrique de Moraes Holschuh wrote:
+> On Tue, 26 Oct 2010, Julia Lawall wrote:
+> > From: Julia Lawall <julia@diku.dk>
+> > 
+> > Delete successive assignments to the same location.
+> 
+> There are often results of mismerges or other assorted screw ups, often
+> done by the maintainer itself (e.g. me in thinkpad-acpi's case) during
+> development.
+> 
+> The patch is correct, and I thank you for the head's up.  But let me
+> track down what caused it first, hmm?  I also highly recommend that this
+> should be done in all cases you find, instead of just blindly fixing the
+> assignment.
 
-Good Day,
+I've reviewed the entire patchset per your suggestion and Julia
+obviously didn't do it blindly.  It all looks good.  The patcheset fixes
+a number of bugs.
 
-Please kindly accept my apology for sending you this email without your consent. I believe you are a highly respected personality, considering the fact that I sourced your email from the peoples search database on the web during my descret search for a foreign partner whom can assist me in taking this business to it success. Though, I do not know to what extent you are familiar with events. I have a proposal for you.This however is not mandatory nor will I in any manner compel you to honor against your will, but I hope you will read on and consider the value I offer. 
-
-My name is Mr. Jerry Ntai, I am the Head of Operations in Mevas Bank, Hong Kong. I have a business proposal in the tune of US$25.2m  to be transferred to an offshore account with your assistance if willing.
-
-After the successful transfer, we shall share in ratio of 30% for you and 70% for me. Should you be interested, please 
-respond to my letter immediately, so we can commence all arrangements and I will give you more information on the project and 
-how we would handle it.
-
-You can contact me on my private email:(mrjerryntai72@yahoo.com.hk) and send me the following information for documentation 
-purpose:
-
-(1)Full name:
-(2)private phone number:
-(3)current residential address:
-(4)Occupation:
-(5)Age and Sex:
-
-I look forward to hearing from you.
-Kind Regards,
-Mr.Jerry Ntai.
+regards,
+dan carpenter
 
