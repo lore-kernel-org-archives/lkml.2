@@ -1,102 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756731Ab0J0XWl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 19:22:41 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:47417 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752628Ab0J0XWi convert rfc822-to-8bit (ORCPT
+	id S1756338Ab0J0X2n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 19:28:43 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:45385 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751737Ab0J0X2k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 19:22:38 -0400
+	Wed, 27 Oct 2010 19:28:40 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=uyR6BHGxRg9pzEu4n30QsVh7+eszb0TluOZxhujvMZ80PpljMHbymJOYXdA9yfKj7Q
-         Nh0wASrPufmdmg2sfGmfi+YTPJTdde94C0cfcYlyJcG++MAoNO5LFZgWu/qWKDp4Qppi
-         Oav3z4iD1deu4Y2f6Wv+yASiGAui0qewevUh8=
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=yHpneGwuf5aZhNHtVjiF0XStc7PEECHKqeDkmirOo3L3lz2R70yglYalEpff5tEqc3
+         Hnuy+ez4mQD2/fhxEmDCZrbnzlKIpMzgmeE9m6xlDbNSRZjzvnL7rlfw7dzfsCYBSM/f
+         juwLDVvPYYraw4fzB9K/ZQPEL19uxbAr6Ieg8=
+Message-ID: <4CC8B5A1.6080703@garzik.org>
+Date: Wed, 27 Oct 2010 19:28:33 -0400
+From: Jeff Garzik <jeff@garzik.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <20101026190042.57f30338.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20101026190042.57f30338.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Thu, 28 Oct 2010 08:22:38 +0900
-Message-ID: <AANLkTim4fFXQKqmFCeR8pvi0SZPXpjDqyOkbV6PYJYkR@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/3] big chunk memory allocator v2
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        andi.kleen@intel.com, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        fujita.tomonori@lab.ntt.co.jp, felipe.contreras@gmail.com,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Michal Nazarewicz <m.nazarewicz@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: James Bottomley <James.Bottomley@suse.de>, Andi Kleen <ak@linux.intel.com>,
+        Mike Anderson <andmike@linux.vnet.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
+        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Christof Schmitt <christof.schmitt@de.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [ANNOUNCE] Status of unlocked_qcmds=1 operation for .37
+References: <1287607774.10283.78.camel@haakon2.linux-iscsi.org> <20101021150840.GA24309@linux.vnet.ibm.com> <1288130914.5169.97.camel@haakon2.linux-iscsi.org> <1288132071.8283.689.camel@mulgrave.site> <1288132464.5169.112.camel@haakon2.linux-iscsi.org> <1288133450.8283.723.camel@mulgrave.site> <1288134048.5169.132.camel@haakon2.linux-iscsi.org> <1288134713.19649.11.camel@mulgrave.site> <1288135918.5169.149.camel@haakon2.linux-iscsi.org> <20101027075349.GA32585@gargoyle.fritz.box> <1288189658.4692.13.camel@mulgrave.site> <1288202802.5169.202.camel@haakon2.linux-iscsi.org>
+In-Reply-To: <1288202802.5169.202.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 26, 2010 at 7:00 PM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> Hi, here is version 2.
+On 10/27/2010 02:06 PM, Nicholas A. Bellinger wrote:
+> On Wed, 2010-10-27 at 09:27 -0500, James Bottomley wrote:
+>> On Wed, 2010-10-27 at 09:53 +0200, Andi Kleen wrote:
+>>>> This sounds like a pretty reasonable compromise that I think is slightly
+>>>> less risky for the LLDs with the ghosts and cob-webs hanging off of
+>>>> them.
+>>>
+>>> They won't get tested either next release cycle. Essentially
+>>> near nobody uses them.
+>>>
+>>>>
+>>>> What do you think..?
+>>>
+>>> Standard linux practice is to simply push the locks down. That's a pretty
+>>> mechanical operation and shouldn't be too risky
+>>>
+>>> With some luck you could even do it with coccinelle.
+>>
+>> Precisely ... if we can do the push down now as a mechanical
+>> transformation we can put it in the current merge window as a low risk
+>> API change.
 >
-> I only did small test and it seems to work (but I think there will be bug...)
-> I post this now just because I'll be out of office 10/31-11/15 with ksummit and
-> a private trip.
->
-> Any comments are welcome but please see the interface is enough for use cases or
-> not.  For example) If MAX_ORDER alignment is too bad, I need to rewrite almost
-> all code.
+> I disagree that touching every single legacy LLD's SHT->queuecommand()
+> and failure paths in that code is a low rist change.
 
-First of all, thanks for the endless your effort to embedded system.
-It's time for statkeholders to review this.
-Cced some guys. Maybe many people of them have to attend KS.
-So I hope SAMSUNG guys review this.
+Think of changes like steps in a math proof.  You want to make a series 
+of equivalent transformations such that, each transformation takes the 
+code (proof) one step closer to your goal.
 
-Maybe they can't test this since ARM doesn't support movable zone now.
-(I will look into this).
-As Kame said, please, review this patch whether this patch have enough
-interface and meet
-your requirement.
-I think this can't meet _all_ of your requirements(ex, latency and
-making sure getting big contiguous memory) but I believe it can meet
-NOT CRITICAL many cases, I guess.
+unlocked_qcmds does nothing but increase complexity, as opposed to an 
+equivalent-transformation mechanical code change much more easily 
+provable as correct (or broken). unlocked_qcmds is the type of 
+transition step you always want to avoid if possible.  Conditional 
+locking logic tends to be complexity at its worst... and in this case, 
+it's all avoidable.
 
->
-> Now interface is:
->
->
-> struct page *__alloc_contig_pages(unsigned long base, unsigned long end,
->                        unsigned long nr_pages, int align_order,
->                        int node, gfp_t gfpflag, nodemask_t *mask)
->
->  * @base: the lowest pfn which caller wants.
->  * @end:  the highest pfn which caller wants.
->  * @nr_pages: the length of a chunk of pages to be allocated.
->  * @align_order: alignment of start address of returned chunk in order.
->  *   Returned' page's order will be aligned to (1 << align_order).If smaller
->  *   than MAX_ORDER, it's raised to MAX_ORDER.
->  * @node: allocate near memory to the node, If -1, current node is used.
->  * @gfpflag: see include/linux/gfp.h
->  * @nodemask: allocate memory within the nodemask.
->
-> If the caller wants a FIXED address, set end - base == nr_pages.
->
-> The patch is based onto the latest mmotm + Bob's 3 patches for fixing
-> memory_hotplug.c (they are queued.)
->
-> Thanks,
-> -Kame
->
->
->
->
->
+	Jeff
 
 
-
--- 
-Kind regards,
-Minchan Kim
