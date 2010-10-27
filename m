@@ -1,104 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760738Ab0J0JVj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 05:21:39 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:49971 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760726Ab0J0JVh (ORCPT
+	id S1753010Ab0J0J1F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 05:27:05 -0400
+Received: from exprod5og111.obsmtp.com ([64.18.0.22]:39543 "EHLO
+	exprod5og111.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751060Ab0J0J1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 05:21:37 -0400
-Date: Wed, 27 Oct 2010 11:21:35 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Andi Kleen <andi@firstfloor.org>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        n-horiguchi@ah.jp.nec.com, x86@kernel.org
-Subject: Re: [GIT PULL] Please pull hwpoison updates for 2.6.37
-Message-ID: <20101027092135.GE2472@basil.fritz.box>
-References: <20101026100923.GA5118@basil.fritz.box>
- <20101027074254.GA809@elte.hu>
- <20101027075846.GA2472@basil.fritz.box>
- <20101027081853.GA20196@elte.hu>
- <20101027090128.GC2472@basil.fritz.box>
- <20101027090903.GA16957@elte.hu>
+	Wed, 27 Oct 2010 05:27:03 -0400
+Message-ID: <4CC7F017.8040106@ge.com>
+Date: Wed, 27 Oct 2010 10:25:43 +0100
+From: Martyn Welch <martyn.welch@ge.com>
+Organization: GE Intelligent Platforms
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.14) Gecko/20101006 Thunderbird/3.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101027090903.GA16957@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Emilio G. Cota" <cota@braap.org>
+CC: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
+        devel@driverdev.osuosl.org,
+        Juan David Gonzalez Cobas <david.cobas@gmail.com>,
+        Bill Pemberton <wfp5p@virginia.edu>
+Subject: Re: [PATCH 02/30] staging/vme_user: return the appropriate error
+ code when module_init fails
+References: <1288055476-19438-1-git-send-email-cota@braap.org> <1288055476-19438-3-git-send-email-cota@braap.org>
+In-Reply-To: <1288055476-19438-3-git-send-email-cota@braap.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 27 Oct 2010 09:27:01.0327 (UTC) FILETIME=[1C3BC5F0:01CB75B9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 11:09:03AM +0200, Ingo Molnar wrote:
+On 26/10/10 02:10, Emilio G. Cota wrote:
+> From: Emilio G. Cota <cota@braap.org>
 > 
-> * Andi Kleen <andi@firstfloor.org> wrote:
+> When init_module fails, 0 is returned anyway; the module is then installed
+> and oopses when we try to remove it:
 > 
-> > > You are welcome! How about the cleanliness feedback that i gave?
-> > > (the stuff in parentheses)
-> > 
-> > Could move the ifdef into mm.h for the flags and let the optimizer
-> > eliminate the code. I can do that in a followup patch.
+> [ 3236.368009] WARNING: at drivers/base/driver.c:262 driver_unregister+0x36/0x6f()
+> [ 3236.368012] Hardware name:
+> [ 3236.368014] Unexpected driver unregister!
+> [ 3236.368016] Modules linked in: vme_user(-) vme_tsi148 vme e1000e iTCO_wdt iTCO_vendor_support [last unloaded: vme]
+> [ 3236.368027] Pid: 16162, comm: rmmod Not tainted 2.6.35 #2
+> [ 3236.368029] Call Trace:
+> [ 3236.368037]  [<ffffffff81036ea3>] warn_slowpath_common+0x80/0x98
+> [ 3236.368044]  [<ffffffff81060a65>] ? __try_stop_module+0x0/0x58
+> [ 3236.368049]  [<ffffffff81036f4f>] warn_slowpath_fmt+0x41/0x43
+> [ 3236.368054]  [<ffffffff81060a65>] ? __try_stop_module+0x0/0x58
+> [ 3236.368059]  [<ffffffff811e8f78>] driver_unregister+0x36/0x6f
+> [ 3236.368066]  [<ffffffffa004aa44>] vme_unregister_driver+0xd/0xf [vme]
+> [ 3236.368072]  [<ffffffffa00616c8>] vme_user_exit+0x10/0x1e [vme_user]
+> [ 3236.368076]  [<ffffffff810612c1>] sys_delete_module+0x1ba/0x226
+> [ 3236.368082]  [<ffffffff812d6e14>] ? do_page_fault+0x25d/0x28a
+> [ 3236.368088]  [<ffffffff8100202b>] system_call_fastpath+0x16/0x1b
+> [ 3236.368092] ---[ end trace cab6d88ebc44c1de ]---
 > 
-> Yeah. If it does not work out due to architectural differences then
-> do not push it too hard (the code is small enough) - we only want to
-> factor this out if it makes things cleaner.
+> The appended fixes it by returning the appropriate error code in module_init
+> whenever something goes wrong, thus cancelling the insertion of the module.
+> 
+> Signed-off-by: Emilio G. Cota <cota@braap.org>
 
-Here's the patch I came up with. I'll keep it in my tree for now.
+Acked-by: Martyn Welch <martyn.welch@ge.com>
 
--Andi
-
----
-
-x86/HWPOISON: Move do_sigbus ifdef into header
-    
-Ingo asked for moving the MEMORY_FAILURE ifdef in the x86's
-fault handler's do_sigbus elsewhere. This patch moves the
-ifdef into mm.h by defining the HWPOISON return flags
-of handle_mm_fault() to 0 if MEMORY_FAILURE is not enabled.
-This way the optimizer can eliminate the code without ifdef.
-    
-Reported-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 852b319..8b76d79 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -812,14 +812,12 @@ do_sigbus(struct pt_regs *regs, unsigned long error_code, unsigned long address,
- 	tsk->thread.error_code	= error_code;
- 	tsk->thread.trap_no	= 14;
- 
--#ifdef CONFIG_MEMORY_FAILURE
- 	if (fault & (VM_FAULT_HWPOISON|VM_FAULT_HWPOISON_LARGE)) {
- 		printk(KERN_ERR
- 	"MCE: Killing %s:%d due to hardware memory corruption fault at %lx\n",
- 			tsk->comm, tsk->pid, address);
- 		code = BUS_MCEERR_AR;
- 	}
--#endif
- 	force_sig_info_fault(SIGBUS, code, address, tsk, fault);
- }
- 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index a4c6684..d9a6af5 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -718,8 +718,13 @@ static inline int page_mapped(struct page *page)
- #define VM_FAULT_SIGBUS	0x0002
- #define VM_FAULT_MAJOR	0x0004
- #define VM_FAULT_WRITE	0x0008	/* Special case for get_user_pages */
-+#ifdef CONFIG_MEMORY_FAILURE
- #define VM_FAULT_HWPOISON 0x0010	/* Hit poisoned small page */
- #define VM_FAULT_HWPOISON_LARGE 0x0020  /* Hit poisoned large page. Index encoded in upper bits */
-+#else
-+#define VM_FAULT_HWPOISON 0
-+#define VM_FAULT_HWPOISON_LARGE 0
-+#endif
- 
- #define VM_FAULT_NOPAGE	0x0100	/* ->fault installed the pte, not return page */
- #define VM_FAULT_LOCKED	0x0200	/* ->fault locked the returned page */
+> ---
+>  drivers/staging/vme/devices/vme_user.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/staging/vme/devices/vme_user.c b/drivers/staging/vme/devices/vme_user.c
+> index cbe2e11..a6f6116 100644
+> --- a/drivers/staging/vme/devices/vme_user.c
+> +++ b/drivers/staging/vme/devices/vme_user.c
+> @@ -611,6 +611,7 @@ static int __init vme_user_init(void)
+>  	if (bus_num == 0) {
+>  		printk(KERN_ERR "%s: No cards, skipping registration\n",
+>  			driver_name);
+> +		retval = -ENODEV;
+>  		goto err_nocard;
+>  	}
+>  
+> @@ -629,6 +630,7 @@ static int __init vme_user_init(void)
+>  	if (ids == NULL) {
+>  		printk(KERN_ERR "%s: Unable to allocate ID table\n",
+>  			driver_name);
+> +		retval = -ENOMEM;
+>  		goto err_id;
+>  	}
+>  
 
 
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+Martyn Welch (Principal Software Engineer)   |   Registered in England and
+GE Intelligent Platforms                     |   Wales (3828642) at 100
+T +44(0)127322748                            |   Barbirolli Square,
+Manchester,
+E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
