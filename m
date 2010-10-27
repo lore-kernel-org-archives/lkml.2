@@ -1,209 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759671Ab0J0Ozs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 10:55:48 -0400
-Received: from fieldses.org ([174.143.236.118]:55165 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752013Ab0J0Ozq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 10:55:46 -0400
-Date: Wed, 27 Oct 2010 10:55:39 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: nfsd changes for 2.6.37
-Message-ID: <20101027145538.GC6328@fieldses.org>
-References: <20101026164549.GD19445@fieldses.org>
- <20101027083924.GA28129@infradead.org>
- <20101027133924.GB6328@fieldses.org>
- <201010271546.09036.arnd@arndb.de>
+	id S1760961Ab0J0O5C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 10:57:02 -0400
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:53366
+	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752013Ab0J0O47 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 10:56:59 -0400
+X-SpamScore: -33
+X-BigFish: VS-33(zzbb2dK542N1432N98dN4015L9371Pzz1202hzzz2dh2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:az33egw01.freescale.net;RD:az33egw01.freescale.net;EFVD:NLI
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-Class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201010271546.09036.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH] ARM: imx: Add some core definitions for MX53
+Date: Wed, 27 Oct 2010 07:57:11 -0700
+Message-ID: <86A0E76937111F4C92FABEC0A2098851051D6523@az33exm21>
+In-Reply-To: <20101027135642.GM6017@pengutronix.de>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] ARM: imx: Add some core definitions for MX53
+Thread-Index: Act13uJlhZWJvl4jRUivqUXTy+5IZwAB5gJw
+References: <1288119235-7036-1-git-send-email-Dinh.Nguyen@freescale.com> <20101027082958.GA6797@angua.secretlab.ca> <20101027090921.GB8554@pengutronix.de> <20101027102253.GA7822@angua.secretlab.ca> <20101027132213.GJ6017@pengutronix.de> <4CC82A13.8000909@eukrea.com> <20101027135642.GM6017@pengutronix.de>
+From: Nguyen Dinh-R00091 <R00091@freescale.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>,
+        =?iso-8859-1?Q?Eric_B=E9nard?= <eric@eukrea.com>
+CC: Grant Likely <grant.likely@secretlab.ca>, <amit.kucheria@canonical.com>,
+        <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <daniel@caiaq.de>,
+        =?iso-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        <valentin.longchamp@epfl.ch>
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 03:46:08PM +0200, Arnd Bergmann wrote:
-> On Wednesday 27 October 2010, J. Bruce Fields wrote:
-> > On Wed, Oct 27, 2010 at 04:39:24AM -0400, Christoph Hellwig wrote:
-> > > Do locks_alloc_lock and initialization of the heap struct file_lock
-> > > in the caller.  This also avoids an entirely useless copy of the
-> > > lock structure.  free the passed in structure if we are modifying
-> > > an existing lock structure.
-> > 
-> > That sounds good; I'll give it a try.
-> 
-> I've already started, this is what I've come up with. I don't have
-> a good way to test it though, and don't know as much as you about this
-> code. Feel free to use it as a starting point if you like.
-> It does look correct to me, but I'm not very confident in this.
+Hi,
 
-Hm, two problems:
-	- We introduce the possibility of fcntl(fd, F_SETLEASE, F_UNLCK)
-	  failing with ENOMEM.
-	- fasync_helper(.,.,1,.) sleeps.  Argh.
+>-----Original Message-----
+>From: Sascha Hauer [mailto:s.hauer@pengutronix.de]
+>Sent: Wednesday, October 27, 2010 8:57 AM
+>To: Eric Bénard
+>Cc: Grant Likely; amit.kucheria@canonical.com; linux@arm.linux.org.uk; Nguyen Dinh-R00091; linux-
+>kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org; daniel@caiaq.de; Uwe Kleine-König;
+>valentin.longchamp@epfl.ch
+>Subject: Re: [PATCH] ARM: imx: Add some core definitions for MX53
+>
+>On Wed, Oct 27, 2010 at 03:33:07PM +0200, Eric Bénard wrote:
+>> Hi,
+>>
+>> Le 27/10/2010 15:22, Sascha Hauer a écrit :
+>> > That's a way we can go but only if the common name is not MX5 or MX5x.
+>> > We've done it with the mx21/27 and it failed when the mx25 came out
+>> > which was completely incompatible. Since then everybody looking at
+>> > the code must know that mx2x is mx21/27 but not mx25. I suggest
+>> > something like MX513 instead.
+>> >
+>> MX513 is the partnumber of a member of the i.MX51 family so that's maybe
+>> not the best choice.
+>
+>Yes, I know. Is MX5_1_3 better? Any other suggestions?
 
---b.
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> ---
-> 
-> diff --git a/fs/locks.c b/fs/locks.c
-> index 8b2b6ad..c5ec771 100644
-> --- a/fs/locks.c
-> +++ b/fs/locks.c
-> @@ -162,10 +162,11 @@ EXPORT_SYMBOL_GPL(unlock_flocks);
->  static struct kmem_cache *filelock_cache __read_mostly;
->  
->  /* Allocate an empty lock structure. */
-> -static struct file_lock *locks_alloc_lock(void)
-> +struct file_lock *locks_alloc_lock(void)
->  {
->  	return kmem_cache_alloc(filelock_cache, GFP_KERNEL);
->  }
-> +EXPORT_SYMBOL_GPL(locks_alloc_lock);
->  
->  void locks_release_private(struct file_lock *fl)
->  {
-> @@ -1365,7 +1366,6 @@ int fcntl_getlease(struct file *filp)
->  int generic_setlease(struct file *filp, long arg, struct file_lock **flp)
->  {
->  	struct file_lock *fl, **before, **my_before = NULL, *lease;
-> -	struct file_lock *new_fl = NULL;
->  	struct dentry *dentry = filp->f_path.dentry;
->  	struct inode *inode = dentry->d_inode;
->  	int error, rdlease_count = 0, wrlease_count = 0;
-> @@ -1385,11 +1385,6 @@ int generic_setlease(struct file *filp, long arg, struct file_lock **flp)
->  	lease = *flp;
->  
->  	if (arg != F_UNLCK) {
-> -		error = -ENOMEM;
-> -		new_fl = locks_alloc_lock();
-> -		if (new_fl == NULL)
-> -			goto out;
-> -
->  		error = -EAGAIN;
->  		if ((arg == F_RDLCK) && (atomic_read(&inode->i_writecount) > 0))
->  			goto out;
-> @@ -1434,23 +1429,19 @@ int generic_setlease(struct file *filp, long arg, struct file_lock **flp)
->  		goto out;
->  	}
->  
-> -	error = 0;
->  	if (arg == F_UNLCK)
-> -		goto out;
-> +		goto out_unlck;
->  
->  	error = -EINVAL;
->  	if (!leases_enable)
->  		goto out;
->  
-> -	locks_copy_lock(new_fl, lease);
-> -	locks_insert_lock(before, new_fl);
-> -
-> -	*flp = new_fl;
-> +	locks_insert_lock(before, lease);
-> +out_unlck:
->  	return 0;
->  
->  out:
-> -	if (new_fl != NULL)
-> -		locks_free_lock(new_fl);
-> +	locks_free_lock(lease);
->  	return error;
->  }
->  EXPORT_SYMBOL(generic_setlease);
-> @@ -1514,26 +1505,31 @@ EXPORT_SYMBOL_GPL(vfs_setlease);
->   */
->  int fcntl_setlease(unsigned int fd, struct file *filp, long arg)
->  {
-> -	struct file_lock fl, *flp = &fl;
-> +	struct file_lock *fl;
->  	struct inode *inode = filp->f_path.dentry->d_inode;
->  	int error;
->  
-> -	locks_init_lock(&fl);
-> -	error = lease_init(filp, arg, &fl);
-> -	if (error)
-> +	fl = locks_alloc_lock();
-> +	if (!fl)
-> +		return -ENOMEM;
-> +
-> +	locks_init_lock(fl);
-> +	error = lease_init(filp, arg, fl);
-> +	if (error) {
-> +		locks_free_lock(fl);
->  		return error;
-> +	}
->  
->  	lock_flocks();
-> -
-> -	error = __vfs_setlease(filp, arg, &flp);
-> +	error = __vfs_setlease(filp, arg, &fl);
->  	if (error || arg == F_UNLCK)
->  		goto out_unlock;
->  
-> -	error = fasync_helper(fd, filp, 1, &flp->fl_fasync);
-> +	error = fasync_helper(fd, filp, 1, &fl->fl_fasync);
->  	if (error < 0) {
->  		/* remove lease just inserted by setlease */
-> -		flp->fl_type = F_UNLCK | F_INPROGRESS;
-> -		flp->fl_break_time = jiffies - 10;
-> +		fl->fl_type = F_UNLCK | F_INPROGRESS;
-> +		fl->fl_break_time = jiffies - 10;
->  		time_out_leases(inode);
->  		goto out_unlock;
->  	}
-> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-> index 9019e8e..56347e0 100644
-> --- a/fs/nfsd/nfs4state.c
-> +++ b/fs/nfsd/nfs4state.c
-> @@ -2614,7 +2614,7 @@ nfs4_open_delegation(struct svc_fh *fh, struct nfsd4_open *open, struct nfs4_sta
->  	struct nfs4_delegation *dp;
->  	struct nfs4_stateowner *sop = stp->st_stateowner;
->  	int cb_up = atomic_read(&sop->so_client->cl_cb_set);
-> -	struct file_lock fl, *flp = &fl;
-> +	struct file_lock *fl;
->  	int status, flag = 0;
->  
->  	flag = NFS4_OPEN_DELEGATE_NONE;
-> @@ -2648,20 +2648,24 @@ nfs4_open_delegation(struct svc_fh *fh, struct nfsd4_open *open, struct nfs4_sta
->  		flag = NFS4_OPEN_DELEGATE_NONE;
->  		goto out;
->  	}
-> -	locks_init_lock(&fl);
-> -	fl.fl_lmops = &nfsd_lease_mng_ops;
-> -	fl.fl_flags = FL_LEASE;
-> -	fl.fl_type = flag == NFS4_OPEN_DELEGATE_READ? F_RDLCK: F_WRLCK;
-> -	fl.fl_end = OFFSET_MAX;
-> -	fl.fl_owner =  (fl_owner_t)dp;
-> -	fl.fl_file = find_readable_file(stp->st_file);
-> -	BUG_ON(!fl.fl_file);
-> -	fl.fl_pid = current->tgid;
-> +	status = -ENOMEM;
-> +	fl = locks_alloc_lock();
-> +	if (!fl)
-> +		goto out;
-> +	locks_init_lock(fl);
-> +	fl->fl_lmops = &nfsd_lease_mng_ops;
-> +	fl->fl_flags = FL_LEASE;
-> +	fl->fl_type = flag == NFS4_OPEN_DELEGATE_READ? F_RDLCK: F_WRLCK;
-> +	fl->fl_end = OFFSET_MAX;
-> +	fl->fl_owner =  (fl_owner_t)dp;
-> +	fl->fl_file = find_readable_file(stp->st_file);
-> +	BUG_ON(!fl->fl_file);
-> +	fl->fl_pid = current->tgid;
->  
->  	/* vfs_setlease checks to see if delegation should be handed out.
->  	 * the lock_manager callbacks fl_mylease and fl_change are used
->  	 */
-> -	if ((status = vfs_setlease(fl.fl_file, fl.fl_type, &flp))) {
-> +	if ((status = vfs_setlease(fl->fl_file, fl->fl_type, &fl))) {
->  		dprintk("NFSD: setlease failed [%d], no delegation\n", status);
->  		unhash_delegation(dp);
->  		flag = NFS4_OPEN_DELEGATE_NONE;
+Not sure why we can't do something like this?
+
+In mx5x.h, 
+MX51_PERIP_1 /* Address specific to mx51 */
+MX53_PERIP_1 /* Address specific to mx53 */
+MX5_PERIP_2 /* Address that is shared to mx51, mx53, and any later mx5X chips */
+Then if something like mx57 comes, you can add to mx5x.h the differences with MX57_PERIP_1.
+
+>
+>--
+>Pengutronix e.K.                           |                             |
+>Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+>Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+>Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+
+Thanks,
+Dinh
+
