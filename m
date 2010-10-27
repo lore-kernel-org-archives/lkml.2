@@ -1,35 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755909Ab0J0TWG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 15:22:06 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60347 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755662Ab0J0TWE (ORCPT
+	id S1755869Ab0J0TXW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 15:23:22 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:42110
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755656Ab0J0TXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 15:22:04 -0400
-Date: Wed, 27 Oct 2010 20:21:01 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH] drivers/char/hvc_console.c: reduce max idle timeout
-Message-ID: <20101027202101.226085c1@lxorguk.ukuu.org.uk>
-In-Reply-To: <201010271659.o9RGxrMc009847@farm-0002.internal.tilera.com>
-References: <201010271659.o9RGxrMc009847@farm-0002.internal.tilera.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Wed, 27 Oct 2010 15:23:20 -0400
+Date: Wed, 27 Oct 2010 12:23:43 -0700 (PDT)
+Message-Id: <20101027.122343.68121252.davem@davemloft.net>
+To: julia@diku.dk
+Cc: netdev@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/14] drivers/net/sb1000.c: delete double assignment
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1288088743-3725-6-git-send-email-julia@diku.dk>
+References: <1288088743-3725-1-git-send-email-julia@diku.dk>
+	<1288088743-3725-6-git-send-email-julia@diku.dk>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Oct 2010 12:54:27 -0400
-Chris Metcalf <cmetcalf@tilera.com> wrote:
+From: Julia Lawall <julia@diku.dk>
+Date: Tue, 26 Oct 2010 12:25:34 +0200
 
-> The tile architecture uses this framework for our serial console,
+> From: Julia Lawall <julia@diku.dk>
+> 
+> The other code around these duplicated assignments initializes the 0 1 2
+> and 3 elements of an array, so change the initialization of the
+> rx_session_id array to do the same.
+> 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+ ...
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
-That may be a mistake unless your console is genuinely only capable of
-polled input.
-
-Alan
+Applied.
