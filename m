@@ -1,135 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753739Ab0J0Ru7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 13:50:59 -0400
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:43545 "EHLO lunge.queued.net"
+	id S1753864Ab0J0Rvm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 13:51:42 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:14173 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753293Ab0J0Ru4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 13:50:56 -0400
-Date: Wed, 27 Oct 2010 10:50:52 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: devicetree-discuss@lists.ozlabs.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: OLPC: speed up device tree creation during boot
-Message-ID: <20101027105052.23aa1c17@queued.net>
-In-Reply-To: <20101027103924.GB7822@angua.secretlab.ca>
-References: <20101022155846.66cde32f@queued.net>
-	<20101022172247.76cb3049@queued.net>
-	<20101027103924.GB7822@angua.secretlab.ca>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753367Ab0J0Rvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 13:51:39 -0400
+X-IronPort-AV: E=Sophos;i="4.58,247,1286164800"; 
+   d="scan'208";a="10837614"
+Subject: Re: [PATCH] x86: use pgd accessors when cloning a pgd range.
+From: Ian Campbell <Ian.Campbell@eu.citrix.com>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>, Borislav Petkov <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>
+In-Reply-To: <4CC8649F.5060408@linux.intel.com>
+References: <1288169413-29065-1-git-send-email-ian.campbell@citrix.com>
+	 <20101027104020.GA16954@a1.tnic> <4CC85839.4000507@goop.org>
+	 <4CC85EE6.7030608@linux.intel.com> <4CC861F9.8080200@goop.org>
+	 <4CC8649F.5060408@linux.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Organization: Citrix Systems, Inc.
+Date: Wed, 27 Oct 2010 18:51:36 +0100
+Message-ID: <1288201896.10179.87.camel@localhost.localdomain>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Oct 2010 11:39:24 +0100
-Grant Likely <grant.likely@secretlab.ca> wrote:
-
-> On Fri, Oct 22, 2010 at 05:22:47PM -0700, Andres Salomon wrote:
-> > 
-> > Calling alloc_bootmem() for tiny chunks of memory over and over is
-> > really slow; on an XO-1, it caused the time between when the kernel
-> > started booting and when the display came alive (post-lxfb probe)
-> > to increase to 44s.  This patch optimizes the prom_early_alloc
-> > function by calling alloc_bootmem for 4k-sized blocks of memory,
-> > and handing out chunks of that to callers.  With this hack, the
-> > time between kernel load and display initialization decreased to
-> > 23s.  If there's a better way to do this early in the boot process,
-> > please let me know.
-> > 
-> > (Note: increasing the chunk size to 16k didn't noticably affect
-> > boot time, and wasted 9k.)
-> > 
-> > Signed-off-by: Andres Salomon <dilinger@queued.net>
-> > ---
-> >  arch/x86/kernel/olpc_dt.c |   27 +++++++++++++++++++++++----
-> >  1 files changed, 23 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/arch/x86/kernel/olpc_dt.c b/arch/x86/kernel/olpc_dt.c
-> > index f660a11..44dd2ae 100644
-> > --- a/arch/x86/kernel/olpc_dt.c
-> > +++ b/arch/x86/kernel/olpc_dt.c
-> > @@ -123,16 +123,35 @@ static int __init olpc_dt_pkg2path(phandle
-> > node, char *buf, }
-> >  
-> >  static unsigned int prom_early_allocated __initdata;
-> > +#define DT_CHUNK_SIZE (1<<12)
+On Wed, 2010-10-27 at 18:42 +0100, H. Peter Anvin wrote:
+> On 10/27/2010 10:31 AM, Jeremy Fitzhardinge wrote:
+> >   On 10/27/2010 10:18 AM, H. Peter Anvin wrote:
+> >> On 10/27/2010 9:50 AM, Jeremy Fitzhardinge wrote:
+> >>>
+> >>> This never used to be a problem.  Perhaps we can change how
+> >>> clone_pgd_range is used at boot time to avoid it in the Xen case (since
+> >>> we don't care about the secondary pagetable)?
+> >>>
+> >>
+> >> Xen shouldn't have any users of this, since it's used for low-level
+> >> operations like SMP bootstrap, suspend to RAM, reboot and low-level
+> >> BIOS functionality.
+> >>
+> >
+> > Right, but it is being called smack in the middle of setup_arch().  It
+> > looks like they could be hidden away in
+> > native_pagetable_setup_start/done though.
+> >
 > 
-> PAGE_SIZE perhaps?
-> 
+> This is what makes me absolutely hate paravirt with a passion... "let's 
+> hid things away in <obscure place> and make it absolutely impossible to 
+> either follow the code flow or figure out what the intended semantics 
+> are supposed to be."  (Let not even get me started on how ill-defined 
+> the semantics of some of the paravirt operations are.)  In this case, at 
+> the most you need a single flag of state... or you could even just 
+> ignore this low-level data structure that you will never use in the 
+> first place.  Ian's message just mentioned "a failure" and never 
+> described in any way what kind of "failure" it was.
 
-I'd rather not imply that it's anything but completely arbitrary..
+That was vague of me, sorry about that. The failure was Xen shooting the
+guest due to an attempt to write to swapper_pg_dir directly, which isn't
+allowed for active pagetables under Xen.
+
+Ian.
 
 
-
-> >  
-> >  void * __init prom_early_alloc(unsigned long size)
-> >  {
-> > +	static u8 *mem = NULL;
-> > +	static size_t free_mem = 0;
-> >  	void *res;
-> >  
-> > -	res = alloc_bootmem(size);
-> > -	if (res)
-> > -		memset(res, 0, size);
-> > +	if (free_mem >= size) {
-> > +		/* allocate from the local cache */
-> > +		free_mem -= size;
-> > +		res = mem;
-> > +		mem += size;
-> > +		return res;
-> > +	}
-> >  
-> > -	prom_early_allocated += size;
-> > +	/*
-> > +	 * To mimimize the number of allocations, grab 4k of
-> > memory (that's
-> > +	 * an arbitrary choice that matches PAGE_SIZE on the
-> > platforms we care
-> > +	 * about, and minimizes wasted bootmem) and hand off
-> > chunks of it to
-> > +	 * callers.
-> > +	 */
-> > +	res = alloc_bootmem(DT_CHUNK_SIZE);
-> > +	if (res) {
-> > +		prom_early_allocated += DT_CHUNK_SIZE;
-> > +		memset(res, 0, DT_CHUNK_SIZE);
-> > +		free_mem = DT_CHUNK_SIZE - size;
-> > +		mem = res + size;
-> > +	}
-> 
-> These two hunks should be flipped around so that only one chunk does
-> the allocation from the pool.  As so:
-> 
-> 	/*
-> 	 * To mimimize the number of allocations, grab 4k of memory
-> (that's
-> 	 * an arbitrary choice that matches PAGE_SIZE on the
-> platforms we care
-> 	 * about, and minimizes wasted bootmem) and hand off chunks
-> of it to
-> 	 * callers.
-> 	 */
-> 	if (free_mem < size) {
-> 		free_mem = max(DT_CHUNK_SIZE, size);
-> 		mem = alloc_bootmem(free_mem);
-> 		if (!mem) {
-> 			free_mem = 0;
-> 			return NULL;
-> 		}
-> 		memset(mem, 0, free_mem);
-> 		prom_early_allocated += free_mem;
-> 	}
-> 
-> 	res = mem;
-> 	free_mem -= size;
-> 	mem += size;
-> 	return res;
-> 
-> g.
-
-Makes sense, thanks.
