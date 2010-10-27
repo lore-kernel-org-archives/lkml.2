@@ -1,60 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933655Ab0J0PQv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 11:16:51 -0400
-Received: from fieldses.org ([174.143.236.118]:48572 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933382Ab0J0PQt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 11:16:49 -0400
-Date: Wed, 27 Oct 2010 11:16:46 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: nfsd changes for 2.6.37
-Message-ID: <20101027151645.GD6328@fieldses.org>
-References: <20101026164549.GD19445@fieldses.org>
- <20101027083924.GA28129@infradead.org>
- <20101027133924.GB6328@fieldses.org>
- <201010271546.09036.arnd@arndb.de>
- <20101027145538.GC6328@fieldses.org>
- <20101027145929.GA5788@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101027145929.GA5788@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933664Ab0J0PRf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 11:17:35 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33201 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933540Ab0J0PRc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 11:17:32 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+To: oprofile-list@lists.sf.net
+Cc: linux-kernel@vger.kernel.org, Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        sricharan <r.sricharan@ti.com>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH v2] oprofile: Fix the hang while offline the cpu
+Date: Wed, 27 Oct 2010 20:47:15 +0530
+Message-Id: <1288192635-11053-1-git-send-email-santosh.shilimkar@ti.com>
+X-Mailer: git-send-email 1.5.6.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 10:59:29AM -0400, Christoph Hellwig wrote:
-> On Wed, Oct 27, 2010 at 10:55:39AM -0400, J. Bruce Fields wrote:
-> > Hm, two problems:
-> > 	- We introduce the possibility of fcntl(fd, F_SETLEASE, F_UNLCK)
-> > 	  failing with ENOMEM.
-> 
-> splitt ->setlease into ->add_least and ->delete_lease.  No need to pass
-> in a structure for the later.  No need to return one either.
+The kernel build with CONFIG_OPROFILE and CPU_HOTPLUG enabled.
+The oprofile is initialised using system timer in absence of hardware
+counters supports. Oprofile isn't started from userland.
 
-Sounds fine to me.
+In this setup while doing a CPU offline the kernel hangs in infinite
+for loop inside lock_hrtimer_base() function
 
-> 
-> > 	- fasync_helper(.,.,1,.) sleeps.  Argh.
-> 
-> That's not new..
+This happens because as part of oprofile_cpu_notify(, it tries to
+stop an hrtimer which was never started. These per-cpu hrtimers
+are started when the oprfile is started.
+	echo 1	> /dev/oprofile/enable
 
-So we could do
+This problem also existwhen the cpu is booted with maxcpus parameter
+set. When bringing the remaining cpus online the timers are started
+even if oprofile is not yet enabled.
 
-	unlock_flocks();
-	error = fasync_helper(fd, filp, 1, &fl->fl_fasync);
-	lock_flocks();
+This patch fix this issue by adding a state variable so that
+these hrtimer start/stop is only attempted when oprofile is
+started
 
-and say, hey, we didn't introduce any new bug there.  But....
+Reported-by: Jan Sebastien <s-jan@ti.com>
+Signed-off-by: sricharan <r.sricharan@ti.com>
+Tested-by: sricharan <r.sricharan@ti.com>
+Cc: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+---
+V2: Updated patch with comments from Robert Richter
+ drivers/oprofile/timer_int.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
 
-I don't know, maybe add a version of fasync_add_entry() that takes a
-preallocated fasync_struct??
+diff --git a/drivers/oprofile/timer_int.c b/drivers/oprofile/timer_int.c
+index dc0ae4d..0107251 100644
+--- a/drivers/oprofile/timer_int.c
++++ b/drivers/oprofile/timer_int.c
+@@ -21,6 +21,7 @@
+ #include "oprof.h"
+ 
+ static DEFINE_PER_CPU(struct hrtimer, oprofile_hrtimer);
++static int ctr_running;
+ 
+ static enum hrtimer_restart oprofile_hrtimer_notify(struct hrtimer *hrtimer)
+ {
+@@ -33,6 +34,9 @@ static void __oprofile_hrtimer_start(void *unused)
+ {
+ 	struct hrtimer *hrtimer = &__get_cpu_var(oprofile_hrtimer);
+ 
++	if (!ctr_running)
++		return;
++
+ 	hrtimer_init(hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+ 	hrtimer->function = oprofile_hrtimer_notify;
+ 
+@@ -42,7 +46,10 @@ static void __oprofile_hrtimer_start(void *unused)
+ 
+ static int oprofile_hrtimer_start(void)
+ {
++	get_online_cpus();
++	ctr_running = 1;
+ 	on_each_cpu(__oprofile_hrtimer_start, NULL, 1);
++	put_online_cpus();
+ 	return 0;
+ }
+ 
+@@ -50,6 +57,9 @@ static void __oprofile_hrtimer_stop(int cpu)
+ {
+ 	struct hrtimer *hrtimer = &per_cpu(oprofile_hrtimer, cpu);
+ 
++	if (!ctr_running)
++		return;
++
+ 	hrtimer_cancel(hrtimer);
+ }
+ 
+@@ -57,8 +67,11 @@ static void oprofile_hrtimer_stop(void)
+ {
+ 	int cpu;
+ 
++	get_online_cpus();
+ 	for_each_online_cpu(cpu)
+ 		__oprofile_hrtimer_stop(cpu);
++	ctr_running = 0;
++	put_online_cpus();
+ }
+ 
+ static int __cpuinit oprofile_cpu_notify(struct notifier_block *self,
+-- 
+1.6.0.4
 
---b.
