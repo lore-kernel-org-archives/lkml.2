@@ -1,120 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751296Ab0J0Qgp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 12:36:45 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:46599 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978Ab0J0Qgo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 12:36:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=gXl6YaDU26h68jgNdFMNNPoOu/HZ4tMi11sb+1N6Y5VQfXvBxSCplP7Cuml6KZzbUH
-         E3L5GpQcY9FWltBMqVvbgaZ+GaHM5ITFAGlXeK78L8FCS+F57ABBBMm53PnAWtQkKHdE
-         sLg3ZK/PJG9qWBT3rseKs2fK21rU/v58FI5uU=
-Message-ID: <4CC85513.5060407@gmail.com>
-Date: Wed, 27 Oct 2010 18:36:35 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Thunderbird/3.1.6
+	id S1751528Ab0J0QhO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 12:37:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46906 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750978Ab0J0QhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 12:37:12 -0400
+Message-ID: <4CC8550B.4060403@redhat.com>
+Date: Wed, 27 Oct 2010 14:36:27 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
 MIME-Version: 1.0
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mm-commits@vger.kernel.org, Antti Palosaari <crope@iki.fi>,
-        Greg KH <gregkh@suse.de>, USB list <linux-usb@vger.kernel.org>
-Subject: Re: DVB: af9015 defunct [was: mmotm 2010-10-20-15-01 uploaded]
-References: <201010202233.o9KMXNoL008303@imap1.linux-foundation.org> <4CC07DB4.20205@gmail.com> <4CC1577F.9060207@gmail.com> <4CC19804.1080109@redhat.com> <4CC19A6E.8010909@gmail.com> <4CC84F60.7000409@redhat.com>
-In-Reply-To: <4CC84F60.7000409@redhat.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-2
+To: Jiri Slaby <jirislaby@gmail.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michael Krufky <mkrufky@kernellabs.com>
+Subject: Re: [GIT PULL for 2.6.37-rc1] V4L/DVB updates
+References: <4CC8380D.3040802@redhat.com> <4CC84597.4000204@gmail.com> <4CC84846.6020304@redhat.com> <4CC84B14.1030303@gmail.com>
+In-Reply-To: <4CC84B14.1030303@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2010 06:12 PM, Mauro Carvalho Chehab wrote:
-> Em 22-10-2010 12:06, Jiri Slaby escreveu:
->> On 10/22/2010 03:56 PM, Mauro Carvalho Chehab wrote:
->>> --- a/drivers/media/dvb/dvb-usb/af9015.c
->>> +++ b/drivers/media/dvb/dvb-usb/af9015.c
->>> @@ -1144,7 +1144,7 @@ static struct qt1010_config af9015_qt1010_config = {
->>>  
->>>  static struct tda18271_config af9015_tda18271_config = {
->>>  	.gate = TDA18271_GATE_DIGITAL,
->>> -	.small_i2c = 1,
->>> +	.small_i2c = TDA18271_16_BYTE_CHUNK_INIT;,
+Em 27-10-2010 13:53, Jiri Slaby escreveu:
+> On 10/27/2010 05:41 PM, Mauro Carvalho Chehab wrote:
+>> Hi Jiri,
 >>
->> No, it doesn't help (note the i2c line which prints the small_i2c entry):
->> dvb-usb: found a 'Leadtek WinFast DTV Dongle Gold' in cold state, will
->> try to load a firmware
->> dvb-usb: downloading firmware from file 'dvb-usb-af9015.fw'
->> dvb-usb: found a 'Leadtek WinFast DTV Dongle Gold' in warm state.
->> dvb-usb: will pass the complete MPEG2 transport stream to the software
->> demuxer.
->> DVB: registering new adapter (Leadtek WinFast DTV Dongle Gold)
->> af9013: firmware version:4.95.0.0
->> DVB: registering adapter 0 frontend 0 (Afatech AF9013 DVB-T)...
->> af9015_tuner_attach: i2c 16
->> tda18271 16-00c0: creating new instance
->> TDA18271HD/C2 detected @ 16-00c0
->> af9015: command failed:1
+>> Em 27-10-2010 13:30, Jiri Slaby escreveu:
+>>> On 10/27/2010 04:32 PM, Mauro Carvalho Chehab wrote:
+>>>> Linus,
+>>>>
+>>>> Please pull from
+>>>> 	ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
+>>> ...
+>>>> Mauro Carvalho Chehab (72):
+>>> ...
+>>>>       [media] tda18271: allow restricting max out to 4 bytes
+>>>
+>>> Even though you know this one breaks at least one driver you want it merged?
+>>
+>> We need to fix that issue with af9015, but, without this patch, cx231xx is broken, as it
+>> doesn't accept more than 4 bytes per I2C transfer. I tested the patch here with some possible
+>> restrictions for I2C size. Also, Mkrufky tested it with other different hardware.
 > 
->> tda18271_write_regs: [16-00c0|M] ERROR: idx = 0x0, len = 39,
->> i2c_transfer returned: -1
+> I think the rule is "no regressions". Was cx231xx broken by some recent
+> change or was it broken forever?
 > 
-> Hmm...
+> Anyway the patch itself is in -next as of next-20101019. What the hell
+> is -next good for then if people skip it? (Yes, 10 workdays is too few
+> for people to really test kernels. Especially when we are talking about
+> DVB.)
 > 
-> int tda18271_write_regs(struct dvb_frontend *fe, int idx, int len)
-> {
-> ...
->         switch (priv->small_i2c) {
->         case TDA18271_03_BYTE_CHUNK_INIT:
->                 max = 3;
->                 break;
->         case TDA18271_08_BYTE_CHUNK_INIT:
->                 max = 8;
->                 break;
->         case TDA18271_16_BYTE_CHUNK_INIT:
->                 max = 16;
->                 break;
->         case TDA18271_39_BYTE_CHUNK_INIT:
->         default:
->                 max = 39;
->         }
+>> What I don't understand is that the only change that this patch caused for af9015 is to change
+>> the I2C max size that used to be 16. The patch I sent you reverted this behaviour, by using
+>> the proper macro value, instead of a magic number, but you reported that this didn't fix your
+>> problem.
 > 
+> What about this hunk? Could it be a source of the problem?
+> @@ -326,24 +352,7 @@ int tda18271_init_regs(struct dvb_frontend *fe)
+>         regs[R_EB22] = 0x48;
+>         regs[R_EB23] = 0xb0;
 > 
-> with small_i2c = 1, the driver will not restrict the maximum length size.
-
-Actually it will make it 39.
-
-> It's weird that the patch didn't fix it. Are you sure that reverting this
-> patch is enough to make the driver work?
-
-Yes, I'm 100% sure.
-
-> Please test this one.
+> -       switch (priv->small_i2c) {
+> -       case TDA18271_08_BYTE_CHUNK_INIT:
+> -               tda18271_write_regs(fe, 0x00, 0x08);
+> -               tda18271_write_regs(fe, 0x08, 0x08);
+> -               tda18271_write_regs(fe, 0x10, 0x08);
+> -               tda18271_write_regs(fe, 0x18, 0x08);
+> -               tda18271_write_regs(fe, 0x20, 0x07);
+> -               break;
+> -       case TDA18271_16_BYTE_CHUNK_INIT:
+> -               tda18271_write_regs(fe, 0x00, 0x10);
+> -               tda18271_write_regs(fe, 0x10, 0x10);
+> -               tda18271_write_regs(fe, 0x20, 0x07);
+> -               break;
+> -       case TDA18271_39_BYTE_CHUNK_INIT:
+> -       default:
+>                 tda18271_write_regs(fe, 0x00, TDA18271_NUM_REGS);
+> -               break;
+> -       }
 > 
-> It will properly log the size of the message the driver tried to use, and will
-> reduce the max number of bytes per I2C transfer to 8.
+>         /* setup agc1 gain */
+>         regs[R_EB17] = 0x00;
+> 
+> Previously it wrote 3 values, now it writes only one.
 
-Yes, this one works. And to be sure that 16 doesn't work I unplugged and
-replugged the device (I didn't last time). And boom, it works too. So
-.small_i2c = TDA18271_16_BYTE_CHUNK_INIT fixes the issue as well.
+No. Previously, the init_regs were manually breaking the 0x39 register initialization
+on several calls to tda18271_write_regs().
 
-> --- a/drivers/media/dvb/dvb-usb/af9015.c
-> +++ b/drivers/media/dvb/dvb-usb/af9015.c
-> @@ -1131,7 +1131,7 @@ static struct qt1010_config af9015_qt1010_config = {
->  
->  static struct tda18271_config af9015_tda18271_config = {
->  	.gate = TDA18271_GATE_DIGITAL,
-> -	.small_i2c = 1,
-> +	.small_i2c = TDA18271_08_BYTE_CHUNK_INIT,
->  };
->  
->  static struct mxl5005s_config af9015_mxl5003_config = {
+What the patch did were to move the logic of breaking the data into smaller groups
+to happen inside tda18271_write_regs().
 
-thanks,
--- 
-js
+So, while the old logic broke it on 3 writes, being the first one from registers
+0x00 to 0x0f, the second from 0x10 to 0x1f and the third from 0x20 to 0x27, the new
+code breaks it inside tda18271_write_regs().
+
+The old logic is broken, since there are some parts of the code calling tda18271_write_regs()
+with a size that were bigger than the maximum supported size.
+
+If you take a look at the code, before this patch, you'll see places where more than the maximum
+allowed size is used. For example:
+
+http://git.linuxtv.org/media_tree.git?a=blob;f=drivers/media/common/tuners/tda18271-common.c;h=e1f678281a58d327752dfcf24dc72ccf1d93ff79;hb=1724c8fa7eb33d68898e060a08a8e6a88348b62f#l385
+
+The driver is wring 11 values:
+	tda18271_write_regs(fe, R_EP3, 11);
+
+This doesn't honor the max size of 8 bytes, if small_i2c = TDA18271_08_BYTE_CHUNK_INIT.
+
+My patch basically did:
+
+1) it moved the logic that restricts the maximum size to be inside tda18271_write_regs();
+2) it added a new max size of 4 bytes;
+3) It renamed the magic values associated with small_i2c.
+
+Basically, af9015 broke due to (3), as .small_i2c = 1 means nothing. It should be using
+.small_i2c = TDA18271_16_BYTE_CHUNK_INIT, instead.
+
+What I don't understand is why a patch doing this change didn't fix the issue. Please
+test the patch I posted on the original -next thread. Let's try to identify why
+tda18271_write_regs() is not breaking the data into smaller writes.
+
+Cheers,
+Mauro
