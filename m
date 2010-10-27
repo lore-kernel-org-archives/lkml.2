@@ -1,33 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755984Ab0J0EYZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 00:24:25 -0400
-Received: from bld-mail15.adl6.internode.on.net ([150.101.137.100]:43962 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751060Ab0J0EX4 (ORCPT
+	id S1754002Ab0J0E3a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 00:29:30 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:19234 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751060Ab0J0E3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 00:23:56 -0400
-From: Dave Chinner <david@fromorbit.com>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: fs: break out inode LRU operations from node_lock
-Date: Wed, 27 Oct 2010 15:23:00 +1100
-Message-Id: <1288153384-8878-1-git-send-email-david@fromorbit.com>
-X-Mailer: git-send-email 1.7.1
+	Wed, 27 Oct 2010 00:29:24 -0400
+Message-ID: <002801cb758f$876aaf00$66f8800a@maildom.okisemi.com>
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <socketcan-core@lists.berlios.de>, <sameo@linux.intel.com>,
+        <21cnbao@gmail.com>, <chripell@fsfe.org>, <w.sang@pengutronix.de>,
+        <wg@grandegger.com>
+Cc: "David Miller" <davem@davemloft.net>, <margie.foster@intel.com>,
+        <kok.howg.ewe@intel.com>, <joel.clark@intel.com>,
+        <andrew.chih.howe.khor@intel.com>, <yong.y.wang@intel.com>,
+        <qi.wang@intel.com>
+References: <4CC61B1B.3090602@dsn.okisemi.com> <20101026.105206.15244527.davem@davemloft.net>
+Subject: can: About Socket CAN with MSI issue
+Date: Wed, 27 Oct 2010 13:29:15 +0900
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Al,
+We have faced issue when our CAN diriver whose MSI is enabled, after installing the driver,
+once remove the driver and install the driver again,
+As a result, interupt handler of the driver is not called again.
 
-The following patches break the inode LRU operations and the first half of
-iput_final() out from under the inode_lock. I included the dispose_one_inode
-factoring patch to isolate the inode_lock from iput_final() completely. It's
-easy enough to drop if you don't want that right now.
+Do you have any information or suggestion about the above issue?
 
-It passes xfstests on 1-, 2- and 8-way VMs, survives 8-way parallel
-create/traverse/unlink workloads with 0, 1 and 65536 byte files on XFS and
-ext4, and shows no problems with looping 50-client dbench runs on XFS or ext4.
+As to the our latest CAN driver,
+please refer to followoing patch posted by me.
+[PATCH net-next-2.6 v2] can: Topcliff: PCH_CAN driver: Fix build warnings
 
-The patches should apply to your current merge-stem tree.
-
+Thanks, Tomoya(OKI SEMICONDUCTOR CO., LTD.)
