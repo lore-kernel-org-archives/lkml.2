@@ -1,121 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755406Ab0J0BtO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 21:49:14 -0400
-Received: from sr-smtp.usish.com ([210.5.144.203]:51487 "EHLO
-	sr-smtp.usish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752503Ab0J0BtM (ORCPT
+	id S1757258Ab0J0Bud (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 21:50:33 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:58224 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752812Ab0J0Buc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 21:49:12 -0400
-From: "Jack Wang" <jack_wang@usish.com>
-To: "'Nicholas A. Bellinger'" <nab@linux-iscsi.org>,
-        "'linux-scsi'" <linux-scsi@vger.kernel.org>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        "'Vasu Dev'" <vasu.dev@linux.intel.com>,
-        "'Tim Chen'" <tim.c.chen@linux.intel.com>,
-        "'Andi Kleen'" <ak@linux.intel.com>,
-        "'Matthew Wilcox'" <willy@linux.intel.com>,
-        "'James Bottomley'" <James.Bottomley@suse.de>,
-        "'Mike Christie'" <michaelc@cs.wisc.edu>,
-        "'Jens Axboe'" <jaxboe@fusionio.com>
-Cc: "'James Smart'" <james.smart@emulex.com>,
-        "'Andrew Vasquez'" <andrew.vasquez@qlogic.com>,
-        "'FUJITA Tomonori'" <fujita.tomonori@lab.ntt.co.jp>,
-        "'Hannes Reinecke'" <hare@suse.de>,
-        "'Joe Eykholt'" <jeykholt@cisco.com>,
-        "'Christoph Hellwig'" <hch@lst.de>,
-        "'Jon Hawley'" <warthog9@kernel.org>,
-        "'MPTFusionLinux'" <DL-MPTFusionLinux@lsi.com>,
-        "'eata.c maintainer'" <dario.ballabio@inwind.it>,
-        "'Luben Tuikov'" <ltuikov@yahoo.com>,
-        "'mvsas maintainer'" <kewei@marvell.com>
-References: <1288139559-12019-1-git-send-email-nab@linux-iscsi.org>
-Subject: RE: [PATCH] scsi: Add SHT->unlocked_qcmd for host_lock less SHT->queuecommand() dispatch
-Date: Wed, 27 Oct 2010 09:52:07 +0800
-Message-ID: <EA06876956CB4AC4A0678AD1E6E72840@usish.com.cn>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <1288139559-12019-1-git-send-email-nab@linux-iscsi.org>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5931
-Thread-Index: Act1bnwn9n+rpfMoTxaaL+eKpOzuIQACkRoA
+	Tue, 26 Oct 2010 21:50:32 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6148"; a="59448544"
+From: adharmap@codeaurora.org
+To: tglx@linutronix.de
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, linux-arm-msm-owner@vger.kernel.org,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+Subject: [RFC IRQ] genirq: fix handle_nested_irq for lazy disable
+Date: Tue, 26 Oct 2010 18:50:09 -0700
+Message-Id: <1288144209-28086-1-git-send-email-adharmap@codeaurora.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+When lazy disabling is implemented and an interrupt is disabled the
+genirq code ends up marking it as IRQ_DISABLED in the descriptor.
+The interrupt stays enabled in the controller.  If the interrupt
+fires after disabling, the flow handlers namely handle_level_irq and
+handle_edge_irq mask the interrupt in the controller.
 
-Greetings all,
+This is not the case with handle_nested_irq. The interrupt stays enabled in
+the controller and if it were a level interrupt it keeps firing only to be
+ignored by handle_nested_irq.
 
-This patch adds scsi_dispatch_cmd_unlocked() and scsi_dispatch_cmd_locked()
-which are now called directly from scsi_dispatch_cmd() depending upon what
-is reported by SHT->unlocked_qcmd on a per driver basis.  Note that by
-default
-unlocked_qcmd is disabled, and all LLDs not defining a SHT->unlocked_qcmd
-will
-be using the legacy scsi_dispatch_cmd_locked().
+Update handle_nested_irq to mask such an interrupt.
 
-This patch also drops the usage of scsi_cmd_get_serial() in
-scsi_dispatch_cmd()
-and assumes the legacy SCSI LLDs that depend upon struct
-scsi_cmnd->serial_number
-will call the now EXPORT_SYMBOL()'ed scsi_cmd_get_serial() call.
+Change-Id: Id0fa3280c49a36aa8b8db1d5cc20472bf5e53c5f
+Signed-off-by: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+---
+ This problem shows up on my hardware because the interrupt controller is
+ over a slow bus and it doesnt deactivate the interrupt line to the processor
+ until an ack or mask operation is carried out for each of its active
+ interrupts.
 
-This patch also adds a cmd->eh_eflags |= SCSI_EH_SOFTIRQ_DONE assignment in
-scsi_softirq_done() in order to signal scsi_try_to_abort_cmd() that the
-command
-has been completed.  This patch uses blk_test_rq_complete() together with a
-new SCSI_EH_SOFTIRQ_DONE in scsi_error.c:scsi_try_to_abort_cmd() in order to
-handle the struct scsi_cmnd timeout case intsead w/o scmd->serial_number
-usage:
+ I could have updated the interrupt controller thread itself to check if the
+ interrupt is marked IRQ_DISABLED but didn't seem right to take the
+ desc->lock in there. Instead updating handle_nested_irq to handle this
+ seemed like the right thing to do.
 
--	if (scmd->serial_number == 0)
-+	if ((blk_test_rq_complete(scmd->request)) &&
-+	    (scmd->eh_eflags & SCSI_EH_SOFTIRQ_DONE))
-		return SUCCESS;
+ kernel/irq/chip.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
 
-Finally, this patch also converts the remaining struct
-Scsi_Host->cmd_serial_number
-to atomic_t following a recommedation by Joe Eykholt to start struct
-Scsi_Host->
-cmd_serial_number at 1, and increment each serial_number by 2 so that the
-serial is odd, and wraps to 1 instead of 0.  struct
-Scsi_Host->cmd_serial_number
-is initialized to '1' in drivers/scsi/hosts.c:scsi_host_alloc().
-
-Along with the changes to SCSI ML, this series includes the following LLD
-commits to enable lock-less operation for certain LLDs, and adds the explict
-scsi_cmd_get_serial() to the legacy LLDs still requring cmd->serial_number
-for anything beyond informational purposes:
-
-libiscsi: Remove host_lock unlock() + lock() from iscsi_queuecommand()
-libsas: Remove host_lock unlock() + lock() from sas_queuecommand()
-aic94xx: Set SHT->unlocked_qcmd=1 for libsas queuecommand()
-mvsas: Set SHT->unlocked_qcmd=1 for libsas queuecommand()
-pm8001: Set SHT->unlocked_qcmd=1 for libsas queuecommand()
-libata: Remove host_lock unlock() + lock() from ata_scsi_queuecmd()
-lpfc: Remove host_lock unlock() + lock() from lpfc_queuecommand()
-qla4xxx: Remove host_lock unlock() + lock() from qla4xxx_queuecommand()
-qla2xxx: Remove host_lock unlock() + lock() from qla2xxx_queuecommand()
-fnic: Remove host_lock unlock() + lock() from fnic_queuecommand()
-mpt2sas: Add scsi_cmd_get_serial() call and set SHT->unlocked_qcmd=1
-mpt/fusion: Add scsi_cmd_get_serial() call and set SHT->unlocked_qcmd=1
-dpt_i2o: Add scsi_cmd_get_serial() call
-eata: Add scsi_cmd_get_serial() call
-u14-34f: Add scsi_cmd_get_serial() call
-
-
-Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-Acked-by: Ravi Anand <ravi.anand@qlogic.com> (for qla2xx)
-Acked-by: Luben Tuikov <ltuikov@yahoo.com> (for aic94xx)
-
-Hi, Nab
-
-Please consider to add my ack. Thanks!
-Acked-by: Jack Wang <jack_wang@usish.com> (for pm8001)
-
-Jack
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index baa5c4a..35ccc41 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -419,6 +419,7 @@ void handle_nested_irq(unsigned int irq)
+ {
+ 	struct irq_desc *desc = irq_to_desc(irq);
+ 	struct irqaction *action;
++	int mask_this_irq = 0;
+ 	irqreturn_t action_ret;
+ 
+ 	might_sleep();
+@@ -428,8 +429,10 @@ void handle_nested_irq(unsigned int irq)
+ 	kstat_incr_irqs_this_cpu(irq, desc);
+ 
+ 	action = desc->action;
+-	if (unlikely(!action || (desc->status & IRQ_DISABLED)))
++	if (unlikely(!action || (desc->status & IRQ_DISABLED))) {
++		mask_this_irq = 1;
+ 		goto out_unlock;
++	}
+ 
+ 	desc->status |= IRQ_INPROGRESS;
+ 	raw_spin_unlock_irq(&desc->lock);
+@@ -443,6 +446,11 @@ void handle_nested_irq(unsigned int irq)
+ 
+ out_unlock:
+ 	raw_spin_unlock_irq(&desc->lock);
++	if (unlikely(mask_this_irq)) {
++		chip_bus_lock(irq, desc);
++		desc->chip->mask(irq);
++		chip_bus_sync_unlock(irq, desc);
++	}
+ }
+ EXPORT_SYMBOL_GPL(handle_nested_irq);
+ 
+-- 
+1.7.1
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
