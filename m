@@ -1,80 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933371Ab0J0OY3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 10:24:29 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:50401 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756971Ab0J0OY0 (ORCPT
+	id S1758944Ab0J0O0b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 10:26:31 -0400
+Received: from smtp-out-231.synserver.de ([212.40.180.231]:1143 "HELO
+	smtp-out-228.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S1755177Ab0J0O03 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 10:24:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=vypi+sSuAj4QKVDtzIZYCGc+QV+/kpZE/6wCyz/Ik9A/jqD/tA2KC/mV4ZKxeQIcrx
-         IAOVb2oBfvnyHpIFYpbjiVv2p/ZQQM7yCJFwz198X/gbvRYtpSd8rSYgCCYLFq8Kbqub
-         qtIF84IJkCq9iNC1kd4inmxcGVyiB03XpwPEw=
-Subject: Re: [PATCH] x86-32: Allocate irq stacks seperate from percpu area
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Brian Gerst <brgerst@gmail.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, mingo@elte.hu
-In-Reply-To: <4CC83067.5000009@kernel.org>
-References: <AANLkTinnc3vBSmewf7ixuOSDYxG+5VNiGaB-vSrDNRiO@mail.gmail.com>
-	 <1288158182-1753-1-git-send-email-brgerst@gmail.com>
-	 <1288159670.2652.181.camel@edumazet-laptop>
-	 <1288173442.15336.1490.camel@twins>
-	 <1288186405.2709.117.camel@edumazet-laptop>  <4CC82C2F.1020707@kernel.org>
-	 <1288187870.2709.128.camel@edumazet-laptop>  <4CC83067.5000009@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 27 Oct 2010 16:24:21 +0200
-Message-ID: <1288189461.2709.144.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Wed, 27 Oct 2010 10:26:29 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: markus@trippelsdorf.de
+X-SynServer-PPID: 1103
+Date: Wed, 27 Oct 2010 16:26:22 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: john stultz <johnstul@us.ibm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@amd64.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: Clocksource tsc unstable (delta = -8589361717 ns) in current
+ git
+Message-ID: <20101027142622.GA1555@arch.trippelsdorf.de>
+References: <20101026112052.GA1672@arch.trippelsdorf.de>
+ <20101026131843.GC17852@aftab>
+ <20101026135808.GB1672@arch.trippelsdorf.de>
+ <alpine.LFD.2.00.1010261747250.3115@localhost6.localdomain6>
+ <1288120736.2645.9.camel@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288120736.2645.9.camel@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 27 octobre 2010 à 16:00 +0200, Tejun Heo a écrit :
-
-> Heh, interesting table.  What does the same code say on 64bit?  Is it
-> the same?
+On Tue, Oct 26, 2010 at 12:18:56PM -0700, john stultz wrote:
+> On Tue, 2010-10-26 at 17:48 +0200, Thomas Gleixner wrote:
+> > On Tue, 26 Oct 2010, Markus Trippelsdorf wrote:
+> > > On Tue, Oct 26, 2010 at 03:18:43PM +0200, Borislav Petkov wrote:
+> > > > otherwise, I don't see anything strange in your dmesg. Unless tglx has a
+> > > > better idea, I'd ask you to bisect it. 5618 changesets shouldn't be that
+> > > > much but I don't know, if the issue appears every several hours it could
+> > > > still be tedious.
+> > > 
+> > > That would be a several week long process, as the issue appears ~ every
+> > > 2 days here on this machine running 24/7.
+> > 
+> > There is only a single commit in that area post 2.6.36:
+> > 
+> >       8af3c153baf95374eff20a37f00c59a295b52756 
+> > 
+> > But I have a hard time how this should make this happen. John ?
 > 
+> Yea, that one doesn't look connected to me.
+> 
+> There have been a few cases that I've seen where we can get false
+> positives for bad TSCs due to the watchdog clocksource having problems
+> (or the clocksource watchdog thread getting delayed for such a long time
+> the watchdog clocksource wraps and we then can't validly compare the two
+> - although this would be hard to trigger with non-rt kernels).
 
-Yes this is the same
+I think the remark above points in the right direction, because the
+mysterious slowness happened again today (and this time on a vanilla git
+kernel). But this time no "Clocksource tsc unstable" message appeared in
+the kernel log. My system recovered by itself and after 2 minutes of
+slowness it was usable again. (The symptoms were the same as desribed in
+my first mail: Second long delays when typing and switching from X to
+the console took many seconds.)
 
-32bit : # numactl --hardware
-available: 2 nodes (0-1)
-node 0 cpus: 1 3 5 7 9 11 13 15
-node 0 size: 2047 MB
-node 0 free: 144 MB
-node 1 cpus: 0 2 4 6 8 10 12 14
-node 1 size: 2038 MB
-node 1 free: 197 MB
-node distances:
-node   0   1 
-  0:  10  20 
-  1:  20  10 
+Is there anything I can do to pinpoint the cause of this slowdown should
+it happen again? (Maybe a perf timechart?)
 
-
-64bit : # numactl --hardware
-available: 2 nodes (0-1)
-node 0 cpus: 1 3 5 7 9 11 13 15
-node 0 size: 2047 MB
-node 0 free: 1868 MB
-node 1 cpus: 0 2 4 6 8 10 12 14
-node 1 size: 2038 MB
-node 1 free: 1912 MB
-node distances:
-node   0   1 
-  0:  10  20 
-  1:  20  10 
-# cat /proc/buddyinfo 
-Node 0, zone      DMA      1      0      1      0      2      1      1      0      1      1      3 
-Node 0, zone    DMA32    454    206     93     15      3      1      1      2      1      3    460 
-Node 1, zone    DMA32      3     19     17      1      0      1      1      1      1      1    380 
-Node 1, zone   Normal     89     67     15      6      0      2      2      0      0      3     95 
-
-
+-- 
+Markus
