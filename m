@@ -1,38 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933395Ab0J0O2m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 10:28:42 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:59737 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758961Ab0J0O2l (ORCPT
+	id S933411Ab0J0O3R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 10:29:17 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:58428 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757213Ab0J0O3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 10:28:41 -0400
-MIME-Version: 1.0
-X-Originating-IP: [93.172.188.124]
-In-Reply-To: <60722BDE-68CB-47B7-856E-6986D760FE42@mac.com>
-References: <652BFE86-3BFE-4E21-88BA-004CA7140D18@mac.com> <AANLkTimvER2Qjpphj+io-qh9mRfDQJ1=goARH3zDLpeJ@mail.gmail.com>
- <60722BDE-68CB-47B7-856E-6986D760FE42@mac.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Wed, 27 Oct 2010 16:28:19 +0200
-Message-ID: <AANLkTi=-mHDJjE_XythUmTewqTx64mFaW8fhmFrrZksD@mail.gmail.com>
-Subject: Re: kernel BUG at drivers/mmc/core/sdio_io.c:28!
-To: Elvis Dowson <elvis.dowson@mac.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 27 Oct 2010 10:29:15 -0400
+Date: Wed, 27 Oct 2010 15:28:09 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: <samu.p.onkalo@nokia.com>
+Cc: <alan@linux.intel.com>, <gregkh@suse.de>, <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: sysfs and power management
+Message-ID: <20101027152809.39701917@lxorguk.ukuu.org.uk>
+In-Reply-To: <62697B07E9803846BC582181BD6FB6B836EB2994F4@NOK-EUMSG-02.mgdnok.nokia.com>
+References: <1288177143.12206.22.camel@4fid08082>
+	<20101027124816.7087436a@linux.intel.com>
+	<62697B07E9803846BC582181BD6FB6B836EB2994F4@NOK-EUMSG-02.mgdnok.nokia.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 4:16 PM, Elvis Dowson <elvis.dowson@mac.com> wrote:
->> Maybe you want to checkout the mainline wl1271 driver using Luca's
->> Beagle board patches :)
->
-> Ok, will try it once again.
+> Do you mean per device hook and each sysfs open / close uses 
+> per device ref-counting.
 
-Try this first please.
+Or you can do it by having an optional per device hook which is passed
+the sysfs node for each open/close and leave the rest up to the driver.
+If it needs to do clever stuff it can.
 
-Everything should just work out of the box, and when it does, you will
-at least know your setup is OK.
-
-Regards,
-Ohad.
+Alan
