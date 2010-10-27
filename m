@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757303Ab0J0GUU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 02:20:20 -0400
-Received: from web37604.mail.mud.yahoo.com ([209.191.87.87]:35526 "HELO
-	web37604.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753250Ab0J0GUS convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 02:20:18 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=f0buXcms1trcCpJFYmvQ8h8Q2I0LLzugVFQyFSpZdaPH9HwHuVa3kF6LlUUyEDa6w5907lNYpzYPujQeNfLvda/91bPZ7Ectlx7oYKfpJfX+52rcvQ3vhWuLxxGbp53AW7dTOmdW71a6Tqw5g2Du9vnROv+dtIrwGvIuPdBO3GQ=;
-Message-ID: <882321.18802.qm@web37604.mail.mud.yahoo.com>
-X-YMail-OSG: GQ.XEUoVM1kcA0g.NVO1_EZxohSQq84OMMkDkq9NGoG58Fu
- 1sLQ3CNIQMkaL.da7hksHEiFs8GxSG52O5aTMvhlViF_seVjBxvxkkoFJRzy
- XTDjN0qQbGli5.r1CgxXTFXdD6GVZjyOiHB0f.WITEoE04NC8WVvyhBeUggG
- Gk9wsGfCuq_ID4IBx8sjQ8LY56jEF3ma2bvmOeNaFWsAa58dDudpYHvGuBO3
- JtZO8BahJEfIeqIDaZYc9uuv_W.rWLx.USxAa38jsakfNf9RNSLKYE1ZAl2a
- Xbe_8s3QkPIZ7OJbgdEjvdLgztvTirdDQA5LRJ5a1wtUouZbHrsFxjA--
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.284920
-Date: Tue, 26 Oct 2010 23:20:16 -0700 (PDT)
-From: Alex Dubov <oakad@yahoo.com>
-Subject: Re: memstick: Alternative approach to proposed fixes
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <1288133739.15918.3.camel@maxim-laptop>
+	id S1757454Ab0J0GY0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 02:24:26 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:53344 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753250Ab0J0GYX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 02:24:23 -0400
+Date: Wed, 27 Oct 2010 08:23:54 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>, Bob Picco <bpicco@redhat.com>,
+        Brian Bloniarz <phunge0@hotmail.com>,
+        Charles Butterfield <charles.butterfield@nextcentury.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>, linux-pci@vger.kernel.org,
+        "Horst H. von Brand" <vonbrand@inf.utfsm.cl>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Stefan Becker <chemobejk@gmail.com>, Chuck Ebbert <cebbert@redhat.com>,
+        Fabrice Bellet <fabrice@bellet.info>, Yinghai Lu <yinghai@kernel.org>,
+        Leann Ogasawara <leann.ogasawara@canonical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v5 9/9] x86: allocate space within a region top-down
+Message-ID: <20101027062354.GA6854@elte.hu>
+References: <20101026214033.29808.15272.stgit@bob.kio>
+ <20101026214154.29808.58672.stgit@bob.kio>
+ <20101026153455.0fe4847f@jbarnes-desktop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101026153455.0fe4847f@jbarnes-desktop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-> All the changes in this patchset are really minor and
-> optional.
-> I could have dropped them.
+* Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
 
-These are the only substantial fixes you patchset has. The rest of the
-large submission is your unilateral decision to rewrite the whole thing
-almost from scratch. I proposed, multiple times, to fix the small things
-first, then discuss the long term evolution.
+> On Tue, 26 Oct 2010 15:41:54 -0600
+> Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
+> 
+> > Request that allocate_resource() use available space from high addresses first, 
+> > rather than the default of using low addresses first.
+> > 
+> > The most common place this makes a difference is when we move or assign new PCI 
+> > device resources.  Low addresses are generally scarce, so it's better to use 
+> > high addresses when possible.  This follows Windows practice for PCI allocation.
+> > 
+> > Reference: https://bugzilla.kernel.org/show_bug.cgi?id=16228#c42
+> > Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+> > ---
+> 
+> Ok, applied this version to -next.  It's been going through distros and lots of 
+> testing despite a lack of recent coverage in PCI -next, so I'm planning to send it 
+> to Linus this week.  We probably won't catch much more until it hits his tree 
+> anyway...
 
-> 
-> 
-> I did much more that that.
-> I made the memstick code readable so not only you could
-> understand it
-> I also wrote ms_block.c while adding common support.
-> I made your code use that support.
-> 
-> It is really sad that you are doing that.
-> 
-> 
-> 
-> 
+It also appears to fix a serious compatibility bug (and a v2.6.34 regression), so 
+even without extensive distro testing it's wise to push this upstream ASAP IMHO ...
 
+Thanks,
 
-      
+	Ingo
