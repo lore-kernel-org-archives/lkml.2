@@ -1,67 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932453Ab0J0LwU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 07:52:20 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:45697 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1756063Ab0J0LwP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 07:52:15 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: bfields@fieldses.org
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com, Neil Brown <neilb@suse.de>,
-        linux-nfs@vger.kernel.org
-Subject: [PATCH] NET: sunrpc, remove unneeded NULL tests
-Date: Wed, 27 Oct 2010 13:52:05 +0200
-Message-Id: <1288180325-20009-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.3.1
+	id S1760982Ab0J0Ly7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 07:54:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48304 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757702Ab0J0Lyy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 07:54:54 -0400
+Message-ID: <4CC812DD.9050608@redhat.com>
+Date: Wed, 27 Oct 2010 13:54:05 +0200
+From: Tomas Henzl <thenzl@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+MIME-Version: 1.0
+To: "Yang, Bo" <Bo.Yang@lsi.com>
+CC: James Bottomley <James.Bottomley@suse.de>, bo yang <boyang1288@gmail.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "akpm@osdl.org" <akpm@osdl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] scsi: megaraid_sas - Version and documentation update
+References: <AANLkTi=praySm1B3dhU+LxhWK2yUccZkzWpd6-6UERYa@mail.gmail.com>	 <4B6A08C587958942AA3002690DD4F8C30100FF9FBB@cosmail02.lsi.com> <1288109543.8283.139.camel@mulgrave.site> <4B6A08C587958942AA3002690DD4F8C3010119E798@cosmail02.lsi.com>
+In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3010119E798@cosmail02.lsi.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stanse found that req in xprt_reserve_xprt is dereferenced prior its
-test to NULL. If that's the case, the checks are unnecessary, so
-remove them.
+On 10/26/2010 07:15 PM, Yang, Bo wrote:
+> James,
+>
+> Thanks for correcting that. Did you also applied 2/5, 3/5 and 4/5 patches?
+>
+> By the way, I always use checkpatch.pl to check the patch before I attach the patch to the e-mail.  Also I just went to the 5/5 patch to verify the patch: the steps:
+>
+> 1. go to  http://marc.info/?l=linux-scsi&m=128688974201201&w=2
+>   
+Looking carefully at the above page (select the text) you can see the trailing whitespaces
+directly on that page. 
 
-The alternative is not to dereference it before the test. The patch
-is to point out the problem, you have to decide.
+> 2. click: ["megasas-version.patch" (application/octet-stream)] to download this patch.  
+> 3. Used the checkpatch.pl to check (I used the cmd: "checkpatch.pl --no-tree megasas-version.patch") 
+>   
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Neil Brown <neilb@suse.de>
-Cc: linux-nfs@vger.kernel.org
----
- net/sunrpc/xprt.c |    8 +++-----
- 1 files changed, 3 insertions(+), 5 deletions(-)
+> It looks OK for me (no errors).  It is maybe the checkpatch.pl I used does not get updated or some steps are not correct.  I will find out the updated one to try and find out the reasons.   
+>   
+Use the checkpatch.pl from the scripts directory
 
-diff --git a/net/sunrpc/xprt.c b/net/sunrpc/xprt.c
-index 4c8f18a..5355c71 100644
---- a/net/sunrpc/xprt.c
-+++ b/net/sunrpc/xprt.c
-@@ -202,10 +202,8 @@ int xprt_reserve_xprt(struct rpc_task *task)
- 		goto out_sleep;
- 	}
- 	xprt->snd_task = task;
--	if (req) {
--		req->rq_bytes_sent = 0;
--		req->rq_ntrans++;
--	}
-+	req->rq_bytes_sent = 0;
-+	req->rq_ntrans++;
- 	return 1;
- 
- out_sleep:
-@@ -213,7 +211,7 @@ out_sleep:
- 			task->tk_pid, xprt);
- 	task->tk_timeout = 0;
- 	task->tk_status = -EAGAIN;
--	if (req && req->rq_ntrans)
-+	if (req->rq_ntrans)
- 		rpc_sleep_on(&xprt->resend, task, NULL);
- 	else
- 		rpc_sleep_on(&xprt->sending, task, NULL);
--- 
-1.7.3.1
 
+>
+> Thanks,
+>
+> Bo Yang
+>
+>
+> -----Original Message-----
+> From: James Bottomley [mailto:James.Bottomley@suse.de] 
+> Sent: Tuesday, October 26, 2010 12:12 PM
+> To: Yang, Bo
+> Cc: bo yang; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 5/5] scsi: megaraid_sas - Version and documentation update
+>
+> On Tue, 2010-10-12 at 07:21 -0600, Yang, Bo wrote:
+>   
+>> Re-Submit:
+>>
+>> Update the version and documentation.
+>>     
+> This has an impressive set of checkpatch failures:
+>
+> ERROR: trailing whitespace
+> #26: FILE: Documentation/scsi/ChangeLog.megaraid_sas:13:
+> +^ITo add the OCR support, driver need to do: $
+>
+> ERROR: trailing whitespace
+> #30: FILE: Documentation/scsi/ChangeLog.megaraid_sas:17:
+> +^I^I$
+>
+> ERROR: trailing whitespace
+> #35: FILE: Documentation/scsi/ChangeLog.megaraid_sas:22:
+> +^I^I$
+>
+> ERROR: trailing whitespace
+> #39: FILE: Documentation/scsi/ChangeLog.megaraid_sas:26:
+> +^I^I$
+>
+> ERROR: trailing whitespace
+> #43: FILE: Documentation/scsi/ChangeLog.megaraid_sas:30:
+> +^I^I$
+>
+> ERROR: trailing whitespace
+> #46: FILE: Documentation/scsi/ChangeLog.megaraid_sas:33:
+> +^I^I $
+>
+> ERROR: trailing whitespace
+> #48: FILE: Documentation/scsi/ChangeLog.megaraid_sas:35:
+> +^I^IOCR to see if driver can bring back the FW.      $
+>
+> ERROR: trailing whitespace
+> #54: FILE: Documentation/scsi/ChangeLog.megaraid_sas:41:
+> +3.^IIn driver's timeout routine, driver will do three time reset if fw
+> is in $
+>
+> total: 8 errors, 0 warnings, 70 lines checked
+>
+> I've fixed it up this time, but could you run it through checkpatch.pl
+> next time?
+>
+> Thanks,
+>
+> James
+>
+>
+> N�����r��y���b�X��ǧv�^�)޺{.n�+����{���"�{ay�ʇڙ�,j��f���h���z��w������j:+v���w�j�m��������zZ+��ݢj"��!tml=
 
