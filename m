@@ -1,70 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759690Ab0J0I5O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 04:57:14 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:35046 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755503Ab0J0I5M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 04:57:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=MtSwY5WlmpYPXkS54aWbTRVSEME54hLhOdGhCutrPgDwJBS9FjXc9RGW9SePectbDW
-         hZ3ggdpaIpFTVC8jOG/9zQF6jc8fi6TX+uShGz5E9fb9+NKJKEBl7m2BA7b18diRD4QV
-         MiwUHv4sRUSejeEaDPE9KtC5Y6MEwd4B68aCk=
-From: Anton Chikin <kverlin@gmail.com>
-To: jkosina@suse.cz
-Cc: chatty@enac.fr, spbnick@gmail.com, anisse@astier.eu,
-        cascardo@holoscopio.com, don@syst.com.br, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        grig@dataart.com, Anton Chikin <Anton.Chikin@dataart.com>,
-        Anton Chikin <anton.chikin@dataart.com>
-Subject: [PATCH] hid: usbhid: New hid quirks for Panasonic Elite Panaboard T-780 and T-880
-Date: Wed, 27 Oct 2010 01:57:05 -0700
-Message-Id: <1288169825-15422-1-git-send-email-Anton.Chikin@dataart.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1760657Ab0J0I51 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 04:57:27 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:57486 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1760621Ab0J0I5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 04:57:23 -0400
+Message-ID: <4CC7EA7D.5020901@cn.fujitsu.com>
+Date: Wed, 27 Oct 2010 17:01:49 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH 1/8] KVM: fix tracing kvm_try_async_get_page
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added Panasonic vendor ID, two device IDs for Panasonic Whiteboard devices and new quirk to ignore
-these devices in hid-core driver.
+Tracing 'async' and *pfn is useless, since 'async' is always true,
+and '*pfn' is always "fault_pfn'
 
-Signed-off-by: Anton Chikin <anton.chikin@dataart.com>
+We can trace 'gva' and 'gfn' instead, it can help us to see the
+life-cycle of an async_pf
+
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- drivers/hid/hid-ids.h           |    4 ++++
- drivers/hid/usbhid/hid-quirks.c |    2 ++
- 2 files changed, 6 insertions(+), 0 deletions(-)
+ arch/x86/kvm/mmu.c         |    2 +-
+ include/trace/events/kvm.h |   12 +++++++-----
+ 2 files changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 3341baa..b5542d3 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -446,6 +446,10 @@
- #define USB_VENDOR_ID_ORTEK		0x05a4
- #define USB_DEVICE_ID_ORTEK_WKB2000	0x2000
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 7ab734d..7449803 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2618,7 +2618,7 @@ static bool try_async_pf(struct kvm_vcpu *vcpu, bool no_apf, gfn_t gfn,
+ 	put_page(pfn_to_page(*pfn));
  
-+#define USB_VENDOR_ID_PANASONIC 	0x04da
-+#define USB_DEVICE_ID_PANASONIC_PANABOARD_T780 	0x1044
-+#define USB_DEVICE_ID_PANASONIC_PANABOARD_T880	0x104d 
-+
- #define USB_VENDOR_ID_PANJIT		0x134c
+ 	if (!no_apf && can_do_async_pf(vcpu)) {
+-		trace_kvm_try_async_get_page(async, *pfn);
++		trace_kvm_try_async_get_page(gva, gfn);
+ 		if (kvm_find_async_pf_gfn(vcpu, gfn)) {
+ 			trace_kvm_async_pf_doublefault(gva, gfn);
+ 			kvm_make_request(KVM_REQ_APF_HALT, vcpu);
+diff --git a/include/trace/events/kvm.h b/include/trace/events/kvm.h
+index 9c2cc6a..30063c6 100644
+--- a/include/trace/events/kvm.h
++++ b/include/trace/events/kvm.h
+@@ -188,18 +188,20 @@ TRACE_EVENT(kvm_age_page,
+ #ifdef CONFIG_KVM_ASYNC_PF
+ TRACE_EVENT(
+ 	kvm_try_async_get_page,
+-	TP_PROTO(bool async, u64 pfn),
+-	TP_ARGS(async, pfn),
++	TP_PROTO(u64 gva, u64 gfn),
++	TP_ARGS(gva, gfn),
  
- #define USB_VENDOR_ID_PANTHERLORD	0x0810
-diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-index 2c18547..b5788b0 100644
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -65,6 +65,8 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_CH, USB_DEVICE_ID_CH_AXIS_295, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_DMI, USB_DEVICE_ID_DMI_ENC, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_ELO, USB_DEVICE_ID_ELO_TS2700, HID_QUIRK_NOGET },
-+	{ USB_VENDOR_ID_PANASONIC, USB_DEVICE_ID_PANASONIC_PANABOARD_T780, HID_QUIRK_IGNORE },
-+	{ USB_VENDOR_ID_PANASONIC, USB_DEVICE_ID_PANASONIC_PANABOARD_T880, HID_QUIRK_IGNORE },
- 	{ USB_VENDOR_ID_PRODIGE, USB_DEVICE_ID_PRODIGE_CORDLESS, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_PIXART_IMAGING_INC_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_SUN, USB_DEVICE_ID_RARITAN_KVM_DONGLE, HID_QUIRK_NOGET },
+ 	TP_STRUCT__entry(
+-		__field(__u64, pfn)
++		__field(u64, gva)
++		__field(u64, gfn)
+ 		),
+ 
+ 	TP_fast_assign(
+-		__entry->pfn = (!async) ? pfn : (u64)-1;
++		__entry->gva = gva;
++		__entry->gfn = gfn;
+ 		),
+ 
+-	TP_printk("pfn %#llx", __entry->pfn)
++	TP_printk("gva = %#llx, gfn = %#llx", __entry->gva, __entry->gfn)
+ );
+ 
+ TRACE_EVENT(
 -- 
 1.7.0.4
-
