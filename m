@@ -1,91 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366Ab0J0Bjf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 21:39:35 -0400
-Received: from mail.windriver.com ([147.11.1.11]:57256 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751561Ab0J0Bje (ORCPT
+	id S1755406Ab0J0BtO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 21:49:14 -0400
+Received: from sr-smtp.usish.com ([210.5.144.203]:51487 "EHLO
+	sr-smtp.usish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752503Ab0J0BtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 21:39:34 -0400
-Message-ID: <4CC7821E.9070503@windriver.com>
-Date: Tue, 26 Oct 2010 20:36:30 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Tue, 26 Oct 2010 21:49:12 -0400
+From: "Jack Wang" <jack_wang@usish.com>
+To: "'Nicholas A. Bellinger'" <nab@linux-iscsi.org>,
+        "'linux-scsi'" <linux-scsi@vger.kernel.org>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
+        "'Vasu Dev'" <vasu.dev@linux.intel.com>,
+        "'Tim Chen'" <tim.c.chen@linux.intel.com>,
+        "'Andi Kleen'" <ak@linux.intel.com>,
+        "'Matthew Wilcox'" <willy@linux.intel.com>,
+        "'James Bottomley'" <James.Bottomley@suse.de>,
+        "'Mike Christie'" <michaelc@cs.wisc.edu>,
+        "'Jens Axboe'" <jaxboe@fusionio.com>
+Cc: "'James Smart'" <james.smart@emulex.com>,
+        "'Andrew Vasquez'" <andrew.vasquez@qlogic.com>,
+        "'FUJITA Tomonori'" <fujita.tomonori@lab.ntt.co.jp>,
+        "'Hannes Reinecke'" <hare@suse.de>,
+        "'Joe Eykholt'" <jeykholt@cisco.com>,
+        "'Christoph Hellwig'" <hch@lst.de>,
+        "'Jon Hawley'" <warthog9@kernel.org>,
+        "'MPTFusionLinux'" <DL-MPTFusionLinux@lsi.com>,
+        "'eata.c maintainer'" <dario.ballabio@inwind.it>,
+        "'Luben Tuikov'" <ltuikov@yahoo.com>,
+        "'mvsas maintainer'" <kewei@marvell.com>
+References: <1288139559-12019-1-git-send-email-nab@linux-iscsi.org>
+Subject: RE: [PATCH] scsi: Add SHT->unlocked_qcmd for host_lock less SHT->queuecommand() dispatch
+Date: Wed, 27 Oct 2010 09:52:07 +0800
+Message-ID: <EA06876956CB4AC4A0678AD1E6E72840@usish.com.cn>
 MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: lkml <linux-kernel@vger.kernel.org>,
-        torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        David Airlie <airlied@linux.ie>,
-        Alexander Shishkin <virtuoso@slind.org>
-Subject: Re: [PATCH] documentation: update sysrq.txt magic sysrq keys
-References: <20101026142040.2f0b70a1.randy.dunlap@oracle.com>
-In-Reply-To: <20101026142040.2f0b70a1.randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Oct 2010 01:36:31.0576 (UTC) FILETIME=[61FD9D80:01CB7577]
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <1288139559-12019-1-git-send-email-nab@linux-iscsi.org>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5931
+Thread-Index: Act1bnwn9n+rpfMoTxaaL+eKpOzuIQACkRoA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Acked-by: Jason Wessel <jason.wessel@windriver.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-If you take a look at commit: 364b5b7b1d793a7f98be55b6b154716dcae78dfc,
-the voyager and kgdb bits were originally fixed there.  It was not
-obvious to me at the time that this was documented in multiple places,
-else it would have been fixed in the same commit.
+Greetings all,
 
-Cheers,
-Jason.
+This patch adds scsi_dispatch_cmd_unlocked() and scsi_dispatch_cmd_locked()
+which are now called directly from scsi_dispatch_cmd() depending upon what
+is reported by SHT->unlocked_qcmd on a per driver basis.  Note that by
+default
+unlocked_qcmd is disabled, and all LLDs not defining a SHT->unlocked_qcmd
+will
+be using the legacy scsi_dispatch_cmd_locked().
 
-On 10/26/2010 04:20 PM, Randy Dunlap wrote:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
->
-> Update Documentation/sysrq.txt magic sysrq keys:
->
-> - 'g' is for kgdb (not arch-specific);
-> - add 2 new uses for 'v', remove the Voyager info;
-> - add 'y' info (SPARC-64 specific);
->
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Cc:	Jason Wessel <jason.wessel@windriver.com>
-> Cc:	"David S. Miller" <davem@davemloft.net>
-> Cc:	"James E.J. Bottomley" <James.Bottomley@suse.de>
-> Cc:	David Airlie <airlied@linux.ie>
-> Acked-by: Alexander Shishkin <virtuoso@slind.org>
-> ---
->  Documentation/sysrq.txt |    7 +++++--
->  1 file changed, 5 insertions(+), 2 deletions(-)
->
-> --- lnx-2636-g6-docs.orig/Documentation/sysrq.txt
-> +++ lnx-2636-g6-docs/Documentation/sysrq.txt
-> @@ -75,7 +75,7 @@ On all -  write a character to /proc/sys
->  
->  'f'	- Will call oom_kill to kill a memory hog process.
->  
-> -'g'	- Used by kgdb on ppc and sh platforms.
-> +'g'	- Used by kgdb (kernel debugger)
->  
->  'h'     - Will display help (actually any other key than those listed
->            here will display help. but 'h' is easy to remember :-)
-> @@ -110,12 +110,15 @@ On all -  write a character to /proc/sys
->  
->  'u'     - Will attempt to remount all mounted filesystems read-only.
->  
-> -'v'	- Dumps Voyager SMP processor info to your console.
-> +'v'	- Forcefully restores framebuffer console
-> +'v'	- Causes ETM buffer dump [ARM-specific]
->  
->  'w'	- Dumps tasks that are in uninterruptable (blocked) state.
->  
->  'x'	- Used by xmon interface on ppc/powerpc platforms.
->  
-> +'y'	- Show global CPU Registers [SPARC-64 specific]
-> +
->  'z'	- Dump the ftrace buffer
->  
->  '0'-'9' - Sets the console log level, controlling which kernel messages
->   
+This patch also drops the usage of scsi_cmd_get_serial() in
+scsi_dispatch_cmd()
+and assumes the legacy SCSI LLDs that depend upon struct
+scsi_cmnd->serial_number
+will call the now EXPORT_SYMBOL()'ed scsi_cmd_get_serial() call.
+
+This patch also adds a cmd->eh_eflags |= SCSI_EH_SOFTIRQ_DONE assignment in
+scsi_softirq_done() in order to signal scsi_try_to_abort_cmd() that the
+command
+has been completed.  This patch uses blk_test_rq_complete() together with a
+new SCSI_EH_SOFTIRQ_DONE in scsi_error.c:scsi_try_to_abort_cmd() in order to
+handle the struct scsi_cmnd timeout case intsead w/o scmd->serial_number
+usage:
+
+-	if (scmd->serial_number == 0)
++	if ((blk_test_rq_complete(scmd->request)) &&
++	    (scmd->eh_eflags & SCSI_EH_SOFTIRQ_DONE))
+		return SUCCESS;
+
+Finally, this patch also converts the remaining struct
+Scsi_Host->cmd_serial_number
+to atomic_t following a recommedation by Joe Eykholt to start struct
+Scsi_Host->
+cmd_serial_number at 1, and increment each serial_number by 2 so that the
+serial is odd, and wraps to 1 instead of 0.  struct
+Scsi_Host->cmd_serial_number
+is initialized to '1' in drivers/scsi/hosts.c:scsi_host_alloc().
+
+Along with the changes to SCSI ML, this series includes the following LLD
+commits to enable lock-less operation for certain LLDs, and adds the explict
+scsi_cmd_get_serial() to the legacy LLDs still requring cmd->serial_number
+for anything beyond informational purposes:
+
+libiscsi: Remove host_lock unlock() + lock() from iscsi_queuecommand()
+libsas: Remove host_lock unlock() + lock() from sas_queuecommand()
+aic94xx: Set SHT->unlocked_qcmd=1 for libsas queuecommand()
+mvsas: Set SHT->unlocked_qcmd=1 for libsas queuecommand()
+pm8001: Set SHT->unlocked_qcmd=1 for libsas queuecommand()
+libata: Remove host_lock unlock() + lock() from ata_scsi_queuecmd()
+lpfc: Remove host_lock unlock() + lock() from lpfc_queuecommand()
+qla4xxx: Remove host_lock unlock() + lock() from qla4xxx_queuecommand()
+qla2xxx: Remove host_lock unlock() + lock() from qla2xxx_queuecommand()
+fnic: Remove host_lock unlock() + lock() from fnic_queuecommand()
+mpt2sas: Add scsi_cmd_get_serial() call and set SHT->unlocked_qcmd=1
+mpt/fusion: Add scsi_cmd_get_serial() call and set SHT->unlocked_qcmd=1
+dpt_i2o: Add scsi_cmd_get_serial() call
+eata: Add scsi_cmd_get_serial() call
+u14-34f: Add scsi_cmd_get_serial() call
+
+
+Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+Acked-by: Ravi Anand <ravi.anand@qlogic.com> (for qla2xx)
+Acked-by: Luben Tuikov <ltuikov@yahoo.com> (for aic94xx)
+
+Hi, Nab
+
+Please consider to add my ack. Thanks!
+Acked-by: Jack Wang <jack_wang@usish.com> (for pm8001)
+
+Jack
 
