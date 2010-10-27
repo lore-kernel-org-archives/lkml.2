@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759761Ab0J0OMQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 10:12:16 -0400
-Received: from kroah.org ([198.145.64.141]:38395 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756706Ab0J0OMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 10:12:13 -0400
-Date: Wed, 27 Oct 2010 07:11:53 -0700
-From: Greg KH <greg@kroah.com>
-To: Alan Cox <alan@linux.intel.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build warning after merge of the final tree (tty
-	tree related)
-Message-ID: <20101027141153.GC24938@kroah.com>
-References: <20100927153151.9bf66022.sfr@canb.auug.org.au> <20101027110307.e754ef59.sfr@canb.auug.org.au> <20101027101127.6fd49417@linux.intel.com>
+	id S1761333Ab0J0ONO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 10:13:14 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38544 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756952Ab0J0ONL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 10:13:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=lE2i1qRv1RhRxwFQNjArq87har1hIHoNv95SJ+dUYFondRH1yN7qsMnp/xvuwxrEyB
+         Ysd6dqK9Oo4iTpZBtWI7LcISpMBLryNE7VU9q9MuRE+zAAsGj7CJtIHqGtnkTLqBVRax
+         Nki+/wL0OoF+MriXDO3bHTHqzw9eHX9FyR6ak=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101027101127.6fd49417@linux.intel.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <201010271555.21201.arnd@arndb.de>
+References: <1288145006-31108-1-git-send-email-vapier@gentoo.org>
+ <1288145006-31108-2-git-send-email-vapier@gentoo.org> <201010271555.21201.arnd@arndb.de>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Wed, 27 Oct 2010 10:12:50 -0400
+X-Google-Sender-Auth: O3B8NgP0Y1ubcMRMVVaDwE6TR6Y
+Message-ID: <AANLkTi=RdaedGVG8=G9Cth7eLZpiSB9BXUPPSfggWdFN@mail.gmail.com>
+Subject: Re: [Uclinux-dist-devel] [PATCH 2/2] asm-generic/io.h: add
+ reads[bwl]/writes[bwl] helpers
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 10:11:27AM +0100, Alan Cox wrote:
-> On Wed, 27 Oct 2010 11:03:07 +1100
-> Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> 
-> > Hi Greg,
-> > 
-> > On Mon, 27 Sep 2010 15:31:51 +1000 Stephen Rothwell
-> > <sfr@canb.auug.org.au> wrote:
-> > >
-> > > After merging the final tree, today's linux-next build (x86_64
-> > > allmodconfig) produced this warning:
-> > > 
-> > > drivers/char/nozomi.c: In function 'ntty_ioctl':
-> > > drivers/char/nozomi.c:1831: warning: unused variable 'argp'
-> > > 
-> > > Introduced by commit dd612b1a8edb7fb3a117c388bfb520476e04ed18 ("tty:
-> > > icount changeover for other main devices").
-> > 
-> > This warning is now in Linus' tree ...
-> 
-> Already re-sent GregKH the fix. Guess it got eaten in the post last
-> time.
+On Wed, Oct 27, 2010 at 09:55, Arnd Bergmann wrote:
+> On Wednesday 27 October 2010, Mike Frysinger wrote:
+>> A bunch of arches define reads[bwl]/writes[bwl] helpers for accessing
+>> memory mapped registers.  Since the Blackfin ones aren't specific to
+>> Blackfin code, move them to the common asm-generic/io.h for people.
+>
+> Just keep it in your series to make it clear where it comes from.
+> I'd put it before the other one though.
 
-Sorry, yes, now got it, will pick it up tomorrow when I get back from
-vacation.
-
-thanks,
-
-greg k-h
+OK, will do.  thanks !
+-mike
