@@ -1,103 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933390Ab0J0O0e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 10:26:34 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:46783 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757142Ab0J0O0b convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 10:26:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=P/rIiHGKUfBYALnmdtLRvAkJYel9Q5zQc8pKbxnAv8EBCBhiE862C9cWIVqOv33eN/
-         amCM5yYHM/cmPpp4HWhwkPbCpYrmQIUls9+8fMrr3J0ndCXJiCqbDMQQqSBAWUMF2r5U
-         sMIrijWx5ctLVT43j3QqddCZIGJj86B77tyFc=
-MIME-Version: 1.0
-In-Reply-To: <1288139559-12019-1-git-send-email-nab@linux-iscsi.org>
-References: <1288139559-12019-1-git-send-email-nab@linux-iscsi.org>
-From: Bart Van Assche <bvanassche@acm.org>
-Date: Wed, 27 Oct 2010 16:26:09 +0200
-X-Google-Sender-Auth: TElvavkm1XuIh34wkFcXTGk84l8
-Message-ID: <AANLkTi=juKAP9gZ4hhRCPwovWRn8px=FEWCCUfuJbUQM@mail.gmail.com>
-Subject: Re: [PATCH] scsi: Add SHT->unlocked_qcmd for host_lock less
- SHT->queuecommand() dispatch
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+	id S1761331Ab0J0O2D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 10:28:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54122 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758961Ab0J0O2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 10:28:01 -0400
+Subject: Re: [ANNOUNCE] Status of unlocked_qcmds=1 operation for .37
+From: James Bottomley <James.Bottomley@suse.de>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Mike Anderson <andmike@linux.vnet.ibm.com>,
         linux-kernel <linux-kernel@vger.kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
+        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Christof Schmitt <christof.schmitt@de.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <20101027075349.GA32585@gargoyle.fritz.box>
+References: <1287607774.10283.78.camel@haakon2.linux-iscsi.org>
+	 <20101021150840.GA24309@linux.vnet.ibm.com>
+	 <1288130914.5169.97.camel@haakon2.linux-iscsi.org>
+	 <1288132071.8283.689.camel@mulgrave.site>
+	 <1288132464.5169.112.camel@haakon2.linux-iscsi.org>
+	 <1288133450.8283.723.camel@mulgrave.site>
+	 <1288134048.5169.132.camel@haakon2.linux-iscsi.org>
+	 <1288134713.19649.11.camel@mulgrave.site>
+	 <1288135918.5169.149.camel@haakon2.linux-iscsi.org>
+	 <20101027075349.GA32585@gargoyle.fritz.box>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Oct 2010 09:27:38 -0500
+Message-ID: <1288189658.4692.13.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 2:32 AM, Nicholas A. Bellinger
-<nab@linux-iscsi.org> wrote:
->
-> [ ... ]
->
-> Finally, this patch also converts the remaining struct Scsi_Host->cmd_serial_number
-> to atomic_t following a recommedation by Joe Eykholt to start struct Scsi_Host->
-> cmd_serial_number at 1, and increment each serial_number by 2 so that the
-> serial is odd, and wraps to 1 instead of 0.  struct Scsi_Host->cmd_serial_number
-> is initialized to '1' in drivers/scsi/hosts.c:scsi_host_alloc().
->
-> [ ... ]
-> diff --git a/drivers/scsi/hosts.c b/drivers/scsi/hosts.c
-> index 4f7a582..0c87c4f 100644
-> --- a/drivers/scsi/hosts.c
-> +++ b/drivers/scsi/hosts.c
-> @@ -381,6 +381,11 @@ struct Scsi_Host *scsi_host_alloc(struct scsi_host_template *sht, int privsize)
->        shost->unchecked_isa_dma = sht->unchecked_isa_dma;
->        shost->use_clustering = sht->use_clustering;
->        shost->ordered_tag = sht->ordered_tag;
-> +       shost->unlocked_qcmd = sht->unlocked_qcmd;
-> +       /*
-> +        * Set the default shost->cmd_serial_number to 1.
-> +        */
-> +       atomic_set(&shost->cmd_serial_number, 1);
->
->        if (sht->supported_mode == MODE_UNKNOWN)
->                /* means we didn't set it ... default to INITIATOR */
-> [ ... ]
-> diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-> index 348fba0..7c93384 100644
-> --- a/drivers/scsi/scsi.c
-> +++ b/drivers/scsi/scsi.c
-> @@ -628,17 +628,69 @@ void scsi_log_completion(struct scsi_cmnd *cmd, int disposition)
->
->  /**
->  * scsi_cmd_get_serial - Assign a serial number to a command
-> - * @host: the scsi host
->  * @cmd: command to assign serial number to
->  *
->  * Description: a serial number identifies a request for error recovery
-> - * and debugging purposes.  Protected by the Host_Lock of host.
-> + * and debugging purposes.  Called directly by SCSI LLDs that have a
-> + * legacy requirement for struct scsi_cmnd->serial_number.
->  */
-> -static inline void scsi_cmd_get_serial(struct Scsi_Host *host, struct scsi_cmnd *cmd)
-> +void scsi_cmd_get_serial(struct scsi_cmnd *cmd)
->  {
-> -       cmd->serial_number = host->cmd_serial_number++;
-> -       if (cmd->serial_number == 0)
-> -               cmd->serial_number = host->cmd_serial_number++;
-> +       struct Scsi_Host *host = cmd->device->host;
-> +       /*
-> +        * Increment the host->cmd_serial_number by 2 so cmd->serial_number
-> +        * is always odd and wraps to 1 instead of 0.
-> +        */
-> +       cmd->serial_number = atomic_add_return(2, &host->cmd_serial_number);
-> +}
-> +EXPORT_SYMBOL(scsi_cmd_get_serial);
-> +
-> [ ... ]
+On Wed, 2010-10-27 at 09:53 +0200, Andi Kleen wrote:
+> > This sounds like a pretty reasonable compromise that I think is slightly
+> > less risky for the LLDs with the ghosts and cob-webs hanging off of
+> > them.
+> 
+> They won't get tested either next release cycle. Essentially
+> near nobody uses them.
+> 
+> > 
+> > What do you think..?
+> 
+> Standard linux practice is to simply push the locks down. That's a pretty
+> mechanical operation and shouldn't be too risky
+> 
+> With some luck you could even do it with coccinelle.
 
-There is a mismatch between the patch description and the patch
-itself. The patch description says that the serial number starts at
-one while the patch itself makes the serial number start at three.
+Precisely ... if we can do the push down now as a mechanical
+transformation we can put it in the current merge window as a low risk
+API change.  This gives us optimal exposure to the rc sequence to sort
+out any problems that arise (or drivers that got missed) with the lowest
+risk of such problems actually arising.  Given the corner cases and the
+late arrival of fixes, the serial number changes are just too risky for
+the current merge window.  Having an API that changes depending on a
+flag is also a high risk process because it's prone to further sources
+of error.
 
-Bart.
+James
+
+
+
+
