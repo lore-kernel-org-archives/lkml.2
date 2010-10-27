@@ -1,169 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756509Ab0J0UCm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 16:02:42 -0400
-Received: from fieldses.org ([174.143.236.118]:46353 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751847Ab0J0UCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 16:02:38 -0400
-Date: Wed, 27 Oct 2010 16:01:45 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: nfsd changes for 2.6.37
-Message-ID: <20101027200145.GE18974@fieldses.org>
-References: <20101026164549.GD19445@fieldses.org>
- <AANLkTimZSj7Y8KUic-VLSgrPFTf5wc_KRdfedzLAkNKT@mail.gmail.com>
- <AANLkTin53pdmfaBahExgi79XjaeFtP5wCS=rrKxfrAHs@mail.gmail.com>
- <201010272148.47376.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201010272148.47376.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756416Ab0J0UG7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 16:06:59 -0400
+Received: from nm10-vm0.bullet.mail.ac4.yahoo.com ([98.139.53.194]:31939 "HELO
+	nm10-vm0.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751889Ab0J0UG4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 16:06:56 -0400
+X-Yahoo-Newman-Id: 127165.22043.bm@omp1034.mail.ac4.yahoo.com
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: Dr6JiVoVM1nTzHglNwwds7doU5auDLThwGIRb5rIT7KeqOf
+ vhhUTqkIcHyj9N3GIwEbiu0F4vMC8NkP8woySt5LS38UE56y9MrhHWJQTJZJ
+ EovGslZDm.ac70tl9mg2DUWkL5GREvdxQxv4Kx_zqnnsx5WnrScnUe6epSIh
+ .Rmn8jPwhQorJiVOb8dHR5a5iiYmJyLArJeFdgwagSfP4I9ZlTM8qOAvC9z8
+ gAd99cTgh8N1AV0mP7wNwIZ7Zup3SnjHDaoMxSAfcr2qu66Ev.IBzkbU5kD_
+ jKCD1pMQ71USv6cQfAU_5_uupOtLJxApJHPZ9QZq_AgWNwyPrgjT5vhjOPWm
+ 8u5AABX72U3lR63AkdSvxNnnQm042D8qe5GkDaqtaAqMkZ2Eimsuf_uVjJ0C
+ WQ1NXJI27Y_o2NpGQLQMcL7C3oPeD7BProuYYnTs11uf8apI5pna6I2rjjc0
+ sp_q1Jzl5FzIsb_O54YwcRx_klg--
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [ANNOUNCE] Status of unlocked_qcmds=1 operation for .37
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Mike Anderson <andmike@linux.vnet.ibm.com>
+Cc: James Bottomley <James.Bottomley@suse.de>, Andi Kleen <ak@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
+        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Christof Schmitt <christof.schmitt@de.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <20101027192025.GA1349@linux.vnet.ibm.com>
+References: <1288130914.5169.97.camel@haakon2.linux-iscsi.org>
+	 <1288132071.8283.689.camel@mulgrave.site>
+	 <1288132464.5169.112.camel@haakon2.linux-iscsi.org>
+	 <1288133450.8283.723.camel@mulgrave.site>
+	 <1288134048.5169.132.camel@haakon2.linux-iscsi.org>
+	 <1288134713.19649.11.camel@mulgrave.site>
+	 <1288135918.5169.149.camel@haakon2.linux-iscsi.org>
+	 <20101027075349.GA32585@gargoyle.fritz.box>
+	 <1288189658.4692.13.camel@mulgrave.site>
+	 <1288202802.5169.202.camel@haakon2.linux-iscsi.org>
+	 <20101027192025.GA1349@linux.vnet.ibm.com>
+Content-Type: text/plain
+Date: Wed, 27 Oct 2010 12:55:18 -0700
+Message-Id: <1288209318.5169.213.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 09:48:47PM +0200, Arnd Bergmann wrote:
-> On Wednesday 27 October 2010 20:43:59 Linus Torvalds wrote:
-> > On Wed, Oct 27, 2010 at 11:42 AM, Linus Torvalds
-> > <torvalds@linux-foundation.org> wrote:
-> > >
-> > > Feel free to edit the message/patch to your hearts content.
+On Wed, 2010-10-27 at 12:20 -0700, Mike Anderson wrote:
+> Nicholas A. Bellinger <nab@linux-iscsi.org> wrote:
+> > On Wed, 2010-10-27 at 09:27 -0500, James Bottomley wrote:
+> > > On Wed, 2010-10-27 at 09:53 +0200, Andi Kleen wrote:
+> > > > > This sounds like a pretty reasonable compromise that I think is slightly
+> > > > > less risky for the LLDs with the ghosts and cob-webs hanging off of
+> > > > > them.
+> > > > 
+> > > > They won't get tested either next release cycle. Essentially
+> > > > near nobody uses them.
+> > > > 
+> > > > > 
+> > > > > What do you think..?
+> > > > 
+> > > > Standard linux practice is to simply push the locks down. That's a pretty
+> > > > mechanical operation and shouldn't be too risky
+> > > > 
+> > > > With some luck you could even do it with coccinelle.
+> > > 
+> > > Precisely ... if we can do the push down now as a mechanical
+> > > transformation we can put it in the current merge window as a low risk
+> > > API change.
 > > 
-> > Oh, and if you want me to just commit this part, I can do so. It
-> > doesn't make much sense without the other parts to actually make it
-> > useful, though, so it probably makes more sense to come with them.
+> > I disagree that touching every single legacy LLD's SHT->queuecommand()
+> > and failure paths in that code is a low rist change.
+> > 
+> > >   This gives us optimal exposure to the rc sequence to sort
+> > > out any problems that arise (or drivers that got missed) with the lowest
+> > > risk of such problems actually arising.
+> > 
+> > Yes, 
+> > 
+> > > Given the corner cases and the
+> > > late arrival of fixes, the serial number changes are just too risky for
+> > > the current merge window.
+> > 
+> > I think with andmike's testing and ACKs for the necessary scsi_error.c
+> > changes this would be an acceptable risk.
+> > 
 > 
-> Once Bruce is happy with the test results, you can pull it from
+> Adding SCSI_EH_SOFTIRQ_DONE in scsi_softirq_done is not going to provide
+> value in scsi_try_to_abort_cmd. scsi_softirq_done calls scsi_eh_scmd_add
+> without the SCSI_EH_CANCEL_CMD flag set which will stop
+> scsi_try_to_abort_cmd from being called.
 > 
-> git+ssh://master.kernel.org/pub/scm/linux/kernel/git/arnd/bkl.git flock
+> Removing the serial_number check in scsi_try_to_abort_cmd and not
+> replacing it may be the correct action as we should be relying on the
+> block complete checking. That said what James has indicated about
+> splitting the serial number change out seems like the lower risk approach
+> at this time.
+> 
 
-Not the useful url for us hoi polloi out here.  OK, looking at
-git://git.kernel.org/pub/scm/linux/kernel/git/arnd/bkl.git flock....
+Hmm, that is unfortuate..
 
-> I've rewritten all the changelogs to make more sense as a series,
-> and split out the bits that turn lock_flocks into a spinlock to
-> come last, so we get a bisectable series.
-> 
-> The contents are left unchanged.
+So in this case it would make sense to drop the explict LLD usage of
+scsi_cmd_get_serial(), and re-include this into scsi_dispatch_cmd() for
+all LLDs and have to deal with a per scsi_host atomic_t serial_number
+counter.  Anyways, I will go ahead an respin another series to follow
+this logic shortly.
 
-Looks fine to me!
+The other question that was mentioned in my email yesterday would be if
+the clearing of a non atomic_t cmd->serial_number from
+scsi_softirq_done() -> scsi_try_to_abort_cmd() is safe to begin with..?
+Does this need to be converted to an atomic_t as well to present a
+subtle race outside of any of the host_lock-less series of patches..?
 
-I haven't retested that, but I can see that the result is identical to
-what I tested.
-
-(You're missing Linus's comment fix, though, unless I'm confused.)
-
---b.
+--nab
 
 
-> 
-> 	Arnd
-> ---
-> 
-> commit b3426739cc8f7c7dd127ca8dad5e25195930cac1
-> Author: Arnd Bergmann <arnd@arndb.de>
-> Date:   Wed Oct 27 21:39:58 2010 +0200
-> 
->     locks: turn lock_flocks into a spinlock
->     
->     Nothing depends on lock_flocks using the BKL
->     any more, so we can do the switch over to
->     a private spinlock.
->     
->     Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> 
->  fs/Kconfig |    1 -
->  fs/locks.c |    5 +++--
->  2 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> commit 55d3ff97c5c0b3dce39f705e2b1fe85818891822
-> Author: Linus Torvalds <torvalds@linux-foundation.org>
-> Date:   Wed Oct 27 12:38:12 2010 -0400
-> 
->     locks: avoid fasync allocation under lock_flocks
->     
->     This splits fasync_helper into four functions: fasync_alloc,
->     fasync_free, fasync_insert_entry and fasync_remove_entry,
->     in order to allow the lease handling to call them directly
->     instead of going through fasync_helper.
->     
->     The fasync_helper interface really doesn't make sense outside
->     of ->fasync file operations, which use the same calling
->     conventions of passing flags in and out as the helper.
->     
->     After the change, fcntl_setlease can simply allocate the
->     new fasync_struct outside of lock_flocks, which is required
->     to turn that into a spinlock.
->     
->     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
->     [bfields@redhat.com: rebase on top of my changes to Arnd's patch]
->     Signed-off-by: J. Bruce Fields <bfields@redhat.com>
->     [arnd: rewrite changelog text]
->     Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> 
->  fs/fcntl.c         |   66 +++++++++++++++++++++++++++++++++++++++------------
->  fs/locks.c         |   18 +++++++++++++-
->  include/linux/fs.h |    5 ++++
->  3 files changed, 72 insertions(+), 17 deletions(-)
-> 
-> commit c5b1f0d92c36851aca09ac6c7c0c4f9690ac14f3
-> Author: Arnd Bergmann <arnd@arndb.de>
-> Date:   Wed Oct 27 15:46:08 2010 +0200
-> 
->     locks/nfsd: allocate file lock outside of spinlock
->     
->     As suggested by Christoph Hellwig, this moves allocation
->     of new file locks out of generic_setlease into the
->     callers, nfs4_open_delegation and fcntl_setlease in order
->     to allow GFP_KERNEL allocations when lock_flocks has
->     become a spinlock.
->     
->     Signed-off-by: Arnd Bergmann <arnd@arndb.de>
->     Acked-by: J. Bruce Fields <bfields@redhat.com>
-> 
->  fs/locks.c          |   36 ++++++++++++------------------------
->  fs/nfsd/nfs4state.c |   26 +++++++++++++++-----------
->  include/linux/fs.h  |    1 +
->  3 files changed, 28 insertions(+), 35 deletions(-)
-> 
-> commit a282a1fa6b23bd21ba0b86e53ed2a316b001836f
-> Author: J. Bruce Fields <bfields@redhat.com>
-> Date:   Tue Oct 26 18:25:30 2010 -0400
-> 
->     lockd: fix nlmsvc_notify_blocked locking
->     
->     nlmsvc_notify_blocked walks the nlm_blocked list,
->     which requires nlm_blocked_lock.
->     
->     Signed-off-by: J. Bruce Fields <bfields@redhat.com>
->     Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> 
->  fs/lockd/svclock.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
-> 
-> commit 763641d81202834e9d64de2019d1edec12868f4f
-> Author: Arnd Bergmann <arnd@arndb.de>
-> Date:   Tue Oct 26 22:55:40 2010 +0200
-> 
->     lockd: push lock_flocks down
->     
->     lockd should use lock_flocks() instead of lock_kernel()
->     to lock against posix locks accessing the i_flock list.
->     
->     This is a prerequisite to turning lock_flocks into a
->     spinlock.
->     
->     Signed-off-by: Arnd Bergmann <arnd@arndb.de>
->     Acked-by: J. Bruce Fields <bfields@redhat.com>
-> 
->  fs/lockd/svc.c     |   11 -----------
->  fs/lockd/svcsubs.c |    9 ++++++++-
->  fs/nfs/Kconfig     |    1 -
->  fs/nfsd/Kconfig    |    1 -
->  4 files changed, 8 insertions(+), 14 deletions(-)
+
