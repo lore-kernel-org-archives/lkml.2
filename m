@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759323Ab0J0IIw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 04:08:52 -0400
-Received: from higgs.elka.pw.edu.pl ([194.29.160.5]:52499 "EHLO
-	higgs.elka.pw.edu.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750756Ab0J0IIu (ORCPT
+	id S1759541Ab0J0ILg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 04:11:36 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55205 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751183Ab0J0ILd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 04:08:50 -0400
-X-Comment: RFC 2476 MSA function at elektron.elka.pw.edu.pl logged sender identity as: wzabolot
-Message-ID: <4CC7DDCC.7040605@elka.pw.edu.pl>
-Date: Wed, 27 Oct 2010 10:07:40 +0200
-From: Wojtek Zabolotny <W.Zabolotny@elka.pw.edu.pl>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100913 Icedove/3.0.7
+	Wed, 27 Oct 2010 04:11:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=SKdlE6F8vohqNZjrT/z1Goy8oWad4KmQJzhRkhdKqlaE2sPwExvO53i57+MbuWre0y
+         snt/mXsgGNTGexoAyfdsKe6I1vPuCa5E5/1SoruIRwjei+HMlcFKZ7xl53cseEkekw1F
+         hinzLG/jZ5vkEWU3jTV0CQ5WbHanAoTzaFkhg=
+Date: Wed, 27 Oct 2010 10:11:21 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: walter harms <wharms@bfs.de>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>, Julia Lawall <julia@diku.dk>,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 8/14] drivers/platform/x86/thinkpad_acpi.c: delete
+	double assignment
+Message-ID: <20101027081121.GC6062@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	walter harms <wharms@bfs.de>,
+	Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+	Julia Lawall <julia@diku.dk>, kernel-janitors@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1288088743-3725-1-git-send-email-julia@diku.dk> <1288088743-3725-9-git-send-email-julia@diku.dk> <20101027010908.GA29299@khazad-dum.debian.net> <4CC7D238.9010903@bfs.de>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: More details - Re: i915 module with modeset=1 freezes machine (kernels
- 2.6.33 and 2.6.36)
-References: <4CC751E8.9030505@elektron.elka.pw.edu.pl>
-In-Reply-To: <4CC751E8.9030505@elektron.elka.pw.edu.pl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CC7D238.9010903@bfs.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have tried to boot my desktop machine (chipset 82865G with agpgart and 
-i915 compiled into kernel) with i915.modeset=0
-In this case machine works, but X work only with vesa driver.
+On Wed, Oct 27, 2010 at 09:18:16AM +0200, walter harms wrote:
+> 
+> IMHO that goes beyond what to expect from a kernel janitor.
 
-Browsing reports about similar problems I have found suggestion to use 
-i915.modeset=1 i915.powersave=0
-unfortunately this also leads to black screen and freeze of machine.
+No way!  Of course, we don't mindlessly remove the second assign without
+trying to figure out if maybe something else was intended.  Frankly, I
+was a little offended by idea that we'd do that.
 
-In my laptop machine (chipset 945GM with agpgart and intel_agp and i915 
-compiled as modules), when I reload i915 with modeset=1 it causes 
-immediate black screen and freeze (the value of powersave parameter does 
-not change the behaviour of my system).
+Of course, we do make mistakes, but they're _honest_ mistakes.
 
-I have also found some info that the problem may be related to detection 
-of lid switch (in laptop) - I tried to press and release the lid switch 
-in my laptop machine - this switched the backlight on, but system was 
-still frozen and unaccessible.
-
+regards,
+dan carpenter
 
