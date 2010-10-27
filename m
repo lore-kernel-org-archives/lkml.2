@@ -1,71 +1,302 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757454Ab0J0GY0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 02:24:26 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:53344 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753250Ab0J0GYX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 02:24:23 -0400
-Date: Wed, 27 Oct 2010 08:23:54 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>, Bob Picco <bpicco@redhat.com>,
-        Brian Bloniarz <phunge0@hotmail.com>,
-        Charles Butterfield <charles.butterfield@nextcentury.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>, linux-pci@vger.kernel.org,
-        "Horst H. von Brand" <vonbrand@inf.utfsm.cl>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        Stefan Becker <chemobejk@gmail.com>, Chuck Ebbert <cebbert@redhat.com>,
-        Fabrice Bellet <fabrice@bellet.info>, Yinghai Lu <yinghai@kernel.org>,
-        Leann Ogasawara <leann.ogasawara@canonical.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v5 9/9] x86: allocate space within a region top-down
-Message-ID: <20101027062354.GA6854@elte.hu>
-References: <20101026214033.29808.15272.stgit@bob.kio>
- <20101026214154.29808.58672.stgit@bob.kio>
- <20101026153455.0fe4847f@jbarnes-desktop>
+	id S1757854Ab0J0G37 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 02:29:59 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:30157 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754497Ab0J0G35 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 02:29:57 -0400
+Message-ID: <4CC7C64A.4070809@kernel.org>
+Date: Tue, 26 Oct 2010 23:27:22 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100914 SUSE/3.0.8 Thunderbird/3.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101026153455.0fe4847f@jbarnes-desktop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Suresh Siddha <suresh.b.siddha@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+CC: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH -v3] x86: Disable x2apic if nox2apic is specified
+References: <1287882149-29275-1-git-send-email-yinghai@kernel.org>	 <1287882149-29275-16-git-send-email-yinghai@kernel.org>	 <alpine.LFD.2.00.1010241204470.2466@localhost6.localdomain6>	 <4CC4AEAB.4030505@kernel.org> <1288029002.2675.22.camel@sbsiddha-MOBL3.sc.intel.com>
+In-Reply-To: <1288029002.2675.22.camel@sbsiddha-MOBL3.sc.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+For
+1. x2apic preenabled system
+2. first kernel have x2apic enabled, and try to kexec second kernel with "nox2apic"
 
-> On Tue, 26 Oct 2010 15:41:54 -0600
-> Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
-> 
-> > Request that allocate_resource() use available space from high addresses first, 
-> > rather than the default of using low addresses first.
-> > 
-> > The most common place this makes a difference is when we move or assign new PCI 
-> > device resources.  Low addresses are generally scarce, so it's better to use 
-> > high addresses when possible.  This follows Windows practice for PCI allocation.
-> > 
-> > Reference: https://bugzilla.kernel.org/show_bug.cgi?id=16228#c42
-> > Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
-> > ---
-> 
-> Ok, applied this version to -next.  It's been going through distros and lots of 
-> testing despite a lack of recent coverage in PCI -next, so I'm planning to send it 
-> to Linus this week.  We probably won't catch much more until it hits his tree 
-> anyway...
+Will put back cpu with apic id < 255 into xapic mode, instead of panic.
 
-It also appears to fix a serious compatibility bug (and a v2.6.34 regression), so 
-even without extensive distro testing it's wise to push this upstream ASAP IMHO ...
+-v2: use x2apic_disabled instead of nox2apic, Suggested by Thomas
+     update x2apic_supported with x2apic_disabled, Suggested by Thomas
 
-Thanks,
+-v3: add checking for boot cpu apic id > 255. in that case will just panic
+     --- pointed out by Suresh.
 
-	Ingo
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ arch/x86/include/asm/apic.h      |    6 +++-
+ arch/x86/include/asm/apicdef.h   |    1 
+ arch/x86/include/asm/processor.h |    1 
+ arch/x86/kernel/acpi/boot.c      |   10 ++++++-
+ arch/x86/kernel/apic/apic.c      |   51 +++++++++++++++++++++++++++++++++------
+ arch/x86/kernel/cpu/topology.c   |   21 ++++++++++++++++
+ arch/x86/mm/srat_64.c            |    7 ++++-
+ 7 files changed, 85 insertions(+), 12 deletions(-)
+
+Index: linux-2.6/arch/x86/include/asm/apic.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/apic.h
++++ linux-2.6/arch/x86/include/asm/apic.h
+@@ -176,6 +176,7 @@ static inline u64 native_x2apic_icr_read
+ }
+ 
+ extern int x2apic_phys;
++extern int x2apic_disabled;
+ extern void check_x2apic(void);
+ extern void enable_x2apic(void);
+ extern void x2apic_icr_write(u32 low, u32 id);
+@@ -183,7 +184,7 @@ static inline int x2apic_enabled(void)
+ {
+ 	int msr, msr2;
+ 
+-	if (!cpu_has_x2apic)
++	if (!cpu_has_x2apic || x2apic_disabled)
+ 		return 0;
+ 
+ 	rdmsr(MSR_IA32_APICBASE, msr, msr2);
+@@ -192,7 +193,7 @@ static inline int x2apic_enabled(void)
+ 	return 0;
+ }
+ 
+-#define x2apic_supported()	(cpu_has_x2apic)
++#define x2apic_supported()	(cpu_has_x2apic && !x2apic_disabled)
+ static inline void x2apic_force_phys(void)
+ {
+ 	x2apic_phys = 1;
+@@ -214,6 +215,7 @@ static inline void x2apic_force_phys(voi
+ 
+ #define	x2apic_preenabled 0
+ #define	x2apic_supported()	0
++#define	x2apic_disabled	1
+ #endif
+ 
+ extern void enable_IR_x2apic(void);
+Index: linux-2.6/arch/x86/kernel/acpi/boot.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/acpi/boot.c
++++ linux-2.6/arch/x86/kernel/acpi/boot.c
+@@ -213,6 +213,8 @@ static int __init
+ acpi_parse_x2apic(struct acpi_subtable_header *header, const unsigned long end)
+ {
+ 	struct acpi_madt_local_x2apic *processor = NULL;
++	int apic_id;
++	u8 enabled;
+ 
+ 	processor = (struct acpi_madt_local_x2apic *)header;
+ 
+@@ -221,6 +223,8 @@ acpi_parse_x2apic(struct acpi_subtable_h
+ 
+ 	acpi_table_print_madt_entry(header);
+ 
++	apic_id = processor->local_apic_id;
++	enabled = processor->lapic_flags & ACPI_MADT_ENABLED;
+ #ifdef CONFIG_X86_X2APIC
+ 	/*
+ 	 * We need to register disabled CPU as well to permit
+@@ -229,8 +233,10 @@ acpi_parse_x2apic(struct acpi_subtable_h
+ 	 * to not preallocating memory for all NR_CPUS
+ 	 * when we use CPU hotplug.
+ 	 */
+-	acpi_register_lapic(processor->local_apic_id,	/* APIC ID */
+-			    processor->lapic_flags & ACPI_MADT_ENABLED);
++	if (x2apic_disabled && (apic_id >= 0xff) && enabled)
++		printk(KERN_WARNING PREFIX "x2apic entry ignored\n");
++	else
++		acpi_register_lapic(apic_id, enabled);
+ #else
+ 	printk(KERN_WARNING PREFIX "x2apic entry ignored\n");
+ #endif
+Index: linux-2.6/arch/x86/kernel/apic/apic.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/apic/apic.c
++++ linux-2.6/arch/x86/kernel/apic/apic.c
+@@ -138,15 +138,14 @@ int x2apic_mode;
+ #ifdef CONFIG_X86_X2APIC
+ /* x2apic enabled before OS handover */
+ static int x2apic_preenabled;
++int x2apic_disabled;
+ static __init int setup_nox2apic(char *str)
+ {
+-	if (x2apic_enabled()) {
+-		pr_warning("Bios already enabled x2apic, "
+-			   "can't enforce nox2apic");
+-		return 0;
+-	}
++	if (x2apic_enabled())
++		pr_warning("Bios already enabled x2apic, will disable it");
++
++	x2apic_disabled = 1;
+ 
+-	setup_clear_cpu_cap(X86_FEATURE_X2APIC);
+ 	return 0;
+ }
+ early_param("nox2apic", setup_nox2apic);
+@@ -1394,8 +1393,38 @@ void __cpuinit end_local_APIC_setup(void
+ }
+ 
+ #ifdef CONFIG_X86_X2APIC
++
++static void disable_x2apic(void)
++{
++	int msr, msr2;
++
++	if (!cpu_has_x2apic)
++		return;
++
++	rdmsr(MSR_IA32_APICBASE, msr, msr2);
++	if (msr & X2APIC_ENABLE) {
++		u32 x2apic_id = x2apic_cpuid_initial_apicid();
++
++		if (x2apic_id > 255)
++			panic("Can not disable x2apic, id: %08x\n", x2apic_id);
++
++		pr_info("Disabling x2apic\n");
++		/*
++		 * Need to disable xapic and x2apic at the same time at first
++		 *  then enable xapic
++		 */
++		wrmsr(MSR_IA32_APICBASE, msr & ~(X2APIC_ENABLE | XAPIC_ENABLE),
++			 0);
++		wrmsr(MSR_IA32_APICBASE, msr & ~X2APIC_ENABLE, 0);
++	}
++}
+ void check_x2apic(void)
+ {
++	if (x2apic_disabled) {
++		disable_x2apic();
++		return;
++	}
++
+ 	if (x2apic_enabled()) {
+ 		pr_info("x2apic enabled by BIOS, switching to x2apic ops\n");
+ 		x2apic_preenabled = x2apic_mode = 1;
+@@ -1406,6 +1435,11 @@ void enable_x2apic(void)
+ {
+ 	int msr, msr2;
+ 
++	if (x2apic_disabled) {
++		disable_x2apic();
++		return;
++	}
++
+ 	if (!x2apic_mode)
+ 		return;
+ 
+@@ -1474,6 +1508,9 @@ void __init enable_IR_x2apic(void)
+ 	else
+ 		ret = enable_IR();
+ 
++	if (x2apic_disabled)
++		goto nox2apic;
++
+ 	if (!ret) {
+ 		/* IR is required if there is APIC ID > 255 even when running
+ 		 * under KVM
+@@ -1510,7 +1547,7 @@ out:
+ 
+ 	if (x2apic_preenabled)
+ 		panic("x2apic: enabled by BIOS but kernel init failed.");
+-	else if (cpu_has_x2apic)
++	else if (cpu_has_x2apic && !x2apic_disabled)
+ 		pr_info("Not enabling x2apic, Intr-remapping init failed.\n");
+ }
+ 
+Index: linux-2.6/arch/x86/mm/srat_64.c
+===================================================================
+--- linux-2.6.orig/arch/x86/mm/srat_64.c
++++ linux-2.6/arch/x86/mm/srat_64.c
+@@ -126,6 +126,12 @@ acpi_numa_x2apic_affinity_init(struct ac
+ 	if ((pa->flags & ACPI_SRAT_CPU_ENABLED) == 0)
+ 		return;
+ 	pxm = pa->proximity_domain;
++	apic_id = pa->apic_id;
++	if (x2apic_disabled && (apic_id >= 0xff)) {
++		printk(KERN_INFO "SRAT: PXM %u -> X2APIC 0x%04x ignored\n",
++			 pxm, apic_id);
++		return;
++	}
+ 	node = setup_node(pxm);
+ 	if (node < 0) {
+ 		printk(KERN_ERR "SRAT: Too many proximity domains %x\n", pxm);
+@@ -133,7 +139,6 @@ acpi_numa_x2apic_affinity_init(struct ac
+ 		return;
+ 	}
+ 
+-	apic_id = pa->apic_id;
+ 	apicid_to_node[apic_id] = node;
+ 	node_set(node, cpu_nodes_parsed);
+ 	acpi_numa = 1;
+Index: linux-2.6/arch/x86/include/asm/apicdef.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/apicdef.h
++++ linux-2.6/arch/x86/include/asm/apicdef.h
+@@ -141,6 +141,7 @@
+ 
+ #define APIC_BASE (fix_to_virt(FIX_APIC_BASE))
+ #define APIC_BASE_MSR	0x800
++#define XAPIC_ENABLE	(1UL << 11)
+ #define X2APIC_ENABLE	(1UL << 10)
+ 
+ #ifdef CONFIG_X86_32
+Index: linux-2.6/arch/x86/include/asm/processor.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/processor.h
++++ linux-2.6/arch/x86/include/asm/processor.h
+@@ -172,6 +172,7 @@ extern void init_scattered_cpuid_feature
+ extern unsigned int init_intel_cacheinfo(struct cpuinfo_x86 *c);
+ extern unsigned short num_cache_leaves;
+ 
++u32 x2apic_cpuid_initial_apicid(void);
+ extern void detect_extended_topology(struct cpuinfo_x86 *c);
+ extern void detect_ht(struct cpuinfo_x86 *c);
+ 
+Index: linux-2.6/arch/x86/kernel/cpu/topology.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/cpu/topology.c
++++ linux-2.6/arch/x86/kernel/cpu/topology.c
+@@ -21,6 +21,27 @@
+ #define BITS_SHIFT_NEXT_LEVEL(eax)	((eax) & 0x1f)
+ #define LEVEL_MAX_SIBLINGS(ebx)		((ebx) & 0xffff)
+ 
++u32 x2apic_cpuid_initial_apicid(void)
++{
++	unsigned int eax, ebx, ecx, edx;
++
++	if (boot_cpu_data.cpuid_level < 0xb)
++		return 0;
++
++	cpuid_count(0xb, SMT_LEVEL, &eax, &ebx, &ecx, &edx);
++
++	/*
++	 * check if the cpuid leaf 0xb is actually implemented.
++	 */
++	if (ebx == 0 || (LEAFB_SUBTYPE(ecx) != SMT_TYPE))
++		return 0;
++
++	/*
++	 * initial apic id, which also represents 32-bit extended x2apic id.
++	 */
++	return edx;
++}
++
+ /*
+  * Check for extended topology enumeration cpuid leaf 0xb and if it
+  * exists, use it for populating initial_apicid and cpu topology
