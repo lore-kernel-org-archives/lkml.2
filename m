@@ -1,132 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756416Ab0J0UG7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 16:06:59 -0400
-Received: from nm10-vm0.bullet.mail.ac4.yahoo.com ([98.139.53.194]:31939 "HELO
-	nm10-vm0.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751889Ab0J0UG4 (ORCPT
+	id S1756651Ab0J0UIz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 16:08:55 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:57528 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752328Ab0J0UIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 16:06:56 -0400
-X-Yahoo-Newman-Id: 127165.22043.bm@omp1034.mail.ac4.yahoo.com
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: Dr6JiVoVM1nTzHglNwwds7doU5auDLThwGIRb5rIT7KeqOf
- vhhUTqkIcHyj9N3GIwEbiu0F4vMC8NkP8woySt5LS38UE56y9MrhHWJQTJZJ
- EovGslZDm.ac70tl9mg2DUWkL5GREvdxQxv4Kx_zqnnsx5WnrScnUe6epSIh
- .Rmn8jPwhQorJiVOb8dHR5a5iiYmJyLArJeFdgwagSfP4I9ZlTM8qOAvC9z8
- gAd99cTgh8N1AV0mP7wNwIZ7Zup3SnjHDaoMxSAfcr2qu66Ev.IBzkbU5kD_
- jKCD1pMQ71USv6cQfAU_5_uupOtLJxApJHPZ9QZq_AgWNwyPrgjT5vhjOPWm
- 8u5AABX72U3lR63AkdSvxNnnQm042D8qe5GkDaqtaAqMkZ2Eimsuf_uVjJ0C
- WQ1NXJI27Y_o2NpGQLQMcL7C3oPeD7BProuYYnTs11uf8apI5pna6I2rjjc0
- sp_q1Jzl5FzIsb_O54YwcRx_klg--
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [ANNOUNCE] Status of unlocked_qcmds=1 operation for .37
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Mike Anderson <andmike@linux.vnet.ibm.com>
-Cc: James Bottomley <James.Bottomley@suse.de>, Andi Kleen <ak@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>,
-        James Smart <james.smart@emulex.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
-        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
-        Brian King <brking@linux.vnet.ibm.com>,
-        Christof Schmitt <christof.schmitt@de.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-In-Reply-To: <20101027192025.GA1349@linux.vnet.ibm.com>
-References: <1288130914.5169.97.camel@haakon2.linux-iscsi.org>
-	 <1288132071.8283.689.camel@mulgrave.site>
-	 <1288132464.5169.112.camel@haakon2.linux-iscsi.org>
-	 <1288133450.8283.723.camel@mulgrave.site>
-	 <1288134048.5169.132.camel@haakon2.linux-iscsi.org>
-	 <1288134713.19649.11.camel@mulgrave.site>
-	 <1288135918.5169.149.camel@haakon2.linux-iscsi.org>
-	 <20101027075349.GA32585@gargoyle.fritz.box>
-	 <1288189658.4692.13.camel@mulgrave.site>
-	 <1288202802.5169.202.camel@haakon2.linux-iscsi.org>
-	 <20101027192025.GA1349@linux.vnet.ibm.com>
-Content-Type: text/plain
-Date: Wed, 27 Oct 2010 12:55:18 -0700
-Message-Id: <1288209318.5169.213.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Oct 2010 16:08:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:user-agent:date:from:to:cc:subject:references
+         :content-disposition;
+        b=hAlVWtq63E2A8NjoXuXcGNbDMrdsJH4aVflJlAV13TdgcA3EX8fj6zsw1iTQHUV5qG
+         lziQUdWH/baE4nUxP8EroZRHN565kysgUEFviq/ZvZqdeKxx42UiJiGHok/t7BmdBIyQ
+         vXv/SZcE1nUKbxlYzsRKxIiEc+O9vuAuReQ60=
+Message-Id: <20101027200806.680836780@openvz.org>
+User-Agent: quilt/0.47-1
+Date: Wed, 27 Oct 2010 23:53:55 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: linux-kernel@vger.kernel.org, "Maciej W. Rozycki" <macro@linux-mips.org>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
+        Don Zickus <dzickus@redhat.com>, Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: [rfc -tip 2/2] x86, apic: Allow to send self NMI ipi
+References: <20101027195352.996250316@openvz.org>
+Content-Disposition: inline; filename=x86-apic-ipi-self-nmi
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-27 at 12:20 -0700, Mike Anderson wrote:
-> Nicholas A. Bellinger <nab@linux-iscsi.org> wrote:
-> > On Wed, 2010-10-27 at 09:27 -0500, James Bottomley wrote:
-> > > On Wed, 2010-10-27 at 09:53 +0200, Andi Kleen wrote:
-> > > > > This sounds like a pretty reasonable compromise that I think is slightly
-> > > > > less risky for the LLDs with the ghosts and cob-webs hanging off of
-> > > > > them.
-> > > > 
-> > > > They won't get tested either next release cycle. Essentially
-> > > > near nobody uses them.
-> > > > 
-> > > > > 
-> > > > > What do you think..?
-> > > > 
-> > > > Standard linux practice is to simply push the locks down. That's a pretty
-> > > > mechanical operation and shouldn't be too risky
-> > > > 
-> > > > With some luck you could even do it with coccinelle.
-> > > 
-> > > Precisely ... if we can do the push down now as a mechanical
-> > > transformation we can put it in the current merge window as a low risk
-> > > API change.
-> > 
-> > I disagree that touching every single legacy LLD's SHT->queuecommand()
-> > and failure paths in that code is a low rist change.
-> > 
-> > >   This gives us optimal exposure to the rc sequence to sort
-> > > out any problems that arise (or drivers that got missed) with the lowest
-> > > risk of such problems actually arising.
-> > 
-> > Yes, 
-> > 
-> > > Given the corner cases and the
-> > > late arrival of fixes, the serial number changes are just too risky for
-> > > the current merge window.
-> > 
-> > I think with andmike's testing and ACKs for the necessary scsi_error.c
-> > changes this would be an acceptable risk.
-> > 
-> 
-> Adding SCSI_EH_SOFTIRQ_DONE in scsi_softirq_done is not going to provide
-> value in scsi_try_to_abort_cmd. scsi_softirq_done calls scsi_eh_scmd_add
-> without the SCSI_EH_CANCEL_CMD flag set which will stop
-> scsi_try_to_abort_cmd from being called.
-> 
-> Removing the serial_number check in scsi_try_to_abort_cmd and not
-> replacing it may be the correct action as we should be relying on the
-> block complete checking. That said what James has indicated about
-> splitting the serial number change out seems like the lower risk approach
-> at this time.
-> 
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Don Zickus <dzickus@redhat.com>
+---
+ arch/x86/include/asm/ipi.h            |    6 ++++++
+ arch/x86/kernel/apic/ipi.c            |    5 ++++-
+ arch/x86/kernel/apic/probe_64.c       |    5 ++++-
+ arch/x86/kernel/apic/x2apic_cluster.c |    5 ++++-
+ arch/x86/kernel/apic/x2apic_phys.c    |    5 ++++-
+ arch/x86/kernel/apic/x2apic_uv_x.c    |    5 ++++-
+ 6 files changed, 26 insertions(+), 5 deletions(-)
 
-Hmm, that is unfortuate..
-
-So in this case it would make sense to drop the explict LLD usage of
-scsi_cmd_get_serial(), and re-include this into scsi_dispatch_cmd() for
-all LLDs and have to deal with a per scsi_host atomic_t serial_number
-counter.  Anyways, I will go ahead an respin another series to follow
-this logic shortly.
-
-The other question that was mentioned in my email yesterday would be if
-the clearing of a non atomic_t cmd->serial_number from
-scsi_softirq_done() -> scsi_try_to_abort_cmd() is safe to begin with..?
-Does this need to be converted to an atomic_t as well to present a
-subtle race outside of any of the host_lock-less series of patches..?
-
---nab
-
-
+Index: linux-2.6.git/arch/x86/include/asm/ipi.h
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/include/asm/ipi.h
++++ linux-2.6.git/arch/x86/include/asm/ipi.h
+@@ -149,6 +149,12 @@ static inline void __default_local_send_
+ 		__default_send_IPI_shortcut(APIC_DEST_ALLINC, vector, apic->dest_logical);
+ }
+ 
++static inline void __default_send_IPI_self_nmi(void)
++{
++	const struct cpumask *cpumask = cpumask_of(smp_processor_id());
++	apic->send_IPI_mask(cpumask, NMI_VECTOR);
++}
++
+ #ifdef CONFIG_X86_32
+ extern void default_send_IPI_mask_logical(const struct cpumask *mask,
+ 						 int vector);
+Index: linux-2.6.git/arch/x86/kernel/apic/ipi.c
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/apic/ipi.c
++++ linux-2.6.git/arch/x86/kernel/apic/ipi.c
+@@ -134,7 +134,10 @@ void default_send_IPI_all(int vector)
+ 
+ void default_send_IPI_self(int vector)
+ {
+-	__default_send_IPI_shortcut(APIC_DEST_SELF, vector, apic->dest_logical);
++	if (unlikely(vector == NMI_VECTOR))
++		__default_send_IPI_self_nmi();
++	else
++		__default_send_IPI_shortcut(APIC_DEST_SELF, vector, apic->dest_logical);
+ }
+ 
+ /* must come after the send_IPI functions above for inlining */
+Index: linux-2.6.git/arch/x86/kernel/apic/probe_64.c
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/apic/probe_64.c
++++ linux-2.6.git/arch/x86/kernel/apic/probe_64.c
+@@ -92,7 +92,10 @@ void __init default_setup_apic_routing(v
+ 
+ void apic_send_IPI_self(int vector)
+ {
+-	__default_send_IPI_shortcut(APIC_DEST_SELF, vector, APIC_DEST_PHYSICAL);
++	if (unlikely(vector == NMI_VECTOR))
++		__default_send_IPI_self_nmi();
++	else
++		__default_send_IPI_shortcut(APIC_DEST_SELF, vector, APIC_DEST_PHYSICAL);
+ }
+ 
+ int __init default_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
+Index: linux-2.6.git/arch/x86/kernel/apic/x2apic_cluster.c
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/apic/x2apic_cluster.c
++++ linux-2.6.git/arch/x86/kernel/apic/x2apic_cluster.c
+@@ -174,7 +174,10 @@ static int x2apic_cluster_phys_pkg_id(in
+ 
+ static void x2apic_send_IPI_self(int vector)
+ {
+-	apic_write(APIC_SELF_IPI, vector);
++	if (unlikely(vector == NMI_VECTOR))
++		__default_send_IPI_self_nmi();
++	else
++		apic_write(APIC_SELF_IPI, vector);
+ }
+ 
+ static void init_x2apic_ldr(void)
+Index: linux-2.6.git/arch/x86/kernel/apic/x2apic_phys.c
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/apic/x2apic_phys.c
++++ linux-2.6.git/arch/x86/kernel/apic/x2apic_phys.c
+@@ -166,7 +166,10 @@ static int x2apic_phys_pkg_id(int initia
+ 
+ static void x2apic_send_IPI_self(int vector)
+ {
+-	apic_write(APIC_SELF_IPI, vector);
++	if (unlikely(vector == NMI_VECTOR))
++		__default_send_IPI_self_nmi();
++	else
++		apic_write(APIC_SELF_IPI, vector);
+ }
+ 
+ static void init_x2apic_ldr(void)
+Index: linux-2.6.git/arch/x86/kernel/apic/x2apic_uv_x.c
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/apic/x2apic_uv_x.c
++++ linux-2.6.git/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -274,7 +274,10 @@ static int uv_phys_pkg_id(int initial_ap
+ 
+ static void uv_send_IPI_self(int vector)
+ {
+-	apic_write(APIC_SELF_IPI, vector);
++	if (unlikely(vector == NMI_VECTOR))
++		__default_send_IPI_self_nmi();
++	else
++		apic_write(APIC_SELF_IPI, vector);
+ }
+ 
+ struct apic __refdata apic_x2apic_uv_x = {
 
