@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932220Ab0J0VCR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 17:02:17 -0400
-Received: from usmamail.tilera.com ([72.1.168.231]:48076 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757081Ab0J0VCP (ORCPT
+	id S932239Ab0J0VEV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 17:04:21 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:22619 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757035Ab0J0VES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 17:02:15 -0400
-Message-ID: <4CC89352.7020808@tilera.com>
-Date: Wed, 27 Oct 2010 17:02:10 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.11) Gecko/20101013 Thunderbird/3.1.5
+	Wed, 27 Oct 2010 17:04:18 -0400
+X-SpamScore: 1
+X-BigFish: VS1(z3b68izzz1202hzzz2dh2a8h)
+Message-ID: <4CC893CD.7020701@freescale.com>
+Date: Wed, 27 Oct 2010 16:04:13 -0500
+From: Timur Tabi <timur@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.13) Gecko/20101013 Fedora/2.0.8-2.fc13 SeaMonkey/2.0.8
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Al Viro <viro@zeniv.linux.org.uk>, <linux-arch@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: situation with signals
-References: <20100923221141.GK19804@ZenIV.linux.org.uk> <9lYpY1#WLHA.1516@exchange1.tad.internal.tilera.com>
-In-Reply-To: <9lYpY1#WLHA.1516@exchange1.tad.internal.tilera.com>
+To: gregkh <gregkh@suse.de>, lkml <linux-kernel@vger.kernel.org>
+Subject: Writing a console/tty driver -- how to use tty_port?
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 27 Oct 2010 21:04:44.0126 (UTC) FILETIME=[9467F7E0:01CB761A]
+X-Reverse-DNS: az33egw02.freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/24/2010 9:33 AM, Arnd Bergmann wrote:
-> On Friday 24 September 2010, Al Viro wrote:
->>         There are several interesting issues in arch/*/*/*signal* (besides
->> shoggoths starting to show up when one reads that code) and I'd been crawling
->> through that area for the last few weeks.  Here are more or less common
->> issues; there are really arch-specific bugs (e.g. roothole on frv that
->> used to allow reading kernel memory by setting the right sa_handler), but
->> that's a separate story.
-> 
-> I still plan to make a counterpart to the asm-generic headers with an
-> example architecture that new architectures can copy from. Signal handling
-> is one of the areas that I have very limited understanding of. Did you
-> encounter any architecture that basically gets signal handling right and that
-> can serve as a positive example to others?
-> 
-> arch/tile/kernel/signal.c was the last one that got merged and I tried
-> to direct the maintainer in the right direction as much as I could, but
-> there are a lot of things I didn't know about.
+Greg,
 
-(Sorry for the belated reply.)
+Do you have an updated version of Tiny TTY that uses tty_port structures?  I'm
+trying to write a new TTY driver for a device that is not a UART, and I'm having
+a hard time finding a good example.  I suspect I need to understand the tty_port
+structure, but I can't find any documentation for it.
 
-I set aside this thread to look at when I had a minute, and I believe there
-is just one of the signal issues present in the tile code.  The fix is to
-reset regs->fault to something other than the "syscall" fault type when
-exiting from do_signal(), so I'll submit that up for 2.6.37 shortly.
+One specific problem I'm having is that I can't figure out how to get a
+tty_struct pointer in my interrupt handler.  The ISR gets called whenever there
+is new input, and it needs to call tty_insert_flip_string().  But it appears
+that it's possible to have my driver opened multiple times, each time creating a
+new TTY.  But since I can only have one interrupt handler, I don't know how to
+determine which of the tty_structs to use.  I figure tty_port is a way to
+resolve this problem, but I don't know how to use it exactly.
 
-Otherwise I think tile is doing things right, though I admit, the signal
-support is pretty deep magic generally.
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Timur Tabi
+Linux kernel developer at Freescale
+
