@@ -1,63 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761303Ab0J0N4s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 09:56:48 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49029 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761261Ab0J0N4r (ORCPT
+	id S1761307Ab0J0N55 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 09:57:57 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:63444 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755354Ab0J0N5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 09:56:47 -0400
-Date: Wed, 27 Oct 2010 15:56:42 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Eric =?iso-8859-15?Q?B=E9nard?= <eric@eukrea.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, amit.kucheria@canonical.com,
-        linux@arm.linux.org.uk, Dinh.Nguyen@freescale.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        daniel@caiaq.de,
-        Uwe =?iso-8859-15?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        valentin.longchamp@epfl.ch
-Subject: Re: [PATCH] ARM: imx: Add some core definitions for MX53
-Message-ID: <20101027135642.GM6017@pengutronix.de>
-References: <1288119235-7036-1-git-send-email-Dinh.Nguyen@freescale.com> <20101027082958.GA6797@angua.secretlab.ca> <20101027090921.GB8554@pengutronix.de> <20101027102253.GA7822@angua.secretlab.ca> <20101027132213.GJ6017@pengutronix.de> <4CC82A13.8000909@eukrea.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
+	Wed, 27 Oct 2010 09:57:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=b7TOeHaCRDHWksmsliDQYooVUQVnEsLPYIByJr7TwAvnQ0tNazIgTuKMEV62gG3W7i
+         T+MzPJCJxmm0rIaAJCdes2VKHyJP0YA2dznQi+KHGWi8cnwwwCrG+6ashn8rth65U92G
+         3DYuoiqrbGtl3hIbbQ5i8O9e7Cp3o0nxt4yHo=
+Subject: Re: [PATCH] x86-32: Allocate irq stacks seperate from percpu area
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Brian Gerst <brgerst@gmail.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, mingo@elte.hu
+In-Reply-To: <4CC82C2F.1020707@kernel.org>
+References: <AANLkTinnc3vBSmewf7ixuOSDYxG+5VNiGaB-vSrDNRiO@mail.gmail.com>
+	 <1288158182-1753-1-git-send-email-brgerst@gmail.com>
+	 <1288159670.2652.181.camel@edumazet-laptop>
+	 <1288173442.15336.1490.camel@twins>
+	 <1288186405.2709.117.camel@edumazet-laptop>  <4CC82C2F.1020707@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Oct 2010 15:57:50 +0200
+Message-ID: <1288187870.2709.128.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <4CC82A13.8000909@eukrea.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 15:55:38 up 116 days,  5:06, 49 users,  load average: 0.22, 0.20,
-	0.20
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 03:33:07PM +0200, Eric B�nard wrote:
-> Hi,
->
-> Le 27/10/2010 15:22, Sascha Hauer a �crit :
-> > That's a way we can go but only if the common name is not MX5 or MX5x.
-> > We've done it with the mx21/27 and it failed when the mx25 came out
-> > which was completely incompatible. Since then everybody looking at
-> > the code must know that mx2x is mx21/27 but not mx25. I suggest
-> > something like MX513 instead.
-> >
-> MX513 is the partnumber of a member of the i.MX51 family so that's maybe 
-> not the best choice.
+Le mercredi 27 octobre 2010 à 15:42 +0200, Tejun Heo a écrit :
+> Hello,
+> 
+> On 10/27/2010 03:33 PM, Eric Dumazet wrote:
+> > Le mercredi 27 octobre 2010 à 11:57 +0200, Peter Zijlstra a écrit :
+> >> On Wed, 2010-10-27 at 08:07 +0200, Eric Dumazet wrote:
+> >>>> -     irqctx = &per_cpu(hardirq_stack, cpu);
+> >>>> +     irqctx = (union irq_ctx *)__get_free_pages(THREAD_FLAGS, THREAD_ORDER);
+> >>>
+> >>> Hmm, then we lose NUMA affinity for stacks. 
+> >>
+> >> I guess we could use:
+> >>
+> >>   alloc_pages_node(cpu_to_node(cpu), THREAD_FLAGS, THREAD_ORDER);
+> >>
+> >>
+> > 
+> > Anyway, I just discovered per_cpu data on my machine (NUMA capable) all
+> > sit on a single node, if 32bit kernel used.
+> > 
+> > # cat /proc/buddyinfo 
+> > Node 0, zone      DMA      0      1      0      1      2      1      1      0      1      1      3 
+> > Node 0, zone   Normal     94    251     81     16      3      2      1      2      1      2    187 
+> > Node 0, zone  HighMem    113     88     47     36     18      5      4      3      2      0    268 
+> > Node 1, zone  HighMem    154     97     43     16      9      4      3      2      3      2    482 
+> ...
+> > 
+> > I presume node 1 having only HighMem could be the reason ?
+> 
+> What does cpu_to_node() on each cpu say?  Also, do you know why
+> num_possible_cpus() is 32, not 16?
+> 
 
-Yes, I know. Is MX5_1_3 better? Any other suggestions?
+I dont know, machine is HP ProLiant BL460c G6 
+[    0.000000] SMP: Allowing 32 CPUs, 16 hotplug CPUs
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+for_each_possible_cpu(cpu) {
+	pr_err("cpu=%d node=%d\n", cpu, cpu_to_node(cpu));
+}
+
+cpu=0 node=1
+cpu=1 node=0
+cpu=2 node=1
+cpu=3 node=0
+cpu=4 node=1
+cpu=5 node=0
+cpu=6 node=1
+cpu=7 node=0
+cpu=8 node=1
+cpu=9 node=0
+cpu=10 node=1
+cpu=11 node=0
+cpu=12 node=1
+cpu=13 node=0
+cpu=14 node=1
+cpu=15 node=0
+cpu=16 node=0
+cpu=17 node=0
+cpu=18 node=0
+cpu=19 node=0
+cpu=20 node=0
+cpu=21 node=0
+cpu=22 node=0
+cpu=23 node=0
+cpu=24 node=0
+cpu=25 node=0
+cpu=26 node=0
+cpu=27 node=0
+cpu=28 node=0
+cpu=29 node=0
+cpu=30 node=0
+cpu=31 node=0
+
+
+
+
