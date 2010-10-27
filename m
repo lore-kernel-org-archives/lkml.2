@@ -1,338 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933364Ab0J0OOb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 10:14:31 -0400
-Received: from mtaout03-winn.ispmail.ntl.com ([81.103.221.49]:52764 "EHLO
-	mtaout03-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758963Ab0J0OOa (ORCPT
+	id S933265Ab0J0OR3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 10:17:29 -0400
+Received: from asmtpout027.mac.com ([17.148.16.102]:62456 "EHLO
+	asmtpout027.mac.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755177Ab0J0OR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 10:14:30 -0400
-From: Daniel Drake <dsd@laptop.org>
-To: tglx@linutronix.de
-To: mingo@redhat.com
-To: x86@kernel.org
-To: hpa@zytor.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v3] OLPC: Add XO-1 suspend/resume support
-Message-Id: <20101027141407.BCA329D401B@zog.reactivated.net>
-Date: Wed, 27 Oct 2010 15:14:07 +0100 (BST)
-X-Cloudmark-Analysis: v=1.1 cv=4QByPj+6Iq2k/6L54d+eVKTdgQxdscpRskJJReCfdXo= c=1 sm=0 a=v1vJNfWZt8EA:10 a=Op-mwl0xAAAA:8 a=Uylrg1PJ_mGYvFKekVwA:9 a=bHCZ5rM8RqovMjPpB3QA:7 a=FV0xDWIUW3QmszCqrzSnVyRIgTQA:4 a=d4CUUju0HPYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	Wed, 27 Oct 2010 10:17:27 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; CHARSET=US-ASCII
+X-Proofpoint-Virus-Version: vendor=fsecure
+ engine=2.50.10432:5.2.15,1.0.148,0.0.0000
+ definitions=2010-10-27_07:2010-10-27,2010-10-27,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0
+ ipscore=0 suspectscore=0 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
+ adjust=0 reason=mlx engine=6.0.2-1004200000 definitions=main-1010270056
+Subject: Re: kernel BUG at drivers/mmc/core/sdio_io.c:28!
+From: Elvis Dowson <elvis.dowson@mac.com>
+In-reply-to: <AANLkTimvER2Qjpphj+io-qh9mRfDQJ1=goARH3zDLpeJ@mail.gmail.com>
+Date: Wed, 27 Oct 2010 18:16:45 +0400
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-id: <60722BDE-68CB-47B7-856E-6986D760FE42@mac.com>
+References: <652BFE86-3BFE-4E21-88BA-004CA7140D18@mac.com>
+ <AANLkTimvER2Qjpphj+io-qh9mRfDQJ1=goARH3zDLpeJ@mail.gmail.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add code needed for basic suspend/resume of the XO-1 laptop.
+Hi Ohad,
 
-Signed-off-by: Daniel Drake <dsd@laptop.org>
----
- arch/x86/Kconfig                  |    2 +-
- arch/x86/include/asm/olpc.h       |    9 ++-
- arch/x86/kernel/Makefile          |    2 +-
- arch/x86/kernel/olpc-xo1-wakeup.S |  133 +++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/olpc-xo1.c        |   79 ++++++++++++++++++++++
- 5 files changed, 220 insertions(+), 5 deletions(-)
- create mode 100644 arch/x86/kernel/olpc-xo1-wakeup.S
+On Oct 27, 2010, at 6:05 PM, Ohad Ben-Cohen wrote:
 
-v2: add dependency on CONFIG_PM_SLEEP (thanks Randy), avoid requirement
-on hacking swsusp_pg_dir by switching to initial_page_table
+> You actually seem to have two problems here:
+> 1. Your SDIO driver's probe function isn't called
+> 2. Your WLAN driver is using the SDIO API without having a valid SDIO function
+> 
+> Ignoring the 2nd issue for now, you most probably have an integration
+> problem.  Is the chip powered up correctly ?
 
-v3: rebase to fix conflict in olpc.h with the now-merged XO-1 rfkill driver
+Yes, I checked the VBAT, and VIO and WLAN Power Enable signals.
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index dfabfef..d913226 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -2038,7 +2038,7 @@ config OLPC
- 
- config OLPC_XO1
- 	tristate "OLPC XO-1 support"
--	depends on OLPC && PCI
-+	depends on OLPC && PCI && PM_SLEEP
- 	---help---
- 	  Add support for non-essential features of the OLPC XO-1 laptop.
- 
-diff --git a/arch/x86/include/asm/olpc.h b/arch/x86/include/asm/olpc.h
-index 42a978c..5bf0805 100644
---- a/arch/x86/include/asm/olpc.h
-+++ b/arch/x86/include/asm/olpc.h
-@@ -88,9 +88,12 @@ extern int olpc_ec_mask_unset(uint8_t bits);
- 
- /* EC commands */
- 
--#define EC_FIRMWARE_REV		0x08
--#define EC_WLAN_ENTER_RESET	0x35
--#define EC_WLAN_LEAVE_RESET	0x25
-+#define EC_FIRMWARE_REV			0x08
-+#define EC_WAKE_UP_WLAN			0x24
-+#define EC_WLAN_LEAVE_RESET		0x25
-+#define EC_SET_SCI_INHIBIT		0x32
-+#define EC_SET_SCI_INHIBIT_RELEASE	0x34
-+#define EC_WLAN_ENTER_RESET		0x35
- 
- /* SCI source values */
- 
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 2c833d8..dfbc0c6 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -108,7 +108,7 @@ obj-$(CONFIG_SCx200)		+= scx200.o
- scx200-y			+= scx200_32.o
- 
- obj-$(CONFIG_OLPC)		+= olpc.o
--obj-$(CONFIG_OLPC_XO1)		+= olpc-xo1.o
-+obj-$(CONFIG_OLPC_XO1)		+= olpc-xo1.o olpc-xo1-wakeup.o
- obj-$(CONFIG_OLPC_OPENFIRMWARE)	+= olpc_ofw.o
- obj-$(CONFIG_X86_MRST)		+= mrst.o
- 
-diff --git a/arch/x86/kernel/olpc-xo1-wakeup.S b/arch/x86/kernel/olpc-xo1-wakeup.S
-new file mode 100644
-index 0000000..8e031d5
---- /dev/null
-+++ b/arch/x86/kernel/olpc-xo1-wakeup.S
-@@ -0,0 +1,133 @@
-+.text
-+#include <linux/linkage.h>
-+#include <asm/segment.h>
-+#include <asm/page.h>
-+#include <asm/pgtable_32.h>
-+
-+	.macro writepost,value
-+		movb $0x34, %al
-+		outb %al, $0x70
-+		movb $\value, %al
-+		outb %al, $0x71
-+	.endm
-+
-+ALIGN
-+	.align 4096
-+
-+wakeup_start:
-+#	jmp wakeup_start
-+
-+	cli
-+	cld
-+
-+	# Clear any dangerous flags
-+
-+	pushl $0
-+	popfl
-+
-+	writepost 0x31
-+
-+	# Set up %cr3
-+	movl $initial_page_table - __PAGE_OFFSET, %eax
-+	movl %eax, %cr3
-+
-+	movl saved_cr4, %eax
-+	movl %eax, %cr4
-+
-+	movl saved_cr0, %eax
-+	movl %eax, %cr0
-+
-+	jmp 1f
-+1:
-+	ljmpl $__KERNEL_CS,$wakeup_return
-+
-+
-+.org 0x1000
-+
-+wakeup_return:
-+	movw    $__KERNEL_DS, %ax
-+	movw    %ax, %ss
-+	movw    %ax, %ds
-+	movw    %ax, %es
-+	movw    %ax, %fs
-+	movw    %ax, %gs
-+
-+	lgdt    saved_gdt
-+	lidt    saved_idt
-+	lldt    saved_ldt
-+	ljmp    $(__KERNEL_CS),$1f
-+1:
-+	movl    %cr3, %eax
-+	movl    %eax, %cr3
-+	wbinvd
-+
-+	# Go back to the return point
-+	jmp ret_point
-+
-+save_registers:
-+	sgdt  saved_gdt
-+	sidt  saved_idt
-+	sldt  saved_ldt
-+
-+	pushl %edx
-+	movl %cr4, %edx
-+	movl %edx, saved_cr4
-+
-+	movl %cr0, %edx
-+	movl %edx, saved_cr0
-+
-+	popl %edx
-+
-+	movl %ebx, saved_context_ebx
-+	movl %ebp, saved_context_ebp
-+	movl %esi, saved_context_esi
-+	movl %edi, saved_context_edi
-+
-+	pushfl
-+	popl saved_context_eflags
-+
-+	ret
-+
-+
-+restore_registers:
-+	movl saved_context_ebp, %ebp
-+	movl saved_context_ebx, %ebx
-+	movl saved_context_esi, %esi
-+	movl saved_context_edi, %edi
-+
-+	pushl saved_context_eflags
-+	popfl
-+
-+	ret
-+
-+
-+ENTRY(do_olpc_suspend_lowlevel)
-+	call	save_processor_state
-+	call	save_registers
-+
-+	# This is the stack context we want to remember
-+	movl %esp, saved_context_esp
-+
-+	pushl	$3
-+	call	olpc_xo1_do_sleep
-+
-+	jmp	wakeup_start
-+	.p2align 4,,7
-+ret_point:
-+	movl    saved_context_esp, %esp
-+
-+	writepost 0x32
-+
-+	call	restore_registers
-+	call	restore_processor_state
-+	ret
-+
-+.data
-+ALIGN
-+
-+saved_gdt:     .long   0,0
-+saved_idt:     .long   0,0
-+saved_ldt:     .long   0
-+saved_cr4:     .long   0
-+saved_cr0:     .long   0
-+
-diff --git a/arch/x86/kernel/olpc-xo1.c b/arch/x86/kernel/olpc-xo1.c
-index f5442c0..9a06081 100644
---- a/arch/x86/kernel/olpc-xo1.c
-+++ b/arch/x86/kernel/olpc-xo1.c
-@@ -16,6 +16,7 @@
- #include <linux/pci_ids.h>
- #include <linux/platform_device.h>
- #include <linux/pm.h>
-+#include <linux/suspend.h>
- 
- #include <asm/io.h>
- #include <asm/olpc.h>
-@@ -33,12 +34,83 @@
- #define PM_SSC		0x54
- 
- /* PM registers (ACPI block) */
-+#define PM1_STS		0x00
- #define PM1_CNT		0x08
- #define PM_GPE0_STS	0x18
- 
-+#define CS5536_PM_PWRBTN (1 << 8)
-+
-+extern void do_olpc_suspend_lowlevel(void);
-+
- static unsigned long acpi_base;
- static unsigned long pms_base;
- 
-+static struct {
-+	unsigned long address;
-+	unsigned short segment;
-+} ofw_bios_entry = { 0xF0000 + PAGE_OFFSET, __KERNEL_CS };
-+
-+static int xo1_power_state_enter(suspend_state_t pm_state)
-+{
-+	int r;
-+
-+	/* Only STR is supported */
-+	if (pm_state != PM_SUSPEND_MEM)
-+		return -EINVAL;
-+
-+	r = olpc_ec_cmd(EC_SET_SCI_INHIBIT, NULL, 0, NULL, 0);
-+	if (r)
-+		return r;
-+
-+	/* Save CPU state */
-+	do_olpc_suspend_lowlevel();
-+
-+	/* Resume path starts here */
-+
-+	/* Tell the EC to stop inhibiting SCIs */
-+	olpc_ec_cmd(EC_SET_SCI_INHIBIT_RELEASE, NULL, 0, NULL, 0);
-+
-+	/*
-+	 * Tell the wireless module to restart USB communication.
-+	 * Must be done twice.
-+	 */
-+	olpc_ec_cmd(EC_WAKE_UP_WLAN, NULL, 0, NULL, 0);
-+	olpc_ec_cmd(EC_WAKE_UP_WLAN, NULL, 0, NULL, 0);
-+
-+	return 0;
-+}
-+
-+asmlinkage int olpc_xo1_do_sleep(u8 sleep_state)
-+{
-+	void *pgd_addr = __va(read_cr3());
-+	printk(KERN_ERR "xo1_do_sleep!\n"); /* this needs to remain here so
-+					      * that gcc doesn't optimize
-+					      * away our __va! */
-+
-+	/* Enable wakeup through power button */
-+	outl((CS5536_PM_PWRBTN << 16) | 0xFFFF, acpi_base + PM1_STS);
-+
-+	__asm__ __volatile__("movl %0,%%eax" : : "r" (pgd_addr));
-+	__asm__("call *(%%edi); cld"
-+		: : "D" (&ofw_bios_entry));
-+	__asm__ __volatile__("movb $0x34, %al\n\t"
-+			     "outb %al, $0x70\n\t"
-+			     "movb $0x30, %al\n\t"
-+			     "outb %al, $0x71\n\t");
-+	return 0;
-+}
-+
-+static int xo1_power_state_valid(suspend_state_t pm_state)
-+{
-+	/* suspend-to-RAM only */
-+	return pm_state == PM_SUSPEND_MEM;
-+}
-+
-+static struct platform_suspend_ops xo1_suspend_ops = {
-+	.valid = xo1_power_state_valid,
-+	.enter = xo1_power_state_enter,
-+};
-+
- static void xo1_power_off(void)
- {
- 	printk(KERN_INFO "OLPC XO-1 power off sequence...\n");
-@@ -101,6 +173,13 @@ static int __devinit olpc_xo1_probe(struct platform_device *pdev)
- 	if (r)
- 		return r;
- 
-+	/*
-+	 * Take a reference on ourself to prevent module unloading. We can't
-+	 * safely unload after changing the suspend handlers.
-+	 */
-+	__module_get(THIS_MODULE);
-+
-+	suspend_set_ops(&xo1_suspend_ops);
- 	pm_power_off = xo1_power_off;
- 
- 	printk(KERN_INFO "OLPC XO-1 support registered\n");
--- 
-1.7.2.3
+> is it mmc rescanned after it is powered up ?
 
+I'm not sure about this. How can I check this? Could you point me to a code fragment?
+
+> are you using the correct mmc controller ?
+
+Yes, MMC2, as per the schematics.
+
+> have you configured your mmc lines correctly (board muxing) ? etc..
+
+Yes, I've setup the mux settings correctly.
+
+> Maybe you want to checkout the mainline wl1271 driver using Luca's
+> Beagle board patches :)
+
+Ok, will try it once again. 
+
+Best regards,
+
+Elvis
