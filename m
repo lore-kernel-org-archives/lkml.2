@@ -1,63 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761253Ab0J0N1p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 09:27:45 -0400
-Received: from gate.crashing.org ([63.228.1.57]:57478 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756640Ab0J0N1m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 09:27:42 -0400
-Subject: Re: Pegasos OHCI bug (was Re: PROBLEM: memory corrupting bug,
- bisected to 6dda9d55)
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: pacman@kosh.dhis.org
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        matt@genesi-usa.com
-In-Reply-To: <20101027085738.1837.qmail@kosh.dhis.org>
-References: <20101027085738.1837.qmail@kosh.dhis.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 28 Oct 2010 00:27:24 +1100
-Message-ID: <1288186044.2236.25.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S933197Ab0J0N2N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 09:28:13 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:37946 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761241Ab0J0N2L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 09:28:11 -0400
+MIME-Version: 1.0
+X-Originating-IP: [89.235.167.66]
+Date: Wed, 27 Oct 2010 17:28:07 +0400
+Message-ID: <AANLkTi=H16k81X9yiAyxOO0Au2cK97o03hR008UUyxhL@mail.gmail.com>
+Subject: [PATCH 2/5] tcp: small user_mss code change
+From: Dmitry Popov <dp@highloadlab.com>
+To: "David S. Miller" <davem@davemloft.net>, William.Allen.Simpson@gmail.com,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Andreas Petlund <apetlund@simula.no>,
+        Shan Wei <shanwei@cn.fujitsu.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Octavian Purdila <opurdila@ixiacom.com>,
+        =?ISO-8859-1?Q?Ilpo_J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, Evgeniy Polyakov <zbr@ioremap.net>,
+        Laurent Chavey <chavey@google.com>,
+        Gilad Ben-Yossef <gilad@codefidence.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "Steven J. Magnani" <steve@digidescorp.com>,
+        Joe Perches <joe@perches.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Yony Amit <yony@comsleep.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Artyom Gavrichenkov <ag@highloadlab.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Dmitry Popov <dp@highloadlab.com>
 
-> Since then, the silence has been deafening.
-> 
-> My assumption now is that this is not ever getting fixed. I'm certainly not
-> able to fix it. I'm not a even kernel programmer! I got far enough to
-> diagnose the cause just with the "add more printk's and boot it again"
-> technique. Hundreds of reboots trying to figure it out. I was a conscientious
-> bug-reporter, I thought.
+No double access to user_mss part of socket.
 
-I'm happy to help you fix it but I'm travelling at the moment and won't
-have much time for a couple of weeks.
+This is done to prevent possible race conditions if accessed without
+socket lock.
 
-Cheers,
-Ben.
+Signed-off-by: Dmitry Popov <dp@highloadlab.com>
+---
+ net/ipv4/tcp_ipv4.c   |    7 ++++---
+ net/ipv4/tcp_output.c |    6 ++++--
+ 2 files changed, 8 insertions(+), 5 deletions(-)
+diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+index 3de881e..c7e9b2a 100644
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -1510,6 +1510,7 @@ struct sock *tcp_v4_syn_recv_sock(struct sock
+*sk, struct sk_buff *skb,
+ 	struct inet_sock *newinet;
+ 	struct tcp_sock *newtp;
+ 	struct sock *newsk;
++	int user_mss;
+ #ifdef CONFIG_TCP_MD5SIG
+ 	struct tcp_md5sig_key *key;
+ #endif
+@@ -1545,9 +1546,9 @@ struct sock *tcp_v4_syn_recv_sock(struct sock
+*sk, struct sk_buff *skb,
+ 	tcp_mtup_init(newsk);
+ 	tcp_sync_mss(newsk, dst_mtu(dst));
+ 	newtp->advmss = dst_metric(dst, RTAX_ADVMSS);
+-	if (tcp_sk(sk)->rx_opt.user_mss &&
+-	    tcp_sk(sk)->rx_opt.user_mss < newtp->advmss)
+-		newtp->advmss = tcp_sk(sk)->rx_opt.user_mss;
++	user_mss = tcp_sk(sk)->rx_opt.user_mss;
++	if (user_mss && user_mss < newtp->advmss)
++		newtp->advmss = user_mss;
 
-> I could pull the PCI card and be done with it. I never used those USB ports
-> anyway. But after all the suffering I went through to find this bug... the
-> crashing e2fsck's and consequent filesystem corruption... I hate the idea of
-> surrendering to it. There are possibly other affected users who I'd be
-> abandoning to suffer similarly in the future.
-> 
-> For the last week I've studied OpenFirmware as hard as I can. I read the spec
-> cover to cover. And the USB annex, and the PCI annex. But I'm still lost in
-> all the different address formats.
-> 
-> I took my best guess on how to handle this problem, and ran with it, ending
-> up with a 97-line Forth script, and that was just to get a virtual address,
-> not to actually do anything with it, and it used a hardcoded device path. But
-> it didn't work, all I got was an "invalid pointer" error. I made another
-> guess at something that wasn't documented anywhere (the fact that this stuff
-> is insufficiently documented is the one thing I can state with complete
-> confidence!) and out came a successful translation to a virtual address: 0.
-> 
-> If I'm the only one fighting this bug, the bug wins.
-> 
+ 	tcp_initialize_rcv_mss(newsk);
 
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index eef2d66..561a7f3 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -2416,6 +2416,7 @@ struct sk_buff *tcp_make_synack(struct sock *sk,
+struct dst_entry *dst,
+ 	struct tcp_md5sig_key *md5;
+ 	int tcp_header_size;
+ 	int mss;
++	int user_mss;
+ 	int s_data_desired;
 
+ 	rcu_read_lock();
+@@ -2439,8 +2440,9 @@ struct sk_buff *tcp_make_synack(struct sock *sk,
+struct dst_entry *dst,
+ 	skb_dst_set(skb, dst_clone(dst));
+
+ 	mss = dst_metric(dst, RTAX_ADVMSS);
+-	if (tp->rx_opt.user_mss && tp->rx_opt.user_mss < mss)
+-		mss = tp->rx_opt.user_mss;
++	user_mss = tp->rx_opt.user_mss;
++	if (user_mss && user_mss < mss)
++		mss = user_mss;
+
+ 	if (req->rcv_wnd == 0) { /* ignored for retransmitted syns */
+ 		__u8 rcv_wscale;
