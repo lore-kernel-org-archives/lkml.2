@@ -1,78 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760865Ab0J0PE0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 11:04:26 -0400
-Received: from exprod5og102.obsmtp.com ([64.18.0.143]:51480 "EHLO
-	exprod5og102.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752013Ab0J0PEY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 11:04:24 -0400
-Message-ID: <4CC83F28.4070802@ge.com>
-Date: Wed, 27 Oct 2010 16:03:04 +0100
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.14) Gecko/20101006 Thunderbird/3.0.9
+	id S1761174Ab0J0PNl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 11:13:41 -0400
+Received: from smtp0.epfl.ch ([128.178.224.219]:57319 "HELO smtp0.epfl.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756464Ab0J0PNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 11:13:39 -0400
+From: Philippe =?iso-8859-14?q?R=E9tornaz?= <philippe.retornaz@epfl.ch>
+Organization: EPFL - STI - LSRO1
+To: "Greg Kroah-Hartman" <gregkh@suse.de>
+Subject: [PATCH] tty_ldisc: Fix BUG() on hangup
+Date: Wed, 27 Oct 2010 17:13:21 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.31.13-desktop-1mnb; KDE/4.3.5; x86_64; ; )
+Cc: Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org
+References: <201010261749.03875.philippe.retornaz@epfl.ch> <20101026171342.580a1f94@lxorguk.ukuu.org.uk>
+In-Reply-To: <20101026171342.580a1f94@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-To: "Emilio G. Cota" <cota@braap.org>
-CC: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
-        devel@driverdev.osuosl.org,
-        Juan David Gonzalez Cobas <david.cobas@gmail.com>,
-        Bill Pemberton <wfp5p@virginia.edu>
-Subject: Re: [PATCH 09/30] staging/vme: fill in struct device's .release,
- even if it's a NOOP
-References: <1288055476-19438-1-git-send-email-cota@braap.org> <1288055476-19438-10-git-send-email-cota@braap.org> <4CC804FF.9050908@ge.com> <20101027144642.GP10869@flamenco.cs.columbia.edu>
-In-Reply-To: <20101027144642.GP10869@flamenco.cs.columbia.edu>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-14"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Oct 2010 15:04:21.0997 (UTC) FILETIME=[3C9CE9D0:01CB75E8]
+Message-Id: <201010271713.22174.philippe.retornaz@epfl.ch>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/10/10 15:46, Emilio G. Cota wrote:
-> On Wed, Oct 27, 2010 at 11:54:55 +0100, Martyn Welch wrote:
->> On 26/10/10 02:10, Emilio G. Cota wrote:
->>> From: Emilio G. Cota <cota@braap.org>
->>>
->>> Without it we get 32 warnings, one per device being released, when
->>> removing a bridge module.
->>>
->>> After applying this patch, bridge modules can at last be removed
->>> without any apparent hiccup.
->>>
->>> [Note: tested only on the tsi148, it's the only bridge I've got]
->>>
->>
->> I guess this is an artifact of the current lack of refcounting?
-> 
-> No, that's orthogonal to this. This has to do with the way the
-> devices are allocated.
-> 
->> This is definitely an issue, however I don't think masking it by adding
->> an empty function is the correct way to go.
-> 
-> We're not masking anything. The release method is there to free the
-> struct it protects when its refcount goes to zero; however, in this
-> case the struct wasn't allocated dynamically--the 32 devices are
-> stored in struct vme_bridge in an array--and therefore there's
-> nothing to do in .release, since struct vme_bridge is freed
-> elsewhere.
-> 
-> While it's true that empty .release methods are usually frowned
-> upon (as stated in Documentation/kobject.txt), due to the way
-> things are done here it actually makes sense to have an
-> empty .release.
+A kernel BUG when bluetooth rfcomm connection drop while 
+the associated serial port is open is sometime triggered.
 
-Ok, I'm not going to ack this for now as I'd like to discuss
-modifications to the approach that is being taken for binding devices
-and this patch seems to fall under the scope of this.
+It seems that the line discipline can disappear between the tty_ldisc_put  and 
+tty_ldisc_get. This patch fall back to the N_TTY line discipline if the 
+previous discipline is not available anymore.
 
-Martyn
+Signed-off-by: Philippe Retornaz <philippe.retornaz@epfl.ch>
+Acked-by: Alan Cox <alan@linux.intel.com>
 
--- 
-Martyn Welch (Principal Software Engineer)   |   Registered in England and
-GE Intelligent Platforms                     |   Wales (3828642) at 100
-T +44(0)127322748                            |   Barbirolli Square,
-Manchester,
-E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
+---
+
+--- linux-2.6.34.x86_64/drivers/char/tty_ldisc.c.orig	2010-05-16 23:17:36.000000000 +0200
++++ linux-2.6.34.x86_64/drivers/char/tty_ldisc.c	2010-10-15 10:48:01.871721197 +0200
+@@ -712,9 +712,12 @@ static void tty_reset_termios(struct tty
+  *	state closed
+  */
+ 
+-static void tty_ldisc_reinit(struct tty_struct *tty, int ldisc)
++static int tty_ldisc_reinit(struct tty_struct *tty, int ldisc)
+ {
+-	struct tty_ldisc *ld;
++	struct tty_ldisc *ld = tty_ldisc_get(ldisc);
++
++	if (IS_ERR(ld))
++		return -1;
+ 
+ 	tty_ldisc_close(tty, tty->ldisc);
+ 	tty_ldisc_put(tty->ldisc);
+@@ -722,10 +725,10 @@ static void tty_ldisc_reinit(struct tty_
+ 	/*
+ 	 *	Switch the line discipline back
+ 	 */
+-	ld = tty_ldisc_get(ldisc);
+-	BUG_ON(IS_ERR(ld));
+ 	tty_ldisc_assign(tty, ld);
+ 	tty_set_termios_ldisc(tty, ldisc);
++
++	return 0;
+ }
+ 
+ /**
+@@ -787,13 +790,16 @@ void tty_ldisc_hangup(struct tty_struct 
+ 	   a FIXME */
+ 	if (tty->ldisc) {	/* Not yet closed */
+ 		if (reset == 0) {
+-			tty_ldisc_reinit(tty, tty->termios->c_line);
+-			err = tty_ldisc_open(tty, tty->ldisc);
++			
++			if (!tty_ldisc_reinit(tty, tty->termios->c_line))
++				err = tty_ldisc_open(tty, tty->ldisc);
++			else
++				err = 1;
+ 		}
+ 		/* If the re-open fails or we reset then go to N_TTY. The
+ 		   N_TTY open cannot fail */
+ 		if (reset || err) {
+-			tty_ldisc_reinit(tty, N_TTY);
++			BUG_ON(tty_ldisc_reinit(tty, N_TTY));
+ 			WARN_ON(tty_ldisc_open(tty, tty->ldisc));
+ 		}
+ 		tty_ldisc_enable(tty);
