@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752358Ab0J0EvZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 00:51:25 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38530 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751757Ab0J0EvU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 00:51:20 -0400
-Subject: Reminder: Linux Foundation Technical Advisory Board Elections and
- Nomination process
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Tech Board Discuss <Tech-board-discuss@lists.linux-foundation.org>
-Cc: "ksummit-2010-discuss@lists.linux-foundation.org" 
-	<ksummit-2010-discuss@lists.linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 26 Oct 2010 23:51:17 -0500
-Message-ID: <1288155077.19649.356.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	id S1753523Ab0J0FDP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 01:03:15 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:51418 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751132Ab0J0FDL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 01:03:11 -0400
+Date: Wed, 27 Oct 2010 07:03:08 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        kernel-janitors@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        ibm-acpi-devel@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 8/14] drivers/platform/x86/thinkpad_acpi.c: delete double
+ assignment
+In-Reply-To: <20101027010908.GA29299@khazad-dum.debian.net>
+Message-ID: <Pine.LNX.4.64.1010270658480.31668@ask.diku.dk>
+References: <1288088743-3725-1-git-send-email-julia@diku.dk>
+ <1288088743-3725-9-git-send-email-julia@diku.dk> <20101027010908.GA29299@khazad-dum.debian.net>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The elections for five of the ten members of the Linux Foundation
-Technical Advisory Board[TAB] are held every year, currently the
-election will be at the 2010 Kernel Summit in a BoF session on Tuesday
-at Jillians (The Joint KS/Plumbers Reception on 2 November).  The idea
-is to be open to both KS and Plumbers attendees who wish to vote. 
+On Tue, 26 Oct 2010, Henrique de Moraes Holschuh wrote:
 
-Anyone is eligible to stand for election, simply send your nomination
-to:
+> On Tue, 26 Oct 2010, Julia Lawall wrote:
+> > From: Julia Lawall <julia@diku.dk>
+> > 
+> > Delete successive assignments to the same location.
+> 
+> There are often results of mismerges or other assorted screw ups, often
+> done by the maintainer itself (e.g. me in thinkpad-acpi's case) during
+> development.
+> 
+> The patch is correct, and I thank you for the head's up.  But let me
+> track down what caused it first, hmm?  I also highly recommend that this
+> should be done in all cases you find, instead of just blindly fixing the
+> assignment.  I suggest using git --blame to track down what added the
+> duplicated assignments, and check if it looks sane...
+> 
+> It is often a VERY BAD IDEA to remove such markers of potential
+> brokennes without checking out if they're actually helpfully trying to
+> warn you of worse badness :p
+> 
+> But hey, maybe you've already done that.  If you did, I apologise for
+> preaching to the choir.
 
-Tech-board-discuss@lists.linux-foundation.org
+I didn't look for the original source of the problem, except in the case 
+of [PATCH 6/14] arch/mips/pmc-sierra/yosemite/setup.c where I found it 
+already in the pre-git era.  Thanks fo rthe suggestion.  On the other 
+hand, I was very selective about which code I changed.  In particular I 
+left a number of cases like:
 
-We currently have five nominees:
+x = NULL; // or 0 etc
+x = foo(...); // ie a NULL returning function
 
-James Bottomley <James.Bottomley@hansenpartnership.com>
-Chris Mason <chris.mason@oracle.com>
-Chris Wright <chrisw@sous-sol.org>
-Grant Likely <grant.likely@secretlab.ca>
-John W. Linville <linville@tuxdriver.com>
+I figured that this isn't hurting anything, and perhaps it is informative 
+about what kind of value foo might return.
 
-The deadline for receiving nominations is up until the beginning of the
-event where the election is held (on the Evening of 2 November Eastern
-Time). Although, please remember if you're not going to be present that
-things go wrong with both networks and mailing lists, so get your
-nomination in early.
-
-James Bottomley (TAB Chair)
-
-
-
+julia
