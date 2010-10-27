@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760714Ab0J0I7L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 04:59:11 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:54679 "EHLO song.cn.fujitsu.com"
+	id S1755536Ab0J0JAd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 05:00:33 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56457 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1760612Ab0J0I7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 04:59:08 -0400
-Message-ID: <4CC7EAE5.907@cn.fujitsu.com>
-Date: Wed, 27 Oct 2010 17:03:33 +0800
+	id S1752777Ab0J0JAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 05:00:32 -0400
+Message-ID: <4CC7EB3A.6070002@cn.fujitsu.com>
+Date: Wed, 27 Oct 2010 17:04:58 +0800
 From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         KVM <kvm@vger.kernel.org>
-Subject: [PATCH 3/8] KVM: fix searching async gfn in kvm_async_pf_gfn_slot
+Subject: [PATCH 4/8] KVM: avoid unnecessary wait for a async pf
 References: <4CC7EA7D.5020901@cn.fujitsu.com>
 In-Reply-To: <4CC7EA7D.5020901@cn.fujitsu.com>
 Content-Type: text/plain; charset=UTF-8
@@ -23,28 +23,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'gfn' is not recorded if the next slot is empty
+In current code, it checks async pf completion out of the wait context,
+like this:
+
+if (vcpu->arch.mp_state == KVM_MP_STATE_RUNNABLE &&
+		    !vcpu->arch.apf.halted)
+			r = vcpu_enter_guest(vcpu);
+		else {
+			......
+			kvm_vcpu_block(vcpu)
+			 ^- waiting until 'async_pf.done' is not empty
+}
+	
+kvm_check_async_pf_completion(vcpu)
+ ^- delete list from async_pf.done
+
+So, if we check aysnc pf completion first, it can be blocked at
+kvm_vcpu_block
+
+Fixed by move the check into wait context
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- arch/x86/kvm/x86.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kvm/x86.c       |    3 ---
+ include/linux/kvm_host.h |    1 -
+ virt/kvm/async_pf.c      |    6 ++++--
+ virt/kvm/async_pf.h      |    6 ++++++
+ virt/kvm/kvm_main.c      |    3 ++-
+ 5 files changed, 12 insertions(+), 7 deletions(-)
 
 diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 7876ec8..16f42ff 100644
+index 16f42ff..0b2c420 100644
 --- a/arch/x86/kvm/x86.c
 +++ b/arch/x86/kvm/x86.c
-@@ -6207,8 +6207,8 @@ static u32 kvm_async_pf_gfn_slot(struct kvm_vcpu *vcpu, gfn_t gfn)
- 	u32 key = kvm_async_pf_hash_fn(gfn);
+@@ -5321,8 +5321,6 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
+ 			vcpu->run->exit_reason = KVM_EXIT_INTR;
+ 			++vcpu->stat.request_irq_exits;
+ 		}
+-		
+-		kvm_check_async_pf_completion(vcpu);
  
- 	for (i = 0; i < roundup_pow_of_two(ASYNC_PF_PER_VCPU) &&
--		     (vcpu->arch.apf.gfns[key] != gfn ||
--		      vcpu->arch.apf.gfns[key] == ~0); i++)
-+		     (vcpu->arch.apf.gfns[key] != gfn &&
-+		      vcpu->arch.apf.gfns[key] != ~0); i++)
- 		key = kvm_async_pf_next_probe(key);
+ 		if (signal_pending(current)) {
+ 			r = -EINTR;
+@@ -6108,7 +6106,6 @@ int kvm_arch_vcpu_runnable(struct kvm_vcpu *vcpu)
+ {
+ 	return (vcpu->arch.mp_state == KVM_MP_STATE_RUNNABLE &&
+ 		!vcpu->arch.apf.halted)
+-		|| !list_empty_careful(&vcpu->async_pf.done)
+ 		|| vcpu->arch.mp_state == KVM_MP_STATE_SIPI_RECEIVED
+ 		|| vcpu->arch.nmi_pending ||
+ 		(kvm_arch_interrupt_allowed(vcpu) &&
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index ee4314e..0c1b7c5 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -90,7 +90,6 @@ struct kvm_async_pf {
+ };
  
- 	return key;
+ void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu);
+-void kvm_check_async_pf_completion(struct kvm_vcpu *vcpu);
+ int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
+ 		       struct kvm_arch_async_pf *arch);
+ int kvm_async_pf_wakeup_all(struct kvm_vcpu *vcpu);
+diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
+index 60df9e0..e213ca4 100644
+--- a/virt/kvm/async_pf.c
++++ b/virt/kvm/async_pf.c
+@@ -120,13 +120,13 @@ void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu)
+ 	vcpu->async_pf.queued = 0;
+ }
+ 
+-void kvm_check_async_pf_completion(struct kvm_vcpu *vcpu)
++bool kvm_check_async_pf_completion(struct kvm_vcpu *vcpu)
+ {
+ 	struct kvm_async_pf *work;
+ 
+ 	if (list_empty_careful(&vcpu->async_pf.done) ||
+ 	    !kvm_arch_can_inject_async_page_present(vcpu))
+-		return;
++		return false;
+ 
+ 	spin_lock(&vcpu->async_pf.lock);
+ 	work = list_first_entry(&vcpu->async_pf.done, typeof(*work), link);
+@@ -142,6 +142,8 @@ void kvm_check_async_pf_completion(struct kvm_vcpu *vcpu)
+ 	if (work->page)
+ 		put_page(work->page);
+ 	kmem_cache_free(async_pf_cache, work);
++
++	return true;
+ }
+ 
+ int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
+diff --git a/virt/kvm/async_pf.h b/virt/kvm/async_pf.h
+index e7ef644..e21533c 100644
+--- a/virt/kvm/async_pf.h
++++ b/virt/kvm/async_pf.h
+@@ -27,10 +27,16 @@
+ int kvm_async_pf_init(void);
+ void kvm_async_pf_deinit(void);
+ void kvm_async_pf_vcpu_init(struct kvm_vcpu *vcpu);
++bool kvm_check_async_pf_completion(struct kvm_vcpu *vcpu);
++
+ #else
+ #define kvm_async_pf_init() (0)
+ #define kvm_async_pf_deinit() do{}while(0)
+ #define kvm_async_pf_vcpu_init(C) do{}while(0)
++static inline bool kvm_check_async_pf_completion(struct kvm_vcpu *vcpu)
++{
++	return false;
++}
+ #endif
+ 
+ #endif
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 88d869e..d9aed28 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -1347,7 +1347,8 @@ void kvm_vcpu_block(struct kvm_vcpu *vcpu)
+ 	for (;;) {
+ 		prepare_to_wait(&vcpu->wq, &wait, TASK_INTERRUPTIBLE);
+ 
+-		if (kvm_arch_vcpu_runnable(vcpu)) {
++		if (kvm_arch_vcpu_runnable(vcpu) ||
++		     kvm_check_async_pf_completion(vcpu)) {
+ 			kvm_make_request(KVM_REQ_UNHALT, vcpu);
+ 			break;
+ 		}
 -- 
 1.7.0.4
 
