@@ -1,136 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757513Ab0J0Vyx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 17:54:53 -0400
-Received: from mga01.intel.com ([192.55.52.88]:48947 "EHLO mga01.intel.com"
+	id S932593Ab0J0Vyz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 17:54:55 -0400
+Received: from mga14.intel.com ([143.182.124.37]:46930 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757422Ab0J0Vyv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757406Ab0J0Vyv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 27 Oct 2010 17:54:51 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.58,248,1286175600"; 
-   d="scan'208";a="851663695"
+   d="scan'208";a="341327220"
 From: Darren Hart <dvhart@linux.intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: Matt Fleming <matt@console-pimps.org>, tglx@linutronix.de,
         peterz@infradead.org, mingo@elte.hu, eric.dumazet@gmail.com,
-        jkacur@redhat.com, Darren Hart <dvhart@linux.intel.com>,
-        Darren Hart <dvhltc@us.ibm.com>
-Subject: [PATCH 3/3] futex: add futex_q static initializer
-Date: Wed, 27 Oct 2010 14:54:26 -0700
-Message-Id: <1288216466-14309-4-git-send-email-dvhart@linux.intel.com>
+        jkacur@redhat.com, Darren Hart <dvhart@linux.intel.com>
+Subject: [PATCH 1/3] futex: fix compiler warnings in exit_robust_list
+Date: Wed, 27 Oct 2010 14:54:24 -0700
+Message-Id: <1288216466-14309-2-git-send-email-dvhart@linux.intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1288216466-14309-1-git-send-email-dvhart@linux.intel.com>
 References: <1288216466-14309-1-git-send-email-dvhart@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The futex_q struct has grown considerably over the last couple years. I
-believe it now merits a static initializer to avoid uninitialized data
-errors (having spent more time than I care to admit debugging an uninitialized
-q.bitset in an experimental new op code).
+The following commit introduced a compiler warning:
 
-With the key initializer built in, several of the FUTEX_KEY_INIT calls can
-be removed.
+Commit 1dcc41bb037533839753df983d31778b30b67d93
+futex: Change 3rd arg of fetch_robust_entry() to unsigned int*
 
-Signed-off-by: Darren Hart <dvhltc@us.ibm.com>
+The following archs/compiler versions all report:
+kernel/futex.c: In function ‘exit_robust_list’:
+kernel/futex.c:2492: warning: ‘next_pi’ may be used uninitialized in this function
+
+x86_64
+gcc (Ubuntu 4.4.3-4ubuntu5) 4.4.3
+gcc (GCC) 4.4.4 20100630 (Red Hat 4.4.4-10)
+gcc (Ubuntu/Linaro 4.4.4-14ubuntu5) 4.4.5
+
+sh
+sh-linux-gnu-gcc (Sourcery G++ Lite 4.3-143) 4.3.3
+
+The code path really can't result in next_pi pi being unitialized (or should
+not), but let's keep the build clean. Assign next_pi = 0 to avoid the warnings.
+
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Tested-by: Matt Fleming <matt@console-pimps.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Ingo Molnar <mingo@elte.hu>
 CC: Eric Dumazet <eric.dumazet@gmail.com>
 CC: John Kacur <jkacur@redhat.com>
 ---
- kernel/futex.c |   25 ++++++++++---------------
- 1 files changed, 10 insertions(+), 15 deletions(-)
+ kernel/futex.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/kernel/futex.c b/kernel/futex.c
-index 8502498..4a10d44 100644
+index a118bf1..78715cb 100644
 --- a/kernel/futex.c
 +++ b/kernel/futex.c
-@@ -131,6 +131,12 @@ struct futex_q {
- 	u32 bitset;
- };
- 
-+#define FUTEX_Q_INIT \
-+	{ /* list gets initialized in queue_me()*/ \
-+	  .task = NULL, NULL, FUTEX_KEY_INIT \
-+	, NULL, NULL, NULL, FUTEX_BITSET_MATCH_ANY }
-+
-+
- /*
-  * Hash buckets are shared by all the futex_keys that hash to the same
-  * location.  Each key may have multiple futex_q structures, one for each task
-@@ -1750,7 +1756,6 @@ static int futex_wait_setup(u32 __user *uaddr, u32 val, int flags,
- 	 * rare, but normal.
- 	 */
- retry:
--	q->key = FUTEX_KEY_INIT;
- 	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q->key);
- 	if (unlikely(ret != 0))
- 		return ret;
-@@ -1791,16 +1796,12 @@ static int futex_wait(u32 __user *uaddr, int flags, u32 val, ktime_t *abs_time,
- 	struct hrtimer_sleeper timeout, *to = NULL;
- 	struct restart_block *restart;
- 	struct futex_hash_bucket *hb;
--	struct futex_q q;
-+	struct futex_q q = FUTEX_Q_INIT;
- 	int ret;
- 
- 	if (!bitset)
- 		return -EINVAL;
--
--	q.pi_state = NULL;
- 	q.bitset = bitset;
--	q.rt_waiter = NULL;
--	q.requeue_pi_key = NULL;
- 
- 	if (abs_time) {
- 		to = &timeout;
-@@ -1891,7 +1892,7 @@ static int futex_lock_pi(u32 __user *uaddr, int flags, int detect,
+@@ -2489,7 +2489,7 @@ void exit_robust_list(struct task_struct *curr)
  {
- 	struct hrtimer_sleeper timeout, *to = NULL;
- 	struct futex_hash_bucket *hb;
--	struct futex_q q;
-+	struct futex_q q = FUTEX_Q_INIT;
- 	int res, ret;
+ 	struct robust_list_head __user *head = curr->robust_list;
+ 	struct robust_list __user *entry, *next_entry, *pending;
+-	unsigned int limit = ROBUST_LIST_LIMIT, pi, next_pi, pip;
++	unsigned int limit = ROBUST_LIST_LIMIT, pi, next_pi = 0, pip;
+ 	unsigned long futex_offset;
+ 	int rc;
  
- 	if (refill_pi_state_cache())
-@@ -1905,11 +1906,7 @@ static int futex_lock_pi(u32 __user *uaddr, int flags, int detect,
- 		hrtimer_set_expires(&to->timer, *time);
- 	}
- 
--	q.pi_state = NULL;
--	q.rt_waiter = NULL;
--	q.requeue_pi_key = NULL;
- retry:
--	q.key = FUTEX_KEY_INIT;
- 	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q.key);
- 	if (unlikely(ret != 0))
- 		goto out;
-@@ -2197,8 +2194,8 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, int flags,
- 	struct rt_mutex_waiter rt_waiter;
- 	struct rt_mutex *pi_mutex = NULL;
- 	struct futex_hash_bucket *hb;
--	union futex_key key2;
--	struct futex_q q;
-+	union futex_key key2 = FUTEX_KEY_INIT;
-+	struct futex_q q = FUTEX_Q_INIT;
- 	int res, ret;
- 
- 	if (!bitset)
-@@ -2221,12 +2218,10 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, int flags,
- 	debug_rt_mutex_init_waiter(&rt_waiter);
- 	rt_waiter.task = NULL;
- 
--	key2 = FUTEX_KEY_INIT;
- 	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2);
- 	if (unlikely(ret != 0))
- 		goto out;
- 
--	q.pi_state = NULL;
- 	q.bitset = bitset;
- 	q.rt_waiter = &rt_waiter;
- 	q.requeue_pi_key = &key2;
 -- 
 1.7.1
 
