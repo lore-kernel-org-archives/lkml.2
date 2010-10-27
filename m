@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758679Ab0J0KGT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 06:06:19 -0400
-Received: from mga11.intel.com ([192.55.52.93]:62258 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752301Ab0J0KGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 06:06:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,245,1286175600"; 
-   d="scan'208";a="620761193"
-Date: Wed, 27 Oct 2010 10:11:27 +0100
-From: Alan Cox <alan@linux.intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build warning after merge of the final tree (tty
- tree related)
-Message-ID: <20101027101127.6fd49417@linux.intel.com>
-In-Reply-To: <20101027110307.e754ef59.sfr@canb.auug.org.au>
-References: <20100927153151.9bf66022.sfr@canb.auug.org.au>
-	<20101027110307.e754ef59.sfr@canb.auug.org.au>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1760295Ab0J0KIB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 06:08:01 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54546 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759752Ab0J0KH5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 06:07:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=kTg03w2s7IA9kUCLhqTMXsJWX3td3Y8/vV3IY69E5VbGS8iezmkN87LSHTrJPImxYO
+         DDW2e52JfOBJiUK6G1iQuRvFiHGgUbso2O2QT+DgzrG/NfhZ0Gxnd83entkVJwbtAHos
+         U4tZ29IKrOzPeXRjBeB5Y/xhxhHnSKasJuhVU=
+Date: Wed, 27 Oct 2010 12:07:35 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>, joel.becker@oracle.com
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] configfs: documentation: remove unneeded check
+Message-ID: <20101027100735.GE6062@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Randy Dunlap <rdunlap@xenotime.net>, joel.becker@oracle.com,
+	linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Oct 2010 11:03:07 +1100
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+If "p" is NULL then it will cause an oops when we pass it to
+simple_strtoul().  In this case "p" can not be NULL so I removed the
+check and cleaned up the rest of the if condition as well.
 
-> Hi Greg,
-> 
-> On Mon, 27 Sep 2010 15:31:51 +1000 Stephen Rothwell
-> <sfr@canb.auug.org.au> wrote:
-> >
-> > After merging the final tree, today's linux-next build (x86_64
-> > allmodconfig) produced this warning:
-> > 
-> > drivers/char/nozomi.c: In function 'ntty_ioctl':
-> > drivers/char/nozomi.c:1831: warning: unused variable 'argp'
-> > 
-> > Introduced by commit dd612b1a8edb7fb3a117c388bfb520476e04ed18 ("tty:
-> > icount changeover for other main devices").
-> 
-> This warning is now in Linus' tree ...
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-Already re-sent GregKH the fix. Guess it got eaten in the post last
-time.
-
-Alan
-
-
+diff --git a/Documentation/filesystems/configfs/configfs_example_explicit.c b/Documentation/filesystems/configfs/configfs_example_explicit.c
+index d428cc9..63ff248 100644
+--- a/Documentation/filesystems/configfs/configfs_example_explicit.c
++++ b/Documentation/filesystems/configfs/configfs_example_explicit.c
+@@ -89,7 +89,7 @@ static ssize_t childless_storeme_write(struct childless *childless,
+ 	char *p = (char *) page;
+ 
+ 	tmp = simple_strtoul(p, &p, 10);
+-	if (!p || (*p && (*p != '\n')))
++	if (*p != '\0' && *p != '\n')
+ 		return -EINVAL;
+ 
+ 	if (tmp > INT_MAX)
