@@ -1,67 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162Ab0J0Qr1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 12:47:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23762 "EHLO mx1.redhat.com"
+	id S1752015Ab0J0QuF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 12:50:05 -0400
+Received: from claw.goop.org ([74.207.240.146]:44372 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751101Ab0J0QrZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 12:47:25 -0400
-Message-ID: <4CC85771.2080307@redhat.com>
-Date: Wed, 27 Oct 2010 14:46:41 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
+	id S1751696Ab0J0QuD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 12:50:03 -0400
+Message-ID: <4CC85839.4000507@goop.org>
+Date: Wed, 27 Oct 2010 09:50:01 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Devin Heitmueller <dheitmueller@kernellabs.com>
-CC: Jiri Slaby <jirislaby@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael Krufky <mkrufky@kernellabs.com>
-Subject: Re: [GIT PULL for 2.6.37-rc1] V4L/DVB updates
-References: <4CC8380D.3040802@redhat.com>	<4CC84597.4000204@gmail.com>	<4CC84846.6020304@redhat.com> <AANLkTim=RfR3Dq0w+ACYjhGTHCSgapdf35wGW8QoZ38n@mail.gmail.com>
-In-Reply-To: <AANLkTim=RfR3Dq0w+ACYjhGTHCSgapdf35wGW8QoZ38n@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Borislav Petkov <bp@alien8.de>, Ian Campbell <ian.campbell@citrix.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH] x86: use pgd accessors when cloning a pgd range.
+References: <1288169413-29065-1-git-send-email-ian.campbell@citrix.com> <20101027104020.GA16954@a1.tnic>
+In-Reply-To: <20101027104020.GA16954@a1.tnic>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 27-10-2010 13:48, Devin Heitmueller escreveu:
-> On Wed, Oct 27, 2010 at 11:41 AM, Mauro Carvalho Chehab
-> 
-> Have you looked at the code for how the Conexant guys got the xc5000
-> firmware load to work (which uses 64 bytes at a time).  I suspect what
-> *really* needs to happen is that needs to be made generic so that the
-> stop bit is properly set (which would allow a single i2c transaction
-> to span across multiple USB control messages).
-> 
-> Note that the xc5000 hack is actually two changes merged together -
-> one uses a GPIO mode in certain cases to handle clock stretching
-> properly (which probably has to stay there for now), and the other
-> allows for larger i2c transactions.  I am referring to the latter
-> change.
-> 
-> If we fix the cx231xx i2c master, then we can go back to the original
-> 18271 config, which avoids the risk of regression for other devices.
+ On 10/27/2010 03:40 AM, Borislav Petkov wrote:
+> On Wed, Oct 27, 2010 at 09:50:13AM +0100, Ian Campbell wrote:
+>> Page tables should always be updated using the proper accessor
+>> methods. Not doing so bypasses the paravirt infrastructure.
+>>
+>> In this case the failure to do so was exposed under Xen by
+>> b40827fa7268 "x86-32, mm: Add an initial page table for core
+>> bootstrapping".
+>>
+>> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+>> Cc: Borislav Petkov <bp@alien8.de>
+>> Cc: H. Peter Anvin <hpa@linux.intel.com>
+>> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+>> ---
+>>  arch/x86/include/asm/pgtable.h |    5 ++++-
+>>  1 files changed, 4 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+>> index ada823a..0b4c514 100644
+>> --- a/arch/x86/include/asm/pgtable.h
+>> +++ b/arch/x86/include/asm/pgtable.h
+>> @@ -619,7 +619,10 @@ static inline void ptep_set_wrprotect(struct mm_struct *mm,
+>>   */
+>>  static inline void clone_pgd_range(pgd_t *dst, pgd_t *src, int count)
+>>  {
+>> -       memcpy(dst, src, count * sizeof(pgd_t));
+>> +	int i;
+>> +
+>> +	for (i=0; i<count; i++)
+>> +		set_pgd(&dst[i], src[i]);
+> Hmm, this slows down clone_pgd_range(). It is called at 3 sites total,
+> two of which happen only on boot in setup_arch() so they can be ignored
+> but the callchain
+>
+> copy_process()
+> ...
+> mm_init()
+> |->mm_alloc_pgd()
+>   |->pgd_alloc()
+>     |->pgd_ctor()
+>       |->clone_pgd_range()
+>
+> could become noticeable. To be on the safe side, I'd make
+> clone_pgd_range() a macro calling either the native or the xen version..
 
-The original code is broken, as it doesn't properly honour a max size of 8.
-Even if we do some optimization at cx231xx, we still need to fix the tda18271
-code, as it is trying to use more than 8 bytes on some writes.
+Frankly I'd want to see some numbers before getting too worried about
+it; if it were a problem we could make the native set_pgd inlined into
+the callside (it is just a memory write after all), which will be very
+similar to memcpy in performance.
 
-Also, as you noticed, the way cx231xx sends large firmwares to xc5000 is a hack:
-it requires to identify that the I2C device is a xc5000 and do an special
-treatment for it.
+I am, however, more concerned about the effect on performance under
+Xen.  xen_set_pgd will avoid doing a hypercall in this case (the
+pagetable isn't yet pinned), but it has to do a moderate amount of work
+to avoid doing the hypercall, and could really add some measurable
+latency to process creation (which is not something we need right now). 
+For that a clone_pgd_range() hypercall is the most straightforward
+answer, but I'm loathe to propose that right now.
 
-We may actually move all those small_i2c logic to the bridge drivers, adding
-those hacks inside the I2C adapter part, but this means that they'll need to 
-have some complex-logic that are dependent on what device is connected to it,
-damaging the benefits that the I2C bus abstraction brings.
+This never used to be a problem.  Perhaps we can change how
+clone_pgd_range is used at boot time to avoid it in the Xen case (since
+we don't care about the secondary pagetable)?
 
-Instead of polluting bridge drivers with I2C-device specific code, the proper
-way seems to use parameters to adjust the maximum size, eventually flagging
-the broken messages in a way that the I2C adapter won't sent a stop transaction
-in the middle of a larger initialization like this one.
-
-Cheers,
-Mauro
+    J
