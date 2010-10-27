@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753261Ab0J0Rfq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 13:35:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61488 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751881Ab0J0Rfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 13:35:42 -0400
-Message-ID: <4CC863D6.7010404@redhat.com>
-Date: Wed, 27 Oct 2010 19:39:34 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Lightning/1.0b2 Thunderbird/3.1.4
+	id S1753376Ab0J0RjC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 13:39:02 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41501 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753056Ab0J0Ri7 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 13:38:59 -0400
 MIME-Version: 1.0
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL for 2.6.37-rc1] V4L/DVB updates
-References: <4CC8380D.3040802@redhat.com>
-In-Reply-To: <4CC8380D.3040802@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20101027164606.GF6328@fieldses.org>
+References: <20101026164549.GD19445@fieldses.org> <20101027145538.GC6328@fieldses.org>
+ <20101027145929.GA5788@infradead.org> <201010271723.59734.arnd@arndb.de>
+ <AANLkTinTm-LwjfBfoFUyp5Dj8S2hexnHGQGpZiOWqyMY@mail.gmail.com> <20101027164606.GF6328@fieldses.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 27 Oct 2010 10:32:20 -0700
+Message-ID: <AANLkTinTXoGiFap-vfu0P_SXb5xS+gMsHOwQtN3Hra3r@mail.gmail.com>
+Subject: Re: nfsd changes for 2.6.37
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 10/27/2010 04:32 PM, Mauro Carvalho Chehab wrote:
-> Linus,
+On Wed, Oct 27, 2010 at 9:46 AM, J. Bruce Fields <bfields@fieldses.org> wrote:
+> On Wed, Oct 27, 2010 at 09:12:06AM -0700, Linus Torvalds wrote:
+>>
+>> Something like the attached (UNTESTED!) perhaps?
 >
-> Please pull from
-> 	ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
->
+> Makes sense to me.  Testing....
 
-<snip snip>
+So I found a buglet in the patch: the
 
-I see that you did not include the changes from my pull request send today,
-understandably so, but I wonder if these could still get into 2.6.37 for say
-rc2 ?
+  NOTE! It is very important that the FASYNC flag always
+  match the state "is the filp on a fasync list".
 
-All of them are bug fixes except for the xirlink_cit button support which
-makes changes to a driver new this cycle, so no chance for causing regressions
-there.
+comment should be moved to be associated with "fasync_insert_entry()"
+rather than "fasync_add_entry()", since it's the insert-entry thing
+that does the actual FASYNC flag handling.
 
-Regards,
+But that incorrect comment placement shouldn't affect testing, obviously ;)
 
-Hans
+Btw, who is going to collect these things assuming it passes testing?
+Arnd? You? I'll happily sign off on the fasync patch (with the comment
+movement) assuming it tests out ok, but there's all the other patches
+too that have been passed around. I really do want to get this into
+the merge window, because it would be a big shame if we couldn't
+effectively get rid of the BKL now just because of these kinds of
+smallish final details, so I'm just checking who wants to step up to
+the plate to collect it all together and make sure I have it?
+
+                      Linus
