@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760978Ab0J0O6F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 10:58:05 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:48669 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752013Ab0J0O6D (ORCPT
+	id S1761151Ab0J0PAE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 11:00:04 -0400
+Received: from statler.bytemark.co.uk ([212.110.162.18]:56151 "EHLO
+	statler.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756725Ab0J0PAB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 10:58:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=K8WCo2zlwq8CfQ5D0zmt35oxi3+W1NeMQPwNCvFYleQMqhWY7jq4Vi3KyUBRw5LicK
-         lD6LKeaz6GY9Y4QvBLcIGzL2ql0xTtp2UC6baF0vvAnuP3YDSWCyAKNoZoy7sXeXG9fY
-         y/Ct6P92MFnE6dQ/AZBOC65/mcFYkaOR69nf0=
+	Wed, 27 Oct 2010 11:00:01 -0400
+Date: Wed, 27 Oct 2010 10:59:47 -0400
+From: "Emilio G. Cota" <cota@braap.org>
+To: Martyn Welch <martyn.welch@ge.com>
+Cc: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
+        devel@driverdev.osuosl.org,
+        Juan David Gonzalez Cobas <david.cobas@gmail.com>,
+        Bill Pemberton <wfp5p@virginia.edu>
+Subject: Re: [PATCH 24/30] staging/vme_user: remove unnecessary call to
+ vme_slave_set
+Message-ID: <20101027145947.GQ10869@flamenco.cs.columbia.edu>
+References: <1288055476-19438-1-git-send-email-cota@braap.org>
+ <1288055476-19438-25-git-send-email-cota@braap.org>
+ <4CC81A17.7090805@ge.com>
 MIME-Version: 1.0
-In-Reply-To: <201010261406.10996.arnd@arndb.de>
-References: <AANLkTineXA2ZY0J7+dZhqywz+4aAVgzihu+LDDbsL8mu@mail.gmail.com>
-	<201010221736.57671.arnd@arndb.de>
-	<AANLkTinY0qmt6uFo4PZ3xH2BF5-AJ0C7ptctzNdOkRU2@mail.gmail.com>
-	<201010261406.10996.arnd@arndb.de>
-Date: Wed, 27 Oct 2010 10:58:02 -0400
-Message-ID: <AANLkTi=wkXHRTvaZCivrgthK=0riEL=j7-m=S6kTHw+5@mail.gmail.com>
-Subject: Re: [PATCH 1/9] mfd: Add support for the ST-Ericsson CG2900.
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Par-Gunnar Hjalmdahl <pghatwork@gmail.com>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CC81A17.7090805@ge.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/10/26 Arnd Bergmann <arnd@arndb.de>:
+On Wed, Oct 27, 2010 at 13:24:55 +0100, Martyn Welch wrote:
+> On 26/10/10 02:11, Emilio G. Cota wrote:
+> > From: Emilio G. Cota <cota@braap.org>
+> > 
+> > The resource is about to be freed and therefore it is pointless to
+> > set any of its parameters.
+> 
+> Nope - this is disabling the window, which given that you are about to
+> unalloc the memory that it is using this is quite important.
 
-> If CG2900 is a single
-> piece of silicon that always looks the same way, it's probably an MFD.
+Aah I didn't realise that 
 
-It is:
-http://www.stericsson.com/product/223489.jsp
+> > -		vme_slave_set(image[i].resource, 0, 0, 0, 0, VME_A32, 0);
 
-So atleast we have that part right :-)
+disables the window. I thought vme_slave_free would disable it as well.
+Forget this one, then.
 
-(And thanks for all the good feedback Arnd, really appreciated!)
+Thanks
 
-Yours,
-Linus Walleij
+		Emilio
+
