@@ -1,32 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759081Ab0J0H65 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 03:58:57 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:42733 "EHLO
+	id S1759612Ab0J0H7v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 03:59:51 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:54395 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758721Ab0J0H6z (ORCPT
+	with ESMTP id S1758988Ab0J0H7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 03:58:55 -0400
-Date: Wed, 27 Oct 2010 09:58:46 +0200
+	Wed, 27 Oct 2010 03:59:49 -0400
+Date: Wed, 27 Oct 2010 09:59:47 +0200
 From: Andi Kleen <andi@firstfloor.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Andi Kleen <andi@firstfloor.org>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        n-horiguchi@ah.jp.nec.com, x86@kernel.org
-Subject: Re: [GIT PULL] Please pull hwpoison updates for 2.6.37
-Message-ID: <20101027075846.GA2472@basil.fritz.box>
-References: <20101026100923.GA5118@basil.fritz.box>
- <20101027074254.GA809@elte.hu>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        Tim Bird <tim.bird@am.sony.com>, andi@firstfloor.org
+Subject: Re: [PATCH] archs: add ioremap_change_write_prot
+Message-ID: <20101027075947.GB2472@basil.fritz.box>
+References: <4CC3F13B.4030107@gmail.com>
+ <alpine.LFD.2.00.1010261818300.3115@localhost6.localdomain6>
+ <AANLkTikyunbd2ACuS0mzR7NV0sfWFRdGRaxna9ZPM-Nt@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101027074254.GA809@elte.hu>
+In-Reply-To: <AANLkTikyunbd2ACuS0mzR7NV0sfWFRdGRaxna9ZPM-Nt@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> However it needs to adds a define or something similar to know if the
+> archs implements or not this interface. Suggestions about this point?
 
-Thanks for the review.
+That's fine, you can do that in Kconfig. I think you already had that
+in the earlier patch: just give it a better name.
 
 -Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
