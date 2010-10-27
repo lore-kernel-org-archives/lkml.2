@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761271Ab0J0QFk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 12:05:40 -0400
-Received: from hera.kernel.org ([140.211.167.34]:42724 "EHLO hera.kernel.org"
+	id S1761079Ab0J0QH0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 12:07:26 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:48498 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761195Ab0J0QFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 12:05:34 -0400
-Date: Wed, 27 Oct 2010 16:04:17 GMT
-From: tip-bot for Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        torvalds@linux-foundation.org, brgerst@gmail.com, tj@kernel.org,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        brgerst@gmail.com, torvalds@linux-foundation.org, tj@kernel.org,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1288158182-1753-1-git-send-email-brgerst@gmail.com>
-References: <1288158182-1753-1-git-send-email-brgerst@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] percpu: Remove the multi-page alignment facility
-Message-ID: <tip-47f19a0814e80e1d4e5c17d61b70fca85ea09162@git.kernel.org>
-Git-Commit-ID: 47f19a0814e80e1d4e5c17d61b70fca85ea09162
-X-Mailer: tip-git-log-daemon
+	id S1757705Ab0J0QHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 12:07:23 -0400
+Date: Wed, 27 Oct 2010 18:07:14 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>, Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Brian Gerst <brgerst@gmail.com>
+Subject: Re: [GIT PULL] x86 fixes
+Message-ID: <20101027160714.GA31597@elte.hu>
+References: <20101027160503.GA31311@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 27 Oct 2010 16:04:17 +0000 (UTC)
+In-Reply-To: <20101027160503.GA31311@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  47f19a0814e80e1d4e5c17d61b70fca85ea09162
-Gitweb:     http://git.kernel.org/tip/47f19a0814e80e1d4e5c17d61b70fca85ea09162
-Author:     Ingo Molnar <mingo@elte.hu>
-AuthorDate: Wed, 27 Oct 2010 17:41:17 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 27 Oct 2010 17:53:25 +0200
 
-percpu: Remove the multi-page alignment facility
+* Ingo Molnar <mingo@elte.hu> wrote:
 
-[DECLARE|DEFINE]_PER_CPU_MULTIPAGE_ALIGNED never really worked because
-the head percpu section was only page aligned. Now that the last user
-is gone (32-bit IRQ stacks), remove the generic percpu facility.
+> Linus,
+> 
+> Please pull the latest x86-fixes-for-linus git tree from:
+> 
+>    git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-fixes-for-linus
+> 
+> This includes the x86-32 irq stacks percpu fix and the removal of the multi-page 
+> pcpu stuff.
 
-Cc: Brian Gerst <brgerst@gmail.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-LKML-Reference: <1288158182-1753-1-git-send-email-brgerst@gmail.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- include/linux/percpu-defs.h |   12 ------------
- 1 files changed, 0 insertions(+), 12 deletions(-)
+s/includes/also includes
 
-diff --git a/include/linux/percpu-defs.h b/include/linux/percpu-defs.h
-index 018db9a..27ef6b1 100644
---- a/include/linux/percpu-defs.h
-+++ b/include/linux/percpu-defs.h
-@@ -148,18 +148,6 @@
- 	DEFINE_PER_CPU_SECTION(type, name, "..readmostly")
- 
- /*
-- * Declaration/definition used for large per-CPU variables that must be
-- * aligned to something larger than the pagesize.
-- */
--#define DECLARE_PER_CPU_MULTIPAGE_ALIGNED(type, name, size)		\
--	DECLARE_PER_CPU_SECTION(type, name, "..page_aligned")		\
--	__aligned(size)
--
--#define DEFINE_PER_CPU_MULTIPAGE_ALIGNED(type, name, size)		\
--	DEFINE_PER_CPU_SECTION(type, name, "..page_aligned")		\
--	__aligned(size)
--
--/*
-  * Intermodule exports for per-CPU variables.  sparse forgets about
-  * address space across EXPORT_SYMBOL(), change EXPORT_SYMBOL() to
-  * noop if __CHECKER__.
+It also has the current stack of x86 fixes.
+
+Thanks,
+
+	Ingo
