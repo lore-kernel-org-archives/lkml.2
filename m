@@ -1,48 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760623Ab0J0DYr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 23:24:47 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:45289 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752702Ab0J0DYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 23:24:41 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/trvdZTbrtbv41OQ8aUXmyfGoFpIT6upeQhD5i+J
-	mpVk9JNJ+xe7ZW
-Subject: Re: Clocksource tsc unstable (delta = -8589361717 ns) in current
- git
-From: Mike Galbraith <efault@gmx.de>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Borislav Petkov <bp@amd64.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-In-Reply-To: <20101026135808.GB1672@arch.trippelsdorf.de>
-References: <20101026112052.GA1672@arch.trippelsdorf.de>
-	 <20101026131843.GC17852@aftab> <20101026135808.GB1672@arch.trippelsdorf.de>
-Content-Type: text/plain
-Date: Wed, 27 Oct 2010 05:24:36 +0200
-Message-Id: <1288149876.7296.3.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1760679Ab0J0D0V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 23:26:21 -0400
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:52630 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752702Ab0J0D0Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 23:26:16 -0400
+Date: Wed, 27 Oct 2010 12:25:49 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-arch@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        John Reiser <jreiser@bitwagon.com>
+Subject: Re: [PATCH 2/3] ftrace/x86: Add support for C version of recordmcount
+Message-ID: <20101027032548.GA5341@linux-sh.org>
+References: <20101014210014.895157788@goodmis.org> <20101014210136.230687571@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101014210136.230687571@goodmis.org>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-26 at 15:58 +0200, Markus Trippelsdorf wrote:
-
-> > > Initializing cgroup subsys cpu
-> > > Linux version 2.6.36-05618-gb18cae4-dirty (markus@arch.trippelsdorf.de) (gcc version 4.5.1 (GCC) ) #41 SMP PREEMPT Tue Oct 26 06:51:47 CEST 2010
-> > 
-> >  ...-dirty means you have some changes ontop of b18cae4. What are those?
+On Thu, Oct 14, 2010 at 05:00:16PM -0400, Steven Rostedt wrote:
+> From: Steven Rostedt <srostedt@redhat.com>
 > 
-> The SCHED_AUTOGROUP patches from Mike Galbraith.
+> This patch adds the support for the C version of recordmcount and
+> compile times show ~ 12% improvement.
+> 
+> After verifying this works, other archs can add:
+> 
+>  HAVE_C_MCOUNT_RECORD
+> 
+> in its Kconfig and it will use the C version of recordmcount
+> instead of the perl version.
+> 
+While I haven't had the chance to debug this yet, turning it on for SH
+blows up immediately:
 
-Turns out that patch is still racy btw.  Very hard to trigger, but you
-should remove it for safety and test result integrity anyway.
+ftrace: allocating 15200 entries in 30 pages
+------------[ cut here ]------------
+WARNING: at /home/pmundt/devel/git/sh-2.6/kernel/trace/ftrace.c:1007
+Modules linked in:
 
-	-Mike
+Pid : 0, Comm:           swapper
+CPU : 0                  Not tainted  (2.6.36-05622-g38ab134-dirty #508)
 
+PC is at ftrace_bug+0x78/0x23c
+PR is at ftrace_bug+0x74/0x23c
+PC  : 80064df4 SP  : 8056ff70 SR  : 400080f0 TEA : c0000004
+R0  : 00000001 R1  : 00000001 R2  : 8064d862 R3  : 8056ff64
+R4  : 805b47b4 R5  : 00000001 R6  : 00000000 R7  : 00000001
+R8  : 803b15d8 R9  : 00000001 R10 : 9fc38be8 R11 : 00000000
+R12 : 8064e88c R13 : 8064e880 R14 : 8056ff70
+MACH: 00000000 MACL: 003d0900 GBR : 296e1678 PR  : 80064df0
+
+Call trace:
+ [<80066a86>] ftrace_process_locs+0x15a/0x284
+ [<803b15d8>] dns_query+0x0/0x26c
+ [<805f6a1a>] ftrace_init+0x112/0x1a8
+ [<801deec0>] strlen+0x0/0x58
+ [<8008f098>] get_zeroed_page+0x0/0x34
+ [<805f0918>] start_kernel+0x3e0/0x480
+ [<801deec0>] strlen+0x0/0x58
+ [<801eb388>] debug_smp_processor_id+0x0/0xe4
+ [<80002132>] _stext+0x132/0x140
+
+Code:
+  80064dee:  mov       r9, r5
+  80064df0:  tst       r9, r9
+  80064df2:  bt        80064df6
+->80064df4:  trapa     #62
+  80064df6:  bra       80064ef2
+  80064df8:  mov       r9, r5
+  80064dfa:  mov.l     80064f68 <ftrace_bug+0x1ec/0x23c>, r1  ! 8064d862 <__warned.27604+0x0/0x1>
+  80064dfc:  mov.b     r2, @r1
+  80064dfe:  mov.l     80064f48 <ftrace_bug+0x1cc/0x23c>, r1  ! 8057021c <ftrace_disabled+0x0/0x4>
+
+---[ end trace 4eaa2a86a8e2da22 ]---
+ftrace failed to modify [<803b15d8>] dns_query+0x0/0x26c
+ actual: 02:d1:22:4f
+Testing tracer nop: PASSED
+
+Suggestions?
