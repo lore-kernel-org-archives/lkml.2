@@ -1,72 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933621Ab0J0Auc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 20:50:32 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51676 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933609Ab0J0Aub (ORCPT
+	id S933626Ab0J0Aus (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 20:50:48 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60102 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933591Ab0J0Auq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 20:50:31 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 27 Oct 2010 09:45:02 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: subrata@linux.vnet.ibm.com
-Cc: Li Zefan <lizf@cn.fujitsu.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linuxppc-dev <Linuxppc-dev@ozlabs.org>,
-        ltp-list <ltp-list@lists.sf.net>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-Subject: Re: [linux-2.6.36-git7: Power7] LTP Memory CGROUP Controller
- functional test creates Backtrace, OOMKill & rcu_sched_state detected stall
- jiffies
-Message-Id: <20101027094502.208c1207.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1288089237.5010.9.camel@subratamodak.linux.ibm.com>
-References: <1288089237.5010.9.camel@subratamodak.linux.ibm.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Oct 2010 20:50:46 -0400
+Date: Wed, 27 Oct 2010 01:50:45 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Jiri Slaby <jslaby@suse.cz>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, "Dr. Werner Fink" <werner@suse.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 28/49] tty: Add a new file /proc/tty/consoles
+Message-ID: <20101027005045.GC19804@ZenIV.linux.org.uk>
+References: <20101022175112.GC13489@kroah.com>
+ <1287771688-14805-28-git-send-email-gregkh@suse.de>
+ <4CC2C9A8.1040003@suse.cz>
+ <20101025075125.GA29179@boole.suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101025075125.GA29179@boole.suse.de>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Oct 2010 16:03:56 +0530
-Subrata Modak <subrata@linux.vnet.ibm.com> wrote:
-
-> If you run LTP Memory CGROUP Controller functional test on
-> linux-2.6.36-git7, the following Backtrace, OOMKill & rcu_sched_state
-> detected stall jiffies are created. The machine is not reachable
-> thereafter. Ways to reproduce this problem:
+On Mon, Oct 25, 2010 at 09:51:25AM +0200, Dr. Werner Fink wrote:
+> > Maybe I wouldn't bother with marking the "current" console by star at
+> > all as it seems not to pay off.
 > 
-> 1) Build and boot kernel 2.6.36-git7 on Power7 machine with attached
-> config file,
-> 2) Fetch, build and install LTP:
-> 	git clone git://ltp.git.sourceforge.net/gitroot/ltp/ltp
-> 	cd ltp
-> 	./configure
-> 	make
-> 	make install
-> 3) Create a LTP runtest file /opt/ltp/runtest/memcg_function_test with
-> the following entry:
-> memcg_function          memcg_function_test.sh
-> <<EOF>>
-> 	cd /opt/ltp
-> 	./runltp -f memcg_function_test
-> 
+> This is the main reason for what I've done this patch:
+> To see on which console line the reading process is
+> located. Please do not skip this part as this is
+> currently the only way to detect the real console below
+> /dev/console ... it could be used in user space: e.g. in
+> plymouth or bootlogd (to deterime the main console) or
+> sulogin (to be able to provide a prompt on all console
+> lines).
 
-IIUC, memcg test includes intentional OOM-Kill test by setting the limit to 0.
-And it has another test to set the limit to PAGE_SIZE.
+You've got to be kidding.  So all this stuff is about getting TIOCGDEV
+into the mainline?  In a form that would, presumably, be more acceptable
+than an ioctl?
 
-In your environemnt, I think page size is 64kb...right ?
+> -- 
+>   "Having a smoking section in a restaurant is like having
+>           a peeing section in a swimming pool." -- Edward Burr
 
-About rcu_sched_state()....I have no idea at this stage. I reviewed memcontrol.c
-and oom_kill.c again and coundn't found anything in quick review.
-
-Could you try again after -rc1 shipped ?
-I think Andrew Morton sent some amount of updates for oom_kill and memcg, vmscan
-to Linus, today.
-
-Thanks,
--Kame
-
+Ironic, innit?
