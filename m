@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab0J0RSz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 13:18:55 -0400
-Received: from mga11.intel.com ([192.55.52.93]:54784 "EHLO mga11.intel.com"
+	id S1752956Ab0J0RTU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 13:19:20 -0400
+Received: from mail.perches.com ([173.55.12.10]:3627 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751881Ab0J0RSw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 13:18:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,247,1286175600"; 
-   d="scan'208";a="620871242"
-Message-ID: <4CC85EE6.7030608@linux.intel.com>
-Date: Wed, 27 Oct 2010 10:18:30 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Borislav Petkov <bp@alien8.de>, Ian Campbell <ian.campbell@citrix.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH] x86: use pgd accessors when cloning a pgd range.
-References: <1288169413-29065-1-git-send-email-ian.campbell@citrix.com> <20101027104020.GA16954@a1.tnic> <4CC85839.4000507@goop.org>
-In-Reply-To: <4CC85839.4000507@goop.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751881Ab0J0RTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 13:19:16 -0400
+From: Joe Perches <joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org
+Subject: [PATCH 0/2] drivers/input/serio: Use pr_fmt and pr_<level>
+Date: Wed, 27 Oct 2010 10:19:09 -0700
+Message-Id: <cover.1288198838.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2010 9:50 AM, Jeremy Fitzhardinge wrote:
->
-> This never used to be a problem.  Perhaps we can change how
-> clone_pgd_range is used at boot time to avoid it in the Xen case (since
-> we don't care about the secondary pagetable)?
->
+Standardize the logging messages a bit.
 
-Xen shouldn't have any users of this, since it's used for low-level 
-operations like SMP bootstrap, suspend to RAM, reboot and low-level BIOS 
-functionality.
+Joe Perches (2):
+  drivers/input/serio/i8042: Use pr_<level>, pr_fmt. Fix dbg and __FILE__ use
+  drivers/input/serio: Use pr_fmt and pr_<level>
 
-	-hpa
+ drivers/input/serio/ambakmi.c         |    5 ++-
+ drivers/input/serio/ct82c710.c        |   10 ++--
+ drivers/input/serio/gscps2.c          |   15 +++---
+ drivers/input/serio/hil_mlc.c         |   17 +++---
+ drivers/input/serio/hp_sdc.c          |   51 +++++++++---------
+ drivers/input/serio/hp_sdc_mlc.c      |   46 ++++++++--------
+ drivers/input/serio/i8042-x86ia64io.h |    2 +-
+ drivers/input/serio/i8042.c           |   94 +++++++++++++++-----------------
+ drivers/input/serio/i8042.h           |   19 ++++---
+ drivers/input/serio/maceps2.c         |    5 ++-
+ drivers/input/serio/parkbd.c          |    8 ++-
+ drivers/input/serio/q40kbd.c          |    6 ++-
+ drivers/input/serio/rpckbd.c          |    6 ++-
+ drivers/input/serio/sa1111ps2.c       |   11 +++--
+ drivers/input/serio/serio.c           |    8 ++--
+ drivers/input/serio/serio_raw.c       |    8 ++-
+ drivers/input/serio/serport.c         |    6 ++-
+ 17 files changed, 167 insertions(+), 150 deletions(-)
+
+-- 
+1.7.3.1.g432b3.dirty
 
