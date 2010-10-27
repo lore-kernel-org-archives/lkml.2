@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761314Ab0J0OBC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 10:01:02 -0400
-Received: from hera.kernel.org ([140.211.167.34]:54634 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757710Ab0J0OBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 10:01:00 -0400
-Message-ID: <4CC83067.5000009@kernel.org>
-Date: Wed, 27 Oct 2010 16:00:07 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.11) Gecko/20101013 Lightning/1.0b2 Thunderbird/3.1.5
+	id S1761300Ab0J0OF3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 10:05:29 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:41287 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756873Ab0J0OF2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 10:05:28 -0400
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Brian Gerst <brgerst@gmail.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, mingo@elte.hu
-Subject: Re: [PATCH] x86-32: Allocate irq stacks seperate from percpu area
-References: <AANLkTinnc3vBSmewf7ixuOSDYxG+5VNiGaB-vSrDNRiO@mail.gmail.com>	 <1288158182-1753-1-git-send-email-brgerst@gmail.com>	 <1288159670.2652.181.camel@edumazet-laptop>	 <1288173442.15336.1490.camel@twins>	 <1288186405.2709.117.camel@edumazet-laptop>  <4CC82C2F.1020707@kernel.org> <1288187870.2709.128.camel@edumazet-laptop>
-In-Reply-To: <1288187870.2709.128.camel@edumazet-laptop>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 27 Oct 2010 14:00:08 +0000 (UTC)
+In-Reply-To: <652BFE86-3BFE-4E21-88BA-004CA7140D18@mac.com>
+References: <652BFE86-3BFE-4E21-88BA-004CA7140D18@mac.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Wed, 27 Oct 2010 16:05:06 +0200
+X-Google-Sender-Auth: ttMm0h5qC7GGsdv3PrWLZbzNupU
+Message-ID: <AANLkTimvER2Qjpphj+io-qh9mRfDQJ1=goARH3zDLpeJ@mail.gmail.com>
+Subject: Re: kernel BUG at drivers/mmc/core/sdio_io.c:28!
+To: Elvis Dowson <elvis.dowson@mac.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Benzy Gabay <benzyg@ti.com>, Luciano Coelho <luciano.coelho@nokia.com>,
+        Vishal Mahaveer <vishalm@ti.com>, linux-mmc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2010 03:57 PM, Eric Dumazet wrote:
->> What does cpu_to_node() on each cpu say?  Also, do you know why
->> num_possible_cpus() is 32, not 16?
->>
-> 
-> I dont know, machine is HP ProLiant BL460c G6 
-> [    0.000000] SMP: Allowing 32 CPUs, 16 hotplug CPUs
-> 
-> for_each_possible_cpu(cpu) {
-> 	pr_err("cpu=%d node=%d\n", cpu, cpu_to_node(cpu));
-> }
-> 
-> cpu=0 node=1
-> cpu=1 node=0
-> cpu=2 node=1
-> cpu=3 node=0
-> cpu=4 node=1
-> cpu=5 node=0
-> cpu=6 node=1
-> cpu=7 node=0
-> cpu=8 node=1
-> cpu=9 node=0
-> cpu=10 node=1
-> cpu=11 node=0
-> cpu=12 node=1
-> cpu=13 node=0
-> cpu=14 node=1
-> cpu=15 node=0
-> cpu=16 node=0
-> cpu=17 node=0
-> cpu=18 node=0
-> cpu=19 node=0
-> cpu=20 node=0
-> cpu=21 node=0
-> cpu=22 node=0
-> cpu=23 node=0
-> cpu=24 node=0
-> cpu=25 node=0
-> cpu=26 node=0
-> cpu=27 node=0
-> cpu=28 node=0
-> cpu=29 node=0
-> cpu=30 node=0
-> cpu=31 node=0
+Hi Elvis,
 
-Heh, interesting table.  What does the same code say on 64bit?  Is it
-the same?
+On Wed, Oct 27, 2010 at 3:24 PM, Elvis Dowson <elvis.dowson@mac.com> wrote:
+> root@beagleboard:/wlan# insmod sdio.ko
+...
+> root@beagleboard:/wlan# insmod tiwlan_drv.ko
+...
+> root@beagleboard:/wlan# ifconfig tiwlan0 up
+> [  200.916687] TIWLAN: 2227.094325: pInitParams->RoamingScanning_2_4G_enable 0
+> [  200.924530] dashboard20_wifi_power: 1
+> [  200.943267] dashboard20_wifi_power: 0
+> [  200.947937] dashboard20_wifi_power: 1
+> [  201.020507] dashboard20_wifi_reset: 0
+> [  201.024200] dashboard20_wifi_set_carddetect: 1
+> [  201.029113] dashboard20_wifi_set_carddetect: Nobody to notify
+> [  202.027465] tiwlan_sdio_probe not yet called
+> [  202.031768] tiwlan_sdio_probe not yet called    <---------------------------------------------
+> [  202.036590] kernel BUG at drivers/mmc/core/sdio_io.c:28!
+> [  202.041961] Unable to handle kernel NULL pointer dereference at virtual address 00000000
 
--- 
-tejun
+
+The BUG is most probably in the driver you are using, and not in the SDIO layer.
+
+The driver is calling sdio_claim_host() without having a valid SDIO function.
+
+Check out the 2 lines above the BUG message - you have a log there
+complaining that your SDIO driver's probe function wasn't called.
+
+You actually seem to have two problems here:
+1. Your SDIO driver's probe function isn't called
+2. Your WLAN driver is using the SDIO API without having a valid SDIO function
+
+Ignoring the 2nd issue for now, you most probably have an integration
+problem.  Is the chip powered up correctly ? is it mmc rescanned after
+it is powered up ? are you using the correct mmc controller ? have you
+configured your mmc lines correctly (board muxing) ? etc..
+
+Maybe you want to checkout the mainline wl1271 driver using Luca's
+Beagle board patches :)
+
+Regards,
+Ohad.
