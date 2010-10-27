@@ -1,185 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760965Ab0J0LlY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 07:41:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52530 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756001Ab0J0LlV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 07:41:21 -0400
-Date: Wed, 27 Oct 2010 13:41:14 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 7/8] KVM: make async_pf work queue lockless
-Message-ID: <20101027114114.GR26191@redhat.com>
-References: <4CC7EA7D.5020901@cn.fujitsu.com>
- <4CC7EC55.7070201@cn.fujitsu.com>
+	id S1760975Ab0J0Ll0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 07:41:26 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:21285 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760854Ab0J0LlX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 07:41:23 -0400
+Message-ID: <00dc01cb75cb$e0ca3430$66f8800a@maildom.okisemi.com>
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: "Dave Airlie" <airlied@gmail.com>
+Cc: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <socketcan-core@lists.berlios.de>, <sameo@linux.intel.com>,
+        <21cnbao@gmail.com>, <chripell@fsfe.org>, <w.sang@pengutronix.de>,
+        <wg@grandegger.com>, "David Miller" <davem@davemloft.net>,
+        <margie.foster@intel.com>, <kok.howg.ewe@intel.com>,
+        <joel.clark@intel.com>, <andrew.chih.howe.khor@intel.com>,
+        <yong.y.wang@intel.com>, <qi.wang@intel.com>
+References: <4CC61B1B.3090602@dsn.okisemi.com><20101026.105206.15244527.davem@davemloft.net><002801cb758f$876aaf00$66f8800a@maildom.okisemi.com> <AANLkTi=bJTMhEo2agsMJ8fptNp7suERCGkzybb5m7ggg@mail.gmail.com>
+Subject: Re: can: About Socket CAN with MSI issue
+Date: Wed, 27 Oct 2010 20:41:21 +0900
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CC7EC55.7070201@cn.fujitsu.com>
+Content-Type: text/plain;
+	charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 05:09:41PM +0800, Xiao Guangrong wrote:
-> The async_pf number is very few since only pending interrupt can
-> let it re-enter to the guest mode.
-> 
-> During my test(Host 4 CPU + 4G, Guest 4 VCPU + 6G), it's no
-> more than 10 requests in the system.
-> 
-> So, we can only increase the completion counter in the work queue
-> context, and walk vcpu->async_pf.queue list to get all completed
-> async_pf
-> 
-That depends on the load. I used memory cgroups to create very big
-memory pressure and I saw hundreds of apfs per second. We shouldn't
-optimize for very low numbers. With vcpu->async_pf.queue having more
-then one element I am not sure your patch is beneficial.
+On Wednesday, October 27, 2010 4:56 PM, Dave Airlie wrote:
+> Its a bug in the PCI layer most likely,
 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-> ---
->  include/linux/kvm_host.h |    4 +--
->  virt/kvm/async_pf.c      |   50 +++++++++++++++++++--------------------------
->  2 files changed, 22 insertions(+), 32 deletions(-)
-> 
-> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> index d91add9..33c03c3 100644
-> --- a/include/linux/kvm_host.h
-> +++ b/include/linux/kvm_host.h
-> @@ -78,7 +78,6 @@ int kvm_io_bus_unregister_dev(struct kvm *kvm, enum kvm_bus bus_idx,
->  #ifdef CONFIG_KVM_ASYNC_PF
->  struct kvm_async_pf {
->  	struct work_struct work;
-> -	struct list_head link;
->  	struct list_head queue;
->  	struct kvm_vcpu *vcpu;
->  	struct mm_struct *mm;
-> @@ -127,10 +126,9 @@ struct kvm_vcpu {
->  
->  #ifdef CONFIG_KVM_ASYNC_PF
->  	struct {
-> +		atomic_t done;
->  		u32 queued;
->  		struct list_head queue;
-> -		struct list_head done;
-> -		spinlock_t lock;
->  		bool wakeup;
->  	} async_pf;
->  #endif
-> diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
-> index 0d1f6c4..f10de1e 100644
-> --- a/virt/kvm/async_pf.c
-> +++ b/virt/kvm/async_pf.c
-> @@ -49,9 +49,7 @@ void kvm_async_pf_deinit(void)
->  
->  void kvm_async_pf_vcpu_init(struct kvm_vcpu *vcpu)
->  {
-> -	INIT_LIST_HEAD(&vcpu->async_pf.done);
->  	INIT_LIST_HEAD(&vcpu->async_pf.queue);
-> -	spin_lock_init(&vcpu->async_pf.lock);
->  }
->  
->  static void async_pf_execute(struct work_struct *work)
-> @@ -72,11 +70,9 @@ static void async_pf_execute(struct work_struct *work)
->  	up_read(&mm->mmap_sem);
->  	unuse_mm(mm);
->  
-> -	spin_lock(&vcpu->async_pf.lock);
-> -	list_add_tail(&apf->link, &vcpu->async_pf.done);
->  	apf->page = page;
->  	apf->done = true;
-> -	spin_unlock(&vcpu->async_pf.lock);
-> +	atomic_inc(&vcpu->async_pf.done);
->  
->  	/*
->  	 * apf may be freed by kvm_check_async_pf_completion() after
-> @@ -101,52 +97,48 @@ void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu)
->  				   typeof(*work), queue);
->  		cancel_work_sync(&work->work);
->  		list_del(&work->queue);
-> -		if (!work->done) /* work was canceled */
-> -			kmem_cache_free(async_pf_cache, work);
-> -	}
-> -
-> -	spin_lock(&vcpu->async_pf.lock);
-> -	while (!list_empty(&vcpu->async_pf.done)) {
-> -		struct kvm_async_pf *work =
-> -			list_entry(vcpu->async_pf.done.next,
-> -				   typeof(*work), link);
-> -		list_del(&work->link);
->  		if (work->page)
->  			put_page(work->page);
->  		kmem_cache_free(async_pf_cache, work);
->  	}
-> -	spin_unlock(&vcpu->async_pf.lock);
->  
->  	vcpu->async_pf.queued = 0;
-> +	atomic_set(&vcpu->async_pf.done, 0);
->  }
->  
->  bool kvm_check_async_pf_completion(struct kvm_vcpu *vcpu)
->  {
->  	struct kvm_async_pf *work;
-> +	struct list_head *pos, *temp;
->  
->  	if (vcpu->async_pf.wakeup) {
->  		vcpu->async_pf.wakeup = false;
->  		return true;
->  	}
->  
-> -	if (list_empty_careful(&vcpu->async_pf.done) ||
-> +	if (!atomic_read(&vcpu->async_pf.done) ||
->  	    !kvm_arch_can_inject_async_page_present(vcpu))
->  		return false;
->  
-> -	spin_lock(&vcpu->async_pf.lock);
-> -	work = list_first_entry(&vcpu->async_pf.done, typeof(*work), link);
-> -	list_del(&work->link);
-> -	spin_unlock(&vcpu->async_pf.lock);
-> +	list_for_each_safe(pos, temp, &vcpu->async_pf.queue) {
-> +		work = list_entry(pos, typeof(*work), queue);
-> +		if (!work->done)
-> +			continue;
->  
-> -	if (work->page)
-> -		kvm_arch_async_page_ready(vcpu, work);
-> -	kvm_arch_async_page_present(vcpu, work);
-> +		if (work->page) {
-> +			kvm_arch_async_page_ready(vcpu, work);
-> +			put_page(work->page);
-> +		}
-> +
-> +		kvm_arch_async_page_present(vcpu, work);
-> +
-> +		list_del(&work->queue);
-> +		vcpu->async_pf.queued--;
-> +		kmem_cache_free(async_pf_cache, work);
-> +		if (atomic_dec_and_test(&vcpu->async_pf.done))
-> +			break;
-You should do atomic_dec() and always break. We cannot inject two apfs during
-one vcpu entry.
+Thank you for your information.
 
-> +	}
->  
-> -	list_del(&work->queue);
-> -	vcpu->async_pf.queued--;
-> -	if (work->page)
-> -		put_page(work->page);
-> -	kmem_cache_free(async_pf_cache, work);
->  	kvm_arch_async_pf_completion(vcpu);
->  
->  	return true;
-> -- 
-> 1.7.0.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+This issue occurrs with Socket-CAN driver only.
+Previous version our CAN driver(Not Socket-CAN but Tolapai ) works well.
+Thus, IMHO, PCI layer doesn't related to the issue.
 
---
-			Gleb.
+Thanks, Tomoya(OKI SEMICONDUCTOR CO., LTD.)
