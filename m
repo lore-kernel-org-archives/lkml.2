@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760931Ab0J0L1g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 07:27:36 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:23925 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755357Ab0J0L1d (ORCPT
+	id S1760935Ab0J0La7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 07:30:59 -0400
+Received: from exprod5og101.obsmtp.com ([64.18.0.141]:38114 "EHLO
+	exprod5og101.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757791Ab0J0La5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 07:27:33 -0400
-Message-ID: <008201cb75c9$f27ff720$66f8800a@maildom.okisemi.com>
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "Marc Kleine-Budde" <mkl@pengutronix.de>,
-        "Wolfgang Grandegger" <wg@grandegger.com>
-Cc: <andrew.chih.howe.khor@intel.com>, <socketcan-core@lists.berlios.de>,
-        <sameo@linux.intel.com>, <margie.foster@intel.com>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <yong.y.wang@intel.com>, <masa-korg@dsn.okisemi.com>,
-        <kok.howg.ewe@intel.com>, <chripell@fsfe.org>,
-        <morinaga526@dsn.okisemi.com>, "David Miller" <davem@davemloft.net>,
-        <joel.clark@intel.com>, <qi.wang@intel.com>
-References: <4CC61B1B.3090602@dsn.okisemi.com>	<20101026.105206.15244527.davem@davemloft.net>	<20101026.105545.200376685.davem@davemloft.net><4CC71DA4.3020600@grandegger.com> <4CC72360.1070608@pengutronix.de>
-Subject: Re: [PATCH net-next-2.6 v2] can: Topcliff: PCH_CAN driver: Fix buildwarnings
-Date: Wed, 27 Oct 2010 20:27:29 +0900
+	Wed, 27 Oct 2010 07:30:57 -0400
+Message-ID: <4CC80D20.5060504@ge.com>
+Date: Wed, 27 Oct 2010 12:29:36 +0100
+From: Martyn Welch <martyn.welch@ge.com>
+Organization: GE Intelligent Platforms
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.14) Gecko/20101006 Thunderbird/3.0.9
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-1"
+To: "Emilio G. Cota" <cota@braap.org>
+CC: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
+        devel@driverdev.osuosl.org,
+        Juan David Gonzalez Cobas <david.cobas@gmail.com>,
+        Bill Pemberton <wfp5p@virginia.edu>
+Subject: Re: [PATCH 13/30] staging/vme_user: declare private variables as
+ static
+References: <1288055476-19438-1-git-send-email-cota@braap.org> <1288055476-19438-14-git-send-email-cota@braap.org>
+In-Reply-To: <1288055476-19438-14-git-send-email-cota@braap.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 3.5
+X-OriginalArrivalTime: 27 Oct 2010 11:30:54.0293 (UTC) FILETIME=[6AA06050:01CB75CA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, October 27, 2010 3:52 AM :  Marc Kleine-Budde and Wolfgang Grandegge wrote:
+On 26/10/10 02:10, Emilio G. Cota wrote:
+> From: Emilio G. Cota <cota@braap.org>
+> 
+> Signed-off-by: Emilio G. Cota <cota@braap.org>
 
-The following is some inarticulate points I have for your questions.
-Please give me more information.
+Acked-by: Martyn Welch <martyn.welch@ge.com>
 
-> Do I understand your code correctly? You have a big loop, but only do
->  two different things at certain values of the loop? Smells fishy.
-Uh, I can't understand your intention.
-Please show in detail.
-This processing does configuration for all message objects.
-
-
-> what does this loop do? why is it nessecarry? I don't like delay loops
->   in the hot path of a driver.
-This loop is for waiting for all tx Message Object completion.
-This is Topcliff CAN HW specification.
-
-
-> If you figured out how to use the endianess conversion functions from
-> the cpu_to_{le,be}-{le,to}_to_cpup family use them here, too.
-Uh,le32_to_cpu have been used already here.
-I can't understand your intention.
-Please show in detail.
-
-
->> All these check if busy in the code make me a bit nervous, can you
->> please explain why they are needed. A pointer to the manual is okay, too.
-> Me too. I already ask in my previous mail how long that functions
-> usually blocks.
-When accessing read/write from/to Message RAM,
-Since it takes much time for transferring between Register and Message RAM,
-SW must check busy flag of CAN register.
-This is a Topcliff HW specification.
+> ---
+>  drivers/staging/vme/devices/vme_user.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/staging/vme/devices/vme_user.c b/drivers/staging/vme/devices/vme_user.c
+> index bdc4e1e..31a74e2 100644
+> --- a/drivers/staging/vme/devices/vme_user.c
+> +++ b/drivers/staging/vme/devices/vme_user.c
+> @@ -114,9 +114,9 @@ typedef struct {
+>  } driver_stats_t;
+>  static driver_stats_t statistics;
+>  
+> -struct cdev *vme_user_cdev;		/* Character device */
+> -struct class *vme_user_sysfs_class;	/* Sysfs class */
+> -struct device *vme_user_bridge;		/* Pointer to the bridge device */
+> +static struct cdev *vme_user_cdev;		/* Character device */
+> +static struct class *vme_user_sysfs_class;	/* Sysfs class */
+> +static struct device *vme_user_bridge;		/* Pointer to the bridge device */
+>  
+>  
+>  static const int type[VME_DEVS] = {	MASTER_MINOR,	MASTER_MINOR,
 
 
-> is there some pdev->name instead of KBUILD_MODNAME that can be used?
-I can't understand your intention.
-pdev(struct pci_dev) doesn't have "name" member. 
-Please show in detail.
-
-Thanks, Tomoya(OKI SEMICONDUCTOR CO., LTD.)
+-- 
+Martyn Welch (Principal Software Engineer)   |   Registered in England and
+GE Intelligent Platforms                     |   Wales (3828642) at 100
+T +44(0)127322748                            |   Barbirolli Square,
+Manchester,
+E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
