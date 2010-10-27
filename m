@@ -1,71 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757022Ab0J0Upb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 16:45:31 -0400
-Received: from cuda4.time.net.my ([203.121.65.122]:32809 "EHLO
-	cuda4.time.net.my" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756960Ab0J0Upa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 16:45:30 -0400
-X-Greylist: delayed 983 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Oct 2010 16:45:29 EDT
-X-ASG-Debug-ID: 1288211121-79eb000e0000-xx1T2L
-X-Barracuda-URL: http://10.20.0.22:8000/cgi-bin/mark.cgi
-Message-ID: <60177.116.206.153.166.1288211116.squirrel@webmail.time.net.my>
-Date: Thu, 28 Oct 2010 04:25:16 +0800 (MYT)
-X-ASG-Orig-Subj: 
-Subject: 
-From: "SUNAWAY GROUP CHINA" <georton@time.net.my>
-Reply-To: james_peterson77@yahoo.com.hk
-User-Agent: SquirrelMail/1.4.11
+	id S932188Ab0J0Uuu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 16:50:50 -0400
+Received: from thunk.org ([69.25.196.29]:51740 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751680Ab0J0Uur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 16:50:47 -0400
+Date: Wed, 27 Oct 2010 16:50:43 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Nicolas Kaiser <nikai@nikai.net>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ext4: fix unbalanced mutex unlock
+Message-ID: <20101027205043.GG3194@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Nicolas Kaiser <nikai@nikai.net>,
+	Andreas Dilger <adilger.kernel@dilger.ca>,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20101026011534.0bb7cb64@absol.kitzblitz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Barracuda-Connect: UNKNOWN[10.20.0.226]
-X-Barracuda-Start-Time: 1288211122
-X-Barracuda-Virus-Scanned: by Barracuda Spam Firewall outbound 1 at time.net.my
-X-Barracuda-Spam-Score: 4.57
-X-Barracuda-Spam-Status: No, SCORE=4.57 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=BSF_SC0_TG076, MISSING_HEADERS, MISSING_SUBJECT, MISSING_SUBJECT_2, TO_CC_NONE
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.1.26337
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	1.29 MISSING_HEADERS        Missing To: header
-	0.01 MISSING_SUBJECT        Missing Subject: header
-	0.00 TO_CC_NONE             No To: or Cc: header
-	1.76 MISSING_SUBJECT_2      Missing Subject: header
-	1.50 BSF_SC0_TG076          Custom Rule TG076
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101026011534.0bb7cb64@absol.kitzblitz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 26, 2010 at 01:15:34AM +0200, Nicolas Kaiser wrote:
+> Although the mutex isn't locked yet, if ext4_li_request_new
+> fails, the mutex would get unlocked on the error path.
+> 
+> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
 
+Nice catch, thanks!!  I've applied a fix to the ext4 patch queue.
 
-
-Sunway Group Procurement
-Level 18, Menara Sunway,
-Jalan Lagoon Timur ,China.
-
-Hello Sir or Madam,
-
-I represent the Sunway Procurement Group, based in China which
-manufactures,supplies and exports electrical appliances, and other
-building materials for
-world trade. We are currently searching for representatives to help us
-establish a
-foreign base of operations, contacting our customers around the world, as
-well as
-receiving payments as our accounts officer.If you are interested, please
-answer the questions below, and send your
-response to : james_peterson15@yahoo.com.hk for further details
-
-1. Your Full Name      2. Telephone number
-3. Fax none                4. Contact Address
-5. Date of Birth            6. Present Occupation
-
-I look forward to hearing from you soon,
-Mr. James Peterson
-
-
+     	    	      	   	   - Ted
