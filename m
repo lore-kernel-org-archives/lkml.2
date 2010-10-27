@@ -1,47 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726Ab0J0SUs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 14:20:48 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:61994 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754206Ab0J0SUp (ORCPT
+	id S1754890Ab0J0SYS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 14:24:18 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:56545 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754638Ab0J0SYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 14:20:45 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Subject: Re: nfsd changes for 2.6.37
-Date: Wed, 27 Oct 2010 20:20:32 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36+; KDE/4.5.1; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <20101026164549.GD19445@fieldses.org> <AANLkTinTXoGiFap-vfu0P_SXb5xS+gMsHOwQtN3Hra3r@mail.gmail.com> <20101027174016.GA18974@fieldses.org>
-In-Reply-To: <20101027174016.GA18974@fieldses.org>
+	Wed, 27 Oct 2010 14:24:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=RAghjbELciHkm/atiPunWSNF0UIaERlQDvYLIMauEOF9e7mCAsjl4wqk75vBrhz0kr
+         rath50TXBR65ThTaua9CP9ecCklF44ZjxQgZ9tmN4B4Go8OyctzF3QB0UbsopKEr4Yhm
+         bBUR210i6wVHRF9ciCgfliKG44gJ2cN4Nj10M=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010272020.33049.arnd@arndb.de>
-X-Provags-ID: V02:K0:M7J/9cZ9DKXE3XLpjBX2PetVD7aRuLnCZZMuPpxpvzw
- 6C217QpWCOshxfcwGzblBvBJ43r2wR6LxXCx/o1zc8Ja8srdxm
- geLWq0PPXuZlKzYSeGnOyLBJ4r8gZ357W8Zm8U2aoBtCNp2p9N
- 47FMyeWy4U9JaDFxhT4tB4C6LnS7GGTb2ee7WypNr/1xg2kPWN
- LMsHTkugaTMC+Ujsaj+Ng==
+In-Reply-To: <AANLkTike6UQVWKSz-Njs5Rps690EHeResH3V+aSM+qdO@mail.gmail.com>
+References: <20100831082307.064687027@linux.vnet.ibm.com> <20100831083844.043619334@linux.vnet.ibm.com>
+ <AANLkTikCLHh5Uz-DRq9ws78We+SwCAqdurA6HfuJh-8Y@mail.gmail.com>
+ <20101018103729.GA4122@linux.vnet.ibm.com> <AANLkTikKJ25L=6b2resz+0SAg7ZYL5j=rHG7Lg4kFbwd@mail.gmail.com>
+ <20101019110801.GA4128@linux.vnet.ibm.com> <AANLkTimLi8BYy_u8NhD15s=+iiODzuG1H_CgZ-cd7jep@mail.gmail.com>
+ <20101019213112.GA11432@merkur.ravnborg.org> <AANLkTike6UQVWKSz-Njs5Rps690EHeResH3V+aSM+qdO@mail.gmail.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Wed, 27 Oct 2010 14:23:51 -0400
+Message-ID: <AANLkTimn8R-qde8FH_cNa4JPcR2F=mkUAQhPVT-hOBhn@mail.gmail.com>
+Subject: Re: [PATCH] initramfs: Fix build break on symbol-prefixed archs
+To: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
+Cc: Michal Marek <mmarek@suse.cz>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>, tabbott@ksplice.com,
+        vda.linux@googlemail.com, hpa@linux.intel.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com,
+        Sam Ravnborg <sam@ravnborg.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 27 October 2010 19:40:16 J. Bruce Fields wrote:
-> Doesn't matter to me.  What I've currently got (Arnd's patches with some
-> minor fixes from me, and your patch, all in a poorly changelogged
-> jumble) is in
-> 
->         git://linux-nfs.org/~bfields/linux-topics.git TMP-BKL-TESTING
-> 
-> You wouldn't want to merge that as is, but it does seem to work.
-
-Ok, then let's use your tree with proper changelogs. That should be the
-easiest way to make sure that the code you test is the one that gets in.
-
-	Arnd
+can we get this change dropped from linux-next until someone gets a
+chance to fix it ?
+-mike
