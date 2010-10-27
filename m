@@ -1,76 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932593Ab0J0Vyz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 17:54:55 -0400
-Received: from mga14.intel.com ([143.182.124.37]:46930 "EHLO mga14.intel.com"
+	id S1756102Ab0J0V6V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 17:58:21 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:33585 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757406Ab0J0Vyv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 17:54:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,248,1286175600"; 
-   d="scan'208";a="341327220"
-From: Darren Hart <dvhart@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Matt Fleming <matt@console-pimps.org>, tglx@linutronix.de,
-        peterz@infradead.org, mingo@elte.hu, eric.dumazet@gmail.com,
-        jkacur@redhat.com, Darren Hart <dvhart@linux.intel.com>
-Subject: [PATCH 1/3] futex: fix compiler warnings in exit_robust_list
-Date: Wed, 27 Oct 2010 14:54:24 -0700
-Message-Id: <1288216466-14309-2-git-send-email-dvhart@linux.intel.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1288216466-14309-1-git-send-email-dvhart@linux.intel.com>
-References: <1288216466-14309-1-git-send-email-dvhart@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1755305Ab0J0V6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 17:58:18 -0400
+Subject: [RFC PATCH 1/1] vhost: TX used buffer guest signal accumulation
+From: Shirley Ma <mashirle@us.ibm.com>
+To: "mst@redhat.com" <mst@redhat.com>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Oct 2010 14:58:13 -0700
+Message-ID: <1288216693.17571.38.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following commit introduced a compiler warning:
+This patch changes vhost TX used buffer guest signal from one by
+one to 3/4 of vring size. This change improves vhost TX transmission 
+both bandwidth and CPU utilization performance for 256 to 8K messages s
+ize without inducing any regression.
 
-Commit 1dcc41bb037533839753df983d31778b30b67d93
-futex: Change 3rd arg of fetch_robust_entry() to unsigned int*
 
-The following archs/compiler versions all report:
-kernel/futex.c: In function ‘exit_robust_list’:
-kernel/futex.c:2492: warning: ‘next_pi’ may be used uninitialized in this function
-
-x86_64
-gcc (Ubuntu 4.4.3-4ubuntu5) 4.4.3
-gcc (GCC) 4.4.4 20100630 (Red Hat 4.4.4-10)
-gcc (Ubuntu/Linaro 4.4.4-14ubuntu5) 4.4.5
-
-sh
-sh-linux-gnu-gcc (Sourcery G++ Lite 4.3-143) 4.3.3
-
-The code path really can't result in next_pi pi being unitialized (or should
-not), but let's keep the build clean. Assign next_pi = 0 to avoid the warnings.
-
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-Tested-by: Matt Fleming <matt@console-pimps.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-CC: Eric Dumazet <eric.dumazet@gmail.com>
-CC: John Kacur <jkacur@redhat.com>
+Signed-off-by: Shirley Ma <xma@us.ibm.com>
 ---
- kernel/futex.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/vhost/net.c   |   20 +++++++++++++++++++-
+ drivers/vhost/vhost.c |   31 +++++++++++++++++++++++++++++++
+ drivers/vhost/vhost.h |    3 +++
+ 3 files changed, 53 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index a118bf1..78715cb 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -2489,7 +2489,7 @@ void exit_robust_list(struct task_struct *curr)
- {
- 	struct robust_list_head __user *head = curr->robust_list;
- 	struct robust_list __user *entry, *next_entry, *pending;
--	unsigned int limit = ROBUST_LIST_LIMIT, pi, next_pi, pip;
-+	unsigned int limit = ROBUST_LIST_LIMIT, pi, next_pi = 0, pip;
- 	unsigned long futex_offset;
- 	int rc;
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 4b4da5b..45e07cd 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -128,6 +128,7 @@ static void handle_tx(struct vhost_net *net)
+ 	int err, wmem;
+ 	size_t hdr_size;
+ 	struct socket *sock;
++	int max_pend = vq->num - (vq->num >> 2); 
  
--- 
-1.7.1
+ 	sock = rcu_dereference_check(vq->private_data,
+ 				     lockdep_is_held(&vq->mutex));
+@@ -198,7 +199,24 @@ static void handle_tx(struct vhost_net *net)
+ 		if (err != len)
+ 			pr_debug("Truncated TX packet: "
+ 				 " len %d != %zd\n", err, len);
+-		vhost_add_used_and_signal(&net->dev, vq, head, 0);
++		/*
++		 * if no pending buffer size allocate, signal used buffer
++		 * one by one, otherwise, signal used buffer when reaching
++		 * 3/4 ring size to reduce CPU utilization.
++		 */
++		if (unlikely(vq->pend))
++			vhost_add_used_and_signal(&net->dev, vq, head, 0);
++		else {
++			vq->pend[vq->num_pend].id = head;
++			vq->pend[vq->num_pend].len = 0;
++			++vq->num_pend;
++			if (vq->num_pend == max_pend) {
++				vhost_add_used_and_signal_n(&net->dev, vq,
++							    vq->pend,
++							    vq->num_pend);
++				vq->num_pend = 0;
++			}
++		}
+ 		total_len += len;
+ 		if (unlikely(total_len >= VHOST_NET_WEIGHT)) {
+ 			vhost_poll_queue(&vq->poll);
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index 94701ff..9486a25 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -170,6 +170,16 @@ static void vhost_vq_reset(struct vhost_dev *dev,
+ 	vq->call_ctx = NULL;
+ 	vq->call = NULL;
+ 	vq->log_ctx = NULL;
++	/* signal pending used buffers */
++	if (vq->pend) {
++		if (vq->num_pend != 0) {
++			vhost_add_used_and_signal_n(dev, vq, vq->pend,
++						    vq->num_pend);
++			vq->num_pend = 0;
++		}
++		kfree(vq->pend);
++	}
++	vq->pend = NULL;
+ }
+ 
+ static int vhost_worker(void *data)
+@@ -273,7 +283,13 @@ long vhost_dev_init(struct vhost_dev *dev,
+ 		dev->vqs[i].heads = NULL;
+ 		dev->vqs[i].dev = dev;
+ 		mutex_init(&dev->vqs[i].mutex);
++		dev->vqs[i].num_pend = 0;
++		dev->vqs[i].pend = NULL;
+ 		vhost_vq_reset(dev, dev->vqs + i);
++		/* signal 3/4 of ring size used buffers */
++		dev->vqs[i].pend = kmalloc((dev->vqs[i].num -
++					   (dev->vqs[i].num >> 2)) *
++					   sizeof *vq->pend, GFP_KERNEL);
+ 		if (dev->vqs[i].handle_kick)
+ 			vhost_poll_init(&dev->vqs[i].poll,
+ 					dev->vqs[i].handle_kick, POLLIN, dev);
+@@ -599,6 +615,21 @@ static long vhost_set_vring(struct vhost_dev *d, int ioctl, void __user *argp)
+ 			r = -EINVAL;
+ 			break;
+ 		}
++		if (vq->num != s.num) {
++			/* signal used buffers first */
++			if (vq->pend) {
++				if (vq->num_pend != 0) {
++					vhost_add_used_and_signal_n(vq->dev, vq,
++								    vq->pend,
++								    vq->num_pend);
++					vq->num_pend = 0;
++				}
++				kfree(vq->pend);
++			}
++			/* realloc pending used buffers size */
++			vq->pend = kmalloc((s.num - (s.num >> 2)) *
++					   sizeof *vq->pend, GFP_KERNEL);
++		}
+ 		vq->num = s.num;
+ 		break;
+ 	case VHOST_SET_VRING_BASE:
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index 073d06a..78949c0 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -108,6 +108,9 @@ struct vhost_virtqueue {
+ 	/* Log write descriptors */
+ 	void __user *log_base;
+ 	struct vhost_log *log;
++	/* delay multiple used buffers to signal once */
++	int num_pend;
++	struct vring_used_elem *pend;
+ };
+ 
+ struct vhost_dev {
+
 
