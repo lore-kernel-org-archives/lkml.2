@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab0J0Rwh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 13:52:37 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:58458 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753780Ab0J0Rwg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 13:52:36 -0400
+	id S1753911Ab0J0RyJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 13:54:09 -0400
+Received: from claw.goop.org ([74.207.240.146]:45465 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753756Ab0J0RyG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 13:54:06 -0400
+Message-ID: <4CC8673C.6060706@goop.org>
+Date: Wed, 27 Oct 2010 10:54:04 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <4CC85771.2080307@redhat.com>
-References: <4CC8380D.3040802@redhat.com>
-	<4CC84597.4000204@gmail.com>
-	<4CC84846.6020304@redhat.com>
-	<AANLkTim=RfR3Dq0w+ACYjhGTHCSgapdf35wGW8QoZ38n@mail.gmail.com>
-	<4CC85771.2080307@redhat.com>
-Date: Wed, 27 Oct 2010 13:52:34 -0400
-Message-ID: <AANLkTimS2FwZfruag0rBnbpEQoqTEUSXf14XGpZYQdAO@mail.gmail.com>
-Subject: Re: [GIT PULL for 2.6.37-rc1] V4L/DVB updates
-From: Devin Heitmueller <dheitmueller@kernellabs.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Jiri Slaby <jirislaby@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael Krufky <mkrufky@kernellabs.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Ian Campbell <ian.campbell@citrix.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH] x86: use pgd accessors when cloning a pgd range.
+References: <1288169413-29065-1-git-send-email-ian.campbell@citrix.com> <20101027104020.GA16954@a1.tnic> <4CC85839.4000507@goop.org> <4CC85EE6.7030608@linux.intel.com> <4CC861F9.8080200@goop.org> <20101027174417.GA19194@a1.tnic>
+In-Reply-To: <20101027174417.GA19194@a1.tnic>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 12:46 PM, Mauro Carvalho Chehab
-<mchehab@redhat.com> wrote:
-> The original code is broken, as it doesn't properly honour a max size of 8.
-> Even if we do some optimization at cx231xx, we still need to fix the tda18271
-> code, as it is trying to use more than 8 bytes on some writes.
->
-> Also, as you noticed, the way cx231xx sends large firmwares to xc5000 is a hack:
-> it requires to identify that the I2C device is a xc5000 and do an special
-> treatment for it.
+ On 10/27/2010 10:44 AM, Borislav Petkov wrote:
+> On Wed, Oct 27, 2010 at 10:31:37AM -0700, Jeremy Fitzhardinge wrote:
+>>> Xen shouldn't have any users of this, since it's used for low-level
+>>> operations like SMP bootstrap, suspend to RAM, reboot and low-level
+>>> BIOS functionality.
+>>>
+>> Right, but it is being called smack in the middle of setup_arch().  It
+>> looks like they could be hidden away in
+>> native_pagetable_setup_start/done though.
+> I think I can put the second sync-back clone_pgd_range in
+> native_pagetable_setup_done but the first one needs to take place right
+> at the beginning of setup_arch() because a lot of code in-between relies
+> on swapper_pg_dir containing proper entries.
 
-Yes, it does currently only get run if it's an xc5000, but I believe
-that code path could be used for *all* devices.  There is no reason
-that it needs to be a hack as that behavior should be the default case
-(presumably Conexant just didn't want to retest against other
-devices).
+OK.
 
-Devin
+> Just to make sure I understand you correctly: best it would be for xen
+> to not have the copy_pgd_range() calls in setup_arch, correct?
 
--- 
-Devin J. Heitmueller - Kernel Labs
-http://www.kernellabs.com
+Right.  Could you put the first copy into swapper_pg_dir earlier, before
+setup_arch() somewhere that's specific to booting via head_32.S?
+
+    J
