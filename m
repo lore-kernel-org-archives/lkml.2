@@ -1,359 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760959Ab0J0Lb6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 07:31:58 -0400
-Received: from cantor.suse.de ([195.135.220.2]:37307 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759858Ab0J0Lb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 07:31:57 -0400
-Date: Wed, 27 Oct 2010 13:31:53 +0200
-From: "Dr. Werner Fink" <werner@suse.de>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 28/49] tty: Add a new file /proc/tty/consoles
-Message-ID: <20101027113152.GA30513@boole.suse.de>
-Mail-Followup-To: Jiri Slaby <jslaby@suse.cz>,
-	Al Viro <viro@ZenIV.linux.org.uk>,
-	Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-	Alan Cox <alan@lxorguk.ukuu.org.uk>
-References: <20101022175112.GC13489@kroah.com>
- <1287771688-14805-28-git-send-email-gregkh@suse.de>
- <4CC2C9A8.1040003@suse.cz>
- <20101025075125.GA29179@boole.suse.de>
- <20101027005045.GC19804@ZenIV.linux.org.uk>
- <20101027092744.GA27071@boole.suse.de>
- <4CC7F616.5060404@suse.cz>
+	id S1759858Ab0J0LfV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 07:35:21 -0400
+Received: from 78-83-101-184.spectrumnet.bg ([78.83.101.184]:32827 "EHLO
+	croler.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754365Ab0J0LfR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 07:35:17 -0400
+X-Greylist: delayed 596 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Oct 2010 07:35:16 EDT
+Message-ID: <4CC80AF3.9040708@croler.net>
+Date: Wed, 27 Oct 2010 14:20:19 +0300
+From: Nikolay Pelov <npelov@croler.net>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="G4iJoqBmSsgzjUCe"
-Content-Disposition: inline
-In-Reply-To: <4CC7F616.5060404@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux-kernel@vger.kernel.org
+Subject: PROBLEM: linux kernel 2.6.35.7 R6040 network driver messages
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-nicksoft.info-MailScanner-Information: Please contact the ISP for more information
+X-MailScanner-ID: o9RBKEH4028258
+X-nicksoft.info-MailScanner: Found to be clean
+X-nicksoft.info-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=-1.799, required 1, autolearn=not spam, ALL_TRUSTED -1.80,
+	BAYES_50 0.00)
+X-nicksoft.info-MailScanner-From: npelov@croler.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi!
 
---G4iJoqBmSsgzjUCe
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+I haven't reported kernel bug until now. I'll try to send as much 
+information as I can. I hope it is sufficient.
 
-On Wed, Oct 27, 2010 at 11:51:18AM +0200, Jiri Slaby wrote:
-> On 10/27/2010 11:27 AM, Dr. Werner Fink wrote:
-> > Such a list would be very helpful e.g. to extend sulogin
-> > to be able to prompt for maintenance on all terminal lines
-> > of the system console after e.g. failed fsck.  Currently
-> > only the preferred terminal line is prompted for maintenance.
-> 
-> I think nobody objects to the /proc/tty/consoles. This is a good thing
-> to have. The patch just needs to be fixed (and you already did and sent
-> me in private).
-> 
-> The objections are against the way how you find out the real tty behind
-> /dev/console. The method to walk through fd, guessing private_data etc.
-> is simply unacceptable.
-> 
-> Actually couldn't you just use one of:
-> 1) ttyprintk driver (well, this will insert mess into klog)
-> 2) send the output to all enabled consoles in /proc/tty/consoles
-> ?
+1. I see repeating (flood) messages "Oct 27 13:14:59 mclive5 kernel: 
+eth0: link up, 100Mbps, full-duplex, lpa 0x45E1" in my syslog - once per 
+second.
+2.  Frequency is probably one message per second because I see this on 
+every 61 seconds: "last message repeated 61 times". I'm not sure if the 
+problem is in the driver or in OS because I use Centos 5.5 with newer 
+kernel, but I don't have the same problem with other network adapters. 
+R6040 is build into kernet, not as a module.
+3. keywords: modules, networking, kernel, problem, linkup, syslog, 
+r6040, MicroClient JrMX
+4. kernel version - # cat /proc/version
+Linux version 2.6.35.7-ns.i586 (root@localhost.localdomain) (gcc version 
+4.1.2 20080704 (Red Hat 4.1.2-48)) #15 Thu Oct 21 18:26:55 CEST 2010
+SMP is disabled
+5.
+6. The problem is always presend. doesn't have to trigger it. only bring 
+interface up:
+ifconfig eth0 up
+7.1 Operating system is Centos 5.5 without updates. it's run as livecd 
+(my own modification). initrd is completely rewritten - it uses bash for 
+init script. init script just mounts the filesystem and ends with:
+exec chroot . /bin/bash <<- EOF >/dev/console
 
-Hmmm ... I've wonder about the comment on add_preferred_console()
-of kernel/printk.c:
+echo "running init"
+exec /sbin/init $level
 
- * add_preferred_console - add a device to the list of preferred consoles.
- * @name: device name
- * @idx: device index
- * @options: options for this console
- *
- * The last preferred console added will be used for kernel messages
- * and stdin/out/err for init.  Normally this is used by console_setup
- * above to handle user-supplied console arguments; however it can also
- * be used by arch-specific code either to override the user or more
- * commonly to provide a default console (ie from PROM variables) when
- * the user has not supplied one.
+EOF
 
-that is that the first line always provides the preferred terminal
-line.  In other words the detection stuff is not required as long
-as the statement in the comment for add_preferred_console() will
-remain now and in future.  Indeed register_console() reorders the
-list of console drivers if the preferred terminal line will be
-changed and this line is marked with the flag CON_CONSDEV.
+root filesystem is AUFS that consists of:
+  one squashfs image
+  one tmpfs ram disk with size=200M
 
-Now as stdin/out/err for init resides on the preferred terminal
-line this could be OK.  If a program is runniung on /dev/console
-then also its stdin is directed to the preferred console line.
+7.2. processor info:
+Processor is Xcore86 MX at 1 GHz and it is i586 compatible
+/proc/cpu reports Vortex86 SoC
+flags           : fpu tsc cx8
+7.3 module information:
+# cat /proc/modules
+ipv6 216009 16 - Live 0xe08ba000
+hidp 9827 2 - Live 0xe086b000
+l2cap 33993 5 hidp, Live 0xe0875000
+crc16 995 1 l2cap, Live 0xe085d000
+bluetooth 46244 2 hidp,l2cap, Live 0xe0842000
+rfkill 7982 1 bluetooth, Live 0xe0824000
+tun 12103 0 - Live 0xe0979000
+dm_mirror 11560 0 - Live 0xe0967000
+dm_region_hash 5376 1 dm_mirror, Live 0xe0957000
+dm_log 7531 2 dm_mirror,dm_region_hash, Live 0xe094a000
+dm_multipath 14155 0 - Live 0xe092e000
+scsi_dh 3972 1 dm_multipath, Live 0xe091f000
+dm_mod 52849 3 dm_mirror,dm_log,dm_multipath, Live 0xe0903000
+option 12594 0 - Live 0xe08b4000
+usb_wwan 6820 1 option, Live 0xe0899000
+serio_raw 3328 0 - Live 0xe088c000
+rtc_cmos 7326 0 - Live 0xe0880000
+rtc_core 10393 1 rtc_cmos, Live 0xe0870000
+pcspkr 1279 0 - Live 0xe0857000
+rtc_lib 1477 1 rtc_core, Live 0xe0861000
 
-Werner
+7.4 Loaded driver and hardware information
+# cat /proc/ioports
+0000-001f : dma1
+0020-0021 : pic1
+0040-0043 : timer0
+0050-0053 : timer1
+0060-0060 : keyboard
+0064-0064 : keyboard
+0070-0071 : rtc_cmos
+  0070-0071 : rtc0
+0080-008f : dma page reg
+00a0-00a1 : pic2
+00c0-00df : dma2
+00f0-00ff : fpu
+0170-0177 : 0000:00:0c.0
+  0170-0177 : pata_rdc
+01f0-01f7 : 0000:00:0c.0
+  01f0-01f7 : pata_rdc
+02e8-02ef : serial
+0376-0376 : 0000:00:0c.0
+  0376-0376 : pata_rdc
+03c0-03df : vga+
+03e8-03ef : serial
+03f6-03f6 : 0000:00:0c.0
+  03f6-03f6 : pata_rdc
+03f8-03ff : serial
+0cf8-0cff : PCI conf1
+de00-deff : 0000:00:08.0
+  de00-deff : r6040
+df80-dfff : 0000:00:0d.0
+ef00-ef0f : 0000:00:0c.0
+  ef00-ef0f : pata_rdc
+
+# cat  /proc/iomem
+00000000-00000fff : reserved
+00001000-0009fbff : System RAM
+0009fc00-0009ffff : reserved
+000a0000-000bffff : Video RAM area
+000c0000-000c7fff : Video ROM
+000e4000-000fffff : reserved
+  000f0000-000fffff : System ROM
+00100000-1fffffff : System RAM
+  00400000-007c990c : Kernel code
+  007c990d-0095d2d7 : Kernel data
+  009c1000-00a40e37 : Kernel bss
+f8000000-fbffffff : 0000:00:0d.0
+febc0000-febcffff : 0000:00:08.0
+febd9000-febd9fff : 0000:00:0a.0
+  febd9000-febd9fff : ohci_hcd
+febda000-febdafff : 0000:00:0b.0
+  febda000-febdafff : ohci_hcd
+febdb400-febdb4ff : 0000:00:08.0
+  febdb400-febdb4ff : r6040
+febdb800-febdb8ff : 0000:00:0a.1
+  febdb800-febdb8ff : ehci_hcd
+febdbc00-febdbcff : 0000:00:0b.1
+  febdbc00-febdbcff : ehci_hcd
+febdc000-febdffff : 0000:00:0e.0
+febe0000-febfffff : 0000:00:0d.0
+ff000000-ffffffff : reserved
+
+7.5 PCI info:
+# lspci -vvv
+00:00.0 Host bridge: RDC Semiconductor, Inc. R6021 Host Bridge (rev 02)
+        Control: I/O- Mem+ BusMaster+ SpecCycle+ MemWINV- VGASnoop- 
+ParErr- Stepping- SERR- FastB2B-
+        Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- 
+<TAbort- <MAbort+ >SERR- <PERR-
+        Latency: 0
+
+00:07.0 ISA bridge: RDC Semiconductor, Inc. Unknown device 6036
+        Control: I/O+ Mem+ BusMaster+ SpecCycle+ MemWINV- VGASnoop- 
+ParErr- Stepping- SERR- FastB2B-
+        Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=?? >TAbort- 
+<TAbort- <MAbort- >SERR- <PERR-
+        Latency: 0
+
+00:08.0 Ethernet controller: RDC Semiconductor, Inc. R6040 MAC Controller
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- 
+ParErr- Stepping- SERR- FastB2B-
+        Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- 
+<TAbort- <MAbort- >SERR- <PERR-
+        Latency: 128 (750ns min, 2000ns max)
+        Interrupt: pin A routed to IRQ 7
+        Region 0: I/O ports at de00 [size=256]
+        Region 1: Memory at febdb400 (32-bit, non-prefetchable) [size=256]
+        Expansion ROM at febc0000 [disabled] [size=64K]
+
+00:0a.0 USB Controller: RDC Semiconductor, Inc. R6060 USB 1.1 Controller 
+(rev 12) (prog-if 10 [OHCI])
+        Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- 
+ParErr- Stepping- SERR+ FastB2B-
+        Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- 
+<TAbort- <MAbort- >SERR- <PERR-
+        Latency: 128, Cache Line Size: 16 bytes
+        Interrupt: pin A routed to IRQ 3
+        Region 0: Memory at febd9000 (32-bit, non-prefetchable) [size=4K]
+
+00:0a.1 USB Controller: RDC Semiconductor, Inc. R6061 USB 2.0 Controller 
+(rev 03) (prog-if 20 [EHCI])
+        Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- 
+ParErr- Stepping- SERR+ FastB2B-
+        Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- 
+<TAbort- <MAbort- >SERR- <PERR-
+        Latency: 128, Cache Line Size: 16 bytes
+        Interrupt: pin B routed to IRQ 3
+        Region 0: Memory at febdb800 (32-bit, non-prefetchable) [size=256]
+
+00:0b.0 USB Controller: RDC Semiconductor, Inc. R6060 USB 1.1 Controller 
+(rev 12) (prog-if 10 [OHCI])
+        Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- 
+ParErr- Stepping- SERR+ FastB2B-
+        Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- 
+<TAbort- <MAbort- >SERR- <PERR-
+        Latency: 128, Cache Line Size: 16 bytes
+        Interrupt: pin A routed to IRQ 3
+        Region 0: Memory at febda000 (32-bit, non-prefetchable) [size=4K]
+
+00:0b.1 USB Controller: RDC Semiconductor, Inc. R6061 USB 2.0 Controller 
+(rev 03) (prog-if 20 [EHCI])
+        Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- 
+ParErr- Stepping- SERR+ FastB2B-
+        Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- 
+<TAbort- <MAbort- >SERR- <PERR-
+        Latency: 128, Cache Line Size: 16 bytes
+        Interrupt: pin B routed to IRQ 3
+        Region 0: Memory at febdbc00 (32-bit, non-prefetchable) [size=256]
+
+00:0c.0 IDE interface: RDC Semiconductor, Inc. Unknown device 1011 (rev 
+01) (prog-if 8a [Master SecP PriP])
+        Subsystem: RDC Semiconductor, Inc. Unknown device 1011
+        Control: I/O+ Mem- BusMaster+ SpecCycle- MemWINV- VGASnoop- 
+ParErr- Stepping- SERR- FastB2B-
+        Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- 
+<TAbort- <MAbort- >SERR- <PERR-
+        Latency: 64, Cache Line Size: 16 bytes
+        Interrupt: pin A routed to IRQ 14
+        Region 0: I/O ports at 01f0 [size=8]
+        Region 1: I/O ports at 03f4 [size=1]
+        Region 2: I/O ports at 0170 [size=8]
+        Region 3: I/O ports at 0374 [size=1]
+        Region 4: I/O ports at ef00 [size=16]
+
+00:0d.0 VGA compatible controller: RDC Semiconductor, Inc. Unknown 
+device 2010 (prog-if 00 [VGA controller])
+        Subsystem: RDC Semiconductor, Inc. Unknown device 2010
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- 
+ParErr- Stepping- SERR+ FastB2B-
+        Status: Cap+ 66MHz+ UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- 
+<TAbort- <MAbort- >SERR- <PERR-
+        Latency: 0
+        Interrupt: pin A routed to IRQ 9
+        Region 0: Memory at f8000000 (32-bit, non-prefetchable) [size=64M]
+        Region 1: Memory at febe0000 (32-bit, non-prefetchable) [size=128K]
+        Region 2: I/O ports at df80 [size=128]
+        Capabilities: [40] Power Management version 3
+                Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA 
+PME(D0-,D1-,D2-,D3hot-,D3cold-)
+                Status: D0 PME-Enable- DSel=0 DScale=0 PME-
+
+00:0e.0 Audio device: RDC Semiconductor, Inc. Unknown device 3010 (rev 01)
+        Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- 
+ParErr- Stepping- SERR+ FastB2B-
+        Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- 
+<TAbort- <MAbort- >SERR- <PERR-
+        Latency: 128, Cache Line Size: 16 bytes
+        Interrupt: pin A routed to IRQ 5
+        Region 0: Memory at febdc000 (32-bit, non-prefetchable) [size=16K]
+
+7.6 SCSI info
+# cat /proc/scsi/scsi
+Attached devices:
+Host: scsi1 Channel: 00 Id: 00 Lun: 00
+  Vendor: ATA      Model: WDC WD1600BEVT-0 Rev: 11.0
+  Type:   Direct-Access                    ANSI  SCSI revision: 05
+
+7.7 Other information that might be relevant to the problem
+can't think of
+8. Other notes, patches, fixes, workarounds
+AUFS patch was added to kernel 2.6.35.7
+no other patches to kernel
+hardware is: http://www.norhtec.com/products/mcjrmx/index.html, but it's 
+not documented very well.
+RAM: 512
+
+I had similar problems with kernel 2.6.29  (not absolutely sure about 
+the version) and another hardware (i486 compatible - XCore86 DX CPU on a 
+Microclient JrDX), but the messages were output to the console and were 
+a lot faster - few messages per second.
+
+
+Good Luck!
 
 -- 
-System V style init programs - http://savannah.nongnu.org/projects/sysvinit/
+This message has been scanned for viruses and
+dangerous content by MailScanner, and is
+believed to be clean.
 
---G4iJoqBmSsgzjUCe
-Content-Type: text/x-patch; charset=iso-8859-1
-Content-Description: Add-a-new-file-proc-tty-consoles.patch
-Content-Disposition: attachment; filename="0002-Add-a-new-file-proc-tty-consoles-to-be-able-to.patch"
-
->From f1c9b9a6d589dfdf85961fe3f8db4cdc9600dc4b Mon Sep 17 00:00:00 2001
-From: Werner Fink <werner@suse.de>
-Date: Wed, 27 Oct 2010 13:25:26 +0200
-Subject: [PATCH] tty: Add a new file /proc/tty/consoles
-
- Add a new file /proc/tty/consoles to be able to
- determine the registered system console lines.
- If the reading process holds /dev/console open at
- the regular standard input stream the active device
- will be marked by an asterisk.  Show possible
- operations and also decode the used flags of the
- of the listed console lines.
-
-Signed-off-by: Werner Fink <werner@suse.de>
-
-diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-index 9fb6cbe..eeee8d9 100644
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -1074,6 +1074,7 @@ Table 1-11: Files in /proc/tty
-  drivers       list of drivers and their usage                
-  ldiscs        registered line disciplines                    
-  driver/serial usage statistic and status of single tty lines 
-+ consoles      registered system console lines
- ..............................................................................
- 
- To see  which  tty's  are  currently in use, you can simply look into the file
-@@ -1092,6 +1093,38 @@ To see  which  tty's  are  currently in use, you can simply look into the file
-   /dev/tty             /dev/tty        5       0 system:/dev/tty 
-   unknown              /dev/tty        4    1-63 console 
- 
-+To see which character device lines are currently used for the system console
-+/dev/console, you may simply look into the file /proc/tty/consoles:
-+
-+  > cat /proc/tty/consoles
-+  tty0                 -WU (ECp)       4:7
-+  ttyS0                -W- (Ep)        4:64
-+
-+The columns are:
-+
-+  device               name of the device
-+  operations           R = can do read operations
-+                       W = can do write operations
-+                       U = can do unblank
-+  flags                E = it is enabled
-+                       C = it is prefered console
-+                       B = it is primary boot console
-+                       p = it is used for printk buffer
-+                       b = it is not a TTY but a Braille device
-+                       a = it is safe to use when cpu is offline
-+                       * = it is tty line of the reading process
-+                       + = it is controlling tty of the reading process
-+  major:minor          major and minor number of the device separated by a colon
-+
-+If the reading process holds /dev/console open at the regular standard input
-+stream the active device will be marked by an asterisk:
-+
-+  > cat /proc/tty/consoles < /dev/console
-+  tty0                 -WU (ECp*)      4:7
-+  ttyS0                -W- (Ep)        4:64
-+  > tty
-+  /dev/pts/3
-+
- 
- 1.8 Miscellaneous kernel statistics in /proc/stat
- -------------------------------------------------
-diff --git a/fs/proc/proc_tty.c b/fs/proc/proc_tty.c
-index 83adcc8..5a6798c 100644
---- a/fs/proc/proc_tty.c
-+++ b/fs/proc/proc_tty.c
-@@ -12,7 +12,10 @@
- #include <linux/proc_fs.h>
- #include <linux/stat.h>
- #include <linux/tty.h>
-+#include <linux/tty_driver.h>
-+#include <linux/console.h>
- #include <linux/seq_file.h>
-+#include <linux/fdtable.h>
- #include <linux/bitops.h>
- 
- /*
-@@ -137,6 +140,170 @@ static const struct file_operations proc_tty_drivers_operations = {
- };
- 
- /*
-+ * The device ID of file descriptor 0 of the current reading
-+ * task if a character device...
-+ */
-+struct proc_tty_private {
-+	dev_t tty_device;
-+	unsigned int on_console:1;
-+};
-+
-+/*
-+ * This is the handler for /proc/tty/consoles
-+ */
-+static int show_console_dev(struct seq_file *m, void *v)
-+{
-+	struct console *con;
-+	int index, len;
-+	char flags[10];
-+	dev_t dev = 0;
-+
-+	con = v;
-+	if (!con)
-+		return 0;
-+
-+	if (con->device) {
-+		const struct tty_driver *driver;
-+		driver = con->device(con, &index);
-+		if (driver) {
-+			dev = MKDEV(driver->major, driver->minor_start);
-+			dev += index;
-+		}
-+	}
-+
-+	index = 0;
-+	if (con->flags & CON_ENABLED)
-+		flags[index++] = 'E';
-+	if (con->flags & CON_CONSDEV)
-+		flags[index++] = 'C';
-+	if (con->flags & CON_BOOT)
-+		flags[index++] = 'B';
-+	if (con->flags & CON_PRINTBUFFER)
-+		flags[index++] = 'p';
-+	if (con->flags & CON_BRL)
-+		flags[index++] = 'b';
-+	if (con->flags & CON_ANYTIME)
-+		flags[index++] = 'a';
-+	if (m->private) {
-+		const struct proc_tty_private *priv = m->private;
-+		if (priv->on_console && (con->flags & CON_CONSDEV))
-+			flags[index++] = '*';
-+		if (dev && priv->tty_device == dev)
-+			flags[index++] = '+';
-+	}
-+	flags[index] = 0;
-+
-+	seq_printf(m, "%s%d%n", con->name, con->index, &len);
-+	len = 21 - len;
-+	if (len < 1)
-+		len = 1;
-+	seq_printf(m, "%*c", len, ' ');
-+	seq_printf(m, "%c%c%c (%s)%n", con->read ? 'R' : '-',
-+			con->write ? 'W' : '-', con->unblank ? 'U' : '-',
-+			flags, &len);
-+	if (dev) {
-+		len = 13 - len;
-+		if (len < 1)
-+			len = 1;
-+		seq_printf(m, "%*c%4d:%d\n", len, ' ', MAJOR(dev), MINOR(dev));
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * Determine terminal device of standard input of current task.
-+ */
-+static void current_console_device(struct proc_tty_private *priv)
-+{
-+	struct files_struct *files = get_files_struct(current);
-+	const struct file *filp;
-+	unsigned long flags;
-+
-+	if (!files)
-+		return;
-+
-+	spin_lock(&files->file_lock);
-+	filp = fcheck_files(files, 0);
-+	if (filp) {
-+		const struct inode *inode;
-+		dget(filp->f_dentry);
-+		inode = filp->f_dentry->d_inode;
-+		if (inode->i_rdev == MKDEV(TTYAUX_MAJOR, 1))
-+			priv->on_console = 1;
-+		dput(filp->f_dentry);
-+	}
-+	spin_unlock(&files->file_lock);
-+	put_files_struct(files);
-+
-+	if (lock_task_sighand(current, &flags)) {
-+		struct signal_struct *sig = current->signal;
-+		if (sig->tty)
-+			priv->tty_device = tty_devnum(sig->tty);
-+		unlock_task_sighand(current, &flags);
-+	}
-+}
-+
-+static void *c_start(struct seq_file *m, loff_t *pos)
-+{
-+	struct proc_tty_private *priv;
-+	struct console *con;
-+	loff_t off = 0;
-+
-+	m->private = NULL;
-+	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
-+	if (priv) {
-+		current_console_device(priv);
-+		m->private = priv;
-+	}
-+
-+	acquire_console_sem();
-+	for (con = console_drivers; con; con = con->next) {
-+		if (off++ == *pos)
-+			break;
-+	}
-+	return con;
-+}
-+
-+static void *c_next(struct seq_file *m, void *v, loff_t *pos)
-+{
-+	struct console *con = v;
-+	con = con->next;
-+	if (con)
-+		++*pos;
-+	return con;
-+}
-+
-+static void c_stop(struct seq_file *m, void *v)
-+{
-+	release_console_sem();
-+	kfree(m->private);
-+}
-+
-+static const struct seq_operations tty_consoles_op = {
-+	.start	= c_start,
-+	.next	= c_next,
-+	.stop	= c_stop,
-+	.show	= show_console_dev
-+};
-+
-+/* iterator for consoles */
-+/*
-+ * Used for open /proc/tty/consoles.
-+ */
-+static int tty_consoles_open(struct inode *inode, struct file *file)
-+{
-+	return seq_open(file, &tty_consoles_op);
-+}
-+
-+static const struct file_operations proc_tty_consoles_operations = {
-+	.open		= tty_consoles_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= seq_release,
-+};
-+
-+/*
-  * This function is called by tty_register_driver() to handle
-  * registering the driver's /proc handler into /proc/tty/driver/<foo>
-  */
-@@ -186,4 +353,5 @@ void __init proc_tty_init(void)
- 	proc_tty_driver = proc_mkdir_mode("tty/driver", S_IRUSR|S_IXUSR, NULL);
- 	proc_create("tty/ldiscs", 0, NULL, &tty_ldiscs_proc_fops);
- 	proc_create("tty/drivers", 0, NULL, &proc_tty_drivers_operations);
-+	proc_create("tty/consoles", 0, NULL, &proc_tty_consoles_operations);
- }
--- 
-1.6.0.2
-
-
---G4iJoqBmSsgzjUCe--
