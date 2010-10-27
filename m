@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838Ab0J0WYv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 18:24:51 -0400
-Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:38991 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754016Ab0J0WYs (ORCPT
+	id S1757156Ab0J0W0u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 18:26:50 -0400
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:26388 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751031Ab0J0W0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 18:24:48 -0400
-Date: Thu, 28 Oct 2010 09:24:44 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] fs: Lock the inode LRU list separately
-Message-ID: <20101027222444.GC2715@dastard>
-References: <1288153384-8878-1-git-send-email-david@fromorbit.com>
- <1288153384-8878-4-git-send-email-david@fromorbit.com>
- <20101027090530.GB16443@infradead.org>
+	Wed, 27 Oct 2010 18:26:47 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: V34MVJ4VM1mBLsPr2E24Wp4gUZ7p7TRP1h8zxoqWHRUYoBb
+ nnQ9y3MU8RInrtN5kGZWM2IsOwIG2qAN3SA7lo4OmEORpVrLOSuLpKTsonSG
+ 086OSwtmkhzNf8mXDMiJtsH5BSw6YAPy5aI3ejYxBN3SD_70ZRcRN0UML_nQ
+ qMTabxx45zD8w_LvyZ7ieur2EjCWa55EQQj8PNaj84rbeBI3KwODVFvx7HhS
+ _
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 27 Oct 2010 17:26:44 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Martin Nybo Andersen <tweek@tweek.dk>
+cc: Dragoslav Zaric <zaricdragoslav@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: Tickles scheduler
+In-Reply-To: <alpine.DEB.2.00.1010260959250.10975@odin.tweek.dk>
+Message-ID: <alpine.DEB.2.00.1010271725260.9704@router.home>
+References: <AANLkTimzEDtfUKajFPgGOhifPhyRQboZbKNbypBaKpKO@mail.gmail.com> <alpine.DEB.2.00.1010260959250.10975@odin.tweek.dk>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101027090530.GB16443@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 05:05:30AM -0400, Christoph Hellwig wrote:
-> > @@ -537,15 +545,10 @@ void evict_inodes(struct super_block *sb)
-> >  		}
-> >  
-> >  		inode->i_state |= I_FREEING;
-> > -		if (!(inode->i_state & (I_DIRTY | I_SYNC)))
-> > -			percpu_counter_dec(&nr_inodes_unused);
-> > +		inode_lru_list_del(inode);
-> >  		spin_unlock(&inode->i_lock);
-> >  
-> > -		/*
-> > -		 * Move the inode off the IO lists and LRU once I_FREEING is
-> > -		 * set so that it won't get moved back on there if it is dirty.
-> > -		 */
-> > -		list_move(&inode->i_lru, &dispose);
-> > +		list_add(&inode->i_lru, &dispose);
-> >  	}
-> >  	spin_unlock(&inode_lock);
-> >  
-> > @@ -582,15 +585,10 @@ int invalidate_inodes(struct super_block *sb)
-> >  		}
-> >  
-> >  		inode->i_state |= I_FREEING;
-> > -		if (!(inode->i_state & (I_DIRTY | I_SYNC)))
-> > -			percpu_counter_dec(&nr_inodes_unused);
-> > +		inode_lru_list_del(inode);
-> >  		spin_unlock(&inode->i_lock);
-> 
-> with this scheme we now decrement nr_inodes_unused twice - once in
-> invalidate_inodes/evict_inodes and once in dispose_one_inode. 
+On Tue, 26 Oct 2010, Martin Nybo Andersen wrote:
 
-That doesn't happen because the counter is only modified when
-the inode is moved on/off the list and there are checks to avoid
-removing an inode that is not on the list. Also, the inode is not
-removed from the LRU in dispose_one_inode - it is always done when
-the inode is marked I_FREEING while the i_lock is held before
-calling dispose_one_inode().
+> On Tue, 26 Oct 2010, Dragoslav Zaric wrote:
+>
+> > [...]
+> >
+> > Is it at all possible to implement kernel without ticking, spin system
+> > by events and periods ?
+>
+> You can compile with CONFIG_NO_HZ=n if you want a ticking kernel.
 
-Basically I wanted to remove the strange "inode is not on the LRU if
-it is dirty or under writeback" accounting checks and make the
-accounting symmetric with adding/removing the inodes from the LRU.
-These are protected by list_empty() checks, so should always end up
-with the correct accounting.
+The kernel always ticks when a process is running CONFIG_NO_HZ does
+nothing for that.
 
-hence the only special case now is prune_icache() which already
-holds the inode_lru_lock() so can't call the helper. Besides, we
-don't need any checks there because we know the inode is on the LRU
-already....
+> > Maybe ticking is still best solution to have fast responding system ?
 
-Cheers,
+I think we need a tickless kernel.... Yes....
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+> My guesses are that it has already been benchmarked for speed, but you can
+> still test it yourself.
+> At least power usage/battery times is much better with a tickless kernel.
+
+Well yes CONFIG_NO_HZ really should say CONFIG_NO_HZ_IDLE. You have
+no ticks when a cpu is idle. Otherwise we are ticking...
+
