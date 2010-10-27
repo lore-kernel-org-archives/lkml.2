@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760547Ab0J0AAu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 20:00:50 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:58122 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753799Ab0J0AAt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 20:00:49 -0400
-Date: Wed, 27 Oct 2010 11:00:38 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>
-Subject: linux-next: build warning from Linus' tree
-Message-Id: <20101027110038.9f2ca56a.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__27_Oct_2010_11_00_38_+1100_svuGtmATILk0pScz"
+	id S1760591Ab0J0ABH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 20:01:07 -0400
+Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:36933 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756546Ab0J0ABF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 20:01:05 -0400
+Date: Wed, 27 Oct 2010 11:00:51 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jens Axboe <jaxboe@fusionio.com>
+Subject: [warn, 2.6.37-current] loop: sysfs: cannot create duplicate
+ filename
+Message-ID: <20101027000051.GC32255@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__27_Oct_2010_11_00_38_+1100_svuGtmATILk0pScz
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Folks,
 
-Hi ,
+I'm getting this warning triggering repeatedly when running xfstests
+on a day old 2.6.37-git tree.
 
-While building Linus' tree, today's linux-next build (x86_64 allmodconfig)
-produced this warning:
+ [ 3393.738568] ------------[ cut here ]------------
+ [ 3393.739389] WARNING: at fs/sysfs/dir.c:451 sysfs_add_one+0xc9/0x130()
+ [ 3393.740490] Hardware name: Bochs
+ [ 3393.741041] sysfs: cannot create duplicate filename '/devices/virtual/block/loop0/loop'
+ [ 3393.742439] Modules linked in:
+ [ 3393.742984] Pid: 5360, comm: mount Not tainted 2.6.36-dgc+ #590
+ [ 3393.744125] Call Trace:
+ [ 3393.744555]  [<ffffffff8108492f>] warn_slowpath_common+0x7f/0xc0
+ [ 3393.745545]  [<ffffffff81084a26>] warn_slowpath_fmt+0x46/0x50
+ [ 3393.746493]  [<ffffffff811d1539>] sysfs_add_one+0xc9/0x130
+ [ 3393.747420]  [<ffffffff811d1621>] create_dir+0x81/0xd0
+ [ 3393.748311]  [<ffffffff811d175c>] sysfs_create_subdir+0x1c/0x20
+ [ 3393.749294]  [<ffffffff811d30b8>] internal_create_group+0x58/0x1a0
+ [ 3393.750234]  [<ffffffff811d3233>] sysfs_create_group+0x13/0x20
+ [ 3393.751223]  [<ffffffff81879e66>] lo_ioctl+0x506/0x7b0
+ [ 3393.752111]  [<ffffffff8169b5a8>] __blkdev_driver_ioctl+0x28/0x30
+ [ 3393.753115]  [<ffffffff8169ba8e>] blkdev_ioctl+0x22e/0x6f0
+ [ 3393.754022]  [<ffffffff81190732>] block_ioctl+0x42/0x50
+ [ 3393.754889]  [<ffffffff8116f239>] do_vfs_ioctl+0xa9/0x5a0
+ [ 3393.755803]  [<ffffffff810bdded>] ? trace_hardirqs_on+0xd/0x10
+ [ 3393.756805]  [<ffffffff8116f7b1>] sys_ioctl+0x81/0xa0
+ [ 3393.757647]  [<ffffffff8103a072>] system_call_fastpath+0x16/0x1b
+ [ 3393.758626] ---[ end trace 2a65a71ed74903b0 ]---
 
-drivers/char/pcmcia/synclink_cs.c:2194: warning: 'mgslpc_get_icount' define=
-d but not used
-
-Introduced by commit 0587102cf9f427c185bfdeb2cef41e13ee0264b1 ("tty:
-icount changeover for other main devices").
-
---=20
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Wed__27_Oct_2010_11_00_38_+1100_svuGtmATILk0pScz
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMx2umAAoJEDMEi1NhKgbsQ3UIAI59bXZhn4AeSyhr4LCH0647
-kXVH8uK7UfHK/fAqGTP3sSAic4Xnl4DDAlcaLKVP6MhqzIhDh93Dld89He8DNFlz
-/sNB+XoNVVnNKDgxBNaR9zwnfWgWxybb83nrnN19EW2+auRiX4ydy4sHVBrBlLD1
-vvAtibbYzXqhfaBR7s+ss/VSfY6fKOI8lFKKrj27wSgDY0xI7860UyAysCzji2Uv
-qmDTLtrK3dZX2o4boPbZlILW6VDcERcio9vhW3dMnyYNAQeNNSHH/99vrDUtDr8L
-4HPDMJtbAC3jcsq6J1W1QbyHdh/MihWiCnsY2eoaiEptNWdubGEw0GaZYZtYkdo=
-=3mq4
------END PGP SIGNATURE-----
-
---Signature=_Wed__27_Oct_2010_11_00_38_+1100_svuGtmATILk0pScz--
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
