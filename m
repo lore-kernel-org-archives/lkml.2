@@ -1,81 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761257Ab0J0QJB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 12:09:01 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:50474 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760843Ab0J0QI7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 12:08:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=AK2cqYq2S4OQp6jJzOlGBPiKod6IAsXy1rJIGPS2nOPXdc+EEFDkVHJaFEsAXOdq5P
-         oPbvgmM0bvSSWnNqUk0nY9q01LiMKV7KUSxTBe8tx9Aaiwdg2LjtiAfVzkzoOyYfIUtT
-         EHIBousTFkI0f7emWGdAYXfOqDeHQ/ezkhyu0=
-Date: Wed, 27 Oct 2010 09:08:42 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Samuel Thibault <sthibault@debian.org>, Tom Vier <tom@triadsys.com>,
-        "594089@bugs.debian.org" <594089@bugs.debian.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: Re: Bug#594089: keyboard-configuration: caps lock keycode problem
-Message-ID: <20101027160842.GB8745@core.coreip.homeip.net>
-References: <20101025045003.GA1438@core.coreip.homeip.net>
- <4CC58816.3090301@triadsys.com>
- <20101025180320.GA4725@const.famille.thibault.fr>
- <4CC6E9D8.8010201@triadsys.com>
- <20101026161820.GE13097@core.coreip.homeip.net>
- <4CC7426C.8040502@triadsys.com>
- <20101027091029.GB28895@core.coreip.homeip.net>
- <20101027120513.GT4725@const.famille.thibault.fr>
- <99F91536-4413-430C-9932-7CEF6AB656DB@gmail.com>
- <20101027152242.GO4725@const.famille.thibault.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101027152242.GO4725@const.famille.thibault.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1761352Ab0J0QMn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 12:12:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57358 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761158Ab0J0QMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 12:12:41 -0400
+Date: Wed, 27 Oct 2010 12:13:38 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: sfrench@samba.org, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        linux-cifs@vger.kernel.org
+Subject: Re: [PATCH 2/4] FS: cifs, remove unneeded NULL tests
+Message-ID: <20101027121338.2984b9d8@corrin.poochiereds.net>
+In-Reply-To: <1288180220-19869-1-git-send-email-jslaby@suse.cz>
+References: <1288180220-19869-1-git-send-email-jslaby@suse.cz>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 05:22:42PM +0200, Samuel Thibault wrote:
-> Dmitry Torokhov, le Wed 27 Oct 2010 08:06:26 -0700, a écrit :
-> > On Oct 27, 2010, at 5:05 AM, Samuel Thibault <sthibault@debian.org> wrote:
-> > 
-> > 
-> >     Dmitry Torokhov, le Wed 27 Oct 2010 02:10:29 -0700, a écrit :
-> > 
-> >         Also, based on evtest data I only see presses/releases for one key
-> >         (Caps Lock, Right Shift, etc.) I do not see the presses for the additional
-> >         keys in the evtest stream so I am baffled as to where the additional
-> >         scancode is coming from... Do you have some funky keymap loaded?
-> >         Anything interesting in dumpkeys?
-> > 
-> > 
-> >     Err, since the duplicates appear in scancodes already, is the content of
-> >     dumpkeys really involved?
-> > 
-> > Evtest data does not show any additional events, so the additional scancodes
-> > must be coming from the legacy keyboard driver. 
+On Wed, 27 Oct 2010 13:50:20 +0200
+Jiri Slaby <jslaby@suse.cz> wrote:
+
+> Stanse found that pSMBFile in cifs_ioctl and file->f_path.dentry in
+> cifs_user_write are dereferenced prior their test to NULL.
 > 
-> Sure, but dumpkeys shows the table from scancodes to keycodes, not from
-> input events to scancodes.
+> The alternative is not to dereference them before the tests. The patch is
+> to point out the problem, you have to decide.
+> 
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Cc: Steve French <sfrench@samba.org>
+> Cc: linux-cifs@vger.kernel.org
+> ---
+>  fs/cifs/file.c  |    2 +-
+>  fs/cifs/ioctl.c |    4 ----
+>  2 files changed, 1 insertions(+), 5 deletions(-)
+> 
+> diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+> index 45af003..db7eaf7 100644
+> --- a/fs/cifs/file.c
+> +++ b/fs/cifs/file.c
+> @@ -1031,7 +1031,7 @@ ssize_t cifs_user_write(struct file *file, const char __user *write_data,
+>  	cifs_stats_bytes_written(pTcon, total_written);
+>  
+>  	/* since the write may have blocked check these pointers again */
+> -	if ((file->f_path.dentry) && (file->f_path.dentry->d_inode)) {
+> +	if (file->f_path.dentry->d_inode) {
 
-I am just wondering if some of the translation is leaking even though
-the keyboard is in raw mode...
+		^^^^^^
+	This check is bogus too. An open filp on a negative dentry
+	isn't possible, right?
 
-OK, scratch that... Are there any other input devices? Anything
-connected via uinput and listening? What does /proc/bus/input/devices
-show? Maybe if Tom could compile and load evbug module it would show us
-where the additional events are coming form, becaus ethey surely are not
-generated by the keyboard itself (otherwise we'd have seen them in
-evtest output for that device).
+>  		struct inode *inode = file->f_path.dentry->d_inode;
+>  /* Do not update local mtime - server will set its actual value on write
+>   *		inode->i_ctime = inode->i_mtime =
+> diff --git a/fs/cifs/ioctl.c b/fs/cifs/ioctl.c
+> index 077bf75..2fa22f2 100644
+> --- a/fs/cifs/ioctl.c
+> +++ b/fs/cifs/ioctl.c
+> @@ -63,8 +63,6 @@ long cifs_ioctl(struct file *filep, unsigned int command, unsigned long arg)
+>  #ifdef CONFIG_CIFS_POSIX
+>  		case FS_IOC_GETFLAGS:
+>  			if (CIFS_UNIX_EXTATTR_CAP & caps) {
+> -				if (pSMBFile == NULL)
+> -					break;
+>  				rc = CIFSGetExtAttr(xid, tcon, pSMBFile->netfid,
+>  					&ExtAttrBits, &ExtAttrMask);
+>  				if (rc == 0)
+> @@ -80,8 +78,6 @@ long cifs_ioctl(struct file *filep, unsigned int command, unsigned long arg)
+>  					rc = -EFAULT;
+>  					break;
+>  				}
+> -				if (pSMBFile == NULL)
+> -					break;
+>  				/* rc= CIFSGetExtAttr(xid,tcon,pSMBFile->netfid,
+>  					extAttrBits, &ExtAttrMask);*/
+>  			}
 
--- 
-Dmitry
+Acked-by: Jeff Layton <jlayton@redhat.com>
