@@ -1,46 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932239Ab0J0VEV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 17:04:21 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:22619 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757035Ab0J0VES (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 17:04:18 -0400
-X-SpamScore: 1
-X-BigFish: VS1(z3b68izzz1202hzzz2dh2a8h)
-Message-ID: <4CC893CD.7020701@freescale.com>
-Date: Wed, 27 Oct 2010 16:04:13 -0500
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.13) Gecko/20101013 Fedora/2.0.8-2.fc13 SeaMonkey/2.0.8
+	id S1757265Ab0J0VE7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 17:04:59 -0400
+Received: from c-67-162-90-113.hsd1.in.comcast.net ([67.162.90.113]:58292 "HELO
+	kosh.dhis.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1757156Ab0J0VE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 17:04:58 -0400
+Message-ID: <20101027210457.23673.qmail@kosh.dhis.org>
+From: pacman@kosh.dhis.org
+Subject: Re: Pegasos OHCI bug (was Re: PROBLEM: memory corrupting bug,
+To: olaf@aepfle.de (Olaf Hering)
+Date: Wed, 27 Oct 2010 16:04:57 -0500 (GMT+5)
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20101027101351.GA28218@aepfle.de>
 MIME-Version: 1.0
-To: gregkh <gregkh@suse.de>, lkml <linux-kernel@vger.kernel.org>
-Subject: Writing a console/tty driver -- how to use tty_port?
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Oct 2010 21:04:44.0126 (UTC) FILETIME=[9467F7E0:01CB761A]
-X-Reverse-DNS: az33egw02.freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg,
+Olaf Hering writes:
+> 
+> On Wed, Oct 27, pacman@kosh.dhis.org wrote:
+> 
+> > |1. How do I locate all usb nodes in the device tree?
+> > |
+> > |2. How do I know if a particular usb node is OHCI?
+> 
+> In the installed system, run 'lspci | grep -i usb', this gives the pci
+> bus numbers.  Then run 'find /sys -name devspec', and look or the bus
 
-Do you have an updated version of Tiny TTY that uses tty_port structures?  I'm
-trying to write a new TTY driver for a device that is not a UART, and I'm having
-a hard time finding a good example.  I suspect I need to understand the tty_port
-structure, but I can't find any documentation for it.
+Once the system is running, I have no problem figuring it out. What I meant
+was how do I write some code to identify OHCI devices correctly, from within
+the limited environment of the Forth interpreter, which will work in the
+general case.
 
-One specific problem I'm having is that I can't figure out how to get a
-tty_struct pointer in my interrupt handler.  The ISR gets called whenever there
-is new input, and it needs to call tty_insert_flip_string().  But it appears
-that it's possible to have my driver opened multiple times, each time creating a
-new TTY.  But since I can only have one interrupt handler, I don't know how to
-determine which of the tty_structs to use.  I figure tty_port is a way to
-resolve this problem, but I don't know how to use it exactly.
+I already know that /pci@80000000/usb@5 and /pci@80000000/usb@5,1 are the
+problem nodes on my machine. And I've learned enough about OF to do a full
+recursive device tree search to find the USB nodes, so the first question is
+answered.
+
+But the UHCI and OHCI nodes look very much alike in the OF properties. "name"
+is just "usb" and there's no "compatible".
+
+The big question that I'm still stumbling over is how to access the device
+registers. The "reg" property looks like this:
+             phys                 size
+ -------------------------- -----------------
+ 00002800 00000000 00000000 00000000 00000000
+ 02002810 00000000 00000000 00000000 00001000
+so I take the second group of 5 words, which should be the device registers,
+and try to map it to a virtual address. The members are unpacked on the stack
+like this:
+  00000000 00000000 02002810 00000000 00001000
+which looks like this stack diagram from OF spec:
+  map-in ( phys.lo ... phys.hi size -- virt )
+and the method call goes like this:
+  " map-in" $call-parent
+The result: "invalid pointer". But I notice it only popped 4 items. I think
+maybe the "size" for map-in is not the same as the "size" found in the reg
+property. Maybe #size-cells applies in one place but not the other. Thanks
+for not documenting that! Try again:
+  00000000 00000000 02002810 00001000 " map-in" $call-parent
+This one doesn't complain, but leaves me a 0 on the stack as its answer. The
+OHCI registers have been mapped to virtual address 0? Doesn't seem likely.
 
 -- 
-Timur Tabi
-Linux kernel developer at Freescale
-
+Alan Curry
