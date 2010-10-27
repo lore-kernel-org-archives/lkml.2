@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab0J0RyJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 13:54:09 -0400
-Received: from claw.goop.org ([74.207.240.146]:45465 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753756Ab0J0RyG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 13:54:06 -0400
-Message-ID: <4CC8673C.6060706@goop.org>
-Date: Wed, 27 Oct 2010 10:54:04 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+	id S1753894Ab0J0R4T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 13:56:19 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39536 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753681Ab0J0R4R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 13:56:17 -0400
+Date: Wed, 27 Oct 2010 10:56:21 -0700
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Thiago Farina <tfransosi@gmail.com>
+Cc: Sundar Iyer <sundar.iyer@stericsson.com>, lrg@slimlogic.co.uk,
+        sameo@linux.intel.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        STEricsson_nomadik_linux@list.st.com,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Bengt JONSSON <bengt.g.jonsson@stericsson.com>
+Subject: Re: [PATCH v2 1/2] regulator: add support for regulators on the
+ ab8500 MFD
+Message-ID: <20101027175620.GB25134@opensource.wolfsonmicro.com>
+References: <1279030173-3086-1-git-send-email-sundar.iyer@stericsson.com>
+ <AANLkTinc50bzQawaoA_XfkLhJXjVjPWzxgbCJ40UnYwi@mail.gmail.com>
+ <20101027173340.GA25134@opensource.wolfsonmicro.com>
+ <AANLkTi=DRHVbz3ov_gL6qyYH673WDk+1Vyw2AvjhSRxv@mail.gmail.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Ian Campbell <ian.campbell@citrix.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [PATCH] x86: use pgd accessors when cloning a pgd range.
-References: <1288169413-29065-1-git-send-email-ian.campbell@citrix.com> <20101027104020.GA16954@a1.tnic> <4CC85839.4000507@goop.org> <4CC85EE6.7030608@linux.intel.com> <4CC861F9.8080200@goop.org> <20101027174417.GA19194@a1.tnic>
-In-Reply-To: <20101027174417.GA19194@a1.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=DRHVbz3ov_gL6qyYH673WDk+1Vyw2AvjhSRxv@mail.gmail.com>
+X-Cookie: Today is what happened to yesterday.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 10/27/2010 10:44 AM, Borislav Petkov wrote:
-> On Wed, Oct 27, 2010 at 10:31:37AM -0700, Jeremy Fitzhardinge wrote:
->>> Xen shouldn't have any users of this, since it's used for low-level
->>> operations like SMP bootstrap, suspend to RAM, reboot and low-level
->>> BIOS functionality.
->>>
->> Right, but it is being called smack in the middle of setup_arch().  It
->> looks like they could be hidden away in
->> native_pagetable_setup_start/done though.
-> I think I can put the second sync-back clone_pgd_range in
-> native_pagetable_setup_done but the first one needs to take place right
-> at the beginning of setup_arch() because a lot of code in-between relies
-> on swapper_pg_dir containing proper entries.
+On Wed, Oct 27, 2010 at 03:42:53PM -0200, Thiago Farina wrote:
+> On Wed, Oct 27, 2010 at 3:33 PM, Mark Brown
 
-OK.
+> > There is no reason to do this, logical values are treated as 0 and 1 in
+> > C.  Using false and true is clear and won't cause any difference in
+> > code.
 
-> Just to make sure I understand you correctly: best it would be for xen
-> to not have the copy_pgd_range() calls in setup_arch, correct?
+> In C99 I suppose that is true and legal?
 
-Right.  Could you put the first copy into swapper_pg_dir earlier, before
-setup_arch() somewhere that's specific to booting via head_32.S?
+Yes.  C has always used 1 and 0 as the numerical mappings for logical
+values, the addition of the keywords did not change them.
 
-    J
+> >> Maybe like this?
+> >> return (ret & info->mask) ? 1: 0;
+
+> > No, that's needlessly obfuscated.
+
+> Obfuscated? What you mean? It is a driver, and people reading and
+> writing a driver would know what it means, no?
+
+Adding the ternery operator just makes the code more noisy for no
+benefit.
+
+> Would be much simpler if it was just (like done in ab3100.c):
+
+> return (ret & info->mask);
+
+Yes, though there's no problem with the current code either.
