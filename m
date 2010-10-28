@@ -1,214 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933500Ab0J1N5U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 09:57:20 -0400
+	id S933562Ab0J1N57 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 09:57:59 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:39011 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933300Ab0J1N4t (ORCPT
+	with ESMTP id S1758774Ab0J1N4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 09:56:49 -0400
-X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=q8LdYn1-A-UA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=enOvQawGAAAA:8 a=20KFwNOVAAAA:8 a=WPyIoOwQAAAA:8 a=meVymXHHAAAA:8 a=bWhlw3oZTvss8zEWJQIA:9 a=wvEa9j2gT5RlsGPJnp4A:7 a=3IAx4QljvZyhzZJroGqarOYyVEIA:4 a=bkT6KWdcy0IA:10 a=jEp0ucaQiEUA:10 a=1DbiqZag68YA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Thu, 28 Oct 2010 09:56:47 -0400
+X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=Y5zlnkkpqyYA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=7d_E57ReAAAA:8 a=3nbZYyFuAAAA:8 a=meVymXHHAAAA:8 a=HzHanZfdLyP9a52u5xMA:9 a=oz3_3wr0uYdbuxPCfjoA:7 a=Rax08GD505yMcdRe7H_fx-nHaRoA:4 a=jEp0ucaQiEUA:10 a=D6-X0JM3zdQA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=HHOBg75yxcZzyzeN:21 a=myAapDF9txdkNF_9:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20101028135648.113943857@goodmis.org>
+Message-Id: <20101028135645.422566563@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 28 Oct 2010 09:55:53 -0400
+Date: Thu, 28 Oct 2010 09:55:49 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Jason Baron <jbaron@redhat.com>, Ralf Baechle <ralf@linux-mips.org>,
-        David Daney <ddaney@caviumnetworks.com>
-Subject: [PATCH 5/8] jump label: Add MIPS support.
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Jason Baron <jbaron@redhat.com>
+Subject: [PATCH 1/8] jump label: Fix module __init section race
 References: <20101028135548.055490014@goodmis.org>
-Content-Disposition: inline; filename=0005-jump-label-Add-MIPS-support.patch
+Content-Disposition: inline; filename=0001-jump-label-Fix-module-__init-section-race.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <ddaney@caviumnetworks.com>
+From: Jason Baron <jbaron@redhat.com>
 
-When in Rome...
+Jump label uses is_module_text_address() to ensure that the module
+__init sections are valid before updating them. However, between the
+check for a valid module __init section and the subsequent jump
+label update, the module's __init section could be freed out from under
+us.
 
-In order not to be left behind, we add jump label support for MIPS.
+We fix this potential race by adding a notifier callback to the
+MODULE_STATE_LIVE state. This notifier is called *after* the __init
+section has been run but before it is going to be freed. In the
+callback, the jump label code zeros the key value for any __init jump
+code within the module, and we add a check for a non-zero key value when
+we update jump labels. In this way we require no additional data
+structures.
 
-Tested on 64-bit big endian (Octeon), and 32-bit little endian
-(malta/qemu).
+Thanks to Mathieu Desnoyers for pointing out this race condition.
 
-Cc: Jason Baron <jbaron@redhat.com>
-Acked-by: Ralf Baechle <ralf@linux-mips.org>
-Signed-off-by: David Daney <ddaney@caviumnetworks.com>
-LKML-Reference: <1286218615-24011-3-git-send-email-ddaney@caviumnetworks.com>
+Reported-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Jason Baron <jbaron@redhat.com>
+LKML-Reference: <c6f037b7598777668025ceedd9294212fd95fa34.1285965957.git.jbaron@redhat.com>
+
+[ Renamed remove_module_init() to remove_jump_label_module_init()
+  as suggested by Masami Hiramatsu. ]
+
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/mips/Kconfig                  |    1 +
- arch/mips/include/asm/jump_label.h |   48 ++++++++++++++++++++++++++++++++++
- arch/mips/kernel/Makefile          |    3 +-
- arch/mips/kernel/jump_label.c      |   50 ++++++++++++++++++++++++++++++++++++
- arch/mips/kernel/module.c          |    5 +++
- 5 files changed, 106 insertions(+), 1 deletions(-)
- create mode 100644 arch/mips/include/asm/jump_label.h
- create mode 100644 arch/mips/kernel/jump_label.c
+ kernel/jump_label.c |   41 ++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 40 insertions(+), 1 deletions(-)
 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index 46cae2b..ebea886 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -12,6 +12,7 @@ config MIPS
- 	select HAVE_FUNCTION_GRAPH_TRACER
- 	select HAVE_KPROBES
- 	select HAVE_KRETPROBES
-+	select HAVE_ARCH_JUMP_LABEL
- 	select RTC_LIB if !MACH_LOONGSON
- 	select GENERIC_ATOMIC64 if !64BIT
+diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+index 7be868b..be9e105 100644
+--- a/kernel/jump_label.c
++++ b/kernel/jump_label.c
+@@ -168,7 +168,8 @@ void jump_label_update(unsigned long key, enum jump_label_type type)
+ 			count = e_module->nr_entries;
+ 			iter = e_module->table;
+ 			while (count--) {
+-				if (kernel_text_address(iter->code))
++				if (iter->key &&
++						kernel_text_address(iter->code))
+ 					arch_jump_label_transform(iter, type);
+ 				iter++;
+ 			}
+@@ -366,6 +367,39 @@ static void remove_jump_label_module(struct module *mod)
+ 	}
+ }
  
-diff --git a/arch/mips/include/asm/jump_label.h b/arch/mips/include/asm/jump_label.h
-new file mode 100644
-index 0000000..7622ccf
---- /dev/null
-+++ b/arch/mips/include/asm/jump_label.h
-@@ -0,0 +1,48 @@
-+/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (c) 2010 Cavium Networks, Inc.
-+ */
-+#ifndef _ASM_MIPS_JUMP_LABEL_H
-+#define _ASM_MIPS_JUMP_LABEL_H
-+
-+#include <linux/types.h>
-+
-+#ifdef __KERNEL__
-+
-+#define JUMP_LABEL_NOP_SIZE 4
-+
-+#ifdef CONFIG_64BIT
-+#define WORD_INSN ".dword"
-+#else
-+#define WORD_INSN ".word"
-+#endif
-+
-+#define JUMP_LABEL(key, label)						\
-+	do {								\
-+		asm goto("1:\tnop\n\t"					\
-+			"nop\n\t"					\
-+			".pushsection __jump_table,  \"a\"\n\t"		\
-+			WORD_INSN " 1b, %l[" #label "], %0\n\t"		\
-+			".popsection\n\t"				\
-+			: :  "i" (key) :  : label);			\
-+	} while (0)
-+
-+
-+#endif /* __KERNEL__ */
-+
-+#ifdef CONFIG_64BIT
-+typedef u64 jump_label_t;
-+#else
-+typedef u32 jump_label_t;
-+#endif
-+
-+struct jump_entry {
-+	jump_label_t code;
-+	jump_label_t target;
-+	jump_label_t key;
-+};
-+
-+#endif /* _ASM_MIPS_JUMP_LABEL_H */
-diff --git a/arch/mips/kernel/Makefile b/arch/mips/kernel/Makefile
-index 8088498..c4a40e9 100644
---- a/arch/mips/kernel/Makefile
-+++ b/arch/mips/kernel/Makefile
-@@ -6,7 +6,8 @@ extra-y		:= head.o init_task.o vmlinux.lds
- 
- obj-y		+= cpu-probe.o branch.o entry.o genex.o irq.o process.o \
- 		   ptrace.o reset.o setup.o signal.o syscall.o \
--		   time.o topology.o traps.o unaligned.o watch.o vdso.o
-+		   time.o topology.o traps.o unaligned.o watch.o vdso.o \
-+		   jump_label.o
- 
- ifdef CONFIG_FUNCTION_TRACER
- CFLAGS_REMOVE_ftrace.o = -pg
-diff --git a/arch/mips/kernel/jump_label.c b/arch/mips/kernel/jump_label.c
-new file mode 100644
-index 0000000..52d3c70
---- /dev/null
-+++ b/arch/mips/kernel/jump_label.c
-@@ -0,0 +1,50 @@
-+/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (c) 2010 Cavium Networks, Inc.
-+ */
-+
-+#include <linux/jump_label.h>
-+#include <linux/kernel.h>
-+#include <linux/memory.h>
-+#include <linux/mutex.h>
-+#include <linux/types.h>
-+#include <linux/cpu.h>
-+
-+#include <asm/cacheflush.h>
-+#include <asm/inst.h>
-+
-+#define J_RANGE_MASK ((1ul << 28) - 1)
-+
-+void arch_jump_label_transform(struct jump_entry *e,
-+			       enum jump_label_type type)
++static void remove_jump_label_module_init(struct module *mod)
 +{
-+	union mips_instruction insn;
-+	union mips_instruction *insn_p =
-+		(union mips_instruction *)(unsigned long)e->code;
++	struct hlist_head *head;
++	struct hlist_node *node, *node_next, *module_node, *module_node_next;
++	struct jump_label_entry *e;
++	struct jump_label_module_entry *e_module;
++	struct jump_entry *iter;
++	int i, count;
 +
-+	/* Jump only works within a 256MB aligned region. */
-+	BUG_ON((e->target & ~J_RANGE_MASK) != (e->code & ~J_RANGE_MASK));
++	/* if the module doesn't have jump label entries, just return */
++	if (!mod->num_jump_entries)
++		return;
 +
-+	/* Target must have 4 byte alignment. */
-+	BUG_ON((e->target & 3) != 0);
-+
-+	if (type == JUMP_LABEL_ENABLE) {
-+		insn.j_format.opcode = j_op;
-+		insn.j_format.target = (e->target & J_RANGE_MASK) >> 2;
-+	} else {
-+		insn.word = 0; /* nop */
++	for (i = 0; i < JUMP_LABEL_TABLE_SIZE; i++) {
++		head = &jump_label_table[i];
++		hlist_for_each_entry_safe(e, node, node_next, head, hlist) {
++			hlist_for_each_entry_safe(e_module, module_node,
++						  module_node_next,
++						  &(e->modules), hlist) {
++				if (e_module->mod != mod)
++					continue;
++				count = e_module->nr_entries;
++				iter = e_module->table;
++				while (count--) {
++					if (within_module_init(iter->code, mod))
++						iter->key = 0;
++					iter++;
++				}
++			}
++		}
 +	}
-+
-+	get_online_cpus();
-+	mutex_lock(&text_mutex);
-+	*insn_p = insn;
-+
-+	flush_icache_range((unsigned long)insn_p,
-+			   (unsigned long)insn_p + sizeof(*insn_p));
-+
-+	mutex_unlock(&text_mutex);
-+	put_online_cpus();
 +}
-diff --git a/arch/mips/kernel/module.c b/arch/mips/kernel/module.c
-index 6f51dda..bb9cde4 100644
---- a/arch/mips/kernel/module.c
-+++ b/arch/mips/kernel/module.c
-@@ -30,6 +30,8 @@
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/spinlock.h>
-+#include <linux/jump_label.h>
 +
- #include <asm/pgtable.h>	/* MODULE_START */
- 
- struct mips_hi16 {
-@@ -390,6 +392,9 @@ int module_finalize(const Elf_Ehdr *hdr,
- 	const Elf_Shdr *s;
- 	char *secstrings = (void *)hdr + sechdrs[hdr->e_shstrndx].sh_offset;
- 
-+	/* Make jump label nops. */
-+	jump_label_apply_nops(me);
-+
- 	INIT_LIST_HEAD(&me->arch.dbe_list);
- 	for (s = sechdrs; s < sechdrs + hdr->e_shnum; s++) {
- 		if (strcmp("__dbe_table", secstrings + s->sh_name) != 0)
+ static int
+ jump_label_module_notify(struct notifier_block *self, unsigned long val,
+ 			 void *data)
+@@ -386,6 +420,11 @@ jump_label_module_notify(struct notifier_block *self, unsigned long val,
+ 		remove_jump_label_module(mod);
+ 		mutex_unlock(&jump_label_mutex);
+ 		break;
++	case MODULE_STATE_LIVE:
++		mutex_lock(&jump_label_mutex);
++		remove_jump_label_module_init(mod);
++		mutex_unlock(&jump_label_mutex);
++		break;
+ 	}
+ 	return ret;
+ }
 -- 
 1.7.1
 
