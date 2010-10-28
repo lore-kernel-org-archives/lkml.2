@@ -1,45 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761092Ab0J1U5q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 16:57:46 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:54498 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759653Ab0J1U5k (ORCPT
+	id S934532Ab0J1U6m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 16:58:42 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:57386 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933674Ab0J1U6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 16:57:40 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Timur Tabi <timur@freescale.com>
-Subject: Re: Writing a console/tty driver -- how to use tty_port?
-Date: Thu, 28 Oct 2010 22:57:33 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36+; KDE/4.5.1; x86_64; ; )
-Cc: gregkh <gregkh@suse.de>, lkml <linux-kernel@vger.kernel.org>
-References: <4CC893CD.7020701@freescale.com>
-In-Reply-To: <4CC893CD.7020701@freescale.com>
+	Thu, 28 Oct 2010 16:58:36 -0400
+Date: Thu, 28 Oct 2010 22:58:31 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Greg KH <greg@kroah.com>
+Cc: Vasiliy Kulikov <segooon@gmail.com>, Iliyan Malchev <ibm@android.com>,
+        Brian Swetland <swetland@google.com>, San Mehat <san@android.com>,
+        kernel-janitors@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        devel@driverdev.osuosl.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 1/8] staging: dream: fix information leak to userland
+Message-ID: <20101028205831.GD19421@elf.ucw.cz>
+References: <1288296098-18936-1-git-send-email-segooon@gmail.com>
+ <20101028204509.GC22785@kroah.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010282257.33898.arnd@arndb.de>
-X-Provags-ID: V02:K0:i9np8AB56myNcXoXk+B8rIqM8AGwQQQll6ugWhSOwed
- /0UhPti/Tsb3TOKDMSfyQhgnJBjNO3c3XdQMGQxRj9wqu6SFnR
- BrGYjpEo/CyqLNG0CNoJe90X5C2xAjifXC8oKuEFLPsVa/nI4z
- DMURtS+OVKBHAiKUIhM4NwVQ90QamG/Adn9jT2vSPMn74n0RHq
- m/kMykoOLIhQdDec5dIMw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101028204509.GC22785@kroah.com>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 27 October 2010 23:04:13 Timur Tabi wrote:
-> Do you have an updated version of Tiny TTY that uses tty_port structures?  I'm
-> trying to write a new TTY driver for a device that is not a UART, and I'm having
-> a hard time finding a good example.  I suspect I need to understand the tty_port
-> structure, but I can't find any documentation for it.
+Hi!
 
-If the device is not a UART, the best option may be to make the driver
-a backend to the hvc driver, like e.g. drivers/char/hvc_tile.c.
+> > Structure msm_audio_stats is copied to userland with some fields unitialized.
+> > It leads to leaking of contents of kernel stack memory.
+> > Also struct msm_audio_config has field "unused" of type array of 3 elements,
+> > not 4.  Instead of this, initialize field "type".
+> > 
+> > Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+> > ---
+> >  drivers/staging/dream/qdsp5/audio_aac.c |    3 ++-
+> 
+> {sigh}
+> 
+> I'd really like to just drop this whole driver as I feel it's _way_
+> behind whatever anyone is really using "in the wild".
+> 
+> Actually, I doubt that anyone even uses this thing, do they?
 
-This works for all devices with or without interrupts that don't need
-to set up the communication parameters but simply provide a read/write
-character interface.
+Not sure, you should definitely talk to codeaurora folks.
 
-	Arnd
+> Any objection to me just dropping the drivers/staging/dream/ tree?
+> People should be working on the chipset-specific driver tree here
+> instead, right?
+
+codeaurora people should know...
+
+> Pavel, it looks like you're not doing any dream work anymore, any
+> problems with me dropping it?
+
+Too busy to do any real work on Dream, sorry :-(.
+								Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
