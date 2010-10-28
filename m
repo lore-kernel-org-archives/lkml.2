@@ -1,38 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759207Ab0J1Psg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 11:48:36 -0400
-Received: from mga14.intel.com ([143.182.124.37]:5184 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754256Ab0J1Psc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 11:48:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,253,1286175600"; 
-   d="scan'208";a="341660870"
-Message-ID: <4CC99B4E.5020108@linux.intel.com>
-Date: Thu, 28 Oct 2010 08:48:30 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+	id S1759264Ab0J1PtP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 11:49:15 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:54520 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753683Ab0J1PtH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 11:49:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=w0nmh0fwsXTald3lmiVCKgy8BfmxNzuB1RrDpupiJ0p47PAeOD5cTwVvjom/pXrAuG
+         5FJzjhxnajAw4rrMBJznCnBOs86q0UGlXPP7wADaZfwE1F4KFBnBCVrbqMmLWPFUv17+
+         0fOsKqWXVEjIOzg3ulQQ0m2ArdB2VITB7bC1A=
 MIME-Version: 1.0
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: Borislav Petkov <bp@alien8.de>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-Subject: Re: [PATCH] x86: use pgd accessors when cloning a pgd range.
-References: <1288169413-29065-1-git-send-email-ian.campbell@citrix.com>	 <20101027104020.GA16954@a1.tnic> <4CC85839.4000507@goop.org>	 <4CC85EE6.7030608@linux.intel.com> <4CC861F9.8080200@goop.org>	 <20101027174417.GA19194@a1.tnic>	 <1288202321.10179.102.camel@localhost.localdomain> <1288257797.8361.1545.camel@zakaz.uk.xensource.com>
-In-Reply-To: <1288257797.8361.1545.camel@zakaz.uk.xensource.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1288124308-14999-2-git-send-email-cyril@ti.com>
+References: <1288124308-14999-1-git-send-email-cyril@ti.com>
+	<1288124308-14999-2-git-send-email-cyril@ti.com>
+Date: Thu, 28 Oct 2010 11:49:06 -0400
+Message-ID: <AANLkTi=rDep3jkp2QAjVsgjZ7JQ0ysnse4TARv29fyHm@mail.gmail.com>
+Subject: Re: [PATCH v4 01/12] misc: add driver for sequencer serial port
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: Cyril Chemparathy <cyril@ti.com>
+Cc: davinci-linux-open-source@linux.davincidsp.com,
+        spi-devel-general@lists.sourceforge.net,
+        broonie@opensource.wolfsonmicro.com, lrg@slimlogic.co.uk,
+        dbrownell@users.sourceforge.net, grant.likely@secretlab.ca,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        rpurdie@rpsys.net, Samuel Ortiz <sameo@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/2010 2:23 AM, Ian Campbell wrote:
->
-> BTW, are there plans to unify 32 and 64 bit WRT the use of
-> swapper_pg_dir vs initial_page_table?
->
+2010/10/26 Cyril Chemparathy <cyril@ti.com>:
 
-Yes, we're not there yet, though.
+> TI's sequencer serial port (TI-SSP) is a jack-of-all-trades type of serial port
+> device.  It has a built-in programmable execution engine that can be programmed
+> to operate as almost any serial bus (I2C, SPI, EasyScale, and others).
+>
+> This patch adds a driver for this controller device.  The driver does not
+> expose a user-land interface.  Protocol drivers built on top of this layer are
+> expected to remain in-kernel.
 
-	-hpa
+Why is this thing in drivers/misc?
+
+drivers/mfd is IMHO the apropriate place for a driver like this, and
+the subdrivers should be migrated to use mfd cells and platform
+drivers for the subdevices.
+
+All functions and abstractions you create here look suspiciously
+lot like other MFD devices.
+
+But please, beat me up if I'm wrong!
+
+Yours,
+Linus Walleij
