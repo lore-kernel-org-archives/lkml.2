@@ -1,88 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759294Ab0J1P5E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 11:57:04 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59307 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754932Ab0J1P47 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 11:56:59 -0400
-Date: Thu, 28 Oct 2010 16:56:35 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "hiroshi.doyu@nokia.com" <hiroshi.doyu@nokia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Felipe Contreras <felipe.contreras@nokia.com>,
-        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/8] staging: tidspbridge - remove req_addr from
-	proc_map
-Message-ID: <20101028155635.GF3122@n2100.arm.linux.org.uk>
-References: <1288054306-4361-1-git-send-email-x0095840@ti.com> <1288054306-4361-2-git-send-email-x0095840@ti.com> <AANLkTimCDM_nruvh_gqxxy0CVnw2sH5UYNT9VgyeBfZN@mail.gmail.com> <496565EC904933469F292DDA3F1663E602F49E280A@dlee06.ent.ti.com> <1288112616-notmuch-felipe.contreras@nokia.com> <496565EC904933469F292DDA3F1663E602F49E28BD@dlee06.ent.ti.com> <1288121251-notmuch-felipe.contreras@nokia.com> <496565EC904933469F292DDA3F1663E602F49E29F7@dlee06.ent.ti.com> <AANLkTimwbNV227yhPy-5E5rdAL2LciKeCSouWGW9H+WG@mail.gmail.com>
+	id S1759316Ab0J1QAO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 12:00:14 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:50046 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754972Ab0J1QAL convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 12:00:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimwbNV227yhPy-5E5rdAL2LciKeCSouWGW9H+WG@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1288200823.5619.46.camel@edumazet-laptop>
+References: <AANLkTinnc3vBSmewf7ixuOSDYxG+5VNiGaB-vSrDNRiO@mail.gmail.com>
+ <1288158182-1753-1-git-send-email-brgerst@gmail.com> <1288159670.2652.181.camel@edumazet-laptop>
+ <1288173442.15336.1490.camel@twins> <1288186405.2709.117.camel@edumazet-laptop>
+ <4CC82C2F.1020707@kernel.org> <1288187870.2709.128.camel@edumazet-laptop>
+ <4CC83067.5000009@kernel.org> <1288189461.2709.144.camel@edumazet-laptop>
+ <1288190387.2709.147.camel@edumazet-laptop> <4CC83A85.3070608@kernel.org>
+ <1288192868.2709.152.camel@edumazet-laptop> <4CC846D5.50106@kernel.org>
+ <1288195668.2709.167.camel@edumazet-laptop> <1288200823.5619.46.camel@edumazet-laptop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 28 Oct 2010 08:59:42 -0700
+Message-ID: <AANLkTikmNc7qqDzoff_3i_FRbG=pmOC7TG3eeZnmvaTD@mail.gmail.com>
+Subject: Re: [PATCH] numa: fix slab_node(MPOL_BIND)
+To: Eric Dumazet <eric.dumazet@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+        Christoph Lameter <cl@linux.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Brian Gerst <brgerst@gmail.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, mingo@elte.hu
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 11:19:47AM +0300, Felipe Contreras wrote:
-> Yes, but this has to be done on every library/app that is using the dsp.
-> It's much easier to do it on kernel side.
-> 
-> Besides, at least on gst-dsp we want it to work for _all_ bridge
-> versions, so it would be:
-> 
-> @@ -829,7 +829,9 @@ struct map_mem {
->         void *proc_handle;
->         void *mpu_addr;
->         unsigned long size;
-> +#if DSP_API >= 3
->         void *req_addr;
-> +#endif
->         void **ret_map_addr;
->         unsigned long attr;
->  };
+Hmm. More people added to the discussion..
 
-This thread is getting really stupid.  There is a process for changing
-the arguments to ioctl.
+This code seems to go back all the way to commit 19770b32609b: "mm:
+filter based on a nodemask as well as a gfp_mask". Which was back in
+April 2008. and got merged into 2.6.26.
 
-The first thing is that ioctl numbers are supposed to be defined in a
-standard form - using _IO(), _IOR(), _IOW() and _IOWR().  Amongst the
-things that these macros take is the structure which is being passed.
+And I'd be happy to commit it (in fact, I was going to), but when
+looking for other uses of first_zones_zonelist(), I found
+local_memory_node() which does the exact same thing: ignore the return
+value, and unconditionally dereference the resulting 'zone' variable.
 
-What this means is that the ioctl number generated by these macros is
-directly related to the size of the structure.  This immediately gives
-a way to deal with a limited set of changes to the structure.
+And so does - although less obviously - mm/vmscan.c for the
+wait_iff_confgested() thing.
 
-The steps are as follows:
+So are those buggy too, since first_zones_zonelist() can apparently return NULL?
 
-1. Rename the structure and all uses of it from "struct map_mem" to
-   "struct old_map_mem"
-2. Rename the ioctl definition names and all uses to have an OLD prefix.
+Please advise...
 
-So at this stage, the original ioctl number and structure are still
-present, and importantly are unchanged except by name.
+                  Linus
 
-3. Add the new "struct map_mem".
-4. Add the new ioctl name definition using "struct map_mem" to identify
-   it.
-5. Implement the new ioctl number.  Optionally, implement the old ioctl
-   functionality via the new implementation if this is appropriate - but
-   make sure that the old ioctl still works.
-6. arrange for users of the old ioctl to receive a warning that it's
-   deprecated.
-
-This allows existing userspace to continue working, but with warnings so
-that people know that they need to rebuild their libraries against the
-new structures.
-
-There's no need for a DSP_API define using this method, provided you
-don't end up with these structures shrinking and then re-growing back
-to a size that they were before.
+On Wed, Oct 27, 2010 at 10:33 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le mercredi 27 octobre 2010 à 18:07 +0200, Eric Dumazet a écrit :
+>
+>> So I tried following experiment :
+>>
+>> # swapoff
+>> # numactl --membind=0 swapon -a
+>> # grep swap /proc/vmallocinfo
+>> 0xf9bf3000-0xf9cf4000 1052672 sys_swapon+0x4aa/0xb24 pages=256 vmalloc N0=256
+>> # swapoff -a
+>> # numactl --membind=1 swapon -a
+>>
+>> <<FREEZE>>
+>>
+>
+> Crash in fact, not freeze, in slab_node()
+>
+> Problem is : we dereference a NULL zone pointer.
+>
+> (node 1 has HighMem only)
+>
+> Following patch seems to solve the problem for me
+>
+> # swapoff -a
+> # numactl --membind=1 swapon -a
+> # grep swap /proc/vmallocinfo
+> 0xf9da5000-0xf9ea6000 1052672 sys_swapon+0x3f9/0xa34 pages=256 vmalloc N1=256
+>
+>
+> Thanks
+>
+>
+> [PATCH] numa: fix slab_node(MPOL_BIND)
+>
+> When a node contains only HighMem memory, slab_node(MPOL_BIND)
+> dereferences a NULL pointer.
+>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> ---
+>  mm/mempolicy.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+> index 81a1276..4a57f13 100644
+> --- a/mm/mempolicy.c
+> +++ b/mm/mempolicy.c
+> @@ -1597,7 +1597,7 @@ unsigned slab_node(struct mempolicy *policy)
+>                (void)first_zones_zonelist(zonelist, highest_zoneidx,
+>                                                        &policy->v.nodes,
+>                                                        &zone);
+> -               return zone->node;
+> +               return zone ? zone->node : numa_node_id();
+>        }
+>
+>        default:
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
