@@ -1,109 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933556Ab0J1Olj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 10:41:39 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35993 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753333Ab0J1Olh (ORCPT
+	id S933480Ab0J1Onr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 10:43:47 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:46510 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759080Ab0J1Ono (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 10:41:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=GHehMdhqRNjgSOe3Hh8JY2TTx/0EPgQuU4smWpXO1OIove/7EnZdLXbJR9yqF7SOUM
-         cJdKQQ/+40deH/a4L5GAkPsgIGafVDJfMT3ICmHfTpBOMjPgLqGCZ32Luh6pot2qQ06Z
-         wYEII9iRm4G5iEFsjimerH/SuAHVdbOm+h+kE=
+	Thu, 28 Oct 2010 10:43:44 -0400
+Message-ID: <4CC98C25.9010207@codemonkey.ws>
+Date: Thu, 28 Oct 2010 09:43:49 -0500
+From: Anthony Liguori <anthony@codemonkey.ws>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100915 Lightning/1.0b1 Thunderbird/3.0.8
 MIME-Version: 1.0
-Date: Thu, 28 Oct 2010 09:41:35 -0500
-Message-ID: <AANLkTinyBTXm8iFhNrJj9_e6hSPKFTDEHgC1=J4VfJY6@mail.gmail.com>
-Subject: [GIT PULL] 9p file system changes for 2.6.37 merge window
-From: Eric Van Hensbergen <ericvh@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        V9FS Developers <v9fs-developer@lists.sourceforge.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Avi Kivity <avi@redhat.com>
+CC: Ian Molton <ian.molton@collabora.co.uk>, virtualization@lists.osdl.org,
+        linux-kernel@vger.kernel.org, QEMU Developers <qemu-devel@nongnu.org>
+Subject: Re: [Qemu-devel] Re: [PATCH] Implement a virtio GPU transport
+References: <4CAC9CD1.2050601@collabora.co.uk>	<4CB1D79A.6070805@redhat.com>	<4CBD739A.2010500@collabora.co.uk>	<4CBD7560.6080207@redhat.com> <4CC8226F.5080807@collabora.co.uk>	<4CC94203.1080207@redhat.com> <4CC9647A.50108@collabora.co.uk> <4CC98784.7020907@redhat.com>
+In-Reply-To: <4CC98784.7020907@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 81280572ca6f54009edfa4deee563e8678784218:
+On 10/28/2010 09:24 AM, Avi Kivity wrote:
+>  On 10/28/2010 01:54 PM, Ian Molton wrote:
+>>> Well, I like to review an implementation against a spec.
+>>
+>>
+>> True, but then all that would prove is that I can write a spec to 
+>> match the code.
+>
+> It would also allow us to check that the spec matches the 
+> requirements.  Those two steps are easier than checking that the code 
+> matches the requirements.
 
-  Merge branch 'upstream-merge' of
-git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4 (2010-10-27
-21:54:31 -0700)
+I'm extremely sceptical of any GL passthrough proposal.  There have 
+literally been half a dozen over the years and they never seem to leave 
+proof-of-concept phase.  My (limited) understanding is that it's a 
+fundamentally hard problem that no one has adequately solved yet.
 
-are available in the git repository at:
+A specifically matters an awful lot less than an explanation of how the 
+problem is being solved in a robust fashion such that it can be reviewed 
+by people with a deeper understanding of the problem space.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ericvh/v9fs.git for-linus
+Regards,
 
-Aneesh Kumar K.V (10):
-      fs/9p: Implement POSIX ACL permission checking function
-      fs/9p: Add xattr callbacks for POSIX ACL
-      fs/9p: Implement setting posix acl
-      fs/9p: Update ACL on chmod
-      fs/9p: Implement create time inheritance
-      fs/9p: Add access = client option to opt in acl evaluation.
-      fs/9p: Use mknod 9p operation on create without open request
-      fs/9p: Add missing iput in v9fs_vfs_lookup
-      fs/9p: Use generic_file_open with lookup_instantiate_filp
-      net/9p: Return error if we fail to encode protocol data
+Anthony Liguori
 
-Arun R Bharadwaj (1):
-      net/9p: This patch implements TLERROR/RLERROR on the 9P client.
+>> The code is proof of concept. the kernel bit is pretty simple, but 
+>> I'd like to get some idea of whether the rest of the code will be 
+>> accepted given that theres not much point in having any one (or two) 
+>> of these components exist without the other.
+>
+> I guess some graphics people need to be involved.
+>
+>>
+>>> Better, but still unsatisfying. If the server is busy, the caller would
+>>> block. I guess it's expected since it's called from ->fsync(). I'm not
+>>> sure whether that's the best interface, perhaps aio_writev is better.
+>>
+>> The caller is intended to block as the host must perform GL rendering 
+>> before allowing the guests process to continue.
+>
+> Why is that?  Can't we pipeline the process?
+>
+>>
+>> The only real bottleneck is that processes will block trying to 
+>> submit data if another process is performing rendering, but that will 
+>> only be solved when the renderer is made multithreaded. The same 
+>> would happen on a real GPU if it had only one queue too.
+>>
+>> If you look at the host code, you can see that the data is already 
+>> buffered per-process, in a pretty sensible way. if the renderer 
+>> itself were made a seperate thread, then this problem magically 
+>> disappears (the queuing code on the host is pretty fast).
+>
+> Well, this is out of my area of expertise.  I don't like it, but if 
+> it's acceptable to the gpu people, okay.
+>
+>>
+>> In testing, the overhead of this was pretty small anyway. Running a 
+>> few dozen glxgears and a copy of ioquake3 simultaneously on an intel 
+>> video card managed the same framerate with the same CPU utilisation, 
+>> both with the old code and the version I just posted. Contention 
+>> during rendering just isn't much of an issue.
+>
 
-Dan Carpenter (1):
-      9p: remove unneeded checks
-
-Harsh Prateek Bora (2):
-      fs/9p: setrlimit fix for 9p write
-      fs/9p: mkdir fix for setting S_ISGID bit as per parent directory
-
-M. Mohan Kumar (4):
-      9p: Implement TLOCK
-      9p: Implement TGETLOCK
-      9p: Use V9FS_MAGIC in statfs
-      9p: Implement TREADLINK operation for 9p2000.L
-
-Sanchit Garg (1):
-      net/9p: Return error on read with NULL buffer
-
-Sripathi Kodi (1):
-      9p: Pass the correct end of buffer to p9dirent_read
-
-Venkateswararao Jujjuri (JV) (5):
-      [fs/9p] Add file_operations for cached mode in dotl protocol.
-      [9p] Introduce client side TFSYNC/RFSYNC for dotl.
-      [net/9p]Serialize virtqueue operations to make VirtIO transport SMP safe.
-      net/9p: Add waitq to VirtIO transport.
-      9p: Add datasync to client side TFSYNC/RFSYNC for dotl
-
-jvrao (3):
-      9p: Add a Direct IO support for non-cached operations.
-      fs/9p: Remove the redundant rsize calculation in v9fs_file_write()
-      net/9p: Add a Warning to catch NULL fids passed to p9_client_clunk().
-
- Documentation/filesystems/9p.txt |    4 +-
- fs/9p/Kconfig                    |   13 ++
- fs/9p/Makefile                   |    1 +
- fs/9p/acl.c                      |  392 ++++++++++++++++++++++++++++++++++++++
- fs/9p/acl.h                      |   49 +++++
- fs/9p/fid.c                      |    1 +
- fs/9p/v9fs.c                     |   22 ++-
- fs/9p/v9fs.h                     |   10 +-
- fs/9p/v9fs_vfs.h                 |    4 +
- fs/9p/vfs_addr.c                 |   30 +++
- fs/9p/vfs_dir.c                  |    4 +-
- fs/9p/vfs_file.c                 |  265 ++++++++++++++++++++++++--
- fs/9p/vfs_inode.c                |  253 ++++++++++++++++++-------
- fs/9p/vfs_super.c                |   14 +-
- fs/9p/xattr.c                    |   52 +++--
- fs/9p/xattr.h                    |    6 +
- include/linux/magic.h            |    1 +
- include/net/9p/9p.h              |   54 ++++++
- include/net/9p/client.h          |    4 +
- net/9p/client.c                  |  178 +++++++++++++++--
- net/9p/protocol.c                |    5 +-
- net/9p/trans_virtio.c            |   76 ++++++--
- 22 files changed, 1288 insertions(+), 150 deletions(-)
- create mode 100644 fs/9p/acl.c
- create mode 100644 fs/9p/acl.h
