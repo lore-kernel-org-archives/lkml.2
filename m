@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934532Ab0J1U6m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 16:58:42 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:57386 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933674Ab0J1U6g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 16:58:36 -0400
-Date: Thu, 28 Oct 2010 22:58:31 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Greg KH <greg@kroah.com>
-Cc: Vasiliy Kulikov <segooon@gmail.com>, Iliyan Malchev <ibm@android.com>,
-        Brian Swetland <swetland@google.com>, San Mehat <san@android.com>,
-        kernel-janitors@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        devel@driverdev.osuosl.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 1/8] staging: dream: fix information leak to userland
-Message-ID: <20101028205831.GD19421@elf.ucw.cz>
-References: <1288296098-18936-1-git-send-email-segooon@gmail.com>
- <20101028204509.GC22785@kroah.com>
+	id S934568Ab0J1U7G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 16:59:06 -0400
+Received: from mga01.intel.com ([192.55.52.88]:64790 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934535Ab0J1U67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 16:58:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,254,1286175600"; 
+   d="scan'208";a="621316162"
+Date: Thu, 28 Oct 2010 22:58:55 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
+        Grazvydas Ignotas <notasas@gmail.com>, Felipe Balbi <balbi@ti.com>
+Subject: Re: [GIT PULL] battery-2.6.git (a last minute fix)
+Message-ID: <20101028205605.GB3116@sortiz-mobl>
+References: <20101026144118.GA9335@oksana.dev.rtsoft.ru>
+ <20101028065457.GA29856@elte.hu>
+ <20101028000710.2039c2f4.akpm@linux-foundation.org>
+ <20101028090953.GA28283@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101028204509.GC22785@kroah.com>
-X-Warning: Reading this can be dangerous to your mental health.
+In-Reply-To: <20101028090953.GA28283@oksana.dev.rtsoft.ru>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hi Anton,
 
-> > Structure msm_audio_stats is copied to userland with some fields unitialized.
-> > It leads to leaking of contents of kernel stack memory.
-> > Also struct msm_audio_config has field "unused" of type array of 3 elements,
-> > not 4.  Instead of this, initialize field "type".
+On Thu, Oct 28, 2010 at 01:09:53PM +0400, Anton Vorontsov wrote:
+> On Thu, Oct 28, 2010 at 12:07:10AM -0700, Andrew Morton wrote:
+> [...]
+> > > The new driver does not build at its own commit point either, as the missing symbol 
+> > > definition is simply not there. It appears that commit 2e727f1 could not have been 
+> > > build-tested by anyone before it got upstream (let alone boot and functionality 
+> > > tested). As a temporary workaround i'm disabling it in -tip.
+> > > 
 > > 
-> > Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-> > ---
-> >  drivers/staging/dream/qdsp5/audio_aac.c |    3 ++-
+> > Those definitions get added by the MFD tree and used by the battery
+> > tree.  Things arrived in the wrong order (and, yes, didn't get tested).
 > 
-> {sigh}
+> My bad. :-/
+>
+> > The fix is for Samuel to get a wiggle on with his merge?  The -rc1
+> > window is about to slam shut on his fingers anyway.
 > 
-> I'd really like to just drop this whole driver as I feel it's _way_
-> behind whatever anyone is really using "in the wild".
-> 
-> Actually, I doubt that anyone even uses this thing, do they?
+> I guess the best thing for now would be to be safe and to disable
+> the new driver via 'depends on BROKEN', so it won't scare testers
+> away from -rc1.
+I'm about to send my pull request to Linus. Should I send this commit revert
+as part of the pull request, or do you want to do it ?
 
-Not sure, you should definitely talk to codeaurora folks.
+Cheers,
+Samuel.
 
-> Any objection to me just dropping the drivers/staging/dream/ tree?
-> People should be working on the chipset-specific driver tree here
-> instead, right?
-
-codeaurora people should know...
-
-> Pavel, it looks like you're not doing any dream work anymore, any
-> problems with me dropping it?
-
-Too busy to do any real work on Dream, sorry :-(.
-								Pavel
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Intel Open Source Technology Centre
+http://oss.intel.com/
