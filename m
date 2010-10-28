@@ -1,87 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932719Ab0J1CQh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 22:16:37 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:37917 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932457Ab0J1CQe (ORCPT
+	id S932735Ab0J1CVY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 22:21:24 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:56358 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932457Ab0J1CVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 22:16:34 -0400
-Date: Wed, 27 Oct 2010 22:16:32 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] tracing: fix TRACE_EVENT power tracepoint creation
-Message-ID: <20101028021632.GA18117@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 22:15:27 up 35 days,  6:17,  4 users,  load average: 0.53, 0.23,
-	0.13
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 27 Oct 2010 22:21:20 -0400
+X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=wSgS5G9fFx4A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=meVymXHHAAAA:8 a=QfZ8UanS6Nfu2vkQX1EA:9 a=7vt5-eNVHPJtrb_7jNEA:7 a=NQEy_a9w6O533b2E92-TZbWZ1TsA:4 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [v2 PATCH] ftrace: Speed up recordmcount
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Wu Zhangjin <wuzhangjin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu,
+        John Reiser <jreiser@bitwagon.com>, Sam Ravnborg <sam@ravnborg.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Michal Marek <mmarek@suse.cz>
+In-Reply-To: <3dc8cddf022eb7024f9f2cf857529a15bee8999a.1288196498.git.wuzhangjin@gmail.com>
+References: <3dc8cddf022eb7024f9f2cf857529a15bee8999a.1288196498.git.wuzhangjin@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 27 Oct 2010 22:21:18 -0400
+Message-ID: <1288232478.18238.138.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DEFINE_TRACE should also exist when CONFIG_EVENT_TRACING=n. Otherwise, setting
-only TRACEPOINTS=y is broken.
+Michal,
 
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
----
- kernel/Makefile             |    1 +
- kernel/trace/Makefile       |    2 +-
- kernel/trace/power-traces.c |    6 ++++++
- 3 files changed, 8 insertions(+), 1 deletion(-)
+Can you give an Acked-by: on this patch?
 
-Index: linux-2.6-lttng/kernel/Makefile
-===================================================================
---- linux-2.6-lttng.orig/kernel/Makefile
-+++ linux-2.6-lttng/kernel/Makefile
-@@ -93,6 +93,7 @@ obj-$(CONFIG_TASKSTATS) += taskstats.o t
- obj-$(USE_IMMEDIATE) += immediate.o
- obj-$(CONFIG_MARKERS) += marker.o
- obj-$(CONFIG_TRACEPOINTS) += tracepoint.o
-+obj-$(CONFIG_TRACEPOINTS) += trace/
- obj-$(CONFIG_LATENCYTOP) += latencytop.o
- obj-$(CONFIG_BINFMT_ELF) += elfcore.o
- obj-$(CONFIG_COMPAT_BINFMT_ELF) += elfcore.o
-Index: linux-2.6-lttng/kernel/trace/Makefile
-===================================================================
---- linux-2.6-lttng.orig/kernel/trace/Makefile
-+++ linux-2.6-lttng/kernel/trace/Makefile
-@@ -52,7 +52,7 @@ obj-$(CONFIG_EVENT_TRACING) += trace_eve
- endif
- obj-$(CONFIG_EVENT_TRACING) += trace_events_filter.o
- obj-$(CONFIG_KPROBE_EVENT) += trace_kprobe.o
--obj-$(CONFIG_EVENT_TRACING) += power-traces.o
-+obj-$(CONFIG_TRACEPOINTS) += power-traces.o
- ifeq ($(CONFIG_TRACING),y)
- obj-$(CONFIG_KGDB_KDB) += trace_kdb.o
- endif
-Index: linux-2.6-lttng/kernel/trace/power-traces.c
-===================================================================
---- linux-2.6-lttng.orig/kernel/trace/power-traces.c
-+++ linux-2.6-lttng/kernel/trace/power-traces.c
-@@ -10,8 +10,14 @@
- #include <linux/sched.h>
- #include <linux/module.h>
- 
-+#ifdef CONFIG_EVENT_TRACING
- #define CREATE_TRACE_POINTS
- #include <trace/events/power.h>
-+#else
-+DEFINE_TRACE(power_start);
-+DEFINE_TRACE(power_end);
-+DEFINE_TRACE(power_frequency);
-+#endif
- 
- EXPORT_TRACEPOINT_SYMBOL_GPL(power_frequency);
- 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Thanks!
+
+-- Steve
+
+
+On Thu, 2010-10-28 at 00:24 +0800, Wu Zhangjin wrote:
+> From: Wu Zhangjin <wuzhangjin@gmail.com>
+> 
+> cmd_record_mcount is used to locate the _mcount symbols in the object
+> files, only the files compiled with -pg has the _mcount symbol, so, it
+> is only needed for such files, but the current cmd_record_mcount is used
+> for all of the object files, so, we need to fix it and speed it up.
+> 
+> Since -pg may be removed by the method used in kernel/trace/Makefile:
+> 
+> ORIG_CFLAGS := $(KBUILD_CFLAGS)
+> KBUILD_CFLAGS = $(subst -pg,,$(ORIG_CFLAGS))
+> 
+> Or may be removed by the method used in arch/x86/kernel/Makefile:
+> 
+> CONFIG_REMOVE_file.o = -pg
+> 
+> So, we must check the last variable stores the compiling flags, that is
+> c_flags(Please refer to cmd_cc_o_c and rule_cc_o_c defined in
+> scripts/Makefile.build) and since the CFLAGS_REMOVE_file.o is already
+> filtered in _c_flags(Please refer to scripts/Makefile.lib) and _c_flags
+> has less symbols, therefore, we only need to check _c_flags.
+> 
+> ---------------
+> Changes from v1:
+> 
+>   o Don't touch Makefile for CONFIG_FTRACE_MCOUNT_RECORD is enough
+>   o Use _c_flags intead of KBUILD_CFLAGS to cover CONFIG_REMOVE_file.o = -pg
+>   (feedback from Steven Rostedt <rostedt@goodmis.org>)
+> 
+> Signed-off-by: Wu Zhangjin <wuzhangjin@gmail.com>
+> ---
+>  scripts/Makefile.build |   13 +++++++++----
+>  1 files changed, 9 insertions(+), 4 deletions(-)
+> 
+> diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+> index 5ad25e1..0ad6108 100644
+> --- a/scripts/Makefile.build
+> +++ b/scripts/Makefile.build
+> @@ -214,17 +214,22 @@ ifdef BUILD_C_RECORDMCOUNT
+>  # The empty.o file is created in the make process in order to determine
+>  #  the target endianness and word size. It is made before all other C
+>  #  files, including recordmcount.
+> -cmd_record_mcount = if [ $(@) != "scripts/mod/empty.o" ]; then			\
+> -			$(objtree)/scripts/recordmcount "$(@)";			\
+> -		    fi;
+> +sub_cmd_record_mcount =					\
+> +	if [ $(@) != "scripts/mod/empty.o" ]; then	\
+> +		$(objtree)/scripts/recordmcount "$(@)";	\
+> +	fi;
+>  else
+> -cmd_record_mcount = set -e ; perl $(srctree)/scripts/recordmcount.pl "$(ARCH)" \
+> +sub_cmd_record_mcount = set -e ; perl $(srctree)/scripts/recordmcount.pl "$(ARCH)" \
+>  	"$(if $(CONFIG_CPU_BIG_ENDIAN),big,little)" \
+>  	"$(if $(CONFIG_64BIT),64,32)" \
+>  	"$(OBJDUMP)" "$(OBJCOPY)" "$(CC) $(KBUILD_CFLAGS)" \
+>  	"$(LD)" "$(NM)" "$(RM)" "$(MV)" \
+>  	"$(if $(part-of-module),1,0)" "$(@)";
+>  endif
+> +cmd_record_mcount = 						\
+> +	if [ "$(findstring -pg,$(_c_flags))" == "-pg" ]; then	\
+> +		$(sub_cmd_record_mcount)			\
+> +	fi;
+>  endif
+>  
+>  define rule_cc_o_c
+
+
