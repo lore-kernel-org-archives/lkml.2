@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757098Ab0J1Gs6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 02:48:58 -0400
-Received: from stargate.chelsio.com ([67.207.112.58]:23817 "EHLO
-	stargate.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754411Ab0J1Gs5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 02:48:57 -0400
-Message-ID: <4CC919B1.1040602@chelsio.com>
-Date: Wed, 27 Oct 2010 23:35:29 -0700
-From: Divy Le Ray <divy@chelsio.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.11) Gecko/20101013 Lightning/1.0b2 Thunderbird/3.1.5 ThunderBrowse/3.3.2
+	id S1756955Ab0J1GzU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 02:55:20 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:58894 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753351Ab0J1GzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 02:55:18 -0400
+Date: Thu, 28 Oct 2010 08:54:57 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
+        Grazvydas Ignotas <notasas@gmail.com>, Felipe Balbi <balbi@ti.com>
+Subject: -tip: origin tree build failure (battery-2.6.git related)
+Message-ID: <20101028065457.GA29856@elte.hu>
+References: <20101026144118.GA9335@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
-To: Nishanth Aravamudan <nacc@us.ibm.com>
-CC: eric.dumazet@gmail.com, sonnyrao@us.ibm.com,
-        Dimitrios Michailidis <dm@chelsio.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cxgb3: fix crash due to manipulating queues before registration
-References: <1288236563.2658.59.camel@edumazet-laptop> <1288242390-28574-1-git-send-email-nacc@us.ibm.com>
-In-Reply-To: <1288242390-28574-1-git-send-email-nacc@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 Oct 2010 06:38:57.0714 (UTC) FILETIME=[CC584920:01CB766A]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101026144118.GA9335@oksana.dev.rtsoft.ru>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2010 10:06 PM, Nishanth Aravamudan wrote:
-> Hi Eric,
->
-> Something like the following?:
->
-> Thanks,
-> Nish
->
->
-> Along the same lines as "cxgb4: fix crash due to manipulating queues
-> before registration" (8f6d9f40476895571df039b6f1f5230ec7faebad), before
-> commit "net: allocate tx queues in register_netdevice"
-> netif_tx_stop_all_queues and related functions could be used between
-> device allocation and registration but now only after registration.
-> cxgb4 has such a call before registration and crashes now.  Move it
-> after register_netdev.
->
-> Signed-off-by: Nishanth Aravamudan<nacc@us.ibm.com>
 
-Acked-by: Divy Le Ray <divy@chelsio.com>
+Hi,
 
-> Cc: eric.dumazet@gmail.com
-> Cc: sonnyrao@us.ibm.com
-> Cc: Divy Le Ray<divy@chelsio.com>
-> Cc: Dimitris Michailidis<dm@chelsio.com>
-> Cc: netdev@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->   drivers/net/cxgb3/cxgb3_main.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
+* Anton Vorontsov <cbouatmailru@gmail.com> wrote:
+
+> Hello Linus,
+> 
+> Please pull battery-2.6.git tree to receive changes prepared for
+> 2.6.37.
+> 
+> There are three new drivers, various small cleanups and bug fixes.
+> [...]
 >
-> diff --git a/drivers/net/cxgb3/cxgb3_main.c b/drivers/net/cxgb3/cxgb3_main.c
-> index 4e3c123..96c70a5 100644
-> --- a/drivers/net/cxgb3/cxgb3_main.c
-> +++ b/drivers/net/cxgb3/cxgb3_main.c
-> @@ -3301,7 +3301,6 @@ static int __devinit init_one(struct pci_dev *pdev,
->   		pi->rx_offload = T3_RX_CSUM | T3_LRO;
->   		pi->port_id = i;
->   		netif_carrier_off(netdev);
-> -		netif_tx_stop_all_queues(netdev);
->   		netdev->irq = pdev->irq;
->   		netdev->mem_start = mmio_start;
->   		netdev->mem_end = mmio_start + mmio_len - 1;
-> @@ -3342,6 +3341,7 @@ static int __devinit init_one(struct pci_dev *pdev,
->   				adapter->name = adapter->port[i]->name;
->
->   			__set_bit(i,&adapter->registered_device_map);
-> +			 netif_tx_stop_all_queues(adapter->port[i]);
->   		}
->   	}
->   	if (!adapter->registered_device_map) {
+> Grazvydas Ignotas (1):
+>       power_supply: Add driver for TWL4030/TPS65950 BCI charger
 
+Today's -tip fails to build due to upstream commit 2e727f1 ("power_supply: Add 
+driver for TWL4030/TPS65950 BCI charger"), on every x86 build that has this driver 
+enabled (for example allyesconfig or allmodconfig):
 
+ drivers/power/twl4030_charger.c: In function ‘twl4030_clear_set_boot_bci’:
+ drivers/power/twl4030_charger.c:105: error: ‘TWL4030_PM_MASTER_BOOT_BCI’ undeclared (first use in this function)
+ drivers/power/twl4030_charger.c:105: error: (Each undeclared identifier is reported only once
+ drivers/power/twl4030_charger.c:105: error: for each function it appears in.)
+ drivers/power/twl4030_charger.c: In function ‘twl4030_bci_have_vbus’:
+ drivers/power/twl4030_charger.c:137: error: ‘TWL4030_PM_MASTER_STS_HW_CONDITIONS’ undeclared (first use in this function)
+
+The new driver does not build at its own commit point either, as the missing symbol 
+definition is simply not there. It appears that commit 2e727f1 could not have been 
+build-tested by anyone before it got upstream (let alone boot and functionality 
+tested). As a temporary workaround i'm disabling it in -tip.
+
+Thanks,
+
+	Ingo
