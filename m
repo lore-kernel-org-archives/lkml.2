@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757120Ab0J1PVW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 11:21:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19469 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753625Ab0J1PVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 11:21:17 -0400
-Date: Thu, 28 Oct 2010 11:20:27 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: masami.hiramatsu.pt@hitachi.com
-Cc: mathieu.desnoyers@polymtl.ca, hpa@zytor.com, tglx@linutronix.de,
-        andi@firstfloor.org, fweisbec@gmail.com, rostedt@goodmis.org,
-        mingo@elte.hu, linux-kernel@vger.kernel.org
-Subject: [PATCH] call stop_machine_text_poke() on all cpus
-Message-ID: <20101028152026.GB2875@redhat.com>
+	id S1758166Ab0J1PXA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 11:23:00 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:37744 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754760Ab0J1PW4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 11:22:56 -0400
+Date: Thu, 28 Oct 2010 11:22:55 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+cc: Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [linux-pm] [PATCH] PERF(kernel): Cleanup power events V2
+In-Reply-To: <Pine.LNX.4.44L0.1010271014280.1650-100000@iolanthe.rowland.org>
+Message-ID: <Pine.LNX.4.44L0.1010281117530.1601-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, text_poke_smp() passes a NULL as the third argument to
-__stop_machine(), which will only run stop_machine_text_poke()
-on 1 cpu. Change NULL -> cpu_online_mask, as stop_machine_text_poke()
-is intended to be run on all cpus.
+On Wed, 27 Oct 2010, Alan Stern wrote:
 
-I actually didn't notice any problems with stop_machine_text_poke()
-only being called on 1 cpu, but found this via code inspection.
+> On Wed, 27 Oct 2010, Mathieu Desnoyers wrote:
+> 
+> > grep -r pm_runtime_get_noresume drivers/    hands out very interesting info.
+> > 
+> > e.g.:
+> > 
+> > drivers/usb/core/drivers.c: usb_autopm_get_interface_async()
+> > 
+> >         pm_runtime_get_noresume(&intf->dev);
+> >         s = ACCESS_ONCE(intf->dev.power.runtime_status);
+> >         if (s == RPM_SUSPENDING || s == RPM_SUSPENDED)
+> >                 status = pm_request_resume(&intf->dev);
+> > 
+> > How is this supposed to work ?
 
-Signed-off-by: Jason Baron <jbaron@redhat.com>
----
- arch/x86/kernel/alternative.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> > If the ACCESS_ONCE can be reordered before the atomic_inc(), then I fear the
+> > device can be suspended even after the check.
+> 
+> You are correct; the code as written may sometimes fail.  It was a
+> hack from the beginning; the kind of test it performs should not be
+> done outside the PM core.  However at the time it was the easiest way 
+> to do what I wanted.
 
-diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-index 9f39a1c..3c3f26f 100644
---- a/arch/x86/kernel/alternative.c
-+++ b/arch/x86/kernel/alternative.c
-@@ -705,6 +705,6 @@ void *__kprobes text_poke_smp(void *addr, const void *opcode, size_t len)
- 	atomic_set(&stop_machine_first, 1);
- 	wrote_text = 0;
- 	/* Use __stop_machine() because the caller already got online_cpus. */
--	__stop_machine(stop_machine_text_poke, (void *)&tpp, NULL);
-+	__stop_machine(stop_machine_text_poke, (void *)&tpp, cpu_online_mask);
- 	return addr;
- }
--- 
-1.7.1
+I forgot to mention one other thing...  The fact that this code will
+sometimes behave unexpectedly isn't a bug.  That function is documented
+as requiring additional locking when a driver uses it.  The need for
+extra locking is unavoidable because I/O requests can arrive at any
+time, even while a runtime suspend is in progress.
+
+Therefore the fact that usb_autopm_get_interface_async() can race with 
+a runtime suspend doesn't matter.  The driver making the call should 
+have sufficient locking to know that the runtime suspend should fail 
+because the driver is busy.
+
+Alan Stern
 
