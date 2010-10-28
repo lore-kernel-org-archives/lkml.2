@@ -1,37 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757946Ab0J1T6I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 15:58:08 -0400
-Received: from bhuna.collabora.co.uk ([93.93.128.226]:51900 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752140Ab0J1T6C (ORCPT
+	id S1758695Ab0J1T6P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 15:58:15 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:63872 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752140Ab0J1T6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 15:58:02 -0400
-Message-ID: <4CC9D472.2080109@collabora.co.uk>
-Date: Thu, 28 Oct 2010 20:52:18 +0100
-From: Ian Molton <ian.molton@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100917 Icedove/3.0.8
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: virtualization@lists.osdl.org, linux-kernel@vger.kernel.org,
-        QEMU Developers <qemu-devel@nongnu.org>
-Subject: Re: [Qemu-devel] Re: [PATCH] Implement a virtio GPU transport
-References: <4CAC9CD1.2050601@collabora.co.uk>	<4CB1D79A.6070805@redhat.com>	<4CBD739A.2010500@collabora.co.uk>	<4CBD7560.6080207@redhat.com> <4CC8226F.5080807@collabora.co.uk>	<4CC94203.1080207@redhat.com> <4CC9647A.50108@collabora.co.uk> <4CC98784.7020907@redhat.com>
-In-Reply-To: <4CC98784.7020907@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 28 Oct 2010 15:58:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=ouqrIXzlJNHmJm0hyQaKgg+GYVG24jdBrxYWWoT4mOlS2KRAV/hMIK63ZApZdcIb9x
+         GeTafZX4z6lUBtJASB+2G09O9DFJzJeBsitGOOI31PDUK4xwuzgTIrWlHSaTvspXK6ub
+         Z2jiO65JiZjGRCcbhT7VN0mGvNU+xlN0wmiNU=
+Subject: Re: [RFC][Patch] Adding kmsg_dump() to
+ reboot/halt/poweroff/emergency_restart path
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Artem.Bityutskiy@nokia.com,
+        ext KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        "simon.kagstrom@netinsight.net" <simon.kagstrom@netinsight.net>,
+        "David.Woodhouse@intel.com" <David.Woodhouse@intel.com>,
+        "anders.grafstrom@netinsight.net" <anders.grafstrom@netinsight.net>,
+        "jason.wessel@windriver.com" <jason.wessel@windriver.com>,
+        "jslaby@suse.cz" <jslaby@suse.cz>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "eparis@redhat.com" <eparis@redhat.com>, "hch@lst.de" <hch@lst.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+In-Reply-To: <20101027163505.c88095da.akpm@linux-foundation.org>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C11B4B724@USINDEVS01.corp.hds.com>
+	 <20101019173303.A205.A69D9226@jp.fujitsu.com>
+	 <1287478272.9272.9.camel@localhost>
+	 <20101027163505.c88095da.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 28 Oct 2010 22:58:04 +0300
+Message-ID: <1288295884.1766.10.camel@brekeke>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/10/10 15:24, Avi Kivity wrote:
->> The caller is intended to block as the host must perform GL rendering
->> before allowing the guests process to continue.
->
-> Why is that?  Can't we pipeline the process?
+On Wed, 2010-10-27 at 16:35 -0700, Andrew Morton wrote:
+> > > I think mtdoops user don't want to dump logs if a system reboot/poweroff
+> > > safely because mtd device have write count limitation. and they are main
+> > > user of kmsg_dump().
+> 
+> mtdoops was the only user until ramoops came along.
+> 
+> > Right, at least this is how we use mtdoops - we log crashes.
+> 
+> Fair enough.  So I suppose the existing clients (mtdoops_do_dump and
+> ramoops_do_dump) should be altered to inspect the `reason' argument,
+> and return if it isn't KMSG_DUMP_OOPS, KMSG_DUMP_PANIC or
+> KMSG_DUMP_KEXEC (I assume?)
 
-No, not really. the guest may call for the scene to be rendered at any 
-time and we have to wait for that to happen before we can return the 
-data to it.
+I agree, then mtdoops/ramoops can be tweaked to handle other messages.
 
--Ian
+> If that sounds suitable then I'd ask Seiji to update and resend the
+> patch, along with a complete changelog as earlier dicussed.
+
+Yes, I think the patch makes perfect sense, just the existing
+functionality should not be changed as a side effect.
+
+> I'd suggest doing it as two patches, the first of which alters mtdoops
+> and ramoops to perform their actions only for the appropriate `reason'
+> values.
+
+Right, thanks.
+
+-- 
+Best Regards,
+Artem Bityutskiy (Битюцкий Артём)
+
