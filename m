@@ -1,95 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758991Ab0J1OMo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 10:12:44 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:63726 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757056Ab0J1OMn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 10:12:43 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: [PATCH v2] preempt: fix kernel build with !CONFIG_BKL
-Date: Thu, 28 Oct 2010 16:12:33 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Brian Gerst <brgerst@gmail.com>, David Howells <dhowells@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Venkatesh Pallipadi <venki@google.com>, x86@kernel.org
-References: <20101028095910.GA15970@shutemov.name> <201010281320.44765.arnd@arndb.de> <20101028134658.GA17769@shutemov.name>
-In-Reply-To: <20101028134658.GA17769@shutemov.name>
+	id S1758964Ab0J1OSz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 10:18:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40937 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755199Ab0J1OSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 10:18:51 -0400
+Date: Thu, 28 Oct 2010 10:17:57 -0400
+From: Jason Baron <jbaron@redhat.com>, rth@redhat.com
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: rostedt@goodmis.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
+        tglx@linutronix.de, andi@firstfloor.org, roland@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org,
+        tony@bakeyournoodle.com, ddaney@caviumnetworks.com, dsd@laptop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] jump label: disable due to compiler bug
+Message-ID: <20101028141757.GA2875@redhat.com>
+References: <cover.1288212485.git.jbaron@redhat.com> <2d1b1d5d2b3930e1acb063cefffbcb2faf049854.1288212486.git.jbaron@redhat.com> <ce4ff595-f9d1-4c17-b68e-82739b07ad3e@email.android.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010281612.33732.arnd@arndb.de>
-X-Provags-ID: V02:K0:FkUcEuAVYMCbESdmrF6HhUtbqo+f+AkyUxzR+JtEkbb
- +qmnYk2iYtWeTLK7SKAoJcs8dErKAcLTbLm80pNE/ck5jo8Wh9
- C+NAXxG8ZHbJ5b4kD+SEYFIXDIyQazwOMp6eZUgcb3uDGvlE9D
- FzD9JZJuGlUhqtfG16vaJyv6yzHG3QoFCuQKAeNYBnOXkpd0fP
- 4tlLUbpxjVqCgC7UcKL1g==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ce4ff595-f9d1-4c17-b68e-82739b07ad3e@email.android.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The preempt count logic tries to take the BKL into account, which breaks
-when CONFIG_BKL is not set.
-
-Use the same preempt_count offset that we use without CONFIG_PREEMPT
-when CONFIG_BKL is disabled.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Reported-by: Kirill Shutemov <kirill@shutemov.name>
----
-> On Thursday 28 October 2010, Kirill A. Shutemov wrote:
-> On Thu, Oct 28, 2010 at 01:20:44PM +0200, Arnd Bergmann wrote:
-> > The preempt count logic tries to take the BKL into account, which breaks
-> > when CONFIG_BKL is not set.
-> > 
-> > Use the same preempt_count offset that we use without CONFIG_PREEMPT
-> > when CONFIG_BKL is disabled.
-> > 
-> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> > Reported-by: "Kirill A. Shutemov" <kirill@shutemov.name>
+On Wed, Oct 27, 2010 at 03:21:55PM -0700, H. Peter Anvin wrote:
+> Could you detail the bug, please?  static_cpu_has() also uses asm goto.
 > 
-> Remove quotes, please.
 
-That would make it an invalid email address because of the dot. I left out
-the middle initial now, if that's better.
+It seems that gcc can leave the stack in an inconsistent state.
 
-> I've got a lot of __schedule_bug. Log attached.
+I only saw this in the 'jmp' enabled case, I'm not sure if it can occur in the
+straight-line code path as well.
 
-Ok. I really don't understand the preempt code all that well, let's
-hope that this one is right.
+thanks,
 
-Thanks for your patience and for your testing!
+-Jason
 
-	Arnd
-
-diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
-index 8a389b6..41cb31f 100644
---- a/include/linux/hardirq.h
-+++ b/include/linux/hardirq.h
-@@ -96,11 +96,15 @@
-  */
- #define in_nmi()	(preempt_count() & NMI_MASK)
- 
--#if defined(CONFIG_PREEMPT)
-+#if defined(CONFIG_PREEMPT) && defined(CONFIG_BKL)
- # define PREEMPT_INATOMIC_BASE kernel_locked()
--# define PREEMPT_CHECK_OFFSET 1
- #else
- # define PREEMPT_INATOMIC_BASE 0
-+#endif
-+
-+#if defined(CONFIG_PREEMPT)
-+# define PREEMPT_CHECK_OFFSET 1
-+#else
- # define PREEMPT_CHECK_OFFSET 0
- #endif
- 
+> "Jason Baron" <jbaron@redhat.com> wrote:
+> 
+> >Unfortunately, we found a compiler bug in the implementation of
+> >'asm goto'. The bug can cause the kernel to crash.
+> >
+> >For now, we are disabling jump labels with a big hammer. When the
+> >gcc fix is committed, we will update the kernel with a better check
+> >for either the version number it's fix in, or some detection of
+> >whether gcc has the fix in place.
+> >
+> >Signed-off-by: Jason Baron <jbaron@redhat.com>
+> >---
+> > include/linux/jump_label.h |    9 +++++++++
+> > 1 files changed, 9 insertions(+), 0 deletions(-)
+> >
+> >diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
+> >index b67cb18..954462a 100644
+> >--- a/include/linux/jump_label.h
+> >+++ b/include/linux/jump_label.h
+> >@@ -1,11 +1,20 @@
+> > #ifndef _LINUX_JUMP_LABEL_H
+> > #define _LINUX_JUMP_LABEL_H
+> > 
+> >+/*
+> >+ * A compiler bug was found in the implementation of 'asm goto'. Thus,
+> >+ * we are disabling it for now pending a better check for compiler
+> >version
+> >+ * that fixes it.
+> >+ */
+> >+#if 0
+> >+
+> > #if defined(CC_HAVE_ASM_GOTO) && defined(CONFIG_HAVE_ARCH_JUMP_LABEL)
+> > # include <asm/jump_label.h>
+> > # define HAVE_JUMP_LABEL
+> > #endif
+> > 
+> >+#endif
+> >+
+> > enum jump_label_type {
+> > 	JUMP_LABEL_ENABLE,
+> > 	JUMP_LABEL_DISABLE
+> >-- 
+> >1.7.1
+> 
+> -- 
+> Sent from my mobile phone.  Please pardon any lack of formatting.
