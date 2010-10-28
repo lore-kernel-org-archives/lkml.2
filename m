@@ -1,79 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757832Ab0J1AQV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 20:16:21 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:3545 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757711Ab0J1AQT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 20:16:19 -0400
-Message-ID: <4CC8C0D2.7060304@caviumnetworks.com>
-Date: Wed, 27 Oct 2010 17:16:18 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
-MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: Perf can't deal with many tracepoints
-References: <E1PBFIJ-0004eC-Tj@tytso-glaptop>
-In-Reply-To: <E1PBFIJ-0004eC-Tj@tytso-glaptop>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 Oct 2010 00:16:46.0947 (UTC) FILETIME=[688AEB30:01CB7635]
+	id S1757720Ab0J1A1u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 20:27:50 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:43835 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751935Ab0J1A1s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 20:27:48 -0400
+Date: Thu, 28 Oct 2010 11:27:39 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Sweta Bhatt <sweta.bhatt@einfochips.com>,
+        Roland Dreier <rolandd@cisco.com>, Davide Rizzo <elpa.rizzo@gmail.com>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Richard Purdie <rpurdie@linux.intel.com>,
+        Joseph Chan <JosephChan@via.com.tw>
+Subject: linux-next: build warnings from Linus' tree
+Message-Id: <20101028112739.0f400818.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__28_Oct_2010_11_27_39_+1100_EUPa91qJ2eWSW.nN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2010 04:20 PM, Theodore Ts'o wrote:
-> Perf will drop dead if it comes across tracepoints that have anything
-> but primitive structure accessors in the TP_printk() section of the
-> tracepoint definition.  For example, the ext4 and jbd2 tracepoints uses
-> jbd2_dev_to_name() to translate a dev_t to a string.  The block I/O
-> tracepoints uses MAJOR() and MINOR() to translate a dev_t to a
-> major/minor number pair.  Both do this in TP_printk.  This results in a
-> fatal error:
->
-> # perf record -R -c 1 -e ext4:ext4_da_writepages sh -c "cp -r /boot /test; sync"
-> [ perf record: Woken up 1 times to write data ]
-> [ perf record: Captured and wrote 0.110 MB perf.data (~4786 samples) ]
-> # perf trace -i perf.data
->    Fatal: no argument match
->                cp-9792   [007] 1181919.509759: ext4_da_writepages: dev jbd2_dev_to_name ino
->
-> There are people roaming around trying to convince me that perf is the
-> One True Way to do everything, including tracepoints.  But there are a
-> whole bunch of tracepoints that perf can't handle.  It seems to me we
-> have three possible solutions:
->
-> 1) Accept there are some tracepoints perf just can't handle, and just
-> say that ftrace is the only way people can use those tracepoints
->
-> 2) Enforce a rule which says that nothing other than primitive structure
-> accessors are allowed, in which case we need a patch such like the one
-> attached.  (We will need to audit all tracepoints; it's more than just
-> ext4, as I've mentioned --- and yes, the patch below is ugly.  But it
-> may be what I have to do to accomodate perf --- or maybe I should just
-> tell people that perf is not supported, and if you want to use ext4 or
-> block I/O tracepoints, you should use ftrace?)
->
-> 3) Figure out some way of making perf smarter; I don't know how to do
-> that in the general case, since it can't handle arbitrary C statements.
-> But maybe it could be taught how to handle dev_t's in some intelligent
-> fashion, perhaps.  And then combine this with either (1) or (2) above.
->
-> What say ye?
->
+--Signature=_Thu__28_Oct_2010_11_27_39_+1100_EUPa91qJ2eWSW.nN
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Tracing is supposed to be low overhead.  Forcing people to decode things 
-like this at the trace point, may take more code and cause the trace 
-data to be larger, making it slower than necessary.
+Hi all,
 
-If there isn't a good reason to keep perf stupid, then making it smarter 
-could be attractive.
+While building Linus' tree, today's linux-next build (x86_64 allmodconfig)
+produced these warnings:
 
-That said, there is some tracepoint data that even Steve's offline 
-ftrace analysis tools cannot handle on some architectures.  PFN comes to 
-mind on Sparse Mem MIPS systems.  So the argument that only primitive 
-structure accessors be allowed has some merits as well.
+sound/soc/soc-core.c: In function 'pmdown_time_set':
+sound/soc/soc-core.c:169: warning: ignoring return value of 'strict_strtol'=
+, declared with attribute warn_unused_result
+drivers/infiniband/hw/nes/nes.c: In function 'nes_store_wqm_quanta':
+drivers/infiniband/hw/nes/nes.c:1115: warning: ignoring return value of 'st=
+rict_strtoul', declared with attribute warn_unused_result
+drivers/hwmon/lm95241.c: In function 'set_interval':
+drivers/hwmon/lm95241.c:132: warning: ignoring return value of 'strict_strt=
+ol', declared with attribute warn_unused_result
+drivers/hwmon/lm95241.c: In function 'set_type1':
+drivers/hwmon/lm95241.c:219: warning: ignoring return value of 'strict_strt=
+ol', declared with attribute warn_unused_result
+drivers/hwmon/lm95241.c: In function 'set_type2':
+drivers/hwmon/lm95241.c:220: warning: ignoring return value of 'strict_strt=
+ol', declared with attribute warn_unused_result
+drivers/hwmon/lm95241.c: In function 'set_min1':
+drivers/hwmon/lm95241.c:248: warning: ignoring return value of 'strict_strt=
+ol', declared with attribute warn_unused_result
+drivers/hwmon/lm95241.c: In function 'set_min2':
+drivers/hwmon/lm95241.c:249: warning: ignoring return value of 'strict_strt=
+ol', declared with attribute warn_unused_result
+drivers/hwmon/lm95241.c: In function 'set_max1':
+drivers/hwmon/lm95241.c:277: warning: ignoring return value of 'strict_strt=
+ol', declared with attribute warn_unused_result
+drivers/hwmon/lm95241.c: In function 'set_max2':
+drivers/hwmon/lm95241.c:278: warning: ignoring return value of 'strict_strt=
+ol', declared with attribute warn_unused_result
+drivers/video/backlight/adp8860_bl.c: In function 'adp8860_bl_l1_daylight_m=
+ax_store':
+drivers/video/backlight/adp8860_bl.c:506: warning: ignoring return value of=
+ 'strict_strtoul', declared with attribute warn_unused_result
+drivers/video/via/viafbdev.c: In function 'viafb_dvp0_proc_write':
+drivers/video/via/viafbdev.c:1117: warning: ignoring return value of 'stric=
+t_strtoul, ', declared with attribute warn_unused_result
+drivers/video/via/viafbdev.c: In function 'viafb_dvp1_proc_write':
+drivers/video/via/viafbdev.c:1187: warning: ignoring return value of 'stric=
+t_strtoul', declared with attribute warn_unused_result
+drivers/video/via/viafbdev.c: In function 'viafb_dfph_proc_write':
+drivers/video/via/viafbdev.c:1245: warning: ignoring return value of 'stric=
+t_strtoul', declared with attribute warn_unused_result
+drivers/video/via/viafbdev.c: In function 'viafb_dfpl_proc_write':
+drivers/video/via/viafbdev.c:1284: warning: ignoring return value of 'stric=
+t_strtoul', declared with attribute warn_unused_result
+drivers/video/via/viafbdev.c: In function 'viafb_vt1636_proc_write':
+drivers/video/via/viafbdev.c:1353: warning: ignoring return value of 'stric=
+t_strtoul', declared with attribute warn_unused_result
+drivers/video/via/viafbdev.c:1390: warning: ignoring return value of 'stric=
+t_strtoul', declared with attribute warn_unused_result
 
-David Daney
+Exposed by commit a55621f15bc61826969a29e111ba131a55ef45de
+("include/linux/kernel.h: add __must_check to strict_strto*()").
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__28_Oct_2010_11_27_39_+1100_EUPa91qJ2eWSW.nN
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMyMN7AAoJEDMEi1NhKgbsdhkH/2GneWDtDnkRJFOItyfi8FbP
+rd0HecZt9pi9cLa2Rk/fo3JyDrFl2qx5QMRa2S9TC7mQA3hN0CDJJsll7frIrk80
+YjWU6rB3GlDPuQz4UFWrT75Q0LLijFGVi+MYGQtrMZ3duvhm8X5z2n10fJFbp8UQ
+4EJy1f2L+hiz7PU32PcFF2YMzo4YnD50Y9ZzqU5eDrceZJUmsSORgEvxnS2xf1oV
+w4njn5/1MhvqXB4oR/GJg/52AxJer6G+s3PGsNbbZkNK7Qz5hPep5QqTh2tp65JV
+J3mTLJMuWuV57/1izCoEGuJXqpXYlDHdO1W2y9B1AsFm2Lhm1hMuHkawlxPC+3M=
+=oIMj
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__28_Oct_2010_11_27_39_+1100_EUPa91qJ2eWSW.nN--
