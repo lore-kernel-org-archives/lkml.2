@@ -1,334 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760072Ab0J1UxJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 16:53:09 -0400
-Received: from moh2-ve3.go2.pl ([193.17.41.208]:42678 "EHLO moh2-ve3.go2.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757856Ab0J1UxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 16:53:02 -0400
-Message-ID: <4CC9E2A5.2010400@o2.pl>
-Date: Thu, 28 Oct 2010 22:52:53 +0200
-From: Maciej Szmigiero <mhej@o2.pl>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.11) Gecko/20101024 Lightning/1.0b3pre Thunderbird/3.1.5
+	id S1761140Ab0J1Uxt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 16:53:49 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:33476 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759653Ab0J1Uxo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 16:53:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=U1Nb9FoAqABGvwS75uakkND8/XiQwIeuLRz0w3x4VufOC4K9GXU2Zzjdlp3Xjqulpr
+         e4o7sZKhTdLvuMXpGxU07O4CbYmLb9cOqcpy/mM/KQXSDV6IbbMfQlE08FW2qIiytNpN
+         FdVXfZhYwekxJ1wYdyTWTqPNhcdrrw/WQ2g/U=
 MIME-Version: 1.0
-To: johnpol@2ka.mipt.ru
-CC: linux-kernel@vger.kernel.org
-Subject: [W1] a driver for DS2405 chip
+In-Reply-To: <AANLkTimcsAcSgEz7vvVzp11XPvY9f010nCRmBCd9VkfF@mail.gmail.com>
+References: <20100831083844.043619334@linux.vnet.ibm.com> <AANLkTikCLHh5Uz-DRq9ws78We+SwCAqdurA6HfuJh-8Y@mail.gmail.com>
+ <20101018103729.GA4122@linux.vnet.ibm.com> <AANLkTikKJ25L=6b2resz+0SAg7ZYL5j=rHG7Lg4kFbwd@mail.gmail.com>
+ <20101019110801.GA4128@linux.vnet.ibm.com> <AANLkTimLi8BYy_u8NhD15s=+iiODzuG1H_CgZ-cd7jep@mail.gmail.com>
+ <20101019213112.GA11432@merkur.ravnborg.org> <AANLkTike6UQVWKSz-Njs5Rps690EHeResH3V+aSM+qdO@mail.gmail.com>
+ <AANLkTimn8R-qde8FH_cNa4JPcR2F=mkUAQhPVT-hOBhn@mail.gmail.com>
+ <4CC8ABC7.5030003@suse.cz> <20101028203542.GA30879@merkur.ravnborg.org> <AANLkTimcsAcSgEz7vvVzp11XPvY9f010nCRmBCd9VkfF@mail.gmail.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Thu, 28 Oct 2010 16:53:22 -0400
+Message-ID: <AANLkTikHHmugY=tFhqSbj-9noJmdeZHPPY1KN9yM8jMe@mail.gmail.com>
+Subject: Re: [PATCH] initramfs: Fix build break on symbol-prefixed archs
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Michal Marek <mmarek@suse.cz>,
+        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>, tabbott@ksplice.com,
+        vda.linux@googlemail.com, hpa@linux.intel.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-O2-Trust: 2, 65
-X-O2-SPF: neutral
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[W1] a driver for DS2405 chip
+On Thu, Oct 28, 2010 at 16:42, Mike Frysinger wrote:
+> On Thu, Oct 28, 2010 at 16:35, Sam Ravnborg wrote:
+>> On Thu, Oct 28, 2010 at 12:46:31AM +0200, Michal Marek wrote:
+>>> On 27.10.2010 20:23, Mike Frysinger wrote:
+>>> > can we get this change dropped from linux-next until someone gets a
+>>> > chance to fix it ?
+>>>
+>>> Sorry I missed this thread. So your last patch
+>>> (http://lkml.org/lkml/2010/10/19/488) did fix the Blackfin build
+>>> failure? Can you submit it with a proper Signed-off-by and changelog?
+>>
+>> Did you see the patch I posted in: http://lkml.org/lkml/2010/10/19/534
+>>
+>> The one that fix up the cppflags usage.
+>>
+>> I think this will solve the issue with blackfin nicely - and
+>> make use of cppflags more as expected.
+>
+> but then i followed up that the Makefile code exists to strip out
+> quotes because the CPP cannot do it for us and we need a value sans
+> quotes:
+> http://lkml.org/lkml/2010/10/19/538
 
-This is a driver for DS2405 1-wire single-channel addressable switch / PIO.
-DS2405 can also work as single-channel binary remote sensor.
+for due diligence, adding those two changes breaks building like so:
+  LD      .tmp_vmlinux1
+.../bfin-uclinux/bin/ld.real: cannot find _
+make: *** [.tmp_vmlinux1] Error 1
 
-Signed-off-by: Maciej Szmigiero <mhej@o2.pl>
-
---- a/drivers/w1/w1_family.h	2009-06-10 05:05:27.000000000 +0200
-+++ b/drivers/w1/w1_family.h	2009-12-13 22:23:32.994770399 +0100
-@@ -28,6 +28,7 @@
- 
- #define W1_FAMILY_DEFAULT	0
- #define W1_FAMILY_SMEM_01	0x01
-+#define W1_FAMILY_DS2405	0x05
- #define W1_FAMILY_SMEM_81	0x81
- #define W1_THERM_DS18S20 	0x10
- #define W1_THERM_DS1822  	0x22
---- a/drivers/w1/w1_io.c	2009-06-10 05:05:27.000000000 +0200
-+++ b/drivers/w1/w1_io.c	2009-12-15 22:32:48.362801835 +0100
-@@ -210,6 +210,7 @@
- 		return retval;
- 	}
- }
-+EXPORT_SYMBOL_GPL(w1_triplet);
- 
- /**
-  * Reads 8 bits.
---- /dev/null	2010-10-28 22:18:50.899999998 +0200
-+++ b/drivers/w1/slaves/w1_ds2405.c	2010-10-28 22:42:13.000000000 +0200
-@@ -0,0 +1,251 @@
-+/*
-+ *	w1_ds2405.c
-+ *
-+ * Copyright (c) 2009 Maciej Szmigiero <mhej@o2.pl>
-+ * Based on w1_therm.c copyright (c) 2004 Evgeniy Polyakov <johnpol@2ka.mipt.ru>
-+ *
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the therms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ */
-+
-+#include <linux/types.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/moduleparam.h>
-+#include <linux/sched.h>
-+#include <linux/device.h>
-+#include <linux/types.h>
-+#include <linux/delay.h>
-+
-+#include "../w1.h"
-+#include "../w1_int.h"
-+#include "../w1_family.h"
-+
-+static int w1_ds2405_select(struct w1_slave *sl, int only_active)
-+{
-+	struct w1_master *dev = sl->master;
-+	int ret;
-+
-+	if (w1_reset_bus(dev) != 0)
-+		return 0;
-+
-+	/* We cannot use normal Match ROM command */
-+	/* since doing so would toggle PIO state */
-+	w1_write_8(dev, only_active ? W1_ALARM_SEARCH : W1_SEARCH);
-+
-+	do {
-+		u64 dev_addr = cpu_to_le64(((u64)sl->reg_num.crc<<(8+48))
-+					| ((u64)sl->reg_num.id<<8)
-+					| sl->reg_num.family);
-+		u8 bit_ctr;
-+
-+		for (bit_ctr = 0; bit_ctr < 64; bit_ctr++) {
-+			int bit2send = !!(dev_addr & 1LL<<bit_ctr);
-+			ret = w1_triplet(dev, bit2send);
-+
-+			if ((ret & 3) == 3) /* no devices found */
-+				return 0;
-+
-+			if ((!!(ret & 4)) != bit2send)
-+				/* wrong direction taken - no such device */
-+				return 0;
-+		}
-+	} while (0);
-+
-+	return 1;
-+}
-+
-+static int w1_ds2405_read_pio(struct w1_slave *sl)
-+{
-+	if (w1_ds2405_select(sl, 1))
-+		return 0; /* "active" means PIO is low */
-+
-+	if (w1_ds2405_select(sl, 0))
-+		return 1;
-+	else
-+		return -ENODEV;
-+}
-+
-+static ssize_t w1_ds2405_read_sensed_file(struct device *device,
-+	struct device_attribute *attr, char *buf)
-+{
-+	struct w1_slave *sl = dev_to_w1_slave(device);
-+	struct w1_master *dev = sl->master;
-+
-+	int ret;
-+	ssize_t f_retval;
-+	u8 state;
-+
-+	ret = mutex_lock_interruptible(&dev->mutex);
-+	if (ret)
-+		return ret;
-+
-+	if (!w1_ds2405_select(sl, 0)) {
-+		f_retval = -ENODEV;
-+		goto out_unlock;
-+	}
-+
-+	state = w1_read_8(dev);
-+
-+	f_retval = snprintf(buf, PAGE_SIZE, "%u\n", !!(state));
-+
-+out_unlock:
-+	w1_reset_bus(dev);
-+	mutex_unlock(&dev->mutex);
-+
-+	return f_retval;
-+}
-+
-+static ssize_t w1_ds2405_read_pio_file(struct device *device,
-+	struct device_attribute *attr, char *buf)
-+{
-+	struct w1_slave *sl = dev_to_w1_slave(device);
-+	struct w1_master *dev = sl->master;
-+
-+	int ret;
-+	ssize_t f_retval;
-+
-+	ret = mutex_lock_interruptible(&dev->mutex);
-+	if (ret)
-+		return ret;
-+
-+	ret = w1_ds2405_read_pio(sl);
-+	if (ret < 0) {
-+		f_retval = ret;
-+		goto out_unlock;
-+	}
-+
-+	f_retval = snprintf(buf, PAGE_SIZE, "%d\n", ret);
-+
-+out_unlock:
-+	w1_reset_bus(dev);
-+	mutex_unlock(&dev->mutex);
-+
-+	return f_retval;
-+}
-+
-+static ssize_t w1_ds2405_write_pio_file(struct device *device,
-+					struct device_attribute *attr,
-+					const char *buf, size_t count)
-+{
-+	struct w1_slave *sl = dev_to_w1_slave(device);
-+	struct w1_master *dev = sl->master;
-+
-+	int ret, current_pio;
-+	unsigned int val;
-+	ssize_t f_retval;
-+
-+	if (count < 1)
-+		return -EINVAL;
-+
-+	/* fill_write_buffer() in fs/sysfs/file.c */
-+	/* keeps the buffer null-terminated */
-+	if (sscanf(buf, " %u%n", &val, &ret) < 1)
-+		return -EINVAL;
-+
-+	if ((val != 0) && (val != 1))
-+		return -EINVAL;
-+
-+	f_retval = ret;
-+
-+	ret = mutex_lock_interruptible(&dev->mutex);
-+	if (ret)
-+		return ret;
-+
-+	current_pio = w1_ds2405_read_pio(sl);
-+	if (current_pio < 0) {
-+		f_retval = current_pio;
-+		goto out_unlock;
-+	}
-+
-+	if (current_pio == val)
-+		goto out_unlock;
-+
-+	if (w1_reset_bus(dev) != 0) {
-+		f_retval = -ENODEV;
-+		goto out_unlock;
-+	}
-+
-+	do {
-+		u64 dev_addr = cpu_to_le64(((u64)sl->reg_num.crc<<(8+48))
-+			     | ((u64)sl->reg_num.id<<8) | sl->reg_num.family);
-+
-+		w1_write_8(dev, W1_MATCH_ROM);
-+		w1_write_block(dev, (u8 *)&dev_addr, 8);
-+	} while (0);
-+
-+out_unlock:
-+	w1_reset_bus(dev);
-+	mutex_unlock(&dev->mutex);
-+
-+	return f_retval;
-+}
-+
-+static DEVICE_ATTR(sensed, S_IRUSR | S_IRGRP, w1_ds2405_read_sensed_file, NULL);
-+static DEVICE_ATTR(PIO, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP,
-+		    w1_ds2405_read_pio_file, w1_ds2405_write_pio_file);
-+
-+static int w1_ds2405_add_slave(struct w1_slave *sl)
-+{
-+	int err;
-+
-+	err = device_create_file(&sl->dev, &dev_attr_sensed);
-+	if (err)
-+		return err;
-+
-+	err = device_create_file(&sl->dev, &dev_attr_PIO);
-+	if (err) {
-+		device_remove_file(&sl->dev, &dev_attr_sensed);
-+		return err;
-+	}
-+
-+	return 0;
-+}
-+
-+static void w1_ds2405_remove_slave(struct w1_slave *sl)
-+{
-+	device_remove_file(&sl->dev, &dev_attr_sensed);
-+	device_remove_file(&sl->dev, &dev_attr_PIO);
-+}
-+
-+
-+static struct w1_family_ops w1_ds2405_fops = {
-+	.add_slave	= w1_ds2405_add_slave,
-+	.remove_slave	= w1_ds2405_remove_slave,
-+};
-+
-+
-+static struct w1_family w1_family_ds2405 = {
-+	.fid = W1_FAMILY_DS2405,
-+	.fops = &w1_ds2405_fops,
-+};
-+
-+static int __init w1_ds2405_init(void)
-+{
-+	return w1_register_family(&w1_family_ds2405);
-+}
-+
-+static void __exit w1_ds2405_fini(void)
-+{
-+
-+	w1_unregister_family(&w1_family_ds2405);
-+}
-+
-+module_init(w1_ds2405_init);
-+module_exit(w1_ds2405_fini);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Maciej Szmigiero <mhej@o2.pl>");
-+MODULE_DESCRIPTION("Driver for 1-wire Dallas DS2405 PIO");
---- a/drivers/w1/slaves/Makefile	2010-08-02 00:11:14.000000000 +0200
-+++ b/drivers/w1/slaves/Makefile	2010-10-28 22:39:13.000000000 +0200
-@@ -4,6 +4,7 @@
- 
- obj-$(CONFIG_W1_SLAVE_THERM)	+= w1_therm.o
- obj-$(CONFIG_W1_SLAVE_SMEM)	+= w1_smem.o
-+obj-$(CONFIG_W1_SLAVE_DS2405)	+= w1_ds2405.o
- obj-$(CONFIG_W1_SLAVE_DS2431)	+= w1_ds2431.o
- obj-$(CONFIG_W1_SLAVE_DS2433)	+= w1_ds2433.o
- obj-$(CONFIG_W1_SLAVE_DS2760)	+= w1_ds2760.o
---- a/drivers/w1/slaves/Kconfig	2010-08-02 00:11:14.000000000 +0200
-+++ b/drivers/w1/slaves/Kconfig	2010-10-28 22:37:55.000000000 +0200
-@@ -16,6 +16,14 @@
- 	  Say Y here if you want to connect 1-wire
- 	  simple 64bit memory rom(ds2401/ds2411/ds1990*) to your wire.
- 
-+config W1_SLAVE_DS2405
-+	tristate "DS2405 Addressable Switch / PIO"
-+	help
-+	  Say Y here if you want to build driver for 1-wire
-+	  single-channel addressable switch / PIO.
-+	  This device can also work as single-channel
-+	  binary remote sensor.
-+
- config W1_SLAVE_DS2431
- 	tristate "1kb EEPROM family support (DS2431)"
- 	help
-
-
+and if we look at the generated vmlinux.lds, we indeed see the quotes
+causing problems:
+  . = ALIGN(8); "_"__lock_text_start = .; *(.spinlock.text)
+"_"__lock_text_end = .;
+  . = ALIGN(8); "_"__kprobes_text_start = .; *(.kprobes.text)
+"_"__kprobes_text_end = .;
+-mike
