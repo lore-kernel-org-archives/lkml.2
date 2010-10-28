@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758644Ab0J1Ml0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 08:41:26 -0400
-Received: from caiajhbdcahe.dreamhost.com ([208.97.132.74]:52586 "EHLO
-	homiemail-a4.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754324Ab0J1MlY convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 08:41:24 -0400
-Subject: [PATCH] atyfb: fix build regression
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 28 Oct 2010 09:41:13 -0300
-Message-ID: <1288269673.2212.9.camel@cowboy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8BIT
+	id S932988Ab0J1MoP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 08:44:15 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:11168 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752585Ab0J1MoL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 08:44:11 -0400
+X-IronPort-AV: E=Sophos;i="4.58,251,1286150400"; 
+   d="scan'208";a="2571193"
+Date: Thu, 28 Oct 2010 13:43:12 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+Subject: Re: [Xen-devel] Re: [PATCH 1/5] xen: events: use irq_alloc_desc(_at)
+ instead of open-coding an IRQ allocator.
+In-Reply-To: <20101026170841.GA10708@dumpdata.com>
+Message-ID: <alpine.DEB.2.00.1010281303330.1407@kaball-desktop>
+References: <1288023736.11153.40.camel@zakaz.uk.xensource.com> <1288023813-31989-1-git-send-email-ian.campbell@citrix.com> <20101025173522.GA5590@dumpdata.com> <4CC60CB7.3070005@goop.org> <20101026141739.GA9557@dumpdata.com> <4CC70583.2050503@goop.org>
+ <20101026170841.GA10708@dumpdata.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Davidlohr Bueso <dave@gnu.org>
-Date: Thu, 28 Oct 2010 09:32:44 -0300
-Subject: [PATCH 6/6] atyfb: fix build regression
-
-On Today's randconfig the following is happening on Linus' latest tree:
-
-  CC      drivers/video/aty/atyfb_base.o
-drivers/video/aty/atyfb_base.c:553: error: ‘ram_dram’ undeclared here (not in a function)
-drivers/video/aty/atyfb_base.c:554: error: ‘ram_resv’ undeclared here (not in a function)
-make[3]: *** [drivers/video/aty/atyfb_base.o] Error 1
-make[2]: *** [drivers/video/aty] Error 2
-make[1]: *** [drivers/video] Error 2
-make: *** [drivers] Error 2
-
-I believe that th ram_dram and ram_resv where removed based on this http://lkml.org/lkml/2010/9/22/258
-
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
----
- drivers/video/aty/atyfb_base.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/video/aty/atyfb_base.c b/drivers/video/aty/atyfb_base.c
-index 8e58f4a..5988b88 100644
---- a/drivers/video/aty/atyfb_base.c
-+++ b/drivers/video/aty/atyfb_base.c
-@@ -535,6 +535,8 @@ static int __devinit correct_chipset(struct atyfb_par *par)
- 	return 0;
- }
- 
-+static char ram_dram[] __devinitdata = "DRAM";
-+static char ram_resv[] __devinitdata = "RESV";
- #ifdef CONFIG_FB_ATY_GX
- static char ram_vram[] __devinitdata = "VRAM";
- #endif /* CONFIG_FB_ATY_GX */
--- 
-1.7.0.4
+On Tue, 26 Oct 2010, Konrad Rzeszutek Wilk wrote:
+> > In that case we should use dynamic allocation for everything.  Or try to
+> > work out distinct irq ranges for different interrupts if you really want
+> > to keep irq==gsi.
+> 
+> Some little alarm bells are ringing in the back of my head about irq != gsi.
+> 
+> I think the issue was the permission. When a PCI device is allocated to the
+> PV guest, we do a bunch of xc_* calls to allow the domain to use the BARs
+> and the IRQ. I believe when the guest boots and tries to map the
+> event channel with the physical IRQ, one of the arguments is that GSI. And
+> if we provide a bogus GSI, well, we won't get the INTx to the guest.
+> 
+> As you mentioned, Stefano's patch add a new element to the tuple that can
+> contain the GSI value. At which point we can make the guest IRQ != GSI,
+> as long as we can contain the <gsi, event channel> mapping present so
+> that for the hypercalls we can give it the right GSI.
+> 
+> The MSI/MSI-X use a completly different mechanism that does not all
+> of this complication, so we are OK with that.
+> 
+> .. snip ..
+> 
+> > d) dynamically allocate all irqs for all event channel types.
+> 
+> <nods> Ok, you sold me on this idea.
+> 
 
 
+Even though dynamic allocation might seem possible for both pirqs and
+irqs, there are some severe limitations:
+
+
+- Xen won't allocate pirq numbers lower than 16 (probably because it
+expects pirq == gsi for the first 16 gsi), so it might run out
+of pirqs if we ask Xen to always choose the pirq number for us.  As a
+consequence it is safer to keep using pirq == gsi, at least for the
+first 16 gsis. This limitation should probably be fixed in Xen, but we
+need to support older hypervisors so we cannot rely on the fix to be
+present.
+
+
+- Linux expects irq == gsi, see arch/x86/kernel/acpi/boot.c:gsi_to_irq
+
+	/* Provide an identity mapping of gsi == irq
+	 * except on truly weird platforms that have
+	 * non isa irqs in the first 16 gsis.
+	 */
 
