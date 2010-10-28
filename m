@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759545Ab0J1XfD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 19:35:03 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:48325 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759268Ab0J1Xe7 convert rfc822-to-8bit (ORCPT
+	id S1759600Ab0J1Xj1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 19:39:27 -0400
+Received: from barcelona.uem.br ([200.201.11.21]:39351 "EHLO barcelona.uem.br"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758438Ab0J1XjV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 19:34:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=VY6Tn9cZjScKNTDpkMysLXN6wa/JUB9epfQaRdgxazEwgrwNlmaQOPpPXm30pDeSvu
-         gkvapyRdS2QpmWz82bzw==
+	Thu, 28 Oct 2010 19:39:21 -0400
+X-Greylist: delayed 2067 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Oct 2010 19:39:21 EDT
+X-Spam-Flag: NO
+X-Spam-Score: 1.231
+Date: Thu, 28 Oct 2010 20:59:49 -0200 (BRST)
+From: =?utf-8?Q?Anniversary_Celebration_=C2=A92010?= <ccsilva@uem.br>
+Message-ID: <23560626.29361288306789693.JavaMail.root@Sakhir.uem.br>
+Subject: GoogleUK 11th Anniversary Celebrations!!!***Contact Mr. Grahams
+ Benfield via email for more info***
 MIME-Version: 1.0
-In-Reply-To: <4CC146BA.7080009@cn.fujitsu.com>
-References: <4CC146A4.9090505@cn.fujitsu.com>
-	<4CC146BA.7080009@cn.fujitsu.com>
-Date: Thu, 28 Oct 2010 16:34:56 -0700
-Message-ID: <AANLkTikf-1kLStxqi5UjP=vn3pqVBHy0OA7ibeWTkJ5z@mail.gmail.com>
-Subject: Re: [PATCH 1/7] cgroups: Shrink struct cgroup_subsys
-From: Paul Menage <menage@google.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: "akpm >> Andrew Morton" <akpm@linux-foundation.org>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        containers@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+X-Originating-IP: [213.229.110.100]
+X-Mailer: Zimbra 5.0.10_GA_2638.RHEL4 (zclient/5.0.10_GA_2638.RHEL4)
+To: undisclosed-recipients:;
+X-UEM-MailScanner-Information: Please contact the ISP for more information
+X-UEM-MailScanner-ID: 30D81104D1.A02BC
+X-UEM-MailScanner: Found to be clean
+X-UEM-MailScanner-SpamScore: 1
+X-UEM-MailScanner-From: ccsilva@uem.br
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 22, 2010 at 1:09 AM, Li Zefan <lizf@cn.fujitsu.com> wrote:
-> On x86_32, sizeof(struct cgroup_subsys) shrinks from 276 bytes
-> to 264.
->
-> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
 
-Acked-by: Paul Menage <menage@google.com>
+Your E-mail just W o n ¬£850,000 UK Pounds in our on-going 11th Anniversary
+Online Promo!!
 
-Maybe use "bool" here?
+YOUR DETAILS:
+L u c k y # : 12-12-23-35-40-41(12),
+T i c k e t # : 00869575733664,
+C G P N : 7-22-71-00-66-12.
 
-Paul
+CONTACT MR GRAHAMS BENFIELD VIA EMAIL BELOW TO GET MORE INFORMATION.
+-E-mail: online.anniversarypromo1@gmail.com
+        : officialclaimsprocessing@myemail.com
 
-> ---
-> include/linux/cgroup.h | † 10 ++++++----
-> †1 files changed, 6 insertions(+), 4 deletions(-)
->
-> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-> index ed4ba11..e23ded6 100644
-> --- a/include/linux/cgroup.h
-> +++ b/include/linux/cgroup.h
-> @@ -481,14 +481,16 @@ struct cgroup_subsys {
-> † † † †void (*bind)(struct cgroup_subsys *ss, struct cgroup *root);
->
-> † † † †int subsys_id;
-> - † † † int active;
-> - † † † int disabled;
-> - † † † int early_init;
-> +
-> + † † † unsigned int active:1;
-> + † † † unsigned int disabled:1;
-> + † † † unsigned int early_init:1;
-> † † † †/*
-> † † † † * True if this subsys uses ID. ID is not available before cgroup_init()
-> † † † † * (not available in early_init time.)
-> † † † † */
-> - † † † bool use_id;
-> + † † † unsigned int use_id:1;
-> +
-> †#define MAX_CGROUP_TYPE_NAMELEN 32
-> † † † †const char *name;
->
-> --
-> 1.7.0.1
->
->
+MRS. HELENA GERRAD
+(c) 2010 Google Online Asst. Coordinator/Announcer.
+====================================================
+Note: Your winning details should be sent to the two email addresses
+    above inorder to get all the necessary informations about your prize.
+
+-- 
+Esta mensagem foi verificada pelo sistema de antiv√≠rus e
+ acredita-se estar livre de perigo.
+
