@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758746Ab0J1Ndf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 09:33:35 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51812 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753003Ab0J1Ndc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 09:33:32 -0400
-Subject: Re: kmemleak disabled itself in 2.6.36
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Toralf =?ISO-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
-Cc: linux-kernel@vger.kernel.org, "Luis R. Rodriguez" <lrodriguez@atheros.com>
-In-Reply-To: <201010281513.26185.toralf.foerster@gmx.de>
-References: <201010272112.59520.toralf.foerster@gmx.de>
-	 <1288254789.10238.5.camel@e102109-lin.cambridge.arm.com>
-	 <201010281513.26185.toralf.foerster@gmx.de>
-Content-Type: text/plain; charset="UTF-8"
-Organization: ARM Limited
-Date: Thu, 28 Oct 2010 14:33:22 +0100
-Message-ID: <1288272802.10238.216.camel@e102109-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 8BIT
-X-OriginalArrivalTime: 28 Oct 2010 13:33:22.0313 (UTC) FILETIME=[B0CCFF90:01CB76A4]
+	id S1758755Ab0J1NmJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 09:42:09 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:64894 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758694Ab0J1NmH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 09:42:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=NfuzN1au8F+Bbsz8glKDuP6QyJY8Wto/n5TKMsfJMYwxfyXar6Rvm6fWLpjZBsvjit
+         VTkLoXxaMsEVANbC+DlJQkxirByj9Mm9L9J1vrJZZMRvPtxRFWpsbdl9f7Wm3nhsE+f3
+         iGbuQGoFPKj8IP+ImCxk/oqlgTX7YQcdjN8Ew=
+Date: Thu, 28 Oct 2010 15:41:56 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Yong Wang <yong.y.wang@intel.com>
+Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] dma/intel_mid_dma: remove unneeded null check
+Message-ID: <20101028134156.GD6062@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Yong Wang <yong.y.wang@intel.com>,
+	Dan Williams <dan.j.williams@intel.com>,
+	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-10-28 at 14:13 +0100, Toralf Förster wrote:
-> Catalin Marinas wrote at 10:33:09
-> > On Wed, 2010-10-27 at 20:12 +0100, Toralf Förster wrote:
-> > > I'm unsure whether this happens due to a
-> > > $> sudo su -c "echo clear > /sys/kernel/debug/kmemleak"
-> > > or while regular scanning, but anyway seems not to be normal, or ?
-> > >
-> > > 2010-10-27T20:42:21.697+02:00 n22 kernel: flush-254:0: page allocation
-> > > failure. order:0, mode:0x0
-> > [...]
-> > > 2010-10-27T20:42:21.699+02:00 n22 kernel: kmemleak: Cannot allocate a
-> > > kmemleak_object structure 2010-10-27T20:42:21.699+02:00 n22 kernel: Pid:
-> > > 15475, comm: flush-254:0 Not tainted 2.6.36 #2
-> > [...]
-> > > 2010-10-27T20:42:21.700+02:00 n22 kernel: kmemleak: Kernel memory leak
-> > > detector disabled
-> >
-> > Are you running out of memory on your system? Kmemleak tried to allocate
-> > a structure but the slab allocator failed to get page. Kmemleak disables
-> > itself in such situations but the problem is somewhere else (not enough
-> > memory?).
-> 
-> I don't think so - no big load to that system, no excessive compiler runs ...
+Smatch complains because we dereference "mid" before checking it.  It
+turns out that "mid" is always a valid pointer here so we can just
+remove the check.
 
-What does /proc/meminfo say after you got this error?
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-Which slab allocator are you using?
-
-Catalin
-
+diff --git a/drivers/dma/intel_mid_dma.c b/drivers/dma/intel_mid_dma.c
+index 338bc4e..41941d0 100644
+--- a/drivers/dma/intel_mid_dma.c
++++ b/drivers/dma/intel_mid_dma.c
+@@ -1021,11 +1021,6 @@ static irqreturn_t intel_mid_dma_interrupt(int irq, void *data)
+ 
+ 	/*DMA Interrupt*/
+ 	pr_debug("MDMA:Got an interrupt on irq %d\n", irq);
+-	if (!mid) {
+-		pr_err("ERR_MDMA:null pointer mid\n");
+-		return -EINVAL;
+-	}
+-
+ 	pr_debug("MDMA: Status %x, Mask %x\n", tfr_status, mid->intr_mask);
+ 	tfr_status &= mid->intr_mask;
+ 	if (tfr_status) {
