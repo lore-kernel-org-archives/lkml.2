@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932764Ab0J1HCF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 03:02:05 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:58759 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755495Ab0J1HCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 03:02:03 -0400
-Message-ID: <4CC920F2.4080008@cn.fujitsu.com>
-Date: Thu, 28 Oct 2010 15:06:26 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	id S932868Ab0J1HGC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 03:06:02 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40506 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932153Ab0J1HF6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 03:05:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:in-reply-to:user-agent;
+        b=shSHC6+PtcUvACiWJAkwibbMt4WyScZEfRHYLVbAUaP3vgO0wCfv81gOnr8cpWyKDp
+         KXOky0PKQ8Xt3yVzyj6blBCrbIVlsYGZ+UoKz0glZPl8EI4ScH4mAYL5N1aLSQujr6ii
+         njU1pWqPPArUTFaJBnMc/sW28DhRn2a9E50xc=
+Date: Thu, 28 Oct 2010 07:05:50 +0000
+From: Jarek Poplawski <jarkao2@gmail.com>
+To: Denys Fedoryshchenko <nuclearcat@nuclearcat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Paul Mackerras <paulus@samba.org>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: 2.6.35->2.6.36 regression, vanilla kernel panic, ppp or
+	hrtimers crashing
+Message-ID: <20101028070550.GA7647@ff.dom.local>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 4/8] KVM: avoid unnecessary wait for a async pf
-References: <4CC7EA7D.5020901@cn.fujitsu.com> <4CC7EB3A.6070002@cn.fujitsu.com> <20101027104210.GN26191@redhat.com>
-In-Reply-To: <20101027104210.GN26191@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201010251222.37191.nuclearcat@nuclearcat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2010 06:42 PM, Gleb Natapov wrote:
-> On Wed, Oct 27, 2010 at 05:04:58PM +0800, Xiao Guangrong wrote:
->> In current code, it checks async pf completion out of the wait context,
->> like this:
->>
->> if (vcpu->arch.mp_state == KVM_MP_STATE_RUNNABLE &&
->> 		    !vcpu->arch.apf.halted)
->> 			r = vcpu_enter_guest(vcpu);
->> 		else {
->> 			......
->> 			kvm_vcpu_block(vcpu)
->> 			 ^- waiting until 'async_pf.done' is not empty
->> }
->> 	
->> kvm_check_async_pf_completion(vcpu)
->>  ^- delete list from async_pf.done
->>
->> So, if we check aysnc pf completion first, it can be blocked at
->> kvm_vcpu_block
->>
-> Correct, but it can be fixed by adding vcpu->arch.apf.halted = false; to
-> kvm_arch_async_page_present(), no?
-> Adding kvm_check_async_pf_completion() to arch independent kvm_vcpu_block()
-> constrains how other archs may implement async pf support IMO.
->  
+On 2010-10-25 11:22, Denys Fedoryshchenko wrote:
+> Hi
+> 
+> Here is what i got from netconsole
+>  [  259.238755] BUG: unable to handle kernel 
+>  paging request
+>  at f8ba001c
+>  [  259.238953] IP:
+>  [<c0199ebe>] do_select+0x2cc/0x502
+...
+> It is not easy to do full git bisect(it is semi-embedded distro), but i can 
+> try reversing particular commits, if someone can give idea which one, and can 
+> try debug patches.
 
-Um, i think it's reasonable, will fix it address your comment.
+Hi,
+Nothing concrete, but you might try reverting this one:
+
+http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.36.y.git;a=commitdiff;h=15fd0cd9a2ad24a78fbee369dec8ca660979d57e
+
+Jarek P.
