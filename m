@@ -1,102 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215Ab0J1Tu3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 15:50:29 -0400
-Received: from gate.crashing.org ([63.228.1.57]:37228 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752732Ab0J1TuZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 15:50:25 -0400
-Message-ID: <52441.84.105.60.153.1288295412.squirrel@gate.crashing.org>
-In-Reply-To: <20101028011147.26254.qmail@kosh.dhis.org>
-References: <20101028011147.26254.qmail@kosh.dhis.org>
-Date: Thu, 28 Oct 2010 21:50:12 +0200 (CEST)
-Subject: Re: Pegasos OHCI bug (was Re: PROBLEM: memory corrupting bug,
-From: "Segher Boessenkool" <segher@kernel.crashing.org>
-To: pacman@kosh.dhis.org
-Cc: "Segher Boessenkool" <segher@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.10a-1.fc6
+	id S1757344Ab0J1TwF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 15:52:05 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:50780 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754745Ab0J1Tv4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 15:51:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=yAOWR9NH4TDPGWAhaCyqYiGDlnu73/oeC6iTNdmYM5xP2zpKWrbZPXYkF0y5/YRa95
+         MVzjUci4UztkmwL7k9BfImRUYVQOIPI2gtfLrWEDqd6qbeXE0wlS+R8K/T0ZFaF4N9+E
+         qqC7CSpQiNx/RUjpOotfEWdn8KEGBZ3ySrT78=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+In-Reply-To: <AANLkTi=j3CAhHExdEPuV6WGkgegizBE7Eyu7BSYQrgE+@mail.gmail.com>
+References: <20100831082307.064687027@linux.vnet.ibm.com> <20100831083844.043619334@linux.vnet.ibm.com>
+ <AANLkTikCLHh5Uz-DRq9ws78We+SwCAqdurA6HfuJh-8Y@mail.gmail.com>
+ <20101018103729.GA4122@linux.vnet.ibm.com> <AANLkTikKJ25L=6b2resz+0SAg7ZYL5j=rHG7Lg4kFbwd@mail.gmail.com>
+ <20101019110801.GA4128@linux.vnet.ibm.com> <AANLkTimLi8BYy_u8NhD15s=+iiODzuG1H_CgZ-cd7jep@mail.gmail.com>
+ <20101019213112.GA11432@merkur.ravnborg.org> <AANLkTike6UQVWKSz-Njs5Rps690EHeResH3V+aSM+qdO@mail.gmail.com>
+ <AANLkTimn8R-qde8FH_cNa4JPcR2F=mkUAQhPVT-hOBhn@mail.gmail.com>
+ <4CC8ABC7.5030003@suse.cz> <AANLkTimCoH1YA3sh3W_59QG42CwtRXQovgqUw2SndUO6@mail.gmail.com>
+ <4CC8B6E4.7070200@suse.cz> <AANLkTinpD8NR-pBLfWV9uan-+MYddFQGtjMx0qhAG_n9@mail.gmail.com>
+ <4CC967CE.4020100@suse.cz> <AANLkTi=j3CAhHExdEPuV6WGkgegizBE7Eyu7BSYQrgE+@mail.gmail.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Thu, 28 Oct 2010 15:51:35 -0400
+Message-ID: <AANLkTimunQMdg2dOTond3sATujz+Mr8d4nO+7FNU15PF@mail.gmail.com>
+Subject: Re: [PATCH] initramfs: Fix build break on symbol-prefixed archs
+To: Michal Marek <mmarek@suse.cz>
+Cc: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>, tabbott@ksplice.com,
+        vda.linux@googlemail.com, hpa@linux.intel.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com,
+        Sam Ravnborg <sam@ravnborg.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> So is it wrong to leave the host controller enabled when the OS is booted?
-
-Yes.  Or, rather, there should be some way for the client to turn off
-all dma and interrupt activity; if the client closes the ihandles in
-"/chosen", and perhaps calls "quiesce", that should be enough.
-
-
-
-> If
-> not, then the error must be in the communication of which memory addresses
-> are in use by OF. I've got a node /memory@0 whose "available" property
-> looks
-> like this:
->  00000000 00400000
->  00584000 0007c000
->  0092a1d8 00004e28
->  00a2f000 005d1000
->  01800000 0e3fd000
->  0fbffab4 0000054c
->>From that list, it looks to me like OF is telling the kernel that it
->> should
-> not attempt to use any address above 0xfbffab4+0x54c == 0xfc00000.
-
-The client is allowed to "take over" all memory, if it doesn't call OF
-after doing so.  This won't work if some device scribbles on it, as
-you have seen.
-
-> Later, when the kernel decides it's done using OF, what's supposed to
-> happen?
-> It closes stdin, but that doesn't help here since the offending device is
-> a
-> bus node, not an input node. It looks to me like the kernel makes the
-> assumption that all devices other than stdin and stdout will have been
-> deactivated already when the kernel starts, and that this assumption has
-> been violated. Who is wrong, from the perspective of the OF standard, the
-> assumer or the violator?
-
-The violator.
-
->> Lovely, incorrect data (it should start with 82002810, i.e.,
->> not relocatable -- it is already an assigned address!).
+On Thu, Oct 28, 2010 at 15:46, Mike Frysinger wrote:
+> On Thu, Oct 28, 2010 at 08:08, Michal Marek wrote:
+>> On 28.10.2010 01:58, Mike Frysinger wrote:
+>>>  The previous commit works and
+>>>> the next will do as well if you submit the patch.
+>>>
+>>> if my change is going in after your bad commit, then you can squash it
+>>> with a simple `git commit --amend`.
+>>
+>> I know how to rewrite the branch, I just don't want to do it needlessly
+>> so that 'git pull' still works for people tracking the branch.
 >
-> Now you see how I have trouble relating the docs to the reality...
+> keeping git bisect sane is not what i would classify as "needlessly"
 
-Yeah :-(
-
->> This means: 32-bit MMIO address space for bus 0 dev 5 fn 0,
->> first BAR; assigned to address 80000000; size is 1000.
->
-> But "address 80000000" is a physical address (I think), so do I need to do
-> a
-> map-in on it before using it?
-
-Yes.
-
->> You could try a boot script like this:
->>
->>
->> dev /pci
->> 0 ffff04 DO 0 i config-w! -100 +LOOP
->> device-end
->>
->>
->> which should disable all PCI devices on all busses, on that
->
-> Almost all of my devices are under that PCI node. What will I prove by
-> disabling them?
-
-You should put it after "load", and before "go".
-
-It should give you a working system; it's a sledgehammer workaround.
-
-
-Segher
-
+plus, there is no requirement that your current tree be what Linus
+pulls.  add my patch to your branch-that-may-not-be-rebased, then
+create a new branch with those two squashed, and have Linus pull that.
+ your main branch will pick up a merge commit, but who cares.
+-mike
