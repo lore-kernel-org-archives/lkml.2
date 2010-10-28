@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934438Ab0J1UML (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 16:12:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2202 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934382Ab0J1UME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 16:12:04 -0400
-Date: Thu, 28 Oct 2010 16:11:13 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: rth@redhat.com, "H. Peter Anvin" <hpa@zytor.com>, rostedt@goodmis.org,
-        mingo@elte.hu, mathieu.desnoyers@polymtl.ca, tglx@linutronix.de,
-        andi@firstfloor.org, roland@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
-        davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org,
-        tony@bakeyournoodle.com, dsd@laptop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] jump label: disable due to compiler bug
-Message-ID: <20101028201112.GA4792@redhat.com>
-References: <cover.1288212485.git.jbaron@redhat.com> <2d1b1d5d2b3930e1acb063cefffbcb2faf049854.1288212486.git.jbaron@redhat.com> <ce4ff595-f9d1-4c17-b68e-82739b07ad3e@email.android.com> <20101028141757.GA2875@redhat.com> <4CC9C724.3020004@caviumnetworks.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CC9C724.3020004@caviumnetworks.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S934482Ab0J1UOk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 16:14:40 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:36079 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932942Ab0J1UOe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 16:14:34 -0400
+Subject: Re: [RFC PATCH 1/1] vhost: TX used buffer guest signal accumulation
+From: Shirley Ma <mashirle@us.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1288294355.11251.20.camel@localhost.localdomain>
+References: <1288216693.17571.38.camel@localhost.localdomain>
+	 <1288240804.14342.1.camel@localhost.localdomain>
+	 <20101028052021.GD5599@redhat.com>
+	 <1288294355.11251.20.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 28 Oct 2010 13:13:55 -0700
+Message-ID: <1288296835.11251.24.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 28, 2010 at 11:55:32AM -0700, David Daney wrote:
-> On 10/28/2010 07:17 AM, Jason Baron wrote:
->> On Wed, Oct 27, 2010 at 03:21:55PM -0700, H. Peter Anvin wrote:
->>> Could you detail the bug, please?  static_cpu_has() also uses asm goto.
->>>
->>
->> It seems that gcc can leave the stack in an inconsistent state.
->>
->> I only saw this in the 'jmp' enabled case, I'm not sure if it can occur in the
->> straight-line code path as well.
->>
->
-> Jason,
->
-> Were you going to file a GCC bug on this issue?  Someone should.
->
+On Thu, 2010-10-28 at 12:32 -0700, Shirley Ma wrote:
+> Also I found a big TX regression for old guest and new guest. For old
+> guest, I am able to get almost 11Gb/s for 2K message size, but for the
+> new guest kernel, I can only get 3.5 Gb/s with the patch and same
+> host.
+> I will dig it why. 
 
-I will file one. I did inform Richard Henderson about the bug, and he
-has already developed a fix. I'm not sure yet, when the fix will be
-included in gcc.
+The regression is from guest kernel, not from this patch. Tested 2.6.31
+kernel, it's performance is less than 2Gb/s for 2K message size already.
+I will resubmit the patch for review. 
 
-Also, Richard said that -maccumulate-outgoing-args flag avoids this bug.
-That flag is already always set for x86_64 (see arch/x86/Makefile), but not
-for x86. This is also consistent with our testing. We have not seen the
-crash on x86_64, only x86.
+I will start to test from 2.6.30 kernel to figure it when TX regression
+induced in virtio_net. Any suggestion which guest kernel I should test
+to figure out this regression?
 
-Thus, I'm going to propose a patch, which makes jump label conditional
-on x86_64 for now (adding -maccumulate-outgoing-args to x86 increases
-the text size, so I'm not proposing adding the flag there).
+Thanks
+Shirley
 
-I'm not sure whether other architectures are exposed to this bug or not.
-I'm trying to find out.
-
-thanks,
-
--Jason
