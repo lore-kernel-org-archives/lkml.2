@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761451Ab0J1UA4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 16:00:56 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:31215 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760600Ab0J1UAq (ORCPT
+	id S1761503Ab0J1UBy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 16:01:54 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:51506 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761405Ab0J1UBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 16:00:46 -0400
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h62h)
-X-Spam-TCS-SCL: 1:0
-From: <Dinh.Nguyen@freescale.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
-        <s.hauer@pengutronix.de>, <u.kleine-koenig@pengutronix.de>,
-        <amit.kucheria@canonical.com>, <eric@eukrea.com>,
-        Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCH] ARM: imx: Fix GPIO_1_xx settings that are wrongly assumed
-Date: Thu, 28 Oct 2010 15:02:17 -0500
-Message-ID: <1288296137-1995-1-git-send-email-Dinh.Nguyen@freescale.com>
-X-Mailer: git-send-email 1.6.0.4
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Reverse-DNS: az33egw01.freescale.net
+	Thu, 28 Oct 2010 16:01:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=nYrf5r5rzB6CW3uAppotcTcA20nQyVmN43+gYnEpO6wy9f4ZQ79MckmFfYHnl+UC+M
+         kvvKpyaSJcJK9Ah/v9cuTXfd32RvTLmv3MX9xVy6OcCbFI+WQ/StBX/AN/v/iVxbs2+w
+         RKuwSU4E2JiL+CB+3XgyHV5WuDJP+q4bW1Yig=
+From: Vasiliy Kulikov <segooon@gmail.com>
+To: kernel-janitors@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Tejun Heo <tj@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/8] staging: dream: fix information leak to userland
+Date: Fri, 29 Oct 2010 00:01:37 +0400
+Message-Id: <1288296098-18936-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Structure msm_audio_stats is copied to userland with some fields unitialized.
+It leads to leaking of contents of kernel stack memory.
+Also struct msm_audio_config has field "unused" of type array of 3 elements,
+not 4.  Instead of this, initialize field "type".
 
-Its not a same assumption that because because 1 gpio mux is at
-mux mode 1, that it is the same for all gpio's. Freescale HW
-engineers like to keep things interesting by varying the mux mode
-of the gpio's.
-
-Reference: The iomux-mx51.h file is generated from a script that
-converts the pin mode file from the SoC HW designers.
-
-Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
 ---
- arch/arm/plat-mxc/include/mach/iomux-mx51.h |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+ drivers/staging/dream/qdsp5/audio_aac.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/plat-mxc/include/mach/iomux-mx51.h b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
-index e46b1c2..056ba0f 100644
---- a/arch/arm/plat-mxc/include/mach/iomux-mx51.h
-+++ b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
-@@ -368,18 +368,18 @@ typedef enum iomux_config {
- 							MX51_SDHCI_PAD_CTRL)
- #define MX51_PAD_GPIO_1_0__GPIO_1_0		IOMUX_PAD(0x7B4, 0x3AC, 1, 0x0,   0, MX51_GPIO_PAD_CTRL)
- #define MX51_PAD_GPIO_1_1__GPIO_1_1		IOMUX_PAD(0x7B8, 0x3B0, 1, 0x0,   0, MX51_GPIO_PAD_CTRL)
--#define MX51_PAD_GPIO_1_2__GPIO_1_2		IOMUX_PAD(0x7D4, 0x3CC, 1, 0x0,   0, MX51_GPIO_PAD_CTRL)
-+#define MX51_PAD_GPIO_1_2__GPIO_1_2		IOMUX_PAD(0x7D4, 0x3CC, 0, 0x0,   0, MX51_GPIO_PAD_CTRL)
- #define MX51_PAD_GPIO_1_2__I2C2_SCL		IOMUX_PAD(0x7D4, 0x3CC, (2 | IOMUX_CONFIG_SION), \
- 							0x9b8,   3, MX51_I2C_PAD_CTRL)
--#define MX51_PAD_GPIO_1_3__GPIO_1_3		IOMUX_PAD(0x7D8, 0x3D0, 1, 0x0,   0, MX51_GPIO_PAD_CTRL)
-+#define MX51_PAD_GPIO_1_3__GPIO_1_3		IOMUX_PAD(0x7D8, 0x3D0, 0, 0x0,   0, MX51_GPIO_PAD_CTRL)
- #define MX51_PAD_GPIO_1_3__I2C2_SDA		IOMUX_PAD(0x7D8, 0x3D0, (2 | IOMUX_CONFIG_SION), \
- 							0x9bc,   3, MX51_I2C_PAD_CTRL)
- #define MX51_PAD_PMIC_INT_REQ__PMIC_INT_REQ	IOMUX_PAD(0x7FC, 0x3D4, 0, 0x0,   0, NO_PAD_CTRL)
--#define MX51_PAD_GPIO_1_4__GPIO_1_4		IOMUX_PAD(0x804, 0x3D8, 1, 0x0,   0, MX51_GPIO_PAD_CTRL)
--#define MX51_PAD_GPIO_1_5__GPIO_1_5		IOMUX_PAD(0x808, 0x3DC, 1, 0x0,   0, MX51_GPIO_PAD_CTRL)
--#define MX51_PAD_GPIO_1_6__GPIO_1_6		IOMUX_PAD(0x80C, 0x3E0, 1, 0x0,   0, MX51_GPIO_PAD_CTRL)
--#define MX51_PAD_GPIO_1_7__GPIO_1_7		IOMUX_PAD(0x810, 0x3E4, 1, 0x0,   0, MX51_GPIO_PAD_CTRL)
--#define MX51_PAD_GPIO_1_8__GPIO_1_8		IOMUX_PAD(0x814, 0x3E8, 1, 0x0,   0, MX51_GPIO_PAD_CTRL)
--#define MX51_PAD_GPIO_1_9__GPIO_1_9		IOMUX_PAD(0x818, 0x3EC, 1, 0x0,   0, MX51_GPIO_PAD_CTRL)
-+#define MX51_PAD_GPIO_1_4__GPIO_1_4		IOMUX_PAD(0x804, 0x3D8, 0, 0x0,   0, MX51_GPIO_PAD_CTRL)
-+#define MX51_PAD_GPIO_1_5__GPIO_1_5		IOMUX_PAD(0x808, 0x3DC, 0, 0x0,   0, MX51_GPIO_PAD_CTRL)
-+#define MX51_PAD_GPIO_1_6__GPIO_1_6		IOMUX_PAD(0x80C, 0x3E0, 0, 0x0,   0, MX51_GPIO_PAD_CTRL)
-+#define MX51_PAD_GPIO_1_7__GPIO_1_7		IOMUX_PAD(0x810, 0x3E4, 0, 0x0,   0, MX51_GPIO_PAD_CTRL)
-+#define MX51_PAD_GPIO_1_8__GPIO_1_8		IOMUX_PAD(0x814, 0x3E8, 0, 0x0,   0, MX51_GPIO_PAD_CTRL)
-+#define MX51_PAD_GPIO_1_9__GPIO_1_9		IOMUX_PAD(0x818, 0x3EC, 0, 0x0,   0, MX51_GPIO_PAD_CTRL)
+diff --git a/drivers/staging/dream/qdsp5/audio_aac.c b/drivers/staging/dream/qdsp5/audio_aac.c
+index 45f4c78..b058c24 100644
+--- a/drivers/staging/dream/qdsp5/audio_aac.c
++++ b/drivers/staging/dream/qdsp5/audio_aac.c
+@@ -589,6 +589,7 @@ static long audio_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
  
- #endif /* __MACH_IOMUX_MX51_H__ */
+ 	if (cmd == AUDIO_GET_STATS) {
+ 		struct msm_audio_stats stats;
++		memset(&stats, 0, sizeof(stats));
+ 		stats.byte_count = audpp_avsync_byte_count(audio->dec_id);
+ 		stats.sample_count = audpp_avsync_sample_count(audio->dec_id);
+ 		if (copy_to_user((void *)arg, &stats, sizeof(stats)))
+@@ -664,10 +665,10 @@ static long audio_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 			} else {
+ 				config.channel_count = 2;
+ 			}
++			config.type = 0;
+ 			config.unused[0] = 0;
+ 			config.unused[1] = 0;
+ 			config.unused[2] = 0;
+-			config.unused[3] = 0;
+ 			if (copy_to_user((void *)arg, &config,
+ 					 sizeof(config)))
+ 				rc = -EFAULT;
 -- 
-1.6.0.4
-
+1.7.0.4
 
