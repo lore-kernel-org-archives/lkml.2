@@ -1,96 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759423Ab0J1T1P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 15:27:15 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:55129 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753322Ab0J1T1I convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 15:27:08 -0400
-Date: Thu, 28 Oct 2010 15:27:04 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: David Sharp <dhsharp@google.com>
-Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Michael Rubin <mrubin@google.com>
-Subject: Re: Benchmarks of kernel tracing options (ftrace, ktrace, lttng
-	and perf)
-Message-ID: <20101028192704.GA26131@Krystal>
-References: <AANLkTim8c+FLo11XJbTmTjiuucn-9UJD0Vui=fvUgCd+@mail.gmail.com> <AANLkTikd6sawwJeBm76QLeowXj0GBAf=wpRVgG8x5MOp@mail.gmail.com> <AANLkTi=Dw-dxkUgYLZYBKb5sGYcdGcpS0OH_fEHW51Jr@mail.gmail.com> <AANLkTi=6EBZeZ+56z_wbDuU1xTmC0saSTMDmqbqDS4Jr@mail.gmail.com>
+	id S1759499Ab0J1TcY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 15:32:24 -0400
+Received: from thunk.org ([69.25.196.29]:40642 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757330Ab0J1TcR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 15:32:17 -0400
+Date: Thu, 28 Oct 2010 15:32:11 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>, sedat.dilek@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
+        sfr@canb.auug.org.au, Arnd Bergmann <arnd@arndb.de>,
+        Avinash Kurup <kurup.avinash@gmail.com>
+Subject: Re: [next-20101038] Call trace in ext4
+Message-ID: <20101028193211.GA28126@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>, sedat.dilek@gmail.com,
+	LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
+	sfr@canb.auug.org.au, Arnd Bergmann <arnd@arndb.de>,
+	Avinash Kurup <kurup.avinash@gmail.com>
+References: <AANLkTi=E_uMj_ndGU86DCjX4aDwjHqg3dkwxjQRSJtq6@mail.gmail.com>
+ <20101028175221.GA1578@arch.trippelsdorf.de>
+ <20101028180118.GC6814@thunk.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <AANLkTi=6EBZeZ+56z_wbDuU1xTmC0saSTMDmqbqDS4Jr@mail.gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 15:24:35 up 35 days, 23:26,  3 users,  load average: 0.00, 0.08,
-	0.10
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20101028180118.GC6814@thunk.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* David Sharp (dhsharp@google.com) wrote:
-[...]
-> I hope this produces a fair comparison. I've detailed my steps below
-> for all of the tracers in case there are improvements to be made.
+On Thu, Oct 28, 2010 at 02:01:18PM -0400, Ted Ts'o wrote:
+> On Thu, Oct 28, 2010 at 07:52:21PM +0200, Markus Trippelsdorf wrote:
+> > 
+> > The same BUG (inode.c:2721) happend here today running latest vanilla
+> > git. There is nothing in my logs unfortunately, but I shot a photo of
+> > the trace (see attachment).
 > 
-[...]
-> Results for amount of time to execute a tracepoint (includes previous results):
-> ktrace: 200ns   (old)
-> ftrace: 224ns   (old, w/ handcoded tracepoint, not syscall tracing)
-> lttng: 449ns    (new)
-> perf: 1047ns    (new)
-> 
-> Also interesting:
-> ftrace: 587ns   (old, w/ syscall tracing)
-> This just shows that syscall tracing is much slower than a normal tracepoint.
+> I see, it's the page_buffers() call which is triggering.  Looking into
+> it...
 
-Hrm, not quite fair actually. LTTng enables a thread flag that causes
-syscall_trace to be called on sycall entry/exit by default. Please try with the
-following patch to remove the extra syscall overhead.
+Can folks let me know if this fixes the problem?
 
-Thanks,
+In this case I haven't been able to replicate the problem, but I've
+eyeballed the problem and I'm about 90% certain this should fix
+things.  But I don't want to push this to Linus until I get
+confirmation from you all that it fixes things.  That's just one of
+the ways in which your testing is critically important for ext4, so
+thanks again for your help in the past, present, and future.
+Thanks!!
 
-Mathieu
+						- Ted
 
-for google benchmarks: remove syscall tracing from LTTng modules
+commit 51279fcb9720aa856ad81673886ca2349a373dac
+Author: Theodore Ts'o <tytso@mit.edu>
+Date:   Thu Oct 28 15:15:21 2010 -0400
 
-Syscall tracing is enabled by default when lttng is tracing, which causes the
-full registers to be saved and a sycall_trace call upon syscall entry/exit.
+    ext4: BUG_ON fix: check if page has buffers before calling page_buffers()
+    
+    We need to make check if a page does not have buffes by checking
+    page_has_buffers(page) before calling page_buffers(page) in
+    ext4_writepage().  Otherwise page_buffers() could throw a BUG_ON.
+    
+    Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 
-This patch is for testing only.
-
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
----
- ltt-tracer.c |    2 --
- 1 file changed, 2 deletions(-)
-
-Index: lttng-modules/ltt-tracer.c
-===================================================================
---- lttng-modules.orig/ltt-tracer.c
-+++ lttng-modules/ltt-tracer.c
-@@ -839,7 +839,6 @@ int ltt_trace_alloc(const char *trace_na
- 	if (list_empty(&ltt_traces.head)) {
- 		mod_timer(&ltt_async_wakeup_timer,
- 				jiffies + LTT_PERCPU_TIMER_INTERVAL);
--		set_kernel_trace_flag_all_tasks();
- 	}
- 	list_add_rcu(&trace->list, &ltt_traces.head);
- 	synchronize_trace();
-@@ -917,7 +916,6 @@ static int _ltt_trace_destroy(struct ltt
- 	list_del_rcu(&trace->list);
- 	synchronize_trace();
- 	if (list_empty(&ltt_traces.head)) {
--		clear_kernel_trace_flag_all_tasks();
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 2d6c6c8..1916164 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -2718,7 +2718,7 @@ static int ext4_writepage(struct page *page,
+ 	 * try to create them using __block_write_begin.  If this
+ 	 * fails, redirty the page and move on.
+ 	 */
+-	if (!page_buffers(page)) {
++	if (!page_has_buffers(page)) {
+ 		if (__block_write_begin(page, 0, len,
+ 					noalloc_get_block_write)) {
+ 		redirty_page:
+@@ -2732,12 +2732,10 @@ static int ext4_writepage(struct page *page,
+ 	if (walk_page_buffers(NULL, page_bufs, 0, len, NULL,
+ 			      ext4_bh_delay_or_unwritten)) {
  		/*
- 		 * We stop the asynchronous delivery of reader wakeup, but
- 		 * we must make one last check for reader wakeups pending
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+-		 * We don't want to do block allocation So redirty the
+-		 * page and return We may reach here when we do a
+-		 * journal commit via
+-		 * journal_submit_inode_data_buffers.  If we don't
+-		 * have mapping block we just ignore them. We can also
+-		 * reach here via shrink_page_list
++		 * We don't want to do block allocation, so redirty
++		 * the page and return.  We may reach here when we do
++		 * a journal commit via journal_submit_inode_data_buffers.
++		 * We can also reach here via shrink_page_list
+ 		 */
+ 		goto redirty_page;
+ 	}
