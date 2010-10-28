@@ -1,121 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758678Ab0J1NM1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 09:12:27 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:43206 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756318Ab0J1NM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 09:12:26 -0400
-Date: Thu, 28 Oct 2010 15:12:04 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Dave Airlie <airlied@linux.ie>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Lee Revell <rlrevell@joe-job.com>, Chun-Yi <jlee@novell.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: -tip: origin tree build failure (Was: [git pull] drm tree for merge
- window)
-Message-ID: <20101028131204.GA29323@elte.hu>
-References: <alpine.DEB.2.00.1010270214140.28394@skynet.skynet.ie>
- <alpine.DEB.2.00.1010270228090.28394@skynet.skynet.ie>
+	id S1758711Ab0J1NNe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 09:13:34 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:37995 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1758661Ab0J1NNc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 09:13:32 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX19phN4Z7CFpfG3xIIRH3NAgODUdvbRNfakOhXDhPp
+	IeKuH3ea4OBm87
+From: Toralf =?utf-8?q?F=C3=B6rster?= <toralf.foerster@gmx.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: kmemleak disabled itself in 2.6.36
+Date: Thu, 28 Oct 2010 15:13:25 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.4.5; i686; ; )
+Cc: linux-kernel@vger.kernel.org, "Luis R. Rodriguez" <lrodriguez@atheros.com>
+References: <201010272112.59520.toralf.foerster@gmx.de> <1288254789.10238.5.camel@e102109-lin.cambridge.arm.com>
+In-Reply-To: <1288254789.10238.5.camel@e102109-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1010270228090.28394@skynet.skynet.ie>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201010281513.26185.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Dave Airlie <airlied@linux.ie> wrote:
+Catalin Marinas wrote at 10:33:09
+> On Wed, 2010-10-27 at 20:12 +0100, Toralf Förster wrote:
+> > I'm unsure whether this happens due to a
+> > $> sudo su -c "echo clear > /sys/kernel/debug/kmemleak"
+> > or while regular scanning, but anyway seems not to be normal, or ?
+> > 
+> > 2010-10-27T20:42:21.697+02:00 n22 kernel: flush-254:0: page allocation
+> > failure. order:0, mode:0x0
+> 
+> [...]
+> 
+> > 2010-10-27T20:42:21.699+02:00 n22 kernel: kmemleak: Cannot allocate a
+> > kmemleak_object structure 2010-10-27T20:42:21.699+02:00 n22 kernel: Pid:
+> > 15475, comm: flush-254:0 Not tainted 2.6.36 #2
+> 
+> [...]
+> 
+> > 2010-10-27T20:42:21.700+02:00 n22 kernel: kmemleak: Kernel memory leak
+> > detector disabled
+> 
+> Are you running out of memory on your system? Kmemleak tried to allocate
+> a structure but the slab allocator failed to get page. Kmemleak disables
+> itself in such situations but the problem is somewhere else (not enough
+> memory?).
+> 
+> Catalin
 
-> > Lee, Chun-Yi (1):
-> >       gpu: Add Intel GMA500(Poulsbo) Stub Driver
+I don't think so - no big load to that system, no excessive compiler runs ...
 
-Today's -tip fails to build due to upstream commit e26fd11 ("gpu: Add Intel 
-GMA500(Poulsbo) Stub Driver"), committed two days ago and merged yesterday, on
-x86 allmodconfig with BACKLIGHT_CLASS_DEVICE disabled:
+-- 
+MfG/Kind regards
+Toralf Förster
 
- drivers/built-in.o: In function `acpi_video_bus_put_one_device':
- video.c:(.text+0x7d26f): undefined reference to `backlight_device_unregister'
- drivers/built-in.o: In function `acpi_video_switch_brightness':
- video.c:(.text+0x7d6f5): undefined reference to `backlight_force_update'
- drivers/built-in.o: In function `acpi_video_device_find_cap':
- video.c:(.text+0x7dfdb): undefined reference to `backlight_device_register'
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
 
-drivers/gpu/stub/Kconfig selects ACPI_VIDEO, but ACPI_VIDEO is a complex interactive 
-Kconfig option with a lot of dependencies:
-
- config ACPI_VIDEO
-	tristate "Video"
-	depends on X86 && BACKLIGHT_CLASS_DEVICE && VIDEO_OUTPUT_CONTROL
-	depends on INPUT
-	select THERMAL
-	help
-	  This driver implements the ACPI Extensions For Display Adapters
-
-and if any of its dependencies are not met, we get a build failure. This problem was 
-apparently realized in the driver at a certain stage:
-
- config STUB_POULSBO
-        tristate "Intel GMA500 Stub Driver"
-        depends on PCI
-        # Poulsbo stub depends on ACPI_VIDEO when ACPI is enabled
-        # but for select to work, need to select ACPI_VIDEO's dependencies, ick
-        select ACPI_VIDEO if ACPI
-
-but not fully understood and not fully fixed.
-
-As a quick fix select these secondary dependencies, like drivers/gpu/drm/Kconfig 
-does:
-
- config DRM_I915
-	tristate "i915 driver"
-	depends on AGP_INTEL
-	select SHMEM
-	select DRM_KMS_HELPER
-	select FB_CFB_FILLRECT
-	select FB_CFB_COPYAREA
-	select FB_CFB_IMAGEBLIT
-	# i915 depends on ACPI_VIDEO when ACPI is enabled
-	# but for select to work, need to select ACPI_VIDEO's dependencies, ick
-	select VIDEO_OUTPUT_CONTROL if ACPI
-	select BACKLIGHT_CLASS_DEVICE if ACPI
-	select INPUT if ACPI
-	select ACPI_VIDEO if ACPI
-	select ACPI_BUTTON if ACPI
-	help
-	  Choose this option if you have a system that has Intel 830M, 845G,
-	  852GM, 855GM 865G or 915G integrated graphics.  If M is selected, the
-
-But it's arguably not particularly nice looking, so maybe this area of code is ripe 
-for a Kconfig restructuring/cleanup.
-
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- drivers/gpu/stub/Kconfig |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/gpu/stub/Kconfig b/drivers/gpu/stub/Kconfig
-index 742c423..0e1edd7 100644
---- a/drivers/gpu/stub/Kconfig
-+++ b/drivers/gpu/stub/Kconfig
-@@ -3,6 +3,9 @@ config STUB_POULSBO
- 	depends on PCI
- 	# Poulsbo stub depends on ACPI_VIDEO when ACPI is enabled
- 	# but for select to work, need to select ACPI_VIDEO's dependencies, ick
-+	select VIDEO_OUTPUT_CONTROL if ACPI
-+	select BACKLIGHT_CLASS_DEVICE if ACPI
-+	select INPUT if ACPI
- 	select ACPI_VIDEO if ACPI
- 	help
- 	  Choose this option if you have a system that has Intel GMA500
