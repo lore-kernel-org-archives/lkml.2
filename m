@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932623Ab0J1MB0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 08:01:26 -0400
-Received: from hera.kernel.org ([140.211.167.34]:42929 "EHLO hera.kernel.org"
+	id S1757711Ab0J1MIv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 08:08:51 -0400
+Received: from cantor.suse.de ([195.135.220.2]:51342 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757697Ab0J1MBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 08:01:24 -0400
-Message-ID: <4CC965FF.8000601@kernel.org>
-Date: Thu, 28 Oct 2010 14:01:03 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.11) Gecko/20101013 Lightning/1.0b2 Thunderbird/3.1.5
+	id S1752993Ab0J1MIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 08:08:48 -0400
+Message-ID: <4CC967CE.4020100@suse.cz>
+Date: Thu, 28 Oct 2010 14:08:46 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Brian Gerst <brgerst@gmail.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, mingo@elte.hu
-Subject: Re: [PATCH] x86-32: Allocate irq stacks seperate from percpu area
-References: <AANLkTinnc3vBSmewf7ixuOSDYxG+5VNiGaB-vSrDNRiO@mail.gmail.com>	 <1288158182-1753-1-git-send-email-brgerst@gmail.com>	 <1288159670.2652.181.camel@edumazet-laptop>	 <1288173442.15336.1490.camel@twins>	 <1288186405.2709.117.camel@edumazet-laptop>  <4CC82C2F.1020707@kernel.org>	 <1288187870.2709.128.camel@edumazet-laptop>  <4CC83067.5000009@kernel.org>	 <1288189461.2709.144.camel@edumazet-laptop>	 <1288190387.2709.147.camel@edumazet-laptop>  <4CC83A85.3070608@kernel.org>	 <1288192868.2709.152.camel@edumazet-laptop>  <4CC846D5.50106@kernel.org> <1288212951.2658.51.camel@edumazet-laptop>
-In-Reply-To: <1288212951.2658.51.camel@edumazet-laptop>
-X-Enigmail-Version: 1.1.1
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>, tabbott@ksplice.com,
+        vda.linux@googlemail.com, hpa@linux.intel.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com,
+        Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [PATCH] initramfs: Fix build break on symbol-prefixed archs
+References: <20100831082307.064687027@linux.vnet.ibm.com> <20100831083844.043619334@linux.vnet.ibm.com> <AANLkTikCLHh5Uz-DRq9ws78We+SwCAqdurA6HfuJh-8Y@mail.gmail.com> <20101018103729.GA4122@linux.vnet.ibm.com> <AANLkTikKJ25L=6b2resz+0SAg7ZYL5j=rHG7Lg4kFbwd@mail.gmail.com> <20101019110801.GA4128@linux.vnet.ibm.com> <AANLkTimLi8BYy_u8NhD15s=+iiODzuG1H_CgZ-cd7jep@mail.gmail.com> <20101019213112.GA11432@merkur.ravnborg.org> <AANLkTike6UQVWKSz-Njs5Rps690EHeResH3V+aSM+qdO@mail.gmail.com> <AANLkTimn8R-qde8FH_cNa4JPcR2F=mkUAQhPVT-hOBhn@mail.gmail.com> <4CC8ABC7.5030003@suse.cz> <AANLkTimCoH1YA3sh3W_59QG42CwtRXQovgqUw2SndUO6@mail.gmail.com> <4CC8B6E4.7070200@suse.cz> <AANLkTinpD8NR-pBLfWV9uan-+MYddFQGtjMx0qhAG_n9@mail.gmail.com>
+In-Reply-To: <AANLkTinpD8NR-pBLfWV9uan-+MYddFQGtjMx0qhAG_n9@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 28 Oct 2010 12:01:05 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Eric.
+On 28.10.2010 01:58, Mike Frysinger wrote:
+> On Wed, Oct 27, 2010 at 19:33, Michal Marek wrote:
+>> On 28.10.2010 01:10, Mike Frysinger wrote:
+>>> On Wed, Oct 27, 2010 at 18:46, Michal Marek wrote:
+>>>> Sorry I missed this thread. So your last patch
+>>>> (http://lkml.org/lkml/2010/10/19/488) did fix the Blackfin build
+>>>> failure? Can you submit it with a proper Signed-off-by and changelog?
+>>>
+>>> it shouldnt be a sep change.  it should be squashed into the broken
+>>> one so that the result works.
+>>
+>> The breakage already happened and I don't want to rewind the branch now.
+> 
+> if it isnt going to be merged until 2.6.38 merge window, i dont see
+> what the problem is with squashing a change into it.
 
-On 10/27/2010 10:55 PM, Eric Dumazet wrote:
-> I changed the User/Kernel split from 3G/1G to 1G/3G so that I have
-> LOWMEM on both nodes. Still pcpu allocates all percpu from node0.
-...
-> [    0.000000] setup_percpu: NR_CPUS:64 nr_cpumask_bits:64 nr_cpu_ids:16 nr_node_ids:8
-> [    0.000000] PERCPU: Embedded 16 pages/cpu @bea00000 s41984 r0 d23552 u131072
-> [    0.000000] pcpu-alloc: s41984 r0 d23552 u131072 alloc=1*2097152
-> [    0.000000] pcpu-alloc: [0] 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 
-> [    0.000000] setup_percpu: cpu=0 early_cpu_to_node()=0
-> [    0.000000] setup_percpu: cpu=1 early_cpu_to_node()=0
-> [    0.000000] setup_percpu: cpu=2 early_cpu_to_node()=0
-> [    0.000000] setup_percpu: cpu=3 early_cpu_to_node()=0
-> [    0.000000] setup_percpu: cpu=4 early_cpu_to_node()=0
-> [    0.000000] setup_percpu: cpu=5 early_cpu_to_node()=0
-> [    0.000000] setup_percpu: cpu=6 early_cpu_to_node()=0
-> [    0.000000] setup_percpu: cpu=7 early_cpu_to_node()=0
-> [    0.000000] setup_percpu: cpu=8 early_cpu_to_node()=0
-> [    0.000000] setup_percpu: cpu=9 early_cpu_to_node()=0
-> [    0.000000] setup_percpu: cpu=10 early_cpu_to_node()=0
-> [    0.000000] setup_percpu: cpu=11 early_cpu_to_node()=0
-> [    0.000000] setup_percpu: cpu=12 early_cpu_to_node()=0
-> [    0.000000] setup_percpu: cpu=13 early_cpu_to_node()=0
-> [    0.000000] setup_percpu: cpu=14 early_cpu_to_node()=0
-> [    0.000000] setup_percpu: cpu=15 early_cpu_to_node()=0
+kbuild-2.6.git#kbuild has stuff meant for 2.6.37, In fact I'll be
+sending a pull request to Linus today. It would be great to sort the
+Blackfin & h8300 build failure first, though.
 
-So, this is the problem.  percpu uses early_cpu_to_node() to determine
-which cpu belongs to which NUMA node and according to it all CPUs are
-on node 0, so percpu is configured accordingly.  I have no idea why
-early_cpu_to_node() is set up like that tho.  Ingo, Thomas, any ideas?
 
--- 
-tejun
+>  The previous commit works and
+>> the next will do as well if you submit the patch.
+> 
+> if my change is going in after your bad commit, then you can squash it
+> with a simple `git commit --amend`.
+
+I know how to rewrite the branch, I just don't want to do it needlessly
+so that 'git pull' still works for people tracking the branch.
+
+Michal
