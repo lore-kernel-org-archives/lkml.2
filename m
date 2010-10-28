@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761173Ab0J1VIN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 17:08:13 -0400
-Received: from kroah.org ([198.145.64.141]:46048 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759658Ab0J1VIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 17:08:07 -0400
-Date: Thu, 28 Oct 2010 14:08:02 -0700
-From: Greg KH <greg@kroah.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Vasiliy Kulikov <segooon@gmail.com>, Iliyan Malchev <ibm@android.com>,
-        Brian Swetland <swetland@google.com>, San Mehat <san@android.com>,
-        kernel-janitors@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        devel@driverdev.osuosl.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 1/8] staging: dream: fix information leak to userland
-Message-ID: <20101028210802.GA23773@kroah.com>
-References: <1288296098-18936-1-git-send-email-segooon@gmail.com>
- <20101028204509.GC22785@kroah.com>
- <20101028205831.GD19421@elf.ucw.cz>
+	id S1761546Ab0J1VIg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 17:08:36 -0400
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:53179
+	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759808Ab0J1VI3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 17:08:29 -0400
+X-SpamScore: -5
+X-BigFish: VS-5(z3b68iz98dNzz1202hzz8275dhz2dh2a8h65h)
+X-Spam-TCS-SCL: 4:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:de01egw02.freescale.net;RD:de01egw02.freescale.net;EFVD:NLI
+Message-ID: <4CC9E646.6070405@freescale.com>
+Date: Thu, 28 Oct 2010 16:08:22 -0500
+From: Timur Tabi <timur@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.13) Gecko/20101013 Fedora/2.0.8-2.fc13 SeaMonkey/2.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101028205831.GD19421@elf.ucw.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: gregkh <gregkh@suse.de>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: Writing a console/tty driver -- how to use tty_port?
+References: <4CC893CD.7020701@freescale.com> <201010282257.33898.arnd@arndb.de>
+In-Reply-To: <201010282257.33898.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 28 Oct 2010 21:08:54.0554 (UTC) FILETIME=[5415FFA0:01CB76E4]
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 28, 2010 at 10:58:31PM +0200, Pavel Machek wrote:
-> Hi!
-> 
-> > > Structure msm_audio_stats is copied to userland with some fields unitialized.
-> > > It leads to leaking of contents of kernel stack memory.
-> > > Also struct msm_audio_config has field "unused" of type array of 3 elements,
-> > > not 4.  Instead of this, initialize field "type".
-> > > 
-> > > Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-> > > ---
-> > >  drivers/staging/dream/qdsp5/audio_aac.c |    3 ++-
-> > 
-> > {sigh}
-> > 
-> > I'd really like to just drop this whole driver as I feel it's _way_
-> > behind whatever anyone is really using "in the wild".
-> > 
-> > Actually, I doubt that anyone even uses this thing, do they?
-> 
-> Not sure, you should definitely talk to codeaurora folks.
-> 
-> > Any objection to me just dropping the drivers/staging/dream/ tree?
-> > People should be working on the chipset-specific driver tree here
-> > instead, right?
-> 
-> codeaurora people should know...
+Arnd Bergmann wrote:
+> If the device is not a UART, the best option may be to make the driver
+> a backend to the hvc driver, like e.g. drivers/char/hvc_tile.c.
 
-Which specific ones?  No one seems to be contributing to the
-drivers/staging/dream/ anymore, and there are a number of out-of-tree
-dream trees floating around now.
+The current version *is* a backend to hvc, but I have to abandon that because of
+this thread:
 
-> > Pavel, it looks like you're not doing any dream work anymore, any
-> > problems with me dropping it?
-> 
-> Too busy to do any real work on Dream, sorry :-(.
+http://lists.ozlabs.org/pipermail/linuxppc-dev/2010-September/085664.html
 
-Ok, I think I'll just drop it unless someone screams.
+I posted a patch that causes hvc to spin if the backend driver returns -EAGAIN,
+which is my driver does when the output buffer is full.
 
-thanks,
+In other words, hvc does not support backend drivers that can detect full output
+buffers.
 
-greg k-h
+> This works for all devices with or without interrupts that don't need
+> to set up the communication parameters but simply provide a read/write
+> character interface.
+
+If my patch were accepted, I wouldn't need to do the rewrite.  Dropping
+characters during a printk() is not acceptable for us.
+
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
+
