@@ -1,54 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758177Ab0J1H2i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 03:28:38 -0400
-Received: from smtp.turknetserver.com ([193.192.122.40]:37546 "EHLO
-	smtp.turknetserver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758115Ab0J1H2g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 03:28:36 -0400
-X-Greylist: delayed 553 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Oct 2010 03:28:35 EDT
-Message-ID: <4CC923AC.4050903@turknetserver.com>
-Date: Thu, 28 Oct 2010 10:18:04 +0300
-From: Tarkan Erimer <tarkan@turknetserver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Lightning/1.0b2 Thunderbird/3.1.6
+	id S1758218Ab0J1Hav (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 03:30:51 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:64522 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1758092Ab0J1Hau (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 03:30:50 -0400
+Message-ID: <4CC927B1.2020807@cn.fujitsu.com>
+Date: Thu, 28 Oct 2010 15:35:13 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: tar.gz and tar.bz2 files of linux kernel on ftp.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Gleb Natapov <gleb@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 5/8] KVM: don't touch vcpu stat after async pf is complete
+References: <4CC7EA7D.5020901@cn.fujitsu.com> <4CC7EB75.9030709@cn.fujitsu.com> <20101027104412.GO26191@redhat.com>
+In-Reply-To: <20101027104412.GO26191@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Why there are two different (tar.gz and tar.bz2) kind of compressed 
-linux kernel on ftp.kernel.org ?
+On 10/27/2010 06:44 PM, Gleb Natapov wrote:
+> On Wed, Oct 27, 2010 at 05:05:57PM +0800, Xiao Guangrong wrote:
+>> Don't make a KVM_REQ_UNHALT request after async pf is completed since it
+>> can break guest's 'halt' instruction.
+>>
+> Why is it a problem? CPU may be unhalted by different events so OS
+> shouldn't depend on it.
+> 
 
-One kind of (.tar.bz2 or .tar.xz etc.) compressed file, probably, will 
-be enough for everybody. Personally, I always download the .tar.bz2 one 
-because of its shorter file length compared to .tar.gz. If it's needed 
-to have two different kind of compressed linux kernel because of some 
-extraordinary situations, maybe we have to consider other better options 
-like .tar.xz for instance. I did a quick comparison between .tar.bz2 and 
-tar.xz compressed linux-2.6.36. Here is what I found :
-
-linux-a9un:/home/tarkane/Downloads # ls -alh linux-2.6.36.tar.*
--rw-r--r-- 1 root root 68M Oct 21 09:14 linux-2.6.36.tar.bz2
--rw-r--r-- 1 root root 59M Oct 28 09:54 linux-2.6.36.tar.xz
-linux-a9un:/home/tarkane/Downloads #
-
-As seen above, .tar.xz has better ratio (%13.24 smaller sized file than 
-.tar.bz2.) than the .tar.bz2 one. So,if it could be an, at least, an 
-option to offer .tar.xz compressed kernel, we could have the following 
-benefits :
-
-- Better usage of ftp.kernel.org's and downloaders' (Some people use 
-bandwidth limited Internet connections.) internet bandwidth.
-- Better disk space usage on ftp.kernel.org servers due to more smaller 
-file sizes.
-- It will reduce the load on ftp.kernel.org servers due to shorter 
-download times.
-
-I will be happy to hear your opinions about it. :-)
-
-Tarkan
+We don't know how guest OS handles it after HLT instruction is completed,
+according to X86's spec, only NMI/INTR/RESET/INIT/SMI can break halt state,
+it violations the hardware behavior if we allow other event break this
+state. Your opinion? :-)
