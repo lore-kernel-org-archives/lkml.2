@@ -1,74 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932111Ab0J0X6x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 19:58:53 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:51952 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757522Ab0J0X6v convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 19:58:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=JeeQ3NMcgoEetxRwaDGwofcYBpJmZkcDLWj8IbaA8M0Zk7uHHuCHL9ON2UOi2KBmqE
-         YcvQSDKaKLTRSt65rkZbBGc+Jv019CrfAy3aOvh92drwsf4GEm2FSpFzT2BSavYGoDyH
-         2vXaSPAZbwTRwoE8ufCIsEnigblaAb+6SI55Y=
+	id S1757660Ab0J1AMv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 20:12:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4706 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752745Ab0J1AMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 20:12:50 -0400
+Message-ID: <4CC8BFDD.8080600@redhat.com>
+Date: Thu, 28 Oct 2010 02:12:13 +0200
+From: Michael Stefaniuc <mstefani@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <4CC8B6E4.7070200@suse.cz>
-References: <20100831082307.064687027@linux.vnet.ibm.com> <20100831083844.043619334@linux.vnet.ibm.com>
- <AANLkTikCLHh5Uz-DRq9ws78We+SwCAqdurA6HfuJh-8Y@mail.gmail.com>
- <20101018103729.GA4122@linux.vnet.ibm.com> <AANLkTikKJ25L=6b2resz+0SAg7ZYL5j=rHG7Lg4kFbwd@mail.gmail.com>
- <20101019110801.GA4128@linux.vnet.ibm.com> <AANLkTimLi8BYy_u8NhD15s=+iiODzuG1H_CgZ-cd7jep@mail.gmail.com>
- <20101019213112.GA11432@merkur.ravnborg.org> <AANLkTike6UQVWKSz-Njs5Rps690EHeResH3V+aSM+qdO@mail.gmail.com>
- <AANLkTimn8R-qde8FH_cNa4JPcR2F=mkUAQhPVT-hOBhn@mail.gmail.com>
- <4CC8ABC7.5030003@suse.cz> <AANLkTimCoH1YA3sh3W_59QG42CwtRXQovgqUw2SndUO6@mail.gmail.com>
- <4CC8B6E4.7070200@suse.cz>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Wed, 27 Oct 2010 19:58:29 -0400
-Message-ID: <AANLkTinpD8NR-pBLfWV9uan-+MYddFQGtjMx0qhAG_n9@mail.gmail.com>
-Subject: Re: [PATCH] initramfs: Fix build break on symbol-prefixed archs
-To: Michal Marek <mmarek@suse.cz>
-Cc: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>, tabbott@ksplice.com,
-        vda.linux@googlemail.com, hpa@linux.intel.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com,
-        Sam Ravnborg <sam@ravnborg.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Alexandre Julliard <julliard@winehq.org>
+Subject: Regression in 2.6.36 in single stepping over hardware breakpoint
+ (Wine)
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 19:33, Michal Marek wrote:
-> On 28.10.2010 01:10, Mike Frysinger wrote:
->> On Wed, Oct 27, 2010 at 18:46, Michal Marek wrote:
->>> On 27.10.2010 20:23, Mike Frysinger wrote:
->>>> can we get this change dropped from linux-next until someone gets a
->>>> chance to fix it ?
->>>
->>> Sorry I missed this thread. So your last patch
->>> (http://lkml.org/lkml/2010/10/19/488) did fix the Blackfin build
->>> failure? Can you submit it with a proper Signed-off-by and changelog?
->>
->> it shouldnt be a sep change.  it should be squashed into the broken
->> one so that the result works.
->
-> The breakage already happened and I don't want to rewind the branch now.
+Hello Frederic,
 
-if it isnt going to be merged until 2.6.38 merge window, i dont see
-what the problem is with squashing a change into it.
+there is a regression between 2.6.35 and 2.6.36 for 32bit Wine in the 
+Wine test checking the single stepping over hardware breakpoints:
+/home/michi/work/wine/tools/runtest -q -P wine -M ntdll.dll -T ../../.. 
+-p ntdll_test.exe.so /home/michi/work/wine/dlls/ntdll/tests/exception.c 
+&& touch exception.ok
+exception.c:585: Test failed: eip is wrong: 340002 instead of 340001
+exception.c:587: Test failed: B0 flag is not set in Dr6
+exception.c:588: Test failed: BS flag is set in Dr6
+exception.c:593: Test failed: eip is wrong: 7ed569d3 instead of 340002
+make: *** [exception.ok] Error 4
 
-> The worst that can happen is that if you bisect into ffe8018 you'll get
-> a tree that does not build on Blackfin.
+All those tests are in bpx_handler()
+http://source.winehq.org/git/wine.git/?a=blob;f=dlls/ntdll/tests/exception.c;h=701b6bba091dddce724075dc41dd2ab407f28ac4;hb=HEAD#l559
 
-and h8300.  i thought there was another symbol prefix arch than just
-these two, but my grep isnt showing it atm.
+A regression test gives:
+0c4519e825c9e2b6a8310deff8582f8c35bfbba9 is the first bad commit
+commit 0c4519e825c9e2b6a8310deff8582f8c35bfbba9
+Author: Frederic Weisbecker <fweisbec@gmail.com>
+Date:   Thu Jun 24 21:21:27 2010 +0200
 
- The previous commit works and
-> the next will do as well if you submit the patch.
+     x86: Set resume bit before returning from breakpoint exception
 
-if my change is going in after your bad commit, then you can squash it
-with a simple `git commit --amend`.
--mike
+     Instruction breakpoints trigger before the instruction executes,
+     and returning back from the breakpoint handler brings us again
+     to the instruction that breakpointed. This naturally bring to
+     a breakpoint recursion.
+
+     To solve this, x86 has the Resume Bit trick. When the cpu flags
+     have the RF flag set, the next instruction won't trigger any
+     instruction breakpoint, and once this instruction is executed,
+     RF is cleared back.
+
+     This let's us jump back to the instruction that triggered the
+     breakpoint without recursion.
+
+     Use this when an instruction breakpoint triggers.
+
+     Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+     Cc: Will Deacon <will.deacon@arm.com>
+     Cc: Prasad <prasad@linux.vnet.ibm.com>
+     Cc: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+     Cc: Paul Mackerras <paulus@samba.org>
+     Cc: Ingo Molnar <mingo@elte.hu>
+     Cc: Jason Wessel <jason.wessel@windriver.com>
+
+:040000 040000 2eae1fa5f90b141d60fe28a971a618e9c0b1a232 
+e27fd94a1beb10e3688d555bd74c888b6a310293 M      arch
+
+Reverting this patch on top of 2.6.36 makes the problem go away.
+
+The problem is 100% reproducible and I see it in 32bit Wine on both
+32bit and 64bit Linux. The regression might affect also 64bit Wine but
+those exception tests aren't compiled for 64bit Wine due to the lack of
+compiler support for win64 exceptions; so we cannot test it.
+
+
+Steps to reproduce:
+-------------------
+Any Wine version wine-1.2 or newer will do (either a tarball from
+http://sourceforge.net/projects/wine/files/Source/ or from git
+    git clone git://source.winehq.org/git/wine.git
+./configure
+make
+cd dlls/ntdll/tests/
+make exception.ok
+
+Test results: The above errors on lines 585, 587, 588, 593 should not show
+up. Additionally there should be no error in line 665 as that means the 
+tests
+didn't run (there was a temporary regression in the 2.6.36-rc phase that
+produced the test failed on line 665; the patch from commit 89e45aac42d4
+was needed at each bisection point).
+
+
+For 32bit Wine builds on a x86_64 machine a pretty complete 32bit setup
+is needed too, but configure will let one know. If configure doesn't
+errors out but produces warnings, those can be safely ignored. It means
+the dependencies are optional and those aren't needed to reproduce this
+bug.  http://wiki.winehq.org/WineOn64bit has a lot more info on setting
+this up.
+
+bye
+         michael
