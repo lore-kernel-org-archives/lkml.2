@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761550Ab0J1Vdv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 17:33:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35346 "EHLO mx1.redhat.com"
+	id S1761615Ab0J1VeJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 17:34:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37181 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760641Ab0J1Vcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 17:32:42 -0400
+	id S934192Ab0J1Vdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 17:33:35 -0400
 From: Eric Paris <eparis@redhat.com>
-Subject: [PATCH 11/20] fanotify: limit the number of marks in a single
-	fanotify group
+Subject: [PATCH 20/20] fsnotify: remove alignment padding from fsnotify_mark
+	on 64 bit builds
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
 Cc: agruen@suse.de, tvrtko.ursulin@sophos.com
-Date: Thu, 28 Oct 2010 17:32:38 -0400
-Message-ID: <20101028213238.24810.11702.stgit@paris.rdu.redhat.com>
+Date: Thu, 28 Oct 2010 17:33:31 -0400
+Message-ID: <20101028213331.24810.75808.stgit@paris.rdu.redhat.com>
 In-Reply-To: <20101028213139.24810.34058.stgit@paris.rdu.redhat.com>
 References: <20101028213139.24810.34058.stgit@paris.rdu.redhat.com>
 User-Agent: StGIT/0.14.3
@@ -23,70 +23,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is currently no limit on the number of marks a given fanotify group
-can have.  Since fanotify is gated on CAP_SYS_ADMIN this was not seen as
-a serious DoS threat.  This patch implements a default of 8192, the same as
-inotify to work towards removing the CAP_SYS_ADMIN gating and eliminating
-the default DoS'able status.
+From: Richard Kennedy <richard@rsk.demon.co.uk>
 
+Reorder struct fsnotfiy_mark to remove 8 bytes of alignment padding on 64
+bit builds.  Shrinks fsnotfiy_mark to 128 bytes allowing more objects per
+slab in its kmem_cache and reduces the number of cachelines needed for
+each structure.
+
+Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
+Cc: Eric Paris <eparis@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Eric Paris <eparis@redhat.com>
 ---
 
- fs/notify/fanotify/fanotify_user.c |    9 +++++++++
- include/linux/fsnotify_backend.h   |    1 +
- 2 files changed, 10 insertions(+), 0 deletions(-)
+ include/linux/fsnotify_backend.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
-index 43d66d9..1d33d7d 100644
---- a/fs/notify/fanotify/fanotify_user.c
-+++ b/fs/notify/fanotify/fanotify_user.c
-@@ -17,6 +17,7 @@
- #include <asm/ioctls.h>
- 
- #define FANOTIFY_DEFAULT_MAX_EVENTS	16384
-+#define FANOTIFY_DEFAULT_MAX_MARKS	8192
- 
- extern const struct fsnotify_ops fanotify_fsnotify_ops;
- 
-@@ -584,6 +585,9 @@ static int fanotify_add_vfsmount_mark(struct fsnotify_group *group,
- 	if (!fsn_mark) {
- 		int ret;
- 
-+		if (atomic_read(&group->num_marks) > group->fanotify_data.max_marks)
-+			return -ENOSPC;
-+
- 		fsn_mark = kmem_cache_alloc(fanotify_mark_cache, GFP_KERNEL);
- 		if (!fsn_mark)
- 			return -ENOMEM;
-@@ -626,6 +630,9 @@ static int fanotify_add_inode_mark(struct fsnotify_group *group,
- 	if (!fsn_mark) {
- 		int ret;
- 
-+		if (atomic_read(&group->num_marks) > group->fanotify_data.max_marks)
-+			return -ENOSPC;
-+
- 		fsn_mark = kmem_cache_alloc(fanotify_mark_cache, GFP_KERNEL);
- 		if (!fsn_mark)
- 			return -ENOMEM;
-@@ -700,6 +707,8 @@ SYSCALL_DEFINE2(fanotify_init, unsigned int, flags, unsigned int, event_f_flags)
- 		group->max_events = FANOTIFY_DEFAULT_MAX_EVENTS;
- 	}
- 
-+	group->fanotify_data.max_marks = FANOTIFY_DEFAULT_MAX_MARKS;
-+
- 	fd = anon_inode_getfd("[fanotify]", &fanotify_fops, group, f_flags);
- 	if (fd < 0)
- 		goto out_put_group;
 diff --git a/include/linux/fsnotify_backend.h b/include/linux/fsnotify_backend.h
-index b37f3a7..49ceed6 100644
+index b36041e..0a68f92 100644
 --- a/include/linux/fsnotify_backend.h
 +++ b/include/linux/fsnotify_backend.h
-@@ -169,6 +169,7 @@ struct fsnotify_group {
- 			bool bypass_perm; /* protected by access_mutex */
- #endif /* CONFIG_FANOTIFY_ACCESS_PERMISSIONS */
- 			int f_flags;
-+			unsigned int max_marks;
- 		} fanotify_data;
- #endif /* CONFIG_FANOTIFY */
+@@ -287,8 +287,8 @@ struct fsnotify_mark {
+ 		struct fsnotify_inode_mark i;
+ 		struct fsnotify_vfsmount_mark m;
  	};
+-	__u32 ignored_mask;		/* events types to ignore */
+ 	struct list_head free_g_list;	/* tmp list used when freeing this mark */
++	__u32 ignored_mask;		/* events types to ignore */
+ #define FSNOTIFY_MARK_FLAG_INODE		0x01
+ #define FSNOTIFY_MARK_FLAG_VFSMOUNT		0x02
+ #define FSNOTIFY_MARK_FLAG_OBJECT_PINNED	0x04
 
