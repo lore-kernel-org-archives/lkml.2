@@ -1,78 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445Ab0J1GGC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 02:06:02 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:49769 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754081Ab0J1GGA (ORCPT
+	id S1755936Ab0J1GHV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 02:07:21 -0400
+Received: from statler.bytemark.co.uk ([212.110.162.18]:33643 "EHLO
+	statler.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754081Ab0J1GHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 02:06:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=ArxbPmlN9AwiTKLPVfahEdWwCmmNCx50CVMl37BdZDdfoah6bt19Y9t3XLID4dk7B/
-         WOYBjpGTWsOa7Fd5y3Zwf5yb+ivrw4TTED1941at0sf4bBH9zGtixywrW5IUEaBMHvo5
-         Zw7uf9ZstKZjcni3pfu2A/Zx+Pw5zbk+NSyLc=
-Subject: [PATCH] intel_scu_ipc: fix signedness bug
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Sreedhara DS <sreedhara.ds@intel.com>, Alan Cox <alan@linux.intel.com>,
-        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org
-Content-Type: text/plain
-Date: Thu, 28 Oct 2010 14:08:39 +0800
-Message-Id: <1288246119.5153.1.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Thu, 28 Oct 2010 02:07:19 -0400
+Date: Thu, 28 Oct 2010 02:07:10 -0400
+From: "Emilio G. Cota" <cota@braap.org>
+To: Greg KH <greg@kroah.com>
+Cc: Martyn Welch <martyn.welch@ge.com>, LKML <linux-kernel@vger.kernel.org>,
+        devel@driverdev.osuosl.org,
+        Juan David Gonzalez Cobas <david.cobas@gmail.com>,
+        Bill Pemberton <wfp5p@virginia.edu>
+Subject: Re: [PATCH 09/30] staging/vme: fill in struct device's .release,
+ even if it's a NOOP
+Message-ID: <20101028060710.GB10720@flamenco.cs.columbia.edu>
+References: <1288055476-19438-1-git-send-email-cota@braap.org>
+ <1288055476-19438-10-git-send-email-cota@braap.org>
+ <4CC804FF.9050908@ge.com>
+ <20101027144642.GP10869@flamenco.cs.columbia.edu>
+ <20101028011711.GA29960@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101028011711.GA29960@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-busy_loop() returns negative error code, thus change err variable
-from u32 to int to properly propagate correct error code.
-
-Also remove unneeded initialization for err and i variables.
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/platform/x86/intel_scu_ipc.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/platform/x86/intel_scu_ipc.c b/drivers/platform/x86/intel_scu_ipc.c
-index 41a9e34..50f5cf3 100644
---- a/drivers/platform/x86/intel_scu_ipc.c
-+++ b/drivers/platform/x86/intel_scu_ipc.c
-@@ -160,7 +160,7 @@ static int pwr_reg_rdwr(u16 *addr, u8 *data, u32 count, u32 op, u32 id)
- {
- 	int i, nc, bytes, d;
- 	u32 offset = 0;
--	u32 err = 0;
-+	int err;
- 	u8 cbuf[IPC_WWBUF_SIZE] = { };
- 	u32 *wbuf = (u32 *)&cbuf;
- 
-@@ -403,7 +403,7 @@ EXPORT_SYMBOL(intel_scu_ipc_update_register);
-  */
- int intel_scu_ipc_simple_command(int cmd, int sub)
- {
--	u32 err = 0;
-+	int err;
- 
- 	mutex_lock(&ipclock);
- 	if (ipcdev.pdev == NULL) {
-@@ -433,8 +433,7 @@ EXPORT_SYMBOL(intel_scu_ipc_simple_command);
- int intel_scu_ipc_command(int cmd, int sub, u32 *in, int inlen,
- 							u32 *out, int outlen)
- {
--	u32 err = 0;
--	int i = 0;
-+	int err, i;
- 
- 	mutex_lock(&ipclock);
- 	if (ipcdev.pdev == NULL) {
--- 
-1.7.2
+On Wed, Oct 27, 2010 at 18:17:11 -0700, Greg KH wrote:
+> On Wed, Oct 27, 2010 at 10:46:42AM -0400, Emilio G. Cota wrote:
+> > On Wed, Oct 27, 2010 at 11:54:55 +0100, Martyn Welch wrote:
+> > > I guess this is an artifact of the current lack of refcounting?
+> > 
+> > No, that's orthogonal to this. This has to do with the way the
+> > devices are allocated.
+> > 
+> > > This is definitely an issue, however I don't think masking it by adding
+> > > an empty function is the correct way to go.
+> > 
+> > We're not masking anything. The release method is there to free the
+> > struct it protects when its refcount goes to zero; however, in this
+> > case the struct wasn't allocated dynamically--the 32 devices are
+> > stored in struct vme_bridge in an array--and therefore there's
+> > nothing to do in .release, since struct vme_bridge is freed
+> > elsewhere.
+> > 
+> > While it's true that empty .release methods are usually frowned
+> > upon (as stated in Documentation/kobject.txt), due to the way
+> > things are done here it actually makes sense to have an
+> > empty .release.
+> 
+> FROWNED APON?
+> 
+> Heh, if you add one, as per the documentation there, I get to publicly
+> ridicule you for doing so.
+> 
+> So consider this your ridicule, if you ever are thinking you need to
+> create an empty release function, YOUR CODE IS WRONG!
+> 
+> Seriously, do you think I just add warnings in there for fun?  So that
+> you can work around them thinking you know better?
+> 
+> {sigh}
+> 
+> Your implementation is broken, never do this, if you create a kobject,
+> you HAVE TO FREE IT in the release function.
+> 
+> I would ask why you are even using a kobject in the first place (hint,
+> if you are writing a driver, or even a subsystem, you shouldn't be, use
+> 'struct device' instead.)
 
 
+kobject?
+
+We were talking about a struct device's .release, not about a struct
+kobject's .release.
+
+The warning comes from the kobject embedded in struct device, not
+from a kobject per se. In fact, let me make it clearer:
+
+		NO KOBJECT IS DIRECTLY OPERATED ON.
+
+proof:
+$ find staging/vme -name '*.[ch]' | xargs grep -F 'kobj'
+brings no results.
+
+
+
+In the current implementation, there's no need to do anything(*) in
+struct device's .release, because struct device is, as I said
+in my message, freed somewhere else.
+
+(*) Of course this is a bug, but it's a known bug, see below.
+
+All struct device's are freed when struct vme_bridge is freed, and
+before that happens, device_unregister() is called for each of the
+devices:
+
+@@ void vme_unregister_bridge(struct vme_bridge *bridge)
+...
+        for (i = 0; i < VME_SLOTS_MAX; i++) {
+                dev = &bridge->dev[i];
+                device_unregister(dev);
+        }
+
+device_unregister(), as you know, calls device_free() which
+then calls kobj_del(), deleting the kobject embedded in struct
+device. This call to kobj_del() from device_free() is the one
+that throws the warning.
+
+> So consider this a rejection of this patch and implementation :)
+
+I don't like the implementation either, and that's why I sent
+another patch that fixes this and some other problems--
+see patch 27.
+
+Fact: Anything other than freeing struct device in .release is
+a bug. So the warning is very well placed there, no question
+about it.
+Example: when a VME bridge is removed, then all devices are
+mercilessly freed, even if their refcounts aren't 0 because
+drivers are controlling them. This is a BUG, and both Martin
+and I knew it.
+
+Fact: Right now VME drivers MUST be removed before VME
+bridges are removed. We all agree on that this is broken--
+bridges shouldn't be allowed to be removed if there are
+drivers controlling any of their devices. Patch 27
+addresses this among other things.
+
+Why did I sent this patch? With it and with some other patches
+I wanted to point out some flaws of the current implementation.
+However after your email I think sending patch 27 directly
+would have been a wiser option--although now we all probably
+understand the code a little bit better.
+
+So please let's focus on the important stuff, which is patch
+27.
+
+		Emilio, Ridiculous In Chief
 
