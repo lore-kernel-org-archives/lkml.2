@@ -1,48 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933245Ab0J1Nrk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 09:47:40 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:36185 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932499Ab0J1Nrh (ORCPT
+	id S933349Ab0J1Nry (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 09:47:54 -0400
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:43410 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933274Ab0J1Nrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 09:47:37 -0400
-Date: Thu, 28 Oct 2010 09:47:24 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Pekka Enberg <penberg@kernel.org>, Aidar Kultayev <the.aidar@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Nick Piggin <npiggin@suse.de>, Arjan van de Ven <arjan@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: 2.6.36 io bring the system to its knees
-Message-ID: <20101028134724.GB4416@infradead.org>
-References: <AANLkTimt7wzR9RwGWbvhiOmot_zzayfCfSh_-v6yvuAP@mail.gmail.com>
- <AANLkTikRKVBzO=ruy=JDmBF28NiUdJmAqb4-1VhK0QBX@mail.gmail.com>
- <AANLkTinzJ9a+9w7G5X0uZpX2o-L8E6XW98VFKoF1R_-S@mail.gmail.com>
- <AANLkTinDDG0ZkNFJZXuV9k3nJgueUW=ph8AuHgyeAXji@mail.gmail.com>
- <AANLkTikvSGNE7uGn5p0tfJNg4Hz5WRmLRC8cXu7+GhMk@mail.gmail.com>
- <20101028090002.GA12446@elte.hu>
- <AANLkTinoGGLTN2JRwjJtF6Ra5auZVg+VSa=TyrtAkDor@mail.gmail.com>
- <20101028133036.GA30565@elte.hu>
+	Thu, 28 Oct 2010 09:47:52 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: 1CVkttEVM1ngroHls6YmmLpEKnyiZrGSLLFnIEKBEXCEJZq
+ xC6Kkmx4qEvWN8Uio2hq8G4VTq0xxx.fbbyOT9cKOquRA_ig45_0oT9yMbVq
+ A3g3HrQf2uaAhAgzUw9d_ok2zSZc0vQPlsJRKZY2AN5RVMVEY3rHupZsA3LO
+ 9jDGQPd87moHHKnicOVmnAnaIu1Cc_GKSwkageZCt7vn2ggJsOyXBRZfGudN
+ VXg0dtNDcC90XUY2lW.W6f2P_44M-
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 28 Oct 2010 08:47:49 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Dragoslav Zaric <zaricdragoslav@gmail.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: Tickles scheduler
+In-Reply-To: <AANLkTimOx=cMr+cwzEc8z7puZDEpa_7aDOxCPSzotjBP@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1010280845320.25874@router.home>
+References: <AANLkTimzEDtfUKajFPgGOhifPhyRQboZbKNbypBaKpKO@mail.gmail.com> <alpine.DEB.2.00.1010260959250.10975@odin.tweek.dk> <alpine.DEB.2.00.1010271725260.9704@router.home> <AANLkTimOx=cMr+cwzEc8z7puZDEpa_7aDOxCPSzotjBP@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101028133036.GA30565@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 28, 2010 at 03:30:36PM +0200, Ingo Molnar wrote:
-> > Looks mostly VFS to me. Aidar, does killing Picasa make things smoother for you? 
-> > If so, maybe the VFS scalability patches will help.
-> 
-> Hm, but the VFS scalability patches mostly decrease CPU usage, and does that mostly 
-> on many-core systems.
+The current plan is to switch off the tick when a process is running that
+cannot be preempted ("realtime" (very bad choice of terms) tasks).
 
-If you have i_mutex contention they are not going to change anything.
