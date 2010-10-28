@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932257Ab0J1X3e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 19:29:34 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:63289 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758771Ab0J1X33 (ORCPT
+	id S1759467Ab0J1Xdv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 19:33:51 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:4303 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759268Ab0J1Xdp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 19:29:29 -0400
+	Thu, 28 Oct 2010 19:33:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
+        d=google.com; s=beta;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type;
-        b=u/Uz4QEzd6Oc3rQrALlwnixpuEx3E/etezKKlgwtyoBUa8jqbA0edkHYi0uz1jAiOi
-         S4ZJS9ZeWvLJos6LCGSAGjjUK8M4vhSqCN01Dixoz5I60bhLIhATeal899CuA5Vuomcu
-         165SVsqskzbPG9O5VDy+2SQr/SgaxC8QZ/PYw=
+        b=SqCvsIQ1aeDhpCxoAuBzYqmlfuNREzbDDI0actNIhk51WV/O+xSErKjHnxPuKOi0kY
+         Y877PpwvUetjcEkykWNg==
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=VnTkuyYht8D+2MPO1d4mXR1ah-0aQeAjZsTaq@mail.gmail.com>
-References: <20101028191523.GA14972@google.com>
-	<20101028131029.ee0aadc0.akpm@linux-foundation.org>
-	<20101028220331.GZ26494@google.com>
-	<AANLkTi=VnTkuyYht8D+2MPO1d4mXR1ah-0aQeAjZsTaq@mail.gmail.com>
-Date: Fri, 29 Oct 2010 08:29:29 +0900
-Message-ID: <AANLkTi=f5-4rOcf8WwSnM4bwV-xBxQ_G++ZdYj_GL1ii@mail.gmail.com>
-Subject: Re: [PATCH] RFC: vmscan: add min_filelist_kbytes sysctl for
- protecting the working set
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, wad@chromium.org, olofj@chromium.org,
-        hughd@chromium.org
+In-Reply-To: <4CC4D84C.5000705@cn.fujitsu.com>
+References: <4CC146A4.9090505@cn.fujitsu.com>
+	<1287751801.15336.35.camel@twins>
+	<4CC4D84C.5000705@cn.fujitsu.com>
+Date: Thu, 28 Oct 2010 16:33:41 -0700
+Message-ID: <AANLkTin9Lzvqw_Dz6b6mywFAOLfoK0P_EfHN9Nchec9j@mail.gmail.com>
+Subject: Re: [PATCH 0/7] cgroups: Allow to bind/unbind subsystems to/from
+ non-trival hierarchy
+From: Paul Menage <menage@google.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "akpm >> Andrew Morton" <akpm@linux-foundation.org>,
+        Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        containers@lists.linux-foundation.org
 Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 29, 2010 at 8:28 AM, Minchan Kim <minchan.kim@gmail.com> wrote:
-> I think this feature that "System response time doesn't allow but OOM allow".
-I think we _need_ this feature that "System response time doesn't
-allow but OOM allow".
+On Sun, Oct 24, 2010 at 6:07 PM, Li Zefan <lizf@cn.fujitsu.com> wrote:
+>
+> Paul had a patch to allow some subsystems to be added to multi-hierarchies,
+> which may help.
 
--- 
-Kind regards,
-Minchan Kim
+I more or less dropped it since I couldn't see a big use for it - all
+the examples I had were more easily implemented as basic cgroup
+control files (and hence available in all hierarchies automatically)
+
+> But it forbids accessing t->cgroups, which makes this
+> feature of limited use.
+
+Not exactly - it meant that you couldn't do a fast dereference via
+t->cgroups to get to your cgroup_subsys_state, since there was no
+longer a unique css for each task for that subsystem - there would be
+one per mounted instance of the subsystem. Instead it became necessary
+to follow a chain of pointers to find the appropriate css for the
+hierarchy in question.
+
+In general this also means that it's harder for the multi-bound
+subsystem have any real-world meaning - it's mostly useful for
+stateless subsystems, or ones where the cgroup_subsys_state contents
+have no direct connection with machine-wide data.
+
+Paul
