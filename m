@@ -1,51 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932906Ab0J1DK7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 23:10:59 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42600 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932833Ab0J1DK6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 23:10:58 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 28 Oct 2010 12:05:32 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Pawan Singh <pawan@pinger.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Tweaking swap algorithm under constrained memory usage
-Message-Id: <20101028120532.bf48b3f0.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <AANLkTikRCiX3dY3-iSXKX8YhQUZp=qoM7wm0cFnxq8NP@mail.gmail.com>
-References: <AANLkTimCSGoeRHXWS2Y5=THbOkHUfY71=B6JzOeFz_=X@mail.gmail.com>
-	<20101028095258.c778a223.kamezawa.hiroyu@jp.fujitsu.com>
-	<AANLkTikRCiX3dY3-iSXKX8YhQUZp=qoM7wm0cFnxq8NP@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S932897Ab0J1DST (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 23:18:19 -0400
+Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:43305 "EHLO
+	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756615Ab0J1DSR convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 23:18:17 -0400
+From: "B. James Phillippe" <bryanp35@comcast.net>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Subject: Confusion on change from Jun '09, to remove connection-tracking notifier
+Date: Wed, 27 Oct 2010 20:18:15 -0700
+Message-Id: <C7A53805-4406-4663-9F28-F2ECBB28F875@comcast.net>
+To: linux-kernel@vger.kernel.org
+Mime-Version: 1.0 (Apple Message framework v1081)
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Oct 2010 19:58:00 -0700
-Pawan Singh <pawan@pinger.org> wrote:
+Hello,
 
-> >
-> > Recent kernel (2.6.28-) has splited LRUs as
-> >  - active/inactive ANON
-> >  - active/inactive FILE
-> >  - LOCKED (UNEVICTABLE) ---(new)
-> 
-> Thanks for the reply. Does that mean that in 2.6.28 kernel, kswapd
-> will modify its thresholds so that it only looks at active/inactive
-> ANON?
-> 
+First let me thank you for reading my message.  I was a LKML subscriber and Linux hacker many years ago but made the switch over to the dark side (NetBSD, then OS X) and am just coming back to Linux.
 
-kswapd's threshold is not modifled. But because UNEVICTABLE LRU is not
-scanned by kswapd, time consumption of kswapd is dramatically reduced.
+I have a kernel module (GPL) I'm trying to update from 2.6.2x to 2.6.3x.  This module uses the old ip_conntrack_register_notifier() API to make use of conntrack events from netfilter.  This API was refactored in Jun '09 to become nf_conntrack_register_notifier() through commit e34d5c1a4f9919a81b4ea4591d7383245f35cb8e.  In its new form, it is a mutually-exclusive interface.  NETLINK is the only kernel-based user of this API that I can find.  Because it is now mutually-exclusive, for my module to use it, it would have to do so at the expense of NETLINK.
 
-About kswapd trigger, IIUC, /proc/sys/vm/min_free_kbytes is one.
+I'm trying to understand what the appropriate interface now is for me to get access to conntrack events in harmony with NETLINK.  It looks like I should be using NETLINK, which is fine, but I cannot find a clean example of how to do that from within the kernel.  The NETLINK socket interface (and corresponding library) for doing fancy things with NETLINK from userspace is certainly clear, but I don't think I should need to go through that much complexity.
 
-Thanks,
--Kame
+Specifically, all I want to be able to do with my module is add additional tracking for creation/deletion of conntrack entries.  What is the intended (hopefully simple) mechanism that I should use for this purpose in 2.6.3x kernel?
+
+Thanks again for reading,
+--
+-bp
+
 
