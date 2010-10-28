@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760575Ab0J1Vci (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 17:32:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21832 "EHLO mx1.redhat.com"
+	id S1761211Ab0J1Vcs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 17:32:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12179 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933834Ab0J1VcN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 17:32:13 -0400
+	id S934544Ab0J1VcY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 17:32:24 -0400
 From: Eric Paris <eparis@redhat.com>
-Subject: [PATCH 06/20] fsnotify: call fsnotify_parent in perm events
+Subject: [PATCH 08/20] fanotify: ignore fanotify ignore marks if open writers
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
 Cc: agruen@suse.de, tvrtko.ursulin@sophos.com
-Date: Thu, 28 Oct 2010 17:32:09 -0400
-Message-ID: <20101028213209.24810.39879.stgit@paris.rdu.redhat.com>
+Date: Thu, 28 Oct 2010 17:32:20 -0400
+Message-ID: <20101028213220.24810.72673.stgit@paris.rdu.redhat.com>
 In-Reply-To: <20101028213139.24810.34058.stgit@paris.rdu.redhat.com>
 References: <20101028213139.24810.34058.stgit@paris.rdu.redhat.com>
 User-Agent: StGIT/0.14.3
@@ -22,125 +22,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fsnotify perm events do not call fsnotify parent.  That means you cannot
-register a perm event on a directory and enforce permissions on all inodes in
-that directory.  This patch fixes that situation.
+fanotify will clear ignore marks if a task changes the contents of an
+inode.  The problem is with the races around when userspace finishes
+checking a file and when that result is actually attached to the inode.
+This race was described as such:
 
+Consider the following scenario with hostile processes A and B, and
+victim process C:
+1. Process A opens new file for writing. File check request is generated.
+2. File check is performed in userspace. Check result is "file has no malware".
+3. The "permit" response is delivered to kernel space.
+4. File ignored mark set.
+5. Process A writes dummy bytes to the file. File ignored flags are cleared.
+6. Process B opens the same file for reading. File check request is generated.
+7. File check is performed in userspace. Check result is "file has no malware".
+8. Process A writes malware bytes to the file. There is no cached response yet.
+9. The "permit" response is delivered to kernel space and is cached in fanotify.
+10. File ignored mark set.
+11. Now any process C will be permitted to open the malware file.
+There is a race between steps 8 and 10
+
+While fanotify makes no strong guarantees about systems with hostile
+processes there is no reason we cannot harden against this race.  We do
+that by simply ignoring any ignore marks if the inode has open writers (aka
+i_writecount > 0).  (We actually do not ignore ignore marks if the
+FAN_MARK_SURV_MODIFY flag is set)
+
+Reported-by: Vasily Novikov <vasily.novikov@kaspersky.com>
 Signed-off-by: Eric Paris <eparis@redhat.com>
 ---
 
- fs/notify/fsnotify.c             |   15 +++++++++------
- include/linux/fsnotify.h         |    9 +++++++--
- include/linux/fsnotify_backend.h |    8 +++++---
- 3 files changed, 21 insertions(+), 11 deletions(-)
+ fs/notify/fanotify/fanotify_user.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/fs/notify/fsnotify.c b/fs/notify/fsnotify.c
-index 57ecadd..20dc218 100644
---- a/fs/notify/fsnotify.c
-+++ b/fs/notify/fsnotify.c
-@@ -84,16 +84,17 @@ void __fsnotify_update_child_dentry_flags(struct inode *inode)
- }
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index 1c09e63..b265936 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -610,6 +610,16 @@ static int fanotify_add_inode_mark(struct fsnotify_group *group,
  
- /* Notify this dentry's parent about a child's events. */
--void __fsnotify_parent(struct path *path, struct dentry *dentry, __u32 mask)
-+int __fsnotify_parent(struct path *path, struct dentry *dentry, __u32 mask)
- {
- 	struct dentry *parent;
- 	struct inode *p_inode;
-+	int ret = 0;
+ 	pr_debug("%s: group=%p inode=%p\n", __func__, group, inode);
  
- 	if (!dentry)
- 		dentry = path->dentry;
- 
- 	if (!(dentry->d_flags & DCACHE_FSNOTIFY_PARENT_WATCHED))
--		return;
++	/*
++	 * If some other task has this inode open for write we should not add
++	 * an ignored mark, unless that ignored mark is supposed to survive
++	 * modification changes anyway.
++	 */
++	if ((flags & FAN_MARK_IGNORED_MASK) &&
++	    !(flags & FAN_MARK_IGNORED_SURV_MODIFY) &&
++	    (atomic_read(&inode->i_writecount) > 0))
 +		return 0;
- 
- 	parent = dget_parent(dentry);
- 	p_inode = parent->d_inode;
-@@ -106,14 +107,16 @@ void __fsnotify_parent(struct path *path, struct dentry *dentry, __u32 mask)
- 		mask |= FS_EVENT_ON_CHILD;
- 
- 		if (path)
--			fsnotify(p_inode, mask, path, FSNOTIFY_EVENT_PATH,
--				 dentry->d_name.name, 0);
-+			ret = fsnotify(p_inode, mask, path, FSNOTIFY_EVENT_PATH,
-+				       dentry->d_name.name, 0);
- 		else
--			fsnotify(p_inode, mask, dentry->d_inode, FSNOTIFY_EVENT_INODE,
--				 dentry->d_name.name, 0);
-+			ret = fsnotify(p_inode, mask, dentry->d_inode, FSNOTIFY_EVENT_INODE,
-+				       dentry->d_name.name, 0);
- 	}
- 
- 	dput(parent);
 +
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(__fsnotify_parent);
- 
-diff --git a/include/linux/fsnotify.h b/include/linux/fsnotify.h
-index 59d0df4..5059faa 100644
---- a/include/linux/fsnotify.h
-+++ b/include/linux/fsnotify.h
-@@ -26,12 +26,12 @@ static inline void fsnotify_d_instantiate(struct dentry *dentry,
- }
- 
- /* Notify this dentry's parent about a child's events. */
--static inline void fsnotify_parent(struct path *path, struct dentry *dentry, __u32 mask)
-+static inline int fsnotify_parent(struct path *path, struct dentry *dentry, __u32 mask)
- {
- 	if (!dentry)
- 		dentry = path->dentry;
- 
--	__fsnotify_parent(path, dentry, mask);
-+	return __fsnotify_parent(path, dentry, mask);
- }
- 
- /* simple call site for access decisions */
-@@ -40,6 +40,7 @@ static inline int fsnotify_perm(struct file *file, int mask)
- 	struct path *path = &file->f_path;
- 	struct inode *inode = path->dentry->d_inode;
- 	__u32 fsnotify_mask = 0;
-+	int ret;
- 
- 	if (file->f_mode & FMODE_NONOTIFY)
- 		return 0;
-@@ -52,6 +53,10 @@ static inline int fsnotify_perm(struct file *file, int mask)
- 	else
- 		BUG();
- 
-+	ret = fsnotify_parent(path, NULL, fsnotify_mask);
-+	if (ret)
-+		return ret;
-+
- 	return fsnotify(inode, fsnotify_mask, path, FSNOTIFY_EVENT_PATH, NULL, 0);
- }
- 
-diff --git a/include/linux/fsnotify_backend.h b/include/linux/fsnotify_backend.h
-index 0268921..b37f3a7 100644
---- a/include/linux/fsnotify_backend.h
-+++ b/include/linux/fsnotify_backend.h
-@@ -304,7 +304,7 @@ struct fsnotify_mark {
- /* main fsnotify call to send events */
- extern int fsnotify(struct inode *to_tell, __u32 mask, void *data, int data_is,
- 		    const unsigned char *name, u32 cookie);
--extern void __fsnotify_parent(struct path *path, struct dentry *dentry, __u32 mask);
-+extern int __fsnotify_parent(struct path *path, struct dentry *dentry, __u32 mask);
- extern void __fsnotify_inode_delete(struct inode *inode);
- extern void __fsnotify_vfsmount_delete(struct vfsmount *mnt);
- extern u32 fsnotify_get_cookie(void);
-@@ -433,8 +433,10 @@ static inline int fsnotify(struct inode *to_tell, __u32 mask, void *data, int da
- 	return 0;
- }
- 
--static inline void __fsnotify_parent(struct path *path, struct dentry *dentry, __u32 mask)
--{}
-+static inline int __fsnotify_parent(struct path *path, struct dentry *dentry, __u32 mask)
-+{
-+	return 0;
-+}
- 
- static inline void __fsnotify_inode_delete(struct inode *inode)
- {}
+ 	fsn_mark = fsnotify_find_inode_mark(group, inode);
+ 	if (!fsn_mark) {
+ 		int ret;
 
