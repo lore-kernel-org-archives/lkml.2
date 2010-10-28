@@ -1,98 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933935Ab0J1REx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 13:04:53 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:33268 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760517Ab0J1REp (ORCPT
+	id S933947Ab0J1RJP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 13:09:15 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:64426 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932442Ab0J1RJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 13:04:45 -0400
-Date: Thu, 28 Oct 2010 13:01:32 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Pekka Enberg <penberg@kernel.org>, Aidar Kultayev <the.aidar@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Nick Piggin <npiggin@suse.de>, Arjan van de Ven <arjan@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: 2.6.36 io bring the system to its knees
-Message-ID: <20101028170132.GY27796@think>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@kernel.org>,
-	Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
-	linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Jens Axboe <axboe@kernel.dk>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Nick Piggin <npiggin@suse.de>,
-	Arjan van de Ven <arjan@infradead.org>,
-	Thomas Gleixner <tglx@linutronix.de>
-References: <AANLkTimt7wzR9RwGWbvhiOmot_zzayfCfSh_-v6yvuAP@mail.gmail.com>
- <AANLkTikRKVBzO=ruy=JDmBF28NiUdJmAqb4-1VhK0QBX@mail.gmail.com>
- <AANLkTinzJ9a+9w7G5X0uZpX2o-L8E6XW98VFKoF1R_-S@mail.gmail.com>
- <AANLkTinDDG0ZkNFJZXuV9k3nJgueUW=ph8AuHgyeAXji@mail.gmail.com>
- <AANLkTikvSGNE7uGn5p0tfJNg4Hz5WRmLRC8cXu7+GhMk@mail.gmail.com>
- <20101028090002.GA12446@elte.hu>
- <AANLkTinoGGLTN2JRwjJtF6Ra5auZVg+VSa=TyrtAkDor@mail.gmail.com>
- <20101028133036.GA30565@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101028133036.GA30565@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 28 Oct 2010 13:09:09 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6150"; a="59597714"
+Subject: Re: [PATCH 09/10] drivers/video/msm/mddi.c: Remove multiple
+ KERN_<level> uses
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Joe Perches <joe@perches.com>
+Cc: Jiri Kosina <trivial@kernel.org>, David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <f1dbb5d550e2146508541335999374cf8910ff59.1288059486.git.joe@perches.com>
+References: <cover.1288059486.git.joe@perches.com>
+	 <f1dbb5d550e2146508541335999374cf8910ff59.1288059486.git.joe@perches.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 28 Oct 2010 10:08:36 -0700
+Message-ID: <1288285716.2683.12.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 28, 2010 at 03:30:36PM +0200, Ingo Molnar wrote:
+On Mon, 2010-10-25 at 19:44 -0700, Joe Perches wrote:
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  drivers/video/msm/mddi.c |    5 ++---
+>  1 files changed, 2 insertions(+), 3 deletions(-)
 > 
-> "Many seconds freezes" and slowdowns wont be fixed via the VFS scalability patches 
-> i'm afraid.
-> 
-> This has the appearance of some really bad IO or VM latency problem. Unfixed and 
-> present in stable kernel versions going from years ago all the way to v2.6.36.
+> diff --git a/drivers/video/msm/mddi.c b/drivers/video/msm/mddi.c
+> index 7c316c3..b66d86a 100644
+> --- a/drivers/video/msm/mddi.c
+> +++ b/drivers/video/msm/mddi.c
+> @@ -318,7 +318,7 @@ static long mddi_wait_interrupt_timeout(struct mddi_info *mddi,
+>  static void mddi_wait_interrupt(struct mddi_info *mddi, uint32_t intmask)
+>  {
+>  	if (mddi_wait_interrupt_timeout(mddi, intmask, HZ/10) == 0)
+> -		printk(KERN_INFO KERN_ERR "mddi_wait_interrupt %d, timeout "
+> +		printk(KERN_INFO "mddi_wait_interrupt %d, timeout "
+>  		       "waiting for %x, INT = %x, STAT = %x gotint = %x\n",
+>  		       current->pid, intmask, mddi_readl(INT), mddi_readl(STAT),
+>  		       mddi->got_int);
+> @@ -465,8 +465,7 @@ static int __init mddi_get_client_caps(struct mddi_info *mddi)
+>  
+>  		if (mddi->flags & FLAG_HAVE_CAPS)
+>  			break;
+> -		printk(KERN_INFO KERN_ERR "mddi_init, timeout waiting for "
+> -				"caps\n");
+> +		printk(KERN_INFO "mddi_init, timeout waiting for caps\n");
+>  	}
+>  	return mddi->flags & FLAG_HAVE_CAPS;
+>  }
 
-Hmmm, the workload you're describing here has two special parts.  First
-it dramatically overloads the disk, and then it has guis doing things
-waiting for the disk.
+Applied to my tree, thanks.
 
-The virtualbox part of the workload is probably filling the queue with
-huge amounts of synchronous random IO (I'm assuming it is going in via
-O_DIRECT), and this will defeat any attempts from the filesystem to tell
-the elevator "hey look, my IO is synchronous, please do hurry"
+Daniel
 
-So, I'd try mounting ext4 in data=writeback mode.  I can't make ext4
-stall fsyncs on non-fsync IO locally and it looks like they have solved
-the ext3 data=ordered problem.  But I still like to rule out old and
-known issues before we dig into new things.
+-- 
 
-I'd also suggest something like the below patch which is entirely
-untested and must be blessed by an actual ext4 developer.  I think we
-can make fsync faster if we put the mutex locking down in the FS, but
-until then it should be ok to drop the mutex while we are doing the
-expensive log commits:
-
-diff --git a/fs/ext4/fsync.c b/fs/ext4/fsync.c
-index 592adf2..1b7a637 100644
---- a/fs/ext4/fsync.c
-+++ b/fs/ext4/fsync.c
-@@ -114,6 +114,7 @@ int ext4_sync_file(struct file *file, int datasync)
- 	if (ext4_should_journal_data(inode))
- 		return ext4_force_commit(inode->i_sb);
- 
-+	mutex_unlock(&inode->i_mutex);
- 	commit_tid = datasync ? ei->i_datasync_tid : ei->i_sync_tid;
- 	if (jbd2_log_start_commit(journal, commit_tid)) {
- 		/*
-@@ -133,5 +134,7 @@ int ext4_sync_file(struct file *file, int datasync)
- 	} else if (journal->j_flags & JBD2_BARRIER)
- 		blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL, NULL,
- 			BLKDEV_IFL_WAIT);
-+
-+	mutex_lock(&inode->i_mutex);
- 	return ret;
- }
-
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
