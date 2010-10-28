@@ -1,121 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761128Ab0J1SV3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 14:21:29 -0400
-Received: from kroah.org ([198.145.64.141]:46287 "EHLO coco.kroah.org"
+	id S1761263Ab0J1SVf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 14:21:35 -0400
+Received: from kroah.org ([198.145.64.141]:46292 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760922Ab0J1SVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 14:21:24 -0400
-Date: Thu, 28 Oct 2010 10:56:15 -0700
+	id S1761117Ab0J1SV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 14:21:29 -0400
+Date: Thu, 28 Oct 2010 11:08:45 -0700
 From: Greg KH <greg@kroah.com>
-To: "Emilio G. Cota" <cota@braap.org>
-Cc: Martyn Welch <martyn.welch@ge.com>, LKML <linux-kernel@vger.kernel.org>,
-        devel@driverdev.osuosl.org,
-        Juan David Gonzalez Cobas <david.cobas@gmail.com>,
-        Bill Pemberton <wfp5p@virginia.edu>
-Subject: Re: [PATCH 09/30] staging/vme: fill in struct device's .release,
- even if it's a NOOP
-Message-ID: <20101028175615.GA2367@kroah.com>
-References: <1288055476-19438-1-git-send-email-cota@braap.org>
- <1288055476-19438-10-git-send-email-cota@braap.org>
- <4CC804FF.9050908@ge.com>
- <20101027144642.GP10869@flamenco.cs.columbia.edu>
- <20101028011711.GA29960@kroah.com>
- <20101028060710.GB10720@flamenco.cs.columbia.edu>
+To: Charles Manning <manningc2@actrix.gen.nz>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: How do I add yaffs file system to mainline?
+Message-ID: <20101028180845.GA2573@kroah.com>
+References: <201010290455.02390.manningc2@actrix.gen.nz>
+ <20101028102641.d936aec8.randy.dunlap@oracle.com>
+ <20101028174432.GA2001@kroah.com>
+ <201010290655.39490.manningc2@actrix.gen.nz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101028060710.GB10720@flamenco.cs.columbia.edu>
+In-Reply-To: <201010290655.39490.manningc2@actrix.gen.nz>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 28, 2010 at 02:07:10AM -0400, Emilio G. Cota wrote:
-> On Wed, Oct 27, 2010 at 18:17:11 -0700, Greg KH wrote:
-> > On Wed, Oct 27, 2010 at 10:46:42AM -0400, Emilio G. Cota wrote:
-> > > On Wed, Oct 27, 2010 at 11:54:55 +0100, Martyn Welch wrote:
-> > > > I guess this is an artifact of the current lack of refcounting?
-> > > 
-> > > No, that's orthogonal to this. This has to do with the way the
-> > > devices are allocated.
-> > > 
-> > > > This is definitely an issue, however I don't think masking it by adding
-> > > > an empty function is the correct way to go.
-> > > 
-> > > We're not masking anything. The release method is there to free the
-> > > struct it protects when its refcount goes to zero; however, in this
-> > > case the struct wasn't allocated dynamically--the 32 devices are
-> > > stored in struct vme_bridge in an array--and therefore there's
-> > > nothing to do in .release, since struct vme_bridge is freed
-> > > elsewhere.
-> > > 
-> > > While it's true that empty .release methods are usually frowned
-> > > upon (as stated in Documentation/kobject.txt), due to the way
-> > > things are done here it actually makes sense to have an
-> > > empty .release.
-> > 
-> > FROWNED APON?
-> > 
-> > Heh, if you add one, as per the documentation there, I get to publicly
-> > ridicule you for doing so.
-> > 
-> > So consider this your ridicule, if you ever are thinking you need to
-> > create an empty release function, YOUR CODE IS WRONG!
-> > 
-> > Seriously, do you think I just add warnings in there for fun?  So that
-> > you can work around them thinking you know better?
-> > 
-> > {sigh}
-> > 
-> > Your implementation is broken, never do this, if you create a kobject,
-> > you HAVE TO FREE IT in the release function.
-> > 
-> > I would ask why you are even using a kobject in the first place (hint,
-> > if you are writing a driver, or even a subsystem, you shouldn't be, use
-> > 'struct device' instead.)
+On Fri, Oct 29, 2010 at 06:55:39AM +1300, Charles Manning wrote:
+> On Friday 29 October 2010 06:44:32 Greg KH wrote:
+> > On Thu, Oct 28, 2010 at 10:26:41AM -0700, Randy Dunlap wrote:
+> > > On Fri, 29 Oct 2010 04:55:02 +1300 Charles Manning wrote:
+> > > > YAFFS has been used for many years as a third-party patch-in.
+> > > >
+> > > > I have recently been through the exercise of changing all the symbols
+> > > > to be more kernel friendly with the intention of mainlining into the
+> > > > linux tree.
+> > > >
+> > > > The code is in git at
+> > > > http://github.com/cdhmanning/linux-yaffs-integration/
+> > >
+> > > It's difficult to review & comment on a git tree.
+> > > We prefer patches via email for review.
+> > >
+> > > > Thanks to CELF and Google for sponsoring the effort so far.
+> > > >
+> > > > What still needs to be done to mainline this?
+> > > > Who do I need to approach?
+> > >
+> > > Either ask Stephen Rothwell to add the git tree to the linux-next daily
+> > > tree or ask Greg KH to add it to the drivers/staging/ area.
+> >
+> > I'd be glad to add the code to the staging tree, but to do so, do you
+> > have a list of things that are left to do in order to get it properly
+> > merged to the "real" portion of the kernel?
 > 
+> We're getting into a Catch-22 discussion here... Until I fully understand what 
+> is needed, I can't really say what needs to be done :-).
 > 
-> kobject?
+> At this stage the code works, is integrated into, and compiles cleanly against 
+> Linus' 2.6 git. My git is based on Linus' 2.6 as of yesterday.
 > 
-> We were talking about a struct device's .release, not about a struct
-> kobject's .release.
+> I have done symbol cleaning changing the old yaffs names of the form 
+> yaffs_ScanBackwards() to yaffs_scan_backward() etc.
 > 
-> The warning comes from the kobject embedded in struct device, not
-> from a kobject per se. In fact, let me make it clearer:
+> What I really need is someone to look at what's there and tell me if there are 
+> still style issues etc that need changing.
 > 
-> 		NO KOBJECT IS DIRECTLY OPERATED ON.
+> I know there is a style guide etc, but when we're talking about processing 15k 
+> loc then some of those rules might be slightly bendable.
 
-Ok, thanks, I wasn't paying attention.
+Not really.
 
-Empty device release functions are also incorrect and shouldn't even be
-part of a patch series.
+Have you run it through sparse and scripts/checkpatch.pl?  If not,
+please do so and resolve all of the issues that they bring up.
 
-> Fact: Anything other than freeing struct device in .release is
-> a bug. So the warning is very well placed there, no question
-> about it.
+Then break up the filesystem into reviewable patches and send them to
+the linux-fsdevel list for review.
 
-Agreed.
+Again, read Documentation/SubmittingPatches for the details on how to
+properly do this, it is described in very good detail :)
 
-> Example: when a VME bridge is removed, then all devices are
-> mercilessly freed, even if their refcounts aren't 0 because
-> drivers are controlling them. This is a BUG, and both Martin
-> and I knew it.
+> > And if so, what is preventing you from doing those tasks right now to
+> > get the code into the .38 kernel merge?
+> 
+> My biggest problem is not fully understanding the process.
 
-Ok, then patches are gladly accepted to fix it.
-
-> Fact: Right now VME drivers MUST be removed before VME
-> bridges are removed. We all agree on that this is broken--
-
-Yup, it's broken, please don't require that.
-
-> bridges shouldn't be allowed to be removed if there are
-> drivers controlling any of their devices. Patch 27
-> addresses this among other things.
-
-Not true, a bridge should be able to be removed, just that the devices
-will then be deleted as well.  See USB bus drivers for examples of how
-to do this properly.
+The process is very well documented, have you read the documentation?
+If so, what part is lacking?
 
 thanks,
 
