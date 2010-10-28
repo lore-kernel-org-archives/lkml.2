@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758078Ab0J1K61 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 06:58:27 -0400
-Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:36313 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756549Ab0J1K6Z (ORCPT
+	id S1758247Ab0J1LD3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 07:03:29 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:44896 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752669Ab0J1LDZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 06:58:25 -0400
-Date: Thu, 28 Oct 2010 21:58:22 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] fs: Lock the inode LRU list separately
-Message-ID: <20101028105822.GD2715@dastard>
-References: <1288153384-8878-1-git-send-email-david@fromorbit.com>
- <1288153384-8878-4-git-send-email-david@fromorbit.com>
- <20101027090530.GB16443@infradead.org>
- <20101027222444.GC2715@dastard>
- <20101028102521.GA6141@infradead.org>
+	Thu, 28 Oct 2010 07:03:25 -0400
+Date: Thu, 28 Oct 2010 07:03:21 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tracing: fix TRACE_EVENT power tracepoint creation
+Message-ID: <20101028110321.GA24711@Krystal>
+References: <20101028021632.GA18117@Krystal> <1288232716.18238.140.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101028102521.GA6141@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1288232716.18238.140.camel@gandalf.stny.rr.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 06:59:15 up 35 days, 15:01,  1 user,  load average: 1.31, 1.27,
+	1.10
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 28, 2010 at 06:25:21AM -0400, Christoph Hellwig wrote:
-> > That doesn't happen because the counter is only modified when
-> > the inode is moved on/off the list and there are checks to avoid
-> > removing an inode that is not on the list. Also, the inode is not
-> > removed from the LRU in dispose_one_inode - it is always done when
-> > the inode is marked I_FREEING while the i_lock is held before
-> > calling dispose_one_inode().
-> > 
-> > Basically I wanted to remove the strange "inode is not on the LRU if
-> > it is dirty or under writeback" accounting checks and make the
-> > accounting symmetric with adding/removing the inodes from the LRU.
-> > These are protected by list_empty() checks, so should always end up
-> > with the correct accounting.
-> > 
-> > hence the only special case now is prune_icache() which already
-> > holds the inode_lru_lock() so can't call the helper. Besides, we
-> > don't need any checks there because we know the inode is on the LRU
-> > already....
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> On Wed, 2010-10-27 at 22:16 -0400, Mathieu Desnoyers wrote:
+> > DEFINE_TRACE should also exist when CONFIG_EVENT_TRACING=n. Otherwise, setting
+> > only TRACEPOINTS=y is broken.
 > 
-> Indeed.  What about adding a
+> NAK, DEFINE_TRACE is deprecated from use outside the tracing
+> infrastructure.
 > 
-> 	BUG_ON(!list_empty(&inode->i_lru));
-> 
-> to evict to ensure this invariant?
+[...]
+> The trace/events/power.h file should handle the DEFINE_TRACE() when
+> CONFIG_EVENT_TRACING is not set. Thus, this is the wrong fix.
 
-Yup, sounds like a good idea.
+DEFINE_TRACE() must only be done once over the whole kernel for a particular
+tracepoint. Currently, it is done in power-traces.c when CONFIG_EVENT_TRACING is
+activated. This is the only instance where trace/power.h is included with
+CREATE_TRACE_POINTS set.
 
-Cheers,
+Given that trace/power.h is inluded in more than one .c file, generating
+DEFINE_TRACE() when CREATE_TRACE_POINTS is not set does not work. So what
+alternative do you suggest ?
 
-Dave.
+Thanks,
+
+Mathieu
+
 -- 
-Dave Chinner
-david@fromorbit.com
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
