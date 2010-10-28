@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760002Ab0J1VGz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 17:06:55 -0400
-Received: from thunk.org ([69.25.196.29]:57953 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934558Ab0J1VGr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 17:06:47 -0400
-Date: Thu, 28 Oct 2010 17:06:44 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: sedat.dilek@gmail.com
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-        sfr@canb.auug.org.au, Arnd Bergmann <arnd@arndb.de>,
-        Avinash Kurup <kurup.avinash@gmail.com>
-Subject: Re: [next-20101038] Call trace in ext4
-Message-ID: <20101028210644.GF28126@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, sedat.dilek@gmail.com,
-	Markus Trippelsdorf <markus@trippelsdorf.de>,
-	LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-	sfr@canb.auug.org.au, Arnd Bergmann <arnd@arndb.de>,
-	Avinash Kurup <kurup.avinash@gmail.com>
-References: <AANLkTi=E_uMj_ndGU86DCjX4aDwjHqg3dkwxjQRSJtq6@mail.gmail.com>
- <20101028175221.GA1578@arch.trippelsdorf.de>
- <20101028180118.GC6814@thunk.org>
- <20101028193211.GA28126@thunk.org>
- <AANLkTimHJe9bA-X+JWkspgjb4AZkkgbEFWQiwzO-gx-h@mail.gmail.com>
- <20101028200548.GC28126@thunk.org>
- <AANLkTimw9Vwzy4MXO1t7TnJfwTwYtWcfj0D=Zx8O72cY@mail.gmail.com>
- <20101028203706.GD28126@thunk.org>
- <AANLkTimFgcCVgBrW_oLzn0tUdGwJKfkhDJMf=EVHZ4Vf@mail.gmail.com>
+	id S933829Ab0J1VIA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 17:08:00 -0400
+Received: from c-67-162-90-113.hsd1.in.comcast.net ([67.162.90.113]:52481 "HELO
+	kosh.dhis.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1757856Ab0J1VHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 17:07:55 -0400
+Message-ID: <20101028210753.22240.qmail@kosh.dhis.org>
+From: pacman@kosh.dhis.org
+Subject: Re: Pegasos OHCI bug (was Re: PROBLEM: memory corrupting bug,
+To: segher@kernel.crashing.org (Segher Boessenkool)
+Date: Thu, 28 Oct 2010 16:07:53 -0500 (GMT+5)
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+In-Reply-To: <52441.84.105.60.153.1288295412.squirrel@gate.crashing.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimFgcCVgBrW_oLzn0tUdGwJKfkhDJMf=EVHZ4Vf@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 28, 2010 at 11:02:14PM +0200, Sedat Dilek wrote:
+Segher Boessenkool writes:
 > 
-> I could copy a complete linux-2.6 GIT tree within my $HOME/src, looks good.
-
-Excellent; and attempts to do this before resulted on the BUG_ON
-tripping?  If so, that's certainly a good sign!
-
+> > So is it wrong to leave the host controller enabled when the OS is booted?
 > 
-> Any other test-case you can suggest to be sure things work as expected, now?
+> Yes.  Or, rather, there should be some way for the client to turn off
+> all dma and interrupt activity; if the client closes the ihandles in
+> "/chosen", and perhaps calls "quiesce", that should be enough.
 
-Well, given that I haven't been able to replicate myself, no, not
-really.
+Sounds good to me, I only wish someone had written down what "quiesce" means.
 
-I am curious about your setup.  How much memory do you have on your
-system, and how much free memory did you have before running the copy?
-(i.e, what does the "free" command display)?
-
-> BTW, feel free to add:
+> >
+> > Almost all of my devices are under that PCI node. What will I prove by
+> > disabling them?
 > 
->       Reported-andtested-by: Sedat Dilek <sedat.dilek@gmail.com>
+> You should put it after "load", and before "go".
+> 
+> It should give you a working system; it's a sledgehammer workaround.
 
-I'll certainly give you credit (as well as to the other people who
-reported the problem).
+I can do it a little more gracefully than that. This works to deactivate the
+problem devices manually:
 
-Thanks again!!
+  1 lbflip 80000000 8 + rl!
+  1 lbflip 80001000 8 + rl!
 
-						- Ted
+where 80000000 and 80001000 have been obtained from
+/pci@80000000/usb@5/assigned-addresses and
+/pci@80000000/usb@5,1/assigned-addresses; 8 is the offset of the
+HcCommandStatus register; and the 1 bit is HostControllerReset (HCR).
+
+Now I'm just trying to find the more correct way of doing it, without
+hardcoded addresses. That'll be something like this:
+
+  search the device tree for OHCI nodes
+  for each OHCI node
+    get assigned-addresses
+    map-in
+    set HCR
+    wait for acknowledgement
+    map-out
+
+which can be done any time before the quiesce call, since that marks the
+point where the kernel assumes that there are no devices writing to memory.
+Sound good?
+
+-- 
+Alan Curry
