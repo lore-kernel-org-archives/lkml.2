@@ -1,87 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760216Ab0J1VS3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 17:18:29 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:2589 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757047Ab0J1VSY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 17:18:24 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp03.nvidia.com on Thu, 28 Oct 2010 14:18:15 -0700
-From: Rhyland Klein <rklein@nvidia.com>
-To: Lars-Peter Clausen <lars@metafoo.de>,
-        Anton Vorontsov <cbouatmailru@gmail.com>
-CC: "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        Andrew Chew <AChew@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 28 Oct 2010 14:17:41 -0700
-Subject: RE: [PATCH v2] POWER: Add gpio charger driver
-Thread-Topic: [PATCH v2] POWER: Add gpio charger driver
-Thread-Index: ActxSB5Yfwvn2FrzShihLF1G4x8GJQFnQ1Gg
-Message-ID: <E88A1D35AF5437468E5B14C7C4BA61C702D3E13FB3@HQMAIL01.nvidia.com>
-References: <1287663957-30099-1-git-send-email-lars@metafoo.de>
- <1287676501-23254-1-git-send-email-lars@metafoo.de>
- <20101021162617.GA10447@oksana.dev.rtsoft.ru> <4CC07CB4.9060108@metafoo.de>
-In-Reply-To: <4CC07CB4.9060108@metafoo.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1760245Ab0J1VTQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 17:19:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47580 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756714Ab0J1VTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 17:19:08 -0400
+Message-ID: <4CC9E8C7.60306@suse.cz>
+Date: Thu, 28 Oct 2010 23:19:03 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Mike Frysinger <vapier.adi@gmail.com>,
+        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>, tabbott@ksplice.com,
+        vda.linux@googlemail.com, hpa@linux.intel.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com
+Subject: Re: [PATCH] initramfs: Fix build break on symbol-prefixed archs
+References: <20100831083844.043619334@linux.vnet.ibm.com> <AANLkTikCLHh5Uz-DRq9ws78We+SwCAqdurA6HfuJh-8Y@mail.gmail.com> <20101018103729.GA4122@linux.vnet.ibm.com> <AANLkTikKJ25L=6b2resz+0SAg7ZYL5j=rHG7Lg4kFbwd@mail.gmail.com> <20101019110801.GA4128@linux.vnet.ibm.com> <AANLkTimLi8BYy_u8NhD15s=+iiODzuG1H_CgZ-cd7jep@mail.gmail.com> <20101019213112.GA11432@merkur.ravnborg.org> <AANLkTike6UQVWKSz-Njs5Rps690EHeResH3V+aSM+qdO@mail.gmail.com> <AANLkTimn8R-qde8FH_cNa4JPcR2F=mkUAQhPVT-hOBhn@mail.gmail.com> <4CC8ABC7.5030003@suse.cz> <20101028203542.GA30879@merkur.ravnborg.org>
+In-Reply-To: <20101028203542.GA30879@merkur.ravnborg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o9SLIbiE026533
 
-> -----Original Message-----
-> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
-> Sent: Thursday, October 21, 2010 10:48 AM
-> To: Anton Vorontsov
-> Cc: Rhyland Klein; broonie@opensource.wolfsonmicro.com; Andrew Chew;
-> olof@lixom.net; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v2] POWER: Add gpio charger driver
+On 28.10.2010 22:35, Sam Ravnborg wrote:
+> On Thu, Oct 28, 2010 at 12:46:31AM +0200, Michal Marek wrote:
+>> On 27.10.2010 20:23, Mike Frysinger wrote:
+>>> can we get this change dropped from linux-next until someone gets a
+>>> chance to fix it ?
+>>
+>> Sorry I missed this thread. So your last patch
+>> (http://lkml.org/lkml/2010/10/19/488) did fix the Blackfin build
+>> failure? Can you submit it with a proper Signed-off-by and changelog?
 > 
-> Anton Vorontsov wrote:
-> > On Thu, Oct 21, 2010 at 05:55:01PM +0200, Lars-Peter Clausen wrote:
-> >> This patch adds a simple driver for chargers indicating their online
-> status
-> >> through a GPIO pin.
-> >>
-> >> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> >
-> > Hm. I'm getting older, it seems. Now can anybody remind me why
-> > pda_power.c doesn't work here? ;-)
-> >
-> > This driver looks like a light-weigh version of pda_power, except
-> > that it can do GPIOs directly (instead of is_*_online() callbacks).
-> >
-> > Can we instead improve pda_power? Like this:
-> >
-> > 	if (!pdata->is_ac_online && pdata->ac_monitor_gpio)
-> > 		pdata->is_ac_online = pda_ac_monitor_gpio;
-> >
-> > Should look quite cool, I think.
-> >
-> > (Plus, we might get rid of ac/usb stuff in that driver, and
-> > pass enum power_supply_type to the callbacks instead).
-> >
+> Did you see the patch I posted in: http://lkml.org/lkml/2010/10/19/534
 > 
-> Hi
+> The one that fix up the cppflags usage.
 > 
-> Hm... I guess it can be, but on the other hand most platform bus chargers
-> type
-> devices can be, because the pda_power driver is keep pretty generic with
-> custom init,
-> status and exit callbacks.
-> 
-> - Lars
+> I think this will solve the issue with blackfin nicely - and
+> make use of cppflags more as expected.
 
-I didn't see any more discussion on this. Is the plan to integrate the gpio-charger driver as is or to instead try to integrate support for this into pda_power?
+As Mike noted - your patch does not strip the double quotes. And Mike's
+patch is really minimal, it just adds the SYMBOL_PREFIX definition to
+_a_flags. I'll look at your patch after this merge window.
 
--rhyland
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Michal
