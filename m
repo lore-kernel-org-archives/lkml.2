@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758166Ab0J1PXA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 11:23:00 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:37744 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754760Ab0J1PW4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 11:22:56 -0400
-Date: Thu, 28 Oct 2010 11:22:55 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-cc: Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [linux-pm] [PATCH] PERF(kernel): Cleanup power events V2
-In-Reply-To: <Pine.LNX.4.44L0.1010271014280.1650-100000@iolanthe.rowland.org>
-Message-ID: <Pine.LNX.4.44L0.1010281117530.1601-100000@iolanthe.rowland.org>
+	id S1758294Ab0J1PYI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 11:24:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63876 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754222Ab0J1PYC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 11:24:02 -0400
+Date: Thu, 28 Oct 2010 17:22:46 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Ed Tomlinson <edt@aei.ca>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 4/7] vmscan: narrowing synchrounous lumply reclaim
+ condition
+Message-ID: <20101028152246.GO29304@random.random>
+References: <20100805150624.31B7.A69D9226@jp.fujitsu.com>
+ <20100805151341.31C3.A69D9226@jp.fujitsu.com>
+ <20101027164138.GD29304@random.random>
+ <201010272231.08978.edt@aei.ca>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201010272231.08978.edt@aei.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Oct 2010, Alan Stern wrote:
+Hi,
 
-> On Wed, 27 Oct 2010, Mathieu Desnoyers wrote:
+On Wed, Oct 27, 2010 at 10:31:07PM -0400, Ed Tomlinson wrote:
+> On Wednesday 27 October 2010 12:41:38 Andrea Arcangeli wrote:
+> > I hope lumpy work stops here and that it goes away whenever THP is
+> > merged.
 > 
-> > grep -r pm_runtime_get_noresume drivers/    hands out very interesting info.
-> > 
-> > e.g.:
-> > 
-> > drivers/usb/core/drivers.c: usb_autopm_get_interface_async()
-> > 
-> >         pm_runtime_get_noresume(&intf->dev);
-> >         s = ACCESS_ONCE(intf->dev.power.runtime_status);
-> >         if (s == RPM_SUSPENDING || s == RPM_SUSPENDED)
-> >                 status = pm_request_resume(&intf->dev);
-> > 
-> > How is this supposed to work ?
-
-> > If the ACCESS_ONCE can be reordered before the atomic_inc(), then I fear the
-> > device can be suspended even after the check.
+> Andrea,
 > 
-> You are correct; the code as written may sometimes fail.  It was a
-> hack from the beginning; the kind of test it performs should not be
-> done outside the PM core.  However at the time it was the easiest way 
-> to do what I wanted.
+> I've been running THP here for since May (#25).  Here it does its job as it should.
 
-I forgot to mention one other thing...  The fact that this code will
-sometimes behave unexpectedly isn't a bug.  That function is documented
-as requiring additional locking when a driver uses it.  The need for
-extra locking is unavoidable because I/O requests can arrive at any
-time, even while a runtime suspend is in progress.
+Thanks for the report :).
 
-Therefore the fact that usb_autopm_get_interface_async() can race with 
-a runtime suspend doesn't matter.  The driver making the call should 
-have sufficient locking to know that the runtime suspend should fail 
-because the driver is busy.
+> When do you see it as ready for inclusion?
 
-Alan Stern
+It is already ready for inclusion. I posted it on 24 Oct to Linus but
+got no answer. I guess he's being busy with merging the other stuff
+(including the lumpy improvements that now requires me to remove more
+stuff, but that's not big deal, but I'll have to audit everything and
+separate the good from the bad and identify any real fix from the
+lumpy stuff that I'll drop, I'll drop also removing the vmstat.h
+lumpy stats, so some userland rebuild may be needed).
 
+As long as sc->lumpy_reclaim_mode is always = LUMPY_MODE_NONE,
+whenever sc->order == 0, I'm not going to let it live in my tree.
