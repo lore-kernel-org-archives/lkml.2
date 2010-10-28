@@ -1,115 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933535Ab0J1N54 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 09:57:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:43228 "EHLO
+	id S1758867Ab0J1N5y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 09:57:54 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:39011 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932830Ab0J1N4s (ORCPT
+	with ESMTP id S933088Ab0J1N4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 28 Oct 2010 09:56:48 -0400
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=97Jt8JwOJ3IA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=3nbZYyFuAAAA:8 a=meVymXHHAAAA:8 a=pKJDfCV8AVH237E5AGQA:9 a=hmfye8OkV17b-mfl81cA:7 a=hgWW_SGuo6VA4i-7bZUiwWv6InYA:4 a=jEp0ucaQiEUA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=85CKqrDd6vgA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=enOvQawGAAAA:8 a=20KFwNOVAAAA:8 a=J1Y8HTJGAAAA:8 a=meVymXHHAAAA:8 a=nDo3GkDlcchujGXVEJ4A:9 a=LHNmAR8Ys2TyTDSEY10A:7 a=UxMaORZKXOAKScklKJOxuVks8CMA:4 a=bkT6KWdcy0IA:10 a=jEp0ucaQiEUA:10 a=4N9Db7Z2_RYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20101028135647.429157214@goodmis.org>
+Message-Id: <20101028135647.822609872@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 28 Oct 2010 09:55:51 -0400
+Date: Thu, 28 Oct 2010 09:55:52 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Jason Baron <jbaron@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH 3/8] jump label: Fix error with preempt disable holding mutex
+        Jason Baron <jbaron@redhat.com>, David Miller <davem@davemloft.net>,
+        David Daney <ddaney@caviumnetworks.com>
+Subject: [PATCH 4/8] jump label: Make arch_jump_label_text_poke_early() optional
 References: <20101028135548.055490014@goodmis.org>
-Content-Disposition: inline; filename=0003-jump-label-Fix-error-with-preempt-disable-holding-mu.patch
+Content-Disposition: inline; filename=0004-jump-label-Make-arch_jump_label_text_poke_early-opti.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: David Daney <ddaney@caviumnetworks.com>
 
-Kprobes and jump label were having a race between mutexes that
-was fixed by reordering the jump label. But this reordering
-moved the jump label mutex into a preempt disable location.
+For the forthcoming MIPS jump label support,
+arch_jump_label_text_poke_early() is unneeded as the MIPS NOP
+instruction is already optimal.
 
-This patch does a little fiddling to move the grabbing of
-the jump label mutex from inside the preempt disable section
-and still keep the order correct between the mutex and the
-kprobes lock.
+Supply a default implementation that does nothing.  Flag x86 and SPARC
+as having arch_jump_label_text_poke_early().
 
-Reported-by: Ingo Molnar <mingo@elte.hu>
 Cc: Jason Baron <jbaron@redhat.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: David Miller <davem@davemloft.net>
+Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+LKML-Reference: <1286218615-24011-2-git-send-email-ddaney@caviumnetworks.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/kprobes.c |   26 +++++++++++++-------------
- 1 files changed, 13 insertions(+), 13 deletions(-)
+ arch/sparc/include/asm/jump_label.h |    1 +
+ arch/x86/include/asm/jump_label.h   |    1 +
+ include/linux/jump_label.h          |    6 ++++++
+ 3 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 9437e14..9737a76 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -1145,17 +1145,13 @@ int __kprobes register_kprobe(struct kprobe *p)
- 	if (ret)
- 		return ret;
+diff --git a/arch/sparc/include/asm/jump_label.h b/arch/sparc/include/asm/jump_label.h
+index 62e66d7..9aa82d7 100644
+--- a/arch/sparc/include/asm/jump_label.h
++++ b/arch/sparc/include/asm/jump_label.h
+@@ -6,6 +6,7 @@
+ #include <linux/types.h>
+ #include <asm/system.h>
  
--	preempt_disable();
- 	jump_label_lock();
-+	preempt_disable();
- 	if (!kernel_text_address((unsigned long) p->addr) ||
- 	    in_kprobes_functions((unsigned long) p->addr) ||
- 	    ftrace_text_reserved(p->addr, p->addr) ||
--	    jump_label_text_reserved(p->addr, p->addr)) {
--		preempt_enable();
--		jump_label_unlock();
--		return -EINVAL;
--	}
--	jump_label_unlock();
-+	    jump_label_text_reserved(p->addr, p->addr))
-+		goto fail_with_jump_label;
++#define HAVE_ARCH_JUMP_LABEL_TEXT_POKE_EARLY
+ #define JUMP_LABEL_NOP_SIZE 4
  
- 	/* User can pass only KPROBE_FLAG_DISABLED to register_kprobe */
- 	p->flags &= KPROBE_FLAG_DISABLED;
-@@ -1169,10 +1165,9 @@ int __kprobes register_kprobe(struct kprobe *p)
- 		 * We must hold a refcount of the probed module while updating
- 		 * its code to prohibit unexpected unloading.
- 		 */
--		if (unlikely(!try_module_get(probed_mod))) {
--			preempt_enable();
--			return -EINVAL;
--		}
-+		if (unlikely(!try_module_get(probed_mod)))
-+			goto fail_with_jump_label;
+ #define JUMP_LABEL(key, label)					\
+diff --git a/arch/x86/include/asm/jump_label.h b/arch/x86/include/asm/jump_label.h
+index f52d42e..169cfd8 100644
+--- a/arch/x86/include/asm/jump_label.h
++++ b/arch/x86/include/asm/jump_label.h
+@@ -6,6 +6,7 @@
+ #include <linux/types.h>
+ #include <asm/nops.h>
+ 
++#define HAVE_ARCH_JUMP_LABEL_TEXT_POKE_EARLY
+ #define JUMP_LABEL_NOP_SIZE 5
+ 
+ # define JUMP_LABEL_INITIAL_NOP ".byte 0xe9 \n\t .long 0\n\t"
+diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
+index 1947a12..b3835f6 100644
+--- a/include/linux/jump_label.h
++++ b/include/linux/jump_label.h
+@@ -22,7 +22,13 @@ extern void jump_label_lock(void);
+ extern void jump_label_unlock(void);
+ extern void arch_jump_label_transform(struct jump_entry *entry,
+ 				 enum jump_label_type type);
 +
- 		/*
- 		 * If the module freed .init.text, we couldn't insert
- 		 * kprobes in there.
-@@ -1180,11 +1175,11 @@ int __kprobes register_kprobe(struct kprobe *p)
- 		if (within_module_init((unsigned long)p->addr, probed_mod) &&
- 		    probed_mod->state != MODULE_STATE_COMING) {
- 			module_put(probed_mod);
--			preempt_enable();
--			return -EINVAL;
-+			goto fail_with_jump_label;
- 		}
- 	}
- 	preempt_enable();
-+	jump_label_unlock();
- 
- 	p->nmissed = 0;
- 	INIT_LIST_HEAD(&p->list);
-@@ -1226,6 +1221,11 @@ out:
- 		module_put(probed_mod);
- 
- 	return ret;
++#ifdef HAVE_ARCH_JUMP_LABEL_TEXT_POKE_EARLY
+ extern void arch_jump_label_text_poke_early(jump_label_t addr);
++#else
++static inline void arch_jump_label_text_poke_early(jump_label_t addr) {}
++#endif
 +
-+fail_with_jump_label:
-+	preempt_enable();
-+	jump_label_unlock();
-+	return -EINVAL;
- }
- EXPORT_SYMBOL_GPL(register_kprobe);
- 
+ extern void jump_label_update(unsigned long key, enum jump_label_type type);
+ extern void jump_label_apply_nops(struct module *mod);
+ extern int jump_label_text_reserved(void *start, void *end);
 -- 
 1.7.1
 
