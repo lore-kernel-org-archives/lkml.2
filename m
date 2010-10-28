@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759337Ab0J1QCE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 12:02:04 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:38179 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758884Ab0J1QB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 12:01:58 -0400
-Date: Thu, 28 Oct 2010 18:01:29 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Huang Ying <ying.huang@intel.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, "Luck, Tony" <tony.luck@intel.com>,
-        BorislavPetkov <petkovbb@googlemail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Don Zickus <dzickus@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH -v3 0/8] ACPI, APEI patches for 2.6.37
-Message-ID: <20101028160129.GA12628@elte.hu>
-References: <1288157312-10441-1-git-send-email-ying.huang@intel.com>
- <1288174050.15336.1507.camel@twins>
- <20101027172343.GB22171@basil.fritz.box>
+	id S1759334Ab0J1QKV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 12:10:21 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:53146 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756140Ab0J1QKR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 12:10:17 -0400
+Message-ID: <4CC9A03F.80401@ti.com>
+Date: Thu, 28 Oct 2010 12:09:35 -0400
+From: Cyril Chemparathy <cyril@ti.com>
+Reply-To: cyril@ti.com
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.14) Gecko/20101006 Lightning/1.0b1 Thunderbird/3.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101027172343.GB22171@basil.fritz.box>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Linus Walleij <linus.ml.walleij@gmail.com>
+CC: "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "dbrownell@users.sourceforge.net" <dbrownell@users.sourceforge.net>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH v4 01/12] misc: add driver for sequencer serial port
+References: <1288124308-14999-1-git-send-email-cyril@ti.com>	<1288124308-14999-2-git-send-email-cyril@ti.com> <AANLkTi=rDep3jkp2QAjVsgjZ7JQ0ysnse4TARv29fyHm@mail.gmail.com>
+In-Reply-To: <AANLkTi=rDep3jkp2QAjVsgjZ7JQ0ysnse4TARv29fyHm@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Andi Kleen <andi@firstfloor.org> wrote:
-
-> Peter,
+On 10/28/2010 11:49 AM, Linus Walleij wrote:
+> 2010/10/26 Cyril Chemparathy <cyril@ti.com>:
 > 
-> > All you've done is decreased the arch/x86/ footprint of the patch series, but 
-> > neither you nor Andi have addressed the technical arguments against adding this 
-> > ABI.
+>> TI's sequencer serial port (TI-SSP) is a jack-of-all-trades type of serial port
+>> device.  It has a built-in programmable execution engine that can be programmed
+>> to operate as almost any serial bus (I2C, SPI, EasyScale, and others).
+>>
+>> This patch adds a driver for this controller device.  The driver does not
+>> expose a user-land interface.  Protocol drivers built on top of this layer are
+>> expected to remain in-kernel.
 > 
-> What were the technical arguments? I don't remember any.
+> Why is this thing in drivers/misc?
+> 
+> drivers/mfd is IMHO the apropriate place for a driver like this, and
+> the subdrivers should be migrated to use mfd cells and platform
+> drivers for the subdevices.
+> 
+> All functions and abstractions you create here look suspiciously
+> lot like other MFD devices.
+> 
+> But please, beat me up if I'm wrong!
 
-You did not reply to my technical arguments:
+Alan had raised the same concern earlier, and my response was:
 
-    http://lkml.org/lkml/2010/10/25/271
+> Unlike MFDs, this device doesn't have cells with differing
+> functionality.  Instead it has functionally identical ports that can
+> operate in a variety of modes.  That said, does this still fit in with
+> other MFD drivers?  If so, I don't see a problem with moving it there.
 
-You did not reply to Thomas's technical arguments:
+I don't see a problem with moving this into MFD, but this won't be able
+to use any of the functionality provided by mfd-core.
 
-    http://lkml.org/lkml/2010/10/26/71
-
-Are you really claiming that you "don't remember any"?
-
-	Ingo
+Thanks
+Cyril.
