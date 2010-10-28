@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753096Ab0J1FEH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 01:04:07 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:44339 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752424Ab0J1FEF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 01:04:05 -0400
-Date: Thu, 28 Oct 2010 14:03:54 +0900
-From: Kyungmin Park <kmpark@infradead.org>
-Subject: [PATCH] arm: GIC: Use the irq_to_desc for SPARSE IRQ
-To: linux@arm.linux.org.uk, rmk@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, rabin.vincent@stericsson.com,
-        linus.walleij@stericsson.com
-Cc: linux-kernel@vger.kernel.org
-Message-id: <20101028050354.GA23284@july>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7BIT
-Content-disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-OriginalArrivalTime: 28 Oct 2010 05:04:02.0557 (UTC)
- FILETIME=[89C44AD0:01CB765D]
+	id S1753334Ab0J1FGn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 01:06:43 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:35889 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752024Ab0J1FGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 01:06:40 -0400
+From: Nishanth Aravamudan <nacc@us.ibm.com>
+To: eric.dumazet@gmail.com
+Cc: Nishanth Aravamudan <nacc@us.ibm.com>, sonnyrao@us.ibm.com,
+        Divy Le Ray <divy@chelsio.com>, Dimitris Michailidis <dm@chelsio.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] cxgb3: fix crash due to manipulating queues before registration
+Date: Wed, 27 Oct 2010 22:06:30 -0700
+Message-Id: <1288242390-28574-1-git-send-email-nacc@us.ibm.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1288236563.2658.59.camel@edumazet-laptop>
+References: <1288236563.2658.59.camel@edumazet-laptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kyungmin Park <kyungmin.park@samsung.com>
+Hi Eric,
 
-When enable SPARSE_IRQ, there's compiler error at gic.c
-Fix it by using the irq_to_desc to get the proper irq desc.
+Something like the following?:
 
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Thanks,
+Nish
+
+
+Along the same lines as "cxgb4: fix crash due to manipulating queues
+before registration" (8f6d9f40476895571df039b6f1f5230ec7faebad), before
+commit "net: allocate tx queues in register_netdevice"
+netif_tx_stop_all_queues and related functions could be used between
+device allocation and registration but now only after registration.
+cxgb4 has such a call before registration and crashes now.  Move it
+after register_netdev.
+
+Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
+Cc: eric.dumazet@gmail.com
+Cc: sonnyrao@us.ibm.com
+Cc: Divy Le Ray <divy@chelsio.com>
+Cc: Dimitris Michailidis <dm@chelsio.com>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
 ---
-diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
-index 7dfa9a8..1ca3c0d 100644
---- a/arch/arm/common/gic.c
-+++ b/arch/arm/common/gic.c
-@@ -158,15 +158,19 @@ static int gic_set_cpu(unsigned int irq, const struct cpumask *mask_val)
- {
- 	void __iomem *reg = gic_dist_base(irq) + GIC_DIST_TARGET + (gic_irq(irq) & ~3);
- 	unsigned int shift = (irq % 4) * 8;
--	unsigned int cpu = cpumask_first(mask_val);
-+	unsigned int node = cpumask_first(mask_val);
-+	struct irq_desc *desc;
- 	u32 val;
+ drivers/net/cxgb3/cxgb3_main.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/cxgb3/cxgb3_main.c b/drivers/net/cxgb3/cxgb3_main.c
+index 4e3c123..96c70a5 100644
+--- a/drivers/net/cxgb3/cxgb3_main.c
++++ b/drivers/net/cxgb3/cxgb3_main.c
+@@ -3301,7 +3301,6 @@ static int __devinit init_one(struct pci_dev *pdev,
+ 		pi->rx_offload = T3_RX_CSUM | T3_LRO;
+ 		pi->port_id = i;
+ 		netif_carrier_off(netdev);
+-		netif_tx_stop_all_queues(netdev);
+ 		netdev->irq = pdev->irq;
+ 		netdev->mem_start = mmio_start;
+ 		netdev->mem_end = mmio_start + mmio_len - 1;
+@@ -3342,6 +3341,7 @@ static int __devinit init_one(struct pci_dev *pdev,
+ 				adapter->name = adapter->port[i]->name;
  
--	spin_lock(&irq_controller_lock);
--	irq_desc[irq].node = cpu;
--	val = readl(reg) & ~(0xff << shift);
--	val |= 1 << (cpu + shift);
--	writel(val, reg);
--	spin_unlock(&irq_controller_lock);
-+	desc = irq_to_desc(irq);
-+	if (desc) {
-+		spin_lock(&irq_controller_lock);
-+		desc->node = node;
-+		val = readl(reg) & ~(0xff << shift);
-+		val |= 1 << (node + shift);
-+		writel(val, reg);
-+		spin_unlock(&irq_controller_lock);
-+	}
- 
- 	return 0;
- }
+ 			__set_bit(i, &adapter->registered_device_map);
++			 netif_tx_stop_all_queues(adapter->port[i]);
+ 		}
+ 	}
+ 	if (!adapter->registered_device_map) {
+-- 
+1.7.1
+
