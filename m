@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757927Ab0J1Kog (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 06:44:36 -0400
-Received: from mailout1.go2.pl ([193.17.41.11]:32861 "EHLO mailout1.go2.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751355Ab0J1Kod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 06:44:33 -0400
-Message-ID: <4CC95406.4070103@o2.pl>
-Date: Thu, 28 Oct 2010 12:44:22 +0200
-From: Maciej Szmigiero <mhej@o2.pl>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.11) Gecko/20101024 Lightning/1.0b3pre Thunderbird/3.1.5
-MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-serial@vger.kernel.org,
+	id S1758078Ab0J1K61 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 06:58:27 -0400
+Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:36313 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756549Ab0J1K6Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 06:58:25 -0400
+Date: Thu, 28 Oct 2010 21:58:22 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [SERIAL]blacklist si3052 chip
-References: <4CC73085.2070304@o2.pl> <20101026224940.22b4ac93@lxorguk.ukuu.org.uk> <4CC74E04.7080407@o2.pl> <20101028012010.GC29960@kroah.com>
-In-Reply-To: <20101028012010.GC29960@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-O2-Trust: 2, 63
-X-O2-SPF: neutral
+Subject: Re: [PATCH 3/4] fs: Lock the inode LRU list separately
+Message-ID: <20101028105822.GD2715@dastard>
+References: <1288153384-8878-1-git-send-email-david@fromorbit.com>
+ <1288153384-8878-4-git-send-email-david@fromorbit.com>
+ <20101027090530.GB16443@infradead.org>
+ <20101027222444.GC2715@dastard>
+ <20101028102521.GA6141@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101028102521.GA6141@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 28.10.2010 03:20, Greg KH pisze:
-> On Tue, Oct 26, 2010 at 11:54:12PM +0200, Maciej Szmigiero wrote:
->> W dniu 26.10.2010 23:49, Alan Cox pisze:
->>> On Tue, 26 Oct 2010 21:48:21 +0200
->>> Maciej Szmigiero <mhej@o2.pl> wrote:
->>>
->>>> [SERIAL]blacklist si3052 chip
->>>>
->>>> Si3052-based softmodems aren't serial ports so don't bind serial driver to them.
->>>> Allows proper driver to bind to them.
->>>
->>> Which is the proper driver ?
->>>
->>> Alan
->>>
->>
->> Awaiting final review on the DAHDI reviewboard.
+On Thu, Oct 28, 2010 at 06:25:21AM -0400, Christoph Hellwig wrote:
+> > That doesn't happen because the counter is only modified when
+> > the inode is moved on/off the list and there are checks to avoid
+> > removing an inode that is not on the list. Also, the inode is not
+> > removed from the LRU in dispose_one_inode - it is always done when
+> > the inode is marked I_FREEING while the i_lock is held before
+> > calling dispose_one_inode().
+> > 
+> > Basically I wanted to remove the strange "inode is not on the LRU if
+> > it is dirty or under writeback" accounting checks and make the
+> > accounting symmetric with adding/removing the inodes from the LRU.
+> > These are protected by list_empty() checks, so should always end up
+> > with the correct accounting.
+> > 
+> > hence the only special case now is prune_icache() which already
+> > holds the inode_lru_lock() so can't call the helper. Besides, we
+> > don't need any checks there because we know the inode is on the LRU
+> > already....
 > 
-> What does this mean?
+> Indeed.  What about adding a
 > 
-> confused,
+> 	BUG_ON(!list_empty(&inode->i_lru));
 > 
-> greg k-h
-> 
+> to evict to ensure this invariant?
 
-DAHDI is the name for drivers for hardware ports of Asterisk open source PBX.
-This allows, for example, to route calls from Asterisk to PSTN (classic, analog telephone line) or ISDN.
-There is good explanation on http://www.voip-info.org/wiki/view/Zaptel (Zaptel is pre-2008 name for DAHDI).
+Yup, sounds like a good idea.
 
-Maciej Szmigiero
+Cheers,
 
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
