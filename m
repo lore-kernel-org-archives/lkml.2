@@ -1,97 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753685Ab0J1Sij (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 14:38:39 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58200 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759239Ab0J1Sif convert rfc822-to-8bit (ORCPT
+	id S1761403Ab0J1Slg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 14:41:36 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:26664 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757013Ab0J1Slb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 14:38:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=C9JP8otyuzFiG5A6uLD5WqZJnCoaiui2m7uF04h/heaEkk3yZdA5XB8MqIgiHeXxYg
-         hxbKyrw/+QrxgWa9+oBeDA2xcfeHSF7jTPKuX+EPO9cIob+3vTmfess+1TwAXv1/atwf
-         JYjy7zvq6F9U+D/H5gc0VjQiiHK7rgB5ctk/A=
+	Thu, 28 Oct 2010 14:41:31 -0400
+Message-ID: <4CC9C386.6010503@oracle.com>
+Date: Thu, 28 Oct 2010 11:40:06 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-In-Reply-To: <20101028112535.442f47a7.akpm@linux-foundation.org>
-References: <alpine.DEB.2.00.1010282004390.31018@ayla.of.borg>
-	<20101028112535.442f47a7.akpm@linux-foundation.org>
-Date: Thu, 28 Oct 2010 20:38:33 +0200
-X-Google-Sender-Auth: V-bifnk12kIOhsdQ48swHNdBfPc
-Message-ID: <AANLkTimyNXV9K7hfz9CzmHa8CYMYdhi+zOgZzAT+CesQ@mail.gmail.com>
-Subject: Re: [PATCH] nfs4: The difference of 2 pointers is size_t
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Benny Halevy <bhalevy@panasas.com>, linux-nfs@vger.kernel.org,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Charles Manning <manningc2@actrix.gen.nz>
+CC: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: How do I add yaffs file system to mainline?
+References: <201010290455.02390.manningc2@actrix.gen.nz> <201010290655.39490.manningc2@actrix.gen.nz> <20101028180845.GA2573@kroah.com> <201010290738.05632.manningc2@actrix.gen.nz>
+In-Reply-To: <201010290738.05632.manningc2@actrix.gen.nz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 28, 2010 at 20:25, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Thu, 28 Oct 2010 20:06:19 +0200 (CEST)
-> Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->
->> On m68k, which is 32-bit:
+On 10/28/10 11:38, Charles Manning wrote:
+> On Friday 29 October 2010 07:08:45 Greg KH wrote:
+>> On Fri, Oct 29, 2010 at 06:55:39AM +1300, Charles Manning wrote:
+>>> On Friday 29 October 2010 06:44:32 Greg KH wrote:
+>>>> On Thu, Oct 28, 2010 at 10:26:41AM -0700, Randy Dunlap wrote:
+>>>>> On Fri, 29 Oct 2010 04:55:02 +1300 Charles Manning wrote:
+>>>>>> YAFFS has been used for many years as a third-party patch-in.
+>>>>>>
+>>>>>> I have recently been through the exercise of changing all the
+>>>>>> symbols to be more kernel friendly with the intention of mainlining
+>>>>>> into the linux tree.
+>>>>>>
+>>>>>> The code is in git at
+>>>>>> http://github.com/cdhmanning/linux-yaffs-integration/
+>>>>>
+>>>>> It's difficult to review & comment on a git tree.
+>>>>> We prefer patches via email for review.
+>>>>>
+>>>>>> Thanks to CELF and Google for sponsoring the effort so far.
+>>>>>>
+>>>>>> What still needs to be done to mainline this?
+>>>>>> Who do I need to approach?
+>>>>>
+>>>>> Either ask Stephen Rothwell to add the git tree to the linux-next
+>>>>> daily tree or ask Greg KH to add it to the drivers/staging/ area.
+>>>>
+>>>> I'd be glad to add the code to the staging tree, but to do so, do you
+>>>> have a list of things that are left to do in order to get it properly
+>>>> merged to the "real" portion of the kernel?
+>>>
+>>> We're getting into a Catch-22 discussion here... Until I fully understand
+>>> what is needed, I can't really say what needs to be done :-).
+>>>
+>>> At this stage the code works, is integrated into, and compiles cleanly
+>>> against Linus' 2.6 git. My git is based on Linus' 2.6 as of yesterday.
+>>>
+>>> I have done symbol cleaning changing the old yaffs names of the form
+>>> yaffs_ScanBackwards() to yaffs_scan_backward() etc.
+>>>
+>>> What I really need is someone to look at what's there and tell me if
+>>> there are still style issues etc that need changing.
+>>>
+>>> I know there is a style guide etc, but when we're talking about
+>>> processing 15k loc then some of those rules might be slightly bendable.
 >>
->> fs/nfs/nfs4proc.c: In function ___nfs41_sequence_done___:
->> fs/nfs/nfs4proc.c:432: warning: format ___%ld___ expects type ___long int___, but argument 3 has type ___int___
->> fs/nfs/nfs4proc.c: In function ___nfs4_setup_sequence___:
->> fs/nfs/nfs4proc.c:576: warning: format ___%ld___ expects type ___long int___, but argument 5 has type ___int___
+>> Not really.
 >>
->> On 32-bit, size_t is int; on 64-bit, size_t is long.
+>> Have you run it through sparse and scripts/checkpatch.pl?  If not,
+>> please do so and resolve all of the issues that they bring up.
 >>
->> Introduced by commit dfb4f309830359352539919f23accc59a20a3758 ("NFSv4.1: keep
->> seq_res.sr_slot as pointer rather than an index")
+>> Then break up the filesystem into reviewable patches and send them to
+>> the linux-fsdevel list for review.
 >>
->> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
->> ---
->>  fs/nfs/nfs4proc.c |    4 ++--
->>  1 files changed, 2 insertions(+), 2 deletions(-)
+>> Again, read Documentation/SubmittingPatches for the details on how to
+>> properly do this, it is described in very good detail :)
 >>
->> diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
->> index 32c8758..80229dc 100644
->> --- a/fs/nfs/nfs4proc.c
->> +++ b/fs/nfs/nfs4proc.c
->> @@ -429,7 +429,7 @@ static int nfs41_sequence_done(struct rpc_task *task, struct nfs4_sequence_res *
->>                * returned NFS4ERR_DELAY as per Section 2.10.6.2
->>                * of RFC5661.
->>                */
->> -             dprintk("%s: slot=%ld seq=%d: Operation in progress\n",
->> +             dprintk("%s: slot=%zd seq=%d: Operation in progress\n",
->>                       __func__,
->>                       res->sr_slot - res->sr_session->fc_slot_table.slots,
->>                       res->sr_slot->seq_nr);
->> @@ -573,7 +573,7 @@ int nfs4_setup_sequence(const struct nfs_server *server,
->>               goto out;
->>       }
+>>>> And if so, what is preventing you from doing those tasks right now to
+>>>> get the code into the .38 kernel merge?
+>>>
+>>> My biggest problem is not fully understanding the process.
 >>
->> -     dprintk("--> %s clp %p session %p sr_slot %ld\n",
->> +     dprintk("--> %s clp %p session %p sr_slot %zd\n",
->>               __func__, session->clp, session, res->sr_slot ?
->>                       res->sr_slot - session->fc_slot_table.slots : -1);
->>
->
-> I think it should formally be %t, for a ptrdiff_t.
+>> The process is very well documented, have you read the documentation?
+>> If so, what part is lacking?
+> 
+> Thanks to all for the input. I'll be re-reading the docs and running the 
+> various scripts etc. That will probably keep me busy for a bit.
+> 
+> The one thing I'm still blurry on is whether it is OK to send a whole fs of 
+> 15kloc as a single patch to all. SubmitPatch seems to be written from the 
+> perspective of writing smaller patches.I guess checkpatch.pl will tell 
+> me :-).
 
-You're correct.
+lkml has a single email limit of 400 KB IIRC.  netdev list is also large,
+but fsdevel may not be quite that large.
 
-I didn't know we "did" %t. I almost have enough fingers and toes to
-count its users ;-)
+How big is the patch (in KB, not lines of code)?
 
-Gr{oetje,eeting}s,
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
