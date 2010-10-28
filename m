@@ -1,175 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760571Ab0J1WOF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 18:14:05 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:24822 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516Ab0J1WOB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 18:14:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-operating-system
-         :user-agent;
-        b=ybbnzT0sWabcZOPQ6f2bY+N2Nv1t2WlCEulZ5ST4CW3TsbO3TQNB7bq1bjPzz9mCm3
-         ND8qFxhwk28b9Dnc+HSA==
-Date: Thu, 28 Oct 2010 15:13:38 -0700
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, wad@chromium.org, olofj@chromium.org,
-        hughd@chromium.org
-Subject: Re: [PATCH] RFC: vmscan: add min_filelist_kbytes sysctl for
- protecting the working set
-Message-ID: <20101028221338.GA26494@google.com>
-References: <20101028191523.GA14972@google.com>
- <4CC9EB84.9050406@redhat.com>
+	id S1756830Ab0J1WUF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 18:20:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48697 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751725Ab0J1WT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 18:19:59 -0400
+Date: Fri, 29 Oct 2010 00:19:56 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: alexander.stein@informatik.tu-chemnitz.de, andrea.gelmini@gelma.net,
+        bebarino@gmail.com, gitster@pobox.com, justinmattock@gmail.com,
+        kyle@redhat.com, lacombar@gmail.com, mmarek@suse.cz, naota@elisp.net,
+        nir.tzachar@gmail.com, will.newton@gmail.com,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] kconfig changes for 2.6.37-rc1
+Message-ID: <20101028221956.GA30585@sepie.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CC9EB84.9050406@redhat.com>
-X-Operating-System: Linux/2.6.32-gg228-generic (x86_64)
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rik van Riel (riel@redhat.com) wrote:
-> On 10/28/2010 03:15 PM, Mandeep Singh Baines wrote:
-> 
-> >+/*
-> >+ * Check low watermark used to prevent fscache thrashing during low memory.
-> >+ */
-> >+static int file_is_low(struct zone *zone, struct scan_control *sc)
-> >+{
-> >+	unsigned long pages_min, active, inactive;
-> >+
-> >+	if (!scanning_global_lru(sc))
-> >+		return false;
-> >+
-> >+	pages_min = min_filelist_kbytes>>  (PAGE_SHIFT - 10);
-> >+	active = zone_page_state(zone, NR_ACTIVE_FILE);
-> >+	inactive = zone_page_state(zone, NR_INACTIVE_FILE);
-> >+
-> >+	return ((active + inactive)<  pages_min);
-> >+}
-> 
-> This is problematic.
-> 
+Hi Linus,
 
-Yeah, just sending this out as an RFC for now in order to draw attention
-to the issue. But the patch does solve our problem really well and would
-probably help out for similar applications.
+this is the kconfig stuff for 2.6.37-rc1:
+* kconfig portability fixes and generalization
+* xconfig ported to Qt4
+* nconfig search redesigned
+* kconfig warnings enabled again, these were disabled late in the 2.6.36
+  rc phase, which is why the shortlog is since 2.6.36-rc8 (I had to
+  merge the rc-fixes branch)
+* other small fixes
 
-> It is quite possible for a NUMA system to have one zone
-> legitimately low on page cache (because all the binaries
-> and libraries got paged in on another NUMA node), without
-> the system being anywhere near out of memory.
-> 
-> This patch looks like it could cause a false OOM kill
-> in that scenario.
-> 
-> At the very minimum, you'd have to check that the system
-> is low on page cache globally, not just locally.
-> 
-> You do point out a real problem though, and it would be
-> nice to find a generic solution to it...
-> 
+Note:  71d8066 (kbuild: fix oldnoconfig to do the right thing) made it
+already into 2.6.36 as e9203c9, but it was originally meant for this
+merge window and I did not want to rebase the branch. Please let me know
+if that's a problem.
 
-Here's another patch I was playing with that helped but wasn't quite
-as bulletproof or as easy to reason about as min_filelist_kbytes.
+Michal
 
----
+The following changes since commit cd07202cc8262e1669edff0d97715f3dd9260917:
 
-[PATCH] vmscan: add a configurable inactive_file_ratio
+  Linux 2.6.36-rc8 (2010-10-14 16:26:43 -0700)
 
-This patch adds a new tuning option which can control how aggressively
-the working set is protected. By aggressively protecting the working set,
-one sees less page faults and more responsiveness on low memory netbook
-systems.
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git kconfig
 
-In commit 56e49d21, "vmscan: evict use-once pages first", Rik Van Riel,
-added an inactive_file_is_low method which would protect the working
-set by only scanning the file_active_list when there were more active
-pages than inactive. This patch makes the ratio configurable via a
-sysctl. The ratio controls how aggressively we protect the working
-set and indirectly controls the working set time constant: the period
-of time over which we examine whats in the working set.
+Alexander Stein (2):
+      kconfig qconf: port to QT4
+      Fix QT4 moc, cflags libs detection on dual QT3/Qt4 systems
 
-Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
----
- include/linux/mm.h |    2 ++
- kernel/sysctl.c    |   12 ++++++++++++
- mm/vmscan.c        |    7 ++++++-
- 3 files changed, 20 insertions(+), 1 deletions(-)
+Andrea Gelmini (1):
+      README: cite nconfig
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 74949fb..6f6db8e 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -36,6 +36,8 @@ extern int sysctl_legacy_va_layout;
- #define sysctl_legacy_va_layout 0
- #endif
- 
-+extern int inactive_file_ratio;
-+
- #include <asm/page.h>
- #include <asm/pgtable.h>
- #include <asm/processor.h>
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 3a45c22..1fe3a81 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1320,6 +1320,18 @@ static struct ctl_table vm_table[] = {
- 		.extra2		= &one,
- 	},
- #endif
-+	{
-+		.ctl_name	= CTL_UNNUMBERED,
-+		.procname	= "inactive_file_ratio",
-+		.data		= &inactive_file_ratio,
-+		.maxlen		= sizeof(inactive_file_ratio),
-+		.mode		= 0644,
-+		.proc_handler	= &proc_dointvec_minmax,
-+		.strategy	= &sysctl_intvec,
-+		.extra1		= &zero,
-+		.extra2		= &one_hundred,
-+	},
-+
- 
- /*
-  * NOTE: do not add new entries to this table unless you have read
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 0984dee..cdae972 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -130,6 +130,11 @@ struct scan_control {
- int vm_swappiness = 60;
- long vm_total_pages;	/* The total number of pages which the VM controls */
- 
-+/*
-+ * Only start shrinking active file list when inactive is below this percentage.
-+ */
-+int inactive_file_ratio = 50;
-+
- static LIST_HEAD(shrinker_list);
- static DECLARE_RWSEM(shrinker_rwsem);
- 
-@@ -1556,7 +1561,7 @@ static int inactive_file_is_low_global(struct zone *zone)
- 	active = zone_page_state(zone, NR_ACTIVE_FILE);
- 	inactive = zone_page_state(zone, NR_INACTIVE_FILE);
- 
--	return (active > inactive);
-+	return ((inactive * 100)/(inactive + active) < inactive_file_ratio);
- }
- 
- /**
--- 
-1.7.3.1
+Arnaud Lacombe (22):
+      kbuild: confdata.c explicitly reference errno, thus need <errno.h>
+      kbuild: don't include `check-lxdialog' ldflags in global HOST_LOADLIBES
+      kbuild: fix typo
+      kbuild: don't overwrite HOST_EXTRACFLAGS
+      kbuild: use getopt_long(), not its _only() variant
+      kconfig: replace a `switch()' statement by a more flexible `if()' statement
+      kconfig: rephrase help text not to mention the internal prefix
+      kconfig: allow build-time definition of the internal config prefix
+      kconfig: rephrase help texts/comments not to include the package name
+      kconfig: allow PACKAGE to be defined on the compiler's command-line
+      kconfig: implement the `mainmenu' directive
+      kconfig: regen parser
+      kconfig: add a symbol string expansion helper
+      kconfig: expand by default the rootmenu's prompt
+      kconfig: delay gconf window initialization
+      kconfig: replace KERNELVERSION usage by the mainmenu's prompt
+      kconfig: don't emit warning upon rootmenu's prompt redefinition
+      kconfig: constify file name
+      kconfig: use the file's name of sourced file
+      kconfig: expand file names
+      kbuild: migrate all arch to the kconfig mainmenu upgrade
+      kbuild: convert `arch/tile' to the kconfig mainmenu upgrade
 
+Junio C Hamano (1):
+      kconfig: fix menuconfig on debian lenny
+
+Justin P. Mattock (1):
+      scripts/kconfig/gconf.glade Update broken web addresses.
+
+Kyle McMartin (1):
+      kbuild: fix oldnoconfig to do the right thing
+
+Michal Marek (9):
+      kconfig: Allow frontends to display messages themselves
+      xconfig: Change the titlebar if using Qt3
+      kconfig: Simplify Makefile for xconfig
+      Merge branch 'kbuild/kconfig/kbuild-generic-v7' of http://github.com/lacombar/linux-2.6 into kbuild/kconfig
+      kconfig: Propagate const
+      kconfig: Fix realloc usage()
+      Merge branch 'kbuild/rc-fixes' into kbuild/kconfig
+      Revert "kconfig: Temporarily disable dependency warnings"
+      Merge branch 'message-callback' into kbuild/kconfig
+
+Naohiro Aota (1):
+      kconfig: Don't go out from read config loop when you read new symbol
+
+Nir Tzachar (1):
+      nconfig: add search support
+
+Stephen Boyd (1):
+      nconfig: Fix help for choice menus
+
+Will Newton (1):
+      kconfig: Use PATH_MAX instead of 128 for path buffer sizes.
+
+ Documentation/kbuild/kconfig-language.txt  |    3 +-
+ Kconfig                                    |   11 +
+ README                                     |    1 +
+ arch/alpha/Kconfig                         |    4 -
+ arch/arm/Kconfig                           |    7 -
+ arch/avr32/Kconfig                         |    7 -
+ arch/blackfin/Kconfig                      |    7 -
+ arch/cris/Kconfig                          |    7 -
+ arch/frv/Kconfig                           |    6 -
+ arch/h8300/Kconfig                         |    7 -
+ arch/ia64/Kconfig                          |    7 -
+ arch/m32r/Kconfig                          |    7 -
+ arch/m68k/Kconfig                          |    6 -
+ arch/m68knommu/Kconfig                     |    7 -
+ arch/microblaze/Kconfig                    |    5 -
+ arch/mips/Kconfig                          |    2 -
+ arch/mn10300/Kconfig                       |    9 -
+ arch/parisc/Kconfig                        |    7 -
+ arch/powerpc/Kconfig                       |    6 -
+ arch/s390/Kconfig                          |    7 -
+ arch/score/Kconfig                         |    5 -
+ arch/sh/Kconfig                            |    7 -
+ arch/sparc/Kconfig                         |    6 -
+ arch/tile/Kconfig                          |    2 -
+ arch/um/Kconfig.common                     |    2 -
+ arch/x86/Kconfig                           |    3 -
+ arch/xtensa/Kconfig                        |    5 -
+ scripts/kconfig/Makefile                   |   87 +++--
+ scripts/kconfig/conf.c                     |   15 +-
+ scripts/kconfig/confdata.c                 |  126 ++++---
+ scripts/kconfig/expr.h                     |    2 +-
+ scripts/kconfig/gconf.c                    |   20 +-
+ scripts/kconfig/gconf.glade                |    1 -
+ scripts/kconfig/kxgettext.c                |   15 +-
+ scripts/kconfig/lex.zconf.c_shipped        |    7 +-
+ scripts/kconfig/lkc.h                      |    8 +-
+ scripts/kconfig/lkc_proto.h                |    3 +
+ scripts/kconfig/lxdialog/check-lxdialog.sh |    2 +
+ scripts/kconfig/mconf.c                    |   64 ++--
+ scripts/kconfig/menu.c                     |    6 +-
+ scripts/kconfig/nconf.c                    |  487 ++++++++++++-------------
+ scripts/kconfig/nconf.gui.c                |   22 +-
+ scripts/kconfig/nconf.h                    |    3 +-
+ scripts/kconfig/qconf.cc                   |  174 +++++----
+ scripts/kconfig/qconf.h                    |   76 ++--
+ scripts/kconfig/symbol.c                   |   51 +++-
+ scripts/kconfig/util.c                     |    7 +-
+ scripts/kconfig/zconf.l                    |    7 +-
+ scripts/kconfig/zconf.tab.c_shipped        |  547 ++++++++++++++--------------
+ scripts/kconfig/zconf.y                    |   18 +-
+ 50 files changed, 946 insertions(+), 955 deletions(-)
+ create mode 100644 Kconfig
