@@ -1,42 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759749Ab0J1VvD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 17:51:03 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:45337 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754541Ab0J1Vu6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 17:50:58 -0400
-Date: Thu, 28 Oct 2010 17:50:46 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 09/10] vmscan: Do not writeback filesystem pages in
- direct reclaim
-Message-ID: <20101028215046.GA15586@infradead.org>
-References: <1283770053-18833-1-git-send-email-mel@csn.ul.ie>
- <1283770053-18833-10-git-send-email-mel@csn.ul.ie>
+	id S1760203Ab0J1VzI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 17:55:08 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57359 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759953Ab0J1VzE convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 17:55:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1283770053-18833-10-git-send-email-mel@csn.ul.ie>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <7veiba9ev2.fsf@alter.siamese.dyndns.org>
+References: <E1PBKT9-0004Uk-Sm@tytso-glaptop> <20101028075631.GA7690@elte.hu>
+ <AANLkTi=8SbOZizWpxLg=Bgp7atdgr8MsR6tnRDYr1+eW@mail.gmail.com>
+ <20101028163854.GA15450@elte.hu> <AANLkTin62vAwJxcsrFk6Yn7Q6tzr-D=EmKKwPazuAJ11@mail.gmail.com>
+ <7veiba9ev2.fsf@alter.siamese.dyndns.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 28 Oct 2010 14:50:47 -0700
+Message-ID: <AANLkTi=OoVpO-d-oT9o8g4V75uYZ=RBCmQ_Y9kGDwPnN@mail.gmail.com>
+Subject: Re: -tip: origin tree build failure
+To: Junio C Hamano <gitster@pobox.com>
+Cc: Ingo Molnar <mingo@elte.hu>, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks like this once again didn't get merged for 2.6.37.  Any reason
-for that?
+On Thu, Oct 28, 2010 at 2:39 PM, Junio C Hamano <gitster@pobox.com> wrote:
+>
+> By the way, I noticed that you started sending patches as attachments
+> lately.  What made you change your mind?
 
+Nothing. I still hate them. But the tools I use (web interface to
+gmail) are broken in this respect. There's no way to include a file,
+or specify that an attachement should be inlined. And don't tell me
+about IMAP - if I wanted to use IMAP, I'd be living in a padded cell.
+
+I have a deep love/hate relationship with gmail. Many things make it
+wonderful, and I'm not regretting the switch (which was initially just
+a trial while traveling).
+
+But it has two issues that I absolutely detest:
+ (a) the idiotic inability to inline attachements and
+ (b) the android gmail app is a total piece of shit and cannot even do
+simple text messages. Crazy.
+(there are other small annoyances, but they are smallish in comparison
+to the above big honking bugs)
+
+Does anybody know anybody who works on the google mail clients and
+could raise these as bugs inside google?
+
+                             Linus
