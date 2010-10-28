@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934280Ab0J1UEi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 16:04:38 -0400
-Received: from king.tilera.com ([72.1.168.226]:23087 "EHLO king.tilera.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761329Ab0J1UDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 16:03:32 -0400
-Message-Id: <201010282003.o9SK3Sq9006823@farm-0012.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Thu, 28 Oct 2010 15:03:30 -0400
-Subject: [PATCH] arch/tile: correct double syscall restart for nested signals
-References: <20100923221141.GK19804@ZenIV.linux.org.uk> <9lYpY1#WLHA.1516@exchange1.tad.internal.tilera.com> <4CC89352.7020808@tilera.com> <20101027213745.GI19804@ZenIV.linux.org.uk>
-In-Reply-To: <20101027213745.GI19804@ZenIV.linux.org.uk>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Arnd Bergmann <arnd@arndb.de>, <linux-arch@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 28 Oct 2010 20:03:29.0422 (UTC) FILETIME=[308662E0:01CB76DB]
+	id S934294Ab0J1UE6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 16:04:58 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:49481 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932325Ab0J1UEF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 16:04:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=BFsBfbxXBxaIsR0CGrdrzlodJJP6Gz3xjuJmTbPxAu34OGEpOsW6ZO14YeEqpavBTJ
+         hVfdquMzAtf0/qqeheInOJr1+HnCHZKRY6d7PFd16UUAnqW3WZEGyNIUi6HzYpTrNq0B
+         JDFM6Pc1+NVtPmy9nuA8V6KIs2CnMLgghfVWs=
+From: Vasiliy Kulikov <segooon@gmail.com>
+To: kernel-janitors@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Tejun Heo <tj@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/8] staging: dream: fix information leak to userland
+Date: Fri, 29 Oct 2010 00:01:47 +0400
+Message-Id: <1288296107-19068-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change is modelled on similar fixes for other architectures.
-The pt_regs "faultnum" member is set to the trap (fault) number that
-caused us to enter the kernel, and is INT_SWINT_1 for the syscall software
-interrupt.  We already supported a pseudo value, INT_SWINT_1_SIGRETURN,
-that we used for the rt_sigreturn syscall; it avoided the case where
-one signal was handled, then we "tail-called" to another handler.
+Structure msm_audio_stats is copied to userland with some fields unitialized.
+It leads to leaking of contents of kernel stack memory.
+Also struct msm_audio_config has field "unused" of type array of 3 elements,
+not 4.  Instead of this, initialize field "type".
 
-This change avoids the similar case where we start to call one handler,
-then are preempted into another handler when we start trying to run
-the first handler.  We clear ->faultnum after calling handle_signal(),
-and to be paranoid also in the case where there was no signal to deliver.
-
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
 ---
- arch/tile/kernel/signal.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+ drivers/staging/dream/qdsp5/audio_evrc.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/arch/tile/kernel/signal.c b/arch/tile/kernel/signal.c
-index fb28e85..704ce0b 100644
---- a/arch/tile/kernel/signal.c
-+++ b/arch/tile/kernel/signal.c
-@@ -330,7 +330,7 @@ void do_signal(struct pt_regs *regs)
- 			current_thread_info()->status &= ~TS_RESTORE_SIGMASK;
- 		}
+diff --git a/drivers/staging/dream/qdsp5/audio_evrc.c b/drivers/staging/dream/qdsp5/audio_evrc.c
+index 24a8926..b1f9233 100644
+--- a/drivers/staging/dream/qdsp5/audio_evrc.c
++++ b/drivers/staging/dream/qdsp5/audio_evrc.c
+@@ -481,6 +481,7 @@ static long audevrc_ioctl(struct file *file, unsigned int cmd,
  
--		return;
-+		goto done;
- 	}
- 
- 	/* Did we come from a system call? */
-@@ -358,4 +358,8 @@ void do_signal(struct pt_regs *regs)
- 		current_thread_info()->status &= ~TS_RESTORE_SIGMASK;
- 		sigprocmask(SIG_SETMASK, &current->saved_sigmask, NULL);
- 	}
-+
-+done:
-+	/* Avoid double syscall restart if there are nested signals. */
-+	regs->faultnum = INT_SWINT_1_SIGRETURN;
- }
+ 	if (cmd == AUDIO_GET_STATS) {
+ 		struct msm_audio_stats stats;
++		memset(&stats, 0, sizeof(stats));
+ 		stats.byte_count = audpp_avsync_byte_count(audio->dec_id);
+ 		stats.sample_count = audpp_avsync_sample_count(audio->dec_id);
+ 		if (copy_to_user((void *)arg, &stats, sizeof(stats)))
+@@ -515,10 +516,10 @@ static long audevrc_ioctl(struct file *file, unsigned int cmd,
+ 			config.buffer_count = 2;
+ 			config.sample_rate = 8000;
+ 			config.channel_count = 1;
++			config.type = 0;
+ 			config.unused[0] = 0;
+ 			config.unused[1] = 0;
+ 			config.unused[2] = 0;
+-			config.unused[3] = 0;
+ 			if (copy_to_user((void *)arg, &config, sizeof(config)))
+ 				rc = -EFAULT;
+ 			else
 -- 
-1.6.5.2
+1.7.0.4
 
