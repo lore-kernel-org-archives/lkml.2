@@ -1,46 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933318Ab0J1IdS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 04:33:18 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:63995 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933065Ab0J1IdQ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 04:33:16 -0400
-Subject: Re: kmemleak disabled itself in 2.6.36
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Toralf =?ISO-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
-Cc: linux-kernel@vger.kernel.org, "Luis R. Rodriguez" <lrodriguez@atheros.com>
-In-Reply-To: <201010272112.59520.toralf.foerster@gmx.de>
-References: <201010272112.59520.toralf.foerster@gmx.de>
-Content-Type: text/plain; charset="UTF-8"
-Organization: ARM Limited
-Date: Thu, 28 Oct 2010 09:33:09 +0100
-Message-ID: <1288254789.10238.5.camel@e102109-lin.cambridge.arm.com>
+	id S933379Ab0J1Ifw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 04:35:52 -0400
+Received: from smtp101.sbc.mail.mud.yahoo.com ([68.142.198.200]:24037 "HELO
+	smtp101.sbc.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933307Ab0J1Ifs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 04:35:48 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: dZCEtasVM1kbYPPBF4M5GZc22jfPTe0HngZ3VFBaQNjhTcM
+ ra3QmO9cUX3zmldrYk8xirPwFfPtEr2klA7A0pvKo5CqjCibvvG8uwuz28Zx
+ DoByXDYWBoXjAL.4THvNDAZ8iyzcPQP43Df3W8gmDpZSf.ZWU4w3dKhUmgYT
+ QvS1lbUxtXjBXC3IHyJshRTkrTGIrxXXuVpH.qWO6DYhod5KitBca3aXv36K
+ ODASDM0peu7MWkui9Ec78lrZAPOGM4nkjySW4jwn1b3TCWb3E
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [PATCH v8] scsi: Push down host_lock into legacy LLD
+	SHT->queuecommand()
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Jeff Garzik <jeff@garzik.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
+        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>
+In-Reply-To: <1288254332.5169.239.camel@haakon2.linux-iscsi.org>
+References: <1288249268-17734-1-git-send-email-nab@linux-iscsi.org>
+	 <4CC9329F.40303@garzik.org>
+	 <1288254332.5169.239.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain
+Date: Thu, 28 Oct 2010 01:30:50 -0700
+Message-Id: <1288254650.5169.242.camel@haakon2.linux-iscsi.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 8BIT
-X-OriginalArrivalTime: 28 Oct 2010 08:33:09.0403 (UTC) FILETIME=[C0450EB0:01CB767A]
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-27 at 20:12 +0100, Toralf Förster wrote:
-> I'm unsure whether this happens due to a
-> $> sudo su -c "echo clear > /sys/kernel/debug/kmemleak"
-> or while regular scanning, but anyway seems not to be normal, or ?
+     A. On Thu, 2010-10-28 at 01:25 -0700, Nicholas A. Bellinger wrote:
+> On Thu, 2010-10-28 at 04:21 -0400, Jeff Garzik wrote:
+> > On 10/28/2010 03:01 AM, Nicholas A. Bellinger wrote:
+> > > Following yet another round of convincing discussions from jgarzik and jejb
+> > > this afternoon, this RFCv8 patch series follows their recommendation and does a
+> > > SCSI subsystem wide 'push down' of struct Scsi_Host->host_lock usage from
+> > > scsi_dispatch_cmd() into legacy LLDs that require (or we are not sure about)
+> > > the host_lock held while SHT->queuecommand() I/O dispatch occurs.
+> > 
+> > Great!
+> > 
+> > 
+> > > diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+> > > index d050e07..672a8c9 100644
+> > > --- a/drivers/ata/libata-scsi.c
+> > > +++ b/drivers/ata/libata-scsi.c
+> > > @@ -3174,7 +3174,7 @@ static inline int __ata_scsi_queuecmd(struct scsi_cmnd *scmd,
+> > >    *	ATA and ATAPI devices appearing as SCSI devices.
+> > >    *
+> > >    *	LOCKING:
+> > > - *	Releases scsi-layer-held lock, and obtains host lock.
+> > > + *	None
+> > >    *
+> > >    *	RETURNS:
+> > >    *	Return value from __ata_scsi_queuecmd() if @cmd can be queued,
+> > > @@ -3190,7 +3190,6 @@ int ata_scsi_queuecmd(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *))
+> > >
+> > >   	ap = ata_shost_to_port(shost);
+> > >
+> > > -	spin_unlock(shost->host_lock);
+> > >   	spin_lock(ap->lock);
+> > >
+> > >   	ata_scsi_dump_cdb(ap, cmd);
+> > > @@ -3204,7 +3203,6 @@ int ata_scsi_queuecmd(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *))
+> > >   	}
+> > >
+> > >   	spin_unlock(ap->lock);
+> > > -	spin_lock(shost->host_lock);
+> > >   	return rc;
+> > >   }
+> > >
+> > 
+> > This is not an equivalent transformation, because we just lost _irqsave 
+> > and _irqstore.
+> > 
+> > You might want to double-check to ensure this problem is not replicated 
+> > in other non-legacy drivers.
 > 
-> 2010-10-27T20:42:21.697+02:00 n22 kernel: flush-254:0: page allocation failure. order:0, mode:0x0
-[...]
-> 2010-10-27T20:42:21.699+02:00 n22 kernel: kmemleak: Cannot allocate a kmemleak_object structure
-> 2010-10-27T20:42:21.699+02:00 n22 kernel: Pid: 15475, comm: flush-254:0 Not tainted 2.6.36 #2
-[...]
-> 2010-10-27T20:42:21.700+02:00 n22 kernel: kmemleak: Kernel memory leak detector disabled
+> Understood, so for libata this will need to turn into the equivilent
+> spin_lock_irqsave() + spin_unlock_irqrestore() for ap->lock, right..?
+> 
+> So apart from libata that leaves the following LLDs running in host_lock
+> less mode:
+> 
+> drivers/infiniband/ulp/iser/iscsi_iser.c: Running in host_lock less mode (libiscsi)
+> drivers/message/fusion/mptscsih.c: Running in host_lock less mode (internal)
+> drivers/message/fusion/mptfc.c: Running in host_lock less mode (internal)
+> drivers/message/fusion/mptsas.c: Running in host_lock less mode (internal)
+> drivers/message/fusion/mptspi.c: Running in host_lock less mode (internal)
+> drivers/scsi/aic94xx/aic94xx_init.c: Running in host_lock less mode (libsas)
+> drivers/scsi/be2iscsi/be_main.c: Running in host_lock less mode (libiscsi)
+> drivers/scsi/bnx2i/bnx2i_iscsi.c: Running in host_lock less mode (libiscsi)
+> drivers/scsi/fnic/fnic_main.c: Running in host_lock less mode (internal)
+> drivers/scsi/iscsi_tcp.c: Running in host_lock less mode (libiscsi)
+> drivers/scsi/lpfc/lpfc_scsi.c: Running in host_lock less mode (internal)
+> drivers/scsi/mpt2sas/mpt2sas_scsih.c: Running in host_lock less mode (internal)
+> drivers/scsi/mvsas/mv_init.c: Running in host_lock less mode (libsas)
+> drivers/scsi/pm8001/pm8001_init.c: Running in host_lock less mode (libsas)
+> drivers/scsi/qla2xxx/qla_os.c: Running in host_lock less mode (internal)
+> drivers/scsi/qla4xxx/ql4_os.c: Running in host_lock less mode (internal)
+> drivers/scsi/scsi_debug.c: Running in host_lock less mode (internal)
+> drivers/scsi/cxgbi/cxgb3i/cxgb3i.c: Running in host_lock less mode (libiscsi)
+> drivers/scsi/cxgbi/cxgb4i/cxgb4i.c: Running in host_lock less mode (libiscsi)
+> 
+> I will take another look and make sure any LLD specific locks that are
+> obtained in SHT->queuecommand() from the host_lock-less drivers are
+> assuming they need to call internal locks with _irqsave + _irqrestore
+> held and include these into lio-4.0.git/host_lock-less-for-37-v9.
+> 
 
-Are you running out of memory on your system? Kmemleak tried to allocate
-a structure but the slab allocator failed to get page. Kmemleak disables
-itself in such situations but the problem is somewhere else (not enough
-memory?).
+Here is the proposed patch for libata:
 
-Catalin
+diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+index d050e07..55a24bb 100644
+--- a/drivers/ata/libata-scsi.c
++++ b/drivers/ata/libata-scsi.c
+@@ -3174,7 +3174,7 @@ static inline int __ata_scsi_queuecmd(struct scsi_cmnd *scmd,
+  *     ATA and ATAPI devices appearing as SCSI devices.
+  *
+  *     LOCKING:
+- *     Releases scsi-layer-held lock, and obtains host lock.
++ *     None
+  *
+  *     RETURNS:
+  *     Return value from __ata_scsi_queuecmd() if @cmd can be queued,
+@@ -3186,12 +3186,12 @@ int ata_scsi_queuecmd(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *))
+        struct ata_device *dev;
+        struct scsi_device *scsidev = cmd->device;
+        struct Scsi_Host *shost = scsidev->host;
++       unsigned long flags;
+        int rc = 0;
+
+        ap = ata_shost_to_port(shost);
+
+-       spin_unlock(shost->host_lock);
+-       spin_lock(ap->lock);
++       spin_lock_irqsave(ap->lock, flags);
+
+        ata_scsi_dump_cdb(ap, cmd);
+
+@@ -3203,8 +3203,7 @@ int ata_scsi_queuecmd(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *))
+                done(cmd);
+        }
+
+-       spin_unlock(ap->lock);
+-       spin_lock(shost->host_lock);
++       spin_unlock_irqrestore(ap->lock, flags);
+        return rc;
+ }
 
