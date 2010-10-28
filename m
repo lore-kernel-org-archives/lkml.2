@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934624Ab0J1Vem (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 17:34:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5261 "EHLO mx1.redhat.com"
+	id S934608Ab0J1VfC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 17:35:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24132 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760301Ab0J1VdZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 17:33:25 -0400
+	id S934603Ab0J1VdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 17:33:17 -0400
 From: Eric Paris <eparis@redhat.com>
-Subject: [PATCH 18/20] fanotify: Fix FAN_CLOSE comments
+Subject: [PATCH 17/20] fanotify: do not recalculate the mask if the ignored
+	mask changed
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
 Cc: agruen@suse.de, tvrtko.ursulin@sophos.com
-Date: Thu, 28 Oct 2010 17:33:19 -0400
-Message-ID: <20101028213319.24810.7417.stgit@paris.rdu.redhat.com>
+Date: Thu, 28 Oct 2010 17:33:13 -0400
+Message-ID: <20101028213313.24810.5978.stgit@paris.rdu.redhat.com>
 In-Reply-To: <20101028213139.24810.34058.stgit@paris.rdu.redhat.com>
 References: <20101028213139.24810.34058.stgit@paris.rdu.redhat.com>
 User-Agent: StGIT/0.14.3
@@ -22,32 +23,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+If fanotify sets a new bit in the ignored mask it will cause the generic
+fsnotify layer to recalculate the real mask.  This is stupid since we
+didn't change that part.
 
-The comments for FAN_CLOSE_WRITE and FAN_CLOSE_NOWRITE do not match
-FS_CLOSE_WRITE and FS_CLOSE_NOWRITE, respectively.  WRITE is for
-writable files while NOWRITE is for non-writable files.
-
-Signed-off-by: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
 Signed-off-by: Eric Paris <eparis@redhat.com>
 ---
 
- include/linux/fanotify.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ fs/notify/fanotify/fanotify_user.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/fanotify.h b/include/linux/fanotify.h
-index 5e0400a..0f01214 100644
---- a/include/linux/fanotify.h
-+++ b/include/linux/fanotify.h
-@@ -6,8 +6,8 @@
- /* the following events that user-space can register for */
- #define FAN_ACCESS		0x00000001	/* File was accessed */
- #define FAN_MODIFY		0x00000002	/* File was modified */
--#define FAN_CLOSE_WRITE		0x00000008	/* Unwrittable file closed */
--#define FAN_CLOSE_NOWRITE	0x00000010	/* Writtable file closed */
-+#define FAN_CLOSE_WRITE		0x00000008	/* Writtable file closed */
-+#define FAN_CLOSE_NOWRITE	0x00000010	/* Unwrittable file closed */
- #define FAN_OPEN		0x00000020	/* File was opened */
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index ff1a908..fa71d5d 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -558,15 +558,15 @@ static __u32 fanotify_mark_add_to_mask(struct fsnotify_mark *fsn_mark,
+ 				       __u32 mask,
+ 				       unsigned int flags)
+ {
+-	__u32 oldmask;
++	__u32 oldmask = -1;
  
- #define FAN_Q_OVERFLOW		0x00004000	/* Event queued overflowed */
+ 	spin_lock(&fsn_mark->lock);
+ 	if (!(flags & FAN_MARK_IGNORED_MASK)) {
+ 		oldmask = fsn_mark->mask;
+ 		fsnotify_set_mark_mask_locked(fsn_mark, (oldmask | mask));
+ 	} else {
+-		oldmask = fsn_mark->ignored_mask;
+-		fsnotify_set_mark_ignored_mask_locked(fsn_mark, (oldmask | mask));
++		__u32 tmask = fsn_mark->ignored_mask | mask;
++		fsnotify_set_mark_ignored_mask_locked(fsn_mark, tmask);
+ 		if (flags & FAN_MARK_IGNORED_SURV_MODIFY)
+ 			fsn_mark->flags |= FSNOTIFY_MARK_FLAG_IGNORED_SURV_MODIFY;
+ 	}
 
