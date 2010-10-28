@@ -1,78 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758520Ab0J1LU6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 07:20:58 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:40269 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754222Ab0J1LU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 07:20:57 -0400
-Date: Thu, 28 Oct 2010 13:20:52 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-Subject: Re: [PATCH] x86: use pgd accessors when cloning a pgd range.
-Message-ID: <20101028112052.GA21757@a1.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Ian Campbell <Ian.Campbell@citrix.com>,
-	Jeremy Fitzhardinge <jeremy@goop.org>,
-	"H. Peter Anvin" <hpa@linux.intel.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"x86@kernel.org" <x86@kernel.org>
-References: <1288169413-29065-1-git-send-email-ian.campbell@citrix.com>
- <20101027104020.GA16954@a1.tnic>
- <4CC85839.4000507@goop.org>
- <4CC85EE6.7030608@linux.intel.com>
- <4CC861F9.8080200@goop.org>
- <20101027174417.GA19194@a1.tnic>
- <1288202321.10179.102.camel@localhost.localdomain>
- <1288257797.8361.1545.camel@zakaz.uk.xensource.com>
+	id S1758577Ab0J1LVk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 07:21:40 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:60678 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758547Ab0J1LVi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 07:21:38 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: [PATCH] preempt: fix kernel build with !CONFIG_BKL
+Date: Thu, 28 Oct 2010 13:20:44 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Brian Gerst <brgerst@gmail.com>, David Howells <dhowells@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Venkatesh Pallipadi <venki@google.com>, x86@kernel.org
+References: <20101028095910.GA15970@shutemov.name>
+In-Reply-To: <20101028095910.GA15970@shutemov.name>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1288257797.8361.1545.camel@zakaz.uk.xensource.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201010281320.44765.arnd@arndb.de>
+X-Provags-ID: V02:K0:e/dXgw6ifcCRNeSly6hYuUZEEZy+m0m7Wi/4TzznF0Z
+ +5a1SFkqU8khk9c8m6izWl2FlhUcGtmUdT9T730h54J7uC0FUq
+ IcxSgyastOMqGIuFhqsuNPiaepNLg2vwYpqXKL9arivRsbp9p7
+ 6Bjg3VIU1o322oamqa8K6/JaQ4pjnsbeHA7d1cft67X21JRCVk
+ 88SppPCep0jhM+b6AptTw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 28, 2010 at 10:23:17AM +0100, Ian Campbell wrote:
-> Now tested and it works. Patch below.
+The preempt count logic tries to take the BKL into account, which breaks
+when CONFIG_BKL is not set.
 
-I'm assuming you tested bare metal too?
+Use the same preempt_count offset that we use without CONFIG_PREEMPT
+when CONFIG_BKL is disabled.
 
-> I'm also going to look into switching Xen to startup on
-> initial_page_table, since I think the consistency with native would be
-> useful from a principle of least surprise PoV. However the following
-> is a useful stopgap if nothing else.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Reported-by: "Kirill A. Shutemov" <kirill@shutemov.name>
 
-Sounds good. Then we can drop this temporary workaround.
+---
+> /home/kas/git/tmp/linux-2.6-local/arch/x86/include/asm/i387.h: In function ‘irq_ts_save’:
+> /home/kas/git/tmp/linux-2.6-local/arch/x86/include/asm/i387.h:324: error: implicit declaration of function ‘kernel_locked’
+> make[1]: *** [arch/x86/kernel/asm-offsets.s] Error 1
+> make: *** [prepare0] Error 2
 
-> BTW, are there plans to unify 32 and 64 bit WRT the use of
-> swapper_pg_dir vs initial_page_table?
+Ah, found it. I had not considered or tested the case of CONFIG_BKL=n
+with CONFIG_PREEMPT=y.
 
-To be honest, I thought about it but 64bit does the bootstrapping
-differently. I'll look into it one fine day when there's time. (like
-there ever is :))
+Does this work? Ideally please test with LOCKDEP enabled to see if
+there are other problems in this configuration that I missed.
 
-> From: Ian Campbell <ian.campbell@citrix.com>
-> Date: Thu, 28 Oct 2010 10:16:52 +0100
-> Subject: [PATCH] x86/32: skip early initialisation of swapper_pg_dir if it is already current
-> 
-> In particular in the Xen PV case the Xen early startup code has
-> already initialised swapper_pg_dir and switched to it. In this case
-> initial_page_table is uninitialised since Xen has no use for it so
-> copying it over swapper_pg_dir is not correct.
-> 
-> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-> Cc: Borislav Petkov <bp@alien8.de>
-> Cc: H. Peter Anvin <hpa@linux.intel.com>
-> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-
-Acked-by: Borislav Petkov <bp@alien8.de>
-
--- 
-Regards/Gruss,
-Boris.
+--- a/include/linux/hardirq.h
++++ b/include/linux/hardirq.h
+@@ -96,7 +96,7 @@
+  */
+ #define in_nmi()	(preempt_count() & NMI_MASK)
+ 
+-#if defined(CONFIG_PREEMPT)
++#if defined(CONFIG_PREEMPT) && defined(CONFIG_BKL)
+ # define PREEMPT_INATOMIC_BASE kernel_locked()
+ # define PREEMPT_CHECK_OFFSET 1
+ #else
