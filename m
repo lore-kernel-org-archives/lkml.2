@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934154Ab0J1S4B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 14:56:01 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51588 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761442Ab0J1Szs (ORCPT
+	id S1761449Ab0J1Szv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 14:55:51 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:11870 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761432Ab0J1Szl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 14:55:48 -0400
+	Thu, 28 Oct 2010 14:55:41 -0400
+Message-ID: <4CC9C724.3020004@caviumnetworks.com>
+Date: Thu, 28 Oct 2010 11:55:32 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=8tq1zu_RWjmk5rLOWvP_KPH5UQioQ6wEkc0Ob@mail.gmail.com>
-References: <E1PBKT9-0004Uk-Sm@tytso-glaptop> <20101028075631.GA7690@elte.hu>
- <AANLkTi=8SbOZizWpxLg=Bgp7atdgr8MsR6tnRDYr1+eW@mail.gmail.com>
- <20101028163854.GA15450@elte.hu> <AANLkTin62vAwJxcsrFk6Yn7Q6tzr-D=EmKKwPazuAJ11@mail.gmail.com>
- <20101028171701.GA18368@elte.hu> <20101028172725.GA6814@thunk.org> <AANLkTi=8tq1zu_RWjmk5rLOWvP_KPH5UQioQ6wEkc0Ob@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 28 Oct 2010 11:54:55 -0700
-Message-ID: <AANLkTin=EeQx4pEPk9ST27kcRpDP65NQvL1c1m8UcRmO@mail.gmail.com>
-Subject: Re: Minimum git commit abbrev length (Was Re: -tip: origin tree build
- failure (was: [GIT PULL] ext4 update) for 2.6.37)
-To: "Ted Ts'o" <tytso@mit.edu>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>, git@vger.kernel.org,
+To: Jason Baron <jbaron@redhat.com>, rth@redhat.com
+CC: "H. Peter Anvin" <hpa@zytor.com>, rostedt@goodmis.org, mingo@elte.hu,
+        mathieu.desnoyers@polymtl.ca, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
+        avi@redhat.com, davem@davemloft.net, vgoyal@redhat.com,
+        sam@ravnborg.org, tony@bakeyournoodle.com, dsd@laptop.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [PATCH 2/2] jump label: disable due to compiler bug
+References: <cover.1288212485.git.jbaron@redhat.com> <2d1b1d5d2b3930e1acb063cefffbcb2faf049854.1288212486.git.jbaron@redhat.com> <ce4ff595-f9d1-4c17-b68e-82739b07ad3e@email.android.com> <20101028141757.GA2875@redhat.com>
+In-Reply-To: <20101028141757.GA2875@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 28 Oct 2010 18:56:06.0671 (UTC) FILETIME=[C6DB89F0:01CB76D1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 28, 2010 at 11:28 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+On 10/28/2010 07:17 AM, Jason Baron wrote:
+> On Wed, Oct 27, 2010 at 03:21:55PM -0700, H. Peter Anvin wrote:
+>> Could you detail the bug, please?  static_cpu_has() also uses asm goto.
+>>
 >
-> Yes. The default of 7 (I think) comes from fairly early in git
-> development, when seven hex digits was a lot (it covers about 250+
-> million hash values). Back then I thought that 65k revisions was a lot
-> (it was what we were about to hit in BK), and each revision tends to
-> be about 5-10 new objects or so, so a million objects was a big
-> number.
+> It seems that gcc can leave the stack in an inconsistent state.
 >
-> These days, the kernel isn't even the largest git project, and even
-> the kernel has about 220k revisions (_much_ bigger than the BK tree
-> ever was) and we are approaching two million objects. At that point,
-> seven hex digits is still unique for a lot of them, but when we're
-> talking about just two orders of magnitude difference between number
-> of objects and the hash size, there _will_ be hash collisions. It's no
-> longer even close to unrealistic - it happens all the time.
+> I only saw this in the 'jmp' enabled case, I'm not sure if it can occur in the
+> straight-line code path as well.
+>
 
-Hmm. In fact, in the kernel, we currently have about twelve thousand
-objects that end up having collisions in 7 hex digits. Even in the old
-historical BK kernel tree, we have over a thousand objects that
-collide (each bucket in both cases gets just two objects, there are as
-of yet no multiple collisions, which is what you'd expect with a good
-hash). See with
+Jason,
 
-  git rev-list --objects --all | cut -c1-7 | sort | uniq -dc
+Were you going to file a GCC bug on this issue?  Someone should.
 
-and in fact git itself has a few collisions (but currently just 44
-objects ending up sharing 22 SHA1 buckets in 7 digits).
+It would be a shame to have the problem persist due to lack of awareness 
+by the GCC developers.
 
-With each digit, you'd expect the collisions to decrease by a factor
-of 16, and that is indeed exactly what happens. For my current kernel
-tree I get:
-
- - 7 digits: 5823 buckets with duplicates (ie 11646 objects that aren't unique)
- - 8: 406
- - 9: 30
- - 10: 1
- - 11: 0
-
-so 12 hex digits is indeed pretty safe for the kernel, and is likely
-to remain so until the kernel history grows by a factor of 16.
-
-                        Linus
+David Daney
