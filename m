@@ -1,351 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932924Ab0J1DUr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 23:20:47 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:59678 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756615Ab0J1DUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 23:20:45 -0400
-Date: Thu, 28 Oct 2010 14:20:31 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for October 28
-Message-Id: <20101028142031.5a4d6612.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S932935Ab0J1D3c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 23:29:32 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46765 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932714Ab0J1D33 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 23:29:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=EG7TQXMrDXAd5lfc2aTxF7OK8bOPeO3aLeIC653mv05F+b1CgsSHZ/XIH8Wg54p9XI
+         R0diOW2DN0lbbyIoDB+Rj2SJOmSR9GRTp1oPmUfJOLKJ8Wj2BosAZCJqB2j7AfMvop7q
+         tHbTZWrFqJqJhnpA0Q9PCryEWabO6zP4nHBTw=
+Subject: Re: cxgb3: kernel access of bad area with v2.6.36-6794-g12ba8d1
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Nishanth Aravamudan <nacc@us.ibm.com>
+Cc: Divy Le Ray <divy@chelsio.com>, sonnyrao@us.ibm.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20101028015407.GA9564@us.ibm.com>
+References: <20101028015407.GA9564@us.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 28 Oct 2010 05:29:23 +0200
+Message-ID: <1288236563.2658.59.camel@edumazet-laptop>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__28_Oct_2010_14_20_31_+1100_nH.50.tOIX5q3dio"
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__28_Oct_2010_14_20_31_+1100_nH.50.tOIX5q3dio
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Le mercredi 27 octobre 2010 à 18:54 -0700, Nishanth Aravamudan a écrit :
+> Hi,
+> 
+> I'm seeing the following trace w/ current git on a machine in our lab:
+> 
+> Chelsio T3 Network Driver - version 1.1.4-ko
+> cxgb3 0003:01:00.0: enabling device (0140 -> 0142)
+> Unable to handle kernel paging request for data at address 0x00000010
+> Faulting instruction address: 0xd000000008473ae8
+> Oops: Kernel access of bad area, sig: 11 [#1]
+> SMP NR_CPUS=32 NUMA pSeries
+> last sysfs file: /sys/devices/virtual/block/dm-0/dev
+> Modules linked in: cxgb3(+) mdio ehea ib_ehca ib_core ext4 jbd2 mbcache sd_mod crc_t10dif ipr dm_mod [last unloaded: scsi_wait_scan]
+> NIP: d000000008473ae8 LR: d000000008473ac4 CTR: c0000000004398a0
+> REGS: c0000007a157f190 TRAP: 0300   Not tainted  (2.6.36)
+> MSR: 8000000000009032 <EE,ME,IR,DR>  CR: 24424444  XER: 00000000
+> DAR: 0000000000000010, DSISR: 0000000040000000
+> TASK = c0000007a3755290[741] 'modprobe' THREAD: c0000007a157c000 CPU: 24
+> GPR00: 0000000000000000 c0000007a157f410 d000000008486978 c0000007a526c000 
+> GPR04: c0000000006d25dd c0000007a526c005 c0000007a526c29e 0000000000000002 
+> GPR08: 0000000000000004 0000000000000010 c0000007a526c0a0 0000000000000000 
+> GPR12: d000000008474aa8 c00000000eed3c00 d00000000847aeb8 0000000000000001 
+> GPR16: 0000000000001000 0000000000000000 d000000008477aa8 00003c047ef7e000 
+> GPR20: c0000007a8b7d280 c0000007a8b7d310 d00000000847d1c0 d00000000847d1d8 
+> GPR24: 0000000000000003 00003c047ef7efff 0000000000000001 c0000007a3c1c000 
+> GPR28: 0000000000000000 c0000007a526c000 d000000008484210 c0000007a3c1c000 
+> NIP [d000000008473ae8] .init_one+0x510/0xb7c [cxgb3]
+> LR [d000000008473ac4] .init_one+0x4ec/0xb7c [cxgb3]
+> Call Trace:
+> [c0000007a157f410] [d000000008473ac4] .init_one+0x4ec/0xb7c [cxgb3] (unreliable)
+> [c0000007a157f560] [c0000000002e40bc] .local_pci_probe+0x7c/0x100
+> [c0000007a157f5f0] [c0000000002e5018] .pci_device_probe+0x148/0x150
+> [c0000007a157f6a0] [c00000000034df68] .driver_probe_device+0x128/0x330
+> [c0000007a157f750] [c00000000034e27c] .__driver_attach+0x10c/0x110
+> [c0000007a157f7e0] [c00000000034d15c] .bus_for_each_dev+0x9c/0xf0
+> [c0000007a157f890] [c00000000034dbc8] .driver_attach+0x28/0x40
+> [c0000007a157f910] [c00000000034c648] .bus_add_driver+0x218/0x3d0
+> [c0000007a157f9c0] [c00000000034e718] .driver_register+0x98/0x1d0
+> [c0000007a157fa60] [c0000000002e5354] .__pci_register_driver+0x64/0x140
+> [c0000007a157fb00] [d000000008474278] .cxgb3_init_module+0x2c/0x44 [cxgb3]
+> [c0000007a157fb80] [c000000000009754] .do_one_initcall+0x64/0x1e0
+> [c0000007a157fc40] [c0000000000d28b8] .SyS_init_module+0x1b8/0x1790
+> [c0000007a157fe30] [c000000000008564] syscall_exit+0x0/0x40
+> Instruction dump:
+> 9b890018 9b090019 48000fe9 e8410028 801d0308 2f800000 419e003c 39600000 
+> e93d0300 796045e4 7d290214 39290010 <7c0048a8> 7c00d378 7c0049ad 40a2fff4 
+> ---[ end trace 2a530df8c4ad3d70 ]---
+> udevd-work[600]: '/sbin/modprobe -b pci:v00001425d00000030sv00001014sd0000038Cbc02sc00i00' unexpected exit with status 0x000b
+> 
+> I did an objdump -ldr of cxgb3.ko and:
+> 
+> 
+>  4c0:   48 00 00 01     bl      4c0 <.init_one+0x4c0>
+>                         4c0: R_PPC64_REL24      .alloc_etherdev_mq
+>  4c4:   60 00 00 00     nop
+>  4c8:   7c 7d 1b 79     mr.     r29,r3
+>  4cc:   41 82 03 28     beq-    7f4 <.init_one+0x7f4>
+>  4d0:   39 3d 07 00     addi    r9,r29,1792
+>  4d4:   fa bd 03 f8     std     r21,1016(r29)
+>  4d8:   fb bb 32 08     std     r29,12808(r27)
+>  4dc:   fb fd 07 00     std     r31,1792(r29)
+>  4e0:   9b 89 00 18     stb     r28,24(r9)
+>  4e4:   9b 09 00 19     stb     r24,25(r9)
+>  4e8:   48 00 00 01     bl      4e8 <.init_one+0x4e8>
+>                         4e8: R_PPC64_REL24      .netif_carrier_off
+>  4ec:   60 00 00 00     nop
+>  4f0:   80 1d 03 08     lwz     r0,776(r29)
+>  4f4:   2f 80 00 00     cmpwi   cr7,r0,0
+>  4f8:   41 9e 00 3c     beq-    cr7,534 <.init_one+0x534>
+>  4fc:   39 60 00 00     li      r11,0
+>  500:   e9 3d 03 00     ld      r9,768(r29)
+>  504:   79 60 45 e4     rldicr  r0,r11,8,55
+>  508:   7d 29 02 14     add     r9,r9,r0
+>  50c:   39 29 00 10     addi    r9,r9,16
+>  510:   7c 00 48 a8     ldarx   r0,0,r9
+>  514:   7c 00 d3 78     or      r0,r0,r26
+>  518:   7c 00 49 ad     stdcx.  r0,0,r9
+>  51c:   40 a2 ff f4     bne-    510 <.init_one+0x510>
+> 
+> So I'm guessing it's somewhere in here:
+> 
+>         for (i = 0; i < ai->nports0 + ai->nports1; ++i) {
+>                 struct net_device *netdev;
+> 
+>                 netdev = alloc_etherdev_mq(sizeof(struct port_info), SGE_QSETS);
+>                 if (!netdev) {
+>                         err = -ENOMEM;
+>                         goto out_free_dev;
+>                 }
+> 
+>                 SET_NETDEV_DEV(netdev, &pdev->dev);
+> 
+>                 adapter->port[i] = netdev;
+>                 pi = netdev_priv(netdev);
+>                 pi->adapter = adapter;
+>                 pi->rx_offload = T3_RX_CSUM | T3_LRO;
+>                 pi->port_id = i;
+>                 netif_carrier_off(netdev);
+>                 netif_tx_stop_all_queues(netdev);
+>                 netdev->irq = pdev->irq;
+>                 netdev->mem_start = mmio_start;
+>                 netdev->mem_end = mmio_start + mmio_len - 1;
+>                 netdev->features |= NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_TSO;
+>                 netdev->features |= NETIF_F_GRO;
+>                 if (pci_using_dac)
+>                         netdev->features |= NETIF_F_HIGHDMA;
+> 
+>                 netdev->features |= NETIF_F_HW_VLAN_TX | NETIF_F_HW_VLAN_RX;
+>                 netdev->netdev_ops = &cxgb_netdev_ops;
+>                 SET_ETHTOOL_OPS(netdev, &cxgb_ethtool_ops);
+>         }
+> 
+> Well, presuming the trace is mostly accurate?  I'm not sure what else is
+> needed to determine the problem further. I'm building 2.6.36 as I write
+> this.  But it doesn't seem like this code has changed much and I had a
+> working kernel around 2.6.36-rc7...
+> 
 
-Hi all,
+It seems this crash is because  alloc_etherdev_mq() (alloc_netdev_mq())
+not anymore allocates tx_queues.
 
-Reminder: do not add 2.6.38 destined stuff to linux-next until after
-2.6.37-rc1 is released.
 
-Reminder 2: if what you ask Linus to merge turns out to be a little
-different from what you have in linux-next (or Linus' fixes things up a
-little), please updtae your linux-next submission so I don't have to
-worry about those differences.
+So netif_tx_stop_all_queues(netdev) is crashing, accessing a NULL
+pointer in your driver.
 
-Changes since 20101027:
+netif_tx_stop_all_queues(netdev) should be called only once device is
+registered : netif_alloc_netdev_queues() is called from
+register_netdevice()
 
-The ext4 tree gained a conflict against Linus' tree.
+Take a look at commit 8f6d9f40476895571 to have an example of how to fix
+this problem.
 
-The slab tree lost its build failure.
+Thanks
 
-The drm tree lost its conflict.
 
-The fsnotify tree gained a conflict against Linus' tree.
 
-The xen tree lost a conflict.
 
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 176 trees (counting Linus' and 22 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging kbuild-current/rc-fixes
-Merging quilt/driver-core.current
-Merging quilt/tty.current
-Merging quilt/usb.current
-Merging quilt/staging.current
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging gcl-current/merge
-Merging arm/devel
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-CONFLICT (content): Merge conflict in arch/arm/mach-s3c64xx/dev-audio.c
-Merging tegra/for-next
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-CONFLICT (content): Merge conflict in drivers/usb/host/Kconfig
-CONFLICT (content): Merge conflict in drivers/usb/host/Makefile
-Merging parisc/next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/next
-Merging galak/next
-Merging s390/features
-Merging sh/master
-Merging genesis/master
-CONFLICT (content): Merge conflict in drivers/video/sh_mobile_hdmi.c
-Merging sparc/master
-Merging tile/master
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/next
-CONFLICT (content): Merge conflict in fs/ext4/inode.c
-CONFLICT (content): Merge conflict in fs/ext4/mballoc.c
-Applying: ext4: merge fix for blkdev_issue_zeroout API change
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging hfsplus/for-next
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-Merging quilt/jdelvare-hwmon
-Merging hwmon-staging/hwmon-next
-Merging quilt/kernel-doc
-CONFLICT (content): Merge conflict in lib/idr.c
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging ibft/master
-Merging scsi/master
-Merging async_tx/next
-Merging net/master
-Merging wireless/master
-Merging bluetooth/master
-Merging mtd/master
-CONFLICT (content): Merge conflict in drivers/mtd/mtd_blkdevs.c
-Merging crypto/master
-Merging sound/for-next
-Merging sound-asoc/for-next
-Merging cpufreq/next
-Merging quilt/rr
-Merging input/next
-Merging lsm/for-next
-Merging block/for-next
-CONFLICT (content): Merge conflict in fs/ocfs2/file.c
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-Merging backlight/for-mm
-Merging mmc/mmc-next
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-CONFLICT (content): Merge conflict in drivers/mfd/sh_mobile_sdhi.c
-CONFLICT (content): Merge conflict in drivers/misc/Makefile
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging viafb/viafb-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging lblnet/master
-Merging agp/agp-next
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-Merging audit/for-next
-Merging quilt/aoe
-Merging suspend/linux-next
-Merging fsnotify/for-next
-CONFLICT (content): Merge conflict in fs/notify/fsnotify.c
-Merging irda/for-next
-Merging catalin/for-next
-CONFLICT (content): Merge conflict in arch/arm/kernel/Makefile
-CONFLICT (content): Merge conflict in arch/arm/mach-vexpress/ct-ca9x4.c
-CONFLICT (content): Merge conflict in arch/arm/mm/flush.c
-CONFLICT (content): Merge conflict in arch/arm/mm/mmu.c
-Merging alacrity/linux-next
-CONFLICT (content): Merge conflict in include/linux/Kbuild
-Merging i7core_edac/linux_next
-Merging i7300_edac/linux_next
-Merging devicetree/next-devicetree
-Merging spi/next-spi
-Merging omap_dss2/for-next
-Merging tip/auto-latest
-Merging rcu/rcu/next
-Merging oprofile/for-next
-Merging xen/upstream/xen
-CONFLICT (content): Merge conflict in arch/x86/xen/mmu.c
-Merging swiotlb-xen/master
-CONFLICT (content): Merge conflict in arch/x86/include/asm/io_apic.h
-CONFLICT (content): Merge conflict in drivers/pci/Makefile
-Merging xen-pvhvm/linux-next
-Merging edac-amd/for-next
-Merging percpu/for-next
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging quilt/driver-core
-CONFLICT (content): Merge conflict in drivers/misc/Makefile
-Merging quilt/tty
-Merging quilt/usb
-CONFLICT (content): Merge conflict in arch/powerpc/sysdev/fsl_soc.c
-CONFLICT (content): Merge conflict in drivers/scsi/sd.c
-CONFLICT (content): Merge conflict in drivers/usb/gadget/rndis.c
-CONFLICT (content): Merge conflict in drivers/usb/host/Kconfig
-CONFLICT (content): Merge conflict in drivers/usb/host/Makefile
-CONFLICT (delete/modify): drivers/uwb/wlp/wss-lc.c deleted in HEAD and modi=
-fied in quilt/usb. Version quilt/usb of drivers/uwb/wlp/wss-lc.c left in tr=
-ee.
-$ git rm -f drivers/uwb/wlp/wss-lc.c
-Merging staging-next/staging-next
-CONFLICT (rename/modify): Merge conflict in drivers/misc/ti-st/st_core.c
-CONFLICT (rename/modify): Merge conflict in drivers/misc/ti-st/st_kim.c
-CONFLICT (content): Merge conflict in arch/arm/plat-omap/devices.c
-CONFLICT (content): Merge conflict in drivers/misc/Makefile
-CONFLICT (content): Merge conflict in drivers/staging/Makefile
-CONFLICT (content): Merge conflict in drivers/staging/batman-adv/hard-inter=
-face.c
-CONFLICT (content): Merge conflict in drivers/staging/cx25821/cx25821-audio=
--upstream.c
-CONFLICT (content): Merge conflict in drivers/staging/cx25821/cx25821-audio=
-.h
-CONFLICT (delete/modify): drivers/staging/mrst-touchscreen/Makefile deleted=
- in HEAD and modified in staging-next/staging-next. Version staging-next/st=
-aging-next of drivers/staging/mrst-touchscreen/Makefile left in tree.
-CONFLICT (delete/modify): drivers/staging/mrst-touchscreen/intel-mid-touch.=
-c deleted in HEAD and modified in staging-next/staging-next. Version stagin=
-g-next/staging-next of drivers/staging/mrst-touchscreen/intel-mid-touch.c l=
-eft in tree.
-CONFLICT (delete/modify): drivers/staging/ti-st/st.h deleted in staging-nex=
-t/staging-next and modified in HEAD. Version HEAD of drivers/staging/ti-st/=
-st.h left in tree.
-CONFLICT (delete/modify): drivers/staging/ti-st/st_core.h deleted in stagin=
-g-next/staging-next and modified in HEAD. Version HEAD of drivers/staging/t=
-i-st/st_core.h left in tree.
-CONFLICT (content): Merge conflict in fs/compat_ioctl.c
-$ git rm -f drivers/staging/mrst-touchscreen/Makefile drivers/staging/mrst-=
-touchscreen/intel-mid-touch.c
-$ git rm -f drivers/staging/ti-st/st.h drivers/staging/ti-st/st_core.h
-Applying: staging: ath6kl: Fixing the driver to use modified mmc_host struc=
-ture
-Merging slabh/slabh
-Merging bkl-trivial/trivial
-Merging bkl-llseek/llseek
-Merging bkl-vfs/vfs
-Merging bkl-config/config
-Merging irqflags/master
-Merging cleancache/linux-next
-CONFLICT (content): Merge conflict in include/linux/fs.h
-CONFLICT (content): Merge conflict in mm/Kconfig
-Merging scsi-post-merge/merge-base:master
-
---Signature=_Thu__28_Oct_2010_14_20_31_+1100_nH.50.tOIX5q3dio
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMyOv/AAoJEDMEi1NhKgbsdDAIAJ21henvHzV9mZG7d3LxWtQV
-WDchobhvRvTTm6HPcpx54RYuI4nOfhpRFDoB6yESUWVtr9ks58MYXJWXGc0E9NER
-MiXyrddMfjNF1p1WmW5uQZOl7VfVZw+x5ib3wZ+t8KQ7yXWftINFGCOPL06xOdve
-kD5URu7KvBXqtJBNhDLWr3y1x8QDPp4v5jEAkT+oP/9K08oE/gkED/VuMn6tPfPC
-OhIdvEsvgrk1IQZvGuoTTjG2CT7quHWG1zQao7ZJ6H82+msjIrN1JG9xvN9EVbdh
-EEJyjZVy0gofkTa2yEGolDl2KH6CpeJ5X/fwze/xQUeDDj6oTUN2H5N6L+zcZzA=
-=zlb+
------END PGP SIGNATURE-----
-
---Signature=_Thu__28_Oct_2010_14_20_31_+1100_nH.50.tOIX5q3dio--
