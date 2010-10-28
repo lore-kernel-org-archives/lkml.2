@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758323Ab0J1LOH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 07:14:07 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:59426 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753237Ab0J1LOE (ORCPT
+	id S1758378Ab0J1LQN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 07:16:13 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:53502 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758238Ab0J1LQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 07:14:04 -0400
+	Thu, 28 Oct 2010 07:16:12 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=H4WH0Jq3Bs6cfliPTV6zByBPLH6LlqGSK7T1yiJoW35vkzmjw0QBLVrVBFvlMdZwKy
-         FO2TT7OWXpDxBMc4/+rZdcjYzdb30kBlYJOsCoWWu38xc3ONrjcmH6Vbrk7w1/pyvTmT
-         8TzSkfgnoa2YMBNxw2zqhzoBkTiLWvmw8jOsQ=
-From: Vasiliy Kulikov <segooon@gmail.com>
-To: kernel-janitors@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hong Liu <hong.liu@intel.com>,
-        Alan Cox <alan@linux.intel.com>,
-        Anantha Narayanan <anantha.narayanan@intel.com>,
-        Jonathan Cameron <jic23@cam.ac.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH] misc: apds9802als: fix signedness bug
-Date: Thu, 28 Oct 2010 15:13:58 +0400
-Message-Id: <1288264438-10578-1-git-send-email-segooon@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=jTPjMynfVioYmt50lF0RQ4SUVgxvhL2d9/bHdhfPlc+0R5kADwyB5b3k2x0NMW/Dvr
+         hOvvJnU3W5VwgAqdLN2gVhlQWcYESDZOLhxpo1iaAYvt8GD15qefiZHPqcXBFJPt65xe
+         2rZRRpGyK+iQyEWTfZhGTt+8vz3ZHCtT7isug=
+MIME-Version: 1.0
+In-Reply-To: <20101028090002.GA12446@elte.hu>
+References: <AANLkTimt7wzR9RwGWbvhiOmot_zzayfCfSh_-v6yvuAP@mail.gmail.com>
+	<AANLkTikRKVBzO=ruy=JDmBF28NiUdJmAqb4-1VhK0QBX@mail.gmail.com>
+	<AANLkTinzJ9a+9w7G5X0uZpX2o-L8E6XW98VFKoF1R_-S@mail.gmail.com>
+	<AANLkTinDDG0ZkNFJZXuV9k3nJgueUW=ph8AuHgyeAXji@mail.gmail.com>
+	<AANLkTikvSGNE7uGn5p0tfJNg4Hz5WRmLRC8cXu7+GhMk@mail.gmail.com>
+	<20101028090002.GA12446@elte.hu>
+Date: Thu, 28 Oct 2010 14:16:11 +0300
+X-Google-Sender-Auth: X9Y96HBfi5xEf26rwB2jrfDXw00
+Message-ID: <AANLkTinoGGLTN2JRwjJtF6Ra5auZVg+VSa=TyrtAkDor@mail.gmail.com>
+Subject: Re: 2.6.36 io bring the system to its knees
+From: Pekka Enberg <penberg@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-i2c_smbus_read_byte_data() may return negative error code.  This is not
-seen to als_sensing_range_store() as the result is stored in unsigned int.
-Made it signed.
+* Pekka Enberg <penberg@kernel.org> wrote:
+>> On Thu, Oct 28, 2010 at 9:09 AM, Aidar Kultayev <the.aidar@gmail.com> wrote:
+>> > Find attached screenshot ( latencytop_n_powertop.png ) which depicts
+>> > artifacts where the window manager froze at the time I was trying to
+>> > see a tab in Konsole where the powertop was running.
+>>
+>> You seem to have forgotten to include the attachment.
 
-Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
----
- Compile tested.
+On Thu, Oct 28, 2010 at 12:00 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> I got it - it appears it was too large for lkml's ~500K mail size limit.
+>
+> Aidar, mind sending a smaller image?
 
- drivers/misc/apds9802als.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Looks mostly VFS to me. Aidar, does killing Picasa make things
+smoother for you? If so, maybe the VFS scalability patches will help.
 
-diff --git a/drivers/misc/apds9802als.c b/drivers/misc/apds9802als.c
-index f9b91ba..0ed0935 100644
---- a/drivers/misc/apds9802als.c
-+++ b/drivers/misc/apds9802als.c
-@@ -123,7 +123,7 @@ static ssize_t als_sensing_range_store(struct device *dev,
- {
- 	struct i2c_client *client = to_i2c_client(dev);
- 	struct als_data *data = i2c_get_clientdata(client);
--	unsigned int ret_val;
-+	int ret_val;
- 	unsigned long val;
- 
- 	if (strict_strtoul(buf, 10, &val))
--- 
-1.7.0.4
-
+                        Pekka
