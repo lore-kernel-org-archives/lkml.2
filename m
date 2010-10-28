@@ -1,53 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758194Ab0J1MR7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 08:17:59 -0400
-Received: from DMZ-MAILSEC-SCANNER-8.MIT.EDU ([18.7.68.37]:58704 "EHLO
-	dmz-mailsec-scanner-8.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752521Ab0J1MR6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 08:17:58 -0400
-X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Oct 2010 08:17:58 EDT
-X-AuditID: 12074425-b7c98ae000000a04-56-4cc968c8fdee
-Subject: Re: -tip: origin tree build failure (was: [GIT PULL] ext4 update for 2.6.37)
-Mime-Version: 1.0 (Apple Message framework v1081)
-Content-Type: text/plain; charset=windows-1252
-From: Theodore Tso <tytso@MIT.EDU>
-In-Reply-To: <20101028075631.GA7690@elte.hu>
-Date: Thu, 28 Oct 2010 08:12:50 -0400
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <698D7018-682F-4D8A-A3A6-079514669D9F@mit.edu>
-References: <E1PBKT9-0004Uk-Sm@tytso-glaptop> <20101028075631.GA7690@elte.hu>
-To: Ingo Molnar <mingo@elte.hu>
-X-Mailer: Apple Mail (2.1081)
-X-Brightmail-Tracker: AAAAAA==
+	id S1758538Ab0J1MSI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 08:18:08 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:38968 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758336Ab0J1MSG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 08:18:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=nb+C80uaOgXiW3SklZrrYXKeuM9g25ZPkJuzUUXsDR4/K5F3wkdXhabar3YuYM+N7Y
+         xN2oSbhTQmMcf0vXM4SQ/huhOUJaonrtwu7pn0B4yEJCwtYyWQLpIYvB++nZjfbp/ygE
+         0pAnNp6OO+mExvCDqQ0ClZvBn9FIgGH+dR8q0=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTikx4zZwMLiAUrGKcH6yoo_PGgRA7nT9BzYMxQ89@mail.gmail.com>
+References: <AANLkTimt7wzR9RwGWbvhiOmot_zzayfCfSh_-v6yvuAP@mail.gmail.com>
+	<AANLkTikRKVBzO=ruy=JDmBF28NiUdJmAqb4-1VhK0QBX@mail.gmail.com>
+	<AANLkTinzJ9a+9w7G5X0uZpX2o-L8E6XW98VFKoF1R_-S@mail.gmail.com>
+	<AANLkTinDDG0ZkNFJZXuV9k3nJgueUW=ph8AuHgyeAXji@mail.gmail.com>
+	<AANLkTikvSGNE7uGn5p0tfJNg4Hz5WRmLRC8cXu7+GhMk@mail.gmail.com>
+	<20101028090002.GA12446@elte.hu>
+	<AANLkTinoGGLTN2JRwjJtF6Ra5auZVg+VSa=TyrtAkDor@mail.gmail.com>
+	<AANLkTikyYQk1FH7d6jkw2GYHLN8jmghuGZQw=EFVgjuA@mail.gmail.com>
+	<AANLkTikx4zZwMLiAUrGKcH6yoo_PGgRA7nT9BzYMxQ89@mail.gmail.com>
+Date: Thu, 28 Oct 2010 18:18:05 +0600
+Message-ID: <AANLkTi=Yt-vK-=8X8xu0htCQeEieEGfkWMCRYKUeK+PF@mail.gmail.com>
+Subject: Re: 2.6.36 io bring the system to its knees
+From: Aidar Kultayev <the.aidar@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, npiggin@kernel.dk,
+        Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+http://picasaweb.google.com/aidar.eiei/LinuxIo#5533068249408411698
 
-On Oct 28, 2010, at 3:56 AM, Ingo Molnar wrote:
+I will look into latencytop output and will figure out a usage pattern
+that is most annoying with regards to IO.
+Will try to see what leads to that & if possible to make a screenshot
+of what is going on.
+The thing is, I don't think the program that captures the screenshots
+does it in a meaningful way, because at the moment the system is
+brought to its knees, I don't think that this particular program
+(KSnapshot) can get away from being affected. I mean it might take a
+snapshot which is not representative enough.
 
-> 
-> hi Ted,
-> 
->> Theodore Ts'o (18):
->>      ext4: rename {exit,init}_ext4_*() to ext4_{exit,init}_*()
-> 
-> Today's -tip fails to build due to upstream commit 5dabfc7 ("ext4: rename 
-> {exit,init}_ext4_*() to ext4_{exit,init}_*()"), on all[yes/mod]config with 
-> CONFIG_EXT4_FS_XATTR disabled:
-> 
->  fs/ext4/super.c:4776: error: implicit declaration of function ‘ext4_init_xattr’
-> 
-> Commit 5dabfc7 renamed init_ext4_xattr to ext4_init_xattr but forgot to update the 
-> definition in fs/ext4/xattr.h. The patch below fixes it.
 
-Acked-by: "Theodore Ts'o" <tytso@mit.edu>
+thanks, Aidar
 
-Thanks for catching this, my bad.
-
--- Ted
-
+On Thu, Oct 28, 2010 at 5:48 PM, Pekka Enberg <penberg@kernel.org> wrote:
+> On Thu, Oct 28, 2010 at 2:33 PM, Aidar Kultayev <the.aidar@gmail.com> wrote:
+>> if it wasn't picasa, it would have been something else. I mean if I
+>> kill picasa ( later on it was done indexing new pics anyway ), it
+>> would have been for virtualbox to thrash the io. So, nope, getting rid
+>> of picasa doesn't help either. In general the systems responsiveness
+>> or sluggishness is dominated by those io operations going on - the DD
+>> & CP & probably VBOX issuing whole bunch of its load for IO.
+>
+> Do you still see high latencies in vfs_lseek() and vfs_fsync()? I'm
+> not a VFS expert but looking at your latencytop output, it seems that
+> fsync grabs ->i_mutex which blocks vfs_llseek(), for example. I'm not
+> sure why that causes high latencies though it's a mutex we're holding.
+>
+> On Thu, Oct 28, 2010 at 2:33 PM, Aidar Kultayev <the.aidar@gmail.com> wrote:
+>> Another way I see these delays, is when I leave system overnight, with
+>> ktorrent & juk(stopped) in the background. It takes some time for
+>> WM(kwin) to work out ALT+TAB the very next morning. But this might be
+>> because the WM(kwin & its code) has been swapped out, because of long
+>> period of not using it.
+>
+> Yeah, that's probably paging overhead.
+>
+> P.S. Can you please upload latencytop output somewhere and post an URL
+> to it so other people can also see it?
+>
