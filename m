@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760993Ab0J1SSM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 14:18:12 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:1706 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755321Ab0J1SSK convert rfc822-to-8bit (ORCPT
+	id S1761047Ab0J1SSu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 14:18:50 -0400
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:41505 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1760923Ab0J1SSo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 14:18:10 -0400
-X-IronPort-AV: E=Sophos;i="4.58,253,1286175600"; 
-   d="scan'208";a="474375924"
-Subject: Re: [PATCH] nfs4: The difference of 2 pointers is size_t
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Benny Halevy <bhalevy@panasas.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-nfs@vger.kernel.org,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-In-Reply-To: <alpine.DEB.2.00.1010282004390.31018@ayla.of.borg>
-References: <alpine.DEB.2.00.1010282004390.31018@ayla.of.borg>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp
-Date: Thu, 28 Oct 2010 14:17:14 -0400
-Message-ID: <1288289834.14221.12.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-X-OriginalArrivalTime: 28 Oct 2010 18:17:54.0364 (UTC) FILETIME=[70893FC0:01CB76CC]
+	Thu, 28 Oct 2010 14:18:44 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: xNsylvIVM1kqvrY6BMVZiTLSQlBOFUwNrRiq0eMA9r3BoSi
+ xHtYJkDjhH7hRoD4FhesDXz47jga6eFEJdIwSrMG0MDlDNGfy1Bmv14JZ8QB
+ mlGAOW8lzsC4v5X5nP3mGsE2TC3hDm_zwFkZEOxn.DNwzGUvE6grUFD_xz7X
+ yU41PL1pRoAE2DYPlo1528XR_cH2y9tr3tRyZK2efVpTGLFhJyTgWMDkNPnh
+ Wku8SedKV9Vk2T1EFhE1tSBk75GEw
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 28 Oct 2010 13:18:41 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Mark Hounschell <markh@compro.net>
+cc: Dragoslav Zaric <zaricdragoslav@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: Tickles scheduler
+In-Reply-To: <4CC9B2BD.1050504@compro.net>
+Message-ID: <alpine.DEB.2.00.1010281317270.26782@router.home>
+References: <AANLkTimzEDtfUKajFPgGOhifPhyRQboZbKNbypBaKpKO@mail.gmail.com> <alpine.DEB.2.00.1010260959250.10975@odin.tweek.dk> <alpine.DEB.2.00.1010271725260.9704@router.home> <AANLkTimOx=cMr+cwzEc8z7puZDEpa_7aDOxCPSzotjBP@mail.gmail.com>
+ <alpine.DEB.2.00.1010280845320.25874@router.home> <4CC9B2BD.1050504@compro.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-10-28 at 20:06 +0200, Geert Uytterhoeven wrote:
-> On m68k, which is 32-bit:
-> 
-> fs/nfs/nfs4proc.c: In function ‘nfs41_sequence_done’:
-> fs/nfs/nfs4proc.c:432: warning: format ‘%ld’ expects type ‘long int’, but argument 3 has type ‘int’
-> fs/nfs/nfs4proc.c: In function ‘nfs4_setup_sequence’:
-> fs/nfs/nfs4proc.c:576: warning: format ‘%ld’ expects type ‘long int’, but argument 5 has type ‘int’
-> 
-> On 32-bit, size_t is int; on 64-bit, size_t is long.
-> 
-> Introduced by commit dfb4f309830359352539919f23accc59a20a3758 ("NFSv4.1: keep
-> seq_res.sr_slot as pointer rather than an index")
-> 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
->  fs/nfs/nfs4proc.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-> index 32c8758..80229dc 100644
-> --- a/fs/nfs/nfs4proc.c
-> +++ b/fs/nfs/nfs4proc.c
-> @@ -429,7 +429,7 @@ static int nfs41_sequence_done(struct rpc_task *task, struct nfs4_sequence_res *
->  		 * returned NFS4ERR_DELAY as per Section 2.10.6.2
->  		 * of RFC5661.
->  		 */
-> -		dprintk("%s: slot=%ld seq=%d: Operation in progress\n",
-> +		dprintk("%s: slot=%zd seq=%d: Operation in progress\n",
->  			__func__,
->  			res->sr_slot - res->sr_session->fc_slot_table.slots,
->  			res->sr_slot->seq_nr);
-> @@ -573,7 +573,7 @@ int nfs4_setup_sequence(const struct nfs_server *server,
->  		goto out;
->  	}
->  
-> -	dprintk("--> %s clp %p session %p sr_slot %ld\n",
-> +	dprintk("--> %s clp %p session %p sr_slot %zd\n",
->  		__func__, session->clp, session, res->sr_slot ?
->  			res->sr_slot - session->fc_slot_table.slots : -1);
->  
+On Thu, 28 Oct 2010, Mark Hounschell wrote:
 
-Thanks! Applied.
+> On 10/28/2010 09:47 AM, Christoph Lameter wrote:
+> > The current plan is to switch off the tick when a process is running that
+> > cannot be preempted ("realtime" (very bad choice of terms) tasks).
+> >
+>
+> In what kind of time frame is this plan? And in the plan what will be the criteria for
+> "cannot be preempted"?
 
-Trond
+Time frame is dependent on my available time unless someone else steps
+forward to help out. The criteria for "cannot be preempted" could be
+initially a process running with SCHED_FIFO.
