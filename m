@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759327Ab0J1QRy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 12:17:54 -0400
-Received: from smtp-out-2.dataguard.no ([87.118.11.130]:63433 "EHLO
-	smtp-out-2.dataguard.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754432Ab0J1QRr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 12:17:47 -0400
-X-AuditID: 57760b82-b7c77ae0000045ae-f5-4cc9a2283e48
-Message-ID: <20101028181743.11857ep4k2kha0hs@webmail.combitel.no>
-Date: Thu, 28 Oct 2010 18:17:43 +0200
-From: "Webmail Upgrade Team" <upgradecct@Safe-mail.net>
-Reply-to: upgradeact@w.cn
-To: undisclosed-recipients:;
-Subject: Upgrade Your Email Account
+	id S1759353Ab0J1QXF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 12:23:05 -0400
+Received: from claw.goop.org ([74.207.240.146]:40721 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753683Ab0J1QW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 12:22:58 -0400
+Message-ID: <4CC9A35F.1050603@goop.org>
+Date: Thu, 28 Oct 2010 09:22:55 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.2)
-X-Brightmail-Tracker: AAAAAA==
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+Subject: Re: [Xen-devel] Re: [PATCH 1/5] xen: events: use irq_alloc_desc(_at)
+ instead of open-coding an IRQ allocator.
+References: <1288023736.11153.40.camel@zakaz.uk.xensource.com> <1288023813-31989-1-git-send-email-ian.campbell@citrix.com> <20101025173522.GA5590@dumpdata.com> <4CC60CB7.3070005@goop.org> <20101026141739.GA9557@dumpdata.com> <4CC70583.2050503@goop.org> <20101026170841.GA10708@dumpdata.com> <alpine.DEB.2.00.1010281303330.1407@kaball-desktop>
+In-Reply-To: <alpine.DEB.2.00.1010281303330.1407@kaball-desktop>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ On 10/28/2010 05:43 AM, Stefano Stabellini wrote:
+> On Tue, 26 Oct 2010, Konrad Rzeszutek Wilk wrote:
+>>> In that case we should use dynamic allocation for everything.  Or try to
+>>> work out distinct irq ranges for different interrupts if you really want
+>>> to keep irq==gsi.
+>> Some little alarm bells are ringing in the back of my head about irq != gsi.
+>>
+>> I think the issue was the permission. When a PCI device is allocated to the
+>> PV guest, we do a bunch of xc_* calls to allow the domain to use the BARs
+>> and the IRQ. I believe when the guest boots and tries to map the
+>> event channel with the physical IRQ, one of the arguments is that GSI. And
+>> if we provide a bogus GSI, well, we won't get the INTx to the guest.
+>>
+>> As you mentioned, Stefano's patch add a new element to the tuple that can
+>> contain the GSI value. At which point we can make the guest IRQ != GSI,
+>> as long as we can contain the <gsi, event channel> mapping present so
+>> that for the hypercalls we can give it the right GSI.
+>>
+>> The MSI/MSI-X use a completly different mechanism that does not all
+>> of this complication, so we are OK with that.
+>>
+>> .. snip ..
+>>
+>>> d) dynamically allocate all irqs for all event channel types.
+>> <nods> Ok, you sold me on this idea.
+>>
+>
+> Even though dynamic allocation might seem possible for both pirqs and
+> irqs, there are some severe limitations:
+>
+>
+> - Xen won't allocate pirq numbers lower than 16 (probably because it
+> expects pirq == gsi for the first 16 gsi), so it might run out
+> of pirqs if we ask Xen to always choose the pirq number for us.  As a
+> consequence it is safer to keep using pirq == gsi, at least for the
+> first 16 gsis. This limitation should probably be fixed in Xen, but we
+> need to support older hypervisors so we cannot rely on the fix to be
+> present.
+>
+>
+> - Linux expects irq == gsi, see arch/x86/kernel/acpi/boot.c:gsi_to_irq
+>
+> 	/* Provide an identity mapping of gsi == irq
+> 	 * except on truly weird platforms that have
+> 	 * non isa irqs in the first 16 gsis.
+> 	 */
 
+Yes, we always have to identity map legacy ISA interrupts, and we should
+never attempt to dynamically allocate in that region.
 
-Confirm Deactivation
-
-CONFIRM YOUR REQUEST FOR YOUR Web ACCOUNT DEACTIVATION
-
-Kindly note that we recently did some upgrade on our database and  
-during this upgrade, there was an unusual responds code from your  
-email address requesting for deactivation. Verify to deactivate or  
-keep your email account active.
-
-[Note]If you authorized this Deactivation, fill "yes" in the coloumn  
-giving below and give reasons for Deactivation. And if this request  
-was caused due to conjestion or error, fill "NO" on the coloumn giving  
-bellow.
-
-In order to verify/confirm your email identity, You are to provide the  
-following data;
-
-CONFIRM YOUR WEB E-MAIL IDENTITY BELOW;
-
-First Name:_____________________________________________________________
-Last Name:____________________
-Ik Moore is typing...
-Ik Moore: Email  
-Username:_________________________________________________________
-Email Password:_________________________________________________________
-Account Deactivation:__________________(specify yes to deactivate. No)__
-to keep active)
-Reason for Deactivation:_______________(if yes)_________________________
-Email:upgradeact@w.cn
-
-Warning!!! In failure to verify your email account within 48hrs on  
-receiving this notification, This will automatically execute your  
-outstanding request for account Deactivation and your email will be  
-removed from our data base.
-
-Thank you for using our Web.Account e-mail!
-We hope to serve you better
-warning Code: ASPH8B02AXV
-
-Kind regards,
-Webmail Service Team Management.
-ABN 33
-All rights reserved ©2010.
-
-----------------------------------------------------------------
-This message was sent using IMP, the Internet Messaging Program.
+    J
 
