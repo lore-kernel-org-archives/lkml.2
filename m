@@ -1,99 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757962Ab0J1BEA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 21:04:00 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:4408 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757790Ab0J1BD7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 21:03:59 -0400
-From: David Daney <ddaney@caviumnetworks.com>
-To: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org
-Cc: David Daney <ddaney@caviumnetworks.com>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dan Carpenter <error27@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH] of: of_mdio: Fix some endianness problems.
-Date: Wed, 27 Oct 2010 18:03:47 -0700
-Message-Id: <1288227827-5447-1-git-send-email-ddaney@caviumnetworks.com>
-X-Mailer: git-send-email 1.7.2.3
-X-OriginalArrivalTime: 28 Oct 2010 01:04:27.0075 (UTC) FILETIME=[114FD130:01CB763C]
+	id S1758008Ab0J1BLv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 21:11:51 -0400
+Received: from c-67-162-90-113.hsd1.in.comcast.net ([67.162.90.113]:47567 "HELO
+	kosh.dhis.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1757889Ab0J1BLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 21:11:49 -0400
+Message-ID: <20101028011147.26254.qmail@kosh.dhis.org>
+From: pacman@kosh.dhis.org
+Subject: Re: Pegasos OHCI bug (was Re: PROBLEM: memory corrupting bug,
+To: segher@kernel.crashing.org (Segher Boessenkool)
+Date: Wed, 27 Oct 2010 20:11:47 -0500 (GMT+5)
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+In-Reply-To: <50748.84.105.60.153.1288222432.squirrel@gate.crashing.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In of_mdiobus_register(), the __be32 *addr variable is dereferenced.
-This will not work on little-endian targets.  Also since it is
-unsigned, checking for less than zero is redundant.
+Segher Boessenkool writes:
+> 
+> >> 1) Figure out what exactly is going on;
+> >
+> > I thought we were past that.
+> 
+> We are not.
+> 
+> > The startup sequence leaves the device in a
+> > bad
+> > state (writing 1000 times per second to memory that the kernel believes is
+> > not in use), so it needs to be given a reset command before the kernel
+> > tries
+> > to use that memory.
+> 
+> The question now is what causes the firmware to do that, and then
+> what is the best way to stop it from doing that.
 
-Fix these two issues.
+As far as I can tell, it turns on the host controller during the global
+probe, which is not wrong because USB devices could theoretically be used for
+booting, or for console display. Then it never turns off the host controller
+because someone forgot to put in the code to turn it off.
 
-Signed-off-by: David Daney <ddaney@caviumnetworks.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Jeremy Kerr <jeremy.kerr@canonical.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Dan Carpenter <error27@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/of/of_mdio.c |   23 ++++++++++++++---------
- 1 files changed, 14 insertions(+), 9 deletions(-)
+It's not easy to figure out exactly where that should have been done. Turning
+off the host controller too soon would rule out booting from USB, but leaving
+it running while the OS is starting up has caused a major problem.
 
-diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
-index 1fce00e..b370306 100644
---- a/drivers/of/of_mdio.c
-+++ b/drivers/of/of_mdio.c
-@@ -52,27 +52,32 @@ int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
- 
- 	/* Loop over the child nodes and register a phy_device for each one */
- 	for_each_child_of_node(np, child) {
--		const __be32 *addr;
-+		const __be32 *paddr;
-+		u32 addr;
- 		int len;
- 
- 		/* A PHY must have a reg property in the range [0-31] */
--		addr = of_get_property(child, "reg", &len);
--		if (!addr || len < sizeof(*addr) || *addr >= 32 || *addr < 0) {
-+		paddr = of_get_property(child, "reg", &len);
-+		if (!paddr || len < sizeof(*paddr)) {
-+addr_err:
- 			dev_err(&mdio->dev, "%s has invalid PHY address\n",
- 				child->full_name);
- 			continue;
- 		}
-+		addr = be32_to_cpup(paddr);
-+		if (addr >= 32)
-+			goto addr_err;
- 
- 		if (mdio->irq) {
--			mdio->irq[*addr] = irq_of_parse_and_map(child, 0);
--			if (!mdio->irq[*addr])
--				mdio->irq[*addr] = PHY_POLL;
-+			mdio->irq[addr] = irq_of_parse_and_map(child, 0);
-+			if (!mdio->irq[addr])
-+				mdio->irq[addr] = PHY_POLL;
- 		}
- 
--		phy = get_phy_device(mdio, be32_to_cpup(addr));
-+		phy = get_phy_device(mdio, addr);
- 		if (!phy || IS_ERR(phy)) {
- 			dev_err(&mdio->dev, "error probing PHY at address %i\n",
--				*addr);
-+				addr);
- 			continue;
- 		}
- 		phy_scan_fixups(phy);
-@@ -91,7 +96,7 @@ int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
- 		}
- 
- 		dev_dbg(&mdio->dev, "registered phy %s at address %i\n",
--			child->name, *addr);
-+			child->name, addr);
- 	}
- 
- 	return 0;
+So is it wrong to leave the host controller enabled when the OS is booted? If
+not, then the error must be in the communication of which memory addresses
+are in use by OF. I've got a node /memory@0 whose "available" property looks
+like this:
+ 00000000 00400000
+ 00584000 0007c000
+ 0092a1d8 00004e28
+ 00a2f000 005d1000
+ 01800000 0e3fd000
+ 0fbffab4 0000054c
+>From that list, it looks to me like OF is telling the kernel that it should
+not attempt to use any address above 0xfbffab4+0x54c == 0xfc00000. The
+addresses being written to by the OHCI controller are 0xfc5c080 and
+0xfc61080. If the kernel is staying within the "available" list, there won't
+be a problem.
+
+Later, when the kernel decides it's done using OF, what's supposed to happen?
+It closes stdin, but that doesn't help here since the offending device is a
+bus node, not an input node. It looks to me like the kernel makes the
+assumption that all devices other than stdin and stdout will have been
+deactivated already when the kernel starts, and that this assumption has
+been violated. Who is wrong, from the perspective of the OF standard, the
+assumer or the violator?
+
+Then there's the "quiesce" call, which I don't understand at all since it's
+not mentioned in any of the specification documents I've been able to find.
+It's been mentioned as an Apple-only thing. Seems like it would be a good
+name for a "make all the devices stop puking on the RAM" function. Since the
+OF spec doesn't include this function, they must not have thought it was
+necessary.
+
+> > /pci@80000000/usb@5/assigned-addresses
+> >  02002810 00000000 80000000 00000000 00001000
+> 
+> Lovely, incorrect data (it should start with 82002810, i.e.,
+> not relocatable -- it is already an assigned address!).
+
+Now you see how I have trouble relating the docs to the reality...
+
+> 
+> This means: 32-bit MMIO address space for bus 0 dev 5 fn 0,
+> first BAR; assigned to address 80000000; size is 1000.
+
+But "address 80000000" is a physical address (I think), so do I need to do a
+map-in on it before using it?
+
+> 
+> You could try a boot script like this:
+> 
+> 
+> dev /pci
+> 0 ffff04 DO 0 i config-w! -100 +LOOP
+> device-end
+> 
+> 
+> which should disable all PCI devices on all busses, on that
+
+Almost all of my devices are under that PCI node. What will I prove by
+disabling them?
+
 -- 
-1.7.2.3
-
+Alan Curry
