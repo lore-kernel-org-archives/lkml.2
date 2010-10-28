@@ -1,87 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758072Ab0J1BUi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 21:20:38 -0400
-Received: from kroah.org ([198.145.64.141]:46999 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757980Ab0J1BUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 21:20:35 -0400
-Date: Wed, 27 Oct 2010 18:17:11 -0700
-From: Greg KH <greg@kroah.com>
-To: "Emilio G. Cota" <cota@braap.org>
-Cc: Martyn Welch <martyn.welch@ge.com>, LKML <linux-kernel@vger.kernel.org>,
-        devel@driverdev.osuosl.org,
-        Juan David Gonzalez Cobas <david.cobas@gmail.com>,
-        Bill Pemberton <wfp5p@virginia.edu>
-Subject: Re: [PATCH 09/30] staging/vme: fill in struct device's .release,
-	even if it's a NOOP
-Message-ID: <20101028011711.GA29960@kroah.com>
-References: <1288055476-19438-1-git-send-email-cota@braap.org> <1288055476-19438-10-git-send-email-cota@braap.org> <4CC804FF.9050908@ge.com> <20101027144642.GP10869@flamenco.cs.columbia.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101027144642.GP10869@flamenco.cs.columbia.edu>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1758044Ab0J1Bdq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 21:33:46 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:60483 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757889Ab0J1Bdo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 21:33:44 -0400
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=hP5unB6w35oA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=ptZ5_ZwvWdonOW_7qwUA:9 a=MLoCo28ro2lf_o5hiBoA:7 a=T6uuljkteQlcDeB-NJFpJl1BvikA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 0/2] jump label updates
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Miller <davem@davemloft.net>
+Cc: jbaron@redhat.com, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
+        hpa@zytor.com, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, avi@redhat.com, vgoyal@redhat.com,
+        sam@ravnborg.org, tony@bakeyournoodle.com, ddaney@caviumnetworks.com,
+        dsd@laptop.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20101027.141538.193709095.davem@davemloft.net>
+References: <cover.1288212485.git.jbaron@redhat.com>
+	 <20101027.141538.193709095.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 27 Oct 2010 21:33:40 -0400
+Message-ID: <1288229620.18238.131.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 10:46:42AM -0400, Emilio G. Cota wrote:
-> On Wed, Oct 27, 2010 at 11:54:55 +0100, Martyn Welch wrote:
-> > On 26/10/10 02:10, Emilio G. Cota wrote:
-> > > From: Emilio G. Cota <cota@braap.org>
-> > > 
-> > > Without it we get 32 warnings, one per device being released, when
-> > > removing a bridge module.
-> > > 
-> > > After applying this patch, bridge modules can at last be removed
-> > > without any apparent hiccup.
-> > > 
-> > > [Note: tested only on the tsi148, it's the only bridge I've got]
-> > > 
+On Wed, 2010-10-27 at 14:15 -0700, David Miller wrote:
+> From: Jason Baron <jbaron@redhat.com>
+> Date: Wed, 27 Oct 2010 17:07:08 -0400
+> 
+> > So we finally tracked down the jump label crashes and it turned out that there
+> > was a a bug in the compiler in the implementation of 'asm goto'. As the fix has
+> > not yet been committed yet to gcc, and I don't have a simple test case to
+> > check if the bug has been fixed, we are going to disable jump labels pending
+> > a better test to detect that gcc has been fixed.
 > > 
-> > I guess this is an artifact of the current lack of refcounting?
+> > The second patch fixes a hang on Geode LX, b/c the no-op probing was done too
+> > early - before the exception tables had even been setup.
 > 
-> No, that's orthogonal to this. This has to do with the way the
-> devices are allocated.
-> 
-> > This is definitely an issue, however I don't think masking it by adding
-> > an empty function is the correct way to go.
-> 
-> We're not masking anything. The release method is there to free the
-> struct it protects when its refcount goes to zero; however, in this
-> case the struct wasn't allocated dynamically--the 32 devices are
-> stored in struct vme_bridge in an array--and therefore there's
-> nothing to do in .release, since struct vme_bridge is freed
-> elsewhere.
-> 
-> While it's true that empty .release methods are usually frowned
-> upon (as stated in Documentation/kobject.txt), due to the way
-> things are done here it actually makes sense to have an
-> empty .release.
+> Please don't lose the sparc section alignment bug fix I posted recently.
 
-FROWNED APON?
+I wont, I'm currently busy doing my RH job ;-) I'll have it already
+queued up, and will post later tonight.
 
-Heh, if you add one, as per the documentation there, I get to publicly
-ridicule you for doing so.
+-- Steve
 
-So consider this your ridicule, if you ever are thinking you need to
-create an empty release function, YOUR CODE IS WRONG!
 
-Seriously, do you think I just add warnings in there for fun?  So that
-you can work around them thinking you know better?
-
-{sigh}
-
-Your implementation is broken, never do this, if you create a kobject,
-you HAVE TO FREE IT in the release function.
-
-I would ask why you are even using a kobject in the first place (hint,
-if you are writing a driver, or even a subsystem, you shouldn't be, use
-'struct device' instead.)
-
-So consider this a rejection of this patch and implementation :)
-
-thanks,
-
-greg k-h
