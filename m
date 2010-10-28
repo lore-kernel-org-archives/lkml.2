@@ -1,70 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759508Ab0J1XZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 19:25:27 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:39843 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759406Ab0J1XZR (ORCPT
+	id S1759400Ab0J1X2a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 19:28:30 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:53797 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759127Ab0J1X2Y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 19:25:17 -0400
-Date: Fri, 29 Oct 2010 00:25:06 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, hch@infradead.org, warthog9@kernel.org,
-        jmorris@namei.org, kyle@mcmartin.ca, hpa@zytor.com,
-        akpm@linux-foundation.org, mingo@elte.hu, eparis@redhat.com,
-        Matthew Wilcox <matthew@wil.cx>
-Subject: Re: [PATCH 0/4] IMA: making i_readcount a first class inode citizen
-Message-ID: <20101028232506.GL19804@ZenIV.linux.org.uk>
-References: <1288303325-9628-1-git-send-email-zohar@linux.vnet.ibm.com>
- <20101028222404.GG2715@dastard>
- <AANLkTimG6o66SFHskkDOtLqYeSzwKt2c0jR3CWe+sd2w@mail.gmail.com>
- <1288305510.2610.13.camel@localhost.localdomain>
- <AANLkTimvEAj2SL7RrwTdypGA_PYJcZyw8OMBGckWpVs7@mail.gmail.com>
+	Thu, 28 Oct 2010 19:28:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=PymEhufouCWRc67cUHloWpdxNMx2zQue6DZ8HUSAcc2ZE+0H3V3/IufOws4PON0AoA
+         gtE9hc3h9MD+9i91UbhypONGgnFj5ntHpv24kzqMvwm8Su3fzAHqxqRfBW341fgCthJC
+         ISmOB51dfXzXpuadq2NeWxqnT9SsJatUEuXzk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimvEAj2SL7RrwTdypGA_PYJcZyw8OMBGckWpVs7@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20101028220331.GZ26494@google.com>
+References: <20101028191523.GA14972@google.com>
+	<20101028131029.ee0aadc0.akpm@linux-foundation.org>
+	<20101028220331.GZ26494@google.com>
+Date: Fri, 29 Oct 2010 08:28:23 +0900
+Message-ID: <AANLkTi=VnTkuyYht8D+2MPO1d4mXR1ah-0aQeAjZsTaq@mail.gmail.com>
+Subject: Re: [PATCH] RFC: vmscan: add min_filelist_kbytes sysctl for
+ protecting the working set
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, wad@chromium.org, olofj@chromium.org,
+        hughd@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 28, 2010 at 03:46:04PM -0700, Linus Torvalds wrote:
-> On Thu, Oct 28, 2010 at 3:38 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> >
-> > Would making i_readcount atomic be enough in ima_rdwr_violation_check(),
-> > or would it still need to take the spin_lock? IMA needs guarantees
-> > that the i_readcount/i_writecount won't be updated in between.
-> 
-> If i_writecount is always updated under the i_lock, then the fix is
-> probably to make that one non-atomic instead. There's no point in
-> having an atomic that is always updated under a spinlock, that just
-> makes everything slower.
-> 
-> Regardless, I don't think i_readcount should be different from i_writecount.
-> 
-> Al? Comments?
+On Fri, Oct 29, 2010 at 7:03 AM, Mandeep Singh Baines <msb@chromium.org> wrote:
+> Andrew Morton (akpm@linux-foundation.org) wrote:
+>> On Thu, 28 Oct 2010 12:15:23 -0700
+>> Mandeep Singh Baines <msb@chromium.org> wrote:
+>>
+>> > On ChromiumOS, we do not use swap.
+>>
+>> Well that's bad.  Why not?
+>>
+>
+> We're using SSDs. We're still in the "make it work" phase so wanted
+> avoid swap unless/until we learn how to use it effectively with
+> an SSD.
+>
+> You'll want to tune swap differently if you're using an SSD. Not sure
+> if swappiness is the answer. Maybe a new tunable to control how aggressive
+> swap is unless such a thing already exits?
+>
+>> > When memory is low, the only way to
+>> > free memory is to reclaim pages from the file list. This results in a
+>> > lot of thrashing under low memory conditions. We see the system become
+>> > unresponsive for minutes before it eventually OOMs. We also see very
+>> > slow browser tab switching under low memory. Instead of an unresponsive
+>> > system, we'd really like the kernel to OOM as soon as it starts to
+>> > thrash. If it can't keep the working set in memory, then OOM.
+>> > Losing one of many tabs is a better behaviour for the user than an
+>> > unresponsive system.
+>> >
+>> > This patch create a new sysctl, min_filelist_kbytes, which disables reclaim
+>> > of file-backed pages when when there are less than min_filelist_bytes worth
+>> > of such pages in the cache. This tunable is handy for low memory systems
+>> > using solid-state storage where interactive response is more important
+>> > than not OOMing.
+>> >
+>> > With this patch and min_filelist_kbytes set to 50000, I see very little
+>> > block layer activity during low memory. The system stays responsive under
+>> > low memory and browser tab switching is fast. Eventually, a process a gets
+>> > killed by OOM. Without this patch, the system gets wedged for minutes
+>> > before it eventually OOMs. Below is the vmstat output from my test runs.
+>> >
+>> > BEFORE (notice the high bi and wa, also how long it takes to OOM):
+>>
+>> That's an interesting result.
+>>
+>> Having the machine "wedged for minutes" thrashing away paging
+>> executable text is pretty bad behaviour.  I wonder how to fix it.
+>> Perhaps simply declaring oom at an earlier stage.
+>>
+>> Your patch is certainly simple enough but a bit sad.  It says "the VM
+>> gets this wrong, so lets just disable it all".  And thereby reduces the
+>> motivation to fix it for real.
+>>
+>
+> Yeah, I used the RFC label because we're thinking this is just a temporary
+> bandaid until something better comes along.
+>
+> Couple of other nits I have with our patch:
+> * Not really sure what to do for the cgroup case. We do something
+>  reasonable for now.
+> * One of my colleagues also brought up the point that we might want to do
+>  something different if swap was enabled.
+>
+>> But the patch definitely improves the situation in real-world
+>> situations and there's a case to be made that it should be available at
+>> least as an interim thing until the VM gets fixed for real.  Which
+>> means that the /proc tunable might disappear again (or become a no-op)
+>> some time in the future.
 
-Well... the rules for i_writecount had been "protect zero->non-zero
-transitions with spinlock".  Back then we had a single spinlock for that,
-IIRC, and making it atomic had been an obvious solution.  Note that we
-have a bunch of places in VM where we need to adjust it (VMA merges and
-splitting) and I really wanted to avoid contention on that lock.
+I think this feature that "System response time doesn't allow but OOM allow".
+While we can control process to not killed by OOM using
+/oom_score_adj, we can't control response time directly.
+But in mobile system, we have to control response time. One of cause
+to avoid swap is due to response time.
 
-BTW, I suspect that the right first step would be to kill open-coded
-manipulations of i_writecount in mmap.c and fork.c; there are inlined
-helpers for that.
+How about using memcg?
+Isolate processes related to system response(ex, rendering engine, IPC
+engine and so no)  to another group.
 
-I *really* don't like what add_dquot_ref() is doing; it checks i_writecount
-under inode_lock and skips the inodes for which it's zero.  It might be
-OK if one of the quota locks held by callers will serialize it wrt the
-relevant part of the open() path, but that needs a comment along those
-lines, at the very least.
-
-We probably can go for non-atomic; the lock is per-inode these days, so
-it's less of a PITA.  I wonder if IMA holding it over its policy checks
-would be a good thing, though - it calls LSM hooks and hell knows what
-shit gets done from those...
+-- 
+Kind regards,
+Minchan Kim
