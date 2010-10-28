@@ -1,166 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756830Ab0J1WUF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 18:20:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48697 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751725Ab0J1WT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 18:19:59 -0400
-Date: Fri, 29 Oct 2010 00:19:56 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: alexander.stein@informatik.tu-chemnitz.de, andrea.gelmini@gelma.net,
-        bebarino@gmail.com, gitster@pobox.com, justinmattock@gmail.com,
-        kyle@redhat.com, lacombar@gmail.com, mmarek@suse.cz, naota@elisp.net,
-        nir.tzachar@gmail.com, will.newton@gmail.com,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT] kconfig changes for 2.6.37-rc1
-Message-ID: <20101028221956.GA30585@sepie.suse.cz>
+	id S1758077Ab0J1WWa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 18:22:30 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:30587 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755493Ab0J1WWY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 18:22:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=bjrklQyQ6GWbd5YdERSIZg00UKywVRtyIymTrxxaWJiQYB07SkZst3RwtR/cndCNK4
+         3VP7DHTSK1JQ6dpNM0rQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4CC99A65.9050706@sssup.it>
+References: <4CC99A65.9050706@sssup.it>
+Date: Thu, 28 Oct 2010 15:22:20 -0700
+Message-ID: <AANLkTinkrVG2fTpPDC1DpcC+CiYWjXdYdqTMO5Tv7Swt@mail.gmail.com>
+Subject: Re: Understanding cgroups
+From: Paul Menage <menage@google.com>
+To: Tommaso Cucinotta <tommaso.cucinotta@sssup.it>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Linux Containers <containers@lists.linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, Oct 28, 2010 at 8:44 AM, Tommaso Cucinotta
+<tommaso.cucinotta@sssup.it> wrote:
+> a) why doesn't a cgroup object directly point to a css_set one, but to a
+> list of them (via cg_cgroup_list elements) ?
 
-this is the kconfig stuff for 2.6.37-rc1:
-* kconfig portability fixes and generalization
-* xconfig ported to Qt4
-* nconfig search redesigned
-* kconfig warnings enabled again, these were disabled late in the 2.6.36
-  rc phase, which is why the shortlog is since 2.6.36-rc8 (I had to
-  merge the rc-fixes branch)
-* other small fixes
+Each task is in one cgroup per mounted hierarchy. There's no
+requirement that different hierarchies have isomorphic partitions of
+tasks (in fact that would somewhat defeat the point of mounting
+separate hierarchies). So even though all the tasks in a cgroup share
+css pointers for the subsystems attached to that cgroup's hierarchy,
+in general they will have different total sets of css pointers. Hence
+the multiple css_set objects associated with a cgroup.
 
-Note:  71d8066 (kbuild: fix oldnoconfig to do the right thing) made it
-already into 2.6.36 as e9203c9, but it was originally meant for this
-merge window and I did not want to rebase the branch. Please let me know
-if that's a problem.
+>    it seems that a cgroup object may be associated to multiple css_set
+> objects, which in turn contain vectors of
+>    cgroup_subsys_state;
+> b) however, cgroup.subsys[] would point to a single cgroup_subsys_state
+> object per subsys_id,
 
-Michal
+No, it points to a single cgroup_subsys_state for each subsys that's
+bound to the cgroup's hierarchy, and NULL for all others.
 
-The following changes since commit cd07202cc8262e1669edff0d97715f3dd9260917:
+> so, what is the
+>    difference between cgroup.subsys[] and css_set.subsys[] ? (or, are these
+> all redundant pointers and point
+>    to the same cgroup_subsys_state objects ?)
 
-  Linux 2.6.36-rc8 (2010-10-14 16:26:43 -0700)
+css_set.subsys is the union of all the (disjoint) sets of subsys
+pointers in the cgroups that a task is a member of (one cgroup per
+hierarchy).
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git kconfig
+Yes, the pointers in the css_set are redundant in that they could be
+determined by following more pointers, but for efficiency they're all
+available directly in the css_set. (Also this typically allows a
+single refcount inc/dec in the task fork/exit case)
 
-Alexander Stein (2):
-      kconfig qconf: port to QT4
-      Fix QT4 moc, cflags libs detection on dual QT3/Qt4 systems
+> c) is css_set.cg_links used to point to (the head of) a list of
+> cg_cgroup_link objects,
 
-Andrea Gelmini (1):
-      README: cite nconfig
+Yes. It's the head of a list of cg_cgroup_link objects, each of which
+has a pointer to this css_set and a pointer to a cgroup of which this
+css_set represents membership. (One per hierarchy)
 
-Arnaud Lacombe (22):
-      kbuild: confdata.c explicitly reference errno, thus need <errno.h>
-      kbuild: don't include `check-lxdialog' ldflags in global HOST_LOADLIBES
-      kbuild: fix typo
-      kbuild: don't overwrite HOST_EXTRACFLAGS
-      kbuild: use getopt_long(), not its _only() variant
-      kconfig: replace a `switch()' statement by a more flexible `if()' statement
-      kconfig: rephrase help text not to mention the internal prefix
-      kconfig: allow build-time definition of the internal config prefix
-      kconfig: rephrase help texts/comments not to include the package name
-      kconfig: allow PACKAGE to be defined on the compiler's command-line
-      kconfig: implement the `mainmenu' directive
-      kconfig: regen parser
-      kconfig: add a symbol string expansion helper
-      kconfig: expand by default the rootmenu's prompt
-      kconfig: delay gconf window initialization
-      kconfig: replace KERNELVERSION usage by the mainmenu's prompt
-      kconfig: don't emit warning upon rootmenu's prompt redefinition
-      kconfig: constify file name
-      kconfig: use the file's name of sourced file
-      kconfig: expand file names
-      kbuild: migrate all arch to the kconfig mainmenu upgrade
-      kbuild: convert `arch/tile' to the kconfig mainmenu upgrade
+> or is it used to link multiple css_set objects into
+> a list ?
 
-Junio C Hamano (1):
-      kconfig: fix menuconfig on debian lenny
+In a way this is also true, but only indirectly - the cg_cgroup_link
+objects form a two-dimensional doubly-linked list lattice that
+represents the many:many relationship between cgroup and css_set. One
+dimension's linked lists are headed by css_set objects, the other
+dimension is headed by cgroups.
 
-Justin P. Mattock (1):
-      scripts/kconfig/gconf.glade Update broken web addresses.
-
-Kyle McMartin (1):
-      kbuild: fix oldnoconfig to do the right thing
-
-Michal Marek (9):
-      kconfig: Allow frontends to display messages themselves
-      xconfig: Change the titlebar if using Qt3
-      kconfig: Simplify Makefile for xconfig
-      Merge branch 'kbuild/kconfig/kbuild-generic-v7' of http://github.com/lacombar/linux-2.6 into kbuild/kconfig
-      kconfig: Propagate const
-      kconfig: Fix realloc usage()
-      Merge branch 'kbuild/rc-fixes' into kbuild/kconfig
-      Revert "kconfig: Temporarily disable dependency warnings"
-      Merge branch 'message-callback' into kbuild/kconfig
-
-Naohiro Aota (1):
-      kconfig: Don't go out from read config loop when you read new symbol
-
-Nir Tzachar (1):
-      nconfig: add search support
-
-Stephen Boyd (1):
-      nconfig: Fix help for choice menus
-
-Will Newton (1):
-      kconfig: Use PATH_MAX instead of 128 for path buffer sizes.
-
- Documentation/kbuild/kconfig-language.txt  |    3 +-
- Kconfig                                    |   11 +
- README                                     |    1 +
- arch/alpha/Kconfig                         |    4 -
- arch/arm/Kconfig                           |    7 -
- arch/avr32/Kconfig                         |    7 -
- arch/blackfin/Kconfig                      |    7 -
- arch/cris/Kconfig                          |    7 -
- arch/frv/Kconfig                           |    6 -
- arch/h8300/Kconfig                         |    7 -
- arch/ia64/Kconfig                          |    7 -
- arch/m32r/Kconfig                          |    7 -
- arch/m68k/Kconfig                          |    6 -
- arch/m68knommu/Kconfig                     |    7 -
- arch/microblaze/Kconfig                    |    5 -
- arch/mips/Kconfig                          |    2 -
- arch/mn10300/Kconfig                       |    9 -
- arch/parisc/Kconfig                        |    7 -
- arch/powerpc/Kconfig                       |    6 -
- arch/s390/Kconfig                          |    7 -
- arch/score/Kconfig                         |    5 -
- arch/sh/Kconfig                            |    7 -
- arch/sparc/Kconfig                         |    6 -
- arch/tile/Kconfig                          |    2 -
- arch/um/Kconfig.common                     |    2 -
- arch/x86/Kconfig                           |    3 -
- arch/xtensa/Kconfig                        |    5 -
- scripts/kconfig/Makefile                   |   87 +++--
- scripts/kconfig/conf.c                     |   15 +-
- scripts/kconfig/confdata.c                 |  126 ++++---
- scripts/kconfig/expr.h                     |    2 +-
- scripts/kconfig/gconf.c                    |   20 +-
- scripts/kconfig/gconf.glade                |    1 -
- scripts/kconfig/kxgettext.c                |   15 +-
- scripts/kconfig/lex.zconf.c_shipped        |    7 +-
- scripts/kconfig/lkc.h                      |    8 +-
- scripts/kconfig/lkc_proto.h                |    3 +
- scripts/kconfig/lxdialog/check-lxdialog.sh |    2 +
- scripts/kconfig/mconf.c                    |   64 ++--
- scripts/kconfig/menu.c                     |    6 +-
- scripts/kconfig/nconf.c                    |  487 ++++++++++++-------------
- scripts/kconfig/nconf.gui.c                |   22 +-
- scripts/kconfig/nconf.h                    |    3 +-
- scripts/kconfig/qconf.cc                   |  174 +++++----
- scripts/kconfig/qconf.h                    |   76 ++--
- scripts/kconfig/symbol.c                   |   51 +++-
- scripts/kconfig/util.c                     |    7 +-
- scripts/kconfig/zconf.l                    |    7 +-
- scripts/kconfig/zconf.tab.c_shipped        |  547 ++++++++++++++--------------
- scripts/kconfig/zconf.y                    |   18 +-
- 50 files changed, 946 insertions(+), 955 deletions(-)
- create mode 100644 Kconfig
+Paul
