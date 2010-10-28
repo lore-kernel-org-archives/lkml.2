@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761354Ab0J1SaA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 14:30:00 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:35477 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755940Ab0J1S3z convert rfc822-to-8bit (ORCPT
+	id S1761362Ab0J1Sae (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 14:30:34 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36379 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755940Ab0J1Saa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 14:29:55 -0400
-Date: Thu, 28 Oct 2010 20:29:53 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>
-Subject: [PATCH] amiserial: Remove unused variable icount
-Message-ID: <alpine.DEB.2.00.1010282027480.29737@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 28 Oct 2010 14:30:30 -0400
+Date: Thu, 28 Oct 2010 20:30:24 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Greg KH <greg@kroah.com>
+Cc: Nguyen Dinh-R00091 <R00091@freescale.com>, Greg KH <gregkh@suse.de>,
+        matthieu.castet@parrot.com, stern@rowland.harvard.edu,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [GIT PATCH] USB patches for .37-rc1
+Message-ID: <20101028183024.GA31158@pengutronix.de>
+References: <20101022175102.GA13489@kroah.com> <86A0E76937111F4C92FABEC0A2098851051D62E6@az33exm21> <20101028181519.GD2573@kroah.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-7
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101028181519.GD2573@kroah.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/char/amiserial.c: In function ¡rs_ioctl¢:
-drivers/char/amiserial.c:1302: warning: unused variable ¡icount¢
+On Thu, Oct 28, 2010 at 11:15:19AM -0700, Greg KH wrote:
+> On Mon, Oct 25, 2010 at 04:33:27PM -0700, Nguyen Dinh-R00091 wrote:
+> > Hi Greg,
+> > 
+> > It seems that this commit is breaking ehci-mxc build for MX51.
+> > 
+> > USB: ehci tdi : let's tdi_reset set host mode
+> > Commit # 65fd42724aee31018b0bb53f4cb04971423be664
+> > 
+> > >Matthew Garrett (1):
+> > >      USB: serial: Enable USB autosuspend by default on qcserial
+> > >
+> > 
+> > The error is:
+> > 
+> > drivers/usb/host/ehci-mxc.c: In function 'ehci_mxc_drv_probe':
+> > drivers/usb/host/ehci-mxc.c:192: error: 'ehci' undeclared (first use in this function)
+> 
+> Care to send a build fix for it?
+I reported that issue, too:
+http://thread.gmane.org/gmane.linux.usb.general/35817/focus=38096
 
-commit 0587102cf9f427c185bfdeb2cef41e13ee0264b1 ("tty: icount changeover for
-other main devices") removed the users, but not the actual variable.
+it contains a patch that fixes the build but isn't confirmed to work,
+yet.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/char/amiserial.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+Best regards
+Uwe
 
-diff --git a/drivers/char/amiserial.c b/drivers/char/amiserial.c
-index b0a7046..c0bd6f4 100644
---- a/drivers/char/amiserial.c
-+++ b/drivers/char/amiserial.c
-@@ -1299,7 +1299,6 @@ static int rs_ioctl(struct tty_struct *tty, struct file * file,
- {
- 	struct async_struct * info = tty->driver_data;
- 	struct async_icount cprev, cnow;	/* kernel counter temps */
--	struct serial_icounter_struct icount;
- 	void __user *argp = (void __user *)arg;
- 	unsigned long flags;
- 
 -- 
-1.7.0.4
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
