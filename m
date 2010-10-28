@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760836Ab0J1R6U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 13:58:20 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:34686 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755325Ab0J1R6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 13:58:14 -0400
-Message-ID: <4CC9B9A9.20904@linux.vnet.ibm.com>
-Date: Thu, 28 Oct 2010 10:58:01 -0700
-From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Charles Manning <manningc2@actrix.gen.nz>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: How do I add yaffs file system to mainline?
-References: <201010281308.16774.manningc2@actrix.gen.nz>
-In-Reply-To: <201010281308.16774.manningc2@actrix.gen.nz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1760848Ab0J1R7V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 13:59:21 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:50152 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755325Ab0J1R7Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 13:59:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=QolMg36yZRt31smHA+6EfWImcu/mQq8Yv3V4dsbu0PUubba68pHBPiZxGsXft9hei1
+         gRk2+cJN9TL00U4LiusFuAHnHJXnrrLhOwC6/UmPBVjMhnxCNjCSyax7VZCh0Kf4ljXo
+         2LACOS98//ckCMjik2211KaK3t/vB1FHLhwUc=
+From: Rabin Vincent <rabin@rab.in>
+To: tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org, Rabin Vincent <rabin@rab.in>
+Subject: [PATCH] genirq: handle shared irqs in handle_nested_irq()
+Date: Thu, 28 Oct 2010 23:28:38 +0530
+Message-Id: <1288288718-1188-1-git-send-email-rabin@rab.in>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2010 05:08 PM, Charles Manning wrote:
-> YAFFS has been used for many years as a third-party patch-in.
->
-> I have recently been through the exercise of changing all the symbols to be
-> more kernel friendly with the intention of mainlining into the linux tree.
->
-> The code is in git at http://github.com/cdhmanning/linux-yaffs-integration/
->
-> Thanks to CELF and Google for sponsoring the effort so far.
->
-> What still needs to be done to mainline this?
-> Who do I need to approach?
+Allow shared irqs to work when nested threads are used for handling
+threaded interrupts.
 
-I'd say you need to post a series of incremental patches which 
-introduces this filesystem, why the kernel should have it, why people 
-would want it, etc.
+Signed-off-by: Rabin Vincent <rabin@rab.in>
+---
+ kernel/irq/chip.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-For lots more details, you should take a look at the files in 
-Documentation/development-process in the kernel source tree.
-
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index baa5c4a..94a45a9 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -418,8 +418,8 @@ static inline void unmask_irq(struct irq_desc *desc)
+ void handle_nested_irq(unsigned int irq)
+ {
+ 	struct irq_desc *desc = irq_to_desc(irq);
++	irqreturn_t action_ret = IRQ_NONE;
+ 	struct irqaction *action;
+-	irqreturn_t action_ret;
+ 
+ 	might_sleep();
+ 
+@@ -434,7 +434,10 @@ void handle_nested_irq(unsigned int irq)
+ 	desc->status |= IRQ_INPROGRESS;
+ 	raw_spin_unlock_irq(&desc->lock);
+ 
+-	action_ret = action->thread_fn(action->irq, action->dev_id);
++	do {
++		action_ret |= action->thread_fn(action->irq, action->dev_id);
++		action = action->next;
++	} while (action);
+ 	if (!noirqdebug)
+ 		note_interrupt(irq, desc, action_ret);
+ 
 -- 
-Regards,
+1.7.2.3
 
-- Corey
-
-Corey Ashford
-Software Engineer
-IBM Linux Technology Center, Linux Toolchain
-Beaverton, OR
-cjashfor@us.ibm.com
