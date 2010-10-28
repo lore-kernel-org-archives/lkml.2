@@ -1,63 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757344Ab0J1TwF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 15:52:05 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:50780 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754745Ab0J1Tv4 convert rfc822-to-8bit (ORCPT
+	id S1757825Ab0J1Twz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 15:52:55 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:50423 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751496Ab0J1Twt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 15:51:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=yAOWR9NH4TDPGWAhaCyqYiGDlnu73/oeC6iTNdmYM5xP2zpKWrbZPXYkF0y5/YRa95
-         MVzjUci4UztkmwL7k9BfImRUYVQOIPI2gtfLrWEDqd6qbeXE0wlS+R8K/T0ZFaF4N9+E
-         qqC7CSpQiNx/RUjpOotfEWdn8KEGBZ3ySrT78=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTi=j3CAhHExdEPuV6WGkgegizBE7Eyu7BSYQrgE+@mail.gmail.com>
-References: <20100831082307.064687027@linux.vnet.ibm.com> <20100831083844.043619334@linux.vnet.ibm.com>
- <AANLkTikCLHh5Uz-DRq9ws78We+SwCAqdurA6HfuJh-8Y@mail.gmail.com>
- <20101018103729.GA4122@linux.vnet.ibm.com> <AANLkTikKJ25L=6b2resz+0SAg7ZYL5j=rHG7Lg4kFbwd@mail.gmail.com>
- <20101019110801.GA4128@linux.vnet.ibm.com> <AANLkTimLi8BYy_u8NhD15s=+iiODzuG1H_CgZ-cd7jep@mail.gmail.com>
- <20101019213112.GA11432@merkur.ravnborg.org> <AANLkTike6UQVWKSz-Njs5Rps690EHeResH3V+aSM+qdO@mail.gmail.com>
- <AANLkTimn8R-qde8FH_cNa4JPcR2F=mkUAQhPVT-hOBhn@mail.gmail.com>
- <4CC8ABC7.5030003@suse.cz> <AANLkTimCoH1YA3sh3W_59QG42CwtRXQovgqUw2SndUO6@mail.gmail.com>
- <4CC8B6E4.7070200@suse.cz> <AANLkTinpD8NR-pBLfWV9uan-+MYddFQGtjMx0qhAG_n9@mail.gmail.com>
- <4CC967CE.4020100@suse.cz> <AANLkTi=j3CAhHExdEPuV6WGkgegizBE7Eyu7BSYQrgE+@mail.gmail.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Thu, 28 Oct 2010 15:51:35 -0400
-Message-ID: <AANLkTimunQMdg2dOTond3sATujz+Mr8d4nO+7FNU15PF@mail.gmail.com>
-Subject: Re: [PATCH] initramfs: Fix build break on symbol-prefixed archs
-To: Michal Marek <mmarek@suse.cz>
-Cc: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>, tabbott@ksplice.com,
-        vda.linux@googlemail.com, hpa@linux.intel.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com,
-        Sam Ravnborg <sam@ravnborg.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 28 Oct 2010 15:52:49 -0400
+X-IronPort-AV: E=Sophos;i="4.58,253,1286175600"; 
+   d="scan'208";a="474436773"
+Subject: Re: [PATCH] nfs4: The difference of 2 pointers is size_t
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Benny Halevy <bhalevy@panasas.com>, linux-nfs@vger.kernel.org,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTimyNXV9K7hfz9CzmHa8CYMYdhi+zOgZzAT+CesQ@mail.gmail.com>
+References: <alpine.DEB.2.00.1010282004390.31018@ayla.of.borg>
+	 <20101028112535.442f47a7.akpm@linux-foundation.org>
+	 <AANLkTimyNXV9K7hfz9CzmHa8CYMYdhi+zOgZzAT+CesQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Organization: NetApp
+Date: Thu, 28 Oct 2010 15:52:42 -0400
+Message-ID: <1288295562.14221.24.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+X-OriginalArrivalTime: 28 Oct 2010 19:52:44.0515 (UTC) FILETIME=[B0216330:01CB76D9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 28, 2010 at 15:46, Mike Frysinger wrote:
-> On Thu, Oct 28, 2010 at 08:08, Michal Marek wrote:
->> On 28.10.2010 01:58, Mike Frysinger wrote:
->>>  The previous commit works and
->>>> the next will do as well if you submit the patch.
->>>
->>> if my change is going in after your bad commit, then you can squash it
->>> with a simple `git commit --amend`.
->>
->> I know how to rewrite the branch, I just don't want to do it needlessly
->> so that 'git pull' still works for people tracking the branch.
->
-> keeping git bisect sane is not what i would classify as "needlessly"
+On Thu, 2010-10-28 at 20:38 +0200, Geert Uytterhoeven wrote:
+> On Thu, Oct 28, 2010 at 20:25, Andrew Morton <akpm@linux-foundation.org> wrote:
+> > On Thu, 28 Oct 2010 20:06:19 +0200 (CEST)
+> > Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> >
+> >> On m68k, which is 32-bit:
+> >>
+> >> fs/nfs/nfs4proc.c: In function ___nfs41_sequence_done___:
+> >> fs/nfs/nfs4proc.c:432: warning: format ___%ld___ expects type ___long int___, but argument 3 has type ___int___
+> >> fs/nfs/nfs4proc.c: In function ___nfs4_setup_sequence___:
+> >> fs/nfs/nfs4proc.c:576: warning: format ___%ld___ expects type ___long int___, but argument 5 has type ___int___
+> >>
+> >> On 32-bit, size_t is int; on 64-bit, size_t is long.
+> >>
+> >> Introduced by commit dfb4f309830359352539919f23accc59a20a3758 ("NFSv4.1: keep
+> >> seq_res.sr_slot as pointer rather than an index")
+> >>
+> >> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> >> ---
+> >>  fs/nfs/nfs4proc.c |    4 ++--
+> >>  1 files changed, 2 insertions(+), 2 deletions(-)
+> >>
+> >> diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+> >> index 32c8758..80229dc 100644
+> >> --- a/fs/nfs/nfs4proc.c
+> >> +++ b/fs/nfs/nfs4proc.c
+> >> @@ -429,7 +429,7 @@ static int nfs41_sequence_done(struct rpc_task *task, struct nfs4_sequence_res *
+> >>                * returned NFS4ERR_DELAY as per Section 2.10.6.2
+> >>                * of RFC5661.
+> >>                */
+> >> -             dprintk("%s: slot=%ld seq=%d: Operation in progress\n",
+> >> +             dprintk("%s: slot=%zd seq=%d: Operation in progress\n",
+> >>                       __func__,
+> >>                       res->sr_slot - res->sr_session->fc_slot_table.slots,
+> >>                       res->sr_slot->seq_nr);
+> >> @@ -573,7 +573,7 @@ int nfs4_setup_sequence(const struct nfs_server *server,
+> >>               goto out;
+> >>       }
+> >>
+> >> -     dprintk("--> %s clp %p session %p sr_slot %ld\n",
+> >> +     dprintk("--> %s clp %p session %p sr_slot %zd\n",
+> >>               __func__, session->clp, session, res->sr_slot ?
+> >>                       res->sr_slot - session->fc_slot_table.slots : -1);
+> >>
+> >
+> > I think it should formally be %t, for a ptrdiff_t.
+> 
+> You're correct.
+> 
+> I didn't know we "did" %t. I almost have enough fingers and toes to
+> count its users ;-)
+> 
+> Gr{oetje,eeting}s,
+> 
+>                         Geert
 
-plus, there is no requirement that your current tree be what Linus
-pulls.  add my patch to your branch-that-may-not-be-rebased, then
-create a new branch with those two squashed, and have Linus pull that.
- your main branch will pick up a merge commit, but who cares.
--mike
+I did a s/size_t/ptrdiff_t/, s/%z/%t/ to the above and committed the
+result with no other changes.
+
+Cheers
+  Trond
