@@ -1,79 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760893Ab0J1SOW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 14:14:22 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:62376 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755321Ab0J1SOQ convert rfc822-to-8bit (ORCPT
+	id S1760910Ab0J1SQD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 14:16:03 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:10599 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755321Ab0J1SP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 14:14:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=OP0x82kHXfdu894M5A3X589yd8C5CG/L3/CmApsZxb5PwPQeb2zZhsyPPRNAC9TkoR
-         zWDExfIpWckIKrLujuCVf4YrcK89CVD9V9y/sg5pW7oiO+xNc4QlJQXWc3jTvc5npyf/
-         T8g2y05OJUo7RPoRtF+5/8jsJGHexwLJ6kAzs=
+	Thu, 28 Oct 2010 14:15:59 -0400
+Message-ID: <4CC9BDDF.9080901@caviumnetworks.com>
+Date: Thu, 28 Oct 2010 11:15:59 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-In-Reply-To: <4CC9A03F.80401@ti.com>
-References: <1288124308-14999-1-git-send-email-cyril@ti.com>
-	<1288124308-14999-2-git-send-email-cyril@ti.com>
-	<AANLkTi=rDep3jkp2QAjVsgjZ7JQ0ysnse4TARv29fyHm@mail.gmail.com>
-	<4CC9A03F.80401@ti.com>
-Date: Thu, 28 Oct 2010 14:14:14 -0400
-Message-ID: <AANLkTinOROf6OqTjN0tZgoDr5ij3J18DHpC8wwArH3CO@mail.gmail.com>
-Subject: Re: [PATCH v4 01/12] misc: add driver for sequencer serial port
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: cyril@ti.com
-Cc: "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
-        "dbrownell@users.sourceforge.net" <dbrownell@users.sourceforge.net>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Greg KH <greg@kroah.com>, Charles Manning <manningc2@actrix.gen.nz>
+CC: Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-fsdevel@vger.kernel.org
+Subject: Re: How do I add yaffs file system to mainline?
+References: <201010290455.02390.manningc2@actrix.gen.nz> <20101028102641.d936aec8.randy.dunlap@oracle.com> <201010290641.13820.manningc2@actrix.gen.nz> <20101028174932.GB2205@kroah.com>
+In-Reply-To: <20101028174932.GB2205@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 28 Oct 2010 18:16:28.0282 (UTC) FILETIME=[3D3A2DA0:01CB76CC]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/10/28 Cyril Chemparathy <cyril@ti.com>:
-> On 10/28/2010 11:49 AM, Linus Walleij wrote:
->> Why is this thing in drivers/misc?
->> drivers/mfd is IMHO the apropriate place for a driver like this, (...)
+On 10/28/2010 10:49 AM, Greg KH wrote:
+> On Fri, Oct 29, 2010 at 06:41:13AM +1300, Charles Manning wrote:
+>> On Friday 29 October 2010 06:26:41 Randy Dunlap wrote:
+>>> On Fri, 29 Oct 2010 04:55:02 +1300 Charles Manning wrote:
+>>>> YAFFS has been used for many years as a third-party patch-in.
+>>>>
+>>>> I have recently been through the exercise of changing all the symbols to
+>>>> be more kernel friendly with the intention of mainlining into the linux
+>>>> tree.
+>>>>
+>>>> The code is in git at
+>>>> http://github.com/cdhmanning/linux-yaffs-integration/
+>>>
+>>> It's difficult to review&  comment on a git tree.
+>>> We prefer patches via email for review.
+>>>
+>>>> Thanks to CELF and Google for sponsoring the effort so far.
+>>>>
+>>>> What still needs to be done to mainline this?
+>>>> Who do I need to approach?
+>>>
+>>> Either ask Stephen Rothwell to add the git tree to the linux-next daily
+>>> tree or ask Greg KH to add it to the drivers/staging/ area.
+>>
+>> Hi Randy
+>>
+>> Thanks for the response.
+>>
+>> At this stage I'm hoping for some high level feedback about code layout etc.
+>> and don't expect an immediate approval. I expect to do some further code
+>> cleansing before getting a green light.
+>>
+>> We're talking around 15k lines of code. Is a huge patch set the right way?
+>>   I thought it would be more polite to invite people to look at git, rather
+>> than filling everyone's inboxes.
 >
-> Alan had raised the same concern earlier, and my response was:
+> Have you read Documentation/SubmittingPatches and
+> Documentation/development_process/ which explains how to break up your
+> code and send it out for review properly?
 >
->[Cyril]
->> Unlike MFDs, this device doesn't have cells with differing
->> functionality.  Instead it has functionally identical ports that can
->> operate in a variety of modes.  That said, does this still fit in with
->> other MFD drivers?  If so, I don't see a problem with moving it there.
+> No one is going to look at a random git tree with 15k lines of code for
+> a review, sorry.  Would you?
 >
-> I don't see a problem with moving this into MFD, but this won't be able
-> to use any of the functionality provided by mfd-core.
 
-I think they do have differing functionality, though not in their
-essence (hardware), they do get a clearly defined role at
-run-time.
+The vast majority of the changes are just adding new files.  All Those 
+can be found in:
 
-Sam will tell, but since you have subdrivers in other
-subsystems MFD fits best IMHO.
+http://github.com/cdhmanning/linux-yaffs-integration/tree/yaffs-integration/fs/yaffs2/
 
-What about the platform data passed into the MFD driver defines
-what type of functionality will be assigned to each physical
-block, from that you create the array of MFD cells to be spawn
-and spawn it off. Then you have platform_driver:s in each
-subsystem attaching to said cells. Shouldn't be too hard.
+That said, one could imagine a scenario where a single patch was created 
+that added the contents of that directory.  That patch could then be 
+send to the relevant mailing lists as several people have pointed out.
 
-Yours,
-Linus Walleij
+Certainly replying to a patch submission e-mail is much closer to the 
+standard kernel development process than trying to comment on files in 
+some random git tree.
+
+David Daney
+
