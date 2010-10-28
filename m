@@ -1,276 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760134Ab0J1VR0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 17:17:26 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:60990 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757047Ab0J1VRT (ORCPT
+	id S1760216Ab0J1VS3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 17:18:29 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:2589 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757047Ab0J1VSY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 17:17:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:content-type;
-        b=m+HLonq7TGjBZW04UMbc2ZYfEje3b9+MuBsjV21lppTLfWfhbmKXi/s20UMfw0R+56
-         BbsyRDVv5KRhYPm2g3/5jFmNfPI2ZYdvmgO9eYvKe+9xeTn3WAEwS5yLGY9OH1fMVEeV
-         YqX8ExjlDf3hCCGFwIiwh66ZRSTXDeyzyn+y8=
+	Thu, 28 Oct 2010 17:18:24 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp03.nvidia.com on Thu, 28 Oct 2010 14:18:15 -0700
+From: Rhyland Klein <rklein@nvidia.com>
+To: Lars-Peter Clausen <lars@metafoo.de>,
+        Anton Vorontsov <cbouatmailru@gmail.com>
+CC: "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        Andrew Chew <AChew@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 28 Oct 2010 14:17:41 -0700
+Subject: RE: [PATCH v2] POWER: Add gpio charger driver
+Thread-Topic: [PATCH v2] POWER: Add gpio charger driver
+Thread-Index: ActxSB5Yfwvn2FrzShihLF1G4x8GJQFnQ1Gg
+Message-ID: <E88A1D35AF5437468E5B14C7C4BA61C702D3E13FB3@HQMAIL01.nvidia.com>
+References: <1287663957-30099-1-git-send-email-lars@metafoo.de>
+ <1287676501-23254-1-git-send-email-lars@metafoo.de>
+ <20101021162617.GA10447@oksana.dev.rtsoft.ru> <4CC07CB4.9060108@metafoo.de>
+In-Reply-To: <4CC07CB4.9060108@metafoo.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20101028210644.GF28126@thunk.org>
-References: <AANLkTi=E_uMj_ndGU86DCjX4aDwjHqg3dkwxjQRSJtq6@mail.gmail.com>
-	<20101028175221.GA1578@arch.trippelsdorf.de>
-	<20101028180118.GC6814@thunk.org>
-	<20101028193211.GA28126@thunk.org>
-	<AANLkTimHJe9bA-X+JWkspgjb4AZkkgbEFWQiwzO-gx-h@mail.gmail.com>
-	<20101028200548.GC28126@thunk.org>
-	<AANLkTimw9Vwzy4MXO1t7TnJfwTwYtWcfj0D=Zx8O72cY@mail.gmail.com>
-	<20101028203706.GD28126@thunk.org>
-	<AANLkTimFgcCVgBrW_oLzn0tUdGwJKfkhDJMf=EVHZ4Vf@mail.gmail.com>
-	<20101028210644.GF28126@thunk.org>
-Date: Thu, 28 Oct 2010 23:17:18 +0200
-Message-ID: <AANLkTi=nkWm2ToXySsRLy1b7m9vz08+sBU3WJ92Nqsj1@mail.gmail.com>
-Subject: Re: [next-20101038] Call trace in ext4
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: "Ted Ts'o" <tytso@mit.edu>, sedat.dilek@gmail.com,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-        sfr@canb.auug.org.au, Arnd Bergmann <arnd@arndb.de>,
-        Avinash Kurup <kurup.avinash@gmail.com>
-Content-Type: multipart/mixed; boundary=20cf300fb3d5ec09280493b3ddc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o9SLIbiE026533
 
---20cf300fb3d5ec09280493b3ddc3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+> -----Original Message-----
+> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
+> Sent: Thursday, October 21, 2010 10:48 AM
+> To: Anton Vorontsov
+> Cc: Rhyland Klein; broonie@opensource.wolfsonmicro.com; Andrew Chew;
+> olof@lixom.net; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH v2] POWER: Add gpio charger driver
+> 
+> Anton Vorontsov wrote:
+> > On Thu, Oct 21, 2010 at 05:55:01PM +0200, Lars-Peter Clausen wrote:
+> >> This patch adds a simple driver for chargers indicating their online
+> status
+> >> through a GPIO pin.
+> >>
+> >> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> >
+> > Hm. I'm getting older, it seems. Now can anybody remind me why
+> > pda_power.c doesn't work here? ;-)
+> >
+> > This driver looks like a light-weigh version of pda_power, except
+> > that it can do GPIOs directly (instead of is_*_online() callbacks).
+> >
+> > Can we instead improve pda_power? Like this:
+> >
+> > 	if (!pdata->is_ac_online && pdata->ac_monitor_gpio)
+> > 		pdata->is_ac_online = pda_ac_monitor_gpio;
+> >
+> > Should look quite cool, I think.
+> >
+> > (Plus, we might get rid of ac/usb stuff in that driver, and
+> > pass enum power_supply_type to the callbacks instead).
+> >
+> 
+> Hi
+> 
+> Hm... I guess it can be, but on the other hand most platform bus chargers
+> type
+> devices can be, because the pda_power driver is keep pretty generic with
+> custom init,
+> status and exit callbacks.
+> 
+> - Lars
 
-On Thu, Oct 28, 2010 at 11:06 PM, Ted Ts'o <tytso@mit.edu> wrote:
-> On Thu, Oct 28, 2010 at 11:02:14PM +0200, Sedat Dilek wrote:
->>
->> I could copy a complete linux-2.6 GIT tree within my $HOME/src, looks go=
-od.
->
-> Excellent; and attempts to do this before resulted on the BUG_ON
-> tripping? =C2=A0If so, that's certainly a good sign!
->
->>
->> Any other test-case you can suggest to be sure things work as expected, =
-now?
->
-> Well, given that I haven't been able to replicate myself, no, not
-> really.
->
-> I am curious about your setup. =C2=A0How much memory do you have on your
-> system, and how much free memory did you have before running the copy?
-> (i.e, what does the "free" command display)?
->
+I didn't see any more discussion on this. Is the plan to integrate the gpio-charger driver as is or to instead try to integrate support for this into pda_power?
 
-This is an IBM T40p with Pentium-M (Banias) 1.7GHz and 1GByte RAM, 60GByte =
-HDD.
-
-Before I run the copy command, I have open 2 KDE konsoles, 1x Quassel
-IRC-client, 1x Firefox with 5 open tabs.
-
-# free
-             total       used       free     shared    buffers     cached
-Mem:       1033796    1005812      27984          0      61400     617252
--/+ buffers/cache:     327160     706636
-Swap:      1052244          0    1052244
-
-While copying (a list with invoking x-timesl free command is attached)...
-
-# free
-             total       used       free     shared    buffers     cached
-Mem:       1033796    1017332      16464          0      66144     630488
--/+ buffers/cache:     320700     713096
-Swap:      1052244          0    1052244
-
-
->> BTW, feel free to add:
->>
->> =C2=A0 =C2=A0 =C2=A0 Reported-andtested-by: Sedat Dilek <sedat.dilek@gma=
-il.com>
->
-> I'll certainly give you credit (as well as to the other people who
-> reported the problem).
->
-
-Of course, Linus wrote in one 2.6.36-rcX announce that maintainers
-forgot about that.
-But I saw people on LKML adding a "Feel free to add...", so I follow
-the etiquette.
-
-> Thanks again!!
->
-> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
-=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
-=C2=A0 =C2=A0 =C2=A0- Ted
->
-
-I have to thank for the fast replies and patch.
-
-- Sedat -
-
---20cf300fb3d5ec09280493b3ddc3
-Content-Type: text/plain; charset=US-ASCII; name="free.txt"
-Content-Disposition: attachment; filename="free.txt"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gfu4rp6y0
-
-cm9vdEB0Ym94On4jIGZyZWUKICAgICAgICAgICAgIHRvdGFsICAgICAgIHVzZWQgICAgICAgZnJl
-ZSAgICAgc2hhcmVkICAgIGJ1ZmZlcnMgICAgIGNhY2hlZApNZW06ICAgICAgIDEwMzM3OTYgICAg
-MTAwNTgxMiAgICAgIDI3OTg0ICAgICAgICAgIDAgICAgICA2MTQwMCAgICAgNjE3MjUyCi0vKyBi
-dWZmZXJzL2NhY2hlOiAgICAgMzI3MTYwICAgICA3MDY2MzYKU3dhcDogICAgICAxMDUyMjQ0ICAg
-ICAgICAgIDAgICAgMTA1MjI0NApyb290QHRib3g6fiMgCnJvb3RAdGJveDp+IyAKcm9vdEB0Ym94
-On4jIApyb290QHRib3g6fiMgCnJvb3RAdGJveDp+IyAKcm9vdEB0Ym94On4jIApyb290QHRib3g6
-fiMgCnJvb3RAdGJveDp+IyAKcm9vdEB0Ym94On4jIApyb290QHRib3g6fiMgCnJvb3RAdGJveDp+
-IyBmcmVlCiAgICAgICAgICAgICB0b3RhbCAgICAgICB1c2VkICAgICAgIGZyZWUgICAgIHNoYXJl
-ZCAgICBidWZmZXJzICAgICBjYWNoZWQKTWVtOiAgICAgICAxMDMzNzk2ICAgICA5OTA3NjQgICAg
-ICA0MzAzMiAgICAgICAgICAwICAgICAgNTkyOTIgICAgIDYwODI0OAotLysgYnVmZmVycy9jYWNo
-ZTogICAgIDMyMzIyNCAgICAgNzEwNTcyClN3YXA6ICAgICAgMTA1MjI0NCAgICAgICAgICAwICAg
-IDEwNTIyNDQKcm9vdEB0Ym94On4jIGZyZWUKICAgICAgICAgICAgIHRvdGFsICAgICAgIHVzZWQg
-ICAgICAgZnJlZSAgICAgc2hhcmVkICAgIGJ1ZmZlcnMgICAgIGNhY2hlZApNZW06ICAgICAgIDEw
-MzM3OTYgICAgIDk4MTEzNiAgICAgIDUyNjYwICAgICAgICAgIDAgICAgICA1ODI0NCAgICAgNjA2
-MzA4Ci0vKyBidWZmZXJzL2NhY2hlOiAgICAgMzE2NTg0ICAgICA3MTcyMTIKU3dhcDogICAgICAx
-MDUyMjQ0ICAgICAgICAgIDAgICAgMTA1MjI0NApyb290QHRib3g6fiMgZnJlZQogICAgICAgICAg
-ICAgdG90YWwgICAgICAgdXNlZCAgICAgICBmcmVlICAgICBzaGFyZWQgICAgYnVmZmVycyAgICAg
-Y2FjaGVkCk1lbTogICAgICAgMTAzMzc5NiAgICAxMDE0MDk2ICAgICAgMTk3MDAgICAgICAgICAg
-MCAgICAgIDU4NTgwICAgICA2Mzk2MjgKLS8rIGJ1ZmZlcnMvY2FjaGU6ICAgICAzMTU4ODggICAg
-IDcxNzkwOApTd2FwOiAgICAgIDEwNTIyNDQgICAgICAgICAgMCAgICAxMDUyMjQ0CnJvb3RAdGJv
-eDp+IyBmcmVlCiAgICAgICAgICAgICB0b3RhbCAgICAgICB1c2VkICAgICAgIGZyZWUgICAgIHNo
-YXJlZCAgICBidWZmZXJzICAgICBjYWNoZWQKTWVtOiAgICAgICAxMDMzNzk2ICAgIDEwMDc4NzYg
-ICAgICAyNTkyMCAgICAgICAgICAwICAgICAgNTkxNDggICAgIDYzMjcwMAotLysgYnVmZmVycy9j
-YWNoZTogICAgIDMxNjAyOCAgICAgNzE3NzY4ClN3YXA6ICAgICAgMTA1MjI0NCAgICAgICAgICAw
-ICAgIDEwNTIyNDQKcm9vdEB0Ym94On4jIGZyZWUKICAgICAgICAgICAgIHRvdGFsICAgICAgIHVz
-ZWQgICAgICAgZnJlZSAgICAgc2hhcmVkICAgIGJ1ZmZlcnMgICAgIGNhY2hlZApNZW06ICAgICAg
-IDEwMzM3OTYgICAgMTAwNTU4NCAgICAgIDI4MjEyICAgICAgICAgIDAgICAgICA1OTU4OCAgICAg
-NjMzMzQ4Ci0vKyBidWZmZXJzL2NhY2hlOiAgICAgMzEyNjQ4ICAgICA3MjExNDgKU3dhcDogICAg
-ICAxMDUyMjQ0ICAgICAgICAgIDAgICAgMTA1MjI0NApyb290QHRib3g6fiMgZnJlZQogICAgICAg
-ICAgICAgdG90YWwgICAgICAgdXNlZCAgICAgICBmcmVlICAgICBzaGFyZWQgICAgYnVmZmVycyAg
-ICAgY2FjaGVkCk1lbTogICAgICAgMTAzMzc5NiAgICAxMDA2MzA4ICAgICAgMjc0ODggICAgICAg
-ICAgMCAgICAgIDU5OTA0ICAgICA2MzQ1MzYKLS8rIGJ1ZmZlcnMvY2FjaGU6ICAgICAzMTE4Njgg
-ICAgIDcyMTkyOApTd2FwOiAgICAgIDEwNTIyNDQgICAgICAgICAgMCAgICAxMDUyMjQ0CnJvb3RA
-dGJveDp+IyBmcmVlCiAgICAgICAgICAgICB0b3RhbCAgICAgICB1c2VkICAgICAgIGZyZWUgICAg
-IHNoYXJlZCAgICBidWZmZXJzICAgICBjYWNoZWQKTWVtOiAgICAgICAxMDMzNzk2ICAgIDEwMjAx
-NDAgICAgICAxMzY1NiAgICAgICAgICAwICAgICAgNjAwODQgICAgIDY0ODMyOAotLysgYnVmZmVy
-cy9jYWNoZTogICAgIDMxMTcyOCAgICAgNzIyMDY4ClN3YXA6ICAgICAgMTA1MjI0NCAgICAgICAg
-ICAwICAgIDEwNTIyNDQKcm9vdEB0Ym94On4jIGZyZWUKICAgICAgICAgICAgIHRvdGFsICAgICAg
-IHVzZWQgICAgICAgZnJlZSAgICAgc2hhcmVkICAgIGJ1ZmZlcnMgICAgIGNhY2hlZApNZW06ICAg
-ICAgIDEwMzM3OTYgICAgIDk5NTUxMiAgICAgIDM4Mjg0ICAgICAgICAgIDAgICAgICA2MDIzNiAg
-ICAgNjI0NTUyCi0vKyBidWZmZXJzL2NhY2hlOiAgICAgMzEwNzI0ICAgICA3MjMwNzIKU3dhcDog
-ICAgICAxMDUyMjQ0ICAgICAgICAgIDAgICAgMTA1MjI0NApyb290QHRib3g6fiMgZnJlZQogICAg
-ICAgICAgICAgdG90YWwgICAgICAgdXNlZCAgICAgICBmcmVlICAgICBzaGFyZWQgICAgYnVmZmVy
-cyAgICAgY2FjaGVkCk1lbTogICAgICAgMTAzMzc5NiAgICAgOTk5MzY4ICAgICAgMzQ0MjggICAg
-ICAgICAgMCAgICAgIDYwMzI4ICAgICA2MjgzOTIKLS8rIGJ1ZmZlcnMvY2FjaGU6ICAgICAzMTA2
-NDggICAgIDcyMzE0OApTd2FwOiAgICAgIDEwNTIyNDQgICAgICAgICAgMCAgICAxMDUyMjQ0CnJv
-b3RAdGJveDp+IyBmcmVlCiAgICAgICAgICAgICB0b3RhbCAgICAgICB1c2VkICAgICAgIGZyZWUg
-ICAgIHNoYXJlZCAgICBidWZmZXJzICAgICBjYWNoZWQKTWVtOiAgICAgICAxMDMzNzk2ICAgIDEw
-MTM5MDQgICAgICAxOTg5MiAgICAgICAgICAwICAgICAgNjA1MzYgICAgIDY0MjQ3MgotLysgYnVm
-ZmVycy9jYWNoZTogICAgIDMxMDg5NiAgICAgNzIyOTAwClN3YXA6ICAgICAgMTA1MjI0NCAgICAg
-ICAgICAwICAgIDEwNTIyNDQKcm9vdEB0Ym94On4jIGZyZWUKICAgICAgICAgICAgIHRvdGFsICAg
-ICAgIHVzZWQgICAgICAgZnJlZSAgICAgc2hhcmVkICAgIGJ1ZmZlcnMgICAgIGNhY2hlZApNZW06
-ICAgICAgIDEwMzM3OTYgICAgMTAxNjg2MCAgICAgIDE2OTM2ICAgICAgICAgIDAgICAgICA2MDY2
-NCAgICAgNjQ0MTA4Ci0vKyBidWZmZXJzL2NhY2hlOiAgICAgMzEyMDg4ICAgICA3MjE3MDgKU3dh
-cDogICAgICAxMDUyMjQ0ICAgICAgICAgIDAgICAgMTA1MjI0NApyb290QHRib3g6fiMgZnJlZQog
-ICAgICAgICAgICAgdG90YWwgICAgICAgdXNlZCAgICAgICBmcmVlICAgICBzaGFyZWQgICAgYnVm
-ZmVycyAgICAgY2FjaGVkCk1lbTogICAgICAgMTAzMzc5NiAgICAxMDE4MDQ0ICAgICAgMTU3NTIg
-ICAgICAgICAgMCAgICAgIDYwNjg4ICAgICA2NDU1NDAKLS8rIGJ1ZmZlcnMvY2FjaGU6ICAgICAz
-MTE4MTYgICAgIDcyMTk4MApTd2FwOiAgICAgIDEwNTIyNDQgICAgICAgICAgMCAgICAxMDUyMjQ0
-CnJvb3RAdGJveDp+IyBmcmVlCiAgICAgICAgICAgICB0b3RhbCAgICAgICB1c2VkICAgICAgIGZy
-ZWUgICAgIHNoYXJlZCAgICBidWZmZXJzICAgICBjYWNoZWQKTWVtOiAgICAgICAxMDMzNzk2ICAg
-IDEwMDkyNjAgICAgICAyNDUzNiAgICAgICAgICAwICAgICAgNjA3MDggICAgIDYzNjQ2MAotLysg
-YnVmZmVycy9jYWNoZTogICAgIDMxMjA5MiAgICAgNzIxNzA0ClN3YXA6ICAgICAgMTA1MjI0NCAg
-ICAgICAgICAwICAgIDEwNTIyNDQKcm9vdEB0Ym94On4jIGZyZWUKICAgICAgICAgICAgIHRvdGFs
-ICAgICAgIHVzZWQgICAgICAgZnJlZSAgICAgc2hhcmVkICAgIGJ1ZmZlcnMgICAgIGNhY2hlZApN
-ZW06ICAgICAgIDEwMzM3OTYgICAgMTAwODI2NCAgICAgIDI1NTMyICAgICAgICAgIDAgICAgICA2
-MDcyOCAgICAgNjM1MzQ0Ci0vKyBidWZmZXJzL2NhY2hlOiAgICAgMzEyMTkyICAgICA3MjE2MDQK
-U3dhcDogICAgICAxMDUyMjQ0ICAgICAgICAgIDAgICAgMTA1MjI0NApyb290QHRib3g6fiMgZnJl
-ZQogICAgICAgICAgICAgdG90YWwgICAgICAgdXNlZCAgICAgICBmcmVlICAgICBzaGFyZWQgICAg
-YnVmZmVycyAgICAgY2FjaGVkCk1lbTogICAgICAgMTAzMzc5NiAgICAxMDEwNjU2ICAgICAgMjMx
-NDAgICAgICAgICAgMCAgICAgIDYwNzY4ICAgICA2Mzg3NjQKLS8rIGJ1ZmZlcnMvY2FjaGU6ICAg
-ICAzMTExMjQgICAgIDcyMjY3MgpTd2FwOiAgICAgIDEwNTIyNDQgICAgICAgICAgMCAgICAxMDUy
-MjQ0CnJvb3RAdGJveDp+IyBmcmVlCiAgICAgICAgICAgICB0b3RhbCAgICAgICB1c2VkICAgICAg
-IGZyZWUgICAgIHNoYXJlZCAgICBidWZmZXJzICAgICBjYWNoZWQKTWVtOiAgICAgICAxMDMzNzk2
-ICAgIDEwMjAwODAgICAgICAxMzcxNiAgICAgICAgICAwICAgICAgNjEwODggICAgIDY0NzU1Mgot
-LysgYnVmZmVycy9jYWNoZTogICAgIDMxMTQ0MCAgICAgNzIyMzU2ClN3YXA6ICAgICAgMTA1MjI0
-NCAgICAgICAgICAwICAgIDEwNTIyNDQKcm9vdEB0Ym94On4jIGZyZWUKICAgICAgICAgICAgIHRv
-dGFsICAgICAgIHVzZWQgICAgICAgZnJlZSAgICAgc2hhcmVkICAgIGJ1ZmZlcnMgICAgIGNhY2hl
-ZApNZW06ICAgICAgIDEwMzM3OTYgICAgMTAwNzE2NCAgICAgIDI2NjMyICAgICAgICAgIDAgICAg
-ICA2MDM4OCAgICAgNjM1MTM2Ci0vKyBidWZmZXJzL2NhY2hlOiAgICAgMzExNjQwICAgICA3MjIx
-NTYKU3dhcDogICAgICAxMDUyMjQ0ICAgICAgICAgIDAgICAgMTA1MjI0NApyb290QHRib3g6fiMg
-ZnJlZQogICAgICAgICAgICAgdG90YWwgICAgICAgdXNlZCAgICAgICBmcmVlICAgICBzaGFyZWQg
-ICAgYnVmZmVycyAgICAgY2FjaGVkCk1lbTogICAgICAgMTAzMzc5NiAgICAxMDA3NDEyICAgICAg
-MjYzODQgICAgICAgICAgMCAgICAgIDYwODg0ICAgICA2MzUyMTYKLS8rIGJ1ZmZlcnMvY2FjaGU6
-ICAgICAzMTEzMTIgICAgIDcyMjQ4NApTd2FwOiAgICAgIDEwNTIyNDQgICAgICAgICAgMCAgICAx
-MDUyMjQ0CnJvb3RAdGJveDp+IyBmcmVlCiAgICAgICAgICAgICB0b3RhbCAgICAgICB1c2VkICAg
-ICAgIGZyZWUgICAgIHNoYXJlZCAgICBidWZmZXJzICAgICBjYWNoZWQKTWVtOiAgICAgICAxMDMz
-Nzk2ICAgIDEwMDI3MDAgICAgICAzMTA5NiAgICAgICAgICAwICAgICAgNjE2NjggICAgIDYyODg3
-MgotLysgYnVmZmVycy9jYWNoZTogICAgIDMxMjE2MCAgICAgNzIxNjM2ClN3YXA6ICAgICAgMTA1
-MjI0NCAgICAgICAgICAwICAgIDEwNTIyNDQKcm9vdEB0Ym94On4jIGZyZWUKICAgICAgICAgICAg
-IHRvdGFsICAgICAgIHVzZWQgICAgICAgZnJlZSAgICAgc2hhcmVkICAgIGJ1ZmZlcnMgICAgIGNh
-Y2hlZApNZW06ICAgICAgIDEwMzM3OTYgICAgIDk5NzQ5MiAgICAgIDM2MzA0ICAgICAgICAgIDAg
-ICAgICA2MjE0NCAgICAgNjIzMzQ4Ci0vKyBidWZmZXJzL2NhY2hlOiAgICAgMzEyMDAwICAgICA3
-MjE3OTYKU3dhcDogICAgICAxMDUyMjQ0ICAgICAgICAgIDAgICAgMTA1MjI0NApyb290QHRib3g6
-fiMgZnJlZQogICAgICAgICAgICAgdG90YWwgICAgICAgdXNlZCAgICAgICBmcmVlICAgICBzaGFy
-ZWQgICAgYnVmZmVycyAgICAgY2FjaGVkCk1lbTogICAgICAgMTAzMzc5NiAgICAgOTk4MDUyICAg
-ICAgMzU3NDQgICAgICAgICAgMCAgICAgIDYyOTg0ICAgICA2MjI1NjAKLS8rIGJ1ZmZlcnMvY2Fj
-aGU6ICAgICAzMTI1MDggICAgIDcyMTI4OApTd2FwOiAgICAgIDEwNTIyNDQgICAgICAgICAgMCAg
-ICAxMDUyMjQ0CnJvb3RAdGJveDp+IyBmcmVlCiAgICAgICAgICAgICB0b3RhbCAgICAgICB1c2Vk
-ICAgICAgIGZyZWUgICAgIHNoYXJlZCAgICBidWZmZXJzICAgICBjYWNoZWQKTWVtOiAgICAgICAx
-MDMzNzk2ICAgICA5OTQyMzIgICAgICAzOTU2NCAgICAgICAgICAwICAgICAgNjM0ODQgICAgIDYx
-NzUyOAotLysgYnVmZmVycy9jYWNoZTogICAgIDMxMzIyMCAgICAgNzIwNTc2ClN3YXA6ICAgICAg
-MTA1MjI0NCAgICAgICAgICAwICAgIDEwNTIyNDQKcm9vdEB0Ym94On4jIGZyZWUKICAgICAgICAg
-ICAgIHRvdGFsICAgICAgIHVzZWQgICAgICAgZnJlZSAgICAgc2hhcmVkICAgIGJ1ZmZlcnMgICAg
-IGNhY2hlZApNZW06ICAgICAgIDEwMzM3OTYgICAgIDk5ODg2MCAgICAgIDM0OTM2ICAgICAgICAg
-IDAgICAgICA2Mzk4MCAgICAgNjIxMDc2Ci0vKyBidWZmZXJzL2NhY2hlOiAgICAgMzEzODA0ICAg
-ICA3MTk5OTIKU3dhcDogICAgICAxMDUyMjQ0ICAgICAgICAgIDAgICAgMTA1MjI0NApyb290QHRi
-b3g6fiMgZnJlZQogICAgICAgICAgICAgdG90YWwgICAgICAgdXNlZCAgICAgICBmcmVlICAgICBz
-aGFyZWQgICAgYnVmZmVycyAgICAgY2FjaGVkCk1lbTogICAgICAgMTAzMzc5NiAgICAxMDE3MTU2
-ICAgICAgMTY2NDAgICAgICAgICAgMCAgICAgIDY0NDAwICAgICA2MzcxMzYKLS8rIGJ1ZmZlcnMv
-Y2FjaGU6ICAgICAzMTU2MjAgICAgIDcxODE3NgpTd2FwOiAgICAgIDEwNTIyNDQgICAgICAgICAg
-MCAgICAxMDUyMjQ0CnJvb3RAdGJveDp+IyBmcmVlCiAgICAgICAgICAgICB0b3RhbCAgICAgICB1
-c2VkICAgICAgIGZyZWUgICAgIHNoYXJlZCAgICBidWZmZXJzICAgICBjYWNoZWQKTWVtOiAgICAg
-ICAxMDMzNzk2ICAgIDEwMTIxNjAgICAgICAyMTYzNiAgICAgICAgICAwICAgICAgNjQ3MjQgICAg
-IDYzMTUzMgotLysgYnVmZmVycy9jYWNoZTogICAgIDMxNTkwNCAgICAgNzE3ODkyClN3YXA6ICAg
-ICAgMTA1MjI0NCAgICAgICAgICAwICAgIDEwNTIyNDQKcm9vdEB0Ym94On4jIGZyZWUKICAgICAg
-ICAgICAgIHRvdGFsICAgICAgIHVzZWQgICAgICAgZnJlZSAgICAgc2hhcmVkICAgIGJ1ZmZlcnMg
-ICAgIGNhY2hlZApNZW06ICAgICAgIDEwMzM3OTYgICAgMTAxNDA5MiAgICAgIDE5NzA0ICAgICAg
-ICAgIDAgICAgICA2NTM5NiAgICAgNjMxNDQ4Ci0vKyBidWZmZXJzL2NhY2hlOiAgICAgMzE3MjQ4
-ICAgICA3MTY1NDgKU3dhcDogICAgICAxMDUyMjQ0ICAgICAgICAgIDAgICAgMTA1MjI0NApyb290
-QHRib3g6fiMgZnJlZQogICAgICAgICAgICAgdG90YWwgICAgICAgdXNlZCAgICAgICBmcmVlICAg
-ICBzaGFyZWQgICAgYnVmZmVycyAgICAgY2FjaGVkCk1lbTogICAgICAgMTAzMzc5NiAgICAxMDA2
-MjI0ICAgICAgMjc1NzIgICAgICAgICAgMCAgICAgIDY1NTI0ICAgICA2MjMxNTIKLS8rIGJ1ZmZl
-cnMvY2FjaGU6ICAgICAzMTc1NDggICAgIDcxNjI0OApTd2FwOiAgICAgIDEwNTIyNDQgICAgICAg
-ICAgMCAgICAxMDUyMjQ0CnJvb3RAdGJveDp+IyBmcmVlCiAgICAgICAgICAgICB0b3RhbCAgICAg
-ICB1c2VkICAgICAgIGZyZWUgICAgIHNoYXJlZCAgICBidWZmZXJzICAgICBjYWNoZWQKTWVtOiAg
-ICAgICAxMDMzNzk2ICAgIDEwMDk5MzIgICAgICAyMzg2NCAgICAgICAgICAwICAgICAgNjU3MDgg
-ICAgIDYyNjI0NAotLysgYnVmZmVycy9jYWNoZTogICAgIDMxNzk4MCAgICAgNzE1ODE2ClN3YXA6
-ICAgICAgMTA1MjI0NCAgICAgICAgICAwICAgIDEwNTIyNDQKcm9vdEB0Ym94On4jIGZyZWUKICAg
-ICAgICAgICAgIHRvdGFsICAgICAgIHVzZWQgICAgICAgZnJlZSAgICAgc2hhcmVkICAgIGJ1ZmZl
-cnMgICAgIGNhY2hlZApNZW06ICAgICAgIDEwMzM3OTYgICAgMTAwOTY5MiAgICAgIDI0MTA0ICAg
-ICAgICAgIDAgICAgICA2NTcxNiAgICAgNjI2MjI0Ci0vKyBidWZmZXJzL2NhY2hlOiAgICAgMzE3
-NzUyICAgICA3MTYwNDQKU3dhcDogICAgICAxMDUyMjQ0ICAgICAgICAgIDAgICAgMTA1MjI0NApy
-b290QHRib3g6fiMgZnJlZQogICAgICAgICAgICAgdG90YWwgICAgICAgdXNlZCAgICAgICBmcmVl
-ICAgICBzaGFyZWQgICAgYnVmZmVycyAgICAgY2FjaGVkCk1lbTogICAgICAgMTAzMzc5NiAgICAx
-MDExOTQwICAgICAgMjE4NTYgICAgICAgICAgMCAgICAgIDY1ODEyICAgICA2Mjc1ODgKLS8rIGJ1
-ZmZlcnMvY2FjaGU6ICAgICAzMTg1NDAgICAgIDcxNTI1NgpTd2FwOiAgICAgIDEwNTIyNDQgICAg
-ICAgICAgMCAgICAxMDUyMjQ0CnJvb3RAdGJveDp+IyBmcmVlCiAgICAgICAgICAgICB0b3RhbCAg
-ICAgICB1c2VkICAgICAgIGZyZWUgICAgIHNoYXJlZCAgICBidWZmZXJzICAgICBjYWNoZWQKTWVt
-OiAgICAgICAxMDMzNzk2ICAgIDEwMTQxNjAgICAgICAxOTYzNiAgICAgICAgICAwICAgICAgNjU4
-NjAgICAgIDYyOTE4MAotLysgYnVmZmVycy9jYWNoZTogICAgIDMxOTEyMCAgICAgNzE0Njc2ClN3
-YXA6ICAgICAgMTA1MjI0NCAgICAgICAgICAwICAgIDEwNTIyNDQKcm9vdEB0Ym94On4jIGZyZWUK
-ICAgICAgICAgICAgIHRvdGFsICAgICAgIHVzZWQgICAgICAgZnJlZSAgICAgc2hhcmVkICAgIGJ1
-ZmZlcnMgICAgIGNhY2hlZApNZW06ICAgICAgIDEwMzM3OTYgICAgMTAxODY0MCAgICAgIDE1MTU2
-ICAgICAgICAgIDAgICAgICA2NTkxNiAgICAgNjMyNDIwCi0vKyBidWZmZXJzL2NhY2hlOiAgICAg
-MzIwMzA0ICAgICA3MTM0OTIKU3dhcDogICAgICAxMDUyMjQ0ICAgICAgICAgIDAgICAgMTA1MjI0
-NApyb290QHRib3g6fiMgZnJlZQogICAgICAgICAgICAgdG90YWwgICAgICAgdXNlZCAgICAgICBm
-cmVlICAgICBzaGFyZWQgICAgYnVmZmVycyAgICAgY2FjaGVkCk1lbTogICAgICAgMTAzMzc5NiAg
-ICAxMDIwNDk2ICAgICAgMTMzMDAgICAgICAgICAgMCAgICAgIDY2MDAwICAgICA2MzM3NjAKLS8r
-IGJ1ZmZlcnMvY2FjaGU6ICAgICAzMjA3MzYgICAgIDcxMzA2MApTd2FwOiAgICAgIDEwNTIyNDQg
-ICAgICAgICAgMCAgICAxMDUyMjQ0CnJvb3RAdGJveDp+IyBmcmVlCiAgICAgICAgICAgICB0b3Rh
-bCAgICAgICB1c2VkICAgICAgIGZyZWUgICAgIHNoYXJlZCAgICBidWZmZXJzICAgICBjYWNoZWQK
-TWVtOiAgICAgICAxMDMzNzk2ICAgIDEwMTczMzIgICAgICAxNjQ2NCAgICAgICAgICAwICAgICAg
-NjYxNDQgICAgIDYzMDQ4OAotLysgYnVmZmVycy9jYWNoZTogICAgIDMyMDcwMCAgICAgNzEzMDk2
-ClN3YXA6ICAgICAgMTA1MjI0NCAgICAgICAgICAwICAgIDEwNTIyNDQKcm9vdEB0Ym94On4jCgo=
---20cf300fb3d5ec09280493b3ddc3--
+-rhyland
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
