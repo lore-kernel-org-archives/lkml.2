@@ -1,54 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934580Ab0J1VEu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 17:04:50 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:54422 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752477Ab0J1VEo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 17:04:44 -0400
-Subject: Re: [RFC PATCH 1/1] vhost: TX used buffer guest signal accumulation
-From: Sridhar Samudrala <sri@us.ibm.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, David Miller <davem@davemloft.net>,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1288296835.11251.24.camel@localhost.localdomain>
-References: <1288216693.17571.38.camel@localhost.localdomain>
-	 <1288240804.14342.1.camel@localhost.localdomain>
-	 <20101028052021.GD5599@redhat.com>
-	 <1288294355.11251.20.camel@localhost.localdomain>
-	 <1288296835.11251.24.camel@localhost.localdomain>
-Content-Type: text/plain
-Date: Thu, 28 Oct 2010 14:04:38 -0700
-Message-Id: <1288299878.30131.2.camel@sridhar.beaverton.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+	id S934587Ab0J1VGN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 17:06:13 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38425 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758873Ab0J1VGG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 17:06:06 -0400
+Message-ID: <4CC9E5B5.5040402@suse.cz>
+Date: Thu, 28 Oct 2010 23:05:57 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Wu Zhangjin <wuzhangjin@gmail.com>
+Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org, mingo@elte.hu,
+        John Reiser <jreiser@bitwagon.com>, Sam Ravnborg <sam@ravnborg.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Subject: Re: [v2 PATCH] ftrace: Speed up recordmcount
+References: <3dc8cddf022eb7024f9f2cf857529a15bee8999a.1288196498.git.wuzhangjin@gmail.com>
+In-Reply-To: <3dc8cddf022eb7024f9f2cf857529a15bee8999a.1288196498.git.wuzhangjin@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-10-28 at 13:13 -0700, Shirley Ma wrote:
-> On Thu, 2010-10-28 at 12:32 -0700, Shirley Ma wrote:
-> > Also I found a big TX regression for old guest and new guest. For old
-> > guest, I am able to get almost 11Gb/s for 2K message size, but for the
-> > new guest kernel, I can only get 3.5 Gb/s with the patch and same
-> > host.
-> > I will dig it why. 
+On 27.10.2010 18:24, Wu Zhangjin wrote:
+> From: Wu Zhangjin <wuzhangjin@gmail.com>
 > 
-> The regression is from guest kernel, not from this patch. Tested 2.6.31
-> kernel, it's performance is less than 2Gb/s for 2K message size already.
-> I will resubmit the patch for review. 
+> cmd_record_mcount is used to locate the _mcount symbols in the object
+> files, only the files compiled with -pg has the _mcount symbol, so, it
+> is only needed for such files, but the current cmd_record_mcount is used
+> for all of the object files, so, we need to fix it and speed it up.
 > 
-> I will start to test from 2.6.30 kernel to figure it when TX regression
-> induced in virtio_net. Any suggestion which guest kernel I should test
-> to figure out this regression?
+> Since -pg may be removed by the method used in kernel/trace/Makefile:
+> 
+> ORIG_CFLAGS := $(KBUILD_CFLAGS)
+> KBUILD_CFLAGS = $(subst -pg,,$(ORIG_CFLAGS))
+> 
+> Or may be removed by the method used in arch/x86/kernel/Makefile:
+> 
+> CONFIG_REMOVE_file.o = -pg
 
-It would be some change in virtio-net driver that may have improved the
-latency of small messages which in turn would have reduced the bandwidth
-as TCP could not accumulate and send large packets.
+CFLAGS_REMOVE_file.o
 
-Thanks
-Sridhar
+
+> So, we must check the last variable stores the compiling flags, that is
+> c_flags(Please refer to cmd_cc_o_c and rule_cc_o_c defined in
+> scripts/Makefile.build) and since the CFLAGS_REMOVE_file.o is already
+> filtered in _c_flags(Please refer to scripts/Makefile.lib) and _c_flags
+> has less symbols, therefore, we only need to check _c_flags.
+> 
+> ---------------
+> Changes from v1:
+> 
+>   o Don't touch Makefile for CONFIG_FTRACE_MCOUNT_RECORD is enough
+>   o Use _c_flags intead of KBUILD_CFLAGS to cover CONFIG_REMOVE_file.o = -pg
+>   (feedback from Steven Rostedt <rostedt@goodmis.org>)
+> 
+> Signed-off-by: Wu Zhangjin <wuzhangjin@gmail.com>
+
+Acked-by: Michal Marek <mmarek@suse.cz>
+
+
+> ---
+>  scripts/Makefile.build |   13 +++++++++----
+>  1 files changed, 9 insertions(+), 4 deletions(-)
+> 
+> diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+> index 5ad25e1..0ad6108 100644
+> --- a/scripts/Makefile.build
+> +++ b/scripts/Makefile.build
+> @@ -214,17 +214,22 @@ ifdef BUILD_C_RECORDMCOUNT
+>  # The empty.o file is created in the make process in order to determine
+>  #  the target endianness and word size. It is made before all other C
+>  #  files, including recordmcount.
+> -cmd_record_mcount = if [ $(@) != "scripts/mod/empty.o" ]; then			\
+> -			$(objtree)/scripts/recordmcount "$(@)";			\
+> -		    fi;
+> +sub_cmd_record_mcount =					\
+> +	if [ $(@) != "scripts/mod/empty.o" ]; then	\
+> +		$(objtree)/scripts/recordmcount "$(@)";	\
+> +	fi;
+>  else
+> -cmd_record_mcount = set -e ; perl $(srctree)/scripts/recordmcount.pl "$(ARCH)" \
+> +sub_cmd_record_mcount = set -e ; perl $(srctree)/scripts/recordmcount.pl "$(ARCH)" \
+>  	"$(if $(CONFIG_CPU_BIG_ENDIAN),big,little)" \
+>  	"$(if $(CONFIG_64BIT),64,32)" \
+>  	"$(OBJDUMP)" "$(OBJCOPY)" "$(CC) $(KBUILD_CFLAGS)" \
+>  	"$(LD)" "$(NM)" "$(RM)" "$(MV)" \
+>  	"$(if $(part-of-module),1,0)" "$(@)";
+>  endif
+> +cmd_record_mcount = 						\
+> +	if [ "$(findstring -pg,$(_c_flags))" == "-pg" ]; then	\
+> +		$(sub_cmd_record_mcount)			\
+> +	fi;
+>  endif
+>  
+>  define rule_cc_o_c
 
