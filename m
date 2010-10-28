@@ -1,145 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934546Ab0J1UUv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 16:20:51 -0400
-Received: from king.tilera.com ([72.1.168.226]:23226 "EHLO king.tilera.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752858Ab0J1UUo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 16:20:44 -0400
-Message-Id: <201010282020.o9SKKe4Y007068@farm-0012.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Thu, 28 Oct 2010 16:07:07 -0400
-Subject: [PATCH] asm-generic/stat.h: support 64-bit file time_t for stat()
-In-Reply-To: <201010271612.13950.arnd@arndb.de>
-To: Arnd Bergmann <arnd@arndb.de>, <linux-arch@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Cc: Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>,
-        Michal Simek <monstr@monstr.eu>
-X-OriginalArrivalTime: 28 Oct 2010 20:20:42.0399 (UTC) FILETIME=[983A2AF0:01CB76DD]
+	id S934178Ab0J1UcT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 16:32:19 -0400
+Received: from smtp103.sbc.mail.gq1.yahoo.com ([67.195.15.62]:26869 "HELO
+	smtp103.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933685Ab0J1UcL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 16:32:11 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: lZ0OUn0VM1kRe3.cCtm0HlV2iPcjNEFXY5YAd2YQEOEufIK
+ s77hbFYO0jcfksXPxZcQZQ8L8PlvAVrp5qBd5pSKo3OL_lMWe1cNBEbGWFiD
+ EQf9hyTR2sKwy.GbS.3uKOKCcH8R8KD1NARddpqNSbdrn0_5a59fcHot3wBy
+ D1PUQrXPtEt7FzAS50ug_rN2SRLkNHNMvAhw6UxmgykKoXoD0KIygBlo_CDi
+ QUq7.n7cNd0d5yRPZBrdZ2gJdsV7SJ2tYQ9jrlkXX3s.sReE-
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [ANNOUNCE] Status of unlocked_qcmds=1 operation for .37
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Andi Kleen <ak@linux.intel.com>, James Bottomley <James.Bottomley@suse.de>,
+        Mike Anderson <andmike@linux.vnet.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
+        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Christof Schmitt <christof.schmitt@de.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, julia@diku.dk
+In-Reply-To: <4CC95BE8.3000909@panasas.com>
+References: <20101021150840.GA24309@linux.vnet.ibm.com>
+	 <1288130914.5169.97.camel@haakon2.linux-iscsi.org>
+	 <1288132071.8283.689.camel@mulgrave.site>
+	 <1288132464.5169.112.camel@haakon2.linux-iscsi.org>
+	 <1288133450.8283.723.camel@mulgrave.site>
+	 <1288134048.5169.132.camel@haakon2.linux-iscsi.org>
+	 <1288134713.19649.11.camel@mulgrave.site>
+	 <1288135918.5169.149.camel@haakon2.linux-iscsi.org>
+	 <20101027075349.GA32585@gargoyle.fritz.box>
+	 <1288189658.4692.13.camel@mulgrave.site>
+	 <20101028091020.GA7906@gargoyle.fritz.box>  <4CC95BE8.3000909@panasas.com>
+Content-Type: text/plain
+Date: Thu, 28 Oct 2010 13:27:14 -0700
+Message-Id: <1288297634.5169.302.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The existing asm-generic/stat.h specifies st_mtime, etc., as a 32-value,
-and works well for 32-bit architectures (currently microblaze, score,
-and 32-bit tile).  However, for 64-bit architectures it isn't sufficient
-to return 32 bits of time_t; this isn't good insurance against the 2037
-rollover.  (It also makes glibc support less convenient, since we can't
-use glibc's handy STAT_IS_KERNEL_STAT mode.)
+On Thu, 2010-10-28 at 13:18 +0200, Boaz Harrosh wrote:
+> On 10/28/2010 11:10 AM, Andi Kleen wrote:
+> > On Wed, Oct 27, 2010 at 09:27:38AM -0500, James Bottomley wrote:
+> >> On Wed, 2010-10-27 at 09:53 +0200, Andi Kleen wrote:
+> >>>> This sounds like a pretty reasonable compromise that I think is slightly
+> >>>> less risky for the LLDs with the ghosts and cob-webs hanging off of
+> >>>> them.
+> >>>
+> >>> They won't get tested either next release cycle. Essentially
+> >>> near nobody uses them.
+> >>>
+> >>>>
+> >>>> What do you think..?
+> >>>
+> >>> Standard linux practice is to simply push the locks down. That's a pretty
+> >>> mechanical operation and shouldn't be too risky
+> >>>
+> >>> With some luck you could even do it with coccinelle.
+> >>
+> >> Precisely ... if we can do the push down now as a mechanical
+> >> transformation we can put it in the current merge window as a low risk
+> >> API change.  This gives us optimal exposure to the rc sequence to sort
+> >> out any problems that arise (or drivers that got missed) with the lowest
+> >> risk of such problems actually arising.  Given the corner cases and the
+> >> late arrival of fixes, the serial number changes are just too risky for
+> >> the current merge window.  Having an API that changes depending on a
+> >> flag is also a high risk process because it's prone to further sources
+> >> of error.
+> > 
+> > Here's a coccinelle script I came up with that does the push down.
+> > It still adds a bogus empty line in front of the irqflags declaration
+> > which I haven't managed to avoid yet. Other than the it seems
+> > to DTRT on the SCSI drivers I tried.
+> > 
+> > -Andi
+> > 
+> > 
+> > @ rule1 @
+> > struct scsi_host_template t;
+> > identifier qc;
+> > @@
+> > t.queuecommand = qc;
+> > 
+> > @ rule2 @
+> > identifier rule1.qc;
+> > identifier cmnd;
+> > expression E;
+> > statement S, S2;
+> > @@
+> > int qc(struct scsi_cmnd *cmnd, ...) 
+> > {
+> > 	... when != S
+> > +	unsigned long irqflags;
+> > 
+> > +	spin_lock_irqsave(&cmnd->device->host->hostlock, irqflags);
+> > 	S2
+> > 	...
+> > +	spin_unlock_irqrestore(&cmnd->device->host->hostlock, irqflags);
+> > 	return E;
+> > }
+> > 
+> 
+> I disagree with your approach this introduces a spin_unlock_irqrestore
+> call site at every return, in the usually huge queuecommand.
+> 
+> I'd say just do:
+> - Rename XXX_queuecommand => __XXX_queuecommand_unlocked
+> - Define new XXX_queuecommand
+> 
+> int qc(struct scsi_cmnd *cmnd, ...) 
+> {
+> 	unsigned long irqflags;
+> 	int ret;
+> 
+> 	spin_lock_irqsave(&cmnd->device->host->hostlock, irqflags);
+> 	ret = __XXX_queuecommand_unlocked(cmnd, ...)
+> 	spin_unlock_irqrestore(&cmnd->device->host->hostlock, irqflags);
+> 	return ret;
+> }
+> 
+> Then when the driver is manually converted the __queuecommand_unlocked
+> can be set into the scsi_host_template and the added function can
+> be dropped.
+> 
 
-This change extends the two "timespec" fields for each of the three atime,
-mtime, and ctime fields from "int" to "long".  As a result, on 32-bit
-platforms nothing changes, and 64-bit platforms will now work as expected.
+I would have to agree that approach does make a bit more sense..  Now
+can some brave soul (/me looks at ak) code another script to automate
+this for the identified legacy LLDs cases that need push down..?
 
-The only wrinkle is 32-bit userspace under 64-bit kernels taking advantage
-of COMPAT mode.  For these, we leave the "struct stat64" definitions with
-the "int" versions of the time_t and nsec fields, so that architectures
-can implement compat_sys_stat64() and friends with sys_stat64(), etc.,
-and get the expected 32-bit structure layout.  This requires a
-field-by-field copy in the kernel, implemented by the code guarded
-under __ARCH_WANT_STAT64.
+8-)
 
-This does mean that the shape of the "struct stat" and "struct stat64"
-structures is different on a 64-bit kernel, but only one of the two
-structures should ever be used by any given process: "struct stat"
-is meant for 64-bit userspace only, and "struct stat64" for 32-bit
-userspace only.  (On a 32-bit kernel the two structures continue to have
-the same shape, since "long" is 32 bits.)
+--nab
 
-The alternative is keeping the two structures the same shape on 64-bit
-kernels, which means a 64-bit time_t in "struct stat64" for 32-bit
-processes.  This is a little unnatural since 32-bit userspace can't
-do anything with 64 bits of time_t information, since time_t is just
-"long", not "int64_t"; and in any case 32-bit userspace might expect
-to be running under a 32-bit kernel, which can't provide the high 32
-bits anyway.  In the case of a 32-bit kernel we'd then be extending the
-kernel's 32-bit time_t to 64 bits, then truncating it back to 32 bits
-again in userspace, for no particular reason.  And, as mentioned above,
-if we have 64-bit time_t for 32-bit processes we can't easily use glibc's
-STAT_IS_KERNEL_STAT, since glibc's stat structure requires an embedded
-"struct timespec", which is a pair of "long" (32-bit) values in a 32-bit
-userspace.  "Inventive" solutions are possible, but are pretty hacky.
-
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- arch/tile/include/asm/stat.h   |    3 +++
- arch/tile/include/asm/unistd.h |    1 +
- arch/tile/kernel/compat.c      |   10 +++++-----
- include/asm-generic/stat.h     |   14 +++++++-------
- 4 files changed, 16 insertions(+), 12 deletions(-)
-
-diff --git a/arch/tile/include/asm/stat.h b/arch/tile/include/asm/stat.h
-index 3dc90fa..b16e5db 100644
---- a/arch/tile/include/asm/stat.h
-+++ b/arch/tile/include/asm/stat.h
-@@ -1 +1,4 @@
-+#ifdef CONFIG_COMPAT
-+#define __ARCH_WANT_STAT64	/* Used for compat_sys_stat64() etc. */
-+#endif
- #include <asm-generic/stat.h>
-diff --git a/arch/tile/include/asm/unistd.h b/arch/tile/include/asm/unistd.h
-index f2e3ff4..b35c2db 100644
---- a/arch/tile/include/asm/unistd.h
-+++ b/arch/tile/include/asm/unistd.h
-@@ -41,6 +41,7 @@ __SYSCALL(__NR_cmpxchg_badaddr, sys_cmpxchg_badaddr)
- #ifdef CONFIG_COMPAT
- #define __ARCH_WANT_SYS_LLSEEK
- #endif
-+#define __ARCH_WANT_SYS_NEWFSTATAT
- #endif
- 
- #endif /* _ASM_TILE_UNISTD_H */
-diff --git a/arch/tile/kernel/compat.c b/arch/tile/kernel/compat.c
-index 77739cd..67617a0 100644
---- a/arch/tile/kernel/compat.c
-+++ b/arch/tile/kernel/compat.c
-@@ -148,11 +148,11 @@ long tile_compat_sys_msgrcv(int msqid,
- #define compat_sys_readahead sys32_readahead
- #define compat_sys_sync_file_range compat_sys_sync_file_range2
- 
--/* The native 64-bit "struct stat" matches the 32-bit "struct stat64". */
--#define compat_sys_stat64 sys_newstat
--#define compat_sys_lstat64 sys_newlstat
--#define compat_sys_fstat64 sys_newfstat
--#define compat_sys_fstatat64 sys_newfstatat
-+/* We leverage the "struct stat64" type for 32-bit time_t/nsec. */
-+#define compat_sys_stat64 sys_stat64
-+#define compat_sys_lstat64 sys_lstat64
-+#define compat_sys_fstat64 sys_fstat64
-+#define compat_sys_fstatat64 sys_fstatat64
- 
- /* The native sys_ptrace dynamically handles compat binaries. */
- #define compat_sys_ptrace sys_ptrace
-diff --git a/include/asm-generic/stat.h b/include/asm-generic/stat.h
-index 47e6417..bd8cad2 100644
---- a/include/asm-generic/stat.h
-+++ b/include/asm-generic/stat.h
-@@ -33,18 +33,18 @@ struct stat {
- 	int		st_blksize;	/* Optimal block size for I/O.  */
- 	int		__pad2;
- 	long		st_blocks;	/* Number 512-byte blocks allocated. */
--	int		st_atime;	/* Time of last access.  */
--	unsigned int	st_atime_nsec;
--	int		st_mtime;	/* Time of last modification.  */
--	unsigned int	st_mtime_nsec;
--	int		st_ctime;	/* Time of last status change.  */
--	unsigned int	st_ctime_nsec;
-+	long		st_atime;	/* Time of last access.  */
-+	unsigned long	st_atime_nsec;
-+	long		st_mtime;	/* Time of last modification.  */
-+	unsigned long	st_mtime_nsec;
-+	long		st_ctime;	/* Time of last status change.  */
-+	unsigned long	st_ctime_nsec;
- 	unsigned int	__unused4;
- 	unsigned int	__unused5;
- };
- 
--#if __BITS_PER_LONG != 64
- /* This matches struct stat64 in glibc2.1. Only used for 32 bit. */
-+#if __BITS_PER_LONG != 64 || defined(__ARCH_WANT_STAT64)
- struct stat64 {
- 	unsigned long long st_dev;	/* Device.  */
- 	unsigned long long st_ino;	/* File serial number.  */
--- 
-1.6.5.2
 
