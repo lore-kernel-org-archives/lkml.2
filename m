@@ -1,49 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759412Ab0J1Qz3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 12:55:29 -0400
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:20197 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758933Ab0J1QzX (ORCPT
+	id S1759443Ab0J1Qz4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 12:55:56 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:51492 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759423Ab0J1Qzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 12:55:23 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 98VzFxkVM1k_qpoNUJHPyoYqRTTB1r_yXnDsFCDe49z9JSU
- 4xJUkXvR2C29vOMzqcMSfib.0J8JYJhNpaKy7Nd5W7gmC5gdV.0ltfEmuJOQ
- enZyVnfnpo2sOFsO9A.t_FJICZmBanQaK.Z7ZW3m7QkelMmdLMzzOldI6LPW
- 4dfsMgZxK.v4_WQLPVGXlWNAKY1LupL.1Epc8BVtIxjgePopi3jEPi9r73P6
- U2oCEmhZOtRt.kbflqau70JpsAUET
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 28 Oct 2010 11:55:18 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Eric Dumazet <eric.dumazet@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Brian Gerst <brgerst@gmail.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org, mingo@elte.hu
-Subject: Re: [PATCH] numa: fix slab_node(MPOL_BIND)
-In-Reply-To: <AANLkTikmNc7qqDzoff_3i_FRbG=pmOC7TG3eeZnmvaTD@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1010281154150.26782@router.home>
-References: <AANLkTinnc3vBSmewf7ixuOSDYxG+5VNiGaB-vSrDNRiO@mail.gmail.com> <1288158182-1753-1-git-send-email-brgerst@gmail.com> <1288159670.2652.181.camel@edumazet-laptop> <1288173442.15336.1490.camel@twins> <1288186405.2709.117.camel@edumazet-laptop>
- <4CC82C2F.1020707@kernel.org> <1288187870.2709.128.camel@edumazet-laptop> <4CC83067.5000009@kernel.org> <1288189461.2709.144.camel@edumazet-laptop> <1288190387.2709.147.camel@edumazet-laptop> <4CC83A85.3070608@kernel.org> <1288192868.2709.152.camel@edumazet-laptop>
- <4CC846D5.50106@kernel.org> <1288195668.2709.167.camel@edumazet-laptop> <1288200823.5619.46.camel@edumazet-laptop> <AANLkTikmNc7qqDzoff_3i_FRbG=pmOC7TG3eeZnmvaTD@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 28 Oct 2010 12:55:51 -0400
+Message-ID: <4CC9A9C9.8020700@kernel.org>
+Date: Thu, 28 Oct 2010 09:50:17 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.14) Gecko/20101013 SUSE/3.0.9 Thunderbird/3.0.9
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "H. Peter Anvin" <hpa@zytor.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH] x86, memblock: Fix early_node_mem with big reserved region.
+References: <4CC753AD.1090403@goop.org> <4CC7BD6D.2030104@kernel.org> <4CC889AF.1020402@goop.org>
+In-Reply-To: <4CC889AF.1020402@goop.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Oct 2010, Linus Torvalds wrote:
 
-> And so does - although less obviously - mm/vmscan.c for the
-> wait_iff_confgested() thing.
->
-> So are those buggy too, since first_zones_zonelist() can apparently return NULL?
+Jeremy said Xen could reserve huge mem but still show as ram in e820.
+early_node_mem could not find range because of start/end adjusting.
+and will go through fallback path. but fallback is still using 
+memblock_x86_find_range_node(), and it is partially top-down because it
+go through active_range entries from low to high.
 
-The code is fine.
+Let's use memblock_find_in_range instead memblock_x86_find_range_node.
+So get real top down in fallback path.
 
-first_zones_zonelist() can only return NULL for the case that a nodemask
-was specified and the code in vmscan.c does not specify a nodemask.
+This is for 2.6.37.
+
+And We may still need to make memblock_x86_find_range_node to do overall
+top_down work.
+
+Reported-by: Jeremy Fitzhardinge <jeremy@goop.org>
+Tested-by: Jeremy Fitzhardinge <jeremy@goop.org>
+Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ arch/x86/mm/numa_64.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
+
+Index: linux-2.6/arch/x86/mm/numa_64.c
+===================================================================
+--- linux-2.6.orig/arch/x86/mm/numa_64.c
++++ linux-2.6/arch/x86/mm/numa_64.c
+@@ -178,11 +178,8 @@ static void * __init early_node_mem(int
+ 
+ 	/* extend the search scope */
+ 	end = max_pfn_mapped << PAGE_SHIFT;
+-	if (end > (MAX_DMA32_PFN<<PAGE_SHIFT))
+-		start = MAX_DMA32_PFN<<PAGE_SHIFT;
+-	else
+-		start = MAX_DMA_PFN<<PAGE_SHIFT;
+-	mem = memblock_x86_find_in_range_node(nodeid, start, end, size, align);
++	start = MAX_DMA_PFN << PAGE_SHIFT;
++	mem = memblock_find_in_range(start, end, size, align);
+ 	if (mem != MEMBLOCK_ERROR)
+ 		return __va(mem);
+ 
