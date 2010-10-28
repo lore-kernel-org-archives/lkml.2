@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934031Ab0J1R1g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 13:27:36 -0400
-Received: from thunk.org ([69.25.196.29]:37155 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933260Ab0J1R1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 13:27:30 -0400
-Date: Thu, 28 Oct 2010 13:27:25 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, git@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Minimum git commit abbrev length (Was Re: -tip: origin tree build
- failure (was: [GIT PULL] ext4 update) for 2.6.37)
-Message-ID: <20101028172725.GA6814@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Ingo Molnar <mingo@elte.hu>,
-	Linus Torvalds <torvalds@linux-foundation.org>, git@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <E1PBKT9-0004Uk-Sm@tytso-glaptop>
- <20101028075631.GA7690@elte.hu>
- <AANLkTi=8SbOZizWpxLg=Bgp7atdgr8MsR6tnRDYr1+eW@mail.gmail.com>
- <20101028163854.GA15450@elte.hu>
- <AANLkTin62vAwJxcsrFk6Yn7Q6tzr-D=EmKKwPazuAJ11@mail.gmail.com>
- <20101028171701.GA18368@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101028171701.GA18368@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S934050Ab0J1R1y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 13:27:54 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:46413
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933987Ab0J1R1u convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 13:27:50 -0400
+Date: Thu, 28 Oct 2010 10:28:13 -0700 (PDT)
+Message-Id: <20101028.102813.59675147.davem@davemloft.net>
+To: nacc@us.ibm.com
+Cc: eric.dumazet@gmail.com, sonnyrao@us.ibm.com, divy@chelsio.com,
+        dm@chelsio.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cxgb3: fix crash due to manipulating queues before
+ registration
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20101028052349.GA21144@us.ibm.com>
+References: <1288242390-28574-1-git-send-email-nacc@us.ibm.com>
+	<1288243110.2658.126.camel@edumazet-laptop>
+	<20101028052349.GA21144@us.ibm.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 28, 2010 at 07:17:01PM +0200, Ingo Molnar wrote:
-> > Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> > Yes. Except for the kernel the default git commit abbreviation is
-> > borderline too short. Seven hex-chars can easily alias with a few
-> > more pulls from me: git will not give aliases at the time it gives
-> > a shorthand, but a month or two later the abbreviated commit may
-> > no longer be unique.
-> > 
-> > So I suggest using --abbrev=12 or similar.
-> 
-> ok. A helper script i use does this:
-> 
->    git log --pretty=format:"%h: %s" $@
-> 
-> I have added --abbrev=12. Might make sense to lengthen the %h
-> default in upstream Git as well?
+From: Nishanth Aravamudan <nacc@us.ibm.com>
+Date: Wed, 27 Oct 2010 22:23:49 -0700
 
-Maybe the right thing to do is add a git config option which allows
-for a configurable minimum git commit abbreviation length?
+> On 28.10.2010 [07:18:30 +0200], Eric Dumazet wrote:
+>> Le mercredi 27 octobre 2010 à 22:06 -0700, Nishanth Aravamudan a écrit :
+>> > Hi Eric,
+>> > 
+>> > Something like the following?:
+>> > 
+>> > Thanks,
+>> > Nish
+>> 
+>> Yes, probably, but I dont have the hardware so cannot test.
+> 
+> Sorry, should have been clearer. I do have the hardware, tested with the
+> patch, it does work. Wanted to make sure that it made sense to the
+> maintainers, of course, but:
+> 
+> Tested-by: Nishanth Aravamudan <nacc@us.ibm.com>
 
-      		   	       	      - Ted
+Applied, thank you.
