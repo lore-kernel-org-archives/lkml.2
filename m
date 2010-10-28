@@ -1,75 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759531Ab0J1Tf2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 15:35:28 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:44255 "EHLO
-	TX2EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758152Ab0J1TfY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 15:35:24 -0400
-X-SpamScore: -11
-X-BigFish: VS-11(z3b68iz1432N98dNzz1202hzzz2dh2a8h62h)
-X-Spam-TCS-SCL: 1:0
-Message-ID: <4CC9D074.3060108@freescale.com>
-Date: Thu, 28 Oct 2010 14:35:16 -0500
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.13) Gecko/20101013 Fedora/2.0.8-2.fc13 SeaMonkey/2.0.8
+	id S1759568Ab0J1Tg1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 15:36:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34789 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759471Ab0J1TgX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 15:36:23 -0400
+Message-ID: <4CC9D0A8.8030209@redhat.com>
+Date: Thu, 28 Oct 2010 14:36:08 -0500
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: gregkh <gregkh@suse.de>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Writing a console/tty driver -- how to use tty_port?
-References: <4CC893CD.7020701@freescale.com> <20101027231948.5e62dd09@lxorguk.ukuu.org.uk>
-In-Reply-To: <20101027231948.5e62dd09@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: "Ted Ts'o" <tytso@mit.edu>, Markus Trippelsdorf <markus@trippelsdorf.de>,
+        sedat.dilek@gmail.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, sfr@canb.auug.org.au,
+        Arnd Bergmann <arnd@arndb.de>, Avinash Kurup <kurup.avinash@gmail.com>
+Subject: Re: [next-20101038] Call trace in ext4
+References: <AANLkTi=E_uMj_ndGU86DCjX4aDwjHqg3dkwxjQRSJtq6@mail.gmail.com> <20101028175221.GA1578@arch.trippelsdorf.de> <20101028180118.GC6814@thunk.org> <20101028193211.GA28126@thunk.org>
+In-Reply-To: <20101028193211.GA28126@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 Oct 2010 19:35:48.0358 (UTC) FILETIME=[52742260:01CB76D7]
-X-Reverse-DNS: de01egw02.freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Cox wrote:
-> drivers/mmc/card/sdio_uart.c
+Ted Ts'o wrote:
+> On Thu, Oct 28, 2010 at 02:01:18PM -0400, Ted Ts'o wrote:
+>> On Thu, Oct 28, 2010 at 07:52:21PM +0200, Markus Trippelsdorf wrote:
+>>> The same BUG (inode.c:2721) happend here today running latest vanilla
+>>> git. There is nothing in my logs unfortunately, but I shot a photo of
+>>> the trace (see attachment).
+>> I see, it's the page_buffers() call which is triggering.  Looking into
+>> it...
 > 
-> is in some ways the best example, it handles all the horrible cases
-> including unloading of hardware v open races, its way more than you'd
-> need but does illustrate it all.
+> Can folks let me know if this fixes the problem?
 
-Thanks Alan.  As always, you're a great help.
+Ted, any idea what caused the change in behavior here?
 
-I've made some progress adding support for tty_port.  I'm registering the ISR in
-the tty_port .activate function.
+-Eric
 
-I see something weird, though.  I lose the console after I log in:
-
-p4080 login: root
-Password:
-ehv_bc_tty_open:442 ttys=dce50000 stdout_irq=68
-ehv_bc_tty_close:450 tty=dce50000
-ls
-
-logout
-ehv_bc_tty_close:450 tty=dce50000
-ehv_bc_console_device:390
-ehv_bc_tty_open:442 ttys=dce50000 stdout_irq=68
-
-
-
-
-
-
-
-
-
-
-p4080 login:
-
-The "ehv_bc_..." lines are my debug printks.
-
-When I type "ls", I don't get a listing.  The "logout" occurs after I press ^D.
-
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+> In this case I haven't been able to replicate the problem, but I've
+> eyeballed the problem and I'm about 90% certain this should fix
+> things.  But I don't want to push this to Linus until I get
+> confirmation from you all that it fixes things.  That's just one of
+> the ways in which your testing is critically important for ext4, so
+> thanks again for your help in the past, present, and future.
+> Thanks!!
+> 
+> 						- Ted
+> 
+> commit 51279fcb9720aa856ad81673886ca2349a373dac
+> Author: Theodore Ts'o <tytso@mit.edu>
+> Date:   Thu Oct 28 15:15:21 2010 -0400
+> 
+>     ext4: BUG_ON fix: check if page has buffers before calling page_buffers()
+>     
+>     We need to make check if a page does not have buffes by checking
+>     page_has_buffers(page) before calling page_buffers(page) in
+>     ext4_writepage().  Otherwise page_buffers() could throw a BUG_ON.
+>     
+>     Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+> 
+> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+> index 2d6c6c8..1916164 100644
+> --- a/fs/ext4/inode.c
+> +++ b/fs/ext4/inode.c
+> @@ -2718,7 +2718,7 @@ static int ext4_writepage(struct page *page,
+>  	 * try to create them using __block_write_begin.  If this
+>  	 * fails, redirty the page and move on.
+>  	 */
+> -	if (!page_buffers(page)) {
+> +	if (!page_has_buffers(page)) {
+>  		if (__block_write_begin(page, 0, len,
+>  					noalloc_get_block_write)) {
+>  		redirty_page:
+> @@ -2732,12 +2732,10 @@ static int ext4_writepage(struct page *page,
+>  	if (walk_page_buffers(NULL, page_bufs, 0, len, NULL,
+>  			      ext4_bh_delay_or_unwritten)) {
+>  		/*
+> -		 * We don't want to do block allocation So redirty the
+> -		 * page and return We may reach here when we do a
+> -		 * journal commit via
+> -		 * journal_submit_inode_data_buffers.  If we don't
+> -		 * have mapping block we just ignore them. We can also
+> -		 * reach here via shrink_page_list
+> +		 * We don't want to do block allocation, so redirty
+> +		 * the page and return.  We may reach here when we do
+> +		 * a journal commit via journal_submit_inode_data_buffers.
+> +		 * We can also reach here via shrink_page_list
+>  		 */
+>  		goto redirty_page;
+>  	}
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
