@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933455Ab0J1OeC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 10:34:02 -0400
-Received: from smtprelay04.ispgateway.de ([80.67.31.38]:52738 "EHLO
-	smtprelay04.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933370Ab0J1OeB (ORCPT
+	id S933518Ab0J1OeI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 10:34:08 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:50102 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933480Ab0J1OeE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 10:34:01 -0400
-Message-ID: <4CC98A3C.5010903@ladisch.de>
-Date: Thu, 28 Oct 2010 16:35:40 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Thu, 28 Oct 2010 10:34:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=fgZPZ8l7UTcijb61JzIUnxfCa6zsczoughTDIcV4l0BP+xNskke5SRCKJrDj1BxWuQ
+         OMdRtmJOLk7dO9RZ6w6boy1wx0zzOlDFqLSk0ujlZ3Fw4udZDMCYeOc9dVojxNY9A/uR
+         /bbsUqOC+hKf6QnNe4qrCK4nhL8Ifepz9Gsu8=
 MIME-Version: 1.0
-To: Matthias Dunda <user254@t1817.greatnet.de>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Reading temperature from another Kernel modules
-References: <007FBA04-E52D-497B-A43B-738F15E33558@t1817.greatnet.de>
-In-Reply-To: <007FBA04-E52D-497B-A43B-738F15E33558@t1817.greatnet.de>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: linux-kernel@cl.domainfactory-kunde.de
+In-Reply-To: <1288242011-32257-1-git-send-email-alex@wigen.net>
+References: <1288242011-32257-1-git-send-email-alex@wigen.net>
+Date: Thu, 28 Oct 2010 10:34:03 -0400
+Message-ID: <AANLkTi=t-X96a2m9kmP_j+nT=tKjyOJZBsOspuBT4TmM@mail.gmail.com>
+Subject: Re: [PATCH] via-velocity: Codestyle fixes
+From: Bob Beers <bob.beers@gmail.com>
+To: alex@wigen.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthias Dunda wrote:
-> BUT: how do I get the temp? Most of the internal functions require a
-> struct device or a struct i2c_client, which - I assume - are perfectly
-> provided by the kernel when going the way over the proc file system.
-> 
-> I tried to statically save such a struct during the probing process
-> (this is the above my_local_client), but this works neither. When I
-> use the saved struct to call jc42_read_value, I always get a
-> temperature value which is not correct at all.
+On Thu, Oct 28, 2010 at 1:00 AM,  <alex@wigen.net> wrote:
+> From: Alexander Wigen <alex@wigen.net>
 
-Is that saved pointer actually the same?  (Put printk()s in both your
-function and some sysfs-called function.)
+>  static void mac_wol_reset(struct mac_regs __iomem *regs)
+> @@ -342,7 +342,7 @@ VELOCITY_PARAM(ValPktLen, "Receiving or Drop invalid 802.3 frame");
+>    1: Wake up if link status is on/off.
+>    2: Wake up if recevied an arp packet.
+>    4: Wake up if recevied any unicast packet.
+> -   Those value can be sumed up to support more than one option.
+> +   Those value can be summed up to support more than one option.
+>  */
+>  VELOCITY_PARAM(wol_opts, "Wake On Lan options");
+>
 
+my $.02 ...
 
-Regards,
-Clemens
+s/recevied/receive/ x2
+
+s/These values can be summed/Those value can be summed up/
+
+-Bob Beers
