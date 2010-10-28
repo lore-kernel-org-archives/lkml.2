@@ -1,53 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934169Ab0J1Vqp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 17:46:45 -0400
-Received: from bhuna.collabora.co.uk ([93.93.128.226]:40305 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933230Ab0J1Vqk (ORCPT
+	id S934561Ab0J1Vqx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 17:46:53 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:51990 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933866Ab0J1Vqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 17:46:40 -0400
-Message-ID: <4CC9EDF6.4050303@collabora.co.uk>
-Date: Thu, 28 Oct 2010 22:41:10 +0100
-From: Ian Molton <ian.molton@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100917 Icedove/3.0.8
+	Thu, 28 Oct 2010 17:46:44 -0400
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=6ThQLmJjoywA:10 a=kj9zAlcOel0A:10 a=mpMdnlmFKti1S5SNY1DT+A==:17 a=yQdBAQUQAAAA:8 a=2C6YHBdLAAAA:8 a=deDR3FDtIebAJckgX_UA:9 a=U4CccYimC4Z_lukdnyYGU6epDs8A:4 a=CjuIK1q_8ugA:10 a=IcxpeKGZWnEA:10 a=mJMriH8CDpcA:10 a=mpMdnlmFKti1S5SNY1DT+A==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 65.28.92.85
+Date: Thu, 28 Oct 2010 16:47:03 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: r8712u: Fix sparse message
+Message-ID: <4cc9ef57.olkJXiwQEtL/lNA3%Larry.Finger@lwfinger.net>
+User-Agent: Heirloom mailx 12.2 01/07/07
 MIME-Version: 1.0
-To: Anthony Liguori <anthony@codemonkey.ws>
-CC: Avi Kivity <avi@redhat.com>, virtualization@lists.osdl.org,
-        linux-kernel@vger.kernel.org, QEMU Developers <qemu-devel@nongnu.org>
-Subject: Re: [Qemu-devel] Re: [PATCH] Implement a virtio GPU transport
-References: <4CAC9CD1.2050601@collabora.co.uk>	<4CB1D79A.6070805@redhat.com>	<4CBD739A.2010500@collabora.co.uk>	<4CBD7560.6080207@redhat.com> <4CC8226F.5080807@collabora.co.uk>	<4CC94203.1080207@redhat.com> <4CC9647A.50108@collabora.co.uk> <4CC98784.7020907@redhat.com> <4CC98C25.9010207@codemonkey.ws> <4CC9D403.2010805@collabora.co.uk> <4CC9D9B9.10601@codemonkey.ws>
-In-Reply-To: <4CC9D9B9.10601@codemonkey.ws>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/10/10 21:14, Anthony Liguori wrote:
+>From b57eb713ef7d36b2fe10ec83a989ba1845e098b6 Mon Sep 17 00:00:00 2001
+From: Larry Finger <Larry.Finger@lwfinger.net>
+Date: Tue, 26 Oct 2010 11:02:25 -0500
+Subject: [PATCH 2/2] staging: r8712u: Fix sparse message
 
->> If this code was invasive to qemus core, I'd say 'no way' but its just
->> not. and as the GL device is versioned, we can keep using it even if
->> the passthrough is replaced by a virtual GPU.
->
-> The virtio-gl implementation is basically duplicating virtio-serial. It
-> looks like ti creates a totally separate window for the GL session. In
-> the current form, is there really any advantage to having the code in
-> QEMU? It could just as easily live outside of QEMU.
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+---
+ drivers/staging/rtl8712/TODO                  |    1 -
+ drivers/staging/rtl8712/rtl871x_ioctl_linux.c |    1 +
+ drivers/staging/rtl8712/rtl871x_mp_ioctl.c    |    2 --
+ drivers/staging/rtl8712/rtl871x_mp_ioctl.h    |    2 +-
+ 4 files changed, 2 insertions(+), 4 deletions(-)
 
-you could say much the same about any driver in qemu... you could 
-serialise up the registers and ship the data off to be processed on 
-another PC if you wanted to...
+diff --git a/drivers/staging/rtl8712/TODO b/drivers/staging/rtl8712/TODO
+index ed22b0b..d8dfe5b 100644
+--- a/drivers/staging/rtl8712/TODO
++++ b/drivers/staging/rtl8712/TODO
+@@ -3,7 +3,6 @@ TODO:
+ - switch to use LIB80211
+ - switch to use MAC80211
+ - checkpatch.pl fixes - only a few remain
+-- sparse fixes
+ 
+ Please send any patches to Greg Kroah-Hartman <greg@kroah.com>,
+ Larry Finger <Larry.Finger@lwfinger.net> and
+diff --git a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+index 1529239..f4353eb 100644
+--- a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
++++ b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+@@ -27,6 +27,7 @@
+  ******************************************************************************/
+ 
+ #define _RTL871X_IOCTL_LINUX_C_
++#define _RTL871X_MP_IOCTL_C_
+ 
+ #include "osdep_service.h"
+ #include "drv_types.h"
+diff --git a/drivers/staging/rtl8712/rtl871x_mp_ioctl.c b/drivers/staging/rtl8712/rtl871x_mp_ioctl.c
+index d60aaa9..5eb461b 100644
+--- a/drivers/staging/rtl8712/rtl871x_mp_ioctl.c
++++ b/drivers/staging/rtl8712/rtl871x_mp_ioctl.c
+@@ -26,8 +26,6 @@
+  *
+  ******************************************************************************/
+ 
+-#define _RTL871X_MP_IOCTL_C_
+-
+ #include "osdep_service.h"
+ #include "drv_types.h"
+ #include "mlme_osdep.h"
+diff --git a/drivers/staging/rtl8712/rtl871x_mp_ioctl.h b/drivers/staging/rtl8712/rtl871x_mp_ioctl.h
+index 2225bd1..fdd2278 100644
+--- a/drivers/staging/rtl8712/rtl871x_mp_ioctl.h
++++ b/drivers/staging/rtl8712/rtl871x_mp_ioctl.h
+@@ -373,7 +373,7 @@ unsigned int mp_ioctl_xmit_packet_hdl(struct oid_par_priv *poid_par_priv);
+ #ifdef _RTL871X_MP_IOCTL_C_ /* CAUTION!!! */
+ /* This ifdef _MUST_ be left in!! */
+ 
+-struct mp_ioctl_handler mp_ioctl_hdl[] = {
++static struct mp_ioctl_handler mp_ioctl_hdl[] = {
+ 	{sizeof(u32), oid_rt_pro_start_test_hdl,
+ 			     OID_RT_PRO_START_TEST},/*0*/
+ 	{sizeof(u32), oid_rt_pro_stop_test_hdl,
+-- 
+1.7.1
 
-The code does not, however, create a seperate window for the GL session. 
-the GL scene is rendered offscreen, and then piped back to the guest for 
-display, so that it is fully composited into the guests graphical 
-environment. From a user perspective, its as if the guest had hardware 
-3D. Performance is very reasonable, around 40fps in ioquake3 on modest 
-(host) hardware.
-
-In theory, the code *could* use a serial transport and render in a 
-seperate process, but then that would make it much harder to evolve it 
-into a GPU-like system in future.
-
--Ian
