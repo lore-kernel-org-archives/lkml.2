@@ -1,144 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761033Ab0J1SUl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 14:20:41 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:60290 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753538Ab0J1SUe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 14:20:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type;
-        b=lFgXKkIrPZKmGfAeXj944UZ2oZmRhNsil6McuSTuhmRLuZC1/SiELIvFFuh0ElmRk/
-         UAwv9+3anx36b5ngK6OsQC2+8mLh6OvaCXXGp5AOr0scz3vo/va1Q9F4jt9exbm82fxa
-         rX9nl5LC/7XtQ6sgWybpOosB4jkVu+8+UYH4w=
+	id S1761128Ab0J1SV3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 14:21:29 -0400
+Received: from kroah.org ([198.145.64.141]:46287 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760922Ab0J1SVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 14:21:24 -0400
+Date: Thu, 28 Oct 2010 10:56:15 -0700
+From: Greg KH <greg@kroah.com>
+To: "Emilio G. Cota" <cota@braap.org>
+Cc: Martyn Welch <martyn.welch@ge.com>, LKML <linux-kernel@vger.kernel.org>,
+        devel@driverdev.osuosl.org,
+        Juan David Gonzalez Cobas <david.cobas@gmail.com>,
+        Bill Pemberton <wfp5p@virginia.edu>
+Subject: Re: [PATCH 09/30] staging/vme: fill in struct device's .release,
+ even if it's a NOOP
+Message-ID: <20101028175615.GA2367@kroah.com>
+References: <1288055476-19438-1-git-send-email-cota@braap.org>
+ <1288055476-19438-10-git-send-email-cota@braap.org>
+ <4CC804FF.9050908@ge.com>
+ <20101027144642.GP10869@flamenco.cs.columbia.edu>
+ <20101028011711.GA29960@kroah.com>
+ <20101028060710.GB10720@flamenco.cs.columbia.edu>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20101028175221.GA1578@arch.trippelsdorf.de>
-References: <AANLkTi=E_uMj_ndGU86DCjX4aDwjHqg3dkwxjQRSJtq6@mail.gmail.com>
-	<20101028175221.GA1578@arch.trippelsdorf.de>
-Date: Thu, 28 Oct 2010 20:20:33 +0200
-Message-ID: <AANLkTikOqeT8OznyMvL7XaWS06kh7ZZ+SJLyMfOc32P4@mail.gmail.com>
-Subject: Re: [next-20101038] Call trace in ext4
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-        "Theodore Ts'o" <tytso@mit.edu>, sfr@canb.auug.org.au,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: multipart/mixed; boundary=20cf300fac9bd6cdf10493b165ad
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101028060710.GB10720@flamenco.cs.columbia.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf300fac9bd6cdf10493b165ad
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Thu, Oct 28, 2010 at 02:07:10AM -0400, Emilio G. Cota wrote:
+> On Wed, Oct 27, 2010 at 18:17:11 -0700, Greg KH wrote:
+> > On Wed, Oct 27, 2010 at 10:46:42AM -0400, Emilio G. Cota wrote:
+> > > On Wed, Oct 27, 2010 at 11:54:55 +0100, Martyn Welch wrote:
+> > > > I guess this is an artifact of the current lack of refcounting?
+> > > 
+> > > No, that's orthogonal to this. This has to do with the way the
+> > > devices are allocated.
+> > > 
+> > > > This is definitely an issue, however I don't think masking it by adding
+> > > > an empty function is the correct way to go.
+> > > 
+> > > We're not masking anything. The release method is there to free the
+> > > struct it protects when its refcount goes to zero; however, in this
+> > > case the struct wasn't allocated dynamically--the 32 devices are
+> > > stored in struct vme_bridge in an array--and therefore there's
+> > > nothing to do in .release, since struct vme_bridge is freed
+> > > elsewhere.
+> > > 
+> > > While it's true that empty .release methods are usually frowned
+> > > upon (as stated in Documentation/kobject.txt), due to the way
+> > > things are done here it actually makes sense to have an
+> > > empty .release.
+> > 
+> > FROWNED APON?
+> > 
+> > Heh, if you add one, as per the documentation there, I get to publicly
+> > ridicule you for doing so.
+> > 
+> > So consider this your ridicule, if you ever are thinking you need to
+> > create an empty release function, YOUR CODE IS WRONG!
+> > 
+> > Seriously, do you think I just add warnings in there for fun?  So that
+> > you can work around them thinking you know better?
+> > 
+> > {sigh}
+> > 
+> > Your implementation is broken, never do this, if you create a kobject,
+> > you HAVE TO FREE IT in the release function.
+> > 
+> > I would ask why you are even using a kobject in the first place (hint,
+> > if you are writing a driver, or even a subsystem, you shouldn't be, use
+> > 'struct device' instead.)
+> 
+> 
+> kobject?
+> 
+> We were talking about a struct device's .release, not about a struct
+> kobject's .release.
+> 
+> The warning comes from the kobject embedded in struct device, not
+> from a kobject per se. In fact, let me make it clearer:
+> 
+> 		NO KOBJECT IS DIRECTLY OPERATED ON.
 
-On Thu, Oct 28, 2010 at 7:52 PM, Markus Trippelsdorf
-<markus@trippelsdorf.de> wrote:
-> On Thu, Oct 28, 2010 at 12:05:05PM +0200, Sedat Dilek wrote:
->> Hi,
->>
->> I have built today linux-next as of next-20101028 in a non-BKL config
->> (kernel-config attached) on a Debian i386/sid host.
->>
->> When I start my quassel IRC-client I get reproducibly this call-trace:
->>
->> # tail -40 kern.log
->> Oct 28 11:42:54 tbox kernel: [ =C2=A0 32.872957] EXT3-fs (sdb5): warning=
-:
->> maximal mount count reached, running e2fsck is recommended
->> Oct 28 11:42:54 tbox kernel: [ =C2=A0 32.873621] EXT3-fs (sdb5): using
->> internal journal
->> Oct 28 11:42:54 tbox kernel: [ =C2=A0 32.873635] EXT3-fs (sdb5): mounted
->> filesystem with ordered data mode
->> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.480401] ------------[ cut here =
-]------------
->> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.480598] kernel BUG at
->> /home/sd/src/linux-2.6/linux-2.6.36/debian/build/source_i386_none/fs/ext=
-4/inode.c:2721!
->
-> The same BUG (inode.c:2721) happend here today running latest vanilla
-> git. There is nothing in my logs unfortunately, but I shot a photo of
-> the trace (see attachment).
->
-> --
-> Markus
->
+Ok, thanks, I wasn't paying attention.
 
-Looks like the two patches from ext/for_linus GIT-branch stabilzes
-system, here (2.6.36-git11).
+Empty device release functions are also incorrect and shouldn't even be
+part of a patch series.
 
-root@tbox:~# uptime
- 20:19:42 up 19 min,  4 users,  load average: 1.27, 0.89, 0.58
+> Fact: Anything other than freeing struct device in .release is
+> a bug. So the warning is very well placed there, no question
+> about it.
 
-- Sedat -
+Agreed.
 
---20cf300fac9bd6cdf10493b165ad
-Content-Type: text/x-diff; charset=UTF-8; 
-	name="0001-ext4-Fix-build-when-CONFIG_EXT4_FS_XATTR.patch"
-Content-Disposition: attachment; 
-	filename="0001-ext4-Fix-build-when-CONFIG_EXT4_FS_XATTR.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gftyko0t1
+> Example: when a VME bridge is removed, then all devices are
+> mercilessly freed, even if their refcounts aren't 0 because
+> drivers are controlling them. This is a BUG, and both Martin
+> and I knew it.
 
-RnJvbSAwNGVlMDJmNTQyYjEzZDllNDExNGEyY2FjODZiMDI4NzRhNjU4MzI0IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBJbmdvIE1vbG5hciA8bWluZ29AZWx0ZS5odT4KRGF0ZTogVGh1
-LCAyOCBPY3QgMjAxMCAxMjowMToxNyAtMDQwMApTdWJqZWN0OiBbUEFUQ0ggMS8yXSBleHQ0OiBG
-aXggYnVpbGQgd2hlbiAhQ09ORklHX0VYVDRfRlNfWEFUVFIKTUlNRS1WZXJzaW9uOiAxLjAKQ29u
-dGVudC1UeXBlOiB0ZXh0L3BsYWluOyBjaGFyc2V0PVVURi04CkNvbnRlbnQtVHJhbnNmZXItRW5j
-b2Rpbmc6IDhiaXQKCj4gVGhlb2RvcmUgVHMnbyAoMTgpOgo+ICAgICAgIGV4dDQ6IHJlbmFtZSB7
-ZXhpdCxpbml0fV9leHQ0XyooKSB0byBleHQ0X3tleGl0LGluaXR9XyooKQoKVG9kYXkncyAtdGlw
-IGZhaWxzIHRvIGJ1aWxkIGR1ZSB0byB1cHN0cmVhbSBjb21taXQgNWRhYmZjNyAoImV4dDQ6CnJl
-bmFtZSB7ZXhpdCxpbml0fV9leHQ0XyooKSB0byBleHQ0X3tleGl0LGluaXR9XyooKSIpLCBvbgph
-bGxbeWVzL21vZF1jb25maWcgd2l0aCBDT05GSUdfRVhUNF9GU19YQVRUUiBkaXNhYmxlZDoKCiAg
-ZnMvZXh0NC9zdXBlci5jOjQ3NzY6IGVycm9yOiBpbXBsaWNpdCBkZWNsYXJhdGlvbiBvZiBmdW5j
-dGlvbiDigJhleHQ0X2luaXRfeGF0dHLigJkKCkNvbW1pdCA1ZGFiZmM3IHJlbmFtZWQgaW5pdF9l
-eHQ0X3hhdHRyIHRvIGV4dDRfaW5pdF94YXR0ciBidXQgZm9yZ290CnRvIHVwZGF0ZSB0aGUgZGVm
-aW5pdGlvbiBpbiBmcy9leHQ0L3hhdHRyLmguIFRoZSBwYXRjaCBiZWxvdyBmaXhlcyBpdC4KClsg
-TWVhIGN1bHBhLCBtZWEgY3VscGEsIG1lYSBtYXhpbXVtIGN1bHBhIC1UZWQgXQoKU2lnbmVkLW9m
-Zi1ieTogSW5nbyBNb2xuYXIgPG1pbmdvQGVsdGUuaHU+ClNpZ25lZC1vZmYtYnk6ICJUaGVvZG9y
-ZSBUcydvIiA8dHl0c29AbWl0LmVkdT4KLS0tCiBmcy9leHQ0L3hhdHRyLmggfCAgICAyICstCiAx
-IGZpbGVzIGNoYW5nZWQsIDEgaW5zZXJ0aW9ucygrKSwgMSBkZWxldGlvbnMoLSkKCmRpZmYgLS1n
-aXQgYS9mcy9leHQ0L3hhdHRyLmggYi9mcy9leHQ0L3hhdHRyLmgKaW5kZXggMjgxZGQ4My4uMWVm
-MTY1MiAxMDA2NDQKLS0tIGEvZnMvZXh0NC94YXR0ci5oCisrKyBiL2ZzL2V4dDQveGF0dHIuaApA
-QCAtMTIyLDcgKzEyMiw3IEBAIGV4dDRfeGF0dHJfcHV0X3N1cGVyKHN0cnVjdCBzdXBlcl9ibG9j
-ayAqc2IpCiB9CiAKIHN0YXRpYyBfX2luaXQgaW5saW5lIGludAotaW5pdF9leHQ0X3hhdHRyKHZv
-aWQpCitleHQ0X2luaXRfeGF0dHIodm9pZCkKIHsKIAlyZXR1cm4gMDsKIH0KLS0gCjEuNy4yLjMK
-Cg==
---20cf300fac9bd6cdf10493b165ad
-Content-Type: text/x-diff; charset=UTF-8; 
-	name="0002-fs-build-fix-when-CONFIG_BLOCK.patch"
-Content-Disposition: attachment; 
-	filename="0002-fs-build-fix-when-CONFIG_BLOCK.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gftyl1ot2
+Ok, then patches are gladly accepted to fix it.
 
-RnJvbSA3NGVlM2VmNTY5YWM3NmI3YTYwMGFjNjkwOTdmOGZmOTZhYWE1YjUwIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBJbmdvIE1vbG5hciA8bWluZ29AZWx0ZS5odT4KRGF0ZTogVGh1
-LCAyOCBPY3QgMjAxMCAxMjowMzowNSAtMDQwMApTdWJqZWN0OiBbUEFUQ0ggMi8yXSBmczogYnVp
-bGQgZml4IHdoZW4gIUNPTkZJR19CTE9DSwpNSU1FLVZlcnNpb246IDEuMApDb250ZW50LVR5cGU6
-IHRleHQvcGxhaW47IGNoYXJzZXQ9VVRGLTgKQ29udGVudC1UcmFuc2Zlci1FbmNvZGluZzogOGJp
-dAoKVG9kYXkncyAtdGlwIGZhaWxzIHRvIGJ1aWxkIG9uICFDT05GSUdfQkxPQ0ssIGR1ZSB0byB1
-cHN0cmVhbSBjb21taXQKMzY3YTUxYSAoImZzOiBBZGQgRklUUklNIGlvY3RsIik6CgogaW5jbHVk
-ZS9saW51eC9mcy5oOjM2OiBlcnJvcjogZXhwZWN0ZWQgc3BlY2lmaWVyLXF1YWxpZmllci1saXN0
-IGJlZm9yZSDigJh1aW50NjRfdOKAmQogaW5jbHVkZS9saW51eC9mcy5oOjM2OiBlcnJvcjogZXhw
-ZWN0ZWQgc3BlY2lmaWVyLXF1YWxpZmllci1saXN0IGJlZm9yZSDigJh1aW50NjRfdOKAmQogaW5j
-bHVkZS9saW51eC9mcy5oOjM2OiBlcnJvcjogZXhwZWN0ZWQgc3BlY2lmaWVyLXF1YWxpZmllci1s
-aXN0IGJlZm9yZSDigJh1aW50NjRfdOKAmQoKVGhlIGNvbW1pdCBhZGRzIHVpbnQ2NF90IHR5cGUg
-dXNhZ2UgdG8gZnMuaCwgYnV0IGxpbnV4L3R5cGVzLmggaXMgbm90CmluY2x1ZGVkIGV4cGxpY2l0
-bHkgLSBpdCdzIG9ubHkgaW5jbHVkZWQgaW1wbGljaXRseSB2aWEKbGludXgvYmxrX3R5cGVzLmgs
-IGFuZCB0aGVyZSBvbmx5IGlmIENPTkZJR19CTE9DSyBpcyBlbmFibGVkLgoKQWRkIHRoZSBleHBs
-aWNpdCAjaW5jbHVkZSB0byBmaXggdGhpcy4KClNpZ25lZC1vZmYtYnk6IEluZ28gTW9sbmFyIDxt
-aW5nb0BlbHRlLmh1PgpTaWduZWQtb2ZmLWJ5OiAiVGhlb2RvcmUgVHMnbyIgPHR5dHNvQG1pdC5l
-ZHU+Ci0tLQogaW5jbHVkZS9saW51eC9mcy5oIHwgICAgMSArCiAxIGZpbGVzIGNoYW5nZWQsIDEg
-aW5zZXJ0aW9ucygrKSwgMCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4
-L2ZzLmggYi9pbmNsdWRlL2xpbnV4L2ZzLmgKaW5kZXggNmVkN2FjZS4uMWM3M2I1MCAxMDA2NDQK
-LS0tIGEvaW5jbHVkZS9saW51eC9mcy5oCisrKyBiL2luY2x1ZGUvbGludXgvZnMuaApAQCAtOSw2
-ICs5LDcgQEAKICNpbmNsdWRlIDxsaW51eC9saW1pdHMuaD4KICNpbmNsdWRlIDxsaW51eC9pb2N0
-bC5oPgogI2luY2x1ZGUgPGxpbnV4L2Jsa190eXBlcy5oPgorI2luY2x1ZGUgPGxpbnV4L3R5cGVz
-Lmg+CiAKIC8qCiAgKiBJdCdzIHNpbGx5IHRvIGhhdmUgTlJfT1BFTiBiaWdnZXIgdGhhbiBOUl9G
-SUxFLCBidXQgeW91IGNhbiBjaGFuZ2UKLS0gCjEuNy4yLjMKCg==
---20cf300fac9bd6cdf10493b165ad--
+> Fact: Right now VME drivers MUST be removed before VME
+> bridges are removed. We all agree on that this is broken--
+
+Yup, it's broken, please don't require that.
+
+> bridges shouldn't be allowed to be removed if there are
+> drivers controlling any of their devices. Patch 27
+> addresses this among other things.
+
+Not true, a bridge should be able to be removed, just that the devices
+will then be deleted as well.  See USB bus drivers for examples of how
+to do this properly.
+
+thanks,
+
+greg k-h
