@@ -1,71 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933989Ab0J1RQB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 13:16:01 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:45535
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933964Ab0J1RP4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 13:15:56 -0400
-Date: Thu, 28 Oct 2010 10:16:18 -0700 (PDT)
-Message-Id: <20101028.101618.226776102.davem@davemloft.net>
-To: rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, error27@gmail.com,
-        masa-korg@dsn.okisemi.com, akpm@linux-foundation.org
-Subject: Re: [PATCH] Fix missing dependency of PCH_GBE driver
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1288268189.18238.173.camel@gandalf.stny.rr.com>
-References: <1288268189.18238.173.camel@gandalf.stny.rr.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S933995Ab0J1RRX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 13:17:23 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:54979 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933943Ab0J1RRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 13:17:15 -0400
+Date: Thu, 28 Oct 2010 19:17:01 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: -tip: origin tree build failure (was: [GIT PULL] ext4 update for
+ 2.6.37)
+Message-ID: <20101028171701.GA18368@elte.hu>
+References: <E1PBKT9-0004Uk-Sm@tytso-glaptop>
+ <20101028075631.GA7690@elte.hu>
+ <AANLkTi=8SbOZizWpxLg=Bgp7atdgr8MsR6tnRDYr1+eW@mail.gmail.com>
+ <20101028163854.GA15450@elte.hu>
+ <AANLkTin62vAwJxcsrFk6Yn7Q6tzr-D=EmKKwPazuAJ11@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTin62vAwJxcsrFk6Yn7Q6tzr-D=EmKKwPazuAJ11@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
-Date: Thu, 28 Oct 2010 08:16:29 -0400
 
-> While doing some randconfigs I stumbled across this build error:
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+> On Thu, Oct 28, 2010 at 9:38 AM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > Point taken in any case, i'll read your edited changelog and will change the
+> > template accordingly.
+> >
+> > Would this:
+> >
+> >  Upstream commit 5dabfc7 ("ext4: rename {exit,init}_ext4_*() to
+> >  ext4_{exit,init}_*()"), breaks the build on all[yes/mod]config with
+> >  CONFIG_EXT4_FS_XATTR disabled:
+> >
+> >  ...
+> >
+> > have been better?
 > 
-> ERROR: "mii_ethtool_gset" [drivers/net/pch_gbe/pch_gbe.ko] undefined!
-> ERROR: "generic_mii_ioctl" [drivers/net/pch_gbe/pch_gbe.ko] undefined!
-> ERROR: "mii_nway_restart" [drivers/net/pch_gbe/pch_gbe.ko] undefined!
-> ERROR: "mii_check_gmii_support" [drivers/net/pch_gbe/pch_gbe.ko] undefined!
-> ERROR: "mii_link_ok" [drivers/net/pch_gbe/pch_gbe.ko] undefined!
-> ERROR: "mii_ethtool_sset" [drivers/net/pch_gbe/pch_gbe.ko] undefined!
+> Yes. Except for the kernel the default git commit abbreviation is borderline too 
+> short. Seven hex-chars can easily alias with a few more pulls from me: git will 
+> not give aliases at the time it gives a shorthand, but a month or two later the 
+> abbreviated commit may no longer be unique.
 > 
-> The config option PCH_GBE is missing the dependency of MII.
+> So I suggest using --abbrev=12 or similar.
+
+ok. A helper script i use does this:
+
+   git log --pretty=format:"%h: %s" $@
+
+I have added --abbrev=12. Might make sense to lengthen the %h default in upstream 
+Git as well?
+
+> What I ended up writing your commit as was this:
 > 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+>     ext4: fix compile with CONFIG_EXT4_FS_XATTR disabled
+> 
+>     Commit 5dabfc78dced ("ext4: rename {exit,init}_ext4_*() to
+>     ext4_{exit,init}_*()") causes
+> 
+>       fs/ext4/super.c:4776: error: implicit declaration of function ‘ext4_init_xattr’
+> 
+>     when CONFIG_EXT4_FS_XATTR is disabled.
+> 
+>     It renamed init_ext4_xattr to ext4_init_xattr but forgot to update the
+>     dummy definition in fs/ext4/xattr.h.
+> 
+>     Signed-off-by: Ingo Molnar <mingo@elte.hu>
+>     Acked-by: "Theodore Ts'o" <tytso@mit.edu>
+>     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> 
+> but that's just me.
 
-The canonical way to handle this is to use 'select'.  Thus,
-I've committed the following to fix this.
+Ok, this indeed is much nicer to read.
 
-Thanks.
+Thanks,
 
---------------------
-pch_gbe: Select MII.
-
-Reported-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- drivers/net/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-index 77c1fab..f24179d 100644
---- a/drivers/net/Kconfig
-+++ b/drivers/net/Kconfig
-@@ -2520,6 +2520,7 @@ source "drivers/net/stmmac/Kconfig"
- config PCH_GBE
- 	tristate "PCH Gigabit Ethernet"
- 	depends on PCI
-+	select MII
- 	---help---
- 	  This is a gigabit ethernet driver for Topcliff PCH.
- 	  Topcliff PCH is the platform controller hub that is used in Intel's
--- 
-1.7.3.2
-
+	Ingo
