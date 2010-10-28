@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759829Ab0J1SVq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 14:21:46 -0400
-Received: from kroah.org ([198.145.64.141]:46304 "EHLO coco.kroah.org"
+	id S934038Ab0J1SYG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 14:24:06 -0400
+Received: from mga09.intel.com ([134.134.136.24]:53473 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761148Ab0J1SVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 14:21:31 -0400
-Date: Thu, 28 Oct 2010 11:15:19 -0700
-From: Greg KH <greg@kroah.com>
-To: Nguyen Dinh-R00091 <R00091@freescale.com>
-Cc: Greg KH <gregkh@suse.de>, matthieu.castet@parrot.com,
-        stern@rowland.harvard.edu, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [GIT PATCH] USB patches for .37-rc1
-Message-ID: <20101028181519.GD2573@kroah.com>
-References: <20101022175102.GA13489@kroah.com>
- <86A0E76937111F4C92FABEC0A2098851051D62E6@az33exm21>
+	id S933933Ab0J1SX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 14:23:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,253,1286175600"; 
+   d="scan'208";a="568275987"
+Date: Thu, 28 Oct 2010 20:26:10 +0200
+From: Andi Kleen <ak@linux.intel.com>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: James Bottomley <James.Bottomley@suse.de>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Mike Anderson <andmike@linux.vnet.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
+        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Christof Schmitt <christof.schmitt@de.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, julia@diku.dk
+Subject: Re: [ANNOUNCE] Status of unlocked_qcmds=1 operation for .37
+Message-ID: <20101028182610.GA4592@gargoyle.fritz.box>
+References: <1288132071.8283.689.camel@mulgrave.site>
+ <1288132464.5169.112.camel@haakon2.linux-iscsi.org>
+ <1288133450.8283.723.camel@mulgrave.site>
+ <1288134048.5169.132.camel@haakon2.linux-iscsi.org>
+ <1288134713.19649.11.camel@mulgrave.site>
+ <1288135918.5169.149.camel@haakon2.linux-iscsi.org>
+ <20101027075349.GA32585@gargoyle.fritz.box>
+ <1288189658.4692.13.camel@mulgrave.site>
+ <20101028091020.GA7906@gargoyle.fritz.box>
+ <4CC95BE8.3000909@panasas.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <86A0E76937111F4C92FABEC0A2098851051D62E6@az33exm21>
+In-Reply-To: <4CC95BE8.3000909@panasas.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 25, 2010 at 04:33:27PM -0700, Nguyen Dinh-R00091 wrote:
-> Hi Greg,
-> 
-> It seems that this commit is breaking ehci-mxc build for MX51.
-> 
-> USB: ehci tdi : let's tdi_reset set host mode
-> Commit # 65fd42724aee31018b0bb53f4cb04971423be664
-> 
-> >Matthew Garrett (1):
-> >      USB: serial: Enable USB autosuspend by default on qcserial
-> >
-> 
-> The error is:
-> 
-> drivers/usb/host/ehci-mxc.c: In function 'ehci_mxc_drv_probe':
-> drivers/usb/host/ehci-mxc.c:192: error: 'ehci' undeclared (first use in this function)
+> I disagree with your approach this introduces a spin_unlock_irqrestore
+> call site at every return, in the usually huge queuecommand.
 
-Care to send a build fix for it?
+I converted the full tree and in practice it turns out there 
+are very few returns in nearly all queuecommands. So it won't
+make much difference.
 
-thanks,
+Longer term they will be all hopefully gone again anyways.
 
-greg k-h
+-Andi
