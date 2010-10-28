@@ -1,63 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755095Ab0J1KB2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 06:01:28 -0400
-Received: from hera.kernel.org ([140.211.167.34]:34617 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750705Ab0J1KB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 06:01:26 -0400
-Date: Thu, 28 Oct 2010 10:01:06 GMT
-From: tip-bot for Paul Mundt <lethal@linux-sh.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        lethal@linux-sh.org, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, lethal@linux-sh.org
-In-Reply-To: <20101028023031.GB10365@linux-sh.org>
-References: <20101028023031.GB10365@linux-sh.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] genirq: Fix up irq_node() for irq_data changes.
-Message-ID: <tip-4600d7c493f354a3e338a35bcf8a3bfbe815776a@git.kernel.org>
-Git-Commit-ID: 4600d7c493f354a3e338a35bcf8a3bfbe815776a
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 28 Oct 2010 10:01:08 +0000 (UTC)
+	id S1755603Ab0J1KEP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 06:04:15 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:32872 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753818Ab0J1KEL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 06:04:11 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 28 Oct 2010 18:58:39 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Shaohua Li <shaohua.li@intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
+Subject: Re: [PATCH 1/2] mm: page allocator: Adjust the per-cpu counter
+ threshold when memory is low
+Message-Id: <20101028185839.4b951bdb.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20101028094903.GC4896@csn.ul.ie>
+References: <1288169256-7174-1-git-send-email-mel@csn.ul.ie>
+	<1288169256-7174-2-git-send-email-mel@csn.ul.ie>
+	<20101028100920.5d4ce413.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101028094903.GC4896@csn.ul.ie>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4600d7c493f354a3e338a35bcf8a3bfbe815776a
-Gitweb:     http://git.kernel.org/tip/4600d7c493f354a3e338a35bcf8a3bfbe815776a
-Author:     Paul Mundt <lethal@linux-sh.org>
-AuthorDate: Thu, 28 Oct 2010 11:30:31 +0900
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 28 Oct 2010 11:58:39 +0200
+On Thu, 28 Oct 2010 10:49:03 +0100
+Mel Gorman <mel@csn.ul.ie> wrote:
 
-genirq: Fix up irq_node() for irq_data changes.
+> On Thu, Oct 28, 2010 at 10:09:20AM +0900, KAMEZAWA Hiroyuki wrote:
+> > On Wed, 27 Oct 2010 09:47:35 +0100
+> > Mel Gorman <mel@csn.ul.ie> wrote:
+> > 
+> > > Commit [aa45484: calculate a better estimate of NR_FREE_PAGES when
+> > > memory is low] noted that watermarks were based on the vmstat
+> > > NR_FREE_PAGES. To avoid synchronization overhead, these counters are
+> > > maintained on a per-cpu basis and drained both periodically and when a
+> > > threshold is above a threshold. On large CPU systems, the difference
+> > > between the estimate and real value of NR_FREE_PAGES can be very high.
+> > > The system can get into a case where pages are allocated far below the
+> > > min watermark potentially causing livelock issues. The commit solved the
+> > > problem by taking a better reading of NR_FREE_PAGES when memory was low.
+> > > 
+> > > <SNIP>
+> > > 
+> > > diff --git a/mm/vmstat.c b/mm/vmstat.c
+> > > index 355a9e6..cafcc2d 100644
+> > > --- a/mm/vmstat.c
+> > > +++ b/mm/vmstat.c
+> > > @@ -81,6 +81,12 @@ EXPORT_SYMBOL(vm_stat);
+> > >  
+> > >  #ifdef CONFIG_SMP
+> > >  
+> > > +static int calculate_pressure_threshold(struct zone *zone)
+> > > +{
+> > > +	return max(1, (int)((high_wmark_pages(zone) - low_wmark_pages(zone) /
+> > > +				num_online_cpus())));
+> > > +}
+> > > +
+> > 
+> > Could you add background theory of this calculation as a comment to
+> > show the difference with calculate_threshold() ?
+> > 
+> 
+> Sure. When writing it, I realised that the calculations here differ from
+> what percpu_drift_mark does. This is what I currently have
+> 
+> int calculate_pressure_threshold(struct zone *zone)
+> {
+>         int threshold;
+>         int watermark_distance;
+> 
+>         /*
+>          * As vmstats are not up to date, there is drift between the estimated
+>          * and real values. For high thresholds and a high number of CPUs, it
+>          * is possible for the min watermark to be breached while the estimated
+>          * value looks fine. The pressure threshold is a reduced value such
+>          * that even the maximum amount of drift will not accidentally breach
+>          * the min watermark
+>          */
+>         watermark_distance = low_wmark_pages(zone) - min_wmark_pages(zone);
+>         threshold = max(1, watermark_distance / num_online_cpus());
+> 
+>         /*
+>          * Maximum threshold is 125
+>          */
+>         threshold = min(125, threshold);
+> 
+>         return threshold;
+> }
+> 
+> Is this better?
+> 
 
-Now that the node ID is tracked in the irq_data structure, update the
-irq_node() definition accordingly. This fixes up irq_node() usage under
-GENERIC_HARDIRQS_NO_DEPRECATED && SMP.
+sounds nice.
 
-Signed-off-by: Paul Mundt <lethal@linux-sh.org>
-LKML-Reference: <20101028023031.GB10365@linux-sh.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Regards,
+-Kame
 
----
- include/linux/irqnr.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/irqnr.h b/include/linux/irqnr.h
-index 05aa8c23..3bc4dca 100644
---- a/include/linux/irqnr.h
-+++ b/include/linux/irqnr.h
-@@ -43,7 +43,7 @@ unsigned int irq_get_next_irq(unsigned int offset);
- 		else
- 
- #ifdef CONFIG_SMP
--#define irq_node(irq)	(irq_to_desc(irq)->node)
-+#define irq_node(irq)	(irq_get_irq_data(irq)->node)
- #else
- #define irq_node(irq)	0
- #endif
