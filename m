@@ -1,784 +1,537 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750939Ab0J1EAK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 00:00:10 -0400
-Received: from extrelay1.mail-hub.dodo.com.au ([123.2.6.247]:51226 "EHLO
-	smtp.dodo.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750703Ab0J1EAH (ORCPT
+	id S1751113Ab0J1EEQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 00:04:16 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:44880 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705Ab0J1EEO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 00:00:07 -0400
-X-Greylist: delayed 687 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Oct 2010 00:00:06 EDT
-From: alex@wigen.net
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, alex@wigen.net
-Subject: [PATCH] via-velocity: Codestyle fixes
-Date: Thu, 28 Oct 2010 13:48:04 +1000
-Message-Id: <1288237684-30783-1-git-send-email-alex@wigen.net>
-X-Mailer: git-send-email 1.7.3.2
+	Thu, 28 Oct 2010 00:04:14 -0400
 MIME-Version: 1.0
-X-Dodo-MailScanner-ID: 79E1D23C5.8CD5F
-X-Dodo-MailScanner: Found to be clean
-X-Dodo-MailScanner-SpamScore: 2
-X-Dodo-MailScanner-From: alex@wigen.net
+X-Originating-IP: [70.128.164.227]
+Date: Thu, 28 Oct 2010 00:04:02 -0400
+X-Google-Sender-Auth: QBrKufOpHeug28-Zg4FyJoRLUgM
+Message-ID: <AANLkTikfxbbut2Qg5CSpkkN-9pYXN-EnNYHR1QDKpiuZ@mail.gmail.com>
+Subject: (reminder) Re: [PATCH v4] Bluetooth: btwilink driver
+From: Pavan Savoy <pavan_savoy@ti.com>
+To: padovan@profusion.mobi, marcel@holtmann.org
+Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pavan Savoy <pavan_savoy@ti.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Wigen <alex@wigen.net>
+On Tue, Oct 19, 2010 at 6:06 PM,  <pavan_savoy@ti.com> wrote:
+> From: Pavan Savoy <pavan_savoy@ti.com>
+>
+> v4 comments
+>
+> module init now returns what platform_driver_register returns.
+> type casting of void* private data has been removed
+>
 
-checkpatch.pl --terse --file drivers/net/via-velocity.c
-Before: total: 13 errors, 106 warnings, 3537 lines checked
-After: total: 0 errors, 96 warnings, 3536 lines checked
+Marcel, Gustavo,
 
-Signed-off-by: Alexander Wigen <alex@wigen.net>
----
- drivers/net/via-velocity.c |  187 ++++++++++++++++++++++----------------------
- 1 files changed, 93 insertions(+), 94 deletions(-)
+Any comments on this?
+Was really hoping this would get in for 2.6.37 ...
 
-diff --git a/drivers/net/via-velocity.c b/drivers/net/via-velocity.c
-index cab96ad..05c2e1e 100644
---- a/drivers/net/via-velocity.c
-+++ b/drivers/net/via-velocity.c
-@@ -84,7 +84,7 @@ static int velocity_nics;
- static int msglevel = MSG_LEVEL_INFO;
- 
- /**
-- *	mac_get_cam_mask	-	Read a CAM mask
-+ *	mac_get_cam_mask - Read a CAM mask
-  *	@regs: register block for this velocity
-  *	@mask: buffer to store mask
-  *
-@@ -113,7 +113,7 @@ static void mac_get_cam_mask(struct mac_regs __iomem *regs, u8 *mask)
- 
- 
- /**
-- *	mac_set_cam_mask	-	Set a CAM mask
-+ *	mac_set_cam_mask - Set a CAM mask
-  *	@regs: register block for this velocity
-  *	@mask: CAM mask to load
-  *
-@@ -156,7 +156,7 @@ static void mac_set_vlan_cam_mask(struct mac_regs __iomem *regs, u8 *mask)
- }
- 
- /**
-- *	mac_set_cam	-	set CAM data
-+ *	mac_set_cam - set CAM data
-  *	@regs: register block of this velocity
-  *	@idx: Cam index
-  *	@addr: 2 or 6 bytes of CAM data
-@@ -211,11 +211,11 @@ static void mac_set_vlan_cam(struct mac_regs __iomem *regs, int idx,
- 
- 
- /**
-- *	mac_wol_reset	-	reset WOL after exiting low power
-+ *	mac_wol_reset - reset WOL after exiting low power
-  *	@regs: register block of this velocity
-  *
-  *	Called after we drop out of wake on lan mode in order to
-- *	reset the Wake on lan features. This function doesn't restore
-+ *	reset the Wake On Lan features. This function doesn't restore
-  *	the rest of the logic from the result of sleep/wakeup
-  */
- static void mac_wol_reset(struct mac_regs __iomem *regs)
-@@ -342,7 +342,7 @@ VELOCITY_PARAM(ValPktLen, "Receiving or Drop invalid 802.3 frame");
-    1: Wake up if link status is on/off.
-    2: Wake up if recevied an arp packet.
-    4: Wake up if recevied any unicast packet.
--   Those value can be sumed up to support more than one option.
-+   Those value can be summed up to support more than one option.
- */
- VELOCITY_PARAM(wol_opts, "Wake On Lan options");
- 
-@@ -370,7 +370,7 @@ static DEFINE_PCI_DEVICE_TABLE(velocity_id_table) = {
- MODULE_DEVICE_TABLE(pci, velocity_id_table);
- 
- /**
-- *	get_chip_name	- 	identifier to name
-+ *	get_chip_name - identifier to name
-  *	@id: chip identifier
-  *
-  *	Given a chip identifier return a suitable description. Returns
-@@ -386,7 +386,7 @@ static const char __devinit *get_chip_name(enum chip_type chip_id)
- }
- 
- /**
-- *	velocity_remove1	-	device unplug
-+ *	velocity_remove1 - device unplug
-  *	@pdev: PCI device being removed
-  *
-  *	Device unload callback. Called on an unplug or on module
-@@ -409,7 +409,7 @@ static void __devexit velocity_remove1(struct pci_dev *pdev)
- }
- 
- /**
-- *	velocity_set_int_opt	-	parser for integer options
-+ *	velocity_set_int_opt - parser for integer options
-  *	@opt: pointer to option value
-  *	@val: value the user requested (or -1 for default)
-  *	@min: lowest value allowed
-@@ -438,7 +438,7 @@ static void __devinit velocity_set_int_opt(int *opt, int val, int min, int max,
- }
- 
- /**
-- *	velocity_set_bool_opt	-	parser for boolean options
-+ *	velocity_set_bool_opt - parser for boolean options
-  *	@opt: pointer to option value
-  *	@val: value the user requested (or -1 for default)
-  *	@def: default value (yes/no)
-@@ -467,7 +467,7 @@ static void __devinit velocity_set_bool_opt(u32 *opt, int val, int def, u32 flag
- }
- 
- /**
-- *	velocity_get_options	-	set options on device
-+ *	velocity_get_options - set options on device
-  *	@opts: option structure for the device
-  *	@index: index of option to use in module options array
-  *	@devname: device name
-@@ -492,7 +492,7 @@ static void __devinit velocity_get_options(struct velocity_opt *opts, int index,
- }
- 
- /**
-- *	velocity_init_cam_filter	-	initialise CAM
-+ *	velocity_init_cam_filter - initialize CAM
-  *	@vptr: velocity to program
-  *
-  *	Initialize the content addressable memory used for filters. Load
-@@ -507,8 +507,8 @@ static void velocity_init_cam_filter(struct velocity_info *vptr)
- 	WORD_REG_BITS_ON(MCFG_VIDFR, &regs->MCFG);
- 
- 	/* Disable all CAMs */
--	memset(vptr->vCAMmask, 0, sizeof(u8) * 8);
--	memset(vptr->mCAMmask, 0, sizeof(u8) * 8);
-+	memset(vptr->vCAMmask, 0, sizeof(u8) *8);
-+	memset(vptr->mCAMmask, 0, sizeof(u8) *8);
- 	mac_set_vlan_cam_mask(regs, vptr->vCAMmask);
- 	mac_set_cam_mask(regs, vptr->mCAMmask);
- 
-@@ -564,7 +564,7 @@ static void velocity_init_rx_ring_indexes(struct velocity_info *vptr)
- }
- 
- /**
-- *	velocity_rx_reset	-	handle a receive reset
-+ *	velocity_rx_reset - handle a receive reset
-  *	@vptr: velocity we are resetting
-  *
-  *	Reset the ownership and status for the receive ring side.
-@@ -591,7 +591,7 @@ static void velocity_rx_reset(struct velocity_info *vptr)
- }
- 
- /**
-- *	velocity_get_opt_media_mode	-	get media selection
-+ *	velocity_get_opt_media_mode - get media selection
-  *	@vptr: velocity adapter
-  *
-  *	Get the media mode stored in EEPROM or module options and load
-@@ -627,7 +627,7 @@ static u32 velocity_get_opt_media_mode(struct velocity_info *vptr)
- }
- 
- /**
-- *	safe_disable_mii_autopoll	-	autopoll off
-+ *	safe_disable_mii_autopoll - autopoll off
-  *	@regs: velocity registers
-  *
-  *	Turn off the autopoll and wait for it to disable on the chip
-@@ -646,7 +646,7 @@ static void safe_disable_mii_autopoll(struct mac_regs __iomem *regs)
- }
- 
- /**
-- *	enable_mii_autopoll	-	turn on autopolling
-+ *	enable_mii_autopoll - turn on autopolling
-  *	@regs: velocity registers
-  *
-  *	Enable the MII link status autopoll feature on the Velocity
-@@ -676,7 +676,7 @@ static void enable_mii_autopoll(struct mac_regs __iomem *regs)
- }
- 
- /**
-- *	velocity_mii_read	-	read MII data
-+ *	velocity_mii_read - read MII data
-  *	@regs: velocity registers
-  *	@index: MII register index
-  *	@data: buffer for received data
-@@ -712,7 +712,7 @@ static int velocity_mii_read(struct mac_regs __iomem *regs, u8 index, u16 *data)
- 
- 
- /**
-- *	mii_check_media_mode	-	check media state
-+ *	mii_check_media_mode - check media state
-  *	@regs: velocity registers
-  *
-  *	Check the current MII status and determine the link status
-@@ -755,7 +755,7 @@ static u32 mii_check_media_mode(struct mac_regs __iomem *regs)
- }
- 
- /**
-- *	velocity_mii_write	-	write MII data
-+ *	velocity_mii_write - write MII data
-  *	@regs: velocity registers
-  *	@index: MII register index
-  *	@data: 16bit data for the MII register
-@@ -794,7 +794,7 @@ static int velocity_mii_write(struct mac_regs __iomem *regs, u8 mii_addr, u16 da
- }
- 
- /**
-- *	set_mii_flow_control	-	flow control setup
-+ *	set_mii_flow_control - flow control setup
-  *	@vptr: velocity interface
-  *
-  *	Set up the flow control on this interface according to
-@@ -829,10 +829,10 @@ static void set_mii_flow_control(struct velocity_info *vptr)
- }
- 
- /**
-- *	mii_set_auto_on		-	autonegotiate on
-+ *	mii_set_auto_on - autonegotiate on
-  *	@vptr: velocity
-  *
-- *	Enable autonegotation on this interface
-+ *	Enable autonegotiation on this interface
-  */
- static void mii_set_auto_on(struct velocity_info *vptr)
- {
-@@ -879,7 +879,7 @@ static u32 check_connection_type(struct mac_regs __iomem *regs)
- 
- 
- /**
-- *	velocity_set_media_mode		-	set media mode
-+ *	velocity_set_media_mode - set media mode
-  *	@mii_status: old MII link state
-  *
-  *	Check the media link state and configure the flow control
-@@ -999,7 +999,7 @@ static int velocity_set_media_mode(struct velocity_info *vptr, u32 mii_status)
- }
- 
- /**
-- *	velocity_print_link_status	-	link status reporting
-+ *	velocity_print_link_status - link status reporting
-  *	@vptr: velocity to report on
-  *
-  *	Turn the link status of the velocity card into a kernel log
-@@ -1050,7 +1050,7 @@ static void velocity_print_link_status(struct velocity_info *vptr)
- }
- 
- /**
-- *	enable_flow_control_ability	-	flow control
-+ *	enable_flow_control_ability - flow control
-  *	@vptr: veloity to configure
-  *
-  *	Set up flow control according to the flow control options
-@@ -1102,7 +1102,7 @@ static void enable_flow_control_ability(struct velocity_info *vptr)
- }
- 
- /**
-- *	velocity_soft_reset	-	soft reset
-+ *	velocity_soft_reset - soft reset
-  *	@vptr: velocity to reset
-  *
-  *	Kick off a soft reset of the velocity adapter and then poll
-@@ -1131,7 +1131,7 @@ static int velocity_soft_reset(struct velocity_info *vptr)
- }
- 
- /**
-- *	velocity_set_multi	-	filter list change callback
-+ *	velocity_set_multi - filter list change callback
-  *	@dev: network device
-  *
-  *	Called by the network layer when the filter lists need to change
-@@ -1181,7 +1181,7 @@ static void velocity_set_multi(struct net_device *dev)
-  */
- 
- /**
-- *	mii_init	-	set up MII
-+ *	mii_init - set up MII
-  *	@vptr: velocity adapter
-  *	@mii_status:  links tatus
-  *
-@@ -1250,7 +1250,7 @@ static void mii_init(struct velocity_info *vptr, u32 mii_status)
- }
- 
- /**
-- * setup_queue_timers	-	Setup interrupt timers
-+ * setup_queue_timers - Setup interrupt timers
-  *
-  * Setup interrupt frequency during suppression (timeout if the frame
-  * count isn't filled).
-@@ -1273,7 +1273,7 @@ static void setup_queue_timers(struct velocity_info *vptr)
- 	}
- }
- /**
-- * setup_adaptive_interrupts  -  Setup interrupt suppression
-+ * setup_adaptive_interrupts - Setup interrupt suppression
-  *
-  * @vptr velocity adapter
-  *
-@@ -1311,11 +1311,11 @@ static void setup_adaptive_interrupts(struct velocity_info *vptr)
- }
- 
- /**
-- *	velocity_init_registers	-	initialise MAC registers
-+ *	velocity_init_registers - initialise MAC registers
-  *	@vptr: velocity to init
-  *	@type: type of initialisation (hot or cold)
-  *
-- *	Initialise the MAC on a reset or on first set up on the
-+ *	Initialize the MAC on a reset or on first set up on the
-  *	hardware.
-  */
- static void velocity_init_registers(struct velocity_info *vptr,
-@@ -1459,7 +1459,7 @@ static void velocity_give_many_rx_descs(struct velocity_info *vptr)
- }
- 
- /**
-- *	velocity_init_dma_rings	-	set up DMA rings
-+ *	velocity_init_dma_rings - set up DMA rings
-  *	@vptr: Velocity to set up
-  *
-  *	Allocate PCI mapped DMA rings for the receive and transmit layer
-@@ -1511,7 +1511,7 @@ static void velocity_set_rxbufsize(struct velocity_info *vptr, int mtu)
- }
- 
- /**
-- *	velocity_alloc_rx_buf	-	allocate aligned receive buffer
-+ *	velocity_alloc_rx_buf - allocate aligned receive buffer
-  *	@vptr: velocity
-  *	@idx: ring index
-  *
-@@ -1542,7 +1542,7 @@ static int velocity_alloc_rx_buf(struct velocity_info *vptr, int idx)
- 	 *	Fill in the descriptor to match
- 	 */
- 
--	*((u32 *) & (rd->rdesc0)) = 0;
-+	*((u32 *) &(rd->rdesc0)) = 0;
- 	rd->size = cpu_to_le16(vptr->rx.buf_sz) | RX_INTEN;
- 	rd->pa_low = cpu_to_le32(rd_info->skb_dma);
- 	rd->pa_high = 0;
-@@ -1578,7 +1578,7 @@ static int velocity_rx_refill(struct velocity_info *vptr)
- }
- 
- /**
-- *	velocity_free_rd_ring	-	free receive ring
-+ *	velocity_free_rd_ring - free receive ring
-  *	@vptr: velocity to clean up
-  *
-  *	Free the receive buffers for each ring slot and any
-@@ -1614,7 +1614,7 @@ static void velocity_free_rd_ring(struct velocity_info *vptr)
- 
- 
- /**
-- *	velocity_init_rd_ring	-	set up receive ring
-+ *	velocity_init_rd_ring - set up receive ring
-  *	@vptr: velocity to configure
-  *
-  *	Allocate and set up the receive buffers for each ring slot and
-@@ -1644,7 +1644,7 @@ out:
- }
- 
- /**
-- *	velocity_init_td_ring	-	set up transmit ring
-+ *	velocity_init_td_ring - set up transmit ring
-  *	@vptr:	velocity
-  *
-  *	Set up the transmit ring and chain the ring pointers together.
-@@ -1673,7 +1673,7 @@ static int velocity_init_td_ring(struct velocity_info *vptr)
- }
- 
- /**
-- *	velocity_free_dma_rings	-	free PCI ring pointers
-+ *	velocity_free_dma_rings - free PCI ring pointers
-  *	@vptr: Velocity to free from
-  *
-  *	Clean up the PCI ring buffers allocated to this velocity.
-@@ -1681,7 +1681,7 @@ static int velocity_init_td_ring(struct velocity_info *vptr)
- static void velocity_free_dma_rings(struct velocity_info *vptr)
- {
- 	const int size = vptr->options.numrx * sizeof(struct rx_desc) +
--		vptr->options.numtx * sizeof(struct tx_desc) * vptr->tx.numq;
-+		vptr->options.numtx * sizeof(struct tx_desc) *vptr->tx.numq;
- 
- 	pci_free_consistent(vptr->pdev, size, vptr->rx.ring, vptr->rx.pool_dma);
- }
-@@ -1715,7 +1715,7 @@ err_free_dma_rings_0:
- }
- 
- /**
-- *	velocity_free_tx_buf	-	free transmit buffer
-+ *	velocity_free_tx_buf - free transmit buffer
-  *	@vptr: velocity
-  *	@tdinfo: buffer
-  *
-@@ -1776,7 +1776,7 @@ static void velocity_free_td_ring_entry(struct velocity_info *vptr,
- }
- 
- /**
-- *	velocity_free_td_ring	-	free td ring
-+ *	velocity_free_td_ring - free td ring
-  *	@vptr: velocity
-  *
-  *	Free up the transmit ring for this particular velocity adapter.
-@@ -1806,7 +1806,7 @@ static void velocity_free_rings(struct velocity_info *vptr)
- }
- 
- /**
-- *	velocity_error	-	handle error from controller
-+ *	velocity_error - handle error from controller
-  *	@vptr: velocity
-  *	@status: card status
-  *
-@@ -1895,7 +1895,7 @@ static void velocity_error(struct velocity_info *vptr, int status)
- }
- 
- /**
-- *	tx_srv		-	transmit interrupt service
-+ *	tx_srv - transmit interrupt service
-  *	@vptr; Velocity
-  *
-  *	Scan the queues looking for transmitted packets that
-@@ -1963,7 +1963,7 @@ static int velocity_tx_srv(struct velocity_info *vptr)
- }
- 
- /**
-- *	velocity_rx_csum	-	checksum process
-+ *	velocity_rx_csum - checksum process
-  *	@rd: receive packet descriptor
-  *	@skb: network layer packet buffer
-  *
-@@ -1987,14 +1987,14 @@ static inline void velocity_rx_csum(struct rx_desc *rd, struct sk_buff *skb)
- }
- 
- /**
-- *	velocity_rx_copy	-	in place Rx copy for small packets
-+ *	velocity_rx_copy - in place Rx copy for small packets
-  *	@rx_skb: network layer packet buffer candidate
-  *	@pkt_size: received data size
-  *	@rd: receive packet descriptor
-  *	@dev: network device
-  *
-  *	Replace the current skb that is scheduled for Rx processing by a
-- *	shorter, immediatly allocated skb, if the received packet is small
-+ *	shorter, immediately allocated skb, if the received packet is small
-  *	enough. This function returns a negative value if the received
-  *	packet is too big or if memory is exhausted.
-  */
-@@ -2018,7 +2018,7 @@ static int velocity_rx_copy(struct sk_buff **rx_skb, int pkt_size,
- }
- 
- /**
-- *	velocity_iph_realign	-	IP header alignment
-+ *	velocity_iph_realign - IP header alignment
-  *	@vptr: velocity we are handling
-  *	@skb: network layer packet buffer
-  *	@pkt_size: received data size
-@@ -2037,7 +2037,7 @@ static inline void velocity_iph_realign(struct velocity_info *vptr,
- 
- 
- /**
-- *	velocity_receive_frame	-	received packet processor
-+ *	velocity_receive_frame - received packet processor
-  *	@vptr: velocity we are handling
-  *	@idx: ring index
-  *
-@@ -2107,7 +2107,7 @@ static int velocity_receive_frame(struct velocity_info *vptr, int idx)
- 
- 
- /**
-- *	velocity_rx_srv		-	service RX interrupt
-+ *	velocity_rx_srv - service RX interrupt
-  *	@vptr: velocity
-  *
-  *	Walk the receive ring of the velocity adapter and remove
-@@ -2191,7 +2191,7 @@ static int velocity_poll(struct napi_struct *napi, int budget)
- }
- 
- /**
-- *	velocity_intr		-	interrupt callback
-+ *	velocity_intr - interrupt callback
-  *	@irq: interrupt number
-  *	@dev_instance: interrupting device
-  *
-@@ -2232,14 +2232,14 @@ static irqreturn_t velocity_intr(int irq, void *dev_instance)
- }
- 
- /**
-- *	velocity_open		-	interface activation callback
-+ *	velocity_open - interface activation callback
-  *	@dev: network layer device to open
-  *
-  *	Called when the network layer brings the interface up. Returns
-  *	a negative posix error code on failure, or zero on success.
-  *
-  *	All the ring allocation and set up is done on open for this
-- *	adapter to minimise memory usage when inactive
-+ *	adapter to minimize memory usage when inactive
-  */
- static int velocity_open(struct net_device *dev)
- {
-@@ -2275,7 +2275,7 @@ out:
- }
- 
- /**
-- *	velocity_shutdown	-	shut down the chip
-+ *	velocity_shutdown - shut down the chip
-  *	@vptr: velocity to deactivate
-  *
-  *	Shuts down the internal operations of the velocity and
-@@ -2293,7 +2293,7 @@ static void velocity_shutdown(struct velocity_info *vptr)
- }
- 
- /**
-- *	velocity_change_mtu	-	MTU change callback
-+ *	velocity_change_mtu - MTU change callback
-  *	@dev: network device
-  *	@new_mtu: desired MTU
-  *
-@@ -2374,7 +2374,7 @@ out_0:
- }
- 
- /**
-- *	velocity_mii_ioctl		-	MII ioctl handler
-+ *	velocity_mii_ioctl - MII ioctl handler
-  *	@dev: network device
-  *	@ifr: the ifreq block for the ioctl
-  *	@cmd: the command
-@@ -2415,7 +2415,7 @@ static int velocity_mii_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd
- 
- 
- /**
-- *	velocity_ioctl		-	ioctl entry point
-+ *	velocity_ioctl - ioctl entry point
-  *	@dev: network device
-  *	@rq: interface request ioctl
-  *	@cmd: command code
-@@ -2452,7 +2452,7 @@ static int velocity_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
- }
- 
- /**
-- *	velocity_get_status	-	statistics callback
-+ *	velocity_get_status - statistics callback
-  *	@dev: network device
-  *
-  *	Callback from the network layer to allow driver statistics
-@@ -2477,24 +2477,24 @@ static struct net_device_stats *velocity_get_stats(struct net_device *dev)
- 	dev->stats.rx_errors = vptr->mib_counter[HW_MIB_ifRxErrorPkts];
- 	dev->stats.rx_length_errors = vptr->mib_counter[HW_MIB_ifInRangeLengthErrors];
- 
--//  unsigned long   rx_dropped;     /* no space in linux buffers    */
-+/*  unsigned long   rx_dropped;     /* no space in linux buffers    */
- 	dev->stats.collisions = vptr->mib_counter[HW_MIB_ifTxEtherCollisions];
- 	/* detailed rx_errors: */
--//  unsigned long   rx_length_errors;
--//  unsigned long   rx_over_errors;     /* receiver ring buff overflow  */
-+/*  unsigned long   rx_length_errors;
-+/*  unsigned long   rx_over_errors;     /* receiver ring buff overflow  */
- 	dev->stats.rx_crc_errors = vptr->mib_counter[HW_MIB_ifRxPktCRCE];
--//  unsigned long   rx_frame_errors;    /* recv'd frame alignment error */
--//  unsigned long   rx_fifo_errors;     /* recv'r fifo overrun      */
--//  unsigned long   rx_missed_errors;   /* receiver missed packet   */
-+/*  unsigned long   rx_frame_errors;    /* recv'd frame alignment error */
-+/*  unsigned long   rx_fifo_errors;     /* recv'r fifo overrun      */
-+/*  unsigned long   rx_missed_errors;   /* receiver missed packet   */
- 
- 	/* detailed tx_errors */
--//  unsigned long   tx_fifo_errors;
-+/*  unsigned long   tx_fifo_errors;
- 
- 	return &dev->stats;
- }
- 
- /**
-- *	velocity_close		-	close adapter callback
-+ *	velocity_close - close adapter callback
-  *	@dev: network device
-  *
-  *	Callback from the network layer when the velocity is being
-@@ -2523,11 +2523,11 @@ static int velocity_close(struct net_device *dev)
- }
- 
- /**
-- *	velocity_xmit		-	transmit packet callback
-+ *	velocity_xmit - transmit packet callback
-  *	@skb: buffer to transmit
-  *	@dev: network device
-  *
-- *	Called by the networ layer to request a packet is queued to
-+ *	Called by the network layer to request a packet is queued to
-  *	the velocity. Returns zero on success.
-  */
- static netdev_tx_t velocity_xmit(struct sk_buff *skb,
-@@ -2636,7 +2636,7 @@ static const struct net_device_ops velocity_netdev_ops = {
- 	.ndo_start_xmit		= velocity_xmit,
- 	.ndo_get_stats		= velocity_get_stats,
- 	.ndo_validate_addr	= eth_validate_addr,
--	.ndo_set_mac_address 	= eth_mac_addr,
-+	.ndo_set_mac_address	= eth_mac_addr,
- 	.ndo_set_multicast_list	= velocity_set_multi,
- 	.ndo_change_mtu		= velocity_change_mtu,
- 	.ndo_do_ioctl		= velocity_ioctl,
-@@ -2646,7 +2646,7 @@ static const struct net_device_ops velocity_netdev_ops = {
- };
- 
- /**
-- *	velocity_init_info	-	init private data
-+ *	velocity_init_info - init private data
-  *	@pdev: PCI device
-  *	@vptr: Velocity info
-  *	@info: Board type
-@@ -2668,7 +2668,7 @@ static void __devinit velocity_init_info(struct pci_dev *pdev,
- }
- 
- /**
-- *	velocity_get_pci_info	-	retrieve PCI info for device
-+ *	velocity_get_pci_info - retrieve PCI info for device
-  *	@vptr: velocity device
-  *	@pdev: PCI device it matches
-  *
-@@ -2706,7 +2706,7 @@ static int __devinit velocity_get_pci_info(struct velocity_info *vptr, struct pc
- }
- 
- /**
-- *	velocity_print_info	-	per driver data
-+ *	velocity_print_info - per driver data
-  *	@vptr: velocity
-  *
-  *	Print per driver data as the kernel driver finds Velocity
-@@ -2730,7 +2730,7 @@ static u32 velocity_get_link(struct net_device *dev)
- 
- 
- /**
-- *	velocity_found1		-	set up discovered velocity card
-+ *	velocity_found1 - set up discovered velocity card
-  *	@pdev: PCI device
-  *	@ent: PCI device table entry that matched
-  *
-@@ -2877,7 +2877,7 @@ err_free_dev:
- 
- #ifdef CONFIG_PM
- /**
-- *	wol_calc_crc		-	WOL CRC
-+ *	wol_calc_crc - WOL CRC
-  *	@pattern: data pattern
-  *	@mask_pattern: mask
-  *
-@@ -2912,7 +2912,7 @@ static u16 wol_calc_crc(int size, u8 *pattern, u8 *mask_pattern)
- }
- 
- /**
-- *	velocity_set_wol	-	set up for wake on lan
-+ *	velocity_set_wol - set up for wake on lan
-  *	@vptr: velocity to set WOL status on
-  *
-  *	Set a card up for wake on lan either by unicast or by
-@@ -2957,7 +2957,7 @@ static int velocity_set_wol(struct velocity_info *vptr)
- 		memcpy(arp->ar_tip, vptr->ip_addr, 4);
- 
- 		crc = wol_calc_crc((sizeof(struct arp_packet) + 7) / 8, buf,
--				(u8 *) & mask_pattern[0][0]);
-+				(u8 *) &mask_pattern[0][0]);
- 
- 		writew(crc, &regs->PatternCRC[0]);
- 		writew(WOLCR_ARP_EN, &regs->WOLCRSet);
-@@ -2997,7 +2997,7 @@ static int velocity_set_wol(struct velocity_info *vptr)
- }
- 
- /**
-- *	velocity_save_context	-	save registers
-+ *	velocity_save_context - save registers
-  *	@vptr: velocity
-  *	@context: buffer for stored context
-  *
-@@ -3058,7 +3058,7 @@ static int velocity_suspend(struct pci_dev *pdev, pm_message_t state)
- }
- 
- /**
-- *	velocity_restore_context	-	restore registers
-+ *	velocity_restore_context - restore registers
-  *	@vptr: velocity
-  *	@context: buffer for stored context
-  *
-@@ -3133,19 +3133,19 @@ static int velocity_resume(struct pci_dev *pdev)
-  *	uses this to handle all our card discover and plugging
-  */
- static struct pci_driver velocity_driver = {
--      .name	= VELOCITY_NAME,
--      .id_table	= velocity_id_table,
--      .probe	= velocity_found1,
--      .remove	= __devexit_p(velocity_remove1),
-+	.name	= VELOCITY_NAME,
-+	.id_table	= velocity_id_table,
-+	.probe	= velocity_found1,
-+	.remove	= __devexit_p(velocity_remove1),
- #ifdef CONFIG_PM
--      .suspend	= velocity_suspend,
--      .resume	= velocity_resume,
-+	.suspend	= velocity_suspend,
-+	.resume	= velocity_resume,
- #endif
- };
- 
- 
- /**
-- *	velocity_ethtool_up	-	pre hook for ethtool
-+ *	velocity_ethtool_up - pre hook for ethtool
-  *	@dev: network device
-  *
-  *	Called before an ethtool operation. We need to make sure the
-@@ -3160,7 +3160,7 @@ static int velocity_ethtool_up(struct net_device *dev)
- }
- 
- /**
-- *	velocity_ethtool_down	-	post hook for ethtool
-+ *	velocity_ethtool_down - post hook for ethtool
-  *	@dev: network device
-  *
-  *	Called after an ethtool operation. Restore the chip back to D3
-@@ -3352,8 +3352,7 @@ static int get_pending_timer_val(int val)
- 	int mult_bits = val >> 6;
- 	int mult = 1;
- 
--	switch (mult_bits)
--	{
-+	switch (mult_bits) {
- 	case 1:
- 		mult = 4; break;
- 	case 2:
-@@ -3454,7 +3453,7 @@ static const struct ethtool_ops velocity_ethtool_ops = {
- 	.set_wol	=	velocity_ethtool_set_wol,
- 	.get_msglevel	=	velocity_get_msglevel,
- 	.set_msglevel	=	velocity_set_msglevel,
--	.set_sg 	=	ethtool_op_set_sg,
-+	.set_sg	=	ethtool_op_set_sg,
- 	.get_link	=	velocity_get_link,
- 	.get_coalesce	=	velocity_get_coalesce,
- 	.set_coalesce	=	velocity_set_coalesce,
-@@ -3480,7 +3479,7 @@ static int velocity_netdev_event(struct notifier_block *nb, unsigned long notifi
- 
- #if defined(CONFIG_PM) && defined(CONFIG_INET)
- static struct notifier_block velocity_inetaddr_notifier = {
--      .notifier_call	= velocity_netdev_event,
-+	.notifier_call	= velocity_netdev_event,
- };
- 
- static void velocity_register_notifier(void)
-@@ -3501,7 +3500,7 @@ static void velocity_unregister_notifier(void)
- #endif	/* defined(CONFIG_PM) && defined(CONFIG_INET) */
- 
- /**
-- *	velocity_init_module	-	load time function
-+ *	velocity_init_module - load time function
-  *
-  *	Called when the velocity module is loaded. The PCI driver
-  *	is registered with the PCI layer, and in turn will call
-@@ -3520,7 +3519,7 @@ static int __init velocity_init_module(void)
- }
- 
- /**
-- *	velocity_cleanup	-	module unload
-+ *	velocity_cleanup - module unload
-  *
-  *	When the velocity hardware is unloaded this function is called.
-  *	It will clean up the notifiers and the unregister the PCI
--- 
-1.7.3.2
+PS:
+deliberately editing the subject..
 
-
-
-
+regards,
+Pavan Savoy
+> v3 comments
+>
+> Lizardo,
+> I have taken care of most of the comments you had.
+> Have re-wrote some of the code commenting you've mentioned.
+> Thanks for the comments,
+>
+> Marcel, Gustavo, & list,
+> Please review this version of patch.
+>
+> The other few like -EPERM for platform driver registration is to keep
+> it similar to other drivers, type casting is maintained just to feel safe
+> and have style similar to other drivers.
+> BT_WILINK in Kconfig is similar to BT_MRVL.
+> I hope those aren't too critical.
+>
+> -- patch description --
+>
+> This is the bluetooth protocol driver for the TI WiLink7 chipsets.
+> Texas Instrument's WiLink chipsets combine wireless technologies
+> like BT, FM, GPS and WLAN onto a single chip.
+>
+> This Bluetooth driver works on top of the TI_ST shared transport
+> line discipline driver which also allows other drivers like
+> FM V4L2 and GPS character driver to make use of the same UART interface.
+>
+> Kconfig and Makefile modifications to enable the Bluetooth
+> driver for Texas Instrument's WiLink 7 chipset.
+>
+> Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+> ---
+>  drivers/bluetooth/Kconfig    |   10 +
+>  drivers/bluetooth/Makefile   |    1 +
+>  drivers/bluetooth/btwilink.c |  411 ++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 422 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/bluetooth/btwilink.c
+>
+> diff --git a/drivers/bluetooth/Kconfig b/drivers/bluetooth/Kconfig
+> index 02deef4..8e0de9a 100644
+> --- a/drivers/bluetooth/Kconfig
+> +++ b/drivers/bluetooth/Kconfig
+> @@ -219,4 +219,14 @@ config BT_ATH3K
+>          Say Y here to compile support for "Atheros firmware download driver"
+>          into the kernel or say M to compile it as module (ath3k).
+>
+> +config BT_WILINK
+> +       tristate "Texas Instruments WiLink7 driver"
+> +       depends on TI_ST
+> +       help
+> +         This enables the Bluetooth driver for Texas Instrument's BT/FM/GPS
+> +         combo devices. This makes use of shared transport line discipline
+> +         core driver to communicate with the BT core of the combo chip.
+> +
+> +         Say Y here to compile support for Texas Instrument's WiLink7 driver
+> +         into the kernel or say M to compile it as module.
+>  endmenu
+> diff --git a/drivers/bluetooth/Makefile b/drivers/bluetooth/Makefile
+> index 71bdf13..f4460f4 100644
+> --- a/drivers/bluetooth/Makefile
+> +++ b/drivers/bluetooth/Makefile
+> @@ -18,6 +18,7 @@ obj-$(CONFIG_BT_HCIBTSDIO)    += btsdio.o
+>  obj-$(CONFIG_BT_ATH3K)         += ath3k.o
+>  obj-$(CONFIG_BT_MRVL)          += btmrvl.o
+>  obj-$(CONFIG_BT_MRVL_SDIO)     += btmrvl_sdio.o
+> +obj-$(CONFIG_BT_WILINK)                += btwilink.o
+>
+>  btmrvl-y                       := btmrvl_main.o
+>  btmrvl-$(CONFIG_DEBUG_FS)      += btmrvl_debugfs.o
+> diff --git a/drivers/bluetooth/btwilink.c b/drivers/bluetooth/btwilink.c
+> new file mode 100644
+> index 0000000..218efd6
+> --- /dev/null
+> +++ b/drivers/bluetooth/btwilink.c
+> @@ -0,0 +1,411 @@
+> +/*
+> + *  Texas Instrument's Bluetooth Driver For Shared Transport.
+> + *
+> + *  Bluetooth Driver acts as interface between HCI core and
+> + *  TI Shared Transport Layer.
+> + *
+> + *  Copyright (C) 2009-2010 Texas Instruments
+> + *  Author: Raja Mani <raja_mani@ti.com>
+> + *     Pavan Savoy <pavan_savoy@ti.com>
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License version 2 as
+> + *  published by the Free Software Foundation.
+> + *
+> + *  This program is distributed in the hope that it will be useful,
+> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + *  GNU General Public License for more details.
+> + *
+> + *  You should have received a copy of the GNU General Public License
+> + *  along with this program; if not, write to the Free Software
+> + *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+> + *
+> + */
+> +
+> +#include <linux/platform_device.h>
+> +#include <net/bluetooth/bluetooth.h>
+> +#include <net/bluetooth/hci_core.h>
+> +
+> +#include <linux/ti_wilink_st.h>
+> +
+> +/* Bluetooth Driver Version */
+> +#define VERSION               "1.0"
+> +
+> +/* Number of seconds to wait for registration completion
+> + * when ST returns PENDING status.
+> + */
+> +#define BT_REGISTER_TIMEOUT   6000     /* 6 sec */
+> +
+> +/**
+> + * struct ti_st - driver operation structure
+> + * @hdev: hci device pointer which binds to bt driver
+> + * @reg_status: ST registration callback status
+> + * @st_write: write function provided by the ST driver
+> + *     to be used by the driver during send_frame.
+> + * @wait_reg_completion - completion sync between ti_st_open
+> + *     and ti_st_registration_completion_cb.
+> + */
+> +struct ti_st {
+> +       struct hci_dev *hdev;
+> +       char reg_status;
+> +       long (*st_write) (struct sk_buff *);
+> +       struct completion wait_reg_completion;
+> +};
+> +
+> +static int reset;
+> +
+> +/* Increments HCI counters based on pocket ID (cmd,acl,sco) */
+> +static inline void ti_st_tx_complete(struct ti_st *hst, int pkt_type)
+> +{
+> +       struct hci_dev *hdev;
+> +       hdev = hst->hdev;
+> +
+> +       /* Update HCI stat counters */
+> +       switch (pkt_type) {
+> +       case HCI_COMMAND_PKT:
+> +               hdev->stat.cmd_tx++;
+> +               break;
+> +
+> +       case HCI_ACLDATA_PKT:
+> +               hdev->stat.acl_tx++;
+> +               break;
+> +
+> +       case HCI_SCODATA_PKT:
+> +               hdev->stat.sco_tx++;
+> +               break;
+> +       }
+> +}
+> +
+> +/* ------- Interfaces to Shared Transport ------ */
+> +
+> +/* Called by ST layer to indicate protocol registration completion
+> + * status.ti_st_open() function will wait for signal from this
+> + * API when st_register() function returns ST_PENDING.
+> + */
+> +static void st_registration_completion_cb(void *priv_data, char data)
+> +{
+> +       struct ti_st *lhst = priv_data;
+> +
+> +       /* Save registration status for use in ti_st_open() */
+> +       lhst->reg_status = data;
+> +       /* complete the wait in ti_st_open() */
+> +       complete(&lhst->wait_reg_completion);
+> +}
+> +
+> +/* Called by Shared Transport layer when receive data is
+> + * available */
+> +static long st_receive(void *priv_data, struct sk_buff *skb)
+> +{
+> +       int err;
+> +       struct ti_st *lhst = priv_data;
+> +
+> +       if (!skb)
+> +               return -EFAULT;
+> +
+> +       if (!lhst) {
+> +               kfree_skb(skb);
+> +               return -EFAULT;
+> +       }
+> +
+> +       skb->dev = (struct net_device *)lhst->hdev;
+> +
+> +       /* Forward skb to HCI core layer */
+> +       err = hci_recv_frame(skb);
+> +       if (err) {
+> +               kfree_skb(skb);
+> +               BT_ERR("Unable to push skb to HCI core(%d)", err);
+> +               return err;
+> +       }
+> +
+> +       lhst->hdev->stat.byte_rx += skb->len;
+> +
+> +       return 0;
+> +}
+> +
+> +/* ------- Interfaces to HCI layer ------ */
+> +/* protocol structure registered with shared transport */
+> +static struct st_proto_s ti_st_proto = {
+> +       .type = ST_BT,
+> +       .recv = st_receive,
+> +       .reg_complete_cb = st_registration_completion_cb,
+> +       .priv_data = NULL,
+> +};
+> +
+> +/* Called from HCI core to initialize the device */
+> +static int ti_st_open(struct hci_dev *hdev)
+> +{
+> +       unsigned long timeleft;
+> +       struct ti_st *hst;
+> +       int err;
+> +
+> +       BT_DBG("%s %p", hdev->name, hdev);
+> +
+> +       /* provide contexts for callbacks from ST */
+> +       hst = hdev->driver_data;
+> +       ti_st_proto.priv_data = hst;
+> +
+> +       err = st_register(&ti_st_proto);
+> +       if (err == -EINPROGRESS) {
+> +               /* Prepare wait-for-completion handler data structures.
+> +                * Needed to synchronize this and
+> +                * st_registration_completion_cb() functions.
+> +                */
+> +               init_completion(&hst->wait_reg_completion);
+> +
+> +               /* Reset ST registration callback status flag , this value
+> +                * will be updated in ti_st_registration_completion_cb()
+> +                * function whenever it called from ST driver.
+> +                */
+> +               hst->reg_status = -EINPROGRESS;
+> +
+> +               /* ST is busy with either protocol registration or firmware
+> +                * download. Wait until the registration callback is called
+> +                */
+> +               BT_DBG(" waiting for registration completion signal from ST");
+> +
+> +               timeleft = wait_for_completion_timeout
+> +                       (&hst->wait_reg_completion,
+> +                        msecs_to_jiffies(BT_REGISTER_TIMEOUT));
+> +               if (!timeleft) {
+> +                       BT_ERR("Timeout(%d sec),didn't get reg "
+> +                                       "completion signal from ST",
+> +                                       BT_REGISTER_TIMEOUT / 1000);
+> +                       return -ETIMEDOUT;
+> +               }
+> +
+> +               /* Is ST registration callback called with ERROR status? */
+> +               if (hst->reg_status != 0) {
+> +                       BT_ERR("ST registration completed with invalid "
+> +                                       "status %d", hst->reg_status);
+> +                       return -EAGAIN;
+> +               }
+> +               err = 0;
+> +       } else if (err == -EPERM) {
+> +               BT_ERR("st_register failed %d", err);
+> +               return err;
+> +       }
+> +
+> +       hst->st_write = ti_st_proto.write;
+> +       if (!hst->st_write) {
+> +               BT_ERR("undefined ST write function");
+> +
+> +               /* Undo registration with ST */
+> +               err = st_unregister(ST_BT);
+> +               if (err)
+> +                       BT_ERR("st_unregister() failed with error %d", err);
+> +
+> +               hst->st_write = NULL;
+> +               return err;
+> +       }
+> +
+> +       /* Registration with ST layer is successful,
+> +        * hardware is ready to accept commands from HCI core.
+> +        */
+> +       set_bit(HCI_RUNNING, &hdev->flags);
+> +
+> +       return err;
+> +}
+> +
+> +/* Close device */
+> +static int ti_st_close(struct hci_dev *hdev)
+> +{
+> +       int err;
+> +       struct ti_st *hst = hdev->driver_data;
+> +
+> +       /* continue to unregister from transport */
+> +       err = st_unregister(ST_BT);
+> +       if (err)
+> +               BT_ERR("st_unregister() failed with error %d", err);
+> +
+> +       hst->st_write = NULL;
+> +
+> +       return err;
+> +}
+> +
+> +static int ti_st_send_frame(struct sk_buff *skb)
+> +{
+> +       struct hci_dev *hdev;
+> +       struct ti_st *hst;
+> +       long len;
+> +
+> +       if (!skb)
+> +               return -ENOMEM;
+> +
+> +       hdev = (struct hci_dev *)skb->dev;
+> +       if (!hdev)
+> +               return -ENODEV;
+> +
+> +       if (!test_bit(HCI_RUNNING, &hdev->flags))
+> +               return -EBUSY;
+> +
+> +       hst = hdev->driver_data;
+> +
+> +       /* Prepend skb with frame type */
+> +       memcpy(skb_push(skb, 1), &bt_cb(skb)->pkt_type, 1);
+> +
+> +       BT_DBG(" %s: type %d len %d", hdev->name, bt_cb(skb)->pkt_type,
+> +                       skb->len);
+> +
+> +       /* Insert skb to shared transport layer's transmit queue.
+> +        * Freeing skb memory is taken care in shared transport layer,
+> +        * so don't free skb memory here.
+> +        */
+> +       if (!hst->st_write) {
+> +               kfree_skb(skb);
+> +               BT_ERR(" Could not write to ST (st_write is NULL)");
+> +               return -EAGAIN;
+> +       }
+> +
+> +       len = hst->st_write(skb);
+> +       if (len < 0) {
+> +               kfree_skb(skb);
+> +               BT_ERR(" ST write failed (%ld)", len);
+> +               return -EAGAIN;
+> +       }
+> +
+> +       /* ST accepted our skb. So, Go ahead and do rest */
+> +       hdev->stat.byte_tx += len;
+> +       ti_st_tx_complete(hst, bt_cb(skb)->pkt_type);
+> +
+> +       return 0;
+> +}
+> +
+> +static void ti_st_destruct(struct hci_dev *hdev)
+> +{
+> +       if (!hdev)
+> +               return;
+> +
+> +       BT_DBG("%s", hdev->name);
+> +
+> +       /* free ti_st memory */
+> +       kfree(hdev->driver_data);
+> +
+> +       return;
+> +}
+> +
+> +/* Creates new HCI device */
+> +static int ti_st_register_dev(struct ti_st *hst)
+> +{
+> +       int err;
+> +       struct hci_dev *hdev;
+> +
+> +       /* Initialize and register HCI device */
+> +       hdev = hci_alloc_dev();
+> +       if (!hdev)
+> +               return -ENOMEM;
+> +
+> +       BT_DBG("hdev %p", hdev);
+> +
+> +       hst->hdev = hdev;
+> +       hdev->bus = HCI_UART;
+> +       hdev->driver_data = hst;
+> +       hdev->open = ti_st_open;
+> +       hdev->close = ti_st_close;
+> +       hdev->flush = NULL;
+> +       hdev->send = ti_st_send_frame;
+> +       hdev->destruct = ti_st_destruct;
+> +       hdev->owner = THIS_MODULE;
+> +
+> +       if (reset)
+> +               set_bit(HCI_QUIRK_NO_RESET, &hdev->quirks);
+> +
+> +       err = hci_register_dev(hdev);
+> +       if (err < 0) {
+> +               BT_ERR("Can't register HCI device error %d", err);
+> +               hci_free_dev(hdev);
+> +               return err;
+> +       }
+> +
+> +       BT_DBG(" HCI device registered (hdev %p)", hdev);
+> +       return 0;
+> +}
+> +
+> +
+> +static int bt_ti_probe(struct platform_device *pdev)
+> +{
+> +       int err;
+> +       static struct ti_st *hst;
+> +
+> +       BT_DBG(" Bluetooth Driver Version %s", VERSION);
+> +
+> +       hst = kzalloc(sizeof(struct ti_st), GFP_KERNEL);
+> +       if (!hst)
+> +               return -ENOMEM;
+> +
+> +       /* Expose "hciX" device to user space */
+> +       err = ti_st_register_dev(hst);
+> +       if (err) {
+> +               kfree(hst);
+> +               return err;
+> +       }
+> +
+> +       dev_set_drvdata(&pdev->dev, hst);
+> +       return err;
+> +}
+> +
+> +static int bt_ti_remove(struct platform_device *pdev)
+> +{
+> +       struct ti_st *hst;
+> +       struct hci_dev *hdev;
+> +
+> +       hst = dev_get_drvdata(&pdev->dev);
+> +
+> +       if (!hst)
+> +               return -EFAULT;
+> +
+> +       /* Deallocate local resource's memory  */
+> +       hdev = hst->hdev;
+> +
+> +       if (!hdev) {
+> +               BT_ERR("Invalid hdev memory");
+> +               kfree(hst);
+> +               return -EFAULT;
+> +       }
+> +
+> +       ti_st_close(hdev);
+> +       hci_unregister_dev(hdev);
+> +       /* Free HCI device memory */
+> +       hci_free_dev(hdev);
+> +
+> +       return 0;
+> +}
+> +
+> +static struct platform_driver btwilink_driver = {
+> +       .probe = bt_ti_probe,
+> +       .remove = bt_ti_remove,
+> +       .driver = {
+> +               .name = "btwilink",
+> +               .owner = THIS_MODULE,
+> +       },
+> +};
+> +
+> +/* ------- Module Init/Exit interfaces ------ */
+> +static int __init bt_drv_init(void)
+> +{
+> +       long ret;
+> +
+> +       ret = platform_driver_register(&btwilink_driver);
+> +       if (ret != 0) {
+> +               BT_ERR("btwilink platform driver registration failed");
+> +               return ret;
+> +       }
+> +       return 0;
+> +}
+> +
+> +static void __exit bt_drv_exit(void)
+> +{
+> +       platform_driver_unregister(&btwilink_driver);
+> +}
+> +
+> +module_init(bt_drv_init);
+> +module_exit(bt_drv_exit);
+> +
+> +/* ------ Module Info ------ */
+> +
+> +module_param(reset, bool, 0644);
+> +MODULE_PARM_DESC(reset, "Send HCI reset command on initialization");
+> +MODULE_AUTHOR("Raja Mani <raja_mani@ti.com>");
+> +MODULE_DESCRIPTION("Bluetooth Driver for TI Shared Transport" VERSION);
+> +MODULE_VERSION(VERSION);
+> +MODULE_LICENSE("GPL");
+> --
+> 1.6.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bluetooth" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
