@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933112Ab0J1HzX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 03:55:23 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:58077 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932144Ab0J1HzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 03:55:21 -0400
-Message-ID: <4CC92D6B.5090701@cn.fujitsu.com>
-Date: Thu, 28 Oct 2010 15:59:39 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	id S933133Ab0J1H4m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 03:56:42 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:37938 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932144Ab0J1H4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 03:56:40 -0400
+Date: Thu, 28 Oct 2010 09:56:31 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: -tip: origin tree build failure (was: [GIT PULL] ext4 update for
+ 2.6.37)
+Message-ID: <20101028075631.GA7690@elte.hu>
+References: <E1PBKT9-0004Uk-Sm@tytso-glaptop>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 6/8] KVM: simply wakup async pf
-References: <4CC7EA7D.5020901@cn.fujitsu.com> <4CC7EBD4.6070105@cn.fujitsu.com> <20101027105057.GP26191@redhat.com>
-In-Reply-To: <20101027105057.GP26191@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <E1PBKT9-0004Uk-Sm@tytso-glaptop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2010 06:50 PM, Gleb Natapov wrote:
-> On Wed, Oct 27, 2010 at 05:07:32PM +0800, Xiao Guangrong wrote:
->> The current way is queued a complete async pf with:
->> 	asyc_pf.page = bad_page
->> 	async_pf.arch.gfn = 0
->>
->> It has two problems while kvm_check_async_pf_completion handle this
->> async_pf:
->> - since !async_pf.page, it can retry a pseudo #PF
-> kvm_arch_async_page_ready checks for is_error_page()
-> 
->> - it can delete gfn 0 from vcpu->arch.apf.gfns[]
-> kvm_arch_async_page_present() checks for is_error_page() too and,
-> in case of PV guest, injects special token if it is true. 
-> 
 
-Ah, sorry for my stupid questions.
+hi Ted,
 
-> After your patch special token will not be injected and migration will
-> not work.
-> 
->> Actually, we can simply record this wakeup request and let
->> kvm_check_async_pf_completion simply break the wait
->>
-> May be wakeup_all function naming is misleading. It means wake up all PV
-> guest processes by sending broadcast async pf notification. It is not
-> about waking host vcpu thread.
-> 
+> Theodore Ts'o (18):
+>       ext4: rename {exit,init}_ext4_*() to ext4_{exit,init}_*()
 
-I'm not good at the KVM PV way, i'll dig into it, please ignore this patch,
-thanks.
+Today's -tip fails to build due to upstream commit 5dabfc7 ("ext4: rename 
+{exit,init}_ext4_*() to ext4_{exit,init}_*()"), on all[yes/mod]config with 
+CONFIG_EXT4_FS_XATTR disabled:
+
+  fs/ext4/super.c:4776: error: implicit declaration of function ‘ext4_init_xattr’
+
+Commit 5dabfc7 renamed init_ext4_xattr to ext4_init_xattr but forgot to update the 
+definition in fs/ext4/xattr.h. The patch below fixes it.
+
+Thanks,
+
+	Ingo
+
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+
+--- linux.orig/fs/ext4/xattr.h
++++ linux/fs/ext4/xattr.h
+@@ -122,7 +122,7 @@ ext4_xattr_put_super(struct super_block 
+ }
+ 
+ static __init inline int
+-init_ext4_xattr(void)
++ext4_init_xattr(void)
+ {
+ 	return 0;
+ }
+
