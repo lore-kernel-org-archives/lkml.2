@@ -1,86 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758077Ab0J1WWa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 18:22:30 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:30587 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755493Ab0J1WWY convert rfc822-to-8bit (ORCPT
+	id S1758192Ab0J1W0O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 18:26:14 -0400
+Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:47936 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752062Ab0J1W0N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 18:22:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=bjrklQyQ6GWbd5YdERSIZg00UKywVRtyIymTrxxaWJiQYB07SkZst3RwtR/cndCNK4
-         3VP7DHTSK1JQ6dpNM0rQ==
+	Thu, 28 Oct 2010 18:26:13 -0400
+Date: Fri, 29 Oct 2010 09:24:04 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, hch@infradead.org, warthog9@kernel.org,
+        jmorris@namei.org, kyle@mcmartin.ca, hpa@zytor.com,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        mingo@elte.hu, eparis@redhat.com, viro@zeniv.linux.org.uk,
+        Matthew Wilcox <matthew@wil.cx>
+Subject: Re: [PATCH 0/4] IMA: making i_readcount a first class inode citizen
+Message-ID: <20101028222404.GG2715@dastard>
+References: <1288303325-9628-1-git-send-email-zohar@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <4CC99A65.9050706@sssup.it>
-References: <4CC99A65.9050706@sssup.it>
-Date: Thu, 28 Oct 2010 15:22:20 -0700
-Message-ID: <AANLkTinkrVG2fTpPDC1DpcC+CiYWjXdYdqTMO5Tv7Swt@mail.gmail.com>
-Subject: Re: Understanding cgroups
-From: Paul Menage <menage@google.com>
-To: Tommaso Cucinotta <tommaso.cucinotta@sssup.it>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Linux Containers <containers@lists.linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288303325-9628-1-git-send-email-zohar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 28, 2010 at 8:44 AM, Tommaso Cucinotta
-<tommaso.cucinotta@sssup.it> wrote:
-> a) why doesn't a cgroup object directly point to a css_set one, but to a
-> list of them (via cg_cgroup_list elements) ?
+On Thu, Oct 28, 2010 at 06:02:01PM -0400, Mimi Zohar wrote:
+> On Mon, 2010-10-25 at 14:41 -0400, Eric Paris wrote:
+> 
+> <snip>
+> 
+> > I believe that IBM is going to look into making i_readcount a first
+> > class citizen which can be used by both IMA and generic_setlease().
+> > Then people could say IMA had 0 per inode overhead   :)
+> 
+> This patchset separates the incrementing/decrementing of the i_readcount,
+> in the VFS layer, from other IMA functionality, by replacing the current
+> ima_counts_get() call with iget_readcount(). Its unclear whether this
+> call to increment i_readcount should be made earlier. 
 
-Each task is in one cgroup per mounted hierarchy. There's no
-requirement that different hierarchies have isomorphic partitions of
-tasks (in fact that would somewhat defeat the point of mounting
-separate hierarchies). So even though all the tasks in a cgroup share
-css pointers for the subsystems attached to that cgroup's hierarchy,
-in general they will have different total sets of css pointers. Hence
-the multiple css_set objects associated with a cgroup.
+Why the wrapper functions and locking? Why not an atomic variable like
+i_writecount?
 
->    it seems that a cgroup object may be associated to multiple css_set
-> objects, which in turn contain vectors of
->    cgroup_subsys_state;
-> b) however, cgroup.subsys[] would point to a single cgroup_subsys_state
-> object per subsys_id,
+Cheers,
 
-No, it points to a single cgroup_subsys_state for each subsys that's
-bound to the cgroup's hierarchy, and NULL for all others.
-
-> so, what is the
->    difference between cgroup.subsys[] and css_set.subsys[] ? (or, are these
-> all redundant pointers and point
->    to the same cgroup_subsys_state objects ?)
-
-css_set.subsys is the union of all the (disjoint) sets of subsys
-pointers in the cgroups that a task is a member of (one cgroup per
-hierarchy).
-
-Yes, the pointers in the css_set are redundant in that they could be
-determined by following more pointers, but for efficiency they're all
-available directly in the css_set. (Also this typically allows a
-single refcount inc/dec in the task fork/exit case)
-
-> c) is css_set.cg_links used to point to (the head of) a list of
-> cg_cgroup_link objects,
-
-Yes. It's the head of a list of cg_cgroup_link objects, each of which
-has a pointer to this css_set and a pointer to a cgroup of which this
-css_set represents membership. (One per hierarchy)
-
-> or is it used to link multiple css_set objects into
-> a list ?
-
-In a way this is also true, but only indirectly - the cg_cgroup_link
-objects form a two-dimensional doubly-linked list lattice that
-represents the many:many relationship between cgroup and css_set. One
-dimension's linked lists are headed by css_set objects, the other
-dimension is headed by cgroups.
-
-Paul
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
