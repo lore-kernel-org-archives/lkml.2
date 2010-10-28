@@ -1,119 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759316Ab0J1QAO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 12:00:14 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50046 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754972Ab0J1QAL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 12:00:11 -0400
+	id S1759337Ab0J1QCE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 12:02:04 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:38179 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758884Ab0J1QB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 12:01:58 -0400
+Date: Thu, 28 Oct 2010 18:01:29 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Huang Ying <ying.huang@intel.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, "Luck, Tony" <tony.luck@intel.com>,
+        BorislavPetkov <petkovbb@googlemail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Don Zickus <dzickus@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH -v3 0/8] ACPI, APEI patches for 2.6.37
+Message-ID: <20101028160129.GA12628@elte.hu>
+References: <1288157312-10441-1-git-send-email-ying.huang@intel.com>
+ <1288174050.15336.1507.camel@twins>
+ <20101027172343.GB22171@basil.fritz.box>
 MIME-Version: 1.0
-In-Reply-To: <1288200823.5619.46.camel@edumazet-laptop>
-References: <AANLkTinnc3vBSmewf7ixuOSDYxG+5VNiGaB-vSrDNRiO@mail.gmail.com>
- <1288158182-1753-1-git-send-email-brgerst@gmail.com> <1288159670.2652.181.camel@edumazet-laptop>
- <1288173442.15336.1490.camel@twins> <1288186405.2709.117.camel@edumazet-laptop>
- <4CC82C2F.1020707@kernel.org> <1288187870.2709.128.camel@edumazet-laptop>
- <4CC83067.5000009@kernel.org> <1288189461.2709.144.camel@edumazet-laptop>
- <1288190387.2709.147.camel@edumazet-laptop> <4CC83A85.3070608@kernel.org>
- <1288192868.2709.152.camel@edumazet-laptop> <4CC846D5.50106@kernel.org>
- <1288195668.2709.167.camel@edumazet-laptop> <1288200823.5619.46.camel@edumazet-laptop>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 28 Oct 2010 08:59:42 -0700
-Message-ID: <AANLkTikmNc7qqDzoff_3i_FRbG=pmOC7TG3eeZnmvaTD@mail.gmail.com>
-Subject: Re: [PATCH] numa: fix slab_node(MPOL_BIND)
-To: Eric Dumazet <eric.dumazet@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
-        Christoph Lameter <cl@linux.com>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Brian Gerst <brgerst@gmail.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, mingo@elte.hu
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101027172343.GB22171@basil.fritz.box>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hmm. More people added to the discussion..
 
-This code seems to go back all the way to commit 19770b32609b: "mm:
-filter based on a nodemask as well as a gfp_mask". Which was back in
-April 2008. and got merged into 2.6.26.
+* Andi Kleen <andi@firstfloor.org> wrote:
 
-And I'd be happy to commit it (in fact, I was going to), but when
-looking for other uses of first_zones_zonelist(), I found
-local_memory_node() which does the exact same thing: ignore the return
-value, and unconditionally dereference the resulting 'zone' variable.
+> Peter,
+> 
+> > All you've done is decreased the arch/x86/ footprint of the patch series, but 
+> > neither you nor Andi have addressed the technical arguments against adding this 
+> > ABI.
+> 
+> What were the technical arguments? I don't remember any.
 
-And so does - although less obviously - mm/vmscan.c for the
-wait_iff_confgested() thing.
+You did not reply to my technical arguments:
 
-So are those buggy too, since first_zones_zonelist() can apparently return NULL?
+    http://lkml.org/lkml/2010/10/25/271
 
-Please advise...
+You did not reply to Thomas's technical arguments:
 
-                  Linus
+    http://lkml.org/lkml/2010/10/26/71
 
-On Wed, Oct 27, 2010 at 10:33 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Le mercredi 27 octobre 2010 à 18:07 +0200, Eric Dumazet a écrit :
->
->> So I tried following experiment :
->>
->> # swapoff
->> # numactl --membind=0 swapon -a
->> # grep swap /proc/vmallocinfo
->> 0xf9bf3000-0xf9cf4000 1052672 sys_swapon+0x4aa/0xb24 pages=256 vmalloc N0=256
->> # swapoff -a
->> # numactl --membind=1 swapon -a
->>
->> <<FREEZE>>
->>
->
-> Crash in fact, not freeze, in slab_node()
->
-> Problem is : we dereference a NULL zone pointer.
->
-> (node 1 has HighMem only)
->
-> Following patch seems to solve the problem for me
->
-> # swapoff -a
-> # numactl --membind=1 swapon -a
-> # grep swap /proc/vmallocinfo
-> 0xf9da5000-0xf9ea6000 1052672 sys_swapon+0x3f9/0xa34 pages=256 vmalloc N1=256
->
->
-> Thanks
->
->
-> [PATCH] numa: fix slab_node(MPOL_BIND)
->
-> When a node contains only HighMem memory, slab_node(MPOL_BIND)
-> dereferences a NULL pointer.
->
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> ---
->  mm/mempolicy.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-> index 81a1276..4a57f13 100644
-> --- a/mm/mempolicy.c
-> +++ b/mm/mempolicy.c
-> @@ -1597,7 +1597,7 @@ unsigned slab_node(struct mempolicy *policy)
->                (void)first_zones_zonelist(zonelist, highest_zoneidx,
->                                                        &policy->v.nodes,
->                                                        &zone);
-> -               return zone->node;
-> +               return zone ? zone->node : numa_node_id();
->        }
->
->        default:
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Are you really claiming that you "don't remember any"?
+
+	Ingo
