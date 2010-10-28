@@ -1,47 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756359Ab0J1WcY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 18:32:24 -0400
-Received: from cantor.suse.de ([195.135.220.2]:40272 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751924Ab0J1WcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 18:32:18 -0400
-Date: Fri, 29 Oct 2010 00:32:17 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: guillem@hadrons.org, nacc@us.ibm.com, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] kbuild packaging changes for 2.6.37-rc1
-Message-ID: <20101028223217.GA4769@sepie.suse.cz>
+	id S1758349Ab0J1Wew (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 18:34:52 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49733 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753285Ab0J1Weq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 18:34:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101028222404.GG2715@dastard>
+References: <1288303325-9628-1-git-send-email-zohar@linux.vnet.ibm.com> <20101028222404.GG2715@dastard>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 28 Oct 2010 15:29:21 -0700
+Message-ID: <AANLkTimG6o66SFHskkDOtLqYeSzwKt2c0jR3CWe+sd2w@mail.gmail.com>
+Subject: Re: [PATCH 0/4] IMA: making i_readcount a first class inode citizen
+To: Dave Chinner <david@fromorbit.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        hch@infradead.org, warthog9@kernel.org, jmorris@namei.org,
+        kyle@mcmartin.ca, hpa@zytor.com, akpm@linux-foundation.org,
+        mingo@elte.hu, eparis@redhat.com, viro@zeniv.linux.org.uk,
+        Matthew Wilcox <matthew@wil.cx>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, Oct 28, 2010 at 3:24 PM, Dave Chinner <david@fromorbit.com> wrote:
+>
+> Why the wrapper functions and locking? Why not an atomic variable like
+> i_writecount?
 
-please also pull these two fixes for make rpm-pkg and make deb-pkg,
-respectively.
+Indeed. With moving this more into the VFS, let's just make sure it
+looks like i_writecount as much as possible.
 
-Thanks,
-Michal
-
-The following changes since commit da5cabf80e2433131bf0ed8993abc0f7ea618c73:
-
-  Linux 2.6.36-rc1 (2010-08-15 17:41:37 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git packaging
-
-Guillem Jover (1):
-      kbuild, deb-pkg: Check if KBUILD_IMAGE exists before copying it
-
-Nishanth Aravamudan (1):
-      scripts/package: don't break if %{_smp_mflags} isn't set
-
- scripts/package/builddeb |    4 +++-
- scripts/package/mkspec   |    2 +-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+                      Linus
