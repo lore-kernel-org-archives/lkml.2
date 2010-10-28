@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934115Ab0J1S03 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 14:26:29 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57246 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934088Ab0J1S0Z (ORCPT
+	id S934103Ab0J1S0R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 14:26:17 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:44085 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S934088Ab0J1S0M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 14:26:25 -0400
-Date: Thu, 28 Oct 2010 11:25:35 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Benny Halevy <bhalevy@panasas.com>, linux-nfs@vger.kernel.org,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] nfs4: The difference of 2 pointers is size_t
-Message-Id: <20101028112535.442f47a7.akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1010282004390.31018@ayla.of.borg>
-References: <alpine.DEB.2.00.1010282004390.31018@ayla.of.borg>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 28 Oct 2010 14:26:12 -0400
+Date: Thu, 28 Oct 2010 14:26:10 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Luis R. Rodriguez" <mcgrof@gmail.com>
+cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        <linux-usb@vger.kernel.org>, <usb-storage@lists.one-eyed-alien.net>
+Subject: Re: v2.6.36-rc8..v2.6.36 regression on NULL pointer deference at
+ disk_replace_part_tbl+0x32
+In-Reply-To: <AANLkTin9k=nM8N5FB7gnpXfRhU2axYKZx=rELEppqY_a@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1010281423540.1601-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Oct 2010 20:06:19 +0200 (CEST)
-Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+On Thu, 28 Oct 2010, Luis R. Rodriguez wrote:
 
-> On m68k, which is 32-bit:
-> 
-> fs/nfs/nfs4proc.c: In function ___nfs41_sequence_done___:
-> fs/nfs/nfs4proc.c:432: warning: format ___%ld___ expects type ___long int___, but argument 3 has type ___int___
-> fs/nfs/nfs4proc.c: In function ___nfs4_setup_sequence___:
-> fs/nfs/nfs4proc.c:576: warning: format ___%ld___ expects type ___long int___, but argument 5 has type ___int___
-> 
-> On 32-bit, size_t is int; on 64-bit, size_t is long.
-> 
-> Introduced by commit dfb4f309830359352539919f23accc59a20a3758 ("NFSv4.1: keep
-> seq_res.sr_slot as pointer rather than an index")
-> 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
->  fs/nfs/nfs4proc.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-> index 32c8758..80229dc 100644
-> --- a/fs/nfs/nfs4proc.c
-> +++ b/fs/nfs/nfs4proc.c
-> @@ -429,7 +429,7 @@ static int nfs41_sequence_done(struct rpc_task *task, struct nfs4_sequence_res *
->  		 * returned NFS4ERR_DELAY as per Section 2.10.6.2
->  		 * of RFC5661.
->  		 */
-> -		dprintk("%s: slot=%ld seq=%d: Operation in progress\n",
-> +		dprintk("%s: slot=%zd seq=%d: Operation in progress\n",
->  			__func__,
->  			res->sr_slot - res->sr_session->fc_slot_table.slots,
->  			res->sr_slot->seq_nr);
-> @@ -573,7 +573,7 @@ int nfs4_setup_sequence(const struct nfs_server *server,
->  		goto out;
->  	}
->  
-> -	dprintk("--> %s clp %p session %p sr_slot %ld\n",
-> +	dprintk("--> %s clp %p session %p sr_slot %zd\n",
->  		__func__, session->clp, session, res->sr_slot ?
->  			res->sr_slot - session->fc_slot_table.slots : -1);
->  
+> On Thu, Oct 28, 2010 at 10:25 AM, Luis R. Rodriguez <mcgrof@gmail.com> wrote:
+> > I've filled out a bug report for a regression when I enable USB tether
+> > on my Nexus One when hooked up to my laptop. I get a NULL pointer
+> > dereference. This is a regression between v2.6.36-rc8 and v2.6.36. I
+> > will bisect when I get a chance.
 
-I think it should formally be %t, for a ptrdiff_t.
+> Odd, I get 0 results with a:
+> 
+> git log v2.6.36-rc8..v2.6.36 scsiglue.c protocol.c transport.c usb.c
+> initializers.c sierra_ms.c option_ms.c
+> 
+> So the issue must be elsewhere unless there was a subsystem change
+> that triggered a new issue on usb-storage.
+
+What makes you think this bug has anything at all to do with 
+usb-storage?  The fact that you saw it with a USB drive has very little 
+to do with anything.
+
+With a problem like this, which crosses so many subsystem boundaries 
+(USB, storage, SCSI, block), you shouldn't make any assumptions.  Just 
+do a complete bisection.
+
+Alan Stern
+
