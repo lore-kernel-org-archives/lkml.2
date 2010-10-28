@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758956Ab0J1PcI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 11:32:08 -0400
+	id S1759167Ab0J1Pcc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 11:32:32 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:63317 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758801Ab0J1Pb4 (ORCPT
+	with ESMTP id S932582Ab0J1PcY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 11:31:56 -0400
+	Thu, 28 Oct 2010 11:32:24 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=YYmet6ImVxKGKwWtWnfvqcoNL96bAbvKPnpJamtAwRpL9KLwVt2Pfk6ziR/LBQWEic
-         vYVwudCQRWEgMhaICkHMm5v4X9So8DWotaMFHVCf1NiL5HuQboH9XlQyp1kIIhT3fgh8
-         QPKiRvOBbU2/IR59h3vTl6iKVdprbUCs58tas=
+        b=p7+eDd58vWgoADgPBtY1ZUY0EeZQrgr/QsXGJhwHKQXcME699saBD8hWU+vrOmithj
+         nXai30CIta+q9rO9IgpckmBP9D4AieJCpFx0ED9eRM8v5ovO8UsMI/lDsiRHRKqcB4wK
+         b8YmpKIYUUv5J+DkYVjhnIocXV1UoTzNl5nPg=
 From: Michal Nazarewicz <mina86@mina86.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         Michal Nazarewicz <m.nazarewicz@samsung.com>,
         Michal Nazarewicz <mina86@mina86.com>
-Subject: [PATCHv2 3/7] USB: gadget: f_mass_storage: use ?: instead of a macro
-Date: Thu, 28 Oct 2010 17:31:20 +0200
-Message-Id: <c98d8da2966a20ac381d87298c215b4fc487faaf.1288256118.git.mina86@mina86.com>
+Subject: [PATCHv2 5/7] USB: gadget: f_mass_storage: remove needless complete()
+Date: Thu, 28 Oct 2010 17:31:22 +0200
+Message-Id: <b760fc04ef78cbcb8d04fab164d993d194aa6646.1288256118.git.mina86@mina86.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <bfcc3341c937589451942f87d944659faf6c9e3c.1288256118.git.mina86@mina86.com>
 References: <bfcc3341c937589451942f87d944659faf6c9e3c.1288256118.git.mina86@mina86.com>
@@ -29,53 +29,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit removes an "OR" macro defined in Mass Storage
-Function in favour of a two argument version of "?:" operator
-(which is a GCC extension).
+This commit removes call to the complete() function done in
+fsg_unbind() which was never needed there but was a leftover
+form file_storage.c.
 
 Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
 ---
- drivers/usb/gadget/f_mass_storage.c |   11 ++++-------
- 1 files changed, 4 insertions(+), 7 deletions(-)
+ drivers/usb/gadget/f_mass_storage.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
-index c89b992..2a4aca1 100644
+index c71f69f..365f1b3 100644
 --- a/drivers/usb/gadget/f_mass_storage.c
 +++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -2822,14 +2822,12 @@ buffhds_first_it:
- 			i = 0x0399;
- 		}
+@@ -2657,7 +2657,7 @@ static int fsg_main_thread(void *common_)
+ 		up_write(&common->filesem);
  	}
--#define OR(x, y) ((x) ? (x) : (y))
- 	snprintf(common->inquiry_string, sizeof common->inquiry_string,
--		 "%-8s%-16s%04x",
--		 OR(cfg->vendor_name, "Linux   "),
-+		 "%-8s%-16s%04x", cfg->vendor_name ?: "Linux",
- 		 /* Assume product name dependent on the first LUN */
--		 OR(cfg->product_name, common->luns->cdrom
-+		 cfg->product_name ?: (common->luns->cdrom
- 				     ? "File-Stor Gadget"
--				     : "File-CD Gadget  "),
-+				     : "File-CD Gadget"),
- 		 i);
  
+-	/* Let the unbind and cleanup routines know the thread has exited */
++	/* Let fsg_unbind() know the thread has exited */
+ 	complete_and_exit(&common->thread_notifier, 0);
+ }
  
-@@ -2848,14 +2846,13 @@ buffhds_first_it:
- 	/* Tell the thread to start working */
- 	common->thread_task =
- 		kthread_create(fsg_main_thread, common,
--			       OR(cfg->thread_name, "file-storage"));
-+			       cfg->thread_name ?: "file-storage");
- 	if (IS_ERR(common->thread_task)) {
- 		rc = PTR_ERR(common->thread_task);
- 		goto error_release;
+@@ -2906,9 +2906,6 @@ static void fsg_common_release(struct kref *ref)
+ 	if (common->state != FSG_STATE_TERMINATED) {
+ 		raise_exception(common, FSG_STATE_EXIT);
+ 		wait_for_completion(&common->thread_notifier);
+-
+-		/* The cleanup routine waits for this completion also */
+-		complete(&common->thread_notifier);
  	}
- 	init_completion(&common->thread_notifier);
- 	init_waitqueue_head(&common->fsg_wait);
--#undef OR
  
- 
- 	/* Information */
+ 	if (likely(common->luns)) {
 -- 
 1.7.1
 
