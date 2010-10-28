@@ -1,55 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757965Ab0J1A63 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 20:58:29 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45540 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757790Ab0J1A61 (ORCPT
+	id S1757962Ab0J1BEA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 21:04:00 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:4408 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757790Ab0J1BD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 20:58:27 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 28 Oct 2010 09:52:58 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Pawan Singh <pawan@pinger.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Tweaking swap algorithm under constrained memory usage
-Message-Id: <20101028095258.c778a223.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <AANLkTimCSGoeRHXWS2Y5=THbOkHUfY71=B6JzOeFz_=X@mail.gmail.com>
-References: <AANLkTimCSGoeRHXWS2Y5=THbOkHUfY71=B6JzOeFz_=X@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Oct 2010 21:03:59 -0400
+From: David Daney <ddaney@caviumnetworks.com>
+To: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org
+Cc: David Daney <ddaney@caviumnetworks.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dan Carpenter <error27@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH] of: of_mdio: Fix some endianness problems.
+Date: Wed, 27 Oct 2010 18:03:47 -0700
+Message-Id: <1288227827-5447-1-git-send-email-ddaney@caviumnetworks.com>
+X-Mailer: git-send-email 1.7.2.3
+X-OriginalArrivalTime: 28 Oct 2010 01:04:27.0075 (UTC) FILETIME=[114FD130:01CB763C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Oct 2010 11:41:18 -0700
-Pawan Singh <pawan@pinger.org> wrote:
+In of_mdiobus_register(), the __be32 *addr variable is dereferenced.
+This will not work on little-endian targets.  Also since it is
+unsigned, checking for less than zero is redundant.
 
-> I have a requirement where a user space process needs to allocate 75%
-> of the memory on the machine and keep it locked i.e. not swappable.
-> Other processes need to share the rest of the memory. Swap is enabled.
-> I was wondering what tweaks would be required so that the swapping
-> alogrithms' thresholds are based on 25% of the memory rather than on
-> 100% of the memory. If I leave this at default, kswapd may decide to
-> swap a lot more pages than really required because 75% of pages are
-> locked. I am working on 2.6.22 kernel. I can use "swappiness" factor
-> and reduce it - but I wanted to know if I can alter something
-> fundamental in the kernel code to make life for rest of the processes
-> better.
-> 
-> Thanks for any suggestions.
-> 
+Fix these two issues.
 
-Recent kernel (2.6.28-) has splited LRUs as
-  - active/inactive ANON
-  - active/inactive FILE
-  - LOCKED (UNEVICTABLE) ---(new)
+Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Dan Carpenter <error27@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/of/of_mdio.c |   23 ++++++++++++++---------
+ 1 files changed, 14 insertions(+), 9 deletions(-)
 
-Then, try the new kernel is a choice.
-
-Thanks,
--Kame
+diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
+index 1fce00e..b370306 100644
+--- a/drivers/of/of_mdio.c
++++ b/drivers/of/of_mdio.c
+@@ -52,27 +52,32 @@ int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
+ 
+ 	/* Loop over the child nodes and register a phy_device for each one */
+ 	for_each_child_of_node(np, child) {
+-		const __be32 *addr;
++		const __be32 *paddr;
++		u32 addr;
+ 		int len;
+ 
+ 		/* A PHY must have a reg property in the range [0-31] */
+-		addr = of_get_property(child, "reg", &len);
+-		if (!addr || len < sizeof(*addr) || *addr >= 32 || *addr < 0) {
++		paddr = of_get_property(child, "reg", &len);
++		if (!paddr || len < sizeof(*paddr)) {
++addr_err:
+ 			dev_err(&mdio->dev, "%s has invalid PHY address\n",
+ 				child->full_name);
+ 			continue;
+ 		}
++		addr = be32_to_cpup(paddr);
++		if (addr >= 32)
++			goto addr_err;
+ 
+ 		if (mdio->irq) {
+-			mdio->irq[*addr] = irq_of_parse_and_map(child, 0);
+-			if (!mdio->irq[*addr])
+-				mdio->irq[*addr] = PHY_POLL;
++			mdio->irq[addr] = irq_of_parse_and_map(child, 0);
++			if (!mdio->irq[addr])
++				mdio->irq[addr] = PHY_POLL;
+ 		}
+ 
+-		phy = get_phy_device(mdio, be32_to_cpup(addr));
++		phy = get_phy_device(mdio, addr);
+ 		if (!phy || IS_ERR(phy)) {
+ 			dev_err(&mdio->dev, "error probing PHY at address %i\n",
+-				*addr);
++				addr);
+ 			continue;
+ 		}
+ 		phy_scan_fixups(phy);
+@@ -91,7 +96,7 @@ int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
+ 		}
+ 
+ 		dev_dbg(&mdio->dev, "registered phy %s at address %i\n",
+-			child->name, *addr);
++			child->name, addr);
+ 	}
+ 
+ 	return 0;
+-- 
+1.7.2.3
 
