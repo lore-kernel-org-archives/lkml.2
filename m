@@ -1,84 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758352Ab0J1TzB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 15:55:01 -0400
-Received: from thunk.org ([69.25.196.29]:59308 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758067Ab0J1Ty4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 15:54:56 -0400
-Date: Thu, 28 Oct 2010 15:54:51 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Eric Sandeen <sandeen@redhat.com>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>, sedat.dilek@gmail.com,
-        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-        sfr@canb.auug.org.au, Arnd Bergmann <arnd@arndb.de>,
-        Avinash Kurup <kurup.avinash@gmail.com>
-Subject: Re: [next-20101038] Call trace in ext4
-Message-ID: <20101028195451.GB28126@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Eric Sandeen <sandeen@redhat.com>,
-	Markus Trippelsdorf <markus@trippelsdorf.de>, sedat.dilek@gmail.com,
-	LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-	sfr@canb.auug.org.au, Arnd Bergmann <arnd@arndb.de>,
-	Avinash Kurup <kurup.avinash@gmail.com>
-References: <AANLkTi=E_uMj_ndGU86DCjX4aDwjHqg3dkwxjQRSJtq6@mail.gmail.com>
- <20101028175221.GA1578@arch.trippelsdorf.de>
- <20101028180118.GC6814@thunk.org>
- <20101028193211.GA28126@thunk.org>
- <4CC9D0A8.8030209@redhat.com>
+	id S1758416Ab0J1T4E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 15:56:04 -0400
+Received: from bhuna.collabora.co.uk ([93.93.128.226]:37773 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753068Ab0J1Tz5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 15:55:57 -0400
+Message-ID: <4CC9D403.2010805@collabora.co.uk>
+Date: Thu, 28 Oct 2010 20:50:27 +0100
+From: Ian Molton <ian.molton@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100917 Icedove/3.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CC9D0A8.8030209@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+To: Anthony Liguori <anthony@codemonkey.ws>
+CC: Avi Kivity <avi@redhat.com>, virtualization@lists.osdl.org,
+        linux-kernel@vger.kernel.org, QEMU Developers <qemu-devel@nongnu.org>
+Subject: Re: [Qemu-devel] Re: [PATCH] Implement a virtio GPU transport
+References: <4CAC9CD1.2050601@collabora.co.uk>	<4CB1D79A.6070805@redhat.com>	<4CBD739A.2010500@collabora.co.uk>	<4CBD7560.6080207@redhat.com> <4CC8226F.5080807@collabora.co.uk>	<4CC94203.1080207@redhat.com> <4CC9647A.50108@collabora.co.uk> <4CC98784.7020907@redhat.com> <4CC98C25.9010207@codemonkey.ws>
+In-Reply-To: <4CC98C25.9010207@codemonkey.ws>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 28, 2010 at 02:36:08PM -0500, Eric Sandeen wrote:
-> Ted Ts'o wrote:
-> > On Thu, Oct 28, 2010 at 02:01:18PM -0400, Ted Ts'o wrote:
-> >> On Thu, Oct 28, 2010 at 07:52:21PM +0200, Markus Trippelsdorf wrote:
-> >>> The same BUG (inode.c:2721) happend here today running latest vanilla
-> >>> git. There is nothing in my logs unfortunately, but I shot a photo of
-> >>> the trace (see attachment).
-> >> I see, it's the page_buffers() call which is triggering.  Looking into
-> >> it...
-> > 
-> > Can folks let me know if this fixes the problem?
-> 
-> Ted, any idea what caused the change in behavior here?
+On 28/10/10 15:43, Anthony Liguori wrote:
+> On 10/28/2010 09:24 AM, Avi Kivity wrote:
+>> On 10/28/2010 01:54 PM, Ian Molton wrote:
+>
+>>> True, but then all that would prove is that I can write a spec to
+>>> match the code.
+>>
+>> It would also allow us to check that the spec matches the
+>> requirements. Those two steps are easier than checking that the code
+>> matches the requirements.
 
-The bug was caused by commit a42afc5f56: ext4: simplify ext4_writepage()
+There was no formal spec for this. The code was written to replace nasty 
+undefined-instruction based data transport hacks in the (already 
+existing) GL passthrough code.
 
-I somehow managed to use page_buffers(page) instead of
-page_has_buffers(page) when cleaning up ext4_writpage().  It's not
-something I can trigger in xfstests, and so on my todo list is to
-create a test case that can trigger this issue.
+> I'm extremely sceptical of any GL passthrough proposal. There have
+> literally been half a dozen over the years and they never seem to leave
+> proof-of-concept phase. My (limited) understanding is that it's a
+> fundamentally hard problem that no one has adequately solved yet.
 
-The immediate trigger was journal_submit_inode_data_buffers() getting
-called in data=ordered mode, which ends up calling
-generic_writepages() which iterates over all of the dirty pages in the
-inode and calls ext4_writepage() on them.  If we're under enough
-memory pressure that the buffer heads get stripped from the page
-before the journal commit happens (by default on a 5 second interval),
-then we'll end up calling page_buffers() on a page with the buffer
-heads stripped, and the fact that I had somehow changed
-page_has_buffers() to page_buffers(), would cause a BUG_ON.
+The code in this case has been presented as a patch to qemu nearly 3 
+years ago. I've taken the patches and refactored them to use virtio 
+rather than an undefined instruction (which fails under KVM, unlike my 
+approach).
 
-My standard test setup runs xfstests using 768k of memory on a
-dual-CPU system, and apparently fsstress wasn't enough to trigger the
-case where the bh's get stripped from the page, even with a relatively
-small memory configuration.  Which is surprising to me, but one good
-thing about this bug is that it has pointed out a gap in my testing
-strategy.
+Its in use testing meego images and seems to be fairly reliable. it can 
+handle compositing window managers, games, video, etc. We're currently 
+supporting OpenGL 1.4 including shaders.
 
-To address this, we need to either (a) create tests that generate
-enough memory pressure so this happens, or (b) we need to have some
-hooks (maybe some magic ioctl's) that emulate this by forcibly
-detaching bh's from some random number of pages.
+> A specifically matters an awful lot less than an explanation of how the
+> problem is being solved in a robust fashion such that it can be reviewed
+> by people with a deeper understanding of the problem space.
 
-	       	    	 	       	  - Ted
+I'm not sure there is a way to prevent nefarious tasks upsetting the 
+hosts OpenGL with carefully crafted strings of commands, short of 
+inspecting every single command, which is insane.
+
+Really this needs to be done at a lower level by presenting a virtual 
+GPU to the guest OS but I am not in a position to code that right now.
+
+The code as it is is useful, and can always be superceeded by a virtual 
+GPU implementation in future.
+
+At least this breaks the chicken / egg cycle of people wanting GL 
+support on virtual machines, but not writing stuff to take advantage of 
+it because the support isn't there. its also a neatly encapsulated 
+solution - if you dont want people to have access to the passthrough, 
+simply tell qemu not to present the virtio-gl device to the guest, via 
+qemus existing commandline options.
+
+If this code was invasive to qemus core, I'd say 'no way' but its just 
+not. and as the GL device is versioned, we can keep using it even if the 
+passthrough is replaced by a virtual GPU.
