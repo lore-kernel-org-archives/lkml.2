@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757901Ab0J1Apx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 20:45:53 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:4046 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757576Ab0J1Apv (ORCPT
+	id S1757965Ab0J1A63 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 20:58:29 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45540 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757790Ab0J1A61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 20:45:51 -0400
-Message-ID: <4CC8C7BE.4010102@caviumnetworks.com>
-Date: Wed, 27 Oct 2010 17:45:50 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
-MIME-Version: 1.0
-To: "Ted Ts'o" <tytso@mit.edu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Perf can't deal with many tracepoints
-References: <E1PBFIJ-0004eC-Tj@tytso-glaptop> <4CC8C0D2.7060304@caviumnetworks.com> <20101028004047.GH3194@thunk.org>
-In-Reply-To: <20101028004047.GH3194@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 27 Oct 2010 20:58:27 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 28 Oct 2010 09:52:58 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Pawan Singh <pawan@pinger.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Tweaking swap algorithm under constrained memory usage
+Message-Id: <20101028095258.c778a223.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <AANLkTimCSGoeRHXWS2Y5=THbOkHUfY71=B6JzOeFz_=X@mail.gmail.com>
+References: <AANLkTimCSGoeRHXWS2Y5=THbOkHUfY71=B6JzOeFz_=X@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 Oct 2010 00:46:19.0367 (UTC) FILETIME=[88FCBF70:01CB7639]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2010 05:40 PM, Ted Ts'o wrote:
-> On Wed, Oct 27, 2010 at 05:16:18PM -0700, David Daney wrote:
->> Tracing is supposed to be low overhead.  Forcing people to decode
->> things like this at the trace point, may take more code and cause
->> the trace data to be larger, making it slower than necessary.
->>
->> If there isn't a good reason to keep perf stupid, then making it
->> smarter could be attractive.
->
-> Agreed.  Although one argument against making perf smarter is that
-> certain things such as the dev_t MAJOR/MINOR split is an internal
-> abstraction that could potentially vary from kernel to kernel.
->
-> And the question is whether perf really should be so different that if
-> you boot a different kernel, you had better have the right perf
-> installed.
->
+On Wed, 27 Oct 2010 11:41:18 -0700
+Pawan Singh <pawan@pinger.org> wrote:
 
-It may be possible to encode the dev_t split in the trace meta-data. 
-This is done for some other types.  Then perf could decode it based on 
-the meta-data.
+> I have a requirement where a user space process needs to allocate 75%
+> of the memory on the machine and keep it locked i.e. not swappable.
+> Other processes need to share the rest of the memory. Swap is enabled.
+> I was wondering what tweaks would be required so that the swapping
+> alogrithms' thresholds are based on 25% of the memory rather than on
+> 100% of the memory. If I leave this at default, kswapd may decide to
+> swap a lot more pages than really required because 75% of pages are
+> locked. I am working on 2.6.22 kernel. I can use "swappiness" factor
+> and reduce it - but I wanted to know if I can alter something
+> fundamental in the kernel code to make life for rest of the processes
+> better.
+> 
+> Thanks for any suggestions.
+> 
 
-Another option is to have perf print the raw data and not crash.  Then 
-someone looking at the output could, if they desired, decode the dev_t 
-themselves.
+Recent kernel (2.6.28-) has splited LRUs as
+  - active/inactive ANON
+  - active/inactive FILE
+  - LOCKED (UNEVICTABLE) ---(new)
 
-David Daney
+Then, try the new kernel is a choice.
+
+Thanks,
+-Kame
+
