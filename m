@@ -1,37 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933034Ab0J1Hxr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 03:53:47 -0400
-Received: from swm.pp.se ([212.247.200.143]:40074 "EHLO uplift.swm.pp.se"
+	id S933072Ab0J1Hyk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 03:54:40 -0400
+Received: from mail.perches.com ([173.55.12.10]:3643 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932144Ab0J1Hxq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 03:53:46 -0400
-X-Greylist: delayed 572 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Oct 2010 03:53:46 EDT
-Date: Thu, 28 Oct 2010 09:44:12 +0200 (CEST)
-From: Mikael Abrahamsson <swmike@swm.pp.se>
-To: Tarkan Erimer <tarkan@turknetserver.com>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: tar.gz and tar.bz2 files of linux kernel on ftp.kernel.org
-In-Reply-To: <4CC923AC.4050903@turknetserver.com>
-Message-ID: <alpine.DEB.1.10.1010280943210.29868@uplift.swm.pp.se>
-References: <4CC923AC.4050903@turknetserver.com>
-User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
-Organization: People's Front Against WWW
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S932913Ab0J1Hyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 03:54:38 -0400
+Subject: Re: [RFC PATCH] include/linux/kernel.h: Add config option for  
+ pr_fmt(fmt)
+From: Joe Perches <joe@perches.com>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+In-Reply-To: <20101028093529.503c3a28@endymion.delvare>
+References: <1287713982.16920.39.camel@Joe-Laptop>
+	 <20101026110335.3a4c7679@endymion.delvare>
+	 <1288201301.4145.122.camel@Joe-Laptop>
+	 <20101028093529.503c3a28@endymion.delvare>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 28 Oct 2010 00:54:36 -0700
+Message-ID: <1288252476.1836.9.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Oct 2010, Tarkan Erimer wrote:
+On Thu, 2010-10-28 at 09:35 +0200, Jean Delvare wrote:
+> On Wed, 27 Oct 2010 10:41:41 -0700, Joe Perches wrote:
+> > On Tue, 2010-10-26 at 11:03 +0200, Jean Delvare wrote:
+> > > On Thu, 21 Oct 2010 19:19:42 -0700, Joe Perches wrote:
+> > > > Change the default #define pr_fmt(fmt) from:
+> > > > 	- #define pr_fmt(fmt) fmt
+> > > > to:
+> > > > 	- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> > > > This will standard use of prefixes and prevent the
+> > > > addition of new #defines when using pr_<level>.
+> > > I'm all for it!
+> > > > Adds a config option to use the old style if desired.
+> > > Not sure what the idea is. Once  pr_fmt() includes the module name, we
+> > > will drop hard-coded prefixes in all log messages throughout the kernel
+> > > tree. Once this is done, a kernel built with PR_FMT_IS_KBUILD_MODNAME=n
+> > > would become horribly confusing.
+> > 
+> > True.  The idea is to allow a transition period and remove
+> > this PR_FMT_IS_KBUILD_MODNAME config option later.
+> 
+> I don't buy this, sorry. During the "transition period", neither value
+> of this option will produce good results. One will lead to duplicate
+> prefixes and the other will lead to missing prefixes.
 
-> Why there are two different (tar.gz and tar.bz2) kind of compressed linux 
-> kernel on ftp.kernel.org ?
+So why don't you change it in your kernel.h and include that
+in linux-next and see how many complaints you get.
 
-<http://lwn.net/Articles/374776/>
 
-There has been a lot of discussion about this, it was deemed to be best to 
-let the users choose what version they wanted and provide both.
-
--- 
-Mikael Abrahamsson    email: swmike@swm.pp.se
