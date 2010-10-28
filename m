@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758792Ab0J1Nq4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 09:46:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:34800 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755459Ab0J1Nqy (ORCPT
+	id S1758824Ab0J1NrB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 09:47:01 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:36169 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755459Ab0J1Nq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 09:46:54 -0400
-X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=8-x9nQSR450A:10 a=kj9zAlcOel0A:10 a=mpMdnlmFKti1S5SNY1DT+A==:17 a=yQdBAQUQAAAA:8 a=CjxXgO3LAAAA:8 a=VwQbUJbxAAAA:8 a=Z44L6zz-h1PFREQNEwkA:9 a=nl1kGc4b4FnD-d2isY0SR_JvmZgA:4 a=CjuIK1q_8ugA:10 a=IcxpeKGZWnEA:10 a=rC2wZJ5BpNYA:10 a=LI9Vle30uBYA:10 a=mpMdnlmFKti1S5SNY1DT+A==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 65.28.92.85
-Date: Thu, 28 Oct 2010 08:47:13 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: crogonint@yahoo.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: rt2870: Add new USB ID for Belkin F6D4050 v1
-Message-ID: <4cc97ee1.wgYIjaudblVVNZRG%Larry.Finger@lwfinger.net>
-User-Agent: Heirloom mailx 12.2 01/07/07
+	Thu, 28 Oct 2010 09:46:58 -0400
+Date: Thu, 28 Oct 2010 09:46:41 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Aidar Kultayev <the.aidar@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, npiggin@kernel.dk,
+        Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 2.6.36 io bring the system to its knees
+Message-ID: <20101028134641.GA4416@infradead.org>
+References: <AANLkTimt7wzR9RwGWbvhiOmot_zzayfCfSh_-v6yvuAP@mail.gmail.com>
+ <AANLkTikRKVBzO=ruy=JDmBF28NiUdJmAqb4-1VhK0QBX@mail.gmail.com>
+ <AANLkTinzJ9a+9w7G5X0uZpX2o-L8E6XW98VFKoF1R_-S@mail.gmail.com>
+ <AANLkTinDDG0ZkNFJZXuV9k3nJgueUW=ph8AuHgyeAXji@mail.gmail.com>
+ <AANLkTikvSGNE7uGn5p0tfJNg4Hz5WRmLRC8cXu7+GhMk@mail.gmail.com>
+ <20101028090002.GA12446@elte.hu>
+ <AANLkTinoGGLTN2JRwjJtF6Ra5auZVg+VSa=TyrtAkDor@mail.gmail.com>
+ <AANLkTikyYQk1FH7d6jkw2GYHLN8jmghuGZQw=EFVgjuA@mail.gmail.com>
+ <AANLkTikx4zZwMLiAUrGKcH6yoo_PGgRA7nT9BzYMxQ89@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <AANLkTikx4zZwMLiAUrGKcH6yoo_PGgRA7nT9BzYMxQ89@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add new USB ID for FT2870 for Belkin F6D4050 v1
+On Thu, Oct 28, 2010 at 02:48:20PM +0300, Pekka Enberg wrote:
+> On Thu, Oct 28, 2010 at 2:33 PM, Aidar Kultayev <the.aidar@gmail.com> wrote:
+> > if it wasn't picasa, it would have been something else. I mean if I
+> > kill picasa ( later on it was done indexing new pics anyway ), it
+> > would have been for virtualbox to thrash the io. So, nope, getting rid
+> > of picasa doesn't help either. In general the systems responsiveness
+> > or sluggishness is dominated by those io operations going on - the DD
+> > & CP & probably VBOX issuing whole bunch of its load for IO.
+> 
+> Do you still see high latencies in vfs_lseek() and vfs_fsync()? I'm
+> not a VFS expert but looking at your latencytop output, it seems that
+> fsync grabs ->i_mutex which blocks vfs_llseek(), for example. I'm not
+> sure why that causes high latencies though it's a mutex we're holding.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Reported- and Tested-by: James Long <crogonint@yahoo.com>
-Cc: Stable <stable@kernel.org>
----
+It does.  But what workload does a lot of llseeks while fsyncing the
+same file?  I'd bet some application is doing really stupid things here.
 
-Index: linux-2.6/drivers/staging/rt2860/usb_main_dev.c
-===================================================================
---- linux-2.6.orig/drivers/staging/rt2860/usb_main_dev.c
-+++ linux-2.6/drivers/staging/rt2860/usb_main_dev.c
-@@ -65,6 +65,7 @@ struct usb_device_id rtusb_usb_id[] = {
- 	{USB_DEVICE(0x14B2, 0x3C07)},	/* AL */
- 	{USB_DEVICE(0x050D, 0x8053)},	/* Belkin */
- 	{USB_DEVICE(0x050D, 0x825B)},	/* Belkin */
-+	{USB_DEVICE(0x050D, 0x935A)},	/* Belkin F6D4050 v1 */
- 	{USB_DEVICE(0x050D, 0x935B)},	/* Belkin F6D4050 v2 */
- 	{USB_DEVICE(0x14B2, 0x3C23)},	/* Airlink */
- 	{USB_DEVICE(0x14B2, 0x3C27)},	/* Airlink */
