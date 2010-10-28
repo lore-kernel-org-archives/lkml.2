@@ -1,144 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751697Ab0J1IqL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 04:46:11 -0400
-Received: from nm27-vm0.bullet.mail.ne1.yahoo.com ([98.138.91.63]:45394 "HELO
-	nm27-vm0.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751030Ab0J1IqI (ORCPT
+	id S1752126Ab0J1I5l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 04:57:41 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:50071 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033Ab0J1I5j convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 04:46:08 -0400
-X-Yahoo-Newman-Id: 184353.69247.bm@omp1008.mail.ne1.yahoo.com
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: oEjTS_IVM1l8ByrwfXjD8aurD8qzsx28.3nqEUPKkfDkulS
- Hc5FZLMLOwfq7Rom3YrIVtBz3priZ0O8o0c.TNcLqKWTF2kMT3ZdDgYpj12y
- OKP5monOJS.qbcL_Hyg.0GaT0xXrEx63GDXZ8pJ172QLZQ6iXkl4I9303lRb
- nM3InIniQdkOzHvQn5SaMz9BR7OSTl8Re_lnxPYYje1Q73UYkSNiOgKVWyY3
- IYOWveDo7t.A7QQMH5pGs
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [PATCH v8] scsi: Push down host_lock into legacy LLD
-	SHT->queuecommand()
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Jeff Garzik <jeff@garzik.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        James Smart <james.smart@emulex.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
-        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
-        Mike Anderson <andmike@linux.vnet.ibm.com>,
-        Brian King <brking@linux.vnet.ibm.com>,
-        Christof Schmitt <christof.schmitt@de.ibm.com>
-In-Reply-To: <1288254332.5169.239.camel@haakon2.linux-iscsi.org>
-References: <1288249268-17734-1-git-send-email-nab@linux-iscsi.org>
-	 <4CC9329F.40303@garzik.org>
-	 <1288254332.5169.239.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain
-Date: Thu, 28 Oct 2010 01:41:09 -0700
-Message-Id: <1288255269.5169.250.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Thu, 28 Oct 2010 04:57:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=c9fNdI9+TtUxWz5i5ak3IC5UKXv/RtE9f7Nh5aUcsXaG2GnKMhUAFEUQ9XSYLkCTgP
+         M6NcGZXDj1gDL9wSgmWsR+etsFfBfm3MIL6zfJDQuwb2ll/5cpD92/Qdwqd9aOtLFUbh
+         bJVe/u3slIEOtJco4kFrzDz87g1g1xvu+jxXs=
+MIME-Version: 1.0
+In-Reply-To: <1288213557.17571.28.camel@localhost.localdomain>
+References: <1288213257.17571.25.camel@localhost.localdomain>
+	<1288213557.17571.28.camel@localhost.localdomain>
+Date: Thu, 28 Oct 2010 09:57:38 +0100
+Message-ID: <AANLkTinqG_G2pevoYJyiHiBda1ZZS-53Uqz9WEspbMOy@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/1] vhost: Reduce TX used buffer signal for performance
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: "mst@redhat.com" <mst@redhat.com>, David Miller <davem@davemloft.net>,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-10-28 at 01:25 -0700, Nicholas A. Bellinger wrote:
-> On Thu, 2010-10-28 at 04:21 -0400, Jeff Garzik wrote:
-> > On 10/28/2010 03:01 AM, Nicholas A. Bellinger wrote:
-> > > Following yet another round of convincing discussions from jgarzik and jejb
-> > > this afternoon, this RFCv8 patch series follows their recommendation and does a
-> > > SCSI subsystem wide 'push down' of struct Scsi_Host->host_lock usage from
-> > > scsi_dispatch_cmd() into legacy LLDs that require (or we are not sure about)
-> > > the host_lock held while SHT->queuecommand() I/O dispatch occurs.
-> > 
-> > Great!
-> > 
-> > 
-> > > diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-> > > index d050e07..672a8c9 100644
-> > > --- a/drivers/ata/libata-scsi.c
-> > > +++ b/drivers/ata/libata-scsi.c
-> > > @@ -3174,7 +3174,7 @@ static inline int __ata_scsi_queuecmd(struct scsi_cmnd *scmd,
-> > >    *	ATA and ATAPI devices appearing as SCSI devices.
-> > >    *
-> > >    *	LOCKING:
-> > > - *	Releases scsi-layer-held lock, and obtains host lock.
-> > > + *	None
-> > >    *
-> > >    *	RETURNS:
-> > >    *	Return value from __ata_scsi_queuecmd() if @cmd can be queued,
-> > > @@ -3190,7 +3190,6 @@ int ata_scsi_queuecmd(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *))
-> > >
-> > >   	ap = ata_shost_to_port(shost);
-> > >
-> > > -	spin_unlock(shost->host_lock);
-> > >   	spin_lock(ap->lock);
-> > >
-> > >   	ata_scsi_dump_cdb(ap, cmd);
-> > > @@ -3204,7 +3203,6 @@ int ata_scsi_queuecmd(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *))
-> > >   	}
-> > >
-> > >   	spin_unlock(ap->lock);
-> > > -	spin_lock(shost->host_lock);
-> > >   	return rc;
-> > >   }
-> > >
-> > 
-> > This is not an equivalent transformation, because we just lost _irqsave 
-> > and _irqstore.
-> > 
-> > You might want to double-check to ensure this problem is not replicated 
-> > in other non-legacy drivers.
-> 
-> Understood, so for libata this will need to turn into the equivilent
-> spin_lock_irqsave() + spin_unlock_irqrestore() for ap->lock, right..?
-> 
-> So apart from libata that leaves the following LLDs running in host_lock
-> less mode:
-> 
-> drivers/infiniband/ulp/iser/iscsi_iser.c: Running in host_lock less mode (libiscsi)
-> drivers/message/fusion/mptscsih.c: Running in host_lock less mode (internal)
-> drivers/message/fusion/mptfc.c: Running in host_lock less mode (internal)
-> drivers/message/fusion/mptsas.c: Running in host_lock less mode (internal)
-> drivers/message/fusion/mptspi.c: Running in host_lock less mode (internal)
-> drivers/scsi/aic94xx/aic94xx_init.c: Running in host_lock less mode (libsas)
-> drivers/scsi/be2iscsi/be_main.c: Running in host_lock less mode (libiscsi)
-> drivers/scsi/bnx2i/bnx2i_iscsi.c: Running in host_lock less mode (libiscsi)
-> drivers/scsi/fnic/fnic_main.c: Running in host_lock less mode (internal)
-> drivers/scsi/iscsi_tcp.c: Running in host_lock less mode (libiscsi)
-> drivers/scsi/lpfc/lpfc_scsi.c: Running in host_lock less mode (internal)
-> drivers/scsi/mpt2sas/mpt2sas_scsih.c: Running in host_lock less mode (internal)
-> drivers/scsi/mvsas/mv_init.c: Running in host_lock less mode (libsas)
-> drivers/scsi/pm8001/pm8001_init.c: Running in host_lock less mode (libsas)
-> drivers/scsi/qla2xxx/qla_os.c: Running in host_lock less mode (internal)
-> drivers/scsi/qla4xxx/ql4_os.c: Running in host_lock less mode (internal)
-> drivers/scsi/scsi_debug.c: Running in host_lock less mode (internal)
-> drivers/scsi/cxgbi/cxgb3i/cxgb3i.c: Running in host_lock less mode (libiscsi)
-> drivers/scsi/cxgbi/cxgb4i/cxgb4i.c: Running in host_lock less mode (libiscsi)
-> 
-> I will take another look and make sure any LLD specific locks that are
-> obtained in SHT->queuecommand() from the host_lock-less drivers are
-> assuming they need to call internal locks with _irqsave + _irqrestore
-> held and include these into lio-4.0.git/host_lock-less-for-37-v9.
-> 
+On Wed, Oct 27, 2010 at 10:05 PM, Shirley Ma <mashirle@us.ibm.com> wrote:
+> This patch changes vhost TX used buffer signal to guest from one by
+> one to up to 3/4 of vring size. This change improves vhost TX message
+> size from 256 to 8K performance for both bandwidth and CPU utilization
+> without inducing any regression.
 
-Ok, so originally libiscsi, fnic, and lpfc where using
-spin_unlock(host->host_lock) -> spin_lock(host->host_lock)
+Any concerns about introducing latency or does the guest not care when
+TX completions come in?
 
-And libsas, qla2xxx, qla4xxx where using
-spin_unlock_irq(host->host_lock) -> spin_lock_irq(host->host_lock)
+> Signed-off-by: Shirley Ma <xma@us.ibm.com>
+> ---
+>
+>  drivers/vhost/net.c   |   19 ++++++++++++++++++-
+>  drivers/vhost/vhost.c |   31 +++++++++++++++++++++++++++++++
+>  drivers/vhost/vhost.h |    3 +++
+>  3 files changed, 52 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> index 4b4da5b..bd1ba71 100644
+> --- a/drivers/vhost/net.c
+> +++ b/drivers/vhost/net.c
+> @@ -198,7 +198,24 @@ static void handle_tx(struct vhost_net *net)
+>                if (err != len)
+>                        pr_debug("Truncated TX packet: "
+>                                 " len %d != %zd\n", err, len);
+> -               vhost_add_used_and_signal(&net->dev, vq, head, 0);
+> +               /*
+> +                * if no pending buffer size allocate, signal used buffer
+> +                * one by one, otherwise, signal used buffer when reaching
+> +                * 3/4 ring size to reduce CPU utilization.
+> +                */
+> +               if (unlikely(vq->pend))
+> +                       vhost_add_used_and_signal(&net->dev, vq, head, 0);
+> +               else {
+> +                       vq->pend[vq->num_pend].id = head;
 
-Just to verify, you are thinking that those *not* using spin_unlock_irq
-+ spin_lock_irq() for the legacy optimization dispath should have their
-per LLD host lock converted to spin_lock_irqsave() +
-spin_unlock_irqrestore(), right..?
+I don't understand the logic here: if !vq->pend then we assign to
+vq->pend[vq->num_pend].
 
---nab
+> +                       vq->pend[vq->num_pend].len = 0;
+> +                       ++vq->num_pend;
+> +                       if (vq->num_pend == (vq->num - (vq->num >> 2))) {
+> +                               vhost_add_used_and_signal_n(&net->dev, vq,
+> +                                                           vq->pend,
+> +                                                           vq->num_pend);
+> +                               vq->num_pend = 0;
+> +                       }
+> +               }
+>                total_len += len;
+>                if (unlikely(total_len >= VHOST_NET_WEIGHT)) {
+>                        vhost_poll_queue(&vq->poll);
+> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+> index 94701ff..47696d2 100644
+> --- a/drivers/vhost/vhost.c
+> +++ b/drivers/vhost/vhost.c
+> @@ -170,6 +170,16 @@ static void vhost_vq_reset(struct vhost_dev *dev,
+>        vq->call_ctx = NULL;
+>        vq->call = NULL;
+>        vq->log_ctx = NULL;
+> +       /* signal pending used buffers */
+> +       if (vq->pend) {
+> +               if (vq->num_pend != 0) {
+> +                       vhost_add_used_and_signal_n(dev, vq, vq->pend,
+> +                                                   vq->num_pend);
+> +                       vq->num_pend = 0;
+> +               }
+> +               kfree(vq->pend);
+> +       }
+> +       vq->pend = NULL;
+>  }
+>
+>  static int vhost_worker(void *data)
+> @@ -273,7 +283,13 @@ long vhost_dev_init(struct vhost_dev *dev,
+>                dev->vqs[i].heads = NULL;
+>                dev->vqs[i].dev = dev;
+>                mutex_init(&dev->vqs[i].mutex);
+> +               dev->vqs[i].num_pend = 0;
+> +               dev->vqs[i].pend = NULL;
+>                vhost_vq_reset(dev, dev->vqs + i);
+> +               /* signal 3/4 of ring size used buffers */
+> +               dev->vqs[i].pend = kmalloc((dev->vqs[i].num -
+> +                                          (dev->vqs[i].num >> 2)) *
+> +                                          sizeof *vq->peed, GFP_KERNEL);
 
+Has this patch been compile tested?  vq->peed?
+
+Stefan
