@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761561Ab0J1UGV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 16:06:21 -0400
-Received: from thunk.org ([69.25.196.29]:43415 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757707Ab0J1UFw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 16:05:52 -0400
-Date: Thu, 28 Oct 2010 16:05:48 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: sedat.dilek@gmail.com
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-        sfr@canb.auug.org.au, Arnd Bergmann <arnd@arndb.de>,
-        Avinash Kurup <kurup.avinash@gmail.com>
-Subject: Re: [next-20101038] Call trace in ext4
-Message-ID: <20101028200548.GC28126@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, sedat.dilek@gmail.com,
-	Markus Trippelsdorf <markus@trippelsdorf.de>,
-	LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-	sfr@canb.auug.org.au, Arnd Bergmann <arnd@arndb.de>,
-	Avinash Kurup <kurup.avinash@gmail.com>
-References: <AANLkTi=E_uMj_ndGU86DCjX4aDwjHqg3dkwxjQRSJtq6@mail.gmail.com>
- <20101028175221.GA1578@arch.trippelsdorf.de>
- <20101028180118.GC6814@thunk.org>
- <20101028193211.GA28126@thunk.org>
- <AANLkTimHJe9bA-X+JWkspgjb4AZkkgbEFWQiwzO-gx-h@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimHJe9bA-X+JWkspgjb4AZkkgbEFWQiwzO-gx-h@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S933750Ab0J1ULp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 16:11:45 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47074 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934348Ab0J1ULg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 16:11:36 -0400
+Date: Thu, 28 Oct 2010 13:10:29 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, wad@chromium.org, olofj@chromium.org,
+        hughd@chromium.org
+Subject: Re: [PATCH] RFC: vmscan: add min_filelist_kbytes sysctl for
+ protecting the working set
+Message-Id: <20101028131029.ee0aadc0.akpm@linux-foundation.org>
+In-Reply-To: <20101028191523.GA14972@google.com>
+References: <20101028191523.GA14972@google.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 28, 2010 at 09:54:23PM +0200, Sedat Dilek wrote:
+On Thu, 28 Oct 2010 12:15:23 -0700
+Mandeep Singh Baines <msb@chromium.org> wrote:
+
+> On ChromiumOS, we do not use swap.
+
+Well that's bad.  Why not?
+
+> When memory is low, the only way to
+> free memory is to reclaim pages from the file list. This results in a
+> lot of thrashing under low memory conditions. We see the system become
+> unresponsive for minutes before it eventually OOMs. We also see very
+> slow browser tab switching under low memory. Instead of an unresponsive
+> system, we'd really like the kernel to OOM as soon as it starts to
+> thrash. If it can't keep the working set in memory, then OOM.
+> Losing one of many tabs is a better behaviour for the user than an
+> unresponsive system.
 > 
-> Hm, unfortunately NO (see logs).
+> This patch create a new sysctl, min_filelist_kbytes, which disables reclaim
+> of file-backed pages when when there are less than min_filelist_bytes worth
+> of such pages in the cache. This tunable is handy for low memory systems
+> using solid-state storage where interactive response is more important
+> than not OOMing.
 > 
-> I have compiled via M=fs/ext4 in an already compiled build-tree with
-> these 3 patches.
+> With this patch and min_filelist_kbytes set to 50000, I see very little
+> block layer activity during low memory. The system stays responsive under
+> low memory and browser tab switching is fast. Eventually, a process a gets
+> killed by OOM. Without this patch, the system gets wedged for minutes
+> before it eventually OOMs. Below is the vmstat output from my test runs.
+> 
+> BEFORE (notice the high bi and wa, also how long it takes to OOM):
 
-Ok, stupid question.  You did make sure the new ext4 module was
-loaded, right?
+That's an interesting result.
 
-> [  100.884524] ------------[ cut here ]------------
-> [  100.884718] kernel BUG at /home/sd/src/linux-2.6/linux-2.6.36/debian/build/source_i386_none/fs/ext4/inode.c:2721!
+Having the machine "wedged for minutes" thrashing away paging
+executable text is pretty bad behaviour.  I wonder how to fix it. 
+Perhaps simply declaring oom at an earlier stage.
 
-OK, so after the patch, line 2721: changed from page_buffers() to:
+Your patch is certainly simple enough but a bit sad.  It says "the VM
+gets this wrong, so lets just disable it all".  And thereby reduces the
+motivation to fix it for real.
 
-    if (!page_has_buffers(page))
+But the patch definitely improves the situation in real-world
+situations and there's a case to be made that it should be available at
+least as an interim thing until the VM gets fixed for real.  Which
+means that the /proc tunable might disappear again (or become a no-op)
+some time in the future.
 
-page_has_buffers() expands to:
 
-#define page_has_buffers(page)	PagePrivate(page)
-
-which expands to test_bit() call to see if PG_private1 is set in
-page->flags.  There is no BUG_ON anywhere there as far as I can tell.
-
-Line 2721 in the older kernel was page_has_buffers() which does have a
-BUG_ON check.
-
-					- Ted
