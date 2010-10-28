@@ -1,85 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932837Ab0J1HcB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 03:32:01 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:62713 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932356Ab0J1HcA (ORCPT
+	id S932968Ab0J1Hfn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 03:35:43 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:29560 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932618Ab0J1Hfk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 03:32:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:reply-to:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=kLGABM+i08KyBGnsH1px/rSApwBqIGWRn5b3Dp1gtoAHbhimo9XiGhyyZinJLHRoCN
-         cJo7ogA5E7JodHg26HEcng+sQq//xolmM+cRFHHeOdGaxAq9yzgNG0iNL/xin8PWqq+e
-         rq0GQ87ywXAcwMmjHU9XcbC/epDBARPouUfk0=
-Message-ID: <4CC926EA.2070903@gmail.com>
-Date: Thu, 28 Oct 2010 15:31:54 +0800
-From: =?UTF-8?B?IlNpbmdhcG9yZSBDaXRpemVuIE1yLiBUZW8gRW4gTWluZyAoWmhhbmcgRQ==?=
-	 =?UTF-8?B?bm1pbmcpIOW8oOaBqem4oyAi?= 
-	<space.time.universe@gmail.com>
-Reply-To: space.time.universe@gmail.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.1) Gecko/20090814 Fedora/3.0-2.6.b3.fc11 Thunderbird/3.0b3
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: "space.time.universe@gmail.com" <space.time.universe@gmail.com>,
-        "teoenming@hotmail.com" <teoenming@hotmail.com>,
-        zhang_enming@lavabit.com
-Subject: Photographs of Singapore Citizen Mr. Teo En Ming (Zhang Enming)
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Thu, 28 Oct 2010 03:35:40 -0400
+Date: Thu, 28 Oct 2010 09:35:29 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Joe Perches <joe@perches.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: Re: [RFC PATCH] include/linux/kernel.h: Add config option for  
+ pr_fmt(fmt)
+Message-ID: <20101028093529.503c3a28@endymion.delvare>
+In-Reply-To: <1288201301.4145.122.camel@Joe-Laptop>
+References: <1287713982.16920.39.camel@Joe-Laptop>
+	<20101026110335.3a4c7679@endymion.delvare>
+	<1288201301.4145.122.camel@Joe-Laptop>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Photograph of Singapore Citizen Mr. Teo En Ming (Zhang Enming) 张恩鸣 #1:
-http://i.imgur.com/M1FNX.jpg
+On Wed, 27 Oct 2010 10:41:41 -0700, Joe Perches wrote:
+> On Tue, 2010-10-26 at 11:03 +0200, Jean Delvare wrote:
+> > On Thu, 21 Oct 2010 19:19:42 -0700, Joe Perches wrote:
+> > > Change the default #define pr_fmt(fmt) from:
+> > > 	- #define pr_fmt(fmt) fmt
+> > > to:
+> > > 	- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> > > This will standard use of prefixes and prevent the
+> > > addition of new #defines when using pr_<level>.
+> > I'm all for it!
+> > > Adds a config option to use the old style if desired.
+> > Not sure what the idea is. Once  pr_fmt() includes the module name, we
+> > will drop hard-coded prefixes in all log messages throughout the kernel
+> > tree. Once this is done, a kernel built with PR_FMT_IS_KBUILD_MODNAME=n
+> > would become horribly confusing.
+> 
+> True.  The idea is to allow a transition period and remove
+> this PR_FMT_IS_KBUILD_MODNAME config option later.
 
-Photograph of Singapore Citizen Mr. Teo En Ming (Zhang Enming) 张恩鸣 #2:
-http://i51.tinypic.com/11u9irm.jpg
+I don't buy this, sorry. During the "transition period", neither value
+of this option will produce good results. One will lead to duplicate
+prefixes and the other will lead to missing prefixes.
 
-Photograph of Singapore Citizen Mr. Teo En Ming (Zhang Enming) 张恩鸣 #3:
-http://www.imagevimage.com/images/Singapore_Citizen_Mr._Teo_En_Ming_%28Zhang_Enming%29.jpg
+I think it's preferable to drop this option, and prepare patches for
+all drivers, so that the change happens all at once and we're done with
+it. You seem to have all the tools to produce such patches, right?
 
-Photograph of Singapore Citizen Mr. Teo En Ming (Zhang Enming) 张恩鸣 #4:
-http://www.merrypic.com/files/o397beqo7qw8wky5rjno.jpg
+Of course there will be 1% of all messages which we won't get right,
+and they will have t be fixed afterwards, but I don't think this is a
+problem.
 
-Photograph of Singapore Citizen Mr. Teo En Ming (Zhang Enming) 张恩鸣 #5:
-http://piczasso.com/i/yicuz.jpg
+> > How relevant is the x86 defconfig?
+> > It doesn't include any hardware-specific driver, does it?
+> 
+> It adds lots of x86 specific drivers...
+> 
+> > I've used the following grep to find them: grep -I 'pr_[a-z]*([^"]'
+> > Let me know if you have anything better.
+> 
+> Perhaps use -P
+> "\bpr_(emerg|alert|crit|err|warning|warn|notice|info|cont|debug)\s*\(\s*\"\w+:"
 
-Photograph of Singapore Citizen Mr. Teo En Ming (Zhang Enming) 张恩鸣 #6:
-http://www.freeimagehosting.net/uploads/1b553b21ae.jpg
+Ah, right. This finds the hard-coded prefixes, my approach only caught
+the constant prefixes. So we want to run both.
 
-Thank you very much for your kind attention.
+> Another way is to use:
+> strings <vmlinux|other> | grep -P "^<.>\w+:"
+
+This catches everything, but you don't always know where the string
+comes from, so it isn't as convenient.
 
 -- 
-Yours sincerely,
-
-Singapore Citizen Mr. Teo En Ming (Zhang Enming) 张恩鸣 Dip(Mechatronics) BEng(Hons)(Mechanical Engineering)
-Singapore Identity Card No.: S78*6*2*H
-Location: Bedok Reservoir Road, Singapore
-ZIP: 470103
-Mobile Phone (Starhub Pre-paid): +65-8369-2618
-Windows Live Messenger: teoenming-at-hotmail.com
-My Youtube videos: http://www.youtube.com/user/enmingteo
-Alma Maters:
-[1] Singapore Polytechnic (Graduated 1998)
-[2] National University of Singapore (Graduated 2006)
-My Open Letter (Plea for Medical Help/Assistance) to World Leaders (Updated 28 August 2010):-
-http://lists.mcs.anl.gov/pipermail/mpich-discuss/2010-August/007811.html
-http://mythtv.org/pipermail/mythtv-users/2010-August/295952.html
-http://archives.gentoo.org/gentoo-user/msg_f6a341d9623fda17880159b137c07335.xml
-Photograph of Singapore Citizen Mr. Teo En Ming (Zhang Enming) 张恩鸣 #1:
-http://i.imgur.com/M1FNX.jpg
-Photograph of Singapore Citizen Mr. Teo En Ming (Zhang Enming) 张恩鸣 #2:
-http://i51.tinypic.com/11u9irm.jpg
-Photograph of Singapore Citizen Mr. Teo En Ming (Zhang Enming) 张恩鸣 #3:
-http://www.imagevimage.com/images/Singapore_Citizen_Mr._Teo_En_Ming_%28Zhang_Enming%29.jpg
-Photograph of Singapore Citizen Mr. Teo En Ming (Zhang Enming) 张恩鸣 #4:
-http://www.merrypic.com/files/o397beqo7qw8wky5rjno.jpg
-Photograph of Singapore Citizen Mr. Teo En Ming (Zhang Enming) 张恩鸣 #5:
-http://piczasso.com/i/yicuz.jpg
-Photograph of Singapore Citizen Mr. Teo En Ming (Zhang Enming) 张恩鸣 #6:
-http://www.freeimagehosting.net/uploads/1b553b21ae.jpg
-
+Jean Delvare
