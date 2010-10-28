@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761546Ab0J1VIg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 17:08:36 -0400
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:53179
-	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759808Ab0J1VI3 (ORCPT
+	id S933795Ab0J1VJY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 17:09:24 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59871 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758423Ab0J1VJS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 17:08:29 -0400
-X-SpamScore: -5
-X-BigFish: VS-5(z3b68iz98dNzz1202hzz8275dhz2dh2a8h65h)
-X-Spam-TCS-SCL: 4:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:de01egw02.freescale.net;RD:de01egw02.freescale.net;EFVD:NLI
-Message-ID: <4CC9E646.6070405@freescale.com>
-Date: Thu, 28 Oct 2010 16:08:22 -0500
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.13) Gecko/20101013 Fedora/2.0.8-2.fc13 SeaMonkey/2.0.8
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: gregkh <gregkh@suse.de>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Writing a console/tty driver -- how to use tty_port?
-References: <4CC893CD.7020701@freescale.com> <201010282257.33898.arnd@arndb.de>
-In-Reply-To: <201010282257.33898.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Thu, 28 Oct 2010 17:09:18 -0400
+Date: Thu, 28 Oct 2010 14:07:25 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>, Tejun Heo <tj@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Brian Gerst <brgerst@gmail.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org, mingo@elte.hu
+Subject: Re: [PATCH] numa: fix slab_node(MPOL_BIND)
+Message-Id: <20101028140725.755aea50.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1010281154150.26782@router.home>
+References: <AANLkTinnc3vBSmewf7ixuOSDYxG+5VNiGaB-vSrDNRiO@mail.gmail.com>
+	<1288158182-1753-1-git-send-email-brgerst@gmail.com>
+	<1288159670.2652.181.camel@edumazet-laptop>
+	<1288173442.15336.1490.camel@twins>
+	<1288186405.2709.117.camel@edumazet-laptop>
+	<4CC82C2F.1020707@kernel.org>
+	<1288187870.2709.128.camel@edumazet-laptop>
+	<4CC83067.5000009@kernel.org>
+	<1288189461.2709.144.camel@edumazet-laptop>
+	<1288190387.2709.147.camel@edumazet-laptop>
+	<4CC83A85.3070608@kernel.org>
+	<1288192868.2709.152.camel@edumazet-laptop>
+	<4CC846D5.50106@kernel.org>
+	<1288195668.2709.167.camel@edumazet-laptop>
+	<1288200823.5619.46.camel@edumazet-laptop>
+	<AANLkTikmNc7qqDzoff_3i_FRbG=pmOC7TG3eeZnmvaTD@mail.gmail.com>
+	<alpine.DEB.2.00.1010281154150.26782@router.home>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 Oct 2010 21:08:54.0554 (UTC) FILETIME=[5415FFA0:01CB76E4]
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann wrote:
-> If the device is not a UART, the best option may be to make the driver
-> a backend to the hvc driver, like e.g. drivers/char/hvc_tile.c.
+On Thu, 28 Oct 2010 11:55:18 -0500 (CDT)
+Christoph Lameter <cl@linux.com> wrote:
 
-The current version *is* a backend to hvc, but I have to abandon that because of
-this thread:
+> On Thu, 28 Oct 2010, Linus Torvalds wrote:
+> 
+> > And so does - although less obviously - mm/vmscan.c for the
+> > wait_iff_confgested() thing.
+> >
+> > So are those buggy too, since first_zones_zonelist() can apparently return NULL?
+> 
+> The code is fine.
+> 
+> first_zones_zonelist() can only return NULL for the case that a nodemask
+> was specified and the code in vmscan.c does not specify a nodemask.
 
-http://lists.ozlabs.org/pipermail/linuxppc-dev/2010-September/085664.html
-
-I posted a patch that causes hvc to spin if the backend driver returns -EAGAIN,
-which is my driver does when the output buffer is full.
-
-In other words, hvc does not support backend drivers that can detect full output
-buffers.
-
-> This works for all devices with or without interrupts that don't need
-> to set up the communication parameters but simply provide a read/write
-> character interface.
-
-If my patch were accepted, I wouldn't need to do the rewrite.  Dropping
-characters during a printk() is not acceptable for us.
-
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+Geeze, how did you work that out and how the heck was anyone else
+supposed to know this :(
 
