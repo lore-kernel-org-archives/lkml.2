@@ -1,55 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934566Ab0J1Upy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 16:45:54 -0400
-Received: from kroah.org ([198.145.64.141]:48535 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758532Ab0J1Upn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 16:45:43 -0400
-Date: Thu, 28 Oct 2010 13:45:09 -0700
-From: Greg KH <greg@kroah.com>
-To: Vasiliy Kulikov <segooon@gmail.com>, Iliyan Malchev <ibm@android.com>,
-        Pavel Machek <pavel@ucw.cz>, Brian Swetland <swetland@google.com>,
-        San Mehat <san@android.com>
-Cc: kernel-janitors@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        devel@driverdev.osuosl.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 1/8] staging: dream: fix information leak to userland
-Message-ID: <20101028204509.GC22785@kroah.com>
-References: <1288296098-18936-1-git-send-email-segooon@gmail.com>
+	id S933716Ab0J1Urv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 16:47:51 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:56296 "EHLO
+	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757047Ab0J1Urp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 16:47:45 -0400
+X-SpamScore: -5
+X-BigFish: VS-5(z3b68iz98dNzz1202hzzz2dh2a8h63h)
+X-Spam-TCS-SCL: 2:0
+Message-ID: <4CC9E168.7050903@freescale.com>
+Date: Thu, 28 Oct 2010 15:47:36 -0500
+From: Timur Tabi <timur@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.13) Gecko/20101013 Fedora/2.0.8-2.fc13 SeaMonkey/2.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288296098-18936-1-git-send-email-segooon@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: gregkh <gregkh@suse.de>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: Writing a console/tty driver -- how to use tty_port?
+References: <4CC893CD.7020701@freescale.com> <20101027231948.5e62dd09@lxorguk.ukuu.org.uk> <4CC9DE56.8070707@freescale.com>
+In-Reply-To: <4CC9DE56.8070707@freescale.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 28 Oct 2010 20:48:08.0882 (UTC) FILETIME=[6D9B8920:01CB76E1]
+X-Reverse-DNS: az33egw02.freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 29, 2010 at 12:01:37AM +0400, Vasiliy Kulikov wrote:
-> Structure msm_audio_stats is copied to userland with some fields unitialized.
-> It leads to leaking of contents of kernel stack memory.
-> Also struct msm_audio_config has field "unused" of type array of 3 elements,
-> not 4.  Instead of this, initialize field "type".
-> 
-> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-> ---
->  drivers/staging/dream/qdsp5/audio_aac.c |    3 ++-
+Timur Tabi wrote:
+> Assuming that both calls to tty_init_termios(tty) return 0, these three lines
+> will be executed twice:
 
-{sigh}
+Ugh, never mind.  I didn't notice the "return ret;" after it unlocks the kernel.
 
-I'd really like to just drop this whole driver as I feel it's _way_
-behind whatever anyone is really using "in the wild".
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
 
-Actually, I doubt that anyone even uses this thing, do they?
-
-Any objection to me just dropping the drivers/staging/dream/ tree?
-People should be working on the chipset-specific driver tree here
-instead, right?
-
-Pavel, it looks like you're not doing any dream work anymore, any
-problems with me dropping it?
-
-thanks,
-
-greg k-h
