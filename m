@@ -1,38 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934095Ab0J1R2f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 13:28:35 -0400
-Received: from mx2.compro.net ([12.186.155.4]:58893 "EHLO mx2.compro.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934077Ab0J1R2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 13:28:30 -0400
-X-IronPort-AV: E=Sophos;i="4.58,253,1286164800"; 
-   d="scan'208";a="5969919"
-Message-ID: <4CC9B2BD.1050504@compro.net>
-Date: Thu, 28 Oct 2010 13:28:29 -0400
-From: Mark Hounschell <markh@compro.net>
-Reply-To: markh@compro.net
-Organization: Compro Computer Svcs.
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100914 SUSE/3.0.8 Thunderbird/3.0.8
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Dragoslav Zaric <zaricdragoslav@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: Tickles scheduler
-References: <AANLkTimzEDtfUKajFPgGOhifPhyRQboZbKNbypBaKpKO@mail.gmail.com> <alpine.DEB.2.00.1010260959250.10975@odin.tweek.dk> <alpine.DEB.2.00.1010271725260.9704@router.home> <AANLkTimOx=cMr+cwzEc8z7puZDEpa_7aDOxCPSzotjBP@mail.gmail.com> <alpine.DEB.2.00.1010280845320.25874@router.home>
-In-Reply-To: <alpine.DEB.2.00.1010280845320.25874@router.home>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1760148Ab0J1RbN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 13:31:13 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:33111 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751420Ab0J1RbK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 13:31:10 -0400
+X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=XRlQGgV7sb0A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=8B_Zd0MxBC68SoALtLAA:9 a=GUVIfecJOtQYTYVFGevP-vTfBukA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] Fix missing dependency of PCH_GBE driver
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, error27@gmail.com,
+        masa-korg@dsn.okisemi.com, akpm@linux-foundation.org
+In-Reply-To: <20101028.101618.226776102.davem@davemloft.net>
+References: <1288268189.18238.173.camel@gandalf.stny.rr.com>
+	 <20101028.101618.226776102.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 28 Oct 2010 13:31:07 -0400
+Message-ID: <1288287067.18238.272.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/2010 09:47 AM, Christoph Lameter wrote:
-> The current plan is to switch off the tick when a process is running that
-> cannot be preempted ("realtime" (very bad choice of terms) tasks).
-> 
+On Thu, 2010-10-28 at 10:16 -0700, David Miller wrote:
 
-In what kind of time frame is this plan? And in the plan what will be the criteria for
-"cannot be preempted"?
+> The canonical way to handle this is to use 'select'.  Thus,
+> I've committed the following to fix this.
 
-Thanks
-Mark
+Yeah, I was thinking that too after I posted it.
+
+-- Steve
+
+
