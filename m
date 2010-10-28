@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933829Ab0J1VIA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 17:08:00 -0400
-Received: from c-67-162-90-113.hsd1.in.comcast.net ([67.162.90.113]:52481 "HELO
-	kosh.dhis.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1757856Ab0J1VHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 17:07:55 -0400
-Message-ID: <20101028210753.22240.qmail@kosh.dhis.org>
-From: pacman@kosh.dhis.org
-Subject: Re: Pegasos OHCI bug (was Re: PROBLEM: memory corrupting bug,
-To: segher@kernel.crashing.org (Segher Boessenkool)
-Date: Thu, 28 Oct 2010 16:07:53 -0500 (GMT+5)
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-In-Reply-To: <52441.84.105.60.153.1288295412.squirrel@gate.crashing.org>
+	id S1761173Ab0J1VIN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 17:08:13 -0400
+Received: from kroah.org ([198.145.64.141]:46048 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759658Ab0J1VIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 17:08:07 -0400
+Date: Thu, 28 Oct 2010 14:08:02 -0700
+From: Greg KH <greg@kroah.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Vasiliy Kulikov <segooon@gmail.com>, Iliyan Malchev <ibm@android.com>,
+        Brian Swetland <swetland@google.com>, San Mehat <san@android.com>,
+        kernel-janitors@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        devel@driverdev.osuosl.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 1/8] staging: dream: fix information leak to userland
+Message-ID: <20101028210802.GA23773@kroah.com>
+References: <1288296098-18936-1-git-send-email-segooon@gmail.com>
+ <20101028204509.GC22785@kroah.com>
+ <20101028205831.GD19421@elf.ucw.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20101028205831.GD19421@elf.ucw.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Segher Boessenkool writes:
+On Thu, Oct 28, 2010 at 10:58:31PM +0200, Pavel Machek wrote:
+> Hi!
 > 
-> > So is it wrong to leave the host controller enabled when the OS is booted?
+> > > Structure msm_audio_stats is copied to userland with some fields unitialized.
+> > > It leads to leaking of contents of kernel stack memory.
+> > > Also struct msm_audio_config has field "unused" of type array of 3 elements,
+> > > not 4.  Instead of this, initialize field "type".
+> > > 
+> > > Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+> > > ---
+> > >  drivers/staging/dream/qdsp5/audio_aac.c |    3 ++-
+> > 
+> > {sigh}
+> > 
+> > I'd really like to just drop this whole driver as I feel it's _way_
+> > behind whatever anyone is really using "in the wild".
+> > 
+> > Actually, I doubt that anyone even uses this thing, do they?
 > 
-> Yes.  Or, rather, there should be some way for the client to turn off
-> all dma and interrupt activity; if the client closes the ihandles in
-> "/chosen", and perhaps calls "quiesce", that should be enough.
-
-Sounds good to me, I only wish someone had written down what "quiesce" means.
-
-> >
-> > Almost all of my devices are under that PCI node. What will I prove by
-> > disabling them?
+> Not sure, you should definitely talk to codeaurora folks.
 > 
-> You should put it after "load", and before "go".
+> > Any objection to me just dropping the drivers/staging/dream/ tree?
+> > People should be working on the chipset-specific driver tree here
+> > instead, right?
 > 
-> It should give you a working system; it's a sledgehammer workaround.
+> codeaurora people should know...
 
-I can do it a little more gracefully than that. This works to deactivate the
-problem devices manually:
+Which specific ones?  No one seems to be contributing to the
+drivers/staging/dream/ anymore, and there are a number of out-of-tree
+dream trees floating around now.
 
-  1 lbflip 80000000 8 + rl!
-  1 lbflip 80001000 8 + rl!
+> > Pavel, it looks like you're not doing any dream work anymore, any
+> > problems with me dropping it?
+> 
+> Too busy to do any real work on Dream, sorry :-(.
 
-where 80000000 and 80001000 have been obtained from
-/pci@80000000/usb@5/assigned-addresses and
-/pci@80000000/usb@5,1/assigned-addresses; 8 is the offset of the
-HcCommandStatus register; and the 1 bit is HostControllerReset (HCR).
+Ok, I think I'll just drop it unless someone screams.
 
-Now I'm just trying to find the more correct way of doing it, without
-hardcoded addresses. That'll be something like this:
+thanks,
 
-  search the device tree for OHCI nodes
-  for each OHCI node
-    get assigned-addresses
-    map-in
-    set HCR
-    wait for acknowledgement
-    map-out
-
-which can be done any time before the quiesce call, since that marks the
-point where the kernel assumes that there are no devices writing to memory.
-Sound good?
-
--- 
-Alan Curry
+greg k-h
