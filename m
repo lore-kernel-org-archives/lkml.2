@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933096Ab0J1MQf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 08:16:35 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:33201 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932988Ab0J1MQc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 08:16:32 -0400
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=zKaw4EI_zqEA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=ujcgHWeCht_Hv3SW8zUA:9 a=idfR7dOjmNrh0CXizOQA:7 a=79PcQq05JtbH15GOgiAZgL70RAIA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: [PATCH] Fix missing dependency of PCH_GBE driver
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
-Cc: "David S. Miller" <davem@davemloft.net>, Dan Carpenter <error27@gmail.com>,
-        Masayuki Ohtake <masa-korg@dsn.okisemi.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 28 Oct 2010 08:16:29 -0400
-Message-ID: <1288268189.18238.173.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1758194Ab0J1MR7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 08:17:59 -0400
+Received: from DMZ-MAILSEC-SCANNER-8.MIT.EDU ([18.7.68.37]:58704 "EHLO
+	dmz-mailsec-scanner-8.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752521Ab0J1MR6 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 08:17:58 -0400
+X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Oct 2010 08:17:58 EDT
+X-AuditID: 12074425-b7c98ae000000a04-56-4cc968c8fdee
+Subject: Re: -tip: origin tree build failure (was: [GIT PULL] ext4 update for 2.6.37)
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=windows-1252
+From: Theodore Tso <tytso@MIT.EDU>
+In-Reply-To: <20101028075631.GA7690@elte.hu>
+Date: Thu, 28 Oct 2010 08:12:50 -0400
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <698D7018-682F-4D8A-A3A6-079514669D9F@mit.edu>
+References: <E1PBKT9-0004Uk-Sm@tytso-glaptop> <20101028075631.GA7690@elte.hu>
+To: Ingo Molnar <mingo@elte.hu>
+X-Mailer: Apple Mail (2.1081)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While doing some randconfigs I stumbled across this build error:
 
-ERROR: "mii_ethtool_gset" [drivers/net/pch_gbe/pch_gbe.ko] undefined!
-ERROR: "generic_mii_ioctl" [drivers/net/pch_gbe/pch_gbe.ko] undefined!
-ERROR: "mii_nway_restart" [drivers/net/pch_gbe/pch_gbe.ko] undefined!
-ERROR: "mii_check_gmii_support" [drivers/net/pch_gbe/pch_gbe.ko] undefined!
-ERROR: "mii_link_ok" [drivers/net/pch_gbe/pch_gbe.ko] undefined!
-ERROR: "mii_ethtool_sset" [drivers/net/pch_gbe/pch_gbe.ko] undefined!
+On Oct 28, 2010, at 3:56 AM, Ingo Molnar wrote:
 
-The config option PCH_GBE is missing the dependency of MII.
+> 
+> hi Ted,
+> 
+>> Theodore Ts'o (18):
+>>      ext4: rename {exit,init}_ext4_*() to ext4_{exit,init}_*()
+> 
+> Today's -tip fails to build due to upstream commit 5dabfc7 ("ext4: rename 
+> {exit,init}_ext4_*() to ext4_{exit,init}_*()"), on all[yes/mod]config with 
+> CONFIG_EXT4_FS_XATTR disabled:
+> 
+>  fs/ext4/super.c:4776: error: implicit declaration of function ‘ext4_init_xattr’
+> 
+> Commit 5dabfc7 renamed init_ext4_xattr to ext4_init_xattr but forgot to update the 
+> definition in fs/ext4/xattr.h. The patch below fixes it.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Acked-by: "Theodore Ts'o" <tytso@mit.edu>
 
-diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-index 9334539..cf9769c 100644
---- a/drivers/net/Kconfig
-+++ b/drivers/net/Kconfig
-@@ -2540,7 +2540,7 @@ source "drivers/net/stmmac/Kconfig"
- 
- config PCH_GBE
- 	tristate "PCH Gigabit Ethernet"
--	depends on PCI
-+	depends on PCI && MII
- 	---help---
- 	  This is a gigabit ethernet driver for Topcliff PCH.
- 	  Topcliff PCH is the platform controller hub that is used in Intel's
+Thanks for catching this, my bad.
 
+-- Ted
 
