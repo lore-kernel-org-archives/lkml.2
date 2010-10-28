@@ -1,130 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933468Ab0J1N5S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 09:57:18 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:43228 "EHLO
+	id S933500Ab0J1N5U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 09:57:20 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:39011 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933326Ab0J1N4u (ORCPT
+	with ESMTP id S933300Ab0J1N4t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 09:56:50 -0400
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=A-NSifI8fewA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=oGMlB6cnAAAA:8 a=Op-mwl0xAAAA:8 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=lX7lPQoMTCHELtWkhWsA:9 a=ymEWPR7M_glonWn4VjQA:7 a=3Agao2Fpp8J5eE1tXMFHEoBgWggA:4 a=CY6gl2JlH4YA:10 a=d4CUUju0HPYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Thu, 28 Oct 2010 09:56:49 -0400
+X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=q8LdYn1-A-UA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=enOvQawGAAAA:8 a=20KFwNOVAAAA:8 a=WPyIoOwQAAAA:8 a=meVymXHHAAAA:8 a=bWhlw3oZTvss8zEWJQIA:9 a=wvEa9j2gT5RlsGPJnp4A:7 a=3IAx4QljvZyhzZJroGqarOYyVEIA:4 a=bkT6KWdcy0IA:10 a=jEp0ucaQiEUA:10 a=1DbiqZag68YA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20101028135648.650490093@goodmis.org>
+Message-Id: <20101028135648.113943857@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 28 Oct 2010 09:55:55 -0400
+Date: Thu, 28 Oct 2010 09:55:53 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Daniel Drake <dsd@laptop.org>, Jason Baron <jbaron@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 7/8] x86, ftrace: Use safe noops, drop trap test
+        Jason Baron <jbaron@redhat.com>, Ralf Baechle <ralf@linux-mips.org>,
+        David Daney <ddaney@caviumnetworks.com>
+Subject: [PATCH 5/8] jump label: Add MIPS support.
 References: <20101028135548.055490014@goodmis.org>
-Content-Disposition: inline; filename=0007-x86-ftrace-Use-safe-noops-drop-trap-test.patch
+Content-Disposition: inline; filename=0005-jump-label-Add-MIPS-support.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: H. Peter Anvin <hpa@zytor.com>
+From: David Daney <ddaney@caviumnetworks.com>
 
-Always use a safe 5-byte noop sequence.  Drop the trap test, since it
-is known to return false negatives on some virtualization platforms on
-32 bits.  The resulting code is both simpler and safer.
+When in Rome...
 
-Cc: Daniel Drake <dsd@laptop.org>
+In order not to be left behind, we add jump label support for MIPS.
+
+Tested on 64-bit big endian (Octeon), and 32-bit little endian
+(malta/qemu).
+
 Cc: Jason Baron <jbaron@redhat.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Acked-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+LKML-Reference: <1286218615-24011-3-git-send-email-ddaney@caviumnetworks.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/kernel/alternative.c |   69 +++++++++--------------------------------
- 1 files changed, 15 insertions(+), 54 deletions(-)
+ arch/mips/Kconfig                  |    1 +
+ arch/mips/include/asm/jump_label.h |   48 ++++++++++++++++++++++++++++++++++
+ arch/mips/kernel/Makefile          |    3 +-
+ arch/mips/kernel/jump_label.c      |   50 ++++++++++++++++++++++++++++++++++++
+ arch/mips/kernel/module.c          |    5 +++
+ 5 files changed, 106 insertions(+), 1 deletions(-)
+ create mode 100644 arch/mips/include/asm/jump_label.h
+ create mode 100644 arch/mips/kernel/jump_label.c
 
-diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-index a36bb90..0b30214 100644
---- a/arch/x86/kernel/alternative.c
-+++ b/arch/x86/kernel/alternative.c
-@@ -644,65 +644,26 @@ void *__kprobes text_poke_smp(void *addr, const void *opcode, size_t len)
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index 46cae2b..ebea886 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -12,6 +12,7 @@ config MIPS
+ 	select HAVE_FUNCTION_GRAPH_TRACER
+ 	select HAVE_KPROBES
+ 	select HAVE_KRETPROBES
++	select HAVE_ARCH_JUMP_LABEL
+ 	select RTC_LIB if !MACH_LOONGSON
+ 	select GENERIC_ATOMIC64 if !64BIT
  
- #if defined(CONFIG_DYNAMIC_FTRACE) || defined(HAVE_JUMP_LABEL)
- 
--unsigned char ideal_nop5[IDEAL_NOP_SIZE_5];
-+#ifdef CONFIG_X86_64
-+unsigned char ideal_nop5[5] = { 0x66, 0x66, 0x66, 0x66, 0x90 };
+diff --git a/arch/mips/include/asm/jump_label.h b/arch/mips/include/asm/jump_label.h
+new file mode 100644
+index 0000000..7622ccf
+--- /dev/null
++++ b/arch/mips/include/asm/jump_label.h
+@@ -0,0 +1,48 @@
++/*
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ *
++ * Copyright (c) 2010 Cavium Networks, Inc.
++ */
++#ifndef _ASM_MIPS_JUMP_LABEL_H
++#define _ASM_MIPS_JUMP_LABEL_H
++
++#include <linux/types.h>
++
++#ifdef __KERNEL__
++
++#define JUMP_LABEL_NOP_SIZE 4
++
++#ifdef CONFIG_64BIT
++#define WORD_INSN ".dword"
 +#else
-+unsigned char ideal_nop5[5] = { 0x3e, 0x8d, 0x74, 0x26, 0x00 };
++#define WORD_INSN ".word"
 +#endif
++
++#define JUMP_LABEL(key, label)						\
++	do {								\
++		asm goto("1:\tnop\n\t"					\
++			"nop\n\t"					\
++			".pushsection __jump_table,  \"a\"\n\t"		\
++			WORD_INSN " 1b, %l[" #label "], %0\n\t"		\
++			".popsection\n\t"				\
++			: :  "i" (key) :  : label);			\
++	} while (0)
++
++
++#endif /* __KERNEL__ */
++
++#ifdef CONFIG_64BIT
++typedef u64 jump_label_t;
++#else
++typedef u32 jump_label_t;
++#endif
++
++struct jump_entry {
++	jump_label_t code;
++	jump_label_t target;
++	jump_label_t key;
++};
++
++#endif /* _ASM_MIPS_JUMP_LABEL_H */
+diff --git a/arch/mips/kernel/Makefile b/arch/mips/kernel/Makefile
+index 8088498..c4a40e9 100644
+--- a/arch/mips/kernel/Makefile
++++ b/arch/mips/kernel/Makefile
+@@ -6,7 +6,8 @@ extra-y		:= head.o init_task.o vmlinux.lds
  
- void __init arch_init_ideal_nop5(void)
- {
--	extern const unsigned char ftrace_test_p6nop[];
--	extern const unsigned char ftrace_test_nop5[];
--	extern const unsigned char ftrace_test_jmp[];
--	int faulted = 0;
--
- 	/*
--	 * There is no good nop for all x86 archs.
--	 * We will default to using the P6_NOP5, but first we
--	 * will test to make sure that the nop will actually
--	 * work on this CPU. If it faults, we will then
--	 * go to a lesser efficient 5 byte nop. If that fails
--	 * we then just use a jmp as our nop. This isn't the most
--	 * efficient nop, but we can not use a multi part nop
--	 * since we would then risk being preempted in the middle
--	 * of that nop, and if we enabled tracing then, it might
--	 * cause a system crash.
-+	 * There is no good nop for all x86 archs.  This selection
-+	 * algorithm should be unified with the one in find_nop_table(),
-+	 * but this should be good enough for now.
- 	 *
--	 * TODO: check the cpuid to determine the best nop.
-+	 * For cases other than the ones below, use the safe (as in
-+	 * always functional) defaults above.
- 	 */
--	asm volatile (
--		"ftrace_test_jmp:"
--		"jmp ftrace_test_p6nop\n"
--		"nop\n"
--		"nop\n"
--		"nop\n"  /* 2 byte jmp + 3 bytes */
--		"ftrace_test_p6nop:"
--		P6_NOP5
--		"jmp 1f\n"
--		"ftrace_test_nop5:"
--		".byte 0x66,0x66,0x66,0x66,0x90\n"
--		"1:"
--		".section .fixup, \"ax\"\n"
--		"2:	movl $1, %0\n"
--		"	jmp ftrace_test_nop5\n"
--		"3:	movl $2, %0\n"
--		"	jmp 1b\n"
--		".previous\n"
--		_ASM_EXTABLE(ftrace_test_p6nop, 2b)
--		_ASM_EXTABLE(ftrace_test_nop5, 3b)
--		: "=r"(faulted) : "0" (faulted));
--
--	switch (faulted) {
--	case 0:
--		pr_info("converting mcount calls to 0f 1f 44 00 00\n");
--		memcpy(ideal_nop5, ftrace_test_p6nop, IDEAL_NOP_SIZE_5);
--		break;
--	case 1:
--		pr_info("converting mcount calls to 66 66 66 66 90\n");
--		memcpy(ideal_nop5, ftrace_test_nop5, IDEAL_NOP_SIZE_5);
--		break;
--	case 2:
--		pr_info("converting mcount calls to jmp . + 5\n");
--		memcpy(ideal_nop5, ftrace_test_jmp, IDEAL_NOP_SIZE_5);
--		break;
--	}
--
-+#ifdef CONFIG_X86_64
-+	/* Don't use these on 32 bits due to broken virtualizers */
-+	if (boot_cpu_data.x86_vendor == X86_VENDOR_INTEL)
-+		memcpy(ideal_nop5, p6_nops[5], 5);
-+#endif
- }
- #endif
+ obj-y		+= cpu-probe.o branch.o entry.o genex.o irq.o process.o \
+ 		   ptrace.o reset.o setup.o signal.o syscall.o \
+-		   time.o topology.o traps.o unaligned.o watch.o vdso.o
++		   time.o topology.o traps.o unaligned.o watch.o vdso.o \
++		   jump_label.o
+ 
+ ifdef CONFIG_FUNCTION_TRACER
+ CFLAGS_REMOVE_ftrace.o = -pg
+diff --git a/arch/mips/kernel/jump_label.c b/arch/mips/kernel/jump_label.c
+new file mode 100644
+index 0000000..52d3c70
+--- /dev/null
++++ b/arch/mips/kernel/jump_label.c
+@@ -0,0 +1,50 @@
++/*
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ *
++ * Copyright (c) 2010 Cavium Networks, Inc.
++ */
++
++#include <linux/jump_label.h>
++#include <linux/kernel.h>
++#include <linux/memory.h>
++#include <linux/mutex.h>
++#include <linux/types.h>
++#include <linux/cpu.h>
++
++#include <asm/cacheflush.h>
++#include <asm/inst.h>
++
++#define J_RANGE_MASK ((1ul << 28) - 1)
++
++void arch_jump_label_transform(struct jump_entry *e,
++			       enum jump_label_type type)
++{
++	union mips_instruction insn;
++	union mips_instruction *insn_p =
++		(union mips_instruction *)(unsigned long)e->code;
++
++	/* Jump only works within a 256MB aligned region. */
++	BUG_ON((e->target & ~J_RANGE_MASK) != (e->code & ~J_RANGE_MASK));
++
++	/* Target must have 4 byte alignment. */
++	BUG_ON((e->target & 3) != 0);
++
++	if (type == JUMP_LABEL_ENABLE) {
++		insn.j_format.opcode = j_op;
++		insn.j_format.target = (e->target & J_RANGE_MASK) >> 2;
++	} else {
++		insn.word = 0; /* nop */
++	}
++
++	get_online_cpus();
++	mutex_lock(&text_mutex);
++	*insn_p = insn;
++
++	flush_icache_range((unsigned long)insn_p,
++			   (unsigned long)insn_p + sizeof(*insn_p));
++
++	mutex_unlock(&text_mutex);
++	put_online_cpus();
++}
+diff --git a/arch/mips/kernel/module.c b/arch/mips/kernel/module.c
+index 6f51dda..bb9cde4 100644
+--- a/arch/mips/kernel/module.c
++++ b/arch/mips/kernel/module.c
+@@ -30,6 +30,8 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/spinlock.h>
++#include <linux/jump_label.h>
++
+ #include <asm/pgtable.h>	/* MODULE_START */
+ 
+ struct mips_hi16 {
+@@ -390,6 +392,9 @@ int module_finalize(const Elf_Ehdr *hdr,
+ 	const Elf_Shdr *s;
+ 	char *secstrings = (void *)hdr + sechdrs[hdr->e_shstrndx].sh_offset;
+ 
++	/* Make jump label nops. */
++	jump_label_apply_nops(me);
++
+ 	INIT_LIST_HEAD(&me->arch.dbe_list);
+ 	for (s = sechdrs; s < sechdrs + hdr->e_shnum; s++) {
+ 		if (strcmp("__dbe_table", secstrings + s->sh_name) != 0)
 -- 
 1.7.1
 
