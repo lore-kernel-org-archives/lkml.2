@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758736Ab0J1SzZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 14:55:25 -0400
-Received: from www.tglx.de ([62.245.132.106]:52456 "EHLO www.tglx.de"
+	id S1761431Ab0J1Szk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 14:55:40 -0400
+Received: from thunk.org ([69.25.196.29]:37694 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758731Ab0J1SzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 14:55:19 -0400
-Date: Thu, 28 Oct 2010 20:54:18 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Rabin Vincent <rabin@rab.in>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] genirq: handle shared irqs in handle_nested_irq()
-In-Reply-To: <1288288718-1188-1-git-send-email-rabin@rab.in>
-Message-ID: <alpine.LFD.2.00.1010282053180.2692@localhost6.localdomain6>
-References: <1288288718-1188-1-git-send-email-rabin@rab.in>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1761407Ab0J1Szg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 14:55:36 -0400
+Date: Thu, 28 Oct 2010 14:55:31 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: sedat.dilek@gmail.com
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
+        sfr@canb.auug.org.au, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [next-20101038] Call trace in ext4
+Message-ID: <20101028185531.GE6814@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, sedat.dilek@gmail.com,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
+	sfr@canb.auug.org.au, Arnd Bergmann <arnd@arndb.de>
+References: <AANLkTi=E_uMj_ndGU86DCjX4aDwjHqg3dkwxjQRSJtq6@mail.gmail.com>
+ <20101028175221.GA1578@arch.trippelsdorf.de>
+ <AANLkTikOqeT8OznyMvL7XaWS06kh7ZZ+SJLyMfOc32P4@mail.gmail.com>
+ <AANLkTi=O1a3ZWg500OgPPLDxQeoEUsRdqGwzcgNmc8RD@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=O1a3ZWg500OgPPLDxQeoEUsRdqGwzcgNmc8RD@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Oct 2010, Rabin Vincent wrote:
-
-> Allow shared irqs to work when nested threads are used for handling
-> threaded interrupts.
-
-Why do we want this ? handle_nested_irq() is called from a interrupt
-demultiplexer, so why would we need shared interrupts for this ?
-
-Thanks,
-
-	tglx
- 
-> Signed-off-by: Rabin Vincent <rabin@rab.in>
-> ---
->  kernel/irq/chip.c |    7 +++++--
->  1 files changed, 5 insertions(+), 2 deletions(-)
+On Thu, Oct 28, 2010 at 08:34:19PM +0200, Sedat Dilek wrote:
 > 
-> diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-> index baa5c4a..94a45a9 100644
-> --- a/kernel/irq/chip.c
-> +++ b/kernel/irq/chip.c
-> @@ -418,8 +418,8 @@ static inline void unmask_irq(struct irq_desc *desc)
->  void handle_nested_irq(unsigned int irq)
->  {
->  	struct irq_desc *desc = irq_to_desc(irq);
-> +	irqreturn_t action_ret = IRQ_NONE;
->  	struct irqaction *action;
-> -	irqreturn_t action_ret;
->  
->  	might_sleep();
->  
-> @@ -434,7 +434,10 @@ void handle_nested_irq(unsigned int irq)
->  	desc->status |= IRQ_INPROGRESS;
->  	raw_spin_unlock_irq(&desc->lock);
->  
-> -	action_ret = action->thread_fn(action->irq, action->dev_id);
-> +	do {
-> +		action_ret |= action->thread_fn(action->irq, action->dev_id);
-> +		action = action->next;
-> +	} while (action);
->  	if (!noirqdebug)
->  		note_interrupt(irq, desc, action_ret);
->  
-> -- 
-> 1.7.2.3
-> 
+> One minute after I sent the mail, I ran into the error.
+> Now, I could start my IRC-client for a while... till crash.
+
+Yeah, the patchesin ext4/next are just things to fix compiling without
+CONFIG_BLOCK or CONFIG_EXT4_FS_XATTR.  It doesn't make any code
+changes at all.
+
+					- Ted
