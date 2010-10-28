@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760070Ab0J1VdU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 17:33:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3370 "EHLO mx1.redhat.com"
+	id S934527Ab0J1Veh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 17:34:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20445 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761204Ab0J1Vcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 17:32:48 -0400
+	id S934611Ab0J1Vd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 17:33:29 -0400
 From: Eric Paris <eparis@redhat.com>
-Subject: [PATCH 12/20] fanotify: allow userspace to override max marks
+Subject: [PATCH 19/20] fs/notify/fanotify/fanotify_user.c: fix warnings
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
 Cc: agruen@suse.de, tvrtko.ursulin@sophos.com
-Date: Thu, 28 Oct 2010 17:32:44 -0400
-Message-ID: <20101028213244.24810.19075.stgit@paris.rdu.redhat.com>
+Date: Thu, 28 Oct 2010 17:33:25 -0400
+Message-ID: <20101028213325.24810.54488.stgit@paris.rdu.redhat.com>
 In-Reply-To: <20101028213139.24810.34058.stgit@paris.rdu.redhat.com>
 References: <20101028213139.24810.34058.stgit@paris.rdu.redhat.com>
 User-Agent: StGIT/0.14.3
@@ -22,56 +22,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some fanotify groups, especially those like AV scanners, will need to place
-lots of marks, particularly ignore marks.  Since ignore marks do not pin
-inodes in cache and are cleared if the inode is removed from core (usually
-under memory pressure) we expose an interface for listeners, with
-CAP_SYS_ADMIN, to override the maximum number of marks and be allowed to
-set and 'unlimited' number of marks.  Programs which make use of this
-feature will be able to OOM a machine.
+From: Andrew Morton <akpm@linux-foundation.org>
 
+fs/notify/fanotify/fanotify_user.c: In function 'fanotify_release':
+fs/notify/fanotify/fanotify_user.c:375: warning: unused variable 'lre'
+fs/notify/fanotify/fanotify_user.c:375: warning: unused variable 're'
+
+this is really ugly.
+
+Cc: Eric Paris <eparis@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Eric Paris <eparis@redhat.com>
 ---
 
- fs/notify/fanotify/fanotify_user.c |    9 ++++++++-
- include/linux/fanotify.h           |    4 +++-
- 2 files changed, 11 insertions(+), 2 deletions(-)
+ fs/notify/fanotify/fanotify_user.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
 diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
-index 1d33d7d..f921610 100644
+index fa71d5d..fce66df 100644
 --- a/fs/notify/fanotify/fanotify_user.c
 +++ b/fs/notify/fanotify/fanotify_user.c
-@@ -707,7 +707,14 @@ SYSCALL_DEFINE2(fanotify_init, unsigned int, flags, unsigned int, event_f_flags)
- 		group->max_events = FANOTIFY_DEFAULT_MAX_EVENTS;
- 	}
+@@ -376,11 +376,10 @@ static ssize_t fanotify_write(struct file *file, const char __user *buf, size_t
+ static int fanotify_release(struct inode *ignored, struct file *file)
+ {
+ 	struct fsnotify_group *group = file->private_data;
+-	struct fanotify_response_event *re, *lre;
+-
+-	pr_debug("%s: file=%p group=%p\n", __func__, file, group);
  
--	group->fanotify_data.max_marks = FANOTIFY_DEFAULT_MAX_MARKS;
-+	if (flags & FAN_UNLIMITED_MARKS) {
-+		fd = -EPERM;
-+		if (!capable(CAP_SYS_ADMIN))
-+			goto out_put_group;
-+		group->fanotify_data.max_marks = UINT_MAX;
-+	} else {
-+		group->fanotify_data.max_marks = FANOTIFY_DEFAULT_MAX_MARKS;
-+	}
+ #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
++	struct fanotify_response_event *re, *lre;
++
+ 	mutex_lock(&group->fanotify_data.access_mutex);
  
- 	fd = anon_inode_getfd("[fanotify]", &fanotify_fops, group, f_flags);
- 	if (fd < 0)
-diff --git a/include/linux/fanotify.h b/include/linux/fanotify.h
-index e37f559..7592a36 100644
---- a/include/linux/fanotify.h
-+++ b/include/linux/fanotify.h
-@@ -32,9 +32,11 @@
- 				 FAN_CLASS_PRE_CONTENT)
- 
- #define FAN_UNLIMITED_QUEUE	0x00000010
-+#define FAN_UNLIMITED_MARKS	0x00000020
- 
- #define FAN_ALL_INIT_FLAGS	(FAN_CLOEXEC | FAN_NONBLOCK | \
--				 FAN_ALL_CLASS_BITS | FAN_UNLIMITED_QUEUE)
-+				 FAN_ALL_CLASS_BITS | FAN_UNLIMITED_QUEUE |\
-+				 FAN_UNLIMITED_MARKS)
- 
- /* flags used for fanotify_modify_mark() */
- #define FAN_MARK_ADD		0x00000001
+ 	group->fanotify_data.bypass_perm = true;
 
