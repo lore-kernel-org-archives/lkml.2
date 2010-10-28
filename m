@@ -1,78 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760804Ab0J1SGb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 14:06:31 -0400
-Received: from gerard.telenet-ops.be ([195.130.132.48]:58157 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755321Ab0J1SGZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 14:06:25 -0400
-Date: Thu, 28 Oct 2010 20:06:19 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Benny Halevy <bhalevy@panasas.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-cc: linux-nfs@vger.kernel.org,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: [PATCH] nfs4: The difference of 2 pointers is size_t
-Message-ID: <alpine.DEB.2.00.1010282004390.31018@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1760822Ab0J1SJT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 14:09:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20760 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758192Ab0J1SJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 14:09:10 -0400
+Date: Thu, 28 Oct 2010 14:08:53 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, hch@lst.de,
+        Linux/m68k <linux-m68k@vger.kernel.org>
+Subject: Re: [PATCH 1/2] amiga floppy: Stop sharing request queue across
+ multiple gendisks
+Message-ID: <20101028180853.GF30148@redhat.com>
+References: <1285271646-2768-1-git-send-email-vgoyal@redhat.com>
+ <1285271646-2768-2-git-send-email-vgoyal@redhat.com>
+ <AANLkTi=KDqSu8PrR2JbNzwv_Z93G6X5MRqbEiSF9hVgH@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-7
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=KDqSu8PrR2JbNzwv_Z93G6X5MRqbEiSF9hVgH@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On m68k, which is 32-bit:
+On Thu, Oct 28, 2010 at 07:38:33PM +0200, Geert Uytterhoeven wrote:
+> On Thu, Sep 23, 2010 at 21:54, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > o Use one request queue per gendisk instead of sharing request queue
+> >
+> > o Don't have hardware. No compile testing or run time testing done. Completely
+> >  untested.
+> >
+> > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> > ---
+> >  drivers/block/amiflop.c |   59 ++++++++++++++++++++++++++++++++++++++--------
+> >  1 files changed, 48 insertions(+), 11 deletions(-)
+> >
+> > diff --git a/drivers/block/amiflop.c b/drivers/block/amiflop.c
+> > index 76f114f..ead8b77 100644
+> > --- a/drivers/block/amiflop.c
+> > +++ b/drivers/block/amiflop.c
+> > @@ -114,8 +114,6 @@ static unsigned long int fd_def_df0 = FD_DD_3;     /* default for df0 if it does
+> >  module_param(fd_def_df0, ulong, 0);
+> >  MODULE_LICENSE("GPL");
+> >
+> > -static struct request_queue *floppy_queue;
+> > -
+> >  /*
+> >  *  Macros
+> >  */
+> > @@ -164,6 +162,7 @@ static volatile int selected = -1;  /* currently selected drive */
+> >  static int writepending;
+> >  static int writefromint;
+> >  static char *raw_buf;
+> > +static int fdc_queue;
+> >
+> >  static DEFINE_SPINLOCK(amiflop_lock);
+> >
+> > @@ -1334,6 +1333,42 @@ static int get_track(int drive, int track)
+> >        return -1;
+> >  }
+> >
+> > +/*
+> > + * Round-robin between our available drives, doing one request from each
+> > + */
+> > +static struct request *set_next_request(void)
+> > +{
+> > +       struct request_queue *q;
+> > +       int cnt = FD_MAX_UNITS;
+> > +       struct request *rq;
+> > +
+> > +       /* Find next queue we can dispatch from */
+> > +       fdc_queue = fdc_queue + 1;
+> > +       if (fdc_queue == FD_MAX_UNITS)
+> > +               fdc_queue = 0;
+> > +
+> > +       for(cnt = FD_MAX_UNITS; cnt > 0, cnt--) {
+> > +
+> > +               if (unit[fdc_queue].type->code == FD_NODRIVE) {
+> > +                       if (++fdc_queue == FD_MAX_UNITS)
+> > +                               fdc_queue = 0;
+> > +                       cotinue;
+> > +               }
+> > +
+> > +               q = unit[fdc_queue].gendisk->queue;
+> > +               if (q) {
+> > +                       rq = blk_fetch_request(q);
+> > +                       if (rq)
+> > +                               break;
+> > +               }
+> > +
+> > +               if (++fdc_queue == FD_MAX_UNITS)
+> > +                       fdc_queue = 0;
+> > +       }
+> > +
+> > +       return rq;
+> > +}
+> 
+> drivers/block/amiflop.c:1344: warning: ‘rq’ may be used uninitialized
+> in this function
+> drivers/block/ataflop.c:1402: warning: ‘rq’ may be used uninitialized
+> in this function
+> 
+> Should `rq' just be initialized to NULL? I looked at
+> floppy.c:set_next_request(), but it's
+> completely different.
+> 
 
-fs/nfs/nfs4proc.c: In function �nfs41_sequence_done�:
-fs/nfs/nfs4proc.c:432: warning: format �%ld� expects type �long int�, but argument 3 has type �int�
-fs/nfs/nfs4proc.c: In function �nfs4_setup_sequence�:
-fs/nfs/nfs4proc.c:576: warning: format �%ld� expects type �long int�, but argument 5 has type �int�
+I think we should explicitly initialize rq=NULL so that we don't return
+a garbage value if we can't find any rq to dispatch.
 
-On 32-bit, size_t is int; on 64-bit, size_t is long.
+I will send a patch to fix that. 
 
-Introduced by commit dfb4f309830359352539919f23accc59a20a3758 ("NFSv4.1: keep
-seq_res.sr_slot as pointer rather than an index")
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- fs/nfs/nfs4proc.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index 32c8758..80229dc 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -429,7 +429,7 @@ static int nfs41_sequence_done(struct rpc_task *task, struct nfs4_sequence_res *
- 		 * returned NFS4ERR_DELAY as per Section 2.10.6.2
- 		 * of RFC5661.
- 		 */
--		dprintk("%s: slot=%ld seq=%d: Operation in progress\n",
-+		dprintk("%s: slot=%zd seq=%d: Operation in progress\n",
- 			__func__,
- 			res->sr_slot - res->sr_session->fc_slot_table.slots,
- 			res->sr_slot->seq_nr);
-@@ -573,7 +573,7 @@ int nfs4_setup_sequence(const struct nfs_server *server,
- 		goto out;
- 	}
- 
--	dprintk("--> %s clp %p session %p sr_slot %ld\n",
-+	dprintk("--> %s clp %p session %p sr_slot %zd\n",
- 		__func__, session->clp, session, res->sr_slot ?
- 			res->sr_slot - session->fc_slot_table.slots : -1);
- 
--- 
-1.7.0.4
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+Thanks
+Vivek
