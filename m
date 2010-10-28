@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760376Ab0J1Vdp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 17:33:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5265 "EHLO mx1.redhat.com"
+	id S1761550Ab0J1Vdv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 17:33:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35346 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933741Ab0J1Vcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 17:32:54 -0400
+	id S1760641Ab0J1Vcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 17:32:42 -0400
 From: Eric Paris <eparis@redhat.com>
-Subject: [PATCH 13/20] fanotify: limit number of listeners per user
+Subject: [PATCH 11/20] fanotify: limit the number of marks in a single
+	fanotify group
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
 Cc: agruen@suse.de, tvrtko.ursulin@sophos.com
-Date: Thu, 28 Oct 2010 17:32:50 -0400
-Message-ID: <20101028213249.24810.41480.stgit@paris.rdu.redhat.com>
+Date: Thu, 28 Oct 2010 17:32:38 -0400
+Message-ID: <20101028213238.24810.11702.stgit@paris.rdu.redhat.com>
 In-Reply-To: <20101028213139.24810.34058.stgit@paris.rdu.redhat.com>
 References: <20101028213139.24810.34058.stgit@paris.rdu.redhat.com>
 User-Agent: StGIT/0.14.3
@@ -22,111 +23,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fanotify currently has no limit on the number of listeners a given user can
-have open.  This patch limits the total number of listeners per user to
-128.  This is the same as the inotify default limit.
+There is currently no limit on the number of marks a given fanotify group
+can have.  Since fanotify is gated on CAP_SYS_ADMIN this was not seen as
+a serious DoS threat.  This patch implements a default of 8192, the same as
+inotify to work towards removing the CAP_SYS_ADMIN gating and eliminating
+the default DoS'able status.
 
 Signed-off-by: Eric Paris <eparis@redhat.com>
 ---
 
- fs/notify/fanotify/fanotify.c      |   11 ++++++++++-
- fs/notify/fanotify/fanotify_user.c |   11 +++++++++++
+ fs/notify/fanotify/fanotify_user.c |    9 +++++++++
  include/linux/fsnotify_backend.h   |    1 +
- include/linux/sched.h              |    3 +++
- 4 files changed, 25 insertions(+), 1 deletions(-)
+ 2 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/fs/notify/fanotify/fanotify.c b/fs/notify/fanotify/fanotify.c
-index 85366c7..60c11c3 100644
---- a/fs/notify/fanotify/fanotify.c
-+++ b/fs/notify/fanotify/fanotify.c
-@@ -200,10 +200,19 @@ static bool fanotify_should_send_event(struct fsnotify_group *group,
- 	return false;
- }
- 
-+static void fanotify_free_group_priv(struct fsnotify_group *group)
-+{
-+	struct user_struct *user;
-+
-+	user = group->fanotify_data.user;
-+	atomic_dec(&user->fanotify_listeners);
-+	free_uid(user);
-+}
-+
- const struct fsnotify_ops fanotify_fsnotify_ops = {
- 	.handle_event = fanotify_handle_event,
- 	.should_send_event = fanotify_should_send_event,
--	.free_group_priv = NULL,
-+	.free_group_priv = fanotify_free_group_priv,
- 	.free_event_priv = NULL,
- 	.freeing_mark = NULL,
- };
 diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
-index f921610..a7d9369 100644
+index 43d66d9..1d33d7d 100644
 --- a/fs/notify/fanotify/fanotify_user.c
 +++ b/fs/notify/fanotify/fanotify_user.c
-@@ -18,6 +18,7 @@
+@@ -17,6 +17,7 @@
+ #include <asm/ioctls.h>
  
  #define FANOTIFY_DEFAULT_MAX_EVENTS	16384
- #define FANOTIFY_DEFAULT_MAX_MARKS	8192
-+#define FANOTIFY_DEFAULT_MAX_LISTENERS	128
++#define FANOTIFY_DEFAULT_MAX_MARKS	8192
  
  extern const struct fsnotify_ops fanotify_fsnotify_ops;
  
-@@ -656,6 +657,7 @@ SYSCALL_DEFINE2(fanotify_init, unsigned int, flags, unsigned int, event_f_flags)
- {
- 	struct fsnotify_group *group;
- 	int f_flags, fd;
-+	struct user_struct *user;
+@@ -584,6 +585,9 @@ static int fanotify_add_vfsmount_mark(struct fsnotify_group *group,
+ 	if (!fsn_mark) {
+ 		int ret;
  
- 	pr_debug("%s: flags=%d event_f_flags=%d\n",
- 		__func__, flags, event_f_flags);
-@@ -666,6 +668,12 @@ SYSCALL_DEFINE2(fanotify_init, unsigned int, flags, unsigned int, event_f_flags)
- 	if (flags & ~FAN_ALL_INIT_FLAGS)
- 		return -EINVAL;
- 
-+	user = get_current_user();
-+	if (atomic_read(&user->fanotify_listeners) > FANOTIFY_DEFAULT_MAX_LISTENERS) {
-+		free_uid(user);
-+		return -EMFILE;
-+	}
++		if (atomic_read(&group->num_marks) > group->fanotify_data.max_marks)
++			return -ENOSPC;
 +
- 	f_flags = O_RDWR | FMODE_NONOTIFY;
- 	if (flags & FAN_CLOEXEC)
- 		f_flags |= O_CLOEXEC;
-@@ -677,6 +685,9 @@ SYSCALL_DEFINE2(fanotify_init, unsigned int, flags, unsigned int, event_f_flags)
- 	if (IS_ERR(group))
- 		return PTR_ERR(group);
+ 		fsn_mark = kmem_cache_alloc(fanotify_mark_cache, GFP_KERNEL);
+ 		if (!fsn_mark)
+ 			return -ENOMEM;
+@@ -626,6 +630,9 @@ static int fanotify_add_inode_mark(struct fsnotify_group *group,
+ 	if (!fsn_mark) {
+ 		int ret;
  
-+	group->fanotify_data.user = user;
-+	atomic_inc(&user->fanotify_listeners);
++		if (atomic_read(&group->num_marks) > group->fanotify_data.max_marks)
++			return -ENOSPC;
 +
- 	group->fanotify_data.f_flags = event_f_flags;
- #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
- 	mutex_init(&group->fanotify_data.access_mutex);
+ 		fsn_mark = kmem_cache_alloc(fanotify_mark_cache, GFP_KERNEL);
+ 		if (!fsn_mark)
+ 			return -ENOMEM;
+@@ -700,6 +707,8 @@ SYSCALL_DEFINE2(fanotify_init, unsigned int, flags, unsigned int, event_f_flags)
+ 		group->max_events = FANOTIFY_DEFAULT_MAX_EVENTS;
+ 	}
+ 
++	group->fanotify_data.max_marks = FANOTIFY_DEFAULT_MAX_MARKS;
++
+ 	fd = anon_inode_getfd("[fanotify]", &fanotify_fops, group, f_flags);
+ 	if (fd < 0)
+ 		goto out_put_group;
 diff --git a/include/linux/fsnotify_backend.h b/include/linux/fsnotify_backend.h
-index 49ceed6..4366f45 100644
+index b37f3a7..49ceed6 100644
 --- a/include/linux/fsnotify_backend.h
 +++ b/include/linux/fsnotify_backend.h
-@@ -170,6 +170,7 @@ struct fsnotify_group {
+@@ -169,6 +169,7 @@ struct fsnotify_group {
+ 			bool bypass_perm; /* protected by access_mutex */
  #endif /* CONFIG_FANOTIFY_ACCESS_PERMISSIONS */
  			int f_flags;
- 			unsigned int max_marks;
-+			struct user_struct *user;
++			unsigned int max_marks;
  		} fanotify_data;
  #endif /* CONFIG_FANOTIFY */
  	};
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index be7adb7..6f420ba 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -672,6 +672,9 @@ struct user_struct {
- 	atomic_t inotify_watches; /* How many inotify watches does this user have? */
- 	atomic_t inotify_devs;	/* How many inotify devs does this user have opened? */
- #endif
-+#ifdef CONFIG_FANOTIFY
-+	atomic_t fanotify_listeners;
-+#endif
- #ifdef CONFIG_EPOLL
- 	atomic_t epoll_watches;	/* The number of file descriptors currently watched */
- #endif
 
