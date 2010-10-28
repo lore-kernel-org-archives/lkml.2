@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933072Ab0J1Hyk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 03:54:40 -0400
-Received: from mail.perches.com ([173.55.12.10]:3643 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932913Ab0J1Hyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 03:54:38 -0400
-Subject: Re: [RFC PATCH] include/linux/kernel.h: Add config option for  
- pr_fmt(fmt)
-From: Joe Perches <joe@perches.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-In-Reply-To: <20101028093529.503c3a28@endymion.delvare>
-References: <1287713982.16920.39.camel@Joe-Laptop>
-	 <20101026110335.3a4c7679@endymion.delvare>
-	 <1288201301.4145.122.camel@Joe-Laptop>
-	 <20101028093529.503c3a28@endymion.delvare>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 28 Oct 2010 00:54:36 -0700
-Message-ID: <1288252476.1836.9.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S933112Ab0J1HzX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 03:55:23 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:58077 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932144Ab0J1HzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 03:55:21 -0400
+Message-ID: <4CC92D6B.5090701@cn.fujitsu.com>
+Date: Thu, 28 Oct 2010 15:59:39 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 6/8] KVM: simply wakup async pf
+References: <4CC7EA7D.5020901@cn.fujitsu.com> <4CC7EBD4.6070105@cn.fujitsu.com> <20101027105057.GP26191@redhat.com>
+In-Reply-To: <20101027105057.GP26191@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-10-28 at 09:35 +0200, Jean Delvare wrote:
-> On Wed, 27 Oct 2010 10:41:41 -0700, Joe Perches wrote:
-> > On Tue, 2010-10-26 at 11:03 +0200, Jean Delvare wrote:
-> > > On Thu, 21 Oct 2010 19:19:42 -0700, Joe Perches wrote:
-> > > > Change the default #define pr_fmt(fmt) from:
-> > > > 	- #define pr_fmt(fmt) fmt
-> > > > to:
-> > > > 	- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> > > > This will standard use of prefixes and prevent the
-> > > > addition of new #defines when using pr_<level>.
-> > > I'm all for it!
-> > > > Adds a config option to use the old style if desired.
-> > > Not sure what the idea is. Once  pr_fmt() includes the module name, we
-> > > will drop hard-coded prefixes in all log messages throughout the kernel
-> > > tree. Once this is done, a kernel built with PR_FMT_IS_KBUILD_MODNAME=n
-> > > would become horribly confusing.
-> > 
-> > True.  The idea is to allow a transition period and remove
-> > this PR_FMT_IS_KBUILD_MODNAME config option later.
+On 10/27/2010 06:50 PM, Gleb Natapov wrote:
+> On Wed, Oct 27, 2010 at 05:07:32PM +0800, Xiao Guangrong wrote:
+>> The current way is queued a complete async pf with:
+>> 	asyc_pf.page = bad_page
+>> 	async_pf.arch.gfn = 0
+>>
+>> It has two problems while kvm_check_async_pf_completion handle this
+>> async_pf:
+>> - since !async_pf.page, it can retry a pseudo #PF
+> kvm_arch_async_page_ready checks for is_error_page()
 > 
-> I don't buy this, sorry. During the "transition period", neither value
-> of this option will produce good results. One will lead to duplicate
-> prefixes and the other will lead to missing prefixes.
+>> - it can delete gfn 0 from vcpu->arch.apf.gfns[]
+> kvm_arch_async_page_present() checks for is_error_page() too and,
+> in case of PV guest, injects special token if it is true. 
+> 
 
-So why don't you change it in your kernel.h and include that
-in linux-next and see how many complaints you get.
+Ah, sorry for my stupid questions.
 
+> After your patch special token will not be injected and migration will
+> not work.
+> 
+>> Actually, we can simply record this wakeup request and let
+>> kvm_check_async_pf_completion simply break the wait
+>>
+> May be wakeup_all function naming is misleading. It means wake up all PV
+> guest processes by sending broadcast async pf notification. It is not
+> about waking host vcpu thread.
+> 
 
+I'm not good at the KVM PV way, i'll dig into it, please ignore this patch,
+thanks.
