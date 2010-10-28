@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934433Ab0J1Ueu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 16:34:50 -0400
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:45273
-	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933788Ab0J1Uen (ORCPT
+	id S934541Ab0J1Ufs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 16:35:48 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:41666 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933800Ab0J1Ufo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 16:34:43 -0400
-X-SpamScore: -11
-X-BigFish: VS-11(z3b68iz1432N98dNzz1202hzzz2dh2a8h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:de01egw01.freescale.net;RD:de01egw01.freescale.net;EFVD:NLI
-Message-ID: <4CC9DE56.8070707@freescale.com>
-Date: Thu, 28 Oct 2010 15:34:30 -0500
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.13) Gecko/20101013 Fedora/2.0.8-2.fc13 SeaMonkey/2.0.8
+	Thu, 28 Oct 2010 16:35:44 -0400
+Date: Thu, 28 Oct 2010 22:35:42 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Mike Frysinger <vapier.adi@gmail.com>,
+        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>, tabbott@ksplice.com,
+        vda.linux@googlemail.com, hpa@linux.intel.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com
+Subject: Re: [PATCH] initramfs: Fix build break on symbol-prefixed archs
+Message-ID: <20101028203542.GA30879@merkur.ravnborg.org>
+References: <20100831083844.043619334@linux.vnet.ibm.com> <AANLkTikCLHh5Uz-DRq9ws78We+SwCAqdurA6HfuJh-8Y@mail.gmail.com> <20101018103729.GA4122@linux.vnet.ibm.com> <AANLkTikKJ25L=6b2resz+0SAg7ZYL5j=rHG7Lg4kFbwd@mail.gmail.com> <20101019110801.GA4128@linux.vnet.ibm.com> <AANLkTimLi8BYy_u8NhD15s=+iiODzuG1H_CgZ-cd7jep@mail.gmail.com> <20101019213112.GA11432@merkur.ravnborg.org> <AANLkTike6UQVWKSz-Njs5Rps690EHeResH3V+aSM+qdO@mail.gmail.com> <AANLkTimn8R-qde8FH_cNa4JPcR2F=mkUAQhPVT-hOBhn@mail.gmail.com> <4CC8ABC7.5030003@suse.cz>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: gregkh <gregkh@suse.de>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Writing a console/tty driver -- how to use tty_port?
-References: <4CC893CD.7020701@freescale.com> <20101027231948.5e62dd09@lxorguk.ukuu.org.uk>
-In-Reply-To: <20101027231948.5e62dd09@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 Oct 2010 20:35:02.0185 (UTC) FILETIME=[98B31990:01CB76DF]
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CC8ABC7.5030003@suse.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Cox wrote:
-> drivers/mmc/card/sdio_uart.c
+On Thu, Oct 28, 2010 at 12:46:31AM +0200, Michal Marek wrote:
+> On 27.10.2010 20:23, Mike Frysinger wrote:
+> > can we get this change dropped from linux-next until someone gets a
+> > chance to fix it ?
 > 
-> is in some ways the best example, it handles all the horrible cases
-> including unloading of hardware v open races, its way more than you'd
-> need but does illustrate it all.
+> Sorry I missed this thread. So your last patch
+> (http://lkml.org/lkml/2010/10/19/488) did fix the Blackfin build
+> failure? Can you submit it with a proper Signed-off-by and changelog?
 
-I see something weird in sdio_uart_install():
+Did you see the patch I posted in: http://lkml.org/lkml/2010/10/19/534
 
-	int ret = tty_init_termios(tty);
+The one that fix up the cppflags usage.
 
-	if (ret == 0) {
-		tty_driver_kref_get(driver);
-		tty->count++;
-		/* This is the ref sdio_uart_port get provided */
-		tty->driver_data = port;
-		driver->ttys[idx] = tty;
+I think this will solve the issue with blackfin nicely - and
+make use of cppflags more as expected.
 
-
-This function is called by tty_driver_install_tty(), which also does this:
-
-	if (tty_init_termios(tty) == 0) {
-		lock_kernel();
-		tty_driver_kref_get(driver);
-		tty->count++;
-		driver->ttys[idx] = tty;
-		unlock_kernel();
-		return 0;
-	}
-
-Assuming that both calls to tty_init_termios(tty) return 0, these three lines
-will be executed twice:
-
-		tty_driver_kref_get(driver);
-		tty->count++;
-		driver->ttys[idx] = tty;
-
-Is that right?
-
--- 
-Timur Tabi
-Linux kernel developer at Freescale
-
+	Sam
