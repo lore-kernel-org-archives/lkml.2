@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933399Ab0J1DAT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 23:00:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54591 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933096Ab0J1DAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 23:00:16 -0400
-Message-ID: <4CC8E6F7.5080405@zytor.com>
-Date: Wed, 27 Oct 2010 19:59:03 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+	id S933268Ab0J1DFM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 23:05:12 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:53919 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932829Ab0J1DFI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 23:05:08 -0400
+Date: Thu, 28 Oct 2010 04:04:54 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sweta Bhatt <sweta.bhatt@einfochips.com>,
+        Roland Dreier <rolandd@cisco.com>, Davide Rizzo <elpa.rizzo@gmail.com>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Richard Purdie <rpurdie@linux.intel.com>,
+        Joseph Chan <JosephChan@via.com.tw>
+Subject: Re: linux-next: build warnings from Linus' tree
+Message-ID: <20101028030454.GB15103@sirena.org.uk>
+References: <20101028112739.0f400818.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Jason Baron <jbaron@redhat.com>, mingo@elte.hu,
-        mathieu.desnoyers@polymtl.ca, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com,
-        ddaney@caviumnetworks.com, dsd@laptop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] move arch_init_ideal_nop5 later
-References: <cover.1288212485.git.jbaron@redhat.com>	 <2de96f2012e81597079ab0b09a1487e7061b9cc6.1288212486.git.jbaron@redhat.com>	 <e35a5b13-ea12-42d2-b569-ff1d69ef58d1@email.android.com> <1288231897.18238.133.camel@gandalf.stny.rr.com>
-In-Reply-To: <1288231897.18238.133.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101028112739.0f400818.sfr@canb.auug.org.au>
+X-Cookie: To err is human, to moo bovine.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2010 07:11 PM, Steven Rostedt wrote:
-> On Wed, 2010-10-27 at 15:24 -0700, H. Peter Anvin wrote:
->> The exception test is broken anyway for reasons I already explained, so it would be better to just drop it.
-> 
-> Would you be OK if we nuke it for the next merge window? It's been in
-> there since 2.6.28, I'd hate to drop it now to discover that it breaks
-> something this late in the merge window.
-> 
+On Thu, Oct 28, 2010 at 11:27:39AM +1100, Stephen Rothwell wrote:
 
-I'd be much happier nuking it now than moving the invocation.  The
-latter is much more likely to break things.
+> While building Linus' tree, today's linux-next build (x86_64 allmodconfig)
+> produced these warnings:
 
-	-hpa
+> sound/soc/soc-core.c: In function 'pmdown_time_set':
+> sound/soc/soc-core.c:169: warning: ignoring return value of 'strict_strtol', declared with attribute warn_unused_result
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Just cooked up a patch for this but due to timezone/travel on the part
+of both myself and Liam it may not make get reviewed and into -next for
+a little while.
