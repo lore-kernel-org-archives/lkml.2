@@ -1,67 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933014Ab0J1Hup (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 03:50:45 -0400
-Received: from smtp-out-246.synserver.de ([212.40.180.246]:1062 "HELO
-	smtp-out-245.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S932884Ab0J1Hum (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 03:50:42 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: markus@trippelsdorf.de
-X-SynServer-PPID: 19076
-Date: Thu, 28 Oct 2010 09:50:39 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] ext4 update for 2.6.37
-Message-ID: <20101028075038.GC1580@arch.trippelsdorf.de>
-References: <E1PBKT9-0004Uk-Sm@tytso-glaptop>
+	id S933034Ab0J1Hxr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 03:53:47 -0400
+Received: from swm.pp.se ([212.247.200.143]:40074 "EHLO uplift.swm.pp.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932144Ab0J1Hxq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 03:53:46 -0400
+X-Greylist: delayed 572 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Oct 2010 03:53:46 EDT
+Date: Thu, 28 Oct 2010 09:44:12 +0200 (CEST)
+From: Mikael Abrahamsson <swmike@swm.pp.se>
+To: Tarkan Erimer <tarkan@turknetserver.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: tar.gz and tar.bz2 files of linux kernel on ftp.kernel.org
+In-Reply-To: <4CC923AC.4050903@turknetserver.com>
+Message-ID: <alpine.DEB.1.10.1010280943210.29868@uplift.swm.pp.se>
+References: <4CC923AC.4050903@turknetserver.com>
+User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+Organization: People's Front Against WWW
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1PBKT9-0004Uk-Sm@tytso-glaptop>
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 28, 2010 at 12:52:07AM -0400, Theodore Ts'o wrote:
-> Hi Linus,
-> 
-> Please pull from:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git for_linus
-> or
->   git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git upstream-merge
-> 
-> the merge is somewhat complex, since there's been a lot of work going on
-> in parallel with discard and zeroout changes, as well as the change
-> block_prepare_write/__block_write_begin.  The changes pass the xfstests
-> regression test suite, using both 1k and 4k block sizes --- both before
-> the upstream merge (the for_linus branch) and after doing a trial merge
-> with the head of your tree as of Wednesday evening (the upstream-merge
-> branch).
+On Thu, 28 Oct 2010, Tarkan Erimer wrote:
 
-This misses a trivial ifdef wrapper in fs/ext4/super.c for
-!CONFIG_EXT4_FS_XATTR configurations. Something like this:
+> Why there are two different (tar.gz and tar.bz2) kind of compressed linux 
+> kernel on ftp.kernel.org ?
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 0348ce0..5f82585 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -4773,9 +4773,12 @@ static int __init ext4_init_fs(void)
- 	if (err)
- 		goto out3;
- 
-+#ifdef CONFIG_EXT4_FS_XATTR
- 	err = ext4_init_xattr();
-+#endif
- 	if (err)
- 		goto out2;
-+
- 	err = init_inodecache();
- 	if (err)
- 		goto out1;
+<http://lwn.net/Articles/374776/>
+
+There has been a lot of discussion about this, it was deemed to be best to 
+let the users choose what version they wanted and provide both.
+
 -- 
-Markus
+Mikael Abrahamsson    email: swmike@swm.pp.se
