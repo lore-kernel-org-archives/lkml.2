@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758121Ab0J1HZx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 03:25:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55134 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755750Ab0J1HZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 03:25:51 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH] Fix a missing inclusion of linux/types.h in linux/fs.h
-To: torvalds@osdl.org, akpm@linux-foundation.org
-From: David Howells <dhowells@redhat.com>
-Cc: lczerner@redhat.com, dmonakhov@openvz.org, tytso@mit.edu,
-        linux-kernel@vger.kernel.org
-Date: Thu, 28 Oct 2010 08:25:28 +0100
-Message-ID: <20101028072528.31276.91746.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.15-97-g9680-dirty
+	id S1758177Ab0J1H2i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 03:28:38 -0400
+Received: from smtp.turknetserver.com ([193.192.122.40]:37546 "EHLO
+	smtp.turknetserver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758115Ab0J1H2g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 03:28:36 -0400
+X-Greylist: delayed 553 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Oct 2010 03:28:35 EDT
+Message-ID: <4CC923AC.4050903@turknetserver.com>
+Date: Thu, 28 Oct 2010 10:18:04 +0300
+From: Tarkan Erimer <tarkan@turknetserver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: linux-kernel@vger.kernel.org
+Subject: tar.gz and tar.bz2 files of linux kernel on ftp.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-linux/fs.h needs to #include linux/types.h otherwise the following errors can be
-encountered:
+Why there are two different (tar.gz and tar.bz2) kind of compressed 
+linux kernel on ftp.kernel.org ?
 
-In file included from fs/char_dev.c:8:
-include/linux/fs.h:36: error: expected specifier-qualifier-list before 'uint64_t'
-In file included from include/linux/tty.h:9,
-                 from drivers/char/tty_mutex.c:4:
-include/linux/fs.h:36: error: expected specifier-qualifier-list before 'uint64_t'
-In file included from mm/shmem.c:23:
-include/linux/fs.h:36: error: expected specifier-qualifier-list before 'uint64_t'
+One kind of (.tar.bz2 or .tar.xz etc.) compressed file, probably, will 
+be enough for everybody. Personally, I always download the .tar.bz2 one 
+because of its shorter file length compared to .tar.gz. If it's needed 
+to have two different kind of compressed linux kernel because of some 
+extraordinary situations, maybe we have to consider other better options 
+like .tar.xz for instance. I did a quick comparison between .tar.bz2 and 
+tar.xz compressed linux-2.6.36. Here is what I found :
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+linux-a9un:/home/tarkane/Downloads # ls -alh linux-2.6.36.tar.*
+-rw-r--r-- 1 root root 68M Oct 21 09:14 linux-2.6.36.tar.bz2
+-rw-r--r-- 1 root root 59M Oct 28 09:54 linux-2.6.36.tar.xz
+linux-a9un:/home/tarkane/Downloads #
 
- include/linux/fs.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+As seen above, .tar.xz has better ratio (%13.24 smaller sized file than 
+.tar.bz2.) than the .tar.bz2 one. So,if it could be an, at least, an 
+option to offer .tar.xz compressed kernel, we could have the following 
+benefits :
 
+- Better usage of ftp.kernel.org's and downloaders' (Some people use 
+bandwidth limited Internet connections.) internet bandwidth.
+- Better disk space usage on ftp.kernel.org servers due to more smaller 
+file sizes.
+- It will reduce the load on ftp.kernel.org servers due to shorter 
+download times.
 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 6ed7ace..15de46d 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -6,6 +6,7 @@
-  * structures etc.
-  */
- 
-+#include <linux/types.h>
- #include <linux/limits.h>
- #include <linux/ioctl.h>
- #include <linux/blk_types.h>
+I will be happy to hear your opinions about it. :-)
 
+Tarkan
