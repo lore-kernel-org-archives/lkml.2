@@ -1,73 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753334Ab0J1FGn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 01:06:43 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:35889 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752024Ab0J1FGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 01:06:40 -0400
-From: Nishanth Aravamudan <nacc@us.ibm.com>
-To: eric.dumazet@gmail.com
-Cc: Nishanth Aravamudan <nacc@us.ibm.com>, sonnyrao@us.ibm.com,
-        Divy Le Ray <divy@chelsio.com>, Dimitris Michailidis <dm@chelsio.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] cxgb3: fix crash due to manipulating queues before registration
-Date: Wed, 27 Oct 2010 22:06:30 -0700
-Message-Id: <1288242390-28574-1-git-send-email-nacc@us.ibm.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1288236563.2658.59.camel@edumazet-laptop>
+	id S1754402Ab0J1FSi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 01:18:38 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:49301 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754067Ab0J1FSg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 01:18:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=ECQGfMTH+ZocLj+jwaXngQlb8+DWdhUozbU1rluVJDFYVgGo16oSPdNzglmmxJSA/O
+         g7+Rdq0yHbNYw9FqY/Q9GdiVSvlNQJjXAn/U1Pgw5tIuKJzKszri5G+SZYn1VNKoeJkr
+         8erSkQ9rXmtW7/Eh5B9M2T5IW9E0riXcja4/0=
+Subject: Re: [PATCH] cxgb3: fix crash due to manipulating queues before
+ registration
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Nishanth Aravamudan <nacc@us.ibm.com>
+Cc: sonnyrao@us.ibm.com, Divy Le Ray <divy@chelsio.com>,
+        Dimitris Michailidis <dm@chelsio.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1288242390-28574-1-git-send-email-nacc@us.ibm.com>
 References: <1288236563.2658.59.camel@edumazet-laptop>
+	 <1288242390-28574-1-git-send-email-nacc@us.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 28 Oct 2010 07:18:30 +0200
+Message-ID: <1288243110.2658.126.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+Le mercredi 27 octobre 2010 à 22:06 -0700, Nishanth Aravamudan a écrit :
+> Hi Eric,
+> 
+> Something like the following?:
+> 
+> Thanks,
+> Nish
 
-Something like the following?:
+Yes, probably, but I dont have the hardware so cannot test.
 
-Thanks,
-Nish
-
-
-Along the same lines as "cxgb4: fix crash due to manipulating queues
-before registration" (8f6d9f40476895571df039b6f1f5230ec7faebad), before
-commit "net: allocate tx queues in register_netdevice"
-netif_tx_stop_all_queues and related functions could be used between
-device allocation and registration but now only after registration.
-cxgb4 has such a call before registration and crashes now.  Move it
-after register_netdev.
-
-Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
-Cc: eric.dumazet@gmail.com
-Cc: sonnyrao@us.ibm.com
-Cc: Divy Le Ray <divy@chelsio.com>
-Cc: Dimitris Michailidis <dm@chelsio.com>
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/net/cxgb3/cxgb3_main.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/net/cxgb3/cxgb3_main.c b/drivers/net/cxgb3/cxgb3_main.c
-index 4e3c123..96c70a5 100644
---- a/drivers/net/cxgb3/cxgb3_main.c
-+++ b/drivers/net/cxgb3/cxgb3_main.c
-@@ -3301,7 +3301,6 @@ static int __devinit init_one(struct pci_dev *pdev,
- 		pi->rx_offload = T3_RX_CSUM | T3_LRO;
- 		pi->port_id = i;
- 		netif_carrier_off(netdev);
--		netif_tx_stop_all_queues(netdev);
- 		netdev->irq = pdev->irq;
- 		netdev->mem_start = mmio_start;
- 		netdev->mem_end = mmio_start + mmio_len - 1;
-@@ -3342,6 +3341,7 @@ static int __devinit init_one(struct pci_dev *pdev,
- 				adapter->name = adapter->port[i]->name;
- 
- 			__set_bit(i, &adapter->registered_device_map);
-+			 netif_tx_stop_all_queues(adapter->port[i]);
- 		}
- 	}
- 	if (!adapter->registered_device_map) {
--- 
-1.7.1
 
