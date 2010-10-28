@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754171Ab0J1LsY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 07:48:24 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:37835 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752585Ab0J1LsV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 07:48:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=aVb6AhDsfGpYDcrO/6rWkVuc+zuDLQbGOFgUE/CqLY/y3K7yskn74QyXA6vICA+KbA
-         kWiMTYUvpyUo7A9UOomapmDeapMeJ8OQSy0OMahXQ4vZYWSs5nuEhrtDtCXZx0XDsYQf
-         VT8A8mipfTvt5MuWs35Miag+i90uS9WM1dfac=
+	id S1754800Ab0J1Lx6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 07:53:58 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:23495 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752741Ab0J1Lx4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 07:53:56 -0400
+X-IronPort-AV: E=Sophos;i="4.58,251,1286164800"; 
+   d="scan'208";a="10848821"
+Subject: Re: [PATCH] x86: use pgd accessors when cloning a pgd range.
+From: Ian Campbell <Ian.Campbell@eu.citrix.com>
+To: Borislav Petkov <bp@alien8.de>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>
+In-Reply-To: <20101028112052.GA21757@a1.tnic>
+References: <1288169413-29065-1-git-send-email-ian.campbell@citrix.com>
+	 <20101027104020.GA16954@a1.tnic> <4CC85839.4000507@goop.org>
+	 <4CC85EE6.7030608@linux.intel.com> <4CC861F9.8080200@goop.org>
+	 <20101027174417.GA19194@a1.tnic>
+	 <1288202321.10179.102.camel@localhost.localdomain>
+	 <1288257797.8361.1545.camel@zakaz.uk.xensource.com>
+	 <20101028112052.GA21757@a1.tnic>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Thu, 28 Oct 2010 12:53:52 +0100
+Message-ID: <1288266832.1228.99.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikyYQk1FH7d6jkw2GYHLN8jmghuGZQw=EFVgjuA@mail.gmail.com>
-References: <AANLkTimt7wzR9RwGWbvhiOmot_zzayfCfSh_-v6yvuAP@mail.gmail.com>
-	<AANLkTikRKVBzO=ruy=JDmBF28NiUdJmAqb4-1VhK0QBX@mail.gmail.com>
-	<AANLkTinzJ9a+9w7G5X0uZpX2o-L8E6XW98VFKoF1R_-S@mail.gmail.com>
-	<AANLkTinDDG0ZkNFJZXuV9k3nJgueUW=ph8AuHgyeAXji@mail.gmail.com>
-	<AANLkTikvSGNE7uGn5p0tfJNg4Hz5WRmLRC8cXu7+GhMk@mail.gmail.com>
-	<20101028090002.GA12446@elte.hu>
-	<AANLkTinoGGLTN2JRwjJtF6Ra5auZVg+VSa=TyrtAkDor@mail.gmail.com>
-	<AANLkTikyYQk1FH7d6jkw2GYHLN8jmghuGZQw=EFVgjuA@mail.gmail.com>
-Date: Thu, 28 Oct 2010 14:48:20 +0300
-X-Google-Sender-Auth: q19xVEYdRjCoi5dexmiU280K97o
-Message-ID: <AANLkTikx4zZwMLiAUrGKcH6yoo_PGgRA7nT9BzYMxQ89@mail.gmail.com>
-Subject: Re: 2.6.36 io bring the system to its knees
-From: Pekka Enberg <penberg@kernel.org>
-To: Aidar Kultayev <the.aidar@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, npiggin@kernel.dk,
-        Dave Chinner <david@fromorbit.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 28, 2010 at 2:33 PM, Aidar Kultayev <the.aidar@gmail.com> wrote:
-> if it wasn't picasa, it would have been something else. I mean if I
-> kill picasa ( later on it was done indexing new pics anyway ), it
-> would have been for virtualbox to thrash the io. So, nope, getting rid
-> of picasa doesn't help either. In general the systems responsiveness
-> or sluggishness is dominated by those io operations going on - the DD
-> & CP & probably VBOX issuing whole bunch of its load for IO.
+On Thu, 2010-10-28 at 12:20 +0100, Borislav Petkov wrote:
+> On Thu, Oct 28, 2010 at 10:23:17AM +0100, Ian Campbell wrote:
+> > Now tested and it works. Patch below.
+> 
+> I'm assuming you tested bare metal too?
 
-Do you still see high latencies in vfs_lseek() and vfs_fsync()? I'm
-not a VFS expert but looking at your latencytop output, it seems that
-fsync grabs ->i_mutex which blocks vfs_llseek(), for example. I'm not
-sure why that causes high latencies though it's a mutex we're holding.
+Yes, I tried PAE with and without CONFIG_PARAVIRT as well as non-PAE
+without CONFIG_PARAVIRT.
 
-On Thu, Oct 28, 2010 at 2:33 PM, Aidar Kultayev <the.aidar@gmail.com> wrote:
-> Another way I see these delays, is when I leave system overnight, with
-> ktorrent & juk(stopped) in the background. It takes some time for
-> WM(kwin) to work out ALT+TAB the very next morning. But this might be
-> because the WM(kwin & its code) has been swapped out, because of long
-> period of not using it.
+Ian.
 
-Yeah, that's probably paging overhead.
 
-P.S. Can you please upload latencytop output somewhere and post an URL
-to it so other people can also see it?
