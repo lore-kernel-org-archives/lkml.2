@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933870Ab0J1Vnj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 17:43:39 -0400
-Received: from web31802.mail.mud.yahoo.com ([68.142.207.65]:34952 "HELO
-	web31802.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S933157Ab0J1Vnd convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 17:43:33 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=WgdetHhuK5EwzDDygQauywfJKplWKwBi45jY2uYRooLr8j5EsJrSwgfzZX6TTo0cfW0nS5vFay2w/ycXgSTfgVfiO7sd0vU0GJLSEOrwA3JczKU8n/cgGnlu/6QRLUzovnRRBZwbxmX+0oPM20UMALVxB8HvmIraHsetaTqErys=;
-Message-ID: <807665.54188.qm@web31802.mail.mud.yahoo.com>
-X-YMail-OSG: 3QtLcjsVM1k7qiBfPj4_UIrK6MKQqsCE9NkJqHKUw2za.2R
- 0i.q4bnhsX0AtYdRI0W6IW8NoNNRAqN2UuXnEuboTwn6IJ_fQibD4lKeQN4r
- ooh_14p845_73YztWwXcrI3nGGBD_fnNkY2HtcGXuSQzHP5ueenhDSpWoBBt
- q6BnVHyK.EKFocJuam1uHkX0ToCJtegpLpFjS5eF6gSS_3.qGm9PKrCWEbxt
- Q2KmcLIqkRoNHkg7FIwZVh7vOcQLf8dDbugxDUikFX54rAMK0hFAWLAGIY8a
- Uy7fMw9ySOINaWGnjfmLbzfHaVeoklzbi5qWU7EydBtfJdq4I78viN4J2LS5
- EDE_WRzehE1FAfeMJTp7vKtRLV7oyam_oaA--
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.285259
-Date: Thu, 28 Oct 2010 14:43:31 -0700 (PDT)
-From: Luben Tuikov <ltuikov@yahoo.com>
-Reply-To: ltuikov@yahoo.com
-Subject: Re: [PATCH] [USB] UAS: Rename urbs by pipe
-To: Greg KH <greg@kroah.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthew Wilcox <willy@linux.intel.com>
-In-Reply-To: <20101028204101.GA22785@kroah.com>
+	id S934169Ab0J1Vqp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 17:46:45 -0400
+Received: from bhuna.collabora.co.uk ([93.93.128.226]:40305 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933230Ab0J1Vqk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 17:46:40 -0400
+Message-ID: <4CC9EDF6.4050303@collabora.co.uk>
+Date: Thu, 28 Oct 2010 22:41:10 +0100
+From: Ian Molton <ian.molton@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100917 Icedove/3.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Anthony Liguori <anthony@codemonkey.ws>
+CC: Avi Kivity <avi@redhat.com>, virtualization@lists.osdl.org,
+        linux-kernel@vger.kernel.org, QEMU Developers <qemu-devel@nongnu.org>
+Subject: Re: [Qemu-devel] Re: [PATCH] Implement a virtio GPU transport
+References: <4CAC9CD1.2050601@collabora.co.uk>	<4CB1D79A.6070805@redhat.com>	<4CBD739A.2010500@collabora.co.uk>	<4CBD7560.6080207@redhat.com> <4CC8226F.5080807@collabora.co.uk>	<4CC94203.1080207@redhat.com> <4CC9647A.50108@collabora.co.uk> <4CC98784.7020907@redhat.com> <4CC98C25.9010207@codemonkey.ws> <4CC9D403.2010805@collabora.co.uk> <4CC9D9B9.10601@codemonkey.ws>
+In-Reply-To: <4CC9D9B9.10601@codemonkey.ws>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---- On Thu, 10/28/10, Greg KH <greg@kroah.com> wrote:
-> I'm sorry, but can you explain this a bit more?  I
-> really don't
-> understand why this change is necessary.
+On 28/10/10 21:14, Anthony Liguori wrote:
 
-It isn't necessary (like water or food, etc). It reflects much closer what
-really is happening under the hood. Having a software abstraction
-(implementation) representing the hw or the physical function much closer,
-allows for much more versatile manipulation.
+>> If this code was invasive to qemus core, I'd say 'no way' but its just
+>> not. and as the GL device is versioned, we can keep using it even if
+>> the passthrough is replaced by a virtual GPU.
+>
+> The virtio-gl implementation is basically duplicating virtio-serial. It
+> looks like ti creates a totally separate window for the GL session. In
+> the current form, is there really any advantage to having the code in
+> QEMU? It could just as easily live outside of QEMU.
 
-For example, if you would like to implement sending TMFs and receiving
-their Responses, you'd do that on the Command and Status pipes. So you can
-allocate an URB at the "cmd_urb" (meaning "command pipe urb") and on the
-"status_urb" (meaning "status pipe urb"). Before this patch this was called
-"sense_urb" which reflected what the type of IU but not the pipe, all the
-while it was being allocated for the Status pipe. A good infrastructure
-is a reusable infrastructure. This patch properly renames some macro
-definitions and variables in order to allow for some of the infrastructure
-of the driver to be reused in order to send other IUs.
+you could say much the same about any driver in qemu... you could 
+serialise up the registers and ship the data off to be processed on 
+another PC if you wanted to...
 
+The code does not, however, create a seperate window for the GL session. 
+the GL scene is rendered offscreen, and then piped back to the guest for 
+display, so that it is fully composited into the guests graphical 
+environment. From a user perspective, its as if the guest had hardware 
+3D. Performance is very reasonable, around 40fps in ioquake3 on modest 
+(host) hardware.
+
+In theory, the code *could* use a serial transport and render in a 
+seperate process, but then that would make it much harder to evolve it 
+into a GPU-like system in future.
+
+-Ian
