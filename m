@@ -1,350 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757638Ab0J1KcP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 06:32:15 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38415 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355Ab0J1KcL convert rfc822-to-8bit (ORCPT
+	id S1757614Ab0J1Ke6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 06:34:58 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:48426 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751355Ab0J1Ke4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 06:32:11 -0400
+	Thu, 28 Oct 2010 06:34:56 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=wcCuM8xhc6Kuds9XxZCS+oLNTrn523FPZ3ALVHdpwHS0+OC9y++ioFLxUck4eQk+C0
-         cSd7Y8VmBKoGPRw5E7FRK7OpRAdhryvf1I+Kvl9Loq0qPLopx1XY27XbcII9DtAGS88X
-         kfIjx0pAt/EgzLKZRYYEbjLRKW+DaiU7mmTAQ=
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type;
+        b=Tg9ggygNR/5h1rzzxHSiyJeB9lD2O+Smq8FTmmSVT9f3bFqGEdk2d9kmN3/6YjlLYm
+         x4rk3wuuMlreTiabUSoZkiDDyavG3NZvJMWrUU05zkwIrX5GZKbkIWP1s79zSLI3c2+y
+         jILv/wrkM88SIWikv+DrwRjm7sIYZwikDJRKU=
 MIME-Version: 1.0
-In-Reply-To: <201010261406.10996.arnd@arndb.de>
-References: <AANLkTineXA2ZY0J7+dZhqywz+4aAVgzihu+LDDbsL8mu@mail.gmail.com>
-	<201010221736.57671.arnd@arndb.de>
-	<AANLkTinY0qmt6uFo4PZ3xH2BF5-AJ0C7ptctzNdOkRU2@mail.gmail.com>
-	<201010261406.10996.arnd@arndb.de>
-Date: Thu, 28 Oct 2010 12:32:09 +0200
-Message-ID: <AANLkTin72z7AmfkMMH01siwkNNNvHM+1+qXLodmaUx5q@mail.gmail.com>
-Subject: Re: [PATCH 1/9] mfd: Add support for the ST-Ericsson CG2900.
-From: Par-Gunnar Hjalmdahl <pghatwork@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linus.walleij@stericsson.com, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <AANLkTi=E_uMj_ndGU86DCjX4aDwjHqg3dkwxjQRSJtq6@mail.gmail.com>
+References: <AANLkTi=E_uMj_ndGU86DCjX4aDwjHqg3dkwxjQRSJtq6@mail.gmail.com>
+Date: Thu, 28 Oct 2010 12:34:55 +0200
+Message-ID: <AANLkTin+GsrEFb2+tYD4ctg3o9t3wzpcywOkF9S1n6=0@mail.gmail.com>
+Subject: Re: [next-20101028] Call trace in ext4
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
+Cc: "Theodore Ts'o" <tytso@mit.edu>, sfr@canb.auug.org.au,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: multipart/mixed; boundary=00163630fe6196ce3d0493aae427
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks again for your comments Arnd.
-Sorry for not answering your mail earlier but I've spent the last few
-days changing a few hundred debug comments. :-)
-See answers below.
+--00163630fe6196ce3d0493aae427
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-/P-G
+[ Changes subject s/next-20101038/next-20101028 ]
 
-2010/10/26 Arnd Bergmann <arnd@arndb.de>:
-> On Tuesday 26 October 2010, Par-Gunnar Hjalmdahl wrote:
->
->> 2010/10/22 Arnd Bergmann <arnd@arndb.de>:
->> > On Friday 22 October 2010 12:35:16 Par-Gunnar Hjalmdahl wrote:
->> >> This patch adds support for the ST-Ericsson CG2900 Connectivity
->> >> Combo controller.
->> >> This patch adds the central framework to be able to register CG2900 users,
->> >> transports, and chip handlers.
->> >>
->> >> Signed-off-by: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
->> >
->> > Looks ok from a coding style perspective, but some important information is
->> > missing from the description:
->> >
->> > * What is a CG2900?
->> > * Why is it a MFD device rather than e.g. a bus or a subsystem?
->> >
->>
->> I will add some more info:
->>  - CG2900 is a GPS, Bluetooth, FM controller
->>  - I do not really know what makes a device qualify as a certain type,
->> but at least for us this is a multifunction device. But I can't really
->> say that it isn't really a bus (could be stated as multifunction HCI
->> bus). I guess it could be qualified as a subsystem as well, but I
->> cannot give you a reason to have it as either.
->
-> It's not often completely clear, but I would draw the distinction like
-> this:
->
-> * A multi-function device is a single device that sits on a given bus
-> with one host I/O interface and provides functionality to different
-> logical subsystems like serial or alsa. A typical case for an MFD would
-> be a to solve the problem of sharing resources between the child drivers
-> because you cannot bind one device to two drivers. If CG2900 is a single
-> piece of silicon that always looks the same way, it's probably an MFD.
->
-> * A bus is a much more general abstraction which has multiple devices
-> and multiple device types behind it. The bus has no idea what devices
-> are attached to it at compile time, so you either probe the devices at
-> boot time or define a set of devices in a board definition (platform
-> devices). Driver modules then register a struct device_driver for the
-> bus, which gives all matching devices to the bus. If you can have
-> future CG2900 compatible devices that need to have other drivers, e.g.
-> for HID or video, it should probably be a bus.
->
-> * A subsystem is less clearly defined, I would call bluetooth a subsystem
-> instead of just a bus because it not only matches devices with drivers
-> but also has its own user-level interfaces for raw communication.
-> If you want to be able to have drivers in the kernel and in user space,
-> you might want to consider starting a new drivers/cg2900 subsystem, or
-> integrating into the bluetooth subsystem if that makes sense.
->
+Not sure if there got something wrong when merging ext4 [1] into
+linux-next (before GIT-pull-request to LKML) or some patches missing
+from Ted's ext4/upstream-merge GIT branch?
 
-Thanks for this explanation. I would like to see this as a MFD at the
-moment since it is most definitely a silicon, as stated by Linus
-Walleij in a separate answer.
-In the future this could however be extended to be a bus, when we
-could use more chips with this driver.
+- Sedat -
 
->> >> +config MFD_CG2900
->> >> +     tristate "Support ST-Ericsson CG2900 main structure"
->> >> +     depends on NET
->> >> +     help
->> >> +       Support for ST-Ericsson CG2900 Connectivity Combo controller main structure.
->> >> +       Supports multiple functionalities muxed over a Bluetooth HCI H:4 interface.
->> >> +       CG2900 support Bluetooth, FM radio, and GPS.
->> >> +
->> >
->> > Can you explain what it means to mux over a H:4 interface? Does this mean
->> > you use bluetooth infrastructure that is designed for wireless communication
->> > in order to connect on-board or on-chip devices?
->> >
->>
->> The H:4 protocol is defined in the Bluetooth Core specification. It
->> uses a single byte first in the data packet to determine an HCI
->> channel. In the Bluetooth Core specification there are 4 channels
->> specified, 0x01-0x04 (0x01 is BT command, etc). The rest of the
->> channels are reserved, but these have been used on a proprietary basis
->> to transport data to different IPs within the controller. In our API
->> we have chosen to have a channel separation on an API basis and the
->> H:4 byte is then added within the driver. So we have multiple channels
->> coming in from the users that we mux onto a single data transport.
->> That's what I mean in the text. I guess I could rewrite it a bit to
->> make it clearer.
->
-> I still don't understand it, though that may be a problem on my side.
->
-> Does that mean that cg2900 is to the host side a standard bluetooth HCI,
-> but it uses extensions to the HCI in order to make the other functions
-> available to the host?
->
-> What chapter in the bluetooth core specification describes this?
->
+P.S.: Forgotten to add v2 of 2nd patch I mentionned below, sorry.
 
-Yes, exactly. Just for Bluetooth functionality you could more or less
-use existing Bluetooth UART drivers (you still have to enable chip and
-so on separately though), but in order to reach FM and GPS this
-protocol has been extended. In order to have an energy efficient
-solution there must also be a common driver that can shut off the chip
-when not in use, hence this CG2900 driver.
-You can read about the original protocol in the Bluetooth Core
-specification Volume 4 Part A - UART Transport Layer.
-This way to extend functionality upon the existing protocol is common
-amongst chip manufacturers for combo chips including Bluetooth
-functionality. Texas Instruments has already posted a driver for their
-chip (in drivers/staging/ti-st) that uses a similar protocol.
+[1] http://lkml.org/lkml/2010/10/27/480
+[2] http://git.kernel.org/?p=3Dlinux/kernel/git/tytso/ext4.git;a=3Dshortlog=
+;h=3Drefs/heads/upstream-merge
 
->> >> +
->> >> +/**
->> >> + * add_h4_user() - Add H4 user to user storage based on supplied H4 channel.
->> >> + * @dev:     Stored CG2900 device.
->> >> + * @name:    Device name to identify different devices that are using
->> >> + *           the same H4 channel.
->> >> + *
->> >> + * Returns:
->> >> + *   0 if there is no error.
->> >> + *   -EINVAL if NULL pointer or bad channel is supplied.
->> >> + *   -EBUSY if there already is a user for supplied channel.
->> >> + */
->> >> +static int add_h4_user(struct cg2900_device *dev, const char * const name)
->> >> +{
->> >
->> > Where does that name come from? Why not just use an enum if the name is
->> > only use for strncmp?
->> >
->>
->> At a point in time we used to have an enum, but from what I can see it
->> is easier to keep an API stable if you use name lookup instead. If we
->> want to have minimal changes to the API in the future this is quite a
->> flexible solution, but this code should be moved to each respective
->> chip handler.
+On Thu, Oct 28, 2010 at 12:05 PM, Sedat Dilek
+<sedat.dilek@googlemail.com> wrote:
+> Hi,
 >
-> You haven't really answered the first question, where the name comes from
-> (I guess the question was not too clear). Does this e.g. get passed by a
-> user application, or does it come from a hardware description of some
-> sort?
+> I have built today linux-next as of next-20101028 in a non-BKL config
+> (kernel-config attached) on a Debian i386/sid host.
 >
-> It looks a bit like a handcoded version of the code we use for device/driver
-> matching in drivers/core. If that's the case, it would be better to use
-> the existing infrastructure and create a bus with devices that can be
-> matched with drivers.
+> When I start my quassel IRC-client I get reproducibly this call-trace:
 >
-
-Oops, I misunderstood your question. The name is supplied by the user
-calling cg2900_register_user. The names are defined for reference in
-include/linux/mfd/cg2900.h.
-We used to have an enum to define this, but since we thought that
-using name lookup to be more future safe (and as well more "Kernel
-like") we chose to use that instead. It can have been a bad choice.
-Problem here is to some extent that we are beginners at Linux coding.
-A straight minimal API seemed to be easiest way to solve it. As you
-say we could probably use device registration as you state (we are
-already using MFD cells so we could possibly extend that) but I don't
-know if that would improve our code.
-We also have a lot of internal dependencies (like our FM driver that
-will be submitted to the Kernel community) so would like to avoid
-changing APIs if possible. But if you make this an absolute demand I
-guess we will have to follow.
-
->> >> +static ssize_t test_char_dev_read(struct file *filp, char __user *buf,
->> >> +                               size_t count, loff_t *f_pos)
->> >> +{
->> >> +     struct sk_buff *skb;
->> >> +     int bytes_to_copy;
->> >> +     int err;
->> >> +     struct sk_buff_head *rx_queue = &core_info->test_char_dev->rx_queue;
->> >
->> > What is this read/write interface used for?
->> >
->> > The name suggests that this is only for testing and not an essential
->> > part of your driver. Could this be made a separate driver?
->> >
->> > It also looks like you do socket communication here, can't you use
->> > a proper AF_BLUETOOTH socket to do the same?
->> >
->>
->> This interface can be used for module testing where you can have a
->> test engine in user space that acts as a chip. Yes, it could be made
->> into a separate driver but it would be a very small driver. Don't know
->> if it will be worth having it in a separate file...
+> # tail -40 kern.log
+> Oct 28 11:42:54 tbox kernel: [ =C2=A0 32.872957] EXT3-fs (sdb5): warning:
+> maximal mount count reached, running e2fsck is recommended
+> Oct 28 11:42:54 tbox kernel: [ =C2=A0 32.873621] EXT3-fs (sdb5): using
+> internal journal
+> Oct 28 11:42:54 tbox kernel: [ =C2=A0 32.873635] EXT3-fs (sdb5): mounted
+> filesystem with ordered data mode
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.480401] ------------[ cut here ]=
+------------
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.480598] kernel BUG at
+> /home/sd/src/linux-2.6/linux-2.6.36/debian/build/source_i386_none/fs/ext4=
+/inode.c:2721!
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.480979] invalid opcode: 0000 [#1=
+] SMP
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.481155] last sysfs file:
+> /sys/devices/LNXSYSTM:00/device:00/PNP0A03:00/device:01/PNP0C09:00/PNP0C0=
+A:00/power_supply/BAT0/energy_full
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.481610] Modules linked in: ext3
+> jbd sco aes_i586 rfcomm bnep aes_generic l2cap bluetooth acpi_cpufreq
+> mperf cpufreq_powersave cpufreq_userspace cpufreq_stats ppdev
+> cpufreq_conservative lp dm_crypt binfmt_misc arc4 snd_intel8x0 ecb
+> snd_intel8x0m radeon thinkpad_acpi snd_ac97_codec ath5k snd_seq_midi
+> ac97_bus pcmcia snd_pcm_oss joydev snd_rawmidi snd_seq_midi_event ath
+> mac80211 snd_mixer_oss ttm cfg80211 snd_seq snd_pcm yenta_socket
+> pcmcia_rsrc drm_kms_helper drm snd_seq_device snd_timer pcmcia_core
+> i2c_algo_bit nsc_ircc rfkill snd_page_alloc irda i2c_i801 shpchp snd
+> i2c_core tpm_tis rng_core pci_hotplug psmouse processor tpm soundcore
+> parport_pc video ac tpm_bios battery button led_class pcspkr evdev
+> parport power_supply serio_raw nvram output crc_ccitt fuse autofs4
+> ext4 mbcache jbd2 crc16 dm_mod usbhid hid usb_storage sg sd_mod sr_mod
+> crc_t10dif cdrom ata_generic ata_piix libata uhci_hcd ehci_hcd usbcore
+> scsi_mod thermal e1000 thermal_sys floppy nls_base [last unloaded:
+> scsi
+> Oct 28 11:44:16 tbox kernel: _wait_scan]
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020]
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] Pid: 237, comm:
+> jbd2/sda5-8 Not tainted 2.6.36-next-20101028.1-686 #1 2374SG6/2374SG6
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] EIP: 0060:[<f86282fb>]
+> EFLAGS: 00010246 CPU: 0
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] EIP is at
+> ext4_writepage+0x8d/0x1f1 [ext4]
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] EAX: 40020029 EBX:
+> f76934a0 ECX: 05050030 EDX: 00000000
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] ESI: 00005050 EDI:
+> 00001000 EBP: f5f3c548 ESP: ef973dbc
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] =C2=A0DS: 007b ES: 007b =
+FS:
+> 00d8 GS: 00e0 SS: 0068
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] Process jbd2/sda5-8 (pid=
+:
+> 237, ti=3Def972000 task=3Def8c9080 task.ti=3Def972000)
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] Stack:
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] =C2=A000000005 00000000
+> ef973e98 00000000 f5f3c600 ef973e98 00000000 00005050
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] =C2=A0c108fe6e f76934a0
+> c1090ea4 00000001 f5f3c600 00000004 00000002 00000000
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] =C2=A000000006 0000000e
+> ef9a6180 c108fe66 e74172ff 0000000e 00000000 f7693400
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] Call Trace:
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] =C2=A0[<c108fe6e>] ? __w=
+ritepage+0x8/0x1f
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] =C2=A0[<c1090ea4>] ?
+> write_cache_pages+0x1cc/0x281
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] =C2=A0[<c108fe66>] ? __w=
+ritepage+0x0/0x1f
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] =C2=A0[<c1090f6f>] ?
+> generic_writepages+0x16/0x1d
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] =C2=A0[<f85ab8d9>] ?
+> journal_submit_data_buffers+0xf5/0x150 [jbd2]
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] =C2=A0[<f85abd1e>] ?
+> jbd2_journal_commit_transaction+0x2d1/0xda3 [jbd2]
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] =C2=A0[<c1025bdb>] ?
+> dequeue_task_fair+0x1b/0x57
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] =C2=A0[<c10392df>] ?
+> lock_timer_base+0x19/0x34
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] =C2=A0[<c1039356>] ?
+> try_to_del_timer_sync+0x5c/0x63
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] =C2=A0[<f85afdf2>] ?
+> kjournald2+0x9e/0x1c7 [jbd2]
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] =C2=A0[<c1043ffe>] ?
+> autoremove_wake_function+0x0/0x29
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] =C2=A0[<f85afd54>] ?
+> kjournald2+0x0/0x1c7 [jbd2]
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] =C2=A0[<c1043cb2>] ? kth=
+read+0x63/0x68
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] =C2=A0[<c1043c4f>] ? kth=
+read+0x0/0x68
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] =C2=A0[<c10034fe>] ?
+> kernel_thread_helper+0x6/0x10
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] Code: 0c 89 34 24 89 ce =
+0f
+> ac d6 0c 39 7c 24 04 75 05 39 34 24 74 07 bf 00 10 00 00 eb 08 89 cf
+> 81 e7 ff 0f 00 00 8b 03 f6 c4 08 75 04 <0f> 0b eb fe c7 04 24 00 00 00
+> 00 83 7b 0c 00 75 37 68 46 ac 62
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.484020] EIP: [<f86282fb>]
+> ext4_writepage+0x8d/0x1f1 [ext4] SS:ESP 0068:ef973dbc
+> Oct 28 11:44:16 tbox kernel: [ =C2=A0115.564589] ---[ end trace 1b8c420fb=
+1d1ae45 ]---
 >
-> I don't think file size is a major argument here. If it's used for
-> testing, I'd make it a separate module that defaults to not being
-> built, in order to prevent people from relying on what you intended
-> as a testing interface.
+> The code section looks like:
+> [ fs/ext4/inode.c ]
+> ...
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0/*
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 * If the page does not have buffers (for what=
+ever reason),
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 * try to create them using __block_write_begi=
+n. =C2=A0If this
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 * fails, redirty the page and move on.
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 */
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0if (!page_buffers(page)) { =C2=A0 =C2=A0 <--- =
+LINE #2721
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0if (__block_write_=
+begin(page, 0, len,
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0noalloc_g=
+et_block_write)) {
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0redirty_page:
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 =C2=A0redirty_page_for_writepage(wbc, page);
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 =C2=A0unlock_page(page);
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 =C2=A0return 0;
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0}
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0commit_write =3D 1=
+;
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0}
+> ...
+>
+> I am not sure if this is a general ext4 problem or only in a non-BKL setu=
+p.
+>
+> Hope this helps to track down the problem.
+>
+> Kind Regards,
+> - Sedat -
+>
+> P.S.:
+> I also have tried with patches from [1] and [2], v2 versions attached
+> to make linux-next happy.
+>
+> [1] http://lkml.org/lkml/2010/10/28/36
+> [2] http://lkml.org/lkml/2010/10/28/40
 >
 
-OK. We can do this.
+--00163630fe6196ce3d0493aae427
+Content-Type: text/x-diff; charset=US-ASCII; 
+	name="tip-origin-tree-build-failure-was-GIT-PULL-ext4-update-for-2.6.37-v2.patch"
+Content-Disposition: attachment; 
+	filename="tip-origin-tree-build-failure-was-GIT-PULL-ext4-update-for-2.6.37-v2.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gfthyr6p3
 
->> We use the sk_buffer, which I guess is the reason that you mention
->> sockets. We could of course use a socket instead of a char dev, both
->> here and in the cg2900_char_dev file (which of course then would be
->> renamed). It was just a choice we made during development. We think
->> that the transport as such is more like a streaming interface, but I
->> see no real problem to have sockets. We already have several users
->> using char dev though so I would prefer to keep char dev rather than
->> switching to sockets unless you have a strong reason for this.
->> I see no reason to use AF_BLUETOOTH though, the transport is not only
->> for Bluetooth.
->
-> The question here is what is appropriate. My guess was that the frame
-> format was the one used in bluetooth sockets. If that's not the
-> case, AF_BLUETOOTH would obviously be wrong.
->
-> For the test interface, it doesn't matter that much what you use, but
-> for the cg2900_char_dev we should make sure that you considered all
-> the options and made a reasonable decision. What does the data format
-> look like there? My impression is that the character device might be
-> too low-level and it could be better to use some structured interface
-> like a socket, but it really depends on what it actually does.
->
-> In particular, if you can address multiple hardware units over one
-> character device, it may be better to have separate devices for each
-> of them.
->
-
-What is transmitted over each char dev is individual for that channel.
-For BT channels this will be BT data (normally char dev is not used
-for Bluetooth since BT stack connection is done directly in Kernel
-through btcg2900.c), for FM channel this will be FM data, etc. But
-most of all it will not be the same format as the sockets provided by
-the Bluetooth stack (at least I think so) since BT stack have
-protocols below the sockets (such as L2CAP). What is sent over the
-char dev is the same data as sent to the chip minus the H4 header (the
-first byte).
-The CG2900 driver is currently written only to support one CG2900
-chip, but of course that could be extended in the future.
-
->> >> +     CG2900_INFO("test_char_dev_read");
->> >> +
->> >> +     if (skb_queue_empty(rx_queue))
->> >> +             wait_event_interruptible(char_wait_queue,
->> >> +                                      !(skb_queue_empty(rx_queue)));
->> >> +
->> >> +     skb = skb_dequeue(rx_queue);
->> >> +     if (!skb) {
->> >> +             CG2900_INFO("skb queue is empty - return with zero bytes");
->> >> +             bytes_to_copy = 0;
->> >> +             goto finished;
->> >> +     }
->> >> +
->> >> +     bytes_to_copy = min(count, skb->len);
->> >> +     err = copy_to_user(buf, skb->data, bytes_to_copy);
->> >> +     if (err) {
->> >> +             skb_queue_head(rx_queue, skb);
->> >> +             return -EFAULT;
->> >> +     }
->> >> +
->> >> +     skb_pull(skb, bytes_to_copy);
->> >> +
->> >> +     if (skb->len > 0)
->> >> +             skb_queue_head(rx_queue, skb);
->> >> +     else
->> >> +             kfree_skb(skb);
->> >> +
->> >> +finished:
->> >> +     return bytes_to_copy;
->> >> +}
->> >
->> > This does not handle short/continued reads.
->> >
->>
->> As I mentioned above this interface is used for testing and we
->> therefore have some restriction of usage. I don't think we need to
->> impose all things necessary for a full interface upon it.
->
-> This is where it gets complicated. We don't normally add interfaces
-> to the kernel unless we expect to fully support them for the forseeable
-> future. It has happened more than enough in the past that somebody
-> introduced a debugging interface which subsequently became a supported
-> ABI because some application started relying on it.
->
-> Is the code that uses the test interface even publically available?
-> If not, I would recommend saving the trouble of arguing about it
-> and leaving out the interface.
->
-
-OK. Good idea. I will split out the test code to a separate file and
-leave it out of next patch set.
-
->> >> +     #define CG2900_ERR(fmt, arg...)                                 \
->> >> +     do {                                                            \
->> >> +             if (cg2900_debug_level >= 1)                            \
->> >> +                     pr_err("CG2900 %s: " fmt "\n" , __func__ , ## arg); \
->> >> +     } while (0)
->> >> +
->> >> +#endif /* NDEBUG */
->> >
->> > You'll feel relieved when all this is gone...
->> >
->>
->> The only thing is it's been pretty nice to have it, but I will remove it.
->> Is it OK to keep defines so we can have "CG2900" in front and "\n"
->> after the text?
->
-> Ideally, you would use the dev_* functions instead of the pr_* functions,
-> which print the name of the device before the message. I also wouldn't
-> add the "\n" in the macro because all the regular printing functions don't
-> do it. It will likely only confuse people and the binary remains the same.
->
->        Arnd
->
-
-OK. I've updated the code (will come in next patch set). I use dev_dbg
-where possible.
-
-/P-G
+ZGlmZiAtcmR1cCBzb3VyY2VfaTM4Nl9ub25lLm9yaWcvZnMvZXh0NC94YXR0ci5oIHNvdXJjZV9p
+Mzg2X25vbmUvZnMvZXh0NC94YXR0ci5oCi0tLSBzb3VyY2VfaTM4Nl9ub25lLm9yaWcvZnMvZXh0
+NC94YXR0ci5oCTIwMTAtMTAtMjAgMjI6MzA6MjIuMDAwMDAwMDAwICswMjAwCisrKyBzb3VyY2Vf
+aTM4Nl9ub25lL2ZzL2V4dDQveGF0dHIuaAkyMDEwLTEwLTI4IDExOjM3OjM0LjY0NDIxODA1NyAr
+MDIwMApAQCAtMTIyLDcgKzEyMiw3IEBAIGV4dDRfeGF0dHJfcHV0X3N1cGVyKHN0cnVjdCBzdXBl
+cl9ibG9jawogfQogCiBzdGF0aWMgaW5saW5lIGludAotaW5pdF9leHQ0X3hhdHRyKHZvaWQpCitl
+eHQ0X2luaXRfeGF0dHIodm9pZCkKIHsKIAlyZXR1cm4gMDsKIH0KTnVyIGluIHNvdXJjZV9pMzg2
+X25vbmUvZnMvZXh0NDogeGF0dHIuaC5yZWouCg==
+--00163630fe6196ce3d0493aae427--
