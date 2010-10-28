@@ -1,100 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934587Ab0J1VGN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 17:06:13 -0400
-Received: from cantor.suse.de ([195.135.220.2]:38425 "EHLO mx1.suse.de"
+	id S1760002Ab0J1VGz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 17:06:55 -0400
+Received: from thunk.org ([69.25.196.29]:57953 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758873Ab0J1VGG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 17:06:06 -0400
-Message-ID: <4CC9E5B5.5040402@suse.cz>
-Date: Thu, 28 Oct 2010 23:05:57 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	id S934558Ab0J1VGr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 17:06:47 -0400
+Date: Thu, 28 Oct 2010 17:06:44 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: sedat.dilek@gmail.com
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
+        sfr@canb.auug.org.au, Arnd Bergmann <arnd@arndb.de>,
+        Avinash Kurup <kurup.avinash@gmail.com>
+Subject: Re: [next-20101038] Call trace in ext4
+Message-ID: <20101028210644.GF28126@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, sedat.dilek@gmail.com,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
+	sfr@canb.auug.org.au, Arnd Bergmann <arnd@arndb.de>,
+	Avinash Kurup <kurup.avinash@gmail.com>
+References: <AANLkTi=E_uMj_ndGU86DCjX4aDwjHqg3dkwxjQRSJtq6@mail.gmail.com>
+ <20101028175221.GA1578@arch.trippelsdorf.de>
+ <20101028180118.GC6814@thunk.org>
+ <20101028193211.GA28126@thunk.org>
+ <AANLkTimHJe9bA-X+JWkspgjb4AZkkgbEFWQiwzO-gx-h@mail.gmail.com>
+ <20101028200548.GC28126@thunk.org>
+ <AANLkTimw9Vwzy4MXO1t7TnJfwTwYtWcfj0D=Zx8O72cY@mail.gmail.com>
+ <20101028203706.GD28126@thunk.org>
+ <AANLkTimFgcCVgBrW_oLzn0tUdGwJKfkhDJMf=EVHZ4Vf@mail.gmail.com>
 MIME-Version: 1.0
-To: Wu Zhangjin <wuzhangjin@gmail.com>
-Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        John Reiser <jreiser@bitwagon.com>, Sam Ravnborg <sam@ravnborg.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Subject: Re: [v2 PATCH] ftrace: Speed up recordmcount
-References: <3dc8cddf022eb7024f9f2cf857529a15bee8999a.1288196498.git.wuzhangjin@gmail.com>
-In-Reply-To: <3dc8cddf022eb7024f9f2cf857529a15bee8999a.1288196498.git.wuzhangjin@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimFgcCVgBrW_oLzn0tUdGwJKfkhDJMf=EVHZ4Vf@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.10.2010 18:24, Wu Zhangjin wrote:
-> From: Wu Zhangjin <wuzhangjin@gmail.com>
+On Thu, Oct 28, 2010 at 11:02:14PM +0200, Sedat Dilek wrote:
 > 
-> cmd_record_mcount is used to locate the _mcount symbols in the object
-> files, only the files compiled with -pg has the _mcount symbol, so, it
-> is only needed for such files, but the current cmd_record_mcount is used
-> for all of the object files, so, we need to fix it and speed it up.
-> 
-> Since -pg may be removed by the method used in kernel/trace/Makefile:
-> 
-> ORIG_CFLAGS := $(KBUILD_CFLAGS)
-> KBUILD_CFLAGS = $(subst -pg,,$(ORIG_CFLAGS))
-> 
-> Or may be removed by the method used in arch/x86/kernel/Makefile:
-> 
-> CONFIG_REMOVE_file.o = -pg
+> I could copy a complete linux-2.6 GIT tree within my $HOME/src, looks good.
 
-CFLAGS_REMOVE_file.o
+Excellent; and attempts to do this before resulted on the BUG_ON
+tripping?  If so, that's certainly a good sign!
 
-
-> So, we must check the last variable stores the compiling flags, that is
-> c_flags(Please refer to cmd_cc_o_c and rule_cc_o_c defined in
-> scripts/Makefile.build) and since the CFLAGS_REMOVE_file.o is already
-> filtered in _c_flags(Please refer to scripts/Makefile.lib) and _c_flags
-> has less symbols, therefore, we only need to check _c_flags.
 > 
-> ---------------
-> Changes from v1:
+> Any other test-case you can suggest to be sure things work as expected, now?
+
+Well, given that I haven't been able to replicate myself, no, not
+really.
+
+I am curious about your setup.  How much memory do you have on your
+system, and how much free memory did you have before running the copy?
+(i.e, what does the "free" command display)?
+
+> BTW, feel free to add:
 > 
->   o Don't touch Makefile for CONFIG_FTRACE_MCOUNT_RECORD is enough
->   o Use _c_flags intead of KBUILD_CFLAGS to cover CONFIG_REMOVE_file.o = -pg
->   (feedback from Steven Rostedt <rostedt@goodmis.org>)
-> 
-> Signed-off-by: Wu Zhangjin <wuzhangjin@gmail.com>
+>       Reported-andtested-by: Sedat Dilek <sedat.dilek@gmail.com>
 
-Acked-by: Michal Marek <mmarek@suse.cz>
+I'll certainly give you credit (as well as to the other people who
+reported the problem).
 
+Thanks again!!
 
-> ---
->  scripts/Makefile.build |   13 +++++++++----
->  1 files changed, 9 insertions(+), 4 deletions(-)
-> 
-> diff --git a/scripts/Makefile.build b/scripts/Makefile.build
-> index 5ad25e1..0ad6108 100644
-> --- a/scripts/Makefile.build
-> +++ b/scripts/Makefile.build
-> @@ -214,17 +214,22 @@ ifdef BUILD_C_RECORDMCOUNT
->  # The empty.o file is created in the make process in order to determine
->  #  the target endianness and word size. It is made before all other C
->  #  files, including recordmcount.
-> -cmd_record_mcount = if [ $(@) != "scripts/mod/empty.o" ]; then			\
-> -			$(objtree)/scripts/recordmcount "$(@)";			\
-> -		    fi;
-> +sub_cmd_record_mcount =					\
-> +	if [ $(@) != "scripts/mod/empty.o" ]; then	\
-> +		$(objtree)/scripts/recordmcount "$(@)";	\
-> +	fi;
->  else
-> -cmd_record_mcount = set -e ; perl $(srctree)/scripts/recordmcount.pl "$(ARCH)" \
-> +sub_cmd_record_mcount = set -e ; perl $(srctree)/scripts/recordmcount.pl "$(ARCH)" \
->  	"$(if $(CONFIG_CPU_BIG_ENDIAN),big,little)" \
->  	"$(if $(CONFIG_64BIT),64,32)" \
->  	"$(OBJDUMP)" "$(OBJCOPY)" "$(CC) $(KBUILD_CFLAGS)" \
->  	"$(LD)" "$(NM)" "$(RM)" "$(MV)" \
->  	"$(if $(part-of-module),1,0)" "$(@)";
->  endif
-> +cmd_record_mcount = 						\
-> +	if [ "$(findstring -pg,$(_c_flags))" == "-pg" ]; then	\
-> +		$(sub_cmd_record_mcount)			\
-> +	fi;
->  endif
->  
->  define rule_cc_o_c
-
+						- Ted
