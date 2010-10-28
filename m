@@ -1,54 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947Ab0J1E3g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 00:29:36 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:52085 "EHLO imr4.ericy.com"
+	id S1752327Ab0J1Ekh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 00:40:37 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:59630 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751598Ab0J1E3e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 00:29:34 -0400
-Date: Wed, 27 Oct 2010 21:28:34 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Joe Perches <joe@perches.com>
-CC: Jean Delvare <khali@linux-fr.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC PATCH] include/linux/kernel.h: Add config option for
- pr_fmt(fmt)
-Message-ID: <20101028042834.GA2219@ericsson.com>
-References: <1287713982.16920.39.camel@Joe-Laptop>
- <20101026110335.3a4c7679@endymion.delvare>
- <1288201301.4145.122.camel@Joe-Laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1288201301.4145.122.camel@Joe-Laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751707Ab0J1Eke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 00:40:34 -0400
+Subject: Re: [RFC PATCH 1/1] vhost: TX used buffer guest signal accumulation
+From: Shirley Ma <mashirle@us.ibm.com>
+To: "mst@redhat.com" <mst@redhat.com>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1288216693.17571.38.camel@localhost.localdomain>
+References: <1288216693.17571.38.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Oct 2010 21:40:04 -0700
+Message-ID: <1288240804.14342.1.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 01:41:41PM -0400, Joe Perches wrote:
-> On Tue, 2010-10-26 at 11:03 +0200, Jean Delvare wrote:
-> > On Thu, 21 Oct 2010 19:19:42 -0700, Joe Perches wrote:
-> > > Change the default #define pr_fmt(fmt) from:
-> > > 	- #define pr_fmt(fmt) fmt
-> > > to:
-> > > 	- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> > > This will standard use of prefixes and prevent the
-> > > addition of new #defines when using pr_<level>.
-> > I'm all for it!
-> > > Adds a config option to use the old style if desired.
-> > Not sure what the idea is. Once  pr_fmt() includes the module name, we
-> > will drop hard-coded prefixes in all log messages throughout the kernel
-> > tree. Once this is done, a kernel built with PR_FMT_IS_KBUILD_MODNAME=n
-> > would become horribly confusing.
-> 
-> True.  The idea is to allow a transition period and remove
-> this PR_FMT_IS_KBUILD_MODNAME config option later.
-> 
-Personally I would prefer to just make the change without config option.
+Resubmit this patch for fixing some minor error (white space, typo).
 
-However, if that is not acceptable, a config option which is enabled by default
-would still be better than nothing - and much better than hundreds of pr_fmt()
-spread throughout the code. Feel free to add my Acked-by, whatever that may help.
+Signed-off-by: Shirley Ma <xma@us.ibm.com>
+---
+ drivers/vhost/net.c   |   20 +++++++++++++++++++-
+ drivers/vhost/vhost.c |   32 ++++++++++++++++++++++++++++++++
+ drivers/vhost/vhost.h |    3 +++
+ 3 files changed, 54 insertions(+), 1 deletions(-)
 
-Guenter
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 4b4da5b..3eb8016 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -128,6 +128,7 @@ static void handle_tx(struct vhost_net *net)
+ 	int err, wmem;
+ 	size_t hdr_size;
+ 	struct socket *sock;
++	int max_pend = vq->num - (vq->num >> 2);
+ 
+ 	sock = rcu_dereference_check(vq->private_data,
+ 				     lockdep_is_held(&vq->mutex));
+@@ -198,7 +199,24 @@ static void handle_tx(struct vhost_net *net)
+ 		if (err != len)
+ 			pr_debug("Truncated TX packet: "
+ 				 " len %d != %zd\n", err, len);
+-		vhost_add_used_and_signal(&net->dev, vq, head, 0);
++		/*
++		 * if no pending buffer size allocate, signal used buffer
++		 * one by one, otherwise, signal used buffer when reaching
++		 * 3/4 ring size to reduce CPU utilization.
++		 */
++		if (unlikely(vq->pend))
++			vhost_add_used_and_signal(&net->dev, vq, head, 0);
++		else {
++			vq->pend[vq->num_pend].id = head;
++			vq->pend[vq->num_pend].len = 0;
++			++vq->num_pend;
++			if (vq->num_pend == max_pend) {
++				vhost_add_used_and_signal_n(&net->dev, vq,
++							    vq->pend,
++							    vq->num_pend);
++				vq->num_pend = 0;
++			}
++		}
+ 		total_len += len;
+ 		if (unlikely(total_len >= VHOST_NET_WEIGHT)) {
+ 			vhost_poll_queue(&vq->poll);
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index 94701ff..f2f3288 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -170,6 +170,16 @@ static void vhost_vq_reset(struct vhost_dev *dev,
+ 	vq->call_ctx = NULL;
+ 	vq->call = NULL;
+ 	vq->log_ctx = NULL;
++	/* signal pending used buffers */
++	if (vq->pend) {
++		if (vq->num_pend != 0) {
++			vhost_add_used_and_signal_n(dev, vq, vq->pend,
++						    vq->num_pend);
++			vq->num_pend = 0;
++		}
++		kfree(vq->pend);
++	}
++	vq->pend = NULL;
+ }
+ 
+ static int vhost_worker(void *data)
+@@ -273,7 +283,14 @@ long vhost_dev_init(struct vhost_dev *dev,
+ 		dev->vqs[i].heads = NULL;
+ 		dev->vqs[i].dev = dev;
+ 		mutex_init(&dev->vqs[i].mutex);
++		dev->vqs[i].num_pend = 0;
++		dev->vqs[i].pend = NULL;
+ 		vhost_vq_reset(dev, dev->vqs + i);
++		/* signal 3/4 of ring size used buffers */
++		dev->vqs[i].pend = kmalloc((dev->vqs[i].num -
++					   (dev->vqs[i].num >> 2)) *
++					   sizeof *dev->vqs[i].pend,
++					   GFP_KERNEL);
+ 		if (dev->vqs[i].handle_kick)
+ 			vhost_poll_init(&dev->vqs[i].poll,
+ 					dev->vqs[i].handle_kick, POLLIN, dev);
+@@ -599,6 +616,21 @@ static long vhost_set_vring(struct vhost_dev *d, int ioctl, void __user *argp)
+ 			r = -EINVAL;
+ 			break;
+ 		}
++		if (vq->num != s.num) {
++			/* signal used buffers first */
++			if (vq->pend) {
++				if (vq->num_pend != 0) {
++					vhost_add_used_and_signal_n(vq->dev, vq,
++								    vq->pend,
++								    vq->num_pend);
++					vq->num_pend = 0;
++				}
++				kfree(vq->pend);
++			}
++			/* realloc pending used buffers size */
++			vq->pend = kmalloc((s.num - (s.num >> 2)) *
++					   sizeof *vq->pend, GFP_KERNEL);
++		}
+ 		vq->num = s.num;
+ 		break;
+ 	case VHOST_SET_VRING_BASE:
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index 073d06a..78949c0 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -108,6 +108,9 @@ struct vhost_virtqueue {
+ 	/* Log write descriptors */
+ 	void __user *log_base;
+ 	struct vhost_log *log;
++	/* delay multiple used buffers to signal once */
++	int num_pend;
++	struct vring_used_elem *pend;
+ };
+ 
+ struct vhost_dev {
+
+
