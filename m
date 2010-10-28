@@ -1,91 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759833Ab0J1UPE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 16:15:04 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:40858 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759718Ab0J1UO4 (ORCPT
+	id S1761555Ab0J1UPM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 16:15:12 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:36790 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761529Ab0J1UPC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 16:14:56 -0400
-Message-ID: <4CC9D9B9.10601@codemonkey.ws>
-Date: Thu, 28 Oct 2010 15:14:49 -0500
-From: Anthony Liguori <anthony@codemonkey.ws>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100915 Lightning/1.0b1 Thunderbird/3.0.8
+	Thu, 28 Oct 2010 16:15:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:content-type:content-transfer-encoding;
+        b=AZMFTBumV5KQ1MQW/ruFtXsebXQFeSww+RPF6/QTHSaCmOCGXEkfnh1cxugzfVEXXy
+         p4HQbJpkRKM3P68dJcfzoQ1jHW89xa/kVEt8EYAn0ai8DDXHj/GVdC+QmMwfp5hVGERQ
+         34pQsBB22l+lH+Pu8kNKALslMfTwS91r9pBFo=
 MIME-Version: 1.0
-To: Ian Molton <ian.molton@collabora.co.uk>
-CC: Avi Kivity <avi@redhat.com>, virtualization@lists.osdl.org,
-        linux-kernel@vger.kernel.org, QEMU Developers <qemu-devel@nongnu.org>
-Subject: Re: [Qemu-devel] Re: [PATCH] Implement a virtio GPU transport
-References: <4CAC9CD1.2050601@collabora.co.uk>	<4CB1D79A.6070805@redhat.com>	<4CBD739A.2010500@collabora.co.uk>	<4CBD7560.6080207@redhat.com> <4CC8226F.5080807@collabora.co.uk>	<4CC94203.1080207@redhat.com> <4CC9647A.50108@collabora.co.uk> <4CC98784.7020907@redhat.com> <4CC98C25.9010207@codemonkey.ws> <4CC9D403.2010805@collabora.co.uk>
-In-Reply-To: <4CC9D403.2010805@collabora.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20101028200548.GC28126@thunk.org>
+References: <AANLkTi=E_uMj_ndGU86DCjX4aDwjHqg3dkwxjQRSJtq6@mail.gmail.com>
+	<20101028175221.GA1578@arch.trippelsdorf.de>
+	<20101028180118.GC6814@thunk.org>
+	<20101028193211.GA28126@thunk.org>
+	<AANLkTimHJe9bA-X+JWkspgjb4AZkkgbEFWQiwzO-gx-h@mail.gmail.com>
+	<20101028200548.GC28126@thunk.org>
+Date: Thu, 28 Oct 2010 22:15:00 +0200
+Message-ID: <AANLkTimw9Vwzy4MXO1t7TnJfwTwYtWcfj0D=Zx8O72cY@mail.gmail.com>
+Subject: Re: [next-20101038] Call trace in ext4
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: "Ted Ts'o" <tytso@mit.edu>, sedat.dilek@gmail.com,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
+        sfr@canb.auug.org.au, Arnd Bergmann <arnd@arndb.de>,
+        Avinash Kurup <kurup.avinash@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/2010 02:50 PM, Ian Molton wrote:
-> On 28/10/10 15:43, Anthony Liguori wrote:
->> On 10/28/2010 09:24 AM, Avi Kivity wrote:
->>> On 10/28/2010 01:54 PM, Ian Molton wrote:
+On Thu, Oct 28, 2010 at 10:05 PM, Ted Ts'o <tytso@mit.edu> wrote:
+> On Thu, Oct 28, 2010 at 09:54:23PM +0200, Sedat Dilek wrote:
 >>
->>>> True, but then all that would prove is that I can write a spec to
->>>> match the code.
->>>
->>> It would also allow us to check that the spec matches the
->>> requirements. Those two steps are easier than checking that the code
->>> matches the requirements.
+>> Hm, unfortunately NO (see logs).
+>>
+>> I have compiled via M=fs/ext4 in an already compiled build-tree with
+>> these 3 patches.
 >
-> There was no formal spec for this. The code was written to replace 
-> nasty undefined-instruction based data transport hacks in the (already 
-> existing) GL passthrough code.
+> Ok, stupid question.  You did make sure the new ext4 module was
+> loaded, right?
 >
->> I'm extremely sceptical of any GL passthrough proposal. There have
->> literally been half a dozen over the years and they never seem to leave
->> proof-of-concept phase. My (limited) understanding is that it's a
->> fundamentally hard problem that no one has adequately solved yet.
+>> [  100.884524] ------------[ cut here ]------------
+>> [  100.884718] kernel BUG at /home/sd/src/linux-2.6/linux-2.6.36/debian/build/source_i386_none/fs/ext4/inode.c:2721!
 >
-> The code in this case has been presented as a patch to qemu nearly 3 
-> years ago. I've taken the patches and refactored them to use virtio 
-> rather than an undefined instruction (which fails under KVM, unlike my 
-> approach).
+> OK, so after the patch, line 2721: changed from page_buffers() to:
 >
-> Its in use testing meego images and seems to be fairly reliable. it 
-> can handle compositing window managers, games, video, etc. We're 
-> currently supporting OpenGL 1.4 including shaders.
+>    if (!page_has_buffers(page))
 >
->> A specifically matters an awful lot less than an explanation of how the
->> problem is being solved in a robust fashion such that it can be reviewed
->> by people with a deeper understanding of the problem space.
+> page_has_buffers() expands to:
 >
-> I'm not sure there is a way to prevent nefarious tasks upsetting the 
-> hosts OpenGL with carefully crafted strings of commands, short of 
-> inspecting every single command, which is insane.
+> #define page_has_buffers(page)  PagePrivate(page)
 >
-> Really this needs to be done at a lower level by presenting a virtual 
-> GPU to the guest OS but I am not in a position to code that right now.
+> which expands to test_bit() call to see if PG_private1 is set in
+> page->flags.  There is no BUG_ON anywhere there as far as I can tell.
 >
-> The code as it is is useful, and can always be superceeded by a 
-> virtual GPU implementation in future.
+> Line 2721 in the older kernel was page_has_buffers() which does have a
+> BUG_ON check.
 >
-> At least this breaks the chicken / egg cycle of people wanting GL 
-> support on virtual machines, but not writing stuff to take advantage 
-> of it because the support isn't there. its also a neatly encapsulated 
-> solution - if you dont want people to have access to the passthrough, 
-> simply tell qemu not to present the virtio-gl device to the guest, via 
-> qemus existing commandline options.
+>                                        - Ted
 >
-> If this code was invasive to qemus core, I'd say 'no way' but its just 
-> not. and as the GL device is versioned, we can keep using it even if 
-> the passthrough is replaced by a virtual GPU.
 
-The virtio-gl implementation is basically duplicating virtio-serial.  It 
-looks like ti creates a totally separate window for the GL session.    
-In the current form, is there really any advantage to having the code in 
-QEMU?  It could just as easily live outside of QEMU.
+I created a new ext4.ko via "make M=fs/ext4" in the build-dir and
+copied the the kernel-module to /lib/modules/$(uname
+-r)/kernel/fs/ext4/, is that not enough?
+If not, I have to recompile a new kernel.
 
-Regards,
-
-Anthony Liguori
-
-
+- Sedat -
