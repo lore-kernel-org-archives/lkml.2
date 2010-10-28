@@ -1,86 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758744Ab0J1Wle (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 18:41:34 -0400
-Received: from thunk.org ([69.25.196.29]:60265 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753333Ab0J1Wl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 18:41:28 -0400
-Date: Thu, 28 Oct 2010 18:41:23 -0400
-Message-Id: <E1PBb9v-0005RM-E0@tytso-glaptop>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ext4 bugfix update
-From: "Theodore Ts'o" <tytso@mit.edu>
-Phone: (781) 391-3464
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S1759106Ab0J1Wln (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 18:41:43 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:35294 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758888Ab0J1Wlf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 18:41:35 -0400
+Date: Thu, 28 Oct 2010 17:41:32 -0500
+From: Russ Anderson <rja@sgi.com>
+To: linux-kernel@vger.kernel.org
+Cc: "H. Peter Anvin" <hpa@zytor.com>, mingo@redhat.com, tglx@linutronix.de,
+        Jack Steiner <steiner@sgi.com>, Russ Anderson <rja@sgi.com>
+Subject: [PATCH] x86, uv: More Westmere support on SGI UV
+Message-ID: <20101028224132.GB15804@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+x86, uv: More Westmere support on SGI UV
 
-Please pull from:
+Enable Westmere support on all apic modes on SGI UV.
 
-        git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git for_linus
+Signed-off-by: Russ Anderson <rja@sgi.com>
 
-to pick up the following fix.
-
-Many thanks!!
-
-					- Ted
-
->From b1142e8fec6a594723e5054055a7b53379b90490 Mon Sep 17 00:00:00 2001
-From: Theodore Ts'o <tytso@mit.edu>
-Date: Thu, 28 Oct 2010 17:33:57 -0400
-Subject: [PATCH] ext4: BUG_ON fix: check if page has buffers before calling page_buffers()
-
-We need to make check if a page does not have buffes by checking
-page_has_buffers(page) before calling page_buffers(page) in
-ext4_writepage().  Otherwise page_buffers() could throw a BUG_ON.
-
-Thanks also to Markus Trippelsdorf and Avinash Kurup who also reported
-the problem.
-
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reported-by: Sedat Dilek <sedat.dilek@googlemail.com>
-Tested-by: Sedat Dilek <sedat.dilek@googlemail.com>
 ---
- fs/ext4/inode.c |   12 +++++-------
- 1 files changed, 5 insertions(+), 7 deletions(-)
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 2d6c6c8..1916164 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -2718,7 +2718,7 @@ static int ext4_writepage(struct page *page,
- 	 * try to create them using __block_write_begin.  If this
- 	 * fails, redirty the page and move on.
- 	 */
--	if (!page_buffers(page)) {
-+	if (!page_has_buffers(page)) {
- 		if (__block_write_begin(page, 0, len,
- 					noalloc_get_block_write)) {
- 		redirty_page:
-@@ -2732,12 +2732,10 @@ static int ext4_writepage(struct page *page,
- 	if (walk_page_buffers(NULL, page_bufs, 0, len, NULL,
- 			      ext4_bh_delay_or_unwritten)) {
- 		/*
--		 * We don't want to do block allocation So redirty the
--		 * page and return We may reach here when we do a
--		 * journal commit via
--		 * journal_submit_inode_data_buffers.  If we don't
--		 * have mapping block we just ignore them. We can also
--		 * reach here via shrink_page_list
-+		 * We don't want to do block allocation, so redirty
-+		 * the page and return.  We may reach here when we do
-+		 * a journal commit via journal_submit_inode_data_buffers.
-+		 * We can also reach here via shrink_page_list
+ arch/x86/kernel/apic/x2apic_uv_x.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+Index: linux/arch/x86/kernel/apic/x2apic_uv_x.c
+===================================================================
+--- linux.orig/arch/x86/kernel/apic/x2apic_uv_x.c	2010-10-28 16:39:23.771774569 -0500
++++ linux/arch/x86/kernel/apic/x2apic_uv_x.c	2010-10-28 16:45:52.295342718 -0500
+@@ -71,7 +71,7 @@ static int early_get_nodeid(void)
+ 	return node_id.s.node_id;
+ }
+ 
+-static int __init early_get_apic_pnode_shift(void)
++static void __init early_get_apic_pnode_shift(void)
+ {
+ 	unsigned long *mmr;
+ 
+@@ -83,8 +83,6 @@ static int __init early_get_apic_pnode_s
+ 		 * Old bios, use default value
  		 */
- 		goto redirty_page;
- 	}
+ 		uvh_apicid.s.pnode_shift = UV_APIC_PNODE_SHIFT;
+-
+-	return uvh_apicid.s.pnode_shift;
+ }
+ 
+ static int __init uv_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
+@@ -93,6 +91,7 @@ static int __init uv_acpi_madt_oem_check
+ 
+ 	if (!strcmp(oem_id, "SGI")) {
+ 		nodeid = early_get_nodeid();
++		early_get_apic_pnode_shift();
+ 		x86_platform.is_untracked_pat_range =  uv_is_untracked_pat_range;
+ 		x86_platform.nmi_init = uv_nmi_init;
+ 		if (!strcmp(oem_table_id, "UVL"))
+@@ -101,7 +100,7 @@ static int __init uv_acpi_madt_oem_check
+ 			uv_system_type = UV_X2APIC;
+ 		else if (!strcmp(oem_table_id, "UVH")) {
+ 			__get_cpu_var(x2apic_extra_bits) =
+-				nodeid << (early_get_apic_pnode_shift() - 1);
++				nodeid << (uvh_apicid.s.pnode_shift - 1);
+ 			uv_system_type = UV_NON_UNIQUE_APIC;
+ 			return 1;
+ 		}
 -- 
-1.7.3.1
-
+Russ Anderson, OS RAS/Partitioning Project Lead  
+SGI - Silicon Graphics Inc          rja@sgi.com
