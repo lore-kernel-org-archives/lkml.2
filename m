@@ -1,87 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758725Ab0J1Naz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 09:30:55 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:48095 "EHLO mx3.mail.elte.hu"
+	id S1758734Ab0J1Ncn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 09:32:43 -0400
+Received: from mx1.fusionio.com ([64.244.102.30]:44977 "EHLO mx1.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753003Ab0J1Nax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 09:30:53 -0400
-Date: Thu, 28 Oct 2010 15:30:36 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Nick Piggin <npiggin@suse.de>, Arjan van de Ven <arjan@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: 2.6.36 io bring the system to its knees
-Message-ID: <20101028133036.GA30565@elte.hu>
-References: <AANLkTimt7wzR9RwGWbvhiOmot_zzayfCfSh_-v6yvuAP@mail.gmail.com>
- <AANLkTikRKVBzO=ruy=JDmBF28NiUdJmAqb4-1VhK0QBX@mail.gmail.com>
- <AANLkTinzJ9a+9w7G5X0uZpX2o-L8E6XW98VFKoF1R_-S@mail.gmail.com>
- <AANLkTinDDG0ZkNFJZXuV9k3nJgueUW=ph8AuHgyeAXji@mail.gmail.com>
- <AANLkTikvSGNE7uGn5p0tfJNg4Hz5WRmLRC8cXu7+GhMk@mail.gmail.com>
- <20101028090002.GA12446@elte.hu>
- <AANLkTinoGGLTN2JRwjJtF6Ra5auZVg+VSa=TyrtAkDor@mail.gmail.com>
+	id S1753003Ab0J1Nck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 09:32:40 -0400
+X-ASG-Debug-ID: 1288272758-085b8ec10001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4CC97B74.3000808@fusionio.com>
+Date: Thu, 28 Oct 2010 07:32:36 -0600
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinoGGLTN2JRwjJtF6Ra5auZVg+VSa=TyrtAkDor@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] fix for loop warning
+References: <4CC7A809.1070607@fusionio.com> <AANLkTink4hKJk_-Pb-rPxQcBH5WcBKqf=9ybZ7thL1O6@mail.gmail.com>
+X-ASG-Orig-Subj: Re: [GIT PULL] fix for loop warning
+In-Reply-To: <AANLkTink4hKJk_-Pb-rPxQcBH5WcBKqf=9ybZ7thL1O6@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1288272758
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.4251 1.0000 0.0000
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.44984
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Pekka Enberg <penberg@kernel.org> wrote:
-
-> * Pekka Enberg <penberg@kernel.org> wrote:
-> >> On Thu, Oct 28, 2010 at 9:09 AM, Aidar Kultayev <the.aidar@gmail.com> wrote:
-> >> > Find attached screenshot ( latencytop_n_powertop.png ) which depicts
-> >> > artifacts where the window manager froze at the time I was trying to
-> >> > see a tab in Konsole where the powertop was running.
-> >>
-> >> You seem to have forgotten to include the attachment.
+On 2010-10-27 19:47, Linus Torvalds wrote:
+> On Tue, Oct 26, 2010 at 9:18 PM, Jens Axboe <jaxboe@fusionio.com> wrote:
+>>
+>>  git://git.kernel.dk/linux-2.6-block.git for-linus
 > 
-> On Thu, Oct 28, 2010 at 12:00 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> > I got it - it appears it was too large for lkml's ~500K mail size limit.
-> >
-> > Aidar, mind sending a smaller image?
+> "Already up-to-date."
 > 
-> Looks mostly VFS to me. Aidar, does killing Picasa make things smoother for you? 
-> If so, maybe the VFS scalability patches will help.
+> Forgot to push?
 
-Hm, but the VFS scalability patches mostly decrease CPU usage, and does that mostly 
-on many-core systems.
+Must have... The branch has now been updated with a few other pending
+patches. All pretty trivial and straight forward changes.
 
-While the bugreport here is rather plain:
+Please pull (again :-).
 
-> How do I notice slowdowns ? The JuK lags so badly that it can't play any music, 
-> the mouse pointer freezes, kwin effects freeze for few seconds.
->
-> How can I make it much worse ? I can try & run disk clean up under XP, that is 
-> running in VBox, with folder compression. On top of it if I start copying big 
-> files in linux ( 700MB avis, etc ), GUI effects freeze, mouse pointer freezes for 
-> few seconds.
->
-> And this is on 2.6.36 that is supposed to cure these "features". From this 
-> perspective, 2.6.36 is no better than any previous stable kernel I've tried. 
-> Probably as bad with regards to IO issues.
 
-"Many seconds freezes" and slowdowns wont be fixed via the VFS scalability patches 
-i'm afraid.
+  git://git.kernel.dk/linux-2.6-block.git for-linus
 
-This has the appearance of some really bad IO or VM latency problem. Unfixed and 
-present in stable kernel versions going from years ago all the way to v2.6.36.
+Andrew Morton (1):
+      drivers/block/aoe/aoeblk.c: ratelimit a warning printk
 
-Thanks,
+Geert Uytterhoeven (1):
+      drivers/block/z2ram.c: correct printing of sector_t
 
-	Ingo
+Mike Miller (1):
+      cciss: remove overlapping PCI IDs
+
+Milan Broz (1):
+      loop: Properly clear sysfs in autoclear mode
+
+Nicolas Kaiser (1):
+      drivers/block/drbd/drbd_main.c: fix error path
+
+Tejun Heo (1):
+      aoe: don't use flush_scheduled_work()
+
+Vasiliy Kulikov (1):
+      block: cciss: fix information leak to userland
+
+ drivers/block/aoe/aoeblk.c     |    4 +++-
+ drivers/block/aoe/aoedev.c     |    4 +---
+ drivers/block/cciss.c          |   37 +------------------------------------
+ drivers/block/drbd/drbd_main.c |    2 +-
+ drivers/block/loop.c           |    2 +-
+ drivers/block/z2ram.c          |    6 ++++--
+ 6 files changed, 11 insertions(+), 44 deletions(-)
+
+
+-- 
+Jens Axboe
+
