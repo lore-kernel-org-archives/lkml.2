@@ -1,55 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759600Ab0J1Xj1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 19:39:27 -0400
-Received: from barcelona.uem.br ([200.201.11.21]:39351 "EHLO barcelona.uem.br"
+	id S1759621Ab0J1Xkp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 19:40:45 -0400
+Received: from hera.kernel.org ([140.211.167.34]:42779 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758438Ab0J1XjV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 19:39:21 -0400
-X-Greylist: delayed 2067 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Oct 2010 19:39:21 EDT
-X-Spam-Flag: NO
-X-Spam-Score: 1.231
-Date: Thu, 28 Oct 2010 20:59:49 -0200 (BRST)
-From: =?utf-8?Q?Anniversary_Celebration_=C2=A92010?= <ccsilva@uem.br>
-Message-ID: <23560626.29361288306789693.JavaMail.root@Sakhir.uem.br>
-Subject: GoogleUK 11th Anniversary Celebrations!!!***Contact Mr. Grahams
- Benfield via email for more info***
+	id S1759139Ab0J1Xkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 19:40:41 -0400
+Date: Thu, 28 Oct 2010 23:40:12 GMT
+From: tip-bot for Yinghai Lu <yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, jeremy@goop.org, hpa@zytor.com,
+        mingo@redhat.com, konrad.wilk@oracle.com, yinghai@kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, jeremy@goop.org,
+        linux-kernel@vger.kernel.org, yinghai@kernel.org,
+        konrad.wilk@oracle.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <4CC9A9C9.8020700@kernel.org>
+References: <4CC9A9C9.8020700@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, memblock: Fix early_node_mem with big reserved region.
+Message-ID: <tip-419db274bed4269f475a8e78cbe9c917192cfe8b@git.kernel.org>
+Git-Commit-ID: 419db274bed4269f475a8e78cbe9c917192cfe8b
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [213.229.110.100]
-X-Mailer: Zimbra 5.0.10_GA_2638.RHEL4 (zclient/5.0.10_GA_2638.RHEL4)
-To: undisclosed-recipients:;
-X-UEM-MailScanner-Information: Please contact the ISP for more information
-X-UEM-MailScanner-ID: 30D81104D1.A02BC
-X-UEM-MailScanner: Found to be clean
-X-UEM-MailScanner-SpamScore: 1
-X-UEM-MailScanner-From: ccsilva@uem.br
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 28 Oct 2010 23:40:13 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  419db274bed4269f475a8e78cbe9c917192cfe8b
+Gitweb:     http://git.kernel.org/tip/419db274bed4269f475a8e78cbe9c917192cfe8b
+Author:     Yinghai Lu <yinghai@kernel.org>
+AuthorDate: Thu, 28 Oct 2010 09:50:17 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 28 Oct 2010 15:52:36 -0700
 
-Your E-mail just W o n £850,000 UK Pounds in our on-going 11th Anniversary
-Online Promo!!
+x86, memblock: Fix early_node_mem with big reserved region.
 
-YOUR DETAILS:
-L u c k y # : 12-12-23-35-40-41(12),
-T i c k e t # : 00869575733664,
-C G P N : 7-22-71-00-66-12.
+Xen can reserve huge amounts of memory for pre-ballooning, but that
+still shows as RAM in the e820 memory map.  early_node_mem could not
+find range because of start/end adjusting, and will go through the
+fallback path.  However, the fallback patch is still using
+memblock_x86_find_range_node(), and it is partially top-down because
+it go through active_range entries from low to high.
 
-CONTACT MR GRAHAMS BENFIELD VIA EMAIL BELOW TO GET MORE INFORMATION.
--E-mail: online.anniversarypromo1@gmail.com
-        : officialclaimsprocessing@myemail.com
+Let's use memblock_find_in_range instead memblock_x86_find_range_node.
+So get real top down in fallback path.
 
-MRS. HELENA GERRAD
-(c) 2010 Google Online Asst. Coordinator/Announcer.
-====================================================
-Note: Your winning details should be sent to the two email addresses
-    above inorder to get all the necessary informations about your prize.
+We may still need to make memblock_x86_find_range_node to do overall
+top_down work.
 
--- 
-Esta mensagem foi verificada pelo sistema de antivírus e
- acredita-se estar livre de perigo.
+Reported-by: Jeremy Fitzhardinge <jeremy@goop.org>
+Tested-by: Jeremy Fitzhardinge <jeremy@goop.org>
+Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+LKML-Reference: <4CC9A9C9.8020700@kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/mm/numa_64.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
+diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
+index 60f4985..7ffc9b7 100644
+--- a/arch/x86/mm/numa_64.c
++++ b/arch/x86/mm/numa_64.c
+@@ -178,11 +178,8 @@ static void * __init early_node_mem(int nodeid, unsigned long start,
+ 
+ 	/* extend the search scope */
+ 	end = max_pfn_mapped << PAGE_SHIFT;
+-	if (end > (MAX_DMA32_PFN<<PAGE_SHIFT))
+-		start = MAX_DMA32_PFN<<PAGE_SHIFT;
+-	else
+-		start = MAX_DMA_PFN<<PAGE_SHIFT;
+-	mem = memblock_x86_find_in_range_node(nodeid, start, end, size, align);
++	start = MAX_DMA_PFN << PAGE_SHIFT;
++	mem = memblock_find_in_range(start, end, size, align);
+ 	if (mem != MEMBLOCK_ERROR)
+ 		return __va(mem);
+ 
