@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031Ab0J1L4c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 07:56:32 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:17983 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730Ab0J1L43 (ORCPT
+	id S1756405Ab0J1MAI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 08:00:08 -0400
+Received: from bhuna.collabora.co.uk ([93.93.128.226]:49920 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752459Ab0J1MAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 07:56:29 -0400
-Date: Thu, 28 Oct 2010 04:55:32 -0700
-From: Joel Becker <Joel.Becker@oracle.com>
-To: Dan Carpenter <error27@gmail.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [patch v2] configfs: documentation: remove unneeded check
-Message-ID: <20101028115531.GG11937@mail.oracle.com>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
-	linux-doc@vger.kernel.org, kernel-janitors@vger.kernel.org
-References: <20101027100735.GE6062@bicker>
- <20101027112207.GA17439@mail.oracle.com>
- <20101027145031.GG6062@bicker>
+	Thu, 28 Oct 2010 08:00:05 -0400
+Message-ID: <4CC9647A.50108@collabora.co.uk>
+Date: Thu, 28 Oct 2010 12:54:34 +0100
+From: Ian Molton <ian.molton@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100917 Icedove/3.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101027145031.GG6062@bicker>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Avi Kivity <avi@redhat.com>
+CC: linux-kernel@vger.kernel.org, QEMU Developers <qemu-devel@nongnu.org>,
+        virtualization@lists.osdl.org
+Subject: Re: [Qemu-devel] Re: [PATCH] Implement a virtio GPU transport
+References: <4CAC9CD1.2050601@collabora.co.uk> <4CB1D79A.6070805@redhat.com>	<4CBD739A.2010500@collabora.co.uk> <4CBD7560.6080207@redhat.com> <4CC8226F.5080807@collabora.co.uk> <4CC94203.1080207@redhat.com>
+In-Reply-To: <4CC94203.1080207@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 04:50:31PM +0200, Dan Carpenter wrote:
-> If "p" is NULL then it will cause an oops when we pass it to
-> simple_strtoul().  In this case "p" can not be NULL so I removed the
-> check.  I also changed the check a little to make it more explicit that
-> we are testing whether p points to the NUL char.
-> 
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
+On 28/10/10 10:27, Avi Kivity wrote:
+> On 10/27/2010 03:00 PM, Ian Molton wrote:
+>> On 19/10/10 11:39, Avi Kivity wrote:
+>>> On 10/19/2010 12:31 PM, Ian Molton wrote:
+>>
+>>>>> 2. should start with a patch to the virtio-pci spec to document what
+>>>>> you're doing
+>>>>
+>>>> Where can I find that spec?
+>>>
+>>> http://ozlabs.org/~rusty/virtio-spec/
+>>
+>> Ok, but I'm not patching that until theres been some review.
+>
+> Well, I like to review an implementation against a spec.
 
-Acked-by: Joel Becker <joel.becker@oracle.com>
+True, but then all that would prove is that I can write a spec to match 
+the code.
 
-> ---
-> V2: Added some parenthesis to make the precedence more clear.
-> 
-> diff --git a/Documentation/filesystems/configfs/configfs_example_explicit.c b/Documentation/filesystems/configfs/configfs_example_explicit.c
-> index d428cc9..63ff248 100644
-> --- a/Documentation/filesystems/configfs/configfs_example_explicit.c
-> +++ b/Documentation/filesystems/configfs/configfs_example_explicit.c
-> @@ -89,7 +89,7 @@ static ssize_t childless_storeme_write(struct childless *childless,
->  	char *p = (char *) page;
->  
->  	tmp = simple_strtoul(p, &p, 10);
-> -	if (!p || (*p && (*p != '\n')))
-> +	if ((*p != '\0') && (*p != '\n'))
->  		return -EINVAL;
->  
->  	if (tmp > INT_MAX)
-> 
+The code is proof of concept. the kernel bit is pretty simple, but I'd 
+like to get some idea of whether the rest of the code will be accepted 
+given that theres not much point in having any one (or two) of these 
+components exist without the other.
 
--- 
+> Better, but still unsatisfying. If the server is busy, the caller would
+> block. I guess it's expected since it's called from ->fsync(). I'm not
+> sure whether that's the best interface, perhaps aio_writev is better.
 
-"Sometimes I think the surest sign intelligent
- life exists elsewhere in the universe is that
- none of it has tried to contact us."
-                                -Calvin & Hobbes
+The caller is intended to block as the host must perform GL rendering 
+before allowing the guests process to continue.
 
-Joel Becker
-Senior Development Manager
-Oracle
-E-mail: joel.becker@oracle.com
-Phone: (650) 506-8127
+The only real bottleneck is that processes will block trying to submit 
+data if another process is performing rendering, but that will only be 
+solved when the renderer is made multithreaded. The same would happen on 
+a real GPU if it had only one queue too.
+
+If you look at the host code, you can see that the data is already 
+buffered per-process, in a pretty sensible way. if the renderer itself 
+were made a seperate thread, then this problem magically disappears (the 
+queuing code on the host is pretty fast).
+
+In testing, the overhead of this was pretty small anyway. Running a few 
+dozen glxgears and a copy of ioquake3 simultaneously on an intel video 
+card managed the same framerate with the same CPU utilisation, both with 
+the old code and the version I just posted. Contention during rendering 
+just isn't much of an issue.
+
+-Ian
