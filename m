@@ -1,102 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934136Ab0J1Svw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 14:51:52 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35535 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757796Ab0J1Svp convert rfc822-to-8bit (ORCPT
+	id S934150Ab0J1SwW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 14:52:22 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:15014 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757796Ab0J1SwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 14:51:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=taLK/mIS9/gfVnsrBmlAGju66HvvahdRYN0/qJGPtRE4e8EnoOBBcFOP2cwMI690yi
-         hScdssCBNR46S/aMc1qnaLImBQuOTYlDVMC2BmkJrjAUKm2xvKZ/8p/NCsBY/a4MBPv7
-         OFj0W7Anyc5XchNz56Eeks9cUKcl5kms80Ato=
+	Thu, 28 Oct 2010 14:52:16 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Amit Kumar Salecha <amit.salecha@qlogic.com>
+Subject: NULL pointer dereference at netxen_nic_probe+0x813/0x9a0
+Date: Thu, 28 Oct 2010 12:50:50 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-25-generic; KDE/4.4.2; x86_64; ; )
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <201010231923.o9NJNK9U013494@hera.kernel.org>
-References: <201010231923.o9NJNK9U013494@hera.kernel.org>
-Date: Thu, 28 Oct 2010 20:51:43 +0200
-X-Google-Sender-Auth: 7_a-D62mZs5X932rxT3JMVC_LU8
-Message-ID: <AANLkTi=KRAcoonwFHKNaptap2LQHDswRCGpect82aHzx@mail.gmail.com>
-Subject: Re: tproxy: added IPv6 support to the socket match
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Balazs Scheidler <bazsi@balabit.hu>, KOVACS Krisztian <hidden@balabit.hu>,
-        Patrick McHardy <kaber@trash.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        netfilter-devel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010281250.50802.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 23, 2010 at 21:23, Linux Kernel Mailing List
-<linux-kernel@vger.kernel.org> wrote:
-> Gitweb:     http://git.kernel.org/linus/b64c9256a9b76fc9f059f71bd08ba88fb0cbba2e
-> Commit:     b64c9256a9b76fc9f059f71bd08ba88fb0cbba2e
-> Parent:     6ad7889327a5ee6ab4220bd34e4428c7d0de0f32
-> Author:     Balazs Scheidler <bazsi@balabit.hu>
-> AuthorDate: Thu Oct 21 16:19:42 2010 +0200
-> Committer:  Patrick McHardy <kaber@trash.net>
-> CommitDate: Thu Oct 21 16:19:42 2010 +0200
->
->    tproxy: added IPv6 support to the socket match
->
->    The ICMP extraction bits were contributed by Harry Mason.
->
->    Signed-off-by: Balazs Scheidler <bazsi@balabit.hu>
->    Signed-off-by: KOVACS Krisztian <hidden@balabit.hu>
->    Signed-off-by: Patrick McHardy <kaber@trash.net>
-> ---
->  net/netfilter/xt_socket.c |  165 ++++++++++++++++++++++++++++++++++++++++++---
->  1 files changed, 154 insertions(+), 11 deletions(-)
->
-> diff --git a/net/netfilter/xt_socket.c b/net/netfilter/xt_socket.c
-> index 266faa0..2dbd4c8 100644
-> --- a/net/netfilter/xt_socket.c
-> +++ b/net/netfilter/xt_socket.c
+This is on current Linus upstream as of this morning (8128057)
+on an HP DL785:
 
-> +static bool
-> +socket_mt6_v1(const struct sk_buff *skb, struct xt_action_param *par)
-> +{
-> +       struct ipv6hdr *iph = ipv6_hdr(skb);
-> +       struct udphdr _hdr, *hp = NULL;
-> +       struct sock *sk;
-> +       struct in6_addr *daddr, *saddr;
-> +       __be16 dport, sport;
-> +       int thoff;
-> +       u8 tproto;
+QLogic/NetXen Network Driver v4.0.74
+netxen_nic 0000:07:00.0: PCI INT A -> GSI 30 (level, low) -> IRQ 30
+netxen_nic 0000:07:00.0: setting latency timer to 64
+netxen_nic 0000:07:00.0: 2MB memory map
+netxen_nic 0000:07:00.0: loading firmware from flash
+netxen_nic 0000:07:00.0: using 64-bit dma mask
+kernel: Quad Gig LP Board S/N TI9ABK0266  Chip rev 0x42
+netxen_nic 0000:07:00.0: firmware v4.0.520 [legacy]
+netxen_nic 0000:07:00.0: irq 72 for MSI/MSI-X
+netxen_nic 0000:07:00.0: irq 73 for MSI/MSI-X
+netxen_nic 0000:07:00.0: irq 74 for MSI/MSI-X
+netxen_nic 0000:07:00.0: irq 75 for MSI/MSI-X
+netxen_nic 0000:07:00.0: using msi-x interrupts
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
+IP: [<ffffffff8160afda>] netxen_nic_probe+0x813/0x9a0
+PGD 0 
+Oops: 0002 [#1] SMP 
+last sysfs file: 
+CPU 0 
+Modules linked in:
 
-tproto is unsigned...
-
-> +       const struct xt_socket_mtinfo1 *info = (struct xt_socket_mtinfo1 *) par->matchinfo;
-> +
-> +       tproto = ipv6_find_hdr(skb, &thoff, -1, NULL);
-
-but ipv6_find_hdr() returns int, and negative values for errors...
-
-> +       if (tproto < 0) {
-
-which it can never catch.
-
-> +               pr_debug("unable to find transport header in IPv6 packet, dropping\n");
-> +               return NF_DROP;
-> +       }
-
-net/netfilter/xt_socket.c:256: warning: comparison is always false due
-to limited range of data type
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Pid: 1650, comm: work_for_cpu Not tainted 2.6.36-07338-g8128057 #269 /ProLiant DL785 G5   
+RIP: 0010:[<ffffffff8160afda>]  [<ffffffff8160afda>] netxen_nic_probe+0x813/0x9a0
+RSP: 0018:ffff8806138abe30  EFLAGS: 00010246
+RAX: 0000000000000010 RBX: ffff8806139126c0 RCX: 0000000000000000
+RDX: 0000000000000000 RSI: ffff880613895616 RDI: ffff880613912000
+RBP: ffff8806138abe90 R08: 0000000000000000 R09: ffff8806138abb80
+R10: 0000000000000000 R11: 0000000000000000 R12: ffff880613912000
+R13: ffff8812174f7000 R14: ffff880613912000 R15: ffff8812174f7000
+FS:  0000000000000000(0000) GS:ffff8800cfa00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000010 CR3: 0000000001c07000 CR4: 00000000000006f0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process work_for_cpu (pid: 1650, threadinfo ffff8806138aa000, task ffff880616f12be0)
+Stack:
+ ffff8812174f7090 0000000000000246 ffff8806138abe90 ffff8812174f7000
+ 00008806138abfd8 0000000000000282 68cd0025b30068cc ffff880c17439d30
+ ffff8812174f7090 ffff8812174f7000 ffff8812174f7208 0000000000000000
+Call Trace:
+ [<ffffffff81203696>] local_pci_probe+0x48/0x91
+ [<ffffffff81052bae>] ? do_work_for_cpu+0x0/0x26
+ [<ffffffff81052bc1>] do_work_for_cpu+0x13/0x26
+ [<ffffffff81052bae>] ? do_work_for_cpu+0x0/0x26
+ [<ffffffff81057a7b>] kthread+0x81/0x89
+ [<ffffffff81003854>] kernel_thread_helper+0x4/0x10
+ [<ffffffff810579fa>] ? kthread+0x0/0x89
+ [<ffffffff81003850>] ? kernel_thread_helper+0x0/0x10
+Code: 00 eb 15 49 8d bf 90 00 00 00 48 c7 c6 1b 2e aa 81 31 c0 e8 c0 4e cd ff 4c 89 f7 e8 d6 bb ee ff 49 8b 96 00 03 00 00 48 8d 42 10 <f0> 80 4a 10 01 4c 89 f7 e8 a3 7e ed ff 85 c0 41 89 c4 74 2a 49 
+RIP  [<ffffffff8160afda>] netxen_nic_probe+0x813/0x9a0
+ RSP <ffff8806138abe30>
+CR2: 0000000000000010
+---[ end trace 059c7071bbf8de1f ]---
