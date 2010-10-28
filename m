@@ -1,66 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934568Ab0J1U7G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 16:59:06 -0400
-Received: from mga01.intel.com ([192.55.52.88]:64790 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934535Ab0J1U67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 16:58:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,254,1286175600"; 
-   d="scan'208";a="621316162"
-Date: Thu, 28 Oct 2010 22:58:55 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
-        Grazvydas Ignotas <notasas@gmail.com>, Felipe Balbi <balbi@ti.com>
-Subject: Re: [GIT PULL] battery-2.6.git (a last minute fix)
-Message-ID: <20101028205605.GB3116@sortiz-mobl>
-References: <20101026144118.GA9335@oksana.dev.rtsoft.ru>
- <20101028065457.GA29856@elte.hu>
- <20101028000710.2039c2f4.akpm@linux-foundation.org>
- <20101028090953.GA28283@oksana.dev.rtsoft.ru>
+	id S934573Ab0J1U7w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 16:59:52 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:35709 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933674Ab0J1U7q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 16:59:46 -0400
+Date: Thu, 28 Oct 2010 22:59:45 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Dinh.Nguyen@freescale.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, s.hauer@pengutronix.de,
+        amit.kucheria@canonical.com, eric@eukrea.com
+Subject: Re: [PATCH] ARM: imx: Fix GPIO_1_xx settings that are wrongly
+	assumed
+Message-ID: <20101028205945.GE31158@pengutronix.de>
+References: <1288296137-1995-1-git-send-email-Dinh.Nguyen@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20101028090953.GA28283@oksana.dev.rtsoft.ru>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1288296137-1995-1-git-send-email-Dinh.Nguyen@freescale.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anton,
+Hello Dinh,
 
-On Thu, Oct 28, 2010 at 01:09:53PM +0400, Anton Vorontsov wrote:
-> On Thu, Oct 28, 2010 at 12:07:10AM -0700, Andrew Morton wrote:
-> [...]
-> > > The new driver does not build at its own commit point either, as the missing symbol 
-> > > definition is simply not there. It appears that commit 2e727f1 could not have been 
-> > > build-tested by anyone before it got upstream (let alone boot and functionality 
-> > > tested). As a temporary workaround i'm disabling it in -tip.
-> > > 
-> > 
-> > Those definitions get added by the MFD tree and used by the battery
-> > tree.  Things arrived in the wrong order (and, yes, didn't get tested).
+On Thu, Oct 28, 2010 at 03:02:17PM -0500, Dinh.Nguyen@freescale.com wrote:
+> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 > 
-> My bad. :-/
->
-> > The fix is for Samuel to get a wiggle on with his merge?  The -rc1
-> > window is about to slam shut on his fingers anyway.
+> Its not a same assumption that because because 1 gpio mux is at
+> mux mode 1, that it is the same for all gpio's. Freescale HW
+> engineers like to keep things interesting by varying the mux mode
+> of the gpio's.
 > 
-> I guess the best thing for now would be to be safe and to disable
-> the new driver via 'depends on BROKEN', so it won't scare testers
-> away from -rc1.
-I'm about to send my pull request to Linus. Should I send this commit revert
-as part of the pull request, or do you want to do it ?
+> Reference: The iomux-mx51.h file is generated from a script that
+> converts the pin mode file from the SoC HW designers.
+> 
+> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> ---
+>  arch/arm/plat-mxc/include/mach/iomux-mx51.h |   16 ++++++++--------
+>  1 files changed, 8 insertions(+), 8 deletions(-)
+> 
+> diff --git a/arch/arm/plat-mxc/include/mach/iomux-mx51.h b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
+> index e46b1c2..056ba0f 100644
+> --- a/arch/arm/plat-mxc/include/mach/iomux-mx51.h
+> +++ b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
+> @@ -368,18 +368,18 @@ typedef enum iomux_config {
+>  							MX51_SDHCI_PAD_CTRL)
+>  #define MX51_PAD_GPIO_1_0__GPIO_1_0		IOMUX_PAD(0x7B4, 0x3AC, 1, 0x0,   0, MX51_GPIO_PAD_CTRL)
+>  #define MX51_PAD_GPIO_1_1__GPIO_1_1		IOMUX_PAD(0x7B8, 0x3B0, 1, 0x0,   0, MX51_GPIO_PAD_CTRL)
+> -#define MX51_PAD_GPIO_1_2__GPIO_1_2		IOMUX_PAD(0x7D4, 0x3CC, 1, 0x0,   0, MX51_GPIO_PAD_CTRL)
+> +#define MX51_PAD_GPIO_1_2__GPIO_1_2		IOMUX_PAD(0x7D4, 0x3CC, 0, 0x0,   0, MX51_GPIO_PAD_CTRL)
+>  #define MX51_PAD_GPIO_1_2__I2C2_SCL		IOMUX_PAD(0x7D4, 0x3CC, (2 | IOMUX_CONFIG_SION), \
+>  							0x9b8,   3, MX51_I2C_PAD_CTRL)
+> -#define MX51_PAD_GPIO_1_3__GPIO_1_3		IOMUX_PAD(0x7D8, 0x3D0, 1, 0x0,   0, MX51_GPIO_PAD_CTRL)
+> +#define MX51_PAD_GPIO_1_3__GPIO_1_3		IOMUX_PAD(0x7D8, 0x3D0, 0, 0x0,   0, MX51_GPIO_PAD_CTRL)
+>  #define MX51_PAD_GPIO_1_3__I2C2_SDA		IOMUX_PAD(0x7D8, 0x3D0, (2 | IOMUX_CONFIG_SION), \
+>  							0x9bc,   3, MX51_I2C_PAD_CTRL)
+>  #define MX51_PAD_PMIC_INT_REQ__PMIC_INT_REQ	IOMUX_PAD(0x7FC, 0x3D4, 0, 0x0,   0, NO_PAD_CTRL)
+> -#define MX51_PAD_GPIO_1_4__GPIO_1_4		IOMUX_PAD(0x804, 0x3D8, 1, 0x0,   0, MX51_GPIO_PAD_CTRL)
+> -#define MX51_PAD_GPIO_1_5__GPIO_1_5		IOMUX_PAD(0x808, 0x3DC, 1, 0x0,   0, MX51_GPIO_PAD_CTRL)
+> -#define MX51_PAD_GPIO_1_6__GPIO_1_6		IOMUX_PAD(0x80C, 0x3E0, 1, 0x0,   0, MX51_GPIO_PAD_CTRL)
+> -#define MX51_PAD_GPIO_1_7__GPIO_1_7		IOMUX_PAD(0x810, 0x3E4, 1, 0x0,   0, MX51_GPIO_PAD_CTRL)
+> -#define MX51_PAD_GPIO_1_8__GPIO_1_8		IOMUX_PAD(0x814, 0x3E8, 1, 0x0,   0, MX51_GPIO_PAD_CTRL)
+> -#define MX51_PAD_GPIO_1_9__GPIO_1_9		IOMUX_PAD(0x818, 0x3EC, 1, 0x0,   0, MX51_GPIO_PAD_CTRL)
+> +#define MX51_PAD_GPIO_1_4__GPIO_1_4		IOMUX_PAD(0x804, 0x3D8, 0, 0x0,   0, MX51_GPIO_PAD_CTRL)
+> +#define MX51_PAD_GPIO_1_5__GPIO_1_5		IOMUX_PAD(0x808, 0x3DC, 0, 0x0,   0, MX51_GPIO_PAD_CTRL)
+> +#define MX51_PAD_GPIO_1_6__GPIO_1_6		IOMUX_PAD(0x80C, 0x3E0, 0, 0x0,   0, MX51_GPIO_PAD_CTRL)
+> +#define MX51_PAD_GPIO_1_7__GPIO_1_7		IOMUX_PAD(0x810, 0x3E4, 0, 0x0,   0, MX51_GPIO_PAD_CTRL)
+> +#define MX51_PAD_GPIO_1_8__GPIO_1_8		IOMUX_PAD(0x814, 0x3E8, 0, 0x0,   0, MX51_GPIO_PAD_CTRL)
+> +#define MX51_PAD_GPIO_1_9__GPIO_1_9		IOMUX_PAD(0x818, 0x3EC, 0, 0x0,   0, MX51_GPIO_PAD_CTRL)
+Before b545d9ed1b92f169d0326afac091328be5e76620 the muxmode entries were
+correct.  Back when I looked at the patch that resulted into b545d9ed1b9
+I wondered if the intended change was only
+s/NO_PAD_CTRL/MX51_GPIO_PAD_CTRL/ but didn't check the reference manual.
 
-Cheers,
-Samuel.
+Eric?
+
+Best regards
+Uwe
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
