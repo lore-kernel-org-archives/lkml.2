@@ -1,40 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756245Ab0J1GcO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 02:32:14 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:44733 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753972Ab0J1GcM (ORCPT
+	id S1757098Ab0J1Gs6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 02:48:58 -0400
+Received: from stargate.chelsio.com ([67.207.112.58]:23817 "EHLO
+	stargate.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754411Ab0J1Gs5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 02:32:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=dOwU4aqU6T9jWN/ZdNnSzZ51TGaRohGEG8RPkGHzM85AZgtpj3fxzAE+SuPqYmw7E0
-         A8ulRM7eCdU33kKxnJ5Fq9WR8ZD1FuN1IdZ7HQKr+q/Vsdh0ryE41TPbRghvalMn4G+/
-         92IR7VRTc5jHWgKNgNfLnc0GwYY6vHB365EpA=
+	Thu, 28 Oct 2010 02:48:57 -0400
+Message-ID: <4CC919B1.1040602@chelsio.com>
+Date: Wed, 27 Oct 2010 23:35:29 -0700
+From: Divy Le Ray <divy@chelsio.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.11) Gecko/20101013 Lightning/1.0b2 Thunderbird/3.1.5 ThunderBrowse/3.3.2
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinDDG0ZkNFJZXuV9k3nJgueUW=ph8AuHgyeAXji@mail.gmail.com>
-References: <AANLkTimt7wzR9RwGWbvhiOmot_zzayfCfSh_-v6yvuAP@mail.gmail.com>
-	<AANLkTikRKVBzO=ruy=JDmBF28NiUdJmAqb4-1VhK0QBX@mail.gmail.com>
-	<AANLkTinzJ9a+9w7G5X0uZpX2o-L8E6XW98VFKoF1R_-S@mail.gmail.com>
-	<AANLkTinDDG0ZkNFJZXuV9k3nJgueUW=ph8AuHgyeAXji@mail.gmail.com>
-Date: Thu, 28 Oct 2010 09:32:11 +0300
-X-Google-Sender-Auth: 2QgGPmUgBQqZIiIMuB5wRlQpPQQ
-Message-ID: <AANLkTikvSGNE7uGn5p0tfJNg4Hz5WRmLRC8cXu7+GhMk@mail.gmail.com>
-Subject: Re: 2.6.36 io bring the system to its knees
-From: Pekka Enberg <penberg@kernel.org>
-To: Aidar Kultayev <the.aidar@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, mingo@elte.hu
-Content-Type: text/plain; charset=ISO-8859-1
+To: Nishanth Aravamudan <nacc@us.ibm.com>
+CC: eric.dumazet@gmail.com, sonnyrao@us.ibm.com,
+        Dimitrios Michailidis <dm@chelsio.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cxgb3: fix crash due to manipulating queues before registration
+References: <1288236563.2658.59.camel@edumazet-laptop> <1288242390-28574-1-git-send-email-nacc@us.ibm.com>
+In-Reply-To: <1288242390-28574-1-git-send-email-nacc@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 28 Oct 2010 06:38:57.0714 (UTC) FILETIME=[CC584920:01CB766A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 28, 2010 at 9:09 AM, Aidar Kultayev <the.aidar@gmail.com> wrote:
-> Find attached screenshot ( latencytop_n_powertop.png ) which depicts
-> artifacts where the window manager froze at the time I was trying to
-> see a tab in Konsole where the powertop was running.
+On 10/27/2010 10:06 PM, Nishanth Aravamudan wrote:
+> Hi Eric,
+>
+> Something like the following?:
+>
+> Thanks,
+> Nish
+>
+>
+> Along the same lines as "cxgb4: fix crash due to manipulating queues
+> before registration" (8f6d9f40476895571df039b6f1f5230ec7faebad), before
+> commit "net: allocate tx queues in register_netdevice"
+> netif_tx_stop_all_queues and related functions could be used between
+> device allocation and registration but now only after registration.
+> cxgb4 has such a call before registration and crashes now.  Move it
+> after register_netdev.
+>
+> Signed-off-by: Nishanth Aravamudan<nacc@us.ibm.com>
 
-You seem to have forgotten to include the attachment.
+Acked-by: Divy Le Ray <divy@chelsio.com>
+
+> Cc: eric.dumazet@gmail.com
+> Cc: sonnyrao@us.ibm.com
+> Cc: Divy Le Ray<divy@chelsio.com>
+> Cc: Dimitris Michailidis<dm@chelsio.com>
+> Cc: netdev@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>   drivers/net/cxgb3/cxgb3_main.c |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/net/cxgb3/cxgb3_main.c b/drivers/net/cxgb3/cxgb3_main.c
+> index 4e3c123..96c70a5 100644
+> --- a/drivers/net/cxgb3/cxgb3_main.c
+> +++ b/drivers/net/cxgb3/cxgb3_main.c
+> @@ -3301,7 +3301,6 @@ static int __devinit init_one(struct pci_dev *pdev,
+>   		pi->rx_offload = T3_RX_CSUM | T3_LRO;
+>   		pi->port_id = i;
+>   		netif_carrier_off(netdev);
+> -		netif_tx_stop_all_queues(netdev);
+>   		netdev->irq = pdev->irq;
+>   		netdev->mem_start = mmio_start;
+>   		netdev->mem_end = mmio_start + mmio_len - 1;
+> @@ -3342,6 +3341,7 @@ static int __devinit init_one(struct pci_dev *pdev,
+>   				adapter->name = adapter->port[i]->name;
+>
+>   			__set_bit(i,&adapter->registered_device_map);
+> +			 netif_tx_stop_all_queues(adapter->port[i]);
+>   		}
+>   	}
+>   	if (!adapter->registered_device_map) {
+
+
