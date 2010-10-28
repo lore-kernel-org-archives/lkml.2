@@ -1,113 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753056Ab0J1JIJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 05:08:09 -0400
-Received: from mga09.intel.com ([134.134.136.24]:24920 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751183Ab0J1JIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 05:08:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,250,1286175600"; 
-   d="scan'208";a="568126600"
-Date: Thu, 28 Oct 2010 11:10:20 +0200
-From: Andi Kleen <ak@linux.intel.com>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Mike Anderson <andmike@linux.vnet.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>,
-        James Smart <james.smart@emulex.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
-        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
-        Brian King <brking@linux.vnet.ibm.com>,
-        Christof Schmitt <christof.schmitt@de.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, julia@diku.dk
-Subject: Re: [ANNOUNCE] Status of unlocked_qcmds=1 operation for .37
-Message-ID: <20101028091020.GA7906@gargoyle.fritz.box>
-References: <20101021150840.GA24309@linux.vnet.ibm.com>
- <1288130914.5169.97.camel@haakon2.linux-iscsi.org>
- <1288132071.8283.689.camel@mulgrave.site>
- <1288132464.5169.112.camel@haakon2.linux-iscsi.org>
- <1288133450.8283.723.camel@mulgrave.site>
- <1288134048.5169.132.camel@haakon2.linux-iscsi.org>
- <1288134713.19649.11.camel@mulgrave.site>
- <1288135918.5169.149.camel@haakon2.linux-iscsi.org>
- <20101027075349.GA32585@gargoyle.fritz.box>
- <1288189658.4692.13.camel@mulgrave.site>
+	id S1753270Ab0J1JKB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 05:10:01 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:63956 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752501Ab0J1JJ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 05:09:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=wZ5mT55z7h1QOEbm8fJiauC1ClxVOgi3fynDlNTRieQy1HoImZ9Dvhc3GuGMNM1tDI
+         bEwbDPxqSA/OttIo7g0tAehAFtJ30cRwQOmrynleKxE7gMsmHaSkzDA6KgN5KacC2C2e
+         iLrzXMxWmHJbkBwAMv94gxkqvr2zouc1HNkxs=
+Date: Thu, 28 Oct 2010 13:09:53 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
+        Grazvydas Ignotas <notasas@gmail.com>, Felipe Balbi <balbi@ti.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [GIT PULL] battery-2.6.git (a last minute fix)
+Message-ID: <20101028090953.GA28283@oksana.dev.rtsoft.ru>
+References: <20101026144118.GA9335@oksana.dev.rtsoft.ru>
+ <20101028065457.GA29856@elte.hu>
+ <20101028000710.2039c2f4.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1288189658.4692.13.camel@mulgrave.site>
+In-Reply-To: <20101028000710.2039c2f4.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 09:27:38AM -0500, James Bottomley wrote:
-> On Wed, 2010-10-27 at 09:53 +0200, Andi Kleen wrote:
-> > > This sounds like a pretty reasonable compromise that I think is slightly
-> > > less risky for the LLDs with the ghosts and cob-webs hanging off of
-> > > them.
+On Thu, Oct 28, 2010 at 12:07:10AM -0700, Andrew Morton wrote:
+[...]
+> > The new driver does not build at its own commit point either, as the missing symbol 
+> > definition is simply not there. It appears that commit 2e727f1 could not have been 
+> > build-tested by anyone before it got upstream (let alone boot and functionality 
+> > tested). As a temporary workaround i'm disabling it in -tip.
 > > 
-> > They won't get tested either next release cycle. Essentially
-> > near nobody uses them.
-> > 
-> > > 
-> > > What do you think..?
-> > 
-> > Standard linux practice is to simply push the locks down. That's a pretty
-> > mechanical operation and shouldn't be too risky
-> > 
-> > With some luck you could even do it with coccinelle.
 > 
-> Precisely ... if we can do the push down now as a mechanical
-> transformation we can put it in the current merge window as a low risk
-> API change.  This gives us optimal exposure to the rc sequence to sort
-> out any problems that arise (or drivers that got missed) with the lowest
-> risk of such problems actually arising.  Given the corner cases and the
-> late arrival of fixes, the serial number changes are just too risky for
-> the current merge window.  Having an API that changes depending on a
-> flag is also a high risk process because it's prone to further sources
-> of error.
+> Those definitions get added by the MFD tree and used by the battery
+> tree.  Things arrived in the wrong order (and, yes, didn't get tested).
 
-Here's a coccinelle script I came up with that does the push down.
-It still adds a bogus empty line in front of the irqflags declaration
-which I haven't managed to avoid yet. Other than the it seems
-to DTRT on the SCSI drivers I tried.
+My bad. :-/
 
--Andi
+> The fix is for Samuel to get a wiggle on with his merge?  The -rc1
+> window is about to slam shut on his fingers anyway.
 
+I guess the best thing for now would be to be safe and to disable
+the new driver via 'depends on BROKEN', so it won't scare testers
+away from -rc1.
 
-@ rule1 @
-struct scsi_host_template t;
-identifier qc;
-@@
-t.queuecommand = qc;
+Linus,
 
-@ rule2 @
-identifier rule1.qc;
-identifier cmnd;
-expression E;
-statement S, S2;
-@@
-int qc(struct scsi_cmnd *cmnd, ...) 
-{
-	... when != S
-+	unsigned long irqflags;
+Please pull battery-2.6.git tree again, this is to disable the
+non-buildable (as it appears w/o MFD tree) driver.
 
-+	spin_lock_irqsave(&cmnd->device->host->hostlock, irqflags);
-	S2
-	...
-+	spin_unlock_irqrestore(&cmnd->device->host->hostlock, irqflags);
-	return E;
-}
+The following changes since commit 81280572ca6f54009edfa4deee563e8678784218:
+  Linus Torvalds (1):
+        Merge branch 'upstream-merge' of git://git.kernel.org/.../tytso/ext4
+
+are available in the git repository at:
+
+  git://git.infradead.org/battery-2.6.git master
+
+Anton Vorontsov (1):
+      power_supply: Mark twl4030_charger as broken
+
+ drivers/power/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
 
+commit 23886839a752401aba66517bff8a8b91549279ce
+Author: Anton Vorontsov <cbouatmailru@gmail.com>
+Date:   Thu Oct 28 12:44:16 2010 +0400
 
+    power_supply: Mark twl4030_charger as broken
+    
+    The driver is not buildable without MFD changes. For now, let's
+    disable the driver as it breaks build for major platforms (i.e. x86).
+    
+      CC [M]  drivers/power/twl4030_charger.o
+    drivers/power/twl4030_charger.c: In function 'twl4030_clear_set_boot_bci':
+    drivers/power/twl4030_charger.c:105: error: 'TWL4030_PM_MASTER_BOOT_BCI' undeclared (first use in this function)
+    drivers/power/twl4030_charger.c:105: error: (Each undeclared identifier is reported only once
+    drivers/power/twl4030_charger.c:105: error: for each function it appears in.)
+    drivers/power/twl4030_charger.c: In function 'twl4030_bci_have_vbus':
+    drivers/power/twl4030_charger.c:137: error: 'TWL4030_PM_MASTER_STS_HW_CONDITIONS' undeclared (first use in this function)
+    drivers/power/twl4030_charger.c: In function 'twl4030_bci_probe':
+    drivers/power/twl4030_charger.c:477: warning: overflow in implicit constant conversion
+    drivers/power/twl4030_charger.c:485: warning: overflow in implicit constant conversion
+    make[2]: *** [drivers/power/twl4030_charger.o] Error 1
+    
+    We can re-enable it if MFD tree will finally merge into 2.6.37.
+    
+    Reported-by: Ingo Molnar <mingo@elte.hu>
+    Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
+
+diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+index 60d83d9..ec44477 100644
+--- a/drivers/power/Kconfig
++++ b/drivers/power/Kconfig
+@@ -182,6 +182,7 @@ config CHARGER_ISP1704
+ config CHARGER_TWL4030
+ 	tristate "OMAP TWL4030 BCI charger driver"
+ 	depends on TWL4030_CORE
++	depends on BROKEN
+ 	help
+ 	  Say Y here to enable support for TWL4030 Battery Charge Interface.
+ 
