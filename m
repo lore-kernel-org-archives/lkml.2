@@ -1,41 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756038Ab0J1KGg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 06:06:36 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:50174 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755005Ab0J1KGd (ORCPT
+	id S1756394Ab0J1KSj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 06:18:39 -0400
+Received: from nm5.bullet.mail.sp2.yahoo.com ([98.139.91.75]:40203 "HELO
+	nm5.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755888Ab0J1KSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 06:06:33 -0400
-Date: Thu, 28 Oct 2010 12:04:59 +0200
-From: Nicolas Kaiser <nikai@nikai.net>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ext4: fix unbalanced mutex unlock
-Message-ID: <20101028120459.2f255b8c@absol.kitzblitz>
-In-Reply-To: <20101027205043.GG3194@thunk.org>
-References: <20101026011534.0bb7cb64@absol.kitzblitz>
-	<20101027205043.GG3194@thunk.org>
-Organization: -
-X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
- N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
-X-Mailer: Claws Mail (Linux)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 28 Oct 2010 06:18:38 -0400
+X-Yahoo-Newman-Id: 112591.27938.bm@smtp105.mail.gq1.yahoo.com
+Message-ID: <112591.27938.bm@smtp105.mail.gq1.yahoo.com>
+X-Yahoo-SMTP: 8G.OypmswBBESFptfR_gTW6RyOmVv7U-
+X-YMail-OSG: I9bp8PYVM1kbTEdb1fUTREf0CkI6UFn3GPQZuGg4ds390Sa
+ fA1VOC8xkGE7VOO8JZJYG0WsOnmYRUKBwjDHX4Gb5_GqqICcVEM4Cz6hX_ii
+ Kftrtykm4ErHVJeRQ_q139STdQ75rZZB_1lCCGg45h7SuwZ_1_B2iaTOh14Z
+ GxsTXjZZ92p7_qWmIoINmftnCDKfb3McCvo71MqsaHjUcDUV3QbuymVajAX9
+ eZ62eAh2xYrOrgFJqYg--
+X-Yahoo-Newman-Property: ymail-3
+From: "Fosy" <pfarr35086@yahoo.ca>
+Subject: Lydiouz Avafkpu Zydinsx
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain;
+	charset="GB2312"
+MIME-Version: 1.0
+Date: Thu, 28 Oct 2010 18:20:17 +0800
+X-Priority: 1
+X-Mailer: Microsoft Outlook Express 6.00.2462.0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o9SAIrOY022928
 
-* "Ted Ts'o" <tytso@mit.edu>:
-> On Tue, Oct 26, 2010 at 01:15:34AM +0200, Nicolas Kaiser wrote:
-> > Although the mutex isn't locked yet, if ext4_li_request_new
-> > fails, the mutex would get unlocked on the error path.
-
-> Nice catch, thanks!!  I've applied a fix to the ext4 patch queue.
-
-Thanks for augmenting the patch - looks good to me :)
-
-Best regards,
-Nicolas Kaiser
+©°©¤©Ğ©¤©Ğ©¤©Ğ©¤©Ğ©¤©´
+©¦ÎÒ©ª×É©ªÓµ©ª¸÷©ªÁª©¦
+©¦Ë¾©ªÑ¯©ªÓĞ©ªÖÖ©ªÏµ©¦
+©¦Í¨©ª»á©ª¼¸©ªÆ±©ªÈË©¦
+©¦¹ı©ªÎñ©ªÊ®©ª¾İ©ª£º©¦
+©¦¹Ø©ª·Ñ©ª¼Ò©ª¾ù©ªÀî©¦
+©¦Ïµ©ª¡¢©ª³Ç©ª¿É©ª¾­©¦
+©¦¿É©ª½¨©ªÊĞ©ªÉÏ©ªÀí©¦
+©¦ÓÅ©ªÖş©ª²»©ªÍø©ª£º©¦
+©¦»İ©ªÒµ©ªÍ¬©ª²é©ª£±©¦
+©¦´ú©ªµÈ©ªĞĞ©ªÑ¯©ª£³©¦
+©¦¿ª©ªÆ±©ªÒµ©ª»ò©ª£²©¦
+©¦¸÷©ª£¬©ªµÄ©ªµ½©ª£¶©¦
+©¦Àà©ª¶¼©ªºÏ©ªË°©ª£¶©¦
+©¦·ş©ª¿É©ª×÷©ªÎñ©ª£µ©¦
+©¦Îñ©ªÕÒ©ª¹«©ªÑé©ª£¶©¦
+©¦Òµ©ªµ½©ªË¾©ªÖ¤©ª£µ©¦
+©¦¼°©ª¶Ô©ª¡£©ªºó©ª£µ©¦
+©¦ÉÌ©ª¿Ú©ª¡¡©ª¸¶©ª£µ©¦
+©¦Òµ©ª¹«©ª¡¡©ª¿î©ª£¸©¦
+©¦·¢©ªË¾©ª¡¡©ª£¡©ª¡¡©¦
+©¦Æ±©ª¿ª©ª¡¡©ª¡¡©ª¡¡©¦
+©¦£¬©ª£»©ª¡¡©ª¡¡©ª¡¡©¦
+©¦¡¡©ª¡¡©ª¡¡©ª¡¡©ª¡¡©¦
+©¦¡¡©ª¡¡©ª¡¡©ª¡¡©ª¡¡©¦
+©¦¡¡©ª¡¡©ª¡¡©ª¡¡©ª¡¡©¦
+©¦¡¡©ª¡¡©ª¡¡©ª¡¡©ª¡¡©¦
+©¦¡¡©ª¡¡©ª¡¡©ª¡¡©ª¡¡©¦
+©¦¡¡©ª¡¡©ª¡¡©ª¡¡©ª¡¡©¦
+©¦¡¡©ª¡¡©ª¡¡©ª¡¡©ª¡¡©¦
+©¦¡¡©ª¡¡©ª¡¡©ª¡¡©ª¡¡©¦
+©¦¡¡©ª¡¡©ª¡¡©ª¡¡©ª¡¡©¦
+©¦¡¡©ª¡¡©ª¡¡©ª¡¡©ª¡¡©¦
+©¦¡¡©ª¡¡©ª¡¡©ª¡¡©ª¡¡©¦
+©¦¡¡©ª¡¡©ª¡¡©ª¡¡©ª¡¡©¦
+©¦¡¡©ª¡¡©ª¡¡©ª¡¡©ª¡¡©¦
+©¸©¤©Ø©¤©Ø©¤©Ø©¤©Ø©¤©¼
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
