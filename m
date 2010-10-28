@@ -1,94 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760534Ab0J1WJt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 18:09:49 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50860 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759734Ab0J1WJn (ORCPT
+	id S1760351Ab0J1WN6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 18:13:58 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:24749 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751516Ab0J1WNv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 18:09:43 -0400
-Date: Thu, 28 Oct 2010 15:09:04 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Shaohua Li <shaohua.li@intel.com>,
+	Thu, 28 Oct 2010 18:13:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-operating-system
+         :user-agent;
+        b=jAdrqTQhlD+AFhqHsgRNiuQ3CqlnghsYkUFtlQLJ8aYS31NJOu5DwNXDPz4p+Ivpis
+         uoeqOXJsRIPA14R3RKWw==
+Date: Thu, 28 Oct 2010 15:03:31 -0700
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mandeep Singh Baines <msb@chromium.org>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
-Subject: Re: [PATCH 2/2] mm: vmstat: Use a single setter function and
- callback for adjusting percpu thresholds
-Message-Id: <20101028150904.79fe9beb.akpm@linux-foundation.org>
-In-Reply-To: <1288278816-32667-3-git-send-email-mel@csn.ul.ie>
-References: <1288278816-32667-1-git-send-email-mel@csn.ul.ie>
-	<1288278816-32667-3-git-send-email-mel@csn.ul.ie>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, wad@chromium.org, olofj@chromium.org,
+        hughd@chromium.org
+Subject: Re: [PATCH] RFC: vmscan: add min_filelist_kbytes sysctl for
+ protecting the working set
+Message-ID: <20101028220331.GZ26494@google.com>
+References: <20101028191523.GA14972@google.com>
+ <20101028131029.ee0aadc0.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101028131029.ee0aadc0.akpm@linux-foundation.org>
+X-Operating-System: Linux/2.6.32-gg228-generic (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Oct 2010 16:13:36 +0100
-Mel Gorman <mel@csn.ul.ie> wrote:
+Andrew Morton (akpm@linux-foundation.org) wrote:
+> On Thu, 28 Oct 2010 12:15:23 -0700
+> Mandeep Singh Baines <msb@chromium.org> wrote:
+> 
+> > On ChromiumOS, we do not use swap.
+> 
+> Well that's bad.  Why not?
+> 
 
-> reduce_pgdat_percpu_threshold() and restore_pgdat_percpu_threshold()
-> exist to adjust the per-cpu vmstat thresholds while kswapd is awake to
-> avoid errors due to counter drift. The functions duplicate some code so
-> this patch replaces them with a single set_pgdat_percpu_threshold() that
-> takes a callback function to calculate the desired threshold as a
-> parameter.
+We're using SSDs. We're still in the "make it work" phase so wanted
+avoid swap unless/until we learn how to use it effectively with
+an SSD.
 
-hm.  Could have passed in some silly flag rather than a function
-pointer but whatever.
+You'll want to tune swap differently if you're using an SSD. Not sure
+if swappiness is the answer. Maybe a new tunable to control how aggressive
+swap is unless such a thing already exits?
 
->
-> ...
->
-> -void reduce_pgdat_percpu_threshold(pg_data_t *pgdat)
-> +void set_pgdat_percpu_threshold(pg_data_t *pgdat,
-> +				int (*calculate_pressure)(struct zone *))
->  {
->  	struct zone *zone;
->  	int cpu;
-> @@ -196,28 +197,7 @@ void reduce_pgdat_percpu_threshold(pg_data_t *pgdat)
->  		if (!zone->percpu_drift_mark)
->  			continue;
->  
-> -		threshold = calculate_pressure_threshold(zone);
-> -		for_each_online_cpu(cpu)
-> -			per_cpu_ptr(zone->pageset, cpu)->stat_threshold
-> -							= threshold;
-> -	}
-> -	put_online_cpus();
-> -}
-> -
-> -void restore_pgdat_percpu_threshold(pg_data_t *pgdat)
-> -{
-> -	struct zone *zone;
-> -	int cpu;
-> -	int threshold;
-> -	int i;
-> -
-> -	get_online_cpus();
-> -	for (i = 0; i < pgdat->nr_zones; i++) {
-> -		zone = &pgdat->node_zones[i];
-> -		if (!zone->percpu_drift_mark)
-> -			continue;
-> -
-> -		threshold = calculate_threshold(zone);
-> +		threshold = calculate_pressure(zone);
+> > When memory is low, the only way to
+> > free memory is to reclaim pages from the file list. This results in a
+> > lot of thrashing under low memory conditions. We see the system become
+> > unresponsive for minutes before it eventually OOMs. We also see very
+> > slow browser tab switching under low memory. Instead of an unresponsive
+> > system, we'd really like the kernel to OOM as soon as it starts to
+> > thrash. If it can't keep the working set in memory, then OOM.
+> > Losing one of many tabs is a better behaviour for the user than an
+> > unresponsive system.
+> > 
+> > This patch create a new sysctl, min_filelist_kbytes, which disables reclaim
+> > of file-backed pages when when there are less than min_filelist_bytes worth
+> > of such pages in the cache. This tunable is handy for low memory systems
+> > using solid-state storage where interactive response is more important
+> > than not OOMing.
+> > 
+> > With this patch and min_filelist_kbytes set to 50000, I see very little
+> > block layer activity during low memory. The system stays responsive under
+> > low memory and browser tab switching is fast. Eventually, a process a gets
+> > killed by OOM. Without this patch, the system gets wedged for minutes
+> > before it eventually OOMs. Below is the vmstat output from my test runs.
+> > 
+> > BEFORE (notice the high bi and wa, also how long it takes to OOM):
+> 
+> That's an interesting result.
+> 
+> Having the machine "wedged for minutes" thrashing away paging
+> executable text is pretty bad behaviour.  I wonder how to fix it. 
+> Perhaps simply declaring oom at an earlier stage.
+> 
+> Your patch is certainly simple enough but a bit sad.  It says "the VM
+> gets this wrong, so lets just disable it all".  And thereby reduces the
+> motivation to fix it for real.
+> 
 
-Readability nit: it's better to use the
+Yeah, I used the RFC label because we're thinking this is just a temporary
+bandaid until something better comes along.
 
-		threshold = (*calculate_pressure)(zone);
+Couple of other nits I have with our patch:
+* Not really sure what to do for the cgroup case. We do something
+  reasonable for now.
+* One of my colleagues also brought up the point that we might want to do
+  something different if swap was enabled.
 
-syntax here.  So the code reader doesn't go running around trying to
-find the function "calculate_pressure".  I've been fooled that way
-plenty of times.
-
-
->  		for_each_online_cpu(cpu)
->  			per_cpu_ptr(zone->pageset, cpu)->stat_threshold
->  							= threshold;
-
+> But the patch definitely improves the situation in real-world
+> situations and there's a case to be made that it should be available at
+> least as an interim thing until the VM gets fixed for real.  Which
+> means that the /proc tunable might disappear again (or become a no-op)
+> some time in the future.
+> 
+> 
