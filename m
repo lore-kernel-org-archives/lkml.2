@@ -1,38 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761057Ab0J1Ses (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 14:34:48 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:44686
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761132Ab0J1Sem (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 14:34:42 -0400
-Date: Thu, 28 Oct 2010 11:35:06 -0700 (PDT)
-Message-Id: <20101028.113506.71100696.davem@davemloft.net>
-To: geert@linux-m68k.org
-Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org
-Subject: Re: [PATCH] net: atarilance - flags should be unsigned long
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.DEB.2.00.1010282030530.29788@ayla.of.borg>
-References: <alpine.DEB.2.00.1010282030530.29788@ayla.of.borg>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-7
+	id S1761396Ab0J1SiO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 14:38:14 -0400
+Received: from smtp.scorch.co.nz ([27.110.127.199]:46209 "HELO scorch.co.nz"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1761372Ab0J1SiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 14:38:08 -0400
+X-Virus-Checked: Checked by ClamAV on scorch.co.nz
+From: Charles Manning <manningc2@actrix.gen.nz>
+To: Greg KH <greg@kroah.com>
+Subject: Re: How do I add yaffs file system to mainline?
+Date: Fri, 29 Oct 2010 07:38:05 +1300
+User-Agent: KMail/1.9.10
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+References: <201010290455.02390.manningc2@actrix.gen.nz> <201010290655.39490.manningc2@actrix.gen.nz> <20101028180845.GA2573@kroah.com>
+In-Reply-To: <20101028180845.GA2573@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201010290738.05632.manningc2@actrix.gen.nz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o9SIYp54025643
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-Date: Thu, 28 Oct 2010 20:31:53 +0200 (CEST)
+On Friday 29 October 2010 07:08:45 Greg KH wrote:
+> On Fri, Oct 29, 2010 at 06:55:39AM +1300, Charles Manning wrote:
+> > On Friday 29 October 2010 06:44:32 Greg KH wrote:
+> > > On Thu, Oct 28, 2010 at 10:26:41AM -0700, Randy Dunlap wrote:
+> > > > On Fri, 29 Oct 2010 04:55:02 +1300 Charles Manning wrote:
+> > > > > YAFFS has been used for many years as a third-party patch-in.
+> > > > >
+> > > > > I have recently been through the exercise of changing all the
+> > > > > symbols to be more kernel friendly with the intention of mainlining
+> > > > > into the linux tree.
+> > > > >
+> > > > > The code is in git at
+> > > > > http://github.com/cdhmanning/linux-yaffs-integration/
+> > > >
+> > > > It's difficult to review & comment on a git tree.
+> > > > We prefer patches via email for review.
+> > > >
+> > > > > Thanks to CELF and Google for sponsoring the effort so far.
+> > > > >
+> > > > > What still needs to be done to mainline this?
+> > > > > Who do I need to approach?
+> > > >
+> > > > Either ask Stephen Rothwell to add the git tree to the linux-next
+> > > > daily tree or ask Greg KH to add it to the drivers/staging/ area.
+> > >
+> > > I'd be glad to add the code to the staging tree, but to do so, do you
+> > > have a list of things that are left to do in order to get it properly
+> > > merged to the "real" portion of the kernel?
+> >
+> > We're getting into a Catch-22 discussion here... Until I fully understand
+> > what is needed, I can't really say what needs to be done :-).
+> >
+> > At this stage the code works, is integrated into, and compiles cleanly
+> > against Linus' 2.6 git. My git is based on Linus' 2.6 as of yesterday.
+> >
+> > I have done symbol cleaning changing the old yaffs names of the form
+> > yaffs_ScanBackwards() to yaffs_scan_backward() etc.
+> >
+> > What I really need is someone to look at what's there and tell me if
+> > there are still style issues etc that need changing.
+> >
+> > I know there is a style guide etc, but when we're talking about
+> > processing 15k loc then some of those rules might be slightly bendable.
+>
+> Not really.
+>
+> Have you run it through sparse and scripts/checkpatch.pl?  If not,
+> please do so and resolve all of the issues that they bring up.
+>
+> Then break up the filesystem into reviewable patches and send them to
+> the linux-fsdevel list for review.
+>
+> Again, read Documentation/SubmittingPatches for the details on how to
+> properly do this, it is described in very good detail :)
+>
+> > > And if so, what is preventing you from doing those tasks right now to
+> > > get the code into the .38 kernel merge?
+> >
+> > My biggest problem is not fully understanding the process.
+>
+> The process is very well documented, have you read the documentation?
+> If so, what part is lacking?
 
-> drivers/net/atarilance.c: In function ¡addr_accessible¢:
-> drivers/net/atarilance.c:413: warning: comparison of distinct pointer types lacks a cast
-> drivers/net/atarilance.c:450: warning: comparison of distinct pointer types lacks a cast
-> 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Thanks to all for the input. I'll be re-reading the docs and running the 
+various scripts etc. That will probably keep me busy for a bit.
 
-Applied, thanks.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+The one thing I'm still blurry on is whether it is OK to send a whole fs of 
+15kloc as a single patch to all. SubmitPatch seems to be written from the 
+perspective of writing smaller patches.I guess checkpatch.pl will tell 
+me :-).
+
+-- Charles
+
+
