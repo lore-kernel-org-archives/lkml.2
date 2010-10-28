@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933727Ab0J1VcD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 17:32:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9597 "EHLO mx1.redhat.com"
+	id S933835Ab0J1VcO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 17:32:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19440 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760146Ab0J1Vbt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 17:31:49 -0400
+	id S1760345Ab0J1Vb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 17:31:56 -0400
 From: Eric Paris <eparis@redhat.com>
-Subject: [PATCH 02/20] fsnotify: implement ordering between notifiers
+Subject: [PATCH 03/20] fanotify: implement fanotify listener ordering
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
 Cc: agruen@suse.de, tvrtko.ursulin@sophos.com
-Date: Thu, 28 Oct 2010 17:31:45 -0400
-Message-ID: <20101028213145.24810.11059.stgit@paris.rdu.redhat.com>
+Date: Thu, 28 Oct 2010 17:31:51 -0400
+Message-ID: <20101028213151.24810.60039.stgit@paris.rdu.redhat.com>
 In-Reply-To: <20101028213139.24810.34058.stgit@paris.rdu.redhat.com>
 References: <20101028213139.24810.34058.stgit@paris.rdu.redhat.com>
 User-Agent: StGIT/0.14.3
@@ -22,81 +22,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fanotify needs to be able to specify that some groups get events before
-others.  They use this idea to make sure that a hierarchical storage
-manager gets access to files before programs which actually use them.  This
-is purely infrastructure.  Everything will have a priority of 0, but the
-infrastructure will exist for it to be non-zero.
+The fanotify listeners needs to be able to specify what types of operations
+they are going to perform so they can be ordered appropriately between other
+listeners doing other types of operations.  They need this to be able to make
+sure that things like hierarchichal storage managers will get access to inodes
+before processes which need the data.  This patch defines 3 possible uses
+which groups must indicate in the fanotify_init() flags.
+
+FAN_CLASS_PRE_CONTENT
+FAN_CLASS_CONTENT
+FAN_CLASS_NOTIF
+
+Groups will receive notification in that order.  The order between 2 groups in
+the same class is undeterministic.
+
+FAN_CLASS_PRE_CONTENT is intended to be used by listeners which need access to
+the inode before they are certain that the inode contains it's final data.  A
+hierarchical storage manager should choose to use this class.
+
+FAN_CLASS_CONTENT is intended to be used by listeners which need access to the
+inode after it contains its intended contents.  This would be the appropriate
+level for an AV solution or document control system.
+
+FAN_CLASS_NOTIF is intended for normal async notification about access, much the
+same as inotify and dnotify.  Syncronous permissions events are not permitted
+at this class.
 
 Signed-off-by: Eric Paris <eparis@redhat.com>
 ---
 
- fs/notify/inode_mark.c           |    9 +++++++--
- fs/notify/vfsmount_mark.c        |    6 +++++-
- include/linux/fsnotify_backend.h |    8 ++++++++
- 3 files changed, 20 insertions(+), 3 deletions(-)
+ fs/notify/fanotify/fanotify_user.c |   25 ++++++++++++++++++++++++-
+ include/linux/fanotify.h           |   11 ++++++++++-
+ 2 files changed, 34 insertions(+), 2 deletions(-)
 
-diff --git a/fs/notify/inode_mark.c b/fs/notify/inode_mark.c
-index 21ed106..4c29fcf 100644
---- a/fs/notify/inode_mark.c
-+++ b/fs/notify/inode_mark.c
-@@ -177,7 +177,8 @@ void fsnotify_set_inode_mark_mask_locked(struct fsnotify_mark *mark,
-  * Attach an initialized mark to a given inode.
-  * These marks may be used for the fsnotify backend to determine which
-  * event types should be delivered to which group and for which inodes.  These
-- * marks are ordered according to the group's location in memory.
-+ * marks are ordered according to priority, highest number first, and then by
-+ * the group's location in memory.
-  */
- int fsnotify_add_inode_mark(struct fsnotify_mark *mark,
- 			    struct fsnotify_group *group, struct inode *inode,
-@@ -211,7 +212,11 @@ int fsnotify_add_inode_mark(struct fsnotify_mark *mark,
- 			goto out;
- 		}
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index bbcb98e..1c09e63 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -664,6 +664,20 @@ SYSCALL_DEFINE2(fanotify_init, unsigned int, flags, unsigned int, event_f_flags)
+ 	init_waitqueue_head(&group->fanotify_data.access_waitq);
+ 	INIT_LIST_HEAD(&group->fanotify_data.access_list);
+ #endif
++	switch (flags & FAN_ALL_CLASS_BITS) {
++	case FAN_CLASS_NOTIF:
++		group->priority = FS_PRIO_0;
++		break;
++	case FAN_CLASS_CONTENT:
++		group->priority = FS_PRIO_1;
++		break;
++	case FAN_CLASS_PRE_CONTENT:
++		group->priority = FS_PRIO_2;
++		break;
++	default:
++		fd = -EINVAL;
++		goto out_put_group;
++	}
  
--		if (mark->group < lmark->group)
-+		if (mark->group->priority < lmark->group->priority)
-+			continue;
+ 	fd = anon_inode_getfd("[fanotify]", &fanotify_fops, group, f_flags);
+ 	if (fd < 0)
+@@ -719,6 +733,16 @@ SYSCALL_DEFINE(fanotify_mark)(int fanotify_fd, unsigned int flags,
+ 	ret = -EINVAL;
+ 	if (unlikely(filp->f_op != &fanotify_fops))
+ 		goto fput_and_out;
++	group = filp->private_data;
 +
-+		if ((mark->group->priority == lmark->group->priority) &&
-+		    (mark->group < lmark->group))
- 			continue;
- 
- 		hlist_add_before_rcu(&mark->i.i_list, &lmark->i.i_list);
-diff --git a/fs/notify/vfsmount_mark.c b/fs/notify/vfsmount_mark.c
-index 56772b5..85eebff 100644
---- a/fs/notify/vfsmount_mark.c
-+++ b/fs/notify/vfsmount_mark.c
-@@ -169,7 +169,11 @@ int fsnotify_add_vfsmount_mark(struct fsnotify_mark *mark,
- 			goto out;
- 		}
- 
--		if (mark->group < lmark->group)
-+		if (mark->group->priority < lmark->group->priority)
-+			continue;
-+
-+		if ((mark->group->priority == lmark->group->priority) &&
-+		    (mark->group < lmark->group))
- 			continue;
- 
- 		hlist_add_before_rcu(&mark->m.m_list, &lmark->m.m_list);
-diff --git a/include/linux/fsnotify_backend.h b/include/linux/fsnotify_backend.h
-index e40190d..8253295 100644
---- a/include/linux/fsnotify_backend.h
-+++ b/include/linux/fsnotify_backend.h
-@@ -129,6 +129,14 @@ struct fsnotify_group {
- 	wait_queue_head_t notification_waitq;	/* read() on the notification file blocks on this waitq */
- 	unsigned int q_len;			/* events on the queue */
- 	unsigned int max_events;		/* maximum events allowed on the list */
 +	/*
-+	 * Valid fsnotify group priorities.  Events are send in order from highest
-+	 * priority to lowest priority.  We default to the lowest priority.
++	 * group->priority == FS_PRIO_0 == FAN_CLASS_NOTIF.  These are not
++	 * allowed to set permissions events.
 +	 */
-+	#define FS_PRIO_0	0 /* normal notifiers, no permissions */
-+	#define FS_PRIO_1	1 /* fanotify content based access control */
-+	#define FS_PRIO_2	2 /* fanotify pre-content access */
-+	unsigned int priority;
++	ret = -EINVAL;
++	if (mask & FAN_ALL_PERM_EVENTS &&
++	    group->priority == FS_PRIO_0)
++		goto fput_and_out;
  
- 	/* stores all fastpath marks assoc with this group so they can be cleaned on unregister */
- 	spinlock_t mark_lock;		/* protect marks_list */
+ 	ret = fanotify_find_path(dfd, pathname, &path, flags);
+ 	if (ret)
+@@ -729,7 +753,6 @@ SYSCALL_DEFINE(fanotify_mark)(int fanotify_fd, unsigned int flags,
+ 		inode = path.dentry->d_inode;
+ 	else
+ 		mnt = path.mnt;
+-	group = filp->private_data;
+ 
+ 	/* create/update an inode mark */
+ 	switch (flags & (FAN_MARK_ADD | FAN_MARK_REMOVE | FAN_MARK_FLUSH)) {
+diff --git a/include/linux/fanotify.h b/include/linux/fanotify.h
+index 63531a6..2c89ce7 100644
+--- a/include/linux/fanotify.h
++++ b/include/linux/fanotify.h
+@@ -25,7 +25,16 @@
+ #define FAN_CLOEXEC		0x00000001
+ #define FAN_NONBLOCK		0x00000002
+ 
+-#define FAN_ALL_INIT_FLAGS	(FAN_CLOEXEC | FAN_NONBLOCK)
++/* These are NOT bitwise flags.  Both bits are used togther.  */
++#define FAN_CLASS_NOTIF		0x00000000
++#define FAN_CLASS_CONTENT	0x00000004
++#define FAN_CLASS_PRE_CONTENT	0x00000008
++
++#define FAN_ALL_CLASS_BITS	(FAN_CLASS_NOTIF | FAN_CLASS_CONTENT | \
++				 FAN_CLASS_PRE_CONTENT)
++
++#define FAN_ALL_INIT_FLAGS	(FAN_CLOEXEC | FAN_NONBLOCK | \
++				 FAN_ALL_CLASS_BITS)
+ 
+ /* flags used for fanotify_modify_mark() */
+ #define FAN_MARK_ADD		0x00000001
 
