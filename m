@@ -1,108 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761403Ab0J1Slg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 14:41:36 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:26664 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757013Ab0J1Slb (ORCPT
+	id S1761408Ab0J1Sm1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 14:42:27 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:50752 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757013Ab0J1SmX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 14:41:31 -0400
-Message-ID: <4CC9C386.6010503@oracle.com>
-Date: Thu, 28 Oct 2010 11:40:06 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Thu, 28 Oct 2010 14:42:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=Z6fOne8MH3DsIlqMTfbVxeuGeP54tK3tj8C6LHWw4QVPEDAs755eJAw2irRhDdRNYv
+         9w4Bnt/jz+omAMC2dU88z2Oubk+RKVzwmGAtoVJjP1HChjmrEaiUnG9hbUj6pRQkxhbQ
+         tshSsIiSacPpXbuSGKhNf4tT8b+Ujtft25TnE=
 MIME-Version: 1.0
-To: Charles Manning <manningc2@actrix.gen.nz>
-CC: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: How do I add yaffs file system to mainline?
-References: <201010290455.02390.manningc2@actrix.gen.nz> <201010290655.39490.manningc2@actrix.gen.nz> <20101028180845.GA2573@kroah.com> <201010290738.05632.manningc2@actrix.gen.nz>
-In-Reply-To: <201010290738.05632.manningc2@actrix.gen.nz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201010231923.o9NJN2oc012438@hera.kernel.org>
+References: <201010231923.o9NJN2oc012438@hera.kernel.org>
+Date: Thu, 28 Oct 2010 20:42:21 +0200
+X-Google-Sender-Auth: Tdapb2OoPS7Dml0qEPhmTdaSCfI
+Message-ID: <AANLkTikuvBb79Q-mKK-u3tL=f433Om4T3NqJUynv=8=w@mail.gmail.com>
+Subject: Re: netfilter: nf_nat: make find/put static
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Stephen Hemminger <shemminger@vyatta.com>,
+        Patrick McHardy <kaber@trash.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netfilter-devel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/10 11:38, Charles Manning wrote:
-> On Friday 29 October 2010 07:08:45 Greg KH wrote:
->> On Fri, Oct 29, 2010 at 06:55:39AM +1300, Charles Manning wrote:
->>> On Friday 29 October 2010 06:44:32 Greg KH wrote:
->>>> On Thu, Oct 28, 2010 at 10:26:41AM -0700, Randy Dunlap wrote:
->>>>> On Fri, 29 Oct 2010 04:55:02 +1300 Charles Manning wrote:
->>>>>> YAFFS has been used for many years as a third-party patch-in.
->>>>>>
->>>>>> I have recently been through the exercise of changing all the
->>>>>> symbols to be more kernel friendly with the intention of mainlining
->>>>>> into the linux tree.
->>>>>>
->>>>>> The code is in git at
->>>>>> http://github.com/cdhmanning/linux-yaffs-integration/
->>>>>
->>>>> It's difficult to review & comment on a git tree.
->>>>> We prefer patches via email for review.
->>>>>
->>>>>> Thanks to CELF and Google for sponsoring the effort so far.
->>>>>>
->>>>>> What still needs to be done to mainline this?
->>>>>> Who do I need to approach?
->>>>>
->>>>> Either ask Stephen Rothwell to add the git tree to the linux-next
->>>>> daily tree or ask Greg KH to add it to the drivers/staging/ area.
->>>>
->>>> I'd be glad to add the code to the staging tree, but to do so, do you
->>>> have a list of things that are left to do in order to get it properly
->>>> merged to the "real" portion of the kernel?
->>>
->>> We're getting into a Catch-22 discussion here... Until I fully understand
->>> what is needed, I can't really say what needs to be done :-).
->>>
->>> At this stage the code works, is integrated into, and compiles cleanly
->>> against Linus' 2.6 git. My git is based on Linus' 2.6 as of yesterday.
->>>
->>> I have done symbol cleaning changing the old yaffs names of the form
->>> yaffs_ScanBackwards() to yaffs_scan_backward() etc.
->>>
->>> What I really need is someone to look at what's there and tell me if
->>> there are still style issues etc that need changing.
->>>
->>> I know there is a style guide etc, but when we're talking about
->>> processing 15k loc then some of those rules might be slightly bendable.
->>
->> Not really.
->>
->> Have you run it through sparse and scripts/checkpatch.pl?  If not,
->> please do so and resolve all of the issues that they bring up.
->>
->> Then break up the filesystem into reviewable patches and send them to
->> the linux-fsdevel list for review.
->>
->> Again, read Documentation/SubmittingPatches for the details on how to
->> properly do this, it is described in very good detail :)
->>
->>>> And if so, what is preventing you from doing those tasks right now to
->>>> get the code into the .38 kernel merge?
->>>
->>> My biggest problem is not fully understanding the process.
->>
->> The process is very well documented, have you read the documentation?
->> If so, what part is lacking?
-> 
-> Thanks to all for the input. I'll be re-reading the docs and running the 
-> various scripts etc. That will probably keep me busy for a bit.
-> 
-> The one thing I'm still blurry on is whether it is OK to send a whole fs of 
-> 15kloc as a single patch to all. SubmitPatch seems to be written from the 
-> perspective of writing smaller patches.I guess checkpatch.pl will tell 
-> me :-).
+On Sat, Oct 23, 2010 at 21:23, Linux Kernel Mailing List
+<linux-kernel@vger.kernel.org> wrote:
+> Gitweb:     http://git.kernel.org/linus/0c200d935346fe0ebde9b6dffbb683dddd166fb9
+> Commit:     0c200d935346fe0ebde9b6dffbb683dddd166fb9
+> Parent:     758ff03387228824617cef9507e5682488bf9e0c
+> Author:     Stephen Hemminger <shemminger@vyatta.com>
+> AuthorDate: Mon Oct 4 20:53:18 2010 +0200
+> Committer:  Patrick McHardy <kaber@trash.net>
+> CommitDate: Mon Oct 4 20:53:18 2010 +0200
+>
+>    netfilter: nf_nat: make find/put static
+>
+>    The functions nf_nat_proto_find_get and nf_nat_proto_put are
+>    only used internally in nf_nat_core. This might break some out
+>    of tree NAT module.
+>
+>    Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+>    Signed-off-by: Patrick McHardy <kaber@trash.net>
+> ---
+>  include/net/netfilter/nf_nat_protocol.h |    3 ---
+>  net/ipv4/netfilter/nf_nat_core.c        |    6 ++----
+>  2 files changed, 2 insertions(+), 7 deletions(-)
+>
+> diff --git a/include/net/netfilter/nf_nat_protocol.h b/include/net/netfilter/nf_nat_protocol.h
+> index df17bac..93cc90d 100644
+> --- a/include/net/netfilter/nf_nat_protocol.h
+> +++ b/include/net/netfilter/nf_nat_protocol.h
+> @@ -45,9 +45,6 @@ struct nf_nat_protocol {
+>  extern int nf_nat_protocol_register(const struct nf_nat_protocol *proto);
+>  extern void nf_nat_protocol_unregister(const struct nf_nat_protocol *proto);
+>
+> -extern const struct nf_nat_protocol *nf_nat_proto_find_get(u_int8_t protocol);
+> -extern void nf_nat_proto_put(const struct nf_nat_protocol *proto);
+> -
+>  /* Built-in protocols. */
+>  extern const struct nf_nat_protocol nf_nat_protocol_tcp;
+>  extern const struct nf_nat_protocol nf_nat_protocol_udp;
+> diff --git a/net/ipv4/netfilter/nf_nat_core.c b/net/ipv4/netfilter/nf_nat_core.c
+> index 2c084b3..e2e00c4 100644
+> --- a/net/ipv4/netfilter/nf_nat_core.c
+> +++ b/net/ipv4/netfilter/nf_nat_core.c
+> @@ -47,7 +47,7 @@ __nf_nat_proto_find(u_int8_t protonum)
+>        return rcu_dereference(nf_nat_protos[protonum]);
+>  }
+>
+> -const struct nf_nat_protocol *
+> +static const struct nf_nat_protocol *
+>  nf_nat_proto_find_get(u_int8_t protonum)
+>  {
+>        const struct nf_nat_protocol *p;
+> @@ -60,14 +60,12 @@ nf_nat_proto_find_get(u_int8_t protonum)
+>
+>        return p;
+>  }
+> -EXPORT_SYMBOL_GPL(nf_nat_proto_find_get);
+>
+> -void
+> +static void
+>  nf_nat_proto_put(const struct nf_nat_protocol *p)
+>  {
+>        module_put(p->me);
+>  }
+> -EXPORT_SYMBOL_GPL(nf_nat_proto_put);
+>
+>  /* We keep an extra hash for each conntrack, for fast searching. */
+>  static inline unsigned int
 
-lkml has a single email limit of 400 KB IIRC.  netdev list is also large,
-but fsdevel may not be quite that large.
+They should be moved inside the
+"#if defined(CONFIG_NF_CT_NETLINK) || defined(CONFIG_NF_CT_NETLINK_MODULE)",
+as I now get:
 
-How big is the patch (in KB, not lines of code)?
+net/ipv4/netfilter/nf_nat_core.c:52: warning: ‘nf_nat_proto_find_get’
+defined but not used
+net/ipv4/netfilter/nf_nat_core.c:66: warning: ‘nf_nat_proto_put’
+defined but not used
 
+Gr{oetje,eeting}s,
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
