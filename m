@@ -1,75 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751047Ab0J1IoI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 04:44:08 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:47475 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705Ab0J1IoG (ORCPT
+	id S1751697Ab0J1IqL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 04:46:11 -0400
+Received: from nm27-vm0.bullet.mail.ne1.yahoo.com ([98.138.91.63]:45394 "HELO
+	nm27-vm0.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751030Ab0J1IqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 04:44:06 -0400
-Date: Thu, 28 Oct 2010 10:43:54 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Joe Perches <joe@perches.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: Re: [RFC PATCH] include/linux/kernel.h: Add config option for   
- pr_fmt(fmt)
-Message-ID: <20101028104354.6aaca07c@endymion.delvare>
-In-Reply-To: <1288252476.1836.9.camel@Joe-Laptop>
-References: <1287713982.16920.39.camel@Joe-Laptop>
-	<20101026110335.3a4c7679@endymion.delvare>
-	<1288201301.4145.122.camel@Joe-Laptop>
-	<20101028093529.503c3a28@endymion.delvare>
-	<1288252476.1836.9.camel@Joe-Laptop>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+	Thu, 28 Oct 2010 04:46:08 -0400
+X-Yahoo-Newman-Id: 184353.69247.bm@omp1008.mail.ne1.yahoo.com
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: oEjTS_IVM1l8ByrwfXjD8aurD8qzsx28.3nqEUPKkfDkulS
+ Hc5FZLMLOwfq7Rom3YrIVtBz3priZ0O8o0c.TNcLqKWTF2kMT3ZdDgYpj12y
+ OKP5monOJS.qbcL_Hyg.0GaT0xXrEx63GDXZ8pJ172QLZQ6iXkl4I9303lRb
+ nM3InIniQdkOzHvQn5SaMz9BR7OSTl8Re_lnxPYYje1Q73UYkSNiOgKVWyY3
+ IYOWveDo7t.A7QQMH5pGs
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [PATCH v8] scsi: Push down host_lock into legacy LLD
+	SHT->queuecommand()
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Jeff Garzik <jeff@garzik.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
+        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
+        Mike Anderson <andmike@linux.vnet.ibm.com>,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Christof Schmitt <christof.schmitt@de.ibm.com>
+In-Reply-To: <1288254332.5169.239.camel@haakon2.linux-iscsi.org>
+References: <1288249268-17734-1-git-send-email-nab@linux-iscsi.org>
+	 <4CC9329F.40303@garzik.org>
+	 <1288254332.5169.239.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain
+Date: Thu, 28 Oct 2010 01:41:09 -0700
+Message-Id: <1288255269.5169.250.camel@haakon2.linux-iscsi.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Oct 2010 00:54:36 -0700, Joe Perches wrote:
-> On Thu, 2010-10-28 at 09:35 +0200, Jean Delvare wrote:
-> > On Wed, 27 Oct 2010 10:41:41 -0700, Joe Perches wrote:
-> > > On Tue, 2010-10-26 at 11:03 +0200, Jean Delvare wrote:
-> > > > On Thu, 21 Oct 2010 19:19:42 -0700, Joe Perches wrote:
-> > > > > Change the default #define pr_fmt(fmt) from:
-> > > > > 	- #define pr_fmt(fmt) fmt
-> > > > > to:
-> > > > > 	- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> > > > > This will standard use of prefixes and prevent the
-> > > > > addition of new #defines when using pr_<level>.
-> > > > I'm all for it!
-> > > > > Adds a config option to use the old style if desired.
-> > > > Not sure what the idea is. Once  pr_fmt() includes the module name, we
-> > > > will drop hard-coded prefixes in all log messages throughout the kernel
-> > > > tree. Once this is done, a kernel built with PR_FMT_IS_KBUILD_MODNAME=n
-> > > > would become horribly confusing.
-> > > 
-> > > True.  The idea is to allow a transition period and remove
-> > > this PR_FMT_IS_KBUILD_MODNAME config option later.
+On Thu, 2010-10-28 at 01:25 -0700, Nicholas A. Bellinger wrote:
+> On Thu, 2010-10-28 at 04:21 -0400, Jeff Garzik wrote:
+> > On 10/28/2010 03:01 AM, Nicholas A. Bellinger wrote:
+> > > Following yet another round of convincing discussions from jgarzik and jejb
+> > > this afternoon, this RFCv8 patch series follows their recommendation and does a
+> > > SCSI subsystem wide 'push down' of struct Scsi_Host->host_lock usage from
+> > > scsi_dispatch_cmd() into legacy LLDs that require (or we are not sure about)
+> > > the host_lock held while SHT->queuecommand() I/O dispatch occurs.
 > > 
-> > I don't buy this, sorry. During the "transition period", neither value
-> > of this option will produce good results. One will lead to duplicate
-> > prefixes and the other will lead to missing prefixes.
+> > Great!
+> > 
+> > 
+> > > diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+> > > index d050e07..672a8c9 100644
+> > > --- a/drivers/ata/libata-scsi.c
+> > > +++ b/drivers/ata/libata-scsi.c
+> > > @@ -3174,7 +3174,7 @@ static inline int __ata_scsi_queuecmd(struct scsi_cmnd *scmd,
+> > >    *	ATA and ATAPI devices appearing as SCSI devices.
+> > >    *
+> > >    *	LOCKING:
+> > > - *	Releases scsi-layer-held lock, and obtains host lock.
+> > > + *	None
+> > >    *
+> > >    *	RETURNS:
+> > >    *	Return value from __ata_scsi_queuecmd() if @cmd can be queued,
+> > > @@ -3190,7 +3190,6 @@ int ata_scsi_queuecmd(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *))
+> > >
+> > >   	ap = ata_shost_to_port(shost);
+> > >
+> > > -	spin_unlock(shost->host_lock);
+> > >   	spin_lock(ap->lock);
+> > >
+> > >   	ata_scsi_dump_cdb(ap, cmd);
+> > > @@ -3204,7 +3203,6 @@ int ata_scsi_queuecmd(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *))
+> > >   	}
+> > >
+> > >   	spin_unlock(ap->lock);
+> > > -	spin_lock(shost->host_lock);
+> > >   	return rc;
+> > >   }
+> > >
+> > 
+> > This is not an equivalent transformation, because we just lost _irqsave 
+> > and _irqstore.
+> > 
+> > You might want to double-check to ensure this problem is not replicated 
+> > in other non-legacy drivers.
 > 
-> So why don't you change it in your kernel.h and include that
-> in linux-next and see how many complaints you get.
+> Understood, so for libata this will need to turn into the equivilent
+> spin_lock_irqsave() + spin_unlock_irqrestore() for ap->lock, right..?
+> 
+> So apart from libata that leaves the following LLDs running in host_lock
+> less mode:
+> 
+> drivers/infiniband/ulp/iser/iscsi_iser.c: Running in host_lock less mode (libiscsi)
+> drivers/message/fusion/mptscsih.c: Running in host_lock less mode (internal)
+> drivers/message/fusion/mptfc.c: Running in host_lock less mode (internal)
+> drivers/message/fusion/mptsas.c: Running in host_lock less mode (internal)
+> drivers/message/fusion/mptspi.c: Running in host_lock less mode (internal)
+> drivers/scsi/aic94xx/aic94xx_init.c: Running in host_lock less mode (libsas)
+> drivers/scsi/be2iscsi/be_main.c: Running in host_lock less mode (libiscsi)
+> drivers/scsi/bnx2i/bnx2i_iscsi.c: Running in host_lock less mode (libiscsi)
+> drivers/scsi/fnic/fnic_main.c: Running in host_lock less mode (internal)
+> drivers/scsi/iscsi_tcp.c: Running in host_lock less mode (libiscsi)
+> drivers/scsi/lpfc/lpfc_scsi.c: Running in host_lock less mode (internal)
+> drivers/scsi/mpt2sas/mpt2sas_scsih.c: Running in host_lock less mode (internal)
+> drivers/scsi/mvsas/mv_init.c: Running in host_lock less mode (libsas)
+> drivers/scsi/pm8001/pm8001_init.c: Running in host_lock less mode (libsas)
+> drivers/scsi/qla2xxx/qla_os.c: Running in host_lock less mode (internal)
+> drivers/scsi/qla4xxx/ql4_os.c: Running in host_lock less mode (internal)
+> drivers/scsi/scsi_debug.c: Running in host_lock less mode (internal)
+> drivers/scsi/cxgbi/cxgb3i/cxgb3i.c: Running in host_lock less mode (libiscsi)
+> drivers/scsi/cxgbi/cxgb4i/cxgb4i.c: Running in host_lock less mode (libiscsi)
+> 
+> I will take another look and make sure any LLD specific locks that are
+> obtained in SHT->queuecommand() from the host_lock-less drivers are
+> assuming they need to call internal locks with _irqsave + _irqrestore
+> held and include these into lio-4.0.git/host_lock-less-for-37-v9.
+> 
 
-It would seem awkward that the i2c or hwmon tree would touch kernel.h.
+Ok, so originally libiscsi, fnic, and lpfc where using
+spin_unlock(host->host_lock) -> spin_lock(host->host_lock)
 
-Besides, linux-next is meant for integration testing. We already know
-that the change will integrate fine, in that it won't cause a build
-failure or runtime crash. We also know that, without the tree-wide
-cleanup of many driver, the change will cause duplicate prefixes in
-many messages.
+And libsas, qla2xxx, qla4xxx where using
+spin_unlock_irq(host->host_lock) -> spin_lock_irq(host->host_lock)
 
-There's little point in testing something we know will not be good
-enough. Better prepare all the driver patches, and test the whole thing
-when it's ready. I know it will be a very large and intrusive patchset,
-but this can certainly be done with Andrew's support.
+Just to verify, you are thinking that those *not* using spin_unlock_irq
++ spin_lock_irq() for the legacy optimization dispath should have their
+per LLD host lock converted to spin_lock_irqsave() +
+spin_unlock_irqrestore(), right..?
 
--- 
-Jean Delvare
+--nab
+
