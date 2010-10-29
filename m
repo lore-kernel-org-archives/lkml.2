@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760976Ab0J2Jej (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 05:34:39 -0400
-Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:55280 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751889Ab0J2Jeh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 05:34:37 -0400
-Date: Fri, 29 Oct 2010 20:34:21 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nick Piggin <npiggin@kernel.dk>
-Subject: Re: fs: break out inode operations from inode_lock V4
-Message-ID: <20101029093421.GJ2715@dastard>
-References: <1288342803-14957-1-git-send-email-david@fromorbit.com>
- <20101029092930.GR19804@ZenIV.linux.org.uk>
+	id S1760996Ab0J2JmG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 05:42:06 -0400
+Received: from cantor.suse.de ([195.135.220.2]:54484 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756687Ab0J2JmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 05:42:04 -0400
+Date: Fri, 29 Oct 2010 11:42:02 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Nicolas Kaiser <nikai@nikai.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] telephony: fix return value
+In-Reply-To: <20101026195306.6a61a358@absol.kitzblitz>
+Message-ID: <alpine.LNX.2.00.1010291141520.6879@pobox.suse.cz>
+References: <20101026195306.6a61a358@absol.kitzblitz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101029092930.GR19804@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 29, 2010 at 10:29:30AM +0100, Al Viro wrote:
-> On Fri, Oct 29, 2010 at 07:59:55PM +1100, Dave Chinner wrote:
-> > Hi Al,
-> > 
-> > Another update to the inode_lock splitting patch set. It's still
-> > based on your merge-stem branch. I'm going to be out all weekend, so
-> > any further changes will take a couple of days to turn around.
-> > 
-> > Version 4:
-> > - whitespace cleanup
-> > - moved setting state on new inodes till after the hash search fails
-> >   in insert_inode_locked
-> > - made hash insert operations atomic with state changes by holding
-> >   inode->i_lock while doing hash inserts
-> > - made inode hash removals atomic with state changes by taking the
-> >   inode_lock (later inode_hash_lock) and inode->i_lock. Combined
-> >   with the insert changes, this means the inode_unhashed check in
-> >   ->drop_inode is safely protected by just holding the
-> >   inode->i_lock.
-> > - protect inode_unhashed() checks in insert_inode_locked with
-> >   inode->i_lock
+On Tue, 26 Oct 2010, Nicolas Kaiser wrote:
+
+> If copy_from_user fails, the return value gets overwritten.
 > 
-> The last one is not needed at all; look at what's getting done there - we
-> drop that ->i_lock immediately after the check, so it doesn't buy us anything.
-> The stuff before that *is* a race fix; namely, the race with BS iget()
-> triggered by nfsd.  This check is just verifying that it was a race and not
-> a badly confused filesystem.  IOW, no need to lock anything and no _point_
-> locking anything.  We are repeating the hash walk anyway; this is just making
-> sure that we hadn't run into infinite retries.
+> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+> ---
+>  drivers/telephony/ixj.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/telephony/ixj.c b/drivers/telephony/ixj.c
+> index 0d236f4..2d1280a 100644
+> --- a/drivers/telephony/ixj.c
+> +++ b/drivers/telephony/ixj.c
+> @@ -6581,7 +6581,8 @@ static long do_ixj_ioctl(struct file *file_p, unsigned int cmd, unsigned long ar
+>  	case IXJCTL_SET_FILTER:
+>  		if (copy_from_user(&jf, argp, sizeof(jf))) 
+>  			retval = -EFAULT;
+> -		retval = ixj_init_filter(j, &jf);
+> +		else
+> +			retval = ixj_init_filter(j, &jf);
+>  		break;
+>  	case IXJCTL_SET_FILTER_RAW:
+>  		if (copy_from_user(&jfr, argp, sizeof(jfr))) 
 
-Oh, I forgot to remove that from the changelog - I removed the
-locking from the code, though....
+Applied, thanks Nicolas.
 
-> Other than that I'm OK with that set; could you add "lift ->i_lock from
-> the beginning of writeback_single_inode()" to the series and post your
-> current RCU-for-i_hash patch for review?
-
-It'll be Monday before I get to this. It's way past beer o'clock
-here....
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Jiri Kosina
+SUSE Labs, Novell Inc.
