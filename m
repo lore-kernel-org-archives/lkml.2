@@ -1,101 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756660Ab0J2HYf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 03:24:35 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:53434 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754567Ab0J2HYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 03:24:32 -0400
-Date: Fri, 29 Oct 2010 09:24:26 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "H.Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        LKLM <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] [x86, next] Add mce_sys_info interface for debug.
-Message-ID: <20101029072426.GB29995@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Jin Dongming <jin.dongming@np.css.fujitsu.com>,
-	Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
-	"H.Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-	Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-	LKLM <linux-kernel@vger.kernel.org>
-References: <4CCA50AF.1030302@np.css.fujitsu.com>
+	id S1760162Ab0J2H3D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 03:29:03 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:64022 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755112Ab0J2H24 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 03:28:56 -0400
+Message-ID: <4CCA773F.6000809@kernel.org>
+Date: Fri, 29 Oct 2010 00:26:55 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.14) Gecko/20101013 SUSE/3.0.9 Thunderbird/3.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4CCA50AF.1030302@np.css.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -v3] x86: Disable x2apic if nox2apic is specified
+References: <1287882149-29275-1-git-send-email-yinghai@kernel.org>	 <1287882149-29275-16-git-send-email-yinghai@kernel.org>	 <alpine.LFD.2.00.1010241204470.2466@localhost6.localdomain6>	 <4CC4AEAB.4030505@kernel.org>	 <1288029002.2675.22.camel@sbsiddha-MOBL3.sc.intel.com>	 <4CC7C64A.4070809@kernel.org> <1288331608.2717.14.camel@sbsiddha-MOBL3>
+In-Reply-To: <1288331608.2717.14.camel@sbsiddha-MOBL3>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 29, 2010 at 01:42:23PM +0900, Jin Dongming wrote:
-> Add mce_sys_info interface for testing mce.
+On 10/28/2010 10:53 PM, Suresh Siddha wrote:
+> On Tue, 2010-10-26 at 23:27 -0700, Yinghai Lu wrote:
+>> For
+>> 1. x2apic preenabled system
+>> 2. first kernel have x2apic enabled, and try to kexec second kernel with "nox2apic"
+>>
+>> Will put back cpu with apic id < 255 into xapic mode, instead of panic.
+>>
+>> -v2: use x2apic_disabled instead of nox2apic, Suggested by Thomas
+>>      update x2apic_supported with x2apic_disabled, Suggested by Thomas
+>>
+>> -v3: add checking for boot cpu apic id > 255. in that case will just panic
+>>      --- pointed out by Suresh.
+>>
 > 
-> Following is the reason why the interface is needed:
->   1. Sometimes before testing mce, we want to know the basic
->      information of mce on the test machine. Though there are
->      some provided interfaces, there are some kernel variables
->      which could not be known still.
->   2. When we inject mce data to test mce, the value of some
->      interfaces may be changed. It is hard for everybody to confirm
->      all the information of mce on the system.
-> 
-> This interface could help us know what has happened and make mce test
-> become easier.
-> 
-> The content of mce_sys_info will be like following:
-> 
->   MCE status:                      Original/(Current) Value
->       mce_disabled:                N
-> 
->       mce_ser:                     0/1
->       tolerant:                    1/1
->       panic_on_oops:               0/0
->       monarch_timeout:             1000000/1000000 us
->       mce_ignore_ce:               0/0
->       mce_cmci_disabled:           N/N
-> 
->   MCG Register:
->       CAP_Reg_Val           BANKS    EXT_CNT    FUNCTIONS
->       0x0000000000000806    0x06     0x00       TES
-> 
-> Please note that it is used for testing only.
-> 
-> I tested this patch on Intel64 next-tree.
-> 
-> Signe-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-> ---
->  arch/x86/kernel/cpu/mcheck/mce.c |  126 ++++++++++++++++++++++++++++++++++++++
->  1 files changed, 126 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index ed10e76..91108db 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -97,6 +97,25 @@ static DECLARE_WAIT_QUEUE_HEAD(mce_wait);
->  static DEFINE_PER_CPU(struct mce, mces_seen);
->  static int			cpu_missing;
->  
-> +#ifdef CONFIG_DEBUG_FS
-> +struct mce_sys_info {
-> +	int mce_disabled;
-> +
-> +	u64 mcg_cap_register;
-> +
-> +	int mce_ser;
-> +	int tolerant;
-> +	int panic_on_oops;
-> +	int monarch_timeout;
-> +	int mce_cmci_disable;
-> +	int mce_ignore_ce;
-> +	int mce_cmci_disabled;
+> Can we please hold off in merging this patch for a bit? There are some
+> subtleties in going back to xapic when the platform/cpu's are in x2apic
+> mode. I will check and get back to you on this after KS.
 
-Most of those could be put in a flags vector, thus saving a bunch of
-space. Or a bitfield...
+sure. take you time.
 
--- 
-Regards/Gruss,
-    Boris.
+	Yinghai
