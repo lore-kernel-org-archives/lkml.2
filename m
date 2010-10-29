@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934210Ab0J2RSU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 13:18:20 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:3679 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934200Ab0J2RST (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 13:18:19 -0400
-Message-ID: <4CCB01D1.2050004@caviumnetworks.com>
-Date: Fri, 29 Oct 2010 10:18:09 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	id S934203Ab0J2RWj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 13:22:39 -0400
+Received: from claw.goop.org ([74.207.240.146]:42691 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932701Ab0J2RWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 13:22:38 -0400
+Message-ID: <4CCB02DC.1010307@goop.org>
+Date: Fri, 29 Oct 2010 10:22:36 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Ingo Molnar <mingo@elte.hu>, Jason Baron <jbaron@redhat.com>,
-        rth@redhat.com, "H. Peter Anvin" <hpa@zytor.com>, tglx@linutronix.de,
-        andi@firstfloor.org, roland@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
-        davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org,
-        tony@bakeyournoodle.com, dsd@laptop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] jump label: disable due to compiler bug
-References: <cover.1288212485.git.jbaron@redhat.com>	 <2d1b1d5d2b3930e1acb063cefffbcb2faf049854.1288212486.git.jbaron@redhat.com>	 <ce4ff595-f9d1-4c17-b68e-82739b07ad3e@email.android.com>	 <20101028141757.GA2875@redhat.com> <4CC9C724.3020004@caviumnetworks.com>	 <20101028201112.GA4792@redhat.com> <20101029063450.GE29463@elte.hu>	 <1288354687.18238.433.camel@gandalf.stny.rr.com>	 <20101029122230.GA25663@elte.hu>	 <1288356418.18238.454.camel@gandalf.stny.rr.com>	 <20101029133524.GA23916@Krystal> <1288369108.29632.1.camel@gandalf.stny.rr.com>
-In-Reply-To: <1288369108.29632.1.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+To: Ian Campbell <ian.campbell@citrix.com>
+CC: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] xen: correct size of level2_kernel_pgt
+References: <1288367779-24001-1-git-send-email-ian.campbell@citrix.com>
+In-Reply-To: <1288367779-24001-1-git-send-email-ian.campbell@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Oct 2010 17:18:44.0206 (UTC) FILETIME=[56E3E0E0:01CB778D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2010 09:18 AM, Steven Rostedt wrote:
-> On Fri, 2010-10-29 at 09:35 -0400, Mathieu Desnoyers wrote:
->> * Steven Rostedt (rostedt@goodmis.org) wrote:
+ On 10/29/2010 08:56 AM, Ian Campbell wrote:
+> sizeof(pmd_t *) is 4 bytes on PAE leading to an allocation of only
+> 2048 bytes. The correct size is sizeof(pmd_t) giving us a full page
+> allocation.
 >
->>> Then in the code have:
->>>
->>> -#if defined(CC_HAVE_ASM_GOTO)&&  defined(CONFIG_HAVE_ARCH_JUMP_LABEL)
->>> +#if defined(CC_HAVE_ASM_GOTO)&&  defined(CONFIG_HAVE_ARCH_JUMP_LABEL) \
->>
->> Technically, you could remove the dependency on
->> "defined(CONFIG_HAVE_ARCH_JUMP_LABEL)", because it is now dealt with at
->> the Kconfig level (CONFIG_JUMP_LABEL depends on it).
+> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+> ---
 >
-> Yeah, I noticed that just after hitting send.
->
->>
->>> +	&&  defined(JUMP_LABEL)
->>
->> this would be defined(CONFIG_JUMP_LABEL)
->
-> Yep, this too, but thanks for pointing it out.
->
->
->>
->> The rest looks fine,
->
-> Great, can I add your acked-by then?
->
+> Applies to mainline since 2.6.36 and to xen.git 2.6.32 based trees
 
-I hate to continue beating a dead horse, but RTH just committed the GCC 
-patch, and it will be part of GCC-4.5.2 and later.
+This is just for 2.6.37?
 
-Should this knowledge be builtin to the jump label enabling calculus?
+    J
 
-David Daney
+>  arch/x86/xen/mmu.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+> index c237b81..21ed8d7 100644
+> --- a/arch/x86/xen/mmu.c
+> +++ b/arch/x86/xen/mmu.c
+> @@ -2126,7 +2126,7 @@ __init pgd_t *xen_setup_kernel_pagetable(pgd_t *pgd,
+>  {
+>  	pmd_t *kernel_pmd;
+>  
+> -	level2_kernel_pgt = extend_brk(sizeof(pmd_t *) * PTRS_PER_PMD, PAGE_SIZE);
+> +	level2_kernel_pgt = extend_brk(sizeof(pmd_t) * PTRS_PER_PMD, PAGE_SIZE);
+>  
+>  	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->pt_base) +
+>  				  xen_start_info->nr_pt_frames * PAGE_SIZE +
 
