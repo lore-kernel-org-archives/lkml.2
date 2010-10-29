@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932866Ab0J2UlJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 16:41:09 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:37986 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932514Ab0J2UlD (ORCPT
+	id S1761964Ab0J2Uoy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 16:44:54 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:36314 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761942Ab0J2Uow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 16:41:03 -0400
-Message-ID: <4CCB3158.9010406@kernel.org>
-Date: Fri, 29 Oct 2010 13:40:56 -0700
-From: "J.H." <warthog9@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.7
-MIME-Version: 1.0
-To: users@kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [KORG] Master / hera upgrade & downtime announcement
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 29 Oct 2010 16:44:52 -0400
+X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=ygIiTo8ZIjQA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=cHTspt_pFYjhbIXOOdAA:9 a=Z1lId8sNfktSbUpjmQNUXT7C3Q0A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 2/2] jump label: disable due to compiler bug
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: Ingo Molnar <mingo@elte.hu>, Jason Baron <jbaron@redhat.com>,
+        David Daney <ddaney@caviumnetworks.com>, rth@redhat.com,
+        "H. Peter Anvin" <hpa@zytor.com>, tglx@linutronix.de,
+        andi@firstfloor.org, roland@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org,
+        tony@bakeyournoodle.com, dsd@laptop.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20101029200538.GA25682@Krystal>
+References: <ce4ff595-f9d1-4c17-b68e-82739b07ad3e@email.android.com>
+	 <20101028141757.GA2875@redhat.com> <4CC9C724.3020004@caviumnetworks.com>
+	 <20101028201112.GA4792@redhat.com> <20101029063450.GE29463@elte.hu>
+	 <1288354687.18238.433.camel@gandalf.stny.rr.com>
+	 <20101029122230.GA25663@elte.hu>
+	 <1288356418.18238.454.camel@gandalf.stny.rr.com>
+	 <20101029133524.GA23916@Krystal>
+	 <1288369108.29632.1.camel@gandalf.stny.rr.com>
+	 <20101029200538.GA25682@Krystal>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 29 Oct 2010 16:44:49 -0400
+Message-ID: <1288385089.29632.21.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.3 (shards.monkeyblade.net [198.137.202.13]); Fri, 29 Oct 2010 13:41:00 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Fri, 2010-10-29 at 16:05 -0400, Mathieu Desnoyers wrote:
 
-Afternoon Everyone,
+> > > The rest looks fine,
+> > 
+> > Great, can I add your acked-by then?
+> 
+> As noted in my other email, please do :)
 
-Thought I'd give everyone a quick heads up, that since Kernel Summit
-starts on the 1st of November, which means I've got my one chance to do
-system maintenance on master / hera for the year.
+Crap, I pushed it out already. Well, I have you Cc'd.
 
-I'm expecting to do the upgrade on the 1st itself, likely start time
-will be around Mon Nov  1 19:00:00 UTC 2010, and I'm hoping for the
-entire downtime to take no longer than 2 hours.
+-- Steve
 
-Things that are going to happen during the upgrade:
 
-	- OS getting upgraded to Fedora 13
-		w/ custom kernel to solve XFS and disable IMA
-	- Hardware change
-		Google and HP have been very generous enough to
-		get us a new machine for the master / hera machine.
-		The new machine is a dual, quad core Xeon X5550 box
-		with 32G of ram.  Beyond that it nearly identical to the
-		current machine.
-
-		The current machine will become a 'live' backup machine
-		that will sync semi-continuously, and be available
-		should catastrophic failure of master / hera occur.
-
-Think that's the main big changes.  I'm already working on the upgrade
-since I have multiple boxes to do this with, and things are looking good
-so far.
-
-As a note the start time is estimated, if there is a major change to the
-start time I will let everyone know.
-
-As always, if you have questions, comments or concerns please e-mail me
-or ftpadmin@kernel.org
-
-- - John 'Warthog9' Hawley
-Chief Kernel.org Administrator
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAkzLMVgACgkQ/E3kyWU9did9wACeO0nlEtiX52u6pD3slKtqZ61M
-ZTgAn3TLwks7sT5ovpf9X6/WSbK7+hcz
-=gIkm
------END PGP SIGNATURE-----
