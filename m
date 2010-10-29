@@ -1,47 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758052Ab0J2QaF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 12:30:05 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:27013 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751572Ab0J2QaA (ORCPT
+	id S1761503Ab0J2QcB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 12:32:01 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:56621 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751704Ab0J2Qb7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 12:30:00 -0400
-X-IronPort-AV: E=Sophos;i="4.58,260,1286150400"; 
-   d="scan'208";a="2596199"
-Date: Fri, 29 Oct 2010 17:28:59 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Juan Quintela <quintela@redhat.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>
-Subject: Re: linux-next: manual merge of the xen-pvhvm tree with the xen
- tree
-In-Reply-To: <20101029114237.ae45f678.sfr@canb.auug.org.au>
-Message-ID: <alpine.DEB.2.00.1010291728470.1407@kaball-desktop>
-References: <20101029114237.ae45f678.sfr@canb.auug.org.au>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 29 Oct 2010 12:31:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=MYTJFXVBj9P4d/r2J/nfgzGVUF7WkSfBYSSF2/uHDPDSDEbM/HZxaMXs61CnQ/ybeB
+         /I0AYtBaJpcqWlShjNGTAiusqAWkZAxCrPzjp2mLDjt+YwA6/TopKO6IQW4CVjSbtdg8
+         SLZufG4K9Nho2+wfSnY4/U2j111O/dCgXKxnQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <4CCAD4E8.8040801@snapgear.com>
+References: <4CCAD4E8.8040801@snapgear.com>
+Date: Fri, 29 Oct 2010 18:31:57 +0200
+X-Google-Sender-Auth: zjEguILDuf2UeWMiV8lUeC3i-pI
+Message-ID: <AANLkTin4v0=R0Q2etqi+WkLSJTV7T5J01rd+AbymutqG@mail.gmail.com>
+Subject: Re: [PATCH][resend] m68k,m68knommu: Do not include linux/hardirq.h in asm/irqflags.h
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Greg Ungerer <gerg@snapgear.com>
+Cc: linux-m68k@vger.kernel.org, dhowells@redhat.com, gerg@uclinux.org,
+        phdm@macqel.be, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Oct 2010, Stephen Rothwell wrote:
-> Hi Stefano,
-> 
-> Today's linux-next merge of the xen-pvhvm tree got a conflict in
-> arch/x86/xen/setup.c between commit
-> a1857ddc9ba2dfdbfd70171181e481f2f64b8d0b ("xen: do not release any memory
-> under 1M in domain 0") from the xen tree and commit
-> 4ec5387cc36c6472a2ff2c82e9865abe8cab96c2 ("xen: add the direct mapping
-> area for ISA bus access") from the xen-pvhvm tree.
-> 
-> Just differences in a comment.  I just used the version from the xen
-> tree ...
+On Fri, Oct 29, 2010 at 16:06, Greg Ungerer <gerg@snapgear.com> wrote:
+> Philippe DeMuyter noticed this build failure with Linus' current git
+> tree. I think it is m68k clean too. If all are ok with it I'll
+> pass it directly to Linus.
 
-I think is fine
+Sorry, I saw his patch before, but had no spare cycles left for testing.
+
+Unfortunately that breaks CONFIG_MMU=y:
+
+arch/m68k/include/asm/irqflags.h: In function ‘arch_local_irq_enable’:
+arch/m68k/include/asm/irqflags.h:43: error: implicit declaration of
+function ‘hardirq_count’
+
+But if you protect the #include <linux/hardirq.h> by #ifdef
+CONFIG_MMU, I'm happy with
+it.
+
+> m68k,m68knommu: Do not include linux/hardirq.h in asm/irqflags.h
+>
+> Recent changes to header files made kernel compilation for m68k/m68knommu
+> fail with :
+>  CC      arch/m68knommu/kernel/asm-offsets.s
+> In file included from /archives/linux/git/arch/m68k/include/asm/system.h:2,
+>                 from include/linux/wait.h:25,
+>                 from include/linux/mmzone.h:9,
+>                 from include/linux/gfp.h:4,
+>                 from include/linux/irq.h:20,
+>                 from include/asm-generic/hardirq.h:12,
+>                 from
+> /archives/linux/git/arch/m68k/include/asm/hardirq_no.h:17,
+>                 from /archives/linux/git/arch/m68k/include/asm/hardirq.h:2,
+>                 from include/linux/hardirq.h:10,
+>                 from /archives/linux/git/arch/m68k/include/asm/irqflags.h:5,
+>                 from include/linux/irqflags.h:15,
+>                 from include/linux/spinlock.h:53,
+>                 from include/linux/seqlock.h:29,
+>                 from include/linux/time.h:8,
+>                 from include/linux/timex.h:56,
+>                 from include/linux/sched.h:56,
+>                 from arch/m68knommu/kernel/asm-offsets.c:12:
+> /archives/linux/git/arch/m68k/include/asm/system_no.h: In function
+> â€˜__xchgâ€™:
+> /archives/linux/git/arch/m68k/include/asm/system_no.h:79: error: implicit
+> declaration of function â€˜local_irq_saveâ€™
+> /archives/linux/git/arch/m68k/include/asm/system_no.h:101: error: implicit
+> declaration of function â€˜local_irq_restoreâ€™
+>
+> Fix that
+>
+> Signed-off-by: Philippe De Muyter <phdm@macqel.be>
+>
+> ---
+> diff --git a/arch/m68k/include/asm/irqflags.h
+> b/arch/m68k/include/asm/irqflags.h
+> index 4a5b284..38b414d 100644
+> --- a/arch/m68k/include/asm/irqflags.h
+> +++ b/arch/m68k/include/asm/irqflags.h
+> @@ -2,7 +2,6 @@
+>  #define _M68K_IRQFLAGS_H
+>  #include <linux/types.h>
+> -#include <linux/hardirq.h>
+>  #include <linux/preempt.h>
+>  #include <asm/thread_info.h>
+>  #include <asm/entry.h>
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
