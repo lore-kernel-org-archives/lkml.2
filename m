@@ -1,43 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934008Ab0J2PB5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 11:01:57 -0400
-Received: from Mycroft.westnet.com ([216.187.52.7]:50420 "EHLO
-	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932818Ab0J2PBx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 11:01:53 -0400
+	id S1761360Ab0J2PEX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 11:04:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43232 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757841Ab0J2PEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 11:04:21 -0400
+From: Nikanth Karthikesan <knikanth@suse.de>
+Organization: suse.de
+To: Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH] Modules: x86_64 - R_X86_64_PC32 gives signed 32 bit and needs overflow check.
+Date: Fri, 29 Oct 2010 20:37:32 +0530
+User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.2-default; KDE/4.3.5; x86_64; ; )
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org, x86@kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Message-ID: <19658.57791.952367.70027@quad.stoffel.home>
-Date: Fri, 29 Oct 2010 11:01:19 -0400
-From: "John Stoffel" <john@stoffel.org>
-To: Eric Paris <eparis@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        agruen@suse.de, tvrtko.ursulin@sophos.com
-Subject: Re: [PATCH 03/20] fanotify: implement fanotify listener ordering
-In-Reply-To: <20101028213151.24810.60039.stgit@paris.rdu.redhat.com>
-References: <20101028213139.24810.34058.stgit@paris.rdu.redhat.com>
-	<20101028213151.24810.60039.stgit@paris.rdu.redhat.com>
-X-Mailer: VM 8.1.1 under 23.2.1 (x86_64-pc-linux-gnu)
+Message-Id: <201010292037.32588.knikanth@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Eric" == Eric Paris <eparis@redhat.com> writes:
+R_X86_64_PC32 gives signed 32 bit and needs overflow check.
 
-Eric> The fanotify listeners needs to be able to specify what types of
-Eric> operations they are going to perform so they can be ordered
-Eric> appropriately between other listeners doing other types of
-Eric> operations.  They need this to be able to make sure that things
-Eric> like hierarchichal storage managers will get access to inodes
-Eric> before processes which need the data.  This patch defines 3
-Eric> possible uses which groups must indicate in the fanotify_init()
-Eric> flags.
+Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
 
-Eric> FAN_CLASS_PRE_CONTENT
-Eric> FAN_CLASS_CONTENT
-Eric> FAN_CLASS_NOTIF
+---
 
-Reviewed-By: john@stoffel.org
+diff --git a/arch/x86/kernel/module.c b/arch/x86/kernel/module.c
+index 8f29560..59b859a 100644
+--- a/arch/x86/kernel/module.c
++++ b/arch/x86/kernel/module.c
+@@ -168,11 +168,9 @@ int apply_relocate_add(Elf64_Shdr *sechdrs,
+ 			break;
+ 		case R_X86_64_PC32:
+ 			val -= (u64)loc;
+-			*(u32 *)loc = val;
+-#if 0
++			*(s32 *)loc = val;
+ 			if ((s64)val != *(s32 *)loc)
+ 				goto overflow;
+-#endif
+ 			break;
+ 		default:
+ 			printk(KERN_ERR "module %s: Unknown rela relocation: %llu\n",
