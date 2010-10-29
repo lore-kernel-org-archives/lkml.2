@@ -1,96 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761465Ab0J2MrD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 08:47:03 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:59063 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890Ab0J2MrB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 08:47:01 -0400
-X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=ygIiTo8ZIjQA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=tNfoEJo-XNs0bUC9IPIA:9 a=UgC6mzC-xmbhUmzjPkUA:7 a=FeyJYdcZNtq34qFcgXFvcvbVfVUA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 2/2] jump label: disable due to compiler bug
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Jason Baron <jbaron@redhat.com>, David Daney <ddaney@caviumnetworks.com>,
-        rth@redhat.com, "H. Peter Anvin" <hpa@zytor.com>,
-        mathieu.desnoyers@polymtl.ca, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
-        avi@redhat.com, davem@davemloft.net, vgoyal@redhat.com,
-        sam@ravnborg.org, tony@bakeyournoodle.com, dsd@laptop.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101029122230.GA25663@elte.hu>
-References: <cover.1288212485.git.jbaron@redhat.com>
-	 <2d1b1d5d2b3930e1acb063cefffbcb2faf049854.1288212486.git.jbaron@redhat.com>
-	 <ce4ff595-f9d1-4c17-b68e-82739b07ad3e@email.android.com>
-	 <20101028141757.GA2875@redhat.com> <4CC9C724.3020004@caviumnetworks.com>
-	 <20101028201112.GA4792@redhat.com> <20101029063450.GE29463@elte.hu>
-	 <1288354687.18238.433.camel@gandalf.stny.rr.com>
-	 <20101029122230.GA25663@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 29 Oct 2010 08:46:58 -0400
-Message-ID: <1288356418.18238.454.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1761471Ab0J2Mun (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 08:50:43 -0400
+Received: from tomasu.net ([64.85.170.234]:56173 "EHLO mail.tomasu.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757655Ab0J2Muj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 08:50:39 -0400
+From: Thomas Fjellstrom <thomas@fjellstrom.ca>
+Reply-To: thomas@fjellstrom.ca
+To: Linux Kernel List <linux-kernel@vger.kernel.org>
+Subject: mvsas errors in 2.6.36
+Date: Fri, 29 Oct 2010 06:50:32 -0600
+User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.5.2; x86_64; svn-1188918; 2010-10-21)
+Cc: linux-scsi@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201010290650.32892.thomas@fjellstrom.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-29 at 14:22 +0200, Ingo Molnar wrote:
-> * Steven Rostedt <rostedt@goodmis.org> wrote:
-> 
-> > On Fri, 2010-10-29 at 08:34 +0200, Ingo Molnar wrote:
+Good news and bad news, the current mvsas driver in 2.6.36 seems to work
+better than older kernels with my setup (2 port sas + 5 SATA disks). But I
+gotten the following messages so far:
 
-> > Do you mean to have it dependent on !EMBEDDED, or perhaps !CC_OPTIMIZE_FOR_SIZE ?
-> 
-> CC_OPTIMIZE_FOR_SIZE dependency probably not. Might even leave out !EMBEDDED, to 
-> make it generally configurable.
-> 
-> Also, we should make it default off - we need to see whether there are any compiler 
-> bugs lurking.
+[  213.856050] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task() mvi=ffff880123200000 task=ffff880122545a40 slot=ffff880123226628 slot_idx=x3
+[  213.856064] drivers/scsi/mvsas/mv_sas.c 1632:mvs_query_task:rc= 5
+[  213.856094] drivers/scsi/mvsas/mv_sas.c 2083:port 0 ctrl sts=0x89800.
+[  213.856100] drivers/scsi/mvsas/mv_sas.c 2085:Port 0 irq sts = 0x1001
+[  213.856111] drivers/scsi/mvsas/mv_sas.c 2111:phy0 Unplug Notice
+[  213.866069] drivers/scsi/mvsas/mv_sas.c 2083:port 0 ctrl sts=0x199800.
+[  213.866078] drivers/scsi/mvsas/mv_sas.c 2085:Port 0 irq sts = 0x1081
+[  213.887617] drivers/scsi/mvsas/mv_sas.c 2083:port 0 ctrl sts=0x199800.
+[  213.887625] drivers/scsi/mvsas/mv_sas.c 2085:Port 0 irq sts = 0x10000
+[  213.887632] drivers/scsi/mvsas/mv_sas.c 2138:notify plug in on phy[0]
+[  213.991191] drivers/scsi/mvsas/mv_sas.c 1224:port 0 attach dev info is 0
+[  213.991191] drivers/scsi/mvsas/mv_sas.c 1226:port 0 attach sas addr is 0
+[  213.995701] drivers/scsi/mvsas/mv_sas.c 378:phy 0 byte dmaded.
+[  216.064032] drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for device[0]:rc= 0
+[  216.064049] ata9: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
+[  216.064647] ata9.00: device reported invalid CHS sector 0
+[  216.065226] ata9: status=0x01 { Error }
+[  216.065815] ata9: error=0x04 { DriveStatusError }
+[ 1519.840061] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task() mvi=ffff880123200000 task=ffff88011f944700 slot=ffff880123226680 slot_idx=x4
+[ 1519.840075] drivers/scsi/mvsas/mv_sas.c 1632:mvs_query_task:rc= 5
+[ 1519.840107] drivers/scsi/mvsas/mv_sas.c 2083:port 3 ctrl sts=0x89800.
+[ 1519.840113] drivers/scsi/mvsas/mv_sas.c 2085:Port 3 irq sts = 0x1001
+[ 1519.840124] drivers/scsi/mvsas/mv_sas.c 2111:phy3 Unplug Notice
+[ 1519.850080] drivers/scsi/mvsas/mv_sas.c 2083:port 3 ctrl sts=0x199800.
+[ 1519.850086] drivers/scsi/mvsas/mv_sas.c 2085:Port 3 irq sts = 0x1081
+[ 1519.854247] drivers/scsi/mvsas/mv_sas.c 2083:port 3 ctrl sts=0x199800.
+[ 1519.854250] drivers/scsi/mvsas/mv_sas.c 2085:Port 3 irq sts = 0x10000
+[ 1519.854252] drivers/scsi/mvsas/mv_sas.c 2138:notify plug in on phy[3]
+[ 1519.951698] drivers/scsi/mvsas/mv_sas.c 1224:port 3 attach dev info is 2000000
+[ 1519.951698] drivers/scsi/mvsas/mv_sas.c 1226:port 3 attach sas addr is 3
+[ 1519.963251] drivers/scsi/mvsas/mv_sas.c 378:phy 3 byte dmaded.
+[ 1522.048039] drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for device[3]:rc= 0
+[ 1522.048056] ata12: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
+[ 1522.048679] ata12.00: device reported invalid CHS sector 0
+[ 1522.049268] ata12: status=0x01 { Error }
+[ 1522.049856] ata12: error=0x04 { DriveStatusError }
+[ 1558.816044] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task() mvi=ffff880123200000 task=ffff880124d89500 slot=ffff880123226680 slot_idx=x4
+[ 1558.816058] drivers/scsi/mvsas/mv_sas.c 1632:mvs_query_task:rc= 5
+[ 1558.816086] drivers/scsi/mvsas/mv_sas.c 2083:port 3 ctrl sts=0x89800.
+[ 1558.816092] drivers/scsi/mvsas/mv_sas.c 2085:Port 3 irq sts = 0x1001
+[ 1558.816103] drivers/scsi/mvsas/mv_sas.c 2111:phy3 Unplug Notice
+[ 1558.826059] drivers/scsi/mvsas/mv_sas.c 2083:port 3 ctrl sts=0x199800.
+[ 1558.826066] drivers/scsi/mvsas/mv_sas.c 2085:Port 3 irq sts = 0x1081
+[ 1558.829663] drivers/scsi/mvsas/mv_sas.c 2083:port 3 ctrl sts=0x199800.
+[ 1558.829670] drivers/scsi/mvsas/mv_sas.c 2085:Port 3 irq sts = 0x10000
+[ 1558.829677] drivers/scsi/mvsas/mv_sas.c 2138:notify plug in on phy[3]
+[ 1558.904494] drivers/scsi/mvsas/mv_sas.c 1224:port 3 attach dev info is 2000000
+[ 1558.904494] drivers/scsi/mvsas/mv_sas.c 1226:port 3 attach sas addr is 3
+[ 1558.938424] drivers/scsi/mvsas/mv_sas.c 378:phy 3 byte dmaded.
+[ 1561.024027] drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for device[3]:rc= 0
+[ 1561.024044] ata12: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
+[ 1561.024652] ata12.00: device reported invalid CHS sector 0
+[ 1561.025242] ata12: status=0x01 { Error }
+[ 1561.025834] ata12: error=0x04 { DriveStatusError }
+[ 1594.800036] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task() mvi=ffff880123200000 task=ffff88011f945a40 slot=ffff880123226680 slot_idx=x4
+[ 1594.800051] drivers/scsi/mvsas/mv_sas.c 1632:mvs_query_task:rc= 5
+[ 1594.800077] drivers/scsi/mvsas/mv_sas.c 2083:port 3 ctrl sts=0x89800.
+[ 1594.800083] drivers/scsi/mvsas/mv_sas.c 2085:Port 3 irq sts = 0x1001
+[ 1594.800094] drivers/scsi/mvsas/mv_sas.c 2111:phy3 Unplug Notice
+[ 1594.810048] drivers/scsi/mvsas/mv_sas.c 2083:port 3 ctrl sts=0x199800.
+[ 1594.810055] drivers/scsi/mvsas/mv_sas.c 2085:Port 3 irq sts = 0x1081
+[ 1594.814327] drivers/scsi/mvsas/mv_sas.c 2083:port 3 ctrl sts=0x199800.
+[ 1594.814330] drivers/scsi/mvsas/mv_sas.c 2085:Port 3 irq sts = 0x10000
+[ 1594.814332] drivers/scsi/mvsas/mv_sas.c 2138:notify plug in on phy[3]
+[ 1594.882000] drivers/scsi/mvsas/mv_sas.c 1224:port 3 attach dev info is 2000000
+[ 1594.882000] drivers/scsi/mvsas/mv_sas.c 1226:port 3 attach sas addr is 3
+[ 1594.923382] drivers/scsi/mvsas/mv_sas.c 378:phy 3 byte dmaded.
+[ 1597.008031] drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for device[3]:rc= 0
+[ 1597.008048] ata12: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
+[ 1597.008675] ata12.00: device reported invalid CHS sector 0
+[ 1597.009271] ata12: status=0x01 { Error }
+[ 1597.009871] ata12: error=0x04 { DriveStatusError }
+[ 2193.824051] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task() mvi=ffff880123200000 task=ffff880009c7c540 slot=ffff8801232265d0 slot_idx=x2
+[ 2193.824065] drivers/scsi/mvsas/mv_sas.c 1632:mvs_query_task:rc= 5
+[ 2193.824092] drivers/scsi/mvsas/mv_sas.c 2083:port 0 ctrl sts=0x89800.
+[ 2193.824099] drivers/scsi/mvsas/mv_sas.c 2085:Port 0 irq sts = 0x1001001
+[ 2193.824109] drivers/scsi/mvsas/mv_sas.c 2111:phy0 Unplug Notice
+[ 2193.834062] drivers/scsi/mvsas/mv_sas.c 2083:port 0 ctrl sts=0x199800.
+[ 2193.834067] drivers/scsi/mvsas/mv_sas.c 2085:Port 0 irq sts = 0x1001081
+[ 2193.855272] drivers/scsi/mvsas/mv_sas.c 2083:port 0 ctrl sts=0x199800.
+[ 2193.855279] drivers/scsi/mvsas/mv_sas.c 2085:Port 0 irq sts = 0x10000
+[ 2193.855286] drivers/scsi/mvsas/mv_sas.c 2138:notify plug in on phy[0]
+[ 2193.859234] drivers/scsi/mvsas/mv_sas.c 1224:port 0 attach dev info is 0
+[ 2193.859234] drivers/scsi/mvsas/mv_sas.c 1226:port 0 attach sas addr is 0
+[ 2193.959270] drivers/scsi/mvsas/mv_sas.c 378:phy 0 byte dmaded.
+[ 2196.032026] drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for device[0]:rc= 0
+[ 2196.032045] ata9: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
+[ 2196.032676] ata9: status=0x01 { Error }
+[ 2196.033274] ata9: error=0x04 { DriveStatusError }
+[ 2440.800047] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task() mvi=ffff880123200000 task=ffff880010f36700 slot=ffff880123226628 slot_idx=x3
+[ 2440.800061] drivers/scsi/mvsas/mv_sas.c 1632:mvs_query_task:rc= 5
+[ 2440.800090] drivers/scsi/mvsas/mv_sas.c 2083:port 7 ctrl sts=0x89800.
+[ 2440.800096] drivers/scsi/mvsas/mv_sas.c 2085:Port 7 irq sts = 0x1001
+[ 2440.800107] drivers/scsi/mvsas/mv_sas.c 2111:phy7 Unplug Notice
+[ 2440.810060] drivers/scsi/mvsas/mv_sas.c 2083:port 7 ctrl sts=0x199800.
+[ 2440.810065] drivers/scsi/mvsas/mv_sas.c 2085:Port 7 irq sts = 0x1081
+[ 2440.831453] drivers/scsi/mvsas/mv_sas.c 2083:port 7 ctrl sts=0x199800.
+[ 2440.831460] drivers/scsi/mvsas/mv_sas.c 2085:Port 7 irq sts = 0x10000
+[ 2440.831467] drivers/scsi/mvsas/mv_sas.c 2138:notify plug in on phy[7]
+[ 2440.880053] drivers/scsi/mvsas/mv_sas.c 1224:port 7 attach dev info is 4000000
+[ 2440.880053] drivers/scsi/mvsas/mv_sas.c 1226:port 7 attach sas addr is 7
+[ 2440.940497] drivers/scsi/mvsas/mv_sas.c 378:phy 7 byte dmaded.
+[ 2443.008033] drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for device[4]:rc= 0
+[ 2443.008052] ata13: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
+[ 2443.008685] ata13: status=0x01 { Error }
+[ 2443.009295] ata13: error=0x04 { DriveStatusError }
+[ 2675.808044] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task() mvi=ffff880123200000 task=ffff88011aae3500 slot=ffff880123226578 slot_idx=x1
+[ 2675.808058] drivers/scsi/mvsas/mv_sas.c 1632:mvs_query_task:rc= 5
+[ 2675.808088] drivers/scsi/mvsas/mv_sas.c 2083:port 2 ctrl sts=0x89800.
+[ 2675.808094] drivers/scsi/mvsas/mv_sas.c 2085:Port 2 irq sts = 0x1001
+[ 2675.808104] drivers/scsi/mvsas/mv_sas.c 2111:phy2 Unplug Notice
+[ 2675.818051] drivers/scsi/mvsas/mv_sas.c 2083:port 2 ctrl sts=0x199800.
+[ 2675.818057] drivers/scsi/mvsas/mv_sas.c 2085:Port 2 irq sts = 0x1081
+[ 2675.839505] drivers/scsi/mvsas/mv_sas.c 2083:port 2 ctrl sts=0x199800.
+[ 2675.839513] drivers/scsi/mvsas/mv_sas.c 2085:Port 2 irq sts = 0x10000
+[ 2675.839519] drivers/scsi/mvsas/mv_sas.c 2138:notify plug in on phy[2]
+[ 2675.874139] drivers/scsi/mvsas/mv_sas.c 1224:port 2 attach dev info is 4
+[ 2675.874139] drivers/scsi/mvsas/mv_sas.c 1226:port 2 attach sas addr is 2
+[ 2675.936683] drivers/scsi/mvsas/mv_sas.c 378:phy 2 byte dmaded.
+[ 2678.016055] drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for device[2]:rc= 0
+[ 2678.016075] ata11: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
+[ 2678.016706] ata11: status=0x01 { Error }
+[ 2678.017315] ata11: error=0x04 { DriveStatusError }
+[ 2678.017964] ata9: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
+[ 2678.018573] ata9: status=0x01 { Error }
+[ 2678.019175] ata9: error=0x04 { DriveStatusError }
 
-Ah, so we should then add a:
+I did not unplug a disk, the errors seem to be spurious.
 
-config JUMP_LABEL
-	prompt "Optimize trace point call sites"
-	depends on HAVE_ARCH_JUMP_LABEL
-	help
-	  If it is detected that the compiler has support for
-	  "asm goto", the kernel will compile trace points locations 
-	  with just a nop instruction. When trace points are enabled
-	  the nop will be converted to a jump to the trace function.
-	  This technique lowers overhead and stress on the branch
-	  prediction of the processor.
+Otherwise though things seem to be working. At least so far. The mv_abort_task
+part is very familiar, the older version of this driver would do it right
+after attempting to build/activate the md raid5 array that lives on this
+controller. Except the controller would lock up, and all drives would become
+inaccessible.
 
-	  On i386, the options added to make this work may increase
-	  the size of the kernel slightly.
+I'm going to attempt to grow this array today, so long as the xfs_fsr that I
+started doesn't cause the array to fail.
 
+If I keep getting mv_abort_task errors, I'll have to back down to the copy of
+the driver I got from Andy Yan. I've managed to patch it up to compile for
+2.6.36 just now, I just hope it'll work at least as well as it did with
+2.6.34. At the very least I didn't get these errors.
 
-Then in the code have:
+Some background, the disks attached to the card are (5) Seagate 7200.12 1TB
+disks, using SAS->SATA cables. Machine is a amd64 Phenom II X4 810 w/4G
+ram running debian sid and a vanila 2.6.36 kernel. The card is a
+AOC-SASLP-MV8, according to lspci:
 
--#if defined(CC_HAVE_ASM_GOTO) && defined(CONFIG_HAVE_ARCH_JUMP_LABEL)
-+#if defined(CC_HAVE_ASM_GOTO) && defined(CONFIG_HAVE_ARCH_JUMP_LABEL) \
-+	&& defined(JUMP_LABEL)
- # include <asm/jump_label.h>
- # define HAVE_JUMP_LABEL
- #endif
+04:00.0 SCSI storage controller: Marvell Technology Group Ltd. MV64460/64461/64462 System Controller, Revision B (rev 01)
 
+according to dmesg:
 
-If you agree, I can write up a patch.
+[    2.819325] mvsas 0000:04:00.0: mvsas: driver version 0.8.2
+[    2.819394] mvsas 0000:04:00.0: PCI INT A -> GSI 19 (level, low) -> IRQ 19
+[    2.819454] mvsas 0000:04:00.0: setting latency timer to 64
+[    2.820952] mvsas 0000:04:00.0: mvsas: PCI-E x4, Bandwidth Usage: 2.5 Gbps
+[    7.203222] drivers/scsi/mvsas/mv_sas.c 1224:port 0 attach dev info is 0
+[    7.203225] drivers/scsi/mvsas/mv_sas.c 1226:port 0 attach sas addr is 0
+[    7.403220] drivers/scsi/mvsas/mv_sas.c 1224:port 1 attach dev info is 0
+[    7.403223] drivers/scsi/mvsas/mv_sas.c 1226:port 1 attach sas addr is 1
+[    7.603221] drivers/scsi/mvsas/mv_sas.c 1224:port 2 attach dev info is 4
+[    7.603223] drivers/scsi/mvsas/mv_sas.c 1226:port 2 attach sas addr is 2
+[    7.803221] drivers/scsi/mvsas/mv_sas.c 1224:port 3 attach dev info is 2000000
+[    7.803224] drivers/scsi/mvsas/mv_sas.c 1226:port 3 attach sas addr is 3
+[    7.904015] drivers/scsi/mvsas/mv_sas.c 1224:port 4 attach dev info is 0
+[    7.904018] drivers/scsi/mvsas/mv_sas.c 1226:port 4 attach sas addr is 0
+[    8.008014] drivers/scsi/mvsas/mv_sas.c 1224:port 5 attach dev info is 0
+[    8.008017] drivers/scsi/mvsas/mv_sas.c 1226:port 5 attach sas addr is 0
+[    8.112014] drivers/scsi/mvsas/mv_sas.c 1224:port 6 attach dev info is 0
+[    8.112016] drivers/scsi/mvsas/mv_sas.c 1226:port 6 attach sas addr is 0
+[    8.315223] drivers/scsi/mvsas/mv_sas.c 1224:port 7 attach dev info is 4000000
+[    8.315226] drivers/scsi/mvsas/mv_sas.c 1226:port 7 attach sas addr is 7
+[    8.315230] scsi8 : mvsas
+[    8.315620] drivers/scsi/mvsas/mv_sas.c 378:phy 0 byte dmaded.
+[    8.315624] drivers/scsi/mvsas/mv_sas.c 378:phy 1 byte dmaded.
+[    8.315628] drivers/scsi/mvsas/mv_sas.c 378:phy 2 byte dmaded.
+[    8.315632] drivers/scsi/mvsas/mv_sas.c 378:phy 3 byte dmaded.
+[    8.315636] drivers/scsi/mvsas/mv_sas.c 378:phy 7 byte dmaded.
+[    8.316762] drivers/scsi/mvsas/mv_sas.c 1388:found dev[0:5] is gone.
+[    8.384626] drivers/scsi/mvsas/mv_sas.c 1388:found dev[1:5] is gone.
+[    8.452444] drivers/scsi/mvsas/mv_sas.c 1388:found dev[2:5] is gone.
+[    8.520181] drivers/scsi/mvsas/mv_sas.c 1388:found dev[3:5] is gone.
+[    8.523810] drivers/scsi/mvsas/mv_sas.c 1388:found dev[4:5] is gone.
 
--- Steve
-	  
-> 
-> > I can see people making a big stink about adding back a gcc option that makes the 
-> > kernel bigger.
-> 
-> Depends on exactly how much .text we are talking about here. Plus it would be 
-> default-off.
-> 
-> Thanks,
-> 
-> 	Ingo
+I just hope the raid5 reshape I'm about to do doesn't crap its pants because
+of the errors above.
 
+I'd like to help test any fixes or changes if needed. Let me know.
 
+Thanks again.
+
+-- 
+Thomas Fjellstrom
+thomas@fjellstrom.ca
