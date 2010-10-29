@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933739Ab0J2KEP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 06:04:15 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:26468 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932361Ab0J2KEM (ORCPT
+	id S933793Ab0J2KEb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 06:04:31 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:13318 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933627Ab0J2KE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 06:04:12 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275dhz32i2a8h43h62h)
-X-Spam-TCS-SCL: 1:0
-X-WSS-ID: 0LB1QM1-01-A9U-02
+	Fri, 29 Oct 2010 06:04:28 -0400
+X-SpamScore: -6
+X-BigFish: VPS-6(zz936eK4015Lzz1202hzz8275dhz32i2a8h)
+X-WSS-ID: 0LB1QN7-02-1BN-02
 X-M-MSG: 
-Date: Fri, 29 Oct 2010 12:03:38 +0200
+Date: Fri, 29 Oct 2010 12:04:20 +0200
 From: Robert Richter <robert.richter@amd.com>
-To: Tejun Heo <tj@kernel.org>
-CC: "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2.6.36-rc7] oprofile: don't use flush_scheduled_work()
-Message-ID: <20101029100338.GE5969@erda.amd.com>
-References: <4CB85C4C.6080806@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "oprofile-list@lists.sourceforge.net" 
+	<oprofile-list@lists.sourceforge.net>
+Subject: [GIT PULL] oprofile fixes for v2.6.37
+Message-ID: <20101029100420.GF5969@erda.amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <4CB85C4C.6080806@kernel.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.10.10 09:51:08, Tejun Heo wrote:
-> flush_scheduled_work() is deprecated and scheduled to be removed.
-> sync_stop() currently cancels cpu_buffer works inside buffer_mutex and
-> flushes the system workqueue outside.  Instead, split end_cpu_work()
-> into two parts - stopping further work enqueues and flushing works -
-> and do the former inside buffer_mutex and latter outside.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
+Ingo,
 
-Patch applied to oprofile/urgent. Thanks Tejun.
+please pull oprofile fixes v2.6.37:
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
+
+Thanks,
 
 -Robert
+
+
+The following changes since commit e25804a0327dad954f7d43803178fdef2fd35b4e:
+
+  Merge branch 'perf/core' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 into perf/urgent (2010-10-27 08:25:15 +0200)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git for-next
+
+Santosh Shilimkar (1):
+      oprofile: Fix the hang while taking the cpu offline
+
+Tejun Heo (1):
+      oprofile: Remove deprecated use of flush_scheduled_work()
+
+ drivers/oprofile/buffer_sync.c |    2 +-
+ drivers/oprofile/cpu_buffer.c  |   10 +++++++---
+ drivers/oprofile/cpu_buffer.h  |    1 +
+ drivers/oprofile/timer_int.c   |   13 +++++++++++++
+ 4 files changed, 22 insertions(+), 4 deletions(-)
 
 -- 
 Advanced Micro Devices, Inc.
