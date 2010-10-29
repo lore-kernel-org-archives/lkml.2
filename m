@@ -1,89 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761368Ab0J2LRL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 07:17:11 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36140 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759688Ab0J2LRJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 07:17:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=vG05yMArbSL11X/copk6h3e9o3YAVDrnkEv3UElMmURDkRxUaPGR7hr/ZBMxfJKiWf
-         LthGFuz1pLx+qoE5yyir7tpazc+r2qDwnVCSS5Z7BHqbppwXKH4heR2QS9xS5slt2Chv
-         pmovqrDgQtkHCF99KmLrt6YJ8oUTk5rGCZEDE=
+	id S933208Ab0J2LSL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 07:18:11 -0400
+Received: from ozlabs.org ([203.10.76.45]:42372 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759688Ab0J2LSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 07:18:08 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: virtualization@lists.linux-foundation.org
+Subject: Re: [Qemu-devel] Re: [PATCH] Implement a virtio GPU transport
+Date: Fri, 29 Oct 2010 21:48:00 +1030
+User-Agent: KMail/1.13.5 (Linux/2.6.35-22-generic; KDE/4.5.1; i686; ; )
+Cc: Ian Molton <ian.molton@collabora.co.uk>, Avi Kivity <avi@redhat.com>,
+        virtualization@lists.osdl.org, linux-kernel@vger.kernel.org,
+        QEMU Developers <qemu-devel@nongnu.org>
+References: <4CAC9CD1.2050601@collabora.co.uk> <4CBD7560.6080207@redhat.com> <4CC8226F.5080807@collabora.co.uk>
+In-Reply-To: <4CC8226F.5080807@collabora.co.uk>
 MIME-Version: 1.0
-In-Reply-To: <181be0f834f3670249d3c8d7ba1462dab1ece2c1.1288321597.git.mirq-linux@rere.qmqm.pl>
-References: <cover.1288321597.git.mirq-linux@rere.qmqm.pl>
-	<181be0f834f3670249d3c8d7ba1462dab1ece2c1.1288321597.git.mirq-linux@rere.qmqm.pl>
-Date: Fri, 29 Oct 2010 14:17:07 +0300
-Message-ID: <AANLkTik+r8r-pywpFYfwrZX2bTjgAVd1rwvoTi7ttq3B@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/2] Gemini: create platform device for ethernet in
- Raidsonic IB-4220B
-From: Paulius Zaleckas <paulius.zaleckas@gmail.com>
-To: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirq-linux@rere.qmqm.pl>
-Cc: Hans Ulli Kroll <ulli.kroll@googlemail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Janos Laube <janos.dev@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010292148.01167.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/10/29 Michał Mirosław <mirq-linux@rere.qmqm.pl>:
-> This is cherry-picked from:
->
-> git://git.berlios.de/gemini-board ib4220
->
-> Code by Paulius Zaleckas <paulius.zaleckas@gmail.com>
-> and Janos Laube <janos.dev@gmail.com>.
->
-> Signed-off-by: Michał Mirosław <mirq-linux@rere.qmqm.pl>
-> ---
->
->  arch/arm/mach-gemini/board-nas4220b.c    |   53 ++++++++++++++++++++++++++++++
->  arch/arm/mach-gemini/common.h            |    2 +
->  arch/arm/mach-gemini/devices.c           |   52 +++++++++++++++++++++++++++++
->  arch/arm/mach-gemini/include/mach/gmac.h |   21 ++++++++++++
->  4 files changed, 128 insertions(+), 0 deletions(-)
->  create mode 100644 arch/arm/mach-gemini/include/mach/gmac.h
->
-[...]
-> diff --git a/arch/arm/mach-gemini/include/mach/gmac.h b/arch/arm/mach-gemini/include/mach/gmac.h
-> new file mode 100644
-> index 0000000..c6eeacc
-> --- /dev/null
-> +++ b/arch/arm/mach-gemini/include/mach/gmac.h
-> @@ -0,0 +1,21 @@
-> +/*
-> + * Gemini GMAC specific defines
-> + *
-> + * Copyright (C) 2008, Paulius Zaleckas <paulius.zaleckas@teltonika.lt>
+On Wed, 27 Oct 2010 11:30:31 pm Ian Molton wrote:
+> On 19/10/10 11:39, Avi Kivity wrote:
+> > On 10/19/2010 12:31 PM, Ian Molton wrote:
+> 
+> >>> 2. should start with a patch to the virtio-pci spec to document what
+> >>> you're doing
+> >>
+> >> Where can I find that spec?
+> >
+> > http://ozlabs.org/~rusty/virtio-spec/
+> 
+> Ok, but I'm not patching that until theres been some review.
 
-This e-mail is dead. Please change it to gmail one.
+Fair enough; it's a bit of a PITA to patch, so it makes sense to get the
+details nailed down first.
 
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + */
-> +#ifndef __MACH_GMAC_H__
-> +#define __MACH_GMAC_H__
-> +
-> +#include <linux/phy.h>
-> +
-> +struct gemini_gmac_platform_data {
-> +       char *bus_id[2]; /* NULL means that this port is not used */
-> +       phy_interface_t interface[2];
-> +};
-> +
-> +#endif /* __MACH_GMAC_H__ */
-> --
-> 1.7.1
->
->
+> There are links to the associated qemu and guest OS changes in my 
+> original email.
+> 
+> >> It doesnt, at present... It could be changed fairly easily ithout
+> >> breaking anything if that happens though.
+> >
+> > The hypervisor and the guest can be changed independently. The driver
+> > should be coded so that it doesn't depend on hypervisor implementation
+> > details.
+> 
+> Fixed - updated patch tested and attached.
+
+OK. FWIW, I think this is an awesome idea.  I understand others are skeptical,
+but this seems simple and if it works and you're happy to maintain it I'm
+happy to let you do it :)
+
+Cheers,
+Rusty.
