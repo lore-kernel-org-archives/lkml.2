@@ -1,84 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761931Ab0J2Ua0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 16:30:26 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:13254 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757938Ab0J2UaY (ORCPT
+	id S1761869Ab0J2Uhi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 16:37:38 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:46238
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756391Ab0J2Uhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 16:30:24 -0400
-Date: Fri, 29 Oct 2010 22:20:12 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Alban Crequy <alban.crequy@collabora.co.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Pauli Nieminen <pauli.nieminen@collabora.co.uk>,
-        Rainer Weikusat <rweikusat@mssgmbh.com>
-Subject: Re: [PATCH 0/1] RFC: poll/select performance on datagram sockets
-In-Reply-To: <1288380431.2680.3.camel@edumazet-laptop>
-Message-ID: <alpine.LNX.2.00.1010292217390.24561@swampdragon.chaosbits.net>
-References: <20101029191857.5f789d56@chocolatine.cbg.collabora.co.uk> <1288380431.2680.3.camel@edumazet-laptop>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1149779595-1288383612=:24561"
+	Fri, 29 Oct 2010 16:37:35 -0400
+Date: Fri, 29 Oct 2010 13:37:59 -0700 (PDT)
+Message-Id: <20101029.133759.48489968.davem@davemloft.net>
+To: rostedt@goodmis.org
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, akpm@linux-foundation.org,
+        fweisbec@gmail.com, jbaron@redhat.com, ddaney@caviumnetworks.com
+Subject: Re: [PATCH 4/8] jump label: Make arch_jump_label_text_poke_early()
+ optional
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20101028135647.822609872@goodmis.org>
+References: <20101028135548.055490014@goodmis.org>
+	<20101028135647.822609872@goodmis.org>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+From: Steven Rostedt <rostedt@goodmis.org>
+Date: Thu, 28 Oct 2010 09:55:52 -0400
 
---8323328-1149779595-1288383612=:24561
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-
-On Fri, 29 Oct 2010, Eric Dumazet wrote:
-
-> Le vendredi 29 octobre 2010 à 19:18 +0100, Alban Crequy a écrit :
-> > Hi,
-> > 
-> > When a process calls the poll or select, the kernel calls (struct
-> > file_operations)->poll on every file descriptor and returns a mask of
-> > events which are ready. If the process is only interested by POLLIN
-> > events, the mask is still computed for POLLOUT and it can be expensive.
-> > For example, on Unix datagram sockets, a process running poll() with
-> > POLLIN will wakes-up when the remote end call read(). This is a
-> > performance regression introduced when fixing another bug by
-> > 3c73419c09a5ef73d56472dbfdade9e311496e9b and
-> > ec0d215f9420564fc8286dcf93d2d068bb53a07e.
-> > 
-> > The attached program illustrates the problem. It compares the
-> > performance of sending/receiving data on an Unix datagram socket and
-> > select(). When the datagram sockets are not connected, the performance
-> > problem is not triggered, but when they are connected it becomes a lot
-> > slower. On my computer, I have the following time:
-> > 
-> > Connected datagram sockets: >4 seconds
-> > Non-connected datagram sockets: <1 second
-> > 
-> > The patch attached in the next email fixes the performance problem: it
-> > becomes <1 second for both cases. I am not suggesting the patch for
-> > inclusion; I would like to change the prototype of (struct
-> > file_operations)->poll instead of adding ->poll2. But there is a lot of
-> > poll functions to change (grep tells me 337 functions).
-> > 
-> > Any opinions?
+> From: David Daney <ddaney@caviumnetworks.com>
 > 
-> My opinion would be to use epoll() for this kind of workload.
+> For the forthcoming MIPS jump label support,
+> arch_jump_label_text_poke_early() is unneeded as the MIPS NOP
+> instruction is already optimal.
 > 
-Sorry to intrude out of the blue without really understanding the kernel 
-side of most of the code in question, but if there's a performance 
-regression for applications using poll() shouldn't we address that so we 
-get back to the prior performance level rather than requireing all 
-userspace apps to switch to epoll() ??
+> Supply a default implementation that does nothing.  Flag x86 and SPARC
+> as having arch_jump_label_text_poke_early().
+> 
+> Cc: Jason Baron <jbaron@redhat.com>
+> Cc: David Miller <davem@davemloft.net>
+> Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+> LKML-Reference: <1286218615-24011-2-git-send-email-ddaney@caviumnetworks.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
--- 
-Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-Plain text mails only, please      http://www.expita.com/nomime.html
-Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
+On the SPARC side, it's not that the nop isn't optimal, on sparc it's
+always 0x01000000.  The issue is that when written an I-cache flush is
+necessary using a 'flushi' instruction.
 
---8323328-1149779595-1288383612=:24561--
+Does MIPS not need a flush when poking instructions?  I find this hard
+to believe, although it's been some time since I last touched that
+architecture :-)
