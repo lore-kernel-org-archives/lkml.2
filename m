@@ -1,79 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762063Ab0J2Vl3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 17:41:29 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42796 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755194Ab0J2VlZ (ORCPT
+	id S1762056Ab0J2Vvn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 17:51:43 -0400
+Received: from higgs.elka.pw.edu.pl ([194.29.160.5]:58119 "EHLO
+	higgs.elka.pw.edu.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752741Ab0J2Vvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 17:41:25 -0400
+	Fri, 29 Oct 2010 17:51:42 -0400
+X-Comment: RFC 2476 MSA function at elektron.elka.pw.edu.pl logged sender identity as: wzabolot
+Message-ID: <4CCB41E5.7030708@elektron.elka.pw.edu.pl>
+Date: Fri, 29 Oct 2010 23:51:33 +0200
+From: "wzabolot@elektron.elka.pw.edu.pl" <W.Zabolotny@elka.pw.edu.pl>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100913 Icedove/3.0.7
 MIME-Version: 1.0
-In-Reply-To: <20101029.125920.189692530.davem@davemloft.net>
-References: <20101029.125920.189692530.davem@davemloft.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 29 Oct 2010 14:41:03 -0700
-Message-ID: <AANLkTinR6XH30dHwPS23=sGYOJU8rO4+kwz+Uv_XRB-b@mail.gmail.com>
-Subject: Re: [GIT] Networking
-To: David Miller <davem@davemloft.net>
-Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=20cf303dd828e76cc30493c851f6
+To: linux-kernel@vger.kernel.org
+Subject: SOLVED? Re: i915 module with modeset=1 freezes machine (kernels 2.6.33
+ and 2.6.36)
+References: <4CC751E8.9030505@elektron.elka.pw.edu.pl> <4CC7DDCC.7040605@elka.pw.edu.pl> <4CCB39BE.4080400@elektron.elka.pw.edu.pl>
+In-Reply-To: <4CCB39BE.4080400@elektron.elka.pw.edu.pl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf303dd828e76cc30493c851f6
-Content-Type: text/plain; charset=ISO-8859-1
+I ve set two options in my kernel configuration:
+CONFIG_FRAMEBUFFER_CONSOLE=y
+CONFIG_FRAMEBUFFER_CONSOLE_ROTATION=y
 
-On Fri, Oct 29, 2010 at 12:59 PM, David Miller <davem@davemloft.net> wrote:
->
-> This has the verify_iovec() INT_MAX limiter change as well as:
+Now the system boots correctly with KMS switched on.
 
-I think you'd want this as well, to make sure that sendto/recvfrom
-don't generate invalid iovecs.
-
-Feel free to add my sign-off (or just commit it as yourself) after
-giving it some testing.
-
-NOTE! On thing that struck me is that the VFS layer does the
-"access_ok()" on the pre-truncated size and pointer pair, and I think
-that is the correct thing to do. However, the socket layer (and this
-patch) just truncates the size, so even if the copy is then done
-correctly with the proper user access checking, it will not check that
-the whole original buffer was valid - only that the buffer it fills in
-is valid.
-
-Now, this is not a security issue (since we're just not checking stuff
-that isn't getting filled in), but I think it's a QoI issue - it
-allows users to successfully pass in bogus buffers with huge sizes,
-and then if the thing only reads a few bytes it will all be ok.
-
-That's not a new thing: the old code may not have truncated the sizes,
-but if you pass in a 2GB buffer size, 99.999% of all socket read calls
-obviously won't ever fill that 2GB, but will happily return with
-whatever is there in the socket now (especially with nonblocking IO
-etc). But I do wonder if we shouldn't do the access_ok() on the whole
-buffer, as a way to keep user code honest.
-
-                  Linus
-
---20cf303dd828e76cc30493c851f6
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gfvknyzj0
-
-IG5ldC9zb2NrZXQuYyB8ICAgIDQgKysrKwogMSBmaWxlcyBjaGFuZ2VkLCA0IGluc2VydGlvbnMo
-KyksIDAgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvbmV0L3NvY2tldC5jIGIvbmV0L3NvY2tl
-dC5jCmluZGV4IDUyNDdhZTEuLjNjYTJmZDkgMTAwNjQ0Ci0tLSBhL25ldC9zb2NrZXQuYworKysg
-Yi9uZXQvc29ja2V0LmMKQEAgLTE2NTIsNiArMTY1Miw4IEBAIFNZU0NBTExfREVGSU5FNihzZW5k
-dG8sIGludCwgZmQsIHZvaWQgX191c2VyICosIGJ1ZmYsIHNpemVfdCwgbGVuLAogCXN0cnVjdCBp
-b3ZlYyBpb3Y7CiAJaW50IGZwdXRfbmVlZGVkOwogCisJaWYgKGxlbiA+IElOVF9NQVgpCisJCWxl
-biA9IElOVF9NQVg7CiAJc29jayA9IHNvY2tmZF9sb29rdXBfbGlnaHQoZmQsICZlcnIsICZmcHV0
-X25lZWRlZCk7CiAJaWYgKCFzb2NrKQogCQlnb3RvIG91dDsKQEAgLTE3MDksNiArMTcxMSw4IEBA
-IFNZU0NBTExfREVGSU5FNihyZWN2ZnJvbSwgaW50LCBmZCwgdm9pZCBfX3VzZXIgKiwgdWJ1Ziwg
-c2l6ZV90LCBzaXplLAogCWludCBlcnIsIGVycjI7CiAJaW50IGZwdXRfbmVlZGVkOwogCisJaWYg
-KHNpemUgPiBJTlRfTUFYKQorCQlzaXplID0gSU5UX01BWDsKIAlzb2NrID0gc29ja2ZkX2xvb2t1
-cF9saWdodChmZCwgJmVyciwgJmZwdXRfbmVlZGVkKTsKIAlpZiAoIXNvY2spCiAJCWdvdG8gb3V0
-Owo=
---20cf303dd828e76cc30493c851f6--
