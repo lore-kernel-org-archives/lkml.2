@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932866Ab0J2Pd7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 11:33:59 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:39911 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756541Ab0J2Pd5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 11:33:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=jX/+LjBC25lLkwRHJqrfaBFqrDlDzYK/M5E/sYSVu3hAO42fYwKNi46KsOMgQE7zYc
-         QtVDDluDuuSi5MSEkXTubJLHkDRrtyYdEMrHzSXKz/OhMiJ0ZlVCupyz0sDPFi76NZdx
-         ora7MUWBEOLbTd0v46hNmhj6HVuvkrf2R0fB8=
-MIME-Version: 1.0
-In-Reply-To: <20101029145212.GA21205@thunk.org>
-References: <AANLkTimt7wzR9RwGWbvhiOmot_zzayfCfSh_-v6yvuAP@mail.gmail.com>
-	<AANLkTikRKVBzO=ruy=JDmBF28NiUdJmAqb4-1VhK0QBX@mail.gmail.com>
-	<AANLkTinzJ9a+9w7G5X0uZpX2o-L8E6XW98VFKoF1R_-S@mail.gmail.com>
-	<AANLkTinDDG0ZkNFJZXuV9k3nJgueUW=ph8AuHgyeAXji@mail.gmail.com>
-	<AANLkTikvSGNE7uGn5p0tfJNg4Hz5WRmLRC8cXu7+GhMk@mail.gmail.com>
-	<20101028090002.GA12446@elte.hu>
-	<AANLkTinoGGLTN2JRwjJtF6Ra5auZVg+VSa=TyrtAkDor@mail.gmail.com>
-	<20101028133036.GA30565@elte.hu>
-	<20101028170132.GY27796@think>
-	<AANLkTikgO=n88ZAQ6EYAg1+aC1d0+o923FYyhkOouaH5@mail.gmail.com>
-	<20101029145212.GA21205@thunk.org>
-Date: Fri, 29 Oct 2010 21:33:56 +0600
-Message-ID: <AANLkTim-A7DLOOw4myQU3Lfip+ZEE32F2Ap_PJXuxG6G@mail.gmail.com>
-Subject: Re: 2.6.36 io bring the system to its knees
-From: Aidar Kultayev <the.aidar@gmail.com>
-To: "Ted Ts'o" <tytso@mit.edu>, Pekka Enberg <penberg@kernel.org>,
-        Chris Mason <chris.mason@oracle.com>, Ingo Molnar <mingo@elte.hu>,
-        Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Nick Piggin <npiggin@suse.de>, Arjan van de Ven <arjan@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S934043Ab0J2PnV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 11:43:21 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:56903 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932823Ab0J2PnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 11:43:15 -0400
+Subject: Re: [RFC PATCH 1/1] vhost: TX used buffer guest signal accumulation
+From: Shirley Ma <mashirle@us.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20101029081027.GB22688@redhat.com>
+References: <1288216693.17571.38.camel@localhost.localdomain>
+	 <1288240804.14342.1.camel@localhost.localdomain>
+	 <20101028052021.GD5599@redhat.com>
+	 <1288286062.11251.15.camel@localhost.localdomain>
+	 <20101029081027.GB22688@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 29 Oct 2010 08:43:08 -0700
+Message-ID: <1288366988.4110.5.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-puling the git now - I will try whatever you throw at me.
+On Fri, 2010-10-29 at 10:10 +0200, Michael S. Tsirkin wrote:
+> Hmm. I don't yet understand. We are still doing copies into the per-vq
+> buffer, and the data copied is really small.  Is it about cache line
+> bounces?  Could you try figuring it out?
 
-On Fri, Oct 29, 2010 at 8:52 PM, Ted Ts'o <tytso@mit.edu> wrote:
-> On Thu, Oct 28, 2010 at 08:57:49PM +0300, Pekka Enberg wrote:
->> Don't we need to call ext4_should_writeback_data() before we drop the
->> lock? It pokes at ->i_mode which needs ->i_mutex AFAICT.
->
-> No, it should be fine.  It's not like a file is going to change from
-> being a regular file to a directory or vice versa.  :-)
->
-> From a quick inspection it looks OK, but I haven't had the time to
-> look more closely to be 100% sure, and of course I haven't run it
-> through a battery of regression tests.  For normal usage it should be
-> fine though.
->
-> Aidar, if you'd be willing to try it with this patch applied, and with
-> the file system mounted data=writeback, and then let me know what the
-> latencytop reports, that would be useful.  I'm fairly sure that fixing
-> llseek() probably won't make that much difference, since it will
-> probably spread things out to other places, but it would be good to
-> make the experiment.
->
-> We will probably also need to use the uninitialized bit for protecting
-> data from showing up after a crash for extent-based files, and turning
-> on data=writeback is a good way to simulate that.  (Sorry, no way
-> we're going to make a change like that this merge cycle, but that
-> might be something we could do for 2.6.38.)  But I am curious to see
-> what are the next things that come up as being problematic after that.
->
-> Thanks,
->
->                                        - Ted
->
+per-vq buffer is much less expensive than 3 put_copy() call. I will
+collect the profiling data to show that.
+
+> > > 2. How about flushing out queued stuff before we exit
+> > >    the handle_tx loop? That would address most of
+> > >    the spec issue. 
+> > 
+> > The performance is almost as same as the previous patch. I will
+> resubmit
+> > the modified one, adding vhost_add_used_and_signal_n after handle_tx
+> > loop for processing pending queue.
+> > 
+> > This patch was a part of modified macvtap zero copy which I haven't
+> > submitted yet. I found this helped vhost TX in general. This pending
+> > queue will be used by DMA done later, so I put it in vq instead of a
+> > local variable in handle_tx.
+> > 
+> > Thanks
+> > Shirley
+> 
+> BTW why do we need another array? Isn't heads field exactly what we
+> need
+> here?
+
+head field is only for up to 32, the more used buffers add and signal
+accumulated the better performance is from test results. That's was one
+of the reason I didn't use heads. The other reason was I used these
+buffer for pending dma done in mavctap zero copy patch. It could be up
+to vq->num in worse case.
+
+Thanks
+Shirley
+
