@@ -1,32 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762013Ab0J2VRj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 17:17:39 -0400
-Received: from higgs.elka.pw.edu.pl ([194.29.160.5]:57876 "EHLO
-	higgs.elka.pw.edu.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754907Ab0J2VRh (ORCPT
+	id S933073Ab0J2VWG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 17:22:06 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:58503 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751200Ab0J2VWD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 17:17:37 -0400
-X-Comment: RFC 2476 MSA function at elektron.elka.pw.edu.pl logged sender identity as: wzabolot
-Message-ID: <4CCB39BE.4080400@elektron.elka.pw.edu.pl>
-Date: Fri, 29 Oct 2010 23:16:46 +0200
-From: "wzabolot@elektron.elka.pw.edu.pl" <W.Zabolotny@elka.pw.edu.pl>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100913 Icedove/3.0.7
+	Fri, 29 Oct 2010 17:22:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=gFE4gm66H9hlZyGCrwC6d1OqpjnKfT6fKDya0pJlDvFh1xLilgzAdBHX2xcmaMY01s
+         PlOWNiKxJAfh4XngCmtoTKt37+IoyJ9GMdeBCVsJM+hcLcRWd60krS9cmtafVgK9vD0I
+         ++5su/tH1cZm6ckb1U6rDD+XBoBb9L0L5RCFQ=
+Date: Sat, 30 Oct 2010 01:21:59 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, brgerst@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86-32: Restore irq stacks NUMA-aware
+	allocations
+Message-ID: <20101029212159.GD6130@lenovo>
+References: <1288276854.2649.607.camel@edumazet-laptop> <tip-5c1eb08936693cd78c71164c8bea0b086ae72c67@git.kernel.org> <1288377146.1988.0.camel@laptop> <20101029202809.GB6130@lenovo> <1288385883.2680.17.camel@edumazet-laptop>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Re: More details - Re: i915 module with modeset=1 freezes machine
- (kernels 2.6.33 and 2.6.36)
-References: <4CC751E8.9030505@elektron.elka.pw.edu.pl> <4CC7DDCC.7040605@elka.pw.edu.pl>
-In-Reply-To: <4CC7DDCC.7040605@elka.pw.edu.pl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1288385883.2680.17.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 82865G based system boots correctly with debian distribution kernel 
-linux-image-2.6.32-5-686 .
-I tried to copy settings related to DRM, framebuffers and other graphics 
-related options from 2.6.32-5 to my self-compiled 2.6.36 kernel, but it 
-still hangs.
+On Fri, Oct 29, 2010 at 10:58:03PM +0200, Eric Dumazet wrote:
+> Le samedi 30 octobre 2010 à 00:28 +0400, Cyrill Gorcunov a écrit :
+> > On Fri, Oct 29, 2010 at 08:32:26PM +0200, Peter Zijlstra wrote:
+> > > On Fri, 2010-10-29 at 06:43 +0000, tip-bot for Eric Dumazet wrote:
+> > > > +       irqctx = page_address(alloc_pages_node(cpu_to_node(cpu),
+> > > > +                                              THREAD_FLAGS,
+> > > > +                                              THREAD_ORDER)); 
+> > > 
+> > > Shouldn't we be checking for a NULL return from alloc_pages_node()
+> > > before calling page_address() on it?
+> > > --
+> > 
+> >  Something like below I guess, but probably we could try to allocate
+> > on appropriate NUMA node first and if it fails -- via old alloc_pages
+> > and if it fail in turn -- then we panic.
+> 
+> Maybe my commit message was not clear : 
+> 
+> There is no need to test return from alloc_pages_node() and do the
+> fallback. It already done properly.
+>
 
+Yes Eric, somehow managed to miss that, my bad.
+ 
+  Cyrill
