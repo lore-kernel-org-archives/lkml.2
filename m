@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755602Ab0J2SOe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 14:14:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58629 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754907Ab0J2SOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 14:14:31 -0400
-Message-ID: <4CCB0EE0.4000401@redhat.com>
-Date: Fri, 29 Oct 2010 11:13:52 -0700
-From: Richard Henderson <rth@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: David Daney <ddaney@caviumnetworks.com>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Ingo Molnar <mingo@elte.hu>, Jason Baron <jbaron@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, tglx@linutronix.de,
-        andi@firstfloor.org, roland@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
-        davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org,
-        tony@bakeyournoodle.com, dsd@laptop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] jump label: disable due to compiler bug
-References: <cover.1288212485.git.jbaron@redhat.com>	 <2d1b1d5d2b3930e1acb063cefffbcb2faf049854.1288212486.git.jbaron@redhat.com>	 <ce4ff595-f9d1-4c17-b68e-82739b07ad3e@email.android.com>	 <20101028141757.GA2875@redhat.com> <4CC9C724.3020004@caviumnetworks.com>	 <20101028201112.GA4792@redhat.com> <20101029063450.GE29463@elte.hu>	 <1288354687.18238.433.camel@gandalf.stny.rr.com>	 <20101029122230.GA25663@elte.hu>	 <1288356418.18238.454.camel@gandalf.stny.rr.com>	 <20101029133524.GA23916@Krystal>	 <1288369108.29632.1.camel@gandalf.stny.rr.com>	 <4CCB01D1.2050004@caviumnetworks.com> <1288373582.29632.3.camel@gandalf.stny.rr.com> <4CCB08EB.8070004@caviumnetworks.com>
-In-Reply-To: <4CCB08EB.8070004@caviumnetworks.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	id S1756332Ab0J2SS1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 14:18:27 -0400
+Received: from vms173019pub.verizon.net ([206.46.173.19]:58809 "EHLO
+	vms173019pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754449Ab0J2SSZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 14:18:25 -0400
+Date: Fri, 29 Oct 2010 14:18:04 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-acpi@vger.kernel.org,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Lee@kernel.org, Chun-Yi <joeyli.kernel@gmail.com>,
+        Dave Airlie <airlied@redhat.com>, Zhang Rui <rui.zhang@intel.com>
+Subject: Re: linux-next: Tree for October 28 (acpi_video)
+In-reply-to: <20101029090131.68709a71.randy.dunlap@oracle.com>
+Message-id: <alpine.LFD.2.00.1010291406560.3423@localhost.localdomain>
+References: <20101028142031.5a4d6612.sfr@canb.auug.org.au>
+ <20101029090131.68709a71.randy.dunlap@oracle.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2010 10:48 AM, David Daney wrote:
-> http://gcc.gnu.org/bugzilla/show_bug.cgi?id=46226
-> 
-> Perhaps it could be integrated with the current checks for the presence of 'asm goto'
+> drivers/built-in.o: In function `acpi_video_bus_put_one_device':
+> video.c:(.text+0x9d794): undefined reference to `backlight_device_unregister'
 
-If you're looking for a cross-compile-able test, you can strip the
-testcase down to 
+Invalid .config, as ACPI_VIDEO depends on BACKLIGHT_CLASS_DEVICE, which is not set.
 
-extern void abort(void);
-void g(int x, ...);
-void f(int x)
-{
-  if (x == 0)
-    g(0);
-  g(1, 2, 3, 4, 5, 6, 7);
-  asm goto ("XYZZY" : : : : label);
-  abort ();
- label:
-  return;
-}
+This breakage is the infamous "select in Kconfig doesn't" bug,
+which has apparently claimed a new victim, STUB_POULSBO:
 
-and use perl to notice the adjustment to esp before or after XYZZY.
-It should be fairly obvious looking at the assembly before and after
-the patch.
+(STUB_POULSBO && HAS_IOMEM && PCI && ACPI || DRM_I915 && <choice> && 
+AGP_INTEL && ACPI || DRM_NOUVEAU && STAGING && !STAGING_EXCLUDE_BUILD && 
+DRM && PCI && ACPI) selects ACPI_VIDEO which has unmet direct dependencies 
+(ACPI && X86 && BACKLIGHT_CLASS_DEVICE && VIDEO_OUTPUT_CONTROL && INPUT)
 
-I don't know what sort of embedded processors supported by linux
-actually use ACCUMULATE_OUTGOING_ARGS.  Almost all ports don't, so
-I'd be pretty comfortable making this a 32-bit x86 only test, and
-let other targets just check that the test compiles.
+commit e26fd1199ebab0d469fc3e037da5932d382f0669
+Author: Lee, Chun-Yi <joeyli.kernel@gmail.com>
+Date:   Wed Oct 20 13:51:19 2010 +0800
 
+    gpu: Add Intel GMA500(Poulsbo) Stub Driver
+    
+    Currently, there have no GMA500(Poulsbo) native video driver to 
+support
+    intel opregion. So, use this stub driver to enable the acpi backlight
+    control sysfs entry files by requrest acpi_video_register.
+    
+    [airlied: fix warnings]
+    
+    Signed-off-by: Lee, Chun-Yi <jlee@novell.com>
+    Signed-off-by: Dave Airlie <airlied@redhat.com>
 
-r~
