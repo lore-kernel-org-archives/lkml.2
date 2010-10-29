@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933681Ab0J2KDi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 06:03:38 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:58599 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1756616Ab0J2KDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 06:03:35 -0400
-X-Authenticated: #4630777
-X-Provags-ID: V01U2FsdGVkX1/r09lAzRTr4x3dj7e0cdFEZpvd5rUbixdYuSWaL/
-	+lHUy3K6SGz3NJ
-Date: Fri, 29 Oct 2010 12:02:17 +0200
-From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
-To: eparis@redhat.com
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Ensure FMODE_NONOTIFY is not set by userspace
-Message-ID: <20101029100217.GC26242@lsanfilippo.unix.rd.tt.avira.com>
+	id S933739Ab0J2KEP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 06:04:15 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:26468 "EHLO
+	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932361Ab0J2KEM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 06:04:12 -0400
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275dhz32i2a8h43h62h)
+X-Spam-TCS-SCL: 1:0
+X-WSS-ID: 0LB1QM1-01-A9U-02
+X-M-MSG: 
+Date: Fri, 29 Oct 2010 12:03:38 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Tejun Heo <tj@kernel.org>
+CC: "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2.6.36-rc7] oprofile: don't use flush_scheduled_work()
+Message-ID: <20101029100338.GE5969@erda.amd.com>
+References: <4CB85C4C.6080806@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-Y-GMX-Trusted: 0
+In-Reply-To: <4CB85C4C.6080806@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 15.10.10 09:51:08, Tejun Heo wrote:
+> flush_scheduled_work() is deprecated and scheduled to be removed.
+> sync_stop() currently cancels cpu_buffer works inside buffer_mutex and
+> flushes the system workqueue outside.  Instead, split end_cpu_work()
+> into two parts - stopping further work enqueues and flushing works -
+> and do the former inside buffer_mutex and latter outside.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
 
-    In fsnotify_open() ensure that FMODE_NONOTIFY is never set by userspace.
-    Also always call fsnotify_parent and fsnotify.
+Patch applied to oprofile/urgent. Thanks Tejun.
 
-Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
----
-This patch applies against commit 3970d817558a426cc2f53eaa01182eb9452e0cb1
-of branch 'origin/for-next' from git.infradead.org/users/eparis/notify.git
+-Robert
 
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
-diff --git a/include/linux/fsnotify.h b/include/linux/fsnotify.h
-index ecb43b3..5c185fa 100644
---- a/include/linux/fsnotify.h
-+++ b/include/linux/fsnotify.h
-@@ -235,10 +235,11 @@ static inline void fsnotify_open(struct file *file)
- 	if (S_ISDIR(inode->i_mode))
- 		mask |= FS_ISDIR;
- 
--	if (!(file->f_mode & FMODE_NONOTIFY)) {
--		fsnotify_parent(path, NULL, mask);
--		fsnotify(inode, mask, path, FSNOTIFY_EVENT_PATH, NULL, 0);
--	}
-+	/* FMODE_NONOTIFY must never be set from user */
-+	file->f_mode &= ~FMODE_NONOTIFY;
-+
-+	fsnotify_parent(path, NULL, mask);
-+	fsnotify(inode, mask, path, FSNOTIFY_EVENT_PATH, NULL, 0);
- }
- 
- /*
