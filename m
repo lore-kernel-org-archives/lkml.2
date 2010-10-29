@@ -1,160 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761341Ab0J2S5P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 14:57:15 -0400
-Received: from claw.goop.org ([74.207.240.146]:45734 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758461Ab0J2S5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 14:57:12 -0400
-Message-ID: <4CCB1906.4000608@goop.org>
-Date: Fri, 29 Oct 2010 11:57:10 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Vasiliy G Tolstov <v.tolstov@selfip.ru>
-Subject: [GIT PULL] Small Xen bugfixes
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1761593Ab0J2TBk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 15:01:40 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:59617 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759778Ab0J2TBg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 15:01:36 -0400
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=B7RQlXCkizYA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=7d_E57ReAAAA:8 a=3nbZYyFuAAAA:8 a=meVymXHHAAAA:8 a=HzHanZfdLyP9a52u5xMA:9 a=oz3_3wr0uYdbuxPCfjoA:7 a=Rax08GD505yMcdRe7H_fx-nHaRoA:4 a=jEp0ucaQiEUA:10 a=D6-X0JM3zdQA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=HHOBg75yxcZzyzeN:21 a=myAapDF9txdkNF_9:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Message-Id: <20101029190134.747310610@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Fri, 29 Oct 2010 15:00:51 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Jason Baron <jbaron@redhat.com>
+Subject: [PATCH 1/7] jump label: Fix module __init section race
+References: <20101029190050.674141729@goodmis.org>
+Content-Disposition: inline; filename=0001-jump-label-Fix-module-__init-section-race.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Hi Linus,
+From: Jason Baron <jbaron@redhat.com>
 
-Here are some small Xen bugfixes:
+Jump label uses is_module_text_address() to ensure that the module
+__init sections are valid before updating them. However, between the
+check for a valid module __init section and the subsequent jump
+label update, the module's __init section could be freed out from under
+us.
 
-    * fix dom0 boot on systems whose E820 doesn't completely cover the
-      ISA address space.  This fixes a crash on a Dell R310.
-    * fix misallocation of initial pagetables on 32-bit systems
-      (sizeof(pmd_t) != sizeof(pmd_t *)).  In practice this didn't cause
-      a problem because the following allocation was page-aligned so the
-      padding was big enough to make up the difference.
-    * in xenfs, properly report put_user failures to write back error status
+We fix this potential race by adding a notifier callback to the
+MODULE_STATE_LIVE state. This notifier is called *after* the __init
+section has been run but before it is going to be freed. In the
+callback, the jump label code zeros the key value for any __init jump
+code within the module, and we add a check for a non-zero key value when
+we update jump labels. In this way we require no additional data
+structures.
 
-The changes are on two branches:
+Thanks to Mathieu Desnoyers for pointing out this race condition.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git upstream/core
+Reported-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Jason Baron <jbaron@redhat.com>
+LKML-Reference: <c6f037b7598777668025ceedd9294212fd95fa34.1285965957.git.jbaron@redhat.com>
 
-Ian Campbell (2):
-      xen: do not release any memory under 1M in domain 0
-      xen: correct size of level2_kernel_pgt
+[ Renamed remove_module_init() to remove_jump_label_module_init()
+  as suggested by Masami Hiramatsu. ]
 
- arch/x86/xen/mmu.c   |    2 +-
- arch/x86/xen/setup.c |   31 ++++++++++++++++++++++++++-----
- 2 files changed, 27 insertions(+), 6 deletions(-)
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/jump_label.c |   41 ++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 40 insertions(+), 1 deletions(-)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git upstream/xenfs
-
-Vasiliy Kulikov (1):
-      xen: xenfs: privcmd: check put_user() return code
-
- drivers/xen/xenfs/privcmd.c |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
-
-Thanks,
-	J
-
-
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index e41683c..13cd4eb 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -2104,7 +2104,7 @@ __init pgd_t *xen_setup_kernel_pagetable(pgd_t *pgd,
- {
- 	pmd_t *kernel_pmd;
- 
--	level2_kernel_pgt = extend_brk(sizeof(pmd_t *) * PTRS_PER_PMD, PAGE_SIZE);
-+	level2_kernel_pgt = extend_brk(sizeof(pmd_t) * PTRS_PER_PMD, PAGE_SIZE);
- 
- 	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->pt_base) +
- 				  xen_start_info->nr_pt_frames * PAGE_SIZE +
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 8e2c9f21..1f49951 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -84,6 +84,22 @@ static unsigned long __init xen_release_chunk(phys_addr_t start_addr,
- 	start = PFN_UP(start_addr);
- 	end = PFN_DOWN(end_addr);
- 
-+	/*
-+	 * Domain 0 maintains a 1-1 P2M mapping for the first megabyte
-+	 * so do not return such memory to the hypervisor.
-+	 *
-+	 * This region can contain various firmware tables and the
-+	 * like which are often assumed to be always mapped and
-+	 * available via phys_to_virt.
-+	 */
-+	if (xen_initial_domain()) {
-+		if (end < PFN_DOWN(ISA_END_ADDRESS))
-+			return 0;
-+
-+		if (start < PFN_DOWN(ISA_END_ADDRESS))
-+			start = PFN_DOWN(ISA_END_ADDRESS);
-+	}
-+
- 	if (end <= start)
- 		return 0;
- 
-@@ -163,6 +179,7 @@ char * __init xen_memory_setup(void)
- 		XENMEM_memory_map;
- 	rc = HYPERVISOR_memory_op(op, &memmap);
- 	if (rc == -ENOSYS) {
-+		BUG_ON(xen_initial_domain());
- 		memmap.nr_entries = 1;
- 		map[0].addr = 0ULL;
- 		map[0].size = mem_end;
-@@ -200,12 +217,16 @@ char * __init xen_memory_setup(void)
+diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+index 7be868b..be9e105 100644
+--- a/kernel/jump_label.c
++++ b/kernel/jump_label.c
+@@ -168,7 +168,8 @@ void jump_label_update(unsigned long key, enum jump_label_type type)
+ 			count = e_module->nr_entries;
+ 			iter = e_module->table;
+ 			while (count--) {
+-				if (kernel_text_address(iter->code))
++				if (iter->key &&
++						kernel_text_address(iter->code))
+ 					arch_jump_label_transform(iter, type);
+ 				iter++;
+ 			}
+@@ -366,6 +367,39 @@ static void remove_jump_label_module(struct module *mod)
  	}
- 
- 	/*
--	 * Even though this is normal, usable memory under Xen, reserve
--	 * ISA memory anyway because too many things think they can poke
--	 * about in there.
-+	 * Even though this is normal, usable memory in a Xen domU,
-+	 * reserve ISA memory anyway because too many things think
-+	 * they can poke about in there.
-+	 *
-+	 * In dom0 we use the host e820 and therefore do not need to
-+	 * specially reserved anything.
- 	 */
--	e820_add_region(ISA_START_ADDRESS, ISA_END_ADDRESS - ISA_START_ADDRESS,
--			E820_RESERVED);
-+	if (!xen_initial_domain())
-+		e820_add_region(ISA_START_ADDRESS, ISA_END_ADDRESS - ISA_START_ADDRESS,
-+				E820_RESERVED);
- 
- 	/*
- 	 * Reserve Xen bits:
-diff --git a/drivers/xen/xenfs/privcmd.c b/drivers/xen/xenfs/privcmd.c
-index f80be7f..2eb04c8 100644
---- a/drivers/xen/xenfs/privcmd.c
-+++ b/drivers/xen/xenfs/privcmd.c
-@@ -266,9 +266,7 @@ static int mmap_return_errors(void *data, void *state)
- 	xen_pfn_t *mfnp = data;
- 	struct mmap_batch_state *st = state;
- 
--	put_user(*mfnp, st->user++);
--
--	return 0;
-+	return put_user(*mfnp, st->user++);
  }
  
- static struct vm_operations_struct privcmd_vm_ops;
-@@ -323,10 +321,8 @@ static long privcmd_ioctl_mmap_batch(void __user *udata)
- 	up_write(&mm->mmap_sem);
- 
- 	if (state.err > 0) {
--		ret = 0;
--
- 		state.user = m.arr;
--		traverse_pages(m.num, sizeof(xen_pfn_t),
-+		ret = traverse_pages(m.num, sizeof(xen_pfn_t),
- 			       &pagelist,
- 			       mmap_return_errors, &state);
++static void remove_jump_label_module_init(struct module *mod)
++{
++	struct hlist_head *head;
++	struct hlist_node *node, *node_next, *module_node, *module_node_next;
++	struct jump_label_entry *e;
++	struct jump_label_module_entry *e_module;
++	struct jump_entry *iter;
++	int i, count;
++
++	/* if the module doesn't have jump label entries, just return */
++	if (!mod->num_jump_entries)
++		return;
++
++	for (i = 0; i < JUMP_LABEL_TABLE_SIZE; i++) {
++		head = &jump_label_table[i];
++		hlist_for_each_entry_safe(e, node, node_next, head, hlist) {
++			hlist_for_each_entry_safe(e_module, module_node,
++						  module_node_next,
++						  &(e->modules), hlist) {
++				if (e_module->mod != mod)
++					continue;
++				count = e_module->nr_entries;
++				iter = e_module->table;
++				while (count--) {
++					if (within_module_init(iter->code, mod))
++						iter->key = 0;
++					iter++;
++				}
++			}
++		}
++	}
++}
++
+ static int
+ jump_label_module_notify(struct notifier_block *self, unsigned long val,
+ 			 void *data)
+@@ -386,6 +420,11 @@ jump_label_module_notify(struct notifier_block *self, unsigned long val,
+ 		remove_jump_label_module(mod);
+ 		mutex_unlock(&jump_label_mutex);
+ 		break;
++	case MODULE_STATE_LIVE:
++		mutex_lock(&jump_label_mutex);
++		remove_jump_label_module_init(mod);
++		mutex_unlock(&jump_label_mutex);
++		break;
  	}
+ 	return ret;
+ }
+-- 
+1.7.1
 
 
