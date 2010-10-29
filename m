@@ -1,42 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762109Ab0J2V7V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 17:59:21 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:37816 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755739Ab0J2V7Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 17:59:16 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] One more power management fix for 2.6.37
-Date: Fri, 29 Oct 2010 23:58:27 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
+	id S1762138Ab0J2V7f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 17:59:35 -0400
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:65381 "EHLO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756047Ab0J2V7b convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 17:59:31 -0400
+Message-ID: <4CCB434A.7010400@snapgear.com>
+Date: Sat, 30 Oct 2010 07:57:30 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010292358.27975.rjw@sisk.pl>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: linux-m68k@vger.kernel.org, dhowells@redhat.com, gerg@uclinux.org,
+        phdm@macqel.be, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH][resend] m68k,m68knommu: Do not include linux/hardirq.h
+ in asm/irqflags.h
+References: <4CCAD4E8.8040801@snapgear.com> <AANLkTin4v0=R0Q2etqi+WkLSJTV7T5J01rd+AbymutqG@mail.gmail.com>
+In-Reply-To: <AANLkTin4v0=R0Q2etqi+WkLSJTV7T5J01rd+AbymutqG@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-OriginalArrivalTime: 29 Oct 2010 21:57:42.0978 (UTC) FILETIME=[4FF9CA20:01CB77B4]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Please pull one more power management fix for 2.6.37 from:
+Hi Geert,
 
-git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git pm-fixes
+On 30/10/10 02:31, Geert Uytterhoeven wrote:
+> On Fri, Oct 29, 2010 at 16:06, Greg Ungerer<gerg@snapgear.com>  wrote:
+>> Philippe DeMuyter noticed this build failure with Linus' current git
+>> tree. I think it is m68k clean too. If all are ok with it I'll
+>> pass it directly to Linus.
+>
+> Sorry, I saw his patch before, but had no spare cycles left for testing.
+>
+> Unfortunately that breaks CONFIG_MMU=y:
+>
+> arch/m68k/include/asm/irqflags.h: In function ‘arch_local_irq_enable’:
+> arch/m68k/include/asm/irqflags.h:43: error: implicit declaration of
+> function ‘hardirq_count’
+>
+> But if you protect the #include<linux/hardirq.h>  by #ifdef
+> CONFIG_MMU, I'm happy with
+> it.
 
-It fixes a regression in the core I/O runtime PM code.
+Thanks, I'll rework it with that.
+
+Regards
+Greg
 
 
- drivers/base/power/runtime.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+>> m68k,m68knommu: Do not include linux/hardirq.h in asm/irqflags.h
+>>
+>> Recent changes to header files made kernel compilation for m68k/m68knommu
+>> fail with :
+>>   CC      arch/m68knommu/kernel/asm-offsets.s
+>> In file included from /archives/linux/git/arch/m68k/include/asm/system.h:2,
+>>                  from include/linux/wait.h:25,
+>>                  from include/linux/mmzone.h:9,
+>>                  from include/linux/gfp.h:4,
+>>                  from include/linux/irq.h:20,
+>>                  from include/asm-generic/hardirq.h:12,
+>>                  from
+>> /archives/linux/git/arch/m68k/include/asm/hardirq_no.h:17,
+>>                  from /archives/linux/git/arch/m68k/include/asm/hardirq.h:2,
+>>                  from include/linux/hardirq.h:10,
+>>                  from /archives/linux/git/arch/m68k/include/asm/irqflags.h:5,
+>>                  from include/linux/irqflags.h:15,
+>>                  from include/linux/spinlock.h:53,
+>>                  from include/linux/seqlock.h:29,
+>>                  from include/linux/time.h:8,
+>>                  from include/linux/timex.h:56,
+>>                  from include/linux/sched.h:56,
+>>                  from arch/m68knommu/kernel/asm-offsets.c:12:
+>> /archives/linux/git/arch/m68k/include/asm/system_no.h: In function
+>> â€˜__xchgâ€™:
+>> /archives/linux/git/arch/m68k/include/asm/system_no.h:79: error: implicit
+>> declaration of function â€˜local_irq_saveâ€™
+>> /archives/linux/git/arch/m68k/include/asm/system_no.h:101: error: implicit
+>> declaration of function â€˜local_irq_restoreâ€™
+>>
+>> Fix that
+>>
+>> Signed-off-by: Philippe De Muyter<phdm@macqel.be>
+>>
+>> ---
+>> diff --git a/arch/m68k/include/asm/irqflags.h
+>> b/arch/m68k/include/asm/irqflags.h
+>> index 4a5b284..38b414d 100644
+>> --- a/arch/m68k/include/asm/irqflags.h
+>> +++ b/arch/m68k/include/asm/irqflags.h
+>> @@ -2,7 +2,6 @@
+>>   #define _M68K_IRQFLAGS_H
+>>   #include<linux/types.h>
+>> -#include<linux/hardirq.h>
+>>   #include<linux/preempt.h>
+>>   #include<asm/thread_info.h>
+>>   #include<asm/entry.h>
+>
+> Gr{oetje,eeting}s,
+>
+>                          Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                  -- Linus Torvalds
+>
 
----------------
 
-Kevin Winchester (1):
-      PM / Runtime: Fix typo in status comparison causing warning
-
+-- 
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close,                            FAX:         +61 7 3891 3630
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
