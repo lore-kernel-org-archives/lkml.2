@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758486Ab0J2CIC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 22:08:02 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:56379 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755079Ab0J2CHz (ORCPT
+	id S1760289Ab0J2CU3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 22:20:29 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27226 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760202Ab0J2CUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 22:07:55 -0400
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=7lP_iKngrZkA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=Z4Rwk6OoAAAA:8 a=VwQbUJbxAAAA:8 a=jOO7u0OJ1EddcHWKlwwA:9 a=y1PGnjB3WI68hF5k9Uo39weOVBoA:4 a=PUjeQqilurYA:10 a=jbrJJM5MRmoA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 0/3] [GIT PULL] ftrace: recordmcount.c updates for MIPS
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <20101028140512.441043850@goodmis.org>
-References: <20101028140512.441043850@goodmis.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 28 Oct 2010 22:07:51 -0400
-Message-ID: <1288318071.18238.393.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 28 Oct 2010 22:20:23 -0400
+Message-ID: <4CCA2F0C.7010302@kernel.org>
+Date: Thu, 28 Oct 2010 19:18:52 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.14) Gecko/20101013 SUSE/3.0.9 Thunderbird/3.0.9
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: Shaohua Li <shaohua.li@intel.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: Use online node real index in calulate_tbl_offset()
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ralf,
 
-Ingo and I were discussing this patch series, and since it is very
-specific to MIPS, we agreed that it makes more sense going through your
-tree. it's based off of mainline's commit of:
+Found one numa system that doesn't have ram installed in first socket
+hang during executing init scripts.
 
-commit e3e1288e86a07cdeb0aee5860a2dff111c6eff79
-Merge: 9ae6d03 964dc25
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Wed Oct 27 19:04:36 2010 -0700
+bisect to:
 
-Would you mind pulling from my tree?
+|commit 932967202182743c01a2eee4bdfa2c42697bc586
+|Author: Shaohua Li <shaohua.li@intel.com>
+|Date:   Wed Oct 20 11:07:03 2010 +0800
+|
+|    x86: Spread tlb flush vector between nodes
 
-Thanks!
+It turns out when first socket is not online could have cpus on node1
+tlb_offset set to bigger than NUM_INVALIDATE_TLB_VECTORS.
 
--- Steve
+that could affect systems like 4 sockets, but socket 2 doesn't
+have installed, sockets 3 will get too big tlb_offset.
 
+Need to use real online node idx.
 
-On Thu, 2010-10-28 at 10:05 -0400, Steven Rostedt wrote:
-> Ingo,
-> 
-> Please pull the latest tip/perf/mips tree, which can be found at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-> tip/perf/mips
-> 
-> 
-> John Reiser (1):
->       ftrace/MIPS: Add MIPS64 support for C version of recordmcount
-> 
-> Wu Zhangjin (2):
->       ftrace/MIPS: Add module support for C version of recordmcount
->       ftrace/MIPS: Enable C Version of recordmcount
-> 
-> ----
->  arch/mips/Kconfig      |    1 +
->  scripts/recordmcount.c |   44 ++++++++++++++++++++++++
->  scripts/recordmcount.h |   86 +++++++++++++++++++++++++++++++++++++++++++++---
->  3 files changed, 126 insertions(+), 5 deletions(-)
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
+---
+ arch/x86/mm/tlb.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
+Index: linux-2.6/arch/x86/mm/tlb.c
+===================================================================
+--- linux-2.6.orig/arch/x86/mm/tlb.c
++++ linux-2.6/arch/x86/mm/tlb.c
+@@ -223,7 +223,7 @@ void native_flush_tlb_others(const struc
+ 
+ static void __cpuinit calculate_tlb_offset(void)
+ {
+-	int cpu, node, nr_node_vecs;
++	int cpu, node, nr_node_vecs, idx = 0;
+ 	/*
+ 	 * we are changing tlb_vector_offset for each CPU in runtime, but this
+ 	 * will not cause inconsistency, as the write is atomic under X86. we
+@@ -239,7 +239,7 @@ static void __cpuinit calculate_tlb_offs
+ 		nr_node_vecs = NUM_INVALIDATE_TLB_VECTORS/nr_online_nodes;
+ 
+ 	for_each_online_node(node) {
+-		int node_offset = (node % NUM_INVALIDATE_TLB_VECTORS) *
++		int node_offset = (idx % NUM_INVALIDATE_TLB_VECTORS) *
+ 			nr_node_vecs;
+ 		int cpu_offset = 0;
+ 		for_each_cpu(cpu, cpumask_of_node(node)) {
+@@ -248,6 +248,7 @@ static void __cpuinit calculate_tlb_offs
+ 			cpu_offset++;
+ 			cpu_offset = cpu_offset % nr_node_vecs;
+ 		}
++		idx++;
+ 	}
+ }
+ 
