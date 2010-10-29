@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761860Ab0J2UXz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 16:23:55 -0400
-Received: from smtp-out-1.dataguard.no ([87.118.11.126]:59021 "EHLO
-	smtp-out-1.dataguard.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756398Ab0J2UXx convert rfc822-to-8bit (ORCPT
+	id S1761897Ab0J2U11 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 16:27:27 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48389 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756398Ab0J2U10 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 16:23:53 -0400
-X-AuditID: 57760b7e-b7c24ae000000327-f6-4ccb2d56fabc
-Message-ID: <20101029222349.18796u7yf5kpzudc@webmail.combitel.no>
-Date: Fri, 29 Oct 2010 22:23:49 +0200
-From: "Webmail equipo de =?iso-8859-1?b?YWN0dWFsaXphY2nzbg==?=" 
-	<upgradecct@Safe-mail.net>
-Reply-to: upgradaccnt@nba2k.com.cn
-To: undisclosed-recipients:;
-Subject: Actualice su cuenta de correo =?iso-8859-1?b?ZWxlY3Ry825pY28=?=
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.2)
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 29 Oct 2010 16:27:26 -0400
+Date: Fri, 29 Oct 2010 13:19:52 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Greg Thelen <gthelen@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [PATCH v4 02/11] memcg: document cgroup dirty memory interfaces
+Message-Id: <20101029131952.1191023d.akpm@linux-foundation.org>
+In-Reply-To: <1288336154-23256-3-git-send-email-gthelen@google.com>
+References: <1288336154-23256-1-git-send-email-gthelen@google.com>
+	<1288336154-23256-3-git-send-email-gthelen@google.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 29 Oct 2010 00:09:05 -0700
+Greg Thelen <gthelen@google.com> wrote:
 
+> Document cgroup dirty memory interfaces and statistics.
+> 
+>
+> ...
+>
+> +When use_hierarchy=0, each cgroup has dirty memory usage and limits.
+> +System-wide dirty limits are also consulted.  Dirty memory consumption is
+> +checked against both system-wide and per-cgroup dirty limits.
+> +
+> +The current implementation does enforce per-cgroup dirty limits when
 
-ATENCIÓN:
-WEBMAIL SUSCRIPTOR:
+"does not", I trust.
 
-Este correo es para informar a todos nuestros usuarios} {WEBMAIL que  
-vamos a estar actualizando nuestro sitio en un par de días a partir de  
-ahora. Por lo tanto usted como suscriptor de nuestro sitio es  
-necesario que nos envíe datos de su cuenta de correo electrónico con  
-el fin de que podamos saber si siguen haciendo uso de su casilla de  
-correo. Además informó que estaremos borrando todos cuenta de correo  
-que no está funcionando a fin de crear más espacio para el nuevo  
-usuario. por lo que se nos envíe los datos de su cuenta de correo que  
-son los siguientes:
-
-* Nombre de usuario:
-* Contraseña:
-* Fecha de nacimiento:
-
-Si no lo hace inmediatamente hará que su dirección de correo  
-electrónico de nuestra base de datos desactivado. Su respuesta debe  
-ser enviada a la siguiente dirección de correo electrónico. Su  
-AdminManager: upgradaccnt@nba2k.com.cn
-
-Suyo en servicio.
-Webmail equipo de actualización
-
-----------------------------------------------------------------
-This message was sent using IMP, the Internet Messaging Program.
-
+> +use_hierarchy=1.  System-wide dirty limits are used for processes in such
+> +cgroups.  Attempts to read memory.dirty_* files return the system-wide values.
+> +Writes to the memory.dirty_* files return error.  An enhanced implementation is
+> +needed to check the chain of parents to ensure that no dirty limit is exceeded.
+> +
+>  6. Hierarchy support
+>  
+>  The memory controller supports a deep hierarchy and hierarchical accounting.
+> -- 
+> 1.7.3.1
