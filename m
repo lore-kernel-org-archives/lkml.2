@@ -1,56 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761954Ab0J2Ui5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 16:38:57 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:29455 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761852Ab0J2Uiz (ORCPT
+	id S932407Ab0J2Ukh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 16:40:37 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:46255
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1761845Ab0J2Ukf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 16:38:55 -0400
-Date: Fri, 29 Oct 2010 13:37:09 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, akpm <akpm@linux-foundation.org>,
-        Ba Zheng <zheng.ba@intel.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
-        linux-i2c@vger.kernel.org
-Subject: [PATCH -next] i2c: intel-mid depends on PCI
-Message-Id: <20101029133709.5e5df4ad.randy.dunlap@oracle.com>
-In-Reply-To: <20101029121148.d27e03bc.sfr@canb.auug.org.au>
-References: <20101029121148.d27e03bc.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Fri, 29 Oct 2010 16:40:35 -0400
+Date: Fri, 29 Oct 2010 13:40:58 -0700 (PDT)
+Message-Id: <20101029.134058.246543591.davem@davemloft.net>
+To: jj@chaosbits.net
+Cc: eric.dumazet@gmail.com, alban.crequy@collabora.co.uk,
+        shemminger@vyatta.com, gorcunov@openvz.org, adobriyan@gmail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        pauli.nieminen@collabora.co.uk, rweikusat@mssgmbh.com
+Subject: Re: [PATCH 0/1] RFC: poll/select performance on datagram sockets
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.LNX.2.00.1010292217390.24561@swampdragon.chaosbits.net>
+References: <20101029191857.5f789d56@chocolatine.cbg.collabora.co.uk>
+	<1288380431.2680.3.camel@edumazet-laptop>
+	<alpine.LNX.2.00.1010292217390.24561@swampdragon.chaosbits.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+From: Jesper Juhl <jj@chaosbits.net>
+Date: Fri, 29 Oct 2010 22:20:12 +0200 (CEST)
 
-i2c-intel-mid driver uses PCI data structs and interfaces,
-so it should depend on PCI.  Fixes these build errors:
+> Sorry to intrude out of the blue without really understanding the kernel 
+> side of most of the code in question, but if there's a performance 
+> regression for applications using poll() shouldn't we address that so we 
+> get back to the prior performance level rather than requireing all 
+> userspace apps to switch to epoll() ??
 
-drivers/i2c/busses/i2c-intel-mid.c:977: error: implicit declaration of function 'pci_request_region'
-drivers/i2c/busses/i2c-intel-mid.c:1077: error: implicit declaration of function 'pci_release_region'
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Ba Zheng <zheng.ba@intel.com>
-Cc: Jean Delvare <khali@linux-fr.org>
-Cc: Ben Dooks <ben-linux@fluff.org>
-Cc: linux-i2c@vger.kernel.org
----
- drivers/i2c/busses/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
---- linux-next-20101029.orig/drivers/i2c/busses/Kconfig
-+++ linux-next-20101029/drivers/i2c/busses/Kconfig
-@@ -398,6 +398,7 @@ config I2C_IMX
- 
- config I2C_INTEL_MID
- 	tristate "Intel Moorestown/Medfield Platform I2C controller"
-+	depends on PCI
- 	help
- 	  Say Y here if you have an Intel Moorestown/Medfield platform I2C
- 	  controller.
+For such a pathological program like Alban's test case, I say
+absolutely not.
