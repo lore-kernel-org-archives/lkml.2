@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757514Ab0J2LyC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 07:54:02 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37409 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751991Ab0J2Lx7 convert rfc822-to-8bit (ORCPT
+	id S1761360Ab0J2L4Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 07:56:16 -0400
+Received: from smtp-out-013.synserver.de ([212.40.180.13]:1030 "EHLO
+	smtp-out-008.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758022Ab0J2L4O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 07:53:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=xJhXop0BLc79xL9blTCpglaDRL1tPHsqLYvaK1E0qzhtvXOgONgWhKTiBITGtn81+n
-         sDsYNncKsjELGE4Q8+jCEzGlJmlKu4dJXTc+GKjUIVSqrCN1DpTYlF/27qOS2WcMAuPf
-         uezOCMAbyESZBJUylotV8JTD+Q9h3A90M1dbY=
+	Fri, 29 Oct 2010 07:56:14 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: markus@trippelsdorf.de
+X-SynServer-PPID: 23082
+Date: Fri, 29 Oct 2010 13:54:38 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Borislav Petkov <bp@alien8.de>, john stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "avi@redhat.com" <avi@redhat.com>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>
+Subject: Re: [bisected] Clocksource tsc unstable git
+Message-ID: <20101029115438.GA15838@arch.trippelsdorf.de>
+References: <20101026135808.GB1672@arch.trippelsdorf.de>
+ <alpine.LFD.2.00.1010261747250.3115@localhost6.localdomain6>
+ <1288120736.2645.9.camel@localhost>
+ <20101027142622.GA1555@arch.trippelsdorf.de>
+ <20101027182608.GA1580@arch.trippelsdorf.de>
+ <20101029081831.GA7149@liondog.tnic>
+ <20101029083013.GA1553@arch.trippelsdorf.de>
+ <20101029102713.GA21125@aftab>
+ <20101029113433.GB1553@arch.trippelsdorf.de>
+ <20101029113934.GB21125@aftab>
 MIME-Version: 1.0
-In-Reply-To: <20101022135130.617f0ce8@lxorguk.ukuu.org.uk>
-References: <AANLkTi=XTUau_GbASJEUBgsZ_FYYmRAX6W43YtRdv2wS@mail.gmail.com>
-	<20101022135130.617f0ce8@lxorguk.ukuu.org.uk>
-Date: Fri, 29 Oct 2010 13:53:57 +0200
-Message-ID: <AANLkTinj93zAXJAipB3HjE62Xa1Z=9k9gPBxaT=+MLtg@mail.gmail.com>
-Subject: Re: [PATCH 5/9] mfd: Add UART support for the ST-Ericsson CG2900.
-From: Par-Gunnar Hjalmdahl <pghatwork@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linus.walleij@stericsson.com, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101029113934.GB21125@aftab>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/10/22 Alan Cox <alan@lxorguk.ukuu.org.uk>:
->> +
->> +/**
->> + * create_work_item() - Create work item and add it to the work queue.
->> + * @wq:              work queue struct where the work will be added.
->> + * @work_func:       Work function.
->> + * @data:    Private data for the work.
->> + *
->> + * Returns:
->> + *   0 if there is no error.
->> + *   -EBUSY if not possible to queue work.
->> + *   -ENOMEM if allocation fails.
->> + */
->> +static int create_work_item(struct workqueue_struct *wq, work_func_t work_func,
->> +                         void *data)
->> +{
->> +     struct uart_work_struct *new_work;
->> +     int err;
->> +
->> +     new_work = kmalloc(sizeof(*new_work), GFP_ATOMIC);
->
-> So instead of a tiny object embedded in your device you've got a whole
-> error path to worry about, a printk disguised in a macro and a text
-> string longer than the struct size ? Surely this should be part of the
-> device
->
+On Fri, Oct 29, 2010 at 01:39:34PM +0200, Borislav Petkov wrote:
+> On Fri, Oct 29, 2010 at 07:34:33AM -0400, Markus Trippelsdorf wrote:
+> > > Markus, can you verify this on your system by compiling x86info from
+> > > git://git.choralone.org/git/x86info and doing
+> > > 
+> > > ./lsmsr Int
+> > 
+> > 
+> > x86info v1.28beta.  Dave Jones 2001-2010
+> > Feedback to <davej@redhat.com>.
+> > 
+> > Found 4 CPUs
+> > --------------------------------------------------------------------------
+> > CPU #1
+> > EFamily: 1 EModel: 0 Family: 15 Model: 4 Stepping: 2
+> > CPU Model: Quad-Core Opteron/Phenom II (RB-C2)
+> 
+> well, x86info doesn't help - there's a lsmsr tool which is being built
+> too but no need, I can infer the info from your revision: your CPU is
+> RB-C2 which does SMI initiated C1E.
 
-I've tried now to use 3 separate work_structs in the device (one for
-each work function used), but this doesn't work out.
-The reason is that the work is generated so often that a work is not
-finished before next work of same type comes. This is especially true
-for transmit and receive. Then I get 0 back when queuing the work and
-there is no real way to solve it from what I can see than to allocate
-new work structures every time.
+Sorry. Here is the correct output:
 
-/P-G
+IntPendingMessage    = 0x0000000008c200b0
+
+-- 
+Markus
