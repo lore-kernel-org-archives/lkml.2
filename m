@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761992Ab0J2Usc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 16:48:32 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:9064 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758328Ab0J2Usb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 16:48:31 -0400
-Message-ID: <4CCB331F.6070507@caviumnetworks.com>
-Date: Fri, 29 Oct 2010 13:48:31 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	id S1761985Ab0J2UwR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 16:52:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59524 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758342Ab0J2UwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 16:52:14 -0400
+Message-ID: <4CCB33C6.6040806@zytor.com>
+Date: Fri, 29 Oct 2010 13:51:18 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: rostedt@goodmis.org, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        akpm@linux-foundation.org, fweisbec@gmail.com, jbaron@redhat.com
-Subject: Re: [PATCH 4/8] jump label: Make arch_jump_label_text_poke_early()
- optional
-References: <20101028135548.055490014@goodmis.org>	<20101028135647.822609872@goodmis.org> <20101029.133759.48489968.davem@davemloft.net>
-In-Reply-To: <20101029.133759.48489968.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: David Daney <ddaney@caviumnetworks.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Ingo Molnar <mingo@elte.hu>, Jason Baron <jbaron@redhat.com>,
+        rth@redhat.com, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
+        avi@redhat.com, davem@davemloft.net, vgoyal@redhat.com,
+        sam@ravnborg.org, tony@bakeyournoodle.com, dsd@laptop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] jump label: disable due to compiler bug
+References: <cover.1288212485.git.jbaron@redhat.com>	 <2d1b1d5d2b3930e1acb063cefffbcb2faf049854.1288212486.git.jbaron@redhat.com>	 <ce4ff595-f9d1-4c17-b68e-82739b07ad3e@email.android.com>	 <20101028141757.GA2875@redhat.com> <4CC9C724.3020004@caviumnetworks.com>	 <20101028201112.GA4792@redhat.com> <20101029063450.GE29463@elte.hu>	 <1288354687.18238.433.camel@gandalf.stny.rr.com>	 <20101029122230.GA25663@elte.hu>	 <1288356418.18238.454.camel@gandalf.stny.rr.com>	 <20101029133524.GA23916@Krystal>	 <1288369108.29632.1.camel@gandalf.stny.rr.com>	 <4CCB01D1.2050004@caviumnetworks.com>	 <1288373582.29632.3.camel@gandalf.stny.rr.com> <4CCB2B7B.6020002@zytor.com> <1288385260.29632.24.camel@gandalf.stny.rr.com>
+In-Reply-To: <1288385260.29632.24.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Oct 2010 20:49:01.0402 (UTC) FILETIME=[B75333A0:01CB77AA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2010 01:37 PM, David Miller wrote:
-> From: Steven Rostedt<rostedt@goodmis.org>
-> Date: Thu, 28 Oct 2010 09:55:52 -0400
->
->> From: David Daney<ddaney@caviumnetworks.com>
->>
->> For the forthcoming MIPS jump label support,
->> arch_jump_label_text_poke_early() is unneeded as the MIPS NOP
->> instruction is already optimal.
->>
->> Supply a default implementation that does nothing.  Flag x86 and SPARC
->> as having arch_jump_label_text_poke_early().
->>
->> Cc: Jason Baron<jbaron@redhat.com>
->> Cc: David Miller<davem@davemloft.net>
->> Signed-off-by: David Daney<ddaney@caviumnetworks.com>
->> LKML-Reference:<1286218615-24011-2-git-send-email-ddaney@caviumnetworks.com>
->> Signed-off-by: Steven Rostedt<rostedt@goodmis.org>
->
-> On the SPARC side, it's not that the nop isn't optimal, on sparc it's
-> always 0x01000000.
+On 10/29/2010 01:47 PM, Steven Rostedt wrote:
+> 
+> Fine, but we can wait till 2.6.38 for that. For now we have a manual
+> config option. I'm not changing it until I have 4.5.2 in my distcc farm
+> and testing it out.
+> 
+> If things turn out fine, we can have > 4.5.2 || run check option. Or
+> just stick with 4.5.2. But we can debate this later (or at KS if you
+> want ;-)
+> 
 
-That's what I thought.  You could remove your
-arch_jump_label_text_poke_early() function to no determent.
+KS would be a good place to talk about toolchain dependencies in
+general.  It's a big problem.
 
-> The issue is that when written an I-cache flush is
-> necessary using a 'flushi' instruction.
->
-> Does MIPS not need a flush when poking instructions?
-
-Yes, it does.
-
-> I find this hard to believe, although it's been some time since I
-> last touched that architecture :-)
-
-I just looked at my patch again.  I am indeed flushing the I cache
-after patching the code, so I don't really know what you are talking
-about.
-
-David Daney
+	-hpa
