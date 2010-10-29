@@ -1,57 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758405Ab0KAP43 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 11:56:29 -0400
-Received: from fallback1.mail.ru ([94.100.176.18]:42556 "EHLO
-	fallback1.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758269Ab0KAP40 (ORCPT
+	id S1752126Ab0KDRfN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 13:35:13 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:60899 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911Ab0KDRfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 11:56:26 -0400
-From: Dmitry Artamonow <mad_soft@inbox.ru>
-To: linux-usb@vger.kernel.org
-Cc: David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tom Herbert <therbert@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH] USB: gadget: fix ethernet gadget crash in gether_setup
-Date: Thu, 28 Oct 2010 12:18:29 +0400
-Message-Id: <1288253909-12084-1-git-send-email-mad_soft@inbox.ru>
-X-Mailer: git-send-email 1.7.0.4
-X-Mras: Ok
+	Thu, 4 Nov 2010 13:35:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:x-url:user-agent;
+        b=pEwsiok8dUTHaucAgu1Fp95fz8GKL5NAniQ4oZY5tqd5cHJlOiuqmlAcgp6iUY9hh6
+         F9erS4OfFqba6Sp//HSj0d1yIwMot7mRPcEF1z0hAZoPXVmq9u+w75FAGU3sqphAu8xV
+         IG6I4kwOitcNkSZ+HWSqpzky0GtjeegyFmiYM=
+Date: Fri, 29 Oct 2010 18:32:53 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tzanussi@gmail.com>
+Cc: =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        David Miller <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: perf probe/trace python scripting integration issues
+Message-ID: <20101029203253.GA13385@ghostprotocols.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Crash is triggered by commit e6484930d7 ("net: allocate tx queues in
-register_netdevice"), which moved tx netqueue creation into register_netdev.
-So now calling netif_stop_queue() before register_netdev causes an oops.
-Move netif_stop_queue() after net device registration to fix crash.
+Ok, now I'm trying to convert net/ipv4/tcp_probe.c to perf probe + perf
+trace python scripting, so first thing I stumbled was:
 
-Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
----
- drivers/usb/gadget/u_ether.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+[root@ana ~]# perf probe tcp_rcv_established:32 'saddr=tp->inet_conn.icsk_inet.inet_saddr daddr=tp->inet_conn.icsk_inet.inet_daddr sport=tp->inet_conn.icsk_inet.inet_sport dport=tp->inet_conn.icsk_inet.inet_dport'
+Add new events:
+Failed to write event: Invalid argument
+  Error: Failed to add events. (-1)
+[root@ana ~]#
 
-diff --git a/drivers/usb/gadget/u_ether.c b/drivers/usb/gadget/u_ether.c
-index 6bb876d..cb23355 100644
---- a/drivers/usb/gadget/u_ether.c
-+++ b/drivers/usb/gadget/u_ether.c
-@@ -797,7 +797,6 @@ int gether_setup(struct usb_gadget *g, u8 ethaddr[ETH_ALEN])
- 	 *  - iff DATA transfer is active, carrier is "on"
- 	 *  - tx queueing enabled if open *and* carrier is "on"
- 	 */
--	netif_stop_queue(net);
- 	netif_carrier_off(net);
- 
- 	dev->gadget = g;
-@@ -812,6 +811,7 @@ int gether_setup(struct usb_gadget *g, u8 ethaddr[ETH_ALEN])
- 		INFO(dev, "MAC %pM\n", net->dev_addr);
- 		INFO(dev, "HOST MAC %pM\n", dev->host_mac);
- 
-+		netif_stop_queue(net);
- 		the_dev = dev;
- 	}
- 
--- 
-1.7.0.4
+The message is cryptic, but then I looked at dmesg and:
 
+Line length is too long: Should be less than 128.
+
+128 seems like too little for real fun, but anyway, I suppressed saddr,
+assuming a machine with just an IP address then:
+
+[root@ana ~]# perf probe tcp_rcv_established:32 'daddr=tp->inet_conn.icsk_inet.inet_daddr sport=tp->inet_conn.icsk_inet.inet_sport dport=tp->inet_conn.icsk_inet.inet_dport'
+Add new events:
+  probe:tcp_rcv_established (on tcp_rcv_established:32 with daddr=tp->inet_conn.icsk_inet.inet_daddr sport=tp->inet_conn.icsk_inet.inet_sport dport=tp->inet_conn.icsk_inet.inet_dport)
+  probe:tcp_rcv_established_1 (on tcp_rcv_established:32 with daddr=tp->inet_conn.icsk_inet.inet_daddr sport=tp->inet_conn.icsk_inet.inet_sport dport=tp->inet_conn.icsk_inet.inet_dport)
+
+You can now use it on all perf tools, such as:
+
+	perf record -e probe:tcp_rcv_established_1 -aR sleep 1
+
+[root@ana ~]#
+
+Better, but why that _1? I did this several times, but:
+
+[root@ana ~]# perf probe --list
+  probe:tcp_rcv_established (on tcp_rcv_established:32@ipv4/tcp_input.c with daddr sport dport)
+  probe:tcp_rcv_established_1 (on tcp_rcv_established:32@ipv4/tcp_input.c with daddr sport dport)
+[root@ana ~]# perf probe -d probe:tcp_rcv_established
+Remove event: probe:tcp_rcv_established
+[root@ana ~]# perf probe --list
+  probe:tcp_rcv_established_1 (on tcp_rcv_established:32@ipv4/tcp_input.c with daddr sport dport)
+[root@ana ~]# perf probe -d probe:tcp_rcv_established_1
+Remove event: probe:tcp_rcv_established_1
+[root@ana ~]# perf probe --list
+[root@ana ~]# perf probe tcp_rcv_established:32 'daddr=tp->inet_conn.icsk_inet.inet_daddr sport=tp->inet_conn.icsk_inet.inet_sport dport=tp->inet_conn.icsk_inet.inet_dport'
+Add new events:
+  probe:tcp_rcv_established (on tcp_rcv_established:32 with daddr=tp->inet_conn.icsk_inet.inet_daddr sport=tp->inet_conn.icsk_inet.inet_sport dport=tp->inet_conn.icsk_inet.inet_dport)
+  probe:tcp_rcv_established_1 (on tcp_rcv_established:32 with daddr=tp->inet_conn.icsk_inet.inet_daddr sport=tp->inet_conn.icsk_inet.inet_sport dport=tp->inet_conn.icsk_inet.inet_dport)
+
+You can now use it on all perf tools, such as:
+
+	perf record -e probe:tcp_rcv_established_1 -aR sleep 1
+
+[root@ana ~]#
+
+Strange! It is adding two events for the price of one :-\
+
+Anyway, then:
+
+[root@ana ~]# perf record -a -e probe:tcp_rcv_established
+^C[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.354 MB perf.data (~15445 samples) ]
+
+[root@ana ~]#
+
+And then lets get to perf trace --gen-script, which is a pearl, great stuff :-)
+
+[root@ana ~]# perf trace --gen-script python
+generated Python script: perf-trace.py
+[root@ana ~]# cat perf-trace.py
+# perf trace event handlers, generated by perf trace -g python
+# Licensed under the terms of the GNU GPL License version 2
+
+# The common_* event handler fields are the most useful fields common to
+# all events.  They don't necessarily correspond to the 'common_*' fields
+# in the format files.  Those fields not available as handler params can
+# be retrieved using Python functions of the form common_*(context).
+# See the perf-trace-python Documentation for the list of available functions.
+
+import os
+import sys
+
+sys.path.append(os.environ['PERF_EXEC_PATH'] + \
+	'/scripts/python/Perf-Trace-Util/lib/Perf/Trace')
+
+from perf_trace_context import *
+from Core import *
+
+
+def trace_begin():
+	print "in trace_begin"
+
+def trace_end():
+	print "in trace_end"
+
+def probe__tcp_rcv_established(event_name, context, common_cpu,
+	common_secs, common_nsecs, common_pid, common_comm,
+	__probe_ip, __probe_nargs, daddr, sport, 
+	dport):
+		print_header(event_name, common_cpu, common_secs, common_nsecs,
+			common_pid, common_comm)
+
+		print "__probe_ip=%u, __probe_nargs=%d, daddr=%u, " \
+		"sport=%u, dport=%u\n" % \
+		(__probe_ip, __probe_nargs, daddr, sport, 
+		dport),
+
+def trace_unhandled(event_name, context, event_fields_dict):
+		print ' '.join(['%s=%s'%(k,str(v))for k,v in sorted(event_fields_dict.items())])
+
+def print_header(event_name, cpu, secs, nsecs, pid, comm):
+	print "%-20s %5u %05u.%09u %8u %-20s " % \
+	(event_name, cpu, secs, nsecs, pid, comm),
+[root@ana ~]#
+
+If I add socket.inet_ntoa to pretty print daddr it works, but there is a
+problem with sport:
+
+[root@ana ~]# perf trace -s perf-trace.py
+in trace_begin
+probe__tcp_rcv_established 1 26900.345379960 2322 synergys daddr=192.168.1.9, sport=3577733216(<type 'long'>), dport=1625350111(<type 'int'>)
+probe__tcp_rcv_established 1 26900.346405454    0 init     daddr=192.168.1.9, sport=3577733216(<type 'long'>), dport=1625350111(<type 'int'>)
+probe__tcp_rcv_established 1 26901.638974088    0 init     daddr=192.168.1.120, sport=4043300960(<type 'long'>), dport=1625311633(<type 'int'>)
+probe__tcp_rcv_established 1 26903.347126354 2320 synergys daddr=192.168.1.9, sport=3577864288(<type 'long'>), dport=1625350111(<type 'int'>)
+probe__tcp_rcv_established 1 26903.349344114    0 init     daddr=192.168.1.9, sport=3577864288(<type 'long'>), dport=1625350111(<type 'int'>)
+probe__tcp_rcv_established 1 26903.544836656    0 init     daddr=192.168.1.120, sport=4043432032(<type 'long'>), dport=1625311633(<type 'int'>)
+probe__tcp_rcv_established 1 26903.610710303    0 init     daddr=192.168.1.120, sport=2052265472(<type 'int'>), dport=1487502(<type 'int'>)
+in trace_end
+[root@ana ~]#
+
+Look at the sport type, it flips from long to int sometimes, I saw this on
+dport too, ideas?
+
+[root@ana ~]# cat /sys/kernel/debug/tracing/events/probe/tcp_rcv_established/format 
+name: tcp_rcv_established
+ID: 804
+format:
+	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
+	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
+	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
+	field:int common_pid;	offset:4;	size:4;	signed:1;
+	field:int common_lock_depth;	offset:8;	size:4;	signed:1;
+
+	field:unsigned long __probe_ip;	offset:12;	size:4;	signed:0;
+	field:int __probe_nargs;	offset:16;	size:4;	signed:1;
+	field:unsigned long daddr;	offset:20;	size:4;	signed:0;
+	field:unsigned long sport;	offset:24;	size:4;	signed:0;
+	field:unsigned long dport;	offset:28;	size:4;	signed:0;
+
+print fmt: "(%lx) daddr=%lx sport=%lx dport=%lx", REC->__probe_ip, REC->daddr, REC->sport, REC->dport
+[root@ana ~]#
+
+[root@ana ~]# uname -a
+Linux ana.ghostprotocols.net 2.6.34.7-61.fc13.i686 #1 SMP Tue Oct 19 04:42:47 UTC 2010 i686 i686 i386 GNU/Linux
+
+Ok, maybe this is just me trying to use the latest relesed kernel for a
+current distribution, will try with 2.6.36-rc8 :-\
+
+- Arnaldo
