@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760096Ab0J2CXS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 22:23:18 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:60522 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755302Ab0J2CXN (ORCPT
+	id S1760352Ab0J2C6D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 22:58:03 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:36884 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760083Ab0J2C54 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 22:23:13 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 4/7] vmscan: narrowing synchrounous lumply reclaim condition
-Cc: kosaki.motohiro@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>
-In-Reply-To: <20101028151201.GN29304@random.random>
-References: <20101028162522.B0B5.A69D9226@jp.fujitsu.com> <20101028151201.GN29304@random.random>
-Message-Id: <20101029104314.B0C0.A69D9226@jp.fujitsu.com>
+	Thu, 28 Oct 2010 22:57:56 -0400
+From: Tao Ma <tao.ma@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, Tao Ma <tao.ma@oracle.com>,
+        Jiri Kosina <trivial@kernel.org>
+Subject: [PATCH] drivers/net/igb: remove unused variable in igb_xmit_frame_ring_adv.
+Date: Fri, 29 Oct 2010 10:55:49 +0800
+Message-Id: <1288320949-5136-1-git-send-email-tao.ma@oracle.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri, 29 Oct 2010 11:23:07 +0900 (JST)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, Oct 28, 2010 at 05:00:57PM +0900, KOSAKI Motohiro wrote:
-> > Hi
-> > 
-> > > My tree uses compaction in a fine way inside kswapd too and tons of
-> > > systems are running without lumpy and floods of order 9 allocations
-> > > with only compaction (in direct reclaim and kswapd) without the
-> > > slighest problem. Furthermore I extended compaction for all
-> > > allocations not just that PAGE_ALLOC_COSTLY_ORDER (maybe I already
-> > > removed all PAGE_ALLOC_COSTLY_ORDER checks?). There's no good reason
-> > > not to use compaction for every allocation including 1,2,3, and things
-> > > works fine this way.
-> > 
-> > Interesting. I parsed this you have compaction improvement. If so,
-> > can you please post them? Generically, 1) improve the feature 2) remove
-> > unused one is safety order. In the other hand, reverse order seems to has
-> > regression risk.
-> 
-> THP is way higher priority than the compaction improvements, so the
-> compaction improvements are not at the top of the queue:
-> 
-> http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=shortlog
-> 
-> http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=commitdiff;h=d8f02410d718725a7daaf192af33abc41dcfae16;hp=39c4a61fedc5f5bf0c95a60483ac0acea1a9a757
-> 
-> At the top of the queue there is the lumpy_reclaim removal as that's
-> higher priority than THP.
+drivers/net/igb/igb_main.c: In function ‘igb_xmit_frame_ring_adv’:
+drivers/net/igb/igb_main.c:4110: warning: unused variable ‘adapter’
 
-Umm... 
+Cc: Jiri Kosina <trivial@kernel.org>
+Signed-off-by: Tao Ma <tao.ma@oracle.com>
+---
+ drivers/net/igb/igb_main.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-If THP vs lumpy confliction is most big matter, I'd prefer automatical 
-lumpy disabling when THP enabled rather than completely removing. It is lower risk.
-And, After finish to improve compaction, I expect we will be able to discuss
-remove thing. 
-
-If my parse is correct, You have tested "improved-compaction + no-lumpy + THP"
-combination, but nobody have tested "current-compaction + no-lumpy". 
-IOW, I only say I dislike a regression.
-
-
-
-
+diff --git a/drivers/net/igb/igb_main.c b/drivers/net/igb/igb_main.c
+index 14db09e..892d196 100644
+--- a/drivers/net/igb/igb_main.c
++++ b/drivers/net/igb/igb_main.c
+@@ -4107,7 +4107,6 @@ static inline int igb_maybe_stop_tx(struct igb_ring *tx_ring, int size)
+ netdev_tx_t igb_xmit_frame_ring_adv(struct sk_buff *skb,
+ 				    struct igb_ring *tx_ring)
+ {
+-	struct igb_adapter *adapter = netdev_priv(tx_ring->netdev);
+ 	int tso = 0, count;
+ 	u32 tx_flags = 0;
+ 	u16 first;
+-- 
+1.7.1.GIT
 
