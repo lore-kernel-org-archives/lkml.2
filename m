@@ -1,77 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933846Ab0J2OPy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 10:15:54 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:49941 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755308Ab0J2OPv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 10:15:51 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, hch@infradead.org, warthog9@kernel.org,
-        david@fromorbit.com, jmorris@namei.org, kyle@mcmartin.ca,
-        hpa@zytor.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, mingo@elte.hu, eparis@redhat.com,
-        viro@zeniv.linux.org.uk, Matthew Wilcox <matthew@wil.cx>,
-        Mimi Zohar <zohar@us.ibm.com>
-Subject: Re: [PATCH 2/4] IMA: maintain i_readcount in the VFS layer
-In-Reply-To: Your message of "Thu, 28 Oct 2010 18:02:03 EDT."
-             <1288303325-9628-3-git-send-email-zohar@linux.vnet.ibm.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1288303325-9628-1-git-send-email-zohar@linux.vnet.ibm.com>
-            <1288303325-9628-3-git-send-email-zohar@linux.vnet.ibm.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1288361618_4998P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S933894Ab0J2OQH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 10:16:07 -0400
+Received: from claw.goop.org ([74.207.240.146]:51623 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933875Ab0J2OQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 10:16:05 -0400
+Message-ID: <4CCAD722.3040004@goop.org>
+Date: Fri, 29 Oct 2010 07:16:02 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        Teck Choon Giam <giamteckchoon@gmail.com>
+Subject: Re: Section conflicts with percpu variables
+References: <4CC8780C.8090401@goop.org> <4CC9409D.7050405@kernel.org>
+In-Reply-To: <4CC9409D.7050405@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Date: Fri, 29 Oct 2010 10:13:38 -0400
-Message-ID: <6166.1288361618@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020201.4CCAD693.013E,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1288361618_4998P
-Content-Type: text/plain; charset=us-ascii
+ On 10/28/2010 02:21 AM, Tejun Heo wrote:
+> On 10/27/2010 09:05 PM, Jeremy Fitzhardinge wrote:
+>>  Hi Tejun,
+>>
+>> I wonder if you could have a look at this.  I have someone reporting
+>> compilation failures when using the stock Centos 5 compiler:
+>>
+>> arch/x86/xen/mmu.c:163: error: __pcpu_scope_xen_cr3 causes a section type conflict
+>> arch/x86/xen/mmu.c:164: error: __pcpu_scope_xen_current_cr3 causes a section type conflict
+>> arch/x86/xen/mmu.c:163: error: __pcpu_unique_xen_cr3 causes a section type conflict
+>> arch/x86/xen/mmu.c:164: error: __pcpu_unique_xen_current_cr3 causes a section type conflict
+>>
+>> Looking at mmu.i, I can't see why it is picking on these particular
+>> per-cpu variables.  Do you have any insight into this.
+> Hmmm... me neither.  section type conflict?  Does it make any
+> different if you move the definitions near the top of the file or use
+> a different compiler version?
 
-On Thu, 28 Oct 2010 18:02:03 EDT, Mimi Zohar said:
-> ima_counts_get() updated the readcount and invalidated the PCR,
-> as necessary. Only update the i_readcount in the VFS layer.
-> Move the PCR invalidation checks to ima_file_check(), where it
-> belongs.
-> 
-> Maintaining the i_readcount in the VFS layer, will allow other
-> subsystems to use i_readcount.
+This is the first report of this kind I've seen, so it mostly works. 
+The compiler in question is the stock Centos 5 (.1?) compiler, so it
+would be nice to make sure it works as-is.
 
-Would a symmetric i_writecount be useful for anything?  If it existed,
-could any code be simplified elsewhere?
+I've seen section type conflicts with .discard before when discarding a
+function and a data type with the same section, which is why I added
+general support for .discard.* so they can all get their own sections. 
+But that doesn't seem to be the case here.
 
-
---==_Exmh_1288361618_4998P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFMytaScC3lWbTT17ARAly8AJ0Y+I8WrqgNUlbAuPqt9WOhW7vmNwCggC9Q
-5xBbiRhnwZPtFWKpuE4NhwU=
-=PnvS
------END PGP SIGNATURE-----
-
---==_Exmh_1288361618_4998P--
-
+    J
