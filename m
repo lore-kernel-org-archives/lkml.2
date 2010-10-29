@@ -1,42 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755673Ab0J2G6a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 02:58:30 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:39190 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753921Ab0J2G6Z (ORCPT
+	id S1754907Ab0J2HKS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 03:10:18 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:5675 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754395Ab0J2HKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 02:58:25 -0400
-Date: Fri, 29 Oct 2010 07:58:19 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vfs: fix possible use after free in finish_open()
-Message-ID: <20101029065819.GQ19804@ZenIV.linux.org.uk>
-References: <E1PAMux-0002CG-8a@pomaz-ex.szeredi.hu>
- <E1PAgls-00049P-QS@pomaz-ex.szeredi.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1PAgls-00049P-QS@pomaz-ex.szeredi.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	Fri, 29 Oct 2010 03:10:14 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=X2e5HIdSE2U7sZraRi7vip6YVI26cXKdygOeOhwRMVwfikfzIgiZcPFIwRj4d+X4Z
+	VxOxlcAYLynIcgBE9SRxA==
+From: Greg Thelen <gthelen@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Greg Thelen <gthelen@google.com>
+Subject: [PATCH v4 00/11] memcg: per cgroup dirty page accounting
+Date: Fri, 29 Oct 2010 00:09:03 -0700
+Message-Id: <1288336154-23256-1-git-send-email-gthelen@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 26, 2010 at 12:28:48PM +0200, Miklos Szeredi wrote:
-> Oops, broken patch.  Here's the correct one.
-> 
-> ----
-> Subject: vfs: fix possible use after free in finish_open()
-> 
-> From: Miklos Szeredi <mszeredi@suse.cz>
-> 
-> In finish_open() nd->path is used after nameidata_to_filp() already
-> released it.  Fix by acquiring a ref to nd->path and releasing after
-> the last use.
+Changes since v3:
+- Refactored balance_dirty_pages() dirtying checking to use new struct
+  dirty_info, which is used to compare both system and memcg dirty limits
+  against usage.
+- Disabled memcg dirty limits when memory.use_hierarchy=1.  An enhancement is
+  needed to check the chain of parents to ensure that no dirty limit is
+  exceeded.
+- Ported to mmotm-2010-10-22-16-36.
 
-Nice catch, but I'd do it differently; that is, do not drop reference
-in nameidata_to_filp() (and dup it if we do __dentry_open()) and drop
-it in callers instead.  Will push in a few.
+Changes since v2:
+- Rather than disabling softirq in lock_page_cgroup(), introduce a separate lock
+  to synchronize between memcg page accounting and migration.  This only affects
+  patch 4 of the series.  Patch 4 used to disable softirq, now it introduces the
+  new lock.
+
+Changes since v1:
+- Renamed "nfs"/"total_nfs" to "nfs_unstable"/"total_nfs_unstable" in per cgroup
+  memory.stat to match /proc/meminfo.
+- Avoid lockdep warnings by using rcu_read_[un]lock() in
+  mem_cgroup_has_dirty_limit().
+- Fixed lockdep issue in mem_cgroup_read_stat() which is exposed by these
+  patches.
+- Remove redundant comments.
+- Rename (for clarity):
+  - mem_cgroup_write_page_stat_item -> mem_cgroup_page_stat_item
+  - mem_cgroup_read_page_stat_item -> mem_cgroup_nr_pages_item
+- Renamed newly created proc files:
+  - memory.dirty_bytes -> memory.dirty_limit_in_bytes
+  - memory.dirty_background_bytes -> memory.dirty_background_limit_in_bytes
+- Removed unnecessary get_ prefix from get_xxx() functions.
+- Allow [kKmMgG] suffixes for newly created dirty limit value cgroupfs files.
+- Disable softirq rather than hardirq in lock_page_cgroup()
+- Made mem_cgroup_move_account_page_stat() inline.
+- Ported patches to mmotm-2010-10-13-17-13.
+
+This patch set provides the ability for each cgroup to have independent dirty
+page limits.
+
+Limiting dirty memory is like fixing the max amount of dirty (hard to reclaim)
+page cache used by a cgroup.  So, in case of multiple cgroup writers, they will
+not be able to consume more than their designated share of dirty pages and will
+be forced to perform write-out if they cross that limit.
+
+The patches are based on a series proposed by Andrea Righi in Mar 2010.
+
+Overview:
+- Add page_cgroup flags to record when pages are dirty, in writeback, or nfs
+  unstable.
+
+- Extend mem_cgroup to record the total number of pages in each of the 
+  interesting dirty states (dirty, writeback, unstable_nfs).  
+
+- Add dirty parameters similar to the system-wide  /proc/sys/vm/dirty_*
+  limits to mem_cgroup.  The mem_cgroup dirty parameters are accessible
+  via cgroupfs control files.
+
+- Consider both system and per-memcg dirty limits in page writeback when
+  deciding to queue background writeback or block for foreground writeback.
+
+Known shortcomings:
+- When a cgroup dirty limit is exceeded, then bdi writeback is employed to
+  writeback dirty inodes.  Bdi writeback considers inodes from any cgroup, not
+  just inodes contributing dirty pages to the cgroup exceeding its limit.  
+
+- When memory.use_hierarchy is set, then dirty limits are disabled.  This is a
+  implementation detail.  An enhanced implementation is needed to check the
+  chain of parents to ensure that no dirty limit is exceeded.
+
+Performance data:
+- A page fault microbenchmark workload was used to measure performance, which
+  can be called in read or write mode:
+        f = open(foo. $cpu)
+        truncate(f, 4096)
+        alarm(60)
+        while (1) {
+                p = mmap(f, 4096)
+                if (write)
+			*p = 1
+		else
+			x = *p
+                munmap(p)
+        }
+
+- The workload was called for several points in the patch series in different
+  modes:
+  - s_read is a single threaded reader
+  - s_write is a single threaded writer
+  - p_read is a 16 thread reader, each operating on a different file
+  - p_write is a 16 thread writer, each operating on a different file
+
+- Measurements were collected on a 16 core non-numa system using "perf stat
+  --repeat 3".  The -a option was used for parallel (p_*) runs.
+
+- All numbers are page fault rate (M/sec).  Higher is better.
+
+- To compare the performance of a kernel without non-memcg compare the first and
+  last rows, neither has memcg configured.  The first row does not include any
+  of these memcg patches.
+
+- To compare the performance of using memcg dirty limits, compare the baseline
+  (2nd row titled "w/ memcg") with the the code and memcg enabled (2nd to last
+  row titled "all patches").
+
+                           root_cgroup                    child_cgroup
+                 s_read s_write p_read p_write   s_read s_write p_read p_write
+mmotm w/o memcg   0.428  0.390   0.429  0.388
+mmotm w/ memcg    0.411  0.378   0.391  0.362     0.412  0.377   0.385  0.363
+all patches       0.384  0.360   0.370  0.348     0.381  0.363   0.368  0.347
+all patches       0.431  0.402   0.427  0.395
+  w/o memcg
+
+Balbir Singh (1):
+  memcg: CPU hotplug lockdep warning fix
+
+Greg Thelen (9):
+  memcg: add page_cgroup flags for dirty page tracking
+  memcg: document cgroup dirty memory interfaces
+  memcg: create extensible page stat update routines
+  writeback: create dirty_info structure
+  memcg: add dirty page accounting infrastructure
+  memcg: add kernel calls for memcg dirty page stats
+  memcg: add dirty limits to mem_cgroup
+  memcg: add cgroupfs interface to memcg dirty limits
+  memcg: check memcg dirty limits in page writeback
+
+KAMEZAWA Hiroyuki (1):
+  memcg: add lock to synchronize page accounting and migration
+
+ Documentation/cgroups/memory.txt |   73 ++++++
+ fs/fs-writeback.c                |    7 +-
+ fs/nfs/write.c                   |    4 +
+ include/linux/memcontrol.h       |   64 +++++-
+ include/linux/page_cgroup.h      |   54 ++++-
+ include/linux/writeback.h        |    9 +-
+ mm/backing-dev.c                 |   12 +-
+ mm/filemap.c                     |    1 +
+ mm/memcontrol.c                  |  477 ++++++++++++++++++++++++++++++++++++--
+ mm/page-writeback.c              |  135 ++++++++----
+ mm/rmap.c                        |    4 +-
+ mm/truncate.c                    |    1 +
+ mm/vmstat.c                      |    6 +-
+ 13 files changed, 764 insertions(+), 83 deletions(-)
+
+-- 
+1.7.3.1
+
+
+
