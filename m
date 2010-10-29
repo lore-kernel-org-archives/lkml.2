@@ -1,71 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933952Ab0J2PQs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 11:16:48 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:37869 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761497Ab0J2PQp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 11:16:45 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        hch@infradead.org, warthog9@kernel.org, david@fromorbit.com,
-        jmorris@namei.org, kyle@mcmartin.ca, hpa@zytor.com,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        mingo@elte.hu, eparis@redhat.com, viro@zeniv.linux.org.uk,
-        Matthew Wilcox <matthew@wil.cx>, Mimi Zohar <zohar@us.ibm.com>
-Subject: Re: [PATCH 2/4] IMA: maintain i_readcount in the VFS layer
-In-Reply-To: Your message of "Fri, 29 Oct 2010 10:13:38 EDT."
-             <6166.1288361618@localhost>
-From: Valdis.Kletnieks@vt.edu
-References: <1288303325-9628-1-git-send-email-zohar@linux.vnet.ibm.com> <1288303325-9628-3-git-send-email-zohar@linux.vnet.ibm.com>
-            <6166.1288361618@localhost>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1288365318_4998P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S934047Ab0J2PQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 11:16:59 -0400
+Received: from bender.cm4all.net ([87.106.27.49]:60164 "EHLO bender.cm4all.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933964Ab0J2PQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 11:16:57 -0400
+X-Greylist: delayed 540 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Oct 2010 11:16:57 EDT
+Subject: [PATCH] u64_stats_sync.h: move "inline" before the return type
+To: linux-kernel@vger.kernel.org
+From: Max Kellermann <mk@cm4all.com>
+Date: Fri, 29 Oct 2010 17:08:33 +0200
+Message-ID: <20101029150833.20666.70754.stgit@rabbit.intern.cm-ag>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Date: Fri, 29 Oct 2010 11:15:18 -0400
-Message-ID: <8750.1288365318@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020203.4CCAE507.0152,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1288365318_4998P
-Content-Type: text/plain; charset=us-ascii
+With the option -Wextra, gcc emits warnings like this one:
 
-On Fri, 29 Oct 2010 10:13:38 EDT, Valdis.Kletnieks@vt.edu said:
+ include/linux/u64_stats_sync.h:70: warning: 'inline' is not at beginning of declaration
 
-> Would a symmetric i_writecount be useful for anything?  If it existed,
-> could any code be simplified elsewhere?
+While this is legal according to the C standard, it would be more
+readable to have all modifiers before the return type.
+---
+ include/linux/u64_stats_sync.h |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
--ENOCAFFIENE. :)
-
---==_Exmh_1288365318_4998P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFMyuUGcC3lWbTT17ARAiREAKDCHVCHPxJQoGxbQ3TbfUX5DfNHGQCdFQ6S
-VHxXL9/vKf7apf8Z7kguDCI=
-=X7eN
------END PGP SIGNATURE-----
-
---==_Exmh_1288365318_4998P--
+diff --git a/include/linux/u64_stats_sync.h b/include/linux/u64_stats_sync.h
+index fa261a0..8da8c4e 100644
+--- a/include/linux/u64_stats_sync.h
++++ b/include/linux/u64_stats_sync.h
+@@ -67,21 +67,21 @@ struct u64_stats_sync {
+ #endif
+ };
+ 
+-static void inline u64_stats_update_begin(struct u64_stats_sync *syncp)
++static inline void u64_stats_update_begin(struct u64_stats_sync *syncp)
+ {
+ #if BITS_PER_LONG==32 && defined(CONFIG_SMP)
+ 	write_seqcount_begin(&syncp->seq);
+ #endif
+ }
+ 
+-static void inline u64_stats_update_end(struct u64_stats_sync *syncp)
++static inline void u64_stats_update_end(struct u64_stats_sync *syncp)
+ {
+ #if BITS_PER_LONG==32 && defined(CONFIG_SMP)
+ 	write_seqcount_end(&syncp->seq);
+ #endif
+ }
+ 
+-static unsigned int inline u64_stats_fetch_begin(const struct u64_stats_sync *syncp)
++static inline unsigned int u64_stats_fetch_begin(const struct u64_stats_sync *syncp)
+ {
+ #if BITS_PER_LONG==32 && defined(CONFIG_SMP)
+ 	return read_seqcount_begin(&syncp->seq);
+@@ -93,7 +93,7 @@ static unsigned int inline u64_stats_fetch_begin(const struct u64_stats_sync *sy
+ #endif
+ }
+ 
+-static bool inline u64_stats_fetch_retry(const struct u64_stats_sync *syncp,
++static inline bool u64_stats_fetch_retry(const struct u64_stats_sync *syncp,
+ 					 unsigned int start)
+ {
+ #if BITS_PER_LONG==32 && defined(CONFIG_SMP)
+@@ -112,7 +112,7 @@ static bool inline u64_stats_fetch_retry(const struct u64_stats_sync *syncp,
+  * - UP 32bit must disable BH.
+  * - 64bit have no problem atomically reading u64 values, irq safe.
+  */
+-static unsigned int inline u64_stats_fetch_begin_bh(const struct u64_stats_sync *syncp)
++static inline unsigned int u64_stats_fetch_begin_bh(const struct u64_stats_sync *syncp)
+ {
+ #if BITS_PER_LONG==32 && defined(CONFIG_SMP)
+ 	return read_seqcount_begin(&syncp->seq);
+@@ -124,7 +124,7 @@ static unsigned int inline u64_stats_fetch_begin_bh(const struct u64_stats_sync
+ #endif
+ }
+ 
+-static bool inline u64_stats_fetch_retry_bh(const struct u64_stats_sync *syncp,
++static inline bool u64_stats_fetch_retry_bh(const struct u64_stats_sync *syncp,
+ 					 unsigned int start)
+ {
+ #if BITS_PER_LONG==32 && defined(CONFIG_SMP)
 
