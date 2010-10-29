@@ -1,88 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758751Ab0J2S07 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 14:26:59 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51635 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756969Ab0J2S06 (ORCPT
+	id S1759621Ab0J2S1F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 14:27:05 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:33153 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756969Ab0J2S1B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 14:26:58 -0400
-Date: Fri, 29 Oct 2010 11:25:41 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Shaohua Li <shaohua.li@intel.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
-Subject: Re: [PATCH 1/2] mm: page allocator: Adjust the per-cpu counter
- threshold when memory is low
-Message-Id: <20101029112541.8ab906bb.akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1010290955510.20370@router.home>
-References: <1288278816-32667-1-git-send-email-mel@csn.ul.ie>
-	<1288278816-32667-2-git-send-email-mel@csn.ul.ie>
-	<20101028150433.fe4f2d77.akpm@linux-foundation.org>
-	<alpine.DEB.2.00.1010290955510.20370@router.home>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 29 Oct 2010 14:27:01 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6151"; a="59890722"
+Message-ID: <4CCB11F4.9080908@codeaurora.org>
+Date: Fri, 29 Oct 2010 11:27:00 -0700
+From: Bryan Huntsman <bryanh@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100528 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: Pavel Machek <pavel@ucw.cz>, Vasiliy Kulikov <segooon@gmail.com>,
+        Iliyan Malchev <ibm@android.com>, Brian Swetland <swetland@google.com>,
+        San Mehat <san@android.com>, kernel-janitors@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH 1/8] staging: dream: fix information leak to userland
+References: <1288296098-18936-1-git-send-email-segooon@gmail.com> <20101028204509.GC22785@kroah.com> <20101028205831.GD19421@elf.ucw.cz> <20101028210802.GA23773@kroah.com> <4CCA2445.7070705@codeaurora.org> <20101029013843.GA9922@kroah.com>
+In-Reply-To: <20101029013843.GA9922@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Oct 2010 09:58:25 -0500 (CDT)
-Christoph Lameter <cl@linux.com> wrote:
 
-> On Thu, 28 Oct 2010, Andrew Morton wrote:
+>> Greg, I'll check around internally and see if there are any concerns
+>> about dropping it.  I'll get back to you soon.  Thanks.
 > 
-> > > To ensure that kswapd wakes up, a safe version of zone_watermark_ok()
-> > > is introduced that takes a more accurate reading of NR_FREE_PAGES when
-> > > called from wakeup_kswapd, when deciding whether it is really safe to go
-> > > back to sleep in sleeping_prematurely() and when deciding if a zone is
-> > > really balanced or not in balance_pgdat(). We are still using an expensive
-> > > function but limiting how often it is called.
-> >
-> > Here I go again.  I have a feeling that I already said this, but I
-> > can't find versions 2 or 3 in the archives..
-> >
-> > Did you evaluate using plain on percpu_counters for this?  They won't
-> > solve the performance problem as they're basically the same thing as
-> > these open-coded counters.  But they'd reduce the amount of noise and
-> > custom-coded boilerplate in mm/.
+> Wonderful, thanks for doing this.
 > 
-> The zone counters are done using the ZVCs in vmstat.c to save space
+> greg k-h
 
-well, they actually waste space because of that threshold thing.
+No concerns from us.  Feel free to drop it.  Thanks.
 
-> and to
-> be in the same cacheline as other hot data necessary for allocation and
-> free.
+- Bryan
 
-Yes, that'll save some misses.
-
->  >
-> > > +	threshold = max(1, (int)(watermark_distance / num_online_cpus()));
-> > > +
-> > > +	/*
-> > > +	 * Maximum threshold is 125
-> >
-> > Reasoning?
-> 
-> Differentials are stored in 8 bit signed ints.
-> 
-> > > +	put_online_cpus();
-> > > +}
-> >
-> > Given that ->stat_threshold is the same for each CPU, why store it for
-> > each CPU at all?  Why not put it in the zone and eliminate the inner
-> > loop?
-> 
-> Doing that caused cache misses in the past and reduced the performance of
-> the ZVCs. This way the threshold is in the same cacheline as the
-> differentials.
-
-This sounds wrong.  As long as that threshold isn't stored in a
-cacheline which other CPUs are modifying, all CPUs should be able to
-happily cache it.  Maybe it needed a bit of padding inside the zone
-struct.
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
