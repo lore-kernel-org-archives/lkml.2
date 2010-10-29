@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759400Ab0J2ArY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 20:47:24 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:38078 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754444Ab0J2ArR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 20:47:17 -0400
-Date: Fri, 29 Oct 2010 09:38:53 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: Dan Carpenter <error27@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [patch] memcg: null dereference on allocation failure
-Message-Id: <20101029093853.49e75309.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20101028111241.GC6062@bicker>
-References: <20101028111241.GC6062@bicker>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759511Ab0J2AuL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 20:50:11 -0400
+Received: from kroah.org ([198.145.64.141]:51821 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756446Ab0J2AuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 20:50:07 -0400
+Date: Thu, 28 Oct 2010 17:50:09 -0700
+From: Greg KH <greg@kroah.com>
+To: Konstantin Katuev <kkatuev@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging/keucr driver - uninitialized variable & proper
+	memset length
+Message-ID: <20101029005009.GA8142@kroah.com>
+References: <AANLkTimvLvtLDLiYT2geZ3Qh1+cugjB-OYQcGv9hhGVG@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimvLvtLDLiYT2geZ3Qh1+cugjB-OYQcGv9hhGVG@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(I add Andrew to CC-list)
+On Thu, Oct 28, 2010 at 10:20:33PM +1100, Konstantin Katuev wrote:
+> There was commented out transfer_flags initialization.
+> And i think memset should fill entire structure, not only length of
+> pointer to it.
+> Driver now works.
 
-On Thu, 28 Oct 2010 13:12:41 +0200
-Dan Carpenter <error27@gmail.com> wrote:
+Great!
 
-> The original code had a null dereference if alloc_percpu() failed.
-> This was introduced in 711d3d2c9bc3 "memcg: cpu hotplug aware percpu
-> count updates"
 > 
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
-> 
+> Konstantin
 
-Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Oops, I need a "Signed-off-by:" line in order to be able to apply this.
+Read Documentation/SubmittingPatches for more details about this?
 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 9a99cfa..2efa8ea 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -4208,15 +4208,17 @@ static struct mem_cgroup *mem_cgroup_alloc(void)
->  
->  	memset(mem, 0, size);
->  	mem->stat = alloc_percpu(struct mem_cgroup_stat_cpu);
-> -	if (!mem->stat) {
-> -		if (size < PAGE_SIZE)
-> -			kfree(mem);
-> -		else
-> -			vfree(mem);
-> -		mem = NULL;
-> -	}
-> +	if (!mem->stat)
-> +		goto out_free;
->  	spin_lock_init(&mem->pcp_counter_lock);
->  	return mem;
-> +
-> +out_free:
-> +	if (size < PAGE_SIZE)
-> +		kfree(mem);
-> +	else
-> +		vfree(mem);
-> +	return NULL;
->  }
->  
->  /*
+Care to resend it with that and cc: me so I make sure to see it so that
+I can apply it?
+
+thanks,
+
+greg k-h
