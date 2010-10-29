@@ -1,45 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934264Ab0J2R4n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 13:56:43 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:28785 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932904Ab0J2R4l (ORCPT
+	id S1758806Ab0J2R5T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 13:57:19 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:54780 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158Ab0J2R5R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 13:56:41 -0400
-Date: Fri, 29 Oct 2010 10:54:56 -0700
-From: Randy Dunlap <randy.dunlap@Oracle.Com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH] fs/dcache: fix kernel-doc warnings
-Message-Id: <20101029105456.1d819b6c.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 29 Oct 2010 13:57:17 -0400
+X-IronPort-AV: E=Sophos;i="4.58,260,1286164800"; 
+   d="scan'208";a="120296352"
+Subject: Re: [PATCH] xen: xenfs: privcmd: check put_user() return code
+From: Ian Campbell <Ian.Campbell@eu.citrix.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Vasiliy Kulikov <segooon@gmail.com>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+In-Reply-To: <4CCB09FB.8050906@goop.org>
+References: <1288265942-12581-1-git-send-email-segooon@gmail.com>
+	 <4CCB01C9.4020007@goop.org>
+	 <1288374270.8069.41.camel@localhost.localdomain>
+	 <4CCB09FB.8050906@goop.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Organization: Citrix Systems, Inc.
+Date: Fri, 29 Oct 2010 18:57:14 +0100
+Message-ID: <1288375034.8069.66.camel@localhost.localdomain>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Fri, 2010-10-29 at 18:52 +0100, Jeremy Fitzhardinge wrote:
+> On 10/29/2010 10:44 AM, Ian Campbell wrote:
+> > On Fri, 2010-10-29 at 18:18 +0100, Jeremy Fitzhardinge wrote:
+> >> On 10/28/2010 04:39 AM, Vasiliy Kulikov wrote:
+> >>> put_user() may fail.  In this case propagate error code from
+> >>> privcmd_ioctl_mmap_batch().
+> >> Thanks for looking at this.  I'm in two minds about this; the existing
+> >> logic is such that these put_users can only fail if something else has
+> >> already failed and its returning an error.  I guess it would be useful
+> >> to get an EFAULT if you've got a problem writing back the results.
+> >>
+> >> IanC, any opinion?
+> > Not a strong one.
+> >
+> > Perhaps what we really want in this case is for traverse_pages to return
+> > the total number of callback failures it encountered rather than
+> > aborting after the first failure?
+> >
+> > On the other hand you are correct that gather_array() has already
+> > touched all the pages which we are going to be touching here so how
+> > likely is a new failure at this point anyway?
+> 
+> I could think of two cases: the array is mapped RO, so only the
+> writeback fails, or someone changes the mapping under our feet from
+> another thread.
 
-Warning(fs/dcache.c:1495): No description found for parameter 'parent'
-Warning(fs/dcache.c:1495): Excess function parameter 'dparent' description in 'd_validate'
+I guess in that case returning EFAULT and leaving the array in whatever
+partially updated state we got to is the right thing to do and the
+proposed patch is therefore correct.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- fs/dcache.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+>     J
+> 
+> > Ian.
+> >
+> >> Thanks,
+> >>     J
+> >>
+> >>> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+> >>> ---
+> >>>  Compile tested.
+> >>>
+> >>>  drivers/xen/xenfs/privcmd.c |    8 ++------
+> >>>  1 files changed, 2 insertions(+), 6 deletions(-)
+> >>>
+> >>> diff --git a/drivers/xen/xenfs/privcmd.c b/drivers/xen/xenfs/privcmd.c
+> >>> index f80be7f..2eb04c8 100644
+> >>> --- a/drivers/xen/xenfs/privcmd.c
+> >>> +++ b/drivers/xen/xenfs/privcmd.c
+> >>> @@ -266,9 +266,7 @@ static int mmap_return_errors(void *data, void *state)
+> >>>  	xen_pfn_t *mfnp = data;
+> >>>  	struct mmap_batch_state *st = state;
+> >>>  
+> >>> -	put_user(*mfnp, st->user++);
+> >>> -
+> >>> -	return 0;
+> >>> +	return put_user(*mfnp, st->user++);
+> >>>  }
+> >>>  
+> >>>  static struct vm_operations_struct privcmd_vm_ops;
+> >>> @@ -323,10 +321,8 @@ static long privcmd_ioctl_mmap_batch(void __user *udata)
+> >>>  	up_write(&mm->mmap_sem);
+> >>>  
+> >>>  	if (state.err > 0) {
+> >>> -		ret = 0;
+> >>> -
+> >>>  		state.user = m.arr;
+> >>> -		traverse_pages(m.num, sizeof(xen_pfn_t),
+> >>> +		ret = traverse_pages(m.num, sizeof(xen_pfn_t),
+> >>>  			       &pagelist,
+> >>>  			       mmap_return_errors, &state);
+> >>>  	}
+> >
+> 
 
---- linux-2.6.36-git13.orig/fs/dcache.c
-+++ linux-2.6.36-git13/fs/dcache.c
-@@ -1485,7 +1485,7 @@ out:
- /**
-  * d_validate - verify dentry provided from insecure source
-  * @dentry: The dentry alleged to be valid child of @dparent
-- * @dparent: The parent dentry (known to be valid)
-+ * @parent: The parent dentry (known to be valid)
-  *
-  * An insecure source has sent us a dentry, here we verify it and dget() it.
-  * This is used by ncpfs in its readdir implementation.
+
