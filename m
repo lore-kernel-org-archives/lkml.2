@@ -1,44 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759597Ab0J2AP5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 20:15:57 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:24174 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754444Ab0J2APx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 20:15:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=jKvQY4cmuYzmNdiapWv5Ni42OmH8bbYEPZelNfhMq0YO7sabBlijNxGh4DN4K8MTVo
-         VBYf+ZLrJkbIJlVjln6w==
+	id S1759793Ab0J2AQt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 20:16:49 -0400
+Received: from gate.crashing.org ([63.228.1.57]:51055 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757093Ab0J2AQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 20:16:44 -0400
+Message-ID: <53195.84.105.60.153.1288311394.squirrel@gate.crashing.org>
+In-Reply-To: <20101028210753.22240.qmail@kosh.dhis.org>
+References: <20101028210753.22240.qmail@kosh.dhis.org>
+Date: Fri, 29 Oct 2010 02:16:34 +0200 (CEST)
+Subject: Re: Pegasos OHCI bug (was Re: PROBLEM: memory corrupting bug,
+From: "Segher Boessenkool" <segher@kernel.crashing.org>
+To: pacman@kosh.dhis.org
+Cc: "Segher Boessenkool" <segher@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.10a-1.fc6
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinbtLkF=haFeDkzecEWv_FE9jG4TefiptSnZcPi@mail.gmail.com>
-References: <4CC146A4.9090505@cn.fujitsu.com>
-	<4CC14769.2000406@cn.fujitsu.com>
-	<AANLkTinbtLkF=haFeDkzecEWv_FE9jG4TefiptSnZcPi@mail.gmail.com>
-Date: Thu, 28 Oct 2010 17:15:50 -0700
-Message-ID: <AANLkTin+82ZMmTGEDY+w3pZgRgJ5HvjuLzwGxpcSdOUN@mail.gmail.com>
-Subject: Re: [PATCH 7/7] cgroups: Update documentation for bindable subsystems
-From: Paul Menage <menage@google.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: "akpm >> Andrew Morton" <akpm@linux-foundation.org>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        containers@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 28, 2010 at 5:13 PM, Paul Menage <menage@google.com> wrote:
+>> > Almost all of my devices are under that PCI node. What will I prove by
+>> > disabling them?
+>>
+>> You should put it after "load", and before "go".
+>>
+>> It should give you a working system; it's a sledgehammer workaround.
 >
-> Also, post_clone() doesn't get called when creating the css hierarchy
-> during binding.
+> I can do it a little more gracefully than that. This works to deactivate
+> the
+> problem devices manually:
 >
+>   1 lbflip 80000000 8 + rl!
+>   1 lbflip 80001000 8 + rl!
+>
+> where 80000000 and 80001000 have been obtained from
+> /pci@80000000/usb@5/assigned-addresses and
+> /pci@80000000/usb@5,1/assigned-addresses; 8 is the offset of the
+> HcCommandStatus register; and the 1 bit is HostControllerReset (HCR).
+>
+> Now I'm just trying to find the more correct way of doing it, without
+> hardcoded addresses. That'll be something like this:
+>
+>   search the device tree for OHCI nodes
+>   for each OHCI node
+>     get assigned-addresses
+>     map-in
+>     set HCR
+>     wait for acknowledgement
+>     map-out
 
-Oops, ignore that - I noticed that it does.
+As you noted, your firmware does not show which usb host controllers
+are OHCI and which are not.  It has a lot of other problems as well.
+Also, it's a lot of code to do things this way.  Which is why I suggested
+the "heavy handed" workaround: it is simple and should work on even the
+most broken OF implementations.
 
-Paul
+To figure out which host controllers are OHCI, you'll need to look
+at the PCI class code (0c0310 for OHCI), since your OF doesn't want
+to tell you.
+
+> Sound good?
+
+Sounds like it should work, yes.
+
+
+Segher
+
