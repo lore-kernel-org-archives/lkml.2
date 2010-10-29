@@ -1,56 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761978Ab0J2UpX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 16:45:23 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:38577 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761845Ab0J2UpV (ORCPT
+	id S1761976Ab0J2Uqm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 16:46:42 -0400
+Received: from x35.xmailserver.org ([64.71.152.41]:57181 "EHLO
+	x35.xmailserver.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761845Ab0J2Uql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 16:45:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=AE7wzteRZOUgFIfHmfmdpU/8+2k674ptdhlk69pXU9YgGzyuGyD2/iQMeT/CQE28GO
-         5LzYdxZrw90x+0vE9uI1egG2d8sPXcmN7zq9YEbvuvim5DworP/23N+YBN6kuvEvVOfA
-         RvXxLfLGFoyw5cu0EvhBROaNEEqPceYvlPr0o=
+	Fri, 29 Oct 2010 16:46:41 -0400
+X-AuthUser: davidel@xmailserver.org
+Date: Fri, 29 Oct 2010 13:46:15 -0700 (PDT)
+From: Davide Libenzi <davidel@xmailserver.org>
+X-X-Sender: davide@davide-lnx1
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Alban Crequy <alban.crequy@collabora.co.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>, netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pauli Nieminen <pauli.nieminen@collabora.co.uk>,
+        Rainer Weikusat <rweikusat@mssgmbh.com>
 Subject: Re: [PATCH 0/1] RFC: poll/select performance on datagram sockets
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: jj@chaosbits.net, alban.crequy@collabora.co.uk, shemminger@vyatta.com,
-        gorcunov@openvz.org, adobriyan@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, pauli.nieminen@collabora.co.uk,
-        rweikusat@mssgmbh.com
-In-Reply-To: <20101029.134058.246543591.davem@davemloft.net>
-References: <20101029191857.5f789d56@chocolatine.cbg.collabora.co.uk>
-	 <1288380431.2680.3.camel@edumazet-laptop>
-	 <alpine.LNX.2.00.1010292217390.24561@swampdragon.chaosbits.net>
-	 <20101029.134058.246543591.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 29 Oct 2010 22:45:16 +0200
-Message-ID: <1288385116.2680.11.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.DEB.2.00.1010291306390.8517@davide-lnx1>
+Message-ID: <alpine.DEB.2.00.1010291339180.8517@davide-lnx1>
+References: <20101029191857.5f789d56@chocolatine.cbg.collabora.co.uk> <1288380431.2680.3.camel@edumazet-laptop> <alpine.DEB.2.00.1010291306390.8517@davide-lnx1>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+X-GPG-FINGRPRINT: CFAE 5BEE FD36 F65E E640  56FE 0974 BF23 270F 474E
+X-GPG-PUBLIC_KEY: http://www.xmailserver.org/davidel.asc
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-744411154-1288384889=:8517"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 29 octobre 2010 Ã  13:40 -0700, David Miller a Ã©crit :
-> From: Jesper Juhl <jj@chaosbits.net>
-> Date: Fri, 29 Oct 2010 22:20:12 +0200 (CEST)
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--8323329-744411154-1288384889=:8517
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
+
+On Fri, 29 Oct 2010, Davide Libenzi wrote:
+
+> On Fri, 29 Oct 2010, Eric Dumazet wrote:
 > 
-> > Sorry to intrude out of the blue without really understanding the kernel 
-> > side of most of the code in question, but if there's a performance 
-> > regression for applications using poll() shouldn't we address that so we 
-> > get back to the prior performance level rather than requireing all 
-> > userspace apps to switch to epoll() ??
+> > Le vendredi 29 octobre 2010 à 19:18 +0100, Alban Crequy a écrit :
+> > > Hi,
+> > > 
+> > > When a process calls the poll or select, the kernel calls (struct
+> > > file_operations)->poll on every file descriptor and returns a mask of
+> > > events which are ready. If the process is only interested by POLLIN
+> > > events, the mask is still computed for POLLOUT and it can be expensive.
+> > > For example, on Unix datagram sockets, a process running poll() with
+> > > POLLIN will wakes-up when the remote end call read(). This is a
+> > > performance regression introduced when fixing another bug by
+> > > 3c73419c09a5ef73d56472dbfdade9e311496e9b and
+> > > ec0d215f9420564fc8286dcf93d2d068bb53a07e.
+> > > 
+> > > The attached program illustrates the problem. It compares the
+> > > performance of sending/receiving data on an Unix datagram socket and
+> > > select(). When the datagram sockets are not connected, the performance
+> > > problem is not triggered, but when they are connected it becomes a lot
+> > > slower. On my computer, I have the following time:
+> > > 
+> > > Connected datagram sockets: >4 seconds
+> > > Non-connected datagram sockets: <1 second
+> > > 
+> > > The patch attached in the next email fixes the performance problem: it
+> > > becomes <1 second for both cases. I am not suggesting the patch for
+> > > inclusion; I would like to change the prototype of (struct
+> > > file_operations)->poll instead of adding ->poll2. But there is a lot of
+> > > poll functions to change (grep tells me 337 functions).
+> > > 
+> > > Any opinions?
+> > 
+> > My opinion would be to use epoll() for this kind of workload.
 > 
-> For such a pathological program like Alban's test case, I say
-> absolutely not.
+> Yeah, epoll does check for event hints coming with the callback wakeup, 
+> and avoid waking up epoll_wait() waiters, for non matching events.
 
-Yes, and with some perf tool help, we probably can find out how to
-speedup the thing again, with no API change.
-
+Also, why not using the existing wait->key instead of adding a poll2()?
 
 
+- Davide
+
+--8323329-744411154-1288384889=:8517--
