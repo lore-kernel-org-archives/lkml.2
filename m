@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751625Ab0J2EkQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 00:40:16 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:38019 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751148Ab0J2EkO (ORCPT
+	id S1752354Ab0J2Ekh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 00:40:37 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59273 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349Ab0J2Ek3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 00:40:14 -0400
+	Fri, 29 Oct 2010 00:40:29 -0400
 X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
-Message-ID: <4CCA508F.3090903@np.css.fujitsu.com>
-Date: Fri, 29 Oct 2010 13:41:51 +0900
+Message-ID: <4CCA50A1.8050609@np.css.fujitsu.com>
+Date: Fri, 29 Oct 2010 13:42:09 +0900
 From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
 User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
 MIME-Version: 1.0
@@ -18,57 +18,105 @@ CC: Ingo Molnar <mingo@elte.hu>, "H.Peter Anvin" <hpa@zytor.com>,
         Andi Kleen <andi@firstfloor.org>,
         Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
         LKLM <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/3] [x86, next] Fix unsuitable attributes of mce debugfs.
+Subject: [PATCH 2/3] [x86, next] Add mce_ser interface in /sys/kernel/debug/mce/
+ for test
 Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The debug interfaces of mce should be desired to do following operations
-    - Write operation as root user
-    - Read operation as all users
-for debugging mce functionality.
+If we want to test the part of mce handler for SRAO and SRAR,  we need to
+have a test machine whose CPU supports MCG_SER_P. If we don't have such
+machine, we can not test the part of mce handler for SRAO and SRAR.
 
-But the real attributes of interfaces of mce are 0444.
-Though the attributes of interfaces do not give any impact to
-debug mce functionality, I still think that the attributes of
-interfaces should be changed from 0444 to 0644.
+With this interface we can test the part of mce handler for SRAO and SRAR
+by setting mce_ser 1 on the machine which does not support MCG_SER_P.
 
-I tested this patch on Intel64 next-tree.
+Usage:
+        if val == 1 or val == 0
+           Set val to mce_ser.
+        else
+           Ser the original value to mce_ser.
+
+Note:
+    Please don't use mce_ser interface except mce test.
+    Because when the real mce exception happened, the unsuitable set
+    with this interface maybe change the real process of mce handler and
+    lead to a different result.
+
+This patch is tested on Intel64 on next-tree.
 
 Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
 ---
- arch/x86/kernel/cpu/mcheck/mce-severity.c |    2 +-
- arch/x86/kernel/cpu/mcheck/mce.c          |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce.c |   39 ++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 39 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce-severity.c b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-index 1e8d66c..f9e6376 100644
---- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-@@ -203,7 +203,7 @@ static int __init severities_debugfs_init(void)
- 	if (dmce == NULL)
- 		goto err_out;
- 	fseverities_coverage = debugfs_create_file("severities-coverage",
--						   0444, dmce, NULL,
-+						   0644, dmce, NULL,
- 						   &severities_coverage_fops);
- 	if (fseverities_coverage == NULL)
- 		goto err_out;
 diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 7a35b72..8edb04d 100644
+index 8edb04d..ed10e76 100644
 --- a/arch/x86/kernel/cpu/mcheck/mce.c
 +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -2200,7 +2200,7 @@ static int __init mcheck_debugfs_init(void)
+@@ -2158,6 +2158,8 @@ static int __init mcheck_disable(char *str)
+ __setup("nomce", mcheck_disable);
+ 
+ #ifdef CONFIG_DEBUG_FS
++static int org_mce_ser;
++
+ struct dentry *mce_get_debugfs_dir(void)
+ {
+ 	static struct dentry *dmce;
+@@ -2193,9 +2195,39 @@ static int fake_panic_set(void *data, u64 val)
+ DEFINE_SIMPLE_ATTRIBUTE(fake_panic_fops, fake_panic_get,
+ 			fake_panic_set, "%llu\n");
+ 
++/*
++ * mce_ser_get() can only get the current value of mce_ser. 
++ * The value may be not the original value of mce_ser on this machine.
++ * So please use mce_ser_set() to confirm the original value of mce_ser.
++ */
++static int mce_ser_get(void *data, u64 *val)
++{
++	*val = mce_ser;
++	return 0;
++}
++
++/* 
++ * Set the value of mce_ser with mce_ser_set().
++ * Parameter "u64 val" of mce_ser_set() :
++ *      val == 1 or 0 : mce_ser = val;
++ *      others        : set mce_ser with the original value of mce_ser.
++ */
++static int mce_ser_set(void *data, u64 val)
++{
++	if (val == 1 || val == 0)
++		mce_ser = val;
++	else
++		mce_ser = org_mce_ser;
++	return 0;
++}
++
++DEFINE_SIMPLE_ATTRIBUTE(mce_ser_fops, mce_ser_get,
++			mce_ser_set, "%llu\n");
++
+ static int __init mcheck_debugfs_init(void)
+ {
+ 	struct dentry *dmce, *ffake_panic;
++	struct dentry *fmce_ser = NULL;
+ 
  	dmce = mce_get_debugfs_dir();
  	if (!dmce)
- 		return -ENOMEM;
--	ffake_panic = debugfs_create_file("fake_panic", 0444, dmce, NULL,
-+	ffake_panic = debugfs_create_file("fake_panic", 0644, dmce, NULL,
- 					  &fake_panic_fops);
+@@ -2205,6 +2237,13 @@ static int __init mcheck_debugfs_init(void)
  	if (!ffake_panic)
  		return -ENOMEM;
--- 
-1.7.2.2
+ 
++	org_mce_ser = mce_ser;
++
++	fmce_ser = debugfs_create_file("mce_ser", 0644, dmce, NULL,
++						&mce_ser_fops);
++	if (!fmce_ser)
++		return -ENOMEM;
++
+ 	return 0;
+ }
+ late_initcall(mcheck_debugfs_init);
 
