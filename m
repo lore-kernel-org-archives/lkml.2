@@ -1,49 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753099Ab0J2FWe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 01:22:34 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:36318 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752581Ab0J2FW3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 01:22:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=syT8+giLovYbATCqXifNFQgjjpCSXe2FbE/Qtpwk3h9vWb/NfrOFGbshNzuucyCm8y
-         Od0I1kNCKfTsA6itqYPzenX83/lV5iBgmSQ0NCi2lXJNjfdDbVkIzNmijtBm9ks5DAMu
-         jqen13aRl20BHYMHVXHuy8PnHJyJSXPbfMKfs=
+	id S1752484Ab0J2FkZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 01:40:25 -0400
+Received: from hera.kernel.org ([140.211.167.34]:34261 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751004Ab0J2FkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 01:40:19 -0400
+Date: Fri, 29 Oct 2010 05:40:00 GMT
+From: tip-bot for Russ Anderson <rja@sgi.com>
+Cc: linux-kernel@vger.kernel.org, rja@sgi.com, hpa@zytor.com, mingo@redhat.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, rja@sgi.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <20101028224132.GB15804@sgi.com>
+References: <20101028224132.GB15804@sgi.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/uv] x86, uv: More Westmere support on SGI UV
+Message-ID: <tip-0520bd8438f18f2b1b2af5fd1c4ecc070a1bf837@git.kernel.org>
+Git-Commit-ID: 0520bd8438f18f2b1b2af5fd1c4ecc070a1bf837
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Date: Fri, 29 Oct 2010 01:22:28 -0400
-Message-ID: <AANLkTimGgzOZb8EwUQO16cZcL+ycveKTYzg_AAX+D+Kw@mail.gmail.com>
-Subject: 2.6.36-git11 -- kernel/pid.c:419 invoked rcu_dereference_check()
- without protection!
-From: Miles Lane <miles.lane@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 29 Oct 2010 05:40:01 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ INFO: suspicious rcu_dereference_check() usage. ]
----------------------------------------------------
-kernel/pid.c:419 invoked rcu_dereference_check() without protection!
+Commit-ID:  0520bd8438f18f2b1b2af5fd1c4ecc070a1bf837
+Gitweb:     http://git.kernel.org/tip/0520bd8438f18f2b1b2af5fd1c4ecc070a1bf837
+Author:     Russ Anderson <rja@sgi.com>
+AuthorDate: Thu, 28 Oct 2010 17:41:32 -0500
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Thu, 28 Oct 2010 22:38:07 -0700
 
-other info that might help us debug this:
+x86, uv: More Westmere support on SGI UV
 
+Enable Westmere support for all APIC modes on SGI UV.
 
-rcu_scheduler_active = 1, debug_locks = 1
-1 lock held by ureadahead/943:
- #0:  (tasklist_lock){.+.+..}, at: [<ffffffff810ec497>]
-sys_ioprio_set+0x8e/0x2aa
+Signed-off-by: Russ Anderson <rja@sgi.com>
+LKML-Reference: <20101028224132.GB15804@sgi.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/apic/x2apic_uv_x.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-stack backtrace:
-Pid: 943, comm: ureadahead Not tainted 2.6.36-git11 #8
-Call Trace:
- [<ffffffff8105d335>] lockdep_rcu_dereference+0x9d/0xa5
- [<ffffffff8104c825>] find_task_by_pid_ns+0x3f/0x58
- [<ffffffff8104c85b>] find_task_by_vpid+0x1d/0x1f
- [<ffffffff810ec4c6>] sys_ioprio_set+0xbd/0x2aa
- [<ffffffff813547a3>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff81002aab>] system_call_fastpath+0x16/0x1b
+diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
+index 0a2918e..ed4118d 100644
+--- a/arch/x86/kernel/apic/x2apic_uv_x.c
++++ b/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -71,7 +71,7 @@ static int early_get_nodeid(void)
+ 	return node_id.s.node_id;
+ }
+ 
+-static int __init early_get_apic_pnode_shift(void)
++static void __init early_get_apic_pnode_shift(void)
+ {
+ 	unsigned long *mmr;
+ 
+@@ -83,8 +83,6 @@ static int __init early_get_apic_pnode_shift(void)
+ 		 * Old bios, use default value
+ 		 */
+ 		uvh_apicid.s.pnode_shift = UV_APIC_PNODE_SHIFT;
+-
+-	return uvh_apicid.s.pnode_shift;
+ }
+ 
+ static int __init uv_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
+@@ -93,6 +91,7 @@ static int __init uv_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
+ 
+ 	if (!strcmp(oem_id, "SGI")) {
+ 		nodeid = early_get_nodeid();
++		early_get_apic_pnode_shift();
+ 		x86_platform.is_untracked_pat_range =  uv_is_untracked_pat_range;
+ 		x86_platform.nmi_init = uv_nmi_init;
+ 		if (!strcmp(oem_table_id, "UVL"))
+@@ -101,7 +100,7 @@ static int __init uv_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
+ 			uv_system_type = UV_X2APIC;
+ 		else if (!strcmp(oem_table_id, "UVH")) {
+ 			__get_cpu_var(x2apic_extra_bits) =
+-				nodeid << (early_get_apic_pnode_shift() - 1);
++				nodeid << (uvh_apicid.s.pnode_shift - 1);
+ 			uv_system_type = UV_NON_UNIQUE_APIC;
+ 			return 1;
+ 		}
