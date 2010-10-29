@@ -1,75 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761851Ab0J2XW7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 19:22:59 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:52016 "EHLO
+	id S933120Ab0J2XX2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 19:23:28 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:59703 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066Ab0J2XW6 (ORCPT
+	with ESMTP id S1759130Ab0J2XXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 19:22:58 -0400
+	Fri, 29 Oct 2010 19:23:21 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: Timur Tabi <timur@freescale.com>
-Subject: Re: Writing a console/tty driver -- how to use tty_port?
-Date: Fri, 29 Oct 2010 16:21:42 +0200
+To: Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH] asm-generic/stat.h: support 64-bit file time_t for stat()
+Date: Fri, 29 Oct 2010 08:25:59 +0200
 User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: gregkh <gregkh@suse.de>, lkml <linux-kernel@vger.kernel.org>
-References: <4CC893CD.7020701@freescale.com> <201010282257.33898.arnd@arndb.de> <4CC9E646.6070405@freescale.com>
-In-Reply-To: <4CC9E646.6070405@freescale.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>,
+        Michal Simek <monstr@monstr.eu>
+References: <201010282020.o9SKKe4Y007068@farm-0012.internal.tilera.com>
+In-Reply-To: <201010282020.o9SKKe4Y007068@farm-0012.internal.tilera.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010291621.42890.arnd@arndb.de>
-X-Provags-ID: V02:K0:tsbZOx1hYWw4nRrY3t2sLSYhz2jSwoW0iQjlLkhiXii
- gTu8Fqx9aFMVoQl5BkNYNa1My5TdSHeBzr3XyUSg0JYMF8NJnI
- j/2Tm035Xuzn9Xkiw4fVBmDWHIqZK8365U8GKh9ZbdeIJMirp9
- tg9wJM8W5sZ4w8sncJm+UMWYU3Zwy7t5KHb/E5lSGcBYy2NUTV
- Xod5u4FHpgjgGyBmyQiig==
+Message-Id: <201010290826.00087.arnd@arndb.de>
+X-Provags-ID: V02:K0:IYMJRKdIeV4E5D1PG+Cb74zd4cm01vFfUKfKdFqzUED
+ t6pyihWXbjLJAMGUojxIxyB5WcDab386+ZaC/PlVkE2oXThhIL
+ Oij4l/UmrZJs+O2G1sEgsQeAKCvJxhVCOeP5HC9n6fLRCM68dp
+ T9JtqOaw76RdGSk0Ub78oZLVJ13amHyTHyMAMewGvTVAPt29kB
+ bV1fXr4hFNGerXUUq/PSQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 28 October 2010, Timur Tabi wrote:
-> Arnd Bergmann wrote:
-> > If the device is not a UART, the best option may be to make the driver
-> > a backend to the hvc driver, like e.g. drivers/char/hvc_tile.c.
-> 
-> The current version *is* a backend to hvc, but I have to abandon that because of
-> this thread:
-> 
-> http://lists.ozlabs.org/pipermail/linuxppc-dev/2010-September/085664.html
-> 
-> I posted a patch that causes hvc to spin if the backend driver returns -EAGAIN,
-> which is my driver does when the output buffer is full.
-> 
-> In other words, hvc does not support backend drivers that can detect full output
-> buffers.
+On Thursday 28 October 2010, Chris Metcalf wrote:
+> The existing asm-generic/stat.h specifies st_mtime, etc., as a 32-value,
+> and works well for 32-bit architectures (currently microblaze, score,
+> and 32-bit tile).  However, for 64-bit architectures it isn't sufficient
+> to return 32 bits of time_t; this isn't good insurance against the 2037
+> rollover.  (It also makes glibc support less convenient, since we can't
+> use glibc's handy STAT_IS_KERNEL_STAT mode.)
 
-To be more specific, hvc does support retransmitting characters on the tty
-but not on the console!
+Yes, this goes back to my ignoring the y2k38 problem when I introduced
+that header. I couldn't think of a reason to make st_mtime longer
+than 32 bits, and defined it in a way that would make the structure
+compatible between 32 and 64 bit code.
 
-The backend drivers return 0 to notify the tty driver that output is busy
-and should be retried, which will set the timer.
+> The only wrinkle is 32-bit userspace under 64-bit kernels taking advantage
+> of COMPAT mode.  For these, we leave the "struct stat64" definitions with
+> the "int" versions of the time_t and nsec fields, so that architectures
+> can implement compat_sys_stat64() and friends with sys_stat64(), etc.,
+> and get the expected 32-bit structure layout.  This requires a
+> field-by-field copy in the kernel, implemented by the code guarded
+> under __ARCH_WANT_STAT64.
 
-> > This works for all devices with or without interrupts that don't need
-> > to set up the communication parameters but simply provide a read/write
-> > character interface.
-> 
-> If my patch were accepted, I wouldn't need to do the rewrite.  Dropping
-> characters during a printk() is not acceptable for us.
+Right. That reminds me that I shold go through the system call definitions
+one day and make sure we don't actually build the syscalls into
+the kernel that are not used on tile and other architectures using
+the generic header files.
 
-Why do you care about printk output overflowing more than others do? Most
-of the hvc drivers block internally and never return 0, but those that
-do probably all need the same solution.
+> The alternative is keeping the two structures the same shape on 64-bit
+> kernels, which means a 64-bit time_t in "struct stat64" for 32-bit
+> processes.  This is a little unnatural since 32-bit userspace can't
+> do anything with 64 bits of time_t information, since time_t is just
+> "long", not "int64_t"; and in any case 32-bit userspace might expect
+> to be running under a 32-bit kernel, which can't provide the high 32
+> bits anyway.  In the case of a 32-bit kernel we'd then be extending the
+> kernel's 32-bit time_t to 64 bits, then truncating it back to 32 bits
+> again in userspace, for no particular reason.  And, as mentioned above,
+> if we have 64-bit time_t for 32-bit processes we can't easily use glibc's
+> STAT_IS_KERNEL_STAT, since glibc's stat structure requires an embedded
+> "struct timespec", which is a pair of "long" (32-bit) values in a 32-bit
+> userspace.  "Inventive" solutions are possible, but are pretty hacky.
 
-Your original one-line patch from last year didn't seem too wrong, though
-you might want to check with the iseries people, since that driver might
-return zero in error cases.
+I'd like to have more opinions on that. Would it be less crazy
+to ignore the y2k38 problem for new 32 bit architectures given that
+we already know about it, or to make those architectures unnecessarily
+slow, given that we still have 27+ years before it hits people in
+a major way?
 
-The idea of adding a special return code from ->put_chars to distinguish
-buffer full from other errors also seemed reasonable, as did the approach
-to flag the hv_ops to tell the base layer wether you want retransmits
-or drops.
+I think we have four alternatives here:
 
-	Arnd
+1. this patch, which is the easiest solution and keeps everything else
+working, but not solving the y2k38 problem on 32 bit.
+
+2. make __kernel_time_t 64 bit on new architectures, solving the y2k38
+problem for them at the cost of run-time overhead and possibly application
+porting effort.
+
+3. make struct stat use a 64 bit time field on new architectures at the
+cost of not using STAT_IS_KERNEL_STAT in 32 bit glibc.
+
+4. leave struct stat as it is, and move to struct xstat that does
+everything right from the start.
+
+> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+
+Your patch looks correct for solution 1, I can forward it if we decide
+to do it this way, or you can take it in your series.
+
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
