@@ -1,85 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758181Ab0J2S0A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 14:26:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:63141 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516Ab0J2SZ5 (ORCPT
+	id S1758751Ab0J2S07 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 14:26:59 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51635 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756969Ab0J2S06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 14:25:57 -0400
-X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=ygIiTo8ZIjQA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=mDV3o1hIAAAA:8 a=deMge4z8aYbPzyKb3_sA:9 a=IALjDw_Ie1edGuaJomcA:7 a=UtUYY2bW8OBZo7VcXx98qOIjY14A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 2/2] jump label: disable due to compiler bug
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Richard Henderson <rth@redhat.com>
-Cc: David Daney <ddaney@caviumnetworks.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Ingo Molnar <mingo@elte.hu>, Jason Baron <jbaron@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, tglx@linutronix.de,
-        andi@firstfloor.org, roland@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
-        davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org,
-        tony@bakeyournoodle.com, dsd@laptop.org, linux-kernel@vger.kernel.org
-In-Reply-To: <4CCB0EE0.4000401@redhat.com>
-References: <cover.1288212485.git.jbaron@redhat.com>
-	 <2d1b1d5d2b3930e1acb063cefffbcb2faf049854.1288212486.git.jbaron@redhat.com>
-	 <ce4ff595-f9d1-4c17-b68e-82739b07ad3e@email.android.com>
-	 <20101028141757.GA2875@redhat.com> <4CC9C724.3020004@caviumnetworks.com>
-	 <20101028201112.GA4792@redhat.com> <20101029063450.GE29463@elte.hu>
-	 <1288354687.18238.433.camel@gandalf.stny.rr.com>
-	 <20101029122230.GA25663@elte.hu>
-	 <1288356418.18238.454.camel@gandalf.stny.rr.com>
-	 <20101029133524.GA23916@Krystal>
-	 <1288369108.29632.1.camel@gandalf.stny.rr.com>
-	 <4CCB01D1.2050004@caviumnetworks.com>
-	 <1288373582.29632.3.camel@gandalf.stny.rr.com>
-	 <4CCB08EB.8070004@caviumnetworks.com>  <4CCB0EE0.4000401@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 29 Oct 2010 14:25:54 -0400
-Message-ID: <1288376754.29632.19.camel@gandalf.stny.rr.com>
+	Fri, 29 Oct 2010 14:26:58 -0400
+Date: Fri, 29 Oct 2010 11:25:41 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Shaohua Li <shaohua.li@intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
+Subject: Re: [PATCH 1/2] mm: page allocator: Adjust the per-cpu counter
+ threshold when memory is low
+Message-Id: <20101029112541.8ab906bb.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1010290955510.20370@router.home>
+References: <1288278816-32667-1-git-send-email-mel@csn.ul.ie>
+	<1288278816-32667-2-git-send-email-mel@csn.ul.ie>
+	<20101028150433.fe4f2d77.akpm@linux-foundation.org>
+	<alpine.DEB.2.00.1010290955510.20370@router.home>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-29 at 11:13 -0700, Richard Henderson wrote:
-> On 10/29/2010 10:48 AM, David Daney wrote:
-> > http://gcc.gnu.org/bugzilla/show_bug.cgi?id=46226
-> > 
-> > Perhaps it could be integrated with the current checks for the presence of 'asm goto'
-> 
-> If you're looking for a cross-compile-able test, you can strip the
-> testcase down to 
-> 
-> extern void abort(void);
-> void g(int x, ...);
-> void f(int x)
-> {
->   if (x == 0)
->     g(0);
->   g(1, 2, 3, 4, 5, 6, 7);
->   asm goto ("XYZZY" : : : : label);
->   abort ();
->  label:
->   return;
-> }
-> 
-> and use perl to notice the adjustment to esp before or after XYZZY.
-> It should be fairly obvious looking at the assembly before and after
-> the patch.
-> 
-> I don't know what sort of embedded processors supported by linux
-> actually use ACCUMULATE_OUTGOING_ARGS.  Almost all ports don't, so
-> I'd be pretty comfortable making this a 32-bit x86 only test, and
-> let other targets just check that the test compiles.
-> 
+On Fri, 29 Oct 2010 09:58:25 -0500 (CDT)
+Christoph Lameter <cl@linux.com> wrote:
 
-Thanks! I'll make a patch with this check (for x86_32) and queue it up
-for 2.6.38. I think we are way past doing this for 2.6.37.
+> On Thu, 28 Oct 2010, Andrew Morton wrote:
+> 
+> > > To ensure that kswapd wakes up, a safe version of zone_watermark_ok()
+> > > is introduced that takes a more accurate reading of NR_FREE_PAGES when
+> > > called from wakeup_kswapd, when deciding whether it is really safe to go
+> > > back to sleep in sleeping_prematurely() and when deciding if a zone is
+> > > really balanced or not in balance_pgdat(). We are still using an expensive
+> > > function but limiting how often it is called.
+> >
+> > Here I go again.  I have a feeling that I already said this, but I
+> > can't find versions 2 or 3 in the archives..
+> >
+> > Did you evaluate using plain on percpu_counters for this?  They won't
+> > solve the performance problem as they're basically the same thing as
+> > these open-coded counters.  But they'd reduce the amount of noise and
+> > custom-coded boilerplate in mm/.
+> 
+> The zone counters are done using the ZVCs in vmstat.c to save space
 
--- Steve
+well, they actually waste space because of that threshold thing.
 
+> and to
+> be in the same cacheline as other hot data necessary for allocation and
+> free.
 
+Yes, that'll save some misses.
+
+>  >
+> > > +	threshold = max(1, (int)(watermark_distance / num_online_cpus()));
+> > > +
+> > > +	/*
+> > > +	 * Maximum threshold is 125
+> >
+> > Reasoning?
+> 
+> Differentials are stored in 8 bit signed ints.
+> 
+> > > +	put_online_cpus();
+> > > +}
+> >
+> > Given that ->stat_threshold is the same for each CPU, why store it for
+> > each CPU at all?  Why not put it in the zone and eliminate the inner
+> > loop?
+> 
+> Doing that caused cache misses in the past and reduced the performance of
+> the ZVCs. This way the threshold is in the same cacheline as the
+> differentials.
+
+This sounds wrong.  As long as that threshold isn't stored in a
+cacheline which other CPUs are modifying, all CPUs should be able to
+happily cache it.  Maybe it needed a bit of padding inside the zone
+struct.
