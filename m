@@ -1,78 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759650Ab0J2DlY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 23:41:24 -0400
-Received: from smtp-out-2.dataguard.no ([87.118.11.130]:43508 "EHLO
-	smtp-out-2.dataguard.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756277Ab0J2DlS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 23:41:18 -0400
-X-AuditID: 57760b82-b7c77ae0000045ae-e5-4cca425c97de
-Message-ID: <20101029054115.15196yhuft214yv4@webmail.combitel.no>
-Date: Fri, 29 Oct 2010 05:41:15 +0200
-From: "Webmail Upgrade Team" <upgradecct@Safe-mail.net>
-Reply-to: upgradaccnt@nba2k.com.cn
-To: undisclosed-recipients:;
-Subject: Upgrade Your Email Account
+	id S1760021Ab0J2DoG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 23:44:06 -0400
+Received: from cantor.suse.de ([195.135.220.2]:46952 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756277Ab0J2DoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 23:44:00 -0400
+Date: Thu, 28 Oct 2010 20:41:42 -0700
+From: Greg KH <gregkh@suse.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Jon Masters <jcm@redhat.com>, corbet <corbet@lwn.net>,
+        Jake Edge <jake@lwn.net>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>, lmr@redhat.com,
+        autotest@test.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
+        Clark Williams <williams@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Subject: Re: [ANNOUNCE] ktest.pl: Easy and flexible testing script for
+	Linux Kernel Developers
+Message-ID: <20101029034142.GA12125@suse.de>
+References: <1288294944.18238.346.camel@gandalf.stny.rr.com> <20101029002740.GA7688@suse.de> <1288321849.18238.395.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.2)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <1288321849.18238.395.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Oct 28, 2010 at 11:10:49PM -0400, Steven Rostedt wrote:
+> On Thu, 2010-10-28 at 17:27 -0700, Greg KH wrote:
+> 
+> > > Maybe this should go into the tools directory?
+> > 
+> > Yes please, I think that would be a great idea.
+> 
+> Should I try to get this into 2.6.37?  Since it is a stand alone tool, I
+> can hardly expect that it would break anything else.
 
+I don't see why not, but perhaps you might want to wait for people to
+test it a bit?  Then get it into .38?
 
-WEBMAIL MANAGEMENT CENTER
+thanks,
 
-Confirm Deactivation
-
-CONFIRM YOUR REQUEST FOR YOUR Web ACCOUNT DEACTIVATION
-
-Kindly note that we recently did some upgrade on our database and  
-during this upgrade, there was an unusual responds code from your  
-email address requesting for deactivation. Verify to deactivate or  
-keep your email account active.
-
-[Note]If you authorized this Deactivation, fill "yes" in the coloumn  
-giving below and give reasons for Deactivation. And if this request  
-was caused due to conjestion or error, fill "NO" on the coloumn giving  
-bellow.
-
-In order to verify/confirm you email identity, You are to provide the  
-following data;
-
-CONFIRM YOUR WEB E-MAIL IDENTITY BELOW;
-
-First Name:_____________________________________________________________
-Last Name:______________________________________________________________
-Email Username:_________________________________________________________
-Email Password:_________________________________________________________
-Account Deactivation:__________________(specify yes to deactivate. No)__
-to keep active)
-Reason for Deactivation:_______________(if yes)_________________________
-Email:upgradaccnt@nba2k.com.cn
-
-Warning!!! In failure to verify your email account within 48hrs on  
-receiving this notification, This will automatically execute your  
-outstanding request for account Deactivation and your email will be  
-removed from our data base.
-
-Thank you for using our Web.Account e-mail!
-We hope to serve you better
-warning Code: ASPH8B02AXV
-
-Kind regards,
-Webmail Service Team Management.
-ABN 33
-All rights reserved ©2010.
-
-----------------------------------------------------------------
-This message was sent using IMP, the Internet Messaging Program.
-
+greg k-h
