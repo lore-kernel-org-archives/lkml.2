@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761538Ab0J2QfY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 12:35:24 -0400
-Received: from www.tglx.de ([62.245.132.106]:45618 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751729Ab0J2QfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 12:35:22 -0400
-Date: Fri, 29 Oct 2010 18:34:25 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Rabin Vincent <rabin@rab.in>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] genirq: handle shared irqs in handle_nested_irq()
-In-Reply-To: <AANLkTim_XKe9f_Onc9jXiuq14CSk9kPbPLTFvcT9caR7@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1010291833440.2692@localhost6.localdomain6>
-References: <1288288718-1188-1-git-send-email-rabin@rab.in> <alpine.LFD.2.00.1010282053180.2692@localhost6.localdomain6> <AANLkTinaTTqv3r0tWDOeZR5n=nHj5LybxAPf5uvUxpRh@mail.gmail.com> <alpine.LFD.2.00.1010291725370.2692@localhost6.localdomain6>
- <AANLkTim_XKe9f_Onc9jXiuq14CSk9kPbPLTFvcT9caR7@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1758481Ab0J2QpW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 12:45:22 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:35861 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751974Ab0J2QpU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 12:45:20 -0400
+Date: Fri, 29 Oct 2010 12:45:18 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: ltt-dev@lists.casi.polymtl.ca
+Cc: linux-kernel@vger.kernel.org
+Subject: [RELEASE] LTTng 0.238 and lttng-modules 0.19.2 for kernel 2.6.36
+Message-ID: <20101029164518.GA20073@Krystal>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-95874718-1288370067=:2692"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 12:44:24 up 36 days, 20:46,  4 users,  load average: 0.18, 0.13,
+	0.10
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+LTTng, the Linux Trace Toolkit Next Generation, is a project that aims at
+producing a highly efficient full system tracing solution.  It is composed of
+several components to allow tracing of the kernel, of userspace, trace viewing
+and analysis and trace streaming.  LTTng is open source software. It is being
+actively developed with the community.
 
----1463795968-95874718-1288370067=:2692
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Changelog:
 
-On Fri, 29 Oct 2010, Rabin Vincent wrote:
+* LTTng 0.238 and lttng-modules 0.19.2 now reserve the PMU on ARM OMAP2+ when a
+  trace session starts. We're playing nice with perf.
 
-> On Fri, Oct 29, 2010 at 8:56 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > On Fri, 29 Oct 2010, Rabin Vincent wrote:
-> >> On Fri, Oct 29, 2010 at 12:24 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> >> > On Thu, 28 Oct 2010, Rabin Vincent wrote:
-> >> >> Allow shared irqs to work when nested threads are used for handling
-> >> >> threaded interrupts.
-> >> >
-> >> > Why do we want this ? handle_nested_irq() is called from a interrupt
-> >> > demultiplexer, so why would we need shared interrupts for this ?
-> >>
-> >> Threaded IRQ + handle_nested_irq() is used by I2C GPIO expander drivers
-> >> like chained hander + generic_handle_irq() is used by on-chip GPIO
-> >> drivers.  If two irq handlers are registered on an on-chip GPIO
-> >> interrupt (because two devices are externally connected), it works.  If
-> >> the handlers are instead registered on one of the expander's pins'
-> >> interrupt, without this patch, only the handler registered first is
-> >> called.
-> >
-> > Have the hardware dudes not yet understood that shared interrupts are
-> > a horrible idea ?
-> 
-> Note that I haven't actually seen the multiple devices to expander GPIO
-> (yet?, though I've seen the multiple devices to onchip GPIO).  It seemed
-> to be something missing from the irq handling though, rather than
-> something that was left out on purpose.
+Project website: http://lttng.org
+Download link: http://lttng.org/content/download
+(please refer to the LTTng Manual for installation instructions)
 
-No, I left it out on purpose and I'd rather go w/o it unless there is
-a intree user.
-
-Thanks,
-
-	tglx
----1463795968-95874718-1288370067=:2692--
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
