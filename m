@@ -1,118 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761383Ab0J2OBM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 10:01:12 -0400
-Received: from ns1.dataart.com ([195.206.224.40]:49209 "EHLO
-	relay1.dataart.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932586Ab0J2OBK convert rfc822-to-8bit (ORCPT
+	id S932704Ab0J2OG3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 10:06:29 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:49528 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1761497Ab0J2OG2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 10:01:10 -0400
-X-Greylist: delayed 1102 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Oct 2010 10:01:10 EDT
-From: Anton Chikin <Anton.Chikin@dataart.com>
-To: Jiri Kosina <jkosina@suse.cz>
-CC: "chatty@enac.fr" <chatty@enac.fr>, "spbnick@gmail.com" <spbnick@gmail.com>,
-        "anisse@astier.eu" <anisse@astier.eu>,
-        "cascardo@holoscopio.com" <cascardo@holoscopio.com>,
-        "don@syst.com.br" <don@syst.com.br>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Gregory Burmistrov <grig@dataart.com>,
-        Paul Osborn <Paul.Osborn@eu.panasonic.com>
-Date: Fri, 29 Oct 2010 17:42:42 +0400
-Subject: RE: [PATCH] hid: usbhid: New hid quirks for Panasonic Elite
- Panaboard T-780 and T-880
-Thread-Topic: [PATCH] hid: usbhid: New hid quirks for Panasonic Elite
- Panaboard T-780 and T-880
-Thread-Index: Act3bPryL0+bqdGLRTSZ0u93gZyQawAAL9Ig
-Message-ID: <3BF066A8BAB61C43B779966CEE6D7FA018BC9E19F2@e6.universe.dart.spb>
-References: <1288169825-15422-1-git-send-email-Anton.Chikin@dataart.com>
- <alpine.LNX.2.00.1010291453460.6879@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1010291453460.6879@pobox.suse.cz>
-Accept-Language: ru-RU
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ru-RU
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 29 Oct 2010 10:06:28 -0400
+Date: Fri, 29 Oct 2010 10:06:26 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+cc: Greg KH <gregkh@suse.de>, <matthieu.castet@parrot.com>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        Nguyen Dinh-R00091 <R00091@freescale.com>
+Subject: Re: [PATCH] USB: ehci/mxc: compile fix
+In-Reply-To: <1288337869-378-1-git-send-email-u.kleine-koenig@pengutronix.de>
+Message-ID: <Pine.LNX.4.44L0.1010290956490.1588-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Jiri,
+On Fri, 29 Oct 2010, [UTF-8] Uwe Kleine-König wrote:
 
-Panasonic Elite Panaboard UB-T780 is a touchscreen whiteboard. It uses projector to present PC's screen onto the board. So we need to calibrate it according to the projector's position and apply calibration data inside our driver.
-
-There is no other driver for this device. I'm working directly for Panasonic on this driver.
-
-Is this nice for changelog comment?
-
-With best regards,
-Anton Chikin
-
------Original Message-----
-From: Jiri Kosina [mailto:jkosina@suse.cz] 
-Sent: Friday, October 29, 2010 4:55 PM
-To: Anton Chikin
-Cc: chatty@enac.fr; spbnick@gmail.com; anisse@astier.eu; cascardo@holoscopio.com; don@syst.com.br; linux-input@vger.kernel.org; linux-kernel@vger.kernel.org; linux-usb@vger.kernel.org; Gregory Burmistrov; Anton Chikin; Anton Chikin
-Subject: Re: [PATCH] hid: usbhid: New hid quirks for Panasonic Elite Panaboard T-780 and T-880
-
-On Wed, 27 Oct 2010, Anton Chikin wrote:
-
-> Added Panasonic vendor ID, two device IDs for Panasonic Whiteboard devices and new quirk to ignore
-> these devices in hid-core driver.
-
-Could you please be more verbose in the changelog?
-
-Is the generic HID driver not working with these devices at all? Or is the 
-functionality only limited, not exploiting all the features the hardware 
-provides?
-
-Is there any other driver available for these devices?
-
-Thanks.
-
+> 65fd42724aee31018b0bb53f4cb04971423be664 broke the build using
+> ARM's mx51_defconfig:
 > 
-> Signed-off-by: Anton Chikin <anton.chikin@dataart.com>
+>  	  CC      drivers/usb/host/ehci-hcd.o
+>  	In file included from drivers/usb/host/ehci-hcd.c:1166:
+>  	drivers/usb/host/ehci-mxc.c: In function 'ehci_mxc_drv_probe':
+>  	drivers/usb/host/ehci-mxc.c:192: error: 'ehci' undeclared (first use in this function)
+>  	drivers/usb/host/ehci-mxc.c:192: error: (Each undeclared identifier is reported only once
+>  	drivers/usb/host/ehci-mxc.c:192: error: for each function it appears in.)
+>  	drivers/usb/host/ehci-mxc.c:117: warning: unused variable 'temp'
+>  	make[3]: *** [drivers/usb/host/ehci-hcd.o] Error 1
+>  	make[2]: *** [drivers/usb/host/ehci-hcd.o] Error 2
+>  	make[1]: *** [sub-make] Error 2
+>  	make: *** [all] Error 2
+> 
+> Fix it together with the warnung about the unused variable.
+> 
+> Tested-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 > ---
->  drivers/hid/hid-ids.h           |    4 ++++
->  drivers/hid/usbhid/hid-quirks.c |    2 ++
->  2 files changed, 6 insertions(+), 0 deletions(-)
+>  drivers/usb/host/ehci-mxc.c |   13 ++++++++-----
+>  1 files changed, 8 insertions(+), 5 deletions(-)
 > 
-> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-> index 3341baa..b5542d3 100644
-> --- a/drivers/hid/hid-ids.h
-> +++ b/drivers/hid/hid-ids.h
-> @@ -446,6 +446,10 @@
->  #define USB_VENDOR_ID_ORTEK		0x05a4
->  #define USB_DEVICE_ID_ORTEK_WKB2000	0x2000
+> diff --git a/drivers/usb/host/ehci-mxc.c b/drivers/usb/host/ehci-mxc.c
+> index ac9c4d7..70edb11 100644
+> --- a/drivers/usb/host/ehci-mxc.c
+> +++ b/drivers/usb/host/ehci-mxc.c
+> @@ -36,6 +36,8 @@ struct ehci_mxc_priv {
+>  static int ehci_mxc_setup(struct usb_hcd *hcd)
+>  {
+>  	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
+> +	struct device *dev = hcd->self.controller;
+> +	struct mxc_usbh_platform_data *pdata = dev_get_platdata(dev);
+>  	int retval;
 >  
-> +#define USB_VENDOR_ID_PANASONIC 	0x04da
-> +#define USB_DEVICE_ID_PANASONIC_PANABOARD_T780 	0x1044
-> +#define USB_DEVICE_ID_PANASONIC_PANABOARD_T880	0x104d 
+>  	/* EHCI registers start at offset 0x100 */
+> @@ -64,6 +66,11 @@ static int ehci_mxc_setup(struct usb_hcd *hcd)
+>  	ehci_reset(ehci);
+>  
+>  	ehci_port_power(ehci, 0);
 > +
->  #define USB_VENDOR_ID_PANJIT		0x134c
->  
->  #define USB_VENDOR_ID_PANTHERLORD	0x0810
-> diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-> index 2c18547..b5788b0 100644
-> --- a/drivers/hid/usbhid/hid-quirks.c
-> +++ b/drivers/hid/usbhid/hid-quirks.c
-> @@ -65,6 +65,8 @@ static const struct hid_blacklist {
->  	{ USB_VENDOR_ID_CH, USB_DEVICE_ID_CH_AXIS_295, HID_QUIRK_NOGET },
->  	{ USB_VENDOR_ID_DMI, USB_DEVICE_ID_DMI_ENC, HID_QUIRK_NOGET },
->  	{ USB_VENDOR_ID_ELO, USB_DEVICE_ID_ELO_TS2700, HID_QUIRK_NOGET },
-> +	{ USB_VENDOR_ID_PANASONIC, USB_DEVICE_ID_PANASONIC_PANABOARD_T780, HID_QUIRK_IGNORE },
-> +	{ USB_VENDOR_ID_PANASONIC, USB_DEVICE_ID_PANASONIC_PANABOARD_T880, HID_QUIRK_IGNORE },
->  	{ USB_VENDOR_ID_PRODIGE, USB_DEVICE_ID_PRODIGE_CORDLESS, HID_QUIRK_NOGET },
->  	{ USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_PIXART_IMAGING_INC_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NOGET },
->  	{ USB_VENDOR_ID_SUN, USB_DEVICE_ID_RARITAN_KVM_DONGLE, HID_QUIRK_NOGET },
-> -- 
-> 1.7.0.4
-> 
+> +	/* set up the PORTSCx register */
+> +	ehci_writel(ehci, pdata->portsc, &ehci->regs->port_status[0]);
+> +	mdelay(10);
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+This mdelay really should be changed to msleep.  Also according to 
+Matthieu, in ehci-fsl this is done before the ehci_port_power() call, 
+not after, and there is no delay.  I don't know if this makes any 
+difference.
+
+Alan Stern
+
