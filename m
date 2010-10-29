@@ -1,114 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761747Ab0J2Tpg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 15:45:36 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:12678 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755148Ab0J2Tpf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 15:45:35 -0400
-Date: Fri, 29 Oct 2010 21:35:25 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: support@audioscience.com, alsa-devel@alsa-project.org,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH] AudioScience HPI driver: Unsafe memory management when
- allocating control cache
-Message-ID: <alpine.LNX.2.00.1010292124180.24561@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1761754Ab0J2TrB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 15:47:01 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37406 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761580Ab0J2Tq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 15:46:59 -0400
+Message-ID: <4CCB24CA.3050106@kernel.org>
+Date: Fri, 29 Oct 2010 23:47:22 +0400
+From: Denis Kirjanov <dkirjanov@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: bjorn.helgaas@hp.com
+CC: amit.salecha@qlogic.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Fwd: NULL pointer dereference at netxen_nic_probe+0x813/0x9a0
+References: <201010281250.50802.bjorn.helgaas@hp.com> <AANLkTim8coGDmxxCnhzXXLEswf1OYptswbA59BYcbp-N@mail.gmail.com>
+In-Reply-To: <AANLkTim8coGDmxxCnhzXXLEswf1OYptswbA59BYcbp-N@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 29 Oct 2010 19:46:55 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> This is on current Linus upstream as of this morning (8128057)
+> on an HP DL785:
+> 
+> QLogic/NetXen Network Driver v4.0.74
+> netxen_nic 0000:07:00.0: PCI INT A -> GSI 30 (level, low) -> IRQ 30
+> netxen_nic 0000:07:00.0: setting latency timer to 64
+> netxen_nic 0000:07:00.0: 2MB memory map
+> netxen_nic 0000:07:00.0: loading firmware from flash
+> netxen_nic 0000:07:00.0: using 64-bit dma mask
+> kernel: Quad Gig LP Board S/N TI9ABK0266  Chip rev 0x42
+> netxen_nic 0000:07:00.0: firmware v4.0.520 [legacy]
+> netxen_nic 0000:07:00.0: irq 72 for MSI/MSI-X
+> netxen_nic 0000:07:00.0: irq 73 for MSI/MSI-X
+> netxen_nic 0000:07:00.0: irq 74 for MSI/MSI-X
+> netxen_nic 0000:07:00.0: irq 75 for MSI/MSI-X
+> netxen_nic 0000:07:00.0: using msi-x interrupts
+> BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
+> IP: [<ffffffff8160afda>] netxen_nic_probe+0x813/0x9a0
+> PGD 0
+> Oops: 0002 [#1] SMP
+> last sysfs file:
+> CPU 0
+> Modules linked in:
+> 
+> Pid: 1650, comm: work_for_cpu Not tainted 2.6.36-07338-g8128057 #269
+> /ProLiant DL785 G5
+> RIP: 0010:[<ffffffff8160afda>]  [<ffffffff8160afda>]
+> netxen_nic_probe+0x813/0x9a0
+> RSP: 0018:ffff8806138abe30  EFLAGS: 00010246
+> RAX: 0000000000000010 RBX: ffff8806139126c0 RCX: 0000000000000000
+> RDX: 0000000000000000 RSI: ffff880613895616 RDI: ffff880613912000
+> RBP: ffff8806138abe90 R08: 0000000000000000 R09: ffff8806138abb80
+> R10: 0000000000000000 R11: 0000000000000000 R12: ffff880613912000
+> R13: ffff8812174f7000 R14: ffff880613912000 R15: ffff8812174f7000
+> FS:  0000000000000000(0000) GS:ffff8800cfa00000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> CR2: 0000000000000010 CR3: 0000000001c07000 CR4: 00000000000006f0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process work_for_cpu (pid: 1650, threadinfo ffff8806138aa000, task
+> ffff880616f12be0)
+> Stack:
+>  ffff8812174f7090 0000000000000246 ffff8806138abe90 ffff8812174f7000
+>  00008806138abfd8 0000000000000282 68cd0025b30068cc ffff880c17439d30
+>  ffff8812174f7090 ffff8812174f7000 ffff8812174f7208 0000000000000000
+> Call Trace:
+>  [<ffffffff81203696>] local_pci_probe+0x48/0x91
+>  [<ffffffff81052bae>] ? do_work_for_cpu+0x0/0x26
+>  [<ffffffff81052bc1>] do_work_for_cpu+0x13/0x26
+>  [<ffffffff81052bae>] ? do_work_for_cpu+0x0/0x26
+>  [<ffffffff81057a7b>] kthread+0x81/0x89
+>  [<ffffffff81003854>] kernel_thread_helper+0x4/0x10
+>  [<ffffffff810579fa>] ? kthread+0x0/0x89
+>  [<ffffffff81003850>] ? kernel_thread_helper+0x0/0x10
+> Code: 00 eb 15 49 8d bf 90 00 00 00 48 c7 c6 1b 2e aa 81 31 c0 e8 c0
+> 4e cd ff 4c 89 f7 e8 d6 bb ee ff 49 8b 96 00 03 00 00 48 8d 42 10 <f0>
+> 80 4a 10 01 4c 89 f7 e8 a3 7e ed ff 85 c0 41 89 c4 74 2a 49
+> RIP  [<ffffffff8160afda>] netxen_nic_probe+0x813/0x9a0
+>  RSP <ffff8806138abe30>
+> CR2: 0000000000000010
+> ---[ end trace 059c7071bbf8de1f ]---
+Could you please try the following patch.  
 
-I noticed that sound/pci/asihpi/hpicmn.c::hpi_alloc_control_cache() does 
-not check the return value from kmalloc(), which may fail.
-If kmalloc() fails we'll dereference a null pointer and things will go bad 
-fast.
-There are two memory allocations in that function and there's also the 
-problem that the first may succeed and the second may fail and nothing is 
-done about that either which will also go wrong down the line.
-
-I tried to fix that up in the patch below, but since I don't know this 
-code at all nor have the hardware to test anything the patch is based 
-entirely on 30 minutes of investigation of the source and then compile 
-tested only, so it may be the completely wrong way to fix the issues. Thus 
-I am not suggesting that this patch be merged as-is unless someone else 
-who know this code says it looks correct (in which case, by all means 
-merge it), I'm mainly trying to bring the issue to the attention of the 
-relevant people and providing an attempted fix seemed like the best way to 
-do that.
-
-Btw; please keep me on Cc if you reply.
-
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- hpi6000.c |    2 ++
- hpi6205.c |    2 ++
- hpicmn.c  |   12 +++++++++---
- 3 files changed, 13 insertions(+), 3 deletions(-)
-
-diff --git a/sound/pci/asihpi/hpi6000.c b/sound/pci/asihpi/hpi6000.c
-index f7e374e..1b9bf93 100644
---- a/sound/pci/asihpi/hpi6000.c
-+++ b/sound/pci/asihpi/hpi6000.c
-@@ -625,6 +625,8 @@ static short create_adapter_obj(struct hpi_adapter_obj *pao,
- 			control_cache_size, (struct hpi_control_cache_info *)
- 			&phw->control_cache[0]
- 			);
-+		if (!phw->p_cache)
-+			pao->has_control_cache = 0;
- 	} else
- 		pao->has_control_cache = 0;
+diff --git a/drivers/net/netxen/netxen_nic_main.c b/drivers/net/netxen/netxen_nic_main.c
+index 50820be..5766475 100644
+--- a/drivers/net/netxen/netxen_nic_main.c
++++ b/drivers/net/netxen/netxen_nic_main.c
+@@ -1239,15 +1239,15 @@ netxen_setup_netdev(struct netxen_adapter *adapter,
+ 	if (netxen_read_mac_addr(adapter))
+ 		dev_warn(&pdev->dev, "failed to read mac addr\n");
  
-diff --git a/sound/pci/asihpi/hpi6205.c b/sound/pci/asihpi/hpi6205.c
-index 22c5fc6..2672f65 100644
---- a/sound/pci/asihpi/hpi6205.c
-+++ b/sound/pci/asihpi/hpi6205.c
-@@ -644,6 +644,8 @@ static u16 create_adapter_obj(struct hpi_adapter_obj *pao,
- 				interface->control_cache.size_in_bytes,
- 				(struct hpi_control_cache_info *)
- 				p_control_cache_virtual);
-+			if (!phw->p_cache)
-+				err = HPI_ERROR_MEMORY_ALLOC;
- 		}
- 		if (!err) {
- 			err = hpios_locked_mem_get_phys_addr(&phw->
-diff --git a/sound/pci/asihpi/hpicmn.c b/sound/pci/asihpi/hpicmn.c
-index dda4f1c..d67f4d3 100644
---- a/sound/pci/asihpi/hpicmn.c
-+++ b/sound/pci/asihpi/hpicmn.c
-@@ -571,14 +571,20 @@ struct hpi_control_cache *hpi_alloc_control_cache(const u32
- {
- 	struct hpi_control_cache *p_cache =
- 		kmalloc(sizeof(*p_cache), GFP_KERNEL);
-+	if (!p_cache)
-+		return NULL;
-+	p_cache->p_info =
-+		kmalloc(sizeof(*p_cache->p_info) * number_of_controls,
-+			GFP_KERNEL);
-+	if (!p_cache->p_info) {
-+		kfree(p_cache);
-+		return NULL;
-+	}
- 	p_cache->cache_size_in_bytes = size_in_bytes;
- 	p_cache->control_count = number_of_controls;
- 	p_cache->p_cache =
- 		(struct hpi_control_cache_single *)pDSP_control_buffer;
- 	p_cache->init = 0;
--	p_cache->p_info =
--		kmalloc(sizeof(*p_cache->p_info) * p_cache->control_count,
--		GFP_KERNEL);
- 	return p_cache;
+-	netif_carrier_off(netdev);
+-	netif_stop_queue(netdev);
+-
+ 	err = register_netdev(netdev);
+ 	if (err) {
+ 		dev_err(&pdev->dev, "failed to register net device\n");
+ 		return err;
+ 	}
+ 
++	netif_carrier_off(netdev);
++	netif_stop_queue(netdev);
++
+ 	return 0;
  }
- 
-
--- 
-Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-Plain text mails only, please      http://www.expita.com/nomime.html
-Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
 
