@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761877Ab0J2UCv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 16:02:51 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:35766 "EHLO
+	id S934239Ab0J2UDX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 16:03:23 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:43134 "EHLO
 	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754404Ab0J2UCt (ORCPT
+	by vger.kernel.org with ESMTP id S1754404Ab0J2UDV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 16:02:49 -0400
-Date: Fri, 29 Oct 2010 16:02:45 -0400
+	Fri, 29 Oct 2010 16:03:21 -0400
+Date: Fri, 29 Oct 2010 16:03:19 -0400
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
@@ -15,172 +15,130 @@ Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
         Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <peterz@infradead.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jason Baron <jbaron@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        David Daney <ddaney@caviumnetworks.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        David Miller <davem@davemloft.net>, Richard Henderson <rth@redhat.com>
-Subject: Re: [PATCH 7/7] jump label: Add work around to i386 gcc asm goto
-	bug
-Message-ID: <20101029200245.GA10702@Krystal>
-References: <20101029190050.674141729@goodmis.org> <20101029190136.494851966@goodmis.org>
+        Daniel Drake <dsd@laptop.org>, Jason Baron <jbaron@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 6/7] x86, ftrace: Use safe noops, drop trap test
+Message-ID: <20101029200319.GB10702@Krystal>
+References: <20101029190050.674141729@goodmis.org> <20101029190136.250239408@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101029190136.494851966@goodmis.org>
+In-Reply-To: <20101029190136.250239408@goodmis.org>
 X-Editor: vi
 X-Info: http://www.efficios.com
 X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 16:02:07 up 37 days, 4 min,  4 users,  load average: 0.12, 0.18,
-	0.15
+X-Uptime: 16:02:47 up 37 days, 4 min,  4 users,  load average: 0.11, 0.17,
+	0.14
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Steven Rostedt (rostedt@goodmis.org) wrote:
-> From: Steven Rostedt <srostedt@redhat.com>
+> From: H. Peter Anvin <hpa@zytor.com>
 > 
-> On i386 (not x86_64) early implementations of gcc would have a bug
-> with asm goto causing it to produce code like the following:
+> Always use a safe 5-byte noop sequence.  Drop the trap test, since it
+> is known to return false negatives on some virtualization platforms on
+> 32 bits.  The resulting code is both simpler and safer.
 > 
-> (This was noticed by Peter Zijlstra)
-> 
->    56 pushl 0
->    67 nopl         jmp 0x6f
->       popl
->       jmp 0x8c
-> 
->    6f              mov
->                    test
->                    je 0x8c
-> 
->    8c mov
->       call *(%esp)
-> 
-> The jump added in the asm goto skipped over the popl that matched
-> the pushl 0, which lead up to a quick crash of the system when
-> the jump was enabled. The nopl is defined in the asm goto () statement
-> and when tracepoints are enabled, the nop changes to a jump to the label
-> that was specified by the asm goto. asm goto is suppose to tell gcc that
-> the code in the asm might jump to an external label. Here gcc obviously
-> fails to make that work.
-> 
-> The bug report for gcc is here:
-> 
->   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=46226
-> 
-> The bug only appears on x86 when not compiled with
-> -maccumulate-outgoing-args. This option is always set on x86_64 and it
-> is also the work around for a function graph tracer i386 bug.
-> (See commit: 746357d6a526d6da9d89a2ec645b28406e959c2e)
-> This explains why the bug only showed up on i386 when function graph
-> tracer was not enabled.
-> 
-> This patch now adds a CONFIG_JUMP_LABEL option that is default
-> off instead of using jump labels by default. When jump labels are
-> enabled, the -maccumulate-outgoing-args will be used (causing a
-> slightly larger kernel image on i386). This option will exist
-> until we have a way to detect if the gcc compiler in use is safe
-> to use on all configurations without the work around.
-> 
-> Note, there exists such a test, but for now we will keep the enabling
-> of jump label as a manual option.
-> 
-> Archs that know the compiler is safe with asm goto, may choose to
-> select JUMP_LABEL and enable it by default.
+> Cc: Daniel Drake <dsd@laptop.org>
+> Cc: Jason Baron <jbaron@redhat.com>
+> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
-Looks good. You can add my
+Looks good to me.
 
 Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
-if you feel like it.
-
-Thanks,
-
-Mathieu
-
-> 
-> Reported-by: Ingo Molnar <mingo@elte.hu>
-> Cause-discovered-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Jason Baron <jbaron@redhat.com>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: David Daney <ddaney@caviumnetworks.com>
-> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: David Miller <davem@davemloft.net>
-> Cc: Richard Henderson <rth@redhat.com>
-> LKML-Reference: <1288028746.3673.11.camel@laptop>
+> Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 > ---
->  arch/Kconfig               |   14 ++++++++++++++
->  arch/x86/Makefile_32.cpu   |   13 ++++++++++++-
->  include/linux/jump_label.h |    2 +-
->  3 files changed, 27 insertions(+), 2 deletions(-)
+>  arch/x86/kernel/alternative.c |   69 +++++++++--------------------------------
+>  1 files changed, 15 insertions(+), 54 deletions(-)
 > 
-> diff --git a/arch/Kconfig b/arch/Kconfig
-> index 53d7f61..8bf0fa6 100644
-> --- a/arch/Kconfig
-> +++ b/arch/Kconfig
-> @@ -42,6 +42,20 @@ config KPROBES
->  	  for kernel debugging, non-intrusive instrumentation and testing.
->  	  If in doubt, say "N".
+> diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+> index a36bb90..0b30214 100644
+> --- a/arch/x86/kernel/alternative.c
+> +++ b/arch/x86/kernel/alternative.c
+> @@ -644,65 +644,26 @@ void *__kprobes text_poke_smp(void *addr, const void *opcode, size_t len)
 >  
-> +config JUMP_LABEL
-> +       bool "Optimize trace point call sites"
-> +       depends on HAVE_ARCH_JUMP_LABEL
-> +       help
-> +         If it is detected that the compiler has support for "asm goto",
-> +	 the kernel will compile trace point locations with just a
-> +	 nop instruction. When trace points are enabled, the nop will
-> +	 be converted to a jump to the trace function. This technique
-> +	 lowers overhead and stress on the branch prediction of the
-> +	 processor.
-> +
-> +	 On i386, options added to the compiler flags may increase
-> +	 the size of the kernel slightly.
-> +
->  config OPTPROBES
->  	def_bool y
->  	depends on KPROBES && HAVE_OPTPROBES
-> diff --git a/arch/x86/Makefile_32.cpu b/arch/x86/Makefile_32.cpu
-> index 1255d95..f2ee1ab 100644
-> --- a/arch/x86/Makefile_32.cpu
-> +++ b/arch/x86/Makefile_32.cpu
-> @@ -51,7 +51,18 @@ cflags-$(CONFIG_X86_GENERIC) 	+= $(call tune,generic,$(call tune,i686))
->  # prologue (push %ebp, mov %esp, %ebp) which breaks the function graph
->  # tracer assumptions. For i686, generic, core2 this is set by the
->  # compiler anyway
-> -cflags-$(CONFIG_FUNCTION_GRAPH_TRACER) += $(call cc-option,-maccumulate-outgoing-args)
-> +ifeq ($(CONFIG_FUNCTION_GRAPH_TRACER), y)
-> +ADD_ACCUMULATE_OUTGOING_ARGS := y
-> +endif
-> +
-> +# Work around to a bug with asm goto with first implementations of it
-> +# in gcc causing gcc to mess up the push and pop of the stack in some
-> +# uses of asm goto.
-> +ifeq ($(CONFIG_JUMP_LABEL), y)
-> +ADD_ACCUMULATE_OUTGOING_ARGS := y
-> +endif
-> +
-> +cflags-$(ADD_ACCUMULATE_OUTGOING_ARGS) += $(call cc-option,-maccumulate-outgoing-args)
+>  #if defined(CONFIG_DYNAMIC_FTRACE) || defined(HAVE_JUMP_LABEL)
 >  
->  # Bug fix for binutils: this option is required in order to keep
->  # binutils from generating NOPL instructions against our will.
-> diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-> index 1947a12..7880f18 100644
-> --- a/include/linux/jump_label.h
-> +++ b/include/linux/jump_label.h
-> @@ -1,7 +1,7 @@
->  #ifndef _LINUX_JUMP_LABEL_H
->  #define _LINUX_JUMP_LABEL_H
+> -unsigned char ideal_nop5[IDEAL_NOP_SIZE_5];
+> +#ifdef CONFIG_X86_64
+> +unsigned char ideal_nop5[5] = { 0x66, 0x66, 0x66, 0x66, 0x90 };
+> +#else
+> +unsigned char ideal_nop5[5] = { 0x3e, 0x8d, 0x74, 0x26, 0x00 };
+> +#endif
 >  
-> -#if defined(CC_HAVE_ASM_GOTO) && defined(CONFIG_HAVE_ARCH_JUMP_LABEL)
-> +#if defined(CC_HAVE_ASM_GOTO) && defined(CONFIG_JUMP_LABEL)
->  # include <asm/jump_label.h>
->  # define HAVE_JUMP_LABEL
+>  void __init arch_init_ideal_nop5(void)
+>  {
+> -	extern const unsigned char ftrace_test_p6nop[];
+> -	extern const unsigned char ftrace_test_nop5[];
+> -	extern const unsigned char ftrace_test_jmp[];
+> -	int faulted = 0;
+> -
+>  	/*
+> -	 * There is no good nop for all x86 archs.
+> -	 * We will default to using the P6_NOP5, but first we
+> -	 * will test to make sure that the nop will actually
+> -	 * work on this CPU. If it faults, we will then
+> -	 * go to a lesser efficient 5 byte nop. If that fails
+> -	 * we then just use a jmp as our nop. This isn't the most
+> -	 * efficient nop, but we can not use a multi part nop
+> -	 * since we would then risk being preempted in the middle
+> -	 * of that nop, and if we enabled tracing then, it might
+> -	 * cause a system crash.
+> +	 * There is no good nop for all x86 archs.  This selection
+> +	 * algorithm should be unified with the one in find_nop_table(),
+> +	 * but this should be good enough for now.
+>  	 *
+> -	 * TODO: check the cpuid to determine the best nop.
+> +	 * For cases other than the ones below, use the safe (as in
+> +	 * always functional) defaults above.
+>  	 */
+> -	asm volatile (
+> -		"ftrace_test_jmp:"
+> -		"jmp ftrace_test_p6nop\n"
+> -		"nop\n"
+> -		"nop\n"
+> -		"nop\n"  /* 2 byte jmp + 3 bytes */
+> -		"ftrace_test_p6nop:"
+> -		P6_NOP5
+> -		"jmp 1f\n"
+> -		"ftrace_test_nop5:"
+> -		".byte 0x66,0x66,0x66,0x66,0x90\n"
+> -		"1:"
+> -		".section .fixup, \"ax\"\n"
+> -		"2:	movl $1, %0\n"
+> -		"	jmp ftrace_test_nop5\n"
+> -		"3:	movl $2, %0\n"
+> -		"	jmp 1b\n"
+> -		".previous\n"
+> -		_ASM_EXTABLE(ftrace_test_p6nop, 2b)
+> -		_ASM_EXTABLE(ftrace_test_nop5, 3b)
+> -		: "=r"(faulted) : "0" (faulted));
+> -
+> -	switch (faulted) {
+> -	case 0:
+> -		pr_info("converting mcount calls to 0f 1f 44 00 00\n");
+> -		memcpy(ideal_nop5, ftrace_test_p6nop, IDEAL_NOP_SIZE_5);
+> -		break;
+> -	case 1:
+> -		pr_info("converting mcount calls to 66 66 66 66 90\n");
+> -		memcpy(ideal_nop5, ftrace_test_nop5, IDEAL_NOP_SIZE_5);
+> -		break;
+> -	case 2:
+> -		pr_info("converting mcount calls to jmp . + 5\n");
+> -		memcpy(ideal_nop5, ftrace_test_jmp, IDEAL_NOP_SIZE_5);
+> -		break;
+> -	}
+> -
+> +#ifdef CONFIG_X86_64
+> +	/* Don't use these on 32 bits due to broken virtualizers */
+> +	if (boot_cpu_data.x86_vendor == X86_VENDOR_INTEL)
+> +		memcpy(ideal_nop5, p6_nops[5], 5);
+> +#endif
+>  }
 >  #endif
 > -- 
 > 1.7.1
