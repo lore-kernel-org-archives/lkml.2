@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759603Ab0J1X5Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 19:57:25 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:59092 "EHLO
+	id S933372Ab0J2ACf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 20:02:35 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:60719 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759242Ab0J1X5U (ORCPT
+	with ESMTP id S933300Ab0J2ACa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 19:57:20 -0400
+	Thu, 28 Oct 2010 20:02:30 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=yF4me6FBMUgUEjzpOrQPJsAWkV+7tr+HMpmXLwM0UT3Jgkd8O6qiww90OfFtPZrN61
-         Fv5GpDQtdfkC5TARs93A==
+         :cc:content-type:content-transfer-encoding;
+        b=JBkwezGDLjvxnu/wpArprR9OVZWh9Va3QMR0sX7WxSXJl03y2sN6yNgUG7HonUh57N
+         +G14rPZ1ZzIyi27xfdCw==
 MIME-Version: 1.0
-In-Reply-To: <20101022213819.GK10119@count0.beaverton.ibm.com>
+In-Reply-To: <4CC146F5.9060006@cn.fujitsu.com>
 References: <4CC146A4.9090505@cn.fujitsu.com>
-	<4CC146D4.7030009@cn.fujitsu.com>
-	<20101022213819.GK10119@count0.beaverton.ibm.com>
-Date: Thu, 28 Oct 2010 16:57:16 -0700
-Message-ID: <AANLkTimO+nzksuv==6Cf7BYH0f_TXKiHFkZH1sT+A8i+@mail.gmail.com>
-Subject: Re: [PATCH 2/7] cgroups: Allow to bind a subsystem to a cgroup hierarchy
+	<4CC146F5.9060006@cn.fujitsu.com>
+Date: Thu, 28 Oct 2010 17:02:27 -0700
+Message-ID: <AANLkTimUEWrfvuRFAkHkMyefNfQqUW9_ksB9jNHb+n2g@mail.gmail.com>
+Subject: Re: [PATCH 3/7] cgroups: Allow to unbind subsystem from a cgroup hierarachy
 From: Paul Menage <menage@google.com>
-To: Matt Helsley <matthltc@us.ibm.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>,
-        "akpm >> Andrew Morton" <akpm@linux-foundation.org>,
-        containers@lists.linux-foundation.org,
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: "akpm >> Andrew Morton" <akpm@linux-foundation.org>,
+        Stephane Eranian <eranian@google.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>
+        containers@lists.linux-foundation.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 22, 2010 at 2:38 PM, Matt Helsley <matthltc@us.ibm.com> wrote:
->> + *
->> + * The iterating order is: a1, a2, b1, c1, c2, a3. So a parent will be
->> + * processed before its children.
->> + */
->
-> You could just say it's a depth-first walk except we process the parent before
-> its children.
+On Fri, Oct 22, 2010 at 1:10 AM, Li Zefan <lizf@cn.fujitsu.com> wrote:
+> -               for_each_set_bit(i, &added_bits, CGROUP_SUBSYS_COUNT)
+> -                       cg->subsys[i] = cgrp->subsys[i];
+> +               for_each_set_bit(i, &bits, CGROUP_SUBSYS_COUNT) {
+> +                       if (add)
+> +                               cg->subsys[i] = cgrp->subsys[i];
+> +                       else
+> +                               cg->subsys[i] = dummytop->subsys[i];
+> +               }
 
-The standard term for that is "pre-order traversal". You shouldn't
-need a diagram.
+Should these technically be rcu_assign_pointer() ?
 
 Paul
