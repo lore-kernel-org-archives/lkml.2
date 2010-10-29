@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760021Ab0J2DoG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 23:44:06 -0400
-Received: from cantor.suse.de ([195.135.220.2]:46952 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756277Ab0J2DoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 23:44:00 -0400
-Date: Thu, 28 Oct 2010 20:41:42 -0700
-From: Greg KH <gregkh@suse.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Jon Masters <jcm@redhat.com>, corbet <corbet@lwn.net>,
-        Jake Edge <jake@lwn.net>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>, lmr@redhat.com,
-        autotest@test.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
-        Clark Williams <williams@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Subject: Re: [ANNOUNCE] ktest.pl: Easy and flexible testing script for
-	Linux Kernel Developers
-Message-ID: <20101029034142.GA12125@suse.de>
-References: <1288294944.18238.346.camel@gandalf.stny.rr.com> <20101029002740.GA7688@suse.de> <1288321849.18238.395.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288321849.18238.395.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1760554Ab0J2Dou (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 23:44:50 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33121
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758164Ab0J2Doo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 23:44:44 -0400
+Date: Thu, 28 Oct 2010 20:45:07 -0700 (PDT)
+Message-Id: <20101028.204507.193718797.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] IDE
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 28, 2010 at 11:10:49PM -0400, Steven Rostedt wrote:
-> On Thu, 2010-10-28 at 17:27 -0700, Greg KH wrote:
-> 
-> > > Maybe this should go into the tools directory?
-> > 
-> > Yes please, I think that would be a great idea.
-> 
-> Should I try to get this into 2.6.37?  Since it is a stand alone tool, I
-> can hardly expect that it would break anything else.
 
-I don't see why not, but perhaps you might want to wait for people to
-test it a bit?  Then get it into .38?
+Please pull to get these IDE changes for 2.6.36, thanks!
 
-thanks,
+The following changes since commit b18cae4224bde7e5a332c19bc99247b2098ea232:
 
-greg k-h
+  Merge branch 'for-next' of git://android.git.kernel.org/kernel/tegra (2010-10-25 18:42:06 -0700)
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/ide-2.6.git master
+
+Sergei Shtylyov (2):
+      hpt366: add debounce delay to cable_detect() method
+      hpt366: fix clock turnaround
+
+Tejun Heo (1):
+      ide: clean up timed out request handling
+
+ drivers/ide/hpt366.c  |   14 ++++++++------
+ drivers/ide/ide-dma.c |   11 +++--------
+ 2 files changed, 11 insertions(+), 14 deletions(-)
