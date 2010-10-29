@@ -1,62 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933073Ab0J2VWG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 17:22:06 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:58503 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751200Ab0J2VWD (ORCPT
+	id S933284Ab0J2VWj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 17:22:39 -0400
+Received: from tomts22.bellnexxia.net ([209.226.175.184]:43033 "EHLO
+	tomts22-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932982Ab0J2VWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 17:22:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=gFE4gm66H9hlZyGCrwC6d1OqpjnKfT6fKDya0pJlDvFh1xLilgzAdBHX2xcmaMY01s
-         PlOWNiKxJAfh4XngCmtoTKt37+IoyJ9GMdeBCVsJM+hcLcRWd60krS9cmtafVgK9vD0I
-         ++5su/tH1cZm6ckb1U6rDD+XBoBb9L0L5RCFQ=
-Date: Sat, 30 Oct 2010 01:21:59 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, brgerst@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86-32: Restore irq stacks NUMA-aware
-	allocations
-Message-ID: <20101029212159.GD6130@lenovo>
-References: <1288276854.2649.607.camel@edumazet-laptop> <tip-5c1eb08936693cd78c71164c8bea0b086ae72c67@git.kernel.org> <1288377146.1988.0.camel@laptop> <20101029202809.GB6130@lenovo> <1288385883.2680.17.camel@edumazet-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+	Fri, 29 Oct 2010 17:22:38 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAKvWykxGGOIS/2dsb2JhbAChUHLADoVIBA
+Date: Fri, 29 Oct 2010 16:42:33 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        David Daney <ddaney@caviumnetworks.com>, Ingo Molnar <mingo@elte.hu>,
+        Jason Baron <jbaron@redhat.com>, rth@redhat.com, tglx@linutronix.de,
+        andi@firstfloor.org, roland@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org,
+        tony@bakeyournoodle.com, dsd@laptop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] jump label: disable due to compiler bug
+Message-ID: <20101029204233.GA28585@Krystal>
+References: <20101028201112.GA4792@redhat.com> <20101029063450.GE29463@elte.hu> <1288354687.18238.433.camel@gandalf.stny.rr.com> <20101029122230.GA25663@elte.hu> <1288356418.18238.454.camel@gandalf.stny.rr.com> <20101029133524.GA23916@Krystal> <1288369108.29632.1.camel@gandalf.stny.rr.com> <4CCB01D1.2050004@caviumnetworks.com> <1288373582.29632.3.camel@gandalf.stny.rr.com> <4CCB2B7B.6020002@zytor.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1288385883.2680.17.camel@edumazet-laptop>
+In-Reply-To: <4CCB2B7B.6020002@zytor.com>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 16:29:21 up 205 days,  6:19,  3 users,  load average: 0.15, 0.12,
+	0.09
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 29, 2010 at 10:58:03PM +0200, Eric Dumazet wrote:
-> Le samedi 30 octobre 2010 à 00:28 +0400, Cyrill Gorcunov a écrit :
-> > On Fri, Oct 29, 2010 at 08:32:26PM +0200, Peter Zijlstra wrote:
-> > > On Fri, 2010-10-29 at 06:43 +0000, tip-bot for Eric Dumazet wrote:
-> > > > +       irqctx = page_address(alloc_pages_node(cpu_to_node(cpu),
-> > > > +                                              THREAD_FLAGS,
-> > > > +                                              THREAD_ORDER)); 
-> > > 
-> > > Shouldn't we be checking for a NULL return from alloc_pages_node()
-> > > before calling page_address() on it?
-> > > --
+* H. Peter Anvin (hpa@zytor.com) wrote:
+> On 10/29/2010 10:33 AM, Steven Rostedt wrote:
+> >>
+> >> Should this knowledge be builtin to the jump label enabling calculus?
 > > 
-> >  Something like below I guess, but probably we could try to allocate
-> > on appropriate NUMA node first and if it fails -- via old alloc_pages
-> > and if it fail in turn -- then we panic.
+> > No, because we can't trust versions. We never know what home grown gcc a
+> > kernel developer is using (and what has been backported or not). Thus
+> > the only option is to have a builtin test we can do at compile time to
+> > determine if the bug exists or not and decide then.
+> > 
+> > Note, I'm currently running my last set of patches through ktest. When
+> > it finishes (presumably with no issues), I'll post a pull request.
+> > 
 > 
-> Maybe my commit message was not clear : 
+> I disagree with that assessment.
 > 
-> There is no need to test return from alloc_pages_node() and do the
-> fallback. It already done properly.
->
+> We know that if version >= 4.5.2 the problem has been fixed, and that
+> for earlier versions we can't know if it's there, so just disable it for
+> gcc < 4.5.2.  The fix might have been backported, but it's not a big
+> deal if the users of backported compilers don't see the full benefit --
+> it's only a problem during a limited time window anyway.
 
-Yes Eric, somehow managed to miss that, my bad.
- 
-  Cyrill
+I agree with HPA here. Moreover, we have no hard guarantee that the
+automated assembly inspection proposed won't be breaked in the future
+caused by changes in gcc. Compiling and running a user-level runtime
+test at kernel build time does not work with cross-compilers, and
+matching the exact options used for kernel builds might be hard.
+
+I would tend to argue that the added longer-term maintainance burden of
+adding such a test is far worse than leaving gcc < 4.5.2 users without
+static jump patching, especially given that we have a fallback.
+
+For now, we know that x86_64 works, but the standard setup for x86_32
+kernel is broken. What do we do if testing shows that some other
+architecture has similar issues ? Add more work-arounds ? At this early
+stage, I would simply bump the gcc version dependency forward for all
+architectures. Later on, after things have settled and as more and more
+architectures are supported, we could deal with arch-specific breakages
+on a per-architecture basis.
+
+If this was a showstopper feature, my position would be different. But
+the fact that we have been able to wait for gcc to integrate asm gotos
+while adding tracepoints shows that it's not crucial in the short term.
+We still have to be careful when adding new tracepoints anyway as long
+as gcc < 4.5 is still widely used.
+
+Thanks,
+
+Mathieu
+
+> 
+> Admittedly it would be nice to have a header file or even a
+> configuration file where the gcc version is tested and workarounds are
+> centralized; then the backporters could put their own overrides in there.
+> 
+> 	-hpa
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
