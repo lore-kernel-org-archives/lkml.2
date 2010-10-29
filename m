@@ -1,77 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761411Ab0J2MXG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 08:23:06 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:34022 "EHLO mx2.mail.elte.hu"
+	id S1761440Ab0J2M1S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 08:27:18 -0400
+Received: from mga02.intel.com ([134.134.136.20]:26210 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756878Ab0J2MXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 08:23:03 -0400
-Date: Fri, 29 Oct 2010 14:22:30 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jason Baron <jbaron@redhat.com>, David Daney <ddaney@caviumnetworks.com>,
-        rth@redhat.com, "H. Peter Anvin" <hpa@zytor.com>,
-        mathieu.desnoyers@polymtl.ca, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
-        avi@redhat.com, davem@davemloft.net, vgoyal@redhat.com,
-        sam@ravnborg.org, tony@bakeyournoodle.com, dsd@laptop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] jump label: disable due to compiler bug
-Message-ID: <20101029122230.GA25663@elte.hu>
-References: <cover.1288212485.git.jbaron@redhat.com>
- <2d1b1d5d2b3930e1acb063cefffbcb2faf049854.1288212486.git.jbaron@redhat.com>
- <ce4ff595-f9d1-4c17-b68e-82739b07ad3e@email.android.com>
- <20101028141757.GA2875@redhat.com>
- <4CC9C724.3020004@caviumnetworks.com>
- <20101028201112.GA4792@redhat.com>
- <20101029063450.GE29463@elte.hu>
- <1288354687.18238.433.camel@gandalf.stny.rr.com>
+	id S1754821Ab0J2M1R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 08:27:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,259,1286175600"; 
+   d="scan'208";a="672207298"
+Date: Fri, 29 Oct 2010 14:29:28 +0200
+From: Andi Kleen <andi.kleen@intel.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: =?utf-8?Q?Micha=C5=82?= Nazarewicz <m.nazarewicz@samsung.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        "fujita.tomonori@lab.ntt.co.jp" <fujita.tomonori@lab.ntt.co.jp>,
+        "felipe.contreras@gmail.com" <felipe.contreras@gmail.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Osciak <pawel@osciak.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [RFC][PATCH 0/3] big chunk memory allocator v2
+Message-ID: <20101029122928.GA17792@gargoyle.fritz.box>
+References: <20101026190042.57f30338.kamezawa.hiroyu@jp.fujitsu.com>
+ <AANLkTim4fFXQKqmFCeR8pvi0SZPXpjDqyOkbV6PYJYkR@mail.gmail.com>
+ <op.vlbywq137p4s8u@pikus>
+ <20101029103154.GA10823@gargoyle.fritz.box>
+ <20101029195900.88559162.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1288354687.18238.433.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20101029195900.88559162.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> On Fri, 2010-10-29 at 08:34 +0200, Ingo Molnar wrote:
-> > * Jason Baron <jbaron@redhat.com> wrote:
-> > 
-> > > Thus, I'm going to propose a patch, which makes jump label conditional on x86_64 
-> > > for now [...]
-> > 
-> > No, we dont do 64-bit only features really.
-> > 
-> > > [...] (adding -maccumulate-outgoing-args to x86 increases the text size, so I'm 
-> > > not proposing adding the flag there).
-> > 
-> > Please make jump labels configurable instead. (dependent on EMBEDDED)
+On Fri, Oct 29, 2010 at 11:59:00AM +0100, KAMEZAWA Hiroyuki wrote:
+> On Fri, 29 Oct 2010 12:31:54 +0200
+> Andi Kleen <andi.kleen@intel.com> wrote:
 > 
-> Do you mean to have it dependent on !EMBEDDED, or perhaps !CC_OPTIMIZE_FOR_SIZE ?
+> > > When I was posting CMA, it had been suggested to create a new migration type
+> > > dedicated to contiguous allocations.  I think I already did that and thanks to
+> > > this new migration type we have (i) an area of memory that only accepts movable
+> > > and reclaimable pages and 
+> > 
+> > Aka highmem next generation :-(
+> > 
+> 
+> yes. But Nick's new shrink_slab() may be a new help even without
+> new zone.
 
-CC_OPTIMIZE_FOR_SIZE dependency probably not. Might even leave out !EMBEDDED, to 
-make it generally configurable.
+You would really need callbacks into lots of code. Christoph
+used to have some patches for directed shrink of dcache/icache,
+but they are currently not on the table.
 
-Also, we should make it default off - we need to see whether there are any compiler 
-bugs lurking.
+I don't think Nick's patch does that, he simply optimizes the existing
+shrinker (which in practice tends to not shrink a lot) to be a bit
+less wasteful.
 
-> I can see people making a big stink about adding back a gcc option that makes the 
-> kernel bigger.
+The coverage will never be 100% in any case. So you always have to
+make a choice between movable or fully usable. That's essentially
+highmem with most of its problems.
 
-Depends on exactly how much .text we are talking about here. Plus it would be 
-default-off.
+> 
+> 
+> > > (ii) is used only if all other (non-reserved) pages have
+> > > been allocated.
+> > 
+> > That will be near always the case after some uptime, as memory fills up
+> > with caches. Unless you do early reclaim? 
+> > 
+> 
+> memory migration always do work with alloc_page() for getting migration target
+> pages. So, memory will be reclaimed if filled by cache.
 
-Thanks,
+Was talking about that paragraph CMA, not your patch. 
 
-	Ingo
+If I understand it correctly CMA wants to define
+a new zone which is somehow similar to movable, but only sometimes used
+when another zone is full (which is the usual state in normal
+operation actually)
+
+It was unclear to me how this was all supposed to work. At least
+as described in the paragraph it cannot I think.
+
+
+> About my patch, I may have to prealloc all required pages before start.
+> But I didn't do that at this time.
+
+preallocate when? I thought the whole point of the large memory allocator
+was to not have to pre-allocate.
+
+-Andi
