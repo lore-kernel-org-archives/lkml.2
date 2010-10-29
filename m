@@ -1,59 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762185Ab0J3ADa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 20:03:30 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56107 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751345Ab0J3AD2 (ORCPT
+	id S933135Ab0J3AFI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 20:05:08 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:35040 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751345Ab0J3AFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 20:03:28 -0400
-Date: Fri, 29 Oct 2010 17:02:09 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Ken Sumrall <ksumrall@android.com>
-Cc: linux-kernel@vger.kernel.org, Miklos Szeredi <miklos@szeredi.hu>,
-        Jens Axboe <jens.axboe@oracle.com>, Anfei <anfei.zhou@gmail.com>,
-        "Anand V. Avati" <avati@gluster.com>, fuse-devel@lists.sourceforge.net
-Subject: Re: [PATCH] Fix bug in FUSE where the attribute cache for a file
- was not cleared when a file is opened with O_TRUNC.
-Message-Id: <20101029170209.0aced0ca.akpm@linux-foundation.org>
-In-Reply-To: <1288395700-9527-1-git-send-email-ksumrall@android.com>
-References: <1288395700-9527-1-git-send-email-ksumrall@android.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Fri, 29 Oct 2010 20:05:05 -0400
+Subject: Re: [ANNOUNCE] Status of unlocked_qcmds=1 operation for .37
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Boaz Harrosh <bharrosh@panasas.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Mike Anderson <andmike@linux.vnet.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
+        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Christof Schmitt <christof.schmitt@de.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, julia@diku.dk,
+        Jeff Garzik <jeff@garzik.org>
+In-Reply-To: <20101029075019.GC8287@gargoyle.fritz.box>
+References: <1288132464.5169.112.camel@haakon2.linux-iscsi.org>
+	 <1288133450.8283.723.camel@mulgrave.site>
+	 <1288134048.5169.132.camel@haakon2.linux-iscsi.org>
+	 <1288134713.19649.11.camel@mulgrave.site>
+	 <1288135918.5169.149.camel@haakon2.linux-iscsi.org>
+	 <20101027075349.GA32585@gargoyle.fritz.box>
+	 <1288189658.4692.13.camel@mulgrave.site>
+	 <20101028091020.GA7906@gargoyle.fritz.box> <4CC95BE8.3000909@panasas.com>
+	 <1288297634.5169.302.camel@haakon2.linux-iscsi.org>
+	 <20101029075019.GC8287@gargoyle.fritz.box>
+Content-Type: text/plain
+Date: Fri, 29 Oct 2010 16:50:47 -0700
+Message-Id: <1288396247.19406.26.camel@haakon2.linux-iscsi.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Oct 2010 16:41:40 -0700 Ken Sumrall <ksumrall@android.com> wrote:
-
-> Signed-off-by: Ken Sumrall <ksumrall@android.com>
-> ---
->  fs/fuse/file.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
+On Fri, 2010-10-29 at 09:50 +0200, Andi Kleen wrote:
+> > I would have to agree that approach does make a bit more sense..  Now
+> > can some brave soul (/me looks at ak) code another script to automate
+> > this for the identified legacy LLDs cases that need push down..?
 > 
-> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-> index c822458..4fbe62c 100644
-> --- a/fs/fuse/file.c
-> +++ b/fs/fuse/file.c
-> @@ -134,6 +134,7 @@ EXPORT_SYMBOL_GPL(fuse_do_open);
->  void fuse_finish_open(struct inode *inode, struct file *file)
->  {
->  	struct fuse_file *ff = file->private_data;
-> +	struct fuse_conn *fc = get_fuse_conn(inode);
->  
->  	if (ff->open_flags & FOPEN_DIRECT_IO)
->  		file->f_op = &fuse_direct_io_file_operations;
-> @@ -141,6 +142,8 @@ void fuse_finish_open(struct inode *inode, struct file *file)
->  		invalidate_inode_pages2(inode->i_mapping);
->  	if (ff->open_flags & FOPEN_NONSEEKABLE)
->  		nonseekable_open(inode, file);
-> +	if (fc->atomic_o_trunc && (file->f_flags & O_TRUNC))
-> +		fuse_invalidate_attr(inode);
->  }
->  
->  int fuse_open_common(struct inode *inode, struct file *file, bool isdir)
+> For the drivers I looked at it doesn't really make too much difference,
+> I don't think there was any with a really large number of returns.
+> You can see that in the diffstat for the full changes.
+> 
 
-What were the user-visible effects of this bug?
+Yep, this is a valid point.  During the push down this week, I only ran
+into a handful (say ~15) overly-complex SHT->queuecommand() w more than
+a few return statements.  This was also isoloated for the most part into
+legacy/ancient LLDs.
+
+> Writing another script is probably not too hard, but the problem
+> is that I needed a significant amount of manual post processing
+> (both the select the right files to patch and to get rid
+> of misplaced newlines and some mismatches in cocci) 
+> So it's not a fully automated procedure.
+> 
+
+<nod>
+
+So I really do not have a strong preference here.  I think Boaz's
+approach is a bit cleaner, but in the end I think it should not hold up
+on a global push-down merge for lio-4.0.git/host_lock-less-for-37-v9.
+
+Also, at this point I have not received any other feedback from LLD
+maintainers to say "My LLD should be running in lock-less mode" or "My
+LLD cannot run in lock-less mode, and needs the host_lock push down".
+
+One additional point that was raised by jgarzik was that those LLDs
+running in 'lock-less' mode may need to have their internal
+->queuecommand() spinlocks converted to spin_lock_irqsave() +
+spin_unlock_irqrestore().  This has already been fixed for libata
+following Jeff's recommendation, but we also identified a few other
+potential LLDs that may need more work.  From the last response locatd
+here:
+
+http://marc.info/?l=linux-scsi&m=128825558912565&w=2
+
+"Ok, so originally libiscsi, fnic, and lpfc where using
+spin_unlock(host->host_lock) -> spin_lock(host->host_lock)
+
+And libsas, qla2xxx, qla4xxx where using
+spin_unlock_irq(host->host_lock) -> spin_lock_irq(host->host_lock)
+
+Just to verify, you are thinking that those *not* using spin_unlock_irq
++ spin_lock_irq() for the legacy optimization dispatch should have their
+per LLD host lock converted to spin_lock_irqsave() +
+spin_unlock_irqrestore(), right..?"
+
+So I think that means an audit of locks obtained in libiscsi, fnic and lpfc
+will be in to ensure they do not assume irqs have alreadby been externally
+disabled for lock-less operation..
+
+Any comments folks..?
+
+--nab
 
