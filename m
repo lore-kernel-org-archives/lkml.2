@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934229Ab0J2WcY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 18:32:24 -0400
-Received: from static.200.77.63.178.clients.your-server.de ([178.63.77.200]:33983
+	id S934293Ab0J2Wd7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 18:33:59 -0400
+Received: from static.200.77.63.178.clients.your-server.de ([178.63.77.200]:33986
 	"EHLO Debian-50-lenny-64-minimal" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933070Ab0J2WcX (ORCPT
+	by vger.kernel.org with ESMTP id S932865Ab0J2Wd5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 18:32:23 -0400
-Date: Sat, 30 Oct 2010 00:32:23 +0200
+	Fri, 29 Oct 2010 18:33:57 -0400
+Date: Sat, 30 Oct 2010 00:33:57 +0200
 From: "Hans J. Koch" <hjk@hansjkoch.de>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: lm-sensors@lm-sensors.org
-Subject: [PATCH 4/6] hwmon: Change mail address of Hans J. Koch
-Message-ID: <20101029223223.GE4331@local>
+Cc: netdev@vger.kernel.org
+Subject: [PATCH 5/6] netdev: can: Change mail address of Hans J. Koch
+Message-ID: <20101029223357.GF4331@local>
 References: <20101029221231.GA4331@local>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -28,59 +28,22 @@ to my new address.
 
 Signed-off-by: Hans J. Koch <hjk@hansjkoch.de>
 ---
- drivers/hwmon/amc6821.c |    2 +-
- drivers/hwmon/lm93.c    |    4 ++--
- drivers/hwmon/max6650.c |    2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/net/can/at91_can.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/hwmon/amc6821.c b/drivers/hwmon/amc6821.c
-index fa9708c..4033974 100644
---- a/drivers/hwmon/amc6821.c
-+++ b/drivers/hwmon/amc6821.c
-@@ -4,7 +4,7 @@
- 	Copyright (C) 2009 T. Mertelj <tomaz.mertelj@guest.arnes.si>
- 
- 	Based on max6650.c:
--	Copyright (C) 2007 Hans J. Koch <hjk@linutronix.de>
-+	Copyright (C) 2007 Hans J. Koch <hjk@hansjkoch.de>
- 
- 	This program is free software; you can redistribute it and/or modify
- 	it under the terms of the GNU General Public License as published by
-diff --git a/drivers/hwmon/lm93.c b/drivers/hwmon/lm93.c
-index 6669255..754e5fb 100644
---- a/drivers/hwmon/lm93.c
-+++ b/drivers/hwmon/lm93.c
-@@ -20,7 +20,7 @@
-     Adapted to 2.6.20 by Carsten Emde <cbe@osadl.org>
-         Copyright (c) 2006 Carsten Emde, Open Source Automation Development Lab
- 
--    Modified for mainline integration by Hans J. Koch <hjk@linutronix.de>
-+    Modified for mainline integration by Hans J. Koch <hjk@hansjkoch.de>
-         Copyright (c) 2007 Hans J. Koch, Linutronix GmbH
- 
-     This program is free software; you can redistribute it and/or modify
-@@ -2629,7 +2629,7 @@ static void __exit lm93_exit(void)
- }
- 
- MODULE_AUTHOR("Mark M. Hoffman <mhoffman@lightlink.com>, "
--		"Hans J. Koch <hjk@linutronix.de");
-+		"Hans J. Koch <hjk@hansjkoch.de");
- MODULE_DESCRIPTION("LM93 driver");
- MODULE_LICENSE("GPL");
- 
-diff --git a/drivers/hwmon/max6650.c b/drivers/hwmon/max6650.c
-index a0160ee..9a11532 100644
---- a/drivers/hwmon/max6650.c
-+++ b/drivers/hwmon/max6650.c
-@@ -2,7 +2,7 @@
-  * max6650.c - Part of lm_sensors, Linux kernel modules for hardware
-  *             monitoring.
+diff --git a/drivers/net/can/at91_can.c b/drivers/net/can/at91_can.c
+index cee98fa..7ef83d0 100644
+--- a/drivers/net/can/at91_can.c
++++ b/drivers/net/can/at91_can.c
+@@ -1,7 +1,7 @@
+ /*
+  * at91_can.c - CAN network driver for AT91 SoC CAN controller
   *
 - * (C) 2007 by Hans J. Koch <hjk@linutronix.de>
 + * (C) 2007 by Hans J. Koch <hjk@hansjkoch.de>
+  * (C) 2008, 2009, 2010 by Marc Kleine-Budde <kernel@pengutronix.de>
   *
-  * based on code written by John Morris <john.morris@spirentcom.com>
-  * Copyright (c) 2003 Spirent Communications
+  * This software may be distributed under the terms of the GNU General
 -- 
 1.7.1
 
