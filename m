@@ -1,213 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757865Ab0J2SYc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 14:24:32 -0400
-Received: from bhuna.collabora.co.uk ([93.93.128.226]:33848 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516Ab0J2SYb (ORCPT
+	id S1758181Ab0J2S0A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 14:26:00 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:63141 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751516Ab0J2SZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 14:24:31 -0400
-From: Alban Crequy <alban.crequy@collabora.co.uk>
-To: Alban Crequy <alban.crequy@collabora.co.uk>
-Cc: Alban Crequy <alban.crequy@collabora.co.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Pauli Nieminen <pauli.nieminen@collabora.co.uk>,
-        Rainer Weikusat <rweikusat@mssgmbh.com>
-Subject: [PATCH] poll/select performance on datagram sockets
-Date: Fri, 29 Oct 2010 19:21:17 +0100
-Message-Id: <1288376477-17387-1-git-send-email-alban.crequy@collabora.co.uk>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20101029191857.5f789d56@chocolatine.cbg.collabora.co.uk>
-References: <20101029191857.5f789d56@chocolatine.cbg.collabora.co.uk>
+	Fri, 29 Oct 2010 14:25:57 -0400
+X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=ygIiTo8ZIjQA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=mDV3o1hIAAAA:8 a=deMge4z8aYbPzyKb3_sA:9 a=IALjDw_Ie1edGuaJomcA:7 a=UtUYY2bW8OBZo7VcXx98qOIjY14A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 2/2] jump label: disable due to compiler bug
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Richard Henderson <rth@redhat.com>
+Cc: David Daney <ddaney@caviumnetworks.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Ingo Molnar <mingo@elte.hu>, Jason Baron <jbaron@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, tglx@linutronix.de,
+        andi@firstfloor.org, roland@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org,
+        tony@bakeyournoodle.com, dsd@laptop.org, linux-kernel@vger.kernel.org
+In-Reply-To: <4CCB0EE0.4000401@redhat.com>
+References: <cover.1288212485.git.jbaron@redhat.com>
+	 <2d1b1d5d2b3930e1acb063cefffbcb2faf049854.1288212486.git.jbaron@redhat.com>
+	 <ce4ff595-f9d1-4c17-b68e-82739b07ad3e@email.android.com>
+	 <20101028141757.GA2875@redhat.com> <4CC9C724.3020004@caviumnetworks.com>
+	 <20101028201112.GA4792@redhat.com> <20101029063450.GE29463@elte.hu>
+	 <1288354687.18238.433.camel@gandalf.stny.rr.com>
+	 <20101029122230.GA25663@elte.hu>
+	 <1288356418.18238.454.camel@gandalf.stny.rr.com>
+	 <20101029133524.GA23916@Krystal>
+	 <1288369108.29632.1.camel@gandalf.stny.rr.com>
+	 <4CCB01D1.2050004@caviumnetworks.com>
+	 <1288373582.29632.3.camel@gandalf.stny.rr.com>
+	 <4CCB08EB.8070004@caviumnetworks.com>  <4CCB0EE0.4000401@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 29 Oct 2010 14:25:54 -0400
+Message-ID: <1288376754.29632.19.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----
- fs/select.c         |   27 ++++++++++++++++++++++++---
- include/linux/fs.h  |    1 +
- include/linux/net.h |    3 +++
- net/socket.c        |   15 ++++++++++-----
- net/unix/af_unix.c  |   17 +++++++++++------
- 5 files changed, 49 insertions(+), 14 deletions(-)
+On Fri, 2010-10-29 at 11:13 -0700, Richard Henderson wrote:
+> On 10/29/2010 10:48 AM, David Daney wrote:
+> > http://gcc.gnu.org/bugzilla/show_bug.cgi?id=46226
+> > 
+> > Perhaps it could be integrated with the current checks for the presence of 'asm goto'
+> 
+> If you're looking for a cross-compile-able test, you can strip the
+> testcase down to 
+> 
+> extern void abort(void);
+> void g(int x, ...);
+> void f(int x)
+> {
+>   if (x == 0)
+>     g(0);
+>   g(1, 2, 3, 4, 5, 6, 7);
+>   asm goto ("XYZZY" : : : : label);
+>   abort ();
+>  label:
+>   return;
+> }
+> 
+> and use perl to notice the adjustment to esp before or after XYZZY.
+> It should be fairly obvious looking at the assembly before and after
+> the patch.
+> 
+> I don't know what sort of embedded processors supported by linux
+> actually use ACCUMULATE_OUTGOING_ARGS.  Almost all ports don't, so
+> I'd be pretty comfortable making this a 32-bit x86 only test, and
+> let other targets just check that the test compiles.
+> 
 
-diff --git a/fs/select.c b/fs/select.c
-index 500a669..ff46afa 100644
---- a/fs/select.c
-+++ b/fs/select.c
-@@ -449,9 +449,21 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
- 				if (file) {
- 					f_op = file->f_op;
- 					mask = DEFAULT_POLLMASK;
--					if (f_op && f_op->poll) {
-+					if (f_op && f_op->poll2) {
-+						unsigned long filter_mask = 0;
-+						filter_mask |= (in & bit)
-+							? POLLIN_SET : 0;
-+						filter_mask |= (out & bit)
-+							? POLLOUT_SET : 0;
-+						filter_mask |= (ex & bit)
-+							? POLLEX_SET : 0;
- 						wait_key_set(wait, in, out, bit);
--						mask = (*f_op->poll)(file, wait);
-+						mask = (*f_op->poll2)(file,
-+							wait, filter_mask);
-+					} else if (f_op && f_op->poll) {
-+						wait_key_set(wait, in, out, bit);
-+						mask = (*f_op->poll)(file,
-+							wait);
- 					}
- 					fput_light(file, fput_needed);
- 					if ((mask & POLLIN_SET) && (in & bit)) {
-@@ -738,7 +750,16 @@ static inline unsigned int do_pollfd(struct pollfd *pollfd, poll_table *pwait)
- 		mask = POLLNVAL;
- 		if (file != NULL) {
- 			mask = DEFAULT_POLLMASK;
--			if (file->f_op && file->f_op->poll) {
-+			if (file->f_op && file->f_op->poll2) {
-+				unsigned long filter_mask;
-+				filter_mask = pollfd->events
-+						| POLLERR | POLLHUP;
-+				if (pwait)
-+					pwait->key = pollfd->events |
-+							POLLERR | POLLHUP;
-+				mask = file->f_op->poll2(file, pwait,
-+							filter_mask);
-+			} else if (file->f_op && file->f_op->poll) {
- 				if (pwait)
- 					pwait->key = pollfd->events |
- 							POLLERR | POLLHUP;
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 509ca14..dd0eb7a 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1493,6 +1493,7 @@ struct file_operations {
- 	ssize_t (*aio_write) (struct kiocb *, const struct iovec *, unsigned long, loff_t);
- 	int (*readdir) (struct file *, void *, filldir_t);
- 	unsigned int (*poll) (struct file *, struct poll_table_struct *);
-+	unsigned int (*poll2) (struct file *, struct poll_table_struct *, unsigned long);
- 	int (*ioctl) (struct inode *, struct file *, unsigned int, unsigned long);
- 	long (*unlocked_ioctl) (struct file *, unsigned int, unsigned long);
- 	long (*compat_ioctl) (struct file *, unsigned int, unsigned long);
-diff --git a/include/linux/net.h b/include/linux/net.h
-index dee0b11..1f33d1c 100644
---- a/include/linux/net.h
-+++ b/include/linux/net.h
-@@ -175,6 +175,9 @@ struct proto_ops {
- 				      int *sockaddr_len, int peer);
- 	unsigned int	(*poll)	     (struct file *file, struct socket *sock,
- 				      struct poll_table_struct *wait);
-+	unsigned int	(*poll2)     (struct file *file, struct socket *sock,
-+				      struct poll_table_struct *wait,
-+				      unsigned long filter_mask);
- 	int		(*ioctl)     (struct socket *sock, unsigned int cmd,
- 				      unsigned long arg);
- #ifdef CONFIG_COMPAT
-diff --git a/net/socket.c b/net/socket.c
-index 367d547..38b7786 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -113,8 +113,9 @@ static ssize_t sock_aio_write(struct kiocb *iocb, const struct iovec *iov,
- static int sock_mmap(struct file *file, struct vm_area_struct *vma);
- 
- static int sock_close(struct inode *inode, struct file *file);
--static unsigned int sock_poll(struct file *file,
--			      struct poll_table_struct *wait);
-+static unsigned int sock_poll2(struct file *file,
-+			      struct poll_table_struct *wait,
-+			      unsigned long filter_mask);
- static long sock_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
- #ifdef CONFIG_COMPAT
- static long compat_sock_ioctl(struct file *file,
-@@ -137,7 +138,7 @@ static const struct file_operations socket_file_ops = {
- 	.llseek =	no_llseek,
- 	.aio_read =	sock_aio_read,
- 	.aio_write =	sock_aio_write,
--	.poll =		sock_poll,
-+	.poll2 =	sock_poll2,
- 	.unlocked_ioctl = sock_ioctl,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl = compat_sock_ioctl,
-@@ -1049,7 +1050,8 @@ out_release:
- }
- 
- /* No kernel lock held - perfect */
--static unsigned int sock_poll(struct file *file, poll_table *wait)
-+static unsigned int sock_poll2(struct file *file, poll_table *wait,
-+			       unsigned long filter_mask)
- {
- 	struct socket *sock;
- 
-@@ -1057,7 +1059,10 @@ static unsigned int sock_poll(struct file *file, poll_table *wait)
- 	 *      We can't return errors to poll, so it's either yes or no.
- 	 */
- 	sock = file->private_data;
--	return sock->ops->poll(file, sock, wait);
-+	if (sock->ops->poll2)
-+		return sock->ops->poll2(file, sock, wait, filter_mask);
-+	else
-+		return sock->ops->poll(file, sock, wait);
- }
- 
- static int sock_mmap(struct file *file, struct vm_area_struct *vma)
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index 617bea4..60e30ea 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -489,7 +489,7 @@ static int unix_accept(struct socket *, struct socket *, int);
- static int unix_getname(struct socket *, struct sockaddr *, int *, int);
- static unsigned int unix_poll(struct file *, struct socket *, poll_table *);
- static unsigned int unix_dgram_poll(struct file *, struct socket *,
--				    poll_table *);
-+				    poll_table *, unsigned long);
- static int unix_ioctl(struct socket *, unsigned int, unsigned long);
- static int unix_shutdown(struct socket *, int);
- static int unix_stream_sendmsg(struct kiocb *, struct socket *,
-@@ -535,7 +535,7 @@ static const struct proto_ops unix_dgram_ops = {
- 	.socketpair =	unix_socketpair,
- 	.accept =	sock_no_accept,
- 	.getname =	unix_getname,
--	.poll =		unix_dgram_poll,
-+	.poll2 =	unix_dgram_poll,
- 	.ioctl =	unix_ioctl,
- 	.listen =	sock_no_listen,
- 	.shutdown =	unix_shutdown,
-@@ -556,7 +556,7 @@ static const struct proto_ops unix_seqpacket_ops = {
- 	.socketpair =	unix_socketpair,
- 	.accept =	unix_accept,
- 	.getname =	unix_getname,
--	.poll =		unix_dgram_poll,
-+	.poll2 =	unix_dgram_poll,
- 	.ioctl =	unix_ioctl,
- 	.listen =	unix_listen,
- 	.shutdown =	unix_shutdown,
-@@ -2031,7 +2031,8 @@ static unsigned int unix_poll(struct file *file, struct socket *sock, poll_table
- }
- 
- static unsigned int unix_dgram_poll(struct file *file, struct socket *sock,
--				    poll_table *wait)
-+				    poll_table *wait,
-+				    unsigned long filter_mask)
- {
- 	struct sock *sk = sock->sk, *other;
- 	unsigned int mask, writable;
-@@ -2061,8 +2062,12 @@ static unsigned int unix_dgram_poll(struct file *file, struct socket *sock,
- 			return mask;
- 	}
- 
--	/* writable? */
--	writable = unix_writable(sk);
-+	/* writable?
-+	 * sock_poll_wait() is expensive. Don't bother checking if it is not
-+	 * requested.
-+	 */
-+	writable = (filter_mask & (POLLOUT | POLLWRNORM | POLLWRBAND))
-+		    && unix_writable(sk);
- 	if (writable) {
- 		other = unix_peer_get(sk);
- 		if (other) {
--- 
-1.7.1
+Thanks! I'll make a patch with this check (for x86_32) and queue it up
+for 2.6.38. I think we are way past doing this for 2.6.37.
+
+-- Steve
+
 
