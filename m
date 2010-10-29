@@ -1,50 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760162Ab0J2H3D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 03:29:03 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:64022 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755112Ab0J2H24 (ORCPT
+	id S1759061Ab0J2HiF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 03:38:05 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42722 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753147Ab0J2HiA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 03:28:56 -0400
-Message-ID: <4CCA773F.6000809@kernel.org>
-Date: Fri, 29 Oct 2010 00:26:55 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.14) Gecko/20101013 SUSE/3.0.9 Thunderbird/3.0.9
+	Fri, 29 Oct 2010 03:38:00 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Greg KH <gregkh@suse.de>
+Cc: matthieu.castet@parrot.com, stern@rowland.harvard.edu,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Nguyen Dinh-R00091 <R00091@freescale.com>
+Subject: [PATCH] USB: ehci/mxc: compile fix
+Date: Fri, 29 Oct 2010 09:37:49 +0200
+Message-Id: <1288337869-378-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <20101028181519.GD2573@kroah.com>
+References: <20101028181519.GD2573@kroah.com>
 MIME-Version: 1.0
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -v3] x86: Disable x2apic if nox2apic is specified
-References: <1287882149-29275-1-git-send-email-yinghai@kernel.org>	 <1287882149-29275-16-git-send-email-yinghai@kernel.org>	 <alpine.LFD.2.00.1010241204470.2466@localhost6.localdomain6>	 <4CC4AEAB.4030505@kernel.org>	 <1288029002.2675.22.camel@sbsiddha-MOBL3.sc.intel.com>	 <4CC7C64A.4070809@kernel.org> <1288331608.2717.14.camel@sbsiddha-MOBL3>
-In-Reply-To: <1288331608.2717.14.camel@sbsiddha-MOBL3>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/2010 10:53 PM, Suresh Siddha wrote:
-> On Tue, 2010-10-26 at 23:27 -0700, Yinghai Lu wrote:
->> For
->> 1. x2apic preenabled system
->> 2. first kernel have x2apic enabled, and try to kexec second kernel with "nox2apic"
->>
->> Will put back cpu with apic id < 255 into xapic mode, instead of panic.
->>
->> -v2: use x2apic_disabled instead of nox2apic, Suggested by Thomas
->>      update x2apic_supported with x2apic_disabled, Suggested by Thomas
->>
->> -v3: add checking for boot cpu apic id > 255. in that case will just panic
->>      --- pointed out by Suresh.
->>
-> 
-> Can we please hold off in merging this patch for a bit? There are some
-> subtleties in going back to xapic when the platform/cpu's are in x2apic
-> mode. I will check and get back to you on this after KS.
+65fd42724aee31018b0bb53f4cb04971423be664 broke the build using
+ARM's mx51_defconfig:
 
-sure. take you time.
+ 	  CC      drivers/usb/host/ehci-hcd.o
+ 	In file included from drivers/usb/host/ehci-hcd.c:1166:
+ 	drivers/usb/host/ehci-mxc.c: In function 'ehci_mxc_drv_probe':
+ 	drivers/usb/host/ehci-mxc.c:192: error: 'ehci' undeclared (first use in this function)
+ 	drivers/usb/host/ehci-mxc.c:192: error: (Each undeclared identifier is reported only once
+ 	drivers/usb/host/ehci-mxc.c:192: error: for each function it appears in.)
+ 	drivers/usb/host/ehci-mxc.c:117: warning: unused variable 'temp'
+ 	make[3]: *** [drivers/usb/host/ehci-hcd.o] Error 1
+ 	make[2]: *** [drivers/usb/host/ehci-hcd.o] Error 2
+ 	make[1]: *** [sub-make] Error 2
+ 	make: *** [all] Error 2
 
-	Yinghai
+Fix it together with the warnung about the unused variable.
+
+Tested-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+ drivers/usb/host/ehci-mxc.c |   13 ++++++++-----
+ 1 files changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/usb/host/ehci-mxc.c b/drivers/usb/host/ehci-mxc.c
+index ac9c4d7..70edb11 100644
+--- a/drivers/usb/host/ehci-mxc.c
++++ b/drivers/usb/host/ehci-mxc.c
+@@ -36,6 +36,8 @@ struct ehci_mxc_priv {
+ static int ehci_mxc_setup(struct usb_hcd *hcd)
+ {
+ 	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
++	struct device *dev = hcd->self.controller;
++	struct mxc_usbh_platform_data *pdata = dev_get_platdata(dev);
+ 	int retval;
+ 
+ 	/* EHCI registers start at offset 0x100 */
+@@ -64,6 +66,11 @@ static int ehci_mxc_setup(struct usb_hcd *hcd)
+ 	ehci_reset(ehci);
+ 
+ 	ehci_port_power(ehci, 0);
++
++	/* set up the PORTSCx register */
++	ehci_writel(ehci, pdata->portsc, &ehci->regs->port_status[0]);
++	mdelay(10);
++
+ 	return 0;
+ }
+ 
+@@ -114,7 +121,7 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
+ 	struct mxc_usbh_platform_data *pdata = pdev->dev.platform_data;
+ 	struct usb_hcd *hcd;
+ 	struct resource *res;
+-	int irq, ret, temp;
++	int irq, ret;
+ 	struct ehci_mxc_priv *priv;
+ 	struct device *dev = &pdev->dev;
+ 
+@@ -188,10 +195,6 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
+ 		clk_enable(priv->ahbclk);
+ 	}
+ 
+-	/* set up the PORTSCx register */
+-	ehci_writel(ehci, pdata->portsc, &ehci->regs->port_status[0]);
+-	mdelay(10);
+-
+ 	/* setup specific usb hw */
+ 	ret = mxc_initialize_usb_hw(pdev->id, pdata->flags);
+ 	if (ret < 0)
+-- 
+1.7.2.3
+
