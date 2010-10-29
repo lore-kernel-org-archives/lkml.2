@@ -1,173 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760501Ab0J2KTZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 06:19:25 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:50841 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751863Ab0J2KTV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 06:19:21 -0400
-From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
-        corbet@lwn.net, neilb@suse.de, npiggin@kernel.dk,
-        hooanon05@yahoo.co.jp, bfields@fieldses.org, miklos@szeredi.hu
-Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
-        linux-kernel@vger.kernel.org
-Subject: [Updated PATCH -V22 07/14] fs: Remove i_nlink check from file system link callback
-In-Reply-To: <1288346243-12211-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1288346243-12211-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1288346243-12211-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-User-Agent: Notmuch/0.3.1-130-g97f5c81 (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
-Date: Fri, 29 Oct 2010 15:49:03 +0530
-Message-ID: <m3vd4lxpwo.fsf@linux.vnet.ibm.com>
+	id S933698Ab0J2KXQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 06:23:16 -0400
+Received: from rere.qmqm.pl ([89.167.52.164]:44360 "EHLO rere.qmqm.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756930Ab0J2KXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 06:23:09 -0400
+Message-Id: <181be0f834f3670249d3c8d7ba1462dab1ece2c1.1288321597.git.mirq-linux@rere.qmqm.pl>
+In-Reply-To: <cover.1288321597.git.mirq-linux@rere.qmqm.pl>
+References: <cover.1288321597.git.mirq-linux@rere.qmqm.pl>
+From: =?UTF-8?q?Micha=C5=82=20Miros=C5=82aw?= <mirq-linux@rere.qmqm.pl>
+To: Hans Ulli Kroll <ulli.kroll@googlemail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Cc: Paulius Zaleckas <paulius.zaleckas@gmail.com>,
+        Janos Laube <janos.dev@gmail.com>
+Subject: [RFC PATCH 1/2] Gemini: create platform device for ethernet in Raidsonic IB-4220B
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Date: Fri, 29 Oct 2010 12:23:08 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Oct 2010 15:27:16 +0530, "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
-> Now that VFS check for inode->i_nlink == 0 and returns proper
-> error, remove similar check from file system
-> 
-> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> ---
->  fs/btrfs/inode.c    |    3 ---
->  fs/ext3/namei.c     |    7 -------
->  fs/ext4/namei.c     |    7 -------
->  fs/gfs2/ops_inode.c |    3 ---
->  fs/jfs/namei.c      |    3 ---
->  fs/reiserfs/namei.c |    4 ----
->  fs/ubifs/dir.c      |   18 ------------------
->  7 files changed, 0 insertions(+), 45 deletions(-)
-> 
+This is cherry-picked from:
 
-Updated patch to drop the gfs2 hunk based on feedback from Al Viro.
-Updated patch below
+git://git.berlios.de/gemini-board ib4220
 
-commit c440c404eeec8e26baf2a3be3d5ebf05d6808e54
-Author: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Date:   Fri Oct 29 14:47:47 2010 +0530
+Code by Paulius Zaleckas <paulius.zaleckas@gmail.com>
+and Janos Laube <janos.dev@gmail.com>.
 
-    fs: Remove i_nlink check from file system link callback
-    
-    Now that VFS check for inode->i_nlink == 0 and returns proper
-    error, remove similar check from file system
-    
-    Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Michał Mirosław <mirq-linux@rere.qmqm.pl>
+---
 
- fs/btrfs/inode.c    |    3 ---
- fs/ext3/namei.c     |    7 -------
- fs/ext4/namei.c     |    7 -------
- fs/jfs/namei.c      |    3 ---
- fs/reiserfs/namei.c |    4 ----
- fs/ubifs/dir.c      |   18 ------------------
- 6 files changed, 0 insertions(+), 42 deletions(-)
+ arch/arm/mach-gemini/board-nas4220b.c    |   53 ++++++++++++++++++++++++++++++
+ arch/arm/mach-gemini/common.h            |    2 +
+ arch/arm/mach-gemini/devices.c           |   52 +++++++++++++++++++++++++++++
+ arch/arm/mach-gemini/include/mach/gmac.h |   21 ++++++++++++
+ 4 files changed, 128 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-gemini/include/mach/gmac.h
 
-diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-index 64f99cf..fdeaa14 100644
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -4734,9 +4734,6 @@ static int btrfs_link(struct dentry *old_dentry, struct inode *dir,
- 	int err;
- 	int drop_inode = 0;
+diff --git a/arch/arm/mach-gemini/board-nas4220b.c b/arch/arm/mach-gemini/board-nas4220b.c
+index 2ba096d..ca6ec5a 100644
+--- a/arch/arm/mach-gemini/board-nas4220b.c
++++ b/arch/arm/mach-gemini/board-nas4220b.c
+@@ -26,6 +26,7 @@
+ #include <asm/mach/arch.h>
+ #include <asm/mach/time.h>
  
--	if (inode->i_nlink == 0)
--		return -ENOENT;
--
- 	/* do not allow sys_link's with other subvols of the same device */
- 	if (root->objectid != BTRFS_I(inode)->root->objectid)
- 		return -EPERM;
-diff --git a/fs/ext3/namei.c b/fs/ext3/namei.c
-index bce9dce..3edda98 100644
---- a/fs/ext3/namei.c
-+++ b/fs/ext3/namei.c
-@@ -2242,13 +2242,6 @@ static int ext3_link (struct dentry * old_dentry,
++#include <mach/gmac.h>
+ #include <mach/hardware.h>
+ #include <mach/global_reg.h>
  
- 	dquot_initialize(dir);
+@@ -91,13 +92,65 @@ static struct platform_device ib4220b_key_device = {
+ 	},
+ };
  
--	/*
--	 * Return -ENOENT if we've raced with unlink and i_nlink is 0.  Doing
--	 * otherwise has the potential to corrupt the orphan inode list.
--	 */
--	if (inode->i_nlink == 0)
--		return -ENOENT;
--
- retry:
- 	handle = ext3_journal_start(dir, EXT3_DATA_TRANS_BLOCKS(dir->i_sb) +
- 					EXT3_INDEX_EXTRA_TRANS_BLOCKS);
-diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index 92203b8..38c03bf 100644
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -2285,13 +2285,6 @@ static int ext4_link(struct dentry *old_dentry,
++static struct mdio_gpio_platform_data ib4220b_mdio = {
++	.mdc		= 22,
++	.mdio		= 21,
++	.phy_mask	= ~(1 << 1),
++};
++
++static struct platform_device ib4220b_phy_device = {
++	.name	= "mdio-gpio",
++	.id	= 0,
++	.dev	= {
++		.platform_data = &ib4220b_mdio,
++	},
++};
++
++static struct gemini_gmac_platform_data ib4220b_gmac_data = {
++	.bus_id[0] = "0:01",
++	.interface[0] = PHY_INTERFACE_MODE_RGMII,
++};
++
++static void __init gmac_ib4220b_init(void)
++{
++	unsigned int val;
++
++	val = __raw_readl(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_IO_DRIVING_CTRL);
++	val |= (0x3 << GMAC0_PADS_SHIFT) | (0x3 << GMAC1_PADS_SHIFT);
++	__raw_writel(val, IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_IO_DRIVING_CTRL);
++
++	val = (0x0 << GMAC0_RXDV_SKEW_SHIFT) | (0xf << GMAC0_RXC_SKEW_SHIFT) |
++		(0x7 << GMAC0_TXEN_SKEW_SHIFT) | (0xa << GMAC0_TXC_SKEW_SHIFT) |
++		(0x0 << GMAC1_RXDV_SKEW_SHIFT) | (0xf << GMAC1_RXC_SKEW_SHIFT) |
++		(0x7 << GMAC1_TXEN_SKEW_SHIFT) | (0xa << GMAC1_TXC_SKEW_SHIFT);
++	__raw_writel(val, IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_GMAC_CTRL_SKEW_CTRL);
++
++	__raw_writel(0x77777777, IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_GMAC0_DATA_SKEW_CTRL);
++	__raw_writel(0x77777777, IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_GMAC1_DATA_SKEW_CTRL);
++
++	val = __raw_readl(IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_ARBITRATION1_CTRL) & ~BURST_LENGTH_MASK;
++	val |= (0x20 << BURST_LENGTH_SHIFT);
++	__raw_writel(val, IO_ADDRESS(GEMINI_GLOBAL_BASE) +
++		GLOBAL_ARBITRATION1_CTRL);
++}
++
+ static void __init ib4220b_init(void)
+ {
+ 	gemini_gpio_init();
++	gmac_ib4220b_init();
++
+ 	platform_register_uart();
+ 	platform_register_pflash(SZ_16M, NULL, 0);
+ 	platform_device_register(&ib4220b_led_device);
+ 	platform_device_register(&ib4220b_key_device);
++	platform_device_register(&ib4220b_phy_device);
++	platform_register_ethernet(&ib4220b_gmac_data);
+ }
  
- 	dquot_initialize(dir);
+ MACHINE_START(NAS4220B, "Raidsonic NAS IB-4220-B")
+diff --git a/arch/arm/mach-gemini/common.h b/arch/arm/mach-gemini/common.h
+index 9392834..4eafed5 100644
+--- a/arch/arm/mach-gemini/common.h
++++ b/arch/arm/mach-gemini/common.h
+@@ -13,6 +13,7 @@
+ #define __GEMINI_COMMON_H__
  
--	/*
--	 * Return -ENOENT if we've raced with unlink and i_nlink is 0.  Doing
--	 * otherwise has the potential to corrupt the orphan inode list.
--	 */
--	if (inode->i_nlink == 0)
--		return -ENOENT;
--
- retry:
- 	handle = ext4_journal_start(dir, EXT4_DATA_TRANS_BLOCKS(dir->i_sb) +
- 					EXT4_INDEX_EXTRA_TRANS_BLOCKS);
-diff --git a/fs/jfs/namei.c b/fs/jfs/namei.c
-index 231ca4a..2619157 100644
---- a/fs/jfs/namei.c
-+++ b/fs/jfs/namei.c
-@@ -808,9 +808,6 @@ static int jfs_link(struct dentry *old_dentry,
- 	if (ip->i_nlink == JFS_LINK_MAX)
- 		return -EMLINK;
+ struct mtd_partition;
++struct gemini_gmac_platform_data;
  
--	if (ip->i_nlink == 0)
--		return -ENOENT;
--
- 	dquot_initialize(dir);
+ extern void gemini_map_io(void);
+ extern void gemini_init_irq(void);
+@@ -21,6 +22,7 @@ extern void gemini_gpio_init(void);
  
- 	tid = txBegin(ip->i_sb, 0);
-diff --git a/fs/reiserfs/namei.c b/fs/reiserfs/namei.c
-index ba5f51e..ae303ca 100644
---- a/fs/reiserfs/namei.c
-+++ b/fs/reiserfs/namei.c
-@@ -1122,10 +1122,6 @@ static int reiserfs_link(struct dentry *old_dentry, struct inode *dir,
- 		reiserfs_write_unlock(dir->i_sb);
- 		return -EMLINK;
- 	}
--	if (inode->i_nlink == 0) {
--		reiserfs_write_unlock(dir->i_sb);
--		return -ENOENT;
--	}
+ /* Common platform devices registration functions */
+ extern int platform_register_uart(void);
++extern int platform_register_ethernet(struct gemini_gmac_platform_data *pdata);
+ extern int platform_register_pflash(unsigned int size,
+ 				    struct mtd_partition *parts,
+ 				    unsigned int nr_parts);
+diff --git a/arch/arm/mach-gemini/devices.c b/arch/arm/mach-gemini/devices.c
+index 6b52525..ead7ab1 100644
+--- a/arch/arm/mach-gemini/devices.c
++++ b/arch/arm/mach-gemini/devices.c
+@@ -17,6 +17,7 @@
+ #include <mach/irqs.h>
+ #include <mach/hardware.h>
+ #include <mach/global_reg.h>
++#include <mach/gmac.h>
  
- 	/* inc before scheduling so reiserfs_unlink knows we are here */
- 	inc_nlink(inode);
-diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
-index 14f64b6..7217d67 100644
---- a/fs/ubifs/dir.c
-+++ b/fs/ubifs/dir.c
-@@ -522,24 +522,6 @@ static int ubifs_link(struct dentry *old_dentry, struct inode *dir,
- 	ubifs_assert(mutex_is_locked(&dir->i_mutex));
- 	ubifs_assert(mutex_is_locked(&inode->i_mutex));
+ static struct plat_serial8250_port serial_platform_data[] = {
+ 	{
+@@ -45,6 +46,57 @@ int platform_register_uart(void)
+ 	return platform_device_register(&serial_device);
+ }
  
--	/*
--	 * Return -ENOENT if we've raced with unlink and i_nlink is 0.  Doing
--	 * otherwise has the potential to corrupt the orphan inode list.
--	 *
--	 * Indeed, consider a scenario when 'vfs_link(dirA/fileA)' and
--	 * 'vfs_unlink(dirA/fileA, dirB/fileB)' race. 'vfs_link()' does not
--	 * lock 'dirA->i_mutex', so this is possible. Both of the functions
--	 * lock 'fileA->i_mutex' though. Suppose 'vfs_unlink()' wins, and takes
--	 * 'fileA->i_mutex' mutex first. Suppose 'fileA->i_nlink' is 1. In this
--	 * case 'ubifs_unlink()' will drop the last reference, and put 'inodeA'
--	 * to the list of orphans. After this, 'vfs_link()' will link
--	 * 'dirB/fileB' to 'inodeA'. This is a problem because, for example,
--	 * the subsequent 'vfs_unlink(dirB/fileB)' will add the same inode
--	 * to the list of orphans.
--	 */
--	 if (inode->i_nlink == 0)
--		 return -ENOENT;
--
- 	err = dbg_check_synced_i_size(inode);
- 	if (err)
- 		return err;
++
++static struct resource gmac_resources[] = {
++	{
++		.start	= GEMINI_TOE_BASE,
++		.end	= GEMINI_TOE_BASE + 0xffff,
++		.flags	= IORESOURCE_MEM,
++	},
++	{
++		.start	= IRQ_GMAC0,
++		.end	= IRQ_GMAC0,
++		.flags	= IORESOURCE_IRQ,
++	},
++	{
++		.start	= IRQ_GMAC1,
++		.end	= IRQ_GMAC1,
++		.flags	= IORESOURCE_IRQ,
++	},
++};
++
++static u64 gmac_dmamask = 0xffffffffUL;
++
++static struct platform_device ethernet_device = {
++	.name	= "gemini-gmac",
++	.id	= 0,
++	.dev	= {
++		.dma_mask = &gmac_dmamask,
++		.coherent_dma_mask = 0xffffffff,
++	},
++	.num_resources	= ARRAY_SIZE(gmac_resources),
++	.resource	= gmac_resources,
++};
++
++int __init platform_register_ethernet(struct gemini_gmac_platform_data *pdata)
++{
++	unsigned int reg = __raw_readl(IO_ADDRESS(GEMINI_GLOBAL_BASE) + GLOBAL_MISC_CTRL);
++
++	reg &= ~(GMAC_GMII | GMAC_1_ENABLE);
++
++	if (pdata->bus_id[1])
++		reg |= GMAC_1_ENABLE;
++	else if (pdata->interface[0] == PHY_INTERFACE_MODE_GMII)
++		reg |= GMAC_GMII;		
++
++	__raw_writel(reg, IO_ADDRESS(GEMINI_GLOBAL_BASE) + GLOBAL_MISC_CTRL);
++
++	ethernet_device.dev.platform_data = pdata;
++
++	return platform_device_register(&ethernet_device);
++}
++
++
+ static struct resource flash_resource = {
+ 	.start	= GEMINI_FLASH_BASE,
+ 	.flags	= IORESOURCE_MEM,
+diff --git a/arch/arm/mach-gemini/include/mach/gmac.h b/arch/arm/mach-gemini/include/mach/gmac.h
+new file mode 100644
+index 0000000..c6eeacc
+--- /dev/null
++++ b/arch/arm/mach-gemini/include/mach/gmac.h
+@@ -0,0 +1,21 @@
++/*
++ * Gemini GMAC specific defines
++ *
++ * Copyright (C) 2008, Paulius Zaleckas <paulius.zaleckas@teltonika.lt>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++#ifndef __MACH_GMAC_H__
++#define __MACH_GMAC_H__
++
++#include <linux/phy.h>
++
++struct gemini_gmac_platform_data {
++	char *bus_id[2]; /* NULL means that this port is not used */
++	phy_interface_t interface[2];
++};
++
++#endif /* __MACH_GMAC_H__ */
+-- 
+1.7.1
+
