@@ -1,152 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934239Ab0J2UDX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 16:03:23 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:43134 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754404Ab0J2UDV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 16:03:21 -0400
-Date: Fri, 29 Oct 2010 16:03:19 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Daniel Drake <dsd@laptop.org>, Jason Baron <jbaron@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 6/7] x86, ftrace: Use safe noops, drop trap test
-Message-ID: <20101029200319.GB10702@Krystal>
-References: <20101029190050.674141729@goodmis.org> <20101029190136.250239408@goodmis.org>
+	id S1761899Ab0J2UGJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 16:06:09 -0400
+Received: from claw.goop.org ([74.207.240.146]:37746 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761588Ab0J2UGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 16:06:08 -0400
+Message-ID: <4CCB292E.9090602@goop.org>
+Date: Fri, 29 Oct 2010 13:06:06 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101029190136.250239408@goodmis.org>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 16:02:47 up 37 days, 4 min,  4 users,  load average: 0.11, 0.17,
-	0.14
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Vasiliy G Tolstov <v.tolstov@selfip.ru>
+Subject: Re: [GIT PULL] Small Xen bugfixes
+References: <4CCB1906.4000608@goop.org> <AANLkTi=g5sdiWSaLUHAATQn-1=jPqtc=RL6SpYSMYn98@mail.gmail.com> <4CCB1E71.3060600@goop.org>
+In-Reply-To: <4CCB1E71.3060600@goop.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> From: H. Peter Anvin <hpa@zytor.com>
-> 
-> Always use a safe 5-byte noop sequence.  Drop the trap test, since it
-> is known to return false negatives on some virtualization platforms on
-> 32 bits.  The resulting code is both simpler and safer.
-> 
-> Cc: Daniel Drake <dsd@laptop.org>
-> Cc: Jason Baron <jbaron@redhat.com>
-> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+ On 10/29/2010 12:20 PM, Jeremy Fitzhardinge wrote:
+>  On 10/29/2010 12:08 PM, Linus Torvalds wrote:
+>> On Fri, Oct 29, 2010 at 11:57 AM, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+>>>    * fix dom0 boot on systems whose E820 doesn't completely cover the
+>>>      ISA address space.  This fixes a crash on a Dell R310.
+>> Hmm. This clashes with my current tree.
+> Bugger, so it does.  I just did a test merge with no complaint though;
+> what happened?
+>
+> I'll redo the patch anyway to fix the below.
+>
+>> And that conflict is trivial to fix up, but the thing is, I think the
+>> patch that comes from your tree is worse than what is already there.
+>>
+>> Why is that simple unconditional
+>>
+>>     e820_add_region(ISA_START_ADDRESS, ISA_END_ADDRESS - ISA_START_ADDRESS,
+>>            E820_RESERVED);
+>>
+>> not just always the right thing? Why do you have a separate hack for
+>> dom0 in xen_release_chunk() instead? That just looks bogus.
+> Yes, we actually had this discussion.  I was for making the
+> e820_add_region unconditional, and Ian's counter was that it could be
+> done in the common code rather than Xen-specific.
+>
+>> The normal logic we use on PC's is to just always reserve the low 64kB
+>> of memory, and the whole ISA space. Why doesn't Xen just do the same?
+> The specific issue is that the Xen domain returns any memory that's not
+> covered by an E820 entry back to Xen, mostly to make sure that memory
+> isn't wasted by being shadowed by PCI devices.  But it was also doing
+> this in the sub-1M region, which on all the machines I've tested on is
+> completely covered.  But on a Dell R310 there's a little 2-page gap
+> where some ACPI stuff is lurking, that was being released back to Xen so
+> it couldn't be accessed from Linux any more.
+>
+> The fix is to just make sure the whole low region is covered (or at
+> least the 640k-1M space).
 
-Looks good to me.
+Hm, I see.  This Dell machine stashes the MPS table in 2 pages just
+*below* 640k, so the ISA_START_ADDRESS-ISA_END_ADDRESS reserved range
+doesn't cover it.
 
-Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+There's three ways to fix this:
 
-> Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  arch/x86/kernel/alternative.c |   69 +++++++++--------------------------------
->  1 files changed, 15 insertions(+), 54 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-> index a36bb90..0b30214 100644
-> --- a/arch/x86/kernel/alternative.c
-> +++ b/arch/x86/kernel/alternative.c
-> @@ -644,65 +644,26 @@ void *__kprobes text_poke_smp(void *addr, const void *opcode, size_t len)
->  
->  #if defined(CONFIG_DYNAMIC_FTRACE) || defined(HAVE_JUMP_LABEL)
->  
-> -unsigned char ideal_nop5[IDEAL_NOP_SIZE_5];
-> +#ifdef CONFIG_X86_64
-> +unsigned char ideal_nop5[5] = { 0x66, 0x66, 0x66, 0x66, 0x90 };
-> +#else
-> +unsigned char ideal_nop5[5] = { 0x3e, 0x8d, 0x74, 0x26, 0x00 };
-> +#endif
->  
->  void __init arch_init_ideal_nop5(void)
->  {
-> -	extern const unsigned char ftrace_test_p6nop[];
-> -	extern const unsigned char ftrace_test_nop5[];
-> -	extern const unsigned char ftrace_test_jmp[];
-> -	int faulted = 0;
-> -
->  	/*
-> -	 * There is no good nop for all x86 archs.
-> -	 * We will default to using the P6_NOP5, but first we
-> -	 * will test to make sure that the nop will actually
-> -	 * work on this CPU. If it faults, we will then
-> -	 * go to a lesser efficient 5 byte nop. If that fails
-> -	 * we then just use a jmp as our nop. This isn't the most
-> -	 * efficient nop, but we can not use a multi part nop
-> -	 * since we would then risk being preempted in the middle
-> -	 * of that nop, and if we enabled tracing then, it might
-> -	 * cause a system crash.
-> +	 * There is no good nop for all x86 archs.  This selection
-> +	 * algorithm should be unified with the one in find_nop_table(),
-> +	 * but this should be good enough for now.
->  	 *
-> -	 * TODO: check the cpuid to determine the best nop.
-> +	 * For cases other than the ones below, use the safe (as in
-> +	 * always functional) defaults above.
->  	 */
-> -	asm volatile (
-> -		"ftrace_test_jmp:"
-> -		"jmp ftrace_test_p6nop\n"
-> -		"nop\n"
-> -		"nop\n"
-> -		"nop\n"  /* 2 byte jmp + 3 bytes */
-> -		"ftrace_test_p6nop:"
-> -		P6_NOP5
-> -		"jmp 1f\n"
-> -		"ftrace_test_nop5:"
-> -		".byte 0x66,0x66,0x66,0x66,0x90\n"
-> -		"1:"
-> -		".section .fixup, \"ax\"\n"
-> -		"2:	movl $1, %0\n"
-> -		"	jmp ftrace_test_nop5\n"
-> -		"3:	movl $2, %0\n"
-> -		"	jmp 1b\n"
-> -		".previous\n"
-> -		_ASM_EXTABLE(ftrace_test_p6nop, 2b)
-> -		_ASM_EXTABLE(ftrace_test_nop5, 3b)
-> -		: "=r"(faulted) : "0" (faulted));
-> -
-> -	switch (faulted) {
-> -	case 0:
-> -		pr_info("converting mcount calls to 0f 1f 44 00 00\n");
-> -		memcpy(ideal_nop5, ftrace_test_p6nop, IDEAL_NOP_SIZE_5);
-> -		break;
-> -	case 1:
-> -		pr_info("converting mcount calls to 66 66 66 66 90\n");
-> -		memcpy(ideal_nop5, ftrace_test_nop5, IDEAL_NOP_SIZE_5);
-> -		break;
-> -	case 2:
-> -		pr_info("converting mcount calls to jmp . + 5\n");
-> -		memcpy(ideal_nop5, ftrace_test_jmp, IDEAL_NOP_SIZE_5);
-> -		break;
-> -	}
-> -
-> +#ifdef CONFIG_X86_64
-> +	/* Don't use these on 32 bits due to broken virtualizers */
-> +	if (boot_cpu_data.x86_vendor == X86_VENDOR_INTEL)
-> +		memcpy(ideal_nop5, p6_nops[5], 5);
-> +#endif
->  }
->  #endif
-> -- 
-> 1.7.1
-> 
-> 
+    * not free memory below 1M (Ian's current patch)
+    * fill any E820 gaps below 1M
+    * reserve all memory below 1M
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+The 3rd is certainly simplest, at the cost of wasting a trivial amount
+of memory.  Unfortunately it crashes early.  Sigh, will try and sort it
+out this afternoon.
+
+    J
