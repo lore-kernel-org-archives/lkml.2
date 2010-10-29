@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933933Ab0J2O2G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 10:28:06 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:27815 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933902Ab0J2O2F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 10:28:05 -0400
-X-Greylist: delayed 449 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Oct 2010 10:28:04 EDT
-Date: Fri, 29 Oct 2010 16:10:26 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Johannes Berg <johannes@sipsolutions.net>
-cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] mac80211 failure to check kmalloc return value in key_key_read
- could lead to unpleasant surprises
-Message-ID: <alpine.LNX.2.00.1010291544510.8123@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S933955Ab0J2O3N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 10:29:13 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:36225 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S933902Ab0J2O3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 10:29:11 -0400
+X-Authenticated: #4630777
+X-Provags-ID: V01U2FsdGVkX1+QdpctWFuQ9t1knHFInfbrRI8CUqd3yA6PurRjAu
+	JALI8HGN0wc+lv
+Date: Fri, 29 Oct 2010 16:27:52 +0200
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: Ensure FMODE_NONOTIFY is not set by userspace
+Message-ID: <20101029142752.GF26242@lsanfilippo.unix.rd.tt.avira.com>
+References: <20101029100217.GC26242@lsanfilippo.unix.rd.tt.avira.com> <1288360370.3017.15.camel@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288360370.3017.15.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I noticed two small issues in mac80211/debugfs_key.c::key_key_read while 
-reading through the code. Patch below.
+On Fri, Oct 29, 2010 at 09:52:50AM -0400, Eric Paris wrote:
+> 
+> Did you find a place where the user was able to set FMODE_NONOTIFY?
+> That would be a problem.  But that's not what is happening here and
+> that's not what you are fixing.
 
-The key_key_read() function returns ssize_t and the value that's actually 
-returned is the return value of simple_read_from_buffer() which also 
-returns ssize_t, so let's hold the return value in a ssize_t local 
-variable rather than a int one.
+I know its not happening here, but doing something like
 
-Also, memory is allocated dynamically with kmalloc() which can fail, but 
-the return value of kmalloc() is not checked, so we may end up operating 
-on a null pointer further on. So check for a NULL return and bail out with 
--ENOMEM in that case.
+#define MY_FLAG 0x1000000
 
-Please keep me on CC on replies since I'm not subscribed to 
-linux-wireless.
+ open("file/within/fanotify_protection", O_RDONLY | MY_FLAG);
 
+from userspace is all that is needed to be ignored by fanotify :)
+There is nothing that checks if this flag has been set by userspace (or 
+did I miss something?)
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- debugfs_key.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+Beside this since the flag should only be set within create_fd() or
+fanotify_init() there should never be a situation where 
+fsnotify_open() is called with a FMODE_NONOTIFY set (by the kernel).
 
-diff --git a/net/mac80211/debugfs_key.c b/net/mac80211/debugfs_key.c
-index 4aa47d0..1243d1d 100644
---- a/net/mac80211/debugfs_key.c
-+++ b/net/mac80211/debugfs_key.c
-@@ -203,9 +203,13 @@ static ssize_t key_key_read(struct file *file, char __user *userbuf,
- 			    size_t count, loff_t *ppos)
- {
- 	struct ieee80211_key *key = file->private_data;
--	int i, res, bufsize = 2 * key->conf.keylen + 2;
-+	int i, bufsize = 2 * key->conf.keylen + 2;
- 	char *buf = kmalloc(bufsize, GFP_KERNEL);
- 	char *p = buf;
-+	ssize_t res;
-+
-+	if (!buf)
-+		return -ENOMEM;
- 
- 	for (i = 0; i < key->conf.keylen; i++)
- 		p += scnprintf(p, bufsize + buf - p, "%02x", key->conf.key[i]);
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-Plain text mails only, please      http://www.expita.com/nomime.html
-Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
+Regards,
+Lino 
