@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933755Ab0J2LkW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 07:40:22 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:60146 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932470Ab0J2LkT (ORCPT
+	id S933836Ab0J2LuF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 07:50:05 -0400
+Received: from mail001.aei.ca ([206.123.6.130]:46545 "EHLO mail001.aei.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932534Ab0J2LuC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 07:40:19 -0400
-Date: Fri, 29 Oct 2010 13:39:34 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Borislav Petkov <bp@alien8.de>, john stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "avi@redhat.com" <avi@redhat.com>,
-        "mtosatti@redhat.com" <mtosatti@redhat.com>
-Subject: Re: [bisected] Clocksource tsc unstable git
-Message-ID: <20101029113934.GB21125@aftab>
-References: <20101026131843.GC17852@aftab>
- <20101026135808.GB1672@arch.trippelsdorf.de>
- <alpine.LFD.2.00.1010261747250.3115@localhost6.localdomain6>
- <1288120736.2645.9.camel@localhost>
- <20101027142622.GA1555@arch.trippelsdorf.de>
- <20101027182608.GA1580@arch.trippelsdorf.de>
- <20101029081831.GA7149@liondog.tnic>
- <20101029083013.GA1553@arch.trippelsdorf.de>
- <20101029102713.GA21125@aftab>
- <20101029113433.GB1553@arch.trippelsdorf.de>
+	Fri, 29 Oct 2010 07:50:02 -0400
+From: Ed Tomlinson <edt@aei.ca>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [Qemu-devel] Re: [PATCH] Implement a virtio GPU transport
+Date: Fri, 29 Oct 2010 07:49:57 -0400
+User-Agent: KMail/1.13.5 (Linux/2.6.36-crc+; KDE/4.5.2; x86_64; ; )
+Cc: virtualization@lists.linux-foundation.org,
+        Ian Molton <ian.molton@collabora.co.uk>, Avi Kivity <avi@redhat.com>,
+        virtualization@lists.osdl.org, linux-kernel@vger.kernel.org,
+        QEMU Developers <qemu-devel@nongnu.org>
+References: <4CAC9CD1.2050601@collabora.co.uk> <4CC8226F.5080807@collabora.co.uk> <201010292148.01167.rusty@rustcorp.com.au>
+In-Reply-To: <201010292148.01167.rusty@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101029113433.GB1553@arch.trippelsdorf.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <201010290749.58283.edt@aei.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 29, 2010 at 07:34:33AM -0400, Markus Trippelsdorf wrote:
-> > Markus, can you verify this on your system by compiling x86info from
-> > git://git.choralone.org/git/x86info and doing
+On Friday 29 October 2010 07:18:00 Rusty Russell wrote:
+> On Wed, 27 Oct 2010 11:30:31 pm Ian Molton wrote:
+> > On 19/10/10 11:39, Avi Kivity wrote:
+> > > On 10/19/2010 12:31 PM, Ian Molton wrote:
 > > 
-> > ./lsmsr Int
+> > >>> 2. should start with a patch to the virtio-pci spec to document what
+> > >>> you're doing
+> > >>
+> > >> Where can I find that spec?
+> > >
+> > > http://ozlabs.org/~rusty/virtio-spec/
+> > 
+> > Ok, but I'm not patching that until theres been some review.
 > 
+> Fair enough; it's a bit of a PITA to patch, so it makes sense to get the
+> details nailed down first.
 > 
-> x86info v1.28beta.  Dave Jones 2001-2010
-> Feedback to <davej@redhat.com>.
+> > There are links to the associated qemu and guest OS changes in my 
+> > original email.
+> > 
+> > >> It doesnt, at present... It could be changed fairly easily ithout
+> > >> breaking anything if that happens though.
+> > >
+> > > The hypervisor and the guest can be changed independently. The driver
+> > > should be coded so that it doesn't depend on hypervisor implementation
+> > > details.
+> > 
+> > Fixed - updated patch tested and attached.
 > 
-> Found 4 CPUs
-> --------------------------------------------------------------------------
-> CPU #1
-> EFamily: 1 EModel: 0 Family: 15 Model: 4 Stepping: 2
-> CPU Model: Quad-Core Opteron/Phenom II (RB-C2)
+> OK. FWIW, I think this is an awesome idea.  I understand others are skeptical,
+> but this seems simple and if it works and you're happy to maintain it I'm
+> happy to let you do it :)
 
-well, x86info doesn't help - there's a lsmsr tool which is being built
-too but no need, I can infer the info from your revision: your CPU is
-RB-C2 which does SMI initiated C1E.
+>From a kvm user's perspective this is a GREAT idea.  Looks like Ian and friends have
+though about better solutions down the line and have made their code easy
+to superceed.  If this is really the case I vote to get this in qemu/kvm asap -
+software opengl can be a real pain.
 
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Thanks
+Ed Tomlinson
