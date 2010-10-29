@@ -1,85 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933601Ab0J2IaY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 04:30:24 -0400
-Received: from smtp-out-009.synserver.de ([212.40.180.9]:1126 "EHLO
-	smtp-out-008.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756013Ab0J2IaU (ORCPT
+	id S1760726Ab0J2Ibv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 04:31:51 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:36462 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1760380Ab0J2Ibn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 04:30:20 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: markus@trippelsdorf.de
-X-SynServer-PPID: 23885
-Date: Fri, 29 Oct 2010 10:30:13 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Borislav Petkov <bp@alien8.de>, john stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@amd64.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        heiko.carstens@de.ibm.com, a.p.zijlstra@chello.nl, avi@redhat.com,
-        mtosatti@redhat.com
-Subject: Re: [bisected] Clocksource tsc unstable git
-Message-ID: <20101029083013.GA1553@arch.trippelsdorf.de>
-References: <20101026112052.GA1672@arch.trippelsdorf.de>
- <20101026131843.GC17852@aftab>
- <20101026135808.GB1672@arch.trippelsdorf.de>
- <alpine.LFD.2.00.1010261747250.3115@localhost6.localdomain6>
- <1288120736.2645.9.camel@localhost>
- <20101027142622.GA1555@arch.trippelsdorf.de>
- <20101027182608.GA1580@arch.trippelsdorf.de>
- <20101029081831.GA7149@liondog.tnic>
+	Fri, 29 Oct 2010 04:31:43 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX1+jnEVkpfujUKRaEol/+MI1KSS4Ss/mDRBw+wOtCW
+	PutoOtKjFkHbv7
+From: Toralf =?utf-8?q?F=C3=B6rster?= <toralf.foerster@gmx.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: kmemleak disabled itself in 2.6.36
+Date: Fri, 29 Oct 2010 10:31:28 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.4.5; i686; ; )
+Cc: linux-kernel@vger.kernel.org, "Luis R. Rodriguez" <lrodriguez@atheros.com>
+References: <201010272112.59520.toralf.foerster@gmx.de> <201010281513.26185.toralf.foerster@gmx.de> <1288272802.10238.216.camel@e102109-lin.cambridge.arm.com>
+In-Reply-To: <1288272802.10238.216.camel@e102109-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101029081831.GA7149@liondog.tnic>
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201010291031.29316.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 29, 2010 at 10:18:31AM +0200, Borislav Petkov wrote:
-> On Wed, Oct 27, 2010 at 08:26:08PM +0200, markus@trippelsdorf.de wrote:
-> > During my search for a reliable testcase I found out that kvm guests also
-> > showed random hangs (that didn't happen in v2.6.36) here. These hangs last a
-> > few seconds each, during which the mouse is not movable at all.
+
+Catalin Marinas wrote at 15:33:22
+> On Thu, 2010-10-28 at 14:13 +0100, Toralf Förster wrote:
+> > Catalin Marinas wrote at 10:33:09
 > > 
-> > So I ran git-bisect with this testcase and the result of the bisection is:
+> > > On Wed, 2010-10-27 at 20:12 +0100, Toralf Förster wrote:
+> > > > I'm unsure whether this happens due to a
+> > > > $> sudo su -c "echo clear > /sys/kernel/debug/kmemleak"
+> > > > or while regular scanning, but anyway seems not to be normal, or ?
+> > > > 
+> > > > 2010-10-27T20:42:21.697+02:00 n22 kernel: flush-254:0: page
+> > > > allocation failure. order:0, mode:0x0
+> > > 
+> > > [...]
+> > > 
+> > > > 2010-10-27T20:42:21.699+02:00 n22 kernel: kmemleak: Cannot allocate a
+> > > > kmemleak_object structure 2010-10-27T20:42:21.699+02:00 n22 kernel:
+> > > > Pid: 15475, comm: flush-254:0 Not tainted 2.6.36 #2
+> > > 
+> > > [...]
+> > > 
+> > > > 2010-10-27T20:42:21.700+02:00 n22 kernel: kmemleak: Kernel memory
+> > > > leak detector disabled
+> > > 
+> > > Are you running out of memory on your system? Kmemleak tried to
+> > > allocate a structure but the slab allocator failed to get page.
+> > > Kmemleak disables itself in such situations but the problem is
+> > > somewhere else (not enough memory?).
 > > 
-> > 34f971f6f7988be4d014eec3e3526bee6d007ffa is the first bad commit
-> > commit 34f971f6f7988be4d014eec3e3526bee6d007ffa
-> > Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Date:   Wed Sep 22 13:53:15 2010 +0200
-> >
+> > I don't think so - no big load to that system, no excessive compiler runs
+> > ...
 > 
-> ...
+> What does /proc/meminfo say after you got this error?
 > 
-> >
-> > Reverting the commit solves the kvm hang issue. (If this issue is
-> > related to my original tsc problem is of course open for debate, but I
-> > have a strong hunch it is.)
+> Which slab allocator are you using?
 > 
-> Well, what do you know, the temporary "slowdown" triggered on my setup
-> too. After waiting a minute maybe, the machine recovered and guess what
-> appeared in dmesg:
-> 
-> [44729.650859] Clocksource tsc unstable (delta = -8615263009 ns)
-> [44729.656229] Switching to clocksource hpet
-> 
-> I've reverted the changeset above and will run without it to check
-> whether it makes any difference.
+> Catalin
 
-After further testing I've found out that the tsc- and the kvm-issue are
-unrelated. IOW I get these "slowdowns" even with 34f971f6f7988be4
-reverted. 
+These are the settings :
 
-I guess John was right when he wrote:
-> From your dmesg, I'd guess the hpet is the watchdog clocksource, so I
-> be on the lookout for hpet related changes.
->
-> Maybe does reverting 995bd3bb5c78f3ff71339803c0b8337ed36d64fb hide the
-> issue?  
+tfoerste@n22 ~ $ zgrep ^CONFIG_SL.B /proc/config.gz 
+CONFIG_SLAB=y
+CONFIG_SLABINFO=y
 
-Because with 995bd3bb5c78f reverted I never had a single "slowdown" here.
+I didn't took a look into  /proc/meminfo when it happened.
+
 -- 
-Markus
+MfG/Kind regards
+Toralf Förster
+
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+
