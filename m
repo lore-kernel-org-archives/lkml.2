@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933964Ab0J2Owg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 10:52:36 -0400
-Received: from thunk.org ([69.25.196.29]:48785 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933926Ab0J2Owb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 10:52:31 -0400
-Date: Fri, 29 Oct 2010 10:52:12 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Chris Mason <chris.mason@oracle.com>, Ingo Molnar <mingo@elte.hu>,
-        Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Nick Piggin <npiggin@suse.de>, Arjan van de Ven <arjan@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: 2.6.36 io bring the system to its knees
-Message-ID: <20101029145212.GA21205@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Pekka Enberg <penberg@kernel.org>,
-	Chris Mason <chris.mason@oracle.com>, Ingo Molnar <mingo@elte.hu>,
-	Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
-	linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Jens Axboe <axboe@kernel.dk>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Nick Piggin <npiggin@suse.de>,
-	Arjan van de Ven <arjan@infradead.org>,
-	Thomas Gleixner <tglx@linutronix.de>
-References: <AANLkTimt7wzR9RwGWbvhiOmot_zzayfCfSh_-v6yvuAP@mail.gmail.com>
- <AANLkTikRKVBzO=ruy=JDmBF28NiUdJmAqb4-1VhK0QBX@mail.gmail.com>
- <AANLkTinzJ9a+9w7G5X0uZpX2o-L8E6XW98VFKoF1R_-S@mail.gmail.com>
- <AANLkTinDDG0ZkNFJZXuV9k3nJgueUW=ph8AuHgyeAXji@mail.gmail.com>
- <AANLkTikvSGNE7uGn5p0tfJNg4Hz5WRmLRC8cXu7+GhMk@mail.gmail.com>
- <20101028090002.GA12446@elte.hu>
- <AANLkTinoGGLTN2JRwjJtF6Ra5auZVg+VSa=TyrtAkDor@mail.gmail.com>
- <20101028133036.GA30565@elte.hu>
- <20101028170132.GY27796@think>
- <AANLkTikgO=n88ZAQ6EYAg1+aC1d0+o923FYyhkOouaH5@mail.gmail.com>
+	id S1758009Ab0J2OzR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 10:55:17 -0400
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:27180 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757398Ab0J2OzM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 10:55:12 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: dwXfj8sVM1mZd.baM0V0XHG9dvaV15cY2AwcPTV.h9Kk9PU
+ MSorjB2b8GhLjfsyTQsGUAmfKQzVx2X6MMEbcbCO2tK94ZvSXVVCc_QYQo.T
+ CtrKC9hQvB6a7HUH0wP..aujUJVAYEe1V5KtwsVCVvHwafq58wAYWP944Kef
+ ZcggHb5LsbH5vkeK9Y5aGdgLH9asmXAI3LH8aFrVpvqKgZ9c0.AA9x7.psPU
+ Q0PH1H0uYSdmul_GAr1qrGwHASgO4h6YljgSKvtXyEg--
+X-Yahoo-Newman-Property: ymail-3
+Date: Fri, 29 Oct 2010 09:55:08 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>, Tejun Heo <tj@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Brian Gerst <brgerst@gmail.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org, mingo@elte.hu
+Subject: Re: [PATCH] numa: fix slab_node(MPOL_BIND)
+In-Reply-To: <20101028140725.755aea50.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.00.1010290952190.20370@router.home>
+References: <AANLkTinnc3vBSmewf7ixuOSDYxG+5VNiGaB-vSrDNRiO@mail.gmail.com> <1288158182-1753-1-git-send-email-brgerst@gmail.com> <1288159670.2652.181.camel@edumazet-laptop> <1288173442.15336.1490.camel@twins> <1288186405.2709.117.camel@edumazet-laptop>
+ <4CC82C2F.1020707@kernel.org> <1288187870.2709.128.camel@edumazet-laptop> <4CC83067.5000009@kernel.org> <1288189461.2709.144.camel@edumazet-laptop> <1288190387.2709.147.camel@edumazet-laptop> <4CC83A85.3070608@kernel.org> <1288192868.2709.152.camel@edumazet-laptop>
+ <4CC846D5.50106@kernel.org> <1288195668.2709.167.camel@edumazet-laptop> <1288200823.5619.46.camel@edumazet-laptop> <AANLkTikmNc7qqDzoff_3i_FRbG=pmOC7TG3eeZnmvaTD@mail.gmail.com> <alpine.DEB.2.00.1010281154150.26782@router.home>
+ <20101028140725.755aea50.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikgO=n88ZAQ6EYAg1+aC1d0+o923FYyhkOouaH5@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 28, 2010 at 08:57:49PM +0300, Pekka Enberg wrote:
-> Don't we need to call ext4_should_writeback_data() before we drop the
-> lock? It pokes at ->i_mode which needs ->i_mutex AFAICT.
+On Thu, 28 Oct 2010, Andrew Morton wrote:
 
-No, it should be fine.  It's not like a file is going to change from
-being a regular file to a directory or vice versa.  :-)
+> On Thu, 28 Oct 2010 11:55:18 -0500 (CDT)
+> Christoph Lameter <cl@linux.com> wrote:
+>
+> > On Thu, 28 Oct 2010, Linus Torvalds wrote:
+> >
+> > > And so does - although less obviously - mm/vmscan.c for the
+> > > wait_iff_confgested() thing.
+> > >
+> > > So are those buggy too, since first_zones_zonelist() can apparently return NULL?
+> >
+> > The code is fine.
+> >
+> > first_zones_zonelist() can only return NULL for the case that a nodemask
+> > was specified and the code in vmscan.c does not specify a nodemask.
+>
+> Geeze, how did you work that out and how the heck was anyone else
+> supposed to know this :(
 
->From a quick inspection it looks OK, but I haven't had the time to
-look more closely to be 100% sure, and of course I haven't run it
-through a battery of regression tests.  For normal usage it should be
-fine though.
+Look at the code and how it was modified by Lee. The initial assumption
+before his patch was that the zonelist contains all zones of the system.
+Therefore you will allways find all possible zone types in the system.
+The function did not contain a check for the end of the zonelist and does
+not now for the nodemask == NULL.
 
-Aidar, if you'd be willing to try it with this patch applied, and with
-the file system mounted data=writeback, and then let me know what the
-latencytop reports, that would be useful.  I'm fairly sure that fixing
-llseek() probably won't make that much difference, since it will
-probably spread things out to other places, but it would be good to
-make the experiment.
+However, the modification to filter the zonelist then makes it possible to
+have subsets of zones not containing the requested zone types now.
+Therefore Lee added a check for the end of the zonelist for that case.
 
-We will probably also need to use the uninitialized bit for protecting
-data from showing up after a crash for extent-based files, and turning
-on data=writeback is a good way to simulate that.  (Sorry, no way
-we're going to make a change like that this merge cycle, but that
-might be something we could do for 2.6.38.)  But I am curious to see
-what are the next things that come up as being problematic after that.
+Could be better documented. Took me some staring at the code to figure it
+out.
 
-Thanks,
-
-					- Ted
