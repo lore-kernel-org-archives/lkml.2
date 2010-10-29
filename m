@@ -1,191 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761835Ab0J2T67 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 15:58:59 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:34860
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756043Ab0J2T64 (ORCPT
+	id S1761877Ab0J2UCv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 16:02:51 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:35766 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754404Ab0J2UCt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 15:58:56 -0400
-Date: Fri, 29 Oct 2010 12:59:20 -0700 (PDT)
-Message-Id: <20101029.125920.189692530.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 29 Oct 2010 16:02:49 -0400
+Date: Fri, 29 Oct 2010 16:02:45 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jason Baron <jbaron@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        David Daney <ddaney@caviumnetworks.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        David Miller <davem@davemloft.net>, Richard Henderson <rth@redhat.com>
+Subject: Re: [PATCH 7/7] jump label: Add work around to i386 gcc asm goto
+	bug
+Message-ID: <20101029200245.GA10702@Krystal>
+References: <20101029190050.674141729@goodmis.org> <20101029190136.494851966@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101029190136.494851966@goodmis.org>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 16:02:07 up 37 days, 4 min,  4 users,  load average: 0.12, 0.18,
+	0.15
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> From: Steven Rostedt <srostedt@redhat.com>
+> 
+> On i386 (not x86_64) early implementations of gcc would have a bug
+> with asm goto causing it to produce code like the following:
+> 
+> (This was noticed by Peter Zijlstra)
+> 
+>    56 pushl 0
+>    67 nopl         jmp 0x6f
+>       popl
+>       jmp 0x8c
+> 
+>    6f              mov
+>                    test
+>                    je 0x8c
+> 
+>    8c mov
+>       call *(%esp)
+> 
+> The jump added in the asm goto skipped over the popl that matched
+> the pushl 0, which lead up to a quick crash of the system when
+> the jump was enabled. The nopl is defined in the asm goto () statement
+> and when tracepoints are enabled, the nop changes to a jump to the label
+> that was specified by the asm goto. asm goto is suppose to tell gcc that
+> the code in the asm might jump to an external label. Here gcc obviously
+> fails to make that work.
+> 
+> The bug report for gcc is here:
+> 
+>   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=46226
+> 
+> The bug only appears on x86 when not compiled with
+> -maccumulate-outgoing-args. This option is always set on x86_64 and it
+> is also the work around for a function graph tracer i386 bug.
+> (See commit: 746357d6a526d6da9d89a2ec645b28406e959c2e)
+> This explains why the bug only showed up on i386 when function graph
+> tracer was not enabled.
+> 
+> This patch now adds a CONFIG_JUMP_LABEL option that is default
+> off instead of using jump labels by default. When jump labels are
+> enabled, the -maccumulate-outgoing-args will be used (causing a
+> slightly larger kernel image on i386). This option will exist
+> until we have a way to detect if the gcc compiler in use is safe
+> to use on all configurations without the work around.
+> 
+> Note, there exists such a test, but for now we will keep the enabling
+> of jump label as a manual option.
+> 
+> Archs that know the compiler is safe with asm goto, may choose to
+> select JUMP_LABEL and enable it by default.
 
-This has the verify_iovec() INT_MAX limiter change as well as:
+Looks good. You can add my
 
-1) kdump fix in netxen from Rajesh Borundia
+Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
-2) 8390 oops in probe regression fix from Pavel Emelyanov
+if you feel like it.
 
-3) ipv4 routing table memory leak on namespace stop, also from Pavel
-   Emelyanov.
+Thanks,
 
-4) cxgb3 probe OOPS fix from Nishanth Aravamudan
+Mathieu
 
-5) Limit kernel stack usage of root in pktgen, from Nelson Elhage,
-   although this needs a few more tweaks I think.
+> 
+> Reported-by: Ingo Molnar <mingo@elte.hu>
+> Cause-discovered-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Jason Baron <jbaron@redhat.com>
+> Cc: H. Peter Anvin <hpa@zytor.com>
+> Cc: David Daney <ddaney@caviumnetworks.com>
+> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: David Miller <davem@davemloft.net>
+> Cc: Richard Henderson <rth@redhat.com>
+> LKML-Reference: <1288028746.3673.11.camel@laptop>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  arch/Kconfig               |   14 ++++++++++++++
+>  arch/x86/Makefile_32.cpu   |   13 ++++++++++++-
+>  include/linux/jump_label.h |    2 +-
+>  3 files changed, 27 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/Kconfig b/arch/Kconfig
+> index 53d7f61..8bf0fa6 100644
+> --- a/arch/Kconfig
+> +++ b/arch/Kconfig
+> @@ -42,6 +42,20 @@ config KPROBES
+>  	  for kernel debugging, non-intrusive instrumentation and testing.
+>  	  If in doubt, say "N".
+>  
+> +config JUMP_LABEL
+> +       bool "Optimize trace point call sites"
+> +       depends on HAVE_ARCH_JUMP_LABEL
+> +       help
+> +         If it is detected that the compiler has support for "asm goto",
+> +	 the kernel will compile trace point locations with just a
+> +	 nop instruction. When trace points are enabled, the nop will
+> +	 be converted to a jump to the trace function. This technique
+> +	 lowers overhead and stress on the branch prediction of the
+> +	 processor.
+> +
+> +	 On i386, options added to the compiler flags may increase
+> +	 the size of the kernel slightly.
+> +
+>  config OPTPROBES
+>  	def_bool y
+>  	depends on KPROBES && HAVE_OPTPROBES
+> diff --git a/arch/x86/Makefile_32.cpu b/arch/x86/Makefile_32.cpu
+> index 1255d95..f2ee1ab 100644
+> --- a/arch/x86/Makefile_32.cpu
+> +++ b/arch/x86/Makefile_32.cpu
+> @@ -51,7 +51,18 @@ cflags-$(CONFIG_X86_GENERIC) 	+= $(call tune,generic,$(call tune,i686))
+>  # prologue (push %ebp, mov %esp, %ebp) which breaks the function graph
+>  # tracer assumptions. For i686, generic, core2 this is set by the
+>  # compiler anyway
+> -cflags-$(CONFIG_FUNCTION_GRAPH_TRACER) += $(call cc-option,-maccumulate-outgoing-args)
+> +ifeq ($(CONFIG_FUNCTION_GRAPH_TRACER), y)
+> +ADD_ACCUMULATE_OUTGOING_ARGS := y
+> +endif
+> +
+> +# Work around to a bug with asm goto with first implementations of it
+> +# in gcc causing gcc to mess up the push and pop of the stack in some
+> +# uses of asm goto.
+> +ifeq ($(CONFIG_JUMP_LABEL), y)
+> +ADD_ACCUMULATE_OUTGOING_ARGS := y
+> +endif
+> +
+> +cflags-$(ADD_ACCUMULATE_OUTGOING_ARGS) += $(call cc-option,-maccumulate-outgoing-args)
+>  
+>  # Bug fix for binutils: this option is required in order to keep
+>  # binutils from generating NOPL instructions against our will.
+> diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
+> index 1947a12..7880f18 100644
+> --- a/include/linux/jump_label.h
+> +++ b/include/linux/jump_label.h
+> @@ -1,7 +1,7 @@
+>  #ifndef _LINUX_JUMP_LABEL_H
+>  #define _LINUX_JUMP_LABEL_H
+>  
+> -#if defined(CC_HAVE_ASM_GOTO) && defined(CONFIG_HAVE_ARCH_JUMP_LABEL)
+> +#if defined(CC_HAVE_ASM_GOTO) && defined(CONFIG_JUMP_LABEL)
+>  # include <asm/jump_label.h>
+>  # define HAVE_JUMP_LABEL
+>  #endif
+> -- 
+> 1.7.1
+> 
+> 
 
-6) Fix panic in cxgb3 tx desc freeing, from Krishna Kumar.
-
-7) DCCP updates from Gerrit Renker
-
-8) pch_gbe build fix, due to missing dependency
-
-9) Signedness fix in netfilte xt_socket code.
-
-10) Atheros driver fixes from Felix Fietkau, Jones Desougi, Luis
-    R. Rodriguez, Mohammed Shafi Shajakhan, and Rajkumar Manoharan
-
-Please pull, thanks a lot!
-
-The following changes since commit 1e431a9d6478940c0b5fcfa1c17a336fc0683409:
-
-  Merge branch 'for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb (2010-10-29 11:49:38 -0700)
-
-are available in the git repository at:
-
-  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
-
-Carolyn Wyborny (2):
-      e1000e: reset PHY after errors detected
-      e1000e: Add check for reset flags before displaying reset message
-
-David S. Miller (4):
-      pch_gbe: Select MII.
-      net: Limit socket I/O iovec total length to INT_MAX.
-      netfilter: xt_socket: Make tproto signed in socket_mt6_v1().
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless-2.6
-
-Dmitry Artamonow (1):
-      USB: gadget: fix ethernet gadget crash in gether_setup
-
-Emil Tantilov (2):
-      ixgb: call pci_disable_device in ixgb_remove
-      igbvf: fix panic on load
-
-Felix Fietkau (1):
-      ath9k: fix tx aggregation flush on AR9003
-
-Geert Uytterhoeven (1):
-      net: atarilance - flags should be unsigned long
-
-Gerrit Renker (4):
-      dccp: Return-value convention of hc_tx_send_packet()
-      dccp: Extend CCID packet dequeueing interface
-      dccp: Refine the wait-for-ccid mechanism
-      dccp ccid-2: Stop polling
-
-Jesper Juhl (1):
-      mac80211: fix failure to check kmalloc return value in key_key_read
-
-Jesse Gross (1):
-      igb: Fix unused variable warning.
-
-John Fastabend (1):
-      ixgbe: DCB, fix TX hang occurring in stress condition with PFC
-
-Jones Desougi (1):
-      ath5k: Fix double free on hw attach error path
-
-Jouni Malinen (1):
-      mac80211: Fix scan_ies_len to include DS Params
-
-Krishna Kumar (1):
-      cxgb3: Fix panic in free_tx_desc()
-
-Larry Finger (1):
-      b43: Fix warning at drivers/mmc/core/core.c:237 in mmc_wait_for_cmd
-
-Luis R. Rodriguez (4):
-      ath9k: add locking for stopping RX
-      ath9k: add locking for starting the PCU on RX
-      ath9k: rename rxflushlock to pcu_lock
-      ath9k: lock reset and PCU start/stopping
-
-Mohammed Shafi Shajakhan (1):
-      ath9k: Fix incorrect access of rate flags in RC
-
-Nelson Elhage (1):
-      pktgen: Limit how much data we copy onto the stack.
-
-Nishanth Aravamudan (1):
-      cxgb3: fix crash due to manipulating queues before registration
-
-Paul Fox (1):
-      libertas: Fix sd8686 firmware reload
-
-Pavel Emelyanov (2):
-      8390: Don't oops on starting dev queue
-      fib: Fix fib zone and its hash leak on namespace stop
-
-Rajesh Borundia (1):
-      netxen: fix kdump
-
-Rajkumar Manoharan (1):
-      ath9k_htc: Set proper firmware offset for Netgear WNDA3200
-
-avisconti (1):
-      stmmac: enable/disable rx/tx in the core with a single write.
-
- drivers/net/Kconfig                      |    1 +
- drivers/net/atarilance.c                 |    2 +-
- drivers/net/cxgb3/cxgb3_main.c           |    2 +-
- drivers/net/cxgb3/sge.c                  |    4 +-
- drivers/net/e1000e/82571.c               |   38 ++++++
- drivers/net/e1000e/e1000.h               |    3 +
- drivers/net/e1000e/netdev.c              |   29 ++++-
- drivers/net/igb/igb_main.c               |    1 -
- drivers/net/igbvf/netdev.c               |    8 +-
- drivers/net/ixgb/ixgb_main.c             |    1 +
- drivers/net/ixgbe/ixgbe_dcb.c            |   39 +++++-
- drivers/net/ixgbe/ixgbe_dcb.h            |    5 +-
- drivers/net/ixgbe/ixgbe_dcb_82599.c      |    5 +
- drivers/net/ixgbe/ixgbe_dcb_82599.h      |    3 +
- drivers/net/ixgbe/ixgbe_main.c           |   12 ++-
- drivers/net/lib8390.c                    |    1 -
- drivers/net/netxen/netxen_nic_ctx.c      |   15 --
- drivers/net/netxen/netxen_nic_main.c     |    7 +
- drivers/net/stmmac/stmmac_main.c         |   40 ++-----
- drivers/net/wireless/ath/ath5k/attach.c  |   17 +--
- drivers/net/wireless/ath/ath9k/ath9k.h   |    2 +-
- drivers/net/wireless/ath/ath9k/hif_usb.c |   10 +-
- drivers/net/wireless/ath/ath9k/main.c    |   31 ++++-
- drivers/net/wireless/ath/ath9k/rc.c      |    2 +-
- drivers/net/wireless/ath/ath9k/recv.c    |   15 +-
- drivers/net/wireless/ath/ath9k/xmit.c    |   18 ++--
- drivers/net/wireless/b43/sdio.c          |    2 +
- drivers/net/wireless/libertas/if_sdio.c  |   32 ++++-
- drivers/usb/gadget/u_ether.c             |    2 +-
- include/linux/dccp.h                     |    4 +-
- include/linux/socket.h                   |    2 +-
- include/net/ip_fib.h                     |    2 +
- net/compat.c                             |   10 +-
- net/core/iovec.c                         |   20 ++--
- net/core/pktgen.c                        |    7 +-
- net/dccp/ccid.h                          |   34 +++++-
- net/dccp/ccids/ccid2.c                   |   23 ++-
- net/dccp/ccids/ccid2.h                   |    5 +
- net/dccp/ccids/ccid3.c                   |   12 +-
- net/dccp/dccp.h                          |    5 +-
- net/dccp/output.c                        |  209 ++++++++++++++++++------------
- net/dccp/proto.c                         |   21 +++-
- net/dccp/timer.c                         |   27 ++--
- net/ipv4/fib_frontend.c                  |    2 +-
- net/ipv4/fib_hash.c                      |   18 +++
- net/ipv4/fib_trie.c                      |    5 +
- net/mac80211/debugfs_key.c               |    6 +-
- net/mac80211/main.c                      |    5 +-
- net/netfilter/xt_socket.c                |    7 +-
- 49 files changed, 525 insertions(+), 246 deletions(-)
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
