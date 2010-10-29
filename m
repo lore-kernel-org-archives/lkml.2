@@ -1,101 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761156Ab0J2KRf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 06:17:35 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:55682 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756784Ab0J2KRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 06:17:32 -0400
-Date: Fri, 29 Oct 2010 11:17:19 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Shaohua Li <shaohua.li@intel.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
-Subject: Re: [PATCH 2/2] mm: vmstat: Use a single setter function and
-	callback for adjusting percpu thresholds
-Message-ID: <20101029101718.GH4896@csn.ul.ie>
-References: <1288278816-32667-1-git-send-email-mel@csn.ul.ie> <1288278816-32667-3-git-send-email-mel@csn.ul.ie> <20101028150904.79fe9beb.akpm@linux-foundation.org>
+	id S1760501Ab0J2KTZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 06:19:25 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:50841 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751863Ab0J2KTV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 06:19:21 -0400
+From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+        corbet@lwn.net, neilb@suse.de, npiggin@kernel.dk,
+        hooanon05@yahoo.co.jp, bfields@fieldses.org, miklos@szeredi.hu
+Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
+        linux-kernel@vger.kernel.org
+Subject: [Updated PATCH -V22 07/14] fs: Remove i_nlink check from file system link callback
+In-Reply-To: <1288346243-12211-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1288346243-12211-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1288346243-12211-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Notmuch/0.3.1-130-g97f5c81 (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
+Date: Fri, 29 Oct 2010 15:49:03 +0530
+Message-ID: <m3vd4lxpwo.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20101028150904.79fe9beb.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 28, 2010 at 03:09:04PM -0700, Andrew Morton wrote:
-> On Thu, 28 Oct 2010 16:13:36 +0100
-> Mel Gorman <mel@csn.ul.ie> wrote:
+On Fri, 29 Oct 2010 15:27:16 +0530, "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+> Now that VFS check for inode->i_nlink == 0 and returns proper
+> error, remove similar check from file system
 > 
-> > reduce_pgdat_percpu_threshold() and restore_pgdat_percpu_threshold()
-> > exist to adjust the per-cpu vmstat thresholds while kswapd is awake to
-> > avoid errors due to counter drift. The functions duplicate some code so
-> > this patch replaces them with a single set_pgdat_percpu_threshold() that
-> > takes a callback function to calculate the desired threshold as a
-> > parameter.
-> 
-> hm.  Could have passed in some silly flag rather than a function
-> pointer but whatever.
-> 
-> >
-> > ...
-> >
-> > -void reduce_pgdat_percpu_threshold(pg_data_t *pgdat)
-> > +void set_pgdat_percpu_threshold(pg_data_t *pgdat,
-> > +				int (*calculate_pressure)(struct zone *))
-> >  {
-> >  	struct zone *zone;
-> >  	int cpu;
-> > @@ -196,28 +197,7 @@ void reduce_pgdat_percpu_threshold(pg_data_t *pgdat)
-> >  		if (!zone->percpu_drift_mark)
-> >  			continue;
-> >  
-> > -		threshold = calculate_pressure_threshold(zone);
-> > -		for_each_online_cpu(cpu)
-> > -			per_cpu_ptr(zone->pageset, cpu)->stat_threshold
-> > -							= threshold;
-> > -	}
-> > -	put_online_cpus();
-> > -}
-> > -
-> > -void restore_pgdat_percpu_threshold(pg_data_t *pgdat)
-> > -{
-> > -	struct zone *zone;
-> > -	int cpu;
-> > -	int threshold;
-> > -	int i;
-> > -
-> > -	get_online_cpus();
-> > -	for (i = 0; i < pgdat->nr_zones; i++) {
-> > -		zone = &pgdat->node_zones[i];
-> > -		if (!zone->percpu_drift_mark)
-> > -			continue;
-> > -
-> > -		threshold = calculate_threshold(zone);
-> > +		threshold = calculate_pressure(zone);
-> 
-> Readability nit: it's better to use the
-> 
-> 		threshold = (*calculate_pressure)(zone);
-> 
-> syntax here.  So the code reader doesn't go running around trying to
-> find the function "calculate_pressure".  I've been fooled that way
-> plenty of times.
+> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> ---
+>  fs/btrfs/inode.c    |    3 ---
+>  fs/ext3/namei.c     |    7 -------
+>  fs/ext4/namei.c     |    7 -------
+>  fs/gfs2/ops_inode.c |    3 ---
+>  fs/jfs/namei.c      |    3 ---
+>  fs/reiserfs/namei.c |    4 ----
+>  fs/ubifs/dir.c      |   18 ------------------
+>  7 files changed, 0 insertions(+), 45 deletions(-)
 > 
 
-Fair point, I'll know for future reference. Thanks
+Updated patch to drop the gfs2 hunk based on feedback from Al Viro.
+Updated patch below
 
-> 
-> >  		for_each_online_cpu(cpu)
-> >  			per_cpu_ptr(zone->pageset, cpu)->stat_threshold
-> >  							= threshold;
-> 
+commit c440c404eeec8e26baf2a3be3d5ebf05d6808e54
+Author: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Date:   Fri Oct 29 14:47:47 2010 +0530
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+    fs: Remove i_nlink check from file system link callback
+    
+    Now that VFS check for inode->i_nlink == 0 and returns proper
+    error, remove similar check from file system
+    
+    Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+
+ fs/btrfs/inode.c    |    3 ---
+ fs/ext3/namei.c     |    7 -------
+ fs/ext4/namei.c     |    7 -------
+ fs/jfs/namei.c      |    3 ---
+ fs/reiserfs/namei.c |    4 ----
+ fs/ubifs/dir.c      |   18 ------------------
+ 6 files changed, 0 insertions(+), 42 deletions(-)
+
+diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+index 64f99cf..fdeaa14 100644
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -4734,9 +4734,6 @@ static int btrfs_link(struct dentry *old_dentry, struct inode *dir,
+ 	int err;
+ 	int drop_inode = 0;
+ 
+-	if (inode->i_nlink == 0)
+-		return -ENOENT;
+-
+ 	/* do not allow sys_link's with other subvols of the same device */
+ 	if (root->objectid != BTRFS_I(inode)->root->objectid)
+ 		return -EPERM;
+diff --git a/fs/ext3/namei.c b/fs/ext3/namei.c
+index bce9dce..3edda98 100644
+--- a/fs/ext3/namei.c
++++ b/fs/ext3/namei.c
+@@ -2242,13 +2242,6 @@ static int ext3_link (struct dentry * old_dentry,
+ 
+ 	dquot_initialize(dir);
+ 
+-	/*
+-	 * Return -ENOENT if we've raced with unlink and i_nlink is 0.  Doing
+-	 * otherwise has the potential to corrupt the orphan inode list.
+-	 */
+-	if (inode->i_nlink == 0)
+-		return -ENOENT;
+-
+ retry:
+ 	handle = ext3_journal_start(dir, EXT3_DATA_TRANS_BLOCKS(dir->i_sb) +
+ 					EXT3_INDEX_EXTRA_TRANS_BLOCKS);
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index 92203b8..38c03bf 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -2285,13 +2285,6 @@ static int ext4_link(struct dentry *old_dentry,
+ 
+ 	dquot_initialize(dir);
+ 
+-	/*
+-	 * Return -ENOENT if we've raced with unlink and i_nlink is 0.  Doing
+-	 * otherwise has the potential to corrupt the orphan inode list.
+-	 */
+-	if (inode->i_nlink == 0)
+-		return -ENOENT;
+-
+ retry:
+ 	handle = ext4_journal_start(dir, EXT4_DATA_TRANS_BLOCKS(dir->i_sb) +
+ 					EXT4_INDEX_EXTRA_TRANS_BLOCKS);
+diff --git a/fs/jfs/namei.c b/fs/jfs/namei.c
+index 231ca4a..2619157 100644
+--- a/fs/jfs/namei.c
++++ b/fs/jfs/namei.c
+@@ -808,9 +808,6 @@ static int jfs_link(struct dentry *old_dentry,
+ 	if (ip->i_nlink == JFS_LINK_MAX)
+ 		return -EMLINK;
+ 
+-	if (ip->i_nlink == 0)
+-		return -ENOENT;
+-
+ 	dquot_initialize(dir);
+ 
+ 	tid = txBegin(ip->i_sb, 0);
+diff --git a/fs/reiserfs/namei.c b/fs/reiserfs/namei.c
+index ba5f51e..ae303ca 100644
+--- a/fs/reiserfs/namei.c
++++ b/fs/reiserfs/namei.c
+@@ -1122,10 +1122,6 @@ static int reiserfs_link(struct dentry *old_dentry, struct inode *dir,
+ 		reiserfs_write_unlock(dir->i_sb);
+ 		return -EMLINK;
+ 	}
+-	if (inode->i_nlink == 0) {
+-		reiserfs_write_unlock(dir->i_sb);
+-		return -ENOENT;
+-	}
+ 
+ 	/* inc before scheduling so reiserfs_unlink knows we are here */
+ 	inc_nlink(inode);
+diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
+index 14f64b6..7217d67 100644
+--- a/fs/ubifs/dir.c
++++ b/fs/ubifs/dir.c
+@@ -522,24 +522,6 @@ static int ubifs_link(struct dentry *old_dentry, struct inode *dir,
+ 	ubifs_assert(mutex_is_locked(&dir->i_mutex));
+ 	ubifs_assert(mutex_is_locked(&inode->i_mutex));
+ 
+-	/*
+-	 * Return -ENOENT if we've raced with unlink and i_nlink is 0.  Doing
+-	 * otherwise has the potential to corrupt the orphan inode list.
+-	 *
+-	 * Indeed, consider a scenario when 'vfs_link(dirA/fileA)' and
+-	 * 'vfs_unlink(dirA/fileA, dirB/fileB)' race. 'vfs_link()' does not
+-	 * lock 'dirA->i_mutex', so this is possible. Both of the functions
+-	 * lock 'fileA->i_mutex' though. Suppose 'vfs_unlink()' wins, and takes
+-	 * 'fileA->i_mutex' mutex first. Suppose 'fileA->i_nlink' is 1. In this
+-	 * case 'ubifs_unlink()' will drop the last reference, and put 'inodeA'
+-	 * to the list of orphans. After this, 'vfs_link()' will link
+-	 * 'dirB/fileB' to 'inodeA'. This is a problem because, for example,
+-	 * the subsequent 'vfs_unlink(dirB/fileB)' will add the same inode
+-	 * to the list of orphans.
+-	 */
+-	 if (inode->i_nlink == 0)
+-		 return -ENOENT;
+-
+ 	err = dbg_check_synced_i_size(inode);
+ 	if (err)
+ 		return err;
