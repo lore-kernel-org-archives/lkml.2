@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756027Ab0J2GgL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 02:36:11 -0400
-Received: from rt-pi1-ru-sssup.pi1.garr.net ([193.206.136.46]:6680 "EHLO
+	id S932372Ab0J2GhB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 02:37:01 -0400
+Received: from rt-pi1-ru-sssup.pi1.garr.net ([193.206.136.46]:47311 "EHLO
 	sssup.it" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754762Ab0J2GgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 02:36:06 -0400
-Subject: [RFC][PATCH 11/22] sched: add schedstats for -deadline tasks
+	id S1753444Ab0J2Ggz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 02:36:55 -0400
+Subject: [RFC][PATCH 12/22] sched: add runtime reporting for -deadline tasks
 From: Raistlin <raistlin@linux.it>
 To: Peter Zijlstra <peterz@infradead.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
@@ -27,9 +27,9 @@ Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         paulmck <paulmck@linux.vnet.ibm.com>
 In-Reply-To: <1288333128.8661.137.camel@Palantir>
 References: <1288333128.8661.137.camel@Palantir>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-E1LEhD8pWNpvixpz0CBg"
-Date: Fri, 29 Oct 2010 08:35:53 +0200
-Message-ID: <1288334153.8661.152.camel@Palantir>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-4b7mjbDTaqZHnBYKYbuJ"
+Date: Fri, 29 Oct 2010 08:36:42 +0200
+Message-ID: <1288334202.8661.153.camel@Palantir>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
@@ -37,209 +37,111 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-E1LEhD8pWNpvixpz0CBg
+--=-4b7mjbDTaqZHnBYKYbuJ
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
 
-Add some typical sched-debug output to dl_rq(s) and some
-schedstats to -deadline tasks.
+Make it available for the user-space the total amount of runtime
+time it has used from since it became a -deadline task.
+
+This is something that is typically useful for monitoring from
+user-space the task CPU usage, and maybe implementing at that level
+some more sophisticated scheduling behaviour.
+
+One example is feedback scheduling, where you try to adapt the
+scheduling parameters of a task by looking at its behaviour in
+a certain interval of time, applying concepts coming from control
+engineering.
 
 Signed-off-by: Dario Faggioli <raistlin@linux.it>
 ---
- include/linux/sched.h |   13 +++++++++++++
- kernel/sched.c        |    2 ++
- kernel/sched_debug.c  |   43 +++++++++++++++++++++++++++++++++++++++++++
- kernel/sched_dl.c     |   42 ++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 100 insertions(+), 0 deletions(-)
+ include/linux/sched.h |    7 +++----
+ kernel/sched.c        |    3 +++
+ kernel/sched_debug.c  |    1 +
+ kernel/sched_dl.c     |    1 +
+ 4 files changed, 8 insertions(+), 4 deletions(-)
 
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index e301eea..8ae947b 100644
+index 8ae947b..b6f0635 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -1242,6 +1242,15 @@ struct sched_rt_entity {
+@@ -1242,14 +1242,15 @@ struct sched_rt_entity {
  #endif
  };
 =20
+-#ifdef CONFIG_SCHEDSTATS
+ struct sched_stats_dl {
 +#ifdef CONFIG_SCHEDSTATS
-+struct sched_stats_dl {
-+	u64			last_dmiss;
-+	u64			last_rorun;
-+	u64			dmiss_max;
-+	u64			rorun_max;
+ 	u64			last_dmiss;
+ 	u64			last_rorun;
+ 	u64			dmiss_max;
+ 	u64			rorun_max;
+-};
+ #endif
++	u64			tot_rtime;
 +};
-+#endif
-+
+=20
  struct sched_dl_entity {
  	struct rb_node	rb_node;
- 	int nr_cpus_allowed;
-@@ -1282,6 +1291,10 @@ struct sched_dl_entity {
- 	 * own bandwidth to be enforced, thus we need one timer per task.
+@@ -1292,9 +1293,7 @@ struct sched_dl_entity {
  	 */
  	struct hrtimer dl_timer;
-+
-+#ifdef CONFIG_SCHEDSTATS
-+	struct sched_stats_dl stats;
-+#endif
+=20
+-#ifdef CONFIG_SCHEDSTATS
+ 	struct sched_stats_dl stats;
+-#endif
  };
 =20
  struct rcu_node;
 diff --git a/kernel/sched.c b/kernel/sched.c
-index 619d091..63a33f6 100644
+index 63a33f6..19c8c25 100644
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
-@@ -425,6 +425,8 @@ struct dl_rq {
-=20
- 	unsigned long dl_nr_running;
-=20
-+	u64 exec_clock;
+@@ -4799,6 +4799,8 @@ __setparam_dl(struct task_struct *p, const struct sch=
+ed_param_ex *param_ex)
+ 	dl_se->flags =3D param_ex->sched_flags;
+ 	dl_se->dl_throttled =3D 0;
+ 	dl_se->dl_new =3D 1;
 +
- #ifdef CONFIG_SMP
- 	/*
- 	 * Deadline values of the currently executing and the
++	dl_se->stats.tot_rtime =3D 0;
+ }
+=20
+ static void
+@@ -4812,6 +4814,7 @@ __getparam_dl(struct task_struct *p, struct sched_par=
+am_ex *param_ex)
+ 	param_ex->sched_period =3D ns_to_timespec(dl_se->dl_period);
+ 	param_ex->sched_flags =3D dl_se->flags;
+ 	param_ex->curr_runtime =3D ns_to_timespec(dl_se->runtime);
++	param_ex->used_runtime =3D ns_to_timespec(dl_se->stats.tot_rtime);
+ 	param_ex->curr_deadline =3D ns_to_timespec(dl_se->deadline);
+ }
+=20
 diff --git a/kernel/sched_debug.c b/kernel/sched_debug.c
-index 2e1b0d1..f685f18 100644
+index f685f18..9bec524 100644
 --- a/kernel/sched_debug.c
 +++ b/kernel/sched_debug.c
-@@ -243,6 +243,42 @@ void print_rt_rq(struct seq_file *m, int cpu, struct r=
-t_rq *rt_rq)
- #undef P
- }
-=20
-+void print_dl_rq(struct seq_file *m, int cpu, struct dl_rq *dl_rq)
-+{
-+	s64 min_deadline =3D -1, max_deadline =3D -1;
-+	struct rq *rq =3D cpu_rq(cpu);
-+	struct sched_dl_entity *last;
-+	unsigned long flags;
-+
-+	SEQ_printf(m, "\ndl_rq[%d]:\n", cpu);
-+
-+	raw_spin_lock_irqsave(&rq->lock, flags);
-+	if (dl_rq->rb_leftmost)
-+		min_deadline =3D (rb_entry(dl_rq->rb_leftmost,
-+					 struct sched_dl_entity,
-+					 rb_node))->deadline;
-+	last =3D __pick_dl_last_entity(dl_rq);
-+	if (last)
-+		max_deadline =3D last->deadline;
-+	raw_spin_unlock_irqrestore(&rq->lock, flags);
-+
-+#define P(x) \
-+	SEQ_printf(m, "  .%-30s: %Ld\n", #x, (long long)(dl_rq->x))
-+#define __PN(x) \
-+	SEQ_printf(m, "  .%-30s: %Ld.%06ld\n", #x, SPLIT_NS(x))
-+#define PN(x) \
-+	SEQ_printf(m, "  .%-30s: %Ld.%06ld\n", #x, SPLIT_NS(dl_rq->x))
-+
-+	P(dl_nr_running);
-+	PN(exec_clock);
-+	__PN(min_deadline);
-+	__PN(max_deadline);
-+
-+#undef PN
-+#undef __PN
-+#undef P
-+}
-+
- static void print_cpu(struct seq_file *m, int cpu)
- {
- 	struct rq *rq =3D cpu_rq(cpu);
-@@ -302,6 +338,7 @@ static void print_cpu(struct seq_file *m, int cpu)
- #endif
- 	print_cfs_stats(m, cpu);
- 	print_rt_stats(m, cpu);
-+	print_dl_stats(m, cpu);
-=20
- 	print_rq(m, rq, cpu);
- }
-@@ -430,6 +467,12 @@ void proc_sched_show_task(struct task_struct *p, struc=
-t seq_file *m)
- 	P(se.statistics.nr_wakeups_affine_attempts);
- 	P(se.statistics.nr_wakeups_passive);
- 	P(se.statistics.nr_wakeups_idle);
-+	if (dl_task(p)) {
-+		PN(dl.stats.last_dmiss);
-+		PN(dl.stats.dmiss_max);
-+		PN(dl.stats.last_rorun);
-+		PN(dl.stats.rorun_max);
-+	}
+@@ -472,6 +472,7 @@ void proc_sched_show_task(struct task_struct *p, struct=
+ seq_file *m)
+ 		PN(dl.stats.dmiss_max);
+ 		PN(dl.stats.last_rorun);
+ 		PN(dl.stats.rorun_max);
++		PN(dl.stats.tot_rtime);
+ 	}
 =20
  	{
- 		u64 avg_atom, avg_per_cpu;
 diff --git a/kernel/sched_dl.c b/kernel/sched_dl.c
-index c8eb304..b01aa2a 100644
+index b01aa2a..c4091c9 100644
 --- a/kernel/sched_dl.c
 +++ b/kernel/sched_dl.c
-@@ -465,6 +465,25 @@ int dl_runtime_exceeded(struct rq *rq, struct sched_dl=
-_entity *dl_se)
- 	int rorun =3D dl_se->runtime <=3D 0;
+@@ -535,6 +535,7 @@ static void update_curr_dl(struct rq *rq)
 =20
- 	/*
-+	 * Record statistics about last and maximum deadline
-+	 * misses and runtime overruns.
-+	 */
-+	if (dmiss) {
-+		u64 damount =3D rq->clock - dl_se->deadline;
-+
-+		schedstat_set(dl_se->stats.last_dmiss, damount);
-+		schedstat_set(dl_se->stats.dmiss_max,
-+			      max(dl_se->stats.dmiss_max, damount));
-+	}
-+	if (rorun) {
-+		u64 ramount =3D -dl_se->runtime;
-+
-+		schedstat_set(dl_se->stats.last_rorun, ramount);
-+		schedstat_set(dl_se->stats.rorun_max,
-+			      max(dl_se->stats.rorun_max, ramount));
-+	}
-+
-+	/*
- 	 * No need for checking if it's time to enforce the
- 	 * bandwidth for the tasks that are:
- 	 *  - maximum priority (SF_HEAD),
-@@ -508,6 +527,7 @@ static void update_curr_dl(struct rq *rq)
- 		      max(curr->se.statistics.exec_max, delta_exec));
+ 	sched_dl_avg_update(rq, delta_exec);
 =20
- 	curr->se.sum_exec_runtime +=3D delta_exec;
-+	schedstat_add(&rq->dl, exec_clock, delta_exec);
- 	account_group_exec_runtime(curr, delta_exec);
-=20
- 	curr->se.exec_start =3D rq->clock;
-@@ -898,6 +918,16 @@ static void start_hrtick_dl(struct rq *rq, struct task=
-_struct *p)
- }
- #endif
-=20
-+static struct sched_dl_entity *__pick_dl_last_entity(struct dl_rq *dl_rq)
-+{
-+	struct rb_node *last =3D rb_last(&dl_rq->rb_root);
-+
-+	if (!last)
-+		return NULL;
-+
-+	return rb_entry(last, struct sched_dl_entity, rb_node);
-+}
-+
- static struct sched_dl_entity *pick_next_dl_entity(struct rq *rq,
- 						   struct dl_rq *dl_rq)
- {
-@@ -1573,3 +1603,15 @@ static const struct sched_class dl_sched_class =3D {
- 	.switched_to		=3D switched_to_dl,
- };
-=20
-+#ifdef CONFIG_SCHED_DEBUG
-+extern void print_dl_rq(struct seq_file *m, int cpu, struct dl_rq *dl_rq);
-+
-+static void print_dl_stats(struct seq_file *m, int cpu)
-+{
-+	struct dl_rq *dl_rq =3D &cpu_rq(cpu)->dl;
-+
-+	rcu_read_lock();
-+	print_dl_rq(m, cpu, dl_rq);
-+	rcu_read_unlock();
-+}
-+#endif /* CONFIG_SCHED_DEBUG */
++	dl_se->stats.tot_rtime +=3D delta_exec;
+ 	dl_se->runtime -=3D delta_exec;
+ 	if (dl_runtime_exceeded(rq, dl_se)) {
+ 		__dequeue_task_dl(rq, curr, 0);
 --=20
 1.7.2.3
 
@@ -252,17 +154,17 @@ Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
 http://blog.linux.it/raistlin / raistlin@ekiga.net /
 dario.faggioli@jabber.org
 
---=-E1LEhD8pWNpvixpz0CBg
+--=-4b7mjbDTaqZHnBYKYbuJ
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEABECAAYFAkzKa0kACgkQk4XaBE3IOsTKvgCeJxdyH9g5jKEWyn6tzfjGhkTA
-pDAAniLcO1GvJGD+/j7miNEga8esv1MT
-=gNRK
+iEYEABECAAYFAkzKa3oACgkQk4XaBE3IOsRDoQCgpWDX58Q4ah2bB/aQx+GY9DlF
+TtkAoJ+nID36aeJ/CHj+HkXy0soap+aA
+=1rqq
 -----END PGP SIGNATURE-----
 
---=-E1LEhD8pWNpvixpz0CBg--
+--=-4b7mjbDTaqZHnBYKYbuJ--
 
