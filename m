@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762082Ab0J2WMk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 18:12:40 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:52685 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755031Ab0J2WMg (ORCPT
+	id S932951Ab0J2WN5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 18:13:57 -0400
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:39601 "EHLO
+	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757762Ab0J2WNz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 18:12:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:mime-version:content-type
-         :content-transfer-encoding:message-id;
-        b=O8jaVd1xkIx5ijxRI50O4Vhqp1HH40Pot+xE1lpzKqEmLIXN1aPJfwLD2K/HgnNqRb
-         O8waLhlXNgDo2T7guUr86P1WfGWcBrAulRfqLJ8JVI9C58+/eMIZcO1b09e7JvtgNMK+
-         Nlaw3O2pvTSmbHtMrN1phvCinE0u4PFP8T6D0=
-From: Edward Shishkin <edward.shishkin@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] ecryptfs: fix truncation error in  ecryptfs_read_update_atime
-Date: Sat, 30 Oct 2010 00:11:50 +0200
-User-Agent: KMail/1.12.3 (Linux/2.6.27.41-170.2.117.fc10.i686; KDE/4.3.3; i686; ; )
-Cc: jmoyer@redhat.com, hch@lst.de, esandeen@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+	Fri, 29 Oct 2010 18:13:55 -0400
+Date: Sat, 30 Oct 2010 00:10:29 +0200
+From: Nicolas Kaiser <nikai@nikai.net>
+To: Brett Rudley <brudley@broadcom.com>
+Cc: Henry Ptasinski <henryp@broadcom.com>, Nohee Ko <noheek@broadcom.com>,
+        linux-wireless@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging/brcm80211: simplify expression
+Message-ID: <20101030001029.374336b0@absol.kitzblitz>
+Organization: -
+X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
+ N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
+X-Mailer: Claws Mail (Linux)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010300011.51022.edward.shishkin@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is similar to the bug found in direct-io not so long ago.
+Simplify: ((a && b) || !a) => (b || !a)
 
-Fix up truncation (ssize_t->int).  This only matters with >2G
-reads/writes, which the kernel doesn't permit.
-
-Signed-off-by: Edward Shishkin <edward.shishkin@gmail.com>
+Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
 ---
- fs/ecryptfs/file.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/brcm80211/sys/wlc_mac80211.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
---- linux-2.6.36.orig/fs/ecryptfs/file.c
-+++ linux-2.6.36/fs/ecryptfs/file.c
-@@ -48,7 +48,7 @@ static ssize_t ecryptfs_read_update_atim
- 				const struct iovec *iov,
- 				unsigned long nr_segs, loff_t pos)
- {
--	int rc;
-+	ssize_t rc;
- 	struct dentry *lower_dentry;
- 	struct vfsmount *lower_vfsmount;
- 	struct file *file = iocb->ki_filp;
+diff --git a/drivers/staging/brcm80211/sys/wlc_mac80211.c b/drivers/staging/brcm80211/sys/wlc_mac80211.c
+index feaffcc..aab2d8b 100644
+--- a/drivers/staging/brcm80211/sys/wlc_mac80211.c
++++ b/drivers/staging/brcm80211/sys/wlc_mac80211.c
+@@ -667,7 +667,7 @@ bool wlc_ps_check(wlc_info_t *wlc)
+ 		 * may be either true or false due to the low level override.
+ 		 */
+ 		wake = STAY_AWAKE(wlc);
+-		wake_ok = (wake && ((tmp & MCTL_WAKE) != 0)) || !wake;
++		wake_ok = ((tmp & MCTL_WAKE) != 0) || !wake;
+ #endif
+ 		if (hps && !wake_ok) {
+ 			WL_ERROR(("wl%d: wake not sync, sw %d maccontrol 0x%x\n", wlc->pub->unit, wake, tmp));
+-- 
+1.7.2.2
