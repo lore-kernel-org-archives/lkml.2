@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932682Ab0J2OOh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 10:14:37 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:44521 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757923Ab0J2OOf (ORCPT
+	id S933846Ab0J2OPy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 10:15:54 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:49941 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755308Ab0J2OPv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 10:14:35 -0400
-X-SpamScore: -11
-X-BigFish: VS-11(z3b68iz1432N98dNzz1202hzzz2dh2a8h66h)
-X-Spam-TCS-SCL: 5:0
-Message-ID: <4CCAD6C5.5020102@freescale.com>
-Date: Fri, 29 Oct 2010 09:14:29 -0500
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.13) Gecko/20101013 Fedora/2.0.8-2.fc13 SeaMonkey/2.0.8
-MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: gregkh <gregkh@suse.de>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Writing a console/tty driver -- how to use tty_port?
-References: <4CC893CD.7020701@freescale.com> <20101027231948.5e62dd09@lxorguk.ukuu.org.uk> <4CC9D074.3060108@freescale.com> <4CCAD244.3060600@freescale.com>
-In-Reply-To: <4CCAD244.3060600@freescale.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Fri, 29 Oct 2010 10:15:51 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, hch@infradead.org, warthog9@kernel.org,
+        david@fromorbit.com, jmorris@namei.org, kyle@mcmartin.ca,
+        hpa@zytor.com, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, mingo@elte.hu, eparis@redhat.com,
+        viro@zeniv.linux.org.uk, Matthew Wilcox <matthew@wil.cx>,
+        Mimi Zohar <zohar@us.ibm.com>
+Subject: Re: [PATCH 2/4] IMA: maintain i_readcount in the VFS layer
+In-Reply-To: Your message of "Thu, 28 Oct 2010 18:02:03 EDT."
+             <1288303325-9628-3-git-send-email-zohar@linux.vnet.ibm.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1288303325-9628-1-git-send-email-zohar@linux.vnet.ibm.com>
+            <1288303325-9628-3-git-send-email-zohar@linux.vnet.ibm.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1288361618_4998P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Oct 2010 14:15:02.0985 (UTC) FILETIME=[ADBB0390:01CB7773]
-X-Reverse-DNS: az33egw02.freescale.net
+Date: Fri, 29 Oct 2010 10:13:38 -0400
+Message-ID: <6166.1288361618@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020201.4CCAD693.013E,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Timur Tabi wrote:
-> I've done a little more debugging, and it's even stranger than I thought.  The
-> console is only half missing.
+--==_Exmh_1288361618_4998P
+Content-Type: text/plain; charset=us-ascii
+
+On Thu, 28 Oct 2010 18:02:03 EDT, Mimi Zohar said:
+> ima_counts_get() updated the readcount and invalidated the PCR,
+> as necessary. Only update the i_readcount in the VFS layer.
+> Move the PCR invalidation checks to ima_file_check(), where it
+> belongs.
 > 
-> What's missing is my shell prompt, and a few other things.  I can type in
-> commands, though.  The prompt returns, however, if I 'cd' to the root direcetory.
+> Maintaining the i_readcount in the VFS layer, will allow other
+> subsystems to use i_readcount.
 
-Never mind, I figure it out.  My console device was silently rejecting any
-writes larger than 16 bytes.
+Would a symmetric i_writecount be useful for anything?  If it existed,
+could any code be simplified elsewhere?
 
-Sorry for the noise.  I know your inboxes must be always full.
 
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+--==_Exmh_1288361618_4998P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFMytaScC3lWbTT17ARAly8AJ0Y+I8WrqgNUlbAuPqt9WOhW7vmNwCggC9Q
+5xBbiRhnwZPtFWKpuE4NhwU=
+=PnvS
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1288361618_4998P--
 
