@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760289Ab0J2CU3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 22:20:29 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:27226 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760202Ab0J2CUX (ORCPT
+	id S1760096Ab0J2CXS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 22:23:18 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:60522 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755302Ab0J2CXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 22:20:23 -0400
-Message-ID: <4CCA2F0C.7010302@kernel.org>
-Date: Thu, 28 Oct 2010 19:18:52 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.14) Gecko/20101013 SUSE/3.0.9 Thunderbird/3.0.9
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: Shaohua Li <shaohua.li@intel.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+	Thu, 28 Oct 2010 22:23:13 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 4/7] vmscan: narrowing synchrounous lumply reclaim condition
+Cc: kosaki.motohiro@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: Use online node real index in calulate_tbl_offset()
-Content-Type: text/plain; charset=ISO-8859-1
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>
+In-Reply-To: <20101028151201.GN29304@random.random>
+References: <20101028162522.B0B5.A69D9226@jp.fujitsu.com> <20101028151201.GN29304@random.random>
+Message-Id: <20101029104314.B0C0.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri, 29 Oct 2010 11:23:07 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> On Thu, Oct 28, 2010 at 05:00:57PM +0900, KOSAKI Motohiro wrote:
+> > Hi
+> > 
+> > > My tree uses compaction in a fine way inside kswapd too and tons of
+> > > systems are running without lumpy and floods of order 9 allocations
+> > > with only compaction (in direct reclaim and kswapd) without the
+> > > slighest problem. Furthermore I extended compaction for all
+> > > allocations not just that PAGE_ALLOC_COSTLY_ORDER (maybe I already
+> > > removed all PAGE_ALLOC_COSTLY_ORDER checks?). There's no good reason
+> > > not to use compaction for every allocation including 1,2,3, and things
+> > > works fine this way.
+> > 
+> > Interesting. I parsed this you have compaction improvement. If so,
+> > can you please post them? Generically, 1) improve the feature 2) remove
+> > unused one is safety order. In the other hand, reverse order seems to has
+> > regression risk.
+> 
+> THP is way higher priority than the compaction improvements, so the
+> compaction improvements are not at the top of the queue:
+> 
+> http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=shortlog
+> 
+> http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=commitdiff;h=d8f02410d718725a7daaf192af33abc41dcfae16;hp=39c4a61fedc5f5bf0c95a60483ac0acea1a9a757
+> 
+> At the top of the queue there is the lumpy_reclaim removal as that's
+> higher priority than THP.
 
-Found one numa system that doesn't have ram installed in first socket
-hang during executing init scripts.
+Umm... 
 
-bisect to:
+If THP vs lumpy confliction is most big matter, I'd prefer automatical 
+lumpy disabling when THP enabled rather than completely removing. It is lower risk.
+And, After finish to improve compaction, I expect we will be able to discuss
+remove thing. 
 
-|commit 932967202182743c01a2eee4bdfa2c42697bc586
-|Author: Shaohua Li <shaohua.li@intel.com>
-|Date:   Wed Oct 20 11:07:03 2010 +0800
-|
-|    x86: Spread tlb flush vector between nodes
+If my parse is correct, You have tested "improved-compaction + no-lumpy + THP"
+combination, but nobody have tested "current-compaction + no-lumpy". 
+IOW, I only say I dislike a regression.
 
-It turns out when first socket is not online could have cpus on node1
-tlb_offset set to bigger than NUM_INVALIDATE_TLB_VECTORS.
 
-that could affect systems like 4 sockets, but socket 2 doesn't
-have installed, sockets 3 will get too big tlb_offset.
 
-Need to use real online node idx.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
----
- arch/x86/mm/tlb.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-Index: linux-2.6/arch/x86/mm/tlb.c
-===================================================================
---- linux-2.6.orig/arch/x86/mm/tlb.c
-+++ linux-2.6/arch/x86/mm/tlb.c
-@@ -223,7 +223,7 @@ void native_flush_tlb_others(const struc
- 
- static void __cpuinit calculate_tlb_offset(void)
- {
--	int cpu, node, nr_node_vecs;
-+	int cpu, node, nr_node_vecs, idx = 0;
- 	/*
- 	 * we are changing tlb_vector_offset for each CPU in runtime, but this
- 	 * will not cause inconsistency, as the write is atomic under X86. we
-@@ -239,7 +239,7 @@ static void __cpuinit calculate_tlb_offs
- 		nr_node_vecs = NUM_INVALIDATE_TLB_VECTORS/nr_online_nodes;
- 
- 	for_each_online_node(node) {
--		int node_offset = (node % NUM_INVALIDATE_TLB_VECTORS) *
-+		int node_offset = (idx % NUM_INVALIDATE_TLB_VECTORS) *
- 			nr_node_vecs;
- 		int cpu_offset = 0;
- 		for_each_cpu(cpu, cpumask_of_node(node)) {
-@@ -248,6 +248,7 @@ static void __cpuinit calculate_tlb_offs
- 			cpu_offset++;
- 			cpu_offset = cpu_offset % nr_node_vecs;
- 		}
-+		idx++;
- 	}
- }
- 
