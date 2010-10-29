@@ -1,86 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761862Ab0J2UJE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 16:09:04 -0400
-Received: from x35.xmailserver.org ([64.71.152.41]:33533 "EHLO
-	x35.xmailserver.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756869Ab0J2UJC (ORCPT
+	id S1761930Ab0J2UJK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 16:09:10 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:54733 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761870Ab0J2UJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 16:09:02 -0400
-X-AuthUser: davidel@xmailserver.org
-Date: Fri, 29 Oct 2010 13:08:34 -0700 (PDT)
-From: Davide Libenzi <davidel@xmailserver.org>
-X-X-Sender: davide@davide-lnx1
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Alban Crequy <alban.crequy@collabora.co.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>, netdev@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Pauli Nieminen <pauli.nieminen@collabora.co.uk>,
-        Rainer Weikusat <rweikusat@mssgmbh.com>
-Subject: Re: [PATCH 0/1] RFC: poll/select performance on datagram sockets
-In-Reply-To: <1288380431.2680.3.camel@edumazet-laptop>
-Message-ID: <alpine.DEB.2.00.1010291306390.8517@davide-lnx1>
-References: <20101029191857.5f789d56@chocolatine.cbg.collabora.co.uk> <1288380431.2680.3.camel@edumazet-laptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-X-GPG-FINGRPRINT: CFAE 5BEE FD36 F65E E640  56FE 0974 BF23 270F 474E
-X-GPG-PUBLIC_KEY: http://www.xmailserver.org/davidel.asc
+	Fri, 29 Oct 2010 16:09:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=hk7hkq4WdQ2I/i+gQ/BXQHV1wJKkNSqitS4PDZdio/LzX14bIA2rTFNY4saZqpPspD
+         iX90QZW3OzC+C6inc21NT0ox2KOYsXK99YkaeKvAiGgChTGRe+qanSFWV5t0uVkANWXG
+         vqAkcqHbX6/xW9NSmNTJONgRA7dOvlHvlVV0Y=
+Date: Sat, 30 Oct 2010 00:09:00 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        eric.dumazet@gmail.com, brgerst@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86-32: Restore irq stacks NUMA-aware
+	allocations
+Message-ID: <20101029200859.GA6130@lenovo>
+References: <1288276854.2649.607.camel@edumazet-laptop> <tip-5c1eb08936693cd78c71164c8bea0b086ae72c67@git.kernel.org> <1288377146.1988.0.camel@laptop>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1085891600-1288382915=:8517"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288377146.1988.0.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---8323329-1085891600-1288382915=:8517
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-
-On Fri, 29 Oct 2010, Eric Dumazet wrote:
-
-> Le vendredi 29 octobre 2010 à 19:18 +0100, Alban Crequy a écrit :
-> > Hi,
-> > 
-> > When a process calls the poll or select, the kernel calls (struct
-> > file_operations)->poll on every file descriptor and returns a mask of
-> > events which are ready. If the process is only interested by POLLIN
-> > events, the mask is still computed for POLLOUT and it can be expensive.
-> > For example, on Unix datagram sockets, a process running poll() with
-> > POLLIN will wakes-up when the remote end call read(). This is a
-> > performance regression introduced when fixing another bug by
-> > 3c73419c09a5ef73d56472dbfdade9e311496e9b and
-> > ec0d215f9420564fc8286dcf93d2d068bb53a07e.
-> > 
-> > The attached program illustrates the problem. It compares the
-> > performance of sending/receiving data on an Unix datagram socket and
-> > select(). When the datagram sockets are not connected, the performance
-> > problem is not triggered, but when they are connected it becomes a lot
-> > slower. On my computer, I have the following time:
-> > 
-> > Connected datagram sockets: >4 seconds
-> > Non-connected datagram sockets: <1 second
-> > 
-> > The patch attached in the next email fixes the performance problem: it
-> > becomes <1 second for both cases. I am not suggesting the patch for
-> > inclusion; I would like to change the prototype of (struct
-> > file_operations)->poll instead of adding ->poll2. But there is a lot of
-> > poll functions to change (grep tells me 337 functions).
-> > 
-> > Any opinions?
+On Fri, Oct 29, 2010 at 08:32:26PM +0200, Peter Zijlstra wrote:
+> On Fri, 2010-10-29 at 06:43 +0000, tip-bot for Eric Dumazet wrote:
+> > +       irqctx = page_address(alloc_pages_node(cpu_to_node(cpu),
+> > +                                              THREAD_FLAGS,
+> > +                                              THREAD_ORDER)); 
 > 
-> My opinion would be to use epoll() for this kind of workload.
+> Shouldn't we be checking for a NULL return from alloc_pages_node()
+> before calling page_address() on it?
 
-Yeah, epoll does check for event hints coming with the callback wakeup, 
-and avoid waking up epoll_wait() waiters, for non matching events.
-Most of the devices we care about, have been modified to report the event 
-mask with the wakeup call.
+ It seems at this stage it's a panic() or BUG_ON candidate. (Which
+reminds me GFP_PANIC flag proposal back in 2009 ;)
 
-
-- Davide
-
-
---8323329-1085891600-1288382915=:8517--
+  Cyrill
