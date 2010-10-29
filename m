@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933955Ab0J2O3N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 10:29:13 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:36225 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S933902Ab0J2O3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 10:29:11 -0400
-X-Authenticated: #4630777
-X-Provags-ID: V01U2FsdGVkX1+QdpctWFuQ9t1knHFInfbrRI8CUqd3yA6PurRjAu
-	JALI8HGN0wc+lv
-Date: Fri, 29 Oct 2010 16:27:52 +0200
-From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
-To: Eric Paris <eparis@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: Ensure FMODE_NONOTIFY is not set by userspace
-Message-ID: <20101029142752.GF26242@lsanfilippo.unix.rd.tt.avira.com>
-References: <20101029100217.GC26242@lsanfilippo.unix.rd.tt.avira.com> <1288360370.3017.15.camel@localhost.localdomain>
+	id S933948Ab0J2Oa4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 10:30:56 -0400
+Received: from stinky.trash.net ([213.144.137.162]:40101 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756976Ab0J2Oay (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 10:30:54 -0400
+Message-ID: <4CCADA8D.3030808@trash.net>
+Date: Fri, 29 Oct 2010 16:30:37 +0200
+From: Patrick McHardy <kaber@trash.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288360370.3017.15.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-Y-GMX-Trusted: 0
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Stephen Hemminger <shemminger@vyatta.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netfilter-devel@vger.kernel.org
+Subject: Re: netfilter: nf_nat: make find/put static
+References: <201010231923.o9NJN2oc012438@hera.kernel.org> <AANLkTikuvBb79Q-mKK-u3tL=f433Om4T3NqJUynv=8=w@mail.gmail.com>
+In-Reply-To: <AANLkTikuvBb79Q-mKK-u3tL=f433Om4T3NqJUynv=8=w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 29, 2010 at 09:52:50AM -0400, Eric Paris wrote:
+Am 28.10.2010 20:42, schrieb Geert Uytterhoeven:
+> On Sat, Oct 23, 2010 at 21:23, Linux Kernel Mailing List
+> <linux-kernel@vger.kernel.org> wrote:
+>>    netfilter: nf_nat: make find/put static
+>>
+>>    ...
 > 
-> Did you find a place where the user was able to set FMODE_NONOTIFY?
-> That would be a problem.  But that's not what is happening here and
-> that's not what you are fixing.
+> They should be moved inside the
+> "#if defined(CONFIG_NF_CT_NETLINK) || defined(CONFIG_NF_CT_NETLINK_MODULE)",
+> as I now get:
+> 
+> net/ipv4/netfilter/nf_nat_core.c:52: warning: ‘nf_nat_proto_find_get’
+> defined but not used
+> net/ipv4/netfilter/nf_nat_core.c:66: warning: ‘nf_nat_proto_put’
+> defined but not used
 
-I know its not happening here, but doing something like
-
-#define MY_FLAG 0x1000000
-
- open("file/within/fanotify_protection", O_RDONLY | MY_FLAG);
-
-from userspace is all that is needed to be ignored by fanotify :)
-There is nothing that checks if this flag has been set by userspace (or 
-did I miss something?)
-
-Beside this since the flag should only be set within create_fd() or
-fanotify_init() there should never be a situation where 
-fsnotify_open() is called with a FMODE_NONOTIFY set (by the kernel).
-
-Regards,
-Lino 
+Thanks, I'll fix this up.
