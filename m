@@ -1,73 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751833Ab0J2EWf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 00:22:35 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:56955 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134Ab0J2EWa (ORCPT
+	id S1751004Ab0J2E33 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 00:29:29 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:33089 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349Ab0J2E3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 00:22:30 -0400
-X-AuditID: b753bd60-a7da7ba000003e7d-6f-4cca4c03d22f
-Message-ID: <4CCA4BFD.3020302@hitachi.com>
-Date: Fri, 29 Oct 2010 13:22:21 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Fri, 29 Oct 2010 00:29:22 -0400
+Date: Fri, 29 Oct 2010 05:29:19 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/8] fs: protect inode->i_state with inode->i_lock
+Message-ID: <20101029042919.GM19804@ZenIV.linux.org.uk>
+References: <1288322620-8566-1-git-send-email-david@fromorbit.com>
+ <1288322620-8566-2-git-send-email-david@fromorbit.com>
 MIME-Version: 1.0
-To: Jason Baron <jbaron@redhat.com>
-Cc: mathieu.desnoyers@polymtl.ca, hpa@zytor.com, tglx@linutronix.de,
-        andi@firstfloor.org, fweisbec@gmail.com, rostedt@goodmis.org,
-        mingo@elte.hu, linux-kernel@vger.kernel.org,
-        2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCH] call stop_machine_text_poke() on all cpus
-References: <20101028152026.GB2875@redhat.com>
-In-Reply-To: <20101028152026.GB2875@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288322620-8566-2-git-send-email-david@fromorbit.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2010/10/29 0:20), Jason Baron wrote:
-> Currently, text_poke_smp() passes a NULL as the third argument to
-> __stop_machine(), which will only run stop_machine_text_poke()
-> on 1 cpu. Change NULL -> cpu_online_mask, as stop_machine_text_poke()
-> is intended to be run on all cpus.
+On Fri, Oct 29, 2010 at 02:23:33PM +1100, Dave Chinner wrote:
+> @@ -293,9 +293,11 @@ static void inode_wait_for_writeback(struct inode *inode)
+>  
+>  	wqh = bit_waitqueue(&inode->i_state, __I_SYNC);
+>  	 while (inode->i_state & I_SYNC) {
+> +		spin_unlock(&inode->i_lock);
 
-That should be my misunderstand...
+Minor annoyance, but...  Let's replace spaces with tab in that while.
 
-> 
-> I actually didn't notice any problems with stop_machine_text_poke()
-> only being called on 1 cpu, but found this via code inspection.
+> +		spin_unlock(&inode->i_lock);
+> +
+>  		pages_skipped = wbc->pages_skipped;
+>  		writeback_single_inode(inode, wbc);
 
-Thank you very much!
+	Might make sense to lift locking i_lock into callers of
+writeback_single_inode() (it has to grab the damn thing as soon as it's
+called) and collapse it with spin_unlock() here.  Separate patch.
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> +		spin_unlock(&inode->i_lock);
+>  		/*
+>  		 * If the inode was already on b_dirty/b_io/b_more_io, don't
+>  		 * reposition it (that would break b_dirty time-ordering).
 
-> 
-> Signed-off-by: Jason Baron <jbaron@redhat.com>
-> ---
->  arch/x86/kernel/alternative.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-> index 9f39a1c..3c3f26f 100644
-> --- a/arch/x86/kernel/alternative.c
-> +++ b/arch/x86/kernel/alternative.c
-> @@ -705,6 +705,6 @@ void *__kprobes text_poke_smp(void *addr, const void *opcode, size_t len)
->  	atomic_set(&stop_machine_first, 1);
->  	wrote_text = 0;
->  	/* Use __stop_machine() because the caller already got online_cpus. */
-> -	__stop_machine(stop_machine_text_poke, (void *)&tpp, NULL);
-> +	__stop_machine(stop_machine_text_poke, (void *)&tpp, cpu_online_mask);
->  	return addr;
->  }
+I'm not sure there's any point in dropping it here, actually.
 
+> +	spin_lock(&inode->i_lock);
+>  	inode->i_state = I_FREEING | I_CLEAR;
+> +	spin_unlock(&inode->i_lock);
 
--- 
-Masami HIRAMATSU
-2nd Dept. Linux Technology Center
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+_Probably_ not needed here; we already had I_FREEING set by the time
+we'd called that and no other thread will modify ->i_state of that
+inode at that point.  Check for I_CLEAR will be later in the same
+thread, so no barriers are needed.  Separate patch.
+
+> @@ -552,8 +568,6 @@ int invalidate_inodes(struct super_block *sb)
+>  		 */
+>  		list_move(&inode->i_lru, &dispose);
+>  		list_del_init(&inode->i_wb_list);
+> -		if (!(inode->i_state & (I_DIRTY | I_SYNC)))
+> -			percpu_counter_dec(&nr_inodes_unused);
+>  	}
+>  	spin_unlock(&inode_lock);
+
+Ho-hum...
+
+I'm not sure we need that list_del_init() here, actually, seeing that
+I_FREEING is already set...  For later patch, anyway.
+
+> @@ -917,10 +946,12 @@ static struct inode *get_new_inode_fast(struct super_block *sb,
+>  		/* We released the lock, so.. */
+>  		old = find_inode_fast(sb, head, ino);
+>  		if (!old) {
+> +			spin_lock(&inode->i_lock);
+>  			inode->i_ino = ino;
+> +			inode->i_state = I_NEW;
+> +			spin_unlock(&inode->i_lock);
+
+Almost certainly not needed; nobody can find this inode at that point.
+
+> + * wake_up_bit(&inode->i_state, __I_NEW) after removing from the hash list
+> + * will DTRT.
+
+Add that i_lock is not regained.
