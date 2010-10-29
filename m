@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759876Ab0J2AaW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 20:30:22 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:49774 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755663Ab0J2AaR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 20:30:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
-         :content-type:content-transfer-encoding;
-        b=NbCE9UV8RSACS1T7h/5MIxLbZTTdaNZE0YlUiN0rJQr6MhRI5sS5SiQXQ7w1K8x66w
-         X/dzDNWf13PQfMTX5BbS5hpV5jYcEcsSbP0klHkWufnmHYVqGfZP/8LK8XWTIQ1X77fl
-         QUilcJAFCcOdON8wZ+q4P70zJ1iQ355EWJiAU=
-From: Kevin Winchester <kjwinchester@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Kevin Winchester <kjwinchester@gmail.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] power: Fix typo in status comparison causing warning
-Date: Thu, 28 Oct 2010 21:29:52 -0300
-Message-Id: <1288312192-28909-1-git-send-email-kjwinchester@gmail.com>
-X-Mailer: git-send-email 1.7.3.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-To: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>
+	id S1760013Ab0J2Aag (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 20:30:36 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:60460 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759664Ab0J2Aab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 20:30:31 -0400
+Subject: Re: [PATCH 0/4] IMA: making i_readcount a first class inode citizen
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        hch@infradead.org, warthog9@kernel.org, jmorris@namei.org,
+        kyle@mcmartin.ca, hpa@zytor.com, akpm@linux-foundation.org,
+        mingo@elte.hu, viro@zeniv.linux.org.uk,
+        Matthew Wilcox <matthew@wil.cx>
+In-Reply-To: <1288305907.3017.1.camel@localhost.localdomain>
+References: <1288303325-9628-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <20101028222404.GG2715@dastard>
+	 <AANLkTimG6o66SFHskkDOtLqYeSzwKt2c0jR3CWe+sd2w@mail.gmail.com>
+	 <1288305907.3017.1.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 28 Oct 2010 20:30:26 -0400
+Message-ID: <1288312226.2610.68.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GCC version 4.5.1 gives the following warning:
+On Thu, 2010-10-28 at 18:45 -0400, Eric Paris wrote:
+> On Thu, 2010-10-28 at 15:29 -0700, Linus Torvalds wrote:
+> > On Thu, Oct 28, 2010 at 3:24 PM, Dave Chinner <david@fromorbit.com> wrote:
+> > >
+> > > Why the wrapper functions and locking? Why not an atomic variable like
+> > > i_writecount?
+> > 
+> > Indeed. With moving this more into the VFS, let's just make sure it
+> > looks like i_writecount as much as possible.
+> 
+> My thought was that the IMA read/write checks should happen AFTER the
+> i_writecount and i_readcount counters were updated.  Thus even if we
+> raced with another task we can rest assured that the other task would
+> catch the situation we missed....
+> 
+> -Eric
 
-	drivers/base/power/runtime.c: In function ‘rpm_check_suspend_allowed’:
-	drivers/base/power/runtime.c:146:25: warning: comparison between ‘enum dpm_state’ and ‘enum rpm_status’
+Thanks Eric. My misunderstanding. Will update the patches, making
+i_readcount atomic.
 
-which seems to be a typo in that dev->power.runtime_status
-should be compared instead of dev->power.status.
-
-Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
----
- drivers/base/power/runtime.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
-index 126ca49..02c652b 100644
---- a/drivers/base/power/runtime.c
-+++ b/drivers/base/power/runtime.c
-@@ -143,7 +143,7 @@ static int rpm_check_suspend_allowed(struct device *dev)
- 
- 	/* Pending resume requests take precedence over suspends. */
- 	else if ((dev->power.deferred_resume
--			&& dev->power.status == RPM_SUSPENDING)
-+			&& dev->power.runtime_status == RPM_SUSPENDING)
- 	    || (dev->power.request_pending
- 			&& dev->power.request == RPM_REQ_RESUME))
- 		retval = -EAGAIN;
--- 
-1.7.3.2
+Mimi
 
