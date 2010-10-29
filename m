@@ -1,109 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761503Ab0J2QcB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 12:32:01 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:56621 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704Ab0J2Qb7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 12:31:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=MYTJFXVBj9P4d/r2J/nfgzGVUF7WkSfBYSSF2/uHDPDSDEbM/HZxaMXs61CnQ/ybeB
-         /I0AYtBaJpcqWlShjNGTAiusqAWkZAxCrPzjp2mLDjt+YwA6/TopKO6IQW4CVjSbtdg8
-         SLZufG4K9Nho2+wfSnY4/U2j111O/dCgXKxnQ=
+	id S1761538Ab0J2QfY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 12:35:24 -0400
+Received: from www.tglx.de ([62.245.132.106]:45618 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751729Ab0J2QfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 12:35:22 -0400
+Date: Fri, 29 Oct 2010 18:34:25 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Rabin Vincent <rabin@rab.in>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] genirq: handle shared irqs in handle_nested_irq()
+In-Reply-To: <AANLkTim_XKe9f_Onc9jXiuq14CSk9kPbPLTFvcT9caR7@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1010291833440.2692@localhost6.localdomain6>
+References: <1288288718-1188-1-git-send-email-rabin@rab.in> <alpine.LFD.2.00.1010282053180.2692@localhost6.localdomain6> <AANLkTinaTTqv3r0tWDOeZR5n=nHj5LybxAPf5uvUxpRh@mail.gmail.com> <alpine.LFD.2.00.1010291725370.2692@localhost6.localdomain6>
+ <AANLkTim_XKe9f_Onc9jXiuq14CSk9kPbPLTFvcT9caR7@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <4CCAD4E8.8040801@snapgear.com>
-References: <4CCAD4E8.8040801@snapgear.com>
-Date: Fri, 29 Oct 2010 18:31:57 +0200
-X-Google-Sender-Auth: zjEguILDuf2UeWMiV8lUeC3i-pI
-Message-ID: <AANLkTin4v0=R0Q2etqi+WkLSJTV7T5J01rd+AbymutqG@mail.gmail.com>
-Subject: Re: [PATCH][resend] m68k,m68knommu: Do not include linux/hardirq.h in asm/irqflags.h
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Ungerer <gerg@snapgear.com>
-Cc: linux-m68k@vger.kernel.org, dhowells@redhat.com, gerg@uclinux.org,
-        phdm@macqel.be, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-95874718-1288370067=:2692"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 29, 2010 at 16:06, Greg Ungerer <gerg@snapgear.com> wrote:
-> Philippe DeMuyter noticed this build failure with Linus' current git
-> tree. I think it is m68k clean too. If all are ok with it I'll
-> pass it directly to Linus.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Sorry, I saw his patch before, but had no spare cycles left for testing.
+---1463795968-95874718-1288370067=:2692
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-Unfortunately that breaks CONFIG_MMU=y:
+On Fri, 29 Oct 2010, Rabin Vincent wrote:
 
-arch/m68k/include/asm/irqflags.h: In function ‘arch_local_irq_enable’:
-arch/m68k/include/asm/irqflags.h:43: error: implicit declaration of
-function ‘hardirq_count’
+> On Fri, Oct 29, 2010 at 8:56 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > On Fri, 29 Oct 2010, Rabin Vincent wrote:
+> >> On Fri, Oct 29, 2010 at 12:24 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> >> > On Thu, 28 Oct 2010, Rabin Vincent wrote:
+> >> >> Allow shared irqs to work when nested threads are used for handling
+> >> >> threaded interrupts.
+> >> >
+> >> > Why do we want this ? handle_nested_irq() is called from a interrupt
+> >> > demultiplexer, so why would we need shared interrupts for this ?
+> >>
+> >> Threaded IRQ + handle_nested_irq() is used by I2C GPIO expander drivers
+> >> like chained hander + generic_handle_irq() is used by on-chip GPIO
+> >> drivers. �If two irq handlers are registered on an on-chip GPIO
+> >> interrupt (because two devices are externally connected), it works. �If
+> >> the handlers are instead registered on one of the expander's pins'
+> >> interrupt, without this patch, only the handler registered first is
+> >> called.
+> >
+> > Have the hardware dudes not yet understood that shared interrupts are
+> > a horrible idea ?
+> 
+> Note that I haven't actually seen the multiple devices to expander GPIO
+> (yet?, though I've seen the multiple devices to onchip GPIO).  It seemed
+> to be something missing from the irq handling though, rather than
+> something that was left out on purpose.
 
-But if you protect the #include <linux/hardirq.h> by #ifdef
-CONFIG_MMU, I'm happy with
-it.
+No, I left it out on purpose and I'd rather go w/o it unless there is
+a intree user.
 
-> m68k,m68knommu: Do not include linux/hardirq.h in asm/irqflags.h
->
-> Recent changes to header files made kernel compilation for m68k/m68knommu
-> fail with :
->  CC      arch/m68knommu/kernel/asm-offsets.s
-> In file included from /archives/linux/git/arch/m68k/include/asm/system.h:2,
->                 from include/linux/wait.h:25,
->                 from include/linux/mmzone.h:9,
->                 from include/linux/gfp.h:4,
->                 from include/linux/irq.h:20,
->                 from include/asm-generic/hardirq.h:12,
->                 from
-> /archives/linux/git/arch/m68k/include/asm/hardirq_no.h:17,
->                 from /archives/linux/git/arch/m68k/include/asm/hardirq.h:2,
->                 from include/linux/hardirq.h:10,
->                 from /archives/linux/git/arch/m68k/include/asm/irqflags.h:5,
->                 from include/linux/irqflags.h:15,
->                 from include/linux/spinlock.h:53,
->                 from include/linux/seqlock.h:29,
->                 from include/linux/time.h:8,
->                 from include/linux/timex.h:56,
->                 from include/linux/sched.h:56,
->                 from arch/m68knommu/kernel/asm-offsets.c:12:
-> /archives/linux/git/arch/m68k/include/asm/system_no.h: In function
-> â€˜__xchgâ€™:
-> /archives/linux/git/arch/m68k/include/asm/system_no.h:79: error: implicit
-> declaration of function â€˜local_irq_saveâ€™
-> /archives/linux/git/arch/m68k/include/asm/system_no.h:101: error: implicit
-> declaration of function â€˜local_irq_restoreâ€™
->
-> Fix that
->
-> Signed-off-by: Philippe De Muyter <phdm@macqel.be>
->
-> ---
-> diff --git a/arch/m68k/include/asm/irqflags.h
-> b/arch/m68k/include/asm/irqflags.h
-> index 4a5b284..38b414d 100644
-> --- a/arch/m68k/include/asm/irqflags.h
-> +++ b/arch/m68k/include/asm/irqflags.h
-> @@ -2,7 +2,6 @@
->  #define _M68K_IRQFLAGS_H
->  #include <linux/types.h>
-> -#include <linux/hardirq.h>
->  #include <linux/preempt.h>
->  #include <asm/thread_info.h>
->  #include <asm/entry.h>
+Thanks,
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+	tglx
+---1463795968-95874718-1288370067=:2692--
