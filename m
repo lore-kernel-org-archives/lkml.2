@@ -1,84 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751662Ab0J2EiM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 00:38:12 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:46847 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751148Ab0J2EiF (ORCPT
+	id S1751625Ab0J2EkQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 00:40:16 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:38019 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751148Ab0J2EkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 00:38:05 -0400
-Date: Fri, 29 Oct 2010 00:37:58 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Michael Rubin <mrubin@google.com>
-Cc: David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Benchmarks of kernel tracing options (ftrace, ktrace, lttng
-	and perf)
-Message-ID: <20101029043758.GA32614@Krystal>
-References: <AANLkTim8c+FLo11XJbTmTjiuucn-9UJD0Vui=fvUgCd+@mail.gmail.com> <AANLkTikd6sawwJeBm76QLeowXj0GBAf=wpRVgG8x5MOp@mail.gmail.com> <AANLkTi=Dw-dxkUgYLZYBKb5sGYcdGcpS0OH_fEHW51Jr@mail.gmail.com> <AANLkTi=6EBZeZ+56z_wbDuU1xTmC0saSTMDmqbqDS4Jr@mail.gmail.com> <20101028192704.GA26131@Krystal> <AANLkTimPTw4M7iSOna47mT06D7BvPx4__0qm71pKF62G@mail.gmail.com>
+	Fri, 29 Oct 2010 00:40:14 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
+Message-ID: <4CCA508F.3090903@np.css.fujitsu.com>
+Date: Fri, 29 Oct 2010 13:41:51 +0900
+From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimPTw4M7iSOna47mT06D7BvPx4__0qm71pKF62G@mail.gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 00:26:24 up 36 days,  8:28,  1 user,  load average: 0.03, 0.09,
-	0.08
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Huang Ying <ying.huang@intel.com>
+CC: Ingo Molnar <mingo@elte.hu>, "H.Peter Anvin" <hpa@zytor.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        LKLM <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/3] [x86, next] Fix unsuitable attributes of mce debugfs.
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Michael Rubin (mrubin@google.com) wrote:
-> On Thu, Oct 28, 2010 at 12:27 PM, Mathieu Desnoyers
-> <mathieu.desnoyers@efficios.com> wrote:
-> > * David Sharp (dhsharp@google.com) wrote:
-> > Hrm, not quite fair actually. LTTng enables a thread flag that causes
-> > syscall_trace to be called on sycall entry/exit by default. Please try with the
-> > following patch to remove the extra syscall overhead.
-> 
-> We started this thread is an attempt to get the ball rolling on
-> keeping track of these metrics. They seem important for both Google
-> and Linux as a whole. We published all our work and benchmarks with
-> hopes that the owners could comment and also run the tests themselves.
-> 
-> Matthieu it might make more sense for you to find the" fair" setup and
-> publish that, than take the extra time to go back and forth with
-> David. Once you have the config that best represents what users will
-> see and you have numbers to go with it, we can then run it in our
-> environment. I worry you will be forced to send us patch and patch and
-> patch and we won't have the resources to do a good job in responding
-> to them. Which is not fair to you.
+The debug interfaces of mce should be desired to do following operations
+    - Write operation as root user
+    - Read operation as all users
+for debugging mce functionality.
 
-Nah, it's really a matter of fine-tuning really. I already performed these
-benchmarks, have published the results, and know what to expect, so I figured
-out quickly that something was wrong with your setup. Disabling the extra
-syscall tracing is the only detail I see that is missing for fair comparison of
-LTTng with your setup.
+But the real attributes of interfaces of mce are 0444.
+Though the attributes of interfaces do not give any impact to
+debug mce functionality, I still think that the attributes of
+interfaces should be changed from 0444 to 0644.
 
-For the "fair" setup to compare ring buffers, I would personally tend to say
-that going through a system call might not be the way I would benchmark the ring
-buffer per se, but I must admit that the benchmark you are doing is very useful
-for evaluation of system call entry/exit tracing. On this particular aspect, I
-have always admitted that lttng is not super-fast, but it actually takes the
-same overhead as the Linux kernel syscall tracing has today. But given it is
-always enabled when lttng tracing runs, you happened to add this overhead to the
-lttng ring buffer inappropriately.
+I tested this patch on Intel64 next-tree.
 
-I'm willing to help David with the setup, and I'm sure it won't take long. By
-the way, I'm currently porting lttng to the new Generic Ring Buffer Library,
-which might be even slightly faster than the current lttng code (and faster than
-ftrace with the ring buffer benchmark Steven wrote). So when I'm done porting
-lttng to it, it might be worthwhile to benchmark the Generic Ring Buffer too.
+Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+---
+ arch/x86/kernel/cpu/mcheck/mce-severity.c |    2 +-
+ arch/x86/kernel/cpu/mcheck/mce.c          |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-Thank you,
-
-Mathieu
-
+diff --git a/arch/x86/kernel/cpu/mcheck/mce-severity.c b/arch/x86/kernel/cpu/mcheck/mce-severity.c
+index 1e8d66c..f9e6376 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
++++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
+@@ -203,7 +203,7 @@ static int __init severities_debugfs_init(void)
+ 	if (dmce == NULL)
+ 		goto err_out;
+ 	fseverities_coverage = debugfs_create_file("severities-coverage",
+-						   0444, dmce, NULL,
++						   0644, dmce, NULL,
+ 						   &severities_coverage_fops);
+ 	if (fseverities_coverage == NULL)
+ 		goto err_out;
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 7a35b72..8edb04d 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -2200,7 +2200,7 @@ static int __init mcheck_debugfs_init(void)
+ 	dmce = mce_get_debugfs_dir();
+ 	if (!dmce)
+ 		return -ENOMEM;
+-	ffake_panic = debugfs_create_file("fake_panic", 0444, dmce, NULL,
++	ffake_panic = debugfs_create_file("fake_panic", 0644, dmce, NULL,
+ 					  &fake_panic_fops);
+ 	if (!ffake_panic)
+ 		return -ENOMEM;
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+1.7.2.2
+
