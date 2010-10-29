@@ -1,45 +1,363 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759511Ab0J2AuL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 20:50:11 -0400
-Received: from kroah.org ([198.145.64.141]:51821 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756446Ab0J2AuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 20:50:07 -0400
-Date: Thu, 28 Oct 2010 17:50:09 -0700
-From: Greg KH <greg@kroah.com>
-To: Konstantin Katuev <kkatuev@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging/keucr driver - uninitialized variable & proper
-	memset length
-Message-ID: <20101029005009.GA8142@kroah.com>
-References: <AANLkTimvLvtLDLiYT2geZ3Qh1+cugjB-OYQcGv9hhGVG@mail.gmail.com>
+	id S1758108Ab0J2BEl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 21:04:41 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55879 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751245Ab0J2BEg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 21:04:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=jRLMmokHU4SXOavhiGSYP3gP/KpbJlOvtadKgRoDvaiZc0vDac5ggyjL5QfgtHLSva
+         M5R08ZQGZjkyeWO63+d4ionpxUKk0Z7vKaIZp2TFQ9OAuk3ATHllJYUch79q3e4WD9Fk
+         Ni0i7vUJ8XwYZhofYLIxjBmquHlgDwYBzlcbY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 In-Reply-To: <AANLkTimvLvtLDLiYT2geZ3Qh1+cugjB-OYQcGv9hhGVG@mail.gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+References: <AANLkTimvLvtLDLiYT2geZ3Qh1+cugjB-OYQcGv9hhGVG@mail.gmail.com>
+Date: Fri, 29 Oct 2010 12:04:34 +1100
+Message-ID: <AANLkTikSyCY93hdX019zLhYu7DV_LTP2yw6UwmP-Gi3b@mail.gmail.com>
+Subject: [PATCH v2] staging/keucr driver - uninitialized variable & proper
+ memset length
+From: Konstantin Katuev <kkatuev@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: greg@kroah.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 28, 2010 at 10:20:33PM +1100, Konstantin Katuev wrote:
-> There was commented out transfer_flags initialization.
-> And i think memset should fill entire structure, not only length of
-> pointer to it.
-> Driver now works.
+There was commented out transfer_flags initialization.
+And i think memset should fill entire structure, not only length of
+pointer to it.
+Driver now works.
 
-Great!
+Signed-off-by: Konstantin Katuev <kkatuev@gmail.com>
+---
+diff --git a/drivers/staging/keucr/init.c b/drivers/staging/keucr/init.c
+index 1934805..978bf87 100644
+--- a/drivers/staging/keucr/init.c
++++ b/drivers/staging/keucr/init.c
+@@ -22,7 +22,7 @@ int ENE_InitMedia(struct us_data *us)
+       int     result;
+       BYTE    MiscReg03 = 0;
 
-> 
-> Konstantin
+-       printk("--- Initial Nedia ---\n");
++       printk("--- Init Media ---\n");
+       result = ENE_Read_BYTE(us, REG_CARD_STATUS, &MiscReg03);
+       if (result != USB_STOR_XFER_GOOD)
+       {
+@@ -64,7 +64,7 @@ int ENE_Read_BYTE(struct us_data *us, WORD index, void *buf)
+       struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
+       int result;
 
-Oops, I need a "Signed-off-by:" line in order to be able to apply this.
-Read Documentation/SubmittingPatches for more details about this?
+-       memset(bcb, 0, sizeof(bcb));
++       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+       bcb->DataTransferLength = 0x01;
+       bcb->Flags                      = 0x80;
+@@ -92,7 +92,7 @@ int ENE_SDInit(struct us_data *us)
+               return USB_STOR_TRANSPORT_ERROR;
+       }
 
-Care to resend it with that and cc: me so I make sure to see it so that
-I can apply it?
+-       memset(bcb, 0, sizeof(bcb));
++       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+       bcb->Flags = 0x80;
+       bcb->CDB[0] = 0xF2;
+@@ -112,7 +112,7 @@ int ENE_SDInit(struct us_data *us)
+               return USB_STOR_TRANSPORT_ERROR;
+       }
 
-thanks,
+-       memset(bcb, 0, sizeof(bcb));
++       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+       bcb->DataTransferLength = 0x200;
+       bcb->Flags                      = 0x80;
+@@ -161,7 +161,7 @@ int ENE_MSInit(struct us_data *us)
+               return USB_STOR_TRANSPORT_ERROR;
+       }
 
-greg k-h
+-       memset(bcb, 0, sizeof(bcb));
++       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+       bcb->DataTransferLength = 0x200;
+       bcb->Flags                      = 0x80;
+@@ -219,7 +219,7 @@ int ENE_SMInit(struct us_data *us)
+               return USB_STOR_TRANSPORT_ERROR;
+       }
+
+-       memset(bcb, 0, sizeof(bcb));
++       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+       bcb->DataTransferLength = 0x200;
+       bcb->Flags                      = 0x80;
+@@ -341,7 +341,7 @@ int ENE_LoadBinCode(struct us_data *us, BYTE flag)
+               break;
+       }
+
+-       memset(bcb, 0, sizeof(bcb));
++       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+       bcb->DataTransferLength = 0x800;
+       bcb->Flags =0x00;
+@@ -433,7 +433,7 @@ int ENE_Read_Data(struct us_data *us, void *buf,
+unsigned int length)
+
+       //printk("transport --- ENE_Read_Data\n");
+       // set up the command wrapper
+-       memset(bcb, 0, sizeof(bcb));
++       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+       bcb->DataTransferLength = length;
+       bcb->Flags =0x80;
+@@ -470,7 +470,7 @@ int ENE_Write_Data(struct us_data *us, void *buf,
+unsigned int length)
+
+       //printk("transport --- ENE_Write_Data\n");
+       // set up the command wrapper
+-       memset(bcb, 0, sizeof(bcb));
++       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+       bcb->DataTransferLength = length;
+       bcb->Flags =0x00;
+diff --git a/drivers/staging/keucr/ms.c b/drivers/staging/keucr/ms.c
+index d4340a9..9a3fdb4 100644
+--- a/drivers/staging/keucr/ms.c
++++ b/drivers/staging/keucr/ms.c
+@@ -15,7 +15,7 @@ int MS_ReaderCopyBlock(struct us_data *us, WORD
+oldphy, WORD newphy, WORD PhyBlo
+       if (result != USB_STOR_XFER_GOOD)
+               return USB_STOR_TRANSPORT_ERROR;
+
+-       memset(bcb, 0, sizeof(bcb));
++       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+       bcb->DataTransferLength = 0x200*len;
+       bcb->Flags                      = 0x00;
+@@ -53,7 +53,7 @@ int MS_ReaderReadPage(struct us_data *us, DWORD
+PhyBlockAddr, BYTE PageNum, PDWO
+               return USB_STOR_TRANSPORT_ERROR;
+
+       // Read Page Data
+-       memset(bcb, 0, sizeof(bcb));
++       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+       bcb->DataTransferLength = 0x200;
+       bcb->Flags                      = 0x80;
+@@ -69,7 +69,7 @@ int MS_ReaderReadPage(struct us_data *us, DWORD
+PhyBlockAddr, BYTE PageNum, PDWO
+               return USB_STOR_TRANSPORT_ERROR;
+
+       // Read Extra Data
+-       memset(bcb, 0, sizeof(bcb));
++       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+       bcb->DataTransferLength = 0x4;
+       bcb->Flags                      = 0x80;
+@@ -108,7 +108,7 @@ int MS_ReaderEraseBlock(struct us_data *us, DWORD
+PhyBlockAddr)
+       if (result != USB_STOR_XFER_GOOD)
+               return USB_STOR_TRANSPORT_ERROR;
+
+-       memset(bcb, 0, sizeof(bcb));
++       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+       bcb->DataTransferLength = 0x200;
+       bcb->Flags                      = 0x80;
+@@ -673,7 +673,7 @@ int MS_LibReadExtraBlock(struct us_data *us, DWORD
+PhyBlock, BYTE PageNum, BYTE
+       //printk("MS_LibReadExtraBlock --- PhyBlock = %x, PageNum =
+%x, blen = %x\n", PhyBlock, PageNum, blen);
+
+       // Read Extra Data
+-       memset(bcb, 0, sizeof(bcb));
++       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+       bcb->DataTransferLength = 0x4 * blen;
+       bcb->Flags                      = 0x80;
+@@ -700,7 +700,7 @@ int MS_LibReadExtra(struct us_data *us, DWORD
+PhyBlock, BYTE PageNum, MS_LibType
+       BYTE    ExtBuf[4];
+
+       //printk("MS_LibReadExtra --- PhyBlock = %x, PageNum = %x\n",
+PhyBlock, PageNum);
+-       memset(bcb, 0, sizeof(bcb));
++       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+       bcb->DataTransferLength = 0x4;
+       bcb->Flags                      = 0x80;
+@@ -807,7 +807,7 @@ int MS_LibOverwriteExtra(struct us_data *us, DWORD
+PhyBlockAddr, BYTE PageNum, B
+       if (result != USB_STOR_XFER_GOOD)
+               return USB_STOR_TRANSPORT_ERROR;
+
+-       memset(bcb, 0, sizeof(bcb));
++       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+       bcb->DataTransferLength = 0x4;
+       bcb->Flags                      = 0x80;
+diff --git a/drivers/staging/keucr/msscsi.c b/drivers/staging/keucr/msscsi.c
+index ad0c5c6..cb92d25 100644
+--- a/drivers/staging/keucr/msscsi.c
++++ b/drivers/staging/keucr/msscsi.c
+@@ -145,7 +145,7 @@ int MS_SCSI_Read(struct us_data *us, struct scsi_cmnd *srb)
+               }
+
+               // set up the command wrapper
+-               memset(bcb, 0, sizeof(bcb));
++               memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+               bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+               bcb->DataTransferLength = blenByte;
+               bcb->Flags  = 0x80;
+@@ -193,7 +193,7 @@ int MS_SCSI_Read(struct us_data *us, struct scsi_cmnd *srb)
+                       blkno  = phyblk * 0x20 + PageNum;
+
+                       // set up the command wrapper
+-                       memset(bcb, 0, sizeof(bcb));
++                       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+                       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+                       bcb->DataTransferLength = 0x200 * len;
+                       bcb->Flags  = 0x80;
+@@ -250,7 +250,7 @@ int MS_SCSI_Write(struct us_data *us, struct scsi_cmnd *srb)
+               }
+
+               // set up the command wrapper
+-               memset(bcb, 0, sizeof(bcb));
++               memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+               bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+               bcb->DataTransferLength = blenByte;
+               bcb->Flags  = 0x00;
+diff --git a/drivers/staging/keucr/sdscsi.c b/drivers/staging/keucr/sdscsi.c
+index 6c332f8..d646507 100644
+--- a/drivers/staging/keucr/sdscsi.c
++++ b/drivers/staging/keucr/sdscsi.c
+@@ -152,7 +152,7 @@ int SD_SCSI_Read(struct us_data *us, struct scsi_cmnd *srb)
+               bnByte = bn;
+
+       // set up the command wrapper
+-       memset(bcb, 0, sizeof(bcb));
++       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+       bcb->DataTransferLength = blenByte;
+       bcb->Flags  = 0x80;
+@@ -192,7 +192,7 @@ int SD_SCSI_Write(struct us_data *us, struct scsi_cmnd *srb)
+               bnByte = bn;
+
+       // set up the command wrapper
+-       memset(bcb, 0, sizeof(bcb));
++       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+       bcb->DataTransferLength = blenByte;
+       bcb->Flags  = 0x00;
+diff --git a/drivers/staging/keucr/smilsub.c b/drivers/staging/keucr/smilsub.c
+index 844b659..1b52535 100644
+--- a/drivers/staging/keucr/smilsub.c
++++ b/drivers/staging/keucr/smilsub.c
+@@ -266,7 +266,7 @@ int Ssfdc_D_ReadSect(struct us_data *us, BYTE
+*buf,BYTE *redundant)
+       addr = addr*(WORD)Ssfdc.MaxSectors+Media.Sector;
+
+       // Read sect data
+-       memset(bcb, 0, sizeof(bcb));
++       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+       bcb->DataTransferLength = 0x200;
+       bcb->Flags                      = 0x80;
+@@ -281,7 +281,7 @@ int Ssfdc_D_ReadSect(struct us_data *us, BYTE
+*buf,BYTE *redundant)
+               return USB_STOR_TRANSPORT_ERROR;
+
+       // Read redundant
+-       memset(bcb, 0, sizeof(bcb));
++       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+       bcb->DataTransferLength = 0x10;
+       bcb->Flags                      = 0x80;
+@@ -319,7 +319,7 @@ int Ssfdc_D_ReadBlock(struct us_data *us, WORD
+count, BYTE *buf,BYTE *redundant)
+       addr = addr*(WORD)Ssfdc.MaxSectors+Media.Sector;
+
+       // Read sect data
+-       memset(bcb, 0, sizeof(bcb));
++       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+       bcb->DataTransferLength = 0x200*count;
+       bcb->Flags                      = 0x80;
+@@ -334,7 +334,7 @@ int Ssfdc_D_ReadBlock(struct us_data *us, WORD
+count, BYTE *buf,BYTE *redundant)
+               return USB_STOR_TRANSPORT_ERROR;
+
+       // Read redundant
+-       memset(bcb, 0, sizeof(bcb));
++       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+       bcb->DataTransferLength = 0x10;
+       bcb->Flags                      = 0x80;
+@@ -536,7 +536,7 @@ int Ssfdc_D_CopyBlock(struct us_data *us, WORD
+count, BYTE *buf,BYTE *redundant)
+       WriteAddr = WriteAddr*(WORD)Ssfdc.MaxSectors;
+
+       // Write sect data
+-       memset(bcb, 0, sizeof(bcb));
++       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+       bcb->DataTransferLength = 0x200*count;
+       bcb->Flags                      = 0x00;
+@@ -754,7 +754,7 @@ int Ssfdc_D_WriteSectForCopy(struct us_data *us,
+BYTE *buf, BYTE *redundant)
+       addr = addr*(WORD)Ssfdc.MaxSectors+Media.Sector;
+
+       // Write sect data
+-       memset(bcb, 0, sizeof(bcb));
++       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+       bcb->DataTransferLength = 0x200;
+       bcb->Flags                      = 0x00;
+@@ -791,7 +791,7 @@ int Ssfdc_D_EraseBlock(struct us_data *us)
+       addr=(WORD)Media.Zone*Ssfdc.MaxBlocks+Media.PhyBlock;
+       addr=addr*(WORD)Ssfdc.MaxSectors;
+
+-       memset(bcb, 0, sizeof(bcb));
++       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+       bcb->DataTransferLength = 0x200;
+       bcb->Flags                      = 0x80;
+@@ -827,7 +827,7 @@ int Ssfdc_D_ReadRedtData(struct us_data *us, BYTE
+*redundant)
+       addr = (WORD)Media.Zone*Ssfdc.MaxBlocks+Media.PhyBlock;
+       addr = addr*(WORD)Ssfdc.MaxSectors+Media.Sector;
+
+-       memset(bcb, 0, sizeof(bcb));
++       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+       bcb->DataTransferLength = 0x10;
+       bcb->Flags                      = 0x80;
+@@ -870,7 +870,7 @@ int Ssfdc_D_WriteRedtData(struct us_data *us, BYTE
+*redundant)
+       addr = (WORD)Media.Zone*Ssfdc.MaxBlocks+Media.PhyBlock;
+       addr = addr*(WORD)Ssfdc.MaxSectors+Media.Sector;
+
+-       memset(bcb, 0, sizeof(bcb));
++       memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+       bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+       bcb->DataTransferLength = 0x10;
+       bcb->Flags                      = 0x80;
+diff --git a/drivers/staging/keucr/transport.c
+b/drivers/staging/keucr/transport.c
+index 4697021..e3d3163 100644
+--- a/drivers/staging/keucr/transport.c
++++ b/drivers/staging/keucr/transport.c
+@@ -40,7 +40,7 @@ static int usb_stor_msg_common(struct us_data *us,
+int timeout)
+       us->current_urb->error_count = 0;
+       us->current_urb->status = 0;
+
+-//     us->current_urb->transfer_flags = URB_NO_SETUP_DMA_MAP;
++       us->current_urb->transfer_flags = 0;
+       if (us->current_urb->transfer_buffer == us->iobuf)
+               us->current_urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
+       us->current_urb->transfer_dma = us->iobuf_dma;
