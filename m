@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761535Ab0J2OI5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 10:08:57 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:35481 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757785Ab0J2OIz (ORCPT
+	id S932682Ab0J2OOh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 10:14:37 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:44521 "EHLO
+	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757923Ab0J2OOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 10:08:55 -0400
-Date: Fri, 29 Oct 2010 10:08:54 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Kevin Winchester <kjwinchester@gmail.com>, Pavel Machek <pavel@ucw.cz>,
-        <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] power: Fix typo in status comparison causing warning
-In-Reply-To: <201010290949.11833.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1010291006340.1588-100000@iolanthe.rowland.org>
+	Fri, 29 Oct 2010 10:14:35 -0400
+X-SpamScore: -11
+X-BigFish: VS-11(z3b68iz1432N98dNzz1202hzzz2dh2a8h66h)
+X-Spam-TCS-SCL: 5:0
+Message-ID: <4CCAD6C5.5020102@freescale.com>
+Date: Fri, 29 Oct 2010 09:14:29 -0500
+From: Timur Tabi <timur@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.13) Gecko/20101013 Fedora/2.0.8-2.fc13 SeaMonkey/2.0.8
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: gregkh <gregkh@suse.de>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: Writing a console/tty driver -- how to use tty_port?
+References: <4CC893CD.7020701@freescale.com> <20101027231948.5e62dd09@lxorguk.ukuu.org.uk> <4CC9D074.3060108@freescale.com> <4CCAD244.3060600@freescale.com>
+In-Reply-To: <4CCAD244.3060600@freescale.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 29 Oct 2010 14:15:02.0985 (UTC) FILETIME=[ADBB0390:01CB7773]
+X-Reverse-DNS: az33egw02.freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Oct 2010, Rafael J. Wysocki wrote:
-
-> On Friday, October 29, 2010, Kevin Winchester wrote:
-> > GCC version 4.5.1 gives the following warning:
-> > 
-> > 	drivers/base/power/runtime.c: In function ‘rpm_check_suspend_allowed’:
-> > 	drivers/base/power/runtime.c:146:25: warning: comparison between ‘enum dpm_state’ and ‘enum rpm_status’
-> > 
-> > which seems to be a typo in that dev->power.runtime_status
-> > should be compared instead of dev->power.status.
-> > 
-> > Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
-> > ---
-> >  drivers/base/power/runtime.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
-> > index 126ca49..02c652b 100644
-> > --- a/drivers/base/power/runtime.c
-> > +++ b/drivers/base/power/runtime.c
-> > @@ -143,7 +143,7 @@ static int rpm_check_suspend_allowed(struct device *dev)
-> >  
-> >  	/* Pending resume requests take precedence over suspends. */
-> >  	else if ((dev->power.deferred_resume
-> > -			&& dev->power.status == RPM_SUSPENDING)
-> > +			&& dev->power.runtime_status == RPM_SUSPENDING)
-> >  	    || (dev->power.request_pending
-> >  			&& dev->power.request == RPM_REQ_RESUME))
-> >  		retval = -EAGAIN;
+Timur Tabi wrote:
+> I've done a little more debugging, and it's even stranger than I thought.  The
+> console is only half missing.
 > 
-> Ouch, this actually is a serious bug.
+> What's missing is my shell prompt, and a few other things.  I can type in
+> commands, though.  The prompt returns, however, if I 'cd' to the root direcetory.
 
-Yes indeed.  I should have caught it while reviewing the patch.  A 
-quick check shows there are no other similar typos.
+Never mind, I figure it out.  My console device was silently rejecting any
+writes larger than 16 bytes.
 
-> Thanks a lot for the fix, will push to Linus shortly.
-> 
-> Rafael
+Sorry for the noise.  I know your inboxes must be always full.
 
-Alan Stern
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
 
