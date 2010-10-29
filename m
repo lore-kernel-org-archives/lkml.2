@@ -1,247 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760021Ab0J2HQm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 03:16:42 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:9104 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754713Ab0J2HQh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 03:16:37 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=lQzrwJJ4BZNdQc3ggIZcLz/N3atNpFO6CirKnh+FExm9FGLSBk24ULSEZSk8ArndI
-	pqbplj3KthxLFuLsRQ8EQ==
-From: Greg Thelen <gthelen@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Greg Thelen <gthelen@google.com>
-Subject: [PATCH v4 11/11] memcg: check memcg dirty limits in page writeback
-Date: Fri, 29 Oct 2010 00:09:14 -0700
-Message-Id: <1288336154-23256-12-git-send-email-gthelen@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1288336154-23256-1-git-send-email-gthelen@google.com>
-References: <1288336154-23256-1-git-send-email-gthelen@google.com>
+	id S1758952Ab0J2HTK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 03:19:10 -0400
+Received: from rt-pi1-ru-sssup.pi1.garr.net ([193.206.136.46]:39635 "EHLO
+	sssup.it" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756199Ab0J2HTH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 03:19:07 -0400
+Subject: [RFC][PATCH 00/22] sched: SCHED_DEADLINE v3
+From: Raistlin <raistlin@linux.it>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
+        "p.faure" <p.faure@akatech.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        michael trimarchi <trimarchi@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>,
+        Tommaso Cucinotta <cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Nicola Manica <nicola.manica@disi.unitn.it>,
+        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
+        Harald Gustafsson <hgu1972@gmail.com>,
+        paulmck <paulmck@linux.vnet.ibm.com>, Dario <raistlin@linux.it>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-0idb1rubvU/lFmV8bEne"
+Date: Fri, 29 Oct 2010 08:18:47 +0200
+Message-ID: <1288333128.8661.137.camel@Palantir>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the current process is in a non-root memcg, then
-balance_dirty_pages() will consider the memcg dirty limits
-as well as the system-wide limits.  This allows different
-cgroups to have distinct dirty limits which trigger direct
-and background writeback at different levels.
 
-Signed-off-by: Andrea Righi <arighi@develer.com>
-Signed-off-by: Greg Thelen <gthelen@google.com>
----
-Changelog since v3:
-- Leave determine_dirtyable_memory() static.  v3 made is non-static.
-- balance_dirty_pages() now considers both system and memcg dirty limits and
-  usage data.  This data is retrieved with global_dirty_info() and
-  memcg_dirty_info().  
+--=-0idb1rubvU/lFmV8bEne
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
- mm/page-writeback.c |  109 ++++++++++++++++++++++++++++++++++++--------------
- 1 files changed, 78 insertions(+), 31 deletions(-)
+Hello everyone,
 
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index b3bb2fb..57caee5 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -131,6 +131,18 @@ EXPORT_SYMBOL(laptop_mode);
- static struct prop_descriptor vm_completions;
- static struct prop_descriptor vm_dirties;
- 
-+static unsigned long dirty_writeback_pages(void)
-+{
-+	s64 ret;
-+
-+	ret = mem_cgroup_page_stat(MEMCG_NR_DIRTY_WRITEBACK_PAGES);
-+	if (ret < 0)
-+		ret = global_page_state(NR_UNSTABLE_NFS) +
-+			global_page_state(NR_WRITEBACK);
-+
-+	return ret;
-+}
-+
- /*
-  * couple the period to the dirty_ratio:
-  *
-@@ -398,45 +410,67 @@ unsigned long determine_dirtyable_memory(void)
- }
- 
- /*
-+ * The dirty limits will be lifted by 1/4 for PF_LESS_THROTTLE (ie. nfsd) and
-+ * runtime tasks.
-+ */
-+static inline void adjust_dirty_info(struct dirty_info *info)
-+{
-+	struct task_struct *tsk;
-+
-+	if (info->background_thresh >= info->dirty_thresh)
-+		info->background_thresh = info->dirty_thresh / 2;
-+	tsk = current;
-+	if (tsk->flags & PF_LESS_THROTTLE || rt_task(tsk)) {
-+		info->background_thresh += info->background_thresh / 4;
-+		info->dirty_thresh += info->dirty_thresh / 4;
-+	}
-+}
-+
-+/*
-  * global_dirty_info - return background-writeback and dirty-throttling
-  * thresholds as well as dirty usage metrics.
-  *
-  * Calculate the dirty thresholds based on sysctl parameters
-  * - vm.dirty_background_ratio  or  vm.dirty_background_bytes
-  * - vm.dirty_ratio             or  vm.dirty_bytes
-- * The dirty limits will be lifted by 1/4 for PF_LESS_THROTTLE (ie. nfsd) and
-- * runtime tasks.
-  */
- void global_dirty_info(struct dirty_info *info)
- {
--	unsigned long background;
--	unsigned long dirty;
- 	unsigned long available_memory = determine_dirtyable_memory();
--	struct task_struct *tsk;
- 
- 	if (vm_dirty_bytes)
--		dirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
-+		info->dirty_thresh = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
- 	else
--		dirty = (vm_dirty_ratio * available_memory) / 100;
-+		info->dirty_thresh = (vm_dirty_ratio * available_memory) / 100;
- 
- 	if (dirty_background_bytes)
--		background = DIV_ROUND_UP(dirty_background_bytes, PAGE_SIZE);
-+		info->background_thresh =
-+			DIV_ROUND_UP(dirty_background_bytes, PAGE_SIZE);
- 	else
--		background = (dirty_background_ratio * available_memory) / 100;
-+		info->background_thresh =
-+			(dirty_background_ratio * available_memory) / 100;
- 
- 	info->nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
- 				global_page_state(NR_UNSTABLE_NFS);
- 	info->nr_writeback = global_page_state(NR_WRITEBACK);
- 
--	if (background >= dirty)
--		background = dirty / 2;
--	tsk = current;
--	if (tsk->flags & PF_LESS_THROTTLE || rt_task(tsk)) {
--		background += background / 4;
--		dirty += dirty / 4;
--	}
--	info->background_thresh = background;
--	info->dirty_thresh = dirty;
-+	adjust_dirty_info(info);
-+}
-+
-+/*
-+ * Calculate the background-writeback and dirty-throttling thresholds and dirty
-+ * usage metrics from the current task's memcg dirty limit parameters.  Returns
-+ * false if no memcg limits exist.
-+ */
-+static bool memcg_dirty_info(struct dirty_info *info)
-+{
-+	unsigned long available_memory = determine_dirtyable_memory();
-+
-+	if (!mem_cgroup_dirty_info(available_memory, info))
-+		return false;
-+
-+	adjust_dirty_info(info);
-+	return true;
- }
- 
- /*
-@@ -480,7 +514,8 @@ unsigned long bdi_dirty_limit(struct backing_dev_info *bdi, unsigned long dirty)
- static void balance_dirty_pages(struct address_space *mapping,
- 				unsigned long write_chunk)
- {
--	struct dirty_info dirty_info;
-+	struct dirty_info sys_info;
-+	struct dirty_info memcg_info;
- 	long bdi_nr_reclaimable;
- 	long bdi_nr_writeback;
- 	unsigned long bdi_thresh;
-@@ -497,19 +532,27 @@ static void balance_dirty_pages(struct address_space *mapping,
- 			.range_cyclic	= 1,
- 		};
- 
--		global_dirty_info(&dirty_info);
-+		global_dirty_info(&sys_info);
-+
-+		if (!memcg_dirty_info(&memcg_info))
-+			memcg_info = sys_info;
- 
- 		/*
- 		 * Throttle it only when the background writeback cannot
- 		 * catch-up. This avoids (excessively) small writeouts
- 		 * when the bdi limits are ramping up.
- 		 */
--		if (dirty_info.nr_reclaimable + dirty_info.nr_writeback <=
--				(dirty_info.background_thresh +
--				 dirty_info.dirty_thresh) / 2)
-+		if ((sys_info.nr_reclaimable + sys_info.nr_writeback <=
-+				(sys_info.background_thresh +
-+				 sys_info.dirty_thresh) / 2) &&
-+		    (memcg_info.nr_reclaimable + memcg_info.nr_writeback <=
-+				(memcg_info.background_thresh +
-+				 memcg_info.dirty_thresh) / 2))
- 			break;
- 
--		bdi_thresh = bdi_dirty_limit(bdi, dirty_info.dirty_thresh);
-+		bdi_thresh = bdi_dirty_limit(bdi,
-+				min(sys_info.dirty_thresh,
-+				    memcg_info.dirty_thresh));
- 		bdi_thresh = task_dirty_limit(current, bdi_thresh);
- 
- 		/*
-@@ -538,9 +581,12 @@ static void balance_dirty_pages(struct address_space *mapping,
- 		 */
- 		dirty_exceeded =
- 			(bdi_nr_reclaimable + bdi_nr_writeback > bdi_thresh)
--			|| (dirty_info.nr_reclaimable +
--			    dirty_info.nr_writeback >
--			    dirty_info.dirty_thresh);
-+			|| (sys_info.nr_reclaimable +
-+			    sys_info.nr_writeback >
-+			    sys_info.dirty_thresh)
-+			|| (memcg_info.nr_reclaimable +
-+			    memcg_info.nr_writeback >
-+			    memcg_info.dirty_thresh);
- 
- 		if (!dirty_exceeded)
- 			break;
-@@ -593,8 +639,10 @@ static void balance_dirty_pages(struct address_space *mapping,
- 	 * background_thresh, to keep the amount of dirty memory low.
- 	 */
- 	if ((laptop_mode && pages_written) ||
--	    (!laptop_mode && (dirty_info.nr_reclaimable >
--			      dirty_info.background_thresh)))
-+	    (!laptop_mode && ((sys_info.nr_reclaimable >
-+			       sys_info.background_thresh) ||
-+			      (memcg_info.nr_reclaimable >
-+			       memcg_info.background_thresh))))
- 		bdi_start_background_writeback(bdi);
- }
- 
-@@ -666,8 +714,7 @@ void throttle_vm_writeout(gfp_t gfp_mask)
- 		dirty_info.dirty_thresh +=
- 			dirty_info.dirty_thresh / 10;      /* wheeee... */
- 
--                if (global_page_state(NR_UNSTABLE_NFS) +
--		    global_page_state(NR_WRITEBACK) <= dirty_info.dirty_thresh)
-+		if (dirty_writeback_pages() <= dirty_info.dirty_thresh)
- 			break;
-                 congestion_wait(BLK_RW_ASYNC, HZ/10);
- 
--- 
-1.7.3.1
+This is the take 3 for the SCHED_DEADLINE patchset. I've done my best to
+have something that can be publicly shown by the Kernel Summit. To be
+sincere, I didn't make in getting the code to the point I wanted to but,
+hey, I hope this can be at least something from where to start the
+discussion. :-)
+
+BTW, the patchset introduces a new deadline based real-time task
+scheduling policy --called SCHED_DEADLINE-- with bandwidth isolation
+(aka "resource reservation") capabilities. It now supports
+global/clustered multiprocessor scheduling through dynamic task
+migrations.
+
+The code is being jointly developed by ReTiS Lab (http://retis.sssup.it)
+and Evidence S.r.l (http://www.evidence.eu.com) in the context of the
+ACTORS EU-funded project (http://www.actors-project.eu).
+It is also starting to get some users, both in academic and applied
+research, considered I'm getting some feedback from Ericsson, MIT and
+from Iowa State, Porto (ISEP), Carnegie Mellon, Barcelona and Trento
+universities.
+
+=46rom the previous release[*]:
+ - all the comments and the fixes coming from the reviews we got have=20
+   been considered and applied;
+ - global and clustered (e.g., through cpusets) scheduling is now
+   available. This means that tasks can migrate among (a subset of) CPUs
+   when this is needed, by means of pushes & pulls, like in
+   sched_rt.c;
+ - (c)group based task admission logic and bandwidth management has=20
+   been removed, in favour of a per root_domain tasks bandwidth
+   accounting mechanism;
+ - finally, all the code underwent major restructuring (many parts=20
+   have been almost completely rewritten), to make it easier to read and
+   understand, as well as more consistent with kernel mechanisms and
+   conventions;
+=20
+Still missing/incomplete:
+ - (c)group based bandwidth management, and maybe scheduling. It seems=20
+   some more discussion on what precisely we want is *really* needed=20
+   for this point;
+ - better handling of rq selection for dynamic task migration, by means
+   of a cpupri equivalent for -deadline tasks. Not that hard to do, we
+   already have some ideas and hope to have the code soon;
+ - bandwidth inheritance (to replace deadline/priority inheritance).
+   What's in the patchset is just very few more than a simple
+   placeholder. I tried doing something that may fit in the current
+   architecture of rt_mutexes (i.e., the pi-chain of waiters) but did
+   not get to anything meaningful. We are now working on migrating to
+   something similar to what it's probably known here as proxy
+   execution... It's not easy at all, but we are on it. :-)
+
+The official page of the project is:
+  http://www.evidence.eu.com/sched_deadline.html
+
+while the development is taking place at:
+  http://gitorious.org/sched_deadline/pages/Home
+  http://gitorious.org/sched_deadline
+
+Check the repositories frequently if you're interested, and feel free to
+e-mail me for any issue you run into.
+
+Patchset is on top of tip/master (as of today). The git-tree and patches
+for PREEMPT_RT will be available on the project website in the next
+days.
+
+Relationship of this patchset with the EDF-throttling one is tight,
+although the two implementations add different (new) features and solve
+different problems. In case they have to coexist, a lot of code could be
+shared and duplications would be easily avoided.
+
+As usual, any kind of feedback is welcome and appreciated.
+
+Thanks in advice and regards,
+Dario
+
+[*] http://lwn.net/Articles/376502, http://lwn.net/Articles/353797
+
+Dario Faggioi, SCHED_DEADLINE (22)
+
+ sched: add sched_class->task_dead.
+ sched: add extended scheduling interface.
+ sched: SCHED_DEADLINE data structures.
+ sched: SCHED_DEADLINE SMP-related data structures.
+ sched: SCHED_DEADLINE policy implementation.
+ sched: SCHED_DEADLINE handles spacial kthreads.
+ sched: SCHED_DEADLINE push and pull logic.
+ sched: SCHED_DEADLINE avg_update accounting.
+ sched: add period support for -deadline tasks.
+ sched: add a syscall to wait for the next instance.
+ sched: add schedstats for -deadline tasks.
+ sched: add runtime reporting for -deadline tasks.
+ sched: add resource limits for -deadline tasks.
+ sched: add latency tracing for -deadline tasks.
+ sched: add traceporints for -deadline tasks.
+ sched: add SMP traceporints for -deadline tasks.
+ sched: add signaling overrunning -deadline tasks.
+ sched: add reclaiming logic to -deadline tasks.
+ rtmutex: turn the plist into an rb-tree.
+ sched: drafted deadline inheritance logic.
+ sched: add bandwidth management for sched_dl.
+ sched: add sched_dl documentation.
+
+ Documentation/scheduler/sched-deadline.txt |  147 +++
+ arch/arm/include/asm/unistd.h              |    4 +
+ arch/arm/kernel/calls.S                    |    4 +
+ arch/x86/ia32/ia32entry.S                  |    4 +
+ arch/x86/include/asm/unistd_32.h           |    6 +-
+ arch/x86/include/asm/unistd_64.h           |    8 +
+ arch/x86/kernel/syscall_table_32.S         |    4 +
+ include/asm-generic/resource.h             |    7 +-
+ include/linux/init_task.h                  |   10 +
+ include/linux/rtmutex.h                    |   13 +-
+ include/linux/sched.h                      |  208 ++++-
+ include/linux/syscalls.h                   |    9 +
+ include/trace/events/sched.h               |  312 +++++-
+ kernel/fork.c                              |    4 +-
+ kernel/hrtimer.c                           |    2 +-
+ kernel/posix-cpu-timers.c                  |   55 +
+ kernel/rtmutex-debug.c                     |    8 +-
+ kernel/rtmutex.c                           |  146 ++-
+ kernel/rtmutex_common.h                    |   22 +-
+ kernel/sched.c                             | 1046 ++++++++++++++++--
+ kernel/sched_debug.c                       |   46 +
+ kernel/sched_dl.c                          | 1713 ++++++++++++++++++++++++=
+++++
+ kernel/sched_fair.c                        |    6 +-
+ kernel/sched_rt.c                          |    7 +-
+ kernel/sched_stoptask.c                    |    2 +-
+ kernel/softirq.c                           |    6 +-
+ kernel/sysctl.c                            |   14 +
+ kernel/trace/trace_sched_wakeup.c          |   44 +-
+ kernel/trace/trace_selftest.c              |   31 +-
+ kernel/watchdog.c                          |    3 +-
+ 30 files changed, 3721 insertions(+), 170 deletions(-)
+
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+----------------------------------------------------------------------
+Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
+
+http://blog.linux.it/raistlin / raistlin@ekiga.net /
+dario.faggioli@jabber.org
+
+--=-0idb1rubvU/lFmV8bEne
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkzKZ0cACgkQk4XaBE3IOsTGzgCfXU9GFknpl6d3AeR7uUWZ08/b
+NUQAmwYuXAhLMCDbTN1WCjOCXWCLu/5j
+=S2qG
+-----END PGP SIGNATURE-----
+
+--=-0idb1rubvU/lFmV8bEne--
 
