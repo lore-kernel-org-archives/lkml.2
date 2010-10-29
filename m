@@ -1,48 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760352Ab0J2C6D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 22:58:03 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:36884 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760083Ab0J2C54 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 22:57:56 -0400
-From: Tao Ma <tao.ma@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org, Tao Ma <tao.ma@oracle.com>,
-        Jiri Kosina <trivial@kernel.org>
-Subject: [PATCH] drivers/net/igb: remove unused variable in igb_xmit_frame_ring_adv.
-Date: Fri, 29 Oct 2010 10:55:49 +0800
-Message-Id: <1288320949-5136-1-git-send-email-tao.ma@oracle.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S932257Ab0J2DDB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 23:03:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41528 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758164Ab0J2DCz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 23:02:55 -0400
+Message-ID: <4CCA3941.9060303@zytor.com>
+Date: Thu, 28 Oct 2010 20:02:25 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: Use online node real index in calulate_tbl_offset()
+References: <4CCA2F0C.7010302@kernel.org>
+In-Reply-To: <4CCA2F0C.7010302@kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/net/igb/igb_main.c: In function ‘igb_xmit_frame_ring_adv’:
-drivers/net/igb/igb_main.c:4110: warning: unused variable ‘adapter’
+Shaohua, does this look right to you?
 
-Cc: Jiri Kosina <trivial@kernel.org>
-Signed-off-by: Tao Ma <tao.ma@oracle.com>
----
- drivers/net/igb/igb_main.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+	-hpa
 
-diff --git a/drivers/net/igb/igb_main.c b/drivers/net/igb/igb_main.c
-index 14db09e..892d196 100644
---- a/drivers/net/igb/igb_main.c
-+++ b/drivers/net/igb/igb_main.c
-@@ -4107,7 +4107,6 @@ static inline int igb_maybe_stop_tx(struct igb_ring *tx_ring, int size)
- netdev_tx_t igb_xmit_frame_ring_adv(struct sk_buff *skb,
- 				    struct igb_ring *tx_ring)
- {
--	struct igb_adapter *adapter = netdev_priv(tx_ring->netdev);
- 	int tso = 0, count;
- 	u32 tx_flags = 0;
- 	u16 first;
+
+On 10/28/2010 07:18 PM, Yinghai Lu wrote:
+> 
+> Found one numa system that doesn't have ram installed in first socket
+> hang during executing init scripts.
+> 
+> bisect to:
+> 
+> |commit 932967202182743c01a2eee4bdfa2c42697bc586
+> |Author: Shaohua Li <shaohua.li@intel.com>
+> |Date:   Wed Oct 20 11:07:03 2010 +0800
+> |
+> |    x86: Spread tlb flush vector between nodes
+> 
+> It turns out when first socket is not online could have cpus on node1
+> tlb_offset set to bigger than NUM_INVALIDATE_TLB_VECTORS.
+> 
+> that could affect systems like 4 sockets, but socket 2 doesn't
+> have installed, sockets 3 will get too big tlb_offset.
+> 
+> Need to use real online node idx.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
+> ---
+>  arch/x86/mm/tlb.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> Index: linux-2.6/arch/x86/mm/tlb.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/mm/tlb.c
+> +++ linux-2.6/arch/x86/mm/tlb.c
+> @@ -223,7 +223,7 @@ void native_flush_tlb_others(const struc
+>  
+>  static void __cpuinit calculate_tlb_offset(void)
+>  {
+> -	int cpu, node, nr_node_vecs;
+> +	int cpu, node, nr_node_vecs, idx = 0;
+>  	/*
+>  	 * we are changing tlb_vector_offset for each CPU in runtime, but this
+>  	 * will not cause inconsistency, as the write is atomic under X86. we
+> @@ -239,7 +239,7 @@ static void __cpuinit calculate_tlb_offs
+>  		nr_node_vecs = NUM_INVALIDATE_TLB_VECTORS/nr_online_nodes;
+>  
+>  	for_each_online_node(node) {
+> -		int node_offset = (node % NUM_INVALIDATE_TLB_VECTORS) *
+> +		int node_offset = (idx % NUM_INVALIDATE_TLB_VECTORS) *
+>  			nr_node_vecs;
+>  		int cpu_offset = 0;
+>  		for_each_cpu(cpu, cpumask_of_node(node)) {
+> @@ -248,6 +248,7 @@ static void __cpuinit calculate_tlb_offs
+>  			cpu_offset++;
+>  			cpu_offset = cpu_offset % nr_node_vecs;
+>  		}
+> +		idx++;
+>  	}
+>  }
+>  
+
+
 -- 
-1.7.1.GIT
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
