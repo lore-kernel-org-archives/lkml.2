@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932532Ab0J2MPJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 08:15:09 -0400
-Received: from www.tglx.de ([62.245.132.106]:43195 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751890Ab0J2MPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 08:15:06 -0400
-Date: Fri, 29 Oct 2010 14:14:12 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Borislav Petkov <bp@amd64.org>
-cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Borislav Petkov <bp@alien8.de>, john stultz <johnstul@us.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "avi@redhat.com" <avi@redhat.com>,
-        "mtosatti@redhat.com" <mtosatti@redhat.com>
-Subject: Re: [bisected] Clocksource tsc unstable git
-In-Reply-To: <20101029102713.GA21125@aftab>
-Message-ID: <alpine.LFD.2.00.1010291411150.2692@localhost6.localdomain6>
-References: <20101026112052.GA1672@arch.trippelsdorf.de> <20101026131843.GC17852@aftab> <20101026135808.GB1672@arch.trippelsdorf.de> <alpine.LFD.2.00.1010261747250.3115@localhost6.localdomain6> <1288120736.2645.9.camel@localhost> <20101027142622.GA1555@arch.trippelsdorf.de>
- <20101027182608.GA1580@arch.trippelsdorf.de> <20101029081831.GA7149@liondog.tnic> <20101029083013.GA1553@arch.trippelsdorf.de> <20101029102713.GA21125@aftab>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1761416Ab0J2MSO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 08:18:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:62403 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751890Ab0J2MSM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 08:18:12 -0400
+X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=ygIiTo8ZIjQA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=yd-9aiblakt9m_ewWcMA:9 a=6JAf1Z1vT588NWI_XOci7J2jECsA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 2/2] jump label: disable due to compiler bug
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Jason Baron <jbaron@redhat.com>, David Daney <ddaney@caviumnetworks.com>,
+        rth@redhat.com, "H. Peter Anvin" <hpa@zytor.com>,
+        mathieu.desnoyers@polymtl.ca, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
+        avi@redhat.com, davem@davemloft.net, vgoyal@redhat.com,
+        sam@ravnborg.org, tony@bakeyournoodle.com, dsd@laptop.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20101029063450.GE29463@elte.hu>
+References: <cover.1288212485.git.jbaron@redhat.com>
+	 <2d1b1d5d2b3930e1acb063cefffbcb2faf049854.1288212486.git.jbaron@redhat.com>
+	 <ce4ff595-f9d1-4c17-b68e-82739b07ad3e@email.android.com>
+	 <20101028141757.GA2875@redhat.com> <4CC9C724.3020004@caviumnetworks.com>
+	 <20101028201112.GA4792@redhat.com>  <20101029063450.GE29463@elte.hu>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 29 Oct 2010 08:18:07 -0400
+Message-ID: <1288354687.18238.433.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Oct 2010, Borislav Petkov wrote:
-> On Fri, Oct 29, 2010 at 04:30:13AM -0400, Markus Trippelsdorf wrote:
-> That's strange, when we tested this one everything seemed fine so I
-> guess this is one of those bugs which appear later, just as if out of
-> nowhere.
+On Fri, 2010-10-29 at 08:34 +0200, Ingo Molnar wrote:
+> * Jason Baron <jbaron@redhat.com> wrote:
 > 
-> Thomas, could it be that SMI fires in between the HPET write and
-> subsequent read:
+> > Thus, I'm going to propose a patch, which makes jump label conditional on x86_64 
+> > for now [...]
 > 
-> 	hpet_writel(cnt, HPET_Tn_CMP(timer));
+> No, we dont do 64-bit only features really.
 > 
-> 	...
+> > [...] (adding -maccumulate-outgoing-args to x86 increases the text size, so I'm 
+> > not proposing adding the flag there).
 > 
-> 	res = (s32)(cnt - hpet_readl(HPET_COUNTER));
-> 
-> causing the -ETIME and thus a wait for HPET wraparound? My machine at
-> least does SMI-initiated C1E so it could very well be the problem.
+> Please make jump labels configurable instead. (dependent on EMBEDDED)
 
-Well, even if a SMI fires, then the counter will be ahead of cnt and
-we get -ETIME. The upper layer of clockevents/timers will then
-reprogram HPET. So that's not an issue.
+Do you mean to have it dependent on !EMBEDDED, or perhaps 
+!CC_OPTIMIZE_FOR_SIZE ?
 
-The only problem which might hit us is when our assumption of 8 HPET
-cycles being enough to transfer the new match value into the real
-match register is wrong.
+I can see people making a big stink about adding back a gcc option that
+makes the kernel bigger.
 
-Thanks,
+-- Steve
 
-	tglx
+> 
+> Also, could you please send the fix to me ASAP? We dont need confirmation and 
+> re-confirmation and testing, as this thing is crashing on me several times every 
+> single day ...
+> 
+> I also know that 64-bit never crashed this way, nor did the 32-bit kernel with 
+> function tracer enabled - so -maccumulate-outgoing-args will likely fix it.
+> 
+> Lets get the ball rolling so we can get it to Linus today ...
+
+
+
