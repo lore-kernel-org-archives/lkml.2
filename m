@@ -1,156 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934277Ab0J2R6j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 13:58:39 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34121 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757865Ab0J2R6g (ORCPT
+	id S934301Ab0J2R6o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 13:58:44 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:56298 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934286Ab0J2R6m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 13:58:36 -0400
-Message-ID: <4CCB0B3F.5050400@pengutronix.de>
-Date: Fri, 29 Oct 2010 19:58:23 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.14) Gecko/20101006 Thunderbird/3.0.9
-MIME-Version: 1.0
-To: Oliver Hartkopp <socketcan@hartkopp.net>
-CC: Tomoya <tomoya-linux@dsn.okisemi.com>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Christian Pellegrin <chripell@fsfe.org>,
-        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, andrew.chih.howe.khor@intel.com,
-        qi.wang@intel.com, margie.foster@intel.com, yong.y.wang@intel.com,
-        Masayuki Ohtake <masa-korg@dsn.okisemi.com>, kok.howg.ewe@intel.com,
-        joel.clark@intel.com
-Subject: Re: [PATCH net-next-2.6 v2] can: Topcliff: PCH_CAN driver: Fix build
- warnings
-References: <4CCAA3D4.8070408@dsn.okisemi.com> <4CCAC4CD.7000503@pengutronix.de> <4CCAFA68.2030903@hartkopp.net>
-In-Reply-To: <4CCAFA68.2030903@hartkopp.net>
-X-Enigmail-Version: 1.0.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigD922065302406494E355EB6E"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 29 Oct 2010 13:58:42 -0400
+Date: Fri, 29 Oct 2010 10:56:24 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: lkml <linux-kernel@vger.kernel.org>, akpm <akpm@linux-foundation.org>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH] scripts/kernel-doc: escape special characters for xml
+ struct output
+Message-Id: <20101029105624.541f8828.randy.dunlap@oracle.com>
+In-Reply-To: <20101026114555.4b79977d.rdunlap@xenotime.net>
+References: <20101026114555.4b79977d.rdunlap@xenotime.net>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigD922065302406494E355EB6E
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-On 10/29/2010 06:46 PM, Oliver Hartkopp wrote:
-> Indeed the access to the data registers does not seem to be endian awar=
-e.
->=20
-> See in pch_can_rx_normal():
->=20
-> +			cf->can_dlc =3D get_can_dlc((ioread32(&priv->regs->
-> +						   if1_mcont)) & 0xF);
-> +			*(u16 *)(cf->data + 0) =3D ioread16(&priv->regs->
-> +							  if1_dataa1);
-> +			*(u16 *)(cf->data + 2) =3D ioread16(&priv->regs->
-> +							  if1_dataa2);
-> +			*(u16 *)(cf->data + 4) =3D ioread16(&priv->regs->
-> +							  if1_datab1);
-> +			*(u16 *)(cf->data + 6) =3D ioread16(&priv->regs->
-> +							  if1_datab2);
->=20
-> See in pch_xmit():
->=20
-> +	/* Copy data to register */
-> +	if (cf->can_dlc > 0) {
-> +		u32 data1 =3D *((u16 *)&cf->data[0]);
-> +		iowrite32(data1, &priv->regs->if2_dataa1);
-> +	}
-> +	if (cf->can_dlc > 2) {
-> +		u32 data1 =3D *((u16 *)&cf->data[2]);
-> +		iowrite32(data1, &priv->regs->if2_dataa2);
-> +	}
-> +	if (cf->can_dlc > 4) {
-> +		u32 data1 =3D *((u16 *)&cf->data[4]);
-> +		iowrite32(data1, &priv->regs->if2_datab1);
-> +	}
-> +	if (cf->can_dlc > 6) {
-> +		u32 data1 =3D *((u16 *)&cf->data[6]);
-> +		iowrite32(data1, &priv->regs->if2_datab2);
-> +	}
-> +
->=20
-> It's just a question if the driver for an Intel Chipset should/could ig=
-nore
-> the endian problematic.
->=20
-> If this is intended the driver should only appear in Kconfig depending =
-on X86
-> or little endian systems.
->=20
-> Besides this remark, the struct pch_can_regs could also be defined in a=
- way
-> that every single CAN payload data byte could be accessed directly to a=
-llow
+scripts/kernel-doc was leaving unescaped '<', '>', and '&' in
+generated xml output for structs.  This causes xml parser errors.
+Convert these characters to "&lt;", "&gt;", and "&amp;" as needed
+to prevent errors.
+Most of the conversion was already done; complete it just before
+output.
 
-That _should_ work on x86. On the contrary on ARM some registers in SOCs
-allow only full 32 bit access.
+Documentation/DocBook/device-drivers.xml:41883: parser error : StartTag: invalid element name
+#define INPUT_KEYMAP_BY_INDEX	(1 << 0)
 
-> e.g. this code in pch_can_rx_normal():
->=20
-> cf->data[0] =3D ioread8(&priv->regs->if1_data0);
-> cf->data[1] =3D ioread8(&priv->regs->if1_data1);
-> cf->data[2] =3D ioread8(&priv->regs->if1_data2);
-> (..)
-> cf->data[6] =3D ioread8(&priv->regs->if1_data6);
-> cf->data[7] =3D ioread8(&priv->regs->if1_data7);
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ scripts/kernel-doc |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
-> This is easy to understand and additionally endian aware.
-
-or use this, (as proposed in a earlier mail)
-
-	for (i =3D 0; i < cf->can_dlc; i +=3D 2) {
-		reg =3D ioread32(&priv->regs->if1_data[i >> 1]);
-		*(__be16 *)cf->data[i] =3D cpu_to_be16(reg);
-	}
-
-> In opposite to this:
->=20
-> +	if (cf->can_dlc > 2) {
-> +		u32 data1 =3D *((u16 *)&cf->data[2]);
-> +		iowrite32(data1, &priv->regs->if2_dataa2);
-> +	}
->=20
-> Which puts a little? endian u16 into the big endian register layout.
-> Sorry i'm just getting curious on this register access implementation.
-
-According to the datasheet the layout is LE.
-
-cheers, Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---------------enigD922065302406494E355EB6E
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAkzLCz8ACgkQjTAFq1RaXHNrIwCfS+PVtWTtKoyqU8gk4IVOdn2d
-p/YAn3uHRtqZgZBU3N/SUNAYrySGvYro
-=ft6v
------END PGP SIGNATURE-----
-
---------------enigD922065302406494E355EB6E--
+--- linux-2.6.36-git13.orig/scripts/kernel-doc
++++ linux-2.6.36-git13/scripts/kernel-doc
+@@ -5,7 +5,7 @@ use strict;
+ ## Copyright (c) 1998 Michael Zucchi, All Rights Reserved        ##
+ ## Copyright (C) 2000, 1  Tim Waugh <twaugh@redhat.com>          ##
+ ## Copyright (C) 2001  Simon Huggins                             ##
+-## Copyright (C) 2005-2009  Randy Dunlap                         ##
++## Copyright (C) 2005-2010  Randy Dunlap                         ##
+ ## 								 ##
+ ## #define enhancements by Armin Kuster <akuster@mvista.com>	 ##
+ ## Copyright (c) 2000 MontaVista Software, Inc.			 ##
+@@ -453,7 +453,7 @@ sub output_highlight {
+     if ($output_mode eq "html" || $output_mode eq "xml") {
+ 	$contents = local_unescape($contents);
+ 	# convert data read & converted thru xml_escape() into &xyz; format:
+-	$contents =~ s/\\\\\\/&/g;
++	$contents =~ s/\\\\\\/\&/g;
+     }
+ #   print STDERR "contents b4:$contents\n";
+     eval $dohighlight;
+@@ -770,7 +770,11 @@ sub output_struct_xml(%) {
+     print $args{'type'} . " " . $args{'struct'} . " {\n";
+     foreach $parameter (@{$args{'parameterlist'}}) {
+ 	if ($parameter =~ /^#/) {
+-	    print "$parameter\n";
++	    my $prm = $parameter;
++	    # convert data read & converted thru xml_escape() into &xyz; format:
++	    # This allows us to have #define macros interspersed in a struct.
++	    $prm =~ s/\\\\\\/\&/g;
++	    print "$prm\n";
+ 	    next;
+ 	}
+ 
+@@ -1701,6 +1705,8 @@ sub push_parameter($$$) {
+ 	}
+ 	}
+ 
++	$param = xml_escape($param);
++
+ 	# strip spaces from $param so that it is one continous string
+ 	# on @parameterlist;
+ 	# this fixes a problem where check_sections() cannot find
