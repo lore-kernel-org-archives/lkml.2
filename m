@@ -1,72 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758009Ab0J2OzR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 10:55:17 -0400
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:27180 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757398Ab0J2OzM (ORCPT
+	id S933926Ab0J2O4M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 10:56:12 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:27933 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757398Ab0J2O4J convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 10:55:12 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: dwXfj8sVM1mZd.baM0V0XHG9dvaV15cY2AwcPTV.h9Kk9PU
- MSorjB2b8GhLjfsyTQsGUAmfKQzVx2X6MMEbcbCO2tK94ZvSXVVCc_QYQo.T
- CtrKC9hQvB6a7HUH0wP..aujUJVAYEe1V5KtwsVCVvHwafq58wAYWP944Kef
- ZcggHb5LsbH5vkeK9Y5aGdgLH9asmXAI3LH8aFrVpvqKgZ9c0.AA9x7.psPU
- Q0PH1H0uYSdmul_GAr1qrGwHASgO4h6YljgSKvtXyEg--
-X-Yahoo-Newman-Property: ymail-3
-Date: Fri, 29 Oct 2010 09:55:08 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>, Tejun Heo <tj@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Brian Gerst <brgerst@gmail.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org, mingo@elte.hu
-Subject: Re: [PATCH] numa: fix slab_node(MPOL_BIND)
-In-Reply-To: <20101028140725.755aea50.akpm@linux-foundation.org>
-Message-ID: <alpine.DEB.2.00.1010290952190.20370@router.home>
-References: <AANLkTinnc3vBSmewf7ixuOSDYxG+5VNiGaB-vSrDNRiO@mail.gmail.com> <1288158182-1753-1-git-send-email-brgerst@gmail.com> <1288159670.2652.181.camel@edumazet-laptop> <1288173442.15336.1490.camel@twins> <1288186405.2709.117.camel@edumazet-laptop>
- <4CC82C2F.1020707@kernel.org> <1288187870.2709.128.camel@edumazet-laptop> <4CC83067.5000009@kernel.org> <1288189461.2709.144.camel@edumazet-laptop> <1288190387.2709.147.camel@edumazet-laptop> <4CC83A85.3070608@kernel.org> <1288192868.2709.152.camel@edumazet-laptop>
- <4CC846D5.50106@kernel.org> <1288195668.2709.167.camel@edumazet-laptop> <1288200823.5619.46.camel@edumazet-laptop> <AANLkTikmNc7qqDzoff_3i_FRbG=pmOC7TG3eeZnmvaTD@mail.gmail.com> <alpine.DEB.2.00.1010281154150.26782@router.home>
- <20101028140725.755aea50.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 29 Oct 2010 10:56:09 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Date: Fri, 29 Oct 2010 16:58:31 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [RFC][PATCH 0/3] big chunk memory allocator v2
+In-reply-to: <20101029142741.GB19823@gargoyle.fritz.box>
+To: Andi Kleen <andi.kleen@intel.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        "fujita.tomonori@lab.ntt.co.jp" <fujita.tomonori@lab.ntt.co.jp>,
+        "felipe.contreras@gmail.com" <felipe.contreras@gmail.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Osciak <pawel@osciak.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Message-id: <op.vlcejtth7p4s8u@pikus>
+Organization: Samsung Electronics
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.62 (Linux)
+References: <20101026190042.57f30338.kamezawa.hiroyu@jp.fujitsu.com>
+ <AANLkTim4fFXQKqmFCeR8pvi0SZPXpjDqyOkbV6PYJYkR@mail.gmail.com>
+ <op.vlbywq137p4s8u@pikus> <20101029103154.GA10823@gargoyle.fritz.box>
+ <20101029195900.88559162.kamezawa.hiroyu@jp.fujitsu.com>
+ <20101029122928.GA17792@gargoyle.fritz.box> <op.vlb8bda87p4s8u@pikus>
+ <20101029142741.GB19823@gargoyle.fritz.box>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Oct 2010, Andrew Morton wrote:
+On Fri, 29 Oct 2010 16:27:41 +0200, Andi Kleen <andi.kleen@intel.com> wrote:
 
-> On Thu, 28 Oct 2010 11:55:18 -0500 (CDT)
-> Christoph Lameter <cl@linux.com> wrote:
+> On Fri, Oct 29, 2010 at 01:43:51PM +0100, Michał Nazarewicz wrote:
+>> Hmm... true.  Still the point remains that only movable and reclaimable pages are
+>> allowed in the marked regions.  This in effect means that from unmovable pages
+>> point of view, the area is unusable but I havn't thought of any other way to
+>> guarantee that because of fragmentation, long sequence of free/movable/reclaimable
+>> pages is available.
+
+> Essentially a movable zone as defined today.
+
+Ah, right, I somehow was under the impresion that movable zone can be used as a fallback
+zone.  When I'm finished with my current approach I'll look more closely into it.
+
+> That gets you near all the problems of highmem (except for the mapping
+> problem and you're a bit more flexible in the splits):
 >
-> > On Thu, 28 Oct 2010, Linus Torvalds wrote:
-> >
-> > > And so does - although less obviously - mm/vmscan.c for the
-> > > wait_iff_confgested() thing.
-> > >
-> > > So are those buggy too, since first_zones_zonelist() can apparently return NULL?
-> >
-> > The code is fine.
-> >
-> > first_zones_zonelist() can only return NULL for the case that a nodemask
-> > was specified and the code in vmscan.c does not specify a nodemask.
->
-> Geeze, how did you work that out and how the heck was anyone else
-> supposed to know this :(
+> Someone has to decide at boot how much should be movable
+> and what not, some workloads will run out of space, some may
+> deadlock when it runs out of management objects, etc.etc.
+> Classic highmem had a long string of issues with all of this.
 
-Look at the code and how it was modified by Lee. The initial assumption
-before his patch was that the zonelist contains all zones of the system.
-Therefore you will allways find all possible zone types in the system.
-The function did not contain a check for the end of the zonelist and does
-not now for the nodemask == NULL.
+Here's where the rest of CMA comes.  The solution may be not perfect but it's
+probably better then nothing.  The idea is to define regions for each device
+(with possibility for a single region to be shared) which, hopefuly, can help
+with fragmentation.
 
-However, the modification to filter the zonelist then makes it possible to
-have subsets of zones not containing the requested zone types now.
-Therefore Lee added a check for the end of the zonelist for that case.
+In the current form, CMA is designed mostly for embeded systems where one can
+define what kind of devices will be used, but in general this could be used
+for other systems as well.
 
-Could be better documented. Took me some staring at the code to figure it
-out.
-
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
