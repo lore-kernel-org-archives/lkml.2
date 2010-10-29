@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933714Ab0J2Js6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 05:48:58 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:38071 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933656Ab0J2Js4 (ORCPT
+	id S1761025Ab0J2J5v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 05:57:51 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:56525 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756694Ab0J2J5s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 05:48:56 -0400
-Date: Fri, 29 Oct 2010 10:48:54 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
+	Fri, 29 Oct 2010 05:57:48 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+        corbet@lwn.net, neilb@suse.de, npiggin@kernel.dk,
+        hooanon05@yahoo.co.jp, bfields@fieldses.org, miklos@szeredi.hu
+Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/8] fs: move i_wb_list out from under inode_lock
-Message-ID: <20101029094854.GS19804@ZenIV.linux.org.uk>
-References: <1288342803-14957-1-git-send-email-david@fromorbit.com>
- <1288342803-14957-7-git-send-email-david@fromorbit.com>
- <20101029094358.GA9052@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101029094358.GA9052@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Subject: [PATCH -V22 00/14] Generic name to handle and open by handle syscalls
+Date: Fri, 29 Oct 2010 15:27:09 +0530
+Message-Id: <1288346243-12211-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 29, 2010 at 05:43:58AM -0400, Christoph Hellwig wrote:
-> > -extern int evict_inodes(struct super_block *);
-> > +extern void evict_inodes(struct super_block *);
-> 
-> err, evict_inodes doesn't change in this patch.
+Hi,
 
-Erm...  That's my fuckup - it _is_ void(struct super_block *) and the
-only reason why it doesn't blow up is that inode.c doesn't include
-internal.h.
+The below set of patches implement open by handle support using exportfs
+operations. This allows user space application to map a file name to file
+handle and later open the file using handle. This should be usable
+for userspace NFS [1] and 9P server [2]. XFS already support this with the ioctls
+XFS_IOC_PATH_TO_HANDLE and XFS_IOC_OPEN_BY_HANDLE.
 
-IOW, Dave is right and I'll fix that in a minute.
+[1] http://nfs-ganesha.sourceforge.net/
+[2] http://thread.gmane.org/gmane.comp.emulators.qemu/68992
+
+git repo for the patchset at:
+git://git.kernel.org/pub/scm/linux/kernel/git/kvaneesh/linux-open-handle.git open-by-handle
+
+Test case can be found at
+http://git.kernel.org/?p=fs/ext2/kvaneesh/handle-test.git
+git://git.kernel.org/pub/scm/fs/ext2/kvaneesh/handle-test.git
+
+Changes from V21:
+a) move inode->i_nlink == 0 check from file system link callback to VFS
+
+-aneesh
+
