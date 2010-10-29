@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933884Ab0J2NEb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 09:04:31 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60120 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933844Ab0J2NEV (ORCPT
+	id S933887Ab0J2NFY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 09:05:24 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:45951 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933836Ab0J2NFX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 09:04:21 -0400
-From: "Kirill A. Shutsemov" <kirill@shutemov.name>
-To: Sam Ravnborg <sam@ravnborg.org>, David Woodhouse <dwmw2@infradead.org>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: [PATCH 2/2] kbuild: export linux/{a.out,kvm,kvm_para}.h on headers_install_all
-Date: Fri, 29 Oct 2010 16:04:01 +0300
-Message-Id: <1288357441-23100-2-git-send-email-kirill@shutemov.name>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1288357441-23100-1-git-send-email-kirill@shutemov.name>
-References: <1288357441-23100-1-git-send-email-kirill@shutemov.name>
+	Fri, 29 Oct 2010 09:05:23 -0400
+Message-ID: <4CCAC68F.7050903@codemonkey.ws>
+Date: Fri, 29 Oct 2010 08:05:19 -0500
+From: Anthony Liguori <anthony@codemonkey.ws>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100915 Lightning/1.0b1 Thunderbird/3.0.8
+MIME-Version: 1.0
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: virtualization@lists.linux-foundation.org,
+        QEMU Developers <qemu-devel@nongnu.org>, virtualization@lists.osdl.org,
+        Ian Molton <ian.molton@collabora.co.uk>, Avi Kivity <avi@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Qemu-devel] Re: [PATCH] Implement a virtio GPU transport
+References: <4CAC9CD1.2050601@collabora.co.uk> <4CBD7560.6080207@redhat.com>	<4CC8226F.5080807@collabora.co.uk> <201010292148.01167.rusty@rustcorp.com.au>
+In-Reply-To: <201010292148.01167.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kirill A. Shutemov <kirill@shutemov.name>
+On 10/29/2010 06:18 AM, Rusty Russell wrote:
+>> Fixed - updated patch tested and attached.
+>>      
+> OK. FWIW, I think this is an awesome idea.
 
-Export linux/a.out.h, linux/kvm.h and linux/kvm_para.h on
-headers_install_all if at least one architecture has appropriate files
-in arch-dependent headers.
+Paravirtual OpenGL or the actual proposed implementation?  Have you 
+looked at the actual code?
 
-Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
----
- include/linux/Kbuild |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+If I understand correctly, the implementation is an RPC of opengl 
+commands across virtio that are then rendered on the host to an 
+offscreen buffer.  The buffer is then sent back to the guest in rendered 
+form.
 
-diff --git a/include/linux/Kbuild b/include/linux/Kbuild
-index 90e3ed3..7c52116 100644
---- a/include/linux/Kbuild
-+++ b/include/linux/Kbuild
-@@ -20,15 +20,18 @@ header-y += wimax/
- objhdr-y += version.h
- 
- ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/a.out.h \
--		  $(srctree)/include/asm-$(SRCARCH)/a.out.h),)
-+		  $(srctree)/include/asm-$(SRCARCH)/a.out.h \
-+		  $(INSTALL_HDR_PATH)/include/asm-*/a.out.h),)
- header-y += a.out.h
- endif
- ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm.h \
--		  $(srctree)/include/asm-$(SRCARCH)/kvm.h),)
-+		  $(srctree)/include/asm-$(SRCARCH)/kvm.h \
-+		  $(INSTALL_HDR_PATH)/include/asm-*/kvm.h),)
- header-y += kvm.h
- endif
- ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm_para.h \
--		  $(srctree)/include/asm-$(SRCARCH)/kvm_para.h),)
-+		  $(srctree)/include/asm-$(SRCARCH)/kvm_para.h \
-+		  $(INSTALL_HDR_PATH)/include/asm-*/kvm_para.h),)
- header-y += kvm_para.h
- endif
- 
--- 
-1.7.3.2
+But it's possible to mess around with other guests because the opengl 
+commands are not scrubbed. There have been other proposals in the past 
+that include a mini JIT that would translate opengl commands into a safe 
+form.
+
+Exposing just an opengl RPC transport doesn't seem that useful either.  
+It ought to be part of a VGA card in order for it to be integrated with 
+the rest of the graphics system without a round trip.
+
+The alternative proposal is Spice which so far noone has mentioned.  
+Right now, Spice seems to be taking the right approach to guest 3d support.
+
+Regards,
+
+Anthony Liguori
+
+>    I understand others are skeptical,
+> but this seems simple and if it works and you're happy to maintain it I'm
+> happy to let you do it :)
+>
+> Cheers,
+> Rusty.
+>
+>    
 
