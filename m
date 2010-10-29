@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933627Ab0J2IMJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 04:12:09 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:54339 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932890Ab0J2IMD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 04:12:03 -0400
-Date: Fri, 29 Oct 2010 10:12:02 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Len Brown <lenb@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: Re: intel idle kconfig warning
-Message-ID: <20101029081202.GC11149@basil.fritz.box>
-References: <20101028122045.GA6774@basil.fritz.box>
- <alpine.LFD.2.00.1010290053530.4117@localhost.localdomain>
+	id S933648Ab0J2IMS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 04:12:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20822 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933599Ab0J2IMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 04:12:05 -0400
+Date: Fri, 29 Oct 2010 10:11:58 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: Sridhar Samudrala <sri@us.ibm.com>, David Miller <davem@davemloft.net>,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 1/1] vhost: TX used buffer guest signal accumulation
+Message-ID: <20101029081158.GC22688@redhat.com>
+References: <1288216693.17571.38.camel@localhost.localdomain>
+ <1288240804.14342.1.camel@localhost.localdomain>
+ <20101028052021.GD5599@redhat.com>
+ <1288294355.11251.20.camel@localhost.localdomain>
+ <1288296835.11251.24.camel@localhost.localdomain>
+ <1288299878.30131.2.camel@sridhar.beaverton.ibm.com>
+ <1288302050.11251.26.camel@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1010290053530.4117@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1288302050.11251.26.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 29, 2010 at 01:03:11AM -0400, Len Brown wrote:
+On Thu, Oct 28, 2010 at 02:40:50PM -0700, Shirley Ma wrote:
+> On Thu, 2010-10-28 at 14:04 -0700, Sridhar Samudrala wrote:
+> > It would be some change in virtio-net driver that may have improved
+> > the
+> > latency of small messages which in turn would have reduced the
+> > bandwidth
+> > as TCP could not accumulate and send large packets.
 > 
-> > include/config/auto.conf:4352:warning: symbol value 'm' invalid for INTEL_IDLE
-> > 
-> > Some problem with the intel idle Kconfig?
+> I will check out any latency improvement patch in virtio_net. If that's
+> the case, whether it is good to have some tunable parameter to benefit
+> both BW and latency workload?
 > 
-> I'm unable to reproduce this warning.
-> 
-> Note that CONFIG_INTEL_IDLE has been boolean since 2.6.36.
-> It was tristate in 2.6.35.  Is there some sort of stale state
-> on your build system?
+> Shirley 
 
-Hmm yes it went away after cleaning the build dir.
-
-I guess that's a Kbuild bug then that it doesn't handle such changes?
-
--Andi
+No, we need it to work well automatically somehow.
 
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+MST
