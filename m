@@ -1,84 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760289Ab0J2IKL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 04:10:11 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:54325 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751420Ab0J2IKE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 04:10:04 -0400
-Date: Fri, 29 Oct 2010 10:10:03 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "H.Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        LKLM <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] [x86, next] Add mce_sys_info interface for debug.
-Message-ID: <20101029081003.GB11149@basil.fritz.box>
-References: <4CCA50AF.1030302@np.css.fujitsu.com>
+	id S933586Ab0J2IKj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 04:10:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47158 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752628Ab0J2IKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 04:10:32 -0400
+Date: Fri, 29 Oct 2010 10:10:27 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 1/1] vhost: TX used buffer guest signal accumulation
+Message-ID: <20101029081027.GB22688@redhat.com>
+References: <1288216693.17571.38.camel@localhost.localdomain>
+ <1288240804.14342.1.camel@localhost.localdomain>
+ <20101028052021.GD5599@redhat.com>
+ <1288286062.11251.15.camel@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CCA50AF.1030302@np.css.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1288286062.11251.15.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 29, 2010 at 01:42:23PM +0900, Jin Dongming wrote:
-> Add mce_sys_info interface for testing mce.
+On Thu, Oct 28, 2010 at 10:14:22AM -0700, Shirley Ma wrote:
 > 
-> Following is the reason why the interface is needed:
->   1. Sometimes before testing mce, we want to know the basic
->      information of mce on the test machine. Though there are
->      some provided interfaces, there are some kernel variables
->      which could not be known still.
-
-That doesn't make sense to me. AFAIK everything is either available
-in sysfs or printed in the kernel log or can be known by knowing 
-the hardware.
-
->   2. When we inject mce data to test mce, the value of some
->      interfaces may be changed. It is hard for everybody to confirm
->      all the information of mce on the system.
+> > Two ideas:
+> > 1. How about writing out used, just delaying the signal?
+> >    This way we don't have to queue separately.
 > 
-> This interface could help us know what has happened and make mce test
-> become easier.
+> This improves some performance, but not as good as delaying
+> both used and signal. Since delaying used buffers combining
+> multiple small copies to a large copy, which saves more CPU
+> utilization and increased some BW.
 
+Hmm. I don't yet understand. We are still doing copies into the per-vq
+buffer, and the data copied is really small.  Is it about cache line
+bounces?  Could you try figuring it out?
 
-The new interface seems overkill to me.
-
+> > 2. How about flushing out queued stuff before we exit
+> >    the handle_tx loop? That would address most of
+> >    the spec issue. 
 > 
-> The content of mce_sys_info will be like following:
+> The performance is almost as same as the previous patch. I will resubmit
+> the modified one, adding vhost_add_used_and_signal_n after handle_tx
+> loop for processing pending queue.
 > 
->   MCE status:                      Original/(Current) Value
->       mce_disabled:                N
-
-Well you should know if you set that. It's also visible
-in the kernel log.
-
+> This patch was a part of modified macvtap zero copy which I haven't
+> submitted yet. I found this helped vhost TX in general. This pending
+> queue will be used by DMA done later, so I put it in vq instead of a
+> local variable in handle_tx.
 > 
->       mce_ser:                     0/1
+> Thanks
+> Shirley
 
-That should be known or can be read directly.
+BTW why do we need another array? Isn't heads field exactly what we need
+here?
 
->       tolerant:                    1/1
->       panic_on_oops:               0/0
->       monarch_timeout:             1000000/1000000 us
->       mce_ignore_ce:               0/0
->       mce_cmci_disabled:           N/N
-
-These are all in sysfs or in the command line.
-
-
-
-> 
->   MCG Register:
->       CAP_Reg_Val           BANKS    EXT_CNT    FUNCTIONS
->       0x0000000000000806    0x06     0x00       TES
-
-You can just read that from /dev/cpu/*/msr if you really want it.
-No need to bloat the kernel.
-
--Andi
