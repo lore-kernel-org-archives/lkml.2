@@ -1,130 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762043Ab0J2VE6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 17:04:58 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:13816 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755739Ab0J2VEz (ORCPT
+	id S932548Ab0J2VF5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 17:05:57 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:45362 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755739Ab0J2VFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 17:04:55 -0400
-Date: Fri, 29 Oct 2010 22:54:45 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Benny Sjostrand <benny@hostmobility.com>
-cc: linux-kernel@vger.kernel.org, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org
-Subject: [PATCH] cs46xx memory management fixes for cs46xx_dsp_spos_create()
- - make sure we free and don't do pointless work.
-Message-ID: <alpine.LNX.2.00.1010292242080.24561@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 29 Oct 2010 17:05:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=JYj/DZjZL0/bEBRT5EbSWCKc/oae+GZJSpDw4uGCKFSBO+wL2Ck2BQSbAfaPiJ0ViX
+         pcs/1yrC4QILDRQnUL09FNYjbcBpp1Xy+M9oCR9MDGfyKjgu7lr2MHek50EEQq5aAXL0
+         HM+Cj5mKeARLbRWFuww//ASEv3prCXkR6yz8k=
+Subject: Re: [PATCH 0/1] RFC: poll/select performance on datagram sockets
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Davide Libenzi <davidel@xmailserver.org>
+Cc: Alban Crequy <alban.crequy@collabora.co.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>, netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pauli Nieminen <pauli.nieminen@collabora.co.uk>,
+        Rainer Weikusat <rweikusat@mssgmbh.com>
+In-Reply-To: <alpine.DEB.2.00.1010291339180.8517@davide-lnx1>
+References: <20101029191857.5f789d56@chocolatine.cbg.collabora.co.uk>
+	 <1288380431.2680.3.camel@edumazet-laptop>
+	 <alpine.DEB.2.00.1010291306390.8517@davide-lnx1>
+	 <alpine.DEB.2.00.1010291339180.8517@davide-lnx1>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 29 Oct 2010 23:05:48 +0200
+Message-ID: <1288386348.2680.25.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Following patch solves the problem for me, and its only a start, I am
+pretty sure we can optimize more than that.
 
-When reading through sound/pci/cs46xx/dsp_spos.c I noticed a couple of 
-things in cs46xx_dsp_spos_create().
+What I did is to move "struct poll_wqueues table;" out of do_select()
+in its caller. This structure is highly modified by an other cpu in
+Alban workload, and this slow down do_select() because many accesses to
+some of its local variables (normally, private ones !) hit a false
+sharing.
 
-It seems to me that we don't always free the various memory buffers we 
-allocate and we also do some work (structure member assignment) early, 
-that is completely pointless if some of the memory allocations fail and 
-we end up just aborting the whole thing.
+Before :
 
-I don't have hardware to test, so the patch below is compile tested only, 
-but it makes the following changes:
+# time /root/uclient connected
+The performance problem will be triggered
+select: begin
+select: end: 3 seconds
 
-- Make sure we always free all allocated memory on failures.
-- Don't do pointless work assigning to structure members before we know 
-  all memory allocations, that may abort progress, have completed 
-  successfully.
-- Remove some trailing whitespace.
+real	0m3.101s
+user	0m0.000s
+sys	0m6.104s
 
-If it looks ok, please merge, otherwise I'd be interested in knowing 
-what's wrong so I can improve it.
+After :
+
+# time /root/uclient connected
+The performance problem will be triggered
+select: begin
+select: end: 1 seconds
+
+real	0m1.041s
+user	0m0.004s
+sys	0m2.040s
 
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Impressive no ?
+
+Reported-by: Alban Crequy <alban.crequy@collabora.co.uk>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 ---
- dsp_spos.c |   33 +++++++++++----------------------
- 1 file changed, 11 insertions(+), 22 deletions(-)
+ fs/compat.c          |    3 ++-
+ fs/select.c          |   19 ++++++++++---------
+ include/linux/poll.h |    3 ++-
+ 3 files changed, 14 insertions(+), 11 deletions(-)
 
-diff --git a/sound/pci/cs46xx/dsp_spos.c b/sound/pci/cs46xx/dsp_spos.c
-index 3e5ca8f..e377287 100644
---- a/sound/pci/cs46xx/dsp_spos.c
-+++ b/sound/pci/cs46xx/dsp_spos.c
-@@ -225,39 +225,25 @@ struct dsp_spos_instance *cs46xx_dsp_spos_create (struct snd_cs46xx * chip)
- {
- 	struct dsp_spos_instance * ins = kzalloc(sizeof(struct dsp_spos_instance), GFP_KERNEL);
+diff --git a/fs/compat.c b/fs/compat.c
+index ff66c0d..3c3c3d3 100644
+--- a/fs/compat.c
++++ b/fs/compat.c
+@@ -1704,6 +1704,7 @@ int compat_core_sys_select(int n, compat_ulong_t __user *inp,
+ 	int size, max_fds, ret = -EINVAL;
+ 	struct fdtable *fdt;
+ 	long stack_fds[SELECT_STACK_ALLOC/sizeof(long)];
++	struct poll_wqueues table;
  
--	if (ins == NULL) 
-+	if (ins == NULL)
- 		return NULL;
+ 	if (n < 0)
+ 		goto out_nofds;
+@@ -1744,7 +1745,7 @@ int compat_core_sys_select(int n, compat_ulong_t __user *inp,
+ 	zero_fd_set(n, fds.res_out);
+ 	zero_fd_set(n, fds.res_ex);
  
- 	/* better to use vmalloc for this big table */
--	ins->symbol_table.nsymbols = 0;
- 	ins->symbol_table.symbols = vmalloc(sizeof(struct dsp_symbol_entry) *
- 					    DSP_MAX_SYMBOLS);
--	ins->symbol_table.highest_frag_index = 0;
--
--	if (ins->symbol_table.symbols == NULL) {
-+	ins->code.data = kmalloc(DSP_CODE_BYTE_SIZE, GFP_KERNEL);
-+	ins->modules = kmalloc(sizeof(struct dsp_module_desc) * DSP_MAX_MODULES, GFP_KERNEL);
-+	if (!ins->symbol_table.symbols || !ins->code.data || !ins->modules) {
- 		cs46xx_dsp_spos_destroy(chip);
- 		goto error;
+-	ret = do_select(n, &fds, end_time);
++	ret = do_select(n, &fds, end_time, &table);
+ 
+ 	if (ret < 0)
+ 		goto out;
+diff --git a/fs/select.c b/fs/select.c
+index b7b10aa..ed054f5 100644
+--- a/fs/select.c
++++ b/fs/select.c
+@@ -393,10 +393,10 @@ static inline void wait_key_set(poll_table *wait, unsigned long in,
  	}
--
-+	ins->symbol_table.nsymbols = 0;
-+	ins->symbol_table.highest_frag_index = 0;
- 	ins->code.offset = 0;
- 	ins->code.size = 0;
--	ins->code.data = kmalloc(DSP_CODE_BYTE_SIZE, GFP_KERNEL);
--
--	if (ins->code.data == NULL) {
--		cs46xx_dsp_spos_destroy(chip);
--		goto error;
--	}
--
- 	ins->nscb = 0;
- 	ins->ntask = 0;
--
- 	ins->nmodules = 0;
--	ins->modules = kmalloc(sizeof(struct dsp_module_desc) * DSP_MAX_MODULES, GFP_KERNEL);
--
--	if (ins->modules == NULL) {
--		cs46xx_dsp_spos_destroy(chip);
--		goto error;
--	}
- 
- 	/* default SPDIF input sample rate
- 	   to 48000 khz */
-@@ -271,8 +257,8 @@ struct dsp_spos_instance *cs46xx_dsp_spos_create (struct snd_cs46xx * chip)
- 
- 	/* set left and right validity bits and
- 	   default channel status */
--	ins->spdif_csuv_default = 
--		ins->spdif_csuv_stream =  
-+	ins->spdif_csuv_default =
-+		ins->spdif_csuv_stream =
- 	 /* byte 0 */  ((unsigned int)_wrap_all_bits(  (SNDRV_PCM_DEFAULT_CON_SPDIF        & 0xff)) << 24) |
- 	 /* byte 1 */  ((unsigned int)_wrap_all_bits( ((SNDRV_PCM_DEFAULT_CON_SPDIF >> 8) & 0xff)) << 16) |
- 	 /* byte 3 */   (unsigned int)_wrap_all_bits(  (SNDRV_PCM_DEFAULT_CON_SPDIF >> 24) & 0xff) |
-@@ -281,6 +267,9 @@ struct dsp_spos_instance *cs46xx_dsp_spos_create (struct snd_cs46xx * chip)
- 	return ins;
- 
- error:
-+	kfree(ins->modules);
-+	kfree(ins->code.data);
-+	vfree(ins->symbol_table.symbols);
- 	kfree(ins);
- 	return NULL;
  }
+ 
+-int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
++int do_select(int n, fd_set_bits *fds, struct timespec *end_time,
++	      struct poll_wqueues *table)
+ {
+ 	ktime_t expire, *to = NULL;
+-	struct poll_wqueues table;
+ 	poll_table *wait;
+ 	int retval, i, timed_out = 0;
+ 	unsigned long slack = 0;
+@@ -409,8 +409,8 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
+ 		return retval;
+ 	n = retval;
+ 
+-	poll_initwait(&table);
+-	wait = &table.pt;
++	poll_initwait(table);
++	wait = &table->pt;
+ 	if (end_time && !end_time->tv_sec && !end_time->tv_nsec) {
+ 		wait = NULL;
+ 		timed_out = 1;
+@@ -482,8 +482,8 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
+ 		wait = NULL;
+ 		if (retval || timed_out || signal_pending(current))
+ 			break;
+-		if (table.error) {
+-			retval = table.error;
++		if (table->error) {
++			retval = table->error;
+ 			break;
+ 		}
+ 
+@@ -497,12 +497,12 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
+ 			to = &expire;
+ 		}
+ 
+-		if (!poll_schedule_timeout(&table, TASK_INTERRUPTIBLE,
++		if (!poll_schedule_timeout(table, TASK_INTERRUPTIBLE,
+ 					   to, slack))
+ 			timed_out = 1;
+ 	}
+ 
+-	poll_freewait(&table);
++	poll_freewait(table);
+ 
+ 	return retval;
+ }
+@@ -528,6 +528,7 @@ int core_sys_select(int n, fd_set __user *inp, fd_set __user *outp,
+ 	struct fdtable *fdt;
+ 	/* Allocate small arguments on the stack to save memory and be faster */
+ 	long stack_fds[SELECT_STACK_ALLOC/sizeof(long)];
++	struct poll_wqueues table;
+ 
+ 	ret = -EINVAL;
+ 	if (n < 0)
+@@ -570,7 +571,7 @@ int core_sys_select(int n, fd_set __user *inp, fd_set __user *outp,
+ 	zero_fd_set(n, fds.res_out);
+ 	zero_fd_set(n, fds.res_ex);
+ 
+-	ret = do_select(n, &fds, end_time);
++	ret = do_select(n, &fds, end_time, &table);
+ 
+ 	if (ret < 0)
+ 		goto out;
+diff --git a/include/linux/poll.h b/include/linux/poll.h
+index 56e76af..54ba625 100644
+--- a/include/linux/poll.h
++++ b/include/linux/poll.h
+@@ -130,7 +130,8 @@ void zero_fd_set(unsigned long nr, unsigned long *fdset)
+ 
+ #define MAX_INT64_SECONDS (((s64)(~((u64)0)>>1)/HZ)-1)
+ 
+-extern int do_select(int n, fd_set_bits *fds, struct timespec *end_time);
++extern int do_select(int n, fd_set_bits *fds, struct timespec *end_time,
++		     struct poll_wqueues *table);
+ extern int do_sys_poll(struct pollfd __user * ufds, unsigned int nfds,
+ 		       struct timespec *end_time);
+ extern int core_sys_select(int n, fd_set __user *inp, fd_set __user *outp,
 
-
--- 
-Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-Plain text mails only, please      http://www.expita.com/nomime.html
-Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
 
