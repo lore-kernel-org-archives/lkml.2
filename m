@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932617Ab0J2Ghq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 02:37:46 -0400
-Received: from rt-pi1-ru-sssup.pi1.garr.net ([193.206.136.46]:24630 "EHLO
+	id S1755483Ab0J2GiZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 02:38:25 -0400
+Received: from rt-pi1-ru-sssup.pi1.garr.net ([193.206.136.46]:26474 "EHLO
 	sssup.it" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753248Ab0J2Ghk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 02:37:40 -0400
-Subject: [RFC][PATCH 13/22] sched: add resource limits for -deadline tasks
+	id S1753248Ab0J2GiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 02:38:19 -0400
+Subject: [RFC][PATCH 14/22] sched: add latency tracing for -deadline tasks.
 From: Raistlin <raistlin@linux.it>
 To: Peter Zijlstra <peterz@infradead.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
@@ -27,9 +27,9 @@ Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         paulmck <paulmck@linux.vnet.ibm.com>
 In-Reply-To: <1288333128.8661.137.camel@Palantir>
 References: <1288333128.8661.137.camel@Palantir>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-a2O5WNCtspMKW9AkfmKD"
-Date: Fri, 29 Oct 2010 08:37:30 +0200
-Message-ID: <1288334250.8661.154.camel@Palantir>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-uySv6t3QCE6W6w4r+zMT"
+Date: Fri, 29 Oct 2010 08:38:09 +0200
+Message-ID: <1288334289.8661.155.camel@Palantir>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
@@ -37,92 +37,213 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-a2O5WNCtspMKW9AkfmKD
+--=-uySv6t3QCE6W6w4r+zMT
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
 
-Add resource limits for non-root tasks in using the SCHED_DEADLINE
-policy, very similarly to what already exists for RT policies.
+It is very likely that systems that wants/needs to use the new
+SCHED_DEADLINE policy also want to have the scheduling latency of
+the -deadline tasks under control.
 
-In fact, this patch:
- - adds the resource limit RLIMIT_DLDLINE, which is the minimum value
-   a user task can use as its own deadline;
- - adds the resource limit RLIMIT_DLRTIME, which is the maximum value
-   a user task can use as it own runtime.
+For this reason a new version of the scheduling wakeup latency,
+called "wakeup_dl", is introduced.
 
-Notice that to exploit these, a modified version of the ulimit
-utility and a modified resource.h header file are needed. They
-both will be available on the website of the project.
+As a consequence of applying this patch there will be three wakeup
+latency tracer:
+ * "wakeup", that deals with all tasks in the system;
+ * "wakeup_rt", that deals with -rt and -deadline tasks only;
+ * "wakeup_dl", that deals with -deadline tasks only.
 
 Signed-off-by: Dario Faggioli <raistlin@linux.it>
 ---
- include/asm-generic/resource.h |    7 ++++++-
- kernel/sched.c                 |   25 +++++++++++++++++++++++++
- 2 files changed, 31 insertions(+), 1 deletions(-)
+ kernel/trace/trace_sched_wakeup.c |   44 +++++++++++++++++++++++++++++++++=
+---
+ kernel/trace/trace_selftest.c     |   31 ++++++++++++++++----------
+ 2 files changed, 59 insertions(+), 16 deletions(-)
 
-diff --git a/include/asm-generic/resource.h b/include/asm-generic/resource.=
-h
-index 587566f..4a1d0e2 100644
---- a/include/asm-generic/resource.h
-+++ b/include/asm-generic/resource.h
-@@ -45,7 +45,10 @@
- 					   0-39 for nice level 19 .. -20 */
- #define RLIMIT_RTPRIO		14	/* maximum realtime priority */
- #define RLIMIT_RTTIME		15	/* timeout for RT tasks in us */
--#define RLIM_NLIMITS		16
-+
-+#define RLIMIT_DLDLINE		16	/* minimum deadline in us */
-+#define RLIMIT_DLRTIME		17	/* maximum runtime in us */
-+#define RLIM_NLIMITS		18
+diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_w=
+akeup.c
+index 7319559..8cee7b0 100644
+--- a/kernel/trace/trace_sched_wakeup.c
++++ b/kernel/trace/trace_sched_wakeup.c
+@@ -27,6 +27,7 @@ static int			wakeup_cpu;
+ static int			wakeup_current_cpu;
+ static unsigned			wakeup_prio =3D -1;
+ static int			wakeup_rt;
++static int			wakeup_dl;
 =20
- /*
-  * SuS says limits have to be unsigned.
-@@ -87,6 +90,8 @@
- 	[RLIMIT_NICE]		=3D { 0, 0 },				\
- 	[RLIMIT_RTPRIO]		=3D { 0, 0 },				\
- 	[RLIMIT_RTTIME]		=3D {  RLIM_INFINITY,  RLIM_INFINITY },	\
-+	[RLIMIT_DLDLINE]	=3D { ULONG_MAX, ULONG_MAX },		\
-+	[RLIMIT_DLRTIME]	=3D { 0, 0 },				\
+ static arch_spinlock_t wakeup_lock =3D
+ 	(arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
+@@ -414,9 +415,17 @@ probe_wakeup(void *ignore, struct task_struct *p, int =
+success)
+ 	tracing_record_cmdline(p);
+ 	tracing_record_cmdline(current);
+=20
+-	if ((wakeup_rt && !rt_task(p)) ||
+-			p->prio >=3D wakeup_prio ||
+-			p->prio >=3D current->prio)
++	/*
++	 * Semantic is like this:
++	 *  - wakeup tracer handles all tasks in the system, independently
++	 *    from their scheduling class;
++	 *  - wakeup_rt tracer handles tasks belonging to sched_dl and
++	 *    sched_rt class;
++	 *  - wakeup_dl handles tasks belonging to sched_dl class only.
++	 */
++	if ((wakeup_dl && !dl_task(p)) ||
++	    (wakeup_rt && !dl_task(p) && !rt_task(p)) ||
++	    (p->prio >=3D wakeup_prio || p->prio >=3D current->prio))
+ 		return;
+=20
+ 	pc =3D preempt_count();
+@@ -428,7 +437,7 @@ probe_wakeup(void *ignore, struct task_struct *p, int s=
+uccess)
+ 	arch_spin_lock(&wakeup_lock);
+=20
+ 	/* check for races. */
+-	if (!tracer_enabled || p->prio >=3D wakeup_prio)
++	if (!tracer_enabled || (!dl_task(p) && p->prio >=3D wakeup_prio))
+ 		goto out_locked;
+=20
+ 	/* reset the trace */
+@@ -536,16 +545,25 @@ static int __wakeup_tracer_init(struct trace_array *t=
+r)
+=20
+ static int wakeup_tracer_init(struct trace_array *tr)
+ {
++	wakeup_dl =3D 0;
+ 	wakeup_rt =3D 0;
+ 	return __wakeup_tracer_init(tr);
  }
 =20
- #endif	/* __KERNEL__ */
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 19c8c25..9165c5e 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -4903,6 +4903,31 @@ recheck:
- 	 * Allow unprivileged RT tasks to decrease priority:
- 	 */
- 	if (user && !capable(CAP_SYS_NICE)) {
-+		if (dl_policy(policy)) {
-+			u64 rlim_dline, rlim_rtime;
-+			u64 dline, rtime;
+ static int wakeup_rt_tracer_init(struct trace_array *tr)
+ {
++	wakeup_dl =3D 0;
+ 	wakeup_rt =3D 1;
+ 	return __wakeup_tracer_init(tr);
+ }
+=20
++static int wakeup_dl_tracer_init(struct trace_array *tr)
++{
++	wakeup_dl =3D 1;
++	wakeup_rt =3D 0;
++	return __wakeup_tracer_init(tr);
++}
 +
-+			if (!lock_task_sighand(p, &flags))
-+				return -ESRCH;
-+			rlim_dline =3D p->signal->rlim[RLIMIT_DLDLINE].rlim_cur;
-+			rlim_rtime =3D p->signal->rlim[RLIMIT_DLRTIME].rlim_cur;
-+			unlock_task_sighand(p, &flags);
+ static void wakeup_tracer_reset(struct trace_array *tr)
+ {
+ 	stop_wakeup_tracer(tr);
+@@ -608,6 +626,20 @@ static struct tracer wakeup_rt_tracer __read_mostly =
+=3D
+ 	.use_max_tr	=3D 1,
+ };
+=20
++static struct tracer wakeup_dl_tracer __read_mostly =3D
++{
++	.name		=3D "wakeup_dl",
++	.init		=3D wakeup_dl_tracer_init,
++	.reset		=3D wakeup_tracer_reset,
++	.start		=3D wakeup_tracer_start,
++	.stop		=3D wakeup_tracer_stop,
++	.wait_pipe	=3D poll_wait_pipe,
++	.print_max	=3D 1,
++#ifdef CONFIG_FTRACE_SELFTEST
++	.selftest    =3D trace_selftest_startup_wakeup,
++#endif
++};
 +
-+			/* can't set/change -deadline policy */
-+			if (policy !=3D p->policy && !rlim_rtime)
-+				return -EPERM;
+ __init static int init_wakeup_tracer(void)
+ {
+ 	int ret;
+@@ -620,6 +652,10 @@ __init static int init_wakeup_tracer(void)
+ 	if (ret)
+ 		return ret;
+=20
++	ret =3D register_tracer(&wakeup_dl_tracer);
++	if (ret)
++		return ret;
 +
-+			/* can't decrease the deadline */
-+			rlim_dline *=3D NSEC_PER_USEC;
-+			dline =3D timespec_to_ns(&param_ex->sched_deadline);
-+			if (dline < p->dl.dl_deadline && dline < rlim_dline)
-+				return -EPERM;
-+			/* can't increase the runtime */
-+			rlim_rtime *=3D NSEC_PER_USEC;
-+			rtime =3D timespec_to_ns(&param_ex->sched_runtime);
-+			if (rtime > p->dl.dl_runtime && rtime > rlim_rtime)
-+				return -EPERM;
-+		}
- 		if (rt_policy(policy)) {
- 			unsigned long rlim_rtprio =3D
- 					task_rlimit(p, RLIMIT_RTPRIO);
+ 	return 0;
+ }
+ device_initcall(init_wakeup_tracer);
+diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
+index 562c56e..c4f3580 100644
+--- a/kernel/trace/trace_selftest.c
++++ b/kernel/trace/trace_selftest.c
+@@ -557,11 +557,18 @@ trace_selftest_startup_nop(struct tracer *trace, stru=
+ct trace_array *tr)
+ #ifdef CONFIG_SCHED_TRACER
+ static int trace_wakeup_test_thread(void *data)
+ {
+-	/* Make this a RT thread, doesn't need to be too high */
+-	static struct sched_param param =3D { .sched_priority =3D 5 };
++	/* Make this a -deadline thread */
++	struct sched_param param =3D { .sched_priority =3D 0 };
++	struct sched_param_ex paramx =3D {
++		.sched_priority =3D 0,
++		.sched_runtime =3D { .tv_sec =3D 0, .tv_nsec =3D 100000 },
++		.sched_deadline =3D { .tv_sec =3D 0, .tv_nsec =3D 10000000 },
++		.sched_period =3D { .tv_sec =3D 0, tv_nsec =3D 10000000 }
++		.sched_flags =3D 0
++	};
+ 	struct completion *x =3D data;
+=20
+-	sched_setscheduler(current, SCHED_FIFO, &param);
++	sched_setscheduler_ex(current, SCHED_DEADLINE, &param, &paramx);
+=20
+ 	/* Make it know we have a new prio */
+ 	complete(x);
+@@ -573,8 +580,8 @@ static int trace_wakeup_test_thread(void *data)
+ 	/* we are awake, now wait to disappear */
+ 	while (!kthread_should_stop()) {
+ 		/*
+-		 * This is an RT task, do short sleeps to let
+-		 * others run.
++		 * This will likely be the system top priority
++		 * task, do short sleeps to let others run.
+ 		 */
+ 		msleep(100);
+ 	}
+@@ -587,21 +594,21 @@ trace_selftest_startup_wakeup(struct tracer *trace, s=
+truct trace_array *tr)
+ {
+ 	unsigned long save_max =3D tracing_max_latency;
+ 	struct task_struct *p;
+-	struct completion isrt;
++	struct completion is_ready;
+ 	unsigned long count;
+ 	int ret;
+=20
+-	init_completion(&isrt);
++	init_completion(&is_ready);
+=20
+-	/* create a high prio thread */
+-	p =3D kthread_run(trace_wakeup_test_thread, &isrt, "ftrace-test");
++	/* create a -deadline thread */
++	p =3D kthread_run(trace_wakeup_test_thread, &is_ready, "ftrace-test");
+ 	if (IS_ERR(p)) {
+ 		printk(KERN_CONT "Failed to create ftrace wakeup test thread ");
+ 		return -1;
+ 	}
+=20
+-	/* make sure the thread is running at an RT prio */
+-	wait_for_completion(&isrt);
++	/* make sure the thread is running at -deadline policy */
++	wait_for_completion(&is_ready);
+=20
+ 	/* start the tracing */
+ 	ret =3D tracer_init(trace, tr);
+@@ -613,7 +620,7 @@ trace_selftest_startup_wakeup(struct tracer *trace, str=
+uct trace_array *tr)
+ 	/* reset the max latency */
+ 	tracing_max_latency =3D 0;
+=20
+-	/* sleep to let the RT thread sleep too */
++	/* sleep to let the thread sleep too */
+ 	msleep(100);
+=20
+ 	/*
 --=20
 1.7.2.3
 
@@ -135,17 +256,17 @@ Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
 http://blog.linux.it/raistlin / raistlin@ekiga.net /
 dario.faggioli@jabber.org
 
---=-a2O5WNCtspMKW9AkfmKD
+--=-uySv6t3QCE6W6w4r+zMT
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEABECAAYFAkzKa6oACgkQk4XaBE3IOsRMXQCeKTq+Rj2ANAGBJvervnbdSlNF
-auIAn2Dmbb0/xkDgl33YgaEaa0ecEa73
-=B9M3
+iEYEABECAAYFAkzKa9EACgkQk4XaBE3IOsTJFgCfSfAWRpjqapmtjAh2VuLhMjMg
+P+UAnjQVYNexbXNDVsGI03Oi8/nAogYD
+=U5YR
 -----END PGP SIGNATURE-----
 
---=-a2O5WNCtspMKW9AkfmKD--
+--=-uySv6t3QCE6W6w4r+zMT--
 
