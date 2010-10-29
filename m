@@ -1,143 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761515Ab0J2NLh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 09:11:37 -0400
-Received: from mail.windriver.com ([147.11.1.11]:64323 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756735Ab0J2NLf (ORCPT
+	id S933854Ab0J2NOX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 09:14:23 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:55839 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932282Ab0J2NOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 09:11:35 -0400
-Message-ID: <4CCAC7F7.9060400@windriver.com>
-Date: Fri, 29 Oct 2010 08:11:19 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Fri, 29 Oct 2010 09:14:21 -0400
+Date: Fri, 29 Oct 2010 15:13:32 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Borislav Petkov <bp@alien8.de>, john stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "avi@redhat.com" <avi@redhat.com>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>
+Subject: Re: [bisected] Clocksource tsc unstable git
+Message-ID: <20101029131332.GC21125@aftab>
+References: <alpine.LFD.2.00.1010261747250.3115@localhost6.localdomain6>
+ <1288120736.2645.9.camel@localhost>
+ <20101027142622.GA1555@arch.trippelsdorf.de>
+ <20101027182608.GA1580@arch.trippelsdorf.de>
+ <20101029081831.GA7149@liondog.tnic>
+ <20101029083013.GA1553@arch.trippelsdorf.de>
+ <20101029102713.GA21125@aftab>
+ <20101029113433.GB1553@arch.trippelsdorf.de>
+ <20101029113934.GB21125@aftab>
+ <20101029115438.GA15838@arch.trippelsdorf.de>
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net
-Subject: Re: [PATCH] kdb: avoid on-stack cpumask, old-style accessors
-References: <201010272030.34310.rusty@rustcorp.com.au> <4CC810A0.80609@windriver.com> <201010292018.26776.rusty@rustcorp.com.au>
-In-Reply-To: <201010292018.26776.rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Oct 2010 13:11:20.0643 (UTC) FILETIME=[C76FE930:01CB776A]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101029115438.GA15838@arch.trippelsdorf.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2010 04:48 AM, Rusty Russell wrote:
+On Fri, Oct 29, 2010 at 07:54:38AM -0400, Markus Trippelsdorf wrote:
+> On Fri, Oct 29, 2010 at 01:39:34PM +0200, Borislav Petkov wrote:
+> > On Fri, Oct 29, 2010 at 07:34:33AM -0400, Markus Trippelsdorf wrote:
+> > > > Markus, can you verify this on your system by compiling x86info from
+> > > > git://git.choralone.org/git/x86info and doing
+> > > > 
+> > > > ./lsmsr Int
+> > > 
+> > > 
+> > > x86info v1.28beta.  Dave Jones 2001-2010
+> > > Feedback to <davej@redhat.com>.
+> > > 
+> > > Found 4 CPUs
+> > > --------------------------------------------------------------------------
+> > > CPU #1
+> > > EFamily: 1 EModel: 0 Family: 15 Model: 4 Stepping: 2
+> > > CPU Model: Quad-Core Opteron/Phenom II (RB-C2)
+> > 
+> > well, x86info doesn't help - there's a lsmsr tool which is being built
+> > too but no need, I can infer the info from your revision: your CPU is
+> > RB-C2 which does SMI initiated C1E.
 > 
-> We could, or look harder at that code to see if the mask is really needed?
+> Sorry. Here is the correct output:
+> 
+> IntPendingMessage    = 0x0000000008c200b0
 
-How right you are!  We don't even need the mask in the first place.
-The code can be refactored at the same time it is made to actually
-work.  It turns out that the per_cpu command doesn't work properly at
-the moment in the mainline.
+Yep, bit 27 is set, SmiOnCmpHalt.
 
-That means I will drop your patch, but I really do appreciate you
-pointing this out.
+Thanks.
 
-Thanks!
-Jason.
+-- 
+Regards/Gruss,
+Boris.
 
---
-
-From: Jason Wessel <jason.wessel@windriver.com>
-Subject: [PATCH] kdb: fix per_cpu command to remove supress mask
-Date: Fri Oct 29 08:04:16 CDT 2010
-
-Rusty pointed out that the per_cpu command uses up lots of space on
-the stack and the cpu supress mask is probably not needed.
-
-This patch removes the need for the supress mask as well as fixing up
-the following problems with the kdb per_cpu command:
-  * The per_cpu command should allow an address as an argument
-  * When you have more data than can be displayed on one screen allow
-    the user to break out of the print loop.
-
-Reported-by: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
----
- kernel/debug/kdb/kdb_main.c |   46 ++++++++++----------------------------------
- 1 file changed, 11 insertions(+), 35 deletions(-)
-
---- a/kernel/debug/kdb/kdb_main.c
-+++ b/kernel/debug/kdb/kdb_main.c
-@@ -2603,20 +2603,17 @@ static int kdb_summary(int argc, const c
-  */
- static int kdb_per_cpu(int argc, const char **argv)
- {
--	char buf[256], fmtstr[64];
--	kdb_symtab_t symtab;
--	cpumask_t suppress = CPU_MASK_NONE;
--	int cpu, diag;
--	unsigned long addr, val, bytesperword = 0, whichcpu = ~0UL;
-+	char fmtstr[64];
-+	int cpu, diag, nextarg = 1;
-+	unsigned long addr, symaddr, val, bytesperword = 0, whichcpu = ~0UL;
- 
- 	if (argc < 1 || argc > 3)
- 		return KDB_ARGCOUNT;
- 
--	snprintf(buf, sizeof(buf), "per_cpu__%s", argv[1]);
--	if (!kdbgetsymval(buf, &symtab)) {
--		kdb_printf("%s is not a per_cpu variable\n", argv[1]);
--		return KDB_BADADDR;
--	}
-+	diag = kdbgetaddrarg(argc, argv, &nextarg, &symaddr, NULL, NULL);
-+	if (diag)
-+		return diag;
-+
- 	if (argc >= 2) {
- 		diag = kdbgetularg(argv[2], &bytesperword);
- 		if (diag)
-@@ -2649,46 +2646,25 @@ static int kdb_per_cpu(int argc, const c
- #define KDB_PCU(cpu) 0
- #endif
- #endif
--
- 	for_each_online_cpu(cpu) {
-+		if (KDB_FLAG(CMD_INTERRUPT))
-+			return 0;
-+
- 		if (whichcpu != ~0UL && whichcpu != cpu)
- 			continue;
--		addr = symtab.sym_start + KDB_PCU(cpu);
-+		addr = symaddr + KDB_PCU(cpu);
- 		diag = kdb_getword(&val, addr, bytesperword);
- 		if (diag) {
- 			kdb_printf("%5d " kdb_bfd_vma_fmt0 " - unable to "
- 				   "read, diag=%d\n", cpu, addr, diag);
- 			continue;
- 		}
--#ifdef	CONFIG_SMP
--		if (!val) {
--			cpu_set(cpu, suppress);
--			continue;
--		}
--#endif	/* CONFIG_SMP */
- 		kdb_printf("%5d ", cpu);
- 		kdb_md_line(fmtstr, addr,
- 			bytesperword == KDB_WORD_SIZE,
- 			1, bytesperword, 1, 1, 0);
- 	}
--	if (cpus_weight(suppress) == 0)
--		return 0;
--	kdb_printf("Zero suppressed cpu(s):");
--	for (cpu = first_cpu(suppress); cpu < num_possible_cpus();
--	     cpu = next_cpu(cpu, suppress)) {
--		kdb_printf(" %d", cpu);
--		if (cpu == num_possible_cpus() - 1 ||
--		    next_cpu(cpu, suppress) != cpu + 1)
--			continue;
--		while (cpu < num_possible_cpus() &&
--		       next_cpu(cpu, suppress) == cpu + 1)
--			++cpu;
--		kdb_printf("-%d", cpu);
--	}
--	kdb_printf("\n");
--
- #undef KDB_PCU
--
- 	return 0;
- }
- 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
