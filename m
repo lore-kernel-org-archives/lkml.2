@@ -1,68 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934113Ab0J2QHK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 12:07:10 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:34560 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932898Ab0J2QHI (ORCPT
+	id S934083Ab0J2QKB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 12:10:01 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:43428 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755308Ab0J2QJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 12:07:08 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:references:date:in-reply-to:message-id:
-	user-agent:mime-version:content-type;
-	b=NNQfLlUxXQzQFnxplG6NtmmlKwoUM4sBuqNyBdYbF1lac92btcH/oy/PTR451djgu
-	KpgmFRH7XwnE/jknl6Q5w==
-From: Greg Thelen <gthelen@google.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: [PATCH v4 11/11] memcg: check memcg dirty limits in page writeback
-References: <1288336154-23256-1-git-send-email-gthelen@google.com>
-	<1288336154-23256-12-git-send-email-gthelen@google.com>
-	<20101029164835.06eef3cf.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Fri, 29 Oct 2010 09:06:33 -0700
-In-Reply-To: <20101029164835.06eef3cf.kamezawa.hiroyu@jp.fujitsu.com>
-	(KAMEZAWA Hiroyuki's message of "Fri, 29 Oct 2010 16:48:35 +0900")
-Message-ID: <xr93eib9nfue.fsf@ninji.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Fri, 29 Oct 2010 12:09:58 -0400
+Date: Fri, 29 Oct 2010 17:09:56 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Chun Wu <chun.wu84@gmail.com>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] block: missing module_put in put_disk
+Message-ID: <20101029160955.GU19804@ZenIV.linux.org.uk>
+References: <1288367495-2919-1-git-send-email-chun@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288367495-2919-1-git-send-email-chun@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+On Fri, Oct 29, 2010 at 11:51:35AM -0400, Chun Wu wrote:
+> From: Chun Wu <chun.wu84@gmail.com>
+> 
+> module_put function is not called in put_disk function. Should it be added?
 
-> On Fri, 29 Oct 2010 00:09:14 -0700
-> Greg Thelen <gthelen@google.com> wrote:
->
->> If the current process is in a non-root memcg, then
->> balance_dirty_pages() will consider the memcg dirty limits
->> as well as the system-wide limits.  This allows different
->> cgroups to have distinct dirty limits which trigger direct
->> and background writeback at different levels.
->> 
->> Signed-off-by: Andrea Righi <arighi@develer.com>
->> Signed-off-by: Greg Thelen <gthelen@google.com>
->
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->
-> Ideally, I think some comments in the code for "why we need double-check system's
-> dirty limit and memcg's dirty limit" will be appreciated.
+Check the callers.  Check the callers of get_disk.  Think whether those
+two are counterparts.  See if any callers would have module_put() nearby.
+See if any callers would not have module_put() nearby.  See if there is
+anything that would distinguish one class from another.  Think whether
+they need different behaviour.  Then you'll be able to answer your
+question.  As a bonus, consider the source of confusion and see if you
+can remove it [I'm serious, BTW - get_disk() is apparently a lousy name
+asking for confusion; renaming it might be a useful thing to do, provided
+that new name would be less confusing]
 
-I will add to the balance_dirty_pages() comment.  It will read:
-/*
- * balance_dirty_pages() must be called by processes which are generating dirty
- * data.  It looks at the number of dirty pages in the machine and will force
- * the caller to perform writeback if the system is over `vm_dirty_ratio'.
- * If we're over `background_thresh' then the writeback threads are woken to
- * perform some writeout.  The current task may have per-memcg dirty
- * limits, which are also checked.
- */
+[snip the patch blindly adding such call]
