@@ -1,50 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933667Ab0J2ING (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 04:13:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62616 "EHLO mx1.redhat.com"
+	id S933598Ab0J2ISo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 04:18:44 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:46734 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755715Ab0J2INA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 04:13:00 -0400
-Date: Fri, 29 Oct 2010 10:12:56 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 1/1] vhost: TX used buffer guest signal accumulation
-Message-ID: <20101029081256.GD22688@redhat.com>
-References: <1288216693.17571.38.camel@localhost.localdomain>
- <1288240804.14342.1.camel@localhost.localdomain>
- <20101028052021.GD5599@redhat.com>
- <1288294355.11251.20.camel@localhost.localdomain>
- <1288296835.11251.24.camel@localhost.localdomain>
+	id S1755814Ab0J2ISf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 04:18:35 -0400
+Date: Fri, 29 Oct 2010 10:18:31 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: markus@trippelsdorf.de
+Cc: john stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Borislav Petkov <bp@amd64.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        heiko.carstens@de.ibm.com, a.p.zijlstra@chello.nl, avi@redhat.com,
+        mtosatti@redhat.com
+Subject: Re: [bisected] Clocksource tsc unstable git
+Message-ID: <20101029081831.GA7149@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>, markus@trippelsdorf.de,
+	john stultz <johnstul@us.ibm.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Borislav Petkov <bp@amd64.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"hpa@linux.intel.com" <hpa@linux.intel.com>,
+	Ingo Molnar <mingo@elte.hu>,
+	Andreas Herrmann <andreas.herrmann3@amd.com>,
+	heiko.carstens@de.ibm.com, a.p.zijlstra@chello.nl, avi@redhat.com,
+	mtosatti@redhat.com
+References: <20101026112052.GA1672@arch.trippelsdorf.de>
+ <20101026131843.GC17852@aftab>
+ <20101026135808.GB1672@arch.trippelsdorf.de>
+ <alpine.LFD.2.00.1010261747250.3115@localhost6.localdomain6>
+ <1288120736.2645.9.camel@localhost>
+ <20101027142622.GA1555@arch.trippelsdorf.de>
+ <20101027182608.GA1580@arch.trippelsdorf.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1288296835.11251.24.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20101027182608.GA1580@arch.trippelsdorf.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 28, 2010 at 01:13:55PM -0700, Shirley Ma wrote:
-> On Thu, 2010-10-28 at 12:32 -0700, Shirley Ma wrote:
-> > Also I found a big TX regression for old guest and new guest. For old
-> > guest, I am able to get almost 11Gb/s for 2K message size, but for the
-> > new guest kernel, I can only get 3.5 Gb/s with the patch and same
-> > host.
-> > I will dig it why. 
+On Wed, Oct 27, 2010 at 08:26:08PM +0200, markus@trippelsdorf.de wrote:
+> During my search for a reliable testcase I found out that kvm guests also
+> showed random hangs (that didn't happen in v2.6.36) here. These hangs last a
+> few seconds each, during which the mouse is not movable at all.
 > 
-> The regression is from guest kernel, not from this patch. Tested 2.6.31
-> kernel, it's performance is less than 2Gb/s for 2K message size already.
-> I will resubmit the patch for review. 
+> So I ran git-bisect with this testcase and the result of the bisection is:
 > 
-> I will start to test from 2.6.30 kernel to figure it when TX regression
-> induced in virtio_net. Any suggestion which guest kernel I should test
-> to figure out this regression?
-> 
-> Thanks
-> Shirley
+> 34f971f6f7988be4d014eec3e3526bee6d007ffa is the first bad commit
+> commit 34f971f6f7988be4d014eec3e3526bee6d007ffa
+> Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Date:   Wed Sep 22 13:53:15 2010 +0200
+>
 
-git bisect 2.6.31 2.6.30
-and go from here.
+...
+
+>
+> Reverting the commit solves the kvm hang issue. (If this issue is
+> related to my original tsc problem is of course open for debate, but I
+> have a strong hunch it is.)
+
+Well, what do you know, the temporary "slowdown" triggered on my setup
+too. After waiting a minute maybe, the machine recovered and guess what
+appeared in dmesg:
+
+[44729.650859] Clocksource tsc unstable (delta = -8615263009 ns)
+[44729.656229] Switching to clocksource hpet
+
+I've reverted the changeset above and will run without it to check
+whether it makes any difference.
+
+-- 
+Regards/Gruss,
+    Boris.
