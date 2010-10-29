@@ -1,144 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934329Ab0J2WeR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 18:34:17 -0400
-Received: from vsp04.crystone.se ([83.168.225.23]:62396 "HELO
-	vsp04.crystone.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S934319Ab0J2WeP (ORCPT
+	id S934268Ab0J2Wgu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 18:36:50 -0400
+Received: from static.200.77.63.178.clients.your-server.de ([178.63.77.200]:34290
+	"EHLO Debian-50-lenny-64-minimal" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933092Ab0J2Wgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 18:34:15 -0400
-X-Greylist: delayed 895 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Oct 2010 18:34:14 EDT
-Message-ID: <4CCB4851.7080701@hostmobility.com>
-Date: Sat, 30 Oct 2010 00:18:57 +0200
-From: =?ISO-8859-1?Q?Benny_Sj=F6strand?= <benny@hostmobility.com>
-User-Agent: Thunderbird 2.0.0.21 (Windows/20090302)
+	Fri, 29 Oct 2010 18:36:48 -0400
+Date: Sat, 30 Oct 2010 00:36:47 +0200
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Greg KH <gregkh@suse.de>
+Subject: [PATCH 6/6] uio: Change mail address of Hans J. Koch
+Message-ID: <20101029223647.GG4331@local>
+References: <20101029221231.GA4331@local>
 MIME-Version: 1.0
-To: Jesper Juhl <jj@chaosbits.net>
-CC: linux-kernel@vger.kernel.org, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org
-Subject: Re: [PATCH] cs46xx memory management fixes for cs46xx_dsp_spos_create()
- - make sure we free and don't do pointless work.
-References: <alpine.LNX.2.00.1010292242080.24561@swampdragon.chaosbits.net>
-In-Reply-To: <alpine.LNX.2.00.1010292242080.24561@swampdragon.chaosbits.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101029221231.GA4331@local>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello again!
+My old mail address doesn't exist anymore. This changes all occurrences
+to my new address.
 
-Just doing a reply-all.
-It's has been many years since I did anything to the cs46xx driver, so 
-I'm wondering
-if there's anyone out there still using a cs46xx sound card?
-I think the changes look's correct, but I can't test it, I do not have a 
-cs46xx hardware anymore.
+Signed-off-by: Hans J. Koch <hjk@hansjkoch.de>
+---
+ drivers/uio/uio.c          |    2 +-
+ drivers/uio/uio_cif.c      |    2 +-
+ drivers/uio/uio_netx.c     |    2 +-
+ include/linux/uio_driver.h |    2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
 
-/Benny
-
-Jesper Juhl wrote:
-> Hi,
->
-> When reading through sound/pci/cs46xx/dsp_spos.c I noticed a couple of 
-> things in cs46xx_dsp_spos_create().
->
-> It seems to me that we don't always free the various memory buffers we 
-> allocate and we also do some work (structure member assignment) early, 
-> that is completely pointless if some of the memory allocations fail and 
-> we end up just aborting the whole thing.
->
-> I don't have hardware to test, so the patch below is compile tested only, 
-> but it makes the following changes:
->
-> - Make sure we always free all allocated memory on failures.
-> - Don't do pointless work assigning to structure members before we know 
->   all memory allocations, that may abort progress, have completed 
->   successfully.
-> - Remove some trailing whitespace.
->
-> If it looks ok, please merge, otherwise I'd be interested in knowing 
-> what's wrong so I can improve it.
->
->
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  dsp_spos.c |   33 +++++++++++----------------------
->  1 file changed, 11 insertions(+), 22 deletions(-)
->
-> diff --git a/sound/pci/cs46xx/dsp_spos.c b/sound/pci/cs46xx/dsp_spos.c
-> index 3e5ca8f..e377287 100644
-> --- a/sound/pci/cs46xx/dsp_spos.c
-> +++ b/sound/pci/cs46xx/dsp_spos.c
-> @@ -225,39 +225,25 @@ struct dsp_spos_instance *cs46xx_dsp_spos_create (struct snd_cs46xx * chip)
->  {
->  	struct dsp_spos_instance * ins = kzalloc(sizeof(struct dsp_spos_instance), GFP_KERNEL);
->  
-> -	if (ins == NULL) 
-> +	if (ins == NULL)
->  		return NULL;
->  
->  	/* better to use vmalloc for this big table */
-> -	ins->symbol_table.nsymbols = 0;
->  	ins->symbol_table.symbols = vmalloc(sizeof(struct dsp_symbol_entry) *
->  					    DSP_MAX_SYMBOLS);
-> -	ins->symbol_table.highest_frag_index = 0;
-> -
-> -	if (ins->symbol_table.symbols == NULL) {
-> +	ins->code.data = kmalloc(DSP_CODE_BYTE_SIZE, GFP_KERNEL);
-> +	ins->modules = kmalloc(sizeof(struct dsp_module_desc) * DSP_MAX_MODULES, GFP_KERNEL);
-> +	if (!ins->symbol_table.symbols || !ins->code.data || !ins->modules) {
->  		cs46xx_dsp_spos_destroy(chip);
->  		goto error;
->  	}
-> -
-> +	ins->symbol_table.nsymbols = 0;
-> +	ins->symbol_table.highest_frag_index = 0;
->  	ins->code.offset = 0;
->  	ins->code.size = 0;
-> -	ins->code.data = kmalloc(DSP_CODE_BYTE_SIZE, GFP_KERNEL);
-> -
-> -	if (ins->code.data == NULL) {
-> -		cs46xx_dsp_spos_destroy(chip);
-> -		goto error;
-> -	}
-> -
->  	ins->nscb = 0;
->  	ins->ntask = 0;
-> -
->  	ins->nmodules = 0;
-> -	ins->modules = kmalloc(sizeof(struct dsp_module_desc) * DSP_MAX_MODULES, GFP_KERNEL);
-> -
-> -	if (ins->modules == NULL) {
-> -		cs46xx_dsp_spos_destroy(chip);
-> -		goto error;
-> -	}
->  
->  	/* default SPDIF input sample rate
->  	   to 48000 khz */
-> @@ -271,8 +257,8 @@ struct dsp_spos_instance *cs46xx_dsp_spos_create (struct snd_cs46xx * chip)
->  
->  	/* set left and right validity bits and
->  	   default channel status */
-> -	ins->spdif_csuv_default = 
-> -		ins->spdif_csuv_stream =  
-> +	ins->spdif_csuv_default =
-> +		ins->spdif_csuv_stream =
->  	 /* byte 0 */  ((unsigned int)_wrap_all_bits(  (SNDRV_PCM_DEFAULT_CON_SPDIF        & 0xff)) << 24) |
->  	 /* byte 1 */  ((unsigned int)_wrap_all_bits( ((SNDRV_PCM_DEFAULT_CON_SPDIF >> 8) & 0xff)) << 16) |
->  	 /* byte 3 */   (unsigned int)_wrap_all_bits(  (SNDRV_PCM_DEFAULT_CON_SPDIF >> 24) & 0xff) |
-> @@ -281,6 +267,9 @@ struct dsp_spos_instance *cs46xx_dsp_spos_create (struct snd_cs46xx * chip)
->  	return ins;
->  
->  error:
-> +	kfree(ins->modules);
-> +	kfree(ins->code.data);
-> +	vfree(ins->symbol_table.symbols);
->  	kfree(ins);
->  	return NULL;
->  }
->
->
->   
-
+diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+index a858d2b..51fe179 100644
+--- a/drivers/uio/uio.c
++++ b/drivers/uio/uio.c
+@@ -3,7 +3,7 @@
+  *
+  * Copyright(C) 2005, Benedikt Spranger <b.spranger@linutronix.de>
+  * Copyright(C) 2005, Thomas Gleixner <tglx@linutronix.de>
+- * Copyright(C) 2006, Hans J. Koch <hjk@linutronix.de>
++ * Copyright(C) 2006, Hans J. Koch <hjk@hansjkoch.de>
+  * Copyright(C) 2006, Greg Kroah-Hartman <greg@kroah.com>
+  *
+  * Userspace IO
+diff --git a/drivers/uio/uio_cif.c b/drivers/uio/uio_cif.c
+index a8ea2f1..a84a451 100644
+--- a/drivers/uio/uio_cif.c
++++ b/drivers/uio/uio_cif.c
+@@ -1,7 +1,7 @@
+ /*
+  * UIO Hilscher CIF card driver
+  *
+- * (C) 2007 Hans J. Koch <hjk@linutronix.de>
++ * (C) 2007 Hans J. Koch <hjk@hansjkoch.de>
+  * Original code (C) 2005 Benedikt Spranger <b.spranger@linutronix.de>
+  *
+  * Licensed under GPL version 2 only.
+diff --git a/drivers/uio/uio_netx.c b/drivers/uio/uio_netx.c
+index 5a18e9f..5ffdb48 100644
+--- a/drivers/uio/uio_netx.c
++++ b/drivers/uio/uio_netx.c
+@@ -2,7 +2,7 @@
+  * UIO driver for Hilscher NetX based fieldbus cards (cifX, comX).
+  * See http://www.hilscher.com for details.
+  *
+- * (C) 2007 Hans J. Koch <hjk@linutronix.de>
++ * (C) 2007 Hans J. Koch <hjk@hansjkoch.de>
+  * (C) 2008 Manuel Traut <manut@linutronix.de>
+  *
+  * Licensed under GPL version 2 only.
+diff --git a/include/linux/uio_driver.h b/include/linux/uio_driver.h
+index d6188e5..665517c 100644
+--- a/include/linux/uio_driver.h
++++ b/include/linux/uio_driver.h
+@@ -3,7 +3,7 @@
+  *
+  * Copyright(C) 2005, Benedikt Spranger <b.spranger@linutronix.de>
+  * Copyright(C) 2005, Thomas Gleixner <tglx@linutronix.de>
+- * Copyright(C) 2006, Hans J. Koch <hjk@linutronix.de>
++ * Copyright(C) 2006, Hans J. Koch <hjk@hansjkoch.de>
+  * Copyright(C) 2006, Greg Kroah-Hartman <greg@kroah.com>
+  *
+  * Userspace IO driver.
+-- 
+1.7.1
 
