@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759705Ab0J2Amv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Oct 2010 20:42:51 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:33093 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756293Ab0J2Amo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Oct 2010 20:42:44 -0400
-Date: Fri, 29 Oct 2010 11:42:37 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Juan Quintela <quintela@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Ian Campbell <ian.campbell@citrix.com>
-Subject: linux-next: manual merge of the xen-pvhvm tree with the xen tree
-Message-Id: <20101029114237.ae45f678.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1759400Ab0J2ArY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Oct 2010 20:47:24 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:38078 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754444Ab0J2ArR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Oct 2010 20:47:17 -0400
+Date: Fri, 29 Oct 2010 09:38:53 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: Dan Carpenter <error27@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [patch] memcg: null dereference on allocation failure
+Message-Id: <20101029093853.49e75309.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20101028111241.GC6062@bicker>
+References: <20101028111241.GC6062@bicker>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__29_Oct_2010_11_42_37_+1100_LjM4Cn0Ftf6vGToO"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__29_Oct_2010_11_42_37_+1100_LjM4Cn0Ftf6vGToO
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+(I add Andrew to CC-list)
 
-Hi Stefano,
+On Thu, 28 Oct 2010 13:12:41 +0200
+Dan Carpenter <error27@gmail.com> wrote:
 
-Today's linux-next merge of the xen-pvhvm tree got a conflict in
-arch/x86/xen/setup.c between commit
-a1857ddc9ba2dfdbfd70171181e481f2f64b8d0b ("xen: do not release any memory
-under 1M in domain 0") from the xen tree and commit
-4ec5387cc36c6472a2ff2c82e9865abe8cab96c2 ("xen: add the direct mapping
-area for ISA bus access") from the xen-pvhvm tree.
+> The original code had a null dereference if alloc_percpu() failed.
+> This was introduced in 711d3d2c9bc3 "memcg: cpu hotplug aware percpu
+> count updates"
+> 
+> Signed-off-by: Dan Carpenter <error27@gmail.com>
+> 
 
-Just differences in a comment.  I just used the version from the xen
-tree ...
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 
---Signature=_Fri__29_Oct_2010_11_42_37_+1100_LjM4Cn0Ftf6vGToO
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMyhh9AAoJEDMEi1NhKgbsBQAH/jfdWUZfubFkqF9DxjplWXVB
-EGA0uWXCK8O++hw6fAy9bzilihyPxOhJiDMazrcpK6awkn7ULPDjwHRRjp79hhc2
-IE/lvjjt3NBCpEZDhkPTnWlBW1+z8IlXXSMTIOIQvBRky7xa8asCzY4GAJYDysuV
-9zsq0+vJu01W4+eQih+xFminNPSKjVzKbgMvyFgyuZwZNU1rpb5XTyWKCqK1Yvkv
-R/Y+G8Bv8tId1QiI09JZhGpoAdBi5wdaFAjh1PjyDSP83ZdxYyjJHmjVWnXV0IIL
-PT2bgkYkkZhX2FtSzbg3iOKk63g82K6lpLTF5i+gHPpNcnHPPoTJcCgqR6nwXHE=
-=ljwt
------END PGP SIGNATURE-----
-
---Signature=_Fri__29_Oct_2010_11_42_37_+1100_LjM4Cn0Ftf6vGToO--
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 9a99cfa..2efa8ea 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -4208,15 +4208,17 @@ static struct mem_cgroup *mem_cgroup_alloc(void)
+>  
+>  	memset(mem, 0, size);
+>  	mem->stat = alloc_percpu(struct mem_cgroup_stat_cpu);
+> -	if (!mem->stat) {
+> -		if (size < PAGE_SIZE)
+> -			kfree(mem);
+> -		else
+> -			vfree(mem);
+> -		mem = NULL;
+> -	}
+> +	if (!mem->stat)
+> +		goto out_free;
+>  	spin_lock_init(&mem->pcp_counter_lock);
+>  	return mem;
+> +
+> +out_free:
+> +	if (size < PAGE_SIZE)
+> +		kfree(mem);
+> +	else
+> +		vfree(mem);
+> +	return NULL;
+>  }
+>  
+>  /*
