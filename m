@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760661Ab0J2Hzv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 03:55:51 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60324 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755200Ab0J2Hzq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 03:55:46 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 29 Oct 2010 16:50:12 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: [PATCH v4 05/11] writeback: create dirty_info structure
-Message-Id: <20101029165012.ec0574ea.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1288336154-23256-6-git-send-email-gthelen@google.com>
-References: <1288336154-23256-1-git-send-email-gthelen@google.com>
-	<1288336154-23256-6-git-send-email-gthelen@google.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S933405Ab0J2IEH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 04:04:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39283 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754137Ab0J2IDx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 04:03:53 -0400
+Date: Fri, 29 Oct 2010 10:03:47 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 1/1] vhost: TX used buffer guest signal accumulation
+Message-ID: <20101029080347.GA22688@redhat.com>
+References: <1288216693.17571.38.camel@localhost.localdomain>
+ <1288240804.14342.1.camel@localhost.localdomain>
+ <20101028052021.GD5599@redhat.com>
+ <1288294355.11251.20.camel@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288294355.11251.20.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Oct 2010 00:09:08 -0700
-Greg Thelen <gthelen@google.com> wrote:
-
-> Bundle dirty limits and dirty memory usage metrics into a dirty_info
-> structure to simplify interfaces of routines that need all.
+On Thu, Oct 28, 2010 at 12:32:35PM -0700, Shirley Ma wrote:
+> On Thu, 2010-10-28 at 07:20 +0200, Michael S. Tsirkin wrote:
+> > My concern is this can delay signalling for unlimited time.
+> > Could you pls test this with guests that do not have
+> > 2b5bbe3b8bee8b38bdc27dd9c0270829b6eb7eeb
+> > b0c39dbdc204006ef3558a66716ff09797619778
+> > that is 2.6.31 and older? 
 > 
-> Signed-off-by: Greg Thelen <gthelen@google.com>
+> The patch only induces delay signaling unlimited time when there is no
+> TX packet to transmit. I thought TX signaling only noticing guest to
+> release the used buffers, anything else beside this?
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Right, that's it I think. For newer kernels we orphan the skb
+on xmit so we don't care that much about completing them.
+This does rely on an undocumented assumption about guest
+behaviour though.
 
+> I tested rhel5u5 guest (2.6.18 kernel), it works fine. I checked the two
+> commits log, I don't think this patch could cause any issue w/o these
+> two patches.
+> 
+> Also I found a big TX regression for old guest and new guest. For old
+> guest, I am able to get almost 11Gb/s for 2K message size, but for the
+> new guest kernel, I can only get 3.5 Gb/s with the patch and same host.
+> I will dig it why.
+> 
+> thanks
+> Shirley
