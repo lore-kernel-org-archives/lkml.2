@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932537Ab0J2Gkp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 02:40:45 -0400
-Received: from rt-pi1-ru-sssup.pi1.garr.net ([193.206.136.46]:22217 "EHLO
+	id S1755418Ab0J2GmT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 02:42:19 -0400
+Received: from rt-pi1-ru-sssup.pi1.garr.net ([193.206.136.46]:25840 "EHLO
 	sssup.it" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752520Ab0J2Gkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 02:40:39 -0400
-Subject: [RFC][PATCH 17/22] sched: add signaling overrunning -deadline
- tasks.
+	id S1752888Ab0J2GmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 02:42:12 -0400
+Subject: [RFC][PATCH 19/22] rtmutex: turn the plist into an rb-tree
 From: Raistlin <raistlin@linux.it>
 To: Peter Zijlstra <peterz@infradead.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
@@ -28,9 +27,9 @@ Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         paulmck <paulmck@linux.vnet.ibm.com>
 In-Reply-To: <1288333128.8661.137.camel@Palantir>
 References: <1288333128.8661.137.camel@Palantir>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-6HDrJI3ckwMLPY4BJKyk"
-Date: Fri, 29 Oct 2010 08:40:28 +0200
-Message-ID: <1288334428.8661.158.camel@Palantir>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-6sEDqU0t2Vuytgs5LwBQ"
+Date: Fri, 29 Oct 2010 08:42:01 +0200
+Message-ID: <1288334521.8661.160.camel@Palantir>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
@@ -38,222 +37,559 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-6HDrJI3ckwMLPY4BJKyk
+--=-6sEDqU0t2Vuytgs5LwBQ
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
 
-Add to the scheduler the capability of notifying when -deadline tasks
-overrun their maximum runtime and/or overcome their scheduling
-deadline.
+Turn the pi-chains from plist to rb-tree, in the rt_mutex code,
+and provide a proper comparison function for -deadline and
+-priority tasks.
 
-Runtime overruns might be quite common, e.g., due to coarse granularity
-execution time accounting resolution or wrong assignment of tasks'
-parameters (especially runtime). However, since the scheduler enforces
-bandwidth isolation among tasks, this is not at all a threat to other
-tasks' schedulability. For this reason, it is not common that a task
-wants to be notified about that. Moreover, if we are using the
-SCHED_DEADLINE policy with sporadic tasks, or to limit the bandwidth
-of not periodic nor sporadic ones, runtime overruns are very likely
-to occur at each and every instance, and again they should not be
-considered a problem.
+This is done mainly because:
+ - classical prio field of the plist is just an int, which might
+   not be enough for representing a deadline;
+ - manipulating such a list would become O(nr_deadline_tasks),
+   which might be to much, as the number of -deadline task increses.
 
-On the other hand, a deadline miss in any task means that, even if we
-are trying at our best to keep each task isolated and to avoid
-reciprocal interference among them, something went very, very bad,
-and one task did not manage in consuming its runtime by its deadline.
-This is something that should happen only on an oversubscribed
-system, and thus being notified when it occurs could be very useful.
+Therefore, an rb-tree is used, and tasks are queued in it according
+to the following logic:
+ - among two -priority (i.e., SCHED_BATCH/OTHER/RR/FIFO) tasks, the
+   one with the higher (lower, actually!) prio wins;
+ - among a -priority and a -deadline task, the latter always wins;
+ - among two -deadline tasks, the one with the earliest deadline
+   wins.
 
-The user can specify the signal(s) he wants to be sent to his task
-during sched_setscheduler_ex(), raising two specific flags in the
-sched_flags field of struct sched_param_ex:
- * SF_SIG_RORUN (if he wants to be signaled on runtime overrun),
- * SF_SIG_DMISS (if he wants to be signaled on deadline misses).
+Queueing and dequeueing functions are chenged accordingly, for both
+the list of a task's pi-waiters and the list of tasks blocked on
+a pi-lock.
 
-This patch:
- - adds the logic needed to send SIGXCPU signal to a -deadline task
-   in case its actual runtime becomes negative;
- - adds the logic needed to send SIGXCPU signal to a -deadline task
-   in case it is still being scheduled while its absolute deadline
-   passes.
-
-This all happens in the POSIX cpu-timers code, we need to take
-t->sighand->siglock, and it can't be done within the scheduler,
-under task_rq(t)->lock.
-
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Dario Faggioli <raistlin@linux.it>
 ---
- include/linux/sched.h     |   14 ++++++++++-
- kernel/posix-cpu-timers.c |   55 +++++++++++++++++++++++++++++++++++++++++=
-++++
- kernel/sched_debug.c      |    2 +
- kernel/sched_dl.c         |    8 +++++-
- 4 files changed, 76 insertions(+), 3 deletions(-)
+ include/linux/init_task.h |   10 +++
+ include/linux/rtmutex.h   |   13 +---
+ include/linux/sched.h     |    4 +-
+ kernel/fork.c             |    3 +-
+ kernel/rtmutex-debug.c    |    8 +--
+ kernel/rtmutex.c          |  135 +++++++++++++++++++++++++++++++++++------=
+----
+ kernel/rtmutex_common.h   |   22 ++++----
+ kernel/sched.c            |    4 -
+ 8 files changed, 137 insertions(+), 62 deletions(-)
 
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index 1f8c06c..f4f7567 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -10,6 +10,7 @@
+ #include <linux/pid_namespace.h>
+ #include <linux/user_namespace.h>
+ #include <linux/securebits.h>
++#include <linux/rbtree.h>
+ #include <net/net_namespace.h>
+=20
+ extern struct files_struct init_files;
+@@ -110,6 +111,14 @@ extern struct cred init_cred;
+ # define INIT_PERF_EVENTS(tsk)
+ #endif
+=20
++#ifdef CONFIG_RT_MUTEXES
++# define INIT_RT_MUTEXES						\
++	.pi_waiters =3D RB_ROOT,						\
++	.pi_waiters_leftmost =3D NULL,
++#else
++# define INIT_RT_MUTEXES
++#endif
++
+ /*
+  *  INIT_TASK is used to set up the first task table, touch at
+  * your own risk!. Base=3D0, limit=3D0x1fffff (=3D2MB)
+@@ -178,6 +187,7 @@ extern struct cred init_cred;
+ 	INIT_FTRACE_GRAPH						\
+ 	INIT_TRACE_RECURSION						\
+ 	INIT_TASK_RCU_PREEMPT(tsk)					\
++	INIT_RT_MUTEXES							\
+ }
+=20
+=20
+diff --git a/include/linux/rtmutex.h b/include/linux/rtmutex.h
+index 8d522ff..bd7cd02 100644
+--- a/include/linux/rtmutex.h
++++ b/include/linux/rtmutex.h
+@@ -13,7 +13,7 @@
+ #define __LINUX_RT_MUTEX_H
+=20
+ #include <linux/linkage.h>
+-#include <linux/plist.h>
++#include <linux/rbtree.h>
+ #include <linux/spinlock_types.h>
+=20
+ extern int max_lock_depth; /* for sysctl */
+@@ -27,7 +27,8 @@ extern int max_lock_depth; /* for sysctl */
+  */
+ struct rt_mutex {
+ 	raw_spinlock_t		wait_lock;
+-	struct plist_head	wait_list;
++	struct rb_root          waiters;
++	struct rb_node          *waiters_leftmost;
+ 	struct task_struct	*owner;
+ #ifdef CONFIG_DEBUG_RT_MUTEXES
+ 	int			save_state;
+@@ -98,12 +99,4 @@ extern int rt_mutex_trylock(struct rt_mutex *lock);
+=20
+ extern void rt_mutex_unlock(struct rt_mutex *lock);
+=20
+-#ifdef CONFIG_RT_MUTEXES
+-# define INIT_RT_MUTEXES(tsk)						\
+-	.pi_waiters	=3D PLIST_HEAD_INIT(tsk.pi_waiters, tsk.pi_lock),	\
+-	INIT_RT_MUTEX_DEBUG(tsk)
+-#else
+-# define INIT_RT_MUTEXES(tsk)
+-#endif
+-
+ #endif
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index b6f0635..b729f83 100644
+index 8806c1f..c3d1f17b 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -163,8 +163,19 @@ struct sched_param_ex {
-  *              of the highest priority scheduling class. In case it
-  *              it sched_deadline, the task also ignore runtime and
-  *              bandwidth limitations.
-+ *
-+ * These flags here below are meant to be used by userspace tasks to affec=
-t
-+ * the scheduler behaviour and/or specifying that they want to be informed
-+ * of the occurrence of some events.
-+ *
-+ *  @SF_SIG_RORUN       tells us the task wants to be notified whenever
-+ *                      a runtime overrun occurs;
-+ *  @SF_SIG_DMISS       tells us the task wants to be notified whenever
-+ *                      a scheduling deadline is missed.
-  */
- #define SF_HEAD		1
-+#define SF_SIG_RORUN	2
-+#define SF_SIG_DMISS	4
+@@ -56,6 +56,7 @@ struct sched_param {
+ #include <linux/types.h>
+ #include <linux/timex.h>
+ #include <linux/jiffies.h>
++#include <linux/plist.h>
+ #include <linux/rbtree.h>
+ #include <linux/thread_info.h>
+ #include <linux/cpumask.h>
+@@ -1530,7 +1531,8 @@ struct task_struct {
 =20
- struct exec_domain;
- struct futex_pi_state;
-@@ -1243,9 +1254,10 @@ struct sched_rt_entity {
+ #ifdef CONFIG_RT_MUTEXES
+ 	/* PI waiters blocked on a rt_mutex held by this task */
+-	struct plist_head pi_waiters;
++	struct rb_root pi_waiters;
++	struct rb_node *pi_waiters_leftmost;
+ 	/* Deadlock detection and priority inheritance handling */
+ 	struct rt_mutex_waiter *pi_blocked_on;
+ #endif
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 3b159c5..aceb248 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -935,7 +935,8 @@ static void rt_mutex_init_task(struct task_struct *p)
+ {
+ 	raw_spin_lock_init(&p->pi_lock);
+ #ifdef CONFIG_RT_MUTEXES
+-	plist_head_init_raw(&p->pi_waiters, &p->pi_lock);
++	p->pi_waiters =3D RB_ROOT;
++	p->pi_waiters_leftmost =3D NULL;
+ 	p->pi_blocked_on =3D NULL;
+ #endif
+ }
+diff --git a/kernel/rtmutex-debug.c b/kernel/rtmutex-debug.c
+index ddabb54..7cc8376 100644
+--- a/kernel/rtmutex-debug.c
++++ b/kernel/rtmutex-debug.c
+@@ -23,7 +23,7 @@
+ #include <linux/kallsyms.h>
+ #include <linux/syscalls.h>
+ #include <linux/interrupt.h>
+-#include <linux/plist.h>
++#include <linux/rbtree.h>
+ #include <linux/fs.h>
+ #include <linux/debug_locks.h>
+=20
+@@ -111,7 +111,7 @@ static void printk_lock(struct rt_mutex *lock, int prin=
+t_owner)
+=20
+ void rt_mutex_debug_task_free(struct task_struct *task)
+ {
+-	WARN_ON(!plist_head_empty(&task->pi_waiters));
++	WARN_ON(!RB_EMPTY_ROOT(&task->pi_waiters));
+ 	WARN_ON(task->pi_blocked_on);
+ }
+=20
+@@ -205,16 +205,12 @@ void debug_rt_mutex_proxy_unlock(struct rt_mutex *loc=
+k)
+ void debug_rt_mutex_init_waiter(struct rt_mutex_waiter *waiter)
+ {
+ 	memset(waiter, 0x11, sizeof(*waiter));
+-	plist_node_init(&waiter->list_entry, MAX_PRIO);
+-	plist_node_init(&waiter->pi_list_entry, MAX_PRIO);
+ 	waiter->deadlock_task_pid =3D NULL;
+ }
+=20
+ void debug_rt_mutex_free_waiter(struct rt_mutex_waiter *waiter)
+ {
+ 	put_pid(waiter->deadlock_task_pid);
+-	TRACE_WARN_ON(!plist_node_empty(&waiter->list_entry));
+-	TRACE_WARN_ON(!plist_node_empty(&waiter->pi_list_entry));
+ 	TRACE_WARN_ON(waiter->task);
+ 	memset(waiter, 0x22, sizeof(*waiter));
+ }
+diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
+index a960481..2e9c0dc 100644
+--- a/kernel/rtmutex.c
++++ b/kernel/rtmutex.c
+@@ -97,6 +97,90 @@ static inline void mark_rt_mutex_waiters(struct rt_mutex=
+ *lock)
+ }
+ #endif
+=20
++static inline int
++rt_mutex_waiter_less(struct rt_mutex_waiter *left,
++		     struct rt_mutex_waiter *right)
++{
++	if (left->task->prio < right->task->prio)
++		return 1;
++
++	/*
++	 * If both tasks are dl_task(), we check their deadlines.
++	 */
++	if (dl_prio(left->task->prio) && dl_prio(right->task->prio))
++		return left->task->dl.deadline < right->task->dl.deadline;
++}
++
++static void
++rt_mutex_enqueue(struct rt_mutex *lock, struct rt_mutex_waiter *waiter)
++{
++	struct rb_node **link =3D &lock->waiters.rb_node;
++	struct rb_node *parent =3D NULL;
++	struct rt_mutex_waiter *entry;
++	int leftmost =3D 1;
++
++	while (*link) {
++		parent =3D *link;
++		entry =3D rb_entry(parent, struct rt_mutex_waiter, tree_entry);
++		if (rt_mutex_waiter_less(waiter, entry)) {
++			link =3D &parent->rb_left;
++		} else {
++			link =3D &parent->rb_right;
++			leftmost =3D 0;
++		}
++	}
++
++	if (leftmost)
++		lock->waiters_leftmost =3D &waiter->tree_entry;
++
++	rb_link_node(&waiter->tree_entry, parent, link);
++	rb_insert_color(&waiter->tree_entry, &lock->waiters);
++}
++
++static void
++rt_mutex_dequeue(struct rt_mutex *lock, struct rt_mutex_waiter *waiter)
++{
++	if (lock->waiters_leftmost =3D=3D &waiter->tree_entry)
++		lock->waiters_leftmost =3D rb_next(&waiter->tree_entry);
++
++	rb_erase(&waiter->tree_entry, &lock->waiters);
++}
++
++static void
++rt_mutex_enqueue_pi(struct task_struct *task, struct rt_mutex_waiter *wait=
+er)
++{
++	struct rb_node **link =3D &task->pi_waiters.rb_node;
++	struct rb_node *parent =3D NULL;
++	struct rt_mutex_waiter *entry;
++	int leftmost =3D 1;
++
++	while (*link) {
++		parent =3D *link;
++		entry =3D rb_entry(parent, struct rt_mutex_waiter, pi_tree_entry);
++		if (rt_mutex_waiter_less(waiter, entry)) {
++			link =3D &parent->rb_left;
++		} else {
++			link =3D &parent->rb_right;
++			leftmost =3D 0;
++		}
++	}
++
++	if (leftmost)
++		task->pi_waiters_leftmost =3D &waiter->pi_tree_entry;
++
++	rb_link_node(&waiter->pi_tree_entry, parent, link);
++	rb_insert_color(&waiter->pi_tree_entry, &task->pi_waiters);
++}
++
++static void
++rt_mutex_dequeue_pi(struct task_struct *task, struct rt_mutex_waiter *wait=
+er)
++{
++	if (task->pi_waiters_leftmost =3D=3D &waiter->pi_tree_entry)
++		task->pi_waiters_leftmost =3D rb_next(&waiter->pi_tree_entry);
++
++	rb_erase(&waiter->pi_tree_entry, &task->pi_waiters);
++}
++
+ /*
+  * Calculate task priority from the waiter list priority
+  *
+@@ -108,7 +192,7 @@ int rt_mutex_getprio(struct task_struct *task)
+ 	if (likely(!task_has_pi_waiters(task)))
+ 		return task->normal_prio;
+=20
+-	return min(task_top_pi_waiter(task)->pi_list_entry.prio,
++	return min(task_top_pi_waiter(task)->task->prio,
+ 		   task->normal_prio);
+ }
+=20
+@@ -227,7 +311,7 @@ static int rt_mutex_adjust_prio_chain(struct task_struc=
+t *task,
+ 	 * When deadlock detection is off then we check, if further
+ 	 * priority adjustment is necessary.
+ 	 */
+-	if (!detect_deadlock && waiter->list_entry.prio =3D=3D task->prio)
++	if (!detect_deadlock && waiter->task->prio =3D=3D task->prio)
+ 		goto out_unlock_pi;
+=20
+ 	lock =3D waiter->lock;
+@@ -248,9 +332,8 @@ static int rt_mutex_adjust_prio_chain(struct task_struc=
+t *task,
+ 	top_waiter =3D rt_mutex_top_waiter(lock);
+=20
+ 	/* Requeue the waiter */
+-	plist_del(&waiter->list_entry, &lock->wait_list);
+-	waiter->list_entry.prio =3D task->prio;
+-	plist_add(&waiter->list_entry, &lock->wait_list);
++	rt_mutex_dequeue(lock, waiter);
++	rt_mutex_enqueue(lock, waiter);
+=20
+ 	/* Release the task */
+ 	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+@@ -263,17 +346,15 @@ static int rt_mutex_adjust_prio_chain(struct task_str=
+uct *task,
+=20
+ 	if (waiter =3D=3D rt_mutex_top_waiter(lock)) {
+ 		/* Boost the owner */
+-		plist_del(&top_waiter->pi_list_entry, &task->pi_waiters);
+-		waiter->pi_list_entry.prio =3D waiter->list_entry.prio;
+-		plist_add(&waiter->pi_list_entry, &task->pi_waiters);
++		rt_mutex_dequeue_pi(task, top_waiter);
++		rt_mutex_enqueue_pi(task, waiter);
+ 		__rt_mutex_adjust_prio(task);
+=20
+ 	} else if (top_waiter =3D=3D waiter) {
+ 		/* Deboost the owner */
+-		plist_del(&waiter->pi_list_entry, &task->pi_waiters);
++		rt_mutex_dequeue_pi(task, waiter);
+ 		waiter =3D rt_mutex_top_waiter(lock);
+-		waiter->pi_list_entry.prio =3D waiter->list_entry.prio;
+-		plist_add(&waiter->pi_list_entry, &task->pi_waiters);
++		rt_mutex_enqueue_pi(task, waiter);
+ 		__rt_mutex_adjust_prio(task);
+ 	}
+=20
+@@ -331,7 +412,7 @@ static inline int try_to_steal_lock(struct rt_mutex *lo=
+ck,
+=20
+ 	/* No chain handling, pending owner is not blocked on anything: */
+ 	next =3D rt_mutex_top_waiter(lock);
+-	plist_del(&next->pi_list_entry, &pendowner->pi_waiters);
++	rt_mutex_dequeue_pi(pendowner, next);
+ 	__rt_mutex_adjust_prio(pendowner);
+ 	raw_spin_unlock_irqrestore(&pendowner->pi_lock, flags);
+=20
+@@ -351,7 +432,7 @@ static inline int try_to_steal_lock(struct rt_mutex *lo=
+ck,
+ 	 */
+ 	if (likely(next->task !=3D task)) {
+ 		raw_spin_lock_irqsave(&task->pi_lock, flags);
+-		plist_add(&next->pi_list_entry, &task->pi_waiters);
++		rt_mutex_enqueue_pi(task, next);
+ 		__rt_mutex_adjust_prio(task);
+ 		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+ 	}
+@@ -424,13 +505,11 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *l=
+ock,
+ 	__rt_mutex_adjust_prio(task);
+ 	waiter->task =3D task;
+ 	waiter->lock =3D lock;
+-	plist_node_init(&waiter->list_entry, task->prio);
+-	plist_node_init(&waiter->pi_list_entry, task->prio);
+=20
+ 	/* Get the top priority waiter on the lock */
+ 	if (rt_mutex_has_waiters(lock))
+ 		top_waiter =3D rt_mutex_top_waiter(lock);
+-	plist_add(&waiter->list_entry, &lock->wait_list);
++	rt_mutex_enqueue(lock, waiter);
+=20
+ 	task->pi_blocked_on =3D waiter;
+=20
+@@ -438,9 +517,8 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *loc=
+k,
+=20
+ 	if (waiter =3D=3D rt_mutex_top_waiter(lock)) {
+ 		raw_spin_lock_irqsave(&owner->pi_lock, flags);
+-		plist_del(&top_waiter->pi_list_entry, &owner->pi_waiters);
+-		plist_add(&waiter->pi_list_entry, &owner->pi_waiters);
+-
++		rt_mutex_dequeue_pi(owner, top_waiter);
++		rt_mutex_enqueue_pi(owner, waiter);
+ 		__rt_mutex_adjust_prio(owner);
+ 		if (owner->pi_blocked_on)
+ 			chain_walk =3D 1;
+@@ -486,7 +564,7 @@ static void wakeup_next_waiter(struct rt_mutex *lock)
+ 	raw_spin_lock_irqsave(&current->pi_lock, flags);
+=20
+ 	waiter =3D rt_mutex_top_waiter(lock);
+-	plist_del(&waiter->list_entry, &lock->wait_list);
++	rt_mutex_dequeue(lock, waiter);
+=20
+ 	/*
+ 	 * Remove it from current->pi_waiters. We do not adjust a
+@@ -494,7 +572,7 @@ static void wakeup_next_waiter(struct rt_mutex *lock)
+ 	 * boosted mode and go back to normal after releasing
+ 	 * lock->wait_lock.
+ 	 */
+-	plist_del(&waiter->pi_list_entry, &current->pi_waiters);
++	rt_mutex_dequeue_pi(current, waiter);
+ 	pendowner =3D waiter->task;
+ 	waiter->task =3D NULL;
+=20
+@@ -521,7 +599,7 @@ static void wakeup_next_waiter(struct rt_mutex *lock)
+ 		struct rt_mutex_waiter *next;
+=20
+ 		next =3D rt_mutex_top_waiter(lock);
+-		plist_add(&next->pi_list_entry, &pendowner->pi_waiters);
++		rt_mutex_enqueue_pi(pendowner, next);
+ 	}
+ 	raw_spin_unlock_irqrestore(&pendowner->pi_lock, flags);
+=20
+@@ -542,7 +620,7 @@ static void remove_waiter(struct rt_mutex *lock,
+ 	int chain_walk =3D 0;
+=20
+ 	raw_spin_lock_irqsave(&current->pi_lock, flags);
+-	plist_del(&waiter->list_entry, &lock->wait_list);
++	rt_mutex_dequeue(lock, waiter);
+ 	waiter->task =3D NULL;
+ 	current->pi_blocked_on =3D NULL;
+ 	raw_spin_unlock_irqrestore(&current->pi_lock, flags);
+@@ -551,13 +629,13 @@ static void remove_waiter(struct rt_mutex *lock,
+=20
+ 		raw_spin_lock_irqsave(&owner->pi_lock, flags);
+=20
+-		plist_del(&waiter->pi_list_entry, &owner->pi_waiters);
++		rt_mutex_dequeue_pi(owner, waiter);
+=20
+ 		if (rt_mutex_has_waiters(lock)) {
+ 			struct rt_mutex_waiter *next;
+=20
+ 			next =3D rt_mutex_top_waiter(lock);
+-			plist_add(&next->pi_list_entry, &owner->pi_waiters);
++			rt_mutex_enqueue_pi(owner, next);
+ 		}
+ 		__rt_mutex_adjust_prio(owner);
+=20
+@@ -567,8 +645,6 @@ static void remove_waiter(struct rt_mutex *lock,
+ 		raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
+ 	}
+=20
+-	WARN_ON(!plist_node_empty(&waiter->pi_list_entry));
+-
+ 	if (!chain_walk)
+ 		return;
+=20
+@@ -595,7 +671,7 @@ void rt_mutex_adjust_pi(struct task_struct *task)
+ 	raw_spin_lock_irqsave(&task->pi_lock, flags);
+=20
+ 	waiter =3D task->pi_blocked_on;
+-	if (!waiter || waiter->list_entry.prio =3D=3D task->prio) {
++	if (!waiter || waiter->task->prio =3D=3D task->prio) {
+ 		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+ 		return;
+ 	}
+@@ -971,7 +1047,8 @@ void __rt_mutex_init(struct rt_mutex *lock, const char=
+ *name)
+ {
+ 	lock->owner =3D NULL;
+ 	raw_spin_lock_init(&lock->wait_lock);
+-	plist_head_init_raw(&lock->wait_list, &lock->wait_lock);
++	lock->waiters =3D RB_ROOT;
++	lock->waiters_leftmost =3D NULL;
+=20
+ 	debug_rt_mutex_init(lock, name);
+ }
+diff --git a/kernel/rtmutex_common.h b/kernel/rtmutex_common.h
+index 97a2f81..84b9eea 100644
+--- a/kernel/rtmutex_common.h
++++ b/kernel/rtmutex_common.h
+@@ -40,13 +40,13 @@ extern void schedule_rt_mutex_test(struct rt_mutex *loc=
+k);
+  * This is the control structure for tasks blocked on a rt_mutex,
+  * which is allocated on the kernel stack on of the blocked task.
+  *
+- * @list_entry:		pi node to enqueue into the mutex waiters list
+- * @pi_list_entry:	pi node to enqueue into the mutex owner waiters list
++ * @tree_entry:		pi node to enqueue into the mutex waiters tree
++ * @pi_tree_entry:	pi node to enqueue into the mutex owner waiters tree
+  * @task:		task reference to the blocked task
+  */
+ struct rt_mutex_waiter {
+-	struct plist_node	list_entry;
+-	struct plist_node	pi_list_entry;
++	struct rb_node          tree_entry;
++	struct rb_node          pi_tree_entry;
+ 	struct task_struct	*task;
+ 	struct rt_mutex		*lock;
+ #ifdef CONFIG_DEBUG_RT_MUTEXES
+@@ -57,11 +57,11 @@ struct rt_mutex_waiter {
  };
 =20
- struct sched_stats_dl {
--#ifdef CONFIG_SCHEDSTATS
-+	int			dmiss, rorun;
- 	u64			last_dmiss;
- 	u64			last_rorun;
-+#ifdef CONFIG_SCHEDSTATS
- 	u64			dmiss_max;
- 	u64			rorun_max;
- #endif
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index 6842eeb..610b8b1 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -901,6 +901,37 @@ void posix_cpu_timer_get(struct k_itimer *timer, struc=
-t itimerspec *itp)
+ /*
+- * Various helpers to access the waiters-plist:
++ * Various helpers to access the waiters-tree:
+  */
+ static inline int rt_mutex_has_waiters(struct rt_mutex *lock)
+ {
+-	return !plist_head_empty(&lock->wait_list);
++	return !RB_EMPTY_ROOT(&lock->waiters);
+ }
+=20
+ static inline struct rt_mutex_waiter *
+@@ -69,8 +69,8 @@ rt_mutex_top_waiter(struct rt_mutex *lock)
+ {
+ 	struct rt_mutex_waiter *w;
+=20
+-	w =3D plist_first_entry(&lock->wait_list, struct rt_mutex_waiter,
+-			       list_entry);
++	w =3D rb_entry(lock->waiters_leftmost, struct rt_mutex_waiter,
++		     tree_entry);
+ 	BUG_ON(w->lock !=3D lock);
+=20
+ 	return w;
+@@ -78,14 +78,14 @@ rt_mutex_top_waiter(struct rt_mutex *lock)
+=20
+ static inline int task_has_pi_waiters(struct task_struct *p)
+ {
+-	return !plist_head_empty(&p->pi_waiters);
++	return !RB_EMPTY_ROOT(&p->pi_waiters);
+ }
+=20
+ static inline struct rt_mutex_waiter *
+ task_top_pi_waiter(struct task_struct *p)
+ {
+-	return plist_first_entry(&p->pi_waiters, struct rt_mutex_waiter,
+-				  pi_list_entry);
++	return rb_entry(p->pi_waiters_leftmost, struct rt_mutex_waiter,
++			pi_tree_entry);
  }
 =20
  /*
-+ * Inform a -deadline task that it is overrunning its runtime or
-+ * (much worse) missing a deadline. This is done by sending the task
-+ * SIGXCPU, with some additional information to let it discover
-+ * what actually happened.
-+ *
-+ * The nature of the violation is coded in si_errno, while an attempt
-+ * to let the task know *how big* the violation is is done through
-+ * si_value. Unfortunately, only an int field is available there,
-+ * thus what reported might be inaccurate.
-+ */
-+static inline void __dl_signal(struct task_struct *tsk, int which)
-+{
-+	struct siginfo info;
-+	long long amount =3D which =3D=3D SF_SIG_DMISS ? tsk->dl.stats.last_dmiss=
- :
-+			   tsk->dl.stats.last_rorun;
-+
-+	info.si_signo =3D SIGXCPU;
-+	info.si_errno =3D which;
-+	info.si_code =3D SI_KERNEL;
-+	info.si_pid =3D 0;
-+	info.si_uid =3D 0;
-+	info.si_value.sival_int =3D (int)amount;
-+
-+	/* Correctly take the locks on task's sighand */
-+	__group_send_sig_info(SIGXCPU, &info, tsk);
-+	/* Log what happened to dmesg */
-+	printk(KERN_INFO "SCHED_DEADLINE: 0x%4x by %Ld [ns] in %d (%s)\n",
-+	       which, amount, task_pid_nr(tsk), tsk->comm);
-+}
-+
-+/*
-  * Check for any per-thread CPU timers that have fired and move them off
-  * the tsk->cpu_timers[N] list onto the firing list.  Here we update the
-  * tsk->it_*_expires values to reflect the remaining thread CPU timers.
-@@ -958,6 +989,25 @@ static void check_thread_timers(struct task_struct *ts=
-k,
- 	}
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 4d291e3..853473a 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -8504,10 +8504,6 @@ void __init sched_init(void)
+ 	open_softirq(SCHED_SOFTIRQ, run_rebalance_domains);
+ #endif
 =20
+-#ifdef CONFIG_RT_MUTEXES
+-	plist_head_init_raw(&init_task.pi_waiters, &init_task.pi_lock);
+-#endif
+-
  	/*
-+	 * if the userspace asked for that, we notify about (scheduling)
-+	 * deadline misses and runtime overruns via sending SIGXCPU to
-+	 * "faulting" task.
-+	 *
-+	 * Note that (hopefully small) runtime overruns are very likely
-+	 * to occur, mainly due to accounting resolution, while missing a
-+	 * scheduling deadline should be very rare, and only happen on
-+	 * an oversubscribed systems.
-+	 *
-+	 */
-+	if (unlikely(dl_task(tsk))) {
-+		if ((tsk->dl.flags & SF_SIG_DMISS) && tsk->dl.stats.dmiss)
-+			__dl_signal(tsk, SF_SIG_DMISS);
-+		if ((tsk->dl.flags & SF_SIG_RORUN) && tsk->dl.stats.rorun)
-+			__dl_signal(tsk, SF_SIG_RORUN);
-+		tsk->dl.stats.dmiss =3D tsk->dl.stats.rorun =3D 0;
-+	}
-+
-+	/*
- 	 * Check for the special case thread timers.
+ 	 * The boot idle thread does lazy MMU switching as well:
  	 */
- 	soft =3D ACCESS_ONCE(sig->rlim[RLIMIT_RTTIME].rlim_cur);
-@@ -1272,6 +1322,11 @@ static inline int fastpath_timer_check(struct task_s=
-truct *tsk)
- {
- 	struct signal_struct *sig;
-=20
-+	if (unlikely(dl_task(tsk) &&
-+	    (((tsk->dl.flags & SF_SIG_DMISS) && tsk->dl.stats.dmiss) ||
-+	     ((tsk->dl.flags & SF_SIG_RORUN) && tsk->dl.stats.rorun))))
-+		return 1;
-+
- 	if (!task_cputime_zero(&tsk->cputime_expires)) {
- 		struct task_cputime task_sample =3D {
- 			.utime =3D tsk->utime,
-diff --git a/kernel/sched_debug.c b/kernel/sched_debug.c
-index 9bec524..4949a21 100644
---- a/kernel/sched_debug.c
-+++ b/kernel/sched_debug.c
-@@ -468,8 +468,10 @@ void proc_sched_show_task(struct task_struct *p, struc=
-t seq_file *m)
- 	P(se.statistics.nr_wakeups_passive);
- 	P(se.statistics.nr_wakeups_idle);
- 	if (dl_task(p)) {
-+		P(dl.stats.dmiss);
- 		PN(dl.stats.last_dmiss);
- 		PN(dl.stats.dmiss_max);
-+		P(dl.stats.rorun);
- 		PN(dl.stats.last_rorun);
- 		PN(dl.stats.rorun_max);
- 		PN(dl.stats.tot_rtime);
-diff --git a/kernel/sched_dl.c b/kernel/sched_dl.c
-index cc87949..eff183a 100644
---- a/kernel/sched_dl.c
-+++ b/kernel/sched_dl.c
-@@ -491,14 +491,18 @@ int dl_runtime_exceeded(struct rq *rq, struct sched_d=
-l_entity *dl_se)
- 	if (dmiss) {
- 		u64 damount =3D rq->clock - dl_se->deadline;
-=20
--		schedstat_set(dl_se->stats.last_dmiss, damount);
-+		dl_se->stats.dmiss =3D 1;
-+		dl_se->stats.last_dmiss =3D damount;
-+
- 		schedstat_set(dl_se->stats.dmiss_max,
- 			      max(dl_se->stats.dmiss_max, damount));
- 	}
- 	if (rorun) {
- 		u64 ramount =3D -dl_se->runtime;
-=20
--		schedstat_set(dl_se->stats.last_rorun, ramount);
-+		dl_se->stats.rorun =3D 1;
-+		dl_se->stats.last_rorun =3D ramount;
-+
- 		schedstat_set(dl_se->stats.rorun_max,
- 			      max(dl_se->stats.rorun_max, ramount));
- 	}
 --=20
 1.7.2.3
 
@@ -266,17 +602,17 @@ Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
 http://blog.linux.it/raistlin / raistlin@ekiga.net /
 dario.faggioli@jabber.org
 
---=-6HDrJI3ckwMLPY4BJKyk
+--=-6sEDqU0t2Vuytgs5LwBQ
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEABECAAYFAkzKbFwACgkQk4XaBE3IOsQcDACfTIcCMkqN93+1JZuJh1x25mx3
-eLUAoINBlqMzWB+Yq6TbCdydsfR+wapi
-=2KeR
+iEYEABECAAYFAkzKbLkACgkQk4XaBE3IOsT5UwCcCfIB48YRYGgiaC6PL1mJRzeK
+qIIAoIkOb1BgoouNahGYd9gv19PtkK/G
+=cyXm
 -----END PGP SIGNATURE-----
 
---=-6HDrJI3ckwMLPY4BJKyk--
+--=-6sEDqU0t2Vuytgs5LwBQ--
 
