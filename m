@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753861Ab0J3NCj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 09:02:39 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:34116 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753627Ab0J3NCh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 09:02:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=NoK4neYZYapNkVmcqS9jd0tJ7RGDFFRcQLdS0orob54jATtb/ozROghO/dSXj5w43Y
-         c6Km7ynP9trwIZ94xiOTRYG0f3D8MNotnh0/igNuAkhi5tJJMxsN6QubIcP96Cah8t7x
-         9A+OmESFSNFbk6W8gw5VAhh2WKFRomcY9ZSqQ=
-MIME-Version: 1.0
-In-Reply-To: <20101030091440.GA15276@elte.hu>
-References: <AANLkTinzJ9a+9w7G5X0uZpX2o-L8E6XW98VFKoF1R_-S@mail.gmail.com>
-	<AANLkTinDDG0ZkNFJZXuV9k3nJgueUW=ph8AuHgyeAXji@mail.gmail.com>
-	<AANLkTikvSGNE7uGn5p0tfJNg4Hz5WRmLRC8cXu7+GhMk@mail.gmail.com>
-	<20101028090002.GA12446@elte.hu>
-	<AANLkTinoGGLTN2JRwjJtF6Ra5auZVg+VSa=TyrtAkDor@mail.gmail.com>
-	<20101028133036.GA30565@elte.hu>
-	<20101028170132.GY27796@think>
-	<AANLkTikgO=n88ZAQ6EYAg1+aC1d0+o923FYyhkOouaH5@mail.gmail.com>
-	<20101029145212.GA21205@thunk.org>
-	<AANLkTim-A7DLOOw4myQU3Lfip+ZEE32F2Ap_PJXuxG6G@mail.gmail.com>
-	<20101030091440.GA15276@elte.hu>
-Date: Sat, 30 Oct 2010 19:02:35 +0600
-Message-ID: <AANLkTim-hgA3-9T_N5k53Sga5LMazMQPmmQZzQsoQvRY@mail.gmail.com>
-Subject: Re: 2.6.36 io bring the system to its knees
-From: Aidar Kultayev <the.aidar@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Pekka Enberg <penberg@kernel.org>,
-        Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Nick Piggin <npiggin@suse.de>, Arjan van de Ven <arjan@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753771Ab0J3NOa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 09:14:30 -0400
+Received: from wine.ocn.ne.jp ([122.1.235.145]:53555 "EHLO smtp.wine.ocn.ne.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750975Ab0J3NO2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 09:14:28 -0400
+To: paulmck@linux.vnet.ibm.com, sergey.senozhatsky@gmail.com
+Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org, mingo@elte.hu
+Subject: Re: [PATCH] rcu_read_lock/unlock protect find_task_by_vpid call
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <20101029125550.GA3932@swordfish.minsk.epam.com>
+	<20101029201648.GK2367@linux.vnet.ibm.com>
+	<20101030093234.GK3932@swordfish.minsk.epam.com>
+In-Reply-To: <20101030093234.GK3932@swordfish.minsk.epam.com>
+Message-Id: <201010302214.DDF98906.MSFJOFtFHOLQVO@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sat, 30 Oct 2010 22:14:23 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Sergey Senozhatsky wrote:
+> On (10/29/10 13:16), Paul E. McKenney wrote:
+> > Interesting...
+> > 
+> > The task-list lock is read-held at this point, which should mean that
+> > the PID mapping cannot change.  The lockdep_tasklist_lock_is_held()
+> > function does lockdep_is_held(&tasklist_lock), which must therefore
+> > only be checking for write-holding the lock.  The fix would be to
+> > make lockdep_tasklist_lock_is_held() check for either read-holding or
+> > write-holding tasklist lock.
+> > 
+> > Or is there some subtle reason that read-holding the tasklist lock is
+> > not sufficient?
 
-here is what I have :
+This was discussed in the thread at http://kerneltrap.org/mailarchive/linux-kernel/2009/12/10/4517520 .
+Quoting from one of posts in that thead http://kerneltrap.org/mailarchive/linux-kernel/2010/2/8/4536388
 
-.ext4 mounted with data=ordered
-.-tip tree ( uname -a gives : Linux pussy 2.6.36-tip+ )
+| Usually tasklist gives enough protection, but if copy_process() fails
+| it calls free_pid() lockless and does call_rcu(delayed_put_pid().
+| This means, without rcu lock find_pid_ns() can't scan the hash table
+| safely.
 
-here is the latencytop & powertop & top screenshot:
+And now the patch that adds
 
-http://picasaweb.google.com/lh/photo/bMTgbVDoojwUeXtVdyvIKw?feat=directlink
+	rcu_lockdep_assert(rcu_read_lock_held());
 
-the system is/was doing :
-.dd if=/dev/zero of=test.10g bs=1M count=10000;rm test.10g
-.netbeans
-.compiling gcc-4.5.1
-.running VBox, which wasn't doing any IO. The guest os was idle in other words
-.vlc
-.chromium
-.firefox
-and bunch of other small stuff.
+was merged in accordance with that comment.
+Therefore, I thing below change is not good.
 
-Even without having running DD, the mouse cursor would occasionally
-lag. The alt+tab effect in KWin would take 5+seconds to workout.
-When I run DD on top of the workload it consistently made system much
-more laggy. The cursor would freeze much more frequent. It is like if
-you drag your mouse physically, but the cursor on the screen would
-jump discretely, in other words there is no continuity.
-Music would stop.
+> Should it be changed to (let's say)
+> 
+> struct task_struct *find_task_by_pid_ns(pid_t nr, struct pid_namespace *ns)
+> {
+> -	rcu_lockdep_assert(rcu_read_lock_held());
+> +	rcu_lockdep_assert(rcu_read_lock_held() || lockdep_tasklist_lock_is_held());
+> 	return pid_task(find_pid_ns(nr, ns), PIDTYPE_PID);
+> }
 
-I am free to try out anything here.
-
-thanks, Aidar
-
-On Sat, Oct 30, 2010 at 3:14 PM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Aidar Kultayev <the.aidar@gmail.com> wrote:
->
->> puling the git now - I will try whatever you throw at me.
->
-> Ted, i stuck that patch into tip:out-of-tree as:
->
->  22fd555f6c5f: <not for upstream> ext4: Relax i_mutex hold times
->
-> So that Aidar can test things more easily via:
->
->  http://people.redhat.com/mingo/tip.git/README
->
-> Thanks,
->
->        Ingo
->
+Regards.
