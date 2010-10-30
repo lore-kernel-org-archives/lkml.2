@@ -1,156 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751726Ab0J3GLU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 02:11:20 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:49732 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751533Ab0J3GLS (ORCPT
+	id S1751760Ab0J3GV4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 02:21:56 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55246 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751480Ab0J3GVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 02:11:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=A3gozl+DwA3s+dPpP1/RJAti77EmkXVM0f3VTIcM+1tAuHIwc/bRLXQdvoCynuMEoW
-         5a3lqleKoPF5JAWKBur8CC0NV7jU5D4rgbjSz6TmPu4Llp6s0dXBM/I/ISXtpCCutJRn
-         eL8CYSTgupjSbl6uESPogj0iC5MrqVgfBnZJw=
-Subject: Re: Memory barrier question.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-In-Reply-To: <201010301448.ADJ35414.VOFHtQOJOFLSMF@I-love.SAKURA.ne.jp>
-References: <201010292223.IIF64065.tOLVFJFSQOMFOH@I-love.SAKURA.ne.jp>
-	 <20101029150908.GC2367@linux.vnet.ibm.com>
-	 <201010301448.ADJ35414.VOFHtQOJOFLSMF@I-love.SAKURA.ne.jp>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 30 Oct 2010 08:11:11 +0200
-Message-ID: <1288419071.2680.648.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Sat, 30 Oct 2010 02:21:54 -0400
+Date: Sat, 30 Oct 2010 07:21:47 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Eric Paris <eparis@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Slaby <jirislaby@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: audit_tree: sleep inside atomic
+Message-ID: <20101030062147.GA16697@ZenIV.linux.org.uk>
+References: <4C1F8217.5020909@gmail.com>
+ <4C80FD9E.5040408@gmail.com>
+ <20100913170522.f0b8b1e8.akpm@linux-foundation.org>
+ <1284581305.2703.127.camel@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1284581305.2703.127.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le samedi 30 octobre 2010 à 14:48 +0900, Tetsuo Handa a écrit :
-> Paul E. McKenney wrote:
-> > For the CPU, let's take it by type of architecture...
+On Wed, Sep 15, 2010 at 04:08:25PM -0400, Eric Paris wrote:
+> On Mon, 2010-09-13 at 17:05 -0700, Andrew Morton wrote:
+> > On Fri, 03 Sep 2010 15:52:30 +0200
+> > Jiri Slaby <jirislaby@gmail.com> wrote:
 > > 
-> > First, let's get the UP-only architectures out of the way.  These would
-> > always see their changes in order, so woiuld always see "hello".
-> 
-> Of course.
-> 
-> > Second, let's consider the TSO architectures, including x86, SPARC,
-> > PA-RISC, and IBM Mainframe.  On these architectures, reads are not
-> > reordered by the CPU, so if they see the new pointer, they will also
-> > see the new characters -- hence "hello".
-> 
-> Yes.
-> 
-> > Next, let's consider weakly ordered systems that respect dependency
-> > ordering (ARM, PowerPC, Itanium).  The load of the pointer would
-> > always be ordered with respect to any dereference of the pointer,
-> > so they would always see "hello".
-> 
-> I'm relieved to hear that.
-> 
-> > This leave DEC Alpha.  In this architecture, smp_read_barrier_depends()
-> > expands to smp_rmb(), which forces the ordering as required.  So
-> > Alpha also sees "hello."
-> 
-> Yes.
-> 
-> > I believe that this covers all of the cases.
+> > > Ideas, comments?
 > > 
-> > Am I missing anything?
+> > Apparently not.
 > 
-> You are right. Regarding list elements, they are appropriately protected.
+> Sorry, I've been slacking off on vacation the last couple weeks.
 > 
+> > The question is: why is nobody reporting this bug?  Obviously nobody's
+> > running that code path.  Why not?
 > 
+> The only people who run this code path, that I know of, are govt orgs
+> who run in certified environments.  I don't know of any upstream kernel
+> users who really would hit it.
 > 
-> Then, what about list heads that are dynamically allocated/initialized?
-> 
-> sruct hashed_word {
-> 	struct list_head list;
-> 	void *key;
-> 	char *buf;
-> };
-> static struct list_head tables[1u << TABLEBIT];
-> static void (*some_callback) (void *);
-> 
+> In any case I don't think it would be particularly painful to just
+> always allocate a chunk between the two locks.  this is not a hot path
+> by any stretch of the imagination.  I'll see if I can't code something
+> up today/tomorrow.
 
-typedef void (*some_callback_t) (void *);
+It's not even a matter of path being hot; we should do allocation before
+grabbing entry->lock if size is non-zero.  End of the story.
 
-static some_callback_t __rcu *some_callback;
-
-> static void init(void)
-> {
-> 	int i;
-> 	/* Initialize the table. */
-> 	for (i = 0; i < (1u << TABLEBIT); i++)
-> 		INIT_LIST_HEAD(&tables[i]);
-> 	smp_wmb();
-> 	/* Allow other CPUs to access the table. */
-> 	some_callback = func;
-
-rcu_assign_pointer(some_callback, func);
-
-> }
-> 
-> /*
->  * This function is called by
->  *
->  *	if (some_callback)
->  *		some_callback(some_ptr);
->  *
->  * rather than
->  *
->  *	func(some_ptr);
-
-well no, see later.
-
->  *
->  * .
->  */
-> static void func(void *some_ptr)
-> {
-> 	struct hashed_word *ptr;
-> 	struct list_head *table = &tables[hash_ptr(some_ptr, TABLEBIT)];
-> 	/* We must make sure that readers see table->next != NULL. */
-
-
-> 	smp_rmb();
-Nope.. delete this
-
-> 	rcu_read_lock();
-> 	list_for_each_entry_rcu(ptr, table, list) {
-> 		if (ptr->key != some_ptr)
-> 			continue;
-> 		printk("%s\n", ptr->buf);
-> 		break;
-> 	}
-> 	rcu_read_unlock();
-> }
-> 
-> How can I make sure INIT_LIST_HEAD() in init() takes effect?
-> Is smp_rmb() appropriate?
-
-Please avoid smp_rmb()/smb_wmb() and use RCU api only.
-
-some_callback_t *ptr;
-
-rcu_read_lock();
-ptr = rcu_dereference(some_callback);
-if (ptr) {
-	list_for_each_entry_rcu(aux, table, list) {
- 		if (aux->key != ptr)
- 			continue;
- 		printk("%s\n", aux->buf);
- 		break;
- 	}
- }
-rcu_read_unlock();
-
-
-
+Fixed in audit branch I'll push today.
