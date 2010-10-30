@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752165Ab0J3Hps (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 03:45:48 -0400
-Received: from mxout3.netvision.net.il ([194.90.6.2]:50731 "EHLO
-	mxout3.netvision.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751686Ab0J3Hpp (ORCPT
+	id S1752248Ab0J3Hr4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 03:47:56 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:39289 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751808Ab0J3Hrx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 03:45:45 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; CHARSET=US-ASCII; format=flowed
-Message-id: <4CCBCD8E.1020601@billauer.co.il>
-Date: Sat, 30 Oct 2010 09:47:26 +0200
-From: Eli Billauer <eli@billauer.co.il>
-User-Agent: Thunderbird 2.0.0.23 (Windows/20090812)
-To: linux-kernel@vger.kernel.org
-Subject: open() on /dev/tty takes 30 seconds on 2.6.36
+	Sat, 30 Oct 2010 03:47:53 -0400
+Date: Sat, 30 Oct 2010 09:47:49 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, David Daney <ddaney@caviumnetworks.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Ingo Molnar <mingo@elte.hu>, Jason Baron <jbaron@redhat.com>,
+        rth@redhat.com, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
+        avi@redhat.com, davem@davemloft.net, vgoyal@redhat.com,
+        sam@ravnborg.org, tony@bakeyournoodle.com, dsd@laptop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] jump label: disable due to compiler bug
+Message-ID: <20101030074749.GB1721@basil.fritz.box>
+References: <20101029063450.GE29463@elte.hu>
+ <1288354687.18238.433.camel@gandalf.stny.rr.com>
+ <20101029122230.GA25663@elte.hu>
+ <1288356418.18238.454.camel@gandalf.stny.rr.com>
+ <20101029133524.GA23916@Krystal>
+ <1288369108.29632.1.camel@gandalf.stny.rr.com>
+ <4CCB01D1.2050004@caviumnetworks.com>
+ <1288373582.29632.3.camel@gandalf.stny.rr.com>
+ <4CCB2B7B.6020002@zytor.com>
+ <1288385260.29632.24.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288385260.29632.24.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+> Fine, but we can wait till 2.6.38 for that. For now we have a manual
+> config option. I'm not changing it until I have 4.5.2 in my distcc farm
+> and testing it out.
 
-I'm sorry about my previous overconclusive email, but there is a real 
-problem with opening TTYs during a few minutes after a system boots 
-(Fedora 12 in my case). I'll stick to the facts this time.
+It's probably obvious, but a manual config option still breaks
+the allyes|modconfig crowd.
 
-The kernel involved is 2.6.36, downloaded a few days ago as "latest 
-stable kernel" at kernel.org.
-
-Running strace on sshd with -T and -tt flags, hence showing the time 
-each call took, these two lines were found. The number in brackets is 
-the time the system call took (not to the time to the next call or 
-something).
-
-...
-21:35:21.131436 open("/dev/tty", O_RDWR|O_NOCTTY) = -1 ENXIO (No such 
-device or address) <30.022532>
-...
-21:35:51.175642 open("/dev/pts/0", O_RDWR) = 4 <30.063213>
-...
-
-So it took 30 seconds just to fail opening /dev/tty.
-
-I then went on to add printk's in pty.c. Among others, I had:
-
-static int ptmx_open(struct inode *inode, struct file *filp)
-{
-    struct tty_struct *tty;
-    int retval;
-    int index;
-
-    nonseekable_open(inode, filp);
-
-    /* find a device that is not in use. */
-    printk(KERN_ALERT  "34: ptmx_open to lock\n");
-    tty_lock();
-    printk(KERN_ALERT  "35: ptmx_open locked\n");
-
-[snipped here]
-
-And then found in my /var/log/messages (no log lines between these two):
-Oct 29 16:14:58 ocho kernel: 34: ptmx_open to lock
-Oct 29 16:15:13 ocho kernel: 35: ptmx_open locked
-
-So we can see it took 15 seconds to acquire a lock in this case. In all 
-other pairs of lock messages there was no time difference. To me it 
-looks like 15 seconds in order to acquire a lock in the kernel is a 
-smoking gun.
-
-Please look into this.
-   Eli
+-Andi
 
 -- 
-Web: http://www.billauer.co.il
-
+ak@linux.intel.com -- Speaking for myself only.
