@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752549Ab0J3DsM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 23:48:12 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:40143 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751281Ab0J3DsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 23:48:10 -0400
-Date: Fri, 29 Oct 2010 22:48:04 -0500
-From: Russ Anderson <rja@sgi.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, rja@americas.sgi.com
-Subject: Re: [BUG] intr_remap: Simplify the code further
-Message-ID: <20101030034804.GC9557@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-References: <20101029222227.GJ32456@sgi.com> <1288399062.2690.169.camel@sbsiddha-MOBL3.sc.intel.com> <20101030015050.GA9557@sgi.com> <AANLkTi=Ct+NXV_pvPNbn+j-j=hHXmUxaqa=XEaga=+Pq@mail.gmail.com>
+	id S1750851Ab0J3EE0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 00:04:26 -0400
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:32772 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750715Ab0J3EEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 00:04:23 -0400
+Date: Fri, 29 Oct 2010 21:04:19 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Mingkai Hu <Mingkai.hu@freescale.com>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
+Subject: mtd: fix build error in m25p80.c
+Message-ID: <20101029210419.70f99e96@queued.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=Ct+NXV_pvPNbn+j-j=hHXmUxaqa=XEaga=+Pq@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 29, 2010 at 07:55:49PM -0700, Yinghai Lu wrote:
-> On Fri, Oct 29, 2010 at 6:50 PM, Russ Anderson <rja@sgi.com> wrote:
-> > On Fri, Oct 29, 2010 at 05:37:42PM -0700, Suresh Siddha wrote:
-> >> On Fri, 2010-10-29 at 15:22 -0700, Russ Anderson wrote:
-> >> > There is a regression that is causing a NULL pointer dereference
-> >> > in free_irte when shutting down xpc.  git bisect narrowed it down
-> >> > to git commit d585d060b42bd36f6f0b23ff327d3b91f80c7139, which
-> >> > changed free_irte().  Reverse applying the patch fixes the problem.
-> >> >
-> >>
-> >> Russ, Is this with !CONFIG_SPARSE_IRQ?
-> >
-> >
-> > CONFIG_SPARSE_IRQ=y
-> >
-> 
-> can you try attached patch?
 
-That fixes it.
+While building an x86 distro kernel, I hit the following:
 
-> Yinghai
+Kernel: arch/x86/boot/bzImage is ready  (#7)
+ERROR: "of_mtd_parse_partitions" [drivers/mtd/devices/m25p80.ko]
+undefined!
 
-Thanks!
+of_mtd_parse_partitions is defined with MTD_OF_PARTS, and that's only
+built on PPC and microblaze.  The code in question should be wrapped w/
+a stricter #ifdef.
 
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+---
+ drivers/mtd/devices/m25p80.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
+index ea22520..184ddd5 100644
+--- a/drivers/mtd/devices/m25p80.c
++++ b/drivers/mtd/devices/m25p80.c
+@@ -924,7 +924,7 @@ static int __devinit m25p_probe(struct spi_device *spi)
+ 			nr_parts = data->nr_parts;
+ 		}
+ 
+-#ifdef CONFIG_OF
++#ifdef CONFIG_MTD_OF_PARTS
+ 		if (nr_parts <= 0 && spi->dev.of_node) {
+ 			nr_parts = of_mtd_parse_partitions(&spi->dev,
+ 					spi->dev.of_node, &parts);
 -- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
+1.7.1
+
