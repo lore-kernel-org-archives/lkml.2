@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751251Ab0J3UYp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 16:24:45 -0400
-Received: from 1-1-12-13a.han.sth.bostream.se ([82.182.30.168]:45778 "EHLO
-	palpatine.hardeman.nu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751084Ab0J3UYo (ORCPT
+	id S1751367Ab0J3Ugu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 16:36:50 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:10980 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751190Ab0J3Ugr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 16:24:44 -0400
-X-Greylist: delayed 415 seconds by postgrey-1.27 at vger.kernel.org; Sat, 30 Oct 2010 16:24:43 EDT
-Subject: [PATCH] drivers/media/IR/ir-keytable.c: fix binary search
-To: torvalds@linux-foundation.org
-From: David =?utf-8?b?SMOkcmRlbWFu?= <david@hardeman.nu>
-Cc: jarod@wilsonet.com, dmitry.torokhov@gmail.com, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mchehab@infradead.org
-Date: Sat, 30 Oct 2010 22:17:44 +0200
-Message-ID: <20101030201744.2964.20624.stgit@localhost.localdomain>
-User-Agent: StGit/0.15
+	Sat, 30 Oct 2010 16:36:47 -0400
+Date: Sat, 30 Oct 2010 22:26:30 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Tom Zanussi <zanussi@us.ibm.com>, Karim Yaghmour <karim@opersys.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: [PATCH] Optimize relay_alloc_page_array() slightly by using vzalloc
+ rather than vmalloc and memset
+Message-ID: <alpine.LNX.2.00.1010302216550.1572@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The input-large-scancode patches changed the binary search in
-drivers/media/IR/ir-keytable.c to use unsigned integers, but
-signed integers are actually necessary for the algorithm to work.
+Hi,
 
-Signed-off-by: David Härdeman <david@hardeman.nu>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+We can optimize kernel/relay.c::relay_alloc_page_array() slightly by using 
+vzalloc. The patch makes these changes:
+
+ - use vzalloc instead of vmalloc+memset.
+ - remove redundant local variable 'array'.
+ - declare local 'pa_size' as const.
+
+Cuts down nicely on both source and object-code size.
+
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- drivers/media/IR/ir-keytable.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+Compile tested only.
 
-diff --git a/drivers/media/IR/ir-keytable.c b/drivers/media/IR/ir-keytable.c
-index 9186b45..647d52b 100644
---- a/drivers/media/IR/ir-keytable.c
-+++ b/drivers/media/IR/ir-keytable.c
-@@ -325,9 +325,9 @@ static int ir_setkeytable(struct ir_input_dev *ir_dev,
- static unsigned int ir_lookup_by_scancode(const struct ir_scancode_table *rc_tab,
- 					  unsigned int scancode)
+ relay.c |   15 ++++-----------
+ 1 file changed, 4 insertions(+), 11 deletions(-)
+
+diff --git a/kernel/relay.c b/kernel/relay.c
+index c7cf397..859ea5a 100644
+--- a/kernel/relay.c
++++ b/kernel/relay.c
+@@ -70,17 +70,10 @@ static const struct vm_operations_struct relay_file_mmap_ops = {
+  */
+ static struct page **relay_alloc_page_array(unsigned int n_pages)
  {
--	unsigned int start = 0;
--	unsigned int end = rc_tab->len - 1;
--	unsigned int mid;
-+	int start = 0;
-+	int end = rc_tab->len - 1;
-+	int mid;
+-	struct page **array;
+-	size_t pa_size = n_pages * sizeof(struct page *);
+-
+-	if (pa_size > PAGE_SIZE) {
+-		array = vmalloc(pa_size);
+-		if (array)
+-			memset(array, 0, pa_size);
+-	} else {
+-		array = kzalloc(pa_size, GFP_KERNEL);
+-	}
+-	return array;
++	const size_t pa_size = n_pages * sizeof(struct page *);
++	if (pa_size > PAGE_SIZE)
++		return vzalloc(pa_size);
++	return kzalloc(pa_size, GFP_KERNEL);
+ }
  
- 	while (start <= end) {
- 		mid = (start + end) / 2;
+ /*
+
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
+Plain text mails only, please      http://www.expita.com/nomime.html
+Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
 
