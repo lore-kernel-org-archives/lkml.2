@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751167Ab0J3UVm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 16:21:42 -0400
-Received: from cantor.suse.de ([195.135.220.2]:41945 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750756Ab0J3UVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 16:21:41 -0400
-Date: Sat, 30 Oct 2010 22:21:39 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] VIA Chrome integrated camera controller driver includes
- headers multiple times
-In-Reply-To: <20101030084813.3581ea7e@bike.lwn.net>
-Message-ID: <alpine.LNX.2.00.1010302220580.6879@pobox.suse.cz>
-References: <alpine.LNX.2.00.1010301527580.7979@swampdragon.chaosbits.net> <20101030084813.3581ea7e@bike.lwn.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751251Ab0J3UYp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 16:24:45 -0400
+Received: from 1-1-12-13a.han.sth.bostream.se ([82.182.30.168]:45778 "EHLO
+	palpatine.hardeman.nu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751084Ab0J3UYo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 16:24:44 -0400
+X-Greylist: delayed 415 seconds by postgrey-1.27 at vger.kernel.org; Sat, 30 Oct 2010 16:24:43 EDT
+Subject: [PATCH] drivers/media/IR/ir-keytable.c: fix binary search
+To: torvalds@linux-foundation.org
+From: David =?utf-8?b?SMOkcmRlbWFu?= <david@hardeman.nu>
+Cc: jarod@wilsonet.com, dmitry.torokhov@gmail.com, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mchehab@infradead.org
+Date: Sat, 30 Oct 2010 22:17:44 +0200
+Message-ID: <20101030201744.2964.20624.stgit@localhost.localdomain>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 30 Oct 2010, Jonathan Corbet wrote:
+The input-large-scancode patches changed the binary search in
+drivers/media/IR/ir-keytable.c to use unsigned integers, but
+signed integers are actually necessary for the algorithm to work.
 
-> > The VIA Chrome integrated camera controller driver includes both 
-> > 'linux/pci.h' and 'linux/device.h' twice. This gets rid of the duplicates.
-> 
-> Well, you see...I have teenage children.  So I've gotten very much used
-> to the idea that you have to ask for anything at *least* twice have any
-> chance of it actually happening.  Beyond that, the VIA controller has
-> certain adolescent behavior patterns of its own...watch out when it's
-> in a bad mood...so I just kind of fell into the habit of insisting.
+Signed-off-by: David Härdeman <david@hardeman.nu>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
+ drivers/media/IR/ir-keytable.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-It's always good to know the background of the bug. Do you want this to be 
-included in the changelog? :)
+diff --git a/drivers/media/IR/ir-keytable.c b/drivers/media/IR/ir-keytable.c
+index 9186b45..647d52b 100644
+--- a/drivers/media/IR/ir-keytable.c
++++ b/drivers/media/IR/ir-keytable.c
+@@ -325,9 +325,9 @@ static int ir_setkeytable(struct ir_input_dev *ir_dev,
+ static unsigned int ir_lookup_by_scancode(const struct ir_scancode_table *rc_tab,
+ 					  unsigned int scancode)
+ {
+-	unsigned int start = 0;
+-	unsigned int end = rc_tab->len - 1;
+-	unsigned int mid;
++	int start = 0;
++	int end = rc_tab->len - 1;
++	int mid;
+ 
+ 	while (start <= end) {
+ 		mid = (start + end) / 2;
 
-> Seriously, though, I'm not sure how that happened.   Obviously:
-> 
-> 	Acked-by: Jonathan Corbet <corbet@lwn.net>
-
-Applied. Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
