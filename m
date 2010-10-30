@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755337Ab0J3S0w (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 14:26:52 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:50099 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755018Ab0J3S0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 14:26:49 -0400
-Date: Sat, 30 Oct 2010 20:26:41 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86 fix
-Message-ID: <20101030182641.GA23751@elte.hu>
+	id S1755263Ab0J3Sig (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 14:38:36 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:29417 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736Ab0J3Sie (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 14:38:34 -0400
+Date: Sat, 30 Oct 2010 20:28:17 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: kvm@vger.kernel.org
+cc: Avi Kivity <avi@redhat.com>, Avi Kivity <avi@qumranet.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Yaniv Kamay <yaniv@qumranet.com>, Amit Shah <amit.shah@qumranet.com>,
+        Ben-Ami Yassour <benami@il.ibm.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] KVM x86: remove memset, use vzalloc and don't assign the
+ same value to a variable twice
+Message-ID: <alpine.LNX.2.00.1010302020150.1572@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Hi,
 
-Please pull the latest x86-fixes-for-linus git tree from:
+We can improve kvm_vm_ioctl_get_dirty_log() slightly by using vzalloc() 
+rather than first allocating and then manually zero the memory with 
+memset(). Also, while I was looking at this I noticed that we assign 
+-ENOMEM to the 'r' variable twice even though none of the code inbetween 
+the two assignments can change 'r', so I removed the second assignment.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-fixes-for-linus
+Patch has been compile tested only.
 
- Thanks,
-
-	Ingo
-
------------------->
-Yinghai Lu (1):
-      x86: Check irq_remapped instead of remapping_enabled in destroy_irq()
+Please consider merging and please CC me on all replies as I'm not 
+subscribed to the kvm mailing list.
 
 
- arch/x86/kernel/apic/io_apic.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ x86.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 0929191..7cc0a72 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3109,7 +3109,7 @@ void destroy_irq(unsigned int irq)
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 2288ad8..29f9c0a 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -3174,12 +3174,10 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
+ 		spin_unlock(&kvm->mmu_lock);
  
- 	irq_set_status_flags(irq, IRQ_NOREQUEST|IRQ_NOPROBE);
+ 		r = -ENOMEM;
+-		dirty_bitmap = vmalloc(n);
++		dirty_bitmap = vzalloc(n);
+ 		if (!dirty_bitmap)
+ 			goto out;
+-		memset(dirty_bitmap, 0, n);
  
--	if (intr_remapping_enabled)
-+	if (irq_remapped(cfg))
- 		free_irte(irq);
- 	raw_spin_lock_irqsave(&vector_lock, flags);
- 	__clear_irq_vector(irq, cfg);
+-		r = -ENOMEM;
+ 		slots = kzalloc(sizeof(struct kvm_memslots), GFP_KERNEL);
+ 		if (!slots) {
+ 			vfree(dirty_bitmap);
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
+Plain text mails only, please      http://www.expita.com/nomime.html
+Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
+
