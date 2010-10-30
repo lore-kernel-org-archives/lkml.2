@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902Ab0J3VLR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 17:11:17 -0400
-Received: from mail.perches.com ([173.55.12.10]:3805 "EHLO mail.perches.com"
+	id S1752959Ab0J3VLT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 17:11:19 -0400
+Received: from mail.perches.com ([173.55.12.10]:3799 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752447Ab0J3VJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 17:09:49 -0400
+	id S1752542Ab0J3VJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 17:09:48 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 35/39] net/core/dev.c: Update WARN uses
-Date: Sat, 30 Oct 2010 14:08:52 -0700
-Message-Id: <2f05cefa4dc86594a2d7335c7978b1ae781bef0e.1288471898.git.joe@perches.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: [PATCH 33/39] lib: Update WARN uses
+Date: Sat, 30 Oct 2010 14:08:50 -0700
+Message-Id: <4c14c8dfad71a552d1d927aec07fac0d40ba81e4.1288471898.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <cover.1288471897.git.joe@perches.com>
 References: <cover.1288471897.git.joe@perches.com>
@@ -21,27 +20,199 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Coalesce long formats.
-Add missing newlines.
+Align arguments.
+Remove KERN_<level>.
+Use %s, __func__
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- net/core/dev.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ lib/debugobjects.c   |   21 ++++++++++-----------
+ lib/iomap.c          |    2 +-
+ lib/kobject.c        |    9 ++++-----
+ lib/kobject_uevent.c |    4 ++--
+ lib/list_debug.c     |   24 ++++++++++--------------
+ lib/plist.c          |   12 ++++++------
+ 6 files changed, 33 insertions(+), 39 deletions(-)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 35dfb83..0f79b89 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -1817,8 +1817,7 @@ struct sk_buff *skb_gso_segment(struct sk_buff *skb, int features)
- 		if (dev && dev->ethtool_ops && dev->ethtool_ops->get_drvinfo)
- 			dev->ethtool_ops->get_drvinfo(dev, &info);
+diff --git a/lib/debugobjects.c b/lib/debugobjects.c
+index deebcc5..f9f33fe 100644
+--- a/lib/debugobjects.c
++++ b/lib/debugobjects.c
+@@ -253,10 +253,9 @@ static void debug_print_object(struct debug_obj *obj, char *msg)
  
--		WARN(1, "%s: caps=(0x%lx, 0x%lx) len=%d data_len=%d "
--			"ip_summed=%d",
-+		WARN(1, "%s: caps=(0x%lx, 0x%lx) len=%d data_len=%d ip_summed=%d\n",
- 		     info.driver, dev ? dev->features : 0L,
- 		     skb->sk ? skb->sk->sk_route_caps : 0L,
- 		     skb->len, skb->data_len, skb->ip_summed);
+ 	if (limit < 5 && obj->descr != descr_test) {
+ 		limit++;
+-		WARN(1, KERN_ERR "ODEBUG: %s %s (active state %u) "
+-				 "object type: %s\n",
+-			msg, obj_states[obj->state], obj->astate,
+-			obj->descr->name);
++		WARN(1, "ODEBUG: %s %s (active state %u) object type: %s\n",
++		     msg, obj_states[obj->state], obj->astate,
++		     obj->descr->name);
+ 	}
+ 	debug_objects_warnings++;
+ }
+@@ -841,22 +840,22 @@ check_results(void *addr, enum debug_obj_state state, int fixups, int warnings)
+ 
+ 	obj = lookup_object(addr, db);
+ 	if (!obj && state != ODEBUG_STATE_NONE) {
+-		WARN(1, KERN_ERR "ODEBUG: selftest object not found\n");
++		WARN(1, "ODEBUG: selftest object not found\n");
+ 		goto out;
+ 	}
+ 	if (obj && obj->state != state) {
+-		WARN(1, KERN_ERR "ODEBUG: selftest wrong state: %d != %d\n",
+-		       obj->state, state);
++		WARN(1, "ODEBUG: selftest wrong state: %d != %d\n",
++		     obj->state, state);
+ 		goto out;
+ 	}
+ 	if (fixups != debug_objects_fixups) {
+-		WARN(1, KERN_ERR "ODEBUG: selftest fixups failed %d != %d\n",
+-		       fixups, debug_objects_fixups);
++		WARN(1, "ODEBUG: selftest fixups failed %d != %d\n",
++		     fixups, debug_objects_fixups);
+ 		goto out;
+ 	}
+ 	if (warnings != debug_objects_warnings) {
+-		WARN(1, KERN_ERR "ODEBUG: selftest warnings failed %d != %d\n",
+-		       warnings, debug_objects_warnings);
++		WARN(1, "ODEBUG: selftest warnings failed %d != %d\n",
++		     warnings, debug_objects_warnings);
+ 		goto out;
+ 	}
+ 	res = 0;
+diff --git a/lib/iomap.c b/lib/iomap.c
+index d322293..08b4c8d 100644
+--- a/lib/iomap.c
++++ b/lib/iomap.c
+@@ -40,7 +40,7 @@ static void bad_io_access(unsigned long port, const char *access)
+ 	static int count = 10;
+ 	if (count) {
+ 		count--;
+-		WARN(1, KERN_ERR "Bad IO access at port %#lx (%s)\n", port, access);
++		WARN(1, "Bad IO access at port %#lx (%s)\n", port, access);
+ 	}
+ }
+ 
+diff --git a/lib/kobject.c b/lib/kobject.c
+index 82dc34c..26b808e 100644
+--- a/lib/kobject.c
++++ b/lib/kobject.c
+@@ -164,8 +164,8 @@ static int kobject_add_internal(struct kobject *kobj)
+ 		return -ENOENT;
+ 
+ 	if (!kobj->name || !kobj->name[0]) {
+-		WARN(1, "kobject: (%p): attempted to be registered with empty "
+-			 "name!\n", kobj);
++		WARN(1, "kobject: (%p): attempted to be registered with empty name!\n",
++		     kobj);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -590,9 +590,8 @@ void kobject_put(struct kobject *kobj)
+ {
+ 	if (kobj) {
+ 		if (!kobj->state_initialized)
+-			WARN(1, KERN_WARNING "kobject: '%s' (%p): is not "
+-			       "initialized, yet kobject_put() is being "
+-			       "called.\n", kobject_name(kobj), kobj);
++			WARN(1, "kobject: '%s' (%p): is not initialized, yet kobject_put() is being called\n",
++			     kobject_name(kobj), kobj);
+ 		kref_put(&kobj->kref, kobject_release);
+ 	}
+ }
+diff --git a/lib/kobject_uevent.c b/lib/kobject_uevent.c
+index 70af0a7..78f0a74 100644
+--- a/lib/kobject_uevent.c
++++ b/lib/kobject_uevent.c
+@@ -345,7 +345,7 @@ int add_uevent_var(struct kobj_uevent_env *env, const char *format, ...)
+ 	int len;
+ 
+ 	if (env->envp_idx >= ARRAY_SIZE(env->envp)) {
+-		WARN(1, KERN_ERR "add_uevent_var: too many keys\n");
++		WARN(1, "%s(): too many keys\n", __func__);
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -356,7 +356,7 @@ int add_uevent_var(struct kobj_uevent_env *env, const char *format, ...)
+ 	va_end(args);
+ 
+ 	if (len >= (sizeof(env->buf) - env->buflen)) {
+-		WARN(1, KERN_ERR "add_uevent_var: buffer size too small\n");
++		WARN(1, "%s(): buffer size too small\n", __func__);
+ 		return -ENOMEM;
+ 	}
+ 
+diff --git a/lib/list_debug.c b/lib/list_debug.c
+index 344c710..b574054 100644
+--- a/lib/list_debug.c
++++ b/lib/list_debug.c
+@@ -21,13 +21,11 @@ void __list_add(struct list_head *new,
+ 			      struct list_head *next)
+ {
+ 	WARN(next->prev != prev,
+-		"list_add corruption. next->prev should be "
+-		"prev (%p), but was %p. (next=%p).\n",
+-		prev, next->prev, next);
++	     "list_add corruption. next->prev should be prev (%p), but was %p. (next=%p)\n",
++	     prev, next->prev, next);
+ 	WARN(prev->next != next,
+-		"list_add corruption. prev->next should be "
+-		"next (%p), but was %p. (prev=%p).\n",
+-		next, prev->next, prev);
++	     "list_add corruption. prev->next should be next (%p), but was %p. (prev=%p)\n",
++	     next, prev->next, prev);
+ 	next->prev = new;
+ 	new->next = next;
+ 	new->prev = prev;
+@@ -44,17 +42,15 @@ EXPORT_SYMBOL(__list_add);
+ void list_del(struct list_head *entry)
+ {
+ 	WARN(entry->next == LIST_POISON1,
+-		"list_del corruption, next is LIST_POISON1 (%p)\n",
+-		LIST_POISON1);
++	     "list_del corruption, next is LIST_POISON1 (%p)\n", LIST_POISON1);
+ 	WARN(entry->next != LIST_POISON1 && entry->prev == LIST_POISON2,
+-		"list_del corruption, prev is LIST_POISON2 (%p)\n",
+-		LIST_POISON2);
++	     "list_del corruption, prev is LIST_POISON2 (%p)\n", LIST_POISON2);
+ 	WARN(entry->prev->next != entry,
+-		"list_del corruption. prev->next should be %p, "
+-		"but was %p\n", entry, entry->prev->next);
++	     "list_del corruption. prev->next should be %p, but was %p\n",
++	     entry, entry->prev->next);
+ 	WARN(entry->next->prev != entry,
+-		"list_del corruption. next->prev should be %p, "
+-		"but was %p\n", entry, entry->next->prev);
++	     "list_del corruption. next->prev should be %p, but was %p\n",
++	     entry, entry->next->prev);
+ 	__list_del(entry->prev, entry->next);
+ 	entry->next = LIST_POISON1;
+ 	entry->prev = LIST_POISON2;
+diff --git a/lib/plist.c b/lib/plist.c
+index 1471988..8923f3a 100644
+--- a/lib/plist.c
++++ b/lib/plist.c
+@@ -32,12 +32,12 @@ static void plist_check_prev_next(struct list_head *t, struct list_head *p,
+ 				  struct list_head *n)
+ {
+ 	WARN(n->prev != p || p->next != n,
+-			"top: %p, n: %p, p: %p\n"
+-			"prev: %p, n: %p, p: %p\n"
+-			"next: %p, n: %p, p: %p\n",
+-			 t, t->next, t->prev,
+-			p, p->next, p->prev,
+-			n, n->next, n->prev);
++	     "top: %p, n: %p, p: %p\n"
++	     "prev: %p, n: %p, p: %p\n"
++	     "next: %p, n: %p, p: %p\n",
++	     t, t->next, t->prev,
++	     p, p->next, p->prev,
++	     n, n->next, n->prev);
+ }
+ 
+ static void plist_check_list(struct list_head *top)
 -- 
 1.7.3.1.g432b3.dirty
 
