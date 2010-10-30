@@ -1,41 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315Ab0J3STL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 14:19:11 -0400
-Received: from asmtpout024.mac.com ([17.148.16.99]:49099 "EHLO
-	asmtpout024.mac.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754808Ab0J3STJ (ORCPT
+	id S1755386Ab0J3SVB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 14:21:01 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:29219 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755062Ab0J3SU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 14:19:09 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; CHARSET=US-ASCII
-X-Proofpoint-Virus-Version: vendor=fsecure
- engine=2.50.10432:5.2.15,1.0.148,0.0.0000
- definitions=2010-10-30_07:2010-10-29,2010-10-30,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0
- ipscore=0 suspectscore=0 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
- adjust=0 reason=mlx engine=6.0.2-1004200000 definitions=main-1010300103
-From: Elvis Dowson <elvis.dowson@mac.com>
-Subject: Forked android kernel development from linux kernel mainline
-Date: Sat, 30 Oct 2010 22:18:37 +0400
-Message-id: <01784A8B-36A0-4E8A-9729-23C2B19351F8@mac.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-X-Mailer: Apple Mail (2.1081)
+	Sat, 30 Oct 2010 14:20:58 -0400
+Date: Sat, 30 Oct 2010 20:10:41 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        Arnd Bergmann <arnd@arndb.de>, cbe-oss-dev@lists.ozlabs.org
+Subject: [PATCH] PowerPC/Cell: use vzalloc rather than vmalloc and memset in
+ spu_alloc_lscsa_std
+Message-ID: <alpine.LNX.2.00.1010302004290.1572@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
-       I was wondering what the long term implications of android development being forked from the linux mainline are? 
 
-Android support was removed from 2.6.33 onwards, and development still continues for 2.6.35, by reverting the commit that deleted android from the mainline.
+We can get rid of a memset in 
+arch/powerpc/platforms/cell/spufs/lscsa_alloc.c::spu_alloc_lscsa_std() by 
+using vzalloc() rather than vmalloc()+memset().
 
-One could argue that android gave linux a solid boost widespread adoption for mobile embedded devices, and its use would continue to grow exponentially with time, more than plain vanilla linux for embedded devices. 
+Completely untested patch below since I have no hardware nor tools to 
+compile this.
 
-Was removing android from the linux kernel mainline a mistake, in retrospect?
 
-Best regards,
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ lscsa_alloc.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Elvis Dowson
+diff --git a/arch/powerpc/platforms/cell/spufs/lscsa_alloc.c b/arch/powerpc/platforms/cell/spufs/lscsa_alloc.c
+index a101abf..3b894f5 100644
+--- a/arch/powerpc/platforms/cell/spufs/lscsa_alloc.c
++++ b/arch/powerpc/platforms/cell/spufs/lscsa_alloc.c
+@@ -36,10 +36,9 @@ static int spu_alloc_lscsa_std(struct spu_state *csa)
+ 	struct spu_lscsa *lscsa;
+ 	unsigned char *p;
+ 
+-	lscsa = vmalloc(sizeof(struct spu_lscsa));
++	lscsa = vzalloc(sizeof(struct spu_lscsa));
+ 	if (!lscsa)
+ 		return -ENOMEM;
+-	memset(lscsa, 0, sizeof(struct spu_lscsa));
+ 	csa->lscsa = lscsa;
+ 
+ 	/* Set LS pages reserved to allow for user-space mapping. */
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
+Plain text mails only, please      http://www.expita.com/nomime.html
+Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
 
