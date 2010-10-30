@@ -1,17 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752742Ab0J3VJx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 17:09:53 -0400
-Received: from mail.perches.com ([173.55.12.10]:3802 "EHLO mail.perches.com"
+	id S1752777Ab0J3VJz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 17:09:55 -0400
+Received: from mail.perches.com ([173.55.12.10]:3809 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752428Ab0J3VJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 17:09:49 -0400
+	id S1752616Ab0J3VJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 17:09:50 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 34/39] mm: Update WARN uses
-Date: Sat, 30 Oct 2010 14:08:51 -0700
-Message-Id: <01d3ac1297677b782018d82a25e2ca82f7d1ca09.1288471898.git.joe@perches.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 36/39] net/ipv4/tcp.c: Update WARN uses
+Date: Sat, 30 Oct 2010 14:08:53 -0700
+Message-Id: <2afee732758b93d7464e6bb07a52b3bc67f164a4.1288471898.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <cover.1288471897.git.joe@perches.com>
 References: <cover.1288471897.git.joe@perches.com>
@@ -25,46 +31,50 @@ Remove KERN_<level>.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- mm/percpu.c  |    4 ++--
- mm/vmalloc.c |    5 ++---
- 2 files changed, 4 insertions(+), 5 deletions(-)
+ net/ipv4/tcp.c |   16 +++++++---------
+ 1 files changed, 7 insertions(+), 9 deletions(-)
 
-diff --git a/mm/percpu.c b/mm/percpu.c
-index efe8168..0aef392 100644
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -715,8 +715,8 @@ static void __percpu *pcpu_alloc(size_t size, size_t align, bool reserved)
- 	unsigned long flags;
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 1664a05..5f738c5 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -1193,7 +1193,7 @@ void tcp_cleanup_rbuf(struct sock *sk, int copied)
+ 	struct sk_buff *skb = skb_peek(&sk->sk_receive_queue);
  
- 	if (unlikely(!size || size > PCPU_MIN_UNIT_SIZE || align > PAGE_SIZE)) {
--		WARN(true, "illegal size (%zu) or align (%zu) for "
--		     "percpu allocation\n", size, align);
-+		WARN(true, "illegal size (%zu) or align (%zu) for percpu allocation\n",
-+		     size, align);
- 		return NULL;
- 	}
+ 	WARN(skb && !before(tp->copied_seq, TCP_SKB_CB(skb)->end_seq),
+-	     KERN_INFO "cleanup rbuf bug: copied %X seq %X rcvnxt %X\n",
++	     "cleanup rbuf bug: copied %X seq %X rcvnxt %X\n",
+ 	     tp->copied_seq, TCP_SKB_CB(skb)->end_seq, tp->rcv_nxt);
+ #endif
  
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index a3d66b3..bf71c20 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -1371,14 +1371,13 @@ static void __vunmap(const void *addr, int deallocate_pages)
- 		return;
+@@ -1477,10 +1477,9 @@ int tcp_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+ 			 * shouldn't happen.
+ 			 */
+ 			if (WARN(before(*seq, TCP_SKB_CB(skb)->seq),
+-			     KERN_INFO "recvmsg bug: copied %X "
+-				       "seq %X rcvnxt %X fl %X\n", *seq,
+-				       TCP_SKB_CB(skb)->seq, tp->rcv_nxt,
+-				       flags))
++				 "recvmsg bug: copied %X seq %X rcvnxt %X fl %X\n",
++				 *seq, TCP_SKB_CB(skb)->seq, tp->rcv_nxt,
++				 flags))
+ 				break;
  
- 	if ((PAGE_SIZE-1) & (unsigned long)addr) {
--		WARN(1, KERN_ERR "Trying to vfree() bad address (%p)\n", addr);
-+		WARN(1, "Trying to vfree() bad address (%p)\n", addr);
- 		return;
- 	}
+ 			offset = *seq - TCP_SKB_CB(skb)->seq;
+@@ -1490,10 +1489,9 @@ int tcp_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+ 				goto found_ok_skb;
+ 			if (tcp_hdr(skb)->fin)
+ 				goto found_fin_ok;
+-			WARN(!(flags & MSG_PEEK), KERN_INFO "recvmsg bug 2: "
+-					"copied %X seq %X rcvnxt %X fl %X\n",
+-					*seq, TCP_SKB_CB(skb)->seq,
+-					tp->rcv_nxt, flags);
++			WARN(!(flags & MSG_PEEK),
++			     "recvmsg bug 2: copied %X seq %X rcvnxt %X fl %X\n",
++			     *seq, TCP_SKB_CB(skb)->seq, tp->rcv_nxt, flags);
+ 		}
  
- 	area = remove_vm_area(addr);
- 	if (unlikely(!area)) {
--		WARN(1, KERN_ERR "Trying to vfree() nonexistent vm area (%p)\n",
--				addr);
-+		WARN(1, "Trying to vfree() nonexistent vm area (%p)\n", addr);
- 		return;
- 	}
- 
+ 		/* Well, if we have backlog, try to process it now yet. */
 -- 
 1.7.3.1.g432b3.dirty
 
