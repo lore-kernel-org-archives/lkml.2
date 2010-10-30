@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753649Ab0J3VV1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 17:21:27 -0400
-Received: from mail.perches.com ([173.55.12.10]:3842 "EHLO mail.perches.com"
+	id S1753738Ab0J3VZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 17:25:26 -0400
+Received: from fieldses.org ([174.143.236.118]:55733 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751296Ab0J3VVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 17:21:25 -0400
-Subject: [PATCH] arch/arm/kernel/hw_breakpoint.c: Convert WARN_ON to WARN
-From: Joe Perches <joe@perches.com>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 30 Oct 2010 14:21:24 -0700
-Message-ID: <1288473684.366.139.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753261Ab0J3VZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 17:25:24 -0400
+Date: Sat, 30 Oct 2010 17:25:00 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: nfsd changes for 2.6.37
+Message-ID: <20101030212500.GE480@fieldses.org>
+References: <20101026164549.GD19445@fieldses.org>
+ <20101027083924.GA28129@infradead.org>
+ <20101027133924.GB6328@fieldses.org>
+ <201010271546.09036.arnd@arndb.de>
+ <20101027145538.GC6328@fieldses.org>
+ <20101027145929.GA5788@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101027145929.GA5788@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Message isn't printed by WARN_ON.
+I noticed a couple problems with the lease patches.  Also:
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- arch/arm/kernel/hw_breakpoint.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+On Wed, Oct 27, 2010 at 10:59:29AM -0400, Christoph Hellwig wrote:
+> On Wed, Oct 27, 2010 at 10:55:39AM -0400, J. Bruce Fields wrote:
+> > Hm, two problems:
+> > 	- We introduce the possibility of fcntl(fd, F_SETLEASE, F_UNLCK)
+> > 	  failing with ENOMEM.
+> 
+> splitt ->setlease into ->add_least and ->delete_lease.  No need to pass
+> in a structure for the later.  No need to return one either.
 
-diff --git a/arch/arm/kernel/hw_breakpoint.c b/arch/arm/kernel/hw_breakpoint.c
-index 54593b0..21e3a4a 100644
---- a/arch/arm/kernel/hw_breakpoint.c
-+++ b/arch/arm/kernel/hw_breakpoint.c
-@@ -748,8 +748,7 @@ static int hw_breakpoint_pending(unsigned long addr, unsigned int fsr,
- 		breakpoint_handler(addr, regs);
- 		break;
- 	case ARM_ENTRY_ASYNC_WATCHPOINT:
--		WARN_ON("Asynchronous watchpoint exception taken. "
--			"Debugging results may be unreliable");
-+		WARN(1, "Asynchronous watchpoint exception taken. Debugging results may be unreliable\n");
- 	case ARM_ENTRY_SYNC_WATCHPOINT:
- 		watchpoint_handler(addr, regs);
- 		break;
+We still need to do this part.  I just did the minimum required to fix
+the problem--I figure splitting out a separate ->delete_lease method
+(which I agree would be cleaner) could wait till the next merge window.
 
+Patches follow, tested on top of the merge of Arnd's patches; if they
+look OK they can go in, or I can commit them on top of a few pending
+nfsd fixes and send another pull request.
 
+It'd be nice if we get this fixed by -rc1, but not the end of the world
+if we don't.
+
+--b.
