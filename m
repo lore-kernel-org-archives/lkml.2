@@ -1,215 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240Ab0J3Vqu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 17:46:50 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:32192 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751563Ab0J3Vqr (ORCPT
+	id S1752300Ab0J3VwK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 17:52:10 -0400
+Received: from tomts5-srv.bellnexxia.net ([209.226.175.25]:63393 "EHLO
+	tomts5-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751582Ab0J3VwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 17:46:47 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:references:date:in-reply-to:message-id:
-	user-agent:mime-version:content-type;
-	b=IYZR6azivUG08AM1j3SnI5pPj3g/OagF5dg3lfXGwdAMqQNRW770ayuyLSzZj6F+X
-	v4mEZh1MPddUAqnLwdTQw==
-From: Greg Thelen <gthelen@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: [PATCH v4 00/11] memcg: per cgroup dirty page accounting
-References: <1288336154-23256-1-git-send-email-gthelen@google.com>
-	<20101029131946.5905d244.akpm@linux-foundation.org>
-Date: Sat, 30 Oct 2010 14:46:09 -0700
-In-Reply-To: <20101029131946.5905d244.akpm@linux-foundation.org> (Andrew
-	Morton's message of "Fri, 29 Oct 2010 13:19:46 -0700")
-Message-ID: <xr93sjzne4m6.fsf@ninji.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
+	Sat, 30 Oct 2010 17:52:08 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEADMvzExGGOIS/2dsb2JhbAChSXK8ZYVEBI9d
+Date: Sat, 30 Oct 2010 17:47:05 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Tom Zanussi <zanussi@us.ibm.com>, Karim Yaghmour <karim@opersys.com>,
+        Paul Mundt <lethal@linux-sh.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH] Optimize relay_alloc_page_array() slightly by using
+	vzalloc rather than vmalloc and memset
+Message-ID: <20101030214704.GA20005@Krystal>
+References: <alpine.LNX.2.00.1010302216550.1572@swampdragon.chaosbits.net>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1010302216550.1572@swampdragon.chaosbits.net>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 17:33:00 up 206 days,  7:23,  3 users,  load average: 0.12, 0.10,
+	0.09
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> writes:
+* Jesper Juhl (jj@chaosbits.net) wrote:
+> Hi,
+> 
+> We can optimize kernel/relay.c::relay_alloc_page_array() slightly by using 
+> vzalloc. The patch makes these changes:
+> 
+>  - use vzalloc instead of vmalloc+memset.
+>  - remove redundant local variable 'array'.
+>  - declare local 'pa_size' as const.
 
-> On Fri, 29 Oct 2010 00:09:03 -0700
-> Greg Thelen <gthelen@google.com> wrote:
->
-> This is cool stuff - it's been a long haul.  One day we'll be
-> nearly-finished and someone will write a book telling people how to use
-> it all and lots of people will go "holy crap".  I hope.
->
->> Limiting dirty memory is like fixing the max amount of dirty (hard to reclaim)
->> page cache used by a cgroup.  So, in case of multiple cgroup writers, they will
->> not be able to consume more than their designated share of dirty pages and will
->> be forced to perform write-out if they cross that limit.
->> 
->> The patches are based on a series proposed by Andrea Righi in Mar 2010.
->> 
->> Overview:
->> - Add page_cgroup flags to record when pages are dirty, in writeback, or nfs
->>   unstable.
->> 
->> - Extend mem_cgroup to record the total number of pages in each of the 
->>   interesting dirty states (dirty, writeback, unstable_nfs).  
->> 
->> - Add dirty parameters similar to the system-wide  /proc/sys/vm/dirty_*
->>   limits to mem_cgroup.  The mem_cgroup dirty parameters are accessible
->>   via cgroupfs control files.
->
-> Curious minds will want to know what the default values are set to and
-> how they were determined.
+Hrm ? How does declaring a local variable as const helps the compiler in
+any way ?
 
-When a memcg is created, its dirty limits are set to a copy of the
-parent's limits.  If the new cgroup is a top level cgroup, then it
-inherits from the system parameters (/proc/sys/vm/dirty_*).
+Moreover, is there anyone still using this code ? LTTng uses the Generic
+Ring Buffer library which completely deprecates relay.c. Perf and Ftrace
+each have their own ring buffers, without dependency on relay.c.
 
->> - Consider both system and per-memcg dirty limits in page writeback when
->>   deciding to queue background writeback or block for foreground writeback.
->> 
->> Known shortcomings:
->> - When a cgroup dirty limit is exceeded, then bdi writeback is employed to
->>   writeback dirty inodes.  Bdi writeback considers inodes from any cgroup, not
->>   just inodes contributing dirty pages to the cgroup exceeding its limit.  
->
-> yup.  Some broader discussion of the implications of this shortcoming
-> is needed.  I'm not sure where it would be placed, though. 
-> Documentation/ for now, until you write that book.
+BLK_DEV_IO_TRACE seems to still select RELAY. Has it completed its
+transition to either Ftrace or Perf ? Depending on Jens, moving blktrace
+relay dependency to the Generic Ring Buffer Library might be a good
+option to consider.
 
-Fair enough.  I can add more text to Documentation/ describing the
-behavior and issue in more detail.
+Thanks,
 
->> - When memory.use_hierarchy is set, then dirty limits are disabled.  This is a
->>   implementation detail.
->
-> So this is unintentional, and forced upon us my the present implementation?
+Mathieu
 
-Yes, this is not ideal.  I chose not to address this particular issue in
-this series to keep the series smaller.
+> 
+> Cuts down nicely on both source and object-code size.
+> 
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+> Compile tested only.
+> 
+>  relay.c |   15 ++++-----------
+>  1 file changed, 4 insertions(+), 11 deletions(-)
+> 
+> diff --git a/kernel/relay.c b/kernel/relay.c
+> index c7cf397..859ea5a 100644
+> --- a/kernel/relay.c
+> +++ b/kernel/relay.c
+> @@ -70,17 +70,10 @@ static const struct vm_operations_struct relay_file_mmap_ops = {
+>   */
+>  static struct page **relay_alloc_page_array(unsigned int n_pages)
+>  {
+> -	struct page **array;
+> -	size_t pa_size = n_pages * sizeof(struct page *);
+> -
+> -	if (pa_size > PAGE_SIZE) {
+> -		array = vmalloc(pa_size);
+> -		if (array)
+> -			memset(array, 0, pa_size);
+> -	} else {
+> -		array = kzalloc(pa_size, GFP_KERNEL);
+> -	}
+> -	return array;
+> +	const size_t pa_size = n_pages * sizeof(struct page *);
+> +	if (pa_size > PAGE_SIZE)
+> +		return vzalloc(pa_size);
+> +	return kzalloc(pa_size, GFP_KERNEL);
+>  }
+>  
+>  /*
+> 
+> 
+> 
+> -- 
+> Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
+> Plain text mails only, please      http://www.expita.com/nomime.html
+> Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
+> 
 
->>  An enhanced implementation is needed to check the
->>   chain of parents to ensure that no dirty limit is exceeded.
->
-> How important is it that this be fixed?
-
-I am not sure if there is interest in hierarchical per-memcg dirty
-limits.  So I don't think that this is very important to be fixed
-immediately.  But the fact that it doesn't work is unexpected.  It would
-be nice if it just worked.  I'll look into making it work.
-
-> And how feasible would that fix be?  A linear walk up the hierarchy
-> list?  More than that?
-
-I think it should be a simple matter of enhancing
-mem_cgroup_dirty_info() to walk up the hierarchy looking for the cgroup
-closest to its dirty limit.  The only tricky part is that there are
-really two limits (foreground/throttling limit, and a background limit)
-that need to be considered when finding the memcg that most deserves
-inspection by balance_dirty_pages().
-
->> Performance data:
->> - A page fault microbenchmark workload was used to measure performance, which
->>   can be called in read or write mode:
->>         f = open(foo. $cpu)
->>         truncate(f, 4096)
->>         alarm(60)
->>         while (1) {
->>                 p = mmap(f, 4096)
->>                 if (write)
->> 			*p = 1
->> 		else
->> 			x = *p
->>                 munmap(p)
->>         }
->> 
->> - The workload was called for several points in the patch series in different
->>   modes:
->>   - s_read is a single threaded reader
->>   - s_write is a single threaded writer
->>   - p_read is a 16 thread reader, each operating on a different file
->>   - p_write is a 16 thread writer, each operating on a different file
->> 
->> - Measurements were collected on a 16 core non-numa system using "perf stat
->>   --repeat 3".  The -a option was used for parallel (p_*) runs.
->> 
->> - All numbers are page fault rate (M/sec).  Higher is better.
->> 
->> - To compare the performance of a kernel without non-memcg compare the first and
->>   last rows, neither has memcg configured.  The first row does not include any
->>   of these memcg patches.
->> 
->> - To compare the performance of using memcg dirty limits, compare the baseline
->>   (2nd row titled "w/ memcg") with the the code and memcg enabled (2nd to last
->>   row titled "all patches").
->> 
->>                            root_cgroup                    child_cgroup
->>                  s_read s_write p_read p_write   s_read s_write p_read p_write
->> mmotm w/o memcg   0.428  0.390   0.429  0.388
->> mmotm w/ memcg    0.411  0.378   0.391  0.362     0.412  0.377   0.385  0.363
->> all patches       0.384  0.360   0.370  0.348     0.381  0.363   0.368  0.347
->> all patches       0.431  0.402   0.427  0.395
->>   w/o memcg
->
-> afaict this benchmark has demonstrated that the changes do not cause an
-> appreciable performance regression in terms of CPU loading, yes?
-
-Using the mmap() workload, which is a fault heavy workload...
-
-When memcg is not configured, there is no significant performance
-change.  Depending on the workload the performance is between 0%..3%
-faster.  This is likely workload noise.
-
-When memcg is configured, the performance drops between 4% and 8%.  Some
-of this might be noise, but it is expected that memcg faults will get
-slower because there's more code in the fault path.
-
-> Can we come up with any tests which demonstrate the _benefits_ of the
-> feature?
-
-Here is a test script that shows a situation where memcg dirty limits
-are beneficial.  The script runs two programs: a dirty page background
-antagonist (dd) and an interactive foreground process (tar).  If the
-scripts argument is false, then both processes are run together in the
-root cgroup sharing system-wide dirty memory in classic fashion.  If the
-script is given a true argument, then a cgroup is used to contain dd
-dirty page consumption.
-
----[start]---
-#!/bin/bash
-# dirty.sh - dirty limit performance test script
-echo use_cgroup: $1
-
-# start antagonist
-if $1; then    # if using cgroup to contain 'dd'...
-  mkdir /dev/cgroup/A
-  echo 400M > /dev/cgroup/A/memory.dirty_limit_in_bytes
-  (echo $BASHPID > /dev/cgroup/A/tasks; dd if=/dev/zero of=big.file
-  count=10k bs=1M) &
-else
-  dd if=/dev/zero of=big.file count=10k bs=1M &
-fi
-
-sleep 10
-
-time tar -xzf linux-2.6.36.tar.gz
-wait
-$1 && rmdir /dev/cgroup/A
----[end]---
-
-dirty.sh false : dd 59.7MB/s stddev 7.442%, tar 12.2s stddev 25.720%
-  # both in root_cgroup
-dirty.sh true  : dd 55.4MB/s stddev 0.958%, tar  3.8s stddev  0.250%
-  # tar in root_cgroup, dd in cgroup
-
-The cgroup reserved dirty memory resources for the rest of the system
-processes (tar in this case).  The tar process had faster and more
-predictable performance.  memcg dirty ratios might be useful to serve
-different task classes (interactive vs batch).  A past discussion
-touched on this: http://lkml.org/lkml/2010/5/20/136
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
