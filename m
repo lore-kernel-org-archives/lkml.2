@@ -1,30 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755680Ab0J3TV4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 15:21:56 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:52938 "EHLO mx3.mail.elte.hu"
+	id S1755818Ab0J3TYY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 15:24:24 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:33557 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751245Ab0J3TVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 15:21:53 -0400
-Date: Sat, 30 Oct 2010 21:21:31 +0200
+	id S1751245Ab0J3TYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 15:24:22 -0400
+Date: Sat, 30 Oct 2010 21:23:57 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-        linux-kernel@vger.kernel.org, h.mitake@gmail.com,
+To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Cc: linux-kernel@vger.kernel.org, h.mitake@gmail.com,
         "Ma Ling:" <ling.ma@intel.com>, Zhao Yakui <yakui.zhao@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 1/2] perf bench: port memcpy_64.S to perf bench
-Message-ID: <20101030192131.GB26503@elte.hu>
+Subject: Re: [PATCH 2/2] perf bench: add x86-64 specific benchmarks to perf
+ bench mem memcpy
+Message-ID: <20101030192357.GC26503@elte.hu>
 References: <1288368098-26121-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
- <1288381751.1988.13.camel@laptop>
+ <1288368098-26121-2-git-send-email-mitake@dcl.info.waseda.ac.jp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1288381751.1988.13.camel@laptop>
+In-Reply-To: <1288368098-26121-2-git-send-email-mitake@dcl.info.waseda.ac.jp>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -38,51 +39,61 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+* Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp> wrote:
 
-> On Sat, 2010-10-30 at 01:01 +0900, Hitoshi Mitake wrote:
-> > This patch ports arch/x86/lib/memcpy_64.S to "perf bench mem".
-> > When PERF_BENCH is defined at preprocessor level,
-> > memcpy_64.S is preprocessed to includable form from the sources
-> > under tools/perf for benchmarking programs.
-> > 
-> > Signed-off-by: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-> > Cc: Ma Ling: <ling.ma@intel.com>
-> > Cc: Zhao Yakui <yakui.zhao@intel.com>
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> > Cc: Paul Mackerras <paulus@samba.org>
-> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: H. Peter Anvin <hpa@zytor.com>
-> > ---
-> >  arch/x86/lib/memcpy_64.S |   30 ++++++++++++++++++++++++++++++
-> >  1 files changed, 30 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/arch/x86/lib/memcpy_64.S b/arch/x86/lib/memcpy_64.S
-> > index 75ef61e..72c6dfe 100644
-> > --- a/arch/x86/lib/memcpy_64.S
-> > +++ b/arch/x86/lib/memcpy_64.S
-> > @@ -1,10 +1,23 @@
-> >  /* Copyright 2002 Andi Kleen */
-> >  
-> > +/*
-> > + * perf bench adoption by Hitoshi Mitake
-> > + * PERF_BENCH means that this file is included from
-> > + * the source files under tools/perf/ for benchmark programs.
-> > + *
-> > + * You don't have to care about PERF_BENCH when
-> > + * you are working on the kernel.
-> > + */
-> > +
-> > +#ifndef PERF_BENCH
+> This patch adds new file: mem-memcpy-x86-64-asm.S
+> for x86-64 specific memcpy() benchmarking.
+> Added new benchmarks are,
+>  x86-64-rep:      memcpy() implemented with rep instruction
+>  x86-64-unrolled: unrolled memcpy()
 > 
-> I don't like littering the actual kernel code with tools/perf/
-> ifdeffery..
+> Original idea of including the source files of kernel
+> for benchmarking is suggested by Ingo Molnar.
+> This is more effective than write-once programs for quantitative
+> evaluation of in-kernel, little and leaf functions called high frequently.
+> Because perf bench is in kernel source tree and executing it
+> on various hardwares, especially new model CPUs, is easy.
+> 
+> This way can also be used for other functions of kernel e.g. checksum functions.
+> 
+> Example of usage on Core i3 M330:
+> 
+> | % ./perf bench mem memcpy -l 500MB
+> | # Running mem/memcpy benchmark...
+> | # Copying 500MB Bytes from 0x7f911f94c010 to 0x7f913ed4d010 ...
+> |
+> |      578.732506 MB/Sec
+> | % ./perf bench mem memcpy -l 500MB -r x86-64-rep
+> | # Running mem/memcpy benchmark...
+> | # Copying 500MB Bytes from 0x7fb4b6fe4010 to 0x7fb4d63e5010 ...
+> |
+> |      738.184980 MB/Sec
+> | % ./perf bench mem memcpy -l 500MB -r x86-64-unrolled
+> | # Running mem/memcpy benchmark...
+> | # Copying 500MB Bytes from 0x7f6f2e668010 to 0x7f6f4da69010 ...
+> |
+> |      767.483269 MB/Sec
+> 
+> This shows clearly that unrolled memcpy() is efficient
+> than rep version and glibc's one :)
 
+Hey, really cool output :-)
 
-Yeah - could we somehow accept that file into a perf build as-is?
+Might also make sense to measure Ma Ling's patched version?
+
+> # checkpatch.pl warns about two externs in bench/mem-memcpy.c
+> # added by this patch. But I think it is no problem.
+
+You should put these:
+
+ +#ifdef ARCH_X86_64
+ +extern void *memcpy_x86_64_unrolled(void *to, const void *from, size_t len);
+ +extern void *memcpy_x86_64_rep(void *to, const void *from, size_t len);
+ +#endif
+
+into a .h file - a new one if needed.
+
+That will make both checkpatch and me happier ;-)
 
 Thanks,
 
