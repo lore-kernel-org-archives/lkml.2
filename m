@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab0J3TqR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 15:46:17 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:10226 "EHLO
+	id S1755478Ab0J3Tyx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 15:54:53 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:10345 "EHLO
 	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751493Ab0J3TqQ (ORCPT
+	with ESMTP id S1751833Ab0J3Tyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 15:46:16 -0400
-Date: Sat, 30 Oct 2010 21:35:58 +0200 (CEST)
+	Sat, 30 Oct 2010 15:54:51 -0400
+Date: Sat, 30 Oct 2010 21:44:33 +0200 (CEST)
 From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: Stephane Eranian <eranian@hpl.hp.com>,
-        David Mosberger-Tang <davidm@hpl.hp.com>, linux-ia64@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] IA64 perfmon: Change vmalloc to vzalloc and drop memset.
-Message-ID: <alpine.LNX.2.00.1010302131050.1572@swampdragon.chaosbits.net>
+To: Ondrej Zary <linux@rainbow-software.org>
+cc: =?ISO-8859-15?Q?Benny_Sj=F6strand?= <benny@hostmobility.com>,
+        linux-kernel@vger.kernel.org, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org
+Subject: Re: [PATCH] cs46xx memory management fixes for cs46xx_dsp_spos_create()
+ - make sure we free and don't do pointless work.
+In-Reply-To: <201010301406.12961.linux@rainbow-software.org>
+Message-ID: <alpine.LNX.2.00.1010302143530.1572@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1010292242080.24561@swampdragon.chaosbits.net> <4CCB4851.7080701@hostmobility.com> <201010301406.12961.linux@rainbow-software.org>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1140537297-1288467873=:1572"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-vzalloc() nicely zeroes memory for us, so we don't have to do a vmalloc() 
-and then manually memset() the returned memory when all we want is for it 
-to be zero. Patch changes this for pfm_rvmalloc().
+--8323328-1140537297-1288467873=:1572
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 
+On Sat, 30 Oct 2010, Ondrej Zary wrote:
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
-Untested patch since I have neither the hardware nor tools to even compile 
-this.
+> On Saturday 30 October 2010 00:18:57 Benny Sjöstrand wrote:
+> > Hello again!
+> >
+> > Just doing a reply-all.
+> > It's has been many years since I did anything to the cs46xx driver, so
+> > I'm wondering
+> > if there's anyone out there still using a cs46xx sound card?
+> > I think the changes look's correct, but I can't test it, I do not have a
+> > cs46xx hardware anymore.
+> 
+> Sure, there are many of these cards "out there". I just got a "new" Terratec 
+> DMX Xfire 1024 (CS4624). I'll test the patch.
+> 
 
- perfmon.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/arch/ia64/kernel/perfmon.c b/arch/ia64/kernel/perfmon.c
-index 39e534f..3aee09d 100644
---- a/arch/ia64/kernel/perfmon.c
-+++ b/arch/ia64/kernel/perfmon.c
-@@ -829,10 +829,9 @@ pfm_rvmalloc(unsigned long size)
- 	unsigned long addr;
- 
- 	size = PAGE_ALIGN(size);
--	mem  = vmalloc(size);
-+	mem  = vzalloc(size);
- 	if (mem) {
- 		//printk("perfmon: CPU%d pfm_rvmalloc(%ld)=%p\n", smp_processor_id(), size, mem);
--		memset(mem, 0, size);
- 		addr = (unsigned long)mem;
- 		while (size > 0) {
- 			pfm_reserve_page(addr);
+Thanks a lot. Let me know how the test goes :-)
 
 -- 
 Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
 Plain text mails only, please      http://www.expita.com/nomime.html
 Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
 
+--8323328-1140537297-1288467873=:1572--
