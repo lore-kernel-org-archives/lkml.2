@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753714Ab0J3OLU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 10:11:20 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:65375 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142Ab0J3OLR (ORCPT
+	id S1754040Ab0J3OLb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 10:11:31 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:42438 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753945Ab0J3OL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 10:11:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=rQtnKWAZ49cK8lCQImkJ/ITCoz9t19NdCNTF0Yq3PmpGqvX3Fummwn3zcXg6chP9H+
-         1yIDhqaKyEdpmyUmtrg4TNpW1PGGXy3Fan33WA8+mLjFrLtQMK0Oqi7vI0heOCoR3mBW
-         wiDt5GA192f/vfenkAZAjAGlshYa3eO3b1NCE=
-From: Vasiliy Kulikov <segooon@gmail.com>
-To: kernel-janitors@vger.kernel.org
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
+	Sat, 30 Oct 2010 10:11:27 -0400
+X-Greylist: delayed 636 seconds by postgrey-1.27 at vger.kernel.org; Sat, 30 Oct 2010 10:11:27 EDT
+X-Sasl-enc: mFow5z+i1BTMfbm80rrFPEURWo+Cl6attUOvrpGmWdD4 1288447250
+Date: Sat, 30 Oct 2010 12:00:47 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Greg KH <gregkh@suse.de>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, samu.p.onkalo@nokia.com,
+        alan@linux.intel.com, akpm@linux-foundation.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2] x86: kvm: fix information leak to userland
-Date: Sat, 30 Oct 2010 18:11:11 +0400
-Message-Id: <1288447871-7715-1-git-send-email-segooon@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+Subject: Re: sysfs and power management
+Message-ID: <20101030140047.GA24464@khazad-dum.debian.net>
+References: <1288177143.12206.22.camel@4fid08082>
+ <20101027124816.7087436a@linux.intel.com>
+ <62697B07E9803846BC582181BD6FB6B836EB2994F4@NOK-EUMSG-02.mgdnok.nokia.com>
+ <20101027152809.39701917@lxorguk.ukuu.org.uk>
+ <20101029195039.GA26401@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101029195039.GA26401@suse.de>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Structure kvm_ppc_pvinfo is copied to userland with pad field
-unitialized.  Structure kvm_clock_data is copied to userland with
-flags and pad fields unitialized.  It leads to leaking of contents
-of kernel stack memory.
+On Fri, 29 Oct 2010, Greg KH wrote:
+> back to sleep.  That's probably the best way to do this, as userspace
+> isn't going to open the sysfs file and not close it instantly anyway
+> after it has read the data (seeking on a sysfs file isn't really
+> recommended, even if it sometimes seems to work.)
 
-Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
----
- I cannot compile this driver, so it is not tested at all.
+Well, it is documented that seek(start of file) on sysfs works, and it
+is ABI already (some userspace uses it on poll/select-capable
+attributes).  So, maybe seek(somewhere that is not the start of the
+file) doesn't work -- and it should return an error in that case if it
+doesn't already...  but it is a lot more deterministic than "sometimes"
+;-)
 
- As it is not compilable, I've missed and typed wrong var name in v1, sorry.
+So yes, userspace will open() and not close() a sysfs attribute immediately
+afterwards.  It is not only shell crap that interfaces to the kernel over
+sysfs :-)
 
- arch/x86/kvm/x86.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+It would make a lot of sense to support the poll/select model on any
+sensor for which you have event-driven notifications of change from the
+hardware or firmware.
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index b0818f6..261f3d0 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -2896,6 +2896,7 @@ long kvm_arch_vcpu_ioctl(struct file *filp,
- 	case KVM_GET_DEBUGREGS: {
- 		struct kvm_debugregs dbgregs;
- 
-+		memset(&dbgregs, 0, sizeof(dbgregs));
- 		kvm_vcpu_ioctl_x86_get_debugregs(vcpu, &dbgregs);
- 
- 		r = -EFAULT;
-@@ -3481,11 +3482,11 @@ long kvm_arch_vm_ioctl(struct file *filp,
- 		struct kvm_clock_data user_ns;
- 		u64 now_ns;
- 
-+		memset(&user_ns, 0, sizeof(user_ns));
- 		local_irq_disable();
- 		now_ns = get_kernel_ns();
- 		user_ns.clock = kvm->arch.kvmclock_offset + now_ns;
- 		local_irq_enable();
--		user_ns.flags = 0;
- 
- 		r = -EFAULT;
- 		if (copy_to_user(argp, &user_ns, sizeof(user_ns)))
+I don't know about open/close notifications, however.  Usually you need
+those when you're going to stream something to userspace, and there are FAR
+better interfaces to use in that case, such as the ring buffers used by the
+data acquisition devices, netlink (which userspace programmers seems not to
+like much :p), input devices, and generic character devices...
+
 -- 
-1.7.0.4
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
