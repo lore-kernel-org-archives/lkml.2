@@ -1,98 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751055Ab0J3EfL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 00:35:11 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:36293 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784Ab0J3EfI (ORCPT
+	id S1751304Ab0J3E5u (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 00:57:50 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44689 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951Ab0J3E5s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 00:35:08 -0400
+	Sat, 30 Oct 2010 00:57:48 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=message-id:date:from:reply-to:user-agent:mime-version:to:cc:subject
          :references:in-reply-to:content-type:content-transfer-encoding;
-        b=kXVPhwcQOo7Ai6JsbfFkaOA6OUGJ+wvsb+SZhkA4MyCEnpTw4dH31QpApVjsXqFPLe
-         yfP23LQ8ZJ/fGNYqjffqZQmRpPtI13TDAGkPcRlV2NlLCcYQfR/0rNvhc7k5tn2YPyV1
-         jnCRQgiQq+NUhSYdg+sqzmnQ1kLCkK9hAozWU=
-Message-ID: <4CCBA075.2030204@gmail.com>
-Date: Sat, 30 Oct 2010 12:35:01 +0800
+        b=a69YNVoQwhAt/t9LksRGDLX9IrhhAdnIjKs/Tf2cKxLEgAUDRwgJdVya973TsiJoE4
+         sdj+rbuHx7JNPbS1DRS7QhBOYs1h2DWeoKNzOJb5S//kIjtlR2AQpaB2VXtqUTjAbBod
+         UoX9NwQ/TAg8pyFJmqFTqJG+6LPsUMLoenDXY=
+Message-ID: <4CCBA5C5.2050505@gmail.com>
+Date: Sat, 30 Oct 2010 12:57:41 +0800
 From: =?UTF-8?B?IlNpbmdhcG9yZSBDaXRpemVuIE1yLiBUZW8gRW4gTWluZyAoWmhhbmcgRQ==?=
 	 =?UTF-8?B?bm1pbmcpIOW8oOaBqem4oyAi?= 
 	<space.time.universe@gmail.com>
 Reply-To: space.time.universe@gmail.com
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.1) Gecko/20090814 Fedora/3.0-2.6.b3.fc11 Thunderbird/3.0b3
 MIME-Version: 1.0
-To: linux-kernel <linux-kernel@vger.kernel.org>
+To: =?UTF-8?B?UGFzaSBLw6Rya2vDpGluZW4=?= <pasik@iki.fi>,
+        LKML <linux-kernel@vger.kernel.org>
 CC: "space.time.universe@gmail.com" <space.time.universe@gmail.com>,
         "teoenming@hotmail.com" <teoenming@hotmail.com>,
         zhang_enming@lavabit.com
-Subject: Re: [KORG] Master / hera upgrade & downtime announcement
-References: <4CCB3158.9010406@kernel.org>
-In-Reply-To: <4CCB3158.9010406@kernel.org>
+Subject: Re: Linux Kernel 2.6.36 Status
+References: <4C95BC88.9050301@gmail.com> <20101004122752.GZ2804@reaktio.net>
+In-Reply-To: <20101004122752.GZ2804@reaktio.net>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30/2010 04:40 AM, J.H. wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
+On 10/04/2010 08:27 PM, Pasi Kärkkäinen wrote:
+> On Sun, Sep 19, 2010 at 03:32:24PM +0800, "Mr. Teo En Ming (Zhang Enming) ????????? of Singapore" wrote:
+>    
+>> Dear Linus Torvalds,
+>>
+>> May I know if Linux kernel 2.6.36 is Xen pv-ops dom0 ready?
+>>
+>>      
+> Linux 2.6.36 will not contain pv-ops dom0 code.
 >
-> Afternoon Everyone,
+> The RFC request about initial dom0 patches was sent recently,
+> and once reviewd/ack'd, the code can go into later kernel version.
 >
-> Thought I'd give everyone a quick heads up, that since Kernel Summit
-> starts on the 1st of November, which means I've got my one chance to do
-> system maintenance on master / hera for the year.
->
-> I'm expecting to do the upgrade on the 1st itself, likely start time
-> will be around Mon Nov  1 19:00:00 UTC 2010, and I'm hoping for the
-> entire downtime to take no longer than 2 hours.
->
-> Things that are going to happen during the upgrade:
->
-> 	- OS getting upgraded to Fedora 13
-> 		w/ custom kernel to solve XFS and disable IMA
-> 	- Hardware change
-> 		Google and HP have been very generous enough to
-> 		get us a new machine for the master / hera machine.
-> 		The new machine is a dual, quad core Xeon X5550 box
-> 		with 32G of ram.  Beyond that it nearly identical to the
-> 		current machine.
->
-> 		The current machine will become a 'live' backup machine
-> 		that will sync semi-continuously, and be available
-> 		should catastrophic failure of master / hera occur.
->
-> Think that's the main big changes.  I'm already working on the upgrade
-> since I have multiple boxes to do this with, and things are looking good
-> so far.
->
-> As a note the start time is estimated, if there is a major change to the
-> start time I will let everyone know.
->
-> As always, if you have questions, comments or concerns please e-mail me
-> or ftpadmin@kernel.org
->
-> - - John 'Warthog9' Hawley
-> Chief Kernel.org Administrator
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v1.4.10 (GNU/Linux)
-> Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
->
-> iEYEARECAAYFAkzLMVgACgkQ/E3kyWU9did9wACeO0nlEtiX52u6pD3slKtqZ61M
-> ZTgAn3TLwks7sT5ovpf9X6/WSbK7+hcz
-> =gIkm
-> -----END PGP SIGNATURE-----
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> -- Pasi
 >
 >    
+>> Thank you very much.
+>>
+>> -- 
+>> Yours sincerely,
+>>
+>> Mr. Teo En Ming (Zhang Enming) ????????? Dip(Mechatronics) BEng(Hons)(Mechanical Engineering)
+>> Citizenship: Singapore Citizen/Singaporean
+>> Alma Maters:
+>> [1] Singapore Polytechnic (Graduated 1998)
+>> [2] National University of Singapore (Graduated 2006)
+>> Facebook account: Teo En Ming (Zhang Enming)
+>> Facebook link: http://www.facebook.com/profile.php?id=100000750083982
+>> Facebook photos: http://www.facebook.com/profile.php?id=100000750083982#!/profile.php?id=100000750083982&v=photos
+>> Facebook videos: http://www.facebook.com/profile.php?id=100000750083982&v=app_2392950137
+>> Mobile Phone (Starhub pre-paid): +65-8369-2618
+>> Windows Live Messenger: teoenming-at-hotmail.com
+>> Location: Bedok Reservoir Road, Singapore
+>> ZIP: 470103
+>> My Open Letter (Plea for Medical Help/Assistance) to World Leaders (Updated 28 August 2010):-
+>> http://lists.mcs.anl.gov/pipermail/mpich-discuss/2010-August/007811.html
+>> http://mythtv.org/pipermail/mythtv-users/2010-August/295952.html
+>> http://archives.gentoo.org/gentoo-user/msg_f6a341d9623fda17880159b137c07335.xml
+>> Photo of Mr. Teo En Ming (Zhang Enming) ????????? of Singapore: http://i53.tinypic.com/207tamp.jpg
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>      
+>    
 
-Noted with thanks.
+Dear Pasi,
+
+Later Linux kernel versions as in 2.6.37, or 2.6.38?
+
+Thank you very much.
 
 -- 
 Yours sincerely,
