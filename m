@@ -1,45 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538Ab0J3Vbr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 17:31:47 -0400
-Received: from mail.perches.com ([173.55.12.10]:3851 "EHLO mail.perches.com"
+	id S1751541Ab0J3VcA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 17:32:00 -0400
+Received: from fieldses.org ([174.143.236.118]:42911 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751541Ab0J3Vbo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 17:31:44 -0400
-Subject: [PATCH] MAINTAINERS: intel-gfx is a subscribers-only mailing list
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 30 Oct 2010 14:31:11 -0700
-Message-ID: <1288474271.366.147.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1751594Ab0J3Vb2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 17:31:28 -0400
+From: "J. Bruce Fields" <bfields@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Christoph Hellwig <hch@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
+        Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 4/4] nfsd4: initialize delegation pointer to lease
+Date: Sat, 30 Oct 2010 17:31:16 -0400
+Message-Id: <1288474276-14288-4-git-send-email-bfields@redhat.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20101030212500.GE480@fieldses.org>
+References: <20101030212500.GE480@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark it so.
+The NFSv4 server was initializing the dp->dl_flock pointer by the
+somewhat ridiculous method of a locks_copy_lock callback.
 
-Signed-off-by: Joe Perches <joe@perches.com>
+Now that setlease uses the passed-in lock instead of doing a copy,
+dl_flock no longer gets set, resulting in the lock leaking on delegation
+release, and later possible hangs (among other problems).
+
+So, initialize dl_flock and get rid of the callback.
+
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 ---
- MAINTAINERS |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ fs/nfsd/nfs4state.c |   19 ++-----------------
+ 1 files changed, 2 insertions(+), 17 deletions(-)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index cb8b580..f283096 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2070,7 +2070,7 @@ F:	include/drm/
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index 56347e0..b7f818b 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -2310,22 +2310,6 @@ void nfsd_release_deleg_cb(struct file_lock *fl)
+ }
  
- INTEL DRM DRIVERS (excluding Poulsbo, Moorestown and derivative chipsets)
- M:	Chris Wilson <chris@chris-wilson.co.uk>
--L:	intel-gfx@lists.freedesktop.org
-+L:	intel-gfx@lists.freedesktop.org (subscribers-only)
- L:	dri-devel@lists.freedesktop.org
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/ickle/drm-intel.git
- S:	Supported
-
+ /*
+- * Set the delegation file_lock back pointer.
+- *
+- * Called from setlease() with lock_kernel() held.
+- */
+-static
+-void nfsd_copy_lock_deleg_cb(struct file_lock *new, struct file_lock *fl)
+-{
+-	struct nfs4_delegation *dp = (struct nfs4_delegation *)new->fl_owner;
+-
+-	dprintk("NFSD: nfsd_copy_lock_deleg_cb: new fl %p dp %p\n", new, dp);
+-	if (!dp)
+-		return;
+-	dp->dl_flock = new;
+-}
+-
+-/*
+  * Called from setlease() with lock_kernel() held
+  */
+ static
+@@ -2355,7 +2339,6 @@ int nfsd_change_deleg_cb(struct file_lock **onlist, int arg)
+ static const struct lock_manager_operations nfsd_lease_mng_ops = {
+ 	.fl_break = nfsd_break_deleg_cb,
+ 	.fl_release_private = nfsd_release_deleg_cb,
+-	.fl_copy_lock = nfsd_copy_lock_deleg_cb,
+ 	.fl_mylease = nfsd_same_client_deleg_cb,
+ 	.fl_change = nfsd_change_deleg_cb,
+ };
+@@ -2661,12 +2644,14 @@ nfs4_open_delegation(struct svc_fh *fh, struct nfsd4_open *open, struct nfs4_sta
+ 	fl->fl_file = find_readable_file(stp->st_file);
+ 	BUG_ON(!fl->fl_file);
+ 	fl->fl_pid = current->tgid;
++	dp->dl_flock = fl;
+ 
+ 	/* vfs_setlease checks to see if delegation should be handed out.
+ 	 * the lock_manager callbacks fl_mylease and fl_change are used
+ 	 */
+ 	if ((status = vfs_setlease(fl->fl_file, fl->fl_type, &fl))) {
+ 		dprintk("NFSD: setlease failed [%d], no delegation\n", status);
++		dp->dl_flock = NULL;
+ 		unhash_delegation(dp);
+ 		flag = NFS4_OPEN_DELEGATE_NONE;
+ 		goto out;
+-- 
+1.7.1
 
