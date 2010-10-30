@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090Ab0J3HAE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 03:00:04 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:55542 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751808Ab0J3HAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 03:00:01 -0400
-Date: Sat, 30 Oct 2010 00:07:33 -0700
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Containers <containers@lists.osdl.org>,
-        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Pavel Emelyanov <xemul@openvz.org>
-Subject: Re: [PATCH] pidns: Fix wait for zombies to be reaped in
-	zap_pid_ns_processes
-Message-ID: <20101030070733.GA21401@us.ibm.com>
-References: <m1r5jd5l0v.fsf_-_@fess.ebiederm.org> <m1mxu15kv4.fsf_-_@fess.ebiederm.org> <20100709121425.GB18586@hawkmoon.kerlabs.com> <m1lj9k4xfx.fsf@fess.ebiederm.org> <20100709141324.GC18586@hawkmoon.kerlabs.com> <m1aaq04ph2.fsf_-_@fess.ebiederm.org> <20100711141406.GD18586@hawkmoon.kerlabs.com> <m1tyo4shas.fsf_-_@fess.ebiederm.org> <20100713214234.GA21042@hawkmoon.kerlabs.com> <m1oceakf5x.fsf@fess.ebiederm.org>
+	id S1752059Ab0J3H0o (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 03:26:44 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:40703 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751538Ab0J3H0m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 03:26:42 -0400
+Message-ID: <4CCBC8B1.2080808@in.ibm.com>
+Date: Sat, 30 Oct 2010 12:56:41 +0530
+From: Sachin Sant <sachinp@in.ibm.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100903)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1oceakf5x.fsf@fess.ebiederm.org>
-X-Operating-System: Linux 2.0.32 on an i486
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: linux-kernel <linux-kernel@vger.kernel.org>
+CC: linux-s390@vger.kernel.org
+Subject: [s390] 2.6.36-git14 build break - fs/compat.c :631 (PAGE_CACHE_MASK
+ undeclared)
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric W. Biederman [ebiederm@xmission.com] wrote:
-| Louis Rilling <Louis.Rilling@kerlabs.com> writes:
-| 
-| > This patch looks like it is working (only a small RCU issue shown below). I
-| > couldn't try it yet though.
-| 
-| It certainly worked in my testing. 
-| 
-| > I must admit that I am using a similar back-off solution in Kerrighed (not to
-| > solve the issue of proc_flush_task(), but for one of the reasons that you stated
-| > above: we want to be sure that all tasks of the namespace have been reaped), but
-| > I considered it too ugly to propose it for Linux ;)
-| 
-| Well sometimes you have to go with what works.
-| 
-| Thanks for spotting those issue with my patch.  I guess it needs one more
-| pass before I can call it done.
+Latest 2.6.36 git [commit 44234d0c46...] fails to build on s390x with following error :
 
-Eric,
+fs/compat.c: In function compat_rw_copy_check_uvector:
+fs/compat.c:631: error: PAGE_CACHE_MASK undeclared (first use in this function)
+fs/compat.c:631: error: (Each undeclared identifier is reported only once
+fs/compat.c:631: error: for each function it appears in.)
+make[1]: *** [fs/compat.o] Error 1
 
-Do you plan to resend this patch ? 
+The code in question was added via following commit:
 
-FYI, we ran into the problem that Louis Rilling reported when testing with
-the checkpoint/restart code and this patch fixes the problem (after a minor
-tweak to the C/R code).
+commit 435f49a518c78eec8e2edbbadd912737246cbe20
+readv/writev: do the same MAX_RW_COUNT truncation that read/write does
 
-Thanks,
+Thanks
+-Sachin
 
-Sukadev
+-- 
+
+---------------------------------
+Sachin Sant
+IBM Linux Technology Center
+India Systems and Technology Labs
+Bangalore, India
+---------------------------------
+
