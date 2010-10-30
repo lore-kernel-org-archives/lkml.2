@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755459Ab0J3BK1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 21:10:27 -0400
-Received: from hera.kernel.org ([140.211.167.34]:35280 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751710Ab0J3BK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 21:10:26 -0400
-Date: Sat, 30 Oct 2010 01:10:03 GMT
-From: tip-bot for Jason Baron <jbaron@redhat.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, mathieu.desnoyers@efficios.com,
-        jbaron@redhat.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        mathieu.desnoyers@efficios.com, masami.hiramatsu.pt@hitachi.com,
-        tglx@linutronix.de, jbaron@redhat.com, hpa@linux.intel.com
-In-Reply-To: <20101028152026.GB2875@redhat.com>
-References: <20101028152026.GB2875@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, alternative: Call stop_machine_text_poke() on all cpus
-Message-ID: <tip-404ba5d7bb958d3d788bdaa0debc0bdf60f13ffe@git.kernel.org>
-Git-Commit-ID: 404ba5d7bb958d3d788bdaa0debc0bdf60f13ffe
-X-Mailer: tip-git-log-daemon
+	id S1752199Ab0J3BWI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 21:22:08 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40494 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751641Ab0J3BWG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 21:22:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 30 Oct 2010 01:10:04 +0000 (UTC)
+In-Reply-To: <AANLkTikBmewDmBJWHzdTerJE2W4GqRYMxLCdAJyz5JDB@mail.gmail.com>
+References: <20100212091609.GB1025@kernel.dk> <alpine.LFD.2.00.1002120722270.7792@localhost.localdomain>
+ <alpine.LSU.2.01.1002131356250.20838@obet.zrqbmnf.qr> <20100215144938.GD3434@quack.suse.cz>
+ <alpine.LSU.2.01.1002151629380.27775@obet.zrqbmnf.qr> <alpine.LSU.2.01.1006271842220.1495@obet.zrqbmnf.qr>
+ <alpine.LNX.2.01.1010250115360.16022@obet.zrqbmnf.qr> <AANLkTikBmewDmBJWHzdTerJE2W4GqRYMxLCdAJyz5JDB@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 29 Oct 2010 18:16:48 -0700
+Message-ID: <AANLkTikEpV7GWG9fd3=zfrhOZtbPvxJWfXAO30iN8aae@mail.gmail.com>
+Subject: Re: Sync writeback still broken
+To: Jan Engelhardt <jengelh@medozas.de>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, stable@kernel.org,
+        Greg KH <gregkh@suse.de>, Jens Axboe <jaxboe@fusionio.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  404ba5d7bb958d3d788bdaa0debc0bdf60f13ffe
-Gitweb:     http://git.kernel.org/tip/404ba5d7bb958d3d788bdaa0debc0bdf60f13ffe
-Author:     Jason Baron <jbaron@redhat.com>
-AuthorDate: Thu, 28 Oct 2010 11:20:27 -0400
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Fri, 29 Oct 2010 16:42:58 -0700
+On Fri, Oct 29, 2010 at 5:57 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> Guys, what is the status of this?
+>
+> The original patch in that email thread still makes no sense and the
+> commit log for it cannot be the real issue. But the _problem_ seems to
+> be real, and the code is apparently a total mess, still.
 
-x86, alternative: Call stop_machine_text_poke() on all cpus
+Btw, is the problem just that insane WB_SYNC_ALL thing?
 
-Currently, text_poke_smp() passes a NULL as the third argument to
-__stop_machine(), which will only run stop_machine_text_poke()
-on 1 cpu. Change NULL -> cpu_online_mask, as stop_machine_text_poke()
-is intended to be run on all cpus.
+The problem with WB_SYNC_ALL seems to be that it synchrnously writes
+out one inode at a time. And it's not just the data, it's the inode
+itself.
 
-I actually didn't notice any problems with stop_machine_text_poke()
-only being called on 1 cpu, but found this via code inspection.
+So rather than write out all pages for _all_ inodes, and then wait for
+them, and write out _all_ metadata, and then wait for that, it seems
+like the WB_SYNC_ALL code does the truly stupid thing, which is to
+"write out some data for one inode, then _synchronously_ wait for
+that, then write out the metadata for that single inode, then
+_synchronously_ wait for THAT" and then rinse and repeat for each
+inode.
 
-Signed-off-by: Jason Baron <jbaron@redhat.com>
-LKML-Reference: <20101028152026.GB2875@redhat.com>
-Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+The sane thing for "WB_SYNC_ALL" would be to:
+ - for_each_inode: write out all data (no waiting)
+ - for_each_inode: wait for the data for that inode, write out the inode
+ - for_each_inode: wait for the inode
 
----
- arch/x86/kernel/alternative.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+so that you avoid the whole synchronous wait thing, and can do all
+inodes in one go.
 
-diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-index a36bb90..5ceeca3 100644
---- a/arch/x86/kernel/alternative.c
-+++ b/arch/x86/kernel/alternative.c
-@@ -638,7 +638,7 @@ void *__kprobes text_poke_smp(void *addr, const void *opcode, size_t len)
- 	atomic_set(&stop_machine_first, 1);
- 	wrote_text = 0;
- 	/* Use __stop_machine() because the caller already got online_cpus. */
--	__stop_machine(stop_machine_text_poke, (void *)&tpp, NULL);
-+	__stop_machine(stop_machine_text_poke, (void *)&tpp, cpu_online_mask);
- 	return addr;
- }
- 
+I dunno. Who even uses WB_SYNC_ALL? It's just "sync()" itself, isn't
+it? And "umount()", I guess. I didn't actually look at the code.
+
+                  Linus
