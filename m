@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695Ab0J3VKb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 17:10:31 -0400
-Received: from mail.perches.com ([173.55.12.10]:3822 "EHLO mail.perches.com"
+	id S1752071Ab0J3VJq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 17:09:46 -0400
+Received: from mail.perches.com ([173.55.12.10]:3787 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752416Ab0J3VJw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 17:09:52 -0400
+	id S1752398Ab0J3VJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 17:09:43 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 38/39] net/rfkill/input.c: Update WARN uses
-Date: Sat, 30 Oct 2010 14:08:55 -0700
-Message-Id: <7eabc1e74e9b483e921a4324d609d527fc83ec62.1288471898.git.joe@perches.com>
+Subject: [PATCH 28/39] fs: Update WARN uses
+Date: Sat, 30 Oct 2010 14:08:45 -0700
+Message-Id: <79733904005b2732d054989308a46a5ce2016ac5.1288471898.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <cover.1288471897.git.joe@perches.com>
 References: <cover.1288471897.git.joe@perches.com>
@@ -25,28 +22,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Coalesce long formats.
 Align arguments.
+Remove KERN_<level>.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- net/rfkill/input.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ fs/bio.c    |    2 +-
+ fs/buffer.c |    2 +-
+ fs/super.c  |    5 +++--
+ 3 files changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/net/rfkill/input.c b/net/rfkill/input.c
-index 1bca6d4..4343f59 100644
---- a/net/rfkill/input.c
-+++ b/net/rfkill/input.c
-@@ -75,9 +75,8 @@ static void __rfkill_handle_global_op(enum rfkill_sched_op op)
- 	default:
- 		/* memory corruption or bug, fail safely */
- 		rfkill_epo();
--		WARN(1, "Unknown requested operation %d! "
--			"rfkill Emergency Power Off activated\n",
--			op);
-+		WARN(1, "Unknown requested operation %d! rfkill Emergency Power Off activated\n",
-+		     op);
+diff --git a/fs/bio.c b/fs/bio.c
+index 8abb2df..c2837c4 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -134,7 +134,7 @@ static void bio_put_slab(struct bio_set *bs)
+ 		}
  	}
- }
  
+-	if (WARN(!bslab, KERN_ERR "bio: unable to find slab!\n"))
++	if (WARN(!bslab, "bio: unable to find slab!\n"))
+ 		goto out;
+ 
+ 	WARN_ON(!bslab->slab_ref);
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 5930e38..8d0319b 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -1186,7 +1186,7 @@ void __brelse(struct buffer_head * buf)
+ 		put_bh(buf);
+ 		return;
+ 	}
+-	WARN(1, KERN_ERR "VFS: brelse: Trying to free free buffer\n");
++	WARN(1, "VFS: brelse: Trying to free free buffer\n");
+ }
+ EXPORT_SYMBOL(__brelse);
+ 
+diff --git a/fs/super.c b/fs/super.c
+index ca69615..ade7cd2 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -1009,8 +1009,9 @@ vfs_kern_mount(struct file_system_type *type, int flags, const char *name, void
+ 	 * violate this rule. This warning should be either removed or
+ 	 * converted to a BUG() in 2.6.34.
+ 	 */
+-	WARN((mnt->mnt_sb->s_maxbytes < 0), "%s set sb->s_maxbytes to "
+-		"negative value (%lld)\n", type->name, mnt->mnt_sb->s_maxbytes);
++	WARN((mnt->mnt_sb->s_maxbytes < 0),
++	     "%s set sb->s_maxbytes to negative value (%lld)\n",
++	     type->name, mnt->mnt_sb->s_maxbytes);
+ 
+ 	mnt->mnt_mountpoint = mnt->mnt_root;
+ 	mnt->mnt_parent = mnt;
 -- 
 1.7.3.1.g432b3.dirty
 
