@@ -1,160 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407Ab0J3MGa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 08:06:30 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:37356 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751274Ab0J3MG1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 08:06:27 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Benny =?iso-8859-1?q?Sj=F6strand?= <benny@hostmobility.com>
-Subject: Re: [PATCH] cs46xx memory management fixes for cs46xx_dsp_spos_create() - make sure we free and don't do pointless work.
-Date: Sat, 30 Oct 2010 14:06:07 +0200
-User-Agent: KMail/1.9.10
-Cc: Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org
-References: <alpine.LNX.2.00.1010292242080.24561@swampdragon.chaosbits.net> <4CCB4851.7080701@hostmobility.com>
-In-Reply-To: <4CCB4851.7080701@hostmobility.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
-Message-Id: <201010301406.12961.linux@rainbow-software.org>
+	id S1753621Ab0J3Mk4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 08:40:56 -0400
+Received: from wine.ocn.ne.jp ([122.1.235.145]:60721 "EHLO smtp.wine.ocn.ne.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753555Ab0J3Mky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 08:40:54 -0400
+To: eric.dumazet@gmail.com
+Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Subject: Re: Memory barrier question.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201010292223.IIF64065.tOLVFJFSQOMFOH@I-love.SAKURA.ne.jp>
+	<20101029150908.GC2367@linux.vnet.ibm.com>
+	<201010301448.ADJ35414.VOFHtQOJOFLSMF@I-love.SAKURA.ne.jp>
+	<1288419071.2680.648.camel@edumazet-laptop>
+In-Reply-To: <1288419071.2680.648.camel@edumazet-laptop>
+Message-Id: <201010302140.DCE52148.FMJHOFFSVLQOOt@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sat, 30 Oct 2010 21:40:49 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 30 October 2010 00:18:57 Benny Sjöstrand wrote:
-> Hello again!
->
-> Just doing a reply-all.
-> It's has been many years since I did anything to the cs46xx driver, so
-> I'm wondering
-> if there's anyone out there still using a cs46xx sound card?
-> I think the changes look's correct, but I can't test it, I do not have a
-> cs46xx hardware anymore.
+Hello.
 
-Sure, there are many of these cards "out there". I just got a "new" Terratec 
-DMX Xfire 1024 (CS4624). I'll test the patch.
+Eric Dumazet wrote:
+> Le samedi 30 octobre 2010 a 14:48 +0900, Tetsuo Handa a ecrit :
+> > Then, what about list heads that are dynamically allocated/initialized?
+> > 
+> > sruct hashed_word {
+> > 	struct list_head list;
+> > 	void *key;
+> > 	char *buf;
+> > };
+> > static struct list_head tables[1u << TABLEBIT];
+> > static void (*some_callback) (void *);
+> > 
+> 
+> typedef void (*some_callback_t) (void *);
+> 
+> static some_callback_t __rcu *some_callback;
+> 
+> > static void init(void)
+> > {
+> > 	int i;
+> > 	/* Initialize the table. */
+> > 	for (i = 0; i < (1u << TABLEBIT); i++)
+> > 		INIT_LIST_HEAD(&tables[i]);
+> > 	smp_wmb();
+> > 	/* Allow other CPUs to access the table. */
+> > 	some_callback = func;
+> 
+> rcu_assign_pointer(some_callback, func);
+> 
+This one is OK. But a bit different from what I want to do.
 
->
-> /Benny
->
-> Jesper Juhl wrote:
-> > Hi,
-> >
-> > When reading through sound/pci/cs46xx/dsp_spos.c I noticed a couple of
-> > things in cs46xx_dsp_spos_create().
-> >
-> > It seems to me that we don't always free the various memory buffers we
-> > allocate and we also do some work (structure member assignment) early,
-> > that is completely pointless if some of the memory allocations fail and
-> > we end up just aborting the whole thing.
-> >
-> > I don't have hardware to test, so the patch below is compile tested only,
-> > but it makes the following changes:
-> >
-> > - Make sure we always free all allocated memory on failures.
-> > - Don't do pointless work assigning to structure members before we know
-> >   all memory allocations, that may abort progress, have completed
-> >   successfully.
-> > - Remove some trailing whitespace.
-> >
-> > If it looks ok, please merge, otherwise I'd be interested in knowing
-> > what's wrong so I can improve it.
-> >
-> >
-> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > ---
-> >  dsp_spos.c |   33 +++++++++++----------------------
-> >  1 file changed, 11 insertions(+), 22 deletions(-)
-> >
-> > diff --git a/sound/pci/cs46xx/dsp_spos.c b/sound/pci/cs46xx/dsp_spos.c
-> > index 3e5ca8f..e377287 100644
-> > --- a/sound/pci/cs46xx/dsp_spos.c
-> > +++ b/sound/pci/cs46xx/dsp_spos.c
-> > @@ -225,39 +225,25 @@ struct dsp_spos_instance *cs46xx_dsp_spos_create
-> > (struct snd_cs46xx * chip) {
-> >  	struct dsp_spos_instance * ins = kzalloc(sizeof(struct
-> > dsp_spos_instance), GFP_KERNEL);
-> >
-> > -	if (ins == NULL)
-> > +	if (ins == NULL)
-> >  		return NULL;
-> >
-> >  	/* better to use vmalloc for this big table */
-> > -	ins->symbol_table.nsymbols = 0;
-> >  	ins->symbol_table.symbols = vmalloc(sizeof(struct dsp_symbol_entry) *
-> >  					    DSP_MAX_SYMBOLS);
-> > -	ins->symbol_table.highest_frag_index = 0;
-> > -
-> > -	if (ins->symbol_table.symbols == NULL) {
-> > +	ins->code.data = kmalloc(DSP_CODE_BYTE_SIZE, GFP_KERNEL);
-> > +	ins->modules = kmalloc(sizeof(struct dsp_module_desc) *
-> > DSP_MAX_MODULES, GFP_KERNEL); +	if (!ins->symbol_table.symbols ||
-> > !ins->code.data || !ins->modules) { cs46xx_dsp_spos_destroy(chip);
-> >  		goto error;
-> >  	}
-> > -
-> > +	ins->symbol_table.nsymbols = 0;
-> > +	ins->symbol_table.highest_frag_index = 0;
-> >  	ins->code.offset = 0;
-> >  	ins->code.size = 0;
-> > -	ins->code.data = kmalloc(DSP_CODE_BYTE_SIZE, GFP_KERNEL);
-> > -
-> > -	if (ins->code.data == NULL) {
-> > -		cs46xx_dsp_spos_destroy(chip);
-> > -		goto error;
-> > -	}
-> > -
-> >  	ins->nscb = 0;
-> >  	ins->ntask = 0;
-> > -
-> >  	ins->nmodules = 0;
-> > -	ins->modules = kmalloc(sizeof(struct dsp_module_desc) *
-> > DSP_MAX_MODULES, GFP_KERNEL); -
-> > -	if (ins->modules == NULL) {
-> > -		cs46xx_dsp_spos_destroy(chip);
-> > -		goto error;
-> > -	}
-> >
-> >  	/* default SPDIF input sample rate
-> >  	   to 48000 khz */
-> > @@ -271,8 +257,8 @@ struct dsp_spos_instance *cs46xx_dsp_spos_create
-> > (struct snd_cs46xx * chip)
-> >
-> >  	/* set left and right validity bits and
-> >  	   default channel status */
-> > -	ins->spdif_csuv_default =
-> > -		ins->spdif_csuv_stream =
-> > +	ins->spdif_csuv_default =
-> > +		ins->spdif_csuv_stream =
-> >  	 /* byte 0 */  ((unsigned int)_wrap_all_bits( 
-> > (SNDRV_PCM_DEFAULT_CON_SPDIF        & 0xff)) << 24) | /* byte 1 */ 
-> > ((unsigned int)_wrap_all_bits( ((SNDRV_PCM_DEFAULT_CON_SPDIF >> 8) &
-> > 0xff)) << 16) | /* byte 3 */   (unsigned int)_wrap_all_bits( 
-> > (SNDRV_PCM_DEFAULT_CON_SPDIF >> 24) & 0xff) | @@ -281,6 +267,9 @@ struct
-> > dsp_spos_instance *cs46xx_dsp_spos_create (struct snd_cs46xx * chip)
-> > return ins;
-> >
-> >  error:
-> > +	kfree(ins->modules);
-> > +	kfree(ins->code.data);
-> > +	vfree(ins->symbol_table.symbols);
-> >  	kfree(ins);
-> >  	return NULL;
-> >  }
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> > }
+> > 
+> > /*
+> >  * This function is called by
+> >  *
+> >  *	if (some_callback)
+> >  *		some_callback(some_ptr);
+> >  *
+> >  * rather than
+> >  *
+> >  *	func(some_ptr);
+> 
+> well no, see later.
+> 
+I want to split built-in part and module part. I'm happy to embed
 
+	if (some_callback)
+		some_callback(some_ptr);
 
+into built-in part but I'm not happy to expose tables to built-in part.
+I'm using function pointer to realize it (like LSM).
 
--- 
-Ondrej Zary
+> >  *
+> >  * .
+> >  */
+> > static void func(void *some_ptr)
+> > {
+> > 	struct hashed_word *ptr;
+> > 	struct list_head *table = &tables[hash_ptr(some_ptr, TABLEBIT)];
+> > 	/* We must make sure that readers see table->next != NULL. */
+> 
+> 
+> > 	smp_rmb();
+> Nope.. delete this
+> 
+> > 	rcu_read_lock();
+> > 	list_for_each_entry_rcu(ptr, table, list) {
+> > 		if (ptr->key != some_ptr)
+> > 			continue;
+> > 		printk("%s\n", ptr->buf);
+> > 		break;
+> > 	}
+> > 	rcu_read_unlock();
+> > }
+> > 
+> > How can I make sure INIT_LIST_HEAD() in init() takes effect?
+> > Is smp_rmb() appropriate?
+> 
+> Please avoid smp_rmb()/smb_wmb() and use RCU api only.
+> 
+> some_callback_t *ptr;
+> 
+> rcu_read_lock();
+> ptr = rcu_dereference(some_callback);
+> if (ptr) {
+
+I want to know how I can guarantee that "table->next != NULL"
+by exposing only "some_callback" to built-in part.
+Once the result of INIT_LIST_HEAD() became visible to readers,
+readers no longer need to use RCU for guaranteeing table->next != NULL.
+
+> 	list_for_each_entry_rcu(aux, table, list) {
+>  		if (aux->key != ptr)
+>  			continue;
+>  		printk("%s\n", aux->buf);
+>  		break;
+>  	}
+>  }
+> rcu_read_unlock();
+
+Regards.
