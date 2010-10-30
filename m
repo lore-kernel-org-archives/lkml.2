@@ -1,296 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113Ab0J3KQi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 06:16:38 -0400
-Received: from hera.kernel.org ([140.211.167.34]:44015 "EHLO hera.kernel.org"
+	id S1753364Ab0J3KQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 06:16:57 -0400
+Received: from hera.kernel.org ([140.211.167.34]:44027 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751967Ab0J3KQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 06:16:36 -0400
-Date: Sat, 30 Oct 2010 10:16:15 GMT
+	id S1753220Ab0J3KQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 06:16:52 -0400
+Date: Sat, 30 Oct 2010 10:15:50 GMT
 From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        gregkh@suse.de, tglx@linutronix.de
+        akpm@linux-foundation.org, tglx@linutronix.de, tytso@mit.edu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        gregkh@suse.de, tglx@linutronix.de
-In-Reply-To: <20100907125057.278833764@linutronix.de>
-References: <20100907125057.278833764@linutronix.de>
+        akpm@linux-foundation.org, tglx@linutronix.de, tytso@mit.edu
+In-Reply-To: <alpine.LFD.2.00.1010162231480.2496@localhost6.localdomain6>
+References: <alpine.LFD.2.00.1010162231480.2496@localhost6.localdomain6>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] staging: Final semaphore cleanup
-Message-ID: <tip-45f4d0243525b6bc747c946937ced437b135a84d@git.kernel.org>
-Git-Commit-ID: 45f4d0243525b6bc747c946937ced437b135a84d
+Subject: [tip:core/locking] jbd2: Convert jbd2_slab_create_sem to mutex
+Message-ID: <tip-51dfacdef38b1dd6fc58b03dd1725d517516b115@git.kernel.org>
+Git-Commit-ID: 51dfacdef38b1dd6fc58b03dd1725d517516b115
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 30 Oct 2010 10:16:16 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 30 Oct 2010 10:15:51 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  45f4d0243525b6bc747c946937ced437b135a84d
-Gitweb:     http://git.kernel.org/tip/45f4d0243525b6bc747c946937ced437b135a84d
+Commit-ID:  51dfacdef38b1dd6fc58b03dd1725d517516b115
+Gitweb:     http://git.kernel.org/tip/51dfacdef38b1dd6fc58b03dd1725d517516b115
 Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Sat, 30 Oct 2010 11:06:57 +0200
+AuthorDate: Sat, 16 Oct 2010 22:34:39 +0200
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Sat, 30 Oct 2010 12:12:50 +0200
 
-staging: Final semaphore cleanup
+jbd2: Convert jbd2_slab_create_sem to mutex
 
-Fixup the last remaining users of DECLARE_MUTEX and init_MUTEX.
+jbd2_slab_create_sem is used as a mutex, so make it one.
 
-Scripted conversion, resulting code is binary equivalent.
+[ akpm muttered: We may as well make it local to
+jbd2_journal_create_slab() also. ]
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-LKML-Reference: <20100907125057.278833764@linutronix.de>
+Cc: Ted Ts'o <tytso@mit.edu>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+LKML-Reference: <alpine.LFD.2.00.1010162231480.2496@localhost6.localdomain6>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/staging/ath6kl/os/linux/ar6000_raw_if.c    |    4 ++--
- drivers/staging/brcm80211/brcmfmac/dhd_linux.c     |    4 ++--
- drivers/staging/brcm80211/sys/wl_mac80211.c        |    2 +-
- drivers/staging/comedi/drivers/dt9812.c            |    2 +-
- drivers/staging/comedi/drivers/usbdux.c            |    4 ++--
- drivers/staging/comedi/drivers/usbduxfast.c        |    4 ++--
- drivers/staging/dream/camera/mt9d112.c             |    2 +-
- drivers/staging/dream/camera/mt9p012_fox.c         |    2 +-
- drivers/staging/dream/camera/mt9t013.c             |    2 +-
- drivers/staging/dream/camera/s5k3e2fx.c            |    2 +-
- drivers/staging/msm/msm_fb.c                       |    4 ++--
- drivers/staging/rtl8712/osdep_service.h            |    2 +-
- drivers/staging/smbfs/inode.c                      |    2 +-
- .../westbridge/astoria/block/cyasblkdev_block.c    |    2 +-
- .../westbridge/astoria/block/cyasblkdev_queue.c    |    2 +-
- 15 files changed, 20 insertions(+), 20 deletions(-)
+ fs/jbd2/journal.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/ath6kl/os/linux/ar6000_raw_if.c b/drivers/staging/ath6kl/os/linux/ar6000_raw_if.c
-index c196098..6b8eeea 100644
---- a/drivers/staging/ath6kl/os/linux/ar6000_raw_if.c
-+++ b/drivers/staging/ath6kl/os/linux/ar6000_raw_if.c
-@@ -198,8 +198,8 @@ int ar6000_htc_raw_open(AR_SOFTC_T *ar)
-         
-     for (streamID = HTC_RAW_STREAM_0; streamID < HTC_RAW_STREAM_NUM_MAX; streamID++) {
-         /* Initialize the data structures */
--        init_MUTEX(&arRaw->raw_htc_read_sem[streamID]);
--        init_MUTEX(&arRaw->raw_htc_write_sem[streamID]);
-+	sema_init(&arRaw->raw_htc_read_sem[streamID], 1);
-+	sema_init(&arRaw->raw_htc_write_sem[streamID], 1);
-         init_waitqueue_head(&arRaw->raw_htc_read_queue[streamID]);
-         init_waitqueue_head(&arRaw->raw_htc_write_queue[streamID]);
- 
-diff --git a/drivers/staging/brcm80211/brcmfmac/dhd_linux.c b/drivers/staging/brcm80211/brcmfmac/dhd_linux.c
-index e535787..bbbe7c5 100644
---- a/drivers/staging/brcm80211/brcmfmac/dhd_linux.c
-+++ b/drivers/staging/brcm80211/brcmfmac/dhd_linux.c
-@@ -1929,7 +1929,7 @@ dhd_pub_t *dhd_attach(osl_t *osh, struct dhd_bus *bus, uint bus_hdrlen)
- 		goto fail;
- 
- 	net->netdev_ops = NULL;
--	init_MUTEX(&dhd->proto_sem);
-+	sema_init(&dhd->proto_sem, 1);
- 	/* Initialize other structure content */
- 	init_waitqueue_head(&dhd->ioctl_resp_wait);
- 	init_waitqueue_head(&dhd->ctrl_wait);
-@@ -1977,7 +1977,7 @@ dhd_pub_t *dhd_attach(osl_t *osh, struct dhd_bus *bus, uint bus_hdrlen)
- 	dhd->timer.function = dhd_watchdog;
- 
- 	/* Initialize thread based operation and lock */
--	init_MUTEX(&dhd->sdsem);
-+	sema_init(&dhd->sdsem, 1);
- 	if ((dhd_watchdog_prio >= 0) && (dhd_dpc_prio >= 0))
- 		dhd->threads_only = true;
- 	else
-diff --git a/drivers/staging/brcm80211/sys/wl_mac80211.c b/drivers/staging/brcm80211/sys/wl_mac80211.c
-index ad635ee..d060377 100644
---- a/drivers/staging/brcm80211/sys/wl_mac80211.c
-+++ b/drivers/staging/brcm80211/sys/wl_mac80211.c
-@@ -866,7 +866,7 @@ static wl_info_t *wl_attach(u16 vendor, u16 device, unsigned long regs,
- 	spin_lock_init(&wl->rpcq_lock);
- 	spin_lock_init(&wl->txq_lock);
- 
--	init_MUTEX(&wl->sem);
-+	sema_init(&wl->sem, 1);
- #else
- 	spin_lock_init(&wl->lock);
- 	spin_lock_init(&wl->isr_lock);
-diff --git a/drivers/staging/comedi/drivers/dt9812.c b/drivers/staging/comedi/drivers/dt9812.c
-index 0560a74..0605985 100644
---- a/drivers/staging/comedi/drivers/dt9812.c
-+++ b/drivers/staging/comedi/drivers/dt9812.c
-@@ -262,7 +262,7 @@ struct dt9812_usb_cmd {
- 
- #define DT9812_NUM_SLOTS	16
- 
--static DECLARE_MUTEX(dt9812_mutex);
-+static DEFINE_SEMAPHORE(dt9812_mutex);
- 
- static const struct usb_device_id dt9812_table[] = {
- 	{USB_DEVICE(0x0867, 0x9812)},
-diff --git a/drivers/staging/comedi/drivers/usbdux.c b/drivers/staging/comedi/drivers/usbdux.c
-index 6131e2d..1f177a6 100644
---- a/drivers/staging/comedi/drivers/usbdux.c
-+++ b/drivers/staging/comedi/drivers/usbdux.c
-@@ -315,7 +315,7 @@ struct usbduxsub {
+diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+index 538417c..c590d15 100644
+--- a/fs/jbd2/journal.c
++++ b/fs/jbd2/journal.c
+@@ -1838,7 +1838,6 @@ size_t journal_tag_bytes(journal_t *journal)
   */
- static struct usbduxsub usbduxsub[NUMUSBDUX];
+ #define JBD2_MAX_SLABS 8
+ static struct kmem_cache *jbd2_slab[JBD2_MAX_SLABS];
+-static DECLARE_MUTEX(jbd2_slab_create_sem);
  
--static DECLARE_MUTEX(start_stop_sem);
-+static DEFINE_SEMAPHORE(start_stop_sem);
+ static const char *jbd2_slab_names[JBD2_MAX_SLABS] = {
+ 	"jbd2_1k", "jbd2_2k", "jbd2_4k", "jbd2_8k",
+@@ -1859,6 +1858,7 @@ static void jbd2_journal_destroy_slabs(void)
  
- /*
-  * Stops the data acquision
-@@ -2367,7 +2367,7 @@ static int usbduxsub_probe(struct usb_interface *uinterf,
- 	dev_dbg(dev, "comedi_: usbdux: "
- 		"usbduxsub[%d] is ready to connect to comedi.\n", index);
- 
--	init_MUTEX(&(usbduxsub[index].sem));
-+	sema_init(&(usbduxsub[index].sem), 1);
- 	/* save a pointer to the usb device */
- 	usbduxsub[index].usbdev = udev;
- 
-diff --git a/drivers/staging/comedi/drivers/usbduxfast.c b/drivers/staging/comedi/drivers/usbduxfast.c
-index 0a164a9..5b15e6d 100644
---- a/drivers/staging/comedi/drivers/usbduxfast.c
-+++ b/drivers/staging/comedi/drivers/usbduxfast.c
-@@ -199,7 +199,7 @@ struct usbduxfastsub_s {
-  */
- static struct usbduxfastsub_s usbduxfastsub[NUMUSBDUXFAST];
- 
--static DECLARE_MUTEX(start_stop_sem);
-+static DEFINE_SEMAPHORE(start_stop_sem);
- 
- /*
-  * bulk transfers to usbduxfast
-@@ -1504,7 +1504,7 @@ static int usbduxfastsub_probe(struct usb_interface *uinterf,
- 	       "connect to comedi.\n", index);
- #endif
- 
--	init_MUTEX(&(usbduxfastsub[index].sem));
-+	sema_init(&(usbduxfastsub[index].sem), 1);
- 	/* save a pointer to the usb device */
- 	usbduxfastsub[index].usbdev = udev;
- 
-diff --git a/drivers/staging/dream/camera/mt9d112.c b/drivers/staging/dream/camera/mt9d112.c
-index e6f2d51..27c978f 100644
---- a/drivers/staging/dream/camera/mt9d112.c
-+++ b/drivers/staging/dream/camera/mt9d112.c
-@@ -37,7 +37,7 @@ struct mt9d112_ctrl {
- static struct mt9d112_ctrl *mt9d112_ctrl;
- 
- static DECLARE_WAIT_QUEUE_HEAD(mt9d112_wait_queue);
--DECLARE_MUTEX(mt9d112_sem);
-+DEFINE_SEMAPHORE(mt9d112_sem);
- 
- 
- /*=============================================================
-diff --git a/drivers/staging/dream/camera/mt9p012_fox.c b/drivers/staging/dream/camera/mt9p012_fox.c
-index 791bd6c..544a973 100644
---- a/drivers/staging/dream/camera/mt9p012_fox.c
-+++ b/drivers/staging/dream/camera/mt9p012_fox.c
-@@ -123,7 +123,7 @@ struct mt9p012_ctrl {
- 
- static struct mt9p012_ctrl *mt9p012_ctrl;
- static DECLARE_WAIT_QUEUE_HEAD(mt9p012_wait_queue);
--DECLARE_MUTEX(mt9p012_sem);
-+DEFINE_SEMAPHORE(mt9p012_sem);
- 
- /*=============================================================
- 	EXTERNAL DECLARATIONS
-diff --git a/drivers/staging/dream/camera/mt9t013.c b/drivers/staging/dream/camera/mt9t013.c
-index 8fd7727..75e78aa 100644
---- a/drivers/staging/dream/camera/mt9t013.c
-+++ b/drivers/staging/dream/camera/mt9t013.c
-@@ -123,7 +123,7 @@ struct mt9t013_ctrl {
- 
- static struct mt9t013_ctrl *mt9t013_ctrl;
- static DECLARE_WAIT_QUEUE_HEAD(mt9t013_wait_queue);
--DECLARE_MUTEX(mt9t013_sem);
-+DEFINE_SEMAPHORE(mt9t013_sem);
- 
- extern struct mt9t013_reg mt9t013_regs; /* from mt9t013_reg.c */
- 
-diff --git a/drivers/staging/dream/camera/s5k3e2fx.c b/drivers/staging/dream/camera/s5k3e2fx.c
-index 1459903..d66b453 100644
---- a/drivers/staging/dream/camera/s5k3e2fx.c
-+++ b/drivers/staging/dream/camera/s5k3e2fx.c
-@@ -313,7 +313,7 @@ struct s5k3e2fx_i2c_reg_conf {
- 
- static struct s5k3e2fx_ctrl *s5k3e2fx_ctrl;
- static DECLARE_WAIT_QUEUE_HEAD(s5k3e2fx_wait_queue);
--DECLARE_MUTEX(s5k3e2fx_sem);
-+DEFINE_SEMAPHORE(s5k3e2fx_sem);
- 
- static int s5k3e2fx_i2c_rxdata(unsigned short saddr, unsigned char *rxdata,
- 	int length)
-diff --git a/drivers/staging/msm/msm_fb.c b/drivers/staging/msm/msm_fb.c
-index ea268ed..23fa049 100644
---- a/drivers/staging/msm/msm_fb.c
-+++ b/drivers/staging/msm/msm_fb.c
-@@ -1158,7 +1158,7 @@ static int msm_fb_release(struct fb_info *info, int user)
- 	return ret;
- }
- 
--DECLARE_MUTEX(msm_fb_pan_sem);
-+DEFINE_SEMAPHORE(msm_fb_pan_sem);
- 
- static int msm_fb_pan_display(struct fb_var_screeninfo *var,
- 			      struct fb_info *info)
-@@ -1962,7 +1962,7 @@ static int msmfb_overlay_play(struct fb_info *info, unsigned long *argp)
- 
- #endif
- 
--DECLARE_MUTEX(msm_fb_ioctl_ppp_sem);
-+DEFINE_SEMAPHORE(msm_fb_ioctl_ppp_sem);
- DEFINE_MUTEX(msm_fb_ioctl_lut_sem);
- DEFINE_MUTEX(msm_fb_ioctl_hist_sem);
- 
-diff --git a/drivers/staging/rtl8712/osdep_service.h b/drivers/staging/rtl8712/osdep_service.h
-index 7fca42c..d1674cd 100644
---- a/drivers/staging/rtl8712/osdep_service.h
-+++ b/drivers/staging/rtl8712/osdep_service.h
-@@ -161,7 +161,7 @@ static inline u32 _down_sema(struct semaphore *sema)
- 
- static inline void _rtl_rwlock_init(struct semaphore *prwlock)
+ static int jbd2_journal_create_slab(size_t size)
  {
--	init_MUTEX(prwlock);
-+	sema_init(prwlock, 1);
- }
++	static DEFINE_MUTEX(jbd2_slab_create_mutex);
+ 	int i = order_base_2(size) - 10;
+ 	size_t slab_size;
  
- static inline void _init_listhead(struct list_head *list)
-diff --git a/drivers/staging/smbfs/inode.c b/drivers/staging/smbfs/inode.c
-index 552951a..fa42f40 100644
---- a/drivers/staging/smbfs/inode.c
-+++ b/drivers/staging/smbfs/inode.c
-@@ -537,7 +537,7 @@ static int smb_fill_super(struct super_block *sb, void *raw_data, int silent)
- 	server->mnt = NULL;
- 	server->sock_file = NULL;
- 	init_waitqueue_head(&server->conn_wq);
--	init_MUTEX(&server->sem);
-+	sema_init(&server->sem, 1);
- 	INIT_LIST_HEAD(&server->entry);
- 	INIT_LIST_HEAD(&server->xmitq);
- 	INIT_LIST_HEAD(&server->recvq);
-diff --git a/drivers/staging/westbridge/astoria/block/cyasblkdev_block.c b/drivers/staging/westbridge/astoria/block/cyasblkdev_block.c
-index f428a7a..e1851f0 100644
---- a/drivers/staging/westbridge/astoria/block/cyasblkdev_block.c
-+++ b/drivers/staging/westbridge/astoria/block/cyasblkdev_block.c
-@@ -157,7 +157,7 @@ struct cyasblkdev_blk_data {
- /* pointer to west bridge block data device superstructure */
- static struct cyasblkdev_blk_data *gl_bd;
+@@ -1870,16 +1870,16 @@ static int jbd2_journal_create_slab(size_t size)
  
--static DECLARE_MUTEX(open_lock);
-+static DEFINE_SEMAPHORE(open_lock);
+ 	if (unlikely(i < 0))
+ 		i = 0;
+-	down(&jbd2_slab_create_sem);
++	mutex_lock(&jbd2_slab_create_mutex);
+ 	if (jbd2_slab[i]) {
+-		up(&jbd2_slab_create_sem);
++		mutex_unlock(&jbd2_slab_create_mutex);
+ 		return 0;	/* Already created */
+ 	}
  
- /* local forwardd declarationss  */
- static cy_as_device_handle *cyas_dev_handle;
-diff --git a/drivers/staging/westbridge/astoria/block/cyasblkdev_queue.c b/drivers/staging/westbridge/astoria/block/cyasblkdev_queue.c
-index 24e959e..0bbb8a3 100644
---- a/drivers/staging/westbridge/astoria/block/cyasblkdev_queue.c
-+++ b/drivers/staging/westbridge/astoria/block/cyasblkdev_queue.c
-@@ -334,7 +334,7 @@ int cyasblkdev_init_queue(struct cyasblkdev_queue *bq, spinlock_t *lock)
- 
- 	init_completion(&bq->thread_complete);
- 	init_waitqueue_head(&bq->thread_wq);
--	init_MUTEX(&bq->thread_sem);
-+	sema_init(&bq->thread_sem, 1);
- 
- 	ret = kernel_thread(cyasblkdev_queue_thread, bq, CLONE_KERNEL);
- 	if (ret >= 0) {
+ 	slab_size = 1 << (i+10);
+ 	jbd2_slab[i] = kmem_cache_create(jbd2_slab_names[i], slab_size,
+ 					 slab_size, 0, NULL);
+-	up(&jbd2_slab_create_sem);
++	mutex_unlock(&jbd2_slab_create_mutex);
+ 	if (!jbd2_slab[i]) {
+ 		printk(KERN_EMERG "JBD2: no memory for jbd2_slab cache\n");
+ 		return -ENOMEM;
