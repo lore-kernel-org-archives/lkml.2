@@ -1,82 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755690Ab0J3TDJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 15:03:09 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:29709 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751931Ab0J3TDE (ORCPT
+	id S1755386Ab0J3THn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 15:07:43 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58710 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752748Ab0J3THl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 15:03:04 -0400
-Date: Sat, 30 Oct 2010 20:52:47 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: Cliff Wickman <cpw@sgi.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org
-Subject: [PATCH] SGI UltraViolet: Prefer kzalloc over kmalloc and memset and
- remove a pointless cast
-Message-ID: <alpine.LNX.2.00.1010302036450.1572@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 30 Oct 2010 15:07:41 -0400
+Date: Sat, 30 Oct 2010 12:06:32 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@lst.de>, Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: Ping? RE: [GIT PULL] mm/vfs/fs:cleancache for 2.6.37 merge
+ window
+Message-Id: <20101030120632.40345d0d.akpm@linux-foundation.org>
+In-Reply-To: <7b34b3ea-9436-4077-a35e-a5eaabd59813@default>
+References: <ec76a6ed-a1dc-4e8b-a4ac-1e72ab367d0f@default>
+	<7b34b3ea-9436-4077-a35e-a5eaabd59813@default>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 27 Oct 2010 11:37:47 -0700 (PDT) Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
 
-Hi,
+> Ping?  I hope you are still considering this.  If not or if
+> there are any questions I can answer, please let me know.
 
-Using kzalloc() instead of kmalloc()+memset() carries no downsides that I 
-can see, but it results in smaller (and presumably slightly faster) code.
-There are two places in arch/x86/platform/uv/ that I've found where we can 
-make this improvement - patch below.
-I also removed the cast of the kzalloc() return value since it returns a 
-void* so the cast is pointless.
+What's happened here is that the patchset has gone through its
+iterations and a few people have commented and then after a while,
+nobody had anything to say about the code so nobody said anything more.
 
-It compiles, but I have no way to test it further than that.
+But silence doesn't mean acceptance - it just means that nobody had
+anything to say.
 
+I think I looked at the earlier iterations, tried to understand the
+point behind it all, made a few code suggestions and eventually tuned
+out.  At that time (and hence at this time) I just cannot explain to
+myself why we would want to merge this code.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- tlb_uv.c  |    4 +---
- uv_time.c |    3 +--
- 2 files changed, 2 insertions(+), 5 deletions(-)
+All new code is a cost/benefit decision.  The costs are pretty well
+known: larger codebase, more code for us and our "customers" to
+maintain and support, etc.  That the code pokes around in vfs and
+various filesystems does increase those costs a little.
 
-diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
-index 20ea20a..f5b0258 100644
---- a/arch/x86/platform/uv/tlb_uv.c
-+++ b/arch/x86/platform/uv/tlb_uv.c
-@@ -1520,9 +1520,7 @@ static void __init uv_init_per_cpu(int nuvhubs)
- 
- 	timeout_us = calculate_destination_timeout();
- 
--	uvhub_descs = (struct uvhub_desc *)
--		kmalloc(nuvhubs * sizeof(struct uvhub_desc), GFP_KERNEL);
--	memset(uvhub_descs, 0, nuvhubs * sizeof(struct uvhub_desc));
-+	uvhub_descs = kzalloc(nuvhubs * sizeof(struct uvhub_desc), GFP_KERNEL);
- 	uvhub_mask = kzalloc((nuvhubs+7)/8, GFP_KERNEL);
- 	for_each_present_cpu(cpu) {
- 		bcp = &per_cpu(bau_control, cpu);
-diff --git a/arch/x86/platform/uv/uv_time.c b/arch/x86/platform/uv/uv_time.c
-index 56e421b..523975c 100644
---- a/arch/x86/platform/uv/uv_time.c
-+++ b/arch/x86/platform/uv/uv_time.c
-@@ -149,10 +149,9 @@ static __init int uv_rtc_allocate_timers(void)
- {
- 	int cpu;
- 
--	blade_info = kmalloc(uv_possible_blades * sizeof(void *), GFP_KERNEL);
-+	blade_info = kzalloc(uv_possible_blades * sizeof(void *), GFP_KERNEL);
- 	if (!blade_info)
- 		return -ENOMEM;
--	memset(blade_info, 0, uv_possible_blades * sizeof(void *));
- 
- 	for_each_present_cpu(cpu) {
- 		int nid = cpu_to_node(cpu);
+But the extent of the benefits to our users aren't obvious to me.  The
+code is still xen-specific, I believe?  If so, that immediately reduces
+the benefit side by a large amount simply because of the reduced
+audience.
+
+We did spend some time trying to get this wired up to zram so that the
+feature would be potentially useful to *all* users, thereby setting the
+usefulness multiplier back to 1.0.  But I don't recall that anything
+came of this?
+
+I also don't know how useful the code is to its intended
+micro-audience: xen users!
 
 
--- 
-Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-Plain text mails only, please      http://www.expita.com/nomime.html
-Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
+So can we please revisit all this from the top level?  Jeremy, your
+input would be valuable.  Christoph, I recall that you had technical
+objections - can you please repeat those?
 
+
+It's the best I can do to kick this along, sorry.
