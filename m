@@ -1,73 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755659Ab0J3RqP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 13:46:15 -0400
-Received: from x35.xmailserver.org ([64.71.152.41]:36834 "EHLO
-	x35.xmailserver.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755170Ab0J3RqN (ORCPT
+	id S1755315Ab0J3STL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 14:19:11 -0400
+Received: from asmtpout024.mac.com ([17.148.16.99]:49099 "EHLO
+	asmtpout024.mac.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754808Ab0J3STJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 13:46:13 -0400
-X-AuthUser: davidel@xmailserver.org
-Date: Sat, 30 Oct 2010 10:45:37 -0700 (PDT)
-From: Davide Libenzi <davidel@xmailserver.org>
-X-X-Sender: davide@davide-lnx1
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Davide Libenzi <davidel@xmailserver.org>,
-        Alban Crequy <alban.crequy@collabora.co.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>, netdev@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Pauli Nieminen <pauli.nieminen@collabora.co.uk>,
-        Rainer Weikusat <rweikusat@mssgmbh.com>
-Subject: Re: [PATCH] af_unix: optimize unix_dgram_poll()
-In-Reply-To: <1288432420.2680.933.camel@edumazet-laptop>
-Message-ID: <alpine.DEB.2.00.1010301042040.12598@davide-lnx1>
-References: <20101029191857.5f789d56@chocolatine.cbg.collabora.co.uk>  <1288380431.2680.3.camel@edumazet-laptop>  <alpine.DEB.2.00.1010291306390.8517@davide-lnx1>  <alpine.DEB.2.00.1010291339180.8517@davide-lnx1> <1288432420.2680.933.camel@edumazet-laptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-X-GPG-FINGRPRINT: CFAE 5BEE FD36 F65E E640  56FE 0974 BF23 270F 474E
-X-GPG-PUBLIC_KEY: http://www.xmailserver.org/davidel.asc
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1701732935-1288460744=:12598"
+	Sat, 30 Oct 2010 14:19:09 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; CHARSET=US-ASCII
+X-Proofpoint-Virus-Version: vendor=fsecure
+ engine=2.50.10432:5.2.15,1.0.148,0.0.0000
+ definitions=2010-10-30_07:2010-10-29,2010-10-30,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0
+ ipscore=0 suspectscore=0 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
+ adjust=0 reason=mlx engine=6.0.2-1004200000 definitions=main-1010300103
+From: Elvis Dowson <elvis.dowson@mac.com>
+Subject: Forked android kernel development from linux kernel mainline
+Date: Sat, 30 Oct 2010 22:18:37 +0400
+Message-id: <01784A8B-36A0-4E8A-9729-23C2B19351F8@mac.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi,
+       I was wondering what the long term implications of android development being forked from the linux mainline are? 
 
---8323329-1701732935-1288460744=:12598
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Android support was removed from 2.6.33 onwards, and development still continues for 2.6.35, by reverting the commit that deleted android from the mainline.
 
-On Sat, 30 Oct 2010, Eric Dumazet wrote:
+One could argue that android gave linux a solid boost widespread adoption for mobile embedded devices, and its use would continue to grow exponentially with time, more than plain vanilla linux for embedded devices. 
 
-> Le vendredi 29 octobre 2010 à 13:46 -0700, Davide Libenzi a écrit :
-> 
-> > Also, why not using the existing wait->key instead of adding a poll2()?
-> 
-> Indeed, if wait is not null, we have in wait->key the interest of
-> poller. If a particular poll() function is expensive, it can test these
-> bits.
-> 
-> Thanks !
-> 
-> Note: I chose the 'goto skip_write' to make this patch really obvious.
+Was removing android from the linux kernel mainline a mistake, in retrospect?
 
-Plain agreement on th patch, and I understand the indent overflow 
-concerns, but why not ...
+Best regards,
 
-	/*
-	 * No write status requested, avoid expensive OUT tests.
-	 */
-	if (wait && !(wait->key & (POLLWRBAND | POLLWRNORM | POLLOUT)))
-		return mask
+Elvis Dowson
 
-The write-test code is the last one we do anyway.
-
-
-- Davide
-
-
---8323329-1701732935-1288460744=:12598--
