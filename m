@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004Ab0J3OW5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 10:22:57 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:59896 "EHLO
+	id S1754065Ab0J3O0Y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 10:26:24 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:40880 "EHLO
 	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752879Ab0J3OWz (ORCPT
+	with ESMTP id S1752879Ab0J3O0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 10:22:55 -0400
+	Sat, 30 Oct 2010 10:26:23 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=jrSemKmQVkeq7Tm5Ti2qrmp+SXkAXyPbI5cO2mzC/9YqCYNRF/61yImS2hmgCUZ2Md
-         OrvtoMa+3XxyfPhGqYvpHcqqisMZT1fFSQYS1T5BXQkcjOeIkcf5RCECqYi9UKPFj2xg
-         tjgr+nnbRoETpFm0iekLOBfY/uHyAI3K7dhzg=
-Date: Sat, 30 Oct 2010 18:22:49 +0400
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=HIth1nnaE5FjtN85NWf1P1KjsEXwdSTKRwn9ZncM66/nvshITRGnDFrInaldM8fqkV
+         n2Z7+AuYHejq2vjnIBMhIwrA2qwPbLlWmnpFKQDG5AIneYvQANsj2JeI7pg+CpAMIIpF
+         0SotewmZp15f13mMAgvYA7djfcLJBxQ2SJtSw=
 From: Vasiliy Kulikov <segooon@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: kernel-janitors@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Helge Deller <deller@gmx.de>, David Howells <dhowells@redhat.com>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] ipc: shm: fix information leak to userland
-Message-ID: <20101030142249.GA9835@albatros>
-References: <1288429477-21920-1-git-send-email-segooon@gmail.com>
- <20101030090644.GX19804@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101030090644.GX19804@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: kernel-janitors@vger.kernel.org
+Cc: Alex Elder <aelder@sgi.com>, xfs-masters@oss.sgi.com,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <dchinner@redhat.com>,
+        Eric Sandeen <sandeen@redhat.com>,
+        =?UTF-8?q?Arkadiusz=20Mi=C5=9Bkiewicz?= <arekm@maven.pl>,
+        xfs@oss.sgi.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] xfs: linux-2.6: xfs_ioctl: fix information leak to userland
+Date: Sat, 30 Oct 2010 18:26:17 +0400
+Message-Id: <1288448778-5373-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Structure shmid_ds is copied to userland with shm_unused{,2,3}
-fields unitialized.  It leads to leaking of contents of kernel stack
-memory.
+al_hreq is copied from userland.  If al_hreq.buflen is not properly aligned then
+xfs_attr_list will ignore the last bytes of kbuf.  These bytes are unitialized.
+It leads to leaking of contents of kernel stack memory.
 
-Cc: stable@kernel.org
-Acked-by: Al Viro <viro@ZenIV.linux.org.uk>
 Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
 ---
  Compile tested.
 
- ipc/shm.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ fs/xfs/linux-2.6/xfs_ioctl.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/ipc/shm.c b/ipc/shm.c
-index fd658a1..7d3bb22 100644
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -479,6 +479,7 @@ static inline unsigned long copy_shmid_to_user(void __user *buf, struct shmid64_
- 	    {
- 		struct shmid_ds out;
+diff --git a/fs/xfs/linux-2.6/xfs_ioctl.c b/fs/xfs/linux-2.6/xfs_ioctl.c
+index 2ea238f..ad442d9 100644
+--- a/fs/xfs/linux-2.6/xfs_ioctl.c
++++ b/fs/xfs/linux-2.6/xfs_ioctl.c
+@@ -416,7 +416,7 @@ xfs_attrlist_by_handle(
+ 	if (IS_ERR(dentry))
+ 		return PTR_ERR(dentry);
  
-+		memset(&out, 0, sizeof(out));
- 		ipc64_perm_to_ipc_perm(&in->shm_perm, &out.shm_perm);
- 		out.shm_segsz	= in->shm_segsz;
- 		out.shm_atime	= in->shm_atime;
+-	kbuf = kmalloc(al_hreq.buflen, GFP_KERNEL);
++	kbuf = kzalloc(al_hreq.buflen, GFP_KERNEL);
+ 	if (!kbuf)
+ 		goto out_dput;
+ 
 -- 
 1.7.0.4
+
