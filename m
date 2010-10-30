@@ -1,49 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983Ab0J3Wap (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 18:30:45 -0400
-Received: from relay.dotsterhost.com ([72.5.54.243]:38162 "EHLO
-	relay.dotsterhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752174Ab0J3Wao (ORCPT
+	id S1754101Ab0J3XYO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 19:24:14 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:39125
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753921Ab0J3XYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 18:30:44 -0400
-Date: Tue, 26 Oct 2010 04:00:56 -0700
-Message-Id: <201010261100.o9QB0uqh013754@relay.dotsterhost.com>
-Sender-ID: y198404
-To: linux-kernel@vger.kernel.org
-Subject: Reply Needed
-From: Dr Carl Lee <vcheng69@yahoo.com.hk>
-Reply-To: carl_leeus69@yahoo.co.jp
-MIME-Version: 1.0
-Content-Type: text/plain
-Content-Transfer-Encoding: 16bit
+	Sat, 30 Oct 2010 19:24:12 -0400
+Date: Sat, 30 Oct 2010 16:24:36 -0700 (PDT)
+Message-Id: <20101030.162436.115938810.davem@davemloft.net>
+To: dkirjanov@kernel.org
+Cc: bjorn.helgaas@hp.com, amit.salecha@qlogic.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: NULL pointer dereference at netxen_nic_probe+0x813/0x9a0
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4CCC7868.60104@kernel.org>
+References: <4CCB24CA.3050106@kernel.org>
+	<20101029.125403.71123384.davem@davemloft.net>
+	<4CCC7868.60104@kernel.org>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
- 
-I have a proposition for you, this however is not mandatory nor will I
-in any manner compel you to honor against your will.Let me start by
-introducing myself. I am Dr.Carl Lee, Director of Operations
-of the Hang Seng Bank Ltd,Sai Wan Ho Branch. I have a mutual beneficial
-business suggestion for you.
- 
-1. Can you handle this project?
-2. Can I give you this trust ?
- 
-Absolute confidentiality is required from you.Besides,I will use my connection
-to get some documents to back up the fund so that the fund can not be
-question by any authority.
- 
-More information await you in my next response to your email message.
- 
- 
-Treat as very urgent.
- 
-Yours Faithfully,
- 
-Dr. Carl Lee.
+From: Denis Kirjanov <dkirjanov@kernel.org>
+Date: Sat, 30 Oct 2010 23:56:24 +0400
 
+> [PATCH] netxen_nic: Fix the tx queue manipulation bug in netxen_nic_probe
+> 
+> We should not stop the egress queue during probe because it is wrong.
+> 
+> Signed-off-by: Denis Kirjanov <dkirjanov@kernel.org>
 
-
+Applied.
