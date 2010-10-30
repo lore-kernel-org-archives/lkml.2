@@ -1,61 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755714Ab0J3TRJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 15:17:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48719 "EHLO mx2.suse.de"
+	id S1755680Ab0J3TV4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 15:21:56 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:52938 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755386Ab0J3TRH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 15:17:07 -0400
-Subject: Re: [PATCH v2] powerpc: kvm: powerpc: fix information leak to userland
-Mime-Version: 1.0 (Apple Message framework v1081)
+	id S1751245Ab0J3TVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 15:21:53 -0400
+Date: Sat, 30 Oct 2010 21:21:31 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+        linux-kernel@vger.kernel.org, h.mitake@gmail.com,
+        "Ma Ling:" <ling.ma@intel.com>, Zhao Yakui <yakui.zhao@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 1/2] perf bench: port memcpy_64.S to perf bench
+Message-ID: <20101030192131.GB26503@elte.hu>
+References: <1288368098-26121-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
+ <1288381751.1988.13.camel@laptop>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <1288464922-8812-1-git-send-email-segooon@gmail.com>
-Date: Sat, 30 Oct 2010 12:16:57 -0700
-Cc: kernel-janitors@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, kvm-ppc@vger.kernel.org,
-        kvm@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <1480CDBF-0A4A-49EC-AF4C-CED1D63BB911@suse.de>
-References: <1288464922-8812-1-git-send-email-segooon@gmail.com>
-To: Vasiliy Kulikov <segooon@gmail.com>
-X-Mailer: Apple Mail (2.1081)
+Content-Disposition: inline
+In-Reply-To: <1288381751.1988.13.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 30.10.2010, at 11:55, Vasiliy Kulikov wrote:
+* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-> Structure kvm_ppc_pvinfo is copied to userland with "flags" and "pad"
-> fields unitialized.  It leads to leaking of contents of kernel stack
-> memory.  We have to initialize them to zero.
+> On Sat, 2010-10-30 at 01:01 +0900, Hitoshi Mitake wrote:
+> > This patch ports arch/x86/lib/memcpy_64.S to "perf bench mem".
+> > When PERF_BENCH is defined at preprocessor level,
+> > memcpy_64.S is preprocessed to includable form from the sources
+> > under tools/perf for benchmarking programs.
+> > 
+> > Signed-off-by: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+> > Cc: Ma Ling: <ling.ma@intel.com>
+> > Cc: Zhao Yakui <yakui.zhao@intel.com>
+> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> > Cc: Paul Mackerras <paulus@samba.org>
+> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Steven Rostedt <rostedt@goodmis.org>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: H. Peter Anvin <hpa@zytor.com>
+> > ---
+> >  arch/x86/lib/memcpy_64.S |   30 ++++++++++++++++++++++++++++++
+> >  1 files changed, 30 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/arch/x86/lib/memcpy_64.S b/arch/x86/lib/memcpy_64.S
+> > index 75ef61e..72c6dfe 100644
+> > --- a/arch/x86/lib/memcpy_64.S
+> > +++ b/arch/x86/lib/memcpy_64.S
+> > @@ -1,10 +1,23 @@
+> >  /* Copyright 2002 Andi Kleen */
+> >  
+> > +/*
+> > + * perf bench adoption by Hitoshi Mitake
+> > + * PERF_BENCH means that this file is included from
+> > + * the source files under tools/perf/ for benchmark programs.
+> > + *
+> > + * You don't have to care about PERF_BENCH when
+> > + * you are working on the kernel.
+> > + */
+> > +
+> > +#ifndef PERF_BENCH
 > 
-> In patch v1 Jan Kiszka suggested to fill reserved fields with zeros
-> instead of memset'ting the whole struct.  It makes sense as these
-> fields are explicitly marked as padding.  No more fields need zeroing.
-> 
-> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-> ---
-> arch/powerpc/kvm/powerpc.c |    2 ++
-> 1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/powerpc/kvm/powerpc.c b/arch/powerpc/kvm/powerpc.c
-> index 2f87a16..5962336 100644
-> --- a/arch/powerpc/kvm/powerpc.c
-> +++ b/arch/powerpc/kvm/powerpc.c
-> @@ -604,6 +604,8 @@ static int kvm_vm_ioctl_get_pvinfo(struct kvm_ppc_pvinfo *pvinfo)
-> 	pvinfo->hcall[1] = inst_ori | (KVM_SC_MAGIC_R0 & inst_imm_mask);
-> 	pvinfo->hcall[2] = inst_sc;
-> 	pvinfo->hcall[3] = inst_nop;
-> +	pvinfo->flags = 0;
-> +	memset(&pvinfo->pad, 0, sizeof(pvinfo->pad));
+> I don't like littering the actual kernel code with tools/perf/
+> ifdeffery..
 
-This should only be memset(pvinfo->pad), no? It's an array after all which automatically translates to a pointer when referenced.
 
-Alex
+Yeah - could we somehow accept that file into a perf build as-is?
 
+Thanks,
+
+	Ingo
