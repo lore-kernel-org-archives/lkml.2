@@ -1,73 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754632Ab0J3PqR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 11:46:17 -0400
-Received: from fmmailgate03.web.de ([217.72.192.234]:34758 "EHLO
-	fmmailgate03.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753217Ab0J3PqQ (ORCPT
+	id S1754722Ab0J3QA3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 12:00:29 -0400
+Received: from ws1.ithb.melsa.net.id ([202.138.229.34]:46395 "EHLO
+	mail.ithb.ac.id" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752765Ab0J3QA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 11:46:16 -0400
-Message-ID: <4CCC3DC2.6090505@web.de>
-Date: Sat, 30 Oct 2010 17:46:10 +0200
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	Sat, 30 Oct 2010 12:00:26 -0400
+X-Greylist: delayed 23473 seconds by postgrey-1.27 at vger.kernel.org; Sat, 30 Oct 2010 12:00:25 EDT
+Message-ID: <03e34fe06174dddc02f9c74b7a03035b.squirrel@mail.ithb.ac.id>
+Date: Sat, 30 Oct 2010 15:27:52 +0800 (HKT)
+Subject: Apply For A Guaranteed Loan
+From: "VIVA 48hrs FINANCE LOAN" <v.lendersfinancedesk100@gmail.com>
+Reply-To: v.v.financerdesk25@gmail.com
+User-Agent: SquirrelMail/1.4.17-1.fc8
 MIME-Version: 1.0
-To: Vasiliy Kulikov <segooon@gmail.com>
-CC: kernel-janitors@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] x86: kvm: fix information leak to userland
-References: <1288447871-7715-1-git-send-email-segooon@gmail.com> <4CCC2D11.7090109@web.de> <20101030153147.GA14169@albatros>
-In-Reply-To: <20101030153147.GA14169@albatros>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig6C14A3F8D8FA9A6FABCF3241"
-X-Provags-ID: V01U2FsdGVkX19p2xq+uRvndoz/kSl6IpElq4IJCXylnGZ2R5XT
-	dg/7cqwlfzb8DlhhkdY8HX+xRVg69iKf0IFWdnxHmKF+IZ5P5a
-	8Bo19SA8A=
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig6C14A3F8D8FA9A6FABCF3241
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
 
-Am 30.10.2010 17:31, Vasiliy Kulikov wrote:
-> On Sat, Oct 30, 2010 at 16:34 +0200, Jan Kiszka wrote:
->> Am 30.10.2010 16:11, Vasiliy Kulikov wrote:
->>> Structure kvm_ppc_pvinfo is copied to userland with pad field
->>> unitialized.  Structure kvm_clock_data is copied to userland with
->>> flags and pad fields unitialized.  It leads to leaking of contents
->>> of kernel stack memory.
->>
->> This description only partially matches your patch, please fix.
->=20
-> What do you mean?  Two structures are copied with some fields with old
-> stack values.  Smth valuable else?
+VIVA 48hrs FINANCE LOAN
+5 Churchill Place,
+London, E14 5HP.
+Tel:+447024019643
 
-I mean you aren't touching ppc code in this patch, but you are fixing
-more than just the kvm_clock interface.
+Attention,
 
-Jan
+We are currently giving out loans to any part of the world
 
+at 2% interest rate. If interested, send your name, Resident
 
---------------enig6C14A3F8D8FA9A6FABCF3241
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+country and Phone number to Mr. Mayson Scout with the email
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.15 (GNU/Linux)
-Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
+address bellow Email:
+ viva.financeloandesk90@gmail.com .or call: +447024019643
 
-iEYEARECAAYFAkzMPcUACgkQitSsb3rl5xQ8JgCfZqJQnjleqkRU2Zn/6GL8X12C
-InAAn2okk5zxAEp1qFMw6wOEL8o2oCy/
-=lQYE
------END PGP SIGNATURE-----
-
---------------enig6C14A3F8D8FA9A6FABCF3241--
+Regards
+Mr. Mayson Scout
+C.E.O
+VIVA 48hrs FINANCE LOAN
