@@ -1,87 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752430Ab0J3IMV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 04:12:21 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:52253 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906Ab0J3IMQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 04:12:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=gPGQg3YF879Q7TFhMTRlMlw5su+oIztfZQ+iawPODPV6wxZTnuXPW78FqrRL7EKHnz
-         YtXEn4vWh4cDAQmEAnx6qqsyLJ7ZcmFZEB00BiAoHmtsQyFd2kCJmFDg+J/Ft/4dKONJ
-         P4DarO4mIYL0dl8JEPlgyTYt1FLWompW19NPY=
+	id S1752462Ab0J3IQm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 04:16:42 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46477 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752266Ab0J3IQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 04:16:40 -0400
+Date: Sat, 30 Oct 2010 08:16:01 GMT
+From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        peterz@infradead.org, tglx@linutronix.de, viro@zeniv.linux.org.uk,
+        hch@infradead.org
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, viro@zeniv.linux.org.uk,
+        hch@infradead.org
+In-Reply-To: <20100907125056.228874895@linutronix.de>
+References: <20100907125056.228874895@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/locking] hpfs: Convert sbi->hpfs_creation_de to mutex
+Message-ID: <tip-117bf5fbdbdc7a5394e5718b3354238961c83067@git.kernel.org>
+Git-Commit-ID: 117bf5fbdbdc7a5394e5718b3354238961c83067
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimE=uzwhDMz_-jVWKyb9NAONGuVvVo5KbjkkZVu@mail.gmail.com>
-References: <4CCBC8B1.2080808@in.ibm.com>
-	<AANLkTimE=uzwhDMz_-jVWKyb9NAONGuVvVo5KbjkkZVu@mail.gmail.com>
-Date: Sat, 30 Oct 2010 16:12:15 +0800
-Message-ID: <AANLkTikXAde1yLZkB80GOjWu-sFZAvv0SL566rWssD1k@mail.gmail.com>
-Subject: Re: [s390] 2.6.36-git14 build break - fs/compat.c :631
- (PAGE_CACHE_MASK undeclared)
-From: wu zhangjin <wuzhangjin@gmail.com>
-To: Sachin Sant <sachinp@in.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-s390@vger.kernel.org,
-        linux-mips <linux-mips@linux-mips.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 30 Oct 2010 08:16:02 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Seems Linus added that patch, add him in this loop)
+Commit-ID:  117bf5fbdbdc7a5394e5718b3354238961c83067
+Gitweb:     http://git.kernel.org/tip/117bf5fbdbdc7a5394e5718b3354238961c83067
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Tue, 7 Sep 2010 14:32:56 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Sat, 30 Oct 2010 10:12:03 +0200
 
-On Sat, Oct 30, 2010 at 4:01 PM, wu zhangjin <wuzhangjin@gmail.com> wrote:
-> The same problem on MIPS.
->
-> Perhaps this can help:
->
-> $ git diff
-> diff --git a/fs/compat.c b/fs/compat.c
-> index ff66c0d..c580c32 100644
-> --- a/fs/compat.c
-> +++ b/fs/compat.c
-> @@ -49,6 +49,7 @@
->  #include <linux/eventpoll.h>
->  #include <linux/fs_struct.h>
->  #include <linux/slab.h>
-> +#include <linux/pagemap.h>
->
->  #include <asm/uaccess.h>
->  #include <asm/mmu_context.h>
->
-> I'm not sure if this is a good fixup, because the problem is
-> introduced by MAX_RW_COUNT defined in include/linux/fs.h:
->
-> #define MAX_RW_COUNT (INT_MAX & PAGE_CACHE_MASK)
->
-> and the PAGE_CACHE_MASK is defined in pagemap.h, we may be possible to
-> add <linux/pagemap.h> in include/linux/fs.h but pagemap.h has included
-> <linux/fs.h> too ...
->
-> Regards,
-> Wu Zhangjin
->
-> On Sat, Oct 30, 2010 at 3:26 PM, Sachin Sant <sachinp@in.ibm.com> wrote:
->> Latest 2.6.36 git [commit 44234d0c46...] fails to build on s390x with
->> following error :
->>
->> fs/compat.c: In function compat_rw_copy_check_uvector:
->> fs/compat.c:631: error: PAGE_CACHE_MASK undeclared (first use in this
->> function)
->> fs/compat.c:631: error: (Each undeclared identifier is reported only once
->> fs/compat.c:631: error: for each function it appears in.)
->> make[1]: *** [fs/compat.o] Error 1
->>
->> The code in question was added via following commit:
->>
->> commit 435f49a518c78eec8e2edbbadd912737246cbe20
->> readv/writev: do the same MAX_RW_COUNT truncation that read/write does
->>
->> Thanks
->> -Sachin
->
+hpfs: Convert sbi->hpfs_creation_de to mutex
+
+sbi->hpfs_creation_de is used as mutex so make it a mutex.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Christoph Hellwig <hch@infradead.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org
+LKML-Reference: <20100907125056.228874895@linutronix.de>
+
+---
+ fs/hpfs/buffer.c  |    4 ++--
+ fs/hpfs/hpfs_fn.h |    2 +-
+ fs/hpfs/super.c   |    2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/fs/hpfs/buffer.c b/fs/hpfs/buffer.c
+index eac5f96..793cb9d 100644
+--- a/fs/hpfs/buffer.c
++++ b/fs/hpfs/buffer.c
+@@ -14,7 +14,7 @@ void hpfs_lock_creation(struct super_block *s)
+ #ifdef DEBUG_LOCKS
+ 	printk("lock creation\n");
+ #endif
+-	down(&hpfs_sb(s)->hpfs_creation_de);
++	mutex_lock(&hpfs_sb(s)->hpfs_creation_de);
+ }
+ 
+ void hpfs_unlock_creation(struct super_block *s)
+@@ -22,7 +22,7 @@ void hpfs_unlock_creation(struct super_block *s)
+ #ifdef DEBUG_LOCKS
+ 	printk("unlock creation\n");
+ #endif
+-	up(&hpfs_sb(s)->hpfs_creation_de);
++	mutex_unlock(&hpfs_sb(s)->hpfs_creation_de);
+ }
+ 
+ /* Map a sector into a buffer and return pointers to it and to the buffer. */
+diff --git a/fs/hpfs/hpfs_fn.h b/fs/hpfs/hpfs_fn.h
+index b59eac0..2fee17d 100644
+--- a/fs/hpfs/hpfs_fn.h
++++ b/fs/hpfs/hpfs_fn.h
+@@ -87,7 +87,7 @@ struct hpfs_sb_info {
+ 	unsigned *sb_bmp_dir;		/* main bitmap directory */
+ 	unsigned sb_c_bitmap;		/* current bitmap */
+ 	unsigned sb_max_fwd_alloc;	/* max forwad allocation */
+-	struct semaphore hpfs_creation_de; /* when creating dirents, nobody else
++	struct mutex hpfs_creation_de;	/* when creating dirents, nobody else
+ 					   can alloc blocks */
+ 	/*unsigned sb_mounting : 1;*/
+ 	int sb_timeshift;
+diff --git a/fs/hpfs/super.c b/fs/hpfs/super.c
+index c969a1a..18e1d45 100644
+--- a/fs/hpfs/super.c
++++ b/fs/hpfs/super.c
+@@ -491,7 +491,7 @@ static int hpfs_fill_super(struct super_block *s, void *options, int silent)
+ 	sbi->sb_bmp_dir = NULL;
+ 	sbi->sb_cp_table = NULL;
+ 
+-	init_MUTEX(&sbi->hpfs_creation_de);
++	mutex_init(&sbi->hpfs_creation_de);
+ 
+ 	uid = current_uid();
+ 	gid = current_gid();
