@@ -1,70 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755263Ab0J3Sig (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 14:38:36 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:29417 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736Ab0J3Sie (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 14:38:34 -0400
-Date: Sat, 30 Oct 2010 20:28:17 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: kvm@vger.kernel.org
-cc: Avi Kivity <avi@redhat.com>, Avi Kivity <avi@qumranet.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Yaniv Kamay <yaniv@qumranet.com>, Amit Shah <amit.shah@qumranet.com>,
-        Ben-Ami Yassour <benami@il.ibm.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] KVM x86: remove memset, use vzalloc and don't assign the
- same value to a variable twice
-Message-ID: <alpine.LNX.2.00.1010302020150.1572@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752174Ab0J3SoP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 14:44:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42213 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751276Ab0J3SoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 14:44:13 -0400
+Subject: [GIT PULL] notification tree
+From: Eric Paris <eparis@redhat.com>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 30 Oct 2010 14:43:35 -0400
+Message-ID: <1288464215.3017.34.camel@localhost.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The notification tree has patches to address a number of fanotify
+complaints from last cycle.  The most important being the (ABI
+compatible) addition of 'classes' which will allow things like
+hierarchical storage managers to receive events before scanners or
+indexers.  It also includes default limits on the amount of memory an
+fanotify listener can consume and other minor changes.  An updated
+example program which makes use of most all of the fanotify feature set
+can be found at
 
-We can improve kvm_vm_ioctl_get_dirty_log() slightly by using vzalloc() 
-rather than first allocating and then manually zero the memory with 
-memset(). Also, while I was looking at this I noticed that we assign 
--ENOMEM to the 'r' variable twice even though none of the code inbetween 
-the two assignments can change 'r', so I removed the second assignment.
+http://git.infradead.org/users/eparis/fanotify-example.git
 
-Patch has been compile tested only.
-
-Please consider merging and please CC me on all replies as I'm not 
-subscribed to the kvm mailing list.
-
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- x86.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 2288ad8..29f9c0a 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -3174,12 +3174,10 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
- 		spin_unlock(&kvm->mmu_lock);
- 
- 		r = -ENOMEM;
--		dirty_bitmap = vmalloc(n);
-+		dirty_bitmap = vzalloc(n);
- 		if (!dirty_bitmap)
- 			goto out;
--		memset(dirty_bitmap, 0, n);
- 
--		r = -ENOMEM;
- 		slots = kzalloc(sizeof(struct kvm_memslots), GFP_KERNEL);
- 		if (!slots) {
- 			vfree(dirty_bitmap);
+The following changes since commit 2d10d8737ccdba752d60106abbc6ed4f37404923:
 
+  Merge branches 'x86-fixes-for-linus' and 'x86-uv-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip (2010-10-29 18:58:00 -0700)
 
--- 
-Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-Plain text mails only, please      http://www.expita.com/nomime.html
-Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
+are available in the git repository at:
+
+  git://git.infradead.org/users/eparis/notify.git for-linus
+
+Andrew Morton (1):
+      fs/notify/fanotify/fanotify_user.c: fix warnings
+
+Eric Paris (17):
+      fanotify: allow fanotify to be built
+      fsnotify: implement ordering between notifiers
+      fanotify: implement fanotify listener ordering
+      fanotify: use __aligned_u64 in fanotify userspace metadata
+      fsnotify: correctly handle return codes from listeners
+      fsnotify: call fsnotify_parent in perm events
+      fanotify: allow userspace to flush all marks
+      fanotify: ignore fanotify ignore marks if open writers
+      fsnotify: implement a default maximum queue depth
+      fanotify: allow userspace to override max queue depth
+      fanotify: limit the number of marks in a single fanotify group
+      fanotify: allow userspace to override max marks
+      fanotify: limit number of listeners per user
+      fanotify: do not send events for irregular files
+      fsnotify: rename FS_IN_ISDIR to FS_ISDIR
+      fanotify: ignore events on directories unless specifically requested
+      fanotify: do not recalculate the mask if the ignored mask changed
+
+Lino Sanfilippo (2):
+      make fanotify_read() restartable across signals
+      Ensure FMODE_NONOTIFY is not set by userspace
+
+Richard Kennedy (1):
+      fsnotify: remove alignment padding from fsnotify_mark on 64 bit builds
+
+Stefan Hajnoczi (1):
+      fanotify: Fix FAN_CLOSE comments
+
+ fs/notify/Kconfig                  |    2 +-
+ fs/notify/fanotify/fanotify.c      |   27 ++++++++--
+ fs/notify/fanotify/fanotify_user.c |   98 +++++++++++++++++++++++++++++++++---
+ fs/notify/fsnotify.c               |   35 ++++++++-----
+ fs/notify/inode_mark.c             |    9 +++-
+ fs/notify/inotify/inotify_user.c   |    2 +-
+ fs/notify/vfsmount_mark.c          |    6 ++-
+ include/linux/Kbuild               |    1 +
+ include/linux/fanotify.h           |   36 ++++++++++---
+ include/linux/fsnotify.h           |   38 ++++++++------
+ include/linux/fsnotify_backend.h   |   26 +++++++--
+ include/linux/sched.h              |    3 +
+ 12 files changed, 219 insertions(+), 64 deletions(-)
 
