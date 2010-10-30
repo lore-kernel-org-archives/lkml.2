@@ -1,64 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176Ab0J3JE5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 05:04:57 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:37337 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752859Ab0J3JEi (ORCPT
+	id S1752975Ab0J3JGt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 05:06:49 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54158 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752586Ab0J3JGr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 05:04:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=MnGkucGmJpXbKmPEcUQWMOinwA42desOXJdZhEa0PbliPNhv5zjtjoIxFwaLWeHGic
-         QqscgRvTubNefLtple25YvI/zPZWXyimNRXRVmK6M6XuENvbmIyjc8iFDDm3taj0J8EI
-         /vJJUkuCPSEWc0grqzXz2KEOfy+WhRx0kkim4=
-From: Vasiliy Kulikov <segooon@gmail.com>
-To: kernel-janitors@vger.kernel.org
-Cc: Karsten Keil <isdn@linux-pingi.de>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-        Eric Paris <eparis@redhat.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] isdn: mISDN: socket: fix information leak to userland
-Date: Sat, 30 Oct 2010 13:04:33 +0400
-Message-Id: <1288429473-21864-1-git-send-email-segooon@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Sat, 30 Oct 2010 05:06:47 -0400
+Date: Sat, 30 Oct 2010 10:06:44 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Vasiliy Kulikov <segooon@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Helge Deller <deller@gmx.de>, David Howells <dhowells@redhat.com>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipc: shm: fix information leak to userland
+Message-ID: <20101030090644.GX19804@ZenIV.linux.org.uk>
+References: <1288429477-21920-1-git-send-email-segooon@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288429477-21920-1-git-send-email-segooon@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Structure mISDN_devinfo is copied to userland with the field "name"
-that has the last elements unitialized.  It leads to leaking of
-contents of kernel stack memory.
-
-Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
----
- Compile tested.
-
- drivers/isdn/mISDN/socket.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/isdn/mISDN/socket.c b/drivers/isdn/mISDN/socket.c
-index 3232206..7446d8b 100644
---- a/drivers/isdn/mISDN/socket.c
-+++ b/drivers/isdn/mISDN/socket.c
-@@ -392,6 +392,7 @@ data_sock_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)
- 		if (dev) {
- 			struct mISDN_devinfo di;
+On Sat, Oct 30, 2010 at 01:04:37PM +0400, Vasiliy Kulikov wrote:
+> Structure shmid_ds is copied to userland with shm_unused{,2,3}
+> fields unitialized.  It leads to leaking of contents of kernel stack memory.
  
-+			memset(&di, 0, sizeof(di));
- 			di.id = dev->id;
- 			di.Dprotocols = dev->Dprotocols;
- 			di.Bprotocols = dev->Bprotocols | get_all_Bprotocols();
-@@ -672,6 +673,7 @@ base_sock_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)
- 		if (dev) {
- 			struct mISDN_devinfo di;
- 
-+			memset(&di, 0, sizeof(di));
- 			di.id = dev->id;
- 			di.Dprotocols = dev->Dprotocols;
- 			di.Bprotocols = dev->Bprotocols | get_all_Bprotocols();
--- 
-1.7.0.4
-
+ACK; send to Linus and add Cc: stable@kernel.org
