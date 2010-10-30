@@ -1,34 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751500Ab0J3Fvi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 01:51:38 -0400
-Received: from exchange.portmed.org ([198.60.225.2]:6873 "EHLO
-	exchange.portmed.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004Ab0J3Fvh convert rfc822-to-8bit (ORCPT
+	id S1751480Ab0J3F5o (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 01:57:44 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:41823 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124Ab0J3F5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 01:51:37 -0400
-X-Greylist: delayed 1349 seconds by postgrey-1.27 at vger.kernel.org; Sat, 30 Oct 2010 01:51:37 EDT
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Sat, 30 Oct 2010 01:57:43 -0400
+Date: Sat, 30 Oct 2010 06:57:37 +0100
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Andres Salomon <dilinger@queued.net>
+Cc: Mingkai Hu <Mingkai.hu@freescale.com>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
+Subject: Re: mtd: fix build error in m25p80.c
+Message-ID: <20101030055737.GA2456@angua.secretlab.ca>
+References: <20101029210419.70f99e96@queued.net>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Subject: End Of Year Promo
-Date: Fri, 29 Oct 2010 23:27:57 -0600
-Message-ID: <C368BD2F5199B844A749EAB9468DA32A09739679@pmcmail.portmed.org>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: End Of Year Promo
-Thread-Index: Act38y/tFe8+skPpTnWKivKNmg26+w==
-From: "Burke, Billie" <Billieb@portmed.org>
-To: <info@ca.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101029210419.70f99e96@queued.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Oct 29, 2010 at 09:04:19PM -0700, Andres Salomon wrote:
+> 
+> While building an x86 distro kernel, I hit the following:
+> 
+> Kernel: arch/x86/boot/bzImage is ready  (#7)
+> ERROR: "of_mtd_parse_partitions" [drivers/mtd/devices/m25p80.ko]
+> undefined!
+> 
+> of_mtd_parse_partitions is defined with MTD_OF_PARTS, and that's only
+> built on PPC and microblaze.  The code in question should be wrapped w/
+> a stricter #ifdef.
+> 
+> Signed-off-by: Andres Salomon <dilinger@queued.net>
+> ---
+>  drivers/mtd/devices/m25p80.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
+> index ea22520..184ddd5 100644
+> --- a/drivers/mtd/devices/m25p80.c
+> +++ b/drivers/mtd/devices/m25p80.c
+> @@ -924,7 +924,7 @@ static int __devinit m25p_probe(struct spi_device *spi)
+>  			nr_parts = data->nr_parts;
+>  		}
+>  
+> -#ifdef CONFIG_OF
+> +#ifdef CONFIG_MTD_OF_PARTS
+>  		if (nr_parts <= 0 && spi->dev.of_node) {
+>  			nr_parts = of_mtd_parse_partitions(&spi->dev,
+>  					spi->dev.of_node, &parts);
 
+True; but CONFIG_MTD_OF_PARTS should be built on all architectures
+when CONFIG_OF & CONFIG_MTD_PARTITIONS is set.  I'll craft a patch.
 
-Contact The Following Email:(agtbarry1@yahoo.com.hk)
-You Won £253,437.00 in this years Lotterys End of Year Promotion.To claim your prize. Send; Full Names, Address, Occupation ,Tel, Age, To Mr. Barret Brown Email:agtbarry1@yahoo.com.hk
-
+g.
