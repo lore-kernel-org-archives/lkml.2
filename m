@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958Ab0J3OA0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 10:00:26 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:60603 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142Ab0J3OAY (ORCPT
+	id S1753714Ab0J3OLU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 10:11:20 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:65375 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142Ab0J3OLR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 10:00:24 -0400
-X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=ygIiTo8ZIjQA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=xXoaG0mu6ZuicIMNSmoA:9 a=igzBPwQLflvVfqlNjD3qs1qxNWgA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 2/2] jump label: disable due to compiler bug
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, David Daney <ddaney@caviumnetworks.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Ingo Molnar <mingo@elte.hu>, Jason Baron <jbaron@redhat.com>,
-        rth@redhat.com, tglx@linutronix.de, roland@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
-        davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org,
-        tony@bakeyournoodle.com, dsd@laptop.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20101030074749.GB1721@basil.fritz.box>
-References: <20101029063450.GE29463@elte.hu>
-	 <1288354687.18238.433.camel@gandalf.stny.rr.com>
-	 <20101029122230.GA25663@elte.hu>
-	 <1288356418.18238.454.camel@gandalf.stny.rr.com>
-	 <20101029133524.GA23916@Krystal>
-	 <1288369108.29632.1.camel@gandalf.stny.rr.com>
-	 <4CCB01D1.2050004@caviumnetworks.com>
-	 <1288373582.29632.3.camel@gandalf.stny.rr.com> <4CCB2B7B.6020002@zytor.com>
-	 <1288385260.29632.24.camel@gandalf.stny.rr.com>
-	 <20101030074749.GB1721@basil.fritz.box>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Sat, 30 Oct 2010 10:00:19 -0400
-Message-ID: <1288447219.29632.53.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Sat, 30 Oct 2010 10:11:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=rQtnKWAZ49cK8lCQImkJ/ITCoz9t19NdCNTF0Yq3PmpGqvX3Fummwn3zcXg6chP9H+
+         1yIDhqaKyEdpmyUmtrg4TNpW1PGGXy3Fan33WA8+mLjFrLtQMK0Oqi7vI0heOCoR3mBW
+         wiDt5GA192f/vfenkAZAjAGlshYa3eO3b1NCE=
+From: Vasiliy Kulikov <segooon@gmail.com>
+To: kernel-janitors@vger.kernel.org
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] x86: kvm: fix information leak to userland
+Date: Sat, 30 Oct 2010 18:11:11 +0400
+Message-Id: <1288447871-7715-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-10-30 at 09:47 +0200, Andi Kleen wrote:
-> > Fine, but we can wait till 2.6.38 for that. For now we have a manual
-> > config option. I'm not changing it until I have 4.5.2 in my distcc farm
-> > and testing it out.
-> 
-> It's probably obvious, but a manual config option still breaks
-> the allyes|modconfig crowd.
+Structure kvm_ppc_pvinfo is copied to userland with pad field
+unitialized.  Structure kvm_clock_data is copied to userland with
+flags and pad fields unitialized.  It leads to leaking of contents
+of kernel stack memory.
 
-Enabling the config only adds the workaround which causes the kernel to
-be a bit bigger (adds -maccumulate-outgoing-args) and does not break the
-kernel. When we have the test, we wont need to add this workaround if
-the test passes.
+Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+---
+ I cannot compile this driver, so it is not tested at all.
 
-This is still a new feature, and until we are sure its safe, we should
-have it as an option.
+ As it is not compilable, I've missed and typed wrong var name in v1, sorry.
 
-There's lots of things in the kernel that will break with
-all{yes,mod}config. I know, because I keep hitting them with my
-randconfig tests.
+ arch/x86/kvm/x86.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-
--- Steve
-
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index b0818f6..261f3d0 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -2896,6 +2896,7 @@ long kvm_arch_vcpu_ioctl(struct file *filp,
+ 	case KVM_GET_DEBUGREGS: {
+ 		struct kvm_debugregs dbgregs;
+ 
++		memset(&dbgregs, 0, sizeof(dbgregs));
+ 		kvm_vcpu_ioctl_x86_get_debugregs(vcpu, &dbgregs);
+ 
+ 		r = -EFAULT;
+@@ -3481,11 +3482,11 @@ long kvm_arch_vm_ioctl(struct file *filp,
+ 		struct kvm_clock_data user_ns;
+ 		u64 now_ns;
+ 
++		memset(&user_ns, 0, sizeof(user_ns));
+ 		local_irq_disable();
+ 		now_ns = get_kernel_ns();
+ 		user_ns.clock = kvm->arch.kvmclock_offset + now_ns;
+ 		local_irq_enable();
+-		user_ns.flags = 0;
+ 
+ 		r = -EFAULT;
+ 		if (copy_to_user(argp, &user_ns, sizeof(user_ns)))
+-- 
+1.7.0.4
 
