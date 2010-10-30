@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab0J3VNM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 17:13:12 -0400
-Received: from mail.perches.com ([173.55.12.10]:3730 "EHLO mail.perches.com"
+	id S1753277Ab0J3VNg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 17:13:36 -0400
+Received: from mail.perches.com ([173.55.12.10]:3766 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752246Ab0J3VJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 17:09:40 -0400
+	id S1752200Ab0J3VJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 17:09:39 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Tomi Valkeinen <tomi.valkeinen@nokia.com>, linux-omap@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 23/39] drivers/video/omap2/dss: Update WARN uses
-Date: Sat, 30 Oct 2010 14:08:40 -0700
-Message-Id: <3dffcda8949a6625985223b6fbf18815b93646d7.1288471898.git.joe@perches.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 21/39] drivers/staging: Update WARN uses
+Date: Sat, 30 Oct 2010 14:08:38 -0700
+Message-Id: <8312f0d8caf92953b08390be149a9c0ac49ad516.1288471898.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <cover.1288471897.git.joe@perches.com>
 References: <cover.1288471897.git.joe@perches.com>
@@ -20,28 +20,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing initial argument.
-Coalesce long formats.
+Add missing newlines.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/video/omap2/dss/core.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ drivers/staging/memrar/memrar_allocator.c    |    2 +-
+ drivers/staging/solo6x10/solo6010-v4l2-enc.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/video/omap2/dss/core.c b/drivers/video/omap2/dss/core.c
-index 8e89f60..2a98237 100644
---- a/drivers/video/omap2/dss/core.c
-+++ b/drivers/video/omap2/dss/core.c
-@@ -867,8 +867,7 @@ static void reset_device(struct device *dev, int check)
- 		dev->platform_data = NULL;
- 		while (dev_p < dev_end) {
- 			if (*dev_p) {
--				WARN("%s: struct device fields will be "
--						"discarded\n",
-+				WARN(1, "%s: struct device fields will be discarded\n",
- 				     __func__);
- 				break;
- 			}
+diff --git a/drivers/staging/memrar/memrar_allocator.c b/drivers/staging/memrar/memrar_allocator.c
+index a4f8c58..705bde8 100644
+--- a/drivers/staging/memrar/memrar_allocator.c
++++ b/drivers/staging/memrar/memrar_allocator.c
+@@ -74,7 +74,7 @@ struct memrar_allocator *memrar_create_allocator(unsigned long base,
+ 	 * and issue a diagnostic.
+ 	 */
+ 	WARN(capacity < block_size * 2,
+-	     "memrar: Only one block available to allocator.\n");
++	     "memrar: Only one block available to allocator\n");
+ 
+ 	allocator = kmalloc(sizeof(*allocator), GFP_KERNEL);
+ 
+diff --git a/drivers/staging/solo6x10/solo6010-v4l2-enc.c b/drivers/staging/solo6x10/solo6010-v4l2-enc.c
+index bbf3d9c..f73567d 100644
+--- a/drivers/staging/solo6x10/solo6010-v4l2-enc.c
++++ b/drivers/staging/solo6x10/solo6010-v4l2-enc.c
+@@ -184,7 +184,7 @@ static void solo_update_mode(struct solo_enc_dev *solo_enc)
+ 		solo_enc->bw_weight <<= 2;
+ 		break;
+ 	default:
+-		WARN(1, "mode is unknown");
++		WARN(1, "mode is unknown\n");
+ 	}
+ }
+ 
 -- 
 1.7.3.1.g432b3.dirty
 
