@@ -1,58 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493Ab0J3Lsc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 07:48:32 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:33375 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751664Ab0J3Ls3 (ORCPT
+	id S1753407Ab0J3MGa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 08:06:30 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:37356 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751274Ab0J3MG1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 07:48:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=U7yGcwNDo0QFMS2AyELHyz/6Or2rFl2mNS4tSTaCoiJme7sGw2Qkfads77ITj1fiFz
-         Z+SRUMaUjFAAWMkQJ7MlGymxBOCEB9o8nIaOHbSUOzVqJlhAoc1p67QiqKzRFBFTiI8u
-         Jf6V9T2hpG44fUvw3MqzybrD+q3nO+pg1KtYQ=
+	Sat, 30 Oct 2010 08:06:27 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Benny =?iso-8859-1?q?Sj=F6strand?= <benny@hostmobility.com>
+Subject: Re: [PATCH] cs46xx memory management fixes for cs46xx_dsp_spos_create() - make sure we free and don't do pointless work.
+Date: Sat, 30 Oct 2010 14:06:07 +0200
+User-Agent: KMail/1.9.10
+Cc: Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org
+References: <alpine.LNX.2.00.1010292242080.24561@swampdragon.chaosbits.net> <4CCB4851.7080701@hostmobility.com>
+In-Reply-To: <4CCB4851.7080701@hostmobility.com>
 MIME-Version: 1.0
-Date: Sat, 30 Oct 2010 13:48:28 +0200
-Message-ID: <AANLkTik41vfVn6K0UDYfoCK7O8j2UHsqhGNdbVckt-PA@mail.gmail.com>
-Subject: A couple of Kconfig warnings
-From: Fabio Comolli <fabio.comolli@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+Message-Id: <201010301406.12961.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just pulled Linus' tree.
+On Saturday 30 October 2010 00:18:57 Benny Sjöstrand wrote:
+> Hello again!
+>
+> Just doing a reply-all.
+> It's has been many years since I did anything to the cs46xx driver, so
+> I'm wondering
+> if there's anyone out there still using a cs46xx sound card?
+> I think the changes look's correct, but I can't test it, I do not have a
+> cs46xx hardware anymore.
 
-warning: (BT_HIDP && NET && BT && BT_L2CAP && INPUT || USB_HID &&
-HID_SUPPORT && USB && INPUT) selects HID which has unmet direct
-dependencies (HID_SUPPORT && INPUT)
+Sure, there are many of these cards "out there". I just got a "new" Terratec 
+DMX Xfire 1024 (CS4624). I'll test the patch.
 
-warning: (SFC && NETDEVICES && NETDEV_10000 && PCI && INET || I2C_VIA
-&& I2C && PCI && EXPERIMENTAL || I2C_HYDRA && I2C && PCI && PPC_CHRP
-&& EXPERIMENTAL || I2C_GPIO && I2C && GENERIC_GPIO || I2C_IXP2000 &&
-I2C && ARCH_IXP2000 || I2C_SIMTEC && I2C || I2C_VERSATILE && I2C &&
-(ARCH_VERSATILE || ARCH_REALVIEW || ARCH_VEXPRESS) || I2C_PARPORT &&
-I2C && PARPORT || I2C_PARPORT_LIGHT && I2C || I2C_ACORN && I2C &&
-ARCH_ACORN || SCx200_I2C && I2C && SCx200_GPIO || VIDEO_BT848 &&
-MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_DEV && PCI && I2C &&
-VIDEO_V4L2 && INPUT && VIDEO_IR || VIDEO_CX88 && MEDIA_SUPPORT &&
-VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && VIDEO_DEV && PCI && I2C &&
-INPUT && VIDEO_IR || VIDEO_CX23885 && MEDIA_SUPPORT &&
-VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && DVB_CORE && VIDEO_DEV && PCI &&
-I2C && INPUT && IR_CORE || VIDEO_AU0828 && MEDIA_SUPPORT &&
-VIDEO_CAPTURE_DRIVERS && I2C && INPUT && DVB_CORE && USB && VIDEO_V4L2
-|| VIDEO_IVTV && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2
-&& PCI && I2C && INPUT && VIDEO_IR || VIDEO_CX18 && MEDIA_SUPPORT &&
-VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && DVB_CORE && PCI && I2C &&
-EXPERIMENTAL && INPUT && VIDEO_IR || VIDEO_SAA7164 && MEDIA_SUPPORT &&
-VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && DVB_CORE && PCI && I2C ||
-DVB_PLUTO2 && MEDIA_SUPPORT && DVB_CAPTURE_DRIVERS && DVB_CORE && PCI
-&& I2C || DRM && HAS_IOMEM && (AGP || AGP=n) && !EMULATED_CMPXCHG &&
-MMU || FB_DDC && HAS_IOMEM && FB || FB_VIA && HAS_IOMEM && FB && PCI
-&& X86 || VIDEO_CX25821 && STAGING && !STAGING_EXCLUDE_BUILD &&
-DVB_CORE && VIDEO_DEV && PCI && I2C && INPUT && BKL && VIDEO_IR)
-selects I2C_ALGOBIT which has unmet direct dependencies (I2C &&
-I2C_HELPER_AUTO)
+>
+> /Benny
+>
+> Jesper Juhl wrote:
+> > Hi,
+> >
+> > When reading through sound/pci/cs46xx/dsp_spos.c I noticed a couple of
+> > things in cs46xx_dsp_spos_create().
+> >
+> > It seems to me that we don't always free the various memory buffers we
+> > allocate and we also do some work (structure member assignment) early,
+> > that is completely pointless if some of the memory allocations fail and
+> > we end up just aborting the whole thing.
+> >
+> > I don't have hardware to test, so the patch below is compile tested only,
+> > but it makes the following changes:
+> >
+> > - Make sure we always free all allocated memory on failures.
+> > - Don't do pointless work assigning to structure members before we know
+> >   all memory allocations, that may abort progress, have completed
+> >   successfully.
+> > - Remove some trailing whitespace.
+> >
+> > If it looks ok, please merge, otherwise I'd be interested in knowing
+> > what's wrong so I can improve it.
+> >
+> >
+> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > ---
+> >  dsp_spos.c |   33 +++++++++++----------------------
+> >  1 file changed, 11 insertions(+), 22 deletions(-)
+> >
+> > diff --git a/sound/pci/cs46xx/dsp_spos.c b/sound/pci/cs46xx/dsp_spos.c
+> > index 3e5ca8f..e377287 100644
+> > --- a/sound/pci/cs46xx/dsp_spos.c
+> > +++ b/sound/pci/cs46xx/dsp_spos.c
+> > @@ -225,39 +225,25 @@ struct dsp_spos_instance *cs46xx_dsp_spos_create
+> > (struct snd_cs46xx * chip) {
+> >  	struct dsp_spos_instance * ins = kzalloc(sizeof(struct
+> > dsp_spos_instance), GFP_KERNEL);
+> >
+> > -	if (ins == NULL)
+> > +	if (ins == NULL)
+> >  		return NULL;
+> >
+> >  	/* better to use vmalloc for this big table */
+> > -	ins->symbol_table.nsymbols = 0;
+> >  	ins->symbol_table.symbols = vmalloc(sizeof(struct dsp_symbol_entry) *
+> >  					    DSP_MAX_SYMBOLS);
+> > -	ins->symbol_table.highest_frag_index = 0;
+> > -
+> > -	if (ins->symbol_table.symbols == NULL) {
+> > +	ins->code.data = kmalloc(DSP_CODE_BYTE_SIZE, GFP_KERNEL);
+> > +	ins->modules = kmalloc(sizeof(struct dsp_module_desc) *
+> > DSP_MAX_MODULES, GFP_KERNEL); +	if (!ins->symbol_table.symbols ||
+> > !ins->code.data || !ins->modules) { cs46xx_dsp_spos_destroy(chip);
+> >  		goto error;
+> >  	}
+> > -
+> > +	ins->symbol_table.nsymbols = 0;
+> > +	ins->symbol_table.highest_frag_index = 0;
+> >  	ins->code.offset = 0;
+> >  	ins->code.size = 0;
+> > -	ins->code.data = kmalloc(DSP_CODE_BYTE_SIZE, GFP_KERNEL);
+> > -
+> > -	if (ins->code.data == NULL) {
+> > -		cs46xx_dsp_spos_destroy(chip);
+> > -		goto error;
+> > -	}
+> > -
+> >  	ins->nscb = 0;
+> >  	ins->ntask = 0;
+> > -
+> >  	ins->nmodules = 0;
+> > -	ins->modules = kmalloc(sizeof(struct dsp_module_desc) *
+> > DSP_MAX_MODULES, GFP_KERNEL); -
+> > -	if (ins->modules == NULL) {
+> > -		cs46xx_dsp_spos_destroy(chip);
+> > -		goto error;
+> > -	}
+> >
+> >  	/* default SPDIF input sample rate
+> >  	   to 48000 khz */
+> > @@ -271,8 +257,8 @@ struct dsp_spos_instance *cs46xx_dsp_spos_create
+> > (struct snd_cs46xx * chip)
+> >
+> >  	/* set left and right validity bits and
+> >  	   default channel status */
+> > -	ins->spdif_csuv_default =
+> > -		ins->spdif_csuv_stream =
+> > +	ins->spdif_csuv_default =
+> > +		ins->spdif_csuv_stream =
+> >  	 /* byte 0 */  ((unsigned int)_wrap_all_bits( 
+> > (SNDRV_PCM_DEFAULT_CON_SPDIF        & 0xff)) << 24) | /* byte 1 */ 
+> > ((unsigned int)_wrap_all_bits( ((SNDRV_PCM_DEFAULT_CON_SPDIF >> 8) &
+> > 0xff)) << 16) | /* byte 3 */   (unsigned int)_wrap_all_bits( 
+> > (SNDRV_PCM_DEFAULT_CON_SPDIF >> 24) & 0xff) | @@ -281,6 +267,9 @@ struct
+> > dsp_spos_instance *cs46xx_dsp_spos_create (struct snd_cs46xx * chip)
+> > return ins;
+> >
+> >  error:
+> > +	kfree(ins->modules);
+> > +	kfree(ins->code.data);
+> > +	vfree(ins->symbol_table.symbols);
+> >  	kfree(ins);
+> >  	return NULL;
+> >  }
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
+-- 
+Ondrej Zary
