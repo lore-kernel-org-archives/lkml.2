@@ -1,110 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154Ab0J3Jxu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 05:53:50 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:48740 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751967Ab0J3Jxr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 05:53:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=CTgKJpI2NMRuTtWys4mYoiL/Hqxc5pgEtSfOQWCIdrxZC9B9k/3gFFvxXWCcXOapJI
-         RVnYJQbMbFxkgRrhlcTKA/IhTv2zNtq8KmcgMcNIVlDZ/zYoUlGwDXETHkfnw3WE6XzH
-         5jfxynvMaolibmeCqdgUzTj7Mqk9jrNrXv//s=
-Subject: [PATCH] af_unix: optimize unix_dgram_poll()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Davide Libenzi <davidel@xmailserver.org>
-Cc: Alban Crequy <alban.crequy@collabora.co.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>, netdev@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Pauli Nieminen <pauli.nieminen@collabora.co.uk>,
-        Rainer Weikusat <rweikusat@mssgmbh.com>
-In-Reply-To: <alpine.DEB.2.00.1010291339180.8517@davide-lnx1>
-References: <20101029191857.5f789d56@chocolatine.cbg.collabora.co.uk>
-	 <1288380431.2680.3.camel@edumazet-laptop>
-	 <alpine.DEB.2.00.1010291306390.8517@davide-lnx1>
-	 <alpine.DEB.2.00.1010291339180.8517@davide-lnx1>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 30 Oct 2010 11:53:40 +0200
-Message-ID: <1288432420.2680.933.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1753113Ab0J3KQi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 06:16:38 -0400
+Received: from hera.kernel.org ([140.211.167.34]:44015 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751967Ab0J3KQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 06:16:36 -0400
+Date: Sat, 30 Oct 2010 10:16:15 GMT
+From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        gregkh@suse.de, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        gregkh@suse.de, tglx@linutronix.de
+In-Reply-To: <20100907125057.278833764@linutronix.de>
+References: <20100907125057.278833764@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/locking] staging: Final semaphore cleanup
+Message-ID: <tip-45f4d0243525b6bc747c946937ced437b135a84d@git.kernel.org>
+Git-Commit-ID: 45f4d0243525b6bc747c946937ced437b135a84d
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 30 Oct 2010 10:16:16 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 29 octobre 2010 à 13:46 -0700, Davide Libenzi a écrit :
+Commit-ID:  45f4d0243525b6bc747c946937ced437b135a84d
+Gitweb:     http://git.kernel.org/tip/45f4d0243525b6bc747c946937ced437b135a84d
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Sat, 30 Oct 2010 11:06:57 +0200
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Sat, 30 Oct 2010 12:12:50 +0200
 
-> Also, why not using the existing wait->key instead of adding a poll2()?
+staging: Final semaphore cleanup
 
-Indeed, if wait is not null, we have in wait->key the interest of
-poller. If a particular poll() function is expensive, it can test these
-bits.
+Fixup the last remaining users of DECLARE_MUTEX and init_MUTEX.
 
-Thanks !
+Scripted conversion, resulting code is binary equivalent.
 
-Note: I chose the 'goto skip_write' to make this patch really obvious.
-
-[PATCH] af_unix: optimize unix_dgram_poll()
-
-unix_dgram_poll() is pretty expensive to check POLLOUT status, because
-it has to lock the socket to get its peer, take a reference on the peer
-to check its receive queue status, and queue another poll_wait on
-peer_wait. This all can be avoided if the process calling
-unix_dgram_poll() is not interested in POLLOUT status. It makes
-unix_dgram_recvmsg() faster by not queueing irrelevant pollers in
-peer_wait.
-
-On a test program provided by Alan Crequy :
-
-Before:
-
-real    0m0.211s
-user    0m0.000s
-sys     0m0.208s
-
-After:
-
-real	0m0.044s
-user	0m0.000s
-sys	0m0.040s
-
-Suggested-by: Davide Libenzi <davidel@xmailserver.org>
-Reported-by: Alban Crequy <alban.crequy@collabora.co.uk>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+LKML-Reference: <20100907125057.278833764@linutronix.de>
 ---
- net/unix/af_unix.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/staging/ath6kl/os/linux/ar6000_raw_if.c    |    4 ++--
+ drivers/staging/brcm80211/brcmfmac/dhd_linux.c     |    4 ++--
+ drivers/staging/brcm80211/sys/wl_mac80211.c        |    2 +-
+ drivers/staging/comedi/drivers/dt9812.c            |    2 +-
+ drivers/staging/comedi/drivers/usbdux.c            |    4 ++--
+ drivers/staging/comedi/drivers/usbduxfast.c        |    4 ++--
+ drivers/staging/dream/camera/mt9d112.c             |    2 +-
+ drivers/staging/dream/camera/mt9p012_fox.c         |    2 +-
+ drivers/staging/dream/camera/mt9t013.c             |    2 +-
+ drivers/staging/dream/camera/s5k3e2fx.c            |    2 +-
+ drivers/staging/msm/msm_fb.c                       |    4 ++--
+ drivers/staging/rtl8712/osdep_service.h            |    2 +-
+ drivers/staging/smbfs/inode.c                      |    2 +-
+ .../westbridge/astoria/block/cyasblkdev_block.c    |    2 +-
+ .../westbridge/astoria/block/cyasblkdev_queue.c    |    2 +-
+ 15 files changed, 20 insertions(+), 20 deletions(-)
 
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index 3c95304..dcb84fe 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -2090,6 +2090,9 @@ static unsigned int unix_dgram_poll(struct file *file, struct socket *sock,
- 			return mask;
- 	}
+diff --git a/drivers/staging/ath6kl/os/linux/ar6000_raw_if.c b/drivers/staging/ath6kl/os/linux/ar6000_raw_if.c
+index c196098..6b8eeea 100644
+--- a/drivers/staging/ath6kl/os/linux/ar6000_raw_if.c
++++ b/drivers/staging/ath6kl/os/linux/ar6000_raw_if.c
+@@ -198,8 +198,8 @@ int ar6000_htc_raw_open(AR_SOFTC_T *ar)
+         
+     for (streamID = HTC_RAW_STREAM_0; streamID < HTC_RAW_STREAM_NUM_MAX; streamID++) {
+         /* Initialize the data structures */
+-        init_MUTEX(&arRaw->raw_htc_read_sem[streamID]);
+-        init_MUTEX(&arRaw->raw_htc_write_sem[streamID]);
++	sema_init(&arRaw->raw_htc_read_sem[streamID], 1);
++	sema_init(&arRaw->raw_htc_write_sem[streamID], 1);
+         init_waitqueue_head(&arRaw->raw_htc_read_queue[streamID]);
+         init_waitqueue_head(&arRaw->raw_htc_write_queue[streamID]);
  
-+	if (wait && !(wait->key & (POLLWRBAND | POLLWRNORM | POLLOUT)))
-+		goto skip_write;
-+
- 	/* writable? */
- 	writable = unix_writable(sk);
- 	if (writable) {
-@@ -2111,6 +2114,7 @@ static unsigned int unix_dgram_poll(struct file *file, struct socket *sock,
+diff --git a/drivers/staging/brcm80211/brcmfmac/dhd_linux.c b/drivers/staging/brcm80211/brcmfmac/dhd_linux.c
+index e535787..bbbe7c5 100644
+--- a/drivers/staging/brcm80211/brcmfmac/dhd_linux.c
++++ b/drivers/staging/brcm80211/brcmfmac/dhd_linux.c
+@@ -1929,7 +1929,7 @@ dhd_pub_t *dhd_attach(osl_t *osh, struct dhd_bus *bus, uint bus_hdrlen)
+ 		goto fail;
+ 
+ 	net->netdev_ops = NULL;
+-	init_MUTEX(&dhd->proto_sem);
++	sema_init(&dhd->proto_sem, 1);
+ 	/* Initialize other structure content */
+ 	init_waitqueue_head(&dhd->ioctl_resp_wait);
+ 	init_waitqueue_head(&dhd->ctrl_wait);
+@@ -1977,7 +1977,7 @@ dhd_pub_t *dhd_attach(osl_t *osh, struct dhd_bus *bus, uint bus_hdrlen)
+ 	dhd->timer.function = dhd_watchdog;
+ 
+ 	/* Initialize thread based operation and lock */
+-	init_MUTEX(&dhd->sdsem);
++	sema_init(&dhd->sdsem, 1);
+ 	if ((dhd_watchdog_prio >= 0) && (dhd_dpc_prio >= 0))
+ 		dhd->threads_only = true;
  	else
- 		set_bit(SOCK_ASYNC_NOSPACE, &sk->sk_socket->flags);
+diff --git a/drivers/staging/brcm80211/sys/wl_mac80211.c b/drivers/staging/brcm80211/sys/wl_mac80211.c
+index ad635ee..d060377 100644
+--- a/drivers/staging/brcm80211/sys/wl_mac80211.c
++++ b/drivers/staging/brcm80211/sys/wl_mac80211.c
+@@ -866,7 +866,7 @@ static wl_info_t *wl_attach(u16 vendor, u16 device, unsigned long regs,
+ 	spin_lock_init(&wl->rpcq_lock);
+ 	spin_lock_init(&wl->txq_lock);
  
-+skip_write:
- 	return mask;
+-	init_MUTEX(&wl->sem);
++	sema_init(&wl->sem, 1);
+ #else
+ 	spin_lock_init(&wl->lock);
+ 	spin_lock_init(&wl->isr_lock);
+diff --git a/drivers/staging/comedi/drivers/dt9812.c b/drivers/staging/comedi/drivers/dt9812.c
+index 0560a74..0605985 100644
+--- a/drivers/staging/comedi/drivers/dt9812.c
++++ b/drivers/staging/comedi/drivers/dt9812.c
+@@ -262,7 +262,7 @@ struct dt9812_usb_cmd {
+ 
+ #define DT9812_NUM_SLOTS	16
+ 
+-static DECLARE_MUTEX(dt9812_mutex);
++static DEFINE_SEMAPHORE(dt9812_mutex);
+ 
+ static const struct usb_device_id dt9812_table[] = {
+ 	{USB_DEVICE(0x0867, 0x9812)},
+diff --git a/drivers/staging/comedi/drivers/usbdux.c b/drivers/staging/comedi/drivers/usbdux.c
+index 6131e2d..1f177a6 100644
+--- a/drivers/staging/comedi/drivers/usbdux.c
++++ b/drivers/staging/comedi/drivers/usbdux.c
+@@ -315,7 +315,7 @@ struct usbduxsub {
+  */
+ static struct usbduxsub usbduxsub[NUMUSBDUX];
+ 
+-static DECLARE_MUTEX(start_stop_sem);
++static DEFINE_SEMAPHORE(start_stop_sem);
+ 
+ /*
+  * Stops the data acquision
+@@ -2367,7 +2367,7 @@ static int usbduxsub_probe(struct usb_interface *uinterf,
+ 	dev_dbg(dev, "comedi_: usbdux: "
+ 		"usbduxsub[%d] is ready to connect to comedi.\n", index);
+ 
+-	init_MUTEX(&(usbduxsub[index].sem));
++	sema_init(&(usbduxsub[index].sem), 1);
+ 	/* save a pointer to the usb device */
+ 	usbduxsub[index].usbdev = udev;
+ 
+diff --git a/drivers/staging/comedi/drivers/usbduxfast.c b/drivers/staging/comedi/drivers/usbduxfast.c
+index 0a164a9..5b15e6d 100644
+--- a/drivers/staging/comedi/drivers/usbduxfast.c
++++ b/drivers/staging/comedi/drivers/usbduxfast.c
+@@ -199,7 +199,7 @@ struct usbduxfastsub_s {
+  */
+ static struct usbduxfastsub_s usbduxfastsub[NUMUSBDUXFAST];
+ 
+-static DECLARE_MUTEX(start_stop_sem);
++static DEFINE_SEMAPHORE(start_stop_sem);
+ 
+ /*
+  * bulk transfers to usbduxfast
+@@ -1504,7 +1504,7 @@ static int usbduxfastsub_probe(struct usb_interface *uinterf,
+ 	       "connect to comedi.\n", index);
+ #endif
+ 
+-	init_MUTEX(&(usbduxfastsub[index].sem));
++	sema_init(&(usbduxfastsub[index].sem), 1);
+ 	/* save a pointer to the usb device */
+ 	usbduxfastsub[index].usbdev = udev;
+ 
+diff --git a/drivers/staging/dream/camera/mt9d112.c b/drivers/staging/dream/camera/mt9d112.c
+index e6f2d51..27c978f 100644
+--- a/drivers/staging/dream/camera/mt9d112.c
++++ b/drivers/staging/dream/camera/mt9d112.c
+@@ -37,7 +37,7 @@ struct mt9d112_ctrl {
+ static struct mt9d112_ctrl *mt9d112_ctrl;
+ 
+ static DECLARE_WAIT_QUEUE_HEAD(mt9d112_wait_queue);
+-DECLARE_MUTEX(mt9d112_sem);
++DEFINE_SEMAPHORE(mt9d112_sem);
+ 
+ 
+ /*=============================================================
+diff --git a/drivers/staging/dream/camera/mt9p012_fox.c b/drivers/staging/dream/camera/mt9p012_fox.c
+index 791bd6c..544a973 100644
+--- a/drivers/staging/dream/camera/mt9p012_fox.c
++++ b/drivers/staging/dream/camera/mt9p012_fox.c
+@@ -123,7 +123,7 @@ struct mt9p012_ctrl {
+ 
+ static struct mt9p012_ctrl *mt9p012_ctrl;
+ static DECLARE_WAIT_QUEUE_HEAD(mt9p012_wait_queue);
+-DECLARE_MUTEX(mt9p012_sem);
++DEFINE_SEMAPHORE(mt9p012_sem);
+ 
+ /*=============================================================
+ 	EXTERNAL DECLARATIONS
+diff --git a/drivers/staging/dream/camera/mt9t013.c b/drivers/staging/dream/camera/mt9t013.c
+index 8fd7727..75e78aa 100644
+--- a/drivers/staging/dream/camera/mt9t013.c
++++ b/drivers/staging/dream/camera/mt9t013.c
+@@ -123,7 +123,7 @@ struct mt9t013_ctrl {
+ 
+ static struct mt9t013_ctrl *mt9t013_ctrl;
+ static DECLARE_WAIT_QUEUE_HEAD(mt9t013_wait_queue);
+-DECLARE_MUTEX(mt9t013_sem);
++DEFINE_SEMAPHORE(mt9t013_sem);
+ 
+ extern struct mt9t013_reg mt9t013_regs; /* from mt9t013_reg.c */
+ 
+diff --git a/drivers/staging/dream/camera/s5k3e2fx.c b/drivers/staging/dream/camera/s5k3e2fx.c
+index 1459903..d66b453 100644
+--- a/drivers/staging/dream/camera/s5k3e2fx.c
++++ b/drivers/staging/dream/camera/s5k3e2fx.c
+@@ -313,7 +313,7 @@ struct s5k3e2fx_i2c_reg_conf {
+ 
+ static struct s5k3e2fx_ctrl *s5k3e2fx_ctrl;
+ static DECLARE_WAIT_QUEUE_HEAD(s5k3e2fx_wait_queue);
+-DECLARE_MUTEX(s5k3e2fx_sem);
++DEFINE_SEMAPHORE(s5k3e2fx_sem);
+ 
+ static int s5k3e2fx_i2c_rxdata(unsigned short saddr, unsigned char *rxdata,
+ 	int length)
+diff --git a/drivers/staging/msm/msm_fb.c b/drivers/staging/msm/msm_fb.c
+index ea268ed..23fa049 100644
+--- a/drivers/staging/msm/msm_fb.c
++++ b/drivers/staging/msm/msm_fb.c
+@@ -1158,7 +1158,7 @@ static int msm_fb_release(struct fb_info *info, int user)
+ 	return ret;
  }
  
-
-
-
+-DECLARE_MUTEX(msm_fb_pan_sem);
++DEFINE_SEMAPHORE(msm_fb_pan_sem);
+ 
+ static int msm_fb_pan_display(struct fb_var_screeninfo *var,
+ 			      struct fb_info *info)
+@@ -1962,7 +1962,7 @@ static int msmfb_overlay_play(struct fb_info *info, unsigned long *argp)
+ 
+ #endif
+ 
+-DECLARE_MUTEX(msm_fb_ioctl_ppp_sem);
++DEFINE_SEMAPHORE(msm_fb_ioctl_ppp_sem);
+ DEFINE_MUTEX(msm_fb_ioctl_lut_sem);
+ DEFINE_MUTEX(msm_fb_ioctl_hist_sem);
+ 
+diff --git a/drivers/staging/rtl8712/osdep_service.h b/drivers/staging/rtl8712/osdep_service.h
+index 7fca42c..d1674cd 100644
+--- a/drivers/staging/rtl8712/osdep_service.h
++++ b/drivers/staging/rtl8712/osdep_service.h
+@@ -161,7 +161,7 @@ static inline u32 _down_sema(struct semaphore *sema)
+ 
+ static inline void _rtl_rwlock_init(struct semaphore *prwlock)
+ {
+-	init_MUTEX(prwlock);
++	sema_init(prwlock, 1);
+ }
+ 
+ static inline void _init_listhead(struct list_head *list)
+diff --git a/drivers/staging/smbfs/inode.c b/drivers/staging/smbfs/inode.c
+index 552951a..fa42f40 100644
+--- a/drivers/staging/smbfs/inode.c
++++ b/drivers/staging/smbfs/inode.c
+@@ -537,7 +537,7 @@ static int smb_fill_super(struct super_block *sb, void *raw_data, int silent)
+ 	server->mnt = NULL;
+ 	server->sock_file = NULL;
+ 	init_waitqueue_head(&server->conn_wq);
+-	init_MUTEX(&server->sem);
++	sema_init(&server->sem, 1);
+ 	INIT_LIST_HEAD(&server->entry);
+ 	INIT_LIST_HEAD(&server->xmitq);
+ 	INIT_LIST_HEAD(&server->recvq);
+diff --git a/drivers/staging/westbridge/astoria/block/cyasblkdev_block.c b/drivers/staging/westbridge/astoria/block/cyasblkdev_block.c
+index f428a7a..e1851f0 100644
+--- a/drivers/staging/westbridge/astoria/block/cyasblkdev_block.c
++++ b/drivers/staging/westbridge/astoria/block/cyasblkdev_block.c
+@@ -157,7 +157,7 @@ struct cyasblkdev_blk_data {
+ /* pointer to west bridge block data device superstructure */
+ static struct cyasblkdev_blk_data *gl_bd;
+ 
+-static DECLARE_MUTEX(open_lock);
++static DEFINE_SEMAPHORE(open_lock);
+ 
+ /* local forwardd declarationss  */
+ static cy_as_device_handle *cyas_dev_handle;
+diff --git a/drivers/staging/westbridge/astoria/block/cyasblkdev_queue.c b/drivers/staging/westbridge/astoria/block/cyasblkdev_queue.c
+index 24e959e..0bbb8a3 100644
+--- a/drivers/staging/westbridge/astoria/block/cyasblkdev_queue.c
++++ b/drivers/staging/westbridge/astoria/block/cyasblkdev_queue.c
+@@ -334,7 +334,7 @@ int cyasblkdev_init_queue(struct cyasblkdev_queue *bq, spinlock_t *lock)
+ 
+ 	init_completion(&bq->thread_complete);
+ 	init_waitqueue_head(&bq->thread_wq);
+-	init_MUTEX(&bq->thread_sem);
++	sema_init(&bq->thread_sem, 1);
+ 
+ 	ret = kernel_thread(cyasblkdev_queue_thread, bq, CLONE_KERNEL);
+ 	if (ret >= 0) {
