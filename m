@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199Ab0J3BWI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 21:22:08 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40494 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751641Ab0J3BWG (ORCPT
+	id S1755768Ab0J3B12 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 21:27:28 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:43512 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688Ab0J3B10 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 21:22:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <AANLkTikBmewDmBJWHzdTerJE2W4GqRYMxLCdAJyz5JDB@mail.gmail.com>
-References: <20100212091609.GB1025@kernel.dk> <alpine.LFD.2.00.1002120722270.7792@localhost.localdomain>
- <alpine.LSU.2.01.1002131356250.20838@obet.zrqbmnf.qr> <20100215144938.GD3434@quack.suse.cz>
- <alpine.LSU.2.01.1002151629380.27775@obet.zrqbmnf.qr> <alpine.LSU.2.01.1006271842220.1495@obet.zrqbmnf.qr>
- <alpine.LNX.2.01.1010250115360.16022@obet.zrqbmnf.qr> <AANLkTikBmewDmBJWHzdTerJE2W4GqRYMxLCdAJyz5JDB@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 29 Oct 2010 18:16:48 -0700
-Message-ID: <AANLkTikEpV7GWG9fd3=zfrhOZtbPvxJWfXAO30iN8aae@mail.gmail.com>
-Subject: Re: Sync writeback still broken
-To: Jan Engelhardt <jengelh@medozas.de>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, stable@kernel.org,
-        Greg KH <gregkh@suse.de>, Jens Axboe <jaxboe@fusionio.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 29 Oct 2010 21:27:26 -0400
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=jaF2b-Ib8NwA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=DAJIHWo6YThM6G2F_RMA:9 a=3dGRKDUZa0E31aidkvLWn9_rpr8A:4 a=PUjeQqilurYA:10 a=hXFNqW0bEOwA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 1/5] [PATCH 1/5] kconfig: Make localmodconfig handle
+ environment variables
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        Sam Ravnborg <sam@ravnborg.org>, Roman Zippel <zippel@linux-m68k.org>
+In-Reply-To: <AANLkTi=a8dp-WUNHAkx2fZ5GgNHmDw+ee7MDeUSL44Z0@mail.gmail.com>
+References: <20101029054310.790179545@goodmis.org>
+	 <20101029054423.498608001@goodmis.org>
+	 <AANLkTi=a8dp-WUNHAkx2fZ5GgNHmDw+ee7MDeUSL44Z0@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 29 Oct 2010 21:27:22 -0400
+Message-ID: <1288402042.29632.50.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 29, 2010 at 5:57 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> Guys, what is the status of this?
->
-> The original patch in that email thread still makes no sense and the
-> commit log for it cannot be the real issue. But the _problem_ seems to
-> be real, and the code is apparently a total mess, still.
+On Fri, 2010-10-29 at 20:26 -0400, Arnaud Lacombe wrote:
+> Hi,
 
-Btw, is the problem just that insane WB_SYNC_ALL thing?
+> Technically, it is _not_ an environment variable; it is a kconfig
+> symbol's name. In this particular case, both name collide and the
+> kconfig symbol happens to get its default value from the environment.
+> The real fixes, from my point of view, would be to have a perl binding
+> of the kconfig backend and get rid of read_kconfig(). That said, your
+> patch is broken if a symbol happen not to match an environment
+> variable (both in name and value).
 
-The problem with WB_SYNC_ALL seems to be that it synchrnously writes
-out one inode at a time. And it's not just the data, it's the inode
-itself.
+That sounds like a proper fix. Unfortunately, I don't have the time to
+work on this now, and although this fix works by coincidence, it
+never-the-less works, as suppose to just having localmodconfig crash.
 
-So rather than write out all pages for _all_ inodes, and then wait for
-them, and write out _all_ metadata, and then wait for that, it seems
-like the WB_SYNC_ALL code does the truly stupid thing, which is to
-"write out some data for one inode, then _synchronously_ wait for
-that, then write out the metadata for that single inode, then
-_synchronously_ wait for THAT" and then rinse and repeat for each
-inode.
+But you are right. After KS and Plumbers, I'll work on doing something
+like that. That can probably solve some of the other issues I'm having
+(still keeping too many modules enabled).
 
-The sane thing for "WB_SYNC_ALL" would be to:
- - for_each_inode: write out all data (no waiting)
- - for_each_inode: wait for the data for that inode, write out the inode
- - for_each_inode: wait for the inode
+> 
+> Btw, two questions:
+>  - who has authority on kconfig ? Michal or you ? MAINTAINERS say
+> "Roman Zippel", but AFAIK, this is no longer valid.
 
-so that you avoid the whole synchronous wait thing, and can do all
-inodes in one go.
+Michal is in charge of the build system. I just wrote
+streamline_config.pl, and have been maintaining it on my own. If I ever
+need to touch anything outside of that script, I always ask for Michal's
+Acked-by.
 
-I dunno. Who even uses WB_SYNC_ALL? It's just "sync()" itself, isn't
-it? And "umount()", I guess. I didn't actually look at the code.
+>  - what is the delay someone in CC: is given the time to answer a
+> patch ? I see that this one particularly is already in Linus' tree.
 
-                  Linus
+Well, again, I consider myself the maintainer of streamline_config.pl,
+and as long as my changes don't affect anything else, I don't ask for
+forgiveness ;-)
+
+I probably should rename my subject (and my git tree) to
+s/kconfig/localmodconfig/. But then again, having the kconfig: name gets
+the attention of people like yourself to tell me what you told me.
+
+-- Steve
+
+
+
