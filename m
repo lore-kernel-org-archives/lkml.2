@@ -1,99 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753941Ab0J3NSL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 09:18:11 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55034 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142Ab0J3NSG (ORCPT
+	id S1753784Ab0J3N2x (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 09:28:53 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:40556 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751735Ab0J3N2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 09:18:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=eWI1DzqBcd3YcTzNCeHxOevLqnb6ezzVmSQ3zdaat8NlHfTRAXAt2R8YzpN1GPeba0
-         +I4bbtWNxjkLrcuAl/DzfRGg+Kxd+ZXbUcz7GKK/DM2+nvRCRwzGABehNjgjsXW0qgSr
-         xrBLguEyT9aGLPPm5avBwDPYEfxO7dS8t+wRY=
-Subject: Re: [PATCH 0/1] RFC: poll/select performance on datagram sockets
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Alban Crequy <alban.crequy@collabora.co.uk>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Pauli Nieminen <pauli.nieminen@collabora.co.uk>,
-        Rainer Weikusat <rweikusat@mssgmbh.com>,
-        Davide Libenzi <davidel@xmailserver.org>
-In-Reply-To: <1288443217.2680.962.camel@edumazet-laptop>
-References: <20101029191857.5f789d56@chocolatine.cbg.collabora.co.uk>
-	 <1288380431.2680.3.camel@edumazet-laptop>
-	 <20101030123403.5e01540d@chocolatine.cbg.collabora.co.uk>
-	 <1288443217.2680.962.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 30 Oct 2010 15:17:58 +0200
-Message-ID: <1288444678.2680.966.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Sat, 30 Oct 2010 09:28:51 -0400
+Date: Sat, 30 Oct 2010 14:28:49 +0100 (BST)
+From: "Maciej W. Rozycki" <macro@linux-mips.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Wu Zhangjin <wuzhangjin@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        John Reiser <jreiser@bitwagon.com>,
+        David Daney <ddaney@caviumnetworks.com>
+Subject: Re: [PATCH 3/3] ftrace/MIPS: Enable C Version of recordmcount
+In-Reply-To: <1288186564.18238.126.camel@gandalf.stny.rr.com>
+Message-ID: <alpine.LFD.2.00.1010301414060.25426@eddie.linux-mips.org>
+References: <cover.1288176026.git.wuzhangjin@gmail.com>         <bb99009a9ac79d3f55a8c8bf1c8bd2bc0e1f160e.1288176026.git.wuzhangjin@gmail.com> <1288186564.18238.126.camel@gandalf.stny.rr.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 27 Oct 2010, Steven Rostedt wrote:
 
-> Problem is the peer_wait, that epoll doesnt seem to be plugged into.
+> On Wed, 2010-10-27 at 18:59 +0800, Wu Zhangjin wrote:
+> > From: Wu Zhangjin <wuzhangjin@gmail.com>
+> > 
+> > Selects HAVE_C_RECORDMCOUNT to use the C version of the recordmcount
+> > intead of the old Perl Version of recordmcount.
+> > 
+> > Signed-off-by: Wu Zhangjin <wuzhangjin@gmail.com>
 > 
-> Bug is in unix_dgram_poll()
-> 
-> It calls sock_poll_wait( ... &unix_sk(other)->peer_wait,) only if socket
-> is 'writable'. Its a clear bug
-> 
-> Try this patch please ?
-> 
-> diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-> index 0ebc777..315716c 100644
-> --- a/net/unix/af_unix.c
-> +++ b/net/unix/af_unix.c
-> @@ -2092,7 +2092,7 @@ static unsigned int unix_dgram_poll(struct file *file, struct socket *sock,
->  
->  	/* writable? */
->  	writable = unix_writable(sk);
-> -	if (writable) {
-> +	if (1 /*writable*/) {
->  		other = unix_peer_get(sk);
->  		if (other) {
->  			if (unix_peer(other) != sk) {
-> 
-> 
-> 
+> I'd like to get an Acked-by from Ralf and Maciej on this.
 
-Also you'll need to change your program to make the epoll registrations
-_after_ sockets connect(), or else you can see that epoll() wont know
-about the other peer stuff.
+Acked-by: Maciej W. Rozycki <macro@linux-mips.org>
 
-for (i = 0 ; i < NB_CLIENTS ; i++) {
-	client_fds[i] = socket(AF_UNIX, SOCK_DGRAM, 0);
-}
+ I have looked through it and spotted nothing obviously wrong, but I can't 
+afford any further testing, especially at run time, sorry.
 
+ One point to note -- it seems to me the code currently assumes a 32-bit 
+model, i.e. the use of the -msym32 GCC option suitable for a 64-bit kernel 
+loaded to a CKSEG0 address (cf. KBUILD_SYM32 in arch/mips/Makefile), tools 
+support permitting.  That means it does not (correctly) support kernels 
+loaded to an XPHYS address as required for some platforms (or otherwise 
+chosen for testing such a configuration; modulo some processor errata and 
+bootloader limitations, it is generally OK to run the kernel from XPHYS on 
+64-bit chips even if the entire RAM fits into CKSEG0).
 
-for (i = 0 ; i < NB_CLIENTS ; i++) {
-	connect(client_fds[i], (struct sockaddr*)&addr_server, sizeof(addr_server));
-}
+ For the avoidance of doubt -- I'm just mentioning it to emphasise a 
+possible future direction for improvement of this code -- not an objection 
+against this submission, that is certainly a good foundation for future 
+development.
 
-ev.events = EPOLLOUT;
-ev.data.fd = client_fds[NB_CLIENTS-1];
-if (epoll_ctl(epollfd, EPOLL_CTL_ADD, client_fds[NB_CLIENTS-1], &ev) == -1) {
-      perror("epoll_ctl: client_fds max");
-      exit(EXIT_FAILURE);
-}
-if (trigger == 0) {
-      ev.events = EPOLLOUT;
-      ev.data.fd = client_fds[0];
-      if (epoll_ctl(epollfd, EPOLL_CTL_ADD, client_fds[0], &ev) == -1) {
-        perror("epoll_ctl: client_fds 0");
-        exit(EXIT_FAILURE);
-      }
-}
+ Thanks to everybody involved.
 
-
-
+  Maciej
