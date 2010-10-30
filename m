@@ -1,135 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214Ab0J3KkO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 06:40:14 -0400
-Received: from hera.kernel.org ([140.211.167.34]:48366 "EHLO hera.kernel.org"
+	id S1753386Ab0J3Kko (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 06:40:44 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48378 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752517Ab0J3KkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 06:40:12 -0400
-Date: Sat, 30 Oct 2010 10:39:49 GMT
+	id S1752839Ab0J3Kkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 06:40:42 -0400
+Date: Sat, 30 Oct 2010 10:40:13 GMT
 From: tip-bot for Jason Baron <jbaron@redhat.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, mathieu.desnoyers@efficios.com,
-        rostedt@goodmis.org, jbaron@redhat.com, tglx@linutronix.de
+        masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
+        jbaron@redhat.com, tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        mathieu.desnoyers@efficios.com, masami.hiramatsu.pt@hitachi.com,
-        rostedt@goodmis.org, jbaron@redhat.com, tglx@linutronix.de
-In-Reply-To: <c6f037b7598777668025ceedd9294212fd95fa34.1285965957.git.jbaron@redhat.com>
-References: <c6f037b7598777668025ceedd9294212fd95fa34.1285965957.git.jbaron@redhat.com>
+        masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
+        tglx@linutronix.de, jbaron@redhat.com, mingo@elte.hu
+In-Reply-To: <759032c48d5e30c27f0bba003d09bffa8e9f28bb.1285965957.git.jbaron@redhat.com>
+References: <759032c48d5e30c27f0bba003d09bffa8e9f28bb.1285965957.git.jbaron@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] jump label: Fix module __init section race
-Message-ID: <tip-b842f8faf6c7dc2005c6a70631c1a91bac02f180@git.kernel.org>
-Git-Commit-ID: b842f8faf6c7dc2005c6a70631c1a91bac02f180
+Subject: [tip:perf/urgent] jump label: Fix deadlock b/w jump_label_mutex vs. text_mutex
+Message-ID: <tip-91bad2f8d3057482b9afb599f14421b007136960@git.kernel.org>
+Git-Commit-ID: 91bad2f8d3057482b9afb599f14421b007136960
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 30 Oct 2010 10:39:51 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 30 Oct 2010 10:40:14 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b842f8faf6c7dc2005c6a70631c1a91bac02f180
-Gitweb:     http://git.kernel.org/tip/b842f8faf6c7dc2005c6a70631c1a91bac02f180
+Commit-ID:  91bad2f8d3057482b9afb599f14421b007136960
+Gitweb:     http://git.kernel.org/tip/91bad2f8d3057482b9afb599f14421b007136960
 Author:     Jason Baron <jbaron@redhat.com>
-AuthorDate: Fri, 1 Oct 2010 17:23:41 -0400
+AuthorDate: Fri, 1 Oct 2010 17:23:48 -0400
 Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Thu, 28 Oct 2010 09:17:02 -0400
+CommitDate: Thu, 28 Oct 2010 09:17:40 -0400
 
-jump label: Fix module __init section race
+jump label: Fix deadlock b/w jump_label_mutex vs. text_mutex
 
-Jump label uses is_module_text_address() to ensure that the module
-__init sections are valid before updating them. However, between the
-check for a valid module __init section and the subsequent jump
-label update, the module's __init section could be freed out from under
-us.
+register_kprobe() downs the 'text_mutex' and then calls
+jump_label_text_reserved(), which downs the 'jump_label_mutex'.
+However, the jump label code takes those mutexes in the reverse
+order.
 
-We fix this potential race by adding a notifier callback to the
-MODULE_STATE_LIVE state. This notifier is called *after* the __init
-section has been run but before it is going to be freed. In the
-callback, the jump label code zeros the key value for any __init jump
-code within the module, and we add a check for a non-zero key value when
-we update jump labels. In this way we require no additional data
-structures.
+Fix by requiring the caller of jump_label_text_reserved() to do
+the jump label locking via the newly added: jump_label_lock(),
+jump_label_unlock(). Currently, kprobes is the only user
+of jump_label_text_reserved().
 
-Thanks to Mathieu Desnoyers for pointing out this race condition.
-
-Reported-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Reported-by: Ingo Molnar <mingo@elte.hu>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Jason Baron <jbaron@redhat.com>
-LKML-Reference: <c6f037b7598777668025ceedd9294212fd95fa34.1285965957.git.jbaron@redhat.com>
-
-[ Renamed remove_module_init() to remove_jump_label_module_init()
-  as suggested by Masami Hiramatsu. ]
-
+LKML-Reference: <759032c48d5e30c27f0bba003d09bffa8e9f28bb.1285965957.git.jbaron@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/jump_label.c |   41 ++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 40 insertions(+), 1 deletions(-)
+ include/linux/jump_label.h |    5 +++++
+ kernel/jump_label.c        |   33 +++++++++++++++++++++------------
+ kernel/kprobes.c           |    6 ++++++
+ 3 files changed, 32 insertions(+), 12 deletions(-)
 
-diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-index 7be868b..be9e105 100644
---- a/kernel/jump_label.c
-+++ b/kernel/jump_label.c
-@@ -168,7 +168,8 @@ void jump_label_update(unsigned long key, enum jump_label_type type)
- 			count = e_module->nr_entries;
- 			iter = e_module->table;
- 			while (count--) {
--				if (kernel_text_address(iter->code))
-+				if (iter->key &&
-+						kernel_text_address(iter->code))
- 					arch_jump_label_transform(iter, type);
- 				iter++;
- 			}
-@@ -366,6 +367,39 @@ static void remove_jump_label_module(struct module *mod)
- 	}
+diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
+index b67cb18..1947a12 100644
+--- a/include/linux/jump_label.h
++++ b/include/linux/jump_label.h
+@@ -18,6 +18,8 @@ struct module;
+ extern struct jump_entry __start___jump_table[];
+ extern struct jump_entry __stop___jump_table[];
+ 
++extern void jump_label_lock(void);
++extern void jump_label_unlock(void);
+ extern void arch_jump_label_transform(struct jump_entry *entry,
+ 				 enum jump_label_type type);
+ extern void arch_jump_label_text_poke_early(jump_label_t addr);
+@@ -59,6 +61,9 @@ static inline int jump_label_text_reserved(void *start, void *end)
+ 	return 0;
  }
  
-+static void remove_jump_label_module_init(struct module *mod)
++static inline void jump_label_lock(void) {}
++static inline void jump_label_unlock(void) {}
++
+ #endif
+ 
+ #define COND_STMT(key, stmt)					\
+diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+index be9e105..12cce78 100644
+--- a/kernel/jump_label.c
++++ b/kernel/jump_label.c
+@@ -39,6 +39,16 @@ struct jump_label_module_entry {
+ 	struct module *mod;
+ };
+ 
++void jump_label_lock(void)
 +{
-+	struct hlist_head *head;
-+	struct hlist_node *node, *node_next, *module_node, *module_node_next;
-+	struct jump_label_entry *e;
-+	struct jump_label_module_entry *e_module;
-+	struct jump_entry *iter;
-+	int i, count;
-+
-+	/* if the module doesn't have jump label entries, just return */
-+	if (!mod->num_jump_entries)
-+		return;
-+
-+	for (i = 0; i < JUMP_LABEL_TABLE_SIZE; i++) {
-+		head = &jump_label_table[i];
-+		hlist_for_each_entry_safe(e, node, node_next, head, hlist) {
-+			hlist_for_each_entry_safe(e_module, module_node,
-+						  module_node_next,
-+						  &(e->modules), hlist) {
-+				if (e_module->mod != mod)
-+					continue;
-+				count = e_module->nr_entries;
-+				iter = e_module->table;
-+				while (count--) {
-+					if (within_module_init(iter->code, mod))
-+						iter->key = 0;
-+					iter++;
-+				}
-+			}
-+		}
-+	}
++	mutex_lock(&jump_label_mutex);
 +}
 +
- static int
- jump_label_module_notify(struct notifier_block *self, unsigned long val,
- 			 void *data)
-@@ -386,6 +420,11 @@ jump_label_module_notify(struct notifier_block *self, unsigned long val,
- 		remove_jump_label_module(mod);
- 		mutex_unlock(&jump_label_mutex);
- 		break;
-+	case MODULE_STATE_LIVE:
-+		mutex_lock(&jump_label_mutex);
-+		remove_jump_label_module_init(mod);
-+		mutex_unlock(&jump_label_mutex);
-+		break;
++void jump_label_unlock(void)
++{
++	mutex_unlock(&jump_label_mutex);
++}
++
+ static int jump_label_cmp(const void *a, const void *b)
+ {
+ 	const struct jump_entry *jea = a;
+@@ -152,7 +162,7 @@ void jump_label_update(unsigned long key, enum jump_label_type type)
+ 	struct jump_label_module_entry *e_module;
+ 	int count;
+ 
+-	mutex_lock(&jump_label_mutex);
++	jump_label_lock();
+ 	entry = get_jump_label_entry((jump_label_t)key);
+ 	if (entry) {
+ 		count = entry->nr_entries;
+@@ -175,7 +185,7 @@ void jump_label_update(unsigned long key, enum jump_label_type type)
+ 			}
+ 		}
  	}
+-	mutex_unlock(&jump_label_mutex);
++	jump_label_unlock();
+ }
+ 
+ static int addr_conflict(struct jump_entry *entry, void *start, void *end)
+@@ -232,6 +242,7 @@ out:
+  * overlaps with any of the jump label patch addresses. Code
+  * that wants to modify kernel text should first verify that
+  * it does not overlap with any of the jump label addresses.
++ * Caller must hold jump_label_mutex.
+  *
+  * returns 1 if there is an overlap, 0 otherwise
+  */
+@@ -242,7 +253,6 @@ int jump_label_text_reserved(void *start, void *end)
+ 	struct jump_entry *iter_stop = __start___jump_table;
+ 	int conflict = 0;
+ 
+-	mutex_lock(&jump_label_mutex);
+ 	iter = iter_start;
+ 	while (iter < iter_stop) {
+ 		if (addr_conflict(iter, start, end)) {
+@@ -257,7 +267,6 @@ int jump_label_text_reserved(void *start, void *end)
+ 	conflict = module_conflict(start, end);
+ #endif
+ out:
+-	mutex_unlock(&jump_label_mutex);
+ 	return conflict;
+ }
+ 
+@@ -268,7 +277,7 @@ static __init int init_jump_label(void)
+ 	struct jump_entry *iter_stop = __stop___jump_table;
+ 	struct jump_entry *iter;
+ 
+-	mutex_lock(&jump_label_mutex);
++	jump_label_lock();
+ 	ret = build_jump_label_hashtable(__start___jump_table,
+ 					 __stop___jump_table);
+ 	iter = iter_start;
+@@ -276,7 +285,7 @@ static __init int init_jump_label(void)
+ 		arch_jump_label_text_poke_early(iter->code);
+ 		iter++;
+ 	}
+-	mutex_unlock(&jump_label_mutex);
++	jump_label_unlock();
  	return ret;
  }
+ early_initcall(init_jump_label);
+@@ -409,21 +418,21 @@ jump_label_module_notify(struct notifier_block *self, unsigned long val,
+ 
+ 	switch (val) {
+ 	case MODULE_STATE_COMING:
+-		mutex_lock(&jump_label_mutex);
++		jump_label_lock();
+ 		ret = add_jump_label_module(mod);
+ 		if (ret)
+ 			remove_jump_label_module(mod);
+-		mutex_unlock(&jump_label_mutex);
++		jump_label_unlock();
+ 		break;
+ 	case MODULE_STATE_GOING:
+-		mutex_lock(&jump_label_mutex);
++		jump_label_lock();
+ 		remove_jump_label_module(mod);
+-		mutex_unlock(&jump_label_mutex);
++		jump_label_unlock();
+ 		break;
+ 	case MODULE_STATE_LIVE:
+-		mutex_lock(&jump_label_mutex);
++		jump_label_lock();
+ 		remove_jump_label_module_init(mod);
+-		mutex_unlock(&jump_label_mutex);
++		jump_label_unlock();
+ 		break;
+ 	}
+ 	return ret;
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 99865c3..9437e14 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -1146,13 +1146,16 @@ int __kprobes register_kprobe(struct kprobe *p)
+ 		return ret;
+ 
+ 	preempt_disable();
++	jump_label_lock();
+ 	if (!kernel_text_address((unsigned long) p->addr) ||
+ 	    in_kprobes_functions((unsigned long) p->addr) ||
+ 	    ftrace_text_reserved(p->addr, p->addr) ||
+ 	    jump_label_text_reserved(p->addr, p->addr)) {
+ 		preempt_enable();
++		jump_label_unlock();
+ 		return -EINVAL;
+ 	}
++	jump_label_unlock();
+ 
+ 	/* User can pass only KPROBE_FLAG_DISABLED to register_kprobe */
+ 	p->flags &= KPROBE_FLAG_DISABLED;
+@@ -1187,6 +1190,8 @@ int __kprobes register_kprobe(struct kprobe *p)
+ 	INIT_LIST_HEAD(&p->list);
+ 	mutex_lock(&kprobe_mutex);
+ 
++	jump_label_lock(); /* needed to call jump_label_text_reserved() */
++
+ 	get_online_cpus();	/* For avoiding text_mutex deadlock. */
+ 	mutex_lock(&text_mutex);
+ 
+@@ -1214,6 +1219,7 @@ int __kprobes register_kprobe(struct kprobe *p)
+ out:
+ 	mutex_unlock(&text_mutex);
+ 	put_online_cpus();
++	jump_label_unlock();
+ 	mutex_unlock(&kprobe_mutex);
+ 
+ 	if (probed_mod)
