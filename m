@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755500Ab0J3TQd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 15:16:33 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:29892 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753497Ab0J3TQa (ORCPT
+	id S1755714Ab0J3TRJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 15:17:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48719 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755386Ab0J3TRH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 15:16:30 -0400
-Date: Sat, 30 Oct 2010 21:06:13 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH] Perf, AMD: Prefer kzalloc() over kmalloc()+memset() in
- amd_alloc_nb()
-Message-ID: <alpine.LNX.2.00.1010302101240.1572@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 30 Oct 2010 15:17:07 -0400
+Subject: Re: [PATCH v2] powerpc: kvm: powerpc: fix information leak to userland
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=us-ascii
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <1288464922-8812-1-git-send-email-segooon@gmail.com>
+Date: Sat, 30 Oct 2010 12:16:57 -0700
+Cc: kernel-janitors@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, kvm-ppc@vger.kernel.org,
+        kvm@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <1480CDBF-0A4A-49EC-AF4C-CED1D63BB911@suse.de>
+References: <1288464922-8812-1-git-send-email-segooon@gmail.com>
+To: Vasiliy Kulikov <segooon@gmail.com>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Hi,
+On 30.10.2010, at 11:55, Vasiliy Kulikov wrote:
 
-I believe this would be an improvement?
+> Structure kvm_ppc_pvinfo is copied to userland with "flags" and "pad"
+> fields unitialized.  It leads to leaking of contents of kernel stack
+> memory.  We have to initialize them to zero.
+> 
+> In patch v1 Jan Kiszka suggested to fill reserved fields with zeros
+> instead of memset'ting the whole struct.  It makes sense as these
+> fields are explicitly marked as padding.  No more fields need zeroing.
+> 
+> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+> ---
+> arch/powerpc/kvm/powerpc.c |    2 ++
+> 1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/powerpc/kvm/powerpc.c b/arch/powerpc/kvm/powerpc.c
+> index 2f87a16..5962336 100644
+> --- a/arch/powerpc/kvm/powerpc.c
+> +++ b/arch/powerpc/kvm/powerpc.c
+> @@ -604,6 +604,8 @@ static int kvm_vm_ioctl_get_pvinfo(struct kvm_ppc_pvinfo *pvinfo)
+> 	pvinfo->hcall[1] = inst_ori | (KVM_SC_MAGIC_R0 & inst_imm_mask);
+> 	pvinfo->hcall[2] = inst_sc;
+> 	pvinfo->hcall[3] = inst_nop;
+> +	pvinfo->flags = 0;
+> +	memset(&pvinfo->pad, 0, sizeof(pvinfo->pad));
 
-Prefer kzalloc() over kmalloc()+memset() in amd_alloc_nb().
+This should only be memset(pvinfo->pad), no? It's an array after all which automatically translates to a pointer when referenced.
 
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- perf_event_amd.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-index 46d5844..a3787b2 100644
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -280,11 +280,10 @@ static struct amd_nb *amd_alloc_nb(int cpu, int nb_id)
- 	struct amd_nb *nb;
- 	int i;
- 
--	nb = kmalloc(sizeof(struct amd_nb), GFP_KERNEL);
-+	nb = kzalloc(sizeof(struct amd_nb), GFP_KERNEL);
- 	if (!nb)
- 		return NULL;
- 
--	memset(nb, 0, sizeof(*nb));
- 	nb->nb_id = nb_id;
- 
- 	/*
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-Plain text mails only, please      http://www.expita.com/nomime.html
-Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
+Alex
 
