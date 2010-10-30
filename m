@@ -1,93 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751525Ab0J3Utc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 16:49:32 -0400
-Received: from claw.goop.org ([74.207.240.146]:36591 "EHLO claw.goop.org"
+	id S1751592Ab0J3VCt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 17:02:49 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:37494 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751167Ab0J3Ut3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 16:49:29 -0400
-Message-ID: <4CCC84D8.6080005@goop.org>
-Date: Sat, 30 Oct 2010 13:49:28 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+	id S1751414Ab0J3VCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 17:02:46 -0400
+Date: Sat, 30 Oct 2010 14:02:44 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: sergey.senozhatsky@gmail.com, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mingo@elte.hu
+Subject: Re: [PATCH] rcu_read_lock/unlock protect find_task_by_vpid call
+Message-ID: <20101030210244.GE2664@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20101029125550.GA3932@swordfish.minsk.epam.com>
+ <20101029201648.GK2367@linux.vnet.ibm.com>
+ <20101030093234.GK3932@swordfish.minsk.epam.com>
+ <201010302214.DDF98906.MSFJOFtFHOLQVO@I-love.SAKURA.ne.jp>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, Chris Mason <chris.mason@oracle.com>,
-        Nitin Gupta <nitingupta910@gmail.com>
-Subject: Re: Ping? RE: [GIT PULL] mm/vfs/fs:cleancache for 2.6.37 merge window
-References: <ec76a6ed-a1dc-4e8b-a4ac-1e72ab367d0f@default>	<7b34b3ea-9436-4077-a35e-a5eaabd59813@default> <20101030120632.40345d0d.akpm@linux-foundation.org>
-In-Reply-To: <20101030120632.40345d0d.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201010302214.DDF98906.MSFJOFtFHOLQVO@I-love.SAKURA.ne.jp>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 10/30/2010 12:06 PM, Andrew Morton wrote:
-> On Wed, 27 Oct 2010 11:37:47 -0700 (PDT) Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
->
->> Ping?  I hope you are still considering this.  If not or if
->> there are any questions I can answer, please let me know.
-> What's happened here is that the patchset has gone through its
-> iterations and a few people have commented and then after a while,
-> nobody had anything to say about the code so nobody said anything more.
->
-> But silence doesn't mean acceptance - it just means that nobody had
-> anything to say.
->
-> I think I looked at the earlier iterations, tried to understand the
-> point behind it all, made a few code suggestions and eventually tuned
-> out.  At that time (and hence at this time) I just cannot explain to
-> myself why we would want to merge this code.
->
-> All new code is a cost/benefit decision.  The costs are pretty well
-> known: larger codebase, more code for us and our "customers" to
-> maintain and support, etc.  That the code pokes around in vfs and
-> various filesystems does increase those costs a little.
->
-> But the extent of the benefits to our users aren't obvious to me.  The
-> code is still xen-specific, I believe?  If so, that immediately reduces
-> the benefit side by a large amount simply because of the reduced
-> audience.
->
-> We did spend some time trying to get this wired up to zram so that the
-> feature would be potentially useful to *all* users, thereby setting the
-> usefulness multiplier back to 1.0.  But I don't recall that anything
-> came of this?
+On Sat, Oct 30, 2010 at 10:14:23PM +0900, Tetsuo Handa wrote:
+> Sergey Senozhatsky wrote:
+> > On (10/29/10 13:16), Paul E. McKenney wrote:
+> > > Interesting...
+> > > 
+> > > The task-list lock is read-held at this point, which should mean that
+> > > the PID mapping cannot change.  The lockdep_tasklist_lock_is_held()
+> > > function does lockdep_is_held(&tasklist_lock), which must therefore
+> > > only be checking for write-holding the lock.  The fix would be to
+> > > make lockdep_tasklist_lock_is_held() check for either read-holding or
+> > > write-holding tasklist lock.
+> > > 
+> > > Or is there some subtle reason that read-holding the tasklist lock is
+> > > not sufficient?
+> 
+> This was discussed in the thread at http://kerneltrap.org/mailarchive/linux-kernel/2009/12/10/4517520 .
+> Quoting from one of posts in that thead http://kerneltrap.org/mailarchive/linux-kernel/2010/2/8/4536388
+> 
+> | Usually tasklist gives enough protection, but if copy_process() fails
+> | it calls free_pid() lockless and does call_rcu(delayed_put_pid().
+> | This means, without rcu lock find_pid_ns() can't scan the hash table
+> | safely.
+> 
+> And now the patch that adds
+> 
+> 	rcu_lockdep_assert(rcu_read_lock_held());
+> 
+> was merged in accordance with that comment.
+> Therefore, I thing below change is not good.
+> 
+> > Should it be changed to (let's say)
+> > 
+> > struct task_struct *find_task_by_pid_ns(pid_t nr, struct pid_namespace *ns)
+> > {
+> > -	rcu_lockdep_assert(rcu_read_lock_held());
+> > +	rcu_lockdep_assert(rcu_read_lock_held() || lockdep_tasklist_lock_is_held());
+> > 	return pid_task(find_pid_ns(nr, ns), PIDTYPE_PID);
+> > }
 
-Nitin was definitely working on this and made some constructive comments
-as a result, but I don't know if there's any completed/usable code or not.
+So we should remove the lockdep_tasklist_lock_is_held() and then
+apply Sergey's patch, correct?
 
-> I also don't know how useful the code is to its intended
-> micro-audience: xen users!
-
-The benefit is that it allows memory to be much more fluidly assigned
-between domains as needed, rather than having to statically allocate big
-chunks of memory.  The result is that its possible to provision domains
-with much smaller amounts of memory while still reducing the number of
-real pagefault IOs.  Dan's numbers are certainly very interesting (Dan,
-perhaps you can repost those results).
-
-However, I don't think it has been widely deployed yet, since most users
-are using upstream/distro kernels.
-
-> So can we please revisit all this from the top level?  Jeremy, your
-> input would be valuable.
-
-OK, I'll need to get myself up to speed on the issues again.  Will you
-be about in Boston next week?
-
->   Christoph, I recall that you had technical
-> objections - can you please repeat those?
-
-I think (and I don't want to misrepresent or minimize Christoph's
-concerns here) the most acute one were the need for a one-line addition
-to each filesystem which wants to participate.
-
-> It's the best I can do to kick this along, sorry.
-
-Thanks,
-    J
-
+							Thanx, Paul
