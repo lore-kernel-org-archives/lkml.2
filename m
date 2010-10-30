@@ -1,63 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752975Ab0J3LQX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 07:16:23 -0400
-Received: from Chamillionaire.breakpoint.cc ([85.10.199.196]:59561 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751616Ab0J3LQU (ORCPT
+	id S1753160Ab0J3Lbm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 07:31:42 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:55061 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751664Ab0J3Lbl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 07:16:20 -0400
-Date: Sat, 30 Oct 2010 13:16:18 +0200
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: use after free in serport
-Message-ID: <20101030111618.GA29915@Chamillionaire.breakpoint.cc>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-X-Key-Id: FE3F4706
-X-Key-Fingerprint: FFDA BBBB 3563 1B27 75C9  925B 98D5 5C1C FE3F 4706
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 30 Oct 2010 07:31:41 -0400
+To: Ken Sumrall <ksumrall@android.com>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, miklos@szeredi.hu,
+        jens.axboe@oracle.com, anfei.zhou@gmail.com, avati@gluster.com,
+        fuse-devel@lists.sourceforge.net
+In-reply-to: <AANLkTimJWX5WnG6oiUfBxiD=BBJ=Q5iRc73iar=gPKCy@mail.gmail.com>
+	(message from Ken Sumrall on Fri, 29 Oct 2010 17:31:34 -0700)
+Subject: Re: [PATCH] Fix bug in FUSE where the attribute cache for a file was
+ not cleared when a file is opened with O_TRUNC.
+References: <1288395700-9527-1-git-send-email-ksumrall@android.com>
+	<20101029170209.0aced0ca.akpm@linux-foundation.org> <AANLkTimJWX5WnG6oiUfBxiD=BBJ=Q5iRc73iar=gPKCy@mail.gmail.com>
+Message-Id: <E1PC9ed-00045m-LA@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Sat, 30 Oct 2010 13:31:23 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a userland tool called inputattach which binds a serial port to
-a specific device lets say a touch screen. serport
-(CONFIG_SERIO_SERPORT) is the couterpart in the kernel. So the userland
-does the following:
+Ken,
 
-- 1. open("/dev/ttySx", O_RDWR | O_NOCTTY | O_NONBLOCK);
-- 2. setline()
-- 3. ioctl(fd, TIOCSETD, &ldisc); with ldisc = N_MOUSE
-  if the ldisc class is not set (yet), it calls serport_ldisc_open()
-  which allocates a little bit of memory.
-- 4. ioctl(fd, SPIOCSTYPE, &devt) with devt beeing the device the user
-  wants to attach
-- 5. read(fd, NULL, 0);
-  this attaches the device, calls its ->connect function and the program
-  stays here for as long as the driver has to remain attached and
-  working.
-- 6. ioctl(fd, TIOCSETD, &ldisc); with ldisc = 0.
-  this calls serport_ldisc_close() and the extra memory is gone.
-- 7. close()
+Thanks for the patch.
 
-Now the program remains in step 5. If the user starts it again then it
-behaves a little different:
-- step 3 does nothing because the correct ldisc is allready set.
-  tty_set_ldisc() discovers that (tty->ldisc->ops->num == ldisc) is true
-  (Check the no-op case) so nothing happens.
-- in step 5 serport_ldisc_read() discovers that it allready performing a
-  read() and returns with -EBUSY.
-- step 6 deallocates memory which was allocated by the other process.
+Here's a slightly updated one.  Does this also look OK?
 
-Now we have the struct serport freed but the first process is still
-using it.
+Miklos
 
-Any idea how to fix it? I've seen that it is possible to manually bind
-devices via /sys so maybe we could remove serport. However I'm not sure
-if this kind of bug also affects other ldisc classes.
 
-Sebastian
+----
+Subject: fuse: fix attributes after open(O_TRUNC)
+From: Ken Sumrall <ksumrall@android.com>
+
+The attribute cache for a file was not being cleared when a file is
+opened with O_TRUNC.
+
+If the filesystem's open operation truncates the file
+("atomic_o_trunc" feature flag is set) then the kernel should
+invalidate the cached st_mtime and st_ctime attributes.
+
+Also i_size should be explicitly be set to zero as it is used
+sometimes without refreshing the cache.
+
+Signed-off-by: Ken Sumrall <ksumrall@android.com>
+Cc: Anfei <anfei.zhou@gmail.com>
+Cc: "Anand V. Avati" <avati@gluster.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Miklos Szeredi <miklos@szeredi.hu>
+Cc: stable@kernel.org
+---
+
+ fs/fuse/file.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+Index: linux-2.6/fs/fuse/file.c
+===================================================================
+--- linux-2.6.orig/fs/fuse/file.c	2010-10-27 14:04:02.000000000 +0200
++++ linux-2.6/fs/fuse/file.c	2010-10-30 13:14:07.000000000 +0200
+@@ -134,6 +134,7 @@ EXPORT_SYMBOL_GPL(fuse_do_open);
+ void fuse_finish_open(struct inode *inode, struct file *file)
+ {
+ 	struct fuse_file *ff = file->private_data;
++	struct fuse_conn *fc = get_fuse_conn(inode);
+ 
+ 	if (ff->open_flags & FOPEN_DIRECT_IO)
+ 		file->f_op = &fuse_direct_io_file_operations;
+@@ -141,6 +142,15 @@ void fuse_finish_open(struct inode *inod
+ 		invalidate_inode_pages2(inode->i_mapping);
+ 	if (ff->open_flags & FOPEN_NONSEEKABLE)
+ 		nonseekable_open(inode, file);
++	if (fc->atomic_o_trunc && (file->f_flags & O_TRUNC)) {
++		struct fuse_inode *fi = get_fuse_inode(inode);
++
++		spin_lock(&fc->lock);
++		fi->attr_version = ++fc->attr_version;
++		i_size_write(inode, 0);
++		spin_unlock(&fc->lock);
++		fuse_invalidate_attr(inode);
++	}
+ }
+ 
+ int fuse_open_common(struct inode *inode, struct file *file, bool isdir)
