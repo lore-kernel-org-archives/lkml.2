@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753738Ab0J3VZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 17:25:26 -0400
-Received: from fieldses.org ([174.143.236.118]:55733 "EHLO fieldses.org"
+	id S1753851Ab0J3VZl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 17:25:41 -0400
+Received: from ozlabs.org ([203.10.76.45]:45032 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753261Ab0J3VZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 17:25:24 -0400
-Date: Sat, 30 Oct 2010 17:25:00 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: nfsd changes for 2.6.37
-Message-ID: <20101030212500.GE480@fieldses.org>
-References: <20101026164549.GD19445@fieldses.org>
- <20101027083924.GA28129@infradead.org>
- <20101027133924.GB6328@fieldses.org>
- <201010271546.09036.arnd@arndb.de>
- <20101027145538.GC6328@fieldses.org>
- <20101027145929.GA5788@infradead.org>
+	id S1753813Ab0J3VZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 17:25:38 -0400
+From: Jeremy Kerr <jk@ozlabs.org>
+To: cbe-oss-dev@lists.ozlabs.org
+Subject: Re: [Cbe-oss-dev] [PATCH] PowerPC/Cell: use vzalloc rather than vmalloc and memset in spu_alloc_lscsa_std
+Date: Sat, 30 Oct 2010 17:25:32 -0400
+User-Agent: KMail/1.13.5 (Linux/2.6.35-22-generic; KDE/4.5.1; x86_64; ; )
+Cc: Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Ben Herrenschmidt <benh@kernel.crashing.org>
+References: <alpine.LNX.2.00.1010302004290.1572@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1010302004290.1572@swampdragon.chaosbits.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101027145929.GA5788@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010301725.32559.jk@ozlabs.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I noticed a couple problems with the lease patches.  Also:
+Jesper,
 
-On Wed, Oct 27, 2010 at 10:59:29AM -0400, Christoph Hellwig wrote:
-> On Wed, Oct 27, 2010 at 10:55:39AM -0400, J. Bruce Fields wrote:
-> > Hm, two problems:
-> > 	- We introduce the possibility of fcntl(fd, F_SETLEASE, F_UNLCK)
-> > 	  failing with ENOMEM.
-> 
-> splitt ->setlease into ->add_least and ->delete_lease.  No need to pass
-> in a structure for the later.  No need to return one either.
+> We can get rid of a memset in
+> arch/powerpc/platforms/cell/spufs/lscsa_alloc.c::spu_alloc_lscsa_std() by
+> using vzalloc() rather than vmalloc()+memset().
 
-We still need to do this part.  I just did the minimum required to fix
-the problem--I figure splitting out a separate ->delete_lease method
-(which I agree would be cleaner) could wait till the next merge window.
+Looks good to me.
 
-Patches follow, tested on top of the merge of Arnd's patches; if they
-look OK they can go in, or I can commit them on top of a few pending
-nfsd fixes and send another pull request.
+Acked-By: Jeremy Kerr <jk@ozlabs.org>
 
-It'd be nice if we get this fixed by -rc1, but not the end of the world
-if we don't.
+Ben, could you apply this to the powerpc tree?
 
---b.
+Cheers,
+
+
+Jeremy
