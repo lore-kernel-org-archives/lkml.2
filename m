@@ -1,52 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752248Ab0J3Hr4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 03:47:56 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:39289 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751808Ab0J3Hrx (ORCPT
+	id S1752324Ab0J3IBF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 04:01:05 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:50063 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751906Ab0J3IBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 03:47:53 -0400
-Date: Sat, 30 Oct 2010 09:47:49 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, David Daney <ddaney@caviumnetworks.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Ingo Molnar <mingo@elte.hu>, Jason Baron <jbaron@redhat.com>,
-        rth@redhat.com, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
-        avi@redhat.com, davem@davemloft.net, vgoyal@redhat.com,
-        sam@ravnborg.org, tony@bakeyournoodle.com, dsd@laptop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] jump label: disable due to compiler bug
-Message-ID: <20101030074749.GB1721@basil.fritz.box>
-References: <20101029063450.GE29463@elte.hu>
- <1288354687.18238.433.camel@gandalf.stny.rr.com>
- <20101029122230.GA25663@elte.hu>
- <1288356418.18238.454.camel@gandalf.stny.rr.com>
- <20101029133524.GA23916@Krystal>
- <1288369108.29632.1.camel@gandalf.stny.rr.com>
- <4CCB01D1.2050004@caviumnetworks.com>
- <1288373582.29632.3.camel@gandalf.stny.rr.com>
- <4CCB2B7B.6020002@zytor.com>
- <1288385260.29632.24.camel@gandalf.stny.rr.com>
+	Sat, 30 Oct 2010 04:01:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=P9aKe2bf91wiFMcwsikdvQfTPZlV2sLWDf3X7a5qoI9KzU2P4oLB7zVM0M4ZOoeEaE
+         9jg1z+vatoTVe/HlNHY5fqLjGcD+c0+hvnq15bV0fD+Mkkqj9kexaquVGUqR//thRyZ3
+         4KYx/ZnKlXaVVv3OpiZAIaLxaKKcEjJkIaX9k=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288385260.29632.24.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4CCBC8B1.2080808@in.ibm.com>
+References: <4CCBC8B1.2080808@in.ibm.com>
+Date: Sat, 30 Oct 2010 16:01:00 +0800
+Message-ID: <AANLkTimE=uzwhDMz_-jVWKyb9NAONGuVvVo5KbjkkZVu@mail.gmail.com>
+Subject: Re: [s390] 2.6.36-git14 build break - fs/compat.c :631
+ (PAGE_CACHE_MASK undeclared)
+From: wu zhangjin <wuzhangjin@gmail.com>
+To: Sachin Sant <sachinp@in.ibm.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-s390@vger.kernel.org,
+        linux-mips <linux-mips@linux-mips.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Fine, but we can wait till 2.6.38 for that. For now we have a manual
-> config option. I'm not changing it until I have 4.5.2 in my distcc farm
-> and testing it out.
+The same problem on MIPS.
 
-It's probably obvious, but a manual config option still breaks
-the allyes|modconfig crowd.
+Perhaps this can help:
 
--Andi
+$ git diff
+diff --git a/fs/compat.c b/fs/compat.c
+index ff66c0d..c580c32 100644
+--- a/fs/compat.c
++++ b/fs/compat.c
+@@ -49,6 +49,7 @@
+ #include <linux/eventpoll.h>
+ #include <linux/fs_struct.h>
+ #include <linux/slab.h>
++#include <linux/pagemap.h>
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+ #include <asm/uaccess.h>
+ #include <asm/mmu_context.h>
+
+I'm not sure if this is a good fixup, because the problem is
+introduced by MAX_RW_COUNT defined in include/linux/fs.h:
+
+#define MAX_RW_COUNT (INT_MAX & PAGE_CACHE_MASK)
+
+and the PAGE_CACHE_MASK is defined in pagemap.h, we may be possible to
+add <linux/pagemap.h> in include/linux/fs.h but pagemap.h has included
+<linux/fs.h> too ...
+
+Regards,
+Wu Zhangjin
+
+On Sat, Oct 30, 2010 at 3:26 PM, Sachin Sant <sachinp@in.ibm.com> wrote:
+> Latest 2.6.36 git [commit 44234d0c46...] fails to build on s390x with
+> following error :
+>
+> fs/compat.c: In function compat_rw_copy_check_uvector:
+> fs/compat.c:631: error: PAGE_CACHE_MASK undeclared (first use in this
+> function)
+> fs/compat.c:631: error: (Each undeclared identifier is reported only once
+> fs/compat.c:631: error: for each function it appears in.)
+> make[1]: *** [fs/compat.o] Error 1
+>
+> The code in question was added via following commit:
+>
+> commit 435f49a518c78eec8e2edbbadd912737246cbe20
+> readv/writev: do the same MAX_RW_COUNT truncation that read/write does
+>
+> Thanks
+> -Sachin
