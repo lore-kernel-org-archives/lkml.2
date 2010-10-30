@@ -1,97 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762205Ab0J3Ay1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Oct 2010 20:54:27 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62602 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783Ab0J3Ay0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Oct 2010 20:54:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=D1PjhYqballbxYXHN1DYJY1jm+1tqrYniQLxXiUVMIIli/AMhGh4M/E2x1joUQZeyz
-         6pIWc/PiHAKsTLoBc65bkWscJjc4Ovs918PpFHA5BC45jEk4QeU53/qQnFaN07wOjXRS
-         fBIie7IHKndFRpPF8KkDAdsbDgeIAyFTEonmw=
+	id S1762194Ab0J3A6F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Oct 2010 20:58:05 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57536 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752187Ab0J3A6C convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Oct 2010 20:58:02 -0400
 MIME-Version: 1.0
-In-Reply-To: <20101030003357.029b4e02@werewolf.home>
-References: <20101022013544.0fdab0e0@werewolf.home>
-	<4CC16B1E.4060709@suse.de>
-	<20101023004636.1acdd81c@werewolf.home>
-	<20101024013038.057442c0@werewolf.home>
-	<4CC55894.5040509@suse.de>
-	<20101030003357.029b4e02@werewolf.home>
-Date: Fri, 29 Oct 2010 19:54:24 -0500
-Message-ID: <AANLkTin-tXH-Q5wDGs9ZCQGdEZkm7w=AEdegDjV0mn6S@mail.gmail.com>
-Subject: Re: CIFS is slooow, gvfs is fast
-From: Steve French <smfrench@gmail.com>
-To: =?ISO-8859-1?Q?J=2EA=2E_Magall=F3n?= <jamagallon@ono.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux CIFS <linux-cifs@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <alpine.LNX.2.01.1010250115360.16022@obet.zrqbmnf.qr>
+References: <20100212091609.GB1025@kernel.dk> <alpine.LFD.2.00.1002120722270.7792@localhost.localdomain>
+ <alpine.LSU.2.01.1002131356250.20838@obet.zrqbmnf.qr> <20100215144938.GD3434@quack.suse.cz>
+ <alpine.LSU.2.01.1002151629380.27775@obet.zrqbmnf.qr> <alpine.LSU.2.01.1006271842220.1495@obet.zrqbmnf.qr>
+ <alpine.LNX.2.01.1010250115360.16022@obet.zrqbmnf.qr>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 29 Oct 2010 17:57:31 -0700
+Message-ID: <AANLkTikBmewDmBJWHzdTerJE2W4GqRYMxLCdAJyz5JDB@mail.gmail.com>
+Subject: Re: Sync writeback still broken
+To: Jan Engelhardt <jengelh@medozas.de>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, stable@kernel.org,
+        Greg KH <gregkh@suse.de>, Jens Axboe <jaxboe@fusionio.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 29, 2010 at 5:33 PM, J.A. MagallÃ³n <jamagallon@ono.com> wrote:
-> On Mon, 25 Oct 2010 15:44:44 +0530, Suresh Jayaraman <sjayaraman@suse.de> wrote:
->
->> On 10/24/2010 05:00 AM, J.A. MagallÃ³n wrote:
->> > On Sat, 23 Oct 2010 00:46:36 +0200, "J.A. Magallï¿½n" <jamagallon@ono.com> wrote:
->> >
->> >>
->> >> If you mean hardware network path (cabling, router), yes.
->> >> For file paths, CIFS fs is under /net/htpc/media, and gvfs uses a mount
->> >> point on '~/.gvfs/media on htpc'.
->> >>
->> >> And here comes the weird part. To rule out the desktop environment factor,
->> >> I tried a dd in both paths. On /net, I get 16.6 MB/s, and on
->> >> ~/.gvfs/xxx, I just get 5.5 MB/s. I really don't understand anything...
->> >> things get reversed depending if you use a gui or commandline.
->> >>update
->> >> Weird, really weird...
->> >>
->> >
->> > Well, to sort things out, I did some more tests (this does not mean things
->> > get any closer to be clear for me at least...).
->> >
->> > Can anybody tell me whats going here...??
->> > It looks just like gui tools behave just in reverse of cli, and that a plain
->> > smbclient is faster that cifs. I'm really confused...
->> >
+Guys, what is the status of this?
+
+The original patch in that email thread still makes no sense and the
+commit log for it cannot be the real issue. But the _problem_ seems to
+be real, and the code is apparently a total mess, still.
+
+And the chunking is necessary - as even quoted in that whole thread:
+
+  On Tue, Feb 23, 2010 at 01:53:50PM +1100, Dave Chinner wrote:
+  >
+  > Ignoring nr_to_write completely can lead to issues like we used to
+  > have with XFS - it would write an entire extent (8GB) at a time and
+  > starve all other writeback. Those starvation problems - which were
+  > very obvious on NFS servers - went away when we trimmed back the
+  > amount to write in a single pass to saner amounts...
+
+so we can't just stay with one single inode and do that one
+completely. At the same time, the VFS chunking code itself is at least
+supposed to try to write out 4MB at a time, which means that the whole
+"only 400kB/s throughput" thing is pretty damn unlikely - but if it's
+true, then that obviously means that the chunking is somehow broken.
+
+IOW, we haven't seemed to get anywhere, and I haven't seen anybody
+reply to Jan's plaintive email. Anybody?
+
+                         Linus
+
+On Sun, Oct 24, 2010 at 4:41 PM, Jan Engelhardt <jengelh@medozas.de> wrote:
 >>
->> Could you try mounting from commandline with something like
->> Â  `mount -t cifs //server/share /mnt/point -o user=user1`
->> (commenting out the fstab entry) and try copying the file?
+>>What ultimately became of the discussion and/or the patch?
 >>
->>
+>>Your original ad-hoc patch certainly still does its job; had no need to
+>>reboot in 86 days and still counting.
 >
-> Same results, cli copy takes about 7.5 seconds (thats around 40MB/s), and
-> gui copy says it runs at 7.8 MB/s.
-> This could be the normal behaviour I could expect, gui is slower as it has to
-> update progress bars, move flying sheets, or even does a sync from time to
-> time.
+> I still observe this behavior on 2.6.36-rc8. This is starting to
+> get frustrating, so I will be happily following akpm's advise to
+> poke people.
 >
-> The misbehaviour I see is the other way aroung, FUSE/GVFS is fast from GUI
-> and slow from CLI. And, the best, why are there any difference ???
-
-The obvious thing to check is actual cifs write sizes on the network
-(with wireshark e.g.)
-and how much parallelism.   We know cifs kernel client will send 56K
-writes, but only one at
-a time for any particular file.  (thanks to Pavel the smb2 kernel
-client will send more
-in parallel and get about two to three times better performance).   cifs kernel
-client can send less than 56K if the dirty pages are scattered of course
-(writepages won't be called with contiguous dirty pages) and cifs client can
-send more than 56K when mounting with "directio" cifs mount option
-but only if the application tries to write more than 56K for each user space
-write operation (mounting with directio might be a nice comparison point).
-
-
--- 
-Thanks,
-
-Steve
+> Thread entrypoint: http://lkml.org/lkml/2010/2/12/41
+>
+> Previously, many concurrent extractions of tarballs and so on have been
+> one way to trigger the issue; I now also have a rather small testcase
+> (below) that freezes the box here (which has 24G RAM, so even if I'm
+> lacking to call msync, I should be fine) sometime after memset finishes.
+>
+> ----
+> /* calculate all possible 32-bit hashes
+>   needs 16G of address space, so better have a 64-bit kernel at hand
+>  */
+> #define _GNU_SOURCE 1
+> #include <sys/mman.h>
+> #include <sys/stat.h>
+> #include <sys/types.h>
+> #include <errno.h>
+> #include <fcntl.h>
+> #include <limits.h>
+> #include <stdint.h>
+> #include <stdio.h>
+> #include <stdlib.h>
+> #include <string.h>
+>
+> #define ARRAY_SIZE(x) (sizeof(x) / sizeof(*(x)))
+> #define S_IRUGO (S_IRUSR | S_IRGRP | S_IROTH)
+> #define S_IWUGO (S_IWUSR | S_IWGRP | S_IWOTH)
+>
+> #define jrot(x,k) (((x) << (k)) | ((x) >> (32 - (k))))
+>
+> /* jhash_mix - mix 3 32-bit values reversibly. */
+> #define jhash_mix(a, b, c) { \
+>        a -= c; a ^= jrot(c,  4); c += b; \
+>        b -= a; b ^= jrot(a,  6); a += c; \
+>        c -= b; c ^= jrot(b,  8); b += a; \
+>        a -= c; a ^= jrot(c, 16); c += b; \
+>        b -= a; b ^= jrot(a, 19); a += c; \
+>        c -= b; c ^= jrot(b,  4); b += a; \
+> }
+>
+> #define jhash_final(a, b, c) { \
+>        c ^= b; c -= jrot(b, 14); \
+>        a ^= c; a -= jrot(c, 11); \
+>        b ^= a; b -= jrot(a, 25); \
+>        c ^= b; c -= jrot(b, 16); \
+>        a ^= c; a -= jrot(c,  4);  \
+>        b ^= a; b -= jrot(a, 14); \
+>        c ^= b; c -= jrot(b, 24); \
+> }
+>
+> static uint32_t hash_jlookup3(const void *vkey, size_t length)
+> {
+>        static const unsigned int JHASH_GOLDEN_RATIO = 0x9e3779b9;
+>        const uint8_t *key = vkey;
+>        uint32_t a, b, c;
+>
+>        a = b = c = JHASH_GOLDEN_RATIO + length;
+>        /* All but the last block: affect some 32 bits of (a,b,c) */
+>        for (; length > 12; length -= 12, key += 12) {
+>                a += key[0] + ((uint32_t)key[1] << 8) +
+>                     ((uint32_t)key[2] << 16) + ((uint32_t)key[3] << 24);
+>                b += key[4] + ((uint32_t)key[5] << 8) +
+>                     ((uint32_t)key[6] << 16) + ((uint32_t)key[7] << 24);
+>                c += key[8] + ((uint32_t)key[9] << 8) +
+>                     ((uint32_t)key[10] << 16)+ ((uint32_t)key[11] << 24);
+>                jhash_mix(a, b, c);
+>        }
+>
+>        switch (length) {
+>        case 12: c += ((uint32_t)key[11]) << 24;
+>        case 11: c += ((uint32_t)key[10]) << 16;
+>        case 10: c += ((uint32_t)key[9])  << 8;
+>        case  9: c += key[8];
+>        case  8: b += ((uint32_t)key[7]) << 24;
+>        case  7: b += ((uint32_t)key[6]) << 16;
+>        case  6: b += ((uint32_t)key[5]) << 8;
+>        case  5: b += key[4];
+>        case  4: a += ((uint32_t)key[3]) << 24;
+>        case  3: a += ((uint32_t)key[2]) << 16;
+>        case  2: a += ((uint32_t)key[1]) << 8;
+>        case  1: a += key[0];
+>                break;
+>        case  0: return c;
+>        }
+>
+>        jhash_final(a,b,c);
+>        return c;
+> }
+>
+> static uint32_t *freq;
+> static const unsigned long long freq_size = 0x100000000UL * sizeof(*freq);
+>
+> static void map_freq(void)
+> {
+>        int fd;
+>
+>        fd = open("jenkins3.frq", O_RDWR | O_CREAT, S_IRUGO | S_IWUGO);
+>        if (fd < 0) {
+>                perror("open");
+>                abort();
+>        }
+>
+>        if (ftruncate(fd, freq_size) < 0) {
+>                perror("ftruncate");
+>                abort();
+>        }
+>
+>        freq = mmap(NULL, freq_size, PROT_READ | PROT_WRITE,
+>               MAP_SHARED, fd, 0);
+>        if (freq == NULL) {
+>                perror("mmap");
+>                abort();
+>        }
+> }
+>
+> static inline void calc_all_hashes(void)
+> {
+>        uint32_t x, y;
+>
+>        memset(freq, 0, freq_size);
+>        for (x = 0; x < UINT32_MAX; ++x) {
+>                if ((x & 0xFFFFF) == 0)
+>                        fprintf(stderr, "\r\e[2K""fill: %08x", x);
+>                y = hash_jlookup3(&x, sizeof(x));
+>                if (freq[y] < UINT32_MAX)
+>                        ++freq[y];
+>        }
+> }
+>
+> int main(void)
+> {
+>        map_freq();
+>        calc_all_hashes();
+>        return 0;
+> }
+>
