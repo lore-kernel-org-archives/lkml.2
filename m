@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924Ab0J3OQt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 10:16:49 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:51131 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751142Ab0J3OQr (ORCPT
+	id S1754004Ab0J3OW5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 10:22:57 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:59896 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752879Ab0J3OWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 10:16:47 -0400
-Date: Sat, 30 Oct 2010 10:16:44 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: loic.minier@canonical.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Nicolas Pitre <nico@fluxnic.net>,
-        Steve Langasek <steve.langasek@canonical.com>
-Cc: ltt-dev@lists.casi.polymtl.ca, linux-kernel@vger.kernel.org
-Subject: LTTng Mainlining Roadmap
-Message-ID: <20101030141644.GA17206@Krystal>
+	Sat, 30 Oct 2010 10:22:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=jrSemKmQVkeq7Tm5Ti2qrmp+SXkAXyPbI5cO2mzC/9YqCYNRF/61yImS2hmgCUZ2Md
+         OrvtoMa+3XxyfPhGqYvpHcqqisMZT1fFSQYS1T5BXQkcjOeIkcf5RCECqYi9UKPFj2xg
+         tjgr+nnbRoETpFm0iekLOBfY/uHyAI3K7dhzg=
+Date: Sat, 30 Oct 2010 18:22:49 +0400
+From: Vasiliy Kulikov <segooon@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: kernel-janitors@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Helge Deller <deller@gmx.de>, David Howells <dhowells@redhat.com>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] ipc: shm: fix information leak to userland
+Message-ID: <20101030142249.GA9835@albatros>
+References: <1288429477-21920-1-git-send-email-segooon@gmail.com>
+ <20101030090644.GX19804@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 09:55:11 up 37 days, 17:57,  4 users,  load average: 0.13, 0.14,
-	0.14
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20101030090644.GX19804@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+Structure shmid_ds is copied to userland with shm_unused{,2,3}
+fields unitialized.  It leads to leaking of contents of kernel stack
+memory.
 
-Here is an updated roadmap for the LTTng mainlining. As you will notice, the
-plan is not exactly to push the LTTng code into the Linux kernel as is, but
-rather to extract LTTng pieces one by one (it's already modular, so it is quite
-straightforward) and push them to mainline as individual pieces.
+Cc: stable@kernel.org
+Acked-by: Al Viro <viro@ZenIV.linux.org.uk>
+Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+---
+ Compile tested.
 
-This is the approach I have taken for the Tracepoints, which led to very good
-results. I plan to do the same for the Generic Ring Buffer Library, Trace
-Clocks, kernel state dump... these can all be splitted into serparate mainlining
-efforts.
+ ipc/shm.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-The new official URL for the LTTng roadmap is:
-
-http://lttng.org/roadmap
-
-FYI, I fixed the ARM PMU reservation in LTTng yesterday afternoon and made a new
-release. So it should now play along nicely with perf counters.
-
-Feedback is welcome,
-
-Thanks!
-
-Mathieu
-
+diff --git a/ipc/shm.c b/ipc/shm.c
+index fd658a1..7d3bb22 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -479,6 +479,7 @@ static inline unsigned long copy_shmid_to_user(void __user *buf, struct shmid64_
+ 	    {
+ 		struct shmid_ds out;
+ 
++		memset(&out, 0, sizeof(out));
+ 		ipc64_perm_to_ipc_perm(&in->shm_perm, &out.shm_perm);
+ 		out.shm_segsz	= in->shm_segsz;
+ 		out.shm_atime	= in->shm_atime;
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+1.7.0.4
