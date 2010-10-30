@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977Ab0J3Nmv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 09:42:51 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:25914 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142Ab0J3Nmt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 09:42:49 -0400
-Date: Sat, 30 Oct 2010 15:32:32 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Jonathan Corbet <corbet@lwn.net>
-cc: linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: [PATCH] VIA Chrome integrated camera controller driver includes
- headers multiple times
-Message-ID: <alpine.LNX.2.00.1010301527580.7979@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754000Ab0J3N6d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 09:58:33 -0400
+Received: from hera.kernel.org ([140.211.167.34]:58204 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751883Ab0J3N6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 09:58:31 -0400
+Message-ID: <4CCC2480.70303@kernel.org>
+Date: Sat, 30 Oct 2010 15:58:24 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Jesper Juhl <jj@chaosbits.net>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH] percpu: zero memory more efficiently in mm/percpu.c::pcpu_mem_alloc()
+References: <alpine.LNX.2.00.1010292354060.24561@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1010292354060.24561@swampdragon.chaosbits.net>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 30 Oct 2010 13:58:27 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Don't do vmalloc() + memset() when vzalloc() will do.
 
-The VIA Chrome integrated camera controller driver includes both 
-'linux/pci.h' and 'linux/device.h' twice. This gets rid of the duplicates.
-
+tj: dropped unnecessary temp variable ptr.
 
 Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- via-camera.c |    2 --
- 1 file changed, 2 deletions(-)
+Applied with slight modification.  Thank you.
 
-diff --git a/drivers/media/video/via-camera.c b/drivers/media/video/via-camera.c
-index 02a21bc..6f52818 100644
---- a/drivers/media/video/via-camera.c
-+++ b/drivers/media/video/via-camera.c
-@@ -13,14 +13,12 @@
- #include <linux/pci.h>
- #include <linux/gpio.h>
- #include <linux/interrupt.h>
--#include <linux/pci.h>
- #include <linux/platform_device.h>
- #include <linux/videodev2.h>
- #include <media/v4l2-device.h>
- #include <media/v4l2-ioctl.h>
- #include <media/v4l2-chip-ident.h>
- #include <media/videobuf-dma-sg.h>
--#include <linux/device.h>
- #include <linux/delay.h>
- #include <linux/dma-mapping.h>
- #include <linux/pm_qos_params.h>
+ mm/percpu.c |    8 ++------
+ 1 files changed, 2 insertions(+), 6 deletions(-)
 
+diff --git a/mm/percpu.c b/mm/percpu.c
+index efe8168..9e16d1c 100644
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -293,12 +293,8 @@ static void *pcpu_mem_alloc(size_t size)
 
+ 	if (size <= PAGE_SIZE)
+ 		return kzalloc(size, GFP_KERNEL);
+-	else {
+-		void *ptr = vmalloc(size);
+-		if (ptr)
+-			memset(ptr, 0, size);
+-		return ptr;
+-	}
++	else
++		return vzalloc(size);
+ }
+
+ /**
 -- 
-Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-Plain text mails only, please      http://www.expita.com/nomime.html
-Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
+1.7.1
 
