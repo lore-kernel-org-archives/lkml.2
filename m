@@ -1,52 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756667Ab0JaVcY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Oct 2010 17:32:24 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:60913 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752253Ab0JaVcX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Oct 2010 17:32:23 -0400
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Sam Creasey <sammy@sammy.net>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH/RFC] m68k/sun3: Kill pte_unmap() warnings
-References: <alpine.DEB.2.00.1010312135110.22279@ayla.of.borg>
-X-Yow: YOW!!  Now I'm playing with my HOLOGRAPHIC ATOMIC SIMULATION LASER
- pinball machine!!  WORLD PEACE is in the BALANCE!!
-Date: Sun, 31 Oct 2010 22:32:18 +0100
-In-Reply-To: <alpine.DEB.2.00.1010312135110.22279@ayla.of.borg> (Geert
-	Uytterhoeven's message of "Sun, 31 Oct 2010 21:38:35 +0100 (CET)")
-Message-ID: <m2wroynj4t.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1756776Ab0JaVvn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Oct 2010 17:51:43 -0400
+Received: from slowhand.arndnet.de ([88.198.19.76]:59162 "EHLO mail.unitix.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752823Ab0JaVvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Oct 2010 17:51:41 -0400
+Message-ID: <4CCDE4EB.7060001@arndnet.de>
+Date: Sun, 31 Oct 2010 22:51:39 +0100
+From: Arnd Hannemann <arnd@arndnet.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Lightning/1.0b1 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: regression: b43-sdio: probe of mmc0:0001:1 failed with error
+ -16
+References: <4CCDA454.708@arndnet.de> <AANLkTin80pwnb1DX8OdZK3Wgsq0nj==G9VM3pahsmo0U@mail.gmail.com>
+In-Reply-To: <AANLkTin80pwnb1DX8OdZK3Wgsq0nj==G9VM3pahsmo0U@mail.gmail.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: multipart/mixed;
+ boundary="------------090604000406090506030406"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven <geert@linux-m68k.org> writes:
+This is a multi-part message in MIME format.
+--------------090604000406090506030406
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-> Which one is preferable?
->
-> -------------------------------------------------------------------------------
-> Since commit 31c911329e048b715a1dfeaaf617be9430fd7f4e ("mm: check the argument
-> of kunmap on architectures without highmem"), we get lots of warnings like
->
-> arch/m68k/kernel/sys_m68k.c:508: warning: passing argument 1 of ‘kunmap’ from incompatible pointer type
->
-> As m68k doesn't support highmem anyway, open code the calls to kmap() and
-> kunmap() (the latter is a no-op) to kill the warnings.
+Hi Ohad,
 
-I prefer this one, it matches all architectures without CONFIG_HIGHPTE.
+Am 31.10.2010 20:14, schrieb Ohad Ben-Cohen:
 
-Andreas.
+> On Sun, Oct 31, 2010 at 7:16 PM, Arnd Hannemann <arnd@arndnet.de> wrote:
+>> b43-sdio: probe of mmc0:0001:1 failed with error -16
+> 
+> It's exactly what Daniel is experiencing with the XO-1.5.
+> 
+> In Daniel's scenario, mmc_sdio_init_card() fails because
+> mmc_send_relative_addr() returns -110.
+> 
+> Can you please check out if that's the same thing you have too ?
 
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+No, it seems to be the pm_runtime_get_sync in sdio_bus.c::sdio_bus_probe().
+
+If I test with CONFIG_PM_RUNTIME=y and the attached modifications,
+then I get this as output:
+
+root@ap4evb:~# modprobe b43
+[   29.859375] cfg80211: Calling CRDA to update world regulatory domain
+[   30.226562] pm_runtime_get_sync: -16
+[   30.234375] b43-sdio: probe of mmc0:0001:1 failed with error -16
+[   30.242187] Broadcom 43xx driver loaded [ Features: LS, Firmware-ID: FW13 ]
+
+If CONFIG_PM_RUNTIME is not set in .config, the problem goes away.
+
+Regards,
+Arnd
+
+
+--------------090604000406090506030406
+Content-Type: text/plain;
+ name="diff"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="diff"
+
+diff --git a/drivers/mmc/core/sd_ops.c b/drivers/mmc/core/sd_ops.c
+index 797cdb5..57b6dd4 100644
+--- a/drivers/mmc/core/sd_ops.c
++++ b/drivers/mmc/core/sd_ops.c
+@@ -237,8 +237,10 @@ int mmc_send_relative_addr(struct mmc_host *host, unsigned int *rca)
+ 	cmd.flags = MMC_RSP_R6 | MMC_CMD_BCR;
+ 
+ 	err = mmc_wait_for_cmd(host, &cmd, MMC_CMD_RETRIES);
+-	if (err)
++	if (err) {
++		printk(KERN_INFO "%s(): %d\n", __func__, err);
+ 		return err;
++	}
+ 
+ 	*rca = cmd.resp[0] >> 16;
+ 
+diff --git a/drivers/mmc/core/sdio_bus.c b/drivers/mmc/core/sdio_bus.c
+index 2716c7a..102c163 100644
+--- a/drivers/mmc/core/sdio_bus.c
++++ b/drivers/mmc/core/sdio_bus.c
+@@ -133,8 +133,10 @@ static int sdio_bus_probe(struct device *dev)
+ 	 * pm_runtime_get_noresume() in its remove routine.
+ 	 */
+ 	ret = pm_runtime_get_sync(dev);
+-	if (ret < 0)
++	if (ret < 0) {
++		printk(KERN_INFO "pm_runtime_get_sync: %d\n", ret);
+ 		goto out;
++	}
+ 
+ 	/* Set the default block size so the driver is sure it's something
+ 	 * sensible. */
+
+--------------090604000406090506030406--
