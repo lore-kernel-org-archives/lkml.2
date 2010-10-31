@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756501Ab0JaRif (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Oct 2010 13:38:35 -0400
-Received: from higgs.elka.pw.edu.pl ([194.29.160.5]:41883 "EHLO
-	higgs.elka.pw.edu.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756410Ab0JaRid (ORCPT
+	id S1756493Ab0JaRo0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Oct 2010 13:44:26 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:61772 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756093Ab0JaRoY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Oct 2010 13:38:33 -0400
-X-Comment: RFC 2476 MSA function at elektron.elka.pw.edu.pl logged sender identity as: wzabolot
-Message-ID: <4CCDA96E.1030404@elektron.elka.pw.edu.pl>
-Date: Sun, 31 Oct 2010 18:37:50 +0100
-From: "wzabolot@elektron.elka.pw.edu.pl" <W.Zabolotny@elka.pw.edu.pl>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100913 Icedove/3.0.7
+	Sun, 31 Oct 2010 13:44:24 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Igor Zhbanov <izh1979@gmail.com>
+Subject: Re: Why get/put_unaligned are hidden behind #ifdef __KERNEL__ on PowerPC and Microblaze?
+Date: Sun, 31 Oct 2010 18:45:04 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <AANLkTimtfUXN9oTQ=BaxNz+h+mgwFBPrzN_Nggbai+ZJ@mail.gmail.com> <m2bp6apelh.fsf@igel.home> <AANLkTimGUUhYgSQ6dCBtyaY5s1JQOqewU2RA78t4p8_6@mail.gmail.com>
+In-Reply-To: <AANLkTimGUUhYgSQ6dCBtyaY5s1JQOqewU2RA78t4p8_6@mail.gmail.com>
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Kernel configuration should warn when KMS is switched on but
- framebuffer console is not?
-References: <4CC751E8.9030505@elektron.elka.pw.edu.pl>	<4CC7DDCC.7040605@elka.pw.edu.pl>	<4CCB39BE.4080400@elektron.elka.pw.edu.pl>	<4CCB41E5.7030708@elektron.elka.pw.edu.pl>	<4CCC1EF3.1050007@elektron.elka.pw.edu.pl> <20101031102928.b7353c20.rdunlap@xenotime.net>
-In-Reply-To: <20101031102928.b7353c20.rdunlap@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201010311845.04560.arnd@arndb.de>
+X-Provags-ID: V02:K0:M3ZL5OMnyd3O3fu5SdC3o+velc+4sUZiMfHu6TzmS6Y
+ 0/4qUbt9uNU/kCmDNVzo12enxkbz9YCI9dR3E4x/tKQVQSlzM3
+ 4biFC3ETZrmI70/qXiZ/fzhLhyr18hXXY5ZZ5ksTkjocI3xIiw
+ HqEtq4nF42w9wXUyDN8rFXRvLrH1sgoWG47yzgvaifp6Or2Wn3
+ k6Aa6X1DQELDxxTzagBzQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 31.10.2010 18:29, Randy Dunlap pisze:
-> On Sat, 30 Oct 2010 15:34:43 +0200 wzabolot@elektron.elka.pw.edu.pl wrote:
->
->    
->> To avoid the problems described in the above bug reports, maybe the kernel
->> configuration should check and warn when CONFIG_DRM_I915_KMS is set to "y"
->> while CONFIG_FRAMEBUFFER_CONSOLE is not set to "y"?
->>      
-> What "above bug reports" are you referring to, please?
->
->    
-I mean my report archived as http://lkml.org/lkml/2010/10/26/466
-and following informations about attempts to resolve it (next messages 
-in the thread).
--- 
-Regards,
-Wojtek Zabolotny
+On Sunday 31 October 2010, Igor Zhbanov wrote:
+> 2010/10/31 Andreas Schwab <schwab@linux-m68k.org>:
 
+> I think that unaligned memory access interface are stable, so it can
+> be safely exported
+> to user space. We have some other platform-related exported headers,
+> e.g. <asm/byteorder.h>,
+> so why not to export <asm/unaligned.h>. Let it be "official" way to
+> deal with unaligned data
+> in user space too.
+
+There are libraries to deal with stuff like this. The kernel headers
+are in no way a portable way to do this and any code that tries to
+use them in this way would not even be portable across different
+distribution that put the kernel headers in different places or
+to architectures that define these functions as extern.
+
+If you need something like get_unaligned, look in places like
+http://ccan.ozlabs.org or http://www.gnu.org/software/gnulib/.
+
+You can also use a generic gcc based implementation that uses
+attribute((packed)) for unaligned access.
+
+	Arnd
