@@ -1,47 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751868Ab0JaF4F (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Oct 2010 01:56:05 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:62765 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254Ab0JaF4D (ORCPT
+	id S1752156Ab0JaGZk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Oct 2010 02:25:40 -0400
+Received: from 190-202-95-114.dyn.dsl.cantv.net ([190.202.95.114]:35647 "EHLO
+	kepler2.unet.edu.ve" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751491Ab0JaGZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Oct 2010 01:56:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=Iq21JkDOqejcrWUtcO6xqVpmlBPyP39jlMZxyah+O/KDzW1Lieqj1oc0UVU9RrP6WK
-         ZX123QPPNlRt8wwdGvaC+eArl2IrChymMozuGPqhXh3UcBgXbnP0YWVI6Xg3TejMTI5J
-         IxKIcP7S+rDzUloprAaeAckTKAHdnObQzNqV4=
+	Sun, 31 Oct 2010 02:25:38 -0400
+Message-ID: <20101031015530.75451yfn7zeds1k0@webmail.unet.edu.ve>
+Date: Sun, 31 Oct 2010 01:55:30 -0430
+From: info_webmaster <info@webmaster.org>
+Reply-to: customercarewebdept2010@w.cn
+To: undisclosed-recipients:;
+Subject: Confirm your webmail account
 MIME-Version: 1.0
-Date: Sun, 31 Oct 2010 11:56:02 +0600
-Message-ID: <AANLkTi=T2JXDT=jYRED8jMGiWdxwUt5vJ-RG=pfRv9dS@mail.gmail.com>
-Subject: [PATCH] sched: Remove redundant #ifdef.
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+ charset=ISO-8859-2;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.5)
+X-UNET-MailScanner: Found to be clean
+X-UNET-MailScanner-From: info@webmaster.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Remove redundant #ifdef to wrap struct cpupri. root_domain structure
-is declared under #ifdef CONFIG_SMP, no need to use #ifdef again
-inside the structure.
+Dear Account User,
+
+We are currently updating our database and the center of the e-mail  
+account which is to say, see page home. We will remove the email  
+accounts that age
+e are no longer active to create more space for bills new users.we  
+also investigated a system audit level security to improve and enhance  
+our current security.
+
+To continue using our services are needed update and confirm the  
+details of your e-mail below.
+
+To complete your new account confirmation, reply to this message  
+immediately and enter your account details as requested below.
+
+Username: ..................
+E-mail Username ..............
+Password: ..................
+Confirm password? A :............
+Date of Birth :..............
+Password to future :............
+
+Otherwise, your account will be deactivated immediately from our  
+database data and the service is not interrupted as important  
+messages, and can be lost due to reduced confirm your account  
+information to us.
+
+We apologize for any inconvenience this will cause for this period but  
+confidence that we are here to serve you better service and provide  
+more technology which revolves around email e-mail and Internet.
+
+It is also relevant to understand that our main concern is that our  
+customers and the security of their files and data.
+
+Confirmation code: -/93-1A388-480 Webmail Support Team.
 
 
-Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
----
+================================================== =============
+This email is intended only for its intended recipientabove and may  
+contain confidential, privileged or private, legally, it is not for  
+general use or disclosure. If not the intended recipient, you are  
+notified that any disclosure,
+copying, distribution or taking any action based on contents of this  
+message is strictly prohibited. If you receive this message in error,  
+please let us know by reply message and then delete this message from  
+your system. Your cooperation is appreciated.
+================================================== ==============
 
---- linus-36/kernel/sched.c	2010-10-21 02:30:22.000000000 +0600
-+++ rakib-36/kernel/sched.c	2010-10-31 11:16:22.000000000 +0600
-@@ -426,9 +426,7 @@ struct root_domain {
- 	 */
- 	cpumask_var_t rto_mask;
- 	atomic_t rto_count;
--#ifdef CONFIG_SMP
- 	struct cpupri cpupri;
--#endif
- };
+Thanks for your Understanding
 
- /*
+
+
+
+
