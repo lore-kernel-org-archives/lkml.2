@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603Ab0JaDFL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 23:05:11 -0400
-Received: from fieldses.org ([174.143.236.118]:47235 "EHLO fieldses.org"
+	id S1754788Ab0JaDF3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 23:05:29 -0400
+Received: from fieldses.org ([174.143.236.118]:47236 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753368Ab0JaDFI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753642Ab0JaDFI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 30 Oct 2010 23:05:08 -0400
-Date: Sat, 30 Oct 2010 23:05:04 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
+Date: Sat, 30 Oct 2010 23:04:44 -0400
 To: Christoph Hellwig <hch@infradead.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
+Cc: "J. Bruce Fields" <bfields@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: nfsd changes for 2.6.37
-Message-ID: <20101031030504.GC24174@fieldses.org>
-References: <20101026164549.GD19445@fieldses.org>
- <20101027083924.GA28129@infradead.org>
- <20101027133924.GB6328@fieldses.org>
- <201010271546.09036.arnd@arndb.de>
- <20101027145538.GC6328@fieldses.org>
- <20101027145929.GA5788@infradead.org>
- <20101030212500.GE480@fieldses.org>
- <20101031020707.GB29702@infradead.org>
+        Arnd Bergmann <arnd@arndb.de>, Bryan Schumaker <bjschuma@netapp.com>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] nfsd4: initialize delegation pointer to lease
+Message-ID: <20101031030443.GB24174@fieldses.org>
+References: <20101030212500.GE480@fieldses.org>
+ <1288474276-14288-4-git-send-email-bfields@redhat.com>
+ <20101031020431.GA29702@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101031020707.GB29702@infradead.org>
+In-Reply-To: <20101031020431.GA29702@infradead.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 30, 2010 at 10:07:08PM -0400, Christoph Hellwig wrote:
-> On Sat, Oct 30, 2010 at 05:25:00PM -0400, J. Bruce Fields wrote:
-> > We still need to do this part.  I just did the minimum required to fix
-> > the problem--I figure splitting out a separate ->delete_lease method
-> > (which I agree would be cleaner) could wait till the next merge window.
+On Sat, Oct 30, 2010 at 10:04:31PM -0400, Christoph Hellwig wrote:
+> On Sat, Oct 30, 2010 at 05:31:16PM -0400, J. Bruce Fields wrote:
+> > The NFSv4 server was initializing the dp->dl_flock pointer by the
+> > somewhat ridiculous method of a locks_copy_lock callback.
+> > 
+> > Now that setlease uses the passed-in lock instead of doing a copy,
+> > dl_flock no longer gets set, resulting in the lock leaking on delegation
+> > release, and later possible hangs (among other problems).
+> > 
+> > So, initialize dl_flock and get rid of the callback.
 > 
-> I'd say please do it now.  The pre-allocated file_lock changes make
-> the semantics inside ->setlease really nasty right now.  I think it's a
-> dumb idea to leave it that way even for a single merge window.
+> >From what I can see this was the only instance of 
+> lock_manager_operations.fl_copy_lock.  Please kill it while you're at
+> it.
+> 
+> Also lock_manager_operations.fl_release_private has only exact one
+> instance in nfs4d which is part of the same abuse scheme.  Please also
+> get rid of it.   I recently noticed this while updating
+> Documentation/filesystems/Locking for the grand new BKL-less world.
 
-OK, will do.
+Yeah, I wanted to maximize chances of getting the minimal fixes into
+-rc1, but I've got patches for that queued up too.  I was planning on
+waiting for the next merge window, but I'm happy enough to send them in
+now.
 
 --b.
