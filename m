@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506Ab0JaBvj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 21:51:39 -0400
-Received: from mga11.intel.com ([192.55.52.93]:2156 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751541Ab0JaBvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 21:51:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,266,1286175600"; 
-   d="scan'208";a="852597078"
-Date: Sun, 31 Oct 2010 09:51:32 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Aidar Kultayev <the.aidar@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "Ted Ts'o" <tytso@mit.edu>,
-        Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Nick Piggin <npiggin@suse.de>, Arjan van de Ven <arjan@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: 2.6.36 io bring the system to its knees
-Message-ID: <20101031015132.GA10086@localhost>
-References: <AANLkTimt7wzR9RwGWbvhiOmot_zzayfCfSh_-v6yvuAP@mail.gmail.com>
- <AANLkTikRKVBzO=ruy=JDmBF28NiUdJmAqb4-1VhK0QBX@mail.gmail.com>
- <AANLkTinzJ9a+9w7G5X0uZpX2o-L8E6XW98VFKoF1R_-S@mail.gmail.com>
- <AANLkTinDDG0ZkNFJZXuV9k3nJgueUW=ph8AuHgyeAXji@mail.gmail.com>
- <20101031012224.GA8007@localhost>
+	id S1753061Ab0JaCE4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 22:04:56 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:34481 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752056Ab0JaCEz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 22:04:55 -0400
+Date: Sat, 30 Oct 2010 22:04:31 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: "J. Bruce Fields" <bfields@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
+        Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] nfsd4: initialize delegation pointer to lease
+Message-ID: <20101031020431.GA29702@infradead.org>
+References: <20101030212500.GE480@fieldses.org>
+ <1288474276-14288-4-git-send-email-bfields@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101031012224.GA8007@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1288474276-14288-4-git-send-email-bfields@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > How do I notice slowdowns ? The JuK lags so badly that it can't play
-> > any music, the mouse pointer freezes, kwin effects freeze for few
-> > seconds.
+On Sat, Oct 30, 2010 at 05:31:16PM -0400, J. Bruce Fields wrote:
+> The NFSv4 server was initializing the dp->dl_flock pointer by the
+> somewhat ridiculous method of a locks_copy_lock callback.
+> 
+> Now that setlease uses the passed-in lock instead of doing a copy,
+> dl_flock no longer gets set, resulting in the lock leaking on delegation
+> release, and later possible hangs (among other problems).
+> 
+> So, initialize dl_flock and get rid of the callback.
 
-> > How can I make it much worse ? I can try & run disk clean up under XP,
-> > that is running in VBox, with folder compression. On top of it if I
-> > start copying big files in linux ( 700MB avis, etc ), GUI effects
-> > freeze, mouse pointer freezes for few seconds.
+>From what I can see this was the only instance of 
+lock_manager_operations.fl_copy_lock.  Please kill it while you're at
+it.
 
-It may also help to lower the dirty ratio.
+Also lock_manager_operations.fl_release_private has only exact one
+instance in nfs4d which is part of the same abuse scheme.  Please also
+get rid of it.   I recently noticed this while updating
+Documentation/filesystems/Locking for the grand new BKL-less world.
 
-echo 5 > /proc/sys/vm/dirty_ratio
-
-Memory pressure + heavy write can easily hurt responsiveness.
-
-- eats up to 20% (the default value for dirty_ratio) memory with dirty
-  pages and hence increase the memory pressure and number of swap IO
-
-- the file copy makes the device write congested and hence makes
-  pageout() easily blocked in get_request_wait()
-
-As a result every application may be slowed down by the heavy swap IO
-when page fault as well as being blocked when allocating memory (which
-may go into direct reclaim and then call pageout()). 
-
-Thanks,
-Fengguang
