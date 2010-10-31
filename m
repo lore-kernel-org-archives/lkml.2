@@ -1,91 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657Ab0JaBLG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 21:11:06 -0400
-Received: from mx5.orcon.net.nz ([219.88.242.55]:53710 "EHLO mx5.orcon.net.nz"
+	id S1754690Ab0JaBWb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 21:22:31 -0400
+Received: from mga14.intel.com ([143.182.124.37]:6743 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754461Ab0JaBLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 21:11:04 -0400
-Message-ID: <4CCCC224.50007@orcon.net.nz>
-Date: Sun, 31 Oct 2010 14:11:00 +1300
-From: Michael Cree <mcree@orcon.net.nz>
-User-Agent: Mozilla/5.0 (X11; U; Linux alpha; en-US; rv:1.9.1.14) Gecko/20101026 Icedove/3.0.9
+	id S1754335Ab0JaBW3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 21:22:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,266,1286175600"; 
+   d="scan'208";a="342576929"
+Date: Sun, 31 Oct 2010 09:22:24 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Aidar Kultayev <the.aidar@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, "Ted Ts'o" <tytso@mit.edu>,
+        Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Nick Piggin <npiggin@suse.de>, Arjan van de Ven <arjan@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: 2.6.36 io bring the system to its knees
+Message-ID: <20101031012224.GA8007@localhost>
+References: <AANLkTimt7wzR9RwGWbvhiOmot_zzayfCfSh_-v6yvuAP@mail.gmail.com>
+ <AANLkTikRKVBzO=ruy=JDmBF28NiUdJmAqb4-1VhK0QBX@mail.gmail.com>
+ <AANLkTinzJ9a+9w7G5X0uZpX2o-L8E6XW98VFKoF1R_-S@mail.gmail.com>
+ <AANLkTinDDG0ZkNFJZXuV9k3nJgueUW=ph8AuHgyeAXji@mail.gmail.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Matt Turner <mattst88@gmail.com>, Jiri Kosina <trivial@kernel.org>,
-        Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/39] arch/alpha: Update WARN uses
-References: <cover.1288471897.git.joe@perches.com>	 <517a3d5c620dd4843a35a05c9a1c123b4b936cd9.1288471898.git.joe@perches.com>	 <AANLkTi=Po5RaY-mL62trrVm+kuK=0JV7z2oQcDJek4kE@mail.gmail.com> <1288474087.366.145.camel@Joe-Laptop>
-In-Reply-To: <1288474087.366.145.camel@Joe-Laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-DSPAM-Check: by mx5.orcon.net.nz on Sun, 31 Oct 2010 14:11:01 +1300
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Sun Oct 31 14:11:02 2010
-X-DSPAM-Confidence: 0.8531
-X-DSPAM-Probability: 0.0000
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinDDG0ZkNFJZXuV9k3nJgueUW=ph8AuHgyeAXji@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31/10/10 10:28, Joe Perches wrote:
-> On Sat, 2010-10-30 at 17:17 -0400, Matt Turner wrote:
->> On Sat, Oct 30, 2010 at 5:08 PM, Joe Perches<joe@perches.com>  wrote:
->>> Coalesce long formats.
->>> Align arguments.
->>> Signed-off-by: Joe Perches<joe@perches.com>
->>>   arch/alpha/kernel/pci-sysfs.c |   14 ++++++--------
->>>   1 files changed, 6 insertions(+), 8 deletions(-)
->>> diff --git a/arch/alpha/kernel/pci-sysfs.c b/arch/alpha/kernel/pci-sysfs.c
->>> @@ -44,10 +44,9 @@ static int __pci_mmap_fits(struct pci_dev *pdev, int num,
->>> -       WARN(1, "process \"%s\" tried to map%s 0x%08lx-0x%08lx on %s BAR %d "
->>> -               "(size 0x%08lx)\n",
->>> -               current->comm, sparse ? " sparse" : "", start, start + nr,
->>> -               pci_name(pdev), num, size);
->>> +       WARN(1, "process \"%s\" tried to map%s 0x%08lx-0x%08lx on %s BAR %d (size 0x%08lx)\n",
->>> +            current->comm, sparse ? " sparse" : "", start, start + nr,
->>> +            pci_name(pdev), num, size);
->>> @@ -261,10 +260,9 @@ static int __legacy_mmap_fits(struct pci_controller *hose,
->>> -       WARN(1, "process \"%s\" tried to map%s 0x%08lx-0x%08lx on hose %d "
->>> -               "(size 0x%08lx)\n",
->>> -               current->comm, sparse ? " sparse" : "", start, start + nr,
->>> -               hose->index, size);
->>> +       WARN(1, "process \"%s\" tried to map%s 0x%08lx-0x%08lx on hose %d (size 0x%08lx)\n",
->>> +            current->comm, sparse ? " sparse" : "", start, start + nr,
->>> +            hose->index, size);
->> What's accomplished here? It looks like you joined two strings (which
->> were separated as to not overflow the 80-char limit) and spaced a
->> couple lines over.
->>
->> I don't see how this makes anything clearer.
->
-> This one is just a whitespace cleanup.
-> Ignore it or nack it if you want.
+Hi Aidar,
 
-I prefer the original indenting as it clearly stands the `1' on its own 
-thus emphasising that the warning will be printed everytime the WARN() 
-statement is executed.  I surmise that the original programmer thought 
-it important to emphasise this as it might not be considered the 
-"normal" usage of WARN().
+On Thu, Oct 28, 2010 at 12:09:36PM +0600, Aidar Kultayev wrote:
+> QUOTE:***
+> And yes, we'd very much like to fix such slowdowns via heuristics as
+> well (detecting large sequential IO and not letting it poison the
+> existing cache), so good bugreports and reproducing testcases sent to
+> linux-kernel@vger.kernel.org and people willing to try out
+> experimental kernel patches would definitely be welcome.
+> 
+> Thanks,
+> 
+> Ingo
+> 
+> *** http://ask.slashdot.org/story/10/10/23/1828251/The-State-of-Linux-IO-Scheduling-For-the-Desktop#commentlisting
+> 
+> I'll be rather quick & to the point here.
+> 
+> I get & run stable kernels the same day they appear on kernel.org in
+> hope to get away from these annoying, ignored, neglected slowdowns.
+> 
+> .config attached - I have Lenovo ThinkPad T400, Core2Duo T9400, 4Gb
+> DDR2, w/integrated GM45 - xf86-video-intel, iwlagn for the intel 5300
+> wifi, CFS, ext2 for
+> swap partition - 4Gb, ext3 for boot, ext4 - 400Gb for everything else.
 
-I agree that, in general, coalesced strings aid grepping but this broken 
-string isn't one that will benefit.
+If possible I'd suggest to turn off the swap and check if it helps.
+Some people reports(*) desktop responsiveness problems that can be
+poor-man-fixed by disabling swap.
 
-I recall the story that when someone pointed out parallel fifths (an 
-absolute no-no according to the rules of classical harmony) in a 
-composition of Beethoven's to Beethoven himself, Beethoven was so 
-indignant that he proceeded to compose a set of variations on a theme 
-where in each variation he extensively violated one of the rules of 
-classical harmony, and wrote down the bottom of each variation "You Ass" 
-to the authority who had made the rule.
+(*) https://bugzilla.kernel.org/show_bug.cgi?id=12309
 
-The moral here is that when a _competent_ programmer breaks the "style 
-guide" they are most likely doing so for a very good reason.  Thus, 
-those who would submit whitespace fix patches should take time to ask 
-themselves why the original programmer has laid out the code in such a 
-fashion and learn from it, before submitting so-called "fixes".
+> All the hardware I have runs linux natively.
+> No kernel helped me from the days of 2.6.28.x upto 2.6.36. The dubbed
+> slowdown fixes never worked for me.
 
-Cheers
-Michael.
+There are multiple causes of slowdown. 2.6.36 includes some easy fix.
+The swap problem is (maybe partly) root caused(**), however will need a
+rather complex and intrusive patch to fix.
+
+(**) http://www.spinics.net/lists/linux-fsdevel/msg35397.html
+
+Thanks,
+Fengguang
+
+> The kernel config choices are rather typical : NO_HZ, I don't go crazy for
+> 1000Hz and use 100 or 250Hz and voluntary preemption.
+> Regarding the userland:
+> Love choices, hence nothing but Gentoo + KDE4. Multilib. Some relevant
+> info here:
+> 
+> ==============================================================================================
+> emerge --info
+> Portage 2.1.8.3 (default/linux/amd64/10.0/desktop, gcc-4.5.1,
+> glibc-2.11.2-r0, 2.6.36 x86_64)
+> =================================================================
+> System uname: Linux-2.6.36-x86_64-Intel-R-_Core-TM-2_Duo_CPU_T9400_@_2.53GHz-with-gentoo-1.12.13
+> Timestamp of tree: Tue, 26 Oct 2010 10:30:01 +0000
+> app-shells/bash:     4.1_p7
+> dev-java/java-config: 2.1.11
+> dev-lang/python:     2.5.4-r4, 2.6.5-r3, 3.1.2-r4
+> dev-util/cmake:      2.8.1-r2
+> sys-apps/baselayout: 1.12.13
+> sys-apps/sandbox:    2.3-r1
+> sys-devel/autoconf:  2.13, 2.65-r1
+> sys-devel/automake:  1.7.9-r1, 1.8.5-r4, 1.9.6-r3, 1.10.3, 1.11.1
+> sys-devel/binutils:  2.20.1-r1
+> sys-devel/gcc:       4.5.1
+> sys-devel/gcc-config: 1.4.1
+> sys-devel/libtool:   2.2.10
+> sys-devel/make:      3.81-r2
+> CBUILD="x86_64-pc-linux-gnu"
+> CFLAGS="-O2 -pipe -march=native"
+> CHOST="x86_64-pc-linux-gnu"
+> CONFIG_PROTECT="/etc /usr/share/X11/xkb /usr/share/config /var/lib/hsqldb"
+> CONFIG_PROTECT_MASK="/etc/ca-certificates.conf /etc/env.d
+> /etc/env.d/java/ /etc/fonts/fonts.conf /etc/gconf
+> /etc/php/apache2-php5/ext-active/ /etc/php/cgi-php5/ext-active/
+> /etc/php/cli-php5/ext-active/ /etc/revdep-rebuild /etc/sandbox.d
+> /etc/terminfo"
+> CXXFLAGS="-O2 -pipe -march=native"
+> ==============================================================================================
+> 
+> Now, I know, Ingo said he wants : "good bugreports and reproducing
+> testcases" and my testcase is very real life and rather replicates my
+> typical use of computer these days:
+> 
+> - VirtualBox running XP only to look at some 2007 ppts ( the Ooo3
+> doens't cut it )
+> - JuK ( or VLC ) KDE's music player - some music in the background
+> - Chromium browser, with bunch of tabs with J2EE/J2SE javadocs, eats
+> out some significant swap space
+> - bash terminals
+> - ktorrent
+> - PDFs opened in okular, Adobe reader
+> - sync'ing portage tree & emerging new ebuilds ( usually with gentoo )
+> - Netbeans, Eclipse, apache, vsftd, sshd, tomcat and the whole 9 yards.
+> 
+> How do I notice slowdowns ? The JuK lags so badly that it can't play
+> any music, the mouse pointer freezes, kwin effects freeze for few
+> seconds.
+> How can I make it much worse ? I can try & run disk clean up under XP,
+> that is running in VBox, with folder compression. On top of it if I
+> start copying big files in linux ( 700MB avis, etc ), GUI effects
+> freeze, mouse pointer freezes for few seconds.
+> 
+> And this is on 2.6.36 that is supposed to cure these "features". From
+> this perspective, 2.6.36 is no better than any previous stable kernel
+> I've tried. Probably as bad with regards to IO issues.
+> 
+> 
+> Find attached screenshot ( latencytop_n_powertop.png ) which depicts
+> artifacts where the window manager froze at the time I was trying to
+> see a tab in Konsole where the powertop was running.
+> 
+> At the time, in the other tabs of the Konsole the following was running :
+> .dd if=/dev/zero of=test.10g bs=1M count=10000;rm test.10g
+> .cp /home/ak/1.distr/Linux/openSUSE-11.2-DVD-x86_64.iso
+> /home/lameruser/;rm /home/lameruser/openSUSE-11.2-DVD-x86_64.iso;
+> .dd if=/dev/zero of=test.10g bs=1M count=10000;rm test.10g
+> .cp /home/ak/funeral.avi /home/ak/0.junk/;rm /home/ak/0.junk/funeral.avi
+> .the XP under VBox was compacting its old files.
+> 
+> the iso is about 4Gb, the avi is about 700Mb
+> 
+> I do follow the problem here :
+> https://bugzilla.kernel.org/show_bug.cgi?id=12309
+> 
+> This is a monumental failure for kernel development project and FLOSS
+> in general.
+> Poor management, no leadership/championship, no responsibility, neglect
+
