@@ -1,40 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756650Ab0JaTPG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Oct 2010 15:15:06 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:33781 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756451Ab0JaTPD (ORCPT
+	id S1756677Ab0JaT6W (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Oct 2010 15:58:22 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43403 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392Ab0JaT6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Oct 2010 15:15:03 -0400
+	Sun, 31 Oct 2010 15:58:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=LZW1sUEQbqeXFm+odKoDp5b5GPRxdny0JRZ96zarJbXo0mD84cVZrpONqJ3BPX0zOc
+         wZZlgQoywxG1XOtoXMdWuwk2mZlluD2JzmQy78loN9Iie5X+Xo1SXQvBh/v6IVPZea+Q
+         AXkvijLncX0q1VLUQfpSeOXSl2hHRyWJ/oP4o=
 MIME-Version: 1.0
-X-Originating-IP: [93.172.188.124]
-In-Reply-To: <4CCDA454.708@arndnet.de>
-References: <4CCDA454.708@arndnet.de>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Sun, 31 Oct 2010 21:14:43 +0200
-Message-ID: <AANLkTin80pwnb1DX8OdZK3Wgsq0nj==G9VM3pahsmo0U@mail.gmail.com>
-Subject: Re: regression: b43-sdio: probe of mmc0:0001:1 failed with error -16
-To: Arnd Hannemann <arnd@arndnet.de>
-Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Sun, 31 Oct 2010 21:58:18 +0200
+Message-ID: <AANLkTinWT9OyicLfdeY+AvWs=5vb5z8skZ3t6keYjk9j@mail.gmail.com>
+Subject: Horrible btrfs performance due to fragmentation
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Calvin Walton <calvin.walton@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-btrfs@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Mon, Oct 11, 2010 at 6:46 PM, Calvin Walton <calvin.walton@gmail.com> wrote:
+> On Mon, 2010-10-11 at 03:30 +0300, Felipe Contreras wrote:
+>> I use btrfs on most of my volumes on my laptop, and I've always felt
+>> booting was very slow, but definitely sure is slow, is starting up
+>> Google Chrome:
+>>
+>> encrypted ext4: ~20s
+>> btrfs: ~2:11s
+>>
+>> I have tried different things to find out exactly what is the issue,
+>> but haven't quite found it yet.
+>
+> If you've been using this volume for a while, it could just have become
+> badly fragmented. You could try btrfs's fancy online defragmentation
+> abilities to see if that'll give you an improvement:
+>
+> # btrfs filesystem defragment /mountpoint/of/volume
+>
+> Let us know if that helps, of course :)
 
-On Sun, Oct 31, 2010 at 7:16 PM, Arnd Hannemann <arnd@arndnet.de> wrote:
-> b43-sdio: probe of mmc0:0001:1 failed with error -16
+I finally managed to track down this issue. Indeed the fragmentation
+is horrible, and 'btrfs filesystem defragment' doesn't help:
 
-It's exactly what Daniel is experiencing with the XO-1.5.
+% cat History-old > History
+% btrfs filesystem defragment /home
+% echo 3 > /proc/sys/vm/drop_caches
 
-In Daniel's scenario, mmc_sdio_init_card() fails because
-mmc_send_relative_addr() returns -110.
+% time dd if=History of=/dev/null && time dd if=History-old of=/dev/null
+109664+0 records in
+109664+0 records out
+56147968 bytes (56 MB) copied, 1.90015 s, 29.5 MB/s
+dd if=History of=/dev/null  0.08s user 0.29s system 15% cpu 2.458 total
+109664+0 records in
+109664+0 records out
+56147968 bytes (56 MB) copied, 97.772 s, 574 kB/s
+dd if=History-old of=/dev/null  0.07s user 0.80s system 0% cpu 1:37.79 total
 
-Can you please check out if that's the same thing you have too ?
+I think this is a serious issue that *must* be fixed for 1.0. I filed
+a bug for this:
+https://bugzilla.kernel.org/show_bug.cgi?id=21562
 
-Thanks,
-Ohad.
+-- 
+Felipe Contreras
