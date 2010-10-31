@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677Ab0JaT6W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Oct 2010 15:58:22 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43403 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392Ab0JaT6U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Oct 2010 15:58:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=LZW1sUEQbqeXFm+odKoDp5b5GPRxdny0JRZ96zarJbXo0mD84cVZrpONqJ3BPX0zOc
-         wZZlgQoywxG1XOtoXMdWuwk2mZlluD2JzmQy78loN9Iie5X+Xo1SXQvBh/v6IVPZea+Q
-         AXkvijLncX0q1VLUQfpSeOXSl2hHRyWJ/oP4o=
+	id S1756694Ab0JaUE7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Oct 2010 16:04:59 -0400
+Received: from mga11.intel.com ([192.55.52.93]:64804 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751381Ab0JaUE5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Oct 2010 16:04:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,268,1286175600"; 
+   d="scan'208";a="852743286"
+Date: Mon, 1 Nov 2010 04:03:41 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "containers@lists.osdl.org" <containers@lists.osdl.org>,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v4 11/11] memcg: check memcg dirty limits in page
+ writeback
+Message-ID: <20101031200341.GA455@localhost>
+References: <1288336154-23256-1-git-send-email-gthelen@google.com>
+ <1288336154-23256-12-git-send-email-gthelen@google.com>
+ <20101029164835.06eef3cf.kamezawa.hiroyu@jp.fujitsu.com>
+ <xr93eib9nfue.fsf@ninji.mtv.corp.google.com>
 MIME-Version: 1.0
-Date: Sun, 31 Oct 2010 21:58:18 +0200
-Message-ID: <AANLkTinWT9OyicLfdeY+AvWs=5vb5z8skZ3t6keYjk9j@mail.gmail.com>
-Subject: Horrible btrfs performance due to fragmentation
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Calvin Walton <calvin.walton@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-btrfs@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <xr93eib9nfue.fsf@ninji.mtv.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 11, 2010 at 6:46 PM, Calvin Walton <calvin.walton@gmail.com> wrote:
-> On Mon, 2010-10-11 at 03:30 +0300, Felipe Contreras wrote:
->> I use btrfs on most of my volumes on my laptop, and I've always felt
->> booting was very slow, but definitely sure is slow, is starting up
->> Google Chrome:
->>
->> encrypted ext4: ~20s
->> btrfs: ~2:11s
->>
->> I have tried different things to find out exactly what is the issue,
->> but haven't quite found it yet.
->
-> If you've been using this volume for a while, it could just have become
-> badly fragmented. You could try btrfs's fancy online defragmentation
-> abilities to see if that'll give you an improvement:
->
-> # btrfs filesystem defragment /mountpoint/of/volume
->
-> Let us know if that helps, of course :)
+On Sat, Oct 30, 2010 at 12:06:33AM +0800, Greg Thelen wrote:
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+> 
+> > On Fri, 29 Oct 2010 00:09:14 -0700
+> > Greg Thelen <gthelen@google.com> wrote:
+> >
+> >> If the current process is in a non-root memcg, then
+> >> balance_dirty_pages() will consider the memcg dirty limits
+> >> as well as the system-wide limits.  This allows different
+> >> cgroups to have distinct dirty limits which trigger direct
+> >> and background writeback at different levels.
+> >> 
+> >> Signed-off-by: Andrea Righi <arighi@develer.com>
+> >> Signed-off-by: Greg Thelen <gthelen@google.com>
+> >
+> > Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-I finally managed to track down this issue. Indeed the fragmentation
-is horrible, and 'btrfs filesystem defragment' doesn't help:
+The "check both memcg&global dirty limit" looks much more sane than
+the V3 implementation. Although it still has misbehaviors in some
+cases, it's generally a good new feature to have.
 
-% cat History-old > History
-% btrfs filesystem defragment /home
-% echo 3 > /proc/sys/vm/drop_caches
+Acked-by: Wu Fengguang <fengguang.wu@intel.com>
 
-% time dd if=History of=/dev/null && time dd if=History-old of=/dev/null
-109664+0 records in
-109664+0 records out
-56147968 bytes (56 MB) copied, 1.90015 s, 29.5 MB/s
-dd if=History of=/dev/null  0.08s user 0.29s system 15% cpu 2.458 total
-109664+0 records in
-109664+0 records out
-56147968 bytes (56 MB) copied, 97.772 s, 574 kB/s
-dd if=History-old of=/dev/null  0.07s user 0.80s system 0% cpu 1:37.79 total
+> > Ideally, I think some comments in the code for "why we need double-check system's
+> > dirty limit and memcg's dirty limit" will be appreciated.
+> 
+> I will add to the balance_dirty_pages() comment.  It will read:
+> /*
+>  * balance_dirty_pages() must be called by processes which are generating dirty
+>  * data.  It looks at the number of dirty pages in the machine and will force
+>  * the caller to perform writeback if the system is over `vm_dirty_ratio'.
+                   ~~~~~~~~~~~~~~~~~                  ~~~~
 
-I think this is a serious issue that *must* be fixed for 1.0. I filed
-a bug for this:
-https://bugzilla.kernel.org/show_bug.cgi?id=21562
+To be exact, it tries to throttle the dirty speed so that
+vm_dirty_ratio is not exceeded. In fact balance_dirty_pages() starts
+throttling the dirtier slightly below vm_dirty_ratio.
 
--- 
-Felipe Contreras
+>  * If we're over `background_thresh' then the writeback threads are woken to
+>  * perform some writeout.  The current task may have per-memcg dirty
+>  * limits, which are also checked.
+>  */
