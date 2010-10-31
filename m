@@ -1,44 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756578Ab0JaSNV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Oct 2010 14:13:21 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:60564 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307Ab0JaSNU (ORCPT
+	id S1756638Ab0JaSoT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Oct 2010 14:44:19 -0400
+Received: from tomts13-srv.bellnexxia.net ([209.226.175.34]:35790 "EHLO
+	tomts13-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756502Ab0JaSoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Oct 2010 14:13:20 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4CCDB1B6.4030404@s5r6.in-berlin.de>
-Date: Sun, 31 Oct 2010 19:13:10 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
-MIME-Version: 1.0
-To: "Robert P. J. Day" <rpjday@crashcourse.ca>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: is there some kind of standard for "inline" these days?
-References: <alpine.DEB.2.00.1010311342520.18295@localhost6.localdomain6> <4CCDB0AA.3060505@s5r6.in-berlin.de>
-In-Reply-To: <4CCDB0AA.3060505@s5r6.in-berlin.de>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 31 Oct 2010 14:44:17 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAJRVzUxGGOIS/2dsb2JhbAChSHK5a4VEBI9d
+Date: Sun, 31 Oct 2010 14:39:14 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Tom Zanussi <zanussi@us.ibm.com>, Karim Yaghmour <karim@opersys.com>,
+        Paul Mundt <lethal@linux-sh.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH] Optimize relay_alloc_page_array() slightly by using
+	vzalloc rather than vmalloc and memset
+Message-ID: <20101031183913.GA26160@Krystal>
+References: <alpine.LNX.2.00.1010302216550.1572@swampdragon.chaosbits.net> <20101030214704.GA20005@Krystal> <alpine.LNX.2.00.1010302343590.1572@swampdragon.chaosbits.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1010302343590.1572@swampdragon.chaosbits.net>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 14:23:17 up 207 days,  4:13,  4 users,  load average: 0.05, 0.09,
+	0.04
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stefan Richter wrote:
-> Robert P. J. Day wrote:
->>   i asked about this some time ago and i'm curious -- is there a
->> simple standard for the use of "inline" in kernel code.  as of now,
->> there are still uses of all of inline, __inline__ and __inline,
+* Jesper Juhl (jj@chaosbits.net) wrote:
+> On Sat, 30 Oct 2010, Mathieu Desnoyers wrote:
 > 
-> "grep inline include/linux/kernel.h" looks like a good guidance.
+> > * Jesper Juhl (jj@chaosbits.net) wrote:
+> > > Hi,
+> > > 
+> > > We can optimize kernel/relay.c::relay_alloc_page_array() slightly by using 
+> > > vzalloc. The patch makes these changes:
+> > > 
+> > >  - use vzalloc instead of vmalloc+memset.
+> > >  - remove redundant local variable 'array'.
+> > >  - declare local 'pa_size' as const.
+> > 
+> > Hrm ? How does declaring a local variable as const helps the compiler in
+> > any way ?
+> > 
 > 
-> See also the C99 standard and maybe
-> http://gcc.gnu.org/onlinedocs/gcc/Alternate-Keywords.html .
+> Hmm, probably not very much in this case (but it doesn't hurt either ;) - 
+> actually, removing the const yielded the exact same result, so it's 
+> "not at all" in this case). 
+> That bit came from my "build-in" tendency to declare stuff const when it 
+> obviously doesn't change/nor should. It's a habbit..
 
-PS:  drivers/staging/ is probably the only place that is worth a
-normalization.  There is always bugzilla.kernel.org for those with time to spare.
+Which looks to me like a misunderstanding of the C99 standard. What you
+do is:
+
+static struct page **relay_alloc_page_array(unsigned int n_pages)
+{
+	const size_t pa_size = n_pages * sizeof(struct page *);
+	...
+}
+
+So the compiler has no choice but to emit code that will fill in the
+value of pa_size at runtime, because it depends on "n_pages", a
+parameter received by the function. So pa_size is everything but
+constant.
+
+The C99 standard, section 6.7.3 (Type qualifiers) states:
+
+"The implementation may place a const object that is not volatile in a
+read-only region of storage. Moreover, the implementation need not
+allocate storage for such an object if its address is never used."
+
+So maybe gcc is kind here and it just removes this const specifier
+without complaining, but a different compiler might be more strict and
+fail to compile because you would be dynamically assigning a value to a
+variable placed in read-only storage.
+
+> 
+> 
+> > Moreover, is there anyone still using this code ? LTTng uses the Generic
+> > Ring Buffer library which completely deprecates relay.c. Perf and Ftrace
+> > each have their own ring buffers, without dependency on relay.c.
+> > 
+> > BLK_DEV_IO_TRACE seems to still select RELAY. Has it completed its
+> > transition to either Ftrace or Perf ? Depending on Jens, moving blktrace
+> > relay dependency to the Generic Ring Buffer Library might be a good
+> > option to consider.
+> > 
+> 
+> I admit I have no idea if this code is actually still used, but as long as 
+> it's in the kernel I think we should strive to make it as good as possible 
+> - no? If there are still users this is an improvement, if there are no 
+> users (who knows if there are out-of-tree ones?) then it should probably 
+> just go away (but even then this patch does no harm - except for a bit of 
+> churn).
+
+Another point that I don't like about your patch is the comment:
+
+"Compile tested only."
+
+Please don't break unused code for the sake of trying to slightly
+optimize it, especially if you don't bother testing your modifications.
+
+So as far as I am concerned, I am Nack-ing this patch. I might possibly
+nack any further change to relay.c, and hereby propose its replacement
+by the generic ring buffer library, unless someone comes up with a good
+reason for keeping it.
+
+Thanks,
+
+Mathieu
+
 -- 
-Stefan Richter
--=====-==-=- =-=- =====
-http://arcgraph.de/sr/
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
