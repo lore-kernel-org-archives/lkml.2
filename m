@@ -1,125 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756638Ab0JaSoT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Oct 2010 14:44:19 -0400
-Received: from tomts13-srv.bellnexxia.net ([209.226.175.34]:35790 "EHLO
-	tomts13-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756502Ab0JaSoR (ORCPT
+	id S1756650Ab0JaTPG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Oct 2010 15:15:06 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:33781 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756451Ab0JaTPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Oct 2010 14:44:17 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAJRVzUxGGOIS/2dsb2JhbAChSHK5a4VEBI9d
-Date: Sun, 31 Oct 2010 14:39:14 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Tom Zanussi <zanussi@us.ibm.com>, Karim Yaghmour <karim@opersys.com>,
-        Paul Mundt <lethal@linux-sh.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH] Optimize relay_alloc_page_array() slightly by using
-	vzalloc rather than vmalloc and memset
-Message-ID: <20101031183913.GA26160@Krystal>
-References: <alpine.LNX.2.00.1010302216550.1572@swampdragon.chaosbits.net> <20101030214704.GA20005@Krystal> <alpine.LNX.2.00.1010302343590.1572@swampdragon.chaosbits.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1010302343590.1572@swampdragon.chaosbits.net>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 14:23:17 up 207 days,  4:13,  4 users,  load average: 0.05, 0.09,
-	0.04
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Sun, 31 Oct 2010 15:15:03 -0400
+MIME-Version: 1.0
+X-Originating-IP: [93.172.188.124]
+In-Reply-To: <4CCDA454.708@arndnet.de>
+References: <4CCDA454.708@arndnet.de>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Sun, 31 Oct 2010 21:14:43 +0200
+Message-ID: <AANLkTin80pwnb1DX8OdZK3Wgsq0nj==G9VM3pahsmo0U@mail.gmail.com>
+Subject: Re: regression: b43-sdio: probe of mmc0:0001:1 failed with error -16
+To: Arnd Hannemann <arnd@arndnet.de>
+Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Jesper Juhl (jj@chaosbits.net) wrote:
-> On Sat, 30 Oct 2010, Mathieu Desnoyers wrote:
-> 
-> > * Jesper Juhl (jj@chaosbits.net) wrote:
-> > > Hi,
-> > > 
-> > > We can optimize kernel/relay.c::relay_alloc_page_array() slightly by using 
-> > > vzalloc. The patch makes these changes:
-> > > 
-> > >  - use vzalloc instead of vmalloc+memset.
-> > >  - remove redundant local variable 'array'.
-> > >  - declare local 'pa_size' as const.
-> > 
-> > Hrm ? How does declaring a local variable as const helps the compiler in
-> > any way ?
-> > 
-> 
-> Hmm, probably not very much in this case (but it doesn't hurt either ;) - 
-> actually, removing the const yielded the exact same result, so it's 
-> "not at all" in this case). 
-> That bit came from my "build-in" tendency to declare stuff const when it 
-> obviously doesn't change/nor should. It's a habbit..
+Hi Arnd,
 
-Which looks to me like a misunderstanding of the C99 standard. What you
-do is:
+On Sun, Oct 31, 2010 at 7:16 PM, Arnd Hannemann <arnd@arndnet.de> wrote:
+> b43-sdio: probe of mmc0:0001:1 failed with error -16
 
-static struct page **relay_alloc_page_array(unsigned int n_pages)
-{
-	const size_t pa_size = n_pages * sizeof(struct page *);
-	...
-}
+It's exactly what Daniel is experiencing with the XO-1.5.
 
-So the compiler has no choice but to emit code that will fill in the
-value of pa_size at runtime, because it depends on "n_pages", a
-parameter received by the function. So pa_size is everything but
-constant.
+In Daniel's scenario, mmc_sdio_init_card() fails because
+mmc_send_relative_addr() returns -110.
 
-The C99 standard, section 6.7.3 (Type qualifiers) states:
-
-"The implementation may place a const object that is not volatile in a
-read-only region of storage. Moreover, the implementation need not
-allocate storage for such an object if its address is never used."
-
-So maybe gcc is kind here and it just removes this const specifier
-without complaining, but a different compiler might be more strict and
-fail to compile because you would be dynamically assigning a value to a
-variable placed in read-only storage.
-
-> 
-> 
-> > Moreover, is there anyone still using this code ? LTTng uses the Generic
-> > Ring Buffer library which completely deprecates relay.c. Perf and Ftrace
-> > each have their own ring buffers, without dependency on relay.c.
-> > 
-> > BLK_DEV_IO_TRACE seems to still select RELAY. Has it completed its
-> > transition to either Ftrace or Perf ? Depending on Jens, moving blktrace
-> > relay dependency to the Generic Ring Buffer Library might be a good
-> > option to consider.
-> > 
-> 
-> I admit I have no idea if this code is actually still used, but as long as 
-> it's in the kernel I think we should strive to make it as good as possible 
-> - no? If there are still users this is an improvement, if there are no 
-> users (who knows if there are out-of-tree ones?) then it should probably 
-> just go away (but even then this patch does no harm - except for a bit of 
-> churn).
-
-Another point that I don't like about your patch is the comment:
-
-"Compile tested only."
-
-Please don't break unused code for the sake of trying to slightly
-optimize it, especially if you don't bother testing your modifications.
-
-So as far as I am concerned, I am Nack-ing this patch. I might possibly
-nack any further change to relay.c, and hereby propose its replacement
-by the generic ring buffer library, unless someone comes up with a good
-reason for keeping it.
+Can you please check out if that's the same thing you have too ?
 
 Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Ohad.
