@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756163Ab0JaQOH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Oct 2010 12:14:07 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:50518 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756093Ab0JaQOG (ORCPT
+	id S1756153Ab0JaQVN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Oct 2010 12:21:13 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:34223 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755767Ab0JaQVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Oct 2010 12:14:06 -0400
+	Sun, 31 Oct 2010 12:21:08 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=XkbFeeY+kkAuXKd+VwmzN9PcXRm8R5QhH7lYRDFTxEsOM/h+ALUcW/fUCi6Oig3G3H
-         q4UHM8NrpJZfKZU6tT805LI3M2Y8SlNd1sZw23YUoKm3hJ5nqCnY9AHVMQ7jLi+ifJ68
-         ziyDww1RHbjYMHTsbFK9ZnsoDiOhKB+2iQEYA=
+        h=from:subject:to:cc:date:message-id:user-agent:mime-version
+         :content-type:content-transfer-encoding;
+        b=aNFqPFHgM7z/Bhlu2Edgg+PYxSGxHNARlc23ybU6IZ5CX9LYArgiAGXS4D7oCFXV88
+         b/Amm10vx0RTz7R4KCBzGGK/G/9+PHjRnfG1PqoRsyens7S/sxSU+UaeB7YIyxqWlA1v
+         s/1UrN+9fYq1DT/dF+9Hmm/zvGBeznvlioE9w=
+From: Paulius Zaleckas <paulius.zaleckas@gmail.com>
+Subject: [PATCH v2] Regression: fix mounting NFS when NFSv3 support is not
+	compiled
+To: Trond.Myklebust@netapp.com
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sun, 31 Oct 2010 18:21:05 +0200
+Message-ID: <20101031162105.23213.60220.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <1288529170-28890-1-git-send-email-samu.p.onkalo@nokia.com>
-References: <1288529170-28890-1-git-send-email-samu.p.onkalo@nokia.com>
-Date: Mon, 1 Nov 2010 00:14:04 +0800
-Message-ID: <AANLkTikRSF-4o=Jnyg2_Wa4gg7E+s_tM9ZD3g+f7hyWm@mail.gmail.com>
-Subject: Re: [RFC PATCH] device-core: sysfs open - close notify
-From: Ming Lei <tom.leiming@gmail.com>
-To: Samu Onkalo <samu.p.onkalo@nokia.com>
-Cc: gregkh@suse.de, hmh@hmh.eng.br, alan@linux.intel.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/10/31 Samu Onkalo <samu.p.onkalo@nokia.com>:
-> Device drivers have no idea when somebody in userspace keeps some sysfs entry
-> open. The driver just received read or write calls. The driver may want to
-> control HW state based on activity so it either have to turn HW on and off
-> for each sysfs access or it needs separate enable disable entry which controls
-> the HW state. In cases where sysfs is used to pass some events under interrupt
-> control (like proximity events from the proximity sensors) it is not enough to
-> just keep sysfs entry open in userspace.
+Trying to mount NFS (root partition in my case) fails if CONFIG_NFS_V3
+is not selected. nfs_validate_mount_data() returns EPROTONOSUPPORT,
+because of this check:
 
-Since very few drivers have this kind of requirement, why not take notifier
-call chain mechanism to do such thing? eg. register a notifier function
-if the driver is interested in such kind of open/close events.
+#ifndef CONFIG_NFS_V3
+	if (args->version == 3)
+		goto out_v3_not_compiled;
+#endif /* !CONFIG_NFS_V3 */
 
-Your patch may cause many unnecessary memory waste because
-most of drivers does not need attribute file .open/.close notifier.
+and args->version was always initialized to 3.
 
+It was working in 2.6.36
 
-thanks,
--- 
-Lei Ming
+Signed-off-by: Paulius Zaleckas <paulius.zaleckas@gmail.com>
+---
+
+ fs/nfs/super.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
+
+diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+index 0a42e8f..9587506 100644
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -67,6 +67,12 @@
+ 
+ #define NFSDBG_FACILITY		NFSDBG_VFS
+ 
++#ifdef CONFIG_NFS_V3
++#define NFS_DEFAULT_VERSION 3
++#else
++#define NFS_DEFAULT_VERSION 2
++#endif
++
+ enum {
+ 	/* Mount options that take no arguments */
+ 	Opt_soft, Opt_hard,
+@@ -2277,7 +2283,7 @@ static int nfs_get_sb(struct file_system_type *fs_type,
+ 	};
+ 	int error = -ENOMEM;
+ 
+-	data = nfs_alloc_parsed_mount_data(3);
++	data = nfs_alloc_parsed_mount_data(NFS_DEFAULT_VERSION);
+ 	mntfh = nfs_alloc_fhandle();
+ 	if (data == NULL || mntfh == NULL)
+ 		goto out_free_fh;
+
