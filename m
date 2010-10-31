@@ -1,93 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756863Ab0JaWhG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Oct 2010 18:37:06 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38251 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753280Ab0JaWhC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Oct 2010 18:37:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=JS876t2CBq3TViDtcqMrcox2ekPsmElD04KserWV1D4lObtiDF2KWzHsVdo6llZ522
-         Ce0PNAPvjHMG1SEAeZ2I82l5UkJ2DfS2be2BPZ8ZNQZWZfldMiMnEmJPCkshdMTEvnh1
-         yW18EBp9l3/3Gh7GJN6/LTF7p9InORjtx9j/Y=
+	id S1756879Ab0JaWkS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Oct 2010 18:40:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48308 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753280Ab0JaWkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Oct 2010 18:40:15 -0400
+Date: Sun, 31 Oct 2010 23:40:12 +0100
+From: Jan Kara <jack@suse.cz>
+To: Jan Engelhardt <jengelh@medozas.de>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <jens.axboe@oracle.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, stable@kernel.org,
+        gregkh@suse.de
+Subject: Re: Sync writeback still broken
+Message-ID: <20101031224012.GB13207@quack.suse.cz>
+References: <20100212091609.GB1025@kernel.dk>
+ <alpine.LFD.2.00.1002120722270.7792@localhost.localdomain>
+ <alpine.LSU.2.01.1002131356250.20838@obet.zrqbmnf.qr>
+ <20100215144938.GD3434@quack.suse.cz>
+ <alpine.LSU.2.01.1002151629380.27775@obet.zrqbmnf.qr>
+ <alpine.LSU.2.01.1006271842220.1495@obet.zrqbmnf.qr>
+ <alpine.LNX.2.01.1010250115360.16022@obet.zrqbmnf.qr>
+ <20101031122437.GA6296@quack.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikNywvthaU-+s5HXvh3RX=HxiFWmADW--Ln_Gga@mail.gmail.com>
-References: <AANLkTinWT9OyicLfdeY+AvWs=5vb5z8skZ3t6keYjk9j@mail.gmail.com>
-	<AANLkTikNywvthaU-+s5HXvh3RX=HxiFWmADW--Ln_Gga@mail.gmail.com>
-Date: Mon, 1 Nov 2010 00:36:58 +0200
-Message-ID: <AANLkTimgCU1tM9VJv8RJ-dim+bRsT7cbZ9ZidbT5sco-@mail.gmail.com>
-Subject: Re: Horrible btrfs performance due to fragmentation
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: cwillu <cwillu@cwillu.com>
-Cc: Calvin Walton <calvin.walton@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-btrfs@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101031122437.GA6296@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 1, 2010 at 12:25 AM, cwillu <cwillu@cwillu.com> wrote:
-> On Sun, Oct 31, 2010 at 1:58 PM, Felipe Contreras
-> <felipe.contreras@gmail.com> wrote:
->> On Mon, Oct 11, 2010 at 6:46 PM, Calvin Walton <calvin.walton@gmail.com> wrote:
->>> On Mon, 2010-10-11 at 03:30 +0300, Felipe Contreras wrote:
->>>> I use btrfs on most of my volumes on my laptop, and I've always felt
->>>> booting was very slow, but definitely sure is slow, is starting up
->>>> Google Chrome:
->>>>
->>>> encrypted ext4: ~20s
->>>> btrfs: ~2:11s
->>>>
->>>> I have tried different things to find out exactly what is the issue,
->>>> but haven't quite found it yet.
->>>
->>> If you've been using this volume for a while, it could just have become
->>> badly fragmented. You could try btrfs's fancy online defragmentation
->>> abilities to see if that'll give you an improvement:
->>>
->>> # btrfs filesystem defragment /mountpoint/of/volume
->>>
->>> Let us know if that helps, of course :)
->>
->> I finally managed to track down this issue. Indeed the fragmentation
->> is horrible, and 'btrfs filesystem defragment' doesn't help:
->>
->> % cat History-old > History
->> % btrfs filesystem defragment /home
->> % echo 3 > /proc/sys/vm/drop_caches
->>
->> % time dd if=History of=/dev/null && time dd if=History-old of=/dev/null
->> 109664+0 records in
->> 109664+0 records out
->> 56147968 bytes (56 MB) copied, 1.90015 s, 29.5 MB/s
->> dd if=History of=/dev/null  0.08s user 0.29s system 15% cpu 2.458 total
->> 109664+0 records in
->> 109664+0 records out
->> 56147968 bytes (56 MB) copied, 97.772 s, 574 kB/s
->> dd if=History-old of=/dev/null  0.07s user 0.80s system 0% cpu 1:37.79 total
->>
->> I think this is a serious issue that *must* be fixed for 1.0. I filed
->> a bug for this:
->> https://bugzilla.kernel.org/show_bug.cgi?id=21562
->
-> btrfs fi defrag isn't recursive.  "btrfs filesystem defrag /home" will
-> defragment the space used to store the folder, without touching the
-> space used to store files in that folder.
+On Sun 31-10-10 13:24:37, Jan Kara wrote:
+> On Mon 25-10-10 01:41:48, Jan Engelhardt wrote:
+> > On Sunday 2010-06-27 18:44, Jan Engelhardt wrote:
+> > >On Monday 2010-02-15 16:41, Jan Engelhardt wrote:
+> > >>On Monday 2010-02-15 15:49, Jan Kara wrote:
+> > >>>On Sat 13-02-10 13:58:19, Jan Engelhardt wrote:
+> > >>>> >> 
+> > >>>> >> This fixes it by using the passed in page writeback count, instead of
+> > >>>> >> doing MAX_WRITEBACK_PAGES batches, which gets us much better performance
+> > >>>> >> (Jan reports it's up from ~400KB/sec to 10MB/sec) and makes sync(1)
+> > >>>> >> finish properly even when new pages are being dirted.
+> > >>>> >
+> > >>>> >This seems broken.
+> > >>>> 
+> > >>>> It seems so. Jens, Jan Kara, your patch does not entirely fix this.
+> > >>>> While there is no sync/fsync to be seen in these traces, I can
+> > >>>> tell there's a livelock, without Dirty decreasing at all.
+> > >
+> > >What ultimately became of the discussion and/or the patch? 
+> > >
+> > >Your original ad-hoc patch certainly still does its job; had no need to 
+> > >reboot in 86 days and still counting.
+> > 
+> > I still observe this behavior on 2.6.36-rc8. This is starting to 
+> > get frustrating, so I will be happily following akpm's advise to 
+> > poke people.
+>   Yes, that's a good way :)
+> 
+> > Thread entrypoint: http://lkml.org/lkml/2010/2/12/41
+> > 
+> > Previously, many concurrent extractions of tarballs and so on have been 
+> > one way to trigger the issue; I now also have a rather small testcase 
+> > (below) that freezes the box here (which has 24G RAM, so even if I'm 
+> > lacking to call msync, I should be fine) sometime after memset finishes.
+>   I've tried your test but didn't succeed in freezing my laptop.
+> Everything was running smooth, the machine even felt reasonably responsive
+> although constantly reading and writing to disk. Also sync(1) finished in a
+> couple of seconds as one would expect in an optimistic case.
+>   Needless to say that my laptop has only 1G of ram so I had to downsize
+> the hash table from 16G to 1G to be able to run the test and the disk is
+> Intel SSD so the performance of the backing storage compared to the amount
+> of needed IO is much in my favor.
+>   OK, so I've taken a machine with standard rotational drive and 28GB of
+> ram and there I can see sync(1) hanging (but otherwise the machine looks
+> OK). Investigating further...
+  So with the writeback tracing, I verified that indeed the trouble is that
+work queued by sync(1) gets queued behind the background writeback which is
+just running. And background writeback won't stop because your process is
+dirtying pages so agressively. Actually, it would stop after writing
+LONG_MAX pages but that's effectively infinity. I have a patch
+(e.g. http://www.kerneltrap.com/mailarchive/linux-fsdevel/2010/8/3/6886244)
+to stop background writeback when other work is queued but it's kind
+of hacky so I can see why Christoph doesn't like it ;)
+  So I'll have to code something different to fix this issue...
 
-Yes, that came up on the IRC, but:
-
-1) It doesn't make sense: "btrfs filesystem" doesn't allow a fileystem
-as argument? Why would anyone want it to be _non_ recursive?
-
-2) The filesystem should not degrade performance so horribly no matter
-how long the it has been used. Even git has automatic garbage
-collection.
-
+									Honza
 -- 
-Felipe Contreras
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
