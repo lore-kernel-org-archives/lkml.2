@@ -1,54 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215Ab0JaKGT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Oct 2010 06:06:19 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:26786 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755133Ab0JaKGN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Oct 2010 06:06:13 -0400
-Date: Sun, 31 Oct 2010 11:05:53 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Joe Perches <joe@perches.com>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: Re: [PATCH 0/8] hwmon: applesmc: Dynamic configuration rewrite
-Message-ID: <20101031110553.5744668a@endymion.delvare>
-In-Reply-To: <4CCD2C7A.6020703@euromail.se>
-References: <1288511434-5662-1-git-send-email-rydberg@euromail.se>
-	<1288513860.366.205.camel@Joe-Laptop>
-	<4CCD2C7A.6020703@euromail.se>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755238Ab0JaKIl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Oct 2010 06:08:41 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:37553 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755041Ab0JaKIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Oct 2010 06:08:38 -0400
+Date: Sun, 31 Oct 2010 11:08:33 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org, Peter Oruba <peter.oruba@amd.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        amd64-microcode@amd64.org
+Subject: Re: [PATCH] AMD Microcode: Prefer vzalloc() over calls to
+ vmalloc()+memset()
+Message-ID: <20101031100833.GA18633@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
+	Peter Oruba <peter.oruba@amd.com>,
+	Andreas Herrmann <andreas.herrmann3@amd.com>,
+	amd64-microcode@amd64.org
+References: <alpine.LNX.2.00.1010302118160.1572@swampdragon.chaosbits.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1010302118160.1572@swampdragon.chaosbits.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 31 Oct 2010 09:44:42 +0100, Henrik Rydberg wrote:
-> On 10/31/2010 09:31 AM, Joe Perches wrote:
+On Sat, Oct 30, 2010 at 09:23:14PM +0200, Jesper Juhl wrote:
+> We don't have to do memset() ourselves after vmalloc() when we have 
+> vzalloc(), so change that in 
+> arch/x86/kernel/microcode_amd.c::get_next_ucode().
 > 
-> > On Sun, 2010-10-31 at 08:50 +0100, Henrik Rydberg wrote:
-> >> This patchset introduces dynamic configuration by making the SMC
-> >> register set efficiently searchable, and fixes a number of outstanding
-> >> issues:
-> > 
-> > Hi Henrik.
-> > 
-> > Your patches are built on top of a patch I submitted
-> > that wasn't accepted by Jean or Guenter.
+> Please CC me on replies.
 > 
 > 
-> Right. I imagine there will be new revisions of that patch. If we are all
-> targeting 2.6.38, I can certainly rebase this set back to the current head, if
-> that is preferrable. Jean?
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+> compile tested only.
+> 
+>  microcode_amd.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
+> index e1af7c0..d46e805 100644
+> --- a/arch/x86/kernel/microcode_amd.c
+> +++ b/arch/x86/kernel/microcode_amd.c
+> @@ -183,9 +183,8 @@ get_next_ucode(const u8 *buf, unsigned int size, unsigned int *mc_size)
+>  		return NULL;
+>  	}
+>  
+> -	mc = vmalloc(UCODE_MAX_SIZE);
+> +	mc = vzalloc(UCODE_MAX_SIZE);
+>  	if (mc) {
+> -		memset(mc, 0, UCODE_MAX_SIZE);
+>  		if (get_ucode_data(mc, buf + UCODE_CONTAINER_SECTION_HDR,
+>  				   total_size)) {
+>  			vfree(mc);
 
-Hendrik, Joe, please give me a few days to finish urgent pending work,
-and I'll get back to you regarding both issues. I'm sure we can sort it
-all out :)
+Good.
 
+Better yet, you can go a step further and remove one indentation block:
+
+--
+	mc = vzalloc(UCODE_MAX_SIZE);
+	if (!mc)
+		goto out;
+
+	if (get_ucode_data(mc, ...
+	...
+
+out:
+	return mc;
+
+}
+--
+making the code even fit in 80 chars width and thus more readable.
+
+Thanks.
 
 -- 
-Jean Delvare
+Regards/Gruss,
+    Boris.
