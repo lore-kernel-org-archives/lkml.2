@@ -1,77 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647Ab0JaMwu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Oct 2010 08:52:50 -0400
-Received: from astoria.ccjclearline.com ([64.235.106.9]:60087 "EHLO
-	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755390Ab0JaMws (ORCPT
+	id S1755718Ab0JaNHv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Oct 2010 09:07:51 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:50934 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755681Ab0JaNHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Oct 2010 08:52:48 -0400
-Date: Sun, 31 Oct 2010 08:52:42 -0400 (EDT)
-From: "Robert P. J. Day" <rpjday@crashcourse.ca>
-X-X-Sender: rpjday@localhost6.localdomain6
-To: trivial@kernel.org
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Correct comments for ctime field for ext2 and ext3.
-Message-ID: <alpine.DEB.2.00.1010310851290.16583@localhost6.localdomain6>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - crashcourse.ca
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Sun, 31 Oct 2010 09:07:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=mOkHTuxUhH+ghkKIlZWlI5GMjHWAH7PnG4t/Q8gzFc57ihdjjZdt4myeZO9az1ZPTp
+         luJ9hZjqeJuHMUzmz4ZsUg9Jqay9KgNknsT1tyhoNuRKFMuBSCbgpiDihekiWUjqQdEA
+         eHB01Nu4cY8PPnvuDcvzg54/wgkFacnWM8ze0=
+Subject: 
+From: KaGeN101 <kagen101@gmail.com>
+Reply-To: kagen101@gmail.com
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain
+Date: Sun, 31 Oct 2010 15:07:39 +0200
+Message-ID: <1288530459.3719.7.camel@dermezel>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+unsubscribe
 
-Signed-off-by: Robert P. J. Day <rpjday@crashcourse.ca>
-
----
-
-  not sure if my first posting made it, so ignore this if its a dup.
-
-diff --git a/include/linux/ext2_fs.h b/include/linux/ext2_fs.h
-index 2dfa707..e084c99 100644
---- a/include/linux/ext2_fs.h
-+++ b/include/linux/ext2_fs.h
-@@ -244,7 +244,7 @@ struct ext2_inode {
- 	__le16	i_uid;		/* Low 16 bits of Owner Uid */
- 	__le32	i_size;		/* Size in bytes */
- 	__le32	i_atime;	/* Access time */
--	__le32	i_ctime;	/* Creation time */
-+	__le32	i_ctime;	/* Status change time */
- 	__le32	i_mtime;	/* Modification time */
- 	__le32	i_dtime;	/* Deletion Time */
- 	__le16	i_gid;		/* Low 16 bits of Group Id */
-diff --git a/include/linux/ext3_fs.h b/include/linux/ext3_fs.h
-index 6ce1bca..30438c0 100644
---- a/include/linux/ext3_fs.h
-+++ b/include/linux/ext3_fs.h
-@@ -282,7 +282,7 @@ struct ext3_inode {
- 	__le16	i_uid;		/* Low 16 bits of Owner Uid */
- 	__le32	i_size;		/* Size in bytes */
- 	__le32	i_atime;	/* Access time */
--	__le32	i_ctime;	/* Creation time */
-+	__le32	i_ctime;	/* Status change time */
- 	__le32	i_mtime;	/* Modification time */
- 	__le32	i_dtime;	/* Deletion Time */
- 	__le16	i_gid;		/* Low 16 bits of Group Id */
-
-
-rday
-
--- 
-
-========================================================================
-Robert P. J. Day                               Waterloo, Ontario, CANADA
-                        http://crashcourse.ca
-
-Twitter:                                       http://twitter.com/rpjday
-LinkedIn:                               http://ca.linkedin.com/in/rpjday
-========================================================================
