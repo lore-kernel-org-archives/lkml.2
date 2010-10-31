@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756153Ab0JaQVN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Oct 2010 12:21:13 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:34223 "EHLO
+	id S1756222Ab0JaRKc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Oct 2010 13:10:32 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:53346 "EHLO
 	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755767Ab0JaQVI (ORCPT
+	with ESMTP id S1756093Ab0JaRKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Oct 2010 12:21:08 -0400
+	Sun, 31 Oct 2010 13:10:30 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:subject:to:cc:date:message-id:user-agent:mime-version
-         :content-type:content-transfer-encoding;
-        b=aNFqPFHgM7z/Bhlu2Edgg+PYxSGxHNARlc23ybU6IZ5CX9LYArgiAGXS4D7oCFXV88
-         b/Amm10vx0RTz7R4KCBzGGK/G/9+PHjRnfG1PqoRsyens7S/sxSU+UaeB7YIyxqWlA1v
-         s/1UrN+9fYq1DT/dF+9Hmm/zvGBeznvlioE9w=
-From: Paulius Zaleckas <paulius.zaleckas@gmail.com>
-Subject: [PATCH v2] Regression: fix mounting NFS when NFSv3 support is not
-	compiled
-To: Trond.Myklebust@netapp.com
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sun, 31 Oct 2010 18:21:05 +0200
-Message-ID: <20101031162105.23213.60220.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=JDuui4PYMoh4BwvtowCYNIuLyMt2E5Cu+0PRAVUbJJbTV1XXruTBZw1qRMpg+FeMEI
+         3u/waQ8wutBHwn3ba8CIhrvQ7rwR72r86AmGuBMcBwnpYDAM60Qj/vsFWj4qzcWlwq0R
+         n3DQch6eDmufpEW82wlbN9gg7R0QHgFwhrcko=
+From: Vasiliy Kulikov <segooon@gmail.com>
+To: kernel-janitors@vger.kernel.org
+Cc: Joerg Reuter <jreuter@yaina.de>, Ralf Baechle <ralf@linux-mips.org>,
+        "David S. Miller" <davem@davemloft.net>, linux-hams@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] net: ax25: fix information leak to userland
+Date: Sun, 31 Oct 2010 20:10:22 +0300
+Message-Id: <1288545022-16393-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trying to mount NFS (root partition in my case) fails if CONFIG_NFS_V3
-is not selected. nfs_validate_mount_data() returns EPROTONOSUPPORT,
-because of this check:
+Sometimes ax25_getname() doesn't initialize all members of fsa_digipeater
+field of fsa struct.  This structure is then copied to userland.  It leads to
+leaking of contents of kernel stack memory.  We have to initialize them to zero.
 
-#ifndef CONFIG_NFS_V3
-	if (args->version == 3)
-		goto out_v3_not_compiled;
-#endif /* !CONFIG_NFS_V3 */
-
-and args->version was always initialized to 3.
-
-It was working in 2.6.36
-
-Signed-off-by: Paulius Zaleckas <paulius.zaleckas@gmail.com>
+Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
 ---
+ net/ax25/af_ax25.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
- fs/nfs/super.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
-
-diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-index 0a42e8f..9587506 100644
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -67,6 +67,12 @@
+diff --git a/net/ax25/af_ax25.c b/net/ax25/af_ax25.c
+index 26eaebf..a324d83 100644
+--- a/net/ax25/af_ax25.c
++++ b/net/ax25/af_ax25.c
+@@ -1392,6 +1392,7 @@ static int ax25_getname(struct socket *sock, struct sockaddr *uaddr,
+ 	ax25_cb *ax25;
+ 	int err = 0;
  
- #define NFSDBG_FACILITY		NFSDBG_VFS
++	memset(&fsa->fsa_digipeater, 0, sizeof(fsa->fsa_digipeater));
+ 	lock_sock(sk);
+ 	ax25 = ax25_sk(sk);
  
-+#ifdef CONFIG_NFS_V3
-+#define NFS_DEFAULT_VERSION 3
-+#else
-+#define NFS_DEFAULT_VERSION 2
-+#endif
-+
- enum {
- 	/* Mount options that take no arguments */
- 	Opt_soft, Opt_hard,
-@@ -2277,7 +2283,7 @@ static int nfs_get_sb(struct file_system_type *fs_type,
- 	};
- 	int error = -ENOMEM;
- 
--	data = nfs_alloc_parsed_mount_data(3);
-+	data = nfs_alloc_parsed_mount_data(NFS_DEFAULT_VERSION);
- 	mntfh = nfs_alloc_fhandle();
- 	if (data == NULL || mntfh == NULL)
- 		goto out_free_fh;
+-- 
+1.7.0.4
 
