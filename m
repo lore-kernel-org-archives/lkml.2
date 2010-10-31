@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756493Ab0JaRo0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Oct 2010 13:44:26 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:61772 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756093Ab0JaRoY (ORCPT
+	id S1756513Ab0JaRqM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Oct 2010 13:46:12 -0400
+Received: from astoria.ccjclearline.com ([64.235.106.9]:58092 "EHLO
+	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756093Ab0JaRqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Oct 2010 13:44:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Igor Zhbanov <izh1979@gmail.com>
-Subject: Re: Why get/put_unaligned are hidden behind #ifdef __KERNEL__ on PowerPC and Microblaze?
-Date: Sun, 31 Oct 2010 18:45:04 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <AANLkTimtfUXN9oTQ=BaxNz+h+mgwFBPrzN_Nggbai+ZJ@mail.gmail.com> <m2bp6apelh.fsf@igel.home> <AANLkTimGUUhYgSQ6dCBtyaY5s1JQOqewU2RA78t4p8_6@mail.gmail.com>
-In-Reply-To: <AANLkTimGUUhYgSQ6dCBtyaY5s1JQOqewU2RA78t4p8_6@mail.gmail.com>
+	Sun, 31 Oct 2010 13:46:10 -0400
+Date: Sun, 31 Oct 2010 13:46:03 -0400 (EDT)
+From: "Robert P. J. Day" <rpjday@crashcourse.ca>
+X-X-Sender: rpjday@localhost6.localdomain6
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: is there some kind of standard for "inline" these days?
+Message-ID: <alpine.DEB.2.00.1010311342520.18295@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010311845.04560.arnd@arndb.de>
-X-Provags-ID: V02:K0:M3ZL5OMnyd3O3fu5SdC3o+velc+4sUZiMfHu6TzmS6Y
- 0/4qUbt9uNU/kCmDNVzo12enxkbz9YCI9dR3E4x/tKQVQSlzM3
- 4biFC3ETZrmI70/qXiZ/fzhLhyr18hXXY5ZZ5ksTkjocI3xIiw
- HqEtq4nF42w9wXUyDN8rFXRvLrH1sgoWG47yzgvaifp6Or2Wn3
- k6Aa6X1DQELDxxTzagBzQ==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - crashcourse.ca
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 31 October 2010, Igor Zhbanov wrote:
-> 2010/10/31 Andreas Schwab <schwab@linux-m68k.org>:
 
-> I think that unaligned memory access interface are stable, so it can
-> be safely exported
-> to user space. We have some other platform-related exported headers,
-> e.g. <asm/byteorder.h>,
-> so why not to export <asm/unaligned.h>. Let it be "official" way to
-> deal with unaligned data
-> in user space too.
+  i asked about this some time ago and i'm curious -- is there a
+simple standard for the use of "inline" in kernel code.  as of now,
+there are still uses of all of inline, __inline__ and __inline, as
+well as __always_inline and, now, in "staging", we have the ugly
+spectre of:
 
-There are libraries to deal with stuff like this. The kernel headers
-are in no way a portable way to do this and any code that tries to
-use them in this way would not even be portable across different
-distribution that put the kernel headers in different places or
-to architectures that define these functions as extern.
+  #define INLINE    __inline
 
-If you need something like get_unaligned, look in places like
-http://ccan.ozlabs.org or http://www.gnu.org/software/gnulib/.
+in a few places.
 
-You can also use a generic gcc based implementation that uses
-attribute((packed)) for unaligned access.
+  is there a simple rule for what inline definition and usage would be
+in a perfect world?  thanks.
 
-	Arnd
+rday
+
+-- 
+
+========================================================================
+Robert P. J. Day                               Waterloo, Ontario, CANADA
+                        http://crashcourse.ca
+
+Twitter:                                       http://twitter.com/rpjday
+LinkedIn:                               http://ca.linkedin.com/in/rpjday
+========================================================================
