@@ -1,94 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756879Ab0JaWkS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Oct 2010 18:40:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48308 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753280Ab0JaWkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Oct 2010 18:40:15 -0400
-Date: Sun, 31 Oct 2010 23:40:12 +0100
-From: Jan Kara <jack@suse.cz>
-To: Jan Engelhardt <jengelh@medozas.de>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <jens.axboe@oracle.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, stable@kernel.org,
-        gregkh@suse.de
-Subject: Re: Sync writeback still broken
-Message-ID: <20101031224012.GB13207@quack.suse.cz>
-References: <20100212091609.GB1025@kernel.dk>
- <alpine.LFD.2.00.1002120722270.7792@localhost.localdomain>
- <alpine.LSU.2.01.1002131356250.20838@obet.zrqbmnf.qr>
- <20100215144938.GD3434@quack.suse.cz>
- <alpine.LSU.2.01.1002151629380.27775@obet.zrqbmnf.qr>
- <alpine.LSU.2.01.1006271842220.1495@obet.zrqbmnf.qr>
- <alpine.LNX.2.01.1010250115360.16022@obet.zrqbmnf.qr>
- <20101031122437.GA6296@quack.suse.cz>
+	id S1756883Ab0JaWsH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Oct 2010 18:48:07 -0400
+Received: from frost.carfax.org.uk ([212.13.194.111]:2127 "EHLO
+	frost.carfax.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145Ab0JaWsF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Oct 2010 18:48:05 -0400
+Date: Sun, 31 Oct 2010 22:47:57 +0000
+From: Hugo Mills <hugo-lkml@carfax.org.uk>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: cwillu <cwillu@cwillu.com>, Calvin Walton <calvin.walton@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-btrfs@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
+Subject: Re: Horrible btrfs performance due to fragmentation
+Message-ID: <20101031224757.GA2430@selene>
+Mail-Followup-To: Hugo Mills <hugo-lkml@carfax.org.uk>,
+	Felipe Contreras <felipe.contreras@gmail.com>,
+	cwillu <cwillu@cwillu.com>, Calvin Walton <calvin.walton@gmail.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	linux-btrfs@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
+References: <AANLkTinWT9OyicLfdeY+AvWs=5vb5z8skZ3t6keYjk9j@mail.gmail.com>
+ <AANLkTikNywvthaU-+s5HXvh3RX=HxiFWmADW--Ln_Gga@mail.gmail.com>
+ <AANLkTimgCU1tM9VJv8RJ-dim+bRsT7cbZ9ZidbT5sco-@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IS0zKkzwUGydFO0o"
 Content-Disposition: inline
-In-Reply-To: <20101031122437.GA6296@quack.suse.cz>
+In-Reply-To: <AANLkTimgCU1tM9VJv8RJ-dim+bRsT7cbZ9ZidbT5sco-@mail.gmail.com>
+X-GPG-Fingerprint: 8C59 86C7 81F3 93FE BB02  DDB1 20AC B3BE 515C 238D
+X-GPG-Key: 515C238D
+X-Parrot: It is no more. It has joined the choir invisible.
+X-IRC-Nicks: darksatanic darkersatanic darkling darkthing
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-frost.carfax.org.uk-Spam-Score: -0.0 (/)
+X-frost.carfax.org.uk-Spam-Report: Spam detection software, running on the system "spamd0.lon.bitfolk.com", has
+	identified this incoming email as possible spam.  The original message
+	has been attached to this so you can view it (if it isn't spam) or label
+	similar future email.  If you have any questions, see
+	the administrator of that system for details.
+	Content preview:  On Mon, Nov 01, 2010 at 12:36:58AM +0200, Felipe Contreras
+	wrote: > On Mon, Nov 1, 2010 at 12:25 AM, cwillu <cwillu@cwillu.com> wrote:
+	> > btrfs fi defrag isn't recursive. "btrfs filesystem defrag /home" will
+	> > defragment the space used to store the folder, without touching the >
+	> space used to store files in that folder. > > Yes, that came up on the
+	IRC, but: > > 1) It doesn't make sense: "btrfs filesystem" doesn't allow a
+	fileystem > as argument? Why would anyone want it to be _non_ recursive?
+	[...] 
+	Content analysis details:   (-0.0 points, 5.0 required)
+	pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	-0.0 T_RP_MATCHES_RCVD      Envelope sender domain matches handover relay
+	domain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 31-10-10 13:24:37, Jan Kara wrote:
-> On Mon 25-10-10 01:41:48, Jan Engelhardt wrote:
-> > On Sunday 2010-06-27 18:44, Jan Engelhardt wrote:
-> > >On Monday 2010-02-15 16:41, Jan Engelhardt wrote:
-> > >>On Monday 2010-02-15 15:49, Jan Kara wrote:
-> > >>>On Sat 13-02-10 13:58:19, Jan Engelhardt wrote:
-> > >>>> >> 
-> > >>>> >> This fixes it by using the passed in page writeback count, instead of
-> > >>>> >> doing MAX_WRITEBACK_PAGES batches, which gets us much better performance
-> > >>>> >> (Jan reports it's up from ~400KB/sec to 10MB/sec) and makes sync(1)
-> > >>>> >> finish properly even when new pages are being dirted.
-> > >>>> >
-> > >>>> >This seems broken.
-> > >>>> 
-> > >>>> It seems so. Jens, Jan Kara, your patch does not entirely fix this.
-> > >>>> While there is no sync/fsync to be seen in these traces, I can
-> > >>>> tell there's a livelock, without Dirty decreasing at all.
-> > >
-> > >What ultimately became of the discussion and/or the patch? 
-> > >
-> > >Your original ad-hoc patch certainly still does its job; had no need to 
-> > >reboot in 86 days and still counting.
-> > 
-> > I still observe this behavior on 2.6.36-rc8. This is starting to 
-> > get frustrating, so I will be happily following akpm's advise to 
-> > poke people.
->   Yes, that's a good way :)
-> 
-> > Thread entrypoint: http://lkml.org/lkml/2010/2/12/41
-> > 
-> > Previously, many concurrent extractions of tarballs and so on have been 
-> > one way to trigger the issue; I now also have a rather small testcase 
-> > (below) that freezes the box here (which has 24G RAM, so even if I'm 
-> > lacking to call msync, I should be fine) sometime after memset finishes.
->   I've tried your test but didn't succeed in freezing my laptop.
-> Everything was running smooth, the machine even felt reasonably responsive
-> although constantly reading and writing to disk. Also sync(1) finished in a
-> couple of seconds as one would expect in an optimistic case.
->   Needless to say that my laptop has only 1G of ram so I had to downsize
-> the hash table from 16G to 1G to be able to run the test and the disk is
-> Intel SSD so the performance of the backing storage compared to the amount
-> of needed IO is much in my favor.
->   OK, so I've taken a machine with standard rotational drive and 28GB of
-> ram and there I can see sync(1) hanging (but otherwise the machine looks
-> OK). Investigating further...
-  So with the writeback tracing, I verified that indeed the trouble is that
-work queued by sync(1) gets queued behind the background writeback which is
-just running. And background writeback won't stop because your process is
-dirtying pages so agressively. Actually, it would stop after writing
-LONG_MAX pages but that's effectively infinity. I have a patch
-(e.g. http://www.kerneltrap.com/mailarchive/linux-fsdevel/2010/8/3/6886244)
-to stop background writeback when other work is queued but it's kind
-of hacky so I can see why Christoph doesn't like it ;)
-  So I'll have to code something different to fix this issue...
 
-									Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+--IS0zKkzwUGydFO0o
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Mon, Nov 01, 2010 at 12:36:58AM +0200, Felipe Contreras wrote:
+> On Mon, Nov 1, 2010 at 12:25 AM, cwillu <cwillu@cwillu.com> wrote:
+> > btrfs fi defrag isn't recursive. =A0"btrfs filesystem defrag /home" will
+> > defragment the space used to store the folder, without touching the
+> > space used to store files in that folder.
+>=20
+> Yes, that came up on the IRC, but:
+>=20
+> 1) It doesn't make sense: "btrfs filesystem" doesn't allow a fileystem
+> as argument? Why would anyone want it to be _non_ recursive?
+
+   You missed the subsequent discussion on IRC about the interaction
+of COW with defrag. Essentially, if you've got two files that are COW
+copies of each other, and one has had something written to it since,
+it's *impossible* for both files to be defragmented, without making a
+full copy of both:
+
+Start with a file (A, etc are data blocks on the disk):
+
+file1 =3D ABCDEF
+
+Cow copy it:
+
+file1 =3D ABCDEF
+file2 =3D ABCDEF
+
+Now write to one of them:
+
+file1 =3D ABCDEF
+file2 =3D ABCDxF
+
+   So, either file1 is contiguous, and file2 is fragmented (with the
+block x somewhere else on disk), or file2 is contiguous, and file1 is
+fragmented (with E somewhere else on disk). In fact, we've determined
+by experiment that when you defrag a file that's sharing blocks with
+another one, the file gets copied in its entirety, thus separating the
+blocks of the file and its COW duplicate.
+
+> 2) The filesystem should not degrade performance so horribly no matter
+> how long the it has been used. Even git has automatic garbage
+> collection.
+
+   Since, I believe, btrfs uses COW very heavily internally for
+ensuring consistency, you can end up with fragmenting files and
+directories very easily. You probably need some kind of scrubber that
+goes looking for non-COW files that are fragmented, and defrags them
+in the background.
+
+   Hugo.
+
+--=20
+=3D=3D=3D Hugo Mills: hugo@... carfax.org.uk | darksatanic.net | lug.org.uk=
+ =3D=3D=3D
+  PGP key: 515C238D from wwwkeys.eu.pgp.net or http://www.carfax.org.uk
+   --- "No!  My collection of rare, incurable diseases! Violated!" ---  =20
+
+--IS0zKkzwUGydFO0o
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iD8DBQFMzfIcIKyzvlFcI40RAjomAKC7h8axNIS0H47H2uYyIDBvFngUYwCfRUkH
+TPgHcU2xv8BDUzNjRJ4iaCw=
+=iX+7
+-----END PGP SIGNATURE-----
+
+--IS0zKkzwUGydFO0o--
