@@ -1,82 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512Ab0JaMOj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Oct 2010 08:14:39 -0400
-Received: from exprod5og110.obsmtp.com ([64.18.0.20]:38352 "HELO
-	exprod5og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755376Ab0JaMOg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Oct 2010 08:14:36 -0400
-Message-ID: <4CCD5DA4.9090806@panasas.com>
-Date: Sun, 31 Oct 2010 14:14:28 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	id S1755536Ab0JaMYr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Oct 2010 08:24:47 -0400
+Received: from cantor.suse.de ([195.135.220.2]:55810 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755425Ab0JaMYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Oct 2010 08:24:44 -0400
+Date: Sun, 31 Oct 2010 13:24:37 +0100
+From: Jan Kara <jack@suse.cz>
+To: Jan Engelhardt <jengelh@medozas.de>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <jens.axboe@oracle.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, stable@kernel.org,
+        gregkh@suse.de
+Subject: Re: Sync writeback still broken
+Message-ID: <20101031122437.GA6296@quack.suse.cz>
+References: <20100212091609.GB1025@kernel.dk>
+ <alpine.LFD.2.00.1002120722270.7792@localhost.localdomain>
+ <alpine.LSU.2.01.1002131356250.20838@obet.zrqbmnf.qr>
+ <20100215144938.GD3434@quack.suse.cz>
+ <alpine.LSU.2.01.1002151629380.27775@obet.zrqbmnf.qr>
+ <alpine.LSU.2.01.1006271842220.1495@obet.zrqbmnf.qr>
+ <alpine.LNX.2.01.1010250115360.16022@obet.zrqbmnf.qr>
 MIME-Version: 1.0
-To: Andi Kleen <ak@linux.intel.com>
-CC: James Bottomley <James.Bottomley@suse.de>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Mike Anderson <andmike@linux.vnet.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>,
-        James Smart <james.smart@emulex.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
-        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
-        Brian King <brking@linux.vnet.ibm.com>,
-        Christof Schmitt <christof.schmitt@de.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, julia@diku.dk
-Subject: Re: [ANNOUNCE] Status of unlocked_qcmds=1 operation for .37
-References: <1288132071.8283.689.camel@mulgrave.site> <1288132464.5169.112.camel@haakon2.linux-iscsi.org> <1288133450.8283.723.camel@mulgrave.site> <1288134048.5169.132.camel@haakon2.linux-iscsi.org> <1288134713.19649.11.camel@mulgrave.site> <1288135918.5169.149.camel@haakon2.linux-iscsi.org> <20101027075349.GA32585@gargoyle.fritz.box> <1288189658.4692.13.camel@mulgrave.site> <20101028091020.GA7906@gargoyle.fritz.box> <4CC95BE8.3000909@panasas.com> <20101028182610.GA4592@gargoyle.fritz.box>
-In-Reply-To: <20101028182610.GA4592@gargoyle.fritz.box>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 31 Oct 2010 12:14:34.0490 (UTC) FILETIME=[2E09B5A0:01CB78F5]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.01.1010250115360.16022@obet.zrqbmnf.qr>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/2010 08:26 PM, Andi Kleen wrote:
->> I disagree with your approach this introduces a spin_unlock_irqrestore
->> call site at every return, in the usually huge queuecommand.
+On Mon 25-10-10 01:41:48, Jan Engelhardt wrote:
+> On Sunday 2010-06-27 18:44, Jan Engelhardt wrote:
+> >On Monday 2010-02-15 16:41, Jan Engelhardt wrote:
+> >>On Monday 2010-02-15 15:49, Jan Kara wrote:
+> >>>On Sat 13-02-10 13:58:19, Jan Engelhardt wrote:
+> >>>> >> 
+> >>>> >> This fixes it by using the passed in page writeback count, instead of
+> >>>> >> doing MAX_WRITEBACK_PAGES batches, which gets us much better performance
+> >>>> >> (Jan reports it's up from ~400KB/sec to 10MB/sec) and makes sync(1)
+> >>>> >> finish properly even when new pages are being dirted.
+> >>>> >
+> >>>> >This seems broken.
+> >>>> 
+> >>>> It seems so. Jens, Jan Kara, your patch does not entirely fix this.
+> >>>> While there is no sync/fsync to be seen in these traces, I can
+> >>>> tell there's a livelock, without Dirty decreasing at all.
+> >
+> >What ultimately became of the discussion and/or the patch? 
+> >
+> >Your original ad-hoc patch certainly still does its job; had no need to 
+> >reboot in 86 days and still counting.
 > 
-> I converted the full tree and in practice it turns out there 
-> are very few returns in nearly all queuecommands. So it won't
-> make much difference.
+> I still observe this behavior on 2.6.36-rc8. This is starting to 
+> get frustrating, so I will be happily following akpm's advise to 
+> poke people.
+  Yes, that's a good way :)
+
+> Thread entrypoint: http://lkml.org/lkml/2010/2/12/41
 > 
+> Previously, many concurrent extractions of tarballs and so on have been 
+> one way to trigger the issue; I now also have a rather small testcase 
+> (below) that freezes the box here (which has 24G RAM, so even if I'm 
+> lacking to call msync, I should be fine) sometime after memset finishes.
+  I've tried your test but didn't succeed in freezing my laptop.
+Everything was running smooth, the machine even felt reasonably responsive
+although constantly reading and writing to disk. Also sync(1) finished in a
+couple of seconds as one would expect in an optimistic case.
+  Needless to say that my laptop has only 1G of ram so I had to downsize
+the hash table from 16G to 1G to be able to run the test and the disk is
+Intel SSD so the performance of the backing storage compared to the amount
+of needed IO is much in my favor.
+  OK, so I've taken a machine with standard rotational drive and 28GB of
+ram and there I can see sync(1) hanging (but otherwise the machine looks
+OK). Investigating further...
 
-"few returns" is too much. Any thing bigger than 1 is a total wast.
-
-And the mess?!? Where to add the flags? where the returns? Need a 
-"{...}" or not. Lots of manual intervention, and possible errors.
-I bet with my approach you wouldn't need to manually fix a single
-file.
-
-> Longer term they will be all hopefully gone again anyways.
-> 
-
-That one I'm most afraid of. These that did not get fixed in this
-round, will not be fixed for a long time (if ever). I'd even go
-anal and not open code the lock but actually call the original
-__queue_command through a MACRO, that can be change in one place.
-(And will solve your patchset bisect-ability)
-
-- XXX_queue_command(...
-+ XXX_queue_command_unlocked(...
-
-
-+ XXX_queue_command(...
-+ {
-+ 	return SCSI_LOCKED_QUEUECOMMAND(XXX_queue_command_unlocked, ...);
-+ }
-> -Andi
-
-But since I'm only blabing, the one that "do", gets to decide ;-) .
-Perhaps next time.
-
-Boaz
+									Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
