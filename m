@@ -1,55 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756317Ab0JaR0H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Oct 2010 13:26:07 -0400
-Received: from mx.treblig.org ([80.68.94.177]:58333 "EHLO mx.treblig.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756227Ab0JaR0G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Oct 2010 13:26:06 -0400
-Date: Sun, 31 Oct 2010 17:26:03 +0000
-From: "Dr. David Alan Gilbert" <linux@treblig.org>
-To: linux-kernel@vger.kernel.org
-Cc: jchapman@katalix.com, netdev@vger.kernel.org
-Subject: [PATCH] kzalloc with swapped params in l2tp_dfs_seq_open
-Message-ID: <20101031172603.GB16459@gallifrey>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Chocolate: 70 percent or better cocoa solids preferably
-X-Operating-System: Linux/2.6.32.20-kvm-i386-20100823 (i686)
-X-Uptime: 17:16:59 up 67 days,  1:43,  1 user,  load average: 0.02, 0.02,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756355Ab0JaR05 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Oct 2010 13:26:57 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:43912 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756246Ab0JaR04 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Oct 2010 13:26:56 -0400
+Subject: Re: [GIT PATCH] final SCSI updates for the merge window.
+From: Jaswinder Singh <jaswinder@infradead.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1288536363.3056.7.camel@mulgrave.site>
+References: <1288536363.3056.7.camel@mulgrave.site>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 31 Oct 2010 23:00:17 +0530
+Message-ID: <1288546218.3120.4.camel@netbook.satnam>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-  'sparse' spotted that the parameters to kzalloc in l2tp_dfs_seq_open
-were swapped.
+Hello,
 
-Tested on current git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
-at 1792f17b7210280a3d7ff29da9614ba779cfcedb  build, boots and I can see that directory,
-but there again I could see /sys/kernel/debug/l2tp with it swapped; I don't have
-any l2tp in use.
+On Sun, 2010-10-31 at 09:46 -0500, James Bottomley wrote:
+> The main pieces of this are qla2xxx, qla4xxx, lpfc megaraid_sas, and
+> fcoe driver updates.  Plus some well documented bfa cleanups and a
+> couple of assorted bug fixes.
+> 
+> Also, I'd like to do a queuecommand API change in -rc1.  I'd like to
+> push the queue lock out of the mid layer and into the drivers'
+> queuecommand routine which will eliminate a spurious lock and unlock for
+> drivers that don't need it (should improve latency for multicore) Andi
+> Kleen has a coccinelle script to do this mechanically, so it will be a
+> big bang single commit for all drivers.  We'll do the optimisations as
+> part of the usual enhancements in the next merge window, but I'd like
+> the mechanical API change to go in last when the tree is getting stable.
+> 
+> The current patch is available here:
+> 
+> master.kernel.org:/pub/scm/linux/kernel/git/jejb/scsi-misc-2.6.git
+> 
+> The Short Changelog is:
+> 
+> Andrew Vasquez (2):
+>       qla2xxx: Correct PRLI failure response code handling.
+>       qla2xxx: Initialize the vport_slock spinlock.
+> 
+> Anil Ravindranath (2):
+>       pmcraid: add support for set timestamp command and other fixes
 
-Signed-off-by: Dr. David Alan Gilbert <linux@treblig.org>
+This patch looks ugly and it smells bad endian-wise.
+
+Do you mind running endian check on it by :
+
+make C=1 CF="-D__CHECK_ENDIAN__" 
+
+
+ /**
++ * pmcraid_set_timestamp - set the timestamp to IOAFP
++ *
++ * @cmd: pointer to pmcraid_cmd structure
++ *
++ * Return Value
++ *  0 for success or non-zero for failure cases
++ */
++static void pmcraid_set_timestamp(struct pmcraid_cmd *cmd)
++{
++       struct pmcraid_instance *pinstance = cmd->drv_inst;
++       struct pmcraid_ioarcb *ioarcb = &cmd->ioa_cb->ioarcb;
++       __be32 time_stamp_len = cpu_to_be32(PMCRAID_TIMESTAMP_LEN);
++       struct pmcraid_ioadl_desc *ioadl = ioarcb->add_data.u.ioadl;
++
++       struct timeval tv;
++       __le64 timestamp;
++
++       do_gettimeofday(&tv);
++       timestamp = tv.tv_sec * 1000;
++
++       pinstance->timestamp_data->timestamp[0] = (__u8)(timestamp);
++       pinstance->timestamp_data->timestamp[1] = (__u8)((timestamp) >> 8);
++       pinstance->timestamp_data->timestamp[2] = (__u8)((timestamp) >> 16);
++       pinstance->timestamp_data->timestamp[3] = (__u8)((timestamp) >> 24);
++       pinstance->timestamp_data->timestamp[4] = (__u8)((timestamp) >> 32);
++       pinstance->timestamp_data->timestamp[5] = (__u8)((timestamp)  >> 40);
++
++       pmcraid_reinit_cmdblk(cmd);
++       ioarcb->request_type = REQ_TYPE_SCSI;
++       ioarcb->resource_handle = cpu_to_le32(PMCRAID_IOA_RES_HANDLE);
++       ioarcb->cdb[0] = PMCRAID_SCSI_SET_TIMESTAMP;
++       ioarcb->cdb[1] = PMCRAID_SCSI_SERVICE_ACTION;
++       memcpy(&(ioarcb->cdb[6]), &time_stamp_len, sizeof(time_stamp_len));
++
++       ioarcb->ioadl_bus_addr = cpu_to_le64((cmd->ioa_cb_bus_addr) +
++                                       offsetof(struct pmcraid_ioarcb,
++                                               add_data.u.ioadl[0]));
++       ioarcb->ioadl_length = cpu_to_le32(sizeof(struct pmcraid_ioadl_desc));
++       ioarcb->ioarcb_bus_addr &= ~(0x1FULL);
++
+
+Thanks,
 --
-diff --git a/net/l2tp/l2tp_debugfs.c b/net/l2tp/l2tp_debugfs.c
-index 104ec3b..b8dbae8 100644
---- a/net/l2tp/l2tp_debugfs.c
-+++ b/net/l2tp/l2tp_debugfs.c
-@@ -249,7 +249,7 @@ static int l2tp_dfs_seq_open(struct inode *inode, struct file *file)
- 	struct seq_file *seq;
- 	int rc = -ENOMEM;
- 
--	pd = kzalloc(GFP_KERNEL, sizeof(*pd));
-+	pd = kzalloc(sizeof(*pd), GFP_KERNEL);
- 	if (pd == NULL)
- 		goto out;
- 
--- 
- -----Open up your eyes, open up your mind, open up your code -------   
-/ Dr. David Alan Gilbert    |       Running GNU/Linux       | Happy  \ 
-\ gro.gilbert @ treblig.org |                               | In Hex /
- \ _________________________|_____ http://www.treblig.org   |_______/
+Jaswinder Singh.
+
