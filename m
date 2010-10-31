@@ -1,175 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab0JaATL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 20:19:11 -0400
-Received: from mxout3.netvision.net.il ([194.90.6.2]:37443 "EHLO
-	mxout3.netvision.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754116Ab0JaATJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 20:19:09 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; CHARSET=US-ASCII; format=flowed
-Message-id: <4CCCB663.7010100@billauer.co.il>
-Date: Sun, 31 Oct 2010 02:20:51 +0200
-From: Eli Billauer <eli@billauer.co.il>
-User-Agent: Thunderbird 2.0.0.23 (Windows/20090812)
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: open() on /dev/tty takes 30 seconds on 2.6.36
-References: <4CCBCD8E.1020601@billauer.co.il>
- <20101030114634.b19c4e0c.akpm@linux-foundation.org>
-In-reply-to: <20101030114634.b19c4e0c.akpm@linux-foundation.org>
+	id S1754657Ab0JaBLG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 21:11:06 -0400
+Received: from mx5.orcon.net.nz ([219.88.242.55]:53710 "EHLO mx5.orcon.net.nz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754461Ab0JaBLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 21:11:04 -0400
+Message-ID: <4CCCC224.50007@orcon.net.nz>
+Date: Sun, 31 Oct 2010 14:11:00 +1300
+From: Michael Cree <mcree@orcon.net.nz>
+User-Agent: Mozilla/5.0 (X11; U; Linux alpha; en-US; rv:1.9.1.14) Gecko/20101026 Icedove/3.0.9
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Matt Turner <mattst88@gmail.com>, Jiri Kosina <trivial@kernel.org>,
+        Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/39] arch/alpha: Update WARN uses
+References: <cover.1288471897.git.joe@perches.com>	 <517a3d5c620dd4843a35a05c9a1c123b4b936cd9.1288471898.git.joe@perches.com>	 <AANLkTi=Po5RaY-mL62trrVm+kuK=0JV7z2oQcDJek4kE@mail.gmail.com> <1288474087.366.145.camel@Joe-Laptop>
+In-Reply-To: <1288474087.366.145.camel@Joe-Laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-DSPAM-Check: by mx5.orcon.net.nz on Sun, 31 Oct 2010 14:11:01 +1300
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Sun Oct 31 14:11:02 2010
+X-DSPAM-Confidence: 0.8531
+X-DSPAM-Probability: 0.0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton wrote:
-
-> Odd.  Presumably someone else was holding big_tty_mutex for 15 seconds.
+On 31/10/10 10:28, Joe Perches wrote:
+> On Sat, 2010-10-30 at 17:17 -0400, Matt Turner wrote:
+>> On Sat, Oct 30, 2010 at 5:08 PM, Joe Perches<joe@perches.com>  wrote:
+>>> Coalesce long formats.
+>>> Align arguments.
+>>> Signed-off-by: Joe Perches<joe@perches.com>
+>>>   arch/alpha/kernel/pci-sysfs.c |   14 ++++++--------
+>>>   1 files changed, 6 insertions(+), 8 deletions(-)
+>>> diff --git a/arch/alpha/kernel/pci-sysfs.c b/arch/alpha/kernel/pci-sysfs.c
+>>> @@ -44,10 +44,9 @@ static int __pci_mmap_fits(struct pci_dev *pdev, int num,
+>>> -       WARN(1, "process \"%s\" tried to map%s 0x%08lx-0x%08lx on %s BAR %d "
+>>> -               "(size 0x%08lx)\n",
+>>> -               current->comm, sparse ? " sparse" : "", start, start + nr,
+>>> -               pci_name(pdev), num, size);
+>>> +       WARN(1, "process \"%s\" tried to map%s 0x%08lx-0x%08lx on %s BAR %d (size 0x%08lx)\n",
+>>> +            current->comm, sparse ? " sparse" : "", start, start + nr,
+>>> +            pci_name(pdev), num, size);
+>>> @@ -261,10 +260,9 @@ static int __legacy_mmap_fits(struct pci_controller *hose,
+>>> -       WARN(1, "process \"%s\" tried to map%s 0x%08lx-0x%08lx on hose %d "
+>>> -               "(size 0x%08lx)\n",
+>>> -               current->comm, sparse ? " sparse" : "", start, start + nr,
+>>> -               hose->index, size);
+>>> +       WARN(1, "process \"%s\" tried to map%s 0x%08lx-0x%08lx on hose %d (size 0x%08lx)\n",
+>>> +            current->comm, sparse ? " sparse" : "", start, start + nr,
+>>> +            hose->index, size);
+>> What's accomplished here? It looks like you joined two strings (which
+>> were separated as to not overflow the 80-char limit) and spaced a
+>> couple lines over.
+>>
+>> I don't see how this makes anything clearer.
 >
-> We can find out who, with the sysrq-d command if you have the time
-> please.  You'll need to enable lockdep and magic sysrq in .config. 
-> Then run `dmesg -n 8' so all messages get printed by the kernel and
-> then, in the middle of that 15-second delay, do
->
-> 	echo d > /proc/sysrq-trigger
->
-> I'll confess that I've never used sysrq-d and am unsure what the output
-> looks like.  Fingers crossed!
->   
+> This one is just a whitespace cleanup.
+> Ignore it or nack it if you want.
 
-First, I'll explain what I did: Since I can't login while this problem 
-occurs, I had to modify sshd's service script to start sshd with strace, 
-and also kick off a script (called who-is-locking.sh), which creates 
-that sysrq call every five seconds. This could also be the place to 
-mention, that I got an NULL dereference oops during one of these (IP at 
-get_usage_chars+0x0/0x10e, while in the who-is-locking process). But 
-that happened after the desired data was logged.
+I prefer the original indenting as it clearly stands the `1' on its own 
+thus emphasising that the warning will be printed everytime the WARN() 
+statement is executed.  I surmise that the original programmer thought 
+it important to emphasise this as it might not be considered the 
+"normal" usage of WARN().
 
-Now, let's look at the interesting point of the strace (of sshd):
+I agree that, in general, coalesced strings aid grepping but this broken 
+string isn't one that will benefit.
 
-01:23:37.156475 open("/dev/tty", O_RDWR|O_NOCTTY) = -1 ENXIO (No such 
-device or address) <29.999444>
-01:24:07.156354 setsid()                = 2336 <0.000167>
+I recall the story that when someone pointed out parallel fifths (an 
+absolute no-no according to the rules of classical harmony) in a 
+composition of Beethoven's to Beethoven himself, Beethoven was so 
+indignant that he proceeded to compose a set of variations on a theme 
+where in each variation he extensively violated one of the rules of 
+classical harmony, and wrote down the bottom of each variation "You Ass" 
+to the authority who had made the rule.
 
-The same open() taking 30 seconds, ending at 01:24:07. In 
-/var/log/messages (below) we have
-Oct 31 01:24:07 ocho modem-manager: (ttyS2) opening serial device...
-Oct 31 01:24:07 ocho modem-manager: (ttyS3) closing serial device...
+The moral here is that when a _competent_ programmer breaks the "style 
+guide" they are most likely doing so for a very good reason.  Thus, 
+those who would submit whitespace fix patches should take time to ask 
+themselves why the original programmer has laid out the code in such a 
+fashion and learn from it, before submitting so-called "fixes".
 
-The same things happens again, when ssh opens /dev/pts/0, which takes 30 
-seconds again, with the end of operation coinciding with modem-manager 
-opening a tty device.
-
-As far as I know, there is only one real serial port on my computer. 
-Maybe this snippet from my boot log may be of interest:
-
-Oct 31 01:14:28 ocho kernel: Serial: 8250/16550 driver, 4 ports, IRQ 
-sharing enabled
-Oct 31 01:14:28 ocho kernel: serial8250: ttyS0 at I/O 0x3f8 (irq = 4) is 
-a 16550A
-Oct 31 01:14:28 ocho kernel: 00:07: ttyS0 at I/O 0x3f8 (irq = 4) is a 16550A
-Oct 31 01:14:28 ocho kernel: serial 0000:05:04.0: PCI INT A -> GSI 16 
-(level, low) -> IRQ 16
-Oct 31 01:14:28 ocho kernel: 0000:05:04.0: ttyS1 at I/O 0xbe20 (irq = 
-16) is a 8250
-Oct 31 01:14:28 ocho kernel: 0000:05:04.0: ttyS2 at I/O 0xbe28 (irq = 
-16) is a 8250
-Oct 31 01:14:28 ocho kernel: 0000:05:04.0: ttyS3 at I/O 0xbe40 (irq = 
-16) is a 8250
-Oct 31 01:14:28 ocho kernel: Couldn't register serial port 0000:05:04.0: -28
-
-Below is /var/log/message dump for the relevant time interval. I can 
-submit more if necessary, but I think the picture is pretty clear.
-
-Hope this helps,
-    Eli
-
-Oct 31 01:23:59 ocho kernel: =============================================
-Oct 31 01:23:59 ocho kernel:
-Oct 31 01:24:04 ocho kernel: SysRq : Show Locks Held
-Oct 31 01:24:04 ocho kernel:
-Oct 31 01:24:04 ocho kernel: Showing all locks held in the system:
-Oct 31 01:24:04 ocho kernel: 2 locks held by modem-manager/1835:
-Oct 31 01:24:04 ocho kernel: #0:  (big_tty_mutex){+.+.+.}, at: 
-[<ffffffff814b9c09>] tty_lock+0x3f/0x4a
-Oct 31 01:24:04 ocho kernel: #1:  (&port->mutex){+.+.+.}, at: 
-[<ffffffff812fcace>] uart_close+0x82/0x312
-Oct 31 01:24:04 ocho kernel: 2 locks held by who-is-locking./1850:
-Oct 31 01:24:04 ocho kernel: #0:  (sysrq_key_table_lock){......}, at: 
-[<ffffffff812e97de>] __handle_sysrq+0x28/0x15b
-Oct 31 01:24:04 ocho kernel: #1:  (tasklist_lock){.?.+..}, at: 
-[<ffffffff810798a5>] debug_show_all_locks+0x4c/0x178
-Oct 31 01:24:04 ocho kernel: 1 lock held by gpm/1971:
-Oct 31 01:24:04 ocho kernel: #0:  (tty_mutex){+.+.+.}, at: 
-[<ffffffff812d5903>] tty_open+0x5a/0x4ac
-Oct 31 01:24:04 ocho kernel: 1 lock held by mingetty/2125:
-Oct 31 01:24:04 ocho kernel: #0:  (&tty->atomic_read_lock){+.+...}, at: 
-[<ffffffff812d7648>] n_tty_read+0x281/0x7b4
-Oct 31 01:24:04 ocho kernel: 1 lock held by mingetty/2126:
-Oct 31 01:24:04 ocho kernel: #0:  (&tty->atomic_read_lock){+.+...}, at: 
-[<ffffffff812d7648>] n_tty_read+0x281/0x7b4
-Oct 31 01:24:04 ocho kernel: 1 lock held by mingetty/2127:
-Oct 31 01:24:04 ocho kernel: #0:  (&tty->atomic_read_lock){+.+...}, at: 
-[<ffffffff812d7648>] n_tty_read+0x281/0x7b4
-Oct 31 01:24:04 ocho kernel: 1 lock held by mingetty/2128:
-Oct 31 01:24:04 ocho kernel: #0:  (&tty->atomic_read_lock){+.+...}, at: 
-[<ffffffff812d7648>] n_tty_read+0x281/0x7b4
-Oct 31 01:24:04 ocho kernel: 1 lock held by mingetty/2129:
-Oct 31 01:24:04 ocho kernel: #0:  (&tty->atomic_read_lock){+.+...}, at: 
-[<ffffffff812d7648>] n_tty_read+0x281/0x7b4
-Oct 31 01:24:04 ocho kernel: 2 locks held by sshd/2336:
-Oct 31 01:24:04 ocho kernel: #0:  (tty_mutex){+.+.+.}, at: 
-[<ffffffff812d5903>] tty_open+0x5a/0x4ac
-Oct 31 01:24:04 ocho kernel: #1:  (big_tty_mutex){+.+.+.}, at: 
-[<ffffffff814b9c09>] tty_lock+0x3f/0x4a
-Oct 31 01:24:04 ocho kernel:
-Oct 31 01:24:04 ocho kernel: =============================================
-Oct 31 01:24:04 ocho kernel:
-Oct 31 01:24:07 ocho modem-manager: (ttyS2) opening serial device...
-Oct 31 01:24:07 ocho modem-manager: (ttyS3) closing serial device...
-Oct 31 01:24:09 ocho kernel: SysRq : Show Locks Held
-Oct 31 01:24:09 ocho kernel:
-Oct 31 01:24:09 ocho kernel: Showing all locks held in the system:
-Oct 31 01:24:09 ocho kernel: 2 locks held by modem-manager/1835:
-Oct 31 01:24:09 ocho kernel: #0:  (big_tty_mutex){+.+.+.}, at: 
-[<ffffffff814b9c09>] tty_lock+0x3f/0x4a
-Oct 31 01:24:09 ocho kernel: #1:  (&port->mutex){+.+.+.}, at: 
-[<ffffffff812fcace>] uart_close+0x82/0x312
-Oct 31 01:24:09 ocho kernel: 2 locks held by who-is-locking./1850:
-Oct 31 01:24:09 ocho kernel: #0:  (sysrq_key_table_lock){......}, at: 
-[<ffffffff812e97de>] __handle_sysrq+0x28/0x15b
-Oct 31 01:24:09 ocho kernel: #1:  (tasklist_lock){.?.+..}, at: 
-[<ffffffff810798a5>] debug_show_all_locks+0x4c/0x178
-Oct 31 01:24:09 ocho kernel: 1 lock held by gpm/1971:
-Oct 31 01:24:09 ocho kernel: #0:  (tty_mutex){+.+.+.}, at: 
-[<ffffffff812d5903>] tty_open+0x5a/0x4ac
-Oct 31 01:24:09 ocho kernel: 1 lock held by mingetty/2125:
-Oct 31 01:24:09 ocho kernel: #0:  (&tty->atomic_read_lock){+.+...}, at: 
-[<ffffffff812d7648>] n_tty_read+0x281/0x7b4
-Oct 31 01:24:09 ocho kernel: 1 lock held by mingetty/2126:
-Oct 31 01:24:09 ocho kernel: #0:  (&tty->atomic_read_lock){+.+...}, at: 
-[<ffffffff812d7648>] n_tty_read+0x281/0x7b4
-Oct 31 01:24:09 ocho kernel: 1 lock held by mingetty/2127:
-Oct 31 01:24:09 ocho kernel: #0:  (&tty->atomic_read_lock){+.+...}, at: 
-[<ffffffff812d7648>] n_tty_read+0x281/0x7b4
-Oct 31 01:24:09 ocho kernel: 1 lock held by mingetty/2128:
-Oct 31 01:24:09 ocho kernel: #0:  (&tty->atomic_read_lock){+.+...}, at: 
-[<ffffffff812d7648>] n_tty_read+0x281/0x7b4
-Oct 31 01:24:09 ocho kernel: 1 lock held by mingetty/2129:
-Oct 31 01:24:09 ocho kernel: #0:  (&tty->atomic_read_lock){+.+...}, at: 
-[<ffffffff812d7648>] n_tty_read+0x281/0x7b4
-Oct 31 01:24:09 ocho kernel: 2 locks held by sshd/2336:
-Oct 31 01:24:09 ocho kernel: #0:  (tty_mutex){+.+.+.}, at: 
-[<ffffffff812d5903>] tty_open+0x5a/0x4ac
-Oct 31 01:24:09 ocho kernel: #1:  (big_tty_mutex){+.+.+.}, at: 
-[<ffffffff814b9c09>] tty_lock+0x3f/0x4a
-Oct 31 01:24:09 ocho kernel:
-Oct 31 01:24:09 ocho kernel: =============================================
-Oct 31 01:24:09 ocho kernel:
-
--- 
-
-Web: http://www.billauer.co.il
-
+Cheers
+Michael.
