@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755947Ab0JaOcS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Oct 2010 10:32:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38253 "EHLO mx2.suse.de"
+	id S1755975Ab0JaOkr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Oct 2010 10:40:47 -0400
+Received: from relay.atmel.no ([194.19.124.36]:21514 "EHLO relay.atmel.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755710Ab0JaOcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Oct 2010 10:32:16 -0400
-Date: Sun, 31 Oct 2010 07:25:39 -0700
-From: Greg KH <gregkh@suse.de>
-To: Onkalo Samu <samu.p.onkalo@nokia.com>
-Cc: ext Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: sysfs and power management
-Message-ID: <20101031142539.GA25480@suse.de>
-References: <1288177143.12206.22.camel@4fid08082> <20101027124816.7087436a@linux.intel.com> <62697B07E9803846BC582181BD6FB6B836EB2994F4@NOK-EUMSG-02.mgdnok.nokia.com> <20101027152809.39701917@lxorguk.ukuu.org.uk> <20101029195039.GA26401@suse.de> <20101030140047.GA24464@khazad-dum.debian.net> <1288526275.2313.14.camel@noppispoppis.nmp.nokia.com>
+	id S1755710Ab0JaOkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Oct 2010 10:40:45 -0400
+X-Greylist: delayed 1863 seconds by postgrey-1.27 at vger.kernel.org; Sun, 31 Oct 2010 10:40:44 EDT
+Date: Sun, 31 Oct 2010 15:02:44 +0100
+From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Roman Zippel <zippel@linux-m68k.org>,
+        Andreas Schwab <schwab@linux-m68k.org>, linux-m68k@vger.kernel.org,
+        Greg Ungerer <gerg@uclinux.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        Andy Grover <andy.grover@oracle.com>, rds-devel@oss.oracle.com,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH v2 02/22] bitops: rename generic little-endian bitops
+ functions
+Message-ID: <20101031140244.GA2269@ssg-0.norway.atmel.com>
+References: <1287672077-5797-1-git-send-email-akinobu.mita@gmail.com>
+ <1287672077-5797-3-git-send-email-akinobu.mita@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1288526275.2313.14.camel@noppispoppis.nmp.nokia.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <1287672077-5797-3-git-send-email-akinobu.mita@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 31, 2010 at 01:57:55PM +0200, Onkalo Samu wrote:
-> On Sat, 2010-10-30 at 16:00 +0200, ext Henrique de Moraes Holschuh
-> wrote:
-> > On Fri, 29 Oct 2010, Greg KH wrote:
-> > > back to sleep.  That's probably the best way to do this, as userspace
-> > > isn't going to open the sysfs file and not close it instantly anyway
-> > > after it has read the data (seeking on a sysfs file isn't really
-> > > recommended, even if it sometimes seems to work.)
-> > 
-> > Well, it is documented that seek(start of file) on sysfs works, and it
-> > is ABI already (some userspace uses it on poll/select-capable
-> > attributes).  So, maybe seek(somewhere that is not the start of the
-> > file) doesn't work -- and it should return an error in that case if it
-> > doesn't already...  but it is a lot more deterministic than "sometimes"
-> > ;-)
-> > 
-> > So yes, userspace will open() and not close() a sysfs attribute immediately
-> > afterwards.  It is not only shell crap that interfaces to the kernel over
-> > sysfs :-)
-> > 
+Around Thu 21 Oct 2010 23:40:57 +0900 or thereabout, Akinobu Mita wrote:
+> As a preparation for providing little-endian bitops for all architectures,
+> This removes generic_ prefix from little-endian bitops function names
+> in asm-generic/bitops/le.h.
 > 
-> What I would like to do is:
+> s/generic_find_next_le_bit/find_next_le_bit/
+> s/generic_find_next_zero_le_bit/find_next_zero_le_bit/
+> s/generic_find_first_zero_le_bit/find_first_zero_le_bit/
+> s/generic___test_and_set_le_bit/__test_and_set_le_bit/
+> s/generic___test_and_clear_le_bit/__test_and_clear_le_bit/
+> s/generic_test_le_bit/test_le_bit/
+> s/generic___set_le_bit/__set_le_bit/
+> s/generic___clear_le_bit/__clear_le_bit/
+> s/generic_test_and_set_le_bit/test_and_set_le_bit/
+> s/generic_test_and_clear_le_bit/test_and_clear_le_bit/
 > 
-> Control sensors operating mode and regulators based on the userspace
-> activity. If no-one is interested about the sensor, it can be turned
-> totally off including its operating power via regulator framework.
+> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: Roman Zippel <zippel@linux-m68k.org>
+> Cc: Andreas Schwab <schwab@linux-m68k.org>
+> Cc: linux-m68k@lists.linux-m68k.org
+> Cc: Greg Ungerer <gerg@uclinux.org>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: linuxppc-dev@lists.ozlabs.org
+> Cc: Andy Grover <andy.grover@oracle.com>
+> Cc: rds-devel@oss.oracle.com
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: netdev@vger.kernel.org
+> Cc: Avi Kivity <avi@redhat.com>
+> Cc: Marcelo Tosatti <mtosatti@redhat.com>
+> Cc: kvm@vger.kernel.org
+> ---
+> No change from previous submission
 > 
-> So far the only accepted interface for the small sensor seems to be
-> sysfs. I tried use misc device but it was not accepted.
+>  arch/avr32/kernel/avr32_ksyms.c              |    4 ++--
+>  arch/avr32/lib/findbit.S                     |    4 ++--
 
-Look at the drivers/staging/iio/ subsystem.  It is working on a
-framework that you can use through a character device (I think) to
-properly manage your drivers in this manner.
+For the AVR32 changes.
 
-Try working with those developers as I think it is what you are looking
-for here.
+Acked-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
 
-thanks,
+<snipp patch>
 
-greg k-h
+-- 
+Best regards, Hans-Christian Egtvedt
