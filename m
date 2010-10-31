@@ -1,36 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753501Ab0JaHrX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Oct 2010 03:47:23 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56752 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752554Ab0JaHrV (ORCPT
+	id S1753308Ab0JaHvr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Oct 2010 03:51:47 -0400
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:55017 "EHLO
+	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752554Ab0JaHvo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Oct 2010 03:47:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=IUzkT2YsoFfH/NyNcBHCS9iWNrCm1yTuCJkdVN33Tb7yFuGWt8YxAcbXGbHKUECdRj
-         wni0AOzJgbg07cUYLH9Hknyj5ZkkPkHzpnrejPQnWG14n4+6Bzy2YI9JEW92754KKuOD
-         6K1HJmkKtwB6bm0nKL6GMZWg1kWtBFq9rcp1w=
-MIME-Version: 1.0
-In-Reply-To: <a4a2512bcf19341d19db73534412250e@localhost>
-References: <fbcf2b0a4d8ebff3378b9522ce81ad82@localhost>
-	<a4a2512bcf19341d19db73534412250e@localhost>
-Date: Sun, 31 Oct 2010 00:47:19 -0700
-Message-ID: <AANLkTi=CqWzxN7e6S6kUDqNgCodEt08caTAqW5em0XOd@mail.gmail.com>
-Subject: Re: [PATCH 2/3] mtd: m25p80: Add support for Macronix MX256L25635E
-From: Kevin Cernekee <cernekee@gmail.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Sun, 31 Oct 2010 03:51:44 -0400
+From: "Henrik Rydberg" <rydberg@euromail.se>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+        Henrik Rydberg <rydberg@euromail.se>
+Subject: [PATCH 0/8] hwmon: applesmc: Dynamic configuration rewrite
+Date: Sun, 31 Oct 2010 08:50:26 +0100
+Message-Id: <1288511434-5662-1-git-send-email-rydberg@euromail.se>
+X-Mailer: git-send-email 1.7.1
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1PCShW-0007Xy-6Y.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PCShW-0007Xy-6Y abc30290d3bbfa043ce5e314f677684f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Corrected subject line:
+The amount of machines supported by this driver has increased rapidly
+over the past years, and the detailed driver support of the many
+flavors is quickly becoming a problem.
 
-[PATCH 2/3] mtd: m25p80: Add support for Macronix MX25L25635E
+This patchset introduces dynamic configuration by making the SMC
+register set efficiently searchable, and fixes a number of outstanding
+issues:
 
-"MX256L25635E" is incorrect.
+* Support for all new models since MacbookPro 6.
+* Support for variable number of cpu sensors in the MacPros.
+* Handles the odd temperature sensor types found on new models.
+* Fixes minor read problems on many intermediate models.
+
+The first patch is preparatory. The second patch adds the register
+lookup cache. The third patch adds the dynamic temperature files, and
+the fourth implements a new temperature register format. The fifth
+patch makes the remaining features dynamically configured, and the
+sixth patch sets up the fans dynamically. The seventh patch is purely
+janitory, and the last patch updates the copyright.
+
+As a side-effect, the file is reduced by almost five hundred lines.
+
+Cheers,
+Henrik
+
+Henrik Rydberg (8):
+  hwmon: applesmc: Relax the severity of device init failure
+  hwmon: applesmc: Introduce a register lookup table
+  hwmon: applesmc: Dynamic creation of temperature files
+  hwmon: applesmc: Handle new temperature format
+  hwmon: applesmc: Extract all features generically
+  hwmon: applesmc: Dynamic creation of fan files
+  hwmon: applesmc: Simplify feature sysfs handling
+  hwmon: applesmc: Update copyright information
+
+ drivers/hwmon/applesmc.c | 1542 ++++++++++++++++------------------------------
+ 1 files changed, 534 insertions(+), 1008 deletions(-)
+
