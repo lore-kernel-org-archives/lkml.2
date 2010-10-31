@@ -1,115 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763Ab0JaBcg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 21:32:36 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51125
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754503Ab0JaBce (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 21:32:34 -0400
-Date: Sat, 30 Oct 2010 18:32:57 -0700 (PDT)
-Message-Id: <20101030.183257.70183832.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1754743Ab0JaBjD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 21:39:03 -0400
+Received: from mail.perches.com ([173.55.12.10]:3869 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754335Ab0JaBjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 21:39:01 -0400
+Subject: Re: [PATCH 02/39] arch/alpha: Update WARN uses
+From: Joe Perches <joe@perches.com>
+To: Michael Cree <mcree@orcon.net.nz>
+Cc: Matt Turner <mattst88@gmail.com>, Jiri Kosina <trivial@kernel.org>,
+        Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <4CCCC224.50007@orcon.net.nz>
+References: <cover.1288471897.git.joe@perches.com>
+	 <517a3d5c620dd4843a35a05c9a1c123b4b936cd9.1288471898.git.joe@perches.com>
+	 <AANLkTi=Po5RaY-mL62trrVm+kuK=0JV7z2oQcDJek4kE@mail.gmail.com>
+	 <1288474087.366.145.camel@Joe-Laptop>  <4CCCC224.50007@orcon.net.nz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 30 Oct 2010 18:38:59 -0700
+Message-ID: <1288489139.366.169.camel@Joe-Laptop>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 2010-10-31 at 14:11 +1300, Michael Cree wrote:
+> On 31/10/10 10:28, Joe Perches wrote:
+> > On Sat, 2010-10-30 at 17:17 -0400, Matt Turner wrote:
+> >> On Sat, Oct 30, 2010 at 5:08 PM, Joe Perches<joe@perches.com>  wrote:
+> >>> Coalesce long formats.
+> >>> Align arguments.
+> >> What's accomplished here? It looks like you joined two strings (which
+> >> were separated as to not overflow the 80-char limit) and spaced a
+> >> couple lines over.
+> > This one is just a whitespace cleanup.
+> > Ignore it or nack it if you want.
+> I prefer the original indenting as it clearly stands the `1' on its own 
+> thus emphasising that the warning will be printed everytime the WARN() 
+> statement is executed.  I surmise that the original programmer thought 
+> it important to emphasise this as it might not be considered the 
+> "normal" usage of WARN().
 
-Last pull request before 2.6.37-rc1, I really wanted to get your
-sendto/recvfrom patch in here as well as the RDS fixes.
+Actually, WARN(1, foo) is by far the most common use of WARN.
+More than half of all uses.
 
-I did a bunch of tests with the various I/O calls using different
-lengths, like 10, (2^31 - 1), 2^31, 2^32, and larger on 64-bit and it
-all seems to be doing the right thing at least with TCP and UDP.
+$ grep -rP --include=*.[ch] -oh "\bWARN\s*\(" * | wc -l
+286
+$ grep -rP --include=*.[ch] -oh "\bWARN\s*\(\w+" * | \
+	sort | uniq -c | sort -rn | head -5
+    173 WARN(1
+      8 WARN(IS_ERR
+      4 WARN(ret
+      4 WARN(priv
+      4 WARN(local
 
-Also:
+> The moral here is that when a _competent_ programmer breaks the "style 
+> guide" they are most likely doing so for a very good reason.  Thus, 
+> those who would submit whitespace fix patches should take time to ask 
+> themselves why the original programmer has laid out the code in such a 
+> fashion and learn from it, before submitting so-called "fixes".
 
-1) Fix ipv6 UDP statistic regression, from Eric Dumazet.
+Code is decidedly not music.
 
-2) Fix GRE fallback tunnel init, also from Eric Dumazet.
+This stuff is mostly craft not art and consistency in
+craft has value.
 
-3) Endianness fixes from vmxnet driver, from Harvey Harrison.
+You might also note I didn't call it a fix, I called it
+a whitespace cleanup.
 
-4) New ID for pcnet_cs driver.
+And again, I don't much care if it's applied to
+arch/alpha or not.  I haven't had an alpha since I gave
+away my AlphaStation a decade ago.
 
-5) Stack info leak to userland fix in mISDN, from Kulikov Vasiliy.
-
-6) netxen_nic probe crash due to too early tx queue manipulation,
-   fix from Denis Kirjanov.
-
-7) RDS fixes from you and Andy Grover.
-
-8) Fix sparse and section mismatch problems in new pch_can driver,
-   from Marc Kleine-Budde.
-
-Please pull, thanks a lot!
-
-The following changes since commit b7bdcc47114595b4b359fe0f7d941bb901e9261d:
-
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-kconfig (2010-10-29 14:43:30 -0700)
-
-are available in the git repository at:
-
-  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
-
-Andy Grover (4):
-      RDS: Return -EINVAL if rds_rdma_pages returns an error
-      RDS: Clean up error handling in rds_cmsg_rdma_args
-      RDS: Copy rds_iovecs into kernel memory instead of rereading from userspace
-      RDS: Let rds_message_alloc_sgs() return NULL
-
-Cyril Chemparathy (1):
-      phy/marvell: rename 88ec048 to 88e1318s and fix mscr1 addr
-
-Denis Kirjanov (1):
-      netxen_nic: Fix the tx queue manipulation bug in netxen_nic_probe
-
-Eric Dumazet (2):
-      ipv6/udp: report SndbufErrors and RcvbufErrors
-      ip_gre: fix fallback tunnel setup
-
-Hans J. Koch (1):
-      netdev: can: Change mail address of Hans J. Koch
-
-Harvey Harrison (2):
-      vmxnet3: remove unnecessary byteswapping in BAR writing macros
-      vmxnet: trivial annotation of protocol constant
-
-Ken Kawasaki (1):
-      pcnet_cs: add new_id
-
-Kulikov Vasiliy (1):
-      isdn: mISDN: socket: fix information leak to userland
-
-Linus Torvalds (2):
-      net: fix rds_iovec page count overflow
-      net: Truncate recvfrom and sendto length to INT_MAX.
-
-Marc Kleine-Budde (2):
-      can: pch_can: fix sparse warning
-      can: pch_can: fix section mismatch warning by using a whitelisted name
-
- drivers/isdn/mISDN/socket.c          |    2 +
- drivers/net/can/at91_can.c           |    2 +-
- drivers/net/can/pch_can.c            |   10 ++--
- drivers/net/netxen/netxen_nic_main.c |    1 -
- drivers/net/pcmcia/pcnet_cs.c        |    1 +
- drivers/net/phy/marvell.c            |   18 +++---
- drivers/net/vmxnet3/vmxnet3_drv.c    |    2 +-
- drivers/net/vmxnet3/vmxnet3_int.h    |    8 +-
- include/linux/marvell_phy.h          |    2 +-
- net/ipv4/ip_gre.c                    |    6 +-
- net/ipv6/proc.c                      |    4 +
- net/rds/message.c                    |    5 ++
- net/rds/rdma.c                       |  126 ++++++++++++++++++++++-----------
- net/rds/send.c                       |    4 +
- net/socket.c                         |    4 +
- 15 files changed, 128 insertions(+), 67 deletions(-)
