@@ -1,116 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993Ab0JaJNz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Oct 2010 05:13:55 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:30111 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753308Ab0JaJNw (ORCPT
+	id S1755061Ab0JaJQd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Oct 2010 05:16:33 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61265 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753308Ab0JaJQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Oct 2010 05:13:52 -0400
-X-IronPort-AV: E=Sophos;i="4.58,267,1286164800"; 
-   d="scan'208";a="120447428"
-Subject: Re: [GIT PULL] Small Xen bugfixes
-From: Ian Campbell <Ian.Campbell@eu.citrix.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        Vasiliy G Tolstov <v.tolstov@selfip.ru>
-In-Reply-To: <4CCB292E.9090602@goop.org>
-References: <4CCB1906.4000608@goop.org>
-	 <AANLkTi=g5sdiWSaLUHAATQn-1=jPqtc=RL6SpYSMYn98@mail.gmail.com>
-	 <4CCB1E71.3060600@goop.org>  <4CCB292E.9090602@goop.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Organization: Citrix Systems, Inc.
-Date: Sun, 31 Oct 2010 09:13:49 +0000
-Message-ID: <1288516429.16032.13.camel@localhost.localdomain>
+	Sun, 31 Oct 2010 05:16:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type;
+        b=QeDtIj2F0EFKkTMtxnVPTQef6osaU+X8zKPE4jbNY45zL7YFqlbzPRB77ytF8+F+xF
+         kIFrvw1sVUvSX7m2utwu9hI8fYKtNVuYsInb1vg2piq5pSFeMbbQSKDr+z7i8KYBAsK2
+         MomAp5j2+bxjmnCegjNKCmOpSR4h6Nt0giJvQ=
+Message-ID: <4CCD33E6.7000104@suse.cz>
+Date: Sun, 31 Oct 2010 10:16:22 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Thunderbird/3.1.6
 MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: use after free in serport
+References: <20101030111618.GA29915@Chamillionaire.breakpoint.cc>
+In-Reply-To: <20101030111618.GA29915@Chamillionaire.breakpoint.cc>
+X-Enigmail-Version: 1.1.2
+Content-Type: multipart/mixed;
+ boundary="------------000505040901050302050301"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-29 at 21:06 +0100, Jeremy Fitzhardinge wrote:
-> On 10/29/2010 12:20 PM, Jeremy Fitzhardinge wrote:
-> >  On 10/29/2010 12:08 PM, Linus Torvalds wrote:
-> >> On Fri, Oct 29, 2010 at 11:57 AM, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
-> >>>    * fix dom0 boot on systems whose E820 doesn't completely cover the
-> >>>      ISA address space.  This fixes a crash on a Dell R310.
-> >> Hmm. This clashes with my current tree.
-> > Bugger, so it does.  I just did a test merge with no complaint though;
-> > what happened?
-> >
-> > I'll redo the patch anyway to fix the below.
-> >
-> >> And that conflict is trivial to fix up, but the thing is, I think the
-> >> patch that comes from your tree is worse than what is already there.
-> >>
-> >> Why is that simple unconditional
-> >>
-> >>     e820_add_region(ISA_START_ADDRESS, ISA_END_ADDRESS - ISA_START_ADDRESS,
-> >>            E820_RESERVED);
-> >>
-> >> not just always the right thing? Why do you have a separate hack for
-> >> dom0 in xen_release_chunk() instead? That just looks bogus.
-> > Yes, we actually had this discussion.  I was for making the
-> > e820_add_region unconditional, and Ian's counter was that it could be
-> > done in the common code rather than Xen-specific.
-> >
-> >> The normal logic we use on PC's is to just always reserve the low 64kB
-> >> of memory, and the whole ISA space. Why doesn't Xen just do the same?
-> > The specific issue is that the Xen domain returns any memory that's not
-> > covered by an E820 entry back to Xen, mostly to make sure that memory
-> > isn't wasted by being shadowed by PCI devices.  But it was also doing
-> > this in the sub-1M region, which on all the machines I've tested on is
-> > completely covered.  But on a Dell R310 there's a little 2-page gap
-> > where some ACPI stuff is lurking, that was being released back to Xen so
-> > it couldn't be accessed from Linux any more.
-> >
-> > The fix is to just make sure the whole low region is covered (or at
-> > least the 640k-1M space).
+This is a multi-part message in MIME format.
+--------------000505040901050302050301
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+
+On 10/30/2010 01:16 PM, Sebastian Andrzej Siewior wrote:
+> Now we have the struct serport freed but the first process is still
+> using it.
 > 
-> Hm, I see.  This Dell machine stashes the MPS table in 2 pages just
-> *below* 640k, so the ISA_START_ADDRESS-ISA_END_ADDRESS reserved range
-> doesn't cover it.
+> Any idea how to fix it?
 
-Yes, what the machine has is:
-        (XEN)  0000000000000000 - 000000000009e000 (usable)
-        (XEN)  0000000000100000 - 00000000bf699000 (usable)
-which after reserving the 640k-1M range shows up in dom0 as:
-        BIOS-provided physical RAM map:
-         Xen: 0000000000000000 - 000000000009e000 (usable)
-         Xen: 00000000000a0000 - 0000000000100000 (reserved)
-         Xen: 0000000000100000 - 0000000020000000 (usable)
-which has a little 2 page hole between 9e000-a0000 which
-xen_release_chunk dutifully punches out as a hole in both the virtual
-and physical address space.
+I think so:
+http://lkml.org/lkml/2010/10/21/223
 
-> There's three ways to fix this:
-> 
->     * not free memory below 1M (Ian's current patch)
->     * fill any E820 gaps below 1M
->     * reserve all memory below 1M
+(the updated patch attached)
 
-The second two basically indirectly implement the first under Xen. They
-also seem like things which if they are correct to do in Xen dom0 they
-would also be correct on native too and therefore belong in
-sanitize_e820 or somewhere like that.
+regards,
+-- 
+js
+suse labs
 
-The actual memory which is marked reserved (or just unmentioned) doesn't
-really matter much here since the code which goes poking around in this
-stuff doesn't check if it is reserved or not (and it shouldn't since we
-know the BIOSes can/will get this stuff wrong).
+--------------000505040901050302050301
+Content-Type: text/x-patch;
+ name="0001-Char-TTY-restore-tty_ldisc_wait_idle.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="0001-Char-TTY-restore-tty_ldisc_wait_idle.patch"
 
-> The 3rd is certainly simplest, at the cost of wasting a trivial amount
-> of memory.
+>From 769b2920731dabb4408ee68aec39c01765659430 Mon Sep 17 00:00:00 2001
+From: Jiri Slaby <jslaby@suse.cz>
+Date: Thu, 21 Oct 2010 15:49:18 +0200
+Subject: [PATCH] Char: TTY, restore tty_ldisc_wait_idle
 
-Doesn't Linux avoid using the lowest 1M anyway? (obviously apart from
-the start of day probing for firmware tables etc).
+It was removed in 65b770468e98 (tty-ldisc: turn ldisc user count into
+a proper refcount), but we need to wait for last user to quit the
+ldisc before we close it in tty_set_ldisc.
 
->   Unfortunately it crashes early.  Sigh, will try and sort it
-> out this afternoon.
+Otherwise weird things start to happen. There might be processes
+waiting in tty_read->n_tty_read on tty->read_wait for input to appear
+and at that moment, a change of ldisc is fatal. n_tty_close is called,
+it frees read_buf and the waiting process is still in the middle of
+reading and goes nuts after it is woken.
 
-Strange!
+Previously we prevented close to happen when others are in ldisc ops
+by tty_ldisc_wait_idle in tty_set_ldisc. But the commit above removed
+that. So revoke the change and test whether there is 1 user (=we), and
+allow the close then.
+
+We can do that without ldisc/tty locks, because nobody else can open
+the device due to TTY_LDISC_CHANGING bit set, so we in fact wait for
+everybody to leave.
+
+I don't understand why tty_ldisc_lock would be needed either when the
+counter is an atomic variable, so this is a lockless
+tty_ldisc_wait_idle.
+
+On the other hand, if we fail to wait (timeout or signal), we have to
+reenable the halted ldiscs, so we take ldisc lock and reuse the setup
+path at the end of tty_set_ldisc.
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Alan Cox <alan@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/char/tty_ldisc.c |   29 +++++++++++++++++++++++++++++
+ 1 files changed, 29 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/char/tty_ldisc.c b/drivers/char/tty_ldisc.c
+index 412f977..5bbf33a 100644
+--- a/drivers/char/tty_ldisc.c
++++ b/drivers/char/tty_ldisc.c
+@@ -47,6 +47,7 @@
+ 
+ static DEFINE_SPINLOCK(tty_ldisc_lock);
+ static DECLARE_WAIT_QUEUE_HEAD(tty_ldisc_wait);
++static DECLARE_WAIT_QUEUE_HEAD(tty_ldisc_idle);
+ /* Line disc dispatch table */
+ static struct tty_ldisc_ops *tty_ldiscs[NR_LDISCS];
+ 
+@@ -83,6 +84,7 @@ static void put_ldisc(struct tty_ldisc *ld)
+ 		return;
+ 	}
+ 	local_irq_restore(flags);
++	wake_up(&tty_ldisc_idle);
+ }
+ 
+ /**
+@@ -531,6 +533,23 @@ static int tty_ldisc_halt(struct tty_struct *tty)
+ }
+ 
+ /**
++ *	tty_ldisc_wait_idle	-	wait for the ldisc to become idle
++ *	@tty: tty to wait for
++ *
++ *	Wait for the line discipline to become idle. The discipline must
++ *	have been halted for this to guarantee it remains idle.
++ */
++static int tty_ldisc_wait_idle(struct tty_struct *tty)
++{
++	int ret;
++	ret = wait_event_interruptible_timeout(tty_ldisc_idle,
++			atomic_read(&tty->ldisc->users) == 1, 5 * HZ);
++	if (ret < 0)
++		return ret;
++	return ret > 0 ? 0 : -EBUSY;
++}
++
++/**
+  *	tty_set_ldisc		-	set line discipline
+  *	@tty: the terminal to set
+  *	@ldisc: the line discipline
+@@ -634,8 +653,17 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
+ 
+ 	flush_scheduled_work();
+ 
++	retval = tty_ldisc_wait_idle(tty);
++
+ 	tty_lock();
+ 	mutex_lock(&tty->ldisc_mutex);
++
++	/* handle wait idle failure locked */
++	if (retval) {
++		tty_ldisc_put(new_ldisc);
++		goto enable;
++	}
++
+ 	if (test_bit(TTY_HUPPED, &tty->flags)) {
+ 		/* We were raced by the hangup method. It will have stomped
+ 		   the ldisc data and closed the ldisc down */
+@@ -669,6 +697,7 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
+ 
+ 	tty_ldisc_put(o_ldisc);
+ 
++enable:
+ 	/*
+ 	 *	Allow ldisc referencing to occur again
+ 	 */
+-- 
+1.7.3.1
 
 
+--------------000505040901050302050301--
