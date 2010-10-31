@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751440Ab0JaEUa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Oct 2010 00:20:30 -0400
-Received: from mail.perches.com ([173.55.12.10]:3875 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750877Ab0JaEU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Oct 2010 00:20:29 -0400
-Subject: Re: [PATCH 1/2] kernel/module.c: Use pr_<level> and pr_fmt
-From: Joe Perches <joe@perches.com>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
-In-Reply-To: <AANLkTiniij6Xyq77mrm_FiuNfd4ggA+qHx6__6sfS_i_@mail.gmail.com>
-References: <cover.1288482645.git.joe@perches.com>
-	 <c913cbdfddab78a4b7c840e0d8ff9754c306fc66.1288482645.git.joe@perches.com>
-	 <AANLkTiniij6Xyq77mrm_FiuNfd4ggA+qHx6__6sfS_i_@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 30 Oct 2010 21:20:27 -0700
-Message-ID: <1288498827.366.183.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1751540Ab0JaEYs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Oct 2010 00:24:48 -0400
+Received: from [69.28.251.93] ([69.28.251.93]:38298 "EHLO b32.net"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751354Ab0JaEYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Oct 2010 00:24:46 -0400
+From: Kevin Cernekee <cernekee@gmail.com>
+Subject: [PATCH 1/3] mtd: m25p80: Reinstate error print on unrecognized flash
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Date: Sat, 30 Oct 2010 21:11:02 -0700
+Message-Id: <fbcf2b0a4d8ebff3378b9522ce81ad82@localhost>
+User-Agent: vim 7.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-10-31 at 00:04 -0400, Arnaud Lacombe wrote:
-> [not that I'm fond of getting my mailbox full of whitespace patches, but...]
-> On Sat, Oct 30, 2010 at 7:58 PM, Joe Perches <joe@perches.com> wrote:
-> > Add missing KERN_CONT to printks
-> > Convert to pr_<level>
-> > Add "#define pr_fmt(fmt) fmt" so pr_<level> uses are not prefixed.
-> > Coalesce long formats for easier grep.
+Commit b34bc037b26e621e5fc13466767e4da110a7b3d3 removed the
+"unrecognized JEDEC id" error message, causing the probe function to
+silently abort if the flash ID is unrecognized.
 
-Mostly it's a way to add #define pr_fmt(fmt) fmt
-in this file so that a different default for
-pr_fmt could be used in kernel.h later.
+It is desirable to produce diagnostic output in this situation so that
+the user has some idea what went wrong.
 
-This patch was sent to lkml and not directly
-to you.  As you find this stuff uninteresting I
-suggest you unsubscribe and read LKML using any
-of the various web services like lkml.org and
-read only what you find useful.
+Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+---
+ drivers/mtd/devices/m25p80.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
+index bf5a002..80404e1 100644
+--- a/drivers/mtd/devices/m25p80.c
++++ b/drivers/mtd/devices/m25p80.c
+@@ -764,6 +764,7 @@ static const struct spi_device_id *__devinit jedec_probe(struct spi_device *spi)
+ 			return &m25p_ids[tmp];
+ 		}
+ 	}
++	dev_err(&spi->dev, "unrecognized JEDEC id %06x\n", jedec);
+ 	return ERR_PTR(-ENODEV);
+ }
+ 
+-- 
+1.7.0.4
 
