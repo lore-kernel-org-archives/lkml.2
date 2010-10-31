@@ -1,83 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752156Ab0JaGZk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Oct 2010 02:25:40 -0400
-Received: from 190-202-95-114.dyn.dsl.cantv.net ([190.202.95.114]:35647 "EHLO
-	kepler2.unet.edu.ve" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751491Ab0JaGZi (ORCPT
+	id S1752372Ab0JaGcL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Oct 2010 02:32:11 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:16547 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751412Ab0JaGcJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Oct 2010 02:25:38 -0400
-Message-ID: <20101031015530.75451yfn7zeds1k0@webmail.unet.edu.ve>
-Date: Sun, 31 Oct 2010 01:55:30 -0430
-From: info_webmaster <info@webmaster.org>
-Reply-to: customercarewebdept2010@w.cn
-To: undisclosed-recipients:;
-Subject: Confirm your webmail account
+	Sun, 31 Oct 2010 02:32:09 -0400
+Date: Sun, 31 Oct 2010 07:21:48 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Eric Paris <eparis@redhat.com>
+cc: linux-kernel@vger.kernel.org, Stephen Smalley <sds@tycho.nsa.gov>,
+        James Morris <jmorris@namei.org>, Eric Paris <eparis@parisplace.org>,
+        Stephen Hemminger <shemminger@vyatta.com>, ulia Lawall <julia@diku.dk>,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] SELinux: Do not assign the same value twice to the same
+ variable
+In-Reply-To: <1288495964.3017.37.camel@localhost.localdomain>
+Message-ID: <alpine.LNX.2.00.1010310717200.17199@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1010302306230.1572@swampdragon.chaosbits.net> <1288495964.3017.37.camel@localhost.localdomain>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-2;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.5)
-X-UNET-MailScanner: Found to be clean
-X-UNET-MailScanner-From: info@webmaster.org
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Account User,
+On Sat, 30 Oct 2010, Eric Paris wrote:
 
-We are currently updating our database and the center of the e-mail  
-account which is to say, see page home. We will remove the email  
-accounts that age
-e are no longer active to create more space for bills new users.we  
-also investigated a system audit level security to improve and enhance  
-our current security.
+> On Sat, 2010-10-30 at 23:10 +0200, Jesper Juhl wrote:
+> > Hi,
+> > 
+> > It makes little sense to assign the same value to the same variable twice 
+> > when there is no code inbetween which could have changed the value of that 
+> > variable.
+> 
+> I don't like the patch.  The compiler will optimize it away (actually it
+> will optimize both of them away) and it make it clear that if a new
+> block is added in the middle that error codes can't be wrong....
+> 
+> It's just a personal preference I guess, but I like always setting the
+> error code before goto outs.  Is there a reason doing this is a problem?
+> 
+It's not a problem as such, it just seemed a silly thing to do when I came 
+across it. But, I can see your point in leaving it, so just forget about 
+the patch.
 
-To continue using our services are needed update and confirm the  
-details of your e-mail below.
-
-To complete your new account confirmation, reply to this message  
-immediately and enter your account details as requested below.
-
-Username: ..................
-E-mail Username ..............
-Password: ..................
-Confirm password? A :............
-Date of Birth :..............
-Password to future :............
-
-Otherwise, your account will be deactivated immediately from our  
-database data and the service is not interrupted as important  
-messages, and can be lost due to reduced confirm your account  
-information to us.
-
-We apologize for any inconvenience this will cause for this period but  
-confidence that we are here to serve you better service and provide  
-more technology which revolves around email e-mail and Internet.
-
-It is also relevant to understand that our main concern is that our  
-customers and the security of their files and data.
-
-Confirmation code: -/93-1A388-480 Webmail Support Team.
-
-
-================================================== =============
-This email is intended only for its intended recipientabove and may  
-contain confidential, privileged or private, legally, it is not for  
-general use or disclosure. If not the intended recipient, you are  
-notified that any disclosure,
-copying, distribution or taking any action based on contents of this  
-message is strictly prohibited. If you receive this message in error,  
-please let us know by reply message and then delete this message from  
-your system. Your cooperation is appreciated.
-================================================== ==============
-
-Thanks for your Understanding
-
-
-
-
+-- 
+Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
+Plain text mails only, please      http://www.expita.com/nomime.html
+Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
 
