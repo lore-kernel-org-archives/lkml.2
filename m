@@ -1,241 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756686Ab0JaUM1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Oct 2010 16:12:27 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:14399 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751381Ab0JaUM0 (ORCPT
+	id S1756712Ab0JaUTN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Oct 2010 16:19:13 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:14960 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751666Ab0JaUTL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Oct 2010 16:12:26 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:references:date:in-reply-to:message-id:
-	user-agent:mime-version:content-type;
-	b=nzH90ETngf1hlzQwFCC0yamwnuNqy4MaTwZ0hrNBJ5LqxYtBRU+BM4IVpOAeHw7ZB
-	ZG32Crio3FYy/EIFQjKbw==
-From: Greg Thelen <gthelen@google.com>
-To: Ciju Rajan K <ciju@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: [PATCH v4 03/11] memcg: create extensible page stat update routines
-References: <1288336154-23256-1-git-send-email-gthelen@google.com>
-	<1288336154-23256-4-git-send-email-gthelen@google.com>
-	<4CCD81CB.9030503@linux.vnet.ibm.com>
-Date: Sun, 31 Oct 2010 13:11:46 -0700
-In-Reply-To: <4CCD81CB.9030503@linux.vnet.ibm.com> (Ciju Rajan K.'s message of
-	"Sun, 31 Oct 2010 20:18:43 +0530")
-Message-ID: <xr93sjzmcebh.fsf@ninji.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Sun, 31 Oct 2010 16:19:11 -0400
+Date: Sun, 31 Oct 2010 21:19:04 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux I2C <linux-i2c@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: [GIT PULL] Late i2c updates for 2.6.37
+Message-ID: <20101031211904.7c0ab7c5@endymion.delvare>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ciju Rajan K <ciju@linux.vnet.ibm.com> writes:
+Hi Linus,
 
-> Greg Thelen wrote:
->> Replace usage of the mem_cgroup_update_file_mapped() memcg
->> statistic update routine with two new routines:
->> * mem_cgroup_inc_page_stat()
->> * mem_cgroup_dec_page_stat()
->>
->> As before, only the file_mapped statistic is managed.  However,
->> these more general interfaces allow for new statistics to be
->> more easily added.  New statistics are added with memcg dirty
->> page accounting.
->>
->> Signed-off-by: Greg Thelen <gthelen@google.com>
->> Signed-off-by: Andrea Righi <arighi@develer.com>
->> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->> Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
->> ---
->> Changelog since v1:
->> - Rename (for clarity):
->>   - mem_cgroup_write_page_stat_item -> mem_cgroup_page_stat_item
->>   - mem_cgroup_read_page_stat_item -> mem_cgroup_nr_pages_item
->>
->>  include/linux/memcontrol.h |   31 ++++++++++++++++++++++++++++---
->>  mm/memcontrol.c            |   16 +++++++---------
->>  mm/rmap.c                  |    4 ++--
->>  3 files changed, 37 insertions(+), 14 deletions(-)
->>
->> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
->> index 159a076..067115c 100644
->> --- a/include/linux/memcontrol.h
->> +++ b/include/linux/memcontrol.h
->> @@ -25,6 +25,11 @@ struct page_cgroup;
->>  struct page;
->>  struct mm_struct;
->>
->> +/* Stats that can be updated by kernel. */
->> +enum mem_cgroup_page_stat_item {
->> +	MEMCG_NR_FILE_MAPPED, /* # of pages charged as file rss */
->> +};
->> +
->>  extern unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
->>  					struct list_head *dst,
->>  					unsigned long *scanned, int order,
->> @@ -121,7 +126,22 @@ static inline bool mem_cgroup_disabled(void)
->>  	return false;
->>  }
->>
->> -void mem_cgroup_update_file_mapped(struct page *page, int val);
->> +void mem_cgroup_update_page_stat(struct page *page,
->> +				 enum mem_cgroup_page_stat_item idx,
->> +				 int val);
->> +
->> +static inline void mem_cgroup_inc_page_stat(struct page *page,
->> +					    enum mem_cgroup_page_stat_item idx)
->> +{
->> +	mem_cgroup_update_page_stat(page, idx, 1);
->> +}
->> +
->> +static inline void mem_cgroup_dec_page_stat(struct page *page,
->> +					    enum mem_cgroup_page_stat_item idx)
->> +{
->> +	mem_cgroup_update_page_stat(page, idx, -1);
->> +}
->> +
->>  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
->>  						gfp_t gfp_mask);
->>  u64 mem_cgroup_get_limit(struct mem_cgroup *mem);
->> @@ -293,8 +313,13 @@ mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
->>  {
->>  }
->>
->> -static inline void mem_cgroup_update_file_mapped(struct page *page,
->> -							int val)
->> +static inline void mem_cgroup_inc_page_stat(struct page *page,
->> +					    enum mem_cgroup_page_stat_item idx)
->> +{
->> +}
->> +
->> +static inline void mem_cgroup_dec_page_stat(struct page *page,
->> +					    enum mem_cgroup_page_stat_item idx)
->>  {
->>  }
->>
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index 9a99cfa..4fd00c4 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -1592,7 +1592,8 @@ bool mem_cgroup_handle_oom(struct mem_cgroup *mem, gfp_t mask)
->>   * possibility of race condition. If there is, we take a lock.
->>   */
->>
->>   
-> Greg,
->
-> I am not seeing the function mem_cgroup_update_file_stat() in the latest mmotm
-> 2010-10-22-16-36.
-> So not able to apply this patch. Tried couple of times cloning the entire mmotm
-> git repository. But no luck.
-> Tried in the web interface http://git.zen-kernel.org/mmotm/tree/mm/memcontrol.c
-> also. It is not there.
-> Surprisingly git log doesn't show any recent changes to mm/memcontrol.c. Am I
-> missing something?
-> I could see this function in the mainline linux 2.6 git tree.
->
-> -Ciju
+Please pull late i2c subsystem updates for Linux 2.6.37 from:
 
-mem_cgroup_update_file_mapped() was renamed to
-mem_cgroup_update_file_stat() in
-http://userweb.kernel.org/~akpm/mmotm/broken-out/memcg-generic-filestat-update-interface.patch
+git://git.kernel.org/pub/scm/linux/kernel/git/jdelvare/staging.git i2c-for-linus
 
-I also do not see this in the mmotm git repo.  However, if I manually
-apply the mmotm patches to v2.6.36 using quilt then I see the expected
-patched memcontrol.c.  I am not sure why the zen-kernel.org git mmotm
-repo differs from a mmotm patched mainline 2.6.36.
+These depended on changes in other trees, which I had to wait for you
+to merge before I could send them.
 
-Here is my procedure using quilt to patch mainline:
+ Documentation/i2c/busses/i2c-i801   |    6 +-
+ drivers/i2c/busses/Kconfig          |    1 +
+ drivers/i2c/busses/i2c-i801.c       |  333 ++++++++++++++++++++---------------
+ drivers/staging/tm6000/tm6000-i2c.c |    1 -
+ include/linux/i2c.h                 |    2 -
+ include/linux/pci_ids.h             |    1 +
+ 6 files changed, 196 insertions(+), 148 deletions(-)
 
-# Checkout 2.6.36 mainline
-$ git checkout v2.6.36
+---------------
 
-# Confirm mainline 2.6.36 does not have mem_cgroup_update_file_stat()
-$ grep mem_cgroup_update_file_stat -r mm
+David Woodhouse (2):
+      i2c-i801: Handle multiple instances instead of keeping global state
+      i2c-i801: Add PCI idents for Patsburg 'IDF' SMBus controllers
 
-# Apply patches
-$ curl http://userweb.kernel.org/~akpm/mmotm/broken-out.tar.gz | tar -xzf -
-$ export QUILT_PATCHES=broken-out
-$ quilt push -aq
-...
-Now at patch memblock-add-input-size-checking-to-memblock_find_region-fix.patch
+Jean Delvare (1):
+      i2c: Drop unused I2C_CLASS_TV flags
 
-# Now the memcontrol contains mem_cgroup_update_file_stat()
-$ grep mem_cgroup_update_file_stat -r mm
-mm/memcontrol.c:static void mem_cgroup_update_file_stat(struct page *page, int idx, int val)
-mm/memcontrol.c:        mem_cgroup_update_file_stat(page, MEM_CGROUP_STAT_FILE_MAPPED, val);
+Seth Heasley (1):
+      i2c-i801: Add Intel Patsburg device ID
 
->> -static void mem_cgroup_update_file_stat(struct page *page, int idx, int val)
->> +void mem_cgroup_update_page_stat(struct page *page,
->> +				 enum mem_cgroup_page_stat_item idx, int val)
->>  {
->>  	struct mem_cgroup *mem;
->>  	struct page_cgroup *pc = lookup_page_cgroup(page);
->> @@ -1615,30 +1616,27 @@ static void mem_cgroup_update_file_stat(struct page *page, int idx, int val)
->>  			goto out;
->>  	}
->>
->> -	this_cpu_add(mem->stat->count[idx], val);
->> -
->>  	switch (idx) {
->> -	case MEM_CGROUP_STAT_FILE_MAPPED:
->> +	case MEMCG_NR_FILE_MAPPED:
->>  		if (val > 0)
->>  			SetPageCgroupFileMapped(pc);
->>  		else if (!page_mapped(page))
->>  			ClearPageCgroupFileMapped(pc);
->> +		idx = MEM_CGROUP_STAT_FILE_MAPPED;
->>  		break;
->>  	default:
->>  		BUG();
->>  	}
->>
->> +	this_cpu_add(mem->stat->count[idx], val);
->> +
->>  out:
->>  	if (unlikely(need_unlock))
->>  		unlock_page_cgroup(pc);
->>  	rcu_read_unlock();
->>  	return;
->>  }
->> -
->> -void mem_cgroup_update_file_mapped(struct page *page, int val)
->> -{
->> -	mem_cgroup_update_file_stat(page, MEM_CGROUP_STAT_FILE_MAPPED, val);
->> -}
->> +EXPORT_SYMBOL(mem_cgroup_update_page_stat);
->>
->>  /*
->>   * size of first charge trial. "32" comes from vmscan.c's magic value.
->> diff --git a/mm/rmap.c b/mm/rmap.c
->> index 1a8bf76..a66ab76 100644
->> --- a/mm/rmap.c
->> +++ b/mm/rmap.c
->> @@ -911,7 +911,7 @@ void page_add_file_rmap(struct page *page)
->>  {
->>  	if (atomic_inc_and_test(&page->_mapcount)) {
->>  		__inc_zone_page_state(page, NR_FILE_MAPPED);
->> -		mem_cgroup_update_file_mapped(page, 1);
->> +		mem_cgroup_inc_page_stat(page, MEMCG_NR_FILE_MAPPED);
->>  	}
->>  }
->>
->> @@ -949,7 +949,7 @@ void page_remove_rmap(struct page *page)
->>  		__dec_zone_page_state(page, NR_ANON_PAGES);
->>  	} else {
->>  		__dec_zone_page_state(page, NR_FILE_MAPPED);
->> -		mem_cgroup_update_file_mapped(page, -1);
->> +		mem_cgroup_dec_page_stat(page, MEMCG_NR_FILE_MAPPED);
->>  	}
->>  	/*
->>  	 * It would be tidy to reset the PageAnon mapping here,
->>   
+Thanks,
+-- 
+Jean Delvare
