@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756299Ab0JaRKp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Oct 2010 13:10:45 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:58185 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756257Ab0JaRKj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Oct 2010 13:10:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=xZ3SqEc/fHPXmLFM8G7x883q9y/bB7XfVnjrwN8GVzyht/WJUmgjfbysqQI7j2hitJ
-         1ptdM/WG6uQkSAWF2l+dQ8Q0b6sMveaim9GPJQKC7AY5A9A5TG1YIyGrtJchtohGSiSl
-         jRFZ93tJkS5QOJVJTX1i5uRLyYV9dxAuH92wY=
-From: Vasiliy Kulikov <segooon@gmail.com>
-To: kernel-janitors@vger.kernel.org
-Cc: Jon Maloy <jon.maloy@ericsson.com>,
-        Allan Stephens <allan.stephens@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        tipc-discussion@lists.sourceforge.net, netdev@vger.kernel.org,
+	id S1756232Ab0JaRQK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Oct 2010 13:16:10 -0400
+Received: from slowhand.arndnet.de ([88.198.19.76]:36465 "EHLO mail.unitix.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756098Ab0JaRQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Oct 2010 13:16:08 -0400
+Message-ID: <4CCDA454.708@arndnet.de>
+Date: Sun, 31 Oct 2010 18:16:04 +0100
+From: Arnd Hannemann <arnd@arndnet.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Lightning/1.0b1 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: Ohad Ben-Cohen <ohad@wizery.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] net: tipc: fix information leak to userland
-Date: Sun, 31 Oct 2010 20:10:32 +0300
-Message-Id: <1288545032-16481-1-git-send-email-segooon@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+Subject: regression: b43-sdio: probe of mmc0:0001:1 failed with error -16
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Structure sockaddr_tipc is copied to userland with padding bytes after
-"id" field in union field "name" unitialized.  It leads to leaking of
-contents of kernel stack memory.  We have to initialize them to zero.
+Hi,
 
-Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
----
- net/tipc/socket.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+on todays Linus' git (v2.6.36-9871-g3985c7c) b43 sdio stopped working.
+It was working on (v2.6.36-6794-g12ba8d1).
 
-diff --git a/net/tipc/socket.c b/net/tipc/socket.c
-index 33217fc..e9f0d50 100644
---- a/net/tipc/socket.c
-+++ b/net/tipc/socket.c
-@@ -396,6 +396,7 @@ static int get_name(struct socket *sock, struct sockaddr *uaddr,
- 	struct sockaddr_tipc *addr = (struct sockaddr_tipc *)uaddr;
- 	struct tipc_sock *tsock = tipc_sk(sock->sk);
- 
-+	memset(addr, 0, sizeof(*addr));
- 	if (peer) {
- 		if ((sock->state != SS_CONNECTED) &&
- 			((peer != 2) || (sock->state != SS_DISCONNECTING)))
--- 
-1.7.0.4
+b43-sdio: probe of mmc0:0001:1 failed with error -16
+
+The error seems to originate from the following code in drivers/mmc/core/sdio_bus.c:sdio_bus_probe()
+
+135         ret = pm_runtime_get_sync(dev);
+136         if (ret < 0)
+137                 goto out;
+
+so I suspect this has something to do with the following commit: 
+
+commit 40bba0c1ca83a370f749c8bc9afda71cf79ebd91
+Author: Ohad Ben-Cohen <ohad@wizery.com>
+Date:   Sat Oct 2 13:54:11 2010 +0200
+
+    mmc: sdio: enable runtime PM for SDIO functions
+
+However, simply reverting 40bba0c1ca83a370f749c8bc9afda71cf79ebd91 does not work because then
+modprobe hangs.
+
+Tested on AP4EVB (arm) with tmio_mmc. Any ideas?
+
+Best regards,
+Arnd
+
+
 
