@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754788Ab0JaDF3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 23:05:29 -0400
-Received: from fieldses.org ([174.143.236.118]:47236 "EHLO fieldses.org"
+	id S1754815Ab0JaDdI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 23:33:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21637 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753642Ab0JaDFI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 23:05:08 -0400
-Date: Sat, 30 Oct 2010 23:04:44 -0400
-To: Christoph Hellwig <hch@infradead.org>
-Cc: "J. Bruce Fields" <bfields@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Bryan Schumaker <bjschuma@netapp.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] nfsd4: initialize delegation pointer to lease
-Message-ID: <20101031030443.GB24174@fieldses.org>
-References: <20101030212500.GE480@fieldses.org>
- <1288474276-14288-4-git-send-email-bfields@redhat.com>
- <20101031020431.GA29702@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101031020431.GA29702@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+	id S1753764Ab0JaDdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Oct 2010 23:33:06 -0400
+Subject: Re: [PATCH] SELinux: Do not assign the same value twice to the
+ same variable
+From: Eric Paris <eparis@redhat.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org, Stephen Smalley <sds@tycho.nsa.gov>,
+        James Morris <jmorris@namei.org>, Eric Paris <eparis@parisplace.org>,
+        Stephen Hemminger <shemminger@vyatta.com>, ulia Lawall <julia@diku.dk>,
+        linux-security-module@vger.kernel.org
+In-Reply-To: <alpine.LNX.2.00.1010302306230.1572@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1010302306230.1572@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 30 Oct 2010 23:32:44 -0400
+Message-ID: <1288495964.3017.37.camel@localhost.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 30, 2010 at 10:04:31PM -0400, Christoph Hellwig wrote:
-> On Sat, Oct 30, 2010 at 05:31:16PM -0400, J. Bruce Fields wrote:
-> > The NFSv4 server was initializing the dp->dl_flock pointer by the
-> > somewhat ridiculous method of a locks_copy_lock callback.
-> > 
-> > Now that setlease uses the passed-in lock instead of doing a copy,
-> > dl_flock no longer gets set, resulting in the lock leaking on delegation
-> > release, and later possible hangs (among other problems).
-> > 
-> > So, initialize dl_flock and get rid of the callback.
+On Sat, 2010-10-30 at 23:10 +0200, Jesper Juhl wrote:
+> Hi,
 > 
-> >From what I can see this was the only instance of 
-> lock_manager_operations.fl_copy_lock.  Please kill it while you're at
-> it.
+> It makes little sense to assign the same value to the same variable twice 
+> when there is no code inbetween which could have changed the value of that 
+> variable.
+
+I don't like the patch.  The compiler will optimize it away (actually it
+will optimize both of them away) and it make it clear that if a new
+block is added in the middle that error codes can't be wrong....
+
+It's just a personal preference I guess, but I like always setting the
+error code before goto outs.  Is there a reason doing this is a problem?
+
+-Eric
 > 
-> Also lock_manager_operations.fl_release_private has only exact one
-> instance in nfs4d which is part of the same abuse scheme.  Please also
-> get rid of it.   I recently noticed this while updating
-> Documentation/filesystems/Locking for the grand new BKL-less world.
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+> Untested patch below.
+> 
+>  policydb.c |    1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/security/selinux/ss/policydb.c b/security/selinux/ss/policydb.c
+> index 94f630d..e5a30ff 100644
+> --- a/security/selinux/ss/policydb.c
+> +++ b/security/selinux/ss/policydb.c
+> @@ -1866,7 +1866,6 @@ static int genfs_read(struct policydb *p, void *fp)
+>  			if (!newc)
+>  				goto out;
+>  
+> -			rc = -ENOMEM;
+>  			newc->u.name = kmalloc(len + 1, GFP_KERNEL);
+>  			if (!newc->u.name)
+>  				goto out;
+> 
+> 
 
-Yeah, I wanted to maximize chances of getting the minimal fixes into
--rc1, but I've got patches for that queued up too.  I was planning on
-waiting for the next merge window, but I'm happy enough to send them in
-now.
 
---b.
