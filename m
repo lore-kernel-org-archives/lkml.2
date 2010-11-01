@@ -1,49 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758290Ab0KAPxZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 11:53:25 -0400
-Received: from sh.osrg.net ([192.16.179.4]:35089 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758259Ab0KAPxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 11:53:23 -0400
-Date: Tue, 02 Nov 2010 00:52:40 +0900 (JST)
-Message-Id: <20101102.005240.44125556.ryusuke@osrg.net>
-To: nbowler@elliptictech.com
-Cc: tglx@linutronix.de, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Linux 2.6.37-rc1
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-In-Reply-To: <20101101154717.GA17893@elliptictech.com>
-References: <AANLkTimr3rW67HxgOUyReEW8dmmSsd4b7-Ns57mXzS1w@mail.gmail.com>
-	<alpine.LFD.2.00.1011011634240.2566@localhost6.localdomain6>
-	<20101101154717.GA17893@elliptictech.com>
-X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1758299Ab0KAPyk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 11:54:40 -0400
+Received: from bhuna.collabora.co.uk ([93.93.128.226]:51826 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757124Ab0KAPyj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 11:54:39 -0400
+Message-ID: <4CCEE172.2010600@collabora.co.uk>
+Date: Mon, 01 Nov 2010 15:49:06 +0000
+From: Ian Molton <ian.molton@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100917 Icedove/3.0.8
+MIME-Version: 1.0
+To: Anthony Liguori <anthony@codemonkey.ws>
+CC: Avi Kivity <avi@redhat.com>, virtualization@lists.osdl.org,
+        linux-kernel@vger.kernel.org, QEMU Developers <qemu-devel@nongnu.org>
+Subject: Re: [Qemu-devel] Re: [PATCH] Implement a virtio GPU transport
+References: <4CAC9CD1.2050601@collabora.co.uk>	<4CB1D79A.6070805@redhat.com>	<4CBD739A.2010500@collabora.co.uk>	<4CBD7560.6080207@redhat.com>	<4CC8226F.5080807@collabora.co.uk>	<4CC94203.1080207@redhat.com>	<4CC9647A.50108@collabora.co.uk> <4CC98784.7020907@redhat.com>	<4CC9D472.2080109@collabora.co.uk> <4CCE9989.2010809@redhat.com> <4CCEBEE2.8010404@codemonkey.ws>
+In-Reply-To: <4CCEBEE2.8010404@codemonkey.ws>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 02 Nov 2010 00:52:42 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Nov 2010 11:47:17 -0400, Nick Bowler <nbowler@elliptictech.com> wrote:
-> On 2010-11-01 16:37 +0100, Thomas Gleixner wrote:
-> > On Mon, 1 Nov 2010, Linus Torvalds wrote:
-> > > The merge window for 2.6.37 is over, and -rc1 is out there (or will be
-> > > soon, as things are uploading from my laptop here in Boston and then
-> > > mirroring out)
-> > 
-> > Did you switch back to tarballs and patches only or is there going to
-> > be an update of your git tree in the foreseeable future ?
-> 
-> Seems that the v2.6.37-rc1 tag is in the git tree, but is not reachable
-> from the master branch.  See
-> 
->   http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=shortlog;h=v2.6.37-rc1
-> 
+On 01/11/10 13:21, Anthony Liguori wrote:
+> On 11/01/2010 05:42 AM, Avi Kivity wrote:
+>> On 10/28/2010 03:52 PM, Ian Molton wrote:
+>>> On 28/10/10 15:24, Avi Kivity wrote:
 
-Yes, it looks like only the master branch hasn't been updated.
+>> Waiting for a response is fine, but can't the guest issue a second
+>> batch while waiting for the first?
 
-we can get -rc1 by 'git fetch --tags'
+> The other scenario would be multiple applications trying to use GL but
+> AFAICT, this is not supported in the current model.
 
-Ryusuke Konishi
+It very much is. It supports fully visually integrated rendering (no 
+overlay windows) and even compositing GL window managers work fine, even 
+if running 3D apps under them.
+
+-Ian
