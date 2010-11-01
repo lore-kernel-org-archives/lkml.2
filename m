@@ -1,65 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751779Ab0KAQh6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 12:37:58 -0400
-Received: from fmmailgate03.web.de ([217.72.192.234]:33949 "EHLO
-	fmmailgate03.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309Ab0KAQhz (ORCPT
+	id S1751877Ab0KAQoI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 12:44:08 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:14435 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991Ab0KAQoF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 12:37:55 -0400
-Message-ID: <4CCEECE2.8060003@web.de>
-Date: Mon, 01 Nov 2010 17:37:54 +0100
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: "Roedel, Joerg" <Joerg.Roedel@amd.com>, kvm <kvm@vger.kernel.org>,
-        Sheng Yang <sheng@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Crash on kvm_iommu_map_pages
-References: <4CCEB7CF.8030207@web.de> <4CCEB946.7070103@web.de> <20101101132127.GF20959@amd.com> <4CCEBFAC.1000809@web.de> <20101101135322.GG20959@amd.com> <4CCECD17.3080303@web.de> <20101101143526.GD2987@8bytes.org> <4CCEDCD7.1000908@web.de>
-In-Reply-To: <4CCEDCD7.1000908@web.de>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigBDFCF7F84EEF71670E478356"
-X-Provags-ID: V01U2FsdGVkX1/i3rYVqg7tnph9cVV0QlWxwE9O6c7RKhPgsE2T
-	iULXcJKt3M7vPqbkdQ0no8rpvo4KS9nHIkvoBZJtC+A5jY4Ii9
-	DbkR1Wf8U=
+	Mon, 1 Nov 2010 12:44:05 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6153"; a="60181661"
+From: Stephen Caudle <scaudle@codeaurora.org>
+To: linux@arm.linux.org.uk
+Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dwalker@codeaurora.org,
+        adharmap@codeaurora.org, Stephen Caudle <scaudle@codeaurora.org>
+Subject: [PATCH] [ARM] gic: Unmask private interrupts on all cores during IRQ enable
+Date: Mon,  1 Nov 2010 12:39:55 -0400
+Message-Id: <1288629595-15331-1-git-send-email-scaudle@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigBDFCF7F84EEF71670E478356
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Requesting/freeing private peripheral interrupts on multi-core chips that
+use only one IRQ number for all cores currently unmasks/masks the interrupt
+for only the executing core.
 
-Am 01.11.2010 16:29, Jan Kiszka wrote:
-> Nope. But I just noticed a fatal thinko in my fix to
-> intel_iommu_attach_device - probably that was the key. Need to boot the=
+This change prevents the need for a separate call to enable_irq on other
+cores after request_irq. Also, shutdown is implemented instead of disable
+to allow for lazy IRQ disabling.
 
-> test kernel...
+Signed-off-by: Stephen Caudle <scaudle@codeaurora.org>
+---
+ arch/arm/Kconfig      |    5 +++
+ arch/arm/common/gic.c |   83 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 88 insertions(+), 0 deletions(-)
 
-That was indeed the reason for this GPF: I blindly swapped the
-problematic lines, releasing the wrong page. Sorry, false alarm this
-time, will send out the corrected intel_iommu_attach_device fix later.
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index a19a526..fbf5236 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1298,6 +1298,11 @@ config LOCAL_TIMERS
+ 	  accounting to be spread across the timer interval, preventing a
+ 	  "thundering herd" at every timer tick.
+ 
++config IRQ_PER_CPU
++	bool
++	depends on SMP
++	default n
++
+ source kernel/Kconfig.preempt
+ 
+ config HZ
+diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
+index ada6359..372cfb3 100644
+--- a/arch/arm/common/gic.c
++++ b/arch/arm/common/gic.c
+@@ -39,12 +39,25 @@ struct gic_chip_data {
+ 	unsigned int irq_offset;
+ 	void __iomem *dist_base;
+ 	void __iomem *cpu_base;
++#ifdef CONFIG_IRQ_PER_CPU
++	struct call_single_data ppi_data;
++#endif
+ };
+ 
+ #ifndef MAX_GIC_NR
+ #define MAX_GIC_NR	1
+ #endif
+ 
++#ifdef CONFIG_IRQ_PER_CPU
++#ifndef GIC_PPI_FIRST
++#define GIC_PPI_FIRST	16
++#endif
++
++#ifndef GIC_PPI_LAST
++#define GIC_PPI_LAST	31
++#endif
++#endif
++
+ static struct gic_chip_data gic_data[MAX_GIC_NR];
+ 
+ static inline void __iomem *gic_dist_base(unsigned int irq)
+@@ -158,6 +171,72 @@ static int gic_set_cpu(unsigned int irq, const struct cpumask *mask_val)
+ }
+ #endif
+ 
++#ifdef CONFIG_IRQ_PER_CPU
++static inline void gic_smp_call_function(struct call_single_data *data)
++{
++	int cpu;
++	int this_cpu = smp_processor_id();
++
++	/*
++	 * Since this function is called with interrupts disabled,
++	 * smp_call_function can't be used here because it warns (even
++	 * if wait = 0) when interrupts are disabled.
++	 *
++	 * __smp_call_function_single doesn't warn when interrupts are
++	 * disabled and not waiting, so use it instead.
++	 */
++	for_each_online_cpu(cpu)
++		if (cpu != this_cpu)
++			__smp_call_function_single(cpu, data, 0);
++}
++
++static void gic_mask_ppi(void *info)
++{
++	gic_mask_irq(*(unsigned int *)info);
++}
++
++static void gic_unmask_ppi(void *info)
++{
++	gic_unmask_irq(*(unsigned int *)info);
++}
++
++static void gic_enable_irq(unsigned int irq)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++	struct gic_chip_data *gic_data = get_irq_chip_data(irq);
++
++	if (irq >= GIC_PPI_FIRST && irq <= GIC_PPI_LAST) {
++		gic_data->ppi_data.func = gic_unmask_ppi;
++		gic_data->ppi_data.info = &desc->irq;
++		gic_data->ppi_data.flags = 0;
++
++		/* Unmask PPIs on all cores during enable. */
++		gic_smp_call_function(&gic_data->ppi_data);
++	}
++
++	desc->chip->unmask(irq);
++	desc->status &= ~IRQ_MASKED;
++}
++
++static void gic_shutdown_irq(unsigned int irq)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++	struct gic_chip_data *gic_data = get_irq_chip_data(irq);
++
++	if (irq >= GIC_PPI_FIRST && irq <= GIC_PPI_LAST) {
++		gic_data->ppi_data.func = gic_mask_ppi;
++		gic_data->ppi_data.info = &desc->irq;
++		gic_data->ppi_data.flags = 0;
++
++		/* Mask PPIs on all cores during disable. */
++		gic_smp_call_function(&gic_data->ppi_data);
++	}
++
++	desc->chip->mask(irq);
++	desc->status |= IRQ_MASKED;
++}
++#endif
++
+ static void gic_handle_cascade_irq(unsigned int irq, struct irq_desc *desc)
+ {
+ 	struct gic_chip_data *chip_data = get_irq_data(irq);
+@@ -196,6 +275,10 @@ static struct irq_chip gic_chip = {
+ #ifdef CONFIG_SMP
+ 	.set_affinity	= gic_set_cpu,
+ #endif
++#ifdef CONFIG_IRQ_PER_CPU
++	.enable		= gic_enable_irq,
++	.shutdown	= gic_shutdown_irq,
++#endif
+ };
+ 
+ void __init gic_cascade_irq(unsigned int gic_nr, unsigned int irq)
+-- 
+1.7.3.2
 
-Jan
+--
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum
 
-
---------------enigBDFCF7F84EEF71670E478356
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.15 (GNU/Linux)
-Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAkzO7OIACgkQitSsb3rl5xQ0RQCgsxYl31TWPTHysiHCf73OJ4E8
-zhUAnjMHesq6erKomKT3xa3CMbz3VKJ3
-=WbES
------END PGP SIGNATURE-----
-
---------------enigBDFCF7F84EEF71670E478356--
