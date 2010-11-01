@@ -1,104 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755378Ab0KAW0j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 18:26:39 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:19941 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745Ab0KAW0h (ORCPT
+	id S1752014Ab0KAWm3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 18:42:29 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54907 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751075Ab0KAWm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 18:26:37 -0400
-Date: Mon, 1 Nov 2010 15:26:24 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: "werner" <w.landgraf@ru.ru>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 2.6.37-rc1 problems
-Message-Id: <20101101152624.f567dbe2.randy.dunlap@oracle.com>
-In-Reply-To: <web-395637137@zbackend1.aha.ru>
-References: <web-395637137@zbackend1.aha.ru>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 1 Nov 2010 18:42:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=Ul9L6qyRQ76PqNorgjhjEunf6hg4STNP0p+2ry+ndfc/vy+5SltGUd/EURr0OSnsJH
+         w4xn+NKaneIAL8EtAiNkRDprMRsdBLxrffxijlI4DTIp2QUZzUiwd3gwTU1D39tEdA1S
+         TUuKFunz8IdS7PeisWMtB+chPUnk1Nc/2kJ0w=
+Message-ID: <4CCF424F.3050205@redhat.com>
+Date: Mon, 01 Nov 2010 23:42:23 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Mnenhy/0.8.3 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Jiri Olsa <jolsa@redhat.com>
+CC: dhowells@redhat.com, lizf@cn.fujitsu.com, paul.moore@hp.com,
+        johannes@sipsolutions.net, dipankar@in.ibm.com,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH 2/3] kernel,cred,kvm,security - removing superfluous rcu_read_lock_held
+ check
+References: <1288638909-10541-1-git-send-email-jolsa@redhat.com> <1288638909-10541-3-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1288638909-10541-3-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 01 Nov 2010 18:14:12 -0400 werner wrote:
+On 11/01/2010 08:15 PM, Jiri Olsa wrote:
+> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> index a055742..a90a7e3 100644
+> --- a/include/linux/kvm_host.h
+> +++ b/include/linux/kvm_host.h
+> @@ -256,7 +256,6 @@ void kvm_put_kvm(struct kvm *kvm);
+>   static inline struct kvm_memslots *kvm_memslots(struct kvm *kvm)
+>   {
+>   	return rcu_dereference_check(kvm->memslots,
+> -			srcu_read_lock_held(&kvm->srcu)
+>   			|| lockdep_is_held(&kvm->slots_lock));
+>   }
+>
 
-> 2.6.37-rc1 probelms:
-> 
-> ===========================
-> 
->    CC [M] 
->  drivers/staging/ath6kl/hif/sdio/linux_sdio/src/hif_scatter.o
-> drivers/staging/ath6kl/hif/sdio/linux_sdio/src/hif_scatter.c: 
-> In function 'SetupHIFScatterSupport':
-> drivers/staging/ath6kl/hif/sdio/linux_sdio/src/hif_scatter.c:288: 
-> error: 'struct mmc_host' has no member named 'max_hw_segs'
-> drivers/staging/ath6kl/hif/sdio/linux_sdio/src/hif_scatter.c:289: 
-> error: 'struct mmc_host' has no member named 'max_hw_segs'
+This is an srcu_read_lock_held, which you don't touch here:
 
-Already reported, Greg said that he would fix it up.
+> diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
+> index 9d8e8fb..0956a73 100644
+> --- a/kernel/rcutorture.c
+> +++ b/kernel/rcutorture.c
+> @@ -807,7 +807,6 @@ static void rcu_torture_timer(unsigned long unused)
+>  	idx = cur_ops->readlock();
+>  	completed = cur_ops->completed();
+>  	p = rcu_dereference_check(rcu_torture_current,
+> -				  rcu_read_lock_held() ||
+>  				  rcu_read_lock_bh_held() ||
+>  				  rcu_read_lock_sched_held() ||
+>  				  srcu_read_lock_held(&srcu_ctl));
 
-> make[3]: 
-> [drivers/staging/ath6kl/hif/sdio/linux_sdio/src/hif_scatter.o] 
-> Error 1 (ignored)
->    LD [M]  drivers/staging/ath6kl/ath6kl.o
-> ld: 
-> drivers/staging/ath6kl/hif/sdio/linux_sdio/src/hif_scatter.o: 
-> No such file: No such file or directory
+I guess the kvm hunk is the incorrect one?
 
-Comes from error above and using -i or -k (as I do).
-
-> make[3]: [drivers/staging/ath6kl/ath6kl.o] Error 1 
-> (ignored)
-> 
-> ============================
-> 
->    CC [M]  drivers/staging/solo6x10/solo6010-core.o
->    CC [M]  drivers/staging/solo6x10/solo6010-i2c.o
->    CC [M]  drivers/staging/solo6x10/solo6010-p2m.o
->    CC [M]  drivers/staging/solo6x10/solo6010-v4l2.o
-> drivers/staging/solo6x10/solo6010-v4l2.c: In function 
-> 'solo_v4l2_open':
-> drivers/staging/solo6x10/solo6010-v4l2.c:440: error: too 
-> few arguments to function 'videobuf_queue_dma_contig_init'
-> make[3]: [drivers/staging/solo6x10/solo6010-v4l2.o] Error 
-> 1 (ignored)
->    CC [M]  drivers/staging/solo6x10/solo6010-tw28.o
->    CC [M]  drivers/staging/solo6x10/solo6010-gpio.o
->    CC [M]  drivers/staging/solo6x10/solo6010-disp.o
->    CC [M]  drivers/staging/solo6x10/solo6010-enc.o
->    CC [M]  drivers/staging/solo6x10/solo6010-v4l2-enc.o
-> drivers/staging/solo6x10/solo6010-v4l2-enc.c: In function 
-> 'solo_enc_open':
-> drivers/staging/solo6x10/solo6010-v4l2-enc.c:769: error: 
-> too few arguments to function 
-> 'videobuf_queue_dma_contig_init'
-> make[3]: [drivers/staging/solo6x10/solo6010-v4l2-enc.o] 
-> Error 1 (ignored)
->    CC [M]  drivers/staging/solo6x10/solo6010-g723.o
->    LD [M]  drivers/staging/solo6x10/solo6x10.o
-> ld: drivers/staging/solo6x10/solo6010-v4l2.o: No such 
-> file: No such file or directory
-> make[3]: [drivers/staging/solo6x10/solo6x10.o] Error 1 
-> (ignored)
-> 
-> ===============================
-> 
->    CC [M]  fs/logfs/compr.o
-> In file included from fs/logfs/compr.c:8:
-
-[snip huge list of messages]
-
-Fixed by today's commit:
-
-commit e99d11d19977c74b18411cdb59cdebb788237a6e
-Author: Paul Mundt <lethal@linux-sh.org>
-Date:   Tue Nov 2 05:29:21 2010 +0900
-    fs: logfs: Fix up MTD=y build.
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Paolo
