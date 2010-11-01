@@ -1,114 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929Ab0KATXj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 15:23:39 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:42789 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751864Ab0KATXe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 15:23:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=xuBYAGQJ9h4u/1nWwhcGd10RmvvGPNFVwkBX89bJsMiNPAbWenOld6JWwa6nWM8v1y
-         AyU3hPmYN6tGyZkJm2ONve8/6IEnoMITTvo1ggQNeRWF74me91MZgDPUjp1c215PyB0p
-         P6kb47nBoXD6DhYA2/l+VlRNUTGT4dz5H2hmU=
+	id S1752027Ab0KATXo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 15:23:44 -0400
+Received: from cantor.suse.de ([195.135.220.2]:39835 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751873Ab0KATXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 15:23:38 -0400
+Date: Mon, 1 Nov 2010 15:23:34 -0400 (EDT)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Alan Ott <alan@signal11.us>, Marcel Holtmann <marcel@holtmann.org>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: Stefan Achatz <erazor_de@users.sourceforge.net>,
+        Antonio Ospite <ospite@studenti.unina.it>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Stephane Chatty <chatty@enac.fr>,
+        Michael Poole <mdpoole@troilus.org>,
+        Bastien Nocera <hadess@hadess.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH v4 0/2] Get and Set Feature Reports on HIDRAW (USB and
+ Bluetooth)
+In-Reply-To: <alpine.LNX.2.00.1009221408330.26813@pobox.suse.cz>
+Message-ID: <alpine.LNX.2.00.1011011523150.15851@pobox.suse.cz>
+References: <1281442367.12579.206.camel@localhost.localdomain> <1281990059-3562-1-git-send-email-alan@signal11.us> <alpine.LNX.2.00.1008231459370.1019@pobox.suse.cz> <alpine.LNX.2.00.1009021724480.26813@pobox.suse.cz>
+ <alpine.LNX.2.00.1009221408330.26813@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <201011020819.33777.manningc2@actrix.gen.nz>
-References: <1288636877-7964-1-git-send-email-tdent48227@gmail.com>
-	<1288636877-7964-6-git-send-email-tdent48227@gmail.com>
-	<AANLkTikgq2uAW5ko0qG5fe+w-LGvwiV6z3Oi51V_QuiK@mail.gmail.com>
-	<201011020819.33777.manningc2@actrix.gen.nz>
-Date: Mon, 1 Nov 2010 21:23:33 +0200
-X-Google-Sender-Auth: NtsxhqOBWTu5VwR0yIkVgGj1_mo
-Message-ID: <AANLkTimJw8ZMDGu61z8bEvCL8R94xr9GdAnFkQDtMg+V@mail.gmail.com>
-Subject: Re: [PATCH 05/29] Staging: yaffs2: yaffs_allocator: Add files
-From: Pekka Enberg <penberg@kernel.org>
-To: Charles Manning <manningc2@actrix.gen.nz>
-Cc: Tracey Dent <tdent48227@gmail.com>, greg@kroah.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 1, 2010 at 9:19 PM, Charles Manning <manningc2@actrix.gen.nz> wrote:
-> On Tuesday 02 November 2010 07:58:49 Pekka Enberg wrote:
->> On Mon, Nov 1, 2010 at 8:40 PM, Tracey Dent <tdent48227@gmail.com> wrote:
->> > Adding files to yaffs2 directory.
->> >
->> > Signed-off-by: Tracey Dent <tdent48227@gmail.com>
->> > ---
->> >  drivers/staging/yaffs2/yaffs_allocator.c |  408
->> > ++++++++++++++++++++++++++++++ drivers/staging/yaffs2/yaffs_allocator.h |
->> >   30 +++
->> >  2 files changed, 438 insertions(+), 0 deletions(-)
->> >  create mode 100644 drivers/staging/yaffs2/yaffs_allocator.c
->> >  create mode 100644 drivers/staging/yaffs2/yaffs_allocator.h
->> >
->> > diff --git a/drivers/staging/yaffs2/yaffs_allocator.c
->> > b/drivers/staging/yaffs2/yaffs_allocator.c new file mode 100644
->> > index 0000000..024ee2a
->> > --- /dev/null
->> > +++ b/drivers/staging/yaffs2/yaffs_allocator.c
->> > @@ -0,0 +1,408 @@
->> > +/*
->> > + * YAFFS: Yet Another Flash File System. A NAND-flash specific file
->> > system. + *
->> > + * Copyright (C) 2002-2010 Aleph One Ltd.
->> > + *   for Toby Churchill Ltd and Brightstar Engineering
->> > + *
->> > + * Created by Charles Manning <charles@aleph1.co.uk>
->> > + *
->> > + * This program is free software; you can redistribute it and/or modify
->> > + * it under the terms of the GNU General Public License version 2 as
->> > + * published by the Free Software Foundation.
->> > + */
->> > +
->> > +
->> > +
->> > +#include "yaffs_allocator.h"
->> > +#include "yaffs_guts.h"
->> > +#include "yaffs_trace.h"
->> > +#include "yportenv.h"
->> > +
->> > +#ifdef CONFIG_YAFFS_YMALLOC_ALLOCATOR
->> > +
->> > +void yaffs_deinit_raw_tnodes_and_objs(yaffs_dev_t *dev)
->> > +{
->> > +       dev = dev;
->> > +}
->> > +
->> > +void yaffs_init_raw_tnodes_and_objs(yaffs_dev_t *dev)
->> > +{
->> > +       dev = dev;
->> > +}
->> > +
->> > +yaffs_tnode_t *yaffs_alloc_raw_tnode(yaffs_dev_t *dev)
->> > +{
->> > +       return (yaffs_tnode_t *)YMALLOC(dev->tnode_size);
->> > +}
->> > +
->> > +void yaffs_free_raw_tnode(yaffs_dev_t *dev, yaffs_tnode_t *tn)
->> > +{
->> > +       dev = dev;
->> > +       YFREE(tn);
->> > +}
->>
->> So you have your own dynamic memory allocator? What's wrong with kmalloc()?
->
-> No. YMALLOC() wraps kmalloc() to keep the code portable.
->
-> This code does a home-grown slab allocator. The reason for doing this is that
-> Linux slab does not allow slab caches to be destroyed while objects exist.
->
-> While that might sound like a dangerous practice, it does mean that when yaffs
-> unmounts it can drop all the data structures without having to walk all the
-> trees freeing the objects.
+On Wed, 22 Sep 2010, Jiri Kosina wrote:
 
-Either way, your home-grown slab allocator is not going to be merged
-this way. You should be using kmem_cache_alloc() and propose proper
-patches on top of mm/sl?b.c.
+> > > > This is version 4. Built against 2.6.35+ revision 320b2b8de12698 .
+> > > > 
+> > > > Alan Ott (2):
+> > > >   HID: Add Support for Setting and Getting Feature Reports from hidraw
+> > > >   Bluetooth: hidp: Add support for hidraw  HIDIOCGFEATURE  and
+> > > >     HIDIOCSFEATURE
+> > > > 
+> > > >  drivers/hid/hidraw.c          |  105 ++++++++++++++++++++++++++++++++++++--
+> > > >  drivers/hid/usbhid/hid-core.c |   37 +++++++++++++-
+> > > >  include/linux/hid.h           |    3 +
+> > > >  include/linux/hidraw.h        |    3 +
+> > > >  net/bluetooth/hidp/core.c     |  114 +++++++++++++++++++++++++++++++++++++++--
+> > > >  net/bluetooth/hidp/hidp.h     |    8 +++
+> > > >  6 files changed, 260 insertions(+), 10 deletions(-)
+> > > 
+> > > Marcel, as per our previous discussion -- what is your word on this? I'd 
+> > > be glad taking it once you Ack the bluetooth bits (which, as far as I 
+> > > understood from your last mail, don't have strong objections against any 
+> > > more).
+> > 
+> > ... Marcel?
+> > 
+> > I'd really like not to miss 2.6.37 merge window with this.
+> 
+> Seemingly I have not enought powers to get statement from Marcel here 
+> these days/weeks.
+> 
+> Davem, would you perhaps be able to step in here?
+
+Marcel, any word on this patchset by chance?
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
