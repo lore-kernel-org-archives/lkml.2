@@ -1,111 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564Ab0KASbS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 14:31:18 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58988 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751354Ab0KASbQ convert rfc822-to-8bit (ORCPT
+	id S1752725Ab0KASeG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 14:34:06 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:19985 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752092Ab0KASeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 14:31:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=vmI9akPJH6Bofx+pU2omcOZKIXarqDyTY2SLG3Z5fD+V2tNbia5LWiL1AdhiR8EbtT
-         bS8dyR7BTR7TQ70glPsxuR13xKGlE0JQVlGGNucaIYR0WAR1fLk8/9uHOqnpLuL68pXg
-         nj6/QB/1qJAmHBHUMqOZUfxorFsPFs7Vf0iPU=
+	Mon, 1 Nov 2010 14:34:04 -0400
+Date: Mon, 1 Nov 2010 19:23:32 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Takashi Iwai <tiwai@suse.de>
+cc: Ondrej Zary <linux@rainbow-software.org>,
+        =?ISO-8859-15?Q?Benny_Sj=F6strand?= <benny@hostmobility.com>,
+        linux-kernel@vger.kernel.org, Jaroslav Kysela <perex@perex.cz>,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH] cs46xx memory management fixes for cs46xx_dsp_spos_create()
+ - make sure we free and don't do pointless work.
+In-Reply-To: <s5h39rl2xjm.wl%tiwai@suse.de>
+Message-ID: <alpine.LNX.2.00.1011011922460.9616@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1010292242080.24561@swampdragon.chaosbits.net> <201010301406.12961.linux@rainbow-software.org> <alpine.LNX.2.00.1010302143530.1572@swampdragon.chaosbits.net> <201010311829.13924.linux@rainbow-software.org>
+ <s5h39rl2xjm.wl%tiwai@suse.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <4CCC9AEB.7060101@fluff.org>
-References: <1287608139-21354-1-git-send-email-alchark@gmail.com>
-	<1287608139-21354-3-git-send-email-alchark@gmail.com>
-	<4CCC9AEB.7060101@fluff.org>
-Date: Mon, 1 Nov 2010 21:31:14 +0300
-Message-ID: <AANLkTini9jZHtH+Bp4dgdQ6A-=7iAe71YJ_KnMjJqbTN@mail.gmail.com>
-Subject: Re: [PATCH 3/6] input: Add support for VIA VT8500 and compatibles in i8042
-From: Alexey Charkov <alchark@gmail.com>
-To: Ben Dooks <ben-linux@fluff.org>
-Cc: vt8500-wm8505-linux-kernel@googlegroups.com,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-input@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-2090847303-1288635812=:9616"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/10/31 Ben Dooks <ben-linux@fluff.org>:
-> On 20/10/10 21:55, Alexey Charkov wrote:
->> VIA and WonderMedia Systems-on-Chip feature a standard i8042-compatible
->> keyboard and mouse controller. This adds necessary glue to enable use
->> of the standard driver with these systems.
->>
->> Signed-off-by: Alexey Charkov <alchark@gmail.com>
->> ---
->>
->> Please review and state whether this could be acceptable for a merge
->> to mainline in the coming 2.6.37 window. If possible, I would deeply
->> appreciate a merge to a relevant git tree for integration prior to
->> asking Linus to pull the changes. I could rebase the code if needed,
->> currently this is against Linus' master branch.
->>
->> This patch relies on the basic architecture support for VT8500/WM8505
->> to be in place, as introduced by PATCH 1/6 in this series.
->>
->> Due credits go to the community for providing feedback, advice and
->> testing.
->>
->> NB: The development is being done at:
->> http://gitorious.org/linux-on-via-vt8500/vt8500-kernel
->>
->> Relevant code may be pulled from a git tree in there.
->>
->>  drivers/input/serio/Kconfig        |    3 +-
->>  drivers/input/serio/i8042-vt8500.h |   71 ++++++++++++++++++++++++++++++++++++
->>  drivers/input/serio/i8042.h        |    2 +
->>  3 files changed, 75 insertions(+), 1 deletions(-)
->>  create mode 100644 drivers/input/serio/i8042-vt8500.h
->>
->> diff --git a/drivers/input/serio/Kconfig b/drivers/input/serio/Kconfig
->> index 3bfe8fa..2b86774 100644
->> --- a/drivers/input/serio/Kconfig
->> +++ b/drivers/input/serio/Kconfig
->> @@ -21,7 +21,8 @@ if SERIO
->>  config SERIO_I8042
->>       tristate "i8042 PC Keyboard controller" if EMBEDDED || !X86
->>       default y
->> -     depends on !PARISC && (!ARM || ARCH_SHARK || FOOTBRIDGE_HOST) && \
->> +     depends on !PARISC && \
->> +               (!ARM || ARCH_SHARK || ARCH_VT8500 || FOOTBRIDGE_HOST) && \
->>                  (!SUPERH || SH_CAYMAN) && !M68K && !BLACKFIN
->
-> this looks like someone could do with a HAS_SERIO_I8042 Kconfig entry
-> and have the relevant archs select it instead of having this mess.
->
->
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-True, it would make things much cleaner. However, that's probably out
-of scope of adding VT8500 support here, thus not for me to decide :)
+--8323328-2090847303-1288635812=:9616
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 
-<snip>
+On Mon, 1 Nov 2010, Takashi Iwai wrote:
 
->
-> yeurk... how about having a core i8042 implementation and having
-> a structure with the necessary callbacks for the code, so that
-> we don't end up having to select what is builtin for the system
-> we're compiling for?
->
+> At Sun, 31 Oct 2010 18:29:10 +0100,
+> Ondrej Zary wrote:
+> > 
+> > On Saturday 30 October 2010 21:44:33 Jesper Juhl wrote:
+> > > On Sat, 30 Oct 2010, Ondrej Zary wrote:
+> > > > On Saturday 30 October 2010 00:18:57 Benny Sjöstrand wrote:
+> > > > > Hello again!
+> > > > >
+> > > > > Just doing a reply-all.
+> > > > > It's has been many years since I did anything to the cs46xx driver, so
+> > > > > I'm wondering
+> > > > > if there's anyone out there still using a cs46xx sound card?
+> > > > > I think the changes look's correct, but I can't test it, I do not have
+> > > > > a cs46xx hardware anymore.
+> > > >
+> > > > Sure, there are many of these cards "out there". I just got a "new"
+> > > > Terratec DMX Xfire 1024 (CS4624). I'll test the patch.
+> > >
+> > > Thanks a lot. Let me know how the test goes :-)
+> > 
+> > It works fine. Playing music right now.
+> 
+> Great.  I applied the patch now.
+> 
+Thanks Takashi and thank you for testing Ondrej :-)
 
-I would really like to see this implemented as a standard platform
-driver (accepting resources and platform_data as necessary). This
-would be a way cleaner approach, with less code duplication and less
-patching of the driver itself whenever a new platform is to be added.
-However, I don't know how that kind of a change would affect other
-arches.
+-- 
+Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
+Plain text mails only, please      http://www.expita.com/nomime.html
+Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
 
-> --
-> Ben
->
-
-Thanks,
-Alexey
+--8323328-2090847303-1288635812=:9616--
