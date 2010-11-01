@@ -1,724 +1,389 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049Ab0KARED (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 13:04:03 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:36890
+	id S1753986Ab0KAREA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 13:04:00 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:36894
 	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753014Ab0KARDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753221Ab0KARDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 1 Nov 2010 13:03:39 -0400
 From: Haiyang Zhang <haiyangz@linuxonhyperv.com>
 To: haiyangz@microsoft.com, hjanssen@microsoft.com, gregkh@suse.de,
         linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
-Subject: [PATCH 09/10] staging: hv: Convert camel cased local variables in ring_buffer.c to lower cases
-Date: Mon,  1 Nov 2010 09:31:24 -0700
-Message-Id: <1288629085-12207-9-git-send-email-haiyangz@linuxonhyperv.com>
+Subject: [PATCH 04/10] staging: hv: Convert camel cased local variables in hv.c to lower cases
+Date: Mon,  1 Nov 2010 09:31:19 -0700
+Message-Id: <1288629085-12207-4-git-send-email-haiyangz@linuxonhyperv.com>
 X-Mailer: git-send-email 1.5.5.6
-In-Reply-To: <1288629085-12207-8-git-send-email-haiyangz@linuxonhyperv.com>
+In-Reply-To: <1288629085-12207-3-git-send-email-haiyangz@linuxonhyperv.com>
 References: <1288629085-12207-1-git-send-email-haiyangz@linuxonhyperv.com>
  <1288629085-12207-2-git-send-email-haiyangz@linuxonhyperv.com>
  <1288629085-12207-3-git-send-email-haiyangz@linuxonhyperv.com>
- <1288629085-12207-4-git-send-email-haiyangz@linuxonhyperv.com>
- <1288629085-12207-5-git-send-email-haiyangz@linuxonhyperv.com>
- <1288629085-12207-6-git-send-email-haiyangz@linuxonhyperv.com>
- <1288629085-12207-7-git-send-email-haiyangz@linuxonhyperv.com>
- <1288629085-12207-8-git-send-email-haiyangz@linuxonhyperv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Haiyang Zhang <haiyangz@microsoft.com>
 
-Convert camel cased local variables in ring_buffer.c to lower cases
+Convert camel cased local variables in hv.c to lower cases
 
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 
 ---
- drivers/staging/hv/channel.c     |    4 +-
- drivers/staging/hv/ring_buffer.c |  337 +++++++++++++++++++-------------------
- drivers/staging/hv/ring_buffer.h |   26 ++--
- 3 files changed, 185 insertions(+), 182 deletions(-)
+ drivers/staging/hv/hv.c |  170 +++++++++++++++++++++++-----------------------
+ 1 files changed, 85 insertions(+), 85 deletions(-)
 
-diff --git a/drivers/staging/hv/channel.c b/drivers/staging/hv/channel.c
-index 0e554e9..97db545 100644
---- a/drivers/staging/hv/channel.c
-+++ b/drivers/staging/hv/channel.c
-@@ -1052,6 +1052,6 @@ void vmbus_ontimer(unsigned long data)
- static void dump_vmbus_channel(struct vmbus_channel *channel)
- {
- 	DPRINT_DBG(VMBUS, "Channel (%d)", channel->offermsg.child_relid);
--	DumpRingInfo(&channel->outbound, "Outbound ");
--	DumpRingInfo(&channel->inbound, "Inbound ");
-+	Dumpring_info(&channel->outbound, "Outbound ");
-+	Dumpring_info(&channel->inbound, "Inbound ");
- }
-diff --git a/drivers/staging/hv/ring_buffer.c b/drivers/staging/hv/ring_buffer.c
-index 6095cc5..705d95f 100644
---- a/drivers/staging/hv/ring_buffer.c
-+++ b/drivers/staging/hv/ring_buffer.c
-@@ -68,11 +68,11 @@ Description:
+diff --git a/drivers/staging/hv/hv.c b/drivers/staging/hv/hv.c
+index 122e556..5d72736 100644
+--- a/drivers/staging/hv/hv.c
++++ b/drivers/staging/hv/hv.c
+@@ -65,7 +65,7 @@ static int HvQueryHypervisorInfo(void)
+ 	unsigned int ebx;
+ 	unsigned int ecx;
+ 	unsigned int edx;
+-	unsigned int maxLeaf;
++	unsigned int max_leaf;
+ 	unsigned int op;
  
- --*/
- static inline u32
--GetNextWriteLocation(struct hv_ring_buffer_info *RingInfo)
-+GetNextWriteLocation(struct hv_ring_buffer_info *ring_info)
- {
--	u32 next = RingInfo->ring_buffer->write_index;
-+	u32 next = ring_info->ring_buffer->write_index;
+ 	/*
+@@ -93,7 +93,7 @@ static int HvQueryHypervisorInfo(void)
+ 		    ((edx >> 16) & 0xFF),
+ 		    ((edx >> 24) & 0xFF));
  
--	/* ASSERT(next < RingInfo->RingDataSize); */
-+	/* ASSERT(next < ring_info->RingDataSize); */
+-	maxLeaf = eax;
++	max_leaf = eax;
+ 	eax = 0;
+ 	ebx = 0;
+ 	ecx = 0;
+@@ -107,7 +107,7 @@ static int HvQueryHypervisorInfo(void)
+ 		    ((eax >> 16) & 0xFF),
+ 		    ((eax >> 24) & 0xFF));
  
- 	return next;
- }
-@@ -87,10 +87,10 @@ Description:
- 
- --*/
- static inline void
--SetNextWriteLocation(struct hv_ring_buffer_info *RingInfo,
--		     u32 NextWriteLocation)
-+SetNextWriteLocation(struct hv_ring_buffer_info *ring_info,
-+		     u32 next_write_location)
- {
--	RingInfo->ring_buffer->write_index = NextWriteLocation;
-+	ring_info->ring_buffer->write_index = next_write_location;
- }
- 
- /*++
-@@ -103,11 +103,11 @@ Description:
- 
- --*/
- static inline u32
--GetNextReadLocation(struct hv_ring_buffer_info *RingInfo)
-+GetNextReadLocation(struct hv_ring_buffer_info *ring_info)
- {
--	u32 next = RingInfo->ring_buffer->read_index;
-+	u32 next = ring_info->ring_buffer->read_index;
- 
--	/* ASSERT(next < RingInfo->RingDataSize); */
-+	/* ASSERT(next < ring_info->RingDataSize); */
- 
- 	return next;
- }
-@@ -123,13 +123,13 @@ Description:
- 
- --*/
- static inline u32
--GetNextReadLocationWithOffset(struct hv_ring_buffer_info *RingInfo, u32 Offset)
-+GetNextReadLocationWithOffset(struct hv_ring_buffer_info *ring_info, u32 offset)
- {
--	u32 next = RingInfo->ring_buffer->read_index;
-+	u32 next = ring_info->ring_buffer->read_index;
- 
--	/* ASSERT(next < RingInfo->RingDataSize); */
--	next += Offset;
--	next %= RingInfo->ring_datasize;
-+	/* ASSERT(next < ring_info->RingDataSize); */
-+	next += offset;
-+	next %= ring_info->ring_datasize;
- 
- 	return next;
- }
-@@ -144,9 +144,10 @@ Description:
- 
- --*/
- static inline void
--SetNextReadLocation(struct hv_ring_buffer_info *RingInfo, u32 NextReadLocation)
-+SetNextReadLocation(struct hv_ring_buffer_info *ring_info,
-+		    u32 next_read_location)
- {
--	RingInfo->ring_buffer->read_index = NextReadLocation;
-+	ring_info->ring_buffer->read_index = next_read_location;
- }
- 
- 
-@@ -160,9 +161,9 @@ Description:
- 
- --*/
- static inline void *
--GetRingBuffer(struct hv_ring_buffer_info *RingInfo)
-+GetRingBuffer(struct hv_ring_buffer_info *ring_info)
- {
--	return (void *)RingInfo->ring_buffer->buffer;
-+	return (void *)ring_info->ring_buffer->buffer;
- }
- 
- 
-@@ -176,9 +177,9 @@ Description:
- 
- --*/
- static inline u32
--GetRingBufferSize(struct hv_ring_buffer_info *RingInfo)
-+GetRingBufferSize(struct hv_ring_buffer_info *ring_info)
- {
--	return RingInfo->ring_datasize;
-+	return ring_info->ring_datasize;
- }
- 
- /*++
-@@ -191,41 +192,41 @@ Description:
- 
- --*/
- static inline u64
--GetRingBufferIndices(struct hv_ring_buffer_info *RingInfo)
-+GetRingBufferIndices(struct hv_ring_buffer_info *ring_info)
- {
--	return (u64)RingInfo->ring_buffer->write_index << 32;
-+	return (u64)ring_info->ring_buffer->write_index << 32;
- }
- 
- 
- /*++
- 
- Name:
--	DumpRingInfo()
-+	Dumpring_info()
- 
- Description:
- 	Dump out to console the ring buffer info
- 
- --*/
--void DumpRingInfo(struct hv_ring_buffer_info *RingInfo, char *Prefix)
-+void Dumpring_info(struct hv_ring_buffer_info *ring_info, char *prefix)
- {
--	u32 bytesAvailToWrite;
--	u32 bytesAvailToRead;
-+	u32 bytes_avail_towrite;
-+	u32 bytes_avail_toread;
- 
--	GetRingBufferAvailBytes(RingInfo,
--	&bytesAvailToRead,
--	&bytesAvailToWrite);
-+	GetRingBufferAvailBytes(ring_info,
-+	&bytes_avail_toread,
-+	&bytes_avail_towrite);
- 
- 	DPRINT(VMBUS,
- 		DEBUG_RING_LVL,
- 		"%s <<ringinfo %p buffer %p avail write %u "
- 		"avail read %u read idx %u write idx %u>>",
--		Prefix,
--		RingInfo,
--		RingInfo->ring_buffer->buffer,
--		bytesAvailToWrite,
--		bytesAvailToRead,
--		RingInfo->ring_buffer->read_index,
--		RingInfo->ring_buffer->write_index);
-+		prefix,
-+		ring_info,
-+		ring_info->ring_buffer->buffer,
-+		bytes_avail_towrite,
-+		bytes_avail_toread,
-+		ring_info->ring_buffer->read_index,
-+		ring_info->ring_buffer->write_index);
- }
- 
- 
-@@ -233,17 +234,17 @@ void DumpRingInfo(struct hv_ring_buffer_info *RingInfo, char *Prefix)
- 
- static u32
- CopyToRingBuffer(
--	struct hv_ring_buffer_info	*RingInfo,
--	u32				StartWriteOffset,
--	void				*Src,
--	u32				SrcLen);
-+	struct hv_ring_buffer_info	*ring_info,
-+	u32				start_write_offset,
-+	void				*src,
-+	u32				srclen);
- 
- static u32
- CopyFromRingBuffer(
--	struct hv_ring_buffer_info	*RingInfo,
--	void				*Dest,
--	u32				DestLen,
--	u32				StartReadOffset);
-+	struct hv_ring_buffer_info	*ring_info,
-+	void				*dest,
-+	u32				destlen,
-+	u32				start_read_offset);
- 
- 
- 
-@@ -256,25 +257,25 @@ Description:
- 	Get various debug metrics for the specified ring buffer
- 
- --*/
--void RingBufferGetDebugInfo(struct hv_ring_buffer_info *RingInfo,
-+void RingBufferGetDebugInfo(struct hv_ring_buffer_info *ring_info,
- 			    struct hv_ring_buffer_debug_info *debug_info)
- {
--	u32 bytesAvailToWrite;
--	u32 bytesAvailToRead;
-+	u32 bytes_avail_towrite;
-+	u32 bytes_avail_toread;
- 
--	if (RingInfo->ring_buffer) {
--		GetRingBufferAvailBytes(RingInfo,
--					&bytesAvailToRead,
--					&bytesAvailToWrite);
-+	if (ring_info->ring_buffer) {
-+		GetRingBufferAvailBytes(ring_info,
-+					&bytes_avail_toread,
-+					&bytes_avail_towrite);
- 
--		debug_info->bytes_avail_toread = bytesAvailToRead;
--		debug_info->bytes_avail_towrite = bytesAvailToWrite;
-+		debug_info->bytes_avail_toread = bytes_avail_toread;
-+		debug_info->bytes_avail_towrite = bytes_avail_towrite;
- 		debug_info->current_read_index =
--			RingInfo->ring_buffer->read_index;
-+			ring_info->ring_buffer->read_index;
- 		debug_info->current_write_index =
--			RingInfo->ring_buffer->write_index;
-+			ring_info->ring_buffer->write_index;
- 		debug_info->current_interrupt_mask =
--			RingInfo->ring_buffer->interrupt_mask;
-+			ring_info->ring_buffer->interrupt_mask;
+-	if (maxLeaf >= HVCPUID_VERSION) {
++	if (max_leaf >= HVCPUID_VERSION) {
+ 		eax = 0;
+ 		ebx = 0;
+ 		ecx = 0;
+@@ -122,61 +122,61 @@ static int HvQueryHypervisorInfo(void)
+ 			    edx >> 24,
+ 			    edx & 0xFFFFFF);
  	}
+-	return maxLeaf;
++	return max_leaf;
  }
  
-@@ -302,21 +303,22 @@ Description:
- 	Initialize the ring buffer
- 
- --*/
--int RingBufferInit(struct hv_ring_buffer_info *RingInfo, void *Buffer, u32 BufferLen)
-+int RingBufferInit(struct hv_ring_buffer_info *ring_info,
-+		   void *buffer, u32 buflen)
+ /*
+  * HvDoHypercall - Invoke the specified hypercall
+  */
+-static u64 HvDoHypercall(u64 Control, void *Input, void *Output)
++static u64 HvDoHypercall(u64 control, void *input, void *output)
  {
- 	if (sizeof(struct hv_ring_buffer) != PAGE_SIZE)
- 		return -EINVAL;
+ #ifdef CONFIG_X86_64
+-	u64 hvStatus = 0;
+-	u64 inputAddress = (Input) ? virt_to_phys(Input) : 0;
+-	u64 outputAddress = (Output) ? virt_to_phys(Output) : 0;
+-	volatile void *hypercallPage = g_hv_context.hypercall_page;
++	u64 hv_status = 0;
++	u64 input_address = (input) ? virt_to_phys(input) : 0;
++	u64 output_address = (output) ? virt_to_phys(output) : 0;
++	volatile void *hypercall_page = g_hv_context.hypercall_page;
  
--	memset(RingInfo, 0, sizeof(struct hv_ring_buffer_info));
-+	memset(ring_info, 0, sizeof(struct hv_ring_buffer_info));
+ 	DPRINT_DBG(VMBUS, "Hypercall <control %llx input phys %llx virt %p "
+ 		   "output phys %llx virt %p hypercall %p>",
+-		   Control, inputAddress, Input,
+-		   outputAddress, Output, hypercallPage);
++		   control, input_address, input,
++		   output_address, output, hypercall_page);
  
--	RingInfo->ring_buffer = (struct hv_ring_buffer *)Buffer;
--	RingInfo->ring_buffer->read_index =
--		RingInfo->ring_buffer->write_index = 0;
-+	ring_info->ring_buffer = (struct hv_ring_buffer *)buffer;
-+	ring_info->ring_buffer->read_index =
-+		ring_info->ring_buffer->write_index = 0;
+-	__asm__ __volatile__("mov %0, %%r8" : : "r" (outputAddress) : "r8");
+-	__asm__ __volatile__("call *%3" : "=a" (hvStatus) :
+-			     "c" (Control), "d" (inputAddress),
+-			     "m" (hypercallPage));
++	__asm__ __volatile__("mov %0, %%r8" : : "r" (output_address) : "r8");
++	__asm__ __volatile__("call *%3" : "=a" (hv_status) :
++			     "c" (control), "d" (input_address),
++			     "m" (hypercall_page));
  
--	RingInfo->ring_size = BufferLen;
--	RingInfo->ring_datasize = BufferLen - sizeof(struct hv_ring_buffer);
-+	ring_info->ring_size = buflen;
-+	ring_info->ring_datasize = buflen - sizeof(struct hv_ring_buffer);
+-	DPRINT_DBG(VMBUS, "Hypercall <return %llx>",  hvStatus);
++	DPRINT_DBG(VMBUS, "Hypercall <return %llx>",  hv_status);
  
--	spin_lock_init(&RingInfo->ring_lock);
-+	spin_lock_init(&ring_info->ring_lock);
+-	return hvStatus;
++	return hv_status;
  
- 	return 0;
+ #else
+ 
+-	u32 controlHi = Control >> 32;
+-	u32 controlLo = Control & 0xFFFFFFFF;
+-	u32 hvStatusHi = 1;
+-	u32 hvStatusLo = 1;
+-	u64 inputAddress = (Input) ? virt_to_phys(Input) : 0;
+-	u32 inputAddressHi = inputAddress >> 32;
+-	u32 inputAddressLo = inputAddress & 0xFFFFFFFF;
+-	u64 outputAddress = (Output) ? virt_to_phys(Output) : 0;
+-	u32 outputAddressHi = outputAddress >> 32;
+-	u32 outputAddressLo = outputAddress & 0xFFFFFFFF;
+-	volatile void *hypercallPage = g_hv_context.hypercall_page;
++	u32 control_hi = control >> 32;
++	u32 control_lo = control & 0xFFFFFFFF;
++	u32 hv_status_hi = 1;
++	u32 hv_status_lo = 1;
++	u64 input_address = (input) ? virt_to_phys(input) : 0;
++	u32 input_address_hi = input_address >> 32;
++	u32 input_address_lo = input_address & 0xFFFFFFFF;
++	u64 output_address = (output) ? virt_to_phys(output) : 0;
++	u32 output_address_hi = output_address >> 32;
++	u32 output_address_lo = output_address & 0xFFFFFFFF;
++	volatile void *hypercall_page = g_hv_context.hypercall_page;
+ 
+ 	DPRINT_DBG(VMBUS, "Hypercall <control %llx input %p output %p>",
+-		   Control, Input, Output);
++		   control, input, output);
+ 
+-	__asm__ __volatile__ ("call *%8" : "=d"(hvStatusHi),
+-			      "=a"(hvStatusLo) : "d" (controlHi),
+-			      "a" (controlLo), "b" (inputAddressHi),
+-			      "c" (inputAddressLo), "D"(outputAddressHi),
+-			      "S"(outputAddressLo), "m" (hypercallPage));
++	__asm__ __volatile__ ("call *%8" : "=d"(hv_status_hi),
++			      "=a"(hv_status_lo) : "d" (control_hi),
++			      "a" (control_lo), "b" (input_address_hi),
++			      "c" (input_address_lo), "D"(output_address_hi),
++			      "S"(output_address_lo), "m" (hypercall_page));
+ 
+ 	DPRINT_DBG(VMBUS, "Hypercall <return %llx>",
+-		   hvStatusLo | ((u64)hvStatusHi << 32));
++		   hv_status_lo | ((u64)hv_status_hi << 32));
+ 
+-	return hvStatusLo | ((u64)hvStatusHi << 32);
++	return hv_status_lo | ((u64)hv_status_hi << 32);
+ #endif /* !x86_64 */
  }
-@@ -330,7 +332,7 @@ Description:
- 	Cleanup the ring buffer
  
- --*/
--void RingBufferCleanup(struct hv_ring_buffer_info *RingInfo)
-+void RingBufferCleanup(struct hv_ring_buffer_info *ring_info)
+@@ -188,9 +188,9 @@ static u64 HvDoHypercall(u64 Control, void *Input, void *Output)
+ int HvInit(void)
  {
- }
+ 	int ret = 0;
+-	int maxLeaf;
+-	union hv_x64_msr_hypercall_contents hypercallMsr;
+-	void *virtAddr = NULL;
++	int max_leaf;
++	union hv_x64_msr_hypercall_contents hypercall_msr;
++	void *virtaddr = NULL;
  
-@@ -343,78 +345,78 @@ Description:
- 	Write to the ring buffer
+ 	memset(g_hv_context.synic_event_page, 0, sizeof(void *) * MAX_NUM_CPUS);
+ 	memset(g_hv_context.synic_message_page, 0,
+@@ -204,7 +204,7 @@ int HvInit(void)
+ 	DPRINT_INFO(VMBUS,
+ 		    "Windows hypervisor detected! Retrieving more info...");
  
- --*/
--int RingBufferWrite(struct hv_ring_buffer_info *OutRingInfo,
-+int RingBufferWrite(struct hv_ring_buffer_info *outring_info,
- 		    struct scatterlist *sglist, u32 sgcount)
- {
- 	int i = 0;
--	u32 byteAvailToWrite;
--	u32 byteAvailToRead;
--	u32 totalBytesToWrite = 0;
-+	u32 bytes_avail_towrite;
-+	u32 bytes_avail_toread;
-+	u32 totalbytes_towrite = 0;
+-	maxLeaf = HvQueryHypervisorInfo();
++	max_leaf = HvQueryHypervisorInfo();
+ 	/* HvQueryHypervisorFeatures(maxLeaf); */
  
- 	struct scatterlist *sg;
--	volatile u32 nextWriteLocation;
--	u64 prevIndices = 0;
-+	volatile u32 next_write_location;
-+	u64 prev_indices = 0;
- 	unsigned long flags;
+ 	/*
+@@ -223,39 +223,39 @@ int HvInit(void)
+ 	g_hv_context.guestid = HV_LINUX_GUEST_ID;
  
- 	for_each_sg(sglist, sg, sgcount, i)
- 	{
--		totalBytesToWrite += sg->length;
-+		totalbytes_towrite += sg->length;
+ 	/* See if the hypercall page is already set */
+-	rdmsrl(HV_X64_MSR_HYPERCALL, hypercallMsr.as_uint64);
++	rdmsrl(HV_X64_MSR_HYPERCALL, hypercall_msr.as_uint64);
+ 
+ 	/*
+ 	* Allocate the hypercall page memory
+ 	* virtAddr = osd_PageAlloc(1);
+ 	*/
+-	virtAddr = osd_VirtualAllocExec(PAGE_SIZE);
++	virtaddr = osd_VirtualAllocExec(PAGE_SIZE);
+ 
+-	if (!virtAddr) {
++	if (!virtaddr) {
+ 		DPRINT_ERR(VMBUS,
+ 			   "unable to allocate hypercall page!!");
+ 		goto Cleanup;
  	}
  
--	totalBytesToWrite += sizeof(u64);
-+	totalbytes_towrite += sizeof(u64);
+-	hypercallMsr.enable = 1;
++	hypercall_msr.enable = 1;
  
--	spin_lock_irqsave(&OutRingInfo->ring_lock, flags);
-+	spin_lock_irqsave(&outring_info->ring_lock, flags);
+-	hypercallMsr.guest_physical_address = vmalloc_to_pfn(virtAddr);
+-	wrmsrl(HV_X64_MSR_HYPERCALL, hypercallMsr.as_uint64);
++	hypercall_msr.guest_physical_address = vmalloc_to_pfn(virtaddr);
++	wrmsrl(HV_X64_MSR_HYPERCALL, hypercall_msr.as_uint64);
  
--	GetRingBufferAvailBytes(OutRingInfo,
--				&byteAvailToRead,
--				&byteAvailToWrite);
-+	GetRingBufferAvailBytes(outring_info,
-+				&bytes_avail_toread,
-+				&bytes_avail_towrite);
+ 	/* Confirm that hypercall page did get setup. */
+-	hypercallMsr.as_uint64 = 0;
+-	rdmsrl(HV_X64_MSR_HYPERCALL, hypercallMsr.as_uint64);
++	hypercall_msr.as_uint64 = 0;
++	rdmsrl(HV_X64_MSR_HYPERCALL, hypercall_msr.as_uint64);
  
--	DPRINT_DBG(VMBUS, "Writing %u bytes...", totalBytesToWrite);
-+	DPRINT_DBG(VMBUS, "Writing %u bytes...", totalbytes_towrite);
+-	if (!hypercallMsr.enable) {
++	if (!hypercall_msr.enable) {
+ 		DPRINT_ERR(VMBUS, "unable to set hypercall page!!");
+ 		goto Cleanup;
+ 	}
  
--	/* DumpRingInfo(OutRingInfo, "BEFORE "); */
-+	/* Dumpring_info(Outring_info, "BEFORE "); */
+-	g_hv_context.hypercall_page = virtAddr;
++	g_hv_context.hypercall_page = virtaddr;
  
- 	/* If there is only room for the packet, assume it is full. */
- 	/* Otherwise, the next time around, we think the ring buffer */
- 	/* is empty since the read index == write index */
--	if (byteAvailToWrite <= totalBytesToWrite) {
-+	if (bytes_avail_towrite <= totalbytes_towrite) {
- 		DPRINT_DBG(VMBUS,
- 			"No more space left on outbound ring buffer "
- 			"(needed %u, avail %u)",
--			totalBytesToWrite,
--			byteAvailToWrite);
-+			totalbytes_towrite,
-+			bytes_avail_towrite);
+ 	DPRINT_INFO(VMBUS, "Hypercall page VA=%p, PA=0x%0llx",
+ 		    g_hv_context.hypercall_page,
+-		    (u64)hypercallMsr.guest_physical_address << PAGE_SHIFT);
++		    (u64)hypercall_msr.guest_physical_address << PAGE_SHIFT);
  
--		spin_unlock_irqrestore(&OutRingInfo->ring_lock, flags);
-+		spin_unlock_irqrestore(&outring_info->ring_lock, flags);
+ 	/* Setup the global signal event param for the signal event hypercall */
+ 	g_hv_context.signal_event_buffer =
+@@ -278,13 +278,13 @@ int HvInit(void)
+ 	return ret;
+ 
+ Cleanup:
+-	if (virtAddr) {
+-		if (hypercallMsr.enable) {
+-			hypercallMsr.as_uint64 = 0;
+-			wrmsrl(HV_X64_MSR_HYPERCALL, hypercallMsr.as_uint64);
++	if (virtaddr) {
++		if (hypercall_msr.enable) {
++			hypercall_msr.as_uint64 = 0;
++			wrmsrl(HV_X64_MSR_HYPERCALL, hypercall_msr.as_uint64);
+ 		}
+ 
+-		vfree(virtAddr);
++		vfree(virtaddr);
+ 	}
+ 	ret = -1;
+ 	return ret;
+@@ -297,15 +297,15 @@ Cleanup:
+  */
+ void HvCleanup(void)
+ {
+-	union hv_x64_msr_hypercall_contents hypercallMsr;
++	union hv_x64_msr_hypercall_contents hypercall_msr;
+ 
+ 	kfree(g_hv_context.signal_event_buffer);
+ 	g_hv_context.signal_event_buffer = NULL;
+ 	g_hv_context.signal_event_param = NULL;
+ 
+ 	if (g_hv_context.hypercall_page) {
+-		hypercallMsr.as_uint64 = 0;
+-		wrmsrl(HV_X64_MSR_HYPERCALL, hypercallMsr.as_uint64);
++		hypercall_msr.as_uint64 = 0;
++		wrmsrl(HV_X64_MSR_HYPERCALL, hypercall_msr.as_uint64);
+ 		vfree(g_hv_context.hypercall_page);
+ 		g_hv_context.hypercall_page = NULL;
+ 	}
+@@ -316,35 +316,35 @@ void HvCleanup(void)
+  *
+  * This involves a hypercall.
+  */
+-u16 HvPostMessage(union hv_connection_id connectionId,
+-		  enum hv_message_type messageType,
+-		  void *payload, size_t payloadSize)
++u16 HvPostMessage(union hv_connection_id connection_id,
++		  enum hv_message_type message_type,
++		  void *payload, size_t payload_size)
+ {
+-	struct alignedInput {
++	struct aligned_input {
+ 		u64 alignment8;
+ 		struct hv_input_post_message msg;
+ 	};
+ 
+-	struct hv_input_post_message *alignedMsg;
++	struct hv_input_post_message *aligned_msg;
+ 	u16 status;
+ 	unsigned long addr;
+ 
+-	if (payloadSize > HV_MESSAGE_PAYLOAD_BYTE_COUNT)
++	if (payload_size > HV_MESSAGE_PAYLOAD_BYTE_COUNT)
  		return -1;
- 	}
  
- 	/* Write to the ring buffer */
--	nextWriteLocation = GetNextWriteLocation(OutRingInfo);
-+	next_write_location = GetNextWriteLocation(outring_info);
- 
- 	for_each_sg(sglist, sg, sgcount, i)
- 	{
--		nextWriteLocation = CopyToRingBuffer(OutRingInfo,
--						     nextWriteLocation,
-+		next_write_location = CopyToRingBuffer(outring_info,
-+						     next_write_location,
- 						     sg_virt(sg),
- 						     sg->length);
- 	}
- 
- 	/* Set previous packet start */
--	prevIndices = GetRingBufferIndices(OutRingInfo);
-+	prev_indices = GetRingBufferIndices(outring_info);
- 
--	nextWriteLocation = CopyToRingBuffer(OutRingInfo,
--					     nextWriteLocation,
--					     &prevIndices,
-+	next_write_location = CopyToRingBuffer(outring_info,
-+					     next_write_location,
-+					     &prev_indices,
- 					     sizeof(u64));
- 
- 	/* Make sure we flush all writes before updating the writeIndex */
- 	mb();
- 
- 	/* Now, update the write location */
--	SetNextWriteLocation(OutRingInfo, nextWriteLocation);
-+	SetNextWriteLocation(outring_info, next_write_location);
- 
--	/* DumpRingInfo(OutRingInfo, "AFTER "); */
-+	/* Dumpring_info(Outring_info, "AFTER "); */
- 
--	spin_unlock_irqrestore(&OutRingInfo->ring_lock, flags);
-+	spin_unlock_irqrestore(&outring_info->ring_lock, flags);
- 	return 0;
- }
- 
-@@ -428,41 +430,42 @@ Description:
- 	Read without advancing the read index
- 
- --*/
--int RingBufferPeek(struct hv_ring_buffer_info *InRingInfo, void *Buffer, u32 BufferLen)
-+int RingBufferPeek(struct hv_ring_buffer_info *Inring_info,
-+		   void *Buffer, u32 buflen)
- {
--	u32 bytesAvailToWrite;
--	u32 bytesAvailToRead;
--	u32 nextReadLocation = 0;
-+	u32 bytes_avail_towrite;
-+	u32 bytes_avail_toread;
-+	u32 next_read_location = 0;
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&InRingInfo->ring_lock, flags);
-+	spin_lock_irqsave(&Inring_info->ring_lock, flags);
- 
--	GetRingBufferAvailBytes(InRingInfo,
--				&bytesAvailToRead,
--				&bytesAvailToWrite);
-+	GetRingBufferAvailBytes(Inring_info,
-+				&bytes_avail_toread,
-+				&bytes_avail_towrite);
- 
- 	/* Make sure there is something to read */
--	if (bytesAvailToRead < BufferLen) {
-+	if (bytes_avail_toread < buflen) {
- 		/* DPRINT_DBG(VMBUS,
- 			"got callback but not enough to read "
- 			"<avail to read %d read size %d>!!",
--			bytesAvailToRead,
-+			bytes_avail_toread,
- 			BufferLen); */
- 
--		spin_unlock_irqrestore(&InRingInfo->ring_lock, flags);
-+		spin_unlock_irqrestore(&Inring_info->ring_lock, flags);
- 
+-	addr = (unsigned long)kmalloc(sizeof(struct alignedInput), GFP_ATOMIC);
++	addr = (unsigned long)kmalloc(sizeof(struct aligned_input), GFP_ATOMIC);
+ 	if (!addr)
  		return -1;
- 	}
  
- 	/* Convert to byte offset */
--	nextReadLocation = GetNextReadLocation(InRingInfo);
-+	next_read_location = GetNextReadLocation(Inring_info);
+-	alignedMsg = (struct hv_input_post_message *)
++	aligned_msg = (struct hv_input_post_message *)
+ 			(ALIGN_UP(addr, HV_HYPERCALL_PARAM_ALIGN));
  
--	nextReadLocation = CopyFromRingBuffer(InRingInfo,
-+	next_read_location = CopyFromRingBuffer(Inring_info,
- 						Buffer,
--						BufferLen,
--						nextReadLocation);
-+						buflen,
-+						next_read_location);
+-	alignedMsg->connectionid = connectionId;
+-	alignedMsg->message_type = messageType;
+-	alignedMsg->payload_size = payloadSize;
+-	memcpy((void *)alignedMsg->payload, payload, payloadSize);
++	aligned_msg->connectionid = connection_id;
++	aligned_msg->message_type = message_type;
++	aligned_msg->payload_size = payload_size;
++	memcpy((void *)aligned_msg->payload, payload, payload_size);
  
--	spin_unlock_irqrestore(&InRingInfo->ring_lock, flags);
-+	spin_unlock_irqrestore(&Inring_info->ring_lock, flags);
+-	status = HvDoHypercall(HVCALL_POST_MESSAGE, alignedMsg, NULL) & 0xFFFF;
++	status = HvDoHypercall(HVCALL_POST_MESSAGE, aligned_msg, NULL) & 0xFFFF;
  
- 	return 0;
- }
-@@ -477,52 +480,52 @@ Description:
- 	Read and advance the read index
+ 	kfree((void *)addr);
  
- --*/
--int RingBufferRead(struct hv_ring_buffer_info *InRingInfo, void *Buffer,
--		   u32 BufferLen, u32 Offset)
-+int RingBufferRead(struct hv_ring_buffer_info *inring_info, void *buffer,
-+		   u32 buflen, u32 offset)
+@@ -379,10 +379,10 @@ void HvSynicInit(void *irqarg)
+ 	u64 version;
+ 	union hv_synic_simp simp;
+ 	union hv_synic_siefp siefp;
+-	union hv_synic_sint sharedSint;
++	union hv_synic_sint shared_sint;
+ 	union hv_synic_scontrol sctrl;
+ 
+-	u32 irqVector = *((u32 *)(irqarg));
++	u32 irq_vector = *((u32 *)(irqarg));
+ 	int cpu = smp_processor_id();
+ 
+ 	if (!g_hv_context.hypercall_page)
+@@ -436,17 +436,17 @@ void HvSynicInit(void *irqarg)
+ 	/*	  interceptionSint.as_uint64); */
+ 
+ 	/* Setup the shared SINT. */
+-	rdmsrl(HV_X64_MSR_SINT0 + VMBUS_MESSAGE_SINT, sharedSint.as_uint64);
++	rdmsrl(HV_X64_MSR_SINT0 + VMBUS_MESSAGE_SINT, shared_sint.as_uint64);
+ 
+-	sharedSint.as_uint64 = 0;
+-	sharedSint.vector = irqVector; /* HV_SHARED_SINT_IDT_VECTOR + 0x20; */
+-	sharedSint.masked = false;
+-	sharedSint.auto_eoi = true;
++	shared_sint.as_uint64 = 0;
++	shared_sint.vector = irq_vector; /* HV_SHARED_SINT_IDT_VECTOR + 0x20; */
++	shared_sint.masked = false;
++	shared_sint.auto_eoi = true;
+ 
+ 	DPRINT_DBG(VMBUS, "HV_X64_MSR_SINT1 msr set to: %llx",
+-		   sharedSint.as_uint64);
++		   shared_sint.as_uint64);
+ 
+-	wrmsrl(HV_X64_MSR_SINT0 + VMBUS_MESSAGE_SINT, sharedSint.as_uint64);
++	wrmsrl(HV_X64_MSR_SINT0 + VMBUS_MESSAGE_SINT, shared_sint.as_uint64);
+ 
+ 	/* Enable the global synic bit */
+ 	rdmsrl(HV_X64_MSR_SCONTROL, sctrl.as_uint64);
+@@ -471,7 +471,7 @@ Cleanup:
+  */
+ void HvSynicCleanup(void *arg)
  {
--	u32 bytesAvailToWrite;
--	u32 bytesAvailToRead;
--	u32 nextReadLocation = 0;
--	u64 prevIndices = 0;
-+	u32 bytes_avail_towrite;
-+	u32 bytes_avail_toread;
-+	u32 next_read_location = 0;
-+	u64 prev_indices = 0;
- 	unsigned long flags;
+-	union hv_synic_sint sharedSint;
++	union hv_synic_sint shared_sint;
+ 	union hv_synic_simp simp;
+ 	union hv_synic_siefp siefp;
+ 	int cpu = smp_processor_id();
+@@ -479,13 +479,13 @@ void HvSynicCleanup(void *arg)
+ 	if (!g_hv_context.synic_initialized)
+ 		return;
  
--	if (BufferLen <= 0)
-+	if (buflen <= 0)
- 		return -EINVAL;
+-	rdmsrl(HV_X64_MSR_SINT0 + VMBUS_MESSAGE_SINT, sharedSint.as_uint64);
++	rdmsrl(HV_X64_MSR_SINT0 + VMBUS_MESSAGE_SINT, shared_sint.as_uint64);
  
--	spin_lock_irqsave(&InRingInfo->ring_lock, flags);
-+	spin_lock_irqsave(&inring_info->ring_lock, flags);
+-	sharedSint.masked = 1;
++	shared_sint.masked = 1;
  
--	GetRingBufferAvailBytes(InRingInfo,
--				&bytesAvailToRead,
--				&bytesAvailToWrite);
-+	GetRingBufferAvailBytes(inring_info,
-+				&bytes_avail_toread,
-+				&bytes_avail_towrite);
+ 	/* Need to correctly cleanup in the case of SMP!!! */
+ 	/* Disable the interrupt */
+-	wrmsrl(HV_X64_MSR_SINT0 + VMBUS_MESSAGE_SINT, sharedSint.as_uint64);
++	wrmsrl(HV_X64_MSR_SINT0 + VMBUS_MESSAGE_SINT, shared_sint.as_uint64);
  
--	DPRINT_DBG(VMBUS, "Reading %u bytes...", BufferLen);
-+	DPRINT_DBG(VMBUS, "Reading %u bytes...", buflen);
- 
--	/* DumpRingInfo(InRingInfo, "BEFORE "); */
-+	/* Dumpring_info(Inring_info, "BEFORE "); */
- 
- 	/* Make sure there is something to read */
--	if (bytesAvailToRead < BufferLen) {
-+	if (bytes_avail_toread < buflen) {
- 		DPRINT_DBG(VMBUS,
- 			"got callback but not enough to read "
- 			"<avail to read %d read size %d>!!",
--			bytesAvailToRead,
--			BufferLen);
-+			bytes_avail_toread,
-+			buflen);
- 
--		spin_unlock_irqrestore(&InRingInfo->ring_lock, flags);
-+		spin_unlock_irqrestore(&inring_info->ring_lock, flags);
- 
- 		return -1;
- 	}
- 
--	nextReadLocation = GetNextReadLocationWithOffset(InRingInfo, Offset);
-+	next_read_location = GetNextReadLocationWithOffset(inring_info, offset);
- 
--	nextReadLocation = CopyFromRingBuffer(InRingInfo,
--						Buffer,
--						BufferLen,
--						nextReadLocation);
-+	next_read_location = CopyFromRingBuffer(inring_info,
-+						buffer,
-+						buflen,
-+						next_read_location);
- 
--	nextReadLocation = CopyFromRingBuffer(InRingInfo,
--						&prevIndices,
-+	next_read_location = CopyFromRingBuffer(inring_info,
-+						&prev_indices,
- 						sizeof(u64),
--						nextReadLocation);
-+						next_read_location);
- 
- 	/* Make sure all reads are done before we update the read index since */
- 	/* the writer may start writing to the read area once the read index */
-@@ -530,11 +533,11 @@ int RingBufferRead(struct hv_ring_buffer_info *InRingInfo, void *Buffer,
- 	mb();
- 
- 	/* Update the read index */
--	SetNextReadLocation(InRingInfo, nextReadLocation);
-+	SetNextReadLocation(inring_info, next_read_location);
- 
--	/* DumpRingInfo(InRingInfo, "AFTER "); */
-+	/* Dumpring_info(Inring_info, "AFTER "); */
- 
--	spin_unlock_irqrestore(&InRingInfo->ring_lock, flags);
-+	spin_unlock_irqrestore(&inring_info->ring_lock, flags);
- 
- 	return 0;
- }
-@@ -552,29 +555,29 @@ Description:
- --*/
- static u32
- CopyToRingBuffer(
--	struct hv_ring_buffer_info	*RingInfo,
--	u32				StartWriteOffset,
--	void				*Src,
--	u32				SrcLen)
-+	struct hv_ring_buffer_info	*ring_info,
-+	u32				start_write_offset,
-+	void				*src,
-+	u32				srclen)
- {
--	void *ringBuffer = GetRingBuffer(RingInfo);
--	u32 ringBufferSize = GetRingBufferSize(RingInfo);
--	u32 fragLen;
-+	void *ring_buffer = GetRingBuffer(ring_info);
-+	u32 ring_buffer_size = GetRingBufferSize(ring_info);
-+	u32 frag_len;
- 
- 	/* wrap-around detected! */
--	if (SrcLen > ringBufferSize - StartWriteOffset) {
-+	if (srclen > ring_buffer_size - start_write_offset) {
- 		DPRINT_DBG(VMBUS, "wrap-around detected!");
- 
--		fragLen = ringBufferSize - StartWriteOffset;
--		memcpy(ringBuffer + StartWriteOffset, Src, fragLen);
--		memcpy(ringBuffer, Src + fragLen, SrcLen - fragLen);
-+		frag_len = ring_buffer_size - start_write_offset;
-+		memcpy(ring_buffer + start_write_offset, src, frag_len);
-+		memcpy(ring_buffer, src + frag_len, srclen - frag_len);
- 	} else
--		memcpy(ringBuffer + StartWriteOffset, Src, SrcLen);
-+		memcpy(ring_buffer + start_write_offset, src, srclen);
- 
--	StartWriteOffset += SrcLen;
--	StartWriteOffset %= ringBufferSize;
-+	start_write_offset += srclen;
-+	start_write_offset %= ring_buffer_size;
- 
--	return StartWriteOffset;
-+	return start_write_offset;
- }
- 
- 
-@@ -590,33 +593,33 @@ Description:
- --*/
- static u32
- CopyFromRingBuffer(
--	struct hv_ring_buffer_info	*RingInfo,
--	void				*Dest,
--	u32				DestLen,
--	u32				StartReadOffset)
-+	struct hv_ring_buffer_info	*ring_info,
-+	void				*dest,
-+	u32				destlen,
-+	u32				start_read_offset)
- {
--	void *ringBuffer = GetRingBuffer(RingInfo);
--	u32 ringBufferSize = GetRingBufferSize(RingInfo);
-+	void *ring_buffer = GetRingBuffer(ring_info);
-+	u32 ring_buffer_size = GetRingBufferSize(ring_info);
- 
--	u32 fragLen;
-+	u32 frag_len;
- 
- 	/* wrap-around detected at the src */
--	if (DestLen > ringBufferSize - StartReadOffset) {
-+	if (destlen > ring_buffer_size - start_read_offset) {
- 		DPRINT_DBG(VMBUS, "src wrap-around detected!");
- 
--		fragLen = ringBufferSize - StartReadOffset;
-+		frag_len = ring_buffer_size - start_read_offset;
- 
--		memcpy(Dest, ringBuffer + StartReadOffset, fragLen);
--		memcpy(Dest + fragLen, ringBuffer, DestLen - fragLen);
-+		memcpy(dest, ring_buffer + start_read_offset, frag_len);
-+		memcpy(dest + frag_len, ring_buffer, destlen - frag_len);
- 	} else
- 
--		memcpy(Dest, ringBuffer + StartReadOffset, DestLen);
-+		memcpy(dest, ring_buffer + start_read_offset, destlen);
- 
- 
--	StartReadOffset += DestLen;
--	StartReadOffset %= ringBufferSize;
-+	start_read_offset += destlen;
-+	start_read_offset %= ring_buffer_size;
- 
--	return StartReadOffset;
-+	return start_read_offset;
- }
- 
- 
-diff --git a/drivers/staging/hv/ring_buffer.h b/drivers/staging/hv/ring_buffer.h
-index bb4c5bc..f30be1f 100644
---- a/drivers/staging/hv/ring_buffer.h
-+++ b/drivers/staging/hv/ring_buffer.h
-@@ -75,28 +75,28 @@ struct hv_ring_buffer_debug_info {
- /* Interface */
- 
- 
--int RingBufferInit(struct hv_ring_buffer_info *RingInfo, void *Buffer,
--		   u32 BufferLen);
-+int RingBufferInit(struct hv_ring_buffer_info *ring_info, void *buffer,
-+		   u32 buflen);
- 
--void RingBufferCleanup(struct hv_ring_buffer_info *RingInfo);
-+void RingBufferCleanup(struct hv_ring_buffer_info *ring_info);
- 
--int RingBufferWrite(struct hv_ring_buffer_info *RingInfo,
-+int RingBufferWrite(struct hv_ring_buffer_info *ring_info,
- 		    struct scatterlist *sglist,
- 		    u32 sgcount);
- 
--int RingBufferPeek(struct hv_ring_buffer_info *RingInfo, void *Buffer,
--		   u32 BufferLen);
-+int RingBufferPeek(struct hv_ring_buffer_info *ring_info, void *buffer,
-+		   u32 buflen);
- 
--int RingBufferRead(struct hv_ring_buffer_info *RingInfo,
--		   void *Buffer,
--		   u32 BufferLen,
--		   u32 Offset);
-+int RingBufferRead(struct hv_ring_buffer_info *ring_info,
-+		   void *buffer,
-+		   u32 buflen,
-+		   u32 offset);
- 
--u32 GetRingBufferInterruptMask(struct hv_ring_buffer_info *RingInfo);
-+u32 GetRingBufferInterruptMask(struct hv_ring_buffer_info *ring_info);
- 
--void DumpRingInfo(struct hv_ring_buffer_info *RingInfo, char *Prefix);
-+void Dumpring_info(struct hv_ring_buffer_info *ring_info, char *prefix);
- 
--void RingBufferGetDebugInfo(struct hv_ring_buffer_info *RingInfo,
-+void RingBufferGetDebugInfo(struct hv_ring_buffer_info *ring_info,
- 			    struct hv_ring_buffer_debug_info *debug_info);
- 
- #endif /* _RING_BUFFER_H_ */
+ 	rdmsrl(HV_X64_MSR_SIMP, simp.as_uint64);
+ 	simp.simp_enabled = 0;
 -- 
 1.6.3.2
 
