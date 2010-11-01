@@ -1,77 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756423Ab0KASqc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 14:46:32 -0400
-Received: from acsinet14.oracle.com ([141.146.126.236]:17772 "EHLO
-	acsinet14.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754915Ab0KASq3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 14:46:29 -0400
-X-Greylist: delayed 870 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Nov 2010 14:46:28 EDT
-Subject: Re: Regression, bisected: sqlite locking failure on nfs
-Mime-Version: 1.0 (Apple Message framework v1081)
-Content-Type: text/plain; charset=us-ascii
-From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <20101101181938.GA3875@elliptictech.com>
-Date: Mon, 1 Nov 2010 14:30:03 -0400
-Cc: LKML Kernel <linux-kernel@vger.kernel.org>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <187AEE96-9231-4899-9D65-A444503D2758@oracle.com>
-References: <20101101175854.GA3550@elliptictech.com> <D68536EB-6BE9-4DE4-B325-39FEF747092E@oracle.com> <20101101181938.GA3875@elliptictech.com>
-To: Nick Bowler <nbowler@elliptictech.com>
-X-Mailer: Apple Mail (2.1081)
+	id S1755760Ab0KASq7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 14:46:59 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37384 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755487Ab0KASpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 14:45:00 -0400
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk, linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        kay.sievers@vrfy.org, jack@suse.cz,
+        James.Bottomley@HansenPartnership.com
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 2/7] block: move register_disk() and del_gendisk() to block/genhd.c
+Date: Mon,  1 Nov 2010 19:44:36 +0100
+Message-Id: <1288637081-5183-3-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1288637081-5183-1-git-send-email-tj@kernel.org>
+References: <1288637081-5183-1-git-send-email-tj@kernel.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 01 Nov 2010 18:44:52 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+There's no reason register_disk() and del_gendisk() should be in
+fs/partitions/check.c and it forces unnecessary global functions.
+Move both to genhd.c.  While at it, collapse unlink_gendisk(), which
+was artificially in a separate function due to genhd.c/check.c split,
+into del_gendisk().
 
-On Nov 1, 2010, at 2:19 PM, Nick Bowler wrote:
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ block/genhd.c          |   90 ++++++++++++++++++++++++++++++++++++++++++++++--
+ fs/partitions/check.c  |   89 -----------------------------------------------
+ include/linux/blkdev.h |    1 -
+ include/linux/genhd.h  |    1 -
+ 4 files changed, 87 insertions(+), 94 deletions(-)
 
-> On 2010-11-01 14:07 -0400, Chuck Lever wrote:
->> On Nov 1, 2010, at 1:58 PM, Nick Bowler wrote:
->>> After installing 2.6.37-rc1, attempting to use sqlite in any capacity on
->>> NFS gives a locking error:
->>> 
->>> % echo 'select * from blah;' | sqlite3 blah.sqlite
->>> Error: near line 1: database is locked
->>> 
->>> % echo 'create table blargh(INT);' | sqlite3 blargh.sqlite
->>> Error: near line 1: database is locked
->>> 
->>> The result is that a lot of high-profile applications which make use of
->>> sqlite fail mysteriously.  Bisection reveals the following, and
->>> reverting the implicated commit solves the issue:
->> 
->> Nick, thanks for the report.  Is 2.6.37-rc1 running on your clients or
->> on your server?
-> 
-> Sorry for not being clear: the client is running 2.6.37-rc1.   The
-> server is running RHEL 5.5.
-> 
->> Does anything interesting appear in the kernel log when your test case
->> fails?
-> 
-> There are no unusual messages on the client... but I just logged into
-> the server and I see lots of messages of the following form:
-> 
->  nfsd: request from insecure port (192.168.8.199:35766)!
->  nfsd: request from insecure port (192.168.8.199:35766)!
->  nfsd: request from insecure port (192.168.8.199:35766)!
->  nfsd: request from insecure port (192.168.8.199:35766)!
->  nfsd: request from insecure port (192.168.8.199:35766)!
-> 
-> (192.168.8.199 is the address of the failing client).  I can only assume
-> that these are a result of my recent issues, since I don't have access
-> to the system log (with timestamps) on that machine.
-
-That's the problem this patch is supposed to prevent.  I'll investigate further.
-
+diff --git a/block/genhd.c b/block/genhd.c
+index 0905ab2..2e5e4c0 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -502,6 +502,64 @@ static int exact_lock(dev_t devt, void *data)
+ 	return 0;
+ }
+ 
++void register_disk(struct gendisk *disk)
++{
++	struct device *ddev = disk_to_dev(disk);
++	struct block_device *bdev;
++	struct disk_part_iter piter;
++	struct hd_struct *part;
++	int err;
++
++	ddev->parent = disk->driverfs_dev;
++
++	dev_set_name(ddev, disk->disk_name);
++
++	/* delay uevents, until we scanned partition table */
++	dev_set_uevent_suppress(ddev, 1);
++
++	if (device_add(ddev))
++		return;
++	if (!sysfs_deprecated) {
++		err = sysfs_create_link(block_depr, &ddev->kobj,
++					kobject_name(&ddev->kobj));
++		if (err) {
++			device_del(ddev);
++			return;
++		}
++	}
++	disk->part0.holder_dir = kobject_create_and_add("holders", &ddev->kobj);
++	disk->slave_dir = kobject_create_and_add("slaves", &ddev->kobj);
++
++	/* No minors to use for partitions */
++	if (!disk_partitionable(disk))
++		goto exit;
++
++	/* No such device (e.g., media were just removed) */
++	if (!get_capacity(disk))
++		goto exit;
++
++	bdev = bdget_disk(disk, 0);
++	if (!bdev)
++		goto exit;
++
++	bdev->bd_invalidated = 1;
++	err = blkdev_get(bdev, FMODE_READ, NULL);
++	if (err < 0)
++		goto exit;
++	blkdev_put(bdev, FMODE_READ);
++
++exit:
++	/* announce disk after possible partitions are created */
++	dev_set_uevent_suppress(ddev, 0);
++	kobject_uevent(&ddev->kobj, KOBJ_ADD);
++
++	/* announce possible partitions */
++	disk_part_iter_init(&piter, disk, 0);
++	while ((part = disk_part_iter_next(&piter)))
++		kobject_uevent(&part_to_dev(part)->kobj, KOBJ_ADD);
++	disk_part_iter_exit(&piter);
++}
++
+ /**
+  * add_disk - add partitioning information to kernel list
+  * @disk: per-device partitioning information
+@@ -552,17 +610,43 @@ void add_disk(struct gendisk *disk)
+ 				   "bdi");
+ 	WARN_ON(retval);
+ }
+-
+ EXPORT_SYMBOL(add_disk);
+-EXPORT_SYMBOL(del_gendisk);	/* in partitions/check.c */
+ 
+-void unlink_gendisk(struct gendisk *disk)
++void del_gendisk(struct gendisk *disk)
+ {
++	struct disk_part_iter piter;
++	struct hd_struct *part;
++
++	/* invalidate stuff */
++	disk_part_iter_init(&piter, disk,
++			     DISK_PITER_INCL_EMPTY | DISK_PITER_REVERSE);
++	while ((part = disk_part_iter_next(&piter))) {
++		invalidate_partition(disk, part->partno);
++		delete_partition(disk, part->partno);
++	}
++	disk_part_iter_exit(&piter);
++
++	invalidate_partition(disk, 0);
++	blk_free_devt(disk_to_dev(disk)->devt);
++	set_capacity(disk, 0);
++	disk->flags &= ~GENHD_FL_UP;
++
+ 	sysfs_remove_link(&disk_to_dev(disk)->kobj, "bdi");
+ 	bdi_unregister(&disk->queue->backing_dev_info);
+ 	blk_unregister_queue(disk);
+ 	blk_unregister_region(disk_devt(disk), disk->minors);
++
++	part_stat_set_all(&disk->part0, 0);
++	disk->part0.stamp = 0;
++
++	kobject_put(disk->part0.holder_dir);
++	kobject_put(disk->slave_dir);
++	disk->driverfs_dev = NULL;
++	if (!sysfs_deprecated)
++		sysfs_remove_link(block_depr, dev_name(disk_to_dev(disk)));
++	device_del(disk_to_dev(disk));
+ }
++EXPORT_SYMBOL(del_gendisk);
+ 
+ /**
+  * get_gendisk - get partitioning information for a given device
+diff --git a/fs/partitions/check.c b/fs/partitions/check.c
+index 2e6501d..e4afbac 100644
+--- a/fs/partitions/check.c
++++ b/fs/partitions/check.c
+@@ -507,65 +507,6 @@ out_put:
+ 	return ERR_PTR(err);
+ }
+ 
+-/* Not exported, helper to add_disk(). */
+-void register_disk(struct gendisk *disk)
+-{
+-	struct device *ddev = disk_to_dev(disk);
+-	struct block_device *bdev;
+-	struct disk_part_iter piter;
+-	struct hd_struct *part;
+-	int err;
+-
+-	ddev->parent = disk->driverfs_dev;
+-
+-	dev_set_name(ddev, disk->disk_name);
+-
+-	/* delay uevents, until we scanned partition table */
+-	dev_set_uevent_suppress(ddev, 1);
+-
+-	if (device_add(ddev))
+-		return;
+-	if (!sysfs_deprecated) {
+-		err = sysfs_create_link(block_depr, &ddev->kobj,
+-					kobject_name(&ddev->kobj));
+-		if (err) {
+-			device_del(ddev);
+-			return;
+-		}
+-	}
+-	disk->part0.holder_dir = kobject_create_and_add("holders", &ddev->kobj);
+-	disk->slave_dir = kobject_create_and_add("slaves", &ddev->kobj);
+-
+-	/* No minors to use for partitions */
+-	if (!disk_partitionable(disk))
+-		goto exit;
+-
+-	/* No such device (e.g., media were just removed) */
+-	if (!get_capacity(disk))
+-		goto exit;
+-
+-	bdev = bdget_disk(disk, 0);
+-	if (!bdev)
+-		goto exit;
+-
+-	bdev->bd_invalidated = 1;
+-	err = blkdev_get(bdev, FMODE_READ, NULL);
+-	if (err < 0)
+-		goto exit;
+-	blkdev_put(bdev, FMODE_READ);
+-
+-exit:
+-	/* announce disk after possible partitions are created */
+-	dev_set_uevent_suppress(ddev, 0);
+-	kobject_uevent(&ddev->kobj, KOBJ_ADD);
+-
+-	/* announce possible partitions */
+-	disk_part_iter_init(&piter, disk, 0);
+-	while ((part = disk_part_iter_next(&piter)))
+-		kobject_uevent(&part_to_dev(part)->kobj, KOBJ_ADD);
+-	disk_part_iter_exit(&piter);
+-}
+-
+ static bool disk_unlock_native_capacity(struct gendisk *disk)
+ {
+ 	const struct block_device_operations *bdops = disk->fops;
+@@ -728,33 +669,3 @@ fail:
+ }
+ 
+ EXPORT_SYMBOL(read_dev_sector);
+-
+-void del_gendisk(struct gendisk *disk)
+-{
+-	struct disk_part_iter piter;
+-	struct hd_struct *part;
+-
+-	/* invalidate stuff */
+-	disk_part_iter_init(&piter, disk,
+-			     DISK_PITER_INCL_EMPTY | DISK_PITER_REVERSE);
+-	while ((part = disk_part_iter_next(&piter))) {
+-		invalidate_partition(disk, part->partno);
+-		delete_partition(disk, part->partno);
+-	}
+-	disk_part_iter_exit(&piter);
+-
+-	invalidate_partition(disk, 0);
+-	blk_free_devt(disk_to_dev(disk)->devt);
+-	set_capacity(disk, 0);
+-	disk->flags &= ~GENHD_FL_UP;
+-	unlink_gendisk(disk);
+-	part_stat_set_all(&disk->part0, 0);
+-	disk->part0.stamp = 0;
+-
+-	kobject_put(disk->part0.holder_dir);
+-	kobject_put(disk->slave_dir);
+-	disk->driverfs_dev = NULL;
+-	if (!sysfs_deprecated)
+-		sysfs_remove_link(block_depr, dev_name(disk_to_dev(disk)));
+-	device_del(disk_to_dev(disk));
+-}
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 5027a59..c6f9e3c 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -644,7 +644,6 @@ static inline void rq_flush_dcache_pages(struct request *rq)
+ 
+ extern int blk_register_queue(struct gendisk *disk);
+ extern void blk_unregister_queue(struct gendisk *disk);
+-extern void register_disk(struct gendisk *dev);
+ extern void generic_make_request(struct bio *bio);
+ extern void blk_rq_init(struct request_queue *q, struct request *rq);
+ extern void blk_put_request(struct request *);
+diff --git a/include/linux/genhd.h b/include/linux/genhd.h
+index 5e4e692..56e17ed 100644
+--- a/include/linux/genhd.h
++++ b/include/linux/genhd.h
+@@ -394,7 +394,6 @@ extern void part_round_stats(int cpu, struct hd_struct *part);
+ /* block/genhd.c */
+ extern void add_disk(struct gendisk *disk);
+ extern void del_gendisk(struct gendisk *gp);
+-extern void unlink_gendisk(struct gendisk *gp);
+ extern struct gendisk *get_gendisk(dev_t dev, int *partno);
+ extern struct block_device *bdget_disk(struct gendisk *disk, int partno);
+ 
 -- 
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
-
-
-
+1.7.1
 
