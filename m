@@ -1,44 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874Ab0KASG6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 14:06:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44600 "EHLO mx2.suse.de"
+	id S1752986Ab0KASHe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 14:07:34 -0400
+Received: from mga14.intel.com ([143.182.124.37]:18659 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751560Ab0KASG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 14:06:57 -0400
-Date: Mon, 1 Nov 2010 11:07:40 -0700
-From: Greg KH <gregkh@suse.de>
-To: Alan Cox <alan@linux.intel.com>
-Cc: samu.p.onkalo@nokia.com, ext Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: sysfs and power management
-Message-ID: <20101101180740.GA17148@suse.de>
-References: <1288177143.12206.22.camel@4fid08082> <20101027124816.7087436a@linux.intel.com> <62697B07E9803846BC582181BD6FB6B836EB2994F4@NOK-EUMSG-02.mgdnok.nokia.com> <20101027152809.39701917@lxorguk.ukuu.org.uk> <20101029195039.GA26401@suse.de> <20101030140047.GA24464@khazad-dum.debian.net> <1288526275.2313.14.camel@noppispoppis.nmp.nokia.com> <20101031142539.GA25480@suse.de> <1288608087.26073.6.camel@4fid08082> <20101101165701.2fc30368@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101101165701.2fc30368@linux.intel.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1752269Ab0KASHc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 14:07:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,275,1286175600"; 
+   d="scan'208";a="343155408"
+Date: Mon, 1 Nov 2010 17:11:26 +0000
+From: Alan Cox <alan@linux.intel.com>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Samu Onkalo <samu.p.onkalo@nokia.com>, gregkh@suse.de, hmh@hmh.eng.br,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] device-core: sysfs open - close notify
+Message-ID: <20101101171126.1194e2b0@linux.intel.com>
+In-Reply-To: <AANLkTikRSF-4o=Jnyg2_Wa4gg7E+s_tM9ZD3g+f7hyWm@mail.gmail.com>
+References: <1288529170-28890-1-git-send-email-samu.p.onkalo@nokia.com>
+	<AANLkTikRSF-4o=Jnyg2_Wa4gg7E+s_tM9ZD3g+f7hyWm@mail.gmail.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 01, 2010 at 04:57:01PM +0000, Alan Cox wrote:
-> > I took a look to that. It seems that iio is more or less sysfs based.
-> > There are ring buffers and event device which are chardev based
-> > but still the data outside ring buffer and the control is sysfs based.
-> 
-> IIO is sysfs dependant, heavyweight and makes no sense for some of the
-> sysfs based drivers. IIO is also staging based and Linus already threw
-> out the last attempt to unify these drivers sanely with an ALS layer -
-> which was smaller, cleaner and better !
+> Your patch may cause many unnecessary memory waste because
+> most of drivers does not need attribute file .open/.close notifier.
 
-I think we need to revisit this issue again, before iio is merged to the
-main kernel tree.  I've been totally ignoring the iio user/kernel api at
-the moment, waiting for things to settle down there.
+Firstly there are not that many driver objects in a small system so it
+wouldn't take that much to shift the balance the other way. Secondly
+its becoming clear that every time a driver goes to runtime pm these
+issues come up - even with things like configuration values for drivers
+that need to wake the hardware and then silence it.
 
-thanks,
+So the whole sysfs/open thing is going to keep haunting us with runtime
+pm, the question is where to put the callbacks so we don't bloat stuff.
+Clearly not per attribute or per sysfs node. One possibility would be
+with the runtime pm stuff, but that would need a clean reliable way to
+go sysfs->device->runtime_pm
 
-greg k-h
+There are also obvious hackish ways to handle it like passing a 0
+length read to indicate close etc - they save memory but they are
+asking for problems in future.
+
