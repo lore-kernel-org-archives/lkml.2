@@ -1,42 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755150Ab0KAVcf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 17:32:35 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:47229 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752886Ab0KAVcc (ORCPT
+	id S1755107Ab0KAVfv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 17:35:51 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:62056 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753413Ab0KAVfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 17:32:32 -0400
-Date: Mon, 1 Nov 2010 21:32:24 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Andy Isaacson <adi@hexapodia.org>
-Cc: srajiv@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Subject: Re: [2.6.37-rc1 REGRESSION] suspend fails on x200 (was Re: [PATCH]
-	tpm: Autodetect itpm devices)
-Message-ID: <20101101213224.GA28746@srcf.ucam.org>
-References: <1287697360-31273-1-git-send-email-mjg@redhat.com> <20101101211948.GA19250@hexapodia.org>
+	Mon, 1 Nov 2010 17:35:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=FJ9LETgHzMR7c9+j58osyVr9T8Qx7fX10S4+0RN0wlF47wOA+y08Kg+yhJQQKnmYDM
+         aTsleL6Tv7XgnIc58+VnCnkQgrY6CBVrkU7gkCROwnZpHALZuUG/otGBgW9ryUEttSor
+         jeHvhLyyRIVWZcSZfr14zheJirnCGLEDO97N8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101101211948.GA19250@hexapodia.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Date: Mon, 1 Nov 2010 21:35:49 +0000
+Message-ID: <AANLkTimZvwdY8Q+=iGMC2MhPt_Vow38a0SE9g4ij-cRe@mail.gmail.com>
+Subject: [2.6.37-rc1, patch] r8169: fix sleeping while holding spinlock...
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 01, 2010 at 02:19:48PM -0700, Andy Isaacson wrote:
+Recent changes to the r8169 driver cause it to call
+device_set_wakeup_enable under spinlock, which may sleep.
 
-> I suspect that it would have failed previously if I'd forced the module
-> to load, but since tpm_tis now loads automatically as of 2.6.37-rc1, I
-> have to "rmmod tpm_tis" for suspend to work.
+Locking isn't necessary around the call to device_set_wakeup_enable,
+so drop the spinlock before calling it, to address this.
 
-Hm. That's what this patch was intended to fix. Can you check that the 
-tree you're using has it merged? The autoloading comes from the fix to 
-the pnp code to use _CID even if _HID is malformed, so now we have a pnp 
-device when we previously didn't.
+Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+
+diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
+index d88ce9f..894e7c7 100644
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -846,10 +846,10 @@ static int rtl8169_set_wol(struct net_device
+*dev, struct ethtool_wolinfo *wol)
+ 	else
+ 		tp->features &= ~RTL_FEATURE_WOL;
+ 	__rtl8169_set_wol(tp, wol->wolopts);
+-	device_set_wakeup_enable(&tp->pci_dev->dev, wol->wolopts);
+-
+ 	spin_unlock_irq(&tp->lock);
+
++	device_set_wakeup_enable(&tp->pci_dev->dev, wol->wolopts);
++
+ 	return 0;
+ }
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Daniel J Blueman
