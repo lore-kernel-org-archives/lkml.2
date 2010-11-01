@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265Ab0KASmJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 14:42:09 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:45912 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754168Ab0KASmF (ORCPT
+	id S1755197Ab0KASrm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 14:47:42 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:64867 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754171Ab0KASmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 14:42:05 -0400
+	Mon, 1 Nov 2010 14:42:07 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Mt9Zx8dDqvGxhB/ITDqeh+CpeHhqNOXkzJLQ2WEx+6YSl/xCheEz7CDoQpo8J1fXRG
-         116ljFy7poK6Usc+E/IjcwzBpQi4WZUQXrVsmFC0PL4NRkDG6GXRFMBy5CRmfmE3zZSQ
-         Z8lk+idJ8ocociQzqoLM2Wz8Ut6KAkMGqIKbE=
+        b=LFHvzZHgSFEZOlrjmoWXWucbOe3qr7nwOMg//jkZiiUZaEbD4U+ZvUB56+9PyEAKgk
+         wAn8Ue3ghyT8R+ZNelS+2GOTmTJ8ecDuUM9y6ddN2EFVaXb7G3tUTmF7kIOKpQ5XGjHy
+         15XwZ8z/xrEAoG3WUxUq0jBDU7z1x6p3pL51g=
 From: Tracey Dent <tdent48227@gmail.com>
 To: greg@kroah.com
 Cc: manningc2@actrix.gen.nz, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, Tracey Dent <tdent48227@gmail.com>
-Subject: [PATCH 15/29] Staging: yaffs2: yaffs_mtdif2: Add files
-Date: Mon,  1 Nov 2010 14:41:03 -0400
-Message-Id: <1288636877-7964-16-git-send-email-tdent48227@gmail.com>
+Subject: [PATCH 16/29] Staging: yaffs2: yaffs_nameval: Add files
+Date: Mon,  1 Nov 2010 14:41:04 -0400
+Message-Id: <1288636877-7964-17-git-send-email-tdent48227@gmail.com>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1288636877-7964-1-git-send-email-tdent48227@gmail.com>
 References: <1288636877-7964-1-git-send-email-tdent48227@gmail.com>
@@ -31,18 +31,18 @@ Adding files to yaffs2 directory.
 
 Signed-off-by: Tracey Dent <tdent48227@gmail.com>
 ---
- drivers/staging/yaffs2/yaffs_mtdif2.c |  256 +++++++++++++++++++++++++++++++++
- drivers/staging/yaffs2/yaffs_mtdif2.h |   29 ++++
- 2 files changed, 285 insertions(+), 0 deletions(-)
- create mode 100644 drivers/staging/yaffs2/yaffs_mtdif2.c
- create mode 100644 drivers/staging/yaffs2/yaffs_mtdif2.h
+ drivers/staging/yaffs2/yaffs_nameval.c |  197 ++++++++++++++++++++++++++++++++
+ drivers/staging/yaffs2/yaffs_nameval.h |   26 ++++
+ 2 files changed, 223 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/yaffs2/yaffs_nameval.c
+ create mode 100644 drivers/staging/yaffs2/yaffs_nameval.h
 
-diff --git a/drivers/staging/yaffs2/yaffs_mtdif2.c b/drivers/staging/yaffs2/yaffs_mtdif2.c
+diff --git a/drivers/staging/yaffs2/yaffs_nameval.c b/drivers/staging/yaffs2/yaffs_nameval.c
 new file mode 100644
-index 0000000..1c60a44
+index 0000000..a4ed297
 --- /dev/null
-+++ b/drivers/staging/yaffs2/yaffs_mtdif2.c
-@@ -0,0 +1,256 @@
++++ b/drivers/staging/yaffs2/yaffs_nameval.c
+@@ -0,0 +1,197 @@
 +/*
 + * YAFFS: Yet Another Flash File System. A NAND-flash specific file system.
 + *
@@ -56,255 +56,196 @@ index 0000000..1c60a44
 + * published by the Free Software Foundation.
 + */
 +
-+/* mtd interface for YAFFS2 */
++/*
++ * This simple implementation of a name-value store assumes a small number of values and fits
++ * into a small finite buffer.
++ *
++ * Each attribute is stored as a record:
++ *  sizeof(int) bytes   record size.
++ *  strnlen+1 bytes name null terminated.
++ *  nbytes    value.
++ *  ----------
++ *  total size  stored in record size 
++ *
++ * This code has not been tested with unicode yet.
++ */
++
++
++#include "yaffs_nameval.h"
 +
 +#include "yportenv.h"
-+#include "yaffs_trace.h"
-+
-+#include "yaffs_mtdif2.h"
-+
-+#include "linux/mtd/mtd.h"
-+#include "linux/types.h"
-+#include "linux/time.h"
-+
-+#include "yaffs_packedtags2.h"
-+
-+#include "yaffs_linux.h"
-+
-+/* NB For use with inband tags....
-+ * We assume that the data buffer is of size total_bytes_per_chunk so that we can also
-+ * use it to load the tags.
-+ */
-+int nandmtd2_write_chunk_tags(yaffs_dev_t *dev, int nand_chunk,
-+				      const __u8 *data,
-+				      const yaffs_ext_tags *tags)
++ 
++static int nval_find(const char *xb, int xb_size, const YCHAR *name,
++		int *exist_size)
 +{
-+	struct mtd_info *mtd = yaffs_dev_to_mtd(dev);
-+#if (MTD_VERSION_CODE > MTD_VERSION(2, 6, 17))
-+	struct mtd_oob_ops ops;
-+#else
-+	size_t dummy;
-+#endif
-+	int retval = 0;
++	int pos=0;
++	int size;
 +
-+	loff_t addr;
++	memcpy(&size,xb,sizeof(int));
++	while(size > 0 && (size < xb_size) && (pos + size < xb_size)){
++		if(yaffs_strncmp((YCHAR *)(xb+pos+sizeof(int)),name,size) == 0){
++			if(exist_size)
++				*exist_size = size;
++			return pos;
++		}
++		pos += size;
++		if(pos < xb_size -sizeof(int))
++			memcpy(&size,xb + pos,sizeof(int));
++		else
++			size = 0;
++	}
++	if(exist_size)
++		*exist_size = 0;
++	return -1;
++}
 +
-+	yaffs_packed_tags2 pt;
++static int nval_used(const char *xb, int xb_size)
++{
++	int pos=0;
++	int size;
 +
-+	int packed_tags_size = dev->param.no_tags_ecc ? sizeof(pt.t) : sizeof(pt);
-+	void * packed_tags_ptr = dev->param.no_tags_ecc ? (void *) &pt.t : (void *)&pt;
++	memcpy(&size,xb + pos,sizeof(int));
++	while(size > 0 && (size < xb_size) && (pos + size < xb_size)){
++		pos += size;
++		if(pos < xb_size -sizeof(int))
++			memcpy(&size,xb + pos,sizeof(int));
++		else
++			size = 0;
++	}
++	return pos;
++}
 +
-+	T(YAFFS_TRACE_MTD,
-+	  (TSTR
-+	   ("nandmtd2_write_chunk_tags chunk %d data %p tags %p"
-+	    TENDSTR), nand_chunk, data, tags));
-+
-+
-+	addr  = ((loff_t) nand_chunk) * dev->param.total_bytes_per_chunk;
-+
-+	/* For yaffs2 writing there must be both data and tags.
-+	 * If we're using inband tags, then the tags are stuffed into
-+	 * the end of the data buffer.
-+	 */
-+	if (!data || !tags)
-+		BUG();
-+	else if (dev->param.inband_tags) {
-+		yaffs_packed_tags2_tags_only *pt2tp;
-+		pt2tp = (yaffs_packed_tags2_tags_only *)(data + dev->data_bytes_per_chunk);
-+		yaffs_pack_tags2_tags_only(pt2tp, tags);
++int nval_del(char *xb, int xb_size, const YCHAR *name)
++{
++	int pos  = nval_find(xb, xb_size, name, NULL);
++	int size;
++	
++	if(pos >= 0 && pos < xb_size){
++		/* Find size, shift rest over this record, then zero out the rest of buffer */
++		memcpy(&size,xb+pos,sizeof(int));
++		memcpy(xb + pos, xb + pos + size, xb_size - (pos + size));
++		memset(xb + (xb_size - size),0,size);
++		return 0;
 +	} else
-+		yaffs_pack_tags2(&pt, tags, !dev->param.no_tags_ecc);
-+
-+#if (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 17))
-+	ops.mode = MTD_OOB_AUTO;
-+	ops.ooblen = (dev->param.inband_tags) ? 0 : packed_tags_size;
-+	ops.len = dev->param.total_bytes_per_chunk;
-+	ops.ooboffs = 0;
-+	ops.datbuf = (__u8 *)data;
-+	ops.oobbuf = (dev->param.inband_tags) ? NULL : packed_tags_ptr;
-+	retval = mtd->write_oob(mtd, addr, &ops);
-+
-+#else
-+	if (!dev->param.inband_tags) {
-+		retval =
-+		    mtd->write_ecc(mtd, addr, dev->data_bytes_per_chunk,
-+				   &dummy, data, (__u8 *) packed_tags_ptr, NULL);
-+	} else {
-+		retval =
-+		    mtd->write(mtd, addr, dev->param.total_bytes_per_chunk, &dummy,
-+			       data);
-+	}
-+#endif
-+
-+	if (retval == 0)
-+		return YAFFS_OK;
-+	else
-+		return YAFFS_FAIL;
++		return -ENODATA;
 +}
 +
-+int nandmtd2_read_chunk_tags(yaffs_dev_t *dev, int nand_chunk,
-+				       __u8 *data, yaffs_ext_tags *tags)
++int nval_set(char *xb, int xb_size, const YCHAR *name, const char *buf, int bsize, int flags)
 +{
-+	struct mtd_info *mtd = yaffs_dev_to_mtd(dev);
-+#if (MTD_VERSION_CODE > MTD_VERSION(2, 6, 17))
-+	struct mtd_oob_ops ops;
-+#endif
-+	size_t dummy;
-+	int retval = 0;
-+	int local_data = 0;
++	int pos;
++	int namelen = yaffs_strnlen(name,xb_size);
++	int reclen;
++	int size_exist = 0;
++	int space;
++	int start;
 +
-+	loff_t addr = ((loff_t) nand_chunk) * dev->param.total_bytes_per_chunk;
++	pos = nval_find(xb,xb_size,name, &size_exist);
 +
-+	yaffs_packed_tags2 pt;
++	if(flags & XATTR_CREATE && pos >= 0)
++		return -EEXIST;
++	if(flags & XATTR_REPLACE && pos < 0)
++		return -ENODATA;
 +
-+	int packed_tags_size = dev->param.no_tags_ecc ? sizeof(pt.t) : sizeof(pt);
-+	void * packed_tags_ptr = dev->param.no_tags_ecc ? (void *) &pt.t: (void *)&pt;
++	start = nval_used(xb,xb_size);
++	space = xb_size - start + size_exist;
 +
-+	T(YAFFS_TRACE_MTD,
-+	  (TSTR
-+	   ("nandmtd2_read_chunk_tags chunk %d data %p tags %p"
-+	    TENDSTR), nand_chunk, data, tags));
++	reclen = (sizeof(int) + namelen + 1 + bsize);
 +
-+	if (dev->param.inband_tags) {
++	if(reclen > space)
++		return -ENOSPC;
 +
-+		if (!data) {
-+			local_data = 1;
-+			data = yaffs_get_temp_buffer(dev, __LINE__);
-+		}
-+
-+
++	if(pos >= 0){
++		nval_del(xb,xb_size,name);
++		start = nval_used(xb, xb_size);
 +	}
 +
++	pos = start;
 +
-+#if (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 17))
-+	if (dev->param.inband_tags || (data && !tags))
-+		retval = mtd->read(mtd, addr, dev->param.total_bytes_per_chunk,
-+				&dummy, data);
-+	else if (tags) {
-+		ops.mode = MTD_OOB_AUTO;
-+		ops.ooblen = packed_tags_size;
-+		ops.len = data ? dev->data_bytes_per_chunk : packed_tags_size;
-+		ops.ooboffs = 0;
-+		ops.datbuf = data;
-+		ops.oobbuf = yaffs_dev_to_lc(dev)->spare_buffer;
-+		retval = mtd->read_oob(mtd, addr, &ops);
-+	}
-+#else
-+	if (!dev->param.inband_tags && data && tags) {
-+
-+		retval = mtd->read_ecc(mtd, addr, dev->data_bytes_per_chunk,
-+					  &dummy, data, dev->spare_buffer,
-+					  NULL);
-+	} else {
-+		if (data)
-+			retval =
-+			    mtd->read(mtd, addr, dev->data_bytes_per_chunk, &dummy,
-+				      data);
-+		if (!dev->param.inband_tags && tags)
-+			retval =
-+			    mtd->read_oob(mtd, addr, mtd->oobsize, &dummy,
-+					  dev->spare_buffer);
-+	}
-+#endif
-+
-+
-+	if (dev->param.inband_tags) {
-+		if (tags) {
-+			yaffs_packed_tags2_tags_only *pt2tp;
-+			pt2tp = (yaffs_packed_tags2_tags_only *)&data[dev->data_bytes_per_chunk];
-+			yaffs_unpack_tags2_tags_only(tags, pt2tp);
-+		}
-+	} else {
-+		if (tags) {
-+			memcpy(packed_tags_ptr, yaffs_dev_to_lc(dev)->spare_buffer, packed_tags_size);
-+			yaffs_unpack_tags2(tags, &pt, !dev->param.no_tags_ecc);
-+		}
-+	}
-+
-+	if (local_data)
-+		yaffs_release_temp_buffer(dev, data, __LINE__);
-+
-+	if (tags && retval == -EBADMSG && tags->ecc_result == YAFFS_ECC_RESULT_NO_ERROR) {
-+		tags->ecc_result = YAFFS_ECC_RESULT_UNFIXED;
-+		dev->n_ecc_unfixed++;
-+	}
-+	if(tags && retval == -EUCLEAN && tags->ecc_result == YAFFS_ECC_RESULT_NO_ERROR) {
-+		tags->ecc_result = YAFFS_ECC_RESULT_FIXED;
-+		dev->n_ecc_fixed++;
-+	}
-+	if (retval == 0)
-+		return YAFFS_OK;
-+	else
-+		return YAFFS_FAIL;
++	memcpy(xb + pos,&reclen,sizeof(int));
++	pos +=sizeof(int);
++	yaffs_strncpy((YCHAR *)(xb + pos), name, reclen);
++	pos+= (namelen+1);
++	memcpy(xb + pos,buf,bsize);
++	return 0;
 +}
 +
-+int nandmtd2_mark_block_bad(struct yaffs_dev_s *dev, int block_no)
++int nval_get(const char *xb, int xb_size, const YCHAR *name, char *buf, int bsize)
 +{
-+	struct mtd_info *mtd = yaffs_dev_to_mtd(dev);
-+	int retval;
-+	T(YAFFS_TRACE_MTD,
-+	  (TSTR("nandmtd2_mark_block_bad %d" TENDSTR), block_no));
++	int pos = nval_find(xb,xb_size,name,NULL);
++	int size;
++	
++	if(pos >= 0 && pos< xb_size){
++		
++		memcpy(&size,xb +pos,sizeof(int));
++		pos+=sizeof(int); /* advance past record length */
++		size -= sizeof(int);
 +
-+	retval =
-+	    mtd->block_markbad(mtd,
-+			       block_no * dev->param.chunks_per_block *
-+			       dev->param.total_bytes_per_chunk);
-+
-+	if (retval == 0)
-+		return YAFFS_OK;
-+	else
-+		return YAFFS_FAIL;
-+
-+}
-+
-+int nandmtd2_query_block(struct yaffs_dev_s *dev, int block_no,
-+			    yaffs_block_state_t *state, __u32 *seq_number)
-+{
-+	struct mtd_info *mtd = yaffs_dev_to_mtd(dev);
-+	int retval;
-+
-+	T(YAFFS_TRACE_MTD,
-+	  (TSTR("nandmtd2_query_block %d" TENDSTR), block_no));
-+	retval =
-+	    mtd->block_isbad(mtd,
-+			     block_no * dev->param.chunks_per_block *
-+			     dev->param.total_bytes_per_chunk);
-+
-+	if (retval) {
-+		T(YAFFS_TRACE_MTD, (TSTR("block is bad" TENDSTR)));
-+
-+		*state = YAFFS_BLOCK_STATE_DEAD;
-+		*seq_number = 0;
-+	} else {
-+		yaffs_ext_tags t;
-+		nandmtd2_read_chunk_tags(dev, block_no *
-+						   dev->param.chunks_per_block, NULL,
-+						   &t);
-+
-+		if (t.chunk_used) {
-+			*seq_number = t.seq_number;
-+			*state = YAFFS_BLOCK_STATE_NEEDS_SCANNING;
-+		} else {
-+			*seq_number = 0;
-+			*state = YAFFS_BLOCK_STATE_EMPTY;
++		/* Advance over name string */
++		while(xb[pos] && size > 0 && pos < xb_size){
++			pos++;
++			size--;
 +		}
-+	}
-+	T(YAFFS_TRACE_MTD,
-+	  (TSTR("block is bad seq %d state %d" TENDSTR), *seq_number,
-+	   *state));
++		/*Advance over NUL */
++		pos++;
++		size--;
 +
-+	if (retval == 0)
-+		return YAFFS_OK;
++		if(size <= bsize){
++			memcpy(buf,xb + pos,size);
++			return size;
++		}
++		
++	}
++	if(pos >= 0)
++		return -ERANGE;
 +	else
-+		return YAFFS_FAIL;
++		return -ENODATA;
 +}
 +
-diff --git a/drivers/staging/yaffs2/yaffs_mtdif2.h b/drivers/staging/yaffs2/yaffs_mtdif2.h
++int nval_list(const char *xb, int xb_size, char *buf, int bsize)
++{
++	int pos = 0;
++	int size;
++	int name_len;
++	int ncopied = 0;
++	int filled = 0;
++
++	memcpy(&size,xb + pos,sizeof(int));
++	while(size > sizeof(int) && size <= xb_size && (pos + size) < xb_size && !filled){
++		pos+= sizeof(int);
++		size-=sizeof(int);
++		name_len = yaffs_strnlen((YCHAR *)(xb + pos), size);
++		if(ncopied + name_len + 1 < bsize){
++			memcpy(buf,xb+pos,name_len * sizeof(YCHAR));
++			buf+= name_len;
++			*buf = '\0';
++			buf++;
++			if(sizeof(YCHAR) > 1){
++				*buf = '\0';
++				buf++;
++			}
++			ncopied += (name_len+1);
++		} else
++			filled = 1;
++		pos+=size;
++		if(pos < xb_size -sizeof(int))
++			memcpy(&size,xb + pos,sizeof(int));
++		else
++			size = 0;
++	}
++	return ncopied;
++}
++
++
++int nval_hasvalues(const char *xb, int xb_size)
++{
++	return nval_used(xb, xb_size) > 0;
++}
+diff --git a/drivers/staging/yaffs2/yaffs_nameval.h b/drivers/staging/yaffs2/yaffs_nameval.h
 new file mode 100644
-index 0000000..b33b84d
+index 0000000..bd80859
 --- /dev/null
-+++ b/drivers/staging/yaffs2/yaffs_mtdif2.h
-@@ -0,0 +1,29 @@
++++ b/drivers/staging/yaffs2/yaffs_nameval.h
+@@ -0,0 +1,26 @@
 +/*
 + * YAFFS: Yet another Flash File System . A NAND-flash specific file system.
 + *
@@ -320,19 +261,16 @@ index 0000000..b33b84d
 + * Note: Only YAFFS headers are LGPL, YAFFS C code is covered by GPL.
 + */
 +
-+#ifndef __YAFFS_MTDIF2_H__
-+#define __YAFFS_MTDIF2_H__
++#ifndef __NAMEVAL_H__
++#define __NAMEVAL_H__
 +
-+#include "yaffs_guts.h"
-+int nandmtd2_write_chunk_tags(yaffs_dev_t *dev, int nand_chunk,
-+				const __u8 *data,
-+				const yaffs_ext_tags *tags);
-+int nandmtd2_read_chunk_tags(yaffs_dev_t *dev, int nand_chunk,
-+				__u8 *data, yaffs_ext_tags *tags);
-+int nandmtd2_mark_block_bad(struct yaffs_dev_s *dev, int block_no);
-+int nandmtd2_query_block(struct yaffs_dev_s *dev, int block_no,
-+			yaffs_block_state_t *state, __u32 *seq_number);
++#include "yportenv.h"
 +
++int nval_del(char *xb, int xb_size, const YCHAR *name);
++int nval_set(char *xb, int xb_size, const YCHAR *name, const char *buf, int bsize, int flags);
++int nval_get(const char *xb, int xb_size, const YCHAR *name, char *buf, int bsize);
++int nval_list(const char *xb, int xb_size, char *buf, int bsize);
++int nval_hasvalues(const char *xb, int xb_size);
 +#endif
 -- 
 1.7.3.2.146.gca209
