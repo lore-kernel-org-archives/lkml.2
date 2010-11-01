@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146Ab0KAUA0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 16:00:26 -0400
-Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:48546 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752763Ab0KAUAZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 16:00:25 -0400
-Date: Mon, 1 Nov 2010 15:59:58 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Chuck Lever <chuck.lever@oracle.com>,
-        LKML Kernel <linux-kernel@vger.kernel.org>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
-Subject: Re: Regression, bisected: sqlite locking failure on nfs
-Message-ID: <20101101195958.GA3598@elliptictech.com>
-Mail-Followup-To: Trond Myklebust <Trond.Myklebust@netapp.com>,
-	Chuck Lever <chuck.lever@oracle.com>,
-	LKML Kernel <linux-kernel@vger.kernel.org>,
-	"J. Bruce Fields" <bfields@redhat.com>,
-	Linux NFS Mailing List <linux-nfs@vger.kernel.org>
-References: <20101101175854.GA3550@elliptictech.com>
- <D68536EB-6BE9-4DE4-B325-39FEF747092E@oracle.com>
- <20101101181938.GA3875@elliptictech.com>
- <187AEE96-9231-4899-9D65-A444503D2758@oracle.com>
- <1288639376.5009.16.camel@heimdal.trondhjem.org>
- <1288640536.5009.18.camel@heimdal.trondhjem.org>
+	id S1753235Ab0KAUBc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 16:01:32 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:51269 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752693Ab0KAUBa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 16:01:30 -0400
+Date: Mon, 1 Nov 2010 16:01:22 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Pavel Emelianov <xemul@openvz.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org
+Subject: Re: [PATCH] cgroup: prefer [kv]zalloc over [kv]malloc+memset in
+ memory controller code.
+Message-ID: <20101101200122.GH840@cmpxchg.org>
+References: <alpine.LNX.2.00.1011012038490.12889@swampdragon.chaosbits.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1288640536.5009.18.camel@heimdal.trondhjem.org>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LNX.2.00.1011012038490.12889@swampdragon.chaosbits.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-11-01 15:42 -0400, Trond Myklebust wrote:
-> On Mon, 2010-11-01 at 15:22 -0400, Trond Myklebust wrote:
-> Does this fix the regression?
-[...]
-> NLM: Fix a regression in lockd
+On Mon, Nov 01, 2010 at 08:40:56PM +0100, Jesper Juhl wrote:
+> Hi (please CC me on replies),
+> 
+> 
+> Apologies to those who receive this multiple times. I screwed up the To: 
+> field in my original mail :-(
+> 
+> 
+> In mem_cgroup_alloc() we currently do either kmalloc() or vmalloc() then 
+> followed by memset() to zero the memory. This can be more efficiently 
+> achieved by using kzalloc() and vzalloc().
+> 
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 
-Unfortunately, the problem persists with this patch applied on top of
-2.6.37-rc1.
+Looks good to me, but there is also the memset after kmalloc in
+alloc_mem_cgroup_per_zone_info().  Can you switch that over as well in
+this patch?  You can pass __GFP_ZERO to kmalloc_node() for zeroing.
 
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+Thanks!
