@@ -1,130 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556Ab0KAUQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 16:16:58 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:56927 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753473Ab0KAUQ4 (ORCPT
+	id S1753745Ab0KAURH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 16:17:07 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:57229 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753599Ab0KAURE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 16:16:56 -0400
-Date: Mon, 1 Nov 2010 21:06:23 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-cc: michael@ellerman.id.au, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Stephen Rothwell <sfr@pcug.org.au>
-Subject: Re: [PATCH] iSeries: Remove unused mf_getSrcHistory function.
-In-Reply-To: <20101102071025.2fe5e6ca.sfr@canb.auug.org.au>
-Message-ID: <alpine.LNX.2.00.1011012104050.12889@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1010301911220.1572@swampdragon.chaosbits.net> <1288609842.10671.7.camel@concordia> <20101102071025.2fe5e6ca.sfr@canb.auug.org.au>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Mon, 1 Nov 2010 16:17:04 -0400
+Message-ID: <4CCF2035.9020603@linux.vnet.ibm.com>
+Date: Tue, 02 Nov 2010 01:46:53 +0530
+From: Ciju Rajan K <ciju@linux.vnet.ibm.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Greg Thelen <gthelen@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [PATCH v4 03/11] memcg: create extensible page stat update routines
+References: <1288336154-23256-1-git-send-email-gthelen@google.com> <1288336154-23256-4-git-send-email-gthelen@google.com> <4CCD81CB.9030503@linux.vnet.ibm.com> <xr93sjzmcebh.fsf@ninji.mtv.corp.google.com>
+In-Reply-To: <xr93sjzmcebh.fsf@ninji.mtv.corp.google.com>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Nov 2010, Stephen Rothwell wrote:
+Greg Thelen wrote:
+> Ciju Rajan K <ciju@linux.vnet.ibm.com> writes:
+>
+>   
+>> Greg Thelen wrote:
+>>     
+>>> Replace usage of the mem_cgroup_update_file_mapped() memcg
+>>> statistic update routine with two new routines:
+>>> * mem_cgroup_inc_page_stat()
+>>> * mem_cgroup_dec_page_stat()
+>>>
+>>> As before, only the file_mapped statistic is managed.  However,
+>>> these more general interfaces allow for new statistics to be
+>>> more easily added.  New statistics are added with memcg dirty
+>>> page accounting.
+>>>
+>>> Signed-off-by: Greg Thelen <gthelen@google.com>
+>>> Signed-off-by: Andrea Righi <arighi@develer.com>
+>>> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>>> Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+>>> ---
+>>> Changelog since v1:
+>>> - Rename (for clarity):
+>>>   - mem_cgroup_write_page_stat_item -> mem_cgroup_page_stat_item
+>>>   - mem_cgroup_read_page_stat_item -> mem_cgroup_nr_pages_item
+>>>
+>>>  include/linux/memcontrol.h |   31 ++++++++++++++++++++++++++++---
+>>>  mm/memcontrol.c            |   16 +++++++---------
+>>>  mm/rmap.c                  |    4 ++--
+>>>  3 files changed, 37 insertions(+), 14 deletions(-)
+>>>
+>>> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+>>> index 159a076..067115c 100644
+>>> --- a/include/linux/memcontrol.h
+>>> +++ b/include/linux/memcontrol.h
+>>> @@ -25,6 +25,11 @@ struct page_cgroup;
+>>>  struct page;
+>>>  struct mm_struct;
+>>>
+>>> +/* Stats that can be updated by kernel. */
+>>> +enum mem_cgroup_page_stat_item {
+>>> +	MEMCG_NR_FILE_MAPPED, /* # of pages charged as file rss */
+>>> +};
+>>> +
+>>>  extern unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
+>>>  					struct list_head *dst,
+>>>  					unsigned long *scanned, int order,
+>>> @@ -121,7 +126,22 @@ static inline bool mem_cgroup_disabled(void)
+>>>  	return false;
+>>>  }
+>>>
+>>> -void mem_cgroup_update_file_mapped(struct page *page, int val);
+>>> +void mem_cgroup_update_page_stat(struct page *page,
+>>> +				 enum mem_cgroup_page_stat_item idx,
+>>> +				 int val);
+>>> +
+>>> +static inline void mem_cgroup_inc_page_stat(struct page *page,
+>>> +					    enum mem_cgroup_page_stat_item idx)
+>>> +{
+>>> +	mem_cgroup_update_page_stat(page, idx, 1);
+>>> +}
+>>> +
+>>> +static inline void mem_cgroup_dec_page_stat(struct page *page,
+>>> +					    enum mem_cgroup_page_stat_item idx)
+>>> +{
+>>> +	mem_cgroup_update_page_stat(page, idx, -1);
+>>> +}
+>>> +
+>>>  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+>>>  						gfp_t gfp_mask);
+>>>  u64 mem_cgroup_get_limit(struct mem_cgroup *mem);
+>>> @@ -293,8 +313,13 @@ mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
+>>>  {
+>>>  }
+>>>
+>>> -static inline void mem_cgroup_update_file_mapped(struct page *page,
+>>> -							int val)
+>>> +static inline void mem_cgroup_inc_page_stat(struct page *page,
+>>> +					    enum mem_cgroup_page_stat_item idx)
+>>> +{
+>>> +}
+>>> +
+>>> +static inline void mem_cgroup_dec_page_stat(struct page *page,
+>>> +					    enum mem_cgroup_page_stat_item idx)
+>>>  {
+>>>  }
+>>>
+>>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>>> index 9a99cfa..4fd00c4 100644
+>>> --- a/mm/memcontrol.c
+>>> +++ b/mm/memcontrol.c
+>>> @@ -1592,7 +1592,8 @@ bool mem_cgroup_handle_oom(struct mem_cgroup *mem, gfp_t mask)
+>>>   * possibility of race condition. If there is, we take a lock.
+>>>   */
+>>>
+>>>   
+>>>       
+>> Greg,
+>>
+>> I am not seeing the function mem_cgroup_update_file_stat() in the latest mmotm
+>> 2010-10-22-16-36.
+>> So not able to apply this patch. Tried couple of times cloning the entire mmotm
+>> git repository. But no luck.
+>> Tried in the web interface http://git.zen-kernel.org/mmotm/tree/mm/memcontrol.c
+>> also. It is not there.
+>> Surprisingly git log doesn't show any recent changes to mm/memcontrol.c. Am I
+>> missing something?
+>> I could see this function in the mainline linux 2.6 git tree.
+>>
+>> -Ciju
+>>     
+>
+> mem_cgroup_update_file_mapped() was renamed to
+> mem_cgroup_update_file_stat() in
+> http://userweb.kernel.org/~akpm/mmotm/broken-out/memcg-generic-filestat-update-interface.patch
+>
+> I also do not see this in the mmotm git repo.  However, if I manually
+> apply the mmotm patches to v2.6.36 using quilt then I see the expected
+> patched memcontrol.c.  I am not sure why the zen-kernel.org git mmotm
+> repo differs from a mmotm patched mainline 2.6.36.
+>
+> Here is my procedure using quilt to patch mainline:
+>
+> # Checkout 2.6.36 mainline
+> $ git checkout v2.6.36
+>
+> # Confirm mainline 2.6.36 does not have mem_cgroup_update_file_stat()
+> $ grep mem_cgroup_update_file_stat -r mm
+>
+> # Apply patches
+> $ curl http://userweb.kernel.org/~akpm/mmotm/broken-out.tar.gz | tar -xzf -
+> $ export QUILT_PATCHES=broken-out
+> $ quilt push -aq
+> ...
+> Now at patch memblock-add-input-size-checking-to-memblock_find_region-fix.patch
+>
+> # Now the memcontrol contains mem_cgroup_update_file_stat()
+> $ grep mem_cgroup_update_file_stat -r mm
+> mm/memcontrol.c:static void mem_cgroup_update_file_stat(struct page *page, int idx, int val)
+> mm/memcontrol.c:        mem_cgroup_update_file_stat(page, MEM_CGROUP_STAT_FILE_MAPPED, val);
+>
+>   
+Thank you Greg! I will try these steps.
+I could see the per cgroup dirty page accounting patches already in the 
+latest broken-out.tar.gz
 
-> Hi Jesper,
-> 
-> On Mon, 01 Nov 2010 22:10:42 +1100 Michael Ellerman <michael@ellerman.id.au> wrote:
-> >
-> > On Sat, 2010-10-30 at 19:20 +0200, Jesper Juhl wrote:
-> > > 
-> > > If memory is tight and a dynamic allocation fails there's no reason to 
-> > > make a bad situation worse by leaking memory.
-> > > 
-> > > mf_getSrcHistory potentially leaks pages[0-3]. I believe the right thing 
-> > > to do is to free that memory again before returning -ENOMEM - which is 
-> > > what this patch does.
-> > > 
-> > > I realize that the function is under '#if 0' so this probably doesn't 
-> > > matter much, but I assume that the function is still there for a reason 
-> > > (but I could be wrong, I don't know the powerpc code).
-> > > Anyway, I suggest we remove the leak.
-> > 
-> > Stephen is the iSeries maintainer, and I think he #if 0'ed the code. But
-> > I don't think it will ever be un-ifdef'ed, so should probably just be
-> > removed.
-> 
-> Well, only unofficially iseries maintainer :-)
-> 
-> Yes, just remove the whole function ... it was never used and never will
-> be.
-> 
-
-Done.
-
-Remove unused function 'mf_getSrcHistory' (that will never be used ever 
-according to Stephen Rothwell).
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- mf.c |   46 ----------------------------------------------
- 1 file changed, 46 deletions(-)
-
-diff --git a/arch/powerpc/platforms/iseries/mf.c b/arch/powerpc/platforms/iseries/mf.c
-index 42d0a88..56cfd8c 100644
---- a/arch/powerpc/platforms/iseries/mf.c
-+++ b/arch/powerpc/platforms/iseries/mf.c
-@@ -1045,52 +1045,6 @@ static const struct file_operations mf_side_proc_fops = {
- 	.write		= mf_side_proc_write,
- };
- 
--#if 0
--static void mf_getSrcHistory(char *buffer, int size)
--{
--	struct IplTypeReturnStuff return_stuff;
--	struct pending_event *ev = new_pending_event();
--	int rc = 0;
--	char *pages[4];
--
--	pages[0] = kmalloc(4096, GFP_ATOMIC);
--	pages[1] = kmalloc(4096, GFP_ATOMIC);
--	pages[2] = kmalloc(4096, GFP_ATOMIC);
--	pages[3] = kmalloc(4096, GFP_ATOMIC);
--	if ((ev == NULL) || (pages[0] == NULL) || (pages[1] == NULL)
--			 || (pages[2] == NULL) || (pages[3] == NULL))
--		return -ENOMEM;
--
--	return_stuff.xType = 0;
--	return_stuff.xRc = 0;
--	return_stuff.xDone = 0;
--	ev->event.hp_lp_event.xSubtype = 6;
--	ev->event.hp_lp_event.x.xSubtypeData =
--		subtype_data('M', 'F', 'V', 'I');
--	ev->event.data.vsp_cmd.xEvent = &return_stuff;
--	ev->event.data.vsp_cmd.cmd = 4;
--	ev->event.data.vsp_cmd.lp_index = HvLpConfig_getLpIndex();
--	ev->event.data.vsp_cmd.result_code = 0xFF;
--	ev->event.data.vsp_cmd.reserved = 0;
--	ev->event.data.vsp_cmd.sub_data.page[0] = iseries_hv_addr(pages[0]);
--	ev->event.data.vsp_cmd.sub_data.page[1] = iseries_hv_addr(pages[1]);
--	ev->event.data.vsp_cmd.sub_data.page[2] = iseries_hv_addr(pages[2]);
--	ev->event.data.vsp_cmd.sub_data.page[3] = iseries_hv_addr(pages[3]);
--	mb();
--	if (signal_event(ev) != 0)
--		return;
--
-- 	while (return_stuff.xDone != 1)
-- 		udelay(10);
-- 	if (return_stuff.xRc == 0)
-- 		memcpy(buffer, pages[0], size);
--	kfree(pages[0]);
--	kfree(pages[1]);
--	kfree(pages[2]);
--	kfree(pages[3]);
--}
--#endif
--
- static int mf_src_proc_show(struct seq_file *m, void *v)
- {
- #if 0
- 
-
--- 
-Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-Plain text mails only, please      http://www.expita.com/nomime.html
-Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
+-Ciju
+>>> -static void mem_cgroup_update_file_stat(struct page *page, int idx, int val)
+>>> +void mem_cgroup_update_page_stat(struct page *page,
+>>> +				 enum mem_cgroup_page_stat_item idx, int val)
+>>>  {
+>>>  	struct mem_cgroup *mem;
+>>>  	struct page_cgroup *pc = lookup_page_cgroup(page);
+>>> @@ -1615,30 +1616,27 @@ static void mem_cgroup_update_file_stat(struct page *page, int idx, int val)
+>>>  			goto out;
+>>>  	}
+>>>
+>>> -	this_cpu_add(mem->stat->count[idx], val);
+>>> -
+>>>  	switch (idx) {
+>>> -	case MEM_CGROUP_STAT_FILE_MAPPED:
+>>> +	case MEMCG_NR_FILE_MAPPED:
+>>>  		if (val > 0)
+>>>  			SetPageCgroupFileMapped(pc);
+>>>  		else if (!page_mapped(page))
+>>>  			ClearPageCgroupFileMapped(pc);
+>>> +		idx = MEM_CGROUP_STAT_FILE_MAPPED;
+>>>  		break;
+>>>  	default:
+>>>  		BUG();
+>>>  	}
+>>>
+>>> +	this_cpu_add(mem->stat->count[idx], val);
+>>> +
+>>>  out:
+>>>  	if (unlikely(need_unlock))
+>>>  		unlock_page_cgroup(pc);
+>>>  	rcu_read_unlock();
+>>>  	return;
+>>>  }
+>>> -
+>>> -void mem_cgroup_update_file_mapped(struct page *page, int val)
+>>> -{
+>>> -	mem_cgroup_update_file_stat(page, MEM_CGROUP_STAT_FILE_MAPPED, val);
+>>> -}
+>>> +EXPORT_SYMBOL(mem_cgroup_update_page_stat);
+>>>
+>>>  /*
+>>>   * size of first charge trial. "32" comes from vmscan.c's magic value.
+>>> diff --git a/mm/rmap.c b/mm/rmap.c
+>>> index 1a8bf76..a66ab76 100644
+>>> --- a/mm/rmap.c
+>>> +++ b/mm/rmap.c
+>>> @@ -911,7 +911,7 @@ void page_add_file_rmap(struct page *page)
+>>>  {
+>>>  	if (atomic_inc_and_test(&page->_mapcount)) {
+>>>  		__inc_zone_page_state(page, NR_FILE_MAPPED);
+>>> -		mem_cgroup_update_file_mapped(page, 1);
+>>> +		mem_cgroup_inc_page_stat(page, MEMCG_NR_FILE_MAPPED);
+>>>  	}
+>>>  }
+>>>
+>>> @@ -949,7 +949,7 @@ void page_remove_rmap(struct page *page)
+>>>  		__dec_zone_page_state(page, NR_ANON_PAGES);
+>>>  	} else {
+>>>  		__dec_zone_page_state(page, NR_FILE_MAPPED);
+>>> -		mem_cgroup_update_file_mapped(page, -1);
+>>> +		mem_cgroup_dec_page_stat(page, MEMCG_NR_FILE_MAPPED);
+>>>  	}
+>>>  	/*
+>>>  	 * It would be tidy to reset the PageAnon mapping here,
+>>>   
+>>>       
 
