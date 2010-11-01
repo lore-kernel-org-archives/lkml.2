@@ -1,58 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755237Ab0KAVtU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 17:49:20 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:36676 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751216Ab0KAVtS (ORCPT
+	id S1755256Ab0KAVzK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 17:55:10 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:23378 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751493Ab0KAVzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 17:49:18 -0400
-Date: Mon, 1 Nov 2010 14:47:29 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
-Subject: [PATCH] mtd: fix nand kernel-doc warnings
-Message-Id: <20101101144729.e0c58fec.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 1 Nov 2010 17:55:07 -0400
+Date: Mon, 1 Nov 2010 22:44:34 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Borislav Petkov <bp@alien8.de>
+cc: linux-kernel@vger.kernel.org, Peter Oruba <peter.oruba@amd.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        amd64-microcode@amd64.org
+Subject: [PATCH v2] AMD Microcode: Prefer vzalloc() over calls to
+ vmalloc()+memset().
+In-Reply-To: <20101101212747.GA23907@liondog.tnic>
+Message-ID: <alpine.LNX.2.00.1011012239390.12889@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1010302118160.1572@swampdragon.chaosbits.net> <20101031100833.GA18633@liondog.tnic> <alpine.LNX.2.00.1011012020500.12889@swampdragon.chaosbits.net> <20101101212747.GA23907@liondog.tnic>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Mon, 1 Nov 2010, Borislav Petkov wrote:
 
-Warning(include/linux/mtd/nand.h:543): No description found for parameter 'badblockbits'
-Warning(drivers/mtd/nand/nand_bbt.c:1101): No description found for parameter 'mtd'
+> On Mon, Nov 01, 2010 at 08:23:23PM +0100, Jesper Juhl wrote:
+> > Thank you for the feedback I'll prepare a new version of the patch 
+> > incorporating it, then resend it. 
+> > 
+> > One thing I'm not entirely sure about though is how to credit you with 
+> > your improment to my original patch. Would I simply prepend
+> > 
+> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > Signed-off-by: Borislav Petkov <bp@alien8.de>
+> > 
+> > or should I leave just my own Signed-off-by: and then mention you in the 
+> > changelog part of the mail or? 
+> 
+> How very considerate of you, but no need. Simply put your SOB in and
+> I'll ack it.
+> 
+Ok. I just care a great deal about assigning credit where due, since for 
+some of us (me included) the only credit we ever get for our work is the 
+small credit attributed to us via the SOB or similar... But, I'll just 
+(almost) respin the patch with just my own SOB below.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+
+
+We don't have to do memset() ourselves after vmalloc() when we have 
+vzalloc(), so change that in 
+arch/x86/kernel/microcode_amd.c::get_next_ucode().
+Thanks to Borislav Petkov for improvement suggestions.
+
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- drivers/mtd/nand/nand_bbt.c |    3 ++-
- include/linux/mtd/nand.h    |    2 ++
- 2 files changed, 4 insertions(+), 1 deletion(-)
+ microcode_amd.c |   19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
---- linux-2.6.36-git17.orig/include/linux/mtd/nand.h
-+++ linux-2.6.36-git17/include/linux/mtd/nand.h
-@@ -448,6 +448,8 @@ struct nand_buffers {
-  *			See the defines for further explanation.
-  * @badblockpos:	[INTERN] position of the bad block marker in the oob
-  *			area.
-+ * @badblockbits:	[INTERN] number of bits to left-shift the bad block
-+ *			number
-  * @cellinfo:		[INTERN] MLC/multichip data from chip ident
-  * @numchips:		[INTERN] number of physical chips
-  * @chipsize:		[INTERN] the size of one chip for multichip arrays
---- linux-2.6.36-git17.orig/drivers/mtd/nand/nand_bbt.c
-+++ linux-2.6.36-git17/drivers/mtd/nand/nand_bbt.c
-@@ -1092,7 +1092,8 @@ static void mark_bbt_region(struct mtd_i
+diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
+index e1af7c0..383d4f8 100644
+--- a/arch/x86/kernel/microcode_amd.c
++++ b/arch/x86/kernel/microcode_amd.c
+@@ -183,16 +183,17 @@ get_next_ucode(const u8 *buf, unsigned int size, unsigned int *mc_size)
+ 		return NULL;
+ 	}
  
- /**
-  * verify_bbt_descr - verify the bad block description
-- * @bd:			the table to verify
-+ * @mtd:	MTD device structure
-+ * @bd:		the table to verify
-  *
-  * This functions performs a few sanity checks on the bad block description
-  * table.
+-	mc = vmalloc(UCODE_MAX_SIZE);
+-	if (mc) {
+-		memset(mc, 0, UCODE_MAX_SIZE);
+-		if (get_ucode_data(mc, buf + UCODE_CONTAINER_SECTION_HDR,
+-				   total_size)) {
+-			vfree(mc);
+-			mc = NULL;
+-		} else
+-			*mc_size = total_size + UCODE_CONTAINER_SECTION_HDR;
++	mc = vzalloc(UCODE_MAX_SIZE);
++	if (!mc)
++		return NULL;
++
++	if (get_ucode_data(mc, buf + UCODE_CONTAINER_SECTION_HDR, total_size)) {
++		vfree(mc);
++		mc = NULL;
++	} else {
++		*mc_size = total_size + UCODE_CONTAINER_SECTION_HDR;
+ 	}
++
+ 	return mc;
+ }
+ 
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
+Plain text mails only, please      http://www.expita.com/nomime.html
+Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
+
