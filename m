@@ -1,295 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755329Ab0KASow (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 14:44:52 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:53969 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754168Ab0KASmK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 14:42:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=DF2eE1bzqrq7DPdif8YH16eotn0cqzF1Xe8lQ9tyCPz3k7k+xWHfgsBq0oZUgqAPl0
-         R5QjdxfVExJyvt2h8p1wQC4VbUKB4DSbm+YgCrd8U0MjNYfi4uiLyZq9bBD4Unl0FFup
-         cQMHqD0kDYxYU3viMpd7ZnFzpzp9rhVWKZSg8=
-From: Tracey Dent <tdent48227@gmail.com>
-To: greg@kroah.com
-Cc: manningc2@actrix.gen.nz, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Tracey Dent <tdent48227@gmail.com>
-Subject: [PATCH 19/29] Staging: yaffs2: yaffs_packedtags2: Add files
-Date: Mon,  1 Nov 2010 14:41:07 -0400
-Message-Id: <1288636877-7964-20-git-send-email-tdent48227@gmail.com>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
-In-Reply-To: <1288636877-7964-1-git-send-email-tdent48227@gmail.com>
-References: <1288636877-7964-1-git-send-email-tdent48227@gmail.com>
+	id S1756289Ab0KASq3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 14:46:29 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37386 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755506Ab0KASpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 14:45:00 -0400
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk, linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        kay.sievers@vrfy.org, jack@suse.cz,
+        James.Bottomley@HansenPartnership.com
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 1/7] block: kill genhd_media_change_notify()
+Date: Mon,  1 Nov 2010 19:44:35 +0100
+Message-Id: <1288637081-5183-2-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1288637081-5183-1-git-send-email-tj@kernel.org>
+References: <1288637081-5183-1-git-send-email-tj@kernel.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 01 Nov 2010 18:44:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding files to yaffs2 directory.
+There's no user of the facility.  Kill it.
 
-Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- drivers/staging/yaffs2/yaffs_packedtags2.c |  198 ++++++++++++++++++++++++++++
- drivers/staging/yaffs2/yaffs_packedtags2.h |   43 ++++++
- 2 files changed, 241 insertions(+), 0 deletions(-)
- create mode 100644 drivers/staging/yaffs2/yaffs_packedtags2.c
- create mode 100644 drivers/staging/yaffs2/yaffs_packedtags2.h
+ block/genhd.c         |   25 -------------------------
+ include/linux/genhd.h |    1 -
+ 2 files changed, 0 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/staging/yaffs2/yaffs_packedtags2.c b/drivers/staging/yaffs2/yaffs_packedtags2.c
-new file mode 100644
-index 0000000..4873f78
---- /dev/null
-+++ b/drivers/staging/yaffs2/yaffs_packedtags2.c
-@@ -0,0 +1,198 @@
-+/*
-+ * YAFFS: Yet Another Flash File System. A NAND-flash specific file system.
-+ *
-+ * Copyright (C) 2002-2010 Aleph One Ltd.
-+ *   for Toby Churchill Ltd and Brightstar Engineering
-+ *
-+ * Created by Charles Manning <charles@aleph1.co.uk>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include "yaffs_packedtags2.h"
-+#include "yportenv.h"
-+#include "yaffs_trace.h"
-+#include "yaffs_tagsvalidity.h"
-+
-+/* This code packs a set of extended tags into a binary structure for
-+ * NAND storage
-+ */
-+
-+/* Some of the information is "extra" struff which can be packed in to
-+ * speed scanning
-+ * This is defined by having the EXTRA_HEADER_INFO_FLAG set.
-+ */
-+
-+/* Extra flags applied to chunk_id */
-+
-+#define EXTRA_HEADER_INFO_FLAG	0x80000000
-+#define EXTRA_SHRINK_FLAG	0x40000000
-+#define EXTRA_SHADOWS_FLAG	0x20000000
-+#define EXTRA_SPARE_FLAGS	0x10000000
-+
-+#define ALL_EXTRA_FLAGS		0xF0000000
-+
-+/* Also, the top 4 bits of the object Id are set to the object type. */
-+#define EXTRA_OBJECT_TYPE_SHIFT (28)
-+#define EXTRA_OBJECT_TYPE_MASK  ((0x0F) << EXTRA_OBJECT_TYPE_SHIFT)
-+
-+
-+static void yaffs_dump_packed_tags2_tags_only(const yaffs_packed_tags2_tags_only *ptt)
-+{
-+	T(YAFFS_TRACE_MTD,
-+	  (TSTR("packed tags obj %d chunk %d byte %d seq %d" TENDSTR),
-+	   ptt->obj_id, ptt->chunk_id, ptt->n_bytes,
-+	   ptt->seq_number));
-+}
-+static void yaffs_dump_packed_tags2(const yaffs_packed_tags2 *pt)
-+{
-+	yaffs_dump_packed_tags2_tags_only(&pt->t);
-+}
-+
-+static void yaffs_dump_tags2(const yaffs_ext_tags *t)
-+{
-+	T(YAFFS_TRACE_MTD,
-+	  (TSTR
-+	   ("ext.tags eccres %d blkbad %d chused %d obj %d chunk%d byte %d del %d ser %d seq %d"
-+	    TENDSTR), t->ecc_result, t->block_bad, t->chunk_used, t->obj_id,
-+	   t->chunk_id, t->n_bytes, t->is_deleted, t->serial_number,
-+	   t->seq_number));
-+
-+}
-+
-+void yaffs_pack_tags2_tags_only(yaffs_packed_tags2_tags_only *ptt,
-+		const yaffs_ext_tags *t)
-+{
-+	ptt->chunk_id = t->chunk_id;
-+	ptt->seq_number = t->seq_number;
-+	ptt->n_bytes = t->n_bytes;
-+	ptt->obj_id = t->obj_id;
-+
-+	if (t->chunk_id == 0 && t->extra_available) {
-+		/* Store the extra header info instead */
-+		/* We save the parent object in the chunk_id */
-+		ptt->chunk_id = EXTRA_HEADER_INFO_FLAG
-+			| t->extra_parent_id;
-+		if (t->extra_is_shrink)
-+			ptt->chunk_id |= EXTRA_SHRINK_FLAG;
-+		if (t->extra_shadows)
-+			ptt->chunk_id |= EXTRA_SHADOWS_FLAG;
-+
-+		ptt->obj_id &= ~EXTRA_OBJECT_TYPE_MASK;
-+		ptt->obj_id |=
-+		    (t->extra_obj_type << EXTRA_OBJECT_TYPE_SHIFT);
-+
-+		if (t->extra_obj_type == YAFFS_OBJECT_TYPE_HARDLINK)
-+			ptt->n_bytes = t->extra_equiv_id;
-+		else if (t->extra_obj_type == YAFFS_OBJECT_TYPE_FILE)
-+			ptt->n_bytes = t->extra_length;
-+		else
-+			ptt->n_bytes = 0;
-+	}
-+
-+	yaffs_dump_packed_tags2_tags_only(ptt);
-+	yaffs_dump_tags2(t);
-+}
-+
-+
-+void yaffs_pack_tags2(yaffs_packed_tags2 *pt, const yaffs_ext_tags *t, int tags_ecc)
-+{
-+	yaffs_pack_tags2_tags_only(&pt->t, t);
-+
-+	if(tags_ecc)
-+		yaffs_ecc_calc_other((unsigned char *)&pt->t,
-+					sizeof(yaffs_packed_tags2_tags_only),
-+					&pt->ecc);
-+}
-+
-+
-+void yaffs_unpack_tags2_tags_only(yaffs_ext_tags *t,
-+		yaffs_packed_tags2_tags_only *ptt)
-+{
-+
-+	memset(t, 0, sizeof(yaffs_ext_tags));
-+
-+	yaffs_init_tags(t);
-+
-+	if (ptt->seq_number != 0xFFFFFFFF) {
-+		t->block_bad = 0;
-+		t->chunk_used = 1;
-+		t->obj_id = ptt->obj_id;
-+		t->chunk_id = ptt->chunk_id;
-+		t->n_bytes = ptt->n_bytes;
-+		t->is_deleted = 0;
-+		t->serial_number = 0;
-+		t->seq_number = ptt->seq_number;
-+
-+		/* Do extra header info stuff */
-+
-+		if (ptt->chunk_id & EXTRA_HEADER_INFO_FLAG) {
-+			t->chunk_id = 0;
-+			t->n_bytes = 0;
-+
-+			t->extra_available = 1;
-+			t->extra_parent_id =
-+			    ptt->chunk_id & (~(ALL_EXTRA_FLAGS));
-+			t->extra_is_shrink =
-+			    (ptt->chunk_id & EXTRA_SHRINK_FLAG) ? 1 : 0;
-+			t->extra_shadows =
-+			    (ptt->chunk_id & EXTRA_SHADOWS_FLAG) ? 1 : 0;
-+			t->extra_obj_type =
-+			    ptt->obj_id >> EXTRA_OBJECT_TYPE_SHIFT;
-+			t->obj_id &= ~EXTRA_OBJECT_TYPE_MASK;
-+
-+			if (t->extra_obj_type == YAFFS_OBJECT_TYPE_HARDLINK)
-+				t->extra_equiv_id = ptt->n_bytes;
-+			else
-+				t->extra_length = ptt->n_bytes;
-+		}
-+	}
-+
-+	yaffs_dump_packed_tags2_tags_only(ptt);
-+	yaffs_dump_tags2(t);
-+
-+}
-+
-+
-+void yaffs_unpack_tags2(yaffs_ext_tags *t, yaffs_packed_tags2 *pt, int tags_ecc)
-+{
-+
-+	yaffs_ecc_result ecc_result = YAFFS_ECC_RESULT_NO_ERROR;
-+
-+	if (pt->t.seq_number != 0xFFFFFFFF &&
-+	    tags_ecc){
-+		/* Chunk is in use and we need to do ECC */
-+		
-+		yaffs_ecc_other ecc;
-+		int result;
-+		yaffs_ecc_calc_other((unsigned char *)&pt->t,
-+					sizeof(yaffs_packed_tags2_tags_only),
-+					&ecc);
-+		result = yaffs_ecc_correct_other((unsigned char *)&pt->t,
-+						sizeof(yaffs_packed_tags2_tags_only),
-+						&pt->ecc, &ecc);
-+		switch (result) {
-+			case 0:
-+				ecc_result = YAFFS_ECC_RESULT_NO_ERROR;
-+				break;
-+			case 1:
-+				ecc_result = YAFFS_ECC_RESULT_FIXED;
-+				break;
-+			case -1:
-+				ecc_result = YAFFS_ECC_RESULT_UNFIXED;
-+				break;
-+			default:
-+				ecc_result = YAFFS_ECC_RESULT_UNKNOWN;
-+		}
-+	}
-+
-+	yaffs_unpack_tags2_tags_only(t, &pt->t);
-+
-+	t->ecc_result = ecc_result;
-+
-+	yaffs_dump_packed_tags2(pt);
-+	yaffs_dump_tags2(t);
-+}
-+
-diff --git a/drivers/staging/yaffs2/yaffs_packedtags2.h b/drivers/staging/yaffs2/yaffs_packedtags2.h
-new file mode 100644
-index 0000000..fd7a239
---- /dev/null
-+++ b/drivers/staging/yaffs2/yaffs_packedtags2.h
-@@ -0,0 +1,43 @@
-+/*
-+ * YAFFS: Yet another Flash File System . A NAND-flash specific file system.
-+ *
-+ * Copyright (C) 2002-2010 Aleph One Ltd.
-+ *   for Toby Churchill Ltd and Brightstar Engineering
-+ *
-+ * Created by Charles Manning <charles@aleph1.co.uk>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU Lesser General Public License version 2.1 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Note: Only YAFFS headers are LGPL, YAFFS C code is covered by GPL.
-+ */
-+
-+/* This is used to pack YAFFS2 tags, not YAFFS1tags. */
-+
-+#ifndef __YAFFS_PACKEDTAGS2_H__
-+#define __YAFFS_PACKEDTAGS2_H__
-+
-+#include "yaffs_guts.h"
-+#include "yaffs_ecc.h"
-+
-+typedef struct {
-+	unsigned seq_number;
-+	unsigned obj_id;
-+	unsigned chunk_id;
-+	unsigned n_bytes;
-+} yaffs_packed_tags2_tags_only;
-+
-+typedef struct {
-+	yaffs_packed_tags2_tags_only t;
-+	yaffs_ecc_other ecc;
-+} yaffs_packed_tags2;
-+
-+/* Full packed tags with ECC, used for oob tags */
-+void yaffs_pack_tags2(yaffs_packed_tags2 *pt, const yaffs_ext_tags *t, int tags_ecc);
-+void yaffs_unpack_tags2(yaffs_ext_tags *t, yaffs_packed_tags2 *pt, int tags_ecc);
-+
-+/* Only the tags part (no ECC for use with inband tags */
-+void yaffs_pack_tags2_tags_only(yaffs_packed_tags2_tags_only *pt, const yaffs_ext_tags *t);
-+void yaffs_unpack_tags2_tags_only(yaffs_ext_tags *t, yaffs_packed_tags2_tags_only *pt);
-+#endif
+diff --git a/block/genhd.c b/block/genhd.c
+index 5fa2b44..0905ab2 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -1110,29 +1110,6 @@ static int __init proc_genhd_init(void)
+ module_init(proc_genhd_init);
+ #endif /* CONFIG_PROC_FS */
+ 
+-static void media_change_notify_thread(struct work_struct *work)
+-{
+-	struct gendisk *gd = container_of(work, struct gendisk, async_notify);
+-	char event[] = "MEDIA_CHANGE=1";
+-	char *envp[] = { event, NULL };
+-
+-	/*
+-	 * set enviroment vars to indicate which event this is for
+-	 * so that user space will know to go check the media status.
+-	 */
+-	kobject_uevent_env(&disk_to_dev(gd)->kobj, KOBJ_CHANGE, envp);
+-	put_device(gd->driverfs_dev);
+-}
+-
+-#if 0
+-void genhd_media_change_notify(struct gendisk *disk)
+-{
+-	get_device(disk->driverfs_dev);
+-	schedule_work(&disk->async_notify);
+-}
+-EXPORT_SYMBOL_GPL(genhd_media_change_notify);
+-#endif  /*  0  */
+-
+ dev_t blk_lookup_devt(const char *name, int partno)
+ {
+ 	dev_t devt = MKDEV(0, 0);
+@@ -1198,8 +1175,6 @@ struct gendisk *alloc_disk_node(int minors, int node_id)
+ 		disk_to_dev(disk)->class = &block_class;
+ 		disk_to_dev(disk)->type = &disk_type;
+ 		device_initialize(disk_to_dev(disk));
+-		INIT_WORK(&disk->async_notify,
+-			media_change_notify_thread);
+ 	}
+ 	return disk;
+ }
+diff --git a/include/linux/genhd.h b/include/linux/genhd.h
+index 7a7b9c1..5e4e692 100644
+--- a/include/linux/genhd.h
++++ b/include/linux/genhd.h
+@@ -173,7 +173,6 @@ struct gendisk {
+ 	struct timer_rand_state *random;
+ 
+ 	atomic_t sync_io;		/* RAID */
+-	struct work_struct async_notify;
+ #ifdef  CONFIG_BLK_DEV_INTEGRITY
+ 	struct blk_integrity *integrity;
+ #endif
 -- 
-1.7.3.2.146.gca209
+1.7.1
 
