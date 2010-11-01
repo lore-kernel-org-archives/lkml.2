@@ -1,194 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187Ab0KAUnD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 16:43:03 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:22402 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751088Ab0KAUnA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 16:43:00 -0400
-Date: Mon, 1 Nov 2010 21:32:27 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Tracey Dent <tdent48227@gmail.com>
-cc: greg@kroah.com, manningc2@actrix.gen.nz, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 21/29] Staging: yaffs2: yaffs_tagscompact: Add files
-In-Reply-To: <1288636877-7964-22-git-send-email-tdent48227@gmail.com>
-Message-ID: <alpine.LNX.2.00.1011012119210.12889@swampdragon.chaosbits.net>
-References: <1288636877-7964-1-git-send-email-tdent48227@gmail.com> <1288636877-7964-22-git-send-email-tdent48227@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754291Ab0KAUo4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 16:44:56 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:50479
+	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753890Ab0KAUou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 16:44:50 -0400
+From: Haiyang Zhang <haiyangz@linuxonhyperv.com>
+To: haiyangz@microsoft.com, hjanssen@microsoft.com, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org
+Subject: [PATCH 06/10] staging: hv: Convert camel cased local variables in osd.c to lower cases
+Date: Mon,  1 Nov 2010 13:46:05 -0700
+Message-Id: <1288644369-12958-6-git-send-email-haiyangz@linuxonhyperv.com>
+X-Mailer: git-send-email 1.5.5.6
+In-Reply-To: <1288644369-12958-5-git-send-email-haiyangz@linuxonhyperv.com>
+References: <1288644369-12958-1-git-send-email-haiyangz@linuxonhyperv.com>
+ <1288644369-12958-2-git-send-email-haiyangz@linuxonhyperv.com>
+ <1288644369-12958-3-git-send-email-haiyangz@linuxonhyperv.com>
+ <1288644369-12958-4-git-send-email-haiyangz@linuxonhyperv.com>
+ <1288644369-12958-5-git-send-email-haiyangz@linuxonhyperv.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Nov 2010, Tracey Dent wrote:
+From: Haiyang Zhang <haiyangz@microsoft.com>
 
-> Adding files to yaffs2 directory.
-> 
-> Signed-off-by: Tracey Dent <tdent48227@gmail.com>
-> ---
->  drivers/staging/yaffs2/yaffs_tagscompat.c |  539 +++++++++++++++++++++++++++++
->  drivers/staging/yaffs2/yaffs_tagscompat.h |   39 ++
->  2 files changed, 578 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/staging/yaffs2/yaffs_tagscompat.c
->  create mode 100644 drivers/staging/yaffs2/yaffs_tagscompat.h
-> 
-> diff --git a/drivers/staging/yaffs2/yaffs_tagscompat.c b/drivers/staging/yaffs2/yaffs_tagscompat.c
-> new file mode 100644
-> index 0000000..1e910f2
-> --- /dev/null
-> +++ b/drivers/staging/yaffs2/yaffs_tagscompat.c
-[snip]
-> +int yaffs_count_bits(__u8 x)
-> +{
-> +	int ret_val;
-> +	ret_val = yaffs_count_bits_table[x];
-> +	return ret_val;
+Convert camel cased local variables in osd.c to lower cases
 
-How about just getting rid of the unneeded temporary variable and just 
-doing:
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 
-int yaffs_count_bits(__u8 x)
-{
-     return yaffs_count_bits_table[x];
-}
+---
+ drivers/staging/hv/osd.c |   40 ++++++++++++++++++++--------------------
+ 1 files changed, 20 insertions(+), 20 deletions(-)
 
-??
-
-[snip]
-> +void yaffs_calc_tags_ecc(yaffs_tags_t *tags)
-> +{
-> +	/* Calculate an ecc */
-> +
-> +	unsigned char *b = ((yaffs_tags_union_t *) tags)->as_bytes;
-> +	unsigned i, j;
-> +	unsigned ecc = 0;
-> +	unsigned bit = 0;
-> +
-> +	tags->ecc = 0;
-
-tags->ecc is not touched between here
-
-> +
-> +	for (i = 0; i < 8; i++) {
-> +		for (j = 1; j & 0xff; j <<= 1) {
-> +			bit++;
-> +			if (b[i] & j)
-> +				ecc ^= bit;
-> +		}
-> +	}
-> +
-> +	tags->ecc = ecc;
-
-and this assignment here, so the first 'tags->ecc = 0' assignment is 
-pointless and should just go away IMHO.
-
-> +int yaffs_tags_compat_wr(yaffs_dev_t *dev,
-> +						int nand_chunk,
-> +						const __u8 *data,
-> +						const yaffs_ext_tags *ext_tags)
-> +{
-> +	yaffs_spare spare;
-> +	yaffs_tags_t tags;
-> +
-> +	yaffs_spare_init(&spare);
-> +
-> +	if (ext_tags->is_deleted)
-> +		spare.page_status = 0;
-> +	else {
-
-purely a minor style issue, but I believe the kernel coding style here is 
-to put curly braces for both the 'if' and 'else' branches if either 
-requires them, so
-
-if (ext_tags->is_deleted) {
-        spare.page_status = 0;
-} else {
-        ...
-        ...
-}
-
-
-[snip]
-> +int yaffs_tags_compat_rd(yaffs_dev_t *dev,
-> +						     int nand_chunk,
-> +						     __u8 *data,
-> +						     yaffs_ext_tags *ext_tags)
-> +{
-> +
-> +	yaffs_spare spare;
-> +	yaffs_tags_t tags;
-> +	yaffs_ecc_result ecc_result = YAFFS_ECC_RESULT_UNKNOWN;
-> +
-> +	static yaffs_spare spare_ff;
-> +	static int init;
-> +
-> +	if (!init) {
-> +		memset(&spare_ff, 0xFF, sizeof(spare_ff));
-> +		init = 1;
-> +	}
-> +
-> +	if (yaffs_rd_chunk_nand
-> +	    (dev, nand_chunk, data, &spare, &ecc_result, 1)) {
-> +		/* ext_tags may be NULL */
-> +		if (ext_tags) {
-> +
-> +			int deleted =
-> +			    (yaffs_count_bits(spare.page_status) < 7) ? 1 : 0;
-> +
-> +			ext_tags->is_deleted = deleted;
-> +			ext_tags->ecc_result = ecc_result;
-> +			ext_tags->block_bad = 0;	/* We're reading it */
-> +			/* therefore it is not a bad block */
-> +			ext_tags->chunk_used =
-> +			    (memcmp(&spare_ff, &spare, sizeof(spare_ff)) !=
-> +			     0) ? 1 : 0;
-> +
-> +			if (ext_tags->chunk_used) {
-> +				yaffs_get_tags_from_spare(dev, &spare, &tags);
-> +
-> +				ext_tags->obj_id = tags.obj_id;
-> +				ext_tags->chunk_id = tags.chunk_id;
-> +				ext_tags->n_bytes = tags.n_bytes_lsb;
-> +
-> +				if (dev->data_bytes_per_chunk >= 1024)
-> +					ext_tags->n_bytes |= (((unsigned) tags.n_bytes_msb) << 10);
-> +
-> +				ext_tags->serial_number = tags.serial_number;
-> +			}
-> +		}
-> +
-> +		return YAFFS_OK;
-> +	} else {
-> +		return YAFFS_FAIL;
-> +	}
-> +}
-
-Indentation could be reduced with no negative effect by doing
-
-if (!yaffs_rd_chunk_nand
-         (dev, nand_chunk, data, &spare, &ecc_result, 1))
-        return YAFFS_FAIL;
-...rest of function...
-
-
-> +int yaffs_tags_compat_mark_bad(struct yaffs_dev_s *dev,
-> +					    int flash_block)
-> +{
-> +
-> +	yaffs_spare spare;
-> +
-> +	memset(&spare, 0xff, sizeof(yaffs_spare));
-> +
-
-Why is memset() used directly here, but elsewhere the yaffs_spare_init() 
-function is used?
-
-
+diff --git a/drivers/staging/hv/osd.c b/drivers/staging/hv/osd.c
+index 8c3eb27..b39ec25 100644
+--- a/drivers/staging/hv/osd.c
++++ b/drivers/staging/hv/osd.c
+@@ -130,9 +130,9 @@ EXPORT_SYMBOL_GPL(osd_WaitEventCreate);
+ 
+ /**
+  * osd_WaitEventSet() - Wake up the process
+- * @waitEvent: Structure to event to be woken up
++ * @wait_event: Structure to event to be woken up
+  *
+- * @waitevent is of type &struct osd_waitevent
++ * @wait_event is of type &struct osd_waitevent
+  *
+  * Wake up the sleeping process so it can do some work.
+  * And set condition indicator in &struct osd_waitevent to indicate
+@@ -140,18 +140,18 @@ EXPORT_SYMBOL_GPL(osd_WaitEventCreate);
+  *
+  * Only used by Network and Storage Hyper-V drivers.
+  */
+-void osd_WaitEventSet(struct osd_waitevent *waitEvent)
++void osd_WaitEventSet(struct osd_waitevent *wait_event)
+ {
+-	waitEvent->condition = 1;
+-	wake_up_interruptible(&waitEvent->event);
++	wait_event->condition = 1;
++	wake_up_interruptible(&wait_event->event);
+ }
+ EXPORT_SYMBOL_GPL(osd_WaitEventSet);
+ 
+ /**
+  * osd_WaitEventWait() - Wait for event till condition is true
+- * @waitEvent: Structure to event to be put to sleep
++ * @wait_event: Structure to event to be put to sleep
+  *
+- * @waitevent is of type &struct osd_waitevent
++ * @wait_event is of type &struct osd_waitevent
+  *
+  * Set up the process to sleep until waitEvent->condition get true.
+  * And set condition indicator in &struct osd_waitevent to indicate
+@@ -161,25 +161,25 @@ EXPORT_SYMBOL_GPL(osd_WaitEventSet);
+  *
+  * Mainly used by Hyper-V drivers.
+  */
+-int osd_WaitEventWait(struct osd_waitevent *waitEvent)
++int osd_WaitEventWait(struct osd_waitevent *wait_event)
+ {
+ 	int ret = 0;
+ 
+-	ret = wait_event_interruptible(waitEvent->event,
+-				       waitEvent->condition);
+-	waitEvent->condition = 0;
++	ret = wait_event_interruptible(wait_event->event,
++				       wait_event->condition);
++	wait_event->condition = 0;
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(osd_WaitEventWait);
+ 
+ /**
+  * osd_WaitEventWaitEx() - Wait for event or timeout for process wakeup
+- * @waitEvent: Structure to event to be put to sleep
+- * @TimeoutInMs:       Total number of Milliseconds to wait before waking up
++ * @wait_event: Structure to event to be put to sleep
++ * @timeout_in_ms:       Total number of Milliseconds to wait before waking up
+  *
+- * @waitevent is of type &struct osd_waitevent
++ * @wait_event is of type &struct osd_waitevent
+  * Set up the process to sleep until @waitEvent->condition get true or
+- * @TimeoutInMs (Time out in Milliseconds) has been reached.
++ * @timeout_in_ms (Time out in Milliseconds) has been reached.
+  * And set condition indicator in &struct osd_waitevent to indicate
+  * the process is in a sleeping state.
+  *
+@@ -187,14 +187,14 @@ EXPORT_SYMBOL_GPL(osd_WaitEventWait);
+  *
+  * Mainly used by Hyper-V drivers.
+  */
+-int osd_WaitEventWaitEx(struct osd_waitevent *waitEvent, u32 TimeoutInMs)
++int osd_WaitEventWaitEx(struct osd_waitevent *wait_event, u32 timeout_in_ms)
+ {
+ 	int ret = 0;
+ 
+-	ret = wait_event_interruptible_timeout(waitEvent->event,
+-					       waitEvent->condition,
+-					       msecs_to_jiffies(TimeoutInMs));
+-	waitEvent->condition = 0;
++	ret = wait_event_interruptible_timeout(wait_event->event,
++					       wait_event->condition,
++					       msecs_to_jiffies(timeout_in_ms));
++	wait_event->condition = 0;
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(osd_WaitEventWaitEx);
 -- 
-Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-Plain text mails only, please      http://www.expita.com/nomime.html
-Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
+1.6.3.2
 
