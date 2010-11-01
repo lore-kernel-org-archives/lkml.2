@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140Ab0KATYo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 15:24:44 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:6657 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751613Ab0KATYm (ORCPT
+	id S1752062Ab0KATZe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 15:25:34 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:55167 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751179Ab0KATZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 15:24:42 -0400
-Message-ID: <4CCF13FA.1080609@caviumnetworks.com>
-Date: Mon, 01 Nov 2010 12:24:42 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	Mon, 1 Nov 2010 15:25:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=LofDQg4ovBI1CQ2c6IC2VZRBqnlzCTtuDooRjtiFLeV4Yy+hUNweXJoMK1T3UH4Mhu
+         hP3kv30uw3qVRpSdVVPBgOhr3MXcOB4BwgEYK0hMYpEsvrbbDswGF/w0mJpLBK0bu7ul
+         E9Hs7FfxKv4slhdQd09Oq8ZQP6hQRAmDDtgoU=
 MIME-Version: 1.0
-To: Charles Manning <manningc2@actrix.gen.nz>
-CC: Tracey Dent <tdent48227@gmail.com>, greg@kroah.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 0/29] Staging: Add yaffs2 filesystem
-References: <1288636877-7964-1-git-send-email-tdent48227@gmail.com> <4CCF0D2B.6070308@caviumnetworks.com> <201011020814.35902.manningc2@actrix.gen.nz>
-In-Reply-To: <201011020814.35902.manningc2@actrix.gen.nz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 01 Nov 2010 19:25:15.0362 (UTC) FILETIME=[82CF9C20:01CB79FA]
+In-Reply-To: <AANLkTimx9KhUZhHKx_FJ=orUoRaVHaye3G9Uazg4iZmm@mail.gmail.com>
+References: <1288636877-7964-1-git-send-email-tdent48227@gmail.com>
+	<1288636877-7964-5-git-send-email-tdent48227@gmail.com>
+	<AANLkTimx9KhUZhHKx_FJ=orUoRaVHaye3G9Uazg4iZmm@mail.gmail.com>
+Date: Mon, 1 Nov 2010 15:25:32 -0400
+Message-ID: <AANLkTik1tCS++ina=zFhyTPbXOjwMko7jW=zodt1zypz@mail.gmail.com>
+Subject: Re: [PATCH 04/29] Staging: yaffs2: moduleconfig.h: Add file
+From: Tracey Dent <tdent48227@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: greg@kroah.com, manningc2@actrix.gen.nz, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2010 12:14 PM, Charles Manning wrote:
-> On Tuesday 02 November 2010 07:55:39 David Daney wrote:
->> On 11/01/2010 11:40 AM, Tracey Dent wrote:
->>> The patch sets puts the yaffs2 filesystem in the staging directory.
->>> It is all based on Charles git
->>> tree(http://github.com/cdhmanning/linux-yaffs-integration/). Everything
->>> is compile tested and it builds.
->>>
->>> This only the inital support and I will be sending more cleanup patches.
->>>
->>> Greg can you add the patch set into your staging-next tree.
->>> Also, It doesn't affect anything other than itself.
->>>
->>> Thanks,
->>>
->>> Tracey Dent
+On 11/1/10, Pekka Enberg <penberg@kernel.org> wrote:
+> On Mon, Nov 1, 2010 at 8:40 PM, Tracey Dent <tdent48227@gmail.com> wrote:
+>> Adding files to yaffs2 directory.
 >>
->> I am confused.
+>> Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+>> ---
+>>  drivers/staging/yaffs2/moduleconfig.h |   86
+>> +++++++++++++++++++++++++++++++++
+>>  1 files changed, 86 insertions(+), 0 deletions(-)
+>>  create mode 100644 drivers/staging/yaffs2/moduleconfig.h
 >>
->> Are you and Charles Manning working together on this?
->>
->> Did you write all this code or did Charles?  If it was Charles, why are
->> there no From: and Signed-off-by headers for him?
->>
->> Thanks in advance for enlightening us as to what is going on here,
->> David Daney
+>> diff --git a/drivers/staging/yaffs2/moduleconfig.h
+>> b/drivers/staging/yaffs2/moduleconfig.h
+>> new file mode 100644
+>> index 0000000..4b4d642
+>> --- /dev/null
+>> +++ b/drivers/staging/yaffs2/moduleconfig.h
+>> @@ -0,0 +1,86 @@
+>> +/*
+>> + * YAFFS: Yet another Flash File System . A NAND-flash specific file
+>> system.
+>> + *
+>> + * Copyright (C) 2002-2010 Aleph One Ltd.
+>> + *   for Toby Churchill Ltd and Brightstar Engineering
+>> + *
+>> + * Created by Martin Fouts <Martin.Fouts@palmsource.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU Lesser General Public License version
+>> 2.1 as
+>> + * published by the Free Software Foundation.
+>> + *
+>> + * Note: Only YAFFS headers are LGPL, YAFFS C code is covered by GPL.
+>> + */
+>> +
+>> +#ifndef __YAFFS_CONFIG_H__
+>> +#define __YAFFS_CONFIG_H__
+>> +
+>> +#ifdef YAFFS_OUT_OF_TREE
 >
-> We are not working together on this, but I do appreciate the effort in helping
-> bring to a head what people like/dislike.
+> You probably want to drop this header as well...
 >
-> I am trying to keep the kernel yaffs consistent with the yaffs.net yaffs so
-> that it is easier to add changes from yaffs.net.
->
-
-Great.  Thanks for clearing things up.
-
-I will offer my unsolicited opinion:
-
-Charles has obviously expended great effort on yaffs2.  He has a git 
-repository hosting the code, and has expressed a desire to get the code 
-fit for merging.  For Tracey Dent to come along and hijack the entire 
-effort, would anger me if I were in Charles' place.
-
-Having used yaffs2 in the past, I would like to see the code in the 
-kernel.  Having it come via Charles would seem to make sense.
-
-David Daney
+ Yes, I was going to make up a clean up patch set when or if this gets merge.
