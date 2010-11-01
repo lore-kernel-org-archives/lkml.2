@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754464Ab0KAIJY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 04:09:24 -0400
-Received: from smtpeu1.atmel.com ([195.65.72.27]:64582 "EHLO bagnes.atmel.com"
+	id S1754553Ab0KAIOP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 04:14:15 -0400
+Received: from mail.fc.unesp.br ([200.145.159.3]:35330 "EHLO mail.fc.unesp.br"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754237Ab0KAIJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 04:09:22 -0400
-Subject: Re: [PATCH 2/6] avr32: get rid of useless args in signal.c before
- other work there
-From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Al Viro <viro@ftp.linux.org.uk>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-In-Reply-To: <20101101080201.GZ19804@ZenIV.linux.org.uk>
-References: <E1P0QNo-0008S7-Vr@ZenIV.linux.org.uk>
-	 <1288598309.2843.12.camel@hcegtvedt>
-	 <20101101080201.GZ19804@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Atmel Corporation
-Date: Mon, 01 Nov 2010 09:08:39 +0100
-Message-ID: <1288598919.2843.22.camel@hcegtvedt>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1754388Ab0KAION (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 04:14:13 -0400
+X-Greylist: delayed 662 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Nov 2010 04:14:12 EDT
+Message-ID: <20101101060245.20872hp6cfp80x7p@webmail.fc.unesp.br>
+Date: Mon, 01 Nov 2010 06:02:45 -0200
+From: "Jozef Ruud Roosevelt" <info@jozef.co.uk>
+Reply-to: jozef-rosevelt@live.com
+To: undisclosed-recipients:;
+Subject: Attention Please!!
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 01 Nov 2010 08:08:39.0919 (UTC) FILETIME=[FE0A97F0:01CB799B]
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-01 at 08:02 +0000, Al Viro wrote: 
-> On Mon, Nov 01, 2010 at 08:58:29AM +0100, Hans-Christian Egtvedt wrote:
-> > On Tue, 2010-09-28 at 03:57 +0100, Al Viro wrote: 
-> > > Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-> > > @@ -261,11 +261,12 @@ handle_signal(unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
-> > >   * doesn't want to handle. Thus you cannot kill init even with a
-> > >   * SIGKILL even by mistake.
-> > >   */
-> > > -int do_signal(struct pt_regs *regs, sigset_t *oldset, int syscall)
-> > > +static void do_signal(struct pt_regs *regs, int syscall)
-> > >  {
-> > >  	siginfo_t info;
-> > >  	int signr;
-> > >  	struct k_sigaction ka;
-> > > +	sigset_t *oldset;
-> > 
-> > Should be initialized as it is checked in the else if block further
-> > below.
-> 
-> That else if should be simply else...
 
-Ah, that made a lot more sense. I'm still on my first cup of coffee
-brushing dust of your series.
 
--- 
-Hans-Christian Egtvedt
+Attention Please,
+
+I am Jozef Ruud Roosevelt, a Dutch National presently residing in  
+Newcastle United Kingdom, I have a proposition Involving an investment  
+initiative in your country economy  to discuss with you, It will be of  
+mutual benefit to both of us, and I believe we can handle it together,  
+once we have a common understanding and mutual cooperation in the  
+execution of the modalities. I work with Abn Amro Bank as an auditor.
+
+Should you be interested, please e-mail back to me through this email  
+address: (jozef-rosevelt@live.com) or you can give me a call (+44 702  
+4056 175).
+I await your earliest response.
+
+Yours Sincerely,
+Jozef Ruud Roosevel.
+
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
+
 
