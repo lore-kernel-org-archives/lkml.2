@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757278Ab0KALGm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 07:06:42 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:45573 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754966Ab0KALGj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 07:06:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=p25hwK169sNr3usQ5MHyGDg9f+id8k3QPPQXbdJCmoHa2pMkVHw/ik0lfim4LXTKAM
-         sF+d7wIcZ/LmDvIR0G4Sfma3HblnNe3lbTr67QUPpdq/isxtt5iEEBmgKWJZmXhQSq60
-         lNRGuWREZiay1HfXD+kwjpn6x0WfPajxZJ80w=
-MIME-Version: 1.0
-Date: Mon, 1 Nov 2010 11:06:38 +0000
-Message-ID: <AANLkTimT6X6GwyrizZP+-rJ-KYzp9ktGxUDKaqgoP5jz@mail.gmail.com>
-Subject: Re: btrfs and apt package manager in ubuntu (discard stalls)
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: Mike Hommey <mh@glandium.org>
-Cc: Christian <gmane.20.ceed@spamgourmet.com>, linux-btrfs@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757268Ab0KALKp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 07:10:45 -0400
+Received: from ozlabs.org ([203.10.76.45]:37868 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757212Ab0KALKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 07:10:43 -0400
+Subject: Re: [PATCH] iSeries: Don't leak if allocations fail in
+ mf_getSrcHistory
+From: Michael Ellerman <michael@ellerman.id.au>
+Reply-To: michael@ellerman.id.au
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linuxppc-dev@lists.ozlabs.org, Paul Mackerras <paulus@samba.org>,
+        linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@pcug.org.au>
+In-Reply-To: <alpine.LNX.2.00.1010301911220.1572@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1010301911220.1572@swampdragon.chaosbits.net>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-gBTVMiECxDTmalQzWme3"
+Date: Mon, 01 Nov 2010 22:10:42 +1100
+Message-ID: <1288609842.10671.7.camel@concordia>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 November 2010 08:10, Mike Hommey <mh@glandium.org> wrote:
-> On Sun, Oct 31, 2010 at 11:21:36AM -0500, Christian wrote:
->> On Sun, 2010-10-31 at 16:17 +0300, Abdullah Ansari wrote:
->> > it's very slow in installtion with apt in ubuntu
->>
->> I'm seeing the same thing. When installing using apt the disk grinds
->> "forever" before the installation completes. I have two identical
->> laptops running Linux Mint 10 (rc) with similar disk layout except that
->> one has two btrfs partitions while the other only has ext4. The one with
->> btrfs takes at least 10 times longer to install updates on than the ext4
->> one.
->
-> That's because dpkg uses sync when unpacking each package.
 
-I've seen significant stalls in dpkg calling fsync() when BTRFS
-discard is enabled on my OCZ Vertex SSD (firmware 1.6, Indilinx
-controller). I don't get these stalls with discard on my superb
-Crucial C300 (Marvell controller).
+--=-gBTVMiECxDTmalQzWme3
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-What is your block device and your mount options?
+On Sat, 2010-10-30 at 19:20 +0200, Jesper Juhl wrote:
+> Hi,
+>=20
+> If memory is tight and a dynamic allocation fails there's no reason to=
+=20
+> make a bad situation worse by leaking memory.
+>=20
+> mf_getSrcHistory potentially leaks pages[0-3]. I believe the right thing=
+=20
+> to do is to free that memory again before returning -ENOMEM - which is=
+=20
+> what this patch does.
+>=20
+> I realize that the function is under '#if 0' so this probably doesn't=20
+> matter much, but I assume that the function is still there for a reason=
+=20
+> (but I could be wrong, I don't know the powerpc code).
+> Anyway, I suggest we remove the leak.
 
-I can reproduce an eye-watering 3.1s (!!) stall with:
+Stephen is the iSeries maintainer, and I think he #if 0'ed the code. But
+I don't think it will ever be un-ifdef'ed, so should probably just be
+removed.
 
-# sync; echo 2 >/proc/sys/vm/drop_caches; bash -x
-/var/lib/dpkg/info/gconf2.postinst
+cheers
 
-I conclude the Vertex firmware has a performance issue. I see it is
-discard, as the call trace is:
 
- gconftool-2   D ffff880001e54cc0     0  4378   4377 0x00000000
- ffff88010407fb98 0000000000000082 ffff88010407ffd8 0000000000014cc0
- 0000000000014cc0 ffff88010407ffd8 0000000000014cc0 ffff88010407ffd8
- 0000000000014cc0 ffff88012f115f18 ffff88012f115f20 ffff88012f115b80
-Call Trace:
- [<ffffffff81586ade>] schedule_timeout+0x19e/0x2e0
- [<ffffffff812a674e>] ? generic_make_request+0x20e/0x430
- [<ffffffff815866fd>] wait_for_common+0xcd/0x180
- [<ffffffff8105cd90>] ? default_wake_function+0x0/0x20
- [<ffffffff812a69ed>] ? submit_bio+0x7d/0x100
- [<ffffffff8158688d>] wait_for_completion+0x1d/0x20
- [<ffffffff812ae339>] blkdev_issue_discard+0x1b9/0x210
- [<ffffffffa0024991>] btrfs_issue_discard+0x21/0x30 [btrfs]
- [<ffffffffa0024a3c>] btrfs_discard_extent+0x9c/0xc0 [btrfs]
- [<ffffffffa002517e>] btrfs_finish_extent_commit+0x5e/0x1d0 [btrfs]
- [<ffffffffa0038e78>] btrfs_commit_transaction+0x4a8/0x630 [btrfs]
- [<ffffffff81083200>] ? autoremove_wake_function+0x0/0x40
- [<ffffffffa0045635>] btrfs_sync_file+0x125/0x1a0 [btrfs]
- [<ffffffff8117e5a3>] vfs_fsync_range+0x83/0xa0
- [<ffffffff8117e62c>] vfs_fsync+0x1c/0x20
- [<ffffffff8117e66a>] do_fsync+0x3a/0x60
- [<ffffffff8117e6c0>] sys_fsync+0x10/0x20
- [<ffffffff8100b0f2>] system_call_fastpath+0x16/0x1b
+--=-gBTVMiECxDTmalQzWme3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-Daniel
--- 
-Daniel J Blueman
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkzOoDIACgkQdSjSd0sB4dL0dACgqcRspxXeU01uHOVG9ZaBdwkd
+1Q8AmgKshK1tiCp7tMAWNiZAeESMBdZn
+=UUKN
+-----END PGP SIGNATURE-----
+
+--=-gBTVMiECxDTmalQzWme3--
+
