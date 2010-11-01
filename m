@@ -1,68 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758157Ab0KAPbJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 11:31:09 -0400
-Received: from fieldses.org ([174.143.236.118]:56998 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756748Ab0KAPbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 11:31:07 -0400
-Date: Mon, 1 Nov 2010 11:30:58 -0400
-From: "J. Bruce Fields" <bfields@citi.umich.edu>
-To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
-        sandeen@redhat.com, tytso@mit.edu, jlayton@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jeremy Allison <jra@samba.org>
-Subject: Re: [PATCH -V4 00/11]  New ACL format for better NFSv4 acl
- interoperability
-Message-ID: <20101101153058.GB27029@fieldses.org>
-References: <1285332494-12756-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20101012002409.GH16442@fieldses.org>
- <m3bp6zswvh.fsf@linux.vnet.ibm.com>
- <20101012153507.GC12752@fieldses.org>
- <20101025190901.GA13523@fieldses.org>
- <m3k4l5lgfa.fsf@linux.vnet.ibm.com>
+	id S1758184Ab0KAPbm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 11:31:42 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:45854 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756748Ab0KAPbl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 11:31:41 -0400
+Date: Mon, 1 Nov 2010 11:31:37 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] fs: Use RCU freeing of inodes via SLAB_DESTROY_BY_RCU
+Message-ID: <20101101153137.GA28791@infradead.org>
+References: <1288589624-15251-1-git-send-email-david@fromorbit.com>
+ <1288589624-15251-3-git-send-email-david@fromorbit.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <m3k4l5lgfa.fsf@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1288589624-15251-3-git-send-email-david@fromorbit.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 26, 2010 at 10:05:37AM +0530, Aneesh Kumar K. V wrote:
-> On Mon, 25 Oct 2010 15:09:02 -0400, "J. Bruce Fields" <bfields@citi.umich.edu> wrote:
-> > On Tue, Oct 12, 2010 at 11:35:07AM -0400, J. Bruce Fields wrote:
-> > > On Tue, Oct 12, 2010 at 12:47:38PM +0530, Aneesh Kumar K. V wrote:
-> > > > What we need in the first step is to get VFS changes reviewed.Once we
-> > > > agree on the VFS changes done, then we can start looking at the changes
-> > > > upto NFS richacl nfs support. When get that merged then we can start
-> > > > having discussion on how local file system maintainers want to migrate
-> > > > the existing file system with posixacl to richacl.
-> > > 
-> > > OK.  So, personally: I'm resigned to the idea that we want support for
-> > > this ACL model.  The vfs changes look OK to me (and wouldn't be changed
-> > > by any comments I'd have on the more richacl-specific patches to
-> > > follow).  So that's an ACK from me on the first set of these patches,
-> > > assuming it's OK with people to merge these things one step at a time.
-> > 
-> > Is there any progress on this?
+On Mon, Nov 01, 2010 at 04:33:43PM +1100, Dave Chinner wrote:
+> From: Dave Chinner <dchinner@redhat.com>
 > 
-> The next step would be to get Al Viro or Christoph to look at the
-> proposed VFS changes and get an ACK on them. Meanwhile i can rebase
-> the full series to the latest linux kernel. 
->
-> Apart from that is there any specific changes you would like to see
-> as a part of richacl patch series. Would you like to see the full
-> patchset posted to the list or should we go in steps as mentioned above
-> ?
+> Change the inode caches to use RCU freed inodes via the SLAB_DESTROY_BY_RCU
+> method. While touching the slab creation functions for the inode caches, fix
+> all of the slabs to use consistent flags by defining SLAB_INODES to be the set
+> of common inode cache flags
 
-People need to see the users that justify the VFS changes.  I think it
-would be more useful to post all the patches required to get the new
-feature.
+I think this should be done as a separate preparatory patch.
 
-With the kernel summit and plumbers conference ongoing this week,
-there's probably not a great rush.
-
---b.
