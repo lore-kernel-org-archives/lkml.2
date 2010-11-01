@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226Ab0KARKE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 13:10:04 -0400
-Received: from mx4.sophos.com ([74.202.89.161]:55826 "EHLO mx4.sophos.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752400Ab0KARKC convert rfc822-to-8bit (ORCPT
+	id S1751817Ab0KARMq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 13:12:46 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:58086 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751482Ab0KARMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 13:10:02 -0400
-From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-Organization: Sophos Plc
-To: Eric Paris <eparis@redhat.com>
-Subject: Re: [PATCH 10/20] fanotify: allow userspace to override max queue depth
-Date: Mon, 1 Nov 2010 17:09:58 +0000
-User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.5.2; x86_64; ; )
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "agruen@suse.de" <agruen@suse.de>
-References: <20101028213139.24810.34058.stgit@paris.rdu.redhat.com> <20101028213232.24810.78.stgit@paris.rdu.redhat.com>
-In-Reply-To: <20101028213232.24810.78.stgit@paris.rdu.redhat.com>
-MIME-Version: 1.0
-Message-ID: <201011011709.59239.tvrtko.ursulin@sophos.com>
-X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 01/11/2010 17:09:59,
-	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 01/11/2010 17:09:59,
-	Serialize complete at 01/11/2010 17:09:59
-X-TNEFEvaluated: 1
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+	Mon, 1 Nov 2010 13:12:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Vfavswzap0J4no+hu2S4UcV4aqOsssnveeF9aHObRTjz/ZEfk9h5Ioo8LDubLjeFwI
+         nfu5FFft/jlb/d6I8SuqF5x0+W4kTAABZhK8T1onFR6Xba/rvKl1+7MwQ3P2Lo9qogN6
+         4YsSQph5UOzjozMFiUDn1PPabRfhY8n1F0v6g=
+From: Mauro Schilman <maurito.s@gmail.com>
+To: gregkh@suse.de
+Cc: u.kleine-koenig@pengutronix.de, eli@siliconsprawl.com,
+        michael.tate@wanadoo.fr, arnd@arndb.de, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, ehames@gmail.com, maurito.s@gmail.com,
+        md.bustos90@gmail.com, facugaich@gmail.com
+Subject: Staging: frontier: fix space and * coding style issues in alphatrack.c This is a patch to the alphatrack.c file that fixes up a space warning and a space after '*' warning found by the checkpatch.pl tool Signed-off-by: Mauro Schilman <maurito.s@gmail.com>
+Date: Mon,  1 Nov 2010 14:12:05 -0300
+Message-Id: <1288631525-8766-1-git-send-email-maurito.s@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 28 Oct 2010 22:32:32 Eric Paris wrote:
-> fanotify has a defualt max queue depth.  This patch allows processes which
-> explicitly request it to have an 'unlimited' queue depth.  These processes
-> need to be very careful to make sure they cannot fall far enough behind
-> that they OOM the box.  Thus this flag is gated on CAP_SYS_ADMIN.
->
-> Signed-off-by: Eric Paris <eparis@redhat.com>
-> ---
->
->  fs/notify/fanotify/fanotify_user.c |    9 ++++++++-
->  include/linux/fanotify.h           |    5 +++--
->  2 files changed, 11 insertions(+), 3 deletions(-)
->
-> diff --git a/fs/notify/fanotify/fanotify_user.c
-> b/fs/notify/fanotify/fanotify_user.c index 04f2fe4..43d66d9 100644
-> --- a/fs/notify/fanotify/fanotify_user.c
-> +++ b/fs/notify/fanotify/fanotify_user.c
-> @@ -691,7 +691,14 @@ SYSCALL_DEFINE2(fanotify_init, unsigned int, flags,
-> unsigned int, event_f_flags) goto out_put_group;
->       }
->
-> -     group->max_events = FANOTIFY_DEFAULT_MAX_EVENTS;
-> +     if (flags & FAN_UNLIMITED_QUEUE) {
-> +             fd = -EPERM;
-> +             if (!capable(CAP_SYS_ADMIN))
-> +                     goto out_put_group;
+---
+ drivers/staging/frontier/alphatrack.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Either this capable call is not needed or the one at the top of the syscall
-needs to go if you intended to allow non-privileged access.
+diff --git a/drivers/staging/frontier/alphatrack.c b/drivers/staging/frontier/alphatrack.c
+index ef7fbf8..2babb03 100644
+--- a/drivers/staging/frontier/alphatrack.c
++++ b/drivers/staging/frontier/alphatrack.c
+@@ -89,7 +89,7 @@ static int debug = ALPHATRACK_DEBUG;
+ 
+ /* Use our own dbg macro */
+ #define dbg_info(dev, format, arg...) do \
+-    { if (debug) dev_info(dev , format , ## arg); } while (0)
++	{ if (debug) dev_info(dev , format , ## arg); } while (0)
+ 
+ #define alphatrack_ocmd_info(dev, cmd, format, arg...)
+ 
+@@ -769,7 +769,7 @@ static int usb_alphatrack_probe(struct usb_interface *intf,
+ 	}
+ 
+ 	dev->write_buffer =
+-	    kmalloc(sizeof(struct alphatrack_ocmd) * true_size, GFP_KERNEL);
++	    kmalloc(true_size * sizeof(struct alphatrack_ocmd), GFP_KERNEL);
+ 
+ 	if (!dev->write_buffer) {
+ 		dev_err(&intf->dev, "Couldn't allocate write_buffer\n");
+-- 
+1.7.1
 
-Tvrtko
-
-Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
-Company Reg No 2096520. VAT Reg No GB 348 3873 20.
