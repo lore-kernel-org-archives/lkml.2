@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755107Ab0KAVfv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 17:35:51 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:62056 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753413Ab0KAVfu (ORCPT
+	id S1755200Ab0KAViq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 17:38:46 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:52899 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754Ab0KAVim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 17:35:50 -0400
+	Mon, 1 Nov 2010 17:38:42 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=FJ9LETgHzMR7c9+j58osyVr9T8Qx7fX10S4+0RN0wlF47wOA+y08Kg+yhJQQKnmYDM
-         aTsleL6Tv7XgnIc58+VnCnkQgrY6CBVrkU7gkCROwnZpHALZuUG/otGBgW9ryUEttSor
-         jeHvhLyyRIVWZcSZfr14zheJirnCGLEDO97N8=
-MIME-Version: 1.0
-Date: Mon, 1 Nov 2010 21:35:49 +0000
-Message-ID: <AANLkTimZvwdY8Q+=iGMC2MhPt_Vow38a0SE9g4ij-cRe@mail.gmail.com>
-Subject: [2.6.37-rc1, patch] r8169: fix sleeping while holding spinlock...
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=IAhUxYEREN6wLNA4uiMMwwJWOan8qifzNneHdFZuZjuSEis6z/+4e+cQBfM480Cr9T
+         JZvu4pEUIsrtSb+lTJMslrboZJbI6M7hjyolZTtMchrOsUA5pLWL7waU0pV5mN1m2IGF
+         d/bFamUpeSFiIBrfd46H3T6yVvO96ntsAT62A=
+From: Mauro Schilman <maurito.s@gmail.com>
+To: gregkh@suse.de
+Cc: u.kleine-koenig@pengutronix.de, eli@siliconsprawl.com,
+        michael.tate@wanadoo.fr, arnd@arndb.de, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, ehames@gmail.com, maurito.s@gmail.com,
+        md.bustos90@gmail.com, facugaich@gmail.com
+Subject: [PATCH] Staging: frontier: fix space and * coding style issues in alphatrack.c
+Date: Mon,  1 Nov 2010 18:38:10 -0300
+Message-Id: <1288647490-2088-1-git-send-email-maurito.s@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recent changes to the r8169 driver cause it to call
-device_set_wakeup_enable under spinlock, which may sleep.
+ This is a patch to the alphatrack.c file that fixes up a space warning and a
+     space after '*' warning found by the checkpatch.pl tool
+ Signed-off-by: Mauro Schilman <maurito.s@gmail.com>
 
-Locking isn't necessary around the call to device_set_wakeup_enable,
-so drop the spinlock before calling it, to address this.
+---
+ drivers/staging/frontier/alphatrack.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
-
-diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
-index d88ce9f..894e7c7 100644
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -846,10 +846,10 @@ static int rtl8169_set_wol(struct net_device
-*dev, struct ethtool_wolinfo *wol)
- 	else
- 		tp->features &= ~RTL_FEATURE_WOL;
- 	__rtl8169_set_wol(tp, wol->wolopts);
--	device_set_wakeup_enable(&tp->pci_dev->dev, wol->wolopts);
--
- 	spin_unlock_irq(&tp->lock);
-
-+	device_set_wakeup_enable(&tp->pci_dev->dev, wol->wolopts);
-+
- 	return 0;
- }
-
+diff --git a/drivers/staging/frontier/alphatrack.c b/drivers/staging/frontier/alphatrack.c
+index ef7fbf8..2babb03 100644
+--- a/drivers/staging/frontier/alphatrack.c
++++ b/drivers/staging/frontier/alphatrack.c
+@@ -89,7 +89,7 @@ static int debug = ALPHATRACK_DEBUG;
+ 
+ /* Use our own dbg macro */
+ #define dbg_info(dev, format, arg...) do \
+-    { if (debug) dev_info(dev , format , ## arg); } while (0)
++	{ if (debug) dev_info(dev , format , ## arg); } while (0)
+ 
+ #define alphatrack_ocmd_info(dev, cmd, format, arg...)
+ 
+@@ -769,7 +769,7 @@ static int usb_alphatrack_probe(struct usb_interface *intf,
+ 	}
+ 
+ 	dev->write_buffer =
+-	    kmalloc(sizeof(struct alphatrack_ocmd) * true_size, GFP_KERNEL);
++	    kmalloc(true_size * sizeof(struct alphatrack_ocmd), GFP_KERNEL);
+ 
+ 	if (!dev->write_buffer) {
+ 		dev_err(&intf->dev, "Couldn't allocate write_buffer\n");
 -- 
-Daniel J Blueman
+1.7.1
+
