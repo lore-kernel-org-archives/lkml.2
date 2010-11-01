@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208Ab0KAG0S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 02:26:18 -0400
-Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:48421 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751592Ab0KAG0Q (ORCPT
+	id S1752872Ab0KAGxx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 02:53:53 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60158 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751779Ab0KAGxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 02:26:16 -0400
-Date: Mon, 1 Nov 2010 17:24:46 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-Subject: Re: [PATCH 00/17] [RFC] soft and dynamic dirty throttling limits
-Message-ID: <20101101062446.GK2715@dastard>
-References: <20100912154945.758129106@intel.com>
- <20101012141716.GA26702@infradead.org>
- <20101013030733.GV4681@dastard>
- <20101013082611.GA6733@localhost>
- <20101013092627.GY4681@dastard>
+	Mon, 1 Nov 2010 02:53:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=JG+6njxo7kNFBP/dwGaVBtP3e/uPpeyzRv8MN7pTHTtY4AallFDtUfg14oUNrMTfNW
+         SuLQmPK1Ohuhr+ibE4xEq/Dt0W6YK6efsxAJ6zEyF3fGdcKtTxOVVWCnyKN+tic3lbkN
+         GBrnPeB3ZKiIJUvJR5lgygTm8tLqIGvuq07Zo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101013092627.GY4681@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Mon, 1 Nov 2010 12:53:50 +0600
+Message-ID: <AANLkTinWQRG=HA9uB3ad0KAqRRTinL6L_4iKgF84coph@mail.gmail.com>
+Subject: [PATCH] x86, mm: Fix section mismatch in tlb.c
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Shaohua Li <shaohua.li@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 13, 2010 at 08:26:27PM +1100, Dave Chinner wrote:
-> On Wed, Oct 13, 2010 at 04:26:12PM +0800, Wu Fengguang wrote:
-> > On Wed, Oct 13, 2010 at 11:07:33AM +0800, Dave Chinner wrote:
-> > > On Tue, Oct 12, 2010 at 10:17:16AM -0400, Christoph Hellwig wrote:
-> > > > Wu, what's the state of this series?  It looks like we'll need it
-> > > > rather sooner than later - try to get at least the preparations in
-> > > > ASAP would be really helpful.
-> > > 
-> > > Not ready in it's current form. This load (creating millions of 1
-> > > byte files in parallel):
-> > > 
-> > > $ /usr/bin/time ./fs_mark -D 10000 -S0 -n 100000 -s 1 -L 63 \
-> > > > -d /mnt/scratch/0 -d /mnt/scratch/1 \
-> > > > -d /mnt/scratch/2 -d /mnt/scratch/3 \
-> > > > -d /mnt/scratch/4 -d /mnt/scratch/5 \
-> > > > -d /mnt/scratch/6 -d /mnt/scratch/7
-> > > 
-> > > Locks up all the fs_mark processes spinning in traces like the
-> > > following and no further progress is made when the inode cache
-> > > fills memory.
-> > 
-> > I reproduced the problem on a 6G/8p 2-socket 11-disk box.
-> > 
-> > The root cause is, pageout() is somehow called with low scan priority,
-> > which deserves more investigation.
-> > 
-> > The direct cause is, balance_dirty_pages() then keeps nr_dirty too low,
-> > which can be improved easily by not pushing down the soft dirty limit
-> > to less than 1-second worth of dirty pages.
-> > 
-> > My test box has two nodes, and their memory usage are rather unbalanced:
-> > (Dave, maybe you have NUMA setup too?)
-> 
-> No, I'm running the test in a single node VM.
-> 
-> FYI, I'm running the test on XFS (16TB 12 disk RAID0 stripe), using
-> the mount options "inode64,nobarrier,logbsize=262144,delaylog".
+Mark tlb_cpuhp_notify as __cpuinit. It's basically a callback
+function, which is called from __cpuinit init_smp_flash(). So - it's
+safe.
 
-Any update on the current status of this patchset?
+We were warned by the following warning:
 
-Cheers,
+WARNING: arch/x86/mm/built-in.o(.text+0x356d): Section mismatch in
+reference from the function tlb_cpuhp_notify() to the function
+.cpuinit.text:calculate_tlb_offset()
+The function tlb_cpuhp_notify() references
+the function __cpuinit calculate_tlb_offset().
+This is often because tlb_cpuhp_notify lacks a __cpuinit
+annotation or the annotation of calculate_tlb_offset is wrong.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+
+Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+---
+
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index 4935848..12cdbb1 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -251,7 +251,7 @@ static void __cpuinit calculate_tlb_offset(void)
+ 	}
+ }
+
+-static int tlb_cpuhp_notify(struct notifier_block *n,
++static int __cpuinit tlb_cpuhp_notify(struct notifier_block *n,
+ 		unsigned long action, void *hcpu)
+ {
+ 	switch (action & 0xf) {
