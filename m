@@ -1,247 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745Ab0KAURH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 16:17:07 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:57229 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753599Ab0KAURE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 16:17:04 -0400
-Message-ID: <4CCF2035.9020603@linux.vnet.ibm.com>
-Date: Tue, 02 Nov 2010 01:46:53 +0530
-From: Ciju Rajan K <ciju@linux.vnet.ibm.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
-MIME-Version: 1.0
-To: Greg Thelen <gthelen@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: [PATCH v4 03/11] memcg: create extensible page stat update routines
-References: <1288336154-23256-1-git-send-email-gthelen@google.com> <1288336154-23256-4-git-send-email-gthelen@google.com> <4CCD81CB.9030503@linux.vnet.ibm.com> <xr93sjzmcebh.fsf@ninji.mtv.corp.google.com>
-In-Reply-To: <xr93sjzmcebh.fsf@ninji.mtv.corp.google.com>
-Content-Type: text/plain; charset=us-ascii; format=flowed
+	id S1753821Ab0KAUSB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 16:18:01 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:33960 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753265Ab0KAUR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 16:17:59 -0400
+Subject: Re: [RFC PATCH 1/1] vhost: TX used buffer guest signal accumulation
+From: Shirley Ma <mashirle@us.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20101030200603.GA19033@redhat.com>
+References: <1288216693.17571.38.camel@localhost.localdomain>
+	 <1288240804.14342.1.camel@localhost.localdomain>
+	 <20101028052021.GD5599@redhat.com>
+	 <1288286062.11251.15.camel@localhost.localdomain>
+	 <20101029081027.GB22688@redhat.com>
+	 <1288366988.4110.5.camel@localhost.localdomain>
+	 <20101030200603.GA19033@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 01 Nov 2010 13:17:53 -0700
+Message-ID: <1288642673.19173.8.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg Thelen wrote:
-> Ciju Rajan K <ciju@linux.vnet.ibm.com> writes:
->
->   
->> Greg Thelen wrote:
->>     
->>> Replace usage of the mem_cgroup_update_file_mapped() memcg
->>> statistic update routine with two new routines:
->>> * mem_cgroup_inc_page_stat()
->>> * mem_cgroup_dec_page_stat()
->>>
->>> As before, only the file_mapped statistic is managed.  However,
->>> these more general interfaces allow for new statistics to be
->>> more easily added.  New statistics are added with memcg dirty
->>> page accounting.
->>>
->>> Signed-off-by: Greg Thelen <gthelen@google.com>
->>> Signed-off-by: Andrea Righi <arighi@develer.com>
->>> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->>> Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
->>> ---
->>> Changelog since v1:
->>> - Rename (for clarity):
->>>   - mem_cgroup_write_page_stat_item -> mem_cgroup_page_stat_item
->>>   - mem_cgroup_read_page_stat_item -> mem_cgroup_nr_pages_item
->>>
->>>  include/linux/memcontrol.h |   31 ++++++++++++++++++++++++++++---
->>>  mm/memcontrol.c            |   16 +++++++---------
->>>  mm/rmap.c                  |    4 ++--
->>>  3 files changed, 37 insertions(+), 14 deletions(-)
->>>
->>> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
->>> index 159a076..067115c 100644
->>> --- a/include/linux/memcontrol.h
->>> +++ b/include/linux/memcontrol.h
->>> @@ -25,6 +25,11 @@ struct page_cgroup;
->>>  struct page;
->>>  struct mm_struct;
->>>
->>> +/* Stats that can be updated by kernel. */
->>> +enum mem_cgroup_page_stat_item {
->>> +	MEMCG_NR_FILE_MAPPED, /* # of pages charged as file rss */
->>> +};
->>> +
->>>  extern unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
->>>  					struct list_head *dst,
->>>  					unsigned long *scanned, int order,
->>> @@ -121,7 +126,22 @@ static inline bool mem_cgroup_disabled(void)
->>>  	return false;
->>>  }
->>>
->>> -void mem_cgroup_update_file_mapped(struct page *page, int val);
->>> +void mem_cgroup_update_page_stat(struct page *page,
->>> +				 enum mem_cgroup_page_stat_item idx,
->>> +				 int val);
->>> +
->>> +static inline void mem_cgroup_inc_page_stat(struct page *page,
->>> +					    enum mem_cgroup_page_stat_item idx)
->>> +{
->>> +	mem_cgroup_update_page_stat(page, idx, 1);
->>> +}
->>> +
->>> +static inline void mem_cgroup_dec_page_stat(struct page *page,
->>> +					    enum mem_cgroup_page_stat_item idx)
->>> +{
->>> +	mem_cgroup_update_page_stat(page, idx, -1);
->>> +}
->>> +
->>>  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
->>>  						gfp_t gfp_mask);
->>>  u64 mem_cgroup_get_limit(struct mem_cgroup *mem);
->>> @@ -293,8 +313,13 @@ mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
->>>  {
->>>  }
->>>
->>> -static inline void mem_cgroup_update_file_mapped(struct page *page,
->>> -							int val)
->>> +static inline void mem_cgroup_inc_page_stat(struct page *page,
->>> +					    enum mem_cgroup_page_stat_item idx)
->>> +{
->>> +}
->>> +
->>> +static inline void mem_cgroup_dec_page_stat(struct page *page,
->>> +					    enum mem_cgroup_page_stat_item idx)
->>>  {
->>>  }
->>>
->>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->>> index 9a99cfa..4fd00c4 100644
->>> --- a/mm/memcontrol.c
->>> +++ b/mm/memcontrol.c
->>> @@ -1592,7 +1592,8 @@ bool mem_cgroup_handle_oom(struct mem_cgroup *mem, gfp_t mask)
->>>   * possibility of race condition. If there is, we take a lock.
->>>   */
->>>
->>>   
->>>       
->> Greg,
->>
->> I am not seeing the function mem_cgroup_update_file_stat() in the latest mmotm
->> 2010-10-22-16-36.
->> So not able to apply this patch. Tried couple of times cloning the entire mmotm
->> git repository. But no luck.
->> Tried in the web interface http://git.zen-kernel.org/mmotm/tree/mm/memcontrol.c
->> also. It is not there.
->> Surprisingly git log doesn't show any recent changes to mm/memcontrol.c. Am I
->> missing something?
->> I could see this function in the mainline linux 2.6 git tree.
->>
->> -Ciju
->>     
->
-> mem_cgroup_update_file_mapped() was renamed to
-> mem_cgroup_update_file_stat() in
-> http://userweb.kernel.org/~akpm/mmotm/broken-out/memcg-generic-filestat-update-interface.patch
->
-> I also do not see this in the mmotm git repo.  However, if I manually
-> apply the mmotm patches to v2.6.36 using quilt then I see the expected
-> patched memcontrol.c.  I am not sure why the zen-kernel.org git mmotm
-> repo differs from a mmotm patched mainline 2.6.36.
->
-> Here is my procedure using quilt to patch mainline:
->
-> # Checkout 2.6.36 mainline
-> $ git checkout v2.6.36
->
-> # Confirm mainline 2.6.36 does not have mem_cgroup_update_file_stat()
-> $ grep mem_cgroup_update_file_stat -r mm
->
-> # Apply patches
-> $ curl http://userweb.kernel.org/~akpm/mmotm/broken-out.tar.gz | tar -xzf -
-> $ export QUILT_PATCHES=broken-out
-> $ quilt push -aq
-> ...
-> Now at patch memblock-add-input-size-checking-to-memblock_find_region-fix.patch
->
-> # Now the memcontrol contains mem_cgroup_update_file_stat()
-> $ grep mem_cgroup_update_file_stat -r mm
-> mm/memcontrol.c:static void mem_cgroup_update_file_stat(struct page *page, int idx, int val)
-> mm/memcontrol.c:        mem_cgroup_update_file_stat(page, MEM_CGROUP_STAT_FILE_MAPPED, val);
->
->   
-Thank you Greg! I will try these steps.
-I could see the per cgroup dirty page accounting patches already in the 
-latest broken-out.tar.gz
+On Sat, 2010-10-30 at 22:06 +0200, Michael S. Tsirkin wrote:
+> On Fri, Oct 29, 2010 at 08:43:08AM -0700, Shirley Ma wrote:
+> > On Fri, 2010-10-29 at 10:10 +0200, Michael S. Tsirkin wrote:
+> > > Hmm. I don't yet understand. We are still doing copies into the
+> per-vq
+> > > buffer, and the data copied is really small.  Is it about cache
+> line
+> > > bounces?  Could you try figuring it out?
+> > 
+> > per-vq buffer is much less expensive than 3 put_copy() call. I will
+> > collect the profiling data to show that.
+> 
+> What about __put_user? Maybe the access checks are the ones
+> that add the cost here? I attach patches to strip access checks:
+> they are not needed as we do them on setup time already, anyway.
+> Can you try them out and see if performance is improved for you
+> please?
+> On top of this, we will need to add some scheme to accumulate signals,
+> but that is a separate issue.
 
--Ciju
->>> -static void mem_cgroup_update_file_stat(struct page *page, int idx, int val)
->>> +void mem_cgroup_update_page_stat(struct page *page,
->>> +				 enum mem_cgroup_page_stat_item idx, int val)
->>>  {
->>>  	struct mem_cgroup *mem;
->>>  	struct page_cgroup *pc = lookup_page_cgroup(page);
->>> @@ -1615,30 +1616,27 @@ static void mem_cgroup_update_file_stat(struct page *page, int idx, int val)
->>>  			goto out;
->>>  	}
->>>
->>> -	this_cpu_add(mem->stat->count[idx], val);
->>> -
->>>  	switch (idx) {
->>> -	case MEM_CGROUP_STAT_FILE_MAPPED:
->>> +	case MEMCG_NR_FILE_MAPPED:
->>>  		if (val > 0)
->>>  			SetPageCgroupFileMapped(pc);
->>>  		else if (!page_mapped(page))
->>>  			ClearPageCgroupFileMapped(pc);
->>> +		idx = MEM_CGROUP_STAT_FILE_MAPPED;
->>>  		break;
->>>  	default:
->>>  		BUG();
->>>  	}
->>>
->>> +	this_cpu_add(mem->stat->count[idx], val);
->>> +
->>>  out:
->>>  	if (unlikely(need_unlock))
->>>  		unlock_page_cgroup(pc);
->>>  	rcu_read_unlock();
->>>  	return;
->>>  }
->>> -
->>> -void mem_cgroup_update_file_mapped(struct page *page, int val)
->>> -{
->>> -	mem_cgroup_update_file_stat(page, MEM_CGROUP_STAT_FILE_MAPPED, val);
->>> -}
->>> +EXPORT_SYMBOL(mem_cgroup_update_page_stat);
->>>
->>>  /*
->>>   * size of first charge trial. "32" comes from vmscan.c's magic value.
->>> diff --git a/mm/rmap.c b/mm/rmap.c
->>> index 1a8bf76..a66ab76 100644
->>> --- a/mm/rmap.c
->>> +++ b/mm/rmap.c
->>> @@ -911,7 +911,7 @@ void page_add_file_rmap(struct page *page)
->>>  {
->>>  	if (atomic_inc_and_test(&page->_mapcount)) {
->>>  		__inc_zone_page_state(page, NR_FILE_MAPPED);
->>> -		mem_cgroup_update_file_mapped(page, 1);
->>> +		mem_cgroup_inc_page_stat(page, MEMCG_NR_FILE_MAPPED);
->>>  	}
->>>  }
->>>
->>> @@ -949,7 +949,7 @@ void page_remove_rmap(struct page *page)
->>>  		__dec_zone_page_state(page, NR_ANON_PAGES);
->>>  	} else {
->>>  		__dec_zone_page_state(page, NR_FILE_MAPPED);
->>> -		mem_cgroup_update_file_mapped(page, -1);
->>> +		mem_cgroup_dec_page_stat(page, MEMCG_NR_FILE_MAPPED);
->>>  	}
->>>  	/*
->>>  	 * It would be tidy to reset the PageAnon mapping here,
->>>   
->>>       
+Yes, moving from put_user/get_user to __put_user/__get_user does improve
+the performance by removing the checking.
+
+My concern here is whether checking only in set up would be sufficient
+for security? Would be there is a case guest could corrupt the ring
+later? If not, that's OK.
+
+> > > > > 2. How about flushing out queued stuff before we exit
+> > > > >    the handle_tx loop? That would address most of
+> > > > >    the spec issue. 
+> > > > 
+> > > > The performance is almost as same as the previous patch. I will
+> > > resubmit
+> > > > the modified one, adding vhost_add_used_and_signal_n after
+> handle_tx
+> > > > loop for processing pending queue.
+> > > > 
+> > > > This patch was a part of modified macvtap zero copy which I
+> haven't
+> > > > submitted yet. I found this helped vhost TX in general. This
+> pending
+> > > > queue will be used by DMA done later, so I put it in vq instead
+> of a
+> > > > local variable in handle_tx.
+> > > > 
+> > > > Thanks
+> > > > Shirley
+> > > 
+> > > BTW why do we need another array? Isn't heads field exactly what
+> we
+> > > need
+> > > here?
+> > 
+> > head field is only for up to 32, the more used buffers add and
+> signal
+> > accumulated the better performance is from test results.
+> 
+> I think we should separate the used update and signalling.  Interrupts
+> are expensive so I can believe accumulating even up to 100 of them
+> helps. But used head copies are already prety cheap. If we cut the
+> overhead by x32, that should make them almost free?
+
+I can separate the used update and signaling to see the best
+performance.
+
+> > That's was one
+> > of the reason I didn't use heads. The other reason was I used these
+> > buffer for pending dma done in mavctap zero copy patch. It could be
+> up
+> > to vq->num in worse case.
+> 
+> We can always increase that, not an issue. 
+
+Good, I will change heads up to vq->num and use it.
+
+Thanks
+Shirley
 
