@@ -1,127 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162Ab0KAT4N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 15:56:13 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:59692 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752833Ab0KAT4L convert rfc822-to-8bit (ORCPT
+	id S1753114Ab0KAT63 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 15:58:29 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:38762 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752763Ab0KAT61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 15:56:11 -0400
-Subject: Re: Regression, bisected: sqlite locking failure on nfs
-Mime-Version: 1.0 (Apple Message framework v1081)
-Content-Type: text/plain; charset=us-ascii
+	Mon, 1 Nov 2010 15:58:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:subject:to:cc:date:message-id:user-agent:mime-version
+         :content-type:content-transfer-encoding;
+        b=QQ5BM18Gq0Yf0uurySMusToHW5Lbe1X+FtsHW85qVzHyfj9PXZlX9UEe6dwbud/Lz3
+         n039CKfuvdXupaIu7VHl6Khdlf23b8BtOa3+3WgIzJnkK4Zu5oGZyF9ocw7+BirD3eXj
+         zgf3pFVnFMr6Tfh9JLQH4u8ojuPOUc/vXWCLA=
 From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <1288640888.5009.19.camel@heimdal.trondhjem.org>
-Date: Mon, 1 Nov 2010 15:55:21 -0400
-Cc: Nick Bowler <nbowler@elliptictech.com>,
-        LKML Kernel <linux-kernel@vger.kernel.org>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <9892B787-0C2A-42C2-8EFE-357EC5393CC1@oracle.com>
-References: <20101101175854.GA3550@elliptictech.com> <D68536EB-6BE9-4DE4-B325-39FEF747092E@oracle.com> <20101101181938.GA3875@elliptictech.com> <187AEE96-9231-4899-9D65-A444503D2758@oracle.com> <1288639376.5009.16.camel@heimdal.trondhjem.org> <1288640536.5009.18.camel@heimdal.trondhjem.org> <DA1E14E0-DCCD-4A6D-9471-E627D4BF2E85@oracle.com> <1288640888.5009.19.camel@heimdal.trondhjem.org>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-X-Mailer: Apple Mail (2.1081)
+Subject: [PATCH] SUNRPC: Initialize source address if passed-in srcaddr is
+	AF_UNSPEC
+To: nbowler@elliptictech.com
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Date: Mon, 01 Nov 2010 15:58:21 -0400
+Message-ID: <20101101195631.9279.16018.stgit@matisse.1015granger.net>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Recently xs_bind() was changed so it can't tolerate an AF_UNSPEC
+bind address; it needs a fully initialized ANYADDR.  We recently fixed
+this case in xprtsock.c, but some upper layer protocols seem to assume
+that it's OK to pass in an AF_UNSPEC address for the source address.
+Catch that case too.
 
-On Nov 1, 2010, at 3:48 PM, Trond Myklebust wrote:
+Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
+---
 
-> On Mon, 2010-11-01 at 15:45 -0400, Chuck Lever wrote:
->> On Nov 1, 2010, at 3:42 PM, Trond Myklebust wrote:
->> 
->>> On Mon, 2010-11-01 at 15:22 -0400, Trond Myklebust wrote:
->>>> I suspect nlmclnt_lookup_host() is to blame. It appears to be the _only_
->>>> thing in the kernel that actually sets this 'srcaddr' field, and it sets
->>>> it to
->>>> 
->>>> const struct sockaddr source = {
->>>> 	.sa_family      = AF_UNSPEC,
->>>> };
->>>> 
->>>> You triggered the bug by removing the line
->>>> 
->>>> 	transport->srcaddr.ss_family = family;
->>>> 
->>>> from xs_create_sock().
->>>> 
->>>>  Trond
->>> 
->>> Does this fix the regression?
->>> 
->>> Trond
->>> 
->>> ----------------------------------------------------------------------------------------------
->>> NLM: Fix a regression in lockd
->>> 
->>> From: Trond Myklebust <Trond.Myklebust@netapp.com>
->>> 
->>> Nick Bowler reports:
->>> There are no unusual messages on the client... but I just logged into
->>> the server and I see lots of messages of the following form:
->>> 
->>> nfsd: request from insecure port (192.168.8.199:35766)!
->>> nfsd: request from insecure port (192.168.8.199:35766)!
->>> nfsd: request from insecure port (192.168.8.199:35766)!
->>> nfsd: request from insecure port (192.168.8.199:35766)!
->>> nfsd: request from insecure port (192.168.8.199:35766)!
->>> 
->>> Bisected to commit 9247685088398cf21bcb513bd2832b4cd42516c4 (SUNRPC:
->>> Properly initialize sock_xprt.srcaddr in all cases)
->>> 
->>> Apparently, removing the 'transport->srcaddr.ss_family = family' from
->>> xs_create_sock() triggers this due to nlmclnt_lookup_host() incorrectly
->>> initialising the srcaddr family to AF_UNSPEC.
->>> 
->>> Reported-by: Nick Bowler <nbowler@elliptictech.com>
->>> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
->>> ---
->>> 
->>> fs/lockd/host.c |    5 -----
->>> 1 files changed, 0 insertions(+), 5 deletions(-)
->>> 
->>> 
->>> diff --git a/fs/lockd/host.c b/fs/lockd/host.c
->>> index 25e21e4..9ff0c0e 100644
->>> --- a/fs/lockd/host.c
->>> +++ b/fs/lockd/host.c
->>> @@ -238,9 +238,6 @@ struct nlm_host *nlmclnt_lookup_host(const struct sockaddr *sap,
->>> 				     const char *hostname,
->>> 				     int noresvport)
->>> {
->>> -	const struct sockaddr source = {
->>> -		.sa_family	= AF_UNSPEC,
->>> -	};
->>> 	struct nlm_lookup_host_info ni = {
->>> 		.server		= 0,
->>> 		.sap		= sap,
->>> @@ -249,8 +246,6 @@ struct nlm_host *nlmclnt_lookup_host(const struct sockaddr *sap,
->>> 		.version	= version,
->>> 		.hostname	= hostname,
->>> 		.hostname_len	= strlen(hostname),
->>> -		.src_sap	= &source,
->>> -		.src_len	= sizeof(source),
->>> 		.noresvport	= noresvport,
->>> 	};
->>> 
->>> 
->> 
->> 
->> What about that memcpy() in nlm_lookup_host()?  With this patch, wouldn't it be copying garbage into the host's srcaddr field?
->> 
-> 
-> It shouldn't. ni->src_len is now zero.
+Untested.
 
-Yech.  All this still assumes that ANYADDR is all zeroes, and that the memory this is going into is already initialized to zeroes.  It's asking for trouble if we re-arrange all this someday.
+ net/sunrpc/xprtsock.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I've got an untested one line patch that should fix this for any upper layer caller.  Posting now.
-
--- 
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
-
-
-
+diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
+index dfcab5a..fd6484b 100644
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -2181,7 +2181,7 @@ static struct rpc_xprt *xs_setup_xprt(struct xprt_create *args,
+ 	new = container_of(xprt, struct sock_xprt, xprt);
+ 	memcpy(&xprt->addr, args->dstaddr, args->addrlen);
+ 	xprt->addrlen = args->addrlen;
+-	if (args->srcaddr)
++	if (args->srcaddr && args->srcaddr->sa_family != AF_UNSPEC)
+ 		memcpy(&new->srcaddr, args->srcaddr, args->addrlen);
+ 	else {
+ 		int err;
 
