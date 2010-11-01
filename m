@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758265Ab0KAQJr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 12:09:47 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:64418 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756428Ab0KAQJp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 12:09:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ifEZsfmIc7tsXuX+Ub7W7BN/p6EuX2tuWx+/arnw0L3BoY+DiM1/7QqXnJqPvEYuHT
-         sBer8ag/mmyl/QvoBT9UgoEvBG8DSyOr1r/dgWEpXnjyVfD6WWTrlFqAB5vubX6h3Qk0
-         Eke86uONZAHWi6OPOPnZKkV5K/UZJqON8CFLM=
+	id S1758201Ab0KAQMv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 12:12:51 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:38213 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753479Ab0KAQMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 12:12:48 -0400
+Date: Mon, 1 Nov 2010 17:05:29 +0100
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: guillermo arias <papaguillee18@gmail.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        linux-pcmcia@lists.infradead.org
+Subject: Re: PATCH : linux-2.6.35.4 drivers pcmcia cs.c
+Message-ID: <20101101160529.GA9306@comet.dominikbrodowski.net>
+Mail-Followup-To: guillermo arias <papaguillee18@gmail.com>,
+	linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+	linux-pcmcia@lists.infradead.org
+References: <AANLkTikbEgfVZmnVfbgGxbybbghXCuUgvEm03HH=i4HD@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTingbRtFQUoQNZmQubL0LNhVF2hvkdma6j7VDTEU@mail.gmail.com>
-References: <AANLkTinWT9OyicLfdeY+AvWs=5vb5z8skZ3t6keYjk9j@mail.gmail.com>
-	<AANLkTikNywvthaU-+s5HXvh3RX=HxiFWmADW--Ln_Gga@mail.gmail.com>
-	<AANLkTimgCU1tM9VJv8RJ-dim+bRsT7cbZ9ZidbT5sco-@mail.gmail.com>
-	<20101031224757.GA2430@selene>
-	<AANLkTingbRtFQUoQNZmQubL0LNhVF2hvkdma6j7VDTEU@mail.gmail.com>
-Date: Mon, 1 Nov 2010 12:09:43 -0400
-Message-ID: <AANLkTimMCw8p+YJRzCg7_cEn4UEDTC6vxs6ByUjJYMnL@mail.gmail.com>
-Subject: Re: Horrible btrfs performance due to fragmentation
-From: Gregory Maxwell <gmaxwell@gmail.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Hugo Mills <hugo-lkml@carfax.org.uk>, cwillu <cwillu@cwillu.com>,
-        Calvin Walton <calvin.walton@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-btrfs@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikbEgfVZmnVfbgGxbybbghXCuUgvEm03HH=i4HD@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 1, 2010 at 11:58 AM, Felipe Contreras
-<felipe.contreras@gmail.com> wrote:
-> Or when going through all the fragments of a file, have a counter, and
-> if it exceeds certain limit mark it somehow, so that it gets
-> defragmented at least to a certain extent.
+Hi,
 
-Thats elegant, — then resources are only spent on defragmenting files
-which are actually in use and which actually need it... but I don't
-see how it deals with the partial mutual exclusivity of defragmenting
-and COWed files.
+indeed, on a IBM ThinkPad 770Z there seems to be some bug -- the CardBus
+hardware doesn't tell the OS that it is CardBus capable. However, your
+patch isn't correct -- it would enable CardBus on all PCMCIA bridges
+unconditionally. Therefore, I'd need some more input for a proper patch:
+
+1) Did CardBus cards work on any other kernel?
+
+2) What's the output of "lspci -n -v"
+
+3) What's the output of "sudo lspcmcia -vvv"
+
+4) Are there any BIOS options you may toggle to enable CardBus?
+
+Thanks & best wishes,
+
+	Dominik
