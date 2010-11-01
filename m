@@ -1,125 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584Ab0KATnL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 15:43:11 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:50472 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820Ab0KATnJ (ORCPT
+	id S1752634Ab0KATnr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 15:43:47 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:63624 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752160Ab0KATnp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 15:43:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=MyNbXOanIoDgdDJaLfHcrv6+9i+3F9ms6wvU0BS/OiWz7Cd12XtLcsAtaEse+YPhnf
-         nuzSiQfKJXEQlcjomZ4w==
-MIME-Version: 1.0
-In-Reply-To: <4CCF0BE3.2090700@redhat.com>
-References: <20101028191523.GA14972@google.com>
-	<20101101012322.605C.A69D9226@jp.fujitsu.com>
-	<20101101182416.GB31189@google.com>
-	<4CCF0BE3.2090700@redhat.com>
-Date: Mon, 1 Nov 2010 12:43:03 -0700
-X-Google-Sender-Auth: 7a06toPEI9X4vD-aS7tBxD7b6Mg
-Message-ID: <AANLkTi=src1L0gAFsogzCmejGOgg5uh=9O4Uw+ZmfBg4@mail.gmail.com>
-Subject: Re: [PATCH] RFC: vmscan: add min_filelist_kbytes sysctl for
- protecting the working set
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, wad@chromium.org, olofj@chromium.org,
-        hughd@chromium.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Mon, 1 Nov 2010 15:43:45 -0400
+Subject: Re: Regression, bisected: sqlite locking failure on nfs
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=us-ascii
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <1288639376.5009.16.camel@heimdal.trondhjem.org>
+Date: Mon, 1 Nov 2010 15:43:18 -0400
+Cc: Nick Bowler <nbowler@elliptictech.com>,
+        LKML Kernel <linux-kernel@vger.kernel.org>,
+        "J. Bruce Fields" <bfields@redhat.com>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <59BBF1A5-1425-448A-8715-4DD20BCA2ED6@oracle.com>
+References: <20101101175854.GA3550@elliptictech.com> <D68536EB-6BE9-4DE4-B325-39FEF747092E@oracle.com> <20101101181938.GA3875@elliptictech.com> <187AEE96-9231-4899-9D65-A444503D2758@oracle.com> <1288639376.5009.16.camel@heimdal.trondhjem.org>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 1, 2010 at 11:50 AM, Rik van Riel <riel@redhat.com> wrote:
-> On 11/01/2010 02:24 PM, Mandeep Singh Baines wrote:
->
->> Under memory pressure, I see the active list get smaller and smaller. Its
->> getting smaller because we're scanning it faster and faster, causing more
->> and more page faults which slows forward progress resulting in the active
->> list getting smaller still. One way to approach this might to make the
->> scan rate constant and configurable. It doesn't seem right that we scan
->> memory faster and faster under low memory. For us, we'd rather OOM than
->> evict pages that are likely to be accessed again so we'd prefer to make
->> a conservative estimate as to what belongs in the working set. Other
->> folks (long computations) might want to reclaim more aggressively.
->
-> Have you actually read the code?
->
 
-I have but really just recently. I consider myself an mm newb so take any
-conclusion I make with a grain of salt.
+On Nov 1, 2010, at 3:22 PM, Trond Myklebust wrote:
 
-> The active file list is only ever scanned when it is larger
-> than the inactive file list.
->
+> On Mon, 2010-11-01 at 14:30 -0400, Chuck Lever wrote:
+>> On Nov 1, 2010, at 2:19 PM, Nick Bowler wrote:
+>> 
+>>> On 2010-11-01 14:07 -0400, Chuck Lever wrote:
+>>>> On Nov 1, 2010, at 1:58 PM, Nick Bowler wrote:
+>>>>> After installing 2.6.37-rc1, attempting to use sqlite in any capacity on
+>>>>> NFS gives a locking error:
+>>>>> 
+>>>>> % echo 'select * from blah;' | sqlite3 blah.sqlite
+>>>>> Error: near line 1: database is locked
+>>>>> 
+>>>>> % echo 'create table blargh(INT);' | sqlite3 blargh.sqlite
+>>>>> Error: near line 1: database is locked
+>>>>> 
+>>>>> The result is that a lot of high-profile applications which make use of
+>>>>> sqlite fail mysteriously.  Bisection reveals the following, and
+>>>>> reverting the implicated commit solves the issue:
+>>>> 
+>>>> Nick, thanks for the report.  Is 2.6.37-rc1 running on your clients or
+>>>> on your server?
+>>> 
+>>> Sorry for not being clear: the client is running 2.6.37-rc1.   The
+>>> server is running RHEL 5.5.
+>>> 
+>>>> Does anything interesting appear in the kernel log when your test case
+>>>> fails?
+>>> 
+>>> There are no unusual messages on the client... but I just logged into
+>>> the server and I see lots of messages of the following form:
+>>> 
+>>> nfsd: request from insecure port (192.168.8.199:35766)!
+>>> nfsd: request from insecure port (192.168.8.199:35766)!
+>>> nfsd: request from insecure port (192.168.8.199:35766)!
+>>> nfsd: request from insecure port (192.168.8.199:35766)!
+>>> nfsd: request from insecure port (192.168.8.199:35766)!
+>>> 
+>>> (192.168.8.199 is the address of the failing client).  I can only assume
+>>> that these are a result of my recent issues, since I don't have access
+>>> to the system log (with timestamps) on that machine.
+>> 
+>> That's the problem this patch is supposed to prevent.  I'll investigate further.
+>> 
+> 
+> I suspect nlmclnt_lookup_host() is to blame. It appears to be the _only_
+> thing in the kernel that actually sets this 'srcaddr' field, and it sets
+> it to
+> 
+> const struct sockaddr source = {
+> 	.sa_family      = AF_UNSPEC,
+> };
+> 
+> You triggered the bug by removing the line
+> 
+> 	transport->srcaddr.ss_family = family;
+> 
+> from xs_create_sock().
 
-Yes, this prevents you from reclaiming the active list all at once. But if the
-memory pressure doesn't go away, you'll start to reclaim the active list
-little by little. First you'll empty the inactive list, and then
-you'll start scanning
-the active list and pulling pages from inactive to active. The problem is that
-there is no minimum time limit to how long a page will sit in the inactive list
-before it is reclaimed. Just depends on scan rate which does not depend
-on time.
+Thanks.  Actually that line was added by Bruce very recently because Pavel's patches changed xs_bind() so it can't tolerate an AF_UNSPEC address.  My patch attempts to replace the workaround with something more permanent... but looks like I didn't find all the places that needed to be fixed.
 
-In my experiments, I saw the active list get smaller and smaller
-over time until eventually it was only a few MB at which point the system came
-grinding to a halt due to thrashing.
+-- 
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
 
-I played around with making the active/inactive ratio configurable. I
-sent a patch out
-for an inactive_file_ratio. So instead of the default 50%, you'd make the
-ratio configurable.
 
-inactive_file_ratio = (inactive * 100) / (inactive + active)
 
-I saw less thrashing at 10% but this patch wasn't nearly as effective
-as min_filelist_kbytes.
-I can resend the patch if you think its interesting.
 
->>> Q2: In the above you used min_filelist_kbytes=50000. How do you decide
->>> such value? Do other users can calculate proper value?
->>>
->>
->> 50M was small enough that we were comfortable with keeping 50M of file
->> pages
->> in memory and large enough that it is bigger than the working set. I
->> tested
->> by loading up a bunch of popular web sites in chrome and then observing
->> what
->> happend when I ran out of memory. With 50M, I saw almost no thrashing and
->> the system stayed responsive even under low memory. but I wanted to be
->> conservative since I'm really just guessing.
->>
->> Other users could calculate their value by doing something similar.
->
-> Maybe we can scale this by memory amount?
->
-> Say, make sure the total amount of page cache in the system
-> is at least 2* as much as the sum of all the zone->pages_high
-> watermarks, and refuse to evict page cache if we have less
-> than that?
->
-> This may need to be tunable for a few special use cases,
-> like HPC and virtual machine hosting nodes, but it may just
-> do the right thing for everybody else.
->
-> Another alternative could be to really slow down the
-> reclaiming of page cache once we hit this level, so virt
-> hosts and HPC nodes can still decrease the page cache to
-> something really small ... but only if it is not being
-> used.
->
-> Andrew, could a hack like the above be "good enough"?
->
-> Anybody - does the above hack inspire you to come up with
-> an even better idea?
->
