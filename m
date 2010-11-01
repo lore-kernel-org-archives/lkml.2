@@ -1,141 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755691Ab0KAJZI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 05:25:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51274 "EHLO mx1.redhat.com"
+	id S1755919Ab0KAJZg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 05:25:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10244 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754631Ab0KAJZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 05:25:03 -0400
-Date: Mon, 1 Nov 2010 11:24:57 +0200
+	id S1754631Ab0KAJZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 05:25:34 -0400
+Date: Mon, 1 Nov 2010 11:25:30 +0200
 From: Gleb Natapov <gleb@redhat.com>
 To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 5/7] KVM: handle more completed apfs if possible
-Message-ID: <20101101092457.GY26191@redhat.com>
+Subject: Re: [PATCH v2 4/7] KVM: avoid unnecessary wait for a async pf
+Message-ID: <20101101092530.GZ26191@redhat.com>
 References: <4CCE8143.3090105@cn.fujitsu.com>
- <4CCE822B.1070909@cn.fujitsu.com>
+ <4CCE81E8.6020001@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CCE822B.1070909@cn.fujitsu.com>
+In-Reply-To: <4CCE81E8.6020001@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 01, 2010 at 05:02:35PM +0800, Xiao Guangrong wrote:
-> If it's no need to inject async #PF to PV guest we can handle
-> more completed apfs at one time, so we can retry guest #PF
-> as early as possible
+On Mon, Nov 01, 2010 at 05:01:28PM +0800, Xiao Guangrong wrote:
+> In current code, it checks async pf completion out of the wait context,
+> like this:
+> 
+> if (vcpu->arch.mp_state == KVM_MP_STATE_RUNNABLE &&
+> 		    !vcpu->arch.apf.halted)
+> 			r = vcpu_enter_guest(vcpu);
+> 		else {
+> 			......
+> 			kvm_vcpu_block(vcpu)
+> 			 ^- waiting until 'async_pf.done' is not empty
+> }
+> 	
+> kvm_check_async_pf_completion(vcpu)
+>  ^- delete list from async_pf.done
+> 
+> So, if we check aysnc pf completion first, it can be blocked at
+> kvm_vcpu_block
+> 
+> Fixed by mark the vcpu is unhalted in kvm_check_async_pf_completion()
+> path
 > 
 > Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Acked-by: Gleb Natapov <gleb@redhat.com>
+
 > ---
->  arch/x86/include/asm/kvm_host.h |    3 ++-
->  arch/x86/kvm/x86.c              |    8 ++++++--
->  virt/kvm/async_pf.c             |   28 ++++++++++++++++------------
->  3 files changed, 24 insertions(+), 15 deletions(-)
+>  arch/x86/kvm/x86.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
 > 
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index 1be0058..c95b3ff 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -818,7 +818,8 @@ bool kvm_is_linear_rip(struct kvm_vcpu *vcpu, unsigned long linear_rip);
->  
->  void kvm_arch_async_page_not_present(struct kvm_vcpu *vcpu,
->  				     struct kvm_async_pf *work);
-> -void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
-> +/* return true if we can handle more completed apfs, false otherwise */
-> +bool kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
->  				 struct kvm_async_pf *work);
->  void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu,
->  			       struct kvm_async_pf *work);
 > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 4da8485..189664a 100644
+> index 9b543f4..4da8485 100644
 > --- a/arch/x86/kvm/x86.c
 > +++ b/arch/x86/kvm/x86.c
-> @@ -6265,7 +6265,7 @@ void kvm_arch_async_page_not_present(struct kvm_vcpu *vcpu,
->  	}
->  }
->  
-> -void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
-> +bool kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
->  				 struct kvm_async_pf *work)
->  {
->  	trace_kvm_async_pf_ready(work->arch.token, work->gva);
-> @@ -6274,13 +6274,17 @@ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
->  	else
->  		kvm_del_async_pf_gfn(vcpu, work->arch.gfn);
->  
-> +	vcpu->arch.apf.halted = false;
-> +
->  	if ((vcpu->arch.apf.msr_val & KVM_ASYNC_PF_ENABLED) &&
->  	    !apf_put_user(vcpu, KVM_PV_REASON_PAGE_READY)) {
->  		vcpu->arch.fault.error_code = 0;
+> @@ -6280,6 +6280,7 @@ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
 >  		vcpu->arch.fault.address = work->arch.token;
 >  		kvm_inject_page_fault(vcpu);
-> +		return false;
 >  	}
-> -	vcpu->arch.apf.halted = false;
-> +
-> +	return true;
+> +	vcpu->arch.apf.halted = false;
 >  }
 >  
 >  bool kvm_arch_can_inject_async_page_present(struct kvm_vcpu *vcpu)
-> diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
-> index 60df9e0..d57ec92 100644
-> --- a/virt/kvm/async_pf.c
-> +++ b/virt/kvm/async_pf.c
-> @@ -123,25 +123,29 @@ void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu)
->  void kvm_check_async_pf_completion(struct kvm_vcpu *vcpu)
->  {
->  	struct kvm_async_pf *work;
-> +	bool ret;
->  
->  	if (list_empty_careful(&vcpu->async_pf.done) ||
->  	    !kvm_arch_can_inject_async_page_present(vcpu))
->  		return;
->  
-> -	spin_lock(&vcpu->async_pf.lock);
-> -	work = list_first_entry(&vcpu->async_pf.done, typeof(*work), link);
-> -	list_del(&work->link);
-> -	spin_unlock(&vcpu->async_pf.lock);
-> +	do {
-> +		spin_lock(&vcpu->async_pf.lock);
-> +		work = list_first_entry(&vcpu->async_pf.done, typeof(*work),
-> +							link);
-> +		list_del(&work->link);
-> +		spin_unlock(&vcpu->async_pf.lock);
->  
-> -	if (work->page)
-> -		kvm_arch_async_page_ready(vcpu, work);
-> -	kvm_arch_async_page_present(vcpu, work);
-> +		if (work->page)
-> +			kvm_arch_async_page_ready(vcpu, work);
-> +		ret = kvm_arch_async_page_present(vcpu, work);
->  
-> -	list_del(&work->queue);
-> -	vcpu->async_pf.queued--;
-> -	if (work->page)
-> -		put_page(work->page);
-> -	kmem_cache_free(async_pf_cache, work);
-> +		list_del(&work->queue);
-> +		vcpu->async_pf.queued--;
-> +		if (work->page)
-> +			put_page(work->page);
-> +		kmem_cache_free(async_pf_cache, work);
-> +	} while (ret && !list_empty_careful(&vcpu->async_pf.done));
->  }
->  
-No need to change kvm_arch_async_page_present() to return anything. You
-can do while loop like this:
-
-while (!list_empty_careful(&vcpu->async_pf.done) &&
-       kvm_arch_can_inject_async_page_present(vcpu)) {
-}
-
-If kvm_arch_async_page_present() call injects exception
-kvm_arch_can_inject_async_page_present() will return false on next
-iteration.
+> -- 
+> 1.7.0.4
 
 --
 			Gleb.
