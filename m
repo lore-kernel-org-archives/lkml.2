@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747Ab0KARIZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 13:08:25 -0400
-Received: from king.tilera.com ([72.1.168.226]:2790 "EHLO king.tilera.com"
+	id S1753226Ab0KARKE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 13:10:04 -0400
+Received: from mx4.sophos.com ([74.202.89.161]:55826 "EHLO mx4.sophos.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751740Ab0KARIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 13:08:24 -0400
-Message-Id: <201011011708.oA1H8KD5008871@farm-0027.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Mon, 1 Nov 2010 12:46:10 -0400
-Subject: [PATCH] arch/tile: mark "hardwall" device as non-seekable
-To: linux-kernel@vger.kernel.org, arnd@arndb.de
-X-OriginalArrivalTime: 01 Nov 2010 17:08:21.0201 (UTC) FILETIME=[62CA1C10:01CB79E7]
+	id S1752400Ab0KARKC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 13:10:02 -0400
+From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Organization: Sophos Plc
+To: Eric Paris <eparis@redhat.com>
+Subject: Re: [PATCH 10/20] fanotify: allow userspace to override max queue depth
+Date: Mon, 1 Nov 2010 17:09:58 +0000
+User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.5.2; x86_64; ; )
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "agruen@suse.de" <agruen@suse.de>
+References: <20101028213139.24810.34058.stgit@paris.rdu.redhat.com> <20101028213232.24810.78.stgit@paris.rdu.redhat.com>
+In-Reply-To: <20101028213232.24810.78.stgit@paris.rdu.redhat.com>
+MIME-Version: 1.0
+Message-ID: <201011011709.59239.tvrtko.ursulin@sophos.com>
+X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 01/11/2010 17:09:59,
+	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 01/11/2010 17:09:59,
+	Serialize complete at 01/11/2010 17:09:59
+X-TNEFEvaluated: 1
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd's recent patch series tagged this device with noop_llseek,
-conservatively.  In fact, it should be no_llseek, which we arrange
-for by opening the device with nonseekable_open().
+On Thursday 28 Oct 2010 22:32:32 Eric Paris wrote:
+> fanotify has a defualt max queue depth.  This patch allows processes which
+> explicitly request it to have an 'unlimited' queue depth.  These processes
+> need to be very careful to make sure they cannot fall far enough behind
+> that they OOM the box.  Thus this flag is gated on CAP_SYS_ADMIN.
+>
+> Signed-off-by: Eric Paris <eparis@redhat.com>
+> ---
+>
+>  fs/notify/fanotify/fanotify_user.c |    9 ++++++++-
+>  include/linux/fanotify.h           |    5 +++--
+>  2 files changed, 11 insertions(+), 3 deletions(-)
+>
+> diff --git a/fs/notify/fanotify/fanotify_user.c
+> b/fs/notify/fanotify/fanotify_user.c index 04f2fe4..43d66d9 100644
+> --- a/fs/notify/fanotify/fanotify_user.c
+> +++ b/fs/notify/fanotify/fanotify_user.c
+> @@ -691,7 +691,14 @@ SYSCALL_DEFINE2(fanotify_init, unsigned int, flags,
+> unsigned int, event_f_flags) goto out_put_group;
+>       }
+>
+> -     group->max_events = FANOTIFY_DEFAULT_MAX_EVENTS;
+> +     if (flags & FAN_UNLIMITED_QUEUE) {
+> +             fd = -EPERM;
+> +             if (!capable(CAP_SYS_ADMIN))
+> +                     goto out_put_group;
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- arch/tile/kernel/hardwall.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Either this capable call is not needed or the one at the top of the syscall
+needs to go if you intended to allow non-privileged access.
 
-diff --git a/arch/tile/kernel/hardwall.c b/arch/tile/kernel/hardwall.c
-index 1e54a78..db5e610 100644
---- a/arch/tile/kernel/hardwall.c
-+++ b/arch/tile/kernel/hardwall.c
-@@ -768,13 +768,13 @@ static int hardwall_release(struct inode *inode, struct file *file)
- }
- 
- static const struct file_operations dev_hardwall_fops = {
-+	.open           = nonseekable_open,
- 	.unlocked_ioctl = hardwall_ioctl,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl   = hardwall_compat_ioctl,
- #endif
- 	.flush          = hardwall_flush,
- 	.release        = hardwall_release,
--	.llseek		= noop_llseek,
- };
- 
- static struct cdev hardwall_dev;
--- 
-1.6.5.2
+Tvrtko
 
+Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
+Company Reg No 2096520. VAT Reg No GB 348 3873 20.
