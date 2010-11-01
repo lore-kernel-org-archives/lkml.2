@@ -1,60 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757080Ab0KAJyz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 05:54:55 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:63498 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751017Ab0KAJyx convert rfc822-to-8bit (ORCPT
+	id S1756011Ab0KAKBd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 06:01:33 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:36500 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752064Ab0KAKBb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 05:54:53 -0400
+	Mon, 1 Nov 2010 06:01:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ofOxNH+SSXMIJVxuk/I5jFTec/iLjYTibM78x6kzjB0dMloeAFvBhvYBeiLNES2pRW
-         DOt8WyNRJ32ZNF+SGVKU+WmxJ3n48opr++IF8Fr7HwdFovtu0zi+Fx5AzGcE8xEgkCRv
-         JAiQG3/qBT99iH9S0iBXrDYdpMXuKcJWwbizM=
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=nbBTARmxdGmBPZBqKmqDhhsQl6fR2kzwPHuGGNE1mXIRKKnNL044wOOWRWT6jaJHTY
+         kJdpuxEvTstqXMcc1Cu7WODpKAbBgy8qdgfMEW6PKzkDQgsmwwyDUZG5yHJ+ftizieFx
+         PpQXy6W1YPWZkFJRz+hMtOzP9K/JoLJKINtZE=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikkh+Pif7DuP3p-fH2=5_otX7N0NSjSB2h13yFC@mail.gmail.com>
-References: <AANLkTikfW7QfXX76JM=pDYuQYexPvQz3hrAE=B3YMD5x@mail.gmail.com>
-	<20101101092947.GB6023@cr0.nay.redhat.com>
-	<AANLkTi=vF50JAFQRMWRDKpbk157amaXpDetna=8==pHn@mail.gmail.com>
-	<AANLkTikkh+Pif7DuP3p-fH2=5_otX7N0NSjSB2h13yFC@mail.gmail.com>
-Date: Mon, 1 Nov 2010 17:54:52 +0800
-Message-ID: <AANLkTin1_BqwPvxMQPxgEVpz6sdL13ecu0DDcDW009SM@mail.gmail.com>
-Subject: Re: How many params can be accept by kernel module at most?
-From: tingwei liu <tingw.liu@gmail.com>
-To: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Date: Mon, 1 Nov 2010 15:31:30 +0530
+Message-ID: <AANLkTimE4QR+=eXfSMQ5s3OvnLU0Z=7uR1vtokpLnj7X@mail.gmail.com>
+Subject: Where can I find -rc kernels?
+From: Ramya Desai <ramya.desai@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My description is correct or not ?
+Dear All,
 
-2010/11/1 tingwei liu <tingw.liu@gmail.com>:
-> The params are transferred by command line. And the params are all in
-> program statically. So the stack size determine the params number. For
-> example: stack size is 4K,and params are unsigned int type with 4
-> bytes,so the max number of params is 1 thousand。
->
-> 2010/11/1 tingwei liu <tingw.liu@gmail.com>:
->> What's the meaning of dynamically and statically?
->> You response help me much. Thank you
->>
->> 2010/11/1 Américo Wang <xiyou.wangcong@gmail.com>:
->>> On Mon, Nov 01, 2010 at 02:17:23PM +0800, tingwei liu wrote:
->>>>How many params can be accept by kernel module at most?
->>>
->>> If you mean dynamically, these parameters are passed as a whole to kernel,
->>> from the source code, you can see the max length is ~0UL>>1.
->>>
->>> If you mean statically, IOW, the max paramenters you can provide in your module,
->>> this is limited by ELF section size.
->>>
->>> Hope this helps.
->>>
->>
->
+Generally, I download the stable kernels from
+http://www.kernel.org/pub/linux/kernel/v2.6/ However, I did not find a
+link, like this, for -rc kernels. Please let me know, from where can I
+download the -rc kernels. Please provide a link to me.
+
+Thanks and Regards,
+Ramya.
