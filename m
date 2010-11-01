@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508Ab0KATQg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 15:16:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43718 "EHLO mx1.redhat.com"
+	id S1751587Ab0KATQl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 15:16:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47789 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750943Ab0KATQe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 15:16:34 -0400
+	id S1751179Ab0KATQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 15:16:36 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: dhowells@redhat.com, lizf@cn.fujitsu.com, paul.moore@hp.com,
         johannes@sipsolutions.net, dipankar@in.ibm.com
 Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
         kvm@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 2/3] kernel,cred,kvm,security - removing superfluous rcu_read_lock_held check
-Date: Mon,  1 Nov 2010 20:15:08 +0100
-Message-Id: <1288638909-10541-3-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 3/3] net - removing superfluous rcu_read_lock_held check
+Date: Mon,  1 Nov 2010 20:15:09 +0100
+Message-Id: <1288638909-10541-4-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1288638909-10541-1-git-send-email-jolsa@redhat.com>
 References: <1288638909-10541-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,107 +34,105 @@ jirka
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- include/linux/cred.h     |    1 -
- include/linux/fdtable.h  |    1 -
- include/linux/kvm_host.h |    1 -
- kernel/exit.c            |    1 -
- kernel/pid.c             |    1 -
- kernel/rcutorture.c      |    2 --
- security/keys/keyring.c  |    1 -
- 7 files changed, 0 insertions(+), 8 deletions(-)
+ include/linux/rtnetlink.h          |    3 +--
+ include/net/sock.h                 |    3 +--
+ net/mac80211/sta_info.c            |    4 ----
+ net/netlabel/netlabel_domainhash.c |    3 +--
+ net/netlabel/netlabel_unlabeled.c  |    3 +--
+ 5 files changed, 4 insertions(+), 12 deletions(-)
 
-diff --git a/include/linux/cred.h b/include/linux/cred.h
-index 4aaeab3..a6b9afc 100644
---- a/include/linux/cred.h
-+++ b/include/linux/cred.h
-@@ -283,7 +283,6 @@ static inline void put_cred(const struct cred *_cred)
- 	({								\
- 		const struct task_struct *__t = (task);			\
- 		rcu_dereference_check(__t->real_cred,			\
--				      rcu_read_lock_held() ||		\
- 				      task_is_dead(__t));		\
- 	})
+diff --git a/include/linux/rtnetlink.h b/include/linux/rtnetlink.h
+index d42f274..dfe5ba1 100644
+--- a/include/linux/rtnetlink.h
++++ b/include/linux/rtnetlink.h
+@@ -758,8 +758,7 @@ extern int lockdep_rtnl_is_held(void);
+  * or RTNL. Note : Please prefer rtnl_dereference() or rcu_dereference()
+  */
+ #define rcu_dereference_rtnl(p)					\
+-	rcu_dereference_check(p, rcu_read_lock_held() ||	\
+-				 lockdep_rtnl_is_held())
++	rcu_dereference_check(p, lockdep_rtnl_is_held())
  
-diff --git a/include/linux/fdtable.h b/include/linux/fdtable.h
-index 133c0ba..df7e3cf 100644
---- a/include/linux/fdtable.h
-+++ b/include/linux/fdtable.h
-@@ -60,7 +60,6 @@ struct files_struct {
- 
- #define rcu_dereference_check_fdtable(files, fdtfd) \
- 	(rcu_dereference_check((fdtfd), \
--			       rcu_read_lock_held() || \
- 			       lockdep_is_held(&(files)->file_lock) || \
- 			       atomic_read(&(files)->count) == 1 || \
- 			       rcu_my_thread_group_empty()))
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index a055742..a90a7e3 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -256,7 +256,6 @@ void kvm_put_kvm(struct kvm *kvm);
- static inline struct kvm_memslots *kvm_memslots(struct kvm *kvm)
+ /**
+  * rtnl_dereference - fetch RCU pointer when updates are prevented by RTNL
+diff --git a/include/net/sock.h b/include/net/sock.h
+index c7a7362..bee3e9c 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1274,8 +1274,7 @@ extern unsigned long sock_i_ino(struct sock *sk);
+ static inline struct dst_entry *
+ __sk_dst_get(struct sock *sk)
  {
- 	return rcu_dereference_check(kvm->memslots,
--			srcu_read_lock_held(&kvm->srcu)
- 			|| lockdep_is_held(&kvm->slots_lock));
+-	return rcu_dereference_check(sk->sk_dst_cache, rcu_read_lock_held() ||
+-						       sock_owned_by_user(sk) ||
++	return rcu_dereference_check(sk->sk_dst_cache, sock_owned_by_user(sk) ||
+ 						       lockdep_is_held(&sk->sk_lock.slock));
  }
  
-diff --git a/kernel/exit.c b/kernel/exit.c
-index b194feb..f753342 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -85,7 +85,6 @@ static void __exit_signal(struct task_struct *tsk)
- 	struct tty_struct *uninitialized_var(tty);
+diff --git a/net/mac80211/sta_info.c b/net/mac80211/sta_info.c
+index 6d8f897..c879217 100644
+--- a/net/mac80211/sta_info.c
++++ b/net/mac80211/sta_info.c
+@@ -94,7 +94,6 @@ struct sta_info *sta_info_get(struct ieee80211_sub_if_data *sdata,
+ 	struct sta_info *sta;
  
- 	sighand = rcu_dereference_check(tsk->sighand,
--					rcu_read_lock_held() ||
- 					lockdep_tasklist_lock_is_held());
- 	spin_lock(&sighand->siglock);
- 
-diff --git a/kernel/pid.c b/kernel/pid.c
-index 39b65b6..c02adda 100644
---- a/kernel/pid.c
-+++ b/kernel/pid.c
-@@ -402,7 +402,6 @@ struct task_struct *pid_task(struct pid *pid, enum pid_type type)
- 	if (pid) {
- 		struct hlist_node *first;
- 		first = rcu_dereference_check(hlist_first_rcu(&pid->tasks[type]),
--					      rcu_read_lock_held() ||
- 					      lockdep_tasklist_lock_is_held());
- 		if (first)
- 			result = hlist_entry(first, struct task_struct, pids[(type)].node);
-diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
-index 9d8e8fb..0956a73 100644
---- a/kernel/rcutorture.c
-+++ b/kernel/rcutorture.c
-@@ -807,7 +807,6 @@ static void rcu_torture_timer(unsigned long unused)
- 	idx = cur_ops->readlock();
- 	completed = cur_ops->completed();
- 	p = rcu_dereference_check(rcu_torture_current,
--				  rcu_read_lock_held() ||
- 				  rcu_read_lock_bh_held() ||
- 				  rcu_read_lock_sched_held() ||
- 				  srcu_read_lock_held(&srcu_ctl));
-@@ -868,7 +867,6 @@ rcu_torture_reader(void *arg)
- 		idx = cur_ops->readlock();
- 		completed = cur_ops->completed();
- 		p = rcu_dereference_check(rcu_torture_current,
--					  rcu_read_lock_held() ||
- 					  rcu_read_lock_bh_held() ||
- 					  rcu_read_lock_sched_held() ||
- 					  srcu_read_lock_held(&srcu_ctl));
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index d37f713..73c23f2 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -157,7 +157,6 @@ static void keyring_destroy(struct key *keyring)
+ 	sta = rcu_dereference_check(local->sta_hash[STA_HASH(addr)],
+-				    rcu_read_lock_held() ||
+ 				    lockdep_is_held(&local->sta_lock) ||
+ 				    lockdep_is_held(&local->sta_mtx));
+ 	while (sta) {
+@@ -102,7 +101,6 @@ struct sta_info *sta_info_get(struct ieee80211_sub_if_data *sdata,
+ 		    memcmp(sta->sta.addr, addr, ETH_ALEN) == 0)
+ 			break;
+ 		sta = rcu_dereference_check(sta->hnext,
+-					    rcu_read_lock_held() ||
+ 					    lockdep_is_held(&local->sta_lock) ||
+ 					    lockdep_is_held(&local->sta_mtx));
  	}
+@@ -120,7 +118,6 @@ struct sta_info *sta_info_get_bss(struct ieee80211_sub_if_data *sdata,
+ 	struct sta_info *sta;
  
- 	klist = rcu_dereference_check(keyring->payload.subscriptions,
--				      rcu_read_lock_held() ||
- 				      atomic_read(&keyring->usage) == 0);
- 	if (klist) {
- 		for (loop = klist->nkeys - 1; loop >= 0; loop--)
+ 	sta = rcu_dereference_check(local->sta_hash[STA_HASH(addr)],
+-				    rcu_read_lock_held() ||
+ 				    lockdep_is_held(&local->sta_lock) ||
+ 				    lockdep_is_held(&local->sta_mtx));
+ 	while (sta) {
+@@ -129,7 +126,6 @@ struct sta_info *sta_info_get_bss(struct ieee80211_sub_if_data *sdata,
+ 		    memcmp(sta->sta.addr, addr, ETH_ALEN) == 0)
+ 			break;
+ 		sta = rcu_dereference_check(sta->hnext,
+-					    rcu_read_lock_held() ||
+ 					    lockdep_is_held(&local->sta_lock) ||
+ 					    lockdep_is_held(&local->sta_mtx));
+ 	}
+diff --git a/net/netlabel/netlabel_domainhash.c b/net/netlabel/netlabel_domainhash.c
+index d37b7f8..82795a4 100644
+--- a/net/netlabel/netlabel_domainhash.c
++++ b/net/netlabel/netlabel_domainhash.c
+@@ -55,8 +55,7 @@ struct netlbl_domhsh_tbl {
+  * should be okay */
+ static DEFINE_SPINLOCK(netlbl_domhsh_lock);
+ #define netlbl_domhsh_rcu_deref(p) \
+-	rcu_dereference_check(p, rcu_read_lock_held() || \
+-				 lockdep_is_held(&netlbl_domhsh_lock))
++	rcu_dereference_check(p, lockdep_is_held(&netlbl_domhsh_lock))
+ static struct netlbl_domhsh_tbl *netlbl_domhsh = NULL;
+ static struct netlbl_dom_map *netlbl_domhsh_def = NULL;
+ 
+diff --git a/net/netlabel/netlabel_unlabeled.c b/net/netlabel/netlabel_unlabeled.c
+index e2b0a68..d2f982f 100644
+--- a/net/netlabel/netlabel_unlabeled.c
++++ b/net/netlabel/netlabel_unlabeled.c
+@@ -116,8 +116,7 @@ struct netlbl_unlhsh_walk_arg {
+  * hash table should be okay */
+ static DEFINE_SPINLOCK(netlbl_unlhsh_lock);
+ #define netlbl_unlhsh_rcu_deref(p) \
+-	rcu_dereference_check(p, rcu_read_lock_held() || \
+-				 lockdep_is_held(&netlbl_unlhsh_lock))
++	rcu_dereference_check(p, lockdep_is_held(&netlbl_unlhsh_lock))
+ static struct netlbl_unlhsh_tbl *netlbl_unlhsh = NULL;
+ static struct netlbl_unlhsh_iface *netlbl_unlhsh_def = NULL;
+ 
 -- 
 1.7.1
 
