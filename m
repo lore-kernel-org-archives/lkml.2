@@ -1,174 +1,351 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751877Ab0KAQoI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 12:44:08 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:14435 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991Ab0KAQoF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 12:44:05 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6153"; a="60181661"
-From: Stephen Caudle <scaudle@codeaurora.org>
-To: linux@arm.linux.org.uk
-Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dwalker@codeaurora.org,
-        adharmap@codeaurora.org, Stephen Caudle <scaudle@codeaurora.org>
-Subject: [PATCH] [ARM] gic: Unmask private interrupts on all cores during IRQ enable
-Date: Mon,  1 Nov 2010 12:39:55 -0400
-Message-Id: <1288629595-15331-1-git-send-email-scaudle@codeaurora.org>
-X-Mailer: git-send-email 1.7.3.2
+	id S1752092Ab0KAQwd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 12:52:33 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:48714
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751931Ab0KAQwc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 12:52:32 -0400
+From: Haiyang Zhang <haiyangz@linuxonhyperv.com>
+To: haiyangz@microsoft.com, hjanssen@microsoft.com, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org
+Subject: [PATCH 03/10] staging: hv: Convert camel cased struct fields in hv.h to lower cases
+Date: Mon,  1 Nov 2010 09:53:45 -0700
+Message-Id: <1288630429-12330-1-git-send-email-haiyangz@linuxonhyperv.com>
+X-Mailer: git-send-email 1.5.5.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Requesting/freeing private peripheral interrupts on multi-core chips that
-use only one IRQ number for all cores currently unmasks/masks the interrupt
-for only the executing core.
+From: Haiyang Zhang <haiyangz@microsoft.com>
 
-This change prevents the need for a separate call to enable_irq on other
-cores after request_irq. Also, shutdown is implemented instead of disable
-to allow for lazy IRQ disabling.
+Convert camel cased struct fields in hv.h to lower cases
 
-Signed-off-by: Stephen Caudle <scaudle@codeaurora.org>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+
 ---
- arch/arm/Kconfig      |    5 +++
- arch/arm/common/gic.c |   83 +++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 88 insertions(+), 0 deletions(-)
+ drivers/staging/hv/hv.c    |   95 +++++++++++++++++++++++---------------------
+ drivers/staging/hv/hv.h    |   20 +++++-----
+ drivers/staging/hv/vmbus.c |    6 +-
+ 3 files changed, 63 insertions(+), 58 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index a19a526..fbf5236 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1298,6 +1298,11 @@ config LOCAL_TIMERS
- 	  accounting to be spread across the timer interval, preventing a
- 	  "thundering herd" at every timer tick.
+diff --git a/drivers/staging/hv/hv.c b/drivers/staging/hv/hv.c
+index ab03327..122e556 100644
+--- a/drivers/staging/hv/hv.c
++++ b/drivers/staging/hv/hv.c
+@@ -28,11 +28,11 @@
+ #include "vmbus_private.h"
  
-+config IRQ_PER_CPU
-+	bool
-+	depends on SMP
-+	default n
-+
- source kernel/Kconfig.preempt
- 
- config HZ
-diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
-index ada6359..372cfb3 100644
---- a/arch/arm/common/gic.c
-+++ b/arch/arm/common/gic.c
-@@ -39,12 +39,25 @@ struct gic_chip_data {
- 	unsigned int irq_offset;
- 	void __iomem *dist_base;
- 	void __iomem *cpu_base;
-+#ifdef CONFIG_IRQ_PER_CPU
-+	struct call_single_data ppi_data;
-+#endif
+ /* The one and only */
+-struct hv_context gHvContext = {
+-	.SynICInitialized	= false,
+-	.HypercallPage		= NULL,
+-	.SignalEventParam	= NULL,
+-	.SignalEventBuffer	= NULL,
++struct hv_context g_hv_context = {
++	.synic_initialized	= false,
++	.hypercall_page		= NULL,
++	.signal_event_param	= NULL,
++	.signal_event_buffer	= NULL,
  };
  
- #ifndef MAX_GIC_NR
- #define MAX_GIC_NR	1
- #endif
+ /*
+@@ -134,7 +134,7 @@ static u64 HvDoHypercall(u64 Control, void *Input, void *Output)
+ 	u64 hvStatus = 0;
+ 	u64 inputAddress = (Input) ? virt_to_phys(Input) : 0;
+ 	u64 outputAddress = (Output) ? virt_to_phys(Output) : 0;
+-	volatile void *hypercallPage = gHvContext.HypercallPage;
++	volatile void *hypercallPage = g_hv_context.hypercall_page;
  
-+#ifdef CONFIG_IRQ_PER_CPU
-+#ifndef GIC_PPI_FIRST
-+#define GIC_PPI_FIRST	16
-+#endif
-+
-+#ifndef GIC_PPI_LAST
-+#define GIC_PPI_LAST	31
-+#endif
-+#endif
-+
- static struct gic_chip_data gic_data[MAX_GIC_NR];
+ 	DPRINT_DBG(VMBUS, "Hypercall <control %llx input phys %llx virt %p "
+ 		   "output phys %llx virt %p hypercall %p>",
+@@ -162,7 +162,7 @@ static u64 HvDoHypercall(u64 Control, void *Input, void *Output)
+ 	u64 outputAddress = (Output) ? virt_to_phys(Output) : 0;
+ 	u32 outputAddressHi = outputAddress >> 32;
+ 	u32 outputAddressLo = outputAddress & 0xFFFFFFFF;
+-	volatile void *hypercallPage = gHvContext.HypercallPage;
++	volatile void *hypercallPage = g_hv_context.hypercall_page;
  
- static inline void __iomem *gic_dist_base(unsigned int irq)
-@@ -158,6 +171,72 @@ static int gic_set_cpu(unsigned int irq, const struct cpumask *mask_val)
- }
- #endif
+ 	DPRINT_DBG(VMBUS, "Hypercall <control %llx input %p output %p>",
+ 		   Control, Input, Output);
+@@ -192,8 +192,9 @@ int HvInit(void)
+ 	union hv_x64_msr_hypercall_contents hypercallMsr;
+ 	void *virtAddr = NULL;
  
-+#ifdef CONFIG_IRQ_PER_CPU
-+static inline void gic_smp_call_function(struct call_single_data *data)
-+{
-+	int cpu;
-+	int this_cpu = smp_processor_id();
-+
-+	/*
-+	 * Since this function is called with interrupts disabled,
-+	 * smp_call_function can't be used here because it warns (even
-+	 * if wait = 0) when interrupts are disabled.
-+	 *
-+	 * __smp_call_function_single doesn't warn when interrupts are
-+	 * disabled and not waiting, so use it instead.
-+	 */
-+	for_each_online_cpu(cpu)
-+		if (cpu != this_cpu)
-+			__smp_call_function_single(cpu, data, 0);
-+}
-+
-+static void gic_mask_ppi(void *info)
-+{
-+	gic_mask_irq(*(unsigned int *)info);
-+}
-+
-+static void gic_unmask_ppi(void *info)
-+{
-+	gic_unmask_irq(*(unsigned int *)info);
-+}
-+
-+static void gic_enable_irq(unsigned int irq)
-+{
-+	struct irq_desc *desc = irq_to_desc(irq);
-+	struct gic_chip_data *gic_data = get_irq_chip_data(irq);
-+
-+	if (irq >= GIC_PPI_FIRST && irq <= GIC_PPI_LAST) {
-+		gic_data->ppi_data.func = gic_unmask_ppi;
-+		gic_data->ppi_data.info = &desc->irq;
-+		gic_data->ppi_data.flags = 0;
-+
-+		/* Unmask PPIs on all cores during enable. */
-+		gic_smp_call_function(&gic_data->ppi_data);
-+	}
-+
-+	desc->chip->unmask(irq);
-+	desc->status &= ~IRQ_MASKED;
-+}
-+
-+static void gic_shutdown_irq(unsigned int irq)
-+{
-+	struct irq_desc *desc = irq_to_desc(irq);
-+	struct gic_chip_data *gic_data = get_irq_chip_data(irq);
-+
-+	if (irq >= GIC_PPI_FIRST && irq <= GIC_PPI_LAST) {
-+		gic_data->ppi_data.func = gic_mask_ppi;
-+		gic_data->ppi_data.info = &desc->irq;
-+		gic_data->ppi_data.flags = 0;
-+
-+		/* Mask PPIs on all cores during disable. */
-+		gic_smp_call_function(&gic_data->ppi_data);
-+	}
-+
-+	desc->chip->mask(irq);
-+	desc->status |= IRQ_MASKED;
-+}
-+#endif
-+
- static void gic_handle_cascade_irq(unsigned int irq, struct irq_desc *desc)
+-	memset(gHvContext.synICEventPage, 0, sizeof(void *) * MAX_NUM_CPUS);
+-	memset(gHvContext.synICMessagePage, 0, sizeof(void *) * MAX_NUM_CPUS);
++	memset(g_hv_context.synic_event_page, 0, sizeof(void *) * MAX_NUM_CPUS);
++	memset(g_hv_context.synic_message_page, 0,
++	       sizeof(void *) * MAX_NUM_CPUS);
+ 
+ 	if (!HvQueryHypervisorPresence()) {
+ 		DPRINT_ERR(VMBUS, "No Windows hypervisor detected!!");
+@@ -209,17 +210,17 @@ int HvInit(void)
+ 	/*
+ 	 * We only support running on top of Hyper-V
+ 	 */
+-	rdmsrl(HV_X64_MSR_GUEST_OS_ID, gHvContext.GuestId);
++	rdmsrl(HV_X64_MSR_GUEST_OS_ID, g_hv_context.guestid);
+ 
+-	if (gHvContext.GuestId != 0) {
++	if (g_hv_context.guestid != 0) {
+ 		DPRINT_ERR(VMBUS, "Unknown guest id (0x%llx)!!",
+-				gHvContext.GuestId);
++				g_hv_context.guestid);
+ 		goto Cleanup;
+ 	}
+ 
+ 	/* Write our OS info */
+ 	wrmsrl(HV_X64_MSR_GUEST_OS_ID, HV_LINUX_GUEST_ID);
+-	gHvContext.GuestId = HV_LINUX_GUEST_ID;
++	g_hv_context.guestid = HV_LINUX_GUEST_ID;
+ 
+ 	/* See if the hypercall page is already set */
+ 	rdmsrl(HV_X64_MSR_HYPERCALL, hypercallMsr.as_uint64);
+@@ -250,28 +251,29 @@ int HvInit(void)
+ 		goto Cleanup;
+ 	}
+ 
+-	gHvContext.HypercallPage = virtAddr;
++	g_hv_context.hypercall_page = virtAddr;
+ 
+ 	DPRINT_INFO(VMBUS, "Hypercall page VA=%p, PA=0x%0llx",
+-		    gHvContext.HypercallPage,
++		    g_hv_context.hypercall_page,
+ 		    (u64)hypercallMsr.guest_physical_address << PAGE_SHIFT);
+ 
+ 	/* Setup the global signal event param for the signal event hypercall */
+-	gHvContext.SignalEventBuffer =
++	g_hv_context.signal_event_buffer =
+ 			kmalloc(sizeof(struct hv_input_signal_event_buffer),
+ 				GFP_KERNEL);
+-	if (!gHvContext.SignalEventBuffer)
++	if (!g_hv_context.signal_event_buffer)
+ 		goto Cleanup;
+ 
+-	gHvContext.SignalEventParam =
++	g_hv_context.signal_event_param =
+ 		(struct hv_input_signal_event *)
+-			(ALIGN_UP((unsigned long)gHvContext.SignalEventBuffer,
++			(ALIGN_UP((unsigned long)
++				  g_hv_context.signal_event_buffer,
+ 				  HV_HYPERCALL_PARAM_ALIGN));
+-	gHvContext.SignalEventParam->connectionid.asu32 = 0;
+-	gHvContext.SignalEventParam->connectionid.u.id =
++	g_hv_context.signal_event_param->connectionid.asu32 = 0;
++	g_hv_context.signal_event_param->connectionid.u.id =
+ 						VMBUS_EVENT_CONNECTION_ID;
+-	gHvContext.SignalEventParam->flag_number = 0;
+-	gHvContext.SignalEventParam->rsvdz = 0;
++	g_hv_context.signal_event_param->flag_number = 0;
++	g_hv_context.signal_event_param->rsvdz = 0;
+ 
+ 	return ret;
+ 
+@@ -297,15 +299,15 @@ void HvCleanup(void)
  {
- 	struct gic_chip_data *chip_data = get_irq_data(irq);
-@@ -196,6 +275,10 @@ static struct irq_chip gic_chip = {
- #ifdef CONFIG_SMP
- 	.set_affinity	= gic_set_cpu,
- #endif
-+#ifdef CONFIG_IRQ_PER_CPU
-+	.enable		= gic_enable_irq,
-+	.shutdown	= gic_shutdown_irq,
-+#endif
+ 	union hv_x64_msr_hypercall_contents hypercallMsr;
+ 
+-	kfree(gHvContext.SignalEventBuffer);
+-	gHvContext.SignalEventBuffer = NULL;
+-	gHvContext.SignalEventParam = NULL;
++	kfree(g_hv_context.signal_event_buffer);
++	g_hv_context.signal_event_buffer = NULL;
++	g_hv_context.signal_event_param = NULL;
+ 
+-	if (gHvContext.HypercallPage) {
++	if (g_hv_context.hypercall_page) {
+ 		hypercallMsr.as_uint64 = 0;
+ 		wrmsrl(HV_X64_MSR_HYPERCALL, hypercallMsr.as_uint64);
+-		vfree(gHvContext.HypercallPage);
+-		gHvContext.HypercallPage = NULL;
++		vfree(g_hv_context.hypercall_page);
++		g_hv_context.hypercall_page = NULL;
+ 	}
+ }
+ 
+@@ -359,7 +361,8 @@ u16 HvSignalEvent(void)
+ {
+ 	u16 status;
+ 
+-	status = HvDoHypercall(HVCALL_SIGNAL_EVENT, gHvContext.SignalEventParam,
++	status = HvDoHypercall(HVCALL_SIGNAL_EVENT,
++			       g_hv_context.signal_event_param,
+ 			       NULL) & 0xFFFF;
+ 	return status;
+ }
+@@ -382,7 +385,7 @@ void HvSynicInit(void *irqarg)
+ 	u32 irqVector = *((u32 *)(irqarg));
+ 	int cpu = smp_processor_id();
+ 
+-	if (!gHvContext.HypercallPage)
++	if (!g_hv_context.hypercall_page)
+ 		return;
+ 
+ 	/* Check the version */
+@@ -390,17 +393,19 @@ void HvSynicInit(void *irqarg)
+ 
+ 	DPRINT_INFO(VMBUS, "SynIC version: %llx", version);
+ 
+-	gHvContext.synICMessagePage[cpu] = (void *)get_zeroed_page(GFP_ATOMIC);
++	g_hv_context.synic_message_page[cpu] =
++		(void *)get_zeroed_page(GFP_ATOMIC);
+ 
+-	if (gHvContext.synICMessagePage[cpu] == NULL) {
++	if (g_hv_context.synic_message_page[cpu] == NULL) {
+ 		DPRINT_ERR(VMBUS,
+ 			   "unable to allocate SYNIC message page!!");
+ 		goto Cleanup;
+ 	}
+ 
+-	gHvContext.synICEventPage[cpu] = (void *)get_zeroed_page(GFP_ATOMIC);
++	g_hv_context.synic_event_page[cpu] =
++		(void *)get_zeroed_page(GFP_ATOMIC);
+ 
+-	if (gHvContext.synICEventPage[cpu] == NULL) {
++	if (g_hv_context.synic_event_page[cpu] == NULL) {
+ 		DPRINT_ERR(VMBUS,
+ 			   "unable to allocate SYNIC event page!!");
+ 		goto Cleanup;
+@@ -409,7 +414,7 @@ void HvSynicInit(void *irqarg)
+ 	/* Setup the Synic's message page */
+ 	rdmsrl(HV_X64_MSR_SIMP, simp.as_uint64);
+ 	simp.simp_enabled = 1;
+-	simp.base_simp_gpa = virt_to_phys(gHvContext.synICMessagePage[cpu])
++	simp.base_simp_gpa = virt_to_phys(g_hv_context.synic_message_page[cpu])
+ 		>> PAGE_SHIFT;
+ 
+ 	DPRINT_DBG(VMBUS, "HV_X64_MSR_SIMP msr set to: %llx", simp.as_uint64);
+@@ -419,7 +424,7 @@ void HvSynicInit(void *irqarg)
+ 	/* Setup the Synic's event page */
+ 	rdmsrl(HV_X64_MSR_SIEFP, siefp.as_uint64);
+ 	siefp.siefp_enabled = 1;
+-	siefp.base_siefp_gpa = virt_to_phys(gHvContext.synICEventPage[cpu])
++	siefp.base_siefp_gpa = virt_to_phys(g_hv_context.synic_event_page[cpu])
+ 		>> PAGE_SHIFT;
+ 
+ 	DPRINT_DBG(VMBUS, "HV_X64_MSR_SIEFP msr set to: %llx", siefp.as_uint64);
+@@ -449,15 +454,15 @@ void HvSynicInit(void *irqarg)
+ 
+ 	wrmsrl(HV_X64_MSR_SCONTROL, sctrl.as_uint64);
+ 
+-	gHvContext.SynICInitialized = true;
++	g_hv_context.synic_initialized = true;
+ 	return;
+ 
+ Cleanup:
+-	if (gHvContext.synICEventPage[cpu])
+-		osd_PageFree(gHvContext.synICEventPage[cpu], 1);
++	if (g_hv_context.synic_event_page[cpu])
++		osd_PageFree(g_hv_context.synic_event_page[cpu], 1);
+ 
+-	if (gHvContext.synICMessagePage[cpu])
+-		osd_PageFree(gHvContext.synICMessagePage[cpu], 1);
++	if (g_hv_context.synic_message_page[cpu])
++		osd_PageFree(g_hv_context.synic_message_page[cpu], 1);
+ 	return;
+ }
+ 
+@@ -471,7 +476,7 @@ void HvSynicCleanup(void *arg)
+ 	union hv_synic_siefp siefp;
+ 	int cpu = smp_processor_id();
+ 
+-	if (!gHvContext.SynICInitialized)
++	if (!g_hv_context.synic_initialized)
+ 		return;
+ 
+ 	rdmsrl(HV_X64_MSR_SINT0 + VMBUS_MESSAGE_SINT, sharedSint.as_uint64);
+@@ -494,6 +499,6 @@ void HvSynicCleanup(void *arg)
+ 
+ 	wrmsrl(HV_X64_MSR_SIEFP, siefp.as_uint64);
+ 
+-	osd_PageFree(gHvContext.synICMessagePage[cpu], 1);
+-	osd_PageFree(gHvContext.synICEventPage[cpu], 1);
++	osd_PageFree(g_hv_context.synic_message_page[cpu], 1);
++	osd_PageFree(g_hv_context.synic_event_page[cpu], 1);
+ }
+diff --git a/drivers/staging/hv/hv.h b/drivers/staging/hv/hv.h
+index 41f5ebb..5a9e574 100644
+--- a/drivers/staging/hv/hv.h
++++ b/drivers/staging/hv/hv.h
+@@ -92,33 +92,33 @@ static const struct hv_guid VMBUS_SERVICE_ID = {
+ 
+ 
+ struct hv_input_signal_event_buffer {
+-	u64 Align8;
+-	struct hv_input_signal_event Event;
++	u64 align8;
++	struct hv_input_signal_event event;
  };
  
- void __init gic_cascade_irq(unsigned int gic_nr, unsigned int irq)
+ struct hv_context {
+ 	/* We only support running on top of Hyper-V
+ 	* So at this point this really can only contain the Hyper-V ID
+ 	*/
+-	u64 GuestId;
++	u64 guestid;
+ 
+-	void *HypercallPage;
++	void *hypercall_page;
+ 
+-	bool SynICInitialized;
++	bool synic_initialized;
+ 
+ 	/*
+ 	 * This is used as an input param to HvCallSignalEvent hypercall. The
+ 	 * input param is immutable in our usage and must be dynamic mem (vs
+ 	 * stack or global). */
+-	struct hv_input_signal_event_buffer *SignalEventBuffer;
++	struct hv_input_signal_event_buffer *signal_event_buffer;
+ 	/* 8-bytes aligned of the buffer above */
+-	struct hv_input_signal_event *SignalEventParam;
++	struct hv_input_signal_event *signal_event_param;
+ 
+-	void *synICMessagePage[MAX_NUM_CPUS];
+-	void *synICEventPage[MAX_NUM_CPUS];
++	void *synic_message_page[MAX_NUM_CPUS];
++	void *synic_event_page[MAX_NUM_CPUS];
+ };
+ 
+-extern struct hv_context gHvContext;
++extern struct hv_context g_hv_context;
+ 
+ 
+ /* Hv Interface */
+diff --git a/drivers/staging/hv/vmbus.c b/drivers/staging/hv/vmbus.c
+index 7c54ca9..7b68212 100644
+--- a/drivers/staging/hv/vmbus.c
++++ b/drivers/staging/hv/vmbus.c
+@@ -147,7 +147,7 @@ static void VmbusOnCleanup(struct hv_driver *drv)
+ static void VmbusOnMsgDPC(struct hv_driver *drv)
+ {
+ 	int cpu = smp_processor_id();
+-	void *page_addr = gHvContext.synICMessagePage[cpu];
++	void *page_addr = g_hv_context.synic_message_page[cpu];
+ 	struct hv_message *msg = (struct hv_message *)page_addr +
+ 				  VMBUS_MESSAGE_SINT;
+ 	struct hv_message *copied;
+@@ -208,7 +208,7 @@ static int VmbusOnISR(struct hv_driver *drv)
+ 	struct hv_message *msg;
+ 	union hv_synic_event_flags *event;
+ 
+-	page_addr = gHvContext.synICMessagePage[cpu];
++	page_addr = g_hv_context.synic_message_page[cpu];
+ 	msg = (struct hv_message *)page_addr + VMBUS_MESSAGE_SINT;
+ 
+ 	/* Check if there are actual msgs to be process */
+@@ -220,7 +220,7 @@ static int VmbusOnISR(struct hv_driver *drv)
+ 	}
+ 
+ 	/* TODO: Check if there are events to be process */
+-	page_addr = gHvContext.synICEventPage[cpu];
++	page_addr = g_hv_context.synic_event_page[cpu];
+ 	event = (union hv_synic_event_flags *)page_addr + VMBUS_MESSAGE_SINT;
+ 
+ 	/* Since we are a child, we only need to check bit 0 */
 -- 
-1.7.3.2
-
---
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum
+1.6.3.2
 
