@@ -1,45 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758350Ab0KAQO7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 12:14:59 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:53474 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756695Ab0KAQO4 (ORCPT
+	id S1758430Ab0KAQQq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 12:16:46 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:50226 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753416Ab0KAQQp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 12:14:56 -0400
+	Mon, 1 Nov 2010 12:16:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Ey/1G+Io4p5zpy12SXjg5GOXCgjrgB8sh0wltknBfVjw+B9QhGqf1i4VuLC1NBzRwk
-         BL+6hbvg2cembE23mhE3WiVw2UkOD9PvOtSAfgC+aUSBW7GulzSdLD1HTEAZaxdBEwgB
-         Nnhf7p+DKGBx63CS3mORfeGcB7/aCBLsajJ3g=
+         :cc:content-type:content-transfer-encoding;
+        b=bq/YsVtWOByuYDed3IN4r8UE8fzm+VCnPvvNeVwFp6teLbjbSS7hQInUuOm8XubsAB
+         JtkvyPSkkYjP2EiAGHZtdwzPTbYKlw0DdvZarKxYHIFn4xqtiox6Zv6SVsrHT5ved/YG
+         VX3C0I+1HKCi10Pd2NXAqfFJk5hI1xzGpwnm4=
 MIME-Version: 1.0
-In-Reply-To: <20101101.085126.71102684.davem@davemloft.net>
-References: <AANLkTikQuUcAMZKqZ3Rz5HVzOs+63-Y4VYUo5-3EM30H@mail.gmail.com>
-	<20101102023650.bc553e74.sfr@canb.auug.org.au>
-	<AANLkTin3nsb6FfNtXfqjZCuV66mwKVOsKgmZpTABFDUJ@mail.gmail.com>
-	<20101101.085126.71102684.davem@davemloft.net>
-Date: Mon, 1 Nov 2010 12:14:55 -0400
-Message-ID: <AANLkTi=MDPMXOPpvHXCBmEAWkRDcZN1u5h3H7J+ptrMq@mail.gmail.com>
-Subject: Re: All Applied micro boards are failing with current mainline kernel
-From: Josh Boyer <jwboyer@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: sfr@canb.auug.org.au, rsarmah@apm.com, therbert@google.com,
-        eric.dumazet@gmail.com, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, benh@kernel.crashing.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1288253909-12084-1-git-send-email-mad_soft@inbox.ru>
+References: <1288253909-12084-1-git-send-email-mad_soft@inbox.ru>
+Date: Mon, 1 Nov 2010 17:16:39 +0100
+Message-ID: <AANLkTimMwTbj-2oP-VP7Ht1VnA8_w7vpTGz1kk5HG7zx@mail.gmail.com>
+Subject: Re: [PATCH] USB: gadget: fix ethernet gadget crash in gether_setup
+From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
+To: Dmitry Artamonow <mad_soft@inbox.ru>
+Cc: linux-usb@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tom Herbert <therbert@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 1, 2010 at 11:51 AM, David Miller <davem@davemloft.net> wrote:
->> I can whip up a patch to remove those calls or move them after the
->> register, but I don't want to do that without knowing which one is
->> "right".
+2010/10/28 Dmitry Artamonow <mad_soft@inbox.ru>:
+> Crash is triggered by commit e6484930d7 ("net: allocate tx queues in
+> register_netdevice"), which moved tx netqueue creation into register_netdev.
+> So now calling netif_stop_queue() before register_netdev causes an oops.
+> Move netif_stop_queue() after net device registration to fix crash.
 >
-> I've already taken care of this.
+> Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
+> ---
+>  drivers/usb/gadget/u_ether.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/usb/gadget/u_ether.c b/drivers/usb/gadget/u_ether.c
+> index 6bb876d..cb23355 100644
+> --- a/drivers/usb/gadget/u_ether.c
+> +++ b/drivers/usb/gadget/u_ether.c
+> @@ -797,7 +797,6 @@ int gether_setup(struct usb_gadget *g, u8 ethaddr[ETH_ALEN])
+>         *  - iff DATA transfer is active, carrier is "on"
+>         *  - tx queueing enabled if open *and* carrier is "on"
+>         */
+> -       netif_stop_queue(net);
+>        netif_carrier_off(net);
+>
+>        dev->gadget = g;
+> @@ -812,6 +811,7 @@ int gether_setup(struct usb_gadget *g, u8 ethaddr[ETH_ALEN])
+>                INFO(dev, "MAC %pM\n", net->dev_addr);
+>                INFO(dev, "HOST MAC %pM\n", dev->host_mac);
+>
+> +               netif_stop_queue(net);
+>                the_dev = dev;
+>        }
+>
 
-Thanks!
+What about a race between register_netdev() -> open() -> rest of
+gether_setup() ? What is this netif_stop_queue() here needed for?
 
-josh
+Best Regards,
+Micha³ Miros³aw
