@@ -1,109 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753821Ab0KAUSB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 16:18:01 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:33960 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753265Ab0KAUR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 16:17:59 -0400
-Subject: Re: [RFC PATCH 1/1] vhost: TX used buffer guest signal accumulation
-From: Shirley Ma <mashirle@us.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20101030200603.GA19033@redhat.com>
-References: <1288216693.17571.38.camel@localhost.localdomain>
-	 <1288240804.14342.1.camel@localhost.localdomain>
-	 <20101028052021.GD5599@redhat.com>
-	 <1288286062.11251.15.camel@localhost.localdomain>
-	 <20101029081027.GB22688@redhat.com>
-	 <1288366988.4110.5.camel@localhost.localdomain>
-	 <20101030200603.GA19033@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 01 Nov 2010 13:17:53 -0700
-Message-ID: <1288642673.19173.8.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1753527Ab0KAUUc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 16:20:32 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:22077 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753265Ab0KAUUb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 16:20:31 -0400
+Date: Mon, 1 Nov 2010 21:09:58 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Ben Gamari <bgamari.foss@gmail.com>
+cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] Add Kconfig option for default swappiness
+In-Reply-To: <1288548508-22070-1-git-send-email-bgamari.foss@gmail.com>
+Message-ID: <alpine.LNX.2.00.1011012108360.12889@swampdragon.chaosbits.net>
+References: <1288548508-22070-1-git-send-email-bgamari.foss@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-10-30 at 22:06 +0200, Michael S. Tsirkin wrote:
-> On Fri, Oct 29, 2010 at 08:43:08AM -0700, Shirley Ma wrote:
-> > On Fri, 2010-10-29 at 10:10 +0200, Michael S. Tsirkin wrote:
-> > > Hmm. I don't yet understand. We are still doing copies into the
-> per-vq
-> > > buffer, and the data copied is really small.  Is it about cache
-> line
-> > > bounces?  Could you try figuring it out?
-> > 
-> > per-vq buffer is much less expensive than 3 put_copy() call. I will
-> > collect the profiling data to show that.
+On Sun, 31 Oct 2010, Ben Gamari wrote:
+
+> This will allow distributions to tune this important vm parameter in a more
+> self-contained manner.
 > 
-> What about __put_user? Maybe the access checks are the ones
-> that add the cost here? I attach patches to strip access checks:
-> they are not needed as we do them on setup time already, anyway.
-> Can you try them out and see if performance is improved for you
-> please?
-> On top of this, we will need to add some scheme to accumulate signals,
-> but that is a separate issue.
-
-Yes, moving from put_user/get_user to __put_user/__get_user does improve
-the performance by removing the checking.
-
-My concern here is whether checking only in set up would be sufficient
-for security? Would be there is a case guest could corrupt the ring
-later? If not, that's OK.
-
-> > > > > 2. How about flushing out queued stuff before we exit
-> > > > >    the handle_tx loop? That would address most of
-> > > > >    the spec issue. 
-> > > > 
-> > > > The performance is almost as same as the previous patch. I will
-> > > resubmit
-> > > > the modified one, adding vhost_add_used_and_signal_n after
-> handle_tx
-> > > > loop for processing pending queue.
-> > > > 
-> > > > This patch was a part of modified macvtap zero copy which I
-> haven't
-> > > > submitted yet. I found this helped vhost TX in general. This
-> pending
-> > > > queue will be used by DMA done later, so I put it in vq instead
-> of a
-> > > > local variable in handle_tx.
-> > > > 
-> > > > Thanks
-> > > > Shirley
-> > > 
-> > > BTW why do we need another array? Isn't heads field exactly what
-> we
-> > > need
-> > > here?
-> > 
-> > head field is only for up to 32, the more used buffers add and
-> signal
-> > accumulated the better performance is from test results.
+> Signed-off-by: Ben Gamari <bgamari.foss@gmail.com>
+> ---
+>  Documentation/sysctl/vm.txt |    2 +-
+>  mm/Kconfig                  |   11 +++++++++++
+>  mm/vmscan.c                 |    2 +-
+>  3 files changed, 13 insertions(+), 2 deletions(-)
 > 
-> I think we should separate the used update and signalling.  Interrupts
-> are expensive so I can believe accumulating even up to 100 of them
-> helps. But used head copies are already prety cheap. If we cut the
-> overhead by x32, that should make them almost free?
+> diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+> index 6c7d18c..792823b 100644
+> --- a/Documentation/sysctl/vm.txt
+> +++ b/Documentation/sysctl/vm.txt
+> @@ -614,7 +614,7 @@ This control is used to define how aggressive the kernel will swap
+>  memory pages.  Higher values will increase agressiveness, lower values
+>  decrease the amount of swap.
+>  
+> -The default value is 60.
+> +The default value is 60 (changed with CONFIG_DEFAULT_SWAPINESS).
+>  
+>  ==============================================================
+>  
+> diff --git a/mm/Kconfig b/mm/Kconfig
+> index 9c61158..729ecec 100644
+> --- a/mm/Kconfig
+> +++ b/mm/Kconfig
+> @@ -61,6 +61,17 @@ config SPARSEMEM_MANUAL
+>  
+>  endchoice
+>  
+> +config DEFAULT_SWAPPINESS
+> +	int "Default swappiness"
+> +	default "60"
+> +	range 0 100
+> +	help
+> +	  This control is used to define how aggressive the kernel will swap
+> +	  memory pages.  Higher values will increase agressiveness, lower
+> +	  values decrease the amount of swap. Valid values range from 0 to 100.
+> +
+> +	  If unsure, keep default value of 60.
+> +
 
-I can separate the used update and signaling to see the best
-performance.
+Perhaps this help text should mention the fact that swapiness setting can 
+be changed at runtime (regardless of the set default) by writing to 
+/proc/sys/vm/swappiness ???
 
-> > That's was one
-> > of the reason I didn't use heads. The other reason was I used these
-> > buffer for pending dma done in mavctap zero copy patch. It could be
-> up
-> > to vq->num in worse case.
-> 
-> We can always increase that, not an issue. 
 
-Good, I will change heads up to vq->num and use it.
-
-Thanks
-Shirley
+-- 
+Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
+Plain text mails only, please      http://www.expita.com/nomime.html
+Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
 
