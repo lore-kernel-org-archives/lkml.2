@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758129Ab0KAPhH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 11:37:07 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:34425 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756748Ab0KAPhE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 11:37:04 -0400
-Date: Tue, 2 Nov 2010 02:36:50 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: Rupjyoti Sarmah <rsarmah@apm.com>, Tom Herbert <therbert@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: All Applied micro boards are failing with current mainline
- kernel
-Message-Id: <20101102023650.bc553e74.sfr@canb.auug.org.au>
-In-Reply-To: <AANLkTikQuUcAMZKqZ3Rz5HVzOs+63-Y4VYUo5-3EM30H@mail.gmail.com>
-References: <6631e123845856ac20423c25e07844c8@mail.gmail.com>
-	<AANLkTikWWGpAM8+_z9fnngYuYSpT3NWgM7xeGkOzZ3jg@mail.gmail.com>
-	<AANLkTikQuUcAMZKqZ3Rz5HVzOs+63-Y4VYUo5-3EM30H@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__2_Nov_2010_02_36_50_+1100_cUqEyzYYxkUuuGjl"
+	id S1758169Ab0KAPiC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 11:38:02 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:54539 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756594Ab0KAPiA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 11:38:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=YUg7SVg1xqcGTFNIqPaap0+e+EKO1wHN1n/Gy7Kv8zxuta0OHtPV7NpLYyF0Ci0N95
+         SPjPlSsbIMnB1ZRkcSj6BppC47wuP+DZRX4nqTf3CkZ2fqQNF7ZXFsoAJrTaW/VCtzeO
+         HfHJuwvefOEbfQmpSDeLl4gjHg6TR/3A2pIQg=
+Date: Mon, 1 Nov 2010 18:37:55 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Jan Kiszka <jan.kiszka@web.de>
+Cc: Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, Eric Paris <eparis@redhat.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: BUG: using smp_processor_id() in preemptible
+	arch_trigger_all_cpu_backtrace_handler
+Message-ID: <20101101153755.GB5985@lenovo>
+References: <4CCEB51C.7010901@web.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CCEB51C.7010901@web.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__2_Nov_2010_02_36_50_+1100_cUqEyzYYxkUuuGjl
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Nov 01, 2010 at 01:39:56PM +0100, Jan Kiszka wrote:
+> Hi,
+> 
+> I was getting this BUG while running into a GPF:
+> 
+> BUG: using smp_processor_id() in preemptible [00000000] code: qemu-system-x86/2248
+> caller is arch_trigger_all_cpu_backtrace_handler+0x1d/0xf7
+> Pid: 2248, comm: qemu-system-x86 Not tainted 2.6.36+ #12
+> Call Trace:
+> [<ffffffff81203194>] debug_smp_processor_id+0xd8/0xf4
+> [<ffffffff813803ab>] arch_trigger_all_cpu_backtrace_handler+0x1d/0xf7
+...
 
-Hi Josh,
+ Thanks for report Jan. I'll take a look as only get ability.
 
-On Mon, 1 Nov 2010 11:05:53 -0400 Josh Boyer <jwboyer@gmail.com> wrote:
->
-> A few hints would be appreciated.
-
-Remove the call to netif_stop_queue() from emac_probe().  Apparently,
-calling this before register_netdev() is now wrong (maybe always was).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__2_Nov_2010_02_36_50_+1100_cUqEyzYYxkUuuGjl
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMzt6SAAoJEDMEi1NhKgbsj2EIAI8Yt9zCze2B0cT+qNFd+nci
-YME4qQPBWLAeUVCe+KQMOBEbJjgKyUXgf42h44AAHepm2IwP6U+6tVdMsi3L6S5B
-Ak4w2o6J+tM4iuy48pI0nyVEFrOUO3ZwFl0hYXz94zoNaKaxU2nzPRwYnGpYBhIb
-2a3v7S9QV/4rbBX4/8WA3rZ8R4l/ZE8KaR/pa1cYh4WUfONDO3xT0pPSj5BrZDT1
-cx4sKgdNtr6fpkm9sclBbuCT3BOW2ilv6i2+r7yo/2DRJVrXbGDu7AGHBokvvHhx
-NiyYvlSKRqPSTTFQWDfvGDVv8OyaBWgBF8kSPB18P980dUKS+G9l+RWtvz0QeK4=
-=lYu3
------END PGP SIGNATURE-----
-
---Signature=_Tue__2_Nov_2010_02_36_50_+1100_cUqEyzYYxkUuuGjl--
+ Cyrill
