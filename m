@@ -1,93 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752086Ab0KATYI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 15:24:08 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:64435 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751613Ab0KATYF convert rfc822-to-8bit (ORCPT
+	id S1752140Ab0KATYo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 15:24:44 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:6657 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751613Ab0KATYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 15:24:05 -0400
-X-IronPort-AV: E=Sophos;i="4.58,275,1286175600"; 
-   d="scan'208";a="476130284"
-Subject: Re: Regression, bisected: sqlite locking failure on nfs
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Chuck Lever <chuck.lever@oracle.com>
-Cc: Nick Bowler <nbowler@elliptictech.com>,
-        LKML Kernel <linux-kernel@vger.kernel.org>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
-In-Reply-To: <187AEE96-9231-4899-9D65-A444503D2758@oracle.com>
-References: <20101101175854.GA3550@elliptictech.com>
-	 <D68536EB-6BE9-4DE4-B325-39FEF747092E@oracle.com>
-	 <20101101181938.GA3875@elliptictech.com>
-	 <187AEE96-9231-4899-9D65-A444503D2758@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp
-Date: Mon, 01 Nov 2010 15:22:56 -0400
-Message-ID: <1288639376.5009.16.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-X-OriginalArrivalTime: 01 Nov 2010 19:23:33.0703 (UTC) FILETIME=[4637AD70:01CB79FA]
+	Mon, 1 Nov 2010 15:24:42 -0400
+Message-ID: <4CCF13FA.1080609@caviumnetworks.com>
+Date: Mon, 01 Nov 2010 12:24:42 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+MIME-Version: 1.0
+To: Charles Manning <manningc2@actrix.gen.nz>
+CC: Tracey Dent <tdent48227@gmail.com>, greg@kroah.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 0/29] Staging: Add yaffs2 filesystem
+References: <1288636877-7964-1-git-send-email-tdent48227@gmail.com> <4CCF0D2B.6070308@caviumnetworks.com> <201011020814.35902.manningc2@actrix.gen.nz>
+In-Reply-To: <201011020814.35902.manningc2@actrix.gen.nz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 01 Nov 2010 19:25:15.0362 (UTC) FILETIME=[82CF9C20:01CB79FA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-01 at 14:30 -0400, Chuck Lever wrote:
-> On Nov 1, 2010, at 2:19 PM, Nick Bowler wrote:
-> 
-> > On 2010-11-01 14:07 -0400, Chuck Lever wrote:
-> >> On Nov 1, 2010, at 1:58 PM, Nick Bowler wrote:
-> >>> After installing 2.6.37-rc1, attempting to use sqlite in any capacity on
-> >>> NFS gives a locking error:
-> >>> 
-> >>> % echo 'select * from blah;' | sqlite3 blah.sqlite
-> >>> Error: near line 1: database is locked
-> >>> 
-> >>> % echo 'create table blargh(INT);' | sqlite3 blargh.sqlite
-> >>> Error: near line 1: database is locked
-> >>> 
-> >>> The result is that a lot of high-profile applications which make use of
-> >>> sqlite fail mysteriously.  Bisection reveals the following, and
-> >>> reverting the implicated commit solves the issue:
-> >> 
-> >> Nick, thanks for the report.  Is 2.6.37-rc1 running on your clients or
-> >> on your server?
-> > 
-> > Sorry for not being clear: the client is running 2.6.37-rc1.   The
-> > server is running RHEL 5.5.
-> > 
-> >> Does anything interesting appear in the kernel log when your test case
-> >> fails?
-> > 
-> > There are no unusual messages on the client... but I just logged into
-> > the server and I see lots of messages of the following form:
-> > 
-> >  nfsd: request from insecure port (192.168.8.199:35766)!
-> >  nfsd: request from insecure port (192.168.8.199:35766)!
-> >  nfsd: request from insecure port (192.168.8.199:35766)!
-> >  nfsd: request from insecure port (192.168.8.199:35766)!
-> >  nfsd: request from insecure port (192.168.8.199:35766)!
-> > 
-> > (192.168.8.199 is the address of the failing client).  I can only assume
-> > that these are a result of my recent issues, since I don't have access
-> > to the system log (with timestamps) on that machine.
-> 
-> That's the problem this patch is supposed to prevent.  I'll investigate further.
-> 
+On 11/01/2010 12:14 PM, Charles Manning wrote:
+> On Tuesday 02 November 2010 07:55:39 David Daney wrote:
+>> On 11/01/2010 11:40 AM, Tracey Dent wrote:
+>>> The patch sets puts the yaffs2 filesystem in the staging directory.
+>>> It is all based on Charles git
+>>> tree(http://github.com/cdhmanning/linux-yaffs-integration/). Everything
+>>> is compile tested and it builds.
+>>>
+>>> This only the inital support and I will be sending more cleanup patches.
+>>>
+>>> Greg can you add the patch set into your staging-next tree.
+>>> Also, It doesn't affect anything other than itself.
+>>>
+>>> Thanks,
+>>>
+>>> Tracey Dent
+>>
+>> I am confused.
+>>
+>> Are you and Charles Manning working together on this?
+>>
+>> Did you write all this code or did Charles?  If it was Charles, why are
+>> there no From: and Signed-off-by headers for him?
+>>
+>> Thanks in advance for enlightening us as to what is going on here,
+>> David Daney
+>
+> We are not working together on this, but I do appreciate the effort in helping
+> bring to a head what people like/dislike.
+>
+> I am trying to keep the kernel yaffs consistent with the yaffs.net yaffs so
+> that it is easier to add changes from yaffs.net.
+>
 
-I suspect nlmclnt_lookup_host() is to blame. It appears to be the _only_
-thing in the kernel that actually sets this 'srcaddr' field, and it sets
-it to
+Great.  Thanks for clearing things up.
 
-const struct sockaddr source = {
-	.sa_family      = AF_UNSPEC,
-};
+I will offer my unsolicited opinion:
 
-You triggered the bug by removing the line
+Charles has obviously expended great effort on yaffs2.  He has a git 
+repository hosting the code, and has expressed a desire to get the code 
+fit for merging.  For Tracey Dent to come along and hijack the entire 
+effort, would anger me if I were in Charles' place.
 
-	transport->srcaddr.ss_family = family;
+Having used yaffs2 in the past, I would like to see the code in the 
+kernel.  Having it come via Charles would seem to make sense.
 
-from xs_create_sock().
-
-   Trond
+David Daney
