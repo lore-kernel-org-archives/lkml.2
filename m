@@ -1,138 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754101Ab0KAUfo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 16:35:44 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:33735 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753434Ab0KAUfn convert rfc822-to-8bit (ORCPT
+	id S1754081Ab0KAUhO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 16:37:14 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:40961 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751088Ab0KAUhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 16:35:43 -0400
-X-IronPort-AV: E=Sophos;i="4.58,276,1286175600"; 
-   d="scan'208";a="476159602"
-Subject: Re: Regression, bisected: sqlite locking failure on nfs
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Chuck Lever <chuck.lever@oracle.com>
-Cc: Nick Bowler <nbowler@elliptictech.com>,
-        LKML Kernel <linux-kernel@vger.kernel.org>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
-In-Reply-To: <9892B787-0C2A-42C2-8EFE-357EC5393CC1@oracle.com>
-References: <20101101175854.GA3550@elliptictech.com>
-	 <D68536EB-6BE9-4DE4-B325-39FEF747092E@oracle.com>
-	 <20101101181938.GA3875@elliptictech.com>
-	 <187AEE96-9231-4899-9D65-A444503D2758@oracle.com>
-	 <1288639376.5009.16.camel@heimdal.trondhjem.org>
-	 <1288640536.5009.18.camel@heimdal.trondhjem.org>
-	 <DA1E14E0-DCCD-4A6D-9471-E627D4BF2E85@oracle.com>
-	 <1288640888.5009.19.camel@heimdal.trondhjem.org>
-	 <9892B787-0C2A-42C2-8EFE-357EC5393CC1@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp
-Date: Mon, 01 Nov 2010 16:35:29 -0400
-Message-ID: <1288643729.5009.25.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-X-OriginalArrivalTime: 01 Nov 2010 20:35:43.0063 (UTC) FILETIME=[5AB79670:01CB7A04]
+	Mon, 1 Nov 2010 16:37:10 -0400
+Message-ID: <4CCF24F0.5050704@kernel.org>
+Date: Mon, 01 Nov 2010 13:37:04 -0700
+From: "J.H." <warthog9@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.7
+MIME-Version: 1.0
+To: users@kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [kernel.org users] [KORG] Master / hera upgrade & downtime	announcement
+References: <4CCB3158.9010406@kernel.org>
+In-Reply-To: <4CCB3158.9010406@kernel.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.3 (shards.monkeyblade.net [198.137.202.13]); Mon, 01 Nov 2010 13:37:06 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-01 at 15:55 -0400, Chuck Lever wrote:
-> On Nov 1, 2010, at 3:48 PM, Trond Myklebust wrote:
-> 
-> > On Mon, 2010-11-01 at 15:45 -0400, Chuck Lever wrote:
-> >> On Nov 1, 2010, at 3:42 PM, Trond Myklebust wrote:
-> >> 
-> >>> On Mon, 2010-11-01 at 15:22 -0400, Trond Myklebust wrote:
-> >>>> I suspect nlmclnt_lookup_host() is to blame. It appears to be the _only_
-> >>>> thing in the kernel that actually sets this 'srcaddr' field, and it sets
-> >>>> it to
-> >>>> 
-> >>>> const struct sockaddr source = {
-> >>>> 	.sa_family      = AF_UNSPEC,
-> >>>> };
-> >>>> 
-> >>>> You triggered the bug by removing the line
-> >>>> 
-> >>>> 	transport->srcaddr.ss_family = family;
-> >>>> 
-> >>>> from xs_create_sock().
-> >>>> 
-> >>>>  Trond
-> >>> 
-> >>> Does this fix the regression?
-> >>> 
-> >>> Trond
-> >>> 
-> >>> ----------------------------------------------------------------------------------------------
-> >>> NLM: Fix a regression in lockd
-> >>> 
-> >>> From: Trond Myklebust <Trond.Myklebust@netapp.com>
-> >>> 
-> >>> Nick Bowler reports:
-> >>> There are no unusual messages on the client... but I just logged into
-> >>> the server and I see lots of messages of the following form:
-> >>> 
-> >>> nfsd: request from insecure port (192.168.8.199:35766)!
-> >>> nfsd: request from insecure port (192.168.8.199:35766)!
-> >>> nfsd: request from insecure port (192.168.8.199:35766)!
-> >>> nfsd: request from insecure port (192.168.8.199:35766)!
-> >>> nfsd: request from insecure port (192.168.8.199:35766)!
-> >>> 
-> >>> Bisected to commit 9247685088398cf21bcb513bd2832b4cd42516c4 (SUNRPC:
-> >>> Properly initialize sock_xprt.srcaddr in all cases)
-> >>> 
-> >>> Apparently, removing the 'transport->srcaddr.ss_family = family' from
-> >>> xs_create_sock() triggers this due to nlmclnt_lookup_host() incorrectly
-> >>> initialising the srcaddr family to AF_UNSPEC.
-> >>> 
-> >>> Reported-by: Nick Bowler <nbowler@elliptictech.com>
-> >>> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-> >>> ---
-> >>> 
-> >>> fs/lockd/host.c |    5 -----
-> >>> 1 files changed, 0 insertions(+), 5 deletions(-)
-> >>> 
-> >>> 
-> >>> diff --git a/fs/lockd/host.c b/fs/lockd/host.c
-> >>> index 25e21e4..9ff0c0e 100644
-> >>> --- a/fs/lockd/host.c
-> >>> +++ b/fs/lockd/host.c
-> >>> @@ -238,9 +238,6 @@ struct nlm_host *nlmclnt_lookup_host(const struct sockaddr *sap,
-> >>> 				     const char *hostname,
-> >>> 				     int noresvport)
-> >>> {
-> >>> -	const struct sockaddr source = {
-> >>> -		.sa_family	= AF_UNSPEC,
-> >>> -	};
-> >>> 	struct nlm_lookup_host_info ni = {
-> >>> 		.server		= 0,
-> >>> 		.sap		= sap,
-> >>> @@ -249,8 +246,6 @@ struct nlm_host *nlmclnt_lookup_host(const struct sockaddr *sap,
-> >>> 		.version	= version,
-> >>> 		.hostname	= hostname,
-> >>> 		.hostname_len	= strlen(hostname),
-> >>> -		.src_sap	= &source,
-> >>> -		.src_len	= sizeof(source),
-> >>> 		.noresvport	= noresvport,
-> >>> 	};
-> >>> 
-> >>> 
-> >> 
-> >> 
-> >> What about that memcpy() in nlm_lookup_host()?  With this patch, wouldn't it be copying garbage into the host's srcaddr field?
-> >> 
-> > 
-> > It shouldn't. ni->src_len is now zero.
-> 
-> Yech.  All this still assumes that ANYADDR is all zeroes, and that the memory this is going into is already initialized to zeroes.  It's asking for trouble if we re-arrange all this someday.
-> 
-> I've got an untested one line patch that should fix this for any upper layer caller.  Posting now.
-> 
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-No! Upper layer callers should simply not be setting .saddress. Pretty
-much the only thing that _should_ be setting .saddress is the lockd
-callback, and possibly the nfsv4 server callback.
+Hey All,
 
-Trond
+Just a heads up I'm running a little behind but should be starting shortly.
+
+- - John 'Warthog9' Hawley
+Chief Kernel.org Administrator
+
+On 10/29/2010 01:40 PM, J.H. wrote:
+> Afternoon Everyone,
+> 
+> Thought I'd give everyone a quick heads up, that since Kernel Summit
+> starts on the 1st of November, which means I've got my one chance to do
+> system maintenance on master / hera for the year.
+> 
+> I'm expecting to do the upgrade on the 1st itself, likely start time
+> will be around Mon Nov  1 19:00:00 UTC 2010, and I'm hoping for the
+> entire downtime to take no longer than 2 hours.
+> 
+> Things that are going to happen during the upgrade:
+> 
+> 	- OS getting upgraded to Fedora 13
+> 		w/ custom kernel to solve XFS and disable IMA
+> 	- Hardware change
+> 		Google and HP have been very generous enough to
+> 		get us a new machine for the master / hera machine.
+> 		The new machine is a dual, quad core Xeon X5550 box
+> 		with 32G of ram.  Beyond that it nearly identical to the
+> 		current machine.
+> 
+> 		The current machine will become a 'live' backup machine
+> 		that will sync semi-continuously, and be available
+> 		should catastrophic failure of master / hera occur.
+> 
+> Think that's the main big changes.  I'm already working on the upgrade
+> since I have multiple boxes to do this with, and things are looking good
+> so far.
+> 
+> As a note the start time is estimated, if there is a major change to the
+> start time I will let everyone know.
+> 
+> As always, if you have questions, comments or concerns please e-mail me
+> or ftpadmin@kernel.org
+> 
+> - John 'Warthog9' Hawley
+> Chief Kernel.org Administrator
+
+_______________________________________________
+Users mailing list
+Users@linux.kernel.org
+http://linux.kernel.org/mailman/listinfo/users
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAkzPJPAACgkQ/E3kyWU9dic+zgCdHf0zF7EXIn6BwmqboBE25Nqr
+AJQAoINWVSNuF9lyUFPhkSsdN89DtYpF
+=AkT+
+-----END PGP SIGNATURE-----
