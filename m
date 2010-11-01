@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab0KAUNf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 16:13:35 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:58462 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753620Ab0KAUNc (ORCPT
+	id S1753767Ab0KAUNi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 16:13:38 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:41519 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753656Ab0KAUNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 16:13:32 -0400
+	Mon, 1 Nov 2010 16:13:33 -0400
 From: John Stultz <johnstul@us.ibm.com>
 To: lkml <linux-kernel@vger.kernel.org>
-Cc: John Stultz <johnstul@us.ibm.com>, Tony Luck <tony.luck@intel.com>,
+Cc: John Stultz <johnstul@us.ibm.com>, Kyle McMartin <kyle@mcmartin.ca>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 02/10] ia64: convert to clocksource_register_hz/khz
-Date: Mon,  1 Nov 2010 13:12:22 -0700
-Message-Id: <1288642350-1599-3-git-send-email-johnstul@us.ibm.com>
+Subject: [PATCH 05/10] parisc: convert to clocksource_register_hz/khz
+Date: Mon,  1 Nov 2010 13:12:25 -0700
+Message-Id: <1288642350-1599-6-git-send-email-johnstul@us.ibm.com>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1288642350-1599-1-git-send-email-johnstul@us.ibm.com>
 References: <1288642350-1599-1-git-send-email-johnstul@us.ibm.com>
@@ -21,119 +21,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This converts the ia64 clocksources to use clocksource_register_hz/khz
+This converts the parisc clocksources to use clocksource_register_hz/khz
 
 This is untested, so any assistance in testing would be appreciated!
 
-CC: Tony Luck <tony.luck@intel.com>
+CC: Kyle McMartin <kyle@mcmartin.ca>
 CC: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: John Stultz <johnstul@us.ibm.com>
 ---
- arch/ia64/kernel/cyclone.c      |    6 +-----
- arch/ia64/kernel/time.c         |    9 ++-------
- arch/ia64/sn/kernel/sn2/timer.c |    6 +-----
- drivers/char/hpet.c             |    6 +-----
- 4 files changed, 5 insertions(+), 22 deletions(-)
+ arch/parisc/kernel/time.c |    6 +-----
+ 1 files changed, 1 insertions(+), 5 deletions(-)
 
-diff --git a/arch/ia64/kernel/cyclone.c b/arch/ia64/kernel/cyclone.c
-index d52f1f7..f64097b 100644
---- a/arch/ia64/kernel/cyclone.c
-+++ b/arch/ia64/kernel/cyclone.c
-@@ -31,8 +31,6 @@ static struct clocksource clocksource_cyclone = {
-         .rating         = 300,
-         .read           = read_cyclone,
-         .mask           = (1LL << 40) - 1,
--        .mult           = 0, /*to be caluclated*/
--        .shift          = 16,
-         .flags          = CLOCK_SOURCE_IS_CONTINUOUS,
+diff --git a/arch/parisc/kernel/time.c b/arch/parisc/kernel/time.c
+index 05511cc..8bfff4a 100644
+--- a/arch/parisc/kernel/time.c
++++ b/arch/parisc/kernel/time.c
+@@ -201,8 +201,6 @@ static struct clocksource clocksource_cr16 = {
+ 	.rating			= 300,
+ 	.read			= read_cr16,
+ 	.mask			= CLOCKSOURCE_MASK(BITS_PER_LONG),
+-	.mult			= 0, /* to be set */
+-	.shift			= 22,
+ 	.flags			= CLOCK_SOURCE_IS_CONTINUOUS,
  };
  
-@@ -118,9 +116,7 @@ int __init init_cyclone_clock(void)
- 	/* initialize last tick */
- 	cyclone_mc = cyclone_timer;
- 	clocksource_cyclone.fsys_mmio = cyclone_timer;
--	clocksource_cyclone.mult = clocksource_hz2mult(CYCLONE_TIMER_FREQ,
--						clocksource_cyclone.shift);
--	clocksource_register(&clocksource_cyclone);
-+	clocksource_register_hz(&clocksource_cyclone, CYCLONE_TIMER_FREQ);
+@@ -273,7 +271,5 @@ void __init time_init(void)
  
- 	return 0;
+ 	/* register at clocksource framework */
+ 	current_cr16_khz = PAGE0->mem_10msec/10;  /* kHz */
+-	clocksource_cr16.mult = clocksource_khz2mult(current_cr16_khz,
+-						clocksource_cr16.shift);
+-	clocksource_register(&clocksource_cr16);
++	clocksource_register_khz(&clocksource_cr16, current_cr16_khz);
  }
-diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
-index ed6f22e..4b981e5 100644
---- a/arch/ia64/kernel/time.c
-+++ b/arch/ia64/kernel/time.c
-@@ -73,8 +73,6 @@ static struct clocksource clocksource_itc = {
- 	.rating         = 350,
- 	.read           = itc_get_cycles,
- 	.mask           = CLOCKSOURCE_MASK(64),
--	.mult           = 0, /*to be calculated*/
--	.shift          = 16,
- 	.flags          = CLOCK_SOURCE_IS_CONTINUOUS,
- #ifdef CONFIG_PARAVIRT
- 	.resume		= paravirt_clocksource_resume,
-@@ -374,11 +372,8 @@ ia64_init_itm (void)
- 	ia64_cpu_local_tick();
- 
- 	if (!itc_clocksource) {
--		/* Sort out mult/shift values: */
--		clocksource_itc.mult =
--			clocksource_hz2mult(local_cpu_data->itc_freq,
--						clocksource_itc.shift);
--		clocksource_register(&clocksource_itc);
-+		clocksource_register_hz(&clocksource_itc,
-+						local_cpu_data->itc_freq );
- 		itc_clocksource = &clocksource_itc;
- 	}
- }
-diff --git a/arch/ia64/sn/kernel/sn2/timer.c b/arch/ia64/sn/kernel/sn2/timer.c
-index 21d6f09..c34efda 100644
---- a/arch/ia64/sn/kernel/sn2/timer.c
-+++ b/arch/ia64/sn/kernel/sn2/timer.c
-@@ -33,8 +33,6 @@ static struct clocksource clocksource_sn2 = {
-         .rating         = 450,
-         .read           = read_sn2,
-         .mask           = (1LL << 55) - 1,
--        .mult           = 0,
--        .shift          = 10,
-         .flags          = CLOCK_SOURCE_IS_CONTINUOUS,
- };
- 
-@@ -57,9 +55,7 @@ ia64_sn_udelay (unsigned long usecs)
- void __init sn_timer_init(void)
- {
- 	clocksource_sn2.fsys_mmio = RTC_COUNTER_ADDR;
--	clocksource_sn2.mult = clocksource_hz2mult(sn_rtc_cycles_per_second,
--							clocksource_sn2.shift);
--	clocksource_register(&clocksource_sn2);
-+	clocksource_register_hz(&clocksource_sn2, sn_rtc_cycles_per_second);
- 
- 	ia64_udelay = &ia64_sn_udelay;
- }
-diff --git a/drivers/char/hpet.c b/drivers/char/hpet.c
-index 55b8667..d938311 100644
---- a/drivers/char/hpet.c
-+++ b/drivers/char/hpet.c
-@@ -85,8 +85,6 @@ static struct clocksource clocksource_hpet = {
- 	.rating		= 250,
- 	.read		= read_hpet,
- 	.mask		= CLOCKSOURCE_MASK(64),
--	.mult		= 0,		/* to be calculated */
--	.shift		= 10,
- 	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
- };
- static struct clocksource *hpet_clocksource;
-@@ -935,9 +933,7 @@ int hpet_alloc(struct hpet_data *hdp)
- 	if (!hpet_clocksource) {
- 		hpet_mctr = (void __iomem *)&hpetp->hp_hpet->hpet_mc;
- 		CLKSRC_FSYS_MMIO_SET(clocksource_hpet.fsys_mmio, hpet_mctr);
--		clocksource_hpet.mult = clocksource_hz2mult(hpetp->hp_tick_freq,
--						clocksource_hpet.shift);
--		clocksource_register(&clocksource_hpet);
-+		clocksource_register_hz(&clocksource_hpet, hpetp->hp_tick_freq);
- 		hpetp->hp_clocksource = &clocksource_hpet;
- 		hpet_clocksource = &clocksource_hpet;
- 	}
 -- 
 1.7.3.2.146.gca209
 
