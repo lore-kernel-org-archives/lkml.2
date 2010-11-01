@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757717Ab0KAP1n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 11:27:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28990 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753416Ab0KAP1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 11:27:40 -0400
-Date: Mon, 1 Nov 2010 16:27:26 +0100 (CET)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-lab-213.englab.brq.redhat.com
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-cc: Lukas Czerner <lczerner@redhat.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Theodore Tso <tytso@mit.edu>
-Subject: Re: ext4_lazyinit_thread: 'ret' may be used uninitialized in this
- function
-In-Reply-To: <tkrat.ba371a0ea018042b@s5r6.in-berlin.de>
-Message-ID: <alpine.LFD.2.00.1011011551001.2876@dhcp-lab-213.englab.brq.redhat.com>
-References: <tkrat.ba371a0ea018042b@s5r6.in-berlin.de>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1758121Ab0KAP3c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 11:29:32 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:51647 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753416Ab0KAP3a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 11:29:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Vo8cXmUdtE4OW7m3ewqP2raUAmHXtWAihoyioQB0pNJcMnbtEfArCrASCuEJcu031o
+         mTUH6w1GExF1Au0I5NB/j2F2y/oRytiapbH/HVnAwOgcGqG2iMtuHt566xKlp3FIrvac
+         4zDmacpai6prYjXwiwr7iEmGKfntNM9MkY58w=
+Subject: Re: [PATCH 3/3] fs: rcu protect inode hash lookups
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20101101134451.GN2715@dastard>
+References: <1288589624-15251-1-git-send-email-david@fromorbit.com>
+	 <1288589624-15251-4-git-send-email-david@fromorbit.com>
+	 <1288604287.2660.94.camel@edumazet-laptop>  <20101101134451.GN2715@dastard>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 01 Nov 2010 16:29:22 +0100
+Message-ID: <1288625362.2660.108.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 31 Oct 2010, Stefan Richter wrote:
+Le mardi 02 novembre 2010 à 00:44 +1100, Dave Chinner a écrit :
 
-> Commit bfff68738f1c "ext4: add support for lazy inode table
-> initialization" added the following build warning:
-> 
-> fs/ext4/super.c: In function 'ext4_lazyinit_thread':
-> fs/ext4/super.c:2702: warning: 'ret' may be used uninitialized in this function
-> 
-> This warning is due to an actual bug.  But I don't know what the fix is.
+> Perhaps you should rename that file "slab_destroy_by_rcu-tips.txt",
+> because the current name seems unrelated to the contents. :/
 > 
 
-Hi Stefan,
+Hmm, I dont know, this doc really is about the nulls thing.
 
-thank you for noticing this, because I actually do not see the warning
-(I wonder why...), but it is definitely a bug, so the trivial patch below
-should fix that.
+This stuff also addressed one problem I forgot to tell you about: During
+a lookup, you might find an item that is moved to another chain by
+another cpu, so your lookup is redirected to another chain. You can miss
+your target.
 
-Thanks!
--Lukas
+You must find a way to detect such thing to restart the lookup at the
+beginning (of the right chain).
 
->From 3594c17e3f724356ea8cc0a1579ab09990a771ac Mon Sep 17 00:00:00 2001
-From: Lukas Czerner <lczerner@redhat.com>
-Date: Mon, 1 Nov 2010 15:44:54 +0100
-Subject: [PATCH] ext4: fix using uninitialized variable
+Either you stick the chain number in a new inode field (that costs extra
+memory), or you use the 'nulls' value that can let you know if you ended
+your lookup in the right chain.
 
-The ret variable might be used uninitialized. Fix this by  initializing
-it in definition.
 
-Signed-off-by: "Lukas Czerner" <lczerner@redhat.com>
-Reported-by: "Stefan Richter" <stefanr@s5r6.in-berlin.de>
----
- fs/ext4/super.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 8d1d942..aff17cf 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -2699,7 +2699,7 @@ static int ext4_lazyinit_thread(void *arg)
- 	struct ext4_li_request *elr;
- 	unsigned long next_wakeup;
- 	DEFINE_WAIT(wait);
--	int ret;
-+	int ret = 0;
- 
- 	BUG_ON(NULL == eli);
- 
--- 
-1.7.2.3
 
