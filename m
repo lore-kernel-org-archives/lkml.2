@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757130Ab0KAKR2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 06:17:28 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:64796 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757098Ab0KAKRZ (ORCPT
+	id S1757161Ab0KAKSM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 06:18:12 -0400
+Received: from anubis.se.axis.com ([195.60.68.12]:49231 "EHLO
+	anubis.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757120Ab0KAKSL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 06:17:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=VrVzJ5tN4S1xaoCGKO7kiu/gkGaki+k8SUKVHBR77Nxt3Y5fS5DvSZYMvL9pmBCffp
-         GChqTZMEQRZ3rAekeL73OPGnPVgnLwGOO9Rmmx2spD30dwniI/4qpZdKdhFsRML24uR5
-         nJd591CfWGEbxqu6s3kqsilMgwbaSB7W626SU=
-Message-ID: <4CCE93B1.90801@gmail.com>
-Date: Mon, 01 Nov 2010 03:17:21 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Mon, 1 Nov 2010 06:18:11 -0400
+Date: Mon, 1 Nov 2010 11:18:09 +0100
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-cris-kernel <linux-cris-kernel@axis.com>
+Subject: [git pull] CRISv10 RS485 serial fixes
+Message-ID: <20101101101809.GI5043@axis.com>
 MIME-Version: 1.0
-To: Ramya Desai <ramya.desai@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Where can I find -rc kernels?
-References: <AANLkTimE4QR+=eXfSMQ5s3OvnLU0Z=7uR1vtokpLnj7X@mail.gmail.com>
-In-Reply-To: <AANLkTimE4QR+=eXfSMQ5s3OvnLU0Z=7uR1vtokpLnj7X@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2010 03:01 AM, Ramya Desai wrote:
-> Dear All,
->
-> Generally, I download the stable kernels from
-> http://www.kernel.org/pub/linux/kernel/v2.6/ However, I did not find a
-> link, like this, for -rc kernels. Please let me know, from where can I
-> download the -rc kernels. Please provide a link to me.
->
-> Thanks and Regards,
-> Ramya.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Hi Linus!
+
+Please pull the below repository, it contains some small changes
+for CRIS RS485 handling and changes so the CRISv10 serial driver
+is mentioned under the CRIS section in MAINTAINERS.
+
+Thanks!
 
 
-why not just do a git clone of linus's tree then do a git reset --hard 
-v2.6*(some rc version you need...)
+The following changes since commit b5153163ed580e00c67bdfecb02b2e3843817b3e:
 
-this way you do not need to depend on kernel.org providing you the kernel...
+  Merge branch 'devel' of master.kernel.org:/home/rmk/linux-2.6-arm (2010-10-21 16:42:32 -0700)
 
-(as for the site..no idea what happened there..)
+are available in the git repository at:
 
-Justin P. Mattock
+  git://www.jni.nu/cris.git for-linus
+
+Jesper Nilsson (3):
+      Add missing "struct" to in sizeof.
+      CRIS: Fix RS485 delay handling.
+      CRIS: Add paths for CRISv10 serial driver
+
+ MAINTAINERS              |    1 +
+ drivers/serial/crisv10.c |   23 +++++++++++++++--------
+ 2 files changed, 16 insertions(+), 8 deletions(-)
+
+/^JN - Jesper Nilsson
+-- 
+               Jesper Nilsson -- jesper.nilsson@axis.com
