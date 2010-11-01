@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755533Ab0KAJOS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 05:14:18 -0400
-Received: from mx01.sz.bfs.de ([194.94.69.103]:63746 "EHLO mx01.sz.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754377Ab0KAJOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 05:14:15 -0400
-Message-ID: <4CCE84E2.9050801@bfs.de>
-Date: Mon, 01 Nov 2010 10:14:10 +0100
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
-MIME-Version: 1.0
-To: Vasiliy Kulikov <segooon@gmail.com>
-CC: kernel-janitors@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Jiri Pirko <jpirko@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] net: packet: fix information leak to userland
-References: <1288545028-16436-1-git-send-email-segooon@gmail.com>
-In-Reply-To: <1288545028-16436-1-git-send-email-segooon@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1755255Ab0KAJWj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 05:22:39 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:38856 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754740Ab0KAJWg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 05:22:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=B/ESLXJR7VucszrYxqdMBW4+eBrOFQkw8y3S0xQwBN/s1ZSNcuSNQRaZtARfiM6KiD
+         mLIHaPlkwb3LovY7xDLUHyuHKFOlH0RkUfFzYRHbgJAPqBHLG/3hL1vE+B1JkjeSn6eU
+         boMI3ur5U15U19WL17JZjC3Qvce9sZy6uaPxQ=
+Subject: [PATCH] V4L/DVB: tea6415c: return -EIO if i2c_check_functionality
+	fails
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Hans Verkuil <hverkuil@xs4all.nl>, linux-media@vger.kernel.org
+Content-Type: text/plain
+Date: Mon, 01 Nov 2010 17:25:39 +0800
+Message-Id: <1288603539.3831.2.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If the adapter does not support I2C_FUNC_SMBUS_WRITE_BYTE,
+return -EIO instead of 0.
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/media/video/tea6415c.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/media/video/tea6415c.c b/drivers/media/video/tea6415c.c
+index 3e99cea..19621ed 100644
+--- a/drivers/media/video/tea6415c.c
++++ b/drivers/media/video/tea6415c.c
+@@ -148,7 +148,7 @@ static int tea6415c_probe(struct i2c_client *client,
+ 
+ 	/* let's see whether this adapter can support what we need */
+ 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_WRITE_BYTE))
+-		return 0;
++		return -EIO;
+ 
+ 	v4l_info(client, "chip found @ 0x%x (%s)\n",
+ 			client->addr << 1, client->adapter->name);
+-- 
+1.7.2
 
 
-Vasiliy Kulikov schrieb:
-> packet_getname_spkt() doesn't initialize all members of sa_data field of
-> sockaddr struct if strlen(dev->name) < 13.  This structure is then copied
-> to userland.  It leads to leaking of contents of kernel stack memory.
-> We have to fully fill sa_data with strncpy() instead of strlcpy().
-> 
-> The same with packet_getname(): it doesn't initialize sll_pkttype field of
-> sockaddr_ll.  Set it to zero.
-> 
-> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-> ---
->  net/packet/af_packet.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-> index 3616f27..0856a13 100644
-> --- a/net/packet/af_packet.c
-> +++ b/net/packet/af_packet.c
-> @@ -1719,7 +1719,7 @@ static int packet_getname_spkt(struct socket *sock, struct sockaddr *uaddr,
->  	rcu_read_lock();
->  	dev = dev_get_by_index_rcu(sock_net(sk), pkt_sk(sk)->ifindex);
->  	if (dev)
-> -		strlcpy(uaddr->sa_data, dev->name, 15);
-> +		strncpy(uaddr->sa_data, dev->name, 14);
->  	else
->  		memset(uaddr->sa_data, 0, 14);
 
-if i understand the code correcly the max size for dev->name is IFNAMSIZ.
-You can simply that part:
-
-memset(uaddr->sa_data, 0, IFNAMSIZ);
-dev = dev_get_by_index_rcu(sock_net(sk), pkt_sk(sk)->ifindex);
-if (dev)
-	strlcpy(uaddr->sa_data, dev->name, IFNAMSIZ);
-
-
-you should send that as separate patch.
-re,
- wh
-
-
->  	rcu_read_unlock();
-> @@ -1742,6 +1742,7 @@ static int packet_getname(struct socket *sock, struct sockaddr *uaddr,
->  	sll->sll_family = AF_PACKET;
->  	sll->sll_ifindex = po->ifindex;
->  	sll->sll_protocol = po->num;
-> +	sll->sll_pkttype = 0;
->  	rcu_read_lock();
->  	dev = dev_get_by_index_rcu(sock_net(sk), po->ifindex);
->  	if (dev) {
