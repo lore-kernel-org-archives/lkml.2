@@ -1,152 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755199Ab0KAVrT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 17:47:19 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:4352 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801Ab0KAVrQ (ORCPT
+	id S1755245Ab0KAVru (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 17:47:50 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:34718 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755218Ab0KAVrs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 17:47:16 -0400
-Subject: Re: [PATCH 3/3] net - removing superfluous rcu_read_lock_held check
-From: Paul Moore <paul.moore@hp.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: dhowells@redhat.com, lizf@cn.fujitsu.com, johannes@sipsolutions.net,
-        dipankar@in.ibm.com, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, kvm@vger.kernel.org
-In-Reply-To: <1288638909-10541-4-git-send-email-jolsa@redhat.com>
-References: <1288638909-10541-1-git-send-email-jolsa@redhat.com>
-	 <1288638909-10541-4-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset="us-ascii"
-Organization: Hewlett Packard
-Date: Mon, 01 Nov 2010 17:47:12 -0400
-Message-ID: <1288648032.5167.0.camel@sifl>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 1 Nov 2010 17:47:48 -0400
+From: Thomas Weber <weber@corscience.de>
+To: tony@atomide.com
+Cc: Thomas Weber <weber@corscience.de>, Russell King <linux@arm.linux.org.uk>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] OMAP2: Devkit8000: Fix mmc regulator failure
+Date: Mon,  1 Nov 2010 23:48:11 +0100
+Message-Id: <1288651691-14914-1-git-send-email-weber@corscience.de>
+X-Mailer: git-send-email 1.7.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-01 at 20:15 +0100, Jiri Olsa wrote:
-> hi,
-> the rcu_dereference_check is defined as
-> 
-> 	#define rcu_dereference_check(p, c) \
-> 	   __rcu_dereference_check((p), rcu_read_lock_held() || (c), __rcu)
-> 
-> so the caller does not need to specify rcu_read_lock_held() condition.
-> 
-> wbr,
-> jirka
-> 
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+This patch fixes the following error:
 
-The NetLabel changes look fine to me; thanks for the cleanup.
+>regulator: VMMC1: 1850 <--> 3150 mV at 3000 mV normal
+standby
+>twl_reg twl_reg.6: can't register VMMC1, -22
+>twl_reg: probe of twl_reg.6 failed with error -22
 
-> ---
->  include/linux/rtnetlink.h          |    3 +--
->  include/net/sock.h                 |    3 +--
->  net/mac80211/sta_info.c            |    4 ----
->  net/netlabel/netlabel_domainhash.c |    3 +--
->  net/netlabel/netlabel_unlabeled.c  |    3 +--
->  5 files changed, 4 insertions(+), 12 deletions(-)
-> 
-> diff --git a/include/linux/rtnetlink.h b/include/linux/rtnetlink.h
-> index d42f274..dfe5ba1 100644
-> --- a/include/linux/rtnetlink.h
-> +++ b/include/linux/rtnetlink.h
-> @@ -758,8 +758,7 @@ extern int lockdep_rtnl_is_held(void);
->   * or RTNL. Note : Please prefer rtnl_dereference() or rcu_dereference()
->   */
->  #define rcu_dereference_rtnl(p)					\
-> -	rcu_dereference_check(p, rcu_read_lock_held() ||	\
-> -				 lockdep_rtnl_is_held())
-> +	rcu_dereference_check(p, lockdep_rtnl_is_held())
->  
->  /**
->   * rtnl_dereference - fetch RCU pointer when updates are prevented by RTNL
-> diff --git a/include/net/sock.h b/include/net/sock.h
-> index c7a7362..bee3e9c 100644
-> --- a/include/net/sock.h
-> +++ b/include/net/sock.h
-> @@ -1274,8 +1274,7 @@ extern unsigned long sock_i_ino(struct sock *sk);
->  static inline struct dst_entry *
->  __sk_dst_get(struct sock *sk)
->  {
-> -	return rcu_dereference_check(sk->sk_dst_cache, rcu_read_lock_held() ||
-> -						       sock_owned_by_user(sk) ||
-> +	return rcu_dereference_check(sk->sk_dst_cache, sock_owned_by_user(sk) ||
->  						       lockdep_is_held(&sk->sk_lock.slock));
->  }
->  
-> diff --git a/net/mac80211/sta_info.c b/net/mac80211/sta_info.c
-> index 6d8f897..c879217 100644
-> --- a/net/mac80211/sta_info.c
-> +++ b/net/mac80211/sta_info.c
-> @@ -94,7 +94,6 @@ struct sta_info *sta_info_get(struct ieee80211_sub_if_data *sdata,
->  	struct sta_info *sta;
->  
->  	sta = rcu_dereference_check(local->sta_hash[STA_HASH(addr)],
-> -				    rcu_read_lock_held() ||
->  				    lockdep_is_held(&local->sta_lock) ||
->  				    lockdep_is_held(&local->sta_mtx));
->  	while (sta) {
-> @@ -102,7 +101,6 @@ struct sta_info *sta_info_get(struct ieee80211_sub_if_data *sdata,
->  		    memcmp(sta->sta.addr, addr, ETH_ALEN) == 0)
->  			break;
->  		sta = rcu_dereference_check(sta->hnext,
-> -					    rcu_read_lock_held() ||
->  					    lockdep_is_held(&local->sta_lock) ||
->  					    lockdep_is_held(&local->sta_mtx));
->  	}
-> @@ -120,7 +118,6 @@ struct sta_info *sta_info_get_bss(struct ieee80211_sub_if_data *sdata,
->  	struct sta_info *sta;
->  
->  	sta = rcu_dereference_check(local->sta_hash[STA_HASH(addr)],
-> -				    rcu_read_lock_held() ||
->  				    lockdep_is_held(&local->sta_lock) ||
->  				    lockdep_is_held(&local->sta_mtx));
->  	while (sta) {
-> @@ -129,7 +126,6 @@ struct sta_info *sta_info_get_bss(struct ieee80211_sub_if_data *sdata,
->  		    memcmp(sta->sta.addr, addr, ETH_ALEN) == 0)
->  			break;
->  		sta = rcu_dereference_check(sta->hnext,
-> -					    rcu_read_lock_held() ||
->  					    lockdep_is_held(&local->sta_lock) ||
->  					    lockdep_is_held(&local->sta_mtx));
->  	}
-> diff --git a/net/netlabel/netlabel_domainhash.c b/net/netlabel/netlabel_domainhash.c
-> index d37b7f8..82795a4 100644
-> --- a/net/netlabel/netlabel_domainhash.c
-> +++ b/net/netlabel/netlabel_domainhash.c
-> @@ -55,8 +55,7 @@ struct netlbl_domhsh_tbl {
->   * should be okay */
->  static DEFINE_SPINLOCK(netlbl_domhsh_lock);
->  #define netlbl_domhsh_rcu_deref(p) \
-> -	rcu_dereference_check(p, rcu_read_lock_held() || \
-> -				 lockdep_is_held(&netlbl_domhsh_lock))
-> +	rcu_dereference_check(p, lockdep_is_held(&netlbl_domhsh_lock))
->  static struct netlbl_domhsh_tbl *netlbl_domhsh = NULL;
->  static struct netlbl_dom_map *netlbl_domhsh_def = NULL;
->  
-> diff --git a/net/netlabel/netlabel_unlabeled.c b/net/netlabel/netlabel_unlabeled.c
-> index e2b0a68..d2f982f 100644
-> --- a/net/netlabel/netlabel_unlabeled.c
-> +++ b/net/netlabel/netlabel_unlabeled.c
-> @@ -116,8 +116,7 @@ struct netlbl_unlhsh_walk_arg {
->   * hash table should be okay */
->  static DEFINE_SPINLOCK(netlbl_unlhsh_lock);
->  #define netlbl_unlhsh_rcu_deref(p) \
-> -	rcu_dereference_check(p, rcu_read_lock_held() || \
-> -				 lockdep_is_held(&netlbl_unlhsh_lock))
-> +	rcu_dereference_check(p, lockdep_is_held(&netlbl_unlhsh_lock))
->  static struct netlbl_unlhsh_tbl *netlbl_unlhsh = NULL;
->  static struct netlbl_unlhsh_iface *netlbl_unlhsh_def = NULL;
->  
+Signed-off-by: Thomas Weber <weber@corscience.de>
+---
+ arch/arm/mach-omap2/board-devkit8000.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
+diff --git a/arch/arm/mach-omap2/board-devkit8000.c b/arch/arm/mach-omap2/board-devkit8000.c
+index 067f437..53ac762 100644
+--- a/arch/arm/mach-omap2/board-devkit8000.c
++++ b/arch/arm/mach-omap2/board-devkit8000.c
+@@ -242,9 +242,6 @@ static int devkit8000_twl_gpio_setup(struct device *dev,
+ 	mmc[0].gpio_cd = gpio + 0;
+ 	omap2_hsmmc_init(mmc);
+ 
+-	/* link regulators to MMC adapters */
+-	devkit8000_vmmc1_supply.dev = mmc[0].dev;
+-
+ 	/* TWL4030_GPIO_MAX + 1 == ledB, PMU_STAT (out, active low LED) */
+ 	gpio_leds[2].gpio = gpio + TWL4030_GPIO_MAX + 1;
+ 
 -- 
-paul moore
-linux @ hp
-
+1.7.3.2
 
