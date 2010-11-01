@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758094Ab0KAOeS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 10:34:18 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:43945 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756439Ab0KAOeQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 10:34:16 -0400
+	id S1754168Ab0KAOfa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 10:35:30 -0400
+Received: from 8bytes.org ([88.198.83.132]:40104 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752701Ab0KAOf2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 10:35:28 -0400
+Date: Mon, 1 Nov 2010 15:35:26 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Jan Kiszka <jan.kiszka@web.de>
+Cc: "Roedel, Joerg" <Joerg.Roedel@amd.com>, kvm <kvm@vger.kernel.org>,
+        Sheng Yang <sheng@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Crash on kvm_iommu_map_pages
+Message-ID: <20101101143526.GD2987@8bytes.org>
+References: <4CCEB7CF.8030207@web.de> <4CCEB946.7070103@web.de> <20101101132127.GF20959@amd.com> <4CCEBFAC.1000809@web.de> <20101101135322.GG20959@amd.com> <4CCECD17.3080303@web.de>
 MIME-Version: 1.0
-X-Originating-IP: [93.172.188.124]
-In-Reply-To: <4CCECD09.2010505@arndnet.de>
-References: <4CCDA454.708@arndnet.de> <AANLkTin80pwnb1DX8OdZK3Wgsq0nj==G9VM3pahsmo0U@mail.gmail.com>
- <4CCDE4EB.7060001@arndnet.de> <AANLkTik52SVa0SC_RtNtgFu2U9Gye7BKtQ7jNgMPKe=W@mail.gmail.com>
- <4CCE74DB.8000206@arndnet.de> <AANLkTinhYqhcQor3PhTKoS3At3Tt2Qv5WAGSirfR8eNG@mail.gmail.com>
- <4CCECD09.2010505@arndnet.de>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Mon, 1 Nov 2010 16:33:54 +0200
-Message-ID: <AANLkTim8bfNDacFLs-kmkmtQuxUb-1BEqTNVW1dGQZxd@mail.gmail.com>
-Subject: Re: regression: b43-sdio: probe of mmc0:0001:1 failed with error -16
-To: Arnd Hannemann <arnd@arndnet.de>
-Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CCECD17.3080303@web.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 1, 2010 at 4:22 PM, Arnd Hannemann <arnd@arndnet.de> wrote:
-> It looks like this:
->
-> root@ap4evb:~# modprobe b43
-> [   36.023437] cfg80211: Calling CRDA to update world regulatory domain
-> [   36.460937] sdio_bus_probe()
-> [   36.468750] sdio_bus_probe() calling pm_runtime_get_sync()
-> [   36.468750] mmc_power_restore_host() begin
-> [   36.570312] mmc_sdio_power_restore() begin
-> [   36.570312] mmc_sdio_init_card()
-> [   36.578125] mmc_sdio_init_card() mmc_send_io_op_cond ret=-110
+On Mon, Nov 01, 2010 at 03:22:15PM +0100, Jan Kiszka wrote:
+> Am 01.11.2010 14:53, Roedel, Joerg wrote:
+> > On Mon, Nov 01, 2010 at 09:25:00AM -0400, Jan Kiszka wrote:
+> >> Am 01.11.2010 14:21, Roedel, Joerg wrote:
+> >>> The registers rax and rbx contain non-canonical addresses (if
+> >>> interpreted as pointers). The instruction where this happens is a mov so
+> >>> I guess that the #GP is because of an non-canonical address.
+> >>> Can you find out the code-line where this happens and the exact
+> >>> assembler instruction? (haven't managed to decode the registers used).
+> >>
+> >> In pfn_to_dma_pte, line 710:
+> >>
+> >>                 if (!dma_pte_present(pte)) {
+> >> ffffffff8121de8c:       f6 03 03                testb  $0x3,(%rbx)
+> >> ffffffff8121de8f:       0f 85 d8 00 00 00       jne    ffffffff8121df6d <pfn_to_dma_pte+0x154>
+> >>
+> >> The first instruction raises the fault.
+> > 
+> > Ok, so it seems that my understanding of the Code: field in the
+> > crash-message was wrong :)
+> > Anyway, the testb uses rbx as an address which has a non-canonical
+> > value. This means the the address of 'pte' is invalid. Since rax also
+> > contains a wrong address the 'parent' variable probably already contains
+> > the wrong address. Does the attached patch help?
+> > 
+> > diff --git a/include/linux/dma_remapping.h b/include/linux/dma_remapping.h
+> > index 5619f85..ca46f24 100644
+> > --- a/include/linux/dma_remapping.h
+> > +++ b/include/linux/dma_remapping.h
+> > @@ -6,7 +6,7 @@
+> >   */
+> >  #define VTD_PAGE_SHIFT		(12)
+> >  #define VTD_PAGE_SIZE		(1UL << VTD_PAGE_SHIFT)
+> > -#define VTD_PAGE_MASK		(((u64)-1) << VTD_PAGE_SHIFT)
+> > +#define VTD_PAGE_MASK		((((u64)-1) << VTD_PAGE_SHIFT) & ((1ULL << 52) - 1))
+> >  #define VTD_PAGE_ALIGN(addr)	(((addr) + VTD_PAGE_SIZE - 1) & VTD_PAGE_MASK)
+> >  
+> >  #define DMA_PTE_READ (1)
+> > 
+> 
+> Crashes during early boot while initializing dmar. If you need the
+> trace, I could set up some debug console.
 
-OK, thanks. CMD5 time outs. I suspect it's similar to what we have
-with the XO-1.5: despite software calling mmc_power_off/on, the
-hardware does not go through full power off/on cycle.
+Hmm, no. This was only a guess. The VTD_PAGE_MASK does not mask out the
+bits 52-63 of the pte. According to the VT-d spec it is allowed to set
+these bits, some are marked as AVL and some have special meanings. If a
+pte has one of these bits set the phys_addr calculated will be wrong and
+the virt_addr calculated from it too (probably non-canonical, leading to
+the GPF). 
 
->> The interesting part is actually what happens after sdio_bus_probe(),
->> not before it.
->
-> Actually nothing special happens after sdio_bus_probe()
+Probably masking out these bits in dma_pte_addr helps. 
 
-The actual failure happens after it (in mmc_sdio_init_card).
+	Joerg
 
-> With your patch the problem goes away, thanks.
-
-Thank you for testing this,
-Ohad.
