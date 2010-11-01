@@ -1,65 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757195Ab0KAKmm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 06:42:42 -0400
-Received: from mga11.intel.com ([192.55.52.93]:18763 "EHLO mga11.intel.com"
+	id S1757241Ab0KAKnD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 06:43:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5750 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754914Ab0KAKmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 06:42:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,273,1286175600"; 
-   d="scan'208";a="622251665"
-Date: Mon, 1 Nov 2010 12:45:06 +0100
-From: Andi Kleen <ak@linux.intel.com>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: James Bottomley <James.Bottomley@suse.de>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Mike Anderson <andmike@linux.vnet.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>,
-        James Smart <james.smart@emulex.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
-        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
-        Brian King <brking@linux.vnet.ibm.com>,
-        Christof Schmitt <christof.schmitt@de.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, julia@diku.dk
-Subject: Re: [ANNOUNCE] Status of unlocked_qcmds=1 operation for .37
-Message-ID: <20101101114506.GB21905@gargoyle.globalsuite.net>
-References: <1288133450.8283.723.camel@mulgrave.site>
- <1288134048.5169.132.camel@haakon2.linux-iscsi.org>
- <1288134713.19649.11.camel@mulgrave.site>
- <1288135918.5169.149.camel@haakon2.linux-iscsi.org>
- <20101027075349.GA32585@gargoyle.fritz.box>
- <1288189658.4692.13.camel@mulgrave.site>
- <20101028091020.GA7906@gargoyle.fritz.box>
- <4CC95BE8.3000909@panasas.com>
- <20101028182610.GA4592@gargoyle.fritz.box>
- <4CCD5DA4.9090806@panasas.com>
+	id S1757184Ab0KAKnC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 06:43:02 -0400
+Message-ID: <4CCE9989.2010809@redhat.com>
+Date: Mon, 01 Nov 2010 06:42:17 -0400
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CCD5DA4.9090806@panasas.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ian Molton <ian.molton@collabora.co.uk>
+CC: virtualization@lists.osdl.org, linux-kernel@vger.kernel.org,
+        QEMU Developers <qemu-devel@nongnu.org>
+Subject: Re: [Qemu-devel] Re: [PATCH] Implement a virtio GPU transport
+References: <4CAC9CD1.2050601@collabora.co.uk>	<4CB1D79A.6070805@redhat.com>	<4CBD739A.2010500@collabora.co.uk>	<4CBD7560.6080207@redhat.com> <4CC8226F.5080807@collabora.co.uk>	<4CC94203.1080207@redhat.com> <4CC9647A.50108@collabora.co.uk> <4CC98784.7020907@redhat.com> <4CC9D472.2080109@collabora.co.uk>
+In-Reply-To: <4CC9D472.2080109@collabora.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> + XXX_queue_command(...
-> + {
-> + 	return SCSI_LOCKED_QUEUECOMMAND(XXX_queue_command_unlocked, ...);
-> + }
-> > -Andi
-> 
-> But since I'm only blabing, the one that "do", gets to decide ;-) .
-> Perhaps next time.
+  On 10/28/2010 03:52 PM, Ian Molton wrote:
+> On 28/10/10 15:24, Avi Kivity wrote:
+>>> The caller is intended to block as the host must perform GL rendering
+>>> before allowing the guests process to continue.
+>>
+>> Why is that?  Can't we pipeline the process?
+>
+> No, not really. the guest may call for the scene to be rendered at any 
+> time and we have to wait for that to happen before we can return the 
+> data to it.
 
-With semantics patches "do"ing is actually not that much effort ...
+Waiting for a response is fine, but can't the guest issue a second batch 
+while waiting for the first?
 
--Andi
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
+
