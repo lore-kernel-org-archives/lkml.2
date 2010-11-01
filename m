@@ -1,38 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753077Ab0KATrJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 15:47:09 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48574 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753029Ab0KATrG (ORCPT
+	id S1752689Ab0KATsx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 15:48:53 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:48836 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752519Ab0KATsv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 15:47:06 -0400
-Date: Mon, 1 Nov 2010 15:47:10 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Joe Perches <joe@perches.com>
-Cc: Jiri Kosina <trivial@kernel.org>,
-        Ian Lartey <ian@opensource.wolfsonmicro.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 39/39] sound/soc/codecs/wm_hubs.c: Update WARN uses
-Message-ID: <20101101194709.GB13509@opensource.wolfsonmicro.com>
-References: <cover.1288471897.git.joe@perches.com>
- <777b4b32cf9bcd1fcb78d7d5c26e8c9a0c17aa3e.1288471898.git.joe@perches.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <777b4b32cf9bcd1fcb78d7d5c26e8c9a0c17aa3e.1288471898.git.joe@perches.com>
-X-Cookie: You will wish you hadn't.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 1 Nov 2010 15:48:51 -0400
+X-IronPort-AV: E=Sophos;i="4.58,276,1286175600"; 
+   d="scan'208";a="476140673"
+Subject: Re: Regression, bisected: sqlite locking failure on nfs
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Chuck Lever <chuck.lever@oracle.com>
+Cc: Nick Bowler <nbowler@elliptictech.com>,
+        LKML Kernel <linux-kernel@vger.kernel.org>,
+        "J. Bruce Fields" <bfields@redhat.com>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
+In-Reply-To: <DA1E14E0-DCCD-4A6D-9471-E627D4BF2E85@oracle.com>
+References: <20101101175854.GA3550@elliptictech.com>
+	 <D68536EB-6BE9-4DE4-B325-39FEF747092E@oracle.com>
+	 <20101101181938.GA3875@elliptictech.com>
+	 <187AEE96-9231-4899-9D65-A444503D2758@oracle.com>
+	 <1288639376.5009.16.camel@heimdal.trondhjem.org>
+	 <1288640536.5009.18.camel@heimdal.trondhjem.org>
+	 <DA1E14E0-DCCD-4A6D-9471-E627D4BF2E85@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp
+Date: Mon, 01 Nov 2010 15:48:08 -0400
+Message-ID: <1288640888.5009.19.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+X-OriginalArrivalTime: 01 Nov 2010 19:48:40.0275 (UTC) FILETIME=[C8345230:01CB79FD]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 30, 2010 at 02:08:56PM -0700, Joe Perches wrote:
-> Add missing newlines.
+On Mon, 2010-11-01 at 15:45 -0400, Chuck Lever wrote:
+> On Nov 1, 2010, at 3:42 PM, Trond Myklebust wrote:
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
+> > On Mon, 2010-11-01 at 15:22 -0400, Trond Myklebust wrote:
+> >> I suspect nlmclnt_lookup_host() is to blame. It appears to be the _only_
+> >> thing in the kernel that actually sets this 'srcaddr' field, and it sets
+> >> it to
+> >> 
+> >> const struct sockaddr source = {
+> >> 	.sa_family      = AF_UNSPEC,
+> >> };
+> >> 
+> >> You triggered the bug by removing the line
+> >> 
+> >> 	transport->srcaddr.ss_family = family;
+> >> 
+> >> from xs_create_sock().
+> >> 
+> >>   Trond
+> > 
+> > Does this fix the regression?
+> > 
+> > Trond
+> > 
+> > ----------------------------------------------------------------------------------------------
+> > NLM: Fix a regression in lockd
+> > 
+> > From: Trond Myklebust <Trond.Myklebust@netapp.com>
+> > 
+> > Nick Bowler reports:
+> > There are no unusual messages on the client... but I just logged into
+> > the server and I see lots of messages of the following form:
+> > 
+> >  nfsd: request from insecure port (192.168.8.199:35766)!
+> >  nfsd: request from insecure port (192.168.8.199:35766)!
+> >  nfsd: request from insecure port (192.168.8.199:35766)!
+> >  nfsd: request from insecure port (192.168.8.199:35766)!
+> >  nfsd: request from insecure port (192.168.8.199:35766)!
+> > 
+> > Bisected to commit 9247685088398cf21bcb513bd2832b4cd42516c4 (SUNRPC:
+> > Properly initialize sock_xprt.srcaddr in all cases)
+> > 
+> > Apparently, removing the 'transport->srcaddr.ss_family = family' from
+> > xs_create_sock() triggers this due to nlmclnt_lookup_host() incorrectly
+> > initialising the srcaddr family to AF_UNSPEC.
+> > 
+> > Reported-by: Nick Bowler <nbowler@elliptictech.com>
+> > Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+> > ---
+> > 
+> > fs/lockd/host.c |    5 -----
+> > 1 files changed, 0 insertions(+), 5 deletions(-)
+> > 
+> > 
+> > diff --git a/fs/lockd/host.c b/fs/lockd/host.c
+> > index 25e21e4..9ff0c0e 100644
+> > --- a/fs/lockd/host.c
+> > +++ b/fs/lockd/host.c
+> > @@ -238,9 +238,6 @@ struct nlm_host *nlmclnt_lookup_host(const struct sockaddr *sap,
+> > 				     const char *hostname,
+> > 				     int noresvport)
+> > {
+> > -	const struct sockaddr source = {
+> > -		.sa_family	= AF_UNSPEC,
+> > -	};
+> > 	struct nlm_lookup_host_info ni = {
+> > 		.server		= 0,
+> > 		.sap		= sap,
+> > @@ -249,8 +246,6 @@ struct nlm_host *nlmclnt_lookup_host(const struct sockaddr *sap,
+> > 		.version	= version,
+> > 		.hostname	= hostname,
+> > 		.hostname_len	= strlen(hostname),
+> > -		.src_sap	= &source,
+> > -		.src_len	= sizeof(source),
+> > 		.noresvport	= noresvport,
+> > 	};
+> > 
+> > 
+> 
+> 
+> What about that memcpy() in nlm_lookup_host()?  With this patch, wouldn't it be copying garbage into the host's srcaddr field?
+> 
 
-Applied, thanks.
+It shouldn't. ni->src_len is now zero.
+
+Trond
