@@ -1,82 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751777Ab0KATXc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 15:23:32 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:49811 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751179Ab0KATXa (ORCPT
+	id S1751929Ab0KATXj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 15:23:39 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:42789 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751864Ab0KATXe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 15:23:30 -0400
+	Mon, 1 Nov 2010 15:23:34 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=K7dNfBrvUWL2hkwldj9RwyFpPup6rWaTS1hBQH+IwAdRLZhTSIZo6CvR4psZIaEkNp
-         dYgZz32EKXx7zHDlq4UcYB9MXcVFuzmNa/A3PF+uS6jNvK500Y1k22UsXQMR4kc8l/fy
-         YIHTUDnab/pT3FfTNDTRMzETTA7a8OHvAoLX8=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=xuBYAGQJ9h4u/1nWwhcGd10RmvvGPNFVwkBX89bJsMiNPAbWenOld6JWwa6nWM8v1y
+         AyU3hPmYN6tGyZkJm2ONve8/6IEnoMITTvo1ggQNeRWF74me91MZgDPUjp1c215PyB0p
+         P6kb47nBoXD6DhYA2/l+VlRNUTGT4dz5H2hmU=
 MIME-Version: 1.0
-In-Reply-To: <201011020814.35902.manningc2@actrix.gen.nz>
+In-Reply-To: <201011020819.33777.manningc2@actrix.gen.nz>
 References: <1288636877-7964-1-git-send-email-tdent48227@gmail.com>
-	<4CCF0D2B.6070308@caviumnetworks.com>
-	<201011020814.35902.manningc2@actrix.gen.nz>
-Date: Mon, 1 Nov 2010 15:23:29 -0400
-Message-ID: <AANLkTi=EU0X3RY9vB7fKbvgWEQ+FspNn=iSwctsKrZtQ@mail.gmail.com>
-Subject: Re: [PATCH 0/29] Staging: Add yaffs2 filesystem
-From: Tracey Dent <tdent48227@gmail.com>
+	<1288636877-7964-6-git-send-email-tdent48227@gmail.com>
+	<AANLkTikgq2uAW5ko0qG5fe+w-LGvwiV6z3Oi51V_QuiK@mail.gmail.com>
+	<201011020819.33777.manningc2@actrix.gen.nz>
+Date: Mon, 1 Nov 2010 21:23:33 +0200
+X-Google-Sender-Auth: NtsxhqOBWTu5VwR0yIkVgGj1_mo
+Message-ID: <AANLkTimJw8ZMDGu61z8bEvCL8R94xr9GdAnFkQDtMg+V@mail.gmail.com>
+Subject: Re: [PATCH 05/29] Staging: yaffs2: yaffs_allocator: Add files
+From: Pekka Enberg <penberg@kernel.org>
 To: Charles Manning <manningc2@actrix.gen.nz>
-Cc: David Daney <ddaney@caviumnetworks.com>, greg@kroah.com,
+Cc: Tracey Dent <tdent48227@gmail.com>, greg@kroah.com,
         linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/1/10, Charles Manning <manningc2@actrix.gen.nz> wrote:
-> On Tuesday 02 November 2010 07:55:39 David Daney wrote:
->> On 11/01/2010 11:40 AM, Tracey Dent wrote:
->> > The patch sets puts the yaffs2 filesystem in the staging directory.
->> > It is all based on Charles git
->> > tree(http://github.com/cdhmanning/linux-yaffs-integration/). Everything
->> > is compile tested and it builds.
+On Mon, Nov 1, 2010 at 9:19 PM, Charles Manning <manningc2@actrix.gen.nz> wrote:
+> On Tuesday 02 November 2010 07:58:49 Pekka Enberg wrote:
+>> On Mon, Nov 1, 2010 at 8:40 PM, Tracey Dent <tdent48227@gmail.com> wrote:
+>> > Adding files to yaffs2 directory.
 >> >
->> > This only the inital support and I will be sending more cleanup patches.
+>> > Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+>> > ---
+>> >  drivers/staging/yaffs2/yaffs_allocator.c |  408
+>> > ++++++++++++++++++++++++++++++ drivers/staging/yaffs2/yaffs_allocator.h |
+>> >   30 +++
+>> >  2 files changed, 438 insertions(+), 0 deletions(-)
+>> >  create mode 100644 drivers/staging/yaffs2/yaffs_allocator.c
+>> >  create mode 100644 drivers/staging/yaffs2/yaffs_allocator.h
 >> >
->> > Greg can you add the patch set into your staging-next tree.
->> > Also, It doesn't affect anything other than itself.
->> >
->> > Thanks,
->> >
->> > Tracey Dent
+>> > diff --git a/drivers/staging/yaffs2/yaffs_allocator.c
+>> > b/drivers/staging/yaffs2/yaffs_allocator.c new file mode 100644
+>> > index 0000000..024ee2a
+>> > --- /dev/null
+>> > +++ b/drivers/staging/yaffs2/yaffs_allocator.c
+>> > @@ -0,0 +1,408 @@
+>> > +/*
+>> > + * YAFFS: Yet Another Flash File System. A NAND-flash specific file
+>> > system. + *
+>> > + * Copyright (C) 2002-2010 Aleph One Ltd.
+>> > + *   for Toby Churchill Ltd and Brightstar Engineering
+>> > + *
+>> > + * Created by Charles Manning <charles@aleph1.co.uk>
+>> > + *
+>> > + * This program is free software; you can redistribute it and/or modify
+>> > + * it under the terms of the GNU General Public License version 2 as
+>> > + * published by the Free Software Foundation.
+>> > + */
+>> > +
+>> > +
+>> > +
+>> > +#include "yaffs_allocator.h"
+>> > +#include "yaffs_guts.h"
+>> > +#include "yaffs_trace.h"
+>> > +#include "yportenv.h"
+>> > +
+>> > +#ifdef CONFIG_YAFFS_YMALLOC_ALLOCATOR
+>> > +
+>> > +void yaffs_deinit_raw_tnodes_and_objs(yaffs_dev_t *dev)
+>> > +{
+>> > +       dev = dev;
+>> > +}
+>> > +
+>> > +void yaffs_init_raw_tnodes_and_objs(yaffs_dev_t *dev)
+>> > +{
+>> > +       dev = dev;
+>> > +}
+>> > +
+>> > +yaffs_tnode_t *yaffs_alloc_raw_tnode(yaffs_dev_t *dev)
+>> > +{
+>> > +       return (yaffs_tnode_t *)YMALLOC(dev->tnode_size);
+>> > +}
+>> > +
+>> > +void yaffs_free_raw_tnode(yaffs_dev_t *dev, yaffs_tnode_t *tn)
+>> > +{
+>> > +       dev = dev;
+>> > +       YFREE(tn);
+>> > +}
 >>
->> I am confused.
->>
->> Are you and Charles Manning working together on this?
->>
->> Did you write all this code or did Charles?  If it was Charles, why are
->> there no From: and Signed-off-by headers for him?
-
-Yeah I forgot to change that. By adding a signed off line by him.
-
->>
->> Thanks in advance for enlightening us as to what is going on here,
->> David Daney
+>> So you have your own dynamic memory allocator? What's wrong with kmalloc()?
 >
-> We are not working together on this, but I do appreciate the effort in
-> helping
-> bring to a head what people like/dislike.
+> No. YMALLOC() wraps kmalloc() to keep the code portable.
 >
-> I am trying to keep the kernel yaffs consistent with the yaffs.net yaffs so
-> that it is easier to add changes from yaffs.net.
-
-All I did was take your tree and put it in patch form. So nothing
-should change, except I added a general *TODO file.
-
-So you can ack this and get it in Greg'ss Staging-next tree, if you want?
+> This code does a home-grown slab allocator. The reason for doing this is that
+> Linux slab does not allow slab caches to be destroyed while objects exist.
 >
-> -- Charles
->
->
+> While that might sound like a dangerous practice, it does mean that when yaffs
+> unmounts it can drop all the data structures without having to walk all the
+> trees freeing the objects.
 
-Regards,
-
-Tracey Dent
+Either way, your home-grown slab allocator is not going to be merged
+this way. You should be using kmem_cache_alloc() and propose proper
+patches on top of mm/sl?b.c.
