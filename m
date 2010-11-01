@@ -1,103 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758111Ab0KAOWa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 10:22:30 -0400
-Received: from fmmailgate01.web.de ([217.72.192.221]:58541 "EHLO
-	fmmailgate01.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756461Ab0KAOW1 (ORCPT
+	id S1758078Ab0KAO1Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 10:27:24 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:43628 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756461Ab0KAO1W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 10:22:27 -0400
-Message-ID: <4CCECD17.3080303@web.de>
-Date: Mon, 01 Nov 2010 15:22:15 +0100
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	Mon, 1 Nov 2010 10:27:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=ny7jFhfSFehnxrqU/ac8F3CyPpYFWzh1LKcwh+vyA2OKz1/s3kdl71p8MdwQGYaDI9
+         8aZKv08jUJpLnLV+WIteWiGjgyr/grCi4TTHCn8Ql1bCCOu9CtZszM6KX9t7mldBIYX0
+         mltPKYt7+DQPpEClmmAxWOWPWrMPFN8ICiqnE=
 MIME-Version: 1.0
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-CC: kvm <kvm@vger.kernel.org>, Sheng Yang <sheng@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Crash on kvm_iommu_map_pages
-References: <4CCEB7CF.8030207@web.de> <4CCEB946.7070103@web.de> <20101101132127.GF20959@amd.com> <4CCEBFAC.1000809@web.de> <20101101135322.GG20959@amd.com>
-In-Reply-To: <20101101135322.GG20959@amd.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigA73B27D803A202FCBEB11C8D"
-X-Provags-ID: V01U2FsdGVkX18cCsKuj7FeaEzq5uuV4NgkjkJa4gQgENlDTERp
-	MFUO5SBut7Bf4+vAumpx2AmbE7rwcCyjWr7AIDahdibh0Z46rx
-	irH8R8v6M=
+In-Reply-To: <20101101.225758.12584142.ryusuke@osrg.net>
+References: <AANLkTinQ9NdEU+dp35sKp8u1tFu2NR2iX59wi-3wBFeH@mail.gmail.com>
+	<AANLkTim=4GBFzMiAaGbs6uWbi1g2ZQGRYR55i4bO0X49@mail.gmail.com>
+	<AANLkTimqkGH3PMfyL02R9agaxbP9t+BzjqLUaPK=ynu8@mail.gmail.com>
+	<20101101.225758.12584142.ryusuke@osrg.net>
+Date: Mon, 1 Nov 2010 19:57:21 +0530
+Message-ID: <AANLkTi=fyNErf_mCi4hxUR12EdaUX5VaifC_j0dm8r1_@mail.gmail.com>
+Subject: Re: Where can I find -rc kernels?
+From: Ramya Desai <ramya.desai@gmail.com>
+To: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Cc: trapdoor6@gmail.com, horms@verge.net.au, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigA73B27D803A202FCBEB11C8D
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Mon, Nov 1, 2010 at 7:27 PM, Ryusuke Konishi
+<konishi.ryusuke@lab.ntt.co.jp> wrote:
 
-Am 01.11.2010 14:53, Roedel, Joerg wrote:
-> On Mon, Nov 01, 2010 at 09:25:00AM -0400, Jan Kiszka wrote:
->> Am 01.11.2010 14:21, Roedel, Joerg wrote:
->>> The registers rax and rbx contain non-canonical addresses (if
->>> interpreted as pointers). The instruction where this happens is a mov=
- so
->>> I guess that the #GP is because of an non-canonical address.
->>> Can you find out the code-line where this happens and the exact
->>> assembler instruction? (haven't managed to decode the registers used)=
-=2E
->>
->> In pfn_to_dma_pte, line 710:
->>
->>                 if (!dma_pte_present(pte)) {
->> ffffffff8121de8c:       f6 03 03                testb  $0x3,(%rbx)
->> ffffffff8121de8f:       0f 85 d8 00 00 00       jne    ffffffff8121df6=
-d <pfn_to_dma_pte+0x154>
->>
->> The first instruction raises the fault.
->=20
-> Ok, so it seems that my understanding of the Code: field in the
-> crash-message was wrong :)
-> Anyway, the testb uses rbx as an address which has a non-canonical
-> value. This means the the address of 'pte' is invalid. Since rax also
-> contains a wrong address the 'parent' variable probably already contain=
-s
-> the wrong address. Does the attached patch help?
->=20
-> diff --git a/include/linux/dma_remapping.h b/include/linux/dma_remappin=
-g.h
-> index 5619f85..ca46f24 100644
-> --- a/include/linux/dma_remapping.h
-> +++ b/include/linux/dma_remapping.h
-> @@ -6,7 +6,7 @@
->   */
->  #define VTD_PAGE_SHIFT		(12)
->  #define VTD_PAGE_SIZE		(1UL << VTD_PAGE_SHIFT)
-> -#define VTD_PAGE_MASK		(((u64)-1) << VTD_PAGE_SHIFT)
-> +#define VTD_PAGE_MASK		((((u64)-1) << VTD_PAGE_SHIFT) & ((1ULL << 52) =
-- 1))
->  #define VTD_PAGE_ALIGN(addr)	(((addr) + VTD_PAGE_SIZE - 1) & VTD_PAGE_=
-MASK)
-> =20
->  #define DMA_PTE_READ (1)
->=20
+>> >> I did not find the complete sources in that link. I need complete
+>> >> sources by which I can build the kernel images. OR Is there any
+>> >> procedure for merging these changes into any stable kernel version
+>> >> (2.6.36) for making it 2.6.37-rc1.
+>> >>
+>> >> Thanks and Regards,
+>> >> Ramya.
+>> >
+>> > I guess It just hasn't been published there yet. Not present in git
+>> > tree either - I still have 2.6.36-09871-g3985c7c and 'git pull' says:
+>> > Already up-to-date.
+>> >
+>> It's out now at http://www.kernel.org/
+>> But still can't pull it from git.
+>> Thanks,
+>> Tomasz
+>
+> v2.6.37-rc1 is in the git tree.
+>
+> It looks like only master branch hasn't been updated yet.
+>
+> Ryusuke Konishi
 
-Crashes during early boot while initializing dmar. If you need the
-trace, I could set up some debug console.
+Dear All,
 
-Jan
+Thanks to every one.
 
+The kernel version 2.6.37-rc1 is NOW available at
+http://www.kernel.org/pub/linux/kernel/v2.6/testing/. I guess, it is
+updated recently. Anyhow, thanks to all.
 
---------------enigA73B27D803A202FCBEB11C8D
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.15 (GNU/Linux)
-Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAkzOzRsACgkQitSsb3rl5xRbYQCglxRFVl6Tf0z78gyJBPyC78eX
-EfcAnjfOFvXVgRfWHjvqus/spVXoFANk
-=sHp9
------END PGP SIGNATURE-----
-
---------------enigA73B27D803A202FCBEB11C8D--
+Thanks and Regards,
+Ramya.
