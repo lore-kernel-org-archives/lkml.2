@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752248Ab0KARzm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 13:55:42 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:48483 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991Ab0KARzk convert rfc822-to-8bit (ORCPT
+	id S1752560Ab0KAR5n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 13:57:43 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:42908 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750815Ab0KAR5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 13:55:40 -0400
-Subject: Re: [PATCH] Perf, AMD: Prefer kzalloc() over kmalloc()+memset() in
- amd_alloc_nb()
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Stephane Eranian <eranian@google.com>,
-        "robert.richter" <robert.richter@amd.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <bp@amd64.org>
-In-Reply-To: <alpine.LNX.2.00.1010302101240.1572@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1010302101240.1572@swampdragon.chaosbits.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 01 Nov 2010 18:55:13 +0100
-Message-ID: <1288634113.2039.20.camel@laptop>
+	Mon, 1 Nov 2010 13:57:40 -0400
+Date: Mon, 1 Nov 2010 10:55:42 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: linux-kernel@vger.kernel.org, Greg Thelen <gthelen@google.com>
+Cc: akpm@linux-foundation.org
+Subject: Re: mmotm 2010-10-31-21-24 uploaded (mm/memcontrol)
+Message-Id: <20101101105542.bf2ed97a.randy.dunlap@oracle.com>
+In-Reply-To: <201011010427.oA14R3Y6010534@imap1.linux-foundation.org>
+References: <201011010427.oA14R3Y6010534@imap1.linux-foundation.org>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-10-30 at 21:06 +0200, Jesper Juhl wrote:
-> Hi,
+On Sun, 31 Oct 2010 21:25:59 -0700 akpm@linux-foundation.org wrote:
+
+> The mm-of-the-moment snapshot 2010-10-31-21-24 has been uploaded to
 > 
-> I believe this would be an improvement?
+>    http://userweb.kernel.org/~akpm/mmotm/
 > 
-> Prefer kzalloc() over kmalloc()+memset() in amd_alloc_nb().
+> and will soon be available at
 > 
+>    git://zen-kernel.org/kernel/mmotm.git
 > 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
+> It contains the following patches against 2.6.36:
 
 
-I've changed it to..
+memcg-add-dirty-limits-to-mem_cgroup.patch
+
+Something in mm/memcontrol.c::mem_cgroup_dirty_info()
+does unsupported divisions on i386:
+
+mm/built-in.o: In function `mem_cgroup_dirty_info':
+(.text+0x58473): undefined reference to `__divdi3'
+mm/built-in.o: In function `mem_cgroup_dirty_info':
+(.text+0x584b1): undefined reference to `__divdi3'
 
 ---
-Subject: perf, amd: Use kmalloc_node(,__GFP_ZERO) for northbridge structure allocation
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Mon Nov 01 18:52:05 CET 2010
-
-Jasper suggested we use the zeroing capability of the allocators
-instead of calling memset ourselves. Add node affinity while we're at
-it.
-
-Reported-by: Jesper Juhl <jj@chaosbits.net>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
-Index: linux-2.6/arch/x86/kernel/cpu/perf_event_amd.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/perf_event_amd.c
-+++ linux-2.6/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -280,11 +280,10 @@ static struct amd_nb *amd_alloc_nb(int c
- 	struct amd_nb *nb;
- 	int i;
- 
--	nb = kmalloc(sizeof(struct amd_nb), GFP_KERNEL);
-+	nb = kmalloc_node(sizeof(struct amd_nb), GFP_KERNEL | __GFP_ZERO, nb_id);
- 	if (!nb)
- 		return NULL;
- 
--	memset(nb, 0, sizeof(*nb));
- 	nb->nb_id = nb_id;
- 
- 	/*
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
