@@ -1,70 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845Ab0JaXw0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Oct 2010 19:52:26 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:61375 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753779Ab0JaXwY convert rfc822-to-8bit (ORCPT
+	id S1756928Ab0KAACn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Oct 2010 20:02:43 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:58535 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753734Ab0KAACk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Oct 2010 19:52:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=M2I6XKdTn/mHcnyPXThtXIh+q8Ve63sbLNHxM9nUSSVN7desrhGYGqv4l8tj+TfFVR
-         ki9U+Fy7c4NvPmmcNK4UzRTDQypA6nfSxDnDByGRU2NTY7MoRhyzkFoWwe7Z9TZQMF4q
-         laubUGWwVre83uVqlhl7B4BpuDehWiMwPfgy4=
+	Sun, 31 Oct 2010 20:02:40 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
+Message-ID: <4CCE03FA.5030504@np.css.fujitsu.com>
+Date: Mon, 01 Nov 2010 09:04:10 +0900
+From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
 MIME-Version: 1.0
-In-Reply-To: <1bb253bedd9345e3457ce699f9fbc6f65844738f.1288555098.git.joe@perches.com>
-References: <cover.1288555098.git.joe@perches.com> <1bb253bedd9345e3457ce699f9fbc6f65844738f.1288555098.git.joe@perches.com>
-From: Matt Turner <mattst88@gmail.com>
-Date: Sun, 31 Oct 2010 19:52:02 -0400
-Message-ID: <AANLkTinYZ=ZpkRiL2eMtcO_fAAFhBBCoT2fLH0tKaNn9@mail.gmail.com>
-Subject: Re: [PATCH 1/4] drivers/gpu/drm/vmwgfx: Fix k.alloc switched arguments
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+To: Andi Kleen <andi@firstfloor.org>
+CC: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        "H.Peter Anvin" <hpa@zytor.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        LKLM <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] [x86, next] Add mce_ser interface in /sys/kernel/debug/mce/
+ for test
+References: <4CCA50A1.8050609@np.css.fujitsu.com> <20101029080650.GA11149@basil.fritz.box>
+In-Reply-To: <20101029080650.GA11149@basil.fritz.box>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 31, 2010 at 6:33 PM, Joe Perches <joe@perches.com> wrote:
-> Signed-off-by: Joe Perches <joe@perches.com>
+(2010/10/29 17:06), Andi Kleen wrote:
+> On Fri, Oct 29, 2010 at 01:42:09PM +0900, Jin Dongming wrote:
+>> If we want to test the part of mce handler for SRAO and SRAR,  we need to
+>> have a test machine whose CPU supports MCG_SER_P. If we don't have such
+>> machine, we can not test the part of mce handler for SRAO and SRAR.
+>>
+>> With this interface we can test the part of mce handler for SRAO and SRAR
+>> by setting mce_ser 1 on the machine which does not support MCG_SER_P.
+>>
+>> Usage:
+>>         if val == 1 or val == 0
+>>            Set val to mce_ser.
+>>         else
+>>            Ser the original value to mce_ser.
+>>
+>> Note:
+>>     Please don't use mce_ser interface except mce test.
+>>     Because when the real mce exception happened, the unsuitable set
+>>     with this interface maybe change the real process of mce handler and
+>>     lead to a different result.
+> 
+> Basic idea is good (I have been using a similar patch for quite some time).
+> My patch was a little bit simpler though, not bothering with org_ser:
+> 
+Yes, it is.
+
+But if you set mce_ser with mca_recovery_set(), 
+the original value of mce_ser will be changed, is it right?
+
+If a new guy try to test mce with the test machine, he/she may be
+confused by the value of mce_ser. So I think how to tell him
+the original value is also important.
 > ---
->  drivers/gpu/drm/vmwgfx/vmwgfx_ldu.c     |    2 +-
->  drivers/gpu/drm/vmwgfx/vmwgfx_overlay.c |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_ldu.c b/drivers/gpu/drm/vmwgfx/vmwgfx_ldu.c
-> index a01c47d..29113c9 100644
-> --- a/drivers/gpu/drm/vmwgfx/vmwgfx_ldu.c
-> +++ b/drivers/gpu/drm/vmwgfx/vmwgfx_ldu.c
-> @@ -557,7 +557,7 @@ int vmw_kms_init_legacy_display_system(struct vmw_private *dev_priv)
->                return -EINVAL;
->        }
->
-> -       dev_priv->ldu_priv = kmalloc(GFP_KERNEL, sizeof(*dev_priv->ldu_priv));
-> +       dev_priv->ldu_priv = kmalloc(sizeof(*dev_priv->ldu_priv), GFP_KERNEL);
->
->        if (!dev_priv->ldu_priv)
->                return -ENOMEM;
-> diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_overlay.c b/drivers/gpu/drm/vmwgfx/vmwgfx_overlay.c
-> index df2036e..f1a52f9 100644
-> --- a/drivers/gpu/drm/vmwgfx/vmwgfx_overlay.c
-> +++ b/drivers/gpu/drm/vmwgfx/vmwgfx_overlay.c
-> @@ -585,7 +585,7 @@ int vmw_overlay_init(struct vmw_private *dev_priv)
->                return -ENOSYS;
->        }
->
-> -       overlay = kmalloc(GFP_KERNEL, sizeof(*overlay));
-> +       overlay = kmalloc(sizeof(*overlay), GFP_KERNEL);
->        if (!overlay)
->                return -ENOMEM;
->
+> 
+> MCE: Add an debugfs interface to force MCA recovery
+> 
+> This is useful to run the MCA recovery test cases using
+> error injection on a non MCA recovery capable system.
+> 
+> On a system without MCA recovery this should be a nop.
+> 
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> 
+> ---
+>  arch/x86/kernel/cpu/mcheck/mce.c |   20 ++++++++++++++++++--
+>  1 file changed, 18 insertions(+), 2 deletions(-)
+> 
+> Index: linux/arch/x86/kernel/cpu/mcheck/mce.c
+> ===================================================================
+> --- linux.orig/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ linux/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -2346,13 +2346,26 @@ static int fake_panic_set(void *data, u6
+>  	fake_panic = val;
+>  	return 0;
+>  }
+> +static int mca_recovery_get(void *data, u64 *val)
+> +{
+> +	*val = mce_ser;
+> +	return 0;
+> +}
+> +
+> +static int mca_recovery_set(void *data, u64 val)
+> +{
+> +	mce_ser = val;
+> +	return 0;
+> +}
+>  
+>  DEFINE_SIMPLE_ATTRIBUTE(fake_panic_fops, fake_panic_get,
+>  			fake_panic_set, "%llu\n");
+> +DEFINE_SIMPLE_ATTRIBUTE(mca_recovery_fops, mca_recovery_get,
+> +			mca_recovery_set, "%llu\n");
+>  
+>  static int __init mcheck_debugfs_init(void)
+>  {
+> -	struct dentry *dmce, *ffake_panic;
+> +	struct dentry *dmce, *ffake_panic, *fmca_recovery;
+>  
+>  	dmce = mce_get_debugfs_dir();
+>  	if (!dmce)
+> @@ -2361,7 +2374,10 @@ static int __init mcheck_debugfs_init(vo
+>  					  &fake_panic_fops);
+>  	if (!ffake_panic)
+>  		return -ENOMEM;
+> -
+> +	fmca_recovery = debugfs_create_file("mca_recovery_force",0644,dmce,NULL,
+> +					&mca_recovery_fops);
+> +	if (!fmca_recovery)
+> +		return -ENOMEM;
+>  	return 0;
+>  }
+>  late_initcall(mcheck_debugfs_init);
 > --
-> 1.7.3.1.g432b3.dirty
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
 
-Oh! That's a bad one.
 
-Reviewed-by: Matt Turner <mattst88@gmail.com>
