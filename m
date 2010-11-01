@@ -1,236 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756047Ab0KASpY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 14:45:24 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41150 "EHLO hera.kernel.org"
+	id S1755889Ab0KASpN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 14:45:13 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37378 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755944Ab0KASpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 14:45:20 -0400
+	id S1754211Ab0KASo6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 14:44:58 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
         kay.sievers@vrfy.org, jack@suse.cz,
         James.Bottomley@HansenPartnership.com
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 7/7] sd: implement sd_check_events()
-Date: Mon,  1 Nov 2010 19:44:41 +0100
-Message-Id: <1288637081-5183-8-git-send-email-tj@kernel.org>
+Subject: [PATCH 4/7] cdrom: add ->check_events() support
+Date: Mon,  1 Nov 2010 19:44:38 +0100
+Message-Id: <1288637081-5183-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1288637081-5183-1-git-send-email-tj@kernel.org>
 References: <1288637081-5183-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 01 Nov 2010 18:44:53 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 01 Nov 2010 18:44:51 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace sd_media_change() with sd_check_events().  sd used to set the
-changed state whenever the device is not ready, which can cause event
-loop while the device is not ready.  Media presence handling code is
-changed such that the changed state is set iff the media presence
-actually changes.  UA still always sets the changed state and
-NOT_READY always (at least where it used to set ->changed) clears
-media presence, so no event is lost.
+In principle, cdrom just needs to pass through ->check_events() but
+CDROM_MEDIA_CHANGED ioctl makes things a bit more complex.  Just as
+with ->media_changed() support, cdrom code needs to buffer the events
+and serve them to ioctl and vfs as requested.  It may be a good idea
+to deprecate CDROM_MEDIA_CHANGED ioctl in the long run.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- drivers/scsi/sd.c |   89 ++++++++++++++++++++++++++++------------------------
- drivers/scsi/sd.h |    1 -
- 2 files changed, 48 insertions(+), 42 deletions(-)
+ drivers/cdrom/cdrom.c |   55 ++++++++++++++++++++++++++++++++++++++++++++++--
+ include/linux/cdrom.h |    6 +++++
+ 2 files changed, 58 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 8d488a9..34760bb 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -991,30 +991,50 @@ out:
+diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
+index af13c62..1ea8f8d 100644
+--- a/drivers/cdrom/cdrom.c
++++ b/drivers/cdrom/cdrom.c
+@@ -1348,7 +1348,10 @@ static int cdrom_select_disc(struct cdrom_device_info *cdi, int slot)
+ 	if (!CDROM_CAN(CDC_SELECT_DISC))
+ 		return -EDRIVE_CANT_DO_THIS;
  
- static void set_media_not_present(struct scsi_disk *sdkp)
- {
-+	if (sdkp->media_present)
-+		sdkp->device->changed = 1;
- 	sdkp->media_present = 0;
- 	sdkp->capacity = 0;
--	sdkp->device->changed = 1;
+-	(void) cdi->ops->media_changed(cdi, slot);
++	if (cdi->ops->check_events)
++		cdi->ops->check_events(cdi, 0, slot);
++	else
++		cdi->ops->media_changed(cdi, slot);
+ 
+ 	if (slot == CDSL_NONE) {
+ 		/* set media changed bits, on both queues */
+@@ -1392,6 +1395,41 @@ static int cdrom_select_disc(struct cdrom_device_info *cdi, int slot)
+ 	return slot;
+ }
+ 
++/*
++ * As cdrom implements an extra ioctl consumer for media changed
++ * event, it needs to buffer ->check_events() output, such that event
++ * is not lost for both the usual VFS and ioctl paths.
++ * cdi->{vfs|ioctl}_events are used to buffer pending events for each
++ * path.
++ *
++ * XXX: Locking is non-existent.  cdi->ops->check_events() can be
++ * called in parallel and buffering fields are accessed without any
++ * exclusion.  The original media_changed code had the same problem.
++ * It might be better to simply deprecate CDROM_MEDIA_CHANGED ioctl
++ * and remove this cruft altogether.  It doesn't have much usefulness
++ * at this point.
++ */
++static void cdrom_update_events(struct cdrom_device_info *cdi,
++				unsigned int clearing)
++{
++	unsigned int events;
++
++	events = cdi->ops->check_events(cdi, clearing, CDSL_CURRENT);
++	cdi->vfs_events |= events;
++	cdi->ioctl_events |= events;
 +}
 +
-+static int media_not_present(struct scsi_disk *sdkp,
-+			     struct scsi_sense_hdr *sshdr)
++unsigned int cdrom_check_events(struct cdrom_device_info *cdi,
++				unsigned int clearing)
 +{
-+	if (!scsi_sense_valid(sshdr))
-+		return 0;
++	unsigned int events;
 +
-+	/* not invoked for commands that could return deferred errors */
-+	switch (sshdr->sense_key) {
-+	case UNIT_ATTENTION:
-+		sdkp->device->changed = 1;
-+		/* fall through */
-+	case NOT_READY:
-+		/* medium not present */
-+		if (sshdr->asc == 0x3A) {
-+			set_media_not_present(sdkp);
-+			return 1;
-+		}
-+	}
-+	return 0;
- }
- 
- /**
-- *	sd_media_changed - check if our medium changed
-- *	@disk: kernel device descriptor 
-+ *	sd_check_events - check media events
-+ *	@disk: kernel device descriptor
-+ *	@clearing: disk events currently being cleared
-  *
-- *	Returns 0 if not applicable or no change; 1 if change
-+ *	Returns mask of DISK_EVENT_*.
-  *
-  *	Note: this function is invoked from the block subsystem.
-  **/
--static int sd_media_changed(struct gendisk *disk)
-+static unsigned int sd_check_events(struct gendisk *disk, unsigned int clearing)
++	cdrom_update_events(cdi, clearing);
++	events = cdi->vfs_events;
++	cdi->vfs_events = 0;
++	return events;
++}
++
+ /* We want to make media_changed accessible to the user through an
+  * ioctl. The main problem now is that we must double-buffer the
+  * low-level implementation, to assure that the VFS and the user both
+@@ -1403,15 +1441,26 @@ int media_changed(struct cdrom_device_info *cdi, int queue)
  {
- 	struct scsi_disk *sdkp = scsi_disk(disk);
- 	struct scsi_device *sdp = sdkp->device;
- 	struct scsi_sense_hdr *sshdr = NULL;
- 	int retval;
+ 	unsigned int mask = (1 << (queue & 1));
+ 	int ret = !!(cdi->mc_flags & mask);
++	bool changed;
  
--	SCSI_LOG_HLQUEUE(3, sd_printk(KERN_INFO, sdkp, "sd_media_changed\n"));
--
--	if (!sdp->removable)
--		return 0;
-+	SCSI_LOG_HLQUEUE(3, sd_printk(KERN_INFO, sdkp, "sd_check_events\n"));
- 
- 	/*
- 	 * If the device is offline, don't send any commands - just pretend as
-@@ -1024,7 +1044,6 @@ static int sd_media_changed(struct gendisk *disk)
- 	 */
- 	if (!scsi_device_online(sdp)) {
- 		set_media_not_present(sdkp);
--		retval = 1;
- 		goto out;
- 	}
- 
-@@ -1045,26 +1064,30 @@ static int sd_media_changed(struct gendisk *disk)
- 					      sshdr);
- 	}
- 
--	if (retval) {
-+	/* failed to execute TUR, assume media not present */
-+	if (host_byte(retval)) {
- 		set_media_not_present(sdkp);
--		retval = 1;
- 		goto out;
- 	}
- 
-+	if (media_not_present(sdkp, sshdr))
-+		goto out;
+ 	if (!CDROM_CAN(CDC_MEDIA_CHANGED))
+-	    return ret;
++		return ret;
 +
- 	/*
- 	 * For removable scsi disk we have to recognise the presence
--	 * of a disk in the drive. This is kept in the struct scsi_disk
--	 * struct and tested at open !  Daniel Roche (dan@lectra.fr)
-+	 * of a disk in the drive.
- 	 */
-+	if (!sdkp->media_present)
-+		sdp->changed = 1;
- 	sdkp->media_present = 1;
--
--	retval = sdp->changed;
--	sdp->changed = 0;
- out:
--	if (retval != sdkp->previous_state)
-+	/* for backward compatibility */
-+	if (sdp->changed)
- 		sdev_evt_send_simple(sdp, SDEV_EVT_MEDIA_CHANGE, GFP_KERNEL);
--	sdkp->previous_state = retval;
- 	kfree(sshdr);
+ 	/* changed since last call? */
+-	if (cdi->ops->media_changed(cdi, CDSL_CURRENT)) {
++	if (cdi->ops->check_events) {
++		BUG_ON(!queue);	/* shouldn't be called from VFS path */
++		cdrom_update_events(cdi, DISK_EVENT_MEDIA_CHANGE);
++		changed = cdi->ioctl_events & DISK_EVENT_MEDIA_CHANGE;
++		cdi->ioctl_events = 0;
++	} else
++		changed = cdi->ops->media_changed(cdi, CDSL_CURRENT);
 +
-+	retval = sdp->changed ? DISK_EVENT_MEDIA_CHANGE : 0;
-+	sdp->changed = 0;
- 	return retval;
++	if (changed) {
+ 		cdi->mc_flags = 0x3;    /* set bit on both queues */
+ 		ret |= 1;
+ 		cdi->media_written = 0;
+ 	}
++
+ 	cdi->mc_flags &= ~mask;         /* clear bit */
+ 	return ret;
  }
+diff --git a/include/linux/cdrom.h b/include/linux/cdrom.h
+index 78e9047..35eae4b 100644
+--- a/include/linux/cdrom.h
++++ b/include/linux/cdrom.h
+@@ -946,6 +946,8 @@ struct cdrom_device_info {
+ /* device-related storage */
+ 	unsigned int options	: 30;	/* options flags */
+ 	unsigned mc_flags	: 2;	/* media change buffer flags */
++	unsigned int vfs_events;	/* cached events for vfs path */
++	unsigned int ioctl_events;	/* cached events for ioctl path */
+     	int use_count;                  /* number of times device opened */
+     	char name[20];                  /* name of the device type */
+ /* per-device flags */
+@@ -965,6 +967,8 @@ struct cdrom_device_ops {
+ 	int (*open) (struct cdrom_device_info *, int);
+ 	void (*release) (struct cdrom_device_info *);
+ 	int (*drive_status) (struct cdrom_device_info *, int);
++	unsigned int (*check_events) (struct cdrom_device_info *cdi,
++				      unsigned int clearing, int slot);
+ 	int (*media_changed) (struct cdrom_device_info *, int);
+ 	int (*tray_move) (struct cdrom_device_info *, int);
+ 	int (*lock_door) (struct cdrom_device_info *, int);
+@@ -993,6 +997,8 @@ extern int cdrom_open(struct cdrom_device_info *cdi, struct block_device *bdev,
+ extern void cdrom_release(struct cdrom_device_info *cdi, fmode_t mode);
+ extern int cdrom_ioctl(struct cdrom_device_info *cdi, struct block_device *bdev,
+ 		       fmode_t mode, unsigned int cmd, unsigned long arg);
++extern unsigned int cdrom_check_events(struct cdrom_device_info *cdi,
++				       unsigned int clearing);
+ extern int cdrom_media_changed(struct cdrom_device_info *);
  
-@@ -1157,7 +1180,7 @@ static const struct block_device_operations sd_fops = {
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl		= sd_compat_ioctl,
- #endif
--	.media_changed		= sd_media_changed,
-+	.check_events		= sd_check_events,
- 	.revalidate_disk	= sd_revalidate_disk,
- 	.unlock_native_capacity	= sd_unlock_native_capacity,
- };
-@@ -1293,23 +1316,6 @@ static int sd_done(struct scsi_cmnd *SCpnt)
- 	return good_bytes;
- }
- 
--static int media_not_present(struct scsi_disk *sdkp,
--			     struct scsi_sense_hdr *sshdr)
--{
--
--	if (!scsi_sense_valid(sshdr))
--		return 0;
--	/* not invoked for commands that could return deferred errors */
--	if (sshdr->sense_key != NOT_READY &&
--	    sshdr->sense_key != UNIT_ATTENTION)
--		return 0;
--	if (sshdr->asc != 0x3A) /* medium not present */
--		return 0;
--
--	set_media_not_present(sdkp);
--	return 1;
--}
--
- /*
-  * spinup disk - called only in sd_revalidate_disk()
-  */
-@@ -1484,7 +1490,7 @@ static void read_capacity_error(struct scsi_disk *sdkp, struct scsi_device *sdp,
- 	 */
- 	if (sdp->removable &&
- 	    sense_valid && sshdr->sense_key == NOT_READY)
--		sdp->changed = 1;
-+		set_media_not_present(sdkp);
- 
- 	/*
- 	 * We used to set media_present to 0 here to indicate no media
-@@ -2325,7 +2331,7 @@ static void sd_probe_async(void *data, async_cookie_t cookie)
- 	/* defaults, until the device tells us otherwise */
- 	sdp->sector_size = 512;
- 	sdkp->capacity = 0;
--	sdkp->media_present = 1;
-+	sdkp->media_present = 0;
- 	sdkp->write_prot = 0;
- 	sdkp->WCE = 0;
- 	sdkp->RCD = 0;
-@@ -2339,8 +2345,10 @@ static void sd_probe_async(void *data, async_cookie_t cookie)
- 
- 	gd->driverfs_dev = &sdp->sdev_gendev;
- 	gd->flags = GENHD_FL_EXT_DEVT;
--	if (sdp->removable)
-+	if (sdp->removable) {
- 		gd->flags |= GENHD_FL_REMOVABLE;
-+		gd->events |= DISK_EVENT_MEDIA_CHANGE;
-+	}
- 
- 	add_disk(gd);
- 	sd_dif_config_host(sdkp);
-@@ -2422,7 +2430,6 @@ static int sd_probe(struct device *dev)
- 	sdkp->disk = gd;
- 	sdkp->index = index;
- 	atomic_set(&sdkp->openers, 0);
--	sdkp->previous_state = 1;
- 
- 	if (!sdp->request_queue->rq_timeout) {
- 		if (sdp->type != TYPE_MOD)
-diff --git a/drivers/scsi/sd.h b/drivers/scsi/sd.h
-index 55488fa..c9d8f6c 100644
---- a/drivers/scsi/sd.h
-+++ b/drivers/scsi/sd.h
-@@ -55,7 +55,6 @@ struct scsi_disk {
- 	u8		media_present;
- 	u8		write_prot;
- 	u8		protection_type;/* Data Integrity Field */
--	unsigned	previous_state : 1;
- 	unsigned	ATO : 1;	/* state of disk ATO bit */
- 	unsigned	WCE : 1;	/* state of disk WCE bit */
- 	unsigned	RCD : 1;	/* state of disk RCD bit, unused */
+ extern int register_cdrom(struct cdrom_device_info *cdi);
 -- 
 1.7.1
 
