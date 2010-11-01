@@ -1,106 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752256Ab0KATgQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 15:36:16 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64104 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751174Ab0KATgO (ORCPT
+	id S1752494Ab0KATg3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 15:36:29 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:46039 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752459Ab0KATg1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 15:36:14 -0400
+	Mon, 1 Nov 2010 15:36:27 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=hAw8hYxLsBYCC/0bhacgkIEkl1teiiHt2C56zHMs9vNWzz3XMIH2QTY9BmXMpWlBpD
-         8n8pboWA9O5zAhU5MT3cEI//NOkf9Kh3R9+1cbPP+ncS/WCfAFNTi4jRaJ6IdhcFQXFx
-         vbDWOfklpmWBvqOPlEmzWuF7mOV+rL5qzN+OE=
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=NMponrh3oAUCaK9qTMy1+k+SSVSCLshHHF/tISIdBJwAD1hb3IF5veCNNf4CTgsRN8
+         Zvbg8Pb3nJcEUH9JZx8Q==
+Date: Mon, 1 Nov 2010 12:36:15 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
+Subject: Re: [resend][PATCH 2/4] Revert "oom: deprecate oom_adj tunable"
+In-Reply-To: <20101101030353.607A.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1011011232120.6822@chino.kir.corp.google.com>
+References: <20101026220237.B7DA.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1010261234230.5578@chino.kir.corp.google.com> <20101101030353.607A.A69D9226@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <201011020832.16057.manningc2@actrix.gen.nz>
-References: <1288636877-7964-1-git-send-email-tdent48227@gmail.com>
-	<201011020814.35902.manningc2@actrix.gen.nz>
-	<4CCF13FA.1080609@caviumnetworks.com>
-	<201011020832.16057.manningc2@actrix.gen.nz>
-Date: Mon, 1 Nov 2010 15:36:13 -0400
-Message-ID: <AANLkTi=XmuhYoiJNGATDEtGyxj7FWH2UCN8QgqcRmEN6@mail.gmail.com>
-Subject: Re: [PATCH 0/29] Staging: Add yaffs2 filesystem
-From: Tracey Dent <tdent48227@gmail.com>
-To: Charles Manning <manningc2@actrix.gen.nz>
-Cc: David Daney <ddaney@caviumnetworks.com>, greg@kroah.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/1/10, Charles Manning <manningc2@actrix.gen.nz> wrote:
-> On Tuesday 02 November 2010 08:24:42 David Daney wrote:
->> On 11/01/2010 12:14 PM, Charles Manning wrote:
->> > On Tuesday 02 November 2010 07:55:39 David Daney wrote:
->> >> On 11/01/2010 11:40 AM, Tracey Dent wrote:
->> >>> The patch sets puts the yaffs2 filesystem in the staging directory.
->> >>> It is all based on Charles git
->> >>> tree(http://github.com/cdhmanning/linux-yaffs-integration/).
->> >>> Everything
->> >>> is compile tested and it builds.
->> >>>
->> >>> This only the inital support and I will be sending more cleanup
->> >>> patches.
->> >>>
->> >>> Greg can you add the patch set into your staging-next tree.
->> >>> Also, It doesn't affect anything other than itself.
->> >>>
->> >>> Thanks,
->> >>>
->> >>> Tracey Dent
->> >>
->> >> I am confused.
->> >>
->> >> Are you and Charles Manning working together on this?
->> >>
->> >> Did you write all this code or did Charles?  If it was Charles, why are
->> >> there no From: and Signed-off-by headers for him?
->> >>
->> >> Thanks in advance for enlightening us as to what is going on here,
->> >> David Daney
->> >
->> > We are not working together on this, but I do appreciate the effort in
->> > helping bring to a head what people like/dislike.
->> >
->> > I am trying to keep the kernel yaffs consistent with the yaffs.net yaffs
->> > so that it is easier to add changes from yaffs.net.
->>
->> Great.  Thanks for clearing things up.
->>
->> I will offer my unsolicited opinion:
->>
->> Charles has obviously expended great effort on yaffs2.  He has a git
->> repository hosting the code, and has expressed a desire to get the code
->> fit for merging.  For Tracey Dent to come along and hijack the entire
->> effort, would anger me if I were in Charles' place.
->
-> I don't see any malicious intent from Tracey, but I do wish to see some
-> recognition for 8+ years of effort :-).
->
+On Mon, 1 Nov 2010, KOSAKI Motohiro wrote:
 
-I can resend it with your signed-off-by line instead of mine.
+> > The new tunable added in 2.6.36, /proc/pid/oom_score_adj, is necessary for 
+> > the units that the badness score now uses.  We need a tunable with a much 
+> 
+> Who we?
+> 
 
->> Having used yaffs2 in the past, I would like to see the code in the
->> kernel.  Having it come via Charles would seem to make sense.
->>
->
-> A prime consideration from me is to try keep the kernel and yaffs.net
-> versions
-> of yaffs very close to consistent. That will allow me to continue to use my
-> existing out-of-kernel dev tools and have other benefits.
->
-Like I said its exactly from the git
-tree(http://github.com/cdhmanning/linux-yaffs-integration/). It should
-still be compatible with all the existing tools.
+Linux users who care about prioritizing tasks for oom kill with a tunable 
+that (1) has a unit, (2) has a higher resolution, and (3) is linear and 
+not exponential.  Memcg doesn't solve this issue without incurring a 1% 
+memory cost.
 
->
-> -- CHarles
->
->
+> > higher resolution than the oom_adj scale from -16 to +15, and one that 
+> > scales linearly as opposed to exponentially.  Since that tunable is much 
+> > more powerful than the oom_adj implementation, which never made any real 
+> 
+> The reason that you ware NAKed was not to introduce new powerful feature.
+> It was caused to break old and used feature from applications.
+> 
 
+No, it doesn't, and you completely and utterly failed to show a single 
+usecase that broke as a result of this because nobody can currently use 
+oom_adj for anything other than polarization.  Thus, there's no backwards 
+compatibility issue.
 
-Tracey Dent
+> > sense for defining oom killing priority for any purpose other than 
+> > polarization, the old tunable is deprecated for two years.
+> 
+> You haven't tested your patch at all. Distro's initram script are using
+> oom_adj interface and latest kernel show pointless warnings 
+> "/proc/xx/oom_adj is deprecated, please use /proc/xx/oom_score_adj instead."
+> at _every_ boot time.
+> 
+
+Yes, I've tested it, and it deprecates the tunable as expected.  A single 
+warning message serves the purpose well: let users know one time without 
+being overly verbose that the tunable is deprecated and give them 
+sufficient time (2 years) to start using the new tunable.  That's how 
+deprecation is done.
