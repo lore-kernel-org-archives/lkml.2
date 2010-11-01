@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932220Ab0KAPju (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 11:39:50 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:44338 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932202Ab0KAPjt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 11:39:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=qK34fhUud4qx6CjOy3t+SIx7a6hVmBInS6/TMiPiAszLZYIT7/YZx3xk0skROzwPYn
-         AJqjyFoV8AbnrWHdYYf7v1f5b5zHhKSnjjqdkNSynKV1mitBb9Ewmrt9lNcnFsWc/dbt
-         k8P4DTY6f2uVC0JyVAgiGw68uuOAeKOAgdO1w=
+	id S1758218Ab0KAPqE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 11:46:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4288 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756831Ab0KAPqB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 11:46:01 -0400
+Date: Mon, 1 Nov 2010 11:45:36 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Jan Kiszka <jan.kiszka@web.de>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Eric Paris <eparis@redhat.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: BUG: using smp_processor_id() in preemptible
+ arch_trigger_all_cpu_backtrace_handler
+Message-ID: <20101101154536.GT4823@redhat.com>
+References: <4CCEB51C.7010901@web.de>
 MIME-Version: 1.0
-In-Reply-To: <20101102023650.bc553e74.sfr@canb.auug.org.au>
-References: <6631e123845856ac20423c25e07844c8@mail.gmail.com>
-	<AANLkTikWWGpAM8+_z9fnngYuYSpT3NWgM7xeGkOzZ3jg@mail.gmail.com>
-	<AANLkTikQuUcAMZKqZ3Rz5HVzOs+63-Y4VYUo5-3EM30H@mail.gmail.com>
-	<20101102023650.bc553e74.sfr@canb.auug.org.au>
-Date: Mon, 1 Nov 2010 11:39:47 -0400
-Message-ID: <AANLkTin3nsb6FfNtXfqjZCuV66mwKVOsKgmZpTABFDUJ@mail.gmail.com>
-Subject: Re: All Applied micro boards are failing with current mainline kernel
-From: Josh Boyer <jwboyer@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Rupjyoti Sarmah <rsarmah@apm.com>, Tom Herbert <therbert@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CCEB51C.7010901@web.de>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 1, 2010 at 11:36 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Josh,
->
-> On Mon, 1 Nov 2010 11:05:53 -0400 Josh Boyer <jwboyer@gmail.com> wrote:
->>
->> A few hints would be appreciated.
->
-> Remove the call to netif_stop_queue() from emac_probe().  Apparently,
-> calling this before register_netdev() is now wrong (maybe always was).
+On Mon, Nov 01, 2010 at 01:39:56PM +0100, Jan Kiszka wrote:
+> Hi,
+> 
+> I was getting this BUG while running into a GPF:
+> 
+> BUG: using smp_processor_id() in preemptible [00000000] code: qemu-system-x86/2248
+> caller is arch_trigger_all_cpu_backtrace_handler+0x1d/0xf7
+> Pid: 2248, comm: qemu-system-x86 Not tainted 2.6.36+ #12
+> Call Trace:
+> [<ffffffff81203194>] debug_smp_processor_id+0xd8/0xf4
+> [<ffffffff813803ab>] arch_trigger_all_cpu_backtrace_handler+0x1d/0xf7
+> [<ffffffff81381e64>] notifier_call_chain+0xa4/0xdb
+> [<ffffffff81381efe>] __atomic_notifier_call_chain+0x63/0x95
+> [<ffffffff81381e9b>] ? __atomic_notifier_call_chain+0x0/0x95
+> [<ffffffff81381cfb>] ? sub_preempt_count+0x97/0xaa
+> [<ffffffff8121de8c>] ? pfn_to_dma_pte+0x73/0x190
+> [<ffffffff81381f44>] atomic_notifier_call_chain+0x14/0x16
+> [<ffffffff81381f74>] notify_die+0x2e/0x30
+> [<ffffffff8137f498>] do_general_protection+0x121/0x142
+> [<ffffffff81002df2>] system_call_fastpath+0x16/0x1b
 
-Yeah, I just discovered that myself.  I'm wondering
+<snip>
 
-1) why we do that in that function?
-2) If it needs to be removed entirely, or moved to after the
-register_netdev call
-3) If the call to netif_carrier_off also needs similar attention.
+> 
+> I guess this is not intended to trigger here, specifically as it showed
+> up first and may be misinterpreted as the core of the issue.
 
-I can whip up a patch to remove those calls or move them after the
-register, but I don't want to do that without knowing which one is
-"right".
+Heh.  Yeah when I migrated the code, I completely forgot the notifier
+chain could be called from a preemptible context (ie not NMI).
 
-josh
+This patch should fix it and I think it is the correct fix.  Let me know
+how it works out.
+
+Cheers,
+Don
+
+diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
+index c7c9ae4..1bdd0b5 100644
+--- a/arch/x86/kernel/apic/hw_nmi.c
++++ b/arch/x86/kernel/apic/hw_nmi.c
+@@ -63,7 +63,7 @@ arch_trigger_all_cpu_backtrace_handler(struct notifier_block *self,
+ {
+ 	struct die_args *args = __args;
+ 	struct pt_regs *regs;
+-	int cpu = smp_processor_id();
++	int cpu;
+ 
+ 	switch (cmd) {
+ 	case DIE_NMI:
+@@ -74,6 +74,7 @@ arch_trigger_all_cpu_backtrace_handler(struct notifier_block *self,
+ 	}
+ 
+ 	regs = args->regs;
++	cpu = smp_processor_id();
+ 
+ 	if (cpumask_test_cpu(cpu, to_cpumask(backtrace_mask))) {
+ 		static arch_spinlock_t lock = __ARCH_SPIN_LOCK_UNLOCKED;
