@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262Ab0KAEvG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 00:51:06 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:45910 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751632Ab0KAEvF (ORCPT
+	id S1752400Ab0KAE6T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 00:58:19 -0400
+Received: from avexcashub1.qlogic.com ([198.70.193.61]:53942 "EHLO
+	avexcashub1.qlogic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab0KAE6R convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 00:51:05 -0400
+	Mon, 1 Nov 2010 00:58:17 -0400
+From: Amit Salecha <amit.salecha@qlogic.com>
+To: Denis Kirjanov <dkirjanov@kernel.org>, David Miller <davem@davemloft.net>
+CC: "bjorn.helgaas@hp.com" <bjorn.helgaas@hp.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Sun, 31 Oct 2010 23:56:28 -0500
+Subject: RE: NULL pointer dereference at netxen_nic_probe+0x813/0x9a0
+Thread-Topic: NULL pointer dereference at netxen_nic_probe+0x813/0x9a0
+Thread-Index: Act4bI1pzFa2MQTxR/WhJArxkrMczwBFJdYF
+Message-ID: <99737F4847ED0A48AECC9F4A1974A4B80FCEAB434C@MNEXMB2.qlogic.org>
+References: <201010281250.50802.bjorn.helgaas@hp.com>
+	<AANLkTim8coGDmxxCnhzXXLEswf1OYptswbA59BYcbp-N@mail.gmail.com>
+	<4CCB24CA.3050106@kernel.org>
+ <20101029.125403.71123384.davem@davemloft.net>,<4CCC7868.60104@kernel.org>
+In-Reply-To: <4CCC7868.60104@kernel.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-Originating-IP: [93.172.188.124]
-In-Reply-To: <4CCDE4EB.7060001@arndnet.de>
-References: <4CCDA454.708@arndnet.de> <AANLkTin80pwnb1DX8OdZK3Wgsq0nj==G9VM3pahsmo0U@mail.gmail.com>
- <4CCDE4EB.7060001@arndnet.de>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Mon, 1 Nov 2010 06:50:43 +0200
-Message-ID: <AANLkTik52SVa0SC_RtNtgFu2U9Gye7BKtQ7jNgMPKe=W@mail.gmail.com>
-Subject: Re: regression: b43-sdio: probe of mmc0:0001:1 failed with error -16
-To: Arnd Hannemann <arnd@arndnet.de>
-Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 31, 2010 at 11:51 PM, Arnd Hannemann <arnd@arndnet.de> wrote:
->> In Daniel's scenario, mmc_sdio_init_card() fails because
->> mmc_send_relative_addr() returns -110.
->>
->> Can you please check out if that's the same thing you have too ?
+> Ok, thanks Dave, now I see.
 >
-> No, it seems to be the pm_runtime_get_sync in sdio_bus.c::sdio_bus_probe().
+> [PATCH] netxen_nic: Fix the tx queue manipulation bug in netxen_nic_probe
+>
+> We should not stop the egress queue during probe because it is wrong.
+>
+>Signed-off-by: Denis Kirjanov <dkirjanov@kernel.org>
+> ---
+> drivers/net/netxen/netxen_nic_main.c |    1 -
+> 1 files changed, 0 insertions(+), 1 deletions(-)
 
-Yeah, this is just the symptom though - pm_runtime_get_sync tries to
-power up the card, and eventually mmc_sdio_init_card() is called (by
-mmc_sdio_resume which is invoked by mmc_resume_host).
-
-On the XO-1.5 mmc_sdio_init_card() seems to fail due to
-mmc_send_relative_addr() returning -110; this may suggest that
-although mmc_power_off() and mmc_power_on() were called, we still
-didn't have a full power reset, and the card/controller are left at a
-weird state.
-
-Can you please check out if that's the same failure in your case too ?
-
-Thanks!
-Ohad.
+Thanks Denis, for fixing this.
