@@ -1,86 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984Ab0KATcW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 15:32:22 -0400
-Received: from smtp.scorch.co.nz ([27.110.127.199]:60830 "HELO scorch.co.nz"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1750966Ab0KATcT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 15:32:19 -0400
-X-Virus-Checked: Checked by ClamAV on scorch.co.nz
-From: Charles Manning <manningc2@actrix.gen.nz>
-To: David Daney <ddaney@caviumnetworks.com>
-Subject: Re: [PATCH 0/29] Staging: Add yaffs2 filesystem
-Date: Tue, 2 Nov 2010 08:32:15 +1300
-User-Agent: KMail/1.9.10
-Cc: Tracey Dent <tdent48227@gmail.com>, greg@kroah.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-References: <1288636877-7964-1-git-send-email-tdent48227@gmail.com> <201011020814.35902.manningc2@actrix.gen.nz> <4CCF13FA.1080609@caviumnetworks.com>
-In-Reply-To: <4CCF13FA.1080609@caviumnetworks.com>
+	id S1751918Ab0KATd7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 15:33:59 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:21057 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966Ab0KATd4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 15:33:56 -0400
+Date: Mon, 1 Nov 2010 20:23:23 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Borislav Petkov <bp@alien8.de>
+cc: linux-kernel@vger.kernel.org, Peter Oruba <peter.oruba@amd.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        amd64-microcode@amd64.org
+Subject: Re: [PATCH] AMD Microcode: Prefer vzalloc() over calls to
+ vmalloc()+memset()
+In-Reply-To: <20101031100833.GA18633@liondog.tnic>
+Message-ID: <alpine.LNX.2.00.1011012020500.12889@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1010302118160.1572@swampdragon.chaosbits.net> <20101031100833.GA18633@liondog.tnic>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201011020832.16057.manningc2@actrix.gen.nz>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 02 November 2010 08:24:42 David Daney wrote:
-> On 11/01/2010 12:14 PM, Charles Manning wrote:
-> > On Tuesday 02 November 2010 07:55:39 David Daney wrote:
-> >> On 11/01/2010 11:40 AM, Tracey Dent wrote:
-> >>> The patch sets puts the yaffs2 filesystem in the staging directory.
-> >>> It is all based on Charles git
-> >>> tree(http://github.com/cdhmanning/linux-yaffs-integration/). Everything
-> >>> is compile tested and it builds.
-> >>>
-> >>> This only the inital support and I will be sending more cleanup
-> >>> patches.
-> >>>
-> >>> Greg can you add the patch set into your staging-next tree.
-> >>> Also, It doesn't affect anything other than itself.
-> >>>
-> >>> Thanks,
-> >>>
-> >>> Tracey Dent
-> >>
-> >> I am confused.
-> >>
-> >> Are you and Charles Manning working together on this?
-> >>
-> >> Did you write all this code or did Charles?  If it was Charles, why are
-> >> there no From: and Signed-off-by headers for him?
-> >>
-> >> Thanks in advance for enlightening us as to what is going on here,
-> >> David Daney
-> >
-> > We are not working together on this, but I do appreciate the effort in
-> > helping bring to a head what people like/dislike.
-> >
-> > I am trying to keep the kernel yaffs consistent with the yaffs.net yaffs
-> > so that it is easier to add changes from yaffs.net.
->
-> Great.  Thanks for clearing things up.
->
-> I will offer my unsolicited opinion:
->
-> Charles has obviously expended great effort on yaffs2.  He has a git
-> repository hosting the code, and has expressed a desire to get the code
-> fit for merging.  For Tracey Dent to come along and hijack the entire
-> effort, would anger me if I were in Charles' place.
+On Sun, 31 Oct 2010, Borislav Petkov wrote:
 
-I don't see any malicious intent from Tracey, but I do wish to see some 
-recognition for 8+ years of effort :-).
+> On Sat, Oct 30, 2010 at 09:23:14PM +0200, Jesper Juhl wrote:
+> > We don't have to do memset() ourselves after vmalloc() when we have 
+> > vzalloc(), so change that in 
+> > arch/x86/kernel/microcode_amd.c::get_next_ucode().
+> > 
+> > Please CC me on replies.
+> > 
+> > 
+> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > ---
+> > compile tested only.
+> > 
+> >  microcode_amd.c |    3 +--
+> >  1 file changed, 1 insertion(+), 2 deletions(-)
+> > 
+> > diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
+> > index e1af7c0..d46e805 100644
+> > --- a/arch/x86/kernel/microcode_amd.c
+> > +++ b/arch/x86/kernel/microcode_amd.c
+> > @@ -183,9 +183,8 @@ get_next_ucode(const u8 *buf, unsigned int size, unsigned int *mc_size)
+> >  		return NULL;
+> >  	}
+> >  
+> > -	mc = vmalloc(UCODE_MAX_SIZE);
+> > +	mc = vzalloc(UCODE_MAX_SIZE);
+> >  	if (mc) {
+> > -		memset(mc, 0, UCODE_MAX_SIZE);
+> >  		if (get_ucode_data(mc, buf + UCODE_CONTAINER_SECTION_HDR,
+> >  				   total_size)) {
+> >  			vfree(mc);
+> 
+> Good.
+> 
+> Better yet, you can go a step further and remove one indentation block:
+> 
+> --
+> 	mc = vzalloc(UCODE_MAX_SIZE);
+> 	if (!mc)
+> 		goto out;
+> 
+> 	if (get_ucode_data(mc, ...
+> 	...
+> 
+> out:
+> 	return mc;
+> 
+> }
+> --
+> making the code even fit in 80 chars width and thus more readable.
+> 
+> Thanks.
+> 
+Thank you for the feedback I'll prepare a new version of the patch 
+incorporating it, then resend it. 
 
-> Having used yaffs2 in the past, I would like to see the code in the
-> kernel.  Having it come via Charles would seem to make sense.
->
+One thing I'm not entirely sure about though is how to credit you with 
+your improment to my original patch. Would I simply prepend
 
-A prime consideration from me is to try keep the kernel and yaffs.net versions 
-of yaffs very close to consistent. That will allow me to continue to use my 
-existing out-of-kernel dev tools and have other benefits.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Signed-off-by: Borislav Petkov <bp@alien8.de>
 
+or should I leave just my own Signed-off-by: and then mention you in the 
+changelog part of the mail or? 
 
--- CHarles
+-- 
+Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
+Plain text mails only, please      http://www.expita.com/nomime.html
+Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
 
