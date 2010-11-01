@@ -1,47 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758246Ab0KAPr1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 11:47:27 -0400
-Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:57009 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754859Ab0KAPrZ (ORCPT
+	id S1758210Ab0KAPuJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 11:50:09 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:42436
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756831Ab0KAPuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 11:47:25 -0400
-Date: Mon, 1 Nov 2010 11:47:17 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 2.6.37-rc1
-Message-ID: <20101101154717.GA17893@elliptictech.com>
-Mail-Followup-To: Thomas Gleixner <tglx@linutronix.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <AANLkTimr3rW67HxgOUyReEW8dmmSsd4b7-Ns57mXzS1w@mail.gmail.com>
- <alpine.LFD.2.00.1011011634240.2566@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1011011634240.2566@localhost6.localdomain6>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 1 Nov 2010 11:50:07 -0400
+Date: Mon, 01 Nov 2010 08:50:30 -0700 (PDT)
+Message-Id: <20101101.085030.226787287.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: jwboyer@gmail.com, rsarmah@apm.com, therbert@google.com,
+        eric.dumazet@gmail.com, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: All Applied micro boards are failing with current mainline
+ kernel
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20101102023650.bc553e74.sfr@canb.auug.org.au>
+References: <AANLkTikWWGpAM8+_z9fnngYuYSpT3NWgM7xeGkOzZ3jg@mail.gmail.com>
+	<AANLkTikQuUcAMZKqZ3Rz5HVzOs+63-Y4VYUo5-3EM30H@mail.gmail.com>
+	<20101102023650.bc553e74.sfr@canb.auug.org.au>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-11-01 16:37 +0100, Thomas Gleixner wrote:
-> On Mon, 1 Nov 2010, Linus Torvalds wrote:
-> > The merge window for 2.6.37 is over, and -rc1 is out there (or will be
-> > soon, as things are uploading from my laptop here in Boston and then
-> > mirroring out)
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 2 Nov 2010 02:36:50 +1100
+
+> Hi Josh,
 > 
-> Did you switch back to tarballs and patches only or is there going to
-> be an update of your git tree in the foreseeable future ?
+> On Mon, 1 Nov 2010 11:05:53 -0400 Josh Boyer <jwboyer@gmail.com> wrote:
+>>
+>> A few hints would be appreciated.
+> 
+> Remove the call to netif_stop_queue() from emac_probe().  Apparently,
+> calling this before register_netdev() is now wrong (maybe always was).
 
-Seems that the v2.6.37-rc1 tag is in the git tree, but is not reachable
-from the master branch.  See
+Right.
 
-  http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=shortlog;h=v2.6.37-rc1
+I'll add this to net-2.6
 
+--------------------
+ibm_newemac: Remove netif_stop_queue() in emac_probe().
+
+Touching the queue state before register_netdev is not
+allowed, and besides the queue state before ->open()
+is "don't care"
+
+Reported-by: Josh Boyer <jwboyer@gmail.com>
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ibm_newemac/core.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/ibm_newemac/core.c b/drivers/net/ibm_newemac/core.c
+index 385dc32..06bb9b7 100644
+--- a/drivers/net/ibm_newemac/core.c
++++ b/drivers/net/ibm_newemac/core.c
+@@ -2871,7 +2871,6 @@ static int __devinit emac_probe(struct platform_device *ofdev,
+ 	SET_ETHTOOL_OPS(ndev, &emac_ethtool_ops);
+ 
+ 	netif_carrier_off(ndev);
+-	netif_stop_queue(ndev);
+ 
+ 	err = register_netdev(ndev);
+ 	if (err) {
 -- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+1.7.3.2
+
