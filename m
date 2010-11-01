@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756481Ab0KAJrB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 05:47:01 -0400
-Received: from mail.sysgo.com ([195.145.229.155]:50452 "EHLO mail.sysgo.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751602Ab0KAJq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 05:46:58 -0400
-Date: Mon, 1 Nov 2010 10:46:49 +0100
-From: Pavel Machek <pma@sysgo.com>
-To: kernel list <linux-kernel@vger.kernel.org>, chunkeey@googlemail.com,
-        linux-wireless@vger.kernel.org
-Subject: Re: carl9170 disconnects under load
-Message-ID: <20101101094649.GA3391@pma.sysgo.com>
-References: <20101026104811.GA11357@pma.sysgo.com>
- <20101101093140.GA2766@pma.sysgo.com>
+	id S1756963Ab0KAJt4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 05:49:56 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:49992 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751017Ab0KAJty convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 05:49:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=QZnpF+SqfBb+loT3XoWE8tuvWHWnRdYxAYqm68MKwfYKXUogLlsjHNRy+69420G8Vm
+         jQB0xHmnYMnm1lo35cm3LEE44zr0UDNcmH5nl6bs4d/XXFq2EeYeKHvMLdbZanGGhiCD
+         ZelMG1r1svhV54sw0aZAoLAr6IDoyanI5uiTg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101101093140.GA2766@pma.sysgo.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTi=vF50JAFQRMWRDKpbk157amaXpDetna=8==pHn@mail.gmail.com>
+References: <AANLkTikfW7QfXX76JM=pDYuQYexPvQz3hrAE=B3YMD5x@mail.gmail.com>
+	<20101101092947.GB6023@cr0.nay.redhat.com>
+	<AANLkTi=vF50JAFQRMWRDKpbk157amaXpDetna=8==pHn@mail.gmail.com>
+Date: Mon, 1 Nov 2010 17:49:53 +0800
+Message-ID: <AANLkTikkh+Pif7DuP3p-fH2=5_otX7N0NSjSB2h13yFC@mail.gmail.com>
+Subject: Re: How many params can be accept by kernel module at most?
+From: tingwei liu <tingw.liu@gmail.com>
+To: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+The params are transferred by command line. And the params are all in
+program statically. So the stack size determine the params number. For
+example: stack size is 4K,and params are unsigned int type with 4
+bytes,so the max number of params is 1 thousand。
 
-> > I'm testing driver from -wireless testing, cca 2.6.26-rc7.
-> > 
-> > It seems to work (up to 802.11n speeds -- I've seen iwconfig claiming
-> > 121 MB/sec), but disconnects rather quickly when under load:
-> > 
-> > telnet 192.168.1.3 chargen > /dev/null
-> > 
-> > The machine is powerpc mpc5200b board, with OHCI driver -- it is not
-> > capable of USB2.0 speeds.
-> 
-> So I tried with different AP, one not capable of 802.11n speeds. It
-> fails in different way :-(. But this one is with my backport to
-> 2.6.34...
-
-But it fails with wireless-testing tree, too :-(.
-
-Linux mpc5200b 2.6.36-rc8-wl-pma-48197-gdcae733-dirty #43 Tue Oct 26
- 12:06:21 CEST 2010 ppc
-
-								Pavel
-
-PHY: f0003000:00 - Link is Up - 100/Full
-warning: `named' uses 32-bit capabilities (legacy support in use)
-process `named' is using obsolete setsockopt SO_BSDCOMPAT
-ieee80211 phy0: device now idle
-ieee80211 phy0: device no longer idle - scanning
-wlan0: authenticate with 00:11:95:05:30:d7 (try 1)
-wlan0: authenticated
-ieee80211 phy0: device now idle
-ieee80211 phy0: device no longer idle - working
-wlan0: associate with 00:11:95:05:30:d7 (try 1)
-wlan0: RX AssocResp from 00:11:95:05:30:d7 (capab=0x421 status=0
-aid=1)
-wlan0: associated
-ieee80211 phy0: Allocated STA 00:11:95:05:30:d7
-ieee80211 phy0: Inserted STA 00:11:95:05:30:d7
-usb 1-1: restart device (4)
-usb 1-1: firmware upload failed (-110).
-usb 1-1: Failed to restart device  (-110).
-ieee80211 phy0: writing reg 0x1c36f0 (val 0x5000) failed (-5)
-wlan0: deauthenticating from 00:11:95:05:30:d7 by local choice
-(reason=3)
-ieee80211 phy0: Removed STA 00:11:95:05:30:d7
-ieee80211 phy0: Destroyed STA 00:11:95:05:30:d7
-ieee80211 phy0: device now idle
-cfg80211: Calling CRDA to update world regulatory domain
-usb 1-1: reset full speed USB device using of:ppc-of-ohci and address
-2
--/bin/sh-3.00# usb 1-1: device descriptor read/64, error -110
+2010/11/1 tingwei liu <tingw.liu@gmail.com>:
+> What's the meaning of dynamically and statically?
+> You response help me much. Thank you
+>
+> 2010/11/1 Américo Wang <xiyou.wangcong@gmail.com>:
+>> On Mon, Nov 01, 2010 at 02:17:23PM +0800, tingwei liu wrote:
+>>>How many params can be accept by kernel module at most?
+>>
+>> If you mean dynamically, these parameters are passed as a whole to kernel,
+>> from the source code, you can see the max length is ~0UL>>1.
+>>
+>> If you mean statically, IOW, the max paramenters you can provide in your module,
+>> this is limited by ELF section size.
+>>
+>> Hope this helps.
+>>
+>
