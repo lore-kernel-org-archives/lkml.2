@@ -1,53 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754103Ab0KAUdY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 16:33:24 -0400
-Received: from mail.elliptictech.com ([209.217.122.41]:46957 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753673Ab0KAUdV (ORCPT
+	id S1754101Ab0KAUfo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 16:35:44 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:33735 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753434Ab0KAUfn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 16:33:21 -0400
-Date: Mon, 1 Nov 2010 16:33:15 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Chuck Lever <chuck.lever@oracle.com>,
+	Mon, 1 Nov 2010 16:35:43 -0400
+X-IronPort-AV: E=Sophos;i="4.58,276,1286175600"; 
+   d="scan'208";a="476159602"
+Subject: Re: Regression, bisected: sqlite locking failure on nfs
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Chuck Lever <chuck.lever@oracle.com>
+Cc: Nick Bowler <nbowler@elliptictech.com>,
         LKML Kernel <linux-kernel@vger.kernel.org>,
         "J. Bruce Fields" <bfields@redhat.com>,
         Linux NFS Mailing List <linux-nfs@vger.kernel.org>
-Subject: Re: Regression, bisected: sqlite locking failure on nfs
-Message-ID: <20101101203315.GA3600@elliptictech.com>
-Mail-Followup-To: Trond Myklebust <Trond.Myklebust@netapp.com>,
-	Chuck Lever <chuck.lever@oracle.com>,
-	LKML Kernel <linux-kernel@vger.kernel.org>,
-	"J. Bruce Fields" <bfields@redhat.com>,
-	Linux NFS Mailing List <linux-nfs@vger.kernel.org>
+In-Reply-To: <9892B787-0C2A-42C2-8EFE-357EC5393CC1@oracle.com>
 References: <20101101175854.GA3550@elliptictech.com>
- <D68536EB-6BE9-4DE4-B325-39FEF747092E@oracle.com>
- <20101101181938.GA3875@elliptictech.com>
- <187AEE96-9231-4899-9D65-A444503D2758@oracle.com>
- <1288639376.5009.16.camel@heimdal.trondhjem.org>
- <1288640536.5009.18.camel@heimdal.trondhjem.org>
- <DA1E14E0-DCCD-4A6D-9471-E627D4BF2E85@oracle.com>
- <1288640888.5009.19.camel@heimdal.trondhjem.org>
- <1288642170.5009.23.camel@heimdal.trondhjem.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288642170.5009.23.camel@heimdal.trondhjem.org>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	 <D68536EB-6BE9-4DE4-B325-39FEF747092E@oracle.com>
+	 <20101101181938.GA3875@elliptictech.com>
+	 <187AEE96-9231-4899-9D65-A444503D2758@oracle.com>
+	 <1288639376.5009.16.camel@heimdal.trondhjem.org>
+	 <1288640536.5009.18.camel@heimdal.trondhjem.org>
+	 <DA1E14E0-DCCD-4A6D-9471-E627D4BF2E85@oracle.com>
+	 <1288640888.5009.19.camel@heimdal.trondhjem.org>
+	 <9892B787-0C2A-42C2-8EFE-357EC5393CC1@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp
+Date: Mon, 01 Nov 2010 16:35:29 -0400
+Message-ID: <1288643729.5009.25.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+X-OriginalArrivalTime: 01 Nov 2010 20:35:43.0063 (UTC) FILETIME=[5AB79670:01CB7A04]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-11-01 16:09 -0400, Trond Myklebust wrote:
-> Urgh, but nlmclnt_bind_host() will still set .saddress.
+On Mon, 2010-11-01 at 15:55 -0400, Chuck Lever wrote:
+> On Nov 1, 2010, at 3:48 PM, Trond Myklebust wrote:
 > 
-> OK. Here is take 2 of the patch...
-[...]
-> NLM: Fix a regression in lockd
+> > On Mon, 2010-11-01 at 15:45 -0400, Chuck Lever wrote:
+> >> On Nov 1, 2010, at 3:42 PM, Trond Myklebust wrote:
+> >> 
+> >>> On Mon, 2010-11-01 at 15:22 -0400, Trond Myklebust wrote:
+> >>>> I suspect nlmclnt_lookup_host() is to blame. It appears to be the _only_
+> >>>> thing in the kernel that actually sets this 'srcaddr' field, and it sets
+> >>>> it to
+> >>>> 
+> >>>> const struct sockaddr source = {
+> >>>> 	.sa_family      = AF_UNSPEC,
+> >>>> };
+> >>>> 
+> >>>> You triggered the bug by removing the line
+> >>>> 
+> >>>> 	transport->srcaddr.ss_family = family;
+> >>>> 
+> >>>> from xs_create_sock().
+> >>>> 
+> >>>>  Trond
+> >>> 
+> >>> Does this fix the regression?
+> >>> 
+> >>> Trond
+> >>> 
+> >>> ----------------------------------------------------------------------------------------------
+> >>> NLM: Fix a regression in lockd
+> >>> 
+> >>> From: Trond Myklebust <Trond.Myklebust@netapp.com>
+> >>> 
+> >>> Nick Bowler reports:
+> >>> There are no unusual messages on the client... but I just logged into
+> >>> the server and I see lots of messages of the following form:
+> >>> 
+> >>> nfsd: request from insecure port (192.168.8.199:35766)!
+> >>> nfsd: request from insecure port (192.168.8.199:35766)!
+> >>> nfsd: request from insecure port (192.168.8.199:35766)!
+> >>> nfsd: request from insecure port (192.168.8.199:35766)!
+> >>> nfsd: request from insecure port (192.168.8.199:35766)!
+> >>> 
+> >>> Bisected to commit 9247685088398cf21bcb513bd2832b4cd42516c4 (SUNRPC:
+> >>> Properly initialize sock_xprt.srcaddr in all cases)
+> >>> 
+> >>> Apparently, removing the 'transport->srcaddr.ss_family = family' from
+> >>> xs_create_sock() triggers this due to nlmclnt_lookup_host() incorrectly
+> >>> initialising the srcaddr family to AF_UNSPEC.
+> >>> 
+> >>> Reported-by: Nick Bowler <nbowler@elliptictech.com>
+> >>> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+> >>> ---
+> >>> 
+> >>> fs/lockd/host.c |    5 -----
+> >>> 1 files changed, 0 insertions(+), 5 deletions(-)
+> >>> 
+> >>> 
+> >>> diff --git a/fs/lockd/host.c b/fs/lockd/host.c
+> >>> index 25e21e4..9ff0c0e 100644
+> >>> --- a/fs/lockd/host.c
+> >>> +++ b/fs/lockd/host.c
+> >>> @@ -238,9 +238,6 @@ struct nlm_host *nlmclnt_lookup_host(const struct sockaddr *sap,
+> >>> 				     const char *hostname,
+> >>> 				     int noresvport)
+> >>> {
+> >>> -	const struct sockaddr source = {
+> >>> -		.sa_family	= AF_UNSPEC,
+> >>> -	};
+> >>> 	struct nlm_lookup_host_info ni = {
+> >>> 		.server		= 0,
+> >>> 		.sap		= sap,
+> >>> @@ -249,8 +246,6 @@ struct nlm_host *nlmclnt_lookup_host(const struct sockaddr *sap,
+> >>> 		.version	= version,
+> >>> 		.hostname	= hostname,
+> >>> 		.hostname_len	= strlen(hostname),
+> >>> -		.src_sap	= &source,
+> >>> -		.src_len	= sizeof(source),
+> >>> 		.noresvport	= noresvport,
+> >>> 	};
+> >>> 
+> >>> 
+> >> 
+> >> 
+> >> What about that memcpy() in nlm_lookup_host()?  With this patch, wouldn't it be copying garbage into the host's srcaddr field?
+> >> 
+> > 
+> > It shouldn't. ni->src_len is now zero.
+> 
+> Yech.  All this still assumes that ANYADDR is all zeroes, and that the memory this is going into is already initialized to zeroes.  It's asking for trouble if we re-arrange all this someday.
+> 
+> I've got an untested one line patch that should fix this for any upper layer caller.  Posting now.
+> 
 
-Problem occurs with this one (on top of 2.6.37-rc1), too :(
+No! Upper layer callers should simply not be setting .saddress. Pretty
+much the only thing that _should_ be setting .saddress is the lockd
+callback, and possibly the nfsv4 server callback.
 
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+Trond
