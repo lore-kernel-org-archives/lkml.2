@@ -1,50 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758370Ab0KAP5t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 11:57:49 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:40550 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753479Ab0KAP5r (ORCPT
+	id S1758378Ab0KAP66 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 11:58:58 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63328 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757626Ab0KAP6z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 11:57:47 -0400
-Message-ID: <4CCEE374.4050805@codemonkey.ws>
-Date: Mon, 01 Nov 2010 10:57:40 -0500
-From: Anthony Liguori <anthony@codemonkey.ws>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Lightning/1.0b1 Thunderbird/3.0.10
+	Mon, 1 Nov 2010 11:58:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=Ew7xZSH3dvyt9cCAduBfEmzQURMUE82aVA+QDqmuXT2caNo5j82Bp4t9bCuNQNGP98
+         qpv/iG0vwkO+wdjhcYAcMnGCXP+82QEyRz1S8OpF93zc6S96QZqqub7sIJQbmCgyNMXv
+         GKpJM807TFAeYht0JKkv4hmydPnePyfaP0fFw=
 MIME-Version: 1.0
-To: Ian Molton <ian.molton@collabora.co.uk>
-CC: Avi Kivity <avi@redhat.com>, virtualization@lists.osdl.org,
-        linux-kernel@vger.kernel.org, QEMU Developers <qemu-devel@nongnu.org>
-Subject: Re: [Qemu-devel] Re: [PATCH] Implement a virtio GPU transport
-References: <4CAC9CD1.2050601@collabora.co.uk>	<4CB1D79A.6070805@redhat.com>	<4CBD739A.2010500@collabora.co.uk>	<4CBD7560.6080207@redhat.com>	<4CC8226F.5080807@collabora.co.uk>	<4CC94203.1080207@redhat.com>	<4CC9647A.50108@collabora.co.uk> <4CC98784.7020907@redhat.com>	<4CC9D472.2080109@collabora.co.uk> <4CCE9989.2010809@redhat.com> <4CCEBEE2.8010404@codemonkey.ws> <4CCEE172.2010600@collabora.co.uk>
-In-Reply-To: <4CCEE172.2010600@collabora.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20101031224757.GA2430@selene>
+References: <AANLkTinWT9OyicLfdeY+AvWs=5vb5z8skZ3t6keYjk9j@mail.gmail.com>
+	<AANLkTikNywvthaU-+s5HXvh3RX=HxiFWmADW--Ln_Gga@mail.gmail.com>
+	<AANLkTimgCU1tM9VJv8RJ-dim+bRsT7cbZ9ZidbT5sco-@mail.gmail.com>
+	<20101031224757.GA2430@selene>
+Date: Mon, 1 Nov 2010 17:58:52 +0200
+Message-ID: <AANLkTingbRtFQUoQNZmQubL0LNhVF2hvkdma6j7VDTEU@mail.gmail.com>
+Subject: Re: Horrible btrfs performance due to fragmentation
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Hugo Mills <hugo-lkml@carfax.org.uk>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        cwillu <cwillu@cwillu.com>, Calvin Walton <calvin.walton@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-btrfs@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2010 10:49 AM, Ian Molton wrote:
-> On 01/11/10 13:21, Anthony Liguori wrote:
->> On 11/01/2010 05:42 AM, Avi Kivity wrote:
->>> On 10/28/2010 03:52 PM, Ian Molton wrote:
->>>> On 28/10/10 15:24, Avi Kivity wrote:
+On Mon, Nov 1, 2010 at 12:47 AM, Hugo Mills <hugo-lkml@carfax.org.uk> wrote:
+> On Mon, Nov 01, 2010 at 12:36:58AM +0200, Felipe Contreras wrote:
+>> On Mon, Nov 1, 2010 at 12:25 AM, cwillu <cwillu@cwillu.com> wrote:
+>> > btrfs fi defrag isn't recursive.  "btrfs filesystem defrag /home" will
+>> > defragment the space used to store the folder, without touching the
+>> > space used to store files in that folder.
+>>
+>> Yes, that came up on the IRC, but:
+>>
+>> 1) It doesn't make sense: "btrfs filesystem" doesn't allow a fileystem
+>> as argument? Why would anyone want it to be _non_ recursive?
 >
->>> Waiting for a response is fine, but can't the guest issue a second
->>> batch while waiting for the first?
+>   You missed the subsequent discussion on IRC about the interaction
+> of COW with defrag. Essentially, if you've got two files that are COW
+> copies of each other, and one has had something written to it since,
+> it's *impossible* for both files to be defragmented, without making a
+> full copy of both:
 >
->> The other scenario would be multiple applications trying to use GL but
->> AFAICT, this is not supported in the current model.
+> Start with a file (A, etc are data blocks on the disk):
 >
-> It very much is. It supports fully visually integrated rendering (no 
-> overlay windows) and even compositing GL window managers work fine, 
-> even if running 3D apps under them.
+> file1 = ABCDEF
+>
+> Cow copy it:
+>
+> file1 = ABCDEF
+> file2 = ABCDEF
+>
+> Now write to one of them:
+>
+> file1 = ABCDEF
+> file2 = ABCDxF
+>
+>   So, either file1 is contiguous, and file2 is fragmented (with the
+> block x somewhere else on disk), or file2 is contiguous, and file1 is
+> fragmented (with E somewhere else on disk). In fact, we've determined
+> by experiment that when you defrag a file that's sharing blocks with
+> another one, the file gets copied in its entirety, thus separating the
+> blocks of the file and its COW duplicate.
 
-Does the kernel track userspace pid and pass that information to qemu?
+Ok, but the fragmentation would not be an issue in this case.
 
-Regards,
+>> 2) The filesystem should not degrade performance so horribly no matter
+>> how long the it has been used. Even git has automatic garbage
+>> collection.
+>
+>   Since, I believe, btrfs uses COW very heavily internally for
+> ensuring consistency, you can end up with fragmenting files and
+> directories very easily. You probably need some kind of scrubber that
+> goes looking for non-COW files that are fragmented, and defrags them
+> in the background.
 
-Anthony Liguori
+Or when going through all the fragments of a file, have a counter, and
+if it exceeds certain limit mark it somehow, so that it gets
+defragmented at least to a certain extent.
 
-> -Ian
-
+-- 
+Felipe Contreras
