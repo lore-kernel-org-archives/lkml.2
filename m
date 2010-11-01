@@ -1,111 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539Ab0KATmf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 15:42:35 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:20586 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751546Ab0KATmc convert rfc822-to-8bit (ORCPT
+	id S1752584Ab0KATnL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 15:43:11 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:50472 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820Ab0KATnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 15:42:32 -0400
-X-IronPort-AV: E=Sophos;i="4.58,275,1286175600"; 
-   d="scan'208";a="476138539"
-Subject: Re: Regression, bisected: sqlite locking failure on nfs
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Chuck Lever <chuck.lever@oracle.com>
-Cc: Nick Bowler <nbowler@elliptictech.com>,
-        LKML Kernel <linux-kernel@vger.kernel.org>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
-In-Reply-To: <1288639376.5009.16.camel@heimdal.trondhjem.org>
-References: <20101101175854.GA3550@elliptictech.com>
-	 <D68536EB-6BE9-4DE4-B325-39FEF747092E@oracle.com>
-	 <20101101181938.GA3875@elliptictech.com>
-	 <187AEE96-9231-4899-9D65-A444503D2758@oracle.com>
-	 <1288639376.5009.16.camel@heimdal.trondhjem.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp
-Date: Mon, 01 Nov 2010 15:42:16 -0400
-Message-ID: <1288640536.5009.18.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-X-OriginalArrivalTime: 01 Nov 2010 19:42:30.0028 (UTC) FILETIME=[EB851CC0:01CB79FC]
+	Mon, 1 Nov 2010 15:43:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=MyNbXOanIoDgdDJaLfHcrv6+9i+3F9ms6wvU0BS/OiWz7Cd12XtLcsAtaEse+YPhnf
+         nuzSiQfKJXEQlcjomZ4w==
+MIME-Version: 1.0
+In-Reply-To: <4CCF0BE3.2090700@redhat.com>
+References: <20101028191523.GA14972@google.com>
+	<20101101012322.605C.A69D9226@jp.fujitsu.com>
+	<20101101182416.GB31189@google.com>
+	<4CCF0BE3.2090700@redhat.com>
+Date: Mon, 1 Nov 2010 12:43:03 -0700
+X-Google-Sender-Auth: 7a06toPEI9X4vD-aS7tBxD7b6Mg
+Message-ID: <AANLkTi=src1L0gAFsogzCmejGOgg5uh=9O4Uw+ZmfBg4@mail.gmail.com>
+Subject: Re: [PATCH] RFC: vmscan: add min_filelist_kbytes sysctl for
+ protecting the working set
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, wad@chromium.org, olofj@chromium.org,
+        hughd@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-01 at 15:22 -0400, Trond Myklebust wrote:
-> I suspect nlmclnt_lookup_host() is to blame. It appears to be the _only_
-> thing in the kernel that actually sets this 'srcaddr' field, and it sets
-> it to
-> 
-> const struct sockaddr source = {
-> 	.sa_family      = AF_UNSPEC,
-> };
-> 
-> You triggered the bug by removing the line
-> 
-> 	transport->srcaddr.ss_family = family;
-> 
-> from xs_create_sock().
-> 
->    Trond
+On Mon, Nov 1, 2010 at 11:50 AM, Rik van Riel <riel@redhat.com> wrote:
+> On 11/01/2010 02:24 PM, Mandeep Singh Baines wrote:
+>
+>> Under memory pressure, I see the active list get smaller and smaller. Its
+>> getting smaller because we're scanning it faster and faster, causing more
+>> and more page faults which slows forward progress resulting in the active
+>> list getting smaller still. One way to approach this might to make the
+>> scan rate constant and configurable. It doesn't seem right that we scan
+>> memory faster and faster under low memory. For us, we'd rather OOM than
+>> evict pages that are likely to be accessed again so we'd prefer to make
+>> a conservative estimate as to what belongs in the working set. Other
+>> folks (long computations) might want to reclaim more aggressively.
+>
+> Have you actually read the code?
+>
 
-Does this fix the regression?
+I have but really just recently. I consider myself an mm newb so take any
+conclusion I make with a grain of salt.
 
-Trond
+> The active file list is only ever scanned when it is larger
+> than the inactive file list.
+>
 
-----------------------------------------------------------------------------------------------
-NLM: Fix a regression in lockd
+Yes, this prevents you from reclaiming the active list all at once. But if the
+memory pressure doesn't go away, you'll start to reclaim the active list
+little by little. First you'll empty the inactive list, and then
+you'll start scanning
+the active list and pulling pages from inactive to active. The problem is that
+there is no minimum time limit to how long a page will sit in the inactive list
+before it is reclaimed. Just depends on scan rate which does not depend
+on time.
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+In my experiments, I saw the active list get smaller and smaller
+over time until eventually it was only a few MB at which point the system came
+grinding to a halt due to thrashing.
 
-Nick Bowler reports:
-There are no unusual messages on the client... but I just logged into
-the server and I see lots of messages of the following form:
+I played around with making the active/inactive ratio configurable. I
+sent a patch out
+for an inactive_file_ratio. So instead of the default 50%, you'd make the
+ratio configurable.
 
-  nfsd: request from insecure port (192.168.8.199:35766)!
-  nfsd: request from insecure port (192.168.8.199:35766)!
-  nfsd: request from insecure port (192.168.8.199:35766)!
-  nfsd: request from insecure port (192.168.8.199:35766)!
-  nfsd: request from insecure port (192.168.8.199:35766)!
+inactive_file_ratio = (inactive * 100) / (inactive + active)
 
-Bisected to commit 9247685088398cf21bcb513bd2832b4cd42516c4 (SUNRPC:
-Properly initialize sock_xprt.srcaddr in all cases)
+I saw less thrashing at 10% but this patch wasn't nearly as effective
+as min_filelist_kbytes.
+I can resend the patch if you think its interesting.
 
-Apparently, removing the 'transport->srcaddr.ss_family = family' from
-xs_create_sock() triggers this due to nlmclnt_lookup_host() incorrectly
-initialising the srcaddr family to AF_UNSPEC.
-
-Reported-by: Nick Bowler <nbowler@elliptictech.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
----
-
- fs/lockd/host.c |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
-
-
-diff --git a/fs/lockd/host.c b/fs/lockd/host.c
-index 25e21e4..9ff0c0e 100644
---- a/fs/lockd/host.c
-+++ b/fs/lockd/host.c
-@@ -238,9 +238,6 @@ struct nlm_host *nlmclnt_lookup_host(const struct sockaddr *sap,
- 				     const char *hostname,
- 				     int noresvport)
- {
--	const struct sockaddr source = {
--		.sa_family	= AF_UNSPEC,
--	};
- 	struct nlm_lookup_host_info ni = {
- 		.server		= 0,
- 		.sap		= sap,
-@@ -249,8 +246,6 @@ struct nlm_host *nlmclnt_lookup_host(const struct sockaddr *sap,
- 		.version	= version,
- 		.hostname	= hostname,
- 		.hostname_len	= strlen(hostname),
--		.src_sap	= &source,
--		.src_len	= sizeof(source),
- 		.noresvport	= noresvport,
- 	};
- 
-
+>>> Q2: In the above you used min_filelist_kbytes=50000. How do you decide
+>>> such value? Do other users can calculate proper value?
+>>>
+>>
+>> 50M was small enough that we were comfortable with keeping 50M of file
+>> pages
+>> in memory and large enough that it is bigger than the working set. I
+>> tested
+>> by loading up a bunch of popular web sites in chrome and then observing
+>> what
+>> happend when I ran out of memory. With 50M, I saw almost no thrashing and
+>> the system stayed responsive even under low memory. but I wanted to be
+>> conservative since I'm really just guessing.
+>>
+>> Other users could calculate their value by doing something similar.
+>
+> Maybe we can scale this by memory amount?
+>
+> Say, make sure the total amount of page cache in the system
+> is at least 2* as much as the sum of all the zone->pages_high
+> watermarks, and refuse to evict page cache if we have less
+> than that?
+>
+> This may need to be tunable for a few special use cases,
+> like HPC and virtual machine hosting nodes, but it may just
+> do the right thing for everybody else.
+>
+> Another alternative could be to really slow down the
+> reclaiming of page cache once we hit this level, so virt
+> hosts and HPC nodes can still decrease the page cache to
+> something really small ... but only if it is not being
+> used.
+>
+> Andrew, could a hack like the above be "good enough"?
+>
+> Anybody - does the above hack inspire you to come up with
+> an even better idea?
+>
