@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114Ab0KAUaQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 16:30:16 -0400
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:34949 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753851Ab0KAU3f (ORCPT
+	id S1754017Ab0KAUbi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 16:31:38 -0400
+Received: from mail.elliptictech.com ([209.217.122.41]:46942 "EHLO
+	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753434Ab0KAUbh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 16:29:35 -0400
-From: Pekka Enberg <penberg@kernel.org>
-To: gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        Pavel Machek <pavel@ucw.cz>
-Subject: [PATCH 4/4] w35und: Kill struct hwdata ->SurpriseRemoveCount
-Date: Mon,  1 Nov 2010 22:29:31 +0200
-Message-Id: <1288643371-10310-4-git-send-email-penberg@kernel.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1288643371-10310-1-git-send-email-penberg@kernel.org>
-References: <1288643371-10310-1-git-send-email-penberg@kernel.org>
+	Mon, 1 Nov 2010 16:31:37 -0400
+X-Greylist: delayed 1373 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Nov 2010 16:31:37 EDT
+Date: Mon, 1 Nov 2010 16:08:22 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Chuck Lever <chuck.lever@oracle.com>
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: Re: [PATCH] SUNRPC: Initialize source address if passed-in srcaddr
+ is AF_UNSPEC
+Message-ID: <20101101200822.GA3598@elliptictech.com>
+Mail-Followup-To: Chuck Lever <chuck.lever@oracle.com>,
+	linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+References: <20101101195631.9279.16018.stgit@matisse.1015granger.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101101195631.9279.16018.stgit@matisse.1015granger.net>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch kills the ->SurpriseRemoveCount member of struct hwdata. It's not
-used at all so it's safe to remove it.
+On 2010-11-01 15:58 -0400, Chuck Lever wrote:
+> Recently xs_bind() was changed so it can't tolerate an AF_UNSPEC
+> bind address; it needs a fully initialized ANYADDR.  We recently fixed
+> this case in xprtsock.c, but some upper layer protocols seem to assume
+> that it's OK to pass in an AF_UNSPEC address for the source address.
+> Catch that case too.
+> 
+> Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
+> ---
+> 
+> Untested.
 
-Cc: Pavel Machek <pavel@ucw.cz>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
----
- drivers/staging/winbond/wbhal.h |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+This one seems to correct the issue.
 
-diff --git a/drivers/staging/winbond/wbhal.h b/drivers/staging/winbond/wbhal.h
-index 1c91588..dcf3b21 100644
---- a/drivers/staging/winbond/wbhal.h
-+++ b/drivers/staging/winbond/wbhal.h
-@@ -507,8 +507,6 @@ struct hw_data {
- 	u32		RxByteCountLast;
- 	u32		TxByteCountLast;
- 
--	atomic_t	SurpriseRemoveCount;
--
- 	/* For global timer */
- 	u32		time_count;	/* TICK_TIME_100ms 1 = 100ms */
- };
+Tested-by: Nick Bowler <nbowler@elliptictech.com>
+
 -- 
-1.7.0.4
-
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
