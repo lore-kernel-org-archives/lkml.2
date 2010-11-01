@@ -1,122 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752797Ab0KATti (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 15:49:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47414 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752519Ab0KATth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 15:49:37 -0400
-Date: Tue, 2 Nov 2010 06:49:18 +1100
-From: Neil Brown <neilb@suse.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, hch@infradead.org, linux-kernel@vger.kernel.org,
-        petero2@telia.com, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        jack@suse.cz, akpm@linux-foundation.org, adilger.kernel@dilger.ca,
-        tytso@mit.edu, mfasheh@suse.com, joel.becker@oracle.com,
-        aelder@sgi.com, dm-devel@redhat.com, drbd-dev@lists.linbit.com,
-        leochen@broadcom.com, sbranden@broadcom.com, chris.mason@oracle.com,
-        swhiteho@redhat.com, shaggy@linux.vnet.ibm.com, joern@logfs.org,
-        konishi.ryusuke@lab.ntt.co.jp, reiserfs-devel@vger.kernel.org,
-        viro@zeniv.linux.org.uk
-Subject: Re: [PATCHSET] block: clean up bdev claim/release handling
-Message-ID: <20101102064918.4c6037d2@nbeee.brown>
-In-Reply-To: <1288628129-12811-1-git-send-email-tj@kernel.org>
-References: <1288628129-12811-1-git-send-email-tj@kernel.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752731Ab0KATuL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 15:50:11 -0400
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:58682 "EHLO
+	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752326Ab0KATuJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 15:50:09 -0400
+From: Pekka Enberg <penberg@kernel.org>
+To: gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Pavel Machek <pavel@ucw.cz>
+Subject: [PATCH 2/2] w35und: Rename wbhal_s.h to wbhal.h
+Date: Mon,  1 Nov 2010 21:50:06 +0200
+Message-Id: <1288641006-30100-2-git-send-email-penberg@kernel.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1288641006-30100-1-git-send-email-penberg@kernel.org>
+References: <1288641006-30100-1-git-send-email-penberg@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  1 Nov 2010 17:15:24 +0100
-Tejun Heo <tj@kernel.org> wrote:
+This patch renames the wbhal_s.h header file to wbhal.h now that it contains
+both structure and function definitions.
 
-> bdev exclusive access handling is somewhat clumsy.  The primary
-> interface is bd_claim() and bd_release() but there also are
-> open_bdev_exclusive(), close_bdev_exclusive() and bd_claim_by_disk()
-> and bd_release_from_disk().
-> 
-> Gaining exclusive access as a separate step from open itself also has
-> the inherent problem that the block layer doesn't know whether the
-> current open attempt is for an exclusive access or not.  The action of
-> open itself may affect the existing exclusive access but there's no
-> way to prevent it.
-> 
-> This patchset simplifies the claim/release handling by folding it into
-> blkdev_get/put() and making others simple wrappers around them.  This
-> simplifies code and removes strange corner cases like the
-> non-atomicity of exclusive open described above.
+Cc: Pavel Machek <pavel@ucw.cz>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+---
+ drivers/staging/winbond/core.h                 |    2 +-
+ drivers/staging/winbond/mds.c                  |    2 +-
+ drivers/staging/winbond/mds_f.h                |    2 +-
+ drivers/staging/winbond/mto.c                  |    2 +-
+ drivers/staging/winbond/phy_calibration.c      |    2 +-
+ drivers/staging/winbond/phy_calibration.h      |    2 +-
+ drivers/staging/winbond/reg.c                  |    2 +-
+ drivers/staging/winbond/wb35reg_f.h            |    2 +-
+ drivers/staging/winbond/wb35rx_f.h             |    2 +-
+ drivers/staging/winbond/{wbhal_s.h => wbhal.h} |    0
+ drivers/staging/winbond/wbusb.c                |    2 +-
+ 11 files changed, 10 insertions(+), 10 deletions(-)
+ rename drivers/staging/winbond/{wbhal_s.h => wbhal.h} (100%)
 
-He Tejun,
- This looks like a really nice clean-up!  Thanks.
-Definitely
-  Acked-by: NeilBrown <neilb@suse.de>
-for the md parts.
-
-Thanks,
-NeilBrown
-
-
-> 
-> There are five patches in this series.
-> 
->  0001-mtd-fix-bdev-exclusive-open-bugs-in-block2mtd-add_de.patch
->  0002-btrfs-close_bdev_exclusive-should-use-the-same-flags.patch
->  0003-block-simplify-holder-symlink-handling.patch
->  0004-block-make-blkdev_get-put-handle-exclusive-access.patch
->  0005-block-reorganize-claim-release-implementation.patch
-> 
-> 0001-0002 are fixes regarding exclusive bdev opens.  0003 simplifies
-> holder/slave symlink handling.  0004 folds bdev claim/release into
-> blkdev_get/put().  0005 reorganizes implementation a bit.
-> 
-> Cleaning up claim/release handling enables implementation of in-kernel
-> disk event polling which be posted soon.  Although this patchset
-> touches various files including drivers and filesystems, the changes
-> there are mostly trivial and I think it would be best to route these
-> through the block tree.
-> 
-> This patchset is on top of 2.6.37-rc1 and available in the following
-> git tree.
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git
-> cleanup-bd_claim
-> 
-> This patchset reduces about 400 lines of code.
-> 
-> Thanks.
-> 
->  block/ioctl.c                   |    5 
->  drivers/block/drbd/drbd_int.h   |    2 
->  drivers/block/drbd/drbd_main.c  |    7 
->  drivers/block/drbd/drbd_nl.c    |  103 ++-----
->  drivers/block/pktcdvd.c         |   22 -
->  drivers/char/raw.c              |   14 
->  drivers/md/dm-table.c           |   20 -
->  drivers/md/md.c                 |   16 -
->  drivers/mtd/devices/block2mtd.c |   10 
->  drivers/s390/block/dasd_genhd.c |    2 
->  fs/block_dev.c                  |  576
-> +++++++++-------------------------------
-> fs/btrfs/volumes.c              |   14
-> fs/ext3/super.c                 |   12
-> fs/ext4/super.c                 |   12
-> fs/gfs2/ops_fstype.c            |    4
-> fs/jfs/jfs_logmgr.c             |   17 -
-> fs/logfs/dev_bdev.c             |    4
-> fs/nilfs2/super.c               |    4
-> fs/ocfs2/cluster/heartbeat.c    |    2
-> fs/partitions/check.c           |    2
-> fs/reiserfs/journal.c           |   17 -
-> fs/super.c                      |   14
-> fs/xfs/linux-2.6/xfs_super.c    |    2
-> include/linux/fs.h              |   22 -
-> kernel/power/swap.c             |    5
-> mm/swapfile.c                   |    7 26 files changed, 260
-> insertions(+), 655 deletions(-)
-> 
-> --
-> tejun
+diff --git a/drivers/staging/winbond/core.h b/drivers/staging/winbond/core.h
+index 2b87a00..d7b3aca 100644
+--- a/drivers/staging/winbond/core.h
++++ b/drivers/staging/winbond/core.h
+@@ -4,7 +4,7 @@
+ #include <linux/wireless.h>
+ #include <linux/types.h>
+ 
+-#include "wbhal_s.h"
++#include "wbhal.h"
+ #include "mto.h"
+ 
+ #include "mac_structures.h"
+diff --git a/drivers/staging/winbond/mds.c b/drivers/staging/winbond/mds.c
+index 2128e6e..9ac2c87 100644
+--- a/drivers/staging/winbond/mds.c
++++ b/drivers/staging/winbond/mds.c
+@@ -2,7 +2,7 @@
+ #include "mlmetxrx_f.h"
+ #include "mto.h"
+ #include "sysdef.h"
+-#include "wbhal_s.h"
++#include "wbhal.h"
+ #include "wblinux_f.h"
+ #include "wb35tx_f.h"
+ 
+diff --git a/drivers/staging/winbond/mds_f.h b/drivers/staging/winbond/mds_f.h
+index 7f68dea..d902843 100644
+--- a/drivers/staging/winbond/mds_f.h
++++ b/drivers/staging/winbond/mds_f.h
+@@ -1,7 +1,7 @@
+ #ifndef __WINBOND_MDS_F_H
+ #define __WINBOND_MDS_F_H
+ 
+-#include "wbhal_s.h"
++#include "wbhal.h"
+ #include "core.h"
+ 
+ unsigned char Mds_initial(struct wbsoft_priv *adapter);
+diff --git a/drivers/staging/winbond/mto.c b/drivers/staging/winbond/mto.c
+index 05d1262..1faebce 100644
+--- a/drivers/staging/winbond/mto.c
++++ b/drivers/staging/winbond/mto.c
+@@ -19,7 +19,7 @@
+ 
+ #include "sysdef.h"
+ #include "sme_api.h"
+-#include "wbhal_s.h"
++#include "wbhal.h"
+ #include "wb35reg_f.h"
+ #include "core.h"
+ 
+diff --git a/drivers/staging/winbond/phy_calibration.c b/drivers/staging/winbond/phy_calibration.c
+index 08cec74..0658b09 100644
+--- a/drivers/staging/winbond/phy_calibration.c
++++ b/drivers/staging/winbond/phy_calibration.c
+@@ -12,7 +12,7 @@
+ /****************** INCLUDE FILES SECTION ***********************************/
+ #include "sysdef.h"
+ #include "phy_calibration.h"
+-#include "wbhal_s.h"
++#include "wbhal.h"
+ #include "wb35reg_f.h"
+ #include "core.h"
+ 
+diff --git a/drivers/staging/winbond/phy_calibration.h b/drivers/staging/winbond/phy_calibration.h
+index 9fcdab1..84f6e84 100644
+--- a/drivers/staging/winbond/phy_calibration.h
++++ b/drivers/staging/winbond/phy_calibration.h
+@@ -1,7 +1,7 @@
+ #ifndef __WINBOND_PHY_CALIBRATION_H
+ #define __WINBOND_PHY_CALIBRATION_H
+ 
+-#include "wbhal_s.h"
++#include "wbhal.h"
+ 
+ #define REG_AGC_CTRL1		0x1000
+ #define REG_AGC_CTRL2		0x1004
+diff --git a/drivers/staging/winbond/reg.c b/drivers/staging/winbond/reg.c
+index 8df05c4..439d213 100644
+--- a/drivers/staging/winbond/reg.c
++++ b/drivers/staging/winbond/reg.c
+@@ -1,5 +1,5 @@
+ #include "sysdef.h"
+-#include "wbhal_s.h"
++#include "wbhal.h"
+ #include "wb35reg_f.h"
+ #include "core.h"
+ 
+diff --git a/drivers/staging/winbond/wb35reg_f.h b/drivers/staging/winbond/wb35reg_f.h
+index bf23c10..95dc980 100644
+--- a/drivers/staging/winbond/wb35reg_f.h
++++ b/drivers/staging/winbond/wb35reg_f.h
+@@ -1,7 +1,7 @@
+ #ifndef __WINBOND_WB35REG_F_H
+ #define __WINBOND_WB35REG_F_H
+ 
+-#include "wbhal_s.h"
++#include "wbhal.h"
+ 
+ /*
+  * ====================================
+diff --git a/drivers/staging/winbond/wb35rx_f.h b/drivers/staging/winbond/wb35rx_f.h
+index 98acce5..1fdf65e 100644
+--- a/drivers/staging/winbond/wb35rx_f.h
++++ b/drivers/staging/winbond/wb35rx_f.h
+@@ -2,7 +2,7 @@
+ #define __WINBOND_WB35RX_F_H
+ 
+ #include <net/mac80211.h>
+-#include "wbhal_s.h"
++#include "wbhal.h"
+ 
+ //====================================
+ // Interface function declare
+diff --git a/drivers/staging/winbond/wbhal_s.h b/drivers/staging/winbond/wbhal.h
+similarity index 100%
+rename from drivers/staging/winbond/wbhal_s.h
+rename to drivers/staging/winbond/wbhal.h
+diff --git a/drivers/staging/winbond/wbusb.c b/drivers/staging/winbond/wbusb.c
+index a053bbb..df055ab 100644
+--- a/drivers/staging/winbond/wbusb.c
++++ b/drivers/staging/winbond/wbusb.c
+@@ -16,7 +16,7 @@
+ #include "mds_f.h"
+ #include "mlmetxrx_f.h"
+ #include "mto.h"
+-#include "wbhal_s.h"
++#include "wbhal.h"
+ #include "wb35reg_f.h"
+ #include "wb35tx_f.h"
+ #include "wb35rx_f.h"
+-- 
+1.7.0.4
 
