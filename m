@@ -1,75 +1,320 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932102Ab0KAPi5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 11:38:57 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:44913 "EHLO
-	TX2EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758144Ab0KAPix (ORCPT
+	id S932158Ab0KAPjM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 11:39:12 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:5053 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932118Ab0KAPjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 11:38:53 -0400
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h)
-X-FB-SS: 0,
-From: Timur Tabi <timur@freescale.com>
-To: <linux-kernel@vger.kernel.org>, <jslaby@suse.cz>
-Subject: [PATCH] tty: fix typos/errors in tty_driver.h comments
-Date: Mon, 1 Nov 2010 10:38:46 -0500
-Message-ID: <1288625926-26293-1-git-send-email-timur@freescale.com>
-X-Mailer: git-send-email 1.7.2.3
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Reverse-DNS: de01egw01.freescale.net
+	Mon, 1 Nov 2010 11:39:09 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6153"; a="60172986"
+From: Tatyana Brokhman <tlinder@codeaurora.org>
+To: linux-usb@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org, Tatyana Brokhman <tlinder@codeaurora.org>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org
+Subject: [PATCH v4 2/3] usb: dummy_hcd code simplification
+Date: Mon,  1 Nov 2010 17:38:05 +0200
+Message-Id: <1288625887-30303-3-git-send-email-tlinder@codeaurora.org>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1288625887-30303-2-git-send-email-tlinder@codeaurora.org>
+References: <1288625887-30303-1-git-send-email-tlinder@codeaurora.org>
+ <1288625887-30303-2-git-send-email-tlinder@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix various typos and other errors in comments of tty_driver.h.  The most
-significant is the wrong name of a function for the description of
-TTY_DRIVER_DYNAMIC_DEV.
+Take handling of the control requests out from dummy_timer to a different
+function.
 
-Signed-off-by: Timur Tabi <timur@freescale.com>
+Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
 ---
- include/linux/tty_driver.h |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/usb/gadget/dummy_hcd.c |  251 +++++++++++++++++++++------------------
+ 1 files changed, 135 insertions(+), 116 deletions(-)
 
-diff --git a/include/linux/tty_driver.h b/include/linux/tty_driver.h
-index b086779..6c4e42f 100644
---- a/include/linux/tty_driver.h
-+++ b/include/linux/tty_driver.h
-@@ -102,7 +102,7 @@
-  * 	    unsigned int cmd, unsigned long arg);
-  *
-  * 	This routine allows the tty driver to implement
-- *	device-specific ioctl's.  If the ioctl number passed in cmd
-+ * 	device-specific ioctls.  If the ioctl number passed in cmd
-  * 	is not recognized by the driver, it should return ENOIOCTLCMD.
-  *
-  *	Optional
-@@ -167,12 +167,12 @@
-  * 
-  * void (*hangup)(struct tty_struct *tty);
-  *
-- * 	This routine notifies the tty driver that it should hangup the
-+ * 	This routine notifies the tty driver that it should hang up the
-  * 	tty device.
-  *
-  *	Optional:
-  *
-- * int (*break_ctl)(struct tty_stuct *tty, int state);
-+ * int (*break_ctl)(struct tty_struct *tty, int state);
-  *
-  * 	This optional routine requests the tty driver to turn on or
-  * 	off BREAK status on the RS-232 port.  If state is -1,
-@@ -348,7 +348,7 @@ static inline struct tty_driver *tty_driver_kref_get(struct tty_driver *d)
-  * 	overruns, either.)
-  *
-  * TTY_DRIVER_DYNAMIC_DEV --- if set, the individual tty devices need
-- *	to be registered with a call to tty_register_driver() when the
-+ *	to be registered with a call to tty_register_device() when the
-  *	device is found in the system and unregistered with a call to
-  *	tty_unregister_device() so the devices will be show up
-  *	properly in sysfs.  If not set, driver->num entries will be
+diff --git a/drivers/usb/gadget/dummy_hcd.c b/drivers/usb/gadget/dummy_hcd.c
+index dc65462..ef34c4d 100644
+--- a/drivers/usb/gadget/dummy_hcd.c
++++ b/drivers/usb/gadget/dummy_hcd.c
+@@ -1195,6 +1195,139 @@ static struct dummy_ep *find_endpoint (struct dummy *dum, u8 address)
+ #define Ep_Request	(USB_TYPE_STANDARD | USB_RECIP_ENDPOINT)
+ #define Ep_InRequest	(Ep_Request | USB_DIR_IN)
+ 
++
++/**
++ * handle_control_request() - handles all control transfers
++ * @dum: pointer to dummy (the_controller)
++ * @urb: the urb request to handle
++ * @setup: pointer to the setup data for a USB device control
++ *	 request
++ * @status: pointer to request handling status
++ *
++ * Return 0 - if the request was handled
++ *	  1 - if the request wasn't handles
++ *	  error code on error
++ */
++static int handle_control_request(struct dummy *dum, struct urb *urb,
++				  struct usb_ctrlrequest *setup,
++				  int *status)
++{
++	struct dummy_ep		*ep2;
++	int			ret_val = 1;
++	unsigned	w_index;
++	unsigned	w_value;
++
++	w_index = le16_to_cpu(setup->wIndex);
++	w_value = le16_to_cpu(setup->wValue);
++	switch (setup->bRequest) {
++	case USB_REQ_SET_ADDRESS:
++		if (setup->bRequestType != Dev_Request)
++			break;
++		dum->address = w_value;
++		*status = 0;
++		dev_dbg(udc_dev(dum), "set_address = %d\n",
++				w_value);
++		ret_val = 0;
++		break;
++	case USB_REQ_SET_FEATURE:
++		if (setup->bRequestType == Dev_Request) {
++			ret_val = 0;
++			switch (w_value) {
++			case USB_DEVICE_REMOTE_WAKEUP:
++				break;
++			case USB_DEVICE_B_HNP_ENABLE:
++				dum->gadget.b_hnp_enable = 1;
++				break;
++			case USB_DEVICE_A_HNP_SUPPORT:
++				dum->gadget.a_hnp_support = 1;
++				break;
++			case USB_DEVICE_A_ALT_HNP_SUPPORT:
++				dum->gadget.a_alt_hnp_support = 1;
++				break;
++			default:
++				ret_val = -EOPNOTSUPP;
++			}
++			if (ret_val == 0) {
++				dum->devstatus |= (1 << w_value);
++				*status = 0;
++			}
++		} else if (setup->bRequestType == Ep_Request) {
++			/* endpoint halt */
++			ep2 = find_endpoint(dum, w_index);
++			if (!ep2 || ep2->ep.name == ep0name) {
++				ret_val = -EOPNOTSUPP;
++				break;
++			}
++			ep2->halted = 1;
++			ret_val = 0;
++			*status = 0;
++		}
++		break;
++	case USB_REQ_CLEAR_FEATURE:
++		if (setup->bRequestType == Dev_Request) {
++			ret_val = 0;
++			switch (w_value) {
++			case USB_DEVICE_REMOTE_WAKEUP:
++				w_value = USB_DEVICE_REMOTE_WAKEUP;
++				break;
++			default:
++				ret_val = -EOPNOTSUPP;
++				break;
++			}
++			if (ret_val == 0) {
++				dum->devstatus &= ~(1 << w_value);
++				*status = 0;
++			}
++		} else if (setup->bRequestType == Ep_Request) {
++			/* endpoint halt */
++			ep2 = find_endpoint(dum, w_index);
++			if (!ep2) {
++				ret_val = -EOPNOTSUPP;
++				break;
++			}
++			if (!ep2->wedged)
++				ep2->halted = 0;
++			ret_val = 0;
++			*status = 0;
++		}
++		break;
++	case USB_REQ_GET_STATUS:
++		if (setup->bRequestType == Dev_InRequest
++				|| setup->bRequestType == Intf_InRequest
++				|| setup->bRequestType == Ep_InRequest) {
++			char *buf;
++			/*
++			 * device: remote wakeup, selfpowered
++			 * interface: nothing
++			 * endpoint: halt
++			 */
++			buf = (char *)urb->transfer_buffer;
++			if (urb->transfer_buffer_length > 0) {
++				if (setup->bRequestType == Ep_InRequest) {
++					ep2 = find_endpoint(dum, w_index);
++					if (!ep2) {
++						ret_val = -EOPNOTSUPP;
++						break;
++					}
++					buf[0] = ep2->halted;
++				} else if (setup->bRequestType ==
++					   Dev_InRequest) {
++					buf[0] = (u8)dum->devstatus;
++				} else
++					buf[0] = 0;
++			}
++			if (urb->transfer_buffer_length > 1)
++				buf[1] = 0;
++			urb->actual_length = min_t(u32, 2,
++				urb->transfer_buffer_length);
++			ret_val = 0;
++			*status = 0;
++		}
++		break;
++	}
++	return ret_val;
++}
++
+ /* drive both sides of the transfers; looks like irq handlers to
+  * both drivers except the callbacks aren't in_irq().
+  */
+@@ -1297,14 +1430,8 @@ restart:
+ 		if (ep == &dum->ep [0] && ep->setup_stage) {
+ 			struct usb_ctrlrequest		setup;
+ 			int				value = 1;
+-			struct dummy_ep			*ep2;
+-			unsigned			w_index;
+-			unsigned			w_value;
+ 
+ 			setup = *(struct usb_ctrlrequest*) urb->setup_packet;
+-			w_index = le16_to_cpu(setup.wIndex);
+-			w_value = le16_to_cpu(setup.wValue);
+-
+ 			/* paranoia, in case of stale queued data */
+ 			list_for_each_entry (req, &ep->queue, queue) {
+ 				list_del_init (&req->queue);
+@@ -1326,117 +1453,9 @@ restart:
+ 			ep->last_io = jiffies;
+ 			ep->setup_stage = 0;
+ 			ep->halted = 0;
+-			switch (setup.bRequest) {
+-			case USB_REQ_SET_ADDRESS:
+-				if (setup.bRequestType != Dev_Request)
+-					break;
+-				dum->address = w_value;
+-				status = 0;
+-				dev_dbg (udc_dev(dum), "set_address = %d\n",
+-						w_value);
+-				value = 0;
+-				break;
+-			case USB_REQ_SET_FEATURE:
+-				if (setup.bRequestType == Dev_Request) {
+-					value = 0;
+-					switch (w_value) {
+-					case USB_DEVICE_REMOTE_WAKEUP:
+-						break;
+-					case USB_DEVICE_B_HNP_ENABLE:
+-						dum->gadget.b_hnp_enable = 1;
+-						break;
+-					case USB_DEVICE_A_HNP_SUPPORT:
+-						dum->gadget.a_hnp_support = 1;
+-						break;
+-					case USB_DEVICE_A_ALT_HNP_SUPPORT:
+-						dum->gadget.a_alt_hnp_support
+-							= 1;
+-						break;
+-					default:
+-						value = -EOPNOTSUPP;
+-					}
+-					if (value == 0) {
+-						dum->devstatus |=
+-							(1 << w_value);
+-						status = 0;
+-					}
+ 
+-				} else if (setup.bRequestType == Ep_Request) {
+-					// endpoint halt
+-					ep2 = find_endpoint (dum, w_index);
+-					if (!ep2 || ep2->ep.name == ep0name) {
+-						value = -EOPNOTSUPP;
+-						break;
+-					}
+-					ep2->halted = 1;
+-					value = 0;
+-					status = 0;
+-				}
+-				break;
+-			case USB_REQ_CLEAR_FEATURE:
+-				if (setup.bRequestType == Dev_Request) {
+-					switch (w_value) {
+-					case USB_DEVICE_REMOTE_WAKEUP:
+-						dum->devstatus &= ~(1 <<
+-							USB_DEVICE_REMOTE_WAKEUP);
+-						value = 0;
+-						status = 0;
+-						break;
+-					default:
+-						value = -EOPNOTSUPP;
+-						break;
+-					}
+-				} else if (setup.bRequestType == Ep_Request) {
+-					// endpoint halt
+-					ep2 = find_endpoint (dum, w_index);
+-					if (!ep2) {
+-						value = -EOPNOTSUPP;
+-						break;
+-					}
+-					if (!ep2->wedged)
+-						ep2->halted = 0;
+-					value = 0;
+-					status = 0;
+-				}
+-				break;
+-			case USB_REQ_GET_STATUS:
+-				if (setup.bRequestType == Dev_InRequest
+-						|| setup.bRequestType
+-							== Intf_InRequest
+-						|| setup.bRequestType
+-							== Ep_InRequest
+-						) {
+-					char *buf;
+-
+-					// device: remote wakeup, selfpowered
+-					// interface: nothing
+-					// endpoint: halt
+-					buf = (char *)urb->transfer_buffer;
+-					if (urb->transfer_buffer_length > 0) {
+-						if (setup.bRequestType ==
+-								Ep_InRequest) {
+-	ep2 = find_endpoint (dum, w_index);
+-	if (!ep2) {
+-		value = -EOPNOTSUPP;
+-		break;
+-	}
+-	buf [0] = ep2->halted;
+-						} else if (setup.bRequestType ==
+-								Dev_InRequest) {
+-							buf [0] = (u8)
+-								dum->devstatus;
+-						} else
+-							buf [0] = 0;
+-					}
+-					if (urb->transfer_buffer_length > 1)
+-						buf [1] = 0;
+-					urb->actual_length = min_t(u32, 2,
+-						urb->transfer_buffer_length);
+-					value = 0;
+-					status = 0;
+-				}
+-				break;
+-			}
++			value = handle_control_request(dum, urb, &setup,
++						       &status);
+ 
+ 			/* gadget driver handles all other requests.  block
+ 			 * until setup() returns; no reentrancy issues etc.
 -- 
-1.7.2.3
+1.6.3.3
 
-
+--
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
