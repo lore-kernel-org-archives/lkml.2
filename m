@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758210Ab0KAPuJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 11:50:09 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:42436
+	id S1758254Ab0KAPvE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 11:51:04 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:39279
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756831Ab0KAPuH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 11:50:07 -0400
-Date: Mon, 01 Nov 2010 08:50:30 -0700 (PDT)
-Message-Id: <20101101.085030.226787287.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: jwboyer@gmail.com, rsarmah@apm.com, therbert@google.com,
+	by vger.kernel.org with ESMTP id S1756831Ab0KAPvC convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 11:51:02 -0400
+Date: Mon, 01 Nov 2010 08:51:26 -0700 (PDT)
+Message-Id: <20101101.085126.71102684.davem@davemloft.net>
+To: jwboyer@gmail.com
+Cc: sfr@canb.auug.org.au, rsarmah@apm.com, therbert@google.com,
         eric.dumazet@gmail.com, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
+        linux-kernel@vger.kernel.org, benh@kernel.crashing.org
 Subject: Re: All Applied micro boards are failing with current mainline
  kernel
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20101102023650.bc553e74.sfr@canb.auug.org.au>
-References: <AANLkTikWWGpAM8+_z9fnngYuYSpT3NWgM7xeGkOzZ3jg@mail.gmail.com>
-	<AANLkTikQuUcAMZKqZ3Rz5HVzOs+63-Y4VYUo5-3EM30H@mail.gmail.com>
+In-Reply-To: <AANLkTin3nsb6FfNtXfqjZCuV66mwKVOsKgmZpTABFDUJ@mail.gmail.com>
+References: <AANLkTikQuUcAMZKqZ3Rz5HVzOs+63-Y4VYUo5-3EM30H@mail.gmail.com>
 	<20101102023650.bc553e74.sfr@canb.auug.org.au>
+	<AANLkTin3nsb6FfNtXfqjZCuV66mwKVOsKgmZpTABFDUJ@mail.gmail.com>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 2 Nov 2010 02:36:50 +1100
+From: Josh Boyer <jwboyer@gmail.com>
+Date: Mon, 1 Nov 2010 11:39:47 -0400
 
-> Hi Josh,
-> 
-> On Mon, 1 Nov 2010 11:05:53 -0400 Josh Boyer <jwboyer@gmail.com> wrote:
+> On Mon, Nov 1, 2010 at 11:36 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> Hi Josh,
 >>
->> A few hints would be appreciated.
+>> On Mon, 1 Nov 2010 11:05:53 -0400 Josh Boyer <jwboyer@gmail.com> wrote:
+>>>
+>>> A few hints would be appreciated.
+>>
+>> Remove the call to netif_stop_queue() from emac_probe().  Apparently,
+>> calling this before register_netdev() is now wrong (maybe always was).
 > 
-> Remove the call to netif_stop_queue() from emac_probe().  Apparently,
-> calling this before register_netdev() is now wrong (maybe always was).
+> Yeah, I just discovered that myself.  I'm wondering
+> 
+> 1) why we do that in that function?
 
-Right.
+Because likely it was blindly copied from some other driver.
 
-I'll add this to net-2.6
+> 2) If it needs to be removed entirely, or moved to after the
+> register_netdev call
 
---------------------
-ibm_newemac: Remove netif_stop_queue() in emac_probe().
+Removed entirely.
 
-Touching the queue state before register_netdev is not
-allowed, and besides the queue state before ->open()
-is "don't care"
+> 3) If the call to netif_carrier_off also needs similar attention.
 
-Reported-by: Josh Boyer <jwboyer@gmail.com>
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- drivers/net/ibm_newemac/core.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+Not really.
 
-diff --git a/drivers/net/ibm_newemac/core.c b/drivers/net/ibm_newemac/core.c
-index 385dc32..06bb9b7 100644
---- a/drivers/net/ibm_newemac/core.c
-+++ b/drivers/net/ibm_newemac/core.c
-@@ -2871,7 +2871,6 @@ static int __devinit emac_probe(struct platform_device *ofdev,
- 	SET_ETHTOOL_OPS(ndev, &emac_ethtool_ops);
- 
- 	netif_carrier_off(ndev);
--	netif_stop_queue(ndev);
- 
- 	err = register_netdev(ndev);
- 	if (err) {
--- 
-1.7.3.2
+> I can whip up a patch to remove those calls or move them after the
+> register, but I don't want to do that without knowing which one is
+> "right".
 
+I've already taken care of this.
