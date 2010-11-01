@@ -1,97 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634Ab0KATnr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 15:43:47 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:63624 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752160Ab0KATnp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 15:43:45 -0400
-Subject: Re: Regression, bisected: sqlite locking failure on nfs
-Mime-Version: 1.0 (Apple Message framework v1081)
-Content-Type: text/plain; charset=us-ascii
-From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <1288639376.5009.16.camel@heimdal.trondhjem.org>
-Date: Mon, 1 Nov 2010 15:43:18 -0400
-Cc: Nick Bowler <nbowler@elliptictech.com>,
-        LKML Kernel <linux-kernel@vger.kernel.org>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
+	id S1752559Ab0KATpV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 15:45:21 -0400
+Received: from cantor.suse.de ([195.135.220.2]:40558 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750820Ab0KATpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 15:45:19 -0400
+Date: Mon, 1 Nov 2010 15:45:18 -0400 (EDT)
+From: Jiri Kosina <jkosina@suse.cz>
+To: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/22] trivial: fix typos concerning "already"
+In-Reply-To: <1288123039-22368-1-git-send-email-u.kleine-koenig@pengutronix.de>
+Message-ID: <alpine.LNX.2.00.1011011544590.15851@pobox.suse.cz>
+References: <1288123039-22368-1-git-send-email-u.kleine-koenig@pengutronix.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Message-Id: <59BBF1A5-1425-448A-8715-4DD20BCA2ED6@oracle.com>
-References: <20101101175854.GA3550@elliptictech.com> <D68536EB-6BE9-4DE4-B325-39FEF747092E@oracle.com> <20101101181938.GA3875@elliptictech.com> <187AEE96-9231-4899-9D65-A444503D2758@oracle.com> <1288639376.5009.16.camel@heimdal.trondhjem.org>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 26 Oct 2010, Uwe Kleine-König wrote:
 
-On Nov 1, 2010, at 3:22 PM, Trond Myklebust wrote:
+> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> ---
+>  drivers/scsi/bfa/bfa_fcpim.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/scsi/bfa/bfa_fcpim.c b/drivers/scsi/bfa/bfa_fcpim.c
+> index 33c8dd5..aabbf3d 100644
+> --- a/drivers/scsi/bfa/bfa_fcpim.c
+> +++ b/drivers/scsi/bfa/bfa_fcpim.c
+> @@ -2092,7 +2092,7 @@ bfa_ioim_sm_cleanup_qfull(struct bfa_ioim_s *ioim, enum bfa_ioim_event event)
+>  
+>  	case BFA_IOIM_SM_ABORT:
+>  		/**
+> -		 * IO is alraedy being cleaned up implicitly
+> +		 * IO is already being cleaned up implicitly
+>  		 */
+>  		ioim->io_cbfn = __bfa_cb_ioim_abort;
 
-> On Mon, 2010-11-01 at 14:30 -0400, Chuck Lever wrote:
->> On Nov 1, 2010, at 2:19 PM, Nick Bowler wrote:
->> 
->>> On 2010-11-01 14:07 -0400, Chuck Lever wrote:
->>>> On Nov 1, 2010, at 1:58 PM, Nick Bowler wrote:
->>>>> After installing 2.6.37-rc1, attempting to use sqlite in any capacity on
->>>>> NFS gives a locking error:
->>>>> 
->>>>> % echo 'select * from blah;' | sqlite3 blah.sqlite
->>>>> Error: near line 1: database is locked
->>>>> 
->>>>> % echo 'create table blargh(INT);' | sqlite3 blargh.sqlite
->>>>> Error: near line 1: database is locked
->>>>> 
->>>>> The result is that a lot of high-profile applications which make use of
->>>>> sqlite fail mysteriously.  Bisection reveals the following, and
->>>>> reverting the implicated commit solves the issue:
->>>> 
->>>> Nick, thanks for the report.  Is 2.6.37-rc1 running on your clients or
->>>> on your server?
->>> 
->>> Sorry for not being clear: the client is running 2.6.37-rc1.   The
->>> server is running RHEL 5.5.
->>> 
->>>> Does anything interesting appear in the kernel log when your test case
->>>> fails?
->>> 
->>> There are no unusual messages on the client... but I just logged into
->>> the server and I see lots of messages of the following form:
->>> 
->>> nfsd: request from insecure port (192.168.8.199:35766)!
->>> nfsd: request from insecure port (192.168.8.199:35766)!
->>> nfsd: request from insecure port (192.168.8.199:35766)!
->>> nfsd: request from insecure port (192.168.8.199:35766)!
->>> nfsd: request from insecure port (192.168.8.199:35766)!
->>> 
->>> (192.168.8.199 is the address of the failing client).  I can only assume
->>> that these are a result of my recent issues, since I don't have access
->>> to the system log (with timestamps) on that machine.
->> 
->> That's the problem this patch is supposed to prevent.  I'll investigate further.
->> 
-> 
-> I suspect nlmclnt_lookup_host() is to blame. It appears to be the _only_
-> thing in the kernel that actually sets this 'srcaddr' field, and it sets
-> it to
-> 
-> const struct sockaddr source = {
-> 	.sa_family      = AF_UNSPEC,
-> };
-> 
-> You triggered the bug by removing the line
-> 
-> 	transport->srcaddr.ss_family = family;
-> 
-> from xs_create_sock().
-
-Thanks.  Actually that line was added by Bruce very recently because Pavel's patches changed xs_bind() so it can't tolerate an AF_UNSPEC address.  My patch attempts to replace the workaround with something more permanent... but looks like I didn't find all the places that needed to be fixed.
+I have folded the whole series into one patch and applied. Thanks,
 
 -- 
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
-
-
-
-
+Jiri Kosina
+SUSE Labs, Novell Inc.
