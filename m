@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806Ab0KATqD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 15:46:03 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:41212 "EHLO e7.ny.us.ibm.com"
+	id S1752842Ab0KATqJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 15:46:09 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:39002 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752736Ab0KATp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 15:45:57 -0400
+	id S1752601Ab0KATqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 15:46:07 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
@@ -13,9 +13,9 @@ Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
         jmorris@namei.org, akpm@linux-foundation.org,
         torvalds@linux-foundation.org, eparis@redhat.com,
         viro@zeniv.linux.org.uk, Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH v1.1 3/5] IMA: maintain i_readcount in the VFS layer
-Date: Mon,  1 Nov 2010 15:45:37 -0400
-Message-Id: <1288640739-3246-4-git-send-email-zohar@linux.vnet.ibm.com>
+Subject: [PATCH v1.1 5/5] IMA: making i_readcount a first class inode citizen
+Date: Mon,  1 Nov 2010 15:45:39 -0400
+Message-Id: <1288640739-3246-6-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1288640739-3246-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1288640739-3246-1-git-send-email-zohar@linux.vnet.ibm.com>
@@ -23,191 +23,119 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ima_counts_get() updated the readcount and invalidated the PCR,
-as necessary. Only update the i_readcount in the VFS layer.
-Move the PCR invalidation checks to ima_file_check(), where it
-belongs.
-
-Maintaining the i_readcount in the VFS layer, will allow other
-subsystems to use i_readcount.
+Finally, remove the ifdef's around i_readcount, making it a full
+inode citizen so that other subsystems, such as leases, could use it.
 
 Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
 ---
- fs/file_table.c                   |    5 ++++-
- fs/inode.c                        |    3 +++
- fs/open.c                         |    3 ++-
- include/linux/ima.h               |    6 ------
- security/integrity/ima/ima_iint.c |    2 --
- security/integrity/ima/ima_main.c |   25 ++++++++-----------------
- 6 files changed, 17 insertions(+), 27 deletions(-)
+ fs/file_table.c                        |   11 +++++++++++
+ include/linux/fs.h                     |   13 -------------
+ security/integrity/ima/Makefile        |    2 +-
+ security/integrity/ima/ima_readcount.c |   25 -------------------------
+ 4 files changed, 12 insertions(+), 39 deletions(-)
+ delete mode 100644 security/integrity/ima/ima_readcount.c
 
 diff --git a/fs/file_table.c b/fs/file_table.c
-index c3dee38..e575e78 100644
+index e575e78..a658adb 100644
 --- a/fs/file_table.c
 +++ b/fs/file_table.c
-@@ -190,7 +190,8 @@ struct file *alloc_file(struct path *path, fmode_t mode,
- 		file_take_write(file);
- 		WARN_ON(mnt_clone_write(path->mnt));
- 	}
--	ima_counts_get(file);
-+	if ((mode & (FMODE_READ | FMODE_WRITE)) == FMODE_READ)
-+		iget_readcount(path->dentry->d_inode);
- 	return file;
+@@ -92,6 +92,17 @@ int proc_nr_files(ctl_table *table, int write,
  }
- EXPORT_SYMBOL(alloc_file);
-@@ -251,6 +252,8 @@ static void __fput(struct file *file)
- 	fops_put(file->f_op);
- 	put_pid(file->f_owner.pid);
- 	file_sb_list_del(file);
-+	if ((file->f_mode & (FMODE_READ | FMODE_WRITE)) == FMODE_READ)
-+		iput_readcount(inode);
- 	if (file->f_mode & FMODE_WRITE)
- 		drop_file_write_access(file);
- 	file->f_path.dentry = NULL;
-diff --git a/fs/inode.c b/fs/inode.c
-index ae2727a..4676b98 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -170,6 +170,9 @@ int inode_init_always(struct super_block *sb, struct inode *inode)
- 	inode->i_nlink = 1;
- 	inode->i_uid = 0;
- 	inode->i_gid = 0;
-+#ifdef CONFIG_IMA
-+	atomic_set(&inode->i_readcount, 0);
-+#endif
- 	atomic_set(&inode->i_writecount, 0);
- 	inode->i_size = 0;
- 	inode->i_blocks = 0;
-diff --git a/fs/open.c b/fs/open.c
-index 4197b9e..1f6686f 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -688,7 +688,8 @@ static struct file *__dentry_open(struct dentry *dentry, struct vfsmount *mnt,
- 		if (error)
- 			goto cleanup_all;
- 	}
--	ima_counts_get(f);
-+	if ((f->f_mode & (FMODE_READ | FMODE_WRITE)) == FMODE_READ)
-+		iget_readcount(inode);
+ #endif
  
- 	f->f_flags &= ~(O_CREAT | O_EXCL | O_NOCTTY | O_TRUNC);
++void iput_readcount(struct inode *inode)
++{
++	spin_lock(&inode->i_lock);
++	if (unlikely((atomic_read(&inode->i_readcount) == 0)))
++		printk(KERN_INFO "i_readcount: imbalance ino %ld\n",
++		       inode->i_ino);
++	else
++		atomic_dec(&inode->i_readcount);
++	spin_unlock(&inode->i_lock);
++}
++
+ /* Find an unused file structure and return a pointer to it.
+  * Returns NULL, if there are no more free file structures or
+  * we run out of memory.
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 7f5939d..9e296b3 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -786,10 +786,8 @@ struct inode {
  
-diff --git a/include/linux/ima.h b/include/linux/ima.h
-index 975837e..09e6e62 100644
---- a/include/linux/ima.h
-+++ b/include/linux/ima.h
-@@ -20,7 +20,6 @@ extern void ima_inode_free(struct inode *inode);
- extern int ima_file_check(struct file *file, int mask);
- extern void ima_file_free(struct file *file);
- extern int ima_file_mmap(struct file *file, unsigned long prot);
--extern void ima_counts_get(struct file *file);
+ 	unsigned int		i_flags;
  
- #else
- static inline int ima_bprm_check(struct linux_binprm *bprm)
-@@ -53,10 +52,5 @@ static inline int ima_file_mmap(struct file *file, unsigned long prot)
- 	return 0;
+-#ifdef CONFIG_IMA
+ 	/* protected by i_lock */
+ 	atomic_t		i_readcount; /* struct files open RO */
+-#endif
+ 	atomic_t		i_writecount;
+ #ifdef CONFIG_SECURITY
+ 	void			*i_security;
+@@ -2178,22 +2176,11 @@ static inline void allow_write_access(struct file *file)
+ 	if (file)
+ 		atomic_inc(&file->f_path.dentry->d_inode->i_writecount);
  }
- 
--static inline void ima_counts_get(struct file *file)
+-#ifdef CONFIG_IMA
+ extern void iput_readcount(struct inode *inode);
+ static inline void iget_readcount(struct inode *inode)
+ {
+ 	atomic_inc(&inode->i_readcount);
+ }
+-#else
+-static inline void iput_readcount(struct inode *inode)
 -{
 -	return;
 -}
+-static inline void iget_readcount(struct inode *inode)
+-{
+-	return;
+-}
+-#endif
+ extern int do_pipe_flags(int *, int);
+ extern struct file *create_read_pipe(struct file *f, int flags);
+ extern struct file *create_write_pipe(int flags);
+diff --git a/security/integrity/ima/Makefile b/security/integrity/ima/Makefile
+index 131eb1f..787c4cb 100644
+--- a/security/integrity/ima/Makefile
++++ b/security/integrity/ima/Makefile
+@@ -6,4 +6,4 @@
+ obj-$(CONFIG_IMA) += ima.o
+ 
+ ima-y := ima_fs.o ima_queue.o ima_init.o ima_main.o ima_crypto.o ima_api.o \
+-	 ima_policy.o ima_iint.o ima_audit.o ima_readcount.o
++	 ima_policy.o ima_iint.o ima_audit.o
+diff --git a/security/integrity/ima/ima_readcount.c b/security/integrity/ima/ima_readcount.c
+deleted file mode 100644
+index d139e2a9..0000000
+--- a/security/integrity/ima/ima_readcount.c
++++ /dev/null
+@@ -1,25 +0,0 @@
+-/*
+- * Copyright (C) 2010 IBM Corporation
+- *
+- * Authors:
+- * Mimi Zohar <zohar@us.ibm.com>
+- *
+- * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public License as
+- * published by the Free Software Foundation, version 2 of the
+- * License.
+- */
+-#include <linux/module.h>
+-#include <linux/spinlock.h>
+-#include <linux/fs.h>
 -
- #endif /* CONFIG_IMA_H */
- #endif /* _LINUX_IMA_H */
-diff --git a/security/integrity/ima/ima_iint.c b/security/integrity/ima/ima_iint.c
-index f005355..68efe3b 100644
---- a/security/integrity/ima/ima_iint.c
-+++ b/security/integrity/ima/ima_iint.c
-@@ -141,8 +141,6 @@ void ima_inode_free(struct inode *inode)
- 		printk(KERN_INFO "%s: readcount: %u\n", __func__,
- 		       atomic_read(&inode->i_readcount));
- 
--	atomic_set(&inode->i_readcount, 0);
--
- 	if (!IS_IMA(inode))
- 		return;
- 
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index a189197..a0626bc 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -86,17 +86,16 @@ out:
- }
- 
- /*
-- * ima_counts_get - increment file counts
-+ * ima_rdwr_violation_check
-  *
-- * Maintain read/write counters for all files, but only
-- * invalidate the PCR for measured files:
-+ * Only invalidate the PCR for measured files:
-  * 	- Opening a file for write when already open for read,
-  *	  results in a time of measure, time of use (ToMToU) error.
-  *	- Opening a file for read when already open for write,
-  * 	  could result in a file measurement error.
-  *
-  */
--void ima_counts_get(struct file *file)
-+static void ima_rdwr_violation_check(struct file *file)
- {
- 	struct dentry *dentry = file->f_path.dentry;
- 	struct inode *inode = dentry->d_inode;
-@@ -104,13 +103,10 @@ void ima_counts_get(struct file *file)
- 	int rc;
- 	bool send_tomtou = false, send_writers = false;
- 
--	if (!S_ISREG(inode->i_mode))
-+	if (!S_ISREG(inode->i_mode) || !ima_initialized)
- 		return;
- 
+-void iput_readcount(struct inode *inode)
+-{
 -	spin_lock(&inode->i_lock);
--
--	if (!ima_initialized)
--		goto out;
-+	mutex_lock(&inode->i_mutex);	/* file metadata: permissions, xattr */
- 
- 	if (mode & FMODE_WRITE) {
- 		if (atomic_read(&inode->i_readcount) && IS_IMA(inode))
-@@ -125,11 +121,7 @@ void ima_counts_get(struct file *file)
- 	if (atomic_read(&inode->i_writecount) > 0)
- 		send_writers = true;
- out:
--	/* remember the vfs deals with i_writecount */
--	if ((mode & (FMODE_READ | FMODE_WRITE)) == FMODE_READ)
--		atomic_inc(&inode->i_readcount);
--
--	spin_unlock(&inode->i_lock);
-+	mutex_unlock(&inode->i_mutex);
- 
- 	if (send_tomtou)
- 		ima_add_violation(inode, dentry->d_name.name, "invalid_pcr",
-@@ -158,7 +150,6 @@ static void ima_dec_counts(struct inode *inode, struct file *file)
- 			}
- 			return;
- 		}
+-	if (unlikely((atomic_read(&inode->i_readcount) == 0)))
+-		printk(KERN_INFO "i_readcount: imbalance ino %ld\n",
+-		       inode->i_ino);
+-	else
 -		atomic_dec(&inode->i_readcount);
- 	}
- }
- 
-@@ -203,8 +194,7 @@ static void ima_file_free_noiint(struct inode *inode, struct file *file)
-  * ima_file_free - called on __fput()
-  * @file: pointer to file structure being freed
-  *
-- * Flag files that changed, based on i_version;
-- * and decrement the i_readcount.
-+ * Flag files that changed, based on i_version
-  */
- void ima_file_free(struct file *file)
- {
-@@ -318,6 +308,7 @@ int ima_file_check(struct file *file, int mask)
- {
- 	int rc;
- 
-+	ima_rdwr_violation_check(file);
- 	rc = process_measurement(file, file->f_dentry->d_name.name,
- 				 mask & (MAY_READ | MAY_WRITE | MAY_EXEC),
- 				 FILE_CHECK);
+-	spin_unlock(&inode->i_lock);
+-}
 -- 
 1.7.2.2
 
