@@ -1,38 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527Ab0KATEq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 15:04:46 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:44371 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753979Ab0KATEn (ORCPT
+	id S1754927Ab0KATGH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 15:06:07 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:57152 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753163Ab0KATGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 15:04:43 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4CCF0F38.3030106@s5r6.in-berlin.de>
-Date: Mon, 01 Nov 2010 20:04:24 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
+	Mon, 1 Nov 2010 15:06:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=YMC5Ip1RNi/rNbprq7CCYrZlXi9HBZowKD2tFd55hxu1x1PlX3nJWVRt1nQ0J6tI/d
+         NGrJBGpAGLx6TO7F0eAvQd3ZjBtChydptcurlkdw177rTRow0MjRAcXGlGs2OT8M7RrD
+         ueP34ythBvRBRQsvi+GF8/JILt9bUfwhUeB4M=
 MIME-Version: 1.0
-To: Lukas Czerner <lczerner@redhat.com>
-CC: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Theodore Tso <tytso@mit.edu>
-Subject: Re: ext4_lazyinit_thread: 'ret' may be used uninitialized in this
- function
-References: <tkrat.ba371a0ea018042b@s5r6.in-berlin.de> <alpine.LFD.2.00.1011011551001.2876@dhcp-lab-213.englab.brq.redhat.com>
-In-Reply-To: <alpine.LFD.2.00.1011011551001.2876@dhcp-lab-213.englab.brq.redhat.com>
-X-Enigmail-Version: 0.96.0
+In-Reply-To: <1288636877-7964-1-git-send-email-tdent48227@gmail.com>
+References: <1288636877-7964-1-git-send-email-tdent48227@gmail.com>
+Date: Mon, 1 Nov 2010 21:06:04 +0200
+X-Google-Sender-Auth: 9D7ccQTCioeRTVhc5zk2RGrOkiA
+Message-ID: <AANLkTikT5TyCL-rRMQ31_86_SbYH+odoppQh-tovsEBZ@mail.gmail.com>
+Subject: Re: [PATCH 0/29] Staging: Add yaffs2 filesystem
+From: Pekka Enberg <penberg@kernel.org>
+To: Tracey Dent <tdent48227@gmail.com>
+Cc: greg@kroah.com, manningc2@actrix.gen.nz, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lukas Czerner wrote:
-> thank you for noticing this, because I actually do not see the warning
-> (I wonder why...),
+On Mon, Nov 1, 2010 at 8:40 PM, Tracey Dent <tdent48227@gmail.com> wrote:
+> The patch sets puts the yaffs2 filesystem in the staging directory.
+> It is all based on Charles git tree(http://github.com/cdhmanning/linux-yaffs-integration/).
+> Everything is compile tested and it builds.
+>
+> This only the inital support and I will be sending more cleanup patches.
+>
+> Greg can you add the patch set into your staging-next tree.
+> Also, It doesn't affect anything other than itself.
 
-Probably because of different gcc versions.  Here: 4.3.4
--- 
-Stefan Richter
--=====-==-=- =-== ----=
-http://arcgraph.de/sr/
+I know Greg is happy to take this in but it would also be interesting
+to know what's the benefit of YAFFS2 over existing filesystems.
