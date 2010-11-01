@@ -1,170 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433Ab0KAJD0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 05:03:26 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:46997 "EHLO mx3.mail.elte.hu"
+	id S1755051Ab0KAJNj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 05:13:39 -0400
+Received: from hera.kernel.org ([140.211.167.34]:53869 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754740Ab0KAJDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 05:03:23 -0400
-Date: Mon, 1 Nov 2010 10:02:51 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: linux-kernel@vger.kernel.org, h.mitake@gmail.com,
-        Ma Ling <ling.ma@intel.com>, Zhao Yakui <yakui.zhao@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 2/2] perf bench: add x86-64 specific benchmarks to perf
- bench mem memcpy
-Message-ID: <20101101090251.GA28039@elte.hu>
-References: <1288368098-26121-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
- <1288368098-26121-2-git-send-email-mitake@dcl.info.waseda.ac.jp>
- <20101030192357.GC26503@elte.hu>
- <4CCE51E6.7060908@dcl.info.waseda.ac.jp>
+	id S1753983Ab0KAJNh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 05:13:37 -0400
+Date: Mon, 1 Nov 2010 09:13:06 GMT
+From: tip-bot for Rakib Mullick <rakib.mullick@gmail.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        rakib.mullick@gmail.com, shaohua.li@intel.com, tglx@linutronix.de,
+        borislav.petkov@amd.com, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rakib.mullick@gmail.com, shaohua.li@intel.com, tglx@linutronix.de,
+        borislav.petkov@amd.com, mingo@elte.hu
+In-Reply-To: <AANLkTinWQRG=HA9uB3ad0KAqRRTinL6L_4iKgF84coph@mail.gmail.com>
+References: <AANLkTinWQRG=HA9uB3ad0KAqRRTinL6L_4iKgF84coph@mail.gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, mm: Fix section mismatch in tlb.c
+Message-ID: <tip-cf38d0ba7efdc476815768b2b999b27cfae69747@git.kernel.org>
+Git-Commit-ID: cf38d0ba7efdc476815768b2b999b27cfae69747
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4CCE51E6.7060908@dcl.info.waseda.ac.jp>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 01 Nov 2010 09:13:07 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  cf38d0ba7efdc476815768b2b999b27cfae69747
+Gitweb:     http://git.kernel.org/tip/cf38d0ba7efdc476815768b2b999b27cfae69747
+Author:     Rakib Mullick <rakib.mullick@gmail.com>
+AuthorDate: Mon, 1 Nov 2010 12:53:50 +0600
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Mon, 1 Nov 2010 10:09:07 +0100
 
-* Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp> wrote:
+x86, mm: Fix section mismatch in tlb.c
 
-> On 2010年10月31日 04:23, Ingo Molnar wrote:
-> >
-> >* Hitoshi Mitake<mitake@dcl.info.waseda.ac.jp>  wrote:
-> >
-> >>This patch adds new file: mem-memcpy-x86-64-asm.S
-> >>for x86-64 specific memcpy() benchmarking.
-> >>Added new benchmarks are,
-> >>  x86-64-rep:      memcpy() implemented with rep instruction
-> >>  x86-64-unrolled: unrolled memcpy()
-> >>
-> >>Original idea of including the source files of kernel
-> >>for benchmarking is suggested by Ingo Molnar.
-> >>This is more effective than write-once programs for quantitative
-> >>evaluation of in-kernel, little and leaf functions called high frequently.
-> >>Because perf bench is in kernel source tree and executing it
-> >>on various hardwares, especially new model CPUs, is easy.
-> >>
-> >>This way can also be used for other functions of kernel e.g. checksum functions.
-> >>
-> >>Example of usage on Core i3 M330:
-> >>
-> >>| % ./perf bench mem memcpy -l 500MB
-> >>| # Running mem/memcpy benchmark...
-> >>| # Copying 500MB Bytes from 0x7f911f94c010 to 0x7f913ed4d010 ...
-> >>|
-> >>|      578.732506 MB/Sec
-> >>| % ./perf bench mem memcpy -l 500MB -r x86-64-rep
-> >>| # Running mem/memcpy benchmark...
-> >>| # Copying 500MB Bytes from 0x7fb4b6fe4010 to 0x7fb4d63e5010 ...
-> >>|
-> >>|      738.184980 MB/Sec
-> >>| % ./perf bench mem memcpy -l 500MB -r x86-64-unrolled
-> >>| # Running mem/memcpy benchmark...
-> >>| # Copying 500MB Bytes from 0x7f6f2e668010 to 0x7f6f4da69010 ...
-> >>|
-> >>|      767.483269 MB/Sec
-> >>
-> >>This shows clearly that unrolled memcpy() is efficient
-> >>than rep version and glibc's one :)
-> >
-> >Hey, really cool output :-)
-> >
-> >Might also make sense to measure Ma Ling's patched version?
-> 
-> Does Ma Ling's patched version mean,
-> 
-> http://marc.info/?l=linux-kernel&m=128652296500989&w=2
-> 
-> the memcpy applied the patch of the URL?
-> (It seems that this patch was written by Miao Xie.)
-> 
-> I'll include the result of patched version in the next post.
+Mark tlb_cpuhp_notify as __cpuinit. It's basically a callback
+function, which is called from __cpuinit init_smp_flash(). So -
+it's safe.
 
-(Indeed it is Miao Xie - sorry!)
+We were warned by the following warning:
 
-> >># checkpatch.pl warns about two externs in bench/mem-memcpy.c
-> >># added by this patch. But I think it is no problem.
-> >
-> >You should put these:
-> >
-> >  +#ifdef ARCH_X86_64
-> >  +extern void *memcpy_x86_64_unrolled(void *to, const void *from, size_t len);
-> >  +extern void *memcpy_x86_64_rep(void *to, const void *from, size_t len);
-> >  +#endif
-> >
-> >into a .h file - a new one if needed.
-> >
-> >That will make both checkpatch and me happier ;-)
-> >
-> 
-> OK, I'll separate these files.
-> 
-> BTW, I found really interesting evaluation result.
-> Current results of "perf bench mem memcpy" include
-> the overhead of page faults because the measured memcpy()
-> is the first access to allocated memory area.
-> 
-> I tested the another version of perf bench mem memcpy,
-> which does memcpy() before measured memcpy() for removing
-> the overhead come from page faults.
-> 
-> And this is the result:
-> 
-> % ./perf bench mem memcpy -l 500MB -r x86-64-unrolled
-> # Running mem/memcpy benchmark...
-> # Copying 500MB Bytes from 0x7f19d488f010 to 0x7f19f3c90010 ...
-> 
->        4.608340 GB/Sec
-> 
-> % ./perf bench mem memcpy -l 500MB
-> # Running mem/memcpy benchmark...
-> # Copying 500MB Bytes from 0x7f696c3cc010 to 0x7f698b7cd010 ...
-> 
->        4.856442 GB/Sec
-> 
-> % ./perf bench mem memcpy -l 500MB -r x86-64-rep
-> # Running mem/memcpy benchmark...
-> # Copying 500MB Bytes from 0x7f45d6cff010 to 0x7f45f6100010 ...
-> 
->        6.024445 GB/Sec
-> 
-> The relation of scores reversed!
-> I cannot explain the cause of this result, and
-> this is really interesting phenomenon.
+ WARNING: arch/x86/mm/built-in.o(.text+0x356d): Section mismatch
+ in reference from the function tlb_cpuhp_notify() to the
+ function .cpuinit.text:calculate_tlb_offset()
+ The function tlb_cpuhp_notify() references
+ the function __cpuinit calculate_tlb_offset().
+ This is often because tlb_cpuhp_notify lacks a __cpuinit
+ annotation or the annotation of calculate_tlb_offset is wrong.
 
-Interesting indeed, and it would be nice to analyse that! (It should be possible, 
-using various PMU metrics in a clever way, to figure out what's happening inside the 
-CPU, right?)
+Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: Borislav Petkov <borislav.petkov@amd.com>
+Cc: Shaohua Li <shaohua.li@intel.com>
+LKML-Reference: <AANLkTinWQRG=HA9uB3ad0KAqRRTinL6L_4iKgF84coph@mail.gmail.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/mm/tlb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> So I'd like to add new command line option,
-> like "--pre-page-faults" to perf bench mem memcpy,
-> for doing memcpy() before measured memcpy().
-> 
-> How do you think about this idea?
-
-Agreed. (Maybe name it --prefault, as 'prefaulting' is the term we generally use for 
-things like this.)
-
-An even better solution would be to output _both_ results by default, so that people 
-can see both characteristics at a glance?
-
-Thanks,
-
-	Ingo
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index 4935848..12cdbb1 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -251,7 +251,7 @@ static void __cpuinit calculate_tlb_offset(void)
+ 	}
+ }
+ 
+-static int tlb_cpuhp_notify(struct notifier_block *n,
++static int __cpuinit tlb_cpuhp_notify(struct notifier_block *n,
+ 		unsigned long action, void *hcpu)
+ {
+ 	switch (action & 0xf) {
