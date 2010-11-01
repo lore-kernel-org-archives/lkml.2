@@ -1,141 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755475Ab0KASoy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 14:44:54 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:45912 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754211Ab0KASmJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 14:42:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=d8ayR7toI4+l6CKX4S7eIglhRVDcFgDAwJBIlfQJMpDcqr9AOGOkcn+I5I50X0jVKR
-         I471NNqDq8zOmKoAYNG8qjNsDCLEEljpyC9wEh5wd9uVs53iJLKmKFyqXBwM3f5LOv4s
-         rWaN0Lo0PZmyDigm39Ib6Xrbj6s29kIvp94Sw=
-From: Tracey Dent <tdent48227@gmail.com>
-To: greg@kroah.com
-Cc: manningc2@actrix.gen.nz, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Tracey Dent <tdent48227@gmail.com>
-Subject: [PATCH 18/29] Staging: yaffs2: yaffs_packedtags1: Add files
-Date: Mon,  1 Nov 2010 14:41:06 -0400
-Message-Id: <1288636877-7964-19-git-send-email-tdent48227@gmail.com>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
-In-Reply-To: <1288636877-7964-1-git-send-email-tdent48227@gmail.com>
-References: <1288636877-7964-1-git-send-email-tdent48227@gmail.com>
+	id S1755629Ab0KASpE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 14:45:04 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37377 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754680Ab0KASo6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 14:44:58 -0400
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk, linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        kay.sievers@vrfy.org, jack@suse.cz,
+        James.Bottomley@HansenPartnership.com
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 5/7] scsi: replace sr_test_unit_ready() with scsi_test_unit_ready()
+Date: Mon,  1 Nov 2010 19:44:39 +0100
+Message-Id: <1288637081-5183-6-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1288637081-5183-1-git-send-email-tj@kernel.org>
+References: <1288637081-5183-1-git-send-email-tj@kernel.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 01 Nov 2010 18:44:53 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding files to yaffs2 directory.
+The usage of TUR has been confusing involving several different
+commits updating different parts over time.  Currently, the only
+differences between scsi_test_unit_ready() and sr_test_unit_ready()
+are,
 
-Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+* scsi_test_unit_ready() also sets sdev->changed on NOT_READY.
+
+* scsi_test_unit_ready() returns 0 if TUR ended with UNIT_ATTENTION or
+  NOT_READY.
+
+Due to the above two differences, sr is using its own
+sr_test_unit_ready(), but sd - the sole user of the above extra
+handling - doesn't even need them.
+
+Where scsi_test_unit_ready() is used in sd_media_changed(), the code
+is looking for device ready w/ media present state which is true iff
+TUR succeeds w/o sense data or UA, and when the device is not ready
+for whatever reason sd_media_changed() explicitly marks media as
+missing so there's no reason to set sdev->changed automatically from
+scsi_test_unit_ready() on NOT_READY.
+
+Drop both special handlings from scsi_test_unit_ready(), which makes
+it equivalant to sr_test_unit_ready(), and replace
+sr_test_unit_ready() with scsi_test_unit_ready().  Also, drop
+unnecessary explicit NOT_READY check from sd_media_changed().
+Checking return value is enough for testing device readiness.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- drivers/staging/yaffs2/yaffs_packedtags1.c |   50 ++++++++++++++++++++++++++++
- drivers/staging/yaffs2/yaffs_packedtags1.h |   37 ++++++++++++++++++++
- 2 files changed, 87 insertions(+), 0 deletions(-)
- create mode 100644 drivers/staging/yaffs2/yaffs_packedtags1.c
- create mode 100644 drivers/staging/yaffs2/yaffs_packedtags1.h
+ drivers/scsi/scsi_lib.c |   13 +------------
+ drivers/scsi/sd.c       |   10 +---------
+ drivers/scsi/sr.c       |   37 ++++++-------------------------------
+ drivers/scsi/sr.h       |    1 -
+ drivers/scsi/sr_ioctl.c |    2 +-
+ 5 files changed, 9 insertions(+), 54 deletions(-)
 
-diff --git a/drivers/staging/yaffs2/yaffs_packedtags1.c b/drivers/staging/yaffs2/yaffs_packedtags1.c
-new file mode 100644
-index 0000000..2ce873f
---- /dev/null
-+++ b/drivers/staging/yaffs2/yaffs_packedtags1.c
-@@ -0,0 +1,50 @@
-+/*
-+ * YAFFS: Yet Another Flash File System. A NAND-flash specific file system.
-+ *
-+ * Copyright (C) 2002-2010 Aleph One Ltd.
-+ *   for Toby Churchill Ltd and Brightstar Engineering
-+ *
-+ * Created by Charles Manning <charles@aleph1.co.uk>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include "yaffs_packedtags1.h"
-+#include "yportenv.h"
-+
-+void yaffs_pack_tags1(yaffs_packed_tags1 *pt, const yaffs_ext_tags *t)
-+{
-+	pt->chunk_id = t->chunk_id;
-+	pt->serial_number = t->serial_number;
-+	pt->n_bytes = t->n_bytes;
-+	pt->obj_id = t->obj_id;
-+	pt->ecc = 0;
-+	pt->deleted = (t->is_deleted) ? 0 : 1;
-+	pt->unused_stuff = 0;
-+	pt->should_be_ff = 0xFFFFFFFF;
-+
-+}
-+
-+void yaffs_unpack_tags1(yaffs_ext_tags *t, const yaffs_packed_tags1 *pt)
-+{
-+	static const __u8 all_ff[] =
-+	    { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-+0xff };
-+
-+	if (memcmp(all_ff, pt, sizeof(yaffs_packed_tags1))) {
-+		t->block_bad = 0;
-+		if (pt->should_be_ff != 0xFFFFFFFF)
-+			t->block_bad = 1;
-+		t->chunk_used = 1;
-+		t->obj_id = pt->obj_id;
-+		t->chunk_id = pt->chunk_id;
-+		t->n_bytes = pt->n_bytes;
-+		t->ecc_result = YAFFS_ECC_RESULT_NO_ERROR;
-+		t->is_deleted = (pt->deleted) ? 0 : 1;
-+		t->serial_number = pt->serial_number;
-+	} else {
-+		memset(t, 0, sizeof(yaffs_ext_tags));
-+	}
-+}
-diff --git a/drivers/staging/yaffs2/yaffs_packedtags1.h b/drivers/staging/yaffs2/yaffs_packedtags1.h
-new file mode 100644
-index 0000000..50f32e8
---- /dev/null
-+++ b/drivers/staging/yaffs2/yaffs_packedtags1.h
-@@ -0,0 +1,37 @@
-+/*
-+ * YAFFS: Yet another Flash File System . A NAND-flash specific file system.
-+ *
-+ * Copyright (C) 2002-2010 Aleph One Ltd.
-+ *   for Toby Churchill Ltd and Brightstar Engineering
-+ *
-+ * Created by Charles Manning <charles@aleph1.co.uk>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU Lesser General Public License version 2.1 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Note: Only YAFFS headers are LGPL, YAFFS C code is covered by GPL.
-+ */
-+
-+/* This is used to pack YAFFS1 tags, not YAFFS2 tags. */
-+
-+#ifndef __YAFFS_PACKEDTAGS1_H__
-+#define __YAFFS_PACKEDTAGS1_H__
-+
-+#include "yaffs_guts.h"
-+
-+typedef struct {
-+	unsigned chunk_id:20;
-+	unsigned serial_number:2;
-+	unsigned n_bytes:10;
-+	unsigned obj_id:18;
-+	unsigned ecc:12;
-+	unsigned deleted:1;
-+	unsigned unused_stuff:1;
-+	unsigned should_be_ff;
-+
-+} yaffs_packed_tags1;
-+
-+void yaffs_pack_tags1(yaffs_packed_tags1 *pt, const yaffs_ext_tags *t);
-+void yaffs_unpack_tags1(yaffs_ext_tags *t, const yaffs_packed_tags1 *pt);
-+#endif
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index eafeeda..13bf891 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -1984,8 +1984,7 @@ EXPORT_SYMBOL(scsi_mode_sense);
+  *		in.
+  *
+  *	Returns zero if unsuccessful or an error if TUR failed.  For
+- *	removable media, a return of NOT_READY or UNIT_ATTENTION is
+- *	translated to success, with the ->changed flag updated.
++ *	removable media, UNIT_ATTENTION sets ->changed flag.
+  **/
+ int
+ scsi_test_unit_ready(struct scsi_device *sdev, int timeout, int retries,
+@@ -2012,16 +2011,6 @@ scsi_test_unit_ready(struct scsi_device *sdev, int timeout, int retries,
+ 	} while (scsi_sense_valid(sshdr) &&
+ 		 sshdr->sense_key == UNIT_ATTENTION && --retries);
+ 
+-	if (!sshdr)
+-		/* could not allocate sense buffer, so can't process it */
+-		return result;
+-
+-	if (sdev->removable && scsi_sense_valid(sshdr) &&
+-	    (sshdr->sense_key == UNIT_ATTENTION ||
+-	     sshdr->sense_key == NOT_READY)) {
+-		sdev->changed = 1;
+-		result = 0;
+-	}
+ 	if (!sshdr_external)
+ 		kfree(sshdr);
+ 	return result;
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index b9ab3a5..8d488a9 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -1045,15 +1045,7 @@ static int sd_media_changed(struct gendisk *disk)
+ 					      sshdr);
+ 	}
+ 
+-	/*
+-	 * Unable to test, unit probably not ready.   This usually
+-	 * means there is no disc in the drive.  Mark as changed,
+-	 * and we will figure it out later once the drive is
+-	 * available again.
+-	 */
+-	if (retval || (scsi_sense_valid(sshdr) &&
+-		       /* 0x3a is medium not present */
+-		       sshdr->asc == 0x3a)) {
++	if (retval) {
+ 		set_media_not_present(sdkp);
+ 		retval = 1;
+ 		goto out;
+diff --git a/drivers/scsi/sr.c b/drivers/scsi/sr.c
+index d7b383c..63cdbc6 100644
+--- a/drivers/scsi/sr.c
++++ b/drivers/scsi/sr.c
+@@ -165,32 +165,6 @@ static void scsi_cd_put(struct scsi_cd *cd)
+ 	mutex_unlock(&sr_ref_mutex);
+ }
+ 
+-/* identical to scsi_test_unit_ready except that it doesn't
+- * eat the NOT_READY returns for removable media */
+-int sr_test_unit_ready(struct scsi_device *sdev, struct scsi_sense_hdr *sshdr)
+-{
+-	int retries = MAX_RETRIES;
+-	int the_result;
+-	u8 cmd[] = {TEST_UNIT_READY, 0, 0, 0, 0, 0 };
+-
+-	/* issue TEST_UNIT_READY until the initial startup UNIT_ATTENTION
+-	 * conditions are gone, or a timeout happens
+-	 */
+-	do {
+-		the_result = scsi_execute_req(sdev, cmd, DMA_NONE, NULL,
+-					      0, sshdr, SR_TIMEOUT,
+-					      retries--, NULL);
+-		if (scsi_sense_valid(sshdr) &&
+-		    sshdr->sense_key == UNIT_ATTENTION)
+-			sdev->changed = 1;
+-
+-	} while (retries > 0 &&
+-		 (!scsi_status_is_good(the_result) ||
+-		  (scsi_sense_valid(sshdr) &&
+-		   sshdr->sense_key == UNIT_ATTENTION)));
+-	return the_result;
+-}
+-
+ /*
+  * This function checks to see if the media has been changed in the
+  * CDROM drive.  It is possible that we have already sensed a change,
+@@ -213,10 +187,11 @@ static int sr_media_change(struct cdrom_device_info *cdi, int slot)
+ 	}
+ 
+ 	sshdr =  kzalloc(sizeof(*sshdr), GFP_KERNEL);
+-	retval = sr_test_unit_ready(cd->device, sshdr);
+-	if (retval || (scsi_sense_valid(sshdr) &&
+-		       /* 0x3a is medium not present */
+-		       sshdr->asc == 0x3a)) {
++	retval = scsi_test_unit_ready(cd->device, SR_TIMEOUT, MAX_RETRIES,
++				      sshdr);
++	if (host_byte(retval) || (scsi_sense_valid(sshdr) &&
++				  /* ASC 0x3a is medium not present */
++				  sshdr->asc == 0x3a)) {
+ 		/* Media not present or unable to test, unit probably not
+ 		 * ready. This usually means there is no disc in the drive.
+ 		 * Mark as changed, and we will figure it out later once
+@@ -780,7 +755,7 @@ static void get_capabilities(struct scsi_cd *cd)
+ 	}
+ 
+ 	/* eat unit attentions */
+-	sr_test_unit_ready(cd->device, &sshdr);
++	scsi_test_unit_ready(cd->device, SR_TIMEOUT, MAX_RETRIES, &sshdr);
+ 
+ 	/* ask for mode page 0x2a */
+ 	rc = scsi_mode_sense(cd->device, 0, 0x2a, buffer, 128,
+diff --git a/drivers/scsi/sr.h b/drivers/scsi/sr.h
+index 1e144df..81fbc0b 100644
+--- a/drivers/scsi/sr.h
++++ b/drivers/scsi/sr.h
+@@ -61,7 +61,6 @@ int sr_select_speed(struct cdrom_device_info *cdi, int speed);
+ int sr_audio_ioctl(struct cdrom_device_info *, unsigned int, void *);
+ 
+ int sr_is_xa(Scsi_CD *);
+-int sr_test_unit_ready(struct scsi_device *sdev, struct scsi_sense_hdr *sshdr);
+ 
+ /* sr_vendor.c */
+ void sr_vendor_init(Scsi_CD *);
+diff --git a/drivers/scsi/sr_ioctl.c b/drivers/scsi/sr_ioctl.c
+index 3cd8ffb..8be3055 100644
+--- a/drivers/scsi/sr_ioctl.c
++++ b/drivers/scsi/sr_ioctl.c
+@@ -307,7 +307,7 @@ int sr_drive_status(struct cdrom_device_info *cdi, int slot)
+ 		/* we have no changer support */
+ 		return -EINVAL;
+ 	}
+-	if (0 == sr_test_unit_ready(cd->device, &sshdr))
++	if (!scsi_test_unit_ready(cd->device, SR_TIMEOUT, MAX_RETRIES, &sshdr))
+ 		return CDS_DISC_OK;
+ 
+ 	/* SK/ASC/ASCQ of 2/4/1 means "unit is becoming ready" */
 -- 
-1.7.3.2.146.gca209
+1.7.1
 
