@@ -1,67 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753973Ab0KAHaE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 03:30:04 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:38417 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752365Ab0KAHaC convert rfc822-to-8bit (ORCPT
+	id S1754135Ab0KAICJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 04:02:09 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:48762 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753032Ab0KAICH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 03:30:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=o1TZFvtgNCwRzBlzhCHk9udsOWZSvmDUzFOeFLPyCYJowXjXbYERr1oTdmuhIqz5Dv
-         m1NwMnz4TnpUKVRIWBtD8qqB8XAqpbhprxo03/x/BmuFQbUEaJdQ2yKzlzc4EJwE95Gl
-         1DjKKusni6eNTxwKGvlGbUCumUFOpwg8fmDqo=
+	Mon, 1 Nov 2010 04:02:07 -0400
+Date: Mon, 1 Nov 2010 08:02:01 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+Cc: Al Viro <viro@ftp.linux.org.uk>, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [PATCH 2/6] avr32: get rid of useless args in signal.c before
+ other work there
+Message-ID: <20101101080201.GZ19804@ZenIV.linux.org.uk>
+References: <E1P0QNo-0008S7-Vr@ZenIV.linux.org.uk>
+ <1288598309.2843.12.camel@hcegtvedt>
 MIME-Version: 1.0
-In-Reply-To: <20101101040611.GA5850@penfold>
-References: <AANLkTi=sR+wTN1MSRZLW1qB99ybGgOTbUJuw8drtbwA5@mail.gmail.com> <20101101040611.GA5850@penfold>
-From: Bart Van Assche <bvanassche@acm.org>
-Date: Mon, 1 Nov 2010 08:29:40 +0100
-X-Google-Sender-Auth: qFjiFHhTqm-JDQLIdPmbpeUedOc
-Message-ID: <AANLkTiknBbdUji2mATH159US1J_yJE5egOFkU4TH5jdb@mail.gmail.com>
-Subject: Re: New 2.6.36 checkpatch complaints about leading whitespace
-To: Andy Whitcroft <apw@canonical.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Vladislav Bolkhovitin <vst@vlnb.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288598309.2843.12.camel@hcegtvedt>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 1, 2010 at 5:10 AM, Andy Whitcroft <apw@canonical.com> wrote:
->
-> On Sat, Oct 30, 2010 at 11:35:22AM +0200, Bart Van Assche wrote:
-> > Hello Andy,
-> >
-> > Apparently the checkpatch.pl script as included in 2.6.36 complains if
-> > continued lines start with whitespace. An example:
-> >
-> > [ ... ]
-> > +#if defined(MACRO_NAME_1) || defined(MACRO_NAME_2) \
-> > +  || defined(MACRO_NAME_3)
-> > [ ... ]
-> >
-> > checkpatch.pl reports the following warning for the above patch excerpt:
-> >
-> > WARNING: please, no space for starting a line,
-> >                                 excluding comments
-> >
-> > Is that a feature or an unintended side effect of recent checkpatch changes ?
->
-> My personal expectation would be for that second line to be indented
-> with a tab.  But I might be convinced otherwise?
+On Mon, Nov 01, 2010 at 08:58:29AM +0100, Hans-Christian Egtvedt wrote:
+> On Tue, 2010-09-28 at 03:57 +0100, Al Viro wrote: 
+> > Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+> 
+> <snipp>
+> 
+> > @@ -261,11 +261,12 @@ handle_signal(unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
+> >   * doesn't want to handle. Thus you cannot kill init even with a
+> >   * SIGKILL even by mistake.
+> >   */
+> > -int do_signal(struct pt_regs *regs, sigset_t *oldset, int syscall)
+> > +static void do_signal(struct pt_regs *regs, int syscall)
+> >  {
+> >  	siginfo_t info;
+> >  	int signr;
+> >  	struct k_sigaction ka;
+> > +	sigset_t *oldset;
+> 
+> Should be initialized as it is checked in the else if block further
+> below.
 
-There are also other preprocessor directives on which the 2.6.36
-checkpatch complains, e.g.:
-
-#warning A very long warning message that takes multiple lines and of which\
- the second line starts with a space.
-
-Why does the 2.6.36 checkpatch complain that the second line should
-start with a tab instead of a space (which would make the message
-really ugly) ?
-
-Bart.
+That else if should be simply else...
