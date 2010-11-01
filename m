@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758528Ab0KAQQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 12:16:59 -0400
-Received: from hera.kernel.org ([140.211.167.34]:46832 "EHLO hera.kernel.org"
+	id S1758510Ab0KAQQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 12:16:57 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46833 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758476Ab0KAQQy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 12:16:54 -0400
+	id S1758478Ab0KAQQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 12:16:55 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, hch@infradead.org, linux-kernel@vger.kernel.org,
         petero2@telia.com, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
@@ -16,10 +16,10 @@ To: axboe@kernel.dk, hch@infradead.org, linux-kernel@vger.kernel.org,
         chris.mason@oracle.com, swhiteho@redhat.com, shaggy@linux.vnet.ibm.com,
         joern@logfs.org, konishi.ryusuke@lab.ntt.co.jp,
         reiserfs-devel@vger.kernel.org, viro@zeniv.linux.org.uk
-Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 2/5] btrfs: close_bdev_exclusive() should use the same @flags as the matching open_bdev_exclusive()
-Date: Mon,  1 Nov 2010 17:15:26 +0100
-Message-Id: <1288628129-12811-3-git-send-email-tj@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>, linux-mtd@lists.infradead.org
+Subject: [PATCH 1/5] mtd: fix bdev exclusive open bugs in block2mtd::add_device()
+Date: Mon,  1 Nov 2010 17:15:25 +0100
+Message-Id: <1288628129-12811-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1288628129-12811-1-git-send-email-tj@kernel.org>
 References: <1288628129-12811-1-git-send-email-tj@kernel.org>
@@ -28,29 +28,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the failure path of __btrfs_open_devices(), close_bdev_exclusive()
-is called with @flags which doesn't match the one used during
-open_bdev_exclusive().  Fix it.
+There are two bdev exclusive open bugs.
+
+* open_bdev_exclusive() must not be called with NULL holder.  Use dev
+  as the holder.
+
+* open_by_devnum() doesn't open the bdev exclusively but
+  block2mtd_free_device() always assumes it.  Explicitly claim the
+  bdev.
+
+The latter is rather clumsy but will be simplified with future
+blkdev_get/put() cleanups.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Chris Mason <chris.mason@oracle.com>
+Cc: linux-mtd@lists.infradead.org
 ---
- fs/btrfs/volumes.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/mtd/devices/block2mtd.c |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
 
-diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-index cc04dc1..d395962 100644
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -638,7 +638,7 @@ static int __btrfs_open_devices(struct btrfs_fs_devices *fs_devices,
- error_brelse:
- 		brelse(bh);
- error_close:
--		close_bdev_exclusive(bdev, FMODE_READ);
-+		close_bdev_exclusive(bdev, flags);
- error:
- 		continue;
+diff --git a/drivers/mtd/devices/block2mtd.c b/drivers/mtd/devices/block2mtd.c
+index 2cf0cc6..806a9ed 100644
+--- a/drivers/mtd/devices/block2mtd.c
++++ b/drivers/mtd/devices/block2mtd.c
+@@ -246,7 +246,7 @@ static struct block2mtd_dev *add_device(char *devname, int erase_size)
+ 		return NULL;
+ 
+ 	/* Get a handle on the device */
+-	bdev = open_bdev_exclusive(devname, FMODE_READ|FMODE_WRITE, NULL);
++	bdev = open_bdev_exclusive(devname, FMODE_READ|FMODE_WRITE, dev);
+ #ifndef MODULE
+ 	if (IS_ERR(bdev)) {
+ 
+@@ -256,6 +256,15 @@ static struct block2mtd_dev *add_device(char *devname, int erase_size)
+ 		dev_t devt = name_to_dev_t(devname);
+ 		if (devt) {
+ 			bdev = open_by_devnum(devt, FMODE_WRITE | FMODE_READ);
++			if (!IS_ERR(bdev)) {
++				int ret;
++				ret = bd_claim(bdev, dev);
++				if (ret) {
++					blkdev_put(bdev,
++						   FMODE_READ | FMODE_WRITE);
++					bdev = ERR_PTR(ret);
++				}
++			}
+ 		}
  	}
+ #endif
 -- 
 1.7.1
 
