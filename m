@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753495Ab0KAUZI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 16:25:08 -0400
-Received: from lo.gmane.org ([80.91.229.12]:60184 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753130Ab0KAUZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 16:25:05 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Dimitrios Apostolou <jimis@gmx.net>
-Subject: Re: 2.6.36 io bring the system to its knees
-Date: Mon, 1 Nov 2010 01:09:34 +0000 (UTC)
-Message-ID: <ial40e$jpj$1@dough.gmane.org>
-References: <AANLkTimt7wzR9RwGWbvhiOmot_zzayfCfSh_-v6yvuAP@mail.gmail.com>
-	<AANLkTikRKVBzO=ruy=JDmBF28NiUdJmAqb4-1VhK0QBX@mail.gmail.com>
-	<AANLkTinzJ9a+9w7G5X0uZpX2o-L8E6XW98VFKoF1R_-S@mail.gmail.com>
-	<AANLkTinDDG0ZkNFJZXuV9k3nJgueUW=ph8AuHgyeAXji@mail.gmail.com>
-	<20101031012224.GA8007@localhost> <20101031015132.GA10086@localhost>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 178-14-100.dynamic.cyta.gr
-User-Agent: Pan/0.133 (House of Butterflies)
-Cc: linux-mm@kvack.org
+	id S1753803Ab0KAU3d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 16:29:33 -0400
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:41763 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753398Ab0KAU3c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 16:29:32 -0400
+Date: Tue, 2 Nov 2010 05:29:21 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: [PATCH] fs: logfs: Fix up MTD=y build.
+Message-ID: <20101101202921.GA5085@linux-sh.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, 
+Commit 7d945a3aa7608f68dba04083d3421e0b43052660 ("logfs get_sb, part 3")
+broke the logfs build when CONFIG_MTD is set due to a mangled
+logfs_get_sb_mtd() definition.
 
-On Sun, 31 Oct 2010 09:51:32 +0800, Wu Fengguang wrote:
-> It may also help to lower the dirty ratio.
-> 
-> echo 5 > /proc/sys/vm/dirty_ratio
-> 
-> Memory pressure + heavy write can easily hurt responsiveness.
-> 
-> - eats up to 20% (the default value for dirty_ratio) memory with dirty
->   pages and hence increase the memory pressure and number of swap IO
+Signed-off-by: Paul Mundt <lethal@linux-sh.org>
 
-My experience has been different with that. Wouldn't it make more sense 
-to _increase_ dirty_ratio (to 50 lets say) and at the same time decrease 
-dirty_background_ratio? That way writing to disk starts early, but the 
-related apps stall waiting for I/O only when dirty_ratio is reached.
+---
 
+ fs/logfs/logfs.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks, 
-Dimitris
-
-> 
-> - the file copy makes the device write congested and hence makes
->   pageout() easily blocked in get_request_wait()
-> 
-> As a result every application may be slowed down by the heavy swap IO
-> when page fault as well as being blocked when allocating memory (which
-> may go into direct reclaim and then call pageout()).
-> 
-> Thanks,
-> Fengguang
-
-
+diff --git a/fs/logfs/logfs.h b/fs/logfs/logfs.h
+index cd51a36..57afd4a 100644
+--- a/fs/logfs/logfs.h
++++ b/fs/logfs/logfs.h
+@@ -486,7 +486,7 @@ static inline int logfs_get_sb_bdev(struct logfs_super *s,
+ 
+ /* dev_mtd.c */
+ #ifdef CONFIG_MTD
+-int logfs_get_sb_mtd(struct logfs_super *s, int mtdnr)
++int logfs_get_sb_mtd(struct logfs_super *s, int mtdnr);
+ #else
+ static inline int logfs_get_sb_mtd(struct logfs_super *s, int mtdnr)
+ {
