@@ -1,50 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553Ab0KAIOP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 04:14:15 -0400
-Received: from mail.fc.unesp.br ([200.145.159.3]:35330 "EHLO mail.fc.unesp.br"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754388Ab0KAION (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 04:14:13 -0400
-X-Greylist: delayed 662 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Nov 2010 04:14:12 EDT
-Message-ID: <20101101060245.20872hp6cfp80x7p@webmail.fc.unesp.br>
-Date: Mon, 01 Nov 2010 06:02:45 -0200
-From: "Jozef Ruud Roosevelt" <info@jozef.co.uk>
-Reply-to: jozef-rosevelt@live.com
-To: undisclosed-recipients:;
-Subject: Attention Please!!
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
+	id S1754576Ab0KAITU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 04:19:20 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:38321 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753032Ab0KAITR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 04:19:17 -0400
+Subject: Re: [PATCH 1/6] avr32: missed _TIF_NOTIFY_RESUME on one of
+ do_notify_resume callers
+From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+To: Al Viro <viro@ftp.linux.org.uk>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+In-Reply-To: <E1P0QNe-0008Rr-Vf@ZenIV.linux.org.uk>
+References: <E1P0QNe-0008Rr-Vf@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Atmel Corporation
+Date: Mon, 01 Nov 2010 08:55:57 +0100
+Message-ID: <1288598157.2843.9.camel@hcegtvedt>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
+X-OriginalArrivalTime: 01 Nov 2010 07:55:58.0311 (UTC) FILETIME=[38166F70:01CB799A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2010-09-28 at 03:57 +0100, Al Viro wrote: 
+> we need that not just on syscall returns but on irq ones as well...
+> 
+> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 
+Acked-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
 
-Attention Please,
-
-I am Jozef Ruud Roosevelt, a Dutch National presently residing in  
-Newcastle United Kingdom, I have a proposition Involving an investment  
-initiative in your country economy  to discuss with you, It will be of  
-mutual benefit to both of us, and I believe we can handle it together,  
-once we have a common understanding and mutual cooperation in the  
-execution of the modalities. I work with Abn Amro Bank as an auditor.
-
-Should you be interested, please e-mail back to me through this email  
-address: (jozef-rosevelt@live.com) or you can give me a call (+44 702  
-4056 175).
-I await your earliest response.
-
-Yours Sincerely,
-Jozef Ruud Roosevel.
-
-----------------------------------------------------------------
-This message was sent using IMP, the Internet Messaging Program.
-
+-- 
+Hans-Christian Egtvedt
 
