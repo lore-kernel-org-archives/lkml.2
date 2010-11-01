@@ -1,58 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757675Ab0KANFr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 09:05:47 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:64796 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757649Ab0KANFp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 09:05:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type;
-        b=WHBk2Cy2hvrscNt5wt2ViRPl0uFrxSiN80TVm4a9JO5DlS0s9c3uCzQTNOdeOn+yV0
-         N/yMfxsspvfu0HoH+sPNu84f4vKUNH7LoP+aIzRvR7KuNKJvETbF7BIJYN7JyPJaxSzy
-         pDbSyrx4R0ue8lfuGpeHFB/JD2wWDPCupRNlY=
+	id S1757668Ab0KANJt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 09:09:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29267 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755949Ab0KANJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 09:09:47 -0400
+Date: Mon, 1 Nov 2010 15:09:44 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 1/7] KVM: fix tracing kvm_try_async_get_page
+Message-ID: <20101101130944.GF31722@redhat.com>
+References: <4CCE8143.3090105@cn.fujitsu.com>
 MIME-Version: 1.0
-Reply-To: trapdoor6@gmail.com
-In-Reply-To: <AANLkTinQ9NdEU+dp35sKp8u1tFu2NR2iX59wi-3wBFeH@mail.gmail.com>
-References: <AANLkTimE4QR+=eXfSMQ5s3OvnLU0Z=7uR1vtokpLnj7X@mail.gmail.com>
-	<20101101121608.GA10052@verge.net.au>
-	<AANLkTinQ9NdEU+dp35sKp8u1tFu2NR2iX59wi-3wBFeH@mail.gmail.com>
-Date: Mon, 1 Nov 2010 13:05:43 +0000
-Message-ID: <AANLkTim=4GBFzMiAaGbs6uWbi1g2ZQGRYR55i4bO0X49@mail.gmail.com>
-Subject: Re: Where can I find -rc kernels?
-From: trapDoor <trapdoor6@gmail.com>
-To: Ramya Desai <ramya.desai@gmail.com>
-Cc: Simon Horman <horms@verge.net.au>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CCE8143.3090105@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 1, 2010 at 12:54 PM, Ramya Desai <ramya.desai@gmail.com> wrote:
-> On Mon, Nov 1, 2010 at 5:46 PM, Simon Horman <horms@verge.net.au> wrote:
->>
->> Is this what you are after?
->>
->> http://www.kernel.org/pub/linux/kernel/v2.6/testing/
->
-> Simon,
->
-> I did not find the complete sources in that link. I need complete
-> sources by which I can build the kernel images. OR Is there any
-> procedure for merging these changes into any stable kernel version
-> (2.6.36) for making it 2.6.37-rc1.
->
-> Thanks and Regards,
-> Ramya.
+On Mon, Nov 01, 2010 at 04:58:43PM +0800, Xiao Guangrong wrote:
+> Tracing 'async' and *pfn is useless, since 'async' is always true,
+> and '*pfn' is always "fault_pfn'
+> 
+> We can trace 'gva' and 'gfn' instead, it can help us to see the
+> life-cycle of an async_pf
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Acked-by: Gleb Natapov <gleb@redhat.com>
 
-I guess It just hasn't been published there yet. Not present in git
-tree either - I still have 2.6.36-09871-g3985c7c and 'git pull' says:
-Already up-to-date.
+> ---
+>  arch/x86/kvm/mmu.c         |    2 +-
+>  include/trace/events/kvm.h |   12 +++++++-----
+>  2 files changed, 8 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 39cc0c6..5275c50 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -2627,7 +2627,7 @@ static bool try_async_pf(struct kvm_vcpu *vcpu, bool no_apf, gfn_t gfn,
+>  	put_page(pfn_to_page(*pfn));
+>  
+>  	if (!no_apf && can_do_async_pf(vcpu)) {
+> -		trace_kvm_try_async_get_page(async, *pfn);
+> +		trace_kvm_try_async_get_page(gva, gfn);
+>  		if (kvm_find_async_pf_gfn(vcpu, gfn)) {
+>  			trace_kvm_async_pf_doublefault(gva, gfn);
+>  			kvm_make_request(KVM_REQ_APF_HALT, vcpu);
+> diff --git a/include/trace/events/kvm.h b/include/trace/events/kvm.h
+> index 9c2cc6a..30063c6 100644
+> --- a/include/trace/events/kvm.h
+> +++ b/include/trace/events/kvm.h
+> @@ -188,18 +188,20 @@ TRACE_EVENT(kvm_age_page,
+>  #ifdef CONFIG_KVM_ASYNC_PF
+>  TRACE_EVENT(
+>  	kvm_try_async_get_page,
+> -	TP_PROTO(bool async, u64 pfn),
+> -	TP_ARGS(async, pfn),
+> +	TP_PROTO(u64 gva, u64 gfn),
+> +	TP_ARGS(gva, gfn),
+>  
+>  	TP_STRUCT__entry(
+> -		__field(__u64, pfn)
+> +		__field(u64, gva)
+> +		__field(u64, gfn)
+>  		),
+>  
+>  	TP_fast_assign(
+> -		__entry->pfn = (!async) ? pfn : (u64)-1;
+> +		__entry->gva = gva;
+> +		__entry->gfn = gfn;
+>  		),
+>  
+> -	TP_printk("pfn %#llx", __entry->pfn)
+> +	TP_printk("gva = %#llx, gfn = %#llx", __entry->gva, __entry->gfn)
+>  );
+>  
+>  TRACE_EVENT(
+> -- 
+> 1.7.0.4
 
-
--- 
-Thanks,
-Tomasz
+--
+			Gleb.
