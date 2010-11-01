@@ -1,110 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311Ab0KAUJs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 16:09:48 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:21842 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752909Ab0KAUJq (ORCPT
+	id S1753369Ab0KAUKW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 16:10:22 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:33841 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752909Ab0KAUKU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 16:09:46 -0400
-Date: Mon, 1 Nov 2010 20:59:13 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Pavel Emelianov <xemul@openvz.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Paul Menage <menage@google.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org
-Subject: Re: [PATCH] cgroup: prefer [kv]zalloc over [kv]malloc+memset in
- memory controller code.
-In-Reply-To: <20101101200122.GH840@cmpxchg.org>
-Message-ID: <alpine.LNX.2.00.1011012056250.12889@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1011012038490.12889@swampdragon.chaosbits.net> <20101101200122.GH840@cmpxchg.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 1 Nov 2010 16:10:20 -0400
+X-IronPort-AV: E=Sophos;i="4.58,276,1286175600"; 
+   d="scan'208";a="476148481"
+Subject: Re: Regression, bisected: sqlite locking failure on nfs
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Chuck Lever <chuck.lever@oracle.com>
+Cc: Nick Bowler <nbowler@elliptictech.com>,
+        LKML Kernel <linux-kernel@vger.kernel.org>,
+        "J. Bruce Fields" <bfields@redhat.com>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
+In-Reply-To: <1288640888.5009.19.camel@heimdal.trondhjem.org>
+References: <20101101175854.GA3550@elliptictech.com>
+	 <D68536EB-6BE9-4DE4-B325-39FEF747092E@oracle.com>
+	 <20101101181938.GA3875@elliptictech.com>
+	 <187AEE96-9231-4899-9D65-A444503D2758@oracle.com>
+	 <1288639376.5009.16.camel@heimdal.trondhjem.org>
+	 <1288640536.5009.18.camel@heimdal.trondhjem.org>
+	 <DA1E14E0-DCCD-4A6D-9471-E627D4BF2E85@oracle.com>
+	 <1288640888.5009.19.camel@heimdal.trondhjem.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp
+Date: Mon, 01 Nov 2010 16:09:30 -0400
+Message-ID: <1288642170.5009.23.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+X-OriginalArrivalTime: 01 Nov 2010 20:10:08.0743 (UTC) FILETIME=[C830EF70:01CB7A00]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Nov 2010, Johannes Weiner wrote:
-
-> On Mon, Nov 01, 2010 at 08:40:56PM +0100, Jesper Juhl wrote:
-> > Hi (please CC me on replies),
+On Mon, 2010-11-01 at 15:48 -0400, Trond Myklebust wrote:
+> On Mon, 2010-11-01 at 15:45 -0400, Chuck Lever wrote:
+> > What about that memcpy() in nlm_lookup_host()?  With this patch, wouldn't it be copying garbage into the host's srcaddr field?
 > > 
-> > 
-> > Apologies to those who receive this multiple times. I screwed up the To: 
-> > field in my original mail :-(
-> > 
-> > 
-> > In mem_cgroup_alloc() we currently do either kmalloc() or vmalloc() then 
-> > followed by memset() to zero the memory. This can be more efficiently 
-> > achieved by using kzalloc() and vzalloc().
-> > 
-> > 
-> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 > 
-> Looks good to me, but there is also the memset after kmalloc in
-> alloc_mem_cgroup_per_zone_info(). 
-
-Dang, I missed that one. Thanks for pointing it out.
-
-Hmm, I'm wondering if we should perhaps add kzalloc_node()/vzalloc_node() 
-just like kzalloc() and vzalloc()..
-
-
-> Can you switch that over as well in
-> this patch?  You can pass __GFP_ZERO to kmalloc_node() for zeroing.
+> It shouldn't. ni->src_len is now zero.
 > 
 
-Sure thing.
+Urgh, but nlmclnt_bind_host() will still set .saddress.
 
+OK. Here is take 2 of the patch...
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Trond
+---------------------------------------------------------------------------------------------------------------
+NLM: Fix a regression in lockd
+
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+Nick Bowler reports:
+There are no unusual messages on the client... but I just logged into
+the server and I see lots of messages of the following form:
+
+  nfsd: request from insecure port (192.168.8.199:35766)!
+  nfsd: request from insecure port (192.168.8.199:35766)!
+  nfsd: request from insecure port (192.168.8.199:35766)!
+  nfsd: request from insecure port (192.168.8.199:35766)!
+  nfsd: request from insecure port (192.168.8.199:35766)!
+
+Bisected to commit 9247685088398cf21bcb513bd2832b4cd42516c4 (SUNRPC:
+Properly initialize sock_xprt.srcaddr in all cases)
+
+Apparently, removing the 'transport->srcaddr.ss_family = family' from
+xs_create_sock() triggers this due to nlmclnt_lookup_host() incorrectly
+initialising the srcaddr family to AF_UNSPEC.
+
+Reported-by: Nick Bowler <nbowler@elliptictech.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 ---
- memcontrol.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 9a99cfa..bc32ffe 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -4169,13 +4169,11 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *mem, int node)
- 	 */
- 	if (!node_state(node, N_NORMAL_MEMORY))
- 		tmp = -1;
--	pn = kmalloc_node(sizeof(*pn), GFP_KERNEL, tmp);
-+	pn = kmalloc_node(sizeof(*pn), GFP_KERNEL|__GFP_ZERO, tmp);
- 	if (!pn)
- 		return 1;
- 
- 	mem->info.nodeinfo[node] = pn;
--	memset(pn, 0, sizeof(*pn));
--
- 	for (zone = 0; zone < MAX_NR_ZONES; zone++) {
- 		mz = &pn->zoneinfo[zone];
- 		for_each_lru(l)
-@@ -4199,14 +4197,13 @@ static struct mem_cgroup *mem_cgroup_alloc(void)
- 
- 	/* Can be very big if MAX_NUMNODES is very big */
- 	if (size < PAGE_SIZE)
--		mem = kmalloc(size, GFP_KERNEL);
-+		mem = kzalloc(size, GFP_KERNEL);
- 	else
--		mem = vmalloc(size);
-+		mem = vzalloc(size);
- 
- 	if (!mem)
- 		return NULL;
- 
--	memset(mem, 0, size);
- 	mem->stat = alloc_percpu(struct mem_cgroup_stat_cpu);
- 	if (!mem->stat) {
- 		if (size < PAGE_SIZE)
+ fs/lockd/host.c             |   11 ++++-------
+ include/linux/lockd/lockd.h |    1 +
+ 2 files changed, 5 insertions(+), 7 deletions(-)
 
 
--- 
-Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-Plain text mails only, please      http://www.expita.com/nomime.html
-Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
+diff --git a/fs/lockd/host.c b/fs/lockd/host.c
+index 25e21e4..cb57092 100644
+--- a/fs/lockd/host.c
++++ b/fs/lockd/host.c
+@@ -124,7 +124,7 @@ static struct nlm_host *nlm_lookup_host(struct nlm_lookup_host_info *ni)
+ 			continue;
+ 		if (host->h_server != ni->server)
+ 			continue;
+-		if (ni->server &&
++		if (ni->server && host->h_srcaddrlen != 0 &&
+ 		    !rpc_cmp_addr(nlm_srcaddr(host), ni->src_sap))
+ 			continue;
+ 
+@@ -167,6 +167,7 @@ static struct nlm_host *nlm_lookup_host(struct nlm_lookup_host_info *ni)
+ 	host->h_addrlen = ni->salen;
+ 	rpc_set_port(nlm_addr(host), 0);
+ 	memcpy(nlm_srcaddr(host), ni->src_sap, ni->src_len);
++	host->h_srcaddrlen = ni->src_len;
+ 	host->h_version    = ni->version;
+ 	host->h_proto      = ni->protocol;
+ 	host->h_rpcclnt    = NULL;
+@@ -238,9 +239,6 @@ struct nlm_host *nlmclnt_lookup_host(const struct sockaddr *sap,
+ 				     const char *hostname,
+ 				     int noresvport)
+ {
+-	const struct sockaddr source = {
+-		.sa_family	= AF_UNSPEC,
+-	};
+ 	struct nlm_lookup_host_info ni = {
+ 		.server		= 0,
+ 		.sap		= sap,
+@@ -249,8 +247,6 @@ struct nlm_host *nlmclnt_lookup_host(const struct sockaddr *sap,
+ 		.version	= version,
+ 		.hostname	= hostname,
+ 		.hostname_len	= strlen(hostname),
+-		.src_sap	= &source,
+-		.src_len	= sizeof(source),
+ 		.noresvport	= noresvport,
+ 	};
+ 
+@@ -357,7 +353,6 @@ nlm_bind_host(struct nlm_host *host)
+ 			.protocol	= host->h_proto,
+ 			.address	= nlm_addr(host),
+ 			.addrsize	= host->h_addrlen,
+-			.saddress	= nlm_srcaddr(host),
+ 			.timeout	= &timeparms,
+ 			.servername	= host->h_name,
+ 			.program	= &nlm_program,
+@@ -376,6 +371,8 @@ nlm_bind_host(struct nlm_host *host)
+ 			args.flags |= RPC_CLNT_CREATE_HARDRTRY;
+ 		if (host->h_noresvport)
+ 			args.flags |= RPC_CLNT_CREATE_NONPRIVPORT;
++		if (host->h_srcaddrlen)
++			args.saddress = nlm_srcaddr(host),
+ 
+ 		clnt = rpc_create(&args);
+ 		if (!IS_ERR(clnt))
+diff --git a/include/linux/lockd/lockd.h b/include/linux/lockd/lockd.h
+index a34dea4..2dee05e 100644
+--- a/include/linux/lockd/lockd.h
++++ b/include/linux/lockd/lockd.h
+@@ -43,6 +43,7 @@ struct nlm_host {
+ 	struct sockaddr_storage	h_addr;		/* peer address */
+ 	size_t			h_addrlen;
+ 	struct sockaddr_storage	h_srcaddr;	/* our address (optional) */
++	size_t			h_srcaddrlen;
+ 	struct rpc_clnt		*h_rpcclnt;	/* RPC client to talk to peer */
+ 	char			*h_name;		/* remote hostname */
+ 	u32			h_version;	/* interface version */
 
