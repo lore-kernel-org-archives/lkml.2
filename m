@@ -1,119 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007Ab0KAT0J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 15:26:09 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:41818 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751179Ab0KAT0H convert rfc822-to-8bit (ORCPT
+	id S1752180Ab0KAT0x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 15:26:53 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:20961 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751665Ab0KAT0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 15:26:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=JbGdymQfH6uycAnrpRGhrgdgTJZoxlLPwyoqsxyTrqfFkJES8Ea0vKZ6OWyuamTQx2
-         K7v4UVAyKIJQIaU9NrguP4ave9L7rcxJERKN1g4kXD2Dd/8nGNRy45/6QpPXW663xcot
-         qYpI+wfTdnFMllDwdPBo2cLwNJSy5CHrLsdYM=
+	Mon, 1 Nov 2010 15:26:52 -0400
+Date: Mon, 1 Nov 2010 20:16:19 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Tracey Dent <tdent48227@gmail.com>
+cc: greg@kroah.com, manningc2@actrix.gen.nz, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 24/29] Staging: yaffs2: yaffs_verify: Add files
+In-Reply-To: <1288636877-7964-25-git-send-email-tdent48227@gmail.com>
+Message-ID: <alpine.LNX.2.00.1011012008351.12889@swampdragon.chaosbits.net>
+References: <1288636877-7964-1-git-send-email-tdent48227@gmail.com> <1288636877-7964-25-git-send-email-tdent48227@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimJw8ZMDGu61z8bEvCL8R94xr9GdAnFkQDtMg+V@mail.gmail.com>
-References: <1288636877-7964-1-git-send-email-tdent48227@gmail.com>
-	<1288636877-7964-6-git-send-email-tdent48227@gmail.com>
-	<AANLkTikgq2uAW5ko0qG5fe+w-LGvwiV6z3Oi51V_QuiK@mail.gmail.com>
-	<201011020819.33777.manningc2@actrix.gen.nz>
-	<AANLkTimJw8ZMDGu61z8bEvCL8R94xr9GdAnFkQDtMg+V@mail.gmail.com>
-Date: Mon, 1 Nov 2010 21:25:40 +0200
-X-Google-Sender-Auth: sP6pAGTjCea94Yo0EmOd5izcUfo
-Message-ID: <AANLkTim8o7mktJVxHYCgfDA6AuGNua4Mmuz4M=Gpiz1p@mail.gmail.com>
-Subject: Re: [PATCH 05/29] Staging: yaffs2: yaffs_allocator: Add files
-From: Pekka Enberg <penberg@kernel.org>
-To: Charles Manning <manningc2@actrix.gen.nz>
-Cc: Tracey Dent <tdent48227@gmail.com>, greg@kroah.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 1, 2010 at 9:23 PM, Pekka Enberg <penberg@kernel.org> wrote:
-> On Mon, Nov 1, 2010 at 9:19 PM, Charles Manning <manningc2@actrix.gen.nz> wrote:
->> On Tuesday 02 November 2010 07:58:49 Pekka Enberg wrote:
->>> On Mon, Nov 1, 2010 at 8:40 PM, Tracey Dent <tdent48227@gmail.com> wrote:
->>> > Adding files to yaffs2 directory.
->>> >
->>> > Signed-off-by: Tracey Dent <tdent48227@gmail.com>
->>> > ---
->>> >  drivers/staging/yaffs2/yaffs_allocator.c |  408
->>> > ++++++++++++++++++++++++++++++ drivers/staging/yaffs2/yaffs_allocator.h |
->>> >   30 +++
->>> >  2 files changed, 438 insertions(+), 0 deletions(-)
->>> >  create mode 100644 drivers/staging/yaffs2/yaffs_allocator.c
->>> >  create mode 100644 drivers/staging/yaffs2/yaffs_allocator.h
->>> >
->>> > diff --git a/drivers/staging/yaffs2/yaffs_allocator.c
->>> > b/drivers/staging/yaffs2/yaffs_allocator.c new file mode 100644
->>> > index 0000000..024ee2a
->>> > --- /dev/null
->>> > +++ b/drivers/staging/yaffs2/yaffs_allocator.c
->>> > @@ -0,0 +1,408 @@
->>> > +/*
->>> > + * YAFFS: Yet Another Flash File System. A NAND-flash specific file
->>> > system. + *
->>> > + * Copyright (C) 2002-2010 Aleph One Ltd.
->>> > + *   for Toby Churchill Ltd and Brightstar Engineering
->>> > + *
->>> > + * Created by Charles Manning <charles@aleph1.co.uk>
->>> > + *
->>> > + * This program is free software; you can redistribute it and/or modify
->>> > + * it under the terms of the GNU General Public License version 2 as
->>> > + * published by the Free Software Foundation.
->>> > + */
->>> > +
->>> > +
->>> > +
->>> > +#include "yaffs_allocator.h"
->>> > +#include "yaffs_guts.h"
->>> > +#include "yaffs_trace.h"
->>> > +#include "yportenv.h"
->>> > +
->>> > +#ifdef CONFIG_YAFFS_YMALLOC_ALLOCATOR
->>> > +
->>> > +void yaffs_deinit_raw_tnodes_and_objs(yaffs_dev_t *dev)
->>> > +{
->>> > +       dev = dev;
->>> > +}
->>> > +
->>> > +void yaffs_init_raw_tnodes_and_objs(yaffs_dev_t *dev)
->>> > +{
->>> > +       dev = dev;
->>> > +}
->>> > +
->>> > +yaffs_tnode_t *yaffs_alloc_raw_tnode(yaffs_dev_t *dev)
->>> > +{
->>> > +       return (yaffs_tnode_t *)YMALLOC(dev->tnode_size);
->>> > +}
->>> > +
->>> > +void yaffs_free_raw_tnode(yaffs_dev_t *dev, yaffs_tnode_t *tn)
->>> > +{
->>> > +       dev = dev;
->>> > +       YFREE(tn);
->>> > +}
->>>
->>> So you have your own dynamic memory allocator? What's wrong with kmalloc()?
->>
->> No. YMALLOC() wraps kmalloc() to keep the code portable.
->>
->> This code does a home-grown slab allocator. The reason for doing this is that
->> Linux slab does not allow slab caches to be destroyed while objects exist.
->>
->> While that might sound like a dangerous practice, it does mean that when yaffs
->> unmounts it can drop all the data structures without having to walk all the
->> trees freeing the objects.
->
-> Either way, your home-grown slab allocator is not going to be merged
-> this way. You should be using kmem_cache_alloc() and propose proper
-> patches on top of mm/sl?b.c.
+On Mon, 1 Nov 2010, Tracey Dent wrote:
 
-Btw, just to clarify: Greg might not mind taking it in as-is but it'll
-never be promoted to mainline proper this way.
+> Adding files to yaffs2 directory.
+> 
+> Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+> ---
+>  drivers/staging/yaffs2/yaffs_verify.c |  631 +++++++++++++++++++++++++++++++++
+>  drivers/staging/yaffs2/yaffs_verify.h |   41 +++
+>  2 files changed, 672 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/staging/yaffs2/yaffs_verify.c
+>  create mode 100644 drivers/staging/yaffs2/yaffs_verify.h
+> 
+> diff --git a/drivers/staging/yaffs2/yaffs_verify.c b/drivers/staging/yaffs2/yaffs_verify.c
+> new file mode 100644
+> index 0000000..89e730b
+> --- /dev/null
+> +++ b/drivers/staging/yaffs2/yaffs_verify.c
+...
+> +#if 0
+
+Why are you trying to merge new code that's under '#if 0' (and not just 
+here, but elsewhere as well)?
+Either it shouldn't be here, in which case it should just be omitted from 
+the patch, or it needs to be here eventually in which case it should be 
+fixed up so the '#if 0' can go away or simply just be added later when it 
+has been fixed up.
+
+ > +/* Not being used, but don't want to throw away yet 
+*/ > +int yaffs_verify_tnode_worker(yaffs_obj_t *obj, yaffs_tnode_t *tn,
+> +					__u32 level, int chunk_offset)
+> +{
+> +	int i;
+> +	yaffs_dev_t *dev = obj->my_dev;
+> +	int ok = 1;
+> +
+> +	if (tn) {
+> +		if (level > 0) {
+> +
+> +			for (i = 0; i < YAFFS_NTNODES_INTERNAL && ok; i++) {
+> +				if (tn->internal[i]) {
+> +					ok = yaffs_verify_tnode_worker(obj,
+> +							tn->internal[i],
+> +							level - 1,
+> +							(chunk_offset<<YAFFS_TNODES_INTERNAL_BITS) + i);
+> +				}
+> +			}
+> +		} else if (level == 0) {
+> +			yaffs_ext_tags tags;
+> +			__u32 obj_id = obj->obj_id;
+> +
+> +			chunk_offset <<=  YAFFS_TNODES_LEVEL0_BITS;
+> +
+> +			for (i = 0; i < YAFFS_NTNODES_LEVEL0; i++) {
+> +				__u32 the_chunk = yaffs_get_group_base(dev, tn, i);
+> +
+> +				if (the_chunk > 0) {
+> +					/* T(~0,(TSTR("verifying (%d:%d) %d"TENDSTR),tags.obj_id,tags.chunk_id,the_chunk)); */
+> +					yaffs_rd_chunk_tags_nand(dev, the_chunk, NULL, &tags);
+> +					if (tags.obj_id != obj_id || tags.chunk_id != chunk_offset) {
+> +						T(~0, (TSTR("Object %d chunk_id %d NAND mismatch chunk %d tags (%d:%d)"TENDSTR),
+> +							obj_id, chunk_offset, the_chunk,
+> +							tags.obj_id, tags.chunk_id));
+> +					}
+> +				}
+> +				chunk_offset++;
+> +			}
+> +		}
+> +	}
+> +
+> +	return ok;
+
+Here I think it would be nice to reduce the indentation level a bit by by 
+doing something like:
+
+int yaffs_verify_tnode_worker(yaffs_obj_t *obj, yaffs_tnode_t *tn,
+                                     __u32 level, int chunk_offset)
+{
+     int i;
+     yaffs_dev_t *dev = obj->my_dev;
+     int ok = 1;
+                     
+     if (!tn)
+          goto out; /* or simply  return ok;  */
+
+     ... all the stuff currently inside the if() ...
+
+ out:
+     return ok;
+}
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
+Plain text mails only, please      http://www.expita.com/nomime.html
+Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
+
