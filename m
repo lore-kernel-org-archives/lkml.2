@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245Ab0KAVru (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 17:47:50 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:34718 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755218Ab0KAVrs (ORCPT
+	id S1755237Ab0KAVtU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 17:49:20 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:36676 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751216Ab0KAVtS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 17:47:48 -0400
-From: Thomas Weber <weber@corscience.de>
-To: tony@atomide.com
-Cc: Thomas Weber <weber@corscience.de>, Russell King <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] OMAP2: Devkit8000: Fix mmc regulator failure
-Date: Mon,  1 Nov 2010 23:48:11 +0100
-Message-Id: <1288651691-14914-1-git-send-email-weber@corscience.de>
-X-Mailer: git-send-email 1.7.3.2
+	Mon, 1 Nov 2010 17:49:18 -0400
+Date: Mon, 1 Nov 2010 14:47:29 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
+Subject: [PATCH] mtd: fix nand kernel-doc warnings
+Message-Id: <20101101144729.e0c58fec.randy.dunlap@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following error:
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
->regulator: VMMC1: 1850 <--> 3150 mV at 3000 mV normal
-standby
->twl_reg twl_reg.6: can't register VMMC1, -22
->twl_reg: probe of twl_reg.6 failed with error -22
+Warning(include/linux/mtd/nand.h:543): No description found for parameter 'badblockbits'
+Warning(drivers/mtd/nand/nand_bbt.c:1101): No description found for parameter 'mtd'
 
-Signed-off-by: Thomas Weber <weber@corscience.de>
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 ---
- arch/arm/mach-omap2/board-devkit8000.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+ drivers/mtd/nand/nand_bbt.c |    3 ++-
+ include/linux/mtd/nand.h    |    2 ++
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-omap2/board-devkit8000.c b/arch/arm/mach-omap2/board-devkit8000.c
-index 067f437..53ac762 100644
---- a/arch/arm/mach-omap2/board-devkit8000.c
-+++ b/arch/arm/mach-omap2/board-devkit8000.c
-@@ -242,9 +242,6 @@ static int devkit8000_twl_gpio_setup(struct device *dev,
- 	mmc[0].gpio_cd = gpio + 0;
- 	omap2_hsmmc_init(mmc);
+--- linux-2.6.36-git17.orig/include/linux/mtd/nand.h
++++ linux-2.6.36-git17/include/linux/mtd/nand.h
+@@ -448,6 +448,8 @@ struct nand_buffers {
+  *			See the defines for further explanation.
+  * @badblockpos:	[INTERN] position of the bad block marker in the oob
+  *			area.
++ * @badblockbits:	[INTERN] number of bits to left-shift the bad block
++ *			number
+  * @cellinfo:		[INTERN] MLC/multichip data from chip ident
+  * @numchips:		[INTERN] number of physical chips
+  * @chipsize:		[INTERN] the size of one chip for multichip arrays
+--- linux-2.6.36-git17.orig/drivers/mtd/nand/nand_bbt.c
++++ linux-2.6.36-git17/drivers/mtd/nand/nand_bbt.c
+@@ -1092,7 +1092,8 @@ static void mark_bbt_region(struct mtd_i
  
--	/* link regulators to MMC adapters */
--	devkit8000_vmmc1_supply.dev = mmc[0].dev;
--
- 	/* TWL4030_GPIO_MAX + 1 == ledB, PMU_STAT (out, active low LED) */
- 	gpio_leds[2].gpio = gpio + TWL4030_GPIO_MAX + 1;
- 
--- 
-1.7.3.2
-
+ /**
+  * verify_bbt_descr - verify the bad block description
+- * @bd:			the table to verify
++ * @mtd:	MTD device structure
++ * @bd:		the table to verify
+  *
+  * This functions performs a few sanity checks on the bad block description
+  * table.
