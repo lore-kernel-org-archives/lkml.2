@@ -1,71 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757335Ab0KALl1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 07:41:27 -0400
-Received: from fmmailgate03.web.de ([217.72.192.234]:43386 "EHLO
-	fmmailgate03.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754958Ab0KALlX (ORCPT
+	id S1757332Ab0KALpu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 07:45:50 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:58824 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754966Ab0KALpt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 07:41:23 -0400
-Message-ID: <4CCEA761.90501@web.de>
-Date: Mon, 01 Nov 2010 12:41:21 +0100
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	Mon, 1 Nov 2010 07:45:49 -0400
+Message-ID: <4CCEA800.9040500@mvista.com>
+Date: Mon, 01 Nov 2010 14:44:00 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Sheng Yang <sheng@linux.intel.com>
-CC: kvm <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Crash in intel_iommu_assign_device
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig23DDEB05B3DB580A79978CFC"
-X-Provags-ID: V01U2FsdGVkX1+CRO6qI12NOiORYXyiaJf8rDEdZjgWzvC8AWYf
-	2iD00wOe5iG2vuA09DJ1t/Dod5XoLsuPfiY0GSswJbC0G6mX96
-	uJ/GKfw8M=
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: David Daney <ddaney@caviumnetworks.com>, linux-mips@linux-mips.org,
+        ralf@linux-mips.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dan Carpenter <error27@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCH] of: of_mdio: Fix some endianness problems.
+References: <1288227827-5447-1-git-send-email-ddaney@caviumnetworks.com> <20101030063237.GC2456@angua.secretlab.ca> <AANLkTi=24H4RNonXu=i3CHhYqbLniDya+BKnj_evw_p6@mail.gmail.com>
+In-Reply-To: <AANLkTi=24H4RNonXu=i3CHhYqbLniDya+BKnj_evw_p6@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig23DDEB05B3DB580A79978CFC
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+Hello.
 
-Hi Sheng,
+On 31-10-2010 5:54, Grant Likely wrote:
 
-I'm not claiming to understand the details, but this looks like use
-(dereference of pte via dma_pte_addr) after release (free_pgtable_page
-of dmar_domain->pgd aka pte) to me:
+>>> In of_mdiobus_register(), the __be32 *addr variable is dereferenced.
+>>> This will not work on little-endian targets.  Also since it is
+>>> unsigned, checking for less than zero is redundant.
 
-static int intel_iommu_attach_device(struct iommu_domain *domain,
-				     struct device *dev)
-{
-	[...]
-		pte =3D dmar_domain->pgd;
-		if (dma_pte_present(pte)) {
-			free_pgtable_page(dmar_domain->pgd);
-			dmar_domain->pgd =3D (struct dma_pte *)
-				phys_to_virt(dma_pte_addr(pte));
-		}
+>>> Fix these two issues.
 
-At least it crashes here right on pte->val access. Swap both lines?
+>>> Signed-off-by: David Daney<ddaney@caviumnetworks.com>
+>>> Cc: Grant Likely<grant.likely@secretlab.ca>
+>>> Cc: Jeremy Kerr<jeremy.kerr@canonical.com>
+>>> Cc: Benjamin Herrenschmidt<benh@kernel.crashing.org>
+>>> Cc: Dan Carpenter<error27@gmail.com>
+>>> Cc: Greg Kroah-Hartman<gregkh@suse.de>
+>>> ---
+>>>   drivers/of/of_mdio.c |   23 ++++++++++++++---------
+>>>   1 files changed, 14 insertions(+), 9 deletions(-)
+>>>
+>>> diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
+>>> index 1fce00e..b370306 100644
+>>> --- a/drivers/of/of_mdio.c
+>>> +++ b/drivers/of/of_mdio.c
+>>> @@ -52,27 +52,32 @@ int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
+>>>
+>>>        /* Loop over the child nodes and register a phy_device for each one */
+>>>        for_each_child_of_node(np, child) {
+>>> -             const __be32 *addr;
+>>> +             const __be32 *paddr;
+>>> +             u32 addr;
+>>>                int len;
+>>>
+>>>                /* A PHY must have a reg property in the range [0-31] */
+>>> -             addr = of_get_property(child, "reg",&len);
+>>> -             if (!addr || len<  sizeof(*addr) || *addr>= 32 || *addr<  0) {
+>>> +             paddr = of_get_property(child, "reg",&len);
+>>> +             if (!paddr || len<  sizeof(*paddr)) {
+>>> +addr_err:
+>>>                        dev_err(&mdio->dev, "%s has invalid PHY address\n",
+>>>                                child->full_name);
+>>>                        continue;
+>>>                }
+>>> +             addr = be32_to_cpup(paddr);
+>>> +             if (addr>= 32)
+>>> +                     goto addr_err;
 
-Jan
+>> goto's are fine for jumping to the end of a function to unwind
+>> allocations, but please don't use it in this manner.  The original
+>> structure will actually work just fine if you do it thusly:
 
+>>                 if (!paddr || len<  sizeof(*paddr) ||
+>>                     *(addr = be32_to_cpup(paddr))>= 32) {
+>>                         dev_err(&mdio->dev, "%s has invalid PHY address\n",
+>>                                 child->full_name);
+>>                         continue;
+>>                 }
 
---------------enig23DDEB05B3DB580A79978CFC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+>> Otherwise this patch looks good. After you've reworked and retested
+>> I'll pick it up for 2.6.37 (or dave will).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.15 (GNU/Linux)
-Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
+> Actually, I mistyped this.  I think it should be:
+>
+>                 if (!paddr || len<  sizeof(*paddr) ||
+>                     (addr = be32_to_cpup(paddr))>= 32) {
 
-iEYEARECAAYFAkzOp2EACgkQitSsb3rl5xSdOwCgsIx3Az50hzochjariFjdie6T
-G1MAni4HlDU3pf3/fB+4yC0BvPKOpxti
-=aCuo
------END PGP SIGNATURE-----
+   This assignment would probably cause checkpatch.pl to complain...
 
---------------enig23DDEB05B3DB580A79978CFC--
+WBR, Sergei
