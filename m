@@ -1,120 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757155Ab0KAPJV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 11:09:21 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:35794 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1754556Ab0KAPJQ (ORCPT
+	id S1757538Ab0KAPMa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 11:12:30 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:55672 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756688Ab0KAPM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 11:09:16 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: sfrench@samba.org
-Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        linux-cifs@vger.kernel.org, Jeff Layton <jlayton@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: [PATCH v2 1/1] FS: cifs, remove unneeded NULL tests
-Date: Mon,  1 Nov 2010 16:08:55 +0100
-Message-Id: <1288624135-24170-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.3.1
+	Mon, 1 Nov 2010 11:12:27 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6153"; a="60169764"
+From: Tatyana Brokhman <tlinder@codeaurora.org>
+To: linux-usb@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org, Tatyana Brokhman <tlinder@codeaurora.org>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Michal Nazarewicz <m.nazarewicz@samsung.com>,
+        Robert Lukassen <robert.lukassen@tomtom.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mike Frysinger <vapier@gentoo.org>, Cliff Cai <cliff.cai@analog.com>,
+        Fabien Chouteau <fabien.chouteau@barco.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: [RFC/PATCH v3 2/4] usb: Configure endpoint according to gadget speed.
+Date: Mon,  1 Nov 2010 17:11:22 +0200
+Message-Id: <1288624285-32355-3-git-send-email-tlinder@codeaurora.org>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1288624285-32355-2-git-send-email-tlinder@codeaurora.org>
+References: <1288624285-32355-1-git-send-email-tlinder@codeaurora.org>
+ <1288624285-32355-2-git-send-email-tlinder@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stanse found that pSMBFile in cifs_ioctl and file->f_path.dentry in
-cifs_user_write are dereferenced prior their test to NULL.
+Add config_ep_by_speed() to configure the endpoint according to the gadget
+speed. Using this function will spare the FDs from handling the endpoint
+chosen descriptor.
 
-The alternative is not to dereference them before the tests. The patch is
-to point out the problem, you have to decide.
-
-While at it we cache the inode in cifs_user_write to a local variable
-and use all over the function.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Steve French <sfrench@samba.org>
-Cc: linux-cifs@vger.kernel.org
-Cc: Jeff Layton <jlayton@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>
+Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
 ---
- fs/cifs/file.c  |   25 +++++++++++--------------
- fs/cifs/ioctl.c |    4 ----
- 2 files changed, 11 insertions(+), 18 deletions(-)
+ drivers/usb/gadget/composite.c  |   76 +++++++++++++++++++++++++++++++++++++++
+ drivers/usb/gadget/epautoconf.c |    1 +
+ include/linux/usb/composite.h   |   21 +++++++++++
+ include/linux/usb/gadget.h      |    8 +++--
+ 4 files changed, 103 insertions(+), 3 deletions(-)
 
-diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-index ae82159..5d06eb3 100644
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -956,6 +956,7 @@ cifs_update_eof(struct cifsInodeInfo *cifsi, loff_t offset,
- ssize_t cifs_user_write(struct file *file, const char __user *write_data,
- 	size_t write_size, loff_t *poffset)
- {
-+	struct inode *inode = file->f_path.dentry->d_inode;
- 	int rc = 0;
- 	unsigned int bytes_written = 0;
- 	unsigned int total_written;
-@@ -963,7 +964,7 @@ ssize_t cifs_user_write(struct file *file, const char __user *write_data,
- 	struct cifsTconInfo *pTcon;
- 	int xid, long_op;
- 	struct cifsFileInfo *open_file;
--	struct cifsInodeInfo *cifsi = CIFS_I(file->f_path.dentry->d_inode);
-+	struct cifsInodeInfo *cifsi = CIFS_I(inode);
+diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
+index 1160c55..ed6ec5b 100644
+--- a/drivers/usb/gadget/composite.c
++++ b/drivers/usb/gadget/composite.c
+@@ -70,6 +70,82 @@ module_param(iSerialNumber, charp, 0);
+ MODULE_PARM_DESC(iSerialNumber, "SerialNumber string");
  
- 	cifs_sb = CIFS_SB(file->f_path.dentry->d_sb);
- 
-@@ -1029,21 +1030,17 @@ ssize_t cifs_user_write(struct file *file, const char __user *write_data,
- 
- 	cifs_stats_bytes_written(pTcon, total_written);
- 
--	/* since the write may have blocked check these pointers again */
--	if ((file->f_path.dentry) && (file->f_path.dentry->d_inode)) {
--		struct inode *inode = file->f_path.dentry->d_inode;
- /* Do not update local mtime - server will set its actual value on write
-- *		inode->i_ctime = inode->i_mtime =
-- * 			current_fs_time(inode->i_sb);*/
--		if (total_written > 0) {
--			spin_lock(&inode->i_lock);
--			if (*poffset > file->f_path.dentry->d_inode->i_size)
--				i_size_write(file->f_path.dentry->d_inode,
--					*poffset);
--			spin_unlock(&inode->i_lock);
--		}
--		mark_inode_dirty_sync(file->f_path.dentry->d_inode);
-+ *	inode->i_ctime = inode->i_mtime =
-+ * 		current_fs_time(inode->i_sb);*/
-+	if (total_written > 0) {
-+		spin_lock(&inode->i_lock);
-+		if (*poffset > inode->i_size)
-+			i_size_write(inode, *poffset);
-+		spin_unlock(&inode->i_lock);
- 	}
-+	mark_inode_dirty_sync(inode);
+ /*-------------------------------------------------------------------------*/
++/**
++ * next_ep_desc() - advance to the next EP descriptor
++ * @t: currect pointer within descriptor array
++ *
++ * Return: next EP descriptor or NULL
++ *
++ * Iterate over @t until either EP descriptor found or
++ * NULL (that indicates end of list) encountered
++ */
++static struct usb_descriptor_header**
++next_ep_desc(struct usb_descriptor_header **t)
++{
++	for (; *t; t++) {
++		if ((*t)->bDescriptorType == USB_DT_ENDPOINT)
++			return t;
++	}
++	return NULL;
++}
 +
- 	FreeXid(xid);
- 	return total_written;
++/**
++ * config_ep_by_speed() - configures the given endpoint
++ * according to gadget speed.
++ * @g: pointer to the gadget
++ * @f: usb function
++ * @_ep: the endpoint to configure
++ *
++ * Return: error code, 0 on success
++ *
++ * This function chooses the right descriptors for a given
++ * endpoint according to gadget speed and saves in in the
++ * endpoint desc field. If the endpoint already has a descriptor
++ * assigned to it - overwrites it with currently corresponding
++ * descriptor. The endpoint maxpacket field is updated according
++ * to the choosen descriptor.
++ * Note: the supplied function should hold all the descriptors
++ * for supported speeds
++ */
++int config_ep_by_speed(struct usb_gadget *g,
++			struct usb_function *f,
++			struct usb_ep *_ep)
++{
++	struct usb_endpoint_descriptor *chosen_desc = NULL;
++	struct usb_descriptor_header **speed_desc = NULL;
++
++	struct usb_descriptor_header **d_spd; /* cursor for speed desc */
++
++	if (!g || !f || !_ep)
++		return -EIO;
++
++	/* select desired speed */
++	switch (g->speed) {
++	case USB_SPEED_HIGH:
++		if (gadget_is_dualspeed(g)) {
++			speed_desc = f->hs_descriptors;
++			break;
++		}
++		/* else: fall through */
++	default:
++		speed_desc = f->descriptors;
++	}
++	/* find descriptors */
++	for (d_spd = next_ep_desc(speed_desc); d_spd;
++	      d_spd = next_ep_desc(d_spd+1)) {
++		chosen_desc = (struct usb_endpoint_descriptor *)*d_spd;
++		if (chosen_desc->bEndpointAddress == _ep->bEndpointAddress)
++			goto ep_found;
++	}
++	return -EIO;
++
++ep_found:
++	/* commit results */
++	_ep->maxpacket = le16_to_cpu(chosen_desc->wMaxPacketSize);
++	_ep->desc = chosen_desc;
++
++	return 0;
++}
+ 
+ /**
+  * usb_add_function() - add a function to a configuration
+diff --git a/drivers/usb/gadget/epautoconf.c b/drivers/usb/gadget/epautoconf.c
+index 8a83248..84ce0fa 100644
+--- a/drivers/usb/gadget/epautoconf.c
++++ b/drivers/usb/gadget/epautoconf.c
+@@ -184,6 +184,7 @@ ep_matches (
+ 			size = 64;
+ 		desc->wMaxPacketSize = cpu_to_le16(size);
+ 	}
++	ep->bEndpointAddress = desc->bEndpointAddress;
+ 	return 1;
  }
-diff --git a/fs/cifs/ioctl.c b/fs/cifs/ioctl.c
-index 077bf75..2fa22f2 100644
---- a/fs/cifs/ioctl.c
-+++ b/fs/cifs/ioctl.c
-@@ -63,8 +63,6 @@ long cifs_ioctl(struct file *filep, unsigned int command, unsigned long arg)
- #ifdef CONFIG_CIFS_POSIX
- 		case FS_IOC_GETFLAGS:
- 			if (CIFS_UNIX_EXTATTR_CAP & caps) {
--				if (pSMBFile == NULL)
--					break;
- 				rc = CIFSGetExtAttr(xid, tcon, pSMBFile->netfid,
- 					&ExtAttrBits, &ExtAttrMask);
- 				if (rc == 0)
-@@ -80,8 +78,6 @@ long cifs_ioctl(struct file *filep, unsigned int command, unsigned long arg)
- 					rc = -EFAULT;
- 					break;
- 				}
--				if (pSMBFile == NULL)
--					break;
- 				/* rc= CIFSGetExtAttr(xid,tcon,pSMBFile->netfid,
- 					extAttrBits, &ExtAttrMask);*/
- 			}
+ 
+diff --git a/include/linux/usb/composite.h b/include/linux/usb/composite.h
+index 6170681..1f18326 100644
+--- a/include/linux/usb/composite.h
++++ b/include/linux/usb/composite.h
+@@ -138,6 +138,27 @@ int usb_function_activate(struct usb_function *);
+ int usb_interface_id(struct usb_configuration *, struct usb_function *);
+ 
+ /**
++ * config_ep_by_speed() - configures the given endpoint
++ * according to gadget speed.
++ * @g: pointer to the gadget
++ * @f: usb function
++ * @_ep: the endpoint to configure
++ *
++ * Return: error code, 0 on success
++ *
++ * This function chooses the right descriptors for a given
++ * endpoint according to gadget speed and saves in in the
++ * endpoint desc field. If the endpoint already has a descriptor
++ * assigned to it - overwrites it with currently corresponding
++ * descriptor. The endpoint maxpacket field is updated according
++ * to the choosen descriptor.
++ * Note: the supplied function should hold all the descriptors
++ * for supported speeds
++ */
++int config_ep_by_speed(struct usb_gadget *g, struct usb_function *f,
++			struct usb_ep *_ep);
++
++/**
+  * ep_choose - select descriptor endpoint at current device speed
+  * @g: gadget, connected and running at some speed
+  * @hs: descriptor to use for high speed operation
+diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
+index 131843d..e387922 100644
+--- a/include/linux/usb/gadget.h
++++ b/include/linux/usb/gadget.h
+@@ -132,9 +132,10 @@ struct usb_ep_ops {
+  *	value can sometimes be reduced (hardware allowing), according to
+  *      the endpoint descriptor used to configure the endpoint.
+  * @driver_data:for use by the gadget driver.
+- * @desc:endpoint descriptor.  This pointer set before endpoint
+- *	is enabled and remains valid until the endpoint is
+- *	disabled.
++ * @bEndpointAddress: used to identify the endpoint when finding
++ *	descriptor that matches connection speed
++ * @desc:endpoint descriptor.  this pointer set before endpoint is enabled and
++ *	remains valid until the endpoint is disabled.
+  *
+  * the bus controller driver lists all the general purpose endpoints in
+  * gadget->ep_list.  the control endpoint (gadget->ep0) is not in that list,
+@@ -147,6 +148,7 @@ struct usb_ep {
+ 	const struct usb_ep_ops		*ops;
+ 	struct list_head		ep_list;
+ 	unsigned			maxpacket:16;
++	u8				bEndpointAddress;
+ 	struct usb_endpoint_descriptor	*desc;
+ };
+ 
 -- 
-1.7.3.1
+1.6.3.3
 
-
+--
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
