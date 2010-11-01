@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084Ab0KAU3v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 16:29:51 -0400
-Received: from mail.fc.unesp.br ([200.145.159.3]:50067 "EHLO mail.fc.unesp.br"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754046Ab0KAU3s convert rfc822-to-8bit (ORCPT
+	id S1753934Ab0KAU3g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 16:29:36 -0400
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:34936 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753398Ab0KAU3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 16:29:48 -0400
-X-Greylist: delayed 1334 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Nov 2010 16:29:48 EDT
-Message-ID: <20101101174946.18591cff8ogpuwnu@webmail.fc.unesp.br>
-Date: Mon, 01 Nov 2010 17:49:46 -0200
-From: "Webmail Help Desk" <jomilson@fc.unesp.br>
-Reply-to: web_user2010@mail2webmaster.com
-To: undisclosed-recipients:;
-Subject: Urgent...(Webmail upgrade notice)
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
+	Mon, 1 Nov 2010 16:29:34 -0400
+From: Pekka Enberg <penberg@kernel.org>
+To: gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Pavel Machek <pavel@ucw.cz>
+Subject: [PATCH 2/4] w35und: Kill struct hwdata ->NullPacketCount
+Date: Mon,  1 Nov 2010 22:29:29 +0200
+Message-Id: <1288643371-10310-2-git-send-email-penberg@kernel.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1288643371-10310-1-git-send-email-penberg@kernel.org>
+References: <1288643371-10310-1-git-send-email-penberg@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch kills the NullPacketCount member of struct hwdata. It's not used for
+anything so it's safe to remove it.
 
+Cc: Pavel Machek <pavel@ucw.cz>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+---
+ drivers/staging/winbond/wbhal.h |    6 ------
+ drivers/staging/winbond/wbusb.c |    9 ---------
+ 2 files changed, 0 insertions(+), 15 deletions(-)
 
-Dear account user,
-
-We are updating our database, and e-mail account center. We are  
-deleting all unused webmail account and create more space for new  
-accounts. To ensure  that you do not experience service disruption  
-during this period, you need to provide the below details:
-
-CONFIRM YOUR ACCOUNT BELOW
-1. E-mail:.................................
-2. Username :....................................
-2. Password :...................................
-3. Confirm password :...............................
-
-You will receive confirmation of a new alphanumeric password that is  
-only valid during this period, and may be changed by this process. We  
-regret any inconvenience this may cost you.
-
-Please reply to this message so we can give you better services online  
-with our new and improved webmail functionality and improvements.
-
-Webmail Upgrade Team © 2010
-Warning Code: ID67565434.
-
-----------------------------------------------------------------
-This message was sent using IMP, the Internet Messaging Program.
+diff --git a/drivers/staging/winbond/wbhal.h b/drivers/staging/winbond/wbhal.h
+index 821a1b3..6f4cd76 100644
+--- a/drivers/staging/winbond/wbhal.h
++++ b/drivers/staging/winbond/wbhal.h
+@@ -342,9 +342,6 @@ struct wb35_descriptor { /* Skip length = 8 DWORD */
+ 	void	*buffer_address[MAX_DESCRIPTOR_BUFFER_INDEX];
+ };
+ 
+-
+-#define DEFAULT_NULL_PACKET_COUNT	180000	/* 180 seconds */
+-
+ #define MAX_TXVGA_EEPROM		9	/* How many word(u16) of EEPROM will be used for TxVGA */
+ #define MAX_RF_PARAMETER		32
+ 
+@@ -517,9 +514,6 @@ struct hw_data {
+ 
+ 	/* For error recover */
+ 	u32		HwStop;
+-
+-	/* For avoid AP disconnect */
+-	u32		NullPacketCount;
+ };
+ 
+ #endif
+diff --git a/drivers/staging/winbond/wbusb.c b/drivers/staging/winbond/wbusb.c
+index 82040f4..dcb6d5b 100644
+--- a/drivers/staging/winbond/wbusb.c
++++ b/drivers/staging/winbond/wbusb.c
+@@ -611,15 +611,6 @@ static void hal_led_control(unsigned long data)
+ 			}
+ 			break;
+ 		}
+-
+-		/* Active send null packet to avoid AP disconnect */
+-		if (pHwData->LED_LinkOn) {
+-			pHwData->NullPacketCount += TimeInterval;
+-			if (pHwData->NullPacketCount >=
+-			    DEFAULT_NULL_PACKET_COUNT) {
+-				pHwData->NullPacketCount = 0;
+-			}
+-		}
+ 	}
+ 
+ 	pHwData->time_count += TimeInterval;
+-- 
+1.7.0.4
 
