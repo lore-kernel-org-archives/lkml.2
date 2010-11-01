@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753741Ab0KAHVR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 03:21:17 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:53848 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752238Ab0KAHVP (ORCPT
+	id S1753973Ab0KAHaE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 03:30:04 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:38417 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752365Ab0KAHaC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 03:21:15 -0400
+	Mon, 1 Nov 2010 03:30:02 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=nSlXcSWy+njPWfG7Pj4KvWQpDsZbVW3YfQ4VVDJgeZm7ju2XU82A9so5iYyypdkPbm
-         BuueAv6xInzFlycLY1fVdFmZMp+RbsNczcbrZa2210yerIfTzHkqToDaWPCqgY2rZwjq
-         V3IpBLMiYuEnKDkhN9LusXa/5Xj4jUhOth5zY=
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=o1TZFvtgNCwRzBlzhCHk9udsOWZSvmDUzFOeFLPyCYJowXjXbYERr1oTdmuhIqz5Dv
+         m1NwMnz4TnpUKVRIWBtD8qqB8XAqpbhprxo03/x/BmuFQbUEaJdQ2yKzlzc4EJwE95Gl
+         1DjKKusni6eNTxwKGvlGbUCumUFOpwg8fmDqo=
 MIME-Version: 1.0
-Date: Mon, 1 Nov 2010 13:21:13 +0600
-Message-ID: <AANLkTimWOytXT=jDWTobyvL=xdD7xW7oRqXshULgoF6R@mail.gmail.com>
-Subject: [PATCH] acpi: Fix section mismatch warning in osl.c
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: Len Brown <lenb@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+In-Reply-To: <20101101040611.GA5850@penfold>
+References: <AANLkTi=sR+wTN1MSRZLW1qB99ybGgOTbUJuw8drtbwA5@mail.gmail.com> <20101101040611.GA5850@penfold>
+From: Bart Van Assche <bvanassche@acm.org>
+Date: Mon, 1 Nov 2010 08:29:40 +0100
+X-Google-Sender-Auth: qFjiFHhTqm-JDQLIdPmbpeUedOc
+Message-ID: <AANLkTiknBbdUji2mATH159US1J_yJE5egOFkU4TH5jdb@mail.gmail.com>
+Subject: Re: New 2.6.36 checkpatch complaints about leading whitespace
+To: Andy Whitcroft <apw@canonical.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Vladislav Bolkhovitin <vst@vlnb.net>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function acpi_os_initialize1() calls acpi_osi_setup_late() which is in
-.init.text section and gets called from acpi_bus_init which is in
-.init.text section. So mark acpi_os_initialize1() with __init. And
-declaration of __init acpi_osi_setup_late has been removed, cause its
-defination is above called function.
+On Mon, Nov 1, 2010 at 5:10 AM, Andy Whitcroft <apw@canonical.com> wrote:
+>
+> On Sat, Oct 30, 2010 at 11:35:22AM +0200, Bart Van Assche wrote:
+> > Hello Andy,
+> >
+> > Apparently the checkpatch.pl script as included in 2.6.36 complains if
+> > continued lines start with whitespace. An example:
+> >
+> > [ ... ]
+> > +#if defined(MACRO_NAME_1) || defined(MACRO_NAME_2) \
+> > +  || defined(MACRO_NAME_3)
+> > [ ... ]
+> >
+> > checkpatch.pl reports the following warning for the above patch excerpt:
+> >
+> > WARNING: please, no space for starting a line,
+> >                                 excluding comments
+> >
+> > Is that a feature or an unintended side effect of recent checkpatch changes ?
+>
+> My personal expectation would be for that second line to be indented
+> with a tab.  But I might be convinced otherwise?
 
+There are also other preprocessor directives on which the 2.6.36
+checkpatch complains, e.g.:
 
- WARNING: drivers/acpi/acpi.o(.text+0x460): Section mismatch in
-reference from the function acpi_os_initialize1() to the function
-.init.text:acpi_osi_setup_late()
-The function acpi_os_initialize1() references
-the function __init acpi_osi_setup_late().
-This is often because acpi_os_initialize1 lacks a __init
-annotation or the annotation of acpi_osi_setup_late is wrong.
+#warning A very long warning message that takes multiple lines and of which\
+ the second line starts with a space.
 
+Why does the 2.6.36 checkpatch complain that the second line should
+start with a tab instead of a space (which would make the message
+really ugly) ?
 
-Thanks,
-Rakib
-
-
-Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
----
-
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index 966fedd..81de639 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -113,8 +113,6 @@ static DEFINE_SPINLOCK(acpi_ioremap_lock);
- #define	OSI_STRING_LENGTH_MAX 64	/* arbitrary */
- static char osi_setup_string[OSI_STRING_LENGTH_MAX];
-
--static void __init acpi_osi_setup_late(void);
--
- /*
-  * The story of _OSI(Linux)
-  *
-@@ -1530,7 +1528,7 @@ acpi_status __init acpi_os_initialize(void)
- 	return AE_OK;
- }
-
--acpi_status acpi_os_initialize1(void)
-+acpi_status __init acpi_os_initialize1(void)
- {
- 	kacpid_wq = create_workqueue("kacpid");
- 	kacpi_notify_wq = create_workqueue("kacpi_notify");
+Bart.
