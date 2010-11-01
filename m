@@ -1,187 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab0KAJCX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 05:02:23 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:35790 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753649Ab0KAJCV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 05:02:21 -0400
+	id S1755433Ab0KAJD0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 05:03:26 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:46997 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754740Ab0KAJDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 05:03:23 -0400
+Date: Mon, 1 Nov 2010 10:02:51 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Cc: linux-kernel@vger.kernel.org, h.mitake@gmail.com,
+        Ma Ling <ling.ma@intel.com>, Zhao Yakui <yakui.zhao@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 2/2] perf bench: add x86-64 specific benchmarks to perf
+ bench mem memcpy
+Message-ID: <20101101090251.GA28039@elte.hu>
+References: <1288368098-26121-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
+ <1288368098-26121-2-git-send-email-mitake@dcl.info.waseda.ac.jp>
+ <20101030192357.GC26503@elte.hu>
+ <4CCE51E6.7060908@dcl.info.waseda.ac.jp>
 MIME-Version: 1.0
-X-Originating-IP: [93.172.188.124]
-In-Reply-To: <4CCE74DB.8000206@arndnet.de>
-References: <4CCDA454.708@arndnet.de> <AANLkTin80pwnb1DX8OdZK3Wgsq0nj==G9VM3pahsmo0U@mail.gmail.com>
- <4CCDE4EB.7060001@arndnet.de> <AANLkTik52SVa0SC_RtNtgFu2U9Gye7BKtQ7jNgMPKe=W@mail.gmail.com>
- <4CCE74DB.8000206@arndnet.de>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Mon, 1 Nov 2010 11:02:00 +0200
-Message-ID: <AANLkTinhYqhcQor3PhTKoS3At3Tt2Qv5WAGSirfR8eNG@mail.gmail.com>
-Subject: Re: regression: b43-sdio: probe of mmc0:0001:1 failed with error -16
-To: Arnd Hannemann <arnd@arndnet.de>
-Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=000325574a52dc9bc50493fa10a7
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4CCE51E6.7060908@dcl.info.waseda.ac.jp>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---000325574a52dc9bc50493fa10a7
-Content-Type: text/plain; charset=ISO-8859-1
 
-On Mon, Nov 1, 2010 at 10:05 AM, Arnd Hannemann <arnd@arndnet.de> wrote:
-> No, actually mmc_sdio_init_card() is called _before_ sdio_bus_probe
+* Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp> wrote:
 
-Yes, it is called once at boot while the card is mmc_rescan()ed.
+> On 2010年10月31日 04:23, Ingo Molnar wrote:
+> >
+> >* Hitoshi Mitake<mitake@dcl.info.waseda.ac.jp>  wrote:
+> >
+> >>This patch adds new file: mem-memcpy-x86-64-asm.S
+> >>for x86-64 specific memcpy() benchmarking.
+> >>Added new benchmarks are,
+> >>  x86-64-rep:      memcpy() implemented with rep instruction
+> >>  x86-64-unrolled: unrolled memcpy()
+> >>
+> >>Original idea of including the source files of kernel
+> >>for benchmarking is suggested by Ingo Molnar.
+> >>This is more effective than write-once programs for quantitative
+> >>evaluation of in-kernel, little and leaf functions called high frequently.
+> >>Because perf bench is in kernel source tree and executing it
+> >>on various hardwares, especially new model CPUs, is easy.
+> >>
+> >>This way can also be used for other functions of kernel e.g. checksum functions.
+> >>
+> >>Example of usage on Core i3 M330:
+> >>
+> >>| % ./perf bench mem memcpy -l 500MB
+> >>| # Running mem/memcpy benchmark...
+> >>| # Copying 500MB Bytes from 0x7f911f94c010 to 0x7f913ed4d010 ...
+> >>|
+> >>|      578.732506 MB/Sec
+> >>| % ./perf bench mem memcpy -l 500MB -r x86-64-rep
+> >>| # Running mem/memcpy benchmark...
+> >>| # Copying 500MB Bytes from 0x7fb4b6fe4010 to 0x7fb4d63e5010 ...
+> >>|
+> >>|      738.184980 MB/Sec
+> >>| % ./perf bench mem memcpy -l 500MB -r x86-64-unrolled
+> >>| # Running mem/memcpy benchmark...
+> >>| # Copying 500MB Bytes from 0x7f6f2e668010 to 0x7f6f4da69010 ...
+> >>|
+> >>|      767.483269 MB/Sec
+> >>
+> >>This shows clearly that unrolled memcpy() is efficient
+> >>than rep version and glibc's one :)
+> >
+> >Hey, really cool output :-)
+> >
+> >Might also make sense to measure Ma Ling's patched version?
+> 
+> Does Ma Ling's patched version mean,
+> 
+> http://marc.info/?l=linux-kernel&m=128652296500989&w=2
+> 
+> the memcpy applied the patch of the URL?
+> (It seems that this patch was written by Miao Xie.)
+> 
+> I'll include the result of patched version in the next post.
 
-But that's not interesting, because the card is then powered down, and
-will only be powered on again when it is probed with a driver.
+(Indeed it is Miao Xie - sorry!)
 
-> Also mmd_sdio_resume is not called at all.
+> >># checkpatch.pl warns about two externs in bench/mem-memcpy.c
+> >># added by this patch. But I think it is no problem.
+> >
+> >You should put these:
+> >
+> >  +#ifdef ARCH_X86_64
+> >  +extern void *memcpy_x86_64_unrolled(void *to, const void *from, size_t len);
+> >  +extern void *memcpy_x86_64_rep(void *to, const void *from, size_t len);
+> >  +#endif
+> >
+> >into a .h file - a new one if needed.
+> >
+> >That will make both checkpatch and me happier ;-)
+> >
+> 
+> OK, I'll separate these files.
+> 
+> BTW, I found really interesting evaluation result.
+> Current results of "perf bench mem memcpy" include
+> the overhead of page faults because the measured memcpy()
+> is the first access to allocated memory area.
+> 
+> I tested the another version of perf bench mem memcpy,
+> which does memcpy() before measured memcpy() for removing
+> the overhead come from page faults.
+> 
+> And this is the result:
+> 
+> % ./perf bench mem memcpy -l 500MB -r x86-64-unrolled
+> # Running mem/memcpy benchmark...
+> # Copying 500MB Bytes from 0x7f19d488f010 to 0x7f19f3c90010 ...
+> 
+>        4.608340 GB/Sec
+> 
+> % ./perf bench mem memcpy -l 500MB
+> # Running mem/memcpy benchmark...
+> # Copying 500MB Bytes from 0x7f696c3cc010 to 0x7f698b7cd010 ...
+> 
+>        4.856442 GB/Sec
+> 
+> % ./perf bench mem memcpy -l 500MB -r x86-64-rep
+> # Running mem/memcpy benchmark...
+> # Copying 500MB Bytes from 0x7f45d6cff010 to 0x7f45f6100010 ...
+> 
+>        6.024445 GB/Sec
+> 
+> The relation of scores reversed!
+> I cannot explain the cause of this result, and
+> this is really interesting phenomenon.
 
-Sorry, I meant mmc_sdio_restore_host.
+Interesting indeed, and it would be nice to analyse that! (It should be possible, 
+using various PMU metrics in a clever way, to figure out what's happening inside the 
+CPU, right?)
 
-You should see something like this:
+> So I'd like to add new command line option,
+> like "--pre-page-faults" to perf bench mem memcpy,
+> for doing memcpy() before measured memcpy().
+> 
+> How do you think about this idea?
 
-sdio_bus_probe - >
-    ... (runtime PM function calls) ... ->
-           mmc_power_restore_host ->
-                 mmc_sdio_power_restore ->
-                        mmc_sdio_init_card -> ...
+Agreed. (Maybe name it --prefault, as 'prefaulting' is the term we generally use for 
+things like this.)
 
-We have 1 report where the latter mmc_sdio_init_card fails at this
-point, and I'm interested to know whether it fails for you, too (and
-if yes, where). If it is not even called, I'd appreciate if you can
-check out where does this flow break in your case.
-
-> No mmc_send_relative_addr() does _not_ return -110, actually it
-> is not called at all.
-
-OK.
-
-> I inserted a WARN_ON() in sdio_bus_probe, and here is the backtrace I get:
-
-The interesting part is actually what happens after sdio_bus_probe(),
-not before it.
-
-Is mmc_power_restore_host being called ? mmc_sdio_power_restore ?
-mmc_sdio_init_card ? etc...
-
-I'm also attaching a patch that requires hosts to explicitly indicate
-whether they support powering off/on their cards after boot (which
-would prevent SDIO core from powering off you card after boot since
-your host doesn't indicate that capability).
-
-Can you please see if the problem goes away with it ?
+An even better solution would be to output _both_ results by default, so that people 
+can see both characteristics at a glance?
 
 Thanks,
-Ohad.
 
---000325574a52dc9bc50493fa10a7
-Content-Type: text/x-patch; charset=US-ASCII; name="0001-mmc-add-MMC_CAP_RUNTIME_PM.patch"
-Content-Disposition: attachment; 
-	filename="0001-mmc-add-MMC_CAP_RUNTIME_PM.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gfz4dlia0
-
-RnJvbSA2YjU2OTFiZGQ4MTg0Y2MwODc2ZDIwOWM2OWQzODg0NGVhMTBmNjc4IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBPaGFkIEJlbi1Db2hlbiA8b2hhZEB3aXplcnkuY29tPgpEYXRl
-OiBNb24sIDEgTm92IDIwMTAgMDk6NDE6NDQgKzAyMDAKU3ViamVjdDogW1BBVENIXSBtbWM6IGFk
-ZCBNTUNfQ0FQX1JVTlRJTUVfUE0KClNvbWUgYm9hcmQvY2FyZC9ob3N0IGNvbmZpZ3VyYXRpb25z
-IGFyZSBub3QgY2FwYWJsZSBvZiBwb3dlcmluZyBvZmYvb24Kb24gdGhlIGNhcmQgZHVyaW5nIHJ1
-bnRpbWUuCgpUbyBzdXBwb3J0IHN1Y2ggY29uZmlndXJhdGlvbnMsIGFuZCB0byBhbGxvdyBzbW9v
-dGhlciB0cmFuc2l0aW9uIHRvCnJ1bnRpbWUgUE0gYmVoYXZpb3IsIE1NQ19DQVBfUlVOVElNRV9Q
-TSBpcyBhZGRlZCwgc28gaG9zdHMgbmVlZCB0bwpleHBsaWNpdGx5IGluZGljYXRlIHRoYXQgaXQn
-cyBPSyB0byBwb3dlciBvZmYgdGhlaXIgY2FyZHMgYWZ0ZXIgYm9vdC4KClRoaXMgd2lsbCBwcmV2
-ZW50IHNkaW9fYnVzX3Byb2JlKCkgZnJvbSBmYWlsaW5nIHRvIHBvd2VyIG9uIHRoZSBjYXJkCndo
-ZW4gdGhlIGRyaXZlciBpcyBsb2FkZWQgb24gc3VjaCBzZXR1cHMuCgpTaWduZWQtb2ZmLWJ5OiBP
-aGFkIEJlbi1Db2hlbiA8b2hhZEB3aXplcnkuY29tPgotLS0KIGRyaXZlcnMvbW1jL2NvcmUvc2Rp
-by5jICAgICB8ICAgMzcgKysrKysrKysrKysrKysrKysrKysrKystLS0tLS0tLS0tLS0tLQogZHJp
-dmVycy9tbWMvY29yZS9zZGlvX2J1cy5jIHwgICAzMyArKysrKysrKysrKysrKysrKysrKysrLS0t
-LS0tLS0tLS0KIGluY2x1ZGUvbGludXgvbW1jL2hvc3QuaCAgICB8ICAgIDEgKwogMyBmaWxlcyBj
-aGFuZ2VkLCA0NiBpbnNlcnRpb25zKCspLCAyNSBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9k
-cml2ZXJzL21tYy9jb3JlL3NkaW8uYyBiL2RyaXZlcnMvbW1jL2NvcmUvc2Rpby5jCmluZGV4IDZh
-OWFkNDAuLjM3M2Q1NmQgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvbW1jL2NvcmUvc2Rpby5jCisrKyBi
-L2RyaXZlcnMvbW1jL2NvcmUvc2Rpby5jCkBAIC01NDcsOSArNTQ3LDExIEBAIHN0YXRpYyB2b2lk
-IG1tY19zZGlvX2RldGVjdChzdHJ1Y3QgbW1jX2hvc3QgKmhvc3QpCiAJQlVHX09OKCFob3N0LT5j
-YXJkKTsKIAogCS8qIE1ha2Ugc3VyZSBjYXJkIGlzIHBvd2VyZWQgYmVmb3JlIGRldGVjdGluZyBp
-dCAqLwotCWVyciA9IHBtX3J1bnRpbWVfZ2V0X3N5bmMoJmhvc3QtPmNhcmQtPmRldik7Ci0JaWYg
-KGVyciA8IDApCi0JCWdvdG8gb3V0OworCWlmIChob3N0LT5jYXBzICYgTU1DX0NBUF9SVU5USU1F
-X1BNKSB7CisJCWVyciA9IHBtX3J1bnRpbWVfZ2V0X3N5bmMoJmhvc3QtPmNhcmQtPmRldik7CisJ
-CWlmIChlcnIgPCAwKQorCQkJZ290byBvdXQ7CisJfQogCiAJbW1jX2NsYWltX2hvc3QoaG9zdCk7
-CiAKQEAgLTU3MCw3ICs1NzIsOCBAQCBvdXQ6CiAJfQogCiAJLyogVGVsbCBQTSBjb3JlIHRoYXQg
-d2UncmUgZG9uZSAqLwotCXBtX3J1bnRpbWVfcHV0KCZob3N0LT5jYXJkLT5kZXYpOworCWlmICho
-b3N0LT5jYXBzICYgTU1DX0NBUF9SVU5USU1FX1BNKQorCQlwbV9ydW50aW1lX3B1dCgmaG9zdC0+
-Y2FyZC0+ZGV2KTsKIH0KIAogLyoKQEAgLTcyMCwxNiArNzIzLDIxIEBAIGludCBtbWNfYXR0YWNo
-X3NkaW8oc3RydWN0IG1tY19ob3N0ICpob3N0LCB1MzIgb2NyKQogCWNhcmQgPSBob3N0LT5jYXJk
-OwogCiAJLyoKLQkgKiBMZXQgcnVudGltZSBQTSBjb3JlIGtub3cgb3VyIGNhcmQgaXMgYWN0aXZl
-CisJICogRW5hYmxlIHJ1bnRpbWUgUE0gb25seSBpZiBzdXBwb3J0ZWQgYnkgaG9zdCtjYXJkK2Jv
-YXJkCiAJICovCi0JZXJyID0gcG1fcnVudGltZV9zZXRfYWN0aXZlKCZjYXJkLT5kZXYpOwotCWlm
-IChlcnIpCi0JCWdvdG8gcmVtb3ZlOworCWlmIChob3N0LT5jYXBzICYgTU1DX0NBUF9SVU5USU1F
-X1BNKSB7CisJCS8qCisJCSAqIExldCBydW50aW1lIFBNIGNvcmUga25vdyBvdXIgY2FyZCBpcyBh
-Y3RpdmUKKwkJICovCisJCWVyciA9IHBtX3J1bnRpbWVfc2V0X2FjdGl2ZSgmY2FyZC0+ZGV2KTsK
-KwkJaWYgKGVycikKKwkJCWdvdG8gcmVtb3ZlOwogCi0JLyoKLQkgKiBFbmFibGUgcnVudGltZSBQ
-TSBmb3IgdGhpcyBjYXJkCi0JICovCi0JcG1fcnVudGltZV9lbmFibGUoJmNhcmQtPmRldik7CisJ
-CS8qCisJCSAqIEVuYWJsZSBydW50aW1lIFBNIGZvciB0aGlzIGNhcmQKKwkJICovCisJCXBtX3J1
-bnRpbWVfZW5hYmxlKCZjYXJkLT5kZXYpOworCX0KIAogCS8qCiAJICogVGhlIG51bWJlciBvZiBm
-dW5jdGlvbnMgb24gdGhlIGNhcmQgaXMgZW5jb2RlZCBpbnNpZGUKQEAgLTc0Nyw5ICs3NTUsMTAg
-QEAgaW50IG1tY19hdHRhY2hfc2RpbyhzdHJ1Y3QgbW1jX2hvc3QgKmhvc3QsIHUzMiBvY3IpCiAJ
-CQlnb3RvIHJlbW92ZTsKIAogCQkvKgotCQkgKiBFbmFibGUgUnVudGltZSBQTSBmb3IgdGhpcyBm
-dW5jCisJCSAqIEVuYWJsZSBSdW50aW1lIFBNIGZvciB0aGlzIGZ1bmMgKGlmIHN1cHBvcnRlZCkK
-IAkJICovCi0JCXBtX3J1bnRpbWVfZW5hYmxlKCZjYXJkLT5zZGlvX2Z1bmNbaV0tPmRldik7CisJ
-CWlmIChob3N0LT5jYXBzICYgTU1DX0NBUF9SVU5USU1FX1BNKQorCQkJcG1fcnVudGltZV9lbmFi
-bGUoJmNhcmQtPnNkaW9fZnVuY1tpXS0+ZGV2KTsKIAl9CiAKIAltbWNfcmVsZWFzZV9ob3N0KGhv
-c3QpOwpkaWZmIC0tZ2l0IGEvZHJpdmVycy9tbWMvY29yZS9zZGlvX2J1cy5jIGIvZHJpdmVycy9t
-bWMvY29yZS9zZGlvX2J1cy5jCmluZGV4IDI3MTZjN2EuLmYzY2UyMWIgMTAwNjQ0Ci0tLSBhL2Ry
-aXZlcnMvbW1jL2NvcmUvc2Rpb19idXMuYworKysgYi9kcml2ZXJzL21tYy9jb3JlL3NkaW9fYnVz
-LmMKQEAgLTE3LDYgKzE3LDcgQEAKICNpbmNsdWRlIDxsaW51eC9wbV9ydW50aW1lLmg+CiAKICNp
-bmNsdWRlIDxsaW51eC9tbWMvY2FyZC5oPgorI2luY2x1ZGUgPGxpbnV4L21tYy9ob3N0Lmg+CiAj
-aW5jbHVkZSA8bGludXgvbW1jL3NkaW9fZnVuYy5oPgogCiAjaW5jbHVkZSAic2Rpb19jaXMuaCIK
-QEAgLTEzMiw5ICsxMzMsMTEgQEAgc3RhdGljIGludCBzZGlvX2J1c19wcm9iZShzdHJ1Y3QgZGV2
-aWNlICpkZXYpCiAJICogaXQgc2hvdWxkIGNhbGwgcG1fcnVudGltZV9wdXRfbm9pZGxlKCkgaW4g
-aXRzIHByb2JlIHJvdXRpbmUgYW5kCiAJICogcG1fcnVudGltZV9nZXRfbm9yZXN1bWUoKSBpbiBp
-dHMgcmVtb3ZlIHJvdXRpbmUuCiAJICovCi0JcmV0ID0gcG1fcnVudGltZV9nZXRfc3luYyhkZXYp
-OwotCWlmIChyZXQgPCAwKQotCQlnb3RvIG91dDsKKwlpZiAoZnVuYy0+Y2FyZC0+aG9zdC0+Y2Fw
-cyAmIE1NQ19DQVBfUlVOVElNRV9QTSkgeworCQlyZXQgPSBwbV9ydW50aW1lX2dldF9zeW5jKGRl
-dik7CisJCWlmIChyZXQgPCAwKQorCQkJZ290byBvdXQ7CisJfQogCiAJLyogU2V0IHRoZSBkZWZh
-dWx0IGJsb2NrIHNpemUgc28gdGhlIGRyaXZlciBpcyBzdXJlIGl0J3Mgc29tZXRoaW5nCiAJICog
-c2Vuc2libGUuICovCkBAIC0xNTEsNyArMTU0LDggQEAgc3RhdGljIGludCBzZGlvX2J1c19wcm9i
-ZShzdHJ1Y3QgZGV2aWNlICpkZXYpCiAJcmV0dXJuIDA7CiAKIGRpc2FibGVfcnVudGltZXBtOgot
-CXBtX3J1bnRpbWVfcHV0X25vaWRsZShkZXYpOworCWlmIChmdW5jLT5jYXJkLT5ob3N0LT5jYXBz
-ICYgTU1DX0NBUF9SVU5USU1FX1BNKQorCQlwbV9ydW50aW1lX3B1dF9ub2lkbGUoZGV2KTsKIG91
-dDoKIAlyZXR1cm4gcmV0OwogfQpAQCAtMTYwLDEyICsxNjQsMTQgQEAgc3RhdGljIGludCBzZGlv
-X2J1c19yZW1vdmUoc3RydWN0IGRldmljZSAqZGV2KQogewogCXN0cnVjdCBzZGlvX2RyaXZlciAq
-ZHJ2ID0gdG9fc2Rpb19kcml2ZXIoZGV2LT5kcml2ZXIpOwogCXN0cnVjdCBzZGlvX2Z1bmMgKmZ1
-bmMgPSBkZXZfdG9fc2Rpb19mdW5jKGRldik7Ci0JaW50IHJldDsKKwlpbnQgcmV0ID0gMDsKIAog
-CS8qIE1ha2Ugc3VyZSBjYXJkIGlzIHBvd2VyZWQgYmVmb3JlIGludm9raW5nIC0+cmVtb3ZlKCkg
-Ki8KLQlyZXQgPSBwbV9ydW50aW1lX2dldF9zeW5jKGRldik7Ci0JaWYgKHJldCA8IDApCi0JCWdv
-dG8gb3V0OworCWlmIChmdW5jLT5jYXJkLT5ob3N0LT5jYXBzICYgTU1DX0NBUF9SVU5USU1FX1BN
-KSB7CisJCXJldCA9IHBtX3J1bnRpbWVfZ2V0X3N5bmMoZGV2KTsKKwkJaWYgKHJldCA8IDApCisJ
-CQlnb3RvIG91dDsKKwl9CiAKIAlkcnYtPnJlbW92ZShmdW5jKTsKIApAQCAtMTc4LDEwICsxODQs
-MTIgQEAgc3RhdGljIGludCBzZGlvX2J1c19yZW1vdmUoc3RydWN0IGRldmljZSAqZGV2KQogCX0K
-IAogCS8qIEZpcnN0LCB1bmRvIHRoZSBpbmNyZW1lbnQgbWFkZSBkaXJlY3RseSBhYm92ZSAqLwot
-CXBtX3J1bnRpbWVfcHV0X25vaWRsZShkZXYpOworCWlmIChmdW5jLT5jYXJkLT5ob3N0LT5jYXBz
-ICYgTU1DX0NBUF9SVU5USU1FX1BNKQorCQlwbV9ydW50aW1lX3B1dF9ub2lkbGUoZGV2KTsKIAog
-CS8qIFRoZW4gdW5kbyB0aGUgcnVudGltZSBQTSBzZXR0aW5ncyBpbiBzZGlvX2J1c19wcm9iZSgp
-ICovCi0JcG1fcnVudGltZV9wdXRfbm9pZGxlKGRldik7CisJaWYgKGZ1bmMtPmNhcmQtPmhvc3Qt
-PmNhcHMgJiBNTUNfQ0FQX1JVTlRJTUVfUE0pCisJCXBtX3J1bnRpbWVfcHV0X25vaWRsZShkZXYp
-OwogCiBvdXQ6CiAJcmV0dXJuIHJldDsKQEAgLTE5MSw2ICsxOTksOCBAQCBvdXQ6CiAKIHN0YXRp
-YyBpbnQgc2Rpb19idXNfcG1fcHJlcGFyZShzdHJ1Y3QgZGV2aWNlICpkZXYpCiB7CisJc3RydWN0
-IHNkaW9fZnVuYyAqZnVuYyA9IGRldl90b19zZGlvX2Z1bmMoZGV2KTsKKwogCS8qCiAJICogUmVz
-dW1lIGFuIFNESU8gZGV2aWNlIHdoaWNoIHdhcyBzdXNwZW5kZWQgYXQgcnVuIHRpbWUgYXQgdGhp
-cwogCSAqIHBvaW50LCBpbiBvcmRlciB0byBhbGxvdyBzdGFuZGFyZCBTRElPIHN1c3BlbmQvcmVz
-dW1lIHBhdGhzCkBAIC0yMTIsNyArMjIyLDggQEAgc3RhdGljIGludCBzZGlvX2J1c19wbV9wcmVw
-YXJlKHN0cnVjdCBkZXZpY2UgKmRldikKIAkgKiBzaW5jZSB0aGVyZSBpcyBsaXR0bGUgcG9pbnQg
-aW4gZmFpbGluZyBzeXN0ZW0gc3VzcGVuZCBpZiBhCiAJICogZGV2aWNlIGNhbid0IGJlIHJlc3Vt
-ZWQuCiAJICovCi0JcG1fcnVudGltZV9yZXN1bWUoZGV2KTsKKwlpZiAoZnVuYy0+Y2FyZC0+aG9z
-dC0+Y2FwcyAmIE1NQ19DQVBfUlVOVElNRV9QTSkKKwkJcG1fcnVudGltZV9yZXN1bWUoZGV2KTsK
-IAogCXJldHVybiAwOwogfQpkaWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51eC9tbWMvaG9zdC5oIGIv
-aW5jbHVkZS9saW51eC9tbWMvaG9zdC5oCmluZGV4IGMzZmZhZDguLmU1ZWVlMGUgMTAwNjQ0Ci0t
-LSBhL2luY2x1ZGUvbGludXgvbW1jL2hvc3QuaAorKysgYi9pbmNsdWRlL2xpbnV4L21tYy9ob3N0
-LmgKQEAgLTE2Nyw2ICsxNjcsNyBAQCBzdHJ1Y3QgbW1jX2hvc3QgewogCQkJCQkJLyogRERSIG1v
-ZGUgYXQgMS44ViAqLwogI2RlZmluZSBNTUNfQ0FQXzFfMlZfRERSCSgxIDw8IDEyKQkvKiBjYW4g
-c3VwcG9ydCAqLwogCQkJCQkJLyogRERSIG1vZGUgYXQgMS4yViAqLworI2RlZmluZSBNTUNfQ0FQ
-X1JVTlRJTUVfUE0JKDEgPDwgMTMpCS8qIENhbiBwb3dlciBvZmYvb24gaW4gcnVudGltZSAqLwog
-CiAJbW1jX3BtX2ZsYWdfdAkJcG1fY2FwczsJLyogc3VwcG9ydGVkIHBtIGZlYXR1cmVzICovCiAK
-LS0gCjEuNy4wLjQKCg==
---000325574a52dc9bc50493fa10a7--
+	Ingo
