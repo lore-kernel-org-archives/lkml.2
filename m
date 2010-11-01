@@ -1,155 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756187Ab0KAJhW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 05:37:22 -0400
-Received: from smtpeu1.atmel.com ([195.65.72.27]:39259 "EHLO bagnes.atmel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751456Ab0KAJhU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 05:37:20 -0400
-Subject: Re: [PATCH 6/6] avr32: deal with syscall restarts
-From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-To: Al Viro <viro@ftp.linux.org.uk>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-In-Reply-To: <E1P0QOT-0008TU-0m@ZenIV.linux.org.uk>
-References: <E1P0QOT-0008TU-0m@ZenIV.linux.org.uk>
+	id S1756375Ab0KAJiT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 05:38:19 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:63447 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab0KAJiP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 05:38:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=NOiqIO6+av70MDq3uuIui3en1FU184mZeuykaWJEwu69OVORp8SSymb+cSc1iO56+M
+         2NRUZ6breEV+JVP2zf8CNPEc4fmViM3AgORbGyY4D422Dh8iyxE2n00tA96Sw9K1NQpN
+         bRuAx666CsZjFEMpBeC7NfKBXth/VXBSn0nGY=
+Subject: Re: [PATCH 3/3] fs: rcu protect inode hash lookups
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1288589624-15251-4-git-send-email-david@fromorbit.com>
+References: <1288589624-15251-1-git-send-email-david@fromorbit.com>
+	 <1288589624-15251-4-git-send-email-david@fromorbit.com>
 Content-Type: text/plain; charset="UTF-8"
-Organization: Atmel Corporation
-Date: Mon, 01 Nov 2010 10:37:05 +0100
-Message-ID: <1288604225.2843.69.camel@hcegtvedt>
+Date: Mon, 01 Nov 2010 10:38:07 +0100
+Message-ID: <1288604287.2660.94.camel@edumazet-laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 01 Nov 2010 09:37:05.0990 (UTC) FILETIME=[58B4C660:01CB79A8]
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-09-28 at 03:58 +0100, Al Viro wrote: 
-> Currently we both have signals arriving at sigreturn trigger syscall restart
-> when the original handler hadn't been in the syscall at all *and* have
-> multiple pending signals trigger the sitation when %pc is shifted back by
-> more than one insn.
+Le lundi 01 novembre 2010 à 16:33 +1100, Dave Chinner a écrit :
+> From: Dave Chinner <dchinner@redhat.com>
 > 
-> a) take handling of reschedule, signals and keychains into a new helper -
-> work_pending().  All looping is done there now; asm glue calls that if
-> we have anything for it to do.
-
-Am I the only one getting a conflict with the work_pending() function in
-include/linux/workqueue.h?
-
-> b) do_signal() gets explicit "may restart" flag as an argument; after
-> the first call during that loop it gets unconditional 0.
+> Now that inodes are using RCU freeing, we can walk the hash lists
+> using RCU protection during lookups. Convert all the hash list
+> operations to use RCU-based operators and drop the inode_hash_lock
+> around pure lookup operations.
 > 
-> c) sigreturn() sets a thread flag - TIF_NORESTART.  It is included into
-> the "work_pending() has something to do" mask.  work_pending() clears
-> it, clearing its may_restart flag if it had done so.
+> Signed-off-by: Dave Chinner <dchinner@redhat.com>
 
-Both sounds and look sane further below.
+You probably should copy Paul on this stuff, I added him in Cc, because
+SLAB_DESTROY_BY_RCU is really tricky, and Paul review is a must.
 
-> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 > ---
->  arch/avr32/include/asm/thread_info.h |    3 ++
->  arch/avr32/kernel/entry-avr32b.S     |   45 ++++------------------------
->  arch/avr32/kernel/signal.c           |   55 ++++++++++++++++++++++++----------
->  3 files changed, 48 insertions(+), 55 deletions(-)
+>  fs/inode.c |   89 ++++++++++++++++++++++++++++++++++++++---------------------
+>  1 files changed, 57 insertions(+), 32 deletions(-)
 > 
-> diff --git a/arch/avr32/include/asm/thread_info.h b/arch/avr32/include/asm/thread_info.h
-> index 7a9c03d..1e8fa49 100644
-> --- a/arch/avr32/include/asm/thread_info.h
-> +++ b/arch/avr32/include/asm/thread_info.h
-> @@ -85,6 +85,7 @@ static inline struct thread_info *current_thread_info(void)
->  #define TIF_RESTORE_SIGMASK	7	/* restore signal mask in do_signal */
->  #define TIF_CPU_GOING_TO_SLEEP	8	/* CPU is entering sleep 0 mode */
->  #define TIF_NOTIFY_RESUME	9	/* callback before returning to user */
-> +#define TIF_NORESTART		10
-
-Please add a comment after the define.
-
-<snipp>
-
-> diff --git a/arch/avr32/kernel/entry-avr32b.S b/arch/avr32/kernel/entry-avr32b.S
-> index 5e6beb2..bb455b7 100644
-> --- a/arch/avr32/kernel/entry-avr32b.S
-> +++ b/arch/avr32/kernel/entry-avr32b.S
-> @@ -271,28 +271,11 @@ syscall_exit_work:
->  	unmask_interrupts
->  	call	syscall_trace
->  	mask_interrupts
-> -	ld.w	r1, r0[TI_flags]
-> -
-> -1:	bld	r1, TIF_NEED_RESCHED
-
-Hmmm...
-
-@ line 268
-syscall_exit_work:
-bld r1, TIF_SYSCALL_TRACE
-brcc 1f
-
-Which refers to the 1: label you remove here.
-
-> -	brcc	2f
-> -	unmask_interrupts
-> -	call	schedule
-> -	mask_interrupts
-> -	ld.w	r1, r0[TI_flags]
-> -	rjmp	1b
-> -
-> -2:	mov	r2, _TIF_SIGPENDING | _TIF_RESTORE_SIGMASK | _TIF_NOTIFY_RESUME
-> -	tst	r1, r2
-> -	breq	3f
-> -	unmask_interrupts
->  	mov	r12, sp
-
-Make a 1: label at this line should do the trick AFAICT.
-
-<snipp>
-
-> diff --git a/arch/avr32/kernel/signal.c b/arch/avr32/kernel/signal.c
-> index 8e8f6ba..c4c76f5 100644
-> --- a/arch/avr32/kernel/signal.c
-> +++ b/arch/avr32/kernel/signal.c
-> @@ -45,6 +45,8 @@ restore_sigcontext(struct pt_regs *regs, struct sigcontext __user *sc)
->  	/* Always make any pending restarted system calls return -EINTR */
->  	current_thread_info()->restart_block.fn = do_no_restart_syscall;
->  
-> +	set_thread_flag(TIF_NORESTART);
-> +
->  #define COPY(x)		err |= __get_user(regs->x, &sc->x)
->  	COPY(sr);
->  	COPY(pc);
-> @@ -264,7 +266,7 @@ fail:
->   * doesn't want to handle. Thus you cannot kill init even with a
->   * SIGKILL even by mistake.
+> diff --git a/fs/inode.c b/fs/inode.c
+> index 106ec7a..6bead3d 100644
+> --- a/fs/inode.c
+> +++ b/fs/inode.c
+> @@ -50,11 +50,12 @@
+>   *   inode->i_lock
+>   *
+>   * inode_hash_lock
+> - *   inode_sb_list_lock
+> - *   inode->i_lock
+> + *   rcu_read_lock
+> + *     inode_sb_list_lock
+> + *     inode->i_lock
+>   *
+>   * iunique_lock
+> - *   inode_hash_lock
+> + *   rcu_read_lock
 >   */
-> -static void do_signal(struct pt_regs *regs, int syscall)
-> +static void do_signal(struct pt_regs *regs, int may_restart)
->  {
->  	siginfo_t info;
->  	int signr;
-> @@ -285,7 +287,7 @@ static void do_signal(struct pt_regs *regs, int syscall)
->  		oldset = &current->blocked;
 >  
->  	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
-> -	if (syscall) {
-> +	if (may_restart) {
->  		switch (regs->r12) {
->  		case -ERESTART_RESTARTBLOCK:
->  		case -ERESTARTNOHAND:
-> @@ -317,20 +319,41 @@ static void do_signal(struct pt_regs *regs, int syscall)
->  	handle_signal(signr, &ka, &info, oldset, regs);
+>  /*
+> @@ -413,7 +414,7 @@ void __insert_inode_hash(struct inode *inode, unsigned long hashval)
+>  
+>  	spin_lock(&inode_hash_lock);
+>  	spin_lock(&inode->i_lock);
+> -	hlist_add_head(&inode->i_hash, b);
+> +	hlist_add_head_rcu(&inode->i_hash, b);
+>  	spin_unlock(&inode->i_lock);
+>  	spin_unlock(&inode_hash_lock);
+>  }
+> @@ -429,7 +430,7 @@ void remove_inode_hash(struct inode *inode)
+>  {
+>  	spin_lock(&inode_hash_lock);
+>  	spin_lock(&inode->i_lock);
+> -	hlist_del_init(&inode->i_hash);
+> +	hlist_del_init_rcu(&inode->i_hash);
+>  	spin_unlock(&inode->i_lock);
+>  	spin_unlock(&inode_hash_lock);
+>  }
+> @@ -741,26 +742,38 @@ static void __wait_on_freeing_inode(struct inode *inode);
+>  static struct inode *find_inode(struct super_block *sb,
+>  				struct hlist_head *head,
+>  				int (*test)(struct inode *, void *),
+> -				void *data)
+> +				void *data, bool locked)
+>  {
+>  	struct hlist_node *node;
+>  	struct inode *inode = NULL;
+>  
+>  repeat:
+> +	rcu_read_lock();
+>  	hlist_for_each_entry(inode, node, head, i_hash) {
+>  		if (inode->i_sb != sb)
+>  			continue;
+>  		if (!test(inode, data))
+>  			continue;
+>  		spin_lock(&inode->i_lock);
+
+Problem with SLAB_DESTROY_BY_RCU is the inode can be freed, and reused
+immediately (no grace period) by another cpu.
+
+So you need to recheck test(inode, data) _after_ getting a stable
+reference on the inode (spin_lock() in this case), to make sure you
+indeed found the inode you are looking for, not another one.
+
+The test on inode->i_sb != sb can be omitted, _if_ each sb has its own
+kmem_cache (but I am not sure, please check if this is the case)
+
+Also, you should make sure the allocation of inode is careful of not
+overwriting some fields (the i_lock in particular), since you could
+break a concurrent lookup. This is really tricky, you cannot use
+spin_lock_init(&inode->i_lock) anymore in inode_init_always().
+
+You can read Documentation/RCU/rculist_nulls.txt for some doc I wrote
+when adding SLAB_DESTROY_BY_RCU to UDP/TCP sockets. Sockets stable
+reference is not a spinlock, but a refcount, so it was easier to init
+this refcount. With a spinlock, I believe you might need to use SLAB
+constructor, to initialize the spinlock only on fresh objects, not on
+reused ones.
+
+> +		if (inode_unhashed(inode)) {
+> +			spin_unlock(&inode->i_lock);
+> +			continue;
+> +		}
+>  		if (inode->i_state & (I_FREEING|I_WILL_FREE)) {
+> +			rcu_read_unlock();
+> +			if (locked)
+> +				spin_unlock(&inode_hash_lock);
+>  			__wait_on_freeing_inode(inode);
+> +			if (locked)
+> +				spin_lock(&inode_hash_lock);
+>  			goto repeat;
+>  		}
+>  		__iget(inode);
+>  		spin_unlock(&inode->i_lock);
+> +		rcu_read_unlock();
+>  		return inode;
+>  	}
+> +	rcu_read_unlock();
+>  	return NULL;
 >  }
 >  
-> -asmlinkage void do_notify_resume(struct pt_regs *regs, struct thread_info *ti)
-> +asmlinkage int work_pending(struct pt_regs *regs, struct thread_info *ti, int may_restart)
+> @@ -769,26 +782,39 @@ repeat:
+>   * iget_locked for details.
+>   */
+>  static struct inode *find_inode_fast(struct super_block *sb,
+> -				struct hlist_head *head, unsigned long ino)
+> +				struct hlist_head *head, unsigned long ino,
+> +				bool locked)
+>  {
+>  	struct hlist_node *node;
+>  	struct inode *inode = NULL;
+>  
+>  repeat:
+> +	rcu_read_lock();
+>  	hlist_for_each_entry(inode, node, head, i_hash) {
+>  		if (inode->i_ino != ino)
+>  			continue;
+>  		if (inode->i_sb != sb)
+>  			continue;
+>  		spin_lock(&inode->i_lock);
 
-I get a conflict with a similar function declared in
-include/linux/workqueue.h. Also, please brake it over multiple lines as
-it is wider than 80 characters.
+same here, you must recheck if (inode->i_ino != ino)
 
-<snipp>
+> +		if (inode_unhashed(inode)) {
+> +			spin_unlock(&inode->i_lock);
+> +			continue;
+> +		}
+>  		if (inode->i_state & (I_FREEING|I_WILL_FREE)) {
+> +			rcu_read_unlock();
+> +			if (locked)
+> +				spin_unlock(&inode_hash_lock);
+>  			__wait_on_freeing_inode(inode);
+> +			if (locked)
+> +				spin_lock(&inode_hash_lock);
+>  			goto repeat;
+>  		}
+>  		__iget(inode);
+>  		spin_unlock(&inode->i_lock);
+> +		rcu_read_unlock();
+>  		return inode;
+>  	}
+> +	rcu_read_unlock();
+>  	return NULL;
+>  }
+>  
+> @@ -913,14 +939,14 @@ static struct inode *get_new_inode(struct super_block *sb,
+>  
+>  		spin_lock(&inode_hash_lock);
+>  		/* We released the lock, so.. */
+> -		old = find_inode(sb, head, test, data);
+> +		old = find_inode(sb, head, test, data, true);
+>  		if (!old) {
+>  			if (set(inode, data))
+>  				goto set_failed;
+>  
+>  			spin_lock(&inode->i_lock);
+>  			inode->i_state = I_NEW;
+> -			hlist_add_head(&inode->i_hash, head);
+> +			hlist_add_head_rcu(&inode->i_hash, head);
+>  			spin_unlock(&inode->i_lock);
+>  			inode_sb_list_add(inode);
+>  			spin_unlock(&inode_hash_lock);
+> @@ -964,12 +990,12 @@ static struct inode *get_new_inode_fast(struct super_block *sb,
+>  
+>  		spin_lock(&inode_hash_lock);
+>  		/* We released the lock, so.. */
+> -		old = find_inode_fast(sb, head, ino);
+> +		old = find_inode_fast(sb, head, ino, true);
+>  		if (!old) {
+>  			inode->i_ino = ino;
+>  			spin_lock(&inode->i_lock);
+>  			inode->i_state = I_NEW;
+> -			hlist_add_head(&inode->i_hash, head);
+> +			hlist_add_head_rcu(&inode->i_hash, head);
+>  			spin_unlock(&inode->i_lock);
+>  			inode_sb_list_add(inode);
+>  			spin_unlock(&inode_hash_lock);
+> @@ -1006,15 +1032,22 @@ static int test_inode_iunique(struct super_block *sb, unsigned long ino)
+>  	struct hlist_node *node;
+>  	struct inode *inode;
+>  
+> -	spin_lock(&inode_hash_lock);
+> -	hlist_for_each_entry(inode, node, b, i_hash) {
+> -		if (inode->i_ino == ino && inode->i_sb == sb) {
+> -			spin_unlock(&inode_hash_lock);
+> -			return 0;
+> +	rcu_read_lock();
+> +	hlist_for_each_entry_rcu(inode, node, b, i_hash) {
+> +		if (inode->i_ino != ino)
+> +			continue;
+> +		if (inode->i_sb != sb)
+> +			continue;
+> +		spin_lock(&inode->i_lock);
 
--- 
-Hans-Christian Egtvedt
+same here
+
+> +		if (inode_unhashed(inode)) {
+> +			spin_unlock(&inode->i_lock);
+> +			continue;
+>  		}
+> +		spin_unlock(&inode->i_lock);
+> +		rcu_read_unlock();
+> +		return 0;
+>  	}
+> -	spin_unlock(&inode_hash_lock);
+> -
+> +	rcu_read_unlock();
+>  	return 1;
+>  }
+
 
