@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab0KAXrI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 19:47:08 -0400
-Received: from 34.97.116-78.rev.gaoland.net ([78.116.97.34]:39615 "EHLO
-	electric-eye.fr.zoreil.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752013Ab0KAXrA (ORCPT
+	id S1752468Ab0KAXy5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 19:54:57 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:43395 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751093Ab0KAXyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 19:47:00 -0400
-Date: Tue, 2 Nov 2010 00:46:30 +0100
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Daniel J Blueman <daniel.blueman@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [2.6.37-rc1, patch] r8169: fix sleeping while holding spinlock...
-Message-ID: <20101101234630.GA12106@electric-eye.fr.zoreil.com>
-References: <AANLkTimZvwdY8Q+=iGMC2MhPt_Vow38a0SE9g4ij-cRe@mail.gmail.com>
+	Mon, 1 Nov 2010 19:54:54 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
+Message-ID: <4CCF53A9.1060306@np.css.fujitsu.com>
+Date: Tue, 02 Nov 2010 08:56:25 +0900
+From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimZvwdY8Q+=iGMC2MhPt_Vow38a0SE9g4ij-cRe@mail.gmail.com>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andi Kleen <andi@firstfloor.org>
+CC: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        "H.Peter Anvin" <hpa@zytor.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        LKLM <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] [x86, next] Add mce_sys_info interface for debug.
+References: <4CCA50AF.1030302@np.css.fujitsu.com> <20101029081003.GB11149@basil.fritz.box> <4CCE04C7.3050803@np.css.fujitsu.com> <20101101140057.GD25817@basil.fritz.box>
+In-Reply-To: <20101101140057.GD25817@basil.fritz.box>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel J Blueman <daniel.blueman@gmail.com> :
-> Recent changes to the r8169 driver cause it to call
-> device_set_wakeup_enable under spinlock, which may sleep.
+Hi, Andi
+(2010/11/01 23:00), Andi Kleen wrote:
+> On Mon, Nov 01, 2010 at 09:07:35AM +0900, Jin Dongming wrote:
+>> Hi, Andi
+>>
+>> Thanks for your review.
+>> I will cancel this patch.
+>>
+>> But I suggested there is such kind of tool for mce test.
+>> It really costs too much time to confirm them one by one.
+> 
+> I would suggest to write a shell script and put it to download
+> somewhere. We could add a reference to it to the kernel documentation.
+> 
+> -Andi
 
-The change is fine but the description is misleading : the r8169
-driver has been issuing device_set_wakeup_enable under spinlock since
-october 2008. device_set_wakeup_enable did not sleep until recently
-(see f2dc0d1809ab7e0147c7e4ac837be1682f706538 for instance).
+It sounds great.
+Thank you.
 
-drivers/net/gianfar_ethtool.c::gfar_set_wol is broken as well when
-CONFIG_PM is set.
+Best Regards,
+Jin Dongming
+ 
 
--- 
-Ueimor
+
