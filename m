@@ -1,144 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751291Ab0KAXSo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 19:18:44 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:32905 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754Ab0KAXSn (ORCPT
+	id S1751611Ab0KAXVr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 19:21:47 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:43786 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754Ab0KAXVo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 19:18:43 -0400
-Message-ID: <4CCF4AB3.8070505@kernel.org>
-Date: Mon, 01 Nov 2010 16:18:11 -0700
-From: "J.H." <warthog9@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.7
+	Mon, 1 Nov 2010 19:21:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=WwW9lC1MiQJWhhJej8c/DF3SwbXqYVhYNadNcE/w01C5QClxn8t6LhzNmRzrQqT16Q
+         KlN3bd6/5tznH7NvRgQDU3PHe0FnrOceoiUuokvYrD14fNta5+o8tzi6MeYH7vC1FY4C
+         96t4hBKqNcGfNvgNvtLyBi74n38MhDmBZtKLk=
 MIME-Version: 1.0
-To: users@kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [kernel.org users] [KORG] Master / hera upgrade	&	downtime	announcement
-References: <4CCB3158.9010406@kernel.org> <4CCF24F0.5050704@kernel.org> <4CCF3AA1.8050804@kernel.org>
-In-Reply-To: <4CCF3AA1.8050804@kernel.org>
-X-Enigmail-Version: 1.0.1
+In-Reply-To: <alpine.LNX.2.00.1011012056250.12889@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1011012038490.12889@swampdragon.chaosbits.net>
+	<20101101200122.GH840@cmpxchg.org>
+	<alpine.LNX.2.00.1011012056250.12889@swampdragon.chaosbits.net>
+Date: Tue, 2 Nov 2010 08:21:43 +0900
+Message-ID: <AANLkTinAHXcG+ar2Wd9QjT58OOory_g87Tv4LnN53L-6@mail.gmail.com>
+Subject: Re: [PATCH] cgroup: prefer [kv]zalloc over [kv]malloc+memset in
+ memory controller code.
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Pavel Emelianov <xemul@openvz.org>, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.3 (shards.monkeyblade.net [198.137.202.13]); Mon, 01 Nov 2010 16:18:12 -0700 (PDT)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Tue, Nov 2, 2010 at 4:59 AM, Jesper Juhl <jj@chaosbits.net> wrote:
+> On Mon, 1 Nov 2010, Johannes Weiner wrote:
+>
+>> On Mon, Nov 01, 2010 at 08:40:56PM +0100, Jesper Juhl wrote:
+>> > Hi (please CC me on replies),
+>> >
+>> >
+>> > Apologies to those who receive this multiple times. I screwed up the To:
+>> > field in my original mail :-(
+>> >
+>> >
+>> > In mem_cgroup_alloc() we currently do either kmalloc() or vmalloc() then
+>> > followed by memset() to zero the memory. This can be more efficiently
+>> > achieved by using kzalloc() and vzalloc().
+>> >
+>> >
+>> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+>>
+>> Looks good to me, but there is also the memset after kmalloc in
+>> alloc_mem_cgroup_per_zone_info().
+>
+> Dang, I missed that one. Thanks for pointing it out.
+>
+> Hmm, I'm wondering if we should perhaps add kzalloc_node()/vzalloc_node()
+> just like kzalloc() and vzalloc()..
 
-Ergh,
+I am not against that.
+As looking code, there are many places to use kzalloc_node but few vzalloc_node.
+Although it is, Only adding kzalloc_node would make code rather ugly like this.
 
-Heads up apparently the server lied to me and claimed the drives were
-fully in sync, when they were not.
+if (some size > limit)
+  ptr =  kzalloc_node(...);
+else  {
+  prt = vmalloc_node(...)
+  vmalloced = 1;
+}
 
-A couple of people have caught that the last sync that occurred
-apparently was the 29th.
+if (ptr && vmalloced)
+   memset(prt, xxxx);
 
-I'm going to do a full resync of /pub - this will squash anything that
-was there with what was present around 1900 UTC on Nov 1st.  Home dirs,
-mail, etc are going to have to get dealt with on a per-case basis.
+So if we will add kzalloc_node, we have to add vzalloc_node, too.
 
-I might just setup an NFS mount across the two machines and let people
-snag what they need on their own with respect to that.
+>
+>> Can you switch that over as well in
+>> this patch?  You can pass __GFP_ZERO to kmalloc_node() for zeroing.
+>>
+>
+> Sure thing.
+>
+>
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-Right now I'm working on bringing the old box back up so we can get at
-the data.
-
-Just a heads up, stop by #korg on LinuxNet or #kernel.org on Freenode if
-you need to corner me on something *NOWish*
-
-Sorry about that, I did double check that stuff was in sync, so I'm not
-sure what happened there.
-
-- - John 'Warthog9' Hawley
-
-On 11/01/2010 03:09 PM, J.H. wrote:
-> Hey All,
-> 
-> Just a heads up the box is back up.  There's a few sundry items that
-> still need to be dealt with and there might still be another reboot in
-> the next couple of days but I'll send a separate e-mail if/when that has
-> to occur.
-> 
-> All in all things look good, and for the most part it went smoothly
-> (well other than the typical disaster that grub throws at me).
-> 
-> If you see anything amiss, please give me a holler or e-mail
-> ftpadmin@kernel.org with details.
-> 
-> Again thanks to Google and HP, specifically Chris DiBona and Bdale
-> Garbee, for the new box.  It is very nice.  If you get a chance cat
-> /proc/meminfo or cat /proc/cpuinfo - you won't be disappointed.
-> 
-> - John 'Warthog9' Hawley
-> 
-> On 11/01/2010 01:37 PM, J.H. wrote:
->> Hey All,
-> 
->> Just a heads up I'm running a little behind but should be starting shortly.
-> 
->> - John 'Warthog9' Hawley
->> Chief Kernel.org Administrator
-> 
->> On 10/29/2010 01:40 PM, J.H. wrote:
->>> Afternoon Everyone,
-> 
->>> Thought I'd give everyone a quick heads up, that since Kernel Summit
->>> starts on the 1st of November, which means I've got my one chance to do
->>> system maintenance on master / hera for the year.
-> 
->>> I'm expecting to do the upgrade on the 1st itself, likely start time
->>> will be around Mon Nov  1 19:00:00 UTC 2010, and I'm hoping for the
->>> entire downtime to take no longer than 2 hours.
-> 
->>> Things that are going to happen during the upgrade:
-> 
->>> 	- OS getting upgraded to Fedora 13
->>> 		w/ custom kernel to solve XFS and disable IMA
->>> 	- Hardware change
->>> 		Google and HP have been very generous enough to
->>> 		get us a new machine for the master / hera machine.
->>> 		The new machine is a dual, quad core Xeon X5550 box
->>> 		with 32G of ram.  Beyond that it nearly identical to the
->>> 		current machine.
-> 
->>> 		The current machine will become a 'live' backup machine
->>> 		that will sync semi-continuously, and be available
->>> 		should catastrophic failure of master / hera occur.
-> 
->>> Think that's the main big changes.  I'm already working on the upgrade
->>> since I have multiple boxes to do this with, and things are looking good
->>> so far.
-> 
->>> As a note the start time is estimated, if there is a major change to the
->>> start time I will let everyone know.
-> 
->>> As always, if you have questions, comments or concerns please e-mail me
->>> or ftpadmin@kernel.org
-> 
->>> - John 'Warthog9' Hawley
->>> Chief Kernel.org Administrator
-> 
->> _______________________________________________
->> Users mailing list
->> Users@linux.kernel.org
->> http://linux.kernel.org/mailman/listinfo/users
-> 
-> _______________________________________________
-> Users mailing list
-> Users@linux.kernel.org
-> http://linux.kernel.org/mailman/listinfo/users
-
-_______________________________________________
-Users mailing list
-Users@linux.kernel.org
-http://linux.kernel.org/mailman/listinfo/users
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAkzPSrMACgkQ/E3kyWU9dicreQCghOiKTEnmeAE0iVQKrYX1FRHJ
-+3AAn0G1XAIl+eefZ2il7wPvyeNxzmz0
-=Z//P
------END PGP SIGNATURE-----
+-- 
+Kind regards,
+Minchan Kim
