@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753459Ab0KAHCF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 03:02:05 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:44769 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752213Ab0KAHCD (ORCPT
+	id S1753498Ab0KAHGt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 03:06:49 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47267 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752375Ab0KAHGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 03:02:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=B8KDtyUpEutRQ10nQ0FocZda/HgexSmfBC6g8xR/BQCf0thfjxgK3QBBlZsD3vnzcF
-         +/aWhoFxZnyEi7qUISZOk045xJMurpCClgGOeoi+JmruDMZXlev/sGwhIIW2XLEqOFZn
-         TZ1IcjIVz5yDmLbgKxeqgwXkJKD71eLezqSlk=
-Subject: [PATCH] gpio: 74x164 cleanups
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Miguel Gaio <miguel.gaio@efixo.com>, Juhos Gabor <juhosg@openwrt.org>,
-        Florian Fainelli <florian@openwrt.org>
-Content-Type: text/plain
-Date: Mon, 01 Nov 2010 15:05:02 +0800
-Message-Id: <1288595102.8657.1.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	Mon, 1 Nov 2010 03:06:46 -0400
+Date: Mon, 1 Nov 2010 16:06:27 +0900 (JST)
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: David Rientjes <rientjes@google.com>
+Subject: Re: [resend][PATCH 2/4] Revert "oom: deprecate oom_adj tunable"
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
+In-Reply-To: <alpine.DEB.2.00.1010261234230.5578@chino.kir.corp.google.com>
+References: <20101026220237.B7DA.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1010261234230.5578@chino.kir.corp.google.com>
+Message-Id: <20101101030353.607A.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="ISO-2022-JP"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the coding style for gen_74x164_probe
-and adds __devexit annotation for gen_74x164_remove.
+> On Tue, 26 Oct 2010, KOSAKI Motohiro wrote:
+> 
+> > > NACK as a logical follow-up to my NACK for "oom: remove totalpage 
+> > > normalization from oom_badness()"
+> > 
+> > Huh?
+> > 
+> > I requested you show us justification. BUT YOU DIDNT. If you have any 
+> > usecase, show us RIGHT NOW. 
+> > 
+> 
+> The new tunable added in 2.6.36, /proc/pid/oom_score_adj, is necessary for 
+> the units that the badness score now uses.  We need a tunable with a much 
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/gpio/74x164.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+Who we?
 
-diff --git a/drivers/gpio/74x164.c b/drivers/gpio/74x164.c
-index d91ff4c..afefd01 100644
---- a/drivers/gpio/74x164.c
-+++ b/drivers/gpio/74x164.c
-@@ -104,8 +104,8 @@ static int __devinit gen_74x164_probe(struct spi_device *spi)
- 
- 	chip->spi = spi;
- 
--	chip->gpio_chip.label = GEN_74X164_DRIVER_NAME,
--		chip->gpio_chip.direction_output = gen_74x164_direction_output;
-+	chip->gpio_chip.label = GEN_74X164_DRIVER_NAME;
-+	chip->gpio_chip.direction_output = gen_74x164_direction_output;
- 	chip->gpio_chip.get = gen_74x164_get_value;
- 	chip->gpio_chip.set = gen_74x164_set_value;
- 	chip->gpio_chip.base = pdata->base;
-@@ -133,7 +133,7 @@ exit_destroy:
- 	return ret;
- }
- 
--static int gen_74x164_remove(struct spi_device *spi)
-+static int __devexit gen_74x164_remove(struct spi_device *spi)
- {
- 	struct gen_74x164_chip *chip;
- 	int ret;
--- 
-1.7.2
+> higher resolution than the oom_adj scale from -16 to +15, and one that 
+> scales linearly as opposed to exponentially.  Since that tunable is much 
+> more powerful than the oom_adj implementation, which never made any real 
 
+The reason that you ware NAKed was not to introduce new powerful feature.
+It was caused to break old and used feature from applications.
+
+
+> sense for defining oom killing priority for any purpose other than 
+> polarization, the old tunable is deprecated for two years.
+
+You haven't tested your patch at all. Distro's initram script are using
+oom_adj interface and latest kernel show pointless warnings 
+"/proc/xx/oom_adj is deprecated, please use /proc/xx/oom_score_adj instead."
+at _every_ boot time.
+
+As I said, DON'T SEND UNTESTED PATCH! DON'T BREAK USERLAND CARELESSLY!
 
 
