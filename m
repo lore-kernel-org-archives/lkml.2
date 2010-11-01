@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755051Ab0KAJNj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 05:13:39 -0400
-Received: from hera.kernel.org ([140.211.167.34]:53869 "EHLO hera.kernel.org"
+	id S1755533Ab0KAJOS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 05:14:18 -0400
+Received: from mx01.sz.bfs.de ([194.94.69.103]:63746 "EHLO mx01.sz.bfs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753983Ab0KAJNh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 05:13:37 -0400
-Date: Mon, 1 Nov 2010 09:13:06 GMT
-From: tip-bot for Rakib Mullick <rakib.mullick@gmail.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        rakib.mullick@gmail.com, shaohua.li@intel.com, tglx@linutronix.de,
-        borislav.petkov@amd.com, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rakib.mullick@gmail.com, shaohua.li@intel.com, tglx@linutronix.de,
-        borislav.petkov@amd.com, mingo@elte.hu
-In-Reply-To: <AANLkTinWQRG=HA9uB3ad0KAqRRTinL6L_4iKgF84coph@mail.gmail.com>
-References: <AANLkTinWQRG=HA9uB3ad0KAqRRTinL6L_4iKgF84coph@mail.gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, mm: Fix section mismatch in tlb.c
-Message-ID: <tip-cf38d0ba7efdc476815768b2b999b27cfae69747@git.kernel.org>
-Git-Commit-ID: cf38d0ba7efdc476815768b2b999b27cfae69747
-X-Mailer: tip-git-log-daemon
+	id S1754377Ab0KAJOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 05:14:15 -0400
+Message-ID: <4CCE84E2.9050801@bfs.de>
+Date: Mon, 01 Nov 2010 10:14:10 +0100
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
 MIME-Version: 1.0
+To: Vasiliy Kulikov <segooon@gmail.com>
+CC: kernel-janitors@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Jiri Pirko <jpirko@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] net: packet: fix information leak to userland
+References: <1288545028-16436-1-git-send-email-segooon@gmail.com>
+In-Reply-To: <1288545028-16436-1-git-send-email-segooon@gmail.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 01 Nov 2010 09:13:07 +0000 (UTC)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cf38d0ba7efdc476815768b2b999b27cfae69747
-Gitweb:     http://git.kernel.org/tip/cf38d0ba7efdc476815768b2b999b27cfae69747
-Author:     Rakib Mullick <rakib.mullick@gmail.com>
-AuthorDate: Mon, 1 Nov 2010 12:53:50 +0600
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 1 Nov 2010 10:09:07 +0100
 
-x86, mm: Fix section mismatch in tlb.c
 
-Mark tlb_cpuhp_notify as __cpuinit. It's basically a callback
-function, which is called from __cpuinit init_smp_flash(). So -
-it's safe.
+Vasiliy Kulikov schrieb:
+> packet_getname_spkt() doesn't initialize all members of sa_data field of
+> sockaddr struct if strlen(dev->name) < 13.  This structure is then copied
+> to userland.  It leads to leaking of contents of kernel stack memory.
+> We have to fully fill sa_data with strncpy() instead of strlcpy().
+> 
+> The same with packet_getname(): it doesn't initialize sll_pkttype field of
+> sockaddr_ll.  Set it to zero.
+> 
+> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+> ---
+>  net/packet/af_packet.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+> index 3616f27..0856a13 100644
+> --- a/net/packet/af_packet.c
+> +++ b/net/packet/af_packet.c
+> @@ -1719,7 +1719,7 @@ static int packet_getname_spkt(struct socket *sock, struct sockaddr *uaddr,
+>  	rcu_read_lock();
+>  	dev = dev_get_by_index_rcu(sock_net(sk), pkt_sk(sk)->ifindex);
+>  	if (dev)
+> -		strlcpy(uaddr->sa_data, dev->name, 15);
+> +		strncpy(uaddr->sa_data, dev->name, 14);
+>  	else
+>  		memset(uaddr->sa_data, 0, 14);
 
-We were warned by the following warning:
+if i understand the code correcly the max size for dev->name is IFNAMSIZ.
+You can simply that part:
 
- WARNING: arch/x86/mm/built-in.o(.text+0x356d): Section mismatch
- in reference from the function tlb_cpuhp_notify() to the
- function .cpuinit.text:calculate_tlb_offset()
- The function tlb_cpuhp_notify() references
- the function __cpuinit calculate_tlb_offset().
- This is often because tlb_cpuhp_notify lacks a __cpuinit
- annotation or the annotation of calculate_tlb_offset is wrong.
+memset(uaddr->sa_data, 0, IFNAMSIZ);
+dev = dev_get_by_index_rcu(sock_net(sk), pkt_sk(sk)->ifindex);
+if (dev)
+	strlcpy(uaddr->sa_data, dev->name, IFNAMSIZ);
 
-Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
-Cc: Borislav Petkov <borislav.petkov@amd.com>
-Cc: Shaohua Li <shaohua.li@intel.com>
-LKML-Reference: <AANLkTinWQRG=HA9uB3ad0KAqRRTinL6L_4iKgF84coph@mail.gmail.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/mm/tlb.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index 4935848..12cdbb1 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -251,7 +251,7 @@ static void __cpuinit calculate_tlb_offset(void)
- 	}
- }
- 
--static int tlb_cpuhp_notify(struct notifier_block *n,
-+static int __cpuinit tlb_cpuhp_notify(struct notifier_block *n,
- 		unsigned long action, void *hcpu)
- {
- 	switch (action & 0xf) {
+you should send that as separate patch.
+re,
+ wh
+
+
+>  	rcu_read_unlock();
+> @@ -1742,6 +1742,7 @@ static int packet_getname(struct socket *sock, struct sockaddr *uaddr,
+>  	sll->sll_family = AF_PACKET;
+>  	sll->sll_ifindex = po->ifindex;
+>  	sll->sll_protocol = po->num;
+> +	sll->sll_pkttype = 0;
+>  	rcu_read_lock();
+>  	dev = dev_get_by_index_rcu(sock_net(sk), po->ifindex);
+>  	if (dev) {
