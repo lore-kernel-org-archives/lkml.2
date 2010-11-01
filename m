@@ -1,99 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751594Ab0KAQge (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 12:36:34 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:24936 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318Ab0KAQgb (ORCPT
+	id S1751779Ab0KAQh6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 12:37:58 -0400
+Received: from fmmailgate03.web.de ([217.72.192.234]:33949 "EHLO
+	fmmailgate03.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309Ab0KAQhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 12:36:31 -0400
-X-IronPort-AV: E=Sophos;i="4.58,274,1286164800"; 
-   d="scan'208";a="120599021"
-Subject: Re: [GIT PULL] Small Xen bugfixes
-From: Ian Campbell <Ian.Campbell@eu.citrix.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        Vasiliy G Tolstov <v.tolstov@selfip.ru>
-In-Reply-To: <4CCD9935.50308@goop.org>
-References: <4CCB1906.4000608@goop.org>
-	 <AANLkTi=g5sdiWSaLUHAATQn-1=jPqtc=RL6SpYSMYn98@mail.gmail.com>
-	 <4CCB1E71.3060600@goop.org>  <4CCB292E.9090602@goop.org>
-	 <1288516429.16032.13.camel@localhost.localdomain> <4CCD9935.50308@goop.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Mon, 1 Nov 2010 16:36:28 +0000
-Message-ID: <1288629388.13236.4583.camel@zakaz.uk.xensource.com>
+	Mon, 1 Nov 2010 12:37:55 -0400
+Message-ID: <4CCEECE2.8060003@web.de>
+Date: Mon, 01 Nov 2010 17:37:54 +0100
+From: Jan Kiszka <jan.kiszka@web.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+To: Joerg Roedel <joro@8bytes.org>
+CC: "Roedel, Joerg" <Joerg.Roedel@amd.com>, kvm <kvm@vger.kernel.org>,
+        Sheng Yang <sheng@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Crash on kvm_iommu_map_pages
+References: <4CCEB7CF.8030207@web.de> <4CCEB946.7070103@web.de> <20101101132127.GF20959@amd.com> <4CCEBFAC.1000809@web.de> <20101101135322.GG20959@amd.com> <4CCECD17.3080303@web.de> <20101101143526.GD2987@8bytes.org> <4CCEDCD7.1000908@web.de>
+In-Reply-To: <4CCEDCD7.1000908@web.de>
+X-Enigmail-Version: 1.1.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigBDFCF7F84EEF71670E478356"
+X-Provags-ID: V01U2FsdGVkX1/i3rYVqg7tnph9cVV0QlWxwE9O6c7RKhPgsE2T
+	iULXcJKt3M7vPqbkdQ0no8rpvo4KS9nHIkvoBZJtC+A5jY4Ii9
+	DbkR1Wf8U=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-10-31 at 16:28 +0000, Jeremy Fitzhardinge wrote:
-> On 10/31/2010 02:13 AM, Ian Campbell wrote:
-> >> The 3rd is certainly simplest, at the cost of wasting a trivial amount
-> >> of memory.
-> > Doesn't Linux avoid using the lowest 1M anyway? (obviously apart from
-> > the start of day probing for firmware tables etc).
-> 
-> No, it tries to use most of it I think.  It will tend to avoid the low
-> 64k (maybe more) to avoid BIOS bugs.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigBDFCF7F84EEF71670E478356
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-It'll be interesting to see what effect Vista's avoidance of the whole
-region (so I hear) has on BIOS vendors... (I think we can all guess)
+Am 01.11.2010 16:29, Jan Kiszka wrote:
+> Nope. But I just noticed a fatal thinko in my fix to
+> intel_iommu_attach_device - probably that was the key. Need to boot the=
 
-> >>   Unfortunately it crashes early.  Sigh, will try and sort it
-> >> out this afternoon.
-> > Strange!
-> 
-> I didn't get a chance to poke at it again, but in retrospect, I think
-> there are various "must succeed" allocations in low memory.  We don't
-> need those allocations (things like AP boot trampoline, etc), but we
-> don't bother to stub them out or prevent them from happening.  Reducing
-> the system to one with *no* allocatable memory below 1M is just too
-> strange, and would be a continuous source of problems in the future.
+> test kernel...
 
-Agreed, we should try and mimic native as far as possible in this regard
-or I fear we will see a never ending stream of little quirks and
-oddities related to this sort of thing.
+That was indeed the reason for this GPF: I blindly swapped the
+problematic lines, releasing the wrong page. Sorry, false alarm this
+time, will send out the corrected intel_iommu_attach_device fix later.
 
-> Of the other two options, I think your original approach is going to be
-> simplest.  E820 gap filling wouldn't be too bad, but we'd end up having
-> to add a bit of gap-tracking logic to the E820 loop which isn't
-> currently there.
-
-It would also make us susceptible to perhaps being a bit fragile in the
-face of unexpectedly insane e820s coming from the BIOS.
-
-> Ignoring sub-1M gaps is simpler (and it needn't be
-> conditional on xen_initial_domain(), because we would never expect to
-> see anything strange sub-1M in a domU, and if there is, we should still
-> be careful of it in case something odd is going on).
-
-Absolutely.
-
-I wonder if we shouldn't also do the following (note: untested). Since
-Xen avoids using the sub-1M region for anything I think it is reasonable
-to give the whole lot over to domain 0 for the purposes of finding
-firmware table stashed in odd locations etc.
-
-Ian.
-
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index ebb74ec..ab086e5 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -2321,7 +2321,7 @@ __init void xen_ident_map_ISA(void)
- 
- 	xen_raw_printk("Xen: setup ISA identity maps\n");
- 
--	for (pa = ISA_START_ADDRESS; pa < ISA_END_ADDRESS; pa += PAGE_SIZE) {
-+	for (pa = 0; pa < ISA_END_ADDRESS; pa += PAGE_SIZE) {
- 		pte_t pte = mfn_pte(PFN_DOWN(pa), PAGE_KERNEL_IO);
- 
- 		if (HYPERVISOR_update_va_mapping(PAGE_OFFSET + pa, pte, 0))
+Jan
 
 
+--------------enigBDFCF7F84EEF71670E478356
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.15 (GNU/Linux)
+Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAkzO7OIACgkQitSsb3rl5xQ0RQCgsxYl31TWPTHysiHCf73OJ4E8
+zhUAnjMHesq6erKomKT3xa3CMbz3VKJ3
+=WbES
+-----END PGP SIGNATURE-----
+
+--------------enigBDFCF7F84EEF71670E478356--
