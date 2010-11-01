@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568Ab0KAHPJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 03:15:09 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:8254 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752203Ab0KAHPH (ORCPT
+	id S1753741Ab0KAHVR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 03:21:17 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53848 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752238Ab0KAHVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 03:15:07 -0400
-Message-ID: <002701cb7994$81db1350$66f8800a@maildom.okisemi.com>
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "Marc Kleine-Budde" <mkl@pengutronix.de>
-Cc: "Wolfgang Grandegger" <wg@grandegger.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Wolfram Sang" <w.sang@pengutronix.de>,
-        "Christian Pellegrin" <chripell@fsfe.org>,
-        "Barry Song" <21cnbao@gmail.com>,
-        "Samuel Ortiz" <sameo@linux.intel.com>,
-        <socketcan-core@lists.berlios.de>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <andrew.chih.howe.khor@intel.com>,
-        <qi.wang@intel.com>, <margie.foster@intel.com>,
-        <yong.y.wang@intel.com>, "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>,
-        <kok.howg.ewe@intel.com>, <joel.clark@intel.com>
-References: <4CCAA3D4.8070408@dsn.okisemi.com> <4CCAC4CD.7000503@pengutronix.de>
-Subject: Re: [PATCH net-next-2.6 v2] can: Topcliff: PCH_CAN driver: Fix build warnings
-Date: Mon, 1 Nov 2010 16:15:01 +0900
+	Mon, 1 Nov 2010 03:21:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=nSlXcSWy+njPWfG7Pj4KvWQpDsZbVW3YfQ4VVDJgeZm7ju2XU82A9so5iYyypdkPbm
+         BuueAv6xInzFlycLY1fVdFmZMp+RbsNczcbrZa2210yerIfTzHkqToDaWPCqgY2rZwjq
+         V3IpBLMiYuEnKDkhN9LusXa/5Xj4jUhOth5zY=
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1.5
+Date: Mon, 1 Nov 2010 13:21:13 +0600
+Message-ID: <AANLkTimWOytXT=jDWTobyvL=xdD7xW7oRqXshULgoF6R@mail.gmail.com>
+Subject: [PATCH] acpi: Fix section mismatch warning in osl.c
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Len Brown <lenb@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 29, 2010 9:57 PM : Marc Kleine-Budde wrote:
->>>> SW must check busy flag of CAN register.
->>>> This is a Topcliff HW specification.
->>> Maybe the busy check could also be done *before* the Message RAM is
->>> accessed to avoid (or minimize) waiting.
->> Yes, *before* is right.
->> If there is *after* processing, this is a bug.
->> Can you see anyway ?
->Sorry I don't understand what you mean.
-
-Sorry, my English had mistake. I show my comment below again.
- - If there is *after* processing, this is a bug.
- - Can you see the point anywhere ?
-
-> You probably know the datasheet, but I don't, although I've printed
-> chapter 13 from the Intel Controller Hub EG20T datasheet, but it's 50+
-> pages. If the hardware needs the busy waiting in the hot tx path a
-> pointer to the respective section in the manual is a good idea. Just
-> something like:
-
-Though "Oliver Hartkopp" found the place of Datasheet EG20T and notified with the mailing-list,
-Have you read the following ?
-http://edc.intel.com/Platforms/Atom-E6xx/#hardware
-
->>> You have to change the definition of the regs struct a bit:
->>>>  u32 if1_mcont;
->>>>  u32 if1_data[4];
->>>>  u32 reserve2;
->> Uh, I can't find this. Where is this ?
->Here's a patch to illustrate what I meant:
-I understand.
+Function acpi_os_initialize1() calls acpi_osi_setup_late() which is in
+.init.text section and gets called from acpi_bus_init which is in
+.init.text section. So mark acpi_os_initialize1() with __init. And
+declaration of __init acpi_osi_setup_late has been removed, cause its
+defination is above called function.
 
 
-Thanks, Tomoya(OKI SEMICONDUCTOR CO., LTD.)
+ WARNING: drivers/acpi/acpi.o(.text+0x460): Section mismatch in
+reference from the function acpi_os_initialize1() to the function
+.init.text:acpi_osi_setup_late()
+The function acpi_os_initialize1() references
+the function __init acpi_osi_setup_late().
+This is often because acpi_os_initialize1 lacks a __init
+annotation or the annotation of acpi_osi_setup_late is wrong.
+
+
+Thanks,
+Rakib
+
+
+Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+---
+
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index 966fedd..81de639 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -113,8 +113,6 @@ static DEFINE_SPINLOCK(acpi_ioremap_lock);
+ #define	OSI_STRING_LENGTH_MAX 64	/* arbitrary */
+ static char osi_setup_string[OSI_STRING_LENGTH_MAX];
+
+-static void __init acpi_osi_setup_late(void);
+-
+ /*
+  * The story of _OSI(Linux)
+  *
+@@ -1530,7 +1528,7 @@ acpi_status __init acpi_os_initialize(void)
+ 	return AE_OK;
+ }
+
+-acpi_status acpi_os_initialize1(void)
++acpi_status __init acpi_os_initialize1(void)
+ {
+ 	kacpid_wq = create_workqueue("kacpid");
+ 	kacpi_notify_wq = create_workqueue("kacpi_notify");
