@@ -1,49 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758003Ab0KANxV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 09:53:21 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:55909 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757906Ab0KANxU (ORCPT
+	id S1757998Ab0KAN4H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 09:56:07 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38958
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756390Ab0KAN4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 09:53:20 -0400
-Date: Mon, 1 Nov 2010 14:53:32 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: Shaohua Li <shaohua.li@intel.com>, Stephane Eranian <eranian@google.com>,
-        Len Brown <len.brown@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: 2.6.37-rc1: section mismatches
-Message-ID: <20101101135332.GA2864@kryptos.osrc.amd.com>
-References: <tkrat.725fc810c3a4881e@s5r6.in-berlin.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <tkrat.725fc810c3a4881e@s5r6.in-berlin.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 1 Nov 2010 09:56:05 -0400
+Date: Mon, 01 Nov 2010 06:56:28 -0700 (PDT)
+Message-Id: <20101101.065628.104045417.davem@davemloft.net>
+To: linux@treblig.org
+Cc: linux-kernel@vger.kernel.org, jchapman@katalix.com, netdev@vger.kernel.org
+Subject: Re: [PATCH] kzalloc with swapped params in l2tp_dfs_seq_open
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20101031172603.GB16459@gallifrey>
+References: <20101031172603.GB16459@gallifrey>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 01, 2010 at 02:43:29PM +0100, Stefan Richter wrote:
-> ----
-> WARNING: vmlinux.o(.text+0x26e8c): Section mismatch in reference from the function tlb_cpuhp_notify() to the function .cpuinit.text:calculate_tlb_offset()
-> The function tlb_cpuhp_notify() references
-> the function __cpuinit calculate_tlb_offset().
-> This is often because tlb_cpuhp_notify lacks a __cpuinit 
-> annotation or the annotation of calculate_tlb_offset is wrong.
+From: "Dr. David Alan Gilbert" <linux@treblig.org>
+Date: Sun, 31 Oct 2010 17:26:03 +0000
+
+> Hi,
+>   'sparse' spotted that the parameters to kzalloc in l2tp_dfs_seq_open
+> were swapped.
 > 
-> apparently due to commit 932967202182743c01a2eee4bdfa2c42697bc586
+> Tested on current git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+> at 1792f17b7210280a3d7ff29da9614ba779cfcedb  build, boots and I can see that directory,
+> but there again I could see /sys/kernel/debug/l2tp with it swapped; I don't have
+> any l2tp in use.
+> 
+> Signed-off-by: Dr. David Alan Gilbert <linux@treblig.org>
 
-First one already fixed: http://git.kernel.org/tip/cf38d0ba7efdc476815768b2b999b27cfae69747
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Applied, thank you.
