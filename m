@@ -1,127 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758579Ab0KAQSm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 12:18:42 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:4055 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753447Ab0KAQSk (ORCPT
+	id S1758482Ab0KAQWZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 12:22:25 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60933
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755595Ab0KAQWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 12:18:40 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6153"; a="60177948"
-From: Tatyana Brokhman <tlinder@codeaurora.org>
-To: linux-usb@vger.kernel.org
-Cc: linux-arm-msm@vger.kernel.org, Tatyana Brokhman <tlinder@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Jacob Pan <jacob.jun.pan@intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v5 1/3] usb: USB3.0 ch11 definitions
-Date: Mon,  1 Nov 2010 18:18:24 +0200
-Message-Id: <1288628305-27643-1-git-send-email-tlinder@codeaurora.org>
-X-Mailer: git-send-email 1.6.3.3
+	Mon, 1 Nov 2010 12:22:23 -0400
+Date: Mon, 01 Nov 2010 09:22:46 -0700 (PDT)
+Message-Id: <20101101.092246.104046133.davem@davemloft.net>
+To: mirqus@gmail.com
+Cc: mad_soft@inbox.ru, linux-usb@vger.kernel.org,
+        dbrownell@users.sourceforge.net, gregkh@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        therbert@google.com
+Subject: Re: [PATCH] USB: gadget: fix ethernet gadget crash in gether_setup
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <AANLkTimMwTbj-2oP-VP7Ht1VnA8_w7vpTGz1kk5HG7zx@mail.gmail.com>
+References: <1288253909-12084-1-git-send-email-mad_soft@inbox.ru>
+	<AANLkTimMwTbj-2oP-VP7Ht1VnA8_w7vpTGz1kk5HG7zx@mail.gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=utf-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id oA1GMeWo012562
 
-Adding hub SuperSpeed usb definitions as defined by ch10 of the USB3.0
-spec.
+From: Micha≈Ç Miros≈Çaw <mirqus@gmail.com>
+Date: Mon, 1 Nov 2010 17:16:39 +0100
 
-Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
----
- include/linux/usb/ch11.h |   47 ++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/usb/hcd.h  |    4 +++
- 2 files changed, 51 insertions(+), 0 deletions(-)
+> 2010/10/28 Dmitry Artamonow <mad_soft@inbox.ru>:
+>> Crash is triggered by commit e6484930d7 ("net: allocate tx queues in
+>> register_netdevice"), which moved tx netqueue creation into register_netdev.
+>> So now calling netif_stop_queue() before register_netdev causes an oops.
+>> Move netif_stop_queue() after net device registration to fix crash.
+>>
+>> Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
+>> ---
+>> ¬†drivers/usb/gadget/u_ether.c | ¬† ¬†2 +-
+>> ¬†1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/usb/gadget/u_ether.c b/drivers/usb/gadget/u_ether.c
+>> index 6bb876d..cb23355 100644
+>> --- a/drivers/usb/gadget/u_ether.c
+>> +++ b/drivers/usb/gadget/u_ether.c
+>> @@ -797,7 +797,6 @@ int gether_setup(struct usb_gadget *g, u8 ethaddr[ETH_ALEN])
+>> ¬† ¬† ¬† ¬† * ¬†- iff DATA transfer is active, carrier is "on"
+>> ¬† ¬† ¬† ¬† * ¬†- tx queueing enabled if open *and* carrier is "on"
+>> ¬† ¬† ¬† ¬† */
+>> - ¬† ¬† ¬† netif_stop_queue(net);
+>> ¬† ¬† ¬† ¬†netif_carrier_off(net);
+>>
+>> ¬† ¬† ¬† ¬†dev->gadget = g;
+>> @@ -812,6 +811,7 @@ int gether_setup(struct usb_gadget *g, u8 ethaddr[ETH_ALEN])
+>> ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬†INFO(dev, "MAC %pM\n", net->dev_addr);
+>> ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬†INFO(dev, "HOST MAC %pM\n", dev->host_mac);
+>>
+>> + ¬† ¬† ¬† ¬† ¬† ¬† ¬† netif_stop_queue(net);
+>> ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬†the_dev = dev;
+>> ¬† ¬† ¬† ¬†}
+>>
+> 
+> What about a race between register_netdev() -> open() -> rest of
+> gether_setup() ? What is this netif_stop_queue() here needed for?
 
-diff --git a/include/linux/usb/ch11.h b/include/linux/usb/ch11.h
-index 119194c..10ec069 100644
---- a/include/linux/usb/ch11.h
-+++ b/include/linux/usb/ch11.h
-@@ -28,6 +28,13 @@
- #define HUB_STOP_TT		11
- 
- /*
-+ * Hub class additional requests defined by USB 3.0 spec
-+ * See USB 3.0 spec Table 10-6
-+ */
-+#define HUB_SET_DEPTH		12
-+#define HUB_GET_PORT_ERR_COUNT	13
-+
-+/*
-  * Hub Class feature numbers
-  * See USB 2.0 spec Table 11-17
-  */
-@@ -56,6 +63,20 @@
- #define USB_PORT_FEAT_C_PORT_L1         23
- 
- /*
-+ * Port feature selectors added by USB 3.0 spec.
-+ * See USB 3.0 spec Table 10-7
-+ */
-+#define USB_PORT_FEAT_LINK_STATE		5
-+#define USB_PORT_FEAT_U1_TIMEOUT		23
-+#define USB_PORT_FEAT_U2_TIMEOUT		24
-+#define USB_PORT_FEAT_C_LINK_STATE		25
-+#define USB_PORT_FEAT_C_CONFIG_ERR		26
-+#define USB_PORT_FEAT_REMOTE_WAKE_MASK		27
-+#define USB_PORT_FEAT_BH_PORT_RESET		28
-+#define USB_PORT_FEAT_C_BH_PORT_RESET		29
-+#define USB_PORT_FEAT_FORCE_LINKPM_ACCEPT	30
-+
-+/*
-  * Hub Status and Hub Change results
-  * See USB 2.0 spec Table 11-19 and Table 11-20
-  */
-@@ -84,6 +105,32 @@ struct usb_port_status {
- #define USB_PORT_STAT_SUPER_SPEED	0x8000	/* Linux-internal */
- 
- /*
-+ * Additions to wPortStatus bit field from USB 3.0
-+ * See USB 3.0 spec Table 10-10
-+ */
-+#define USB_PORT_STAT_LINK_STATE	0x01e0
-+#define USB_SS_PORT_STAT_POWER		0x0200
-+#define USB_PORT_STAT_SPEED_5GBPS	0x0000
-+/* Valid only if port is enabled */
-+
-+/*
-+ * Definitions for PORT_LINK_STATE values
-+ * (bits 5-8) in wPortStatus
-+ */
-+#define USB_SS_PORT_LS_U0		0x0000
-+#define USB_SS_PORT_LS_U1		0x0020
-+#define USB_SS_PORT_LS_U2		0x0040
-+#define USB_SS_PORT_LS_U3		0x0060
-+#define USB_SS_PORT_LS_SS_DISABLED	0x0080
-+#define USB_SS_PORT_LS_RX_DETECT	0x00a0
-+#define USB_SS_PORT_LS_SS_INACTIVE	0x00c0
-+#define USB_SS_PORT_LS_POLLING		0x00e0
-+#define USB_SS_PORT_LS_RECOVERY		0x0100
-+#define USB_SS_PORT_LS_HOT_RESET	0x0120
-+#define USB_SS_PORT_LS_COMP_MOD		0x0140
-+#define USB_SS_PORT_LS_LOOPBACK		0x0160
-+
-+/*
-  * wPortChange bit field
-  * See USB 2.0 spec Table 11-22
-  * Bits 0 to 4 shown, bits 5 to 15 are reserved
-diff --git a/include/linux/usb/hcd.h b/include/linux/usb/hcd.h
-index 3b571f1..d7738de 100644
---- a/include/linux/usb/hcd.h
-+++ b/include/linux/usb/hcd.h
-@@ -469,6 +469,10 @@ extern void usb_ep0_reinit(struct usb_device *);
- 
- /*-------------------------------------------------------------------------*/
- 
-+/* class requests from USB 3.0 hub spec, table 10-5 */
-+#define SetHubDepth		(0x3000 | HUB_SET_DEPTH)
-+#define GetPortErrorCount	(0x8000 | HUB_GET_PORT_ERR_COUNT)
-+
- /*
-  * Generic bandwidth allocation constants/support
-  */
--- 
-1.6.3.3
-
---
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Nothing, it should be completely removed.
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
