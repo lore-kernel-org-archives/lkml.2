@@ -1,157 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755889Ab0KASpN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 14:45:13 -0400
-Received: from hera.kernel.org ([140.211.167.34]:37378 "EHLO hera.kernel.org"
+	id S1755702Ab0KASqY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 14:46:24 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37385 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754211Ab0KASo6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 14:44:58 -0400
+	id S1755512Ab0KASpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 14:45:00 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
         kay.sievers@vrfy.org, jack@suse.cz,
         James.Bottomley@HansenPartnership.com
-Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 4/7] cdrom: add ->check_events() support
-Date: Mon,  1 Nov 2010 19:44:38 +0100
-Message-Id: <1288637081-5183-5-git-send-email-tj@kernel.org>
+Subject: [PATCHSET RFC] block/SCSI: implement in-kernel disk event handling
+Date: Mon,  1 Nov 2010 19:44:34 +0100
+Message-Id: <1288637081-5183-1-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1288637081-5183-1-git-send-email-tj@kernel.org>
-References: <1288637081-5183-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 01 Nov 2010 18:44:51 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 01 Nov 2010 18:44:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In principle, cdrom just needs to pass through ->check_events() but
-CDROM_MEDIA_CHANGED ioctl makes things a bit more complex.  Just as
-with ->media_changed() support, cdrom code needs to buffer the events
-and serve them to ioctl and vfs as requested.  It may be a good idea
-to deprecate CDROM_MEDIA_CHANGED ioctl in the long run.
+This patchset implements in-kernel disk event handling framework and
+add support for it to sr and sd.  This is largely to move media
+presence polling into kernel as userspace implementation turned out to
+be quite problematic over the years.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- drivers/cdrom/cdrom.c |   55 ++++++++++++++++++++++++++++++++++++++++++++++--
- include/linux/cdrom.h |    6 +++++
- 2 files changed, 58 insertions(+), 3 deletions(-)
+>From the patch description of the third patch,
 
-diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
-index af13c62..1ea8f8d 100644
---- a/drivers/cdrom/cdrom.c
-+++ b/drivers/cdrom/cdrom.c
-@@ -1348,7 +1348,10 @@ static int cdrom_select_disc(struct cdrom_device_info *cdi, int slot)
- 	if (!CDROM_CAN(CDC_SELECT_DISC))
- 		return -EDRIVE_CANT_DO_THIS;
- 
--	(void) cdi->ops->media_changed(cdi, slot);
-+	if (cdi->ops->check_events)
-+		cdi->ops->check_events(cdi, 0, slot);
-+	else
-+		cdi->ops->media_changed(cdi, slot);
- 
- 	if (slot == CDSL_NONE) {
- 		/* set media changed bits, on both queues */
-@@ -1392,6 +1395,41 @@ static int cdrom_select_disc(struct cdrom_device_info *cdi, int slot)
- 	return slot;
- }
- 
-+/*
-+ * As cdrom implements an extra ioctl consumer for media changed
-+ * event, it needs to buffer ->check_events() output, such that event
-+ * is not lost for both the usual VFS and ioctl paths.
-+ * cdi->{vfs|ioctl}_events are used to buffer pending events for each
-+ * path.
-+ *
-+ * XXX: Locking is non-existent.  cdi->ops->check_events() can be
-+ * called in parallel and buffering fields are accessed without any
-+ * exclusion.  The original media_changed code had the same problem.
-+ * It might be better to simply deprecate CDROM_MEDIA_CHANGED ioctl
-+ * and remove this cruft altogether.  It doesn't have much usefulness
-+ * at this point.
-+ */
-+static void cdrom_update_events(struct cdrom_device_info *cdi,
-+				unsigned int clearing)
-+{
-+	unsigned int events;
-+
-+	events = cdi->ops->check_events(cdi, clearing, CDSL_CURRENT);
-+	cdi->vfs_events |= events;
-+	cdi->ioctl_events |= events;
-+}
-+
-+unsigned int cdrom_check_events(struct cdrom_device_info *cdi,
-+				unsigned int clearing)
-+{
-+	unsigned int events;
-+
-+	cdrom_update_events(cdi, clearing);
-+	events = cdi->vfs_events;
-+	cdi->vfs_events = 0;
-+	return events;
-+}
-+
- /* We want to make media_changed accessible to the user through an
-  * ioctl. The main problem now is that we must double-buffer the
-  * low-level implementation, to assure that the VFS and the user both
-@@ -1403,15 +1441,26 @@ int media_changed(struct cdrom_device_info *cdi, int queue)
- {
- 	unsigned int mask = (1 << (queue & 1));
- 	int ret = !!(cdi->mc_flags & mask);
-+	bool changed;
- 
- 	if (!CDROM_CAN(CDC_MEDIA_CHANGED))
--	    return ret;
-+		return ret;
-+
- 	/* changed since last call? */
--	if (cdi->ops->media_changed(cdi, CDSL_CURRENT)) {
-+	if (cdi->ops->check_events) {
-+		BUG_ON(!queue);	/* shouldn't be called from VFS path */
-+		cdrom_update_events(cdi, DISK_EVENT_MEDIA_CHANGE);
-+		changed = cdi->ioctl_events & DISK_EVENT_MEDIA_CHANGE;
-+		cdi->ioctl_events = 0;
-+	} else
-+		changed = cdi->ops->media_changed(cdi, CDSL_CURRENT);
-+
-+	if (changed) {
- 		cdi->mc_flags = 0x3;    /* set bit on both queues */
- 		ret |= 1;
- 		cdi->media_written = 0;
- 	}
-+
- 	cdi->mc_flags &= ~mask;         /* clear bit */
- 	return ret;
- }
-diff --git a/include/linux/cdrom.h b/include/linux/cdrom.h
-index 78e9047..35eae4b 100644
---- a/include/linux/cdrom.h
-+++ b/include/linux/cdrom.h
-@@ -946,6 +946,8 @@ struct cdrom_device_info {
- /* device-related storage */
- 	unsigned int options	: 30;	/* options flags */
- 	unsigned mc_flags	: 2;	/* media change buffer flags */
-+	unsigned int vfs_events;	/* cached events for vfs path */
-+	unsigned int ioctl_events;	/* cached events for ioctl path */
-     	int use_count;                  /* number of times device opened */
-     	char name[20];                  /* name of the device type */
- /* per-device flags */
-@@ -965,6 +967,8 @@ struct cdrom_device_ops {
- 	int (*open) (struct cdrom_device_info *, int);
- 	void (*release) (struct cdrom_device_info *);
- 	int (*drive_status) (struct cdrom_device_info *, int);
-+	unsigned int (*check_events) (struct cdrom_device_info *cdi,
-+				      unsigned int clearing, int slot);
- 	int (*media_changed) (struct cdrom_device_info *, int);
- 	int (*tray_move) (struct cdrom_device_info *, int);
- 	int (*lock_door) (struct cdrom_device_info *, int);
-@@ -993,6 +997,8 @@ extern int cdrom_open(struct cdrom_device_info *cdi, struct block_device *bdev,
- extern void cdrom_release(struct cdrom_device_info *cdi, fmode_t mode);
- extern int cdrom_ioctl(struct cdrom_device_info *cdi, struct block_device *bdev,
- 		       fmode_t mode, unsigned int cmd, unsigned long arg);
-+extern unsigned int cdrom_check_events(struct cdrom_device_info *cdi,
-+				       unsigned int clearing);
- extern int cdrom_media_changed(struct cdrom_device_info *);
- 
- extern int register_cdrom(struct cdrom_device_info *cdi);
--- 
-1.7.1
+ Currently, media presence polling for removeable block devices is done
+ from userland.  There are several issues with this.
 
+ * Polling is done by periodically opening the device.  For SCSI
+   devices, the command sequence generated by such action involves a
+   few different commands including TEST_UNIT_READY.  This behavior,
+   while perfectly legal, is different from Windows which only issues
+   single command, GET_EVENT_STATUS_NOTIFICATION.  Unfortunately, some
+   ATAPI devices lock up after being periodically queried such command
+   sequences.
+
+ * There is no reliable and unintrusive way for a userland program to
+   tell whether the target device is safe for media presence polling.
+   For example, polling for media presence during an on-going burning
+   session can make it fail.  The polling program can avoid this by
+   opening the device with O_EXCL but then it risks making a valid
+   exclusive user of the device fail w/ -EBUSY.
+
+ * Userland polling is unnecessarily heavy and in-kernel implementation
+   is lighter and better coordinated (workqueue, timer slack).
+
+This patchset contains the following seven patches.
+
+ 0001-block-kill-genhd_media_change_notify.patch
+ 0002-block-move-register_disk-and-del_gendisk-to-block-ge.patch
+ 0003-implement-in-kernel-gendisk-events-handling.patch
+ 0004-cdrom-add-check_events-support.patch
+ 0005-scsi-replace-sr_test_unit_ready-with-scsi_test_unit_.patch
+ 0006-sr-implement-sr_check_events.patch
+ 0007-sd-implement-sd_check_events.patch
+
+0001-0002 are prepreations.  0003 implements the block layer framework
+for disk event handling.  0004-0007 add support for it to cdrom and
+then sr and sd.
+
+Block drivers just need to implement a new bdev method
+->check_events() which supercedes ->media_change() and set
+bdev->events[_async] masks according to what the device can do.
+Everything else is handled by block layer including event generation,
+polling and its configuration.
+
+Tested with dvd drives and an iomega click drive (a removable direct
+access ATAPI device Alan gave to me, still operational!).
+
+Kay, as you're the media presence polling expert :-) how does this
+look to you?
+
+This patchset is on top of v2.6.37-rc1 + clean-up-bdev-claim-release
+patchset and available in the following git tree,
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git disk-events
+
+and contains the following changes.
+
+ block/genhd.c           |  544 +++++++++++++++++++++++++++++++++++++++++++++---
+ drivers/cdrom/cdrom.c   |   55 ++++
+ drivers/scsi/scsi_lib.c |   13 -
+ drivers/scsi/sd.c       |   97 ++++----
+ drivers/scsi/sd.h       |    1 
+ drivers/scsi/sr.c       |  168 ++++++++------
+ drivers/scsi/sr.h       |    3 
+ drivers/scsi/sr_ioctl.c |    2 
+ fs/block_dev.c          |   41 +++
+ fs/partitions/check.c   |   89 -------
+ include/linux/blkdev.h  |    4 
+ include/linux/cdrom.h   |    6 
+ include/linux/fs.h      |    1 
+ include/linux/genhd.h   |   20 +
+ include/scsi/scsi.h     |    1 
+ 15 files changed, 774 insertions(+), 271 deletions(-)
+
+Thanks.
+
+--
+tejun
