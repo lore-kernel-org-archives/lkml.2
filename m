@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356Ab0KBO3h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 10:29:37 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:40238 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751713Ab0KBO3c (ORCPT
+	id S1753390Ab0KBOee (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 10:34:34 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:36741 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751713Ab0KBOe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 10:29:32 -0400
+	Tue, 2 Nov 2010 10:34:28 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=sjpYw9wkWpVvgFIYfGRcKFG0zzkwU7D7Uz7R2RZtxm+PzwpY6VV3JjtiVVFPdU+sr1
-         6MGXDKdva8RwESWA6r3k7arYLFS/tKaiVe4boc1RiXCC++oE97H9WWkrxtyMM4oEHOYc
-         +WehBgR/cAS/adSUL2lD0xdlsT3cOxP1ga0lI=
-Subject: Re: [PATCH]oom-kill: direct hardware access processes should get
- bonus
-From: "Figo.zhang" <figo1802@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@osdl.org>
-In-Reply-To: <alpine.DEB.2.00.1011012008160.9383@chino.kir.corp.google.com>
-References: <1288662213.10103.2.camel@localhost.localdomain>
-	 <alpine.DEB.2.00.1011012008160.9383@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 02 Nov 2010 22:24:54 +0800
-Message-ID: <1288707894.19865.1.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.0 
-Content-Transfer-Encoding: 7bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=iJ39wXKLwAoG4pkeS2r34nEozEcvifcP1jmvKorv75dMSomvD/ymNPqWbNr8Hrljn9
+         xg/6Mubn9io2i/vxzqu8QSO2bpeje1o9pt9eEM6v7rLamPsn47oXAbwfJCwIJnYqhO7t
+         XeYa5wrC47NC9F66gR/dCg5X1OzW5e80dICYY=
+MIME-Version: 1.0
+In-Reply-To: <87oca7evbo.fsf@gmail.com>
+References: <1288668052-32036-1-git-send-email-bgamari.foss@gmail.com>
+	<alpine.DEB.2.00.1011012030100.12298@chino.kir.corp.google.com>
+	<87oca7evbo.fsf@gmail.com>
+Date: Tue, 2 Nov 2010 23:34:27 +0900
+Message-ID: <AANLkTimDPdDHAg0Odp0WchOLKh3OUSOWX7_0ps8eizFk@mail.gmail.com>
+Subject: Re: [PATCH] Add Kconfig option for default swappiness
+From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+To: Ben Gamari <bgamari.foss@gmail.com>
+Cc: David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
+        Wu Fengguang <fengguang.wu@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2010/11/2 Ben Gamari <bgamari.foss@gmail.com>:
+> On Mon, 1 Nov 2010 20:33:10 -0700 (PDT), David Rientjes <rientjes@google.com> wrote:
+>> And they can't use an init script to tune /proc/sys/vm/swappiness
+>> because...?
+>
+> Packaging concerns, as I mentioned before,
+>
+> On Mon, Nov 01, 2010 at 08:52:30AM -0400, Ben Gamari wrote:
+>> Ubuntu ships different kernels for desktop and server usage. From a
+>> packaging standpoint it would be much nicer to have this set in the
+>> kernel configuration. If we were to throw the setting /etc/sysctl.conf
+>> the kernel would depend upon the package containing sysctl(8)
+>> (procps). We'd rather avoid this and keep the default kernel
+>> configuration in one place.
+>
+> In short, being able to specify this default in .config is just far
+> simpler from a packaging standpoint than the alternatives.
+>
+Hmm, then, can't we add a sysctl template config/script for generic
+sysctl values ?
+Adding this kind of CONFIG one by one seems not very helpful...
 
-> 
-> Which applications are you referring to that cannot gracefully exit if 
-> killed?
-
-like Xorg server, if xorg server be killed, the gnome desktop will be
-crashed.
-
-
-> 
-> CAP_SYS_RAWIO had a much more dramatic impact in the previous heuristic to 
-> such a point that it would often allow memory hogging tasks to elude the 
-> oom killer at the expense of innocent tasks.  I'm not sure this is the 
-> best way to go.
-
-is it some experiments for demonstration the  CAP_SYS_RAWIO will elude
-the oom killer?
-
-
-
-
+Thanks,
+-Kame
