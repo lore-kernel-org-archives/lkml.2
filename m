@@ -1,57 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754504Ab0KBCVX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 22:21:23 -0400
-Received: from usmamail.tilera.com ([72.1.168.231]:40480 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752783Ab0KBCVW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 22:21:22 -0400
-Message-ID: <4CCF759A.2010206@tilera.com>
-Date: Mon, 1 Nov 2010 22:21:15 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1755127Ab0KBCZr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 22:25:47 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:63095 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754016Ab0KBCZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 22:25:46 -0400
+Message-ID: <4CCF77B2.9080604@cn.fujitsu.com>
+Date: Tue, 02 Nov 2010 10:30:10 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-To: <michael@ellerman.id.au>
-CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH] drivers/char/hvc_console.c: reduce max idle timeout
-References: <201010271659.o9RGxrMc009847@farm-0002.internal.tilera.com> <1288658108.16790.13.camel@concordia>
-In-Reply-To: <1288658108.16790.13.camel@concordia>
-Content-Type: text/plain; charset="UTF-8"
+To: Gleb Natapov <gleb@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [RFC PATCH v2 7/7] KVM: KVM: don't break vcpu 'halt' state due
+ to apfs
+References: <4CCE8143.3090105@cn.fujitsu.com> <4CCE82BC.3090000@cn.fujitsu.com> <20101101125551.GD31722@redhat.com>
+In-Reply-To: <20101101125551.GD31722@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/1/2010 8:35 PM, Michael Ellerman wrote:
-> On Wed, 2010-10-27 at 12:54 -0400, Chris Metcalf wrote:
->> The tile architecture uses this framework for our serial console,
->> and our users complain that the delay of up to two seconds feels like
->> the machine has gone non-responsive and is disturbing.  By contrast,
->> a delay of up to half a second feels like just the normal sort of
->> delay caused by swapping, network lag, etc. and is not noticeable.
->> The overhead is obviously not much greater.
-> It's 4 times greater.
->
-> We picked 2 seconds because it gave a reasonable trade off between
-> responsiveness and load. I'm not convinced that half a second is a
-> better number.
+On 11/01/2010 08:55 PM, Gleb Natapov wrote:
 
-Perhaps the tradeoff should be tunable, then?  I think on our architecture
-we're willing to pay a higher cost on the core running this task, since we
-have many cores; we often have a core that mostly just runs miscellaneous
-Linux administrative tasks anyway, so adding a bit more overhead there is
-not significant for us.
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 2cfdf2d..f7aed95 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -5295,8 +5295,9 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
+>  			{
+>  				switch(vcpu->arch.mp_state) {
+>  				case KVM_MP_STATE_HALTED:
+> -					vcpu->arch.mp_state =
+> -						KVM_MP_STATE_RUNNABLE;
+> +					if (list_empty_careful(&vcpu->async_pf.done))
+> +						vcpu->arch.mp_state =
+> +							KVM_MP_STATE_RUNNABLE;
 
-This issue has caused multiple reports of unresponsiveness from our users,
-so I'd be interested in finding a way to strike a balance.  We could use a
-config option defaulting to 2 seconds (for example), or something more
-dynamic (probably unnecessary).
+if nmi/interrupt and apfs completed event occur at the same time, we will miss to
+exit halt sate. Maybe we can check the pending event here, see below patch please.
 
-Let me know your preference, if this sounds plausible, and I'll write up a
-proposed patch.  Thanks.
+>  				case KVM_MP_STATE_RUNNABLE:
+>  					vcpu->arch.apf.halted = false;
+>  					break;
+> @@ -6279,6 +6280,7 @@ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
+>  		vcpu->arch.fault.error_code = 0;
+>  		vcpu->arch.fault.address = work->arch.token;
+>  		kvm_inject_page_fault(vcpu);
+> +		vcpu->arch.mp_state = KVM_MP_STATE_RUNNABLE;
+>  	}
+>  }
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Have a stupid question, why we make the vcpu runnable here? Sorry i don't know
+kvm pv guest to much. :-(
 
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 2044302..27a712b 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5267,6 +5267,12 @@ out:
+ 	return r;
+ }
+ 
++static bool kvm_vcpu_leave_halt_state(struct kvm_vcpu *vcpu)
++{
++	return vcpu->arch.nmi_pending ||
++		(kvm_arch_interrupt_allowed(vcpu) &&
++		 kvm_cpu_has_interrupt(vcpu));
++}
+ 
+ static int __vcpu_run(struct kvm_vcpu *vcpu)
+ {
+@@ -5299,8 +5305,9 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
+ 			{
+ 				switch(vcpu->arch.mp_state) {
+ 				case KVM_MP_STATE_HALTED:
+-					vcpu->arch.mp_state =
+-						KVM_MP_STATE_RUNNABLE;
++					if (kvm_vcpu_leave_halt_state(vcpu))
++						vcpu->arch.mp_state =
++							KVM_MP_STATE_RUNNABLE;
+ 				case KVM_MP_STATE_RUNNABLE:
+ 					vcpu->arch.apf.halted = false;
+ 					break;
+@@ -6113,9 +6120,7 @@ int kvm_arch_vcpu_runnable(struct kvm_vcpu *vcpu)
+ 		!vcpu->arch.apf.halted)
+ 		|| !list_empty_careful(&vcpu->async_pf.done)
+ 		|| vcpu->arch.mp_state == KVM_MP_STATE_SIPI_RECEIVED
+-		|| vcpu->arch.nmi_pending ||
+-		(kvm_arch_interrupt_allowed(vcpu) &&
+-		 kvm_cpu_has_interrupt(vcpu));
++		|| kvm_vcpu_leave_halt_state(vcpu);
+ }
+ 
+ void kvm_vcpu_kick(struct kvm_vcpu *vcpu)
