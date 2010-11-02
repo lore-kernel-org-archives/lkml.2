@@ -1,84 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751291Ab0KDNGk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 09:06:40 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57777 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750877Ab0KDNGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 09:06:38 -0400
-Message-ID: <4CD2AFBE.7040403@kernel.org>
-Date: Thu, 04 Nov 2010 14:06:06 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: "Luck, Tony" <tony.luck@intel.com>
-CC: Oren Laadan <orenl@cs.columbia.edu>,
-        "ksummit-2010-discuss@lists.linux-foundation.org" 
-	<ksummit-2010-discuss@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-References: <Pine.LNX.4.64.1011021530470.12128@takamine.ncl.cs.columbia.edu>	<4CD08419.5050803@kernel.org> <4CD23087.30900@cs.columbia.edu> <4CD28033.1000700@kernel.org> <987664A83D2D224EAE907B061CE93D53016480D1DE@orsmsx505.amr.corp.intel.com>
-In-Reply-To: <987664A83D2D224EAE907B061CE93D53016480D1DE@orsmsx505.amr.corp.intel.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751340Ab0KDNHN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 09:07:13 -0400
+Received: from smtp.nokia.com ([147.243.1.48]:32856 "EHLO mgw-sa02.nokia.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751075Ab0KDNHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 09:07:10 -0400
+Subject: Re: mmotm 2010-10-31-21-24 uploaded (drivers/nfc/pn544)
+From: "Matti J. Aaltonen" <matti.j.aaltonen@nokia.com>
+Reply-To: matti.j.aaltonen@nokia.com
+To: ext Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Jari Vanhala <ext-jari.vanhala@nokia.com>
+In-Reply-To: <20101101110024.bca61c57.randy.dunlap@oracle.com>
+References: <201011010427.oA14R3Y6010534@imap1.linux-foundation.org>
+	 <20101101110024.bca61c57.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Nokia
+Date: Tue, 02 Nov 2010 09:57:10 +0200
+Message-ID: <1288684630.1603.102.camel@masi.mnp.nokia.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 04 Nov 2010 13:06:09 +0000 (UTC)
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 11/04/2010 01:48 PM, Luck, Tony wrote:
->> If you think only about target processes, yeah sure, you can cover
->> most of the stuff but that's not the impossible part.  What's not
->> defined is interaction with the rest of the system and userland.
->> Userland ecosystem is crazy complex.  You simply cannot stop, say,
->> banshee or even pidgin, let it mingle with the rest of the system and
->> restore it later in any safe way.
+On Mon, 2010-11-01 at 11:00 -0700, ext Randy Dunlap wrote:
+> On Sun, 31 Oct 2010 21:25:59 -0700 akpm@linux-foundation.org wrote:
 > 
-> This is why I think it is important to define the limits of
-> which kernel state features are covered (or going to be
-> covered) by checkpoint/restart - and then list applications
-> that are supported (Oren mentioned mysql server in this thread).
-> It will always be easy for someone to point at some application
-> like powertop and say "we can't migrate that, so checkpoint
-> restart is therefore useless" ... this just is not true. This
-> can be useful without having to be complete (as long as the
-> limits are well defined).
+> > The mm-of-the-moment snapshot 2010-10-31-21-24 has been uploaded to
+> > 
+> >    http://userweb.kernel.org/~akpm/mmotm/
+> > 
+> > and will soon be available at
+> > 
+> >    git://zen-kernel.org/kernel/mmotm.git
+> > 
+> > It contains the following patches against 2.6.36:
+> > 
+> > nfc-driver-for-nxp-semiconductors-pn544-nfc-chip.patch
 > 
->> I'm afraid I can't agree with that.  You can store and restore the
->> states which kernel is aware of but that's a very small fraction of
->> the whole picture.
 > 
-> See above - it may be enough to cover a significant number of
-> useful cases.
-
-I was arguing that it is far from being _generally_ useful or
-transparent.  If you're saying that it is something useful for certain
-use cases and application, yeah, sure.  I never argued against that.
-
->> I'm afraid that's not general or transparent at all.  It's extremely
->> invasive to how a system is setup and used.  It basically is poor
->> man's virtualization or rather partitioning without hardware support
->> and at this point I find it very difficult to justify the added
->> complexity.  Let's just make virtualization better.
+> Use %zd to print ssize_t variables and %zu to print size_t:
 > 
-> I don't think that you'll ever make virtualization good enough
-> to make the HPC people happy.
+> drivers/nfc/pn544.c:332: warning: format '%d' expects type 'int', but argument 6 has type 'size_t'
+> drivers/nfc/pn544.c:442: warning: format '%d' expects type 'int', but argument 6 has type 'size_t'
 
-If you think about HPC, userland implementation is enough.  In 99% of
-cases, those programs just read and write data files and burn a lot of
-CPU cycles.  You don't need a lot of fancy stuff to do that.  More
-important things would be integrating with job management so that
-snapshots and rollbacks can be automatically done.
+Thanks, I'll do that... I'm using Sparse and checkpatch --strict but
+neither gave me a warning about that.
 
-I agree that CR would be very useful for certain use cases and
-applications.  I just can't see where the giant patchset fits between
-userland implementation which seems enough for the the most common use
-case of HPC and virtualization which is maturing fast.
+Cheers,
+Matti
 
-Thanks.
+> 
+> 
+> Also see Documentation/printk-formats.txt as needed.
+> 
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
 
--- 
-tejun
+
