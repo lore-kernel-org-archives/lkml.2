@@ -1,30 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275Ab0KBHQf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 03:16:35 -0400
-Received: from mognix.dark-green.com ([88.116.226.179]:58194 "EHLO
+	id S1755595Ab0KBHRo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 03:17:44 -0400
+Received: from mognix.dark-green.com ([88.116.226.179]:56050 "EHLO
 	mognix.dark-green.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752325Ab0KBHQ2 (ORCPT
+	with ESMTP id S1752325Ab0KBHRj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 03:16:28 -0400
+	Tue, 2 Nov 2010 03:17:39 -0400
 MIME-Version: 1.0
-Date: Tue, 02 Nov 2010 08:16:26 +0100
+Date: Tue, 02 Nov 2010 08:17:37 +0100
 From: gimli <gimli@dark-green.com>
 To: <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/6] MacBookAir3,1(3,2) patches
-Message-ID: <c137eaeb4d262fe04abc7f8cf3255701@mognix.dark-green.com>
+Subject: [PATCH 1/6] MacBookAir3,1(3,2) applesmc support
+Message-ID: <cf611abb8b842b043fd6e837cf161a39@mognix.dark-green.com>
 User-Agent: RoundCube Webmail/0.2.2
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: multipart/mixed;
+	boundary="=_ed3f28ba6097e49e5ea9b48f1949d230"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series add support for the MacBookAir3,1 and MacBookAir3,2 to
-the following drivers :
+--=_ed3f28ba6097e49e5ea9b48f1949d230
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="UTF-8"
 
-applesmc, bcm5974, btusb, hid-apple, mbp-nvidia-bl, snd quirks
+This patch add support for the MacBookAir3,1 and MacBookAir3,2 to the
+applesmc driver.
 
 Signed-off-by: Edgar (gimli) Hucek <gimli@dark-green.com>
 
+--=_ed3f28ba6097e49e5ea9b48f1949d230
+Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="UTF-8";
+ name="applesmc_macnbookair.patch"; 
+Content-Disposition: attachment;
+ filename="applesmc_macnbookair.patch"; 
+
+ZGlmZiAtdU5yIGxpbnV4LTIuNi4zNS9kcml2ZXJzL2h3bW9uL2FwcGxlc21jLmMgbGludXgtMi42
+LjM1LU1hY2Jvb2tBaXIvZHJpdmVycy9od21vbi9hcHBsZXNtYy5jCi0tLSBsaW51eC0yLjYuMzUv
+ZHJpdmVycy9od21vbi9hcHBsZXNtYy5jCTIwMTAtMDgtMDIgMDA6MTE6MTQuMDAwMDAwMDAwICsw
+MjAwCisrKyBsaW51eC0yLjYuMzUtTWFjYm9va0Fpci9kcml2ZXJzL2h3bW9uL2FwcGxlc21jLmMJ
+MjAxMC0xMC0yNCAwNzo0NTowMi4wODU2NzkwMDIgKzAyMDAKQEAgLTE2Miw2ICsxNjIsMTAgQEAK
+IC8qIFNldCAyMjogTWFjQm9vayBQcm8gNywxICovCiAJeyAiVEIwVCIsICJUQjFUIiwgIlRCMlQi
+LCAiVEMwRCIsICJUQzBQIiwgIlROMEQiLCAiVE4wUCIsICJUTjBTIiwKIAkgICJUTjFEIiwgIlRO
+MUYiLCAiVE4xRyIsICJUTjFTIiwgIlRoMUgiLCAiVHMwUCIsICJUczBTIiwgTlVMTCB9LAorLyog
+U2V0IDIzOiBNYWNCb29rIEFpciAzLDEgKi8KKwl7ICJUQjBUIiwgIlRCMVQiLCAiVEIyVCIsICJU
+QzBEIiwgIlRDMEUiLCAiVEMwUCIsICJUQzFFIiwgIlRDWjMiLAorCSAgIlRDWjQiLCAiVENaNSIs
+ICJURzBFIiwgIlRHMUUiLCAiVEcyRSIsICJUR1ozIiwgIlRHWjQiLCAiVEdaNSIsCisJICAiVEgw
+RiIsICJUSDBPIiwgIlRNMFAiIH0sCiB9OwogCiAvKiBMaXN0IG9mIGtleXMgdXNlZCB0byByZWFk
+L3dyaXRlIGZhbiBzcGVlZHMgKi8KQEAgLTE1MjQsMTEgKzE1MjgsMjEgQEAKIAl7IC5hY2NlbGVy
+b21ldGVyID0gMSwgLmxpZ2h0ID0gMSwgLnRlbXBlcmF0dXJlX3NldCA9IDIxIH0sCiAvKiBNYWNC
+b29rIFBybyA3LDE6IGFjY2VsZXJvbWV0ZXIsIGJhY2tsaWdodCBhbmQgdGVtcGVyYXR1cmUgc2V0
+IDIyICovCiAJeyAuYWNjZWxlcm9tZXRlciA9IDEsIC5saWdodCA9IDEsIC50ZW1wZXJhdHVyZV9z
+ZXQgPSAyMiB9LAorLyogTWFjQm9vayBBaXIgMywxOiBhY2NlbGVyb21ldGVyLCBiYWNrbGlnaHQg
+YW5kIHRlbXBlcmF0dXJlIHNldCAxNSAqLworCXsgLmFjY2VsZXJvbWV0ZXIgPSAwLCAubGlnaHQg
+PSAwLCAudGVtcGVyYXR1cmVfc2V0ID0gMjMgfSwKIH07CiAKIC8qIE5vdGUgdGhhdCBETUlfTUFU
+Q0goLi4uLCJNYWNCb29rIikgd2lsbCBtYXRjaCAiTWFjQm9va1BybzEsMSIuCiAgKiBTbyB3ZSBu
+ZWVkIHRvIHB1dCAiQXBwbGUgTWFjQm9vayBQcm8iIGJlZm9yZSAiQXBwbGUgTWFjQm9vayIuICov
+CiBzdGF0aWMgX19pbml0ZGF0YSBzdHJ1Y3QgZG1pX3N5c3RlbV9pZCBhcHBsZXNtY193aGl0ZWxp
+c3RbXSA9IHsKKwl7IGFwcGxlc21jX2RtaV9tYXRjaCwgIkFwcGxlIE1hY0Jvb2sgQWlyIDMiLCB7
+CisJICBETUlfTUFUQ0goRE1JX0JPQVJEX1ZFTkRPUiwgIkFwcGxlIiksCisJICBETUlfTUFUQ0go
+RE1JX1BST0RVQ1RfTkFNRSwgIk1hY0Jvb2tBaXIzLDIiKSB9LAorCQkmYXBwbGVzbWNfZG1pX2Rh
+dGFbMjNdfSwKKwl7IGFwcGxlc21jX2RtaV9tYXRjaCwgIkFwcGxlIE1hY0Jvb2sgQWlyIDMiLCB7
+CisJICBETUlfTUFUQ0goRE1JX0JPQVJEX1ZFTkRPUiwgIkFwcGxlIiksCisJICBETUlfTUFUQ0go
+RE1JX1BST0RVQ1RfTkFNRSwgIk1hY0Jvb2tBaXIzLDEiKSB9LAorCQkmYXBwbGVzbWNfZG1pX2Rh
+dGFbMjNdfSwKIAl7IGFwcGxlc21jX2RtaV9tYXRjaCwgIkFwcGxlIE1hY0Jvb2sgQWlyIDIiLCB7
+CiAJICBETUlfTUFUQ0goRE1JX0JPQVJEX1ZFTkRPUiwgIkFwcGxlIiksCiAJICBETUlfTUFUQ0go
+RE1JX1BST0RVQ1RfTkFNRSwgIk1hY0Jvb2tBaXIyIikgfSwK
+--=_ed3f28ba6097e49e5ea9b48f1949d230--
 
