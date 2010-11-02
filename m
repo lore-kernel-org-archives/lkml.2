@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993Ab0KBQNd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 12:13:33 -0400
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:33758 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751596Ab0KBQN2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 12:13:28 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: mv0zly8VM1nq_Hh334lmrxR3w6fN6bukVu_6Bsj7EN.NIwY
- gGDskSpi91HWKIRImlWZo66PiEBlWJ6JnZ2AS_V8542M3KyMmpI4jZp5HPH4
- 7FaaWHtIilpbRyXsyNMIgw7Wnf.XTUNTybcYkqYoPVl874P3o4hWsac8m0nL
- H1PgqMjj0ii7ZJujA0C9n36fhsZzMwvp6BSMZb_m9SiY6lK4PUMIUkM7HN1O
- Hh.D.Lgy0vEip4kgwpZt8jQ5BXJBQChIDHFBAGQve9SRx5Fh5Lr_0n1l1H8k
- -
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 2 Nov 2010 11:13:24 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@kernel.org>
-cc: sedat.dilek@gmail.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Matt Mackall <mpm@selenic.com>, David Rientjes <rientjes@google.com>
-Subject: Re: Where is the SLAM (a mutable slab allocator) development
- happening?
-In-Reply-To: <AANLkTi=tFRb6FYJ0Zi0ybZOr=Wt8_nAP1YO=4Cipg4wE@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1011021111520.20326@router.home>
-References: <AANLkTinPTrc6FpBRTZbDcsOdwpRUayQuE+2K8U8yPorz@mail.gmail.com> <AANLkTi=tFRb6FYJ0Zi0ybZOr=Wt8_nAP1YO=4Cipg4wE@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754028Ab0KBQV2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 12:21:28 -0400
+Received: from claw.goop.org ([74.207.240.146]:49541 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752094Ab0KBQVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 12:21:23 -0400
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Christoph Hellwig <hch@lst.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Daniel Stodden <daniel.stodden@citrix.com>,
+        Xen-devel <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 0/4] FLUSH/FUA updates for Xen blkfront
+Date: Tue,  2 Nov 2010 12:20:43 -0400
+Message-Id: <cover.1288714384.git.jeremy.fitzhardinge@citrix.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Nov 2010, Pekka Enberg wrote:
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-> I've never heard of such a beast. Lets ask David?
+Update the Xen blockfront driver to deal with the block layer's cache
+flush and FUA operations.
 
-There is a proposal at
+The only primitive we have for implementing these is
+BLKIF_OP_WRITE_BARRIER, which is a fully ordered write operation.
+This is much stronger than a simple cache flush which Linux requires,
+but it will do the job.
 
-http://www.linuxplumbersconf.org/2010/ocw/proposals/405
+It can also implement FUA, since it will guarantee that the data is
+written to stable storage when it completes - however it also
+implements full ordering, which makes it equivalent to a FLUSH+FUA.
 
-Sadly it was rejected. Wish we knew more about this.
+Unfortunately it appears that the actual Xen backend implementation
+will fail an empty BLKIF_OP_WRITE_BARRIER operation.  If that happens,
+disable use of WRITE_BARRIER.  (Daniel, I don't know if this is
+deliberate or not; I couldn't see where the error was coming from).
 
+Jeremy Fitzhardinge (4):
+  xen/blkfront: map REQ_FLUSH into a full barrier
+  xen/blkfront: change blk_shadow.request to proper pointer
+  xen/blkfront: Implement FUA with BLKIF_OP_WRITE_BARRIER
+  xen/blkfront: cope with backend that fail empty
+    BLKIF_OP_WRITE_BARRIER requests
+
+ drivers/block/xen-blkfront.c |   53 +++++++++++++++++++++++------------------
+ 1 files changed, 30 insertions(+), 23 deletions(-)
+
+-- 
+1.7.2.3
 
