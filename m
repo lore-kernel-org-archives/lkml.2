@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754310Ab0KBSA6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 14:00:58 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:51760 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754518Ab0KBSAx (ORCPT
+	id S1754615Ab0KBSDQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 14:03:16 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47485 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752653Ab0KBSDH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 14:00:53 -0400
-Date: Tue, 2 Nov 2010 19:00:51 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Trond.Myklebust@netapp.com, bjschuma@netapp.com,
-        torvalds@linux-foundation.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [regression] NFS readdir change break fully cached nfs root
-Message-ID: <20101102180051.GA26089@basil.fritz.box>
+	Tue, 2 Nov 2010 14:03:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=aTntAqnmXWao9D6qwkR8D5ev9iEkolHU22QjVlDSeacntl+AVjGWGVq8+fbw/eUHnI
+         wCnSd6weMYyTl5+LzSvPdyk4L1N4fFJ2AUd6orrYpz5dhDHElMpBhE4rP+NWOVVhxfxd
+         MsK5/D/ZdeP1hmKf4CIK3Kd8Gv2YJ7Ws0PlWo=
+From: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: Re: 2.6.37 rc1 doesn't suspend to ram
+Date: Tue, 2 Nov 2010 19:02:59 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1-00004-geb8abb9-dirty; KDE/4.5.3; x86_64; ; )
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, suspend-devel@lists.sourceforge.net
+References: <201011011955.39485.a.miskiewicz@gmail.com> <201011011959.08933.a.miskiewicz@gmail.com> <201011021413.50822.rjw@sisk.pl>
+In-Reply-To: <201011021413.50822.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201011021903.00320.a.miskiewicz@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday 02 of November 2010, Rafael J. Wysocki wrote:
+> On Monday, November 01, 2010, Arkadiusz Miskiewicz wrote:
+> > On Monday 01 of November 2010, Arkadiusz Miskiewicz wrote:
+> > > Hi,
+> > > 
+|
+> > [ 2012.149491] PM: Syncing filesystems ... done.
+> > [ 2013.092294] Freezing user space processes ... (elapsed 0.01 seconds)
+> > done. [ 2013.108138] Freezing remaining freezable tasks ... (elapsed
+> > 0.01 seconds) done. [ 2013.124226] Suspending console(s) (use
+> > no_console_suspend to debug) [ 2013.144256] btusb_intr_complete: hci0
+> > urb ffff8800b446dcc0 failed to resubmit (1) [ 2013.145254]
+> > btusb_bulk_complete: hci0 urb ffff8800b446d180 failed to resubmit (1) [
+> > 2013.146255] btusb_bulk_complete: hci0 urb ffff8800b446d3c0 failed to
+> > resubmit (1) [ 2013.297335] sd 0:0:0:0: [sda] Synchronizing SCSI cache
 
-My NFS root test systems stopped booting with 2.6.37-rc1. It just
-hangs after entering user space.
+> Can you try the patch at http://lkml.org/lkml/2010/10/21/456, please?
 
-The NFS root setup uses a slightly fancy parameter setup to minimize 
-network traffic:
+This patch fixes things, thanks!
 
-nfsroot=10.23.204.1:/home/nfsroot/edwin,nocto,acregmin=86400,acregmax=86400,acdirmin=86400,acdirmax=86400 root=/dev/nfs
-
-I bisected it down to this commit from Bryan.
-
-Unfortunately it's not trivially revertable because that conflicts
-with later patches.
-
-commit d1bacf9eb2fd0e7ef870acf84b9e3b157dcfa7dc
-Author: Bryan Schumaker <bjschuma@netapp.com>
-Date:   Fri Sep 24 14:48:42 2010 -0400
-
-    NFS: add readdir cache array
-
-
--Andi
+> Rafael
 
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+Arkadiusz Miśkiewicz        PLD/Linux Team
+arekm / maven.pl            http://ftp.pld-linux.org/
