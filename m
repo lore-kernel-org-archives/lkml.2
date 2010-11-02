@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751114Ab0KBJij (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 05:38:39 -0400
-Received: from smtpeu1.atmel.com ([195.65.72.27]:64793 "EHLO bagnes.atmel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750771Ab0KBJif convert rfc822-to-8bit (ORCPT
+	id S1751265Ab0KBJn4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 05:43:56 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:40800 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750771Ab0KBJnu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 05:38:35 -0400
-Subject: Re: [PATCH 1/7] [AVR32] don't check platform_get_irq's return
- value against zero
-From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, David Vrabel <dvrabel@arcom.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Haavard Skinnemoen <hskinnemoen@atmel.com>
-In-Reply-To: <20101102091545.GQ31158@pengutronix.de>
-References: <1260979809-24811-1-git-send-email-u.kleine-koenig@pengutronix.de>
-	 <20101019064543.GA23839@pengutronix.de>
-	 <1288605483.2843.71.camel@hcegtvedt>
-	 <20101102091545.GQ31158@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Atmel Corporation
-Date: Tue, 02 Nov 2010 10:30:50 +0100
-Message-ID: <1288690250.32331.41.camel@hcegtvedt>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8BIT
-X-OriginalArrivalTime: 02 Nov 2010 09:30:53.0064 (UTC) FILETIME=[A4D68880:01CB7A70]
+	Tue, 2 Nov 2010 05:43:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=LGg4umqD9sDCa5UAkEHuDcf5AwEcwfAsyn6Oc+eM+VEGgwCLVpyLY8WY7hk9ay6nVS
+         zwIjDp5HkhZ8GOOjTvhFg0j7rrnDcRec8Qu5VpgY9fhgg3e3X/lwB6Cr4SQuL25RaUOG
+         ShSfpBI0jiWpCW73BRTqQKfcH9ePcmHuW8Iy0=
+From: Audun Hoem <audun.hoem@gmail.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        audun <audun.hoem@gmail.com>
+Subject: [PATCH] Staging: frontier: alphatrack: Fixed coding style issues
+Date: Tue,  2 Nov 2010 10:43:44 +0100
+Message-Id: <1288691024-25643-1-git-send-email-audun.hoem@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-02 at 10:15 +0100, Uwe Kleine-König wrote: 
-> Hello Hans-Christian,
-> 
-> On Mon, Nov 01, 2010 at 10:58:03AM +0100, Hans-Christian Egtvedt wrote:
-> > On Tue, 2010-10-19 at 08:45 +0200, Uwe Kleine-König wrote: 
-> > > On Wed, Dec 16, 2009 at 05:10:03PM +0100, Uwe Kleine-König wrote:
-> > > > platform_get_irq returns -ENXIO on failure, so !int_irq was probably
-> > > > always true.  Better use (int)int_irq <= 0.  Note that a return value of
-> > > > zero is still handled as error even though this could mean irq0.
-> > 
-> > Indeed, but external interrupts are numbered after the internal
-> > interrupt lines, so in practice this does not happen. At least for now
-> > with the AP700X series.
-> > 
-> > > > This is a followup to 305b3228f9ff4d59f49e6d34a7034d44ee8ce2f0 that
-> > > > changed the return value of platform_get_irq from 0 to -ENXIO on error.
-> > 
-> > Thanks for this fix.
-> > 
-> > > > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> > > > Cc: David Vrabel <dvrabel@arcom.com>
-> > > > Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> > > > Cc: Haavard Skinnemoen <hskinnemoen@atmel.com>
-> > 
-> > Acked-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-> I thought this to go via the avr32 tree.  You "only" acked, so what tree
-> do you consider here?
+From: audun <audun.hoem@gmail.com>
 
-Right now there isn't any AVR32 tree, since I have yet to receive an
-answer to my kernel.org account request. Could you push it through Linus
-tree?
+I cleaned up the coding style.
 
+Signed-off-by: Audun Hoem <audun.hoem@gmail.com>
+---
+ drivers/staging/frontier/alphatrack.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/staging/frontier/alphatrack.c b/drivers/staging/frontier/alphatrack.c
+index ef7fbf8..9d439fa 100644
+--- a/drivers/staging/frontier/alphatrack.c
++++ b/drivers/staging/frontier/alphatrack.c
+@@ -88,8 +88,11 @@ MODULE_SUPPORTED_DEVICE("Frontier Designs Alphatrack Control Surface");
+ static int debug = ALPHATRACK_DEBUG;
+ 
+ /* Use our own dbg macro */
+-#define dbg_info(dev, format, arg...) do \
+-    { if (debug) dev_info(dev , format , ## arg); } while (0)
++#define dbg_info(dev, format, arg...) \
++do {
++	if (debug)
++		dev_info(dev , format , ## arg);
++} while (0)
+ 
+ #define alphatrack_ocmd_info(dev, cmd, format, arg...)
+ 
+@@ -769,7 +772,7 @@ static int usb_alphatrack_probe(struct usb_interface *intf,
+ 	}
+ 
+ 	dev->write_buffer =
+-	    kmalloc(sizeof(struct alphatrack_ocmd) * true_size, GFP_KERNEL);
++	    kmalloc(sizeof(struct alphatrack_ocmd) *true_size, GFP_KERNEL);
+ 
+ 	if (!dev->write_buffer) {
+ 		dev_err(&intf->dev, "Couldn't allocate write_buffer\n");
 -- 
-Hans-Christian Egtvedt
+1.7.0.4
 
