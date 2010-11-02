@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755793Ab0KBGwU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 02:52:20 -0400
-Received: from mga02.intel.com ([134.134.136.20]:58031 "EHLO mga02.intel.com"
+	id S1755929Ab0KBG4Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 02:56:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30429 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752933Ab0KBGwN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 02:52:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,279,1286175600"; 
-   d="scan'208";a="673306566"
-From: Sheng Yang <sheng@linux.intel.com>
-Organization: Intel Opensource Technology Center
-To: Jan Kiszka <jan.kiszka@web.de>
-Subject: Re: Crash in intel_iommu_assign_device
-Date: Tue, 2 Nov 2010 14:52:19 +0800
-User-Agent: KMail/1.13.5 (Linux/2.6.35-22-generic; KDE/4.5.1; x86_64; ; )
-Cc: kvm <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <4CCEA761.90501@web.de>
-In-Reply-To: <4CCEA761.90501@web.de>
+	id S1753059Ab0KBG4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 02:56:19 -0400
+Date: Tue, 2 Nov 2010 08:56:13 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [RFC PATCH v2 7/7] KVM: KVM: don't break vcpu 'halt' state due
+ to apfs
+Message-ID: <20101102065613.GA7881@redhat.com>
+References: <4CCE8143.3090105@cn.fujitsu.com>
+ <4CCE82BC.3090000@cn.fujitsu.com>
+ <20101101125551.GD31722@redhat.com>
+ <4CCF77B2.9080604@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011021452.19525.sheng@linux.intel.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CCF77B2.9080604@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 01 November 2010 19:41:21 Jan Kiszka wrote:
-> Hi Sheng,
+On Tue, Nov 02, 2010 at 10:30:10AM +0800, Xiao Guangrong wrote:
+> On 11/01/2010 08:55 PM, Gleb Natapov wrote:
 > 
-> I'm not claiming to understand the details, but this looks like use
-> (dereference of pte via dma_pte_addr) after release (free_pgtable_page
-> of dmar_domain->pgd aka pte) to me:
+> > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> > index 2cfdf2d..f7aed95 100644
+> > --- a/arch/x86/kvm/x86.c
+> > +++ b/arch/x86/kvm/x86.c
+> > @@ -5295,8 +5295,9 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
+> >  			{
+> >  				switch(vcpu->arch.mp_state) {
+> >  				case KVM_MP_STATE_HALTED:
+> > -					vcpu->arch.mp_state =
+> > -						KVM_MP_STATE_RUNNABLE;
+> > +					if (list_empty_careful(&vcpu->async_pf.done))
+> > +						vcpu->arch.mp_state =
+> > +							KVM_MP_STATE_RUNNABLE;
 > 
-> static int intel_iommu_attach_device(struct iommu_domain *domain,
-> 				     struct device *dev)
-> {
-> 	[...]
-> 		pte = dmar_domain->pgd;
-> 		if (dma_pte_present(pte)) {
-> 			free_pgtable_page(dmar_domain->pgd);
-> 			dmar_domain->pgd = (struct dma_pte *)
-> 				phys_to_virt(dma_pte_addr(pte));
-> 		}
+> if nmi/interrupt and apfs completed event occur at the same time, we will miss to
+> exit halt sate. Maybe we can check the pending event here, see below patch please.
 > 
-> At least it crashes here right on pte->val access. Swap both lines?
+No, we will not. If nmi/interrupt and apfs completed event occur at the same
+time kvm_vcpu_block() will exit with KVM_REQ_UNHALT set, but cpu will
+not be unhalted because of list_empty_careful(&vcpu->async_pf.done)
+check. Vcpu then will process pending apf completion and enter
+kvm_vcpu_block() again which will immediately exit because
+kvm_arch_vcpu_runnable() will return true since there is pending
+nmi/interrupt. This time vcpu will be unhalted.
 
-I think code is right.
-
-The comment above indicate the case: the code want to decrease the level of page 
-table. Mostly it is a 4 level page table, and the code would turn it into 3 levels 
-pagetable. What the code did is just get the first entry of the old pagetable level 
-4, then free the level 4 pagetable's page, and make the pagetable to a level 3 
-pagetable.
-
-Seems it make no sense to swap the lines...
+> >  				case KVM_MP_STATE_RUNNABLE:
+> >  					vcpu->arch.apf.halted = false;
+> >  					break;
+> > @@ -6279,6 +6280,7 @@ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
+> >  		vcpu->arch.fault.error_code = 0;
+> >  		vcpu->arch.fault.address = work->arch.token;
+> >  		kvm_inject_page_fault(vcpu);
+> > +		vcpu->arch.mp_state = KVM_MP_STATE_RUNNABLE;
+> >  	}
+> >  }
+> 
+> Have a stupid question, why we make the vcpu runnable here? Sorry i don't know
+> kvm pv guest to much. :-(
+Because kvm_arch_vcpu_runnable() does not check for pending exceptions.
+Since now we do not unhalt vcpu when apf completion happens we need to
+unhalt it here. But, as I said, the patch is untested.
 
 --
-regards
-Yang, Sheng
-
-> 
-> Jan
+			Gleb.
