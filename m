@@ -1,59 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989Ab0KBG71 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 02:59:27 -0400
-Received: from dallas.jonmasters.org ([72.29.103.172]:44637 "EHLO
-	dallas.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753059Ab0KBG7U (ORCPT
+	id S933150Ab0KBHHQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 03:07:16 -0400
+Received: from fmmailgate01.web.de ([217.72.192.221]:58492 "EHLO
+	fmmailgate01.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753467Ab0KBHHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 02:59:20 -0400
-Subject: Re: [RFD] Device Renaming Mechanism
-From: Jon Masters <jonathan@jonmasters.org>
-To: Nao Nishijima <nao.nishijima.xt@hitachi.com>
-Cc: gregkh@suse.de, James.Bottomley@suse.de, rwheeler@redhat.com,
-        linux-kernel@vger.kernel.org,
-        linux-hotplug-devel@lists.sourceforge.net,
-        linux-hotplug@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
-        mdomsch@dell.com
-In-Reply-To: <4CAEAAD4.2080504@hitachi.com>
-References: <4CAEAAD4.2080504@hitachi.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: World Organi[sz]ation of Broken Dreams
-Date: Tue, 02 Nov 2010 03:00:08 -0400
-Message-ID: <1288681208.3916.170.camel@constitution.bos.jonmasters.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 74.92.29.237
-X-SA-Exim-Mail-From: jonathan@jonmasters.org
-X-SA-Exim-Scanned: No (on dallas.jonmasters.org); SAEximRunCond expanded to false
+	Tue, 2 Nov 2010 03:07:11 -0400
+Message-ID: <4CCFB898.5030200@web.de>
+Date: Tue, 02 Nov 2010 08:07:04 +0100
+From: Jan Kiszka <jan.kiszka@web.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+MIME-Version: 1.0
+To: Sheng Yang <sheng@linux.intel.com>
+CC: kvm <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Crash in intel_iommu_assign_device
+References: <4CCEA761.90501@web.de> <201011021452.19525.sheng@linux.intel.com>
+In-Reply-To: <201011021452.19525.sheng@linux.intel.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigF196ADE705D8A99002D34CF6"
+X-Provags-ID: V01U2FsdGVkX1/cKiav6EM7zf/TILMzNDM1Db2Cs3eXCV7vayju
+	qu+z0PXX3TRB6zWc8zfX12RT7cJZnAk/8Eh63opyTMoW0KpV49
+	1B8AQuxco=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-08 at 14:23 +0900, Nao Nishijima wrote:
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigF196ADE705D8A99002D34CF6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> I'm trying to solve a device name(or device node) mismatch problem caused by
-> device configuration changes. Now I have an idea of device renaming to solve it,
-> and would like to request for comments from kernel developers.
+Am 02.11.2010 07:52, Sheng Yang wrote:
+> On Monday 01 November 2010 19:41:21 Jan Kiszka wrote:
+>> Hi Sheng,
+>>
+>> I'm not claiming to understand the details, but this looks like use
+>> (dereference of pte via dma_pte_addr) after release (free_pgtable_page=
 
-I apologize that I missed this mail until I was doing some podcasts ;)
+>> of dmar_domain->pgd aka pte) to me:
+>>
+>> static int intel_iommu_attach_device(struct iommu_domain *domain,
+>> 				     struct device *dev)
+>> {
+>> 	[...]
+>> 		pte =3D dmar_domain->pgd;
+>> 		if (dma_pte_present(pte)) {
+>> 			free_pgtable_page(dmar_domain->pgd);
+>> 			dmar_domain->pgd =3D (struct dma_pte *)
+>> 				phys_to_virt(dma_pte_addr(pte));
+>> 		}
+>>
+>> At least it crashes here right on pte->val access. Swap both lines?
+>=20
+> I think code is right.
+>=20
+> The comment above indicate the case: the code want to decrease the leve=
+l of page=20
+> table. Mostly it is a 4 level page table, and the code would turn it in=
+to 3 levels=20
+> pagetable. What the code did is just get the first entry of the old pag=
+etable level=20
+> 4, then free the level 4 pagetable's page, and make the pagetable to a =
+level 3=20
+> pagetable.
+>=20
+> Seems it make no sense to swap the lines...
 
-Although not necessarily useful for within-device volumes, I would
-nonetheless like to call attention to the DMTF SMBIOS specification, and
-in particular structure Type 9, which allows system vendors to provide
-various information about the correct mappings of physical system slots
-to devices. Matt Domsch produced a utility a while back called
-biosdevname that can be used to implement one possible device renaming
-mechanism for network interfaces, based on the system slot identifier,
-but of course there is no reason not to support the other devices.
+It fixes the crash here, and I'm convinced the current code is wrong.
+See the patch I've just sent out.
 
-I have read the other mails, but I would love to know what Greg and Kay
-think about supporting automatic renaming in the case where the system
-*actually told you the preferred name* in such a table. Perhaps we can
-discuss this in Cambridge this week.
-
-Jon.
+Jan
 
 
+--------------enigF196ADE705D8A99002D34CF6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.15 (GNU/Linux)
+Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAkzPuJ0ACgkQitSsb3rl5xTqnQCfVybg1Tgb+t9SF1xvTWkffmV+
+O9EAoO77a2s94wuaYzEhfawIpsGm3e9R
+=YaYo
+-----END PGP SIGNATURE-----
+
+--------------enigF196ADE705D8A99002D34CF6--
