@@ -1,99 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755127Ab0KBCZr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 22:25:47 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:63095 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754016Ab0KBCZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 22:25:46 -0400
-Message-ID: <4CCF77B2.9080604@cn.fujitsu.com>
-Date: Tue, 02 Nov 2010 10:30:10 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [RFC PATCH v2 7/7] KVM: KVM: don't break vcpu 'halt' state due
- to apfs
-References: <4CCE8143.3090105@cn.fujitsu.com> <4CCE82BC.3090000@cn.fujitsu.com> <20101101125551.GD31722@redhat.com>
-In-Reply-To: <20101101125551.GD31722@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1755221Ab0KBCan (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 22:30:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10352 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754194Ab0KBCal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 22:30:41 -0400
+Subject: Re: [PATCH] libertas - remove duplicate header inclusions from cfg
+From: Dan Williams <dcbw@redhat.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: libertas-dev@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Holger Schurig <hs4233@mail.mn-solutions.de>
+In-Reply-To: <alpine.LNX.2.00.1010301501430.7979@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1010301501430.7979@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 01 Nov 2010 21:29:12 -0500
+Message-ID: <1288664952.4003.33.camel@dcbw.foobar.com>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2010 08:55 PM, Gleb Natapov wrote:
+On Sat, 2010-10-30 at 15:07 +0200, Jesper Juhl wrote:
+> Hi,
+> 
+> drivers/net/wireless/libertas/cfg.c manages to include both 
+> 'linux/wait.h' and 'linux/sched.h' twice. Once is enough for both headers.
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 2cfdf2d..f7aed95 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -5295,8 +5295,9 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
->  			{
->  				switch(vcpu->arch.mp_state) {
->  				case KVM_MP_STATE_HALTED:
-> -					vcpu->arch.mp_state =
-> -						KVM_MP_STATE_RUNNABLE;
-> +					if (list_empty_careful(&vcpu->async_pf.done))
-> +						vcpu->arch.mp_state =
-> +							KVM_MP_STATE_RUNNABLE;
+Acked-by: Dan Williams <dcbw@redhat.com>
 
-if nmi/interrupt and apfs completed event occur at the same time, we will miss to
-exit halt sate. Maybe we can check the pending event here, see below patch please.
+> ---
+>  cfg.c |    2 --
+>  1 file changed, 2 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/libertas/cfg.c b/drivers/net/wireless/libertas/cfg.c
+> index 5046a00..73b2bee 100644
+> --- a/drivers/net/wireless/libertas/cfg.c
+> +++ b/drivers/net/wireless/libertas/cfg.c
+> @@ -9,8 +9,6 @@
+>  #include <linux/sched.h>
+>  #include <linux/wait.h>
+>  #include <linux/slab.h>
+> -#include <linux/sched.h>
+> -#include <linux/wait.h>
+>  #include <linux/ieee80211.h>
+>  #include <net/cfg80211.h>
+>  #include <asm/unaligned.h>
+> 
+> 
 
->  				case KVM_MP_STATE_RUNNABLE:
->  					vcpu->arch.apf.halted = false;
->  					break;
-> @@ -6279,6 +6280,7 @@ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
->  		vcpu->arch.fault.error_code = 0;
->  		vcpu->arch.fault.address = work->arch.token;
->  		kvm_inject_page_fault(vcpu);
-> +		vcpu->arch.mp_state = KVM_MP_STATE_RUNNABLE;
->  	}
->  }
 
-Have a stupid question, why we make the vcpu runnable here? Sorry i don't know
-kvm pv guest to much. :-(
-
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 2044302..27a712b 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -5267,6 +5267,12 @@ out:
- 	return r;
- }
- 
-+static bool kvm_vcpu_leave_halt_state(struct kvm_vcpu *vcpu)
-+{
-+	return vcpu->arch.nmi_pending ||
-+		(kvm_arch_interrupt_allowed(vcpu) &&
-+		 kvm_cpu_has_interrupt(vcpu));
-+}
- 
- static int __vcpu_run(struct kvm_vcpu *vcpu)
- {
-@@ -5299,8 +5305,9 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
- 			{
- 				switch(vcpu->arch.mp_state) {
- 				case KVM_MP_STATE_HALTED:
--					vcpu->arch.mp_state =
--						KVM_MP_STATE_RUNNABLE;
-+					if (kvm_vcpu_leave_halt_state(vcpu))
-+						vcpu->arch.mp_state =
-+							KVM_MP_STATE_RUNNABLE;
- 				case KVM_MP_STATE_RUNNABLE:
- 					vcpu->arch.apf.halted = false;
- 					break;
-@@ -6113,9 +6120,7 @@ int kvm_arch_vcpu_runnable(struct kvm_vcpu *vcpu)
- 		!vcpu->arch.apf.halted)
- 		|| !list_empty_careful(&vcpu->async_pf.done)
- 		|| vcpu->arch.mp_state == KVM_MP_STATE_SIPI_RECEIVED
--		|| vcpu->arch.nmi_pending ||
--		(kvm_arch_interrupt_allowed(vcpu) &&
--		 kvm_cpu_has_interrupt(vcpu));
-+		|| kvm_vcpu_leave_halt_state(vcpu);
- }
- 
- void kvm_vcpu_kick(struct kvm_vcpu *vcpu)
