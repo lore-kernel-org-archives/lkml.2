@@ -1,94 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752489Ab0KBLIX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 07:08:23 -0400
-Received: from mailout1.zih.tu-dresden.de ([141.30.67.72]:42799 "EHLO
-	mailout1.zih.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751810Ab0KBLIS convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 07:08:18 -0400
-Subject: Re: [PATCH] wrong PERF_COUNT_HW_CACHE_REFERENCES and
- PERF_COUNT_HW_CACHE_MISSES for AMD
-From: Robert =?ISO-8859-1?Q?Sch=F6ne?= <robert.schoene@tu-dresden.de>
-To: Stephane Eranian <eranian@google.com>
-Cc: Vince Weaver <vweaver1@eecs.utk.edu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
-        x86 <x86@kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTimdp1teeaZkn2h32TQjaWxqegp27TNq+rvQcxAF@mail.gmail.com>
-References: <1288620663.2712.84.camel@localhost>
-	 <AANLkTimdp1teeaZkn2h32TQjaWxqegp27TNq+rvQcxAF@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 02 Nov 2010 12:08:05 +0100
-Message-ID: <1288696085.2720.11.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8BIT
-X-TUD-Virus-Scanned: mailout1.zih.tu-dresden.de
+	id S1752524Ab0KBLLN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 07:11:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22200 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751810Ab0KBLLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 07:11:04 -0400
+Message-ID: <4CCFF1BA.1010206@redhat.com>
+Date: Tue, 02 Nov 2010 07:10:50 -0400
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Christopher Yeoh <cyeoh@au1.ibm.com>
+CC: Bryan Donlan <bdonlan@gmail.com>, linux-kernel@vger.kernel.org,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [RFC][PATCH] Cross Memory Attach
+References: <20100915104855.41de3ebf@lilo>	<4C90A6C7.9050607@redhat.com>	<AANLkTi=rmUUPCm212Sju-wW==5cT4eqqU+FEP_hX-Z_y@mail.gmail.com>	<20100916104819.36d10acb@lilo>	<4C91E2CC.9040709@redhat.com> <20101102140710.5f2a6557@lilo>
+In-Reply-To: <20101102140710.5f2a6557@lilo>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-Am Dienstag, den 02.11.2010, 02:55 +0100 schrieb Stephane Eranian:
-> Hi,
-> 
-> 
-> 
-> On Mon, Nov 1, 2010 at 3:11 PM, Robert Schöne
-> <robert.schoene@tu-dresden.de> wrote:
+  On 11/01/2010 11:37 PM, Christopher Yeoh wrote:
 > >
-> > The current arch/x86/kernel/cpu/perf_event_amd.c file lists
-> > L1-Instruction-Cache Misses and Accesses as PERF_COUNT_HW_CACHE_MISSES
-> > resp. PERF_COUNT_HW_CACHE_REFERENCES.
+> >  You could have each process open /proc/self/mem and pass the fd using
+> >  SCM_RIGHTS.
 > >
-> I always thought PERF_COUNT_HW_CACHE_* was about data cache misses.
-> But given that there is no clear definitions for those events, it
-> creates confusion.
+> >  That eliminates a race; with copy_to_process(), by the time the pid
+> >  is looked up it might designate a different process.
 >
-That's what I thought too before reading the AMD BKDG for Family 10.
-It always seemed to me that the "hardware" event type was kind of a
-mapping to the Intel "architectural events". And in their definition its
-it reads as LLC.
-> 
-> If you change the meaning of HW_CACHE_MISSES, then seems to me, you need
-> to change the mapping in the perf tool, because now it includes both data+code.
+> Just to revive an old thread (I've been on holidays), but this doesn't
+> work either. the ptrace check is done by mem_read (eg on each read) so
+> even if you do pass the fd using SCM_RIGHTS, reads on the fd still
+> fail.
 >
-So does the Intel implementation. It's just LLC misses with no
-definition on what was accessed.
-> 
-> > This fix uses L2C-Misses and Accesses instead. (Real LLC-events would be
-> > better, but there are some restrictions for Northbridge Events on AMD).
-> >
-> And those constraints are handled correctly by the kernel.
-> 
-> The constraint is such that you cannot have more than 4 instances of
-> Northbridge events active at the same time per core. If you do, then one
-> of them will starve (if issued from different cores).
+> So unless there's good reason to believe that the ptrace permission
+> check is no longer needed, the /proc/pid/mem interface doesn't seem to
+> be an option for what we want to do.
 >
-Yes, we could use event 4E1 (L3 Cache Misses), but we would need
-different event IDs for the different AMD Families. Not all of them have
-an L3-Cache and even some implementations of Family 10h don't have L3
-either.
-As this event ID is a definition, we would have to introduce a
-"placeholder" definition, which is - whenever a Cache Misses/Accesses
-event is initiated - replaced by the "Last Level Cache" event ID for the
-processor, which is currently in the system.
->
-> 
-> > --- a/arch/x86/kernel/cpu/perf_event_amd.c
-> > +++ b/arch/x86/kernel/cpu/perf_event_amd.c
-> > @@ -100,8 +100,8 @@ static const u64 amd_perfmon_event_map[] =
-> >  {
-> >   [PERF_COUNT_HW_CPU_CYCLES]           = 0x0076,
-> >   [PERF_COUNT_HW_INSTRUCTIONS]         = 0x00c0,
-> > -  [PERF_COUNT_HW_CACHE_REFERENCES]     = 0x0080,
-> > -  [PERF_COUNT_HW_CACHE_MISSES]         = 0x0081,
-> > +  [PERF_COUNT_HW_CACHE_REFERENCES]     = 0x037D,
-> > +  [PERF_COUNT_HW_CACHE_MISSES]         = 0x037E,
-> >   [PERF_COUNT_HW_BRANCH_INSTRUCTIONS]  = 0x00c2,
-> >   [PERF_COUNT_HW_BRANCH_MISSES]                = 0x00c3,
-> >  };
-> >
 
+Perhaps move the check to open().  I can understand the desire to avoid 
+letting random processes peek each other's memory, but once a process 
+has opened its own /proc/self/mem and explicitly passed it to another, 
+we should allow it.
+
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
