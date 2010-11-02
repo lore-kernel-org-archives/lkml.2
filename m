@@ -1,531 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753438Ab0KBOx1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 10:53:27 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:57294 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751504Ab0KBOxV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 10:53:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ycCp1ACFtQCS28WLhtKZuvSeJUT1h4NkoRUj0VwL74x4mOzcvNw7SeZ9jhyxWz1Ury
-         5aU8KoKf6s7Us6yMDyaw==
+	id S1753482Ab0KBO5a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 10:57:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21329 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751504Ab0KBO5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 10:57:23 -0400
+Date: Tue, 2 Nov 2010 10:57:18 -0400
+From: Josef Bacik <josef@redhat.com>
+To: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
+Cc: Jeff Moyer <jmoyer@redhat.com>, Josef Bacik <jbacik@redhat.com>,
+        Chris Mason <chris.mason@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-btrfs@vger.kernel.org,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [RFC][PATCH] direct-io: btrfs: avoid splitting dio requests
+	for non-btrfs filesystems
+Message-ID: <20101102145717.GA2531@localhost.localdomain>
+References: <4CD001A2.4000408@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1288682905.12061.109.camel@minggr.sh.intel.com>
-References: <1288682905.12061.109.camel@minggr.sh.intel.com>
-Date: Tue, 2 Nov 2010 15:53:15 +0100
-Message-ID: <AANLkTimyTYNczZqV5gPmKfL6iYjNf3wpYYFi+5US8bP3@mail.gmail.com>
-Subject: Re: [DRAFT PATCH 2/3] perf: Implement Nehalem uncore pmu
-From: Stephane Eranian <eranian@google.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>, robert.richter@amd.com,
-        Cyrill Gorcunov <gorcunov@gmail.com>, paulus@samba.org,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4CD001A2.4000408@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lin,
+On Tue, Nov 02, 2010 at 01:18:42PM +0100, Christian Ehrhardt wrote:
+> Hi,
+> this is about an issue newer kernels show, bysplitting direct I/O requests
+> into 4k pieces to directly merge them in the Block Device Layer afterwards.
+> 
+> If anyone is interested in own tests just use a simple command like
+> dd if=/mnt/test/test-dd1 of=/dev/null iflag=direct bs=64k count=1
+> in combination with blktrace.
+> 
+> The following patch is more a proposal for discussion than a solution, well
+> thats what RFC's are about right.
+> I'm unsure about names, but also if the approach in general is the right way.
+> It should apply to every 2.6.36 and 2.6.37 kernel.
+> 
+> I put everyone on CC who was involved in the patches leading to the current
+> behavior.
+> 
+> Gr�sse / regards,
+> Christian Ehrhardt
+> IBM Linux Technology Center, System z Linux Performance 
+> 
+> --- cut here ---
+> 
+> Subject: [RFC][PATCH] direct-io: btrfs: avoid splitting dio requests for non-btrfs filesystems
+> 
+> From: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
+> 
+> Commit c2c6ca41 by Josef Bacik <josef@redhat.com> caused all direct I/O's to
+> be split into 4k requests before arriving in the block device layer.
+> This was later on partially fixed by Jeff Moyer <jmoyer@redhat.com> in
+> 7a801ac6.
+> 
+> Jeffs fix improved the situation a lot, but eventually it still splits I/Os
+> for non-btrfs file systems as well were it wouldn't have to.
+> 
+> Eventually in my example on a ext2 filesystem it splits it every 4Mb where
+> dio->boundary is evaluated to true.
+> 
+> In blktrace this looks like:
+>               dd-910   [002]    38.762523:  94,8    A   R 131264 + 8 <- (94,9) 131072
+>               dd-910   [002]    38.762531:  94,8    Q   R 131264 + 8 [dd]
+>               dd-910   [002]    38.762535:  94,8    G   R 131264 + 8 [dd]
+>               dd-910   [002]    38.762537:  94,8    P   N [dd]
+>               dd-910   [002]    38.762539:  94,8    I   R 131264 + 8 [dd]
+>               dd-910   [002]    38.762544:  94,8    A   R 131272 + 8 <- (94,9) 131080
+>               dd-910   [002]    38.762544:  94,8    Q   R 131272 + 8 [dd]
+>               dd-910   [002]    38.762546:  94,8    M   R 131272 + 8 [dd]
+>               dd-910   [002]    38.762550:  94,8    A   R 131280 + 8 <- (94,9) 131088
+>               dd-910   [002]    38.762551:  94,8    Q   R 131280 + 8 [dd]
+>               dd-910   [002]    38.762551:  94,8    M   R 131280 + 8 [dd]
+>               dd-910   [002]    38.762556:  94,8    A   R 131288 + 8 <- (94,9) 131096
+>               dd-910   [002]    38.762557:  94,8    Q   R 131288 + 8 [dd]
+>               dd-910   [002]    38.762557:  94,8    M   R 131288 + 8 [dd]
+>               dd-910   [002]    38.762562:  94,8    A   R 131296 + 8 <- (94,9) 131104
+>               dd-910   [002]    38.762563:  94,8    Q   R 131296 + 8 [dd]
+>               dd-910   [002]    38.762564:  94,8    M   R 131296 + 8 [dd]
+>               dd-910   [002]    38.762568:  94,8    A   R 131304 + 8 <- (94,9) 131112
+>               dd-910   [002]    38.762569:  94,8    Q   R 131304 + 8 [dd]
+>               dd-910   [002]    38.762570:  94,8    M   R 131304 + 8 [dd]
+>               dd-910   [002]    38.762577:  94,8    A   R 131312 + 8 <- (94,9) 131120
+>               dd-910   [002]    38.762578:  94,8    Q   R 131312 + 8 [dd]
+>               dd-910   [002]    38.762579:  94,8    M   R 131312 + 8 [dd]
+>               dd-910   [002]    38.762584:  94,8    A   R 131320 + 8 <- (94,9) 131128
+>               dd-910   [002]    38.762584:  94,8    Q   R 131320 + 8 [dd]
+>               dd-910   [002]    38.762585:  94,8    M   R 131320 + 8 [dd]
+>               dd-910   [002]    38.762590:  94,8    A   R 131328 + 8 <- (94,9) 131136
+>               dd-910   [002]    38.762590:  94,8    Q   R 131328 + 8 [dd]
+>               dd-910   [002]    38.762591:  94,8    M   R 131328 + 8 [dd]
+>               dd-910   [002]    38.762596:  94,8    A   R 131336 + 8 <- (94,9) 131144
+>               dd-910   [002]    38.762597:  94,8    Q   R 131336 + 8 [dd]
+>               dd-910   [002]    38.762598:  94,8    M   R 131336 + 8 [dd]
+>               dd-910   [002]    38.762605:  94,8    A   R 131344 + 16 <- (94,9) 131152
+>               dd-910   [002]    38.762607:  94,8    Q   R 131344 + 16 [dd]
+>               dd-910   [002]    38.762608:  94,8    M   R 131344 + 16 [dd]
+>               dd-910   [002]    38.762611:  94,8    A   R 131368 + 32 <- (94,9) 131176
+>               dd-910   [002]    38.762612:  94,8    Q   R 131368 + 32 [dd]
+>               dd-910   [002]    38.762616:  94,8    G   R 131368 + 32 [dd]
+>               dd-910   [002]    38.762617:  94,8    I   R 131368 + 32 [dd]
+>               dd-910   [002]    38.762619:  94,8    U   N [dd] 2
+>               dd-910   [002]    38.762621:  94,8    D   R 131264 + 96 [dd]
+>               dd-910   [002]    38.762625:  94,8    D   R 131368 + 32 [dd]
+>           <idle>-0     [012]    38.763363:  94,8    C   R 131264 + 96 [0] 
+>           <idle>-0     [015]    38.763797:  94,8    C   R 131368 + 32 [0]
+> 
+> The usual behavior before both commits was:
+>               dd-919   [002]    37.513685:  94,8    A   R 7824 + 96 <- (94,9) 7632
+>               dd-919   [002]    37.513693:  94,8    Q   R 7824 + 96 [dd]
+>               dd-919   [002]    37.513697:  94,8    G   R 7824 + 96 [dd]
+>               dd-919   [002]    37.513700:  94,8    P   N [dd]
+>               dd-919   [002]    37.513701:  94,8    I   R 7824 + 96 [dd]
+>               dd-919   [002]    37.513794:  94,8    A   R 7928 + 32 <- (94,9) 7736
+>               dd-919   [002]    37.513795:  94,8    Q   R 7928 + 32 [dd]
+>               dd-919   [002]    37.513800:  94,8    G   R 7928 + 32 [dd]
+>               dd-919   [002]    37.513802:  94,8    I   R 7928 + 32 [dd]
+>               dd-919   [002]    37.513804:  94,8    U   N [dd] 2
+>               dd-919   [002]    37.513806:  94,8    D   R 7824 + 96 [dd]
+>               dd-919   [002]    37.513810:  94,8    D   R 7928 + 32 [dd]
+>           <idle>-0     [011]    37.514362:  94,8    C   R 7824 + 96 [0] 
+>           <idle>-0     [014]    37.514728:  94,8    C   R 7928 + 32 [0]
+> 
+> That remaining split is cause by the test for:
+>  "dio->final_block_in_bio != dio->cur_page_block".
+> As this was in the code for a long time I just assume it is right.
+> 
+> So eventually for the 64k request in the example this patch improves the
+> effective submissions that get to the block device layer from:
+> 10x4k, 1x8k, 1x16k to 1x48k & 1x16k which is much better.
+> 
+> Througput impact is small, but in terms of cpu consumption this is visible
+> by a single digit percentage depending on the incoming request size.
+> 
+> The solution looking for comments or alternatives in this RFC patch adds a new
+> kiocb flag that let filesystems specify if they need these workaround to
+> separate meta data reads - if not, like all pre-btrfs filesystems the dio code
+> doesn't have to cause this extra work.
+> 
 
-On Tue, Nov 2, 2010 at 8:28 AM, Lin Ming <ming.m.lin@intel.com> wrote:
-> For the background of Nehalem uncore pmu, see Intel SDM Volume 3B
-> "30.6.2 Performance Monitoring Facility in the Uncore"
->
-> 1. data structure
->
-> struct node_hw_events {
->        struct perf_event *events[UNCORE_NUM_COUNTERS];
->        int n_events;
->        struct spinlock lock;
->        int enabled;
-> };
->
-> struct node_hw_events is the per node structure.
-> "lock" protects add/delete events to uncore pmu.
->
-> struct uncore_cpu_hw_events {
->        unsigned long active_mask[BITS_TO_LONGS(UNCORE_NUM_COUNTERS)];
-> };
->
-> struct uncore_cpu_hw_events is the per logical cpu structure.
-> "active_mask" represents the counters used by the cpu.
-> For example, if bit 3, 6 are set for cpuX, then it means uncore counter
-> 3 and 6 are used by cpuX.
->
-I would advise you allocate your uncore_events[] table dynamically
-using kmalloc_node(). That way you avoid unnecessary remote
-memory accesses.
+So this brings up an important question, which is how badly do we want to honor
+buffer_boundary()?  The whole reason I added the logical offset check was because
+we ignore buffer_boundary() if there is no bio currently.  So for BTRFS we would
+do this
 
-Furthermore, the patch is missing support for the fixed uncore counter. It is
-very useful as it allows measuring some reference cycles at the socket
-level. You have 8+1 counter total. You need to define some encoding
-for UNC_CPU_CLK.
+map extent
+set buffer boundary
 
-Another tidbit is about handling of exclude_*. Uncore PMU does measure
-at all priv level all the time. I think it would be wise to fail if
-the user passes
-anything different from exclude_* = 0. Otherwise you think you are measuring
-at some levels but in reality you are not.
+but if this is the first part of the IO and there isn't a bio already setup,
+dio_new_bio clears dio->boundary, so the next extent we would get may not be
+logically contiguous and hilarity would ensue.  I chose not to fix the
+dio->boundary clearing because I was worried I would affect other fs's workloads
+(which I did anyway because of my bug).  So maybe the right idea is to rip out
+my logical offset tests altogether and fix dio so we treat buffer_boundary()
+like gospel.  That way Btrfs can get what it needs without having this weird
+special code, and then we can look at how other fs's set buffer_boundary (I'm
+pretty sure ext2/3 are the only ones) and make sure they are setting it when
+they really mean to.  Thanks,
 
-
-> 2. Uncore pmu NMI handling
->
-> Every core in the socket can be programmed to receive uncore counter
-> overflow interrupt.
->
-> In this draft implementation, each core handles the overflow interrupt
-> caused by the counters with bit set in "active_mask".
->
-Seems like in your model, interrupting all cores is the only solution given
-that you can program uncore events from any cores on the socket.
-
-
-> ---
->  arch/x86/include/asm/msr-index.h              |    1 +
->  arch/x86/kernel/cpu/perf_event.c              |    7 +-
->  arch/x86/kernel/cpu/perf_event_intel_uncore.c |  280 +++++++++++++++++++++++++
->  arch/x86/kernel/cpu/perf_event_intel_uncore.h |   80 +++++++
->  4 files changed, 367 insertions(+), 1 deletions(-)
->  create mode 100644 arch/x86/kernel/cpu/perf_event_intel_uncore.c
->  create mode 100644 arch/x86/kernel/cpu/perf_event_intel_uncore.h
->
-> diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
-> index 3ea3dc4..816fb4b 100644
-> --- a/arch/x86/include/asm/msr-index.h
-> +++ b/arch/x86/include/asm/msr-index.h
-> @@ -81,6 +81,7 @@
->  #define DEBUGCTLMSR_BTS_OFF_OS         (1UL <<  9)
->  #define DEBUGCTLMSR_BTS_OFF_USR                (1UL << 10)
->  #define DEBUGCTLMSR_FREEZE_LBRS_ON_PMI (1UL << 11)
-> +#define DEBUGCTLMSR_ENABLE_UNCORE_PMI  (1UL << 13)
->
->  #define MSR_IA32_MC0_CTL               0x00000400
->  #define MSR_IA32_MC0_STATUS            0x00000401
-> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-> index 7cea0f4..cca07b4 100644
-> --- a/arch/x86/kernel/cpu/perf_event.c
-> +++ b/arch/x86/kernel/cpu/perf_event.c
-> @@ -1215,6 +1215,8 @@ struct pmu_nmi_state {
->
->  static DEFINE_PER_CPU(struct pmu_nmi_state, pmu_nmi);
->
-> +static int uncore_pmu_handle_irq(struct pt_regs *regs);
-> +
->  static int __kprobes
->  perf_event_nmi_handler(struct notifier_block *self,
->                         unsigned long cmd, void *__args)
-> @@ -1249,7 +1251,8 @@ perf_event_nmi_handler(struct notifier_block *self,
->
->        apic_write(APIC_LVTPC, APIC_DM_NMI);
->
-> -       handled = x86_pmu.handle_irq(args->regs);
-> +       handled = uncore_pmu_handle_irq(args->regs);
-> +       handled += x86_pmu.handle_irq(args->regs);
->        if (!handled)
->                return NOTIFY_DONE;
->
-> @@ -1305,6 +1308,7 @@ x86_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
->  #include "perf_event_intel_lbr.c"
->  #include "perf_event_intel_ds.c"
->  #include "perf_event_intel.c"
-> +#include "perf_event_intel_uncore.c"
->
->  static int __cpuinit
->  x86_pmu_notifier(struct notifier_block *self, unsigned long action, void *hcpu)
-> @@ -1360,6 +1364,7 @@ void __init init_hw_perf_events(void)
->
->        switch (boot_cpu_data.x86_vendor) {
->        case X86_VENDOR_INTEL:
-> +               init_uncore_pmu();
->                err = intel_pmu_init();
->                break;
->        case X86_VENDOR_AMD:
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> new file mode 100644
-> index 0000000..fafa0f9
-> --- /dev/null
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> @@ -0,0 +1,280 @@
-> +#include "perf_event_intel_uncore.h"
-> +
-> +static struct node_hw_events uncore_events[MAX_NUMNODES];
-> +static DEFINE_PER_CPU(struct uncore_cpu_hw_events, uncore_cpu_hw_events);
-> +static bool uncore_pmu_initialized;
-> +
-> +static void uncore_pmu_enable_event(struct perf_event *event)
-> +{
-> +       struct hw_perf_event *hwc = &event->hw;
-> +
-> +       wrmsrl(hwc->config_base + hwc->idx, hwc->config | UNCORE_EVENTSEL_ENABLE);
-> +}
-> +
-> +static void uncore_pmu_disable_event(struct perf_event *event)
-> +{
-> +       struct hw_perf_event *hwc = &event->hw;
-> +
-> +       wrmsrl(hwc->config_base + hwc->idx, hwc->config);
-> +}
-> +
-> +static void uncore_pmu_disable_events(void)
-> +{
-> +       struct uncore_cpu_hw_events *cpuc = &__get_cpu_var(uncore_cpu_hw_events);
-> +       int node = numa_node_id();
-> +       int bit;
-> +
-> +       for_each_set_bit(bit, cpuc->active_mask, UNCORE_NUM_COUNTERS)
-> +               uncore_pmu_disable_event(uncore_events[node].events[bit]);
-> +}
-> +
-> +static void uncore_pmu_enable_events(void)
-> +{
-> +       struct uncore_cpu_hw_events *cpuc = &__get_cpu_var(uncore_cpu_hw_events);
-> +       int node = numa_node_id();
-> +       int bit;
-> +
-> +       for_each_set_bit(bit, cpuc->active_mask, UNCORE_NUM_COUNTERS)
-> +               uncore_pmu_disable_event(uncore_events[node].events[bit]);
-> +}
-> +
-> +static void uncore_pmu_global_enable(void)
-> +{
-> +       u64 ctrl;
-> +
-> +       /* (0xFULL << 48): all 4 cores will receive NMI */
-> +       ctrl = ((1 << UNCORE_NUM_COUNTERS) - 1) | (0xFULL << 48);
-> +
-> +       wrmsrl(MSR_UNCORE_PERF_GLOBAL_CTRL, ctrl);
-> +}
-> +
-> +static void uncore_perf_event_destroy(struct perf_event *event)
-> +{
-> +       atomic_dec(&active_events);
-> +}
-> +
-> +static int uncore_pmu_event_init(struct perf_event *event)
-> +{
-> +       struct hw_perf_event *hwc = &event->hw;
-> +
-> +       if (!uncore_pmu_initialized)
-> +               return -ENOENT;
-> +
-> +       switch (event->attr.type) {
-> +       case PERF_TYPE_UNCORE:
-> +               break;
-> +
-> +       default:
-> +               return -ENOENT;
-> +       }
-> +
-> +       atomic_inc(&active_events);
-> +
-> +       event->destroy = uncore_perf_event_destroy;
-> +
-> +       hwc->idx = -1;
-> +       hwc->config = (event->attr.config & UNCORE_RAW_EVENT_MASK) | UNCORE_EVENTSEL_PMI;
-> +       hwc->config_base = MSR_UNCORE_PERFEVTSEL0;
-> +       hwc->event_base = MSR_UNCORE_PMC0;
-> +
-> +       return 0;
-> +}
-> +
-> +static void uncore_pmu_start(struct perf_event *event, int flags)
-> +{
-> +       if (flags & PERF_EF_RELOAD)
-> +               x86_perf_event_set_period(event);
-> +
-> +       uncore_pmu_enable_event(event);
-> +
-> +       perf_event_update_userpage(event);
-> +}
-> +
-> +static void uncore_pmu_stop(struct perf_event *event, int flags)
-> +{
-> +       struct uncore_cpu_hw_events *cpuc = &__get_cpu_var(uncore_cpu_hw_events);
-> +       struct hw_perf_event *hwc = &event->hw;
-> +
-> +       if (__test_and_clear_bit(hwc->idx, cpuc->active_mask))
-> +               uncore_pmu_disable_event(event);
-> +
-> +       if (flags & PERF_EF_UPDATE)
-> +               x86_perf_event_update(event, UNCORE_CNTVAL_BITS);
-> +}
-> +
-> +static int uncore_pmu_add(struct perf_event *event, int flags)
-> +{
-> +       struct uncore_cpu_hw_events *cpuc = &__get_cpu_var(uncore_cpu_hw_events);
-> +       int node = numa_node_id();
-> +       int ret = 1;
-> +       int i;
-> +       u64 ctrl;
-> +
-> +       spin_lock(&uncore_events[node].lock);
-> +
-> +       for (i = 0; i < UNCORE_NUM_COUNTERS; i++) {
-> +               if (!uncore_events[node].events[i]) {
-> +                       uncore_events[node].events[i] = event;
-> +                       uncore_events[node].n_events++;
-> +
-> +                       event->hw.idx = i;
-> +                       __set_bit(i, cpuc->active_mask);
-> +                       if (flags & PERF_EF_START)
-> +                               uncore_pmu_start(event, PERF_EF_RELOAD);
-> +                       ret = 0;
-> +                       break;
-> +               }
-> +       }
-> +
-> +       /*
-> +        * PMI delivery due to an uncore counter overflow is enabled by
-> +        * setting IA32_DEBUG_CTL.Offcore_PMI_EN to 1.
-> +        */
-> +       if (uncore_events[node].n_events == 1) {
-> +               rdmsrl(MSR_IA32_DEBUGCTLMSR, ctrl);
-> +               wrmsrl(MSR_IA32_DEBUGCTLMSR, ctrl | DEBUGCTLMSR_ENABLE_UNCORE_PMI);
-> +       }
-> +
-> +       if (unlikely(!uncore_events[node].enabled)) {
-> +               uncore_pmu_global_enable();
-> +               uncore_events[node].enabled = 1;
-> +       }
-> +
-> +       spin_unlock(&uncore_events[node].lock);
-> +
-> +       return ret;
-> +}
-> +
-> +static void uncore_pmu_del(struct perf_event *event, int flags)
-> +{
-> +       int node = numa_node_id();
-> +       struct hw_perf_event *hwc = &event->hw;
-> +       int i;
-> +
-> +       spin_lock(&uncore_events[node].lock);
-> +
-> +       for (i = 0; i < UNCORE_NUM_COUNTERS; i++) {
-> +               if (uncore_events[node].events[i] == event) {
-> +                       uncore_events[node].events[hwc->idx] = NULL;
-> +                       uncore_events[node].n_events--;
-> +
-> +                       uncore_pmu_stop(event, PERF_EF_UPDATE);
-> +                       break;
-> +               }
-> +       }
-> +
-> +       spin_unlock(&uncore_events[node].lock);
-> +}
-> +
-> +static void uncore_pmu_read(struct perf_event *event)
-> +{
-> +       x86_perf_event_update(event, UNCORE_CNTVAL_BITS);
-> +}
-> +
-> +static struct pmu uncore_pmu = {
-> +       .event_init     = uncore_pmu_event_init,
-> +       .add            = uncore_pmu_add,
-> +       .del            = uncore_pmu_del,
-> +       .start          = uncore_pmu_start,
-> +       .stop           = uncore_pmu_stop,
-> +       .read           = uncore_pmu_read,
-> +};
-> +
-> +
-> +static inline u64 uncore_pmu_get_status(void)
-> +{
-> +       struct uncore_cpu_hw_events *cpuc = &__get_cpu_var(uncore_cpu_hw_events);
-> +       u64 status;
-> +
-> +       rdmsrl(MSR_UNCORE_PERF_GLOBAL_STATUS, status);
-> +
-> +       return status & (*(u64 *)cpuc->active_mask |
-> +               MSR_UNCORE_PERF_GLOBAL_STATUS_OVF_PMI | MSR_UNCORE_PERF_GLOBAL_STATUS_CHG);
-> +}
-> +
-> +static inline void uncore_pmu_ack_status(u64 ack)
-> +{
-> +       wrmsrl(MSR_UNCORE_PERF_GLOBAL_OVF_CTRL, ack);
-> +}
-> +
-> +static int uncore_pmu_save_and_restart(struct perf_event *event)
-> +{
-> +       x86_perf_event_update(event, UNCORE_CNTVAL_BITS);
-> +       return x86_perf_event_set_period(event);
-> +}
-> +
-> +int uncore_pmu_handle_irq(struct pt_regs *regs)
-> +{
-> +       struct perf_sample_data data;
-> +       struct node_hw_events *uncore_node;
-> +       int node;
-> +       int bit;
-> +       u64 status;
-> +       int handled = 0;
-> +
-> +       perf_sample_data_init(&data, 0);
-> +
-> +       node = numa_node_id();
-> +       uncore_node = &uncore_events[node];
-> +
-> +       status = uncore_pmu_get_status();
-> +       if (!status) {
-> +               apic_write(APIC_LVTPC, APIC_DM_NMI);
-> +
-> +               return 1;
-> +       }
-> +
-> +       uncore_pmu_disable_events();
-> +again:
-> +       uncore_pmu_ack_status(status);
-> +
-> +       for_each_set_bit(bit, (unsigned long *)&status, UNCORE_NUM_COUNTERS) {
-> +               struct perf_event *event = uncore_node->events[bit];
-> +
-> +               handled++;
-> +
-> +               if (!uncore_pmu_save_and_restart(event))
-> +                       continue;
-> +
-> +               data.period = event->hw.last_period;
-> +
-> +               if (perf_event_overflow(event, 1, &data, regs))
-> +                       uncore_pmu_stop(event, 0);
-> +       }
-> +
-> +       /*
-> +        * Repeat if there is more work to be done:
-> +        */
-> +       status = uncore_pmu_get_status();
-> +       if (status)
-> +               goto again;
-> +
-> +       uncore_pmu_enable_events();
-> +       return handled;
-> +}
-> +
-> +void __init init_uncore_pmu(void)
-> +{
-> +       union cpuid01_eax eax;
-> +       unsigned int unused;
-> +       unsigned int model;
-> +       int i;
-> +
-> +       if (boot_cpu_data.x86_vendor != X86_VENDOR_INTEL)
-> +               return;
-> +
-> +       cpuid(1, &eax.full, &unused, &unused, &unused);
-> +
-> +       /* Check CPUID signatures: 06_1AH, 06_1EH, 06_1FH */
-> +       model = eax.split.model | (eax.split.ext_model << 4);
-> +       if (eax.split.family != 6 || (model != 0x1A && model != 0x1E && model != 0x1F))
-> +               return;
-> +
-> +       pr_cont("Nehalem uncore pmu, \n");
-> +
-> +       for (i = 0; i < MAX_NUMNODES; i++)
-> +               spin_lock_init(&uncore_events[i].lock);
-> +
-> +       perf_pmu_register(&uncore_pmu);
-> +       uncore_pmu_initialized = true;
-> +}
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-> new file mode 100644
-> index 0000000..33b9b5e
-> --- /dev/null
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-> @@ -0,0 +1,80 @@
-> +#include <linux/perf_event.h>
-> +#include <linux/capability.h>
-> +#include <linux/notifier.h>
-> +#include <linux/hardirq.h>
-> +#include <linux/kprobes.h>
-> +#include <linux/module.h>
-> +#include <linux/kdebug.h>
-> +#include <linux/sched.h>
-> +#include <linux/uaccess.h>
-> +#include <linux/slab.h>
-> +#include <linux/highmem.h>
-> +#include <linux/cpu.h>
-> +#include <linux/bitops.h>
-> +
-> +#include <asm/apic.h>
-> +#include <asm/stacktrace.h>
-> +#include <asm/nmi.h>
-> +#include <asm/compat.h>
-> +
-> +#define MSR_UNCORE_PERF_GLOBAL_CTRL    0x391
-> +#define MSR_UNCORE_PERF_GLOBAL_STATUS  0x392
-> +#define MSR_UNCORE_PERF_GLOBAL_OVF_CTRL        0x393
-> +#define MSR_UNCORE_FIXED_CTR0          0x394
-> +#define MSR_UNCORE_FIXED_CTR_CTRL      0x395
-> +#define MSR_UNCORE_ADDR_OPCODE_MATCH   0x396
-> +
-> +#define MSR_UNCORE_PERF_GLOBAL_CTRL_PMI_CORE0 (1ULL << 48)
-> +#define MSR_UNCORE_PERF_GLOBAL_CTRL_PMI_FRZ (1ULL << 63)
-> +
-> +#define MSR_UNCORE_PERF_GLOBAL_STATUS_OVF_PMI  (1ULL << 61)
-> +#define MSR_UNCORE_PERF_GLOBAL_STATUS_CHG       (1ULL << 63)
-> +
-> +#define MSR_UNCORE_PMC0                        0x3b0
-> +
-> +#define MSR_UNCORE_PERFEVTSEL0         0x3c0
-> +
-> +#define UNCORE_EVENTSEL_EVENT                  0x000000FFULL
-> +#define UNCORE_EVENTSEL_UMASK                  0x0000FF00ULL
-> +#define UNCORE_EVENTSEL_OCC_CTR_RST            (1ULL << 17)
-> +#define UNCORE_EVENTSEL_EDGE                   (1ULL << 18)
-> +#define UNCORE_EVENTSEL_PMI                    (1ULL << 20)
-> +#define UNCORE_EVENTSEL_ENABLE                 (1ULL << 22)
-> +#define UNCORE_EVENTSEL_INV                    (1ULL << 23)
-> +#define UNCORE_EVENTSEL_CMASK                  0xFF000000ULL
-> +
-> +#define UNCORE_RAW_EVENT_MASK          \
-> +       (UNCORE_EVENTSEL_EVENT |        \
-> +        UNCORE_EVENTSEL_UMASK |        \
-> +        UNCORE_EVENTSEL_EDGE  |        \
-> +        UNCORE_EVENTSEL_INV   |        \
-> +        UNCORE_EVENTSEL_CMASK)
-> +
-> +#define UNCORE_CNTVAL_BITS     48
-> +
-> +#define UNCORE_NUM_COUNTERS 8
-> +
-> +union cpuid01_eax {
-> +       struct {
-> +               unsigned int stepping:4;
-> +               unsigned int model:4;
-> +               unsigned int family:4;
-> +               unsigned int type:2;
-> +               unsigned int reserve:2;
-> +               unsigned int ext_model:4;
-> +               unsigned int ext_family:4;
-> +       } split;
-> +       unsigned int full;
-> +};
-> +
-> +struct node_hw_events {
-> +       struct perf_event *events[UNCORE_NUM_COUNTERS]; /* in counter order */
-> +       int n_events;
-> +       struct spinlock lock;
-> +       int enabled;
-> +};
-> +
-> +struct uncore_cpu_hw_events {
-> +       unsigned long active_mask[BITS_TO_LONGS(UNCORE_NUM_COUNTERS)];
-> +};
-> +
-> --
-> 1.7.1
->
->
->
->
->
+Josef
