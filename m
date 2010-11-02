@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752076Ab0KBMXP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 08:23:15 -0400
-Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:57373 "EHLO
-	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750872Ab0KBMXH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 08:23:07 -0400
-From: Mattias Wallin <mattias.wallin@stericsson.com>
-To: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: <linux-kernel@vger.kernel.org>,
-        Mattias Wallin <mattias.wallin@stericsson.com>
-Subject: [PATCH] regulator: regulator disable supply fix
-Date: Tue, 2 Nov 2010 13:22:29 +0100
-Message-ID: <1288700549-28535-1-git-send-email-mattias.wallin@stericsson.com>
-X-Mailer: git-send-email 1.6.3.3
+	id S1752072Ab0KBMYU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 08:24:20 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:39724 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750872Ab0KBMYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 08:24:17 -0400
+Date: Tue, 2 Nov 2010 08:24:13 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Pavel Emelianov <xemul@openvz.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org
+Subject: Re: [PATCH] cgroup: prefer [kv]zalloc over [kv]malloc+memset in
+ memory controller code.
+Message-ID: <20101102122413.GJ840@cmpxchg.org>
+References: <alpine.LNX.2.00.1011012038490.12889@swampdragon.chaosbits.net>
+ <20101101200122.GH840@cmpxchg.org>
+ <alpine.LNX.2.00.1011012056250.12889@swampdragon.chaosbits.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1011012056250.12889@swampdragon.chaosbits.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a disable failure when regulator supply is used.
-A while loop in regulator disable checks for supply pointer != NULL
-but the pointer is not always updated, resulting in the while loop
-running too many times causing a disable failure.
+On Mon, Nov 01, 2010 at 08:59:13PM +0100, Jesper Juhl wrote:
+> On Mon, 1 Nov 2010, Johannes Weiner wrote:
+> 
+> > On Mon, Nov 01, 2010 at 08:40:56PM +0100, Jesper Juhl wrote:
+> > > In mem_cgroup_alloc() we currently do either kmalloc() or vmalloc() then 
+> > > followed by memset() to zero the memory. This can be more efficiently 
+> > > achieved by using kzalloc() and vzalloc().
+> > > 
+> > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > 
+> > Looks good to me, but there is also the memset after kmalloc in
+> > alloc_mem_cgroup_per_zone_info().  Can you switch that over as well
+> > in this patch?  You can pass __GFP_ZERO to kmalloc_node() for zeroing.
+>
+> Sure thing.
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 
-Signed-off-by: Mattias Wallin <mattias.wallin@stericsson.com>
----
- drivers/regulator/core.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Thanks.
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index f1d10c9..dc7d36e 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1424,6 +1424,7 @@ int regulator_disable(struct regulator *regulator)
- 	/* decrease our supplies ref count and disable if required */
- 	while (supply_rdev != NULL) {
- 		rdev = supply_rdev;
-+		supply_rdev = NULL;
- 
- 		mutex_lock(&rdev->mutex);
- 		_regulator_disable(rdev, &supply_rdev);
--- 
-1.6.3.3
-
+Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
