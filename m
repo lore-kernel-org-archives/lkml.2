@@ -1,58 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754280Ab0KBBUM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 21:20:12 -0400
-Received: from mga03.intel.com ([143.182.124.21]:39933 "EHLO mga03.intel.com"
+	id S1754419Ab0KBBXN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 21:23:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7660 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750999Ab0KBBUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 21:20:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,277,1286175600"; 
-   d="scan'208";a="343326239"
-Date: Tue, 2 Nov 2010 09:20:06 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Dimitrios Apostolou <jimis@gmx.net>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: 2.6.36 io bring the system to its knees
-Message-ID: <20101102012006.GA3432@localhost>
-References: <AANLkTimt7wzR9RwGWbvhiOmot_zzayfCfSh_-v6yvuAP@mail.gmail.com>
- <AANLkTikRKVBzO=ruy=JDmBF28NiUdJmAqb4-1VhK0QBX@mail.gmail.com>
- <AANLkTinzJ9a+9w7G5X0uZpX2o-L8E6XW98VFKoF1R_-S@mail.gmail.com>
- <AANLkTinDDG0ZkNFJZXuV9k3nJgueUW=ph8AuHgyeAXji@mail.gmail.com>
- <20101031012224.GA8007@localhost>
- <20101031015132.GA10086@localhost>
- <ial40e$jpj$1@dough.gmane.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ial40e$jpj$1@dough.gmane.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752547Ab0KBBXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 21:23:11 -0400
+Subject: Re: [PATCH v1.1 0/5] IMA: making i_readcount a first class inode
+ citizen
+From: Eric Paris <eparis@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, jmorris@namei.org,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        viro@zeniv.linux.org.uk
+In-Reply-To: <1288640739-3246-1-git-send-email-zohar@linux.vnet.ibm.com>
+References: <1288640739-3246-1-git-send-email-zohar@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 01 Nov 2010 21:22:47 -0400
+Message-ID: <1288660967.3017.83.camel@localhost.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 01, 2010 at 01:09:34AM +0000, Dimitrios Apostolou wrote:
-> Hello, 
+On Mon, 2010-11-01 at 15:45 -0400, Mimi Zohar wrote:
+> Based on the previous posting discussion, i_readcount is now defined as
+> atomic.
 > 
-> On Sun, 31 Oct 2010 09:51:32 +0800, Wu Fengguang wrote:
-> > It may also help to lower the dirty ratio.
-> > 
-> > echo 5 > /proc/sys/vm/dirty_ratio
-> > 
-> > Memory pressure + heavy write can easily hurt responsiveness.
-> > 
-> > - eats up to 20% (the default value for dirty_ratio) memory with dirty
-> >   pages and hence increase the memory pressure and number of swap IO
+> This patchset separates the incrementing/decrementing of the i_readcount,
+> in the VFS layer, from other IMA functionality, by replacing the current
+> ima_counts_get() call with iget_readcount(). Its unclear whether this
+> call to increment i_readcount should be made earlier, like i_writecount.
 > 
-> My experience has been different with that. Wouldn't it make more sense 
-> to _increase_ dirty_ratio (to 50 lets say) and at the same time decrease 
-> dirty_background_ratio? That way writing to disk starts early, but the 
-> related apps stall waiting for I/O only when dirty_ratio is reached.
+> The patch ordering is a bit redundant in order to leave removing the ifdef
+> around i_readcount until the last patch. The first four patches: redefines 
+> i_readcount as atomic, defines iget/iput_readcount(), moves the IMA
+> functionality in ima_counts_get() to ima_file_check(), and removes the IMA
+> imbalance code, simplifying IMA. The last patch moves iput_readcount()
+> to the fs directory and removes the ifdef around i_readcount, making
+> i_readcount into a "first class inode citizen".
+> 
+> The generic_setlease code could then take advantage of i_readcount.
 
-50% dirty ratio may help before the system goes thrashing (writing
-processes will be throttled less/later). However Aidar is seeing hours
-of unresponsiveness with heavy IO, in this case large dirty ratio
-won't help reduce the throttling any more.
+Hey Mimi, 
 
-Thanks,
-Fengguang
+couple of comment and questions, can you help me understand what you
+believe the three locks in question are currently protecting?  And
+remember I already said I don't think they are quite right before you
+started so try not to use that as your example   :)
+
+inode->i_lock
+inode->i_mutex
+iint->mutex
+
+I also question you finishing in patch 5/5 with:
+
++void iput_readcount(struct inode *inode)
++{
++       spin_lock(&inode->i_lock);
++       if (unlikely((atomic_read(&inode->i_readcount) == 0)))
++               printk(KERN_INFO "i_readcount: imbalance ino %ld\n",
++                      inode->i_ino);
++       else
++               atomic_dec(&inode->i_readcount);
++       spin_unlock(&inode->i_lock);
++}
+
+obviously I wonder what the locking is for, but really I question why we
+need this as a conditional at all.  If we are really worried it should
+be a WARN_ON() or BUG() but personally I wonder if we need it at all.
+The VFS is by supposed to get stuff right.  All of the interesting
+checks around IMA were mostly needed because IMA was an object that hung
+off the side of the VFS and you couldn't be certain that all filesystems
+were adhering to the calling conventions you thought were correct.
+Since we've pretty much moved all of this into the VFS its about time we
+stop wasting time wondering if our assumptions are correct.  These are
+pretty hot paths and I'm all for cutting down the IMA overhead on them.
+If we do that this function becomes:
+
+BUG_ON(!atomic_read(&inode->i_readcount))
+atomic_dec(&inode->i_readcont);
+
+it also means that we don't need to set the i_readcount to 0 in
+inode_init_always() from patch 3....
+
