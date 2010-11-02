@@ -1,85 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566Ab0KBPK5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 11:10:57 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51351 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752195Ab0KBPKv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 11:10:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=PIrzrjbtsxIXdAHb8/t4PDciUjS1lUX0LIxWzdVUfubt7/GmpLBOhKFllEQgT5OS8E
-         s3pnC3PBGFqf9i4hawdsa2WghrN3JNcVq2f9eG3Xij0wkKQF4MA0oDHqYuDaKFov/Dbx
-         0NMaRqsXAdfTQzbZSwsE2kj/YUFKrwH9jrhkQ=
+	id S1753593Ab0KBPS1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 11:18:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51877 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753237Ab0KBPSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 11:18:23 -0400
+Date: Tue, 2 Nov 2010 08:18:29 -0700
+From: Greg KH <gregkh@suse.de>
+To: Atul Sowani <sowani@gmail.com>
+Cc: arnaud.patard@rtp-net.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2.6.36 1/1] xgifb: change obsolete pci_find_device()
+	with pci_get_device().
+Message-ID: <20101102151829.GB2033@suse.de>
+References: <4CD02860.2020103@gmail.com>
 MIME-Version: 1.0
-Date: Wed, 3 Nov 2010 00:10:50 +0900
-Message-ID: <AANLkTikCUdpx-jGhKdzueML39CnExumk1i_X_OZJihE2@mail.gmail.com>
-Subject: [BUGFIX][PATCH] fix wrong VM_BUG_ON() in try_charge()'s mm->owner check
-From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-To: linux-mm@kvack.org
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        balbir@linux.vnet.ibm.com, nishimura@mxp.nes.nec.co.jp,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, kosaki.motohiro@jp.fujitsu.com,
-        hughd@gmail.com
-Content-Type: multipart/mixed; boundary=0016e6dab1828c9da804941354f2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CD02860.2020103@gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016e6dab1828c9da804941354f2
-Content-Type: text/plain; charset=ISO-8859-1
+On Tue, Nov 02, 2010 at 08:34:00PM +0530, Atul Sowani wrote:
+> Replaced obsolete pci_find_device() calls with pci_get_device() calls. This is
+> recommended in pci.txt filei in PCI Documentation.
 
-I'm sorry for attached file, I have to use unusual mailer this time.
-This is a fix for wrong VM_BUG_ON() for mm/memcontol.c
+Yes, but you just caused a resource leak :(
 
-Thanks,
--Kame
+> 
+> Signed-off-by: Atul Sowani <sowani@gmail.com>
+> ---
+> diff -uprN a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
+> --- a/drivers/staging/xgifb/XGI_main_26.c	2010-10-21 02:00:22.000000000 +0530
+> +++ b/drivers/staging/xgifb/XGI_main_26.c	2010-11-01 14:25:21.032436943 +0530
+> @@ -483,7 +483,7 @@ XGIfb_query_VGA_config_space(struct xgi_
+>  			break;
+>  		}
+> 
+> -		pdev = pci_find_device(PCI_VENDOR_ID_SI, nbridge_id, pdev);
+> +		pdev = pci_get_device(PCI_VENDOR_ID_SI, nbridge_id, pdev);
 
---0016e6dab1828c9da804941354f2
-Content-Type: application/octet-stream; name="fix-mm-owner-check.patch"
-Content-Disposition: attachment; filename="fix-mm-owner-check.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gg0wx5k80
+Please read the documentation for pci_get_device() for the fact that you
+now have a reference to the pci device.  You need to properly drop it
+when finished.
 
-QXQgX19tZW1fY2dyb3VwX3RyeV9jaGFyZ2UoKSwgVk1fQlVHX09OKCFtbS0+b3duZXIpIGlzIGNo
-ZWNrZWQuCkJ1dCBhcyBjb21tZW50ZWQgaW4gbWVtX2Nncm91cF9mcm9tX3Rhc2soKSwgbW0tPm93
-bmVyIGNhbiBiZSBOVUxMIGluIHNvbWUgcmFjeQpjYXNlLiBUaGlzIGNoZWNrIG9mIFZNX0JVR19P
-TigpIGlzIGJhZC4KCkEgcG9zc2libGUgc3Ryb3kgdG8gaGl0IHRoaXMgaXMgYXQgc3dhcG9mZigp
-LT50cnlfdG9fdW51c2UoKS4gSXQgcGFzc2VzCm1tX3N0cnVjdCB0byBtZW1fY2dyb3VwX3RyeV9j
-aGFyZ2Vfc3dhcGluKCkgd2hpbGUgbW0tPm93bmVyIGlzIE5VTEwuIElmIHdlCmNhbid0IGdldCBw
-cm9wZXIgbWVtX2Nncm91cCBmcm9tIHN3YXBfY2dyb3VwIGluZm9ybWF0aW9uLCBtbS0+b3duZXIg
-aXMgdXNlZAphcyBjaGFyZ2UgdGFyZ2V0IGFuZCB3ZSBzZWUgTlVMTC4KCkNjOiBCYWxiaXIgU2lu
-Z2ggPGJhbGJpckBpbi5pYm0uY29tPgpDYzogRGFpc3VrZSBOaXNoaW11cmEgPG5pc2hpbXVyYUBt
-eHAubmVzLm5lYy5jby5qcD4KQ2M6IEtPU0FLSSBNb3RvaGlybyA8a29zYWtpLm1vdG9oaXJvQGpw
-LmZ1aml0c3UuY29tPgpSZXBvcnRlZC1ieTogSHVnaCBEaWNraW5zIDxodWdoZEBnb29nbGUuY29t
-PgpTaWduZWQtb2ZmLWJ5OiBLQU1FWkFXQSBIaXJveXVraSA8a2FtZXphd2EuaGlyb3l1QGpwLmZ1
-aml0c3UuY29tPgotLS0KIG1tL21lbWNvbnRyb2wuYyB8ICAgMTkgKysrKysrKysrLS0tLS0tLS0t
-LQogMSBmaWxlIGNoYW5nZWQsIDkgaW5zZXJ0aW9ucygrKSwgMTAgZGVsZXRpb25zKC0pCgpJbmRl
-eDogbGludXgtMi42LjM2L21tL21lbWNvbnRyb2wuYwo9PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYu
-MzYub3JpZy9tbS9tZW1jb250cm9sLmMKKysrIGxpbnV4LTIuNi4zNi9tbS9tZW1jb250cm9sLmMK
-QEAgLTE3MjksMTkgKzE3MjksMTggQEAgYWdhaW46CiAKIAkJcmN1X3JlYWRfbG9jaygpOwogCQlw
-ID0gcmN1X2RlcmVmZXJlbmNlKG1tLT5vd25lcik7Ci0JCVZNX0JVR19PTighcCk7CiAJCS8qCi0J
-CSAqIGJlY2F1c2Ugd2UgZG9uJ3QgaGF2ZSB0YXNrX2xvY2soKSwgInAiIGNhbiBleGl0IHdoaWxl
-Ci0JCSAqIHdlJ3JlIGhlcmUuIEluIHRoYXQgY2FzZSwgIm1lbSIgY2FuIHBvaW50IHRvIHJvb3QK
-LQkJICogY2dyb3VwIGJ1dCBuZXZlciBiZSBOVUxMLiAoYW5kIHRhc2tfc3RydWN0IGl0c2VsZiBp
-cyBmcmVlZAotCQkgKiBieSBSQ1UsIGNncm91cCBpdHNlbGYgaXMgUkNVIHNhZmUuKSBUaGVuLCB3
-ZSBoYXZlIHNtYWxsCi0JCSAqIHJpc2sgaGVyZSB0byBnZXQgd3JvbmcgY2dyb3VwLiBCdXQgc3Vj
-aCBraW5kIG9mIG1pcy1hY2NvdW50Ci0JCSAqIGJ5IHJhY2UgYWx3YXlzIGhhcHBlbnMgYmVjYXVz
-ZSB3ZSBkb24ndCBoYXZlIGNncm91cF9tdXRleCgpLgotCQkgKiBJdCdzIG92ZXJraWxsIGFuZCB3
-ZSBhbGxvdyB0aGF0IHNtYWxsIHJhY2UsIGhlcmUuCisJCSAqIEJlY2F1c2Ugd2UgZG9uJ3QgaGF2
-ZSB0YXNrX2xvY2soKSwgInAiIGNhbiBleGl0LgorCQkgKiBJbiB0aGF0IGNhc2UsICJtZW0iIGNh
-biBwb2ludCB0byByb290IG9yIHAgY2FuIGJlIE5VTEwgd2l0aAorCQkgKiByYWNlIHdpdGggc3dh
-cG9mZi4gVGhlbiwgd2UgaGF2ZSBzbWFsbCByaXNrIG9mIG1pcy1hY2NvdW5pbmcuCisJCSAqIEJ1
-dCBzdWNoIGtpbmQgb2YgbWlzLWFjY291bnQgYnkgcmFjZSBhbHdheXMgaGFwcGVucyBiZWNhdXNl
-CisJCSAqIHdlIGRvbid0IGhhdmUgY2dyb3VwX211dGV4KCkuIEl0J3Mgb3ZlcmtpbGwgYW5kIHdl
-IGFsbG8gdGhhdAorCQkgKiBzbWFsbCByYWNlLCBoZXJlLgorCQkgKiAoKikgc3dhcG9mZiBhdCBl
-bCB3aWxsIGNoYXJnZSBhZ2FpbnN0IG1tLXN0cnVjdCBub3QgYWdhaW5zdAorCQkgKiB0YXNrLXN0
-cnVjdC4gU28sIG1tLT5vd25lciBjYW4gYmUgTlVMTC4KIAkJICovCiAJCW1lbSA9IG1lbV9jZ3Jv
-dXBfZnJvbV90YXNrKHApOwotCQlWTV9CVUdfT04oIW1lbSk7Ci0JCWlmIChtZW1fY2dyb3VwX2lz
-X3Jvb3QobWVtKSkgeworCQlpZiAoIW1lbSB8fCBtZW1fY2dyb3VwX2lzX3Jvb3QobWVtKSkgewog
-CQkJcmN1X3JlYWRfdW5sb2NrKCk7CiAJCQlnb3RvIGRvbmU7CiAJCX0K
---0016e6dab1828c9da804941354f2--
+Please change this patch to do that properly and I will be glad to apply
+it.
+
+thanks,
+
+greg k-h
