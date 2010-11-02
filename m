@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab0KBARP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 20:17:15 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:51261 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751264Ab0KBARN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 20:17:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=uqPxloeWHGJcnRjLI/xCBsYwNEteLh2Se7Ocs1qC2FfP8niE1XGyL3lEs/cyF1ZOJ4
-         UOL6zY3oVdlbYLsVetUxoiaxu2puzLie8RKKSeL+KrWUz0kczyjZXowesjXzUAwA82ds
-         akrOtncOe2dnrh4mUy58+KYvZemFgXVKlJw8s=
-MIME-Version: 1.0
-In-Reply-To: <20101101234630.GA12106@electric-eye.fr.zoreil.com>
-References: <AANLkTimZvwdY8Q+=iGMC2MhPt_Vow38a0SE9g4ij-cRe@mail.gmail.com>
-	<20101101234630.GA12106@electric-eye.fr.zoreil.com>
-Date: Tue, 2 Nov 2010 00:17:13 +0000
-Message-ID: <AANLkTinzQGzsUGgzrhFo8eS1_OcnkVDOXRuc1C=0nMx=@mail.gmail.com>
-Subject: Re: [2.6.37-rc1, patch v2] r8169: fix sleeping while holding spinlock...
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: Francois Romieu <romieu@fr.zoreil.com>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753775Ab0KBAUz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 20:20:55 -0400
+Received: from ozlabs.org ([203.10.76.45]:44856 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753337Ab0KBAUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 20:20:52 -0400
+Subject: Re: [PATCH] iSeries: Remove unused mf_getSrcHistory function.
+From: Michael Ellerman <michael@ellerman.id.au>
+Reply-To: michael@ellerman.id.au
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.LNX.2.00.1011012218420.12889@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1010301911220.1572@swampdragon.chaosbits.net>
+	 <1288609842.10671.7.camel@concordia>
+	 <20101102071025.2fe5e6ca.sfr@canb.auug.org.au>
+	 <alpine.LNX.2.00.1011012104050.12889@swampdragon.chaosbits.net>
+	 <20101102082634.65342ce6.sfr@canb.auug.org.au>
+	 <alpine.LNX.2.00.1011012218420.12889@swampdragon.chaosbits.net>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-eOCPNPdZIoaSyHjGARJV"
+Date: Tue, 02 Nov 2010 11:20:50 +1100
+Message-ID: <1288657250.16790.4.camel@concordia>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Francois,
 
-On 1 November 2010 23:46, Francois Romieu <romieu@fr.zoreil.com> wrote:
-> Daniel J Blueman <daniel.blueman@gmail.com> :
->> Recent changes to the r8169 driver cause it to call
->> device_set_wakeup_enable under spinlock, which may sleep.
->
-> The change is fine but the description is misleading : the r8169
-> driver has been issuing device_set_wakeup_enable under spinlock since
-> october 2008. device_set_wakeup_enable did not sleep until recently
-> (see f2dc0d1809ab7e0147c7e4ac837be1682f706538 for instance).
+--=-eOCPNPdZIoaSyHjGARJV
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Good catch; I also find that only the gainfar is the other driver
-needing fixing; I'll follow up with this.
+On Mon, 2010-11-01 at 22:20 +0100, Jesper Juhl wrote:
+> Hi Stephen,
+>=20
+> On Tue, 2 Nov 2010, Stephen Rothwell wrote:
+>=20
+> > On Mon, 1 Nov 2010 21:06:23 +0100 (CET) Jesper Juhl <jj@chaosbits.net> =
+wrote:
+> > >
+> > > Remove unused function 'mf_getSrcHistory' (that will never be used ev=
+er=20
+> > > according to Stephen Rothwell).
+> > >=20
+> > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> >=20
+> > Acked-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> >=20
+>=20
+> Ok, so if you are the (unofficial) iSeries maintainer and you don't merge=
+=20
+> the patch somewhere that'll eventually go up-stream, but just ACK it=20
+> (thank you for that btw), then where do I send it to get it merged?
 
-Patch with updated description for David:
+Here. ie. linuxppc-dev.
 
-As device_set_wakeup_enable can now sleep, move the call to outside
-the critical section.
+But, while you're removing it you should remove the #if 0'ed callsite as
+well, see mf_src_proc_show() in that file. :)
 
-Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+cheers
 
-diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
-index d88ce9f..894e7c7 100644
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -846,10 +846,10 @@ static int rtl8169_set_wol(struct net_device
-*dev, struct ethtool_wolinfo *wol)
- 	else
- 		tp->features &= ~RTL_FEATURE_WOL;
- 	__rtl8169_set_wol(tp, wol->wolopts);
--	device_set_wakeup_enable(&tp->pci_dev->dev, wol->wolopts);
--
- 	spin_unlock_irq(&tp->lock);
+--=-eOCPNPdZIoaSyHjGARJV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-+	device_set_wakeup_enable(&tp->pci_dev->dev, wol->wolopts);
-+
- 	return 0;
- }
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
--- 
-Daniel J Blueman
+iEYEABECAAYFAkzPWV8ACgkQdSjSd0sB4dI0NwCfTXSXao1Giw2lp56QfPOY6Q9J
+jR8AoJYnOXUTU4jBSlCFRJ9V6CMeIT5B
+=732g
+-----END PGP SIGNATURE-----
+
+--=-eOCPNPdZIoaSyHjGARJV--
+
