@@ -1,78 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753775Ab0KBAUz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 20:20:55 -0400
-Received: from ozlabs.org ([203.10.76.45]:44856 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753337Ab0KBAUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 20:20:52 -0400
-Subject: Re: [PATCH] iSeries: Remove unused mf_getSrcHistory function.
-From: Michael Ellerman <michael@ellerman.id.au>
-Reply-To: michael@ellerman.id.au
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-In-Reply-To: <alpine.LNX.2.00.1011012218420.12889@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1010301911220.1572@swampdragon.chaosbits.net>
-	 <1288609842.10671.7.camel@concordia>
-	 <20101102071025.2fe5e6ca.sfr@canb.auug.org.au>
-	 <alpine.LNX.2.00.1011012104050.12889@swampdragon.chaosbits.net>
-	 <20101102082634.65342ce6.sfr@canb.auug.org.au>
-	 <alpine.LNX.2.00.1011012218420.12889@swampdragon.chaosbits.net>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-eOCPNPdZIoaSyHjGARJV"
-Date: Tue, 02 Nov 2010 11:20:50 +1100
-Message-ID: <1288657250.16790.4.camel@concordia>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753979Ab0KBA0B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 20:26:01 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:42980 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753398Ab0KBAZ7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 20:25:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=hhurDuoVnjjXbUTovRm3cmbP1YgAFjDcTmkJ9uho8x3YRKGfZ09vFJEbMb4LlrWnmm
+         BcO6kP7sUK8XDYXrFq9jspO5wlvZ21T8iNWQjEkhgPwadngHFKBrH4YEwjkRA6eJrZRr
+         afdHF4IoN829yTt5fCicfgFAsdrlq+p+pGwHg=
+MIME-Version: 1.0
+Date: Tue, 2 Nov 2010 00:25:58 +0000
+Message-ID: <AANLkTimf_mVrRPEcj8qBbYw1iYHfWdeKUNS3Kk-dfhTT@mail.gmail.com>
+Subject: [2.6.37-rc1, patch] gianfar: fix sleep in atomic...
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Francois Romieu <romieu@fr.zoreil.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Since device_set_wakeup_enable now sleeps, it should not be called
+from a critical section. Since wol_en is not updated elsewhere, we can
+omit the locking entirely.
 
---=-eOCPNPdZIoaSyHjGARJV
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
 
-On Mon, 2010-11-01 at 22:20 +0100, Jesper Juhl wrote:
-> Hi Stephen,
->=20
-> On Tue, 2 Nov 2010, Stephen Rothwell wrote:
->=20
-> > On Mon, 1 Nov 2010 21:06:23 +0100 (CET) Jesper Juhl <jj@chaosbits.net> =
-wrote:
-> > >
-> > > Remove unused function 'mf_getSrcHistory' (that will never be used ev=
-er=20
-> > > according to Stephen Rothwell).
-> > >=20
-> > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> >=20
-> > Acked-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> >=20
->=20
-> Ok, so if you are the (unofficial) iSeries maintainer and you don't merge=
-=20
-> the patch somewhere that'll eventually go up-stream, but just ACK it=20
-> (thank you for that btw), then where do I send it to get it merged?
+diff --git a/drivers/net/gianfar_ethtool.c b/drivers/net/gianfar_ethtool.c
+index 5c566eb..e641d7c 100644
+--- a/drivers/net/gianfar_ethtool.c
++++ b/drivers/net/gianfar_ethtool.c
+@@ -635,10 +635,8 @@ static int gfar_set_wol(struct net_device *dev,
+struct ethtool_wolinfo *wol)
+ 	if (wol->wolopts & ~WAKE_MAGIC)
+ 		return -EINVAL;
 
-Here. ie. linuxppc-dev.
+-	spin_lock_irqsave(&priv->bflock, flags);
+ 	priv->wol_en = wol->wolopts & WAKE_MAGIC ? 1 : 0;
+ 	device_set_wakeup_enable(&dev->dev, priv->wol_en);
+-	spin_unlock_irqrestore(&priv->bflock, flags);
 
-But, while you're removing it you should remove the #if 0'ed callsite as
-well, see mf_src_proc_show() in that file. :)
-
-cheers
-
---=-eOCPNPdZIoaSyHjGARJV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAkzPWV8ACgkQdSjSd0sB4dI0NwCfTXSXao1Giw2lp56QfPOY6Q9J
-jR8AoJYnOXUTU4jBSlCFRJ9V6CMeIT5B
-=732g
------END PGP SIGNATURE-----
-
---=-eOCPNPdZIoaSyHjGARJV--
-
+ 	return 0;
+ }
+-- 
+Daniel J Blueman
