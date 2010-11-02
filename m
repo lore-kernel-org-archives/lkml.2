@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab0KBBxG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 21:53:06 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:50857 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754194Ab0KBBxC (ORCPT
+	id S1755392Ab0KBBzv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 21:55:51 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:2392 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754919Ab0KBBzu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 21:53:02 -0400
+	Mon, 1 Nov 2010 21:55:50 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=m42Pwy5KolArilEI8RtKCvQAwHVPM4VsRSYUEBwLV3zqmmr59Ei2CzQB0XlyJaR7/T
-         8vuL2xNXAVoCKunmNLdg/RYTHDSWNlwHGt/gECvGg9a4eLToAkz/NRTtoYcWGNy0lwbe
-         Nq0kSIt/oYJo8LikEEciQlJBG9q5LWQVs+08I=
-Subject: [PATCH Resend] dma: imx-dma: fix imxdma_probe error path
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Pengutronix <s.hauer@pengutronix.de>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Thiago Farina <tfransosi@gmail.com>
-Content-Type: text/plain
-Date: Tue, 02 Nov 2010 09:56:11 +0800
-Message-Id: <1288662971.20990.7.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=H5wzRoDewgexd60SY3UPeVlVwYBrOb2ABpAKqbN5T8uC/AtLMlWgRFmb0YyzovLnv6
+         R2Yc5E2TV6p4buKdm4HQ==
+MIME-Version: 1.0
+In-Reply-To: <1288620663.2712.84.camel@localhost>
+References: <1288620663.2712.84.camel@localhost>
+Date: Tue, 2 Nov 2010 02:55:46 +0100
+Message-ID: <AANLkTimdp1teeaZkn2h32TQjaWxqegp27TNq+rvQcxAF@mail.gmail.com>
+Subject: Re: [PATCH] wrong PERF_COUNT_HW_CACHE_REFERENCES and
+ PERF_COUNT_HW_CACHE_MISSES for AMD
+From: Stephane Eranian <eranian@google.com>
+To: =?UTF-8?Q?Robert_Sch=C3=B6ne?= <robert.schoene@tu-dresden.de>
+Cc: Vince Weaver <vweaver1@eecs.utk.edu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
+        x86 <x86@kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Otherwise, the i variable will be -1 inside the latest iteration of the while loop.
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
-This resend only update the commit log.
-Regards,
-Axel
-
- drivers/dma/imx-dma.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-index f629e49..e53d438 100644
---- a/drivers/dma/imx-dma.c
-+++ b/drivers/dma/imx-dma.c
-@@ -379,7 +379,7 @@ static int __init imxdma_probe(struct platform_device *pdev)
- 	return 0;
- 
- err_init:
--	while (i-- >= 0) {
-+	while (--i >= 0) {
- 		struct imxdma_channel *imxdmac = &imxdma->channel[i];
- 		imx_dma_free(imxdmac->imxdma_channel);
- 	}
--- 
-1.7.2
+Hi,
 
 
 
+On Mon, Nov 1, 2010 at 3:11 PM, Robert Schöne
+<robert.schoene@tu-dresden.de> wrote:
+>
+> The current arch/x86/kernel/cpu/perf_event_amd.c file lists
+> L1-Instruction-Cache Misses and Accesses as PERF_COUNT_HW_CACHE_MISSES
+> resp. PERF_COUNT_HW_CACHE_REFERENCES.
+>
+I always thought PERF_COUNT_HW_CACHE_* was about data cache misses.
+But given that there is no clear definitions for those events, it
+creates confusion.
+
+If you change the meaning of HW_CACHE_MISSES, then seems to me, you need
+to change the mapping in the perf tool, because now it includes both data+code.
+
+
+> This fix uses L2C-Misses and Accesses instead. (Real LLC-events would be
+> better, but there are some restrictions for Northbridge Events on AMD).
+>
+And those constraints are handled correctly by the kernel.
+
+The constraint is such that you cannot have more than 4 instances of
+Northbridge events active at the same time per core. If you do, then one
+of them will starve (if issued from different cores).
+
+
+> --- a/arch/x86/kernel/cpu/perf_event_amd.c
+> +++ b/arch/x86/kernel/cpu/perf_event_amd.c
+> @@ -100,8 +100,8 @@ static const u64 amd_perfmon_event_map[] =
+>  {
+>   [PERF_COUNT_HW_CPU_CYCLES]           = 0x0076,
+>   [PERF_COUNT_HW_INSTRUCTIONS]         = 0x00c0,
+> -  [PERF_COUNT_HW_CACHE_REFERENCES]     = 0x0080,
+> -  [PERF_COUNT_HW_CACHE_MISSES]         = 0x0081,
+> +  [PERF_COUNT_HW_CACHE_REFERENCES]     = 0x037D,
+> +  [PERF_COUNT_HW_CACHE_MISSES]         = 0x037E,
+>   [PERF_COUNT_HW_BRANCH_INSTRUCTIONS]  = 0x00c2,
+>   [PERF_COUNT_HW_BRANCH_MISSES]                = 0x00c3,
+>  };
+>
