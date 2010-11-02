@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab0KBOHD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 10:07:03 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:49473 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753177Ab0KBOG5 (ORCPT
+	id S1753197Ab0KBOIX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 10:08:23 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:32566 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753055Ab0KBOIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 10:06:57 -0400
-Date: Tue, 2 Nov 2010 14:06:11 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Greg KH <greg@kroah.com>
-Cc: Naveen Kumar G <naveen.gaddipati@stericsson.com>,
-        linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com
-Subject: Re: [PATCHv1] staging: Synaptics RMI4 touchpad driver support
-Message-ID: <20101102140611.59d40e25@lxorguk.ukuu.org.uk>
-In-Reply-To: <20101102140337.GC9387@kroah.com>
-References: <1288699725-14405-1-git-send-email-naveen.gaddipati@stericsson.com>
-	<20101102140337.GC9387@kroah.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 2 Nov 2010 10:08:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=COkON9GU7hGkHGUGJoNLKtOwUsRtrKkUCaplvnl/0ZiCqnJPMJ6D8NoY7lXSVp57XS
+         TXjW/VuSZfIMPuYrX4BA==
+MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.00.1011011857220.9616@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1010302101240.1572@swampdragon.chaosbits.net>
+	<1288634113.2039.20.camel@laptop>
+	<alpine.LNX.2.00.1011011857220.9616@swampdragon.chaosbits.net>
+Date: Tue, 2 Nov 2010 15:08:13 +0100
+Message-ID: <AANLkTinvNSBP+tx3eCW3Xsq1Y_PwndrK5J4xHwWsUtBb@mail.gmail.com>
+Subject: Re: [PATCH] Perf, AMD: Prefer kzalloc() over kmalloc()+memset() in amd_alloc_nb()
+From: Stephane Eranian <eranian@google.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        "robert.richter" <robert.richter@amd.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <bp@amd64.org>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Nov 2010 07:03:37 -0700
-Greg KH <greg@kroah.com> wrote:
+On Mon, Nov 1, 2010 at 6:57 PM, Jesper Juhl <jj@chaosbits.net> wrote:
+> On Mon, 1 Nov 2010, Peter Zijlstra wrote:
+>
+>> On Sat, 2010-10-30 at 21:06 +0200, Jesper Juhl wrote:
+>> > Hi,
+>> >
+>> > I believe this would be an improvement?
+>> >
+>> > Prefer kzalloc() over kmalloc()+memset() in amd_alloc_nb().
+>> >
+>> >
+>> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+>> > ---
+>>
+>>
+>> I've changed it to..
+>>
+>> ---
+>> Subject: perf, amd: Use kmalloc_node(,__GFP_ZERO) for northbridge structure allocation
+>> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>> Date: Mon Nov 01 18:52:05 CET 2010
+>>
+>> Jasper suggested we use the zeroing capability of the allocators
+>> instead of calling memset ourselves. Add node affinity while we're at
+>> it.
+>>
+>> Reported-by: Jesper Juhl <jj@chaosbits.net>
+>> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>
+> Fine by me.
+>
+Works for me.
 
-> On Tue, Nov 02, 2010 at 05:38:45PM +0530, Naveen Kumar G wrote:
-> > --- /dev/null
-> > +++ b/drivers/staging/ste_rmi4/TODO
-> > @@ -0,0 +1,7 @@
-> > +TODO
-> > +----
-> > +
-> > +Wait for the official upstream synaptics rmi4 clearpad drivers as promised over the past few months
-> > +Merge any device support needed from this driver into it
-> > +Delete this driver
-> 
-> Huh?
-> 
-> Why not just add this driver to the kernel tree instead?  When the
-> "promised" driver then eventually shows up (who is promising it?) then
-> delete the thing.
-
-I've suggested that in the past.
-
-> But until then, why is this needed to go into the staging tree?  Is
-> there any other main reason it should be here and not in the "real" part
-> of the kernel?
-
-It's a driver nobody wants to commit to keeping around when there is
-eventually a general purpose driver. In other words things like module
-names will change.
+Acked-by: Stephane Eranian <eranian@google.com>
