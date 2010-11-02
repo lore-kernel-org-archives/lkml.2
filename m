@@ -1,48 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756857Ab0KBHf6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 03:35:58 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:38020 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754699Ab0KBHfw convert rfc822-to-8bit (ORCPT
+	id S1756894Ab0KBHg6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 03:36:58 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62313 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754699Ab0KBHgu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 03:35:52 -0400
+	Tue, 2 Nov 2010 03:36:50 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=Udijde7qizjWnYVmtC6+9/DiZrgK4L42c7OQ6Gda3jsibqxX9TqiHPcghR6GYTuqwU
-         eidOGPswYHaJfGLQe4BpigtKFZNx2p6jQBewjv8oN7NW3plZjVj/W7O4x4ia8Gq2bnvU
-         WSX7vofYyRYCit2AZ4FzzdjEx78s/H8OxJItc=
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=xdiP7Cyi1YiluBWQ7H1TuCoEaN/Odadqv++xG/9jY6LCFGLFQtkMj5ypRNg8U9CY2A
+         mspqbRtKc5eSRrSllsxK/pW9kiIOq33txhcY4lG/Q4yxpCu1WD8V14WizGW0PDcLKySN
+         Cg5TZTOQOx54yBeWUXPPcdYDAc5RXpnywN+a0=
+Message-ID: <4CCFBF8F.6090906@suse.cz>
+Date: Tue, 02 Nov 2010 08:36:47 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Thunderbird/3.1.6
 MIME-Version: 1.0
-In-Reply-To: <20101029122534.d4d6a439.akpm@linux-foundation.org>
-References: <1288364066-18709-1-git-send-email-michael.hennerich@analog.com> <20101029122534.d4d6a439.akpm@linux-foundation.org>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Tue, 2 Nov 2010 03:35:30 -0400
-Message-ID: <AANLkTikq_D_HjMG0kSqTNc4aoFhtN71usVcNGGz2pAn4@mail.gmail.com>
-Subject: Re: [Device-drivers-devel] [PATCH] video: backlight: adp8870: Fix
- warn_unused_result warning reported by Stephen Rothwell
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: michael.hennerich@analog.com, drivers@analog.com, sfr@canb.auug.org.au,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        rpurdie@linux.intel.com, device-drivers-devel@blackfin.uclinux.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Timur Tabi <timur@freescale.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tty: fix typos/errors in tty_driver.h comments
+References: <1288625926-26293-1-git-send-email-timur@freescale.com>
+In-Reply-To: <1288625926-26293-1-git-send-email-timur@freescale.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 29, 2010 at 15:25, Andrew Morton wrote:
->> Subject: [PATCH] video: backlight: adp8870: Fix warn_unused_result warning reported by Stephen Rothwell
->
-> Lots of people are doing this "video: backlight: adp8870:" thing
-> lately.  And it's good, but why not just use
-> "drivers/video/backlight/adp8860_bl.c" to identify the affected
-> susbsytem/file/etc?  It's simple and uniform.  It's not always the
-> appropriate thing to do, but replacing the /'s with ": " seems rather
-> random and pointless.
+On 11/01/2010 04:38 PM, Timur Tabi wrote:
+> Fix various typos and other errors in comments of tty_driver.h.  The most
+> significant is the wrong name of a function for the description of
+> TTY_DRIVER_DYNAMIC_DEV.
+> 
+> Signed-off-by: Timur Tabi <timur@freescale.com>
 
-the colons and spaces make it a lot easier to pick out in a git log.
-your suggestion makes it much harder to read due to the lack of
-whitespace.
--mike
+ACK, but you should CC maintainer (Greg KH).
+
+> ---
+>  include/linux/tty_driver.h |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/include/linux/tty_driver.h b/include/linux/tty_driver.h
+> index b086779..6c4e42f 100644
+> --- a/include/linux/tty_driver.h
+> +++ b/include/linux/tty_driver.h
+> @@ -102,7 +102,7 @@
+>   * 	    unsigned int cmd, unsigned long arg);
+>   *
+>   * 	This routine allows the tty driver to implement
+> - *	device-specific ioctl's.  If the ioctl number passed in cmd
+> + * 	device-specific ioctls.  If the ioctl number passed in cmd
+>   * 	is not recognized by the driver, it should return ENOIOCTLCMD.
+>   *
+>   *	Optional
+> @@ -167,12 +167,12 @@
+>   * 
+>   * void (*hangup)(struct tty_struct *tty);
+>   *
+> - * 	This routine notifies the tty driver that it should hangup the
+> + * 	This routine notifies the tty driver that it should hang up the
+>   * 	tty device.
+>   *
+>   *	Optional:
+>   *
+> - * int (*break_ctl)(struct tty_stuct *tty, int state);
+> + * int (*break_ctl)(struct tty_struct *tty, int state);
+>   *
+>   * 	This optional routine requests the tty driver to turn on or
+>   * 	off BREAK status on the RS-232 port.  If state is -1,
+> @@ -348,7 +348,7 @@ static inline struct tty_driver *tty_driver_kref_get(struct tty_driver *d)
+>   * 	overruns, either.)
+>   *
+>   * TTY_DRIVER_DYNAMIC_DEV --- if set, the individual tty devices need
+> - *	to be registered with a call to tty_register_driver() when the
+> + *	to be registered with a call to tty_register_device() when the
+>   *	device is found in the system and unregistered with a call to
+>   *	tty_unregister_device() so the devices will be show up
+>   *	properly in sysfs.  If not set, driver->num entries will be
+
+
+-- 
+js
+suse labs
