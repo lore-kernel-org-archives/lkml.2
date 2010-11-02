@@ -1,91 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605Ab0KBRzD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 13:55:03 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:45747 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754006Ab0KBRy7 (ORCPT
+	id S1754310Ab0KBSA6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 14:00:58 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:51760 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754518Ab0KBSAx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 13:54:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=lRXYXTgCU9/hLmwbLbDpAyV2EK6o8jjiMute1cORz9HTumuxjlk/s1ApBg1kAxxUeE
-         fJ/khcA5datlHCdCeVpelSImgomol11o0pj7WnSZRrsnXf1oP0s7fcaHPASt4yYp+J6+
-         Zg/FZYQesoK8/mrPgxaac+gPyNzipdLpiZmJo=
-Message-ID: <4CD0506F.6080600@gmail.com>
-Date: Wed, 03 Nov 2010 01:54:55 +0800
-From: Li Zefan <lizf.kern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.11) Gecko/20101006 Thunderbird/3.1.5
+	Tue, 2 Nov 2010 14:00:53 -0400
+Date: Tue, 2 Nov 2010 19:00:51 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Trond.Myklebust@netapp.com, bjschuma@netapp.com,
+        torvalds@linux-foundation.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [regression] NFS readdir change break fully cached nfs root
+Message-ID: <20101102180051.GA26089@basil.fritz.box>
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: dhowells@redhat.com, lizf@cn.fujitsu.com, paul.moore@hp.com,
-        johannes@sipsolutions.net, dipankar@in.ibm.com,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH 1/3] cgroup - removing superfluous rcu_read_lock_held
- check
-References: <1288638909-10541-1-git-send-email-jolsa@redhat.com> <1288638909-10541-2-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1288638909-10541-2-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010年11月02日 03:15, Jiri Olsa wrote:
-> hi,
 
-This..
+My NFS root test systems stopped booting with 2.6.37-rc1. It just
+hangs after entering user space.
 
-> the rcu_dereference_check is defined as
-> 
-> 	#define rcu_dereference_check(p, c) \
-> 	   __rcu_dereference_check((p), rcu_read_lock_held() || (c), __rcu)
-> 
-> so the caller does not need to specify rcu_read_lock_held() condition.
->
- 
-> wbr,
-> jirka
+The NFS root setup uses a slightly fancy parameter setup to minimize 
+network traffic:
 
-and this should be excluded from the changelog.
+nfsroot=10.23.204.1:/home/nfsroot/edwin,nocto,acregmin=86400,acregmax=86400,acdirmin=86400,acdirmax=86400 root=/dev/nfs
 
-> 
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+I bisected it down to this commit from Bryan.
 
-Reviewed-by: Li Zefan <lizf@cn.fujitsu.com>
+Unfortunately it's not trivially revertable because that conflicts
+with later patches.
 
-However a nitpick:
+commit d1bacf9eb2fd0e7ef870acf84b9e3b157dcfa7dc
+Author: Bryan Schumaker <bjschuma@netapp.com>
+Date:   Fri Sep 24 14:48:42 2010 -0400
 
-> ---
->  include/linux/cgroup.h |    1 -
->  kernel/cgroup.c        |    6 ++----
->  2 files changed, 2 insertions(+), 5 deletions(-)
-...
-> @@ -4544,7 +4542,7 @@ unsigned short css_id(struct cgroup_subsys_state *css)
->  	 * it's unchanged until freed.
->  	 */
->  	cssid = rcu_dereference_check(css->id,
-> -			rcu_read_lock_held() || atomic_read(&css->refcnt));
-> +			atomic_read(&css->refcnt));
+    NFS: add readdir cache array
 
-Now the 2 lines can be made into one line and still fit into 80 chars.
 
->  
->  	if (cssid)
->  		return cssid->id;
-> @@ -4557,7 +4555,7 @@ unsigned short css_depth(struct cgroup_subsys_state *css)
->  	struct css_id *cssid;
->  
->  	cssid = rcu_dereference_check(css->id,
-> -			rcu_read_lock_held() || atomic_read(&css->refcnt));
-> +			atomic_read(&css->refcnt));
+-Andi
 
-dito
-
->  
->  	if (cssid)
->  		return cssid->depth;
+-- 
+ak@linux.intel.com -- Speaking for myself only.
