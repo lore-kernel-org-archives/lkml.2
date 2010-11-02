@@ -1,64 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753825Ab0KBPbY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 11:31:24 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:59333 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753681Ab0KBPbS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 11:31:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=EE7W+ewXGOaE9ixxCb4DLor/XjV/dA3vNRH5qqMYAJ7rkjF74L8EfGKuOh6fAxr3qa
-         LN54SIAnMKvYoFZWtDCunLbuJnSgX3wDCRPhtjVw9cgfUqSrvAbxmD4FmRhNsTdUrMfe
-         pXqR3B3H/R4TISmD83mDS0nBLkU9yM8eo9+Ps=
-From: Audun Hoem <audun.hoem@gmail.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Audun Hoem <audun.hoem@gmail.com>
-Subject: [PATCH] staging: frontier: alphatrack: fixed coding style issues
-Date: Tue,  2 Nov 2010 16:31:01 +0100
-Message-Id: <1288711861-3625-1-git-send-email-audun.hoem@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1753834Ab0KBPcL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 11:32:11 -0400
+Received: from www.tglx.de ([62.245.132.106]:58321 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753624Ab0KBPcC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 11:32:02 -0400
+Date: Tue, 2 Nov 2010 16:31:37 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] posix-cpu-timers: rcu_read_lock/unlock protect
+ find_task_by_vpid call
+In-Reply-To: <20101102135821.GA5964@swordfish.minsk.epam.com>
+Message-ID: <alpine.LFD.2.00.1011021630150.9357@localhost6.localdomain6>
+References: <20101102135821.GA5964@swordfish.minsk.epam.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleaned up a macro definition and another simple style warning.
+On Tue, 2 Nov 2010, Sergey Senozhatsky wrote:
 
-Signed-off-by: Audun Hoem <audun.hoem@gmail.com>
----
- drivers/staging/frontier/alphatrack.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+> Commit 4221a9918e38b7494cee341dda7b7b4bb8c04bde "Add RCU check for
+> find_task_by_vpid()" introduced rcu_lockdep_assert to find_task_by_pid_ns.
+> Add rcu_read_lock/rcu_read_unlock to call find_task_by_vpid.
+> 
+> Tetsuo Handa wrote:
+> 
+> Quoting from one of posts in that thead
+> http://kerneltrap.org/mailarchive/linux-kernel/2010/2/8/4536388
+> 
+> | Usually tasklist gives enough protection, but if copy_process() fails
+> | it calls free_pid() lockless and does call_rcu(delayed_put_pid().   
+> | This means, without rcu lock find_pid_ns() can't scan the hash table
+> | safely.
 
-diff --git a/drivers/staging/frontier/alphatrack.c b/drivers/staging/frontier/alphatrack.c
-index ef7fbf8..6e3bd73 100644
---- a/drivers/staging/frontier/alphatrack.c
-+++ b/drivers/staging/frontier/alphatrack.c
-@@ -88,8 +88,11 @@ MODULE_SUPPORTED_DEVICE("Frontier Designs Alphatrack Control Surface");
- static int debug = ALPHATRACK_DEBUG;
- 
- /* Use our own dbg macro */
--#define dbg_info(dev, format, arg...) do \
--    { if (debug) dev_info(dev , format , ## arg); } while (0)
-+#define dbg_info(dev, format, arg...) \
-+do { \
-+	if (debug) \
-+		dev_info(dev , format , ## arg); \
-+} while (0)
- 
- #define alphatrack_ocmd_info(dev, cmd, format, arg...)
- 
-@@ -769,7 +772,7 @@ static int usb_alphatrack_probe(struct usb_interface *intf,
- 	}
- 
- 	dev->write_buffer =
--	    kmalloc(sizeof(struct alphatrack_ocmd) * true_size, GFP_KERNEL);
-+	    kmalloc(sizeof(struct alphatrack_ocmd) *true_size, GFP_KERNEL);
- 
- 	if (!dev->write_buffer) {
- 		dev_err(&intf->dev, "Couldn't allocate write_buffer\n");
--- 
-1.7.0.4
+We can remove the tasklist_lock while at it. rcu_read_lock is enough.
 
+Thanks,
+
+	tglx
+ 
+> 
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> 
+> ---
+> 
+> diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+> index 6842eeb..855bc53 100644
+> --- a/kernel/posix-cpu-timers.c
+> +++ b/kernel/posix-cpu-timers.c
+> @@ -38,11 +38,13 @@ static int check_clock(const clockid_t which_clock)
+>  		return 0;
+>  
+>  	read_lock(&tasklist_lock);
+> +	rcu_read_lock();
+>  	p = find_task_by_vpid(pid);
+>  	if (!p || !(CPUCLOCK_PERTHREAD(which_clock) ?
+>  		   same_thread_group(p, current) : thread_group_leader(p))) {
+>  		error = -EINVAL;
+>  	}
+> +	rcu_read_unlock();
+>  	read_unlock(&tasklist_lock);
+>  
+>  	return error;
+> @@ -395,17 +397,21 @@ int posix_cpu_timer_create(struct k_itimer *new_timer)
+>  		if (pid == 0) {
+>  			p = current;
+>  		} else {
+> +			rcu_read_lock();
+>  			p = find_task_by_vpid(pid);
+>  			if (p && !same_thread_group(p, current))
+>  				p = NULL;
+> +			rcu_read_unlock();
+>  		}
+>  	} else {
+>  		if (pid == 0) {
+>  			p = current->group_leader;
+>  		} else {
+> +			rcu_read_lock();
+>  			p = find_task_by_vpid(pid);
+>  			if (p && !thread_group_leader(p))
+>  				p = NULL;
+> +			rcu_read_unlock();
+>  		}
+>  	}
+>  	new_timer->it.cpu.task = p;
+> 
