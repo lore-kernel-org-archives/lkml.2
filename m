@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933486Ab0KBEqf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 00:46:35 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40938 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933443Ab0KBEq3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 00:46:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=vQovzVquvrE1LwiBjatV03HjH2GoF4ZHFBsJzw/apWVbGLQlnjtOaYG9l3cAzU4qSm
-         +LgIEsYf7tcmIRJ3nm/vq9x1/CocFM4TE4/3rK+s+mxduMZkme2HcjnEvz7Le0k/9wfS
-         B+KxJA8U9brAzUvL4g+IYp7K3aQFKgZI7HqVM=
-Subject: Re: [PATCH 3/3] fs: rcu protect inode hash lookups
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20101102000152.GO2715@dastard>
-References: <1288589624-15251-1-git-send-email-david@fromorbit.com>
-	 <1288589624-15251-4-git-send-email-david@fromorbit.com>
-	 <1288604287.2660.94.camel@edumazet-laptop> <20101101134451.GN2715@dastard>
-	 <1288625362.2660.108.camel@edumazet-laptop> <20101102000152.GO2715@dastard>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 02 Nov 2010 05:46:15 +0100
-Message-ID: <1288673175.2660.141.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S935210Ab0KBFIG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 01:08:06 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:58477 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935168Ab0KBFH7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 01:07:59 -0400
+Date: Tue, 2 Nov 2010 10:37:53 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Pavel Emelianov <xemul@openvz.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org
+Subject: Re: [PATCH] cgroup: prefer [kv]zalloc over [kv]malloc+memset in
+ memory controller code.
+Message-ID: <20101102050752.GG3769@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <alpine.LNX.2.00.1011012038490.12889@swampdragon.chaosbits.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1011012038490.12889@swampdragon.chaosbits.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 02 novembre 2010 à 11:01 +1100, Dave Chinner a écrit :
+* Jesper Juhl <jj@chaosbits.net> [2010-11-01 20:40:56]:
 
-> So, to go to per-chain locks as per the proposed bit-lock-on-the-
-> low-bit-of-the-head-pointer infrastructure, we'll have to cross that
-> with the hlist_null code that plays low-bit pointer games for
-> detecting the end of the chain.
+> Hi (please CC me on replies),
 > 
-
-So what, just use another bit for the lock, this still let 30 bit for
-the nulls value (62 bits on 64bit arches). Anyway, the bit lock is
-rejected by RT guys, so why do you still care ?
-
-
-> The chain is determined by hashing the inode number. Perhaps a
-> simple enough test is to hash the last inode number on a cache miss
-> and if that doesn't match the hash of the lookup key we redo the
-> search. That seems to me like it will avoid needing to play games
-> with termination markers - does that sound reasonable?
 > 
+> Apologies to those who receive this multiple times. I screwed up the To: 
+> field in my original mail :-(
+> 
+> 
+> In mem_cgroup_alloc() we currently do either kmalloc() or vmalloc() then 
+> followed by memset() to zero the memory. This can be more efficiently 
+> achieved by using kzalloc() and vzalloc().
+> 
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  memcontrol.c |    5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 9a99cfa..90da698 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -4199,14 +4199,13 @@ static struct mem_cgroup *mem_cgroup_alloc(void)
+> 
+>  	/* Can be very big if MAX_NUMNODES is very big */
+>  	if (size < PAGE_SIZE)
+> -		mem = kmalloc(size, GFP_KERNEL);
+> +		mem = kzalloc(size, GFP_KERNEL);
+>  	else
+> -		mem = vmalloc(size);
+> +		mem = vzalloc(size);
+> 
+>  	if (!mem)
+>  		return NULL;
+> 
+> -	memset(mem, 0, size);
+>  	mem->stat = alloc_percpu(struct mem_cgroup_stat_cpu);
+>  	if (!mem->stat) {
+>  		if (size < PAGE_SIZE)
+>
 
-Sure, if only the inode number is the key, it can be fetched in atomic
-way so it should be good, even without taking a stable reference on last
-item. It could be a problem if i_ino becomes a larger field...
+ 
+Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+ 
 
-Note : you'll have to remember the last item i_ino in a variable, not to
-refetch it from a 'last item' pointer (this last item could also change
-its chain...)
-
-For TCP, hash key is a complex hash function of many fields needing to
-take a reference before computing it, this was not an option.
-
-
-
+-- 
+	Three Cheers,
+	Balbir
