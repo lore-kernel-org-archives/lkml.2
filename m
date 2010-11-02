@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102Ab0KBQaV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 12:30:21 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:43488 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751259Ab0KBQaO (ORCPT
+	id S1754142Ab0KBQiA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 12:38:00 -0400
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:50014 "EHLO
+	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753890Ab0KBQhy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 12:30:14 -0400
-Date: Tue, 2 Nov 2010 16:29:22 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Christopher Heiny <cheiny@synaptics.com>
-Cc: Greg KH <greg@kroah.com>, Naveen Kumar G <naveen.gaddipati@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "STEricsson_nomadik_linux@list.st.com" 
-	<STEricsson_nomadik_linux@list.st.com>
-Subject: Re: [PATCHv1] staging: Synaptics RMI4 touchpad driver support
-Message-ID: <20101102162922.5864724b@lxorguk.ukuu.org.uk>
-In-Reply-To: <4CD03886.5030502@synaptics.com>
-References: <1288699725-14405-1-git-send-email-naveen.gaddipati@stericsson.com>
-	<20101102140337.GC9387@kroah.com>
-	<4CD03886.5030502@synaptics.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 2 Nov 2010 12:37:54 -0400
+Message-ID: <4CD03E2E.4090908@euromail.se>
+Date: Tue, 02 Nov 2010 17:37:02 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: gimli <gimli@dark-green.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] MacBookAir3,1(3,2) patches
+References: <c137eaeb4d262fe04abc7f8cf3255701@mognix.dark-green.com>
+In-Reply-To: <c137eaeb4d262fe04abc7f8cf3255701@mognix.dark-green.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1PDJrC-0005ZV-8N.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PDJrC-0005ZV-8N 1b9d55997de372f75ab7e2443660daea
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I must confess that I am seriously confused as to why this patch should 
-> be considered for fast tracking into the "real" kernel.  It's based on 
+On 11/02/2010 08:16 AM, gimli wrote:
 
-Because its usable, it works and people want to be able to use their
-hardware.
+> This patch series add support for the MacBookAir3,1 and MacBookAir3,2 to
+> the following drivers :
+> 
+> applesmc, bcm5974, btusb, hid-apple, mbp-nvidia-bl, snd quirks
+> 
+> Signed-off-by: Edgar (gimli) Hucek <gimli@dark-green.com>
+> 
 
-> an implementation that wasn't considered suitable for the "real" kernel, 
-> and doesn't address the concerns relating to that.  If "merge it now, 
-> fix it later" wasn't an acceptable approach previously, is there some 
-> compelling reason it is now acceptable?
 
-staging is different to putting it in drivers/input/
+Hi Gimli,
 
-> On the other hand, I totally understand frustration with our slow rate 
-> of output.  We're trying to produce the best possible code, but this is 
-> not happening as quickly as any of us would like.
+Thanks for your work. When submitting patches, please also CC the people
+obtained by ./scripts/get_maintainer.pl.
 
-And in the mean time we've got an acceptable driver that works and which
-we are happy to pitch overboard once the masterpiece appears. Until then
-people would like to use their hardware.
-
-Alan
+Henrik
