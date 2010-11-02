@@ -1,140 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026Ab0KBTT2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 15:19:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22324 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752357Ab0KBTTW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 15:19:22 -0400
-Date: Tue, 2 Nov 2010 15:19:09 -0400 (EDT)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-lab-213.englab.brq.redhat.com
-To: kevin granade <kevin.granade@gmail.com>
-cc: "Ted Ts'o" <tytso@mit.edu>, Lukas Czerner <lczerner@redhat.com>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: ext4_lazyinit_thread: 'ret' may be used uninitialized in this
- function
-In-Reply-To: <AANLkTim9JbCk29oPjrYMSfhtHL4tL4uHtDq_xZoe7tzg@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1011021516470.16869@dhcp-lab-213.englab.brq.redhat.com>
-References: <tkrat.ba371a0ea018042b@s5r6.in-berlin.de> <alpine.LFD.2.00.1011011551001.2876@dhcp-lab-213.englab.brq.redhat.com> <20101102182911.GE25614@thunk.org> <AANLkTim9JbCk29oPjrYMSfhtHL4tL4uHtDq_xZoe7tzg@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755053Ab0KBTWw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 15:22:52 -0400
+Received: from proxy.quengel.org ([213.146.113.159]:48386 "EHLO
+	gerlin1.hsp-law.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752789Ab0KBTWp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 15:22:45 -0400
+From: Ralf Gerbig <rge@quengel.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: 2.6.36 Crash/Panik in scsi_eh
+References: <87fwvkm215.fsf@gerlin1.hsp-law.de>
+	<1288710413.3056.256.camel@mulgrave.site>
+	<87pqunwszm.fsf@gerlin1.hsp-law.de>
+	<1288723004.3056.473.camel@mulgrave.site>
+Date: Tue, 02 Nov 2010 20:22:42 +0100
+In-Reply-To: <1288723004.3056.473.camel@mulgrave.site> (James Bottomley's
+	message of "Tue, 02 Nov 2010 14:36:44 -0400")
+Message-ID: <87bp67led9.fsf@gerlin1.hsp-law.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463809279-2035809424-1288725551=:16869"
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi James,
 
----1463809279-2035809424-1288725551=:16869
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+* James Bottomley writes:
 
-On Tue, 2 Nov 2010, kevin granade wrote:
+> On Tue, 2010-11-02 at 18:11 +0100, Ralf Gerbig wrote:
+>> >> Nov  2 10:40:57 gerlin1 kernel: [45977.560407] RIP: 0010:[<ffffffff811d2290>]  [<ffffffff811d2290>] scsi_dispatch_cmd+0x92/0x22e
+>> 
+>> > This is the faulting location ... could you run addr2line on this
+>> > address to map it to a line of source code?
+>> 
+>> addr2line id only say ??:0
+>> 
+>> I recompiled vmlinux with debugging symbols, and gdb says:
+>> 
+>> Reading symbols from /usr/src/linux-git/linux-2.6/vmlinux...done.
+>> (gdb) l *(scsi_dispatch_cmd + 0x92)
+>> 0xffffffff811d2290 is in scsi_dispatch_cmd (drivers/scsi/scsi.c:707).
+>> 702              * We will wait MIN_RESET_DELAY clock ticks after the
+>> last reset so
+>> 703              * we can avoid the drive not being ready.
+>> 704              */
+>> 705             timeout = host->last_reset + MIN_RESET_DELAY;
+>> 706
+>> 707             if (host->resetting && time_before(jiffies, timeout)) {
+>> 708                     int ticks_remaining = timeout - jiffies;
+>> 709                     /*
+>> 710                      * NOTE: This may be executed from within an interrupt
+>> 711                      * handler!  This is bad, but for now, it'll do. The irq
 
-> On Tue, Nov 2, 2010 at 1:29 PM, Ted Ts'o <tytso@mit.edu> wrote:
-> >
-> > On Mon, Nov 01, 2010 at 04:27:26PM +0100, Lukas Czerner wrote:
-> > >
-> > > thank you for noticing this, because I actually do not see the warning
-> > > (I wonder why...), but it is definitely a bug, so the trivial patch below
-> > > should fix that.
-> >
-> > This is a slightly less trivial fix that eliminates the need for the
-> > "ret" variable entirely.
-> >
-> >                                                - Ted
-> >
-> > commit e048924538f0c62d18306e2fea0e22dac0140f6e
-> > Author: Theodore Ts'o <tytso@mit.edu>
-> > Date:   Tue Nov 2 14:19:30 2010 -0400
-> >
-> >    ext4: "ret" may be used uninitialized in ext4_lazyinit_thread()
-> >
-> >    Newer GCC's reported the following build warning:
-> >
-> >       fs/ext4/super.c: In function 'ext4_lazyinit_thread':
-> >       fs/ext4/super.c:2702: warning: 'ret' may be used uninitialized in this function
-> >
-> >    Fix it by removing the need for the ret variable in the first place.
-> >
-> >    Signed-off-by: "Lukas Czerner" <lczerner@redhat.com>
-> >    Reported-by: "Stefan Richter" <stefanr@s5r6.in-berlin.de>
-> >    Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-> >
-> > diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-> > index 8d1d942..4d7ef31 100644
-> > --- a/fs/ext4/super.c
-> > +++ b/fs/ext4/super.c
-> > @@ -2699,7 +2699,6 @@ static int ext4_lazyinit_thread(void *arg)
-> >        struct ext4_li_request *elr;
-> >        unsigned long next_wakeup;
-> >        DEFINE_WAIT(wait);
-> > -       int ret;
-> >
-> >        BUG_ON(NULL == eli);
-> >
-> > @@ -2723,13 +2722,12 @@ cont_thread:
-> >                        elr = list_entry(pos, struct ext4_li_request,
-> >                                         lr_request);
-> >
-> > -                       if (time_after_eq(jiffies, elr->lr_next_sched))
-> > -                               ret = ext4_run_li_request(elr);
-> > -
-> > -                       if (ret) {
-> > -                               ret = 0;
-> > -                               ext4_remove_li_request(elr);
-> > -                               continue;
-> > +                       if (time_after_eq(jiffies, elr->lr_next_sched)) {
-> > +                               if (ext4_run_li_request(elr) != 0) {
-> > +                                       /* error, remove the lazy_init job */
-> > +                                       ext4_remove_li_request(elr);
-> > +                                       continue;
-> > +                               }
-> >                        }
-> >
-> >                        if (time_before(elr->lr_next_sched, next_wakeup))
-> 
-> What do you think about this option for the second hunk? (not anything-tested)
-> 
-> @@ -2723,13 +2722,11 @@ cont_thread:
->                        elr = list_entry(pos, struct ext4_li_request,
->                                         lr_request);
-> -                       if (time_after_eq(jiffies, elr->lr_next_sched))
-> -                               ret = ext4_run_li_request(elr);
-> -
-> -                       if (ret) {
-> -                               ret = 0;
-> -                               ext4_remove_li_request(elr);
-> -                               continue;
-> +                       if (time_after_eq(jiffies, elr->lr_next_sched) &&
-> +                           ext4_run_li_request(elr) != 0) {
-> +                               /* error, remove the lazy_init job */
-> +                               ext4_remove_li_request(elr);
-> +                               continue;
->                        }
-> 
->                        if (time_before(elr->lr_next_sched, next_wakeup))
-> --
-> 
-> Though obviously it's a pretty subjective style issue.
-> Kevin Granade
+> Um, that's bad.  It's saying the junk pointer is host on line 707 but
+> when it was dereferenced on line 705 it was fine.  This is most likely
+> to indicate either memory corruption (another thread overwrote the host
+> location or even a hardware fault).
 
-Hmm this relies on the fact that if the first part of the condition
-would not be true, the second part (after and) would never be invoked,
-however I am not really sure that we can rely on that on every
-architecture, or can we ?
+Oh well, back to 2.6.36-rc8-00045-g51ea8a8, lets wait and see.
 
-> 
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
+BTW there was a secondary trace - short transcript:
 
-Thanks!
+general protection fault: 0000 [#2] PREEMPT SMP
+last sysfs file: /sys/system/virtual/sound/uevent
+CPU 2
+Modules ....
 
--Lukas
----1463809279-2035809424-1288725551=:16869--
+Pid: 0, comm: kworker/0:1 Tainted: G	D 
+Rip: 0010:[<ffffffff811d6a9b>] [<ffffffff811d6a9b>] scsi_times_out+0x1b/0x6d
+
+[...]
+
+(gdb) l *(scsi_times_out + 0x1b)
+0xffffffff811d6a9b is in scsi_times_out (drivers/scsi/scsi_error.c:136).
+131             enum blk_eh_timer_return rtn = BLK_EH_NOT_HANDLED;
+132
+133             trace_scsi_dispatch_cmd_timeout(scmd);
+134             scsi_log_completion(scmd, TIMEOUT_ERROR);
+135
+136             if (scmd->device->host->transportt->eh_timed_out)
+137                     rtn = scmd->device->host->transportt->eh_timed_out(scmd);
+138             else if (scmd->device->host->hostt->eh_timed_out)
+139                     rtn = scmd->device->host->hostt->eh_timed_out(scmd);
+140
+
+JPEG is there for the asking.
+
+Thanks for your help,
+
+Ralf
