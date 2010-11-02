@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925Ab0KBPhs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 11:37:48 -0400
-Received: from mail.perches.com ([173.55.12.10]:3927 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753780Ab0KBPhl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 11:37:41 -0400
-Subject: Re: [PATCH] staging: frontier: alphatrack: fixed coding style
- issues
-From: Joe Perches <joe@perches.com>
-To: Audun Hoem <audun.hoem@gmail.com>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1288711861-3625-1-git-send-email-audun.hoem@gmail.com>
-References: <1288711861-3625-1-git-send-email-audun.hoem@gmail.com>
+	id S1753972Ab0KBPib (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 11:38:31 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:59062 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753774Ab0KBPiY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 11:38:24 -0400
+Subject: Re: [PATCH 3/6] MacBookAir3,1(3,2) btusb support
+From: Marcel Holtmann <marcel@holtmann.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gimli <gimli@dark-green.com>
+In-Reply-To: <20101102152454.GC11778@core.coreip.homeip.net>
+References: <9e7738c0461aa509dd55fe470df3855e@mognix.dark-green.com>
+	 <20101102152454.GC11778@core.coreip.homeip.net>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 02 Nov 2010 08:37:39 -0700
-Message-ID: <1288712259.7326.4.camel@Joe-Laptop>
+Date: Tue, 02 Nov 2010 16:38:02 +0100
+Message-ID: <1288712282.3322.181.camel@aeonflux>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-02 at 16:31 +0100, Audun Hoem wrote:
-> Cleaned up a macro definition and another simple style warning.
-> Signed-off-by: Audun Hoem <audun.hoem@gmail.com>
-> ---
->  drivers/staging/frontier/alphatrack.c |    9 ++++++---
->  1 files changed, 6 insertions(+), 3 deletions(-)
+Hi Dmitry,
+
+> Not sure of you guys monitor LKML...
+
+not on a regular basis.
+
+> > This patch add support for the MacBookAir3,1 and MacBookAir3,2 to the btusb
+> > driver.
+> > 
+> > Signed-off-by: Edgar (gimli) Hucek <gimli@dark-green.com>
 > 
-> diff --git a/drivers/staging/frontier/alphatrack.c b/drivers/staging/frontier/alphatrack.c
-> index ef7fbf8..6e3bd73 100644
-> --- a/drivers/staging/frontier/alphatrack.c
-> +++ b/drivers/staging/frontier/alphatrack.c
-> @@ -88,8 +88,11 @@ MODULE_SUPPORTED_DEVICE("Frontier Designs Alphatrack Control Surface");
->  static int debug = ALPHATRACK_DEBUG;
->  
->  /* Use our own dbg macro */
-> -#define dbg_info(dev, format, arg...) do \
-> -    { if (debug) dev_info(dev , format , ## arg); } while (0)
-> +#define dbg_info(dev, format, arg...) \
-> +do { \
-> +	if (debug) \
-> +		dev_info(dev , format , ## arg); \
+> > --- a/drivers/bluetooth/btusb.c	2010-10-30 21:08:45.170492002 +0200
+> > +++ b/drivers/bluetooth/btusb.c	2010-10-30 21:18:11.820492000 +0200
+> > @@ -62,6 +62,9 @@
+> >  	/* Apple iMac11,1 */
+> >  	{ USB_DEVICE(0x05ac, 0x8215) },
+> >  
+> > +	/* Apple MacBookAir3,1, MacBookAir3,2 */
+> > +	{ USB_DEVICE(0x05ac, 0x821b) },
+> > +
+> >  	/* AVM BlueFRITZ! USB v2.0 */
+> >  	{ USB_DEVICE(0x057c, 0x3800) },
 
-There is no need for the spaces before commas.
+patch looks fine to me, but it should be send to linux-bluetooth mailing
+list.
 
-gcc 2.xx required a space before a comma with a trailing ##arg,
-but that compiler version is no longer supported.
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
 
-This should be:
-	dev_info(dev, format, ##arg);
+Regards
 
-though I think using dev_dbg and getting rid of the dbg_info
-macro is better.
-
-> +} while (0)
->  
->  #define alphatrack_ocmd_info(dev, cmd, format, arg...)
->  
-> @@ -769,7 +772,7 @@ static int usb_alphatrack_probe(struct usb_interface *intf,
->  	}
->  
->  	dev->write_buffer =
-> -	    kmalloc(sizeof(struct alphatrack_ocmd) * true_size, GFP_KERNEL);
-> +	    kmalloc(sizeof(struct alphatrack_ocmd) *true_size, GFP_KERNEL);
-
-Not an improvement.
-
-If checkpatch warns about this, it's a checkpatch defect.
+Marcel
 
 
