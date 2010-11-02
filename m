@@ -1,141 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753555Ab0KBPHG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 11:07:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50957 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752717Ab0KBPHC convert rfc822-to-8bit (ORCPT
+	id S1753566Ab0KBPK5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 11:10:57 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:51351 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752195Ab0KBPKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 11:07:02 -0400
-Subject: Re: 2.6.36 Crash/Panik in scsi_eh
-From: James Bottomley <James.Bottomley@suse.de>
-To: Ralf Gerbig <rge@quengel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-In-Reply-To: <87fwvkm215.fsf@gerlin1.hsp-law.de>
-References: <87fwvkm215.fsf@gerlin1.hsp-law.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 02 Nov 2010 11:06:53 -0400
-Message-ID: <1288710413.3056.256.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 8BIT
+	Tue, 2 Nov 2010 11:10:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=PIrzrjbtsxIXdAHb8/t4PDciUjS1lUX0LIxWzdVUfubt7/GmpLBOhKFllEQgT5OS8E
+         s3pnC3PBGFqf9i4hawdsa2WghrN3JNcVq2f9eG3Xij0wkKQF4MA0oDHqYuDaKFov/Dbx
+         0NMaRqsXAdfTQzbZSwsE2kj/YUFKrwH9jrhkQ=
+MIME-Version: 1.0
+Date: Wed, 3 Nov 2010 00:10:50 +0900
+Message-ID: <AANLkTikCUdpx-jGhKdzueML39CnExumk1i_X_OZJihE2@mail.gmail.com>
+Subject: [BUGFIX][PATCH] fix wrong VM_BUG_ON() in try_charge()'s mm->owner check
+From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+To: linux-mm@kvack.org
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        balbir@linux.vnet.ibm.com, nishimura@mxp.nes.nec.co.jp,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, kosaki.motohiro@jp.fujitsu.com,
+        hughd@gmail.com
+Content-Type: multipart/mixed; boundary=0016e6dab1828c9da804941354f2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cc linux-scsi added
+--0016e6dab1828c9da804941354f2
+Content-Type: text/plain; charset=ISO-8859-1
 
-On Tue, 2010-11-02 at 11:51 +0100, Ralf Gerbig wrote:
-> Hi all,
-> 
-> .36 crashed on me twice. First time dead, no sysrq, nothing in the logs
-> after two days, the second time, a day later, with the following log.
-> 
-> The system ran 2.6.36-rc8-00045-g51ea8a8 before for 5 days without
-> trouble.
-> 
-> The IMHO only relevant patches between those kernels are appended below.
-> 
-> (gcc version 4.4.5 (Gentoo 4.4.5 p1.0, pie-0.4.5)
-> 
-> Thanks,
-> 
-> Ralf
-> 
-> Nov  2 10:40:57 gerlin1 kernel: [45977.557733] general protection fault: 0000 [#1] PREEMPT SMP 
+I'm sorry for attached file, I have to use unusual mailer this time.
+This is a fix for wrong VM_BUG_ON() for mm/memcontol.c
 
-This looks like it's missing the fault address, but a GPF is a bit
-unusual, it means the kernel derefed a junk pointer (or a free'd one if
-you have memory debugging turned on).
+Thanks,
+-Kame
 
-> Nov  2 10:40:57 gerlin1 kernel: [45977.557859] last sysfs file: /sys/devices/virtual/sound/timer/uevent
-> Nov  2 10:40:57 gerlin1 kernel: [45977.557974] CPU 2 
-> Nov  2 10:40:57 gerlin1 kernel: [45977.558012] Modules linked in: xt_state xt_tcpudp ipt_REJECT iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 iptable_mangle iptable_filter ipt_addrtype xt_DSCP xt_dscp xt_string xt_owner xt_NFQUEUE xt_multiport xt_mark xt_iprange xt_hashlimit xt_conntrack xt_connmark nf_conntrack ip_tables x_tables tun nfsd lockd nfs_acl auth_rpcgss sunrpc exportfs pppoe pppox ppp_generic slhc it87 hwmon_vid ipv6 snd_pcm_oss snd_mixer_oss snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device powernow_k8 mperf snd_hda_codec_atihdmi usbhid hid snd_hda_codec_realtek snd_hda_intel snd_hda_codec dst dvb_bt8xx dvb_core bt878 bttv ir_lirc_codec lirc_dev usb_storage ir_sony_decoder ir_jvc_decoder snd_hwdep snd_pcm r8169 snd_timer radeon ir_rc6_decoder v4l2_common videodev v4l2_compat_ioctl32 videobuf_dma_sg avmfritz videobuf_core mISDNipac btcx_risc ir_common mISDN_core ir_rc5_decoder ttm drm_kms_helper i2c_piix4 ir_nec_decoder snd firewire_ohci ppdev cfbcopyarea cfbimgblt cfbfillrect processor soundcore ir_core mii firewire_core snd_page_alloc ehci_hcd parport_pc k10temp evdev xhci_hcd hwmon tveeprom ohci_hcd crc_itu_t parport wmi thermal button
-> Nov  2 10:40:57 gerlin1 kernel: [45977.560231] 
-> Nov  2 10:40:57 gerlin1 kernel: [45977.560265] Pid: 600, comm: scsi_eh_16 Not tainted 2.6.36 #6 GA-770TA-UD3/GA-770TA-UD3
-> Nov  2 10:40:57 gerlin1 kernel: [45977.560407] RIP: 0010:[<ffffffff811d2290>]  [<ffffffff811d2290>] scsi_dispatch_cmd+0x92/0x22e
+--0016e6dab1828c9da804941354f2
+Content-Type: application/octet-stream; name="fix-mm-owner-check.patch"
+Content-Disposition: attachment; filename="fix-mm-owner-check.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gg0wx5k80
 
-This is the faulting location ... could you run addr2line on this
-address to map it to a line of source code?
-
-> Nov  2 10:40:57 gerlin1 kernel: [45977.560572] RSP: 0018:ffff88022ffa3d00  EFLAGS: 00010202
-> Nov  2 10:40:57 gerlin1 kernel: [45977.560669] RAX: 0000000000000001 RBX: ffff8801f7c94700 RCX: ffff88017699dd10
-> Nov  2 10:40:57 gerlin1 kernel: [45977.560796] RDX: 0000000000000000 RSI: 0000000000000086 RDI: ffff8801f7c94700
-> Nov  2 10:40:57 gerlin1 kernel: [45977.560924] RBP: ffff88022fee9800 R08: ffff88022fe42901 R09: ffff88022fe42848
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561051] R10: ffff88022ec21b18 R11: ffff88022fee9800 R12: 8000000000100038
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561179] R13: ffff88022fe42848 R14: ffff8801f7c94700 R15: ffff88017699dc30
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561308] FS:  00007f23ccdb1700(0000) GS:ffff880001900000(0000) knlGS:00000000f73ef6c0
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561452] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561556] CR2: 00007f4403f2f000 CR3: 000000022a603000 CR4: 00000000000006e0
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561634] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561634] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561634] Process scsi_eh_16 (pid: 600, threadinfo ffff88022ffa2000, task ffff88022fcd6450)
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561634] Stack:
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561634]  ffff88022fe42948 ffff88022fe42800 ffff88022fee9800 ffff88022eeb0908
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561634] <0> ffff88022fe42848 ffffffff811d7a75 0000000000000000 ffffffff812d8825
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561634] <0> ffff88022fe42938 ffff88022eeb0c68 ffff88022ffa4150 ffff88022eeb0908
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561634] Call Trace:
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561634]  [<ffffffff811d7a75>] ? scsi_request_fn+0x35b/0x4a6
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561634]  [<ffffffff812d8825>] ? _raw_spin_unlock_irqrestore+0x20/0x2e
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561634]  [<ffffffff81121f58>] ? __blk_run_queue+0x37/0x68
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561634]  [<ffffffff8112202f>] ? blk_run_queue+0x20/0x32
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561634]  [<ffffffff811d719f>] ? scsi_run_queue+0x2db/0x375
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561634]  [<ffffffff811d82bc>] ? scsi_run_host_queues+0x1a/0x33
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561634]  [<ffffffff811d683b>] ? scsi_error_handler+0x59b/0x61e
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561634]  [<ffffffff811d62a0>] ? scsi_error_handler+0x0/0x61e
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561634]  [<ffffffff811d62a0>] ? scsi_error_handler+0x0/0x61e
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561634]  [<ffffffff81047e72>] ? kthread+0x7a/0x82
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561634]  [<ffffffff81002c94>] ? kernel_thread_helper+0x4/0x10
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561634]  [<ffffffff81047df8>] ? kthread+0x0/0x82
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561634]  [<ffffffff81002c90>] ? kernel_thread_helper+0x0/0x10
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561634] Code: e9 91 01 00 00 8a 82 a1 00 00 00 84 c0 74 1c 3c 03 7f 18 48 8b 4f 50 8b 92 84 00 00 00 8a 41 01 c1 e2 05 83 e0 1f 09 d0 88 41 01 <41> 83 bc 24 e0 00 00 00 00 49 8b ac 24 e8 00 00 00 74 38 48 8b 
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561634] RIP  [<ffffffff811d2290>] scsi_dispatch_cmd+0x92/0x22e
-> Nov  2 10:40:57 gerlin1 kernel: [45977.561634]  RSP <ffff88022ffa3d00>
-> Nov  2 10:40:57 gerlin1 kernel: [45977.607776] ---[ end trace 3ac2996f7ba1d17f ]---
-
-So you're right, the following are the only two commits.  However
-neither of them touches anything remotely connected to the area where
-the fault is.
-
-James
-
-
-> commit 478971600e47cb83ff2d3c63c5c24f2b04b0d6a1
-> Author: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-> Date:   Fri Sep 17 00:46:42 2010 +0900
-> 
->     [SCSI] bsg: fix incorrect device_status value
->     
->     bsg incorrectly returns sg's masked_status value for device_status.
->     
->     [jejb: fix up expression logic]
->     Reported-by: Douglas Gilbert <dgilbert@interlog.com>
->     Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
->     Cc: Stable Tree <stable@kernel.org>
->     Signed-off-by: James Bottomley <James.Bottomley@suse.de>
-> 
-> :100644 100644 82d5882... 0c00870... M  block/bsg.c
-> 
-> commit 16d3ea26f82271fef9b1c4523b5e1ea31fa39eec
-> Author: Martin K. Petersen <martin.petersen@oracle.com>
-> Date:   Fri Sep 10 01:20:27 2010 -0400
-> 
->     [SCSI] Fix VPD inquiry page wrapper
->     
->     Fix two bugs in the VPD page wrapper:
->     
->         - Don't return failure if the user asked for page 0
->     
->         - The end of buffer check failed to account for the page header size
->           and consequently didn't work
->     
->     Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
->     Cc: Stable Tree <stable@kernel.org>
->     Signed-off-by: James Bottomley <James.Bottomley@suse.de>
-> 
-> :100644 100644 ad0ed21... 348fba0... M  drivers/scsi/scsi.c
-
-
+QXQgX19tZW1fY2dyb3VwX3RyeV9jaGFyZ2UoKSwgVk1fQlVHX09OKCFtbS0+b3duZXIpIGlzIGNo
+ZWNrZWQuCkJ1dCBhcyBjb21tZW50ZWQgaW4gbWVtX2Nncm91cF9mcm9tX3Rhc2soKSwgbW0tPm93
+bmVyIGNhbiBiZSBOVUxMIGluIHNvbWUgcmFjeQpjYXNlLiBUaGlzIGNoZWNrIG9mIFZNX0JVR19P
+TigpIGlzIGJhZC4KCkEgcG9zc2libGUgc3Ryb3kgdG8gaGl0IHRoaXMgaXMgYXQgc3dhcG9mZigp
+LT50cnlfdG9fdW51c2UoKS4gSXQgcGFzc2VzCm1tX3N0cnVjdCB0byBtZW1fY2dyb3VwX3RyeV9j
+aGFyZ2Vfc3dhcGluKCkgd2hpbGUgbW0tPm93bmVyIGlzIE5VTEwuIElmIHdlCmNhbid0IGdldCBw
+cm9wZXIgbWVtX2Nncm91cCBmcm9tIHN3YXBfY2dyb3VwIGluZm9ybWF0aW9uLCBtbS0+b3duZXIg
+aXMgdXNlZAphcyBjaGFyZ2UgdGFyZ2V0IGFuZCB3ZSBzZWUgTlVMTC4KCkNjOiBCYWxiaXIgU2lu
+Z2ggPGJhbGJpckBpbi5pYm0uY29tPgpDYzogRGFpc3VrZSBOaXNoaW11cmEgPG5pc2hpbXVyYUBt
+eHAubmVzLm5lYy5jby5qcD4KQ2M6IEtPU0FLSSBNb3RvaGlybyA8a29zYWtpLm1vdG9oaXJvQGpw
+LmZ1aml0c3UuY29tPgpSZXBvcnRlZC1ieTogSHVnaCBEaWNraW5zIDxodWdoZEBnb29nbGUuY29t
+PgpTaWduZWQtb2ZmLWJ5OiBLQU1FWkFXQSBIaXJveXVraSA8a2FtZXphd2EuaGlyb3l1QGpwLmZ1
+aml0c3UuY29tPgotLS0KIG1tL21lbWNvbnRyb2wuYyB8ICAgMTkgKysrKysrKysrLS0tLS0tLS0t
+LQogMSBmaWxlIGNoYW5nZWQsIDkgaW5zZXJ0aW9ucygrKSwgMTAgZGVsZXRpb25zKC0pCgpJbmRl
+eDogbGludXgtMi42LjM2L21tL21lbWNvbnRyb2wuYwo9PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYu
+MzYub3JpZy9tbS9tZW1jb250cm9sLmMKKysrIGxpbnV4LTIuNi4zNi9tbS9tZW1jb250cm9sLmMK
+QEAgLTE3MjksMTkgKzE3MjksMTggQEAgYWdhaW46CiAKIAkJcmN1X3JlYWRfbG9jaygpOwogCQlw
+ID0gcmN1X2RlcmVmZXJlbmNlKG1tLT5vd25lcik7Ci0JCVZNX0JVR19PTighcCk7CiAJCS8qCi0J
+CSAqIGJlY2F1c2Ugd2UgZG9uJ3QgaGF2ZSB0YXNrX2xvY2soKSwgInAiIGNhbiBleGl0IHdoaWxl
+Ci0JCSAqIHdlJ3JlIGhlcmUuIEluIHRoYXQgY2FzZSwgIm1lbSIgY2FuIHBvaW50IHRvIHJvb3QK
+LQkJICogY2dyb3VwIGJ1dCBuZXZlciBiZSBOVUxMLiAoYW5kIHRhc2tfc3RydWN0IGl0c2VsZiBp
+cyBmcmVlZAotCQkgKiBieSBSQ1UsIGNncm91cCBpdHNlbGYgaXMgUkNVIHNhZmUuKSBUaGVuLCB3
+ZSBoYXZlIHNtYWxsCi0JCSAqIHJpc2sgaGVyZSB0byBnZXQgd3JvbmcgY2dyb3VwLiBCdXQgc3Vj
+aCBraW5kIG9mIG1pcy1hY2NvdW50Ci0JCSAqIGJ5IHJhY2UgYWx3YXlzIGhhcHBlbnMgYmVjYXVz
+ZSB3ZSBkb24ndCBoYXZlIGNncm91cF9tdXRleCgpLgotCQkgKiBJdCdzIG92ZXJraWxsIGFuZCB3
+ZSBhbGxvdyB0aGF0IHNtYWxsIHJhY2UsIGhlcmUuCisJCSAqIEJlY2F1c2Ugd2UgZG9uJ3QgaGF2
+ZSB0YXNrX2xvY2soKSwgInAiIGNhbiBleGl0LgorCQkgKiBJbiB0aGF0IGNhc2UsICJtZW0iIGNh
+biBwb2ludCB0byByb290IG9yIHAgY2FuIGJlIE5VTEwgd2l0aAorCQkgKiByYWNlIHdpdGggc3dh
+cG9mZi4gVGhlbiwgd2UgaGF2ZSBzbWFsbCByaXNrIG9mIG1pcy1hY2NvdW5pbmcuCisJCSAqIEJ1
+dCBzdWNoIGtpbmQgb2YgbWlzLWFjY291bnQgYnkgcmFjZSBhbHdheXMgaGFwcGVucyBiZWNhdXNl
+CisJCSAqIHdlIGRvbid0IGhhdmUgY2dyb3VwX211dGV4KCkuIEl0J3Mgb3ZlcmtpbGwgYW5kIHdl
+IGFsbG8gdGhhdAorCQkgKiBzbWFsbCByYWNlLCBoZXJlLgorCQkgKiAoKikgc3dhcG9mZiBhdCBl
+bCB3aWxsIGNoYXJnZSBhZ2FpbnN0IG1tLXN0cnVjdCBub3QgYWdhaW5zdAorCQkgKiB0YXNrLXN0
+cnVjdC4gU28sIG1tLT5vd25lciBjYW4gYmUgTlVMTC4KIAkJICovCiAJCW1lbSA9IG1lbV9jZ3Jv
+dXBfZnJvbV90YXNrKHApOwotCQlWTV9CVUdfT04oIW1lbSk7Ci0JCWlmIChtZW1fY2dyb3VwX2lz
+X3Jvb3QobWVtKSkgeworCQlpZiAoIW1lbSB8fCBtZW1fY2dyb3VwX2lzX3Jvb3QobWVtKSkgewog
+CQkJcmN1X3JlYWRfdW5sb2NrKCk7CiAJCQlnb3RvIGRvbmU7CiAJCX0K
+--0016e6dab1828c9da804941354f2--
