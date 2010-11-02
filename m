@@ -1,85 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356Ab0KCC1r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 22:27:47 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:43614 "EHLO e4.ny.us.ibm.com"
+	id S1753106Ab0KCCvB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 22:51:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31010 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752695Ab0KCC1p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 22:27:45 -0400
-Date: Wed, 3 Nov 2010 07:57:33 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Nauman Rafique <nauman@google.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>
-Subject: Re: [RFC] blk-cgroup: Allow creation of hierarchical cgroups
-Message-ID: <20101103022733.GJ3769@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20101102222030.GI7198@redhat.com>
+	id S1751392Ab0KCCu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 22:50:58 -0400
+Date: Tue, 2 Nov 2010 14:06:22 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Ravikiran G Thirumalai <kiran@scalex86.org>
+Subject: lessen the impact of a deprecated warning in hugetlbfs
+Message-ID: <20101102180622.GA12620@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Ravikiran G Thirumalai <kiran@scalex86.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101102222030.GI7198@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Vivek Goyal <vgoyal@redhat.com> [2010-11-02 18:20:30]:
+WARN_ONCE is a bit strong for a deprecation warning, given that it spews a
+huge backtrace.
 
-> o Allow hierarchical cgroup creation for blkio controller
-> 
-> o Currently we disallow it as both the io controller policies (throttling
->   as well as proportion bandwidth) do not support hierarhical accounting
->   and control. But the flip side is that blkio controller can not be used with
->   libvirt as libvirt creates a cgroup hierarchy deeper than 1 level.
-> 
->   <top-level-cgroup-dir>/<controller>/libvirt/qemu/<virtual-machine-groups>
-> 
-> o So this patch will allow creation of cgroup hierarhcy but at the backend
->   everything will be treated as flat. So if somebody created a an hierarchy
->   like as follows.
-> 
-> 			root	
-> 			/  \
-> 		     test1 test2
-> 			|
-> 		     test3
-> 
->   CFQ and throttling will practically treat all groups at same level.
-> 			
-> 				pivot
-> 			     /  |   \  \
-> 			root  test1 test2  test3
-> 
-> o Once we have actual support for hierarchical accounting and control
->   then we can introduce another cgroup tunable file "blkio.use_hierarchy"
->   which will be 0 by default but if user wants to enforce hierarhical
->   control then it can be set to 1. This way there should not be any
->   ABI problems down the line.
-> 
-> o The only not so pretty part is introduction of extra file "use_hierarchy"
->   down the line. Kame-san had mentioned that hierarhical accounting is
->   expensive in memory controller hence they keep it off by default. I
->   suspect same will be the case for IO controller also as for each IO
->   completion we shall have to account IO through hierarchy up to the root.
->   if yes, then it probably is not a very bad idea to introduce this extra
->   file so that it will be used only when somebody needs it and some people
->   might enable hierarchy only in part of the hierarchy. 
-> 
-> o This is how basically memory controller also uses "use_hierarhcy" and
->   they also allowed creation of hierarchies when actual backend support
->   was not available.
-> 
-> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+Signed-off-by: Dave Jones <davej@redhat.com>
 
-
-Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
- 
-
--- 
-	Three Cheers,
-	Balbir
+--- linux-2.6.36.noarch/fs/hugetlbfs/inode.c~	2010-11-02 14:01:19.489289082 -0400
++++ linux-2.6.36.noarch/fs/hugetlbfs/inode.c	2010-11-02 14:02:19.947986439 -0400
+@@ -915,8 +915,7 @@ struct file *hugetlb_file_setup(const ch
+ 	if (creat_flags == HUGETLB_SHMFS_INODE && !can_do_hugetlb_shm()) {
+ 		*user = current_user();
+ 		if (user_shm_lock(size, *user)) {
+-			WARN_ONCE(1,
+-			  "Using mlock ulimits for SHM_HUGETLB deprecated\n");
++			printk_once("Using mlock ulimits for SHM_HUGETLB deprecated\n");
+ 		} else {
+ 			*user = NULL;
+ 			return ERR_PTR(-EPERM);
