@@ -1,31 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753427Ab0KBAPB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 20:15:01 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53056 "EHLO
+	id S1753499Ab0KBAPe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 20:15:34 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57277 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752833Ab0KBAO7 (ORCPT
+	with ESMTP id S1750999Ab0KBAPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 20:14:59 -0400
+	Mon, 1 Nov 2010 20:15:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=AHkQWm47S31ZlDsGKt2xwz5G/uWMSmac7xPyK2joEqpFs9HgS6hDlPXTUKzjCF4zGR
-         7qyOb5m5MftDZKGLBuaKMF0LB1eI5boQJtvibxOevLkBwgRWX9DgF5GjZHkXb/IyZ2IF
-         PjYTO3D4fa1aM9dIcZx4VWF46NOdkHRO+BiWI=
+        b=Yqwj+rEreov6R4ifuaWfSVaUtiUIGBw53e+Ohn5jfowUbHSXlMlLWq2hwkO6jr3ZES
+         DcENMtxQr5dp+ZJq1Tj2z6OjuYcz5Uq8XP6us1INuF9cpZmI7gCFY26Hq3Sj31KeLKT2
+         CoJ2siJ/0todfk2LFjlQeDikyoSvPavHQXd70=
 From: Felipe Contreras <felipe.contreras@gmail.com>
 To: linux-usb <linux-usb@vger.kernel.org>
 Cc: linux-main <linux-kernel@vger.kernel.org>,
         linux-omap <linux-omap@vger.kernel.org>, Felipe Balbi <balbi@ti.com>,
         Greg KH <greg@kroah.com>,
         Felipe Contreras <felipe.contreras@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
         David Brownell <dbrownell@users.sourceforge.net>,
-        Alan Stern <stern@rowland.harvard.edu>, Anand Gadiyar <gadiyar@ti.com>,
-        linux-usb@vger.kernel.org
-Subject: [PATCH v3 1/2] usb: trivial Kconfig cleanups
-Date: Tue,  2 Nov 2010 02:14:12 +0200
-Message-Id: <1288656853-4625-2-git-send-email-felipe.contreras@gmail.com>
+        Greg Kroah-Hartman <gregkh@suse.de>, Hao Wu <hao.wu@intel.com>,
+        Alan Cox <alan@linux.intel.com>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Mike Rapoport <mike@compulab.co.il>, linux-usb@vger.kernel.org
+Subject: [PATCH v3 2/2] drivers: cleanup Kconfig stuff
+Date: Tue,  2 Nov 2010 02:14:13 +0200
+Message-Id: <1288656853-4625-3-git-send-email-felipe.contreras@gmail.com>
 X-Mailer: git-send-email 1.7.3.2.2.g0dc5c
 In-Reply-To: <1288656853-4625-1-git-send-email-felipe.contreras@gmail.com>
 References: <1288656853-4625-1-git-send-email-felipe.contreras@gmail.com>
@@ -33,124 +38,150 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Note: USB_GADGET_MUSB_HDRC is already defined in usb/gadget.
+Add missing dependencies, and remove redundant ones, and select sensible
+defaults.
+
+This is more user-friendly, and logical.
+
+ - TWL4030_CORE people should be able to compile without ARM
+ - REGULATOR_TWL4030 if TWL4030_CORE and REGULATOR, it's pretty clear we
+   want this
+ - USB_GADGET_SELECTED is already inside USB_GADGET
+ - USB_GADGET_OMAP only works on ARCH_OMAP1, and USB_OTG_UTILS is
+   already selected by NOP_USB_XCEIV
+ - USB_GADGET_R8A66597 is meant for ARCH_SHMOBILE
+ - USB_MUSB_HDRC needs either NOP_USB_XCEIV, or TWL4030_USB
+ - USB_MUSB_AM35X, NOP_USB_XCEIV is already selected because MACH_OMAP3EVM
+
+Finally, move:
+config USB_MUSB_HDRC
+	select NOP_USB_XCEIV if (ARCH_DAVINCI || MACH_OMAP3EVM || BLACKFIN)
+	select TWL4030_USB if MACH_OMAP_3430SDP
+
+To:
+config TWL4030_USB
+	default y if ARCH_OMAP3
+
+config NOP_USB_XCEIV
+	default y if ARCH_DAVINCI || MACH_OMAP3EVM || BLACKFIN
 
 Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
 ---
- drivers/usb/core/Kconfig   |    3 ---
- drivers/usb/gadget/Kconfig |    2 +-
- drivers/usb/musb/Kconfig   |   17 ++++-------------
- 3 files changed, 5 insertions(+), 17 deletions(-)
+ drivers/mfd/Kconfig        |    2 +-
+ drivers/regulator/Kconfig  |    1 +
+ drivers/usb/gadget/Kconfig |    5 ++---
+ drivers/usb/musb/Kconfig   |    7 ++-----
+ drivers/usb/otg/Kconfig    |    2 ++
+ 5 files changed, 8 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/usb/core/Kconfig b/drivers/usb/core/Kconfig
-index 9eed5b5..8f57a26 100644
---- a/drivers/usb/core/Kconfig
-+++ b/drivers/usb/core/Kconfig
-@@ -110,8 +110,6 @@ config USB_OTG
- 	bool
- 	depends on USB && EXPERIMENTAL
- 	depends on USB_SUSPEND
--	default n
--
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 3a1493b..88e47a0 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -169,7 +169,7 @@ config TWL4030_CORE
  
- config USB_OTG_WHITELIST
- 	bool "Rely on OTG Targeted Peripherals List"
-@@ -139,4 +137,3 @@ config USB_OTG_BLACKLIST_HUB
- 	  external hubs.  OTG hosts are allowed to reduce hardware
- 	  and software costs by not supporting external hubs.  So
- 	  are "Embedded Hosts" that don't offer OTG support.
--
+ config TWL4030_POWER
+ 	bool "Support power resources on TWL4030 family chips"
+-	depends on TWL4030_CORE && ARM
++	depends on TWL4030_CORE
+ 	help
+ 	  Say yes here if you want to use the power resources on the
+ 	  TWL4030 family chips.  Most of these resources are regulators,
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index dd30e88..1397f7a 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -119,6 +119,7 @@ config REGULATOR_MAX8998
+ config REGULATOR_TWL4030
+ 	bool "TI TWL4030/TWL5030/TWL6030/TPS695x0 PMIC"
+ 	depends on TWL4030_CORE
++	default y
+ 	help
+ 	  This driver supports the voltage regulators provided by
+ 	  this family of companion chips.
 diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-index b739ca8..75733cd 100644
+index 75733cd..0ad0c32 100644
 --- a/drivers/usb/gadget/Kconfig
 +++ b/drivers/usb/gadget/Kconfig
-@@ -125,7 +125,6 @@ choice
- config USB_GADGET_AT91
- 	boolean "Atmel AT91 USB Device Port"
- 	depends on ARCH_AT91 && !ARCH_AT91SAM9RL && !ARCH_AT91CAP9 && !ARCH_AT91SAM9G45
--	select USB_GADGET_SELECTED
+@@ -111,7 +111,6 @@ config	USB_GADGET_SELECTED
+ #
+ choice
+ 	prompt "USB Peripheral Controller"
+-	depends on USB_GADGET
  	help
- 	   Many Atmel AT91 processors (such as the AT91RM2000) have a
- 	   full speed USB Device Port with support for five configurable
-@@ -139,6 +138,7 @@ config USB_AT91
- 	tristate
- 	depends on USB_GADGET_AT91
- 	default USB_GADGET
-+	select USB_GADGET_SELECTED
+ 	   A USB device uses a controller to talk to its host.
+ 	   Systems should have only one such upstream link.
+@@ -190,9 +189,8 @@ config USB_LH7A40X
  
- config USB_GADGET_ATMEL_USBA
- 	boolean "Atmel USBA"
+ config USB_GADGET_OMAP
+ 	boolean "OMAP USB Device Controller"
+-	depends on ARCH_OMAP
++	depends on ARCH_OMAP1
+ 	select ISP1301_OMAP if MACH_OMAP_H2 || MACH_OMAP_H3 || MACH_OMAP_H4_OTG
+-	select USB_OTG_UTILS if ARCH_OMAP
+ 	help
+ 	   Many Texas Instruments OMAP processors have flexible full
+ 	   speed USB device controllers, with support for up to 30
+@@ -244,6 +242,7 @@ config USB_PXA25X_SMALL
+ 
+ config USB_GADGET_R8A66597
+ 	boolean "Renesas R8A66597 USB Peripheral Controller"
++	depends on ARCH_SHMOBILE
+ 	select USB_GADGET_DUALSPEED
+ 	help
+ 	   R8A66597 is a discrete USB host and peripheral controller chip that
 diff --git a/drivers/usb/musb/Kconfig b/drivers/usb/musb/Kconfig
-index 341a37a..f0e0495 100644
+index f0e0495..5951b9f 100644
 --- a/drivers/usb/musb/Kconfig
 +++ b/drivers/usb/musb/Kconfig
-@@ -8,12 +8,12 @@ comment "Enable Host or Gadget support to see Inventra options"
- 
- # (M)HDRC = (Multipoint) Highspeed Dual-Role Controller
- config USB_MUSB_HDRC
-+	tristate 'Inventra Highspeed Dual Role Controller (TI, ADI, ...)'
+@@ -11,8 +11,7 @@ config USB_MUSB_HDRC
+ 	tristate 'Inventra Highspeed Dual Role Controller (TI, ADI, ...)'
  	depends on (USB || USB_GADGET)
  	depends on (ARM || (BF54x && !BF544) || (BF52x && !BF522 && !BF523))
- 	select NOP_USB_XCEIV if (ARCH_DAVINCI || MACH_OMAP3EVM || BLACKFIN)
- 	select TWL4030_USB if MACH_OMAP_3430SDP
+-	select NOP_USB_XCEIV if (ARCH_DAVINCI || MACH_OMAP3EVM || BLACKFIN)
+-	select TWL4030_USB if MACH_OMAP_3430SDP
++	depends on (NOP_USB_XCEIV || TWL4030_USB)
  	select USB_OTG_UTILS
--	tristate 'Inventra Highspeed Dual Role Controller (TI, ADI, ...)'
  	help
  	  Say Y here if your system has a dual role high speed USB
- 	  controller based on the Mentor Graphics silicon IP.  Then
-@@ -93,8 +93,8 @@ choice
- # use USB_MUSB_HDRC_HCD not USB_MUSB_HOST to #ifdef host side support;
- # OTG needs both roles, not just USB_MUSB_HOST.
- config USB_MUSB_HOST
--	depends on USB
- 	bool "USB Host"
-+	depends on USB
- 	help
- 	  Say Y here if your system supports the USB host role.
- 	  If it has a USB "A" (rectangular), "Mini-A" (uncommon),
-@@ -104,8 +104,8 @@ config USB_MUSB_HOST
- # use USB_GADGET_MUSB_HDRC not USB_MUSB_PERIPHERAL to #ifdef peripheral
- # side support ... OTG needs both roles
- config USB_MUSB_PERIPHERAL
--	depends on USB_GADGET
- 	bool "USB Peripheral (gadget stack)"
-+	depends on USB_GADGET
- 	select USB_GADGET_MUSB_HDRC
- 	help
- 	  Say Y here if your system supports the USB peripheral role.
-@@ -114,8 +114,8 @@ config USB_MUSB_PERIPHERAL
- 	  (With a "Mini-AB" connector, you should enable USB OTG.)
- 
- config USB_MUSB_OTG
--	depends on USB && USB_GADGET && PM && EXPERIMENTAL
- 	bool "Both host and peripheral:  USB OTG (On The Go) Device"
-+	depends on USB && USB_GADGET && PM && EXPERIMENTAL
- 	select USB_GADGET_MUSB_HDRC
- 	select USB_OTG
- 	help
-@@ -139,14 +139,6 @@ config USB_MUSB_OTG
- 
- endchoice
- 
--# enable peripheral support (including with OTG)
--config USB_GADGET_MUSB_HDRC
--	bool
--	depends on USB_MUSB_HDRC && (USB_MUSB_PERIPHERAL || USB_MUSB_OTG)
--#	default y
--#	select USB_GADGET_DUALSPEED
--#	select USB_GADGET_SELECTED
--
- # enables host support (including with OTG)
- config USB_MUSB_HDRC_HCD
+@@ -63,7 +62,6 @@ comment "Blackfin high speed USB Support"
+ config USB_MUSB_AM35X
  	bool
-@@ -154,7 +146,6 @@ config USB_MUSB_HDRC_HCD
- 	select USB_OTG if USB_GADGET_MUSB_HDRC
- 	default y
+ 	depends on USB_MUSB_HDRC && !ARCH_OMAP2430 && !ARCH_OMAP4
+-	select NOP_USB_XCEIV
+ 	default MACH_OMAP3517EVM
+ 	help
+ 	  Select this option if your platform is based on AM35x. As
+@@ -73,8 +71,7 @@ config USB_MUSB_AM35X
  
--
- config MUSB_PIO_ONLY
- 	bool 'Disable DMA (always use PIO)'
- 	depends on USB_MUSB_HDRC
+ config USB_TUSB6010
+ 	boolean "TUSB 6010 support"
+-	depends on USB_MUSB_HDRC && !USB_MUSB_SOC
+-	select NOP_USB_XCEIV
++	depends on USB_MUSB_HDRC && !USB_MUSB_SOC && NOP_USB_XCEIV
+ 	default y
+ 	help
+ 	  The TUSB 6010 chip, from Texas Instruments, connects a discrete
+diff --git a/drivers/usb/otg/Kconfig b/drivers/usb/otg/Kconfig
+index 5ce0752..728b476 100644
+--- a/drivers/usb/otg/Kconfig
++++ b/drivers/usb/otg/Kconfig
+@@ -53,6 +53,7 @@ config TWL4030_USB
+ 	tristate "TWL4030 USB Transceiver Driver"
+ 	depends on TWL4030_CORE && REGULATOR_TWL4030
+ 	select USB_OTG_UTILS
++	default y if ARCH_OMAP3
+ 	help
+ 	  Enable this to support the USB OTG transceiver on TWL4030
+ 	  family chips (including the TWL5030 and TPS659x0 devices).
+@@ -62,6 +63,7 @@ config TWL4030_USB
+ config NOP_USB_XCEIV
+ 	tristate "NOP USB Transceiver Driver"
+ 	select USB_OTG_UTILS
++	default y if ARCH_DAVINCI || MACH_OMAP3EVM || BLACKFIN
+ 	help
+ 	 this driver is to be used by all the usb transceiver which are either
+ 	 built-in with usb ip or which are autonomous and doesn't require any
 -- 
 1.7.3.2.2.g0dc5c
 
