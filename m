@@ -1,47 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab0KBQw7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 12:52:59 -0400
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:59437 "EHLO
-	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751655Ab0KBQwz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 12:52:55 -0400
-Message-ID: <4CD041AE.80009@euromail.se>
-Date: Tue, 02 Nov 2010 17:51:58 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: gimli <gimli@dark-green.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] MacBookAir3,1(3,2) touchpad ( bcm5974 ) support
-References: <4f8c3332b3e4cdec23a7caafc534a395@mognix.dark-green.com>
-In-Reply-To: <4f8c3332b3e4cdec23a7caafc534a395@mognix.dark-green.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1PDK5W-0000a1-9V.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PDK5W-0000a1-9V 1e5d2a0abbd948b25592f2d0d3f47687
+	id S1753513Ab0KBQzL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 12:55:11 -0400
+Received: from verein.lst.de ([213.95.11.210]:43563 "EHLO verein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751296Ab0KBQzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 12:55:06 -0400
+Date: Tue, 2 Nov 2010 17:54:34 +0100
+From: Christoph Hellwig <hch@lst.de>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@lst.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Daniel Stodden <daniel.stodden@citrix.com>,
+        Xen-devel <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH 4/4] xen/blkfront: cope with backend that fail empty BLKIF_OP_WRITE_BARRIER requests
+Message-ID: <20101102165434.GA19703@lst.de>
+References: <cover.1288714384.git.jeremy.fitzhardinge@citrix.com> <a90cc3e15a94274bb22b990be16cd1f62747a0dd.1288714384.git.jeremy.fitzhardinge@citrix.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <a90cc3e15a94274bb22b990be16cd1f62747a0dd.1288714384.git.jeremy.fitzhardinge@citrix.com>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 0 () 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/02/2010 08:18 AM, gimli wrote:
+>  				       info->gd->disk_name);
+>  				error = -EOPNOTSUPP;
+> +			}
+> +			if (unlikely(bret->status == BLKIF_RSP_ERROR &&
+> +				     info->shadow[id].req.nr_segments == 0)) {
+> +				printk(KERN_WARNING "blkfront: %s: empty write barrier op failed\n",
+> +				       info->gd->disk_name);
+> +				error = -EOPNOTSUPP;
+> +			}
 
-> This patch add support for the MacBookAir3,1 and MacBookAir3,2 to the
-> bcm5974 driver.
-> 
-> Signed-off-by: Edgar (gimli) Hucek <gimli@dark-green.com>
-
-
-Thanks for your patches. Do the usb message packet lengths of these new device
-ids differ in any respect from the old ones? What is the difference between the
-two sets of ids? Physical size? Are the devices really exactly the same?
-
-Any additional information you can provide to shed light on these questions
-would be greatly appreciated. My concern is that there might be more things that
-need to be changed for these devices.
-
-Thanks,
-Henrik
+We don't use -EOPNOTSUPP anymore in the new world order, anything
+barrier related is just a normal I/O error now.
 
