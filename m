@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753009Ab0KBNtb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 09:49:31 -0400
-Received: from hosting.visp.net.lb ([194.146.153.11]:43236 "EHLO
-	hosting.visp.net.lb" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752960Ab0KBNtY (ORCPT
+	id S1753109Ab0KBNty (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 09:49:54 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53736 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753058Ab0KBNtl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 09:49:24 -0400
-From: Denys Fedoryshchenko <nuclearcat@nuclearcat.com>
-To: Jarek Poplawski <jarkao2@gmail.com>
-Subject: Re: 2.6.35->2.6.36 regression, vanilla kernel panic, ppp or hrtimers crashing
-Date: Tue, 2 Nov 2010 15:49:47 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc6-git5-home1; KDE/4.4.5; x86_64; ; )
-Cc: Thomas Gleixner <tglx@linutronix.de>, Paul Mackerras <paulus@samba.org>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-References: <20101028070550.GA7647@ff.dom.local>
-In-Reply-To: <20101028070550.GA7647@ff.dom.local>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011021549.47466.nuclearcat@nuclearcat.com>
+	Tue, 2 Nov 2010 09:49:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=DRWtqdt7eM9lPP/OdC0qg79m0J8dVEXo8bHXQY1h9cmWGzkp2HdvCl2sHOUSb/rHq5
+         NGyE+K52wg0sjkiKu/wKwp9KQXte7AfHqcgfrlmrIG7HNlB7J4rwGCJtETDdBVENLRZW
+         qjxVDMxZ+Ov/m/LN/SETGOrUsURtAN11Omv4I=
+From: Marek Belisko <marek.belisko@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>,
+        Marek Belisko <marek.belisko@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Marek Belisko <marek.belisko@gmail.com>
+Subject: [PATCH 3/4] staging: ft1000: Correct return error values.
+Date: Tue,  2 Nov 2010 14:51:46 +0100
+Message-Id: <1288705907-30725-3-git-send-email-marek.belisko@gmail.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1288705907-30725-1-git-send-email-marek.belisko@gmail.com>
+References: <1288705907-30725-1-git-send-email-marek.belisko@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I didn't try yet, but i enable more debugs and catch linked list corruption. 
+Signed-off-by: Marek Belisko <marek.belisko@gmail.com>
+---
+ drivers/staging/ft1000/ft1000-usb/ft1000_hw.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Here is dumps from netconsole:
-http://www.nuclearcat.com/ll.txt
-http://www.nuclearcat.com/ll2.txt		
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
+index 0de4a2e..30a8475 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
+@@ -1306,7 +1306,7 @@ static int ft1000_submit_rx_urb(struct ft1000_info *info)
+     {
+         DEBUG("network driver is closed, return\n");
+         //usb_kill_urb(pFt1000Dev->rx_urb); //mbelian
+-        return STATUS_SUCCESS;
++	return -ENODEV;
+     }
+ 
+     usb_fill_bulk_urb(pFt1000Dev->rx_urb,
+@@ -1321,12 +1321,12 @@ static int ft1000_submit_rx_urb(struct ft1000_info *info)
+     if((result = usb_submit_urb(pFt1000Dev->rx_urb, GFP_ATOMIC)))
+     {
+         printk("ft1000_submit_rx_urb: submitting rx_urb %d failed\n", result);
+-        return STATUS_FAILURE;
++	return result;
+     }
+ 
+     //DEBUG("ft1000_submit_rx_urb exit: result=%d\n", result);
+ 
+-    return STATUS_SUCCESS;
++	return 0;
+ }
+ 
+ //---------------------------------------------------------------------------
+-- 
+1.7.1
 
-I have another PC, also fails to run 2.6.36, but netconsole don't give 
-anything.
-Both PC's have strange issue with clock drifting away too much (on 2.6.35 and 
-maybe even before).
-
-
-On Thursday 28 October 2010 10:05:50 Jarek Poplawski wrote:
-> On 2010-10-25 11:22, Denys Fedoryshchenko wrote:
-> > Hi
-> > 
-> > Here is what i got from netconsole
-> > 
-> >  [  259.238755] BUG: unable to handle kernel
-> >  paging request
-> >  at f8ba001c
-> >  [  259.238953] IP:
-> >  [<c0199ebe>] do_select+0x2cc/0x502
-> 
-> ...
-> 
-> > It is not easy to do full git bisect(it is semi-embedded distro), but i
-> > can try reversing particular commits, if someone can give idea which
-> > one, and can try debug patches.
-> 
-> Hi,
-> Nothing concrete, but you might try reverting this one:
-> 
-> http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.36.y.git;a=commi
-> tdiff;h=15fd0cd9a2ad24a78fbee369dec8ca660979d57e
-> 
-> Jarek P.
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
