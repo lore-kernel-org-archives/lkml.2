@@ -1,156 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806Ab0KBNpY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 09:45:24 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33480 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751639Ab0KBNpR (ORCPT
+	id S1752857Ab0KBNqL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 09:46:11 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44861 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751639Ab0KBNqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 09:45:17 -0400
-Date: Tue, 2 Nov 2010 14:45:11 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        James.Bottomley@HansenPartnership.com, akpm@linux-foundation.org,
-        julia@diku.dk
-Subject: Re: should struct device.dma_mask still be a pointer?
-Message-ID: <20101102134511.GT31158@pengutronix.de>
-References: <20100622105233.GA4755@pengutronix.de> <20100701103544A.fujita.tomonori@lab.ntt.co.jp> <20101102104104.GR31158@pengutronix.de> <20101102215741T.fujita.tomonori@lab.ntt.co.jp>
+	Tue, 2 Nov 2010 09:46:06 -0400
+Date: Tue, 2 Nov 2010 09:46:13 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Mattias Wallin <mattias.wallin@stericsson.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] regulator: regulator disable supply fix
+Message-ID: <20101102134613.GF21476@opensource.wolfsonmicro.com>
+References: <1288700549-28535-1-git-send-email-mattias.wallin@stericsson.com>
+ <20101102131952.GC21476@opensource.wolfsonmicro.com>
+ <4CD015F6.5060507@stericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101102215741T.fujita.tomonori@lab.ntt.co.jp>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <4CD015F6.5060507@stericsson.com>
+X-Cookie: Never give an inch!
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, Nov 02, 2010 at 02:45:26PM +0100, Mattias Wallin wrote:
 
-On Tue, Nov 02, 2010 at 10:03:32PM +0900, FUJITA Tomonori wrote:
-> On Tue, 2 Nov 2010 11:41:04 +0100
-> Uwe Kleine-König <u.kleine-koenig@pengutronix.de> wrote:
-> 
-> > > > As I work on such a non-pci bus architecture it's still ugly that this
-> > > > is a pointer because I have to allocate extra memory for that.
-> > > 
-> > > The popular trick to avoid allocating the extra memory for that is:
-> > > 
-> > > device.dma_mask = &device.coherent_dma_mask;
-> > Does this work in general?  Or are there any corner cases that make this
-> > trick fail?
-> 
-> It doesn't work if the coherent dma mask of a device is not same as
-> the dma mask of the device.
-> 
-> 
-> > > > Is there a reason not to get rid of struct pci_dev.dma_mask and use
-> > > > struct pci_dev.dev.dma_mask instead?  (Well apart from the needed
-> > > > effort of course.)
-> > > > 
-> > > > If not, the following would be needed:
-> > > > 
-> > > > 	- remove struct pci.dma_mask
-> > > > 	- make struct device.dma_mask an u64 (instead of u64*)
-> > > > 	- substitue var.dma_mask by var.dev.dma_mask for all
-> > > > 	  struct pci_dev var
-> > > > 	- substitue var.dma_mask by &(var.dma_mask) for all
-> > > > 	  struct device var
-> > > > 
-> > > > and note that there are statically initialized struct device (and maybe
-> > > > struct pci_dev?) that need fixing, too.  (e.g.
-> > > > http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob;f=arch/arm/mach-mx2/devices.c;h=a0aeb8a4adc19ef419a0a045ad3b882131597106;hb=HEAD#l265
-> > > > )
-> > > 
-> > > That's exactly the perturbation that the commit log refers to.
-> > > 
-> > > We need to modify all the struct device at a time. We could, however,
-> > > I don't think that it's worth doing. Little gain.
-> > > 
-> > > 
-> > > > Additionally this could be done for struct device.dma_parms.
-> > > 
-> > > Yeah, we should have all the dma parameters in dma_parms.
-> > That applies to dma_mask and coherent_dma_mask, too, I assume?
-> 
-> Yes.
-> 
-> 
-> > Instead of converting all at a time, what about adding an
-> > u64 dma_mask_real to struct device (assuming coherent_dma_mask cannot be
-> > used for it) and use this if dma_mask is NULL.  For me it would make
-> > live a bit easier, because for some time I could just use
-> > device.dma_mask = &device.dma_mask_real instead of allocating an u64
-> > dynamically.  Together with some accessor functions and deprecating
-> > direct access to the dma related members of struct device the drivers
-> > and architectures could be converted one after another.  The final step
-> > to get rid of the pointers would be small then.
-> 
-> But after we finish the above, after all, we still have dma_mask in
-> device strcuture. As I said before, we should move dma stuff to
-> dma_params.
-After we finished the above it's quite easy to move everything into
-dma_parms.  (At least if it's not a pointer, that then again needs an
-additional allocation.)
- 
-> I'm not sure why this really troubles you. Can you give me a pointer
-> to what you have been working on? You have been working on non pci
-> device, right? Why can't you do like pci_dev, embedding
-> device_dma_parameters to your own device structure.
-I'm changing the way imx (ARCH=arm) registers its devices.  Currently
-we have in arch/arm/mach-imx/devices.c:
+> > but this does smell a bit like it ought to be in the _regulator_disable()
+> > call rather than the caller.
 
-	static u64 imx1_camera_dmamask = DMA_BIT_MASK(32);
+> Would you prefer below solution instead?
 
-	struct platform_device imx1_camera_device = {
-		...
-		.dev = {
-			.dma_mask = &imx1_camera_dmamask,
-			.coherent_dma_mask = DMA_BIT_MASK(32),
-		},
-		...
-	}
-
-and I want to make registration dynamic (e.g. using
-platform_device_register_resndata, see
-arch/arm/plat-mxc/devices/platform-imx-i2c.c for an example).
-
-Currently I have a function imx_add_platform_device (that does the same
-as platform_device_register_resndata[1]) and now I want to register a
-device that needs .dma_mask set, so I added something like:
-
-	if (dmamask) {
-                /*
-                 * This memory isn't freed when the device is put,
-                 * I don't have a nice idea for that though.  Conceptually
-                 * dma_mask in struct device should not be a pointer.
-                 * See http://thread.gmane.org/gmane.linux.kernel.pci/9081
-                 */
-                pdev->dev.dma_mask =
-                        kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
-                if (!pdev->dev.dma_mask)
-                        goto err;
-
-                *pdev->dev.dma_mask = dmamask;
-                pdev->dev.coherent_dma_mask = dmamask;
-	}
-
-So there is no private struct I could extend easily.  And I prefer
-cleaning up global oddities instead of being the x-th person to work
-around it.
-
-Best regards
-Uwe
-
-[1] platform_device_register_resndata is newer and the result of making
-imx_add_platform_device global :-)
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Yes.
