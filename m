@@ -1,123 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754027Ab0KBWTH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 18:19:07 -0400
-Received: from sj-iport-6.cisco.com ([171.71.176.117]:54978 "EHLO
-	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753761Ab0KBWTF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 18:19:05 -0400
-Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEADIr0EyrRN+J/2dsb2JhbAChXHGiXZwOhUUEhFeFfg
-X-IronPort-AV: E=Sophos;i="4.58,285,1286150400"; 
-   d="scan'208";a="613537269"
-From: Tom Lyon <pugs@cisco.com>
-Organization: Cisco Systems, Inc.
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCH] vfio: Extended capability fixes
-Date: Tue, 2 Nov 2010 15:19:34 -0700
-User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.3-desktop; KDE/4.4.4; x86_64; ; )
-Cc: Alex Williamson <alex.williamson@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, kvm@vger.kernel.org
-References: <20101102050835.2963.63375.stgit@s20.home> <20101102191108.GB2744@redhat.com>
-In-Reply-To: <20101102191108.GB2744@redhat.com>
+	id S1754061Ab0KBWUo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 18:20:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57114 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753756Ab0KBWUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 18:20:42 -0400
+Date: Tue, 2 Nov 2010 18:20:30 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jens Axboe <jaxboe@fusionio.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+Cc: Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Nauman Rafique <nauman@google.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>
+Subject: [RFC] blk-cgroup: Allow creation of hierarchical cgroups
+Message-ID: <20101102222030.GI7198@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011021519.35300.pugs@cisco.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 02, 2010 12:11:08 pm Michael S. Tsirkin wrote:
-> On Mon, Nov 01, 2010 at 11:08:35PM -0600, Alex Williamson wrote:
-> > - Virtual channel position gets truncated as a u8
-> > 
-> >  - Print the ecap that's unknown, not the last cap we saw
-> >  - Print actual config offset, which provides enough info to make
-> >  
-> >    some sense of the error.
-> > 
-> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > ---
-> > 
-> >  drivers/vfio/vfio_pci_config.c |    8 ++++----
-> >  1 files changed, 4 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/drivers/vfio/vfio_pci_config.c
-> > b/drivers/vfio/vfio_pci_config.c index 8af995d..8304316 100644
-> > --- a/drivers/vfio/vfio_pci_config.c
-> > +++ b/drivers/vfio/vfio_pci_config.c
-> > @@ -410,7 +410,7 @@ static int vfio_msi_cap_len(struct vfio_dev *vdev, u8
-> > pos)
-> > 
-> >   * Determine extended capability length for VC (2 & 9) and
-> >   * MFVC capabilities
-> >   */
-> > 
-> > -static int vfio_vc_cap_len(struct vfio_dev *vdev, u8 pos)
-> > +static int vfio_vc_cap_len(struct vfio_dev *vdev, u16 pos)
-> > 
-> >  {
-> >  
-> >  	struct pci_dev *pdev = vdev->pdev;
-> >  	u32 dw;
-> > 
-> > @@ -580,7 +580,7 @@ int vfio_build_config_map(struct vfio_dev *vdev)
-> > 
-> >  				printk(KERN_WARNING
-> >  				
-> >  					"%s: pci config conflict at %x, "
-> >  					"caps %x %x\n",
-> > 
-> > -					__func__, i, map[pos+i], cap);
-> > +					__func__, pos+i, map[pos+i], cap);
-> > 
-> >  			map[pos+i] = cap;
-> >  		
-> >  		}
-> >  		ret = pci_read_config_byte(pdev, pos + PCI_CAP_LIST_NEXT, &pos);
-> > 
-> > @@ -683,7 +683,7 @@ int vfio_build_config_map(struct vfio_dev *vdev)
-> > 
-> >  		if (len == 0 || len == 0xFF) {
-> >  		
-> >  			printk(KERN_WARNING
-> >  			
-> >  				"%s: unknown length for pci ext cap %x\n",
-> > 
-> > -				__func__, cap);
-> > +				__func__, ecap);
-> > 
-> >  			len = PCI_CAP_SIZEOF;
-> >  		
-> >  		}
-> >  		for (i = 0; i < len; i++) {
-> > 
-> > @@ -691,7 +691,7 @@ int vfio_build_config_map(struct vfio_dev *vdev)
-> > 
-> >  				printk(KERN_WARNING
-> >  				
-> >  					"%s: pci config conflict at %x, "
-> >  					"caps %x %x\n",
-> > 
-> > -					__func__, i, map[epos+i], ecap);
-> > +					__func__, epos+i, map[epos+i], ecap);
-> > 
-> >  			map[epos+i] = ecap;
-> 
-> Not related to this patch, but I am surprised checkpatch does not
-> complain about lack of spaces around + here and elsewhere.
-> Or does it?
-It did not complain.
+o Allow hierarchical cgroup creation for blkio controller
 
-> 
-> >  		}
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel"
-> > in the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+o Currently we disallow it as both the io controller policies (throttling
+  as well as proportion bandwidth) do not support hierarhical accounting
+  and control. But the flip side is that blkio controller can not be used with
+  libvirt as libvirt creates a cgroup hierarchy deeper than 1 level.
+
+  <top-level-cgroup-dir>/<controller>/libvirt/qemu/<virtual-machine-groups>
+
+o So this patch will allow creation of cgroup hierarhcy but at the backend
+  everything will be treated as flat. So if somebody created a an hierarchy
+  like as follows.
+
+			root	
+			/  \
+		     test1 test2
+			|
+		     test3
+
+  CFQ and throttling will practically treat all groups at same level.
+			
+				pivot
+			     /  |   \  \
+			root  test1 test2  test3
+
+o Once we have actual support for hierarchical accounting and control
+  then we can introduce another cgroup tunable file "blkio.use_hierarchy"
+  which will be 0 by default but if user wants to enforce hierarhical
+  control then it can be set to 1. This way there should not be any
+  ABI problems down the line.
+
+o The only not so pretty part is introduction of extra file "use_hierarchy"
+  down the line. Kame-san had mentioned that hierarhical accounting is
+  expensive in memory controller hence they keep it off by default. I
+  suspect same will be the case for IO controller also as for each IO
+  completion we shall have to account IO through hierarchy up to the root.
+  if yes, then it probably is not a very bad idea to introduce this extra
+  file so that it will be used only when somebody needs it and some people
+  might enable hierarchy only in part of the hierarchy. 
+
+o This is how basically memory controller also uses "use_hierarhcy" and
+  they also allowed creation of hierarchies when actual backend support
+  was not available.
+
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ Documentation/cgroups/blkio-controller.txt |   27 +++++++++++++++++++++++++++
+ block/blk-cgroup.c                         |    4 ----
+ 2 files changed, 27 insertions(+), 4 deletions(-)
+
+Index: linux-2.6/block/blk-cgroup.c
+===================================================================
+--- linux-2.6.orig/block/blk-cgroup.c	2010-10-28 14:19:02.000000000 -0400
++++ linux-2.6/block/blk-cgroup.c	2010-11-02 13:10:13.000000000 -0400
+@@ -1452,10 +1452,6 @@ blkiocg_create(struct cgroup_subsys *sub
+ 		goto done;
+ 	}
+ 
+-	/* Currently we do not support hierarchy deeper than two level (0,1) */
+-	if (parent != cgroup->top_cgroup)
+-		return ERR_PTR(-EPERM);
+-
+ 	blkcg = kzalloc(sizeof(*blkcg), GFP_KERNEL);
+ 	if (!blkcg)
+ 		return ERR_PTR(-ENOMEM);
+Index: linux-2.6/Documentation/cgroups/blkio-controller.txt
+===================================================================
+--- linux-2.6.orig/Documentation/cgroups/blkio-controller.txt	2010-10-28 14:19:01.000000000 -0400
++++ linux-2.6/Documentation/cgroups/blkio-controller.txt	2010-11-02 17:51:52.000000000 -0400
+@@ -89,6 +89,33 @@ Throttling/Upper Limit policy
+ 
+  Limits for writes can be put using blkio.write_bps_device file.
+ 
++Hierarchical Cgroups
++====================
++- Currently none of the IO control policy supports hierarhical groups. But
++  cgroup interface does allow creation of hierarhical cgroups and internally
++  IO policies treat them as flat hierarchy.
++
++  So this patch will allow creation of cgroup hierarhcy but at the backend
++  everything will be treated as flat. So if somebody created a hierarchy like
++  as follows.
++
++			root
++			/  \
++		     test1 test2
++			|
++		     test3
++
++  CFQ and throttling will practically treat all groups at same level.
++
++				pivot
++			     /  |   \  \
++			root  test1 test2  test3
++
++  Down the line we can implement hierarchical accounting/control support
++  and also introduce a new cgroup file "use_hierarchy" which will control
++  whether cgroup hierarchy is viewed as flat or hierarchical by the policy.
++  This is how memory controller also has implemented the things.
++
+ Various user visible config options
+ ===================================
+ CONFIG_BLK_CGROUP
