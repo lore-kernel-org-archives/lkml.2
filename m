@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824Ab0KBSg4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 14:36:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58156 "EHLO mx2.suse.de"
+	id S1754846Ab0KBSha (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 14:37:30 -0400
+Received: from mail.atheros.com ([12.19.149.2]:32391 "EHLO mail.atheros.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754803Ab0KBSgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 14:36:50 -0400
-Subject: Re: 2.6.36 Crash/Panik in scsi_eh
-From: James Bottomley <James.Bottomley@suse.de>
-To: Ralf Gerbig <rge@quengel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
+	id S1754826Ab0KBShY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 14:37:24 -0400
+From: Vipin Mehta <Vipin.Mehta@Atheros.com>
+To: Greg KH <gregkh@suse.de>, Randy Dunlap <randy.dunlap@oracle.com>,
         "Martin K. Petersen" <martin.petersen@oracle.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-In-Reply-To: <87pqunwszm.fsf@gerlin1.hsp-law.de>
-References: <87fwvkm215.fsf@gerlin1.hsp-law.de>
-	 <1288710413.3056.256.camel@mulgrave.site>
-	 <87pqunwszm.fsf@gerlin1.hsp-law.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 02 Nov 2010 14:36:44 -0400
-Message-ID: <1288723004.3056.473.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+        Chris Ball <cjb@laptop.org>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        driverdevel <devel@driverdev.osuosl.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 2 Nov 2010 11:37:23 -0700
+Subject: RE: linux-next: Tree for October 29 (staging/ath6kl)
+Thread-Topic: linux-next: Tree for October 29 (staging/ath6kl)
+Thread-Index: Act3xFm2iBnmO/VgRLiT9XRxoL929AC9/1+A
+Message-ID: <35B17FE5076C7040809188FBE7913F983F847B52A2@SC1EXMB-MBCL.global.atheros.com>
+References: <20101029121148.d27e03bc.sfr@canb.auug.org.au>
+ <20101029161610.99e6f4ef.randy.dunlap@oracle.com>
+ <20101029235125.GA22122@suse.de>
+In-Reply-To: <20101029235125.GA22122@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-02 at 18:11 +0100, Ralf Gerbig wrote:
-> >> Nov  2 10:40:57 gerlin1 kernel: [45977.560407] RIP: 0010:[<ffffffff811d2290>]  [<ffffffff811d2290>] scsi_dispatch_cmd+0x92/0x22e
-> 
-> > This is the faulting location ... could you run addr2line on this
-> > address to map it to a line of source code?
-> 
-> addr2line id only say ??:0
-> 
-> I recompiled vmlinux with debugging symbols, and gdb says:
-> 
-> Reading symbols from /usr/src/linux-git/linux-2.6/vmlinux...done.
-> (gdb) l *(scsi_dispatch_cmd + 0x92)
-> 0xffffffff811d2290 is in scsi_dispatch_cmd (drivers/scsi/scsi.c:707).
-> 702              * We will wait MIN_RESET_DELAY clock ticks after the
-> last reset so
-> 703              * we can avoid the drive not being ready.
-> 704              */
-> 705             timeout = host->last_reset + MIN_RESET_DELAY;
-> 706
-> 707             if (host->resetting && time_before(jiffies, timeout)) {
-> 708                     int ticks_remaining = timeout - jiffies;
-> 709                     /*
-> 710                      * NOTE: This may be executed from within an interrupt
-> 711                      * handler!  This is bad, but for now, it'll do. The irq
 
-Um, that's bad.  It's saying the junk pointer is host on line 707 but
-when it was dereferenced on line 705 it was fine.  This is most likely
-to indicate either memory corruption (another thread overwrote the host
-location or even a hardware fault).
+On Fri, Oct 29, 2010 at 04:16:10PM -0700, Randy Dunlap wrote:
+> On Fri, 29 Oct 2010 12:11:48 +1100 Stephen Rothwell wrote:
+> 
+> > Hi all,
+> 
+> 
+> drivers/staging/ath6kl/hif/sdio/linux_sdio/src/hif_scatter.c:288: error: 'struct mmc_host' has no member named 'max_hw_segs'
+> drivers/staging/ath6kl/hif/sdio/linux_sdio/src/hif_scatter.c:289: error: 'struct mmc_host' has no member named 'max_hw_segs'
 
-James
- 
+Looks like it was caused by:
+	a36274e0184193e393fb82957925c3981a6b0477
+
+	mmc: Remove distinction between hw and phys segments
+
+
+and it's a simple fix.  I'll do it after -rc1 is out as I'm on my way to
+Boston now...
+
+I had submitted a patch for this a few weeks back and the required
+changes were present in the tag next-20101028. They somehow got
+reverted back in the tag next-20101029. Both Greg and Stephen
+should have the original patch but I can send it again if it helps.
+
+(Sorry my mutt is acting up so sending it through Outlook)
 
