@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752256Ab0KBI6V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 04:58:21 -0400
-Received: from mail.fc.unesp.br ([200.145.159.3]:53867 "EHLO mail.fc.unesp.br"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751980Ab0KBI6N convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 04:58:13 -0400
-Message-ID: <20101102060651.23291z3fz5vcsm1n@webmail.fc.unesp.br>
-Date: Tue, 02 Nov 2010 06:06:51 -0200
-From: "Webmail Help Desk" <jomilson@fc.unesp.br>
-Reply-to: web_admin10@mail2consultant.com
-To: undisclosed-recipients:;
-Subject: Urgent...(Webmail upgrade notice)
+	id S1752496Ab0KBJF1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 05:05:27 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:60983 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752468Ab0KBJFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 05:05:20 -0400
+Message-ID: <4CCFD556.3070504@cn.fujitsu.com>
+Date: Tue, 02 Nov 2010 17:09:42 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
+To: Gleb Natapov <gleb@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [RFC PATCH v2 7/7] KVM: KVM: don't break vcpu 'halt' state due
+ to apfs
+References: <4CCE8143.3090105@cn.fujitsu.com> <4CCE82BC.3090000@cn.fujitsu.com> <20101101125551.GD31722@redhat.com> <4CCF77B2.9080604@cn.fujitsu.com> <20101102065613.GA7881@redhat.com> <4CCFBE4E.3090804@cn.fujitsu.com> <20101102074545.GC7881@redhat.com>
+In-Reply-To: <20101102074545.GC7881@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/02/2010 03:45 PM, Gleb Natapov wrote:
 
+> kvm_event_needs_reinjection() checks for nmi/interrupts that
+> need reinjection (not injection).  Those are nmi/interrupts that
+> was injected but injection failed for some reason. For nmi, for
+> instance, kvm_arch_vcpu_runnable() checks vcpu->arch.nmi_pending,
+> but kvm_event_needs_reinjection() checks for vcpu->arch.nmi_injected.
+> NMI moves from nmi_pending to nmi_injected when it is injected into vcpu
+> for the first time. CPU cannot be halted in this state.
+> 
 
-Dear account user,
+Yeah, nmi is handled like this way, but for interrupt:
+If interruption controller is in userspace (!irqchip_in_kernel(v->kvm)),
+kvm_arch_vcpu_runnable() checks vcpu->arch.interrupt.pending and
+kvm_event_needs_reinjection() also checks vcpu->arch.interrupt.pending.
 
-We are updating our database, and e-mail account center. We are  
-deleting all unused webmail account and create more space for new  
-accounts. To ensure  that you do not experience service disruption  
-during this period, you need to provide the below details:
+Consider this case:
 
-CONFIRM YOUR ACCOUNT BELOW
-1. E-mail:.................................
-2. Username :....................................
-2. Password :...................................
-3. Confirm password :...............................
+- Guest vcpu executes 'HLT'
+- wakeup the vcpu and inject interrupt and apfs is completed at this time
+- then the vcpu can't handle apf completion and .done list keeps nonempty.  
 
-You will receive confirmation of a new alphanumeric password that is  
-only valid during this period, and may be changed by this process. We  
-regret any inconvenience this may cost you.
+Can this case happen? Sorry if i missed it again.
 
-Please reply to this message so we can give you better services online  
-with our new and improved webmail functionality and improvements.
+>> Also, the pv guest can only handle an apf completion at one time, it can not ensure
+>> vcpu->async_pf.done is empty after kvm_check_async_pf_completion()
+>>
+> In case of PV guest it will be woken up by apf completion by
+> kvm_arch_async_page_present() below.
 
-Webmail Upgrade Team © 2010
-Warning Code: ID67565434.
+......
 
-----------------------------------------------------------------
-This message was sent using IMP, the Internet Messaging Program.
+>> As i know, exception can not let guest exit halt state, only NMI/interruption can do it, yes? :-)
+> On physical HW exception cannot happen while cpu is in halt state, but
+> with PV we define what guest can and cannot expect, so when guest
+> explicitly enables apf it should be able to handle it during halt.
+> 
 
+Ah, i see, thanks your very much.
