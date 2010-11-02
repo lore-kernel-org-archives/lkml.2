@@ -1,82 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750Ab0KBJbT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 05:31:19 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:57199 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750895Ab0KBJbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 05:31:12 -0400
-Message-ID: <4CCFDB67.9050401@cn.fujitsu.com>
-Date: Tue, 02 Nov 2010 17:35:35 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	id S1752785Ab0KBJb3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 05:31:29 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33888 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752742Ab0KBJbS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 05:31:18 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Greg KH <gregkh@suse.de>
+Cc: kernel@pengutronix.de, Sergei Shtylyov <sshtylyov@mvista.com>,
+        matthieu.castet@parrot.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, Nguyen Dinh <R00091@freescale.com>,
+        Dinh Nguyen <Dinh.Nguyen@freescale.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH] USB: ehci/mxc: compile fix
+Date: Tue,  2 Nov 2010 10:30:57 +0100
+Message-Id: <1288690257-16801-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <Pine.LNX.4.44L0.1010290956490.1588-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1010290956490.1588-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v3 5/7] KVM: handle more completed apfs if possible
-References: <4CCE8143.3090105@cn.fujitsu.com> <4CCE822B.1070909@cn.fujitsu.com> <20101101092457.GY26191@redhat.com>
-In-Reply-To: <20101101092457.GY26191@redhat.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If it's no need to inject async #PF to PV guest we can handle
-more completed apfs at one time, so we can retry guest #PF
-as early as possible
+Commit
+	65fd427 (USB: ehci tdi : let's tdi_reset set host mode)
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+broke the build using ARM's mx51_defconfig:
+
+ 	  CC      drivers/usb/host/ehci-hcd.o
+ 	In file included from drivers/usb/host/ehci-hcd.c:1166:
+ 	drivers/usb/host/ehci-mxc.c: In function 'ehci_mxc_drv_probe':
+ 	drivers/usb/host/ehci-mxc.c:192: error: 'ehci' undeclared (first use in this function)
+ 	drivers/usb/host/ehci-mxc.c:192: error: (Each undeclared identifier is reported only once
+ 	drivers/usb/host/ehci-mxc.c:192: error: for each function it appears in.)
+ 	drivers/usb/host/ehci-mxc.c:117: warning: unused variable 'temp'
+ 	make[3]: *** [drivers/usb/host/ehci-hcd.o] Error 1
+ 	make[2]: *** [drivers/usb/host/ehci-hcd.o] Error 2
+ 	make[1]: *** [sub-make] Error 2
+ 	make: *** [all] Error 2
+
+Fix it together with the warning about the unused variable and use
+msleep instead of mdelay as requested by Alan Stern.
+
+Cc: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
- virt/kvm/async_pf.c |   32 ++++++++++++++++----------------
- 1 files changed, 16 insertions(+), 16 deletions(-)
+Hello,
 
-diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
-index 60df9e0..100c66e 100644
---- a/virt/kvm/async_pf.c
-+++ b/virt/kvm/async_pf.c
-@@ -124,24 +124,24 @@ void kvm_check_async_pf_completion(struct kvm_vcpu *vcpu)
+I currently have no hardware to test it, so I only verified it to
+compile.
+
+Dinh: I changed your Tested-by to Cc for the new patch, do you care to
+retest?
+
+Best regards
+Uwe
+---
+ drivers/usb/host/ehci-mxc.c |   14 +++++++++-----
+ 1 files changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/usb/host/ehci-mxc.c b/drivers/usb/host/ehci-mxc.c
+index ac9c4d7..bce8505 100644
+--- a/drivers/usb/host/ehci-mxc.c
++++ b/drivers/usb/host/ehci-mxc.c
+@@ -36,6 +36,8 @@ struct ehci_mxc_priv {
+ static int ehci_mxc_setup(struct usb_hcd *hcd)
  {
- 	struct kvm_async_pf *work;
+ 	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
++	struct device *dev = hcd->self.controller;
++	struct mxc_usbh_platform_data *pdata = dev_get_platdata(dev);
+ 	int retval;
  
--	if (list_empty_careful(&vcpu->async_pf.done) ||
--	    !kvm_arch_can_inject_async_page_present(vcpu))
--		return;
--
--	spin_lock(&vcpu->async_pf.lock);
--	work = list_first_entry(&vcpu->async_pf.done, typeof(*work), link);
--	list_del(&work->link);
--	spin_unlock(&vcpu->async_pf.lock);
-+	while (!list_empty_careful(&vcpu->async_pf.done) &&
-+	      kvm_arch_can_inject_async_page_present(vcpu)) {
-+		spin_lock(&vcpu->async_pf.lock);
-+		work = list_first_entry(&vcpu->async_pf.done, typeof(*work),
-+					      link);
-+		list_del(&work->link);
-+		spin_unlock(&vcpu->async_pf.lock);
+ 	/* EHCI registers start at offset 0x100 */
+@@ -63,6 +65,12 @@ static int ehci_mxc_setup(struct usb_hcd *hcd)
  
--	if (work->page)
--		kvm_arch_async_page_ready(vcpu, work);
--	kvm_arch_async_page_present(vcpu, work);
-+		if (work->page)
-+			kvm_arch_async_page_ready(vcpu, work);
-+		kvm_arch_async_page_present(vcpu, work);
+ 	ehci_reset(ehci);
  
--	list_del(&work->queue);
--	vcpu->async_pf.queued--;
--	if (work->page)
--		put_page(work->page);
--	kmem_cache_free(async_pf_cache, work);
-+		list_del(&work->queue);
-+		vcpu->async_pf.queued--;
-+		if (work->page)
-+			put_page(work->page);
-+		kmem_cache_free(async_pf_cache, work);
-+	}
++	/* set up the PORTSCx register */
++	ehci_writel(ehci, pdata->portsc, &ehci->regs->port_status[0]);
++
++	/* is this really needed? */
++	msleep(10);
++
+ 	ehci_port_power(ehci, 0);
+ 	return 0;
  }
+@@ -114,7 +122,7 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
+ 	struct mxc_usbh_platform_data *pdata = pdev->dev.platform_data;
+ 	struct usb_hcd *hcd;
+ 	struct resource *res;
+-	int irq, ret, temp;
++	int irq, ret;
+ 	struct ehci_mxc_priv *priv;
+ 	struct device *dev = &pdev->dev;
  
- int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
+@@ -188,10 +196,6 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
+ 		clk_enable(priv->ahbclk);
+ 	}
+ 
+-	/* set up the PORTSCx register */
+-	ehci_writel(ehci, pdata->portsc, &ehci->regs->port_status[0]);
+-	mdelay(10);
+-
+ 	/* setup specific usb hw */
+ 	ret = mxc_initialize_usb_hw(pdev->id, pdata->flags);
+ 	if (ret < 0)
 -- 
-1.7.0.4
+1.7.2.3
 
