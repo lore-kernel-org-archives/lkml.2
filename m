@@ -1,114 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753797Ab0KBPa7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 11:30:59 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:33173 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753624Ab0KBPax convert rfc822-to-8bit (ORCPT
+	id S1753825Ab0KBPbY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 11:31:24 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:59333 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753681Ab0KBPbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 11:30:53 -0400
+	Tue, 2 Nov 2010 11:31:18 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=vDjY40iwk/0j315qxd7VKhsEaFb4H3VJMMpLEllkKF7iTvC7zaZMZRp6WXbs6tIPs0
-         aj7gl+sxb1QnwgDeFnt9Ak7DoKPQ7p04GVApOsrNEnitW1xtfRZ/p1/cEfvQd28mTY7W
-         feIMPQ9C7sQccYIgXnsOOEO2ac7UsTcnZY/Us=
-MIME-Version: 1.0
-In-Reply-To: <20101011142428.GK19804@ZenIV.linux.org.uk>
-References: <AANLkTin4886D+-yo=zrf2Yj2R5NM9qdRkc3M9cG2rN_F@mail.gmail.com>
-	<20101010144952.GF19804@ZenIV.linux.org.uk>
-	<AANLkTinuA3AzMoJ82pvCuhmo59DZxL2F1j3xhXUkjj7z@mail.gmail.com>
-	<20101010235256.GG19804@ZenIV.linux.org.uk>
-	<20101011024103.GH19804@ZenIV.linux.org.uk>
-	<20101011043632.GA2566@cynthia.pants.nu>
-	<20101011044808.GI19804@ZenIV.linux.org.uk>
-	<Pine.BSM.4.64L.1010111218040.23471@herc.mirbsd.org>
-	<20101011133545.GJ19804@ZenIV.linux.org.uk>
-	<m3wrpo24u0.fsf@hase.home>
-	<20101011142428.GK19804@ZenIV.linux.org.uk>
-Date: Tue, 2 Nov 2010 16:30:52 +0100
-X-Google-Sender-Auth: tsEiZ4MOwuSehA8cKssWj3YomGg
-Message-ID: <AANLkTinbD+32635CYBhFGVmCrj8YxfjbR4dfSGiTQOsw@mail.gmail.com>
-Subject: Re: aranym bug, manifests as "ida_remove called for id=13" on recent kernels
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Andreas Schwab <schwab@linux-m68k.org>, Thorsten Glaser <tg@mirbsd.de>,
-        linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=EE7W+ewXGOaE9ixxCb4DLor/XjV/dA3vNRH5qqMYAJ7rkjF74L8EfGKuOh6fAxr3qa
+         LN54SIAnMKvYoFZWtDCunLbuJnSgX3wDCRPhtjVw9cgfUqSrvAbxmD4FmRhNsTdUrMfe
+         pXqR3B3H/R4TISmD83mDS0nBLkU9yM8eo9+Ps=
+From: Audun Hoem <audun.hoem@gmail.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Audun Hoem <audun.hoem@gmail.com>
+Subject: [PATCH] staging: frontier: alphatrack: fixed coding style issues
+Date: Tue,  2 Nov 2010 16:31:01 +0100
+Message-Id: <1288711861-3625-1-git-send-email-audun.hoem@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 11, 2010 at 16:24, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> BTW, any comments on signal patchset?  Seems to work here, including the
-> stack expansion fixes, but that's on aranym.  I'll try to resurrect the
-> real hardware, but that may take a while.  If somebody could give it a beating
-> in the meanwhile...
+Cleaned up a macro definition and another simple style warning.
 
-I tried it on my Amiga 4000/040.
-Without your patches, gdb gets stuck in state D+ when reaching a breakpoint:
+Signed-off-by: Audun Hoem <audun.hoem@gmail.com>
+---
+ drivers/staging/frontier/alphatrack.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
-| cassandra:~# gdb /tmp/hello
-| GNU gdb 6.4.90-debian
-| Copyright (C) 2006 Free Software Foundation, Inc.
-| GDB is free software, covered by the GNU General Public License, and you are
-| welcome to change it and/or distribute copies of it under certain conditions.
-| Type "show copying" to see the conditions.
-| There is absolutely no warranty for GDB.  Type "show warranty" for details.
-| This GDB was configured as "m68k-linux-gnu"...Using host
-libthread_db library "/lib/libthread_db.so.1".
-|
-| (gdb) break main
-| Breakpoint 1 at 0x800003fc: file /home/geert/hello.c, line 6.
-| (gdb) run
-| Starting program: /tmp/hello
-|
-| Breakpoint 1, main (argc=1, argv=0xefbeedb4) at /home/geert/hello.c:6
+diff --git a/drivers/staging/frontier/alphatrack.c b/drivers/staging/frontier/alphatrack.c
+index ef7fbf8..6e3bd73 100644
+--- a/drivers/staging/frontier/alphatrack.c
++++ b/drivers/staging/frontier/alphatrack.c
+@@ -88,8 +88,11 @@ MODULE_SUPPORTED_DEVICE("Frontier Designs Alphatrack Control Surface");
+ static int debug = ALPHATRACK_DEBUG;
+ 
+ /* Use our own dbg macro */
+-#define dbg_info(dev, format, arg...) do \
+-    { if (debug) dev_info(dev , format , ## arg); } while (0)
++#define dbg_info(dev, format, arg...) \
++do { \
++	if (debug) \
++		dev_info(dev , format , ## arg); \
++} while (0)
+ 
+ #define alphatrack_ocmd_info(dev, cmd, format, arg...)
+ 
+@@ -769,7 +772,7 @@ static int usb_alphatrack_probe(struct usb_interface *intf,
+ 	}
+ 
+ 	dev->write_buffer =
+-	    kmalloc(sizeof(struct alphatrack_ocmd) * true_size, GFP_KERNEL);
++	    kmalloc(sizeof(struct alphatrack_ocmd) *true_size, GFP_KERNEL);
+ 
+ 	if (!dev->write_buffer) {
+ 		dev_err(&intf->dev, "Couldn't allocate write_buffer\n");
+-- 
+1.7.0.4
 
-With your patches, it works a bit better:
-
-| cassandra:~# gdb /tmp/hello
-| GNU gdb 6.4.90-debian
-| Copyright (C) 2006 Free Software Foundation, Inc.
-| GDB is free software, covered by the GNU General Public License, and you are
-| welcome to change it and/or distribute copies of it under certain conditions.
-| Type "show copying" to see the conditions.
-| There is absolutely no warranty for GDB.  Type "show warranty" for details.
-| This GDB was configured as "m68k-linux-gnu"...Using host
-libthread_db library "/lib/libthread_db.so.1".
-|
-| (gdb) break main
-| Breakpoint 1 at 0x800003fc: file /home/geert/hello.c, line 6.
-| (gdb) run
-| Starting program: /tmp/hello
-|
-| Breakpoint 1, main (argc=1, argv=0xefcc5db4) at /home/geert/hello.c:6
-| 6	    printf("Hello, world! [C]\n");
-| (gdb) cont
-| Continuing.
-| Hello, world! [C]
-|
-| Program exited normally.
-| (gdb) run
-| Starting program: /tmp/hello
-|
-| Breakpoint 1, main (argc=1, argv=0xef85bdb4) at /home/geert/hello.c:6
-| 6	    printf("Hello, world! [C]\n");
-| (gdb) next
-| Hello, world! [C]
-
-After which gdb is stuck in S+, and /tmp/hello in t.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
