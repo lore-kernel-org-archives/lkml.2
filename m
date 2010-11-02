@@ -1,52 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048Ab0KBMaP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 08:30:15 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59831 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905Ab0KBMaI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 08:30:08 -0400
-Subject: Re: [DRAFT PATCH 0/3] perf: Add Intel Nehalem uncore pmu support
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Stephane Eranian <eranian@google.com>, robert.richter@amd.com,
-        Cyrill Gorcunov <gorcunov@gmail.com>, paulus@samba.org,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        CoreyAshford <cjashfor@linux.vnet.ibm.com>,
-        lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <1288682858.12061.105.camel@minggr.sh.intel.com>
-References: <1288682858.12061.105.camel@minggr.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 02 Nov 2010 13:29:30 +0100
-Message-ID: <1288700970.2039.26.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752179Ab0KBMix (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 08:38:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25168 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751822Ab0KBMit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 08:38:49 -0400
+Date: Tue, 2 Nov 2010 14:38:44 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v3 5/7] KVM: handle more completed apfs if possible
+Message-ID: <20101102123844.GE7881@redhat.com>
+References: <4CCE8143.3090105@cn.fujitsu.com>
+ <4CCE822B.1070909@cn.fujitsu.com>
+ <20101101092457.GY26191@redhat.com>
+ <4CCFDB67.9050401@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CCFDB67.9050401@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-02 at 15:27 +0800, Lin Ming wrote:
-> Any comment is very appreciated.
+On Tue, Nov 02, 2010 at 05:35:35PM +0800, Xiao Guangrong wrote:
+> If it's no need to inject async #PF to PV guest we can handle
+> more completed apfs at one time, so we can retry guest #PF
+> as early as possible
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Acked-by: Gleb Natapov <gleb@redhat.com>
 
-Right, so I was hoping to use the sysfs bits to expose things, I'll try
-and get around to looking at your latest effort in that area soonish.
-I'll try and sit down with gregkh one of these days to talk it over.
-
-I'm not too sure about 1/3's change to x86_perf_event_update(), but its
-not too aweful, the change to x86_perf_event_set_period() however does
-look quite gruesome.
-
-It might make sense to simple duplicate that code in the uncore bits,.
-dunno.
-
-2/3 looks ok, but I think it would be nice if it would be more self
-contained, that is, not be part of the include mess and possibly have
-its own NMI_DIE notifier entry.
-
-All in all, Thanks for doing this, its a good start!
-
-
+--
+			Gleb.
