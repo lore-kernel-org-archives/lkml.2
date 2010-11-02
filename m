@@ -1,56 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753704Ab0KBBJz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 21:09:55 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:55432 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752461Ab0KBBJv (ORCPT
+	id S1754204Ab0KBBS0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 21:18:26 -0400
+Received: from 190-202-95-114.dyn.dsl.cantv.net ([190.202.95.114]:33561 "EHLO
+	kepler2.unet.edu.ve" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750999Ab0KBBSY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 21:09:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=IwuNWcZ+zbUUSVfVFSI5OebL2gXDX2yuZrsiZKhr4Bld6iMIlElfEHnAHSgXX7jFFv
-         LNQ65PPKCxQu4DbukmhnhPwp/Ey7DHHMYUbHOh+/MUlRhmxudrbuLDWHAqlNYWijzck7
-         +gZhwV+rC55dZ8n4VDCrD3jMF6x8k8fKuyyqY=
-Subject: [PATCH] dma: imx-dma: fix imxdma_probe error path
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Pengutronix <s.hauer@pengutronix.de>,
-        Dan Williams <dan.j.williams@intel.com>
-Content-Type: text/plain
-Date: Tue, 02 Nov 2010 09:12:57 +0800
-Message-Id: <1288660377.20990.1.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	Mon, 1 Nov 2010 21:18:24 -0400
+Message-ID: <20101101204400.20041ryf8h7s9n8g@webmail.unet.edu.ve>
+Date: Mon, 01 Nov 2010 20:44:00 -0430
+From: info_webmaster <info@webmaster.org>
+Reply-to: customercarewebdept2022@9.cn
+To: undisclosed-recipients:;
+Subject: Confirm your webmail account
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=ISO-8859-2;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.5)
+X-UNET-MailScanner: Found to be clean
+X-UNET-MailScanner-From: info@webmaster.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-otherwise, i will be -1 inside the latest iteration of the while loop.
+Dear Account User,
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/dma/imx-dma.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+We are currently updating our database and the center of the email  
+account that is, seeing the home page. We will remove the email  
+accounts of the electronic age are no longer active to create more  
+space for new accounts users.we also have investigated a system wide  
+security audit to improve and enhance our current security.
 
-diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-index f629e49..e53d438 100644
---- a/drivers/dma/imx-dma.c
-+++ b/drivers/dma/imx-dma.c
-@@ -379,7 +379,7 @@ static int __init imxdma_probe(struct platform_device *pdev)
- 	return 0;
- 
- err_init:
--	while (i-- >= 0) {
-+	while (--i >= 0) {
- 		struct imxdma_channel *imxdmac = &imxdma->channel[i];
- 		imx_dma_free(imxdmac->imxdma_channel);
- 	}
--- 
-1.7.2
+To continue using our services are needed to update and confirm the  
+details of your e-mail below.
+
+To complete your new account confirmation, reply to this email  
+immediately and enter your account details as requested below.
+
+Username: ..................
+E-mail Username ..............
+Password: ..................
+Confirm password?:............
+Date of Birth :..............
+Password to future :............
+
+Otherwise, your account will be deactivated immediately from our  
+database and data service is not interrupted as important messages,  
+and can be lost due to reduction confirm your account information to us.
+
+We apologize for any inconvenience this will cause for this period, but
+confident that we are here to serve you better service and offer more  
+technology which revolves around email addresses and Internet.
+
+It is also relevant to understand that our main concern is that our  
+customers and the security of their files and data.
+
+Confirmation code: -/93-1A388-480 Webmail Support Team.
+
+
+================================================================
+This email is intended only for the addressee indicated above and may  
+contain confidential, privileged or private, legally, it is not for  
+general use or disclosure. If not the intended recipient, you are  
+notified that any disclosure, copying, distribution or taking any  
+action based on the content of this message is strictly prohibited. If  
+you receive this message in error, please let us know by reply message  
+and then delete this message from your system. Your cooperation is  
+appreciated.
+===============================================================
+
+Thanks for your understanding
+
+
 
 
 
