@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310Ab0KBOP1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 10:15:27 -0400
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:57176 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753238Ab0KBOPX (ORCPT
+	id S1753296Ab0KBOQk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 10:16:40 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:37643 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753055Ab0KBOQe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 10:15:23 -0400
-Message-ID: <4CD01CD8.3090206@stericsson.com>
-Date: Tue, 2 Nov 2010 15:14:48 +0100
-From: Linus Walleij <linus.walleij@stericsson.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-Cc: Naveen Kumar GADDIPATI <naveen.gaddipati@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-        <linux-input@vger.kernel.org>
-Subject: Re: [PATCHv1] staging: Synaptics RMI4 touchpad driver support
-References: <1288699725-14405-1-git-send-email-naveen.gaddipati@stericsson.com> <20101102140337.GC9387@kroah.com>
-In-Reply-To: <20101102140337.GC9387@kroah.com>
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+	Tue, 2 Nov 2010 10:16:34 -0400
+To: Takashi Iwai <tiwai@suse.de>
+CC: miklos@szeredi.hu, florian@mickler.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org
+In-reply-to: <s5h62wguj5q.wl%tiwai@suse.de> (message from Takashi Iwai on Tue,
+	02 Nov 2010 11:14:25 +0100)
+Subject: Re: [REGRESSION] no sound on T60 laptop (HDA Intel)
+References: <E1P33mT-0003qa-Fv@pomaz-ex.szeredi.hu>
+	<s5hwrpxnf41.wl%tiwai@suse.de>
+	<E1P3EES-0005SV-Sr@pomaz-ex.szeredi.hu>
+	<s5h8w2b6f9c.wl%tiwai@suse.de>
+	<E1P3PKg-0006RB-KV@pomaz-ex.szeredi.hu>
+	<20101031120452.31836af2@schatten.dmk.lab>
+	<E1PDDGc-0000pM-83@pomaz-ex.szeredi.hu> <s5h62wguj5q.wl%tiwai@suse.de>
+Message-Id: <E1PDHex-0001Gd-3L@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Tue, 02 Nov 2010 15:16:23 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH wrote:
-
->> +Wait for the official upstream synaptics rmi4 clearpad drivers as promised over the past few months
->> +Merge any device support needed from this driver into it
->> +Delete this driver
+On Tue, 02 Nov 2010, Takashi Iwai wrote:
+> At Tue, 02 Nov 2010 10:34:58 +0100,
+> Miklos Szeredi wrote:
+> > 
+> > On Sun, 31 Oct 2010, Florian Mickler wrote:
+> > > > Hmm, now there's no sound even with the revert.  I guess reproducing
+> > > > this is not completely reliable so the bisect gave a false result.  Oh
+> > > > well.
+> > > > 
+> > 
+> > > Did you get to the bottom of this?
+> > 
+> > No, the regression is still there in 2.6.36-final.
 > 
-> Huh?
-> 
-> Why not just add this driver to the kernel tree instead?  When the
-> "promised" driver then eventually shows up (who is promising it?) then
-> delete the thing.
+> This should be fixed by the commit
+> 0e7adbe263f89ea2ef15b5af5e80a812b2a85025.
+> Give it a try.
 
-Well, Alan (on behalf of Ramesh Agarwal) sent out a very similar
-patch (Titled "Synaptics TM1217 Touchscreen Controller driver")
-the other day, and OTOMH that was after discussions with Synaptics
-where they said they were working on a "real" driver (a rather
-complex RMI4 bus driver) and we believe they will fix that sooner
-or later.
+Yes, it fixes it.  Cool.
 
-So, until sooner or later happens we thought we'd keep it in staging.
-
-If you prefer both Alan and we can probably submit our patches for
-inclusion in the proper place.
-
-A side effect may be that the Synaptics RMI4 people may have trouble
-to merge their driver into input/ since they may be requested to
-refactor the existing drivers to use it rather than merging new stuff,
-putting some burden on their shoulders.
-
-Yours,
-Linus Walleij
+Thanks,
+Miklos
