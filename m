@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760Ab0KBBbI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 21:31:08 -0400
-Received: from straum.hexapodia.org ([207.7.131.186]:36588 "EHLO
-	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752783Ab0KBBbG (ORCPT
+	id S1754743Ab0KBBhh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 21:37:37 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:40038 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754338Ab0KBBhe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 21:31:06 -0400
-Date: Mon, 1 Nov 2010 18:31:06 -0700
-From: Andy Isaacson <adi@hexapodia.org>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: srajiv@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Subject: Re: suspend fails on x200 (was Re: [PATCH] tpm: Autodetect itpm
-	devices)
-Message-ID: <20101102013106.GX5988@hexapodia.org>
-References: <1287697360-31273-1-git-send-email-mjg@redhat.com> <20101101211948.GA19250@hexapodia.org> <20101101213224.GA28746@srcf.ucam.org>
+	Mon, 1 Nov 2010 21:37:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=oaFgDsylQlICnbUtSqNIWYlqNkH6DkYq8UyH9YARykraNy5Ks1PnxyEfnS2Kl0zoNw
+         pEiOnvEkXHUiitPLi4a/jPgvhoVEwDV/cWw+rn7BxCs8lan9Qk/zRSWeBDKtJ987/Ue3
+         sdBhZ9PtMo/4xD0zu5ukpdY7O5SbQxHidUyZE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101101213224.GA28746@srcf.ucam.org>
-X-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
-X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
-X-Domestic-Surveillance: money launder bomb tax evasion
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4CCF2A5D.6070403@caviumnetworks.com>
+References: <1288636877-7964-1-git-send-email-tdent48227@gmail.com>
+	<201011020814.35902.manningc2@actrix.gen.nz>
+	<4CCF13FA.1080609@caviumnetworks.com>
+	<201011020832.16057.manningc2@actrix.gen.nz>
+	<AANLkTi=XmuhYoiJNGATDEtGyxj7FWH2UCN8QgqcRmEN6@mail.gmail.com>
+	<20101101201327.GC2049@kroah.com>
+	<AANLkTikjBzaYzOmVz33_d8hazteOZoRY4RF_LjxTTVCf@mail.gmail.com>
+	<4CCF2A5D.6070403@caviumnetworks.com>
+Date: Mon, 1 Nov 2010 21:37:33 -0400
+Message-ID: <AANLkTimMYRPaMNgXg29Q6ZYLJ5WoeUdOXCbvDE9c0Ab+@mail.gmail.com>
+Subject: Re: [PATCH 0/29] Staging: Add yaffs2 filesystem
+From: Tracey Dent <tdent48227@gmail.com>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: Greg KH <greg@kroah.com>, Charles Manning <manningc2@actrix.gen.nz>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 01, 2010 at 09:32:24PM +0000, Matthew Garrett wrote:
-> On Mon, Nov 01, 2010 at 02:19:48PM -0700, Andy Isaacson wrote:
-> > I suspect that it would have failed previously if I'd forced the module
-> > to load, but since tpm_tis now loads automatically as of 2.6.37-rc1, I
-> > have to "rmmod tpm_tis" for suspend to work.
-> 
-> Hm. That's what this patch was intended to fix. Can you check that the 
-> tree you're using has it merged? The autoloading comes from the fix to 
-> the pnp code to use _CID even if _HID is malformed, so now we have a pnp 
-> device when we previously didn't.
+Sorry for all the noise. It wont happen again. I just did something
+without thinking.
 
-Hmmm, I am testing with straight-up .37-rc1, c8ddb2713c62.  It does not
-include your patch.
+regards
 
-This time around, still running -rc1, I ran pm-suspend and it suspended
-+ resumed fine.  The second time I ran pm-suspend, it switched to text
-console and started flashing the moon LED, but hung there with the LCD
-backlight still on and the LED moon flashing.
-
-So, definitely something exciting going on... and not a simple
-suspend regression, and definitely not caused by this patch, my
-apologies.  Subject line updated accordingly.
-
-I'll try applying "Autodetect itpm devices" and report back.
-
--andy
+Tracey
