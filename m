@@ -1,58 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751376Ab0KBKHB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 06:07:01 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:36608 "EHLO
+	id S1751570Ab0KBKHR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 06:07:17 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:46551 "EHLO
 	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750877Ab0KBKGy (ORCPT
+	by vger.kernel.org with ESMTP id S1751404Ab0KBKHI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 06:06:54 -0400
-X-Sasl-enc: knbjtlx6MlZD6Jh3TGmNxU6DBBedzfJpn9HYYla2SCJC 1288692413
+	Tue, 2 Nov 2010 06:07:08 -0400
+X-Sasl-enc: 6go0REVXOQkHlQFD9XtlFNPg4KJMT2pJB/X8mWHGjiFb 1288692427
 To: linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>,
         linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         James Morris <jmorris@namei.org>,
         David Safford <safford@watson.ibm.com>,
         Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: [PATCH 0/3] evm bug fixes
+Subject: [PATCH 1/3] evm: added flag IMA_NEW in the integrity_iint_cache structure
 From: Roberto Sassu <roberto.sassu@polito.it>
 Organization: Politecnico di Torino
-Date: Tue, 2 Nov 2010 11:05:38 +0100
+Date: Tue, 2 Nov 2010 11:05:55 +0100
 MIME-Version: 1.0
 Content-Type: multipart/signed;
-  boundary="nextPart1361848.LUtrrkV42N";
+  boundary="nextPart3662624.iSkrOHKPv0";
   protocol="application/pkcs7-signature";
   micalg=sha1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011021105.42081.roberto.sassu@polito.it>
+Message-Id: <201011021105.55746.roberto.sassu@polito.it>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1361848.LUtrrkV42N
+--nextPart3662624.iSkrOHKPv0
 Content-Type: text/plain;
   charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 
-This patch set apply to the latest EVM patch released for the 2.6.35=20
-kernel series.
+The flag IMA_NEW is set in the function evm_inode_post_init_security()
+to distinguish between new and existent files and it is cleared in the
+function ima_dec_counts(). This permits to check/fix the 'security.ima'
+extended attribute properly in the function ima_appraise_measurement()
+without verifying the 'version' field of the 'integrity_iint_cache'
+structure.
+The 'i_version' field of the inode is not suitable for determining if a
+file is being created because the value '1' may be assumed by inodes
+already in the filesystem before mounting the same with the parameter
+'iversion' as well as those newly created.
 
-
-Roberto Sassu (3):
-  evm: added flag IMA_NEW in the integrity_iint_cache structure
-  ima: fixed ima_inode_setxattr()
-  ima: call evm_inode_post_removexattr() in ima_inode_post_setattr()
-
+Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+=2D--
  security/integrity/evm/evm_main.c     |   23 ++++++++++++++++++++---
  security/integrity/ima/ima_appraise.c |    2 +-
- security/integrity/ima/ima_main.c     |   19 +++++++++++++------
+ security/integrity/ima/ima_main.c     |    2 +-
  security/integrity/integrity.h        |    1 +
- 4 files changed, 35 insertions(+), 10 deletions(-)
+ 4 files changed, 23 insertions(+), 5 deletions(-)
 
+diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm=
+_main.c
+index cca6410..db5e66f 100644
+=2D-- a/security/integrity/evm/evm_main.c
++++ b/security/integrity/evm/evm_main.c
+@@ -274,14 +274,25 @@ int evm_inode_post_init_security(struct inode *inode,=
+ const struct xattr *lsm_xa
+ {
+ 	u8 *hmac_val;
+ 	int rc;
++	struct integrity_iint_cache *iint;
+=20
+ 	if (!evm_initialized || !evm_protected_xattr(lsm_xattr->name))
+ 		return -EOPNOTSUPP;
+=20
+=2D	hmac_val =3D kzalloc(MAX_DIGEST_SIZE, GFP_NOFS);
+=2D	if (!hmac_val)
++	iint =3D integrity_iint_find_get(inode);
++	if (!iint)
+ 		return -ENOMEM;
+=20
++	mutex_lock(&iint->mutex);
++	iint->flags |=3D IMA_NEW;
++	mutex_unlock(&iint->mutex);
++
++	hmac_val =3D kzalloc(MAX_DIGEST_SIZE, GFP_NOFS);
++	if (!hmac_val) {
++		rc =3D -ENOMEM;
++		goto outnofree;
++	}
++
+ 	rc =3D evm_init_hmac(inode, lsm_xattr, hmac_val);
+ 	if (rc < 0)
+ 		goto out;
+@@ -289,9 +300,15 @@ int evm_inode_post_init_security(struct inode *inode, =
+const struct xattr *lsm_xa
+ 	evm_xattr->value =3D hmac_val;
+ 	evm_xattr->value_len =3D evm_hmac_size;
+ 	evm_xattr->name =3D XATTR_EVM_SUFFIX;
+=2D	return 0;
++	goto outrelease;
+ out:
+ 	kfree(hmac_val);
++outnofree:
++	mutex_lock(&iint->mutex);
++	iint->flags &=3D ~IMA_NEW;
++	mutex_unlock(&iint->mutex);
++outrelease:
++	kref_put(&iint->refcount, iint_free);
+ 	return rc;
+ }
+ EXPORT_SYMBOL_GPL(evm_inode_post_init_security);
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima=
+/ima_appraise.c
+index fb402fa..b0256e6 100644
+=2D-- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -114,7 +114,7 @@ int ima_appraise_measurement(struct integrity_iint_cach=
+e *iint,
+ 	return status;
+ err_out:
+ 	if (rc =3D=3D -ENODATA) {
+=2D		if (iint->version =3D=3D 1)
++		if (iint->flags & IMA_NEW)
+ 			return 0;
+ 		cause =3D "missing-hash";
+ 		if (ima_appraise & IMA_APPRAISE_FIX)
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima=
+_main.c
+index 14c39a5..cd29bf2 100644
+=2D-- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -197,7 +197,7 @@ static void ima_dec_counts(struct integrity_iint_cache =
+*iint,
+ 		if (iint->writecount =3D=3D 0) {
+ 			if (iint->version !=3D inode->i_version) {
+ 				iint->flags &=3D ~(IMA_COLLECTED | IMA_APPRAISED
+=2D						 | IMA_MEASURED);
++						 | IMA_MEASURED | IMA_NEW);
+ 				if (iint->flags & IMA_APPRAISE)
+ 					ima_update_xattr(iint, file);
+ 			}
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index 3a9b3de..a25b019 100644
+=2D-- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -23,6 +23,7 @@
+ #define IMA_APPRAISE		4
+ #define IMA_APPRAISED		8
+ #define IMA_COLLECTED		16
++#define IMA_NEW			32
+=20
+ /* integrity data associated with an inode */
+ struct integrity_iint_cache {
 =2D-=20
 1.7.2.3
 
 
---nextPart1361848.LUtrrkV42N
+--nextPart3662624.iSkrOHKPv0
 Content-Type: application/pkcs7-signature; name="smime.p7s"
 Content-Disposition: attachment; filename="smime.p7s"
 Content-Transfer-Encoding: base64
@@ -133,12 +231,12 @@ TdtCm/yxR8XUlFyZkLHfhY19VW4luxb7KZ4GiPKDERdQwBb0kja4eqSOBkAPWZ9Y8zpv4bAxggIc
 MIICGAIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBkaSBUb3Jpbm8x
 NjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eQIC
 A8EwCQYFKw4DAhoFAKCBhzAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEP
-Fw0xMDExMDIxMDA1MzlaMCMGCSqGSIb3DQEJBDEWBBRiqJT2I675F7eG7hw1+B+zSw8u3jAoBgkq
-hkiG9w0BCQ8xGzAZMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzANBgkqhkiG9w0BAQEFAASCAQAM
-llRTYAn8CnvF+pTIgIyXIFvBir+MKffVSy9DhNgJSs5xtY1Wc9WtpmoNEgdbz6zRUYlsYTvEO+PA
-LrSQl5k7HtIabub8uyYCp18ukdNMweCZNy4BXgJTgiUv0YgkyX97Ns3aNA56SNeXxr7kWltjKqG2
-YqH5+xzi2sViNe8cWbur3xvitR2X+qOGmMOm2zwGWqqgu6XlWZwXaXfvUkb7mOX48zCJ+MR+EzYe
-6Ayd6w1ImClFkECQW8MrkFeV/ohuwkmsXzJr/iOfpEgsmY0P5DAJObZef3mmMz86B23dWMLmpMxt
-XbXi2NbsJHTbM6VVem9vlwCpSI5hXgac6pjwAAAAAAAA
+Fw0xMDExMDIxMDA1NTVaMCMGCSqGSIb3DQEJBDEWBBRbAZ4SrX4w8QQRE8UCuzFodFOs7DAoBgkq
+hkiG9w0BCQ8xGzAZMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzANBgkqhkiG9w0BAQEFAASCAQBP
+51iObDi3YgcQnfoXCLoNpr6wQZCdmZqgpcGLdBBFHNPG4cRDc9fbjgWJ9NeTFFWNKUQYjECFhb8m
+eiMJUVQybGTJyyhfIrgE31iS5Zb2ZEGGbG3L026S6pEKWRnQ0qremd6r4PxGNgXUdgJX+h+Zotxg
+uRXcBYsucPLjLFta6GUWEa5ZlXTKZb+4hoJms7VPagC4ISxoSfusFVAss3QdhcG8U0iwF5EMNLBa
+RLFx1MLXg4Wv72buxgYRsn9tDWREuPXrrs78NzJ2P7wkXjA+8fuZNskMxixDj1kTZJt8+22w9ihG
+C6nGPiGyWvBvL35dER7Gp4sChaJdKX1nyZtDAAAAAAAA
 
---nextPart1361848.LUtrrkV42N--
+--nextPart3662624.iSkrOHKPv0--
