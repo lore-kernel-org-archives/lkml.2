@@ -1,115 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527Ab0KBVcY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 17:32:24 -0400
-Received: from hera.kernel.org ([140.211.167.34]:51875 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752179Ab0KBVcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 17:32:21 -0400
-Message-ID: <4CD08419.5050803@kernel.org>
-Date: Tue, 02 Nov 2010 22:35:21 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	id S1753582Ab0KBVhK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 17:37:10 -0400
+Received: from sous-sol.org ([216.99.217.87]:43228 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753319Ab0KBVhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 17:37:08 -0400
+Date: Tue, 2 Nov 2010 14:36:53 -0700
+From: Chris Wright <chrisw@sous-sol.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Chris Wright <chrisw@sous-sol.org>,
+        Tech Board Discuss 
+	<Tech-board-discuss@lists.linux-foundation.org>,
+        "ksummit-2010-discuss@lists.linux-foundation.org" 
+	<ksummit-2010-discuss@lists.linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [Tech-board-discuss] Linux Foundation Technical Advisory Board
+ Elections and Nomination process
+Message-ID: <20101102213653.GA13824@sequoia.sous-sol.org>
+References: <1287151254.3069.10.camel@mulgrave.site>
+ <20101015171820.GA25455@sequoia.sous-sol.org>
 MIME-Version: 1.0
-To: Oren Laadan <orenl@cs.columbia.edu>
-CC: ksummit-2010-discuss@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-References: <Pine.LNX.4.64.1011021530470.12128@takamine.ncl.cs.columbia.edu>
-In-Reply-To: <Pine.LNX.4.64.1011021530470.12128@takamine.ncl.cs.columbia.edu>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 02 Nov 2010 21:32:11 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101015171820.GA25455@sequoia.sous-sol.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ing lkml too)
-Hello,
-
-On 11/02/2010 08:30 PM, Oren Laadan wrote:
-> Following the discussion yesterday, here is a linux-cr diff that
-> that is limited to changes to existing code.
+* Chris Wright (chrisw@sous-sol.org) wrote:
+> * James Bottomley (James.Bottomley@HansenPartnership.com) wrote:
+> > We currently have two nominees (the incumbents):
+> > 
+> > James Bottomley <James.Bottomley@hansenpartnership.com>
+> > Chris Mason <chris.mason@oracle.com>
 > 
-> The diff doesn't include the eclone() patches. I also tried to strip
-> off the new c/r code (either code in new files, or new code within
-> #ifdef CONFIG_CHECKPOINT in existing files).
+> Add another incumbent:
 > 
-> I left a few such snippets in, e.g. c/r syscalls templates and 
-> declaration of c/r specific methods in, e.g. file_operations.
-> 
-> The remaining changes in this patch include new freezer state
-> ("CHECKPOINTING"), mostly refactoring of exsiting code, and a bit
-> of new helpers.
-> 
-> Disclaimer: don't try to compile (or apply) - this is only intended
-> to give a ballpark of how the c/r patches change existing code.
+> Chris Wright <chrisw@sous-sol.org>
 
-The patch size itself isn't too big but I still think it's one scary
-patch mostly because the breadth of the code checkpointing needs to
-modify and I suspect that probably is the biggest concern regarding
-checkpoint-restart from implementation point of view.
+Since I can't make the reception...
 
-FWIW, I'm not quite convinced checkpoint-restart can be something
-which can be generally useful.  In controlled environments where the
-target application behavior can be relatively well defined and
-contained (including actions necessary to rollback in case something
-goes bonkers), it would work and can be quite useful, but I'm afraid
-the states which need to be saved and restored aren't defined well
-enough to be generally applicable.  Not only is it a difficult
-problem, it actually is impossible to define common set of states to
-be saved and restored - it depends on each application.
+My name is Chris Wright and I am standing for re-election as a member
+of the Linux Foundation's Technical Advisory Board.  I've been involved
+with Linux kernel developement for over 10 years now, spanning areas of
+security, Linux -stable tree, and virtualization.  I currently represent
+virtualization interests on the TAB.
 
-As such, I have difficult time believing it can be something generally
-useful.  IOW, I think talking about its usage in complex environments
-like common desktops is mostly handwaving.  What about X sessions,
-network connections, states established in other applications via dbus
-or whatnot?  Which files need to be snapshotted together?  What about
-shared mmaps?  These questions are not difficult to answer in generic
-way, they are impossible.
+I have advocated for and been involved with the TAB since its inception
+roughly 5 years ago.  I got involved out of an interest in ensuring
+that the (at the time) OSDL's resources were put to more constructive
+use for the Linux kernel community.
 
-There is a very distinctive difference between system wide
-suspend/hibernation and process checkpointing.  Most programs are
-already written with the conditions in mind which can be caused by
-system level suspend/hibernation.  Most programs don't expect to be
-scheduled and run in any definite amount of time.  There usually
-are provisions for loss or failure of resources which are out of the
-local system.  There are corner cases which are affected and those
-programs contain code to respond to suspend/hibernation.  Please note
-that this is about userland application behavior but not
-implementation detail in the kernel.  It is a much more fundamental
-property.
+As a technical voice of reason, the TAB provides input to the Linux
+Foundation to help guide its efforts.  Over time, I believe the TAB has
+helped the LF build more constructive communication between the different
+communities it represents (developers, vendors, end users).  As a member
+of the TAB, I am often called upon to represent the community in LF events
+(LinuxCon, Collaboration Summit, End User Summit).  You'll typically find
+me there leading discussions on virtualization and looking for ways to
+improve the Linux in that context.
 
-So, although checkpoint-restart can be very useful for certain
-circumstances, I don't believe there can be a general implementation.
-It inevitably needs to put somewhat strict restrictions on what the
-applications being checkpointed are allowed to do.  And after my
-train of thought reaches there, I fail to see what the advantages of
-in-kernel implementation would be compared to something like the
-following.
+Thank you for giving me the opportunity to represent on the TAB since
+it began.  I'd be honored to continue.
 
-  http://dmtcp.sourceforge.net/
-
-Sure, in-kernel implementation would be able to fake it better, but I
-don't think it's anything major.  The coverage would be slightly
-better but breaking the illusion wouldn't take much.  Just push it a
-bit further and it will break all the same.  In addition, to be
-useful, it would need userland framework or set of workarounds which
-are aware of and can manipulate userland states anyway.  For workloads
-for which checkpointing would be most beneficial (HPC for example), I
-think something like the above would do just fine and it would make
-much more sense to add small features to make userland checkpointing
-work better than doing the whole thing in the kernel.
-
-I think in-kernel checkpointing is in awkward place in terms of
-tradeoff between its benefits and the added complexities to implement
-it.  If you give up coverage slightly, userland checkpointing is
-there.  If you need reliable coverage, proper virtualization isn't too
-far away.  As such, FWIW, I fail to see enough justification for the
-added complexity.  I'll be happy to be proven wrong tho.  :-)
-
-Thank you.
-
--- 
-tejun
+thanks,
+-chris
