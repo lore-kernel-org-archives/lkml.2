@@ -1,61 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992Ab0KBWrm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 18:47:42 -0400
-Received: from mail.perches.com ([173.55.12.10]:3929 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752744Ab0KBWrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 18:47:40 -0400
-Subject: [RESEND PATCH 2/4] drivers/scsi/pmcraid.c: Fix k.alloc switched
- arguments
-From: Joe Perches <joe@perches.com>
+	id S1751423Ab0KBWz1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 18:55:27 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48047 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796Ab0KBWzY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 18:55:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=tuaK3TqVIjuObx12Kzn7sFQKwf1kemDBlVN6k08rHM1c1HaeL6KjtPlwb1OT0wRv6j
+         fNPwLlDXyb9S6t5Eis5xo+B7PLJhQUHlSdcAPImoPh7DUPTWSHm2NwqgV2bwAnTSfy00
+         XduDrppSpvqouRDwaVPfjfoXfAZfnHj2+7WRQ=
+MIME-Version: 1.0
+Date: Tue, 2 Nov 2010 22:55:23 +0000
+Message-ID: <AANLkTik6S4BupU+fZEcJkAexuOhQJYdhpmQa110kzEmd@mail.gmail.com>
+Subject: re: 2.6.36 BUG: scheduling while atomic: rc.sysinit/1376/0x00000002
+From: =?UTF-8?Q?Mathias_Bur=C3=A9n?= <mathias.buren@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Anil Ravindranath <anil_ravindranath@pmc-sierra.com>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        linux-scsi@vger.kernel.org
-In-Reply-To: <cover.1288555098.git.joe@perches.com>
-References: <cover.1288555098.git.joe@perches.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 02 Nov 2010 15:47:39 -0700
-Message-ID: <1288738059.7326.14.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And a typo fix of faile to failed.
+Hi,
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/scsi/pmcraid.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+If I don't use the "discard" mount option for my ext4 / partition, I
+don't see these errors.
 
-diff --git a/drivers/scsi/pmcraid.c b/drivers/scsi/pmcraid.c
-index 4b87657..e5a694a 100644
---- a/drivers/scsi/pmcraid.c
-+++ b/drivers/scsi/pmcraid.c
-@@ -4094,10 +4094,10 @@ static long pmcraid_chr_ioctl(
- 	struct pmcraid_ioctl_header *hdr = NULL;
- 	int retval = -ENOTTY;
- 
--	hdr = kmalloc(GFP_KERNEL, sizeof(struct pmcraid_ioctl_header));
-+	hdr = kmalloc(sizeof(struct pmcraid_ioctl_header), GFP_KERNEL);
- 
- 	if (!hdr) {
--		pmcraid_err("faile to allocate memory for ioctl header\n");
-+		pmcraid_err("failed to allocate memory for ioctl header\n");
- 		return -ENOMEM;
- 	}
- 
--- 
-1.7.3.1.g432b3.dirty
-
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
-
-
+// Mathias
