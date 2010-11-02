@@ -1,106 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755931Ab0KBHp7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 03:45:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27551 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754876Ab0KBHpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 03:45:50 -0400
-Date: Tue, 2 Nov 2010 09:45:45 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [RFC PATCH v2 7/7] KVM: KVM: don't break vcpu 'halt' state due
- to apfs
-Message-ID: <20101102074545.GC7881@redhat.com>
-References: <4CCE8143.3090105@cn.fujitsu.com>
- <4CCE82BC.3090000@cn.fujitsu.com>
- <20101101125551.GD31722@redhat.com>
- <4CCF77B2.9080604@cn.fujitsu.com>
- <20101102065613.GA7881@redhat.com>
- <4CCFBE4E.3090804@cn.fujitsu.com>
+	id S1756957Ab0KBHqW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 03:46:22 -0400
+Received: from fmmailgate03.web.de ([217.72.192.234]:56001 "EHLO
+	fmmailgate03.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756851Ab0KBHqO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 03:46:14 -0400
+Message-ID: <4CCFC1C3.4070807@web.de>
+Date: Tue, 02 Nov 2010 08:46:11 +0100
+From: Jan Kiszka <jan.kiszka@web.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CCFBE4E.3090804@cn.fujitsu.com>
+To: Sheng Yang <sheng@linux.intel.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kvm <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        iommu@lists.linux-foundation.org,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH] intel-iommu: Fix use after release during device attach
+References: <4CCFB84F.6050102@web.de> <201011021531.22886.sheng@linux.intel.com>
+In-Reply-To: <201011021531.22886.sheng@linux.intel.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig7F4A4AF728D72190404B831F"
+X-Provags-ID: V01U2FsdGVkX1/tZWi1KOmEQRfv5fxWmuUfd0fw/DyzCfEE7BaL
+	YpubK/MtDqDlDoRoE2AWm3xqNL9rQM9582XpJ26LyZfxrnnxDm
+	svXJSKYkM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 02, 2010 at 03:31:26PM +0800, Xiao Guangrong wrote:
-> On 11/02/2010 02:56 PM, Gleb Natapov wrote:
-> > On Tue, Nov 02, 2010 at 10:30:10AM +0800, Xiao Guangrong wrote:
-> >> On 11/01/2010 08:55 PM, Gleb Natapov wrote:
-> >>
-> >>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> >>> index 2cfdf2d..f7aed95 100644
-> >>> --- a/arch/x86/kvm/x86.c
-> >>> +++ b/arch/x86/kvm/x86.c
-> >>> @@ -5295,8 +5295,9 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
-> >>>  			{
-> >>>  				switch(vcpu->arch.mp_state) {
-> >>>  				case KVM_MP_STATE_HALTED:
-> >>> -					vcpu->arch.mp_state =
-> >>> -						KVM_MP_STATE_RUNNABLE;
-> >>> +					if (list_empty_careful(&vcpu->async_pf.done))
-> >>> +						vcpu->arch.mp_state =
-> >>> +							KVM_MP_STATE_RUNNABLE;
-> >>
-> >> if nmi/interrupt and apfs completed event occur at the same time, we will miss to
-> >> exit halt sate. Maybe we can check the pending event here, see below patch please.
-> >>
-> > No, we will not. If nmi/interrupt and apfs completed event occur at the same
-> > time kvm_vcpu_block() will exit with KVM_REQ_UNHALT set, but cpu will
-> > not be unhalted because of list_empty_careful(&vcpu->async_pf.done)
-> > check. Vcpu then will process pending apf completion and enter
-> > kvm_vcpu_block() again which will immediately exit because
-> > kvm_arch_vcpu_runnable() will return true since there is pending
-> > nmi/interrupt. This time vcpu will be unhalted.
-> 
-> Thanks for your explanation, but if it has nmi/interrupt pending,
-> kvm_arch_can_inject_async_page_present() always return false in PV guest case,
-> it can not process pending apf completion, so, the vcpu is remain halt state
-> forever?
-> 
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig7F4A4AF728D72190404B831F
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-kvm_event_needs_reinjection() checks for nmi/interrupts that
-need reinjection (not injection).  Those are nmi/interrupts that
-was injected but injection failed for some reason. For nmi, for
-instance, kvm_arch_vcpu_runnable() checks vcpu->arch.nmi_pending,
-but kvm_event_needs_reinjection() checks for vcpu->arch.nmi_injected.
-NMI moves from nmi_pending to nmi_injected when it is injected into vcpu
-for the first time. CPU cannot be halted in this state.
+Am 02.11.2010 08:31, Sheng Yang wrote:
+> On Tuesday 02 November 2010 15:05:51 Jan Kiszka wrote:
+>> From: Jan Kiszka <jan.kiszka@siemens.com>
+>>
+>> Obtail the new pgd pointer before releasing the page containing this
+>> value.
+>>
+>> Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+>> ---
+>>
+>> Who is taking care of this? The kvm tree?
+>>
+>>  drivers/pci/intel-iommu.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
+>> index 4789f8e..35463dd 100644
+>> --- a/drivers/pci/intel-iommu.c
+>> +++ b/drivers/pci/intel-iommu.c
+>> @@ -3627,9 +3627,9 @@ static int intel_iommu_attach_device(struct
+>> iommu_domain *domain,
+>>
+>>  		pte =3D dmar_domain->pgd;
+>>  		if (dma_pte_present(pte)) {
+>> -			free_pgtable_page(dmar_domain->pgd);
+>>  			dmar_domain->pgd =3D (struct dma_pte *)
+>>  				phys_to_virt(dma_pte_addr(pte));
+>> +			free_pgtable_page(pte);
+>>  		}
+>>  		dmar_domain->agaw--;
+>>  	}
+>=20
+> Reviewed-by: Sheng Yang <sheng@linux.intel.com>
+>=20
+> CC iommu mailing list and David.
+>=20
+> OK, Jan, I got your meaning now. And it's not the exactly swap. :)
+>=20
+> I think the old code is safe, seems it's broken(exposed) by:=20
+>=20
+> commit 1a8bd481bfba30515b54368d90a915db3faf302f
+> Author: David Woodhouse <David.Woodhouse@intel.com>
+> Date:   Tue Aug 10 01:38:53 2010 +0100
+>=20
+>     intel-iommu: Fix 32-bit build warning with __cmpxchg()
+>    =20
+>     drivers/pci/intel-iommu.c: In function 'dma_pte_addr':
+>     drivers/pci/intel-iommu.c:239: warning: passing argument 1 of '__cm=
+pxchg64'=20
+> from incompatible pointer typ
+>    =20
+>     It seems that __cmpxchg64() now cares about the type of its pointer=
+ argument,
+>     so give it a (uint64_t *) instead of a pointer to a structure which=
+ contains
+>     only that.
+>    =20
+>     Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+>=20
+> diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
+> index c9171be..603cdc0 100644
+> --- a/drivers/pci/intel-iommu.c
+> +++ b/drivers/pci/intel-iommu.c
+> @@ -236,7 +236,7 @@ static inline u64 dma_pte_addr(struct dma_pte *pte)=
 
-> Also, the pv guest can only handle an apf completion at one time, it can not ensure
-> vcpu->async_pf.done is empty after kvm_check_async_pf_completion()
-> 
-In case of PV guest it will be woken up by apf completion by
-kvm_arch_async_page_present() below.
+>         return pte->val & VTD_PAGE_MASK;
+>  #else
+>         /* Must have a full atomic 64-bit read */
+> -       return  __cmpxchg64(pte, 0ULL, 0ULL) & VTD_PAGE_MASK;
+> +       return  __cmpxchg64(&pte->val, 0ULL, 0ULL) & VTD_PAGE_MASK;
+>  #endif
+>  }
+>=20
+> Seems here is the only affected code?
 
-> > 
-> >>>  				case KVM_MP_STATE_RUNNABLE:
-> >>>  					vcpu->arch.apf.halted = false;
-> >>>  					break;
-> >>> @@ -6279,6 +6280,7 @@ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
-> >>>  		vcpu->arch.fault.error_code = 0;
-> >>>  		vcpu->arch.fault.address = work->arch.token;
-> >>>  		kvm_inject_page_fault(vcpu);
-> >>> +		vcpu->arch.mp_state = KVM_MP_STATE_RUNNABLE;
-> >>>  	}
-> >>>  }
-> >>
-> >> Have a stupid question, why we make the vcpu runnable here? Sorry i don't know
-> >> kvm pv guest to much. :-(
-> > Because kvm_arch_vcpu_runnable() does not check for pending exceptions.
-> > Since now we do not unhalt vcpu when apf completion happens we need to
-> > unhalt it here. But, as I said, the patch is untested.
-> > 
-> 
-> As i know, exception can not let guest exit halt state, only NMI/interruption can do it, yes? :-)
-On physical HW exception cannot happen while cpu is in halt state, but
-with PV we define what guest can and cannot expect, so when guest
-explicitly enables apf it should be able to handle it during halt.
+CONFIG_64BIT is on here, so this change did not make a difference for me.=
 
---
-			Gleb.
+
+Jan
+
+
+--------------enig7F4A4AF728D72190404B831F
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.15 (GNU/Linux)
+Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAkzPwcMACgkQitSsb3rl5xRZPACg1F/I2qbIMWFNmTSurth+pe2Y
+NnwAn2VWE1UaS/vBY3tDLyX8d5ivLYUr
+=uy48
+-----END PGP SIGNATURE-----
+
+--------------enig7F4A4AF728D72190404B831F--
