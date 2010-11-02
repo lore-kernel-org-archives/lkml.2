@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753390Ab0KBUev (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 16:34:51 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58685 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752341Ab0KBUeq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 16:34:46 -0400
-Date: Tue, 2 Nov 2010 16:34:53 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        linux-main <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>, Felipe Balbi <balbi@ti.com>,
-        Greg KH <greg@kroah.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Hao Wu <hao.wu@intel.com>,
-        Alan Cox <alan@linux.intel.com>, Mike Rapoport <mike@compulab.co.il>
-Subject: Re: [PATCH v3 2/2] drivers: cleanup Kconfig stuff
-Message-ID: <20101102203452.GB32103@opensource.wolfsonmicro.com>
-References: <1288656853-4625-1-git-send-email-felipe.contreras@gmail.com>
- <1288656853-4625-3-git-send-email-felipe.contreras@gmail.com>
- <20101102131146.GA21476@opensource.wolfsonmicro.com>
- <AANLkTim6E+e=D88C8g+YDVwS1D5JPeXvVRw-JVoVxh2i@mail.gmail.com>
- <20101102141208.GU31158@pengutronix.de>
- <AANLkTikwGBij05h1GgW0dpvcJedmcOQ1HWCaxaBdhZta@mail.gmail.com>
- <20101102143949.GH21476@opensource.wolfsonmicro.com>
- <AANLkTik6G25x3t9W01e_LRNVRv99CbWY3GFU93mz1wEg@mail.gmail.com>
+	id S1753310Ab0KBUo0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 16:44:26 -0400
+Received: from ifup.org ([198.145.64.140]:40429 "EHLO ifup.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751518Ab0KBUoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 16:44:24 -0400
+X-Greylist: delayed 435 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Nov 2010 16:44:24 EDT
+Date: Tue, 2 Nov 2010 10:04:08 -0700
+From: Brandon Philips <brandon@ifup.org>
+To: Haiyang Zhang <haiyangz@linuxonhyperv.com>
+Cc: haiyangz@microsoft.com, hjanssen@microsoft.com, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org
+Subject: Re: [PATCH 05/10] staging: hv: Convert camel cased functions in
+ hv.c to lower cases
+Message-ID: <20101102170406.GA4557@jenkins.home.ifup.org>
+References: <1288644369-12958-1-git-send-email-haiyangz@linuxonhyperv.com>
+ <1288644369-12958-2-git-send-email-haiyangz@linuxonhyperv.com>
+ <1288644369-12958-3-git-send-email-haiyangz@linuxonhyperv.com>
+ <1288644369-12958-4-git-send-email-haiyangz@linuxonhyperv.com>
+ <1288644369-12958-5-git-send-email-haiyangz@linuxonhyperv.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTik6G25x3t9W01e_LRNVRv99CbWY3GFU93mz1wEg@mail.gmail.com>
-X-Cookie: You will be awarded some great honor.
+In-Reply-To: <1288644369-12958-5-git-send-email-haiyangz@linuxonhyperv.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 02, 2010 at 09:46:47PM +0200, Felipe Contreras wrote:
-> On Tue, Nov 2, 2010 at 4:39 PM, Mark Brown
+On 13:46 Mon 01 Nov 2010, Haiyang Zhang wrote:
+> -static int HvQueryHypervisorInfo(void)
+> +static int hvquery_hypervisor_info(void)
+> -static u64 HvDoHypercall(u64 control, void *input, void *output)
+> +static u64 hvdo_hypercall(u64 control, void *input, void *output)
 
-> > It did originally but that dependency was removed to allow build
-> > coverage for non-OMAP users.
+Should these be hv_do_hypercall and hv_query_hypervisor? That seems to
+be the style in the rest of the patch:
 
-> I'm not sure removing that dependency is worth it. There's probably a
-> lot of code in the kernel that can be built without meeting the
-> specified dependencies. Maybe there should be a way to differentiate
-> soft from hard dependencies for this particular use-case. But I guess
-> for now the lack of dependency should be ok.
+> -int HvInit(void)
+> +int hv_init(void)
 
-It's really useful for subsystem maintainers - it means you can do
-changes over the subsystem without having to have a build lots and lots
-of different configs per chip to make sure everything still at least
-compiles.
+> -void HvCleanup(void)
+> +void hv_cleanup(void)
+
+> -u16 HvPostMessage(union hv_connection_id connection_id,
+> +u16 hv_post_message(union hv_connection_id connection_id,
+
+> -u16 HvSignalEvent(void)
+> +u16 hv_signal_event(void)
+
+Cheers,
+
+	Brandon
