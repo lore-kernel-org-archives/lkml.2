@@ -1,87 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837Ab0KBSkI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 14:40:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46761 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751445Ab0KBSkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 14:40:05 -0400
-Date: Tue, 2 Nov 2010 19:33:08 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stanislaw Gruszka <sgruszka@redhat.com>
-Subject: Re: [PATCH] posix-cpu-timers: rcu_read_lock/unlock protect
-	find_task_by_vpid call
-Message-ID: <20101102183308.GA17720@redhat.com>
-References: <20101102135821.GA5964@swordfish.minsk.epam.com> <alpine.LFD.2.00.1011021630150.9357@localhost6.localdomain6> <20101102160223.GC5964@swordfish.minsk.epam.com> <alpine.LFD.2.00.1011021704110.9357@localhost6.localdomain6>
+	id S1754832Ab0KBSqy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 14:46:54 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59760 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751729Ab0KBSqq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 14:46:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :content-type:content-transfer-encoding;
+        b=lpSHTkjx/Ynnol7l3HKEHKJS4RgaexMvIf7NC3Jw0OUCPVB7ukQLtU5coz/Ww4BQE+
+         FsMBQZxDcK5KAuQDUn2AfbU5SOCgi+DL2IlAi+qnIkUN0eJ3qBbcGGut7QHP6BYn7U4I
+         J+Im4xPXsT6npBSq2FRhKoG08SzBIgbgHAQO4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1011021704110.9357@localhost6.localdomain6>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20101102182911.GE25614@thunk.org>
+References: <tkrat.ba371a0ea018042b@s5r6.in-berlin.de> <alpine.LFD.2.00.1011011551001.2876@dhcp-lab-213.englab.brq.redhat.com>
+ <20101102182911.GE25614@thunk.org>
+From: kevin granade <kevin.granade@gmail.com>
+Date: Tue, 2 Nov 2010 13:46:23 -0500
+Message-ID: <AANLkTim9JbCk29oPjrYMSfhtHL4tL4uHtDq_xZoe7tzg@mail.gmail.com>
+Subject: Re: ext4_lazyinit_thread: 'ret' may be used uninitialized in this function
+To: "Ted Ts'o" <tytso@mit.edu>, Lukas Czerner <lczerner@redhat.com>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tue, 2 Nov 2010, Sergey Senozhatsky wrote:
+On Tue, Nov 2, 2010 at 1:29 PM, Ted Ts'o <tytso@mit.edu> wrote:
 >
-> > On (11/02/10 16:31), Thomas Gleixner wrote:
-> > > On Tue, 2 Nov 2010, Sergey Senozhatsky wrote:
-> > >
-> > > > Commit 4221a9918e38b7494cee341dda7b7b4bb8c04bde "Add RCU check for
-> > > > find_task_by_vpid()" introduced rcu_lockdep_assert to find_task_by_pid_ns.
-> > > > Add rcu_read_lock/rcu_read_unlock to call find_task_by_vpid.
-> > > >
-> > > > Tetsuo Handa wrote:
-> > > >
-> > > > Quoting from one of posts in that thead
-> > > > http://kerneltrap.org/mailarchive/linux-kernel/2010/2/8/4536388
-> > > >
-> > > > | Usually tasklist gives enough protection, but if copy_process() fails
-> > > > | it calls free_pid() lockless and does call_rcu(delayed_put_pid().
-> > > > | This means, without rcu lock find_pid_ns() can't scan the hash table
-> > > > | safely.
-> > >
-> > > We can remove the tasklist_lock while at it. rcu_read_lock is enough.
-> > >
-
-Yes, I believe posix-cpu-timers.c shouldn't use tasklist at all,
-but it is not trivial to change this code.
-
-Minor nit,
-
-> > @@ -390,7 +390,7 @@ int posix_cpu_timer_create(struct k_itimer *new_timer)
+> On Mon, Nov 01, 2010 at 04:27:26PM +0100, Lukas Czerner wrote:
 > >
-> >  	INIT_LIST_HEAD(&new_timer->it.cpu.entry);
-> >
-> > -	read_lock(&tasklist_lock);
-> > +	rcu_read_lock();
-> >  	if (CPUCLOCK_PERTHREAD(new_timer->it_clock)) {
-> >  		if (pid == 0) {
-> >  			p = current;
-> > @@ -414,7 +414,7 @@ int posix_cpu_timer_create(struct k_itimer *new_timer)
-> >  	} else {
-> >  		ret = -EINVAL;
-> >  	}
-> > -	read_unlock(&tasklist_lock);
-> > +	rcu_read_unlock();
+> > thank you for noticing this, because I actually do not see the warning
+> > (I wonder why...), but it is definitely a bug, so the trivial patch below
+> > should fix that.
+>
+> This is a slightly less trivial fix that eliminates the need for the
+> "ret" variable entirely.
+>
+>                                                - Ted
+>
+> commit e048924538f0c62d18306e2fea0e22dac0140f6e
+> Author: Theodore Ts'o <tytso@mit.edu>
+> Date:   Tue Nov 2 14:19:30 2010 -0400
+>
+>    ext4: "ret" may be used uninitialized in ext4_lazyinit_thread()
+>
+>    Newer GCC's reported the following build warning:
+>
+>       fs/ext4/super.c: In function 'ext4_lazyinit_thread':
+>       fs/ext4/super.c:2702: warning: 'ret' may be used uninitialized in this function
+>
+>    Fix it by removing the need for the ret variable in the first place.
+>
+>    Signed-off-by: "Lukas Czerner" <lczerner@redhat.com>
+>    Reported-by: "Stefan Richter" <stefanr@s5r6.in-berlin.de>
+>    Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+>
+> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+> index 8d1d942..4d7ef31 100644
+> --- a/fs/ext4/super.c
+> +++ b/fs/ext4/super.c
+> @@ -2699,7 +2699,6 @@ static int ext4_lazyinit_thread(void *arg)
+>        struct ext4_li_request *elr;
+>        unsigned long next_wakeup;
+>        DEFINE_WAIT(wait);
+> -       int ret;
+>
+>        BUG_ON(NULL == eli);
+>
+> @@ -2723,13 +2722,12 @@ cont_thread:
+>                        elr = list_entry(pos, struct ext4_li_request,
+>                                         lr_request);
+>
+> -                       if (time_after_eq(jiffies, elr->lr_next_sched))
+> -                               ret = ext4_run_li_request(elr);
+> -
+> -                       if (ret) {
+> -                               ret = 0;
+> -                               ext4_remove_li_request(elr);
+> -                               continue;
+> +                       if (time_after_eq(jiffies, elr->lr_next_sched)) {
+> +                               if (ext4_run_li_request(elr) != 0) {
+> +                                       /* error, remove the lazy_init job */
+> +                                       ext4_remove_li_request(elr);
+> +                                       continue;
+> +                               }
+>                        }
+>
+>                        if (time_before(elr->lr_next_sched, next_wakeup))
 
-I think this change is fine, but please note that thread_group_leader()
-check is not relaible without tasklist. If we race with de_thread()
-find_task_by_vpid() can find the new leader before it updates its
-->group_leader. IOW, posix_cpu_timer_create() can fail when it shouldn't.
+What do you think about this option for the second hunk? (not anything-tested)
 
-Not that I think this really matters, posix_cpu_timer_create() has
-other problems with de_thread(). But perhaps it makes sense to
-change posix_cpu_timer_create() to use has_group_leader_pid() instead,
-just to make this code not look racy and avoid adding new problems.
+@@ -2723,13 +2722,11 @@ cont_thread:
+                       elr = list_entry(pos, struct ext4_li_request,
+                                        lr_request);
+-                       if (time_after_eq(jiffies, elr->lr_next_sched))
+-                               ret = ext4_run_li_request(elr);
+-
+-                       if (ret) {
+-                               ret = 0;
+-                               ext4_remove_li_request(elr);
+-                               continue;
++                       if (time_after_eq(jiffies, elr->lr_next_sched) &&
++                           ext4_run_li_request(elr) != 0) {
++                               /* error, remove the lazy_init job */
++                               ext4_remove_li_request(elr);
++                               continue;
+                       }
 
-The real fix, I think, should change cpu_timer_list to use
-struct pid* instead of task_struct.
+                       if (time_before(elr->lr_next_sched, next_wakeup))
+--
 
-Oleg.
+Though obviously it's a pretty subjective style issue.
+Kevin Granade
 
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
