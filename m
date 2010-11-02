@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162Ab0KBUeJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 16:34:09 -0400
-Received: from mognix.dark-green.com ([88.116.226.179]:62003 "EHLO
-	mognix.dark-green.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752341Ab0KBUeH (ORCPT
+	id S1753390Ab0KBUev (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 16:34:51 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58685 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752341Ab0KBUeq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 16:34:07 -0400
-Message-ID: <4CD075BC.3080402@dark-green.com>
-Date: Tue, 02 Nov 2010 21:34:04 +0100
-From: gimli <gimli@dark-green.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; de; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	Tue, 2 Nov 2010 16:34:46 -0400
+Date: Tue, 2 Nov 2010 16:34:53 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        linux-main <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>, Felipe Balbi <balbi@ti.com>,
+        Greg KH <greg@kroah.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Hao Wu <hao.wu@intel.com>,
+        Alan Cox <alan@linux.intel.com>, Mike Rapoport <mike@compulab.co.il>
+Subject: Re: [PATCH v3 2/2] drivers: cleanup Kconfig stuff
+Message-ID: <20101102203452.GB32103@opensource.wolfsonmicro.com>
+References: <1288656853-4625-1-git-send-email-felipe.contreras@gmail.com>
+ <1288656853-4625-3-git-send-email-felipe.contreras@gmail.com>
+ <20101102131146.GA21476@opensource.wolfsonmicro.com>
+ <AANLkTim6E+e=D88C8g+YDVwS1D5JPeXvVRw-JVoVxh2i@mail.gmail.com>
+ <20101102141208.GU31158@pengutronix.de>
+ <AANLkTikwGBij05h1GgW0dpvcJedmcOQ1HWCaxaBdhZta@mail.gmail.com>
+ <20101102143949.GH21476@opensource.wolfsonmicro.com>
+ <AANLkTik6G25x3t9W01e_LRNVRv99CbWY3GFU93mz1wEg@mail.gmail.com>
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] MacBookAir3,1(3,2) alsa support
-References: <2e2e589908fd826020cfede6291e6168@mognix.dark-green.com> <s5h1v73u4je.wl%tiwai@suse.de>
-In-Reply-To: <s5h1v73u4je.wl%tiwai@suse.de>
-Content-Type: multipart/mixed;
- boundary="------------070800090505080207060701"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTik6G25x3t9W01e_LRNVRv99CbWY3GFU93mz1wEg@mail.gmail.com>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------070800090505080207060701
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Tue, Nov 02, 2010 at 09:46:47PM +0200, Felipe Contreras wrote:
+> On Tue, Nov 2, 2010 at 4:39 PM, Mark Brown
 
-Rebased to 2.6.37-rc1
+> > It did originally but that dependency was removed to allow build
+> > coverage for non-OMAP users.
 
-Signed-off-by: Edgar (gimli) Hucek<gimli@dark-green.com>
+> I'm not sure removing that dependency is worth it. There's probably a
+> lot of code in the kernel that can be built without meeting the
+> specified dependencies. Maybe there should be a way to differentiate
+> soft from hard dependencies for this particular use-case. But I guess
+> for now the lack of dependency should be ok.
 
-
-Am 02.11.10 16:30, schrieb Takashi Iwai:
-> At Tue, 02 Nov 2010 08:21:51 +0100,
-> gimli wrote:
->>
->> This patch add support for the MacBookAir3,1 and MacBookAir3,2 to the alsa
->> sound system.
->>
->> Signed-off-by: Edgar (gimli) Hucek<gimli@dark-green.com>
->
-> The patch isn't applicable to the latest upstream code.
-> Could you rebase your patch to 2.6.37-rc1?
->
->
-> thanks,
->
-> Takashi
->
->
->> [2 snd_hda_macbookair.patch<text/plain; UTF-8 (base64)>]
->> --- a/sound/pci/hda/patch_cirrus.c	2010-10-29 08:30:04.029681004 +0200
->> +++ b/sound/pci/hda/patch_cirrus.c	2010-10-29 08:34:04.509681003 +0200
->> @@ -1089,6 +1089,7 @@
->>   static struct snd_pci_quirk cs420x_cfg_tbl[] = {
->>   	SND_PCI_QUIRK(0x10de, 0xcb79, "MacBookPro 5,5", CS420X_MBP55),
->>   	SND_PCI_QUIRK(0x8086, 0x7270, "IMac 27 Inch", CS420X_IMAC27),
->> +	SND_PCI_QUIRK(0x10de, 0x0d94, "MacBookAir 3,1(2)", CS420X_MBP55),
->>   	{} /* terminator */
->>   };
->>
->
-
-
---------------070800090505080207060701
-Content-Type: text/plain; x-mac-type="0"; x-mac-creator="0";
- name="snd_hda_macbookair.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="snd_hda_macbookair.patch"
-
-diff -uNr linux-2.6.37-rc1/sound/pci/hda/patch_cirrus.c linux-2.6.37-rc1-patched/sound/pci/hda/patch_cirrus.c
---- linux-2.6.37-rc1/sound/pci/hda/patch_cirrus.c	2010-11-02 21:27:10.000000000 +0100
-+++ linux-2.6.37-rc1-patched/sound/pci/hda/patch_cirrus.c	2010-11-02 21:28:53.000000000 +0100
-@@ -1169,6 +1169,7 @@
- 	SND_PCI_QUIRK(0x10de, 0xcb79, "MacBookPro 5,5", CS420X_MBP55),
- 	SND_PCI_QUIRK(0x10de, 0xcb89, "MacBookPro 7,1", CS420X_MBP55),
- 	SND_PCI_QUIRK(0x8086, 0x7270, "IMac 27 Inch", CS420X_IMAC27),
-+	SND_PCI_QUIRK(0x10de, 0x0d94, "MacBookAir 3,1(2)", CS420X_MBP55),
- 	{} /* terminator */
- };
- 
-
---------------070800090505080207060701--
+It's really useful for subsystem maintainers - it means you can do
+changes over the subsystem without having to have a build lots and lots
+of different configs per chip to make sure everything still at least
+compiles.
