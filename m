@@ -1,124 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab0KBIAn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 04:00:43 -0400
-Received: from mga01.intel.com ([192.55.52.88]:20259 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754465Ab0KBIAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 04:00:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,279,1286175600"; 
-   d="scan'208";a="853259410"
-From: Sheng Yang <sheng@linux.intel.com>
-Organization: Intel Opensource Technology Center
-To: kvm@vger.kernel.org
-Subject: Re: [PATCH] intel-iommu: Fix use after release during device attach
-Date: Tue, 2 Nov 2010 16:00:42 +0800
-User-Agent: KMail/1.13.5 (Linux/2.6.35-22-generic; KDE/4.5.1; x86_64; ; )
-Cc: Jan Kiszka <jan.kiszka@web.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        iommu@lists.linux-foundation.org,
-        David Woodhouse <dwmw2@infradead.org>
-References: <4CCFB84F.6050102@web.de> <201011021531.22886.sheng@linux.intel.com>
-In-Reply-To: <201011021531.22886.sheng@linux.intel.com>
+	id S1751182Ab0KBI1G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 04:27:06 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:36996 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966Ab0KBI1A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 04:27:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:date:message-id:subject:from:to:content-type;
+        b=dsVD10+SspiMNnptFDs2MLo5JoxvOOvX3Bd8Zfb6KxlG58ehaK4LRUvLB9kfaz0fHa
+         1S25M8gTUXolbEYJDf+L0w6nRVEY+vmc69o00XJDKHgev3eIs1HYyiaTxlBO3azpLINw
+         SqbQgRTtrmkHRob/P9a7kiCH6ttY2kXXjDXCU=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011021600.42802.sheng@linux.intel.com>
+Reply-To: trapdoor6@gmail.com
+Date: Tue, 2 Nov 2010 08:26:59 +0000
+Message-ID: <AANLkTik=04z2thHBS3Z9n68QnTs=i8g8qTFtNT3jb8cg@mail.gmail.com>
+Subject: Pure kernel '2.6.37-rc1-00001-ge99d11d' shown as ~-dirty after compilation
+From: trapDoor <trapdoor6@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 02 November 2010 15:31:22 Sheng Yang wrote:
-> On Tuesday 02 November 2010 15:05:51 Jan Kiszka wrote:
-> > From: Jan Kiszka <jan.kiszka@siemens.com>
-> > 
-> > Obtail the new pgd pointer before releasing the page containing this
-> > value.
-> > 
-> > Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
-> > ---
-> > 
-> > Who is taking care of this? The kvm tree?
-> > 
-> >  drivers/pci/intel-iommu.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
-> > index 4789f8e..35463dd 100644
-> > --- a/drivers/pci/intel-iommu.c
-> > +++ b/drivers/pci/intel-iommu.c
-> > @@ -3627,9 +3627,9 @@ static int intel_iommu_attach_device(struct
-> > iommu_domain *domain,
-> > 
-> >  		pte = dmar_domain->pgd;
-> >  		if (dma_pte_present(pte)) {
-> > 
-> > -			free_pgtable_page(dmar_domain->pgd);
-> > 
-> >  			dmar_domain->pgd = (struct dma_pte *)
-> >  			
-> >  				phys_to_virt(dma_pte_addr(pte));
-> > 
-> > +			free_pgtable_page(pte);
-> > 
-> >  		}
-> >  		dmar_domain->agaw--;
-> >  	
-> >  	}
-> 
-> Reviewed-by: Sheng Yang <sheng@linux.intel.com>
-> 
-> CC iommu mailing list and David.
-> 
-> OK, Jan, I got your meaning now. And it's not the exactly swap. :)
-> 
-> I think the old code is safe, seems it's broken(exposed) by:
-> 
-> commit 1a8bd481bfba30515b54368d90a915db3faf302f
-> Author: David Woodhouse <David.Woodhouse@intel.com>
-> Date:   Tue Aug 10 01:38:53 2010 +0100
-> 
->     intel-iommu: Fix 32-bit build warning with __cmpxchg()
+,Hello,
+When I run 'make kernelrelease' on freshly cloned Linus' git tree it
+shows kernel version as: '2.6.37-rc1-00001-ge99d11d' - and that's
+correct.
+But after compilation it turned up '2.6.37-rc1-00001-ge99d11d-dirty'.
 
-In fact this one shouldn't affect the result. Wrong guess...
+I didn't apply any custom patches to my local tree between 'make
+kernelrelease' and compilation. What I only added - and before running
+'make kernelrelease' - were the following Radeon firmware blobs for my
+graphic card, which I placed in <kernel-source>/firmware/radeon/, in
+order to compile them in:
+REDWOOD_me.bin
+REDWOOD_pfp.bin
+REDWOOD_rlc.bin
 
---
-regards
-Yang, Sheng
+That's how I always did and none of the git-kernels I compiled before
+was referred to as '-dirty' due to the firmware blobs added manually.
+Also, the kernel version shown by 'make kernelrelease' never differed
+from the final kernel version after compilation. Of course assuming
+that no patches were applied in the meantime and no extra string was
+appended manually to the kernel version.
 
-> 
->     drivers/pci/intel-iommu.c: In function 'dma_pte_addr':
->     drivers/pci/intel-iommu.c:239: warning: passing argument 1 of
-> '__cmpxchg64' from incompatible pointer typ
-> 
->     It seems that __cmpxchg64() now cares about the type of its pointer
-> argument, so give it a (uint64_t *) instead of a pointer to a structure
-> which contains only that.
-> 
->     Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-> 
-> diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
-> index c9171be..603cdc0 100644
-> --- a/drivers/pci/intel-iommu.c
-> +++ b/drivers/pci/intel-iommu.c
-> @@ -236,7 +236,7 @@ static inline u64 dma_pte_addr(struct dma_pte *pte)
->         return pte->val & VTD_PAGE_MASK;
->  #else
->         /* Must have a full atomic 64-bit read */
-> -       return  __cmpxchg64(pte, 0ULL, 0ULL) & VTD_PAGE_MASK;
-> +       return  __cmpxchg64(&pte->val, 0ULL, 0ULL) & VTD_PAGE_MASK;
->  #endif
->  }
-> 
-> Seems here is the only affected code?
-> 
-> --
-> regards
-> Yang, Sheng
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+So, what's this '-dirty' about?
+
+-- 
+Thanks,
+Tomasz
