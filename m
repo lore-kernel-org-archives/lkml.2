@@ -1,65 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755079Ab0KBBtJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 21:49:09 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:57764 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752613Ab0KBBtI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 21:49:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=YxDCFHzAOHg3qZemQo6g0PLQ05hUYuAujFf82fmHa5lnuYxP4EbsZcanCmSth5sJGG
-         6g5N6NRMBxhvMuofn8cbFKF+h8NcEbFmVN3FNKBJedbZcDBh6OoS/vAZgHWbfl+Mowdd
-         gE2g+TCGvtFNzAOcFUhaOZCSBOVaFuoUejqa8=
-Subject: [PATCH] dma: intel_mid_dma: fix double free on mid_setup_dma error
-	path
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>
-Content-Type: text/plain
-Date: Tue, 02 Nov 2010 09:52:17 +0800
-Message-Id: <1288662737.20990.4.camel@mola>
+	id S1755015Ab0KBBuM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 21:50:12 -0400
+Received: from mail.perches.com ([173.55.12.10]:3920 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754524Ab0KBBuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 21:50:09 -0400
+Subject: Re: [PATCH 04/39] arch/powerpc: Update WARN uses
+From: Joe Perches <joe@perches.com>
+To: michael@ellerman.id.au
+Cc: Jiri Kosina <trivial@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1288657560.16790.8.camel@concordia>
+References: <cover.1288471897.git.joe@perches.com>
+	 <c6c46b5924e1cc9720d3ad76e6c11e982bd661e5.1288471898.git.joe@perches.com>
+	 <1288609334.10671.4.camel@concordia>  <1288622509.366.237.camel@Joe-Laptop>
+	 <1288657560.16790.8.camel@concordia>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 01 Nov 2010 18:50:07 -0700
+Message-ID: <1288662607.366.249.camel@Joe-Laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should not call kfree(dma) in mid_setup_dma error path because
-the memory is allocated in intel_mid_dma_probe and will be freed
-in intel_mid_dma_probe error path if mid_setup_dma return error.
+On Tue, 2010-11-02 at 11:26 +1100, Michael Ellerman wrote:
+> On Mon, 2010-11-01 at 07:41 -0700, Joe Perches wrote:
+> > Pretty much.  Format coalescing is generally preferred for grep.
+> Really? Grep doesn't work anyway because you have format specifiers, and
+> although you can try and guess them .. good luck, 0x%lx, or 0x%llx, or
+> %#lx or ..
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/dma/intel_mid_dma.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/dma/intel_mid_dma.c b/drivers/dma/intel_mid_dma.c
-index 338bc4e..4c55d45 100644
---- a/drivers/dma/intel_mid_dma.c
-+++ b/drivers/dma/intel_mid_dma.c
-@@ -1075,7 +1075,6 @@ static int mid_setup_dma(struct pci_dev *pdev)
- 	if (NULL == dma->dma_pool) {
- 		pr_err("ERR_MDMA:pci_pool_create failed\n");
- 		err = -ENOMEM;
--		kfree(dma);
- 		goto err_dma_pool;
- 	}
- 
-@@ -1186,7 +1185,6 @@ err_engine:
- 	free_irq(pdev->irq, dma);
- err_irq:
- 	pci_pool_destroy(dma->dma_pool);
--	kfree(dma);
- err_dma_pool:
- 	pr_err("ERR_MDMA:setup_dma failed: %d\n", err);
- 	return err;
--- 
-1.7.2
-
+grep "Breakpoint at .* will be disabled"
 
 
