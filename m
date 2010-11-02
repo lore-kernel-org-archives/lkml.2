@@ -1,602 +1,324 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754192Ab0KBQ7i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 12:59:38 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:34975 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751655Ab0KBQ7e convert rfc822-to-8bit (ORCPT
+	id S1754204Ab0KBRC5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 13:02:57 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37126 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751296Ab0KBRCv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 12:59:34 -0400
+	Tue, 2 Nov 2010 13:02:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
+        d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=kuHu6LFsAgaF76qAv1m3Qlh8E9wObXdvmvP9m41WBX+I/BKzpQ+pSHZY4xgohJeNCx
-         v1Wk3+w/O2WZlxtwZQiQ==
+        b=DQZfNHbfRsVTRj42FiB2grUg35MgANsG81aB04nT7I9yYoI/tBzfkuauwcK5JdIbKE
+         EiusPXjWxVT0pW1BBAbW37bLkpqYUkcaTNySIhclGavFO9P8r+iZqNkGLIwl/srV1L8p
+         3bDcifO9W/2TZjug2CNjYeUf4WTpI2kTtQtKM=
 MIME-Version: 1.0
-In-Reply-To: <1288712023.2457.25.camel@localhost>
-References: <1288682905.12061.109.camel@minggr.sh.intel.com>
-	<AANLkTimyTYNczZqV5gPmKfL6iYjNf3wpYYFi+5US8bP3@mail.gmail.com>
-	<1288712023.2457.25.camel@localhost>
-Date: Tue, 2 Nov 2010 17:59:30 +0100
-Message-ID: <AANLkTi=GVVWxOpZ9Gorn4_r2tASAqOV5+BT7o92xrwJJ@mail.gmail.com>
-Subject: Re: [DRAFT PATCH 2/3] perf: Implement Nehalem uncore pmu
-From: Stephane Eranian <eranian@google.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        "robert.richter@amd.com" <robert.richter@amd.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <201010310911.45738.thomas@fjellstrom.ca>
+References: <201010290650.32892.thomas@fjellstrom.ca>
+	<201010310911.45738.thomas@fjellstrom.ca>
+Date: Tue, 2 Nov 2010 18:02:49 +0100
+Message-ID: <AANLkTim18po6e+uT2drQxgzO7zk2DPtqmHHb=sQtp0U3@mail.gmail.com>
+Subject: Re: mvsas errors in 2.6.36
+From: Audio Haven <audiohaven@gmail.com>
+To: thomas@fjellstrom.ca
+Cc: Linux Kernel List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 2, 2010 at 4:33 PM, Lin Ming <ming.m.lin@intel.com> wrote:
-> On Tue, 2010-11-02 at 22:53 +0800, Stephane Eranian wrote:
->> Lin,
+Hello Thomas,
+
+I'm seeing similar errors on 2.6.36-rc3 (which should have the same
+mvsas driver).
+When copying lots of data over samba to a sofware raid6 on top of
+mvsas, my samba connection stalls and the following is reported:
+
+drivers/scsi/mvsas/mv_sas.c 1632:mvs_query_task:rc= 5
+drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for device[7]:rc= 0
+ata18: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
+ata18: status=0x01 { Error }
+ata18: error=0x04 { DriveStatusError }
+drivers/scsi/mvsas/mv_sas.c 1632:mvs_query_task:rc= 5
+drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for device[7]:rc= 0
+ata18: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
+ata18: status=0x01 { Error }
+ata18: error=0x04 { DriveStatusError }
+drivers/scsi/mvsas/mv_sas.c 1632:mvs_query_task:rc= 5
+drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for device[6]:rc= 0
+ata17: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
+ata17: status=0x01 { Error }
+ata17: error=0x04 { DriveStatusError }
+drivers/scsi/mvsas/mv_sas.c 1632:mvs_query_task:rc= 5
+drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for device[7]:rc= 0
+ata18: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
+ata18: status=0x01 { Error }
+ata18: error=0x04 { DriveStatusError }
+drivers/scsi/mvsas/mv_sas.c 1632:mvs_query_task:rc= 5
+drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for device[7]:rc= 0
+ata18: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
+ata18: status=0x01 { Error }
+ata18: error=0x04 { DriveStatusError }
+
+No data is lost and raid never breaks, but this is a nuisance. The
+above can be reproduced when doing lot's of IO to mvsas independent of
+samba: e.g. a large local file copy to mvsas or even rm -rf of large
+subdirectory in xfs can trigger it. Then these operations become
+terribly slow.
+
+Best regards,
+
+Frederic Vanden Poel
+
+On Sun, Oct 31, 2010 at 4:11 PM, Thomas Fjellstrom <thomas@fjellstrom.ca> wrote:
+> On October 29, 2010, Thomas Fjellstrom wrote:
+>> Good news and bad news, the current mvsas driver in 2.6.36 seems to work
+>> better than older kernels with my setup (2 port sas + 5 SATA disks). But I
+>> gotten the following messages so far:
 >>
->> On Tue, Nov 2, 2010 at 8:28 AM, Lin Ming <ming.m.lin@intel.com> wrote:
->> > For the background of Nehalem uncore pmu, see Intel SDM Volume 3B
->> > "30.6.2 Performance Monitoring Facility in the Uncore"
->> >
->> > 1. data structure
->> >
->> > struct node_hw_events {
->> >        struct perf_event *events[UNCORE_NUM_COUNTERS];
->> >        int n_events;
->> >        struct spinlock lock;
->> >        int enabled;
->> > };
->> >
->> > struct node_hw_events is the per node structure.
->> > "lock" protects add/delete events to uncore pmu.
->> >
->> > struct uncore_cpu_hw_events {
->> >        unsigned long active_mask[BITS_TO_LONGS(UNCORE_NUM_COUNTERS)];
->> > };
->> >
->> > struct uncore_cpu_hw_events is the per logical cpu structure.
->> > "active_mask" represents the counters used by the cpu.
->> > For example, if bit 3, 6 are set for cpuX, then it means uncore counter
->> > 3 and 6 are used by cpuX.
->> >
->> I would advise you allocate your uncore_events[] table dynamically
->> using kmalloc_node(). That way you avoid unnecessary remote
->> memory accesses.
->
-> Good point. Will do this.
->
+>> [ �213.856050] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task()
+>> mvi=ffff880123200000 task=ffff880122545a40 slot=ffff880123226628
+>> slot_idx=x3 [ �213.856064] drivers/scsi/mvsas/mv_sas.c
+>> 1632:mvs_query_task:rc= 5 [ �213.856094] drivers/scsi/mvsas/mv_sas.c
+>> 2083:port 0 ctrl sts=0x89800. [ �213.856100] drivers/scsi/mvsas/mv_sas.c
+>> 2085:Port 0 irq sts = 0x1001 [ �213.856111] drivers/scsi/mvsas/mv_sas.c
+>> 2111:phy0 Unplug Notice [ �213.866069] drivers/scsi/mvsas/mv_sas.c
+>> 2083:port 0 ctrl sts=0x199800. [ �213.866078] drivers/scsi/mvsas/mv_sas.c
+>> 2085:Port 0 irq sts = 0x1081 [ �213.887617] drivers/scsi/mvsas/mv_sas.c
+>> 2083:port 0 ctrl sts=0x199800. [ �213.887625] drivers/scsi/mvsas/mv_sas.c
+>> 2085:Port 0 irq sts = 0x10000 [ �213.887632] drivers/scsi/mvsas/mv_sas.c
+>> 2138:notify plug in on phy[0] [ �213.991191] drivers/scsi/mvsas/mv_sas.c
+>> 1224:port 0 attach dev info is 0 [ �213.991191]
+>> drivers/scsi/mvsas/mv_sas.c 1226:port 0 attach sas addr is 0 [
+>> 213.995701] drivers/scsi/mvsas/mv_sas.c 378:phy 0 byte dmaded.
+>> [ �216.064032] drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for
+>> device[0]:rc= 0 [ �216.064049] ata9: translated ATA stat/err 0x01/04 to
+>> SCSI SK/ASC/ASCQ 0xb/00/00 [ �216.064647] ata9.00: device reported invalid
+>> CHS sector 0
+>> [ �216.065226] ata9: status=0x01 { Error }
+>> [ �216.065815] ata9: error=0x04 { DriveStatusError }
+>> [ 1519.840061] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task()
+>> mvi=ffff880123200000 task=ffff88011f944700 slot=ffff880123226680
+>> slot_idx=x4 [ 1519.840075] drivers/scsi/mvsas/mv_sas.c
+>> 1632:mvs_query_task:rc= 5 [ 1519.840107] drivers/scsi/mvsas/mv_sas.c
+>> 2083:port 3 ctrl sts=0x89800. [ 1519.840113] drivers/scsi/mvsas/mv_sas.c
+>> 2085:Port 3 irq sts = 0x1001 [ 1519.840124] drivers/scsi/mvsas/mv_sas.c
+>> 2111:phy3 Unplug Notice [ 1519.850080] drivers/scsi/mvsas/mv_sas.c
+>> 2083:port 3 ctrl sts=0x199800. [ 1519.850086] drivers/scsi/mvsas/mv_sas.c
+>> 2085:Port 3 irq sts = 0x1081 [ 1519.854247] drivers/scsi/mvsas/mv_sas.c
+>> 2083:port 3 ctrl sts=0x199800. [ 1519.854250] drivers/scsi/mvsas/mv_sas.c
+>> 2085:Port 3 irq sts = 0x10000 [ 1519.854252] drivers/scsi/mvsas/mv_sas.c
+>> 2138:notify plug in on phy[3] [ 1519.951698] drivers/scsi/mvsas/mv_sas.c
+>> 1224:port 3 attach dev info is 2000000 [ 1519.951698]
+>> drivers/scsi/mvsas/mv_sas.c 1226:port 3 attach sas addr is 3 [
+>> 1519.963251] drivers/scsi/mvsas/mv_sas.c 378:phy 3 byte dmaded.
+>> [ 1522.048039] drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for
+>> device[3]:rc= 0 [ 1522.048056] ata12: translated ATA stat/err 0x01/04 to
+>> SCSI SK/ASC/ASCQ 0xb/00/00 [ 1522.048679] ata12.00: device reported
+>> invalid CHS sector 0
+>> [ 1522.049268] ata12: status=0x01 { Error }
+>> [ 1522.049856] ata12: error=0x04 { DriveStatusError }
+>> [ 1558.816044] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task()
+>> mvi=ffff880123200000 task=ffff880124d89500 slot=ffff880123226680
+>> slot_idx=x4 [ 1558.816058] drivers/scsi/mvsas/mv_sas.c
+>> 1632:mvs_query_task:rc= 5 [ 1558.816086] drivers/scsi/mvsas/mv_sas.c
+>> 2083:port 3 ctrl sts=0x89800. [ 1558.816092] drivers/scsi/mvsas/mv_sas.c
+>> 2085:Port 3 irq sts = 0x1001 [ 1558.816103] drivers/scsi/mvsas/mv_sas.c
+>> 2111:phy3 Unplug Notice [ 1558.826059] drivers/scsi/mvsas/mv_sas.c
+>> 2083:port 3 ctrl sts=0x199800. [ 1558.826066] drivers/scsi/mvsas/mv_sas.c
+>> 2085:Port 3 irq sts = 0x1081 [ 1558.829663] drivers/scsi/mvsas/mv_sas.c
+>> 2083:port 3 ctrl sts=0x199800. [ 1558.829670] drivers/scsi/mvsas/mv_sas.c
+>> 2085:Port 3 irq sts = 0x10000 [ 1558.829677] drivers/scsi/mvsas/mv_sas.c
+>> 2138:notify plug in on phy[3] [ 1558.904494] drivers/scsi/mvsas/mv_sas.c
+>> 1224:port 3 attach dev info is 2000000 [ 1558.904494]
+>> drivers/scsi/mvsas/mv_sas.c 1226:port 3 attach sas addr is 3 [
+>> 1558.938424] drivers/scsi/mvsas/mv_sas.c 378:phy 3 byte dmaded.
+>> [ 1561.024027] drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for
+>> device[3]:rc= 0 [ 1561.024044] ata12: translated ATA stat/err 0x01/04 to
+>> SCSI SK/ASC/ASCQ 0xb/00/00 [ 1561.024652] ata12.00: device reported
+>> invalid CHS sector 0
+>> [ 1561.025242] ata12: status=0x01 { Error }
+>> [ 1561.025834] ata12: error=0x04 { DriveStatusError }
+>> [ 1594.800036] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task()
+>> mvi=ffff880123200000 task=ffff88011f945a40 slot=ffff880123226680
+>> slot_idx=x4 [ 1594.800051] drivers/scsi/mvsas/mv_sas.c
+>> 1632:mvs_query_task:rc= 5 [ 1594.800077] drivers/scsi/mvsas/mv_sas.c
+>> 2083:port 3 ctrl sts=0x89800. [ 1594.800083] drivers/scsi/mvsas/mv_sas.c
+>> 2085:Port 3 irq sts = 0x1001 [ 1594.800094] drivers/scsi/mvsas/mv_sas.c
+>> 2111:phy3 Unplug Notice [ 1594.810048] drivers/scsi/mvsas/mv_sas.c
+>> 2083:port 3 ctrl sts=0x199800. [ 1594.810055] drivers/scsi/mvsas/mv_sas.c
+>> 2085:Port 3 irq sts = 0x1081 [ 1594.814327] drivers/scsi/mvsas/mv_sas.c
+>> 2083:port 3 ctrl sts=0x199800. [ 1594.814330] drivers/scsi/mvsas/mv_sas.c
+>> 2085:Port 3 irq sts = 0x10000 [ 1594.814332] drivers/scsi/mvsas/mv_sas.c
+>> 2138:notify plug in on phy[3] [ 1594.882000] drivers/scsi/mvsas/mv_sas.c
+>> 1224:port 3 attach dev info is 2000000 [ 1594.882000]
+>> drivers/scsi/mvsas/mv_sas.c 1226:port 3 attach sas addr is 3 [
+>> 1594.923382] drivers/scsi/mvsas/mv_sas.c 378:phy 3 byte dmaded.
+>> [ 1597.008031] drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for
+>> device[3]:rc= 0 [ 1597.008048] ata12: translated ATA stat/err 0x01/04 to
+>> SCSI SK/ASC/ASCQ 0xb/00/00 [ 1597.008675] ata12.00: device reported
+>> invalid CHS sector 0
+>> [ 1597.009271] ata12: status=0x01 { Error }
+>> [ 1597.009871] ata12: error=0x04 { DriveStatusError }
+>> [ 2193.824051] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task()
+>> mvi=ffff880123200000 task=ffff880009c7c540 slot=ffff8801232265d0
+>> slot_idx=x2 [ 2193.824065] drivers/scsi/mvsas/mv_sas.c
+>> 1632:mvs_query_task:rc= 5 [ 2193.824092] drivers/scsi/mvsas/mv_sas.c
+>> 2083:port 0 ctrl sts=0x89800. [ 2193.824099] drivers/scsi/mvsas/mv_sas.c
+>> 2085:Port 0 irq sts = 0x1001001 [ 2193.824109] drivers/scsi/mvsas/mv_sas.c
+>> 2111:phy0 Unplug Notice [ 2193.834062] drivers/scsi/mvsas/mv_sas.c
+>> 2083:port 0 ctrl sts=0x199800. [ 2193.834067] drivers/scsi/mvsas/mv_sas.c
+>> 2085:Port 0 irq sts = 0x1001081 [ 2193.855272] drivers/scsi/mvsas/mv_sas.c
+>> 2083:port 0 ctrl sts=0x199800. [ 2193.855279] drivers/scsi/mvsas/mv_sas.c
+>> 2085:Port 0 irq sts = 0x10000 [ 2193.855286] drivers/scsi/mvsas/mv_sas.c
+>> 2138:notify plug in on phy[0] [ 2193.859234] drivers/scsi/mvsas/mv_sas.c
+>> 1224:port 0 attach dev info is 0 [ 2193.859234]
+>> drivers/scsi/mvsas/mv_sas.c 1226:port 0 attach sas addr is 0 [
+>> 2193.959270] drivers/scsi/mvsas/mv_sas.c 378:phy 0 byte dmaded.
+>> [ 2196.032026] drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for
+>> device[0]:rc= 0 [ 2196.032045] ata9: translated ATA stat/err 0x01/04 to
+>> SCSI SK/ASC/ASCQ 0xb/00/00 [ 2196.032676] ata9: status=0x01 { Error }
+>> [ 2196.033274] ata9: error=0x04 { DriveStatusError }
+>> [ 2440.800047] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task()
+>> mvi=ffff880123200000 task=ffff880010f36700 slot=ffff880123226628
+>> slot_idx=x3 [ 2440.800061] drivers/scsi/mvsas/mv_sas.c
+>> 1632:mvs_query_task:rc= 5 [ 2440.800090] drivers/scsi/mvsas/mv_sas.c
+>> 2083:port 7 ctrl sts=0x89800. [ 2440.800096] drivers/scsi/mvsas/mv_sas.c
+>> 2085:Port 7 irq sts = 0x1001 [ 2440.800107] drivers/scsi/mvsas/mv_sas.c
+>> 2111:phy7 Unplug Notice [ 2440.810060] drivers/scsi/mvsas/mv_sas.c
+>> 2083:port 7 ctrl sts=0x199800. [ 2440.810065] drivers/scsi/mvsas/mv_sas.c
+>> 2085:Port 7 irq sts = 0x1081 [ 2440.831453] drivers/scsi/mvsas/mv_sas.c
+>> 2083:port 7 ctrl sts=0x199800. [ 2440.831460] drivers/scsi/mvsas/mv_sas.c
+>> 2085:Port 7 irq sts = 0x10000 [ 2440.831467] drivers/scsi/mvsas/mv_sas.c
+>> 2138:notify plug in on phy[7] [ 2440.880053] drivers/scsi/mvsas/mv_sas.c
+>> 1224:port 7 attach dev info is 4000000 [ 2440.880053]
+>> drivers/scsi/mvsas/mv_sas.c 1226:port 7 attach sas addr is 7 [
+>> 2440.940497] drivers/scsi/mvsas/mv_sas.c 378:phy 7 byte dmaded.
+>> [ 2443.008033] drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for
+>> device[4]:rc= 0 [ 2443.008052] ata13: translated ATA stat/err 0x01/04 to
+>> SCSI SK/ASC/ASCQ 0xb/00/00 [ 2443.008685] ata13: status=0x01 { Error }
+>> [ 2443.009295] ata13: error=0x04 { DriveStatusError }
+>> [ 2675.808044] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task()
+>> mvi=ffff880123200000 task=ffff88011aae3500 slot=ffff880123226578
+>> slot_idx=x1 [ 2675.808058] drivers/scsi/mvsas/mv_sas.c
+>> 1632:mvs_query_task:rc= 5 [ 2675.808088] drivers/scsi/mvsas/mv_sas.c
+>> 2083:port 2 ctrl sts=0x89800. [ 2675.808094] drivers/scsi/mvsas/mv_sas.c
+>> 2085:Port 2 irq sts = 0x1001 [ 2675.808104] drivers/scsi/mvsas/mv_sas.c
+>> 2111:phy2 Unplug Notice [ 2675.818051] drivers/scsi/mvsas/mv_sas.c
+>> 2083:port 2 ctrl sts=0x199800. [ 2675.818057] drivers/scsi/mvsas/mv_sas.c
+>> 2085:Port 2 irq sts = 0x1081 [ 2675.839505] drivers/scsi/mvsas/mv_sas.c
+>> 2083:port 2 ctrl sts=0x199800. [ 2675.839513] drivers/scsi/mvsas/mv_sas.c
+>> 2085:Port 2 irq sts = 0x10000 [ 2675.839519] drivers/scsi/mvsas/mv_sas.c
+>> 2138:notify plug in on phy[2] [ 2675.874139] drivers/scsi/mvsas/mv_sas.c
+>> 1224:port 2 attach dev info is 4 [ 2675.874139]
+>> drivers/scsi/mvsas/mv_sas.c 1226:port 2 attach sas addr is 2 [
+>> 2675.936683] drivers/scsi/mvsas/mv_sas.c 378:phy 2 byte dmaded.
+>> [ 2678.016055] drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for
+>> device[2]:rc= 0 [ 2678.016075] ata11: translated ATA stat/err 0x01/04 to
+>> SCSI SK/ASC/ASCQ 0xb/00/00 [ 2678.016706] ata11: status=0x01 { Error }
+>> [ 2678.017315] ata11: error=0x04 { DriveStatusError }
+>> [ 2678.017964] ata9: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ
+>> 0xb/00/00 [ 2678.018573] ata9: status=0x01 { Error }
+>> [ 2678.019175] ata9: error=0x04 { DriveStatusError }
 >>
->> Furthermore, the patch is missing support for the fixed uncore counter. It is
->> very useful as it allows measuring some reference cycles at the socket
->
-> Yes, I'll add fixed uncore counter and possibly also the uncore
-> address/opcode match thing.
->
-Good.
-
->> level. You have 8+1 counter total. You need to define some encoding
->> for UNC_CPU_CLK.
->
-> Could you explain a bit more? What's the encoding for UNC_CPU_CLK?
->
-Well, there is no encoding given it is a fixed counter. This is similar to
-the issue that exists today with core PMU and unhalted_reference_cycles
-vs unhalted_core_cycles for the fixed counters. Unfortunately, today you
-cannot name unhalted_reference_cycles. I'd like to have it because in
-many situations it is better than unhalted_core_cycles.
-
-You need to pick an encoding for this event so it can be named and
-passed in attr.config.
-
->> > 2. Uncore pmu NMI handling
->> >
->> > Every core in the socket can be programmed to receive uncore counter
->> > overflow interrupt.
->> >
->> > In this draft implementation, each core handles the overflow interrupt
->> > caused by the counters with bit set in "active_mask".
->> >
->> Seems like in your model, interrupting all cores is the only solution given
->> that you can program uncore events from any cores on the socket.
->
-> Do you see some potential problem with this model?
->
-You are interrupting other CPUs for potentially nothing. So you
-incur some overhead.
-
-But it may also be interesting to snapshot the IP across all CPUs
-to determine where they all are. In other words, use uncore PMU
-to get a global view of the cores and that's where UNC_CPU_CLK
-comes in handy.
-
-
-> And do you have some ideas about the issue I mentioned in PATCH 0/3?
-> Copy it here.
->
-> 4. Issues
->
-> How to eliminate the duplicate counter values accumulated by multi child
-> processes on the same socket?
-
-I think using uncore PMU to measure per-thread is pretty much useless.
-Maybe it should not even be allowed. There is no way you can correlate
-the counts you're getting to a place in your program. Or put differently,
-sampling in per-thread mode using uncore is useless.
-
-
-Given how perf works in system-wide mode, i.e., automatic aggregation
-you'll have the problem regardless of the mode. I think for uncore, you
-need to measure from only one core per socket. That's the only way to
-get the meaningful counts. You can do this explicitly using the -C mode.
-I believe the tool should print a warning or refuse to do it if you just
-pass -a (system-wide mode).
-
->
-> perf stat -e ru0101 -- make -j4
->
-> Assume the 4 "make" child processes are running on the same socket and
-> counting uncore raw event "0101", and the counter value read by them are
-> val0, val1, val2, val3.
->
-> Then the final counter result given by "perf stat" will be "val0 + val1
-> + val2 + val3".
->
-> But this is obvious wrong, because the uncore counter is shared by all
-> cores in the socket, so the final result should not be accumulated.
->
-> Many thanks,
-> Lin Ming
->
+>> I did not unplug a disk, the errors seem to be spurious.
 >>
+>> Otherwise though things seem to be working. At least so far. The
+>> mv_abort_task part is very familiar, the older version of this driver
+>> would do it right after attempting to build/activate the md raid5 array
+>> that lives on this controller. Except the controller would lock up, and
+>> all drives would become inaccessible.
 >>
->> > ---
->> >  arch/x86/include/asm/msr-index.h              |    1 +
->> >  arch/x86/kernel/cpu/perf_event.c              |    7 +-
->> >  arch/x86/kernel/cpu/perf_event_intel_uncore.c |  280 +++++++++++++++++++++++++
->> >  arch/x86/kernel/cpu/perf_event_intel_uncore.h |   80 +++++++
->> >  4 files changed, 367 insertions(+), 1 deletions(-)
->> >  create mode 100644 arch/x86/kernel/cpu/perf_event_intel_uncore.c
->> >  create mode 100644 arch/x86/kernel/cpu/perf_event_intel_uncore.h
->> >
->> > diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
->> > index 3ea3dc4..816fb4b 100644
->> > --- a/arch/x86/include/asm/msr-index.h
->> > +++ b/arch/x86/include/asm/msr-index.h
->> > @@ -81,6 +81,7 @@
->> >  #define DEBUGCTLMSR_BTS_OFF_OS         (1UL <<  9)
->> >  #define DEBUGCTLMSR_BTS_OFF_USR                (1UL << 10)
->> >  #define DEBUGCTLMSR_FREEZE_LBRS_ON_PMI (1UL << 11)
->> > +#define DEBUGCTLMSR_ENABLE_UNCORE_PMI  (1UL << 13)
->> >
->> >  #define MSR_IA32_MC0_CTL               0x00000400
->> >  #define MSR_IA32_MC0_STATUS            0x00000401
->> > diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
->> > index 7cea0f4..cca07b4 100644
->> > --- a/arch/x86/kernel/cpu/perf_event.c
->> > +++ b/arch/x86/kernel/cpu/perf_event.c
->> > @@ -1215,6 +1215,8 @@ struct pmu_nmi_state {
->> >
->> >  static DEFINE_PER_CPU(struct pmu_nmi_state, pmu_nmi);
->> >
->> > +static int uncore_pmu_handle_irq(struct pt_regs *regs);
->> > +
->> >  static int __kprobes
->> >  perf_event_nmi_handler(struct notifier_block *self,
->> >                         unsigned long cmd, void *__args)
->> > @@ -1249,7 +1251,8 @@ perf_event_nmi_handler(struct notifier_block *self,
->> >
->> >        apic_write(APIC_LVTPC, APIC_DM_NMI);
->> >
->> > -       handled = x86_pmu.handle_irq(args->regs);
->> > +       handled = uncore_pmu_handle_irq(args->regs);
->> > +       handled += x86_pmu.handle_irq(args->regs);
->> >        if (!handled)
->> >                return NOTIFY_DONE;
->> >
->> > @@ -1305,6 +1308,7 @@ x86_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
->> >  #include "perf_event_intel_lbr.c"
->> >  #include "perf_event_intel_ds.c"
->> >  #include "perf_event_intel.c"
->> > +#include "perf_event_intel_uncore.c"
->> >
->> >  static int __cpuinit
->> >  x86_pmu_notifier(struct notifier_block *self, unsigned long action, void *hcpu)
->> > @@ -1360,6 +1364,7 @@ void __init init_hw_perf_events(void)
->> >
->> >        switch (boot_cpu_data.x86_vendor) {
->> >        case X86_VENDOR_INTEL:
->> > +               init_uncore_pmu();
->> >                err = intel_pmu_init();
->> >                break;
->> >        case X86_VENDOR_AMD:
->> > diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
->> > new file mode 100644
->> > index 0000000..fafa0f9
->> > --- /dev/null
->> > +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
->> > @@ -0,0 +1,280 @@
->> > +#include "perf_event_intel_uncore.h"
->> > +
->> > +static struct node_hw_events uncore_events[MAX_NUMNODES];
->> > +static DEFINE_PER_CPU(struct uncore_cpu_hw_events, uncore_cpu_hw_events);
->> > +static bool uncore_pmu_initialized;
->> > +
->> > +static void uncore_pmu_enable_event(struct perf_event *event)
->> > +{
->> > +       struct hw_perf_event *hwc = &event->hw;
->> > +
->> > +       wrmsrl(hwc->config_base + hwc->idx, hwc->config | UNCORE_EVENTSEL_ENABLE);
->> > +}
->> > +
->> > +static void uncore_pmu_disable_event(struct perf_event *event)
->> > +{
->> > +       struct hw_perf_event *hwc = &event->hw;
->> > +
->> > +       wrmsrl(hwc->config_base + hwc->idx, hwc->config);
->> > +}
->> > +
->> > +static void uncore_pmu_disable_events(void)
->> > +{
->> > +       struct uncore_cpu_hw_events *cpuc = &__get_cpu_var(uncore_cpu_hw_events);
->> > +       int node = numa_node_id();
->> > +       int bit;
->> > +
->> > +       for_each_set_bit(bit, cpuc->active_mask, UNCORE_NUM_COUNTERS)
->> > +               uncore_pmu_disable_event(uncore_events[node].events[bit]);
->> > +}
->> > +
->> > +static void uncore_pmu_enable_events(void)
->> > +{
->> > +       struct uncore_cpu_hw_events *cpuc = &__get_cpu_var(uncore_cpu_hw_events);
->> > +       int node = numa_node_id();
->> > +       int bit;
->> > +
->> > +       for_each_set_bit(bit, cpuc->active_mask, UNCORE_NUM_COUNTERS)
->> > +               uncore_pmu_disable_event(uncore_events[node].events[bit]);
->> > +}
->> > +
->> > +static void uncore_pmu_global_enable(void)
->> > +{
->> > +       u64 ctrl;
->> > +
->> > +       /* (0xFULL << 48): all 4 cores will receive NMI */
->> > +       ctrl = ((1 << UNCORE_NUM_COUNTERS) - 1) | (0xFULL << 48);
->> > +
->> > +       wrmsrl(MSR_UNCORE_PERF_GLOBAL_CTRL, ctrl);
->> > +}
->> > +
->> > +static void uncore_perf_event_destroy(struct perf_event *event)
->> > +{
->> > +       atomic_dec(&active_events);
->> > +}
->> > +
->> > +static int uncore_pmu_event_init(struct perf_event *event)
->> > +{
->> > +       struct hw_perf_event *hwc = &event->hw;
->> > +
->> > +       if (!uncore_pmu_initialized)
->> > +               return -ENOENT;
->> > +
->> > +       switch (event->attr.type) {
->> > +       case PERF_TYPE_UNCORE:
->> > +               break;
->> > +
->> > +       default:
->> > +               return -ENOENT;
->> > +       }
->> > +
->> > +       atomic_inc(&active_events);
->> > +
->> > +       event->destroy = uncore_perf_event_destroy;
->> > +
->> > +       hwc->idx = -1;
->> > +       hwc->config = (event->attr.config & UNCORE_RAW_EVENT_MASK) | UNCORE_EVENTSEL_PMI;
->> > +       hwc->config_base = MSR_UNCORE_PERFEVTSEL0;
->> > +       hwc->event_base = MSR_UNCORE_PMC0;
->> > +
->> > +       return 0;
->> > +}
->> > +
->> > +static void uncore_pmu_start(struct perf_event *event, int flags)
->> > +{
->> > +       if (flags & PERF_EF_RELOAD)
->> > +               x86_perf_event_set_period(event);
->> > +
->> > +       uncore_pmu_enable_event(event);
->> > +
->> > +       perf_event_update_userpage(event);
->> > +}
->> > +
->> > +static void uncore_pmu_stop(struct perf_event *event, int flags)
->> > +{
->> > +       struct uncore_cpu_hw_events *cpuc = &__get_cpu_var(uncore_cpu_hw_events);
->> > +       struct hw_perf_event *hwc = &event->hw;
->> > +
->> > +       if (__test_and_clear_bit(hwc->idx, cpuc->active_mask))
->> > +               uncore_pmu_disable_event(event);
->> > +
->> > +       if (flags & PERF_EF_UPDATE)
->> > +               x86_perf_event_update(event, UNCORE_CNTVAL_BITS);
->> > +}
->> > +
->> > +static int uncore_pmu_add(struct perf_event *event, int flags)
->> > +{
->> > +       struct uncore_cpu_hw_events *cpuc = &__get_cpu_var(uncore_cpu_hw_events);
->> > +       int node = numa_node_id();
->> > +       int ret = 1;
->> > +       int i;
->> > +       u64 ctrl;
->> > +
->> > +       spin_lock(&uncore_events[node].lock);
->> > +
->> > +       for (i = 0; i < UNCORE_NUM_COUNTERS; i++) {
->> > +               if (!uncore_events[node].events[i]) {
->> > +                       uncore_events[node].events[i] = event;
->> > +                       uncore_events[node].n_events++;
->> > +
->> > +                       event->hw.idx = i;
->> > +                       __set_bit(i, cpuc->active_mask);
->> > +                       if (flags & PERF_EF_START)
->> > +                               uncore_pmu_start(event, PERF_EF_RELOAD);
->> > +                       ret = 0;
->> > +                       break;
->> > +               }
->> > +       }
->> > +
->> > +       /*
->> > +        * PMI delivery due to an uncore counter overflow is enabled by
->> > +        * setting IA32_DEBUG_CTL.Offcore_PMI_EN to 1.
->> > +        */
->> > +       if (uncore_events[node].n_events == 1) {
->> > +               rdmsrl(MSR_IA32_DEBUGCTLMSR, ctrl);
->> > +               wrmsrl(MSR_IA32_DEBUGCTLMSR, ctrl | DEBUGCTLMSR_ENABLE_UNCORE_PMI);
->> > +       }
->> > +
->> > +       if (unlikely(!uncore_events[node].enabled)) {
->> > +               uncore_pmu_global_enable();
->> > +               uncore_events[node].enabled = 1;
->> > +       }
->> > +
->> > +       spin_unlock(&uncore_events[node].lock);
->> > +
->> > +       return ret;
->> > +}
->> > +
->> > +static void uncore_pmu_del(struct perf_event *event, int flags)
->> > +{
->> > +       int node = numa_node_id();
->> > +       struct hw_perf_event *hwc = &event->hw;
->> > +       int i;
->> > +
->> > +       spin_lock(&uncore_events[node].lock);
->> > +
->> > +       for (i = 0; i < UNCORE_NUM_COUNTERS; i++) {
->> > +               if (uncore_events[node].events[i] == event) {
->> > +                       uncore_events[node].events[hwc->idx] = NULL;
->> > +                       uncore_events[node].n_events--;
->> > +
->> > +                       uncore_pmu_stop(event, PERF_EF_UPDATE);
->> > +                       break;
->> > +               }
->> > +       }
->> > +
->> > +       spin_unlock(&uncore_events[node].lock);
->> > +}
->> > +
->> > +static void uncore_pmu_read(struct perf_event *event)
->> > +{
->> > +       x86_perf_event_update(event, UNCORE_CNTVAL_BITS);
->> > +}
->> > +
->> > +static struct pmu uncore_pmu = {
->> > +       .event_init     = uncore_pmu_event_init,
->> > +       .add            = uncore_pmu_add,
->> > +       .del            = uncore_pmu_del,
->> > +       .start          = uncore_pmu_start,
->> > +       .stop           = uncore_pmu_stop,
->> > +       .read           = uncore_pmu_read,
->> > +};
->> > +
->> > +
->> > +static inline u64 uncore_pmu_get_status(void)
->> > +{
->> > +       struct uncore_cpu_hw_events *cpuc = &__get_cpu_var(uncore_cpu_hw_events);
->> > +       u64 status;
->> > +
->> > +       rdmsrl(MSR_UNCORE_PERF_GLOBAL_STATUS, status);
->> > +
->> > +       return status & (*(u64 *)cpuc->active_mask |
->> > +               MSR_UNCORE_PERF_GLOBAL_STATUS_OVF_PMI | MSR_UNCORE_PERF_GLOBAL_STATUS_CHG);
->> > +}
->> > +
->> > +static inline void uncore_pmu_ack_status(u64 ack)
->> > +{
->> > +       wrmsrl(MSR_UNCORE_PERF_GLOBAL_OVF_CTRL, ack);
->> > +}
->> > +
->> > +static int uncore_pmu_save_and_restart(struct perf_event *event)
->> > +{
->> > +       x86_perf_event_update(event, UNCORE_CNTVAL_BITS);
->> > +       return x86_perf_event_set_period(event);
->> > +}
->> > +
->> > +int uncore_pmu_handle_irq(struct pt_regs *regs)
->> > +{
->> > +       struct perf_sample_data data;
->> > +       struct node_hw_events *uncore_node;
->> > +       int node;
->> > +       int bit;
->> > +       u64 status;
->> > +       int handled = 0;
->> > +
->> > +       perf_sample_data_init(&data, 0);
->> > +
->> > +       node = numa_node_id();
->> > +       uncore_node = &uncore_events[node];
->> > +
->> > +       status = uncore_pmu_get_status();
->> > +       if (!status) {
->> > +               apic_write(APIC_LVTPC, APIC_DM_NMI);
->> > +
->> > +               return 1;
->> > +       }
->> > +
->> > +       uncore_pmu_disable_events();
->> > +again:
->> > +       uncore_pmu_ack_status(status);
->> > +
->> > +       for_each_set_bit(bit, (unsigned long *)&status, UNCORE_NUM_COUNTERS) {
->> > +               struct perf_event *event = uncore_node->events[bit];
->> > +
->> > +               handled++;
->> > +
->> > +               if (!uncore_pmu_save_and_restart(event))
->> > +                       continue;
->> > +
->> > +               data.period = event->hw.last_period;
->> > +
->> > +               if (perf_event_overflow(event, 1, &data, regs))
->> > +                       uncore_pmu_stop(event, 0);
->> > +       }
->> > +
->> > +       /*
->> > +        * Repeat if there is more work to be done:
->> > +        */
->> > +       status = uncore_pmu_get_status();
->> > +       if (status)
->> > +               goto again;
->> > +
->> > +       uncore_pmu_enable_events();
->> > +       return handled;
->> > +}
->> > +
->> > +void __init init_uncore_pmu(void)
->> > +{
->> > +       union cpuid01_eax eax;
->> > +       unsigned int unused;
->> > +       unsigned int model;
->> > +       int i;
->> > +
->> > +       if (boot_cpu_data.x86_vendor != X86_VENDOR_INTEL)
->> > +               return;
->> > +
->> > +       cpuid(1, &eax.full, &unused, &unused, &unused);
->> > +
->> > +       /* Check CPUID signatures: 06_1AH, 06_1EH, 06_1FH */
->> > +       model = eax.split.model | (eax.split.ext_model << 4);
->> > +       if (eax.split.family != 6 || (model != 0x1A && model != 0x1E && model != 0x1F))
->> > +               return;
->> > +
->> > +       pr_cont("Nehalem uncore pmu, \n");
->> > +
->> > +       for (i = 0; i < MAX_NUMNODES; i++)
->> > +               spin_lock_init(&uncore_events[i].lock);
->> > +
->> > +       perf_pmu_register(&uncore_pmu);
->> > +       uncore_pmu_initialized = true;
->> > +}
->> > diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
->> > new file mode 100644
->> > index 0000000..33b9b5e
->> > --- /dev/null
->> > +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
->> > @@ -0,0 +1,80 @@
->> > +#include <linux/perf_event.h>
->> > +#include <linux/capability.h>
->> > +#include <linux/notifier.h>
->> > +#include <linux/hardirq.h>
->> > +#include <linux/kprobes.h>
->> > +#include <linux/module.h>
->> > +#include <linux/kdebug.h>
->> > +#include <linux/sched.h>
->> > +#include <linux/uaccess.h>
->> > +#include <linux/slab.h>
->> > +#include <linux/highmem.h>
->> > +#include <linux/cpu.h>
->> > +#include <linux/bitops.h>
->> > +
->> > +#include <asm/apic.h>
->> > +#include <asm/stacktrace.h>
->> > +#include <asm/nmi.h>
->> > +#include <asm/compat.h>
->> > +
->> > +#define MSR_UNCORE_PERF_GLOBAL_CTRL    0x391
->> > +#define MSR_UNCORE_PERF_GLOBAL_STATUS  0x392
->> > +#define MSR_UNCORE_PERF_GLOBAL_OVF_CTRL        0x393
->> > +#define MSR_UNCORE_FIXED_CTR0          0x394
->> > +#define MSR_UNCORE_FIXED_CTR_CTRL      0x395
->> > +#define MSR_UNCORE_ADDR_OPCODE_MATCH   0x396
->> > +
->> > +#define MSR_UNCORE_PERF_GLOBAL_CTRL_PMI_CORE0 (1ULL << 48)
->> > +#define MSR_UNCORE_PERF_GLOBAL_CTRL_PMI_FRZ (1ULL << 63)
->> > +
->> > +#define MSR_UNCORE_PERF_GLOBAL_STATUS_OVF_PMI  (1ULL << 61)
->> > +#define MSR_UNCORE_PERF_GLOBAL_STATUS_CHG       (1ULL << 63)
->> > +
->> > +#define MSR_UNCORE_PMC0                        0x3b0
->> > +
->> > +#define MSR_UNCORE_PERFEVTSEL0         0x3c0
->> > +
->> > +#define UNCORE_EVENTSEL_EVENT                  0x000000FFULL
->> > +#define UNCORE_EVENTSEL_UMASK                  0x0000FF00ULL
->> > +#define UNCORE_EVENTSEL_OCC_CTR_RST            (1ULL << 17)
->> > +#define UNCORE_EVENTSEL_EDGE                   (1ULL << 18)
->> > +#define UNCORE_EVENTSEL_PMI                    (1ULL << 20)
->> > +#define UNCORE_EVENTSEL_ENABLE                 (1ULL << 22)
->> > +#define UNCORE_EVENTSEL_INV                    (1ULL << 23)
->> > +#define UNCORE_EVENTSEL_CMASK                  0xFF000000ULL
->> > +
->> > +#define UNCORE_RAW_EVENT_MASK          \
->> > +       (UNCORE_EVENTSEL_EVENT |        \
->> > +        UNCORE_EVENTSEL_UMASK |        \
->> > +        UNCORE_EVENTSEL_EDGE  |        \
->> > +        UNCORE_EVENTSEL_INV   |        \
->> > +        UNCORE_EVENTSEL_CMASK)
->> > +
->> > +#define UNCORE_CNTVAL_BITS     48
->> > +
->> > +#define UNCORE_NUM_COUNTERS 8
->> > +
->> > +union cpuid01_eax {
->> > +       struct {
->> > +               unsigned int stepping:4;
->> > +               unsigned int model:4;
->> > +               unsigned int family:4;
->> > +               unsigned int type:2;
->> > +               unsigned int reserve:2;
->> > +               unsigned int ext_model:4;
->> > +               unsigned int ext_family:4;
->> > +       } split;
->> > +       unsigned int full;
->> > +};
->> > +
->> > +struct node_hw_events {
->> > +       struct perf_event *events[UNCORE_NUM_COUNTERS]; /* in counter order */
->> > +       int n_events;
->> > +       struct spinlock lock;
->> > +       int enabled;
->> > +};
->> > +
->> > +struct uncore_cpu_hw_events {
->> > +       unsigned long active_mask[BITS_TO_LONGS(UNCORE_NUM_COUNTERS)];
->> > +};
->> > +
->> > --
->> > 1.7.1
->> >
->> >
->> >
->> >
->> >
+>> I'm going to attempt to grow this array today, so long as the xfs_fsr that
+>> I started doesn't cause the array to fail.
+>>
+>> If I keep getting mv_abort_task errors, I'll have to back down to the copy
+>> of the driver I got from Andy Yan. I've managed to patch it up to compile
+>> for 2.6.36 just now, I just hope it'll work at least as well as it did
+>> with 2.6.34. At the very least I didn't get these errors.
+>>
+>> Some background, the disks attached to the card are (5) Seagate 7200.12 1TB
+>> disks, using SAS->SATA cables. Machine is a amd64 Phenom II X4 810 w/4G
+>> ram running debian sid and a vanila 2.6.36 kernel. The card is a
+>> AOC-SASLP-MV8, according to lspci:
+>>
+>> 04:00.0 SCSI storage controller: Marvell Technology Group Ltd.
+>> MV64460/64461/64462 System Controller, Revision B (rev 01)
+>>
+>> according to dmesg:
+>>
+>> [ � �2.819325] mvsas 0000:04:00.0: mvsas: driver version 0.8.2
+>> [ � �2.819394] mvsas 0000:04:00.0: PCI INT A -> GSI 19 (level, low) -> IRQ
+>> 19 [ � �2.819454] mvsas 0000:04:00.0: setting latency timer to 64
+>> [ � �2.820952] mvsas 0000:04:00.0: mvsas: PCI-E x4, Bandwidth Usage: 2.5
+>> Gbps [ � �7.203222] drivers/scsi/mvsas/mv_sas.c 1224:port 0 attach dev
+>> info is 0 [ � �7.203225] drivers/scsi/mvsas/mv_sas.c 1226:port 0 attach
+>> sas addr is 0 [ � �7.403220] drivers/scsi/mvsas/mv_sas.c 1224:port 1
+>> attach dev info is 0 [ � �7.403223] drivers/scsi/mvsas/mv_sas.c 1226:port
+>> 1 attach sas addr is 1 [ � �7.603221] drivers/scsi/mvsas/mv_sas.c
+>> 1224:port 2 attach dev info is 4 [ � �7.603223]
+>> drivers/scsi/mvsas/mv_sas.c 1226:port 2 attach sas addr is 2 [
+>> 7.803221] drivers/scsi/mvsas/mv_sas.c 1224:port 3 attach dev info is
+>> 2000000 [ � �7.803224] drivers/scsi/mvsas/mv_sas.c 1226:port 3 attach sas
+>> addr is 3 [ � �7.904015] drivers/scsi/mvsas/mv_sas.c 1224:port 4 attach
+>> dev info is 0 [ � �7.904018] drivers/scsi/mvsas/mv_sas.c 1226:port 4
+>> attach sas addr is 0 [ � �8.008014] drivers/scsi/mvsas/mv_sas.c 1224:port
+>> 5 attach dev info is 0 [ � �8.008017] drivers/scsi/mvsas/mv_sas.c
+>> 1226:port 5 attach sas addr is 0 [ � �8.112014]
+>> drivers/scsi/mvsas/mv_sas.c 1224:port 6 attach dev info is 0 [
+>> 8.112016] drivers/scsi/mvsas/mv_sas.c 1226:port 6 attach sas addr is 0 [
+>> �8.315223] drivers/scsi/mvsas/mv_sas.c 1224:port 7 attach dev info is
+>> 4000000 [ � �8.315226] drivers/scsi/mvsas/mv_sas.c 1226:port 7 attach sas
+>> addr is 7 [ � �8.315230] scsi8 : mvsas
+>> [ � �8.315620] drivers/scsi/mvsas/mv_sas.c 378:phy 0 byte dmaded.
+>> [ � �8.315624] drivers/scsi/mvsas/mv_sas.c 378:phy 1 byte dmaded.
+>> [ � �8.315628] drivers/scsi/mvsas/mv_sas.c 378:phy 2 byte dmaded.
+>> [ � �8.315632] drivers/scsi/mvsas/mv_sas.c 378:phy 3 byte dmaded.
+>> [ � �8.315636] drivers/scsi/mvsas/mv_sas.c 378:phy 7 byte dmaded.
+>> [ � �8.316762] drivers/scsi/mvsas/mv_sas.c 1388:found dev[0:5] is gone.
+>> [ � �8.384626] drivers/scsi/mvsas/mv_sas.c 1388:found dev[1:5] is gone.
+>> [ � �8.452444] drivers/scsi/mvsas/mv_sas.c 1388:found dev[2:5] is gone.
+>> [ � �8.520181] drivers/scsi/mvsas/mv_sas.c 1388:found dev[3:5] is gone.
+>> [ � �8.523810] drivers/scsi/mvsas/mv_sas.c 1388:found dev[4:5] is gone.
+>>
+>> I just hope the raid5 reshape I'm about to do doesn't crap its pants
+>> because of the errors above.
+>>
+>> I'd like to help test any fixes or changes if needed. Let me know.
+>>
+>> Thanks again.
 >
+> After a couple days of uptime, the messages are still happening:
 >
+> [175665.888045] drivers/scsi/mvsas/mv_sas.c 1703:<7>mv_abort_task() mvi=ffff880123b00000 task=ffff88010e77e000 slot=ffff880123b26680 slot_idx=x4
+> [175665.888059] drivers/scsi/mvsas/mv_sas.c 1632:mvs_query_task:rc= 5
+> [175665.888086] drivers/scsi/mvsas/mv_sas.c 2083:port 0 ctrl sts=0x89800.
+> [175665.888092] drivers/scsi/mvsas/mv_sas.c 2085:Port 0 irq sts = 0x1001
+> [175665.888103] drivers/scsi/mvsas/mv_sas.c 2111:phy0 Unplug Notice
+> [175665.898053] drivers/scsi/mvsas/mv_sas.c 2083:port 0 ctrl sts=0x199800.
+> [175665.898061] drivers/scsi/mvsas/mv_sas.c 2085:Port 0 irq sts = 0x1081
+> [175665.919498] drivers/scsi/mvsas/mv_sas.c 2083:port 0 ctrl sts=0x199800.
+> [175665.919501] drivers/scsi/mvsas/mv_sas.c 2085:Port 0 irq sts = 0x10000
+> [175665.919503] drivers/scsi/mvsas/mv_sas.c 2138:notify plug in on phy[0]
+> [175666.018302] drivers/scsi/mvsas/mv_sas.c 1224:port 0 attach dev info is 0
+> [175666.018302] drivers/scsi/mvsas/mv_sas.c 1226:port 0 attach sas addr is 0
+> [175666.028291] drivers/scsi/mvsas/mv_sas.c 378:phy 0 byte dmaded.
+> [175668.096048] drivers/scsi/mvsas/mv_sas.c 1586:mvs_I_T_nexus_reset for device[0]:rc= 0
+> [175668.096066] ata9: translated ATA stat/err 0x01/04 to SCSI SK/ASC/ASCQ 0xb/00/00
+> [175668.096739] ata9.00: device reported invalid CHS sector 0
+> [175668.097379] ata9: status=0x01 { Error }
+> [175668.098022] ata9: error=0x04 { DriveStatusError }
+>
+> No fatal errors yet.
+>
+> --
+> Thomas Fjellstrom
+> thomas@fjellstrom.ca
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at �http://vger.kernel.org/majordomo-info.html
 >
