@@ -1,53 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752468Ab0KAXy5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 19:54:57 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:43395 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751093Ab0KAXyy (ORCPT
+	id S1752785Ab0KBACJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 20:02:09 -0400
+Received: from bld-mail16.adl2.internode.on.net ([150.101.137.101]:38763 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751069Ab0KBACI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 19:54:54 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
-Message-ID: <4CCF53A9.1060306@np.css.fujitsu.com>
-Date: Tue, 02 Nov 2010 08:56:25 +0900
-From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+	Mon, 1 Nov 2010 20:02:08 -0400
+Date: Tue, 2 Nov 2010 11:01:52 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 3/3] fs: rcu protect inode hash lookups
+Message-ID: <20101102000152.GO2715@dastard>
+References: <1288589624-15251-1-git-send-email-david@fromorbit.com>
+ <1288589624-15251-4-git-send-email-david@fromorbit.com>
+ <1288604287.2660.94.camel@edumazet-laptop>
+ <20101101134451.GN2715@dastard>
+ <1288625362.2660.108.camel@edumazet-laptop>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "H.Peter Anvin" <hpa@zytor.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        LKLM <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] [x86, next] Add mce_sys_info interface for debug.
-References: <4CCA50AF.1030302@np.css.fujitsu.com> <20101029081003.GB11149@basil.fritz.box> <4CCE04C7.3050803@np.css.fujitsu.com> <20101101140057.GD25817@basil.fritz.box>
-In-Reply-To: <20101101140057.GD25817@basil.fritz.box>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1288625362.2660.108.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Andi
-(2010/11/01 23:00), Andi Kleen wrote:
-> On Mon, Nov 01, 2010 at 09:07:35AM +0900, Jin Dongming wrote:
->> Hi, Andi
->>
->> Thanks for your review.
->> I will cancel this patch.
->>
->> But I suggested there is such kind of tool for mce test.
->> It really costs too much time to confirm them one by one.
+On Mon, Nov 01, 2010 at 04:29:22PM +0100, Eric Dumazet wrote:
+> Le mardi 02 novembre 2010 à 00:44 +1100, Dave Chinner a écrit :
 > 
-> I would suggest to write a shell script and put it to download
-> somewhere. We could add a reference to it to the kernel documentation.
+> > Perhaps you should rename that file "slab_destroy_by_rcu-tips.txt",
+> > because the current name seems unrelated to the contents. :/
+> > 
 > 
-> -Andi
+> Hmm, I dont know, this doc really is about the nulls thing.
 
-It sounds great.
-Thank you.
+Ok, now I understand - there's a new list type that I didn't know
+about called hlist_nulls. not surprising - it's not documented
+anywhere.
 
-Best Regards,
-Jin Dongming
- 
+Maybe explicitly describing what the list_null pattern іs or a
+pointer to linux/include/list_nulls.h might be appropriate, because
+I managed to read that documentation and not realise that it was
+refering to a specific type of list that was already implemented
+rather than a simple marker technique.
 
+> This stuff also addressed one problem I forgot to tell you about: During
+> a lookup, you might find an item that is moved to another chain by
+> another cpu, so your lookup is redirected to another chain. You can miss
+> your target.
 
+<groan>
+
+So, to go to per-chain locks as per the proposed bit-lock-on-the-
+low-bit-of-the-head-pointer infrastructure, we'll have to cross that
+with the hlist_null code that plays low-bit pointer games for
+detecting the end of the chain.
+
+That's just messy - another hash chain specific scalability hackup.
+My dislike of using hash tables for unbounded caches is not
+improved by this....
+
+> You must find a way to detect such thing to restart the lookup at
+> the beginning (of the right chain).  Either you stick the chain
+> number in a new inode field (that costs extra memory), or you use
+> the 'nulls' value that can let you know if you ended your lookup
+> in the right chain.
+
+The chain is determined by hashing the inode number. Perhaps a
+simple enough test is to hash the last inode number on a cache miss
+and if that doesn't match the hash of the lookup key we redo the
+search. That seems to me like it will avoid needing to play games
+with termination markers - does that sound reasonable?
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
