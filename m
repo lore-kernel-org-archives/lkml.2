@@ -1,112 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932355Ab0KBE1s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 00:27:48 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:59780 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932350Ab0KBE1m convert rfc822-to-8bit (ORCPT
+	id S933486Ab0KBEqf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 00:46:35 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:40938 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933443Ab0KBEq3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 00:27:42 -0400
+	Tue, 2 Nov 2010 00:46:29 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=BL4HWbcdlc29/wxP6IYxhEGS4m0sPJ4nnpaLLQOKeKyUjTjZigfJ/Xi18Ateow2CyA
-         UgK7YiWMxwXUjnhp+MR/rQ3uF3t6Bdw4aeEEvz7tOJPn9axArgUMKCCbvuWwzu2NgkpV
-         ylDHwVLorVZFh1uDc9WAyG1w4OLqlZUNaJizQ=
-MIME-Version: 1.0
-In-Reply-To: <1288668052-32036-1-git-send-email-bgamari.foss@gmail.com>
-References: <1288668052-32036-1-git-send-email-bgamari.foss@gmail.com>
-Date: Tue, 2 Nov 2010 13:27:41 +0900
-Message-ID: <AANLkTim0oHFehpJggt9c8PhSZpOZZA1Qz=h6rC5NjeCY@mail.gmail.com>
-Subject: Re: [PATCH] Add Kconfig option for default swappiness
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Ben Gamari <bgamari.foss@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=vQovzVquvrE1LwiBjatV03HjH2GoF4ZHFBsJzw/apWVbGLQlnjtOaYG9l3cAzU4qSm
+         +LgIEsYf7tcmIRJ3nm/vq9x1/CocFM4TE4/3rK+s+mxduMZkme2HcjnEvz7Le0k/9wfS
+         B+KxJA8U9brAzUvL4g+IYp7K3aQFKgZI7HqVM=
+Subject: Re: [PATCH 3/3] fs: rcu protect inode hash lookups
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20101102000152.GO2715@dastard>
+References: <1288589624-15251-1-git-send-email-david@fromorbit.com>
+	 <1288589624-15251-4-git-send-email-david@fromorbit.com>
+	 <1288604287.2660.94.camel@edumazet-laptop> <20101101134451.GN2715@dastard>
+	 <1288625362.2660.108.camel@edumazet-laptop> <20101102000152.GO2715@dastard>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 02 Nov 2010 05:46:15 +0100
+Message-ID: <1288673175.2660.141.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 2, 2010 at 12:20 PM, Ben Gamari <bgamari.foss@gmail.com> wrote:
-> This will allow distributions to tune this important vm parameter in a more
-> self-contained manner.
->
-> Signed-off-by: Ben Gamari <bgamari.foss@gmail.com>
-> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-> Acked-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
->  Documentation/sysctl/vm.txt |    2 +-
->  mm/Kconfig                  |   14 ++++++++++++++
->  mm/vmscan.c                 |    2 +-
->  3 files changed, 16 insertions(+), 2 deletions(-)
->
-> diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-> index 30289fa..d159d02 100644
-> --- a/Documentation/sysctl/vm.txt
-> +++ b/Documentation/sysctl/vm.txt
-> @@ -643,7 +643,7 @@ This control is used to define how aggressive the kernel will swap
->  memory pages.  Higher values will increase agressiveness, lower values
->  decrease the amount of swap.
->
-> -The default value is 60.
-> +The default value is 60 (changed with CONFIG_DEFAULT_SWAPINESS).
->
->  ==============================================================
->
-> diff --git a/mm/Kconfig b/mm/Kconfig
-> index c2c8a4a..dc23737 100644
-> --- a/mm/Kconfig
-> +++ b/mm/Kconfig
-> @@ -61,6 +61,20 @@ config SPARSEMEM_MANUAL
->
->  endchoice
->
-> +config DEFAULT_SWAPPINESS
-> +       int "Default swappiness"
-> +       default "60"
-> +       range 0 100
-> +       help
-> +         This control is used to define how aggressive the kernel will swap
-> +         memory pages.  Higher values will increase agressiveness, lower
-> +         values decrease the amount of swap. Valid values range from 0 to 100.
-> +
-> +         This only sets the default value at boot. Swappiness can be set at
-> +         runtime through /proc/sys/vm/swappiness.
-> +
-> +         If unsure, keep default value of 60.
-> +
->  config DISCONTIGMEM
->        def_bool y
->        depends on (!SELECT_MEMORY_MODEL && ARCH_DISCONTIGMEM_ENABLE) || DISCONTIGMEM_MANUAL
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index b8a6fdc..d9f5bba 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -133,7 +133,7 @@ struct scan_control {
->  /*
->  * From 0 .. 100.  Higher means more swappy.
->  */
-> -int vm_swappiness = 60;
-> +int vm_swappiness = CONFIG_DEFAULT_SWAPPINESS;
->  long vm_total_pages;   /* The total number of pages which the VM controls */
->
->  static LIST_HEAD(shrinker_list);
+Le mardi 02 novembre 2010 Ã  11:01 +1100, Dave Chinner a Ã©crit :
 
-Apparently, it wouldn't hurt maintain the kernel. But I have a concern.
-As someone think this parameter is very important and would be better
-to control by kernel config rather than init script to make the
-package, it would make new potential kernel configs by someone in
-future.
-But I can't convince my opinion myself. Because if there will be lots
-of kernel config for tuning parameters, could it hurt
-maintain/usability? I can't say "Yes" strongly. so I am not against
-this idea strongly.
-Hmm,,  Just pass the decision to others.
+> So, to go to per-chain locks as per the proposed bit-lock-on-the-
+> low-bit-of-the-head-pointer infrastructure, we'll have to cross that
+> with the hlist_null code that plays low-bit pointer games for
+> detecting the end of the chain.
+> 
 
--- 
-Kind regards,
-Minchan Kim
+So what, just use another bit for the lock, this still let 30 bit for
+the nulls value (62 bits on 64bit arches). Anyway, the bit lock is
+rejected by RT guys, so why do you still care ?
+
+
+> The chain is determined by hashing the inode number. Perhaps a
+> simple enough test is to hash the last inode number on a cache miss
+> and if that doesn't match the hash of the lookup key we redo the
+> search. That seems to me like it will avoid needing to play games
+> with termination markers - does that sound reasonable?
+> 
+
+Sure, if only the inode number is the key, it can be fetched in atomic
+way so it should be good, even without taking a stable reference on last
+item. It could be a problem if i_ino becomes a larger field...
+
+Note : you'll have to remember the last item i_ino in a variable, not to
+refetch it from a 'last item' pointer (this last item could also change
+its chain...)
+
+For TCP, hash key is a complex hash function of many fields needing to
+take a reference before computing it, this was not an option.
+
+
+
