@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753390Ab0KBOee (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 10:34:34 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:36741 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751713Ab0KBOe2 (ORCPT
+	id S1753467Ab0KBOfr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 10:35:47 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56255 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753417Ab0KBOfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 10:34:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=iJ39wXKLwAoG4pkeS2r34nEozEcvifcP1jmvKorv75dMSomvD/ymNPqWbNr8Hrljn9
-         xg/6Mubn9io2i/vxzqu8QSO2bpeje1o9pt9eEM6v7rLamPsn47oXAbwfJCwIJnYqhO7t
-         XeYa5wrC47NC9F66gR/dCg5X1OzW5e80dICYY=
+	Tue, 2 Nov 2010 10:35:39 -0400
+Date: Tue, 2 Nov 2010 10:35:35 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: linux-usb <linux-usb@vger.kernel.org>,
+        linux-main <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>, Felipe Balbi <balbi@ti.com>,
+        Greg KH <greg@kroah.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Hao Wu <hao.wu@intel.com>,
+        Alan Cox <alan@linux.intel.com>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Mike Rapoport <mike@compulab.co.il>
+Subject: Re: [PATCH v3 2/2] drivers: cleanup Kconfig stuff
+Message-ID: <20101102143534.GG21476@opensource.wolfsonmicro.com>
+References: <1288656853-4625-1-git-send-email-felipe.contreras@gmail.com>
+ <1288656853-4625-3-git-send-email-felipe.contreras@gmail.com>
+ <20101102131146.GA21476@opensource.wolfsonmicro.com>
+ <AANLkTim6E+e=D88C8g+YDVwS1D5JPeXvVRw-JVoVxh2i@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <87oca7evbo.fsf@gmail.com>
-References: <1288668052-32036-1-git-send-email-bgamari.foss@gmail.com>
-	<alpine.DEB.2.00.1011012030100.12298@chino.kir.corp.google.com>
-	<87oca7evbo.fsf@gmail.com>
-Date: Tue, 2 Nov 2010 23:34:27 +0900
-Message-ID: <AANLkTimDPdDHAg0Odp0WchOLKh3OUSOWX7_0ps8eizFk@mail.gmail.com>
-Subject: Re: [PATCH] Add Kconfig option for default swappiness
-From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-To: Ben Gamari <bgamari.foss@gmail.com>
-Cc: David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTim6E+e=D88C8g+YDVwS1D5JPeXvVRw-JVoVxh2i@mail.gmail.com>
+X-Cookie: Never give an inch!
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/11/2 Ben Gamari <bgamari.foss@gmail.com>:
-> On Mon, 1 Nov 2010 20:33:10 -0700 (PDT), David Rientjes <rientjes@google.com> wrote:
->> And they can't use an init script to tune /proc/sys/vm/swappiness
->> because...?
->
-> Packaging concerns, as I mentioned before,
->
-> On Mon, Nov 01, 2010 at 08:52:30AM -0400, Ben Gamari wrote:
->> Ubuntu ships different kernels for desktop and server usage. From a
->> packaging standpoint it would be much nicer to have this set in the
->> kernel configuration. If we were to throw the setting /etc/sysctl.conf
->> the kernel would depend upon the package containing sysctl(8)
->> (procps). We'd rather avoid this and keep the default kernel
->> configuration in one place.
->
-> In short, being able to specify this default in .config is just far
-> simpler from a packaging standpoint than the alternatives.
->
-Hmm, then, can't we add a sysctl template config/script for generic
-sysctl values ?
-Adding this kind of CONFIG one by one seems not very helpful...
+On Tue, Nov 02, 2010 at 04:02:18PM +0200, Felipe Contreras wrote:
+> On Tue, Nov 2, 2010 at 3:11 PM, Mark Brown
 
-Thanks,
--Kame
+> > This default is not suitable for non-OMAP platforms, it should be
+> > conditional on OMAP or something if we're going to do this (though
+> > generally we handle this with defconfigs rather than in Kconfig).
+
+> This would only be enabled when TWL4030_CORE is enabled, so non-OMAP
+> platforms would not get affected.
+
+TWL4030 can be enabled on other platforms - it's not tied to OMAP
+(mostly to enable build coverage).
+
+> I guess you have seen the complaint from Linus regarding ARM relying
+> too much on defconfigs. This helps in order to simplify defconfigs,
+> and eventually getting rid of them completely.
+
+This solution doesn't seem like it scales so well either, it just shifts
+it into the Kconfig files (where everything is all in central files
+shared by everyone which has its own problems).  Certainly the goal of
+replacing defconfig files with Kconfig seems unattainable.
