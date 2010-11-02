@@ -1,52 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752417Ab0KBM6d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 08:58:33 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:35340 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751081Ab0KBM61 (ORCPT
+	id S1752518Ab0KBNGJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 09:06:09 -0400
+Received: from ns1.dataart.com ([195.206.224.40]:61408 "EHLO
+	relay1.dataart.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750820Ab0KBNGC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 08:58:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:in-reply-to:references:user-agent:date
-         :message-id:mime-version:content-type;
-        b=IHTr4X9CB41bMaGaI0pRqI4TTDPS0sf2fPzy90wIST3k6LOgwrkLUEcFkjdwQw/Ydy
-         YY8vEgyZHMdORbABRF8DQN9FDuOoi6bNYN+s+85YAXOiTlgTrg6ZLITEvKa6kG7uadKj
-         M1j5ihorWuHU4VJxWJxtfbWXU/rxGbn9VZ/Mg=
-From: Ben Gamari <bgamari.foss@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: [PATCH] Add Kconfig option for default swappiness
-In-Reply-To: <alpine.DEB.2.00.1011012030100.12298@chino.kir.corp.google.com>
-References: <1288668052-32036-1-git-send-email-bgamari.foss@gmail.com> <alpine.DEB.2.00.1011012030100.12298@chino.kir.corp.google.com>
-User-Agent: Notmuch/0.3.1-158-g04cd99c (http://notmuchmail.org) Emacs/23.1.1 (x86_64-pc-linux-gnu)
-Date: Tue, 02 Nov 2010 08:58:19 -0400
-Message-ID: <87oca7evbo.fsf@gmail.com>
+	Tue, 2 Nov 2010 09:06:02 -0400
+From: Anton Chikin <Anton.Chikin@dataart.com>
+To: Jiri Kosina <jkosina@suse.cz>
+CC: "chatty@enac.fr" <chatty@enac.fr>, "spbnick@gmail.com" <spbnick@gmail.com>,
+        "anisse@astier.eu" <anisse@astier.eu>,
+        "cascardo@holoscopio.com" <cascardo@holoscopio.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Gregory Burmistrov <grig@dataart.com>,
+        Paul Osborn <Paul.Osborn@eu.panasonic.com>
+Date: Tue, 2 Nov 2010 16:05:54 +0300
+Subject: RE: [PATCH] hid: usbhid: New hid quirks for Panasonic Elite
+ Panaboard T-780 and T-880
+Thread-Topic: [PATCH] hid: usbhid: New hid quirks for Panasonic Elite
+ Panaboard T-780 and T-880
+Thread-Index: Act5+h5driK4u/BuSkm6Z9Y3EMqXjgAjnaCw
+Message-ID: <3BF066A8BAB61C43B779966CEE6D7FA018BC9E1A45@e6.universe.dart.spb>
+References: <1288169825-15422-1-git-send-email-Anton.Chikin@dataart.com>
+ <alpine.LNX.2.00.1010291453460.6879@pobox.suse.cz>
+ <3BF066A8BAB61C43B779966CEE6D7FA018BC9E19F2@e6.universe.dart.spb>
+ <alpine.LNX.2.00.1011011522120.15851@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1011011522120.15851@pobox.suse.cz>
+Accept-Language: ru-RU
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ru-RU
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Nov 2010 20:33:10 -0700 (PDT), David Rientjes <rientjes@google.com> wrote:
-> And they can't use an init script to tune /proc/sys/vm/swappiness 
-> because...?
+Hello Jiri,
 
-Packaging concerns, as I mentioned before,
+Thank you for your feedback.
 
-On Mon, Nov 01, 2010 at 08:52:30AM -0400, Ben Gamari wrote:
-> Ubuntu ships different kernels for desktop and server usage. From a
-> packaging standpoint it would be much nicer to have this set in the
-> kernel configuration. If we were to throw the setting /etc/sysctl.conf
-> the kernel would depend upon the package containing sysctl(8)
-> (procps). We'd rather avoid this and keep the default kernel
-> configuration in one place.
+With the generic hid driver device is working in mouse-mode, turning it into the huge touchscreen, which is completely useless for the end-user.
 
-In short, being able to specify this default in .config is just far
-simpler from a packaging standpoint than the alternatives.
+Moreover, the device has internal modes(mouse mode and touch mode) which we need to switch during work.
 
-- Ben
+On some Linux systems hid driver is loaded from init.rd image, so we can't feed our quirks to it while boot process and we can't rebuild init.rd image on the user's machine because some Linux distributives doesn't have special tools preinstalled.
 
+We are going to submit our driver to the Linux kernel quickly, so everyone can improve it.
+
+Any comments and suggestions are greatly appreciated.
+
+With best regards,
+Anton Chikin
+
+
+-----Original Message-----
+From: Jiri Kosina [mailto:jkosina@suse.cz] 
+Sent: Monday, November 01, 2010 10:22 PM
+To: Anton Chikin
+Cc: chatty@enac.fr; spbnick@gmail.com; anisse@astier.eu; cascardo@holoscopio.com; linux-input@vger.kernel.org; linux-kernel@vger.kernel.org; linux-usb@vger.kernel.org; Gregory Burmistrov; Paul Osborn
+Subject: RE: [PATCH] hid: usbhid: New hid quirks for Panasonic Elite Panaboard T-780 and T-880
+
+On Fri, 29 Oct 2010, Anton Chikin wrote:
+
+> Hello Jiri,
+> 
+> Panasonic Elite Panaboard UB-T780 is a touchscreen whiteboard. It uses 
+> projector to present PC's screen onto the board. So we need to calibrate 
+> it according to the projector's position and apply calibration data 
+> inside our driver.
+> 
+> There is no other driver for this device. I'm working directly for 
+> Panasonic on this driver.
+> 
+> Is this nice for changelog comment?
+
+If the device is 'working' properly with the generic driver, "only" not 
+properly calibrated, I wouldn't really like to blacklist it completely.
+
+It might impose regression for those users who have written their own 
+userspace calibration, for example.
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
