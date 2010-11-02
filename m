@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751182Ab0KBI1G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 04:27:06 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:36996 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966Ab0KBI1A (ORCPT
+	id S1751298Ab0KBIaU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 04:30:20 -0400
+Received: from mail-yx0-f194.google.com ([209.85.213.194]:49224 "EHLO
+	mail-yx0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751208Ab0KBIaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 04:27:00 -0400
+	Tue, 2 Nov 2010 04:30:14 -0400
+X-Greylist: delayed 2858 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Nov 2010 04:30:14 EDT
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:reply-to:date:message-id:subject:from:to:content-type;
-        b=dsVD10+SspiMNnptFDs2MLo5JoxvOOvX3Bd8Zfb6KxlG58ehaK4LRUvLB9kfaz0fHa
-         1S25M8gTUXolbEYJDf+L0w6nRVEY+vmc69o00XJDKHgev3eIs1HYyiaTxlBO3azpLINw
-         SqbQgRTtrmkHRob/P9a7kiCH6ttY2kXXjDXCU=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=fAmybt+nqZB2FWAYxnsitWpf0lTgxu6v9B0qaNRgCgbkcF5b2Lv2rx4pSMmFV2EnMa
+         w9rDohGF1If3vXnAp1EQeVvKU4x4PPm8SgLHsjFRYH6+JJkuOsqaSFzZOx0zGFoCtRA1
+         CjKdAecc9WdL3gOsiu7TwKPq28GnKf+m5Vr28=
 MIME-Version: 1.0
-Reply-To: trapdoor6@gmail.com
-Date: Tue, 2 Nov 2010 08:26:59 +0000
-Message-ID: <AANLkTik=04z2thHBS3Z9n68QnTs=i8g8qTFtNT3jb8cg@mail.gmail.com>
-Subject: Pure kernel '2.6.37-rc1-00001-ge99d11d' shown as ~-dirty after compilation
-From: trapDoor <trapdoor6@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20101101220033.416.qmail@stuge.se>
+References: <AANLkTikbEgfVZmnVfbgGxbybbghXCuUgvEm03HH=i4HD@mail.gmail.com>
+	<20101101160529.GA9306@comet.dominikbrodowski.net>
+	<20101101220033.416.qmail@stuge.se>
+Date: Tue, 2 Nov 2010 15:26:42 +0800
+Message-ID: <AANLkTikBh3qAifA8U9--VyXZpD-vt3cuCj0M6npD4M3D@mail.gmail.com>
+Subject: Re: PATCH : linux-2.6.35.4 drivers pcmcia cs.c
+From: guillermo arias <papaguillee18@gmail.com>
+To: guillermo arias <papaguillee18@gmail.com>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, linux-pcmcia@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-,Hello,
-When I run 'make kernelrelease' on freshly cloned Linus' git tree it
-shows kernel version as: '2.6.37-rc1-00001-ge99d11d' - and that's
-correct.
-But after compilation it turned up '2.6.37-rc1-00001-ge99d11d-dirty'.
+To Dominic Brodowski :.
+> it would enable CardBus on all PCMCIA bridges .
+comment :.
+"if (!(skt->features || SS_CAP_CARDBUS))" : refuse to enable in any
+error(1) condition from "pc or kernel" .
 
-I didn't apply any custom patches to my local tree between 'make
-kernelrelease' and compilation. What I only added - and before running
-'make kernelrelease' - were the following Radeon firmware blobs for my
-graphic card, which I placed in <kernel-source>/firmware/radeon/, in
-order to compile them in:
-REDWOOD_me.bin
-REDWOOD_pfp.bin
-REDWOOD_rlc.bin
+To Peter Stuge :.
+>Is it certain that the hardware *is* actually cardbus capable? .
+comment :.
+was probed with vpn .
 
-That's how I always did and none of the git-kernels I compiled before
-was referred to as '-dirty' due to the firmware blobs added manually.
-Also, the kernel version shown by 'make kernelrelease' never differed
-from the final kernel version after compilation. Of course assuming
-that no patches were applied in the meantime and no extra string was
-appended manually to the kernel version.
+Thanks to you .
 
-So, what's this '-dirty' about?
+//Guillermo
 
--- 
-Thanks,
-Tomasz
+
+
+On 11/2/10, Peter Stuge <peter@stuge.se> wrote:
+> Dominik Brodowski wrote:
+>> indeed, on a IBM ThinkPad 770Z there seems to be some bug -- the CardBus
+>> hardware doesn't tell the OS that it is CardBus capable.
+>
+> What hardware is this, and how would it tell the OS?
+>
+> Is it certain that the hardware *is* actually cardbus capable?
+>
+>
+>> 2) What's the output of "lspci -n -v"
+>> 3) What's the output of "sudo lspcmcia -vvv"
+>
+> Yes please.
+>
+>
+>> 4) Are there any BIOS options you may toggle to enable CardBus?
+>
+>
+> //Peter
+>
