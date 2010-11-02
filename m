@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751703Ab0KBKTV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 06:19:21 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:49647 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750851Ab0KBKTO convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 06:19:14 -0400
-Message-Id: <1288693153.10585.1403155585@webmail.messagingengine.com>
-X-Sasl-Enc: RXoIxG44BW69cL+T0rdml6ZT0JQtuLvzBJcVbDjUPbDg 1288693153
-From: "Alexander van Heukelum" <heukelum@fastmail.fm>
-To: "Ming Lei" <tom.leiming@gmail.com>
-Cc: "Jan Beulich" <JBeulich@novell.com>, "Ingo Molnar" <mingo@elte.hu>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, torvalds@osdl.org,
-        "David Howells" <dhowells@redhat.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Thomas Gleixner" <tglx@linutronix.de>,
-        "Arnd Bergmann" <arnd@arndb.de>
+	id S1751823Ab0KBKZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 06:25:56 -0400
+Received: from hera.kernel.org ([140.211.167.34]:40196 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751251Ab0KBKZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 06:25:50 -0400
+Message-ID: <4CCFE7C1.60909@kernel.org>
+Date: Tue, 02 Nov 2010 11:28:17 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: MessagingEngine.com Webmail Interface
-In-Reply-To: <AANLkTimO5bkya9-ucz0kxsW=cNX5FjJi0zQPsRVAycQ8@mail.gmail.com>
-References: <4CC5B1A1020000780001EF7C@vpn.id2.novell.com><20101025140218.5092.74117.stgit@warthog.procyon.org.uk><28707.1288018465@redhat.com><4CC5B8D3020000780001EFB4@vpn.id2.novell.com><1288538943.19875.1402847217@webmail.messagingengine.com>
- <AANLkTimO5bkya9-ucz0kxsW=cNX5FjJi0zQPsRVAycQ8@mail.gmail.com>
-Subject: Re: [PATCH] Partially revert patch that encloses asm-offset.h numbers
- in brackets
-Date: Tue, 02 Nov 2010 11:19:13 +0100
+To: Arnd Bergmann <arnd@arndb.de>
+CC: James Cloos <cloos@jhcloos.com>, Eli Billauer <eli@billauer.co.il>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: open() on /dev/tty takes 30 seconds on 2.6.36
+References: <4CCBCD8E.1020601@billauer.co.il> <201010310436.18613.arnd@arndb.de> <m31v766fax.fsf@jhcloos.com> <201010311236.38844.arnd@arndb.de>
+In-Reply-To: <201010311236.38844.arnd@arndb.de>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 02 Nov 2010 10:25:09 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 02 Nov 2010 16:30 +0800, "Ming Lei" <tom.leiming@gmail.com> wrote:
-> 2010/10/31 Alexander van Heukelum <heukelum@fastmail.fm>:
-> > In file included from /home/src/linux/linux-2.6/arch/x86/include/asm/suspend_32.h:10,
-> >                 from /home/src/linux/linux-2.6/arch/x86/include/asm/suspend.h:2,
-> >                 from /home/src/linux/linux-2.6/arch/x86/kernel/asm-offsets_32.c:21,
-> >                 from /home/src/linux/linux-2.6/arch/x86/kernel/asm-offsets.c:2:
-> > /home/src/linux/linux-2.6/arch/x86/include/asm/i387.h: In function ‘irq_ts_save’:
-> > /home/src/linux/linux-2.6/arch/x86/include/asm/i387.h:325: error: implicit declaration of function ‘kernel_locked’
-> > make[2]: *** [arch/x86/kernel/asm-offsets.s] Error 1
+Hello,
+
+On 10/31/2010 12:36 PM, Arnd Bergmann wrote:
+> On Sunday 31 October 2010, James Cloos wrote:
+>> WARNING: at kernel/workqueue.c:1180 worker_enter_idle+0xd6/0xe2()
+>> Hardware name: MS-7642
+>> Modules linked in: tcp_diag inet_diag ipt_addrtype xt_dscp xt_string xt_owner xt_multiport xt_iprange xt_hashlimit xt_DSCP xt_NFQUEUE xt_mark xt_connmark tun snd_pcm_oss snd_mixer_oss snd_usb_audio snd_usbmidi_lib snd_rawmidi tpm_tis tpm ppdev parport_pc tpm_bios parport serio_raw edac_core k10temp pcspkr i2c_piix4 shpchp
+>> Pid: 8061, comm: kworker/0:1 Not tainted 2.6.36-carbon1 #18
+>> Call Trace:
+>>  [<ffffffff81050c60>] warn_slowpath_common+0x85/0x9d
+>>  [<ffffffff81050c92>] warn_slowpath_null+0x1a/0x1c
+>>  [<ffffffff81066861>] worker_enter_idle+0xd6/0xe2
+>>  [<ffffffff81068453>] worker_thread+0x182/0x19b
+>>  [<ffffffff810682d1>] ? worker_thread+0x0/0x19b
+>>  [<ffffffff8106ba81>] kthread+0x82/0x8a
+>>  [<ffffffff8100aae4>] kernel_thread_helper+0x4/0x10
+>>  [<ffffffff8106b9ff>] ? kthread+0x0/0x8a
+>>  [<ffffffff8100aae0>] ? kernel_thread_helper+0x0/0x10
+>> ---[ end trace 756b0818a6415dca ]---
+>>
+>> That was followed by a number of task blocked for more than 120 seconds
+>> messages, all due to waiting for pty input or output.  An example trace:
 > 
-> This also touches me too on .37-rc1, any patch for the compile failure?
+> This is triggered by an internal check in the workqueue handling that
+> Tejun introduced. I guess it might be possible that this is triggered by
+> a worker thread being blocked on a mutex, but I don't understand
+> exactly what it is checking for. 
 
-I think this one fixes it:
+Hmmm... that's a condition which shouldn't happen regardless of being
+blocked on mutex or whatever.  It means that internal book keeping
+used to manage concurrency went out of sync somehow.  I've re-read the
+code managing nr_running but couldn't spot where the problem could be.
+Is there any way to reproduce the problem?
 
-http://lkml.org/lkml/2010/10/28/151
+Thanks.
 
-Greetings,
-    Alexander
-
-> thanks,
-> -- 
-> Lei Ming
-> 
+-- 
+tejun
