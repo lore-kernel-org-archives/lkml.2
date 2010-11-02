@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935291Ab0KBFIp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 01:08:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21906 "EHLO mx1.redhat.com"
+	id S938751Ab0KBGbI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 02:31:08 -0400
+Received: from smtp.nokia.com ([147.243.1.47]:37685 "EHLO mgw-sa01.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932283Ab0KBFIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 01:08:38 -0400
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH] vfio: Extended capability fixes
-To: pugs@cisco.com
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        kvm@vger.kernel.org, alex.williamson@redhat.com
-Date: Mon, 01 Nov 2010 23:08:35 -0600
-Message-ID: <20101102050835.2963.63375.stgit@s20.home>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1755573Ab0KBGa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 02:30:58 -0400
+Subject: Re: [RFC PATCH] device-core: sysfs open - close notify
+From: Onkalo Samu <samu.p.onkalo@nokia.com>
+Reply-To: samu.p.onkalo@nokia.com
+To: ext Alan Cox <alan@linux.intel.com>
+Cc: Ming Lei <tom.leiming@gmail.com>, "gregkh@suse.de" <gregkh@suse.de>,
+        "hmh@hmh.eng.br" <hmh@hmh.eng.br>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20101101171126.1194e2b0@linux.intel.com>
+References: <1288529170-28890-1-git-send-email-samu.p.onkalo@nokia.com>
+	 <AANLkTikRSF-4o=Jnyg2_Wa4gg7E+s_tM9ZD3g+f7hyWm@mail.gmail.com>
+	 <20101101171126.1194e2b0@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Nokia Oyj
+Date: Tue, 02 Nov 2010 08:30:08 +0200
+Message-ID: <1288679408.2080.18.camel@noppispoppis.nmp.nokia.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- Virtual channel position gets truncated as a u8
- - Print the ecap that's unknown, not the last cap we saw
- - Print actual config offset, which provides enough info to make
-   some sense of the error.
+On Mon, 2010-11-01 at 18:11 +0100, ext Alan Cox wrote:
+> > Your patch may cause many unnecessary memory waste because
+> > most of drivers does not need attribute file .open/.close notifier.
+> 
+> Firstly there are not that many driver objects in a small system so it
+> wouldn't take that much to shift the balance the other way. Secondly
+> its becoming clear that every time a driver goes to runtime pm these
+> issues come up - even with things like configuration values for drivers
+> that need to wake the hardware and then silence it.
+> 
+> So the whole sysfs/open thing is going to keep haunting us with runtime
+> pm, the question is where to put the callbacks so we don't bloat stuff.
+> Clearly not per attribute or per sysfs node. One possibility would be
+> with the runtime pm stuff, but that would need a clean reliable way to
+> go sysfs->device->runtime_pm
+> 
+> There are also obvious hackish ways to handle it like passing a 0
+> length read to indicate close etc - they save memory but they are
+> asking for problems in future.
+> 
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
+Memory footprint could be minimized by combining separate open close
+functions to one like sysfs_open_close_notify and the actual operation
+would be a call parameter. But is that hackish?
 
- drivers/vfio/vfio_pci_config.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+And perhaps some flags could be used to indicate which attributes trigs
+the open / close notification.
 
-diff --git a/drivers/vfio/vfio_pci_config.c b/drivers/vfio/vfio_pci_config.c
-index 8af995d..8304316 100644
---- a/drivers/vfio/vfio_pci_config.c
-+++ b/drivers/vfio/vfio_pci_config.c
-@@ -410,7 +410,7 @@ static int vfio_msi_cap_len(struct vfio_dev *vdev, u8 pos)
-  * Determine extended capability length for VC (2 & 9) and
-  * MFVC capabilities
-  */
--static int vfio_vc_cap_len(struct vfio_dev *vdev, u8 pos)
-+static int vfio_vc_cap_len(struct vfio_dev *vdev, u16 pos)
- {
- 	struct pci_dev *pdev = vdev->pdev;
- 	u32 dw;
-@@ -580,7 +580,7 @@ int vfio_build_config_map(struct vfio_dev *vdev)
- 				printk(KERN_WARNING
- 					"%s: pci config conflict at %x, "
- 					"caps %x %x\n",
--					__func__, i, map[pos+i], cap);
-+					__func__, pos+i, map[pos+i], cap);
- 			map[pos+i] = cap;
- 		}
- 		ret = pci_read_config_byte(pdev, pos + PCI_CAP_LIST_NEXT, &pos);
-@@ -683,7 +683,7 @@ int vfio_build_config_map(struct vfio_dev *vdev)
- 		if (len == 0 || len == 0xFF) {
- 			printk(KERN_WARNING
- 				"%s: unknown length for pci ext cap %x\n",
--				__func__, cap);
-+				__func__, ecap);
- 			len = PCI_CAP_SIZEOF;
- 		}
- 		for (i = 0; i < len; i++) {
-@@ -691,7 +691,7 @@ int vfio_build_config_map(struct vfio_dev *vdev)
- 				printk(KERN_WARNING
- 					"%s: pci config conflict at %x, "
- 					"caps %x %x\n",
--					__func__, i, map[epos+i], ecap);
-+					__func__, epos+i, map[epos+i], ecap);
- 			map[epos+i] = ecap;
- 		}
+-Samu
+
  
+
 
