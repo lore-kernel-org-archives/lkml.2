@@ -1,83 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932418Ab0KBH1J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 03:27:09 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:65398 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754175Ab0KBH1E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 03:27:04 -0400
-Message-ID: <4CCFBE4E.3090804@cn.fujitsu.com>
-Date: Tue, 02 Nov 2010 15:31:26 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [RFC PATCH v2 7/7] KVM: KVM: don't break vcpu 'halt' state due
- to apfs
-References: <4CCE8143.3090105@cn.fujitsu.com> <4CCE82BC.3090000@cn.fujitsu.com> <20101101125551.GD31722@redhat.com> <4CCF77B2.9080604@cn.fujitsu.com> <20101102065613.GA7881@redhat.com>
-In-Reply-To: <20101102065613.GA7881@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1756272Ab0KBH2Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 03:28:25 -0400
+Received: from mga11.intel.com ([192.55.52.93]:31962 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932430Ab0KBH2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 03:28:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,279,1286175600"; 
+   d="scan'208";a="853252289"
+Subject: [DRAFT PATCH 1/3] perf: Update x86_perf_event_update/set_period
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Stephane Eranian <eranian@google.com>, robert.richter@amd.com,
+        Cyrill Gorcunov <gorcunov@gmail.com>, paulus@samba.org,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 02 Nov 2010 15:27:53 +0800
+Message-ID: <1288682873.12061.106.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/02/2010 02:56 PM, Gleb Natapov wrote:
-> On Tue, Nov 02, 2010 at 10:30:10AM +0800, Xiao Guangrong wrote:
->> On 11/01/2010 08:55 PM, Gleb Natapov wrote:
->>
->>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->>> index 2cfdf2d..f7aed95 100644
->>> --- a/arch/x86/kvm/x86.c
->>> +++ b/arch/x86/kvm/x86.c
->>> @@ -5295,8 +5295,9 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
->>>  			{
->>>  				switch(vcpu->arch.mp_state) {
->>>  				case KVM_MP_STATE_HALTED:
->>> -					vcpu->arch.mp_state =
->>> -						KVM_MP_STATE_RUNNABLE;
->>> +					if (list_empty_careful(&vcpu->async_pf.done))
->>> +						vcpu->arch.mp_state =
->>> +							KVM_MP_STATE_RUNNABLE;
->>
->> if nmi/interrupt and apfs completed event occur at the same time, we will miss to
->> exit halt sate. Maybe we can check the pending event here, see below patch please.
->>
-> No, we will not. If nmi/interrupt and apfs completed event occur at the same
-> time kvm_vcpu_block() will exit with KVM_REQ_UNHALT set, but cpu will
-> not be unhalted because of list_empty_careful(&vcpu->async_pf.done)
-> check. Vcpu then will process pending apf completion and enter
-> kvm_vcpu_block() again which will immediately exit because
-> kvm_arch_vcpu_runnable() will return true since there is pending
-> nmi/interrupt. This time vcpu will be unhalted.
+x86_perf_event_update/set_period will be used by later uncore patches.
 
-Thanks for your explanation, but if it has nmi/interrupt pending,
-kvm_arch_can_inject_async_page_present() always return false in PV guest case,
-it can not process pending apf completion, so, the vcpu is remain halt state
-forever?
+And add PERF_TYPE_UNCORE to present uncore pmu event.
 
-Also, the pv guest can only handle an apf completion at one time, it can not ensure
-vcpu->async_pf.done is empty after kvm_check_async_pf_completion()
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+---
+ arch/x86/kernel/cpu/perf_event.c       |   23 +++++++++++++----------
+ arch/x86/kernel/cpu/perf_event_intel.c |    4 ++--
+ arch/x86/kernel/cpu/perf_event_p4.c    |    2 +-
+ include/linux/perf_event.h             |    1 +
+ 4 files changed, 17 insertions(+), 13 deletions(-)
 
-> 
->>>  				case KVM_MP_STATE_RUNNABLE:
->>>  					vcpu->arch.apf.halted = false;
->>>  					break;
->>> @@ -6279,6 +6280,7 @@ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
->>>  		vcpu->arch.fault.error_code = 0;
->>>  		vcpu->arch.fault.address = work->arch.token;
->>>  		kvm_inject_page_fault(vcpu);
->>> +		vcpu->arch.mp_state = KVM_MP_STATE_RUNNABLE;
->>>  	}
->>>  }
->>
->> Have a stupid question, why we make the vcpu runnable here? Sorry i don't know
->> kvm pv guest to much. :-(
-> Because kvm_arch_vcpu_runnable() does not check for pending exceptions.
-> Since now we do not unhalt vcpu when apf completion happens we need to
-> unhalt it here. But, as I said, the patch is untested.
-> 
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index ed63101..7cea0f4 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -277,11 +277,11 @@ static u64 __read_mostly hw_cache_event_ids
+  * Can only be executed on the CPU where the event is active.
+  * Returns the delta events processed.
+  */
+-static u64
+-x86_perf_event_update(struct perf_event *event)
++u64
++x86_perf_event_update(struct perf_event *event, int cntval_bits)
+ {
+ 	struct hw_perf_event *hwc = &event->hw;
+-	int shift = 64 - x86_pmu.cntval_bits;
++	int shift = 64 - cntval_bits;
+ 	u64 prev_raw_count, new_raw_count;
+ 	int idx = hwc->idx;
+ 	s64 delta;
+@@ -924,10 +924,12 @@ x86_perf_event_set_period(struct perf_event *event)
+ 	if (unlikely(left < 2))
+ 		left = 2;
+ 
+-	if (left > x86_pmu.max_period)
+-		left = x86_pmu.max_period;
++	if (event->attr.type != PERF_TYPE_UNCORE) {
++		if (left > x86_pmu.max_period)
++			left = x86_pmu.max_period;
+ 
+-	per_cpu(pmc_prev_left[idx], smp_processor_id()) = left;
++		per_cpu(pmc_prev_left[idx], smp_processor_id()) = left;
++	}
+ 
+ 	/*
+ 	 * The hw event starts counting from this event offset,
+@@ -942,7 +944,8 @@ x86_perf_event_set_period(struct perf_event *event)
+ 	 * a second write to be sure the register
+ 	 * is updated properly
+ 	 */
+-	if (x86_pmu.perfctr_second_write) {
++	if (event->attr.type != PERF_TYPE_UNCORE &&
++			x86_pmu.perfctr_second_write) {
+ 		wrmsrl(hwc->event_base + idx,
+ 			(u64)(-left) & x86_pmu.cntval_mask);
+ 	}
+@@ -1109,7 +1112,7 @@ static void x86_pmu_stop(struct perf_event *event, int flags)
+ 		 * Drain the remaining delta count out of a event
+ 		 * that we are disabling:
+ 		 */
+-		x86_perf_event_update(event);
++		x86_perf_event_update(event, x86_pmu.cntval_bits);
+ 		hwc->state |= PERF_HES_UPTODATE;
+ 	}
+ }
+@@ -1171,7 +1174,7 @@ static int x86_pmu_handle_irq(struct pt_regs *regs)
+ 
+ 		event = cpuc->events[idx];
+ 
+-		val = x86_perf_event_update(event);
++		val = x86_perf_event_update(event, x86_pmu.cntval_bits);
+ 		if (val & (1ULL << (x86_pmu.cntval_bits - 1)))
+ 			continue;
+ 
+@@ -1424,7 +1427,7 @@ void __init init_hw_perf_events(void)
+ 
+ static inline void x86_pmu_read(struct perf_event *event)
+ {
+-	x86_perf_event_update(event);
++	x86_perf_event_update(event, x86_pmu.cntval_bits);
+ }
+ 
+ /*
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index c8f5c08..a9f35e2 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -536,7 +536,7 @@ static void intel_pmu_nhm_workaround(void)
+ 	for (i = 0; i < 4; i++) {
+ 		event = cpuc->events[i];
+ 		if (event)
+-			x86_perf_event_update(event);
++			x86_perf_event_update(event, x86_pmu.cntval_bits);
+ 	}
+ 
+ 	for (i = 0; i < 4; i++) {
+@@ -673,7 +673,7 @@ static void intel_pmu_enable_event(struct perf_event *event)
+  */
+ static int intel_pmu_save_and_restart(struct perf_event *event)
+ {
+-	x86_perf_event_update(event);
++	x86_perf_event_update(event, x86_pmu.cntval_bits);
+ 	return x86_perf_event_set_period(event);
+ }
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+index 81400b9..63aca68 100644
+--- a/arch/x86/kernel/cpu/perf_event_p4.c
++++ b/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -919,7 +919,7 @@ static int p4_pmu_handle_irq(struct pt_regs *regs)
+ 		/* it might be unflagged overflow */
+ 		overflow = p4_pmu_clear_cccr_ovf(hwc);
+ 
+-		val = x86_perf_event_update(event);
++		val = x86_perf_event_update(event, x86_pmu.cntval_bits);
+ 		if (!overflow && (val & (1ULL << (x86_pmu.cntval_bits - 1))))
+ 			continue;
+ 
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 057bf22..b012880 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -32,6 +32,7 @@ enum perf_type_id {
+ 	PERF_TYPE_HW_CACHE			= 3,
+ 	PERF_TYPE_RAW				= 4,
+ 	PERF_TYPE_BREAKPOINT			= 5,
++	PERF_TYPE_UNCORE			= 6,
+ 
+ 	PERF_TYPE_MAX,				/* non-ABI */
+ };
+-- 
+1.7.1
 
-As i know, exception can not let guest exit halt state, only NMI/interruption can do it, yes? :-)
+
+
+
