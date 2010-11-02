@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752072Ab0KBMYU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 08:24:20 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:39724 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750872Ab0KBMYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 08:24:17 -0400
-Date: Tue, 2 Nov 2010 08:24:13 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Pavel Emelianov <xemul@openvz.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Paul Menage <menage@google.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org
-Subject: Re: [PATCH] cgroup: prefer [kv]zalloc over [kv]malloc+memset in
- memory controller code.
-Message-ID: <20101102122413.GJ840@cmpxchg.org>
-References: <alpine.LNX.2.00.1011012038490.12889@swampdragon.chaosbits.net>
- <20101101200122.GH840@cmpxchg.org>
- <alpine.LNX.2.00.1011012056250.12889@swampdragon.chaosbits.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1011012056250.12889@swampdragon.chaosbits.net>
+	id S1752048Ab0KBMaP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 08:30:15 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59831 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905Ab0KBMaI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 08:30:08 -0400
+Subject: Re: [DRAFT PATCH 0/3] perf: Add Intel Nehalem uncore pmu support
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Stephane Eranian <eranian@google.com>, robert.richter@amd.com,
+        Cyrill Gorcunov <gorcunov@gmail.com>, paulus@samba.org,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        CoreyAshford <cjashfor@linux.vnet.ibm.com>,
+        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <1288682858.12061.105.camel@minggr.sh.intel.com>
+References: <1288682858.12061.105.camel@minggr.sh.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 02 Nov 2010 13:29:30 +0100
+Message-ID: <1288700970.2039.26.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 01, 2010 at 08:59:13PM +0100, Jesper Juhl wrote:
-> On Mon, 1 Nov 2010, Johannes Weiner wrote:
-> 
-> > On Mon, Nov 01, 2010 at 08:40:56PM +0100, Jesper Juhl wrote:
-> > > In mem_cgroup_alloc() we currently do either kmalloc() or vmalloc() then 
-> > > followed by memset() to zero the memory. This can be more efficiently 
-> > > achieved by using kzalloc() and vzalloc().
-> > > 
-> > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > 
-> > Looks good to me, but there is also the memset after kmalloc in
-> > alloc_mem_cgroup_per_zone_info().  Can you switch that over as well
-> > in this patch?  You can pass __GFP_ZERO to kmalloc_node() for zeroing.
->
-> Sure thing.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+On Tue, 2010-11-02 at 15:27 +0800, Lin Ming wrote:
+> Any comment is very appreciated.
 
-Thanks.
+Right, so I was hoping to use the sysfs bits to expose things, I'll try
+and get around to looking at your latest effort in that area soonish.
+I'll try and sit down with gregkh one of these days to talk it over.
 
-Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
+I'm not too sure about 1/3's change to x86_perf_event_update(), but its
+not too aweful, the change to x86_perf_event_set_period() however does
+look quite gruesome.
+
+It might make sense to simple duplicate that code in the uncore bits,.
+dunno.
+
+2/3 looks ok, but I think it would be nice if it would be more self
+contained, that is, not be part of the include mess and possibly have
+its own NMI_DIE notifier entry.
+
+All in all, Thanks for doing this, its a good start!
+
+
