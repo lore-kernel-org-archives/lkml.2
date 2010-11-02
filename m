@@ -1,76 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605Ab0KBUJH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 16:09:07 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:34560 "EHLO e1.ny.us.ibm.com"
+	id S1752240Ab0KBUMA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 16:12:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31964 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752111Ab0KBUIp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 16:08:45 -0400
-From: Vernon Mauery <vernux@us.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
-        Vernon Mauery <vernux@us.ibm.com>
-Subject: [PATCH 1/2] ibm_rtl: Loosen the DMI criteria to all IBM machines
-Date: Tue,  2 Nov 2010 13:08:10 -0700
-Message-Id: <1288728491-2216-2-git-send-email-vernux@us.ibm.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1288728491-2216-1-git-send-email-vernux@us.ibm.com>
-References: <1288728491-2216-1-git-send-email-vernux@us.ibm.com>
+	id S1751423Ab0KBUL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 16:11:56 -0400
+Message-ID: <4CD0707F.7080709@redhat.com>
+Date: Tue, 02 Nov 2010 16:11:43 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Michel Lespinasse <walken@google.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/3] Retry page fault when blocking on disk transfer.
+References: <1286265215-9025-1-git-send-email-walken@google.com> <1286265215-9025-3-git-send-email-walken@google.com> <4CAB628D.3030205@redhat.com> <AANLkTimdACZ9Xm01DM2+E64+T5XfLffrkFBhf7CJ286p@mail.gmail.com> <20101008043956.GA25662@google.com> <4CAF1B90.3080703@redhat.com> <AANLkTinWxTT=+m_fAudc080OUMwacSefnMbSMBFZgPMH@mail.gmail.com> <20101009012204.GA17458@google.com> <20101102200518.GA9229@google.com>
+In-Reply-To: <20101102200518.GA9229@google.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow all IBM machines to pass the DMI check so that we
-don't have to add them one by one to the driver.  Any IBM
-machine that has the _RTL_ table in the EBDA will work.
+On 11/02/2010 04:05 PM, Michel Lespinasse wrote:
 
-Signed-off-by: Vernon Mauery <vernux@us.ibm.com>
----
- drivers/platform/x86/ibm_rtl.c |   29 +++++------------------------
- 1 files changed, 5 insertions(+), 24 deletions(-)
+> Release page reference during page fault retry
+>
+> This slipped by when unifying the filemap and swap versions of
+> lock_page_or_retry()...
+>
+> Signed-off-by: Michel Lespinasse<walken@google.com>
 
-diff --git a/drivers/platform/x86/ibm_rtl.c b/drivers/platform/x86/ibm_rtl.c
-index 3c2c6b9..c5a0061 100644
---- a/drivers/platform/x86/ibm_rtl.c
-+++ b/drivers/platform/x86/ibm_rtl.c
-@@ -220,32 +220,13 @@ static void rtl_teardown_sysfs(void) {
- 	sysdev_class_unregister(&class_rtl);
- }
- 
--static int dmi_check_cb(const struct dmi_system_id *id)
--{
--	RTL_DEBUG("found IBM server '%s'\n", id->ident);
--	return 0;
--}
--
--#define ibm_dmi_entry(NAME, TYPE)                  \
--{                                                  \
--	.ident = NAME,                             \
--	.matches = {                               \
--		DMI_MATCH(DMI_SYS_VENDOR, "IBM"),  \
--		DMI_MATCH(DMI_PRODUCT_NAME, TYPE), \
--	},                                         \
--	.callback = dmi_check_cb                   \
--}
- 
- static struct dmi_system_id __initdata ibm_rtl_dmi_table[] = {
--	ibm_dmi_entry("BladeCenter LS21", "7971"),
--	ibm_dmi_entry("BladeCenter LS22", "7901"),
--	ibm_dmi_entry("BladeCenter HS21 XM", "7995"),
--	ibm_dmi_entry("BladeCenter HS22", "7870"),
--	ibm_dmi_entry("BladeCenter HS22V", "7871"),
--	ibm_dmi_entry("System x3550 M2", "7946"),
--	ibm_dmi_entry("System x3650 M2", "7947"),
--	ibm_dmi_entry("System x3550 M3", "7944"),
--	ibm_dmi_entry("System x3650 M3", "7945"),
-+	{                                                  \
-+		.matches = {                               \
-+			DMI_MATCH(DMI_SYS_VENDOR, "IBM"),  \
-+		},                                         \
-+	},
- 	{ }
- };
- 
+Acked-by: Rik van Riel <riel@redhat.com>
+
 -- 
-1.7.1
-
+All rights reversed
