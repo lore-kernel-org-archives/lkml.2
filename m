@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665Ab0KBVHI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 17:07:08 -0400
-Received: from smtp.microsoft.com ([131.107.115.215]:19355 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753438Ab0KBVHF convert rfc822-to-8bit (ORCPT
+	id S1753368Ab0KBVQG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 17:16:06 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:55863 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753038Ab0KBVQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 17:07:05 -0400
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Brandon Philips <brandon@ifup.org>
-CC: Hank Janssen <hjanssen@microsoft.com>, "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: RE: [PATCH 05/10] staging: hv: Convert camel cased functions in
- hv.c to lower cases
-Thread-Topic: [PATCH 05/10] staging: hv: Convert camel cased functions in
- hv.c to lower cases
-Thread-Index: AQHLegWyysIi3s3LCUKTlGhWblKLdZNe4TkA///MvGA=
-Date: Tue, 2 Nov 2010 21:06:56 +0000
-Message-ID: <1FB5E1D5CA062146B38059374562DF728BA55BD7@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <1288644369-12958-1-git-send-email-haiyangz@linuxonhyperv.com>
- <1288644369-12958-2-git-send-email-haiyangz@linuxonhyperv.com>
- <1288644369-12958-3-git-send-email-haiyangz@linuxonhyperv.com>
- <1288644369-12958-4-git-send-email-haiyangz@linuxonhyperv.com>
- <1288644369-12958-5-git-send-email-haiyangz@linuxonhyperv.com>
- <20101102170406.GA4557@jenkins.home.ifup.org>
-In-Reply-To: <20101102170406.GA4557@jenkins.home.ifup.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 2 Nov 2010 17:16:03 -0400
+Date: Tue, 2 Nov 2010 22:15:58 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Andi Kleen <andi@firstfloor.org>, bjschuma@netapp.com,
+        torvalds@linux-foundation.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [regression] NFS readdir change break fully cached nfs root
+Message-ID: <20101102211558.GE2167@basil.fritz.box>
+References: <20101102180051.GA26089@basil.fritz.box>
+ <1288731930.534.1.camel@heimdal.trondhjem.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288731930.534.1.camel@heimdal.trondhjem.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Brandon Philips [mailto:brandon@ifup.org]
-> Sent: Tuesday, November 02, 2010 1:04 PM
-> > -static int HvQueryHypervisorInfo(void)
-> > +static int hvquery_hypervisor_info(void)
-> > -static u64 HvDoHypercall(u64 control, void *input, void *output)
-> > +static u64 hvdo_hypercall(u64 control, void *input, void *output)
+On Tue, Nov 02, 2010 at 05:05:30PM -0400, Trond Myklebust wrote:
+> On Tue, 2010-11-02 at 19:00 +0100, Andi Kleen wrote:
+> > My NFS root test systems stopped booting with 2.6.37-rc1. It just
+> > hangs after entering user space.
+> > 
+> > The NFS root setup uses a slightly fancy parameter setup to minimize 
+> > network traffic:
+> > 
+> > nfsroot=10.23.204.1:/home/nfsroot/edwin,nocto,acregmin=86400,acregmax=86400,acdirmin=86400,acdirmax=86400 root=/dev/nfs
+> > 
+> > I bisected it down to this commit from Bryan.
+> > 
+> > Unfortunately it's not trivially revertable because that conflicts
+> > with later patches.
 > 
-> Should these be hv_do_hypercall and hv_query_hypervisor? That seems to
-> be the style in the rest of the patch:
+> Does the following patch help?
 
-I didn't insert underscore between every word, for example, it's not
-added between two short words.
-
-Thanks,
-- Haiyang
+Yes that fixes it. Thanks. Test system boots again.
+-Andi
