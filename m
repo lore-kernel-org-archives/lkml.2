@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754447Ab0KBRJU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 13:09:20 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:42155 "EHLO e9.ny.us.ibm.com"
+	id S1754499Ab0KBRJk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 13:09:40 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:39309 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754273Ab0KBRIq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 13:08:46 -0400
+	id S1754258Ab0KBRIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 13:08:44 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
@@ -14,9 +14,9 @@ Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
         torvalds@linux-foundation.org, eparis@redhat.com,
         viro@zeniv.linux.org.uk, Dave Chinner <david@fromorbit.com>,
         Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH v1.2 4/5] IMA: remove IMA imbalance checking
-Date: Tue,  2 Nov 2010 13:08:26 -0400
-Message-Id: <1288717707-5295-5-git-send-email-zohar@linux.vnet.ibm.com>
+Subject: [PATCH v1.2 3/5] IMA: maintain i_readcount in the VFS layer
+Date: Tue,  2 Nov 2010 13:08:25 -0400
+Message-Id: <1288717707-5295-4-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1288717707-5295-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1288717707-5295-1-git-send-email-zohar@linux.vnet.ibm.com>
@@ -24,173 +24,176 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that i_readcount is maintained by the VFS layer, remove the
-imbalance checking in IMA. Cleans up the IMA code nicely.
+ima_counts_get() updated the readcount and invalidated the PCR,
+as necessary. Only update the i_readcount in the VFS layer.
+Move the PCR invalidation checks to ima_file_check(), where it
+belongs.
+
+Maintaining the i_readcount in the VFS layer, will allow other
+subsystems to use i_readcount.
 
 Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
 ---
- security/integrity/ima/ima_iint.c |    4 --
- security/integrity/ima/ima_main.c |  104 ++-----------------------------------
- 2 files changed, 4 insertions(+), 104 deletions(-)
+ fs/file_table.c                   |    5 ++++-
+ fs/open.c                         |    3 ++-
+ include/linux/ima.h               |    6 ------
+ security/integrity/ima/ima_iint.c |    2 --
+ security/integrity/ima/ima_main.c |   25 ++++++++-----------------
+ 5 files changed, 14 insertions(+), 27 deletions(-)
 
+diff --git a/fs/file_table.c b/fs/file_table.c
+index c3dee38..0c724de 100644
+--- a/fs/file_table.c
++++ b/fs/file_table.c
+@@ -190,7 +190,8 @@ struct file *alloc_file(struct path *path, fmode_t mode,
+ 		file_take_write(file);
+ 		WARN_ON(mnt_clone_write(path->mnt));
+ 	}
+-	ima_counts_get(file);
++	if ((mode & (FMODE_READ | FMODE_WRITE)) == FMODE_READ)
++		i_readcount_inc(path->dentry->d_inode);
+ 	return file;
+ }
+ EXPORT_SYMBOL(alloc_file);
+@@ -251,6 +252,8 @@ static void __fput(struct file *file)
+ 	fops_put(file->f_op);
+ 	put_pid(file->f_owner.pid);
+ 	file_sb_list_del(file);
++	if ((file->f_mode & (FMODE_READ | FMODE_WRITE)) == FMODE_READ)
++		i_readcount_dec(inode);
+ 	if (file->f_mode & FMODE_WRITE)
+ 		drop_file_write_access(file);
+ 	file->f_path.dentry = NULL;
+diff --git a/fs/open.c b/fs/open.c
+index 4197b9e..0d485c5 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -688,7 +688,8 @@ static struct file *__dentry_open(struct dentry *dentry, struct vfsmount *mnt,
+ 		if (error)
+ 			goto cleanup_all;
+ 	}
+-	ima_counts_get(f);
++	if ((f->f_mode & (FMODE_READ | FMODE_WRITE)) == FMODE_READ)
++		i_readcount_inc(inode);
+ 
+ 	f->f_flags &= ~(O_CREAT | O_EXCL | O_NOCTTY | O_TRUNC);
+ 
+diff --git a/include/linux/ima.h b/include/linux/ima.h
+index 975837e..09e6e62 100644
+--- a/include/linux/ima.h
++++ b/include/linux/ima.h
+@@ -20,7 +20,6 @@ extern void ima_inode_free(struct inode *inode);
+ extern int ima_file_check(struct file *file, int mask);
+ extern void ima_file_free(struct file *file);
+ extern int ima_file_mmap(struct file *file, unsigned long prot);
+-extern void ima_counts_get(struct file *file);
+ 
+ #else
+ static inline int ima_bprm_check(struct linux_binprm *bprm)
+@@ -53,10 +52,5 @@ static inline int ima_file_mmap(struct file *file, unsigned long prot)
+ 	return 0;
+ }
+ 
+-static inline void ima_counts_get(struct file *file)
+-{
+-	return;
+-}
+-
+ #endif /* CONFIG_IMA_H */
+ #endif /* _LINUX_IMA_H */
 diff --git a/security/integrity/ima/ima_iint.c b/security/integrity/ima/ima_iint.c
-index 68efe3b..4ae7304 100644
+index f005355..68efe3b 100644
 --- a/security/integrity/ima/ima_iint.c
 +++ b/security/integrity/ima/ima_iint.c
-@@ -137,10 +137,6 @@ void ima_inode_free(struct inode *inode)
- {
- 	struct ima_iint_cache *iint;
+@@ -141,8 +141,6 @@ void ima_inode_free(struct inode *inode)
+ 		printk(KERN_INFO "%s: readcount: %u\n", __func__,
+ 		       atomic_read(&inode->i_readcount));
  
--	if (atomic_read(&inode->i_readcount))
--		printk(KERN_INFO "%s: readcount: %u\n", __func__,
--		       atomic_read(&inode->i_readcount));
+-	atomic_set(&inode->i_readcount, 0);
 -
  	if (!IS_IMA(inode))
  		return;
  
 diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index a0626bc..2df9021 100644
+index a189197..a0626bc 100644
 --- a/security/integrity/ima/ima_main.c
 +++ b/security/integrity/ima/ima_main.c
-@@ -36,55 +36,6 @@ static int __init hash_setup(char *str)
+@@ -86,17 +86,16 @@ out:
  }
- __setup("ima_hash=", hash_setup);
  
--struct ima_imbalance {
--	struct hlist_node node;
--	unsigned long fsmagic;
--};
--
--/*
-- * ima_limit_imbalance - emit one imbalance message per filesystem type
-- *
-- * Maintain list of filesystem types that do not measure files properly.
-- * Return false if unknown, true if known.
-- */
--static bool ima_limit_imbalance(struct file *file)
--{
--	static DEFINE_SPINLOCK(ima_imbalance_lock);
--	static HLIST_HEAD(ima_imbalance_list);
--
--	struct super_block *sb = file->f_dentry->d_sb;
--	struct ima_imbalance *entry;
--	struct hlist_node *node;
--	bool found = false;
--
--	rcu_read_lock();
--	hlist_for_each_entry_rcu(entry, node, &ima_imbalance_list, node) {
--		if (entry->fsmagic == sb->s_magic) {
--			found = true;
--			break;
--		}
--	}
--	rcu_read_unlock();
--	if (found)
--		goto out;
--
--	entry = kmalloc(sizeof(*entry), GFP_NOFS);
--	if (!entry)
--		goto out;
--	entry->fsmagic = sb->s_magic;
--	spin_lock(&ima_imbalance_lock);
--	/*
--	 * we could have raced and something else might have added this fs
--	 * to the list, but we don't really care
--	 */
--	hlist_add_head_rcu(&entry->node, &ima_imbalance_list);
--	spin_unlock(&ima_imbalance_lock);
--	printk(KERN_INFO "IMA: unmeasured files on fsmagic: %lX\n",
--	       entry->fsmagic);
--out:
--	return found;
--}
--
  /*
-  * ima_rdwr_violation_check
+- * ima_counts_get - increment file counts
++ * ima_rdwr_violation_check
   *
-@@ -131,65 +82,20 @@ out:
- 				  "open_writers");
- }
- 
--/*
-- * Decrement ima counts
-- */
--static void ima_dec_counts(struct inode *inode, struct file *file)
--{
--	mode_t mode = file->f_mode;
--
--	assert_spin_locked(&inode->i_lock);
--
--	if ((mode & (FMODE_READ | FMODE_WRITE)) == FMODE_READ) {
--	    	if (unlikely(atomic_read(&inode->i_readcount) == 0)) {
--			if (!ima_limit_imbalance(file)) {
--				printk(KERN_INFO "%s: open/free imbalance (r:%u)\n",
--				       __func__,
--				       atomic_read(&inode->i_readcount));
--				dump_stack();
--			}
--			return;
--		}
--	}
--}
--
- static void ima_check_last_writer(struct ima_iint_cache *iint,
- 				  struct inode *inode,
- 				  struct file *file)
+- * Maintain read/write counters for all files, but only
+- * invalidate the PCR for measured files:
++ * Only invalidate the PCR for measured files:
+  * 	- Opening a file for write when already open for read,
+  *	  results in a time of measure, time of use (ToMToU) error.
+  *	- Opening a file for read when already open for write,
+  * 	  could result in a file measurement error.
+  *
+  */
+-void ima_counts_get(struct file *file)
++static void ima_rdwr_violation_check(struct file *file)
  {
- 	mode_t mode = file->f_mode;
+ 	struct dentry *dentry = file->f_path.dentry;
+ 	struct inode *inode = dentry->d_inode;
+@@ -104,13 +103,10 @@ void ima_counts_get(struct file *file)
+ 	int rc;
+ 	bool send_tomtou = false, send_writers = false;
  
--	BUG_ON(!mutex_is_locked(&iint->mutex));
--	assert_spin_locked(&inode->i_lock);
--
-+	mutex_lock(&iint->mutex);
- 	if (mode & FMODE_WRITE &&
- 	    atomic_read(&inode->i_writecount) == 1 &&
- 	    iint->version != inode->i_version)
- 		iint->flags &= ~IMA_MEASURED;
--}
--
--static void ima_file_free_iint(struct ima_iint_cache *iint, struct inode *inode,
--			       struct file *file)
--{
--	mutex_lock(&iint->mutex);
--	spin_lock(&inode->i_lock);
--
--	ima_dec_counts(inode, file);
--	ima_check_last_writer(iint, inode, file);
--
--	spin_unlock(&inode->i_lock);
- 	mutex_unlock(&iint->mutex);
- }
- 
--static void ima_file_free_noiint(struct inode *inode, struct file *file)
--{
--	spin_lock(&inode->i_lock);
--
--	ima_dec_counts(inode, file);
--
--	spin_unlock(&inode->i_lock);
--}
--
- /**
-  * ima_file_free - called on __fput()
-  * @file: pointer to file structure being freed
-@@ -205,12 +111,10 @@ void ima_file_free(struct file *file)
+-	if (!S_ISREG(inode->i_mode))
++	if (!S_ISREG(inode->i_mode) || !ima_initialized)
  		return;
  
- 	iint = ima_iint_find(inode);
-+	if (!iint)
-+		return;
- 
--	if (iint)
--		ima_file_free_iint(iint, inode, file);
--	else
--		ima_file_free_noiint(inode, file);
+-	spin_lock(&inode->i_lock);
 -
-+	ima_check_last_writer(iint, inode, file);
+-	if (!ima_initialized)
+-		goto out;
++	mutex_lock(&inode->i_mutex);	/* file metadata: permissions, xattr */
+ 
+ 	if (mode & FMODE_WRITE) {
+ 		if (atomic_read(&inode->i_readcount) && IS_IMA(inode))
+@@ -125,11 +121,7 @@ void ima_counts_get(struct file *file)
+ 	if (atomic_read(&inode->i_writecount) > 0)
+ 		send_writers = true;
+ out:
+-	/* remember the vfs deals with i_writecount */
+-	if ((mode & (FMODE_READ | FMODE_WRITE)) == FMODE_READ)
+-		atomic_inc(&inode->i_readcount);
+-
+-	spin_unlock(&inode->i_lock);
++	mutex_unlock(&inode->i_mutex);
+ 
+ 	if (send_tomtou)
+ 		ima_add_violation(inode, dentry->d_name.name, "invalid_pcr",
+@@ -158,7 +150,6 @@ static void ima_dec_counts(struct inode *inode, struct file *file)
+ 			}
+ 			return;
+ 		}
+-		atomic_dec(&inode->i_readcount);
+ 	}
  }
  
- static int process_measurement(struct file *file, const unsigned char *filename,
+@@ -203,8 +194,7 @@ static void ima_file_free_noiint(struct inode *inode, struct file *file)
+  * ima_file_free - called on __fput()
+  * @file: pointer to file structure being freed
+  *
+- * Flag files that changed, based on i_version;
+- * and decrement the i_readcount.
++ * Flag files that changed, based on i_version
+  */
+ void ima_file_free(struct file *file)
+ {
+@@ -318,6 +308,7 @@ int ima_file_check(struct file *file, int mask)
+ {
+ 	int rc;
+ 
++	ima_rdwr_violation_check(file);
+ 	rc = process_measurement(file, file->f_dentry->d_name.name,
+ 				 mask & (MAY_READ | MAY_WRITE | MAY_EXEC),
+ 				 FILE_CHECK);
 -- 
 1.7.2.2
 
