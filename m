@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752881Ab0KBWgG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 18:36:06 -0400
-Received: from cantor.suse.de ([195.135.220.2]:32833 "EHLO mx1.suse.de"
+	id S1753761Ab0KBWrV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 18:47:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37793 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752048Ab0KBWgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 18:36:04 -0400
-Date: Tue, 2 Nov 2010 23:36:02 +0100
+	id S1751355Ab0KBWrU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 18:47:20 -0400
+Date: Tue, 2 Nov 2010 23:47:18 +0100
 From: David Sterba <dsterba@suse.cz>
-To: ocfs2-devel@oss.oracle.com
-Cc: linux-kernel@vger.kernel.org, mfasheh@suse.com, joel.becker@oracle.com
-Subject: fs/ocfs2/dlm: Use GFP_ATOMIC under spin_lock
-Message-ID: <20101102223601.GA27513@ds.suse.cz>
+To: linux-usb@vger.kernel.org
+Cc: sarah.a.sharp@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] USB: xhci: Use GFP_ATOMIC under spin_lock
+Message-ID: <20101102224718.GB27513@ds.suse.cz>
 Reply-To: dsterba@suse.cz
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -22,34 +22,32 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 coccinelle check scripts/coccinelle/locks/call_kern.cocci found that
-in fs/ocfs2/dlm/dlmdomain.c an allocation with GFP_KERNEL is done
+in drivers/usb/host/xhci.c an allocation with GFP_KERNEL is done
 with locks held:
 
-dlm_query_region_handler
-  spin_lock(dlm_domain_lock)
-    dlm_match_regions
+xhci_resume
+  spin_lock_irq(xhci->lock)
+    xhci_setup_msix
       kmalloc(GFP_KERNEL)
 
 Change it to GFP_ATOMIC.
 
 Signed-off-by: David Sterba <dsterba@suse.cz>
-CC: Joel Becker <joel.becker@oracle.com>
-CC: Mark Fasheh <mfasheh@suse.com>
-CC: ocfs2-devel@oss.oracle.com
+CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
---
-Exists in v2.6.37-rc1 and current linux-next.
+---
+Exists in v2.6.37-rc1 and current linux-next
 
-diff -u -p a/fs/ocfs2/dlm/dlmdomain.c b/fs/ocfs2/dlm/dlmdomain.c
---- a/fs/ocfs2/dlm/dlmdomain.c 2010-10-22 10:23:23.502434402 +0200
-+++ b/fs/ocfs2/dlm/dlmdomain.c 2010-11-02 17:11:06.000000000 +0100
-@@ -959,7 +959,7 @@ static int dlm_match_regions(struct dlm_
-                r += O2HB_MAX_REGION_NAME_LEN;
-        }
+diff -u -p a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+--- a/drivers/usb/host/xhci.c 2010-10-27 11:27:23.534310054 +0200
++++ b/drivers/usb/host/xhci.c 2010-11-02 15:53:03.000000000 +0100
+@@ -240,7 +240,7 @@ static int xhci_setup_msix(struct xhci_h
 
--       local = kmalloc(sizeof(qr->qr_regions), GFP_KERNEL);
-+       local = kmalloc(sizeof(qr->qr_regions), GFP_ATOMIC);
-        if (!local) {
-                status = -ENOMEM;
-                goto bail;
+        xhci->msix_entries =
+                kmalloc((sizeof(struct msix_entry))*xhci->msix_count,
+-                               GFP_KERNEL);
++                               GFP_ATOMIC);
+        if (!xhci->msix_entries) {
+                xhci_err(xhci, "Failed to allocate MSI-X entries\n");
+                return -ENOMEM;
 
