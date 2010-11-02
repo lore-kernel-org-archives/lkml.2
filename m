@@ -1,131 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574Ab0KBRyR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 13:54:17 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:57651 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754006Ab0KBRyL (ORCPT
+	id S1754605Ab0KBRzD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 13:55:03 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:45747 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754006Ab0KBRy7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 13:54:11 -0400
-Date: Tue, 2 Nov 2010 18:52:48 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Jesper Juhl <jj@chaosbits.net>, amd64-microcode@amd64.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -tip] microcode, AMD: Cleanup code a bit
-Message-ID: <20101102175248.GA25781@aftab>
+	Tue, 2 Nov 2010 13:54:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=lRXYXTgCU9/hLmwbLbDpAyV2EK6o8jjiMute1cORz9HTumuxjlk/s1ApBg1kAxxUeE
+         fJ/khcA5datlHCdCeVpelSImgomol11o0pj7WnSZRrsnXf1oP0s7fcaHPASt4yYp+J6+
+         Zg/FZYQesoK8/mrPgxaac+gPyNzipdLpiZmJo=
+Message-ID: <4CD0506F.6080600@gmail.com>
+Date: Wed, 03 Nov 2010 01:54:55 +0800
+From: Li Zefan <lizf.kern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.11) Gecko/20101006 Thunderbird/3.1.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jiri Olsa <jolsa@redhat.com>
+CC: dhowells@redhat.com, lizf@cn.fujitsu.com, paul.moore@hp.com,
+        johannes@sipsolutions.net, dipankar@in.ibm.com,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH 1/3] cgroup - removing superfluous rcu_read_lock_held
+ check
+References: <1288638909-10541-1-git-send-email-jolsa@redhat.com> <1288638909-10541-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1288638909-10541-2-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-get_ucode_data is a memcpy() wrapper which always returns 0. Move it
-into the header and make it an inline. Remove all code checking its
-return value and turn it into a void.
+On 2010年11月02日 03:15, Jiri Olsa wrote:
+> hi,
 
-There should be no functionality change resulting from this patch.
+This..
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/include/asm/microcode.h |    6 ++++++
- arch/x86/kernel/microcode_amd.c  |   25 +++++--------------------
- 2 files changed, 11 insertions(+), 20 deletions(-)
+> the rcu_dereference_check is defined as
+> 
+> 	#define rcu_dereference_check(p, c) \
+> 	   __rcu_dereference_check((p), rcu_read_lock_held() || (c), __rcu)
+> 
+> so the caller does not need to specify rcu_read_lock_held() condition.
+>
+ 
+> wbr,
+> jirka
 
-diff --git a/arch/x86/include/asm/microcode.h b/arch/x86/include/asm/microcode.h
-index ef51b50..2421507 100644
---- a/arch/x86/include/asm/microcode.h
-+++ b/arch/x86/include/asm/microcode.h
-@@ -48,6 +48,12 @@ static inline struct microcode_ops * __init init_intel_microcode(void)
- 
- #ifdef CONFIG_MICROCODE_AMD
- extern struct microcode_ops * __init init_amd_microcode(void);
-+
-+static inline void get_ucode_data(void *to, const u8 *from, size_t n)
-+{
-+	memcpy(to, from, n);
-+}
-+
- #else
- static inline struct microcode_ops * __init init_amd_microcode(void)
- {
-diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
-index 383d4f8..15831336 100644
---- a/arch/x86/kernel/microcode_amd.c
-+++ b/arch/x86/kernel/microcode_amd.c
-@@ -155,12 +155,6 @@ static int apply_microcode_amd(int cpu)
- 	return 0;
- }
- 
--static int get_ucode_data(void *to, const u8 *from, size_t n)
--{
--	memcpy(to, from, n);
--	return 0;
--}
--
- static void *
- get_next_ucode(const u8 *buf, unsigned int size, unsigned int *mc_size)
- {
-@@ -168,8 +162,7 @@ get_next_ucode(const u8 *buf, unsigned int size, unsigned int *mc_size)
- 	u8 section_hdr[UCODE_CONTAINER_SECTION_HDR];
- 	void *mc;
- 
--	if (get_ucode_data(section_hdr, buf, UCODE_CONTAINER_SECTION_HDR))
--		return NULL;
-+	get_ucode_data(section_hdr, buf, UCODE_CONTAINER_SECTION_HDR);
- 
- 	if (section_hdr[0] != UCODE_UCODE_TYPE) {
- 		pr_err("error: invalid type field in container file section header\n");
-@@ -187,12 +180,8 @@ get_next_ucode(const u8 *buf, unsigned int size, unsigned int *mc_size)
- 	if (!mc)
- 		return NULL;
- 
--	if (get_ucode_data(mc, buf + UCODE_CONTAINER_SECTION_HDR, total_size)) {
--		vfree(mc);
--		mc = NULL;
--	} else {
--		*mc_size = total_size + UCODE_CONTAINER_SECTION_HDR;
--	}
-+	get_ucode_data(mc, buf + UCODE_CONTAINER_SECTION_HDR, total_size);
-+	*mc_size = total_size + UCODE_CONTAINER_SECTION_HDR;
- 
- 	return mc;
- }
-@@ -203,8 +192,7 @@ static int install_equiv_cpu_table(const u8 *buf)
- 	unsigned int *buf_pos = (unsigned int *)container_hdr;
- 	unsigned long size;
- 
--	if (get_ucode_data(&container_hdr, buf, UCODE_CONTAINER_HEADER_SIZE))
--		return 0;
-+	get_ucode_data(&container_hdr, buf, UCODE_CONTAINER_HEADER_SIZE);
- 
- 	size = buf_pos[2];
- 
-@@ -220,10 +208,7 @@ static int install_equiv_cpu_table(const u8 *buf)
- 	}
- 
- 	buf += UCODE_CONTAINER_HEADER_SIZE;
--	if (get_ucode_data(equiv_cpu_table, buf, size)) {
--		vfree(equiv_cpu_table);
--		return 0;
--	}
-+	get_ucode_data(equiv_cpu_table, buf, size);
- 
- 	return size + UCODE_CONTAINER_HEADER_SIZE; /* add header length */
- }
--- 
-1.7.3.1.50.g1e633
+and this should be excluded from the changelog.
 
+> 
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 
--- 
-Regards/Gruss,
-Boris.
+Reviewed-by: Li Zefan <lizf@cn.fujitsu.com>
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+However a nitpick:
+
+> ---
+>  include/linux/cgroup.h |    1 -
+>  kernel/cgroup.c        |    6 ++----
+>  2 files changed, 2 insertions(+), 5 deletions(-)
+...
+> @@ -4544,7 +4542,7 @@ unsigned short css_id(struct cgroup_subsys_state *css)
+>  	 * it's unchanged until freed.
+>  	 */
+>  	cssid = rcu_dereference_check(css->id,
+> -			rcu_read_lock_held() || atomic_read(&css->refcnt));
+> +			atomic_read(&css->refcnt));
+
+Now the 2 lines can be made into one line and still fit into 80 chars.
+
+>  
+>  	if (cssid)
+>  		return cssid->id;
+> @@ -4557,7 +4555,7 @@ unsigned short css_depth(struct cgroup_subsys_state *css)
+>  	struct css_id *cssid;
+>  
+>  	cssid = rcu_dereference_check(css->id,
+> -			rcu_read_lock_held() || atomic_read(&css->refcnt));
+> +			atomic_read(&css->refcnt));
+
+dito
+
+>  
+>  	if (cssid)
+>  		return cssid->depth;
