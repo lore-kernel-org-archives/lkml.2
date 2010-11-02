@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab0KBBzv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 21:55:51 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:2392 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754919Ab0KBBzu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 21:55:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=H5wzRoDewgexd60SY3UPeVlVwYBrOb2ABpAKqbN5T8uC/AtLMlWgRFmb0YyzovLnv6
-         R2Yc5E2TV6p4buKdm4HQ==
+	id S1754833Ab0KBCFQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 22:05:16 -0400
+Received: from mga01.intel.com ([192.55.52.88]:44637 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752756Ab0KBCFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Nov 2010 22:05:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,278,1286175600"; 
+   d="scan'208";a="853176746"
+Date: Tue, 2 Nov 2010 10:04:32 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 4/7] vmscan: narrowing synchrounous lumply reclaim
+ condition
+Message-ID: <20101102020432.GA4829@localhost>
+References: <20100805150624.31B7.A69D9226@jp.fujitsu.com>
+ <20100805151341.31C3.A69D9226@jp.fujitsu.com>
+ <20101027164138.GD29304@random.random>
+ <20101027171643.GA4896@csn.ul.ie>
+ <20101027180333.GE29304@random.random>
+ <20101028102048.GD4896@csn.ul.ie>
 MIME-Version: 1.0
-In-Reply-To: <1288620663.2712.84.camel@localhost>
-References: <1288620663.2712.84.camel@localhost>
-Date: Tue, 2 Nov 2010 02:55:46 +0100
-Message-ID: <AANLkTimdp1teeaZkn2h32TQjaWxqegp27TNq+rvQcxAF@mail.gmail.com>
-Subject: Re: [PATCH] wrong PERF_COUNT_HW_CACHE_REFERENCES and
- PERF_COUNT_HW_CACHE_MISSES for AMD
-From: Stephane Eranian <eranian@google.com>
-To: =?UTF-8?Q?Robert_Sch=C3=B6ne?= <robert.schoene@tu-dresden.de>
-Cc: Vince Weaver <vweaver1@eecs.utk.edu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
-        x86 <x86@kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101028102048.GD4896@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> To make compaction a full replacement for lumpy, reclaim would have to
+> know how to reclaim order-9 worth of pages and then compact properly.
+> It's not setup for this and a naive algorithm would spend a lot of time
+> in the compaction scanning code (which is pretty inefficient). A possible
+> alternative would be to lumpy-compact i.e. select a page from the LRU and
+> move all pages around it elsewhere. Again, this is not what we are currently
+> doing but it's a direction that could be taken.
 
+Agreed. The more lumpy reclaim, the more young pages being wrongly
+evicted. THP could trigger lumpy reclaims heavily, that's why Andreas
+need to disable it. Lumpy migration looks much better.  Compaction
+looks like some pre/batched lumpy-migration. We may also do on demand
+lumpy migration in future.
 
+> +static void set_lumpy_reclaim_mode(int priority, struct scan_control *sc,
+> +                                bool sync)
+> +{
+> +     enum lumpy_mode mode = sync ? LUMPY_MODE_SYNC : LUMPY_MODE_ASYNC;
+> +
+> +     /*
+> +      * Some reclaim have alredy been failed. No worth to try synchronous
+> +      * lumpy reclaim.
+> +      */
+> +     if (sync && sc->lumpy_reclaim_mode == LUMPY_MODE_NONE)
+> +             return;
+> +
+> +     /*
+> +      * If we need a large contiguous chunk of memory, or have
+> +      * trouble getting a small set of contiguous pages, we
+> +      * will reclaim both active and inactive pages.
+> +      */
+> +     if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
+> +             sc->lumpy_reclaim_mode = mode;
+> +     else if (sc->order && priority < DEF_PRIORITY - 2)
+> +             sc->lumpy_reclaim_mode = mode;
+> +     else
+> +             sc->lumpy_reclaim_mode = LUMPY_MODE_NONE;
+> +}
 
-On Mon, Nov 1, 2010 at 3:11 PM, Robert Schöne
-<robert.schoene@tu-dresden.de> wrote:
->
-> The current arch/x86/kernel/cpu/perf_event_amd.c file lists
-> L1-Instruction-Cache Misses and Accesses as PERF_COUNT_HW_CACHE_MISSES
-> resp. PERF_COUNT_HW_CACHE_REFERENCES.
->
-I always thought PERF_COUNT_HW_CACHE_* was about data cache misses.
-But given that there is no clear definitions for those events, it
-creates confusion.
+Andrea, I don't see the conflicts in doing lumpy reclaim improvements
+in parallel to compaction and THP. If lumpy reclaim hurts THP, it can
+be trivially disabled in your tree for huge page order allocations?
 
-If you change the meaning of HW_CACHE_MISSES, then seems to me, you need
-to change the mapping in the perf tool, because now it includes both data+code.
++       if (sc->order > 9)
++               sc->lumpy_reclaim_mode = LUMPY_MODE_NONE;
 
-
-> This fix uses L2C-Misses and Accesses instead. (Real LLC-events would be
-> better, but there are some restrictions for Northbridge Events on AMD).
->
-And those constraints are handled correctly by the kernel.
-
-The constraint is such that you cannot have more than 4 instances of
-Northbridge events active at the same time per core. If you do, then one
-of them will starve (if issued from different cores).
-
-
-> --- a/arch/x86/kernel/cpu/perf_event_amd.c
-> +++ b/arch/x86/kernel/cpu/perf_event_amd.c
-> @@ -100,8 +100,8 @@ static const u64 amd_perfmon_event_map[] =
->  {
->   [PERF_COUNT_HW_CPU_CYCLES]           = 0x0076,
->   [PERF_COUNT_HW_INSTRUCTIONS]         = 0x00c0,
-> -  [PERF_COUNT_HW_CACHE_REFERENCES]     = 0x0080,
-> -  [PERF_COUNT_HW_CACHE_MISSES]         = 0x0081,
-> +  [PERF_COUNT_HW_CACHE_REFERENCES]     = 0x037D,
-> +  [PERF_COUNT_HW_CACHE_MISSES]         = 0x037E,
->   [PERF_COUNT_HW_BRANCH_INSTRUCTIONS]  = 0x00c2,
->   [PERF_COUNT_HW_BRANCH_MISSES]                = 0x00c3,
->  };
->
+Thanks,
+Fengguang
