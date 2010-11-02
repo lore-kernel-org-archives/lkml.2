@@ -1,53 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753677Ab0KBVr0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 17:47:26 -0400
-Received: from verein.lst.de ([213.95.11.210]:38451 "EHLO verein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753368Ab0KBVrZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 17:47:25 -0400
-Date: Tue, 2 Nov 2010 22:47:06 +0100
-From: Christoph Hellwig <hch@lst.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: Oren Laadan <orenl@cs.columbia.edu>,
-        ksummit-2010-discuss@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-Message-ID: <20101102214706.GA28593@lst.de>
-References: <Pine.LNX.4.64.1011021530470.12128@takamine.ncl.cs.columbia.edu> <4CD08419.5050803@kernel.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CD08419.5050803@kernel.org>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+	id S1751761Ab0KBVuD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 17:50:03 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44985 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750862Ab0KBVuA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 17:50:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <201010292358.27975.rjw@sisk.pl>
+References: <201010292358.27975.rjw@sisk.pl>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 2 Nov 2010 17:49:08 -0400
+Message-ID: <AANLkTikF+8VsxyjmXUc_6Epd923g5DCxneNArFNTGrZ_@mail.gmail.com>
+Subject: Re: [GIT PULL] One more power management fix for 2.6.37
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Greg KH <greg@kroah.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Tejun,
+On Fri, Oct 29, 2010 at 5:58 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>
+> Please pull one more power management fix for 2.6.37 from:
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git pm-fixes
+>
+> It fixes a regression in the core I/O runtime PM code.
 
-your writeup brought up a lot of the same issues that I see with
-the in-kernel C/R.  Various C/R implementations that are entirely
-in userspace or with limited kernel assistance have been in production
-in HPC environments for years.  I think especially for these workloads
-C/R is an extremly useful feature, and a standard implementation would
-do Linux well.
+I think we have more. It may be the driver core, though. So I added
+GregKH to the recipients too...
 
-But I think the "transparent" in-kernel one is the wrong approach.  It
-tries to give the illusion that C/R will just work, while a lot of
-things are simply not support.  In this case whitelisting the allowed
-state by requiring special APIs for all I/O (or even just standard
-APIs as long as they are supposed by the C/R lib you're linked against)
-is the more pragmatic, and I think faithful aproach.  In addition to
-the amount of state not supported despite looking transparant the
-other big problem with the patchset is that it saves the kernel internal
-state which changes all the time from one release to another.  The
-handwaiving is that a userspace tool will solve it.  I'm pretty sure
-that's not the case; it might solve a few cases but the general
-version n to version m conversion is impossible to maintain.  Just look
-at the problem qemu has migration between just a handfull of version
-of the relatively well (compared to random kernel state) defined vmstate
-format.
+On resume-from-ram with basically current -git (-rc1 + four patches):
 
+  ...
+  ata1.01: configured for MWDMA2
+  ata1: EH complete
+  PM: resume of devices complete after 3240.438 msecs
+  ------------[ cut here ]------------
+  WARNING: at lib/kref.c:34 kref_get+0x23/0x2c()
+  Hardware name: HP Compaq 2510p Notebook PC
+  Modules linked in: iwlagn [last unloaded: scsi_wait_scan]
+  Pid: 7985, comm: pm-suspend Not tainted 2.6.37-rc1-00004-geb8abb9 #11
+  Call Trace:
+   [<ffffffff81036082>] warn_slowpath_common+0x80/0x98
+   [<ffffffff810360af>] warn_slowpath_null+0x15/0x17
+   [<ffffffff8120001f>] kref_get+0x23/0x2c
+   [<ffffffff811fee1b>] kobject_get+0x1a/0x21
+   [<ffffffff812d84bb>] get_device+0x14/0x1a
+   [<ffffffff812dfcd5>] dpm_resume_end+0x230/0x37c
+   [<ffffffff81060a09>] suspend_devices_and_enter+0x158/0x188
+   [<ffffffff81060b04>] enter_state+0xcb/0xcf
+   [<ffffffff810602cf>] state_store+0xa7/0xc6
+   [<ffffffff811fec2b>] kobj_attr_store+0x17/0x19
+   [<ffffffff810f75dc>] sysfs_write_file+0xf2/0x12e
+   [<ffffffff810ab99c>] vfs_write+0xb0/0x12f
+   [<ffffffff810abbf8>] sys_write+0x45/0x6c
+   [<ffffffff81001fab>] system_call_fastpath+0x16/0x1b
+  ---[ end trace af18256edd598c9c ]---
 
+Any ideas? I incuded the "ata1:..." lines, but the timestamps are actually
+
+  ...
+  [11627.776490] ata1: EH complete
+  [11629.384719] PM: resume of devices complete after 3240.438 msecs
+  [11629.400284] ------------[ cut here ]------------
+  ...
+
+so it's a second and a half after that ata1 resume EH complete
+message, and a bit after it says that it's completed all device
+resumes.
+
+This oops is then followed by a lot of other oopses,most of which
+didn't get captured because the box hung afterwards. But the next oops
+was in kmem_cache_alloc(), so I think it's because the device
+refcounts were bad and had caused slab corruption when being freed too
+early or something. So I think the other oopses are all a result of
+this kref problem.
+
+Hmm?
+
+                         Linus
