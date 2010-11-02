@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750877Ab0KBKHn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 06:07:43 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:41702 "EHLO
+	id S1751842Ab0KBKHc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 06:07:32 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:40236 "EHLO
 	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751403Ab0KBKHj (ORCPT
+	by vger.kernel.org with ESMTP id S1751607Ab0KBKHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 06:07:39 -0400
-X-Sasl-enc: DMuneQ3uGD8/hBwcHkTedPgSJhZJrm9Zr+jCSn7i3xIU 1288692457
+	Tue, 2 Nov 2010 06:07:21 -0400
+X-Sasl-enc: U6BVKqb1k4dZek1dwrvkDVyvI651/EzA0qa7OjLZens0 1288692440
 To: linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>,
         linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         James Morris <jmorris@namei.org>,
         David Safford <safford@watson.ibm.com>,
         Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: [PATCH 3/3] ima: call evm_inode_post_removexattr() in ima_inode_post_setattr()
+Subject: [PATCH 2/3] ima: fixed ima_inode_setxattr()
 From: Roberto Sassu <roberto.sassu@polito.it>
 Organization: Politecnico di Torino
-Date: Tue, 2 Nov 2010 11:06:25 +0100
+Date: Tue, 2 Nov 2010 11:06:08 +0100
 MIME-Version: 1.0
 Content-Type: multipart/signed;
-  boundary="nextPart1541935.m7EFz7UJr3";
+  boundary="nextPart2918188.e0KPbQ49dX";
   protocol="application/pkcs7-signature";
   micalg=sha1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011021106.26253.roberto.sassu@polito.it>
+Message-Id: <201011021106.08995.roberto.sassu@polito.it>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1541935.m7EFz7UJr3
+--nextPart2918188.e0KPbQ49dX
 Content-Type: text/plain;
   charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 
-This patch inserts the call evm_inode_post_removexattr() after removing
-the 'security.ima' extended attribute in the function
-ima_inode_post_setattr() in order to keep 'security.evm' up to date.
+The function ima_inode_setxattr() must call ima_reset_appraise_flags()
+only if the extended attribute 'security.ima' is being set. This patch
+prevents the latter function to be invoked for other extended attributes.
 
 Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 =2D--
- security/integrity/ima/ima_main.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+ security/integrity/ima/ima_main.c |   12 ++++++++----
+ 1 files changed, 8 insertions(+), 4 deletions(-)
 
 diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima=
 _main.c
-index 32dadfa..df92f4d 100644
+index cd29bf2..32dadfa 100644
 =2D-- a/security/integrity/ima/ima_main.c
 +++ b/security/integrity/ima/ima_main.c
-@@ -25,6 +25,7 @@
- #include <linux/slab.h>
- #include <linux/xattr.h>
- #include <linux/ima.h>
-+#include <linux/evm.h>
-=20
- #include "ima.h"
-=20
-@@ -365,8 +366,10 @@ void ima_inode_post_setattr(struct dentry *dentry)
- 	iint->flags &=3D ~(IMA_APPRAISE | IMA_APPRAISED);
- 	must_appraise =3D ima_must_appraise(iint, inode, MAY_ACCESS,
- 					  POST_SETATTR);
-=2D	if (!must_appraise)
-+	if (!must_appraise) {
- 		rc =3D inode->i_op->removexattr(dentry, XATTR_NAME_IMA);
-+		evm_inode_post_removexattr(dentry, XATTR_NAME_IMA);
+@@ -380,9 +380,11 @@ void ima_inode_post_setattr(struct dentry *dentry)
+ static int ima_protect_xattr(struct dentry *dentry, const char *xattr_name,
+ 			     const void *xattr_value, size_t xattr_value_len)
+ {
+=2D	if ((strcmp(xattr_name, XATTR_NAME_IMA) =3D=3D 0)
+=2D	    && !capable(CAP_SYS_ADMIN))
+=2D		return -EPERM;
++	if (strcmp(xattr_name, XATTR_NAME_IMA) =3D=3D 0) {
++		if (!capable(CAP_SYS_ADMIN))
++			return -EPERM;
++		return 1;
 +	}
- 	mutex_unlock(&iint->mutex);
- 	kref_put(&iint->refcount, iint_free);
- 	return;
+ 	return 0;
+ }
+=20
+@@ -411,8 +413,10 @@ int ima_inode_setxattr(struct dentry *dentry, const ch=
+ar *xattr_name,
+=20
+ 	result =3D ima_protect_xattr(dentry, xattr_name, xattr_value,
+ 				 xattr_value_len);
+=2D	if (!result)
++	if (result =3D=3D 1) {
+ 		ima_reset_appraise_flags(dentry->d_inode);
++		result =3D 0;
++	}
+ 	return result;
+ }
+=20
 =2D-=20
 1.7.2.3
 
 
---nextPart1541935.m7EFz7UJr3
+--nextPart2918188.e0KPbQ49dX
 Content-Type: application/pkcs7-signature; name="smime.p7s"
 Content-Disposition: attachment; filename="smime.p7s"
 Content-Transfer-Encoding: base64
@@ -152,12 +160,12 @@ TdtCm/yxR8XUlFyZkLHfhY19VW4luxb7KZ4GiPKDERdQwBb0kja4eqSOBkAPWZ9Y8zpv4bAxggIc
 MIICGAIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBkaSBUb3Jpbm8x
 NjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eQIC
 A8EwCQYFKw4DAhoFAKCBhzAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEP
-Fw0xMDExMDIxMDA2MjZaMCMGCSqGSIb3DQEJBDEWBBTpU54Rkiwcfewg3K1yGmWmgLgLYjAoBgkq
-hkiG9w0BCQ8xGzAZMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzANBgkqhkiG9w0BAQEFAASCAQB9
-rDb4yQMaAefGVW5RPDPgMoVK1SfZKwV8heuEVnT0tcnnLeLh3Qwr5NeMbxfhENjcWffuXxLl+Zi/
-jtrpgBI5gDpyTAL8htTIu+7tYYTq9JVEvOTYPO1HtXvre4KYU0cUb9DTHpg+V6o81GKYZ9y3uAJo
-IXk1vATeCBHBkpedZZnPCPAN/P2+oRAB4tSUWXTtCWs0OMt2CAZu1Qk0pGe0AM7nn6EwJLn6+OtE
-4yn5kh2mLgegeua86bArHJnlxKZKwiSctyuA69KE0jFLcfSsdrs9YtXDmbEC6UQPOFmp39e1OUt0
-0YjjRoTmTHImuGmoPTkuN1w9zq05F21Syz0zAAAAAAAA
+Fw0xMDExMDIxMDA2MDhaMCMGCSqGSIb3DQEJBDEWBBSv2fsThhwI2xEc2Qa5CWPHMwfQOjAoBgkq
+hkiG9w0BCQ8xGzAZMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzANBgkqhkiG9w0BAQEFAASCAQCl
+PJxf7kh2VupfyLtZQczHrdU+ePirN+ISPshMYP/WYjqyN9WB7pcCRY3Yj/kEjpnDwcdDJwJYFlkj
+b3FxFgQn9ONsOCABimNsei3GB19FQBHe772UBVEo0hu3zN2jNFz3o0fkmKAMB/dYj/lpDkh2g3pc
+jRkND4X4c8R2VORgOKAZiviiuS9tFT4Xg7gnwcvxFOS9yOOO2vWwl3RtkMMJPDan8ythD7Kd6jiE
+VQf95GLspG+gOzPjP8d5TnJ+1YDQZc2AdHFJebOUDWW/SxIX+m2GurKx7bCqH0jdrGXYNS65Z2XO
+imntZVQH9nlUOuILBgrli5p3N9cO49uIKmZAAAAAAAAA
 
---nextPart1541935.m7EFz7UJr3--
+--nextPart2918188.e0KPbQ49dX--
