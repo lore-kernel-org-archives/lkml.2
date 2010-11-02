@@ -1,126 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755020Ab0KBBss (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Nov 2010 21:48:48 -0400
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:42582 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754578Ab0KBBso (ORCPT
+	id S1755079Ab0KBBtJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Nov 2010 21:49:09 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:57764 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752613Ab0KBBtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Nov 2010 21:48:44 -0400
-Date: Tue, 2 Nov 2010 10:49:34 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org,
-        Alexander Graf <agraf@suse.de>
-Subject: Re: [PATCH] KVM x86: remove memset, use vzalloc and don't assign
- the same value to a variable twice
-Message-Id: <20101102104934.ecd779dd.yoshikawa.takuya@oss.ntt.co.jp>
-In-Reply-To: <alpine.LNX.2.00.1011011924440.9616@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1010302020150.1572@swampdragon.chaosbits.net>
-	<4CCE0EB2.9070302@oss.ntt.co.jp>
-	<alpine.LNX.2.00.1011011924440.9616@swampdragon.chaosbits.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	Mon, 1 Nov 2010 21:49:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=YxDCFHzAOHg3qZemQo6g0PLQ05hUYuAujFf82fmHa5lnuYxP4EbsZcanCmSth5sJGG
+         6g5N6NRMBxhvMuofn8cbFKF+h8NcEbFmVN3FNKBJedbZcDBh6OoS/vAZgHWbfl+Mowdd
+         gE2g+TCGvtFNzAOcFUhaOZCSBOVaFuoUejqa8=
+Subject: [PATCH] dma: intel_mid_dma: fix double free on mid_setup_dma error
+	path
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>
+Content-Type: text/plain
+Date: Tue, 02 Nov 2010 09:52:17 +0800
+Message-Id: <1288662737.20990.4.camel@mola>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jesper, (dropped some addresses from Cc)
+We should not call kfree(dma) in mid_setup_dma error path because
+the memory is allocated in intel_mid_dma_probe and will be freed
+in intel_mid_dma_probe error path if mid_setup_dma return error.
 
-> > Jesper Juhl wrote:
-> There's definately a positive size impact for the generated object code 
-> and we save having to do the call to memset() and the cost of a vzalloc() 
-> call looks more or less the same as a call to vmalloc() to me.
-
-> > This patch is not based on kvm.git, I guess.
-> > 
-> Nope. It was generated against mainline git as of a couple of days ago. I 
-> can generate a version against kvm.git if you prefer.
-
-Sorry, I should have said more clearly.
-
-kvm_vm_ioctl_get_dirty_log() has been changed since latest mainline kernel was released.
-Furthermore, vmalloc() in it is to be removed soon, currently in kvm's next.
-
-I have checked all vmalloc() + memset() in kvm, and there are three remaining.
-See the patch below.
-  - I have tested on x86.
-  - I can test ppc later if needed, but this is so trivial that Alex will see
-    no problem about this, probably.
-
-So please write your Signed-off-by and ask Avi and Marcelo to apply.
-
-Thanks,
-  Takuya
-
-===
-Subject: [PATCH] KVM: replace vmalloc and memset with vzalloc
-
-Let's use newly introduced vzalloc().
-
-Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-Cc: Jesper Juhl <jj@chaosbits.net>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- arch/powerpc/kvm/book3s.c |    4 +---
- virt/kvm/kvm_main.c       |    9 ++-------
- 2 files changed, 3 insertions(+), 10 deletions(-)
+ drivers/dma/intel_mid_dma.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/kvm/book3s.c b/arch/powerpc/kvm/book3s.c
-index e316847..badc983 100644
---- a/arch/powerpc/kvm/book3s.c
-+++ b/arch/powerpc/kvm/book3s.c
-@@ -1307,12 +1307,10 @@ struct kvm_vcpu *kvmppc_core_vcpu_create(struct kvm *kvm, unsigned int id)
- 	int err = -ENOMEM;
- 	unsigned long p;
- 
--	vcpu_book3s = vmalloc(sizeof(struct kvmppc_vcpu_book3s));
-+	vcpu_book3s = vzalloc(sizeof(struct kvmppc_vcpu_book3s));
- 	if (!vcpu_book3s)
- 		goto out;
- 
--	memset(vcpu_book3s, 0, sizeof(struct kvmppc_vcpu_book3s));
--
- 	vcpu_book3s->shadow_vcpu = (struct kvmppc_book3s_shadow_vcpu *)
- 		kzalloc(sizeof(*vcpu_book3s->shadow_vcpu), GFP_KERNEL);
- 	if (!vcpu_book3s->shadow_vcpu)
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index dbe1d6a..bd44a81 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -606,13 +606,11 @@ int __kvm_set_memory_region(struct kvm *kvm,
- 	/* Allocate if a slot is being created */
- #ifndef CONFIG_S390
- 	if (npages && !new.rmap) {
--		new.rmap = vmalloc(npages * sizeof(*new.rmap));
-+		new.rmap = vzalloc(npages * sizeof(*new.rmap));
- 
- 		if (!new.rmap)
- 			goto out_free;
- 
--		memset(new.rmap, 0, npages * sizeof(*new.rmap));
--
- 		new.user_alloc = user_alloc;
- 		new.userspace_addr = mem->userspace_addr;
+diff --git a/drivers/dma/intel_mid_dma.c b/drivers/dma/intel_mid_dma.c
+index 338bc4e..4c55d45 100644
+--- a/drivers/dma/intel_mid_dma.c
++++ b/drivers/dma/intel_mid_dma.c
+@@ -1075,7 +1075,6 @@ static int mid_setup_dma(struct pci_dev *pdev)
+ 	if (NULL == dma->dma_pool) {
+ 		pr_err("ERR_MDMA:pci_pool_create failed\n");
+ 		err = -ENOMEM;
+-		kfree(dma);
+ 		goto err_dma_pool;
  	}
-@@ -635,14 +633,11 @@ int __kvm_set_memory_region(struct kvm *kvm,
- 			     >> KVM_HPAGE_GFN_SHIFT(level));
- 		lpages -= base_gfn >> KVM_HPAGE_GFN_SHIFT(level);
  
--		new.lpage_info[i] = vmalloc(lpages * sizeof(*new.lpage_info[i]));
-+		new.lpage_info[i] = vzalloc(lpages * sizeof(*new.lpage_info[i]));
- 
- 		if (!new.lpage_info[i])
- 			goto out_free;
- 
--		memset(new.lpage_info[i], 0,
--		       lpages * sizeof(*new.lpage_info[i]));
--
- 		if (base_gfn & (KVM_PAGES_PER_HPAGE(level) - 1))
- 			new.lpage_info[i][0].write_count = 1;
- 		if ((base_gfn+npages) & (KVM_PAGES_PER_HPAGE(level) - 1))
+@@ -1186,7 +1185,6 @@ err_engine:
+ 	free_irq(pdev->irq, dma);
+ err_irq:
+ 	pci_pool_destroy(dma->dma_pool);
+-	kfree(dma);
+ err_dma_pool:
+ 	pr_err("ERR_MDMA:setup_dma failed: %d\n", err);
+ 	return err;
 -- 
-1.7.0.4
+1.7.2
+
+
 
