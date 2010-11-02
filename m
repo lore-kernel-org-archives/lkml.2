@@ -1,7675 +1,5708 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752152Ab0KBW6y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 18:58:54 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:33399 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751596Ab0KBW6r convert rfc822-to-8bit (ORCPT
+	id S1751842Ab0KBXHB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 19:07:01 -0400
+Received: from serrano.cc.columbia.edu ([128.59.29.6]:45339 "EHLO
+	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796Ab0KBXG4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 18:58:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=dtTOz7uuQgweTvtvVW8EKYLrTZgmBO9Ipo28SctF++fzNEFah/4s1J4/W3cToRkugF
-         BVCVsWHgp1T7BQf9rBIYHw4Jp4D1FN6yNseYBydtYF0xu1OrFbULqQBZT0ry2lAdmg1q
-         /10tjDoG4/kqAw339oXJed0+6LCngDh2IgEUM=
-From: Diego Calleja <diegocg@gmail.com>
-Reply-To: diegocg@gmail.com
-To: "werner" <w.landgraf@ru.ru>
-Subject: Re: 2.6.37-rc1 boot Problem - BUG: unable to handle kernel null pointer - dmesg und config Datei
-Date: Tue, 2 Nov 2010 23:58:32 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-dirty; KDE/4.5.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-References: <web-395697375@zbackend1.aha.ru>
-In-Reply-To: <web-395697375@zbackend1.aha.ru>
+	Tue, 2 Nov 2010 19:06:56 -0400
+X-Greylist: delayed 1777 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Nov 2010 19:06:55 EDT
+Message-ID: <4CD09235.9010107@cs.columbia.edu>
+Date: Tue, 02 Nov 2010 18:35:33 -0400
+From: Oren Laadan <orenl@cs.columbia.edu>
+Organization: Columbia University
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Lightning/1.0b1 Thunderbird/3.0.8
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201011022358.32889.diegocg@gmail.com>
+To: ksummit-2010-discuss@lists.linux-foundation.org
+CC: Linux-Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: checkpoint-restart: naked patch
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> BUG: unable to handle kernel NULL pointer dereference at 
-> 00000008
-> IP: [<feee45f4>] atl1_probe+0x7ee/0x992 [atl1]
+[resending with the missing CC's]
 
-I hit this problem too (CC'ing netdev)
+Hi,
 
-On Martes, 2 de Noviembre de 2010 03:09:39 werner escribió:
-> 000000 (gap: b0000000:4ec00000)
-> Booting paravirtualized kernel on bare hardware
-> setup_percpu: NR_CPUS:32 nr_cpumask_bits:32 nr_cpu_ids:2 
-> nr_node_ids:1
-> PERCPU: 10 4K pages/cpu @f7ffe000 s26896 r0 d14064
-> pcpu-alloc: s26896 r0 d14064 u40960 alloc=10*4096
-> pcpu-alloc: [0] 0 [0] 1
-> Built 1 zonelists in Zone order, mobility grouping on. 
->  Total pages: 715087
-> Kernel command line: BOOT_IMAGE=2637rc1 ro root=801 4 
-> root=/dev/sda1 devfs=nomount noapic nolapic acpi=ht 
-> rootwait percpu_alloc=page
-> PID hash table entries: 4096 (order: 2, 16384 bytes)
-> Dentry cache hash table entries: 131072 (order: 7, 524288 
-> bytes)
-> Inode-cache hash table entries: 65536 (order: 6, 262144 
-> bytes)
-> Initializing CPU#0
-> Initializing HighMem for node 0 (000377fe:000affc0)
-> Memory: 2836460k/2883328k available (13895k kernel code, 
-> 46416k reserved, 4973k data, 876k init, 1974024k highmem)
-> virtual kernel memory layout:
->      fixmap  : 0xffd36000 - 0xfffff000   (2852 kB)
->      pkmap   : 0xff800000 - 0xffc00000   (4096 kB)
->      vmalloc : 0xf7ffe000 - 0xff7fe000   ( 120 MB)
->      lowmem  : 0xc0000000 - 0xf77fe000   ( 887 MB)
->        .init : 0xc226e000 - 0xc2349000   ( 876 kB)
->        .data : 0xc1d91da3 - 0xc226d3b8   (4973 kB)
->        .text : 0xc1000000 - 0xc1d91da3   (13895 kB)
-> Checking if this processor honours the WP bit even in 
-> supervisor mode...Ok.
-> SLUB: Genslabs=15, HWalign=64, Order=0-3, MinObjects=0, 
-> CPUs=2, Nodes=1
-> Preemptable hierarchical RCU implementation.
-> 	RCU-based detection of stalled CPUs is disabled.
-> 	Verbose stalled-CPUs detection is disabled.
-> NR_IRQS:1280
-> CPU 0 irqstacks, hard=f5c08000 soft=f5c0a000
-> Extended CMOS year: 2000
-> spurious 8259A interrupt: IRQ7.
-> Console: colour dummy device 80x25
-> console [tty0] enabled
-> hpet clockevent registered
-> Fast TSC calibration using PIT
-> Detected 2410.917 MHz processor.
-> Calibrating delay loop (skipped), value calculated using 
-> timer frequency.. 4821.83 BogoMIPS (lpj=2410917)
-> pid_max: default: 32768 minimum: 301
-> Security Framework initialized
-> Mount-cache hash table entries: 512
-> CPU: Physical Processor ID: 0
-> CPU: Processor Core ID: 0
-> mce: CPU supports 5 MCE banks
-> using C1E aware idle routine
-> Performance Events:
-> no APIC, boot with the "lapic" boot parameter to 
-> force-enable it.
-> no hardware sampling interrupt available.
-> AMD PMU driver.
-> ... version:                0
-> ... bit width:              48
-> ... generic registers:      4
-> ... value mask:             0000ffffffffffff
-> ... max period:             00007fffffffffff
-> ... fixed-purpose events:   0
-> ... event mask:             000000000000000f
-> ACPI: Core revision 20101013
-> ACPI: setting ELCR to 0200 (from 8c00)
-> SMP disabled
-> MCE: In-kernel MCE decoding enabled.
-> Brought up 1 CPUs
-> Total of 1 processors activated (4821.83 BogoMIPS).
-> devtmpfs: initialized
-> xor: automatically using best checksumming function: 
-> pIII_sse
->     pIII_sse  :  6836.000 MB/sec
-> xor: using function: pIII_sse (6836.000 MB/sec)
-> regulator: core version 0.5
-> regulator: dummy:
-> NET: Registered protocol family 16
-> EISA bus registered
-> node 0 link 0: io port [1000, ffffff]
-> TOM: 00000000c0000000 aka 3072M
-> node 0 link 0: mmio [e0000000, efffffff]
-> node 0 link 0: mmio [a0000, bffff]
-> node 0 link 0: mmio [c0000000, fe0bffff]
-> TOM2: 0000000240000000 aka 9216M
-> bus: [00, ff] on node 0 link 0
-> bus: 00 index 0 [io  0x0000-0xffff]
-> bus: 00 index 1 [mem 0xc0000000-0xffffffff]
-> bus: 00 index 2 [mem 0x000a0000-0x000bffff]
-> ACPI: bus type pci registered
-> PCI: MMCONFIG for domain 0000 [bus 00-ff] at [mem 
-> 0xe0000000-0xefffffff] (base 0xe0000000)
-> PCI: not using MMCONFIG
-> PCI: PCI BIOS revision 3.00 entry at 0xf0031, last bus=4
-> PCI: Using configuration type 1 for base access
-> bio: create slab <bio-0> at 0
-> raid6: int32x1    613 MB/s
-> raid6: int32x2    828 MB/s
-> raid6: int32x4    675 MB/s
-> raid6: int32x8    535 MB/s
-> raid6: mmxx1     1941 MB/s
-> raid6: mmxx2     3343 MB/s
-> raid6: sse1x1    1906 MB/s
-> raid6: sse1x2    2945 MB/s
-> raid6: sse2x1    3312 MB/s
-> raid6: sse2x2    4312 MB/s
-> raid6: using algorithm sse2x2 (4312 MB/s)
-> ACPI: EC: Look up EC in DSDT
-> ACPI: Executed 1 blocks of module-level executable AML 
-> code
-> ACPI: Interpreter enabled
-> ACPI: (supports S0 S1 S3 S4 S5)
-> ACPI: Using PIC for interrupt routing
-> PCI: MMCONFIG for domain 0000 [bus 00-ff] at [mem 
-> 0xe0000000-0xefffffff] (base 0xe0000000)
-> PCI: MMCONFIG at [mem 0xe0000000-0xefffffff] reserved in 
-> ACPI motherboard resources
-> PCI: Using MMCONFIG for extended config space
-> ACPI: No dock devices found.
-> PCI: Ignoring host bridge windows from ACPI; if necessary, 
-> use "pci=use_crs" and report a bug
-> ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])
-> pci_root PNP0A03:00: host bridge window [io 
->  0x0000-0x0cf7] (ignored)
-> pci_root PNP0A03:00: host bridge window [io 
->  0x0d00-0xffff] (ignored)
-> pci_root PNP0A03:00: host bridge window [mem 
-> 0x000a0000-0x000bffff] (ignored)
-> pci_root PNP0A03:00: host bridge window [mem 
-> 0x000d0000-0x000dffff] (ignored)
-> pci_root PNP0A03:00: host bridge window [mem 
-> 0xb0000000-0xff77ffff] (ignored)
-> pci 0000:00:00.0: [10de:03ea] type 0 class 0x000500
-> pci 0000:00:01.0: [10de:03e0] type 0 class 0x000601
-> pci 0000:00:01.1: [10de:03eb] type 0 class 0x000c05
-> pci 0000:00:01.1: reg 10: [io  0xdc00-0xdc3f]
-> pci 0000:00:01.1: reg 20: [io  0x0600-0x063f]
-> pci 0000:00:01.1: reg 24: [io  0x0700-0x073f]
-> pci 0000:00:01.1: PME# supported from D3hot D3cold
-> pci 0000:00:01.1: PME# disabled
-> pci 0000:00:01.2: [10de:03f5] type 0 class 0x000500
-> pci 0000:00:02.0: [10de:03f1] type 0 class 0x000c03
-> pci 0000:00:02.0: reg 10: [mem 0xdfdff000-0xdfdfffff]
-> pci 0000:00:02.0: supports D1 D2
-> pci 0000:00:02.0: PME# supported from D0 D1 D2 D3hot 
-> D3cold
-> pci 0000:00:02.0: PME# disabled
-> pci 0000:00:02.1: [10de:03f2] type 0 class 0x000c03
-> pci 0000:00:02.1: reg 10: [mem 0xdfdfec00-0xdfdfecff]
-> pci 0000:00:02.1: supports D1 D2
-> pci 0000:00:02.1: PME# supported from D0 D1 D2 D3hot 
-> D3cold
-> pci 0000:00:02.1: PME# disabled
-> pci 0000:00:04.0: [10de:03f3] type 1 class 0x000604
-> pci 0000:00:05.0: [10de:03f0] type 0 class 0x000403
-> pci 0000:00:05.0: reg 10: [mem 0xdfdf8000-0xdfdfbfff]
-> pci 0000:00:05.0: PME# supported from D3hot D3cold
-> pci 0000:00:05.0: PME# disabled
-> pci 0000:00:06.0: [10de:03ec] type 0 class 0x000101
-> pci 0000:00:06.0: reg 20: [io  0xffa0-0xffaf]
-> pci 0000:00:08.0: [10de:03f6] type 0 class 0x000101
-> pci 0000:00:08.0: reg 10: [io  0xd480-0xd487]
-> pci 0000:00:08.0: reg 14: [io  0xd400-0xd403]
-> pci 0000:00:08.0: reg 18: [io  0xd080-0xd087]
-> pci 0000:00:08.0: reg 1c: [io  0xd000-0xd003]
-> pci 0000:00:08.0: reg 20: [io  0xcc00-0xcc0f]
-> pci 0000:00:08.0: reg 24: [mem 0xdfdfd000-0xdfdfdfff]
-> pci 0000:00:09.0: [10de:03e8] type 1 class 0x000604
-> pci 0000:00:09.0: PME# supported from D0 D1 D2 D3hot 
-> D3cold
-> pci 0000:00:09.0: PME# disabled
-> pci 0000:00:0b.0: [10de:03e9] type 1 class 0x000604
-> pci 0000:00:0b.0: PME# supported from D0 D1 D2 D3hot 
-> D3cold
-> pci 0000:00:0b.0: PME# disabled
-> pci 0000:00:0c.0: [10de:03e9] type 1 class 0x000604
-> pci 0000:00:0c.0: PME# supported from D0 D1 D2 D3hot 
-> D3cold
-> pci 0000:00:0c.0: PME# disabled
-> pci 0000:00:0d.0: [10de:03d1] type 0 class 0x000300
-> pci 0000:00:0d.0: reg 10: [mem 0xde000000-0xdeffffff]
-> pci 0000:00:0d.0: reg 14: [mem 0xc0000000-0xcfffffff 64bit 
-> pref]
-> pci 0000:00:0d.0: reg 1c: [mem 0xdd000000-0xddffffff 
-> 64bit]
-> pci 0000:00:0d.0: reg 30: [mem 0xdfdc0000-0xdfddffff pref]
-> pci 0000:00:18.0: [1022:1100] type 0 class 0x000600
-> pci 0000:00:18.1: [1022:1101] type 0 class 0x000600
-> pci 0000:00:18.2: [1022:1102] type 0 class 0x000600
-> pci 0000:00:18.3: [1022:1103] type 0 class 0x000600
-> PCI: peer root bus 00 res updated from pci conf
-> pci 0000:01:07.0: [10ec:8139] type 0 class 0x000200
-> pci 0000:01:07.0: reg 10: [io  0xe800-0xe8ff]
-> pci 0000:01:07.0: reg 14: [mem 0xdfeffc00-0xdfeffcff]
-> pci 0000:01:07.0: supports D1 D2
-> pci 0000:01:07.0: PME# supported from D1 D2 D3hot
-> pci 0000:01:07.0: PME# disabled
-> pci 0000:00:04.0: PCI bridge to [bus 01-01] (subtractive 
-> decode)
-> pci 0000:00:04.0:   bridge window [io  0xe000-0xefff]
-> pci 0000:00:04.0:   bridge window [mem 
-> 0xdfe00000-0xdfefffff]
-> pci 0000:00:04.0:   bridge window [mem 
-> 0xfff00000-0x000fffff pref] (disabled)
-> pci 0000:00:04.0:   bridge window [io  0x0000-0xffff] 
-> (subtractive decode)
-> pci 0000:00:04.0:   bridge window [mem 
-> 0xc0000000-0xffffffff] (subtractive decode)
-> pci 0000:00:04.0:   bridge window [mem 
-> 0x000a0000-0x000bffff] (subtractive decode)
-> pci 0000:00:09.0: PCI bridge to [bus 02-02]
-> pci 0000:00:09.0:   bridge window [io  0xf000-0x0000] 
-> (disabled)
-> pci 0000:00:09.0:   bridge window [mem 
-> 0xfff00000-0x000fffff] (disabled)
-> pci 0000:00:09.0:   bridge window [mem 
-> 0xfff00000-0x000fffff pref] (disabled)
-> pci 0000:00:0b.0: PCI bridge to [bus 03-03]
-> pci 0000:00:0b.0:   bridge window [io  0xf000-0x0000] 
-> (disabled)
-> pci 0000:00:0b.0:   bridge window [mem 
-> 0xfff00000-0x000fffff] (disabled)
-> pci 0000:00:0b.0:   bridge window [mem 
-> 0xfff00000-0x000fffff pref] (disabled)
-> pci 0000:04:00.0: [1969:1048] type 0 class 0x000200
-> pci 0000:04:00.0: reg 10: [mem 0xdffc0000-0xdfffffff 
-> 64bit]
-> pci 0000:04:00.0: reg 30: [mem 0xdffa0000-0xdffbffff pref]
-> pci 0000:04:00.0: PME# supported from D3hot D3cold
-> pci 0000:04:00.0: PME# disabled
-> pci 0000:04:00.0: disabling ASPM on pre-1.1 PCIe device. 
->  You can enable it with 'pcie_aspm=force'
-> pci 0000:00:0c.0: PCI bridge to [bus 04-04]
-> pci 0000:00:0c.0:   bridge window [io  0xf000-0x0000] 
-> (disabled)
-> pci 0000:00:0c.0:   bridge window [mem 
-> 0xdff00000-0xdfffffff]
-> pci 0000:00:0c.0:   bridge window [mem 
-> 0xfff00000-0x000fffff pref] (disabled)
-> pci_bus 0000:00: on NUMA node 0
-> ACPI: PCI Interrupt Routing Table [\_SB_.PCI0._PRT]
-> ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.P0P1._PRT]
-> ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.P0P2._PRT]
-> ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.BR11._PRT]
-> ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.BR12._PRT]
-> ACPI: PCI Interrupt Link [LNKA] (IRQs 7 10 11 14) *0, 
-> disabled.
-> ACPI: PCI Interrupt Link [LNKB] (IRQs 7 10 *11 14)
-> ACPI: PCI Interrupt Link [LNKC] (IRQs 7 10 11 14) *0, 
-> disabled.
-> ACPI: PCI Interrupt Link [LNKD] (IRQs 7 10 11 14) *0, 
-> disabled.
-> ACPI: PCI Interrupt Link [LNEA] (IRQs 7 10 *11 14)
-> ACPI: PCI Interrupt Link [LNEB] (IRQs 7 10 11 14) *0, 
-> disabled.
-> ACPI: PCI Interrupt Link [LNEC] (IRQs 7 10 11 14) *0, 
-> disabled.
-> ACPI: PCI Interrupt Link [LNED] (IRQs 7 10 11 14) *0, 
-> disabled.
-> ACPI: PCI Interrupt Link [LUB0] (IRQs 7 10 *11 14)
-> ACPI: PCI Interrupt Link [LUB2] (IRQs 7 *10 11 14)
-> ACPI: PCI Interrupt Link [LMAC] (IRQs 7 10 11 14) *0, 
-> disabled.
-> ACPI: PCI Interrupt Link [LAZA] (IRQs 7 10 *11 14)
-> ACPI: PCI Interrupt Link [LACI] (IRQs 7 10 11 14) *0, 
-> disabled.
-> ACPI: PCI Interrupt Link [LMC9] (IRQs 7 10 *11 14)
-> ACPI: PCI Interrupt Link [LSMB] (IRQs 7 *10 11 14)
-> ACPI: PCI Interrupt Link [LPMU] (IRQs 7 10 11 14) *0, 
-> disabled.
-> ACPI: PCI Interrupt Link [LSA0] (IRQs *15)
-> ACPI: PCI Interrupt Link [LSA1] (IRQs 5) *0, disabled.
-> ACPI: PCI Interrupt Link [LATA] (IRQs 7 10 11 14) *0, 
-> disabled.
-> HEST: Table is not found!
-> vgaarb: device added: 
-> PCI:0000:00:0d.0,decodes=io+mem,owns=io+mem,locks=none
-> vgaarb: loaded
-> SCSI subsystem initialized
-> libata version 3.00 loaded.
-> usbcore: registered new interface driver usbfs
-> usbcore: registered new interface driver hub
-> usbcore: registered new device driver usb
-> wmi: Mapper loaded
-> PCI: Using ACPI for IRQ routing
-> PCI: pci_cache_line_size set to 64 bytes
-> reserve RAM buffer: 000000000009fc00 - 000000000009ffff
-> reserve RAM buffer: 00000000affc0000 - 00000000afffffff
-> NetLabel: Initializing
-> NetLabel:  domain hash size = 128
-> NetLabel:  protocols = UNLABELED CIPSOv4
-> NetLabel:  unlabeled traffic allowed by default
-> hpet0: at MMIO 0xfed00000, IRQs 2, 8, 31
-> hpet0: 3 comparators, 32-bit 25.000000 MHz counter
-> Switching to clocksource hpet
-> FS-Cache: Loaded
-> CacheFiles: Loaded
-> pnp: PnP ACPI init
-> ACPI: bus type pnp registered
-> pnp 00:00: [bus 00-ff]
-> pnp 00:00: [io  0x0cf8-0x0cff]
-> pnp 00:00: [io  0x0000-0x0cf7 window]
-> pnp 00:00: [io  0x0d00-0xffff window]
-> pnp 00:00: [mem 0x000a0000-0x000bffff window]
-> pnp 00:00: [mem 0x000d0000-0x000dffff window]
-> pnp 00:00: [mem 0xb0000000-0xff77ffff window]
-> pnp 00:00: Plug and Play ACPI device, IDs PNP0a03 (active)
-> pnp 00:01: [dma 4]
-> pnp 00:01: [io  0x0000-0x000f]
-> pnp 00:01: [io  0x0081-0x0083]
-> pnp 00:01: [io  0x0087]
-> pnp 00:01: [io  0x0089-0x008b]
-> pnp 00:01: [io  0x008f]
-> pnp 00:01: [io  0x00c0-0x00df]
-> pnp 00:01: Plug and Play ACPI device, IDs PNP0200 (active)
-> pnp 00:02: [io  0x0070-0x0071]
-> pnp 00:02: [irq 8]
-> pnp 00:02: Plug and Play ACPI device, IDs PNP0b00 (active)
-> pnp 00:03: [io  0x0061]
-> pnp 00:03: Plug and Play ACPI device, IDs PNP0800 (active)
-> pnp 00:04: [io  0x00f0-0x00ff]
-> pnp 00:04: [irq 13]
-> pnp 00:04: Plug and Play ACPI device, IDs PNP0c04 (active)
-> pnp 00:05: [io  0x03f0-0x03f5]
-> pnp 00:05: [io  0x03f7]
-> pnp 00:05: [irq 6]
-> pnp 00:05: [dma 2]
-> pnp 00:05: Plug and Play ACPI device, IDs PNP0700 (active)
-> pnp 00:06: [io  0x0378-0x037f]
-> pnp 00:06: [io  0x0778-0x077f]
-> pnp 00:06: [irq 7]
-> pnp 00:06: [dma 3]
-> pnp 00:06: Plug and Play ACPI device, IDs PNP0401 (active)
-> pnp 00:07: [mem 0x000d0000-0x000d3fff window]
-> pnp 00:07: [mem 0x000d4000-0x000d7fff window]
-> pnp 00:07: [mem 0x000de000-0x000dffff window]
-> pnp 00:07: [io  0x0010-0x001f]
-> pnp 00:07: [io  0x0022-0x003f]
-> pnp 00:07: [io  0x0044-0x004d]
-> pnp 00:07: [io  0x0050-0x005f]
-> pnp 00:07: [io  0x0062-0x0063]
-> pnp 00:07: [io  0x0065-0x006f]
-> pnp 00:07: [io  0x0072-0x007f]
-> pnp 00:07: [io  0x0080]
-> pnp 00:07: [io  0x0084-0x0086]
-> pnp 00:07: [io  0x0088]
-> pnp 00:07: [io  0x008c-0x008e]
-> pnp 00:07: [io  0x0090-0x009f]
-> pnp 00:07: [io  0x00a2-0x00bf]
-> pnp 00:07: [io  0x00e0-0x00ef]
-> pnp 00:07: [io  0x04d0-0x04d1]
-> pnp 00:07: [io  0x0800-0x080f]
-> pnp 00:07: [io  0x0500-0x057f]
-> pnp 00:07: [io  0x0580-0x05ff]
-> pnp 00:07: [io  0x0800-0x087f]
-> pnp 00:07: [io  0x0880-0x08ff]
-> pnp 00:07: [io  0x0d00-0x0d7f]
-> pnp 00:07: [io  0x0d80-0x0dff]
-> pnp 00:07: [io  0x2000-0x207f]
-> pnp 00:07: [io  0x2080-0x20ff]
-> pnp 00:07: [mem 0xfefe0000-0xfefe01ff]
-> pnp 00:07: [mem 0xfefe1000-0xfefe1fff]
-> pnp 00:07: [mem 0xfee01000-0xfeefffff]
-> pnp 00:07: [mem 0xffb80000-0xffffffff]
-> pnp 00:07: [mem 0xff300000-0xff3fffff]
-> pnp 00:07: Plug and Play ACPI device, IDs PNP0c02 (active)
-> pnp 00:08: [mem 0xfed00000-0xfed00fff]
-> pnp 00:08: Plug and Play ACPI device, IDs PNP0103 (active)
-> pnp 00:09: [mem 0xfec00000-0xfec00fff]
-> pnp 00:09: [mem 0xfee00000-0xfee00fff]
-> pnp 00:09: [mem 0xb0000000-0xbfffffff]
-> pnp 00:09: Plug and Play ACPI device, IDs PNP0c02 (active)
-> pnp 00:0a: [io  0x0060]
-> pnp 00:0a: [io  0x0064]
-> pnp 00:0a: [irq 1]
-> pnp 00:0a: Plug and Play ACPI device, IDs PNP0303 PNP030b 
-> (active)
-> pnp 00:0b: [irq 12]
-> pnp 00:0b: Plug and Play ACPI device, IDs PNP0f03 PNP0f13 
-> (active)
-> pnp 00:0c: [io  0x0000-0xffffffff disabled]
-> pnp 00:0c: [io  0x0230-0x023f]
-> pnp 00:0c: [io  0x0290-0x029f]
-> pnp 00:0c: [io  0x0a00-0x0a0f]
-> pnp 00:0c: [io  0x0a10-0x0a1f]
-> pnp 00:0c: Plug and Play ACPI device, IDs PNP0c02 (active)
-> pnp 00:0d: [io  0x03f8-0x03ff]
-> pnp 00:0d: [irq 4]
-> pnp 00:0d: [dma 0 disabled]
-> pnp 00:0d: Plug and Play ACPI device, IDs PNP0501 (active)
-> pnp 00:0e: [mem 0xe0000000-0xefffffff]
-> pnp 00:0e: Plug and Play ACPI device, IDs PNP0c02 (active)
-> pnp 00:0f: [mem 0x00000000-0x0009ffff]
-> pnp 00:0f: [mem 0x000c0000-0x000cffff]
-> pnp 00:0f: [mem 0x000e0000-0x000fffff]
-> pnp 00:0f: [mem 0x00100000-0xafffffff]
-> pnp 00:0f: [mem 0xff780000-0xffffffff]
-> pnp 00:0f: Plug and Play ACPI device, IDs PNP0c01 (active)
-> pnp: PnP ACPI: found 16 devices
-> ACPI: ACPI bus type pnp unregistered
-> PnPBIOS: Disabled by ACPI PNP
-> system 00:07: [io  0x04d0-0x04d1] has been reserved
-> system 00:07: [io  0x0800-0x080f] has been reserved
-> system 00:07: [io  0x0500-0x057f] has been reserved
-> system 00:07: [io  0x0580-0x05ff] has been reserved
-> system 00:07: [io  0x0800-0x087f] could not be reserved
-> system 00:07: [io  0x0880-0x08ff] has been reserved
-> system 00:07: [io  0x0d00-0x0d7f] has been reserved
-> system 00:07: [io  0x0d80-0x0dff] has been reserved
-> system 00:07: [io  0x2000-0x207f] has been reserved
-> system 00:07: [io  0x2080-0x20ff] has been reserved
-> system 00:07: [mem 0x000d0000-0x000d3fff window] has been 
-> reserved
-> system 00:07: [mem 0x000d4000-0x000d7fff window] has been 
-> reserved
-> system 00:07: [mem 0x000de000-0x000dffff window] has been 
-> reserved
-> system 00:07: [mem 0xfefe0000-0xfefe01ff] has been 
-> reserved
-> system 00:07: [mem 0xfefe1000-0xfefe1fff] has been 
-> reserved
-> system 00:07: [mem 0xfee01000-0xfeefffff] has been 
-> reserved
-> system 00:07: [mem 0xffb80000-0xffffffff] has been 
-> reserved
-> system 00:07: [mem 0xff300000-0xff3fffff] has been 
-> reserved
-> system 00:09: [mem 0xfec00000-0xfec00fff] has been 
-> reserved
-> system 00:09: [mem 0xfee00000-0xfee00fff] has been 
-> reserved
-> system 00:09: [mem 0xb0000000-0xbfffffff] has been 
-> reserved
-> system 00:0c: [io  0x0230-0x023f] has been reserved
-> system 00:0c: [io  0x0290-0x029f] has been reserved
-> system 00:0c: [io  0x0a00-0x0a0f] has been reserved
-> system 00:0c: [io  0x0a10-0x0a1f] has been reserved
-> system 00:0e: [mem 0xe0000000-0xefffffff] has been 
-> reserved
-> system 00:0f: [mem 0x00000000-0x0009ffff] could not be 
-> reserved
-> system 00:0f: [mem 0x000c0000-0x000cffff] could not be 
-> reserved
-> system 00:0f: [mem 0x000e0000-0x000fffff] could not be 
-> reserved
-> system 00:0f: [mem 0x00100000-0xafffffff] could not be 
-> reserved
-> system 00:0f: [mem 0xff780000-0xffffffff] could not be 
-> reserved
-> mdacon: MDA with 8K of memory detected.
-> Console: switching consoles 13-16 to MDA-2
-> pci 0000:00:04.0: PCI bridge to [bus 01-01]
-> pci 0000:00:04.0:   bridge window [io  0xe000-0xefff]
-> pci 0000:00:04.0:   bridge window [mem 
-> 0xdfe00000-0xdfefffff]
-> pci 0000:00:04.0:   bridge window [mem pref disabled]
-> pci 0000:00:09.0: PCI bridge to [bus 02-02]
-> pci 0000:00:09.0:   bridge window [io  disabled]
-> pci 0000:00:09.0:   bridge window [mem disabled]
-> pci 0000:00:09.0:   bridge window [mem pref disabled]
-> pci 0000:00:0b.0: PCI bridge to [bus 03-03]
-> pci 0000:00:0b.0:   bridge window [io  disabled]
-> pci 0000:00:0b.0:   bridge window [mem disabled]
-> pci 0000:00:0b.0:   bridge window [mem pref disabled]
-> pci 0000:00:0c.0: PCI bridge to [bus 04-04]
-> pci 0000:00:0c.0:   bridge window [io  disabled]
-> pci 0000:00:0c.0:   bridge window [mem 
-> 0xdff00000-0xdfffffff]
-> pci 0000:00:0c.0:   bridge window [mem pref disabled]
-> pci 0000:00:04.0: setting latency timer to 64
-> pci 0000:00:09.0: setting latency timer to 64
-> pci 0000:00:0b.0: setting latency timer to 64
-> pci 0000:00:0c.0: setting latency timer to 64
-> pci_bus 0000:00: resource 4 [io  0x0000-0xffff]
-> pci_bus 0000:00: resource 5 [mem 0xc0000000-0xffffffff]
-> pci_bus 0000:00: resource 6 [mem 0x000a0000-0x000bffff]
-> pci_bus 0000:01: resource 0 [io  0xe000-0xefff]
-> pci_bus 0000:01: resource 1 [mem 0xdfe00000-0xdfefffff]
-> pci_bus 0000:01: resource 4 [io  0x0000-0xffff]
-> pci_bus 0000:01: resource 5 [mem 0xc0000000-0xffffffff]
-> pci_bus 0000:01: resource 6 [mem 0x000a0000-0x000bffff]
-> pci_bus 0000:04: resource 1 [mem 0xdff00000-0xdfffffff]
-> NET: Registered protocol family 2
-> IP route cache hash table entries: 32768 (order: 5, 131072 
-> bytes)
-> TCP established hash table entries: 131072 (order: 8, 
-> 1048576 bytes)
-> TCP bind hash table entries: 65536 (order: 7, 524288 
-> bytes)
-> TCP: Hash tables configured (established 131072 bind 
-> 65536)
-> TCP reno registered
-> UDP hash table entries: 512 (order: 2, 16384 bytes)
-> UDP-Lite hash table entries: 512 (order: 2, 16384 bytes)
-> NET: Registered protocol family 1
-> RPC: Registered udp transport module.
-> RPC: Registered tcp transport module.
-> RPC: Registered tcp NFSv4.1 backchannel transport module.
-> pci 0000:00:0d.0: Boot video device
-> PCI: CLS 64 bytes, default 64
-> Machine check injector initialized
-> elanfreq: error: no Elan processor found!
-> cpufreq-nforce2: No nForce2 chipset.
-> apm: BIOS version 1.2 Flags 0x03 (Driver version 1.16ac)
-> apm: overridden by ACPI.
-> microcode: microcode: CPU0: AMD CPU family 0xf not 
-> supported
-> microcode: Microcode Update Driver: v2.00 
-> <tigran@aivazian.fsnet.co.uk>, Peter Oruba
-> Scanning for low memory corruption every 60 seconds
-> scx200: NatSemi SCx200 Driver
-> audit: initializing netlink socket (disabled)
-> type=2000 audit(1288652030.818:1): initialized
-> highmem bounce pool size: 64 pages
-> HugeTLB registered 4 MB page size, pre-allocated 0 pages
-> VFS: Disk quotas dquot_6.5.2
-> Dquot-cache hash table entries: 1024 (order 0, 4096 bytes)
-> DLM (built Nov  1 2010 20:54:43) installed
-> squashfs: version 4.0 (2009/01/31) Phillip Lougher
-> Registering the id_resolver key type
-> FS-Cache: Netfs 'nfs' registered for caching
-> nfs4filelayout_init: NFSv4 File Layout Driver 
-> Registering...
-> Installing knfsd (copyright (C) 1996 okir@monad.swb.de).
-> NTFS driver 2.1.29 [Flags: R/W].
-> EFS: 1.0a - http://aeschi.ch.eu.org/efs/
-> JFFS2 version 2.2. (NAND) (SUMMARY)  Â© 2001-2006 Red Hat, 
-> Inc.
-> ROMFS MTD (C) 2007 Red Hat, Inc.
-> QNX4 filesystem 0.2.3 registered.
-> fuse init (API version 7.15)
-> JFS: nTxBlock = 8192, nTxLock = 65536
-> SGI XFS with ACLs, security attributes, realtime, large 
-> block/inode numbers, no debug enabled
-> SGI XFS Quota Management subsystem
-> NILFS version 2 loaded
-> BeFS version: 0.9.3
-> OCFS2 1.5.0
-> ocfs2: Registered cluster interface o2cb
-> ocfs2: Registered cluster interface user
-> OCFS2 DLMFS 1.5.0
-> OCFS2 User DLM kernel interface loaded
-> OCFS2 Node Manager 1.5.0
-> OCFS2 DLM 1.5.0
-> Btrfs loaded
-> GFS2 (built Nov  1 2010 20:56:12) installed
-> msgmni has been set to 1684
-> async_tx: api initialized (async)
-> Block layer SCSI generic (bsg) driver version 0.4 loaded 
-> (major 254)
-> io scheduler noop registered
-> io scheduler deadline registered
-> io scheduler cfq registered (default)
-> pci_hotplug: PCI Hot Plug PCI Core version: 0.5
-> cpqphp: Compaq Hot Plug PCI Controller Driver version: 
-> 0.9.8
-> ibmphpd: IBM Hot Plug PCI Controller Driver version: 0.6
-> pciehp: PCI Express Hot Plug Controller Driver version: 
-> 0.4
-> cpcihp_zt5550: ZT5550 CompactPCI Hot Plug Driver version: 
-> 0.2
-> cpcihp_generic: Generic port I/O CompactPCI Hot Plug 
-> Driver version: 0.1
-> cpcihp_generic: not configured, disabling.
-> shpchp: Standard Hot Plug PCI Controller Driver version: 
-> 0.4
-> acpiphp: ACPI Hot Plug PCI Controller Driver version: 0.5
-> acpiphp_ibm: ibm_acpiphp_init: acpi_walk_namespace failed
-> ACPI: PCI Interrupt Link [LMC9] enabled at IRQ 11
-> PCI: setting IRQ 11 as level-triggered
-> nvidiafb 0000:00:0d.0: PCI INT A -> Link[LMC9] -> GSI 11 
-> (level, low) -> IRQ 11
-> nvidiafb: Device ID: 10de03d1
-> nvidiafb: CRTC0 analog found
-> nvidiafb: CRTC1 analog not found
-> i2c i2c-0: unable to read EDID block.
-> i2c i2c-0: unable to read EDID block.
-> i2c i2c-0: unable to read EDID block.
-> nvidiafb: EDID found from BUS2
-> nvidiafb: CRTC 0 appears to have a CRT attached
-> nvidiafb: Using CRT on CRTC 0
-> nvidiafb: MTRR set to ON
-> fbcon: NV3d (fb0) is primary device
-> Console: switching to colour frame buffer device 210x65
-> nvidiafb: PCI nVidia NV3d framebuffer (64MB @ 0xC0000000)
-> VIA Graphics Intergration Chipset framebuffer 2.4 
-> initializing
-> vmlfb: initializing
-> Could not find Carillo Ranch MCH device.
-> no IO addresses supplied
-> hgafb: HGA card not detected.
-> hgafb: probe of hgafb.0 failed with error -22
-> uvesafb: failed to execute /sbin/v86d
-> uvesafb: make sure that the v86d helper is installed and 
-> executable
-> uvesafb: Getting VBE info block failed (eax=0x4f00, 
-> err=-2)
-> uvesafb: vbe_init() failed with -22
-> uvesafb: probe of uvesafb.0 failed with error -22
-> vesafb: cannot reserve video memory at 0xc0000000
-> vesafb: framebuffer at 0xc0000000, mapped to 0xfd700000, 
-> using 3072k, total 262144k
-> vesafb: mode is 1024x768x16, linelength=2048, pages=1
-> vesafb: protected mode interface info at c000:d2a0
-> vesafb: pmi: set display start = c00cd2d6, set palette = 
-> c00cd340
-> vesafb: pmi: ports = b4c3 b503 ba03 c003 c103 c403 c503 
-> c603 c703 c803 c903 cc03 ce03 cf03 d003 d103 d203 d303 
-> d403 d503 da03 ff03
-> vesafb: scrolling: redraw
-> vesafb: Truecolor: size=0:5:6:5, shift=0:11:5:0
-> fb1: VESA VGA frame buffer device
-> vga16fb: initializing
-> vga16fb: mapped to 0xc00a0000
-> checking generic (c0000000 10000000) vs hw (a0000 10000)
-> fb2: VGA16 VGA frame buffer device
-> input: Power Button as 
-> /devices/LNXSYSTM:00/device:00/PNP0C0C:00/input/input0
-> ACPI: Power Button [PWRB]
-> input: Power Button as 
-> /devices/LNXSYSTM:00/LNXPWRBN:00/input/input1
-> ACPI: Power Button [PWRF]
-> ACPI: acpi_idle registered with cpuidle
-> ERST: Table is not found!
-> isapnp: Scanning for PnP cards...
-> isapnp: No Plug & Play device found
-> Non-volatile memory driver v1.3
-> toshiba: not a supported Toshiba laptop
-> Linux agpgart interface v0.103
-> [drm] Initialized drm 1.1.0 20060810
-> [drm] radeon defaulting to userspace modesetting.
-> Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
-> serial8250: ttyS0 at I/O 0x3f8 (irq = 4) is a 16550A
-> 00:0d: ttyS0 at I/O 0x3f8 (irq = 4) is a 16550A
-> IT8712 SuperIO detected.
-> parport_pc 00:06: reported by Plug and Play ACPI
-> parport0: PC-style at 0x378 (0x778), irq 7, dma 3 
-> [PCSPP,TRISTATE,COMPAT,ECP,DMA]
-> FDC 0 is a post-1991 82077
-> brd: module loaded
-> loop: module loaded
-> Compaq SMART2 Driver (v 2.6.0)
-> HP CISS Driver (v 3.6.26)
-> MM: desc_per_page = 128
-> nbd: registered device at major 43
-> usbcore: registered new interface driver ub
-> ibmasm: IBM ASM Service Processor Driver version 1.0 
-> loaded
-> Phantom Linux Driver, version n0.9.8, init OK
-> Silicon Labs C2 port support v. 0.51.0 - (C) 2007 Rodolfo 
-> Giometti
-> c2port c2port0: C2 port uc added
-> c2port c2port0: uc flash has 30 blocks x 512 bytes (15360 
-> bytes total)
-> Driver for timberdale has been successfully registered.
-> Uniform Multi-Platform E-IDE driver
-> amd74xx 0000:00:06.0: UDMA133 controller
-> amd74xx 0000:00:06.0: IDE controller (0x10de:0x03ec rev 
-> 0xa2)
-> amd74xx 0000:00:06.0: IDE port disabled
-> amd74xx 0000:00:06.0: not 100% native mode: will probe 
-> irqs later
->      ide0: BM-DMA at 0xffa0-0xffa7
-> Probing IDE interface ide0...
-> ide0 at 0x1f0-0x1f7,0x3f6 on irq 14
-> ide_generic: please use "probe_mask=0x3f" module parameter 
-> for probing all legacy ISA IDE ports
-> ide-gd driver 1.18
-> ide-cd driver 5.00
-> Loading iSCSI transport class v2.0-870.
-> rdac: device handler registered
-> hp_sw: device handler registered
-> emc: device handler registered
-> alua: device handler registered
-> fnic: Cisco FCoE HBA Driver, ver 1.4.0.145
-> iscsi: registered transport (tcp)
-> Loading Adaptec I2O RAID: Version 2.4 Build 5go
-> Detecting Adaptec I2O RAID controllers...
-> Adaptec aacraid driver 1.1-5[26400]-ms
-> aic94xx: Adaptec aic94xx SAS/SATA driver version 1.0.3 
-> loaded
-> scsi: <fdomain> Detection failed (no card)
-> NCR53c406a: no available ports found
-> sym53c416.c: Version 1.0.0-ac
-> qlogicfas: no cards were found, please specify I/O address 
-> and IRQ using iobase= and irq= options
-> QLogic Fibre Channel HBA Driver: 8.03.04-k0
-> iscsi: registered transport (qla4xxx)
-> QLogic iSCSI HBA Driver
-> Emulex LightPulse Fibre Channel SCSI driver 8.3.18
-> Copyright(c) 2004-2009 Emulex.  All rights reserved.
-> Brocade BFA FC/FCOE SCSI driver - version: 2.3.2.0
-> Failed initialization of WD-7000 SCSI card!
-> DC390: clustering now enabled by default. If you get 
-> problems load
->         with "disable_clustering=1" and report to 
-> maintainers
-> megaraid cmm: 2.20.2.7 (Release Date: Sun Jul 16 00:01:03 
-> EST 2006)
-> megaraid: 2.20.5.1 (Release Date: Thu Nov 16 15:32:35 EST 
-> 2006)
-> megasas: 00.00.04.31-rc1 Mon. May 3, 11:41:51 PST 2010
-> mpt2sas version 06.100.00.00 loaded
-> GDT-HA: Storage RAID Controller Driver. Version: 3.05
-> 3ware Storage Controller device driver for Linux 
-> v1.26.02.003.
-> 3ware 9000 Storage Controller device driver for Linux 
-> v2.26.02.014.
-> ppa: Version 2.07 (for Linux 2.4.x)
-> imm: Version 2.05 (for Linux 2.4.0)
-> nsp32: loading...
-> ipr: IBM Power RAID SCSI Device Driver version: 2.5.1 
-> (August 10, 2010)
-> RocketRAID 3xxx/4xxx Controller driver v1.6 (090910)
-> stex: Promise SuperTrak EX Driver version: 4.6.0000.4
-> libcxgbi:libcxgbi_init_module: tag itt 0x1fff, 13 bits, 
-> age 0xf, 4 bits.
-> libcxgbi:ddp_setup_host_page_size: system PAGE 4096, ddp 
-> idx 0.
-> Chelsio T3 iSCSI Driver cxgb3i v2.0.0 (Jun. 2010)
-> iscsi: registered transport (cxgb3i)
-> Broadcom NetXtreme II iSCSI Driver bnx2i v2.1.3 (Aug 10, 
-> 2010)
-> iscsi: registered transport (bnx2i)
-> iscsi: registered transport (be2iscsi)
-> st: Version 20100829, fixed bufsize 32768, s/g segs 256
-> osst :I: Tape driver with OnStream support version 0.99.4
-> osst :I: $Id: osst.c,v 1.73 2005/01/01 21:13:34 wriede Exp 
-> $
-> SCSI Media Changer driver v0.25
-> osd: LOADED open-osd 0.2.0
-> sata_nv 0000:00:08.0: version 3.5
-> ACPI: PCI Interrupt Link [LSA0] enabled at IRQ 15
-> PCI: setting IRQ 15 as level-triggered
-> sata_nv 0000:00:08.0: PCI INT A -> Link[LSA0] -> GSI 15 
-> (level, low) -> IRQ 15
-> sata_nv 0000:00:08.0: setting latency timer to 64
-> scsi2 : sata_nv
-> scsi3 : sata_nv
-> ata1: SATA max UDMA/133 cmd 0xd480 ctl 0xd400 bmdma 0xcc00 
-> irq 15
-> ata2: SATA max UDMA/133 cmd 0xd080 ctl 0xd000 bmdma 0xcc08 
-> irq 15
-> Error: Driver 'pata_platform' is already registered, 
-> aborting...
-> SSFDC read-only Flash Translation layer
-> mtdoops: mtd device (mtddev=name/number) must be supplied
-> L440GX flash mapping: failed to find PIIX4 ISA bridge, 
-> cannot continue
-> device id = 2440
-> device id = 2480
-> device id = 24c0
-> device id = 24d0
-> device id = 25a1
-> device id = 2670
-> physmap-flash.0: failed to claim resource 0
-> SBC-GXx flash: IO:0x258-0x259 MEM:0xdc000-0xdffff
-> Could not find PAR responsible for SC520CDP Flash Bank #0
-> Trying default address 0x8400000
-> Could not find PAR responsible for SC520CDP Flash Bank #1
-> Trying default address 0x8c00000
-> Could not find PAR responsible for SC520CDP DIL Flash
-> Trying default address 0x9400000
-> SC520 CDP flash device: 0x800000 at 0x8400000
-> Failed to ioremap_nocache
-> NetSc520 flash device: 0x100000 at 0x200000
-> Failed to ioremap_nocache
-> Failed to ioremap_nocache
-> scx200_docflash: NatSemi SCx200 DOCCS Flash Driver
-> SNAPGEAR: failed to ioremap() BOOTCS
-> Generic platform RAM MTD, (c) 2004 Simtec Electronics
-> No recognised DiskOnChip devices found
-> slram: not enough parameters.
-> Ramix PMC551 PCI Mezzanine Ram Driver. (C) 1999,2000 
-> Nortel Networks.
-> pmc551: not detected
-> ftl_cs: FTL header not found.
-> No valid DiskOnChip devices found
-> [nandsim] warning: read_byte: unexpected data output 
-> cycle, state is STATE_READY return 0x0
-> [nandsim] warning: read_byte: unexpected data output 
-> cycle, state is STATE_READY return 0x0
-> [nandsim] warning: read_byte: unexpected data output 
-> cycle, state is STATE_READY return 0x0
-> [nandsim] warning: read_byte: unexpected data output 
-> cycle, state is STATE_READY return 0x0
-> [nandsim] warning: read_byte: unexpected data output 
-> cycle, state is STATE_READY return 0x0
-> [nandsim] warning: read_byte: unexpected data output 
-> cycle, state is STATE_READY return 0x0
-> NAND device: Manufacturer ID: 0x98, Chip ID: 0x39 (Toshiba 
-> )
-> flash size: 8 MiB
-> page size: 512 bytes
-> OOB area size: 16 bytes
-> sector size: 8 KiB
-> pages number: 16384
-> pages per sector: 16
-> bus width: 8
-> bits in sector size: 13
-> bits in page size: 9
-> bits in OOB size: 4
-> flash size with OOB: 8448 KiB
-> page address bytes: 3
-> sector address bytes: 2
-> options: 0x62
-> Scanning device for bad blocks
-> Creating 1 MTD partitions on "NAND 8MiB 1,8V 8-bit":
-> 0x000000000000-0x000000800000 : "NAND simulator partition 
-> 0"
-> ftl_cs: FTL header not found.
-> usbcore: registered new interface driver alauda
-> onenand_wait: timeout! ctrl=0x0000 intr=0x0000
-> OneNAND Manufacturer: Samsung (0xec)
-> OneNAND 16MB 1.8V 16-bit (0x04)
-> OneNAND version = 0x001e
-> Lock scheme is Continuous Lock
-> Scanning device for bad blocks
-> Creating 1 MTD partitions on "OneNAND simulator":
-> 0x000000000000-0x000001000000 : "OneNAND simulator 
-> partition"
-> ftl_cs: FTL header not found.
-> Fixed MDIO Bus: probed
-> Atheros(R) L2 Ethernet Driver - version 2.2.3
-> Copyright (c) 2007 Atheros Corporation.
-> e100: Intel(R) PRO/100 Network Driver, 3.5.24-k2-NAPI
-> e100: Copyright(c) 1999-2006 Intel Corporation
-> cnic: Broadcom NetXtreme II CNIC Driver cnic v2.2.6 (Oct 
-> 12, 2010)
-> D-Link DE-620 pocket adapter io 0x378, which is busy.
-> PPP generic driver version 2.4.2
-> PPP Deflate Compression module registered
-> PPP BSD Compression module registered
-> PPP MPPE Compression module registered
-> NET: Registered protocol family 24
-> SLIP: version 0.8.4-NET3.019-NEWTTY (dynamic channels, 
-> max=256) (6 bit encapsulation enabled).
-> CSLIP: code copyright 1989 Regents of the University of 
-> California.
-> SLIP linefill/keepalive option.
-> DE600: port 0x378 busy
-> atp.c:v1.09=ac 2002/10/01 Donald Becker <becker@scyld.com>
-> I2O subsystem v1.325
-> i2o: max drivers = 8
-> I2O Configuration OSM v1.323
-> I2O Bus Adapter OSM v1.317
-> I2O Block Device OSM v1.325
-> I2O SCSI Peripheral OSM v1.316
-> I2O ProcFS OSM v1.316
-> Fusion MPT base driver 3.04.17
-> Copyright (c) 1999-2008 LSI Corporation
-> Fusion MPT SPI Host driver 3.04.17
-> Fusion MPT FC Host driver 3.04.17
-> Fusion MPT SAS Host driver 3.04.17
-> Fusion MPT misc device (ioctl) driver 3.04.17
-> mptctl: Registered with Fusion MPT base driver
-> mptctl: /dev/mptctl @ (major,minor=10,220)
-> Fusion MPT LAN driver 3.04.17
-> Intel ISA PCIC probe: not found.
-> Databook TCIC-2 PCMCIA probe: not found.
-> aoe: AoE v47 initialised.
-> paride: aten registered as protocol 0
-> paride: bpck registered as protocol 1
-> paride: comm registered as protocol 2
-> paride: dstr registered as protocol 3
-> paride: k951 registered as protocol 4
-> paride: k971 registered as protocol 5
-> paride: epat registered as protocol 6
-> paride: epia registered as protocol 7
-> paride: frpw registered as protocol 8
-> paride: friq registered as protocol 9
-> paride: fit2 registered as protocol 10
-> paride: fit3 registered as protocol 11
-> paride: on20 registered as protocol 12
-> paride: on26 registered as protocol 13
-> paride: ktti registered as protocol 14
-> bpck6: BACKPACK Protocol Driver V2.0.2
-> bpck6: Copyright 2001 by Micro Solutions, Inc., DeKalb IL. 
-> USA
-> paride: bpck6 registered as protocol 15
-> pd: pd version 1.05, major 45, cluster 64, nice 0
-> ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-> ata1.00: ATA-8: SAMSUNG HD203WI, 1AN10002, max UDMA/133
-> ata1.00: 3907029168 sectors, multi 16: LBA48 NCQ (depth 
-> 0/32)
-> ata1.00: configured for UDMA/133
-> scsi 2:0:0:0: Direct-Access     ATA      SAMSUNG HD203WI 
->  1AN1 PQ: 0 ANSI: 5
-> sd 2:0:0:0: [sda] 3907029168 512-byte logical blocks: 
-> (2.00 TB/1.81 TiB)
-> sd 2:0:0:0: [sda] Write Protect is off
-> sd 2:0:0:0: [sda] Mode Sense: 00 3a 00 00
-> sd 2:0:0:0: [sda] Write cache: enabled, read cache: 
-> enabled, doesn't support DPO or FUA
-> sd 2:0:0:0: Attached scsi generic sg0 type 0
->   sda: sda1 sda2
-> sd 2:0:0:0: [sda] Attached SCSI disk
-> ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-> ata2.00: ATAPI: HL-DT-ST DVDRAM GSA-H66N, CB00, max 
-> UDMA/100
-> ata2.00: configured for UDMA/100
-> scsi 3:0:0:0: CD-ROM            HL-DT-ST DVDRAM GSA-H66N 
->  CB00 PQ: 0 ANSI: 5
-> sr0: scsi3-mmc drive: 48x/48x writer dvd-ram cd/rw 
-> xa/form2 cdda tray
-> cdrom: Uniform CD-ROM driver Revision: 3.20
-> sr 3:0:0:0: Attached scsi CD-ROM sr0
-> sr 3:0:0:0: Attached scsi generic sg1 type 5
-> pda: Autoprobe failed
-> pd: no valid drive found
-> pcd: pcd version 1.07, major 46, nice 0
-> pcd0: Autoprobe failed
-> pcd: No CD-ROM drive found
-> pf: pf version 1.04, major 47, cluster 64, nice 0
-> pf: No ATAPI disk detected
-> pt: pt version 1.04, major 96
-> pt0: Autoprobe failed
-> pt: No ATAPI tape drive detected
-> pg: pg version 1.02, major 97
-> pga: Autoprobe failed
-> pg: No ATAPI device detected
-> usbcore: registered new interface driver hwa-rc
-> ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
-> ACPI: PCI Interrupt Link [LUB2] enabled at IRQ 10
-> PCI: setting IRQ 10 as level-triggered
-> ehci_hcd 0000:00:02.1: PCI INT B -> Link[LUB2] -> GSI 10 
-> (level, low) -> IRQ 10
-> ehci_hcd 0000:00:02.1: setting latency timer to 64
-> ehci_hcd 0000:00:02.1: EHCI Host Controller
-> ehci_hcd 0000:00:02.1: new USB bus registered, assigned 
-> bus number 1
-> ehci_hcd 0000:00:02.1: debug port 1
-> ehci_hcd 0000:00:02.1: cache line size of 64 is not 
-> supported
-> ehci_hcd 0000:00:02.1: irq 10, io mem 0xdfdfec00
-> ehci_hcd 0000:00:02.1: USB 2.0 started, EHCI 1.00
-> usb usb1: New USB device found, idVendor=1d6b, 
-> idProduct=0002
-> usb usb1: New USB device strings: Mfr=3, Product=2, 
-> SerialNumber=1
-> usb usb1: Product: EHCI Host Controller
-> usb usb1: Manufacturer: Linux 2.6.37-rc1 ehci_hcd
-> usb usb1: SerialNumber: 0000:00:02.1
-> hub 1-0:1.0: USB hub found
-> hub 1-0:1.0: 8 ports detected
-> 116x: driver isp116x-hcd, 03 Nov 2005
-> driver isp1362-hcd, 2005-04-04
-> ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
-> ACPI: PCI Interrupt Link [LUB0] enabled at IRQ 11
-> ohci_hcd 0000:00:02.0: PCI INT A -> Link[LUB0] -> GSI 11 
-> (level, low) -> IRQ 11
-> ohci_hcd 0000:00:02.0: setting latency timer to 64
-> ohci_hcd 0000:00:02.0: OHCI Host Controller
-> ohci_hcd 0000:00:02.0: new USB bus registered, assigned 
-> bus number 2
-> ohci_hcd 0000:00:02.0: irq 11, io mem 0xdfdff000
-> usb usb2: New USB device found, idVendor=1d6b, 
-> idProduct=0001
-> usb usb2: New USB device strings: Mfr=3, Product=2, 
-> SerialNumber=1
-> usb usb2: Product: OHCI Host Controller
-> usb usb2: Manufacturer: Linux 2.6.37-rc1 ohci_hcd
-> usb usb2: SerialNumber: 0000:00:02.0
-> hub 2-0:1.0: USB hub found
-> hub 2-0:1.0: 8 ports detected
-> uhci_hcd: USB Universal Host Controller Interface driver
-> sl811: driver sl811-hcd, 19 May 2005
-> r8a66597_hcd: driver r8a66597_hcd, 2009-05-26
-> usbcore: registered new interface driver hwa-hc
-> usbcore: registered new interface driver wusb-cbaf
-> usbcore: registered new interface driver cdc_acm
-> cdc_acm: v0.26:USB Abstract Control Model driver for USB 
-> modems and ISDN adapters
-> usbcore: registered new interface driver usblp
-> usbcore: registered new interface driver cdc_wdm
-> usbcore: registered new interface driver uas
-> Initializing USB Mass Storage driver...
-> usbcore: registered new interface driver usb-storage
-> USB Mass Storage support registered.
-> usbcore: registered new interface driver ums-alauda
-> usbcore: registered new interface driver ums-cypress
-> usbcore: registered new interface driver ums-datafab
-> usbcore: registered new interface driver ums-freecom
-> usbcore: registered new interface driver ums-isd200
-> usbcore: registered new interface driver ums-jumpshot
-> usbcore: registered new interface driver ums-karma
-> usbcore: registered new interface driver ums-onetouch
-> usbcore: registered new interface driver ums-sddr09
-> usbcore: registered new interface driver ums-sddr55
-> usbcore: registered new interface driver ums-usbat
-> PNP: PS/2 Controller [PNP0303:PS2K,PNP0f03:PS2M] at 
-> 0x60,0x64 irq 1,12
-> serio: i8042 KBD port at 0x60,0x64 irq 1
-> serio: i8042 AUX port at 0x60,0x64 irq 12
-> serio: PARKBD AT adapter on parport0
-> mice: PS/2 mouse device common for all mice
-> usbcore: registered new interface driver appletouch
-> usbcore: registered new interface driver bcm5974
-> inport.c: Didn't find InPort mouse at 0x23c
-> logibm.c: Didn't find Logitech busmouse at 0x23c
-> usbcore: registered new interface driver usb_acecad
-> acecad: v3.2:USB Acecad Flair tablet driver
-> usbcore: registered new interface driver aiptek
-> aiptek: v2.3 (May 2, 2007):Aiptek HyperPen USB Tablet 
-> Driver (Linux 2.6.x)
-> aiptek: Bryan W. Headley/Chris Atenasio/Cedric Brun/Rene 
-> van Paassen
-> usbcore: registered new interface driver gtco
-> GTCO usb driver version: 2.00.0006
-> usbcore: registered new interface driver hanwang
-> usbcore: registered new interface driver kbtab
-> kbtab: v0.0.2:USB KB Gear JamStudio Tablet driver
-> usbcore: registered new interface driver wacom
-> wacom: v1.52:USB Wacom tablet driver
-> input: PC Speaker as /devices/platform/pcspkr/input/input2
-> i2c /dev entries driver
-> lirc_dev: IR Remote Control driver registered, major 242
-> IR NEC protocol handler initialized
-> IR RC5(x) protocol handler initialized
-> IR RC6 protocol handler initialized
-> IR JVC protocol handler initialized
-> IR Sony protocol handler initialized
-> IR RC5 (streamzap) protocol handler initialized
-> IR LIRC bridge handler initialized
-> Linux video capture interface: v2.00
-> usbcore: registered new interface driver dabusb
-> dabusb: v1.54:DAB-USB Interface Driver for Linux (c)1999
-> md: linear personality registered for level -1
-> md: raid0 personality registered for level 0
-> md: raid1 personality registered for level 1
-> md: raid10 personality registered for level 10
-> md: raid6 personality registered for level 6
-> md: raid5 personality registered for level 5
-> md: raid4 personality registered for level 4
-> md: multipath personality registered for level -4
-> md: faulty personality registered for level -5
-> device-mapper: uevent: version 1.0.3
-> device-mapper: ioctl: 4.18.0-ioctl (2010-06-29) 
-> initialised: dm-devel@redhat.com
-> device-mapper: multipath: version 1.1.1 loaded
-> device-mapper: multipath round-robin: version 1.0.0 loaded
-> input: AT Translated Set 2 keyboard as 
-> /devices/platform/i8042/serio0/input/input3
-> EDAC MC: Ver: 2.1.0 Nov  1 2010
-> EISA: Probing bus 0 at eisa.0
-> EISA: Cannot allocate resource for mainboard
-> Cannot allocate resource for EISA slot 1
-> Cannot allocate resource for EISA slot 2
-> Cannot allocate resource for EISA slot 3
-> Cannot allocate resource for EISA slot 4
-> Cannot allocate resource for EISA slot 5
-> Cannot allocate resource for EISA slot 6
-> Cannot allocate resource for EISA slot 7
-> Cannot allocate resource for EISA slot 8
-> EISA: Detected 0 cards.
-> cpuidle: using governor ladder
-> sdhci: Secure Digital Host Controller Interface driver
-> sdhci: Copyright(c) Pierre Ossman
-> wbsd: Winbond W83L51xD SD/MMC card interface driver
-> wbsd: Copyright(c) Pierre Ossman
-> via_sdmmc: VIA SD/MMC Card Reader driver (C) 2008 VIA 
-> Technologies, Inc.
-> usbcore: registered new interface driver usbhid
-> usbhid: USB HID core driver
-> XGIfb: Options (null)
-> dell-wmi: No known WMI GUID found
-> This machine doesn't have MSI-hotkeys through WMI
-> Topstar Laptop ACPI extras driver loaded
-> oprofile: using timer interrupt.
-> TCP cubic registered
-> Initializing XFRM netlink socket
-> NET: Registered protocol family 17
-> NET: Registered protocol family 33
-> lib80211: common routines for IEEE802.11 drivers
-> lib80211_crypt: registered algorithm 'NULL'
-> lib80211_crypt: registered algorithm 'WEP'
-> lib80211_crypt: registered algorithm 'CCMP'
-> lib80211_crypt: registered algorithm 'TKIP'
-> Registering the dns_resolver key type
-> powernow-k8: Found 1 AMD Athlon(tm) 64 X2 Dual Core 
-> Processor 4800+ (1 cpu cores) (version 2.20.00)
-> [Firmware Bug]: powernow-k8: No PSB or ACPI _PSS objects
-> powernow-k8: Make sure that your BIOS is up to date and 
-> Cool'N'Quiet support is enabled in BIOS setup
-> Using IPI No-Shortcut mode
-> psmouse serio1: ID: 10 00 64
-> input: ImPS/2 Generic Wheel Mouse as 
-> /devices/platform/i8042/serio1/input/input4
-> kAFS: Red Hat AFS client v0.1 registering.
-> raid6test: testing the 4-disk case...
-> raid6test: test_disks(0, 1): faila=  0(D)  failb=  1(D) 
->  OK
-> raid6test: test_disks(0, 2): faila=  0(D)  failb=  2(P) 
->  OK
-> raid6test: test_disks(0, 3): faila=  0(D)  failb=  3(Q) 
->  OK
-> raid6test: test_disks(1, 2): faila=  1(D)  failb=  2(P) 
->  OK
-> raid6test: test_disks(1, 3): faila=  1(D)  failb=  3(Q) 
->  OK
-> raid6test: test_disks(2, 3): faila=  2(P)  failb=  3(Q) 
->  OK
-> raid6test: testing the 5-disk case...
-> raid6test: test_disks(0, 1): faila=  0(D)  failb=  1(D) 
->  OK
-> raid6test: test_disks(0, 2): faila=  0(D)  failb=  2(D) 
->  OK
-> raid6test: test_disks(0, 3): faila=  0(D)  failb=  3(P) 
->  OK
-> raid6test: test_disks(0, 4): faila=  0(D)  failb=  4(Q) 
->  OK
-> raid6test: test_disks(1, 2): faila=  1(D)  failb=  2(D) 
->  OK
-> raid6test: test_disks(1, 3): faila=  1(D)  failb=  3(P) 
->  OK
-> raid6test: test_disks(1, 4): faila=  1(D)  failb=  4(Q) 
->  OK
-> raid6test: test_disks(2, 3): faila=  2(D)  failb=  3(P) 
->  OK
-> raid6test: test_disks(2, 4): faila=  2(D)  failb=  4(Q) 
->  OK
-> raid6test: test_disks(3, 4): faila=  3(P)  failb=  4(Q) 
->  OK
-> raid6test: testing the 11-disk case...
-> raid6test: test_disks(0, 1): faila=  0(D)  failb=  1(D) 
->  OK
-> raid6test: test_disks(0, 2): faila=  0(D)  failb=  2(D) 
->  OK
-> raid6test: test_disks(0, 3): faila=  0(D)  failb=  3(D) 
->  OK
-> raid6test: test_disks(0, 4): faila=  0(D)  failb=  4(D) 
->  OK
-> raid6test: test_disks(0, 5): faila=  0(D)  failb=  5(D) 
->  OK
-> raid6test: test_disks(0, 6): faila=  0(D)  failb=  6(D) 
->  OK
-> raid6test: test_disks(0, 7): faila=  0(D)  failb=  7(D) 
->  OK
-> raid6test: test_disks(0, 8): faila=  0(D)  failb=  8(D) 
->  OK
-> raid6test: test_disks(0, 9): faila=  0(D)  failb=  9(P) 
->  OK
-> raid6test: test_disks(0, 10): faila=  0(D)  failb= 10(Q) 
->  OK
-> raid6test: test_disks(1, 2): faila=  1(D)  failb=  2(D) 
->  OK
-> raid6test: test_disks(1, 3): faila=  1(D)  failb=  3(D) 
->  OK
-> raid6test: test_disks(1, 4): faila=  1(D)  failb=  4(D) 
->  OK
-> raid6test: test_disks(1, 5): faila=  1(D)  failb=  5(D) 
->  OK
-> raid6test: test_disks(1, 6): faila=  1(D)  failb=  6(D) 
->  OK
-> raid6test: test_disks(1, 7): faila=  1(D)  failb=  7(D) 
->  OK
-> raid6test: test_disks(1, 8): faila=  1(D)  failb=  8(D) 
->  OK
-> raid6test: test_disks(1, 9): faila=  1(D)  failb=  9(P) 
->  OK
-> raid6test: test_disks(1, 10): faila=  1(D)  failb= 10(Q) 
->  OK
-> raid6test: test_disks(2, 3): faila=  2(D)  failb=  3(D) 
->  OK
-> raid6test: test_disks(2, 4): faila=  2(D)  failb=  4(D) 
->  OK
-> raid6test: test_disks(2, 5): faila=  2(D)  failb=  5(D) 
->  OK
-> raid6test: test_disks(2, 6): faila=  2(D)  failb=  6(D) 
->  OK
-> raid6test: test_disks(2, 7): faila=  2(D)  failb=  7(D) 
->  OK
-> raid6test: test_disks(2, 8): faila=  2(D)  failb=  8(D) 
->  OK
-> raid6test: test_disks(2, 9): faila=  2(D)  failb=  9(P) 
->  OK
-> raid6test: test_disks(2, 10): faila=  2(D)  failb= 10(Q) 
->  OK
-> raid6test: test_disks(3, 4): faila=  3(D)  failb=  4(D) 
->  OK
-> raid6test: test_disks(3, 5): faila=  3(D)  failb=  5(D) 
->  OK
-> raid6test: test_disks(3, 6): faila=  3(D)  failb=  6(D) 
->  OK
-> raid6test: test_disks(3, 7): faila=  3(D)  failb=  7(D) 
->  OK
-> raid6test: test_disks(3, 8): faila=  3(D)  failb=  8(D) 
->  OK
-> raid6test: test_disks(3, 9): faila=  3(D)  failb=  9(P) 
->  OK
-> raid6test: test_disks(3, 10): faila=  3(D)  failb= 10(Q) 
->  OK
-> raid6test: test_disks(4, 5): faila=  4(D)  failb=  5(D) 
->  OK
-> raid6test: test_disks(4, 6): faila=  4(D)  failb=  6(D) 
->  OK
-> raid6test: test_disks(4, 7): faila=  4(D)  failb=  7(D) 
->  OK
-> raid6test: test_disks(4, 8): faila=  4(D)  failb=  8(D) 
->  OK
-> raid6test: test_disks(4, 9): faila=  4(D)  failb=  9(P) 
->  OK
-> raid6test: test_disks(4, 10): faila=  4(D)  failb= 10(Q) 
->  OK
-> raid6test: test_disks(5, 6): faila=  5(D)  failb=  6(D) 
->  OK
-> raid6test: test_disks(5, 7): faila=  5(D)  failb=  7(D) 
->  OK
-> raid6test: test_disks(5, 8): faila=  5(D)  failb=  8(D) 
->  OK
-> raid6test: test_disks(5, 9): faila=  5(D)  failb=  9(P) 
->  OK
-> raid6test: test_disks(5, 10): faila=  5(D)  failb= 10(Q) 
->  OK
-> raid6test: test_disks(6, 7): faila=  6(D)  failb=  7(D) 
->  OK
-> raid6test: test_disks(6, 8): faila=  6(D)  failb=  8(D) 
->  OK
-> raid6test: test_disks(6, 9): faila=  6(D)  failb=  9(P) 
->  OK
-> raid6test: test_disks(6, 10): faila=  6(D)  failb= 10(Q) 
->  OK
-> raid6test: test_disks(7, 8): faila=  7(D)  failb=  8(D) 
->  OK
-> raid6test: test_disks(7, 9): faila=  7(D)  failb=  9(P) 
->  OK
-> raid6test: test_disks(7, 10): faila=  7(D)  failb= 10(Q) 
->  OK
-> raid6test: test_disks(8, 9): faila=  8(D)  failb=  9(P) 
->  OK
-> raid6test: test_disks(8, 10): faila=  8(D)  failb= 10(Q) 
->  OK
-> raid6test: test_disks(9, 10): faila=  9(P)  failb= 10(Q) 
->  OK
-> raid6test: testing the 12-disk case...
-> raid6test: test_disks(0, 1): faila=  0(D)  failb=  1(D) 
->  OK
-> raid6test: test_disks(0, 2): faila=  0(D)  failb=  2(D) 
->  OK
-> raid6test: test_disks(0, 3): faila=  0(D)  failb=  3(D) 
->  OK
-> raid6test: test_disks(0, 4): faila=  0(D)  failb=  4(D) 
->  OK
-> raid6test: test_disks(0, 5): faila=  0(D)  failb=  5(D) 
->  OK
-> raid6test: test_disks(0, 6): faila=  0(D)  failb=  6(D) 
->  OK
-> raid6test: test_disks(0, 7): faila=  0(D)  failb=  7(D) 
->  OK
-> raid6test: test_disks(0, 8): faila=  0(D)  failb=  8(D) 
->  OK
-> raid6test: test_disks(0, 9): faila=  0(D)  failb=  9(D) 
->  OK
-> raid6test: test_disks(0, 10): faila=  0(D)  failb= 10(P) 
->  OK
-> raid6test: test_disks(0, 11): faila=  0(D)  failb= 11(Q) 
->  OK
-> raid6test: test_disks(1, 2): faila=  1(D)  failb=  2(D) 
->  OK
-> raid6test: test_disks(1, 3): faila=  1(D)  failb=  3(D) 
->  OK
-> raid6test: test_disks(1, 4): faila=  1(D)  failb=  4(D) 
->  OK
-> raid6test: test_disks(1, 5): faila=  1(D)  failb=  5(D) 
->  OK
-> raid6test: test_disks(1, 6): faila=  1(D)  failb=  6(D) 
->  OK
-> raid6test: test_disks(1, 7): faila=  1(D)  failb=  7(D) 
->  OK
-> raid6test: test_disks(1, 8): faila=  1(D)  failb=  8(D) 
->  OK
-> raid6test: test_disks(1, 9): faila=  1(D)  failb=  9(D) 
->  OK
-> raid6test: test_disks(1, 10): faila=  1(D)  failb= 10(P) 
->  OK
-> raid6test: test_disks(1, 11): faila=  1(D)  failb= 11(Q) 
->  OK
-> raid6test: test_disks(2, 3): faila=  2(D)  failb=  3(D) 
->  OK
-> raid6test: test_disks(2, 4): faila=  2(D)  failb=  4(D) 
->  OK
-> raid6test: test_disks(2, 5): faila=  2(D)  failb=  5(D) 
->  OK
-> raid6test: test_disks(2, 6): faila=  2(D)  failb=  6(D) 
->  OK
-> raid6test: test_disks(2, 7): faila=  2(D)  failb=  7(D) 
->  OK
-> raid6test: test_disks(2, 8): faila=  2(D)  failb=  8(D) 
->  OK
-> raid6test: test_disks(2, 9): faila=  2(D)  failb=  9(D) 
->  OK
-> raid6test: test_disks(2, 10): faila=  2(D)  failb= 10(P) 
->  OK
-> raid6test: test_disks(2, 11): faila=  2(D)  failb= 11(Q) 
->  OK
-> raid6test: test_disks(3, 4): faila=  3(D)  failb=  4(D) 
->  OK
-> raid6test: test_disks(3, 5): faila=  3(D)  failb=  5(D) 
->  OK
-> raid6test: test_disks(3, 6): faila=  3(D)  failb=  6(D) 
->  OK
-> raid6test: test_disks(3, 7): faila=  3(D)  failb=  7(D) 
->  OK
-> raid6test: test_disks(3, 8): faila=  3(D)  failb=  8(D) 
->  OK
-> raid6test: test_disks(3, 9): faila=  3(D)  failb=  9(D) 
->  OK
-> raid6test: test_disks(3, 10): faila=  3(D)  failb= 10(P) 
->  OK
-> raid6test: test_disks(3, 11): faila=  3(D)  failb= 11(Q) 
->  OK
-> raid6test: test_disks(4, 5): faila=  4(D)  failb=  5(D) 
->  OK
-> raid6test: test_disks(4, 6): faila=  4(D)  failb=  6(D) 
->  OK
-> raid6test: test_disks(4, 7): faila=  4(D)  failb=  7(D) 
->  OK
-> raid6test: test_disks(4, 8): faila=  4(D)  failb=  8(D) 
->  OK
-> raid6test: test_disks(4, 9): faila=  4(D)  failb=  9(D) 
->  OK
-> raid6test: test_disks(4, 10): faila=  4(D)  failb= 10(P) 
->  OK
-> raid6test: test_disks(4, 11): faila=  4(D)  failb= 11(Q) 
->  OK
-> raid6test: test_disks(5, 6): faila=  5(D)  failb=  6(D) 
->  OK
-> raid6test: test_disks(5, 7): faila=  5(D)  failb=  7(D) 
->  OK
-> raid6test: test_disks(5, 8): faila=  5(D)  failb=  8(D) 
->  OK
-> raid6test: test_disks(5, 9): faila=  5(D)  failb=  9(D) 
->  OK
-> raid6test: test_disks(5, 10): faila=  5(D)  failb= 10(P) 
->  OK
-> raid6test: test_disks(5, 11): faila=  5(D)  failb= 11(Q) 
->  OK
-> raid6test: test_disks(6, 7): faila=  6(D)  failb=  7(D) 
->  OK
-> raid6test: test_disks(6, 8): faila=  6(D)  failb=  8(D) 
->  OK
-> raid6test: test_disks(6, 9): faila=  6(D)  failb=  9(D) 
->  OK
-> raid6test: test_disks(6, 10): faila=  6(D)  failb= 10(P) 
->  OK
-> raid6test: test_disks(6, 11): faila=  6(D)  failb= 11(Q) 
->  OK
-> raid6test: test_disks(7, 8): faila=  7(D)  failb=  8(D) 
->  OK
-> raid6test: test_disks(7, 9): faila=  7(D)  failb=  9(D) 
->  OK
-> raid6test: test_disks(7, 10): faila=  7(D)  failb= 10(P) 
->  OK
-> raid6test: test_disks(7, 11): faila=  7(D)  failb= 11(Q) 
->  OK
-> raid6test: test_disks(8, 9): faila=  8(D)  failb=  9(D) 
->  OK
-> raid6test: test_disks(8, 10): faila=  8(D)  failb= 10(P) 
->  OK
-> raid6test: test_disks(8, 11): faila=  8(D)  failb= 11(Q) 
->  OK
-> raid6test: test_disks(9, 10): faila=  9(D)  failb= 10(P) 
->  OK
-> raid6test: test_disks(9, 11): faila=  9(D)  failb= 11(Q) 
->  OK
-> raid6test: test_disks(10, 11): faila= 10(P)  failb= 11(Q) 
->  OK
-> raid6test: testing the 16-disk case...
-> raid6test: test_disks(0, 1): faila=  0(D)  failb=  1(D) 
->  OK
-> raid6test: test_disks(0, 2): faila=  0(D)  failb=  2(D) 
->  OK
-> raid6test: test_disks(0, 3): faila=  0(D)  failb=  3(D) 
->  OK
-> raid6test: test_disks(0, 4): faila=  0(D)  failb=  4(D) 
->  OK
-> raid6test: test_disks(0, 5): faila=  0(D)  failb=  5(D) 
->  OK
-> raid6test: test_disks(0, 6): faila=  0(D)  failb=  6(D) 
->  OK
-> raid6test: test_disks(0, 7): faila=  0(D)  failb=  7(D) 
->  OK
-> raid6test: test_disks(0, 8): faila=  0(D)  failb=  8(D) 
->  OK
-> raid6test: test_disks(0, 9): faila=  0(D)  failb=  9(D) 
->  OK
-> raid6test: test_disks(0, 10): faila=  0(D)  failb= 10(D) 
->  OK
-> raid6test: test_disks(0, 11): faila=  0(D)  failb= 11(D) 
->  OK
-> raid6test: test_disks(0, 12): faila=  0(D)  failb= 12(D) 
->  OK
-> raid6test: test_disks(0, 13): faila=  0(D)  failb= 13(D) 
->  OK
-> raid6test: test_disks(0, 14): faila=  0(D)  failb= 14(P) 
->  OK
-> raid6test: test_disks(0, 15): faila=  0(D)  failb= 15(Q) 
->  OK
-> raid6test: test_disks(1, 2): faila=  1(D)  failb=  2(D) 
->  OK
-> raid6test: test_disks(1, 3): faila=  1(D)  failb=  3(D) 
->  OK
-> raid6test: test_disks(1, 4): faila=  1(D)  failb=  4(D) 
->  OK
-> raid6test: test_disks(1, 5): faila=  1(D)  failb=  5(D) 
->  OK
-> raid6test: test_disks(1, 6): faila=  1(D)  failb=  6(D) 
->  OK
-> raid6test: test_disks(1, 7): faila=  1(D)  failb=  7(D) 
->  OK
-> raid6test: test_disks(1, 8): faila=  1(D)  failb=  8(D) 
->  OK
-> raid6test: test_disks(1, 9): faila=  1(D)  failb=  9(D) 
->  OK
-> raid6test: test_disks(1, 10): faila=  1(D)  failb= 10(D) 
->  OK
-> raid6test: test_disks(1, 11): faila=  1(D)  failb= 11(D) 
->  OK
-> raid6test: test_disks(1, 12): faila=  1(D)  failb= 12(D) 
->  OK
-> raid6test: test_disks(1, 13): faila=  1(D)  failb= 13(D) 
->  OK
-> raid6test: test_disks(1, 14): faila=  1(D)  failb= 14(P) 
->  OK
-> raid6test: test_disks(1, 15): faila=  1(D)  failb= 15(Q) 
->  OK
-> raid6test: test_disks(2, 3): faila=  2(D)  failb=  3(D) 
->  OK
-> raid6test: test_disks(2, 4): faila=  2(D)  failb=  4(D) 
->  OK
-> raid6test: test_disks(2, 5): faila=  2(D)  failb=  5(D) 
->  OK
-> raid6test: test_disks(2, 6): faila=  2(D)  failb=  6(D) 
->  OK
-> raid6test: test_disks(2, 7): faila=  2(D)  failb=  7(D) 
->  OK
-> raid6test: test_disks(2, 8): faila=  2(D)  failb=  8(D) 
->  OK
-> raid6test: test_disks(2, 9): faila=  2(D)  failb=  9(D) 
->  OK
-> raid6test: test_disks(2, 10): faila=  2(D)  failb= 10(D) 
->  OK
-> raid6test: test_disks(2, 11): faila=  2(D)  failb= 11(D) 
->  OK
-> raid6test: test_disks(2, 12): faila=  2(D)  failb= 12(D) 
->  OK
-> raid6test: test_disks(2, 13): faila=  2(D)  failb= 13(D) 
->  OK
-> raid6test: test_disks(2, 14): faila=  2(D)  failb= 14(P) 
->  OK
-> raid6test: test_disks(2, 15): faila=  2(D)  failb= 15(Q) 
->  OK
-> raid6test: test_disks(3, 4): faila=  3(D)  failb=  4(D) 
->  OK
-> raid6test: test_disks(3, 5): faila=  3(D)  failb=  5(D) 
->  OK
-> raid6test: test_disks(3, 6): faila=  3(D)  failb=  6(D) 
->  OK
-> raid6test: test_disks(3, 7): faila=  3(D)  failb=  7(D) 
->  OK
-> raid6test: test_disks(3, 8): faila=  3(D)  failb=  8(D) 
->  OK
-> raid6test: test_disks(3, 9): faila=  3(D)  failb=  9(D) 
->  OK
-> raid6test: test_disks(3, 10): faila=  3(D)  failb= 10(D) 
->  OK
-> raid6test: test_disks(3, 11): faila=  3(D)  failb= 11(D) 
->  OK
-> raid6test: test_disks(3, 12): faila=  3(D)  failb= 12(D) 
->  OK
-> raid6test: test_disks(3, 13): faila=  3(D)  failb= 13(D) 
->  OK
-> raid6test: test_disks(3, 14): faila=  3(D)  failb= 14(P) 
->  OK
-> raid6test: test_disks(3, 15): faila=  3(D)  failb= 15(Q) 
->  OK
-> raid6test: test_disks(4, 5): faila=  4(D)  failb=  5(D) 
->  OK
-> raid6test: test_disks(4, 6): faila=  4(D)  failb=  6(D) 
->  OK
-> raid6test: test_disks(4, 7): faila=  4(D)  failb=  7(D) 
->  OK
-> raid6test: test_disks(4, 8): faila=  4(D)  failb=  8(D) 
->  OK
-> raid6test: test_disks(4, 9): faila=  4(D)  failb=  9(D) 
->  OK
-> raid6test: test_disks(4, 10): faila=  4(D)  failb= 10(D) 
->  OK
-> raid6test: test_disks(4, 11): faila=  4(D)  failb= 11(D) 
->  OK
-> raid6test: test_disks(4, 12): faila=  4(D)  failb= 12(D) 
->  OK
-> raid6test: test_disks(4, 13): faila=  4(D)  failb= 13(D) 
->  OK
-> raid6test: test_disks(4, 14): faila=  4(D)  failb= 14(P) 
->  OK
-> raid6test: test_disks(4, 15): faila=  4(D)  failb= 15(Q) 
->  OK
-> raid6test: test_disks(5, 6): faila=  5(D)  failb=  6(D) 
->  OK
-> raid6test: test_disks(5, 7): faila=  5(D)  failb=  7(D) 
->  OK
-> raid6test: test_disks(5, 8): faila=  5(D)  failb=  8(D) 
->  OK
-> raid6test: test_disks(5, 9): faila=  5(D)  failb=  9(D) 
->  OK
-> raid6test: test_disks(5, 10): faila=  5(D)  failb= 10(D) 
->  OK
-> raid6test: test_disks(5, 11): faila=  5(D)  failb= 11(D) 
->  OK
-> raid6test: test_disks(5, 12): faila=  5(D)  failb= 12(D) 
->  OK
-> raid6test: test_disks(5, 13): faila=  5(D)  failb= 13(D) 
->  OK
-> raid6test: test_disks(5, 14): faila=  5(D)  failb= 14(P) 
->  OK
-> raid6test: test_disks(5, 15): faila=  5(D)  failb= 15(Q) 
->  OK
-> raid6test: test_disks(6, 7): faila=  6(D)  failb=  7(D) 
->  OK
-> raid6test: test_disks(6, 8): faila=  6(D)  failb=  8(D) 
->  OK
-> raid6test: test_disks(6, 9): faila=  6(D)  failb=  9(D) 
->  OK
-> raid6test: test_disks(6, 10): faila=  6(D)  failb= 10(D) 
->  OK
-> raid6test: test_disks(6, 11): faila=  6(D)  failb= 11(D) 
->  OK
-> raid6test: test_disks(6, 12): faila=  6(D)  failb= 12(D) 
->  OK
-> raid6test: test_disks(6, 13): faila=  6(D)  failb= 13(D) 
->  OK
-> raid6test: test_disks(6, 14): faila=  6(D)  failb= 14(P) 
->  OK
-> raid6test: test_disks(6, 15): faila=  6(D)  failb= 15(Q) 
->  OK
-> raid6test: test_disks(7, 8): faila=  7(D)  failb=  8(D) 
->  OK
-> raid6test: test_disks(7, 9): faila=  7(D)  failb=  9(D) 
->  OK
-> raid6test: test_disks(7, 10): faila=  7(D)  failb= 10(D) 
->  OK
-> raid6test: test_disks(7, 11): faila=  7(D)  failb= 11(D) 
->  OK
-> raid6test: test_disks(7, 12): faila=  7(D)  failb= 12(D) 
->  OK
-> raid6test: test_disks(7, 13): faila=  7(D)  failb= 13(D) 
->  OK
-> raid6test: test_disks(7, 14): faila=  7(D)  failb= 14(P) 
->  OK
-> raid6test: test_disks(7, 15): faila=  7(D)  failb= 15(Q) 
->  OK
-> raid6test: test_disks(8, 9): faila=  8(D)  failb=  9(D) 
->  OK
-> raid6test: test_disks(8, 10): faila=  8(D)  failb= 10(D) 
->  OK
-> raid6test: test_disks(8, 11): faila=  8(D)  failb= 11(D) 
->  OK
-> raid6test: test_disks(8, 12): faila=  8(D)  failb= 12(D) 
->  OK
-> raid6test: test_disks(8, 13): faila=  8(D)  failb= 13(D) 
->  OK
-> raid6test: test_disks(8, 14): faila=  8(D)  failb= 14(P) 
->  OK
-> raid6test: test_disks(8, 15): faila=  8(D)  failb= 15(Q) 
->  OK
-> raid6test: test_disks(9, 10): faila=  9(D)  failb= 10(D) 
->  OK
-> raid6test: test_disks(9, 11): faila=  9(D)  failb= 11(D) 
->  OK
-> raid6test: test_disks(9, 12): faila=  9(D)  failb= 12(D) 
->  OK
-> raid6test: test_disks(9, 13): faila=  9(D)  failb= 13(D) 
->  OK
-> raid6test: test_disks(9, 14): faila=  9(D)  failb= 14(P) 
->  OK
-> raid6test: test_disks(9, 15): faila=  9(D)  failb= 15(Q) 
->  OK
-> raid6test: test_disks(10, 11): faila= 10(D)  failb= 11(D) 
->  OK
-> raid6test: test_disks(10, 12): faila= 10(D)  failb= 12(D) 
->  OK
-> raid6test: test_disks(10, 13): faila= 10(D)  failb= 13(D) 
->  OK
-> raid6test: test_disks(10, 14): faila= 10(D)  failb= 14(P) 
->  OK
-> raid6test: test_disks(10, 15): faila= 10(D)  failb= 15(Q) 
->  OK
-> raid6test: test_disks(11, 12): faila= 11(D)  failb= 12(D) 
->  OK
-> raid6test: test_disks(11, 13): faila= 11(D)  failb= 13(D) 
->  OK
-> raid6test: test_disks(11, 14): faila= 11(D)  failb= 14(P) 
->  OK
-> raid6test: test_disks(11, 15): faila= 11(D)  failb= 15(Q) 
->  OK
-> raid6test: test_disks(12, 13): faila= 12(D)  failb= 13(D) 
->  OK
-> raid6test: test_disks(12, 14): faila= 12(D)  failb= 14(P) 
->  OK
-> raid6test: test_disks(12, 15): faila= 12(D)  failb= 15(Q) 
->  OK
-> raid6test: test_disks(13, 14): faila= 13(D)  failb= 14(P) 
->  OK
-> raid6test: test_disks(13, 15): faila= 13(D)  failb= 15(Q) 
->  OK
-> raid6test: test_disks(14, 15): faila= 14(P)  failb= 15(Q) 
->  OK
-> raid6test:
-> raid6test: complete (257 tests, 0 failures)
-> BIOS EDD facility v0.16 2004-Jun-25, 1 devices found
-> md: Waiting for all devices to be available before 
-> autodetect
-> md: If you don't use raid, use raid=noautodetect
-> md: Autodetecting RAID arrays.
-> md: Scanned 0 and added 0 devices.
-> md: autorun ...
-> md: ... autorun DONE.
-> EXT3-fs: barriers not enabled
-> EXT3-fs (sda1): mounted filesystem with ordered data mode
-> VFS: Mounted root (ext3 filesystem) readonly on device 
-> 8:1.
-> kjournald starting.  Commit interval 5 seconds
-> devtmpfs: mounted
-> Freeing unused kernel memory: 876k freed
-> udevd (2424): /proc/2424/oom_adj is deprecated, please use 
-> /proc/2424/oom_score_adj instead.
-> i2c i2c-3: nForce2 SMBus adapter at 0x600
-> i2c i2c-4: nForce2 SMBus adapter at 0x700
-> k8temp 0000:00:18.3: Temperature readouts might be wrong - 
-> check erratum #141
-> ACPI: PCI Interrupt Link [LAZA] enabled at IRQ 11
-> HDA Intel 0000:00:05.0: PCI INT B -> Link[LAZA] -> GSI 11 
-> (level, low) -> IRQ 11
-> hda_intel: Disable MSI for Nvidia chipset
-> HDA Intel 0000:00:05.0: setting latency timer to 64
-> rtc_cmos 00:02: RTC can wake from S4
-> rtc_cmos 00:02: rtc core: registered rtc_cmos as rtc0
-> rtc0: alarms up to one year, y3k, 114 bytes nvram, hpet 
-> irqs
-> 8139too: 8139too Fast Ethernet driver 0.9.28
-> ACPI: PCI Interrupt Link [LNKB] enabled at IRQ 11
-> 8139too 0000:01:07.0: PCI INT A -> Link[LNKB] -> GSI 11 
-> (level, low) -> IRQ 11
-> 8139too 0000:01:07.0: eth0: RealTek RTL8139 at 0xe800, 
-> 00:08:a1:6d:38:47, IRQ 11
-> ACPI: PCI Interrupt Link [LNEA] enabled at IRQ 11
-> atl1 0000:04:00.0: PCI INT A -> Link[LNEA] -> GSI 11 
-> (level, low) -> IRQ 11
-> atl1 0000:04:00.0: setting latency timer to 64
-> atl1 0000:04:00.0: version 2.1.3
-> BUG: unable to handle kernel NULL pointer dereference at 
-> 00000008
-> IP: [<feee45f4>] atl1_probe+0x7ee/0x992 [atl1]
-> *pde = 00000000
-> Oops: 0002 [#1] PREEMPT SMP
-> last sysfs file: /sys/devices/platform/i8042/modalias
-> Modules linked in: tpm_tis tpm atl1(+) tpm_bios 8139too 
-> rtc_cmos rtc_core rtc_lib snd_hda_intel(+) asus_atk0110 
-> snd_hda_codec snd_hwdep snd_pcm k8temp snd_timer snd 
-> soundcore snd_page_alloc i2c_nforce2
-> 
-> Pid: 3174, comm: modprobe Not tainted 2.6.37-rc1 #1 
-> M2N8-VMX/System Product Name
-> EIP: 0060:[<feee45f4>] EFLAGS: 00010246 CPU: 0
-> EIP is at atl1_probe+0x7ee/0x992 [atl1]
-> EAX: 00000008 EBX: 00000000 ECX: f5128000 EDX: 00000000
-> ESI: f51283c0 EDI: 00000000 EBP: f514be44 ESP: f514bdb4
->   DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-> Process modprobe (pid: 3174, ti=f514a000 task=f509f480 
-> task.ti=f514a000)
-> Stack:
->   f5c93060 feee4cc1 feee4be6 f50ab848 f514bdd8 f51283c0 
-> 00000000 f517c120
->   f51285f7 f5c93000 f51285a4 f5128000 f5c93000 f51712fc 
-> c1d8f1af f514be1c
->   c111fd66 f514be00 00000128 00000008 f517c120 f514be48 
-> 00000000 00000000
-> Call Trace:
->   [<c1d8f1af>] ? mutex_unlock+0x8/0x1b
->   [<c111fd66>] ? sysfs_addrm_finish+0x1a/0xa8
->   [<c157b2fe>] ? local_pci_probe+0x41/0x85
->   [<c157be71>] ? pci_device_probe+0x48/0x6b
->   [<c1762fe1>] ? driver_probe_device+0x9c/0x145
->   [<c17630d2>] ? __driver_attach+0x48/0x64
->   [<c17628b4>] ? bus_for_each_dev+0x42/0x6c
->   [<c1762e6a>] ? driver_attach+0x1e/0x20
->   [<c176308a>] ? __driver_attach+0x0/0x64
->   [<c17622c9>] ? bus_add_driver+0x124/0x268
->   [<c1763363>] ? driver_register+0x98/0xf8
->   [<c157c068>] ? __pci_register_driver+0x3d/0x96
->   [<feee8017>] ? atl1_init_module+0x17/0x19 [atl1]
->   [<c100117e>] ? do_one_initcall+0x8c/0x142
->   [<feee8000>] ? atl1_init_module+0x0/0x19 [atl1]
->   [<c106b759>] ? sys_init_module+0x83/0x1b7
->   [<c10cea83>] ? sys_read+0x42/0x66
->   [<c1d909dc>] ? syscall_call+0x7/0xb
-> Code: 4a 68 c2 8b 96 e4 01 00 00 81 c2 08 10 00 00 80 cc 
-> 80 e8 e9 49 68 c2 8b 45 9c e8 0f 6b da c2 8b 45 9c 8b 90 
-> d0 01 00 00 8d 42 08 <f0> 80 4a 08 01 c7 86 3c 01 00 00 31 
-> 0a ee fe 89 b6 40 01 00 00
-> EIP: [<feee45f4>] atl1_probe+0x7ee/0x992 [atl1] SS:ESP 
-> 0068:f514bdb4
-> CR2: 0000000000000008
-> ---[ end trace 7a332cb401051431 ]---
-> EXT3-fs (sda1): using internal journal
-> parport0: no more devices allowed
-> lp: driver loaded but no devices found
-> usbcore: registered new interface driver uvcvideo
-> USB Video Class driver (v1.0.0)
-> rt2860sta: module is from the staging directory, the 
-> quality is unknown, you have been warned.
-> usbcore: registered new interface driver snd-usb-audio
-> EXT3-fs: barriers not enabled
-> EXT3-fs (sda2): warning: maximal mount count reached, 
-> running e2fsck is recommended
-> kjournald starting.  Commit interval 5 seconds
-> EXT3-fs (sda2): using internal journal
-> EXT3-fs (sda2): mounted filesystem with ordered data mode
-> 
-> 
-> 
-> 
-> ================================
-> #
-> # Automatically generated make config: don't edit
-> # Linux/i386 2.6.37-rc1 Kernel Configuration
-> # Mon Nov  1 20:48:50 2010
-> #
-> # CONFIG_64BIT is not set
-> CONFIG_X86_32=y
-> # CONFIG_X86_64 is not set
-> CONFIG_X86=y
-> CONFIG_INSTRUCTION_DECODER=y
-> CONFIG_OUTPUT_FORMAT="elf32-i386"
-> CONFIG_ARCH_DEFCONFIG="arch/x86/configs/i386_defconfig"
-> CONFIG_GENERIC_CMOS_UPDATE=y
-> CONFIG_CLOCKSOURCE_WATCHDOG=y
-> CONFIG_GENERIC_CLOCKEVENTS=y
-> CONFIG_GENERIC_CLOCKEVENTS_BROADCAST=y
-> CONFIG_LOCKDEP_SUPPORT=y
-> CONFIG_STACKTRACE_SUPPORT=y
-> CONFIG_HAVE_LATENCYTOP_SUPPORT=y
-> CONFIG_MMU=y
-> CONFIG_ZONE_DMA=y
-> # CONFIG_NEED_DMA_MAP_STATE is not set
-> CONFIG_NEED_SG_DMA_LENGTH=y
-> CONFIG_GENERIC_ISA_DMA=y
-> CONFIG_GENERIC_IOMAP=y
-> CONFIG_GENERIC_BUG=y
-> CONFIG_GENERIC_HWEIGHT=y
-> CONFIG_GENERIC_GPIO=y
-> CONFIG_ARCH_MAY_HAVE_PC_FDC=y
-> # CONFIG_RWSEM_GENERIC_SPINLOCK is not set
-> CONFIG_RWSEM_XCHGADD_ALGORITHM=y
-> CONFIG_ARCH_HAS_CPU_IDLE_WAIT=y
-> CONFIG_GENERIC_CALIBRATE_DELAY=y
-> # CONFIG_GENERIC_TIME_VSYSCALL is not set
-> CONFIG_ARCH_HAS_CPU_RELAX=y
-> CONFIG_ARCH_HAS_DEFAULT_IDLE=y
-> CONFIG_ARCH_HAS_CACHE_LINE_SIZE=y
-> CONFIG_HAVE_SETUP_PER_CPU_AREA=y
-> CONFIG_NEED_PER_CPU_EMBED_FIRST_CHUNK=y
-> CONFIG_NEED_PER_CPU_PAGE_FIRST_CHUNK=y
-> # CONFIG_HAVE_CPUMASK_OF_CPU_MAP is not set
-> CONFIG_ARCH_HIBERNATION_POSSIBLE=y
-> CONFIG_ARCH_SUSPEND_POSSIBLE=y
-> # CONFIG_ZONE_DMA32 is not set
-> CONFIG_ARCH_POPULATES_NODE_MAP=y
-> # CONFIG_AUDIT_ARCH is not set
-> CONFIG_ARCH_SUPPORTS_OPTIMIZED_INLINING=y
-> CONFIG_ARCH_SUPPORTS_DEBUG_PAGEALLOC=y
-> CONFIG_USE_GENERIC_SMP_HELPERS=y
-> CONFIG_X86_32_SMP=y
-> CONFIG_X86_HT=y
-> CONFIG_X86_TRAMPOLINE=y
-> CONFIG_ARCH_HWEIGHT_CFLAGS="-fcall-saved-ecx 
-> -fcall-saved-edx"
-> CONFIG_KTIME_SCALAR=y
-> CONFIG_ARCH_CPU_PROBE_RELEASE=y
-> CONFIG_DEFCONFIG_LIST="/lib/modules/$UNAME_RELEASE/.config"
-> CONFIG_CONSTRUCTORS=y
-> CONFIG_HAVE_IRQ_WORK=y
-> CONFIG_IRQ_WORK=y
-> 
-> #
-> # General setup
-> #
-> CONFIG_EXPERIMENTAL=y
-> CONFIG_LOCK_KERNEL=y
-> CONFIG_INIT_ENV_ARG_LIMIT=32
-> CONFIG_CROSS_COMPILE=""
-> CONFIG_LOCALVERSION=""
-> # CONFIG_LOCALVERSION_AUTO is not set
-> CONFIG_HAVE_KERNEL_GZIP=y
-> CONFIG_HAVE_KERNEL_BZIP2=y
-> CONFIG_HAVE_KERNEL_LZMA=y
-> CONFIG_HAVE_KERNEL_LZO=y
-> CONFIG_KERNEL_GZIP=y
-> # CONFIG_KERNEL_BZIP2 is not set
-> # CONFIG_KERNEL_LZMA is not set
-> # CONFIG_KERNEL_LZO is not set
-> CONFIG_SWAP=y
-> CONFIG_SYSVIPC=y
-> CONFIG_SYSVIPC_SYSCTL=y
-> CONFIG_POSIX_MQUEUE=y
-> CONFIG_POSIX_MQUEUE_SYSCTL=y
-> CONFIG_BSD_PROCESS_ACCT=y
-> CONFIG_BSD_PROCESS_ACCT_V3=y
-> # CONFIG_TASKSTATS is not set
-> CONFIG_AUDIT=y
-> CONFIG_AUDITSYSCALL=y
-> CONFIG_AUDIT_WATCH=y
-> CONFIG_AUDIT_TREE=y
-> CONFIG_HAVE_GENERIC_HARDIRQS=y
-> 
-> #
-> # IRQ subsystem
-> #
-> CONFIG_GENERIC_HARDIRQS=y
-> CONFIG_GENERIC_HARDIRQS_NO__DO_IRQ=y
-> # CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED is not set
-> CONFIG_HAVE_SPARSE_IRQ=y
-> CONFIG_GENERIC_IRQ_PROBE=y
-> CONFIG_GENERIC_PENDING_IRQ=y
-> # CONFIG_AUTO_IRQ_AFFINITY is not set
-> # CONFIG_IRQ_PER_CPU is not set
-> # CONFIG_HARDIRQS_SW_RESEND is not set
-> # CONFIG_SPARSE_IRQ is not set
-> 
-> #
-> # RCU Subsystem
-> #
-> CONFIG_TREE_PREEMPT_RCU=y
-> CONFIG_PREEMPT_RCU=y
-> # CONFIG_RCU_TRACE is not set
-> CONFIG_RCU_FANOUT=32
-> # CONFIG_RCU_FANOUT_EXACT is not set
-> # CONFIG_TREE_RCU_TRACE is not set
-> CONFIG_IKCONFIG=y
-> CONFIG_IKCONFIG_PROC=y
-> CONFIG_LOG_BUF_SHIFT=21
-> CONFIG_HAVE_UNSTABLE_SCHED_CLOCK=y
-> # CONFIG_CGROUPS is not set
-> CONFIG_NAMESPACES=y
-> CONFIG_UTS_NS=y
-> CONFIG_IPC_NS=y
-> CONFIG_USER_NS=y
-> CONFIG_PID_NS=y
-> CONFIG_NET_NS=y
-> # CONFIG_SYSFS_DEPRECATED is not set
-> CONFIG_RELAY=y
-> CONFIG_BLK_DEV_INITRD=y
-> CONFIG_INITRAMFS_SOURCE=""
-> CONFIG_RD_GZIP=y
-> CONFIG_RD_BZIP2=y
-> CONFIG_RD_LZMA=y
-> CONFIG_RD_LZO=y
-> CONFIG_CC_OPTIMIZE_FOR_SIZE=y
-> CONFIG_SYSCTL=y
-> CONFIG_ANON_INODES=y
-> CONFIG_EMBEDDED=y
-> CONFIG_UID16=y
-> CONFIG_SYSCTL_SYSCALL=y
-> CONFIG_KALLSYMS=y
-> # CONFIG_KALLSYMS_EXTRA_PASS is not set
-> CONFIG_HOTPLUG=y
-> CONFIG_PRINTK=y
-> CONFIG_BUG=y
-> CONFIG_ELF_CORE=y
-> CONFIG_PCSPKR_PLATFORM=y
-> CONFIG_BASE_FULL=y
-> CONFIG_FUTEX=y
-> CONFIG_EPOLL=y
-> CONFIG_SIGNALFD=y
-> CONFIG_TIMERFD=y
-> CONFIG_EVENTFD=y
-> CONFIG_SHMEM=y
-> CONFIG_AIO=y
-> CONFIG_HAVE_PERF_EVENTS=y
-> 
-> #
-> # Kernel Performance Events And Counters
-> #
-> CONFIG_PERF_EVENTS=y
-> # CONFIG_PERF_COUNTERS is not set
-> CONFIG_VM_EVENT_COUNTERS=y
-> CONFIG_PCI_QUIRKS=y
-> CONFIG_SLUB_DEBUG=y
-> CONFIG_COMPAT_BRK=y
-> # CONFIG_SLAB is not set
-> CONFIG_SLUB=y
-> # CONFIG_SLOB is not set
-> CONFIG_PROFILING=y
-> CONFIG_TRACEPOINTS=y
-> CONFIG_OPROFILE=y
-> CONFIG_OPROFILE_EVENT_MULTIPLEX=y
-> CONFIG_HAVE_OPROFILE=y
-> # CONFIG_KPROBES is not set
-> CONFIG_JUMP_LABEL=y
-> CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS=y
-> CONFIG_USER_RETURN_NOTIFIER=y
-> CONFIG_HAVE_IOREMAP_PROT=y
-> CONFIG_HAVE_KPROBES=y
-> CONFIG_HAVE_KRETPROBES=y
-> CONFIG_HAVE_OPTPROBES=y
-> CONFIG_HAVE_ARCH_TRACEHOOK=y
-> CONFIG_HAVE_DMA_ATTRS=y
-> CONFIG_HAVE_REGS_AND_STACK_ACCESS_API=y
-> CONFIG_HAVE_DMA_API_DEBUG=y
-> CONFIG_HAVE_HW_BREAKPOINT=y
-> CONFIG_HAVE_MIXED_BREAKPOINTS_REGS=y
-> CONFIG_HAVE_USER_RETURN_NOTIFIER=y
-> CONFIG_HAVE_PERF_EVENTS_NMI=y
-> CONFIG_HAVE_ARCH_JUMP_LABEL=y
-> 
-> #
-> # GCOV-based kernel profiling
-> #
-> # CONFIG_GCOV_KERNEL is not set
-> CONFIG_HAVE_GENERIC_DMA_COHERENT=y
-> CONFIG_SLABINFO=y
-> CONFIG_RT_MUTEXES=y
-> CONFIG_BASE_SMALL=0
-> CONFIG_MODULES=y
-> CONFIG_MODULE_FORCE_LOAD=y
-> CONFIG_MODULE_UNLOAD=y
-> CONFIG_MODULE_FORCE_UNLOAD=y
-> # CONFIG_MODVERSIONS is not set
-> # CONFIG_MODULE_SRCVERSION_ALL is not set
-> CONFIG_STOP_MACHINE=y
-> CONFIG_BLOCK=y
-> CONFIG_LBDAF=y
-> CONFIG_BLK_DEV_BSG=y
-> CONFIG_BLK_DEV_INTEGRITY=y
-> 
-> #
-> # IO Schedulers
-> #
-> CONFIG_IOSCHED_NOOP=y
-> CONFIG_IOSCHED_DEADLINE=y
-> CONFIG_IOSCHED_CFQ=y
-> # CONFIG_DEFAULT_DEADLINE is not set
-> CONFIG_DEFAULT_CFQ=y
-> # CONFIG_DEFAULT_NOOP is not set
-> CONFIG_DEFAULT_IOSCHED="cfq"
-> CONFIG_PREEMPT_NOTIFIERS=y
-> CONFIG_PADATA=y
-> # CONFIG_INLINE_SPIN_TRYLOCK is not set
-> # CONFIG_INLINE_SPIN_TRYLOCK_BH is not set
-> # CONFIG_INLINE_SPIN_LOCK is not set
-> # CONFIG_INLINE_SPIN_LOCK_BH is not set
-> # CONFIG_INLINE_SPIN_LOCK_IRQ is not set
-> # CONFIG_INLINE_SPIN_LOCK_IRQSAVE is not set
-> # CONFIG_INLINE_SPIN_UNLOCK is not set
-> # CONFIG_INLINE_SPIN_UNLOCK_BH is not set
-> # CONFIG_INLINE_SPIN_UNLOCK_IRQ is not set
-> # CONFIG_INLINE_SPIN_UNLOCK_IRQRESTORE is not set
-> # CONFIG_INLINE_READ_TRYLOCK is not set
-> # CONFIG_INLINE_READ_LOCK is not set
-> # CONFIG_INLINE_READ_LOCK_BH is not set
-> # CONFIG_INLINE_READ_LOCK_IRQ is not set
-> # CONFIG_INLINE_READ_LOCK_IRQSAVE is not set
-> # CONFIG_INLINE_READ_UNLOCK is not set
-> # CONFIG_INLINE_READ_UNLOCK_BH is not set
-> # CONFIG_INLINE_READ_UNLOCK_IRQ is not set
-> # CONFIG_INLINE_READ_UNLOCK_IRQRESTORE is not set
-> # CONFIG_INLINE_WRITE_TRYLOCK is not set
-> # CONFIG_INLINE_WRITE_LOCK is not set
-> # CONFIG_INLINE_WRITE_LOCK_BH is not set
-> # CONFIG_INLINE_WRITE_LOCK_IRQ is not set
-> # CONFIG_INLINE_WRITE_LOCK_IRQSAVE is not set
-> # CONFIG_INLINE_WRITE_UNLOCK is not set
-> # CONFIG_INLINE_WRITE_UNLOCK_BH is not set
-> # CONFIG_INLINE_WRITE_UNLOCK_IRQ is not set
-> # CONFIG_INLINE_WRITE_UNLOCK_IRQRESTORE is not set
-> CONFIG_MUTEX_SPIN_ON_OWNER=y
-> CONFIG_FREEZER=y
-> 
-> #
-> # Processor type and features
-> #
-> CONFIG_TICK_ONESHOT=y
-> # CONFIG_NO_HZ is not set
-> CONFIG_HIGH_RES_TIMERS=y
-> CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
-> CONFIG_SMP=y
-> CONFIG_X86_MPPARSE=y
-> CONFIG_X86_BIGSMP=y
-> CONFIG_X86_EXTENDED_PLATFORM=y
-> CONFIG_X86_ELAN=y
-> # CONFIG_X86_MRST is not set
-> CONFIG_X86_RDC321X=y
-> # CONFIG_X86_32_NON_STANDARD is not set
-> CONFIG_X86_SUPPORTS_MEMORY_FAILURE=y
-> CONFIG_SCHED_OMIT_FRAME_POINTER=y
-> CONFIG_PARAVIRT_GUEST=y
-> # CONFIG_XEN_PRIVILEGED_GUEST is not set
-> CONFIG_KVM_CLOCK=y
-> CONFIG_KVM_GUEST=y
-> CONFIG_LGUEST_GUEST=y
-> CONFIG_PARAVIRT=y
-> # CONFIG_PARAVIRT_SPINLOCKS is not set
-> CONFIG_PARAVIRT_CLOCK=y
-> CONFIG_NO_BOOTMEM=y
-> CONFIG_MEMTEST=y
-> CONFIG_X86_CPU=y
-> CONFIG_X86_INTERNODE_CACHE_SHIFT=4
-> CONFIG_X86_CMPXCHG=y
-> CONFIG_X86_L1_CACHE_SHIFT=4
-> CONFIG_X86_XADD=y
-> CONFIG_X86_WP_WORKS_OK=y
-> CONFIG_X86_INVLPG=y
-> CONFIG_X86_BSWAP=y
-> CONFIG_X86_POPAD_OK=y
-> CONFIG_X86_ALIGNMENT_16=y
-> CONFIG_X86_MINIMUM_CPU_FAMILY=4
-> CONFIG_X86_DEBUGCTLMSR=y
-> CONFIG_PROCESSOR_SELECT=y
-> CONFIG_CPU_SUP_INTEL=y
-> CONFIG_CPU_SUP_CYRIX_32=y
-> CONFIG_CPU_SUP_AMD=y
-> CONFIG_CPU_SUP_CENTAUR=y
-> CONFIG_CPU_SUP_TRANSMETA_32=y
-> CONFIG_CPU_SUP_UMC_32=y
-> CONFIG_HPET_TIMER=y
-> CONFIG_HPET_EMULATE_RTC=y
-> CONFIG_DMI=y
-> # CONFIG_IOMMU_HELPER is not set
-> # CONFIG_IOMMU_API is not set
-> CONFIG_NR_CPUS=32
-> CONFIG_SCHED_SMT=y
-> CONFIG_SCHED_MC=y
-> # CONFIG_IRQ_TIME_ACCOUNTING is not set
-> # CONFIG_PREEMPT_NONE is not set
-> # CONFIG_PREEMPT_VOLUNTARY is not set
-> CONFIG_PREEMPT=y
-> CONFIG_X86_LOCAL_APIC=y
-> CONFIG_X86_IO_APIC=y
-> CONFIG_X86_REROUTE_FOR_BROKEN_BOOT_IRQS=y
-> CONFIG_X86_MCE=y
-> CONFIG_X86_MCE_INTEL=y
-> CONFIG_X86_MCE_AMD=y
-> CONFIG_X86_ANCIENT_MCE=y
-> CONFIG_X86_MCE_THRESHOLD=y
-> CONFIG_X86_MCE_INJECT=y
-> CONFIG_X86_THERMAL_VECTOR=y
-> CONFIG_VM86=y
-> CONFIG_TOSHIBA=y
-> CONFIG_I8K=y
-> CONFIG_X86_REBOOTFIXUPS=y
-> CONFIG_MICROCODE=y
-> CONFIG_MICROCODE_INTEL=y
-> CONFIG_MICROCODE_AMD=y
-> CONFIG_MICROCODE_OLD_INTERFACE=y
-> CONFIG_X86_MSR=y
-> CONFIG_X86_CPUID=y
-> # CONFIG_NOHIGHMEM is not set
-> CONFIG_HIGHMEM4G=y
-> # CONFIG_HIGHMEM64G is not set
-> CONFIG_VMSPLIT_3G=y
-> # CONFIG_VMSPLIT_3G_OPT is not set
-> # CONFIG_VMSPLIT_2G is not set
-> # CONFIG_VMSPLIT_2G_OPT is not set
-> # CONFIG_VMSPLIT_1G is not set
-> CONFIG_PAGE_OFFSET=0xC0000000
-> CONFIG_HIGHMEM=y
-> # CONFIG_ARCH_PHYS_ADDR_T_64BIT is not set
-> # CONFIG_ARCH_DMA_ADDR_T_64BIT is not set
-> CONFIG_ARCH_FLATMEM_ENABLE=y
-> CONFIG_ARCH_SPARSEMEM_ENABLE=y
-> CONFIG_ARCH_SELECT_MEMORY_MODEL=y
-> CONFIG_ILLEGAL_POINTER_VALUE=0
-> CONFIG_SELECT_MEMORY_MODEL=y
-> CONFIG_FLATMEM_MANUAL=y
-> # CONFIG_SPARSEMEM_MANUAL is not set
-> CONFIG_FLATMEM=y
-> CONFIG_FLAT_NODE_MEM_MAP=y
-> CONFIG_SPARSEMEM_STATIC=y
-> CONFIG_HAVE_MEMBLOCK=y
-> CONFIG_PAGEFLAGS_EXTENDED=y
-> CONFIG_SPLIT_PTLOCK_CPUS=4
-> # CONFIG_COMPACTION is not set
-> # CONFIG_PHYS_ADDR_T_64BIT is not set
-> CONFIG_ZONE_DMA_FLAG=1
-> CONFIG_BOUNCE=y
-> CONFIG_VIRT_TO_BUS=y
-> CONFIG_MMU_NOTIFIER=y
-> CONFIG_KSM=y
-> CONFIG_DEFAULT_MMAP_MIN_ADDR=65536
-> CONFIG_ARCH_SUPPORTS_MEMORY_FAILURE=y
-> CONFIG_MEMORY_FAILURE=y
-> CONFIG_HIGHPTE=y
-> CONFIG_X86_CHECK_BIOS_CORRUPTION=y
-> CONFIG_X86_BOOTPARAM_MEMORY_CORRUPTION_CHECK=y
-> CONFIG_X86_RESERVE_LOW=64
-> CONFIG_MATH_EMULATION=y
-> CONFIG_MTRR=y
-> CONFIG_MTRR_SANITIZER=y
-> CONFIG_MTRR_SANITIZER_ENABLE_DEFAULT=0
-> CONFIG_MTRR_SANITIZER_SPARE_REG_NR_DEFAULT=1
-> CONFIG_X86_PAT=y
-> CONFIG_ARCH_USES_PG_UNCACHED=y
-> CONFIG_EFI=y
-> CONFIG_SECCOMP=y
-> CONFIG_CC_STACKPROTECTOR=y
-> # CONFIG_HZ_100 is not set
-> # CONFIG_HZ_250 is not set
-> # CONFIG_HZ_300 is not set
-> CONFIG_HZ_1000=y
-> CONFIG_HZ=1000
-> CONFIG_SCHED_HRTICK=y
-> # CONFIG_KEXEC is not set
-> # CONFIG_CRASH_DUMP is not set
-> CONFIG_PHYSICAL_START=0x1000000
-> # CONFIG_RELOCATABLE is not set
-> CONFIG_PHYSICAL_ALIGN=0x100000
-> CONFIG_HOTPLUG_CPU=y
-> CONFIG_COMPAT_VDSO=y
-> # CONFIG_CMDLINE_BOOL is not set
-> CONFIG_ARCH_ENABLE_MEMORY_HOTPLUG=y
-> 
-> #
-> # Power management and ACPI options
-> #
-> CONFIG_PM=y
-> # CONFIG_PM_DEBUG is not set
-> CONFIG_PM_SLEEP_SMP=y
-> CONFIG_PM_SLEEP=y
-> CONFIG_SUSPEND_NVS=y
-> CONFIG_SUSPEND=y
-> CONFIG_SUSPEND_FREEZER=y
-> CONFIG_HIBERNATION=y
-> CONFIG_PM_STD_PARTITION="\"\""
-> CONFIG_PM_RUNTIME=y
-> CONFIG_PM_OPS=y
-> # CONFIG_PM_OPP is not set
-> CONFIG_ACPI=y
-> CONFIG_ACPI_SLEEP=y
-> CONFIG_ACPI_PROCFS=y
-> CONFIG_ACPI_PROCFS_POWER=y
-> CONFIG_ACPI_POWER_METER=m
-> # CONFIG_ACPI_EC_DEBUGFS is not set
-> CONFIG_ACPI_PROC_EVENT=y
-> CONFIG_ACPI_AC=y
-> CONFIG_ACPI_BATTERY=y
-> CONFIG_ACPI_BUTTON=y
-> CONFIG_ACPI_VIDEO=y
-> CONFIG_ACPI_FAN=y
-> CONFIG_ACPI_DOCK=y
-> CONFIG_ACPI_PROCESSOR=y
-> CONFIG_ACPI_HOTPLUG_CPU=y
-> CONFIG_ACPI_PROCESSOR_AGGREGATOR=y
-> CONFIG_ACPI_THERMAL=y
-> # CONFIG_ACPI_CUSTOM_DSDT is not set
-> CONFIG_ACPI_BLACKLIST_YEAR=2001
-> # CONFIG_ACPI_DEBUG is not set
-> CONFIG_ACPI_PCI_SLOT=y
-> CONFIG_X86_PM_TIMER=y
-> CONFIG_ACPI_CONTAINER=y
-> CONFIG_ACPI_SBS=y
-> CONFIG_ACPI_HED=y
-> CONFIG_ACPI_APEI=y
-> CONFIG_ACPI_APEI_GHES=m
-> # CONFIG_ACPI_APEI_EINJ is not set
-> # CONFIG_ACPI_APEI_ERST_DEBUG is not set
-> CONFIG_SFI=y
-> CONFIG_X86_APM_BOOT=y
-> CONFIG_APM=y
-> # CONFIG_APM_IGNORE_USER_SUSPEND is not set
-> # CONFIG_APM_DO_ENABLE is not set
-> # CONFIG_APM_CPU_IDLE is not set
-> # CONFIG_APM_DISPLAY_BLANK is not set
-> # CONFIG_APM_ALLOW_INTS is not set
-> 
-> #
-> # CPU Frequency scaling
-> #
-> CONFIG_CPU_FREQ=y
-> CONFIG_CPU_FREQ_TABLE=y
-> # CONFIG_CPU_FREQ_DEBUG is not set
-> CONFIG_CPU_FREQ_STAT=y
-> CONFIG_CPU_FREQ_STAT_DETAILS=y
-> CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE=y
-> # CONFIG_CPU_FREQ_DEFAULT_GOV_POWERSAVE is not set
-> # CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE is not set
-> # CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND is not set
-> # CONFIG_CPU_FREQ_DEFAULT_GOV_CONSERVATIVE is not set
-> CONFIG_CPU_FREQ_GOV_PERFORMANCE=y
-> CONFIG_CPU_FREQ_GOV_POWERSAVE=y
-> CONFIG_CPU_FREQ_GOV_USERSPACE=y
-> CONFIG_CPU_FREQ_GOV_ONDEMAND=y
-> CONFIG_CPU_FREQ_GOV_CONSERVATIVE=y
-> 
-> #
-> # CPUFreq processor drivers
-> #
-> CONFIG_X86_PCC_CPUFREQ=y
-> CONFIG_X86_ACPI_CPUFREQ=y
-> CONFIG_ELAN_CPUFREQ=y
-> CONFIG_SC520_CPUFREQ=y
-> CONFIG_X86_POWERNOW_K6=y
-> CONFIG_X86_POWERNOW_K7=y
-> CONFIG_X86_POWERNOW_K7_ACPI=y
-> CONFIG_X86_POWERNOW_K8=y
-> CONFIG_X86_GX_SUSPMOD=y
-> CONFIG_X86_SPEEDSTEP_CENTRINO=y
-> CONFIG_X86_SPEEDSTEP_CENTRINO_TABLE=y
-> CONFIG_X86_SPEEDSTEP_ICH=y
-> CONFIG_X86_SPEEDSTEP_SMI=y
-> CONFIG_X86_P4_CLOCKMOD=y
-> CONFIG_X86_CPUFREQ_NFORCE2=y
-> CONFIG_X86_LONGRUN=y
-> CONFIG_X86_LONGHAUL=y
-> CONFIG_X86_E_POWERSAVER=y
-> 
-> #
-> # shared options
-> #
-> CONFIG_X86_SPEEDSTEP_LIB=y
-> CONFIG_X86_SPEEDSTEP_RELAXED_CAP_CHECK=y
-> CONFIG_CPU_IDLE=y
-> CONFIG_CPU_IDLE_GOV_LADDER=y
-> # CONFIG_INTEL_IDLE is not set
-> 
-> #
-> # Bus options (PCI etc.)
-> #
-> CONFIG_PCI=y
-> # CONFIG_PCI_GOBIOS is not set
-> # CONFIG_PCI_GOMMCONFIG is not set
-> # CONFIG_PCI_GODIRECT is not set
-> # CONFIG_PCI_GOOLPC is not set
-> CONFIG_PCI_GOANY=y
-> CONFIG_PCI_BIOS=y
-> CONFIG_PCI_DIRECT=y
-> CONFIG_PCI_MMCONFIG=y
-> CONFIG_PCI_OLPC=y
-> CONFIG_PCI_DOMAINS=y
-> CONFIG_PCI_CNB20LE_QUIRK=y
-> CONFIG_PCIEPORTBUS=y
-> CONFIG_HOTPLUG_PCI_PCIE=y
-> CONFIG_PCIEAER=y
-> CONFIG_PCIE_ECRC=y
-> CONFIG_PCIEAER_INJECT=y
-> CONFIG_PCIEASPM=y
-> CONFIG_PCIEASPM_DEBUG=y
-> CONFIG_PCIE_PME=y
-> CONFIG_ARCH_SUPPORTS_MSI=y
-> # CONFIG_PCI_MSI is not set
-> # CONFIG_PCI_STUB is not set
-> CONFIG_HT_IRQ=y
-> CONFIG_PCI_IOV=y
-> CONFIG_PCI_IOAPIC=y
-> CONFIG_ISA_DMA_API=y
-> CONFIG_ISA=y
-> CONFIG_EISA=y
-> CONFIG_EISA_VLB_PRIMING=y
-> CONFIG_EISA_PCI_EISA=y
-> CONFIG_EISA_VIRTUAL_ROOT=y
-> CONFIG_EISA_NAMES=y
-> CONFIG_MCA=y
-> CONFIG_MCA_LEGACY=y
-> CONFIG_MCA_PROC_FS=y
-> CONFIG_SCx200=y
-> CONFIG_SCx200HR_TIMER=y
-> CONFIG_OLPC=y
-> CONFIG_OLPC_XO1=m
-> CONFIG_OLPC_OPENFIRMWARE=y
-> CONFIG_AMD_NB=y
-> CONFIG_PCCARD=y
-> CONFIG_PCMCIA=y
-> CONFIG_PCMCIA_LOAD_CIS=y
-> CONFIG_CARDBUS=y
-> 
-> #
-> # PC-card bridges
-> #
-> CONFIG_YENTA=y
-> CONFIG_YENTA_O2=y
-> CONFIG_YENTA_RICOH=y
-> CONFIG_YENTA_TI=y
-> CONFIG_YENTA_ENE_TUNE=y
-> CONFIG_YENTA_TOSHIBA=y
-> CONFIG_PD6729=y
-> CONFIG_I82092=y
-> CONFIG_I82365=y
-> CONFIG_TCIC=y
-> CONFIG_PCMCIA_PROBE=y
-> CONFIG_PCCARD_NONSTATIC=y
-> CONFIG_HOTPLUG_PCI=y
-> # CONFIG_HOTPLUG_PCI_FAKE is not set
-> CONFIG_HOTPLUG_PCI_COMPAQ=y
-> # CONFIG_HOTPLUG_PCI_COMPAQ_NVRAM is not set
-> CONFIG_HOTPLUG_PCI_IBM=y
-> CONFIG_HOTPLUG_PCI_ACPI=y
-> CONFIG_HOTPLUG_PCI_ACPI_IBM=y
-> CONFIG_HOTPLUG_PCI_CPCI=y
-> CONFIG_HOTPLUG_PCI_CPCI_ZT5550=y
-> CONFIG_HOTPLUG_PCI_CPCI_GENERIC=y
-> CONFIG_HOTPLUG_PCI_SHPC=y
-> 
-> #
-> # Executable file formats / Emulations
-> #
-> CONFIG_BINFMT_ELF=y
-> # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
-> CONFIG_HAVE_AOUT=y
-> CONFIG_BINFMT_AOUT=y
-> CONFIG_BINFMT_MISC=y
-> CONFIG_HAVE_ATOMIC_IOMAP=y
-> CONFIG_HAVE_TEXT_POKE_SMP=y
-> CONFIG_NET=y
-> 
-> #
-> # Networking options
-> #
-> CONFIG_PACKET=y
-> CONFIG_UNIX=y
-> CONFIG_XFRM=y
-> CONFIG_XFRM_USER=y
-> CONFIG_XFRM_SUB_POLICY=y
-> CONFIG_XFRM_MIGRATE=y
-> CONFIG_XFRM_STATISTICS=y
-> CONFIG_XFRM_IPCOMP=m
-> CONFIG_NET_KEY=m
-> CONFIG_NET_KEY_MIGRATE=y
-> CONFIG_INET=y
-> CONFIG_IP_MULTICAST=y
-> CONFIG_IP_ADVANCED_ROUTER=y
-> CONFIG_ASK_IP_FIB_HASH=y
-> # CONFIG_IP_FIB_TRIE is not set
-> CONFIG_IP_FIB_HASH=y
-> CONFIG_IP_MULTIPLE_TABLES=y
-> CONFIG_IP_ROUTE_MULTIPATH=y
-> CONFIG_IP_ROUTE_VERBOSE=y
-> CONFIG_IP_PNP=y
-> CONFIG_IP_PNP_DHCP=y
-> CONFIG_IP_PNP_BOOTP=y
-> CONFIG_IP_PNP_RARP=y
-> CONFIG_NET_IPIP=m
-> CONFIG_NET_IPGRE_DEMUX=m
-> CONFIG_NET_IPGRE=m
-> CONFIG_NET_IPGRE_BROADCAST=y
-> CONFIG_IP_MROUTE=y
-> CONFIG_IP_MROUTE_MULTIPLE_TABLES=y
-> CONFIG_IP_PIMSM_V1=y
-> CONFIG_IP_PIMSM_V2=y
-> CONFIG_ARPD=y
-> CONFIG_SYN_COOKIES=y
-> CONFIG_INET_AH=m
-> CONFIG_INET_ESP=m
-> CONFIG_INET_IPCOMP=m
-> CONFIG_INET_XFRM_TUNNEL=m
-> CONFIG_INET_TUNNEL=m
-> CONFIG_INET_XFRM_MODE_TRANSPORT=m
-> CONFIG_INET_XFRM_MODE_TUNNEL=m
-> CONFIG_INET_XFRM_MODE_BEET=m
-> CONFIG_INET_LRO=y
-> CONFIG_INET_DIAG=m
-> CONFIG_INET_TCP_DIAG=m
-> CONFIG_TCP_CONG_ADVANCED=y
-> CONFIG_TCP_CONG_BIC=m
-> CONFIG_TCP_CONG_CUBIC=y
-> CONFIG_TCP_CONG_WESTWOOD=m
-> CONFIG_TCP_CONG_HTCP=m
-> CONFIG_TCP_CONG_HSTCP=m
-> CONFIG_TCP_CONG_HYBLA=m
-> CONFIG_TCP_CONG_VEGAS=m
-> CONFIG_TCP_CONG_SCALABLE=m
-> CONFIG_TCP_CONG_LP=m
-> CONFIG_TCP_CONG_VENO=m
-> CONFIG_TCP_CONG_YEAH=m
-> CONFIG_TCP_CONG_ILLINOIS=m
-> CONFIG_DEFAULT_CUBIC=y
-> # CONFIG_DEFAULT_RENO is not set
-> CONFIG_DEFAULT_TCP_CONG="cubic"
-> CONFIG_TCP_MD5SIG=y
-> CONFIG_IPV6=m
-> CONFIG_IPV6_PRIVACY=y
-> CONFIG_IPV6_ROUTER_PREF=y
-> CONFIG_IPV6_ROUTE_INFO=y
-> CONFIG_IPV6_OPTIMISTIC_DAD=y
-> CONFIG_INET6_AH=m
-> CONFIG_INET6_ESP=m
-> CONFIG_INET6_IPCOMP=m
-> CONFIG_IPV6_MIP6=m
-> CONFIG_INET6_XFRM_TUNNEL=m
-> CONFIG_INET6_TUNNEL=m
-> CONFIG_INET6_XFRM_MODE_TRANSPORT=m
-> CONFIG_INET6_XFRM_MODE_TUNNEL=m
-> CONFIG_INET6_XFRM_MODE_BEET=m
-> CONFIG_INET6_XFRM_MODE_ROUTEOPTIMIZATION=m
-> CONFIG_IPV6_SIT=m
-> CONFIG_IPV6_SIT_6RD=y
-> CONFIG_IPV6_NDISC_NODETYPE=y
-> CONFIG_IPV6_TUNNEL=m
-> CONFIG_IPV6_MULTIPLE_TABLES=y
-> CONFIG_IPV6_SUBTREES=y
-> CONFIG_IPV6_MROUTE=y
-> CONFIG_IPV6_MROUTE_MULTIPLE_TABLES=y
-> CONFIG_IPV6_PIMSM_V2=y
-> CONFIG_NETLABEL=y
-> # CONFIG_NETWORK_SECMARK is not set
-> # CONFIG_NETWORK_PHY_TIMESTAMPING is not set
-> CONFIG_NETFILTER=y
-> # CONFIG_NETFILTER_DEBUG is not set
-> CONFIG_NETFILTER_ADVANCED=y
-> CONFIG_BRIDGE_NETFILTER=y
-> 
-> #
-> # Core Netfilter Configuration
-> #
-> CONFIG_NETFILTER_NETLINK=m
-> CONFIG_NETFILTER_NETLINK_QUEUE=m
-> CONFIG_NETFILTER_NETLINK_LOG=m
-> CONFIG_NF_CONNTRACK=m
-> CONFIG_NF_CONNTRACK_MARK=y
-> # CONFIG_NF_CONNTRACK_ZONES is not set
-> # CONFIG_NF_CONNTRACK_EVENTS is not set
-> CONFIG_NF_CT_PROTO_DCCP=m
-> CONFIG_NF_CT_PROTO_GRE=m
-> CONFIG_NF_CT_PROTO_SCTP=m
-> CONFIG_NF_CT_PROTO_UDPLITE=m
-> CONFIG_NF_CONNTRACK_AMANDA=m
-> CONFIG_NF_CONNTRACK_FTP=m
-> CONFIG_NF_CONNTRACK_H323=m
-> CONFIG_NF_CONNTRACK_IRC=m
-> CONFIG_NF_CONNTRACK_NETBIOS_NS=m
-> CONFIG_NF_CONNTRACK_PPTP=m
-> CONFIG_NF_CONNTRACK_SANE=m
-> CONFIG_NF_CONNTRACK_SIP=m
-> CONFIG_NF_CONNTRACK_TFTP=m
-> CONFIG_NF_CT_NETLINK=m
-> CONFIG_NETFILTER_TPROXY=m
-> CONFIG_NETFILTER_XTABLES=m
-> 
-> #
-> # Xtables combined modules
-> #
-> CONFIG_NETFILTER_XT_MARK=m
-> CONFIG_NETFILTER_XT_CONNMARK=m
-> 
-> #
-> # Xtables targets
-> #
-> CONFIG_NETFILTER_XT_TARGET_CHECKSUM=m
-> CONFIG_NETFILTER_XT_TARGET_CLASSIFY=m
-> CONFIG_NETFILTER_XT_TARGET_CONNMARK=m
-> CONFIG_NETFILTER_XT_TARGET_CT=m
-> CONFIG_NETFILTER_XT_TARGET_DSCP=m
-> CONFIG_NETFILTER_XT_TARGET_HL=m
-> CONFIG_NETFILTER_XT_TARGET_IDLETIMER=m
-> CONFIG_NETFILTER_XT_TARGET_LED=m
-> CONFIG_NETFILTER_XT_TARGET_MARK=m
-> CONFIG_NETFILTER_XT_TARGET_NFLOG=m
-> CONFIG_NETFILTER_XT_TARGET_NFQUEUE=m
-> CONFIG_NETFILTER_XT_TARGET_NOTRACK=m
-> CONFIG_NETFILTER_XT_TARGET_RATEEST=m
-> CONFIG_NETFILTER_XT_TARGET_TEE=m
-> CONFIG_NETFILTER_XT_TARGET_TPROXY=m
-> CONFIG_NETFILTER_XT_TARGET_TRACE=m
-> CONFIG_NETFILTER_XT_TARGET_TCPMSS=m
-> CONFIG_NETFILTER_XT_TARGET_TCPOPTSTRIP=m
-> 
-> #
-> # Xtables matches
-> #
-> CONFIG_NETFILTER_XT_MATCH_CLUSTER=m
-> CONFIG_NETFILTER_XT_MATCH_COMMENT=m
-> CONFIG_NETFILTER_XT_MATCH_CONNBYTES=m
-> CONFIG_NETFILTER_XT_MATCH_CONNLIMIT=m
-> CONFIG_NETFILTER_XT_MATCH_CONNMARK=m
-> CONFIG_NETFILTER_XT_MATCH_CONNTRACK=m
-> CONFIG_NETFILTER_XT_MATCH_CPU=m
-> CONFIG_NETFILTER_XT_MATCH_DCCP=m
-> CONFIG_NETFILTER_XT_MATCH_DSCP=m
-> CONFIG_NETFILTER_XT_MATCH_ESP=m
-> CONFIG_NETFILTER_XT_MATCH_HASHLIMIT=m
-> CONFIG_NETFILTER_XT_MATCH_HELPER=m
-> CONFIG_NETFILTER_XT_MATCH_HL=m
-> CONFIG_NETFILTER_XT_MATCH_IPRANGE=m
-> CONFIG_NETFILTER_XT_MATCH_IPVS=m
-> CONFIG_NETFILTER_XT_MATCH_LENGTH=m
-> CONFIG_NETFILTER_XT_MATCH_LIMIT=m
-> CONFIG_NETFILTER_XT_MATCH_MAC=m
-> CONFIG_NETFILTER_XT_MATCH_MARK=m
-> CONFIG_NETFILTER_XT_MATCH_MULTIPORT=m
-> CONFIG_NETFILTER_XT_MATCH_OSF=m
-> CONFIG_NETFILTER_XT_MATCH_OWNER=m
-> CONFIG_NETFILTER_XT_MATCH_POLICY=m
-> CONFIG_NETFILTER_XT_MATCH_PHYSDEV=m
-> CONFIG_NETFILTER_XT_MATCH_PKTTYPE=m
-> CONFIG_NETFILTER_XT_MATCH_QUOTA=m
-> CONFIG_NETFILTER_XT_MATCH_RATEEST=m
-> CONFIG_NETFILTER_XT_MATCH_REALM=m
-> CONFIG_NETFILTER_XT_MATCH_RECENT=m
-> CONFIG_NETFILTER_XT_MATCH_SCTP=m
-> CONFIG_NETFILTER_XT_MATCH_SOCKET=m
-> CONFIG_NETFILTER_XT_MATCH_STATE=m
-> CONFIG_NETFILTER_XT_MATCH_STATISTIC=m
-> CONFIG_NETFILTER_XT_MATCH_STRING=m
-> CONFIG_NETFILTER_XT_MATCH_TCPMSS=m
-> CONFIG_NETFILTER_XT_MATCH_TIME=m
-> CONFIG_NETFILTER_XT_MATCH_U32=m
-> CONFIG_IP_VS=m
-> CONFIG_IP_VS_IPV6=y
-> # CONFIG_IP_VS_DEBUG is not set
-> CONFIG_IP_VS_TAB_BITS=12
-> 
-> #
-> # IPVS transport protocol load balancing support
-> #
-> CONFIG_IP_VS_PROTO_TCP=y
-> CONFIG_IP_VS_PROTO_UDP=y
-> CONFIG_IP_VS_PROTO_AH_ESP=y
-> CONFIG_IP_VS_PROTO_ESP=y
-> CONFIG_IP_VS_PROTO_AH=y
-> CONFIG_IP_VS_PROTO_SCTP=y
-> 
-> #
-> # IPVS scheduler
-> #
-> CONFIG_IP_VS_RR=m
-> CONFIG_IP_VS_WRR=m
-> CONFIG_IP_VS_LC=m
-> CONFIG_IP_VS_WLC=m
-> CONFIG_IP_VS_LBLC=m
-> CONFIG_IP_VS_LBLCR=m
-> CONFIG_IP_VS_DH=m
-> CONFIG_IP_VS_SH=m
-> CONFIG_IP_VS_SED=m
-> CONFIG_IP_VS_NQ=m
-> 
-> #
-> # IPVS application helper
-> #
-> CONFIG_IP_VS_FTP=m
-> CONFIG_IP_VS_NFCT=y
-> CONFIG_IP_VS_PE_SIP=m
-> 
-> #
-> # IP: Netfilter Configuration
-> #
-> CONFIG_NF_DEFRAG_IPV4=m
-> CONFIG_NF_CONNTRACK_IPV4=m
-> CONFIG_NF_CONNTRACK_PROC_COMPAT=y
-> CONFIG_IP_NF_QUEUE=m
-> CONFIG_IP_NF_IPTABLES=m
-> CONFIG_IP_NF_MATCH_ADDRTYPE=m
-> CONFIG_IP_NF_MATCH_AH=m
-> CONFIG_IP_NF_MATCH_ECN=m
-> CONFIG_IP_NF_MATCH_TTL=m
-> CONFIG_IP_NF_FILTER=m
-> CONFIG_IP_NF_TARGET_REJECT=m
-> CONFIG_IP_NF_TARGET_LOG=m
-> CONFIG_IP_NF_TARGET_ULOG=m
-> CONFIG_NF_NAT=m
-> CONFIG_NF_NAT_NEEDED=y
-> CONFIG_IP_NF_TARGET_MASQUERADE=m
-> CONFIG_IP_NF_TARGET_NETMAP=m
-> CONFIG_IP_NF_TARGET_REDIRECT=m
-> CONFIG_NF_NAT_SNMP_BASIC=m
-> CONFIG_NF_NAT_PROTO_DCCP=m
-> CONFIG_NF_NAT_PROTO_GRE=m
-> CONFIG_NF_NAT_PROTO_UDPLITE=m
-> CONFIG_NF_NAT_PROTO_SCTP=m
-> CONFIG_NF_NAT_FTP=m
-> CONFIG_NF_NAT_IRC=m
-> CONFIG_NF_NAT_TFTP=m
-> CONFIG_NF_NAT_AMANDA=m
-> CONFIG_NF_NAT_PPTP=m
-> CONFIG_NF_NAT_H323=m
-> CONFIG_NF_NAT_SIP=m
-> CONFIG_IP_NF_MANGLE=m
-> CONFIG_IP_NF_TARGET_CLUSTERIP=m
-> CONFIG_IP_NF_TARGET_ECN=m
-> CONFIG_IP_NF_TARGET_TTL=m
-> CONFIG_IP_NF_RAW=m
-> CONFIG_IP_NF_SECURITY=m
-> CONFIG_IP_NF_ARPTABLES=m
-> CONFIG_IP_NF_ARPFILTER=m
-> CONFIG_IP_NF_ARP_MANGLE=m
-> 
-> #
-> # IPv6: Netfilter Configuration
-> #
-> CONFIG_NF_DEFRAG_IPV6=m
-> CONFIG_NF_CONNTRACK_IPV6=m
-> CONFIG_IP6_NF_QUEUE=m
-> CONFIG_IP6_NF_IPTABLES=m
-> CONFIG_IP6_NF_MATCH_AH=m
-> CONFIG_IP6_NF_MATCH_EUI64=m
-> CONFIG_IP6_NF_MATCH_FRAG=m
-> CONFIG_IP6_NF_MATCH_OPTS=m
-> CONFIG_IP6_NF_MATCH_HL=m
-> CONFIG_IP6_NF_MATCH_IPV6HEADER=m
-> CONFIG_IP6_NF_MATCH_MH=m
-> CONFIG_IP6_NF_MATCH_RT=m
-> CONFIG_IP6_NF_TARGET_HL=m
-> CONFIG_IP6_NF_TARGET_LOG=m
-> CONFIG_IP6_NF_FILTER=m
-> CONFIG_IP6_NF_TARGET_REJECT=m
-> CONFIG_IP6_NF_MANGLE=m
-> CONFIG_IP6_NF_RAW=m
-> CONFIG_IP6_NF_SECURITY=m
-> 
-> #
-> # DECnet: Netfilter Configuration
-> #
-> CONFIG_DECNET_NF_GRABULATOR=m
-> CONFIG_BRIDGE_NF_EBTABLES=m
-> CONFIG_BRIDGE_EBT_BROUTE=m
-> CONFIG_BRIDGE_EBT_T_FILTER=m
-> CONFIG_BRIDGE_EBT_T_NAT=m
-> CONFIG_BRIDGE_EBT_802_3=m
-> CONFIG_BRIDGE_EBT_AMONG=m
-> CONFIG_BRIDGE_EBT_ARP=m
-> CONFIG_BRIDGE_EBT_IP=m
-> CONFIG_BRIDGE_EBT_IP6=m
-> CONFIG_BRIDGE_EBT_LIMIT=m
-> CONFIG_BRIDGE_EBT_MARK=m
-> CONFIG_BRIDGE_EBT_PKTTYPE=m
-> CONFIG_BRIDGE_EBT_STP=m
-> CONFIG_BRIDGE_EBT_VLAN=m
-> CONFIG_BRIDGE_EBT_ARPREPLY=m
-> CONFIG_BRIDGE_EBT_DNAT=m
-> CONFIG_BRIDGE_EBT_MARK_T=m
-> CONFIG_BRIDGE_EBT_REDIRECT=m
-> CONFIG_BRIDGE_EBT_SNAT=m
-> CONFIG_BRIDGE_EBT_LOG=m
-> CONFIG_BRIDGE_EBT_ULOG=m
-> CONFIG_BRIDGE_EBT_NFLOG=m
-> CONFIG_IP_DCCP=m
-> CONFIG_INET_DCCP_DIAG=m
-> 
-> #
-> # DCCP CCIDs Configuration (EXPERIMENTAL)
-> #
-> # CONFIG_IP_DCCP_CCID2_DEBUG is not set
-> CONFIG_IP_DCCP_CCID3=y
-> # CONFIG_IP_DCCP_CCID3_DEBUG is not set
-> CONFIG_IP_DCCP_TFRC_LIB=y
-> CONFIG_IP_SCTP=m
-> # CONFIG_SCTP_DBG_MSG is not set
-> # CONFIG_SCTP_DBG_OBJCNT is not set
-> # CONFIG_SCTP_HMAC_NONE is not set
-> # CONFIG_SCTP_HMAC_SHA1 is not set
-> CONFIG_SCTP_HMAC_MD5=y
-> CONFIG_RDS=m
-> CONFIG_RDS_RDMA=m
-> CONFIG_RDS_TCP=m
-> # CONFIG_RDS_DEBUG is not set
-> CONFIG_TIPC=m
-> CONFIG_TIPC_ADVANCED=y
-> CONFIG_TIPC_ZONES=3
-> CONFIG_TIPC_CLUSTERS=1
-> CONFIG_TIPC_NODES=255
-> CONFIG_TIPC_PORTS=8191
-> CONFIG_TIPC_LOG=0
-> # CONFIG_TIPC_DEBUG is not set
-> CONFIG_ATM=m
-> CONFIG_ATM_CLIP=m
-> # CONFIG_ATM_CLIP_NO_ICMP is not set
-> CONFIG_ATM_LANE=m
-> CONFIG_ATM_MPOA=m
-> CONFIG_ATM_BR2684=m
-> # CONFIG_ATM_BR2684_IPFILTER is not set
-> CONFIG_L2TP=m
-> # CONFIG_L2TP_DEBUGFS is not set
-> CONFIG_L2TP_V3=y
-> CONFIG_L2TP_IP=m
-> CONFIG_L2TP_ETH=m
-> CONFIG_STP=m
-> CONFIG_GARP=m
-> CONFIG_BRIDGE=m
-> CONFIG_BRIDGE_IGMP_SNOOPING=y
-> CONFIG_NET_DSA=y
-> CONFIG_NET_DSA_TAG_DSA=y
-> CONFIG_NET_DSA_TAG_EDSA=y
-> CONFIG_NET_DSA_TAG_TRAILER=y
-> CONFIG_NET_DSA_MV88E6XXX=y
-> CONFIG_NET_DSA_MV88E6060=y
-> CONFIG_NET_DSA_MV88E6XXX_NEED_PPU=y
-> CONFIG_NET_DSA_MV88E6131=y
-> CONFIG_NET_DSA_MV88E6123_61_65=y
-> CONFIG_VLAN_8021Q=m
-> CONFIG_VLAN_8021Q_GVRP=y
-> CONFIG_DECNET=m
-> CONFIG_DECNET_ROUTER=y
-> CONFIG_LLC=y
-> CONFIG_LLC2=m
-> CONFIG_IPX=m
-> CONFIG_IPX_INTERN=y
-> CONFIG_ATALK=m
-> CONFIG_DEV_APPLETALK=m
-> CONFIG_LTPC=m
-> CONFIG_COPS=m
-> CONFIG_COPS_DAYNA=y
-> CONFIG_COPS_TANGENT=y
-> CONFIG_IPDDP=m
-> CONFIG_IPDDP_ENCAP=y
-> CONFIG_IPDDP_DECAP=y
-> CONFIG_X25=m
-> CONFIG_LAPB=m
-> CONFIG_ECONET=m
-> CONFIG_ECONET_AUNUDP=y
-> CONFIG_ECONET_NATIVE=y
-> CONFIG_WAN_ROUTER=m
-> CONFIG_PHONET=m
-> CONFIG_PHONET_PIPECTRLR=y
-> CONFIG_IEEE802154=m
-> CONFIG_NET_SCHED=y
-> 
-> #
-> # Queueing/Scheduling
-> #
-> CONFIG_NET_SCH_CBQ=m
-> CONFIG_NET_SCH_HTB=m
-> CONFIG_NET_SCH_HFSC=m
-> CONFIG_NET_SCH_ATM=m
-> CONFIG_NET_SCH_PRIO=m
-> CONFIG_NET_SCH_MULTIQ=m
-> CONFIG_NET_SCH_RED=m
-> CONFIG_NET_SCH_SFQ=m
-> CONFIG_NET_SCH_TEQL=m
-> CONFIG_NET_SCH_TBF=m
-> CONFIG_NET_SCH_GRED=m
-> CONFIG_NET_SCH_DSMARK=m
-> CONFIG_NET_SCH_NETEM=m
-> CONFIG_NET_SCH_DRR=m
-> CONFIG_NET_SCH_INGRESS=m
-> 
-> #
-> # Classification
-> #
-> CONFIG_NET_CLS=y
-> CONFIG_NET_CLS_BASIC=m
-> CONFIG_NET_CLS_TCINDEX=m
-> CONFIG_NET_CLS_ROUTE4=m
-> CONFIG_NET_CLS_ROUTE=y
-> CONFIG_NET_CLS_FW=m
-> CONFIG_NET_CLS_U32=m
-> CONFIG_CLS_U32_PERF=y
-> CONFIG_CLS_U32_MARK=y
-> CONFIG_NET_CLS_RSVP=m
-> CONFIG_NET_CLS_RSVP6=m
-> CONFIG_NET_CLS_FLOW=m
-> # CONFIG_NET_EMATCH is not set
-> CONFIG_NET_CLS_ACT=y
-> CONFIG_NET_ACT_POLICE=y
-> CONFIG_NET_ACT_GACT=m
-> CONFIG_GACT_PROB=y
-> CONFIG_NET_ACT_MIRRED=m
-> CONFIG_NET_ACT_IPT=m
-> CONFIG_NET_ACT_NAT=m
-> CONFIG_NET_ACT_PEDIT=m
-> CONFIG_NET_ACT_SIMP=m
-> CONFIG_NET_ACT_SKBEDIT=m
-> CONFIG_NET_ACT_CSUM=m
-> CONFIG_NET_CLS_IND=y
-> CONFIG_NET_SCH_FIFO=y
-> CONFIG_DCB=y
-> CONFIG_DNS_RESOLVER=y
-> CONFIG_RPS=y
-> 
-> #
-> # Network testing
-> #
-> # CONFIG_NET_PKTGEN is not set
-> # CONFIG_NET_DROP_MONITOR is not set
-> CONFIG_HAMRADIO=y
-> 
-> #
-> # Packet Radio protocols
-> #
-> CONFIG_AX25=m
-> CONFIG_AX25_DAMA_SLAVE=y
-> CONFIG_NETROM=m
-> CONFIG_ROSE=m
-> 
-> #
-> # AX.25 network device drivers
-> #
-> CONFIG_MKISS=m
-> CONFIG_6PACK=m
-> CONFIG_BPQETHER=m
-> CONFIG_SCC=m
-> CONFIG_SCC_DELAY=y
-> CONFIG_SCC_TRXECHO=y
-> CONFIG_BAYCOM_SER_FDX=m
-> CONFIG_BAYCOM_SER_HDX=m
-> CONFIG_BAYCOM_PAR=m
-> CONFIG_BAYCOM_EPP=m
-> CONFIG_YAM=m
-> CONFIG_CAN=m
-> CONFIG_CAN_RAW=m
-> CONFIG_CAN_BCM=m
-> 
-> #
-> # CAN Device Drivers
-> #
-> CONFIG_CAN_VCAN=m
-> CONFIG_CAN_DEV=m
-> CONFIG_CAN_CALC_BITTIMING=y
-> CONFIG_CAN_MCP251X=m
-> CONFIG_CAN_JANZ_ICAN3=m
-> CONFIG_PCH_CAN=m
-> CONFIG_CAN_SJA1000=m
-> CONFIG_CAN_SJA1000_ISA=m
-> CONFIG_CAN_SJA1000_PLATFORM=m
-> CONFIG_CAN_EMS_PCI=m
-> CONFIG_CAN_KVASER_PCI=m
-> CONFIG_CAN_PLX_PCI=m
-> CONFIG_CAN_TSCAN1=m
-> 
-> #
-> # CAN USB interfaces
-> #
-> CONFIG_CAN_EMS_USB=m
-> CONFIG_CAN_ESD_USB2=m
-> # CONFIG_CAN_DEBUG_DEVICES is not set
-> CONFIG_IRDA=m
-> 
-> #
-> # IrDA protocols
-> #
-> CONFIG_IRLAN=m
-> CONFIG_IRNET=m
-> CONFIG_IRCOMM=m
-> CONFIG_IRDA_ULTRA=y
-> 
-> #
-> # IrDA options
-> #
-> CONFIG_IRDA_CACHE_LAST_LSAP=y
-> CONFIG_IRDA_FAST_RR=y
-> # CONFIG_IRDA_DEBUG is not set
-> 
-> #
-> # Infrared-port device drivers
-> #
-> 
-> #
-> # SIR device drivers
-> #
-> CONFIG_IRTTY_SIR=m
-> 
-> #
-> # Dongle support
-> #
-> CONFIG_DONGLE=y
-> CONFIG_ESI_DONGLE=m
-> CONFIG_ACTISYS_DONGLE=m
-> CONFIG_TEKRAM_DONGLE=m
-> CONFIG_TOIM3232_DONGLE=m
-> CONFIG_LITELINK_DONGLE=m
-> CONFIG_MA600_DONGLE=m
-> CONFIG_GIRBIL_DONGLE=m
-> CONFIG_MCP2120_DONGLE=m
-> CONFIG_OLD_BELKIN_DONGLE=m
-> CONFIG_ACT200L_DONGLE=m
-> CONFIG_KINGSUN_DONGLE=m
-> CONFIG_KSDAZZLE_DONGLE=m
-> CONFIG_KS959_DONGLE=m
-> 
-> #
-> # FIR device drivers
-> #
-> CONFIG_USB_IRDA=m
-> CONFIG_SIGMATEL_FIR=m
-> CONFIG_NSC_FIR=m
-> CONFIG_WINBOND_FIR=m
-> CONFIG_TOSHIBA_FIR=m
-> CONFIG_SMC_IRCC_FIR=m
-> CONFIG_ALI_FIR=m
-> CONFIG_VLSI_FIR=m
-> CONFIG_VIA_FIR=m
-> CONFIG_MCS_FIR=m
-> CONFIG_BT=m
-> CONFIG_BT_L2CAP=m
-> CONFIG_BT_SCO=m
-> CONFIG_BT_RFCOMM=m
-> CONFIG_BT_RFCOMM_TTY=y
-> CONFIG_BT_BNEP=m
-> CONFIG_BT_BNEP_MC_FILTER=y
-> CONFIG_BT_BNEP_PROTO_FILTER=y
-> CONFIG_BT_CMTP=m
-> CONFIG_BT_HIDP=m
-> 
-> #
-> # Bluetooth device drivers
-> #
-> CONFIG_BT_HCIBTUSB=m
-> CONFIG_BT_HCIBTSDIO=m
-> CONFIG_BT_HCIUART=m
-> CONFIG_BT_HCIUART_H4=y
-> CONFIG_BT_HCIUART_BCSP=y
-> CONFIG_BT_HCIUART_ATH3K=y
-> CONFIG_BT_HCIUART_LL=y
-> CONFIG_BT_HCIBCM203X=m
-> CONFIG_BT_HCIBPA10X=m
-> CONFIG_BT_HCIBFUSB=m
-> CONFIG_BT_HCIDTL1=m
-> CONFIG_BT_HCIBT3C=m
-> CONFIG_BT_HCIBLUECARD=m
-> CONFIG_BT_HCIBTUART=m
-> CONFIG_BT_HCIVHCI=m
-> CONFIG_BT_MRVL=m
-> CONFIG_BT_MRVL_SDIO=m
-> # CONFIG_BT_ATH3K is not set
-> CONFIG_AF_RXRPC=y
-> # CONFIG_AF_RXRPC_DEBUG is not set
-> CONFIG_RXKAD=m
-> CONFIG_FIB_RULES=y
-> CONFIG_WIRELESS=y
-> CONFIG_WIRELESS_EXT=y
-> CONFIG_WEXT_CORE=y
-> CONFIG_WEXT_PROC=y
-> CONFIG_WEXT_SPY=y
-> CONFIG_WEXT_PRIV=y
-> CONFIG_CFG80211=m
-> # CONFIG_NL80211_TESTMODE is not set
-> # CONFIG_CFG80211_DEVELOPER_WARNINGS is not set
-> # CONFIG_CFG80211_REG_DEBUG is not set
-> CONFIG_CFG80211_DEFAULT_PS=y
-> # CONFIG_CFG80211_DEBUGFS is not set
-> # CONFIG_CFG80211_INTERNAL_REGDB is not set
-> CONFIG_CFG80211_WEXT=y
-> CONFIG_WIRELESS_EXT_SYSFS=y
-> CONFIG_LIB80211=y
-> CONFIG_LIB80211_CRYPT_WEP=y
-> CONFIG_LIB80211_CRYPT_CCMP=y
-> CONFIG_LIB80211_CRYPT_TKIP=y
-> # CONFIG_LIB80211_DEBUG is not set
-> CONFIG_MAC80211=m
-> CONFIG_MAC80211_HAS_RC=y
-> CONFIG_MAC80211_RC_PID=y
-> CONFIG_MAC80211_RC_MINSTREL=y
-> CONFIG_MAC80211_RC_MINSTREL_HT=y
-> # CONFIG_MAC80211_RC_DEFAULT_PID is not set
-> CONFIG_MAC80211_RC_DEFAULT_MINSTREL=y
-> CONFIG_MAC80211_RC_DEFAULT="minstrel_ht"
-> CONFIG_MAC80211_MESH=y
-> CONFIG_MAC80211_LEDS=y
-> # CONFIG_MAC80211_DEBUGFS is not set
-> # CONFIG_MAC80211_DEBUG_MENU is not set
-> CONFIG_WIMAX=m
-> CONFIG_WIMAX_DEBUG_LEVEL=8
-> CONFIG_RFKILL=m
-> CONFIG_RFKILL_LEDS=y
-> CONFIG_RFKILL_INPUT=y
-> CONFIG_NET_9P=m
-> CONFIG_NET_9P_VIRTIO=m
-> CONFIG_NET_9P_RDMA=m
-> # CONFIG_NET_9P_DEBUG is not set
-> CONFIG_CAIF=m
-> # CONFIG_CAIF_DEBUG is not set
-> CONFIG_CAIF_NETDEV=m
-> CONFIG_CEPH_LIB=m
-> # CONFIG_CEPH_LIB_PRETTYDEBUG is not set
-> 
-> #
-> # Device Drivers
-> #
-> 
-> #
-> # Generic Driver Options
-> #
-> CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
-> CONFIG_DEVTMPFS=y
-> CONFIG_DEVTMPFS_MOUNT=y
-> CONFIG_STANDALONE=y
-> CONFIG_PREVENT_FIRMWARE_BUILD=y
-> CONFIG_FW_LOADER=y
-> # CONFIG_FIRMWARE_IN_KERNEL is not set
-> CONFIG_EXTRA_FIRMWARE=""
-> # CONFIG_SYS_HYPERVISOR is not set
-> CONFIG_CONNECTOR=y
-> CONFIG_PROC_EVENTS=y
-> CONFIG_MTD=y
-> # CONFIG_MTD_DEBUG is not set
-> CONFIG_MTD_TESTS=m
-> CONFIG_MTD_CONCAT=y
-> CONFIG_MTD_PARTITIONS=y
-> CONFIG_MTD_REDBOOT_PARTS=y
-> CONFIG_MTD_REDBOOT_DIRECTORY_BLOCK=-1
-> CONFIG_MTD_REDBOOT_PARTS_UNALLOCATED=y
-> # CONFIG_MTD_REDBOOT_PARTS_READONLY is not set
-> CONFIG_MTD_CMDLINE_PARTS=y
-> CONFIG_MTD_AR7_PARTS=y
-> 
-> #
-> # User Modules And Translation Layers
-> #
-> CONFIG_MTD_CHAR=y
-> CONFIG_HAVE_MTD_OTP=y
-> CONFIG_MTD_BLKDEVS=y
-> CONFIG_MTD_BLOCK=y
-> CONFIG_FTL=y
-> CONFIG_NFTL=y
-> CONFIG_NFTL_RW=y
-> CONFIG_INFTL=y
-> CONFIG_RFD_FTL=y
-> CONFIG_SSFDC=y
-> CONFIG_SM_FTL=m
-> CONFIG_MTD_OOPS=y
-> 
-> #
-> # RAM/ROM/Flash chip drivers
-> #
-> CONFIG_MTD_CFI=y
-> CONFIG_MTD_JEDECPROBE=y
-> CONFIG_MTD_GEN_PROBE=y
-> CONFIG_MTD_CFI_ADV_OPTIONS=y
-> CONFIG_MTD_CFI_NOSWAP=y
-> # CONFIG_MTD_CFI_BE_BYTE_SWAP is not set
-> # CONFIG_MTD_CFI_LE_BYTE_SWAP is not set
-> CONFIG_MTD_CFI_GEOMETRY=y
-> CONFIG_MTD_MAP_BANK_WIDTH_1=y
-> CONFIG_MTD_MAP_BANK_WIDTH_2=y
-> CONFIG_MTD_MAP_BANK_WIDTH_4=y
-> CONFIG_MTD_MAP_BANK_WIDTH_8=y
-> CONFIG_MTD_MAP_BANK_WIDTH_16=y
-> CONFIG_MTD_MAP_BANK_WIDTH_32=y
-> CONFIG_MTD_CFI_I1=y
-> CONFIG_MTD_CFI_I2=y
-> CONFIG_MTD_CFI_I4=y
-> CONFIG_MTD_CFI_I8=y
-> CONFIG_MTD_OTP=y
-> CONFIG_MTD_CFI_INTELEXT=y
-> CONFIG_MTD_CFI_AMDSTD=y
-> CONFIG_MTD_CFI_STAA=y
-> CONFIG_MTD_CFI_UTIL=y
-> CONFIG_MTD_RAM=y
-> CONFIG_MTD_ROM=y
-> CONFIG_MTD_ABSENT=y
-> 
-> #
-> # Mapping drivers for chip access
-> #
-> CONFIG_MTD_COMPLEX_MAPPINGS=y
-> CONFIG_MTD_PHYSMAP=y
-> CONFIG_MTD_PHYSMAP_COMPAT=y
-> CONFIG_MTD_PHYSMAP_START=0x8000000
-> CONFIG_MTD_PHYSMAP_LEN=0
-> CONFIG_MTD_PHYSMAP_BANKWIDTH=2
-> CONFIG_MTD_SC520CDP=y
-> CONFIG_MTD_NETSC520=y
-> CONFIG_MTD_TS5500=y
-> CONFIG_MTD_SBC_GXX=y
-> CONFIG_MTD_SCx200_DOCFLASH=y
-> CONFIG_MTD_AMD76XROM=y
-> CONFIG_MTD_ICHXROM=y
-> CONFIG_MTD_ESB2ROM=y
-> CONFIG_MTD_CK804XROM=y
-> CONFIG_MTD_SCB2_FLASH=y
-> CONFIG_MTD_NETtel=y
-> CONFIG_MTD_L440GX=y
-> CONFIG_MTD_PCI=y
-> CONFIG_MTD_PCMCIA=m
-> CONFIG_MTD_PCMCIA_ANONYMOUS=y
-> CONFIG_MTD_GPIO_ADDR=y
-> CONFIG_MTD_INTEL_VR_NOR=y
-> CONFIG_MTD_PLATRAM=y
-> 
-> #
-> # Self-contained MTD device drivers
-> #
-> CONFIG_MTD_PMC551=y
-> CONFIG_MTD_PMC551_BUGFIX=y
-> # CONFIG_MTD_PMC551_DEBUG is not set
-> CONFIG_MTD_DATAFLASH=y
-> CONFIG_MTD_DATAFLASH_WRITE_VERIFY=y
-> CONFIG_MTD_DATAFLASH_OTP=y
-> CONFIG_MTD_M25P80=y
-> CONFIG_M25PXX_USE_FAST_READ=y
-> CONFIG_MTD_SST25L=y
-> CONFIG_MTD_SLRAM=y
-> CONFIG_MTD_PHRAM=y
-> CONFIG_MTD_MTDRAM=y
-> CONFIG_MTDRAM_TOTAL_SIZE=4096
-> CONFIG_MTDRAM_ERASE_SIZE=128
-> CONFIG_MTDRAM_ABS_POS=0
-> CONFIG_MTD_BLOCK2MTD=y
-> 
-> #
-> # Disk-On-Chip Device Drivers
-> #
-> CONFIG_MTD_DOC2000=y
-> CONFIG_MTD_DOC2001=y
-> CONFIG_MTD_DOC2001PLUS=y
-> CONFIG_MTD_DOCPROBE=y
-> CONFIG_MTD_DOCECC=y
-> CONFIG_MTD_DOCPROBE_ADVANCED=y
-> CONFIG_MTD_DOCPROBE_ADDRESS=0x0000
-> CONFIG_MTD_DOCPROBE_HIGH=y
-> CONFIG_MTD_DOCPROBE_55AA=y
-> CONFIG_MTD_NAND_ECC=y
-> CONFIG_MTD_NAND_ECC_SMC=y
-> CONFIG_MTD_NAND=y
-> CONFIG_MTD_NAND_VERIFY_WRITE=y
-> CONFIG_MTD_SM_COMMON=m
-> CONFIG_MTD_NAND_MUSEUM_IDS=y
-> CONFIG_MTD_NAND_DENALI=m
-> CONFIG_MTD_NAND_DENALI_SCRATCH_REG_ADDR=0xFF108018
-> CONFIG_MTD_NAND_IDS=y
-> CONFIG_MTD_NAND_RICOH=m
-> CONFIG_MTD_NAND_DISKONCHIP=y
-> CONFIG_MTD_NAND_DISKONCHIP_PROBE_ADVANCED=y
-> CONFIG_MTD_NAND_DISKONCHIP_PROBE_ADDRESS=0
-> CONFIG_MTD_NAND_DISKONCHIP_PROBE_HIGH=y
-> CONFIG_MTD_NAND_DISKONCHIP_BBTWRITE=y
-> CONFIG_MTD_NAND_CAFE=y
-> CONFIG_MTD_NAND_CS553X=y
-> CONFIG_MTD_NAND_NANDSIM=y
-> CONFIG_MTD_NAND_PLATFORM=y
-> CONFIG_MTD_ALAUDA=y
-> CONFIG_MTD_ONENAND=y
-> CONFIG_MTD_ONENAND_VERIFY_WRITE=y
-> CONFIG_MTD_ONENAND_GENERIC=y
-> CONFIG_MTD_ONENAND_OTP=y
-> CONFIG_MTD_ONENAND_2X_PROGRAM=y
-> CONFIG_MTD_ONENAND_SIM=y
-> 
-> #
-> # LPDDR flash memory drivers
-> #
-> CONFIG_MTD_LPDDR=y
-> CONFIG_MTD_QINFO_PROBE=y
-> CONFIG_MTD_UBI=y
-> CONFIG_MTD_UBI_WL_THRESHOLD=4096
-> CONFIG_MTD_UBI_BEB_RESERVE=1
-> CONFIG_MTD_UBI_GLUEBI=y
-> 
-> #
-> # UBI debugging options
-> #
-> # CONFIG_MTD_UBI_DEBUG is not set
-> CONFIG_PARPORT=y
-> CONFIG_PARPORT_PC=y
-> CONFIG_PARPORT_SERIAL=y
-> CONFIG_PARPORT_PC_FIFO=y
-> CONFIG_PARPORT_PC_SUPERIO=y
-> CONFIG_PARPORT_PC_PCMCIA=y
-> # CONFIG_PARPORT_GSC is not set
-> CONFIG_PARPORT_AX88796=y
-> CONFIG_PARPORT_1284=y
-> CONFIG_PARPORT_NOT_PC=y
-> CONFIG_PNP=y
-> CONFIG_PNP_DEBUG_MESSAGES=y
-> 
-> #
-> # Protocols
-> #
-> CONFIG_ISAPNP=y
-> CONFIG_PNPBIOS=y
-> CONFIG_PNPBIOS_PROC_FS=y
-> CONFIG_PNPACPI=y
-> CONFIG_BLK_DEV=y
-> CONFIG_BLK_DEV_FD=y
-> CONFIG_BLK_DEV_XD=y
-> CONFIG_PARIDE=y
-> 
-> #
-> # Parallel IDE high-level drivers
-> #
-> CONFIG_PARIDE_PD=y
-> CONFIG_PARIDE_PCD=y
-> CONFIG_PARIDE_PF=y
-> CONFIG_PARIDE_PT=y
-> CONFIG_PARIDE_PG=y
-> 
-> #
-> # Parallel IDE protocol modules
-> #
-> CONFIG_PARIDE_ATEN=y
-> CONFIG_PARIDE_BPCK=y
-> CONFIG_PARIDE_BPCK6=y
-> CONFIG_PARIDE_COMM=y
-> CONFIG_PARIDE_DSTR=y
-> CONFIG_PARIDE_FIT2=y
-> CONFIG_PARIDE_FIT3=y
-> CONFIG_PARIDE_EPAT=y
-> CONFIG_PARIDE_EPATC8=y
-> CONFIG_PARIDE_EPIA=y
-> CONFIG_PARIDE_FRIQ=y
-> CONFIG_PARIDE_FRPW=y
-> CONFIG_PARIDE_KBIC=y
-> CONFIG_PARIDE_KTTI=y
-> CONFIG_PARIDE_ON20=y
-> CONFIG_PARIDE_ON26=y
-> CONFIG_BLK_CPQ_DA=y
-> CONFIG_BLK_CPQ_CISS_DA=y
-> CONFIG_CISS_SCSI_TAPE=y
-> CONFIG_BLK_DEV_DAC960=y
-> CONFIG_BLK_DEV_UMEM=y
-> # CONFIG_BLK_DEV_COW_COMMON is not set
-> CONFIG_BLK_DEV_LOOP=y
-> CONFIG_BLK_DEV_CRYPTOLOOP=y
-> CONFIG_BLK_DEV_DRBD=m
-> # CONFIG_DRBD_FAULT_INJECTION is not set
-> CONFIG_BLK_DEV_NBD=y
-> CONFIG_BLK_DEV_OSD=y
-> CONFIG_BLK_DEV_SX8=y
-> CONFIG_BLK_DEV_UB=y
-> CONFIG_BLK_DEV_RAM=y
-> CONFIG_BLK_DEV_RAM_COUNT=16
-> CONFIG_BLK_DEV_RAM_SIZE=16384
-> CONFIG_BLK_DEV_XIP=y
-> CONFIG_CDROM_PKTCDVD=y
-> CONFIG_CDROM_PKTCDVD_BUFFERS=8
-> CONFIG_CDROM_PKTCDVD_WCACHE=y
-> CONFIG_ATA_OVER_ETH=y
-> CONFIG_VIRTIO_BLK=y
-> # CONFIG_BLK_DEV_HD is not set
-> CONFIG_BLK_DEV_RBD=m
-> CONFIG_MISC_DEVICES=y
-> CONFIG_AD525X_DPOT=m
-> CONFIG_AD525X_DPOT_I2C=m
-> CONFIG_AD525X_DPOT_SPI=m
-> CONFIG_IBM_ASM=y
-> CONFIG_PHANTOM=y
-> CONFIG_SGI_IOC4=y
-> CONFIG_TIFM_CORE=y
-> CONFIG_TIFM_7XX1=y
-> CONFIG_ICS932S401=y
-> CONFIG_ENCLOSURE_SERVICES=y
-> CONFIG_CS5535_MFGPT=m
-> CONFIG_CS5535_MFGPT_DEFAULT_IRQ=7
-> CONFIG_CS5535_CLOCK_EVENT_SRC=m
-> CONFIG_HP_ILO=y
-> CONFIG_APDS9802ALS=m
-> CONFIG_ISL29003=y
-> CONFIG_ISL29020=m
-> CONFIG_SENSORS_TSL2550=m
-> CONFIG_SENSORS_BH1780=m
-> CONFIG_SENSORS_BH1770=m
-> CONFIG_SENSORS_APDS990X=m
-> CONFIG_HMC6352=m
-> CONFIG_DS1682=m
-> CONFIG_TI_DAC7512=m
-> CONFIG_VMWARE_BALLOON=m
-> CONFIG_BMP085=m
-> CONFIG_PCH_PHUB=m
-> CONFIG_C2PORT=y
-> CONFIG_C2PORT_DURAMAR_2150=y
-> 
-> #
-> # EEPROM support
-> #
-> CONFIG_EEPROM_AT24=y
-> CONFIG_EEPROM_AT25=y
-> CONFIG_EEPROM_LEGACY=y
-> CONFIG_EEPROM_MAX6875=y
-> CONFIG_EEPROM_93CX6=y
-> CONFIG_CB710_CORE=y
-> # CONFIG_CB710_DEBUG is not set
-> CONFIG_CB710_DEBUG_ASSUMPTIONS=y
-> CONFIG_IWMC3200TOP=m
-> # CONFIG_IWMC3200TOP_DEBUG is not set
-> # CONFIG_IWMC3200TOP_DEBUGFS is not set
-> 
-> #
-> # Texas Instruments shared transport line discipline
-> #
-> CONFIG_TI_ST=m
-> CONFIG_HAVE_IDE=y
-> CONFIG_IDE=y
-> 
-> #
-> # Please see Documentation/ide/ide.txt for help/info on 
-> IDE drives
-> #
-> CONFIG_IDE_XFER_MODE=y
-> CONFIG_IDE_TIMINGS=y
-> CONFIG_IDE_ATAPI=y
-> CONFIG_IDE_LEGACY=y
-> # CONFIG_BLK_DEV_IDE_SATA is not set
-> CONFIG_IDE_GD=y
-> CONFIG_IDE_GD_ATA=y
-> CONFIG_IDE_GD_ATAPI=y
-> CONFIG_BLK_DEV_IDECS=y
-> CONFIG_BLK_DEV_DELKIN=y
-> CONFIG_BLK_DEV_IDECD=y
-> CONFIG_BLK_DEV_IDECD_VERBOSE_ERRORS=y
-> CONFIG_BLK_DEV_IDETAPE=y
-> CONFIG_BLK_DEV_IDEACPI=y
-> CONFIG_IDE_TASK_IOCTL=y
-> CONFIG_IDE_PROC_FS=y
-> 
-> #
-> # IDE chipset support/bugfixes
-> #
-> CONFIG_IDE_GENERIC=y
-> CONFIG_BLK_DEV_PLATFORM=y
-> CONFIG_BLK_DEV_CMD640=y
-> CONFIG_BLK_DEV_CMD640_ENHANCED=y
-> CONFIG_BLK_DEV_IDEPNP=y
-> CONFIG_BLK_DEV_IDEDMA_SFF=y
-> 
-> #
-> # PCI IDE chipsets support
-> #
-> CONFIG_BLK_DEV_IDEPCI=y
-> # CONFIG_IDEPCI_PCIBUS_ORDER is not set
-> # CONFIG_BLK_DEV_OFFBOARD is not set
-> CONFIG_BLK_DEV_GENERIC=y
-> CONFIG_BLK_DEV_OPTI621=y
-> CONFIG_BLK_DEV_RZ1000=y
-> CONFIG_BLK_DEV_IDEDMA_PCI=y
-> CONFIG_BLK_DEV_AEC62XX=y
-> CONFIG_BLK_DEV_ALI15X3=y
-> CONFIG_BLK_DEV_AMD74XX=y
-> CONFIG_BLK_DEV_ATIIXP=y
-> CONFIG_BLK_DEV_CMD64X=y
-> CONFIG_BLK_DEV_TRIFLEX=y
-> CONFIG_BLK_DEV_CS5520=y
-> CONFIG_BLK_DEV_CS5530=y
-> CONFIG_BLK_DEV_CS5535=y
-> CONFIG_BLK_DEV_CS5536=y
-> CONFIG_BLK_DEV_HPT366=y
-> CONFIG_BLK_DEV_JMICRON=y
-> CONFIG_BLK_DEV_SC1200=y
-> CONFIG_BLK_DEV_PIIX=y
-> CONFIG_BLK_DEV_IT8172=y
-> CONFIG_BLK_DEV_IT8213=y
-> CONFIG_BLK_DEV_IT821X=y
-> CONFIG_BLK_DEV_NS87415=y
-> CONFIG_BLK_DEV_PDC202XX_OLD=y
-> CONFIG_BLK_DEV_PDC202XX_NEW=y
-> CONFIG_BLK_DEV_SVWKS=y
-> CONFIG_BLK_DEV_SIIMAGE=y
-> CONFIG_BLK_DEV_SIS5513=y
-> CONFIG_BLK_DEV_SLC90E66=y
-> CONFIG_BLK_DEV_TRM290=y
-> CONFIG_BLK_DEV_VIA82CXXX=y
-> CONFIG_BLK_DEV_TC86C001=y
-> 
-> #
-> # Other IDE chipsets support
-> #
-> 
-> #
-> # Note: most of these also require special kernel boot 
-> parameters
-> #
-> CONFIG_BLK_DEV_4DRIVES=y
-> CONFIG_BLK_DEV_ALI14XX=y
-> CONFIG_BLK_DEV_DTC2278=y
-> CONFIG_BLK_DEV_HT6560B=y
-> CONFIG_BLK_DEV_QD65XX=y
-> CONFIG_BLK_DEV_UMC8672=y
-> CONFIG_BLK_DEV_IDEDMA=y
-> 
-> #
-> # SCSI device support
-> #
-> CONFIG_SCSI_MOD=y
-> CONFIG_RAID_ATTRS=y
-> CONFIG_SCSI=y
-> CONFIG_SCSI_DMA=y
-> CONFIG_SCSI_TGT=y
-> CONFIG_SCSI_NETLINK=y
-> CONFIG_SCSI_PROC_FS=y
-> 
-> #
-> # SCSI support type (disk, tape, CD-ROM)
-> #
-> CONFIG_BLK_DEV_SD=y
-> CONFIG_CHR_DEV_ST=y
-> CONFIG_CHR_DEV_OSST=y
-> CONFIG_BLK_DEV_SR=y
-> CONFIG_BLK_DEV_SR_VENDOR=y
-> CONFIG_CHR_DEV_SG=y
-> CONFIG_CHR_DEV_SCH=y
-> CONFIG_SCSI_ENCLOSURE=y
-> CONFIG_SCSI_MULTI_LUN=y
-> CONFIG_SCSI_CONSTANTS=y
-> CONFIG_SCSI_LOGGING=y
-> CONFIG_SCSI_SCAN_ASYNC=y
-> CONFIG_SCSI_WAIT_SCAN=m
-> 
-> #
-> # SCSI Transports
-> #
-> CONFIG_SCSI_SPI_ATTRS=y
-> CONFIG_SCSI_FC_ATTRS=y
-> CONFIG_SCSI_FC_TGT_ATTRS=y
-> CONFIG_SCSI_ISCSI_ATTRS=y
-> CONFIG_SCSI_SAS_ATTRS=y
-> CONFIG_SCSI_SAS_LIBSAS=y
-> CONFIG_SCSI_SAS_ATA=y
-> CONFIG_SCSI_SAS_HOST_SMP=y
-> # CONFIG_SCSI_SAS_LIBSAS_DEBUG is not set
-> CONFIG_SCSI_SRP_ATTRS=y
-> CONFIG_SCSI_SRP_TGT_ATTRS=y
-> CONFIG_SCSI_LOWLEVEL=y
-> CONFIG_ISCSI_TCP=y
-> CONFIG_ISCSI_BOOT_SYSFS=y
-> CONFIG_SCSI_CXGB3_ISCSI=y
-> CONFIG_SCSI_CXGB4_ISCSI=m
-> CONFIG_SCSI_BNX2_ISCSI=y
-> CONFIG_BE2ISCSI=y
-> CONFIG_BLK_DEV_3W_XXXX_RAID=y
-> CONFIG_SCSI_HPSA=m
-> CONFIG_SCSI_3W_9XXX=y
-> CONFIG_SCSI_3W_SAS=m
-> CONFIG_SCSI_7000FASST=y
-> CONFIG_SCSI_ACARD=y
-> CONFIG_SCSI_AHA152X=y
-> CONFIG_SCSI_AHA1542=y
-> CONFIG_SCSI_AHA1740=y
-> CONFIG_SCSI_AACRAID=y
-> CONFIG_SCSI_AIC7XXX=y
-> CONFIG_AIC7XXX_CMDS_PER_DEVICE=4
-> CONFIG_AIC7XXX_RESET_DELAY_MS=15000
-> # CONFIG_AIC7XXX_DEBUG_ENABLE is not set
-> CONFIG_AIC7XXX_DEBUG_MASK=0
-> # CONFIG_AIC7XXX_REG_PRETTY_PRINT is not set
-> CONFIG_SCSI_AIC7XXX_OLD=y
-> CONFIG_SCSI_AIC79XX=y
-> CONFIG_AIC79XX_CMDS_PER_DEVICE=4
-> CONFIG_AIC79XX_RESET_DELAY_MS=15000
-> # CONFIG_AIC79XX_DEBUG_ENABLE is not set
-> CONFIG_AIC79XX_DEBUG_MASK=0
-> # CONFIG_AIC79XX_REG_PRETTY_PRINT is not set
-> CONFIG_SCSI_AIC94XX=y
-> # CONFIG_AIC94XX_DEBUG is not set
-> CONFIG_SCSI_MVSAS=y
-> CONFIG_SCSI_MVSAS_DEBUG=y
-> CONFIG_SCSI_DPT_I2O=y
-> CONFIG_SCSI_ADVANSYS=y
-> CONFIG_SCSI_IN2000=y
-> CONFIG_SCSI_ARCMSR=y
-> CONFIG_SCSI_ARCMSR_AER=y
-> CONFIG_MEGARAID_NEWGEN=y
-> CONFIG_MEGARAID_MM=y
-> CONFIG_MEGARAID_MAILBOX=y
-> CONFIG_MEGARAID_LEGACY=y
-> CONFIG_MEGARAID_SAS=y
-> CONFIG_SCSI_MPT2SAS=y
-> CONFIG_SCSI_MPT2SAS_MAX_SGE=128
-> CONFIG_SCSI_MPT2SAS_LOGGING=y
-> CONFIG_SCSI_HPTIOP=y
-> CONFIG_SCSI_BUSLOGIC=y
-> CONFIG_SCSI_FLASHPOINT=y
-> CONFIG_VMWARE_PVSCSI=m
-> CONFIG_LIBFC=y
-> CONFIG_LIBFCOE=y
-> CONFIG_FCOE=y
-> CONFIG_FCOE_FNIC=y
-> CONFIG_SCSI_DMX3191D=y
-> CONFIG_SCSI_DTC3280=y
-> CONFIG_SCSI_EATA=y
-> CONFIG_SCSI_EATA_TAGGED_QUEUE=y
-> CONFIG_SCSI_EATA_LINKED_COMMANDS=y
-> CONFIG_SCSI_EATA_MAX_TAGS=16
-> CONFIG_SCSI_FUTURE_DOMAIN=y
-> CONFIG_SCSI_FD_MCS=y
-> CONFIG_SCSI_GDTH=y
-> CONFIG_SCSI_GENERIC_NCR5380=y
-> CONFIG_SCSI_GENERIC_NCR5380_MMIO=y
-> CONFIG_SCSI_GENERIC_NCR53C400=y
-> CONFIG_SCSI_IBMMCA=y
-> CONFIG_IBMMCA_SCSI_ORDER_STANDARD=y
-> CONFIG_IBMMCA_SCSI_DEV_RESET=y
-> CONFIG_SCSI_IPS=y
-> CONFIG_SCSI_INITIO=y
-> CONFIG_SCSI_INIA100=y
-> CONFIG_SCSI_PPA=y
-> CONFIG_SCSI_IMM=y
-> CONFIG_SCSI_IZIP_EPP16=y
-> # CONFIG_SCSI_IZIP_SLOW_CTR is not set
-> CONFIG_SCSI_NCR53C406A=y
-> CONFIG_SCSI_NCR_D700=y
-> CONFIG_SCSI_STEX=y
-> CONFIG_SCSI_SYM53C8XX_2=y
-> CONFIG_SCSI_SYM53C8XX_DMA_ADDRESSING_MODE=1
-> CONFIG_SCSI_SYM53C8XX_DEFAULT_TAGS=16
-> CONFIG_SCSI_SYM53C8XX_MAX_TAGS=64
-> CONFIG_SCSI_SYM53C8XX_MMIO=y
-> CONFIG_SCSI_IPR=y
-> CONFIG_SCSI_IPR_TRACE=y
-> CONFIG_SCSI_IPR_DUMP=y
-> CONFIG_SCSI_NCR_Q720=y
-> CONFIG_SCSI_NCR53C8XX_DEFAULT_TAGS=8
-> CONFIG_SCSI_NCR53C8XX_MAX_TAGS=32
-> CONFIG_SCSI_NCR53C8XX_SYNC=20
-> CONFIG_SCSI_PAS16=y
-> CONFIG_SCSI_QLOGIC_FAS=y
-> CONFIG_SCSI_QLOGIC_1280=y
-> CONFIG_SCSI_QLA_FC=y
-> CONFIG_SCSI_QLA_ISCSI=y
-> CONFIG_SCSI_LPFC=y
-> CONFIG_SCSI_LPFC_DEBUG_FS=y
-> CONFIG_SCSI_SIM710=y
-> CONFIG_SCSI_SYM53C416=y
-> CONFIG_SCSI_DC395x=y
-> CONFIG_SCSI_DC390T=y
-> CONFIG_SCSI_T128=y
-> CONFIG_SCSI_U14_34F=y
-> CONFIG_SCSI_U14_34F_TAGGED_QUEUE=y
-> CONFIG_SCSI_U14_34F_LINKED_COMMANDS=y
-> CONFIG_SCSI_U14_34F_MAX_TAGS=8
-> CONFIG_SCSI_ULTRASTOR=y
-> CONFIG_SCSI_NSP32=y
-> # CONFIG_SCSI_DEBUG is not set
-> CONFIG_SCSI_PMCRAID=y
-> CONFIG_SCSI_PM8001=m
-> CONFIG_SCSI_SRP=y
-> CONFIG_SCSI_BFA_FC=y
-> CONFIG_SCSI_LOWLEVEL_PCMCIA=y
-> CONFIG_PCMCIA_AHA152X=m
-> CONFIG_PCMCIA_FDOMAIN=m
-> CONFIG_PCMCIA_NINJA_SCSI=m
-> CONFIG_PCMCIA_QLOGIC=m
-> CONFIG_PCMCIA_SYM53C500=m
-> CONFIG_SCSI_DH=y
-> CONFIG_SCSI_DH_RDAC=y
-> CONFIG_SCSI_DH_HP_SW=y
-> CONFIG_SCSI_DH_EMC=y
-> CONFIG_SCSI_DH_ALUA=y
-> CONFIG_SCSI_OSD_INITIATOR=y
-> CONFIG_SCSI_OSD_ULD=y
-> CONFIG_SCSI_OSD_DPRINT_SENSE=1
-> # CONFIG_SCSI_OSD_DEBUG is not set
-> CONFIG_ATA=y
-> # CONFIG_ATA_NONSTANDARD is not set
-> CONFIG_ATA_VERBOSE_ERROR=y
-> CONFIG_ATA_ACPI=y
-> CONFIG_SATA_PMP=y
-> 
-> #
-> # Controllers with non-SFF native interface
-> #
-> CONFIG_SATA_AHCI=y
-> CONFIG_SATA_AHCI_PLATFORM=m
-> CONFIG_SATA_INIC162X=y
-> CONFIG_SATA_SIL24=y
-> CONFIG_ATA_SFF=y
-> 
-> #
-> # SFF controllers with custom DMA interface
-> #
-> CONFIG_PDC_ADMA=y
-> CONFIG_SATA_QSTOR=y
-> CONFIG_SATA_SX4=y
-> CONFIG_ATA_BMDMA=y
-> 
-> #
-> # SATA SFF controllers with BMDMA
-> #
-> CONFIG_ATA_PIIX=y
-> CONFIG_SATA_MV=y
-> CONFIG_SATA_NV=y
-> CONFIG_SATA_PROMISE=y
-> CONFIG_SATA_SIL=y
-> CONFIG_SATA_SIS=y
-> CONFIG_SATA_SVW=y
-> CONFIG_SATA_ULI=y
-> CONFIG_SATA_VIA=y
-> CONFIG_SATA_VITESSE=y
-> 
-> #
-> # PATA SFF controllers with BMDMA
-> #
-> CONFIG_PATA_ALI=y
-> CONFIG_PATA_AMD=y
-> CONFIG_PATA_ARTOP=y
-> CONFIG_PATA_ATIIXP=y
-> CONFIG_PATA_ATP867X=y
-> CONFIG_PATA_CMD64X=y
-> CONFIG_PATA_CS5520=y
-> CONFIG_PATA_CS5530=y
-> CONFIG_PATA_CS5535=y
-> CONFIG_PATA_CS5536=y
-> CONFIG_PATA_CYPRESS=y
-> CONFIG_PATA_EFAR=y
-> CONFIG_PATA_HPT366=y
-> CONFIG_PATA_HPT37X=y
-> CONFIG_PATA_HPT3X2N=y
-> CONFIG_PATA_HPT3X3=y
-> CONFIG_PATA_HPT3X3_DMA=y
-> CONFIG_PATA_IT8213=y
-> CONFIG_PATA_IT821X=y
-> CONFIG_PATA_JMICRON=y
-> CONFIG_PATA_MARVELL=y
-> CONFIG_PATA_NETCELL=y
-> CONFIG_PATA_NINJA32=y
-> CONFIG_PATA_NS87415=y
-> CONFIG_PATA_OLDPIIX=y
-> CONFIG_PATA_OPTIDMA=y
-> CONFIG_PATA_PDC2027X=y
-> CONFIG_PATA_PDC_OLD=y
-> CONFIG_PATA_RADISYS=y
-> CONFIG_PATA_RDC=y
-> CONFIG_PATA_SC1200=y
-> CONFIG_PATA_SCH=y
-> CONFIG_PATA_SERVERWORKS=y
-> CONFIG_PATA_SIL680=y
-> CONFIG_PATA_SIS=y
-> CONFIG_PATA_TOSHIBA=y
-> CONFIG_PATA_TRIFLEX=y
-> CONFIG_PATA_VIA=y
-> CONFIG_PATA_WINBOND=y
-> 
-> #
-> # PIO-only SFF controllers
-> #
-> CONFIG_PATA_CMD640_PCI=y
-> CONFIG_PATA_ISAPNP=y
-> CONFIG_PATA_MPIIX=y
-> CONFIG_PATA_NS87410=y
-> CONFIG_PATA_OPTI=y
-> CONFIG_PATA_PCMCIA=y
-> CONFIG_PATA_PLATFORM=y
-> CONFIG_PATA_QDI=y
-> CONFIG_PATA_RZ1000=y
-> CONFIG_PATA_WINBOND_VLB=y
-> 
-> #
-> # Generic fallback / legacy drivers
-> #
-> CONFIG_PATA_ACPI=y
-> CONFIG_ATA_GENERIC=y
-> CONFIG_PATA_LEGACY=y
-> CONFIG_MD=y
-> CONFIG_BLK_DEV_MD=y
-> CONFIG_MD_AUTODETECT=y
-> CONFIG_MD_LINEAR=y
-> CONFIG_MD_RAID0=y
-> CONFIG_MD_RAID1=y
-> CONFIG_MD_RAID10=y
-> CONFIG_MD_RAID456=y
-> CONFIG_MULTICORE_RAID456=y
-> CONFIG_MD_MULTIPATH=y
-> CONFIG_MD_FAULTY=y
-> CONFIG_BLK_DEV_DM=y
-> # CONFIG_DM_DEBUG is not set
-> CONFIG_DM_CRYPT=y
-> CONFIG_DM_SNAPSHOT=y
-> CONFIG_DM_MIRROR=y
-> # CONFIG_DM_LOG_USERSPACE is not set
-> CONFIG_DM_ZERO=y
-> CONFIG_DM_MULTIPATH=y
-> # CONFIG_DM_MULTIPATH_QL is not set
-> # CONFIG_DM_MULTIPATH_ST is not set
-> # CONFIG_DM_DELAY is not set
-> CONFIG_DM_UEVENT=y
-> CONFIG_FUSION=y
-> CONFIG_FUSION_SPI=y
-> CONFIG_FUSION_FC=y
-> CONFIG_FUSION_SAS=y
-> CONFIG_FUSION_MAX_SGE=128
-> CONFIG_FUSION_CTL=y
-> CONFIG_FUSION_LAN=y
-> CONFIG_FUSION_LOGGING=y
-> 
-> #
-> # IEEE 1394 (FireWire) support
-> #
-> CONFIG_FIREWIRE=y
-> CONFIG_FIREWIRE_OHCI=y
-> CONFIG_FIREWIRE_OHCI_DEBUG=y
-> CONFIG_FIREWIRE_SBP2=y
-> CONFIG_FIREWIRE_NET=y
-> CONFIG_FIREWIRE_NOSY=m
-> CONFIG_I2O=y
-> CONFIG_I2O_LCT_NOTIFY_ON_CHANGES=y
-> CONFIG_I2O_EXT_ADAPTEC=y
-> CONFIG_I2O_CONFIG=y
-> CONFIG_I2O_CONFIG_OLD_IOCTL=y
-> CONFIG_I2O_BUS=y
-> CONFIG_I2O_BLOCK=y
-> CONFIG_I2O_SCSI=y
-> CONFIG_I2O_PROC=y
-> CONFIG_MACINTOSH_DRIVERS=y
-> CONFIG_MAC_EMUMOUSEBTN=y
-> CONFIG_NETDEVICES=y
-> CONFIG_IFB=m
-> CONFIG_DUMMY=m
-> CONFIG_BONDING=m
-> CONFIG_MACVLAN=m
-> CONFIG_MACVTAP=m
-> CONFIG_EQUALIZER=m
-> CONFIG_TUN=m
-> CONFIG_VETH=m
-> CONFIG_NET_SB1000=m
-> CONFIG_ARCNET=m
-> CONFIG_ARCNET_1201=m
-> CONFIG_ARCNET_1051=m
-> CONFIG_ARCNET_RAW=m
-> CONFIG_ARCNET_CAP=m
-> CONFIG_ARCNET_COM90xx=m
-> CONFIG_ARCNET_COM90xxIO=m
-> CONFIG_ARCNET_RIM_I=m
-> CONFIG_ARCNET_COM20020=m
-> CONFIG_ARCNET_COM20020_ISA=m
-> CONFIG_ARCNET_COM20020_PCI=m
-> CONFIG_MII=y
-> CONFIG_PHYLIB=y
-> 
-> #
-> # MII PHY device drivers
-> #
-> CONFIG_MARVELL_PHY=m
-> CONFIG_DAVICOM_PHY=m
-> CONFIG_QSEMI_PHY=m
-> CONFIG_LXT_PHY=m
-> CONFIG_CICADA_PHY=m
-> CONFIG_VITESSE_PHY=m
-> CONFIG_SMSC_PHY=m
-> CONFIG_BROADCOM_PHY=m
-> CONFIG_BCM63XX_PHY=m
-> CONFIG_ICPLUS_PHY=m
-> CONFIG_REALTEK_PHY=m
-> CONFIG_NATIONAL_PHY=m
-> CONFIG_STE10XP=m
-> CONFIG_LSI_ET1011C_PHY=m
-> CONFIG_MICREL_PHY=m
-> CONFIG_FIXED_PHY=y
-> CONFIG_MDIO_BITBANG=m
-> CONFIG_MDIO_GPIO=m
-> CONFIG_NET_ETHERNET=y
-> CONFIG_HAPPYMEAL=m
-> CONFIG_SUNGEM=m
-> CONFIG_CASSINI=m
-> CONFIG_NET_VENDOR_3COM=y
-> CONFIG_EL1=m
-> CONFIG_EL2=m
-> CONFIG_ELPLUS=m
-> CONFIG_EL16=m
-> CONFIG_EL3=m
-> CONFIG_3C515=m
-> CONFIG_ELMC=m
-> CONFIG_ELMC_II=m
-> CONFIG_VORTEX=m
-> CONFIG_TYPHOON=m
-> CONFIG_LANCE=m
-> CONFIG_NET_VENDOR_SMC=y
-> CONFIG_WD80x3=m
-> CONFIG_ULTRAMCA=m
-> CONFIG_ULTRA=m
-> CONFIG_ULTRA32=m
-> CONFIG_SMC9194=m
-> CONFIG_ENC28J60=m
-> # CONFIG_ENC28J60_WRITEVERIFY is not set
-> CONFIG_ETHOC=m
-> CONFIG_NET_VENDOR_RACAL=y
-> CONFIG_NI52=m
-> CONFIG_NI65=m
-> CONFIG_DNET=m
-> CONFIG_NET_TULIP=y
-> CONFIG_DE2104X=m
-> CONFIG_DE2104X_DSL=0
-> CONFIG_TULIP=m
-> CONFIG_TULIP_MWI=y
-> CONFIG_TULIP_MMIO=y
-> CONFIG_TULIP_NAPI=y
-> CONFIG_TULIP_NAPI_HW_MITIGATION=y
-> CONFIG_DE4X5=m
-> CONFIG_WINBOND_840=m
-> CONFIG_DM9102=m
-> CONFIG_ULI526X=m
-> CONFIG_PCMCIA_XIRCOM=m
-> CONFIG_AT1700=m
-> CONFIG_DEPCA=m
-> CONFIG_HP100=m
-> CONFIG_NET_ISA=y
-> CONFIG_E2100=m
-> CONFIG_EWRK3=m
-> CONFIG_EEXPRESS=m
-> CONFIG_EEXPRESS_PRO=m
-> CONFIG_HPLAN_PLUS=m
-> CONFIG_HPLAN=m
-> CONFIG_LP486E=m
-> CONFIG_ETH16I=m
-> CONFIG_NE2000=m
-> CONFIG_ZNET=m
-> CONFIG_SEEQ8005=m
-> CONFIG_NE2_MCA=m
-> CONFIG_IBMLANA=m
-> # CONFIG_IBM_NEW_EMAC_ZMII is not set
-> # CONFIG_IBM_NEW_EMAC_RGMII is not set
-> # CONFIG_IBM_NEW_EMAC_TAH is not set
-> # CONFIG_IBM_NEW_EMAC_EMAC4 is not set
-> # CONFIG_IBM_NEW_EMAC_NO_FLOW_CTRL is not set
-> # CONFIG_IBM_NEW_EMAC_MAL_CLR_ICINTSTAT is not set
-> # CONFIG_IBM_NEW_EMAC_MAL_COMMON_ERR is not set
-> CONFIG_NET_PCI=y
-> CONFIG_PCNET32=m
-> CONFIG_AMD8111_ETH=m
-> CONFIG_ADAPTEC_STARFIRE=m
-> CONFIG_AC3200=m
-> CONFIG_KSZ884X_PCI=m
-> CONFIG_APRICOT=m
-> CONFIG_B44=m
-> CONFIG_B44_PCI_AUTOSELECT=y
-> CONFIG_B44_PCICORE_AUTOSELECT=y
-> CONFIG_B44_PCI=y
-> CONFIG_FORCEDETH=m
-> CONFIG_CS89x0=m
-> CONFIG_E100=y
-> CONFIG_LNE390=m
-> CONFIG_FEALNX=m
-> CONFIG_NATSEMI=m
-> CONFIG_NE2K_PCI=m
-> CONFIG_NE3210=m
-> CONFIG_ES3210=m
-> CONFIG_8139CP=m
-> CONFIG_8139TOO=m
-> CONFIG_8139TOO_PIO=y
-> CONFIG_8139TOO_TUNE_TWISTER=y
-> CONFIG_8139TOO_8129=y
-> # CONFIG_8139_OLD_RX_RESET is not set
-> CONFIG_R6040=m
-> CONFIG_SIS900=m
-> CONFIG_EPIC100=m
-> CONFIG_SMSC9420=m
-> CONFIG_SUNDANCE=m
-> # CONFIG_SUNDANCE_MMIO is not set
-> CONFIG_TLAN=m
-> CONFIG_KS8842=m
-> CONFIG_KS8851=m
-> CONFIG_KS8851_MLL=m
-> CONFIG_VIA_RHINE=y
-> CONFIG_VIA_RHINE_MMIO=y
-> CONFIG_SC92031=m
-> CONFIG_NET_POCKET=y
-> CONFIG_ATP=y
-> CONFIG_DE600=y
-> CONFIG_DE620=y
-> CONFIG_ATL2=y
-> CONFIG_NETDEV_1000=y
-> CONFIG_ACENIC=m
-> # CONFIG_ACENIC_OMIT_TIGON_I is not set
-> CONFIG_DL2K=m
-> CONFIG_E1000=m
-> CONFIG_E1000E=m
-> CONFIG_IP1000=m
-> CONFIG_IGB=m
-> CONFIG_IGB_DCA=y
-> CONFIG_IGBVF=m
-> CONFIG_NS83820=m
-> CONFIG_HAMACHI=m
-> CONFIG_YELLOWFIN=m
-> CONFIG_R8169=y
-> CONFIG_R8169_VLAN=y
-> CONFIG_SIS190=m
-> CONFIG_SKGE=m
-> # CONFIG_SKGE_DEBUG is not set
-> CONFIG_SKY2=m
-> # CONFIG_SKY2_DEBUG is not set
-> CONFIG_VIA_VELOCITY=m
-> CONFIG_TIGON3=m
-> CONFIG_BNX2=y
-> CONFIG_CNIC=y
-> CONFIG_QLA3XXX=m
-> CONFIG_ATL1=m
-> CONFIG_ATL1E=m
-> CONFIG_ATL1C=m
-> CONFIG_JME=m
-> CONFIG_STMMAC_ETH=m
-> CONFIG_STMMAC_DA=y
-> CONFIG_STMMAC_DUAL_MAC=y
-> CONFIG_PCH_GBE=m
-> CONFIG_NETDEV_10000=y
-> CONFIG_MDIO=y
-> CONFIG_CHELSIO_T1=m
-> CONFIG_CHELSIO_T1_1G=y
-> CONFIG_CHELSIO_T3_DEPENDS=y
-> CONFIG_CHELSIO_T3=y
-> CONFIG_CHELSIO_T4_DEPENDS=y
-> CONFIG_CHELSIO_T4=m
-> CONFIG_CHELSIO_T4VF_DEPENDS=y
-> CONFIG_CHELSIO_T4VF=m
-> CONFIG_ENIC=m
-> CONFIG_IXGBE=m
-> CONFIG_IXGBE_DCA=y
-> CONFIG_IXGBE_DCB=y
-> CONFIG_IXGB=m
-> CONFIG_S2IO=m
-> CONFIG_VXGE=m
-> # CONFIG_VXGE_DEBUG_TRACE_ALL is not set
-> CONFIG_MYRI10GE=m
-> CONFIG_MYRI10GE_DCA=y
-> CONFIG_NETXEN_NIC=m
-> CONFIG_NIU=m
-> CONFIG_MLX4_EN=m
-> CONFIG_MLX4_CORE=m
-> CONFIG_MLX4_DEBUG=y
-> CONFIG_TEHUTI=m
-> CONFIG_BNX2X=m
-> CONFIG_QLCNIC=m
-> CONFIG_QLGE=m
-> CONFIG_BNA=m
-> CONFIG_SFC=m
-> CONFIG_SFC_MTD=y
-> CONFIG_BE2NET=m
-> CONFIG_TR=y
-> CONFIG_IBMTR=m
-> CONFIG_IBMOL=m
-> CONFIG_IBMLS=m
-> CONFIG_3C359=m
-> CONFIG_TMS380TR=m
-> CONFIG_TMSPCI=m
-> CONFIG_SKISA=m
-> CONFIG_PROTEON=m
-> CONFIG_ABYSS=m
-> CONFIG_MADGEMC=m
-> CONFIG_SMCTR=m
-> CONFIG_WLAN=y
-> CONFIG_PCMCIA_RAYCS=m
-> CONFIG_LIBERTAS_THINFIRM=m
-> # CONFIG_LIBERTAS_THINFIRM_DEBUG is not set
-> CONFIG_LIBERTAS_THINFIRM_USB=m
-> CONFIG_AIRO=m
-> CONFIG_ATMEL=m
-> CONFIG_PCI_ATMEL=m
-> CONFIG_PCMCIA_ATMEL=m
-> CONFIG_AT76C50X_USB=m
-> CONFIG_AIRO_CS=m
-> CONFIG_PCMCIA_WL3501=m
-> CONFIG_PRISM54=m
-> CONFIG_USB_ZD1201=m
-> CONFIG_USB_NET_RNDIS_WLAN=m
-> CONFIG_RTL8180=m
-> CONFIG_RTL8187=m
-> CONFIG_RTL8187_LEDS=y
-> CONFIG_ADM8211=m
-> CONFIG_MAC80211_HWSIM=m
-> CONFIG_MWL8K=m
-> CONFIG_ATH_COMMON=m
-> # CONFIG_ATH_DEBUG is not set
-> CONFIG_ATH5K=m
-> # CONFIG_ATH5K_DEBUG is not set
-> CONFIG_ATH9K_HW=m
-> CONFIG_ATH9K_COMMON=m
-> CONFIG_ATH9K=m
-> # CONFIG_ATH9K_DEBUGFS is not set
-> CONFIG_ATH9K_RATE_CONTROL=y
-> CONFIG_ATH9K_HTC=m
-> # CONFIG_ATH9K_HTC_DEBUGFS is not set
-> CONFIG_AR9170_USB=m
-> CONFIG_AR9170_LEDS=y
-> # CONFIG_CARL9170 is not set
-> CONFIG_B43=m
-> CONFIG_B43_PCI_AUTOSELECT=y
-> CONFIG_B43_PCICORE_AUTOSELECT=y
-> CONFIG_B43_PCMCIA=y
-> CONFIG_B43_SDIO=y
-> CONFIG_B43_PIO=y
-> CONFIG_B43_PHY_LP=y
-> CONFIG_B43_LEDS=y
-> CONFIG_B43_HWRNG=y
-> # CONFIG_B43_DEBUG is not set
-> CONFIG_B43LEGACY=m
-> CONFIG_B43LEGACY_PCI_AUTOSELECT=y
-> CONFIG_B43LEGACY_PCICORE_AUTOSELECT=y
-> CONFIG_B43LEGACY_LEDS=y
-> CONFIG_B43LEGACY_HWRNG=y
-> # CONFIG_B43LEGACY_DEBUG is not set
-> CONFIG_B43LEGACY_DMA=y
-> CONFIG_B43LEGACY_PIO=y
-> CONFIG_B43LEGACY_DMA_AND_PIO_MODE=y
-> # CONFIG_B43LEGACY_DMA_MODE is not set
-> # CONFIG_B43LEGACY_PIO_MODE is not set
-> CONFIG_HOSTAP=y
-> CONFIG_HOSTAP_FIRMWARE=y
-> CONFIG_HOSTAP_FIRMWARE_NVRAM=y
-> CONFIG_HOSTAP_PLX=m
-> CONFIG_HOSTAP_PCI=m
-> CONFIG_HOSTAP_CS=m
-> CONFIG_IPW2100=m
-> CONFIG_IPW2100_MONITOR=y
-> # CONFIG_IPW2100_DEBUG is not set
-> CONFIG_IPW2200=m
-> CONFIG_IPW2200_MONITOR=y
-> CONFIG_IPW2200_RADIOTAP=y
-> CONFIG_IPW2200_PROMISCUOUS=y
-> CONFIG_IPW2200_QOS=y
-> # CONFIG_IPW2200_DEBUG is not set
-> CONFIG_LIBIPW=m
-> # CONFIG_LIBIPW_DEBUG is not set
-> CONFIG_IWLWIFI=m
-> 
-> #
-> # Debugging Options
-> #
-> # CONFIG_IWLWIFI_DEBUG is not set
-> CONFIG_IWLWIFI_DEVICE_TRACING=y
-> CONFIG_IWLAGN=m
-> CONFIG_IWL4965=y
-> CONFIG_IWL5000=y
-> CONFIG_IWL3945=m
-> CONFIG_IWM=m
-> # CONFIG_IWM_DEBUG is not set
-> CONFIG_IWM_TRACING=y
-> CONFIG_LIBERTAS=m
-> CONFIG_LIBERTAS_USB=m
-> CONFIG_LIBERTAS_CS=m
-> CONFIG_LIBERTAS_SDIO=m
-> CONFIG_LIBERTAS_SPI=m
-> # CONFIG_LIBERTAS_DEBUG is not set
-> CONFIG_LIBERTAS_MESH=y
-> CONFIG_HERMES=m
-> CONFIG_HERMES_PRISM=y
-> CONFIG_HERMES_CACHE_FW_ON_INIT=y
-> CONFIG_PLX_HERMES=m
-> CONFIG_TMD_HERMES=m
-> CONFIG_NORTEL_HERMES=m
-> CONFIG_PCI_HERMES=m
-> CONFIG_PCMCIA_HERMES=m
-> CONFIG_PCMCIA_SPECTRUM=m
-> CONFIG_ORINOCO_USB=m
-> CONFIG_P54_COMMON=m
-> CONFIG_P54_USB=m
-> CONFIG_P54_PCI=m
-> CONFIG_P54_SPI=m
-> CONFIG_P54_SPI_DEFAULT_EEPROM=y
-> CONFIG_P54_LEDS=y
-> CONFIG_RT2X00=m
-> CONFIG_RT2400PCI=m
-> CONFIG_RT2500PCI=m
-> CONFIG_RT61PCI=m
-> CONFIG_RT2800PCI_PCI=y
-> CONFIG_RT2800PCI=m
-> CONFIG_RT2800PCI_RT30XX=y
-> CONFIG_RT2800PCI_RT35XX=y
-> CONFIG_RT2500USB=m
-> CONFIG_RT73USB=m
-> CONFIG_RT2800USB=m
-> CONFIG_RT2800USB_RT30XX=y
-> CONFIG_RT2800USB_RT35XX=y
-> CONFIG_RT2800USB_UNKNOWN=y
-> CONFIG_RT2800_LIB=m
-> CONFIG_RT2X00_LIB_PCI=m
-> CONFIG_RT2X00_LIB_USB=m
-> CONFIG_RT2X00_LIB=m
-> CONFIG_RT2X00_LIB_HT=y
-> CONFIG_RT2X00_LIB_FIRMWARE=y
-> CONFIG_RT2X00_LIB_CRYPTO=y
-> CONFIG_RT2X00_LIB_LEDS=y
-> # CONFIG_RT2X00_DEBUG is not set
-> CONFIG_WL1251=m
-> CONFIG_WL1251_SPI=m
-> CONFIG_WL1251_SDIO=m
-> CONFIG_WL12XX=m
-> CONFIG_WL1271=m
-> CONFIG_WL1271_SPI=m
-> CONFIG_WL1271_SDIO=m
-> CONFIG_WL12XX_PLATFORM_DATA=y
-> CONFIG_ZD1211RW=m
-> # CONFIG_ZD1211RW_DEBUG is not set
-> 
-> #
-> # WiMAX Wireless Broadband devices
-> #
-> CONFIG_WIMAX_I2400M=m
-> CONFIG_WIMAX_I2400M_USB=m
-> CONFIG_WIMAX_I2400M_SDIO=m
-> CONFIG_WIMAX_IWMC3200_SDIO=y
-> CONFIG_WIMAX_I2400M_DEBUG_LEVEL=8
-> 
-> #
-> # USB Network Adapters
-> #
-> CONFIG_USB_CATC=m
-> CONFIG_USB_KAWETH=m
-> CONFIG_USB_PEGASUS=m
-> CONFIG_USB_RTL8150=m
-> CONFIG_USB_USBNET=m
-> CONFIG_USB_NET_AX8817X=m
-> CONFIG_USB_NET_CDCETHER=m
-> CONFIG_USB_NET_CDC_EEM=m
-> CONFIG_USB_NET_DM9601=m
-> CONFIG_USB_NET_SMSC75XX=m
-> CONFIG_USB_NET_SMSC95XX=m
-> CONFIG_USB_NET_GL620A=m
-> CONFIG_USB_NET_NET1080=m
-> CONFIG_USB_NET_PLUSB=m
-> CONFIG_USB_NET_MCS7830=m
-> CONFIG_USB_NET_RNDIS_HOST=m
-> CONFIG_USB_NET_CDC_SUBSET=m
-> CONFIG_USB_ALI_M5632=y
-> CONFIG_USB_AN2720=y
-> CONFIG_USB_BELKIN=y
-> CONFIG_USB_ARMLINUX=y
-> CONFIG_USB_EPSON2888=y
-> CONFIG_USB_KC2190=y
-> CONFIG_USB_NET_ZAURUS=m
-> CONFIG_USB_NET_CX82310_ETH=m
-> CONFIG_USB_HSO=m
-> CONFIG_USB_NET_INT51X1=m
-> CONFIG_USB_CDC_PHONET=m
-> CONFIG_USB_IPHETH=m
-> CONFIG_USB_SIERRA_NET=m
-> CONFIG_NET_PCMCIA=y
-> CONFIG_PCMCIA_3C589=m
-> CONFIG_PCMCIA_3C574=m
-> CONFIG_PCMCIA_FMVJ18X=m
-> CONFIG_PCMCIA_PCNET=m
-> CONFIG_PCMCIA_NMCLAN=m
-> CONFIG_PCMCIA_SMC91C92=m
-> CONFIG_PCMCIA_XIRC2PS=m
-> CONFIG_PCMCIA_AXNET=m
-> CONFIG_ARCNET_COM20020_CS=m
-> CONFIG_PCMCIA_IBMTR=m
-> CONFIG_WAN=y
-> CONFIG_HOSTESS_SV11=m
-> CONFIG_COSA=m
-> CONFIG_LANMEDIA=m
-> CONFIG_SEALEVEL_4021=m
-> CONFIG_HDLC=m
-> CONFIG_HDLC_RAW=m
-> CONFIG_HDLC_RAW_ETH=m
-> CONFIG_HDLC_CISCO=m
-> CONFIG_HDLC_FR=m
-> CONFIG_HDLC_PPP=m
-> CONFIG_HDLC_X25=m
-> CONFIG_PCI200SYN=m
-> CONFIG_WANXL=m
-> CONFIG_PC300TOO=m
-> CONFIG_N2=m
-> CONFIG_C101=m
-> CONFIG_FARSYNC=m
-> CONFIG_DSCC4=m
-> CONFIG_DSCC4_PCISYNC=y
-> CONFIG_DSCC4_PCI_RST=y
-> CONFIG_DLCI=m
-> CONFIG_DLCI_MAX=8
-> CONFIG_SDLA=m
-> CONFIG_WAN_ROUTER_DRIVERS=m
-> CONFIG_CYCLADES_SYNC=m
-> CONFIG_CYCLOMX_X25=y
-> CONFIG_LAPBETHER=m
-> CONFIG_X25_ASY=m
-> CONFIG_SBNI=m
-> CONFIG_SBNI_MULTILINE=y
-> CONFIG_ATM_DRIVERS=y
-> CONFIG_ATM_DUMMY=m
-> CONFIG_ATM_TCP=m
-> CONFIG_ATM_LANAI=m
-> CONFIG_ATM_ENI=m
-> # CONFIG_ATM_ENI_DEBUG is not set
-> # CONFIG_ATM_ENI_TUNE_BURST is not set
-> CONFIG_ATM_FIRESTREAM=m
-> CONFIG_ATM_ZATM=m
-> # CONFIG_ATM_ZATM_DEBUG is not set
-> CONFIG_ATM_NICSTAR=m
-> # CONFIG_ATM_NICSTAR_USE_SUNI is not set
-> CONFIG_ATM_NICSTAR_USE_IDT77105=y
-> CONFIG_ATM_IDT77252=m
-> # CONFIG_ATM_IDT77252_DEBUG is not set
-> # CONFIG_ATM_IDT77252_RCV_ALL is not set
-> CONFIG_ATM_IDT77252_USE_SUNI=y
-> CONFIG_ATM_AMBASSADOR=m
-> # CONFIG_ATM_AMBASSADOR_DEBUG is not set
-> CONFIG_ATM_HORIZON=m
-> # CONFIG_ATM_HORIZON_DEBUG is not set
-> CONFIG_ATM_IA=m
-> # CONFIG_ATM_IA_DEBUG is not set
-> CONFIG_ATM_FORE200E=m
-> CONFIG_ATM_FORE200E_USE_TASKLET=y
-> CONFIG_ATM_FORE200E_TX_RETRY=16
-> CONFIG_ATM_FORE200E_DEBUG=0
-> CONFIG_ATM_HE=m
-> # CONFIG_ATM_HE_USE_SUNI is not set
-> CONFIG_ATM_SOLOS=m
-> CONFIG_IEEE802154_DRIVERS=m
-> CONFIG_IEEE802154_FAKEHARD=m
-> 
-> #
-> # CAIF transport drivers
-> #
-> CONFIG_CAIF_TTY=m
-> CONFIG_CAIF_SPI_SLAVE=m
-> CONFIG_CAIF_SPI_SYNC=y
-> CONFIG_FDDI=y
-> CONFIG_DEFXX=m
-> # CONFIG_DEFXX_MMIO is not set
-> CONFIG_SKFP=m
-> CONFIG_HIPPI=y
-> CONFIG_ROADRUNNER=m
-> # CONFIG_ROADRUNNER_LARGE_RINGS is not set
-> CONFIG_PLIP=m
-> CONFIG_PPP=y
-> CONFIG_PPP_MULTILINK=y
-> CONFIG_PPP_FILTER=y
-> CONFIG_PPP_ASYNC=y
-> CONFIG_PPP_SYNC_TTY=y
-> CONFIG_PPP_DEFLATE=y
-> CONFIG_PPP_BSDCOMP=y
-> CONFIG_PPP_MPPE=y
-> CONFIG_PPPOE=y
-> CONFIG_PPTP=m
-> CONFIG_PPPOATM=m
-> CONFIG_PPPOL2TP=m
-> CONFIG_SLIP=y
-> CONFIG_SLIP_COMPRESSED=y
-> CONFIG_SLHC=y
-> CONFIG_SLIP_SMART=y
-> CONFIG_SLIP_MODE_SLIP6=y
-> CONFIG_NET_FC=y
-> CONFIG_NETCONSOLE=m
-> CONFIG_NETCONSOLE_DYNAMIC=y
-> CONFIG_NETPOLL=y
-> # CONFIG_NETPOLL_TRAP is not set
-> CONFIG_NET_POLL_CONTROLLER=y
-> CONFIG_VIRTIO_NET=m
-> CONFIG_VMXNET3=m
-> CONFIG_ISDN=y
-> CONFIG_ISDN_I4L=m
-> CONFIG_ISDN_PPP=y
-> CONFIG_ISDN_PPP_VJ=y
-> CONFIG_ISDN_MPP=y
-> CONFIG_IPPP_FILTER=y
-> CONFIG_ISDN_PPP_BSDCOMP=m
-> CONFIG_ISDN_AUDIO=y
-> CONFIG_ISDN_TTY_FAX=y
-> CONFIG_ISDN_X25=y
-> 
-> #
-> # ISDN feature submodules
-> #
-> CONFIG_ISDN_DIVERSION=m
-> 
-> #
-> # ISDN4Linux hardware drivers
-> #
-> 
-> #
-> # Passive cards
-> #
-> CONFIG_ISDN_DRV_HISAX=m
-> 
-> #
-> # D-channel protocol features
-> #
-> CONFIG_HISAX_EURO=y
-> CONFIG_DE_AOC=y
-> CONFIG_HISAX_NO_SENDCOMPLETE=y
-> CONFIG_HISAX_NO_LLC=y
-> CONFIG_HISAX_NO_KEYPAD=y
-> CONFIG_HISAX_1TR6=y
-> CONFIG_HISAX_NI1=y
-> CONFIG_HISAX_MAX_CARDS=8
-> 
-> #
-> # HiSax supported cards
-> #
-> CONFIG_HISAX_16_0=y
-> CONFIG_HISAX_16_3=y
-> CONFIG_HISAX_TELESPCI=y
-> CONFIG_HISAX_S0BOX=y
-> CONFIG_HISAX_AVM_A1=y
-> CONFIG_HISAX_FRITZPCI=y
-> CONFIG_HISAX_AVM_A1_PCMCIA=y
-> CONFIG_HISAX_ELSA=y
-> CONFIG_HISAX_IX1MICROR2=y
-> CONFIG_HISAX_DIEHLDIVA=y
-> CONFIG_HISAX_ASUSCOM=y
-> CONFIG_HISAX_TELEINT=y
-> CONFIG_HISAX_HFCS=y
-> CONFIG_HISAX_SEDLBAUER=y
-> CONFIG_HISAX_SPORTSTER=y
-> CONFIG_HISAX_MIC=y
-> CONFIG_HISAX_NETJET=y
-> CONFIG_HISAX_NETJET_U=y
-> CONFIG_HISAX_NICCY=y
-> CONFIG_HISAX_ISURF=y
-> CONFIG_HISAX_HSTSAPHIR=y
-> CONFIG_HISAX_BKM_A4T=y
-> CONFIG_HISAX_SCT_QUADRO=y
-> CONFIG_HISAX_GAZEL=y
-> CONFIG_HISAX_HFC_PCI=y
-> CONFIG_HISAX_W6692=y
-> CONFIG_HISAX_HFC_SX=y
-> CONFIG_HISAX_ENTERNOW_PCI=y
-> # CONFIG_HISAX_DEBUG is not set
-> 
-> #
-> # HiSax PCMCIA card service modules
-> #
-> CONFIG_HISAX_SEDLBAUER_CS=m
-> CONFIG_HISAX_ELSA_CS=m
-> CONFIG_HISAX_AVM_A1_CS=m
-> CONFIG_HISAX_TELES_CS=m
-> 
-> #
-> # HiSax sub driver modules
-> #
-> CONFIG_HISAX_ST5481=m
-> CONFIG_HISAX_HFCUSB=m
-> CONFIG_HISAX_HFC4S8S=m
-> CONFIG_HISAX_FRITZ_PCIPNP=m
-> 
-> #
-> # Active cards
-> #
-> CONFIG_ISDN_DRV_ICN=m
-> CONFIG_ISDN_DRV_PCBIT=m
-> CONFIG_ISDN_DRV_SC=m
-> CONFIG_ISDN_DRV_ACT2000=m
-> CONFIG_ISDN_CAPI=m
-> CONFIG_ISDN_DRV_AVMB1_VERBOSE_REASON=y
-> CONFIG_CAPI_TRACE=y
-> CONFIG_ISDN_CAPI_MIDDLEWARE=y
-> CONFIG_ISDN_CAPI_CAPI20=m
-> CONFIG_ISDN_CAPI_CAPIFS_BOOL=y
-> CONFIG_ISDN_CAPI_CAPIFS=m
-> CONFIG_ISDN_CAPI_CAPIDRV=m
-> 
-> #
-> # CAPI hardware drivers
-> #
-> CONFIG_CAPI_AVM=y
-> CONFIG_ISDN_DRV_AVMB1_B1ISA=m
-> CONFIG_ISDN_DRV_AVMB1_B1PCI=m
-> CONFIG_ISDN_DRV_AVMB1_B1PCIV4=y
-> CONFIG_ISDN_DRV_AVMB1_T1ISA=m
-> CONFIG_ISDN_DRV_AVMB1_B1PCMCIA=m
-> CONFIG_ISDN_DRV_AVMB1_AVM_CS=m
-> CONFIG_ISDN_DRV_AVMB1_T1PCI=m
-> CONFIG_ISDN_DRV_AVMB1_C4=m
-> CONFIG_CAPI_EICON=y
-> CONFIG_ISDN_DIVAS=m
-> CONFIG_ISDN_DIVAS_BRIPCI=y
-> CONFIG_ISDN_DIVAS_PRIPCI=y
-> CONFIG_ISDN_DIVAS_DIVACAPI=m
-> CONFIG_ISDN_DIVAS_USERIDI=m
-> CONFIG_ISDN_DIVAS_MAINT=m
-> CONFIG_ISDN_DRV_GIGASET=m
-> CONFIG_GIGASET_CAPI=y
-> # CONFIG_GIGASET_I4L is not set
-> # CONFIG_GIGASET_DUMMYLL is not set
-> CONFIG_GIGASET_BASE=m
-> CONFIG_GIGASET_M105=m
-> CONFIG_GIGASET_M101=m
-> # CONFIG_GIGASET_DEBUG is not set
-> CONFIG_HYSDN=m
-> CONFIG_HYSDN_CAPI=y
-> CONFIG_MISDN=m
-> CONFIG_MISDN_DSP=m
-> CONFIG_MISDN_L1OIP=m
-> 
-> #
-> # mISDN hardware drivers
-> #
-> CONFIG_MISDN_HFCPCI=m
-> CONFIG_MISDN_HFCMULTI=m
-> CONFIG_MISDN_HFCUSB=m
-> CONFIG_MISDN_AVMFRITZ=m
-> CONFIG_MISDN_SPEEDFAX=m
-> CONFIG_MISDN_INFINEON=m
-> CONFIG_MISDN_W6692=m
-> CONFIG_MISDN_NETJET=m
-> CONFIG_MISDN_IPAC=m
-> CONFIG_MISDN_ISAR=m
-> CONFIG_ISDN_HDLC=m
-> CONFIG_PHONE=m
-> CONFIG_PHONE_IXJ=m
-> CONFIG_PHONE_IXJ_PCMCIA=m
-> 
-> #
-> # Input device support
-> #
-> CONFIG_INPUT=y
-> CONFIG_INPUT_FF_MEMLESS=y
-> CONFIG_INPUT_POLLDEV=y
-> CONFIG_INPUT_SPARSEKMAP=y
-> 
-> #
-> # Userland interfaces
-> #
-> CONFIG_INPUT_MOUSEDEV=y
-> CONFIG_INPUT_MOUSEDEV_PSAUX=y
-> CONFIG_INPUT_MOUSEDEV_SCREEN_X=1024
-> CONFIG_INPUT_MOUSEDEV_SCREEN_Y=768
-> CONFIG_INPUT_JOYDEV=y
-> CONFIG_INPUT_EVDEV=y
-> # CONFIG_INPUT_EVBUG is not set
-> 
-> #
-> # Input Device Drivers
-> #
-> CONFIG_INPUT_KEYBOARD=y
-> CONFIG_KEYBOARD_ADP5520=y
-> CONFIG_KEYBOARD_ADP5588=y
-> CONFIG_KEYBOARD_ATKBD=y
-> CONFIG_KEYBOARD_QT2160=y
-> CONFIG_KEYBOARD_LKKBD=y
-> CONFIG_KEYBOARD_GPIO=y
-> CONFIG_KEYBOARD_TCA6416=y
-> CONFIG_KEYBOARD_MATRIX=y
-> CONFIG_KEYBOARD_LM8323=m
-> CONFIG_KEYBOARD_MAX7359=y
-> CONFIG_KEYBOARD_MCS=y
-> CONFIG_KEYBOARD_NEWTON=y
-> CONFIG_KEYBOARD_OPENCORES=y
-> CONFIG_KEYBOARD_STOWAWAY=y
-> CONFIG_KEYBOARD_SUNKBD=y
-> CONFIG_KEYBOARD_STMPE=y
-> CONFIG_KEYBOARD_TWL4030=y
-> CONFIG_KEYBOARD_XTKBD=y
-> CONFIG_INPUT_MOUSE=y
-> CONFIG_MOUSE_PS2=y
-> CONFIG_MOUSE_PS2_ALPS=y
-> CONFIG_MOUSE_PS2_LOGIPS2PP=y
-> CONFIG_MOUSE_PS2_SYNAPTICS=y
-> CONFIG_MOUSE_PS2_LIFEBOOK=y
-> CONFIG_MOUSE_PS2_TRACKPOINT=y
-> CONFIG_MOUSE_PS2_ELANTECH=y
-> CONFIG_MOUSE_PS2_SENTELIC=y
-> CONFIG_MOUSE_PS2_TOUCHKIT=y
-> CONFIG_MOUSE_PS2_OLPC=y
-> CONFIG_MOUSE_SERIAL=y
-> CONFIG_MOUSE_APPLETOUCH=y
-> CONFIG_MOUSE_BCM5974=y
-> CONFIG_MOUSE_INPORT=y
-> CONFIG_MOUSE_ATIXL=y
-> CONFIG_MOUSE_LOGIBM=y
-> CONFIG_MOUSE_PC110PAD=y
-> CONFIG_MOUSE_VSXXXAA=y
-> CONFIG_MOUSE_GPIO=y
-> CONFIG_MOUSE_SYNAPTICS_I2C=y
-> CONFIG_INPUT_JOYSTICK=y
-> CONFIG_JOYSTICK_ANALOG=y
-> CONFIG_JOYSTICK_A3D=m
-> CONFIG_JOYSTICK_ADI=m
-> CONFIG_JOYSTICK_COBRA=m
-> CONFIG_JOYSTICK_GF2K=m
-> CONFIG_JOYSTICK_GRIP=m
-> CONFIG_JOYSTICK_GRIP_MP=m
-> CONFIG_JOYSTICK_GUILLEMOT=m
-> CONFIG_JOYSTICK_INTERACT=m
-> CONFIG_JOYSTICK_SIDEWINDER=m
-> CONFIG_JOYSTICK_TMDC=m
-> CONFIG_JOYSTICK_IFORCE=m
-> CONFIG_JOYSTICK_IFORCE_USB=y
-> CONFIG_JOYSTICK_IFORCE_232=y
-> CONFIG_JOYSTICK_WARRIOR=m
-> CONFIG_JOYSTICK_MAGELLAN=m
-> CONFIG_JOYSTICK_SPACEORB=m
-> CONFIG_JOYSTICK_SPACEBALL=m
-> CONFIG_JOYSTICK_STINGER=m
-> CONFIG_JOYSTICK_TWIDJOY=m
-> CONFIG_JOYSTICK_ZHENHUA=m
-> CONFIG_JOYSTICK_DB9=m
-> CONFIG_JOYSTICK_GAMECON=m
-> CONFIG_JOYSTICK_TURBOGRAFX=m
-> CONFIG_JOYSTICK_JOYDUMP=m
-> CONFIG_JOYSTICK_XPAD=m
-> CONFIG_JOYSTICK_XPAD_FF=y
-> CONFIG_JOYSTICK_XPAD_LEDS=y
-> CONFIG_JOYSTICK_WALKERA0701=m
-> CONFIG_INPUT_TABLET=y
-> CONFIG_TABLET_USB_ACECAD=y
-> CONFIG_TABLET_USB_AIPTEK=y
-> CONFIG_TABLET_USB_GTCO=y
-> CONFIG_TABLET_USB_HANWANG=y
-> CONFIG_TABLET_USB_KBTAB=y
-> CONFIG_TABLET_USB_WACOM=y
-> CONFIG_INPUT_TOUCHSCREEN=y
-> CONFIG_TOUCHSCREEN_88PM860X=m
-> CONFIG_TOUCHSCREEN_ADS7846=m
-> CONFIG_TOUCHSCREEN_AD7877=m
-> CONFIG_TOUCHSCREEN_AD7879=m
-> CONFIG_TOUCHSCREEN_AD7879_I2C=m
-> CONFIG_TOUCHSCREEN_AD7879_SPI=m
-> CONFIG_TOUCHSCREEN_BU21013=m
-> CONFIG_TOUCHSCREEN_CY8CTMG110=m
-> CONFIG_TOUCHSCREEN_DA9034=y
-> CONFIG_TOUCHSCREEN_DYNAPRO=m
-> CONFIG_TOUCHSCREEN_HAMPSHIRE=m
-> CONFIG_TOUCHSCREEN_EETI=m
-> CONFIG_TOUCHSCREEN_FUJITSU=m
-> CONFIG_TOUCHSCREEN_GUNZE=m
-> CONFIG_TOUCHSCREEN_ELO=m
-> CONFIG_TOUCHSCREEN_WACOM_W8001=m
-> CONFIG_TOUCHSCREEN_MCS5000=m
-> CONFIG_TOUCHSCREEN_MTOUCH=m
-> CONFIG_TOUCHSCREEN_INEXIO=m
-> CONFIG_TOUCHSCREEN_MK712=m
-> CONFIG_TOUCHSCREEN_HTCPEN=m
-> CONFIG_TOUCHSCREEN_PENMOUNT=m
-> CONFIG_TOUCHSCREEN_QT602240=m
-> CONFIG_TOUCHSCREEN_TOUCHRIGHT=m
-> CONFIG_TOUCHSCREEN_TOUCHWIN=m
-> CONFIG_TOUCHSCREEN_UCB1400=m
-> CONFIG_TOUCHSCREEN_WM97XX=m
-> CONFIG_TOUCHSCREEN_WM9705=y
-> CONFIG_TOUCHSCREEN_WM9712=y
-> CONFIG_TOUCHSCREEN_WM9713=y
-> CONFIG_TOUCHSCREEN_USB_COMPOSITE=m
-> CONFIG_TOUCHSCREEN_MC13783=m
-> CONFIG_TOUCHSCREEN_USB_EGALAX=y
-> CONFIG_TOUCHSCREEN_USB_PANJIT=y
-> CONFIG_TOUCHSCREEN_USB_3M=y
-> CONFIG_TOUCHSCREEN_USB_ITM=y
-> CONFIG_TOUCHSCREEN_USB_ETURBO=y
-> CONFIG_TOUCHSCREEN_USB_GUNZE=y
-> CONFIG_TOUCHSCREEN_USB_DMC_TSC10=y
-> CONFIG_TOUCHSCREEN_USB_IRTOUCH=y
-> CONFIG_TOUCHSCREEN_USB_IDEALTEK=y
-> CONFIG_TOUCHSCREEN_USB_GENERAL_TOUCH=y
-> CONFIG_TOUCHSCREEN_USB_GOTOP=y
-> CONFIG_TOUCHSCREEN_USB_JASTEC=y
-> CONFIG_TOUCHSCREEN_USB_E2I=y
-> CONFIG_TOUCHSCREEN_USB_ZYTRONIC=y
-> CONFIG_TOUCHSCREEN_USB_ETT_TC45USB=y
-> CONFIG_TOUCHSCREEN_USB_NEXIO=y
-> CONFIG_TOUCHSCREEN_TOUCHIT213=m
-> CONFIG_TOUCHSCREEN_TSC2007=m
-> CONFIG_TOUCHSCREEN_PCAP=m
-> CONFIG_TOUCHSCREEN_TPS6507X=m
-> CONFIG_TOUCHSCREEN_STMPE=m
-> CONFIG_INPUT_MISC=y
-> CONFIG_INPUT_88PM860X_ONKEY=m
-> CONFIG_INPUT_AD714X=m
-> CONFIG_INPUT_AD714X_I2C=m
-> CONFIG_INPUT_AD714X_SPI=m
-> CONFIG_INPUT_PCSPKR=y
-> CONFIG_INPUT_MAX8925_ONKEY=m
-> CONFIG_INPUT_APANEL=m
-> CONFIG_INPUT_WISTRON_BTNS=m
-> CONFIG_INPUT_ATLAS_BTNS=m
-> CONFIG_INPUT_ATI_REMOTE=m
-> CONFIG_INPUT_ATI_REMOTE2=m
-> CONFIG_INPUT_KEYSPAN_REMOTE=m
-> CONFIG_INPUT_POWERMATE=m
-> CONFIG_INPUT_YEALINK=m
-> CONFIG_INPUT_CM109=m
-> CONFIG_INPUT_TWL4030_PWRBUTTON=m
-> CONFIG_INPUT_TWL4030_VIBRA=m
-> CONFIG_INPUT_UINPUT=m
-> CONFIG_INPUT_WINBOND_CIR=m
-> CONFIG_INPUT_PCF50633_PMU=m
-> CONFIG_INPUT_PCF8574=m
-> CONFIG_INPUT_GPIO_ROTARY_ENCODER=m
-> CONFIG_INPUT_WM831X_ON=m
-> CONFIG_INPUT_PCAP=m
-> CONFIG_INPUT_ADXL34X=m
-> CONFIG_INPUT_ADXL34X_I2C=m
-> CONFIG_INPUT_ADXL34X_SPI=m
-> 
-> #
-> # Hardware I/O ports
-> #
-> CONFIG_SERIO=y
-> CONFIG_SERIO_I8042=y
-> CONFIG_SERIO_SERPORT=y
-> CONFIG_SERIO_CT82C710=y
-> CONFIG_SERIO_PARKBD=y
-> CONFIG_SERIO_PCIPS2=y
-> CONFIG_SERIO_LIBPS2=y
-> CONFIG_SERIO_RAW=y
-> CONFIG_SERIO_ALTERA_PS2=y
-> CONFIG_SERIO_PS2MULT=y
-> CONFIG_GAMEPORT=y
-> CONFIG_GAMEPORT_NS558=y
-> CONFIG_GAMEPORT_L4=y
-> CONFIG_GAMEPORT_EMU10K1=y
-> CONFIG_GAMEPORT_FM801=y
-> 
-> #
-> # Character devices
-> #
-> CONFIG_VT=y
-> CONFIG_CONSOLE_TRANSLATIONS=y
-> CONFIG_VT_CONSOLE=y
-> CONFIG_HW_CONSOLE=y
-> CONFIG_VT_HW_CONSOLE_BINDING=y
-> CONFIG_DEVKMEM=y
-> CONFIG_SERIAL_NONSTANDARD=y
-> CONFIG_COMPUTONE=m
-> CONFIG_ROCKETPORT=m
-> CONFIG_CYCLADES=m
-> CONFIG_CYZ_INTR=y
-> CONFIG_DIGIEPCA=m
-> CONFIG_MOXA_INTELLIO=m
-> CONFIG_MOXA_SMARTIO=m
-> CONFIG_ISI=m
-> CONFIG_SYNCLINK=m
-> CONFIG_SYNCLINKMP=m
-> CONFIG_SYNCLINK_GT=m
-> CONFIG_N_HDLC=m
-> CONFIG_N_GSM=m
-> CONFIG_RISCOM8=m
-> CONFIG_SPECIALIX=m
-> CONFIG_STALDRV=y
-> CONFIG_STALLION=m
-> CONFIG_ISTALLION=m
-> CONFIG_NOZOMI=m
-> 
-> #
-> # Serial drivers
-> #
-> CONFIG_SERIAL_8250=y
-> CONFIG_SERIAL_8250_CONSOLE=y
-> CONFIG_FIX_EARLYCON_MEM=y
-> CONFIG_SERIAL_8250_PCI=y
-> CONFIG_SERIAL_8250_PNP=y
-> CONFIG_SERIAL_8250_CS=m
-> CONFIG_SERIAL_8250_NR_UARTS=4
-> CONFIG_SERIAL_8250_RUNTIME_UARTS=4
-> CONFIG_SERIAL_8250_EXTENDED=y
-> CONFIG_SERIAL_8250_MANY_PORTS=y
-> CONFIG_SERIAL_8250_FOURPORT=m
-> CONFIG_SERIAL_8250_ACCENT=m
-> CONFIG_SERIAL_8250_BOCA=m
-> CONFIG_SERIAL_8250_EXAR_ST16C554=m
-> CONFIG_SERIAL_8250_HUB6=m
-> CONFIG_SERIAL_8250_SHARE_IRQ=y
-> CONFIG_SERIAL_8250_DETECT_IRQ=y
-> CONFIG_SERIAL_8250_RSA=y
-> CONFIG_SERIAL_8250_MCA=m
-> 
-> #
-> # Non-8250 serial port support
-> #
-> CONFIG_SERIAL_MAX3100=m
-> CONFIG_SERIAL_MAX3107=m
-> CONFIG_SERIAL_MRST_MAX3110=m
-> CONFIG_SERIAL_MFD_HSU=m
-> CONFIG_SERIAL_UARTLITE=m
-> CONFIG_SERIAL_CORE=y
-> CONFIG_SERIAL_CORE_CONSOLE=y
-> CONFIG_SERIAL_JSM=m
-> CONFIG_SERIAL_TIMBERDALE=m
-> CONFIG_SERIAL_ALTERA_JTAGUART=m
-> CONFIG_SERIAL_ALTERA_UART=m
-> CONFIG_SERIAL_ALTERA_UART_MAXPORTS=4
-> CONFIG_SERIAL_ALTERA_UART_BAUDRATE=115200
-> CONFIG_UNIX98_PTYS=y
-> CONFIG_DEVPTS_MULTIPLE_INSTANCES=y
-> CONFIG_LEGACY_PTYS=y
-> CONFIG_LEGACY_PTY_COUNT=256
-> # CONFIG_TTY_PRINTK is not set
-> CONFIG_PRINTER=m
-> CONFIG_LP_CONSOLE=y
-> CONFIG_PPDEV=m
-> CONFIG_HVC_DRIVER=y
-> CONFIG_VIRTIO_CONSOLE=y
-> CONFIG_IPMI_HANDLER=m
-> # CONFIG_IPMI_PANIC_EVENT is not set
-> CONFIG_IPMI_DEVICE_INTERFACE=m
-> CONFIG_IPMI_SI=m
-> CONFIG_IPMI_WATCHDOG=m
-> CONFIG_IPMI_POWEROFF=m
-> CONFIG_HW_RANDOM=y
-> CONFIG_HW_RANDOM_TIMERIOMEM=m
-> CONFIG_HW_RANDOM_INTEL=m
-> CONFIG_HW_RANDOM_AMD=m
-> CONFIG_HW_RANDOM_GEODE=m
-> CONFIG_HW_RANDOM_VIA=m
-> CONFIG_HW_RANDOM_VIRTIO=m
-> CONFIG_NVRAM=y
-> CONFIG_DTLK=m
-> CONFIG_R3964=m
-> CONFIG_APPLICOM=m
-> CONFIG_SONYPI=m
-> 
-> #
-> # PCMCIA character devices
-> #
-> CONFIG_SYNCLINK_CS=m
-> CONFIG_CARDMAN_4000=m
-> CONFIG_CARDMAN_4040=m
-> CONFIG_IPWIRELESS=m
-> CONFIG_MWAVE=m
-> CONFIG_SCx200_GPIO=m
-> CONFIG_PC8736x_GPIO=m
-> CONFIG_NSC_GPIO=m
-> CONFIG_CS5535_GPIO=m
-> CONFIG_RAW_DRIVER=m
-> CONFIG_MAX_RAW_DEVS=256
-> CONFIG_HPET=y
-> CONFIG_HPET_MMAP=y
-> CONFIG_HANGCHECK_TIMER=m
-> CONFIG_TCG_TPM=m
-> CONFIG_TCG_TIS=m
-> CONFIG_TCG_NSC=m
-> CONFIG_TCG_ATMEL=m
-> CONFIG_TCG_INFINEON=m
-> CONFIG_TELCLOCK=m
-> CONFIG_DEVPORT=y
-> CONFIG_RAMOOPS=m
-> CONFIG_I2C=y
-> CONFIG_I2C_BOARDINFO=y
-> CONFIG_I2C_COMPAT=y
-> CONFIG_I2C_CHARDEV=y
-> CONFIG_I2C_MUX=m
-> 
-> #
-> # Multiplexer I2C Chip support
-> #
-> CONFIG_I2C_MUX_PCA9541=m
-> CONFIG_I2C_MUX_PCA954x=m
-> CONFIG_I2C_HELPER_AUTO=y
-> CONFIG_I2C_SMBUS=m
-> CONFIG_I2C_ALGOBIT=y
-> CONFIG_I2C_ALGOPCA=m
-> 
-> #
-> # I2C Hardware Bus support
-> #
-> 
-> #
-> # PC SMBus host controller drivers
-> #
-> CONFIG_I2C_ALI1535=m
-> CONFIG_I2C_ALI1563=m
-> CONFIG_I2C_ALI15X3=m
-> CONFIG_I2C_AMD756=m
-> CONFIG_I2C_AMD756_S4882=m
-> CONFIG_I2C_AMD8111=m
-> CONFIG_I2C_I801=m
-> CONFIG_I2C_ISCH=m
-> CONFIG_I2C_PIIX4=m
-> CONFIG_I2C_NFORCE2=m
-> CONFIG_I2C_NFORCE2_S4985=m
-> CONFIG_I2C_SIS5595=m
-> CONFIG_I2C_SIS630=m
-> CONFIG_I2C_SIS96X=m
-> CONFIG_I2C_VIA=m
-> CONFIG_I2C_VIAPRO=m
-> 
-> #
-> # ACPI drivers
-> #
-> CONFIG_I2C_SCMI=m
-> 
-> #
-> # I2C system bus drivers (mostly embedded / 
-> system-on-chip)
-> #
-> CONFIG_I2C_GPIO=m
-> # CONFIG_I2C_INTEL_MID is not set
-> CONFIG_I2C_OCORES=m
-> CONFIG_I2C_PCA_PLATFORM=m
-> CONFIG_I2C_SIMTEC=m
-> CONFIG_I2C_XILINX=m
-> 
-> #
-> # External I2C/SMBus adapter drivers
-> #
-> CONFIG_I2C_PARPORT=m
-> CONFIG_I2C_PARPORT_LIGHT=m
-> CONFIG_I2C_TAOS_EVM=m
-> CONFIG_I2C_TINY_USB=m
-> 
-> #
-> # Other I2C/SMBus bus drivers
-> #
-> CONFIG_I2C_PCA_ISA=m
-> CONFIG_I2C_STUB=m
-> CONFIG_SCx200_I2C=m
-> CONFIG_SCx200_I2C_SCL=12
-> CONFIG_SCx200_I2C_SDA=13
-> CONFIG_SCx200_ACB=m
-> # CONFIG_I2C_DEBUG_CORE is not set
-> # CONFIG_I2C_DEBUG_ALGO is not set
-> # CONFIG_I2C_DEBUG_BUS is not set
-> CONFIG_SPI=y
-> CONFIG_SPI_MASTER=y
-> 
-> #
-> # SPI Master Controller Drivers
-> #
-> CONFIG_SPI_BITBANG=m
-> CONFIG_SPI_BUTTERFLY=m
-> CONFIG_SPI_GPIO=m
-> CONFIG_SPI_LM70_LLP=m
-> CONFIG_SPI_TOPCLIFF_PCH=m
-> CONFIG_SPI_XILINX=m
-> CONFIG_SPI_XILINX_PLTFM=m
-> CONFIG_SPI_DESIGNWARE=y
-> CONFIG_SPI_DW_PCI=m
-> 
-> #
-> # SPI Protocol Masters
-> #
-> CONFIG_SPI_SPIDEV=m
-> CONFIG_SPI_TLE62X0=m
-> 
-> #
-> # PPS support
-> #
-> CONFIG_PPS=m
-> # CONFIG_PPS_DEBUG is not set
-> 
-> #
-> # PPS clients support
-> #
-> CONFIG_PPS_CLIENT_KTIMER=m
-> CONFIG_PPS_CLIENT_LDISC=m
-> CONFIG_ARCH_WANT_OPTIONAL_GPIOLIB=y
-> CONFIG_GPIOLIB=y
-> CONFIG_GPIO_SYSFS=y
-> CONFIG_GPIO_MAX730X=m
-> 
-> #
-> # Memory mapped GPIO expanders:
-> #
-> CONFIG_GPIO_BASIC_MMIO=m
-> CONFIG_GPIO_IT8761E=m
-> CONFIG_GPIO_SCH=m
-> CONFIG_GPIO_VX855=m
-> 
-> #
-> # I2C GPIO expanders:
-> #
-> CONFIG_GPIO_MAX7300=m
-> CONFIG_GPIO_MAX732X=m
-> CONFIG_GPIO_PCA953X=m
-> CONFIG_GPIO_PCF857X=m
-> CONFIG_GPIO_SX150X=y
-> CONFIG_GPIO_STMPE=y
-> CONFIG_GPIO_TC35892=y
-> CONFIG_GPIO_TWL4030=m
-> CONFIG_GPIO_WM831X=m
-> CONFIG_GPIO_WM8350=m
-> CONFIG_GPIO_WM8994=m
-> CONFIG_GPIO_ADP5520=m
-> CONFIG_GPIO_ADP5588=m
-> 
-> #
-> # PCI GPIO expanders:
-> #
-> CONFIG_GPIO_CS5535=m
-> CONFIG_GPIO_LANGWELL=y
-> CONFIG_GPIO_PCH=m
-> CONFIG_GPIO_TIMBERDALE=y
-> CONFIG_GPIO_RDC321X=m
-> 
-> #
-> # SPI GPIO expanders:
-> #
-> CONFIG_GPIO_MAX7301=m
-> CONFIG_GPIO_MCP23S08=m
-> CONFIG_GPIO_MC33880=m
-> CONFIG_GPIO_74X164=m
-> 
-> #
-> # AC97 GPIO expanders:
-> #
-> CONFIG_GPIO_UCB1400=y
-> 
-> #
-> # MODULbus GPIO expanders:
-> #
-> CONFIG_GPIO_JANZ_TTL=m
-> CONFIG_W1=m
-> CONFIG_W1_CON=y
-> 
-> #
-> # 1-wire Bus Masters
-> #
-> CONFIG_W1_MASTER_MATROX=m
-> CONFIG_W1_MASTER_DS2490=m
-> CONFIG_W1_MASTER_DS2482=m
-> CONFIG_W1_MASTER_GPIO=m
-> 
-> #
-> # 1-wire Slaves
-> #
-> CONFIG_W1_SLAVE_THERM=m
-> CONFIG_W1_SLAVE_SMEM=m
-> CONFIG_W1_SLAVE_DS2431=m
-> CONFIG_W1_SLAVE_DS2433=m
-> CONFIG_W1_SLAVE_DS2433_CRC=y
-> CONFIG_W1_SLAVE_DS2760=m
-> CONFIG_W1_SLAVE_BQ27000=m
-> CONFIG_POWER_SUPPLY=y
-> # CONFIG_POWER_SUPPLY_DEBUG is not set
-> CONFIG_PDA_POWER=m
-> CONFIG_MAX8925_POWER=m
-> CONFIG_WM831X_BACKUP=m
-> CONFIG_WM831X_POWER=m
-> CONFIG_WM8350_POWER=m
-> # CONFIG_TEST_POWER is not set
-> CONFIG_BATTERY_DS2760=m
-> CONFIG_BATTERY_DS2782=m
-> CONFIG_BATTERY_OLPC=m
-> CONFIG_BATTERY_BQ20Z75=m
-> CONFIG_BATTERY_BQ27x00=m
-> CONFIG_BATTERY_DA9030=m
-> CONFIG_BATTERY_MAX17040=m
-> CONFIG_CHARGER_PCF50633=m
-> CONFIG_CHARGER_ISP1704=m
-> CONFIG_CHARGER_TWL4030=m
-> CONFIG_HWMON=y
-> CONFIG_HWMON_VID=m
-> # CONFIG_HWMON_DEBUG_CHIP is not set
-> 
-> #
-> # Native drivers
-> #
-> CONFIG_SENSORS_ABITUGURU=m
-> CONFIG_SENSORS_ABITUGURU3=m
-> CONFIG_SENSORS_AD7414=m
-> CONFIG_SENSORS_AD7418=m
-> CONFIG_SENSORS_ADCXX=m
-> CONFIG_SENSORS_ADM1021=m
-> CONFIG_SENSORS_ADM1025=m
-> CONFIG_SENSORS_ADM1026=m
-> CONFIG_SENSORS_ADM1029=m
-> CONFIG_SENSORS_ADM1031=m
-> CONFIG_SENSORS_ADM9240=m
-> CONFIG_SENSORS_ADT7411=m
-> CONFIG_SENSORS_ADT7462=m
-> CONFIG_SENSORS_ADT7470=m
-> CONFIG_SENSORS_ADT7475=m
-> CONFIG_SENSORS_ASC7621=m
-> CONFIG_SENSORS_K8TEMP=m
-> CONFIG_SENSORS_K10TEMP=m
-> CONFIG_SENSORS_ASB100=m
-> CONFIG_SENSORS_ATXP1=m
-> CONFIG_SENSORS_DS1621=m
-> CONFIG_SENSORS_I5K_AMB=m
-> CONFIG_SENSORS_F71805F=m
-> CONFIG_SENSORS_F71882FG=m
-> CONFIG_SENSORS_F75375S=m
-> CONFIG_SENSORS_FSCHMD=m
-> CONFIG_SENSORS_G760A=m
-> CONFIG_SENSORS_GL518SM=m
-> CONFIG_SENSORS_GL520SM=m
-> CONFIG_SENSORS_GPIO_FAN=m
-> CONFIG_SENSORS_CORETEMP=m
-> CONFIG_SENSORS_PKGTEMP=m
-> CONFIG_SENSORS_IBMAEM=m
-> CONFIG_SENSORS_IBMPEX=m
-> CONFIG_SENSORS_IT87=m
-> CONFIG_SENSORS_JC42=m
-> CONFIG_SENSORS_LM63=m
-> CONFIG_SENSORS_LM70=m
-> CONFIG_SENSORS_LM73=m
-> CONFIG_SENSORS_LM75=m
-> CONFIG_SENSORS_LM77=m
-> CONFIG_SENSORS_LM78=m
-> CONFIG_SENSORS_LM80=m
-> CONFIG_SENSORS_LM83=m
-> CONFIG_SENSORS_LM85=m
-> CONFIG_SENSORS_LM87=m
-> CONFIG_SENSORS_LM90=m
-> CONFIG_SENSORS_LM92=m
-> CONFIG_SENSORS_LM93=m
-> CONFIG_SENSORS_LTC4215=m
-> CONFIG_SENSORS_LTC4245=m
-> CONFIG_SENSORS_LTC4261=m
-> CONFIG_SENSORS_LM95241=m
-> CONFIG_SENSORS_MAX1111=m
-> CONFIG_SENSORS_MAX1619=m
-> CONFIG_SENSORS_MAX6650=m
-> CONFIG_SENSORS_PC87360=m
-> CONFIG_SENSORS_PC87427=m
-> CONFIG_SENSORS_PCF8591=m
-> CONFIG_SENSORS_SHT15=m
-> CONFIG_SENSORS_SIS5595=m
-> CONFIG_SENSORS_SMM665=m
-> CONFIG_SENSORS_DME1737=m
-> CONFIG_SENSORS_EMC1403=m
-> CONFIG_SENSORS_EMC2103=m
-> CONFIG_SENSORS_SMSC47M1=m
-> CONFIG_SENSORS_SMSC47M192=m
-> CONFIG_SENSORS_SMSC47B397=m
-> CONFIG_SENSORS_ADS7828=m
-> CONFIG_SENSORS_ADS7871=m
-> CONFIG_SENSORS_AMC6821=m
-> CONFIG_SENSORS_THMC50=m
-> CONFIG_SENSORS_TMP102=m
-> CONFIG_SENSORS_TMP401=m
-> CONFIG_SENSORS_TMP421=m
-> CONFIG_SENSORS_VIA_CPUTEMP=m
-> CONFIG_SENSORS_VIA686A=m
-> CONFIG_SENSORS_VT1211=m
-> CONFIG_SENSORS_VT8231=m
-> CONFIG_SENSORS_W83781D=m
-> CONFIG_SENSORS_W83791D=m
-> CONFIG_SENSORS_W83792D=m
-> CONFIG_SENSORS_W83793=m
-> CONFIG_SENSORS_W83795=m
-> # CONFIG_SENSORS_W83795_FANCTRL is not set
-> CONFIG_SENSORS_W83L785TS=m
-> CONFIG_SENSORS_W83L786NG=m
-> CONFIG_SENSORS_W83627HF=m
-> CONFIG_SENSORS_W83627EHF=m
-> CONFIG_SENSORS_WM831X=m
-> CONFIG_SENSORS_WM8350=m
-> CONFIG_SENSORS_LIS3_I2C=m
-> CONFIG_SENSORS_APPLESMC=m
-> CONFIG_SENSORS_MC13783_ADC=m
-> 
-> #
-> # ACPI drivers
-> #
-> CONFIG_SENSORS_ATK0110=m
-> CONFIG_SENSORS_LIS3LV02D=m
-> CONFIG_THERMAL=y
-> CONFIG_THERMAL_HWMON=y
-> CONFIG_WATCHDOG=y
-> # CONFIG_WATCHDOG_NOWAYOUT is not set
-> 
-> #
-> # Watchdog Device Drivers
-> #
-> CONFIG_SOFT_WATCHDOG=m
-> CONFIG_WM831X_WATCHDOG=m
-> CONFIG_WM8350_WATCHDOG=m
-> CONFIG_TWL4030_WATCHDOG=m
-> CONFIG_ACQUIRE_WDT=m
-> CONFIG_ADVANTECH_WDT=m
-> CONFIG_ALIM1535_WDT=m
-> CONFIG_ALIM7101_WDT=m
-> CONFIG_F71808E_WDT=m
-> CONFIG_GEODE_WDT=m
-> CONFIG_SC520_WDT=m
-> CONFIG_SBC_FITPC2_WATCHDOG=m
-> CONFIG_EUROTECH_WDT=m
-> CONFIG_IB700_WDT=m
-> CONFIG_IBMASR=m
-> CONFIG_WAFER_WDT=m
-> CONFIG_I6300ESB_WDT=m
-> CONFIG_ITCO_WDT=m
-> CONFIG_ITCO_VENDOR_SUPPORT=y
-> CONFIG_IT8712F_WDT=m
-> CONFIG_IT87_WDT=m
-> CONFIG_HP_WATCHDOG=m
-> CONFIG_HPWDT_NMI_DECODING=y
-> CONFIG_SC1200_WDT=m
-> CONFIG_SCx200_WDT=m
-> CONFIG_PC87413_WDT=m
-> CONFIG_RDC321X_WDT=m
-> CONFIG_60XX_WDT=m
-> CONFIG_SBC8360_WDT=m
-> CONFIG_SBC7240_WDT=m
-> CONFIG_CPU5_WDT=m
-> CONFIG_SMSC_SCH311X_WDT=m
-> CONFIG_SMSC37B787_WDT=m
-> CONFIG_W83627HF_WDT=m
-> CONFIG_W83697HF_WDT=m
-> CONFIG_W83697UG_WDT=m
-> CONFIG_W83877F_WDT=m
-> CONFIG_W83977F_WDT=m
-> CONFIG_MACHZ_WDT=m
-> CONFIG_SBC_EPX_C3_WATCHDOG=m
-> 
-> #
-> # ISA-based Watchdog Cards
-> #
-> CONFIG_PCWATCHDOG=m
-> CONFIG_MIXCOMWD=m
-> CONFIG_WDT=m
-> 
-> #
-> # PCI-based Watchdog Cards
-> #
-> CONFIG_PCIPCWATCHDOG=m
-> CONFIG_WDTPCI=m
-> 
-> #
-> # USB-based Watchdog Cards
-> #
-> CONFIG_USBPCWATCHDOG=m
-> CONFIG_SSB_POSSIBLE=y
-> 
-> #
-> # Sonics Silicon Backplane
-> #
-> CONFIG_SSB=m
-> CONFIG_SSB_SPROM=y
-> CONFIG_SSB_BLOCKIO=y
-> CONFIG_SSB_PCIHOST_POSSIBLE=y
-> CONFIG_SSB_PCIHOST=y
-> CONFIG_SSB_B43_PCI_BRIDGE=y
-> CONFIG_SSB_PCMCIAHOST_POSSIBLE=y
-> CONFIG_SSB_PCMCIAHOST=y
-> CONFIG_SSB_SDIOHOST_POSSIBLE=y
-> CONFIG_SSB_SDIOHOST=y
-> # CONFIG_SSB_SILENT is not set
-> # CONFIG_SSB_DEBUG is not set
-> CONFIG_SSB_DRIVER_PCICORE_POSSIBLE=y
-> CONFIG_SSB_DRIVER_PCICORE=y
-> CONFIG_MFD_SUPPORT=y
-> CONFIG_MFD_CORE=y
-> CONFIG_MFD_88PM860X=y
-> CONFIG_MFD_SM501=m
-> CONFIG_MFD_SM501_GPIO=y
-> CONFIG_HTC_PASIC3=m
-> CONFIG_HTC_I2CPLD=y
-> CONFIG_UCB1400_CORE=m
-> CONFIG_TPS65010=m
-> CONFIG_TPS6507X=m
-> CONFIG_TWL4030_CORE=y
-> CONFIG_TWL4030_CODEC=y
-> CONFIG_TWL6030_PWM=m
-> CONFIG_MFD_STMPE=y
-> CONFIG_MFD_TC35892=y
-> # CONFIG_MFD_TMIO is not set
-> CONFIG_PMIC_DA903X=y
-> CONFIG_PMIC_ADP5520=y
-> CONFIG_MFD_MAX8925=y
-> CONFIG_MFD_MAX8998=y
-> CONFIG_MFD_WM8400=m
-> CONFIG_MFD_WM831X=y
-> CONFIG_MFD_WM831X_I2C=y
-> CONFIG_MFD_WM831X_SPI=y
-> CONFIG_MFD_WM8350=y
-> CONFIG_MFD_WM8350_I2C=y
-> CONFIG_MFD_WM8994=y
-> CONFIG_MFD_PCF50633=m
-> CONFIG_MFD_MC13783=m
-> CONFIG_MFD_MC13XXX=m
-> CONFIG_PCF50633_ADC=m
-> CONFIG_PCF50633_GPIO=m
-> CONFIG_ABX500_CORE=y
-> CONFIG_AB3100_CORE=y
-> CONFIG_AB3100_OTP=m
-> CONFIG_EZX_PCAP=y
-> CONFIG_AB3550_CORE=y
-> CONFIG_MFD_TIMBERDALE=y
-> CONFIG_LPC_SCH=m
-> CONFIG_MFD_RDC321X=m
-> CONFIG_MFD_JANZ_CMODIO=m
-> CONFIG_MFD_TPS6586X=y
-> CONFIG_MFD_VX855=m
-> CONFIG_REGULATOR=y
-> # CONFIG_REGULATOR_DEBUG is not set
-> CONFIG_REGULATOR_DUMMY=y
-> CONFIG_REGULATOR_FIXED_VOLTAGE=m
-> CONFIG_REGULATOR_VIRTUAL_CONSUMER=m
-> CONFIG_REGULATOR_USERSPACE_CONSUMER=m
-> CONFIG_REGULATOR_BQ24022=m
-> CONFIG_REGULATOR_MAX1586=m
-> CONFIG_REGULATOR_MAX8649=m
-> CONFIG_REGULATOR_MAX8660=m
-> CONFIG_REGULATOR_MAX8925=m
-> CONFIG_REGULATOR_MAX8952=m
-> CONFIG_REGULATOR_MAX8998=m
-> CONFIG_REGULATOR_TWL4030=y
-> CONFIG_REGULATOR_WM831X=m
-> CONFIG_REGULATOR_WM8350=m
-> CONFIG_REGULATOR_WM8400=m
-> CONFIG_REGULATOR_WM8994=m
-> CONFIG_REGULATOR_DA903X=m
-> CONFIG_REGULATOR_PCF50633=m
-> CONFIG_REGULATOR_LP3971=m
-> CONFIG_REGULATOR_LP3972=m
-> CONFIG_REGULATOR_PCAP=m
-> CONFIG_REGULATOR_MC13783=m
-> CONFIG_REGULATOR_AB3100=m
-> CONFIG_REGULATOR_TPS65023=m
-> CONFIG_REGULATOR_TPS6507X=m
-> CONFIG_REGULATOR_88PM8607=y
-> CONFIG_REGULATOR_ISL6271A=m
-> CONFIG_REGULATOR_AD5398=m
-> CONFIG_REGULATOR_TPS6586X=m
-> CONFIG_MEDIA_SUPPORT=y
-> 
-> #
-> # Multimedia core support
-> #
-> CONFIG_VIDEO_DEV=y
-> CONFIG_VIDEO_V4L2_COMMON=y
-> CONFIG_VIDEO_ALLOW_V4L1=y
-> CONFIG_VIDEO_V4L1_COMPAT=y
-> CONFIG_DVB_CORE=y
-> CONFIG_VIDEO_MEDIA=y
-> 
-> #
-> # Multimedia drivers
-> #
-> CONFIG_VIDEO_SAA7146=m
-> CONFIG_VIDEO_SAA7146_VV=m
-> CONFIG_IR_CORE=y
-> CONFIG_VIDEO_IR=y
-> CONFIG_LIRC=y
-> CONFIG_RC_MAP=y
-> CONFIG_IR_NEC_DECODER=y
-> CONFIG_IR_RC5_DECODER=y
-> CONFIG_IR_RC6_DECODER=y
-> CONFIG_IR_JVC_DECODER=y
-> CONFIG_IR_SONY_DECODER=y
-> CONFIG_IR_RC5_SZ_DECODER=y
-> CONFIG_IR_LIRC_CODEC=y
-> CONFIG_IR_ENE=m
-> CONFIG_IR_IMON=m
-> CONFIG_IR_MCEUSB=m
-> CONFIG_IR_NUVOTON=m
-> CONFIG_IR_STREAMZAP=m
-> CONFIG_MEDIA_ATTACH=y
-> CONFIG_MEDIA_TUNER=y
-> CONFIG_MEDIA_TUNER_CUSTOMISE=y
-> CONFIG_MEDIA_TUNER_SIMPLE=m
-> CONFIG_MEDIA_TUNER_TDA8290=m
-> CONFIG_MEDIA_TUNER_TDA827X=m
-> CONFIG_MEDIA_TUNER_TDA18271=m
-> CONFIG_MEDIA_TUNER_TDA9887=m
-> CONFIG_MEDIA_TUNER_TEA5761=m
-> CONFIG_MEDIA_TUNER_TEA5767=m
-> CONFIG_MEDIA_TUNER_MT20XX=m
-> CONFIG_MEDIA_TUNER_MT2060=m
-> CONFIG_MEDIA_TUNER_MT2266=m
-> CONFIG_MEDIA_TUNER_MT2131=m
-> CONFIG_MEDIA_TUNER_QT1010=m
-> CONFIG_MEDIA_TUNER_XC2028=m
-> CONFIG_MEDIA_TUNER_XC5000=m
-> CONFIG_MEDIA_TUNER_MXL5005S=m
-> CONFIG_MEDIA_TUNER_MXL5007T=m
-> CONFIG_MEDIA_TUNER_MC44S803=m
-> CONFIG_MEDIA_TUNER_MAX2165=m
-> CONFIG_MEDIA_TUNER_TDA18218=m
-> CONFIG_VIDEO_V4L2=y
-> CONFIG_VIDEO_V4L1=y
-> CONFIG_VIDEOBUF_GEN=m
-> CONFIG_VIDEOBUF_DMA_SG=m
-> CONFIG_VIDEOBUF_VMALLOC=m
-> CONFIG_VIDEOBUF_DMA_CONTIG=m
-> CONFIG_VIDEOBUF_DVB=m
-> CONFIG_VIDEO_BTCX=m
-> CONFIG_VIDEO_TVEEPROM=m
-> CONFIG_VIDEO_TUNER=m
-> CONFIG_VIDEO_CAPTURE_DRIVERS=y
-> # CONFIG_VIDEO_ADV_DEBUG is not set
-> # CONFIG_VIDEO_FIXED_MINOR_RANGES is not set
-> CONFIG_VIDEO_HELPER_CHIPS_AUTO=y
-> CONFIG_VIDEO_IR_I2C=y
-> CONFIG_VIDEO_TVAUDIO=m
-> CONFIG_VIDEO_TDA7432=m
-> CONFIG_VIDEO_TDA9840=m
-> CONFIG_VIDEO_TEA6415C=m
-> CONFIG_VIDEO_TEA6420=m
-> CONFIG_VIDEO_MSP3400=m
-> CONFIG_VIDEO_CS5345=m
-> CONFIG_VIDEO_CS53L32A=m
-> CONFIG_VIDEO_M52790=m
-> CONFIG_VIDEO_WM8775=m
-> CONFIG_VIDEO_WM8739=m
-> CONFIG_VIDEO_VP27SMPX=m
-> CONFIG_VIDEO_SAA6588=m
-> CONFIG_VIDEO_BT819=m
-> CONFIG_VIDEO_BT856=m
-> CONFIG_VIDEO_BT866=m
-> CONFIG_VIDEO_KS0127=m
-> CONFIG_VIDEO_OV7670=m
-> CONFIG_VIDEO_MT9V011=m
-> CONFIG_VIDEO_SAA7110=m
-> CONFIG_VIDEO_SAA711X=m
-> CONFIG_VIDEO_SAA717X=m
-> CONFIG_VIDEO_TVP5150=m
-> CONFIG_VIDEO_VPX3220=m
-> CONFIG_VIDEO_CX25840=m
-> CONFIG_VIDEO_CX2341X=m
-> CONFIG_VIDEO_SAA7127=m
-> CONFIG_VIDEO_SAA7185=m
-> CONFIG_VIDEO_ADV7170=m
-> CONFIG_VIDEO_ADV7175=m
-> CONFIG_VIDEO_UPD64031A=m
-> CONFIG_VIDEO_UPD64083=m
-> CONFIG_VIDEO_VIVI=m
-> CONFIG_VIDEO_BT848=m
-> CONFIG_VIDEO_BT848_DVB=y
-> CONFIG_VIDEO_PMS=m
-> CONFIG_VIDEO_BWQCAM=m
-> CONFIG_VIDEO_CQCAM=m
-> CONFIG_VIDEO_W9966=m
-> CONFIG_VIDEO_CPIA2=m
-> CONFIG_VIDEO_ZORAN=m
-> CONFIG_VIDEO_ZORAN_DC30=m
-> CONFIG_VIDEO_ZORAN_ZR36060=m
-> CONFIG_VIDEO_ZORAN_BUZ=m
-> CONFIG_VIDEO_ZORAN_DC10=m
-> CONFIG_VIDEO_ZORAN_LML33=m
-> CONFIG_VIDEO_ZORAN_LML33R10=m
-> CONFIG_VIDEO_ZORAN_AVS6EYES=m
-> CONFIG_VIDEO_MEYE=m
-> CONFIG_VIDEO_SAA7134=m
-> CONFIG_VIDEO_SAA7134_ALSA=m
-> CONFIG_VIDEO_SAA7134_RC=y
-> CONFIG_VIDEO_SAA7134_DVB=m
-> CONFIG_VIDEO_MXB=m
-> CONFIG_VIDEO_HEXIUM_ORION=m
-> CONFIG_VIDEO_HEXIUM_GEMINI=m
-> CONFIG_VIDEO_CX88=m
-> CONFIG_VIDEO_CX88_ALSA=m
-> CONFIG_VIDEO_CX88_BLACKBIRD=m
-> CONFIG_VIDEO_CX88_DVB=m
-> CONFIG_VIDEO_CX88_MPEG=m
-> CONFIG_VIDEO_CX88_VP3054=m
-> CONFIG_VIDEO_CX23885=m
-> CONFIG_VIDEO_AU0828=m
-> CONFIG_VIDEO_IVTV=m
-> CONFIG_VIDEO_FB_IVTV=m
-> CONFIG_VIDEO_CX18=m
-> CONFIG_VIDEO_CX18_ALSA=m
-> CONFIG_VIDEO_SAA7164=m
-> CONFIG_VIDEO_CAFE_CCIC=m
-> CONFIG_VIDEO_SR030PC30=m
-> CONFIG_VIDEO_VIA_CAMERA=m
-> CONFIG_SOC_CAMERA=m
-> CONFIG_SOC_CAMERA_IMX074=m
-> CONFIG_SOC_CAMERA_MT9M001=m
-> CONFIG_SOC_CAMERA_MT9M111=m
-> CONFIG_SOC_CAMERA_MT9T031=m
-> CONFIG_SOC_CAMERA_MT9T112=m
-> CONFIG_SOC_CAMERA_MT9V022=m
-> CONFIG_SOC_CAMERA_RJ54N1=m
-> CONFIG_SOC_CAMERA_TW9910=m
-> CONFIG_SOC_CAMERA_PLATFORM=m
-> CONFIG_SOC_CAMERA_OV6650=m
-> CONFIG_SOC_CAMERA_OV772X=m
-> CONFIG_SOC_CAMERA_OV9640=m
-> CONFIG_V4L_USB_DRIVERS=y
-> CONFIG_USB_VIDEO_CLASS=m
-> CONFIG_USB_VIDEO_CLASS_INPUT_EVDEV=y
-> CONFIG_USB_GSPCA=m
-> CONFIG_USB_M5602=m
-> CONFIG_USB_STV06XX=m
-> CONFIG_USB_GL860=m
-> CONFIG_USB_GSPCA_BENQ=m
-> CONFIG_USB_GSPCA_CONEX=m
-> CONFIG_USB_GSPCA_CPIA1=m
-> CONFIG_USB_GSPCA_ETOMS=m
-> CONFIG_USB_GSPCA_FINEPIX=m
-> CONFIG_USB_GSPCA_JEILINJ=m
-> CONFIG_USB_GSPCA_KONICA=m
-> CONFIG_USB_GSPCA_MARS=m
-> CONFIG_USB_GSPCA_MR97310A=m
-> CONFIG_USB_GSPCA_OV519=m
-> CONFIG_USB_GSPCA_OV534=m
-> CONFIG_USB_GSPCA_OV534_9=m
-> CONFIG_USB_GSPCA_PAC207=m
-> CONFIG_USB_GSPCA_PAC7302=m
-> CONFIG_USB_GSPCA_PAC7311=m
-> CONFIG_USB_GSPCA_SN9C2028=m
-> CONFIG_USB_GSPCA_SN9C20X=m
-> CONFIG_USB_GSPCA_SONIXB=m
-> CONFIG_USB_GSPCA_SONIXJ=m
-> CONFIG_USB_GSPCA_SPCA500=m
-> CONFIG_USB_GSPCA_SPCA501=m
-> CONFIG_USB_GSPCA_SPCA505=m
-> CONFIG_USB_GSPCA_SPCA506=m
-> CONFIG_USB_GSPCA_SPCA508=m
-> CONFIG_USB_GSPCA_SPCA561=m
-> CONFIG_USB_GSPCA_SPCA1528=m
-> CONFIG_USB_GSPCA_SQ905=m
-> CONFIG_USB_GSPCA_SQ905C=m
-> CONFIG_USB_GSPCA_SQ930X=m
-> CONFIG_USB_GSPCA_STK014=m
-> CONFIG_USB_GSPCA_STV0680=m
-> CONFIG_USB_GSPCA_SUNPLUS=m
-> CONFIG_USB_GSPCA_T613=m
-> CONFIG_USB_GSPCA_TV8532=m
-> CONFIG_USB_GSPCA_VC032X=m
-> CONFIG_USB_GSPCA_XIRLINK_CIT=m
-> CONFIG_USB_GSPCA_ZC3XX=m
-> CONFIG_VIDEO_PVRUSB2=m
-> CONFIG_VIDEO_PVRUSB2_SYSFS=y
-> CONFIG_VIDEO_PVRUSB2_DVB=y
-> # CONFIG_VIDEO_PVRUSB2_DEBUGIFC is not set
-> CONFIG_VIDEO_HDPVR=m
-> CONFIG_VIDEO_EM28XX=m
-> CONFIG_VIDEO_EM28XX_ALSA=m
-> CONFIG_VIDEO_EM28XX_DVB=m
-> CONFIG_VIDEO_TLG2300=m
-> CONFIG_VIDEO_CX231XX=m
-> CONFIG_VIDEO_CX231XX_ALSA=m
-> CONFIG_VIDEO_CX231XX_DVB=m
-> CONFIG_VIDEO_USBVISION=m
-> CONFIG_VIDEO_USBVIDEO=m
-> CONFIG_USB_VICAM=m
-> CONFIG_USB_IBMCAM=m
-> CONFIG_USB_KONICAWC=m
-> CONFIG_USB_ET61X251=m
-> CONFIG_USB_SE401=m
-> CONFIG_USB_SN9C102=m
-> CONFIG_USB_PWC=m
-> # CONFIG_USB_PWC_DEBUG is not set
-> CONFIG_USB_PWC_INPUT_EVDEV=y
-> CONFIG_USB_ZR364XX=m
-> CONFIG_USB_STKWEBCAM=m
-> CONFIG_USB_S2255=m
-> CONFIG_V4L_MEM2MEM_DRIVERS=y
-> # CONFIG_VIDEO_MEM2MEM_TESTDEV is not set
-> CONFIG_RADIO_ADAPTERS=y
-> CONFIG_RADIO_CADET=m
-> CONFIG_RADIO_RTRACK=m
-> CONFIG_RADIO_RTRACK2=m
-> CONFIG_RADIO_AZTECH=m
-> CONFIG_RADIO_GEMTEK=m
-> CONFIG_RADIO_GEMTEK_PCI=m
-> CONFIG_RADIO_MAXIRADIO=m
-> CONFIG_RADIO_MAESTRO=m
-> CONFIG_RADIO_MIROPCM20=m
-> CONFIG_RADIO_SF16FMI=m
-> CONFIG_RADIO_SF16FMR2=m
-> CONFIG_RADIO_TERRATEC=m
-> CONFIG_RADIO_TRUST=m
-> CONFIG_RADIO_TYPHOON=m
-> CONFIG_RADIO_ZOLTRIX=m
-> CONFIG_I2C_SI4713=m
-> CONFIG_RADIO_SI4713=m
-> CONFIG_USB_DSBR=m
-> CONFIG_RADIO_SI470X=y
-> CONFIG_USB_SI470X=m
-> CONFIG_I2C_SI470X=m
-> CONFIG_USB_MR800=m
-> CONFIG_RADIO_TEA5764=m
-> CONFIG_RADIO_SAA7706H=m
-> CONFIG_RADIO_TEF6862=m
-> CONFIG_RADIO_TIMBERDALE=m
-> CONFIG_DVB_MAX_ADAPTERS=8
-> CONFIG_DVB_DYNAMIC_MINORS=y
-> CONFIG_DVB_CAPTURE_DRIVERS=y
-> 
-> #
-> # Supported SAA7146 based PCI Adapters
-> #
-> CONFIG_TTPCI_EEPROM=m
-> CONFIG_DVB_AV7110=m
-> CONFIG_DVB_AV7110_OSD=y
-> CONFIG_DVB_BUDGET_CORE=m
-> CONFIG_DVB_BUDGET=m
-> CONFIG_DVB_BUDGET_CI=m
-> CONFIG_DVB_BUDGET_AV=m
-> CONFIG_DVB_BUDGET_PATCH=m
-> 
-> #
-> # Supported USB Adapters
-> #
-> CONFIG_DVB_USB=m
-> # CONFIG_DVB_USB_DEBUG is not set
-> CONFIG_DVB_USB_A800=m
-> CONFIG_DVB_USB_DIBUSB_MB=m
-> CONFIG_DVB_USB_DIBUSB_MB_FAULTY=y
-> CONFIG_DVB_USB_DIBUSB_MC=m
-> CONFIG_DVB_USB_DIB0700=m
-> CONFIG_DVB_USB_UMT_010=m
-> CONFIG_DVB_USB_CXUSB=m
-> CONFIG_DVB_USB_M920X=m
-> CONFIG_DVB_USB_GL861=m
-> CONFIG_DVB_USB_AU6610=m
-> CONFIG_DVB_USB_DIGITV=m
-> CONFIG_DVB_USB_VP7045=m
-> CONFIG_DVB_USB_VP702X=m
-> CONFIG_DVB_USB_GP8PSK=m
-> CONFIG_DVB_USB_NOVA_T_USB2=m
-> CONFIG_DVB_USB_TTUSB2=m
-> CONFIG_DVB_USB_DTT200U=m
-> CONFIG_DVB_USB_OPERA1=m
-> CONFIG_DVB_USB_AF9005=m
-> CONFIG_DVB_USB_AF9005_REMOTE=m
-> CONFIG_DVB_USB_DW2102=m
-> CONFIG_DVB_USB_CINERGY_T2=m
-> CONFIG_DVB_USB_ANYSEE=m
-> CONFIG_DVB_USB_DTV5100=m
-> CONFIG_DVB_USB_AF9015=m
-> CONFIG_DVB_USB_CE6230=m
-> CONFIG_DVB_USB_FRIIO=m
-> CONFIG_DVB_USB_EC168=m
-> CONFIG_DVB_USB_AZ6027=m
-> CONFIG_DVB_USB_LME2510=m
-> CONFIG_DVB_TTUSB_BUDGET=m
-> CONFIG_DVB_TTUSB_DEC=m
-> CONFIG_SMS_SIANO_MDTV=m
-> 
-> #
-> # Siano module components
-> #
-> CONFIG_SMS_USB_DRV=m
-> CONFIG_SMS_SDIO_DRV=m
-> 
-> #
-> # Supported FlexCopII (B2C2) Adapters
-> #
-> CONFIG_DVB_B2C2_FLEXCOP=m
-> CONFIG_DVB_B2C2_FLEXCOP_PCI=m
-> CONFIG_DVB_B2C2_FLEXCOP_USB=m
-> # CONFIG_DVB_B2C2_FLEXCOP_DEBUG is not set
-> 
-> #
-> # Supported BT878 Adapters
-> #
-> CONFIG_DVB_BT8XX=m
-> 
-> #
-> # Supported Pluto2 Adapters
-> #
-> CONFIG_DVB_PLUTO2=m
-> 
-> #
-> # Supported SDMC DM1105 Adapters
-> #
-> CONFIG_DVB_DM1105=m
-> CONFIG_DVB_FIREDTV=m
-> CONFIG_DVB_FIREDTV_FIREWIRE=y
-> # CONFIG_DVB_FIREDTV_IEEE1394 is not set
-> CONFIG_DVB_FIREDTV_INPUT=y
-> 
-> #
-> # Supported Earthsoft PT1 Adapters
-> #
-> CONFIG_DVB_PT1=m
-> 
-> #
-> # Supported Mantis Adapters
-> #
-> CONFIG_MANTIS_CORE=m
-> CONFIG_DVB_MANTIS=m
-> CONFIG_DVB_HOPPER=m
-> 
-> #
-> # Supported nGene Adapters
-> #
-> CONFIG_DVB_NGENE=m
-> 
-> #
-> # Supported DVB Frontends
-> #
-> CONFIG_DVB_FE_CUSTOMISE=y
-> 
-> #
-> # Customise DVB Frontends
-> #
-> 
-> #
-> # Multistandard (satellite) frontends
-> #
-> CONFIG_DVB_STB0899=m
-> CONFIG_DVB_STB6100=m
-> CONFIG_DVB_STV090x=m
-> CONFIG_DVB_STV6110x=m
-> 
-> #
-> # DVB-S (satellite) frontends
-> #
-> CONFIG_DVB_CX24110=m
-> CONFIG_DVB_CX24123=m
-> CONFIG_DVB_MT312=m
-> CONFIG_DVB_ZL10036=m
-> CONFIG_DVB_ZL10039=m
-> CONFIG_DVB_S5H1420=m
-> CONFIG_DVB_STV0288=m
-> CONFIG_DVB_STB6000=m
-> CONFIG_DVB_STV0299=m
-> CONFIG_DVB_STV6110=m
-> CONFIG_DVB_STV0900=m
-> CONFIG_DVB_TDA8083=m
-> CONFIG_DVB_TDA10086=m
-> CONFIG_DVB_TDA8261=m
-> CONFIG_DVB_VES1X93=m
-> CONFIG_DVB_TUNER_ITD1000=m
-> CONFIG_DVB_TUNER_CX24113=m
-> CONFIG_DVB_TDA826X=m
-> CONFIG_DVB_TUA6100=m
-> CONFIG_DVB_CX24116=m
-> CONFIG_DVB_SI21XX=m
-> CONFIG_DVB_DS3000=m
-> CONFIG_DVB_MB86A16=m
-> 
-> #
-> # DVB-T (terrestrial) frontends
-> #
-> CONFIG_DVB_SP8870=m
-> CONFIG_DVB_SP887X=m
-> CONFIG_DVB_CX22700=m
-> CONFIG_DVB_CX22702=m
-> CONFIG_DVB_S5H1432=m
-> CONFIG_DVB_DRX397XD=m
-> CONFIG_DVB_L64781=m
-> CONFIG_DVB_TDA1004X=m
-> CONFIG_DVB_NXT6000=m
-> CONFIG_DVB_MT352=m
-> CONFIG_DVB_ZL10353=m
-> CONFIG_DVB_DIB3000MB=m
-> CONFIG_DVB_DIB3000MC=m
-> CONFIG_DVB_DIB7000M=m
-> CONFIG_DVB_DIB7000P=m
-> CONFIG_DVB_TDA10048=m
-> CONFIG_DVB_AF9013=m
-> CONFIG_DVB_EC100=m
-> 
-> #
-> # DVB-C (cable) frontends
-> #
-> CONFIG_DVB_VES1820=m
-> CONFIG_DVB_TDA10021=m
-> CONFIG_DVB_TDA10023=m
-> CONFIG_DVB_STV0297=m
-> 
-> #
-> # ATSC (North American/Korean Terrestrial/Cable DTV) 
-> frontends
-> #
-> CONFIG_DVB_NXT200X=m
-> CONFIG_DVB_OR51211=m
-> CONFIG_DVB_OR51132=m
-> CONFIG_DVB_BCM3510=m
-> CONFIG_DVB_LGDT330X=m
-> CONFIG_DVB_LGDT3305=m
-> CONFIG_DVB_S5H1409=m
-> CONFIG_DVB_AU8522=m
-> CONFIG_DVB_S5H1411=m
-> 
-> #
-> # ISDB-T (terrestrial) frontends
-> #
-> CONFIG_DVB_S921=m
-> CONFIG_DVB_DIB8000=m
-> 
-> #
-> # Digital terrestrial only tuners/PLL
-> #
-> CONFIG_DVB_PLL=m
-> CONFIG_DVB_TUNER_DIB0070=m
-> CONFIG_DVB_TUNER_DIB0090=m
-> 
-> #
-> # SEC control devices for DVB-S
-> #
-> CONFIG_DVB_LNBP21=m
-> CONFIG_DVB_ISL6405=m
-> CONFIG_DVB_ISL6421=m
-> CONFIG_DVB_ISL6423=m
-> CONFIG_DVB_LGS8GL5=m
-> CONFIG_DVB_LGS8GXX=m
-> CONFIG_DVB_ATBM8830=m
-> CONFIG_DVB_TDA665x=m
-> CONFIG_DVB_IX2505V=m
-> 
-> #
-> # Tools to develop new frontends
-> #
-> # CONFIG_DVB_DUMMY_FE is not set
-> CONFIG_DAB=y
-> CONFIG_USB_DABUSB=y
-> 
-> #
-> # Graphics support
-> #
-> CONFIG_AGP=y
-> CONFIG_AGP_ALI=y
-> CONFIG_AGP_ATI=y
-> CONFIG_AGP_AMD=y
-> CONFIG_AGP_AMD64=y
-> CONFIG_AGP_INTEL=y
-> CONFIG_AGP_NVIDIA=y
-> CONFIG_AGP_SIS=y
-> CONFIG_AGP_SWORKS=y
-> CONFIG_AGP_VIA=y
-> CONFIG_AGP_EFFICEON=y
-> CONFIG_VGA_ARB=y
-> CONFIG_VGA_ARB_MAX_GPUS=16
-> CONFIG_VGA_SWITCHEROO=y
-> CONFIG_DRM=y
-> CONFIG_DRM_KMS_HELPER=y
-> CONFIG_DRM_TTM=y
-> CONFIG_DRM_TDFX=y
-> CONFIG_DRM_R128=y
-> CONFIG_DRM_RADEON=y
-> # CONFIG_DRM_RADEON_KMS is not set
-> CONFIG_DRM_I810=y
-> CONFIG_DRM_I830=m
-> CONFIG_DRM_I915=m
-> CONFIG_DRM_I915_KMS=y
-> CONFIG_DRM_MGA=y
-> CONFIG_DRM_SIS=m
-> CONFIG_DRM_VIA=y
-> CONFIG_DRM_SAVAGE=y
-> CONFIG_STUB_POULSBO=m
-> CONFIG_VGASTATE=y
-> CONFIG_VIDEO_OUTPUT_CONTROL=y
-> CONFIG_FB=y
-> CONFIG_FIRMWARE_EDID=y
-> CONFIG_FB_DDC=y
-> CONFIG_FB_BOOT_VESA_SUPPORT=y
-> CONFIG_FB_CFB_FILLRECT=y
-> CONFIG_FB_CFB_COPYAREA=y
-> CONFIG_FB_CFB_IMAGEBLIT=y
-> # CONFIG_FB_CFB_REV_PIXELS_IN_BYTE is not set
-> CONFIG_FB_SYS_FILLRECT=y
-> CONFIG_FB_SYS_COPYAREA=y
-> CONFIG_FB_SYS_IMAGEBLIT=y
-> CONFIG_FB_FOREIGN_ENDIAN=y
-> CONFIG_FB_BOTH_ENDIAN=y
-> # CONFIG_FB_BIG_ENDIAN is not set
-> # CONFIG_FB_LITTLE_ENDIAN is not set
-> CONFIG_FB_SYS_FOPS=y
-> CONFIG_FB_DEFERRED_IO=y
-> CONFIG_FB_HECUBA=y
-> CONFIG_FB_SVGALIB=y
-> # CONFIG_FB_MACMODES is not set
-> CONFIG_FB_BACKLIGHT=y
-> CONFIG_FB_MODE_HELPERS=y
-> CONFIG_FB_TILEBLITTING=y
-> 
-> #
-> # Frame buffer hardware drivers
-> #
-> CONFIG_FB_CIRRUS=y
-> CONFIG_FB_PM2=y
-> CONFIG_FB_PM2_FIFO_DISCONNECT=y
-> CONFIG_FB_CYBER2000=y
-> CONFIG_FB_ARC=y
-> CONFIG_FB_ASILIANT=y
-> CONFIG_FB_IMSTT=y
-> CONFIG_FB_VGA16=y
-> CONFIG_FB_UVESA=y
-> CONFIG_FB_VESA=y
-> CONFIG_FB_EFI=y
-> CONFIG_FB_N411=y
-> CONFIG_FB_HGA=y
-> CONFIG_FB_HGA_ACCEL=y
-> CONFIG_FB_S1D13XXX=y
-> CONFIG_FB_NVIDIA=y
-> CONFIG_FB_NVIDIA_I2C=y
-> # CONFIG_FB_NVIDIA_DEBUG is not set
-> CONFIG_FB_NVIDIA_BACKLIGHT=y
-> CONFIG_FB_RIVA=y
-> CONFIG_FB_RIVA_I2C=y
-> # CONFIG_FB_RIVA_DEBUG is not set
-> CONFIG_FB_RIVA_BACKLIGHT=y
-> CONFIG_FB_I810=y
-> CONFIG_FB_I810_GTF=y
-> CONFIG_FB_I810_I2C=y
-> CONFIG_FB_LE80578=y
-> CONFIG_FB_CARILLO_RANCH=y
-> CONFIG_FB_INTEL=m
-> # CONFIG_FB_INTEL_DEBUG is not set
-> CONFIG_FB_INTEL_I2C=y
-> CONFIG_FB_MATROX=y
-> CONFIG_FB_MATROX_MILLENIUM=y
-> CONFIG_FB_MATROX_MYSTIQUE=y
-> CONFIG_FB_MATROX_G=y
-> CONFIG_FB_MATROX_I2C=y
-> CONFIG_FB_MATROX_MAVEN=y
-> CONFIG_FB_RADEON=y
-> CONFIG_FB_RADEON_I2C=y
-> CONFIG_FB_RADEON_BACKLIGHT=y
-> # CONFIG_FB_RADEON_DEBUG is not set
-> CONFIG_FB_ATY128=y
-> CONFIG_FB_ATY128_BACKLIGHT=y
-> CONFIG_FB_ATY=y
-> CONFIG_FB_ATY_CT=y
-> CONFIG_FB_ATY_GENERIC_LCD=y
-> CONFIG_FB_ATY_GX=y
-> CONFIG_FB_ATY_BACKLIGHT=y
-> CONFIG_FB_S3=y
-> CONFIG_FB_SAVAGE=y
-> CONFIG_FB_SAVAGE_I2C=y
-> CONFIG_FB_SAVAGE_ACCEL=y
-> CONFIG_FB_SIS=y
-> CONFIG_FB_SIS_300=y
-> CONFIG_FB_SIS_315=y
-> CONFIG_FB_VIA=y
-> # CONFIG_FB_VIA_DIRECT_PROCFS is not set
-> CONFIG_FB_NEOMAGIC=y
-> CONFIG_FB_KYRO=y
-> CONFIG_FB_3DFX=y
-> CONFIG_FB_3DFX_ACCEL=y
-> CONFIG_FB_3DFX_I2C=y
-> CONFIG_FB_VOODOO1=y
-> CONFIG_FB_VT8623=y
-> CONFIG_FB_TRIDENT=y
-> CONFIG_FB_ARK=y
-> CONFIG_FB_PM3=y
-> CONFIG_FB_CARMINE=y
-> # CONFIG_FB_CARMINE_DRAM_EVAL is not set
-> CONFIG_CARMINE_DRAM_CUSTOM=y
-> CONFIG_FB_GEODE=y
-> CONFIG_FB_GEODE_LX=y
-> CONFIG_FB_GEODE_GX=y
-> CONFIG_FB_GEODE_GX1=y
-> CONFIG_FB_TMIO=m
-> CONFIG_FB_TMIO_ACCELL=y
-> CONFIG_FB_SM501=m
-> # CONFIG_FB_VIRTUAL is not set
-> CONFIG_FB_METRONOME=y
-> CONFIG_FB_MB862XX=y
-> CONFIG_FB_MB862XX_PCI_GDC=y
-> CONFIG_FB_BROADSHEET=y
-> CONFIG_BACKLIGHT_LCD_SUPPORT=y
-> CONFIG_LCD_CLASS_DEVICE=m
-> CONFIG_LCD_L4F00242T03=m
-> CONFIG_LCD_LMS283GF05=m
-> CONFIG_LCD_LTV350QV=m
-> CONFIG_LCD_ILI9320=m
-> CONFIG_LCD_TDO24M=m
-> CONFIG_LCD_VGG2432A4=m
-> CONFIG_LCD_PLATFORM=m
-> CONFIG_LCD_S6E63M0=m
-> CONFIG_BACKLIGHT_CLASS_DEVICE=y
-> CONFIG_BACKLIGHT_GENERIC=y
-> CONFIG_BACKLIGHT_PROGEAR=m
-> CONFIG_BACKLIGHT_CARILLO_RANCH=m
-> CONFIG_BACKLIGHT_DA903X=m
-> CONFIG_BACKLIGHT_MAX8925=m
-> CONFIG_BACKLIGHT_MBP_NVIDIA=m
-> CONFIG_BACKLIGHT_SAHARA=m
-> CONFIG_BACKLIGHT_WM831X=m
-> CONFIG_BACKLIGHT_ADP5520=m
-> CONFIG_BACKLIGHT_ADP8860=m
-> CONFIG_BACKLIGHT_88PM860X=m
-> CONFIG_BACKLIGHT_PCF50633=m
-> 
-> #
-> # Display device support
-> #
-> CONFIG_DISPLAY_SUPPORT=y
-> 
-> #
-> # Display hardware drivers
-> #
-> 
-> #
-> # Console display driver support
-> #
-> CONFIG_VGA_CONSOLE=y
-> CONFIG_VGACON_SOFT_SCROLLBACK=y
-> CONFIG_VGACON_SOFT_SCROLLBACK_SIZE=256
-> CONFIG_MDA_CONSOLE=y
-> CONFIG_DUMMY_CONSOLE=y
-> CONFIG_FRAMEBUFFER_CONSOLE=y
-> CONFIG_FRAMEBUFFER_CONSOLE_DETECT_PRIMARY=y
-> CONFIG_FRAMEBUFFER_CONSOLE_ROTATION=y
-> CONFIG_FONTS=y
-> CONFIG_FONT_8x8=y
-> CONFIG_FONT_8x16=y
-> CONFIG_FONT_6x11=y
-> CONFIG_FONT_7x14=y
-> CONFIG_FONT_PEARL_8x8=y
-> CONFIG_FONT_ACORN_8x8=y
-> CONFIG_FONT_MINI_4x6=y
-> CONFIG_FONT_SUN8x16=y
-> CONFIG_FONT_SUN12x22=y
-> CONFIG_FONT_10x18=y
-> CONFIG_LOGO=y
-> # CONFIG_LOGO_LINUX_MONO is not set
-> # CONFIG_LOGO_LINUX_VGA16 is not set
-> CONFIG_LOGO_LINUX_CLUT224=y
-> CONFIG_SOUND=m
-> CONFIG_SOUND_OSS_CORE=y
-> CONFIG_SOUND_OSS_CORE_PRECLAIM=y
-> CONFIG_SND=m
-> CONFIG_SND_TIMER=m
-> CONFIG_SND_PCM=m
-> CONFIG_SND_HWDEP=m
-> CONFIG_SND_RAWMIDI=m
-> CONFIG_SND_JACK=y
-> CONFIG_SND_SEQUENCER=m
-> CONFIG_SND_SEQ_DUMMY=m
-> CONFIG_SND_OSSEMUL=y
-> CONFIG_SND_MIXER_OSS=m
-> CONFIG_SND_PCM_OSS=m
-> CONFIG_SND_PCM_OSS_PLUGINS=y
-> CONFIG_SND_SEQUENCER_OSS=y
-> CONFIG_SND_HRTIMER=m
-> CONFIG_SND_SEQ_HRTIMER_DEFAULT=y
-> CONFIG_SND_DYNAMIC_MINORS=y
-> CONFIG_SND_SUPPORT_OLD_API=y
-> CONFIG_SND_VERBOSE_PROCFS=y
-> # CONFIG_SND_VERBOSE_PRINTK is not set
-> # CONFIG_SND_DEBUG is not set
-> CONFIG_SND_VMASTER=y
-> CONFIG_SND_DMA_SGBUF=y
-> CONFIG_SND_RAWMIDI_SEQ=m
-> CONFIG_SND_OPL3_LIB_SEQ=m
-> CONFIG_SND_OPL4_LIB_SEQ=m
-> CONFIG_SND_SBAWE_SEQ=m
-> CONFIG_SND_EMU10K1_SEQ=m
-> CONFIG_SND_MPU401_UART=m
-> CONFIG_SND_OPL3_LIB=m
-> CONFIG_SND_OPL4_LIB=m
-> CONFIG_SND_VX_LIB=m
-> CONFIG_SND_AC97_CODEC=m
-> CONFIG_SND_DRIVERS=y
-> CONFIG_SND_PCSP=m
-> CONFIG_SND_DUMMY=m
-> CONFIG_SND_ALOOP=m
-> CONFIG_SND_VIRMIDI=m
-> CONFIG_SND_MTPAV=m
-> CONFIG_SND_MTS64=m
-> CONFIG_SND_SERIAL_U16550=m
-> CONFIG_SND_MPU401=m
-> CONFIG_SND_PORTMAN2X4=m
-> CONFIG_SND_AC97_POWER_SAVE=y
-> CONFIG_SND_AC97_POWER_SAVE_DEFAULT=0
-> CONFIG_SND_WSS_LIB=m
-> CONFIG_SND_SB_COMMON=m
-> CONFIG_SND_SB8_DSP=m
-> CONFIG_SND_SB16_DSP=m
-> CONFIG_SND_ISA=y
-> CONFIG_SND_ADLIB=m
-> CONFIG_SND_AD1816A=m
-> CONFIG_SND_AD1848=m
-> CONFIG_SND_ALS100=m
-> CONFIG_SND_AZT1605=m
-> CONFIG_SND_AZT2316=m
-> CONFIG_SND_AZT2320=m
-> CONFIG_SND_CMI8330=m
-> CONFIG_SND_CS4231=m
-> CONFIG_SND_CS4236=m
-> CONFIG_SND_ES1688=m
-> CONFIG_SND_ES18XX=m
-> CONFIG_SND_SC6000=m
-> CONFIG_SND_GUSCLASSIC=m
-> CONFIG_SND_GUSEXTREME=m
-> CONFIG_SND_GUSMAX=m
-> CONFIG_SND_INTERWAVE=m
-> CONFIG_SND_INTERWAVE_STB=m
-> CONFIG_SND_JAZZ16=m
-> CONFIG_SND_OPL3SA2=m
-> CONFIG_SND_OPTI92X_AD1848=m
-> CONFIG_SND_OPTI92X_CS4231=m
-> CONFIG_SND_OPTI93X=m
-> CONFIG_SND_MIRO=m
-> CONFIG_SND_SB8=m
-> CONFIG_SND_SB16=m
-> CONFIG_SND_SBAWE=m
-> CONFIG_SND_SB16_CSP=y
-> CONFIG_SND_SSCAPE=m
-> CONFIG_SND_WAVEFRONT=m
-> CONFIG_SND_MSND_PINNACLE=m
-> CONFIG_SND_MSND_CLASSIC=m
-> CONFIG_SND_PCI=y
-> CONFIG_SND_AD1889=m
-> CONFIG_SND_ALS300=m
-> CONFIG_SND_ALS4000=m
-> CONFIG_SND_ALI5451=m
-> CONFIG_SND_ASIHPI=m
-> CONFIG_SND_ATIIXP=m
-> CONFIG_SND_ATIIXP_MODEM=m
-> CONFIG_SND_AU8810=m
-> CONFIG_SND_AU8820=m
-> CONFIG_SND_AU8830=m
-> CONFIG_SND_AW2=m
-> CONFIG_SND_AZT3328=m
-> CONFIG_SND_BT87X=m
-> # CONFIG_SND_BT87X_OVERCLOCK is not set
-> CONFIG_SND_CA0106=m
-> CONFIG_SND_CMIPCI=m
-> CONFIG_SND_OXYGEN_LIB=m
-> CONFIG_SND_OXYGEN=m
-> CONFIG_SND_CS4281=m
-> CONFIG_SND_CS46XX=m
-> CONFIG_SND_CS46XX_NEW_DSP=y
-> CONFIG_SND_CS5530=m
-> CONFIG_SND_CS5535AUDIO=m
-> CONFIG_SND_CTXFI=m
-> CONFIG_SND_DARLA20=m
-> CONFIG_SND_GINA20=m
-> CONFIG_SND_LAYLA20=m
-> CONFIG_SND_DARLA24=m
-> CONFIG_SND_GINA24=m
-> CONFIG_SND_LAYLA24=m
-> CONFIG_SND_MONA=m
-> CONFIG_SND_MIA=m
-> CONFIG_SND_ECHO3G=m
-> CONFIG_SND_INDIGO=m
-> CONFIG_SND_INDIGOIO=m
-> CONFIG_SND_INDIGODJ=m
-> CONFIG_SND_INDIGOIOX=m
-> CONFIG_SND_INDIGODJX=m
-> CONFIG_SND_EMU10K1=m
-> CONFIG_SND_EMU10K1X=m
-> CONFIG_SND_ENS1370=m
-> CONFIG_SND_ENS1371=m
-> CONFIG_SND_ES1938=m
-> CONFIG_SND_ES1968=m
-> CONFIG_SND_ES1968_INPUT=y
-> CONFIG_SND_FM801=m
-> CONFIG_SND_FM801_TEA575X_BOOL=y
-> CONFIG_SND_FM801_TEA575X=m
-> CONFIG_SND_HDA_INTEL=m
-> CONFIG_SND_HDA_HWDEP=y
-> CONFIG_SND_HDA_RECONFIG=y
-> CONFIG_SND_HDA_INPUT_BEEP=y
-> CONFIG_SND_HDA_INPUT_BEEP_MODE=1
-> CONFIG_SND_HDA_INPUT_JACK=y
-> # CONFIG_SND_HDA_PATCH_LOADER is not set
-> CONFIG_SND_HDA_CODEC_REALTEK=y
-> CONFIG_SND_HDA_CODEC_ANALOG=y
-> CONFIG_SND_HDA_CODEC_SIGMATEL=y
-> CONFIG_SND_HDA_CODEC_VIA=y
-> CONFIG_SND_HDA_CODEC_HDMI=y
-> CONFIG_SND_HDA_CODEC_CIRRUS=y
-> CONFIG_SND_HDA_CODEC_CONEXANT=y
-> CONFIG_SND_HDA_CODEC_CA0110=y
-> CONFIG_SND_HDA_CODEC_CMEDIA=y
-> CONFIG_SND_HDA_CODEC_SI3054=y
-> CONFIG_SND_HDA_GENERIC=y
-> # CONFIG_SND_HDA_POWER_SAVE is not set
-> CONFIG_SND_HDSP=m
-> CONFIG_SND_HDSPM=m
-> CONFIG_SND_HIFIER=m
-> CONFIG_SND_ICE1712=m
-> CONFIG_SND_ICE1724=m
-> CONFIG_SND_INTEL8X0=m
-> CONFIG_SND_INTEL8X0M=m
-> CONFIG_SND_KORG1212=m
-> CONFIG_SND_LX6464ES=m
-> CONFIG_SND_MAESTRO3=m
-> CONFIG_SND_MAESTRO3_INPUT=y
-> CONFIG_SND_MIXART=m
-> CONFIG_SND_NM256=m
-> CONFIG_SND_PCXHR=m
-> CONFIG_SND_RIPTIDE=m
-> CONFIG_SND_RME32=m
-> CONFIG_SND_RME96=m
-> CONFIG_SND_RME9652=m
-> CONFIG_SND_SIS7019=m
-> CONFIG_SND_SONICVIBES=m
-> CONFIG_SND_TRIDENT=m
-> CONFIG_SND_VIA82XX=m
-> CONFIG_SND_VIA82XX_MODEM=m
-> CONFIG_SND_VIRTUOSO=m
-> CONFIG_SND_VX222=m
-> CONFIG_SND_YMFPCI=m
-> CONFIG_SND_SPI=y
-> CONFIG_SND_USB=y
-> CONFIG_SND_USB_AUDIO=m
-> CONFIG_SND_USB_UA101=m
-> CONFIG_SND_USB_USX2Y=m
-> CONFIG_SND_USB_CAIAQ=m
-> CONFIG_SND_USB_CAIAQ_INPUT=y
-> CONFIG_SND_USB_US122L=m
-> CONFIG_SND_PCMCIA=y
-> CONFIG_SND_VXPOCKET=m
-> CONFIG_SND_PDAUDIOCF=m
-> CONFIG_SND_SOC=m
-> CONFIG_SND_SOC_I2C_AND_SPI=m
-> CONFIG_SND_SOC_ALL_CODECS=m
-> CONFIG_SND_SOC_88PM860X=m
-> CONFIG_SND_SOC_WM_HUBS=m
-> CONFIG_SND_SOC_AD1836=m
-> CONFIG_SND_SOC_AD193X=m
-> CONFIG_SND_SOC_AD73311=m
-> CONFIG_SND_SOC_ADS117X=m
-> CONFIG_SND_SOC_AK4104=m
-> CONFIG_SND_SOC_AK4535=m
-> CONFIG_SND_SOC_AK4642=m
-> CONFIG_SND_SOC_AK4671=m
-> CONFIG_SND_SOC_CS42L51=m
-> CONFIG_SND_SOC_CS4270=m
-> CONFIG_SND_SOC_L3=m
-> CONFIG_SND_SOC_DA7210=m
-> CONFIG_SND_SOC_MAX98088=m
-> CONFIG_SND_SOC_PCM3008=m
-> CONFIG_SND_SOC_SPDIF=m
-> CONFIG_SND_SOC_SSM2602=m
-> CONFIG_SND_SOC_TLV320AIC23=m
-> CONFIG_SND_SOC_TLV320AIC26=m
-> CONFIG_SND_SOC_TLV320AIC3X=m
-> CONFIG_SND_SOC_TLV320DAC33=m
-> CONFIG_SND_SOC_TWL4030=m
-> CONFIG_SND_SOC_TWL6040=m
-> CONFIG_SND_SOC_UDA134X=m
-> CONFIG_SND_SOC_UDA1380=m
-> CONFIG_SND_SOC_WM8350=m
-> CONFIG_SND_SOC_WM8400=m
-> CONFIG_SND_SOC_WM8510=m
-> CONFIG_SND_SOC_WM8523=m
-> CONFIG_SND_SOC_WM8580=m
-> CONFIG_SND_SOC_WM8711=m
-> CONFIG_SND_SOC_WM8727=m
-> CONFIG_SND_SOC_WM8728=m
-> CONFIG_SND_SOC_WM8731=m
-> CONFIG_SND_SOC_WM8741=m
-> CONFIG_SND_SOC_WM8750=m
-> CONFIG_SND_SOC_WM8753=m
-> CONFIG_SND_SOC_WM8776=m
-> CONFIG_SND_SOC_WM8804=m
-> CONFIG_SND_SOC_WM8900=m
-> CONFIG_SND_SOC_WM8903=m
-> CONFIG_SND_SOC_WM8904=m
-> CONFIG_SND_SOC_WM8940=m
-> CONFIG_SND_SOC_WM8955=m
-> CONFIG_SND_SOC_WM8960=m
-> CONFIG_SND_SOC_WM8961=m
-> CONFIG_SND_SOC_WM8962=m
-> CONFIG_SND_SOC_WM8971=m
-> CONFIG_SND_SOC_WM8974=m
-> CONFIG_SND_SOC_WM8978=m
-> CONFIG_SND_SOC_WM8985=m
-> CONFIG_SND_SOC_WM8988=m
-> CONFIG_SND_SOC_WM8990=m
-> CONFIG_SND_SOC_WM8993=m
-> CONFIG_SND_SOC_WM8994=m
-> CONFIG_SND_SOC_WM9081=m
-> CONFIG_SND_SOC_MAX9877=m
-> CONFIG_SND_SOC_TPA6130A2=m
-> CONFIG_SND_SOC_WM2000=m
-> CONFIG_SND_SOC_WM9090=m
-> CONFIG_SOUND_PRIME=m
-> # CONFIG_SOUND_MSNDCLAS is not set
-> # CONFIG_SOUND_MSNDPIN is not set
-> CONFIG_SOUND_OSS=m
-> CONFIG_SOUND_TRACEINIT=y
-> CONFIG_SOUND_DMAP=y
-> CONFIG_SOUND_VMIDI=m
-> CONFIG_SOUND_TRIX=m
-> CONFIG_SOUND_MSS=m
-> CONFIG_SOUND_MPU401=m
-> CONFIG_SOUND_PAS=m
-> CONFIG_SOUND_PSS=m
-> CONFIG_PSS_MIXER=y
-> CONFIG_SOUND_SB=m
-> CONFIG_SOUND_YM3812=m
-> CONFIG_SOUND_UART6850=m
-> CONFIG_SOUND_AEDSP16=m
-> CONFIG_SC6600=y
-> CONFIG_SC6600_JOY=y
-> CONFIG_SC6600_CDROM=4
-> CONFIG_SC6600_CDROMBASE=0
-> CONFIG_SOUND_KAHLUA=m
-> CONFIG_AC97_BUS=m
-> CONFIG_HID_SUPPORT=y
-> CONFIG_HID=y
-> CONFIG_HIDRAW=y
-> 
-> #
-> # USB Input Devices
-> #
-> CONFIG_USB_HID=y
-> CONFIG_HID_PID=y
-> CONFIG_USB_HIDDEV=y
-> 
-> #
-> # Special HID drivers
-> #
-> CONFIG_HID_3M_PCT=m
-> CONFIG_HID_A4TECH=y
-> CONFIG_HID_ACRUX_FF=m
-> CONFIG_HID_APPLE=y
-> CONFIG_HID_BELKIN=y
-> CONFIG_HID_CANDO=m
-> CONFIG_HID_CHERRY=y
-> CONFIG_HID_CHICONY=y
-> CONFIG_HID_PRODIKEYS=m
-> CONFIG_HID_CYPRESS=y
-> CONFIG_HID_DRAGONRISE=y
-> CONFIG_DRAGONRISE_FF=y
-> CONFIG_HID_EGALAX=m
-> CONFIG_HID_ELECOM=m
-> CONFIG_HID_EZKEY=y
-> CONFIG_HID_KYE=y
-> CONFIG_HID_UCLOGIC=m
-> CONFIG_HID_WALTOP=m
-> CONFIG_HID_GYRATION=y
-> CONFIG_HID_TWINHAN=y
-> CONFIG_HID_KENSINGTON=y
-> CONFIG_HID_LOGITECH=y
-> CONFIG_LOGITECH_FF=y
-> CONFIG_LOGIRUMBLEPAD2_FF=y
-> CONFIG_LOGIG940_FF=y
-> CONFIG_LOGIWII_FF=y
-> CONFIG_HID_MAGICMOUSE=m
-> CONFIG_HID_MICROSOFT=y
-> CONFIG_HID_MOSART=m
-> CONFIG_HID_MONTEREY=y
-> CONFIG_HID_NTRIG=y
-> CONFIG_HID_ORTEK=m
-> CONFIG_HID_PANTHERLORD=y
-> CONFIG_PANTHERLORD_FF=y
-> CONFIG_HID_PETALYNX=y
-> CONFIG_HID_PICOLCD=m
-> CONFIG_HID_PICOLCD_FB=y
-> CONFIG_HID_PICOLCD_BACKLIGHT=y
-> CONFIG_HID_PICOLCD_LCD=y
-> CONFIG_HID_PICOLCD_LEDS=y
-> CONFIG_HID_QUANTA=m
-> CONFIG_HID_ROCCAT=m
-> CONFIG_HID_ROCCAT_KONE=m
-> CONFIG_HID_ROCCAT_PYRA=m
-> CONFIG_HID_SAMSUNG=y
-> CONFIG_HID_SONY=y
-> CONFIG_HID_STANTUM=m
-> CONFIG_HID_SUNPLUS=y
-> CONFIG_HID_GREENASIA=y
-> CONFIG_GREENASIA_FF=y
-> CONFIG_HID_SMARTJOYPLUS=y
-> CONFIG_SMARTJOYPLUS_FF=y
-> CONFIG_HID_TOPSEED=y
-> CONFIG_HID_THRUSTMASTER=y
-> CONFIG_THRUSTMASTER_FF=y
-> CONFIG_HID_WACOM=m
-> CONFIG_HID_WACOM_POWER_SUPPLY=y
-> CONFIG_HID_ZEROPLUS=y
-> CONFIG_ZEROPLUS_FF=y
-> CONFIG_HID_ZYDACRON=m
-> CONFIG_USB_SUPPORT=y
-> CONFIG_USB_ARCH_HAS_HCD=y
-> CONFIG_USB_ARCH_HAS_OHCI=y
-> CONFIG_USB_ARCH_HAS_EHCI=y
-> CONFIG_USB=y
-> # CONFIG_USB_DEBUG is not set
-> CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
-> 
-> #
-> # Miscellaneous USB options
-> #
-> # CONFIG_USB_DEVICEFS is not set
-> CONFIG_USB_DEVICE_CLASS=y
-> CONFIG_USB_DYNAMIC_MINORS=y
-> # CONFIG_USB_SUSPEND is not set
-> # CONFIG_USB_OTG_WHITELIST is not set
-> # CONFIG_USB_OTG_BLACKLIST_HUB is not set
-> CONFIG_USB_MON=y
-> CONFIG_USB_WUSB=y
-> CONFIG_USB_WUSB_CBAF=y
-> # CONFIG_USB_WUSB_CBAF_DEBUG is not set
-> 
-> #
-> # USB Host Controller Drivers
-> #
-> CONFIG_USB_C67X00_HCD=y
-> CONFIG_USB_XHCI_HCD=y
-> # CONFIG_USB_XHCI_HCD_DEBUGGING is not set
-> CONFIG_USB_EHCI_HCD=y
-> CONFIG_USB_EHCI_ROOT_HUB_TT=y
-> CONFIG_USB_EHCI_TT_NEWSCHED=y
-> CONFIG_USB_OXU210HP_HCD=y
-> CONFIG_USB_ISP116X_HCD=y
-> CONFIG_USB_ISP1760_HCD=y
-> CONFIG_USB_ISP1362_HCD=y
-> CONFIG_USB_OHCI_HCD=y
-> # CONFIG_USB_OHCI_BIG_ENDIAN_DESC is not set
-> # CONFIG_USB_OHCI_BIG_ENDIAN_MMIO is not set
-> CONFIG_USB_OHCI_LITTLE_ENDIAN=y
-> CONFIG_USB_UHCI_HCD=y
-> CONFIG_USB_U132_HCD=m
-> CONFIG_USB_SL811_HCD=y
-> CONFIG_USB_SL811_CS=y
-> CONFIG_USB_R8A66597_HCD=y
-> CONFIG_USB_WHCI_HCD=y
-> CONFIG_USB_HWA_HCD=y
-> 
-> #
-> # USB Device Class drivers
-> #
-> CONFIG_USB_ACM=y
-> CONFIG_USB_PRINTER=y
-> CONFIG_USB_WDM=y
-> CONFIG_USB_TMC=m
-> 
-> #
-> # NOTE: USB_STORAGE depends on SCSI but BLK_DEV_SD may
-> #
-> 
-> #
-> # also be needed; see USB_STORAGE Help for more info
-> #
-> CONFIG_USB_STORAGE=y
-> # CONFIG_USB_STORAGE_DEBUG is not set
-> CONFIG_USB_STORAGE_DATAFAB=y
-> CONFIG_USB_STORAGE_FREECOM=y
-> CONFIG_USB_STORAGE_ISD200=y
-> CONFIG_USB_STORAGE_USBAT=y
-> CONFIG_USB_STORAGE_SDDR09=y
-> CONFIG_USB_STORAGE_SDDR55=y
-> CONFIG_USB_STORAGE_JUMPSHOT=y
-> CONFIG_USB_STORAGE_ALAUDA=y
-> CONFIG_USB_STORAGE_ONETOUCH=y
-> CONFIG_USB_STORAGE_KARMA=y
-> CONFIG_USB_STORAGE_CYPRESS_ATACB=y
-> CONFIG_USB_UAS=y
-> # CONFIG_USB_LIBUSUAL is not set
-> 
-> #
-> # USB Imaging devices
-> #
-> CONFIG_USB_MDC800=m
-> CONFIG_USB_MICROTEK=m
-> 
-> #
-> # USB port drivers
-> #
-> CONFIG_USB_USS720=m
-> CONFIG_USB_SERIAL=m
-> CONFIG_USB_EZUSB=y
-> CONFIG_USB_SERIAL_GENERIC=y
-> CONFIG_USB_SERIAL_AIRCABLE=m
-> CONFIG_USB_SERIAL_ARK3116=m
-> CONFIG_USB_SERIAL_BELKIN=m
-> CONFIG_USB_SERIAL_CH341=m
-> CONFIG_USB_SERIAL_WHITEHEAT=m
-> CONFIG_USB_SERIAL_DIGI_ACCELEPORT=m
-> CONFIG_USB_SERIAL_CP210X=m
-> CONFIG_USB_SERIAL_CYPRESS_M8=m
-> CONFIG_USB_SERIAL_EMPEG=m
-> CONFIG_USB_SERIAL_FTDI_SIO=m
-> CONFIG_USB_SERIAL_FUNSOFT=m
-> CONFIG_USB_SERIAL_VISOR=m
-> CONFIG_USB_SERIAL_IPAQ=m
-> CONFIG_USB_SERIAL_IR=m
-> CONFIG_USB_SERIAL_EDGEPORT=m
-> CONFIG_USB_SERIAL_EDGEPORT_TI=m
-> CONFIG_USB_SERIAL_GARMIN=m
-> CONFIG_USB_SERIAL_IPW=m
-> CONFIG_USB_SERIAL_IUU=m
-> CONFIG_USB_SERIAL_KEYSPAN_PDA=m
-> CONFIG_USB_SERIAL_KEYSPAN=m
-> CONFIG_USB_SERIAL_KLSI=m
-> CONFIG_USB_SERIAL_KOBIL_SCT=m
-> CONFIG_USB_SERIAL_MCT_U232=m
-> CONFIG_USB_SERIAL_MOS7720=m
-> CONFIG_USB_SERIAL_MOS7715_PARPORT=y
-> CONFIG_USB_SERIAL_MOS7840=m
-> CONFIG_USB_SERIAL_MOTOROLA=m
-> CONFIG_USB_SERIAL_NAVMAN=m
-> CONFIG_USB_SERIAL_PL2303=m
-> CONFIG_USB_SERIAL_OTI6858=m
-> CONFIG_USB_SERIAL_QCAUX=m
-> CONFIG_USB_SERIAL_QUALCOMM=m
-> CONFIG_USB_SERIAL_SPCP8X5=m
-> CONFIG_USB_SERIAL_HP4X=m
-> CONFIG_USB_SERIAL_SAFE=m
-> CONFIG_USB_SERIAL_SAFE_PADDED=y
-> CONFIG_USB_SERIAL_SAMBA=m
-> CONFIG_USB_SERIAL_SIEMENS_MPI=m
-> CONFIG_USB_SERIAL_SIERRAWIRELESS=m
-> CONFIG_USB_SERIAL_SYMBOL=m
-> CONFIG_USB_SERIAL_TI=m
-> CONFIG_USB_SERIAL_CYBERJACK=m
-> CONFIG_USB_SERIAL_XIRCOM=m
-> CONFIG_USB_SERIAL_WWAN=m
-> CONFIG_USB_SERIAL_OPTION=m
-> CONFIG_USB_SERIAL_OMNINET=m
-> CONFIG_USB_SERIAL_OPTICON=m
-> CONFIG_USB_SERIAL_VIVOPAY_SERIAL=m
-> CONFIG_USB_SERIAL_ZIO=m
-> CONFIG_USB_SERIAL_SSU100=m
-> CONFIG_USB_SERIAL_DEBUG=m
-> 
-> #
-> # USB Miscellaneous drivers
-> #
-> CONFIG_USB_EMI62=m
-> CONFIG_USB_EMI26=m
-> CONFIG_USB_ADUTUX=m
-> CONFIG_USB_SEVSEG=m
-> CONFIG_USB_RIO500=m
-> CONFIG_USB_LEGOTOWER=m
-> CONFIG_USB_LCD=m
-> CONFIG_USB_LED=m
-> CONFIG_USB_CYPRESS_CY7C63=m
-> CONFIG_USB_CYTHERM=m
-> CONFIG_USB_IDMOUSE=m
-> CONFIG_USB_FTDI_ELAN=m
-> CONFIG_USB_APPLEDISPLAY=m
-> CONFIG_USB_SISUSBVGA=m
-> CONFIG_USB_SISUSBVGA_CON=y
-> CONFIG_USB_LD=m
-> CONFIG_USB_TRANCEVIBRATOR=m
-> CONFIG_USB_IOWARRIOR=m
-> # CONFIG_USB_TEST is not set
-> CONFIG_USB_ISIGHTFW=m
-> CONFIG_USB_YUREX=m
-> CONFIG_USB_ATM=m
-> CONFIG_USB_SPEEDTOUCH=m
-> CONFIG_USB_CXACRU=m
-> CONFIG_USB_UEAGLEATM=m
-> CONFIG_USB_XUSBATM=m
-> CONFIG_USB_GADGET=m
-> # CONFIG_USB_GADGET_DEBUG_FILES is not set
-> # CONFIG_USB_GADGET_DEBUG_FS is not set
-> CONFIG_USB_GADGET_VBUS_DRAW=2
-> CONFIG_USB_GADGET_SELECTED=y
-> # CONFIG_USB_GADGET_R8A66597 is not set
-> # CONFIG_USB_GADGET_M66592 is not set
-> # CONFIG_USB_GADGET_AMD5536UDC is not set
-> # CONFIG_USB_GADGET_CI13XXX is not set
-> # CONFIG_USB_GADGET_NET2280 is not set
-> # CONFIG_USB_GADGET_GOKU is not set
-> CONFIG_USB_GADGET_LANGWELL=y
-> CONFIG_USB_LANGWELL=m
-> # CONFIG_USB_GADGET_DUMMY_HCD is not set
-> CONFIG_USB_GADGET_DUALSPEED=y
-> CONFIG_USB_ZERO=m
-> CONFIG_USB_AUDIO=m
-> CONFIG_USB_ETH=m
-> CONFIG_USB_ETH_RNDIS=y
-> CONFIG_USB_ETH_EEM=y
-> CONFIG_USB_GADGETFS=m
-> CONFIG_USB_FUNCTIONFS=m
-> CONFIG_USB_FUNCTIONFS_ETH=y
-> CONFIG_USB_FUNCTIONFS_RNDIS=y
-> CONFIG_USB_FUNCTIONFS_GENERIC=y
-> CONFIG_USB_FILE_STORAGE=m
-> CONFIG_USB_FILE_STORAGE_TEST=y
-> CONFIG_USB_MASS_STORAGE=m
-> CONFIG_USB_G_SERIAL=m
-> CONFIG_USB_MIDI_GADGET=m
-> CONFIG_USB_G_PRINTER=m
-> CONFIG_USB_CDC_COMPOSITE=m
-> CONFIG_USB_G_NOKIA=m
-> CONFIG_USB_G_MULTI=m
-> CONFIG_USB_G_MULTI_RNDIS=y
-> CONFIG_USB_G_MULTI_CDC=y
-> CONFIG_USB_G_HID=m
-> CONFIG_USB_G_DBGP=m
-> CONFIG_USB_G_DBGP_PRINTK=y
-> # CONFIG_USB_G_DBGP_SERIAL is not set
-> CONFIG_USB_G_WEBCAM=m
-> 
-> #
-> # OTG and related infrastructure
-> #
-> CONFIG_USB_OTG_UTILS=y
-> CONFIG_USB_GPIO_VBUS=m
-> CONFIG_TWL4030_USB=m
-> CONFIG_NOP_USB_XCEIV=m
-> CONFIG_UWB=y
-> CONFIG_UWB_HWA=y
-> CONFIG_UWB_WHCI=y
-> CONFIG_UWB_I1480U=m
-> CONFIG_MMC=y
-> # CONFIG_MMC_DEBUG is not set
-> # CONFIG_MMC_UNSAFE_RESUME is not set
-> 
-> #
-> # MMC/SD/SDIO Card Drivers
-> #
-> CONFIG_MMC_BLOCK=y
-> CONFIG_MMC_BLOCK_MINORS=8
-> CONFIG_MMC_BLOCK_BOUNCE=y
-> CONFIG_SDIO_UART=y
-> CONFIG_MMC_TEST=y
-> 
-> #
-> # MMC/SD/SDIO Host Controller Drivers
-> #
-> CONFIG_MMC_SDHCI=y
-> CONFIG_MMC_SDHCI_PCI=y
-> CONFIG_MMC_RICOH_MMC=y
-> CONFIG_MMC_SDHCI_PLTFM=y
-> CONFIG_MMC_WBSD=y
-> CONFIG_MMC_TIFM_SD=y
-> CONFIG_MMC_SDRICOH_CS=m
-> CONFIG_MMC_CB710=y
-> CONFIG_MMC_VIA_SDMMC=y
-> CONFIG_MMC_USHC=m
-> CONFIG_MEMSTICK=y
-> # CONFIG_MEMSTICK_DEBUG is not set
-> 
-> #
-> # MemoryStick drivers
-> #
-> # CONFIG_MEMSTICK_UNSAFE_RESUME is not set
-> CONFIG_MSPRO_BLOCK=y
-> 
-> #
-> # MemoryStick Host Controller Drivers
-> #
-> CONFIG_MEMSTICK_TIFM_MS=y
-> CONFIG_MEMSTICK_JMICRON_38X=y
-> CONFIG_NEW_LEDS=y
-> CONFIG_LEDS_CLASS=m
-> 
-> #
-> # LED drivers
-> #
-> CONFIG_LEDS_88PM860X=m
-> CONFIG_LEDS_NET48XX=m
-> CONFIG_LEDS_NET5501=m
-> CONFIG_LEDS_WRAP=m
-> CONFIG_LEDS_ALIX2=m
-> CONFIG_LEDS_PCA9532=m
-> CONFIG_LEDS_GPIO=m
-> CONFIG_LEDS_GPIO_PLATFORM=y
-> CONFIG_LEDS_LP3944=m
-> CONFIG_LEDS_CLEVO_MAIL=m
-> CONFIG_LEDS_PCA955X=m
-> CONFIG_LEDS_WM831X_STATUS=m
-> CONFIG_LEDS_WM8350=m
-> CONFIG_LEDS_DA903X=m
-> CONFIG_LEDS_DAC124S085=m
-> CONFIG_LEDS_REGULATOR=m
-> CONFIG_LEDS_BD2802=m
-> CONFIG_LEDS_INTEL_SS4200=m
-> CONFIG_LEDS_LT3593=m
-> CONFIG_LEDS_ADP5520=m
-> CONFIG_LEDS_DELL_NETBOOKS=m
-> CONFIG_LEDS_MC13783=m
-> CONFIG_LEDS_TRIGGERS=y
-> 
-> #
-> # LED Triggers
-> #
-> CONFIG_LEDS_TRIGGER_TIMER=m
-> CONFIG_LEDS_TRIGGER_IDE_DISK=y
-> CONFIG_LEDS_TRIGGER_HEARTBEAT=m
-> CONFIG_LEDS_TRIGGER_BACKLIGHT=m
-> CONFIG_LEDS_TRIGGER_GPIO=m
-> CONFIG_LEDS_TRIGGER_DEFAULT_ON=m
-> 
-> #
-> # iptables trigger is under Netfilter config (LED target)
-> #
-> CONFIG_ACCESSIBILITY=y
-> CONFIG_A11Y_BRAILLE_CONSOLE=y
-> CONFIG_INFINIBAND=m
-> CONFIG_INFINIBAND_USER_MAD=m
-> CONFIG_INFINIBAND_USER_ACCESS=m
-> CONFIG_INFINIBAND_USER_MEM=y
-> CONFIG_INFINIBAND_ADDR_TRANS=y
-> CONFIG_INFINIBAND_MTHCA=m
-> CONFIG_INFINIBAND_MTHCA_DEBUG=y
-> CONFIG_INFINIBAND_AMSO1100=m
-> # CONFIG_INFINIBAND_AMSO1100_DEBUG is not set
-> CONFIG_INFINIBAND_CXGB3=m
-> # CONFIG_INFINIBAND_CXGB3_DEBUG is not set
-> CONFIG_INFINIBAND_CXGB4=m
-> CONFIG_MLX4_INFINIBAND=m
-> CONFIG_INFINIBAND_NES=m
-> # CONFIG_INFINIBAND_NES_DEBUG is not set
-> CONFIG_INFINIBAND_IPOIB=m
-> # CONFIG_INFINIBAND_IPOIB_CM is not set
-> # CONFIG_INFINIBAND_IPOIB_DEBUG is not set
-> CONFIG_INFINIBAND_SRP=m
-> CONFIG_INFINIBAND_ISER=m
-> CONFIG_EDAC=y
-> 
-> #
-> # Reporting subsystems
-> #
-> # CONFIG_EDAC_DEBUG is not set
-> CONFIG_EDAC_DECODE_MCE=y
-> CONFIG_EDAC_MCE_INJ=m
-> CONFIG_EDAC_MM_EDAC=y
-> CONFIG_EDAC_MCE=y
-> CONFIG_EDAC_AMD76X=m
-> CONFIG_EDAC_E7XXX=m
-> CONFIG_EDAC_E752X=m
-> CONFIG_EDAC_I82875P=m
-> CONFIG_EDAC_I82975X=m
-> CONFIG_EDAC_I3000=m
-> CONFIG_EDAC_I3200=m
-> CONFIG_EDAC_X38=m
-> CONFIG_EDAC_I5400=m
-> CONFIG_EDAC_I7CORE=m
-> CONFIG_EDAC_I82860=m
-> CONFIG_EDAC_R82600=m
-> CONFIG_EDAC_I5000=m
-> CONFIG_EDAC_I5100=m
-> CONFIG_EDAC_I7300=m
-> CONFIG_RTC_LIB=m
-> CONFIG_RTC_CLASS=m
-> 
-> #
-> # RTC interfaces
-> #
-> CONFIG_RTC_INTF_SYSFS=y
-> CONFIG_RTC_INTF_PROC=y
-> CONFIG_RTC_INTF_DEV=y
-> CONFIG_RTC_INTF_DEV_UIE_EMUL=y
-> CONFIG_RTC_DRV_TEST=m
-> 
-> #
-> # I2C RTC drivers
-> #
-> CONFIG_RTC_DRV_DS1307=m
-> CONFIG_RTC_DRV_DS1374=m
-> CONFIG_RTC_DRV_DS1672=m
-> CONFIG_RTC_DRV_DS3232=m
-> CONFIG_RTC_DRV_MAX6900=m
-> CONFIG_RTC_DRV_MAX8925=m
-> CONFIG_RTC_DRV_MAX8998=m
-> CONFIG_RTC_DRV_RS5C372=m
-> CONFIG_RTC_DRV_ISL1208=m
-> CONFIG_RTC_DRV_ISL12022=m
-> CONFIG_RTC_DRV_X1205=m
-> CONFIG_RTC_DRV_PCF8563=m
-> CONFIG_RTC_DRV_PCF8583=m
-> CONFIG_RTC_DRV_M41T80=m
-> CONFIG_RTC_DRV_M41T80_WDT=y
-> CONFIG_RTC_DRV_BQ32K=m
-> CONFIG_RTC_DRV_TWL4030=m
-> CONFIG_RTC_DRV_S35390A=m
-> CONFIG_RTC_DRV_FM3130=m
-> CONFIG_RTC_DRV_RX8581=m
-> CONFIG_RTC_DRV_RX8025=m
-> 
-> #
-> # SPI RTC drivers
-> #
-> CONFIG_RTC_DRV_M41T94=m
-> CONFIG_RTC_DRV_DS1305=m
-> CONFIG_RTC_DRV_DS1390=m
-> CONFIG_RTC_DRV_MAX6902=m
-> CONFIG_RTC_DRV_R9701=m
-> CONFIG_RTC_DRV_RS5C348=m
-> CONFIG_RTC_DRV_DS3234=m
-> CONFIG_RTC_DRV_PCF2123=m
-> 
-> #
-> # Platform RTC drivers
-> #
-> CONFIG_RTC_DRV_CMOS=m
-> CONFIG_RTC_DRV_DS1286=m
-> CONFIG_RTC_DRV_DS1511=m
-> CONFIG_RTC_DRV_DS1553=m
-> CONFIG_RTC_DRV_DS1742=m
-> CONFIG_RTC_DRV_STK17TA8=m
-> CONFIG_RTC_DRV_M48T86=m
-> CONFIG_RTC_DRV_M48T35=m
-> CONFIG_RTC_DRV_M48T59=m
-> CONFIG_RTC_DRV_MSM6242=m
-> CONFIG_RTC_DRV_BQ4802=m
-> CONFIG_RTC_DRV_RP5C01=m
-> CONFIG_RTC_DRV_V3020=m
-> CONFIG_RTC_DRV_WM831X=m
-> CONFIG_RTC_DRV_WM8350=m
-> CONFIG_RTC_DRV_PCF50633=m
-> CONFIG_RTC_DRV_AB3100=m
-> 
-> #
-> # on-CPU RTC drivers
-> #
-> CONFIG_RTC_DRV_PCAP=m
-> CONFIG_RTC_DRV_MC13XXX=m
-> CONFIG_DMADEVICES=y
-> # CONFIG_DMADEVICES_DEBUG is not set
-> 
-> #
-> # DMA Devices
-> #
-> CONFIG_INTEL_MID_DMAC=m
-> CONFIG_INTEL_IOATDMA=m
-> CONFIG_TIMB_DMA=m
-> CONFIG_PCH_DMA=m
-> CONFIG_DMA_ENGINE=y
-> 
-> #
-> # DMA Clients
-> #
-> CONFIG_NET_DMA=y
-> CONFIG_ASYNC_TX_DMA=y
-> CONFIG_DMATEST=m
-> CONFIG_DCA=m
-> CONFIG_AUXDISPLAY=y
-> CONFIG_KS0108=m
-> CONFIG_KS0108_PORT=0x378
-> CONFIG_KS0108_DELAY=2
-> CONFIG_CFAG12864B=m
-> CONFIG_CFAG12864B_RATE=20
-> CONFIG_UIO=y
-> CONFIG_UIO_CIF=m
-> CONFIG_UIO_PDRV=m
-> CONFIG_UIO_PDRV_GENIRQ=m
-> CONFIG_UIO_AEC=m
-> CONFIG_UIO_SERCOS3=m
-> CONFIG_UIO_PCI_GENERIC=m
-> CONFIG_UIO_NETX=m
-> CONFIG_STAGING=y
-> # CONFIG_STAGING_EXCLUDE_BUILD is not set
-> CONFIG_ET131X=m
-> # CONFIG_ET131X_DEBUG is not set
-> CONFIG_SLICOSS=m
-> CONFIG_VIDEO_GO7007=m
-> CONFIG_VIDEO_GO7007_USB=m
-> CONFIG_VIDEO_GO7007_USB_S2250_BOARD=m
-> CONFIG_VIDEO_GO7007_OV7640=m
-> CONFIG_VIDEO_GO7007_SAA7113=m
-> CONFIG_VIDEO_GO7007_SAA7115=m
-> CONFIG_VIDEO_GO7007_TW9903=m
-> CONFIG_VIDEO_GO7007_UDA1342=m
-> CONFIG_VIDEO_GO7007_SONY_TUNER=m
-> CONFIG_VIDEO_GO7007_TW2804=m
-> CONFIG_VIDEO_CX25821=m
-> CONFIG_VIDEO_CX25821_ALSA=m
-> CONFIG_VIDEO_TM6000=m
-> CONFIG_VIDEO_TM6000_ALSA=m
-> CONFIG_VIDEO_TM6000_DVB=m
-> CONFIG_VIDEO_CPIA=m
-> CONFIG_VIDEO_CPIA_PP=m
-> CONFIG_VIDEO_CPIA_USB=m
-> CONFIG_VIDEO_STRADIS=m
-> CONFIG_USB_IP_COMMON=m
-> CONFIG_USB_IP_VHCI_HCD=m
-> CONFIG_USB_IP_HOST=m
-> # CONFIG_USB_IP_DEBUG_ENABLE is not set
-> CONFIG_W35UND=m
-> CONFIG_PRISM2_USB=m
-> CONFIG_ECHO=m
-> CONFIG_BRCM80211=m
-> CONFIG_BRCM80211_PCI=y
-> # CONFIG_BRCMFMAC is not set
-> CONFIG_RT2860=m
-> CONFIG_RT2870=m
-> CONFIG_COMEDI=m
-> # CONFIG_COMEDI_DEBUG is not set
-> CONFIG_COMEDI_MISC_DRIVERS=m
-> CONFIG_COMEDI_KCOMEDILIB=m
-> CONFIG_COMEDI_BOND=m
-> CONFIG_COMEDI_TEST=m
-> CONFIG_COMEDI_PARPORT=m
-> CONFIG_COMEDI_SERIAL2002=m
-> CONFIG_COMEDI_SKEL=m
-> CONFIG_COMEDI_ISA_DRIVERS=m
-> CONFIG_COMEDI_ACL7225B=m
-> CONFIG_COMEDI_PCL711=m
-> CONFIG_COMEDI_PCL724=m
-> CONFIG_COMEDI_PCL725=m
-> CONFIG_COMEDI_PCL726=m
-> CONFIG_COMEDI_PCL730=m
-> CONFIG_COMEDI_PCL812=m
-> CONFIG_COMEDI_PCL816=m
-> CONFIG_COMEDI_PCL818=m
-> CONFIG_COMEDI_PCM3724=m
-> CONFIG_COMEDI_PCM3730=m
-> CONFIG_COMEDI_RTI800=m
-> CONFIG_COMEDI_RTI802=m
-> CONFIG_COMEDI_DAS16M1=m
-> CONFIG_COMEDI_DAS16=m
-> CONFIG_COMEDI_DAS800=m
-> CONFIG_COMEDI_DAS1800=m
-> CONFIG_COMEDI_DAS6402=m
-> CONFIG_COMEDI_DT2801=m
-> CONFIG_COMEDI_DT2811=m
-> CONFIG_COMEDI_DT2814=m
-> CONFIG_COMEDI_DT2815=m
-> CONFIG_COMEDI_DT2817=m
-> CONFIG_COMEDI_DT282X=m
-> CONFIG_COMEDI_DMM32AT=m
-> CONFIG_COMEDI_FL512=m
-> CONFIG_COMEDI_AIO_AIO12_8=m
-> CONFIG_COMEDI_AIO_IIRO_16=m
-> CONFIG_COMEDI_C6XDIGIO=m
-> CONFIG_COMEDI_MPC624=m
-> CONFIG_COMEDI_ADQ12B=m
-> CONFIG_COMEDI_NI_AT_A2150=m
-> CONFIG_COMEDI_NI_AT_AO=m
-> CONFIG_COMEDI_NI_ATMIO=m
-> CONFIG_COMEDI_NI_ATMIO16D=m
-> CONFIG_COMEDI_PCMAD=m
-> CONFIG_COMEDI_PCMDA12=m
-> CONFIG_COMEDI_PCMMIO=m
-> CONFIG_COMEDI_PCMUIO=m
-> CONFIG_COMEDI_MULTIQ3=m
-> CONFIG_COMEDI_POC=m
-> CONFIG_COMEDI_PCI_DRIVERS=m
-> CONFIG_COMEDI_ADDI_APCI_035=m
-> CONFIG_COMEDI_ADDI_APCI_1032=m
-> CONFIG_COMEDI_ADDI_APCI_1500=m
-> CONFIG_COMEDI_ADDI_APCI_1516=m
-> CONFIG_COMEDI_ADDI_APCI_1564=m
-> CONFIG_COMEDI_ADDI_APCI_16XX=m
-> CONFIG_COMEDI_ADDI_APCI_2016=m
-> CONFIG_COMEDI_ADDI_APCI_2032=m
-> CONFIG_COMEDI_ADDI_APCI_2200=m
-> CONFIG_COMEDI_ADDI_APCI_3001=m
-> CONFIG_COMEDI_ADDI_APCI_3120=m
-> CONFIG_COMEDI_ADDI_APCI_3501=m
-> CONFIG_COMEDI_ADDI_APCI_3XXX=m
-> CONFIG_COMEDI_ADL_PCI6208=m
-> CONFIG_COMEDI_ADL_PCI7230=m
-> CONFIG_COMEDI_ADL_PCI7296=m
-> CONFIG_COMEDI_ADL_PCI7432=m
-> CONFIG_COMEDI_ADL_PCI8164=m
-> CONFIG_COMEDI_ADL_PCI9111=m
-> CONFIG_COMEDI_ADL_PCI9118=m
-> CONFIG_COMEDI_ADV_PCI1710=m
-> CONFIG_COMEDI_ADV_PCI1723=m
-> CONFIG_COMEDI_ADV_PCI_DIO=m
-> CONFIG_COMEDI_AMPLC_DIO200=m
-> CONFIG_COMEDI_AMPLC_PC236=m
-> CONFIG_COMEDI_AMPLC_PC263=m
-> CONFIG_COMEDI_AMPLC_PCI224=m
-> CONFIG_COMEDI_AMPLC_PCI230=m
-> CONFIG_COMEDI_CONTEC_PCI_DIO=m
-> CONFIG_COMEDI_DT3000=m
-> CONFIG_COMEDI_UNIOXX5=m
-> CONFIG_COMEDI_GSC_HPDI=m
-> CONFIG_COMEDI_ICP_MULTI=m
-> CONFIG_COMEDI_II_PCI20KC=m
-> CONFIG_COMEDI_DAQBOARD2000=m
-> CONFIG_COMEDI_JR3_PCI=m
-> CONFIG_COMEDI_KE_COUNTER=m
-> CONFIG_COMEDI_CB_PCIDAS64=m
-> CONFIG_COMEDI_CB_PCIDAS=m
-> CONFIG_COMEDI_CB_PCIDDA=m
-> CONFIG_COMEDI_CB_PCIDIO=m
-> CONFIG_COMEDI_CB_PCIMDAS=m
-> CONFIG_COMEDI_CB_PCIMDDA=m
-> CONFIG_COMEDI_ME4000=m
-> CONFIG_COMEDI_ME_DAQ=m
-> CONFIG_COMEDI_NI_6527=m
-> CONFIG_COMEDI_NI_65XX=m
-> CONFIG_COMEDI_NI_660X=m
-> CONFIG_COMEDI_NI_670X=m
-> CONFIG_COMEDI_NI_PCIDIO=m
-> CONFIG_COMEDI_NI_PCIMIO=m
-> CONFIG_COMEDI_RTD520=m
-> CONFIG_COMEDI_S526=m
-> CONFIG_COMEDI_S626=m
-> CONFIG_COMEDI_SSV_DNP=m
-> CONFIG_COMEDI_PCMCIA_DRIVERS=m
-> CONFIG_COMEDI_CB_DAS16_CS=m
-> CONFIG_COMEDI_DAS08_CS=m
-> CONFIG_COMEDI_NI_DAQ_700_CS=m
-> CONFIG_COMEDI_NI_DAQ_DIO24_CS=m
-> CONFIG_COMEDI_NI_LABPC_CS=m
-> CONFIG_COMEDI_NI_MIO_CS=m
-> CONFIG_COMEDI_QUATECH_DAQP_CS=m
-> CONFIG_COMEDI_USB_DRIVERS=m
-> CONFIG_COMEDI_DT9812=m
-> CONFIG_COMEDI_USBDUX=m
-> CONFIG_COMEDI_USBDUXFAST=m
-> CONFIG_COMEDI_VMK80XX=m
-> CONFIG_COMEDI_NI_COMMON=m
-> CONFIG_COMEDI_MITE=m
-> CONFIG_COMEDI_NI_TIO=m
-> CONFIG_COMEDI_NI_LABPC=m
-> CONFIG_COMEDI_8255=m
-> CONFIG_COMEDI_DAS08=m
-> CONFIG_COMEDI_FC=m
-> CONFIG_ASUS_OLED=m
-> CONFIG_PANEL=m
-> CONFIG_PANEL_PARPORT=0
-> CONFIG_PANEL_PROFILE=5
-> # CONFIG_PANEL_CHANGE_MESSAGE is not set
-> CONFIG_R8187SE=m
-> CONFIG_RTL8192U=m
-> CONFIG_RTL8192E=m
-> CONFIG_R8712U=m
-> CONFIG_R8712_AP=y
-> CONFIG_TRANZPORT=m
-> CONFIG_POHMELFS=m
-> # CONFIG_POHMELFS_DEBUG is not set
-> CONFIG_POHMELFS_CRYPTO=y
-> CONFIG_AUTOFS_FS=y
-> CONFIG_IDE_PHISON=m
-> CONFIG_LINE6_USB=m
-> CONFIG_LINE6_USB_DEBUG=y
-> CONFIG_LINE6_USB_DUMP_CTRL=y
-> CONFIG_LINE6_USB_DUMP_MIDI=y
-> CONFIG_LINE6_USB_DUMP_PCM=y
-> CONFIG_LINE6_USB_RAW=y
-> CONFIG_LINE6_USB_IMPULSE_RESPONSE=y
-> CONFIG_DRM_VMWGFX=m
-> CONFIG_DRM_NOUVEAU=m
-> CONFIG_DRM_NOUVEAU_BACKLIGHT=y
-> CONFIG_DRM_NOUVEAU_DEBUG=y
-> 
-> #
-> # I2C encoder or helper chips
-> #
-> CONFIG_DRM_I2C_CH7006=m
-> CONFIG_DRM_I2C_SIL164=m
-> CONFIG_USB_SERIAL_QUATECH2=m
-> CONFIG_USB_SERIAL_QUATECH_USB2=m
-> CONFIG_VT6655=m
-> CONFIG_VT6656=m
-> CONFIG_FB_UDL=m
-> # CONFIG_HYPERV is not set
-> CONFIG_VME_BUS=m
-> 
-> #
-> # VME Bridge Drivers
-> #
-> CONFIG_VME_CA91CX42=m
-> CONFIG_VME_TSI148=m
-> 
-> #
-> # VME Device Drivers
-> #
-> CONFIG_VME_USER=m
-> 
-> #
-> # VME Board Drivers
-> #
-> CONFIG_VMIVME_7805=m
-> CONFIG_IIO=m
-> CONFIG_IIO_RING_BUFFER=y
-> CONFIG_IIO_SW_RING=m
-> CONFIG_IIO_TRIGGER=y
-> 
-> #
-> # Accelerometers
-> #
-> CONFIG_ADIS16209=m
-> CONFIG_ADIS16220=m
-> CONFIG_ADIS16240=m
-> CONFIG_KXSD9=m
-> CONFIG_LIS3L02DQ=m
-> CONFIG_SCA3000=m
-> 
-> #
-> # Analog to digital convertors
-> #
-> CONFIG_MAX1363=m
-> CONFIG_MAX1363_RING_BUFFER=y
-> CONFIG_AD799X=m
-> CONFIG_AD799X_RING_BUFFER=y
-> CONFIG_AD7476=m
-> 
-> #
-> # Digital gyroscope sensors
-> #
-> CONFIG_ADIS16260=m
-> 
-> #
-> # Inertial measurement units
-> #
-> CONFIG_ADIS16300=m
-> CONFIG_ADIS16350=m
-> CONFIG_ADIS16400=m
-> 
-> #
-> # Light sensors
-> #
-> CONFIG_SENSORS_TSL2563=m
-> CONFIG_SENSORS_ISL29018=m
-> 
-> #
-> # Magnetometer sensors
-> #
-> CONFIG_SENSORS_AK8975=m
-> CONFIG_SENSORS_HMC5843=m
-> 
-> #
-> # Triggers - standalone
-> #
-> CONFIG_IIO_PERIODIC_RTC_TRIGGER=m
-> CONFIG_IIO_GPIO_TRIGGER=m
-> CONFIG_ZRAM=m
-> CONFIG_WLAGS49_H2=m
-> CONFIG_WLAGS49_H25=m
-> CONFIG_BATMAN_ADV=m
-> # CONFIG_BATMAN_ADV_DEBUG is not set
-> CONFIG_SAMSUNG_LAPTOP=m
-> CONFIG_FB_SM7XX=y
-> CONFIG_VIDEO_DT3155=m
-> CONFIG_DT3155_CCIR=y
-> CONFIG_CRYSTALHD=m
-> CONFIG_CXT1E1=m
-> CONFIG_SBE_PMCC4_NCOMM=y
-> 
-> #
-> # Texas Instruments shared transport line discipline
-> #
-> CONFIG_ST_BT=m
-> CONFIG_ADIS16255=m
-> CONFIG_FB_XGI=y
-> CONFIG_LIRC_STAGING=y
-> CONFIG_LIRC_BT829=m
-> CONFIG_LIRC_I2C=m
-> CONFIG_LIRC_IGORPLUGUSB=m
-> CONFIG_LIRC_IMON=m
-> CONFIG_LIRC_IT87=m
-> CONFIG_LIRC_ITE8709=m
-> CONFIG_LIRC_PARALLEL=m
-> CONFIG_LIRC_SASEM=m
-> CONFIG_LIRC_SERIAL=m
-> CONFIG_LIRC_SERIAL_TRANSMITTER=y
-> CONFIG_LIRC_SIR=m
-> CONFIG_LIRC_TTUSBIR=m
-> CONFIG_LIRC_ZILOG=m
-> CONFIG_SMB_FS=y
-> # CONFIG_SMB_NLS_DEFAULT is not set
-> CONFIG_EASYCAP=m
-> # CONFIG_SOLO6X10 is not set
-> CONFIG_ACPI_QUICKSTART=y
-> CONFIG_MACH_NO_WESTBRIDGE=y
-> CONFIG_SBE_2T3E3=m
-> # CONFIG_ATH6K_LEGACY is not set
-> CONFIG_USB_ENESTORAGE=m
-> CONFIG_BCM_WIMAX=m
-> CONFIG_FT1000=m
-> CONFIG_FT1000_USB=m
-> 
-> #
-> # Speakup console speech
-> #
-> CONFIG_SPEAKUP=m
-> CONFIG_SPEAKUP_SYNTH_ACNTSA=m
-> CONFIG_SPEAKUP_SYNTH_ACNTPC=m
-> CONFIG_SPEAKUP_SYNTH_APOLLO=m
-> CONFIG_SPEAKUP_SYNTH_AUDPTR=m
-> CONFIG_SPEAKUP_SYNTH_BNS=m
-> CONFIG_SPEAKUP_SYNTH_DECTLK=m
-> CONFIG_SPEAKUP_SYNTH_DECEXT=m
-> CONFIG_SPEAKUP_SYNTH_DECPC=m
-> CONFIG_SPEAKUP_SYNTH_DTLK=m
-> CONFIG_SPEAKUP_SYNTH_KEYPC=m
-> CONFIG_SPEAKUP_SYNTH_LTLK=m
-> CONFIG_SPEAKUP_SYNTH_SOFT=m
-> CONFIG_SPEAKUP_SYNTH_SPKOUT=m
-> CONFIG_SPEAKUP_SYNTH_TXPRT=m
-> CONFIG_SPEAKUP_SYNTH_DUMMY=m
-> CONFIG_X86_PLATFORM_DEVICES=y
-> CONFIG_ACER_WMI=m
-> CONFIG_ACERHDF=m
-> CONFIG_DELL_LAPTOP=m
-> CONFIG_DELL_WMI=y
-> CONFIG_FUJITSU_LAPTOP=m
-> # CONFIG_FUJITSU_LAPTOP_DEBUG is not set
-> CONFIG_TC1100_WMI=y
-> CONFIG_HP_WMI=m
-> CONFIG_MSI_LAPTOP=m
-> CONFIG_PANASONIC_LAPTOP=y
-> CONFIG_COMPAL_LAPTOP=m
-> CONFIG_SONY_LAPTOP=m
-> CONFIG_SONYPI_COMPAT=y
-> CONFIG_IDEAPAD_LAPTOP=m
-> CONFIG_THINKPAD_ACPI=m
-> CONFIG_THINKPAD_ACPI_ALSA_SUPPORT=y
-> # CONFIG_THINKPAD_ACPI_DEBUGFACILITIES is not set
-> # CONFIG_THINKPAD_ACPI_DEBUG is not set
-> CONFIG_THINKPAD_ACPI_UNSAFE_LEDS=y
-> CONFIG_THINKPAD_ACPI_VIDEO=y
-> CONFIG_THINKPAD_ACPI_HOTKEY_POLL=y
-> CONFIG_SENSORS_HDAPS=m
-> CONFIG_INTEL_MENLOW=y
-> CONFIG_EEEPC_LAPTOP=m
-> CONFIG_EEEPC_WMI=m
-> CONFIG_ACPI_WMI=y
-> CONFIG_MSI_WMI=y
-> CONFIG_ACPI_ASUS=y
-> CONFIG_TOPSTAR_LAPTOP=y
-> CONFIG_ACPI_TOSHIBA=m
-> CONFIG_TOSHIBA_BT_RFKILL=y
-> CONFIG_ACPI_CMPC=m
-> CONFIG_INTEL_IPS=m
-> CONFIG_IBM_RTL=m
-> CONFIG_XO1_RFKILL=m
-> 
-> #
-> # Firmware Drivers
-> #
-> CONFIG_EDD=y
-> # CONFIG_EDD_OFF is not set
-> CONFIG_FIRMWARE_MEMMAP=y
-> # CONFIG_EFI_VARS is not set
-> CONFIG_DELL_RBU=m
-> CONFIG_DCDBAS=m
-> CONFIG_DMIID=y
-> CONFIG_ISCSI_IBFT_FIND=y
-> CONFIG_ISCSI_IBFT=m
-> 
-> #
-> # File systems
-> #
-> CONFIG_EXT2_FS=y
-> CONFIG_EXT2_FS_XATTR=y
-> CONFIG_EXT2_FS_POSIX_ACL=y
-> CONFIG_EXT2_FS_SECURITY=y
-> CONFIG_EXT2_FS_XIP=y
-> CONFIG_EXT3_FS=y
-> CONFIG_EXT3_DEFAULTS_TO_ORDERED=y
-> CONFIG_EXT3_FS_XATTR=y
-> CONFIG_EXT3_FS_POSIX_ACL=y
-> CONFIG_EXT3_FS_SECURITY=y
-> CONFIG_EXT4_FS=y
-> CONFIG_EXT4_FS_XATTR=y
-> CONFIG_EXT4_FS_POSIX_ACL=y
-> CONFIG_EXT4_FS_SECURITY=y
-> # CONFIG_EXT4_DEBUG is not set
-> CONFIG_FS_XIP=y
-> CONFIG_JBD=y
-> # CONFIG_JBD_DEBUG is not set
-> CONFIG_JBD2=y
-> # CONFIG_JBD2_DEBUG is not set
-> CONFIG_FS_MBCACHE=y
-> CONFIG_REISERFS_FS=y
-> # CONFIG_REISERFS_CHECK is not set
-> # CONFIG_REISERFS_PROC_INFO is not set
-> CONFIG_REISERFS_FS_XATTR=y
-> CONFIG_REISERFS_FS_POSIX_ACL=y
-> CONFIG_REISERFS_FS_SECURITY=y
-> CONFIG_JFS_FS=y
-> CONFIG_JFS_POSIX_ACL=y
-> CONFIG_JFS_SECURITY=y
-> # CONFIG_JFS_DEBUG is not set
-> # CONFIG_JFS_STATISTICS is not set
-> CONFIG_FS_POSIX_ACL=y
-> CONFIG_XFS_FS=y
-> CONFIG_XFS_QUOTA=y
-> CONFIG_XFS_POSIX_ACL=y
-> CONFIG_XFS_RT=y
-> # CONFIG_XFS_DEBUG is not set
-> CONFIG_GFS2_FS=y
-> CONFIG_GFS2_FS_LOCKING_DLM=y
-> CONFIG_OCFS2_FS=y
-> CONFIG_OCFS2_FS_O2CB=y
-> CONFIG_OCFS2_FS_USERSPACE_CLUSTER=y
-> # CONFIG_OCFS2_FS_STATS is not set
-> CONFIG_OCFS2_DEBUG_MASKLOG=y
-> # CONFIG_OCFS2_DEBUG_FS is not set
-> CONFIG_BTRFS_FS=y
-> CONFIG_BTRFS_FS_POSIX_ACL=y
-> CONFIG_NILFS2_FS=y
-> CONFIG_EXPORTFS=y
-> CONFIG_FILE_LOCKING=y
-> CONFIG_FSNOTIFY=y
-> CONFIG_DNOTIFY=y
-> CONFIG_INOTIFY_USER=y
-> CONFIG_FANOTIFY=y
-> # CONFIG_FANOTIFY_ACCESS_PERMISSIONS is not set
-> CONFIG_QUOTA=y
-> CONFIG_QUOTA_NETLINK_INTERFACE=y
-> # CONFIG_PRINT_QUOTA_WARNING is not set
-> # CONFIG_QUOTA_DEBUG is not set
-> CONFIG_QUOTA_TREE=y
-> CONFIG_QFMT_V1=y
-> CONFIG_QFMT_V2=y
-> CONFIG_QUOTACTL=y
-> CONFIG_AUTOFS4_FS=y
-> CONFIG_FUSE_FS=y
-> CONFIG_CUSE=y
-> CONFIG_GENERIC_ACL=y
-> 
-> #
-> # Caches
-> #
-> CONFIG_FSCACHE=y
-> CONFIG_FSCACHE_STATS=y
-> CONFIG_FSCACHE_HISTOGRAM=y
-> # CONFIG_FSCACHE_DEBUG is not set
-> # CONFIG_FSCACHE_OBJECT_LIST is not set
-> CONFIG_CACHEFILES=y
-> # CONFIG_CACHEFILES_DEBUG is not set
-> CONFIG_CACHEFILES_HISTOGRAM=y
-> 
-> #
-> # CD-ROM/DVD Filesystems
-> #
-> CONFIG_ISO9660_FS=y
-> CONFIG_JOLIET=y
-> CONFIG_ZISOFS=y
-> CONFIG_UDF_FS=y
-> CONFIG_UDF_NLS=y
-> 
-> #
-> # DOS/FAT/NT Filesystems
-> #
-> CONFIG_FAT_FS=y
-> CONFIG_MSDOS_FS=y
-> CONFIG_VFAT_FS=y
-> CONFIG_FAT_DEFAULT_CODEPAGE=437
-> CONFIG_FAT_DEFAULT_IOCHARSET="iso8859-1"
-> CONFIG_NTFS_FS=y
-> # CONFIG_NTFS_DEBUG is not set
-> CONFIG_NTFS_RW=y
-> 
-> #
-> # Pseudo filesystems
-> #
-> CONFIG_PROC_FS=y
-> CONFIG_PROC_KCORE=y
-> CONFIG_PROC_SYSCTL=y
-> CONFIG_PROC_PAGE_MONITOR=y
-> CONFIG_SYSFS=y
-> CONFIG_TMPFS=y
-> CONFIG_TMPFS_POSIX_ACL=y
-> CONFIG_HUGETLBFS=y
-> CONFIG_HUGETLB_PAGE=y
-> CONFIG_CONFIGFS_FS=y
-> CONFIG_MISC_FILESYSTEMS=y
-> CONFIG_ADFS_FS=y
-> CONFIG_ADFS_FS_RW=y
-> CONFIG_AFFS_FS=y
-> CONFIG_ECRYPT_FS=y
-> CONFIG_HFS_FS=y
-> CONFIG_HFSPLUS_FS=y
-> CONFIG_BEFS_FS=y
-> # CONFIG_BEFS_DEBUG is not set
-> CONFIG_BFS_FS=y
-> CONFIG_EFS_FS=y
-> CONFIG_JFFS2_FS=y
-> CONFIG_JFFS2_FS_DEBUG=0
-> CONFIG_JFFS2_FS_WRITEBUFFER=y
-> CONFIG_JFFS2_FS_WBUF_VERIFY=y
-> CONFIG_JFFS2_SUMMARY=y
-> CONFIG_JFFS2_FS_XATTR=y
-> CONFIG_JFFS2_FS_POSIX_ACL=y
-> CONFIG_JFFS2_FS_SECURITY=y
-> CONFIG_JFFS2_COMPRESSION_OPTIONS=y
-> CONFIG_JFFS2_ZLIB=y
-> CONFIG_JFFS2_LZO=y
-> CONFIG_JFFS2_RTIME=y
-> CONFIG_JFFS2_RUBIN=y
-> # CONFIG_JFFS2_CMODE_NONE is not set
-> CONFIG_JFFS2_CMODE_PRIORITY=y
-> # CONFIG_JFFS2_CMODE_SIZE is not set
-> # CONFIG_JFFS2_CMODE_FAVOURLZO is not set
-> CONFIG_UBIFS_FS=y
-> CONFIG_UBIFS_FS_XATTR=y
-> CONFIG_UBIFS_FS_ADVANCED_COMPR=y
-> CONFIG_UBIFS_FS_LZO=y
-> CONFIG_UBIFS_FS_ZLIB=y
-> # CONFIG_UBIFS_FS_DEBUG is not set
-> # CONFIG_LOGFS is not set
-> CONFIG_CRAMFS=y
-> CONFIG_SQUASHFS=y
-> CONFIG_SQUASHFS_XATTR=y
-> CONFIG_SQUASHFS_LZO=y
-> CONFIG_SQUASHFS_EMBEDDED=y
-> CONFIG_SQUASHFS_FRAGMENT_CACHE_SIZE=3
-> CONFIG_VXFS_FS=y
-> CONFIG_MINIX_FS=y
-> CONFIG_OMFS_FS=y
-> CONFIG_HPFS_FS=y
-> CONFIG_QNX4FS_FS=y
-> CONFIG_ROMFS_FS=y
-> # CONFIG_ROMFS_BACKED_BY_BLOCK is not set
-> # CONFIG_ROMFS_BACKED_BY_MTD is not set
-> CONFIG_ROMFS_BACKED_BY_BOTH=y
-> CONFIG_ROMFS_ON_BLOCK=y
-> CONFIG_ROMFS_ON_MTD=y
-> CONFIG_SYSV_FS=y
-> CONFIG_UFS_FS=y
-> CONFIG_UFS_FS_WRITE=y
-> # CONFIG_UFS_DEBUG is not set
-> CONFIG_EXOFS_FS=y
-> # CONFIG_EXOFS_DEBUG is not set
-> CONFIG_NETWORK_FILESYSTEMS=y
-> CONFIG_NFS_FS=y
-> CONFIG_NFS_V3=y
-> CONFIG_NFS_V3_ACL=y
-> CONFIG_NFS_V4=y
-> CONFIG_NFS_V4_1=y
-> CONFIG_PNFS_FILE_LAYOUT=y
-> CONFIG_ROOT_NFS=y
-> CONFIG_NFS_FSCACHE=y
-> CONFIG_NFS_USE_LEGACY_DNS=y
-> CONFIG_NFS_USE_NEW_IDMAPPER=y
-> CONFIG_NFSD=y
-> CONFIG_NFSD_DEPRECATED=y
-> CONFIG_NFSD_V2_ACL=y
-> CONFIG_NFSD_V3=y
-> CONFIG_NFSD_V3_ACL=y
-> CONFIG_NFSD_V4=y
-> CONFIG_LOCKD=y
-> CONFIG_LOCKD_V4=y
-> CONFIG_NFS_ACL_SUPPORT=y
-> CONFIG_NFS_COMMON=y
-> CONFIG_SUNRPC=y
-> CONFIG_SUNRPC_GSS=y
-> CONFIG_SUNRPC_XPRT_RDMA=m
-> CONFIG_RPCSEC_GSS_KRB5=y
-> CONFIG_CEPH_FS=m
-> CONFIG_CIFS=y
-> CONFIG_CIFS_STATS=y
-> CONFIG_CIFS_STATS2=y
-> CONFIG_CIFS_WEAK_PW_HASH=y
-> CONFIG_CIFS_UPCALL=y
-> CONFIG_CIFS_XATTR=y
-> CONFIG_CIFS_POSIX=y
-> # CONFIG_CIFS_DEBUG2 is not set
-> CONFIG_CIFS_DFS_UPCALL=y
-> # CONFIG_CIFS_FSCACHE is not set
-> CONFIG_CIFS_EXPERIMENTAL=y
-> CONFIG_NCP_FS=y
-> CONFIG_NCPFS_PACKET_SIGNING=y
-> CONFIG_NCPFS_IOCTL_LOCKING=y
-> CONFIG_NCPFS_STRONG=y
-> CONFIG_NCPFS_NFS_NS=y
-> CONFIG_NCPFS_OS2_NS=y
-> CONFIG_NCPFS_SMALLDOS=y
-> CONFIG_NCPFS_NLS=y
-> CONFIG_NCPFS_EXTRAS=y
-> CONFIG_CODA_FS=y
-> CONFIG_AFS_FS=y
-> # CONFIG_AFS_DEBUG is not set
-> CONFIG_AFS_FSCACHE=y
-> CONFIG_9P_FS=m
-> CONFIG_9P_FSCACHE=y
-> CONFIG_9P_FS_POSIX_ACL=y
-> 
-> #
-> # Partition Types
-> #
-> CONFIG_PARTITION_ADVANCED=y
-> CONFIG_ACORN_PARTITION=y
-> CONFIG_ACORN_PARTITION_CUMANA=y
-> CONFIG_ACORN_PARTITION_EESOX=y
-> CONFIG_ACORN_PARTITION_ICS=y
-> CONFIG_ACORN_PARTITION_ADFS=y
-> CONFIG_ACORN_PARTITION_POWERTEC=y
-> CONFIG_ACORN_PARTITION_RISCIX=y
-> CONFIG_OSF_PARTITION=y
-> CONFIG_AMIGA_PARTITION=y
-> CONFIG_ATARI_PARTITION=y
-> CONFIG_MAC_PARTITION=y
-> CONFIG_MSDOS_PARTITION=y
-> CONFIG_BSD_DISKLABEL=y
-> CONFIG_MINIX_SUBPARTITION=y
-> CONFIG_SOLARIS_X86_PARTITION=y
-> CONFIG_UNIXWARE_DISKLABEL=y
-> CONFIG_LDM_PARTITION=y
-> CONFIG_LDM_DEBUG=y
-> CONFIG_SGI_PARTITION=y
-> CONFIG_ULTRIX_PARTITION=y
-> CONFIG_SUN_PARTITION=y
-> CONFIG_KARMA_PARTITION=y
-> CONFIG_EFI_PARTITION=y
-> CONFIG_SYSV68_PARTITION=y
-> CONFIG_NLS=y
-> CONFIG_NLS_DEFAULT="utf8"
-> CONFIG_NLS_CODEPAGE_437=y
-> CONFIG_NLS_CODEPAGE_737=m
-> CONFIG_NLS_CODEPAGE_775=m
-> CONFIG_NLS_CODEPAGE_850=y
-> CONFIG_NLS_CODEPAGE_852=y
-> CONFIG_NLS_CODEPAGE_855=m
-> CONFIG_NLS_CODEPAGE_857=m
-> CONFIG_NLS_CODEPAGE_860=y
-> CONFIG_NLS_CODEPAGE_861=m
-> # CONFIG_NLS_CODEPAGE_862 is not set
-> CONFIG_NLS_CODEPAGE_863=m
-> CONFIG_NLS_CODEPAGE_864=y
-> CONFIG_NLS_CODEPAGE_865=m
-> CONFIG_NLS_CODEPAGE_866=y
-> CONFIG_NLS_CODEPAGE_869=m
-> CONFIG_NLS_CODEPAGE_936=y
-> CONFIG_NLS_CODEPAGE_950=m
-> CONFIG_NLS_CODEPAGE_932=y
-> CONFIG_NLS_CODEPAGE_949=m
-> CONFIG_NLS_CODEPAGE_874=m
-> # CONFIG_NLS_ISO8859_8 is not set
-> CONFIG_NLS_CODEPAGE_1250=m
-> CONFIG_NLS_CODEPAGE_1251=m
-> CONFIG_NLS_ASCII=m
-> CONFIG_NLS_ISO8859_1=y
-> CONFIG_NLS_ISO8859_2=m
-> CONFIG_NLS_ISO8859_3=m
-> CONFIG_NLS_ISO8859_4=m
-> CONFIG_NLS_ISO8859_5=y
-> CONFIG_NLS_ISO8859_6=y
-> CONFIG_NLS_ISO8859_7=m
-> CONFIG_NLS_ISO8859_9=m
-> CONFIG_NLS_ISO8859_13=m
-> CONFIG_NLS_ISO8859_14=m
-> CONFIG_NLS_ISO8859_15=y
-> CONFIG_NLS_KOI8_R=y
-> CONFIG_NLS_KOI8_U=m
-> CONFIG_NLS_UTF8=y
-> CONFIG_DLM=y
-> # CONFIG_DLM_DEBUG is not set
-> 
-> #
-> # Kernel hacking
-> #
-> CONFIG_TRACE_IRQFLAGS_SUPPORT=y
-> # CONFIG_PRINTK_TIME is not set
-> CONFIG_ENABLE_WARN_DEPRECATED=y
-> CONFIG_ENABLE_MUST_CHECK=y
-> CONFIG_FRAME_WARN=0
-> CONFIG_MAGIC_SYSRQ=y
-> # CONFIG_STRIP_ASM_SYMS is not set
-> CONFIG_UNUSED_SYMBOLS=y
-> CONFIG_DEBUG_FS=y
-> # CONFIG_HEADERS_CHECK is not set
-> # CONFIG_DEBUG_KERNEL is not set
-> # CONFIG_HARDLOCKUP_DETECTOR is not set
-> # CONFIG_SLUB_DEBUG_ON is not set
-> # CONFIG_SLUB_STATS is not set
-> CONFIG_BKL=y
-> # CONFIG_SPARSE_RCU_POINTER is not set
-> CONFIG_STACKTRACE=y
-> CONFIG_DEBUG_BUGVERBOSE=y
-> CONFIG_DEBUG_MEMORY_INIT=y
-> CONFIG_ARCH_WANT_FRAME_POINTERS=y
-> CONFIG_FRAME_POINTER=y
-> # CONFIG_RCU_CPU_STALL_DETECTOR is not set
-> # CONFIG_LKDTM is not set
-> CONFIG_SYSCTL_SYSCALL_CHECK=y
-> CONFIG_USER_STACKTRACE_SUPPORT=y
-> CONFIG_NOP_TRACER=y
-> CONFIG_HAVE_FUNCTION_TRACER=y
-> CONFIG_HAVE_FUNCTION_GRAPH_TRACER=y
-> CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST=y
-> CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST=y
-> CONFIG_HAVE_DYNAMIC_FTRACE=y
-> CONFIG_HAVE_FTRACE_MCOUNT_RECORD=y
-> CONFIG_HAVE_SYSCALL_TRACEPOINTS=y
-> CONFIG_HAVE_C_RECORDMCOUNT=y
-> CONFIG_RING_BUFFER=y
-> CONFIG_EVENT_TRACING=y
-> CONFIG_CONTEXT_SWITCH_TRACER=y
-> CONFIG_RING_BUFFER_ALLOW_SWAP=y
-> CONFIG_TRACING=y
-> CONFIG_GENERIC_TRACER=y
-> CONFIG_TRACING_SUPPORT=y
-> CONFIG_FTRACE=y
-> CONFIG_FUNCTION_TRACER=y
-> # CONFIG_IRQSOFF_TRACER is not set
-> # CONFIG_PREEMPT_TRACER is not set
-> # CONFIG_SCHED_TRACER is not set
-> # CONFIG_FTRACE_SYSCALLS is not set
-> CONFIG_BRANCH_PROFILE_NONE=y
-> # CONFIG_PROFILE_ANNOTATED_BRANCHES is not set
-> # CONFIG_PROFILE_ALL_BRANCHES is not set
-> # CONFIG_STACK_TRACER is not set
-> # CONFIG_BLK_DEV_IO_TRACE is not set
-> # CONFIG_DYNAMIC_FTRACE is not set
-> # CONFIG_FUNCTION_PROFILER is not set
-> # CONFIG_FTRACE_STARTUP_TEST is not set
-> # CONFIG_MMIOTRACE is not set
-> # CONFIG_RING_BUFFER_BENCHMARK is not set
-> # CONFIG_PROVIDE_OHCI1394_DMA_INIT is not set
-> # CONFIG_FIREWIRE_OHCI_REMOTE_DMA is not set
-> # CONFIG_DYNAMIC_DEBUG is not set
-> # CONFIG_DMA_API_DEBUG is not set
-> # CONFIG_ATOMIC64_SELFTEST is not set
-> CONFIG_ASYNC_RAID6_TEST=y
-> # CONFIG_SAMPLES is not set
-> CONFIG_HAVE_ARCH_KGDB=y
-> CONFIG_HAVE_ARCH_KMEMCHECK=y
-> CONFIG_STRICT_DEVMEM=y
-> CONFIG_X86_VERBOSE_BOOTUP=y
-> CONFIG_EARLY_PRINTK=y
-> # CONFIG_EARLY_PRINTK_DBGP is not set
-> CONFIG_DOUBLEFAULT=y
-> # CONFIG_IOMMU_STRESS is not set
-> CONFIG_HAVE_MMIOTRACE_SUPPORT=y
-> CONFIG_IO_DELAY_TYPE_0X80=0
-> CONFIG_IO_DELAY_TYPE_0XED=1
-> CONFIG_IO_DELAY_TYPE_UDELAY=2
-> CONFIG_IO_DELAY_TYPE_NONE=3
-> CONFIG_IO_DELAY_0X80=y
-> # CONFIG_IO_DELAY_0XED is not set
-> # CONFIG_IO_DELAY_UDELAY is not set
-> # CONFIG_IO_DELAY_NONE is not set
-> CONFIG_DEFAULT_IO_DELAY_TYPE=0
-> # CONFIG_OPTIMIZE_INLINING is not set
-> 
-> #
-> # Security options
-> #
-> CONFIG_KEYS=y
-> CONFIG_KEYS_DEBUG_PROC_KEYS=y
-> CONFIG_SECURITY=y
-> CONFIG_SECURITYFS=y
-> CONFIG_SECURITY_NETWORK=y
-> CONFIG_SECURITY_NETWORK_XFRM=y
-> # CONFIG_SECURITY_PATH is not set
-> # CONFIG_SECURITY_SELINUX is not set
-> # CONFIG_SECURITY_SMACK is not set
-> # CONFIG_SECURITY_TOMOYO is not set
-> # CONFIG_SECURITY_APPARMOR is not set
-> # CONFIG_IMA is not set
-> CONFIG_DEFAULT_SECURITY_DAC=y
-> CONFIG_DEFAULT_SECURITY=""
-> CONFIG_XOR_BLOCKS=y
-> CONFIG_ASYNC_CORE=y
-> CONFIG_ASYNC_MEMCPY=y
-> CONFIG_ASYNC_XOR=y
-> CONFIG_ASYNC_PQ=y
-> CONFIG_ASYNC_RAID6_RECOV=y
-> CONFIG_ASYNC_TX_DISABLE_PQ_VAL_DMA=y
-> CONFIG_ASYNC_TX_DISABLE_XOR_VAL_DMA=y
-> CONFIG_CRYPTO=y
-> 
-> #
-> # Crypto core or helper
-> #
-> CONFIG_CRYPTO_ALGAPI=y
-> CONFIG_CRYPTO_ALGAPI2=y
-> CONFIG_CRYPTO_AEAD=y
-> CONFIG_CRYPTO_AEAD2=y
-> CONFIG_CRYPTO_BLKCIPHER=y
-> CONFIG_CRYPTO_BLKCIPHER2=y
-> CONFIG_CRYPTO_HASH=y
-> CONFIG_CRYPTO_HASH2=y
-> CONFIG_CRYPTO_RNG=m
-> CONFIG_CRYPTO_RNG2=y
-> CONFIG_CRYPTO_PCOMP=m
-> CONFIG_CRYPTO_PCOMP2=y
-> CONFIG_CRYPTO_MANAGER=y
-> CONFIG_CRYPTO_MANAGER2=y
-> CONFIG_CRYPTO_MANAGER_DISABLE_TESTS=y
-> CONFIG_CRYPTO_GF128MUL=y
-> CONFIG_CRYPTO_NULL=y
-> CONFIG_CRYPTO_PCRYPT=m
-> CONFIG_CRYPTO_WORKQUEUE=y
-> CONFIG_CRYPTO_CRYPTD=m
-> CONFIG_CRYPTO_AUTHENC=y
-> CONFIG_CRYPTO_TEST=m
-> 
-> #
-> # Authenticated Encryption with Associated Data
-> #
-> CONFIG_CRYPTO_CCM=m
-> CONFIG_CRYPTO_GCM=m
-> CONFIG_CRYPTO_SEQIV=m
-> 
-> #
-> # Block modes
-> #
-> CONFIG_CRYPTO_CBC=y
-> CONFIG_CRYPTO_CTR=m
-> CONFIG_CRYPTO_CTS=m
-> CONFIG_CRYPTO_ECB=y
-> CONFIG_CRYPTO_LRW=y
-> CONFIG_CRYPTO_PCBC=y
-> CONFIG_CRYPTO_XTS=y
-> 
-> #
-> # Hash modes
-> #
-> CONFIG_CRYPTO_HMAC=y
-> CONFIG_CRYPTO_XCBC=y
-> CONFIG_CRYPTO_VMAC=m
-> 
-> #
-> # Digest
-> #
-> CONFIG_CRYPTO_CRC32C=y
-> CONFIG_CRYPTO_CRC32C_INTEL=m
-> CONFIG_CRYPTO_GHASH=m
-> CONFIG_CRYPTO_MD4=y
-> CONFIG_CRYPTO_MD5=y
-> CONFIG_CRYPTO_MICHAEL_MIC=y
-> CONFIG_CRYPTO_RMD128=m
-> CONFIG_CRYPTO_RMD160=m
-> CONFIG_CRYPTO_RMD256=m
-> CONFIG_CRYPTO_RMD320=m
-> CONFIG_CRYPTO_SHA1=y
-> CONFIG_CRYPTO_SHA256=y
-> CONFIG_CRYPTO_SHA512=y
-> CONFIG_CRYPTO_TGR192=y
-> CONFIG_CRYPTO_WP512=y
-> 
-> #
-> # Ciphers
-> #
-> CONFIG_CRYPTO_AES=y
-> CONFIG_CRYPTO_AES_586=y
-> CONFIG_CRYPTO_ANUBIS=y
-> CONFIG_CRYPTO_ARC4=y
-> CONFIG_CRYPTO_BLOWFISH=y
-> CONFIG_CRYPTO_CAMELLIA=y
-> CONFIG_CRYPTO_CAST5=y
-> CONFIG_CRYPTO_CAST6=y
-> CONFIG_CRYPTO_DES=y
-> CONFIG_CRYPTO_FCRYPT=y
-> CONFIG_CRYPTO_KHAZAD=y
-> CONFIG_CRYPTO_SALSA20=m
-> CONFIG_CRYPTO_SALSA20_586=m
-> CONFIG_CRYPTO_SEED=y
-> CONFIG_CRYPTO_SERPENT=y
-> CONFIG_CRYPTO_TEA=y
-> CONFIG_CRYPTO_TWOFISH=y
-> CONFIG_CRYPTO_TWOFISH_COMMON=y
-> CONFIG_CRYPTO_TWOFISH_586=y
-> 
-> #
-> # Compression
-> #
-> CONFIG_CRYPTO_DEFLATE=y
-> CONFIG_CRYPTO_ZLIB=m
-> CONFIG_CRYPTO_LZO=y
-> 
-> #
-> # Random Number Generation
-> #
-> # CONFIG_CRYPTO_ANSI_CPRNG is not set
-> CONFIG_CRYPTO_HW=y
-> CONFIG_CRYPTO_DEV_PADLOCK=m
-> CONFIG_CRYPTO_DEV_PADLOCK_AES=m
-> CONFIG_CRYPTO_DEV_PADLOCK_SHA=m
-> CONFIG_CRYPTO_DEV_GEODE=m
-> CONFIG_CRYPTO_DEV_HIFN_795X=m
-> CONFIG_CRYPTO_DEV_HIFN_795X_RNG=y
-> CONFIG_HAVE_KVM=y
-> CONFIG_HAVE_KVM_IRQCHIP=y
-> CONFIG_HAVE_KVM_EVENTFD=y
-> CONFIG_KVM_APIC_ARCHITECTURE=y
-> CONFIG_KVM_MMIO=y
-> CONFIG_VIRTUALIZATION=y
-> CONFIG_KVM=m
-> CONFIG_KVM_INTEL=m
-> CONFIG_KVM_AMD=m
-> # CONFIG_KVM_MMU_AUDIT is not set
-> CONFIG_VHOST_NET=m
-> # CONFIG_LGUEST is not set
-> CONFIG_VIRTIO=y
-> CONFIG_VIRTIO_RING=y
-> CONFIG_VIRTIO_PCI=m
-> CONFIG_VIRTIO_BALLOON=m
-> CONFIG_BINARY_PRINTF=y
-> 
-> #
-> # Library routines
-> #
-> CONFIG_RAID6_PQ=y
-> CONFIG_BITREVERSE=y
-> CONFIG_GENERIC_FIND_FIRST_BIT=y
-> CONFIG_GENERIC_FIND_NEXT_BIT=y
-> CONFIG_GENERIC_FIND_LAST_BIT=y
-> CONFIG_CRC_CCITT=y
-> CONFIG_CRC16=y
-> CONFIG_CRC_T10DIF=y
-> CONFIG_CRC_ITU_T=y
-> CONFIG_CRC32=y
-> CONFIG_CRC7=y
-> CONFIG_LIBCRC32C=y
-> CONFIG_AUDIT_GENERIC=y
-> CONFIG_ZLIB_INFLATE=y
-> CONFIG_ZLIB_DEFLATE=y
-> CONFIG_LZO_COMPRESS=y
-> CONFIG_LZO_DECOMPRESS=y
-> CONFIG_DECOMPRESS_GZIP=y
-> CONFIG_DECOMPRESS_BZIP2=y
-> CONFIG_DECOMPRESS_LZMA=y
-> CONFIG_DECOMPRESS_LZO=y
-> CONFIG_GENERIC_ALLOCATOR=y
-> CONFIG_REED_SOLOMON=y
-> CONFIG_REED_SOLOMON_DEC16=y
-> CONFIG_TEXTSEARCH=y
-> CONFIG_TEXTSEARCH_KMP=m
-> CONFIG_TEXTSEARCH_BM=m
-> CONFIG_TEXTSEARCH_FSM=m
-> CONFIG_HAS_IOMEM=y
-> CONFIG_HAS_IOPORT=y
-> CONFIG_HAS_DMA=y
-> CONFIG_CHECK_SIGNATURE=y
-> CONFIG_NLATTR=y
-> CONFIG_LRU_CACHE=m
-> ---
-> Professional hosting for everyone - http://www.host.ru
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Following the discussion yesterday, here is a linux-cr diff that
+that is limited to changes to existing code.
+
+The diff doesn't include the eclone() patches. I also tried to strip
+off the new c/r code (either code in new files, or new code within
+#ifdef CONFIG_CHECKPOINT in existing files).
+
+I left a few such snippets in, e.g. c/r syscalls templates and declaration of
+c/r specific methods in, e.g. file_operations.
+
+The remaining changes in this patch include new freezer state
+("CHECKPOINTING"), mostly refactoring of exsiting code, and a bit
+of new helpers.
+
+Disclaimer: don't try to compile (or apply) - this is *only* intended
+to give a ballpark of how the c/r patches change existing code.
+
+Thanks,
+
+Oren.
+
+
+ Documentation/cgroups/freezer-subsystem.txt |   10 ++
+ Documentation/credentials.txt               |   14 ++
+ MAINTAINERS                                 |   12 ++
+ Makefile                                    |    2 +-
+ arch/arm/Kconfig                            |    4 +
+ arch/arm/include/asm/ptrace.h               |    1 +
+ arch/arm/include/asm/syscall.h              |   32 ++++
+ arch/arm/include/asm/unistd.h               |    3 +
+ arch/arm/kernel/Makefile                    |    1 +
+ arch/arm/kernel/calls.S                     |    3 +
+ arch/arm/kernel/entry-common.S              |    6 +
+ arch/arm/kernel/ptrace.c                    |   69 +++++++++
+ arch/arm/kernel/signal.c                    |    5 +
+ arch/arm/kernel/sys_arm.c                   |   13 ++
+ arch/powerpc/Kconfig                        |    3 +
+ arch/powerpc/include/asm/Kbuild             |    1 +
+ arch/powerpc/include/asm/elf.h              |    1 +
+ arch/powerpc/include/asm/ptrace.h           |    7 +
+ arch/powerpc/include/asm/systbl.h           |    2 +
+ arch/powerpc/include/asm/unistd.h           |    4 +-
+ arch/powerpc/kernel/Makefile                |    1 +
+ arch/powerpc/kernel/entry_32.S              |   23 +++
+ arch/powerpc/kernel/entry_64.S              |   16 ++
+ arch/powerpc/kernel/process.c               |    1 +
+ arch/powerpc/kernel/ptrace.c                |   83 ++++++++---
+ arch/powerpc/kernel/signal.c                |    6 +
+ arch/powerpc/kernel/vdso.c                  |   13 ++-
+ arch/s390/Kconfig                           |    4 +
+ arch/s390/include/asm/Kbuild                |    1 +
+ arch/s390/include/asm/elf.h                 |    2 +-
+ arch/s390/include/asm/thread_info.h         |    2 +
+ arch/s390/include/asm/unistd.h              |    4 +-
+ arch/s390/kernel/Makefile                   |    1 +
+ arch/s390/kernel/compat_wrapper.S           |   16 ++
+ arch/s390/kernel/process.c                  |   27 ++++
+ arch/s390/kernel/signal.c                   |   21 +++
+ arch/s390/kernel/syscalls.S                 |    2 +
+ arch/s390/kernel/vdso.c                     |   13 ++-
+ arch/s390/mm/Makefile                       |    1 +
+ arch/sh/include/asm/elf.h                   |    1 +
+ arch/sh/kernel/vsyscall/vsyscall.c          |    2 +-
+ arch/x86/Kconfig                            |    4 +
+ arch/x86/ia32/ia32entry.S                   |    9 +
+ arch/x86/include/asm/Kbuild                 |    1 +
+ arch/x86/include/asm/elf.h                  |    3 +-
+ arch/x86/include/asm/ldt.h                  |    7 +
+ arch/x86/include/asm/syscalls.h             |    6 +
+ arch/x86/include/asm/unistd_32.h            |    4 +-
+ arch/x86/include/asm/unistd_64.h            |    4 +
+ arch/x86/kernel/Makefile                    |   10 ++
+ arch/x86/kernel/entry_32.S                  |    8 +
+ arch/x86/kernel/entry_64.S                  |    7 +
+ arch/x86/kernel/signal.c                    |    5 +
+ arch/x86/kernel/syscall_table_32.S          |    2 +
+ arch/x86/vdso/vdso32-setup.c                |    9 +-
+ arch/x86/vdso/vma.c                         |   11 +-
+ drivers/char/pty.c                          |   42 +++++-
+ drivers/char/tty_io.c                       |   35 ++++-
+ drivers/net/loopback.c                      |    9 +-
+ drivers/net/macvlan.c                       |    3 +
+ drivers/net/veth.c                          |    3 +
+ fs/Makefile                                 |    1 +
+ fs/binfmt_elf.c                             |    2 +-
+ fs/devpts/inode.c                           |   13 ++-
+ fs/eventfd.c                                |    1 +
+ fs/eventpoll.c                              |   70 ++++++----
+ fs/exec.c                                   |   71 ++++++++-
+ fs/fcntl.c                                  |   21 ++-
+ fs/fs_struct.c                              |   21 +++
+ fs/namespace.c                              |   36 +++--
+ fs/nilfs2/dir.c                             |    1 -
+ fs/notify/dnotify/dnotify.c                 |   18 +++
+ fs/open.c                                   |   58 +++++---
+ fs/pipe.c                                   |    1 +
+ fs/read_write.c                             |   10 --
+ fs/select.c                                 |    2 +-
+ fs/splice.c                                 |   78 ++++++-----
+ fs/squashfs/dir.c                           |    2 +-
+ include/linux/Kbuild                        |    3 +
+ include/linux/aio.h                         |    2 +
+ include/linux/compat.h                      |    3 +-
+ include/linux/cred.h                        |    8 +
+ include/linux/devpts_fs.h                   |    6 +-
+ include/linux/dnotify.h                     |    6 +
+ include/linux/eventpoll.h                   |    6 +-
+ include/linux/freezer.h                     |    9 +
+ include/linux/fs.h                          |   35 +++++-
+ include/linux/fs_struct.h                   |    2 +
+ include/linux/futex.h                       |   12 ++
+ include/linux/hrtimer.h                     |    8 +-
+ include/linux/magic.h                       |    3 +
+ include/linux/mm.h                          |   38 +++++
+ include/linux/net.h                         |   11 ++
+ include/linux/netdevice.h                   |    6 +
+ include/linux/poll.h                        |    3 +
+ include/linux/posix-timers.h                |   15 ++
+ include/linux/resource.h                    |    1 +
+ include/linux/sched.h                       |   10 +-
+ include/linux/security.h                    |   11 ++
+ include/linux/sem.h                         |    2 +
+ include/linux/shm.h                         |    7 +
+ include/linux/signal.h                      |    3 +
+ include/linux/splice.h                      |    9 +
+ include/linux/tty.h                         |    4 +
+ include/linux/user.h                        |    9 +
+ include/linux/user_namespace.h              |    8 +
+ include/linux/utsname.h                     |    1 +
+ include/net/af_unix.h                       |    1 +
+ include/net/sock.h                          |   48 ++++++
+ init/Kconfig                                |   10 +-
+ ipc/Makefile                                |    3 +-
+ ipc/msg.c                                   |   23 ++--
+ ipc/msgutil.c                               |    8 -
+ ipc/namespace.c                             |    2 +-
+ ipc/sem.c                                   |  113 ++++++++++-----
+ ipc/shm.c                                   |   55 ++++++--
+ ipc/util.c                                  |   42 ++++--
+ ipc/util.h                                  |   32 ++++-
+ kernel/Makefile                             |    2 +
+ kernel/capability.c                         |   96 +++++++++++--
+ kernel/cgroup_freezer.c                     |  214 ++++++++++++++++++++------
+ kernel/compat.c                             |    4 +-
+ kernel/cred.c                               |  116 +++++++++++++++
+ kernel/exit.c                               |   11 ++-
+ kernel/fork.c                               |   10 ++
+ kernel/futex.c                              |   31 ++---
+ kernel/futex_compat.c                       |   13 ++-
+ kernel/groups.c                             |    1 +
+ kernel/nsproxy.c                            |    5 +
+ kernel/posix-cpu-timers.c                   |    9 -
+ kernel/posix-timers.c                       |    2 +-
+ kernel/signal.c                             |   13 ++
+ kernel/sys.c                                |  170 ++++++----------------
+ kernel/sys_ni.c                             |    4 +
+ kernel/sysctl.c                             |    1 +
+ kernel/user.c                               |    5 +
+ kernel/user_namespace.c                     |   54 +++++--
+ kernel/utsname.c                            |    3 +-
+ kernel/utsname_sysctl.c                     |    7 +
+ lib/Kconfig.debug                           |   13 ++
+ mm/Makefile                                 |    1 +
+ mm/filemap.c                                |    1 +
+ mm/memory.c                                 |   95 ++++++++++++-
+ mm/mmap.c                                   |   39 +++++-
+ mm/shmem.c                                  |   16 +--
+ net/Kconfig                                 |    4 +
+ net/Makefile                                |    3 +
+ net/ipv4/Makefile                           |    1 +
+ net/ipv4/af_inet.c                          |    6 +
+ net/ipv6/sit.c                              |    3 +
+ net/socket.c                                |   31 +---
+ net/unix/Makefile                           |    1 +
+ security/capability.c                       |    1 +
+ security/commoncap.c                        |   19 +--
+ security/selinux/include/classmap.h         |    9 +-
+ security/smack/smack.h                      |    1 +
+ security/smack/smack_lsm.c                  |    1 +
+ security/smack/smackfs.c                    |    1 +
+ 159 files changed, 2031 insertions(+), 587 deletions(-)
+
+diff --git a/Documentation/cgroups/freezer-subsystem.txt
+b/Documentation/cgroups/freezer-subsystem.txt
+index 41f37fe..92b68e6 100644
+--- a/Documentation/cgroups/freezer-subsystem.txt
++++ b/Documentation/cgroups/freezer-subsystem.txt
+@@ -100,3 +100,13 @@ things happens:
+ 		and returns EINVAL)
+ 	3) The tasks that blocked the cgroup from entering the "FROZEN"
+ 		state disappear from the cgroup's set of tasks.
++
++When the cgroup freezer is used to guard container checkpoint operations the
++freezer.state may be "CHECKPOINTING". "CHECKPOINTING" can only be set on a
++"FROZEN" cgroup using the checkpoint system call. Once in the "CHECKPOINTING"
++state, the cgroup may not leave until the checkpoint system call returns the
++freezer state to "FROZEN". Writing any new state to freezer.state while
++checkpointing will return EBUSY. These semantics ensure that userspace cannot
++unfreeze the cgroup midway through the checkpoint system call. Note that,
++unlike "FROZEN" and "FREEZING", there is no corresponding "CHECKPOINTED"
++state.
+diff --git a/Documentation/credentials.txt b/Documentation/credentials.txt
+index df03169..55dd589 100644
+--- a/Documentation/credentials.txt
++++ b/Documentation/credentials.txt
+@@ -530,6 +530,20 @@ A typical credentials alteration function would look
+something like this:
+ 	}
+  +SETUID/SETGID HELPERS
++---------------------
++
++Helpers exist to perform the core of uid and gid alterations:
++
++cred_setresuid(struct cred *new, uid_t ruid, uid_t euid, uid_t suid);
++cred_setresgid(struct cred *new, gid_t rgid, gid_t egid, gid_t sgid);
++cred_setfsuid(struct cred *new, uid_t uid, uid_t *old_fsuid);
++cred_setfsgid(struct cred *new, gid_t gid, gid_t *old_fsgid);
++
++These helpers are used in kernel/sys.c for the analogous syscalls.
++As can be seen in those examples, these helpers are to be wrapped
++between calls to prepare_creds() and commit_creds() or abort_creds().
++
+ MANAGING CREDENTIALS
+ --------------------
+ diff --git a/MAINTAINERS b/MAINTAINERS
+index a0e3c3a..e4494d2 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1501,6 +1501,18 @@ M:	Andy Whitcroft <apw@canonical.com>
+ S:	Supported
+ F:	scripts/checkpatch.pl
+ +CHECKPOINT-RESTART
++M:	Oren Laadan <orenl@cs.columbia.edu>
++M:	Serge E. Hallyn <serue@us.ibm.com>
++L:	containers@lists.linux-foundation.org
++W:	http://ckpt.wiki.kernel.org/index.php/Main_Page
++S:	Maintained
++F:	*checkpoint*
++K:	checkpoint
++K:	restore
++K:	ckpt
++K:	c/r
++
+ CISCO 10G ETHERNET DRIVER
+ M:	Scott Feldman <scofeldm@cisco.com>
+ M:	Joe Eykholt <jeykholt@cisco.com>
+diff --git a/Makefile b/Makefile
+index fa1db90..93be4e1 100644
+--- a/Makefile
++++ b/Makefile
+@@ -409,7 +409,7 @@ endif
+ # of make so .config is not included in this case either (for *config).
+  no-dot-config-targets := clean mrproper distclean \
+-			 cscope TAGS tags help %docs check% \
++			 cscope TAGS tags help %docs checkstack \
+ 			 include/linux/version.h headers_% \
+ 			 kernelrelease kernelversion
+ diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index c5408bf..14c7c84 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -100,6 +100,10 @@ config HAVE_LATENCYTOP_SUPPORT
+ 	depends on !SMP
+ 	default y
+ +config CHECKPOINT_SUPPORT
++	bool
++	default y
++
+ config LOCKDEP_SUPPORT
+ 	bool
+ 	default y
+diff --git a/arch/arm/include/asm/ptrace.h b/arch/arm/include/asm/ptrace.h
+index 9dcb11e..9999568 100644
+--- a/arch/arm/include/asm/ptrace.h
++++ b/arch/arm/include/asm/ptrace.h
+@@ -57,6 +57,7 @@
+ #define PSR_C_BIT	0x20000000
+ #define PSR_Z_BIT	0x40000000
+ #define PSR_N_BIT	0x80000000
++#define PSR_GE_BITS	0x000f0000
+  /*
+  * Groups of PSR bits
+diff --git a/arch/arm/include/asm/syscall.h b/arch/arm/include/asm/syscall.h
+new file mode 100644
+index 0000000..1a6ca68
+--- /dev/null
++++ b/arch/arm/include/asm/syscall.h
+@@ -0,0 +1,32 @@
++/*
++ * syscall.h - Linux syscall interfaces for ARM
++ *
++ * Copyright (c) 2010 Christoffer Dall
++ *
++ * This file is released under the GPLv2.
++ * See the file COPYING for more details.
++ */
++
++#ifndef _ASM_ARM_SYSCALLS_H
++#define _ASM_ARM_SYSCALLS_H
++
++#include <linux/highmem.h>
++#include <linux/pagemap.h>
++#include <linux/memory.h>
++#include <asm/unistd.h>
++
++int syscall_get_nr(struct task_struct *task, struct pt_regs *regs);
++
++static inline long syscall_get_return_value(struct task_struct *task,
++					    struct pt_regs *regs)
++{
++	return regs->ARM_r0;
++}
++
++static inline long syscall_get_error(struct task_struct *task,
++				     struct pt_regs *regs)
++{
++	return regs->ARM_r0;
++}
++
++#endif /* _ASM_ARM_SYSCALLS_H */
+diff --git a/arch/arm/include/asm/unistd.h b/arch/arm/include/asm/unistd.h
+index dd2bf53..89484b4 100644
+--- a/arch/arm/include/asm/unistd.h
++++ b/arch/arm/include/asm/unistd.h
+@@ -392,6 +392,9 @@
+ #define __NR_rt_tgsigqueueinfo		(__NR_SYSCALL_BASE+363)
+ #define __NR_perf_event_open		(__NR_SYSCALL_BASE+364)
+ #define __NR_recvmmsg			(__NR_SYSCALL_BASE+365)
++#define __NR_eclone			(__NR_SYSCALL_BASE+366)
++#define __NR_checkpoint			(__NR_SYSCALL_BASE+367)
++#define __NR_restart			(__NR_SYSCALL_BASE+368)
+  /*
+  * The following SWIs are ARM private.
+diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+index 26d302c..bfe39d8 100644
+--- a/arch/arm/kernel/Makefile
++++ b/arch/arm/kernel/Makefile
+@@ -39,6 +39,7 @@ obj-$(CONFIG_ARM_THUMBEE)	+= thumbee.o
+ obj-$(CONFIG_KGDB)		+= kgdb.o
+ obj-$(CONFIG_ARM_UNWIND)	+= unwind.o
+ obj-$(CONFIG_HAVE_TCM)		+= tcm.o
++obj-$(CONFIG_CHECKPOINT)	+= checkpoint.o
+  obj-$(CONFIG_CRUNCH)		+= crunch.o crunch-bits.o
+ AFLAGS_crunch-bits.o		:= -Wa,-mcpu=ep9312
+diff --git a/arch/arm/kernel/calls.S b/arch/arm/kernel/calls.S
+index 37ae301..aa38a4e 100644
+--- a/arch/arm/kernel/calls.S
++++ b/arch/arm/kernel/calls.S
+@@ -375,6 +375,9 @@
+ 		CALL(sys_rt_tgsigqueueinfo)
+ 		CALL(sys_perf_event_open)
+ /* 365 */	CALL(sys_recvmmsg)
++		CALL(sys_eclone_wrapper)
++		CALL(sys_checkpoint)
++		CALL(sys_restart)
+ #ifndef syscalls_counted
+ .equ syscalls_padding, ((NR_syscalls + 3) & ~3) - NR_syscalls
+ #define syscalls_counted
+diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
+index 2c1db77..ba365dc 100644
+--- a/arch/arm/kernel/entry-common.S
++++ b/arch/arm/kernel/entry-common.S
+@@ -380,6 +380,12 @@ sys_clone_wrapper:
+ 		b	sys_clone
+ ENDPROC(sys_clone_wrapper)
+ +sys_eclone_wrapper:
++		add	ip, sp, #S_OFF
++		str	ip, [sp, #0]
++		b	sys_eclone
++ENDPROC(sys_eclone_wrapper)
++
+ sys_sigreturn_wrapper:
+ 		add	r0, sp, #S_OFF
+ 		b	sys_sigreturn
+diff --git a/arch/arm/kernel/ptrace.c b/arch/arm/kernel/ptrace.c
+index 3f562a7..26ac9ef 100644
+--- a/arch/arm/kernel/ptrace.c
++++ b/arch/arm/kernel/ptrace.c
+@@ -23,6 +23,7 @@
+ #include <asm/pgtable.h>
+ #include <asm/system.h>
+ #include <asm/traps.h>
++#include <asm/syscall.h>
+  #include "ptrace.h"
+ @@ -863,3 +864,71 @@ asmlinkage int syscall_trace(int why, struct pt_regs
+*regs, int scno)
+  	return current_thread_info()->syscall;
+ }
++
++/*
++ * This function essentially duplicates the logic from vector_swi in
++ * arch/arm/kernel/entry-common.S. However, that code is in the
++ * critical path for system calls and is hard to factor out without
++ * compromising performance.
++ */
++int syscall_get_nr(struct task_struct *task, struct pt_regs *regs)
++{
++	int ret;
++	int scno;
++	unsigned long instr;
++	bool config_oabi = false;
++	bool config_aeabi = false;
++	bool config_arm_thumb = false;
++	bool config_cpu_endian_be8 = false;
++
++#ifdef CONFIG_OABI_COMPAT
++	config_oabi = true;
++#endif
++#ifdef CONFIG_AEABI
++	config_aeabi = true;
++#endif
++#ifdef CONFIG_ARM_THUMB
++	config_arm_thumb = true;
++#endif
++#ifdef CONFIG_CPU_ENDIAN_BE8
++	config_cpu_endian_be8 = true;
++#endif
++#ifdef CONFIG_CPU_ARM710
++	return -1;
++#endif
++
++	if (config_aeabi && !config_oabi) {
++		/* Pure EABI */
++		return regs->ARM_r7;
++	} else if (config_oabi) {
++		if (config_arm_thumb && (regs->ARM_cpsr & PSR_T_BIT))
++			return -1;
++
++		ret = access_process_vm(task, regs->ARM_pc - 4, &instr,
++					sizeof(unsigned long), 0);
++		if (ret != sizeof(unsigned long))
++			return -1;
++
++		if (config_cpu_endian_be8)
++			asm ("rev %[out], %[in]": [out] "=r" (instr):
++						  [in] "r" (instr));
++
++		if ((instr & 0x00ffffff) == 0)
++			return regs->ARM_r7; /* EABI call */
++		else
++			return (instr & 0x00ffffff) | __NR_OABI_SYSCALL_BASE;
++	} else {
++		 /* Legacy ABI only */
++		if (config_arm_thumb && (regs->ARM_cpsr & PSR_T_BIT)) {
++			/* Thumb mode ABI */
++			scno = regs->ARM_r7 + __NR_SYSCALL_BASE;
++		} else {
++			ret = access_process_vm(task, regs->ARM_pc - 4, &instr,
++						sizeof(unsigned long), 0);
++			if (ret != sizeof(unsigned long))
++				return -1;
++			scno = instr;
++		}
++		return scno & 0x00ffffff;
++	}
++}
+diff --git a/arch/arm/kernel/signal.c b/arch/arm/kernel/signal.c
+index 907d5a6..d37ef41 100644
+--- a/arch/arm/kernel/signal.c
++++ b/arch/arm/kernel/signal.c
+@@ -773,6 +773,11 @@ static void do_signal(struct pt_regs *regs, int syscall)
+ 	single_step_set(current);
+ }
+ +int task_has_saved_sigmask(struct task_struct *task)
++{
++	return !!(task_thread_info(task)->flags & _TIF_RESTORE_SIGMASK);
++}
++
+ asmlinkage void
+ do_notify_resume(struct pt_regs *regs, unsigned int thread_flags, int syscall)
+ {
+diff --git a/arch/arm/kernel/sys_arm.c b/arch/arm/kernel/sys_arm.c
+index c235018..5473ebd 100644
+--- a/arch/arm/kernel/sys_arm.c
++++ b/arch/arm/kernel/sys_arm.c
+@@ -27,6 +27,7 @@
+ #include <linux/ipc.h>
+ #include <linux/uaccess.h>
+ #include <linux/slab.h>
++#include <linux/checkpoint.h>
+  /* Fork a new task - this creates a new program thread.
+  * This is called indirectly via a small wrapper
+@@ -127,3 +128,15 @@ asmlinkage long sys_arm_fadvise64_64(int fd, int advice,
+ {
+ 	return sys_fadvise64_64(fd, offset, len, advice);
+ }
++
++asmlinkage long sys_checkpoint(unsigned long pid, unsigned long fd,
++			       unsigned long flags, unsigned long logfd)
++{
++	return do_sys_checkpoint(pid, fd, flags, logfd);
++}
++
++asmlinkage long sys_restart(unsigned long pid, unsigned long fd,
++			    unsigned long flags, unsigned long logfd)
++{
++	return do_sys_restart(pid, fd, flags, logfd);
++}
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index 2e19500..16416b0 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -26,6 +26,9 @@ config MMU
+ 	bool
+ 	default y
+ +config CHECKPOINT_SUPPORT
++	def_bool y
++
+ config GENERIC_CMOS_UPDATE
+ 	def_bool y
+ diff --git a/arch/powerpc/include/asm/Kbuild b/arch/powerpc/include/asm/Kbuild
+index 5ab7d7f..20379f1 100644
+--- a/arch/powerpc/include/asm/Kbuild
++++ b/arch/powerpc/include/asm/Kbuild
+@@ -12,6 +12,7 @@ header-y += shmbuf.h
+ header-y += socket.h
+ header-y += termbits.h
+ header-y += fcntl.h
++header-y += checkpoint_hdr.h
+ header-y += poll.h
+ header-y += sockios.h
+ header-y += ucontext.h
+diff --git a/arch/powerpc/include/asm/elf.h b/arch/powerpc/include/asm/elf.h
+index c376eda..0b06255 100644
+--- a/arch/powerpc/include/asm/elf.h
++++ b/arch/powerpc/include/asm/elf.h
+@@ -266,6 +266,7 @@ extern int ucache_bsize;
+ #define ARCH_HAS_SETUP_ADDITIONAL_PAGES
+ struct linux_binprm;
+ extern int arch_setup_additional_pages(struct linux_binprm *bprm,
++				       unsigned long start,
+ 				       int uses_interp);
+ #define VDSO_AUX_ENT(a,b) NEW_AUX_ENT(a,b);
+ diff --git a/arch/powerpc/include/asm/ptrace.h b/arch/powerpc/include/asm/ptrace.h
+index 9e2d84c..a88d711 100644
+--- a/arch/powerpc/include/asm/ptrace.h
++++ b/arch/powerpc/include/asm/ptrace.h
+@@ -87,6 +87,8 @@ struct pt_regs {
+  #ifndef __ASSEMBLY__
+ +#include <linux/types.h>
++
+ #define instruction_pointer(regs) ((regs)->nip)
+ #define user_stack_pointer(regs) ((regs)->gpr[1])
+ #define regs_return_value(regs) ((regs)->gpr[3])
+@@ -141,6 +143,11 @@ do {									      \
+ #define arch_has_block_step()	(!cpu_has_feature(CPU_FTR_601))
+ #define ARCH_HAS_USER_SINGLE_STEP_INFO
+ +/* for reprogramming DABR/DAC during restart of a checkpointed task */
++extern bool debugreg_valid(unsigned long val, unsigned int index);
++extern void debugreg_update(struct task_struct *task, unsigned long val,
++			    unsigned int index);
++
+ #endif /* __ASSEMBLY__ */
+  #endif /* __KERNEL__ */
+diff --git a/arch/powerpc/include/asm/systbl.h b/arch/powerpc/include/asm/systbl.h
+index f94fc43..b5afba3 100644
+--- a/arch/powerpc/include/asm/systbl.h
++++ b/arch/powerpc/include/asm/systbl.h
+@@ -327,3 +327,5 @@ COMPAT_SYS_SPU(preadv)
+ COMPAT_SYS_SPU(pwritev)
+ COMPAT_SYS(rt_tgsigqueueinfo)
+ PPC_SYS(eclone)
++PPC_SYS(checkpoint)
++PPC_SYS(restart)
+diff --git a/arch/powerpc/include/asm/unistd.h b/arch/powerpc/include/asm/unistd.h
+index 4cdbd5c..54f6ecb 100644
+--- a/arch/powerpc/include/asm/unistd.h
++++ b/arch/powerpc/include/asm/unistd.h
+@@ -346,10 +346,12 @@
+ #define __NR_pwritev		321
+ #define __NR_rt_tgsigqueueinfo	322
+ #define __NR_eclone		323
++#define __NR_checkpoint		324
++#define __NR_restart		325
+  #ifdef __KERNEL__
+ -#define __NR_syscalls		324
++#define __NR_syscalls		326
+  #define __NR__exit __NR_exit
+ #define NR_syscalls	__NR_syscalls
+diff --git a/arch/powerpc/kernel/Makefile b/arch/powerpc/kernel/Makefile
+index 8773263..6d294a4 100644
+--- a/arch/powerpc/kernel/Makefile
++++ b/arch/powerpc/kernel/Makefile
+@@ -63,6 +63,7 @@ obj64-$(CONFIG_HIBERNATION)	+= swsusp_asm64.o
+ obj-$(CONFIG_MODULES)		+= module.o module_$(CONFIG_WORD_SIZE).o
+ obj-$(CONFIG_44x)		+= cpu_setup_44x.o
+ obj-$(CONFIG_FSL_BOOKE)		+= cpu_setup_fsl_booke.o dbell.o
++obj-$(CONFIG_CHECKPOINT)	+= checkpoint.o
+  extra-y				:= head_$(CONFIG_WORD_SIZE).o
+ extra-$(CONFIG_PPC_BOOK3E_32)	:= head_new_booke.o
+diff --git a/arch/powerpc/kernel/entry_32.S b/arch/powerpc/kernel/entry_32.S
+index 579f1da..853814b 100644
+--- a/arch/powerpc/kernel/entry_32.S
++++ b/arch/powerpc/kernel/entry_32.S
+@@ -594,6 +594,29 @@ ppc_eclone:
+ 	stw	r0,_TRAP(r1)		/* register set saved */
+ 	b	sys_eclone
+ +/* To handle self-checkpoint we must save nvpgprs */
++	.globl	ppc_checkpoint
++ppc_checkpoint:
++	SAVE_NVGPRS(r1)
++	lwz	r0,_TRAP(r1)
++	rlwinm	r0,r0,0,0,30		/* clear LSB to indicate full */
++	stw	r0,_TRAP(r1)		/* register set saved */
++	b	sys_checkpoint
++
++/* The full register set must be restored upon return from restart.
++ * Save nvgprs unconditionally so the caller's state is
++ * restored correctly in case of error.
++ */
++	.globl	ppc_restart
++ppc_restart:
++	SAVE_NVGPRS(r1)
++	lwz	r0,_TRAP(r1)
++	rlwinm	r0,r0,0,0,30		/* clear LSB to indicate full */
++	stw	r0,_TRAP(r1)		/* register set saved */
++	bl	sys_restart
++	REST_NVGPRS(r1)
++	b ret_from_syscall
++
+ 	.globl	ppc_swapcontext
+ ppc_swapcontext:
+ 	SAVE_NVGPRS(r1)
+diff --git a/arch/powerpc/kernel/entry_64.S b/arch/powerpc/kernel/entry_64.S
+index b763340..228f592 100644
+--- a/arch/powerpc/kernel/entry_64.S
++++ b/arch/powerpc/kernel/entry_64.S
+@@ -349,6 +349,22 @@ _GLOBAL(ppc_eclone)
+ 	bl	.sys_eclone
+ 	b	syscall_exit
+ +/* To handle self-checkpoint we must save nvpgprs */
++_GLOBAL(ppc_checkpoint)
++	bl	.save_nvgprs
++	bl	.sys_checkpoint
++	b	syscall_exit
++
++/* The full register set must be restored upon return from restart.
++ * Save nvgprs unconditionally so the caller's state is
++ * restored correctly in case of error.
++ */
++_GLOBAL(ppc_restart)
++	bl	.save_nvgprs
++	bl	.sys_restart
++	REST_NVGPRS(r1)
++	b	syscall_exit
++
+ _GLOBAL(ppc32_swapcontext)
+ 	bl	.save_nvgprs
+ 	bl	.compat_sys_swapcontext
+diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
+index b183287..1664586 100644
+--- a/arch/powerpc/kernel/process.c
++++ b/arch/powerpc/kernel/process.c
+@@ -30,6 +30,7 @@
+ #include <linux/init_task.h>
+ #include <linux/module.h>
+ #include <linux/kallsyms.h>
++#include <linux/checkpoint.h>
+ #include <linux/mqueue.h>
+ #include <linux/hardirq.h>
+ #include <linux/utsname.h>
+diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
+index ed2cfe1..972e6a1 100644
+--- a/arch/powerpc/kernel/ptrace.c
++++ b/arch/powerpc/kernel/ptrace.c
+@@ -763,19 +763,23 @@ void user_disable_single_step(struct task_struct *task)
+ 	clear_tsk_thread_flag(task, TIF_SINGLESTEP);
+ }
+ -int ptrace_set_debugreg(struct task_struct *task, unsigned long addr,
+-			       unsigned long data)
++/**
++ * debugreg_valid() - validate the value to be written to a debug register
++ * @val:	The prospective contents of the register.
++ * @index:	Must be zero.
++ *
++ * Returns true if @val is an acceptable value for the register indicated by
++ * @index, false otherwise.
++ */
++bool debugreg_valid(unsigned long val, unsigned int index)
+ {
+-	/* For ppc64 we support one DABR and no IABR's at the moment (ppc64).
+-	 *  For embedded processors we support one DAC and no IAC's at the
+-	 *  moment.
+-	 */
+-	if (addr > 0)
+-		return -EINVAL;
++	/* We support only one debug register for now */
++	if (index != 0)
++		return false;
+  	/* The bottom 3 bits in dabr are flags */
+-	if ((data & ~0x7UL) >= TASK_SIZE)
+-		return -EIO;
++	if ((val & ~0x7UL) >= TASK_SIZE)
++		return false;
+  #ifndef CONFIG_PPC_ADV_DEBUG_REGS
+ 	/* For processors using DABR (i.e. 970), the bottom 3 bits are flags.
+@@ -791,19 +795,38 @@ int ptrace_set_debugreg(struct task_struct *task, unsigned
+long addr,
+ 	 */
+  	/* Ensure breakpoint translation bit is set */
+-	if (data && !(data & DABR_TRANSLATION))
+-		return -EIO;
+-
+-	/* Move contents to the DABR register */
+-	task->thread.dabr = data;
+-#else /* CONFIG_PPC_ADV_DEBUG_REGS */
++	if (val && !(val & DABR_TRANSLATION))
++		return false;
++#else
+ 	/* As described above, it was assumed 3 bits were passed with the data
+ 	 *  address, but we will assume only the mode bits will be passed
+ 	 *  as to not cause alignment restrictions for DAC-based processors.
+ 	 */
+ +	/* Read or Write bits must be set */
++	if (!(val & 0x3UL))
++		return -EINVAL;
++#endif
++	return true;
++}
++
++/**
++ * debugreg_update() - update a debug register associated with a task
++ * @task:	The task whose register state is to be modified.
++ * @val:	The value to be written to the debug register.
++ * @index:	Specifies the debug register.  Currently unused.
++ *
++ * Set a task's DABR/DAC to @val, which should be validated with
++ * debugreg_valid() beforehand.
++ */
++void debugreg_update(struct task_struct *task, unsigned long val,
++		     unsigned int index)
++{
++#ifndef CONFIG_PPC_ADV_DEBUG_REGS
++	task->thread.dabr = val;
++#else
+ 	/* DAC's hold the whole address without any mode flags */
+-	task->thread.dac1 = data & ~0x3UL;
++	task->thread.dabr = val & ~0x3UL;
+  	if (task->thread.dac1 == 0) {
+ 		dbcr_dac(task) &= ~(DBCR_DAC1R | DBCR_DAC1W);
+@@ -812,13 +835,8 @@ int ptrace_set_debugreg(struct task_struct *task, unsigned
+long addr,
+ 			task->thread.regs->msr &= ~MSR_DE;
+ 			task->thread.dbcr0 &= ~DBCR0_IDM;
+ 		}
+-		return 0;
+ 	}
+ -	/* Read or Write bits must be set */
+-
+-	if (!(data & 0x3UL))
+-		return -EINVAL;
+  	/* Set the Internal Debugging flag (IDM bit 1) for the DBCR0
+ 	   register */
+@@ -827,12 +845,29 @@ int ptrace_set_debugreg(struct task_struct *task, unsigned
+long addr,
+ 	/* Check for write and read flags and set DBCR0
+ 	   accordingly */
+ 	dbcr_dac(task) &= ~(DBCR_DAC1R|DBCR_DAC1W);
+-	if (data & 0x1UL)
++	if (val & 0x1UL)
+ 		dbcr_dac(task) |= DBCR_DAC1R;
+-	if (data & 0x2UL)
++	if (val & 0x2UL)
+ 		dbcr_dac(task) |= DBCR_DAC1W;
+ 	task->thread.regs->msr |= MSR_DE;
+ #endif /* CONFIG_PPC_ADV_DEBUG_REGS */
++}
++
++static int ptrace_set_debugreg(struct task_struct *task, unsigned long addr,
++			       unsigned long data)
++{
++	/* For ppc64 we support one DABR and no IABR's at the moment (ppc64).
++	 * For embedded processors we support one DAC and no IAC's at the
++	 * moment.
++	 */
++	if (addr > 0)
++		return -EINVAL;
++
++	if (!debugreg_valid(data, 0))
++		return -EIO;
++
++	debugreg_update(task, data, 0);
++
+ 	return 0;
+ }
+ diff --git a/arch/powerpc/kernel/signal.c b/arch/powerpc/kernel/signal.c
+index a0afb55..b3337ad 100644
+--- a/arch/powerpc/kernel/signal.c
++++ b/arch/powerpc/kernel/signal.c
+@@ -186,6 +186,12 @@ static int do_signal_pending(sigset_t *oldset, struct
+pt_regs *regs)
+ 	return ret;
+ }
+ +int task_has_saved_sigmask(struct task_struct *task)
++{
++	struct thread_info *ti = task_thread_info(task);
++	return !!(ti->local_flags & _TLF_RESTORE_SIGMASK);
++}
++
+ void do_signal(struct pt_regs *regs, unsigned long thread_info_flags)
+ {
+ 	if (thread_info_flags & _TIF_SIGPENDING)
+diff --git a/arch/powerpc/kernel/vdso.c b/arch/powerpc/kernel/vdso.c
+index d84d192..74210ab 100644
+--- a/arch/powerpc/kernel/vdso.c
++++ b/arch/powerpc/kernel/vdso.c
+@@ -188,7 +188,8 @@ static void dump_vdso_pages(struct vm_area_struct * vma)
+  * This is called from binfmt_elf, we create the special vma for the
+  * vDSO and insert it into the mm struct tree
+  */
+-int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
++int arch_setup_additional_pages(struct linux_binprm *bprm,
++				unsigned long start, int uses_interp)
+ {
+ 	struct mm_struct *mm = current->mm;
+ 	struct page **vdso_pagelist;
+@@ -220,6 +221,10 @@ int arch_setup_additional_pages(struct linux_binprm *bprm,
+int uses_interp)
+ 	vdso_base = VDSO32_MBASE;
+ #endif
+ +	/* in case restart(2) mandates a specific location */
++	if (start)
++		vdso_base = start;
++
+ 	current->mm->context.vdso_base = 0;
+  	/* vDSO has a problem and was disabled, just don't "enable" it for the
+@@ -249,6 +254,12 @@ int arch_setup_additional_pages(struct linux_binprm *bprm,
+int uses_interp)
+ 	/* Add required alignment. */
+ 	vdso_base = ALIGN(vdso_base, VDSO_ALIGNMENT);
+ +	/* for restart(2), double check that we got we asked for */
++	if (start && vdso_base != start) {
++		rc = -EBUSY;
++		goto fail_mmapsem;
++	}
++
+ 	/*
+ 	 * Put vDSO base into mm struct. We need to do this before calling
+ 	 * install_special_mapping or the perf counter mmap tracking code
+diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
+index 0d8cd9b..b358e63 100644
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -49,6 +49,10 @@ config GENERIC_TIME_VSYSCALL
+ config GENERIC_CLOCKEVENTS
+ 	def_bool y
+ +config CHECKPOINT_SUPPORT
++	bool
++	default y if 64BIT
++
+ config GENERIC_BUG
+ 	bool
+ 	depends on BUG
+diff --git a/arch/s390/include/asm/Kbuild b/arch/s390/include/asm/Kbuild
+index 63a2341..3282a6e 100644
+--- a/arch/s390/include/asm/Kbuild
++++ b/arch/s390/include/asm/Kbuild
+@@ -8,6 +8,7 @@ header-y += ucontext.h
+ header-y += vtoc.h
+ header-y += zcrypt.h
+ header-y += chsc.h
++header-y += checkpoint_hdr.h
+  unifdef-y += cmb.h
+ unifdef-y += debug.h
+diff --git a/arch/s390/include/asm/elf.h b/arch/s390/include/asm/elf.h
+index 354d426..5081938 100644
+--- a/arch/s390/include/asm/elf.h
++++ b/arch/s390/include/asm/elf.h
+@@ -216,6 +216,6 @@ do {									    \
+ struct linux_binprm;
+  #define ARCH_HAS_SETUP_ADDITIONAL_PAGES 1
+-int arch_setup_additional_pages(struct linux_binprm *, int);
++int arch_setup_additional_pages(struct linux_binprm *, unsigned long, int);
+  #endif
+diff --git a/arch/s390/include/asm/thread_info.h
+b/arch/s390/include/asm/thread_info.h
+index 34f0873..60f932e 100644
+--- a/arch/s390/include/asm/thread_info.h
++++ b/arch/s390/include/asm/thread_info.h
+@@ -99,6 +99,7 @@ static inline struct thread_info *current_thread_info(void)
+ #define TIF_MEMDIE		18
+ #define TIF_RESTORE_SIGMASK	19	/* restore signal mask in do_signal() */
+ #define TIF_FREEZE		20	/* thread is freezing for suspend */
++#define TIF_SIG_RESTARTBLOCK	23	/* restart must set TIF_RESTART_SVC */
+  #define _TIF_NOTIFY_RESUME	(1<<TIF_NOTIFY_RESUME)
+ #define _TIF_RESTORE_SIGMASK	(1<<TIF_RESTORE_SIGMASK)
+@@ -114,6 +115,7 @@ static inline struct thread_info *current_thread_info(void)
+ #define _TIF_POLLING_NRFLAG	(1<<TIF_POLLING_NRFLAG)
+ #define _TIF_31BIT		(1<<TIF_31BIT)
+ #define _TIF_FREEZE		(1<<TIF_FREEZE)
++#define _TIF_SIG_RESTARTBLOCK	(1<<TIF_SIG_RESTARTBLOCK)
+  #endif /* __KERNEL__ */
+ diff --git a/arch/s390/include/asm/unistd.h b/arch/s390/include/asm/unistd.h
+index ff13be1..79a4178 100644
+--- a/arch/s390/include/asm/unistd.h
++++ b/arch/s390/include/asm/unistd.h
+@@ -270,7 +270,9 @@
+ #define __NR_rt_tgsigqueueinfo	330
+ #define __NR_perf_event_open	331
+ #define __NR_eclone		332
+-#define NR_syscalls 333
++#define __NR_checkpoint		333
++#define __NR_restart		334
++#define NR_syscalls 335
+  /*   * There are some system calls that are not present on 64 bit, some
+diff --git a/arch/s390/kernel/Makefile b/arch/s390/kernel/Makefile
+index 64230bc..b472855 100644
+--- a/arch/s390/kernel/Makefile
++++ b/arch/s390/kernel/Makefile
+@@ -36,6 +36,7 @@ obj-$(CONFIG_SMP)		+= smp.o topology.o
+ obj-$(CONFIG_SMP)		+= $(if $(CONFIG_64BIT),switch_cpu64.o, \
+ 							switch_cpu.o)
+ obj-$(CONFIG_HIBERNATION)	+= suspend.o swsusp_asm64.o
++obj-$(CONFIG_CHECKPOINT)	+= checkpoint.o
+ obj-$(CONFIG_AUDIT)		+= audit.o
+ compat-obj-$(CONFIG_AUDIT)	+= compat_audit.o
+ obj-$(CONFIG_COMPAT)		+= compat_linux.o compat_signal.o \
+diff --git a/arch/s390/kernel/compat_wrapper.S b/arch/s390/kernel/compat_wrapper.S
+index b7bedfa..d57e5e0 100644
+--- a/arch/s390/kernel/compat_wrapper.S
++++ b/arch/s390/kernel/compat_wrapper.S
+@@ -1861,3 +1861,19 @@ sys32_execve_wrapper:
+ 	llgtr	%r3,%r3			# compat_uptr_t *
+ 	llgtr	%r4,%r4			# compat_uptr_t *
+ 	jg	sys32_execve		# branch to system call
++
++	.globl sys_checkpoint_wrapper
++sys_checkpoint_wrapper:
++	lgfr	%r2,%r2			# pid_t
++	lgfr	%r3,%r3			# int
++	llgfr	%r4,%r4			# unsigned long
++	lgfr	%r5,%r5			# int
++	jg	sys_checkpoint
++
++	.globl sys_restart_wrapper
++sys_restart_wrapper:
++	lgfr	%r2,%r2			# pid_t
++	lgfr	%r3,%r3			# int
++	llgfr	%r4,%r4			# unsigned long
++	lgfr	%r5,%r5			# int
++	jg	sys_restart
+diff --git a/arch/s390/kernel/process.c b/arch/s390/kernel/process.c
+index 799cbb0..efc7e8a 100644
+--- a/arch/s390/kernel/process.c
++++ b/arch/s390/kernel/process.c
+@@ -32,6 +32,7 @@
+ #include <linux/kernel_stat.h>
+ #include <linux/syscalls.h>
+ #include <linux/compat.h>
++#include <linux/checkpoint.h>
+ #include <asm/compat.h>
+ #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
+@@ -240,6 +241,32 @@ SYSCALL_DEFINE4(clone, unsigned long, newsp, unsigned long,
+clone_flags,
+ 		       parent_tidptr, child_tidptr);
+ }
+ +#ifdef CONFIG_CHECKPOINT
++SYSCALL_DEFINE4(checkpoint, pid_t, pid, int, fd, unsigned long, flags,
++		int, logfd)
++{
++	return do_sys_checkpoint(pid, fd, flags, logfd);
++}
++
++SYSCALL_DEFINE4(restart, pid_t, pid, int, fd, unsigned long, flags,
++		int, logfd)
++{
++	return do_sys_restart(pid, fd, flags, logfd);
++}
++#else
++SYSCALL_DEFINE4(checkpoint, pid_t, pid, int, fd, unsigned long, flags,
++		int, logfd)
++{
++	return -ENOSYS;
++}
++
++SYSCALL_DEFINE4(restart, pid_t, pid, int, fd, unsigned long, flags,
++		int, logfd)
++{
++	return -ENOSYS;
++}
++#endif
++
+ SYSCALL_DEFINE4(eclone, unsigned int, flags_low, struct clone_args __user *,
+ 		uca, int, args_size, pid_t __user *, pids)
+ {
+diff --git a/arch/s390/kernel/signal.c b/arch/s390/kernel/signal.c
+index 6289945..41e03d3 100644
+--- a/arch/s390/kernel/signal.c
++++ b/arch/s390/kernel/signal.c
+@@ -459,6 +459,16 @@ void do_signal(struct pt_regs *regs)
+ 			break;
+ 		case -ERESTART_RESTARTBLOCK:
+ 			regs->gprs[2] = -EINTR;
++			/*
++			 * This condition is the only one which requires
++			 * special care after handling a signr==0.  So if
++			 * we get frozen and checkpointed at the
++			 * get_signal_to_deliver() below, then we need
++			 * to convey this condition to sys_restart() so it
++			 * can set the restored thread up to run the restart
++			 * block.
++			 */
++			set_thread_flag(TIF_SIG_RESTARTBLOCK);
+ 		}
+ 		regs->svcnr = 0;	/* Don't deal with this again. */
+ 	}
+@@ -467,6 +477,12 @@ void do_signal(struct pt_regs *regs)
+ 	   the debugger may change all our registers ... */
+ 	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
+ +	/*
++	 * we won't get frozen past this so clear the thread flag hinting
++	 * to sys_restart that TIF_RESTART_SVC must be set.
++	 */
++	clear_thread_flag(TIF_SIG_RESTARTBLOCK);
++
+ 	/* Depending on the signal settings we may need to revert the
+ 	   decision to restart the system call. */
+ 	if (signr > 0 && regs->psw.addr == restart_addr) {
+@@ -524,6 +540,11 @@ void do_signal(struct pt_regs *regs)
+ 	}
+ }
+ +int task_has_saved_sigmask(struct task_struct *task)
++{
++	return !!(test_tsk_thread_flag(task, TIF_RESTORE_SIGMASK));
++}
++
+ void do_notify_resume(struct pt_regs *regs)
+ {
+ 	clear_thread_flag(TIF_NOTIFY_RESUME);
+diff --git a/arch/s390/kernel/syscalls.S b/arch/s390/kernel/syscalls.S
+index 08eab1d..9f1f28e 100644
+--- a/arch/s390/kernel/syscalls.S
++++ b/arch/s390/kernel/syscalls.S
+@@ -341,3 +341,5 @@ SYSCALL(sys_pwritev,sys_pwritev,compat_sys_pwritev_wrapper)
+ SYSCALL(sys_rt_tgsigqueueinfo,sys_rt_tgsigqueueinfo,compat_sys_rt_tgsigqueueinfo_wrapper) /* 330 */
+ SYSCALL(sys_perf_event_open,sys_perf_event_open,sys_perf_event_open_wrapper)
+ SYSCALL(sys_eclone,sys_eclone,sys_eclone_wrapper)
++SYSCALL(sys_checkpoint,sys_checkpoint,sys_checkpoint_wrapper)
++SYSCALL(sys_restart,sys_restart,sys_restart_wrapper)
+diff --git a/arch/s390/kernel/vdso.c b/arch/s390/kernel/vdso.c
+index 6bc9c19..54dad2f 100644
+--- a/arch/s390/kernel/vdso.c
++++ b/arch/s390/kernel/vdso.c
+@@ -195,7 +195,8 @@ static void vdso_init_cr5(void)
+  * This is called from binfmt_elf, we create the special vma for the
+  * vDSO and insert it into the mm struct tree
+  */
+-int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
++int arch_setup_additional_pages(struct linux_binprm *bprm,
++				unsigned long start, int uses_interp)
+ {
+ 	struct mm_struct *mm = current->mm;
+ 	struct page **vdso_pagelist;
+@@ -226,6 +227,10 @@ int arch_setup_additional_pages(struct linux_binprm *bprm,
+int uses_interp)
+ 	vdso_pages = vdso32_pages;
+ #endif
+ +	/* in case restart(2) mandates a specific location */
++	if (start)
++		vdso_base = start;
++
+ 	/*
+ 	 * vDSO has a problem and was disabled, just don't "enable" it for
+ 	 * the process
+@@ -248,6 +253,12 @@ int arch_setup_additional_pages(struct linux_binprm *bprm,
+int uses_interp)
+ 		goto out_up;
+ 	}
+ +	/* for restart(2), double check that we got we asked for */
++	if (start && vdso_base != start) {
++		rc = -EINVAL;
++		goto out_up;
++	}
++
+ 	/*
+ 	 * Put vDSO base into mm struct. We need to do this before calling
+ 	 * install_special_mapping or the perf counter mmap tracking code
+diff --git a/arch/s390/mm/Makefile b/arch/s390/mm/Makefile
+index eec0544..359a3bc 100644
+--- a/arch/s390/mm/Makefile
++++ b/arch/s390/mm/Makefile
+@@ -6,3 +6,4 @@ obj-y	 := init.o fault.o extmem.o mmap.o vmem.o pgtable.o
+maccess.o \
+ 	    page-states.o
+ obj-$(CONFIG_CMM) += cmm.o
+ obj-$(CONFIG_HUGETLB_PAGE) += hugetlbpage.o
++obj-$(CONFIG_PAGE_STATES) += page-states.o
+diff --git a/arch/sh/include/asm/elf.h b/arch/sh/include/asm/elf.h
+index ce830fa..4128c30 100644
+--- a/arch/sh/include/asm/elf.h
++++ b/arch/sh/include/asm/elf.h
+@@ -201,6 +201,7 @@ do {									\
+ #define ARCH_HAS_SETUP_ADDITIONAL_PAGES
+ struct linux_binprm;
+ extern int arch_setup_additional_pages(struct linux_binprm *bprm,
++				       unsigned long start,
+ 				       int uses_interp);
+  extern unsigned int vdso_enabled;
+diff --git a/arch/sh/kernel/vsyscall/vsyscall.c b/arch/sh/kernel/vsyscall/vsyscall.c
+index 242117c..6dbdfe1 100644
+--- a/arch/sh/kernel/vsyscall/vsyscall.c
++++ b/arch/sh/kernel/vsyscall/vsyscall.c
+@@ -58,7 +58,7 @@ int __init vsyscall_init(void)
+ }
+  /* Setup a VMA at program startup for the vsyscall page */
+-int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
++int arch_setup_additional_pages(struct linux_binprm *bprm, unsigned long start,
+int uses_interp)
+ {
+ 	struct mm_struct *mm = current->mm;
+ 	unsigned long addr;
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 9458685..335a4b3 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -93,6 +93,10 @@ config STACKTRACE_SUPPORT
+ config HAVE_LATENCYTOP_SUPPORT
+ 	def_bool y
+ +config CHECKPOINT_SUPPORT
++	bool
++	default y
++
+ config MMU
+ 	def_bool y
+ diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
+index b7f3f34..2efc4db 100644
+--- a/arch/x86/ia32/ia32entry.S
++++ b/arch/x86/ia32/ia32entry.S
+@@ -478,6 +478,13 @@ quiet_ni_syscall:
+ 	PTREGSCALL stub32_vfork, sys_vfork, %rdi
+ 	PTREGSCALL stub32_iopl, sys_iopl, %rsi
+ 	PTREGSCALL stub32_eclone, sys_eclone, %r8
++#ifdef CONFIG_CHECKPOINT
++	PTREGSCALL stub32_checkpoint, sys_checkpoint, %r8
++	PTREGSCALL stub32_restart, sys_restart, %r8
++#else
++	PTREGSCALL stub32_checkpoint, sys_ni_syscall, %r8
++	PTREGSCALL stub32_restart, sys_ni_syscall, %r8
++#endif
+  ENTRY(ia32_ptregs_common)
+ 	popq %r11
+@@ -844,4 +851,6 @@ ia32_sys_call_table:
+ 	.quad sys_perf_event_open
+ 	.quad compat_sys_recvmmsg
+ 	.quad stub32_eclone
++	.quad stub32_checkpoint
++	.quad stub32_restart			/* 340 */
+ ia32_syscall_end:
+diff --git a/arch/x86/include/asm/Kbuild b/arch/x86/include/asm/Kbuild
+index 493092e..0893cfa 100644
+--- a/arch/x86/include/asm/Kbuild
++++ b/arch/x86/include/asm/Kbuild
+@@ -2,6 +2,7 @@ include include/asm-generic/Kbuild.asm
+  header-y += boot.h
+ header-y += bootparam.h
++header-y += checkpoint_hdr.h
+ header-y += debugreg.h
+ header-y += ldt.h
+ header-y += msr-index.h
+diff --git a/arch/x86/include/asm/elf.h b/arch/x86/include/asm/elf.h
+index f2ad216..3761be8 100644
+--- a/arch/x86/include/asm/elf.h
++++ b/arch/x86/include/asm/elf.h
+@@ -312,9 +312,10 @@ struct linux_binprm;
+  #define ARCH_HAS_SETUP_ADDITIONAL_PAGES 1
+ extern int arch_setup_additional_pages(struct linux_binprm *bprm,
++				       unsigned long start,
+ 				       int uses_interp);
+ -extern int syscall32_setup_pages(struct linux_binprm *, int exstack);
++extern int syscall32_setup_pages(struct linux_binprm *, unsigned long start,
+int exstack);
+ #define compat_arch_setup_additional_pages	syscall32_setup_pages
+  extern unsigned long arch_randomize_brk(struct mm_struct *mm);
+diff --git a/arch/x86/include/asm/ldt.h b/arch/x86/include/asm/ldt.h
+index 46727eb..f2845f9 100644
+--- a/arch/x86/include/asm/ldt.h
++++ b/arch/x86/include/asm/ldt.h
+@@ -37,4 +37,11 @@ struct user_desc {
+ #define MODIFY_LDT_CONTENTS_CODE	2
+  #endif /* !__ASSEMBLY__ */
++
++#ifdef __KERNEL__
++#include <linux/linkage.h>
++asmlinkage int sys_modify_ldt(int func, void __user *ptr,
++			      unsigned long bytecount);
++#endif
++
+ #endif /* _ASM_X86_LDT_H */
+diff --git a/arch/x86/include/asm/syscalls.h b/arch/x86/include/asm/syscalls.h
+index d525677..538a1ef 100644
+--- a/arch/x86/include/asm/syscalls.h
++++ b/arch/x86/include/asm/syscalls.h
+@@ -29,6 +29,12 @@ long sys_clone(unsigned long, unsigned long, void __user *,
+ 	       void __user *, struct pt_regs *);
+ long sys_eclone(unsigned flags_low, struct clone_args __user *uca,
+ 		int args_size, pid_t __user *pids, struct pt_regs *regs);
++#ifdef CONFIG_CHECKPOINT
++long sys_checkpoint(pid_t pid, int fd, unsigned long flags,
++		    int logfd, struct pt_regs *regs);
++long sys_restart(pid_t pid, int fd, unsigned long flags,
++		 int logfd, struct pt_regs *regs);
++#endif
+  /* kernel/ldt.c */
+ asmlinkage int sys_modify_ldt(int, void __user *, unsigned long);
+diff --git a/arch/x86/include/asm/unistd_32.h b/arch/x86/include/asm/unistd_32.h
+index e543b0e..007d7cd 100644
+--- a/arch/x86/include/asm/unistd_32.h
++++ b/arch/x86/include/asm/unistd_32.h
+@@ -344,10 +344,12 @@
+ #define __NR_perf_event_open	336
+ #define __NR_recvmmsg		337
+ #define __NR_eclone		338
++#define __NR_checkpoint		339
++#define __NR_restart		340
+  #ifdef __KERNEL__
+ -#define NR_syscalls 339
++#define NR_syscalls 341
+  #define __ARCH_WANT_IPC_PARSE_VERSION
+ #define __ARCH_WANT_OLD_READDIR
+diff --git a/arch/x86/include/asm/unistd_64.h b/arch/x86/include/asm/unistd_64.h
+index 1cd16af..2b162e1 100644
+--- a/arch/x86/include/asm/unistd_64.h
++++ b/arch/x86/include/asm/unistd_64.h
+@@ -665,6 +665,10 @@ __SYSCALL(__NR_perf_event_open, sys_perf_event_open)
+ __SYSCALL(__NR_recvmmsg, sys_recvmmsg)
+ #define __NR_eclone				300
+ __SYSCALL(__NR_eclone, stub_eclone)
++#define __NR_checkpoint				301
++__SYSCALL(__NR_checkpoint, stub_checkpoint)
++#define __NR_restart				302
++__SYSCALL(__NR_restart, stub_restart)
+  #ifndef __NO_STUBS
+ #define __ARCH_WANT_OLD_READDIR
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 4c58352..916a7e1 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -117,6 +117,14 @@ obj-$(CONFIG_X86_CHECK_BIOS_CORRUPTION) += check.o
+  obj-$(CONFIG_SWIOTLB)			+= pci-swiotlb.o
+ +obj-$(CONFIG_CHECKPOINT)	+= checkpoint.o
++
++###
++# 32 bit specific files
++ifeq ($(CONFIG_X86_32),y)
++	obj-$(CONFIG_CHECKPOINT)	+= checkpoint_32.o
++endif
++
+ ###
+ # 64 bit specific files
+ ifeq ($(CONFIG_X86_64),y)
+@@ -130,4 +138,6 @@ ifeq ($(CONFIG_X86_64),y)
+  	obj-$(CONFIG_PCI_MMCONFIG)	+= mmconf-fam10h_64.o
+ 	obj-y				+= vsmp_64.o
++
++	obj-$(CONFIG_CHECKPOINT)	+= checkpoint_64.o
+ endif
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 65e1735..49d6628 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -781,6 +781,14 @@ PTREGSCALL0(rt_sigreturn)
+ PTREGSCALL2(vm86)
+ PTREGSCALL1(vm86old)
+ PTREGSCALL4(eclone)
++#ifdef CONFIG_CHECKPOINT
++PTREGSCALL4(checkpoint)
++PTREGSCALL4(restart)
++#else
++/* Use the weak defs in kernel/sys_ni.c */
++#define ptregs_checkpoint  sys_checkpoint
++#define ptregs_restart  sys_restart
++#endif
+  /* Clone is an oddball.  The 4th arg is in %edi */
+ 	ALIGN;
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 216681e..c2ece28 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -699,6 +699,13 @@ END(\label)
+ 	PTREGSCALL stub_sigaltstack, sys_sigaltstack, %rdx
+ 	PTREGSCALL stub_iopl, sys_iopl, %rsi
+ 	PTREGSCALL stub_eclone, sys_eclone, %r8
++#ifdef CONFIG_CHECKPOINT
++	PTREGSCALL stub_checkpoint, sys_checkpoint, %r8
++	PTREGSCALL stub_restart, sys_restart, %r8
++#else
++	PTREGSCALL stub_checkpoint, sys_ni_syscall, %r8
++	PTREGSCALL stub_restart, sys_ni_syscall, %r8
++#endif
+  ENTRY(ptregscall_common)
+ 	DEFAULT_FRAME 1 8	/* offset 8: return address */
+diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
+index 4fd173c..eb63d59 100644
+--- a/arch/x86/kernel/signal.c
++++ b/arch/x86/kernel/signal.c
+@@ -831,6 +831,11 @@ static void do_signal(struct pt_regs *regs)
+ 	}
+ }
+ +int task_has_saved_sigmask(struct task_struct *task)
++{
++	return !!(task_thread_info(task)->status & TS_RESTORE_SIGMASK);
++}
++
+ /*
+  * notification of userspace execution resumption
+  * - triggered by the TIF_WORK_MASK flags
+diff --git a/arch/x86/kernel/syscall_table_32.S b/arch/x86/kernel/syscall_table_32.S
+index 0c92570..2485482 100644
+--- a/arch/x86/kernel/syscall_table_32.S
++++ b/arch/x86/kernel/syscall_table_32.S
+@@ -338,3 +338,5 @@ ENTRY(sys_call_table)
+ 	.long sys_perf_event_open
+ 	.long sys_recvmmsg
+ 	.long ptregs_eclone
++	.long ptregs_checkpoint
++	.long ptregs_restart		/* 340 */
+diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
+index 02b442e..62043c1 100644
+--- a/arch/x86/vdso/vdso32-setup.c
++++ b/arch/x86/vdso/vdso32-setup.c
+@@ -310,7 +310,8 @@ int __init sysenter_setup(void)
+ }
+  /* Setup a VMA at program startup for the vsyscall page */
+-int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
++int arch_setup_additional_pages(struct linux_binprm *bprm,
++				unsigned long start, int uses_interp)
+ {
+ 	struct mm_struct *mm = current->mm;
+ 	unsigned long addr;
+@@ -331,13 +332,17 @@ int arch_setup_additional_pages(struct linux_binprm *bprm,
+int uses_interp)
+ 	if (compat)
+ 		addr = VDSO_HIGH_BASE;
+ 	else {
+-		addr = get_unmapped_area(NULL, 0, PAGE_SIZE, 0, 0);
++		addr = get_unmapped_area(NULL, start, PAGE_SIZE, 0, 0);
+ 		if (IS_ERR_VALUE(addr)) {
+ 			ret = addr;
+ 			goto up_fail;
+ 		}
+ 	}
+ +	/* for restart(2), double check that we got we asked for */
++	if (start && addr != start)
++		goto up_fail;
++
+ 	current->mm->context.vdso = (void *)addr;
+  	if (compat_uses_vma || !compat) {
+diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
+index ac74869..b813286 100644
+--- a/arch/x86/vdso/vma.c
++++ b/arch/x86/vdso/vma.c
+@@ -100,23 +100,28 @@ static unsigned long vdso_addr(unsigned long start,
+unsigned len)
+  /* Setup a VMA at program startup for the vsyscall page.
+    Not called for compat tasks */
+-int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
++int arch_setup_additional_pages(struct linux_binprm *bprm,
++				unsigned long start, int uses_interp)
+ {
+ 	struct mm_struct *mm = current->mm;
+ 	unsigned long addr;
+-	int ret;
++	int ret = -EINVAL;
+  	if (!vdso_enabled)
+ 		return 0;
+  	down_write(&mm->mmap_sem);
+-	addr = vdso_addr(mm->start_stack, vdso_size);
++	addr = start ? : vdso_addr(mm->start_stack, vdso_size);
+ 	addr = get_unmapped_area(NULL, addr, vdso_size, 0, 0);
+ 	if (IS_ERR_VALUE(addr)) {
+ 		ret = addr;
+ 		goto up_fail;
+ 	}
+ +	/* for restart(2), double check that we got we asked for */
++	if (start && addr != start)
++		goto up_fail;
++
+ 	current->mm->context.vdso = (void *)addr;
+  	ret = install_special_mapping(mm, addr, vdso_size,
+diff --git a/drivers/char/pty.c b/drivers/char/pty.c
+index d83a431..77c2d70 100644
+--- a/drivers/char/pty.c
++++ b/drivers/char/pty.c
+@@ -15,6 +15,7 @@
+  #include <linux/errno.h>
+ #include <linux/interrupt.h>
++#include <linux/file.h>
+ #include <linux/tty.h>
+ #include <linux/tty_flip.h>
+ #include <linux/fcntl.h>
+@@ -28,6 +29,7 @@
+ #include <linux/device.h>
+ #include <linux/uaccess.h>
+ #include <linux/bitops.h>
++#include <linux/file.h>
+ #include <linux/devpts_fs.h>
+ #include <linux/slab.h>
+ @@ -615,9 +617,10 @@ static const struct tty_operations pty_unix98_ops = {
+ };
+  /**
+- *	ptmx_open		-	open a unix 98 pty master
++ *	__ptmx_open		-	open a unix 98 pty master
+  *	@inode: inode of device file
+  *	@filp: file pointer to tty
++ *	@index: desired slave index
+  *
+  *	Allocate a unix98 pty master device from the ptmx driver.
+  *
+@@ -626,16 +629,15 @@ static const struct tty_operations pty_unix98_ops = {
+  *		allocated_ptys_lock handles the list of free pty numbers
+  */
+ -static int __ptmx_open(struct inode *inode, struct file *filp)
++static int __ptmx_open(struct inode *inode, struct file *filp, int index)
+ {
+ 	struct tty_struct *tty;
+ 	int retval;
+-	int index;
+  	nonseekable_open(inode, filp);
+  	/* find a device that is not in use. */
+-	index = devpts_new_index(inode);
++	index = devpts_new_index(inode, index);
+ 	if (index < 0)
+ 		return index;
+ @@ -672,11 +674,40 @@ static int ptmx_open(struct inode *inode, struct file *filp)
+ 	int ret;
+  	lock_kernel();
+-	ret = __ptmx_open(inode, filp);
++	ret = __ptmx_open(inode, filp, UNSPECIFIED_PTY_INDEX);
+ 	unlock_kernel();
+ 	return ret;
+ }
+ +static int ptmx_release(struct inode *inode, struct file *filp)
++{
++	return tty_release(inode, filp);
++}
++
++struct file *pty_open_by_index(char *ptmxpath, int index)
++{
++	struct file *ptmxfile;
++	int ret;
++
++	/*
++	 * We need to pick a way to specify which devpts mountpoint to
++	 * use. For now, we'll just use whatever /dev/ptmx points to.
++	 */
++	ptmxfile = filp_open(ptmxpath, O_RDWR|O_NOCTTY, 0);
++	if (IS_ERR(ptmxfile))
++		return ptmxfile;
++
++	lock_kernel();
++	ret = __ptmx_open(ptmxfile->f_dentry->d_inode, ptmxfile, index);
++	unlock_kernel();
++	if (ret) {
++		fput(ptmxfile);
++		return ERR_PTR(ret);
++	}
++
++	return ptmxfile;
++}
++
+ static struct file_operations ptmx_fops;
+  static void __init unix98_pty_init(void)
+@@ -733,6 +764,7 @@ static void __init unix98_pty_init(void)
+ 	/* Now create the /dev/ptmx special device */
+ 	tty_default_fops(&ptmx_fops);
+ 	ptmx_fops.open = ptmx_open;
++	ptmx_fops.release = ptmx_release;
+  	cdev_init(&ptmx_cdev, &ptmx_fops);
+ 	if (cdev_add(&ptmx_cdev, MKDEV(TTYAUX_MAJOR, 2), 1) ||
+diff --git a/drivers/char/tty_io.c b/drivers/char/tty_io.c
+index 6da962c..3977322 100644
+--- a/drivers/char/tty_io.c
++++ b/drivers/char/tty_io.c
+@@ -96,6 +96,7 @@
+ #include <linux/bitops.h>
+ #include <linux/delay.h>
+ #include <linux/seq_file.h>
++#include <linux/mount.h>
+  #include <linux/uaccess.h>
+ #include <asm/system.h>
+@@ -106,6 +107,7 @@
+  #include <linux/kmod.h>
+ #include <linux/nsproxy.h>
++#include <linux/checkpoint.h>
+  #undef TTY_DEBUG_HANGUP
+ @@ -2162,7 +2164,7 @@ static int fionbio(struct file *file, int __user *p)
+  *		Takes ->siglock() when updating signal->tty
+  */
+ -static int tiocsctty(struct tty_struct *tty, int arg)
++int tiocsctty(struct tty_struct *tty, int arg)
+ {
+ 	int ret = 0;
+ 	if (current->signal->leader && (task_session(current) == tty->session))
+@@ -2251,10 +2253,10 @@ static int tiocgpgrp(struct tty_struct *tty, struct
+tty_struct *real_tty, pid_t
+ }
+  /**
+- *	tiocspgrp		-	attempt to set process group
++ *	do_tiocspgrp		-	attempt to set process group
+  *	@tty: tty passed by user
+  *	@real_tty: tty side device matching tty passed by user
+- *	@p: pid pointer
++ *	@pid: pgrp_nr
+  *
+  *	Set the process group of the tty to the session passed. Only
+  *	permitted where the tty session is our session.
+@@ -2262,10 +2264,10 @@ static int tiocgpgrp(struct tty_struct *tty, struct
+tty_struct *real_tty, pid_t
+  *	Locking: RCU, ctrl lock
+  */
+ -static int tiocspgrp(struct tty_struct *tty, struct tty_struct *real_tty,
+pid_t __user *p)
++int do_tiocspgrp(struct tty_struct *tty,
++		 struct tty_struct *real_tty, pid_t pgrp_nr)
+ {
+ 	struct pid *pgrp;
+-	pid_t pgrp_nr;
+ 	int retval = tty_check_change(real_tty);
+ 	unsigned long flags;
+ @@ -2277,8 +2279,6 @@ static int tiocspgrp(struct tty_struct *tty, struct
+tty_struct *real_tty, pid_t
+ 	    (current->signal->tty != real_tty) ||
+ 	    (real_tty->session != task_session(current)))
+ 		return -ENOTTY;
+-	if (get_user(pgrp_nr, p))
+-		return -EFAULT;
+ 	if (pgrp_nr < 0)
+ 		return -EINVAL;
+ 	rcu_read_lock();
+@@ -2300,6 +2300,27 @@ out_unlock:
+ }
+  /**
++ *	tiocspgrp		-	attempt to set process group
++ *	@tty: tty passed by user
++ *	@real_tty: tty side device matching tty passed by user
++ *	@p: pid pointer
++ *
++ *	Set the process group of the tty to the session passed. Only
++ *	permitted where the tty session is our session.
++ *
++ *	Locking: RCU, ctrl lock
++ */
++
++static int tiocspgrp(struct tty_struct *tty, struct tty_struct *real_tty, pid_t
+__user *p)
++{
++	pid_t pgrp_nr;
++
++	if (get_user(pgrp_nr, p))
++		return -EFAULT;
++	return do_tiocspgrp(tty, real_tty, pgrp_nr);
++}
++
++/**
+  *	tiocgsid		-	get session id
+  *	@tty: tty passed by user
+  *	@real_tty: tty side of the tty pased by the user if a pty else the tty
+diff --git a/drivers/net/loopback.c b/drivers/net/loopback.c
+index 72b7949..83c9bf7 100644
+--- a/drivers/net/loopback.c
++++ b/drivers/net/loopback.c
+@@ -156,9 +156,12 @@ static void loopback_dev_free(struct net_device *dev)
+ }
+  static const struct net_device_ops loopback_ops = {
+-	.ndo_init      = loopback_dev_init,
+-	.ndo_start_xmit= loopback_xmit,
+-	.ndo_get_stats = loopback_get_stats,
++	.ndo_init       = loopback_dev_init,
++	.ndo_start_xmit = loopback_xmit,
++	.ndo_get_stats  = loopback_get_stats,
++#ifdef CONFIG_NETNS_CHECKPOINT
++	.ndo_checkpoint = loopback_checkpoint,
++#endif
+ };
+  /*
+diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
+index 40faa36..8bd6be9 100644
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -501,6 +501,9 @@ static const struct net_device_ops macvlan_netdev_ops = {
+ 	.ndo_set_multicast_list	= macvlan_set_multicast_list,
+ 	.ndo_get_stats		= macvlan_dev_get_stats,
+ 	.ndo_validate_addr	= eth_validate_addr,
++#ifdef CONFIG_NETNS_CHECKPOINT
++	.ndo_checkpoint		= macvlan_checkpoint,
++#endif
+ };
+  static void macvlan_setup(struct net_device *dev)
+diff --git a/drivers/net/veth.c b/drivers/net/veth.c
+index f9f0730..9d776c9 100644
+--- a/drivers/net/veth.c
++++ b/drivers/net/veth.c
+@@ -293,6 +293,9 @@ static const struct net_device_ops veth_netdev_ops = {
+ 	.ndo_change_mtu      = veth_change_mtu,
+ 	.ndo_get_stats       = veth_get_stats,
+ 	.ndo_set_mac_address = eth_mac_addr,
++#ifdef CONFIG_NETNS_CHECKPOINT
++	.ndo_checkpoint      = veth_checkpoint,
++#endif
+ };
+  static void veth_setup(struct net_device *dev)
+diff --git a/fs/Makefile b/fs/Makefile
+index 97f340f..aa25755 100644
+--- a/fs/Makefile
++++ b/fs/Makefile
+@@ -29,6 +29,7 @@ obj-$(CONFIG_EVENTFD)		+= eventfd.o
+ obj-$(CONFIG_AIO)               += aio.o
+ obj-$(CONFIG_FILE_LOCKING)      += locks.o
+ obj-$(CONFIG_COMPAT)		+= compat.o compat_ioctl.o
++obj-$(CONFIG_CHECKPOINT)        += checkpoint.o
+  nfsd-$(CONFIG_NFSD)		:= nfsctl.o
+ obj-y				+= $(nfsd-y) $(nfsd-m)
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index 535e763..6434003 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -923,7 +923,7 @@ static int load_elf_binary(struct linux_binprm *bprm, struct
+pt_regs *regs)
+ 	set_binfmt(&elf_format);
+  #ifdef ARCH_HAS_SETUP_ADDITIONAL_PAGES
+-	retval = arch_setup_additional_pages(bprm, !!elf_interpreter);
++	retval = arch_setup_additional_pages(bprm, 0, !!elf_interpreter);
+ 	if (retval < 0) {
+ 		send_sig(SIGKILL, current, 0);
+ 		goto out;
+diff --git a/fs/devpts/inode.c b/fs/devpts/inode.c
+index 0120247..75fb8c5 100644
+--- a/fs/devpts/inode.c
++++ b/fs/devpts/inode.c
+@@ -433,11 +433,11 @@ static struct file_system_type devpts_fs_type = {
+  * to the System V naming convention
+  */
+ -int devpts_new_index(struct inode *ptmx_inode)
++int devpts_new_index(struct inode *ptmx_inode, int req_idx)
+ {
+ 	struct super_block *sb = pts_sb_from_inode(ptmx_inode);
+ 	struct pts_fs_info *fsi = DEVPTS_SB(sb);
+-	int index;
++	int index = req_idx;
+ 	int ida_ret;
+  retry:
+@@ -445,7 +445,9 @@ retry:
+ 		return -ENOMEM;
+  	mutex_lock(&allocated_ptys_lock);
+-	ida_ret = ida_get_new(&fsi->allocated_ptys, &index);
++	if (index == UNSPECIFIED_PTY_INDEX)
++		index = 0;
++	ida_ret = ida_get_new_above(&fsi->allocated_ptys, index, &index);
+ 	if (ida_ret < 0) {
+ 		mutex_unlock(&allocated_ptys_lock);
+ 		if (ida_ret == -EAGAIN)
+@@ -453,6 +455,11 @@ retry:
+ 		return -EIO;
+ 	}
+ +	if (req_idx != UNSPECIFIED_PTY_INDEX && index != req_idx) {
++		ida_remove(&fsi->allocated_ptys, index);
++		mutex_unlock(&allocated_ptys_lock);
++		return -EBUSY;
++	}
+ 	if (index >= pty_limit) {
+ 		ida_remove(&fsi->allocated_ptys, index);
+ 		mutex_unlock(&allocated_ptys_lock);
+diff --git a/fs/eventfd.c b/fs/eventfd.c
+index 6bd3f76..92fdbfa 100644
+--- a/fs/eventfd.c
++++ b/fs/eventfd.c
+@@ -19,6 +19,7 @@
+ #include <linux/module.h>
+ #include <linux/kref.h>
+ #include <linux/eventfd.h>
++#include <linux/checkpoint.h>
+  struct eventfd_ctx {
+ 	struct kref kref;
+diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+index bd056a5..95da38a 100644
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -674,7 +674,7 @@ static unsigned int ep_eventpoll_poll(struct file *file,
+poll_table *wait)
+ /* File callbacks that implement the eventpoll file behaviour */
+ static const struct file_operations eventpoll_fops = {
+ 	.release	= ep_eventpoll_release,
+-	.poll		= ep_eventpoll_poll
++	.poll		= ep_eventpoll_poll,
+ };
+  /* Fast test to see if the file is an evenpoll file */
+@@ -1226,35 +1226,18 @@ SYSCALL_DEFINE1(epoll_create, int, size)
+  * the eventpoll file that enables the insertion/removal/change of
+  * file descriptors inside the interest set.
+  */
+-SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
+-		struct epoll_event __user *, event)
++int do_epoll_ctl(int op, int fd,
++		 struct file *file, struct file *tfile,
++		 struct epoll_event *epds)
+ {
+ 	int error;
+-	struct file *file, *tfile;
+ 	struct eventpoll *ep;
+ 	struct epitem *epi;
+-	struct epoll_event epds;
+-
+-	error = -EFAULT;
+-	if (ep_op_has_event(op) &&
+-	    copy_from_user(&epds, event, sizeof(struct epoll_event)))
+-		goto error_return;
+-
+-	/* Get the "struct file *" for the eventpoll file */
+-	error = -EBADF;
+-	file = fget(epfd);
+-	if (!file)
+-		goto error_return;
+-
+-	/* Get the "struct file *" for the target file */
+-	tfile = fget(fd);
+-	if (!tfile)
+-		goto error_fput;
+  	/* The target file descriptor must support poll */
+ 	error = -EPERM;
+ 	if (!tfile->f_op || !tfile->f_op->poll)
+-		goto error_tgt_fput;
++		return error;
+  	/*
+ 	 * We have to check that the file structure underneath the file descriptor
+@@ -1263,7 +1246,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
+ 	 */
+ 	error = -EINVAL;
+ 	if (file == tfile || !is_file_epoll(file))
+-		goto error_tgt_fput;
++		return error;
+  	/*
+ 	 * At this point it is safe to assume that the "private_data" contains
+@@ -1284,8 +1267,8 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
+ 	switch (op) {
+ 	case EPOLL_CTL_ADD:
+ 		if (!epi) {
+-			epds.events |= POLLERR | POLLHUP;
+-			error = ep_insert(ep, &epds, tfile, fd);
++			epds->events |= POLLERR | POLLHUP;
++			error = ep_insert(ep, epds, tfile, fd);
+ 		} else
+ 			error = -EEXIST;
+ 		break;
+@@ -1297,15 +1280,46 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
+ 		break;
+ 	case EPOLL_CTL_MOD:
+ 		if (epi) {
+-			epds.events |= POLLERR | POLLHUP;
+-			error = ep_modify(ep, epi, &epds);
++			epds->events |= POLLERR | POLLHUP;
++			error = ep_modify(ep, epi, epds);
+ 		} else
+ 			error = -ENOENT;
+ 		break;
+ 	}
+ 	mutex_unlock(&ep->mtx);
+ -error_tgt_fput:
++	return error;
++}
++
++/*
++ * The following function implements the controller interface for
++ * the eventpoll file that enables the insertion/removal/change of
++ * file descriptors inside the interest set.
++ */
++SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
++		struct epoll_event __user *, event)
++{
++	int error;
++	struct file *file, *tfile;
++	struct epoll_event epds;
++
++	error = -EFAULT;
++	if (ep_op_has_event(op) &&
++	    copy_from_user(&epds, event, sizeof(struct epoll_event)))
++		goto error_return;
++
++	/* Get the "struct file *" for the eventpoll file */
++	error = -EBADF;
++	file = fget(epfd);
++	if (!file)
++		goto error_return;
++
++	/* Get the "struct file *" for the target file */
++	tfile = fget(fd);
++	if (!tfile)
++		goto error_fput;
++
++	error = do_epoll_ctl(op, fd, file, tfile, &epds);
+ 	fput(tfile);
+ error_fput:
+ 	fput(file);
+diff --git a/fs/exec.c b/fs/exec.c
+index 49cdaa1..06f93d8 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -693,24 +693,83 @@ exit:
+ }
+ EXPORT_SYMBOL(open_exec);
+ -int kernel_read(struct file *file, loff_t offset,
+-		char *addr, unsigned long count)
++static ssize_t _kernel_read(struct file *file, loff_t offset,
++			    char __user *ubuf, size_t count)
+ {
+-	mm_segment_t old_fs;
++	ssize_t nread;
++	size_t nleft;
+ 	loff_t pos = offset;
+-	int result;
++
++	for (nleft = count; nleft; nleft -= nread) {
++		nread = vfs_read(file, ubuf, nleft, &pos);
++		if (nread <= 0) {
++			if (nread == -EAGAIN) {
++				nread = 0;
++				continue;
++			} else if (nread == 0)
++				break;
++			else
++				return nread;
++		}
++		ubuf += nread;
++	}
++	return count - nleft;
++}
++
++ssize_t kernel_read(struct file *file, loff_t offset,
++		    char *addr, size_t count)
++{
++	mm_segment_t old_fs;
++	ssize_t result;
+  	old_fs = get_fs();
+ 	set_fs(get_ds());
+ 	/* The cast to a user pointer is valid due to the set_fs() */
+-	result = vfs_read(file, (void __user *)addr, count, &pos);
++	result = _kernel_read(file, offset, (void __user *)addr, count);
+ 	set_fs(old_fs);
+ 	return result;
+ }
+  EXPORT_SYMBOL(kernel_read);
+ -static int exec_mmap(struct mm_struct *mm)
++static ssize_t _kernel_write(struct file *file, loff_t offset,
++			     const char __user *ubuf, size_t count)
++{
++	ssize_t nwrite;
++	size_t nleft;
++	loff_t pos = offset;
++
++	for (nleft = count; nleft; nleft -= nwrite) {
++		nwrite = vfs_write(file, ubuf, nleft, &pos);
++		if (nwrite < 0) {
++			if (nwrite == -EAGAIN) {
++				nwrite = 0;
++				continue;
++			} else
++				return nwrite;
++		}
++		ubuf += nwrite;
++	}
++	return count - nleft;
++}
++
++ssize_t kernel_write(struct file *file, loff_t offset,
++		     const char *addr, size_t count)
++{
++	mm_segment_t old_fs;
++	ssize_t result;
++
++	old_fs = get_fs();
++	set_fs(get_ds());
++	/* The cast to a user pointer is valid due to the set_fs() */
++	result = _kernel_write(file, offset, (void __user *)addr, count);
++	set_fs(old_fs);
++	return result;
++}
++
++EXPORT_SYMBOL(kernel_write);
++
++int exec_mmap(struct mm_struct *mm)
+ {
+ 	struct task_struct *tsk;
+ 	struct mm_struct * old_mm, *active_mm;
+diff --git a/fs/fcntl.c b/fs/fcntl.c
+index 452d02f..2079af0 100644
+--- a/fs/fcntl.c
++++ b/fs/fcntl.c
+@@ -418,6 +418,18 @@ static long do_fcntl(int fd, unsigned int cmd, unsigned
+long arg,
+ 	return err;
+ }
+ +int vfs_fcntl(int fd, unsigned int cmd, unsigned long arg, struct file *filp)
++{
++	int err;
++
++	err = security_file_fcntl(filp, cmd, arg);
++	if (err)
++		goto out;
++	err = do_fcntl(fd, cmd, arg, filp);
++ out:
++	return err;
++}
++
+ SYSCALL_DEFINE3(fcntl, unsigned int, fd, unsigned int, cmd, unsigned long, arg)
+ {	
+ 	struct file *filp;
+@@ -427,14 +439,7 @@ SYSCALL_DEFINE3(fcntl, unsigned int, fd, unsigned int, cmd,
+unsigned long, arg)
+ 	if (!filp)
+ 		goto out;
+ -	err = security_file_fcntl(filp, cmd, arg);
+-	if (err) {
+-		fput(filp);
+-		return err;
+-	}
+-
+-	err = do_fcntl(fd, cmd, arg, filp);
+-
++	err = vfs_fcntl(fd, cmd, arg, filp);
+  	fput(filp);
+ out:
+ 	return err;
+diff --git a/fs/fs_struct.c b/fs/fs_struct.c
+index eee0590..2a4c6f5 100644
+--- a/fs/fs_struct.c
++++ b/fs/fs_struct.c
+@@ -6,6 +6,27 @@
+ #include <linux/fs_struct.h>
+  /*
++ * call with owning task locked
++ */
++void get_fs_struct(struct fs_struct *fs)
++{
++	write_lock(&fs->lock);
++	fs->users++;
++	write_unlock(&fs->lock);
++}
++
++void put_fs_struct(struct fs_struct *fs)
++{
++	int kill;
++
++	write_lock(&fs->lock);
++	kill = !--fs->users;
++	write_unlock(&fs->lock);
++	if (kill)
++		free_fs_struct(fs);
++}
++
++/*
+  * Replace the fs->{rootmnt,root} with {mnt,dentry}. Put the old values.
+  * It can block.
+  */
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 8174c8a..da36155 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -29,6 +29,7 @@
+ #include <linux/log2.h>
+ #include <linux/idr.h>
+ #include <linux/fs_struct.h>
++#include <linux/checkpoint.h>
+ #include <asm/uaccess.h>
+ #include <asm/unistd.h>
+ #include "pnode.h"
+@@ -2318,6 +2319,22 @@ static void __init init_mount_tree(void)
+ 	set_fs_root(current->fs, &root);
+ }
+ +void put_mnt_ns(struct mnt_namespace *ns)
++{
++	LIST_HEAD(umount_list);
++
++	if (!atomic_dec_and_test(&ns->count))
++		return;
++	down_write(&namespace_sem);
++	spin_lock(&vfsmount_lock);
++	umount_tree(ns->root, 0, &umount_list);
++	spin_unlock(&vfsmount_lock);
++	up_write(&namespace_sem);
++	release_mounts(&umount_list);
++	kfree(ns);
++}
++EXPORT_SYMBOL(put_mnt_ns);
++
+ void __init mnt_init(void)
+ {
+ 	unsigned u;
+@@ -2347,20 +2364,7 @@ void __init mnt_init(void)
+ 		printk(KERN_WARNING "%s: kobj create error\n", __func__);
+ 	init_rootfs();
+ 	init_mount_tree();
++#ifdef CONFIG_CHECKPOINT
++	register_checkpoint_obj(&ckpt_obj_mntns_ops);
++#endif
+ }
+-
+-void put_mnt_ns(struct mnt_namespace *ns)
+-{
+-	LIST_HEAD(umount_list);
+-
+-	if (!atomic_dec_and_test(&ns->count))
+-		return;
+-	down_write(&namespace_sem);
+-	spin_lock(&vfsmount_lock);
+-	umount_tree(ns->root, 0, &umount_list);
+-	spin_unlock(&vfsmount_lock);
+-	up_write(&namespace_sem);
+-	release_mounts(&umount_list);
+-	kfree(ns);
+-}
+-EXPORT_SYMBOL(put_mnt_ns);
+diff --git a/fs/nilfs2/dir.c b/fs/nilfs2/dir.c
+index 85c89df..e251cab 100644
+--- a/fs/nilfs2/dir.c
++++ b/fs/nilfs2/dir.c
+@@ -702,5 +702,4 @@ const struct file_operations nilfs_dir_operations = {
+ 	.compat_ioctl	= nilfs_ioctl,
+ #endif	/* CONFIG_COMPAT */
+ 	.fsync		= nilfs_sync_file,
+-
+ };
+diff --git a/fs/notify/dnotify/dnotify.c b/fs/notify/dnotify/dnotify.c
+index 7e54e52..0a63bf6 100644
+--- a/fs/notify/dnotify/dnotify.c
++++ b/fs/notify/dnotify/dnotify.c
+@@ -289,6 +289,24 @@ static int attach_dn(struct dnotify_struct *dn, struct
+dnotify_mark_entry *dnent
+ 	return 0;
+ }
+ +int is_dnotify_attached(struct file *filp)
++{
++	struct fsnotify_mark_entry *entry;
++	struct inode *inode;
++
++	inode = filp->f_path.dentry->d_inode;
++	if (!S_ISDIR(inode->i_mode))
++		return 0;
++
++	spin_lock(&inode->i_lock);
++	entry = fsnotify_find_mark_entry(dnotify_group, inode);
++	spin_unlock(&inode->i_lock);
++	if (!entry)
++		return 0;
++	fsnotify_put_mark(entry);
++	return 1;
++}
++
+ /*
+  * When a process calls fcntl to attach a dnotify watch to a directory it ends
+  * up here.  Allocate both a mark for fsnotify to add and a dnotify_struct to be
+diff --git a/fs/open.c b/fs/open.c
+index 74e5cd9..e9d5626 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -524,6 +524,18 @@ SYSCALL_DEFINE2(access, const char __user *, filename, int,
+mode)
+ 	return sys_faccessat(AT_FDCWD, filename, mode);
+ }
+ +int do_chdir(struct fs_struct *fs, struct path *path)
++{
++	int error;
++
++	error = inode_permission(path->dentry->d_inode, MAY_EXEC | MAY_ACCESS);
++	if (error)
++		return error;
++
++	set_fs_pwd(fs, path);
++	return 0;
++}
++
+ SYSCALL_DEFINE1(chdir, const char __user *, filename)
+ {
+ 	struct path path;
+@@ -531,17 +543,10 @@ SYSCALL_DEFINE1(chdir, const char __user *, filename)
+  	error = user_path_dir(filename, &path);
+ 	if (error)
+-		goto out;
+-
+-	error = inode_permission(path.dentry->d_inode, MAY_EXEC | MAY_ACCESS);
+-	if (error)
+-		goto dput_and_out;
+-
+-	set_fs_pwd(current->fs, &path);
++		return error;
+ -dput_and_out:
++	error = do_chdir(current->fs, &path);
+ 	path_put(&path);
+-out:
+ 	return error;
+ }
+ @@ -571,31 +576,36 @@ out:
+ 	return error;
+ }
+ -SYSCALL_DEFINE1(chroot, const char __user *, filename)
++int do_chroot(struct fs_struct *fs, struct path *path)
+ {
+-	struct path path;
+ 	int error;
+ -	error = user_path_dir(filename, &path);
++	error = inode_permission(path->dentry->d_inode, MAY_EXEC | MAY_ACCESS);
+ 	if (error)
+-		goto out;
++		return error;
++
++	if (!capable(CAP_SYS_CHROOT))
++		return -EPERM;
+ -	error = inode_permission(path.dentry->d_inode, MAY_EXEC | MAY_ACCESS);
++	error = security_path_chroot(path);
+ 	if (error)
+-		goto dput_and_out;
++		return error;
+ -	error = -EPERM;
+-	if (!capable(CAP_SYS_CHROOT))
+-		goto dput_and_out;
+-	error = security_path_chroot(&path);
++	set_fs_root(fs, path);
++	return 0;
++}
++
++SYSCALL_DEFINE1(chroot, const char __user *, filename)
++{
++	struct path path;
++	int error;
++
++	error = user_path_dir(filename, &path);
+ 	if (error)
+-		goto dput_and_out;
++		return error;
+ -	set_fs_root(current->fs, &path);
+-	error = 0;
+-dput_and_out:
++	error = do_chroot(current->fs, &path);
+ 	path_put(&path);
+-out:
+ 	return error;
+ }
+ diff --git a/fs/pipe.c b/fs/pipe.c
+index 37ba29f..d1cb313 100644
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -13,6 +13,7 @@
+ #include <linux/fs.h>
+ #include <linux/mount.h>
+ #include <linux/pipe_fs_i.h>
++#include <linux/splice.h>
+ #include <linux/uio.h>
+ #include <linux/highmem.h>
+ #include <linux/pagemap.h>
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 113386d..67b7d83 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -361,16 +361,6 @@ ssize_t vfs_write(struct file *file, const char __user
+*buf, size_t count, loff_
+  EXPORT_SYMBOL(vfs_write);
+ -static inline loff_t file_pos_read(struct file *file)
+-{
+-	return file->f_pos;
+-}
+-
+-static inline void file_pos_write(struct file *file, loff_t pos)
+-{
+-	file->f_pos = pos;
+-}
+-
+ SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
+ {
+ 	struct file *file;
+diff --git a/fs/select.c b/fs/select.c
+index 500a669..194c6d6 100644
+--- a/fs/select.c
++++ b/fs/select.c
+@@ -890,7 +890,7 @@ out_fds:
+ 	return err;
+ }
+ -static long do_restart_poll(struct restart_block *restart_block)
++long do_restart_poll(struct restart_block *restart_block)
+ {
+ 	struct pollfd __user *ufds = restart_block->poll.ufds;
+ 	int nfds = restart_block->poll.nfds;
+diff --git a/fs/splice.c b/fs/splice.c
+index 9313b61..ed91d7a 100644
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -538,21 +538,6 @@ static ssize_t kernel_readv(struct file *file, const struct
+iovec *vec,
+ 	return res;
+ }
+ -static ssize_t kernel_write(struct file *file, const char *buf, size_t count,
+-			    loff_t pos)
+-{
+-	mm_segment_t old_fs;
+-	ssize_t res;
+-
+-	old_fs = get_fs();
+-	set_fs(get_ds());
+-	/* The cast to a user pointer is valid due to the set_fs() */
+-	res = vfs_write(file, (const char __user *)buf, count, &pos);
+-	set_fs(old_fs);
+-
+-	return res;
+-}
+-
+ ssize_t default_file_splice_read(struct file *in, loff_t *ppos,
+ 				 struct pipe_inode_info *pipe, size_t len,
+ 				 unsigned int flags)
+@@ -1011,7 +996,7 @@ static int write_pipe_buf(struct pipe_inode_info *pipe,
+struct pipe_buffer *buf,
+ 		return ret;
+  	data = buf->ops->map(pipe, buf, 0);
+-	ret = kernel_write(sd->u.file, data + buf->offset, sd->len, sd->pos);
++	ret = kernel_write(sd->u.file, sd->pos, data + buf->offset, sd->len);
+ 	buf->ops->unmap(pipe, buf, data);
+  	return ret;
+@@ -1052,18 +1037,43 @@ ssize_t generic_splice_sendpage(struct pipe_inode_info
+*pipe, struct file *out,
+ EXPORT_SYMBOL(generic_splice_sendpage);
+  /*
++ * After the inode slimming patch, i_pipe/i_bdev/i_cdev share the same
++ * location, so checking ->i_pipe is not enough to verify that this is a
++ * pipe.
++ */
++static inline struct pipe_inode_info *pipe_info(struct inode *inode)
++{
++	if (S_ISFIFO(inode->i_mode))
++		return inode->i_pipe;
++
++	return NULL;
++}
++
++static int splice_pipe_to_pipe(struct pipe_inode_info *ipipe,
++			       struct pipe_inode_info *opipe,
++			       size_t len, unsigned int flags);
++
++/*
+  * Attempt to initiate a splice from pipe to file.
+  */
+-static long do_splice_from(struct pipe_inode_info *pipe, struct file *out,
+-			   loff_t *ppos, size_t len, unsigned int flags)
++long do_splice_from(struct pipe_inode_info *pipe, struct file *out,
++		    loff_t *ppos, size_t len, unsigned int flags)
+ {
+ 	ssize_t (*splice_write)(struct pipe_inode_info *, struct file *,
+ 				loff_t *, size_t, unsigned int);
++	struct pipe_inode_info *opipe;
+ 	int ret;
+  	if (unlikely(!(out->f_mode & FMODE_WRITE)))
+ 		return -EBADF;
+ +	/* When called directly (e.g. from c/r) output may be a pipe */
++	opipe = pipe_info(out->f_path.dentry->d_inode);
++	if (opipe) {
++		BUG_ON(opipe == pipe);
++		return splice_pipe_to_pipe(pipe, opipe, len, flags);
++	}
++
+ 	if (unlikely(out->f_flags & O_APPEND))
+ 		return -EINVAL;
+ @@ -1082,17 +1092,25 @@ static long do_splice_from(struct pipe_inode_info
+*pipe, struct file *out,
+ /*
+  * Attempt to initiate a splice from a file to a pipe.
+  */
+-static long do_splice_to(struct file *in, loff_t *ppos,
+-			 struct pipe_inode_info *pipe, size_t len,
+-			 unsigned int flags)
++long do_splice_to(struct file *in, loff_t *ppos,
++		  struct pipe_inode_info *pipe, size_t len,
++		  unsigned int flags)
+ {
+ 	ssize_t (*splice_read)(struct file *, loff_t *,
+ 			       struct pipe_inode_info *, size_t, unsigned int);
++	struct pipe_inode_info *ipipe;
+ 	int ret;
+  	if (unlikely(!(in->f_mode & FMODE_READ)))
+ 		return -EBADF;
+ +	/* When called firectly (e.g. from c/r) input may be a pipe */
++	ipipe = pipe_info(in->f_path.dentry->d_inode);
++	if (ipipe) {
++		BUG_ON(ipipe == pipe);
++		return splice_pipe_to_pipe(ipipe, pipe, len, flags);
++	}
++
+ 	ret = rw_verify_area(READ, in, ppos, len);
+ 	if (unlikely(ret < 0))
+ 		return ret;
+@@ -1272,18 +1290,6 @@ long do_splice_direct(struct file *in, loff_t *ppos,
+struct file *out,
+ static int splice_pipe_to_pipe(struct pipe_inode_info *ipipe,
+ 			       struct pipe_inode_info *opipe,
+ 			       size_t len, unsigned int flags);
+-/*
+- * After the inode slimming patch, i_pipe/i_bdev/i_cdev share the same
+- * location, so checking ->i_pipe is not enough to verify that this is a
+- * pipe.
+- */
+-static inline struct pipe_inode_info *pipe_info(struct inode *inode)
+-{
+-	if (S_ISFIFO(inode->i_mode))
+-		return inode->i_pipe;
+-
+-	return NULL;
+-}
+  /*
+  * Determine where to splice to/from.
+@@ -1888,9 +1894,9 @@ retry:
+ /*
+  * Link contents of ipipe to opipe.
+  */
+-static int link_pipe(struct pipe_inode_info *ipipe,
+-		     struct pipe_inode_info *opipe,
+-		     size_t len, unsigned int flags)
++int link_pipe(struct pipe_inode_info *ipipe,
++	      struct pipe_inode_info *opipe,
++	      size_t len, unsigned int flags)
+ {
+ 	struct pipe_buffer *ibuf, *obuf;
+ 	int ret = 0, i = 0, nbuf;
+diff --git a/fs/squashfs/dir.c b/fs/squashfs/dir.c
+index 12b933a..198865b 100644
+--- a/fs/squashfs/dir.c
++++ b/fs/squashfs/dir.c
+@@ -230,5 +230,5 @@ failed_read:
+  const struct file_operations squashfs_dir_ops = {
+ 	.read = generic_read_dir,
+-	.readdir = squashfs_readdir
++	.readdir = squashfs_readdir,
+ };
+diff --git a/include/linux/Kbuild b/include/linux/Kbuild
+index e2ea0b2..71bb8d1 100644
+--- a/include/linux/Kbuild
++++ b/include/linux/Kbuild
+@@ -45,6 +45,9 @@ header-y += bsg.h
+ header-y += can.h
+ header-y += cciss_defs.h
+ header-y += cdk.h
++header-y += checkpoint.h
++header-y += checkpoint_hdr.h
++header-y += checkpoint_types.h
+ header-y += chio.h
+ header-y += coda_psdev.h
+ header-y += coff.h
+diff --git a/include/linux/aio.h b/include/linux/aio.h
+index 811dbb3..e0b1808 100644
+--- a/include/linux/aio.h
++++ b/include/linux/aio.h
+@@ -212,6 +212,7 @@ extern void kick_iocb(struct kiocb *iocb);
+ extern int aio_complete(struct kiocb *iocb, long res, long res2);
+ struct mm_struct;
+ extern void exit_aio(struct mm_struct *mm);
++extern int check_for_outstanding_aio(struct mm_struct *mm);
+ #else
+ static inline ssize_t wait_on_sync_kiocb(struct kiocb *iocb) { return 0; }
+ static inline int aio_put_req(struct kiocb *iocb) { return 0; }
+@@ -219,6 +220,7 @@ static inline void kick_iocb(struct kiocb *iocb) { }
+ static inline int aio_complete(struct kiocb *iocb, long res, long res2) {
+return 0; }
+ struct mm_struct;
+ static inline void exit_aio(struct mm_struct *mm) { }
++static inline int check_for_outstanding_aio(struct mm_struct *mm) { return 0; }
+ #endif /* CONFIG_AIO */
+  static inline struct kiocb *list_kiocb(struct list_head *h)
+diff --git a/include/linux/compat.h b/include/linux/compat.h
+index 717c691..89125dd 100644
+--- a/include/linux/compat.h
++++ b/include/linux/compat.h
+@@ -210,7 +210,8 @@ struct compat_robust_list_head {
+ };
+  extern void compat_exit_robust_list(struct task_struct *curr);
+-
++extern long do_compat_set_robust_list(struct compat_robust_list_head __user *head,
++				      compat_size_t len);
+ asmlinkage long
+ compat_sys_set_robust_list(struct compat_robust_list_head __user *head,
+ 			   compat_size_t len);
+diff --git a/include/linux/cred.h b/include/linux/cred.h
+index 52507c3..8558bec 100644
+--- a/include/linux/cred.h
++++ b/include/linux/cred.h
+@@ -22,6 +22,9 @@ struct user_struct;
+ struct cred;
+ struct inode;
+ +/* defined in sys.c, used in cred_setresuid */
++extern int set_user(struct cred *new);
++
+ /*
+  * COW Supplementary groups list
+  */
+@@ -396,4 +399,9 @@ do {						\
+ 	*(_fsgid) = __cred->fsgid;		\
+ } while(0)
+ +extern int cred_setresuid(struct cred *new, uid_t ruid, uid_t euid, uid_t suid);
++extern int cred_setresgid(struct cred *new, gid_t rgid, gid_t egid, gid_t sgid);
++extern int cred_setfsuid(struct cred *new, uid_t uid, uid_t *old_fsuid);
++extern int cred_setfsgid(struct cred *new, gid_t gid, gid_t *old_fsgid);
++
+ #endif /* _LINUX_CRED_H */
+diff --git a/include/linux/devpts_fs.h b/include/linux/devpts_fs.h
+index 5ce0e5f..163a70e 100644
+--- a/include/linux/devpts_fs.h
++++ b/include/linux/devpts_fs.h
+@@ -15,9 +15,13 @@
+  #include <linux/errno.h>
+ +#define UNSPECIFIED_PTY_INDEX -1
++
+ #ifdef CONFIG_UNIX98_PTYS
+ -int devpts_new_index(struct inode *ptmx_inode);
++struct file *pty_open_by_index(char *ptmxpath, int index);
++
++int devpts_new_index(struct inode *ptmx_inode, int req_idx);
+ void devpts_kill_index(struct inode *ptmx_inode, int idx);
+ /* mknod in devpts */
+ int devpts_pty_new(struct inode *ptmx_inode, struct tty_struct *tty);
+diff --git a/include/linux/dnotify.h b/include/linux/dnotify.h
+index ecc0628..7093052 100644
+--- a/include/linux/dnotify.h
++++ b/include/linux/dnotify.h
+@@ -29,6 +29,7 @@ struct dnotify_struct {
+ 			    FS_MOVED_FROM | FS_MOVED_TO)
+  extern void dnotify_flush(struct file *, fl_owner_t);
++extern int is_dnotify_attached(struct file *);
+ extern int fcntl_dirnotify(int, struct file *, unsigned long);
+  #else
+@@ -37,6 +38,11 @@ static inline void dnotify_flush(struct file *filp,
+fl_owner_t id)
+ {
+ }
+ +static inline int is_dnotify_attached(struct file *filp)
++{
++	return 0;
++}
++
+ static inline int fcntl_dirnotify(int fd, struct file *filp, unsigned long arg)
+ {
+ 	return -EINVAL;
+diff --git a/include/linux/eventpoll.h b/include/linux/eventpoll.h
+index f6856a5..0f7339d 100644
+--- a/include/linux/eventpoll.h
++++ b/include/linux/eventpoll.h
+@@ -56,6 +56,9 @@ struct file;
+   #ifdef CONFIG_EPOLL
++struct ckpt_ctx;
++struct ckpt_hdr_file;
++
+  /* Used to initialize the epoll bits inside the "struct file" */
+ static inline void eventpoll_init_file(struct file *file)
+@@ -95,8 +98,9 @@ static inline void eventpoll_release(struct file *file)
+ 	eventpoll_release_file(file);
+ }
+ -#else
+ +#else
++/* !defined(CONFIG_EPOLL) */
+ static inline void eventpoll_init_file(struct file *file) {}
+ static inline void eventpoll_release(struct file *file) {}
+ diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+index da7e52b..0cb22cb 100644
+--- a/include/linux/freezer.h
++++ b/include/linux/freezer.h
+@@ -65,11 +65,20 @@ extern void cancel_freezing(struct task_struct *p);
+  #ifdef CONFIG_CGROUP_FREEZER
+ extern int cgroup_freezing_or_frozen(struct task_struct *task);
++extern int in_same_cgroup_freezer(struct task_struct *p, struct task_struct *q);
++extern int cgroup_freezer_begin_checkpoint(struct task_struct *task);
++extern void cgroup_freezer_end_checkpoint(struct task_struct *task);
++extern int cgroup_freezer_make_frozen(struct task_struct *task);
+ #else /* !CONFIG_CGROUP_FREEZER */
+ static inline int cgroup_freezing_or_frozen(struct task_struct *task)
+ {
+ 	return 0;
+ }
++static inline int in_same_cgroup_freezer(struct task_struct *p,
++					 struct task_struct *q)
++{
++	return 0;
++}
+ #endif /* !CONFIG_CGROUP_FREEZER */
+  /*
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 39d57bc..ee725ff 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -397,6 +397,7 @@ struct kstatfs;
+ struct vm_area_struct;
+ struct vfsmount;
+ struct cred;
++struct ckpt_ctx;
+  extern void __init inode_init(void);
+ extern void __init inode_init_early(void);
+@@ -1096,6 +1097,8 @@ struct file_lock {
+  #include <linux/fcntl.h>
+ +extern int vfs_fcntl(int fd, unsigned cmd, unsigned long arg, struct file *fp);
++
+ extern void send_sigio(struct fown_struct *fown, int fd, int band);
+  #ifdef CONFIG_FILE_LOCKING
+@@ -1120,6 +1123,7 @@ extern void locks_remove_posix(struct file *, fl_owner_t);
+ extern void locks_remove_flock(struct file *);
+ extern void locks_release_private(struct file_lock *);
+ extern void posix_test_lock(struct file *, struct file_lock *);
++extern int find_locks_with_owner(struct file *filp, fl_owner_t owner);
+ extern int posix_lock_file(struct file *, struct file_lock *, struct file_lock *);
+ extern int posix_lock_file_wait(struct file *, struct file_lock *);
+ extern int posix_unblock_lock(struct file *, struct file_lock *);
+@@ -1188,6 +1192,11 @@ static inline void locks_remove_posix(struct file *filp,
+fl_owner_t owner)
+ 	return;
+ }
+ +static inline int find_locks_with_owner(struct file *filp, fl_owner_t owner)
++{
++	return -ENOENT;
++}
++
+ static inline void locks_remove_flock(struct file *filp)
+ {
+ 	return;
+@@ -1509,6 +1518,10 @@ struct file_operations {
+ 	ssize_t (*splice_write)(struct pipe_inode_info *, struct file *, loff_t *,
+size_t, unsigned int);
+ 	ssize_t (*splice_read)(struct file *, loff_t *, struct pipe_inode_info *,
+size_t, unsigned int);
+ 	int (*setlease)(struct file *, long, struct file_lock **);
++#ifdef CONFIG_CHECKPOINT
++	int (*checkpoint)(struct ckpt_ctx *, struct file *);
++	int (*collect)(struct ckpt_ctx *, struct file *);
++#endif
+ };
+  struct inode_operations {
+@@ -1548,6 +1561,16 @@ ssize_t rw_copy_check_uvector(int type, const struct
+iovec __user * uvector,
+ 				struct iovec *fast_pointer,
+ 				struct iovec **ret_pointer);
+ +static inline loff_t file_pos_read(struct file *file)
++{
++	return file->f_pos;
++}
++
++static inline void file_pos_write(struct file *file, loff_t pos)
++{
++	file->f_pos = pos;
++}
++
+ extern ssize_t vfs_read(struct file *, char __user *, size_t, loff_t *);
+ extern ssize_t vfs_write(struct file *, const char __user *, size_t, loff_t *);
+ extern ssize_t vfs_readv(struct file *, const struct iovec __user *,
+@@ -1803,6 +1826,11 @@ extern int iterate_mounts(int (*)(struct vfsmount *, void
+*), void *,
+ 			  struct vfsmount *);
+ extern int vfs_statfs(struct dentry *, struct kstatfs *);
+ +struct fs_struct;
++extern int do_chdir(struct fs_struct *fs, struct path *path);
++extern int do_chroot(struct fs_struct *fs, struct path *path);
++
++
+ extern int current_umask(void);
+  /* /sys/fs */
+@@ -2127,7 +2155,8 @@ extern struct file *do_filp_open(int dfd, const char
+*pathname,
+ 		int open_flag, int mode, int acc_mode);
+ extern int may_open(struct path *, int, int);
+ -extern int kernel_read(struct file *, loff_t, char *, unsigned long);
++extern ssize_t kernel_read(struct file *, loff_t, char *, size_t);
++extern ssize_t kernel_write(struct file *, loff_t, const char *, size_t);
+ extern struct file * open_exec(const char *);
+   /* fs/dcache.c -- generic fs support functions */
+@@ -2305,6 +2334,10 @@ void inode_sub_bytes(struct inode *inode, loff_t bytes);
+ loff_t inode_get_bytes(struct inode *inode);
+ void inode_set_bytes(struct inode *inode, loff_t bytes);
+ +#ifdef CONFIG_CHECKPOINT
++extern int generic_file_checkpoint(struct ckpt_ctx *ctx, struct file *file);
++#endif
++
+ extern int vfs_readdir(struct file *, filldir_t, void *);
+  extern int vfs_stat(char __user *, struct kstat *);
+diff --git a/include/linux/fs_struct.h b/include/linux/fs_struct.h
+index 78a05bf..a73cbcb 100644
+--- a/include/linux/fs_struct.h
++++ b/include/linux/fs_struct.h
+@@ -20,5 +20,7 @@ extern struct fs_struct *copy_fs_struct(struct fs_struct *);
+ extern void free_fs_struct(struct fs_struct *);
+ extern void daemonize_fs_struct(void);
+ extern int unshare_fs_struct(void);
++extern void get_fs_struct(struct fs_struct *);
++extern void put_fs_struct(struct fs_struct *);
+  #endif /* _LINUX_FS_STRUCT_H */
+diff --git a/include/linux/futex.h b/include/linux/futex.h
+index 1e5a26d..c825790 100644
+--- a/include/linux/futex.h
++++ b/include/linux/futex.h
+@@ -136,6 +136,17 @@ extern int
+ handle_futex_death(u32 __user *uaddr, struct task_struct *curr, int pi);
+  /*
++ * In case we must use restart_block to restart a futex_wait,
++ * we encode in the 'flags' shared capability
++ */
++#define FLAGS_SHARED		0x01
++#define FLAGS_CLOCKRT		0x02
++#define FLAGS_HAS_TIMEOUT	0x04
++
++/* for c/r */
++extern long futex_wait_restart(struct restart_block *restart);
++
++/*
+  * Futexes are matched on equal values of this key.
+  * The key type depends on whether it's a shared or private mapping.
+  * Don't rearrange members without looking at hash_futex().
+@@ -174,6 +185,7 @@ union futex_key {
+ #define FUTEX_KEY_INIT (union futex_key) { .both = { .ptr = NULL } }
+  #ifdef CONFIG_FUTEX
++extern long do_set_robust_list(struct robust_list_head __user *head, size_t len);
+ extern void exit_robust_list(struct task_struct *curr);
+ extern void exit_pi_state_list(struct task_struct *curr);
+ extern int futex_cmpxchg_enabled;
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index 5d86fb2..97751ad 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -244,7 +244,13 @@ static inline s64 hrtimer_get_expires_ns(const struct
+hrtimer *timer)
+  static inline ktime_t hrtimer_expires_remaining(const struct hrtimer *timer)
+ {
+-    return ktime_sub(timer->_expires, timer->base->get_time());
++	return ktime_sub(timer->_expires, timer->base->get_time());
++}
++
++/* @after will usually be <= now */
++static inline ktime_t hrtimer_expires_remaining_after(const struct hrtimer
+*timer, ktime_t after)
++{
++	return ktime_sub(timer->_expires, after);
+ }
+  #ifdef CONFIG_HIGH_RES_TIMERS
+diff --git a/include/linux/magic.h b/include/linux/magic.h
+index eb9800f..e04117a 100644
+--- a/include/linux/magic.h
++++ b/include/linux/magic.h
+@@ -58,4 +58,7 @@
+ #define DEVPTS_SUPER_MAGIC	0x1cd1
+ #define SOCKFS_MAGIC		0x534F434B
+ +#define CHECKPOINT_MAGIC_HEAD  0x00feed0cc0a2d200LL
++#define CHECKPOINT_MAGIC_TAIL  0x002d2a0cc0deef00LL
++
+ #endif /* __LINUX_MAGIC_H__ */
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 462acaf..31520e5 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -20,6 +20,7 @@ struct file_ra_state;
+ struct user_struct;
+ struct writeback_control;
+ struct rlimit;
++struct ckpt_ctx;
+  #ifndef CONFIG_DISCONTIGMEM          /* Don't use mapnrs, do it properly */
+ extern unsigned long max_mapnr;
+@@ -221,6 +222,9 @@ struct vm_operations_struct {
+ 	int (*migrate)(struct vm_area_struct *vma, const nodemask_t *from,
+ 		const nodemask_t *to, unsigned long flags);
+ #endif
++#ifdef CONFIG_CHECKPOINT
++	int (*checkpoint)(struct ckpt_ctx *ctx, struct vm_area_struct *vma);
++#endif
+ };
+  struct mmu_gather;
+@@ -336,6 +340,17 @@ void put_pages_list(struct list_head *pages);
+  void split_page(struct page *page, unsigned int order);
+ +/* Flag allocation requirements to shmem_getpage and shmem_swp_alloc */
++enum sgp_type {
++	SGP_READ,	/* don't exceed i_size, don't allocate page */
++	SGP_CACHE,	/* don't exceed i_size, may allocate page */
++	SGP_DIRTY,	/* like SGP_CACHE, but set new page dirty */
++	SGP_WRITE,	/* may exceed i_size, may allocate page */
++};
++
++extern int shmem_getpage(struct inode *inode, unsigned long idx,
++			 struct page **pagep, enum sgp_type sgp, int *type);
++
+ /*
+  * Compound pages have a destructor function.  Provide a
+  * prototype for that function and accessor functions.
+@@ -842,6 +857,7 @@ int get_user_pages(struct task_struct *tsk, struct mm_struct
+*mm,
+ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 			struct page **pages);
+ struct page *get_dump_page(unsigned long addr);
++struct page *__get_dirty_page(struct vm_area_struct *vma, unsigned long addr);
+  extern int try_to_release_page(struct page * page, gfp_t gfp_mask);
+ extern void do_invalidatepage(struct page *page, unsigned long offset);
+@@ -1282,9 +1298,13 @@ out:
+ }
+  extern int do_munmap(struct mm_struct *, unsigned long, size_t);
++extern int destroy_mm(struct mm_struct *);
+  extern unsigned long do_brk(unsigned long, unsigned long);
+ +/* fs/exec.c */
++extern int exec_mmap(struct mm_struct *mm);
++
+ /* filemap.c */
+ extern unsigned long page_unuse(struct page *);
+ extern void truncate_inode_pages(struct address_space *, loff_t);
+@@ -1294,10 +1314,27 @@ extern void truncate_inode_pages_range(struct
+address_space *,
+ /* generic vm_area_ops exported for stackable file systems */
+ extern int filemap_fault(struct vm_area_struct *, struct vm_fault *);
+ +#ifdef CONFIG_CHECKPOINT
++/* generic vm_area_ops exported for mapped files checkpoint */
++extern int filemap_checkpoint(struct ckpt_ctx *, struct vm_area_struct *);
++#endif
++
+ /* mm/page-writeback.c */
+ int write_one_page(struct page *page, int wait);
+ void task_dirty_inc(struct task_struct *tsk);
+ +
++/* checkpoint/restart */
++#ifdef CONFIG_CHECKPOINT
++struct ckpt_hdr_vma;
++extern int filemap_restore(struct ckpt_ctx *ctx, struct mm_struct *mm,
++			   struct ckpt_hdr_vma *hh);
++extern int special_mapping_restore(struct ckpt_ctx *ctx, struct mm_struct *mm,
++				   struct ckpt_hdr_vma *hh);
++extern int shmem_restore(struct ckpt_ctx *ctx, struct mm_struct *mm,
++			 struct ckpt_hdr_vma *hh);
++#endif
++
+ /* readahead.c */
+ #define VM_MAX_READAHEAD	128	/* kbytes */
+ #define VM_MIN_READAHEAD	16	/* kbytes (includes current page) */
+@@ -1369,6 +1406,7 @@ struct page *follow_page(struct vm_area_struct *, unsigned
+long address,
+ #define FOLL_GET	0x04	/* do get_page on page */
+ #define FOLL_DUMP	0x08	/* give error on hole if it would be zero */
+ #define FOLL_FORCE	0x10	/* get_user_pages read/write w/o permission */
++#define FOLL_DIRTY	0x20	/* give error on non-present file mapped */
+  typedef int (*pte_fn_t)(pte_t *pte, pgtable_t token, unsigned long addr,
+ 			void *data);
+diff --git a/include/linux/net.h b/include/linux/net.h
+index 4157b5d..6ffe827 100644
+--- a/include/linux/net.h
++++ b/include/linux/net.h
+@@ -153,6 +153,9 @@ struct sockaddr;
+ struct msghdr;
+ struct module;
+ +struct ckpt_ctx;
++struct ckpt_hdr_socket;
++
+ struct proto_ops {
+ 	int		family;
+ 	struct module	*owner;
+@@ -201,6 +204,12 @@ struct proto_ops {
+ 				      int offset, size_t size, int flags);
+ 	ssize_t 	(*splice_read)(struct socket *sock,  loff_t *ppos,
+ 				       struct pipe_inode_info *pipe, size_t len, unsigned int flags);
++	int		(*checkpoint)(struct ckpt_ctx *ctx,
++				      struct socket *sock);
++	int		(*collect)(struct ckpt_ctx *ctx,
++				   struct socket *sock);
++	int		(*restore)(struct ckpt_ctx *ctx, struct socket *sock,
++				   struct ckpt_hdr_socket *h);
+ };
+  #define DECLARE_SOCKADDR(type, dst, src)	\
+@@ -237,6 +246,8 @@ extern int   	     sock_sendmsg(struct socket *sock, struct
+msghdr *msg,
+ 				  size_t len);
+ extern int	     sock_recvmsg(struct socket *sock, struct msghdr *msg,
+ 				  size_t size, int flags);
++extern int	     sock_alloc_file(struct socket *sock, struct file **f,
++				     int flags);
+ extern int 	     sock_map_fd(struct socket *sock, int flags);
+ extern struct socket *sockfd_lookup(int fd, int *err);
+ #define		     sockfd_put(sock) fput(sock->file)
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index fa8b476..9f6de34 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -691,6 +691,12 @@ struct net_device_ops {
+ 	int			(*ndo_fcoe_get_wwn)(struct net_device *dev,
+ 						    u64 *wwn, int type);
+ #endif
++#ifdef CONFIG_CHECKPOINT
++	int			(*ndo_collect)(struct ckpt_ctx *ctx,
++					       struct net_device *dev);
++	int			(*ndo_checkpoint)(struct ckpt_ctx *ctx,
++						  struct net_device *dev);
++#endif
+ };
+  /*
+diff --git a/include/linux/poll.h b/include/linux/poll.h
+index 600cc1f..03357b8 100644
+--- a/include/linux/poll.h
++++ b/include/linux/poll.h
+@@ -136,6 +136,9 @@ extern int core_sys_select(int n, fd_set __user *inp, fd_set
+__user *outp,
+  extern int poll_select_set_timeout(struct timespec *to, long sec, long nsec);
+ +/* used by checkpoint/restart */
++extern long do_restart_poll(struct restart_block *restart_block);
++
+ #endif /* KERNEL */
+  #endif /* _LINUX_POLL_H */
+diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
+index 4f71bf4..7dd69c3 100644
+--- a/include/linux/posix-timers.h
++++ b/include/linux/posix-timers.h
+@@ -101,6 +101,10 @@ int posix_cpu_timer_create(struct k_itimer *timer);
+ int posix_cpu_nsleep(const clockid_t which_clock, int flags,
+ 		     struct timespec *rqtp, struct timespec __user *rmtp);
+ long posix_cpu_nsleep_restart(struct restart_block *restart_block);
++#ifdef CONFIG_COMPAT
++long compat_nanosleep_restart(struct restart_block *restart);
++long compat_clock_nanosleep_restart(struct restart_block *restart);
++#endif
+ int posix_cpu_timer_set(struct k_itimer *timer, int flags,
+ 			struct itimerspec *new, struct itimerspec *old);
+ int posix_cpu_timer_del(struct k_itimer *timer);
+@@ -119,4 +123,15 @@ long clock_nanosleep_restart(struct restart_block
+*restart_block);
+  void update_rlimit_cpu(unsigned long rlim_new);
+ +int invalid_clockid(const clockid_t which_clock);
++
++static inline cputime_t prof_ticks(struct task_struct *p)
++{
++	return cputime_add(p->utime, p->stime);
++}
++static inline cputime_t virt_ticks(struct task_struct *p)
++{
++	return p->utime;
++}
++
+ #endif
+diff --git a/include/linux/resource.h b/include/linux/resource.h
+index f1e914e..35f6163 100644
+--- a/include/linux/resource.h
++++ b/include/linux/resource.h
+@@ -73,6 +73,7 @@ struct rlimit {
+ struct task_struct;
+  int getrusage(struct task_struct *p, int who, struct rusage __user *ru);
++int do_setrlimit(unsigned int resource, struct rlimit *rlim);
+  #endif /* __KERNEL__ */
+ diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 8593051..3ff96d6 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -641,6 +641,10 @@ struct signal_struct {
+ #endif
+  	int oom_adj;	/* OOM kill score adjustment (bit shift) */
++
++#ifdef CONFIG_CHECKPOINT
++	atomic_t restart_count;		/* threads group restart sync */
++#endif
+ };
+  /* Context switch must be unlocked if interrupts are to be enabled */
+@@ -1518,6 +1522,9 @@ struct task_struct {
+ 		unsigned long memsw_bytes; /* uncharged mem+swap usage */
+ 	} memcg_batch;
+ #endif
++#ifdef CONFIG_CHECKPOINT
++	struct ckpt_ctx *checkpoint_ctx;
++#endif
+ };
+  /* Future-safe accessor for struct task_struct's cpus_allowed. */
+@@ -1711,6 +1718,7 @@ extern void thread_group_times(struct task_struct *p,
+cputime_t *ut, cputime_t *
+ #define PF_EXITING	0x00000004	/* getting shut down */
+ #define PF_EXITPIDONE	0x00000008	/* pi exit done on shut down */
+ #define PF_VCPU		0x00000010	/* I'm a virtual CPU */
++#define PF_RESTARTING	0x00000020	/* Process is restarting (c/r) */
+ #define PF_FORKNOEXEC	0x00000040	/* forked but didn't exec */
+ #define PF_MCE_PROCESS  0x00000080      /* process policy on mce errors */
+ #define PF_SUPERPRIV	0x00000100	/* used super-user privileges */
+@@ -2212,7 +2220,7 @@ static inline int task_detached(struct task_struct *p)
+  * Protects ->fs, ->files, ->mm, ->group_info, ->comm, keyring
+  * subscriptions and synchronises with wait4().  Also used in procfs.  Also
+  * pins the final release of task.io_context.  Also protects ->cpuset and
+- * ->cgroup.subsys[].
++ * ->cgroup.subsys[]. Also protects ->checkpoint_ctx in checkpoint/restart.
+  *
+  * Nests both inside and outside of read_lock(&tasklist_lock).
+  * It must not be nested with write_lock_irq(&tasklist_lock),
+diff --git a/include/linux/security.h b/include/linux/security.h
+index 3158dd9..7541237 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -1582,6 +1582,7 @@ struct security_operations {
+  	int (*task_create) (unsigned long clone_flags);
+ 	int (*cred_alloc_blank) (struct cred *cred, gfp_t gfp);
++
+ 	void (*cred_free) (struct cred *cred);
+ 	int (*cred_prepare)(struct cred *new, const struct cred *old,
+ 			    gfp_t gfp);
+@@ -1913,6 +1914,9 @@ void security_release_secctx(char *secdata, u32 seclen);
+ int security_inode_notifysecctx(struct inode *inode, void *ctx, u32 ctxlen);
+ int security_inode_setsecctx(struct dentry *dentry, void *ctx, u32 ctxlen);
+ int security_inode_getsecctx(struct inode *inode, void **ctx, u32 *ctxlen);
++
++char *security_get_lsm_name(void);
++
+ #else /* CONFIG_SECURITY */
+ struct security_mnt_opts {
+ };
+@@ -1935,6 +1939,12 @@ static inline int security_init(void)
+ 	return 0;
+ }
+ +#define DEFAULT_LSM_NAME "lsm_none"
++static inline char *security_get_lsm_name(void)
++{
++	return DEFAULT_LSM_NAME;
++}
++
+ static inline int security_ptrace_access_check(struct task_struct *child,
+ 					     unsigned int mode)
+ {
+@@ -2682,6 +2692,7 @@ static inline int security_inode_getsecctx(struct inode
+*inode, void **ctx, u32
+ {
+ 	return -EOPNOTSUPP;
+ }
++
+ #endif	/* CONFIG_SECURITY */
+  #ifdef CONFIG_SECURITY_NETWORK
+diff --git a/include/linux/sem.h b/include/linux/sem.h
+index 8a4adbe..8cf9636 100644
+--- a/include/linux/sem.h
++++ b/include/linux/sem.h
+@@ -127,12 +127,14 @@ struct sem_undo {
+ 	short *			semadj;		/* array of adjustments, one per semaphore */
+ };
+ +struct ipc_namespace;
+ /* sem_undo_list controls shared access to the list of sem_undo structures
+  * that may be shared among all a CLONE_SYSVSEM task group.
+  */  struct sem_undo_list {
+ 	atomic_t		refcnt;
+ 	spinlock_t		lock;
++	struct ipc_namespace	*ipc_ns;
+ 	struct list_head	list_proc;
+ };
+ diff --git a/include/linux/shm.h b/include/linux/shm.h
+index eca6235..67fe5e2 100644
+--- a/include/linux/shm.h
++++ b/include/linux/shm.h
+@@ -105,6 +105,9 @@ struct shmid_kernel /* private to the kernel */
+  #ifdef CONFIG_SYSVIPC
+ long do_shmat(int shmid, char __user *shmaddr, int shmflg, unsigned long *addr);
++long do_shmat_pgoff(int shmid, char __user *shmaddr,
++		    int shmflg, unsigned long *addr,
++		    unsigned long shmsize, unsigned long shmpgoff);
+ extern int is_file_shm_hugepages(struct file *file);
+ #else
+ static inline long do_shmat(int shmid, char __user *shmaddr,
+@@ -118,6 +121,10 @@ static inline int is_file_shm_hugepages(struct file *file)
+ }
+ #endif
+ +struct ipc_namespace;
++extern int shmctl_down(struct ipc_namespace *ns, int shmid, int cmd,
++		       struct shmid_ds __user *buf, int version);
++
+ #endif /* __KERNEL__ */
+  #endif /* _LINUX_SHM_H_ */
+diff --git a/include/linux/signal.h b/include/linux/signal.h
+index fcd2b14..031784c 100644
+--- a/include/linux/signal.h
++++ b/include/linux/signal.h
+@@ -378,6 +378,9 @@ int unhandled_signal(struct task_struct *tsk, int sig);
+  void signals_init(void);
+ +/* [arch] checkpoint: should saved_sigmask be used in place of blocked */
++int task_has_saved_sigmask(struct task_struct *task);
++
+ #endif /* __KERNEL__ */
+  #endif /* _LINUX_SIGNAL_H */
+diff --git a/include/linux/splice.h b/include/linux/splice.h
+index 18e7c7c..431662c 100644
+--- a/include/linux/splice.h
++++ b/include/linux/splice.h
+@@ -82,4 +82,13 @@ extern ssize_t splice_to_pipe(struct pipe_inode_info *,
+ extern ssize_t splice_direct_to_actor(struct file *, struct splice_desc *,
+ 				      splice_direct_actor *);
+ +extern int link_pipe(struct pipe_inode_info *ipipe,
++		     struct pipe_inode_info *opipe,
++		     size_t len, unsigned int flags);
++extern long do_splice_to(struct file *in, loff_t *ppos,
++			 struct pipe_inode_info *pipe, size_t len,
++			 unsigned int flags);
++extern long do_splice_from(struct pipe_inode_info *pipe, struct file *out,
++			   loff_t *ppos, size_t len, unsigned int flags);
++
+ #endif
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 4409967..b76140e 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -513,6 +513,10 @@ extern void tty_ldisc_begin(void);
+ /* This last one is just for the tty layer internals and shouldn't be used
+elsewhere */
+ extern void tty_ldisc_enable(struct tty_struct *tty);
+ +/* These are for checkpoint/restart */
++extern int tiocsctty(struct tty_struct *tty, int arg);
++extern int do_tiocspgrp(struct tty_struct *tty,
++			struct tty_struct *real_tty, pid_t pgrp_nr);
+  /* n_tty.c */
+ extern struct tty_ldisc_ops tty_ldisc_N_TTY;
+diff --git a/include/linux/user.h b/include/linux/user.h
+index 68daf84..c231e9c 100644
+--- a/include/linux/user.h
++++ b/include/linux/user.h
+@@ -1 +1,10 @@
++#ifndef _LINUX_USER_H
++#define _LINUX_USER_H
++
+ #include <asm/user.h>
++#include <linux/sched.h>
++
++extern int may_setuid(struct user_namespace *ns, uid_t uid);
++extern int may_setgid(gid_t gid);
++
++#endif
+diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
+index cc4f453..f6ea75d 100644
+--- a/include/linux/user_namespace.h
++++ b/include/linux/user_namespace.h
+@@ -20,6 +20,8 @@ extern struct user_namespace init_user_ns;
+  #ifdef CONFIG_USER_NS
+ +struct user_namespace *new_user_ns(struct user_struct *creator,
++				   struct user_struct **newroot);
+ static inline struct user_namespace *get_user_ns(struct user_namespace *ns)
+ {
+ 	if (ns)
+@@ -38,6 +40,12 @@ static inline void put_user_ns(struct user_namespace *ns)
+  #else
+ +static inline struct user_namespace *new_user_ns(struct user_struct *creator,
++				   struct user_struct **newroot)
++{
++	return ERR_PTR(-EINVAL);
++}
++
+ static inline struct user_namespace *get_user_ns(struct user_namespace *ns)
+ {
+ 	return &init_user_ns;
+diff --git a/include/linux/utsname.h b/include/linux/utsname.h
+index 69f3997..774001d 100644
+--- a/include/linux/utsname.h
++++ b/include/linux/utsname.h
+@@ -49,6 +49,7 @@ static inline void get_uts_ns(struct uts_namespace *ns)
+ 	kref_get(&ns->kref);
+ }
+ +extern struct uts_namespace *create_uts_ns(void);
+ extern struct uts_namespace *copy_utsname(unsigned long flags,
+ 					struct uts_namespace *ns);
+ extern void free_uts_ns(struct kref *kref);
+diff --git a/include/net/af_unix.h b/include/net/af_unix.h
+index 1614d78..f79e72b 100644
+--- a/include/net/af_unix.h
++++ b/include/net/af_unix.h
+@@ -68,4 +68,5 @@ static inline int unix_sysctl_register(struct net *net) {
+return 0; }
+ static inline void unix_sysctl_unregister(struct net *net) {}
+ #endif
+ #endif
++
+ #endif
+diff --git a/include/net/sock.h b/include/net/sock.h
+index b4603cd..3cf7de4 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1645,6 +1645,54 @@ extern void sock_enable_timestamp(struct sock *sk, int flag);
+ extern int sock_get_timestamp(struct sock *, struct timeval __user *);
+ extern int sock_get_timestampns(struct sock *, struct timespec __user *);
+ +/* bind() helper shared between any callers needing to perform a bind on
++ * behalf of userspace (syscall and restart) with the security hooks.
++ */
++static inline int sock_bind(struct socket *sock,
++			    struct sockaddr *addr,
++			    int addr_len)
++{
++	int err;
++
++	err = security_socket_bind(sock, addr, addr_len);
++	if (err)
++		return err;
++	else
++		return sock->ops->bind(sock, addr, addr_len);
++}
++
++/* getname() helper shared between any callers needing to perform a getname on
++ * behalf of userspace (syscall and restart) with the security hooks.
++ */
++static inline int sock_getname(struct socket *sock,
++			       struct sockaddr *addr,
++			       int *addr_len)
++{
++	int err;
++
++	err = security_socket_getsockname(sock);
++	if (err)
++		return err;
++	else
++		return sock->ops->getname(sock, addr, addr_len, 0);
++}
++
++/* getpeer() helper shared between any callers needing to perform a getpeer on
++ * behalf of userspace (syscall and restart) with the security hooks.
++ */
++static inline int sock_getpeer(struct socket *sock,
++			       struct sockaddr *addr,
++			       int *addr_len)
++{
++	int err;
++
++	err = security_socket_getpeername(sock);
++	if (err)
++		return err;
++	else
++		return sock->ops->getname(sock, addr, addr_len, 1);
++}
++
+ /*   *	Enable debug/info messages   */
+diff --git a/init/Kconfig b/init/Kconfig
+index eb77e8c..424d5b6 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -201,6 +201,12 @@ config SYSVIPC
+ 	  section 6.4 of the Linux Programmer's Guide, available from
+ 	  <http://www.tldp.org/guides.html>.
+ +config SYSVIPC_CHECKPOINT
++	bool
++	depends on SYSVIPC
++	depends on CHECKPOINT
++	default y
++
+ config SYSVIPC_SYSCTL
+ 	bool
+ 	depends on SYSVIPC
+@@ -664,7 +670,7 @@ config RELAY
+  	  If unsure, say N.
+ -config NAMESPACES
++menuconfig NAMESPACES
+ 	bool "Namespaces support" if EMBEDDED
+ 	default !EMBEDDED
+ 	help
+@@ -715,6 +721,8 @@ config NET_NS
+ 	  Allow user space to create what appear to be multiple instances
+ 	  of the network stack.
+ +source "kernel/checkpoint/Kconfig"
++
+ config BLK_DEV_INITRD
+ 	bool "Initial RAM filesystem and RAM disk (initramfs/initrd) support"
+ 	depends on BROKEN || !FRV
+diff --git a/ipc/Makefile b/ipc/Makefile
+index 9075e17..55e38d4 100644
+--- a/ipc/Makefile
++++ b/ipc/Makefile
+@@ -9,4 +9,5 @@ obj_mq-$(CONFIG_COMPAT) += compat_mq.o
+ obj-$(CONFIG_POSIX_MQUEUE) += mqueue.o msgutil.o $(obj_mq-y)
+ obj-$(CONFIG_IPC_NS) += namespace.o
+ obj-$(CONFIG_POSIX_MQUEUE_SYSCTL) += mq_sysctl.o
+-
++obj-$(CONFIG_SYSVIPC_CHECKPOINT) += checkpoint.o \
++		checkpoint_shm.o checkpoint_msg.o checkpoint_sem.o
+diff --git a/ipc/msg.c b/ipc/msg.c
+index 9547cb7..9ef6a5e 100644
+--- a/ipc/msg.c
++++ b/ipc/msg.c
+@@ -71,8 +71,7 @@ struct msg_sender {
+  #define msg_unlock(msq)		ipc_unlock(&(msq)->q_perm)
+ -static void freeque(struct ipc_namespace *, struct kern_ipc_perm *);
+-static int newque(struct ipc_namespace *, struct ipc_params *);
++static int newque(struct ipc_namespace *, struct ipc_params *, int);
+ #ifdef CONFIG_PROC_FS
+ static int sysvipc_msg_proc_show(struct seq_file *s, void *it);
+ #endif
+@@ -174,10 +173,12 @@ static inline void msg_rmid(struct ipc_namespace *ns,
+struct msg_queue *s)
+  * newque - Create a new msg queue
+  * @ns: namespace
+  * @params: ptr to the structure that contains the key and msgflg
++ * @req_id: request desired id if available (-1 if don't care)
+  *
+  * Called with msg_ids.rw_mutex held (writer)
+  */
+-static int newque(struct ipc_namespace *ns, struct ipc_params *params)
++static int
++newque(struct ipc_namespace *ns, struct ipc_params *params, int req_id)
+ {
+ 	struct msg_queue *msq;
+ 	int id, retval;
+@@ -201,7 +202,7 @@ static int newque(struct ipc_namespace *ns, struct
+ipc_params *params)
+ 	/*
+ 	 * ipc_addid() locks msq
+ 	 */
+-	id = ipc_addid(&msg_ids(ns), &msq->q_perm, ns->msg_ctlmni);
++	id = ipc_addid(&msg_ids(ns), &msq->q_perm, ns->msg_ctlmni, req_id);
+ 	if (id < 0) {
+ 		security_msg_queue_free(msq);
+ 		ipc_rcu_putref(msq);
+@@ -276,7 +277,7 @@ static void expunge_all(struct msg_queue *msq, int res)
+  * msg_ids.rw_mutex (writer) and the spinlock for this message queue are held
+  * before freeque() is called. msg_ids.rw_mutex remains locked on exit.
+  */
+-static void freeque(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
++void freeque(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
+ {
+ 	struct list_head *tmp;
+ 	struct msg_queue *msq = container_of(ipcp, struct msg_queue, q_perm);
+@@ -309,14 +310,11 @@ static inline int msg_security(struct kern_ipc_perm *ipcp,
+int msgflg)
+ 	return security_msg_queue_associate(msq, msgflg);
+ }
+ -SYSCALL_DEFINE2(msgget, key_t, key, int, msgflg)
++int do_msgget(struct ipc_namespace *ns, key_t key, int msgflg, int req_id)
+ {
+-	struct ipc_namespace *ns;
+ 	struct ipc_ops msg_ops;
+ 	struct ipc_params msg_params;
+ -	ns = current->nsproxy->ipc_ns;
+-
+ 	msg_ops.getnew = newque;
+ 	msg_ops.associate = msg_security;
+ 	msg_ops.more_checks = NULL;
+@@ -324,7 +322,12 @@ SYSCALL_DEFINE2(msgget, key_t, key, int, msgflg)
+ 	msg_params.key = key;
+ 	msg_params.flg = msgflg;
+ -	return ipcget(ns, &msg_ids(ns), &msg_ops, &msg_params);
++	return ipcget(ns, &msg_ids(ns), &msg_ops, &msg_params, req_id);
++}
++
++SYSCALL_DEFINE2(msgget, key_t, key, int, msgflg)
++{
++	return do_msgget(current->nsproxy->ipc_ns, key, msgflg, -1);
+ }
+  static inline unsigned long
+diff --git a/ipc/msgutil.c b/ipc/msgutil.c
+index f095ee2..e119243 100644
+--- a/ipc/msgutil.c
++++ b/ipc/msgutil.c
+@@ -36,14 +36,6 @@ struct ipc_namespace init_ipc_ns = {
+  atomic_t nr_ipc_ns = ATOMIC_INIT(1);
+ -struct msg_msgseg {
+-	struct msg_msgseg* next;
+-	/* the next part of the message follows immediately */
+-};
+-
+-#define DATALEN_MSG	(PAGE_SIZE-sizeof(struct msg_msg))
+-#define DATALEN_SEG	(PAGE_SIZE-sizeof(struct msg_msgseg))
+-
+ struct msg_msg *load_msg(const void __user *src, int len)
+ {
+ 	struct msg_msg *msg;
+diff --git a/ipc/namespace.c b/ipc/namespace.c
+index a1094ff..8e5ea32 100644
+--- a/ipc/namespace.c
++++ b/ipc/namespace.c
+@@ -14,7 +14,7 @@
+  #include "util.h"
+ -static struct ipc_namespace *create_ipc_ns(void)
++struct ipc_namespace *create_ipc_ns(void)
+ {
+ 	struct ipc_namespace *ns;
+ 	int err;
+diff --git a/ipc/sem.c b/ipc/sem.c
+index dbef95b..4fca49a 100644
+--- a/ipc/sem.c
++++ b/ipc/sem.c
+@@ -92,8 +92,7 @@
+ #define sem_unlock(sma)		ipc_unlock(&(sma)->sem_perm)
+ #define sem_checkid(sma, semid)	ipc_checkid(&sma->sem_perm, semid)
+ -static int newary(struct ipc_namespace *, struct ipc_params *);
+-static void freeary(struct ipc_namespace *, struct kern_ipc_perm *);
++static int newary(struct ipc_namespace *, struct ipc_params *, int);
+ #ifdef CONFIG_PROC_FS
+ static int sysvipc_sem_proc_show(struct seq_file *s, void *it);
+ #endif
+@@ -133,14 +132,6 @@ void sem_exit_ns(struct ipc_namespace *ns)
+ }
+ #endif
+ -void __init sem_init (void)
+-{
+-	sem_init_ns(&init_ipc_ns);
+-	ipc_init_proc_interface("sysvipc/sem",
+-				"       key      semid perms      nsems   uid   gid  cuid  cgid      otime
+     ctime\n",
+-				IPC_SEM_IDS, sysvipc_sem_proc_show);
+-}
+-
+ /*
+  * sem_lock_(check_) routines are called in the paths where the rw_mutex
+  * is not held.
+@@ -228,11 +219,13 @@ static inline void sem_rmid(struct ipc_namespace *ns,
+struct sem_array *s)
+  * newary - Create a new semaphore set
+  * @ns: namespace
+  * @params: ptr to the structure that contains key, semflg and nsems
++ * @req_id: request desired id if available (-1 if don't care)
+  *
+  * Called with sem_ids.rw_mutex held (as a writer)
+  */
+ -static int newary(struct ipc_namespace *ns, struct ipc_params *params)
++static int
++newary(struct ipc_namespace *ns, struct ipc_params *params, int req_id)
+ {
+ 	int id;
+ 	int retval;
+@@ -265,7 +258,7 @@ static int newary(struct ipc_namespace *ns, struct
+ipc_params *params)
+ 		return retval;
+ 	}
+ -	id = ipc_addid(&sem_ids(ns), &sma->sem_perm, ns->sc_semmni);
++	id = ipc_addid(&sem_ids(ns), &sma->sem_perm, ns->sc_semmni, req_id);
+ 	if (id < 0) {
+ 		security_sem_free(sma);
+ 		ipc_rcu_putref(sma);
+@@ -315,14 +308,12 @@ static inline int sem_more_checks(struct kern_ipc_perm *ipcp,
+ 	return 0;
+ }
+ -SYSCALL_DEFINE3(semget, key_t, key, int, nsems, int, semflg)
++int do_semget(struct ipc_namespace *ns, key_t key, int nsems,
++	      int semflg, int req_id)
+ {
+-	struct ipc_namespace *ns;
+ 	struct ipc_ops sem_ops;
+ 	struct ipc_params sem_params;
+ -	ns = current->nsproxy->ipc_ns;
+-
+ 	if (nsems < 0 || nsems > ns->sc_semmsl)
+ 		return -EINVAL;
+ @@ -334,7 +325,12 @@ SYSCALL_DEFINE3(semget, key_t, key, int, nsems, int, semflg)
+ 	sem_params.flg = semflg;
+ 	sem_params.u.nsems = nsems;
+ -	return ipcget(ns, &sem_ids(ns), &sem_ops, &sem_params);
++	return ipcget(ns, &sem_ids(ns), &sem_ops, &sem_params, req_id);
++}
++
++SYSCALL_DEFINE3(semget, key_t, key, int, nsems, int, semflg)
++{
++	return do_semget(current->nsproxy->ipc_ns, key, nsems, semflg, -1);
+ }
+  /*
+@@ -567,7 +563,7 @@ static void free_un(struct rcu_head *head)
+  * as a writer and the spinlock for this semaphore set hold. sem_ids.rw_mutex
+  * remains locked on exit.
+  */
+-static void freeary(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
++void freeary(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
+ {
+ 	struct sem_undo *un, *tu;
+ 	struct sem_queue *q, *tq;
+@@ -979,6 +975,21 @@ asmlinkage long SyS_semctl(int semid, int semnum, int cmd,
+union semun arg)
+ SYSCALL_ALIAS(sys_semctl, SyS_semctl);
+ #endif
+ +static struct sem_undo_list *alloc_undo_list(struct ipc_namespace *ipc_ns)
++{
++	struct sem_undo_list *undo_list;
++
++	undo_list = kzalloc(sizeof(*undo_list), GFP_KERNEL);
++	if (undo_list == NULL)
++		return NULL;
++	spin_lock_init(&undo_list->lock);
++	atomic_set(&undo_list->refcnt, 1);
++	INIT_LIST_HEAD(&undo_list->list_proc);
++	undo_list->ipc_ns = ipc_ns;
++
++	return undo_list;
++}
++
+ /* If the task doesn't already have a undo_list, then allocate one
+  * here.  We guarantee there is only one thread using this undo list,
+  * and current is THE ONE
+@@ -990,19 +1001,16 @@ SYSCALL_ALIAS(sys_semctl, SyS_semctl);
+  *
+  * This can block, so callers must hold no locks.
+  */
+-static inline int get_undo_list(struct sem_undo_list **undo_listp)
++static inline int get_undo_list(struct sem_undo_list **undo_listp,
++				struct ipc_namespace *ipc_ns)
+ {
+ 	struct sem_undo_list *undo_list;
+  	undo_list = current->sysvsem.undo_list;
+ 	if (!undo_list) {
+-		undo_list = kzalloc(sizeof(*undo_list), GFP_KERNEL);
+-		if (undo_list == NULL)
++		undo_list = alloc_undo_list(ipc_ns);
++		if (!undo_list)
+ 			return -ENOMEM;
+-		spin_lock_init(&undo_list->lock);
+-		atomic_set(&undo_list->refcnt, 1);
+-		INIT_LIST_HEAD(&undo_list->list_proc);
+-
+ 		current->sysvsem.undo_list = undo_list;
+ 	}
+ 	*undo_listp = undo_list;
+@@ -1035,7 +1043,7 @@ static struct sem_undo *lookup_undo(struct sem_undo_list
+*ulp, int semid)
+ }
+  /**
+- * find_alloc_undo - Lookup (and if not present create) undo array
++ * __find_alloc_undo - Lookup (and if not present create) undo array
+  * @ns: namespace
+  * @semid: semaphore array id
+  *
+@@ -1045,7 +1053,8 @@ static struct sem_undo *lookup_undo(struct sem_undo_list
+*ulp, int semid)
+  * Lifetime-rules: sem_undo is rcu-protected, on success, the function
+  * performs a rcu_read_lock().
+  */
+-static struct sem_undo *find_alloc_undo(struct ipc_namespace *ns, int semid)
++static struct sem_undo *__find_alloc_undo(struct ipc_namespace *ns, int semid,
++					  short checkperms)
+ {
+ 	struct sem_array *sma;
+ 	struct sem_undo_list *ulp;
+@@ -1053,7 +1062,7 @@ static struct sem_undo *find_alloc_undo(struct
+ipc_namespace *ns, int semid)
+ 	int nsems;
+ 	int error;
+ -	error = get_undo_list(&ulp);
++	error = get_undo_list(&ulp, ns);
+ 	if (error)
+ 		return ERR_PTR(error);
+ @@ -1071,6 +1080,11 @@ static struct sem_undo *find_alloc_undo(struct
+ipc_namespace *ns, int semid)
+ 	if (IS_ERR(sma))
+ 		return ERR_PTR(PTR_ERR(sma));
+ +	if (checkperms && ipcperms(&sma->sem_perm, checkperms)) {
++		sem_unlock(sma);
++		return ERR_PTR(-EPERM);
++	}
++
+ 	nsems = sma->sem_nsems;
+ 	sem_getref_and_unlock(sma);
+ @@ -1117,6 +1131,11 @@ out:
+ 	return un;
+ }
+ +static struct sem_undo *find_alloc_undo(struct ipc_namespace *ns, int semid)
++{
++	return __find_alloc_undo(ns, semid, 0);
++}
++
+ SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
+ 		unsigned, nsops, const struct timespec __user *, timeout)
+ {
+@@ -1324,7 +1343,7 @@ int copy_semundo(unsigned long clone_flags, struct
+task_struct *tsk)
+ 	int error;
+  	if (clone_flags & CLONE_SYSVSEM) {
+-		error = get_undo_list(&undo_list);
++		error = get_undo_list(&undo_list, tsk->nsproxy->ipc_ns);
+ 		if (error)
+ 			return error;
+ 		atomic_inc(&undo_list->refcnt);
+@@ -1347,14 +1366,8 @@ int copy_semundo(unsigned long clone_flags, struct
+task_struct *tsk)
+  * The current implementation does not do so. The POSIX standard
+  * and SVID should be consulted to determine what behavior is mandated.
+  */
+-void exit_sem(struct task_struct *tsk)
++static void put_undo_list(struct sem_undo_list *ulp)
+ {
+-	struct sem_undo_list *ulp;
+-
+-	ulp = tsk->sysvsem.undo_list;
+-	if (!ulp)
+-		return;
+-	tsk->sysvsem.undo_list = NULL;
+  	if (!atomic_dec_and_test(&ulp->refcnt))
+ 		return;
+@@ -1377,7 +1390,7 @@ void exit_sem(struct task_struct *tsk)
+ 		if (semid == -1)
+ 			break;
+ -		sma = sem_lock_check(tsk->nsproxy->ipc_ns, un->semid);
++		sma = sem_lock_check(ulp->ipc_ns, un->semid);
+  		/* exit_sem raced with IPC_RMID, nothing to do */
+ 		if (IS_ERR(sma))
+@@ -1435,6 +1448,16 @@ void exit_sem(struct task_struct *tsk)
+ 	kfree(ulp);
+ }
+ +void exit_sem(struct task_struct *tsk)
++{
++	struct sem_undo_list *ulp = tsk->sysvsem.undo_list;
++
++	if (ulp) {
++		put_undo_list(ulp);
++		tsk->sysvsem.undo_list = NULL;
++	}
++}
++
+ #ifdef CONFIG_PROC_FS
+ static int sysvipc_sem_proc_show(struct seq_file *s, void *it)
+ {
+@@ -1454,3 +1477,19 @@ static int sysvipc_sem_proc_show(struct seq_file *s, void
+*it)
+ 			  sma->sem_ctime);
+ }
+ #endif
++
++void __init sem_init (void)
++{
++	sem_init_ns(&init_ipc_ns);
++	ipc_init_proc_interface("sysvipc/sem",
++				"       key      semid perms      nsems   uid   gid  cuid  cgid      otime
+     ctime\n",
++				IPC_SEM_IDS, sysvipc_sem_proc_show);
++
++#ifdef CONFIG_CHECKPOINT
++	/* sem_undo_list uses a short but we write a __s16 */
++	CKPT_BUILD_BUG_ON_MISMATCH(*CKPT_STRUCT_MEMBER(sem_undo, semadj),
++				   __s16);
++
++	register_checkpoint_obj(&ckpt_obj_sem_undo_ops);
++#endif
++}
+diff --git a/ipc/shm.c b/ipc/shm.c
+index 1a314c8..ce41555 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -39,6 +39,7 @@
+ #include <linux/nsproxy.h>
+ #include <linux/mount.h>
+ #include <linux/ipc_namespace.h>
++#include <linux/checkpoint.h>
+  #include <asm/uaccess.h>
+ @@ -61,7 +62,7 @@ static const struct vm_operations_struct shm_vm_ops;
+ #define shm_unlock(shp)			\
+ 	ipc_unlock(&(shp)->shm_perm)
+ -static int newseg(struct ipc_namespace *, struct ipc_params *);
++static int newseg(struct ipc_namespace *, struct ipc_params *, int);
+ static void shm_open(struct vm_area_struct *vma);
+ static void shm_close(struct vm_area_struct *vma);
+ static void shm_destroy (struct ipc_namespace *ns, struct shmid_kernel *shp);
+@@ -82,7 +83,7 @@ void shm_init_ns(struct ipc_namespace *ns)
+  * Called with shm_ids.rw_mutex (writer) and the shp structure locked.
+  * Only shm_ids.rw_mutex remains locked on exit.
+  */
+-static void do_shm_rmid(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
++void do_shm_rmid(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
+ {
+ 	struct shmid_kernel *shp;
+ 	shp = container_of(ipcp, struct shmid_kernel, shm_perm);
+@@ -329,11 +330,13 @@ static const struct vm_operations_struct shm_vm_ops = {
+  * newseg - Create a new shared memory segment
+  * @ns: namespace
+  * @params: ptr to the structure that contains key, size and shmflg
++ * @req_id: request desired id if available (-1 if don't care)
+  *
+  * Called with shm_ids.rw_mutex held as a writer.
+  */
+ -static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
++static int
++newseg(struct ipc_namespace *ns, struct ipc_params *params, int req_id)
+ {
+ 	key_t key = params->key;
+ 	int shmflg = params->flg;
+@@ -388,7 +391,7 @@ static int newseg(struct ipc_namespace *ns, struct
+ipc_params *params)
+ 	if (IS_ERR(file))
+ 		goto no_file;
+ -	id = ipc_addid(&shm_ids(ns), &shp->shm_perm, ns->shm_ctlmni);
++	id = ipc_addid(&shm_ids(ns), &shp->shm_perm, ns->shm_ctlmni, req_id);
+ 	if (id < 0) {
+ 		error = id;
+ 		goto no_id;
+@@ -448,14 +451,12 @@ static inline int shm_more_checks(struct kern_ipc_perm *ipcp,
+ 	return 0;
+ }
+ -SYSCALL_DEFINE3(shmget, key_t, key, size_t, size, int, shmflg)
++int do_shmget(struct ipc_namespace *ns, key_t key, size_t size,
++	      int shmflg, int req_id)
+ {
+-	struct ipc_namespace *ns;
+ 	struct ipc_ops shm_ops;
+ 	struct ipc_params shm_params;
+ -	ns = current->nsproxy->ipc_ns;
+-
+ 	shm_ops.getnew = newseg;
+ 	shm_ops.associate = shm_security;
+ 	shm_ops.more_checks = shm_more_checks;
+@@ -464,7 +465,12 @@ SYSCALL_DEFINE3(shmget, key_t, key, size_t, size, int, shmflg)
+ 	shm_params.flg = shmflg;
+ 	shm_params.u.size = size;
+ -	return ipcget(ns, &shm_ids(ns), &shm_ops, &shm_params);
++	return ipcget(ns, &shm_ids(ns), &shm_ops, &shm_params, req_id);
++}
++
++SYSCALL_DEFINE3(shmget, key_t, key, size_t, size, int, shmflg)
++{
++	return do_shmget(current->nsproxy->ipc_ns, key, size, shmflg, -1);
+ }
+  static inline unsigned long copy_shmid_to_user(void __user *buf, struct
+shmid64_ds *in, int version)
+@@ -595,8 +601,8 @@ static void shm_get_stat(struct ipc_namespace *ns, unsigned
+long *rss,
+  * to be held in write mode.
+  * NOTE: no locks must be held, the rw_mutex is taken inside this function.
+  */
+-static int shmctl_down(struct ipc_namespace *ns, int shmid, int cmd,
+-		       struct shmid_ds __user *buf, int version)
++int shmctl_down(struct ipc_namespace *ns, int shmid, int cmd,
++		struct shmid_ds __user *buf, int version)
+ {
+ 	struct kern_ipc_perm *ipcp;
+ 	struct shmid64_ds shmid64;
+@@ -810,11 +816,13 @@ out:
+  * "raddr" thing points to kernel space, and there has to be a wrapper around
+  * this.
+  */
+-long do_shmat(int shmid, char __user *shmaddr, int shmflg, ulong *raddr)
++long do_shmat_pgoff(int shmid, char __user *shmaddr, int shmflg,
++		    ulong *raddr, ulong shmsize, ulong shmpgoff)
+ {
+ 	struct shmid_kernel *shp;
+ 	unsigned long addr;
+ 	unsigned long size;
++	unsigned long pgoff;
+ 	struct file * file;
+ 	int    err;
+ 	unsigned long flags;
+@@ -886,6 +894,17 @@ long do_shmat(int shmid, char __user *shmaddr, int shmflg,
+ulong *raddr)
+ 	size = i_size_read(path.dentry->d_inode);
+ 	shm_unlock(shp);
+ +	pgoff = 0;
++
++	err = -EINVAL;
++	if (shmsize) {
++		if (shmpgoff + shmsize > size ||
++		    shmpgoff + shmsize < shmpgoff)
++			goto out_put_dentry;
++		size = shmsize;
++		pgoff = shmpgoff;
++	}
++
+ 	err = -ENOMEM;
+ 	sfd = kzalloc(sizeof(*sfd), GFP_KERNEL);
+ 	if (!sfd)
+@@ -919,7 +938,7 @@ long do_shmat(int shmid, char __user *shmaddr, int shmflg,
+ulong *raddr)
+ 			goto invalid;
+ 	}
+ 		
+-	user_addr = do_mmap (file, addr, size, prot, flags, 0);
++	user_addr = do_mmap (file, addr, size, prot, flags, pgoff);
+ 	*raddr = user_addr;
+ 	err = 0;
+ 	if (IS_ERR_VALUE(user_addr))
+@@ -955,6 +974,16 @@ out_put_dentry:
+ 	goto out_nattch;
+ }
+ +/*
++ * NOTE! Despite the name, this is NOT a direct system call entrypoint. The
++ * "raddr" thing points to kernel space, and there has to be a wrapper around
++ * this.
++ */
++long do_shmat(int shmid, char __user *shmaddr, int shmflg, ulong *raddr)
++{
++	return do_shmat_pgoff(shmid, shmaddr, shmflg, raddr, 0, 0);
++}
++
+ SYSCALL_DEFINE3(shmat, int, shmid, char __user *, shmaddr, int, shmflg)
+ {
+ 	unsigned long ret;
+diff --git a/ipc/util.c b/ipc/util.c
+index 79ce84e..c4ce60d 100644
+--- a/ipc/util.c
++++ b/ipc/util.c
+@@ -247,10 +247,12 @@ int ipc_get_maxid(struct ipc_ids *ids)
+  *	Called with ipc_ids.rw_mutex held as a writer.
+  */
+  -int ipc_addid(struct ipc_ids* ids, struct kern_ipc_perm* new, int size)
++int
++ipc_addid(struct ipc_ids *ids, struct kern_ipc_perm *new, int size, int req_id)
+ {
+ 	uid_t euid;
+ 	gid_t egid;
++	int lid = 0;
+ 	int id, err;
+  	if (size > IPCMNI)
+@@ -259,28 +261,41 @@ int ipc_addid(struct ipc_ids* ids, struct kern_ipc_perm*
+new, int size)
+ 	if (ids->in_use >= size)
+ 		return -ENOSPC;
+ +	if (req_id >= 0)
++		lid = ipcid_to_idx(req_id);
++
+ 	spin_lock_init(&new->lock);
+ 	new->deleted = 0;
+ 	rcu_read_lock();
+ 	spin_lock(&new->lock);
+ -	err = idr_get_new(&ids->ipcs_idr, new, &id);
++	err = idr_get_new_above(&ids->ipcs_idr, new, lid, &id);
+ 	if (err) {
+ 		spin_unlock(&new->lock);
+ 		rcu_read_unlock();
+ 		return err;
+ 	}
+ +	if (req_id >= 0) {
++		if (id != lid) {
++			idr_remove(&ids->ipcs_idr, id);
++			spin_unlock(&new->lock);
++			rcu_read_unlock();
++			return -EBUSY;
++		}
++		new->seq = req_id / SEQ_MULTIPLIER;
++	} else {
++		new->seq = ids->seq++;
++		if (ids->seq > ids->seq_max)
++			ids->seq = 0;
++	}
++
+ 	ids->in_use++;
+  	current_euid_egid(&euid, &egid);
+ 	new->cuid = new->uid = euid;
+ 	new->gid = new->cgid = egid;
+ -	new->seq = ids->seq++;
+-	if(ids->seq > ids->seq_max)
+-		ids->seq = 0;
+-
+ 	new->id = ipc_buildid(id, new->seq);
+ 	return id;
+ }
+@@ -296,7 +311,7 @@ int ipc_addid(struct ipc_ids* ids, struct kern_ipc_perm*
+new, int size)
+  *	when the key is IPC_PRIVATE.
+  */
+ static int ipcget_new(struct ipc_namespace *ns, struct ipc_ids *ids,
+-		struct ipc_ops *ops, struct ipc_params *params)
++		struct ipc_ops *ops, struct ipc_params *params, int req_id)
+ {
+ 	int err;
+ retry:
+@@ -306,7 +321,7 @@ retry:
+ 		return -ENOMEM;
+  	down_write(&ids->rw_mutex);
+-	err = ops->getnew(ns, params);
++	err = ops->getnew(ns, params, req_id);
+ 	up_write(&ids->rw_mutex);
+  	if (err == -EAGAIN)
+@@ -351,6 +366,7 @@ static int ipc_check_perms(struct kern_ipc_perm *ipcp,
+struct ipc_ops *ops,
+  *	@ids: IPC identifer set
+  *	@ops: the actual creation routine to call
+  *	@params: its parameters
++ *	@req_id: request desired id if available (-1 if don't care)
+  *
+  *	This routine is called by sys_msgget, sys_semget() and sys_shmget()
+  *	when the key is not IPC_PRIVATE.
+@@ -360,7 +376,7 @@ static int ipc_check_perms(struct kern_ipc_perm *ipcp,
+struct ipc_ops *ops,
+  *	On success, the ipc id is returned.
+  */
+ static int ipcget_public(struct ipc_namespace *ns, struct ipc_ids *ids,
+-		struct ipc_ops *ops, struct ipc_params *params)
++		struct ipc_ops *ops, struct ipc_params *params, int req_id)
+ {
+ 	struct kern_ipc_perm *ipcp;
+ 	int flg = params->flg;
+@@ -381,7 +397,7 @@ retry:
+ 		else if (!err)
+ 			err = -ENOMEM;
+ 		else
+-			err = ops->getnew(ns, params);
++			err = ops->getnew(ns, params, req_id);
+ 	} else {
+ 		/* ipc object has been locked by ipc_findkey() */
+ @@ -742,12 +758,12 @@ struct kern_ipc_perm *ipc_lock_check(struct ipc_ids *ids,
+int id)
+  * Common routine called by sys_msgget(), sys_semget() and sys_shmget().
+  */
+ int ipcget(struct ipc_namespace *ns, struct ipc_ids *ids,
+-			struct ipc_ops *ops, struct ipc_params *params)
++		struct ipc_ops *ops, struct ipc_params *params, int req_id)
+ {
+ 	if (params->key == IPC_PRIVATE)
+-		return ipcget_new(ns, ids, ops, params);
++		return ipcget_new(ns, ids, ops, params, req_id);
+ 	else
+-		return ipcget_public(ns, ids, ops, params);
++		return ipcget_public(ns, ids, ops, params, req_id);
+ }
+  /**
+diff --git a/ipc/util.h b/ipc/util.h
+index 764b51a..62ea760 100644
+--- a/ipc/util.h
++++ b/ipc/util.h
+@@ -12,6 +12,7 @@
+  #include <linux/unistd.h>
+ #include <linux/err.h>
++#include <linux/checkpoint.h>
+  #define SEQ_MULTIPLIER	(IPCMNI)
+ @@ -71,7 +72,7 @@ struct ipc_params {
+  *      . routine to call for an extra check if needed
+  */
+ struct ipc_ops {
+-	int (*getnew) (struct ipc_namespace *, struct ipc_params *);
++	int (*getnew) (struct ipc_namespace *, struct ipc_params *, int);
+ 	int (*associate) (struct kern_ipc_perm *, int);
+ 	int (*more_checks) (struct kern_ipc_perm *, struct ipc_params *);
+ };
+@@ -94,7 +95,7 @@ void __init ipc_init_proc_interface(const char *path, const
+char *header,
+ #define ipcid_to_idx(id) ((id) % SEQ_MULTIPLIER)
+  /* must be called with ids->rw_mutex acquired for writing */
+-int ipc_addid(struct ipc_ids *, struct kern_ipc_perm *, int);
++int ipc_addid(struct ipc_ids *, struct kern_ipc_perm *, int, int);
+  /* must be called with ids->rw_mutex acquired for reading */
+ int ipc_get_maxid(struct ipc_ids *);
+@@ -140,6 +141,14 @@ extern void free_msg(struct msg_msg *msg);
+ extern struct msg_msg *load_msg(const void __user *src, int len);
+ extern int store_msg(void __user *dest, struct msg_msg *msg, int len);
+ +struct msg_msgseg {
++	struct msg_msgseg *next;
++	/* the next part of the message follows immediately */
++};
++
++#define DATALEN_MSG	(PAGE_SIZE-sizeof(struct msg_msg))
++#define DATALEN_SEG	(PAGE_SIZE-sizeof(struct msg_msgseg))
++
+ extern void recompute_msgmni(struct ipc_namespace *);
+  static inline int ipc_buildid(int id, int seq)
+@@ -171,7 +180,22 @@ static inline void ipc_unlock(struct kern_ipc_perm *perm)
+  struct kern_ipc_perm *ipc_lock_check(struct ipc_ids *ids, int id);
+ int ipcget(struct ipc_namespace *ns, struct ipc_ids *ids,
+-			struct ipc_ops *ops, struct ipc_params *params);
++	   struct ipc_ops *ops, struct ipc_params *params, int req_id);
+ void free_ipcs(struct ipc_namespace *ns, struct ipc_ids *ids,
+-		void (*free)(struct ipc_namespace *, struct kern_ipc_perm *));
++	       void (*free)(struct ipc_namespace *, struct kern_ipc_perm *));
++
++struct ipc_namespace *create_ipc_ns(void);
++
++int do_shmget(struct ipc_namespace *ns, key_t key, size_t size, int shmflg,
++	      int req_id);
++void do_shm_rmid(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp);
++
++int do_msgget(struct ipc_namespace *ns, key_t key, int msgflg, int req_id);
++void freeque(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp);
++
++int do_semget(struct ipc_namespace *ns, key_t key, int nsems, int semflg,
++	      int req_id);
++void freeary(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp);
++
++
+ #endif
+diff --git a/kernel/Makefile b/kernel/Makefile
+index a987aa1..67159cd 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -25,6 +25,7 @@ CFLAGS_REMOVE_sched_clock.o = -pg
+ CFLAGS_REMOVE_perf_event.o = -pg
+ endif
+ +obj-$(CONFIG_DEFERQUEUE) += deferqueue.o
+ obj-$(CONFIG_FREEZER) += freezer.o
+ obj-$(CONFIG_PROFILING) += profile.o
+ obj-$(CONFIG_SYSCTL_SYSCALL_CHECK) += sysctl_check.o
+@@ -105,6 +106,7 @@ obj-$(CONFIG_PERF_EVENTS) += perf_event.o
+ obj-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
+ obj-$(CONFIG_USER_RETURN_NOTIFIER) += user-return-notifier.o
+ obj-$(CONFIG_PADATA) += padata.o
++obj-$(CONFIG_CHECKPOINT) += checkpoint/
+  ifneq ($(CONFIG_SCHED_OMIT_FRAME_POINTER),y)
+ # According to Alan Modra <alan@linuxcare.com.au>, the -fno-omit-frame-pointer is
+diff --git a/kernel/capability.c b/kernel/capability.c
+index 9e4697e..4f868b3 100644
+--- a/kernel/capability.c
++++ b/kernel/capability.c
+@@ -14,6 +14,8 @@
+ #include <linux/security.h>
+ #include <linux/syscalls.h>
+ #include <linux/pid_namespace.h>
++#include <linux/securebits.h>
++#include <linux/checkpoint.h>
+ #include <asm/uaccess.h>
+ #include "cred-internals.h"
+ @@ -215,6 +217,45 @@ SYSCALL_DEFINE2(capget, cap_user_header_t, header,
+cap_user_data_t, dataptr)
+ 	return ret;
+ }
+ +static int do_capset_tocred(kernel_cap_t *effective, kernel_cap_t *inheritable,
++			kernel_cap_t *permitted, struct cred *new)
++{
++	int ret;
++
++	ret = security_capset(new, current_cred(),
++			      effective, inheritable, permitted);
++	if (ret < 0)
++		return ret;
++
++	/*
++	 * for checkpoint-restart, do we want to wait until end of restart?
++	 * not sure we care */
++	audit_log_capset(current->pid, new, current_cred());
++
++	return 0;
++}
++
++static int do_capset(kernel_cap_t *effective, kernel_cap_t *inheritable,
++			kernel_cap_t *permitted)
++{
++	struct cred *new;
++	int ret;
++
++	new = prepare_creds();
++	if (!new)
++		return -ENOMEM;
++
++	ret = do_capset_tocred(effective, inheritable, permitted, new);
++	if (ret < 0)
++		goto error;
++
++	return commit_creds(new);
++
++error:
++	abort_creds(new);
++	return ret;
++}
++
+ /**
+  * sys_capset - set capabilities for a process or (*) a group of processes
+  * @header: pointer to struct that contains capability version and
+@@ -238,7 +279,6 @@ SYSCALL_DEFINE2(capset, cap_user_header_t, header, const
+cap_user_data_t, data)
+ 	struct __user_cap_data_struct kdata[_KERNEL_CAPABILITY_U32S];
+ 	unsigned i, tocopy, copybytes;
+ 	kernel_cap_t inheritable, permitted, effective;
+-	struct cred *new;
+ 	int ret;
+ 	pid_t pid;
+ @@ -272,22 +312,52 @@ SYSCALL_DEFINE2(capset, cap_user_header_t, header, const
+cap_user_data_t, data)
+ 		i++;
+ 	}
+ -	new = prepare_creds();
+-	if (!new)
+-		return -ENOMEM;
++	return do_capset(&effective, &inheritable, &permitted);
+ -	ret = security_capset(new, current_cred(),
+-			      &effective, &inheritable, &permitted);
+-	if (ret < 0)
+-		goto error;
++}
++
++int apply_securebits(unsigned securebits, struct cred *new)
++{
++	if ((((new->securebits & SECURE_ALL_LOCKS) >> 1)
++	     & (new->securebits ^ securebits))				/*[1]*/
++	    || ((new->securebits & SECURE_ALL_LOCKS & ~securebits))	/*[2]*/
++	    || (securebits & ~(SECURE_ALL_LOCKS | SECURE_ALL_BITS))	/*[3]*/
++	    || (cap_capable(current, current_cred(), CAP_SETPCAP,
++			    SECURITY_CAP_AUDIT) != 0)			/*[4]*/
++		/*
++		 * [1] no changing of bits that are locked
++		 * [2] no unlocking of locks
++		 * [3] no setting of unsupported bits
++		 * [4] doing anything requires privilege (go read about
++		 *     the "sendmail capabilities bug")
++		 */
++	    )
++		/* cannot change a locked bit */
++		return -EPERM;
++	new->securebits = securebits;
++	return 0;
++}
+ -	audit_log_capset(pid, new, current_cred());
++static void do_capbset_drop(struct cred *cred, int cap)
++{
++	cap_lower(cred->cap_bset, cap);
++}
+ -	return commit_creds(new);
++static inline int restore_cap_bset(kernel_cap_t bset, struct cred *cred)
++{
++	int i, may_dropbcap = capable(CAP_SETPCAP);
++
++	for (i = 0; i < CAP_LAST_CAP; i++) {
++		if (cap_raised(bset, i))
++			continue;
++		if (!cap_raised(current_cred()->cap_bset, i))
++			continue;
++		if (!may_dropbcap)
++			return -EPERM;
++		do_capbset_drop(cred, i);
++	}
+ -error:
+-	abort_creds(new);
+-	return ret;
++	return 0;
+ }
+  /**
+diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
+index da5e139..8f923d8 100644
+--- a/kernel/cgroup_freezer.c
++++ b/kernel/cgroup_freezer.c
+@@ -26,6 +26,7 @@ enum freezer_state {
+ 	CGROUP_THAWED = 0,
+ 	CGROUP_FREEZING,
+ 	CGROUP_FROZEN,
++	CGROUP_CHECKPOINTING,
+ };
+  struct freezer {
+@@ -64,6 +65,44 @@ int cgroup_freezing_or_frozen(struct task_struct *task)
+ 	return (state == CGROUP_FREEZING) || (state == CGROUP_FROZEN);
+ }
+ +/* Task is frozen or will freeze immediately when next it gets woken */
++static bool is_task_frozen_enough(struct task_struct *task)
++{
++	return frozen(task) ||
++		(task_is_stopped_or_traced(task) && freezing(task));
++}
++
++/*
++ * caller must hold freezer->lock
++ */
++static void update_freezer_state(struct cgroup *cgroup,
++				 struct freezer *freezer)
++{
++	struct cgroup_iter it;
++	struct task_struct *task;
++	unsigned int nfrozen = 0, ntotal = 0;
++
++	cgroup_iter_start(cgroup, &it);
++	while ((task = cgroup_iter_next(cgroup, &it))) {
++		ntotal++;
++		if (is_task_frozen_enough(task))
++			nfrozen++;
++	}
++
++	/*
++	 * Transition to FROZEN when no new tasks can be added ensures
++	 * that we never exist in the FROZEN state while there are unfrozen
++	 * tasks.
++	 */
++	if (nfrozen == ntotal)
++		freezer->state = CGROUP_FROZEN;
++	else if (nfrozen > 0)
++		freezer->state = CGROUP_FREEZING;
++	else
++		freezer->state = CGROUP_THAWED;
++	cgroup_iter_end(cgroup, &it);
++}
++
+ /*
+  * cgroups_write_string() limits the size of freezer state strings to
+  * CGROUP_LOCAL_BUFFER_SIZE
+@@ -72,6 +111,7 @@ static const char *freezer_state_strs[] = {
+ 	"THAWED",
+ 	"FREEZING",
+ 	"FROZEN",
++	"CHECKPOINTING",
+ };
+  /*
+@@ -79,9 +119,9 @@ static const char *freezer_state_strs[] = {
+  * Transitions are caused by userspace writes to the freezer.state file.
+  * The values in parenthesis are state labels. The rest are edge labels.
+  *
+- * (THAWED) --FROZEN--> (FREEZING) --FROZEN--> (FROZEN)
+- *    ^ ^                    |                     |
+- *    | \_______THAWED_______/                     |
++ * (THAWED) --FROZEN--> (FREEZING) --FROZEN--> (FROZEN) --> (CHECKPOINTING)
++ *    ^ ^                    |                     | ^             |
++ *    | \_______THAWED_______/                     | \_____________/
+  *    \__________________________THAWED____________/
+  */
+ @@ -89,10 +129,10 @@ struct cgroup_subsys freezer_subsys;
+  /* Locks taken and their ordering
+  * ------------------------------
+- * css_set_lock
+  * cgroup_mutex (AKA cgroup_lock)
+- * task->alloc_lock (AKA task_lock)
+  * freezer->lock
++ * css_set_lock
++ * task->alloc_lock (AKA task_lock)
+  * task->sighand->siglock
+  *
+  * cgroup code forces css_set_lock to be taken before task->alloc_lock
+@@ -100,33 +140,38 @@ struct cgroup_subsys freezer_subsys;
+  * freezer_create(), freezer_destroy():
+  * cgroup_mutex [ by cgroup core ]
+  *
+- * can_attach():
+- * cgroup_mutex
++ * freezer_can_attach():
++ * cgroup_mutex (held by caller of can_attach)
+  *
+- * cgroup_frozen():
++ * cgroup_freezing_or_frozen():
+  * task->alloc_lock (to get task's cgroup)
+  *
+  * freezer_fork() (preserving fork() performance means can't take cgroup_mutex):
+- * task->alloc_lock (to get task's cgroup)
+  * freezer->lock
+  *  sighand->siglock (if the cgroup is freezing)
+  *
+  * freezer_read():
+  * cgroup_mutex
+  *  freezer->lock
++ *   write_lock css_set_lock (cgroup iterator start)
++ *    task->alloc_lock
+  *   read_lock css_set_lock (cgroup iterator start)
+  *
+  * freezer_write() (freeze):
+  * cgroup_mutex
+  *  freezer->lock
++ *   write_lock css_set_lock (cgroup iterator start)
++ *    task->alloc_lock
+  *   read_lock css_set_lock (cgroup iterator start)
+- *    sighand->siglock
++ *    sighand->siglock (fake signal delivery inside freeze_task())
+  *
+  * freezer_write() (unfreeze):
+  * cgroup_mutex
+  *  freezer->lock
++ *   write_lock css_set_lock (cgroup iterator start)
++ *    task->alloc_lock
+  *   read_lock css_set_lock (cgroup iterator start)
+- *    task->alloc_lock (to prevent races with freeze_task())
++ *    task->alloc_lock (inside thaw_process(), prevents race with refrigerator())
+  *     sighand->siglock
+  */
+ static struct cgroup_subsys_state *freezer_create(struct cgroup_subsys *ss,
+@@ -149,13 +194,6 @@ static void freezer_destroy(struct cgroup_subsys *ss,
+ 	kfree(cgroup_freezer(cgroup));
+ }
+ -/* Task is frozen or will freeze immediately when next it gets woken */
+-static bool is_task_frozen_enough(struct task_struct *task)
+-{
+-	return frozen(task) ||
+-		(task_is_stopped_or_traced(task) && freezing(task));
+-}
+-
+ /*
+  * The call to cgroup_lock() in the freezer.state write method prevents
+  * a write to that file racing against an attach, and hence the
+@@ -225,37 +263,6 @@ static void freezer_fork(struct cgroup_subsys *ss, struct
+task_struct *task)
+ 	spin_unlock_irq(&freezer->lock);
+ }
+ -/*
+- * caller must hold freezer->lock
+- */
+-static void update_freezer_state(struct cgroup *cgroup,
+-				 struct freezer *freezer)
+-{
+-	struct cgroup_iter it;
+-	struct task_struct *task;
+-	unsigned int nfrozen = 0, ntotal = 0;
+-
+-	cgroup_iter_start(cgroup, &it);
+-	while ((task = cgroup_iter_next(cgroup, &it))) {
+-		ntotal++;
+-		if (is_task_frozen_enough(task))
+-			nfrozen++;
+-	}
+-
+-	/*
+-	 * Transition to FROZEN when no new tasks can be added ensures
+-	 * that we never exist in the FROZEN state while there are unfrozen
+-	 * tasks.
+-	 */
+-	if (nfrozen == ntotal)
+-		freezer->state = CGROUP_FROZEN;
+-	else if (nfrozen > 0)
+-		freezer->state = CGROUP_FREEZING;
+-	else
+-		freezer->state = CGROUP_THAWED;
+-	cgroup_iter_end(cgroup, &it);
+-}
+-
+ static int freezer_read(struct cgroup *cgroup, struct cftype *cft,
+ 			struct seq_file *m)
+ {
+@@ -326,7 +333,10 @@ static int freezer_change_state(struct cgroup *cgroup,
+ 	freezer = cgroup_freezer(cgroup);
+  	spin_lock_irq(&freezer->lock);
+-
++	if (freezer->state == CGROUP_CHECKPOINTING) {
++		retval = -EBUSY;
++		goto out;
++	}
+ 	update_freezer_state(cgroup, freezer);
+ 	if (goal_state == freezer->state)
+ 		goto out;
+@@ -394,3 +404,107 @@ struct cgroup_subsys freezer_subsys = {
+ 	.fork		= freezer_fork,
+ 	.exit		= NULL,
+ };
++
++#ifdef CONFIG_CHECKPOINT
++/*
++ * Caller is expected to ensure that neither @p nor @q may change its
++ * freezer cgroup during this test in a way that may affect the result.
++ * E.g., when called form c/r, @p must be in CHECKPOINTING cgroup, so
++ * may not change cgroup, and either @q is also there, or is not there
++ * and may not join.
++ */
++int in_same_cgroup_freezer(struct task_struct *p, struct task_struct *q)
++{
++	struct cgroup_subsys_state *p_css, *q_css;
++
++	task_lock(p);
++	p_css = task_subsys_state(p, freezer_subsys_id);
++	task_unlock(p);
++
++	task_lock(q);
++	q_css = task_subsys_state(q, freezer_subsys_id);
++	task_unlock(q);
++
++	return (p_css == q_css);
++}
++
++/*
++ * cgroup freezer state changes made without the aid of the cgroup filesystem
++ * must go through this function to ensure proper locking is observed.
++ */
++static int freezer_checkpointing(struct task_struct *task,
++				 enum freezer_state next_state)
++{
++	struct freezer *freezer;
++	struct cgroup_subsys_state *css;
++	enum freezer_state state;
++
++	task_lock(task);
++	css = task_subsys_state(task, freezer_subsys_id);
++	css_get(css); /* make sure freezer doesn't go away */
++	freezer = container_of(css, struct freezer, css);
++	task_unlock(task);
++
++	if (freezer->state == CGROUP_FREEZING) {
++		/* May be in middle of a lazy FREEZING -> FROZEN transition */
++		if (cgroup_lock_live_group(css->cgroup)) {
++			spin_lock_irq(&freezer->lock);
++			update_freezer_state(css->cgroup, freezer);
++			spin_unlock_irq(&freezer->lock);
++			cgroup_unlock();
++		}
++	}
++
++	spin_lock_irq(&freezer->lock);
++	state = freezer->state;
++	if ((state == CGROUP_FROZEN && next_state == CGROUP_CHECKPOINTING) ||
++	    (state == CGROUP_CHECKPOINTING && next_state == CGROUP_FROZEN))
++		freezer->state = next_state;
++	spin_unlock_irq(&freezer->lock);
++	css_put(css);
++	return state;
++}
++
++int cgroup_freezer_begin_checkpoint(struct task_struct *task)
++{
++	if (freezer_checkpointing(task, CGROUP_CHECKPOINTING) != CGROUP_FROZEN)
++		return -EBUSY;
++	return 0;
++}
++
++void cgroup_freezer_end_checkpoint(struct task_struct *task)
++{
++	/*
++	 * If we weren't in CHECKPOINTING state then userspace could have
++	 * unfrozen a task and given us an inconsistent checkpoint image
++	 */
++	WARN_ON(freezer_checkpointing(task, CGROUP_FROZEN) != CGROUP_CHECKPOINTING);
++}
++
++int cgroup_freezer_make_frozen(struct task_struct *task)
++{
++	struct freezer *freezer;
++	struct cgroup_subsys_state *css;
++	int ret = -ENODEV;
++
++	task_lock(task);
++	css = task_subsys_state(task, freezer_subsys_id);
++	css_get(css); /* make sure freezer doesn't go away */
++	freezer = container_of(css, struct freezer, css);
++	task_unlock(task);
++
++	/* Never freeze the root cgroup */
++	if (!test_bit(CSS_ROOT, &css->flags) &&
++	    cgroup_lock_live_group(css->cgroup)) {
++		/* do not freeze outselves, ei ?! */
++		if (css != task_subsys_state(current, freezer_subsys_id))
++			ret = freezer_change_state(css->cgroup, CGROUP_FROZEN);
++		else
++			ret = -EPERM;
++		cgroup_unlock();
++	}
++
++	css_put(css);
++	return ret;
++}
++#endif /* CONFIG_CHECKPOINT */
+diff --git a/kernel/compat.c b/kernel/compat.c
+index 7f40e92..8b18f5d 100644
+--- a/kernel/compat.c
++++ b/kernel/compat.c
+@@ -101,7 +101,7 @@ int put_compat_timespec(const struct timespec *ts, struct
+compat_timespec __user
+ 			__put_user(ts->tv_nsec, &cts->tv_nsec)) ? -EFAULT : 0;
+ }
+ -static long compat_nanosleep_restart(struct restart_block *restart)
++long compat_nanosleep_restart(struct restart_block *restart)
+ {
+ 	struct compat_timespec __user *rmtp;
+ 	struct timespec rmt;
+@@ -648,7 +648,7 @@ long compat_sys_clock_getres(clockid_t which_clock,
+ 	return err;
+ }
+ -static long compat_clock_nanosleep_restart(struct restart_block *restart)
++long compat_clock_nanosleep_restart(struct restart_block *restart)
+ {
+ 	long err;
+ 	mm_segment_t oldfs;
+diff --git a/kernel/cred.c b/kernel/cred.c
+index e1dbe9e..9abe8fa 100644
+--- a/kernel/cred.c
++++ b/kernel/cred.c
+@@ -17,6 +17,7 @@
+ #include <linux/init_task.h>
+ #include <linux/security.h>
+ #include <linux/cn_proc.h>
++#include <linux/checkpoint.h>
+ #include "cred-internals.h"
+  #if 0
+@@ -895,3 +896,118 @@ void validate_creds_for_do_exit(struct task_struct *tsk)
+ }
+  #endif /* CONFIG_DEBUG_CREDENTIALS */
++
++int cred_setresuid(struct cred *new, uid_t ruid, uid_t euid, uid_t suid)
++{
++	int retval;
++	const struct cred *old;
++
++	retval = security_task_setuid(ruid, euid, suid, LSM_SETID_RES);
++	if (retval)
++		return retval;
++	old = current_cred();
++
++	if (!capable(CAP_SETUID)) {
++		if (ruid != (uid_t) -1 && ruid != old->uid &&
++		    ruid != old->euid  && ruid != old->suid)
++			return -EPERM;
++		if (euid != (uid_t) -1 && euid != old->uid &&
++		    euid != old->euid  && euid != old->suid)
++			return -EPERM;
++		if (suid != (uid_t) -1 && suid != old->uid &&
++		    suid != old->euid  && suid != old->suid)
++			return -EPERM;
++	}
++
++	if (ruid != (uid_t) -1) {
++		new->uid = ruid;
++		if (ruid != old->uid) {
++			retval = set_user(new);
++			if (retval < 0)
++				return retval;
++		}
++	}
++	if (euid != (uid_t) -1)
++		new->euid = euid;
++	if (suid != (uid_t) -1)
++		new->suid = suid;
++	new->fsuid = new->euid;
++
++	return security_task_fix_setuid(new, old, LSM_SETID_RES);
++}
++
++int cred_setresgid(struct cred *new, gid_t rgid, gid_t egid,
++			gid_t sgid)
++{
++	const struct cred *old = current_cred();
++	int retval;
++
++	retval = security_task_setgid(rgid, egid, sgid, LSM_SETID_RES);
++	if (retval)
++		return retval;
++
++	if (!capable(CAP_SETGID)) {
++		if (rgid != (gid_t) -1 && rgid != old->gid &&
++		    rgid != old->egid  && rgid != old->sgid)
++			return -EPERM;
++		if (egid != (gid_t) -1 && egid != old->gid &&
++		    egid != old->egid  && egid != old->sgid)
++			return -EPERM;
++		if (sgid != (gid_t) -1 && sgid != old->gid &&
++		    sgid != old->egid  && sgid != old->sgid)
++			return -EPERM;
++	}
++
++	if (rgid != (gid_t) -1)
++		new->gid = rgid;
++	if (egid != (gid_t) -1)
++		new->egid = egid;
++	if (sgid != (gid_t) -1)
++		new->sgid = sgid;
++	new->fsgid = new->egid;
++	return 0;
++}
++
++int cred_setfsuid(struct cred *new, uid_t uid, uid_t *old_fsuid)
++{
++	const struct cred *old;
++
++	old = current_cred();
++	*old_fsuid = old->fsuid;
++
++	if (security_task_setuid(uid, (uid_t)-1, (uid_t)-1, LSM_SETID_FS) < 0)
++		return -EPERM;
++
++	if (uid == old->uid  || uid == old->euid  ||
++	    uid == old->suid || uid == old->fsuid ||
++	    capable(CAP_SETUID)) {
++		if (uid != *old_fsuid) {
++			new->fsuid = uid;
++			if (security_task_fix_setuid(new, old, LSM_SETID_FS) == 0)
++				return 0;
++		}
++	}
++	return -EPERM;
++}
++
++int cred_setfsgid(struct cred *new, gid_t gid, gid_t *old_fsgid)
++{
++	const struct cred *old;
++
++	old = current_cred();
++	*old_fsgid = old->fsgid;
++
++	if (security_task_setgid(gid, (gid_t)-1, (gid_t)-1, LSM_SETID_FS))
++		return -EPERM;
++
++	if (gid == old->gid  || gid == old->egid  ||
++	    gid == old->sgid || gid == old->fsgid ||
++	    capable(CAP_SETGID)) {
++		if (gid != *old_fsgid) {
++			new->fsgid = gid;
++			return 0;
++		}
++	}
++	return -EPERM;
++}
++
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 7f2683a..0ef6685 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -50,6 +50,7 @@
+ #include <linux/perf_event.h>
+ #include <trace/events/sched.h>
+ #include <linux/hw_breakpoint.h>
++#include <linux/checkpoint.h>
+  #include <asm/uaccess.h>
+ #include <asm/unistd.h>
+@@ -303,6 +304,10 @@ kill_orphaned_pgrp(struct task_struct *tsk, struct
+task_struct *parent)
+ 	struct pid *pgrp = task_pgrp(tsk);
+ 	struct task_struct *ignored_task = tsk;
+ +	/* restarting zombie doesn't trigger signals */
++	if (tsk->flags & PF_RESTARTING)
++		return;
++
+ 	if (!parent)
+ 		 /* exit: our father is in a different pgrp than
+ 		  * we are and we were the only connection outside.
+@@ -792,7 +797,7 @@ static void forget_original_parent(struct task_struct *father)
+ 				BUG_ON(task_ptrace(t));
+ 				t->parent = t->real_parent;
+ 			}
+-			if (t->pdeath_signal)
++			if (t->pdeath_signal && !(t->flags & PF_RESTARTING))
+ 				group_send_sig_info(t->pdeath_signal,
+ 						    SEND_SIG_NOINFO, t);
+ 		} while_each_thread(p, t);
+@@ -1010,6 +1015,10 @@ NORET_TYPE void do_exit(long code)
+ 	if (unlikely(current->pi_state_cache))
+ 		kfree(current->pi_state_cache);
+ #endif
++#ifdef CONFIG_CHECKPOINT
++	if (unlikely(tsk->checkpoint_ctx))
++		exit_checkpoint(tsk);
++#endif
+ 	/*
+ 	 * Make sure we are holding no locks:
+ 	 */
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 9d5be5c..86ced8c 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -65,6 +65,7 @@
+ #include <linux/perf_event.h>
+ #include <linux/posix-timers.h>
+ #include <linux/user-return-notifier.h>
++#include <linux/checkpoint.h>
+  #include <asm/pgtable.h>
+ #include <asm/pgalloc.h>
+@@ -886,6 +887,9 @@ static int copy_signal(unsigned long clone_flags, struct
+task_struct *tsk)
+  	sig->oom_adj = current->signal->oom_adj;
+ +#ifdef CONFIG_CHECKPOINT
++	atomic_set(&sig->restart_count, 0);
++#endif
+ 	return 0;
+ }
+ @@ -1226,6 +1230,12 @@ static struct task_struct *copy_process(unsigned long
+clone_flags,
+ 	/* Need tasklist lock for parent etc handling! */
+ 	write_lock_irq(&tasklist_lock);
+ +#ifdef CONFIG_CHECKPOINT
++	/* If parent is restarting, child should be too */
++	if (unlikely(current->checkpoint_ctx))
++		p->checkpoint_ctx = ckpt_ctx_get(current->checkpoint_ctx);
++#endif
++
+ 	/* CLONE_PARENT re-uses the old parent */
+ 	if (clone_flags & (CLONE_PARENT|CLONE_THREAD)) {
+ 		p->real_parent = current->real_parent;
+diff --git a/kernel/futex.c b/kernel/futex.c
+index e7a35f1..baaecb4 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -1593,16 +1593,6 @@ handle_fault:
+ 	goto retry;
+ }
+ -/*
+- * In case we must use restart_block to restart a futex_wait,
+- * we encode in the 'flags' shared capability
+- */
+-#define FLAGS_SHARED		0x01
+-#define FLAGS_CLOCKRT		0x02
+-#define FLAGS_HAS_TIMEOUT	0x04
+-
+-static long futex_wait_restart(struct restart_block *restart);
+-
+ /**
+  * fixup_owner() - Post lock pi_state and corner case management
+  * @uaddr:	user address of the futex
+@@ -1876,7 +1866,7 @@ out:
+ }
+  -static long futex_wait_restart(struct restart_block *restart)
++long futex_wait_restart(struct restart_block *restart)
+ {
+ 	u32 __user *uaddr = (u32 __user *)restart->futex.uaddr;
+ 	int fshared = 0;
+@@ -2352,13 +2342,7 @@ out:
+  * the list. There can only be one such pending lock.
+  */
+ -/**
+- * sys_set_robust_list() - Set the robust-futex list head of a task
+- * @head:	pointer to the list-head
+- * @len:	length of the list-head, as userspace expects
+- */
+-SYSCALL_DEFINE2(set_robust_list, struct robust_list_head __user *, head,
+-		size_t, len)
++long do_set_robust_list(struct robust_list_head __user *head, size_t len)
+ {
+ 	if (!futex_cmpxchg_enabled)
+ 		return -ENOSYS;
+@@ -2374,6 +2358,17 @@ SYSCALL_DEFINE2(set_robust_list, struct robust_list_head
+__user *, head,
+ }
+  /**
++ * sys_set_robust_list() - Set the robust-futex list head of a task
++ * @head:	pointer to the list-head
++ * @len:	length of the list-head, as userspace expects
++ */
++SYSCALL_DEFINE2(set_robust_list, struct robust_list_head __user *, head,
++		size_t, len)
++{
++	return do_set_robust_list(head, len);
++}
++
++/**
+  * sys_get_robust_list() - Get the robust-futex list head of a task
+  * @pid:	pid of the process [zero for current task]
+  * @head_ptr:	pointer to a list-head pointer, the kernel fills it in
+diff --git a/kernel/futex_compat.c b/kernel/futex_compat.c
+index d49afb2..900bb2b 100644
+--- a/kernel/futex_compat.c
++++ b/kernel/futex_compat.c
+@@ -114,9 +114,9 @@ void compat_exit_robust_list(struct task_struct *curr)
+ 	}
+ }
+ -asmlinkage long
+-compat_sys_set_robust_list(struct compat_robust_list_head __user *head,
+-			   compat_size_t len)
++long
++do_compat_set_robust_list(struct compat_robust_list_head __user *head,
++			  compat_size_t len)
+ {
+ 	if (!futex_cmpxchg_enabled)
+ 		return -ENOSYS;
+@@ -130,6 +130,13 @@ compat_sys_set_robust_list(struct compat_robust_list_head
+__user *head,
+ }
+  asmlinkage long
++compat_sys_set_robust_list(struct compat_robust_list_head __user *head,
++			   compat_size_t len)
++{
++	return do_compat_set_robust_list(head, len);
++}
++
++asmlinkage long
+ compat_sys_get_robust_list(int pid, compat_uptr_t __user *head_ptr,
+ 			   compat_size_t __user *len_ptr)
+ {
+diff --git a/kernel/groups.c b/kernel/groups.c
+index 2b45b2e..9b0a176 100644
+--- a/kernel/groups.c
++++ b/kernel/groups.c
+@@ -6,6 +6,7 @@
+ #include <linux/slab.h>
+ #include <linux/security.h>
+ #include <linux/syscalls.h>
++#include <linux/checkpoint.h>
+ #include <asm/uaccess.h>
+  /* init to 2 - one for init_task, one to ensure it is never freed */
+diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+index f74e6c0..5f96b1c 100644
+--- a/kernel/nsproxy.c
++++ b/kernel/nsproxy.c
+@@ -22,6 +22,7 @@
+ #include <linux/pid_namespace.h>
+ #include <net/net_namespace.h>
+ #include <linux/ipc_namespace.h>
++#include <linux/checkpoint.h>
+  static struct kmem_cache *nsproxy_cachep;
+ @@ -236,7 +237,11 @@ void exit_task_namespaces(struct task_struct *p)
+ static int __init nsproxy_cache_init(void)
+ {
+ 	nsproxy_cachep = KMEM_CACHE(nsproxy, SLAB_PANIC);
++#ifdef CONFIG_CHECKPOINT
++	return checkpoint_register_nsproxy();
++#else
+ 	return 0;
++#endif
+ }
+  module_init(nsproxy_cache_init);
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index bc7704b..fd35ef1 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -168,15 +168,6 @@ static void bump_cpu_timer(struct k_itimer *timer,
+ 	}
+ }
+ -static inline cputime_t prof_ticks(struct task_struct *p)
+-{
+-	return cputime_add(p->utime, p->stime);
+-}
+-static inline cputime_t virt_ticks(struct task_struct *p)
+-{
+-	return p->utime;
+-}
+-
+ int posix_cpu_clock_getres(const clockid_t which_clock, struct timespec *tp)
+ {
+ 	int error = check_clock(which_clock);
+diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
+index 00d1fda..ec2e802 100644
+--- a/kernel/posix-timers.c
++++ b/kernel/posix-timers.c
+@@ -211,7 +211,7 @@ static int no_nsleep(const clockid_t which_clock, int flags,
+ /*
+  * Return nonzero if we know a priori this clockid_t value is bogus.
+  */
+-static inline int invalid_clockid(const clockid_t which_clock)
++int invalid_clockid(const clockid_t which_clock)
+ {
+ 	if (which_clock < 0)	/* CPU clock, posix_cpu_* will check it */
+ 		return 0;
+diff --git a/kernel/signal.c b/kernel/signal.c
+index dbd7fe0..32dc1cd 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -30,6 +30,12 @@
+ #include <linux/nsproxy.h>
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/signal.h>
++#define CKPT_DFLAG  CKPT_DSYS
++#include <linux/errno.h>
++#include <linux/resource.h>
++#include <linux/timer.h>
++#include <linux/posix-timers.h>
++#include <linux/checkpoint.h>
+  #include <asm/param.h>
+ #include <asm/uaccess.h>
+@@ -1449,6 +1455,10 @@ int do_notify_parent(struct task_struct *tsk, int sig)
+ 	BUG_ON(!task_ptrace(tsk) &&
+ 	       (tsk->group_leader != tsk || !thread_group_empty(tsk)));
+ +	/* restarting zombie doesn't notify parent */
++	if (tsk->flags & PF_RESTARTING)
++		return ret;
++
+ 	info.si_signo = sig;
+ 	info.si_errno = 0;
+ 	/*
+@@ -2734,4 +2744,7 @@ __attribute__((weak)) const char *arch_vma_name(struct
+vm_area_struct *vma)
+ void __init signals_init(void)
+ {
+ 	sigqueue_cachep = KMEM_CACHE(sigqueue, SLAB_PANIC);
++#ifdef CONFIG_CHECKPOINT
++	checkpoint_register_signal();
++#endif
+ }
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 6d1a7e0..9a98d05 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -565,11 +565,12 @@ error:
+ /*
+  * change the user struct in a credentials set to match the new UID
+  */
+-static int set_user(struct cred *new)
++int set_user(struct cred *new)
+ {
+ 	struct user_struct *new_user;
+ -	new_user = alloc_uid(current_user_ns(), new->uid);
++	/* is this ok? */
++	new_user = alloc_uid(new->user->user_ns, new->uid);
+ 	if (!new_user)
+ 		return -EAGAIN;
+ @@ -704,14 +705,12 @@ error:
+ 	return retval;
+ }
+ -
+ /*
+  * This function implements a generic ability to update ruid, euid,
+  * and suid.  This allows you to implement the 4.4 compatible seteuid().
+  */
+ SYSCALL_DEFINE3(setresuid, uid_t, ruid, uid_t, euid, uid_t, suid)
+ {
+-	const struct cred *old;
+ 	struct cred *new;
+ 	int retval;
+ @@ -719,45 +718,10 @@ SYSCALL_DEFINE3(setresuid, uid_t, ruid, uid_t, euid,
+uid_t, suid)
+ 	if (!new)
+ 		return -ENOMEM;
+ -	retval = security_task_setuid(ruid, euid, suid, LSM_SETID_RES);
+-	if (retval)
+-		goto error;
+-	old = current_cred();
+-
+-	retval = -EPERM;
+-	if (!capable(CAP_SETUID)) {
+-		if (ruid != (uid_t) -1 && ruid != old->uid &&
+-		    ruid != old->euid  && ruid != old->suid)
+-			goto error;
+-		if (euid != (uid_t) -1 && euid != old->uid &&
+-		    euid != old->euid  && euid != old->suid)
+-			goto error;
+-		if (suid != (uid_t) -1 && suid != old->uid &&
+-		    suid != old->euid  && suid != old->suid)
+-			goto error;
+-	}
+-
+-	if (ruid != (uid_t) -1) {
+-		new->uid = ruid;
+-		if (ruid != old->uid) {
+-			retval = set_user(new);
+-			if (retval < 0)
+-				goto error;
+-		}
+-	}
+-	if (euid != (uid_t) -1)
+-		new->euid = euid;
+-	if (suid != (uid_t) -1)
+-		new->suid = suid;
+-	new->fsuid = new->euid;
+-
+-	retval = security_task_fix_setuid(new, old, LSM_SETID_RES);
+-	if (retval < 0)
+-		goto error;
+-
+-	return commit_creds(new);
++	retval = cred_setresuid(new, ruid, euid, suid);
++	if (retval == 0)
++		return commit_creds(new);
+ -error:
+ 	abort_creds(new);
+ 	return retval;
+ }
+@@ -779,43 +743,17 @@ SYSCALL_DEFINE3(getresuid, uid_t __user *, ruid, uid_t
+__user *, euid, uid_t __u
+  */
+ SYSCALL_DEFINE3(setresgid, gid_t, rgid, gid_t, egid, gid_t, sgid)
+ {
+-	const struct cred *old;
+ 	struct cred *new;
+ 	int retval;
+  	new = prepare_creds();
+ 	if (!new)
+ 		return -ENOMEM;
+-	old = current_cred();
+-
+-	retval = security_task_setgid(rgid, egid, sgid, LSM_SETID_RES);
+-	if (retval)
+-		goto error;
+-
+-	retval = -EPERM;
+-	if (!capable(CAP_SETGID)) {
+-		if (rgid != (gid_t) -1 && rgid != old->gid &&
+-		    rgid != old->egid  && rgid != old->sgid)
+-			goto error;
+-		if (egid != (gid_t) -1 && egid != old->gid &&
+-		    egid != old->egid  && egid != old->sgid)
+-			goto error;
+-		if (sgid != (gid_t) -1 && sgid != old->gid &&
+-		    sgid != old->egid  && sgid != old->sgid)
+-			goto error;
+-	}
+-
+-	if (rgid != (gid_t) -1)
+-		new->gid = rgid;
+-	if (egid != (gid_t) -1)
+-		new->egid = egid;
+-	if (sgid != (gid_t) -1)
+-		new->sgid = sgid;
+-	new->fsgid = new->egid;
+ -	return commit_creds(new);
++	retval = cred_setresgid(new, rgid, egid, sgid);
++	if (retval == 0)
++		return commit_creds(new);
+ -error:
+ 	abort_creds(new);
+ 	return retval;
+ }
+@@ -832,7 +770,6 @@ SYSCALL_DEFINE3(getresgid, gid_t __user *, rgid, gid_t
+__user *, egid, gid_t __u
+ 	return retval;
+ }
+ -
+ /*
+  * "setfsuid()" sets the fsuid - the uid used for filesystem checks. This
+  * is used for "access()" and for the NFS daemon (letting nfsd stay at
+@@ -841,35 +778,20 @@ SYSCALL_DEFINE3(getresgid, gid_t __user *, rgid, gid_t
+__user *, egid, gid_t __u
+  */
+ SYSCALL_DEFINE1(setfsuid, uid_t, uid)
+ {
+-	const struct cred *old;
+ 	struct cred *new;
+ 	uid_t old_fsuid;
++	int retval;
+  	new = prepare_creds();
+ 	if (!new)
+ 		return current_fsuid();
+-	old = current_cred();
+-	old_fsuid = old->fsuid;
+-
+-	if (security_task_setuid(uid, (uid_t)-1, (uid_t)-1, LSM_SETID_FS) < 0)
+-		goto error;
+-
+-	if (uid == old->uid  || uid == old->euid  ||
+-	    uid == old->suid || uid == old->fsuid ||
+-	    capable(CAP_SETUID)) {
+-		if (uid != old_fsuid) {
+-			new->fsuid = uid;
+-			if (security_task_fix_setuid(new, old, LSM_SETID_FS) == 0)
+-				goto change_okay;
+-		}
+-	}
+ -error:
+-	abort_creds(new);
+-	return old_fsuid;
++	retval = cred_setfsuid(new, uid, &old_fsuid);
++	if (retval == 0)
++		commit_creds(new);
++	else
++		abort_creds(new);
+ -change_okay:
+-	commit_creds(new);
+ 	return old_fsuid;
+ }
+ @@ -878,34 +800,20 @@ change_okay:
+  */
+ SYSCALL_DEFINE1(setfsgid, gid_t, gid)
+ {
+-	const struct cred *old;
+ 	struct cred *new;
+ 	gid_t old_fsgid;
++	int retval;
+  	new = prepare_creds();
+ 	if (!new)
+ 		return current_fsgid();
+-	old = current_cred();
+-	old_fsgid = old->fsgid;
+-
+-	if (security_task_setgid(gid, (gid_t)-1, (gid_t)-1, LSM_SETID_FS))
+-		goto error;
+ -	if (gid == old->gid  || gid == old->egid  ||
+-	    gid == old->sgid || gid == old->fsgid ||
+-	    capable(CAP_SETGID)) {
+-		if (gid != old_fsgid) {
+-			new->fsgid = gid;
+-			goto change_okay;
+-		}
+-	}
+-
+-error:
+-	abort_creds(new);
+-	return old_fsgid;
++	retval = cred_setfsgid(new, gid, &old_fsgid);
++	if (retval == 0)
++		commit_creds(new);
++	else
++		abort_creds(new);
+ -change_okay:
+-	commit_creds(new);
+ 	return old_fsgid;
+ }
+ @@ -1303,40 +1211,39 @@ SYSCALL_DEFINE2(old_getrlimit, unsigned int, resource,
+  #endif
+ -SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
++int do_setrlimit(unsigned int resource, struct rlimit *new_rlim)
+ {
+-	struct rlimit new_rlim, *old_rlim;
++	struct rlimit *old_rlim;
+ 	int retval;
+  	if (resource >= RLIM_NLIMITS)
+ 		return -EINVAL;
+-	if (copy_from_user(&new_rlim, rlim, sizeof(*rlim)))
+-		return -EFAULT;
+-	if (new_rlim.rlim_cur > new_rlim.rlim_max)
++	if (new_rlim->rlim_cur > new_rlim->rlim_max)
+ 		return -EINVAL;
++
+ 	old_rlim = current->signal->rlim + resource;
+-	if ((new_rlim.rlim_max > old_rlim->rlim_max) &&
++	if ((new_rlim->rlim_max > old_rlim->rlim_max) &&
+ 	    !capable(CAP_SYS_RESOURCE))
+ 		return -EPERM;
+-	if (resource == RLIMIT_NOFILE && new_rlim.rlim_max > sysctl_nr_open)
++	if (resource == RLIMIT_NOFILE && new_rlim->rlim_max > sysctl_nr_open)
+ 		return -EPERM;
+ -	retval = security_task_setrlimit(resource, &new_rlim);
++	retval = security_task_setrlimit(resource, new_rlim);
+ 	if (retval)
+ 		return retval;
+ -	if (resource == RLIMIT_CPU && new_rlim.rlim_cur == 0) {
++	if (resource == RLIMIT_CPU && new_rlim->rlim_cur == 0) {
+ 		/*
+ 		 * The caller is asking for an immediate RLIMIT_CPU
+ 		 * expiry.  But we use the zero value to mean "it was
+ 		 * never set".  So let's cheat and make it one second
+ 		 * instead
+ 		 */
+-		new_rlim.rlim_cur = 1;
++		new_rlim->rlim_cur = 1;
+ 	}
+  	task_lock(current->group_leader);
+-	*old_rlim = new_rlim;
++	*old_rlim = *new_rlim;
+ 	task_unlock(current->group_leader);
+  	if (resource != RLIMIT_CPU)
+@@ -1348,14 +1255,25 @@ SYSCALL_DEFINE2(setrlimit, unsigned int, resource,
+struct rlimit __user *, rlim)
+ 	 * very long-standing error, and fixing it now risks breakage of
+ 	 * applications, so we live with it
+ 	 */
+-	if (new_rlim.rlim_cur == RLIM_INFINITY)
++	if (new_rlim->rlim_cur == RLIM_INFINITY)
+ 		goto out;
+ -	update_rlimit_cpu(new_rlim.rlim_cur);
++	update_rlimit_cpu(new_rlim->rlim_cur);
+ out:
+ 	return 0;
+ }
+ +SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
++{
++	struct rlimit new_rlim;
++
++	if (resource >= RLIM_NLIMITS)
++		return -EINVAL;
++	if (copy_from_user(&new_rlim, rlim, sizeof(*rlim)))
++		return -EFAULT;
++	return do_setrlimit(resource, &new_rlim);
++}
++
+ /*
+  * It would make sense to put struct rusage in the task_struct,
+  * except that would make the task_struct be *really big*.  After
+diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
+index 70f2ea7..0206aca 100644
+--- a/kernel/sys_ni.c
++++ b/kernel/sys_ni.c
+@@ -181,3 +181,7 @@ cond_syscall(sys_eventfd2);
+  /* performance counters: */
+ cond_syscall(sys_perf_event_open);
++
++/* checkpoint/restart */
++cond_syscall(sys_checkpoint);
++cond_syscall(sys_restart);
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 8686b0f..967fa2a 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -926,6 +926,7 @@ static struct ctl_table kern_table[] = {
+ 		.proc_handler	= proc_dointvec,
+ 	},
+ #endif
++
+ /*
+  * NOTE: do not add new entries to this table unless you have read
+  * Documentation/sysctl/ctl_unnumbered.txt
+diff --git a/kernel/user.c b/kernel/user.c
+index 766467b..3c78366 100644
+--- a/kernel/user.c
++++ b/kernel/user.c
+@@ -16,6 +16,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/module.h>
+ #include <linux/user_namespace.h>
++#include <linux/checkpoint.h>
+ #include "cred-internals.h"
+  struct user_namespace init_user_ns = {
+@@ -199,7 +200,11 @@ static int __init uid_cache_init(void)
+ 	uid_hash_insert(&root_user, uidhashentry(&init_user_ns, 0));
+ 	spin_unlock_irq(&uidhash_lock);
+ +#ifdef CONFIG_CHECKPOINT
++	return checkpoint_register_userns();
++#else
+ 	return 0;
++#endif
+ }
+  module_init(uid_cache_init);
+diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+index 076c7c8..ca4790f 100644
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -9,17 +9,11 @@
+ #include <linux/nsproxy.h>
+ #include <linux/slab.h>
+ #include <linux/user_namespace.h>
++#include <linux/checkpoint.h>
+ #include <linux/cred.h>
+ -/*
+- * Create a new user namespace, deriving the creator from the user in the
+- * passed credentials, and replacing that user with the new root user for the
+- * new namespace.
+- *
+- * This is called by copy_creds(), which will finish setting the target task's
+- * credentials.
+- */
+-int create_user_ns(struct cred *new)
++static struct user_namespace *_new_user_ns(struct user_struct *creator,
++				   struct user_struct **newroot)
+ {
+ 	struct user_namespace *ns;
+ 	struct user_struct *root_user;
+@@ -27,7 +21,7 @@ int create_user_ns(struct cred *new)
+  	ns = kmalloc(sizeof(struct user_namespace), GFP_KERNEL);
+ 	if (!ns)
+-		return -ENOMEM;
++		return ERR_PTR(-ENOMEM);
+  	kref_init(&ns->kref);
+ @@ -38,12 +32,43 @@ int create_user_ns(struct cred *new)
+ 	root_user = alloc_uid(ns, 0);
+ 	if (!root_user) {
+ 		kfree(ns);
+-		return -ENOMEM;
++		return ERR_PTR(-ENOMEM);
+ 	}
+  	/* set the new root user in the credentials under preparation */
+-	ns->creator = new->user;
+-	new->user = root_user;
++	ns->creator = creator;
++
++	/* alloc_uid() incremented the userns refcount.  Just set it to 1 */
++	kref_set(&ns->kref, 1);
++
++	*newroot = root_user;
++	return ns;
++}
++
++struct user_namespace *new_user_ns(struct user_struct *creator,
++				   struct user_struct **newroot)
++{
++	if (!capable(CAP_SYS_ADMIN))
++		return ERR_PTR(-EPERM);
++	return _new_user_ns(creator, newroot);
++}
++
++/*
++ * Create a new user namespace, deriving the creator from the user in the
++ * passed credentials, and replacing that user with the new root user for the
++ * new namespace.
++ *
++ * This is called by copy_creds(), which will finish setting the target task's
++ * credentials.
++ */
++int create_user_ns(struct cred *new)
++{
++	struct user_namespace *ns;
++
++	ns = new_user_ns(new->user, &new->user);
++	if (IS_ERR(ns))
++		return PTR_ERR(ns);
++
+ 	new->uid = new->euid = new->suid = new->fsuid = 0;
+ 	new->gid = new->egid = new->sgid = new->fsgid = 0;
+ 	put_group_info(new->group_info);
+@@ -54,9 +79,6 @@ int create_user_ns(struct cred *new)
+ #endif
+ 	/* tgcred will be cleared in our caller bc CLONE_THREAD won't be set */
+ -	/* alloc_uid() incremented the userns refcount.  Just set it to 1 */
+-	kref_set(&ns->kref, 1);
+-
+ 	return 0;
+ }
+ diff --git a/kernel/utsname.c b/kernel/utsname.c
+index 8a82b4b..c82ed83 100644
+--- a/kernel/utsname.c
++++ b/kernel/utsname.c
+@@ -14,8 +14,9 @@
+ #include <linux/utsname.h>
+ #include <linux/err.h>
+ #include <linux/slab.h>
++#include <linux/checkpoint.h>
+ -static struct uts_namespace *create_uts_ns(void)
++struct uts_namespace *create_uts_ns(void)
+ {
+ 	struct uts_namespace *uts_ns;
+ diff --git a/kernel/utsname_sysctl.c b/kernel/utsname_sysctl.c
+index a2cd77e..41c837d 100644
+--- a/kernel/utsname_sysctl.c
++++ b/kernel/utsname_sysctl.c
+@@ -14,6 +14,10 @@
+ #include <linux/utsname.h>
+ #include <linux/sysctl.h>
+ +#define CKPT_DFLAG  CKPT_DSYS
++#include <linux/nsproxy.h>
++#include <linux/checkpoint.h>
++
+ static void *get_uts(ctl_table *table, int write)
+ {
+ 	char *which = table->data;
+@@ -108,6 +112,9 @@ static struct ctl_table uts_root_table[] = {
+ static int __init utsname_sysctl_init(void)
+ {
+ 	register_sysctl_table(uts_root_table);
++#ifdef CONFIG_CHECKPOINT
++	checkpoint_register_utsname();
++#endif
+ 	return 0;
+ }
+ diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 935248b..75d413e 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -1086,6 +1086,19 @@ config DMA_API_DEBUG
+ 	  This option causes a performance degredation.  Use only if you want
+ 	  to debug device drivers. If unsure, say N.
+ +config CHECKPOINT_DEBUG
++	bool "Checkpoint/restart debugging (EXPERIMENTAL)"
++	depends on CHECKPOINT
++	default y
++	help
++	  This options turns on the debugging output of checkpoint/restart.
++	  The level of verbosity is controlled by 'ckpt_debug_level' and can
++	  be set at boot time with "ckpt_debug=" option.
++
++	  Turning this option off will reduce the size of the c/r code. If
++	  turned on, it is unlikely to incur visible overhead if the debug
++	  level is set to zero.
++
+ source "samples/Kconfig"
+  source "lib/Kconfig.kgdb"
+diff --git a/mm/Makefile b/mm/Makefile
+index 6c2a73a..e779b69 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -38,6 +38,7 @@ obj-y += percpu.o
+ else
+ obj-y += percpu_up.o
+ endif
++obj-$(CONFIG_CHECKPOINT) += checkpoint.o
+ obj-$(CONFIG_QUICKLIST) += quicklist.o
+ obj-$(CONFIG_CGROUP_MEM_RES_CTLR) += memcontrol.o page_cgroup.o
+ obj-$(CONFIG_MEMORY_FAILURE) += memory-failure.o
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 140ebda..d59417a 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -34,6 +34,7 @@
+ #include <linux/hardirq.h> /* for BUG_ON(!in_atomic()) only */
+ #include <linux/memcontrol.h>
+ #include <linux/mm_inline.h> /* for page_is_file_cache() */
++#include <linux/checkpoint.h>
+ #include "internal.h"
+  /*
+diff --git a/mm/memory.c b/mm/memory.c
+index 833952d..21de72d 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1314,8 +1314,17 @@ bad_page:
+  no_page:
+ 	pte_unmap_unlock(ptep, ptl);
+-	if (!pte_none(pte))
++	if (!pte_none(pte)) {
++		/*
++		 * When checkpointing we only care about dirty pages.
++		 * If a file-backed page is missing, then return an
++		 * error to tell __get_dirty_page() that it's clean,
++		 * so it won't try to demand page it into memory.
++		 */
++		if ((flags & FOLL_DIRTY) && pte_file(pte))
++			page = ERR_PTR(-EFAULT);
+ 		return page;
++	}
+  no_page_table:
+ 	/*
+@@ -1329,6 +1338,16 @@ no_page_table:
+ 	if ((flags & FOLL_DUMP) &&
+ 	    (!vma->vm_ops || !vma->vm_ops->fault))
+ 		return ERR_PTR(-EFAULT);
++
++	/*
++	 * When checkpointing we only care about dirty pages. If there
++	 * is no page table for a non-anonymous page, we return an
++	 * error to tell __get_dirty_page() that the page is clean, so
++	 * it won't allocate page tables and the page unnecessarily.
++	 */
++	if ((flags & FOLL_DIRTY) && vma->vm_ops)
++		return ERR_PTR(-EFAULT);
++
+ 	return page;
+ }
+ @@ -1586,6 +1605,80 @@ pte_t *get_locked_pte(struct mm_struct *mm, unsigned
+long addr,
+ 	return NULL;
+ }
+ +/**
++ * __get_dirty_page - return page pointer for dirty user page
++ * @vma - target vma
++ * @addr - page address
++ *
++ * Looks up the page that correspond to the address in the vma, and
++ * return the page if it was modified (and grabs a reference to it),
++ * or otherwise returns NULL or error.
++ *
++ * Should only be called for private vma.
++ * Must be called with mmap_sem held for read or write.
++ */
++struct page *__get_dirty_page(struct vm_area_struct *vma, unsigned long addr)
++{
++	struct page *page;
++
++	BUG_ON(vma->vm_flags & (VM_SHARED | VM_MAYSHARE));
++
++	/*
++	 * FOLL_DUMP tells follow_page() to return -EFAULT for either
++	 * non-present anonymous pages, or memory "holes".
++	 * FOLL_DIRTY tells follow_page() to return -EFAULT also for
++	 * non-present file-mapped pages.
++	 * Otherwise, follow_page() returns the page, or NULL if the
++	 * page is swapped out.
++	 */
++
++	cond_resched();
++	while (!(page = follow_page(vma, addr,
++				    FOLL_GET | FOLL_DUMP | FOLL_DIRTY))) {
++		int ret;
++
++		/* the page is swapped out - bring it in (optimize ?) */
++		ret = handle_mm_fault(vma->vm_mm, vma, addr, 0);
++		if (ret & VM_FAULT_ERROR) {
++			if (ret & VM_FAULT_OOM)
++				return ERR_PTR(-ENOMEM);
++			else if (ret & VM_FAULT_SIGBUS)
++				return ERR_PTR(-EFAULT);
++			else
++				BUG();
++			break;
++		}
++		cond_resched();
++	}
++
++	/* -EFAULT means that the page is clean (see above) */
++	if (PTR_ERR(page) == -EFAULT)
++		return NULL;
++	else if (IS_ERR(page))
++		return page;
++
++	/*
++	 * Only care about dirty pages: either anonymous non-zero pages,
++	 * or file-backed COW (copy-on-write) pages that were modified.
++	 * A clean COW page is not interesting because its contents are
++	 * identical to the backing file; ignore such pages.
++	 * A file-backed broken COW is identified by its page_mapping()
++	 * being unset (NULL) because the page will no longer be mapped
++	 * to the original file after having been modified.
++	 */
++	if (is_zero_pfn(page_to_pfn(page))) {
++		/* this is the zero page: ignore */
++		page_cache_release(page);
++		page = NULL;
++	} else if (vma->vm_file && (page_mapping(page) != NULL)) {
++		/* file backed clean cow: ignore */
++		page_cache_release(page);
++		page = NULL;
++	}
++
++	return page;
++}
++
+ /*
+  * This is the old fallback for page remapping.
+  *
+diff --git a/mm/mmap.c b/mm/mmap.c
+index f90ea92..a13d645 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -28,6 +28,7 @@
+ #include <linux/rmap.h>
+ #include <linux/mmu_notifier.h>
+ #include <linux/perf_event.h>
++#include <linux/checkpoint.h>
+  #include <asm/uaccess.h>
+ #include <asm/cacheflush.h>
+@@ -2009,14 +2010,11 @@ int split_vma(struct mm_struct *mm, struct
+vm_area_struct *vma,
+  * work.  This now handles partial unmappings.
+  * Jeremy Fitzhardinge <jeremy@goop.org>
+  */
+-int do_munmap(struct mm_struct *mm, unsigned long start, size_t len)
++int do_munmap_nocheck(struct mm_struct *mm, unsigned long start, size_t len)
+ {
+ 	unsigned long end;
+ 	struct vm_area_struct *vma, *prev, *last;
+ -	if ((start & ~PAGE_MASK) || start > TASK_SIZE || len > TASK_SIZE-start)
+-		return -EINVAL;
+-
+ 	if ((len = PAGE_ALIGN(len)) == 0)
+ 		return -EINVAL;
+ @@ -2090,8 +2088,39 @@ int do_munmap(struct mm_struct *mm, unsigned long start,
+size_t len)
+ 	return 0;
+ }
+ +int do_munmap(struct mm_struct *mm, unsigned long start, size_t len)
++{
++	if ((start & ~PAGE_MASK) || start > TASK_SIZE || len > TASK_SIZE-start)
++		return -EINVAL;
++
++	return do_munmap_nocheck(mm, start, len);
++}
++
+ EXPORT_SYMBOL(do_munmap);
+ +/*
++ * called with mm->mmap-sem held
++ * only called from checkpoint/memory.c:restore_mm()
++ */
++int destroy_mm(struct mm_struct *mm)
++{
++	struct vm_area_struct *vmnext = mm->mmap;
++	struct vm_area_struct *vma;
++	int ret;
++
++	while (vmnext) {
++		vma = vmnext;
++		vmnext = vmnext->vm_next;
++		ret = do_munmap_nocheck(mm, vma->vm_start,
++					vma->vm_end-vma->vm_start);
++		if (ret < 0) {
++			pr_warning("%s: failed munmap (%d)\n", __func__, ret);
++			return ret;
++		}
++	}
++	return 0;
++}
++
+ SYSCALL_DEFINE2(munmap, unsigned long, addr, size_t, len)
+ {
+ 	int ret;
+@@ -2248,7 +2277,7 @@ void exit_mmap(struct mm_struct *mm)
+ 	tlb = tlb_gather_mmu(mm, 1);
+ 	/* update_hiwater_rss(mm) here? but nobody should be looking */
+ 	/* Use -1 here to ensure all VMAs in the mm are unmapped */
+-	end = unmap_vmas(&tlb, vma, 0, -1, &nr_accounted, NULL);
++	end = vma ? unmap_vmas(&tlb, vma, 0, -1, &nr_accounted, NULL) : 0;
+ 	vm_unacct_memory(nr_accounted);
+  	free_pgtables(tlb, vma, FIRST_USER_ADDRESS, 0);
+diff --git a/mm/shmem.c b/mm/shmem.c
+index eef4ebe..df30acc 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -29,6 +29,7 @@
+ #include <linux/mm.h>
+ #include <linux/module.h>
+ #include <linux/swap.h>
++#include <linux/checkpoint.h>
+  static struct vfsmount *shm_mnt;
+ @@ -98,14 +99,6 @@ static struct vfsmount *shm_mnt;
+ /* Pretend that each entry is of this size in directory's i_size */
+ #define BOGO_DIRENT_SIZE 20
+ -/* Flag allocation requirements to shmem_getpage and shmem_swp_alloc */
+-enum sgp_type {
+-	SGP_READ,	/* don't exceed i_size, don't allocate page */
+-	SGP_CACHE,	/* don't exceed i_size, may allocate page */
+-	SGP_DIRTY,	/* like SGP_CACHE, but set new page dirty */
+-	SGP_WRITE,	/* may exceed i_size, may allocate page */
+-};
+-
+ #ifdef CONFIG_TMPFS
+ static unsigned long shmem_default_max_blocks(void)
+ {
+@@ -118,9 +111,6 @@ static unsigned long shmem_default_max_inodes(void)
+ }
+ #endif
+ -static int shmem_getpage(struct inode *inode, unsigned long idx,
+-			 struct page **pagep, enum sgp_type sgp, int *type);
+-
+ static inline struct page *shmem_dir_alloc(gfp_t gfp_mask)
+ {
+ 	/*
+@@ -1213,8 +1203,8 @@ static inline struct mempolicy *shmem_get_sbmpol(struct
+shmem_sb_info *sbinfo)
+  * vm. If we swap it in we mark it dirty since we also free the swap
+  * entry since a page cannot live in both the swap and page cache
+  */
+-static int shmem_getpage(struct inode *inode, unsigned long idx,
+-			struct page **pagep, enum sgp_type sgp, int *type)
++int shmem_getpage(struct inode *inode, unsigned long idx,
++		  struct page **pagep, enum sgp_type sgp, int *type)
+ {
+ 	struct address_space *mapping = inode->i_mapping;
+ 	struct shmem_inode_info *info = SHMEM_I(inode);
+diff --git a/net/Kconfig b/net/Kconfig
+index 041c35e..c1cb774 100644
+--- a/net/Kconfig
++++ b/net/Kconfig
+@@ -276,4 +276,8 @@ source "net/wimax/Kconfig"
+ source "net/rfkill/Kconfig"
+ source "net/9p/Kconfig"
+ +config NETNS_CHECKPOINT
++       bool
++       default y if NET && NET_NS && CHECKPOINT
++
+ endif   # if NET
+diff --git a/net/Makefile b/net/Makefile
+index 1542e72..b7d78f4 100644
+--- a/net/Makefile
++++ b/net/Makefile
+@@ -65,3 +65,6 @@ ifeq ($(CONFIG_NET),y)
+ obj-$(CONFIG_SYSCTL)		+= sysctl_net.o
+ endif
+ obj-$(CONFIG_WIMAX)		+= wimax/
++
++obj-$(CONFIG_CHECKPOINT)	+= checkpoint.o
++obj-$(CONFIG_NETNS_CHECKPOINT)	+= checkpoint_dev.o
+diff --git a/net/ipv4/Makefile b/net/ipv4/Makefile
+index 80ff87c..c00d8ce 100644
+--- a/net/ipv4/Makefile
++++ b/net/ipv4/Makefile
+@@ -49,6 +49,7 @@ obj-$(CONFIG_TCP_CONG_LP) += tcp_lp.o
+ obj-$(CONFIG_TCP_CONG_YEAH) += tcp_yeah.o
+ obj-$(CONFIG_TCP_CONG_ILLINOIS) += tcp_illinois.o
+ obj-$(CONFIG_NETLABEL) += cipso_ipv4.o
++obj-$(CONFIG_CHECKPOINT) += checkpoint.o
+  obj-$(CONFIG_XFRM) += xfrm4_policy.o xfrm4_state.o xfrm4_input.o \
+ 		      xfrm4_output.o
+diff --git a/net/ipv4/af_inet.c b/net/ipv4/af_inet.c
+index f713574..8b7d3dd 100644
+--- a/net/ipv4/af_inet.c
++++ b/net/ipv4/af_inet.c
+@@ -876,6 +876,9 @@ const struct proto_ops inet_stream_ops = {
+ 	.mmap		   = sock_no_mmap,
+ 	.sendpage	   = tcp_sendpage,
+ 	.splice_read	   = tcp_splice_read,
++	.checkpoint        = inet_checkpoint,
++	.restore           = inet_restore,
++	.collect           = inet_collect,
+ #ifdef CONFIG_COMPAT
+ 	.compat_setsockopt = compat_sock_common_setsockopt,
+ 	.compat_getsockopt = compat_sock_common_getsockopt,
+@@ -902,6 +905,9 @@ const struct proto_ops inet_dgram_ops = {
+ 	.recvmsg	   = sock_common_recvmsg,
+ 	.mmap		   = sock_no_mmap,
+ 	.sendpage	   = inet_sendpage,
++	.checkpoint        = inet_checkpoint,
++	.restore           = inet_restore,
++	.collect           = inet_collect,
+ #ifdef CONFIG_COMPAT
+ 	.compat_setsockopt = compat_sock_common_setsockopt,
+ 	.compat_getsockopt = compat_sock_common_getsockopt,
+diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
+index 5abae10..4105bfe 100644
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@ -1089,6 +1089,9 @@ static const struct net_device_ops ipip6_netdev_ops = {
+ 	.ndo_start_xmit	= ipip6_tunnel_xmit,
+ 	.ndo_do_ioctl	= ipip6_tunnel_ioctl,
+ 	.ndo_change_mtu	= ipip6_tunnel_change_mtu,
++#ifdef CONFIG_NETNS_CHECKPOINT
++	.ndo_checkpoint	= ipip6_checkpoint,
++#endif
+ };
+  static void ipip6_tunnel_setup(struct net_device *dev)
+diff --git a/net/socket.c b/net/socket.c
+index 5e8d0af..c5be3a4 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -343,7 +343,7 @@ static const struct dentry_operations
+sockfs_dentry_operations = {
+  *	but we take care of internal coherence yet.
+  */
+ -static int sock_alloc_file(struct socket *sock, struct file **f, int flags)
++int sock_alloc_file(struct socket *sock, struct file **f, int flags)
+ {
+ 	struct qstr name = { .name = "" };
+ 	struct path path;
+@@ -1422,15 +1422,10 @@ SYSCALL_DEFINE3(bind, int, fd, struct sockaddr __user *,
+umyaddr, int, addrlen)
+ 	sock = sockfd_lookup_light(fd, &err, &fput_needed);
+ 	if (sock) {
+ 		err = move_addr_to_kernel(umyaddr, addrlen, (struct sockaddr *)&address);
+-		if (err >= 0) {
+-			err = security_socket_bind(sock,
+-						   (struct sockaddr *)&address,
+-						   addrlen);
+-			if (!err)
+-				err = sock->ops->bind(sock,
+-						      (struct sockaddr *)
+-						      &address, addrlen);
+-		}
++		if (err >= 0)
++			err = sock_bind(sock,
++					(struct sockaddr *)&address,
++					addrlen);
+ 		fput_light(sock->file, fput_needed);
+ 	}
+ 	return err;
+@@ -1609,11 +1604,7 @@ SYSCALL_DEFINE3(getsockname, int, fd, struct sockaddr
+__user *, usockaddr,
+ 	if (!sock)
+ 		goto out;
+ -	err = security_socket_getsockname(sock);
+-	if (err)
+-		goto out_put;
+-
+-	err = sock->ops->getname(sock, (struct sockaddr *)&address, &len, 0);
++	err = sock_getname(sock, (struct sockaddr *)&address, &len);
+ 	if (err)
+ 		goto out_put;
+ 	err = move_addr_to_user((struct sockaddr *)&address, len, usockaddr,
+usockaddr_len);
+@@ -1638,15 +1629,7 @@ SYSCALL_DEFINE3(getpeername, int, fd, struct sockaddr
+__user *, usockaddr,
+  	sock = sockfd_lookup_light(fd, &err, &fput_needed);
+ 	if (sock != NULL) {
+-		err = security_socket_getpeername(sock);
+-		if (err) {
+-			fput_light(sock->file, fput_needed);
+-			return err;
+-		}
+-
+-		err =
+-		    sock->ops->getname(sock, (struct sockaddr *)&address, &len,
+-				       1);
++		err = sock_getpeer(sock, (struct sockaddr *)&address, &len);
+ 		if (!err)
+ 			err = move_addr_to_user((struct sockaddr *)&address, len, usockaddr,
+ 						usockaddr_len);
+diff --git a/net/unix/Makefile b/net/unix/Makefile
+index b852a2b..fbff1e6 100644
+--- a/net/unix/Makefile
++++ b/net/unix/Makefile
+@@ -6,3 +6,4 @@ obj-$(CONFIG_UNIX)	+= unix.o
+  unix-y			:= af_unix.o garbage.o
+ unix-$(CONFIG_SYSCTL)	+= sysctl_net_unix.o
++unix-$(CONFIG_CHECKPOINT) += checkpoint.o
+diff --git a/security/capability.c b/security/capability.c
+index 4875142..0876984 100644
+--- a/security/capability.c
++++ b/security/capability.c
+@@ -852,6 +852,7 @@ static int cap_inode_getsecctx(struct inode *inode, void
+**ctx, u32 *ctxlen)
+ {
+ 	return 0;
+ }
++
+ #ifdef CONFIG_KEYS
+ static int cap_key_alloc(struct key *key, const struct cred *cred,
+ 			 unsigned long flags)
+diff --git a/security/commoncap.c b/security/commoncap.c
+index 6166973..532b971 100644
+--- a/security/commoncap.c
++++ b/security/commoncap.c
+@@ -828,24 +828,9 @@ int cap_task_prctl(int option, unsigned long arg2, unsigned
+long arg3,
+ 	 * capability-based-privilege environment.
+ 	 */
+ 	case PR_SET_SECUREBITS:
+-		error = -EPERM;
+-		if ((((new->securebits & SECURE_ALL_LOCKS) >> 1)
+-		     & (new->securebits ^ arg2))			/*[1]*/
+-		    || ((new->securebits & SECURE_ALL_LOCKS & ~arg2))	/*[2]*/
+-		    || (arg2 & ~(SECURE_ALL_LOCKS | SECURE_ALL_BITS))	/*[3]*/
+-		    || (cap_capable(current, current_cred(), CAP_SETPCAP,
+-				    SECURITY_CAP_AUDIT) != 0)		/*[4]*/
+-			/*
+-			 * [1] no changing of bits that are locked
+-			 * [2] no unlocking of locks
+-			 * [3] no setting of unsupported bits
+-			 * [4] doing anything requires privilege (go read about
+-			 *     the "sendmail capabilities bug")
+-			 */
+-		    )
+-			/* cannot change a locked bit */
++		error = apply_securebits(arg2, new);
++		if (error)
+ 			goto error;
+-		new->securebits = arg2;
+ 		goto changed;
+  	case PR_GET_SECUREBITS:
+diff --git a/security/selinux/include/classmap.h
+b/security/selinux/include/classmap.h
+index 8b32e95..b1cde03 100644
+--- a/security/selinux/include/classmap.h
++++ b/security/selinux/include/classmap.h
+@@ -24,7 +24,7 @@ struct security_class_mapping secclass_map[] = {
+ 	    "getattr", "setexec", "setfscreate", "noatsecure", "siginh",
+ 	    "setrlimit", "rlimitinh", "dyntransition", "setcurrent",
+ 	    "execmem", "execstack", "execheap", "setkeycreate",
+-	    "setsockcreate", NULL } },
++	    "setsockcreate", "restore", NULL } },
+ 	{ "system",
+ 	  { "ipc_info", "syslog_read", "syslog_mod",
+ 	    "syslog_console", "module_request", NULL } },
+@@ -43,7 +43,8 @@ struct security_class_mapping secclass_map[] = {
+ 	    "quotaget", NULL } },
+ 	{ "file",
+ 	  { COMMON_FILE_PERMS,
+-	    "execute_no_trans", "entrypoint", "execmod", "open", NULL } },
++	    "execute_no_trans", "entrypoint", "execmod", "open",
++	    "restore", "fown_restore", NULL } },
+ 	{ "dir",
+ 	  { COMMON_FILE_PERMS, "add_name", "remove_name",
+ 	    "reparent", "search", "rmdir", "open", NULL } },
+@@ -93,13 +94,13 @@ struct security_class_mapping secclass_map[] = {
+ 	  } },
+ 	{ "sem",
+ 	  { COMMON_IPC_PERMS, NULL } },
+-	{ "msg", { "send", "receive", NULL } },
++	{ "msg", { "send", "receive", "restore", NULL } },
+ 	{ "msgq",
+ 	  { COMMON_IPC_PERMS, "enqueue", NULL } },
+ 	{ "shm",
+ 	  { COMMON_IPC_PERMS, "lock", NULL } },
+ 	{ "ipc",
+-	  { COMMON_IPC_PERMS, NULL } },
++	  { COMMON_IPC_PERMS, "restore", NULL } },
+ 	{ "netlink_route_socket",
+ 	  { COMMON_SOCK_PERMS,
+ 	    "nlmsg_read", "nlmsg_write", NULL } },
+diff --git a/security/smack/smack.h b/security/smack/smack.h
+index c6e9aca..a8917b0 100644
+--- a/security/smack/smack.h
++++ b/security/smack/smack.h
+@@ -216,6 +216,7 @@ u32 smack_to_secid(const char *);
+ extern int smack_cipso_direct;
+ extern char *smack_net_ambient;
+ extern char *smack_onlycap;
++extern char *smack_version;
+ extern const char *smack_cipso_option;
+  extern struct smack_known smack_known_floor;
+diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+index fdfeaa2..501e66a 100644
+--- a/security/smack/smack_lsm.c
++++ b/security/smack/smack_lsm.c
+@@ -3119,6 +3119,7 @@ struct security_operations smack_ops = {
+ 	.file_receive = 		smack_file_receive,
+  	.cred_alloc_blank =		smack_cred_alloc_blank,
++
+ 	.cred_free =			smack_cred_free,
+ 	.cred_prepare =			smack_cred_prepare,
+ 	.cred_commit =			smack_cred_commit,
+diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
+index a2b72d7..cc3046b 100644
+--- a/security/smack/smackfs.c
++++ b/security/smack/smackfs.c
+@@ -1256,6 +1256,7 @@ static const struct file_operations smk_logging_ops = {
+ 	.read		= smk_read_logging,
+ 	.write		= smk_write_logging,
+ };
++
+ /**
+  * smk_fill_super - fill the /smackfs superblock
+  * @sb: the empty superblock
+
