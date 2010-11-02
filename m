@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705Ab0KBNTu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 09:19:50 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45301 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752479Ab0KBNTp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 09:19:45 -0400
-Date: Tue, 2 Nov 2010 09:19:52 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Mattias Wallin <mattias.wallin@stericsson.com>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: regulator disable supply fix
-Message-ID: <20101102131952.GC21476@opensource.wolfsonmicro.com>
-References: <1288700549-28535-1-git-send-email-mattias.wallin@stericsson.com>
+	id S1752777Ab0KBNj5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 09:39:57 -0400
+Received: from kroah.org ([198.145.64.141]:40421 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752748Ab0KBNjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 09:39:52 -0400
+Date: Tue, 2 Nov 2010 06:32:50 -0700
+From: Greg KH <greg@kroah.com>
+To: Audun Hoem <audun.hoem@gmail.com>
+Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: frontier: alphatrack: Fixed coding style
+	issues
+Message-ID: <20101102133250.GA30548@kroah.com>
+References: <1288691024-25643-1-git-send-email-audun.hoem@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1288700549-28535-1-git-send-email-mattias.wallin@stericsson.com>
-X-Cookie: Never give an inch!
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1288691024-25643-1-git-send-email-audun.hoem@gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 02, 2010 at 01:22:29PM +0100, Mattias Wallin wrote:
-> This patch fixes a disable failure when regulator supply is used.
-> A while loop in regulator disable checks for supply pointer != NULL
-> but the pointer is not always updated, resulting in the while loop
-> running too many times causing a disable failure.
+On Tue, Nov 02, 2010 at 10:43:44AM +0100, Audun Hoem wrote:
+> From: audun <audun.hoem@gmail.com>
 
-> Signed-off-by: Mattias Wallin <mattias.wallin@stericsson.com>
+Minor nit, use your full name here in the From: line.
 
-Hrm.  This does fix the problem which is needed so:
+> 
+> I cleaned up the coding style.
+> 
+> Signed-off-by: Audun Hoem <audun.hoem@gmail.com>
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Like you used here, that's the correct thing to put here.
+
+
 
 > ---
->  drivers/regulator/core.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+>  drivers/staging/frontier/alphatrack.c |    9 ++++++---
+>  1 files changed, 6 insertions(+), 3 deletions(-)
 > 
-> diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-> index f1d10c9..dc7d36e 100644
-> --- a/drivers/regulator/core.c
-> +++ b/drivers/regulator/core.c
-> @@ -1424,6 +1424,7 @@ int regulator_disable(struct regulator *regulator)
->  	/* decrease our supplies ref count and disable if required */
->  	while (supply_rdev != NULL) {
->  		rdev = supply_rdev;
-> +		supply_rdev = NULL;
+> diff --git a/drivers/staging/frontier/alphatrack.c b/drivers/staging/frontier/alphatrack.c
+> index ef7fbf8..9d439fa 100644
+> --- a/drivers/staging/frontier/alphatrack.c
+> +++ b/drivers/staging/frontier/alphatrack.c
+> @@ -88,8 +88,11 @@ MODULE_SUPPORTED_DEVICE("Frontier Designs Alphatrack Control Surface");
+>  static int debug = ALPHATRACK_DEBUG;
 >  
->  		mutex_lock(&rdev->mutex);
->  		_regulator_disable(rdev, &supply_rdev);
+>  /* Use our own dbg macro */
+> -#define dbg_info(dev, format, arg...) do \
+> -    { if (debug) dev_info(dev , format , ## arg); } while (0)
+> +#define dbg_info(dev, format, arg...) \
+> +do {
+> +	if (debug)
+> +		dev_info(dev , format , ## arg);
+> +} while (0)
 
-but this does smell a bit like it ought to be in the _regulator_disable()
-call rather than the caller.
+In the future, you can probably just remove this macro and switch the
+dev_info() users in the driver to use dev_dbg() as it handles the debug
+toggle already.  Then you can remove the debug variable as well as the
+debugging is handled by the dynamic debug core code in the kernel.
+
+Thanks for the patch, I'll queue it up later and you will get an
+automated email when it goes into my tree.
+
+greg k-h
