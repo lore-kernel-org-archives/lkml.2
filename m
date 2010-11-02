@@ -1,167 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753482Ab0KBO5a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 10:57:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21329 "EHLO mx1.redhat.com"
+	id S1753495Ab0KBO6W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 10:58:22 -0400
+Received: from smtp.witbe.net ([81.88.96.48]:52819 "EHLO smtp.witbe.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751504Ab0KBO5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 10:57:23 -0400
-Date: Tue, 2 Nov 2010 10:57:18 -0400
-From: Josef Bacik <josef@redhat.com>
-To: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>, Josef Bacik <jbacik@redhat.com>,
-        Chris Mason <chris.mason@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-btrfs@vger.kernel.org,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [RFC][PATCH] direct-io: btrfs: avoid splitting dio requests
-	for non-btrfs filesystems
-Message-ID: <20101102145717.GA2531@localhost.localdomain>
-References: <4CD001A2.4000408@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4CD001A2.4000408@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1751504Ab0KBO6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 10:58:16 -0400
+Date: Tue, 2 Nov 2010 15:58:13 +0100
+From: Paul Rolland (=?UTF-8?B?44Od44O844Or44O744Ot44Op44Oz?=) 
+	<rol@witbe.net>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: rol@witbe.net
+Subject: [2.6.37-rc1] drm:i195 errors
+Message-ID: <20101102155813.09cb2c6e@tux.DEF.witbe.net>
+Organization: Witbe.net
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+X-Ncc-RegId: fr.witbe
+X-Face: +^rP^g;Vjb!M*"%3$mF6xWU{DwwAx)W=b_<WXQMv}Rk8,fQ)?Wnk0NK/+m,;eWci?+;=I}d^:]I+)D+|r'vxjYjp.?o-8Va|&sD*-GVKn>}?Y)|*X<5cv@M`1P{\:)p9_:$=)(NY2`%AcypV*]z>YIyy5yY"9PUoV5@)*(W:S5e-48Ct7Wu6CkkO[=KB"ox,_2B/FwY&hr/E1H&<9IbOCx6NrBa"}FLA)UIvHg`9%NC\LfYB3ia]
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWsjH1VRjFydFciEg3a1tJxUEM6OCB1zdsDAAACcElEQVQ4jV2Tu3LcMAxFEY7SG/KQNYlY2685Zi1rmF5kQteBNcL/f0JAacfZDUscARePK9itY3Q4Qu5vplJKIFsrvI0t7Ii/8/nmQsERtgJpHAtiGW4ggylOAwhXTxPi0xfIcxDrZIc3qhMGD/kfKdwBExZrAf6l5PeC/Al7cAGfAGD+AgvL5yckcsxegVmG+QZRPgnYXnFUMAC8DLd6QZhAxj6dRo6vT/JNkmZQmPyDtoroMkD2VlaVgHsw2QrCAf1jPM+ou2Ju1j/G8+xINfZT+zGDPDjr7H/xnKewgi6SO4D7zloYoRDafSoogmirP0t9YIOJnN2ibDEKK6zDoSEjTIFXDcYYkwizoO/AjkATm3g+JVsSXPOCZIHwj7uBo2Bi97RMOoflJ4n3b3dvS2kVXDQupjvAk7zvaMEJlu0OJDFy4SsCusRbL95jRynY0LIA/rpyxCMkJ1ie+bWoEy+MG7pzDE3k8Z2C1a5eUdxmi0adGi2mdVjyUr2uvamrW9EeuLTCY84/AUjBj40LtqYbbM23vqolA2mpj5g03gparH45DqBgmsBK2hU0x662+QQLVYJLitxTnHB7yf0es4rraS/xqKW/hF1zPg9lOijpmtIBVrWKOQ6oTSkQjh3YtnarHQc0RrtS1XjtbQnScPrLeNKM6iS+6Qz6e9mVoPvaHHPU6eP5aKu1Ifd2QQvp6EA1bLaP3VREwewXY73xgLppBR2tg4LFg9lXzegHQlusWuxwogLCaswJ+qunQ2cyfuziX6B1p0E26nQazR3Qn2jQarRXVVZT9zP3uB5FV6pNjQG+u03ugbalEsEXqo7/AjAH60VpvOMvAAAAAElFTkSuQmCC
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 02, 2010 at 01:18:42PM +0100, Christian Ehrhardt wrote:
-> Hi,
-> this is about an issue newer kernels show, bysplitting direct I/O requests
-> into 4k pieces to directly merge them in the Block Device Layer afterwards.
-> 
-> If anyone is interested in own tests just use a simple command like
-> dd if=/mnt/test/test-dd1 of=/dev/null iflag=direct bs=64k count=1
-> in combination with blktrace.
-> 
-> The following patch is more a proposal for discussion than a solution, well
-> thats what RFC's are about right.
-> I'm unsure about names, but also if the approach in general is the right way.
-> It should apply to every 2.6.36 and 2.6.37 kernel.
-> 
-> I put everyone on CC who was involved in the patches leading to the current
-> behavior.
-> 
-> Grüsse / regards,
-> Christian Ehrhardt
-> IBM Linux Technology Center, System z Linux Performance 
-> 
-> --- cut here ---
-> 
-> Subject: [RFC][PATCH] direct-io: btrfs: avoid splitting dio requests for non-btrfs filesystems
-> 
-> From: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
-> 
-> Commit c2c6ca41 by Josef Bacik <josef@redhat.com> caused all direct I/O's to
-> be split into 4k requests before arriving in the block device layer.
-> This was later on partially fixed by Jeff Moyer <jmoyer@redhat.com> in
-> 7a801ac6.
-> 
-> Jeffs fix improved the situation a lot, but eventually it still splits I/Os
-> for non-btrfs file systems as well were it wouldn't have to.
-> 
-> Eventually in my example on a ext2 filesystem it splits it every 4Mb where
-> dio->boundary is evaluated to true.
-> 
-> In blktrace this looks like:
->               dd-910   [002]    38.762523:  94,8    A   R 131264 + 8 <- (94,9) 131072
->               dd-910   [002]    38.762531:  94,8    Q   R 131264 + 8 [dd]
->               dd-910   [002]    38.762535:  94,8    G   R 131264 + 8 [dd]
->               dd-910   [002]    38.762537:  94,8    P   N [dd]
->               dd-910   [002]    38.762539:  94,8    I   R 131264 + 8 [dd]
->               dd-910   [002]    38.762544:  94,8    A   R 131272 + 8 <- (94,9) 131080
->               dd-910   [002]    38.762544:  94,8    Q   R 131272 + 8 [dd]
->               dd-910   [002]    38.762546:  94,8    M   R 131272 + 8 [dd]
->               dd-910   [002]    38.762550:  94,8    A   R 131280 + 8 <- (94,9) 131088
->               dd-910   [002]    38.762551:  94,8    Q   R 131280 + 8 [dd]
->               dd-910   [002]    38.762551:  94,8    M   R 131280 + 8 [dd]
->               dd-910   [002]    38.762556:  94,8    A   R 131288 + 8 <- (94,9) 131096
->               dd-910   [002]    38.762557:  94,8    Q   R 131288 + 8 [dd]
->               dd-910   [002]    38.762557:  94,8    M   R 131288 + 8 [dd]
->               dd-910   [002]    38.762562:  94,8    A   R 131296 + 8 <- (94,9) 131104
->               dd-910   [002]    38.762563:  94,8    Q   R 131296 + 8 [dd]
->               dd-910   [002]    38.762564:  94,8    M   R 131296 + 8 [dd]
->               dd-910   [002]    38.762568:  94,8    A   R 131304 + 8 <- (94,9) 131112
->               dd-910   [002]    38.762569:  94,8    Q   R 131304 + 8 [dd]
->               dd-910   [002]    38.762570:  94,8    M   R 131304 + 8 [dd]
->               dd-910   [002]    38.762577:  94,8    A   R 131312 + 8 <- (94,9) 131120
->               dd-910   [002]    38.762578:  94,8    Q   R 131312 + 8 [dd]
->               dd-910   [002]    38.762579:  94,8    M   R 131312 + 8 [dd]
->               dd-910   [002]    38.762584:  94,8    A   R 131320 + 8 <- (94,9) 131128
->               dd-910   [002]    38.762584:  94,8    Q   R 131320 + 8 [dd]
->               dd-910   [002]    38.762585:  94,8    M   R 131320 + 8 [dd]
->               dd-910   [002]    38.762590:  94,8    A   R 131328 + 8 <- (94,9) 131136
->               dd-910   [002]    38.762590:  94,8    Q   R 131328 + 8 [dd]
->               dd-910   [002]    38.762591:  94,8    M   R 131328 + 8 [dd]
->               dd-910   [002]    38.762596:  94,8    A   R 131336 + 8 <- (94,9) 131144
->               dd-910   [002]    38.762597:  94,8    Q   R 131336 + 8 [dd]
->               dd-910   [002]    38.762598:  94,8    M   R 131336 + 8 [dd]
->               dd-910   [002]    38.762605:  94,8    A   R 131344 + 16 <- (94,9) 131152
->               dd-910   [002]    38.762607:  94,8    Q   R 131344 + 16 [dd]
->               dd-910   [002]    38.762608:  94,8    M   R 131344 + 16 [dd]
->               dd-910   [002]    38.762611:  94,8    A   R 131368 + 32 <- (94,9) 131176
->               dd-910   [002]    38.762612:  94,8    Q   R 131368 + 32 [dd]
->               dd-910   [002]    38.762616:  94,8    G   R 131368 + 32 [dd]
->               dd-910   [002]    38.762617:  94,8    I   R 131368 + 32 [dd]
->               dd-910   [002]    38.762619:  94,8    U   N [dd] 2
->               dd-910   [002]    38.762621:  94,8    D   R 131264 + 96 [dd]
->               dd-910   [002]    38.762625:  94,8    D   R 131368 + 32 [dd]
->           <idle>-0     [012]    38.763363:  94,8    C   R 131264 + 96 [0] 
->           <idle>-0     [015]    38.763797:  94,8    C   R 131368 + 32 [0]
-> 
-> The usual behavior before both commits was:
->               dd-919   [002]    37.513685:  94,8    A   R 7824 + 96 <- (94,9) 7632
->               dd-919   [002]    37.513693:  94,8    Q   R 7824 + 96 [dd]
->               dd-919   [002]    37.513697:  94,8    G   R 7824 + 96 [dd]
->               dd-919   [002]    37.513700:  94,8    P   N [dd]
->               dd-919   [002]    37.513701:  94,8    I   R 7824 + 96 [dd]
->               dd-919   [002]    37.513794:  94,8    A   R 7928 + 32 <- (94,9) 7736
->               dd-919   [002]    37.513795:  94,8    Q   R 7928 + 32 [dd]
->               dd-919   [002]    37.513800:  94,8    G   R 7928 + 32 [dd]
->               dd-919   [002]    37.513802:  94,8    I   R 7928 + 32 [dd]
->               dd-919   [002]    37.513804:  94,8    U   N [dd] 2
->               dd-919   [002]    37.513806:  94,8    D   R 7824 + 96 [dd]
->               dd-919   [002]    37.513810:  94,8    D   R 7928 + 32 [dd]
->           <idle>-0     [011]    37.514362:  94,8    C   R 7824 + 96 [0] 
->           <idle>-0     [014]    37.514728:  94,8    C   R 7928 + 32 [0]
-> 
-> That remaining split is cause by the test for:
->  "dio->final_block_in_bio != dio->cur_page_block".
-> As this was in the code for a long time I just assume it is right.
-> 
-> So eventually for the 64k request in the example this patch improves the
-> effective submissions that get to the block device layer from:
-> 10x4k, 1x8k, 1x16k to 1x48k & 1x16k which is much better.
-> 
-> Througput impact is small, but in terms of cpu consumption this is visible
-> by a single digit percentage depending on the incoming request size.
-> 
-> The solution looking for comments or alternatives in this RFC patch adds a new
-> kiocb flag that let filesystems specify if they need these workaround to
-> separate meta data reads - if not, like all pre-btrfs filesystems the dio code
-> doesn't have to cause this extra work.
-> 
+Hello,
 
-So this brings up an important question, which is how badly do we want to honor
-buffer_boundary()?  The whole reason I added the logical offset check was because
-we ignore buffer_boundary() if there is no bio currently.  So for BTRFS we would
-do this
+I was previously running 2.6.36, without noticing any messages related to
+i915/DRM, but now I can see some :
 
-map extent
-set buffer boundary
+Nov  2 14:21:53 tux kernel: [drm:i915_gem_mmap_gtt_ioctl] *ERROR* Attempting to mmap a purgeable buffer
 
-but if this is the first part of the IO and there isn't a bio already setup,
-dio_new_bio clears dio->boundary, so the next extent we would get may not be
-logically contiguous and hilarity would ensue.  I chose not to fix the
-dio->boundary clearing because I was worried I would affect other fs's workloads
-(which I did anyway because of my bug).  So maybe the right idea is to rip out
-my logical offset tests altogether and fix dio so we treat buffer_boundary()
-like gospel.  That way Btrfs can get what it needs without having this weird
-special code, and then we can look at how other fs's set buffer_boundary (I'm
-pretty sure ext2/3 are the only ones) and make sure they are setting it when
-they really mean to.  Thanks,
+and also :
 
-Josef
+Nov  2 15:45:35 tux kernel: [drm:intel_panel_get_max_backlight] *ERROR* fixme: max PWM is zero.
+
+They seem to appear randomly, without any (yet) identified link to some
+activity I can have on the machine.
+
+The lspci output is :
+[root@tux ~]# lspci -s 00:02.0 -vvv
+00:02.0 VGA compatible controller: Intel Corporation Mobile 4 Series Chipset Integrated Graphics Controller (rev 07) (prog-if 00 [VGA controller])
+        Subsystem: Dell Device 02bc
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx+
+        Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0
+        Interrupt: pin A routed to IRQ 40
+        Region 0: Memory at f6800000 (64-bit, non-prefetchable) [size=4M]
+        Region 2: Memory at d0000000 (64-bit, prefetchable) [size=256M]
+        Region 4: I/O ports at 1800 [size=8]
+        Expansion ROM at <unassigned> [disabled]
+        Capabilities: [90] MSI: Enable+ Count=1/1 Maskable- 64bit-
+                Address: fee0100c  Data: 4159
+        Capabilities: [d0] Power Management version 3
+                Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot-,D3cold-)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+        Kernel driver in use: i915
+
+Regards,
+Paul
