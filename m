@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756310Ab0KCSUQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 14:20:16 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:47090 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752198Ab0KCSUN (ORCPT
+	id S932302Ab0KCSVy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 14:21:54 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:43356 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752270Ab0KCSVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 14:20:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=nuuQ9rESkbiLTPymSHg7Zm8CsqPacqsIaycEGxlHcs/qBUWgK0f5aRq88RUDkt+3sS
-         qAsScRWhSvajfoyJIlACtRo+qh1PP7R8GVf8Zam/ZUxikCGP6SaxJdb0wD//2L+dodwn
-         4NqVL01SzyWWlGwptEtyffxNIZVhUpGaSgH1A=
-Message-ID: <4CD1A7F6.2020504@lwfinger.net>
-Date: Wed, 03 Nov 2010 13:20:38 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.14) Gecko/20101013 SUSE/3.0.9 Thunderbird/3.0.9
+	Wed, 3 Nov 2010 14:21:52 -0400
+Date: Wed, 3 Nov 2010 14:21:59 -0400
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gimli <gimli@dark-green.com>
+Subject: Re: [PATCH 3/6] MacBookAir3,1(3,2) btusb support
+Message-ID: <20101103182159.GA17943@vigoh>
+References: <9e7738c0461aa509dd55fe470df3855e@mognix.dark-green.com>
+ <20101102152454.GC11778@core.coreip.homeip.net>
+ <1288712282.3322.181.camel@aeonflux>
 MIME-Version: 1.0
-To: pali.rohar@gmail.com, Greg Kroah-Hartman <gregkh@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [RFC/RFT] OHCI: Fix for regression in 2.6.37-rc1 since commit 3df7169e7
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288712282.3322.181.camel@aeonflux>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following commit 3df7169e73fc1d71a39cffeacc969f6840cdf52b, my logs are spammed
-with messages of the form "hub 2-0:1.0: unable to enumerate USB device on
-port 5".
+Hi Edgar,
 
-Experimentation has shown that if the functional state bits of the control
-register are preserved in the fixup, then the messages no longer appear.
+* Marcel Holtmann <marcel@holtmann.org> [2010-11-02 16:38:02 +0100]:
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
----
+> Hi Dmitry,
+> 
+> > Not sure of you guys monitor LKML...
+> 
+> not on a regular basis.
+> 
+> > > This patch add support for the MacBookAir3,1 and MacBookAir3,2 to the btusb
+> > > driver.
+> > > 
+> > > Signed-off-by: Edgar (gimli) Hucek <gimli@dark-green.com>
 
-Pali,
+Please also provide the output of usb-devices for this hardware in
+commit message when resubmitting the patch.
 
-Is it possible for you to test this patch to ensure that it does not interfere
-with the fix for the shutdown problem.
+> > 
+> > > --- a/drivers/bluetooth/btusb.c	2010-10-30 21:08:45.170492002 +0200
+> > > +++ b/drivers/bluetooth/btusb.c	2010-10-30 21:18:11.820492000 +0200
+> > > @@ -62,6 +62,9 @@
+> > >  	/* Apple iMac11,1 */
+> > >  	{ USB_DEVICE(0x05ac, 0x8215) },
+> > >  
+> > > +	/* Apple MacBookAir3,1, MacBookAir3,2 */
+> > > +	{ USB_DEVICE(0x05ac, 0x821b) },
+> > > +
+> > >  	/* AVM BlueFRITZ! USB v2.0 */
+> > >  	{ USB_DEVICE(0x057c, 0x3800) },
+> 
+> patch looks fine to me, but it should be send to linux-bluetooth mailing
+> list.
+> 
+> Acked-by: Marcel Holtmann <marcel@holtmann.org>
 
-Thanks,
-
-Larry
----
-
-Index: linux-realtek/drivers/usb/host/pci-quirks.c
-===================================================================
---- linux-realtek.orig/drivers/usb/host/pci-quirks.c
-+++ linux-realtek/drivers/usb/host/pci-quirks.c
-@@ -35,6 +35,7 @@
- #define OHCI_INTRENABLE		0x10
- #define OHCI_INTRDISABLE	0x14
- #define OHCI_OCR		(1 << 3)	/* ownership change request */
-+#define OHCI_CTRL_HCFS		(3 << 6)	/* functional state */
- #define OHCI_CTRL_RWC		(1 << 9)	/* remote wakeup connected */
- #define OHCI_CTRL_IR		(1 << 8)	/* interrupt routing */
- #define OHCI_INTR_OC		(1 << 30)	/* ownership change */
-@@ -184,7 +185,7 @@ static void __devinit quirk_usb_handoff_
- #ifdef __hppa__
- #define	OHCI_CTRL_MASK		(OHCI_CTRL_RWC | OHCI_CTRL_IR)
- #else
--#define	OHCI_CTRL_MASK		OHCI_CTRL_RWC
-+#define	OHCI_CTRL_MASK		(OHCI_CTRL_RWC | OHCI_CTRL_HCFS)
-
- 	if (control & OHCI_CTRL_IR) {
- 		int wait_time = 500; /* arbitrary; 5 seconds */
-
-
+-- 
+Gustavo F. Padovan
+ProFUSION embedded systems - http://profusion.mobi
