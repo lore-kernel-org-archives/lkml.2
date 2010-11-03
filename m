@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755723Ab0KCQZk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 12:25:40 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:60259 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755426Ab0KCQZh (ORCPT
+	id S932158Ab0KCQel (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 12:34:41 -0400
+Received: from portal.weinmann.de ([62.8.140.122]:5517 "EHLO
+	portal.weinmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755796Ab0KCQej convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 12:25:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=WRKgZadsZwiN8xrvYGlCgscCognRn2wQyf9BK/dE+QmTERPrtIjjilxOD2SY8HwXOL
-         F5GxFVQmzScMKFVNK55md9GDkzfFsvgCTY821tFvR7BzFcV1IoGTU9zde6HtfcxUUEOx
-         opQKYDbyNnhHsEPZov19vVGGilhWVpb8LkH2U=
-Message-ID: <4CD18CFC.7080100@suse.cz>
-Date: Wed, 03 Nov 2010 17:25:32 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Thunderbird/3.1.6
+	Wed, 3 Nov 2010 12:34:39 -0400
+X-Greylist: delayed 978 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Nov 2010 12:34:38 EDT
+From: "Voss, Nikolaus" <N.Voss@weinmann.de>
+To: "'Linux Kernel'" <linux-kernel@vger.kernel.org>
+CC: "'David Brownell'" <dbrownell@users.sourceforge.net>,
+        "'Haavard Skinnemoen'" <hskinnemoen@atmel.com>
+Date: Wed, 3 Nov 2010 17:17:59 +0100
+Subject: [PATCH] atmel_tc: tcb_clksrc: fix init sequence
+Thread-Topic: [PATCH] atmel_tc: tcb_clksrc: fix init sequence
+Thread-Index: Act7aZpbhHgt1McfS6aHr+N/GyI35g==
+Message-ID: <EF2E73589CA71846A15D0B2CDF79505D068D0F0615@wm021.weinmann.com>
+Accept-Language: en-US, de-DE
+Content-Language: de-DE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, de-DE
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com, "[cleanups]"@suse.de,
-        "Dr. Werner Fink" <werner@suse.de>, Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: [PATCH 1/1] console: add /proc/consoles
-References: <1288798509-23550-1-git-send-email-jslaby@suse.cz> <20101103161342.GA4942@suse.de> <4CD18ACB.4060108@suse.cz> <20101103162251.GA5404@suse.de>
-In-Reply-To: <20101103162251.GA5404@suse.de>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2010 05:22 PM, Greg KH wrote:
-> On Wed, Nov 03, 2010 at 05:16:11PM +0100, Jiri Slaby wrote:
->> On 11/03/2010 05:13 PM, Greg KH wrote:
->>> On Wed, Nov 03, 2010 at 04:35:09PM +0100, Jiri Slaby wrote:
->>>> It allows users to see what consoles are currently known to the system
->>>> and with what flags.
->>>>
->>>> It is based on Werner's patch, the part about traversing fds was
->>>> removed, the code was moved to kernel/printk.c, where consoles are
->>>> handled and it makes more sense to me.
->>>
->>> Why kernel/printk.c?  I don't think that makes sense, it's just a random
->>> proc file, so why not put it into something like fs/proc/ instead?
->>>
->>> Does it rely on any functions in the printk.c file?
->>
->> No it doesn't. I will move it to fs/proc/ if that's preferred. I checked
->> how VM proc stuff is handled and it was in in mm/, so I put this into
->> kernel/...
->>
->> (Then it will depend on the console cleanup series which I sent few
->> minutes ago...)
-> 
-> That's fine, I can take those through my tree as well, as it makes sense
-> to do so.
+setup_irq() was called before clockevents_register_device() which
+is needed by the irq handler. Bug was reproducible by restarting
+the kernel using kexec (reliable crash).
 
-Actually where this code should be in fs/proc/? Most of the /proc/* is
-handled elsewhere (fs/ mm/ kernel/). The rest is handled in specialized
-fs/proc/FILE.c.
+Signed-off-by: Nikolaus Voss <n.voss@weinmann.de>
+---
+ drivers/clocksource/tcb_clksrc.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-I cannot rule out a file to put this in.
-
-thanks,
+diff --git a/drivers/clocksource/tcb_clksrc.c b/drivers/clocksource/tcb_clksrc.c
+index 01b886e..79c47e8 100644
+--- a/drivers/clocksource/tcb_clksrc.c
++++ b/drivers/clocksource/tcb_clksrc.c
+@@ -196,9 +196,9 @@ static void __init setup_clkevents(struct atmel_tc *tc, int clk32k_divisor_idx)
+ 	clkevt.clkevt.min_delta_ns = clockevent_delta2ns(1, &clkevt.clkevt) + 1;
+ 	clkevt.clkevt.cpumask = cpumask_of(0);
+ 
+-	setup_irq(irq, &tc_irqaction);
+-
+ 	clockevents_register_device(&clkevt.clkevt);
++
++	setup_irq(irq, &tc_irqaction);
+ }
+ 
+ #else /* !CONFIG_GENERIC_CLOCKEVENTS */
 -- 
-js
-suse labs
+1.5.4.3
+
