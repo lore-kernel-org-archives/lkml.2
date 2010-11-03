@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756027Ab0KCRHF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 13:07:05 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:51474 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755378Ab0KCRHD convert rfc822-to-8bit (ORCPT
+	id S1756070Ab0KCRLA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 13:11:00 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:16086 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754251Ab0KCRK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 13:07:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=xDeXYssOZFKM0+I+1r+E6zFxt7xn62bKTFnAWdaNHVwB94WYuCs+wXAXxDjQLMSDvO
-         q4gtOG4nLFcbVTlZBZa1uVkVDH3bN3pK7tcVhYkmVR1bPz3khbcH4Lo4SJBPXO0nrjHI
-         lirCxB/J3h8uBpImsPGnV4xP5A22f8MKUuKqs=
+	Wed, 3 Nov 2010 13:10:57 -0400
+Message-ID: <4CD197A1.4060600@caviumnetworks.com>
+Date: Wed, 03 Nov 2010 10:10:57 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-Reply-To: trapdoor6@gmail.com
-In-Reply-To: <20101103164840.GC4683@hack>
-References: <AANLkTik=04z2thHBS3Z9n68QnTs=i8g8qTFtNT3jb8cg@mail.gmail.com>
-	<20101103164840.GC4683@hack>
-Date: Wed, 3 Nov 2010 17:07:00 +0000
-Message-ID: <AANLkTi=1GdZVYr2z6P7PfR-VKREVzk__1ZodO2nu4dNY@mail.gmail.com>
-Subject: Re: Pure kernel '2.6.37-rc1-00001-ge99d11d' shown as ~-dirty after compilation
-From: trapDoor <trapdoor6@gmail.com>
-To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: cdhmanning@gmail.com
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 6/9] Add some yaffs include files
+References: <1288803204-3849-1-git-send-email-cdhmanning@gmail.com> <1288803204-3849-7-git-send-email-cdhmanning@gmail.com>
+In-Reply-To: <1288803204-3849-7-git-send-email-cdhmanning@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 03 Nov 2010 17:11:32.0575 (UTC) FILETIME=[29AEF6F0:01CB7B7A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 3, 2010 at 4:48 PM, Américo Wang <xiyou.wangcong@gmail.com> wrote:
-> On Tue, Nov 02, 2010 at 08:26:59AM +0000, trapDoor wrote:
->>,Hello,
->>When I run 'make kernelrelease' on freshly cloned Linus' git tree it
->>shows kernel version as: '2.6.37-rc1-00001-ge99d11d' - and that's
->>correct.
->>But after compilation it turned up '2.6.37-rc1-00001-ge99d11d-dirty'.
->>
->>I didn't apply any custom patches to my local tree between 'make
->>kernelrelease' and compilation. What I only added - and before running
->>'make kernelrelease' - were the following Radeon firmware blobs for my
->>graphic card, which I placed in <kernel-source>/firmware/radeon/, in
->>order to compile them in:
->>REDWOOD_me.bin
->>REDWOOD_pfp.bin
->>REDWOOD_rlc.bin
->>
->>That's how I always did and none of the git-kernels I compiled before
->>was referred to as '-dirty' due to the firmware blobs added manually.
->>Also, the kernel version shown by 'make kernelrelease' never differed
->>from the final kernel version after compilation. Of course assuming
->>that no patches were applied in the meantime and no extra string was
->>appended manually to the kernel version.
->>
->>So, what's this '-dirty' about?
->>
+On 11/03/2010 09:53 AM, cdhmanning@gmail.com wrote:
+> From: Charles Manning<cdhmanning@gmail.com>
 >
-> That means your git tree is not clean, since you placed new firmwares
-> into the source tree.
+> Adding yaffs2 file system.
 >
-> --
-> Live like a child, think like the god.
+> Signed-off-by: Charles Manning<cdhmanning@gmail.com>
+> ---
+>   fs/yaffs2/yaffs_guts.h  |  914 +++++++++++++++++++++++++++++++++++++++++++++++
+>   fs/yaffs2/yaffs_trace.h |   58 +++
+>   fs/yaffs2/yportenv.h    |   90 +++++
+>   3 files changed, 1062 insertions(+), 0 deletions(-)
+>   create mode 100644 fs/yaffs2/yaffs_guts.h
+>   create mode 100644 fs/yaffs2/yaffs_trace.h
+>   create mode 100644 fs/yaffs2/yportenv.h
 >
+> diff --git a/fs/yaffs2/yaffs_guts.h b/fs/yaffs2/yaffs_guts.h
+> new file mode 100644
+> index 0000000..60770ca
+> --- /dev/null
+> +++ b/fs/yaffs2/yaffs_guts.h
+> @@ -0,0 +1,914 @@
+> +/*
+> + * YAFFS: Yet another Flash File System . A NAND-flash specific file system.
+> + *
+> + * Copyright (C) 2002-2010 Aleph One Ltd.
+> + *   for Toby Churchill Ltd and Brightstar Engineering
+> + *
+> + * Created by Charles Manning<charles@aleph1.co.uk>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU Lesser General Public License version 2.1 as
+> + * published by the Free Software Foundation.
+> + *
+> + * Note: Only YAFFS headers are LGPL, YAFFS C code is covered by GPL.
+> + */
 
-OK, but then 'make kernelrelease' should produce the same '..-dirty'
-version, not just '2.6.37-rc1-00001-ge99d11d', shouldn't it?
+What are the implications of putting LGPL things in the kernel?
 
-I always do the following steps in the same order:
-1) first I place the firmware files in <kernel-src>/firmware/radeon
-2) then I choose appropriate config file and copy it into kernel
-source directory
-3) then I run 'make oldconfig' and at the end - just before compiling
-and installing - 'make kernelrelease'
+I don't know, but someone probably should think about it.
 
-As I mentioned, for none of the kernels I compiled prior to this
-version (either from git or from tarball) 'make kernelrelease'
-produced different version name than it came up after compilation.
-
-
--- 
-Thanks,
-Tomasz
+David Daney
