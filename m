@@ -1,147 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073Ab0KCVh2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 17:37:28 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:39478 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751558Ab0KCVh0 convert rfc822-to-8bit (ORCPT
+	id S1752036Ab0KCVnW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 17:43:22 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:64819 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751296Ab0KCVnU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 17:37:26 -0400
-From: "Arce, Abraham" <x0066660@ti.com>
-To: Greg KH <greg@kroah.com>, Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar GADDIPATI <naveen.gaddipati@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Date: Wed, 3 Nov 2010 16:37:14 -0500
-Subject: RE: [PATCHv1] staging: Synaptics RMI4 touchpad driver support
-Thread-Topic: [PATCHv1] staging: Synaptics RMI4 touchpad driver support
-Thread-Index: Act7jIPRAEQHCY5NSnuvbzsiadSGKgADqlZg
-Message-ID: <27F9C60D11D683428E133F85D2BB4A530468A82B1A@dlee03.ent.ti.com>
-References: <1288699725-14405-1-git-send-email-naveen.gaddipati@stericsson.com>
- <20101102140337.GC9387@kroah.com> <4CD01CD8.3090206@stericsson.com>
- <20101102154029.GH11778@core.coreip.homeip.net>
- <20101103181058.GE7441@kroah.com>
- <20101103190752.GA4552@core.coreip.homeip.net>
- <20101103191958.GA9912@kroah.com>
-In-Reply-To: <20101103191958.GA9912@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 3 Nov 2010 17:43:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=aqN8JdxKg32CQrFquLPC1krFwO0rQreD0YXjrb8kTKrI5T5CenqGA76iQVGDtS94ak
+         GVh8cm2YIaGDehdHj6Gg1TTVtoKUEarOjTDDRWD/3MlUY0bqvzSZdbu189RCXIMgSImt
+         ryszMzmHL5JE+f+XZw+3qS7Ci5S3BvkvbTdVo=
+Date: Wed, 3 Nov 2010 22:43:13 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Francis Moreau <francis.moro@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>,
+        linux-perf-users@vger.kernel.org
+Subject: Re: perf tools miscellaneous questions
+Message-ID: <20101103214308.GA5421@nowhere>
+References: <m2eib2uryc.fsf@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m2eib2uryc.fsf@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Naveen,
+On Wed, Nov 03, 2010 at 08:28:59PM +0100, Francis Moreau wrote:
+> Hello,
+> 
+> I'm trying to use perf-tools and also to learn some internals about
+> them. So I prefer to ask all of them in one email.
+> 
+> The first one is about the list of pre-defined events given by
+> perf-list. I couldn't find any documentations that describes these
+> events so excuse me if the question is stupid.
 
-> From: linux-input-owner@vger.kernel.org [mailto:linux-input-
-> owner@vger.kernel.org] On Behalf Of Greg KH
-> Sent: Wednesday, November 03, 2010 1:20 PM
-> To: Dmitry Torokhov
-> Cc: Linus Walleij; Naveen Kumar GADDIPATI; linux-kernel@vger.kernel.org;
-> STEricsson_nomadik_linux; linux-input@vger.kernel.org
-> Subject: Re: [PATCHv1] staging: Synaptics RMI4 touchpad driver support
-> 
-> On Wed, Nov 03, 2010 at 12:07:52PM -0700, Dmitry Torokhov wrote:
-> > On Wed, Nov 03, 2010 at 11:10:58AM -0700, Greg KH wrote:
-> > > On Tue, Nov 02, 2010 at 08:40:30AM -0700, Dmitry Torokhov wrote:
-> > > > On Tue, Nov 02, 2010 at 03:14:48PM +0100, Linus Walleij wrote:
-> > > > > Greg KH wrote:
-> > > > >
-> > > > > >> +Wait for the official upstream synaptics rmi4 clearpad drivers as
-> promised over the past few months
-> > > > > >> +Merge any device support needed from this driver into it
-> > > > > >> +Delete this driver
-> > > > > >
-> > > > > > Huh?
-> > > > > >
-> > > > > > Why not just add this driver to the kernel tree instead?  When the
-> > > > > > "promised" driver then eventually shows up (who is promising it?)
-> then
-> > > > > > delete the thing.
-> > > >
-> > > > The same reason as there were several wireless drivers in staging?
-> > >
-> > > Ok, that's a good enough reason for me :)
-> > >
-> > > > > Well, Alan (on behalf of Ramesh Agarwal) sent out a very similar
-> > > > > patch (Titled "Synaptics TM1217 Touchscreen Controller driver")
-> > > > > the other day, and OTOMH that was after discussions with Synaptics
-> > > > > where they said they were working on a "real" driver (a rather
-> > > > > complex RMI4 bus driver) and we believe they will fix that sooner
-> > > > > or later.
-> > > > >
-> > > > > So, until sooner or later happens we thought we'd keep it in staging.
-> > > > >
-> > > > > If you prefer both Alan and we can probably submit our patches for
-> > > > > inclusion in the proper place.
-> > > > >
-> > > > > A side effect may be that the Synaptics RMI4 people may have trouble
-> > > > > to merge their driver into input/ since they may be requested to
-> > > > > refactor the existing drivers to use it rather than merging new stuff,
-> > > > > putting some burden on their shoulders.
-> > > > >
-> > > >
-> > > > No, they have not been requested to change any existing [in tree]
-> > > > drivers. They however been asked to convert to the driver core
-> > > > primitives instead of rolling their own infprastructure to implement
-> > > > devices and drivers binding.
-> > >
-> > > If you don't object to this driver going in, and there is a path forward
-> > > in the future for it to be able to be removed, then I will be glad to
-> > > add it.
-> > >
-> > > Can I add your Acked-by: to the patch for this?
-> > >
-> >
-> > Umm... I haven't looked in detail, but I think it is sane enough for
-> > staging... Much better than Alan's version that seemed to create a
-> > separate input device for every finger. Needs to depend on INPUT and
-> > probably regulators framework...  Probe function may call
-> > input_free_device() after calling input_register_device() which is not
-> > good.
-> 
-> Great, thanks for this.
-> 
-> > Basically staging is yours, you can add whatever you want to it ;)
-> 
-> Heh, well, I try to at least cooperate with the different subsystem
-> maintainers.  I don't need even more people pissed-off at me than I
-> normally get :)
-> 
-> I'll queue this up for .38.
-> 
 
-I have done some initial testing with this patch, it includes some modifications to the board file, I have a gpio acting as irq plus driver code itself
 
-I won't be able to get events (board will hang) unless adding the following code, is this due to the usage of a gpio as interrupt? If you could please clarify...
+Sorry about that. We indeed need to improve a lot the documentation.
+May be this particular part could come with the future sysfs exposure
+of the events.
 
-@@ -481,6 +483,9 @@ static int synaptics_rmi4_sensor_report(struct synaptics_rmi4_data *pdata)
-                                                                        rfi);
-                }
-        }
-+
-+       enable_irq(gpio_to_irq(pdata->irq_number));
-+
-        /* return the number of touch points */
-        return touch;
- }
-@@ -498,6 +503,8 @@ static irqreturn_t synaptics_rmi4_irq(int irq, void *data)
-        struct synaptics_rmi4_data *pdata = data;
-        int touch_count;
-        do {
-+               disable_irq_nosync(gpio_to_irq(pdata->irq_number));
-+
-                touch_count = synaptics_rmi4_sensor_report(pdata);
-                if (touch_count)
-                        wait_event_timeout(pdata->wait, pdata->touch_stopped,
 
-Best Regards
-Abraham
+
+> 
+> What's the difference between 'cpu-clock' and 'task-clock' event ?
+
+
+cpu-clock is based on the total time spent on the cpu. task-clock is
+based only on the time spent on the profiled task, so that doesn't count
+time spent on other tasks, it has a per thread granularity.
+
+(I might be somehow wrong in my explanation).
+
+
+
+> 
+> What's exactly the 'cache-misses' event ? does it include both instructions
+> _and_ data cache misses ? both L1 and L2 caches ?
+> 
+> I was expecting so but the following command makes me wondering:
+> 
+>   $ perf stat -e cache-misses:u,l1d-loads-misses:u true
+>     Performance counter stats for 'true':
+> 
+>                 763  cache-misses            
+>                 874  L1-dcache-load-misses   
+> 
+>         0.000916609  seconds time elapsed
+> 
+> Here cache-misses < L1-dcache-load-misses.
+
+
+
+Dunno, will let others answer.
+
+
+
+> The last question is about the source code annotation done by
+> perf-report. I'm using it to locate the place in my code that generates
+> the most data cache miss events. I can read this during a perf-report
+> session:
+> 
+>    [...]
+>     0.00 :           df215:       c3                      retq
+>     0.00 :           df216:       66 2e 0f 1f 84 00 00    nopw   %cs:0x0(%rax,%rax,1)
+>     0.00 :           df21d:       00 00 00
+>    10.00 :           df220:       48 8b 75 00             mov    0x0(%rbp),%rsi
+>    80.00 :           df224:       48 89 df                mov    %rbx,%rdi
+>     0.00 :           df227:       41 ff d4                callq  *%r12
+>     0.00 :           df22a:       85 c0                   test   %eax,%eax
+>    [...]
+> 
+> If I read the output correctly, most of the dcache misses are coming from
+> 'mov %rbx, %rdi', and AFAIK this intruction can't generate any dcache
+> miss. What am I missing ?
+
+
+Perhaps you need pebs to get the very precise location on your event.
+
+perf stat -e cache-misses:up,l1d-loads-misses:up true
+
+
+I think the more you add 'p', the more precise it is.
+Like:
+
+	perf stat -e cache-misses:uppp,l1d-loads-misses:uppp true
+
+Not sure how much it will accept though :)
 
