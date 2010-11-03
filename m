@@ -1,79 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958Ab0KCHbe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 03:31:34 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:44314 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753303Ab0KCHbc (ORCPT
+	id S1753977Ab0KCHjJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 03:39:09 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:52792 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753378Ab0KCHjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 03:31:32 -0400
+	Wed, 3 Nov 2010 03:39:07 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=u+Wik2Y/c2Jlg8kH6y2uDAZ6sPShxOieOpcwcMxwATdf+3H2AmrwXrqdHAphtepp6/
-         kLT2buiovOiygal9j3VNCtwM4KqjWvbIiTdb9Cm5obKk7gv0fmMKLcFrNofuvl9yanEb
-         BSjRnF5j6gjS+FVu1zXzpQwmdswqPOushw+vs=
-Subject: Re: [RFC 4/4]x86: avoid tlbstate lock if no enough cpus
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>, "hpa@zytor.com" <hpa@zytor.com>
-In-Reply-To: <1288769123.2467.681.camel@edumazet-laptop>
-References: <1288766668.23014.117.camel@sli10-conroe>
-	 <1288767580.2467.636.camel@edumazet-laptop>
-	 <1288767995.23014.120.camel@sli10-conroe>
-	 <1288768330.2467.660.camel@edumazet-laptop>
-	 <1288768795.23014.123.camel@sli10-conroe>
-	 <1288769123.2467.681.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 03 Nov 2010 08:31:26 +0100
-Message-ID: <1288769486.2467.690.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=RtsMwIrhykOE3TqVwiS44yMijJm2rKdbR8GUfna1jZ7VD3CWVxN9vSXwjEvsrBiuup
+         d0Eu8qWBd1J3YThXfKMdQ/dFRYd2JMZ3r7fFp55x8fMfy7eqCFc2FZE4lb5hKhVjskwA
+         JGjJlhT1ZRiZfXQd7dSs+JxuL982sghaD2SJo=
+Date: Wed, 3 Nov 2010 07:38:54 +0000
+From: Jarek Poplawski <jarkao2@gmail.com>
+To: Denys Fedoryshchenko <nuclearcat@nuclearcat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Paul Mackerras <paulus@samba.org>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: 2.6.35->2.6.36 regression, vanilla kernel panic, ppp or
+	hrtimers crashing
+Message-ID: <20101103073854.GA7279@ff.dom.local>
+References: <20101028070550.GA7647@ff.dom.local> <201011021549.47466.nuclearcat@nuclearcat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201011021549.47466.nuclearcat@nuclearcat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 03 novembre 2010 à 08:25 +0100, Eric Dumazet a écrit :
-> Le mercredi 03 novembre 2010 à 15:19 +0800, Shaohua Li a écrit :
-> > On Wed, 2010-11-03 at 15:12 +0800, Eric Dumazet wrote:
-> > > Le mercredi 03 novembre 2010 à 15:06 +0800, Shaohua Li a écrit :
-> > > > just don't want to include the non-present cpus here. I wonder why we
-> > > > haven't a variable to record online cpu number.
+On Tue, Nov 02, 2010 at 03:49:47PM +0200, Denys Fedoryshchenko wrote:
+> I didn't try yet, but i enable more debugs and catch linked list corruption. 
+
+It should be very useful but it seems there were no significant changes
+in ppp locking between 2.6.35 and .36 except the patch I mentioned, so
+it would be nice to check this first and try to fix it properly later.
+
+Jarek P.
+
+> 
+> Here is dumps from netconsole:
+> http://www.nuclearcat.com/ll.txt
+> http://www.nuclearcat.com/ll2.txt		
+> 
+> I have another PC, also fails to run 2.6.36, but netconsole don't give 
+> anything.
+> Both PC's have strange issue with clock drifting away too much (on 2.6.35 and 
+> maybe even before).
+> 
+> 
+> On Thursday 28 October 2010 10:05:50 Jarek Poplawski wrote:
+> > On 2010-10-25 11:22, Denys Fedoryshchenko wrote:
+> > > Hi
 > > > 
-> > > What prevents a 256 cpus machine, to have 8 online cpus that all use the
-> > > same TLB vector ?
+> > > Here is what i got from netconsole
 > > > 
-> > > (Max 32 vectors, so 8 cpus share each vector, settled at boot time)
-> > > 
-> > > Forget about 'online', and think 'possible' ;)
-> > Hmm, the spread vectors to node already merged, how could the 8 cpus
-> > share a vector?
+> > >  [  259.238755] BUG: unable to handle kernel
+> > >  paging request
+> > >  at f8ba001c
+> > >  [  259.238953] IP:
+> > >  [<c0199ebe>] do_select+0x2cc/0x502
 > > 
-> 
-> You boot a machine with 256 cpu.
-> 
-> They are online and very well.
-> 
-> Each vector is shared by at least 8 cpus, because 256/32 = 8. OK ?
-> 
-> Now you off-line 256-8 cpus, because you have HOTPLUG capability in your
-> kernel and you have some policy to bring them up later if needed.
-> 
-> What happens ? Do you rebalance TLB vectors to make sure each cpu has
-> its own vector ?
-> 
-> 
-
-It seems you do that since commit 932967202182743 in
-calculate_tlb_offset()
-
-So just add in this function some logic to tell if each tlb vector is
-used by one or several cpu.
-
-We can avoid the lock for each TLB vector used by exactly one cpu.
-
-
-
+> > ...
+> > 
+> > > It is not easy to do full git bisect(it is semi-embedded distro), but i
+> > > can try reversing particular commits, if someone can give idea which
+> > > one, and can try debug patches.
+> > 
+> > Hi,
+> > Nothing concrete, but you might try reverting this one:
+> > 
+> > http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.36.y.git;a=commi
+> > tdiff;h=15fd0cd9a2ad24a78fbee369dec8ca660979d57e
+> > 
+> > Jarek P.
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe netdev" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
