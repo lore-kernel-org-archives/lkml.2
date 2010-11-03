@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932385Ab0KCPa7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 11:30:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58662 "EHLO mx1.redhat.com"
+	id S932549Ab0KCPgi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 11:36:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55099 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932290Ab0KCPan (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 11:30:43 -0400
+	id S932334Ab0KCPbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 11:31:05 -0400
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Subject: [PATCH 13 of 66] export maybe_mkwrite
-X-Mercurial-Node: 15324c9c30081da3a7409b7097a1ef9b73a65d4f
-Message-Id: <15324c9c30081da3a740.1288798068@v2.random>
+Subject: [PATCH 53 of 66] add numa awareness to hugepage allocations
+X-Mercurial-Node: 223ee926614158fc1353839519650762bad14dcc
+Message-Id: <223ee926614158fc1353.1288798108@v2.random>
 In-Reply-To: <patchbomb.1288798055@v2.random>
 References: <patchbomb.1288798055@v2.random>
 User-Agent: Mercurial-patchbomb/1.4.1
-Date: Wed, 03 Nov 2010 16:27:48 +0100
+Date: Wed, 03 Nov 2010 16:28:28 +0100
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -42,57 +42,274 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andrea Arcangeli <aarcange@redhat.com>
 
-huge_memory.c needs it too when it fallbacks in copying hugepages into regular
-fragmented pages if hugepage allocation fails during COW.
+It's mostly a matter of replacing alloc_pages with alloc_pages_vma after
+introducing alloc_pages_vma. khugepaged needs special handling as the
+allocation has to happen inside collapse_huge_page where the vma is known and
+an error has to be returned to the outer loop to sleep alloc_sleep_millisecs in
+case of failure. But it retains the more efficient logic of handling allocation
+failures in khugepaged in case of CONFIG_NUMA=n.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
 ---
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -416,6 +416,19 @@ static inline void set_compound_order(st
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -330,14 +330,17 @@ alloc_pages(gfp_t gfp_mask, unsigned int
+ {
+ 	return alloc_pages_current(gfp_mask, order);
+ }
+-extern struct page *alloc_page_vma(gfp_t gfp_mask,
++extern struct page *alloc_pages_vma(gfp_t gfp_mask, int order,
+ 			struct vm_area_struct *vma, unsigned long addr);
+ #else
+ #define alloc_pages(gfp_mask, order) \
+ 		alloc_pages_node(numa_node_id(), gfp_mask, order)
+-#define alloc_page_vma(gfp_mask, vma, addr) alloc_pages(gfp_mask, 0)
++#define alloc_pages_vma(gfp_mask, order, vma, addr)	\
++	alloc_pages(gfp_mask, order)
+ #endif
+ #define alloc_page(gfp_mask) alloc_pages(gfp_mask, 0)
++#define alloc_page_vma(gfp_mask, vma, addr)	\
++	alloc_pages_vma(gfp_mask, 0, vma, addr)
+ 
+ extern unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order);
+ extern unsigned long get_zeroed_page(gfp_t gfp_mask);
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -620,11 +620,26 @@ static int __do_huge_pmd_anonymous_page(
+ 	return ret;
  }
  
- /*
-+ * Do pte_mkwrite, but only if the vma says VM_WRITE.  We do this when
-+ * servicing faults for write access.  In the normal case, do always want
-+ * pte_mkwrite.  But get_user_pages can cause write faults for mappings
-+ * that do not have writing enabled, when used by access_process_vm.
-+ */
-+static inline pte_t maybe_mkwrite(pte_t pte, struct vm_area_struct *vma)
++static inline gfp_t alloc_hugepage_gfpmask(int defrag)
 +{
-+	if (likely(vma->vm_flags & VM_WRITE))
-+		pte = pte_mkwrite(pte);
-+	return pte;
++	return GFP_TRANSHUGE & ~(defrag ? 0 : __GFP_WAIT);
 +}
 +
-+/*
-  * Multiple processes may "see" the same page. E.g. for untouched
-  * mappings of /dev/null, all processes see the same page full of
-  * zeroes, and text pages of executables and shared libraries have
-diff --git a/mm/memory.c b/mm/memory.c
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2048,19 +2048,6 @@ static inline int pte_unmap_same(struct 
- 	return same;
++static inline struct page *alloc_hugepage_vma(int defrag,
++					      struct vm_area_struct *vma,
++					      unsigned long haddr)
++{
++	return alloc_pages_vma(alloc_hugepage_gfpmask(defrag),
++			       HPAGE_PMD_ORDER, vma, haddr);
++}
++
++#ifndef CONFIG_NUMA
+ static inline struct page *alloc_hugepage(int defrag)
+ {
+-	return alloc_pages(GFP_TRANSHUGE & ~(defrag ? 0 : __GFP_WAIT),
++	return alloc_pages(alloc_hugepage_gfpmask(defrag),
+ 			   HPAGE_PMD_ORDER);
+ }
++#endif
+ 
+ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			       unsigned long address, pmd_t *pmd,
+@@ -639,7 +654,8 @@ int do_huge_pmd_anonymous_page(struct mm
+ 			return VM_FAULT_OOM;
+ 		if (unlikely(khugepaged_enter(vma)))
+ 			return VM_FAULT_OOM;
+-		page = alloc_hugepage(transparent_hugepage_defrag(vma));
++		page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
++					  vma, haddr);
+ 		if (unlikely(!page))
+ 			goto out;
+ 		if (unlikely(mem_cgroup_newpage_charge(page, mm, GFP_KERNEL))) {
+@@ -858,7 +874,8 @@ int do_huge_pmd_wp_page(struct mm_struct
+ 
+ 	if (transparent_hugepage_enabled(vma) &&
+ 	    !transparent_hugepage_debug_cow())
+-		new_page = alloc_hugepage(transparent_hugepage_defrag(vma));
++		new_page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
++					      vma, haddr);
+ 	else
+ 		new_page = NULL;
+ 
+@@ -1655,7 +1672,11 @@ static void collapse_huge_page(struct mm
+ 	unsigned long hstart, hend;
+ 
+ 	VM_BUG_ON(address & ~HPAGE_PMD_MASK);
++#ifndef CONFIG_NUMA
+ 	VM_BUG_ON(!*hpage);
++#else
++	VM_BUG_ON(*hpage);
++#endif
+ 
+ 	/*
+ 	 * Prevent all access to pagetables with the exception of
+@@ -1693,7 +1714,15 @@ static void collapse_huge_page(struct mm
+ 	if (!pmd_present(*pmd) || pmd_trans_huge(*pmd))
+ 		goto out;
+ 
++#ifndef CONFIG_NUMA
+ 	new_page = *hpage;
++#else
++	new_page = alloc_hugepage_vma(khugepaged_defrag(), vma, address);
++	if (unlikely(!new_page)) {
++		*hpage = ERR_PTR(-ENOMEM);
++		goto out;
++	}
++#endif
+ 	if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL)))
+ 		goto out;
+ 
+@@ -1724,6 +1753,9 @@ static void collapse_huge_page(struct mm
+ 		spin_unlock(&mm->page_table_lock);
+ 		anon_vma_unlock(vma->anon_vma);
+ 		mem_cgroup_uncharge_page(new_page);
++#ifdef CONFIG_NUMA
++		put_page(new_page);
++#endif
+ 		goto out;
+ 	}
+ 
+@@ -1759,7 +1791,9 @@ static void collapse_huge_page(struct mm
+ 	mm->nr_ptes--;
+ 	spin_unlock(&mm->page_table_lock);
+ 
++#ifndef CONFIG_NUMA
+ 	*hpage = NULL;
++#endif
+ 	khugepaged_pages_collapsed++;
+ out:
+ 	up_write(&mm->mmap_sem);
+@@ -1995,11 +2029,16 @@ static void khugepaged_do_scan(struct pa
+ 	while (progress < pages) {
+ 		cond_resched();
+ 
++#ifndef CONFIG_NUMA
+ 		if (!*hpage) {
+ 			*hpage = alloc_hugepage(khugepaged_defrag());
+ 			if (unlikely(!*hpage))
+ 				break;
+ 		}
++#else
++		if (IS_ERR(*hpage))
++			break;
++#endif
+ 
+ 		spin_lock(&khugepaged_mm_lock);
+ 		if (!khugepaged_scan.mm_slot)
+@@ -2014,37 +2053,55 @@ static void khugepaged_do_scan(struct pa
+ 	}
  }
  
--/*
-- * Do pte_mkwrite, but only if the vma says VM_WRITE.  We do this when
-- * servicing faults for write access.  In the normal case, do always want
-- * pte_mkwrite.  But get_user_pages can cause write faults for mappings
-- * that do not have writing enabled, when used by access_process_vm.
-- */
--static inline pte_t maybe_mkwrite(pte_t pte, struct vm_area_struct *vma)
--{
--	if (likely(vma->vm_flags & VM_WRITE))
--		pte = pte_mkwrite(pte);
--	return pte;
--}
--
- static inline void cow_user_page(struct page *dst, struct page *src, unsigned long va, struct vm_area_struct *vma)
++static void khugepaged_alloc_sleep(void)
++{
++	DEFINE_WAIT(wait);
++	add_wait_queue(&khugepaged_wait, &wait);
++	schedule_timeout_interruptible(
++		msecs_to_jiffies(
++			khugepaged_alloc_sleep_millisecs));
++	remove_wait_queue(&khugepaged_wait, &wait);
++}
++
++#ifndef CONFIG_NUMA
+ static struct page *khugepaged_alloc_hugepage(void)
  {
+ 	struct page *hpage;
+ 
+ 	do {
+ 		hpage = alloc_hugepage(khugepaged_defrag());
+-		if (!hpage) {
+-			DEFINE_WAIT(wait);
+-			add_wait_queue(&khugepaged_wait, &wait);
+-			schedule_timeout_interruptible(
+-				msecs_to_jiffies(
+-					khugepaged_alloc_sleep_millisecs));
+-			remove_wait_queue(&khugepaged_wait, &wait);
+-		}
++		if (!hpage)
++			khugepaged_alloc_sleep();
+ 	} while (unlikely(!hpage) &&
+ 		 likely(khugepaged_enabled()));
+ 	return hpage;
+ }
++#endif
+ 
+ static void khugepaged_loop(void)
+ {
+ 	struct page *hpage;
+ 
++#ifdef CONFIG_NUMA
++	hpage = NULL;
++#endif
+ 	while (likely(khugepaged_enabled())) {
++#ifndef CONFIG_NUMA
+ 		hpage = khugepaged_alloc_hugepage();
+ 		if (unlikely(!hpage))
+ 			break;
++#else
++		if (IS_ERR(hpage)) {
++			khugepaged_alloc_sleep();
++			hpage = NULL;
++		}
++#endif
+ 
+ 		khugepaged_do_scan(&hpage);
++#ifndef CONFIG_NUMA
+ 		if (hpage)
+ 			put_page(hpage);
++#endif
+ 		if (khugepaged_has_work()) {
+ 			DEFINE_WAIT(wait);
+ 			if (!khugepaged_scan_sleep_millisecs)
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1794,7 +1794,7 @@ static struct page *alloc_page_interleav
+ }
+ 
+ /**
+- * 	alloc_page_vma	- Allocate a page for a VMA.
++ * 	alloc_pages_vma	- Allocate a page for a VMA.
+  *
+  * 	@gfp:
+  *      %GFP_USER    user allocation.
+@@ -1803,6 +1803,7 @@ static struct page *alloc_page_interleav
+  *      %GFP_FS      allocation should not call back into a file system.
+  *      %GFP_ATOMIC  don't sleep.
+  *
++ *	@order:Order of the GFP allocation.
+  * 	@vma:  Pointer to VMA or NULL if not available.
+  *	@addr: Virtual Address of the allocation. Must be inside the VMA.
+  *
+@@ -1816,7 +1817,8 @@ static struct page *alloc_page_interleav
+  *	Should be called with the mm_sem of the vma hold.
+  */
+ struct page *
+-alloc_page_vma(gfp_t gfp, struct vm_area_struct *vma, unsigned long addr)
++alloc_pages_vma(gfp_t gfp, int order, struct vm_area_struct *vma,
++		unsigned long addr)
+ {
+ 	struct mempolicy *pol = get_vma_policy(current, vma, addr);
+ 	struct zonelist *zl;
+@@ -1828,7 +1830,7 @@ alloc_page_vma(gfp_t gfp, struct vm_area
+ 
+ 		nid = interleave_nid(pol, vma, addr, PAGE_SHIFT);
+ 		mpol_cond_put(pol);
+-		page = alloc_page_interleave(gfp, 0, nid);
++		page = alloc_page_interleave(gfp, order, nid);
+ 		put_mems_allowed();
+ 		return page;
+ 	}
+@@ -1837,7 +1839,7 @@ alloc_page_vma(gfp_t gfp, struct vm_area
+ 		/*
+ 		 * slow path: ref counted shared policy
+ 		 */
+-		struct page *page =  __alloc_pages_nodemask(gfp, 0,
++		struct page *page =  __alloc_pages_nodemask(gfp, order,
+ 						zl, policy_nodemask(gfp, pol));
+ 		__mpol_put(pol);
+ 		put_mems_allowed();
+@@ -1846,7 +1848,8 @@ alloc_page_vma(gfp_t gfp, struct vm_area
  	/*
+ 	 * fast path:  default or task policy
+ 	 */
+-	page = __alloc_pages_nodemask(gfp, 0, zl, policy_nodemask(gfp, pol));
++	page = __alloc_pages_nodemask(gfp, order, zl,
++				      policy_nodemask(gfp, pol));
+ 	put_mems_allowed();
+ 	return page;
+ }
