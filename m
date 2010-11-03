@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754058Ab0KCHoh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 03:44:37 -0400
-Received: from stinky.trash.net ([213.144.137.162]:44500 "EHLO
+	id S1754140Ab0KCHp3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 03:45:29 -0400
+Received: from stinky.trash.net ([213.144.137.162]:44539 "EHLO
 	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753497Ab0KCHog (ORCPT
+	with ESMTP id S1753378Ab0KCHp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 03:44:36 -0400
-Message-ID: <4CD112E2.3040800@trash.net>
-Date: Wed, 03 Nov 2010 08:44:34 +0100
+	Wed, 3 Nov 2010 03:45:28 -0400
+Message-ID: <4CD11316.3080707@trash.net>
+Date: Wed, 03 Nov 2010 08:45:26 +0100
 From: Patrick McHardy <kaber@trash.net>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
 MIME-Version: 1.0
@@ -21,10 +21,9 @@ CC: kernel-janitors@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
         netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
         coreteam@netfilter.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ipv4: netfilter: arp_tables: fix information leak to
- userland
-References: <1288448806-6470-1-git-send-email-segooon@gmail.com>
-In-Reply-To: <1288448806-6470-1-git-send-email-segooon@gmail.com>
+Subject: Re: [PATCH] ipv4: netfilter: ip_tables: fix information leak to userland
+References: <1288448810-6628-1-git-send-email-segooon@gmail.com>
+In-Reply-To: <1288448810-6628-1-git-send-email-segooon@gmail.com>
 X-Enigmail-Version: 1.0.1
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
@@ -33,8 +32,8 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 30.10.2010 16:26, Vasiliy Kulikov wrote:
-> Structure arpt_getinfo is copied to userland with the field "name"
+> Structure ipt_getinfo is copied to userland with the field "name"
 > that has the last elements unitialized.  It leads to leaking of
 > contents of kernel stack memory.
 
-Applied, thanks.
+Also applied, thanks.
