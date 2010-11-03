@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298Ab0KCQKf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 12:10:35 -0400
-Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:26052 "HELO
-	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751861Ab0KCQKc (ORCPT
+	id S1755449Ab0KCQLk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 12:11:40 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:56427 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751797Ab0KCQLi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 12:10:32 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 8k8xt9oVM1kygaFYyJJ.uCBODBFUYRiOccGcoDM3KZX31gZ
- .b2PYOCN6ucul85G7HG4FLIgsxcZBgWhBlM6dt1Ar_9BYi0iZeJQHk3ku6vQ
- cJIPV8D0HytbgGxqpzvSIB5AB7UtYv6eZWLXSGqTGTP54SYHfGcsB8AgSKGX
- f1MU54JWt3b63tmsWQl1scr_StKQYXO7DD7OQqA.zFTqxCf.Msn2xP7mMHNO
- iSeTYxUHJxpc2Bc7uSIuZgqxzeoMpHhf6nWNP3mHP_W3oUlmy_mcWV7ZfFX_
- YpE2Zr5qIqA--
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 3 Nov 2010 11:10:28 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Joe Perches <joe@perches.com>
-cc: jovi zhang <bookjovi@gmail.com>, Jesper Juhl <jj@chaosbits.net>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Minchan Kim <minchan.kim@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Paul Menage <menage@google.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org
-Subject: Re: [PATCH] cgroup: Avoid a memset by using vzalloc
-In-Reply-To: <1288799284.15729.27.camel@Joe-Laptop>
-Message-ID: <alpine.DEB.2.00.1011031108260.11625@router.home>
-References: <alpine.LNX.2.00.1010302333130.1572@swampdragon.chaosbits.net>  <AANLkTi=nMU3ezNFD8LKBhJxr6CmW6-qHY_Mo3HRt6Os0@mail.gmail.com>  <20101031173336.GA28141@balbir.in.ibm.com>  <alpine.LNX.2.00.1011010639410.31190@swampdragon.chaosbits.net> 
- <alpine.DEB.2.00.1011030937580.10599@router.home>  <AANLkTinhAQ7mNQWtjWCOWEHHwgUf+BynMM7jnVBMG32-@mail.gmail.com> <1288799284.15729.27.camel@Joe-Laptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 3 Nov 2010 12:11:38 -0400
+Date: Wed, 3 Nov 2010 12:10:59 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, hch@infradead.org, linux-kernel@vger.kernel.org,
+        petero2@telia.com, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        jack@suse.cz, akpm@linux-foundation.org, adilger.kernel@dilger.ca,
+        tytso@mit.edu, mfasheh@suse.com, joel.becker@oracle.com,
+        aelder@sgi.com, dm-devel@redhat.com, drbd-dev@lists.linbit.com,
+        neilb@suse.de, leochen@broadcom.com, sbranden@broadcom.com,
+        chris.mason@oracle.com, swhiteho@redhat.com, shaggy@linux.vnet.ibm.com,
+        joern@logfs.org, konishi.ryusuke@lab.ntt.co.jp,
+        reiserfs-devel@vger.kernel.org, viro@zeniv.linux.org.uk
+Subject: Re: [PATCH 4/5] block: make blkdev_get/put() handle exclusive access
+Message-ID: <20101103161059.GA13621@infradead.org>
+References: <1288628129-12811-1-git-send-email-tj@kernel.org>
+ <1288628129-12811-5-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288628129-12811-5-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Nov 2010, Joe Perches wrote:
+On Mon, Nov 01, 2010 at 05:15:28PM +0100, Tejun Heo wrote:
+> * blkdev_get() is extended to include exclusive access management.
+>   @holder argument is added and, if is @FMODE_EXCL specified, it will
+>   gain exclusive access atomically w.r.t. other exclusive accesses.
+> 
+> * blkdev_put() is similarly extended.  It now takes @mode argument and
+>   if @FMODE_EXCL is set, it releases an exclusive access.  Also, when
+>   the last exclusive claim is released, the holder/slave symlinks are
+>   removed automatically.
 
-> On Wed, 2010-11-03 at 23:20 +0800, jovi zhang wrote:
-> > On Wed, Nov 3, 2010 at 10:38 PM, Christoph Lameter <cl@linux.com> wrote:
-> > > On Mon, 1 Nov 2010, Jesper Juhl wrote:
-> > >
-> > >> On Sun, 31 Oct 2010, Balbir Singh wrote:
-> > >
-> > >> > > There are so many placed need vzalloc.
-> > >> > > Thanks, Jesper.
-> > >
-> > >
-> > > Could we avoid this painful exercise with a "semantic patch"?
->
-> There's an existing cocci kmalloc/memset script.
+Could we get rid of FMODE_EXCL and just make a non-NULL holder field
+mean to open it exlusively (and pass a holder to the blkdev_put to
+release it)?
 
-I have it in
-/usr/share/doc/coccinelle/examples/janitorings/kzalloc-orig.cocci.gz
+> * bd_link_disk_holder() remains the same but bd_unlink_disk_holder()
+>   is no longer necessary and removed.
 
-(Ubuntu coccinelle package)
+That's a rather asymetric interface.  What about having
+blkdev_get_stacked that require a gendisk as holder and set up the
+links underneath?
 
-> Perhaps this is good enough?
->
-> cp scripts/coccinelle/api/alloc/kzalloc-simple.cocci scripts/coccinelle/api/alloc/vzalloc-simple.cocci
-> sed -i -e 's/kmalloc/vmalloc/g' -e 's/kzalloc/vzalloc/g' scripts/coccinelle/api/alloc/vzalloc-simple.cocci
 
-Not sure if that is the same script but certainly a good start. Try it and
-see if it catches all the locations that you know of?
+> open_bdev_exclusive() and open_by_devnum() can use further cleanup -
+> rename to blkdev_get_by_path() and blkdev_get_by_devt() and drop
+> special features.  Well, let's leave them for another day.
+
+s/blkdev_get_by_devt/blkdev_get_by_dev/
+
+And yes, that rename is a good idea and should go in ASAP after this
+patch.
 
