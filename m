@@ -1,134 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754197Ab0KCLnt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 07:43:49 -0400
-Received: from mga11.intel.com ([192.55.52.93]:60662 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753311Ab0KCLnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 07:43:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,288,1286175600"; 
-   d="scan'208";a="623092080"
-Date: Wed, 3 Nov 2010 19:43:45 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: "Shi, Alex" <alex.shi@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>,
-        "Li, Shaohua" <shaohua.li@intel.com>,
-        "pzijlstr@redhat.com" <pzijlstr@redhat.com>
-Subject: Re: VM ops on 37-rc1
-Message-ID: <20101103114345.GA7428@localhost>
-References: <1288767341.15466.4624.camel@debian>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288767341.15466.4624.camel@debian>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754633Ab0KCLzf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 07:55:35 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:57398 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753795Ab0KCLzd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 07:55:33 -0400
+Subject: [Tech-board-discuss] Linux Foundation Technical Advisory Board
+ Elections results
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Tech Board Discuss <Tech-board-discuss@lists.linux-foundation.org>
+Cc: "ksummit-2010-discuss@lists.linux-foundation.org" 
+	<ksummit-2010-discuss@lists.linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 03 Nov 2010 07:55:28 -0400
+Message-ID: <1288785328.12230.13.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Try revert the latest change to mm/vmstat.c, Michael added code to
-show dirty thresholds there.
+By the close of nominations on Tuesday, we had eight nominees for five places:
 
-Thanks,
-Fengguang
+James Bottomley <James.Bottomley@hansenpartnership.com>
+Chris Mason <chris.mason@oracle.com>
+Chris Wright <chrisw@sous-sol.org>
+Grant Likely <grant.likely@secretlab.ca>
+John W. Linville <linville@tuxdriver.com>
+Frank Rowand <frank.rowand@am.sony.com>
+Konrad Rzeszutek Wilk <konrad@darnok.org>
+Hugh Blemings <hugh@canonical.com>
 
-On Wed, Nov 03, 2010 at 02:55:41PM +0800, Shi, Alex wrote:
-> I found some ops on one of Bensely Core2 machine. The ops may pops up
-> just system after booted. 2.6.36 kernel is good. The similar ops also
-> appears on IA64 machine.   Any idea of this?
-> 
-> general protection fault: 0000 [#1] SMP
-> last sysfs file: /sys/devices/system/cpu/cpu7/cache/index2/shared_cpu_map
-> CPU 1
-> Modules linked in: video output
-> 
-> Pid: 8494, comm: sadc Not tainted 2.6.37-rc1 #1 X7DWN/X7DW3
-> RIP: 0010:[<ffffffff812c6d89>]  [<ffffffff812c6d89>] strnlen+0x11/0x1a
-> RSP: 0018:ffff88022f1ddcf0  EFLAGS: 00010297
-> RAX: 41ffffffff81a197 RBX: 0000000000000000 RCX: ffffffffffffffff
-> RDX: 41ffffffff81a197 RSI: fffffffffffffffe RDI: 41ffffffff81a197
-> RBP: ffff88022ef42000 R08: 0000000000000002 R09: ffffffff81cb7a50
-> R10: ffff88022f1ddf50 R11: ffffffff81c4e3c8 R12: 41ffffffff81a197
-> R13: 000000000000ffff R14: ffff88022ef43000 R15: ffffffff81a19438
-> FS:  00007fd06b06e6f0(0000) GS:ffff8800cfc40000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> CR2: 00007fd06b0a2000 CR3: 000000022db81000 CR4: 00000000000006e0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process sadc (pid: 8494, threadinfo ffff88022f1dc000, task ffff88022b9d5a30)
-> Stack:
->  ffffffff812c846d ffff88022f1ddd88 ffff88022ef42000 ffffffff81a19436
->  ffff88022ef43000 ffff88022ef42000 ffffffff812c9196 ffff88022f08e4c0
->  0000000000001000 ffffffffff0a0004 ffffffff810b30a1 0000000000000000
-> Call Trace:
->  [<ffffffff812c846d>] ? string+0x43/0xb5
->  [<ffffffff812c9196>] ? vsnprintf+0x1d8/0x421
->  [<ffffffff810b30a1>] ? vma_adjust+0x205/0x435
->  [<ffffffff810df8f5>] ? seq_printf+0x67/0x8f
->  [<ffffffff8160d42b>] ? mutex_lock+0x20/0x44
->  [<ffffffff8160d42b>] ? mutex_lock+0x20/0x44
->  [<ffffffff810a9087>] ? all_vm_events+0x60/0x73
->  [<ffffffff8103b615>] ? put_online_cpus+0x22/0x54
->  [<ffffffff810a9169>] ? vmstat_start+0xcf/0x103
->  [<ffffffff810a89a5>] ? vmstat_show+0x23/0x27
->  [<ffffffff810dfe79>] ? seq_read+0x181/0x364
->  [<ffffffff8110d8eb>] ? proc_reg_read+0x6a/0x84
->  [<ffffffff810c86fc>] ? vfs_read+0xa8/0x12f
->  [<ffffffff810c8ae4>] ? sys_read+0x45/0x6e
->  [<ffffffff8100296b>] ? system_call_fastpath+0x16/0x1b
-> Code: f2 ae 48 f7 d1 48 8d 44 11 ff 40 38 30 74 0a 48 ff c8 48 39 d0 73 f3 31 c0 c3 48 89 f8 eb 03 48 ff c0 48 ff ce 48 83 fe ff 74 05 <80> 38 00 75 ef 48 29 f8 c3 31 c0 eb 12 41 38 c8 74 0a 48 ff c2
-> RIP  [<ffffffff812c6d89>] strnlen+0x11/0x1a
->  RSP <ffff88022f1ddcf0>
-> ---[ end trace 75434a01211a18e0 ]---
-> 
-> Sometime, the following ops appears. 
-> 
-> 
-> BUG: unable to handle kernel paging request at ffffff81a19733ff
-> IP: [<ffffffff812c6d89>] strnlen+0x11/0x1a
-> PGD 1c41067 PUD 0
-> Oops: 0000 [#3] SMP
-> last sysfs file: /sys/devices/system/cpu/cpu7/cache/index2/shared_cpu_map
-> CPU 0
-> Modules linked in: video output
-> 
-> Pid: 1781, comm: sadc Tainted: G      D     2.6.37-rc1 #1 X7DWN/X7DW3
-> RIP: 0010:[<ffffffff812c6d89>]  [<ffffffff812c6d89>] strnlen+0x11/0x1a
-> RSP: 0018:ffff88022dea1cf0  EFLAGS: 00010297
-> RAX: ffffff81a19733ff RBX: 0000000000000000 RCX: ffffffffffffffff
-> RDX: ffffff81a19733ff RSI: fffffffffffffffe RDI: ffffff81a19733ff
-> RBP: ffff88022ee38000 R08: 0000000000000002 R09: ffffffff81cb7a50
-> R10: ffff88022dea1f50 R11: ffffffff81c4e3c8 R12: ffffff81a19733ff
-> R13: 000000000000ffff R14: ffff88022ee39000 R15: ffffffff81a19438
-> FS:  00007fd6725dc6f0(0000) GS:ffff8800cfc00000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> CR2: ffffff81a19733ff CR3: 000000022e5e7000 CR4: 00000000000006f0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process sadc (pid: 1781, threadinfo ffff88022dea0000, task ffff88022e1229a0)
-> Stack:
->  ffffffff812c846d ffff88022dea1d88 ffff88022ee38000 ffffffff81a19436
->  ffff88022ee39000 ffff88022ee38000 ffffffff812c9196 ffff88022ee086c0
->  0000000000001000 ffffffffff0a0004 ffffffff810b30a1 0000000000000000
-> Call Trace:
->  [<ffffffff812c846d>] ? string+0x43/0xb5
->  [<ffffffff812c9196>] ? vsnprintf+0x1d8/0x421
->  [<ffffffff810b30a1>] ? vma_adjust+0x205/0x435
->  [<ffffffff810df8f5>] ? seq_printf+0x67/0x8f
->  [<ffffffff8160d42b>] ? mutex_lock+0x20/0x44
->  [<ffffffff8160d42b>] ? mutex_lock+0x20/0x44
->  [<ffffffff810a9087>] ? all_vm_events+0x60/0x73
->  [<ffffffff8103b615>] ? put_online_cpus+0x22/0x54
->  [<ffffffff810a9169>] ? vmstat_start+0xcf/0x103
->  [<ffffffff810a89a5>] ? vmstat_show+0x23/0x27
->  [<ffffffff810dfe79>] ? seq_read+0x181/0x364
->  [<ffffffff8110d8eb>] ? proc_reg_read+0x6a/0x84
->  [<ffffffff810c86fc>] ? vfs_read+0xa8/0x12f
->  [<ffffffff810c8ae4>] ? sys_read+0x45/0x6e
->  [<ffffffff8100296b>] ? system_call_fastpath+0x16/0x1b
-> Code: f2 ae 48 f7 d1 48 8d 44 11 ff 40 38 30 74 0a 48 ff c8 48 39 d0 73 f3 31 c0 c3 48 89 f8 eb 03 48 ff c0 48 ff ce 48 83 fe ff 74 05 <80> 38 00 75 ef 48 29 f8 c3 31 c0 eb 12 41 38 c8 74 0a 48 ff c2
-> RIP  [<ffffffff812c6d89>] strnlen+0x11/0x1a
-> 
-> 
+With Jon Corbet acting as returning officer, the five elected to the TAB
+were:
+
+James Bottomley <James.Bottomley@hansenpartnership.com>
+Chris Mason <chris.mason@oracle.com>
+Grant Likely <grant.likely@secretlab.ca>
+John W. Linville <linville@tuxdriver.com>
+Hugh Blemings <hugh@canonical.com>
+
+James Bottomley (TAB Chair)
+
+
