@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932591Ab0KCPgk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 11:36:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21481 "EHLO mx1.redhat.com"
+	id S1755931Ab0KCPfN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 11:35:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61906 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932405Ab0KCPbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 11:31:03 -0400
+	id S932420Ab0KCPbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 11:31:07 -0400
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Subject: [PATCH 49 of 66] mprotect: pass vma down to page table walkers
-X-Mercurial-Node: ced415b95ee585b1ed15b8d25eb17a0363726154
-Message-Id: <ced415b95ee585b1ed15.1288798104@v2.random>
+Subject: [PATCH 62 of 66] disable transparent hugepages by default on small
+	systems
+X-Mercurial-Node: 5791385d8111de4b51437dec92a8688dfdbcbd00
+Message-Id: <5791385d8111de4b5143.1288798117@v2.random>
 In-Reply-To: <patchbomb.1288798055@v2.random>
 References: <patchbomb.1288798055@v2.random>
 User-Agent: Mercurial-patchbomb/1.4.1
-Date: Wed, 03 Nov 2010 16:28:24 +0100
+Date: Wed, 03 Nov 2010 16:28:37 +0100
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -40,65 +41,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Weiner <hannes@cmpxchg.org>
+From: Rik van Riel <riel@redhat.com>
 
-Flushing the tlb for huge pmds requires the vma's anon_vma,
-so pass along the vma instead of the mm, we can always get the latter
-when we need it.
+On small systems, the extra memory used by the anti-fragmentation
+memory reserve and simply because huge pages are smaller than large
+pages can easily outweigh the benefits of less TLB misses.
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+In case of the crashdump kernel, OOMs have been observed due to
+the anti-fragmentation memory reserve taking up a large fraction
+of the crashdump image.
+
+This patch disables transparent hugepages on systems with less
+than 1GB of RAM, but the hugepage subsystem is fully initialized
+so administrators can enable THP through /sys if desired.
+
+v2: reduce the limit to 512MB
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Acked-by: Avi Kiviti <avi@redhat.com>
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
 ---
 
-diff --git a/mm/mprotect.c b/mm/mprotect.c
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -78,7 +78,7 @@ static void change_pte_range(struct mm_s
- 	pte_unmap_unlock(pte - 1, ptl);
- }
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -527,6 +527,14 @@ static int __init hugepage_init(void)
+ 		goto out;
+ 	}
  
--static inline void change_pmd_range(struct mm_struct *mm, pud_t *pud,
-+static inline void change_pmd_range(struct vm_area_struct *vma, pud_t *pud,
- 		unsigned long addr, unsigned long end, pgprot_t newprot,
- 		int dirty_accountable)
- {
-@@ -88,14 +88,15 @@ static inline void change_pmd_range(stru
- 	pmd = pmd_offset(pud, addr);
- 	do {
- 		next = pmd_addr_end(addr, end);
--		split_huge_page_pmd(mm, pmd);
-+		split_huge_page_pmd(vma->vm_mm, pmd);
- 		if (pmd_none_or_clear_bad(pmd))
- 			continue;
--		change_pte_range(mm, pmd, addr, next, newprot, dirty_accountable);
-+		change_pte_range(vma->vm_mm, pmd, addr, next, newprot,
-+				 dirty_accountable);
- 	} while (pmd++, addr = next, addr != end);
- }
++	/*
++	 * By default disable transparent hugepages on smaller systems,
++	 * where the extra memory used could hurt more than TLB overhead
++	 * is likely to save.  The admin can still enable it through /sys.
++	 */
++	if (totalram_pages < (512 << (20 - PAGE_SHIFT)))
++		transparent_hugepage_flags = 0;
++
+ 	start_khugepaged();
  
--static inline void change_pud_range(struct mm_struct *mm, pgd_t *pgd,
-+static inline void change_pud_range(struct vm_area_struct *vma, pgd_t *pgd,
- 		unsigned long addr, unsigned long end, pgprot_t newprot,
- 		int dirty_accountable)
- {
-@@ -107,7 +108,8 @@ static inline void change_pud_range(stru
- 		next = pud_addr_end(addr, end);
- 		if (pud_none_or_clear_bad(pud))
- 			continue;
--		change_pmd_range(mm, pud, addr, next, newprot, dirty_accountable);
-+		change_pmd_range(vma, pud, addr, next, newprot,
-+				 dirty_accountable);
- 	} while (pud++, addr = next, addr != end);
- }
- 
-@@ -127,7 +129,8 @@ static void change_protection(struct vm_
- 		next = pgd_addr_end(addr, end);
- 		if (pgd_none_or_clear_bad(pgd))
- 			continue;
--		change_pud_range(mm, pgd, addr, next, newprot, dirty_accountable);
-+		change_pud_range(vma, pgd, addr, next, newprot,
-+				 dirty_accountable);
- 	} while (pgd++, addr = next, addr != end);
- 	flush_tlb_range(vma, start, end);
- }
+ 	set_recommended_min_free_kbytes();
