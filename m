@@ -1,67 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449Ab0KCQLk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 12:11:40 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:56427 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797Ab0KCQLi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 12:11:38 -0400
-Date: Wed, 3 Nov 2010 12:10:59 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, hch@infradead.org, linux-kernel@vger.kernel.org,
-        petero2@telia.com, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        jack@suse.cz, akpm@linux-foundation.org, adilger.kernel@dilger.ca,
-        tytso@mit.edu, mfasheh@suse.com, joel.becker@oracle.com,
-        aelder@sgi.com, dm-devel@redhat.com, drbd-dev@lists.linbit.com,
-        neilb@suse.de, leochen@broadcom.com, sbranden@broadcom.com,
-        chris.mason@oracle.com, swhiteho@redhat.com, shaggy@linux.vnet.ibm.com,
-        joern@logfs.org, konishi.ryusuke@lab.ntt.co.jp,
-        reiserfs-devel@vger.kernel.org, viro@zeniv.linux.org.uk
-Subject: Re: [PATCH 4/5] block: make blkdev_get/put() handle exclusive access
-Message-ID: <20101103161059.GA13621@infradead.org>
-References: <1288628129-12811-1-git-send-email-tj@kernel.org>
- <1288628129-12811-5-git-send-email-tj@kernel.org>
+	id S1755412Ab0KCQNM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 12:13:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36328 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751797Ab0KCQNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 12:13:11 -0400
+Date: Wed, 3 Nov 2010 09:13:42 -0700
+From: Greg KH <gregkh@suse.de>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com, "[cleanups]"@suse.de,
+        "Dr. Werner Fink" <werner@suse.de>, Al Viro <viro@ZenIV.linux.org.uk>
+Subject: Re: [PATCH 1/1] console: add /proc/consoles
+Message-ID: <20101103161342.GA4942@suse.de>
+References: <1288798509-23550-1-git-send-email-jslaby@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1288628129-12811-5-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <1288798509-23550-1-git-send-email-jslaby@suse.cz>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 01, 2010 at 05:15:28PM +0100, Tejun Heo wrote:
-> * blkdev_get() is extended to include exclusive access management.
->   @holder argument is added and, if is @FMODE_EXCL specified, it will
->   gain exclusive access atomically w.r.t. other exclusive accesses.
+On Wed, Nov 03, 2010 at 04:35:09PM +0100, Jiri Slaby wrote:
+> It allows users to see what consoles are currently known to the system
+> and with what flags.
 > 
-> * blkdev_put() is similarly extended.  It now takes @mode argument and
->   if @FMODE_EXCL is set, it releases an exclusive access.  Also, when
->   the last exclusive claim is released, the holder/slave symlinks are
->   removed automatically.
+> It is based on Werner's patch, the part about traversing fds was
+> removed, the code was moved to kernel/printk.c, where consoles are
+> handled and it makes more sense to me.
 
-Could we get rid of FMODE_EXCL and just make a non-NULL holder field
-mean to open it exlusively (and pass a holder to the blkdev_put to
-release it)?
+Why kernel/printk.c?  I don't think that makes sense, it's just a random
+proc file, so why not put it into something like fs/proc/ instead?
 
-> * bd_link_disk_holder() remains the same but bd_unlink_disk_holder()
->   is no longer necessary and removed.
+Does it rely on any functions in the printk.c file?
 
-That's a rather asymetric interface.  What about having
-blkdev_get_stacked that require a gendisk as holder and set up the
-links underneath?
+thanks,
 
-
-> open_bdev_exclusive() and open_by_devnum() can use further cleanup -
-> rename to blkdev_get_by_path() and blkdev_get_by_devt() and drop
-> special features.  Well, let's leave them for another day.
-
-s/blkdev_get_by_devt/blkdev_get_by_dev/
-
-And yes, that rename is a good idea and should go in ASAP after this
-patch.
-
+greg k-h
