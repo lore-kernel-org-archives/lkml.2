@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932549Ab0KCPgi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 11:36:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55099 "EHLO mx1.redhat.com"
+	id S932600Ab0KCPhq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 11:37:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59813 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932334Ab0KCPbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 11:31:05 -0400
+	id S932389Ab0KCPbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 11:31:00 -0400
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Subject: [PATCH 53 of 66] add numa awareness to hugepage allocations
-X-Mercurial-Node: 223ee926614158fc1353839519650762bad14dcc
-Message-Id: <223ee926614158fc1353.1288798108@v2.random>
+Subject: [PATCH 45 of 66] remove PG_buddy
+X-Mercurial-Node: 85c897773782cdde8b69b39b983aea148b96bf37
+Message-Id: <85c897773782cdde8b69.1288798100@v2.random>
 In-Reply-To: <patchbomb.1288798055@v2.random>
 References: <patchbomb.1288798055@v2.random>
 User-Agent: Mercurial-patchbomb/1.4.1
-Date: Wed, 03 Nov 2010 16:28:28 +0100
+Date: Wed, 03 Nov 2010 16:28:20 +0100
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -42,274 +42,218 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andrea Arcangeli <aarcange@redhat.com>
 
-It's mostly a matter of replacing alloc_pages with alloc_pages_vma after
-introducing alloc_pages_vma. khugepaged needs special handling as the
-allocation has to happen inside collapse_huge_page where the vma is known and
-an error has to be returned to the outer loop to sleep alloc_sleep_millisecs in
-case of failure. But it retains the more efficient logic of handling allocation
-failures in khugepaged in case of CONFIG_NUMA=n.
+PG_buddy can be converted to _mapcount == -2. So the PG_compound_lock can be
+added to page->flags without overflowing (because of the sparse section bits
+increasing) with CONFIG_X86_PAE=y and CONFIG_X86_PAT=y. This also has to move
+the memory hotplug code from _mapcount to lru.next to avoid any risk of
+clashes. We can't use lru.next for PG_buddy removal, but memory hotplug can use
+lru.next even more easily than the mapcount instead.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -330,14 +330,17 @@ alloc_pages(gfp_t gfp_mask, unsigned int
- {
- 	return alloc_pages_current(gfp_mask, order);
- }
--extern struct page *alloc_page_vma(gfp_t gfp_mask,
-+extern struct page *alloc_pages_vma(gfp_t gfp_mask, int order,
- 			struct vm_area_struct *vma, unsigned long addr);
- #else
- #define alloc_pages(gfp_mask, order) \
- 		alloc_pages_node(numa_node_id(), gfp_mask, order)
--#define alloc_page_vma(gfp_mask, vma, addr) alloc_pages(gfp_mask, 0)
-+#define alloc_pages_vma(gfp_mask, order, vma, addr)	\
-+	alloc_pages(gfp_mask, order)
- #endif
- #define alloc_page(gfp_mask) alloc_pages(gfp_mask, 0)
-+#define alloc_page_vma(gfp_mask, vma, addr)	\
-+	alloc_pages_vma(gfp_mask, 0, vma, addr)
+diff --git a/fs/proc/page.c b/fs/proc/page.c
+--- a/fs/proc/page.c
++++ b/fs/proc/page.c
+@@ -116,15 +116,17 @@ u64 stable_page_flags(struct page *page)
+ 	if (PageHuge(page))
+ 		u |= 1 << KPF_HUGE;
  
- extern unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order);
- extern unsigned long get_zeroed_page(gfp_t gfp_mask);
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -620,11 +620,26 @@ static int __do_huge_pmd_anonymous_page(
- 	return ret;
- }
- 
-+static inline gfp_t alloc_hugepage_gfpmask(int defrag)
-+{
-+	return GFP_TRANSHUGE & ~(defrag ? 0 : __GFP_WAIT);
-+}
++	/*
++	 * Caveats on high order pages: page->_count will only be set
++	 * -1 on the head page; SLUB/SLQB do the same for PG_slab;
++	 * SLOB won't set PG_slab at all on compound pages.
++	 */
++	if (PageBuddy(page))
++		u |= 1 << KPF_BUDDY;
 +
-+static inline struct page *alloc_hugepage_vma(int defrag,
-+					      struct vm_area_struct *vma,
-+					      unsigned long haddr)
-+{
-+	return alloc_pages_vma(alloc_hugepage_gfpmask(defrag),
-+			       HPAGE_PMD_ORDER, vma, haddr);
-+}
-+
-+#ifndef CONFIG_NUMA
- static inline struct page *alloc_hugepage(int defrag)
- {
--	return alloc_pages(GFP_TRANSHUGE & ~(defrag ? 0 : __GFP_WAIT),
-+	return alloc_pages(alloc_hugepage_gfpmask(defrag),
- 			   HPAGE_PMD_ORDER);
- }
-+#endif
+ 	u |= kpf_copy_bit(k, KPF_LOCKED,	PG_locked);
  
- int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 			       unsigned long address, pmd_t *pmd,
-@@ -639,7 +654,8 @@ int do_huge_pmd_anonymous_page(struct mm
- 			return VM_FAULT_OOM;
- 		if (unlikely(khugepaged_enter(vma)))
- 			return VM_FAULT_OOM;
--		page = alloc_hugepage(transparent_hugepage_defrag(vma));
-+		page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
-+					  vma, haddr);
- 		if (unlikely(!page))
- 			goto out;
- 		if (unlikely(mem_cgroup_newpage_charge(page, mm, GFP_KERNEL))) {
-@@ -858,7 +874,8 @@ int do_huge_pmd_wp_page(struct mm_struct
+-	/*
+-	 * Caveats on high order pages:
+-	 * PG_buddy will only be set on the head page; SLUB/SLQB do the same
+-	 * for PG_slab; SLOB won't set PG_slab at all on compound pages.
+-	 */
+ 	u |= kpf_copy_bit(k, KPF_SLAB,		PG_slab);
+-	u |= kpf_copy_bit(k, KPF_BUDDY,		PG_buddy);
  
- 	if (transparent_hugepage_enabled(vma) &&
- 	    !transparent_hugepage_debug_cow())
--		new_page = alloc_hugepage(transparent_hugepage_defrag(vma));
-+		new_page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
-+					      vma, haddr);
- 	else
- 		new_page = NULL;
+ 	u |= kpf_copy_bit(k, KPF_ERROR,		PG_error);
+ 	u |= kpf_copy_bit(k, KPF_DIRTY,		PG_dirty);
+diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+--- a/include/linux/memory_hotplug.h
++++ b/include/linux/memory_hotplug.h
+@@ -13,12 +13,16 @@ struct mem_section;
+ #ifdef CONFIG_MEMORY_HOTPLUG
  
-@@ -1655,7 +1672,11 @@ static void collapse_huge_page(struct mm
- 	unsigned long hstart, hend;
- 
- 	VM_BUG_ON(address & ~HPAGE_PMD_MASK);
-+#ifndef CONFIG_NUMA
- 	VM_BUG_ON(!*hpage);
-+#else
-+	VM_BUG_ON(*hpage);
-+#endif
- 
- 	/*
- 	 * Prevent all access to pagetables with the exception of
-@@ -1693,7 +1714,15 @@ static void collapse_huge_page(struct mm
- 	if (!pmd_present(*pmd) || pmd_trans_huge(*pmd))
- 		goto out;
- 
-+#ifndef CONFIG_NUMA
- 	new_page = *hpage;
-+#else
-+	new_page = alloc_hugepage_vma(khugepaged_defrag(), vma, address);
-+	if (unlikely(!new_page)) {
-+		*hpage = ERR_PTR(-ENOMEM);
-+		goto out;
-+	}
-+#endif
- 	if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL)))
- 		goto out;
- 
-@@ -1724,6 +1753,9 @@ static void collapse_huge_page(struct mm
- 		spin_unlock(&mm->page_table_lock);
- 		anon_vma_unlock(vma->anon_vma);
- 		mem_cgroup_uncharge_page(new_page);
-+#ifdef CONFIG_NUMA
-+		put_page(new_page);
-+#endif
- 		goto out;
- 	}
- 
-@@ -1759,7 +1791,9 @@ static void collapse_huge_page(struct mm
- 	mm->nr_ptes--;
- 	spin_unlock(&mm->page_table_lock);
- 
-+#ifndef CONFIG_NUMA
- 	*hpage = NULL;
-+#endif
- 	khugepaged_pages_collapsed++;
- out:
- 	up_write(&mm->mmap_sem);
-@@ -1995,11 +2029,16 @@ static void khugepaged_do_scan(struct pa
- 	while (progress < pages) {
- 		cond_resched();
- 
-+#ifndef CONFIG_NUMA
- 		if (!*hpage) {
- 			*hpage = alloc_hugepage(khugepaged_defrag());
- 			if (unlikely(!*hpage))
- 				break;
- 		}
-+#else
-+		if (IS_ERR(*hpage))
-+			break;
-+#endif
- 
- 		spin_lock(&khugepaged_mm_lock);
- 		if (!khugepaged_scan.mm_slot)
-@@ -2014,37 +2053,55 @@ static void khugepaged_do_scan(struct pa
- 	}
- }
- 
-+static void khugepaged_alloc_sleep(void)
-+{
-+	DEFINE_WAIT(wait);
-+	add_wait_queue(&khugepaged_wait, &wait);
-+	schedule_timeout_interruptible(
-+		msecs_to_jiffies(
-+			khugepaged_alloc_sleep_millisecs));
-+	remove_wait_queue(&khugepaged_wait, &wait);
-+}
-+
-+#ifndef CONFIG_NUMA
- static struct page *khugepaged_alloc_hugepage(void)
- {
- 	struct page *hpage;
- 
- 	do {
- 		hpage = alloc_hugepage(khugepaged_defrag());
--		if (!hpage) {
--			DEFINE_WAIT(wait);
--			add_wait_queue(&khugepaged_wait, &wait);
--			schedule_timeout_interruptible(
--				msecs_to_jiffies(
--					khugepaged_alloc_sleep_millisecs));
--			remove_wait_queue(&khugepaged_wait, &wait);
--		}
-+		if (!hpage)
-+			khugepaged_alloc_sleep();
- 	} while (unlikely(!hpage) &&
- 		 likely(khugepaged_enabled()));
- 	return hpage;
- }
-+#endif
- 
- static void khugepaged_loop(void)
- {
- 	struct page *hpage;
- 
-+#ifdef CONFIG_NUMA
-+	hpage = NULL;
-+#endif
- 	while (likely(khugepaged_enabled())) {
-+#ifndef CONFIG_NUMA
- 		hpage = khugepaged_alloc_hugepage();
- 		if (unlikely(!hpage))
- 			break;
-+#else
-+		if (IS_ERR(hpage)) {
-+			khugepaged_alloc_sleep();
-+			hpage = NULL;
-+		}
-+#endif
- 
- 		khugepaged_do_scan(&hpage);
-+#ifndef CONFIG_NUMA
- 		if (hpage)
- 			put_page(hpage);
-+#endif
- 		if (khugepaged_has_work()) {
- 			DEFINE_WAIT(wait);
- 			if (!khugepaged_scan_sleep_millisecs)
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1794,7 +1794,7 @@ static struct page *alloc_page_interleav
- }
- 
- /**
-- * 	alloc_page_vma	- Allocate a page for a VMA.
-+ * 	alloc_pages_vma	- Allocate a page for a VMA.
-  *
-  * 	@gfp:
-  *      %GFP_USER    user allocation.
-@@ -1803,6 +1803,7 @@ static struct page *alloc_page_interleav
-  *      %GFP_FS      allocation should not call back into a file system.
-  *      %GFP_ATOMIC  don't sleep.
-  *
-+ *	@order:Order of the GFP allocation.
-  * 	@vma:  Pointer to VMA or NULL if not available.
-  *	@addr: Virtual Address of the allocation. Must be inside the VMA.
-  *
-@@ -1816,7 +1817,8 @@ static struct page *alloc_page_interleav
-  *	Should be called with the mm_sem of the vma hold.
+ /*
+- * Types for free bootmem.
+- * The normal smallest mapcount is -1. Here is smaller value than it.
++ * Types for free bootmem stored in page->lru.next. These have to be in
++ * some random range in unsigned long space for debugging purposes.
   */
- struct page *
--alloc_page_vma(gfp_t gfp, struct vm_area_struct *vma, unsigned long addr)
-+alloc_pages_vma(gfp_t gfp, int order, struct vm_area_struct *vma,
-+		unsigned long addr)
- {
- 	struct mempolicy *pol = get_vma_policy(current, vma, addr);
- 	struct zonelist *zl;
-@@ -1828,7 +1830,7 @@ alloc_page_vma(gfp_t gfp, struct vm_area
+-#define SECTION_INFO		(-1 - 1)
+-#define MIX_SECTION_INFO	(-1 - 2)
+-#define NODE_INFO		(-1 - 3)
++enum {
++	MEMORY_HOTPLUG_MIN_BOOTMEM_TYPE = 12,
++	SECTION_INFO = MEMORY_HOTPLUG_MIN_BOOTMEM_TYPE,
++	MIX_SECTION_INFO,
++	NODE_INFO,
++	MEMORY_HOTPLUG_MAX_BOOTMEM_TYPE = NODE_INFO,
++};
  
- 		nid = interleave_nid(pol, vma, addr, PAGE_SHIFT);
- 		mpol_cond_put(pol);
--		page = alloc_page_interleave(gfp, 0, nid);
-+		page = alloc_page_interleave(gfp, order, nid);
- 		put_mems_allowed();
- 		return page;
- 	}
-@@ -1837,7 +1839,7 @@ alloc_page_vma(gfp_t gfp, struct vm_area
- 		/*
- 		 * slow path: ref counted shared policy
- 		 */
--		struct page *page =  __alloc_pages_nodemask(gfp, 0,
-+		struct page *page =  __alloc_pages_nodemask(gfp, order,
- 						zl, policy_nodemask(gfp, pol));
- 		__mpol_put(pol);
- 		put_mems_allowed();
-@@ -1846,7 +1848,8 @@ alloc_page_vma(gfp_t gfp, struct vm_area
- 	/*
- 	 * fast path:  default or task policy
- 	 */
--	page = __alloc_pages_nodemask(gfp, 0, zl, policy_nodemask(gfp, pol));
-+	page = __alloc_pages_nodemask(gfp, order, zl,
-+				      policy_nodemask(gfp, pol));
- 	put_mems_allowed();
- 	return page;
+ /*
+  * pgdat resizing functions
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -383,6 +383,27 @@ static inline void init_page_count(struc
+ 	atomic_set(&page->_count, 1);
  }
+ 
++/*
++ * PageBuddy() indicate that the page is free and in the buddy system
++ * (see mm/page_alloc.c).
++ */
++static inline int PageBuddy(struct page *page)
++{
++	return atomic_read(&page->_mapcount) == -2;
++}
++
++static inline void __SetPageBuddy(struct page *page)
++{
++	VM_BUG_ON(atomic_read(&page->_mapcount) != -1);
++	atomic_set(&page->_mapcount, -2);
++}
++
++static inline void __ClearPageBuddy(struct page *page)
++{
++	VM_BUG_ON(!PageBuddy(page));
++	atomic_set(&page->_mapcount, -1);
++}
++
+ void put_page(struct page *page);
+ void put_pages_list(struct list_head *pages);
+ 
+diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
+--- a/include/linux/page-flags.h
++++ b/include/linux/page-flags.h
+@@ -48,9 +48,6 @@
+  * struct page (these bits with information) are always mapped into kernel
+  * address space...
+  *
+- * PG_buddy is set to indicate that the page is free and in the buddy system
+- * (see mm/page_alloc.c).
+- *
+  * PG_hwpoison indicates that a page got corrupted in hardware and contains
+  * data with incorrect ECC bits that triggered a machine check. Accessing is
+  * not safe since it may cause another machine check. Don't touch!
+@@ -96,7 +93,6 @@ enum pageflags {
+ 	PG_swapcache,		/* Swap page: swp_entry_t in private */
+ 	PG_mappedtodisk,	/* Has blocks allocated on-disk */
+ 	PG_reclaim,		/* To be reclaimed asap */
+-	PG_buddy,		/* Page is free, on buddy lists */
+ 	PG_swapbacked,		/* Page is backed by RAM/swap */
+ 	PG_unevictable,		/* Page is "unevictable"  */
+ #ifdef CONFIG_MMU
+@@ -233,7 +229,6 @@ PAGEFLAG(OwnerPriv1, owner_priv_1) TESTC
+  * risky: they bypass page accounting.
+  */
+ TESTPAGEFLAG(Writeback, writeback) TESTSCFLAG(Writeback, writeback)
+-__PAGEFLAG(Buddy, buddy)
+ PAGEFLAG(MappedToDisk, mappedtodisk)
+ 
+ /* PG_readahead is only used for file reads; PG_reclaim is only for writes */
+@@ -428,7 +423,7 @@ static inline void ClearPageCompound(str
+ #define PAGE_FLAGS_CHECK_AT_FREE \
+ 	(1 << PG_lru	 | 1 << PG_locked    | \
+ 	 1 << PG_private | 1 << PG_private_2 | \
+-	 1 << PG_buddy	 | 1 << PG_writeback | 1 << PG_reserved | \
++	 1 << PG_writeback | 1 << PG_reserved | \
+ 	 1 << PG_slab	 | 1 << PG_swapcache | 1 << PG_active | \
+ 	 1 << PG_unevictable | __PG_MLOCKED | __PG_HWPOISON | \
+ 	 __PG_COMPOUND_LOCK)
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -65,9 +65,10 @@ static void release_memory_resource(stru
+ 
+ #ifdef CONFIG_MEMORY_HOTPLUG_SPARSE
+ #ifndef CONFIG_SPARSEMEM_VMEMMAP
+-static void get_page_bootmem(unsigned long info,  struct page *page, int type)
++static void get_page_bootmem(unsigned long info,  struct page *page,
++			     unsigned long type)
+ {
+-	atomic_set(&page->_mapcount, type);
++	page->lru.next = (struct list_head *) type;
+ 	SetPagePrivate(page);
+ 	set_page_private(page, info);
+ 	atomic_inc(&page->_count);
+@@ -77,15 +78,16 @@ static void get_page_bootmem(unsigned lo
+  * so use __ref to tell modpost not to generate a warning */
+ void __ref put_page_bootmem(struct page *page)
+ {
+-	int type;
++	unsigned long type;
+ 
+-	type = atomic_read(&page->_mapcount);
+-	BUG_ON(type >= -1);
++	type = (unsigned long) page->lru.next;
++	BUG_ON(type < MEMORY_HOTPLUG_MIN_BOOTMEM_TYPE ||
++	       type > MEMORY_HOTPLUG_MAX_BOOTMEM_TYPE);
+ 
+ 	if (atomic_dec_return(&page->_count) == 1) {
+ 		ClearPagePrivate(page);
+ 		set_page_private(page, 0);
+-		reset_page_mapcount(page);
++		INIT_LIST_HEAD(&page->lru);
+ 		__free_pages_bootmem(page, 0);
+ 	}
+ 
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -444,8 +444,8 @@ __find_combined_index(unsigned long page
+  * (c) a page and its buddy have the same order &&
+  * (d) a page and its buddy are in the same zone.
+  *
+- * For recording whether a page is in the buddy system, we use PG_buddy.
+- * Setting, clearing, and testing PG_buddy is serialized by zone->lock.
++ * For recording whether a page is in the buddy system, we set ->_mapcount -2.
++ * Setting, clearing, and testing _mapcount -2 is serialized by zone->lock.
+  *
+  * For recording page's order, we use page_private(page).
+  */
+@@ -478,7 +478,7 @@ static inline int page_is_buddy(struct p
+  * as necessary, plus some accounting needed to play nicely with other
+  * parts of the VM system.
+  * At each level, we keep a list of pages, which are heads of continuous
+- * free pages of length of (1 << order) and marked with PG_buddy. Page's
++ * free pages of length of (1 << order) and marked with _mapcount -2. Page's
+  * order is recorded in page_private(page) field.
+  * So when we are allocating or freeing one, we can derive the state of the
+  * other.  That is, if we allocate a small block, and both were   
+@@ -5520,7 +5520,6 @@ static struct trace_print_flags pageflag
+ 	{1UL << PG_swapcache,		"swapcache"	},
+ 	{1UL << PG_mappedtodisk,	"mappedtodisk"	},
+ 	{1UL << PG_reclaim,		"reclaim"	},
+-	{1UL << PG_buddy,		"buddy"		},
+ 	{1UL << PG_swapbacked,		"swapbacked"	},
+ 	{1UL << PG_unevictable,		"unevictable"	},
+ #ifdef CONFIG_MMU
+diff --git a/mm/sparse.c b/mm/sparse.c
+--- a/mm/sparse.c
++++ b/mm/sparse.c
+@@ -671,10 +671,10 @@ static void __kfree_section_memmap(struc
+ static void free_map_bootmem(struct page *page, unsigned long nr_pages)
+ {
+ 	unsigned long maps_section_nr, removing_section_nr, i;
+-	int magic;
++	unsigned long magic;
+ 
+ 	for (i = 0; i < nr_pages; i++, page++) {
+-		magic = atomic_read(&page->_mapcount);
++		magic = (unsigned long) page->lru.next;
+ 
+ 		BUG_ON(magic == NODE_INFO);
+ 
