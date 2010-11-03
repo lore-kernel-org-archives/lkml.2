@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754986Ab0KCLAA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 07:00:00 -0400
-Received: from hera.kernel.org ([140.211.167.34]:54033 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754439Ab0KCK76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 06:59:58 -0400
-Message-ID: <4CD14089.7050709@kernel.org>
-Date: Wed, 03 Nov 2010 11:59:21 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: lkml <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH v2.6.36-rc7] init: don't call flush_scheduled_work() from
- do_initcalls()
-References: <4CB86F94.7080702@kernel.org>	<20101021171203.37d0d6d6.akpm@linux-foundation.org>	<4CC14ADA.9080706@kernel.org> <20101022110925.ea1263f8.akpm@linux-foundation.org>
-In-Reply-To: <20101022110925.ea1263f8.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 03 Nov 2010 10:59:23 +0000 (UTC)
+	id S1755021Ab0KCLDc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 07:03:32 -0400
+Received: from outbound.icp-qv1-irony-out3.iinet.net.au ([203.59.1.148]:23347
+	"EHLO outbound.icp-qv1-irony-out3.iinet.net.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753209Ab0KCLD3 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 07:03:29 -0400
+X-Greylist: delayed 555 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Nov 2010 07:03:29 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApEBAK7b0EzL2THB/2dsb2JhbAAH336FRgSNdg
+X-IronPort-AV: E=Sophos;i="4.58,288,1286121600"; 
+   d="scan'208";a="652437627"
+Subject: Re: [W1] a driver for DS2405 chip
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=us-ascii
+From: Ben Nizette <bn@niasdigital.com>
+In-Reply-To: <4CD06C22.20204@o2.pl>
+Date: Wed, 3 Nov 2010 21:54:12 +1100
+Cc: Jonathan Cameron <jic23@cam.ac.uk>, johnpol@2ka.mipt.ru,
+        linux-kernel@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <6B41915B-1667-4CA1-A73A-45B043ED8C11@niasdigital.com>
+References: <4CC9E2A5.2010400@o2.pl> <4CCEB42F.8000102@cam.ac.uk> <4CD06C22.20204@o2.pl>
+To: Maciej Szmigiero <mhej@o2.pl>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Andrew.
 
-On 10/22/2010 08:09 PM, Andrew Morton wrote:
-> mm..  I think we'd be OK to merge it.  Any such code is pretty badly
-> buggy and is probably also crashable with a well-timed rmmod.
+On 03/11/2010, at 6:53 AM, Maciej Szmigiero wrote:
+
+> W dniu 01.11.2010 13:35, Jonathan Cameron pisze:
+>> On 10/28/10 21:52, Maciej Szmigiero wrote:
+>>> [W1] a driver for DS2405 chip
+>>> 
+>>> This is a driver for DS2405 1-wire single-channel addressable switch / PIO.
+>>> DS2405 can also work as single-channel binary remote sensor.
+>> Perhaps handle this as a gpio chip? (be it a fairly limited one)
+>> To my mind it would make it more generally useful...
 > 
-> It'll also be code which few people ever use, so any runtime checks
-> won't get us very good coverage.
+> I think the GPIO infrastructure is meant for on-system GPIOs, where 1-wire devices are mostly 
+> used for remote data acquisition.
+
+Nope!  The contents of drivers/gpio is split roughly 50/50 between on- and off-chip gpio expanders. 
+
+> That's probably why w1_therm (for 1-wire thermometers) is not integrated with HWMON subsystem.
+
+Don't know why this is but kinda sounds like it should be looked at more closely - conceptually 1-W is just another bus like, eg, SPI.
+
+	--Ben.
+
 > 
-> Still, if it's not too hard to implement an "are there any scheduled
-> works which live in initmem" check then I guess that would be the
-> prudent approach.  A quite gross way of implementing that might be
-> something like
+> Maciej Szmigiero
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-I've been trying to implement proper check code but there is a
-problem.  It's possible to check all pending works to see whether the
-work struct itself or the work function is in initmem and warn about
-them.
-
-The problem is with currently running works.  As work_struct isn't
-accessible once it starts executing, struct worker would need to cache
-it for later reference.  Worker already remembers the work_struct
-pointer itself and its cwq and adding one more field to remember the
-currently running work function is easy.  However, it's only useful
-during the unlikely buggy case during init.  Given that if anything is
-still depending on initmem, it will blow up pretty reliably, I don't
-think it's worthwhile to add additional tracking just for this.  So, I
-think I'll just go ahead and drop the flush call and deal with the
-unlikely fallouts if there's any.
-
-Thank you.
-
--- 
-tejun
