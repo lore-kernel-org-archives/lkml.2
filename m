@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932460Ab0KCPic (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 11:38:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59722 "EHLO mx1.redhat.com"
+	id S932627Ab0KCPiz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 11:38:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42358 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932371Ab0KCPa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 11:30:57 -0400
+	id S932350Ab0KCPax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 11:30:53 -0400
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Subject: [PATCH 31 of 66] split_huge_page anon_vma ordering dependency
-X-Mercurial-Node: 804df7cc44c4e27bdad30d2ad44bb50db912dfbc
-Message-Id: <804df7cc44c4e27bdad3.1288798086@v2.random>
+Subject: [PATCH 37 of 66] transhuge-memcg: commit tail pages at charge
+X-Mercurial-Node: 023022a4bc18d09da263221ed1cad26eafd211b6
+Message-Id: <023022a4bc18d09da263.1288798092@v2.random>
 In-Reply-To: <patchbomb.1288798055@v2.random>
 References: <patchbomb.1288798055@v2.random>
 User-Agent: Mercurial-patchbomb/1.4.1
-Date: Wed, 03 Nov 2010 16:28:06 +0100
+Date: Wed, 03 Nov 2010 16:28:12 +0100
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -40,59 +40,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 
-This documents how split_huge_page is safe vs new vma inserctions into
-the anon_vma that may have already released the anon_vma->lock but not
-established pmds yet when split_huge_page starts.
+By this patch, when a transparent hugepage is charged, not only the head page but
+also all the tail pages are committed, IOW pc->mem_cgroup and pc->flags of tail
+pages are set.
 
+Without this patch:
+
+- Tail pages are not linked to any memcg's LRU at splitting. This causes many
+  problems, for example, the charged memcg's directory can never be rmdir'ed
+  because it doesn't have enough pages to scan to make the usage decrease to 0.
+- "rss" field in memory.stat would be incorrect. Moreover, usage_in_bytes in
+  root cgroup is calculated by the stat not by res_counter(since 2.6.32),
+  it would be incorrect too.
+
+Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -840,6 +840,19 @@ static void __split_huge_page(struct pag
- 			continue;
- 		mapcount += __split_huge_page_splitting(page, vma, addr);
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2087,23 +2087,10 @@ struct mem_cgroup *try_get_mem_cgroup_fr
+  * commit a charge got by __mem_cgroup_try_charge() and makes page_cgroup to be
+  * USED state. If already USED, uncharge and return.
+  */
+-
+-static void __mem_cgroup_commit_charge(struct mem_cgroup *mem,
+-				       struct page_cgroup *pc,
+-				       enum charge_type ctype,
+-				       int page_size)
++static void ____mem_cgroup_commit_charge(struct mem_cgroup *mem,
++					 struct page_cgroup *pc,
++					 enum charge_type ctype)
+ {
+-	/* try_charge() can return NULL to *memcg, taking care of it. */
+-	if (!mem)
+-		return;
+-
+-	lock_page_cgroup(pc);
+-	if (unlikely(PageCgroupUsed(pc))) {
+-		unlock_page_cgroup(pc);
+-		mem_cgroup_cancel_charge(mem, page_size);
+-		return;
+-	}
+-
+ 	pc->mem_cgroup = mem;
+ 	/*
+ 	 * We access a page_cgroup asynchronously without lock_page_cgroup().
+@@ -2128,6 +2115,33 @@ static void __mem_cgroup_commit_charge(s
  	}
-+	/*
-+	 * It is critical that new vmas are added to the tail of the
-+	 * anon_vma list. This guarantes that if copy_huge_pmd() runs
-+	 * and establishes a child pmd before
-+	 * __split_huge_page_splitting() freezes the parent pmd (so if
-+	 * we fail to prevent copy_huge_pmd() from running until the
-+	 * whole __split_huge_page() is complete), we will still see
-+	 * the newly established pmd of the child later during the
-+	 * walk, to be able to set it as pmd_trans_splitting too.
-+	 */
-+	if (mapcount != page_mapcount(page))
-+		printk(KERN_ERR "mapcount %d page_mapcount %d\n",
-+		       mapcount, page_mapcount(page));
- 	BUG_ON(mapcount != page_mapcount(page));
  
- 	__split_huge_page_refcount(page);
-@@ -852,6 +865,9 @@ static void __split_huge_page(struct pag
- 			continue;
- 		mapcount2 += __split_huge_page_map(page, vma, addr);
+ 	mem_cgroup_charge_statistics(mem, pc, true);
++}
++
++static void __mem_cgroup_commit_charge(struct mem_cgroup *mem,
++				       struct page_cgroup *pc,
++				       enum charge_type ctype,
++				       int page_size)
++{
++	int i;
++	int count = page_size >> PAGE_SHIFT;
++
++	/* try_charge() can return NULL to *memcg, taking care of it. */
++	if (!mem)
++		return;
++
++	lock_page_cgroup(pc);
++	if (unlikely(PageCgroupUsed(pc))) {
++		unlock_page_cgroup(pc);
++		mem_cgroup_cancel_charge(mem, page_size);
++		return;
++	}
++
++	/*
++	 * we don't need page_cgroup_lock about tail pages, becase they are not
++	 * accessed by any other context at this point.
++	 */
++	for (i = 0; i < count; i++)
++		____mem_cgroup_commit_charge(mem, pc + i, ctype);
+ 
+ 	unlock_page_cgroup(pc);
+ 	/*
+@@ -2522,6 +2536,8 @@ direct_uncharge:
+ static struct mem_cgroup *
+ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype)
+ {
++	int i;
++	int count;
+ 	struct page_cgroup *pc;
+ 	struct mem_cgroup *mem = NULL;
+ 	int page_size = PAGE_SIZE;
+@@ -2535,6 +2551,7 @@ __mem_cgroup_uncharge_common(struct page
+ 	if (PageTransHuge(page))
+ 		page_size <<= compound_order(page);
+ 
++	count = page_size >> PAGE_SHIFT;
+ 	/*
+ 	 * Check if our page_cgroup is valid
+ 	 */
+@@ -2567,7 +2584,8 @@ __mem_cgroup_uncharge_common(struct page
+ 		break;
  	}
-+	if (mapcount != mapcount2)
-+		printk(KERN_ERR "mapcount %d mapcount2 %d page_mapcount %d\n",
-+		       mapcount, mapcount2, page_mapcount(page));
- 	BUG_ON(mapcount != mapcount2);
- }
  
-diff --git a/mm/rmap.c b/mm/rmap.c
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -177,6 +177,10 @@ static void anon_vma_chain_link(struct v
- 	list_add(&avc->same_vma, &vma->anon_vma_chain);
+-	mem_cgroup_charge_statistics(mem, pc, false);
++	for (i = 0; i < count; i++)
++		mem_cgroup_charge_statistics(mem, pc + i, false);
  
- 	anon_vma_lock(anon_vma);
-+	/*
-+	 * It's critical to add new vmas to the tail of the anon_vma,
-+	 * see comment in huge_memory.c:__split_huge_page().
-+	 */
- 	list_add_tail(&avc->same_anon_vma, &anon_vma->head);
- 	anon_vma_unlock(anon_vma);
- }
+ 	ClearPageCgroupUsed(pc);
+ 	/*
