@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932220Ab0KCRua (ORCPT <rfc822;w@1wt.eu>);
+	id S1756191Ab0KCRue (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 13:50:34 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:57743 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932222Ab0KCRua (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Nov 2010 13:50:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38777 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753661Ab0KCRu2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 13:50:28 -0400
-Date: Wed, 3 Nov 2010 13:50:26 -0400 (EDT)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Ross Kirk <Ross.Kirk@nexor.com>
-Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org, eparis@redhat.com
-Subject: Re: [PATCH] audit: error message typo correction
-In-Reply-To: <DF69A264612A3D4B961979B6957E8CFB040F06D4@NEXCHANGE.nexor.co.uk>
-Message-ID: <alpine.LNX.2.00.1011031350040.15851@pobox.suse.cz>
-References: <DF69A264612A3D4B961979B6957E8CFB040F06D4@NEXCHANGE.nexor.co.uk>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=E9cpMf+WqyRxJ/w3SDL3QoayG8IPHJP4ZHKck0E2JYEo4vVcGv8XByxCOh6rAtuLwd
+         pYiaecKFpUWrLRpyvaE6/IawPWHQr4NijCVa29HkgFEcifrfJnflskbrlJh/uwSoUkjY
+         EAqwh81l5JD3Ex7UAKIes+SpPKKFee7du5Iyc=
+Subject: Re: [PATCH] drivers/net/tile/: on-chip network drivers for the
+ tile architecture
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Stephen Hemminger <shemminger@vyatta.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+In-Reply-To: <4CD19DCF.1040709@tilera.com>
+References: <201011012107.oA1L7TGd031588@farm-0027.internal.tilera.com>
+	 <20101103125959.3231daa1@s6510>  <4CD19DCF.1040709@tilera.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 03 Nov 2010 18:50:22 +0100
+Message-ID: <1288806622.2511.187.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Oct 2010, Ross Kirk wrote:
-
+Le mercredi 03 novembre 2010 à 13:37 -0400, Chris Metcalf a écrit :
+> Stephen, thanks for your feedback!
 > 
-> Fixes a typo in the error message raised by audit when auditd has died
+> On 11/3/2010 12:59 PM, Stephen Hemminger wrote:
+> > 1. MUST not use volatile, see volatile-considered-harmful.txt
 > 
-> Signed-off-by: Ross Kirk <ross.kirk@nexor.com>
+> The "harmful" use of volatile is in trying to fake out SMP.  Believe me,
+> with a 64-core architecture, we know our SMP guidelines. :-)  Our use here
+> is simply to force the compiler to issue a load, for the side-effect of
+> populating the TLB, for example.
 > 
-> --
-> 
-> diff -up a/kernel/audit.c b/kernel/audit.c 
-> --- a/kernel/audit.c    2010-10-22 16:25:40.000000000 +0100
-> +++ b/kernel/audit.c    2010-10-22 16:25:46.000000000 +0100
-> @@ -400,7 +400,7 @@ static void kauditd_send_skb(struct sk_b
->         if (err < 0) {
->                 BUG_ON(err != -ECONNREFUSED); /* Shouldn't happen */
->                 printk(KERN_ERR "audit: *NO* daemon at audit_pid=%d\n", audit_pid);
-> -               audit_log_lost("auditd dissapeared\n");
-> +               audit_log_lost("auditd disappeared\n");
->                 audit_pid = 0;
->                 /* we might get lucky and get this in the next auditd */
->                 audit_hold_skb(skb);
+> However, your response does suggest that simply the syntactic use of
+> "volatile" will cause a red flag for readers.  I'll move this to an inline
+> function in a header with a comment explaining what it's for, and use the
+> function instead.
 
-Asi this is not in linux-next as of today, I have put it into trivial 
-queue.
+Please read Documentation/volatile-considered-harmful.txt
 
-Thanks,
+Then if there is a problem, we can make change to the documentation, but
+volatile use in new code is _strictly_ forbidden.
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+ACCESS_ONCE() is your friend, we might document it in
+Documentation/volatile-considered-harmful.txt
+
+
+
