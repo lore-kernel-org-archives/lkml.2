@@ -1,153 +1,442 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754923Ab0KCKMz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 06:12:55 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:53569 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754574Ab0KCKMw (ORCPT
+	id S1754351Ab0KCKSA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 06:18:00 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:64555 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753209Ab0KCKR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 06:12:52 -0400
-X-Sasl-enc: 6OjavMa9vRv2ofnhcpPq+XBEQ+wAb0Gw9BqthPIBrtl2 1288779171
-To: tyhicks@linux.vnet.ibm.com
-Subject: [PATCH 4/5] ecryptfs: fixed testing of file descriptor flags
-From: Roberto Sassu <roberto.sassu@polito.it>
-Organization: Politecnico di Torino
-Date: Wed, 3 Nov 2010 11:11:34 +0100
-MIME-Version: 1.0
-Cc: kirkland@canonical.com, jmorris@namei.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Content-Type: multipart/signed;
-  boundary="nextPart3483669.dl6LrRtznF";
-  protocol="application/pkcs7-signature";
-  micalg=sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011031111.35066.roberto.sassu@polito.it>
+	Wed, 3 Nov 2010 06:17:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=MGMHsshJMS6MpylQfcQ0/3mwnKChaVZ/UltBd/QgEEwBoCooP0vB3JA4POcav03Y+V
+         taSBegouGZk7hqC33U9Gl6zdlL4/pod4ELqy5I0NhsIQ5GDDZP2WgOmwwJZB1Jjj3/Yk
+         hYPMRL2yvLmexa/7/EzyvunGQa8t2RK3WH8AE=
+From: Marek Belisko <marek.belisko@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>,
+        Marek Belisko <marek.belisko@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Marek Belisko <marek.belisko@gmail.com>
+Subject: [PATCH 1/9] staging: ft1000: Get rid of PUCHAR typedef.
+Date: Wed,  3 Nov 2010 11:19:47 +0100
+Message-Id: <1288779595-15793-1-git-send-email-marek.belisko@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart3483669.dl6LrRtznF
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+PUCHAR typedef was replaces by u8 *.
 
-This patch replaces the check (lower_file->f_flags & O_RDONLY) with
-((lower_file & O_ACCMODE) =3D=3D O_RDONLY).
+Signed-off-by: Marek Belisko <marek.belisko@gmail.com>
+---
+ drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c   |    4 +-
+ .../staging/ft1000/ft1000-usb/ft1000_download.c    |   44 ++++++++++----------
+ drivers/staging/ft1000/ft1000-usb/ft1000_hw.c      |   40 +++++++++---------
+ drivers/staging/ft1000/ft1000-usb/ft1000_proc.c    |    6 +-
+ drivers/staging/ft1000/ft1000-usb/ft1000_usb.h     |   11 ++---
+ 5 files changed, 52 insertions(+), 53 deletions(-)
 
-Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
-=2D--
- fs/ecryptfs/file.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
+index 87a6487..cadfb62 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
+@@ -623,10 +623,10 @@ static long ft1000_ChIoctl (struct file *File, unsigned int Command,
+         memcpy(get_stat_data.eui64, info->eui64, EUISZ);
+ 
+             if (info->ProgConStat != 0xFF) {
+-                ft1000_read_dpram16(ft1000dev, FT1000_MAG_DSP_LED, (PUCHAR)&ledStat, FT1000_MAG_DSP_LED_INDX);
++                ft1000_read_dpram16(ft1000dev, FT1000_MAG_DSP_LED, (u8 *)&ledStat, FT1000_MAG_DSP_LED_INDX);
+                 get_stat_data.LedStat = ntohs(ledStat);
+                 DEBUG("FT1000:ft1000_ChIoctl: LedStat = 0x%x\n", get_stat_data.LedStat);
+-                ft1000_read_dpram16(ft1000dev, FT1000_MAG_DSP_CON_STATE, (PUCHAR)&conStat, FT1000_MAG_DSP_CON_STATE_INDX);
++                ft1000_read_dpram16(ft1000dev, FT1000_MAG_DSP_CON_STATE, (u8 *)&conStat, FT1000_MAG_DSP_CON_STATE_INDX);
+                 get_stat_data.ConStat = ntohs(conStat);
+                 DEBUG("FT1000:ft1000_ChIoctl: ConStat = 0x%x\n", get_stat_data.ConStat);
+             }
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
+index 4dd456f..d7ca6cc 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
+@@ -228,7 +228,7 @@ static USHORT get_handshake(struct ft1000_device *ft1000dev, USHORT expected_val
+                    status = ft1000_write_register (ft1000dev,  FT1000_DB_DNLD_RX, FT1000_REG_DOORBELL);
+                }
+ 
+-                status = ft1000_read_dpram16 (ft1000dev, DWNLD_MAG1_HANDSHAKE_LOC, (PUCHAR)&handshake, 1);
++                status = ft1000_read_dpram16 (ft1000dev, DWNLD_MAG1_HANDSHAKE_LOC, (u8 *)&handshake, 1);
+                 //DEBUG("get_handshake: handshake is %x\n", tempx);
+                 handshake = ntohs(handshake);
+                 //DEBUG("get_handshake: after swap, handshake is %x\n", handshake);
+@@ -300,10 +300,10 @@ static USHORT get_handshake_usb(struct ft1000_device *ft1000dev, USHORT expected
+    while (loopcnt < 100)
+    {
+        if (pft1000info->usbboot == 2) {
+-           status = ft1000_read_dpram32 (ft1000dev, 0, (PUCHAR)&(pft1000info->tempbuf[0]), 64);
++           status = ft1000_read_dpram32 (ft1000dev, 0, (u8 *)&(pft1000info->tempbuf[0]), 64);
+            for (temp=0; temp<16; temp++)
+                DEBUG("tempbuf %d = 0x%x\n", temp, pft1000info->tempbuf[temp]);
+-           status = ft1000_read_dpram16 (ft1000dev, DWNLD_MAG1_HANDSHAKE_LOC, (PUCHAR)&handshake, 1);
++           status = ft1000_read_dpram16 (ft1000dev, DWNLD_MAG1_HANDSHAKE_LOC, (u8 *)&handshake, 1);
+            DEBUG("handshake from read_dpram16 = 0x%x\n", handshake);
+            if (pft1000info->dspalive == pft1000info->tempbuf[6])
+                handshake = 0;
+@@ -313,7 +313,7 @@ static USHORT get_handshake_usb(struct ft1000_device *ft1000dev, USHORT expected
+            }
+        }
+        else {
+-           status = ft1000_read_dpram16 (ft1000dev, DWNLD_MAG1_HANDSHAKE_LOC, (PUCHAR)&handshake, 1);
++           status = ft1000_read_dpram16 (ft1000dev, DWNLD_MAG1_HANDSHAKE_LOC, (u8 *)&handshake, 1);
+        }
+        loopcnt++;
+        msleep(10);
+@@ -356,14 +356,14 @@ static USHORT get_request_type(struct ft1000_device *ft1000dev)
+ 
+    if ( pft1000info->bootmode == 1)
+    {
+-       status = fix_ft1000_read_dpram32 (ft1000dev, DWNLD_MAG1_TYPE_LOC, (PUCHAR)&tempx);
++       status = fix_ft1000_read_dpram32 (ft1000dev, DWNLD_MAG1_TYPE_LOC, (u8 *)&tempx);
+        tempx = ntohl(tempx);
+    }
+    else
+    {
+        tempx = 0;
+ 
+-       status = ft1000_read_dpram16 (ft1000dev, DWNLD_MAG1_TYPE_LOC, (PUCHAR)&tempword, 1);
++       status = ft1000_read_dpram16 (ft1000dev, DWNLD_MAG1_TYPE_LOC, (u8 *)&tempword, 1);
+        tempx |= (tempword << 16);
+        tempx = ntohl(tempx);
+    }
+@@ -383,7 +383,7 @@ static USHORT get_request_type_usb(struct ft1000_device *ft1000dev)
+ 	struct ft1000_info *pft1000info = netdev_priv(ft1000dev->net);
+    if ( pft1000info->bootmode == 1)
+    {
+-       status = fix_ft1000_read_dpram32 (ft1000dev, DWNLD_MAG1_TYPE_LOC, (PUCHAR)&tempx);
++       status = fix_ft1000_read_dpram32 (ft1000dev, DWNLD_MAG1_TYPE_LOC, (u8 *)&tempx);
+        tempx = ntohl(tempx);
+    }
+    else
+@@ -394,7 +394,7 @@ static USHORT get_request_type_usb(struct ft1000_device *ft1000dev)
+        }
+        else {
+           tempx = 0;
+-          status = ft1000_read_dpram16 (ft1000dev, DWNLD_MAG1_TYPE_LOC, (PUCHAR)&tempword, 1);
++          status = ft1000_read_dpram16 (ft1000dev, DWNLD_MAG1_TYPE_LOC, (u8 *)&tempword, 1);
+        }
+        tempx |= (tempword << 16);
+        tempx = ntohl(tempx);
+@@ -428,14 +428,14 @@ static long get_request_value(struct ft1000_device *ft1000dev)
+ 
+        if ( pft1000info->bootmode == 1)
+        {
+-	   status = fix_ft1000_read_dpram32(ft1000dev, DWNLD_MAG1_SIZE_LOC, (PUCHAR)&value);
++	   status = fix_ft1000_read_dpram32(ft1000dev, DWNLD_MAG1_SIZE_LOC, (u8 *)&value);
+ 	   value = ntohl(value);
+        }
+        else
+        {
+-	   status = ft1000_read_dpram16(ft1000dev, DWNLD_MAG1_SIZE_LOC, (PUCHAR)&tempword, 0);
++	   status = ft1000_read_dpram16(ft1000dev, DWNLD_MAG1_SIZE_LOC, (u8 *)&tempword, 0);
+ 	   value = tempword;
+-           status = ft1000_read_dpram16(ft1000dev, DWNLD_MAG1_SIZE_LOC, (PUCHAR)&tempword, 1);
++           status = ft1000_read_dpram16(ft1000dev, DWNLD_MAG1_SIZE_LOC, (u8 *)&tempword, 1);
+ 	   value |= (tempword << 16);
+ 	   value = ntohl(value);
+        }
+@@ -460,7 +460,7 @@ static long get_request_value_usb(struct ft1000_device *ft1000dev)
+        }
+        else {
+           value = 0;
+-          status = ft1000_read_dpram16(ft1000dev, DWNLD_MAG1_SIZE_LOC, (PUCHAR)&tempword, 1);
++          status = ft1000_read_dpram16(ft1000dev, DWNLD_MAG1_SIZE_LOC, (u8 *)&tempword, 1);
+        }
+ 
+        value |= (tempword << 16);
+@@ -494,7 +494,7 @@ static void put_request_value(struct ft1000_device *ft1000dev, long lvalue)
+    ULONG    status;
+ 
+        tempx = ntohl(lvalue);
+-       status = fix_ft1000_write_dpram32(ft1000dev, DWNLD_MAG1_SIZE_LOC, (PUCHAR)&tempx);
++       status = fix_ft1000_write_dpram32(ft1000dev, DWNLD_MAG1_SIZE_LOC, (u8 *)&tempx);
+ 
+ 
+ 
+@@ -602,24 +602,24 @@ static ULONG write_blk (struct ft1000_device *ft1000dev, USHORT **pUsFile, UCHAR
+ 	      if (pft1000info->bootmode == 0)
+ 	      {
+ 		 if (dpram >= 0x3F4)
+-                     Status = ft1000_write_dpram32 (ft1000dev, dpram, (PUCHAR)&tempbuffer[0], 8);
++                     Status = ft1000_write_dpram32 (ft1000dev, dpram, (u8 *)&tempbuffer[0], 8);
+ 	         else
+-                    Status = ft1000_write_dpram32 (ft1000dev, dpram, (PUCHAR)&tempbuffer[0], 64);
++                    Status = ft1000_write_dpram32 (ft1000dev, dpram, (u8 *)&tempbuffer[0], 64);
+ 	      }
+ 	      else
+ 	      {
+                  for (j=0; j<10; j++)
+                  {
+-                   Status = ft1000_write_dpram32 (ft1000dev, dpram, (PUCHAR)&tempbuffer[0], 64);
++                   Status = ft1000_write_dpram32 (ft1000dev, dpram, (u8 *)&tempbuffer[0], 64);
+ 		   if (Status == STATUS_SUCCESS)
+ 		   {
+ 		       // Work around for ASIC bit stuffing problem.
+ 		       if ( (tempbuffer[31] & 0xfe00) == 0xfe00)
+ 		       {
+-      		           Status = ft1000_write_dpram32(ft1000dev, dpram+12, (PUCHAR)&tempbuffer[24], 64);
++      		           Status = ft1000_write_dpram32(ft1000dev, dpram+12, (u8 *)&tempbuffer[24], 64);
+ 		       }
+     		       // Let's check the data written
+-	    	       Status = ft1000_read_dpram32 (ft1000dev, dpram, (PUCHAR)&resultbuffer[0], 64);
++	    	       Status = ft1000_read_dpram32 (ft1000dev, dpram, (u8 *)&resultbuffer[0], 64);
+ 		       if ( (tempbuffer[31] & 0xfe00) == 0xfe00)
+ 		       {
+ 		           for (i=0; i<28; i++)
+@@ -633,7 +633,7 @@ static ULONG write_blk (struct ft1000_device *ft1000dev, USHORT **pUsFile, UCHAR
+ 				   break;
+ 				}
+ 			   }
+-   			   Status = ft1000_read_dpram32 (ft1000dev, dpram+12, (PUCHAR)&resultbuffer[0], 64);
++   			   Status = ft1000_read_dpram32 (ft1000dev, dpram+12, (u8 *)&resultbuffer[0], 64);
+ 		           for (i=0; i<16; i++)
+ 		           {
+     			       if (resultbuffer[i] != tempbuffer[i+24])
+@@ -799,7 +799,7 @@ u16 scram_dnldr(struct ft1000_device *ft1000dev, void *pFileStart, ULONG  FileLe
+    ULONG                   image_chksum = 0;
+ 
+    USHORT                  dpram = 0;
+-   PUCHAR                  pbuffer;
++   u8 *pbuffer;
+ 	struct prov_record *pprov_record;
+ 	struct ft1000_info *pft1000info = netdev_priv(ft1000dev->net);
+ 
+@@ -1066,7 +1066,7 @@ u16 scram_dnldr(struct ft1000_device *ft1000dev, void *pFileStart, ULONG  FileLe
+ 
+                       templong = *pUsData++;
+ 					  templong |= (*pUsData++ << 16);
+-                      Status = fix_ft1000_write_dpram32 (ft1000dev, dpram++, (PUCHAR)&templong);
++                      Status = fix_ft1000_write_dpram32 (ft1000dev, dpram++, (u8 *)&templong);
+ 
+                }
+                break;
+@@ -1095,7 +1095,7 @@ u16 scram_dnldr(struct ft1000_device *ft1000dev, void *pFileStart, ULONG  FileLe
+                       templong = ntohs(*pUsFile++);
+ 					  temp = ntohs(*pUsFile++);
+ 					  templong |= (temp << 16);
+-                      Status = fix_ft1000_write_dpram32 (ft1000dev, dpram++, (PUCHAR)&templong);
++                      Status = fix_ft1000_write_dpram32 (ft1000dev, dpram++, (u8 *)&templong);
+ 
+                }
+                break;
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
+index 1fa1f81..8333e66 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
+@@ -196,7 +196,7 @@ u16 ft1000_write_register(struct ft1000_device *ft1000dev, USHORT value, u16 nRe
+ //
+ //---------------------------------------------------------------------------
+ 
+-u16 ft1000_read_dpram32(struct ft1000_device *ft1000dev, USHORT indx, PUCHAR buffer, USHORT cnt)
++u16 ft1000_read_dpram32(struct ft1000_device *ft1000dev, USHORT indx, u8 *buffer, USHORT cnt)
+ {
+     u16 ret = STATUS_SUCCESS;
+ 
+@@ -235,7 +235,7 @@ u16 ft1000_read_dpram32(struct ft1000_device *ft1000dev, USHORT indx, PUCHAR buf
+ // Notes:
+ //
+ //---------------------------------------------------------------------------
+-u16 ft1000_write_dpram32(struct ft1000_device *ft1000dev, USHORT indx, PUCHAR buffer, USHORT cnt)
++u16 ft1000_write_dpram32(struct ft1000_device *ft1000dev, USHORT indx, u8 *buffer, USHORT cnt)
+ {
+      u16 ret = STATUS_SUCCESS;
+ 
+@@ -272,7 +272,7 @@ u16 ft1000_write_dpram32(struct ft1000_device *ft1000dev, USHORT indx, PUCHAR bu
+ // Notes:
+ //
+ //---------------------------------------------------------------------------
+-u16 ft1000_read_dpram16(struct ft1000_device *ft1000dev, USHORT indx, PUCHAR buffer, u8 highlow)
++u16 ft1000_read_dpram16(struct ft1000_device *ft1000dev, USHORT indx, u8 *buffer, u8 highlow)
+ {
+     u16 ret = STATUS_SUCCESS;
+ 
+@@ -365,7 +365,7 @@ u16 ft1000_write_dpram16(struct ft1000_device *ft1000dev, USHORT indx, USHORT va
+ // Notes:
+ //
+ //---------------------------------------------------------------------------
+-u16 fix_ft1000_read_dpram32(struct ft1000_device *ft1000dev, USHORT indx, PUCHAR buffer)
++u16 fix_ft1000_read_dpram32(struct ft1000_device *ft1000dev, USHORT indx, u8 *buffer)
+ {
+     UCHAR buf[16];
+     USHORT pos;
+@@ -414,14 +414,14 @@ u16 fix_ft1000_read_dpram32(struct ft1000_device *ft1000dev, USHORT indx, PUCHAR
+ // Notes:
+ //
+ //---------------------------------------------------------------------------
+-u16 fix_ft1000_write_dpram32(struct ft1000_device *ft1000dev, USHORT indx, PUCHAR buffer)
++u16 fix_ft1000_write_dpram32(struct ft1000_device *ft1000dev, USHORT indx, u8 *buffer)
+ {
+     USHORT pos1;
+     USHORT pos2;
+     USHORT i;
+     UCHAR buf[32];
+     UCHAR resultbuffer[32];
+-    PUCHAR pdata;
++    u8 *pdata;
+     u16 ret  = STATUS_SUCCESS;
+ 
+     //DEBUG("fix_ft1000_write_dpram32: Entered:\n");
+@@ -445,7 +445,7 @@ u16 fix_ft1000_write_dpram32(struct ft1000_device *ft1000dev, USHORT indx, PUCHA
+         return ret;
+     }
+ 
+-    ret = ft1000_read_dpram32(ft1000dev, pos1, (PUCHAR)&resultbuffer[0], 16);
++    ret = ft1000_read_dpram32(ft1000dev, pos1, (u8 *)&resultbuffer[0], 16);
+     if (ret == STATUS_SUCCESS)
+     {
+         buffer = pdata;
+@@ -460,8 +460,8 @@ u16 fix_ft1000_write_dpram32(struct ft1000_device *ft1000dev, USHORT indx, PUCHA
+ 
+     if (ret == STATUS_FAILURE)
+     {
+-        ret = ft1000_write_dpram32(ft1000dev, pos1, (PUCHAR)&tempbuffer[0], 16);
+-        ret = ft1000_read_dpram32(ft1000dev, pos1, (PUCHAR)&resultbuffer[0], 16);
++        ret = ft1000_write_dpram32(ft1000dev, pos1, (u8 *)&tempbuffer[0], 16);
++        ret = ft1000_read_dpram32(ft1000dev, pos1, (u8 *)&resultbuffer[0], 16);
+         if (ret == STATUS_SUCCESS)
+         {
+             buffer = pdata;
+@@ -621,7 +621,7 @@ int dsp_reload(struct ft1000_device *ft1000dev)
+     status = ft1000_write_register (ft1000dev, HOST_INTF_BE, FT1000_REG_SUP_CTRL);
+ 
+     // Let's check for FEFE
+-    status = ft1000_read_dpram32 (ft1000dev, FT1000_MAG_DPRAM_FEFE_INDX, (PUCHAR)&templong, 4);
++    status = ft1000_read_dpram32 (ft1000dev, FT1000_MAG_DPRAM_FEFE_INDX, (u8 *)&templong, 4);
+     DEBUG("templong (fefe) = 0x%8x\n", templong);
+ 
+     // call codeloader
+@@ -1485,7 +1485,7 @@ static BOOLEAN ft1000_receive_cmd (struct ft1000_device *dev, u16 *pbuffer, int
+     int i;
+     u16 tempword;
+ 
+-    ret = ft1000_read_dpram16(dev, FT1000_MAG_PH_LEN, (PUCHAR)&size, FT1000_MAG_PH_LEN_INDX);
++    ret = ft1000_read_dpram16(dev, FT1000_MAG_PH_LEN, (u8 *)&size, FT1000_MAG_PH_LEN_INDX);
+     size = ntohs(size) + PSEUDOSZ;
+     if (size > maxsz) {
+         DEBUG("FT1000:ft1000_receive_cmd:Invalid command length = %d\n", size);
+@@ -1596,7 +1596,7 @@ static int ft1000_dsp_prov(void *arg)
+             TempShortBuf[1] = htons (len);
+             memcpy(&TempShortBuf[2], ppseudo_hdr, len);
+ 
+-            status = ft1000_write_dpram32 (dev, 0, (PUCHAR)&TempShortBuf[0], (unsigned short)(len+2));
++            status = ft1000_write_dpram32 (dev, 0, (u8 *)&TempShortBuf[0], (unsigned short)(len+2));
+             status = ft1000_write_register (dev, FT1000_DB_DPRAM_TX, FT1000_REG_DOORBELL);
+ 
+             list_del(&ptr->list);
+@@ -1815,7 +1815,7 @@ static int ft1000_proc_drvmsg (struct ft1000_device *dev, u16 size) {
+                 }
+                 info->DSPInfoBlk[10] = 0x7200;
+                 info->DSPInfoBlk[11] = htons(info->DSPInfoBlklen);
+-                status = ft1000_write_dpram32 (dev, 0, (PUCHAR)&info->DSPInfoBlk[0], (unsigned short)(info->DSPInfoBlklen+22));
++                status = ft1000_write_dpram32 (dev, 0, (u8 *)&info->DSPInfoBlk[0], (unsigned short)(info->DSPInfoBlklen+22));
+                 status = ft1000_write_register (dev, FT1000_DB_DPRAM_TX, FT1000_REG_DOORBELL);
+                 info->DrvMsgPend = 0;
+ 
+@@ -1930,14 +1930,14 @@ int ft1000_poll(void* dev_id) {
+         if (tempword & FT1000_DB_DPRAM_RX) {
+             //DEBUG("ft1000_poll: FT1000_REG_DOORBELL message type:  FT1000_DB_DPRAM_RX\n");
+ 
+-            status = ft1000_read_dpram16(dev, 0x200, (PUCHAR)&data, 0);
++            status = ft1000_read_dpram16(dev, 0x200, (u8 *)&data, 0);
+             //DEBUG("ft1000_poll:FT1000_DB_DPRAM_RX:ft1000_read_dpram16:size = 0x%x\n", data);
+             size = ntohs(data) + 16 + 2; //wai
+             if (size % 4) {
+                 modulo = 4 - (size % 4);
+                 size = size + modulo;
+             }
+-            status = ft1000_read_dpram16(dev, 0x201, (PUCHAR)&portid, 1);
++            status = ft1000_read_dpram16(dev, 0x201, (u8 *)&portid, 1);
+             portid &= 0xff;
+             //DEBUG("ft1000_poll: FT1000_REG_DOORBELL message type: FT1000_DB_DPRAM_RX : portid 0x%x\n", portid);
+ 
+@@ -2072,7 +2072,7 @@ int ft1000_poll(void* dev_id) {
+             status = ft1000_write_register (dev, FT1000_ASIC_RESET_REQ, FT1000_REG_DOORBELL);
+             status = ft1000_write_register (dev, HOST_INTF_BE, FT1000_REG_SUP_CTRL);
+             // copy dsp session record from Adapter block
+-            status = ft1000_write_dpram32 (dev, 0, (PUCHAR)&info->DSPSess.Rec[0], 1024);
++            status = ft1000_write_dpram32 (dev, 0, (u8 *)&info->DSPSess.Rec[0], 1024);
+             // Program WMARK register
+             status = ft1000_write_register (dev, 0x600, FT1000_REG_MAG_WATERMARK);
+             // ring doorbell to tell DSP that ASIC is out of reset
+@@ -2086,10 +2086,10 @@ int ft1000_poll(void* dev_id) {
+             if (info->fAppMsgPend == 0) {
+                // Reset ASIC and DSP
+ 
+-                status    = ft1000_read_dpram16(dev, FT1000_MAG_DSP_TIMER0, (PUCHAR)&(info->DSP_TIME[0]), FT1000_MAG_DSP_TIMER0_INDX);
+-                status    = ft1000_read_dpram16(dev, FT1000_MAG_DSP_TIMER1, (PUCHAR)&(info->DSP_TIME[1]), FT1000_MAG_DSP_TIMER1_INDX);
+-                status    = ft1000_read_dpram16(dev, FT1000_MAG_DSP_TIMER2, (PUCHAR)&(info->DSP_TIME[2]), FT1000_MAG_DSP_TIMER2_INDX);
+-                status    = ft1000_read_dpram16(dev, FT1000_MAG_DSP_TIMER3, (PUCHAR)&(info->DSP_TIME[3]), FT1000_MAG_DSP_TIMER3_INDX);
++                status    = ft1000_read_dpram16(dev, FT1000_MAG_DSP_TIMER0, (u8 *)&(info->DSP_TIME[0]), FT1000_MAG_DSP_TIMER0_INDX);
++                status    = ft1000_read_dpram16(dev, FT1000_MAG_DSP_TIMER1, (u8 *)&(info->DSP_TIME[1]), FT1000_MAG_DSP_TIMER1_INDX);
++                status    = ft1000_read_dpram16(dev, FT1000_MAG_DSP_TIMER2, (u8 *)&(info->DSP_TIME[2]), FT1000_MAG_DSP_TIMER2_INDX);
++                status    = ft1000_read_dpram16(dev, FT1000_MAG_DSP_TIMER3, (u8 *)&(info->DSP_TIME[3]), FT1000_MAG_DSP_TIMER3_INDX);
+                 info->CardReady = 0;
+                 info->DrvErrNum = DSP_CONDRESET_INFO;
+                 DEBUG("ft1000_hw:DSP conditional reset requested\n");
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_proc.c b/drivers/staging/ft1000/ft1000-usb/ft1000_proc.c
+index 36cdd58..dda0e33 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_proc.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_proc.c
+@@ -39,7 +39,7 @@
+ 
+ 
+ u16 ft1000_read_dpram16 (struct ft1000_device *ft1000dev, USHORT indx,
+-			 PUCHAR buffer, u8 highlow);
++			 u8 *buffer, u8 highlow);
+ 
+ 
+ static int
+@@ -77,11 +77,11 @@ ft1000ReadProc (char *page, char **start, off_t off, int count, int *eof,
+   if (info->ProgConStat != 0xFF)
+     {
+       ft1000_read_dpram16 (info->pFt1000Dev, FT1000_MAG_DSP_LED,
+-			   (PUCHAR) & ledStat, FT1000_MAG_DSP_LED_INDX);
++			   (u8 *)&ledStat, FT1000_MAG_DSP_LED_INDX);
+       info->LedStat = ntohs (ledStat);
+ 
+       ft1000_read_dpram16 (info->pFt1000Dev, FT1000_MAG_DSP_CON_STATE,
+-			   (PUCHAR) & conStat, FT1000_MAG_DSP_CON_STATE_INDX);
++			   (u8 *)&conStat, FT1000_MAG_DSP_CON_STATE_INDX);
+       info->ConStat = ntohs (conStat);
+       do_gettimeofday (&tv);
+       delta = (tv.tv_sec - info->ConTm);
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
+index 503481a..4996da9 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
+@@ -104,7 +104,6 @@ struct prov_record {
+ #define BOOLEAN             u8
+ #define PULONG              u32 *
+ #define PUSHORT             u16 *
+-#define PUCHAR              u8 *
+ #define PCHAR               u8 *
+ #define UINT                u32
+ 
+@@ -565,12 +564,12 @@ struct dpram_blk {
+ 
+ u16 ft1000_read_register(struct ft1000_device *ft1000dev, u16* Data, u16 nRegIndx);
+ u16 ft1000_write_register(struct ft1000_device *ft1000dev, USHORT value, u16 nRegIndx);
+-u16 ft1000_read_dpram32(struct ft1000_device *ft1000dev, USHORT indx, PUCHAR buffer, USHORT cnt);
+-u16 ft1000_write_dpram32(struct ft1000_device *ft1000dev, USHORT indx, PUCHAR buffer, USHORT cnt);
+-u16 ft1000_read_dpram16(struct ft1000_device *ft1000dev, USHORT indx, PUCHAR buffer, u8 highlow);
++u16 ft1000_read_dpram32(struct ft1000_device *ft1000dev, USHORT indx, u8 *buffer, USHORT cnt);
++u16 ft1000_write_dpram32(struct ft1000_device *ft1000dev, USHORT indx, u8 *buffer, USHORT cnt);
++u16 ft1000_read_dpram16(struct ft1000_device *ft1000dev, USHORT indx, u8 *buffer, u8 highlow);
+ u16 ft1000_write_dpram16(struct ft1000_device *ft1000dev, USHORT indx, USHORT value, u8 highlow);
+-u16 fix_ft1000_read_dpram32(struct ft1000_device *ft1000dev, USHORT indx, PUCHAR buffer);
+-u16 fix_ft1000_write_dpram32(struct ft1000_device *ft1000dev, USHORT indx, PUCHAR buffer);
++u16 fix_ft1000_read_dpram32(struct ft1000_device *ft1000dev, USHORT indx, u8 *buffer);
++u16 fix_ft1000_write_dpram32(struct ft1000_device *ft1000dev, USHORT indx, u8 *buffer);
+ 
+ extern void *pFileStart;
+ extern size_t FileLength;
+-- 
+1.7.1
 
-diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
-index 5cfcc3c..26bd93d 100644
-=2D-- a/fs/ecryptfs/file.c
-+++ b/fs/ecryptfs/file.c
-@@ -200,8 +200,8 @@ static int ecryptfs_open(struct inode *inode, struct fi=
-le *file)
- 			ecryptfs_dentry->d_name.name, rc);
- 		goto out_free;
- 	}
-=2D	if ((ecryptfs_inode_to_private(inode)->lower_file->f_flags & O_RDONLY)
-=2D	    && !(file->f_flags & O_RDONLY)) {
-+	if ((ecryptfs_inode_to_private(inode)->lower_file->f_flags & O_ACCMODE) =
-=3D=3D O_RDONLY
-+	    && (file->f_flags & O_ACCMODE) !=3D O_RDONLY) {
- 		rc =3D -EPERM;
- 		printk(KERN_WARNING "%s: Lower persistent file is RO; eCryptfs "
- 		       "file must hence be opened RO\n", __func__);
-=2D-=20
-1.7.2.3
-
-
---nextPart3483669.dl6LrRtznF
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Transfer-Encoding: base64
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIQCTCCBLMw
-ggOboAMCAQICARQwDQYJKoZIhvcNAQEFBQAwQTEQMA4GA1UEChMHRXVyb1BLSTEtMCsGA1UEAxMk
-RXVyb1BLSSBSb290IENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA2MTAyNDEzMzEzM1oXDTEw
-MTIzMTEyNTk1OVowUTELMAkGA1UEBhMCSVQxEDAOBgNVBAoTB0V1cm9QS0kxMDAuBgNVBAMTJ0V1
-cm9QS0kgSXRhbGlhbiBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTCCASIwDQYJKoZIhvcNAQEBBQAD
-ggEPADCCAQoCggEBAPbJ3y5bE0iL2iFW59R4KGHS3iTc22mq2GlDaOZLE3Xz1wTvB/yBl5e4ntMZ
-eEeWTW9JInNRTtfC3mcLk0gnEdK1rQZbe4lQwBVHdkG8LvRQDWHIkZNuccoUpQXMv+JbZjI6m7rH
-fU2CN/YCvFY9QL08xXsfDxvX2Ee4S7EwJiSEEJSiy+R00uTfvfn27d8a6LCqYLzlInRlz4C2CUbk
-+U2UAwjYEPTP2ziqFxztysbxC3fjqH8e6P5wIPXOS5cSYnVaEyp21VXhAOamVJEGlQCdVoTHs+pP
-BYqCBuNhBfienUPaEDHHUUYHZ2nS4eNzd9XOu+5hFi1/8hVZxN4sbdECAwEAAaOCAaQwggGgMEwG
-CWCGSAGG+EIBDQQ/Fj1Jc3N1ZWQgdW5kZXIgcG9saWN5OgogaHR0cDovL3d3dy5ldXJvcGtpLm9y
-Zy9jYS9yb290L2Nwcy8xLjEvMGUGCCsGAQUFBwEBBFkwVzAoBggrBgEFBQcwAYYcaHR0cDovL29j
-c3AuZXVyb3BraS5vcmc6ODAyNjArBggrBgEFBQcwAoYfaHR0cDovL3d3dy5ldXJvcGtpLm9yZy9j
-YS9yb290LzA7BgNVHR8ENDAyMDCgLqAshipodHRwOi8vd3d3LmV1cm9wa2kub3JnL2NhL3Jvb3Qv
-Y3JsL2NybC5kZXIwDAYDVR0TBAUwAwEB/zBOBgNVHSAERzBFMEMGCisGAQQBqQcBAQEwNTAzBggr
-BgEFBQcCARYnaHR0cDovL3d3dy5ldXJvcGtpLm9yZy9jYS9yb290L2Nwcy8xLjEvMA4GA1UdDwEB
-/wQEAwIB9jAdBgNVHQ4EFgQUjl4HtzG0Gbu5BJU0rMX9016KQsAwHwYDVR0jBBgwFoAUjNyLsaVK
-kOdOiHMYPJ3VXn7kss0wDQYJKoZIhvcNAQEFBQADggEBAFjlAWMiL7uhEAVcrPeMXsbQU+bQNbP1
-TBqyBoMCMJ4RakM7/67AsmqpKGIYwhjVkSNHhscRl5BuSiyviHOLbWUJ9tAAKt6hzMDr1J4OvWSH
-Sn8y9fSlyQU8+fQE8FHxXT3Aa7aLYVqsqr0ppmxRDL/9b/mdUVcMXiKFAdopFzhXIigfZFh6MW/o
-7/GEiDMGsovCiwKJ5ZL46zGRDaS+O0aRYQv2PHZaWrC8i0OPwghlTeB2DfUBzm0urPijBATdjzP8
-yO3YGymFZOIG08Roe4bwzrANGzX5luBk3lNmtXTPHoUtRLn3ADa+IUGwK6VYWHYJe1+uUHRNziQu
-/Zsb858wggU/MIIEJ6ADAgECAgIJzzANBgkqhkiG9w0BAQUFADBRMQswCQYDVQQGEwJJVDEQMA4G
-A1UEChMHRXVyb1BLSTEwMC4GA1UEAxMnRXVyb1BLSSBJdGFsaWFuIENlcnRpZmljYXRpb24gQXV0
-aG9yaXR5MB4XDTA2MTEwNjE3MTU1OVoXDTEwMTIzMTEyNTk1OVowZTELMAkGA1UEBhMCSVQxHjAc
-BgNVBAoTFVBvbGl0ZWNuaWNvIGRpIFRvcmlubzE2MDQGA1UEAxMtUG9saXRlY25pY28gZGkgVG9y
-aW5vIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKC
-AQEA/s1vopfmSp2eqKG/jW4H5YyfrZc/jWEnctMMm7TlVT+ryxJ2ifYV/7VyuYVIGdnCBnmJiav6
-uhePqpHyuejEZ+IdCchk04BSBbgzkSbWakw2ekv1SKm8WfvhxHbiSo/t//LQEANMJ+XeeqGl1TRR
-8gdMC6erWFGdl5FcuOpMoaqW6DszVGlOAf7Uo/DExZ0/9cw77GTRoDTA3vi1QJEYGaAAvI2/flaU
-8gn4QoktjowchDXBylVsyqs+ux3v7m3H0cgC3q62t2om2badk40F9XH1w2WPLQB6rSl+TPDxkl2k
-kR4goQprXR0b0OujS5ADq5Ds2w7YPj5h4J6ebsbIUQIDAQABo4ICCzCCAgcwdQYJYIZIAYb4QgEN
-BGgWZklzc3VlZCB1bmRlciBwb2xpY2llczoKIGh0dHA6Ly93d3cuZXVyb3BraS5vcmcvY2Evcm9v
-dC9jcHMvMS4xLwogaHR0cDovL3d3dy5ldXJvcGtpLm9yZy9jYS9pdC9jcHMvMS4xLzBcBggrBgEF
-BQcBAQRQME4wKAYIKwYBBQUHMAGGHGh0dHA6Ly9vY3NwLmV1cm9wa2kub3JnOjgwMjYwIgYIKwYB
-BQUHMAKGFmh0dHA6Ly93d3cuZXVyb3BraS5vcmcwPAYDVR0fBDUwMzAxoC+gLYYraHR0cDovL3d3
-dy5ldXJvcGtpLm9yZy9jYS9pdDIvY3JsMDMvY3JsLmRlcjAPBgNVHRMBAf8EBTADAQH/MIGTBgNV
-HSAEgYswgYgwQwYKKwYBBAGpBwEBATA1MDMGCCsGAQUFBwIBFidodHRwOi8vd3d3LmV1cm9wa2ku
-b3JnL2NhL3Jvb3QvY3BzLzEuMS8wQQYKKwYBBAGpBwIBATAzMDEGCCsGAQUFBwIBFiVodHRwOi8v
-d3d3LmV1cm9wa2kub3JnL2NhL2l0L2Nwcy8xLjEvMAsGA1UdDwQEAwIB9jAdBgNVHQ4EFgQUCf0l
-GW/jaHyCazVzvCgAviw8OjgwHwYDVR0jBBgwFoAUjl4HtzG0Gbu5BJU0rMX9016KQsAwDQYJKoZI
-hvcNAQEFBQADggEBANfGdD6B98NUwBOVYIiuo+SNfw8Afjr2oFHLYEHYhKdBED1WBckhK610v2zJ
-ctramnrqdd+xfyzmkyNm48OtkiVetYzXbgYeyMGxhO8HrJ1Ztf1yEN0lL8HgdK3lmJeLYNYH/cwZ
-5SlKwvTR/VENHLYlWsgWk47ut7W8+Zd/ESwzNdJUCBUMoQnGZ3giyhAXKAgIOckwL0g8KmnceY7J
-Y4L1G++1OuOoUcgg2jRPxcVmHVEe/cM0WHfUcigDXSBTIxAiDwlQ7ni97yX1RqBV/6IVdRDYKyjg
-YkdYcwU9ZuOKUP4Pl5KKCegLOHRoo5kX6V1o7b2IZGBFoVmkag4m4kkwggYLMIIE86ADAgECAgID
-wTANBgkqhkiG9w0BAQUFADBlMQswCQYDVQQGEwJJVDEeMBwGA1UEChMVUG9saXRlY25pY28gZGkg
-VG9yaW5vMTYwNAYDVQQDEy1Qb2xpdGVjbmljbyBkaSBUb3Jpbm8gQ2VydGlmaWNhdGlvbiBBdXRo
-b3JpdHkwHhcNMDgxMjA1MTYwMDAwWhcNMTAxMjMwMTIwMDAwWjB5MQswCQYDVQQGEwJJVDEeMBwG
-A1UEChMVUG9saXRlY25pY28gZGkgVG9yaW5vMTEwLwYDVQQLEyhEaXBhcnRpbWVudG8gZGkgQXV0
-b21hdGljYSBlIEluZm9ybWF0aWNhMRcwFQYDVQQDEw5Sb2JlcnRvICBTYXNzdTCCASIwDQYJKoZI
-hvcNAQEBBQADggEPADCCAQoCggEBAOS/leMNzG5v7FG73ythWtNPOdq8MEFpzg7mjy4M7UsS9+sc
-b7QE8TOX365q/+mBwxZ7qW+OhNKfgv14A3y/quju5P7mjTmTNvKWDpsUBjC+tCs+WpWsgIPc2xxW
-PrR7br04U/SYYNsxynh1TtO2gsQrHIj9S/wNiNRP8GGPCAiuYRlaL2CeSVn4JEKcT0zOeLIIqfDp
-3Ad3YeBhj+cR3TrmO9TyGTPCAb1oyq9wuA1Tx044rqSQNbp0e0RvOrwAIpD/2mNPP3ReTeB53aSg
-q0pCHoH1s2AcY/jWJ1joYFC9hh/2DqZRvMNIsM7Uce5Iiz2sgl1I61IUD4658HYzCmMCAwEAAaOC
-Aq8wggKrMIGVBglghkgBhvhCAQ0EgYcWgYRJc3N1ZWQgdW5kZXIgcG9saWNpZXM6CiBodHRwOi8v
-d3d3LmV1cm9wa2kub3JnL2NhL3Jvb3QvY3BzLzEuMS8KIGh0dHA6Ly93d3cuZXVyb3BraS5vcmcv
-Y2EvaXQvY3BzLzEuMS8KIGh0dHA6Ly9jYS5wb2xpdG8uaXQvY3BzLzIuMS8wEQYJYIZIAYb4QgEB
-BAQDAgCwMGMGCCsGAQUFBwEBBFcwVTAoBggrBgEFBQcwAYYcaHR0cDovL29jc3AuZXVyb3BraS5v
-cmc6ODAyNjApBggrBgEFBQcwAoYdaHR0cDovL3d3dy5ldXJvcGtpLm9yZy9jYS9pdC8wMgYDVR0f
-BCswKTAnoCWgI4YhaHR0cDovL2NhLnBvbGl0by5pdC9jcmwwMy9jcmwuZGVyMAwGA1UdEwEB/wQC
-MAAwOgYDVR0RBDMwMYEXcm9iZXJ0by5zYXNzdUBwb2xpdG8uaXSgFgYKKwYBBAGVYgIBAaAIFgYw
-MjEzMDUwgc0GA1UdIASBxTCBwjBDBgorBgEEAakHAQEBMDUwMwYIKwYBBQUHAgEWJ2h0dHA6Ly93
-d3cuZXVyb3BraS5vcmcvY2Evcm9vdC9jcHMvMS4xLzBBBgorBgEEAakHAgEBMDMwMQYIKwYBBQUH
-AgEWJWh0dHA6Ly93d3cuZXVyb3BraS5vcmcvY2EvaXQvY3BzLzEuMS8wOAYKKwYBBAGVYgECATAq
-MCgGCCsGAQUFBwIBFhxodHRwOi8vY2EucG9saXRvLml0L2Nwcy8yLjEvMAsGA1UdDwQEAwIE8DAd
-BgNVHQ4EFgQUP+37DpRL6r5BNjgsgFjI8MHvGTcwHwYDVR0jBBgwFoAUCf0lGW/jaHyCazVzvCgA
-viw8OjgwDQYJKoZIhvcNAQEFBQADggEBADRj0OWMglzLXTPuKND9gMTHd1iRPzRNI1TiYFN/WIyu
-a3mNev65wKn35VxbbMV6k7zuxxdC7o+iYRLepVOnpw90Af/SiJRc9QI4rk8tzSr5xII7vI0fPvcl
-rjSMymXCvwKrbYwrKe0FhBnSZ8AoewXoHDQ8f64heLIU8mLWuwo1+brq0pJUH5Q+69WAGD03ln+l
-Fhk2KqvVv8yAD21PydrS7Uk2ZLE7l7/+BTQBY8ZjpNRZ44C6+o7lou2zN6lkWtVHBwUNVdfu3wkS
-TdtCm/yxR8XUlFyZkLHfhY19VW4luxb7KZ4GiPKDERdQwBb0kja4eqSOBkAPWZ9Y8zpv4bAxggIc
-MIICGAIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBkaSBUb3Jpbm8x
-NjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eQIC
-A8EwCQYFKw4DAhoFAKCBhzAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEP
-Fw0xMDExMDMxMDExMzVaMCMGCSqGSIb3DQEJBDEWBBTOmPhBFo5QUghjjoCFs5zwEXOjgTAoBgkq
-hkiG9w0BCQ8xGzAZMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzANBgkqhkiG9w0BAQEFAASCAQBo
-Pb81xVrFbjsSb3cexNlQg1OLy7qNz4XLMud4/vU3fpo5fzRGN5yGabPCAF68ri6RNteFfDIWHvKN
-mhpjQxhcgQ8kX9XYesE4QV7+ausn21XL5Qd+4t9RrTiPlbco0vFepERwTCfh4mYB5oZ0ZFFb4IE/
-DlsWcvSfxkMD/6oYQ9HRE4Fgp5Z9fwtV0vDGzIOloY6dwQZ00J7D5wXsGYhAnMG12srXWLY46AOX
-7qCaMWIIF4+ilsfSOZsEAq5S/HO/nfFdtwXKs8wojcx39r26f2rmSiRUr+6amyy4/7sEabAtzAgn
-/3v2tm5y1DdCCl/T1vOsQFweC+Ye9r4Qe8Y7AAAAAAAA
-
---nextPart3483669.dl6LrRtznF--
