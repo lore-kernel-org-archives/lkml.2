@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588Ab0KCKM3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 06:12:29 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:58079 "EHLO
+	id S1754649Ab0KCKMg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 06:12:36 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:44254 "EHLO
 	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754157Ab0KCKMZ (ORCPT
+	by vger.kernel.org with ESMTP id S1754605Ab0KCKMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 06:12:25 -0400
-X-Sasl-enc: 1EzzRRfSXEB4P5miBxUEI4lVlxG29i/nQKUxEYwV01u9 1288779144
+	Wed, 3 Nov 2010 06:12:33 -0400
+X-Sasl-enc: x2YEJXv/+P84tboQyZ1T48/cYeuCHsAXfDnmSGLigtlu 1288779152
 To: tyhicks@linux.vnet.ibm.com
-Subject: [PATCH 0/5] ecryptfs fixes
+Subject: [PATCH 1/5] ecryptfs: moved ECRYPTFS_SUPER_MAGIC definition to linux/magic.h
 From: Roberto Sassu <roberto.sassu@polito.it>
 Organization: Politecnico di Torino
-Date: Wed, 3 Nov 2010 11:11:06 +0100
+Date: Wed, 3 Nov 2010 11:11:15 +0100
 MIME-Version: 1.0
 Cc: kirkland@canonical.com, jmorris@namei.org,
         linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org
-Message-Id: <201011031111.06669.roberto.sassu@polito.it>
 Content-Type: multipart/signed;
-  boundary="nextPart1768355.OPhhKglSx7";
+  boundary="nextPart1702965.YGeeUN9alq";
   protocol="application/pkcs7-signature";
   micalg=sha1
 Content-Transfer-Encoding: 7bit
+Message-Id: <201011031111.15685.roberto.sassu@polito.it>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1768355.OPhhKglSx7
+--nextPart1702965.YGeeUN9alq
 Content-Type: text/plain;
   charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 
-This patch set applies to the latest kernel 2.6.37-rc1.
+The definition of ECRYPTFS_SUPER_MAGIC has been moved to the include
+file 'linux/magic.h' to become available to other kernel subsystems.
 
-
-Roberto Sassu (5):
-  ecryptfs: moved ECRYPTFS_SUPER_MAGIC definition to linux/magic.h
-  ecryptfs: missing initialization of the superblock 'magic' field
-  ecryptfs: test lower_file pointer when lower_file_mutex is locked
-  ecryptfs: fixed testing of file descriptor flags
-  ecryptfs: open lower files with kthread credentials
-
- fs/ecryptfs/ecryptfs_kernel.h |    4 +---
- fs/ecryptfs/file.c            |   20 +++++++++-----------
- fs/ecryptfs/inode.c           |   32 ++++++++++++++------------------
- fs/ecryptfs/kthread.c         |   17 +++++++++++++----
- fs/ecryptfs/main.c            |    5 +++--
+Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+=2D--
+ fs/ecryptfs/ecryptfs_kernel.h |    1 -
  include/linux/magic.h         |    1 +
- 6 files changed, 41 insertions(+), 38 deletions(-)
+ 2 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
+index 59ab793..452be3c 100644
+=2D-- a/fs/ecryptfs/ecryptfs_kernel.h
++++ b/fs/ecryptfs/ecryptfs_kernel.h
+@@ -192,7 +192,6 @@ ecryptfs_get_key_payload_data(struct key *key)
+ 		(((struct user_key_payload*)key->payload.data)->data);
+ }
+=20
+=2D#define ECRYPTFS_SUPER_MAGIC 0xf15f
+ #define ECRYPTFS_MAX_KEYSET_SIZE 1024
+ #define ECRYPTFS_MAX_CIPHER_NAME_SIZE 32
+ #define ECRYPTFS_MAX_NUM_ENC_KEYS 64
+diff --git a/include/linux/magic.h b/include/linux/magic.h
+index eb9800f..9a6d3a8 100644
+=2D-- a/include/linux/magic.h
++++ b/include/linux/magic.h
+@@ -16,6 +16,7 @@
+ #define TMPFS_MAGIC		0x01021994
+ #define HUGETLBFS_MAGIC 	0x958458f6	/* some random number */
+ #define SQUASHFS_MAGIC		0x73717368
++#define ECRYPTFS_SUPER_MAGIC	0xf15f
+ #define EFS_SUPER_MAGIC		0x414A53
+ #define EXT2_SUPER_MAGIC	0xEF53
+ #define EXT3_SUPER_MAGIC	0xEF53
 =2D-=20
 1.7.2.3
 
---nextPart1768355.OPhhKglSx7
+
+--nextPart1702965.YGeeUN9alq
 Content-Type: application/pkcs7-signature; name="smime.p7s"
 Content-Disposition: attachment; filename="smime.p7s"
 Content-Transfer-Encoding: base64
@@ -134,12 +150,12 @@ TdtCm/yxR8XUlFyZkLHfhY19VW4luxb7KZ4GiPKDERdQwBb0kja4eqSOBkAPWZ9Y8zpv4bAxggIc
 MIICGAIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBkaSBUb3Jpbm8x
 NjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eQIC
 A8EwCQYFKw4DAhoFAKCBhzAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEP
-Fw0xMDExMDMxMDExMDZaMCMGCSqGSIb3DQEJBDEWBBQv288DV47Eu4IlSl1dK3QEcBnwujAoBgkq
-hkiG9w0BCQ8xGzAZMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzANBgkqhkiG9w0BAQEFAASCAQBW
-Lv1uAyeYY/eqWbz+A1R9jqHC2TjGsoFr9Y94QKAi5SW4Jq5mHeW35b3en+XQb72aIxLMmU8lYaWM
-nNhZOis4KpqHSACiqBAAdW5z5zhtqSUSbu64ZbBVowIEU1csL0L7yATX5it4XyLVSY2eYcIQmytv
-Si9I47uz0nyBRdSonvvUhMztodW0GyrrrleYRm9H+4aCIwJTnJvLhxkfOMIu0Q7FLQtUFJ2tOoel
-eGeCdyE4tfpDpV2D31FpDEeuKAhEPJ8xrynn0KmMkZwdHxlRJdF5HSxD6gFuj60QmT86DfS0AVTW
-ADJDumBr2rLtw65X8d5/NOCP04xAKFlLFsDVAAAAAAAA
+Fw0xMDExMDMxMDExMTVaMCMGCSqGSIb3DQEJBDEWBBQyatY0nW8AqgcbIJ9nD1mGjiGorDAoBgkq
+hkiG9w0BCQ8xGzAZMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzANBgkqhkiG9w0BAQEFAASCAQDP
+2PZ4WgdbXXiRh7rv4e0KDK+0OaG3Hj+d5EAzvuSgBE/Wpq4jAnduN+bjQcsf6Flg/6J5vzMYWckE
+cQN/Ofn04yDkZ76SomN/8GIunK9FWxLe6ktxBfL8HyqHcgXaebEnzSg4RI9ZvC4JQfnnx6hq/YXQ
+yBzbOnmvlhsOKs8nx23fpOynEy1EKwqgikN2r5Nrv7k1zUfxTJJMXThOy/CnhtXb1ZwXQN+ixemt
+e6blCGVgPiEx08B20PfgRyPnemf2vvlv0RxEAcXzgWKvPS1wTgO+l/yQwbe5sfsI+nCSm57o3glI
+CgIMQt1mTcnjRv32XIpU1kUwqOgBh8kafI1iAAAAAAAA
 
---nextPart1768355.OPhhKglSx7--
+--nextPart1702965.YGeeUN9alq--
