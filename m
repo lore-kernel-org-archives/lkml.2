@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892Ab0KCMf6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 08:35:58 -0400
-Received: from nm15-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.208]:33189 "HELO
-	nm15-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754158Ab0KCMfz (ORCPT
+	id S1755017Ab0KCMro (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 08:47:44 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55985 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754709Ab0KCMrm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 08:35:55 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 497081.28094.bm@omp1041.mail.sp2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
-  b=C3NxTUXFsQO+6rB5+sHq6w9XX7ifa8rNB2RqaNAP7rpyysPcG6DR15KErZVr1MvyPBXGP+/2EKqLbR7H8HOe5W29uHuFC+ut9XXRy4MhZA9SeKhFXzUNsPpFS1uagtefFyCDaHRmZtlA36Rqe/s8652dFWO4oPBlvHIGSl84ROY=;
-Message-ID: <129498.93810.qm@web180302.mail.gq1.yahoo.com>
-X-YMail-OSG: H9GdJ7EVM1lNn8Byb31nfiNbLVN.ohYgdmIcAGeoVjsp3tW
- 7vDtxViDyz4ENRPTjyL2H9L7MO9BkADtXDQ9PaaoJ3cOsGFHWjqjHOQvgwfF
- zIopp_WkxHmEkACQSTc3PvldLcij8NA3xRn7SV0KYb68dqcM_0SraXGEVVRL
- _aRWp5LabxepNZjBSDipH9yWEDgMhMmJytEbc8aO.qCquoR4HGqziQQAGCoo
- 83h4UBJSayceNHqmNfFPsEeElShvRxc3EQ38gFIg_cFFYr5ucLVuApi96XdV
- 1qwJ70yX8xJ5DEbRsiFkx4cV6ThzviD.bp0bM_mjHM_KJlTGKiUwT_TrB7lx
- llAcZ7zFcFAH8.ufRPT3_JoRyAyhTim3csAIj
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.284920
-Date: Wed, 3 Nov 2010 05:35:54 -0700 (PDT)
-From: David Brownell <david-b@pacbell.net>
-Subject: Re: [PATCH v4 08/12] gpio: add ti-ssp gpio driver
-To: Linus Walleij <linus.ml.walleij@gmail.com>
-Cc: davinci-linux-open-source@linux.davincidsp.com,
-        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        rpurdie@rpsys.net, Cyril Chemparathy <cyril@ti.com>,
-        spi-devel-general@lists.sourceforge.net,
-        linux-arm-kernel@lists.infradead.org, lrg@slimlogic.co.uk
-In-Reply-To: <AANLkTin=3K0H+YdNM2Nhz63c3+Upp+rwApo-Ww4p5qH6@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 3 Nov 2010 08:47:42 -0400
+Date: Wed, 3 Nov 2010 05:48:04 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH v2.6.36-rc7] init: don't call flush_scheduled_work()
+ from do_initcalls()
+Message-Id: <20101103054804.c88601d5.akpm@linux-foundation.org>
+In-Reply-To: <4CD14089.7050709@kernel.org>
+References: <4CB86F94.7080702@kernel.org>
+	<20101021171203.37d0d6d6.akpm@linux-foundation.org>
+	<4CC14ADA.9080706@kernel.org>
+	<20101022110925.ea1263f8.akpm@linux-foundation.org>
+	<4CD14089.7050709@kernel.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 03 Nov 2010 11:59:21 +0100 Tejun Heo <tj@kernel.org> wrote:
 
-
---- On Wed, 11/3/10, Linus Walleij <linus.ml.walleij@gmail.com> wrote:
-\
-> Date: Wednesday, November 3, 2010, 3:18 AM
-> 2010/11/3 David Brownell <david-b@pacbell.net>:
+> Hello, Andrew.
 > 
-> > That seems like
-> > a better structure for various vendors' "SSP"
-> > hardware (multifunction serial interface logic)
+> On 10/22/2010 08:09 PM, Andrew Morton wrote:
+> > mm..  I think we'd be OK to merge it.  Any such code is pretty badly
+> > buggy and is probably also crashable with a well-timed rmmod.
+> > 
+> > It'll also be code which few people ever use, so any runtime checks
+> > won't get us very good coverage.
+> > 
+> > Still, if it's not too hard to implement an "are there any scheduled
+> > works which live in initmem" check then I guess that would be the
+> > prudent approach.  A quite gross way of implementing that might be
+> > something like
 > 
-> Incidentally the ARM PrimeCell PL022 is called SSP,
-> "Synchronous Serial Port" and is not multifunction at all.
+> I've been trying to implement proper check code but there is a
+> problem.  It's possible to check all pending works to see whether the
+> work struct itself or the work function is in initmem and warn about
+> them.
+> 
+> The problem is with currently running works.  As work_struct isn't
+> accessible once it starts executing, struct worker would need to cache
+> it for later reference.  Worker already remembers the work_struct
+> pointer itself and its cwq and adding one more field to remember the
+> currently running work function is easy.  However, it's only useful
+> during the unlikely buggy case during init.  Given that if anything is
+> still depending on initmem, it will blow up pretty reliably, I don't
+> think it's worthwhile to add additional tracking just for this.
 
-ISTR coming across that IP module; are you sure
-that it only supports a single serial protocol,
-instead of just a "small" variety" (multi)?
-Unless the hardware only supports one protocol,
-my point holds.
+yes, if it goes bang, we'll hear it.  And we'll be able to work out why
+it went bang pretty easily.  Although I assume that a backtrace which
+leads into a just-unloaded module won't be able to display that
+module's symbols.
 
-I wasn't implying that modules named SSP have
-more in common than tending to support
-more than a single serial protocol.  If they
-only support one, they get names like"USART"
-or sometimes CODEC.
+>  So, I
+> think I'll just go ahead and drop the flush call and deal with the
+> unlikely fallouts if there's any.
 
-- Dave
-
+OK by me.
