@@ -1,93 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756049Ab0KCRAy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 13:00:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18715 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755816Ab0KCRAu convert rfc822-to-8bit (ORCPT
+	id S1756077Ab0KCRBP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 13:01:15 -0400
+Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:33020 "HELO
+	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755816Ab0KCRBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 13:00:50 -0400
-From: Steve Grubb <sgrubb@redhat.com>
-Organization: Red Hat
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: Re: [PATCH] security: move LSM xattrnames to xattr.h
-Date: Wed, 3 Nov 2010 13:00:31 -0400
-User-Agent: KMail/1.13.5 (Linux/2.6.33.8-149.fc13.x86_64; KDE/4.4.5; x86_64; ; )
-Cc: Ozan =?utf-8?q?=C3=87a=C4=9Flayan?= <ozan@pardus.org.tr>,
-        James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        David Safford <safford@watson.ibm.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-References: <1278011263-7951-1-git-send-email-zohar@linux.vnet.ibm.com> <201010120919.11819.sgrubb@redhat.com> <1286890834.2670.21.camel@localhost.localdomain>
-In-Reply-To: <1286890834.2670.21.camel@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201011031300.31522.sgrubb@redhat.com>
+	Wed, 3 Nov 2010 13:01:13 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Subject:Message-ID:X-Mailer:Mime-Version:Content-Type:X-Identified-User;
+	b=ofEOnFT/PzmMY51UGWl2xmzPvVKq4uXc9hgVLhr0yywDDvTtToEOh/Z89ZuZHmeMKwZbkCu8j7GHDet9mvu6yvImKI1PPmirxgUGB932AEnUQ3uUTTtEpdxYAxJxqp+h;
+Date: Wed, 3 Nov 2010 13:00:55 -0400
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] input/i8042: add Sony VAIOs to MUX blacklist
+Message-ID: <20101103130055.324e9cdb@jbarnes-vaio.home>
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/mixed; boundary="MP_/1aDII6iZ0_qD26J6kK93h4k"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 12.157.84.42 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 12, 2010 09:40:34 am Mimi Zohar wrote:
-> On Tue, 2010-10-12 at 09:19 -0400, Steve Grubb wrote:
-> > On Tuesday, October 12, 2010 09:06:09 am Mimi Zohar wrote:
-> > > On Tue, 2010-10-12 at 14:14 +0300, Ozan Çağlayan wrote:
-> > > > Cuma 02 Temmuz 2010 günü (saat 03:16:01) James Morris şunları yazmıştı:
-> > > > > On Thu, 1 Jul 2010, Mimi Zohar wrote:
-> > > > > > Make the security extended attributes names global. Updated to
-> > > > > > move the remaining Smack xattrs.
-> > > > > > 
-> > > > > > Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-> > > > > > Acked-by: Serge Hallyn <serue@us.ibm.com>
-> > > > 
-> > > > This drops
-> > > > 
-> > > > #define XATTR_CAPS_SUFFIX "capability"
-> > > > #define XATTR_NAME_CAPS XATTR_SECURITY_PREFIX XATTR_CAPS_SUFFIX
-> > > > 
-> > > > definitions from capability.h and puts them in xattr.h's #ifdef
-> > > > __KERNEL__ section making them invisible to userspace like libcap-ng
-> > > > causing build failures.
-> > > > 
-> > > > Am I wrong?
-> > > 
-> > > You're correct.  It's the same reason that cap-ng.c has to define
-> > > 'security'.
-> > > 
-> > > #ifdef VFS_CAP_U32
-> > > 
-> > >  #include <attr/xattr.h>
-> > >  #define XATTR_SECURITY_PREFIX "security."
-> > > 
-> > > Am cc'ing Steve.
-> > 
-> > So does this mean I need to provide more definitions for libcap-ng to
-> > work with future kernels or are you asking my opinion? My opinion is
-> > that if user space needs it to work correctly, please let it be
-> > available so I don't have to make my own define which may be inaccurate
-> > one day.
-> > 
-> > Thanks,
-> > -Steve
-> 
-> Before making any changes to the kernel xattr.h, I want to understand
-> the reason for two xattr.h files, one in /usr/include/linux/ and the
-> other in /usr/include/xattr/.  /usr/include/linux/xattr.h contains those
-> elements not defined as __kernel__, while /usr/include/xattr/xattr.h
-> contains that and other definitions.  Will changing the kernel xattr.h
-> version change both?
-> 
-> As long as we're making this change, should 'security' also be defined
-> outside of the __kernel__ definitions?
+--MP_/1aDII6iZ0_qD26J6kK93h4k
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
 
-I guess no one fixed this before 2.6.36 was finalized. Removing the define has broke user 
-space compilation for anything that works on file based capabilities. I can define it 
-myself, but if the kernel folks ever change the string, then we have more than just a 
-compile problem, we have runtime problems because I can no longer use the correct 
-string.
+The Sony VPCZ1 (at least) doesn't support MUXed PS/2 ports, so blacklist them
+all to avoid problems with input devices failing.
 
-So, what was the gain for breaking user space?
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+---
+ drivers/input/serio/i8042-x86ia64io.h |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
--Steve
+diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
+index ed7ad74..2633172 100644
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -351,6 +351,12 @@ static const struct dmi_system_id __initconst i8042_dmi_nomux_table[] = {
+ 		},
+ 	},
+ 	{
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
++			DMI_MATCH(DMI_BOARD_NAME, "VAIO"),
++		},
++	},
++	{
+ 		/* Amoi M636/A737 */
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Amoi Electronics CO.,LTD."),
+-- 
+1.7.0.4
+
+
+--MP_/1aDII6iZ0_qD26J6kK93h4k
+Content-Type: application/octet-stream; name=dmidecode
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename=dmidecode
+
+IyBkbWlkZWNvZGUgMi45ClNNQklPUyAyLjQgcHJlc2VudC4KMTggc3RydWN0dXJlcyBvY2N1cHlp
+bmcgNzM4IGJ5dGVzLgpUYWJsZSBhdCAweDAwMEZGNTAwLgoKSGFuZGxlIDB4MDAwMCwgRE1JIHR5
+cGUgMCwgMjQgYnl0ZXMKQklPUyBJbmZvcm1hdGlvbgoJVmVuZG9yOiBJTlNZREUKCVZlcnNpb246
+IFIyMDc0QzMKCVJlbGVhc2UgRGF0ZTogMDUvMzEvMjAxMAoJUk9NIFNpemU6IDIwNDgga0IKCUNo
+YXJhY3RlcmlzdGljczoKCQlQQ0kgaXMgc3VwcG9ydGVkCgkJUE5QIGlzIHN1cHBvcnRlZAoJCUJJ
+T1MgaXMgdXBncmFkZWFibGUKCQlCSU9TIHNoYWRvd2luZyBpcyBhbGxvd2VkCgkJQm9vdCBmcm9t
+IENEIGlzIHN1cHBvcnRlZAoJCVNlbGVjdGFibGUgYm9vdCBpcyBzdXBwb3J0ZWQKCQlFREQgaXMg
+c3VwcG9ydGVkCgkJODA0MiBrZXlib2FyZCBzZXJ2aWNlcyBhcmUgc3VwcG9ydGVkIChpbnQgOWgp
+CgkJQ0dBL21vbm8gdmlkZW8gc2VydmljZXMgYXJlIHN1cHBvcnRlZCAoaW50IDEwaCkKCQlBQ1BJ
+IGlzIHN1cHBvcnRlZAoJCVVTQiBsZWdhY3kgaXMgc3VwcG9ydGVkCgkJU21hcnQgYmF0dGVyeSBp
+cyBzdXBwb3J0ZWQKCQlCSU9TIGJvb3Qgc3BlY2lmaWNhdGlvbiBpcyBzdXBwb3J0ZWQKCQlGdW5j
+dGlvbiBrZXktaW5pdGlhdGVkIG5ldHdvcmsgYm9vdCBpcyBzdXBwb3J0ZWQKCQlUYXJnZXRlZCBj
+b250ZW50IGRpc3RyaWJ1dGlvbiBpcyBzdXBwb3J0ZWQKCUJJT1MgUmV2aXNpb246IDIwLjc0CglG
+aXJtd2FyZSBSZXZpc2lvbjogMjAuNzQKCkhhbmRsZSAweDAwMDEsIERNSSB0eXBlIDEsIDI3IGJ5
+dGVzClN5c3RlbSBJbmZvcm1hdGlvbgoJTWFudWZhY3R1cmVyOiBTb255IENvcnBvcmF0aW9uCglQ
+cm9kdWN0IE5hbWU6IFZQQ1oxMjJHWAoJVmVyc2lvbjogSjAwNDlUNEYKCVNlcmlhbCBOdW1iZXI6
+IDI3NTI2MjM2LTMwMDIyODgKCVVVSUQ6IDQwNDE3MTg3LTZGODUtREYxMS05NUQ5LTAwMjRCRUQ2
+RDMyQgoJV2FrZS11cCBUeXBlOiBQb3dlciBTd2l0Y2gKCVNLVSBOdW1iZXI6IE4vQQoJRmFtaWx5
+OiBWQUlPCgpIYW5kbGUgMHgwMDAyLCBETUkgdHlwZSAyLCAxMCBieXRlcwpCYXNlIEJvYXJkIElu
+Zm9ybWF0aW9uCglNYW51ZmFjdHVyZXI6IFNvbnkgQ29ycG9yYXRpb24KCVByb2R1Y3QgTmFtZTog
+VkFJTwoJVmVyc2lvbjogTi9BCglTZXJpYWwgTnVtYmVyOiBOL0EKCkhhbmRsZSAweDAwMDMsIERN
+SSB0eXBlIDMsIDE3IGJ5dGVzCkNoYXNzaXMgSW5mb3JtYXRpb24KCU1hbnVmYWN0dXJlcjogU29u
+eSBDb3Jwb3JhdGlvbgoJVHlwZTogTm90ZWJvb2sKCUxvY2s6IE5vdCBQcmVzZW50CglWZXJzaW9u
+OiBOL0EKCVNlcmlhbCBOdW1iZXI6IE4vQQoJQXNzZXQgVGFnOiBOL0EKCUJvb3QtdXAgU3RhdGU6
+IFNhZmUKCVBvd2VyIFN1cHBseSBTdGF0ZTogU2FmZQoJVGhlcm1hbCBTdGF0ZTogU2FmZQoJU2Vj
+dXJpdHkgU3RhdHVzOiBOb25lCglPRU0gSW5mb3JtYXRpb246IDB4MDAwMDAwMDAKCkhhbmRsZSAw
+eDAwMDQsIERNSSB0eXBlIDExLCA1IGJ5dGVzCk9FTSBTdHJpbmdzCglTdHJpbmcgMTogMDAwMDA2
+NzgxMEEKCVN0cmluZyAyOiBGTkMtRVhUQgoJU3RyaW5nIDM6IDlFTDczN3FEZHhmYk1kVjVVamhR
+VHlMYlVqZnRyeUx3c2RmdG5OaFFzZFY1UE5oZ2hWCglTdHJpbmcgNDogUmVzZXJ2ZWQKCVN0cmlu
+ZyA1OiA2LjAuMy4xMTk1CgpIYW5kbGUgMHgwMDA1LCBETUkgdHlwZSAzMiwgMjAgYnl0ZXMKU3lz
+dGVtIEJvb3QgSW5mb3JtYXRpb24KCVN0YXR1czogTm8gZXJyb3JzIGRldGVjdGVkCgpIYW5kbGUg
+MHgwMDA2LCBETUkgdHlwZSAxMzYsIDExIGJ5dGVzCk9FTS1zcGVjaWZpYyBUeXBlCglIZWFkZXIg
+YW5kIERhdGE6CgkJODggMEIgMDYgMDAgMDEgNDQgNDkgNTIgNTMgMTIgMDYKCVN0cmluZ3M6CgkJ
+U29ueSBDb3Jwb3JhdGlvbgoKSGFuZGxlIDB4MDAwNywgRE1JIHR5cGUgMTYsIDE1IGJ5dGVzClBo
+eXNpY2FsIE1lbW9yeSBBcnJheQoJTG9jYXRpb246IFN5c3RlbSBCb2FyZCBPciBNb3RoZXJib2Fy
+ZAoJVXNlOiBTeXN0ZW0gTWVtb3J5CglFcnJvciBDb3JyZWN0aW9uIFR5cGU6IE5vbmUKCU1heGlt
+dW0gQ2FwYWNpdHk6IDIwNDggR0IKCUVycm9yIEluZm9ybWF0aW9uIEhhbmRsZTogTm90IFByb3Zp
+ZGVkCglOdW1iZXIgT2YgRGV2aWNlczogMgoKSGFuZGxlIDB4MDAwOCwgRE1JIHR5cGUgMTcsIDIx
+IGJ5dGVzCk1lbW9yeSBEZXZpY2UKCUFycmF5IEhhbmRsZTogMHgwMDA3CglFcnJvciBJbmZvcm1h
+dGlvbiBIYW5kbGU6IE5vdCBQcm92aWRlZAoJVG90YWwgV2lkdGg6IDY0IGJpdHMKCURhdGEgV2lk
+dGg6IDY0IGJpdHMKCVNpemU6IDIwNDggTUIKCUZvcm0gRmFjdG9yOiBTT0RJTU0KCVNldDogTm9u
+ZQoJTG9jYXRvcjogU09ESU1NMQoJQmFuayBMb2NhdG9yOiBCYW5rIDAKCVR5cGU6IFVua25vd24K
+CVR5cGUgRGV0YWlsOiBVbmtub3duCgpIYW5kbGUgMHgwMDA5LCBETUkgdHlwZSAyMCwgMTkgYnl0
+ZXMKTWVtb3J5IERldmljZSBNYXBwZWQgQWRkcmVzcwoJU3RhcnRpbmcgQWRkcmVzczogMHgwMDAw
+MDAwMDAwMAoJRW5kaW5nIEFkZHJlc3M6IDB4MDAwN0ZGRkZGRkYKCVJhbmdlIFNpemU6IDIgR0IK
+CVBoeXNpY2FsIERldmljZSBIYW5kbGU6IDB4MDAwOAoJTWVtb3J5IEFycmF5IE1hcHBlZCBBZGRy
+ZXNzIEhhbmRsZTogMHgwMDBDCglQYXJ0aXRpb24gUm93IFBvc2l0aW9uOiBVbmtub3duCglJbnRl
+cmxlYXZlIFBvc2l0aW9uOiBVbmtub3duCglJbnRlcmxlYXZlZCBEYXRhIERlcHRoOiBVbmtub3du
+CgpIYW5kbGUgMHgwMDBBLCBETUkgdHlwZSAxNywgMjEgYnl0ZXMKTWVtb3J5IERldmljZQoJQXJy
+YXkgSGFuZGxlOiAweDAwMDcKCUVycm9yIEluZm9ybWF0aW9uIEhhbmRsZTogTm90IFByb3ZpZGVk
+CglUb3RhbCBXaWR0aDogNjQgYml0cwoJRGF0YSBXaWR0aDogNjQgYml0cwoJU2l6ZTogMjA0OCBN
+QgoJRm9ybSBGYWN0b3I6IFNPRElNTQoJU2V0OiBOb25lCglMb2NhdG9yOiBTT0RJTU0yCglCYW5r
+IExvY2F0b3I6IEJhbmsgMQoJVHlwZTogVW5rbm93bgoJVHlwZSBEZXRhaWw6IFVua25vd24KCkhh
+bmRsZSAweDAwMEIsIERNSSB0eXBlIDIwLCAxOSBieXRlcwpNZW1vcnkgRGV2aWNlIE1hcHBlZCBB
+ZGRyZXNzCglTdGFydGluZyBBZGRyZXNzOiAweDAwMDgwMDAwMDAwCglFbmRpbmcgQWRkcmVzczog
+MHgwMDBGRkZGRkZGRgoJUmFuZ2UgU2l6ZTogMiBHQgoJUGh5c2ljYWwgRGV2aWNlIEhhbmRsZTog
+MHgwMDBBCglNZW1vcnkgQXJyYXkgTWFwcGVkIEFkZHJlc3MgSGFuZGxlOiAweDAwMEMKCVBhcnRp
+dGlvbiBSb3cgUG9zaXRpb246IFVua25vd24KCUludGVybGVhdmUgUG9zaXRpb246IFVua25vd24K
+CUludGVybGVhdmVkIERhdGEgRGVwdGg6IFVua25vd24KCkhhbmRsZSAweDAwMEMsIERNSSB0eXBl
+IDE5LCAxNSBieXRlcwpNZW1vcnkgQXJyYXkgTWFwcGVkIEFkZHJlc3MKCVN0YXJ0aW5nIEFkZHJl
+c3M6IDB4MDAwMDAwMDAwMDAKCUVuZGluZyBBZGRyZXNzOiAweDAwMEZGRkZGRkZGCglSYW5nZSBT
+aXplOiA0IEdCCglQaHlzaWNhbCBBcnJheSBIYW5kbGU6IDB4MDAwNwoJUGFydGl0aW9uIFdpZHRo
+OiAwCgpIYW5kbGUgMHgwMDBELCBETUkgdHlwZSA0LCAzNSBieXRlcwpQcm9jZXNzb3IgSW5mb3Jt
+YXRpb24KCVNvY2tldCBEZXNpZ25hdGlvbjogTi9BCglUeXBlOiBDZW50cmFsIFByb2Nlc3NvcgoJ
+RmFtaWx5OiBPdGhlcgoJTWFudWZhY3R1cmVyOiBHZW51aW5lSW50ZWwKCUlEOiA1MiAwNiAwMiAw
+MCBGRiBGQiBFQiBCRgoJVmVyc2lvbjogSW50ZWwoUikgQ29yZShUTSkgaTUgQ1BVICAgICAgIE0g
+NTIwICBAIDIuNDBHSHoKCVZvbHRhZ2U6IDEuNCBWCglFeHRlcm5hbCBDbG9jazogMTMzIE1IegoJ
+TWF4IFNwZWVkOiAyNDAwIE1IegoJQ3VycmVudCBTcGVlZDogMjQwMCBNSHoKCVN0YXR1czogUG9w
+dWxhdGVkLCBFbmFibGVkCglVcGdyYWRlOiBOb25lCglMMSBDYWNoZSBIYW5kbGU6IDB4MDAwRgoJ
+TDIgQ2FjaGUgSGFuZGxlOiAweDAwMTAKCUwzIENhY2hlIEhhbmRsZTogMHgwMDBFCglTZXJpYWwg
+TnVtYmVyOiBOL0EKCUFzc2V0IFRhZzogTi9BCglQYXJ0IE51bWJlcjogTi9BCgpIYW5kbGUgMHgw
+MDBFLCBETUkgdHlwZSA3LCAxOSBieXRlcwpDYWNoZSBJbmZvcm1hdGlvbgoJU29ja2V0IERlc2ln
+bmF0aW9uOiBMMyBDYWNoZQoJQ29uZmlndXJhdGlvbjogRW5hYmxlZCwgTm90IFNvY2tldGVkLCBM
+ZXZlbCAzCglPcGVyYXRpb25hbCBNb2RlOiBXcml0ZSBCYWNrCglMb2NhdGlvbjogSW50ZXJuYWwK
+CUluc3RhbGxlZCBTaXplOiAzMDcyIEtCCglNYXhpbXVtIFNpemU6IDMwNzIgS0IKCVN1cHBvcnRl
+ZCBTUkFNIFR5cGVzOgoJCVVua25vd24KCUluc3RhbGxlZCBTUkFNIFR5cGU6IFVua25vd24KCVNw
+ZWVkOiBVbmtub3duCglFcnJvciBDb3JyZWN0aW9uIFR5cGU6IFNpbmdsZS1iaXQgRUNDCglTeXN0
+ZW0gVHlwZTogVW5pZmllZAoJQXNzb2NpYXRpdml0eTogMTYtd2F5IFNldC1hc3NvY2lhdGl2ZQoK
+SGFuZGxlIDB4MDAwRiwgRE1JIHR5cGUgNywgMTkgYnl0ZXMKQ2FjaGUgSW5mb3JtYXRpb24KCVNv
+Y2tldCBEZXNpZ25hdGlvbjogTDEgQ2FjaGUKCUNvbmZpZ3VyYXRpb246IEVuYWJsZWQsIE5vdCBT
+b2NrZXRlZCwgTGV2ZWwgMQoJT3BlcmF0aW9uYWwgTW9kZTogV3JpdGUgQmFjawoJTG9jYXRpb246
+IEludGVybmFsCglJbnN0YWxsZWQgU2l6ZTogMTI4IEtCCglNYXhpbXVtIFNpemU6IDEyOCBLQgoJ
+U3VwcG9ydGVkIFNSQU0gVHlwZXM6CgkJVW5rbm93bgoJSW5zdGFsbGVkIFNSQU0gVHlwZTogVW5r
+bm93bgoJU3BlZWQ6IFVua25vd24KCUVycm9yIENvcnJlY3Rpb24gVHlwZTogVW5rbm93bgoJU3lz
+dGVtIFR5cGU6IFVua25vd24KCUFzc29jaWF0aXZpdHk6IFVua25vd24KCkhhbmRsZSAweDAwMTAs
+IERNSSB0eXBlIDcsIDE5IGJ5dGVzCkNhY2hlIEluZm9ybWF0aW9uCglTb2NrZXQgRGVzaWduYXRp
+b246IEwyIENhY2hlCglDb25maWd1cmF0aW9uOiBFbmFibGVkLCBOb3QgU29ja2V0ZWQsIExldmVs
+IDIKCU9wZXJhdGlvbmFsIE1vZGU6IFdyaXRlIEJhY2sKCUxvY2F0aW9uOiBJbnRlcm5hbAoJSW5z
+dGFsbGVkIFNpemU6IDUxMiBLQgoJTWF4aW11bSBTaXplOiA1MTIgS0IKCVN1cHBvcnRlZCBTUkFN
+IFR5cGVzOgoJCVVua25vd24KCUluc3RhbGxlZCBTUkFNIFR5cGU6IFVua25vd24KCVNwZWVkOiBV
+bmtub3duCglFcnJvciBDb3JyZWN0aW9uIFR5cGU6IFNpbmdsZS1iaXQgRUNDCglTeXN0ZW0gVHlw
+ZTogVW5pZmllZAoJQXNzb2NpYXRpdml0eTogOC13YXkgU2V0LWFzc29jaWF0aXZlCgpIYW5kbGUg
+MHgwMDExLCBETUkgdHlwZSAxMjcsIDQgYnl0ZXMKRW5kIE9mIFRhYmxlCgo=
+
+--MP_/1aDII6iZ0_qD26J6kK93h4k--
