@@ -1,90 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019Ab0KCCBE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 22:01:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55245 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751193Ab0KCCBC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 22:01:02 -0400
-Message-ID: <4CD0C22B.2000905@redhat.com>
-Date: Tue, 02 Nov 2010 22:00:11 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+	id S1753168Ab0KCCFK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 22:05:10 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:58755 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab0KCCFJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Nov 2010 22:05:09 -0400
 MIME-Version: 1.0
-To: Minchan Kim <minchan.kim@gmail.com>
-CC: Mandeep Singh Baines <msb@chromium.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, wad@chromium.org, olofj@chromium.org,
-        hughd@chromium.org
-Subject: Re: [PATCH] RFC: vmscan: add min_filelist_kbytes sysctl for protecting
- the working set
-References: <20101028191523.GA14972@google.com>	<20101101012322.605C.A69D9226@jp.fujitsu.com>	<20101101182416.GB31189@google.com>	<4CCF0BE3.2090700@redhat.com>	<AANLkTi=src1L0gAFsogzCmejGOgg5uh=9O4Uw+ZmfBg4@mail.gmail.com>	<4CCF8151.3010202@redhat.com> <AANLkTi=JJ-0ae+QybtR+e=4_4mpQghh61c4=TZYAw8uF@mail.gmail.com>
-In-Reply-To: <AANLkTi=JJ-0ae+QybtR+e=4_4mpQghh61c4=TZYAw8uF@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.55.46.36]
+In-Reply-To: <201011030532.09986.randrianasulu@gmail.com>
+References: <201011030532.09986.randrianasulu@gmail.com>
+Date: Wed, 3 Nov 2010 10:05:07 +0800
+Message-ID: <AANLkTi=NYWGQB_O78dn=opzPYFngeBnJ2qrF7k5Le_ma@mail.gmail.com>
+Subject: Re: 2.6.37-rc1 build failure
+From: Lin Ming <lin@ming.vg>
+To: randrianasulu@gmail.com
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/02/2010 08:48 PM, Minchan Kim wrote:
-
->> I wonder if a possible solution would be to limit how fast
->> file pages get reclaimed, when the page cache is very small.
->> Say, inactive_file * active_file<  2 * zone->pages_high ?
+On Wed, Nov 3, 2010 at 1:32 PM,  <randrianasulu@gmail.com> wrote:
+> Trying to make new kernel i run into this:
 >
-> Why do you multiply inactive_file and active_file?
-> What's meaning?
-
-That was a stupid typo, it should have been a + :)
-
-> I think it's very difficult to fix _a_ threshold.
-> At least, user have to set it with proper value to use the feature.
-> Anyway, we need default value. It needs some experiments in desktop
-> and embedded.
-
-Yes, setting a threshold will be difficult.  However,
-if the behaviour below that threshold is harmless to
-pretty much any workload, it doesn't matter a whole
-lot where we set it...
-
->> At that point, maybe we could slow down the reclaiming of
->> page cache pages to be significantly slower than they can
->> be refilled by the disk.  Maybe 100 pages a second - that
->> can be refilled even by an actual spinning metal disk
->> without even the use of readahead.
->>
->> That can be rounded up to one batch of SWAP_CLUSTER_MAX
->> file pages every 1/4 second, when the number of page cache
->> pages is very low.
+>  CC      arch/x86/lib/delay.o
+>  AS      arch/x86/lib/getuser.o
+>  AS      arch/x86/lib/putuser.o
+>  CC      arch/x86/lib/usercopy_32.o
+>  AR      arch/x86/lib/lib.a
+>  LD      vmlinux.o
+>  MODPOST vmlinux.o
+> WARNING: modpost: Found 2 section mismatch(es).
+> To see full details build your kernel with:
+> 'make CONFIG_DEBUG_SECTION_MISMATCH=y'
+>  GEN     .version
+>  CHK     include/generated/compile.h
+>  UPD     include/generated/compile.h
+>  CC      init/version.o
+>  LD      init/built-in.o
+>  LD      .tmp_vmlinux1
+> kernel/built-in.o: In function `free_event':
+> perf_event.c:(.text+0x66eb3): undefined reference to `irq_work_sync'
+> kernel/built-in.o: In function `perf_output_put_handle':
+> perf_event.c:(.text+0x680e1): undefined reference to `irq_work_queue'
+> kernel/built-in.o: In function `__perf_event_overflow':
+> perf_event.c:(.text+0x6a75e): undefined reference to `irq_work_queue'
+> make: *** [.tmp_vmlinux1] Ошибка 1
 >
-> How about reducing scanning window size?
-> I think it could approximate the idea.
-
-A good idea in principle, but if it results in the VM
-simply calling the pageout code more often, I suspect
-it will not have any effect.
-
-Your patch looks like it would have that effect.
-
-I suspect we will need a time-based approach to really
-protect the last bits of page cache in a near-OOM
-situation.
-
->> Would there be any downsides to this approach?
+> kernel.org git master up to
 >
-> At first feeling, I have a concern unbalance aging of anon/file.
-> But I think it's no problem. It a result user want. User want to
-> protect file-backed page(ex, code page) so many anon swapout is
-> natural result to go on the system. If the system has no swap, we have
-> no choice except OOM.
+> commit eb8abb927ae2fd1730e24ea94cd9527f3c086292
+> Author: Theodore Ts'o <tytso@mit.edu>
+> Date:   Tue Nov 2 09:34:50 2010 -0400
+>
+>    ext4: Remove useless spinlock in ext4_getattr()
+>
+>
+>
+> this is my .config
 
-We already have an unbalance in aging anon and file
-pages, several of which are introduced on purpose.
+I build with you .config, but no error.
 
-In this proposal, there would only be an imbalance
-if the number of file pages is really low.
+Maybe you can make distclean and re-build.
 
--- 
-All rights reversed
+Lin Ming
