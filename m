@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250Ab0KCONS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 10:13:18 -0400
-Received: from cantor.suse.de ([195.135.220.2]:56394 "EHLO mx1.suse.de"
+	id S1755318Ab0KCOPe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 10:15:34 -0400
+Received: from mga09.intel.com ([134.134.136.24]:8595 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752549Ab0KCONR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 10:13:17 -0400
-Date: Wed, 3 Nov 2010 10:13:15 -0400 (EDT)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Joe Perches <joe@perches.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/10] drivers/hid/hid-input.c: Remove KERN_DEBUG from
- dbg_hid use
-In-Reply-To: <b63d550b69fd940f0b03fd7dda8396acb2223801.1288059486.git.joe@perches.com>
-Message-ID: <alpine.LNX.2.00.1011031012020.15851@pobox.suse.cz>
-References: <cover.1288059486.git.joe@perches.com> <b63d550b69fd940f0b03fd7dda8396acb2223801.1288059486.git.joe@perches.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754987Ab0KCOPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 10:15:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,289,1286175600"; 
+   d="scan'208";a="569969964"
+Date: Wed, 3 Nov 2010 22:15:29 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Pavel Emelianov <xemul@openvz.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org
+Subject: Re: [PATCH] cgroup: prefer [kv]zalloc over [kv]malloc+memset in
+ memory controller code.
+Message-ID: <20101103141529.GA7713@localhost>
+References: <alpine.LNX.2.00.1011012038490.12889@swampdragon.chaosbits.net>
+ <20101101200122.GH840@cmpxchg.org>
+ <alpine.LNX.2.00.1011012056250.12889@swampdragon.chaosbits.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1011012056250.12889@swampdragon.chaosbits.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Oct 2010, Joe Perches wrote:
+On Mon, Nov 01, 2010 at 08:59:13PM +0100, Jesper Juhl wrote:
 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  drivers/hid/hid-input.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-> index bb0b365..3a1517a 100644
-> --- a/drivers/hid/hid-input.c
-> +++ b/drivers/hid/hid-input.c
-> @@ -174,7 +174,7 @@ static int hidinput_setkeycode(struct input_dev *dev,
->  
->  		clear_bit(*old_keycode, dev->keybit);
->  		set_bit(usage->code, dev->keybit);
-> -		dbg_hid(KERN_DEBUG "Assigned keycode %d to HID usage code %x\n",
-> +		dbg_hid("Assigned keycode %d to HID usage code %x\n",
->  			usage->code, usage->hid);
->  
->  		/*
+> @@ -4169,13 +4169,11 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *mem, int node)
+>  	 */
+>  	if (!node_state(node, N_NORMAL_MEMORY))
+>  		tmp = -1;
+> -	pn = kmalloc_node(sizeof(*pn), GFP_KERNEL, tmp);
+> +	pn = kmalloc_node(sizeof(*pn), GFP_KERNEL|__GFP_ZERO, tmp);
 
-Applied to HID tree, thanks.
+Use the simpler kzalloc_node()? It's introduced here:
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+        commit 979b0fea2d9ae5d57237a368d571cbc84655fba6
+        Author: Jeff Layton <jlayton@redhat.com>
+        Date:   Thu Jun 5 22:47:00 2008 -0700
+
+            vm: add kzalloc_node() inline
+
+
+Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
+
+Thanks,
+Fengguang
