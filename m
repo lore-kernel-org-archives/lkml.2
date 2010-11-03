@@ -1,431 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307Ab0KCOWR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 10:22:17 -0400
-Received: from tango.tkos.co.il ([62.219.50.35]:44504 "EHLO tango.tkos.co.il"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752583Ab0KCOWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 10:22:14 -0400
-From: Baruch Siach <baruch@tkos.co.il>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alex Gershgorin <agersh@rambler.ru>, Baruch Siach <baruch@tkos.co.il>
-Subject: [PATCH] drivers/misc: Altera Cyclone active serial implementation
-Date: Wed,  3 Nov 2010 16:21:35 +0200
-Message-Id: <879a6320efee16c04f0732a6887b95c1b4c6d10f.1288793522.git.baruch@tkos.co.il>
-X-Mailer: git-send-email 1.7.2.3
+	id S1755337Ab0KCOZh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 10:25:37 -0400
+Received: from mognix.dark-green.com ([88.116.226.179]:65073 "EHLO
+	mognix.dark-green.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752583Ab0KCOZg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 10:25:36 -0400
+MIME-Version: 1.0
+Date: Wed, 03 Nov 2010 15:25:28 +0100
+From: gimli <gimli@dark-green.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: Re: Resend  [PATCH 3/4] MacbookAir3,1 and 3,2 hid support
+In-Reply-To: <alpine.LNX.2.00.1011030953540.15851@pobox.suse.cz>
+References: <66c1cd33ff5b2d908b2b31defb8e0cd1@mognix.dark-green.com> <3e6b335b371a07cd60221a25c5b6b47d@mognix.dark-green.com> <alpine.LNX.2.00.1011030918410.15851@pobox.suse.cz> <7b3b313ce7138c19191295a645dfb38f@mognix.dark-green.com> <alpine.LNX.2.00.1011030953540.15851@pobox.suse.cz>
+Message-ID: <dfe20d79428280b911bd98629a8baac9@mognix.dark-green.com>
+User-Agent: RoundCube Webmail/0.2.2
+Content-Type: multipart/mixed;
+	boundary="=_03fb90f6757ccfb8da56d0982336b31f"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alex Gershgorin <agersh@rambler.ru>
+--=_03fb90f6757ccfb8da56d0982336b31f
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="UTF-8"
 
-The active serial protocol can be used to program Altera Cyclone FPGA devices.
-This driver uses the kernel gpio interface to implement the active serial
-protocol.
+Next try.
 
-Signed-off-by: Alex Gershgorin <agersh@rambler.ru>
-Signed-off-by: Baruch Siach <baruch@tkos.co.il>
----
- drivers/misc/Kconfig       |   10 ++
- drivers/misc/Makefile      |    1 +
- drivers/misc/cyclone_as.c  |  326 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/cyclone_as.h |   23 +++
- 4 files changed, 360 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/cyclone_as.c
- create mode 100644 include/linux/cyclone_as.h
+On Wed, 3 Nov 2010 09:56:21 -0400 (EDT), Jiri Kosina <jkosina@suse.cz>
+wrote:
+> On Wed, 3 Nov 2010, gimli wrote:
+> 
+>> Does this look better ? 
+> 
+> What I would actually prefer would be something like
+> 
+> 
+> 	if ( ... )
+> 		table = macbookair_fn_keys;
+> 	else if ( ... )
+> 		table = powerbook_fn_keys;
+> 	else
+> 		table = apple_fn_keys;
+> 
+> 	apple_find_translation(table, usage->code);
+> 
+>> I also use the USB id's for the if.
+> 
+> Thanks,
+--=_03fb90f6757ccfb8da56d0982336b31f
+Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="UTF-8";
+ name="hid_macbookair_2.patch"; 
+Content-Disposition: attachment;
+ filename="hid_macbookair_2.patch"; 
 
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index b743312..182328e 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -390,6 +390,16 @@ config BMP085
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called bmp085.
- 
-+config CYCLONE_AS
-+	tristate "Altera Cyclone Active Serial driver"
-+	help
-+	  Provides support for active serial programming of Altera Cyclone
-+	  devices. For the active serial protocol details see the Altera 
-+	  "Serial Configuration Devices" document (C51014).
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called cyclone_as.
-+
- source "drivers/misc/c2port/Kconfig"
- source "drivers/misc/eeprom/Kconfig"
- source "drivers/misc/cb710/Kconfig"
-diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index 42eab95..a3e0248 100644
---- a/drivers/misc/Makefile
-+++ b/drivers/misc/Makefile
-@@ -35,3 +35,4 @@ obj-y				+= eeprom/
- obj-y				+= cb710/
- obj-$(CONFIG_VMWARE_BALLOON)	+= vmw_balloon.o
- obj-$(CONFIG_ARM_CHARLCD)	+= arm-charlcd.o
-+obj-$(CONFIG_CYCLONE_AS)	+= cyclone_as.o
-diff --git a/drivers/misc/cyclone_as.c b/drivers/misc/cyclone_as.c
-new file mode 100644
-index 0000000..bfaa60d
---- /dev/null
-+++ b/drivers/misc/cyclone_as.c
-@@ -0,0 +1,326 @@
-+/*
-+ * Copyright 2010 Alex Gershgorin, Orex Computed Radiography
-+ *
-+ * The code contained herein is licensed under the GNU General Public
-+ * License. You may obtain a copy of the GNU General Public License
-+ * Version 2 or later at the following locations:
-+ *
-+ * http://www.opensource.org/licenses/gpl-license.html
-+ * http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
-+ */
-+
-+#include <linux/fs.h>
-+#include <linux/err.h>
-+#include <linux/cdev.h>
-+#include <linux/gpio.h>
-+#include <linux/slab.h>
-+#include <linux/mutex.h>
-+#include <linux/delay.h>
-+#include <linux/device.h>
-+#include <linux/uaccess.h>
-+#include <linux/cyclone_as.h>
-+#include <linux/platform_device.h>
-+
-+/* Active Serial Instruction Set */
-+#define AS_WRITE_ENABLE		0x06
-+#define AS_WRITE_DISABLE	0x04
-+#define AS_READ_STATUS		0x05
-+#define AS_WRITE_STATUS		0x01
-+#define AS_READ_BYTES		0x03
-+#define AS_FAST_READ_BYTES	0x0B
-+#define AS_PAGE_PROGRAM		0x02
-+#define AS_ERASE_SECTOR		0xD8
-+#define AS_ERASE_BULK		0xC7
-+#define AS_READ_SILICON_ID	0xAB
-+#define AS_CHECK_SILICON_ID	0x9F
-+
-+#define AS_PAGE_SIZE		256
-+
-+#define AS_MAX_DEVS		16
-+
-+#define ASIO_DATA		0
-+#define ASIO_NCONFIG		1
-+#define ASIO_DCLK		2
-+#define ASIO_NCS		3
-+#define ASIO_NCE		4
-+#define AS_GPIO_NUM		5
-+
-+#define AS_ALIGNED(x)	IS_ALIGNED(x, AS_PAGE_SIZE)
-+
-+static struct class *cyclone_as_class;
-+static unsigned cyclone_as_major;
-+static DECLARE_BITMAP(cyclone_as_devs, AS_MAX_DEVS);
-+
-+struct cyclone_as_device {
-+	struct cdev cdev;
-+	struct device *dev;
-+	struct mutex open_lock;
-+	struct gpio gpios[AS_GPIO_NUM];
-+};
-+
-+static void xmit_byte(struct gpio *gpios, char c, char lsb_first)
-+{
-+	int i;
-+
-+	for (i = 0; i < 8; i++) {
-+		gpio_set_value(gpios[ASIO_DATA].gpio,
-+				lsb_first ? (c >> i) & 1 : (c << i) & 0x80);
-+
-+		gpio_set_value(gpios[ASIO_DCLK].gpio, 0);
-+		ndelay(40);
-+		gpio_set_value(gpios[ASIO_DCLK].gpio, 1);
-+		ndelay(20);
-+	}
-+}
-+
-+static int cyclone_as_open(struct inode *inode, struct file *file)
-+{
-+	int ret;
-+	struct cyclone_as_device *drvdata;
-+
-+	drvdata = container_of(inode->i_cdev, struct cyclone_as_device, cdev);
-+	ret = mutex_trylock(&drvdata->open_lock);
-+	if (ret == 0)
-+		return -EBUSY;
-+
-+	file->private_data = drvdata;
-+
-+	ret = gpio_request_array(drvdata->gpios, ARRAY_SIZE(drvdata->gpios));
-+	if (ret < 0) {
-+		mutex_unlock(&drvdata->open_lock);
-+		return ret;
-+	}
-+	ndelay(300);
-+
-+	dev_dbg(drvdata->dev,
-+			"data: %d, nconfig: %d, dclk: %d, ncs: %d, nce: %d\n",
-+			drvdata->gpios[ASIO_DATA].gpio,
-+			drvdata->gpios[ASIO_NCONFIG].gpio,
-+			drvdata->gpios[ASIO_DCLK].gpio,
-+			drvdata->gpios[ASIO_NCS].gpio,
-+			drvdata->gpios[ASIO_NCE].gpio);
-+
-+	return 0;
-+}
-+
-+static ssize_t cyclone_as_write(struct file *file, const char *buf,
-+		size_t count, loff_t *ppos)
-+{
-+	int	i, ret;
-+	u8	*page_buf;
-+	ssize_t len = count;
-+	struct cyclone_as_device *drvdata = file->private_data;
-+	unsigned page_count;
-+
-+	if (len < 0)
-+		return -EFAULT;
-+
-+	if (len == 0)
-+		return 0;
-+
-+	/* writes must be page aligned */
-+	if (!AS_ALIGNED(*ppos) || !AS_ALIGNED(count))
-+		return -EINVAL;
-+	page_count = *ppos / AS_PAGE_SIZE;
-+
-+	page_buf = kmalloc(AS_PAGE_SIZE, GFP_KERNEL);
-+	if (page_buf == NULL)
-+		return -ENOMEM;
-+
-+	if (*ppos == 0) {
-+		gpio_set_value(drvdata->gpios[ASIO_NCS].gpio, 0);
-+		xmit_byte(drvdata->gpios, AS_WRITE_ENABLE, 0);
-+		gpio_set_value(drvdata->gpios[ASIO_NCS].gpio, 1);
-+		ndelay(300);
-+
-+		gpio_set_value(drvdata->gpios[ASIO_NCS].gpio, 0);
-+		xmit_byte(drvdata->gpios, AS_ERASE_BULK, 0);
-+		gpio_set_value(drvdata->gpios[ASIO_NCS].gpio, 1);
-+		msleep_interruptible(5000);
-+	}
-+
-+	while (len) {
-+		dev_dbg(drvdata->dev, "offset = 0x%p\n", buf);
-+
-+		ret = copy_from_user(page_buf, buf, AS_PAGE_SIZE);
-+		if (ret == 0) {
-+			buf += AS_PAGE_SIZE;
-+			*ppos += AS_PAGE_SIZE;
-+			len -= AS_PAGE_SIZE;
-+		} else {
-+			kfree(page_buf);
-+			return -EFAULT;
-+		}
-+
-+		gpio_set_value(drvdata->gpios[ASIO_NCS].gpio, 0);
-+		xmit_byte(drvdata->gpios, AS_WRITE_ENABLE, 0);
-+		gpio_set_value(drvdata->gpios[ASIO_NCS].gpio, 1);
-+		ndelay(300);
-+
-+		gpio_set_value(drvdata->gpios[ASIO_NCS].gpio, 0);
-+		xmit_byte(drvdata->gpios, AS_PAGE_PROGRAM, 0);
-+		xmit_byte(drvdata->gpios, (page_count >> 8) & 0xff, 0);
-+		xmit_byte(drvdata->gpios, page_count & 0xff, 0);
-+		xmit_byte(drvdata->gpios, 0, 0);
-+		ndelay(300);
-+
-+		for (i = 0; i < AS_PAGE_SIZE; i++)
-+			xmit_byte(drvdata->gpios, page_buf[i], 1);
-+
-+		ndelay(300);
-+		gpio_set_value(drvdata->gpios[ASIO_NCS].gpio, 1);
-+		page_count++;
-+		mdelay(5);
-+	}
-+
-+	kfree(page_buf);
-+	return count;
-+}
-+
-+static int cyclone_as_release(struct inode *inode, struct file *file)
-+{
-+	struct cyclone_as_device *drvdata = file->private_data;
-+	int i;
-+
-+	gpio_set_value(drvdata->gpios[ASIO_NCONFIG].gpio, 1);
-+	gpio_set_value(drvdata->gpios[ASIO_NCE].gpio, 0);
-+	gpio_set_value(drvdata->gpios[ASIO_DCLK].gpio, 0);
-+	ndelay(500);
-+
-+	for (i = 0; i < ARRAY_SIZE(drvdata->gpios); i++)
-+		gpio_direction_input(drvdata->gpios[i].gpio);
-+	gpio_free_array(drvdata->gpios, ARRAY_SIZE(drvdata->gpios));
-+	mutex_unlock(&drvdata->open_lock);
-+
-+	return 0;
-+}
-+
-+static const struct file_operations cyclone_as_fops = {
-+	.open		= cyclone_as_open,
-+	.write		= cyclone_as_write,
-+	.release	= cyclone_as_release,
-+};
-+
-+static int __init cyclone_as_probe(struct platform_device *pdev)
-+{
-+	int ret, minor;
-+	struct cyclone_as_device *drvdata;
-+	struct device *dev;
-+	struct cyclone_as_platform_data *pdata = pdev->dev.platform_data;
-+
-+	drvdata = devm_kzalloc(&pdev->dev, sizeof(*drvdata), GFP_KERNEL);
-+	if (!drvdata)
-+		return -ENOMEM;
-+
-+	drvdata->dev = &pdev->dev;
-+
-+	cdev_init(&drvdata->cdev, &cyclone_as_fops);
-+	drvdata->cdev.owner = THIS_MODULE;
-+
-+	minor = find_first_zero_bit(cyclone_as_devs, AS_MAX_DEVS);
-+	if (minor >= AS_MAX_DEVS)
-+		return -EBUSY;
-+	ret = cdev_add(&drvdata->cdev, MKDEV(cyclone_as_major, minor), 1);
-+	if (ret < 0)
-+		return ret;
-+	set_bit(minor, cyclone_as_devs);
-+
-+	dev = device_create(cyclone_as_class, &pdev->dev,
-+			MKDEV(cyclone_as_major, minor), drvdata,
-+			"%s%d", "cyclone_as", minor);
-+	if (IS_ERR(dev)) {
-+		ret = PTR_ERR(dev);
-+		goto cdev_del;
-+	}
-+
-+	mutex_init(&drvdata->open_lock);
-+
-+	drvdata->gpios[ASIO_DATA].gpio		= pdata->data;
-+	drvdata->gpios[ASIO_DATA].flags		= GPIOF_OUT_INIT_LOW;
-+	drvdata->gpios[ASIO_DATA].label		= "as_data";
-+	drvdata->gpios[ASIO_NCONFIG].gpio	= pdata->nconfig;
-+	drvdata->gpios[ASIO_NCONFIG].flags	= GPIOF_OUT_INIT_LOW;
-+	drvdata->gpios[ASIO_NCONFIG].label	= "as_nconfig";
-+	drvdata->gpios[ASIO_DCLK].gpio		= pdata->dclk;
-+	drvdata->gpios[ASIO_DCLK].flags		= GPIOF_OUT_INIT_LOW;
-+	drvdata->gpios[ASIO_DCLK].label		= "as_dclk";
-+	drvdata->gpios[ASIO_NCS].gpio		= pdata->ncs;
-+	drvdata->gpios[ASIO_NCS].flags		= GPIOF_OUT_INIT_HIGH;
-+	drvdata->gpios[ASIO_NCS].label		= "as_ncs";
-+	drvdata->gpios[ASIO_NCE].gpio		= pdata->nce;
-+	drvdata->gpios[ASIO_NCE].flags		= GPIOF_OUT_INIT_HIGH;
-+	drvdata->gpios[ASIO_NCE].label		= "as_nce";
-+
-+	dev_info(drvdata->dev, "Altera Cyclone Active Serial driver\n");
-+
-+	return 0;
-+
-+cdev_del:
-+	clear_bit(minor, cyclone_as_devs);
-+	cdev_del(&drvdata->cdev);
-+	return ret;
-+}
-+
-+static int __devexit cyclone_as_remove(struct platform_device *pdev)
-+{
-+	struct cyclone_as_device *drvdata = platform_get_drvdata(pdev);
-+	int minor = MINOR(drvdata->cdev.dev);
-+
-+	device_destroy(cyclone_as_class, MKDEV(cyclone_as_major, minor));
-+	clear_bit(minor, cyclone_as_devs);
-+	cdev_del(&drvdata->cdev);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver cyclone_as_driver = {
-+	.driver = {
-+		.owner = THIS_MODULE,
-+		.name = "cyclone_as",
-+	},
-+	.remove = __devexit_p(cyclone_as_remove),
-+};
-+
-+int __init cyclone_as_init(void)
-+{
-+	int err;
-+	dev_t dev;
-+
-+	cyclone_as_class = class_create(THIS_MODULE, "cyclone_as");
-+	if (IS_ERR(cyclone_as_class)) {
-+		err = PTR_ERR(cyclone_as_class);
-+		goto out;
-+	}
-+
-+	err = alloc_chrdev_region(&dev, 0, AS_MAX_DEVS, "cyclone_as");
-+	if (err < 0)
-+		goto class_destroy;
-+	cyclone_as_major = MAJOR(dev);
-+
-+	err = platform_driver_probe(&cyclone_as_driver, cyclone_as_probe);
-+	if (err < 0)
-+		goto chr_remove;
-+
-+	return 0;
-+
-+chr_remove:
-+	unregister_chrdev_region(dev, AS_MAX_DEVS);
-+class_destroy:
-+	class_destroy(cyclone_as_class);
-+out:
-+	return err;
-+}
-+
-+void __exit cyclone_as_cleanup(void)
-+{
-+	platform_driver_unregister(&cyclone_as_driver);
-+	unregister_chrdev_region(MKDEV(cyclone_as_major, 0), AS_MAX_DEVS);
-+	class_destroy(cyclone_as_class);
-+}
-+
-+module_init(cyclone_as_init);
-+module_exit(cyclone_as_cleanup);
-+
-+MODULE_AUTHOR("Alex Gershgorin <agersh@rambler.ru>");
-+MODULE_DESCRIPTION("Altera Cyclone Active Serial driver");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/cyclone_as.h b/include/linux/cyclone_as.h
-new file mode 100644
-index 0000000..cf86955
---- /dev/null
-+++ b/include/linux/cyclone_as.h
-@@ -0,0 +1,23 @@
-+/*
-+ * Copyright 2010 Alex Gershgorin, Orex Computed Radiography
-+ *
-+ * The code contained herein is licensed under the GNU General Public
-+ * License. You may obtain a copy of the GNU General Public License
-+ * Version 2 or later at the following locations:
-+ *
-+ * http://www.opensource.org/licenses/gpl-license.html
-+ * http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
-+ */
-+
-+#ifndef __ALTERA_PROG_H
-+#define __ALTERA_PROG_H
-+
-+struct cyclone_as_platform_data {
-+	unsigned data;
-+	unsigned nconfig;
-+	unsigned dclk;
-+	unsigned ncs;
-+	unsigned nce;
-+}; 
-+
-+#endif /* __ALTERA_PROG_H */
--- 
-1.7.2.3
+ZGlmZiAtdU5yIGxpbnV4LTIuNi4zNy1yYzEvZHJpdmVycy9oaWQvaGlkLWFwcGxlLmMgbGludXgt
+Mi42LjM3LXJjMS1NYWNCb29rQWlyL2RyaXZlcnMvaGlkL2hpZC1hcHBsZS5jCi0tLSBsaW51eC0y
+LjYuMzctcmMxL2RyaXZlcnMvaGlkL2hpZC1hcHBsZS5jCTIwMTAtMTEtMDMgMTQ6MzM6MzUuMDQ5
+NjY2MDAwICswMTAwCisrKyBsaW51eC0yLjYuMzctcmMxLU1hY0Jvb2tBaXIvZHJpdmVycy9oaWQv
+aGlkLWFwcGxlLmMJMjAxMC0xMS0wMyAxNToxOToyNC41NTk2NjYwMDEgKzAxMDAKQEAgLTU5LDYg
+KzU5LDI3IEBACiAJdTggZmxhZ3M7CiB9OwogCitzdGF0aWMgY29uc3Qgc3RydWN0IGFwcGxlX2tl
+eV90cmFuc2xhdGlvbiBtYWNib29rYWlyX2ZuX2tleXNbXSA9IHsKKwl7IEtFWV9CQUNLU1BBQ0Us
+IEtFWV9ERUxFVEUgfSwKKwl7IEtFWV9FTlRFUiwJS0VZX0lOU0VSVCB9LAorCXsgS0VZX0YxLAlL
+RVlfQlJJR0hUTkVTU0RPV04sIEFQUExFX0ZMQUdfRktFWSB9LAorCXsgS0VZX0YyLAlLRVlfQlJJ
+R0hUTkVTU1VQLCAgIEFQUExFX0ZMQUdfRktFWSB9LAorCXsgS0VZX0YzLAlLRVlfU0NBTEUsICAg
+ICAgICAgIEFQUExFX0ZMQUdfRktFWSB9LAorCXsgS0VZX0Y0LAlLRVlfREFTSEJPQVJELCAgICAg
+IEFQUExFX0ZMQUdfRktFWSB9LAorCXsgS0VZX0Y2LAlLRVlfUFJFVklPVVNTT05HLCAgIEFQUExF
+X0ZMQUdfRktFWSB9LAorCXsgS0VZX0Y3LAlLRVlfUExBWVBBVVNFLCAgICAgIEFQUExFX0ZMQUdf
+RktFWSB9LAorCXsgS0VZX0Y4LAlLRVlfTkVYVFNPTkcsICAgICAgIEFQUExFX0ZMQUdfRktFWSB9
+LAorCXsgS0VZX0Y5LAlLRVlfTVVURSwgICAgICAgICAgIEFQUExFX0ZMQUdfRktFWSB9LAorCXsg
+S0VZX0YxMCwJS0VZX1ZPTFVNRURPV04sICAgICBBUFBMRV9GTEFHX0ZLRVkgfSwKKwl7IEtFWV9G
+MTEsCUtFWV9WT0xVTUVVUCwgICAgICAgQVBQTEVfRkxBR19GS0VZIH0sCisJeyBLRVlfRjEyLAlL
+RVlfRUpFQ1RDRCwgICAgICAgIEFQUExFX0ZMQUdfRktFWSB9LAorCXsgS0VZX1VQLAlLRVlfUEFH
+RVVQIH0sCisJeyBLRVlfRE9XTiwJS0VZX1BBR0VET1dOIH0sCisJeyBLRVlfTEVGVCwJS0VZX0hP
+TUUgfSwKKwl7IEtFWV9SSUdIVCwJS0VZX0VORCB9LAorCXsgfQorfTsKKwogc3RhdGljIGNvbnN0
+IHN0cnVjdCBhcHBsZV9rZXlfdHJhbnNsYXRpb24gYXBwbGVfZm5fa2V5c1tdID0gewogCXsgS0VZ
+X0JBQ0tTUEFDRSwgS0VZX0RFTEVURSB9LAogCXsgS0VZX0VOVEVSLAlLRVlfSU5TRVJUIH0sCkBA
+IC0xNTcsMTAgKzE3OCwxNSBAQAogCWlmIChmbm1vZGUpIHsKIAkJaW50IGRvX3RyYW5zbGF0ZTsK
+IAotCQl0cmFucyA9IGFwcGxlX2ZpbmRfdHJhbnNsYXRpb24oKGhpZC0+cHJvZHVjdCA8IDB4MjFk
+IHx8Ci0JCQkJCWhpZC0+cHJvZHVjdCA+PSAweDMwMCkgPwotCQkJCQlwb3dlcmJvb2tfZm5fa2V5
+cyA6IGFwcGxlX2ZuX2tleXMsCi0JCQkJCXVzYWdlLT5jb2RlKTsKKwkJaWYoaGlkLT5wcm9kdWN0
+ID49IFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzRfQU5TSSAmJgorCQkJCWhpZC0+cHJv
+ZHVjdCA8PSBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkc0QV9KSVMpIHsKKwkJCXRyYW5z
+ID0gYXBwbGVfZmluZF90cmFuc2xhdGlvbihtYWNib29rYWlyX2ZuX2tleXMsIHVzYWdlLT5jb2Rl
+KTsKKwkJfSBlbHNlIGlmIChoaWQtPnByb2R1Y3QgPCAweDIxZCB8fCBoaWQtPnByb2R1Y3QgPj0g
+MHgzMDApIHsKKwkJCXRyYW5zID0gYXBwbGVfZmluZF90cmFuc2xhdGlvbihwb3dlcmJvb2tfZm5f
+a2V5cywgdXNhZ2UtPmNvZGUpOworCQl9IGVsc2UgeworCQkJdHJhbnMgPSBhcHBsZV9maW5kX3Ry
+YW5zbGF0aW9uKGFwcGxlX2ZuX2tleXMsIHVzYWdlLT5jb2RlKTsKKwkJfQorCiAJCWlmICh0cmFu
+cykgewogCQkJaWYgKHRlc3RfYml0KHVzYWdlLT5jb2RlLCBhc2MtPnByZXNzZWRfZm4pKQogCQkJ
+CWRvX3RyYW5zbGF0ZSA9IDE7CkBAIC00NDAsNiArNDY2LDE4IEBACiAJCS5kcml2ZXJfZGF0YSA9
+IEFQUExFX0hBU19GTiB8IEFQUExFX0lTT19LRVlCT0FSRCB9LAogCXsgSElEX1VTQl9ERVZJQ0Uo
+VVNCX1ZFTkRPUl9JRF9BUFBMRSwgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HM19KSVMp
+LAogCQkuZHJpdmVyX2RhdGEgPSBBUFBMRV9IQVNfRk4gfCBBUFBMRV9SREVTQ19KSVMgfSwKKwl7
+IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfQVBQTEUsIFVTQl9ERVZJQ0VfSURfQVBQTEVf
+V0VMTFNQUklORzRfQU5TSSksCisJCS5kcml2ZXJfZGF0YSA9IEFQUExFX0hBU19GTiB9LAorCXsg
+SElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9BUFBMRSwgVVNCX0RFVklDRV9JRF9BUFBMRV9X
+RUxMU1BSSU5HNF9JU08pLAorCQkuZHJpdmVyX2RhdGEgPSBBUFBMRV9IQVNfRk4gfCBBUFBMRV9J
+U09fS0VZQk9BUkQgfSwKKwl7IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfQVBQTEUsIFVT
+Ql9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzRfSklTKSwKKwkJLmRyaXZlcl9kYXRhID0gQVBQ
+TEVfSEFTX0ZOIHwgQVBQTEVfUkRFU0NfSklTIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVO
+RE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkc0QV9BTlNJKSwKKwkJ
+LmRyaXZlcl9kYXRhID0gQVBQTEVfSEFTX0ZOIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVO
+RE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkc0QV9JU08pLAorCQku
+ZHJpdmVyX2RhdGEgPSBBUFBMRV9IQVNfRk4gfCBBUFBMRV9JU09fS0VZQk9BUkQgfSwKKwl7IEhJ
+RF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfQVBQTEUsIFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VM
+TFNQUklORzRBX0pJUyksCisJCS5kcml2ZXJfZGF0YSA9IEFQUExFX0hBU19GTiB8IEFQUExFX1JE
+RVNDX0pJUyB9LAogCXsgSElEX0JMVUVUT09USF9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9BUFBMRSwg
+VVNCX0RFVklDRV9JRF9BUFBMRV9BTFVfV0lSRUxFU1NfMjAwOV9BTlNJKSwKIAkJLmRyaXZlcl9k
+YXRhID0gQVBQTEVfTlVNTE9DS19FTVVMQVRJT04gfCBBUFBMRV9IQVNfRk4gfSwKIAl7IEhJRF9C
+TFVFVE9PVEhfREVWSUNFKFVTQl9WRU5ET1JfSURfQVBQTEUsIFVTQl9ERVZJQ0VfSURfQVBQTEVf
+QUxVX1dJUkVMRVNTXzIwMDlfSVNPKSwKZGlmZiAtdU5yIGxpbnV4LTIuNi4zNy1yYzEvZHJpdmVy
+cy9oaWQvaGlkLWNvcmUuYyBsaW51eC0yLjYuMzctcmMxLU1hY0Jvb2tBaXIvZHJpdmVycy9oaWQv
+aGlkLWNvcmUuYwotLS0gbGludXgtMi42LjM3LXJjMS9kcml2ZXJzL2hpZC9oaWQtY29yZS5jCTIw
+MTAtMTEtMDMgMTQ6MzM6MzUuMDQ5NjY2MDAwICswMTAwCisrKyBsaW51eC0yLjYuMzctcmMxLU1h
+Y0Jvb2tBaXIvZHJpdmVycy9oaWQvaGlkLWNvcmUuYwkyMDEwLTExLTAzIDE1OjE2OjM4LjgyOTY2
+NjAwMSArMDEwMApAQCAtMTI3Niw2ICsxMjc2LDEyIEBACiAJeyBISURfVVNCX0RFVklDRShVU0Jf
+VkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkczX0FOU0kpIH0s
+CiAJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQ
+UExFX1dFTExTUFJJTkczX0lTTykgfSwKIAl7IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURf
+QVBQTEUsIFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzNfSklTKSB9LAorCXsgSElEX1VT
+Ql9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9BUFBMRSwgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BS
+SU5HNF9BTlNJKSB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9BUFBMRSwgVVNC
+X0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HNF9JU08pIH0sCisJeyBISURfVVNCX0RFVklDRShV
+U0JfVkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkc0X0pJUykg
+fSwKKwl7IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfQVBQTEUsIFVTQl9ERVZJQ0VfSURf
+QVBQTEVfV0VMTFNQUklORzRBX0FOU0kpIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9S
+X0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkc0QV9JU08pIH0sCisJeyBI
+SURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX1dF
+TExTUFJJTkc0QV9KSVMpIH0sCiAJeyBISURfQkxVRVRPT1RIX0RFVklDRShVU0JfVkVORE9SX0lE
+X0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX0FMVV9XSVJFTEVTU18yMDA5X0FOU0kpIH0sCiAJ
+eyBISURfQkxVRVRPT1RIX0RFVklDRShVU0JfVkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lE
+X0FQUExFX0FMVV9XSVJFTEVTU18yMDA5X0lTTykgfSwKIAl7IEhJRF9CTFVFVE9PVEhfREVWSUNF
+KFVTQl9WRU5ET1JfSURfQVBQTEUsIFVTQl9ERVZJQ0VfSURfQVBQTEVfQUxVX1dJUkVMRVNTXzIw
+MDlfSklTKSB9LApAQCAtMTc1Niw2ICsxNzYyLDEyIEBACiAJeyBISURfVVNCX0RFVklDRShVU0Jf
+VkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkczX0FOU0kpIH0s
+CiAJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQ
+UExFX1dFTExTUFJJTkczX0lTTykgfSwKIAl7IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURf
+QVBQTEUsIFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzNfSklTKSB9LAorCXsgSElEX1VT
+Ql9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9BUFBMRSwgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BS
+SU5HNF9BTlNJKSB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9BUFBMRSwgVVNC
+X0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HNF9JU08pIH0sCisJeyBISURfVVNCX0RFVklDRShV
+U0JfVkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkc0X0pJUykg
+fSwKKwl7IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfQVBQTEUsIFVTQl9ERVZJQ0VfSURf
+QVBQTEVfV0VMTFNQUklORzRBX0FOU0kpIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9S
+X0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkc0QV9JU08pIH0sCisJeyBI
+SURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX1dF
+TExTUFJJTkc0QV9KSVMpIH0sCiAJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX0FQUExF
+LCBVU0JfREVWSUNFX0lEX0FQUExFX0ZPVU5UQUlOX1RQX09OTFkpIH0sCiAJeyBISURfVVNCX0RF
+VklDRShVU0JfVkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX0dFWVNFUjFfVFBf
+T05MWSkgfSwKIAl7IH0KZGlmZiAtdU5yIGxpbnV4LTIuNi4zNy1yYzEvZHJpdmVycy9oaWQvaGlk
+LWlkcy5oIGxpbnV4LTIuNi4zNy1yYzEtTWFjQm9va0Fpci9kcml2ZXJzL2hpZC9oaWQtaWRzLmgK
+LS0tIGxpbnV4LTIuNi4zNy1yYzEvZHJpdmVycy9oaWQvaGlkLWlkcy5oCTIwMTAtMTEtMDMgMTQ6
+MzM6MzUuMDQ5NjY2MDAwICswMTAwCisrKyBsaW51eC0yLjYuMzctcmMxLU1hY0Jvb2tBaXIvZHJp
+dmVycy9oaWQvaGlkLWlkcy5oCTIwMTAtMTEtMDMgMTU6MTY6MzguODI5NjY2MDAxICswMTAwCkBA
+IC05Nyw2ICs5NywxMiBAQAogI2RlZmluZSBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkcz
+X0FOU0kJMHgwMjM2CiAjZGVmaW5lIFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzNfSVNP
+CTB4MDIzNwogI2RlZmluZSBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkczX0pJUwkweDAy
+MzgKKyNkZWZpbmUgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HNF9BTlNJCTB4MDIzZgor
+I2RlZmluZSBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkc0X0lTTwkweDAyNDAKKyNkZWZp
+bmUgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HNF9KSVMJMHgwMjQxCisjZGVmaW5lIFVT
+Ql9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzRBX0FOU0kJMHgwMjQyCisjZGVmaW5lIFVTQl9E
+RVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzRBX0lTTwkweDAyNDMKKyNkZWZpbmUgVVNCX0RFVklD
+RV9JRF9BUFBMRV9XRUxMU1BSSU5HNEFfSklTCTB4MDI0NAogI2RlZmluZSBVU0JfREVWSUNFX0lE
+X0FQUExFX0FMVV9XSVJFTEVTU18yMDA5X0FOU0kgIDB4MDIzOQogI2RlZmluZSBVU0JfREVWSUNF
+X0lEX0FQUExFX0FMVV9XSVJFTEVTU18yMDA5X0lTTyAgIDB4MDIzYQogI2RlZmluZSBVU0JfREVW
+SUNFX0lEX0FQUExFX0FMVV9XSVJFTEVTU18yMDA5X0pJUyAgIDB4MDIzYgo=
+--=_03fb90f6757ccfb8da56d0982336b31f--
 
