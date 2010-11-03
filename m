@@ -1,85 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756145Ab0KCUyt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 16:54:49 -0400
-Received: from waste.org ([173.11.57.241]:43844 "EHLO waste.org"
+	id S1756184Ab0KCUzQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 16:55:16 -0400
+Received: from smtp205.alice.it ([82.57.200.101]:39019 "EHLO smtp205.alice.it"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754088Ab0KCUys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 16:54:48 -0400
-Subject: Re: [PATCH v1 00/12] netoops support
-From: Matt Mackall <mpm@selenic.com>
-To: Mike Waychison <mikew@google.com>
-Cc: Greg KH <greg@kroah.com>, simon.kagstrom@netinsight.net,
-        davem@davemloft.net, adurbin@google.com, akpm@linux-foundation.org,
-        chavey@google.com, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org
-In-Reply-To: <4CD1C612.5080902@google.com>
-References: <20101103012917.4641.57113.stgit@crlf.mtv.corp.google.com>
-	 <20101103023422.GB5782@kroah.com>
-	 <AANLkTi=Oe4oJ0imCh1eoJLS0QYqSBM4pLo=dEUSiJcQb@mail.gmail.com>
-	 <20101103181634.GF7441@kroah.com>
-	 <AANLkTimKWCWtuPeZhMZ75gTxB8LwAhJfy2FZnnRwthft@mail.gmail.com>
-	 <4CD1C612.5080902@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 03 Nov 2010 15:54:45 -0500
-Message-ID: <1288817685.26428.1129.camel@calx>
+	id S1755501Ab0KCUzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 16:55:14 -0400
+Date: Wed, 3 Nov 2010 21:53:39 +0100
+From: Antonio Ospite <ospite@studenti.unina.it>
+To: maciej.rutecki@gmail.com
+Cc: =?UTF-8?B?VMO1bnU=?= Samuel <tonu@jes.ee>, linux-usb@vger.kernel.org,
+        linux-media@vger.kernel.org,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Re: gspca for_2.6.36 - maybe does not work properly for me (ov534)
+Message-Id: <20101103215339.bf451689.ospite@studenti.unina.it>
+In-Reply-To: <201011032007.25474.maciej.rutecki@gmail.com>
+References: <1288264077.1891.40.camel@x41.itrotid.ee>
+	<201011032007.25474.maciej.rutecki@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
+ ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__3_Nov_2010_21_53_40_+0100_/ZqU1j36OlUIk3rq"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-03 at 13:29 -0700, Mike Waychison wrote:
-> Mike Waychison wrote:
-> > FWIW, another semantic difference between netconsole and netoops (that
-> > I had missed in the last email) is filtering: we really do want to get
-> > the whole log when a crash happens, debug messages and all.
-> > Netconsole is subject to console filtering (which we _do_ want as
-> > debug messages going out the uart slows the whole world down).
-> > 
-> > netconsole and netoops _do_ have bits in common, for instance the
-> > handling of NETDEV events and source+target configuration.  I'd rather
-> > those bits become common between the two than figure out how to jam
-> > the semantics we need into netconsole.
-> 
-> Hi Matt,
-> 
-> I've been reading through the netconsole driver in response to Greg's 
-> comments on this thread, and it is definitely more robust in terms of 
-> configuration and handling of network device events than the netoops 
-> driver I proposed.
+--Signature=_Wed__3_Nov_2010_21_53_40_+0100_/ZqU1j36OlUIk3rq
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I've been following the discussion to see if it went anywhere
-interesting..
+On Wed, 3 Nov 2010 20:07:25 +0100
+Maciej Rutecki <maciej.rutecki@gmail.com> wrote:
 
-> What are your thoughts on extending netconsole with the same sort of 
-> semantics that are in the netoops patchset?
+> (add CC's)
+> On czwartek, 28 pa=C5=BAdziernika 2010 o 13:07:57 T=C3=B5nu Samuel wrote:
+> > I am Sony PS3 Eye webcam user.
+> >
 
-My first thought is that it's a bit unfortunate that some of the the
-netconsole configgy bits weren't implemented in a generic way that would
-be applicable to other netpoll clients. Some people have never gotten it
-into their heads that netconsole isn't the only client.
+Please more context in the Subject next time :)
 
-> I'd still like to have blit-dmesg-to-the-network-on-oops semantics, 
-> which seems doable by having a per-target flag for streaming of console 
-> messages (enabled by default) and a flag to emit a structured full dmesg 
-> dump (disabled by default).
+> > After installing 2.6.36 this camera gets recognized but actually does
+> > not work. It might be some own stupidity of improper kernel
+> > configuration but I cannot track it down at moment.
+> >
 
-I'd actually like to see you go forward with netoops. It's clear to me
-that it's a different beast and complexifying netconsole with a bunch of
-weird new options doesn't really sit well. If that means abstracting
-some of the sysfs crap from netconsole, great. 
+This is fixed in 2.6.37-rc1, Mauro this should go in 2.6.36.1 as well,
+ASAP please as we missed 2.6.36.
 
-That said, I don't think netoops is an ideal name, given how closely
-bound oops _events_ are with their textual output. Presumably it covers
-events other than oopsen like panics too. 
+This is the thread:
+http://www.mail-archive.com/linux-media@vger.kernel.org/msg23039.html
 
-Regarding rolling oopses: lots of machines regularly survive oopses, so 
-I think you ought to consider rate-limiting them (to a configurable rate
-with a very low default) rather than suppressing all but the first.
+This is the patch:
+http://git.kernel.org/?p=3Dlinux/kernel/git/torvalds/linux-2.6.git;a=3Dcomm=
+it;h=3Df43402fa55bf5e7e190c176343015122f694857c
 
--- 
-Mathematics is the supreme nostalgia of our time.
+Regards,
+   Antonio
 
+--=20
+Antonio Ospite
+http://ao2.it
 
+PGP public key ID: 0x4553B001
+
+A: Because it messes up the order in which people normally read text.
+   See http://en.wikipedia.org/wiki/Posting_style
+Q: Why is top-posting such a bad thing?
+
+--Signature=_Wed__3_Nov_2010_21_53_40_+0100_/ZqU1j36OlUIk3rq
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkzRy9QACgkQ5xr2akVTsAHqeQCgo+LHKwQp8P316VZbgGz6Ezbo
+DqEAoJEtQazNxRrME0oJmh77VrySyeYc
+=QyHQ
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__3_Nov_2010_21_53_40_+0100_/ZqU1j36OlUIk3rq--
