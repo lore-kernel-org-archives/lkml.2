@@ -1,57 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756211Ab0KCSOM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 14:14:12 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:45384 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127Ab0KCSOK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 14:14:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=Xj85VOBvX0WEL9oZDVUxveq08FBpdR/iED6u2BBsiCg/LC57OjPoLPq/eMxiUFezHn
-         fwosr22jyKrLnw5m0gvX4BwthXtPvG9auSsRW2TqO0hkRVarvxv7u1CQJPFdD0JpKVg9
-         kYeR9t/l+2AXqWnKZkwLuKedee9/uC9aF2QCE=
-Date: Wed, 3 Nov 2010 11:14:01 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] eeepc-wmi: fix compiler warning
-Message-ID: <20101103181400.GA12818@core.coreip.homeip.net>
+	id S1756297Ab0KCSOT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 14:14:19 -0400
+Received: from THUNK.ORG ([69.25.196.29]:50256 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756243Ab0KCSOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 14:14:15 -0400
+Date: Wed, 3 Nov 2010 14:14:12 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: [PATCH -BUGFIX] Re: BUG in ext4 with 2.6.37-rc1
+Message-ID: <20101103181412.GH25614@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+	linux-ext4@vger.kernel.org
+References: <20101102202013.GA3861@elliptictech.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20101102202013.GA3861@elliptictech.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes the following:
+On Tue, Nov 02, 2010 at 04:20:13PM -0400, Nick Bowler wrote:
+> The following BUG occurred today while compiling gcc, with 2.6.37-rc1+.
+> More precisely, commit 7fe19da4ca38 ("preempt: fix kernel build with
+> !CONFIG_BKL") with http://permalink.gmane.org/gmane.linux.nfs/36521
+> applied on top.  It basically took out the whole system.
 
-  CC [M]  drivers/platform/x86/eeepc-wmi.o
-drivers/platform/x86/eeepc-wmi.c:322: warning: initialization from incompatible pointer type
+Hi Nick,
 
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
----
+How easily can you reproduce this bug?  I'm pretty sure I know what
+caused it, but it's always good to get confirmation that a patch
+addresses the reported bug.  If it happens to you fairly often, can
+you try out this patch and let me know whether it fixes the bug for
+you?
 
- drivers/platform/x86/eeepc-wmi.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Many thanks for reporting the bug,
 
+						- Ted
 
-diff --git a/drivers/platform/x86/eeepc-wmi.c b/drivers/platform/x86/eeepc-wmi.c
-index 462ceab..0d50fbb 100644
---- a/drivers/platform/x86/eeepc-wmi.c
-+++ b/drivers/platform/x86/eeepc-wmi.c
-@@ -298,8 +298,8 @@ static void eeepc_wmi_notify(u32 value, void *context)
- 	kfree(obj);
- }
+commit 684e31c9cd47fee65413d5ef620013d03921abb9
+Author: Theodore Ts'o <tytso@mit.edu>
+Date:   Wed Nov 3 14:12:22 2010 -0400
+
+    ext4: handle writeback of inodes which are being freed
+    
+    The following BUG can occur when an inode which is getting freed when
+    it still has dirty pages outstanding, and it gets deleted (in this
+    because it was the target of a rename).  In ordered mode, we need to
+    make sure the data pages are written just in case we crash before the
+    rename (or unlink) is committed.  If the inode is being freed then
+    when we try to igrab the inode, we end up tripping the BUG_ON at
+    fs/ext4/page-io.c:146.
+    
+    In this case, don't need to do any of the endio handling, so we can
+    drop the BUG_ON and then arrange to make ext4_bio_end() handle this
+    case appropriately by releasing the pages and ending the writeback on
+    those pages, and then returning early without queueing the io_end
+    structure on the workqueue.
+    
+      kernel BUG at /scratch_space/linux-2.6/fs/ext4/page-io.c:146!
+      Call Trace:
+       [<ffffffff811075b1>] ext4_bio_write_page+0x172/0x307
+       [<ffffffff811033a7>] mpage_da_submit_io+0x2f9/0x37b
+       [<ffffffff811068d7>] mpage_da_map_and_submit+0x2cc/0x2e2
+       [<ffffffff811069b3>] mpage_add_bh_to_extent+0xc6/0xd5
+       [<ffffffff81106c66>] write_cache_pages_da+0x2a4/0x3ac
+       [<ffffffff81107044>] ext4_da_writepages+0x2d6/0x44d
+       [<ffffffff81087910>] do_writepages+0x1c/0x25
+       [<ffffffff810810a4>] __filemap_fdatawrite_range+0x4b/0x4d
+       [<ffffffff810815f5>] filemap_fdatawrite_range+0xe/0x10
+       [<ffffffff81122a2e>] jbd2_journal_begin_ordered_truncate+0x7b/0xa2
+       [<ffffffff8110615d>] ext4_evict_inode+0x57/0x24c
+       [<ffffffff810c14a3>] evict+0x22/0x92
+       [<ffffffff810c1a3d>] iput+0x212/0x249
+       [<ffffffff810bdf16>] dentry_iput+0xa1/0xb9
+       [<ffffffff810bdf6b>] d_kill+0x3d/0x5d
+       [<ffffffff810be613>] dput+0x13a/0x147
+       [<ffffffff810b990d>] sys_renameat+0x1b5/0x258
+       [<ffffffff81145f71>] ? _atomic_dec_and_lock+0x2d/0x4c
+       [<ffffffff810b2950>] ? cp_new_stat+0xde/0xea
+       [<ffffffff810b29c1>] ? sys_newlstat+0x2d/0x38
+       [<ffffffff810b99c6>] sys_rename+0x16/0x18
+       [<ffffffff81002a2b>] system_call_fastpath+0x16/0x1b
+    
+    Reported-by: Nick Bowler <nbowler@elliptictech.com>
+    Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+
+diff --git a/fs/ext4/page-io.c b/fs/ext4/page-io.c
+index 46a7d6a..4f1b8cd 100644
+--- a/fs/ext4/page-io.c
++++ b/fs/ext4/page-io.c
+@@ -143,7 +143,6 @@ ext4_io_end_t *ext4_init_io_end(struct inode *inode, gfp_t flags)
+ 	if (io) {
+ 		memset(io, 0, sizeof(*io));
+ 		io->inode = igrab(inode);
+-		BUG_ON(!io->inode);
+ 		INIT_WORK(&io->work, ext4_end_io_work);
+ 		INIT_LIST_HEAD(&io->list);
+ 	}
+@@ -171,35 +170,15 @@ static void ext4_end_bio(struct bio *bio, int error)
+ 	struct workqueue_struct *wq;
+ 	struct inode *inode;
+ 	unsigned long flags;
+-	ext4_fsblk_t err_block;
+ 	int i;
  
--static int store_cpufv(struct device *dev, struct device_attribute *attr,
--		       const char *buf, size_t count)
-+static ssize_t store_cpufv(struct device *dev, struct device_attribute *attr,
-+			   const char *buf, size_t count)
- {
- 	int value;
- 	struct acpi_buffer input = { (acpi_size)sizeof(value), &value };
+ 	BUG_ON(!io_end);
+-	inode = io_end->inode;
+ 	bio->bi_private = NULL;
+ 	bio->bi_end_io = NULL;
+ 	if (test_bit(BIO_UPTODATE, &bio->bi_flags))
+ 		error = 0;
+-	err_block = bio->bi_sector >> (inode->i_blkbits - 9);
+ 	bio_put(bio);
+ 
+-	if (!(inode->i_sb->s_flags & MS_ACTIVE)) {
+-		pr_err("sb umounted, discard end_io request for inode %lu\n",
+-			io_end->inode->i_ino);
+-		ext4_free_io_end(io_end);
+-		return;
+-	}
+-
+-	if (error) {
+-		io_end->flag |= EXT4_IO_END_ERROR;
+-		ext4_warning(inode->i_sb, "I/O error writing to inode %lu "
+-			     "(offset %llu size %ld starting block %llu)",
+-			     inode->i_ino,
+-			     (unsigned long long) io_end->offset,
+-			     (long) io_end->size,
+-			     (unsigned long long) err_block);
+-	}
+-
+ 	for (i = 0; i < io_end->num_io_pages; i++) {
+ 		struct page *page = io_end->pages[i]->p_page;
+ 		struct buffer_head *bh, *head;
+@@ -254,9 +233,30 @@ static void ext4_end_bio(struct bio *bio, int error)
+ 		if (!partial_write)
+ 			SetPageUptodate(page);
+ 	}
+-
+ 	io_end->num_io_pages = 0;
+ 
++	if ((inode = io_end->inode) == NULL)
++		goto no_work;
++
++	if (!(inode->i_sb->s_flags & MS_ACTIVE)) {
++		pr_err("sb umounted, discard end_io request for inode %lu\n",
++			io_end->inode->i_ino);
++	no_work:
++		ext4_free_io_end(io_end);
++		return;
++	}
++
++	if (error) {
++		io_end->flag |= EXT4_IO_END_ERROR;
++		ext4_warning(inode->i_sb, "I/O error writing to inode %lu "
++			     "(offset %llu size %ld starting block %llu)",
++			     inode->i_ino,
++			     (unsigned long long) io_end->offset,
++			     (long) io_end->size,
++			     (unsigned long long)
++			     bio->bi_sector >> (inode->i_blkbits - 9));
++	}
++
+ 	/* Add the io_end to per-inode completed io list*/
+ 	spin_lock_irqsave(&EXT4_I(inode)->i_completed_io_lock, flags);
+ 	list_add_tail(&io_end->list, &EXT4_I(inode)->i_completed_io_list);
