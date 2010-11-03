@@ -1,62 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209Ab0KCGnJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 02:43:09 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:44298 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753019Ab0KCGnH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 02:43:07 -0400
-Date: Tue, 2 Nov 2010 02:21:35 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg KH <greg@kroah.com>, Oliver Neukum <oliver@neukum.org>,
-        Valdis.Kletnieks@vt.edu, Dave Airlie <airlied@gmail.com>,
-        codalist@telemann.coda.cs.cmu.edu,
-        ksummit-2010-discuss@lists.linux-foundation.org,
-        autofs@linux.kernel.org, Jan Harkes <jaharkes@cs.cmu.edu>,
-        Samuel Ortiz <samuel@sortiz.org>, Jan Kara <jack@suse.cz>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        netdev@vger.kernel.org, Anders Larsen <al@alarsen.net>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Petr Vandrovec <vandrove@vc.cvut.cz>,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        linux-fsdevel@vger.kernel.org, Evgeniy Dushistov <dushistov@mail.ru>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Hendry <andrew.hendry@gmail.com>,
-        linux-media@vger.kernel.org
-Subject: Re: [Ksummit-2010-discuss] [v2] Remaining BKL users, what to do
-Message-ID: <20101102012135.GB2648@ucw.cz>
-References: <201009161632.59210.arnd@arndb.de>
- <201010192140.47433.oliver@neukum.org>
- <20101019202912.GA30133@kroah.com>
- <201010192244.41913.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201010192244.41913.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753356Ab0KCGoV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 02:44:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:1214 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752712Ab0KCGoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 02:44:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,287,1286175600"; 
+   d="scan'208";a="673766264"
+Subject: [RFC 1/4]x86: cleanup vector usage
+From: Shaohua Li <shaohua.li@intel.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        "hpa@zytor.com" <hpa@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 03 Nov 2010 14:44:18 +0800
+Message-ID: <1288766658.23014.114.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Cleanup the vector usage and make them continuous if possible.
 
-> @@ -79,6 +79,10 @@ static struct drm_driver driver = {
->  
->  static int __init i810_init(void)
->  {
-> +	if (num_present_cpus() > 1) {
-> +		pr_err("drm/i810 does not support SMP\n");
-> +		return -EINVAL;
-> +	}
->  	driver.num_ioctls = i810_max_ioctl;
->  	return drm_init(&driver);
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+---
+ arch/x86/include/asm/irq_vectors.h |   40 +++++++++++++++++++------------------
+ 1 file changed, 21 insertions(+), 19 deletions(-)
 
-Umm, and now someone onlines second cpu?
+Index: linux/arch/x86/include/asm/irq_vectors.h
+===================================================================
+--- linux.orig/arch/x86/include/asm/irq_vectors.h	2010-11-02 10:31:51.000000000 +0800
++++ linux/arch/x86/include/asm/irq_vectors.h	2010-11-02 14:41:01.000000000 +0800
+@@ -1,6 +1,7 @@
+ #ifndef _ASM_X86_IRQ_VECTORS_H
+ #define _ASM_X86_IRQ_VECTORS_H
+ 
++#include <linux/threads.h>
+ /*
+  * Linux IRQ vector layout.
+  *
+@@ -16,8 +17,8 @@
+  *  Vectors   0 ...  31 : system traps and exceptions - hardcoded events
+  *  Vectors  32 ... 127 : device interrupts
+  *  Vector  128         : legacy int80 syscall interface
+- *  Vectors 129 ... 237 : device interrupts
+- *  Vectors 238 ... 255 : special interrupts
++ *  Vectors 129 ... 229 : device interrupts
++ *  Vectors 230 ... 255 : special interrupts
+  *
+  * 64-bit x86 has per CPU IDT tables, 32-bit has one shared IDT table.
+  *
+@@ -96,37 +97,38 @@
+ #define THRESHOLD_APIC_VECTOR		0xf9
+ #define REBOOT_VECTOR			0xf8
+ 
+-/* f0-f7 used for spreading out TLB flushes: */
+-#define INVALIDATE_TLB_VECTOR_END	0xf7
+-#define INVALIDATE_TLB_VECTOR_START	0xf0
+-#define NUM_INVALIDATE_TLB_VECTORS	   8
+-
+-/*
+- * Local APIC timer IRQ vector is on a different priority level,
+- * to work around the 'lost local interrupt if more than 2 IRQ
+- * sources per level' errata.
+- */
+-#define LOCAL_TIMER_VECTOR		0xef
+-
+ /*
+  * Generic system vector for platform specific use
+  */
+-#define X86_PLATFORM_IPI_VECTOR		0xed
++#define X86_PLATFORM_IPI_VECTOR		0xf7
+ 
+ /*
+  * IRQ work vector:
+  */
+-#define IRQ_WORK_VECTOR			0xec
++#define IRQ_WORK_VECTOR			0xf6
+ 
+-#define UV_BAU_MESSAGE			0xea
++#define UV_BAU_MESSAGE			0xf5
+ 
+ /*
+  * Self IPI vector for machine checks
+  */
+-#define MCE_SELF_VECTOR			0xeb
++#define MCE_SELF_VECTOR			0xf4
+ 
+ /* Xen vector callback to receive events in a HVM domain */
+-#define XEN_HVM_EVTCHN_CALLBACK		0xe9
++#define XEN_HVM_EVTCHN_CALLBACK		0xf3
++
++/*
++ * Local APIC timer IRQ vector is on a different priority level,
++ * to work around the 'lost local interrupt if more than 2 IRQ
++ * sources per level' errata.
++ */
++#define LOCAL_TIMER_VECTOR		0xef
++
++/* f0-f7 used for spreading out TLB flushes: */
++#define NUM_INVALIDATE_TLB_VECTORS	   8
++#define INVALIDATE_TLB_VECTOR_END	0xee
++#define INVALIDATE_TLB_VECTOR_START	\
++	(INVALIDATE_TLB_VECTOR_END - NUM_INVALIDATE_TLB_VECTORS + 1)
+ 
+ #define NR_VECTORS			 256
+ 
 
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+
