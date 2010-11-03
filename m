@@ -1,157 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756435Ab0KCTDi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 15:03:38 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:25115 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756398Ab0KCTDh convert rfc822-to-8bit (ORCPT
+	id S932425Ab0KCTHd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 15:07:33 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:49575 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752743Ab0KCTHa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 15:03:37 -0400
+	Wed, 3 Nov 2010 15:07:30 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=ETf/6kT4xii6lKikdhO2qtzMcr69ovccnjeJwGMu/J9bUYLDw0BdZDbDjoE5gLNNrk
-         7MNtv2y36hlmAfFAqrVw==
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=jSV96VA7a5ivvrwnuonbBIzg/CgfpKDgZG3yH4Qq/VZf8556Ly5dcZndmqTCHZuRKm
+         39JmeNIcg7n34O6j55pa7me4ZB4FwoPc+hdPSp7+YNdmbjIkJzJX8I4xKt9x5phUHusI
+         +qhojik+5oINuhorw81lL546sIw4ZTw7eFG+g=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: =?utf-8?q?T=C3=B5nu_Samuel?= <tonu@jes.ee>, linux-usb@vger.kernel.org,
+        linux-media@vger.kernel.org
+Subject: Re: gspca for_2.6.36 - maybe does not work properly for me
+Date: Wed, 3 Nov 2010 20:07:25 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1; KDE/4.4.5; i686; ; )
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>
+References: <1288264077.1891.40.camel@x41.itrotid.ee>
+In-Reply-To: <1288264077.1891.40.camel@x41.itrotid.ee>
 MIME-Version: 1.0
-In-Reply-To: <20101103181634.GF7441@kroah.com>
-References: <20101103012917.4641.57113.stgit@crlf.mtv.corp.google.com>
- <20101103023422.GB5782@kroah.com> <AANLkTi=Oe4oJ0imCh1eoJLS0QYqSBM4pLo=dEUSiJcQb@mail.gmail.com>
- <20101103181634.GF7441@kroah.com>
-From: Mike Waychison <mikew@google.com>
-Date: Wed, 3 Nov 2010 12:03:12 -0700
-Message-ID: <AANLkTimKWCWtuPeZhMZ75gTxB8LwAhJfy2FZnnRwthft@mail.gmail.com>
-Subject: Re: [PATCH v1 00/12] netoops support
-To: Greg KH <greg@kroah.com>
-Cc: simon.kagstrom@netinsight.net, davem@davemloft.net, adurbin@google.com,
-        akpm@linux-foundation.org, chavey@google.com,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Message-Id: <201011032007.25474.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 3, 2010 at 11:16 AM, Greg KH <greg@kroah.com> wrote:
-> On Tue, Nov 02, 2010 at 08:37:42PM -0700, Mike Waychison wrote:
->> On Tue, Nov 2, 2010 at 7:34 PM, Greg KH <greg@kroah.com> wrote:
->> > On Tue, Nov 02, 2010 at 06:29:25PM -0700, Mike Waychison wrote:
->> >> This patchset applies to v2.6.36.
->> >>
->> >> The following series implements support for 'netoops', a simple driver that
->> >> will deliver kmsg logs together with machine specifics over the network.
->> >
->> > We already have the ability to send oopses over the network today,
->> > through the network consolst stuff. What does this patch set do that is
->> > different from our existing stuff that warrants such a big change?
->> >
->>
->> Hi Greg,
->>
->> I am a little familiar with the netconsole suppport.  I should have
->> added a comparison to the cover email :(
->>
->> We never adopted netconsole for a couple different reasons.  The
->> reasons have slightly changed over the years, but even today we find
->> that it isn't a substitute for netoops' semantics.
->
-> Ah, but it sounds like it would be better to fix up netoops to handle
-> your needs.
+(add CC's)
+On czwartek, 28 paÅºdziernika 2010 o 13:07:57 TÃµnu Samuel wrote:
+> I am Sony PS3 Eye webcam user.
+> 
+> After installing 2.6.36 this camera gets recognized but actually does
+> not work. It might be some own stupidity of improper kernel
+> configuration but I cannot track it down at moment.
+> 
+> relevant dmesg:
+> 
+> [ 1372.224068] usb 1-5: new high speed USB device using ehci_hcd and
+> address 5
+> [ 1372.359574] usb 1-5: New USB device found, idVendor=1415,
+> idProduct=2000
+> [ 1372.359582] usb 1-5: New USB device strings: Mfr=1, Product=2,
+> SerialNumber=0
+> [ 1372.359588] usb 1-5: Product: USB Camera-B4.04.27.1
+> [ 1372.359593] usb 1-5: Manufacturer: OmniVision Technologies, Inc.
+> [ 1372.360623] gspca: probing 1415:2000
+> [ 1372.483830] ov534: Sensor ID: 7721
+> [ 1372.534205] ov534: frame_rate: 30
+> [ 1372.534319] gspca: video0 created
+> 
+> spider@spider:~$ lsusb -t
+> /:  Bus 07.Port 1: Dev 1, Class=root_hub, Driver=ohci_hcd/2p, 12M
+> /:  Bus 06.Port 1: Dev 1, Class=root_hub, Driver=ohci_hcd/3p, 12M
+> 
+>     |__ Port 2: Dev 2, If 0, Class='bInterfaceClass 0xe0 not yet
+> 
+> handled', Driver=btusb, 12M
+> 
+>     |__ Port 2: Dev 2, If 1, Class='bInterfaceClass 0xe0 not yet
+> 
+> handled', Driver=btusb, 12M
+> /:  Bus 05.Port 1: Dev 1, Class=root_hub, Driver=ohci_hcd/3p, 12M
+> /:  Bus 04.Port 1: Dev 1, Class=root_hub, Driver=ohci_hcd/3p, 12M
+> /:  Bus 03.Port 1: Dev 1, Class=root_hub, Driver=ohci_hcd/3p, 12M
+> 
+>     |__ Port 1: Dev 2, If 0, Class=HID, Driver=usbhid, 1.5M
+>     |__ Port 1: Dev 2, If 1, Class=HID, Driver=usbhid, 1.5M
+> 
+> /:  Bus 02.Port 1: Dev 1, Class=root_hub, Driver=ehci_hcd/6p, 480M
+> 
+>     |__ Port 3: Dev 2, If 0, Class=vend., Driver=rt2870, 480M
+> 
+> /:  Bus 01.Port 1: Dev 1, Class=root_hub, Driver=ehci_hcd/6p, 480M
+> 
+>     |__ Port 5: Dev 5, If 0, Class=vend., Driver=ov534, 480M
+>     |__ Port 5: Dev 5, If 1, Class=audio, Driver=snd-usb-audio, 480M
+>     |__ Port 5: Dev 5, If 2, Class=audio, Driver=snd-usb-audio, 480M
+> 
+> spider@spider:~$
+> 
+> spider@spider:~$ guvcview
+> guvcview 1.1.3
+> video device: /dev/video0
+> /dev/video0 - device 1
+> Init. USB Camera-B4.04.27.1 (location: usb-0000:00:12.2-5)
+> { pixelformat = 'YUYV', description = 'YUYV' }
+> { discrete: width = 320, height = 240 }
+> 	Time interval between frame: 1/125, 1/100, 1/75, 1/60, 1/50, 1/40,
+> 1/30,
+> { discrete: width = 640, height = 480 }
+> 	Time interval between frame: 1/60, 1/50, 1/40, 1/30, 1/15,
+> checking format: 1448695129
+> vid:1415
+> pid:2000
+> driver:ov534
+> VIDIOC_STREAMON - Unable to start capture: Device or resource busy
+> 
+> 
+> 
+> No image is produced with any webcam software I have tried.
+> 
+> Kernel config is too big to be posted here, so I skip it.
+> 
+> I have tried same on different computers with Intel integrated video and
+> NVIDIA propietary stuff to ensure I have all right with video side.
+> BTW new PS3 Eye (looks same but product code is different, price is
+> lower) is released in Japan and I get my hands on it today later. Then I
+> check if old driver works at all etc.
+> 
 
-Perhaps, but I don't agree that overly complicating one simple driver
-to handle a wildly different set of semantics is justified when it can
-be implemented in another simple driver.
-
->
->> With the number of machines we have, streaming large amounts of
->> consoles within the data center can really add up.  This gets worse
->> when you take into account how reliant we are on kernel logging like
->> OOM conditions (which are very regular and very verbose).  Events in
->> the data center (such as application growth) tend to be temporally
->> correlated, which causes large bursts of logging when we are OOM.  We
->> aren't so interested in this kernel verbosity from a global collection
->> standpoint though, and haven't been keen on the amount of extra
->> un-regulated UDP traffic it would generate.  We are however interested
->> in kernel oopses though (which occur far less often).
->
-> Understood, I'm sure that a change to allow this to the existing netoops
-> code would be appreciated by many.
-
-Do you mean netconsole here?
-
->
->> In terms of the data received, we've really benefited by having
->> structured data in the payload.
->
-> I bet the whole world would benefit by having the oops messages in a
-> more "structured" manner.  We have done changes in the past to provide
-> this type of thing in a "more parsable" manner, to help stuff like
-> kerneloops.org.  I'm sure that adding this type of information to the
-> main oops core/messages would be a good overall goal, instead of only
-> having it available to only this one option/user, right?
-
-It'd be great to figure out how to make this sort of data structured
-in the logs, but it's not really a battle that I'm willing to fight.
-It seems that as a community, we haven't figured out a good way to
-provide any sort of committed ABI via printk (perhaps rightly so).
-
-Another aspect that makes me _not_ want to go this route is the
-pushback we've received in the past about not having too much data get
-added to the oops messages themselves, as folks still relied on
-literal screenshots of oopses.
-
->
->> Another area where the two approaches have differed has been in
->> handling of network reliability.  Historically (though less and less
->> now), we found that we had to transmit data several times.  We also
->> used to explicitly space out packets with delays to handle switch chip
->> buffer overruns.  Both of these functions I presume could be added to
->> netconsole without too much of a problem.
->
-> Yes, I agree netconsole would be good to get this type of change.
->
->> Lastly, this patchset also introduces a 'one-shot' mode, which has
->> saved our bacon several times in the past as well.  It's not totally
->> uncommon for the kernel's crash path to be buggy, in turn causing the
->> kernel to emit Oopses until the cows come home (or rather, until the
->> hardware watchdogs trip).  One-shot keeps us from emitting too much
->> garbage on the network when this happens.
->
-> I thought we had something like "only show the first oops" somewhere in
-> the kernel, perhaps I'm just imagining things...
->
-> If I am, adding this for all oopses would also be good.
-
-Well, there is always panic_on_oops, which we use, but that alone
-doesn't solve the recursive oops problem.
-
->
->> I hope the above comparison of semantics outlines the motivations we
->> have for not using netconsole and favoring an approach like that used
->> in netoops :)
->
-> I think you have just convinced me that you should add this type of
-> functionality for all oops messages even more, instead of only doing it
-> for your one type of oops transport :)
-
-I think you are heavily discounting the value of structured data :(
-It also doesn't help that printk's aren't transactional to each other
-when oopsing (which essentially makes concurrently oopsing CPUs shit
-all over each other in the logs, leading to unparseable data).  You
-are welcome to push the rock up hill for structured log data though ;)
-
-> As for the user/kernel interface, perhaps exporting the data in a text
-> format that is "tagged" would be best?  Then the whole world can parse
-> it easily.
-
-FWIW, another semantic difference between netconsole and netoops (that
-I had missed in the last email) is filtering: we really do want to get
-the whole log when a crash happens, debug messages and all.
-Netconsole is subject to console filtering (which we _do_ want as
-debug messages going out the uart slows the whole world down).
-
-netconsole and netoops _do_ have bits in common, for instance the
-handling of NETDEV events and source+target configuration.  I'd rather
-those bits become common between the two than figure out how to jam
-the semantics we need into netconsole.
+2.6.35,  or  another, older kernel works OK?
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
