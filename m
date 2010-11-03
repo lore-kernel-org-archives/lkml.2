@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755621Ab0KCPB1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 11:01:27 -0400
-Received: from claw.goop.org ([74.207.240.146]:41986 "EHLO claw.goop.org"
+	id S1755714Ab0KCPCX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 11:02:23 -0400
+Received: from claw.goop.org ([74.207.240.146]:42099 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755257Ab0KCPBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 11:01:23 -0400
+	id S1755449Ab0KCPCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 11:02:21 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: Peter Zijlstra <peterz@infradead.org>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
@@ -15,9 +15,9 @@ Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux Virtualization <virtualization@lists.linux-foundation.org>,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 10/20] x86/pvticketlock: keep count of blocked cpus
-Date: Wed,  3 Nov 2010 10:59:51 -0400
-Message-Id: <862249e9baeec961117cb0cf50208727412e2267.1288794124.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 02/20] x86/ticketlock: convert spin loop to C
+Date: Wed,  3 Nov 2010 10:59:43 -0400
+Message-Id: <3d9083892c28a7d3ed5a0191b0b4cd013022a186.1288794124.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <cover.1288794124.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1288794124.git.jeremy.fitzhardinge@citrix.com>
@@ -29,129 +29,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-When a CPU blocks by calling into __ticket_lock_spinning, keep a count in
-the spinlock.  This allows __ticket_lock_kick to more accurately tell
-whether it has any work to do (in many cases, a spinlock may be contended,
-but none of the waiters have gone into blocking).
+The inner loop of __ticket_spin_lock isn't doing anything very special,
+so reimplement it in C.
 
-This adds two locked instructions to the spinlock slow path (once the
-lock has already spun for SPIN_THRESHOLD iterations), and adds another
-one or two bytes to struct arch_spinlock.
+For the 8 bit ticket lock variant, we use a register union to get direct
+access to the lower and upper bytes in the tickets, but unfortunately gcc
+won't generate a direct comparison between the two halves of the register,
+so the generated asm isn't quite as pretty as the hand-coded version.
+However benchmarking shows that this is actually a small improvement in
+runtime performance on some benchmarks, and never a slowdown.
 
-We need to make sure we increment the waiting counter before doing the
-last-chance check of the lock to see if we picked it up in the meantime.
-If we don't then there's a potential deadlock:
-
-	lock holder		lock waiter
-
-				clear event channel
-				check lock for pickup (did not)
-	release lock
-	check waiting counter
-		(=0, no kick)
-				add waiting counter
-				block (=deadlock)
-
-Moving the "add waiting counter earler" avoids the deadlock:
-
-	lock holder		lock waiter
-
-				clear event channel
-				add waiting counter
-				check lock for pickup (did not)
-	release lock
-	check waiting counter
-		(=1, kick)
-				block (and immediately wake)
+We also need to make sure there's a barrier at the end of the lock loop
+to make sure that the compiler doesn't move any instructions from within
+the locked region into the region where we don't yet own the lock.
 
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- arch/x86/include/asm/spinlock.h       |   27 ++++++++++++++++++++++++++-
- arch/x86/include/asm/spinlock_types.h |    3 +++
- arch/x86/xen/spinlock.c               |    4 ++++
- 3 files changed, 33 insertions(+), 1 deletions(-)
+ arch/x86/include/asm/spinlock.h |   58 +++++++++++++++++++-------------------
+ 1 files changed, 29 insertions(+), 29 deletions(-)
 
 diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index a79dfee..3deabca 100644
+index d6d5784..6711d36 100644
 --- a/arch/x86/include/asm/spinlock.h
 +++ b/arch/x86/include/asm/spinlock.h
-@@ -65,6 +65,31 @@ static __always_inline void ____ticket_unlock_kick(struct arch_spinlock *lock, u
+@@ -58,21 +58,21 @@
+ #if (NR_CPUS < 256)
+ static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
  {
+-	unsigned short inc = 1 << TICKET_SHIFT;
+-
+-	asm volatile (
+-		LOCK_PREFIX "xaddw %w0, %1\n"
+-		"1:\t"
+-		"cmpb %h0, %b0\n\t"
+-		"je 2f\n\t"
+-		"rep ; nop\n\t"
+-		"movb %1, %b0\n\t"
+-		/* don't need lfence here, because loads are in-order */
+-		"jmp 1b\n"
+-		"2:"
+-		: "+Q" (inc), "+m" (lock->slock)
+-		:
+-		: "memory", "cc");
++	register union {
++		struct __raw_tickets tickets;
++		unsigned short slock;
++	} inc = { .slock = 1 << TICKET_SHIFT };
++
++	asm volatile (LOCK_PREFIX "xaddw %w0, %1\n"
++		      : "+Q" (inc), "+m" (lock->slock) : : "memory", "cc");
++
++	for (;;) {
++		if (inc.tickets.head == inc.tickets.tail)
++			return;
++		cpu_relax();
++		inc.tickets.head = ACCESS_ONCE(lock->tickets.head);
++	}
++	barrier();		/* make sure nothing creeps before the lock is taken */
  }
  
-+static __always_inline bool __ticket_lock_waiters(const struct arch_spinlock *lock)
-+{
-+	return false;
-+}
-+#else
-+static inline void __ticket_add_waiting(struct arch_spinlock *lock)
-+{
-+	if (sizeof(lock->waiting) == sizeof(u8))
-+		asm (LOCK_PREFIX "addb $1, %0" : "+m" (lock->waiting) : : "memory");
-+	else
-+		asm (LOCK_PREFIX "addw $1, %0" : "+m" (lock->waiting) : : "memory");
-+}
-+
-+static inline void __ticket_sub_waiting(struct arch_spinlock *lock)
-+{
-+	if (sizeof(lock->waiting) == sizeof(u8))
-+		asm (LOCK_PREFIX "subb $1, %0" : "+m" (lock->waiting) : : "memory");
-+	else
-+		asm (LOCK_PREFIX "subw $1, %0" : "+m" (lock->waiting) : : "memory");
-+}
-+
-+static __always_inline bool __ticket_lock_waiters(const struct arch_spinlock *lock)
-+{
-+	return ACCESS_ONCE(lock->waiting) != 0;
-+}
- #endif	/* CONFIG_PARAVIRT_SPINLOCKS */
- 
- /*
-@@ -106,7 +131,7 @@ static __always_inline struct __raw_tickets __ticket_spin_claim(struct arch_spin
-  */
- static __always_inline void __ticket_unlock_kick(struct arch_spinlock *lock, __ticket_t next)
+ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
+@@ -105,22 +105,22 @@ static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
+ static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
  {
--	if (unlikely(lock->tickets.tail != next))
-+	if (unlikely(__ticket_lock_waiters(lock)))
- 		____ticket_unlock_kick(lock, next);
+ 	unsigned inc = 1 << TICKET_SHIFT;
+-	unsigned tmp;
++	__ticket_t tmp;
+ 
+-	asm volatile(LOCK_PREFIX "xaddl %0, %1\n"
+-		     "movzwl %w0, %2\n\t"
+-		     "shrl $16, %0\n\t"
+-		     "1:\t"
+-		     "cmpl %0, %2\n\t"
+-		     "je 2f\n\t"
+-		     "rep ; nop\n\t"
+-		     "movzwl %1, %2\n\t"
+-		     /* don't need lfence here, because loads are in-order */
+-		     "jmp 1b\n"
+-		     "2:"
+-		     : "+r" (inc), "+m" (lock->slock), "=&r" (tmp)
+-		     :
+-		     : "memory", "cc");
++	asm volatile(LOCK_PREFIX "xaddl %0, %1\n\t"
++		     : "+r" (inc), "+m" (lock->slock)
++		     : : "memory", "cc");
++
++	tmp = inc;
++	inc >>= TICKET_SHIFT;
++
++	for (;;) {
++		if ((__ticket_t)inc == tmp)
++			return;
++		cpu_relax();
++		tmp = ACCESS_ONCE(lock->tickets.head);
++	}
++	barrier();		/* make sure nothing creeps before the lock is taken */
  }
  
-diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
-index 48dafc3..b396ed5 100644
---- a/arch/x86/include/asm/spinlock_types.h
-+++ b/arch/x86/include/asm/spinlock_types.h
-@@ -26,6 +26,9 @@ typedef struct arch_spinlock {
- 			__ticket_t head, tail;
- 		} tickets;
- 	};
-+#ifdef CONFIG_PARAVIRT_SPINLOCKS
-+	__ticket_t waiting;
-+#endif
- } arch_spinlock_t;
- 
- #define __ARCH_SPIN_LOCK_UNLOCKED	{ { .slock = 0 } }
-diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
-index 5feb897..b8f09d5 100644
---- a/arch/x86/xen/spinlock.c
-+++ b/arch/x86/xen/spinlock.c
-@@ -119,6 +119,8 @@ static void xen_lock_spinning(struct arch_spinlock *lock, unsigned want)
- 	/* Only check lock once pending cleared */
- 	barrier();
- 
-+	__ticket_add_waiting(lock);
-+
- 	/* check again make sure it didn't become free while
- 	   we weren't looking  */
- 	if (ACCESS_ONCE(lock->tickets.head) == want) {
-@@ -133,6 +135,8 @@ static void xen_lock_spinning(struct arch_spinlock *lock, unsigned want)
- 	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
- 
- out:
-+	__ticket_sub_waiting(lock);
-+
- 	cpumask_clear_cpu(cpu, &waiting_cpus);
- 	w->lock = NULL;
- 	spin_time_accum_blocked(start);
+ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
 -- 
 1.7.2.3
 
