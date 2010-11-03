@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754986Ab0KCLiW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 07:38:22 -0400
-Received: from kroah.org ([198.145.64.141]:50353 "EHLO coco.kroah.org"
+	id S1754158Ab0KCLm3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 07:42:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13669 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752717Ab0KCLiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 07:38:20 -0400
-Date: Wed, 3 Nov 2010 04:36:03 -0700
-From: Greg KH <greg@kroah.com>
-To: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: Brandon Philips <brandon@ifup.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 05/10] staging: hv: Convert camel cased functions in
-	hv.c to lower cases
-Message-ID: <20101103113603.GA13276@kroah.com>
-References: <1288644369-12958-1-git-send-email-haiyangz@linuxonhyperv.com> <1288644369-12958-2-git-send-email-haiyangz@linuxonhyperv.com> <1288644369-12958-3-git-send-email-haiyangz@linuxonhyperv.com> <1288644369-12958-4-git-send-email-haiyangz@linuxonhyperv.com> <1288644369-12958-5-git-send-email-haiyangz@linuxonhyperv.com> <20101102170406.GA4557@jenkins.home.ifup.org> <1FB5E1D5CA062146B38059374562DF728BA55BD7@TK5EX14MBXC126.redmond.corp.microsoft.com>
+	id S1752877Ab0KCLm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 07:42:27 -0400
+Message-ID: <4CD14A6F.4010109@redhat.com>
+Date: Wed, 03 Nov 2010 07:41:35 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1FB5E1D5CA062146B38059374562DF728BA55BD7@TK5EX14MBXC126.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Minchan Kim <minchan.kim@gmail.com>
+CC: Mandeep Singh Baines <msb@chromium.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, wad@chromium.org, olofj@chromium.org,
+        hughd@chromium.org
+Subject: Re: [PATCH] RFC: vmscan: add min_filelist_kbytes sysctl for protecting
+ the working set
+References: <20101028191523.GA14972@google.com>	<20101101012322.605C.A69D9226@jp.fujitsu.com>	<20101101182416.GB31189@google.com>	<4CCF0BE3.2090700@redhat.com>	<AANLkTi=src1L0gAFsogzCmejGOgg5uh=9O4Uw+ZmfBg4@mail.gmail.com>	<4CCF8151.3010202@redhat.com>	<AANLkTi=JJ-0ae+QybtR+e=4_4mpQghh61c4=TZYAw8uF@mail.gmail.com>	<4CD0C22B.2000905@redhat.com> <AANLkTik8y=bh3dBJe0bFmjAUvc7y8yBpjP4DKuKU+Z2j@mail.gmail.com>
+In-Reply-To: <AANLkTik8y=bh3dBJe0bFmjAUvc7y8yBpjP4DKuKU+Z2j@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 02, 2010 at 09:06:56PM +0000, Haiyang Zhang wrote:
-> > From: Brandon Philips [mailto:brandon@ifup.org]
-> > Sent: Tuesday, November 02, 2010 1:04 PM
-> > > -static int HvQueryHypervisorInfo(void)
-> > > +static int hvquery_hypervisor_info(void)
-> > > -static u64 HvDoHypercall(u64 control, void *input, void *output)
-> > > +static u64 hvdo_hypercall(u64 control, void *input, void *output)
-> > 
-> > Should these be hv_do_hypercall and hv_query_hypervisor? That seems to
-> > be the style in the rest of the patch:
-> 
-> I didn't insert underscore between every word, for example, it's not
-> added between two short words.
+On 11/02/2010 11:03 PM, Minchan Kim wrote:
 
-But you should.  Remember, be consistent.
+> It could.
+> But time based approach would be same, IMHO.
+> First of all, I don't want long latency of direct reclaim process.
+> It could affect response of foreground process directly.
+>
+> If VM limits the number of pages reclaimed per second, direct reclaim
+> process's latency will be affected. so we should avoid throttling in
+> direct reclaim path. Agree?
 
-Care to redo these again?
+The idea would be to not throttle the processes trying to
+reclaim page cache pages, but to only reclaim anonymous
+pages when the page cache pages are low (and occasionally
+a few page cache pages, say 128 a second).
 
-thanks,
+If too many reclaimers come in when the page cache is
+low and no swap is available, we will OOM kill instead
+of stalling.
 
-greg k-h
+After all, the entire point of this patch would be to
+avoid minutes-long latencies in triggering the OOM
+killer.
+
+-- 
+All rights reversed
