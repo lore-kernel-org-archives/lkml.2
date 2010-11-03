@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755201Ab0KCNow (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 09:44:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3338 "EHLO mx1.redhat.com"
+	id S1755295Ab0KCNpE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 09:45:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41147 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752321Ab0KCNou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 09:44:50 -0400
-Date: Wed, 3 Nov 2010 11:43:55 -0200
+	id S1752549Ab0KCNoz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 09:44:55 -0400
+Date: Wed, 3 Nov 2010 10:47:11 -0200
 From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>, Avi Kivity <avi@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [RFC PATCH v2 7/7] KVM: KVM: don't break vcpu 'halt' state due
- to apfs
-Message-ID: <20101103134355.GD16809@amt.cnet>
-References: <4CCE8143.3090105@cn.fujitsu.com>
- <4CCE82BC.3090000@cn.fujitsu.com>
- <20101101125551.GD31722@redhat.com>
- <4CD12FC9.9070902@cn.fujitsu.com>
- <20101103094508.GG7881@redhat.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>, kvm@vger.kernel.org,
+        Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
+        Alexander Graf <agraf@suse.de>
+Subject: Re: [PATCH] KVM x86: remove memset, use vzalloc and don't assign the
+ same value to a variable twice
+Message-ID: <20101103124711.GB16809@amt.cnet>
+References: <alpine.LNX.2.00.1010302020150.1572@swampdragon.chaosbits.net>
+ <4CCE0EB2.9070302@oss.ntt.co.jp>
+ <alpine.LNX.2.00.1011011924440.9616@swampdragon.chaosbits.net>
+ <20101102104934.ecd779dd.yoshikawa.takuya@oss.ntt.co.jp>
+ <alpine.LNX.2.00.1011020509590.11973@swampdragon.chaosbits.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101103094508.GG7881@redhat.com>
+In-Reply-To: <alpine.LNX.2.00.1011020509590.11973@swampdragon.chaosbits.net>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 11:45:08AM +0200, Gleb Natapov wrote:
-> On Wed, Nov 03, 2010 at 05:47:53PM +0800, Xiao Guangrong wrote:
-> > On 11/01/2010 08:55 PM, Gleb Natapov wrote:
+On Tue, Nov 02, 2010 at 05:11:19AM +0100, Jesper Juhl wrote:
+> On Tue, 2 Nov 2010, Takuya Yoshikawa wrote:
+> 
+> > Hi Jesper, (dropped some addresses from Cc)
 > > 
-> > > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> > > index 2cfdf2d..f7aed95 100644
-> > > --- a/arch/x86/kvm/x86.c
-> > > +++ b/arch/x86/kvm/x86.c
-> > > @@ -5295,8 +5295,9 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
-> > >  			{
-> > >  				switch(vcpu->arch.mp_state) {
-> > >  				case KVM_MP_STATE_HALTED:
-> > > -					vcpu->arch.mp_state =
-> > > -						KVM_MP_STATE_RUNNABLE;
-> > > +					if (list_empty_careful(&vcpu->async_pf.done))
-> > > +						vcpu->arch.mp_state =
-> > > +							KVM_MP_STATE_RUNNABLE;
-> > >  				case KVM_MP_STATE_RUNNABLE:
-> > >  					vcpu->arch.apf.halted = false;
-> > >  					break;
-> > > @@ -6279,6 +6280,7 @@ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
-> > >  		vcpu->arch.fault.error_code = 0;
-> > >  		vcpu->arch.fault.address = work->arch.token;
-> > >  		kvm_inject_page_fault(vcpu);
-> > > +		vcpu->arch.mp_state = KVM_MP_STATE_RUNNABLE;
-> > >  	}
-> > >  }
-> > >  
+> > > > Jesper Juhl wrote:
+> > > There's definately a positive size impact for the generated object code 
+> > > and we save having to do the call to memset() and the cost of a vzalloc() 
+> > > call looks more or less the same as a call to vmalloc() to me.
 > > 
-> > Tested with full virtualization guests, it works well for me. Thanks!
-> Thank you. Will repost properly.
+> > > > This patch is not based on kvm.git, I guess.
+> > > > 
+> > > Nope. It was generated against mainline git as of a couple of days ago. I 
+> > > can generate a version against kvm.git if you prefer.
+> > 
+> > Sorry, I should have said more clearly.
+> > 
+> > kvm_vm_ioctl_get_dirty_log() has been changed since latest mainline kernel was released.
+> > Furthermore, vmalloc() in it is to be removed soon, currently in kvm's next.
+> > 
+> > I have checked all vmalloc() + memset() in kvm, and there are three remaining.
+> > See the patch below.
+> >   - I have tested on x86.
+> >   - I can test ppc later if needed, but this is so trivial that Alex will see
+> >     no problem about this, probably.
+> > 
+> > So please write your Signed-off-by and ask Avi and Marcelo to apply.
+> > 
+> > Thanks,
+> >   Takuya
+> > 
+> > ===
+> > Subject: [PATCH] KVM: replace vmalloc and memset with vzalloc
+> > 
+> > Let's use newly introduced vzalloc().
+> > 
+> > Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+> 
+> Signed-off-by: Jesper-juhl <jj@chaosbits.net>
 
-There is no need to optimize this. Current code is simpler, less
-error-prone. Applied 1-6, thanks.
+Applied, thanks.
+
 
