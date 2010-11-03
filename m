@@ -1,71 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319Ab0KCWcg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 18:32:36 -0400
-Received: from mail.perches.com ([173.55.12.10]:3978 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752781Ab0KCWcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 18:32:33 -0400
-Subject: Re: [PATCH 3/3] Staging: comedi: fix brace coding style issue in
- pcl818.c
-From: Joe Perches <joe@perches.com>
-To: Damian Varayud <davarayud@gmail.com>
-Cc: gregkh@suse.de, harmonco@engr.orst.edu, sam.j.richardson@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Medina Raul Ezequiel <ezemed7@gmail.com>
-In-Reply-To: <1288819162-6330-3-git-send-email-user@netbu>
-References: <1288819162-6330-1-git-send-email-user@netbu>
-	 <1288819162-6330-3-git-send-email-user@netbu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 03 Nov 2010 15:32:32 -0700
-Message-ID: <1288823552.10236.52.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753376Ab0KCWgi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 18:36:38 -0400
+Received: from www17.your-server.de ([213.133.104.17]:47572 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753167Ab0KCWgg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 18:36:36 -0400
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: 2.6.36: kernel panic in cascade (Fatal exception in interrupt)
+Date: Wed, 3 Nov 2010 23:34:30 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1-00004-geb8abb9; KDE/4.5.2; i686; ; )
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201011032334.30662.thomas@m3y3r.de>
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-03 at 18:19 -0300, Damian Varayud wrote:
-> This is a patch to the pcl818.c file that fixes up braces, indentation, printk() and overlines warning
-> and error at initializing variable found by the checkpatch.pl tool
->  			printk
-> -			    ("comedi: A/D mode1/3 FIFO - channel dropout %d!=%d !\n",
-> +			    ("comedi: A/D mode1/3 FIFO - channel "
-> +			     "dropout %d!=%d !\n",
+Hello,
 
-Not an improvement.
-Please ignore any checkpatch long line complaints about printk formats.
+with 2.6.36 I'm starting to see a kernel panic and my system hangs completely.
+This is what I could capture, i.e. write down, from the (KMS) text console:
 
-Another thing you could do would be to convert these to
-	printk(KERN_ERR
-	       "comedi: A/D mode1/3 FIFO - channel dropout %d!=%d !\n",
-	       etc);
+[   300.000697] Pid: 0, comm: kworker/0:0 Not tainted 2.6.36 #2 MS-7250/MS-7250
+[   300.000815] RIP: 0010:[<ffffffff8105faf4>]  [<ffffffff8105faf4>] cascade+0x54/0x7a
+[   300.000953] ...
+[   300.008200] Call Trace:
+[   300.008200]  <IRQ>
+[   300.008200]  ? run_timer_softirq
+[   300.008200]  ? ktime_get
+[   300.008200]  ? __do_softirq
+[   300.008200]  ? call_softirq
+[   300.008200]  ? do_softirq
+[   300.008200]  ? irq_exit
+[   300.008200]  ? smp_apic_timer_interrupt
+[   300.008200]  ? apic_timer_interrupt
+[   300.008200]  <EOI>
+[   300.008200]  ? _raw_spin_unlock_irq
+[   300.008200]  ? finish_task_switch
+[   300.008200]  ? schedule
+[   300.008200]  ? sched_clock_local
+[   300.008200]  ? cpu_idle
+[   300.008200]  ? start_secondary
+[   300.008200]  Code: 08 48...
+[   300.008200]  RIP  [<ffffffff8105faf4>] cascade+0x54/0x7a
+[   300.008200]   RSP <ffff880002103e40>
+[   300.008200]  ---[ end trace 9511a8b4f653d08 ]---
+[   300.008200]  Kernel panic - not syncing: Fatal exception in interrupt
+[   300.000697] Pid: 0, comm: kworker/0:0 Tainted: G      D     2.6.36 #2
+[   300.008200] Call Trace:
+[   300.008200]  <IRQ>  [<ffffffff816d6a2c>] ? panic+0xa1/0x1a3
+[   300.008200]  ? _raw_spin_unlock_irqrestore
+[   300.008200]  ? oops_end
+[   300.008200]  ? do_invalid_op
+[   300.008200]  ? cascade
+[   300.008200]  ? invalid_op
+[   300.008200]  ? run_timer_softirq
+[   300.008200]  ? ktime_get
+[   300.008200]  ? __do_softirq
+[   300.008200]  ? call_softirq
+[   300.008200]  ? do_softirq
+[   300.008200]  ? irq_exit
+[   300.008200]  ? smp_apic_timer_interrupt
+[   300.008200]  ? apic_timer_interrupt
+[   300.008200]  <EOI> ? _raw_spin_unlock_irq
+[   300.008200]  ? finish_task_switch
+[   300.008200]  ? schedule
+[   300.008200]  ? sched_clock_local
+[   300.008200]  ? cpu_idle
+[   300.008200]  ? start_secondary
+[   300.008200]  panic occurred, switching back to text console
 
-That fixes the missing KERN_<level> and as well doesn't get any
-complaint from checkpatch.
-
-[]
-> @@ -1753,22 +1800,23 @@ static int pcl818_attach(struct comedi_device *dev, struct comedi_devconfig *it)
->  
->  	/* claim our I/O space */
->  	iobase = it->options[0];
-> -	printk("comedi%d: pcl818:  board=%s, ioport=0x%03lx",
-> +	printk(KERN_ERR "comedi%d: pcl818:  board=%s, ioport=0x%03lx",
->  	       dev->minor, this_board->name, iobase);
->  	devpriv->io_range = this_board->io_range;
-> -	if ((this_board->fifo) && (it->options[2] == -1)) {	/*  we've board with FIFO and we want to use FIFO */
-> +	/*  we've board with FIFO and we want to use FIFO */
-> +	if ((this_board->fifo) && (it->options[2] == -1)) {
->  		devpriv->io_range = PCLx1xFIFO_RANGE;
->  		devpriv->usefifo = 1;
->  	}
->  	if (!request_region(iobase, devpriv->io_range, "pcl818")) {
-> -		printk("I/O port conflict\n");
-> +		printk(KERN_ERR "I/O port conflict\n");
-
-Not correct, these and several below are actually
-continuation printks not the start of new lines.
-The KERN_<level> that should be used is KERN_CONT.
-
-
+Help most appreciated!
