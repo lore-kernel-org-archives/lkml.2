@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563Ab0KCHBe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 03:01:34 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:40033 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753165Ab0KCHBb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 03:01:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=wumm7of6PR4BBCwp2g0vSpH7Q52qPQfp+PHMj2ahasFsERUhjtoYd3UGAcaXoBEpnB
-         fl8BT0fd7Tx1Wa5I2YjSOsClsAy0sS/bQNEHXtp/Kzy+jmgWJJl5rSgXxQpVt5BT61rZ
-         kCVRt5dXGeBdC9cF/f3MLoM+LyR+cfXPKfX5Q=
-Subject: [PATCH] ASoC: Fix snd_soc_register_dais error handling
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Takashi Iwai <tiwai@suse.de>
-Content-Type: text/plain
-Date: Wed, 03 Nov 2010 15:04:45 +0800
-Message-Id: <1288767885.32421.5.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	id S1753823Ab0KCHED (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 03:04:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3289 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753146Ab0KCHEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 03:04:01 -0400
+Subject: [PATCH] virtio-net: init link state correctly
+To: rusty@rustcorp.com.au, davem@davemloft.net
+From: Jason Wang <jasowang@redhat.com>
+Cc: markmc@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, mst@redhat.com
+Date: Wed, 03 Nov 2010 15:08:17 +0800
+Message-ID: <20101103070817.26272.31654.stgit@dhcp-91-158.nay.redhat.com>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kzalloc for dai may fail at any iteration of the for loop,
-thus properly unregister already registered DAIs before return error.
+We need call netif_carrier_off() and do not assume VIRTIO_NET_S_LINKUP
+before querying device state during probing, otherwise we may get
+wrong operstate after driver was loaded because the link watch event
+was not fired as expected.
 
-The error handling code in snd_soc_register_dais() already ensure all the DAIs
-are unregistered before return error, we can remove the error handling code
-to unregister DAIs in snd_soc_register_codec().
+Since the device state changed could be caught through interrupt, the
+unconditional call to nerif_carrier_on() is also removed.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
 ---
- sound/soc/soc-core.c |    9 ++++-----
- 1 files changed, 4 insertions(+), 5 deletions(-)
+ drivers/net/virtio_net.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
-index 614a8b3..441285a 100644
---- a/sound/soc/soc-core.c
-+++ b/sound/soc/soc-core.c
-@@ -3043,8 +3043,10 @@ int snd_soc_register_dais(struct device *dev,
- 	for (i = 0; i < count; i++) {
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index bb6b67f..0a0cd35 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -986,9 +986,8 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 		goto unregister;
+ 	}
  
- 		dai = kzalloc(sizeof(struct snd_soc_dai), GFP_KERNEL);
--		if (dai == NULL)
--			return -ENOMEM;
-+		if (dai == NULL) {
-+			ret = -ENOMEM;
-+			goto err;
-+		}
+-	vi->status = VIRTIO_NET_S_LINK_UP;
++	netif_carrier_off(dev);
+ 	virtnet_update_status(vi);
+-	netif_carrier_on(dev);
  
- 		/* create DAI component name */
- 		dai->name = fmt_multiple_name(dev, &dai_drv[i]);
-@@ -3263,9 +3265,6 @@ int snd_soc_register_codec(struct device *dev,
+ 	pr_debug("virtnet: registered device %s\n", dev->name);
  	return 0;
- 
- error:
--	for (i--; i >= 0; i--)
--		snd_soc_unregister_dai(dev);
--
- 	if (codec->reg_cache)
- 		kfree(codec->reg_cache);
- 	kfree(codec->name);
--- 
-1.7.2
-
-
 
