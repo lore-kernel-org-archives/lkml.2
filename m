@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939Ab0KCPeo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 11:34:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59912 "EHLO mx1.redhat.com"
+	id S932494Ab0KCPbS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 11:31:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53748 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932437Ab0KCPbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 11:31:10 -0400
+	id S932083Ab0KCPa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 11:30:56 -0400
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Subject: [PATCH 50 of 66] mprotect: transparent huge page support
-X-Mercurial-Node: 2d595dc366d358c0eef298a466eeb78ce2bc3507
-Message-Id: <2d595dc366d358c0eef2.1288798105@v2.random>
+Subject: [PATCH 63 of 66] fix anon memory statistics with transparent hugepages
+X-Mercurial-Node: 63f97c307774c2f2ec4be60d6d39cbe4c8cc0d26
+Message-Id: <63f97c307774c2f2ec4b.1288798118@v2.random>
 In-Reply-To: <patchbomb.1288798055@v2.random>
 References: <patchbomb.1288798055@v2.random>
 User-Agent: Mercurial-patchbomb/1.4.1
-Date: Wed, 03 Nov 2010 16:28:25 +0100
+Date: Wed, 03 Nov 2010 16:28:38 +0100
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -40,83 +40,162 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Weiner <hannes@cmpxchg.org>
+From: Rik van Riel <riel@redhat.com>
 
-Natively handle huge pmds when changing page tables on behalf of
-mprotect().
+Count each transparent hugepage as HPAGE_PMD_NR pages in the LRU
+statistics, so the Active(anon) and Inactive(anon) statistics in
+/proc/meminfo are correct.
 
-I left out update_mmu_cache() because we do not need it on x86 anyway
-but more importantly the interface works on ptes, not pmds.
-
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
 ---
 
 diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
 --- a/include/linux/huge_mm.h
 +++ b/include/linux/huge_mm.h
-@@ -22,6 +22,8 @@ extern int zap_huge_pmd(struct mmu_gathe
- extern int mincore_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
- 			unsigned long addr, unsigned long end,
- 			unsigned char *vec);
-+extern int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
-+			unsigned long addr, pgprot_t newprot);
+@@ -128,11 +128,19 @@ static inline int PageTransCompound(stru
+ {
+ 	return PageCompound(page);
+ }
++static inline int hpage_nr_pages(struct page *page)
++{
++	if (unlikely(PageTransHuge(page)))
++		return HPAGE_PMD_NR;
++	return 1;
++}
+ #else /* CONFIG_TRANSPARENT_HUGEPAGE */
+ #define HPAGE_PMD_SHIFT ({ BUG(); 0; })
+ #define HPAGE_PMD_MASK ({ BUG(); 0; })
+ #define HPAGE_PMD_SIZE ({ BUG(); 0; })
  
- enum transparent_hugepage_flag {
- 	TRANSPARENT_HUGEPAGE_FLAG,
++#define hpage_nr_pages(x) 1
++
+ #define transparent_hugepage_enabled(__vma) 0
+ 
+ #define transparent_hugepage_flags 0UL
+diff --git a/include/linux/mm_inline.h b/include/linux/mm_inline.h
+--- a/include/linux/mm_inline.h
++++ b/include/linux/mm_inline.h
+@@ -1,6 +1,8 @@
+ #ifndef LINUX_MM_INLINE_H
+ #define LINUX_MM_INLINE_H
+ 
++#include <linux/huge_mm.h>
++
+ /**
+  * page_is_file_cache - should the page be on a file LRU or anon LRU?
+  * @page: the page to test
+@@ -24,7 +26,7 @@ __add_page_to_lru_list(struct zone *zone
+ 		       struct list_head *head)
+ {
+ 	list_add(&page->lru, head);
+-	__inc_zone_state(zone, NR_LRU_BASE + l);
++	__mod_zone_page_state(zone, NR_LRU_BASE + l, hpage_nr_pages(page));
+ 	mem_cgroup_add_lru_list(page, l);
+ }
+ 
+@@ -38,7 +40,7 @@ static inline void
+ del_page_from_lru_list(struct zone *zone, struct page *page, enum lru_list l)
+ {
+ 	list_del(&page->lru);
+-	__dec_zone_state(zone, NR_LRU_BASE + l);
++	__mod_zone_page_state(zone, NR_LRU_BASE + l, -hpage_nr_pages(page));
+ 	mem_cgroup_del_lru_list(page, l);
+ }
+ 
+@@ -73,7 +75,7 @@ del_page_from_lru(struct zone *zone, str
+ 			l += LRU_ACTIVE;
+ 		}
+ 	}
+-	__dec_zone_state(zone, NR_LRU_BASE + l);
++	__mod_zone_page_state(zone, NR_LRU_BASE + l, -hpage_nr_pages(page));
+ 	mem_cgroup_del_lru_list(page, l);
+ }
+ 
 diff --git a/mm/huge_memory.c b/mm/huge_memory.c
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
-@@ -944,6 +944,33 @@ int mincore_huge_pmd(struct vm_area_stru
- 	return ret;
- }
+@@ -1139,6 +1139,7 @@ static void __split_huge_page_refcount(s
+ 	int i;
+ 	unsigned long head_index = page->index;
+ 	struct zone *zone = page_zone(page);
++	int zonestat;
  
-+int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
-+		unsigned long addr, pgprot_t newprot)
-+{
-+	struct mm_struct *mm = vma->vm_mm;
-+	int ret = 0;
+ 	/* prevent PageLRU to go away from under us, and freeze lru stats */
+ 	spin_lock_irq(&zone->lru_lock);
+@@ -1203,6 +1204,15 @@ static void __split_huge_page_refcount(s
+ 	__dec_zone_page_state(page, NR_ANON_TRANSPARENT_HUGEPAGES);
+ 	__mod_zone_page_state(zone, NR_ANON_PAGES, HPAGE_PMD_NR);
+ 
++	/*
++	 * A hugepage counts for HPAGE_PMD_NR pages on the LRU statistics,
++	 * so adjust those appropriately if this page is on the LRU.
++	 */
++	if (PageLRU(page)) {
++		zonestat = NR_LRU_BASE + page_lru(page);
++		__mod_zone_page_state(zone, zonestat, -(HPAGE_PMD_NR-1));
++	}
 +
-+	spin_lock(&mm->page_table_lock);
-+	if (likely(pmd_trans_huge(*pmd))) {
-+		if (unlikely(pmd_trans_splitting(*pmd))) {
-+			spin_unlock(&mm->page_table_lock);
-+			wait_split_huge_page(vma->anon_vma, pmd);
-+		} else {
-+			pmd_t entry;
-+
-+			entry = pmdp_get_and_clear(mm, addr, pmd);
-+			entry = pmd_modify(entry, newprot);
-+			set_pmd_at(mm, addr, pmd, entry);
-+			spin_unlock(&vma->vm_mm->page_table_lock);
-+			flush_tlb_range(vma, addr, addr + HPAGE_PMD_SIZE);
-+			ret = 1;
-+		}
-+	} else
-+		spin_unlock(&vma->vm_mm->page_table_lock);
-+
-+	return ret;
-+}
-+
- pmd_t *page_check_address_pmd(struct page *page,
- 			      struct mm_struct *mm,
- 			      unsigned long address,
-diff --git a/mm/mprotect.c b/mm/mprotect.c
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -88,7 +88,13 @@ static inline void change_pmd_range(stru
- 	pmd = pmd_offset(pud, addr);
- 	do {
- 		next = pmd_addr_end(addr, end);
--		split_huge_page_pmd(vma->vm_mm, pmd);
-+		if (pmd_trans_huge(*pmd)) {
-+			if (next - addr != HPAGE_PMD_SIZE)
-+				split_huge_page_pmd(vma->vm_mm, pmd);
-+			else if (change_huge_pmd(vma, pmd, addr, newprot))
-+				continue;
-+			/* fall through */
-+		}
- 		if (pmd_none_or_clear_bad(pmd))
- 			continue;
- 		change_pte_range(vma->vm_mm, pmd, addr, next, newprot,
+ 	ClearPageCompound(page);
+ 	compound_unlock(page);
+ 	spin_unlock_irq(&zone->lru_lock);
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1083,7 +1083,7 @@ unsigned long mem_cgroup_isolate_pages(u
+ 		case 0:
+ 			list_move(&page->lru, dst);
+ 			mem_cgroup_del_lru(page);
+-			nr_taken++;
++			nr_taken += hpage_nr_pages(page);
+ 			break;
+ 		case -EBUSY:
+ 			/* we don't affect global LRU but rotate in our LRU */
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1028,7 +1028,7 @@ static unsigned long isolate_lru_pages(u
+ 		case 0:
+ 			list_move(&page->lru, dst);
+ 			mem_cgroup_del_lru(page);
+-			nr_taken++;
++			nr_taken += hpage_nr_pages(page);
+ 			break;
+ 
+ 		case -EBUSY:
+@@ -1086,7 +1086,7 @@ static unsigned long isolate_lru_pages(u
+ 			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
+ 				list_move(&cursor_page->lru, dst);
+ 				mem_cgroup_del_lru(cursor_page);
+-				nr_taken++;
++				nr_taken += hpage_nr_pages(page);
+ 				nr_lumpy_taken++;
+ 				if (PageDirty(cursor_page))
+ 					nr_lumpy_dirty++;
+@@ -1141,14 +1141,15 @@ static unsigned long clear_active_flags(
+ 	struct page *page;
+ 
+ 	list_for_each_entry(page, page_list, lru) {
++		int numpages = hpage_nr_pages(page);
+ 		lru = page_lru_base_type(page);
+ 		if (PageActive(page)) {
+ 			lru += LRU_ACTIVE;
+ 			ClearPageActive(page);
+-			nr_active++;
++			nr_active += numpages;
+ 		}
+ 		if (count)
+-			count[lru]++;
++			count[lru] += numpages;
+ 	}
+ 
+ 	return nr_active;
+@@ -1466,7 +1467,7 @@ static void move_active_pages_to_lru(str
+ 
+ 		list_move(&page->lru, &zone->lru[lru].list);
+ 		mem_cgroup_add_lru_list(page, lru);
+-		pgmoved++;
++		pgmoved += hpage_nr_pages(page);
+ 
+ 		if (!pagevec_add(&pvec, page) || list_empty(list)) {
+ 			spin_unlock_irq(&zone->lru_lock);
