@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408Ab0KCOoD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 10:44:03 -0400
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:57927 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755379Ab0KCOoC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 10:44:02 -0400
-Message-ID: <4CD17503.3070604@euromail.se>
-Date: Wed, 03 Nov 2010 15:43:15 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1755426Ab0KCOob (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 10:44:31 -0400
+Received: from cantor.suse.de ([195.135.220.2]:57746 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753181Ab0KCOoa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 10:44:30 -0400
+Date: Wed, 3 Nov 2010 10:44:29 -0400 (EDT)
+From: Jiri Kosina <jkosina@suse.cz>
+To: gimli <gimli@dark-green.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Resend  [PATCH 3/4] MacbookAir3,1 and 3,2 hid support
+In-Reply-To: <dfe20d79428280b911bd98629a8baac9@mognix.dark-green.com>
+Message-ID: <alpine.LNX.2.00.1011031043520.15851@pobox.suse.cz>
+References: <66c1cd33ff5b2d908b2b31defb8e0cd1@mognix.dark-green.com> <3e6b335b371a07cd60221a25c5b6b47d@mognix.dark-green.com> <alpine.LNX.2.00.1011030918410.15851@pobox.suse.cz> <7b3b313ce7138c19191295a645dfb38f@mognix.dark-green.com>
+ <alpine.LNX.2.00.1011030953540.15851@pobox.suse.cz> <dfe20d79428280b911bd98629a8baac9@mognix.dark-green.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-CC: Jean Delvare <khali@linux-fr.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [lm-sensors] [PATCH 0/8] hwmon: applesmc: Dynamic configuration
- rewrite
-References: <1288511434-5662-1-git-send-email-rydberg@euromail.se> <20101103134833.GA12700@ericsson.com>
-In-Reply-To: <20101103134833.GA12700@ericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1PDeZ4-0007zx-Bm.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PDeZ4-0007zx-Bm 7048f7788acc99114030f960ac23cf02
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2010 02:48 PM, Guenter Roeck wrote:
+On Wed, 3 Nov 2010, gimli wrote:
 
-> On Sun, Oct 31, 2010 at 03:50:26AM -0400, Henrik Rydberg wrote:
->> The amount of machines supported by this driver has increased rapidly
->> over the past years, and the detailed driver support of the many
->> flavors is quickly becoming a problem.
->>
->> This patchset introduces dynamic configuration by making the SMC
->> register set efficiently searchable, and fixes a number of outstanding
->> issues:
->>
->> * Support for all new models since MacbookPro 6.
->> * Support for variable number of cpu sensors in the MacPros.
->> * Handles the odd temperature sensor types found on new models.
->> * Fixes minor read problems on many intermediate models.
->>
->> The first patch is preparatory. The second patch adds the register
->> lookup cache. The third patch adds the dynamic temperature files, and
->> the fourth implements a new temperature register format. The fifth
->> patch makes the remaining features dynamically configured, and the
->> sixth patch sets up the fans dynamically. The seventh patch is purely
->> janitory, and the last patch updates the copyright.
->>
->> As a side-effect, the file is reduced by almost five hundred lines.
->>
-> Henrik,
 > 
-> since you applied your changes on top of Joe's pr_fmt patch, I assume
-> that you Ack that patch. Is that a correct assumption ?
-> 
-> I know you sent an Ack earlier, but it was "except for comments already made",
-> so this is just for clarification.
+> On Wed, 3 Nov 2010 09:56:21 -0400 (EDT), Jiri Kosina <jkosina@suse.cz>
+> wrote:
+> > On Wed, 3 Nov 2010, gimli wrote:
+> > 
+> >> Does this look better ? 
+> > 
+> > What I would actually prefer would be something like
+> > 
+> > 
+> > 	if ( ... )
+> > 		table = macbookair_fn_keys;
+> > 	else if ( ... )
+> > 		table = powerbook_fn_keys;
+> > 	else
+> > 		table = apple_fn_keys;
+> > 
+> > 	apple_find_translation(table, usage->code);
+> > 
+> >> I also use the USB id's for the if.
+> Next try.
 
+I have slightly modified the code to be more like what I proposed above, 
+and applied the patch. Thanks a lot,
 
-Yeah, I'm good with those changes. As far as I understand, the issue was
-regarding the extra define at the top, not the changes per se. I can certainly
-live with that extra line until something better comes along.
-
-Thanks,
-Henrik
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
