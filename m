@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932515Ab0KCPbV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 11:31:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9500 "EHLO mx1.redhat.com"
+	id S932445Ab0KCPdQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 11:33:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7498 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932364Ab0KCPa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 11:30:56 -0400
+	id S932083Ab0KCPbT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 11:31:19 -0400
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Subject: [PATCH 42 of 66] khugepaged vma merge
-X-Mercurial-Node: faf02e40e7c56b202ef727a4930f6b43dc6ec335
-Message-Id: <faf02e40e7c56b202ef7.1288798097@v2.random>
+Subject: [PATCH 65 of 66] transparent hugepage sysfs meminfo
+X-Mercurial-Node: ce57a3a626bd03bb9a084d4d67b4405e3ea81294
+Message-Id: <ce57a3a626bd03bb9a08.1288798120@v2.random>
 In-Reply-To: <patchbomb.1288798055@v2.random>
 References: <patchbomb.1288798055@v2.random>
 User-Agent: Mercurial-patchbomb/1.4.1
-Date: Wed, 03 Nov 2010 16:28:17 +0100
+Date: Wed, 03 Nov 2010 16:28:40 +0100
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -40,53 +40,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: David Rientjes <rientjes@google.com>
 
-register in khugepaged if the vma grows.
+Add hugepage statistics to per-node sysfs meminfo
 
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
 
-diff --git a/mm/mmap.c b/mm/mmap.c
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -29,6 +29,7 @@
- #include <linux/mmu_notifier.h>
- #include <linux/perf_event.h>
- #include <linux/audit.h>
-+#include <linux/khugepaged.h>
- 
- #include <asm/uaccess.h>
- #include <asm/cacheflush.h>
-@@ -815,6 +816,7 @@ struct vm_area_struct *vma_merge(struct 
- 				end, prev->vm_pgoff, NULL);
- 		if (err)
- 			return NULL;
-+		khugepaged_enter_vma_merge(prev);
- 		return prev;
- 	}
- 
-@@ -833,6 +835,7 @@ struct vm_area_struct *vma_merge(struct 
- 				next->vm_pgoff - pglen, NULL);
- 		if (err)
- 			return NULL;
-+		khugepaged_enter_vma_merge(area);
- 		return area;
- 	}
- 
-@@ -1761,6 +1764,7 @@ int expand_upwards(struct vm_area_struct
- 		}
- 	}
- 	vma_unlock_anon_vma(vma);
-+	khugepaged_enter_vma_merge(vma);
- 	return error;
+diff --git a/drivers/base/node.c b/drivers/base/node.c
+--- a/drivers/base/node.c
++++ b/drivers/base/node.c
+@@ -117,12 +117,21 @@ static ssize_t node_read_meminfo(struct 
+ 		       "Node %d WritebackTmp:   %8lu kB\n"
+ 		       "Node %d Slab:           %8lu kB\n"
+ 		       "Node %d SReclaimable:   %8lu kB\n"
+-		       "Node %d SUnreclaim:     %8lu kB\n",
++		       "Node %d SUnreclaim:     %8lu kB\n"
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++		       "Node %d AnonHugePages:  %8lu kB\n"
++#endif
++			,
+ 		       nid, K(node_page_state(nid, NR_FILE_DIRTY)),
+ 		       nid, K(node_page_state(nid, NR_WRITEBACK)),
+ 		       nid, K(node_page_state(nid, NR_FILE_PAGES)),
+ 		       nid, K(node_page_state(nid, NR_FILE_MAPPED)),
+-		       nid, K(node_page_state(nid, NR_ANON_PAGES)),
++		       nid, K(node_page_state(nid, NR_ANON_PAGES)
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++			+ node_page_state(nid, NR_ANON_TRANSPARENT_HUGEPAGES) *
++			HPAGE_PMD_NR
++#endif
++		       ),
+ 		       nid, K(node_page_state(nid, NR_SHMEM)),
+ 		       nid, node_page_state(nid, NR_KERNEL_STACK) *
+ 				THREAD_SIZE / 1024,
+@@ -133,7 +142,13 @@ static ssize_t node_read_meminfo(struct 
+ 		       nid, K(node_page_state(nid, NR_SLAB_RECLAIMABLE) +
+ 				node_page_state(nid, NR_SLAB_UNRECLAIMABLE)),
+ 		       nid, K(node_page_state(nid, NR_SLAB_RECLAIMABLE)),
+-		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE)));
++		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE))
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++			, nid,
++			K(node_page_state(nid, NR_ANON_TRANSPARENT_HUGEPAGES) *
++			HPAGE_PMD_NR)
++#endif
++		       );
+ 	n += hugetlb_report_node_meminfo(nid, buf + n);
+ 	return n;
  }
- #endif /* CONFIG_STACK_GROWSUP || CONFIG_IA64 */
-@@ -1808,6 +1812,7 @@ static int expand_downwards(struct vm_ar
- 		}
- 	}
- 	vma_unlock_anon_vma(vma);
-+	khugepaged_enter_vma_merge(vma);
- 	return error;
- }
- 
