@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257Ab0KCNfx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 09:35:53 -0400
-Received: from kroah.org ([198.145.64.141]:49122 "EHLO coco.kroah.org"
+	id S1755201Ab0KCNow (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 09:44:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3338 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751488Ab0KCNfw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 09:35:52 -0400
-Date: Wed, 3 Nov 2010 06:31:36 -0700
-From: Greg KH <greg@kroah.com>
-To: Vipin Mehta <Vipin.Mehta@Atheros.com>
-Cc: Greg KH <gregkh@suse.de>, Randy Dunlap <randy.dunlap@oracle.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Chris Ball <cjb@laptop.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        driverdevel <devel@driverdev.osuosl.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for October 29 (staging/ath6kl)
-Message-ID: <20101103133136.GA18187@kroah.com>
-References: <20101029121148.d27e03bc.sfr@canb.auug.org.au> <20101029161610.99e6f4ef.randy.dunlap@oracle.com> <20101029235125.GA22122@suse.de> <35B17FE5076C7040809188FBE7913F983F847B52A2@SC1EXMB-MBCL.global.atheros.com>
+	id S1752321Ab0KCNou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 09:44:50 -0400
+Date: Wed, 3 Nov 2010 11:43:55 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>, Avi Kivity <avi@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [RFC PATCH v2 7/7] KVM: KVM: don't break vcpu 'halt' state due
+ to apfs
+Message-ID: <20101103134355.GD16809@amt.cnet>
+References: <4CCE8143.3090105@cn.fujitsu.com>
+ <4CCE82BC.3090000@cn.fujitsu.com>
+ <20101101125551.GD31722@redhat.com>
+ <4CD12FC9.9070902@cn.fujitsu.com>
+ <20101103094508.GG7881@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <35B17FE5076C7040809188FBE7913F983F847B52A2@SC1EXMB-MBCL.global.atheros.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20101103094508.GG7881@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 02, 2010 at 11:37:23AM -0700, Vipin Mehta wrote:
-> 
-> On Fri, Oct 29, 2010 at 04:16:10PM -0700, Randy Dunlap wrote:
-> > On Fri, 29 Oct 2010 12:11:48 +1100 Stephen Rothwell wrote:
+On Wed, Nov 03, 2010 at 11:45:08AM +0200, Gleb Natapov wrote:
+> On Wed, Nov 03, 2010 at 05:47:53PM +0800, Xiao Guangrong wrote:
+> > On 11/01/2010 08:55 PM, Gleb Natapov wrote:
 > > 
-> > > Hi all,
+> > > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> > > index 2cfdf2d..f7aed95 100644
+> > > --- a/arch/x86/kvm/x86.c
+> > > +++ b/arch/x86/kvm/x86.c
+> > > @@ -5295,8 +5295,9 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
+> > >  			{
+> > >  				switch(vcpu->arch.mp_state) {
+> > >  				case KVM_MP_STATE_HALTED:
+> > > -					vcpu->arch.mp_state =
+> > > -						KVM_MP_STATE_RUNNABLE;
+> > > +					if (list_empty_careful(&vcpu->async_pf.done))
+> > > +						vcpu->arch.mp_state =
+> > > +							KVM_MP_STATE_RUNNABLE;
+> > >  				case KVM_MP_STATE_RUNNABLE:
+> > >  					vcpu->arch.apf.halted = false;
+> > >  					break;
+> > > @@ -6279,6 +6280,7 @@ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
+> > >  		vcpu->arch.fault.error_code = 0;
+> > >  		vcpu->arch.fault.address = work->arch.token;
+> > >  		kvm_inject_page_fault(vcpu);
+> > > +		vcpu->arch.mp_state = KVM_MP_STATE_RUNNABLE;
+> > >  	}
+> > >  }
+> > >  
 > > 
-> > 
-> > drivers/staging/ath6kl/hif/sdio/linux_sdio/src/hif_scatter.c:288: error: 'struct mmc_host' has no member named 'max_hw_segs'
-> > drivers/staging/ath6kl/hif/sdio/linux_sdio/src/hif_scatter.c:289: error: 'struct mmc_host' has no member named 'max_hw_segs'
-> 
-> Looks like it was caused by:
-> 	a36274e0184193e393fb82957925c3981a6b0477
-> 
-> 	mmc: Remove distinction between hw and phys segments
-> 
-> 
-> and it's a simple fix.  I'll do it after -rc1 is out as I'm on my way to
-> Boston now...
-> 
-> I had submitted a patch for this a few weeks back and the required
-> changes were present in the tag next-20101028. They somehow got
-> reverted back in the tag next-20101029. Both Greg and Stephen
-> should have the original patch but I can send it again if it helps.
-> 
-> (Sorry my mutt is acting up so sending it through Outlook)
+> > Tested with full virtualization guests, it works well for me. Thanks!
+> Thank you. Will repost properly.
 
-It's now in my tree and will get to Linus soon.
+There is no need to optimize this. Current code is simpler, less
+error-prone. Applied 1-6, thanks.
 
-thanks,
-
-greg k-h
