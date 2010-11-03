@@ -1,71 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758Ab0KCKMo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 06:12:44 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:45803 "EHLO
+	id S1754846Ab0KCKMu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 06:12:50 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:45707 "EHLO
 	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754686Ab0KCKMk (ORCPT
+	by vger.kernel.org with ESMTP id S1754574Ab0KCKMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 06:12:40 -0400
-X-Sasl-enc: UfpXV8bLiD2wAEtwvycCp3K35s9r0Srnpds8WIXl/QyB 1288779159
+	Wed, 3 Nov 2010 06:12:46 -0400
+X-Sasl-enc: +7qLaG9aaPBKwT99HT3eoc/CtSn+iIUoJRKzTQxRQjUs 1288779165
 To: tyhicks@linux.vnet.ibm.com
-Subject: [PATCH 2/5] ecryptfs: missing initialization of the superblock 'magic' field
+Subject: [PATCH 3/5] ecryptfs: test lower_file pointer when lower_file_mutex is locked
 From: Roberto Sassu <roberto.sassu@polito.it>
 Organization: Politecnico di Torino
-Date: Wed, 3 Nov 2010 11:11:22 +0100
+Date: Wed, 3 Nov 2010 11:11:28 +0100
 MIME-Version: 1.0
 Cc: kirkland@canonical.com, jmorris@namei.org,
         linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org
 Content-Type: multipart/signed;
-  boundary="nextPart3917744.QtqUO94JV4";
+  boundary="nextPart3965957.LkIBv3GtJk";
   protocol="application/pkcs7-signature";
   micalg=sha1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011031111.22964.roberto.sassu@polito.it>
+Message-Id: <201011031111.29185.roberto.sassu@polito.it>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart3917744.QtqUO94JV4
+--nextPart3965957.LkIBv3GtJk
 Content-Type: text/plain;
   charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 
-This patch initializes the 'magic' field of ecryptfs filesystems to
-ECRYPTFS_SUPER_MAGIC.
+This patch prevents the lower_file pointer in the 'ecryptfs_inode_info'
+structure to be checked when the mutex 'lower_file_mutex' is not locked.
 
 Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 =2D--
- fs/ecryptfs/main.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ fs/ecryptfs/file.c  |   16 +++++++---------
+ fs/ecryptfs/inode.c |   32 ++++++++++++++------------------
+ 2 files changed, 21 insertions(+), 27 deletions(-)
 
-diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
-index 09eb529..81821d7 100644
-=2D-- a/fs/ecryptfs/main.c
-+++ b/fs/ecryptfs/main.c
-@@ -36,6 +36,7 @@
- #include <linux/parser.h>
- #include <linux/fs_stack.h>
- #include <linux/slab.h>
-+#include <linux/magic.h>
- #include "ecryptfs_kernel.h"
-=20
- /**
-@@ -520,6 +521,7 @@ static int ecryptfs_read_super(struct super_block *sb, =
-const char *dev_name)
- 	ecryptfs_set_superblock_lower(sb, path.dentry->d_sb);
- 	sb->s_maxbytes =3D path.dentry->d_sb->s_maxbytes;
- 	sb->s_blocksize =3D path.dentry->d_sb->s_blocksize;
-+	sb->s_magic =3D ECRYPTFS_SUPER_MAGIC;
- 	ecryptfs_set_dentry_lower(sb->s_root, path.dentry);
- 	ecryptfs_set_dentry_lower_mnt(sb->s_root, path.mnt);
- 	rc =3D ecryptfs_interpose(path.dentry, sb->s_root, sb, 0);
+diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
+index 622c9514..5cfcc3c 100644
+=2D-- a/fs/ecryptfs/file.c
++++ b/fs/ecryptfs/file.c
+@@ -192,15 +192,13 @@ static int ecryptfs_open(struct inode *inode, struct =
+file *file)
+ 				      | ECRYPTFS_ENCRYPTED);
+ 	}
+ 	mutex_unlock(&crypt_stat->cs_mutex);
+=2D	if (!ecryptfs_inode_to_private(inode)->lower_file) {
+=2D		rc =3D ecryptfs_init_persistent_file(ecryptfs_dentry);
+=2D		if (rc) {
+=2D			printk(KERN_ERR "%s: Error attempting to initialize "
+=2D			       "the persistent file for the dentry with name "
+=2D			       "[%s]; rc =3D [%d]\n", __func__,
+=2D			       ecryptfs_dentry->d_name.name, rc);
+=2D			goto out_free;
+=2D		}
++	rc =3D ecryptfs_init_persistent_file(ecryptfs_dentry);
++	if (rc) {
++		printk(KERN_ERR "%s: Error attempting to initialize "
++			"the persistent file for the dentry with name "
++			"[%s]; rc =3D [%d]\n", __func__,
++			ecryptfs_dentry->d_name.name, rc);
++		goto out_free;
+ 	}
+ 	if ((ecryptfs_inode_to_private(inode)->lower_file->f_flags & O_RDONLY)
+ 	    && !(file->f_flags & O_RDONLY)) {
+diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
+index 9c0cc4b..822086d 100644
+=2D-- a/fs/ecryptfs/inode.c
++++ b/fs/ecryptfs/inode.c
+@@ -181,15 +181,13 @@ static int ecryptfs_initialize_file(struct dentry *ec=
+ryptfs_dentry)
+ 				"context; rc =3D [%d]\n", rc);
+ 		goto out;
+ 	}
+=2D	if (!ecryptfs_inode_to_private(ecryptfs_dentry->d_inode)->lower_file) {
+=2D		rc =3D ecryptfs_init_persistent_file(ecryptfs_dentry);
+=2D		if (rc) {
+=2D			printk(KERN_ERR "%s: Error attempting to initialize "
+=2D			       "the persistent file for the dentry with name "
+=2D			       "[%s]; rc =3D [%d]\n", __func__,
+=2D			       ecryptfs_dentry->d_name.name, rc);
+=2D			goto out;
+=2D		}
++	rc =3D ecryptfs_init_persistent_file(ecryptfs_dentry);
++	if (rc) {
++		printk(KERN_ERR "%s: Error attempting to initialize "
++			"the persistent file for the dentry with name "
++			"[%s]; rc =3D [%d]\n", __func__,
++			ecryptfs_dentry->d_name.name, rc);
++		goto out;
+ 	}
+ 	rc =3D ecryptfs_write_metadata(ecryptfs_dentry);
+ 	if (rc) {
+@@ -298,15 +296,13 @@ int ecryptfs_lookup_and_interpose_lower(struct dentry=
+ *ecryptfs_dentry,
+ 		rc =3D -ENOMEM;
+ 		goto out;
+ 	}
+=2D	if (!ecryptfs_inode_to_private(ecryptfs_dentry->d_inode)->lower_file) {
+=2D		rc =3D ecryptfs_init_persistent_file(ecryptfs_dentry);
+=2D		if (rc) {
+=2D			printk(KERN_ERR "%s: Error attempting to initialize "
+=2D			       "the persistent file for the dentry with name "
+=2D			       "[%s]; rc =3D [%d]\n", __func__,
+=2D			       ecryptfs_dentry->d_name.name, rc);
+=2D			goto out_free_kmem;
+=2D		}
++	rc =3D ecryptfs_init_persistent_file(ecryptfs_dentry);
++	if (rc) {
++		printk(KERN_ERR "%s: Error attempting to initialize "
++			"the persistent file for the dentry with name "
++			"[%s]; rc =3D [%d]\n", __func__,
++			ecryptfs_dentry->d_name.name, rc);
++		goto out_free_kmem;
+ 	}
+ 	crypt_stat =3D &ecryptfs_inode_to_private(
+ 					ecryptfs_dentry->d_inode)->crypt_stat;
 =2D-=20
 1.7.2.3
 
 
---nextPart3917744.QtqUO94JV4
+--nextPart3965957.LkIBv3GtJk
 Content-Type: application/pkcs7-signature; name="smime.p7s"
 Content-Disposition: attachment; filename="smime.p7s"
 Content-Transfer-Encoding: base64
@@ -146,12 +206,12 @@ TdtCm/yxR8XUlFyZkLHfhY19VW4luxb7KZ4GiPKDERdQwBb0kja4eqSOBkAPWZ9Y8zpv4bAxggIc
 MIICGAIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBkaSBUb3Jpbm8x
 NjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eQIC
 A8EwCQYFKw4DAhoFAKCBhzAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEP
-Fw0xMDExMDMxMDExMjJaMCMGCSqGSIb3DQEJBDEWBBRhTWjE3a5UqrmgIfc02END1c1goTAoBgkq
-hkiG9w0BCQ8xGzAZMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzANBgkqhkiG9w0BAQEFAASCAQA3
-a06Y2STZkd4VTuLE+T1wqI0d6Zmrhi9rNi36Cd2XBE4uXaTa/zCb4qh8Z+X7de6yQJa7Vjmx6IAq
-yjdZgzT6IX/Vyho9SQrVtddoDtAXGArigTDS3rtSyot5PKVCY0fIF+8TCIX/I1qc+/xS9qsutXwM
-tqQCOmSxJYSnQnELAY9tUmc+SodhH9BtpIbtZhRRkiEIui9mkmRyxkW0Y2gAG5EiQGAE1xINgRoS
-7LfXq9qkrMW4PKL1zANZ6ndSP9K0urmZYt0eEu8Z9WHo6M+ygLzRau5kNdml33arpXo6lsVCrJGR
-qn665puJ0A5B6FRN0UHO1DppZtM0+YlY4BQSAAAAAAAA
+Fw0xMDExMDMxMDExMjlaMCMGCSqGSIb3DQEJBDEWBBQHd1xDwBShdP2jYzI+beIkTb+5ljAoBgkq
+hkiG9w0BCQ8xGzAZMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzANBgkqhkiG9w0BAQEFAASCAQCW
+FzpthATYUASOGmIsKKn7MQ6rn6jSAlPJBPZEdM9qd19csu5kKCissJ7KgHvmEnBacoxeuf67Vr38
+Gs68fpjlEd/bRRjFoX6YkbEpuO9qatKX3hG0unpJ/x5PQ48jdqZUp4REG71p9jcB8z5UFqrihG1J
+ekBSvwFW9qTnDH9IiESFIQraI6dIVAy9gePHWeNH8+ffxTwfCh+UmcpPw8/Qx5a/Z65Nk5uE80gZ
+8rnc4d++p3F/HsQrQxXuzZUR333CPT9TsoKOFW7RmUb+CHQ7n+WottGyUfFl0B9o7+zPdbzVMfBz
+F6eJd9+Wx88YQeM18geLBQVXp7lCwIuaUsozAAAAAAAA
 
---nextPart3917744.QtqUO94JV4--
+--nextPart3965957.LkIBv3GtJk--
