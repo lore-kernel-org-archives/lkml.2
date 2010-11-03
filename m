@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932286Ab0KCPam (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 11:30:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34410 "EHLO mx1.redhat.com"
+	id S932263Ab0KCPaj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 11:30:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53390 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932083Ab0KCPad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 11:30:33 -0400
+	id S1755806Ab0KCPac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 11:30:32 -0400
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Subject: [PATCH 34 of 66] add PageTransCompound
-X-Mercurial-Node: ac8e768df801ae2310c6f0d90a40a3e589203f30
-Message-Id: <ac8e768df801ae2310c6.1288798089@v2.random>
+Subject: [PATCH 09 of 66] clear compound mapping
+X-Mercurial-Node: d25fa0af7941f8e1bdbde899d60f35f325e4f220
+Message-Id: <d25fa0af7941f8e1bdbd.1288798064@v2.random>
 In-Reply-To: <patchbomb.1288798055@v2.random>
 References: <patchbomb.1288798055@v2.random>
 User-Agent: Mercurial-patchbomb/1.4.1
-Date: Wed, 03 Nov 2010 16:28:09 +0100
+Date: Wed, 03 Nov 2010 16:27:44 +0100
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -42,30 +42,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andrea Arcangeli <aarcange@redhat.com>
 
-Remove branches when CONFIG_TRANSPARENT_HUGEPAGE=n.
+Clear compound mapping for anonymous compound pages like it already happens for
+regular anonymous pages. But crash if mapping is set for any tail page, also
+the PageAnon check is meaningless for tail pages. This check only makes sense
+for the head page, for tail page it can only hide bugs and we definitely don't
+want to hide bugs.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
 ---
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -105,6 +105,10 @@ static inline int PageTransHuge(struct p
- 	VM_BUG_ON(PageTail(page));
- 	return PageHead(page);
- }
-+static inline int PageTransCompound(struct page *page)
-+{
-+	return PageCompound(page);
-+}
- #else /* CONFIG_TRANSPARENT_HUGEPAGE */
- #define HPAGE_PMD_SHIFT ({ BUG(); 0; })
- #define HPAGE_PMD_MASK ({ BUG(); 0; })
-@@ -122,6 +126,7 @@ static inline int split_huge_page(struct
- #define wait_split_huge_page(__anon_vma, __pmd)	\
- 	do { } while (0)
- #define PageTransHuge(page) 0
-+#define PageTransCompound(page) 0
- static inline int hugepage_madvise(unsigned long *vm_flags)
- {
- 	BUG_ON(0);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -646,13 +646,10 @@ static bool free_pages_prepare(struct pa
+ 	trace_mm_page_free_direct(page, order);
+ 	kmemcheck_free_shadow(page, order);
+ 
+-	for (i = 0; i < (1 << order); i++) {
+-		struct page *pg = page + i;
+-
+-		if (PageAnon(pg))
+-			pg->mapping = NULL;
+-		bad += free_pages_check(pg);
+-	}
++	if (PageAnon(page))
++		page->mapping = NULL;
++	for (i = 0; i < (1 << order); i++)
++		bad += free_pages_check(page + i);
+ 	if (bad)
+ 		return false;
+ 
