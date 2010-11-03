@@ -1,123 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254Ab0KCGsj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 02:48:39 -0400
-Received: from mga11.intel.com ([192.55.52.93]:16465 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752712Ab0KCGsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 02:48:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,287,1286175600"; 
-   d="scan'208";a="853659780"
-Subject: VM ops on 37-rc1
-From: "Alex,Shi" <alex.shi@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Chen, Tim C" <tim.c.chen@intel.com>, "Li, Shaohua" <shaohua.li@intel.com>,
-        fengguang.wu@intel.com, pzijlstr@redhat.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 03 Nov 2010 14:55:41 +0800
-Message-ID: <1288767341.15466.4624.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1753311Ab0KCG7B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 02:59:01 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:44184 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753118Ab0KCG66 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 02:58:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=YIAvmbPWFql9DRN4ReI8VtYVAwNHyfUlI/J90kpRYnKwH554xP96SeZG1wK3K/LkC8
+         pp6atAGQgaJoBbZ1q6CDp1/lgDkisioMH6ND5vhAvJaCNB0vKdr3KyLks3E8F9fg83r4
+         Z4kGuf6mHezFthxZUQx4SXSQjYc4X3wIyFvyU=
+MIME-Version: 1.0
+In-Reply-To: <20101102012135.GB2648@ucw.cz>
+References: <201009161632.59210.arnd@arndb.de>
+	<201010192140.47433.oliver@neukum.org>
+	<20101019202912.GA30133@kroah.com>
+	<201010192244.41913.arnd@arndb.de>
+	<20101102012135.GB2648@ucw.cz>
+Date: Wed, 3 Nov 2010 08:58:56 +0200
+X-Google-Sender-Auth: DI6Yq_dwSQMxCWKUC0qJSM2eFS0
+Message-ID: <AANLkTim=suDPVCW+dPCxtasbUj=X8EMgGRHAiGO37cGo@mail.gmail.com>
+Subject: Re: [Ksummit-2010-discuss] [v2] Remaining BKL users, what to do
+From: Pekka Enberg <penberg@kernel.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Arnd Bergmann <arnd@arndb.de>, Greg KH <greg@kroah.com>,
+        Oliver Neukum <oliver@neukum.org>, Valdis.Kletnieks@vt.edu,
+        Dave Airlie <airlied@gmail.com>, codalist@telemann.coda.cs.cmu.edu,
+        ksummit-2010-discuss@lists.linux-foundation.org,
+        autofs@linux.kernel.org, Jan Harkes <jaharkes@cs.cmu.edu>,
+        Samuel Ortiz <samuel@sortiz.org>, Jan Kara <jack@suse.cz>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        netdev@vger.kernel.org, Anders Larsen <al@alarsen.net>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Petr Vandrovec <vandrove@vc.cvut.cz>,
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        linux-fsdevel@vger.kernel.org, Evgeniy Dushistov <dushistov@mail.ru>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Hendry <andrew.hendry@gmail.com>,
+        linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I found some ops on one of Bensely Core2 machine. The ops may pops up
-just system after booted. 2.6.36 kernel is good. The similar ops also
-appears on IA64 machine.   Any idea of this?
+On Tue, Nov 2, 2010 at 3:21 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> Hi!
+>
+>> @@ -79,6 +79,10 @@ static struct drm_driver driver = {
+>>
+>>  static int __init i810_init(void)
+>>  {
+>> +     if (num_present_cpus() > 1) {
+>> +             pr_err("drm/i810 does not support SMP\n");
+>> +             return -EINVAL;
+>> +     }
+>>       driver.num_ioctls = i810_max_ioctl;
+>>       return drm_init(&driver);
+>
+> Umm, and now someone onlines second cpu?
 
-general protection fault: 0000 [#1] SMP
-last sysfs file: /sys/devices/system/cpu/cpu7/cache/index2/shared_cpu_map
-CPU 1
-Modules linked in: video output
-
-Pid: 8494, comm: sadc Not tainted 2.6.37-rc1 #1 X7DWN/X7DW3
-RIP: 0010:[<ffffffff812c6d89>]  [<ffffffff812c6d89>] strnlen+0x11/0x1a
-RSP: 0018:ffff88022f1ddcf0  EFLAGS: 00010297
-RAX: 41ffffffff81a197 RBX: 0000000000000000 RCX: ffffffffffffffff
-RDX: 41ffffffff81a197 RSI: fffffffffffffffe RDI: 41ffffffff81a197
-RBP: ffff88022ef42000 R08: 0000000000000002 R09: ffffffff81cb7a50
-R10: ffff88022f1ddf50 R11: ffffffff81c4e3c8 R12: 41ffffffff81a197
-R13: 000000000000ffff R14: ffff88022ef43000 R15: ffffffff81a19438
-FS:  00007fd06b06e6f0(0000) GS:ffff8800cfc40000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 00007fd06b0a2000 CR3: 000000022db81000 CR4: 00000000000006e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process sadc (pid: 8494, threadinfo ffff88022f1dc000, task ffff88022b9d5a30)
-Stack:
- ffffffff812c846d ffff88022f1ddd88 ffff88022ef42000 ffffffff81a19436
- ffff88022ef43000 ffff88022ef42000 ffffffff812c9196 ffff88022f08e4c0
- 0000000000001000 ffffffffff0a0004 ffffffff810b30a1 0000000000000000
-Call Trace:
- [<ffffffff812c846d>] ? string+0x43/0xb5
- [<ffffffff812c9196>] ? vsnprintf+0x1d8/0x421
- [<ffffffff810b30a1>] ? vma_adjust+0x205/0x435
- [<ffffffff810df8f5>] ? seq_printf+0x67/0x8f
- [<ffffffff8160d42b>] ? mutex_lock+0x20/0x44
- [<ffffffff8160d42b>] ? mutex_lock+0x20/0x44
- [<ffffffff810a9087>] ? all_vm_events+0x60/0x73
- [<ffffffff8103b615>] ? put_online_cpus+0x22/0x54
- [<ffffffff810a9169>] ? vmstat_start+0xcf/0x103
- [<ffffffff810a89a5>] ? vmstat_show+0x23/0x27
- [<ffffffff810dfe79>] ? seq_read+0x181/0x364
- [<ffffffff8110d8eb>] ? proc_reg_read+0x6a/0x84
- [<ffffffff810c86fc>] ? vfs_read+0xa8/0x12f
- [<ffffffff810c8ae4>] ? sys_read+0x45/0x6e
- [<ffffffff8100296b>] ? system_call_fastpath+0x16/0x1b
-Code: f2 ae 48 f7 d1 48 8d 44 11 ff 40 38 30 74 0a 48 ff c8 48 39 d0 73 f3 31 c0 c3 48 89 f8 eb 03 48 ff c0 48 ff ce 48 83 fe ff 74 05 <80> 38 00 75 ef 48 29 f8 c3 31 c0 eb 12 41 38 c8 74 0a 48 ff c2
-RIP  [<ffffffff812c6d89>] strnlen+0x11/0x1a
- RSP <ffff88022f1ddcf0>
----[ end trace 75434a01211a18e0 ]---
-
-Sometime, the following ops appears. 
-
-
-BUG: unable to handle kernel paging request at ffffff81a19733ff
-IP: [<ffffffff812c6d89>] strnlen+0x11/0x1a
-PGD 1c41067 PUD 0
-Oops: 0000 [#3] SMP
-last sysfs file: /sys/devices/system/cpu/cpu7/cache/index2/shared_cpu_map
-CPU 0
-Modules linked in: video output
-
-Pid: 1781, comm: sadc Tainted: G      D     2.6.37-rc1 #1 X7DWN/X7DW3
-RIP: 0010:[<ffffffff812c6d89>]  [<ffffffff812c6d89>] strnlen+0x11/0x1a
-RSP: 0018:ffff88022dea1cf0  EFLAGS: 00010297
-RAX: ffffff81a19733ff RBX: 0000000000000000 RCX: ffffffffffffffff
-RDX: ffffff81a19733ff RSI: fffffffffffffffe RDI: ffffff81a19733ff
-RBP: ffff88022ee38000 R08: 0000000000000002 R09: ffffffff81cb7a50
-R10: ffff88022dea1f50 R11: ffffffff81c4e3c8 R12: ffffff81a19733ff
-R13: 000000000000ffff R14: ffff88022ee39000 R15: ffffffff81a19438
-FS:  00007fd6725dc6f0(0000) GS:ffff8800cfc00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: ffffff81a19733ff CR3: 000000022e5e7000 CR4: 00000000000006f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process sadc (pid: 1781, threadinfo ffff88022dea0000, task ffff88022e1229a0)
-Stack:
- ffffffff812c846d ffff88022dea1d88 ffff88022ee38000 ffffffff81a19436
- ffff88022ee39000 ffff88022ee38000 ffffffff812c9196 ffff88022ee086c0
- 0000000000001000 ffffffffff0a0004 ffffffff810b30a1 0000000000000000
-Call Trace:
- [<ffffffff812c846d>] ? string+0x43/0xb5
- [<ffffffff812c9196>] ? vsnprintf+0x1d8/0x421
- [<ffffffff810b30a1>] ? vma_adjust+0x205/0x435
- [<ffffffff810df8f5>] ? seq_printf+0x67/0x8f
- [<ffffffff8160d42b>] ? mutex_lock+0x20/0x44
- [<ffffffff8160d42b>] ? mutex_lock+0x20/0x44
- [<ffffffff810a9087>] ? all_vm_events+0x60/0x73
- [<ffffffff8103b615>] ? put_online_cpus+0x22/0x54
- [<ffffffff810a9169>] ? vmstat_start+0xcf/0x103
- [<ffffffff810a89a5>] ? vmstat_show+0x23/0x27
- [<ffffffff810dfe79>] ? seq_read+0x181/0x364
- [<ffffffff8110d8eb>] ? proc_reg_read+0x6a/0x84
- [<ffffffff810c86fc>] ? vfs_read+0xa8/0x12f
- [<ffffffff810c8ae4>] ? sys_read+0x45/0x6e
- [<ffffffff8100296b>] ? system_call_fastpath+0x16/0x1b
-Code: f2 ae 48 f7 d1 48 8d 44 11 ff 40 38 30 74 0a 48 ff c8 48 39 d0 73 f3 31 c0 c3 48 89 f8 eb 03 48 ff c0 48 ff ce 48 83 fe ff 74 05 <80> 38 00 75 ef 48 29 f8 c3 31 c0 eb 12 41 38 c8 74 0a 48 ff c2
-RIP  [<ffffffff812c6d89>] strnlen+0x11/0x1a
-
-
+Well, I see it's being fixed in a different way but yeah,
+num_possible_cpus() would be more appropriate here.
