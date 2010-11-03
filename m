@@ -1,86 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756184Ab0KCUzQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 16:55:16 -0400
-Received: from smtp205.alice.it ([82.57.200.101]:39019 "EHLO smtp205.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755501Ab0KCUzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 16:55:14 -0400
-Date: Wed, 3 Nov 2010 21:53:39 +0100
-From: Antonio Ospite <ospite@studenti.unina.it>
-To: maciej.rutecki@gmail.com
-Cc: =?UTF-8?B?VMO1bnU=?= Samuel <tonu@jes.ee>, linux-usb@vger.kernel.org,
-        linux-media@vger.kernel.org,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: Re: gspca for_2.6.36 - maybe does not work properly for me (ov534)
-Message-Id: <20101103215339.bf451689.ospite@studenti.unina.it>
-In-Reply-To: <201011032007.25474.maciej.rutecki@gmail.com>
-References: <1288264077.1891.40.camel@x41.itrotid.ee>
-	<201011032007.25474.maciej.rutecki@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
+	id S1756160Ab0KCU7B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 16:59:01 -0400
+Received: from legolas.restena.lu ([158.64.1.34]:37016 "EHLO
+	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754012Ab0KCU66 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 16:58:58 -0400
+Date: Wed, 3 Nov 2010 21:58:51 +0100
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Joe Perches <joe@perches.com>
+Cc: Mike Waychison <mikew@google.com>, Randy Dunlap <randy.dunlap@oracle.com>,
+        Greg KH <gregkh@suse.de>, simon.kagstrom@netinsight.net,
+        davem@davemloft.net, adurbin@google.com, akpm@linux-foundation.org,
+        chavey@google.com, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH v1 00/12] netoops support
+Message-ID: <20101103215851.2df7723f@neptune.home>
+In-Reply-To: <1288813229.10236.2.camel@Joe-Laptop>
+References: <20101103012917.4641.57113.stgit@crlf.mtv.corp.google.com>
+	<20101103023422.GB5782@kroah.com>
+	<AANLkTi=Oe4oJ0imCh1eoJLS0QYqSBM4pLo=dEUSiJcQb@mail.gmail.com>
+	<20101103181634.GF7441@kroah.com>
+	<20101103115020.ad8a4ecc.randy.dunlap@oracle.com>
+	<1288813229.10236.2.camel@Joe-Laptop>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i686-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__3_Nov_2010_21_53_40_+0100_/ZqU1j36OlUIk3rq"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__3_Nov_2010_21_53_40_+0100_/ZqU1j36OlUIk3rq
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 03 November 2010 Joe Perches wrote:
+> On Wed, 2010-11-03 at 11:50 -0700, Randy Dunlap wrote:
+> > On Wed, 3 Nov 2010 11:16:34 -0700 Greg KH wrote:
+> > > On Tue, Nov 02, 2010 at 08:37:42PM -0700, Mike Waychison wrote:
+> > > > On Tue, Nov 2, 2010 at 7:34 PM, Greg KH wrote:
+> > > As for the user/kernel interface, perhaps exporting the data in a text
+> > > format that is "tagged" would be best?  Then the whole world can parse
+> > > it easily.
+> > I have been (occasionally) looking at critical kernel messages.
+> > IMO we really need an easy way to find them.
+> > They can begin with any of these strings (and others can be added
+> > too easily):
+> > BUG|panic|MCE|NMI|error:|Oops|Bad|Fatal|Unrecoverable|Unhandled|Weird
+> > We need a simple (single?) tagging method to identify any/all of these,
+> > /methinks.
+> 
+> Simply marking these messages KERN_CRIT or higher would seem to work.
 
-On Wed, 3 Nov 2010 20:07:25 +0100
-Maciej Rutecki <maciej.rutecki@gmail.com> wrote:
+That's an idea (probably better higher that can be enabled on a console with
+a specific flag), though it also invites for filter levels on a per-console
+base (e.g. let uart only show KERN_WARN..KERN_CRIT but having more verbosity
+on termial or netconsole [per target]).
 
-> (add CC's)
-> On czwartek, 28 pa=C5=BAdziernika 2010 o 13:07:57 T=C3=B5nu Samuel wrote:
-> > I am Sony PS3 Eye webcam user.
-> >
+I've been playing with this last winter, need to dig out that code again and
+clean it up for sharing.
 
-Please more context in the Subject next time :)
-
-> > After installing 2.6.36 this camera gets recognized but actually does
-> > not work. It might be some own stupidity of improper kernel
-> > configuration but I cannot track it down at moment.
-> >
-
-This is fixed in 2.6.37-rc1, Mauro this should go in 2.6.36.1 as well,
-ASAP please as we missed 2.6.36.
-
-This is the thread:
-http://www.mail-archive.com/linux-media@vger.kernel.org/msg23039.html
-
-This is the patch:
-http://git.kernel.org/?p=3Dlinux/kernel/git/torvalds/linux-2.6.git;a=3Dcomm=
-it;h=3Df43402fa55bf5e7e190c176343015122f694857c
-
-Regards,
-   Antonio
-
---=20
-Antonio Ospite
-http://ao2.it
-
-PGP public key ID: 0x4553B001
-
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
-
---Signature=_Wed__3_Nov_2010_21_53_40_+0100_/ZqU1j36OlUIk3rq
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkzRy9QACgkQ5xr2akVTsAHqeQCgo+LHKwQp8P316VZbgGz6Ezbo
-DqEAoJEtQazNxRrME0oJmh77VrySyeYc
-=QyHQ
------END PGP SIGNATURE-----
-
---Signature=_Wed__3_Nov_2010_21_53_40_+0100_/ZqU1j36OlUIk3rq--
+Bruno
