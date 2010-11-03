@@ -1,36 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449Ab0KCOq5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 10:46:57 -0400
-Received: from kroah.org ([198.145.64.141]:57018 "EHLO coco.kroah.org"
+	id S1755298Ab0KCO6Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 10:58:24 -0400
+Received: from ifup.org ([198.145.64.140]:48915 "EHLO ifup.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753540Ab0KCOqz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 10:46:55 -0400
-Date: Wed, 3 Nov 2010 07:45:45 -0700
-From: Greg KH <greg@kroah.com>
-To: Konstantin Katuev <kkatuev@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Staging: keucr driver: fix uninitialized variable & proper
-	memset length
-Message-ID: <20101103144545.GA3665@kroah.com>
-References: <AANLkTi=oFai7Mh_VmzeV1TanF-dfmGs=KWOgj+03V2iH@mail.gmail.com>
+	id S1755077Ab0KCO6W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 10:58:22 -0400
+Date: Wed, 3 Nov 2010 07:57:13 -0700
+From: Brandon Philips <brandon@ifup.org>
+To: Marek Belisko <marek.belisko@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/9] staging: ft1000: Get rid of BOOLEAN typedef usage.
+Message-ID: <20101103145713.GA2000@jenkins.mit.edu>
+References: <1288779595-15793-1-git-send-email-marek.belisko@gmail.com>
+ <1288779595-15793-7-git-send-email-marek.belisko@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=oFai7Mh_VmzeV1TanF-dfmGs=KWOgj+03V2iH@mail.gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <1288779595-15793-7-git-send-email-marek.belisko@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 29, 2010 at 12:18:18PM +1100, Konstantin Katuev wrote:
-> There was commented out transfer_flags initialization.
-> And i think memset should fill entire structure, not only length of
-> pointer to it.
+On 11:19 Wed 03 Nov 2010, Marek Belisko wrote:
+> -   BOOLEAN                 bGoodVersion;
+> +   u8                 bGoodVersion;
 
-This patch is line-wrapped and the tabs are converted to spaces so I
-can't apply it at all.  Care to resend it again?
+Please use the bool type instead of u8. Might as well do FALSE/TRUE ->
+false/true while you are at it :)
 
-thanks,
+Cheers,
 
-greg k-h
+	Brandon
