@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932634Ab0KCSgh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 14:36:37 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:57349 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932222Ab0KCSgb (ORCPT
+	id S932650Ab0KCSgs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 14:36:48 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:55524 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932195Ab0KCSgn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 14:36:31 -0400
+	Wed, 3 Nov 2010 14:36:43 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: [PATCH 7/7] [RFC] Introduce Alarm (hybrid) timers
-Date: Wed,  3 Nov 2010 11:31:19 -0700
-Message-Id: <1288809079-14663-8-git-send-email-john.stultz@linaro.org>
+        Richard Cochran <richardcochran@gmail.com>,
+        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
+Subject: =?UTF-8?q?=5BPATCH=203/7=5D=20=5BRFC=5D=20RTC=3A=20Rework=20RTC=20code=20to=20use=20timerlist=20for=20events?=
+Date: Wed,  3 Nov 2010 11:31:15 -0700
+Message-Id: <1288809079-14663-4-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1288809079-14663-1-git-send-email-john.stultz@linaro.org>
 References: <1288809079-14663-1-git-send-email-john.stultz@linaro.org>
@@ -26,700 +27,898 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So after working on my posix interface to the RTC clocks, I came
-across the Android alarm driver (by Arve Hjønnevåg) in the android
-kernel tree.
+This patch reworks a large portion of the generic RTC code
+to in-effect virtualize the rtc interrupt code.
 
-See: http://android.git.kernel.org/?p=kernel/common.git;a=blob;f=drivers/rtc/alarm.c;h=1250edfbdf3302f5e4ea6194847c6ef4bb7beb1c;hb=android-2.6.36
+The current RTC interface is very much a raw hardware interface.
+Via the proc, /dev/, or sysfs interfaces, applciations can set
+the hardware to trigger interrupts in one of three modes:
 
-The android alarm driver is different from the RTC posix clock
-interface in that rather then directly setting timers against
-the RTC device, it uses a hybrid mode, where timers are set
-against hrtimers, but when the system suspends, an RTC alarm
-is set to wake the system at the next timer expiration.
+AIE: Alarm interrupt
+UIE: Update interrupt (ie: once per second)
+PIE: Periodic interrupt (sub-second irqs)
 
-There are some pluses and minuses with this approach.
-The good:
-* No need for apps to deal with a new time domain (rtc) which
-may drift or just be different from system time.
+The problem with this interface is that it limits the RTC hardware
+so it can only be used by one application at a time.
 
-* Avoids issue of selecting which rtc to use on multi-rtc systems,
-as the kernel does it for you.
+The purpose of this patch is to extend the RTC code so that we can
+multiplex multiple applications event needs onto a single RTC device.
+This is done by utilizing the timerlist infrastructure to manage
+a list of events, which cause the RTC hardware to be programmed
+to fire an interrupt for the next event in the list.
 
-The bad:
-* On systems that have multiple rtc devices, we just use the first
-one, which may or may not be ideal (honestly, having multiple rtcs
-never made sense to me).
+In order to preserve the functionality of the exsting proc,/dev/ and
+sysfs interfaces, we emulate the different interrupt modes as follows:
 
-* For apps that actually want to deal with the RTC clock and
-are interested in setting timers against it as a different
-time domain, this provides no user interface to do so.
+AIE: We create a rtc_timer dedicated to AIE mode interrupts. There is
+only one per device, so we don't change existing interface semantics.
 
-I don't really see the bad list as a problem, but please pipe
-up if you do.
+UIE: Again, a dedicated rtc_timer, set for periodic mode, is used
+to emulate UIE interrupts. Again, only one per device.
 
-I had actually discussed this idea with Thomas earlier as being
-a potential future interface, but seeing it already in-use
-by Android verifies that it is the more interesting use mode.
+PIE: Since PIE mode interrupts fire faster then the RTC's clock read
+granularity, we emulate PIE mode interrupts using a hrtimer. Again,
+one per device.
 
-The android alarm driver was built on top of direct RTC
-manipulation, and also implemented its own rbtree timer
-code, so instead of trying to porting it over to my
-timerlist and RTC timer code, I just re-implemented the
-basic functionality roughly following the android in-kernel
-interface.
-
-Another large distinction is that while the in-kernel interface
-is pretty similar, the user-space interface for android alarm
-timers is via ioctls. I've instead chosen to export this
-functionality via the posix interface, as it seemed a little
-simpler and avoids creating duplicate interfaces to things like
-CLOCK_REALTIME and CLOCK_MONOTONIC under alternate names (ie:
-RTC and ELAPSED_REALTIME). Instead, if one wants to use a
-alarm timer, simply create a posix timer against either
-CLOCK_REALTIME_ALARM or CLOCK_MONOTONIC_ALARM.
-
-There is surely other bits of the android alarm code that
-I'm sure I didn't fully understand, so some of the simplifications
-that I've made may not allow Android to use this interface.
-I'd be very interested if those details could be pointed out,
-and hopefully we can find a good solution to get this useful
-functionality upstream.
-
-This patch is a very initial draft. I'm sure there are bugs.
-I just wanted to get it out for structural comment about the
-interface.
-
-Also, this patch does not depend on the posix rtc interface
-layer also included in this patchset. One or both interfaces
-may be useful, so I'm including both to get a feel for what
-folks actually like.
-
-Arve: I know you're busy now, so no rush on reviewing this.
-I just wanted to send this out to get some early feedback
-if anyone else wants to comment. I look forward to your
-input when you are a bit less swamped.
+With this patch, the rtctest.c application in Documentation/rtc.txt
+passes fine on x86 hardware. However, there may very well still be
+bugs, so greatly I'd appreciate any feedback or testing!
 
 Signed-off-by: John Stultz <john.stultz@linaro.org>
-CC: Arve Hjønnevåg <arve@android.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
 CC: Alessandro Zummo <a.zummo@towertech.it>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Richard Cochran <richardcochran@gmail.com>
+CC: Arve Hjønnevåg <arve@android.com>
 ---
- include/linux/alarmtimer.h   |   29 +++
- include/linux/posix-timers.h |    2 +
- include/linux/time.h         |    2 +
- kernel/time/Makefile         |    2 +-
- kernel/time/alarmtimer.c     |  522 ++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 556 insertions(+), 1 deletions(-)
- create mode 100644 include/linux/alarmtimer.h
- create mode 100644 kernel/time/alarmtimer.c
+ drivers/rtc/class.c     |   13 +
+ drivers/rtc/interface.c |  574 ++++++++++++++++++++++++++++------------------
+ drivers/rtc/rtc-lib.c   |   26 +++
+ include/linux/rtc.h     |   43 +++-
+ 4 files changed, 426 insertions(+), 230 deletions(-)
 
-diff --git a/include/linux/alarmtimer.h b/include/linux/alarmtimer.h
-new file mode 100644
-index 0000000..ca3ab47
---- /dev/null
-+++ b/include/linux/alarmtimer.h
-@@ -0,0 +1,29 @@
-+#ifndef _LINUX_ALARMTIMER_H
-+#define _LINUX_ALARMTIMER_H
-+
-+#include <linux/time.h>
-+#include <linux/hrtimer.h>
-+#include <linux/timerlist.h>
-+#include <linux/rtc.h>
-+
-+enum alarmtimer_type {
-+	ALARM_REALTIME,
-+	ALARM_MONOTONIC,
-+
-+	ALARM_NUMTYPE,
-+};
-+
-+struct alarm {
-+	struct timerlist_node node;
-+	ktime_t period;
-+	void (*function)(struct alarm*);
-+	enum alarmtimer_type type;
-+	char enabled;
-+};
-+
-+void alarm_init(struct alarm *alarm, enum alarmtimer_type type,
-+		void (*function)(struct alarm *));
-+void alarm_start(struct alarm *alarm, ktime_t start, ktime_t period);
-+void alarm_cancel(struct alarm *alarm);
-+
-+#endif
-diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
-index e6b46b5..9d1ace6 100644
---- a/include/linux/posix-timers.h
-+++ b/include/linux/posix-timers.h
-@@ -5,6 +5,7 @@
- #include <linux/list.h>
- #include <linux/sched.h>
- #include <linux/rtc.h>
-+#include <linux/alarmtimer.h>
- 
- union cpu_time_count {
- 	cputime_t cpu;
-@@ -65,6 +66,7 @@ struct k_itimer {
- 			unsigned long expires;
- 		} mmtimer;
- 		struct rtc_timer rtctimer;
-+		struct alarm alarmtimer;
- 	} it;
- };
- 
-diff --git a/include/linux/time.h b/include/linux/time.h
-index 914c48d..4791858 100644
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -290,6 +290,8 @@ struct itimerval {
- #define CLOCK_MONOTONIC_RAW		4
- #define CLOCK_REALTIME_COARSE		5
- #define CLOCK_MONOTONIC_COARSE		6
-+#define CLOCK_REALTIME_ALARM		7
-+#define CLOCK_MONOTONIC_ALARM		8
- 
- /*
-  * The IDs of various hardware clocks:
-diff --git a/kernel/time/Makefile b/kernel/time/Makefile
-index ee26662..f85145f 100644
---- a/kernel/time/Makefile
-+++ b/kernel/time/Makefile
-@@ -1,4 +1,4 @@
--obj-y += timekeeping.o ntp.o clocksource.o jiffies.o timer_list.o timecompare.o timeconv.o
-+obj-y += timekeeping.o ntp.o clocksource.o jiffies.o timer_list.o timecompare.o timeconv.o alarmtimer.o
- 
- obj-$(CONFIG_GENERIC_CLOCKEVENTS_BUILD)		+= clockevents.o
- obj-$(CONFIG_GENERIC_CLOCKEVENTS)		+= tick-common.o
-diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
-new file mode 100644
-index 0000000..407a6b5
---- /dev/null
-+++ b/kernel/time/alarmtimer.c
-@@ -0,0 +1,522 @@
-+/*
-+ * Alarmtimer interface
-+ *
-+ * This interface provides a timer which is similarto hrtimers, 
-+ * but triggers a RTC alarm if the box is suspend.
-+ *
-+ * This interface is influenced by the Android RTC Alarm timer
-+ * interface.
-+ *
-+ * Copyright (C) 2010 IBM Corperation
-+ *
-+ * Author: John Stultz <john.stultz@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#include <linux/time.h>
-+#include <linux/hrtimer.h>
-+#include <linux/timerlist.h>
-+#include <linux/rtc.h>
-+#include <linux/alarmtimer.h>
-+#include <linux/mutex.h>
-+#include <linux/platform_device.h>
-+#include <linux/posix-timers.h>
+diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
+index e6539cb..fb59222 100644
+--- a/drivers/rtc/class.c
++++ b/drivers/rtc/class.c
+@@ -16,6 +16,7 @@
+ #include <linux/kdev_t.h>
+ #include <linux/idr.h>
+ #include <linux/slab.h>
 +#include <linux/workqueue.h>
+ 
+ #include "rtc-core.h"
+ 
+@@ -152,6 +153,18 @@ struct rtc_device *rtc_device_register(const char *name, struct device *dev,
+ 	spin_lock_init(&rtc->irq_task_lock);
+ 	init_waitqueue_head(&rtc->irq_queue);
+ 
++	/* Init timerlist */
++	timerlist_init_head(&rtc->timerlist);
++	INIT_WORK(&rtc->irqwork, rtctimer_do_work);
++	/* Init aie timer */
++	rtctimer_init(&rtc->aie_timer, rtc_aie_update_irq, (void*)rtc);
++	/* Init uie timer */
++	rtctimer_init(&rtc->uie_rtctimer, rtc_uie_update_irq, (void*)rtc);
++	/* Init pie timer */
++	hrtimer_init(&rtc->pie_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++	rtc->pie_timer.function = rtc_pie_update_irq;
++	rtc->pie_enabled = 0;
 +
+ 	strlcpy(rtc->name, name, RTC_DEVICE_NAME_SIZE);
+ 	dev_set_name(&rtc->dev, "rtc%d", id);
+ 
+diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
+index a0c8162..55894ee 100644
+--- a/drivers/rtc/interface.c
++++ b/drivers/rtc/interface.c
+@@ -14,15 +14,11 @@
+ #include <linux/rtc.h>
+ #include <linux/sched.h>
+ #include <linux/log2.h>
++#include <linux/workqueue.h>
+ 
+-int rtc_read_time(struct rtc_device *rtc, struct rtc_time *tm)
++static int __rtc_read_time(struct rtc_device *rtc, struct rtc_time *tm)
+ {
+ 	int err;
+-
+-	err = mutex_lock_interruptible(&rtc->ops_lock);
+-	if (err)
+-		return err;
+-
+ 	if (!rtc->ops)
+ 		err = -ENODEV;
+ 	else if (!rtc->ops->read_time)
+@@ -31,7 +27,18 @@ int rtc_read_time(struct rtc_device *rtc, struct rtc_time *tm)
+ 		memset(tm, 0, sizeof(struct rtc_time));
+ 		err = rtc->ops->read_time(rtc->dev.parent, tm);
+ 	}
++	return err;
++}
 +
-+static struct alarm_base {
-+	struct mutex lock;
-+	struct timerlist_head timerlist;
-+	struct hrtimer timer;
-+	ktime_t (*gettime)(void);
-+	clockid_t base_clockid;
-+	struct work_struct irqwork;
-+} alarm_bases[ALARM_NUMTYPE];
-+
-+static struct rtc_timer rtctimer;
-+static struct rtc_device *rtcdev;
-+
-+/**************************************************************************
-+ * alarmtimer management code
-+ */
-+
-+/*
-+ * alarmtimer_enqueue - Adds an alarm timer to an alarm_base timerlist
-+ * @base: pointer to the base where the timer is being run
-+ * @alarm: pointer to alarm being enqueued.
-+ *
-+ * Adds alarm to a alarm_base timerlist and if necessary sets
-+ * an hrtimer to run.
-+ *
-+ * Must hold base->lock when calling.
-+ */
-+static void alarmtimer_enqueue(struct alarm_base *base, struct alarm *alarm)
++int rtc_read_time(struct rtc_device *rtc, struct rtc_time *tm)
 +{
-+	timerlist_add(&base->timerlist, &alarm->node);
-+	if (&alarm->node == timerlist_getnext(&base->timerlist)) {
-+		hrtimer_try_to_cancel(&base->timer);
-+		hrtimer_start(&base->timer, alarm->node.expires,
-+				HRTIMER_MODE_ABS);
++	int err;
+ 
++	err = mutex_lock_interruptible(&rtc->ops_lock);
++	if (err)
++		return err;
++
++	err = __rtc_read_time(rtc, tm);
+ 	mutex_unlock(&rtc->ops_lock);
+ 	return err;
+ }
+@@ -106,188 +113,54 @@ int rtc_set_mmss(struct rtc_device *rtc, unsigned long secs)
+ }
+ EXPORT_SYMBOL_GPL(rtc_set_mmss);
+ 
+-static int rtc_read_alarm_internal(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
++int rtc_read_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
+ {
+ 	int err;
+ 
+ 	err = mutex_lock_interruptible(&rtc->ops_lock);
+ 	if (err)
+ 		return err;
+-
+-	if (rtc->ops == NULL)
+-		err = -ENODEV;
+-	else if (!rtc->ops->read_alarm)
+-		err = -EINVAL;
+-	else {
+-		memset(alarm, 0, sizeof(struct rtc_wkalrm));
+-		err = rtc->ops->read_alarm(rtc->dev.parent, alarm);
+-	}
+-
++	alarm->enabled = rtc->aie_timer.enabled;
++	if (alarm->enabled)
++		alarm->time = rtc_ktime_to_tm(rtc->aie_timer.node.expires);
+ 	mutex_unlock(&rtc->ops_lock);
+-	return err;
++
++	return 0;
+ }
++EXPORT_SYMBOL_GPL(rtc_read_alarm);
+ 
+-int rtc_read_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
++int __rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
+ {
++	struct rtc_time tm;
++	long now, scheduled;
+ 	int err;
+-	struct rtc_time before, now;
+-	int first_time = 1;
+-	unsigned long t_now, t_alm;
+-	enum { none, day, month, year } missing = none;
+-	unsigned days;
+-
+-	/* The lower level RTC driver may return -1 in some fields,
+-	 * creating invalid alarm->time values, for reasons like:
+-	 *
+-	 *   - The hardware may not be capable of filling them in;
+-	 *     many alarms match only on time-of-day fields, not
+-	 *     day/month/year calendar data.
+-	 *
+-	 *   - Some hardware uses illegal values as "wildcard" match
+-	 *     values, which non-Linux firmware (like a BIOS) may try
+-	 *     to set up as e.g. "alarm 15 minutes after each hour".
+-	 *     Linux uses only oneshot alarms.
+-	 *
+-	 * When we see that here, we deal with it by using values from
+-	 * a current RTC timestamp for any missing (-1) values.  The
+-	 * RTC driver prevents "periodic alarm" modes.
+-	 *
+-	 * But this can be racey, because some fields of the RTC timestamp
+-	 * may have wrapped in the interval since we read the RTC alarm,
+-	 * which would lead to us inserting inconsistent values in place
+-	 * of the -1 fields.
+-	 *
+-	 * Reading the alarm and timestamp in the reverse sequence
+-	 * would have the same race condition, and not solve the issue.
+-	 *
+-	 * So, we must first read the RTC timestamp,
+-	 * then read the RTC alarm value,
+-	 * and then read a second RTC timestamp.
+-	 *
+-	 * If any fields of the second timestamp have changed
+-	 * when compared with the first timestamp, then we know
+-	 * our timestamp may be inconsistent with that used by
+-	 * the low-level rtc_read_alarm_internal() function.
+-	 *
+-	 * So, when the two timestamps disagree, we just loop and do
+-	 * the process again to get a fully consistent set of values.
+-	 *
+-	 * This could all instead be done in the lower level driver,
+-	 * but since more than one lower level RTC implementation needs it,
+-	 * then it's probably best best to do it here instead of there..
+-	 */
+ 
+-	/* Get the "before" timestamp */
+-	err = rtc_read_time(rtc, &before);
+-	if (err < 0)
++	err = rtc_valid_tm(&alarm->time);
++	if (err)
+ 		return err;
+-	do {
+-		if (!first_time)
+-			memcpy(&before, &now, sizeof(struct rtc_time));
+-		first_time = 0;
+-
+-		/* get the RTC alarm values, which may be incomplete */
+-		err = rtc_read_alarm_internal(rtc, alarm);
+-		if (err)
+-			return err;
+-		if (!alarm->enabled)
+-			return 0;
+-
+-		/* full-function RTCs won't have such missing fields */
+-		if (rtc_valid_tm(&alarm->time) == 0)
+-			return 0;
+-
+-		/* get the "after" timestamp, to detect wrapped fields */
+-		err = rtc_read_time(rtc, &now);
+-		if (err < 0)
+-			return err;
+-
+-		/* note that tm_sec is a "don't care" value here: */
+-	} while (   before.tm_min   != now.tm_min
+-		 || before.tm_hour  != now.tm_hour
+-		 || before.tm_mon   != now.tm_mon
+-		 || before.tm_year  != now.tm_year);
+-
+-	/* Fill in the missing alarm fields using the timestamp; we
+-	 * know there's at least one since alarm->time is invalid.
+-	 */
+-	if (alarm->time.tm_sec == -1)
+-		alarm->time.tm_sec = now.tm_sec;
+-	if (alarm->time.tm_min == -1)
+-		alarm->time.tm_min = now.tm_min;
+-	if (alarm->time.tm_hour == -1)
+-		alarm->time.tm_hour = now.tm_hour;
+-
+-	/* For simplicity, only support date rollover for now */
+-	if (alarm->time.tm_mday == -1) {
+-		alarm->time.tm_mday = now.tm_mday;
+-		missing = day;
+-	}
+-	if (alarm->time.tm_mon == -1) {
+-		alarm->time.tm_mon = now.tm_mon;
+-		if (missing == none)
+-			missing = month;
+-	}
+-	if (alarm->time.tm_year == -1) {
+-		alarm->time.tm_year = now.tm_year;
+-		if (missing == none)
+-			missing = year;
+-	}
+-
+-	/* with luck, no rollover is needed */
+-	rtc_tm_to_time(&now, &t_now);
+-	rtc_tm_to_time(&alarm->time, &t_alm);
+-	if (t_now < t_alm)
+-		goto done;
+-
+-	switch (missing) {
++	rtc_tm_to_time(&alarm->time, &scheduled);
+ 
+-	/* 24 hour rollover ... if it's now 10am Monday, an alarm that
+-	 * that will trigger at 5am will do so at 5am Tuesday, which
+-	 * could also be in the next month or year.  This is a common
+-	 * case, especially for PCs.
+-	 */
+-	case day:
+-		dev_dbg(&rtc->dev, "alarm rollover: %s\n", "day");
+-		t_alm += 24 * 60 * 60;
+-		rtc_time_to_tm(t_alm, &alarm->time);
+-		break;
+-
+-	/* Month rollover ... if it's the 31th, an alarm on the 3rd will
+-	 * be next month.  An alarm matching on the 30th, 29th, or 28th
+-	 * may end up in the month after that!  Many newer PCs support
+-	 * this type of alarm.
++	/* Make sure we're not setting alarms in the past */
++	err = __rtc_read_time(rtc, &tm);
++	rtc_tm_to_time(&tm, &now);
++	if (scheduled <= now)
++		return -ETIME;
++	/*
++	 * XXX - We just checked to make sure the alarm time is not
++	 * in the past, but there is still a race window where if
++	 * the is alarm set for the next second and the second ticks
++	 * over right here, before we set the alarm.
+ 	 */
+-	case month:
+-		dev_dbg(&rtc->dev, "alarm rollover: %s\n", "month");
+-		do {
+-			if (alarm->time.tm_mon < 11)
+-				alarm->time.tm_mon++;
+-			else {
+-				alarm->time.tm_mon = 0;
+-				alarm->time.tm_year++;
+-			}
+-			days = rtc_month_days(alarm->time.tm_mon,
+-					alarm->time.tm_year);
+-		} while (days < alarm->time.tm_mday);
+-		break;
+-
+-	/* Year rollover ... easy except for leap years! */
+-	case year:
+-		dev_dbg(&rtc->dev, "alarm rollover: %s\n", "year");
+-		do {
+-			alarm->time.tm_year++;
+-		} while (rtc_valid_tm(&alarm->time) != 0);
+-		break;
+-
+-	default:
+-		dev_warn(&rtc->dev, "alarm rollover not handled\n");
+-	}
+ 
+-done:
+-	return 0;
++	if (!rtc->ops)
++		err = -ENODEV;
++	else if (!rtc->ops->set_alarm)
++		err = -EINVAL;
++	else
++		err = rtc->ops->set_alarm(rtc->dev.parent, alarm);
++
++	return err;
+ }
+-EXPORT_SYMBOL_GPL(rtc_read_alarm);
+ 
+ int rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
+ {
+@@ -300,16 +173,18 @@ int rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
+ 	err = mutex_lock_interruptible(&rtc->ops_lock);
+ 	if (err)
+ 		return err;
+-
+-	if (!rtc->ops)
+-		err = -ENODEV;
+-	else if (!rtc->ops->set_alarm)
+-		err = -EINVAL;
+-	else
+-		err = rtc->ops->set_alarm(rtc->dev.parent, alarm);
+-
++	if (rtc->aie_timer.enabled) {
++		rtctimer_remove(rtc, &rtc->aie_timer);
++		rtc->aie_timer.enabled = 0;
++	}
++	rtc->aie_timer.node.expires = rtc_tm_to_ktime(alarm->time);
++	rtc->aie_timer.period = ktime_set(0,0);
++	if (alarm->enabled) {
++		rtc->aie_timer.enabled = 1;
++		rtctimer_enqueue(rtc, &rtc->aie_timer);
++	}
+ 	mutex_unlock(&rtc->ops_lock);
+-	return err;
++	return 0;
+ }
+ EXPORT_SYMBOL_GPL(rtc_set_alarm);
+ 
+@@ -319,6 +194,16 @@ int rtc_alarm_irq_enable(struct rtc_device *rtc, unsigned int enabled)
+ 	if (err)
+ 		return err;
+ 
++	if (rtc->aie_timer.enabled != enabled) {
++		if (enabled){
++			rtc->aie_timer.enabled = 1;
++			rtctimer_enqueue(rtc, &rtc->aie_timer);
++		} else {
++			rtctimer_remove(rtc, &rtc->aie_timer);
++			rtc->aie_timer.enabled = 0;
++		}
++	}
++
+ 	if (!rtc->ops)
+ 		err = -ENODEV;
+ 	else if (!rtc->ops->alarm_irq_enable)
+@@ -337,52 +222,53 @@ int rtc_update_irq_enable(struct rtc_device *rtc, unsigned int enabled)
+ 	if (err)
+ 		return err;
+ 
+-#ifdef CONFIG_RTC_INTF_DEV_UIE_EMUL
+-	if (enabled == 0 && rtc->uie_irq_active) {
+-		mutex_unlock(&rtc->ops_lock);
+-		return rtc_dev_update_irq_enable_emul(rtc, enabled);
++	/* make sure we're changing state */
++	if(rtc->uie_rtctimer.enabled == enabled)
++		goto out;
++
++	if (enabled) {
++		struct rtc_time tm;
++		ktime_t now, onesec;
++
++		__rtc_read_time(rtc, &tm);
++		onesec = ktime_set(1,0);
++		now = rtc_tm_to_ktime(tm);
++		rtc->uie_rtctimer.node.expires = ktime_add(now,onesec);
++		rtc->uie_rtctimer.period = ktime_set(1,0);
++		rtc->uie_rtctimer.enabled = 1;
++		rtctimer_enqueue(rtc, &rtc->uie_rtctimer);
++	} else {
++		rtctimer_remove(rtc, &rtc->uie_rtctimer);
++		rtc->uie_rtctimer.enabled = 0;
+ 	}
+-#endif
+-
+-	if (!rtc->ops)
+-		err = -ENODEV;
+-	else if (!rtc->ops->update_irq_enable)
+-		err = -EINVAL;
+-	else
+-		err = rtc->ops->update_irq_enable(rtc->dev.parent, enabled);
+ 
++out:
+ 	mutex_unlock(&rtc->ops_lock);
+-
+-#ifdef CONFIG_RTC_INTF_DEV_UIE_EMUL
+-	/*
+-	 * Enable emulation if the driver did not provide
+-	 * the update_irq_enable function pointer or if returned
+-	 * -EINVAL to signal that it has been configured without
+-	 * interrupts or that are not available at the moment.
+-	 */
+-	if (err == -EINVAL)
+-		err = rtc_dev_update_irq_enable_emul(rtc, enabled);
+-#endif
+ 	return err;
++
+ }
+ EXPORT_SYMBOL_GPL(rtc_update_irq_enable);
+ 
++
+ /**
+- * rtc_update_irq - report RTC periodic, alarm, and/or update irqs
+- * @rtc: the rtc device
+- * @num: how many irqs are being reported (usually one)
+- * @events: mask of RTC_IRQF with one or more of RTC_PF, RTC_AF, RTC_UF
+- * Context: any
++ * rtc_handle_legacy_irq - AIE, UIE and PIE event hook
++ * @rtc: pointer to the rtc device
++ *
++ * This function is called when an AIE, UIE or PIE mode interrupt
++ * has occured (or been emulated).
++ *
++ * Triggers the registered irq_task function callback.
+  */
+-void rtc_update_irq(struct rtc_device *rtc,
+-		unsigned long num, unsigned long events)
++static void rtc_handle_legacy_irq(struct rtc_device* rtc, int num, int mode)
+ {
+ 	unsigned long flags;
+ 
++	/* mark one irq of the appropriate mode */
+ 	spin_lock_irqsave(&rtc->irq_lock, flags);
+-	rtc->irq_data = (rtc->irq_data + (num << 8)) | events;
++	rtc->irq_data = (rtc->irq_data + (num << 8)) | (RTC_IRQF|mode);
+ 	spin_unlock_irqrestore(&rtc->irq_lock, flags);
+ 
++	/* call the task func */
+ 	spin_lock_irqsave(&rtc->irq_task_lock, flags);
+ 	if (rtc->irq_task)
+ 		rtc->irq_task->func(rtc->irq_task->private_data);
+@@ -391,6 +277,69 @@ void rtc_update_irq(struct rtc_device *rtc,
+ 	wake_up_interruptible(&rtc->irq_queue);
+ 	kill_fasync(&rtc->async_queue, SIGIO, POLL_IN);
+ }
++
++
++/**
++ * rtc_aie_update_irq - AIE mode rtctimer hook
++ * @private: pointer to the rtc_device
++ *
++ * This functions is called when the aie_timer expires.
++ */
++void rtc_aie_update_irq(void *private)
++{
++	struct rtc_device *rtc = (struct rtc_device *)private;
++	rtc_handle_legacy_irq(rtc, 1, RTC_AF);
++}
++
++
++/**
++ * rtc_uie_update_irq - UIE mode rtctimer hook
++ * @private: pointer to the rtc_device
++ *
++ * This functions is called when the uie_timer expires.
++ */
++void rtc_uie_update_irq(void *private)
++{
++	struct rtc_device *rtc = (struct rtc_device *)private;
++	rtc_handle_legacy_irq(rtc, 1,  RTC_UF);
++}
++
++
++/**
++ * rtc_pie_update_irq - PIE mode hrtimer hook
++ * @timer: pointer to the pie mode hrtimer
++ *
++ * This function is used to emulate PIE mode interrupts
++ * using an hrtimer. This function is called when the periodic
++ * hrtimer expires.
++ */
++enum hrtimer_restart rtc_pie_update_irq(struct hrtimer *timer)
++{
++	struct rtc_device *rtc;
++	ktime_t period;
++	int count;
++	rtc = container_of(timer, struct rtc_device, pie_timer);
++
++	period = ktime_set(0,NSEC_PER_SEC/rtc->irq_freq);
++	count = hrtimer_forward_now(timer, period);
++
++	rtc_handle_legacy_irq(rtc, count, RTC_PF);
++
++	return HRTIMER_RESTART;
++}
++
++/**
++ * rtc_update_irq - Triggered when a RTC interrupt occurs.
++ * @rtc: the rtc device
++ * @num: how many irqs are being reported (usually one)
++ * @events: mask of RTC_IRQF with one or more of RTC_PF, RTC_AF, RTC_UF
++ * Context: any
++ */
++void rtc_update_irq(struct rtc_device *rtc,
++		unsigned long num, unsigned long events)
++{
++	schedule_work(&rtc->irqwork);
++}
+ EXPORT_SYMBOL_GPL(rtc_update_irq);
+ 
+ static int __rtc_match(struct device *dev, void *data)
+@@ -477,18 +426,20 @@ int rtc_irq_set_state(struct rtc_device *rtc, struct rtc_task *task, int enabled
+ 	int err = 0;
+ 	unsigned long flags;
+ 
+-	if (rtc->ops->irq_set_state == NULL)
+-		return -ENXIO;
+-
+ 	spin_lock_irqsave(&rtc->irq_task_lock, flags);
+ 	if (rtc->irq_task != NULL && task == NULL)
+ 		err = -EBUSY;
+ 	if (rtc->irq_task != task)
+ 		err = -EACCES;
+-	spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
+ 
+-	if (err == 0)
+-		err = rtc->ops->irq_set_state(rtc->dev.parent, enabled);
++	if(enabled) {
++		ktime_t period = ktime_set(0, NSEC_PER_SEC/rtc->irq_freq);
++		hrtimer_start(&rtc->pie_timer, period, HRTIMER_MODE_REL);
++	} else {
++		hrtimer_cancel(&rtc->pie_timer);
++	}
++	rtc->pie_enabled = enabled;
++	spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
+ 
+ 	return err;
+ }
+@@ -509,21 +460,194 @@ int rtc_irq_set_freq(struct rtc_device *rtc, struct rtc_task *task, int freq)
+ 	int err = 0;
+ 	unsigned long flags;
+ 
+-	if (rtc->ops->irq_set_freq == NULL)
+-		return -ENXIO;
+-
+ 	spin_lock_irqsave(&rtc->irq_task_lock, flags);
+ 	if (rtc->irq_task != NULL && task == NULL)
+ 		err = -EBUSY;
+ 	if (rtc->irq_task != task)
+ 		err = -EACCES;
+-	spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
+-
+ 	if (err == 0) {
+-		err = rtc->ops->irq_set_freq(rtc->dev.parent, freq);
+-		if (err == 0)
+-			rtc->irq_freq = freq;
++		rtc->irq_freq = freq;
++		if (rtc->pie_enabled) {
++			ktime_t period;
++			hrtimer_cancel(&rtc->pie_timer);
++			period = ktime_set(0, NSEC_PER_SEC/rtc->irq_freq);
++			hrtimer_start(&rtc->pie_timer, period,
++					HRTIMER_MODE_REL);
++		}
+ 	}
++	spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
+ 	return err;
+ }
+ EXPORT_SYMBOL_GPL(rtc_irq_set_freq);
++
++/**
++ * rtctimer_enqueue - Adds a rtc_timer to the rtc_device timerlist
++ * @rtc rtc device
++ * @timer timer being added.
++ *
++ * Enqueues a timer onto the rtc devices timerlist and sets
++ * the next alarm event appropriately.
++ *
++ * Must hold ops_lock for proper serialization of timerlist
++ */
++void rtctimer_enqueue(struct rtc_device *rtc, struct rtc_timer *timer)
++{
++	timerlist_add(&rtc->timerlist, &timer->node);
++	if (&timer->node == timerlist_getnext(&rtc->timerlist)) {
++		struct rtc_wkalrm alarm;
++		int err;
++		alarm.time = rtc_ktime_to_tm(timer->node.expires);
++		alarm.enabled = 1;
++		err = __rtc_set_alarm(rtc, &alarm);
++		if (err == -ETIME)
++			schedule_work(&rtc->irqwork);
 +	}
 +}
 +
-+/*
-+ * alarmtimer_remove - Removes an alarm timer from an alarm_base timerlist
-+ * @base: pointer to the base where the timer is running
-+ * @alarm: pointer to alarm being removed
++/**
++ * rtctimer_remove - Removes a rtc_timer from the rtc_device timerlist
++ * @rtc rtc device
++ * @timer timer being removed.
 + *
-+ * Removes alarm to a alarm_base timerlist and if necessary sets
-+ * a new timer to run.
++ * Removes a timer onto the rtc devices timerlist and sets
++ * the next alarm event appropriately.
 + *
-+ * Must hold base->lock when calling.
++ * Must hold ops_lock for proper serialization of timerlist
 + */
-+static void alarmtimer_remove(struct alarm_base *base, struct alarm *alarm)
++void rtctimer_remove(struct rtc_device *rtc, struct rtc_timer *timer)
 +{
-+	struct timerlist_node *next = timerlist_getnext(&base->timerlist);
++	struct timerlist_node *next = timerlist_getnext(&rtc->timerlist);
++	timerlist_del(&rtc->timerlist, &timer->node);
 +
-+	timerlist_del(&base->timerlist, &alarm->node);
-+	if (next == &alarm->node) {
-+		hrtimer_try_to_cancel(&base->timer);
-+		next = timerlist_getnext(&base->timerlist);
++	if (next == &timer->node) {
++		struct rtc_wkalrm alarm;
++		int err;
++		next = timerlist_getnext(&rtc->timerlist);
 +		if (!next)
 +			return;
-+		hrtimer_start(&base->timer, next->expires, HRTIMER_MODE_ABS);
++		alarm.time = rtc_ktime_to_tm(next->expires);
++		alarm.enabled = 1;
++		err = __rtc_set_alarm(rtc, &alarm);
++		if (err == -ETIME)
++			schedule_work(&rtc->irqwork);
 +	}
 +}
 +
-+/*
-+ * alarmtimer_do_work - Handles alarm being fired.
-+ * @work: pointer to workqueue being run
++/**
++ * rtctimer_do_work - Expires rtc timers
++ * @rtc rtc device
++ * @timer timer being removed.
 + *
-+ * When a timer fires, this runs through the timerlist to see
-+ * which alarm timers, and run those that expired. If there are
-+ * more alarm timers queued, we set the hrtimer to fire in the 
-+ * future.
++ * Expires rtc timers. Reprograms next alarm event if needed.
++ * Called via worktask.
++ *
++ * Serializes access to timerlist via ops_lock mutex
 + */
-+void alarmtimer_do_work(struct work_struct *work)
++void rtctimer_do_work(struct work_struct *work)
 +{
-+	struct alarm_base *base = container_of(work, struct alarm_base,
-+						irqwork);
++	struct rtc_timer *timer;
 +	struct timerlist_node *next;
 +	ktime_t now;
++	struct rtc_time tm;
 +
-+	mutex_lock(&base->lock);
-+	now = base->gettime();
-+	while((next = timerlist_getnext(&base->timerlist))) {
-+		struct alarm *alarm;
-+		ktime_t expired = next->expires;
++	struct rtc_device *rtc =
++		container_of(work, struct rtc_device, irqwork);
 +
-+		if (expired.tv64 >= now.tv64)
++	mutex_lock(&rtc->ops_lock);
++again:
++	__rtc_read_time(rtc, &tm);
++	now = rtc_tm_to_ktime(tm);
++	while ((next = timerlist_getnext(&rtc->timerlist))) {
++		if (next->expires.tv64 > now.tv64)
 +			break;
 +
-+		alarm = container_of(next, struct alarm, node);
++		/* expire timer */
++		timer = container_of(next, struct rtc_timer, node);
++		timerlist_del(&rtc->timerlist, &timer->node);
++		timer->enabled = 0;
++		if (timer->task.func)
++			timer->task.func(timer->task.private_data);
 +
-+		timerlist_del(&base->timerlist, &alarm->node);
-+		alarm->enabled = 0;
-+		/* Re-add periodic timers */
-+		if (alarm->period.tv64) {
-+			alarm->node.expires = ktime_add(expired, alarm->period);
-+			timerlist_add(&base->timerlist, &alarm->node);
-+			alarm->enabled = 1;
++		/* Re-add/fwd periodic timers */
++		if (ktime_to_ns(timer->period)) {
++			timer->node.expires = ktime_add(timer->node.expires,
++							timer->period);
++			timer->enabled = 1;
++			timerlist_add(&rtc->timerlist, &timer->node);
 +		}
-+		mutex_unlock(&base->lock);
-+		if (alarm->function)
-+			alarm->function(alarm);
-+		mutex_lock(&base->lock);
 +	}
 +
++	/* Set next alarm */
 +	if (next) {
-+		hrtimer_start(&base->timer, next->expires,
-+				HRTIMER_MODE_ABS);
-+	}
-+	mutex_unlock(&base->lock);
-+}
-+
-+
-+/*
-+ * alarmtimer_fired - Handles alarm hrtimer being fired.
-+ * @timer: pointer to hrtimer being run
-+ *
-+ * When a timer fires, this schedules the do_work function to
-+ * be run.
-+ */
-+static enum hrtimer_restart alarmtimer_fired(struct hrtimer *timer)
-+{
-+	struct alarm_base *base = container_of(timer, struct alarm_base, timer);
-+	schedule_work(&base->irqwork);
-+	return HRTIMER_NORESTART;
-+}
-+
-+/*
-+ * alarmtimer_suspend - Suspend time callback
-+ * @dev: unused
-+ * @state: unused
-+ *
-+ * When we are going into suspend, we look through the bases
-+ * to see which is the soonest timer to expire. We then
-+ * set an rtc timer to fire that far into the future, which 
-+ * will wake us from suspend.
-+ */
-+static int alarmtimer_suspend(struct device *dev)
-+{
-+	struct rtc_time tm;
-+	ktime_t min = ktime_set(0,0);
-+	ktime_t now;
-+	int i;
-+
-+	/* If we have no rtcdev, just return */
-+	if(!rtcdev)
-+		return 0;
-+
-+	/* Find the soonest timer to expire*/
-+	for (i=0;i < ALARM_NUMTYPE; i++) {
-+		struct alarm_base *base = &alarm_bases[i];
-+		struct timerlist_node *next;
-+		ktime_t delta;
-+
-+		mutex_lock(&base->lock);
-+		next = timerlist_getnext(&base->timerlist);
-+		mutex_unlock(&base->lock);
-+		if (!next)
-+			continue;
-+		delta = ktime_sub(next->expires, base->gettime());
-+		if (!min.tv64 || (delta.tv64 < min.tv64))
-+			min = delta;
++		struct rtc_wkalrm alarm;
++		int err;
++		alarm.time = rtc_ktime_to_tm(next->expires);
++		alarm.enabled = 1;
++		err = __rtc_set_alarm(rtc, &alarm);
++		if (err == -ETIME)
++			goto again;
 +	}
 +
-+	/* Setup an rtc timer to fire that far in the future */
-+	rtctimer_cancel(rtcdev, &rtctimer);
-+	rtc_read_time(rtcdev, &tm);
-+	now = rtc_tm_to_ktime(tm);
-+	now = ktime_add(now, min);
-+	rtctimer_start(rtcdev, &rtctimer, now, ktime_set(0,0));
-+
-+	return 0;
-+}
-+
-+/**************************************************************************
-+ * alarm kernel interface code
-+ */
-+ 
-+/*
-+ * alarm_init - Initialize an alarm structure
-+ * @alarm: ptr to alarm to be initialized
-+ * @type: the type of the alarm
-+ * @function: callback that is run when the alarm fires
-+ *
-+ * In-kernel interface to initializes the alarm structure.
-+ */
-+void alarm_init(struct alarm *alarm, enum alarmtimer_type type,
-+		void (*function)(struct alarm *))
-+{
-+	timerlist_init(&alarm->node);
-+	alarm->period = ktime_set(0,0);
-+	alarm->function = function;
-+	alarm->type = type;
-+	alarm->enabled = 0;
-+}
-+
-+/*
-+ * alarm_start - Sets an alarm to fire
-+ * @alarm: ptr to alarm to set
-+ * @start: time to run the alarm
-+ * @period: period at which the alarm will recur
-+ *
-+ * In-kernel interface set an alarm timer.
-+ */
-+void alarm_start(struct alarm *alarm, ktime_t start, ktime_t period)
-+{
-+	struct alarm_base *base = &alarm_bases[alarm->type];
-+
-+	mutex_lock(&base->lock);
-+	if (alarm->enabled)
-+		alarmtimer_remove(base, alarm);
-+	alarm->node.expires = start;
-+	alarm->period = period;
-+	alarmtimer_enqueue(base, alarm);
-+	alarm->enabled = 1;
-+	mutex_unlock(&base->lock);
-+}
-+
-+/*
-+ * alarm_cancel - Tries to cancel an alarm timer
-+ * @alarm: ptr to alarm to be canceled
-+ *
-+ * In-kernel interface to cancel an alarm timer.
-+ */
-+void alarm_cancel(struct alarm *alarm)
-+{
-+	struct alarm_base *base = &alarm_bases[alarm->type];
-+
-+	mutex_lock(&base->lock);
-+	if (alarm->enabled)
-+		alarmtimer_remove(base, alarm);
-+	alarm->enabled = 0;
-+	mutex_unlock(&base->lock);
++	mutex_unlock(&rtc->ops_lock);
 +}
 +
 +
-+/**************************************************************************
-+ * alarm posix interface code 
-+ */
-+
-+/*
-+ * clock2alarm - helper that converts from clockid to alarmtypes
-+ * @clockid: clockid.
++/* rtctimer_init - Initializes an rtc_timer
++ * @timer: timer to be intiialized
++ * @f: function pointer to be called when timer fires
++ * @data: private data passed to function pointer
 + *
-+ * Helper function that converts from clockids to alarmtypes
++ * Kernel interface to initializing an rtc_timer.
 + */
-+static enum alarmtimer_type clock2alarm(clockid_t clockid)
++void rtctimer_init(struct rtc_timer *timer, void (*f)(void* p), void* data)
 +{
-+	if (clockid == CLOCK_REALTIME_ALARM)
-+		return ALARM_REALTIME;
-+	if (clockid == CLOCK_MONOTONIC_ALARM)
-+		return ALARM_MONOTONIC;
-+	return -1;
++	timerlist_init(&timer->node);
++	timer->enabled = 0;
++	timer->task.func = f;
++	timer->task.private_data = data;
++}
++
++/* rtctimer_start - Sets an rtc_timer to fire in the future
++ * @ rtc: rtc device to be used
++ * @ timer: timer being set
++ * @ expires: time at which to expire the timer
++ * @ period: period that the timer will recur
++ *
++ * Kernel interface to set an rtc_timer
++ */
++int rtctimer_start(struct rtc_device *rtc, struct rtc_timer* timer,
++			ktime_t expires, ktime_t period)
++{
++	int ret = 0;
++	mutex_lock(&rtc->ops_lock);
++	if (timer->enabled)
++		rtctimer_remove(rtc, timer);
++
++	timer->node.expires = expires;
++	timer->period = period;
++
++	timer->enabled = 1;
++	rtctimer_enqueue(rtc, timer);
++
++	mutex_unlock(&rtc->ops_lock);
++	return ret;
++}
++
++/* rtctimer_cancel - Stops an rtc_timer
++ * @ rtc: rtc device to be used
++ * @ timer: timer being set
++ *
++ * Kernel interface to cancel an rtc_timer
++ */
++int rtctimer_cancel(struct rtc_device *rtc, struct rtc_timer* timer)
++{
++	int ret = 0;
++	mutex_lock(&rtc->ops_lock);
++	if (timer->enabled)
++		rtctimer_remove(rtc, timer);
++	timer->enabled = 0;
++	mutex_unlock(&rtc->ops_lock);
++	return ret;
++}
++
++
+diff --git a/drivers/rtc/rtc-lib.c b/drivers/rtc/rtc-lib.c
+index 773851f..00df788 100644
+--- a/drivers/rtc/rtc-lib.c
++++ b/drivers/rtc/rtc-lib.c
+@@ -117,4 +117,30 @@ int rtc_tm_to_time(struct rtc_time *tm, unsigned long *time)
+ }
+ EXPORT_SYMBOL(rtc_tm_to_time);
+ 
++/*
++ * Convert rtc_time to ktime
++ */
++ktime_t rtc_tm_to_ktime(struct rtc_time tm)
++{
++	time_t time;
++	rtc_tm_to_time(&tm, &time);
++	return ktime_set(time, 0);
 +}
 +
 +/*
-+ * alarm_handle_timer - Callback for posix timers
-+ * @alarm: alarm that fired
-+ *
-+ * Posix timer callback for expired alarm timers.
++ * Convert ktime to rtc_time
 + */
-+static void alarm_handle_timer(struct alarm* alarm)
++struct rtc_time rtc_ktime_to_tm(ktime_t kt)
 +{
-+	struct k_itimer *ptr = container_of(alarm, struct k_itimer,
-+						it.alarmtimer);
-+	if (posix_timer_event(ptr, 0) != 0)
-+		ptr->it_overrun++;
++	struct timespec ts;
++	struct rtc_time ret;
++
++	ts = ktime_to_timespec(kt);
++	/* Round up any ns */
++	if (ts.tv_nsec)
++		ts.tv_sec++;
++	rtc_time_to_tm(ts.tv_sec, &ret);
++	return ret;
 +}
 +
-+/*
-+ * alarm_clock_getres - posix getres interface
-+ * @which_clock: clockid
-+ * @tp: timespec to fill
-+ *
-+ * Returns the granularity of underlying alarm base clock
-+ */
-+static int alarm_clock_getres(const clockid_t which_clock, struct timespec *tp)
-+{
-+	clockid_t baseid = alarm_bases[clock2alarm(which_clock)].base_clockid;
+ MODULE_LICENSE("GPL");
+diff --git a/include/linux/rtc.h b/include/linux/rtc.h
+index 14dbc83..c50fae5 100644
+--- a/include/linux/rtc.h
++++ b/include/linux/rtc.h
+@@ -107,12 +107,17 @@ extern int rtc_year_days(unsigned int day, unsigned int month, unsigned int year
+ extern int rtc_valid_tm(struct rtc_time *tm);
+ extern int rtc_tm_to_time(struct rtc_time *tm, unsigned long *time);
+ extern void rtc_time_to_tm(unsigned long time, struct rtc_time *tm);
++ktime_t rtc_tm_to_ktime(struct rtc_time tm);
++struct rtc_time rtc_ktime_to_tm(ktime_t kt);
 +
-+	return hrtimer_get_res(baseid, tp);
-+}
+ 
+ #include <linux/device.h>
+ #include <linux/seq_file.h>
+ #include <linux/cdev.h>
+ #include <linux/poll.h>
+ #include <linux/mutex.h>
++#include <linux/timerlist.h>
++#include <linux/workqueue.h>
+ 
+ extern struct class *rtc_class;
+ 
+@@ -151,7 +156,19 @@ struct rtc_class_ops {
+ };
+ 
+ #define RTC_DEVICE_NAME_SIZE 20
+-struct rtc_task;
++typedef struct rtc_task {
++	void (*func)(void *private_data);
++	void *private_data;
++} rtc_task_t;
 +
-+/**
-+ * alarm_clock_get - posix clock_get interface
-+ * @which_clock: clockid
-+ * @tp: timespec to fill.
-+ *
-+ * Provides the underlying alarm base time.
-+ */
-+static int alarm_clock_get(clockid_t which_clock, struct timespec *tp)
-+{
-+	clockid_t baseid = alarm_bases[clock2alarm(which_clock)].base_clockid;
 +
-+	if (baseid == CLOCK_REALTIME)
-+		ktime_get_real_ts(tp);
-+	else if (baseid == CLOCK_MONOTONIC)
-+		ktime_get_ts(tp);
-+	else
-+		return -1;
-+	return 0;
-+}
-+
-+/**
-+ * alarm_timer_create - posix timer_create interface
-+ * @new_timer: k_itimer pointer to manage
-+ *
-+ * Initializes the k_itimer structure.
-+ */
-+static int alarm_timer_create(struct k_itimer *new_timer)
-+{
-+	struct alarm_base *base;
-+
-+	base = &alarm_bases[clock2alarm(new_timer->it_clock)];
-+	alarm_init(&new_timer->it.alarmtimer, clock2alarm(new_timer->it_clock),
-+			alarm_handle_timer);
-+	return 0;
-+}
-+
-+/**
-+ * alarm_timer_get - posix timer_get interface
-+ * @new_timer: k_itimer pointer
-+ * @cur_setting: itimerspec data to fill
-+ *
-+ * Copies the itimerspec data out from the k_itimer
-+ */
-+static void alarm_timer_get(struct k_itimer *timr,
-+				struct itimerspec *cur_setting)
-+{
-+	cur_setting->it_interval =
-+			ktime_to_timespec(timr->it.alarmtimer.period);
-+	cur_setting->it_value =
-+			ktime_to_timespec(timr->it.alarmtimer.node.expires);
-+	return;
-+}
-+
-+/**
-+ * alarm_timer_del - posix timer_del interface
-+ * @timr: k_itimer pointer to be deleted
-+ *
-+ * Cancels any programmed alarms for the given timer.
-+ */
-+ static int alarm_timer_del(struct k_itimer *timr)
-+{
-+	alarm_cancel(&timr->it.alarmtimer);
-+	return 0;
-+}
-+
-+/**
-+ * alarm_timer_set - posix timer_set interface
-+ * @timr: k_itimer pointer to be deleted
-+ * @flags: timer flags
-+ * @new_setting: itimerspec to be used
-+ * @old_setting: itimerspec being replaced
-+ *
-+ * Sets the timer to new_setting, and starts the timer.
-+ */
-+ static int alarm_timer_set(struct k_itimer *timr, int flags,
-+				struct itimerspec *new_setting,
-+				struct itimerspec *old_setting)
-+{
-+	/* Save old values */
-+	old_setting->it_interval =
-+			ktime_to_timespec(timr->it.alarmtimer.period);
-+	old_setting->it_value =
-+			ktime_to_timespec(timr->it.alarmtimer.node.expires);
-+
-+	/* If the timer was already set, cancel it */
-+	alarm_cancel(&timr->it.alarmtimer);
-+
-+	/* start the timer */
-+	alarm_start(&timr->it.alarmtimer,
-+			timespec_to_ktime(new_setting->it_value),
-+			timespec_to_ktime(new_setting->it_interval));
-+	return 0;
-+}
-+
-+/**
-+ * no_nsleep - posix nsleep dummy interface
-+ * @which_clock: ignored
-+ * @flags: ignored
-+ * @tsave: ignored
-+ * @rmtp: ignored
-+ *
-+ * We don't implement nsleep yet, so this stub returns an error.
-+ */
-+static int no_nsleep(const clockid_t which_clock, int flags,
-+		     struct timespec *tsave, struct timespec __user *rmtp)
-+{
-+	return -EOPNOTSUPP;
-+}
-+
-+/**************************************************************************
-+ * alarmtimer initialization code
-+ */
-+
-+/* Suspend hook structures */
-+static const struct dev_pm_ops alarmtimer_pm_ops = {
-+	.suspend = alarmtimer_suspend,
++struct rtc_timer {
++	struct rtc_task	task;
++	struct timerlist_node node;
++	ktime_t period;
++	int enabled;
 +};
 +
-+static struct platform_driver alarmtimer_driver = {
-+	.driver = {
-+		.name = "alarmtimer",
-+		.pm = &alarmtimer_pm_ops,
-+	}
-+};
+ 
+ /* flags */
+ #define RTC_DEV_BUSY 0
+@@ -179,6 +196,15 @@ struct rtc_device
+ 	spinlock_t irq_task_lock;
+ 	int irq_freq;
+ 	int max_user_freq;
 +
-+/**
-+ * alarmtimer_init - Initialize alarm timer code
-+ *
-+ * This function initializes the alarm bases and registers
-+ * the posix clock ids.
-+ */
-+static int __init alarmtimer_init(void)
-+{
-+	int error = 0;
-+	int i;
-+	struct k_clock alarm_clock = {
-+		.clock_getres = alarm_clock_getres,
-+		.clock_get = alarm_clock_get,
-+		.clock_set = do_posix_clock_nosettime,
-+		.timer_create = alarm_timer_create,
-+		.timer_set = alarm_timer_set,
-+		.timer_del = alarm_timer_del,
-+		.timer_get = alarm_timer_get,
-+		.nsleep = no_nsleep,
-+	};
++	struct timerlist_head timerlist;
++	struct rtc_timer aie_timer;
++	struct rtc_timer uie_rtctimer;
++	struct hrtimer pie_timer; /* sub second exp, so needs hrtimer */
++	int pie_enabled;
++	struct work_struct irqwork;
 +
-+	register_posix_clock(CLOCK_REALTIME_ALARM, &alarm_clock);
-+	register_posix_clock(CLOCK_MONOTONIC_ALARM, &alarm_clock);
 +
-+	/* Initialize alarm bases */
-+	alarm_bases[ALARM_REALTIME].base_clockid = CLOCK_REALTIME;
-+	alarm_bases[ALARM_REALTIME].gettime = &ktime_get_real;
-+	alarm_bases[ALARM_MONOTONIC].base_clockid = CLOCK_MONOTONIC;
-+	alarm_bases[ALARM_MONOTONIC].gettime = &ktime_get;
-+	for (i=0; i< ALARM_NUMTYPE; i++) {
-+		timerlist_init_head(&alarm_bases[i].timerlist);
-+		mutex_init(&alarm_bases[i].lock);
-+		hrtimer_init(&alarm_bases[i].timer,
-+				alarm_bases[i].base_clockid,
-+				HRTIMER_MODE_ABS);
-+		alarm_bases[i].timer.function = alarmtimer_fired;
-+		INIT_WORK(&alarm_bases[i].irqwork, alarmtimer_do_work);
-+	}
-+	error = platform_driver_register(&alarmtimer_driver);
-+	platform_device_register_simple("alarmtimer", -1, NULL, 0);
+ #ifdef CONFIG_RTC_INTF_DEV_UIE_EMUL
+ 	struct work_struct uie_task;
+ 	struct timer_list uie_timer;
+@@ -224,15 +250,22 @@ extern int rtc_alarm_irq_enable(struct rtc_device *rtc, unsigned int enabled);
+ extern int rtc_dev_update_irq_enable_emul(struct rtc_device *rtc,
+ 						unsigned int enabled);
+ 
+-typedef struct rtc_task {
+-	void (*func)(void *private_data);
+-	void *private_data;
+-} rtc_task_t;
++void rtc_aie_update_irq(void *private);
++void rtc_uie_update_irq(void *private);
++enum hrtimer_restart rtc_pie_update_irq(struct hrtimer *timer);
+ 
+ int rtc_register(rtc_task_t *task);
+ int rtc_unregister(rtc_task_t *task);
+ int rtc_control(rtc_task_t *t, unsigned int cmd, unsigned long arg);
+ 
++void rtctimer_enqueue(struct rtc_device *rtc, struct rtc_timer *timer);
++void rtctimer_remove(struct rtc_device *rtc, struct rtc_timer *timer);
++void rtctimer_init(struct rtc_timer *timer, void (*f)(void* p), void* data);
++int rtctimer_start(struct rtc_device *rtc, struct rtc_timer* timer,
++			ktime_t expires, ktime_t period);
++int rtctimer_cancel(struct rtc_device *rtc, struct rtc_timer* timer);
++void rtctimer_do_work(struct work_struct *work);
 +
-+	return error;
-+}
-+device_initcall(alarmtimer_init);
-+
-+/**
-+ * has_wakealarm - check rtc device has wakealarm ability
-+ * @dev: current device 
-+ * @name_ptr: name to be returned
-+ *
-+ * This helper function checks to see if the rtc device can wake
-+ * from suspend.
-+ */
-+static int __init has_wakealarm(struct device *dev, void *name_ptr)
-+{
-+	struct rtc_device *candidate = to_rtc_device(dev);
-+
-+	if (!candidate->ops->set_alarm)
-+		return 0;
-+	if (!device_may_wakeup(candidate->dev.parent))
-+		return 0;
-+
-+	*(const char **)name_ptr = dev_name(dev);
-+	return 1;
-+}
-+
-+/**
-+ * alarmtimer_init_late - Late initializing of alarmtimer code
-+ *
-+ * This function locates a rtc device to use for wakealarms.
-+ * Run as late_initcall to make sure rtc devices have been
-+ * registered.
-+ */
-+static int __init alarmtimer_init_late(void)
-+{
-+	char* str;
-+
-+	/* Find an rtc device and init the rtctimer */
-+	class_find_device(rtc_class, NULL, &str, has_wakealarm);
-+	if (str)
-+		rtcdev = rtc_class_open(str);
-+	if (!rtcdev) {
-+		printk("No RTC device found, ALARM timers will not wake"
-+			" from suspend");
-+	}
-+	rtctimer_init(&rtctimer, NULL, NULL);
-+
-+	return 0;
-+}
-+late_initcall(alarmtimer_init_late);
+ static inline bool is_leap_year(unsigned int year)
+ {
+ 	return (!(year % 4) && (year % 100)) || !(year % 400);
 -- 
 1.7.3.2.146.gca209
 
