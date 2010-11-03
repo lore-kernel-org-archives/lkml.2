@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932538Ab0KCPfr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 11:35:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41824 "EHLO mx1.redhat.com"
+	id S932404Ab0KCPbD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 11:31:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34135 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932415Ab0KCPbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 11:31:06 -0400
+	id S932334Ab0KCPau (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 11:30:50 -0400
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Subject: [PATCH 51 of 66] set recommended min free kbytes
-X-Mercurial-Node: e4c3f336872db7bfbf58f7fa000053906b78e80f
-Message-Id: <e4c3f336872db7bfbf58.1288798106@v2.random>
+Subject: [PATCH 60 of 66] freeze khugepaged and ksmd
+X-Mercurial-Node: 99438562b17e61f5bf56480edfa8d406639efac0
+Message-Id: <99438562b17e61f5bf56.1288798115@v2.random>
 In-Reply-To: <patchbomb.1288798055@v2.random>
 References: <patchbomb.1288798055@v2.random>
 User-Agent: Mercurial-patchbomb/1.4.1
-Date: Wed, 03 Nov 2010 16:28:26 +0100
+Date: Wed, 03 Nov 2010 16:28:35 +0100
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -42,8 +42,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andrea Arcangeli <aarcange@redhat.com>
 
-If transparent hugepage is enabled initialize min_free_kbytes to an optimal
-value by default. This moves the hugeadm algorithm in kernel.
+It's unclear why schedule friendly kernel threads can't be taken away by the
+CPU through the scheduler itself. It's safer to stop them as they can trigger
+memory allocation, if kswapd also freezes itself to avoid generating I/O they
+have too.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
@@ -51,83 +53,102 @@ Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 diff --git a/mm/huge_memory.c b/mm/huge_memory.c
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
-@@ -85,6 +85,47 @@ struct khugepaged_scan {
- 	.mm_head = LIST_HEAD_INIT(khugepaged_scan.mm_head),
- };
+@@ -15,6 +15,7 @@
+ #include <linux/mm_inline.h>
+ #include <linux/kthread.h>
+ #include <linux/khugepaged.h>
++#include <linux/freezer.h>
+ #include <asm/tlb.h>
+ #include <asm/pgalloc.h>
+ #include "internal.h"
+@@ -2063,6 +2064,9 @@ static void khugepaged_do_scan(struct pa
+ 			break;
+ #endif
  
++		if (unlikely(kthread_should_stop() || freezing(current)))
++			break;
 +
-+static int set_recommended_min_free_kbytes(void)
-+{
-+	struct zone *zone;
-+	int nr_zones = 0;
-+	unsigned long recommended_min;
-+	extern int min_free_kbytes;
-+
-+	if (!test_bit(TRANSPARENT_HUGEPAGE_FLAG,
-+		      &transparent_hugepage_flags) &&
-+	    !test_bit(TRANSPARENT_HUGEPAGE_REQ_MADV_FLAG,
-+		      &transparent_hugepage_flags))
-+		return 0;
-+
-+	for_each_populated_zone(zone)
-+		nr_zones++;
-+
-+	/* Make sure at least 2 hugepages are free for MIGRATE_RESERVE */
-+	recommended_min = HPAGE_PMD_NR * nr_zones * 2;
-+
-+	/*
-+	 * Make sure that on average at least two pageblocks are almost free
-+	 * of another type, one for a migratetype to fall back to and a
-+	 * second to avoid subsequent fallbacks of other types There are 3
-+	 * MIGRATE_TYPES we care about.
-+	 */
-+	recommended_min += HPAGE_PMD_NR * nr_zones * 3 * 3;
-+
-+	/* don't ever allow to reserve more than 5% of the lowmem */
-+	recommended_min = min(recommended_min,
-+			      (unsigned long) nr_free_buffer_pages() / 20);
-+	recommended_min <<= (PAGE_SHIFT-10);
-+
-+	if (recommended_min > min_free_kbytes) {
-+		min_free_kbytes = recommended_min;
-+		setup_per_zone_wmarks();
-+	}
-+	return 0;
-+}
-+late_initcall(set_recommended_min_free_kbytes);
-+
- static int start_khugepaged(void)
+ 		spin_lock(&khugepaged_mm_lock);
+ 		if (!khugepaged_scan.mm_slot)
+ 			pass_through_head++;
+@@ -2125,6 +2129,9 @@ static void khugepaged_loop(void)
+ 		if (hpage)
+ 			put_page(hpage);
+ #endif
++		try_to_freeze();
++		if (unlikely(kthread_should_stop()))
++			break;
+ 		if (khugepaged_has_work()) {
+ 			DEFINE_WAIT(wait);
+ 			if (!khugepaged_scan_sleep_millisecs)
+@@ -2135,8 +2142,8 @@ static void khugepaged_loop(void)
+ 					khugepaged_scan_sleep_millisecs));
+ 			remove_wait_queue(&khugepaged_wait, &wait);
+ 		} else if (khugepaged_enabled())
+-			wait_event_interruptible(khugepaged_wait,
+-						 khugepaged_wait_event());
++			wait_event_freezable(khugepaged_wait,
++					     khugepaged_wait_event());
+ 	}
+ }
+ 
+@@ -2144,6 +2151,7 @@ static int khugepaged(void *none)
  {
- 	int err = 0;
-@@ -108,6 +149,8 @@ static int start_khugepaged(void)
- 		mutex_unlock(&khugepaged_mutex);
- 		if (wakeup)
- 			wake_up_interruptible(&khugepaged_wait);
-+
-+		set_recommended_min_free_kbytes();
- 	} else
- 		/* wakeup to exit */
- 		wake_up_interruptible(&khugepaged_wait);
-@@ -177,6 +220,13 @@ static ssize_t enabled_store(struct kobj
- 			ret = err;
+ 	struct mm_slot *mm_slot;
+ 
++	set_freezable();
+ 	set_user_nice(current, 19);
+ 
+ 	/* serialize with start_khugepaged() */
+@@ -2158,6 +2166,8 @@ static int khugepaged(void *none)
+ 		mutex_lock(&khugepaged_mutex);
+ 		if (!khugepaged_enabled())
+ 			break;
++		if (unlikely(kthread_should_stop()))
++			break;
  	}
  
-+	if (ret > 0 &&
-+	    (test_bit(TRANSPARENT_HUGEPAGE_FLAG,
-+		      &transparent_hugepage_flags) ||
-+	     test_bit(TRANSPARENT_HUGEPAGE_REQ_MADV_FLAG,
-+		      &transparent_hugepage_flags)))
-+		set_recommended_min_free_kbytes();
-+
- 	return ret;
- }
- static struct kobj_attribute enabled_attr =
-@@ -464,6 +514,8 @@ static int __init hugepage_init(void)
+ 	spin_lock(&khugepaged_mm_lock);
+diff --git a/mm/ksm.c b/mm/ksm.c
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -34,6 +34,7 @@
+ #include <linux/swap.h>
+ #include <linux/ksm.h>
+ #include <linux/hash.h>
++#include <linux/freezer.h>
  
- 	start_khugepaged();
+ #include <asm/tlbflush.h>
+ #include "internal.h"
+@@ -1374,7 +1375,7 @@ static void ksm_do_scan(unsigned int sca
+ 	struct rmap_item *rmap_item;
+ 	struct page *uninitialized_var(page);
  
-+	set_recommended_min_free_kbytes();
+-	while (scan_npages--) {
++	while (scan_npages-- && likely(!freezing(current))) {
+ 		cond_resched();
+ 		rmap_item = scan_get_next_rmap_item(&page);
+ 		if (!rmap_item)
+@@ -1392,6 +1393,7 @@ static int ksmd_should_run(void)
+ 
+ static int ksm_scan_thread(void *nothing)
+ {
++	set_freezable();
+ 	set_user_nice(current, 5);
+ 
+ 	while (!kthread_should_stop()) {
+@@ -1400,11 +1402,13 @@ static int ksm_scan_thread(void *nothing
+ 			ksm_do_scan(ksm_thread_pages_to_scan);
+ 		mutex_unlock(&ksm_thread_mutex);
+ 
++		try_to_freeze();
 +
- out:
- 	return err;
- }
+ 		if (ksmd_should_run()) {
+ 			schedule_timeout_interruptible(
+ 				msecs_to_jiffies(ksm_thread_sleep_millisecs));
+ 		} else {
+-			wait_event_interruptible(ksm_thread_wait,
++			wait_event_freezable(ksm_thread_wait,
+ 				ksmd_should_run() || kthread_should_stop());
+ 		}
+ 	}
