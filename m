@@ -1,35 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab0KCL1n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 07:27:43 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:56051 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754370Ab0KCL1l convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:2:1>);
-	Wed, 3 Nov 2010 07:27:41 -0400
-Message-Id: <4CD15538020000780002060B@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 03 Nov 2010 11:27:36 +0000
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Yinghai Lu" <yinghai@kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, <jbarnes@virtuousgeek.org>
-Subject: your patch "x86/PCI: host mmconfig detect clean up"
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1755014Ab0KCL2e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 07:28:34 -0400
+Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:38249 "EHLO
+	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754370Ab0KCL2c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 07:28:32 -0400
+Message-ID: <4CD1474A.1060807@euromail.se>
+Date: Wed, 03 Nov 2010 12:28:10 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: gimli <gimli@dark-green.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Resend: [PATCH 1/6] MacBookAir3,1(3,2) applesmc support
+References: <cf611abb8b842b043fd6e837cf161a39@mognix.dark-green.com> <4CD03FB0.8000605@euromail.se> <16daf2365a63093624c93857a0011008@mognix.dark-green.com> <4CD137AF.30206@euromail.se> <3b7fc6c1e0318f1100afc442d52da18c@mognix.dark-green.com>
+In-Reply-To: <3b7fc6c1e0318f1100afc442d52da18c@mognix.dark-green.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1PDbVk-0002i8-5r.
+X-Scan-Signature: ch-smtp01.sth.basefarm.net 1PDbVk-0002i8-5r 795c5155044895ed2f008e8abd03df7f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In this patch (commit 068258bc15439c11a966e873f931cc8e513dca61)
-you made the call to pci_mmcfg_reject_broken() unconditional. This
-breaks pci=check_enable_amd_mmconf when the mmconfig space
-wasn't enabled by the BIOS, since obviously the BIOS can't reserve
-in the E820 map the range Linux is going to assign. As the commit
-message doesn't really tell the reason for you doing so, could you
-shed some light on this, so a proper change to restore the original
-functionality can be put together?
+On 11/03/2010 11:41 AM, gimli wrote:
 
-Thanks, Jan
+> Typo fixed patch.
+> 
+> Signed-off-by: Edgar (gimli) Hucek <gimli@dark-green.com>
 
+
+Still two entries... Ok, I can correct this patch myself and incorporate it in
+the upcoming rebase, which will follow after some discussions regarding the
+patches currently on review. I would also suggest that you please read through
+the documentation on how to submit patches, to better help the maintainers and
+make your submissions smoother.
+
+Thanks,
+Henrik
