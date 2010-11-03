@@ -1,269 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419Ab0KCWlL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 18:41:11 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:22096 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753311Ab0KCWlJ (ORCPT
+	id S1753462Ab0KCWmZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 18:42:25 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:42247 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753311Ab0KCWmY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 18:41:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-operating-system
-         :user-agent;
-        b=iymliADHWv5IoP55ZVwEHoP+UfYgx6MsHflEEazfW4DdU7XIc9q/vjSeJFVuE7PSEh
-         GasGQ2vmUjkllyqmKM2w==
-Date: Wed, 3 Nov 2010 15:40:55 -0700
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, wad@chromium.org, olofj@chromium.org,
-        hughd@chromium.org
-Subject: Re: [PATCH] RFC: vmscan: add min_filelist_kbytes sysctl for
- protecting the working set
-Message-ID: <20101103224055.GC19646@google.com>
-References: <20101028191523.GA14972@google.com>
- <20101101012322.605C.A69D9226@jp.fujitsu.com>
- <20101101182416.GB31189@google.com>
- <4CCF0BE3.2090700@redhat.com>
- <AANLkTi=src1L0gAFsogzCmejGOgg5uh=9O4Uw+ZmfBg4@mail.gmail.com>
- <4CCF8151.3010202@redhat.com>
+	Wed, 3 Nov 2010 18:42:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CCF8151.3010202@redhat.com>
-X-Operating-System: Linux/2.6.32-gg228-generic (x86_64)
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-System-Of-Record: true
+In-Reply-To: <1288822281.2718.30.camel@edumazet-laptop>
+References: <AANLkTi=mEzCMCC+K6oLOjW9xfws_+_hHq8DS3hpPB1zY@mail.gmail.com> <1288822281.2718.30.camel@edumazet-laptop>
+From: Tom Gundersen <teg@jklm.no>
+Date: Wed, 3 Nov 2010 23:42:02 +0100
+Message-ID: <AANLkTimY+cC=bu6LDb_e-Qbghd-F0RNZejhKaeXJWbY7@mail.gmail.com>
+Subject: Re: panic with 2.6.37-rc1
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        David Miller <davem@davemloft.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rik van Riel (riel@redhat.com) wrote:
-> On 11/01/2010 03:43 PM, Mandeep Singh Baines wrote:
-> 
-> >Yes, this prevents you from reclaiming the active list all at once. But if the
-> >memory pressure doesn't go away, you'll start to reclaim the active list
-> >little by little. First you'll empty the inactive list, and then
-> >you'll start scanning
-> >the active list and pulling pages from inactive to active. The problem is that
-> >there is no minimum time limit to how long a page will sit in the inactive list
-> >before it is reclaimed. Just depends on scan rate which does not depend
-> >on time.
-> >
-> >In my experiments, I saw the active list get smaller and smaller
-> >over time until eventually it was only a few MB at which point the system came
-> >grinding to a halt due to thrashing.
-> 
-> I believe that changing the active/inactive ratio has other
-> potential thrashing issues.  Specifically, when the inactive
-> list is too small, pages may not stick around long enough to
-> be accessed multiple times and get promoted to the active
-> list, even when they are in active use.
-> 
-> I prefer a more flexible solution, that automatically does
-> the right thing.
-> 
-> The problem you see is that the file list gets reclaimed
-> very quickly, even when it is already very small.
-> 
-> I wonder if a possible solution would be to limit how fast
-> file pages get reclaimed, when the page cache is very small.
-> Say, inactive_file * active_file < 2 * zone->pages_high ?
-> 
-> At that point, maybe we could slow down the reclaiming of
-> page cache pages to be significantly slower than they can
-> be refilled by the disk.  Maybe 100 pages a second - that
-> can be refilled even by an actual spinning metal disk
-> without even the use of readahead.
-> 
-> That can be rounded up to one batch of SWAP_CLUSTER_MAX
-> file pages every 1/4 second, when the number of page cache
-> pages is very low.
-> 
-> This way HPC and virtual machine hosting nodes can still
-> get rid of totally unused page cache, but on any system
-> that actually uses page cache, some minimal amount of
-> cache will be protected under heavy memory pressure.
-> 
-> Does this sound like a reasonable approach?
-> 
-> I realize the threshold may have to be tweaked...
-> 
-> The big question is, how do we integrate this with the
-> OOM killer?  Do we pretend we are out of memory when
-> we've hit our file cache eviction quota and kill something?
-> 
-> Would there be any downsides to this approach?
-> 
-> Are there any volunteers for implementing this idea?
-> (Maybe someone who needs the feature?)
-> 
+On Wed, Nov 3, 2010 at 11:11 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le mercredi 03 novembre 2010 à 23:02 +0100, Tom Gundersen a écrit :
+>> I get panic during boot both with 2.6.37-rc1 and with current head.
+>>
+>> Here is the error message:
+>> <http://www.lix.polytechnique.fr/~tom/2.6.37-rc1-panic.jpg>. My
+>> .config is below.
+>>
+>> Let me know if you want more info. If you want I can test patches or
+>> bisect (if no one has any better suggestions).
+>>
+>
+> Please test following patch, thanks
+>
+> [PATCH] atl1 : fix panic on load
+>
+> Its now illegal to call netif_stop_queue() before register_netdev()
+>
+> Reported-by: Tom Gundersen <teg@jklm.no>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> ---
+>  drivers/net/atlx/atl1.c |    1 -
+>  1 file changed, 1 deletion(-)
+>
+> diff --git a/drivers/net/atlx/atl1.c b/drivers/net/atlx/atl1.c
+> index 43579b3..5336310 100644
+> --- a/drivers/net/atlx/atl1.c
+> +++ b/drivers/net/atlx/atl1.c
+> @@ -3043,7 +3043,6 @@ static int __devinit atl1_probe(struct pci_dev *pdev,
+>        atl1_pcie_patch(adapter);
+>        /* assume we have no link for now */
+>        netif_carrier_off(netdev);
+> -       netif_stop_queue(netdev);
+>
+>        setup_timer(&adapter->phy_config_timer, atl1_phy_config,
+>                    (unsigned long)adapter);
+>
+>
 
-I've created a patch which takes a slightly different approach.
-Instead of limiting how fast pages get reclaimed, the patch limits
-how fast the active list gets scanned. This should result in the
-active list being a better measure of the working set. I've seen
-fairly good results with this patch and a scan inteval of 1
-centisecond. I see no thrashing when the scan interval is non-zero.
+The patch solves the problem. Thanks!
 
-I've made it a tunable because I don't know what to set the scan
-interval. The final patch could set the value based on HZ and some
-other system parameters. Maybe relate it to sched_period?
-
----
-
-[PATCH] vmscan: add a configurable scan interval
-
-On ChromiumOS, we see a lot of thrashing under low memory. We do not
-use swap, so the mm system can only free file-backed pages. Eventually,
-we are left with little file back pages remaining (a few MB) and the
-system becomes unresponsive due to thrashing.
-
-Our preference is for the system to OOM instead of becoming unresponsive.
-
-This patch create a tunable, vmscan_interval_centisecs, for controlling
-the minimum interval between active list scans. At 0, I see the same
-thrashing. At 1, I see no thrashing. The mm system does a good job
-of protecting the working set. If a page has been referenced in the
-last vmscan_interval_centisecs it is kept in memory.
-
-Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
----
- include/linux/mm.h     |    2 ++
- include/linux/mmzone.h |    9 +++++++++
- kernel/sysctl.c        |    7 +++++++
- mm/page_alloc.c        |    2 ++
- mm/vmscan.c            |   21 +++++++++++++++++++--
- 5 files changed, 39 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 721f451..af058f6 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -36,6 +36,8 @@ extern int sysctl_legacy_va_layout;
- #define sysctl_legacy_va_layout 0
- #endif
- 
-+extern unsigned int vmscan_interval;
-+
- #include <asm/page.h>
- #include <asm/pgtable.h>
- #include <asm/processor.h>
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 39c24eb..6c4b6e1 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -415,6 +415,15 @@ struct zone {
- 	unsigned long		present_pages;	/* amount of memory (excluding holes) */
- 
- 	/*
-+	 * To avoid over-scanning, we store the time of the last
-+	 * scan (in jiffies).
-+	 *
-+	 * The anon LRU stats live in [0], file LRU stats in [1]
-+	 */
-+
-+	unsigned long		last_scan[2];
-+
-+	/*
- 	 * rarely used fields:
- 	 */
- 	const char		*name;
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index c33a1ed..c34251d 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1318,6 +1318,13 @@ static struct ctl_table vm_table[] = {
- 		.extra2		= &one,
- 	},
- #endif
-+	{
-+		.procname	= "scan_interval_centisecs",
-+		.data		= &vmscan_interval,
-+		.maxlen		= sizeof(vmscan_interval),
-+		.mode		= 0644,
-+		.proc_handler	= &proc_dointvec,
-+	},
- 
- /*
-  * NOTE: do not add new entries to this table unless you have read
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 07a6544..46991d2 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -51,6 +51,7 @@
- #include <linux/kmemleak.h>
- #include <linux/memory.h>
- #include <linux/compaction.h>
-+#include <linux/jiffies.h>
- #include <trace/events/kmem.h>
- #include <linux/ftrace_event.h>
- 
-@@ -4150,6 +4151,7 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- 		BUG_ON(ret);
- 		memmap_init(size, nid, j, zone_start_pfn);
- 		zone_start_pfn += size;
-+		zone->last_scan[0] = zone->last_scan[1] = jiffies;
- 	}
- }
- 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index b8a6fdc..be45b91 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -40,6 +40,7 @@
- #include <linux/memcontrol.h>
- #include <linux/delayacct.h>
- #include <linux/sysctl.h>
-+#include <linux/jiffies.h>
- 
- #include <asm/tlbflush.h>
- #include <asm/div64.h>
-@@ -136,6 +137,11 @@ struct scan_control {
- int vm_swappiness = 60;
- long vm_total_pages;	/* The total number of pages which the VM controls */
- 
-+/*
-+ * Minimum interval between active list scans.
-+ */
-+unsigned int vmscan_interval = 0;
-+
- static LIST_HEAD(shrinker_list);
- static DECLARE_RWSEM(shrinker_rwsem);
- 
-@@ -1659,14 +1665,25 @@ static int inactive_list_is_low(struct zone *zone, struct scan_control *sc,
- 		return inactive_anon_is_low(zone, sc);
- }
- 
-+static int list_scanned_recently(struct zone *zone, int file)
-+{
-+	unsigned long now = jiffies;
-+	unsigned long delta = vmscan_interval * HZ / 100;
-+
-+	return time_after(zone->last_scan[file] + delta, now);
-+}
-+
- static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
- 	struct zone *zone, struct scan_control *sc, int priority)
- {
- 	int file = is_file_lru(lru);
- 
- 	if (is_active_lru(lru)) {
--		if (inactive_list_is_low(zone, sc, file))
--		    shrink_active_list(nr_to_scan, zone, sc, priority, file);
-+		if (inactive_list_is_low(zone, sc, file) &&
-+		    !list_scanned_recently(zone, file)) {
-+			shrink_active_list(nr_to_scan, zone, sc, priority, file);
-+			zone->last_scan[file] = jiffies;
-+		}
- 		return 0;
- 	}
- 
--- 
-1.7.3.1
+Tom
