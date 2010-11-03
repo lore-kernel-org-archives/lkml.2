@@ -1,47 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932315Ab0KCSQF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 14:16:05 -0400
-Received: from kroah.org ([198.145.64.141]:54571 "EHLO coco.kroah.org"
+	id S932355Ab0KCSQL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 14:16:11 -0400
+Received: from kroah.org ([198.145.64.141]:54574 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932260Ab0KCSQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 14:16:03 -0400
-Date: Wed, 3 Nov 2010 11:06:24 -0700
+	id S932260Ab0KCSQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 14:16:08 -0400
+Date: Wed, 3 Nov 2010 11:10:58 -0700
 From: Greg KH <greg@kroah.com>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: cdhmanning@gmail.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 1/9] Add yaffs Kconfig and Makefile
-Message-ID: <20101103180624.GC7441@kroah.com>
-References: <1288803204-3849-1-git-send-email-cdhmanning@gmail.com> <1288803204-3849-2-git-send-email-cdhmanning@gmail.com> <20101103174607.GA6777@kroah.com> <4CD1A228.5060107@caviumnetworks.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar GADDIPATI <naveen.gaddipati@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCHv1] staging: Synaptics RMI4 touchpad driver support
+Message-ID: <20101103181058.GE7441@kroah.com>
+References: <1288699725-14405-1-git-send-email-naveen.gaddipati@stericsson.com> <20101102140337.GC9387@kroah.com> <4CD01CD8.3090206@stericsson.com> <20101102154029.GH11778@core.coreip.homeip.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CD1A228.5060107@caviumnetworks.com>
+In-Reply-To: <20101102154029.GH11778@core.coreip.homeip.net>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 10:55:52AM -0700, David Daney wrote:
-> On 11/03/2010 10:46 AM, Greg KH wrote:
->> On Thu, Nov 04, 2010 at 05:53:16AM +1300, cdhmanning@gmail.com wrote:
->>> From: Charles Manning<cdhmanning@gmail.com>
->>>
->>> Adding yaffs2 file system.
->>>
->>> Signed-off-by: Charles Manning<cdhmanning@gmail.com>
->>> ---
->>>   fs/yaffs2/Kconfig  |  190 ++++++++++++++++++++++++++++++++++++++++++++++++++++
->>>   fs/yaffs2/Makefile |   17 +++++
->>
->> Don't do this as your first patch, make it your last one.  Otherwise the
->> build will break when you apply this one to the tree.
->>
->
-> In Charles's defense, the changed to fs/Kconfig and fs/Makefile are not 
-> made until the last patch, so buildability should be preserved as-is.
+On Tue, Nov 02, 2010 at 08:40:30AM -0700, Dmitry Torokhov wrote:
+> On Tue, Nov 02, 2010 at 03:14:48PM +0100, Linus Walleij wrote:
+> > Greg KH wrote:
+> > 
+> > >> +Wait for the official upstream synaptics rmi4 clearpad drivers as promised over the past few months
+> > >> +Merge any device support needed from this driver into it
+> > >> +Delete this driver
+> > > 
+> > > Huh?
+> > > 
+> > > Why not just add this driver to the kernel tree instead?  When the
+> > > "promised" driver then eventually shows up (who is promising it?) then
+> > > delete the thing.
+> 
+> The same reason as there were several wireless drivers in staging?
 
-Doh, you are right, sorry about that.
+Ok, that's a good enough reason for me :)
 
-Nevermind :)
+> > Well, Alan (on behalf of Ramesh Agarwal) sent out a very similar
+> > patch (Titled "Synaptics TM1217 Touchscreen Controller driver")
+> > the other day, and OTOMH that was after discussions with Synaptics
+> > where they said they were working on a "real" driver (a rather
+> > complex RMI4 bus driver) and we believe they will fix that sooner
+> > or later.
+> > 
+> > So, until sooner or later happens we thought we'd keep it in staging.
+> > 
+> > If you prefer both Alan and we can probably submit our patches for
+> > inclusion in the proper place.
+> > 
+> > A side effect may be that the Synaptics RMI4 people may have trouble
+> > to merge their driver into input/ since they may be requested to
+> > refactor the existing drivers to use it rather than merging new stuff,
+> > putting some burden on their shoulders.
+> > 
+> 
+> No, they have not been requested to change any existing [in tree]
+> drivers. They however been asked to convert to the driver core
+> primitives instead of rolling their own infprastructure to implement
+> devices and drivers binding.
+
+If you don't object to this driver going in, and there is a path forward
+in the future for it to be able to be removed, then I will be glad to
+add it.
+
+Can I add your Acked-by: to the patch for this?
+
+thanks,
+
+greg k-h
