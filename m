@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932425Ab0KCPbH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 11:31:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19078 "EHLO mx1.redhat.com"
+	id S932474Ab0KCPbP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 11:31:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45849 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755774Ab0KCPax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 11:30:53 -0400
+	id S1755829Ab0KCPay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 11:30:54 -0400
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Subject: [PATCH 04 of 66] define MADV_HUGEPAGE
-X-Mercurial-Node: e31f2c279d68d1c214356ce403014c5cf5eb3de9
-Message-Id: <e31f2c279d68d1c21435.1288798059@v2.random>
+Subject: [PATCH 55 of 66] select CONFIG_COMPACTION if TRANSPARENT_HUGEPAGE
+	enabled
+X-Mercurial-Node: 89a62752012298bb500ce6d20d8b42300de9d081
+Message-Id: <89a62752012298bb500c.1288798110@v2.random>
 In-Reply-To: <patchbomb.1288798055@v2.random>
 References: <patchbomb.1288798055@v2.random>
 User-Agent: Mercurial-patchbomb/1.4.1
-Date: Wed, 03 Nov 2010 16:27:39 +0100
+Date: Wed, 03 Nov 2010 16:28:30 +0100
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -42,70 +43,20 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andrea Arcangeli <aarcange@redhat.com>
 
-Define MADV_HUGEPAGE.
+With transparent hugepage support we need compaction for the "defrag" sysfs
+controls to be effective.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
 
-diff --git a/arch/alpha/include/asm/mman.h b/arch/alpha/include/asm/mman.h
---- a/arch/alpha/include/asm/mman.h
-+++ b/arch/alpha/include/asm/mman.h
-@@ -53,6 +53,8 @@
- #define MADV_MERGEABLE   12		/* KSM may merge identical pages */
- #define MADV_UNMERGEABLE 13		/* KSM may not merge identical pages */
- 
-+#define MADV_HUGEPAGE	14		/* Worth backing with hugepages */
-+
- /* compatibility flags */
- #define MAP_FILE	0
- 
-diff --git a/arch/mips/include/asm/mman.h b/arch/mips/include/asm/mman.h
---- a/arch/mips/include/asm/mman.h
-+++ b/arch/mips/include/asm/mman.h
-@@ -77,6 +77,8 @@
- #define MADV_UNMERGEABLE 13		/* KSM may not merge identical pages */
- #define MADV_HWPOISON    100		/* poison a page for testing */
- 
-+#define MADV_HUGEPAGE	14		/* Worth backing with hugepages */
-+
- /* compatibility flags */
- #define MAP_FILE	0
- 
-diff --git a/arch/parisc/include/asm/mman.h b/arch/parisc/include/asm/mman.h
---- a/arch/parisc/include/asm/mman.h
-+++ b/arch/parisc/include/asm/mman.h
-@@ -59,6 +59,8 @@
- #define MADV_MERGEABLE   65		/* KSM may merge identical pages */
- #define MADV_UNMERGEABLE 66		/* KSM may not merge identical pages */
- 
-+#define MADV_HUGEPAGE	67		/* Worth backing with hugepages */
-+
- /* compatibility flags */
- #define MAP_FILE	0
- #define MAP_VARIABLE	0
-diff --git a/arch/xtensa/include/asm/mman.h b/arch/xtensa/include/asm/mman.h
---- a/arch/xtensa/include/asm/mman.h
-+++ b/arch/xtensa/include/asm/mman.h
-@@ -83,6 +83,8 @@
- #define MADV_MERGEABLE   12		/* KSM may merge identical pages */
- #define MADV_UNMERGEABLE 13		/* KSM may not merge identical pages */
- 
-+#define MADV_HUGEPAGE	14		/* Worth backing with hugepages */
-+
- /* compatibility flags */
- #define MAP_FILE	0
- 
-diff --git a/include/asm-generic/mman-common.h b/include/asm-generic/mman-common.h
---- a/include/asm-generic/mman-common.h
-+++ b/include/asm-generic/mman-common.h
-@@ -45,6 +45,8 @@
- #define MADV_MERGEABLE   12		/* KSM may merge identical pages */
- #define MADV_UNMERGEABLE 13		/* KSM may not merge identical pages */
- 
-+#define MADV_HUGEPAGE	14		/* Worth backing with hugepages */
-+
- /* compatibility flags */
- #define MAP_FILE	0
- 
+diff --git a/mm/Kconfig b/mm/Kconfig
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -305,6 +305,7 @@ config NOMMU_INITIAL_TRIM_EXCESS
+ config TRANSPARENT_HUGEPAGE
+ 	bool "Transparent Hugepage Support"
+ 	depends on X86 && MMU
++	select COMPACTION
+ 	help
+ 	  Transparent Hugepages allows the kernel to use huge pages and
+ 	  huge tlb transparently to the applications whenever possible.
