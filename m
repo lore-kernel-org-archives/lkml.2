@@ -1,93 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756333Ab0KCS11 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 14:27:27 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:58692 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752358Ab0KCS1Z (ORCPT
+	id S932293Ab0KCS2A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 14:28:00 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61636 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755441Ab0KCS16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 14:27:25 -0400
-Message-ID: <4CD1A986.2000508@us.ibm.com>
-Date: Wed, 03 Nov 2010 13:27:18 -0500
-From: Karl Rister <kmr@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: pjt@google.com
-CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Chris Friesen <cfriesen@nortel.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Pierre Bourdon <pbourdon@excellency.fr>, Paul Turner <p@us.ibm.com>,
-        habanero@us.ibm.com
-Subject: Re: [RFC tg_shares_up improvements - v1 00/12] [RFC tg_shares_up
- - v1 00/12] Reducing cost of tg->shares distribution
-References: <20101016044349.830426011@google.com>
-In-Reply-To: <20101016044349.830426011@google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 3 Nov 2010 14:27:58 -0400
+Subject: Re: [PATCHv2 1/3] ARM: Translate delay.S into (mostly) C
+From: Will Deacon <will.deacon@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Nicolas Pitre <nico@fluxnic.net>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Colin Cross <ccross@android.com>, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <1288300770-18350-2-git-send-email-sboyd@codeaurora.org>
+References: <1288300770-18350-1-git-send-email-sboyd@codeaurora.org>
+	 <1288300770-18350-2-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 03 Nov 2010 18:27:21 +0000
+Message-ID: <1288808841.23615.5.camel@e102144-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 03 Nov 2010 18:27:25.0080 (UTC) FILETIME=[C3301980:01CB7B84]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All
+Hi Stephen,
 
-Here is a some performance data for the previously posted patches 
-running a LAMP workload in a cloud-like environment which show promising 
-reductions in CPU utilization.  In this particular test, 32 groups 
-equaling 64 KVM guests (each group consists of an Apache server guest 
-and a MySQL server guest) are running a LAMP workload being driven by 
-external load drivers.  When using the default values in /etc/cgconfig.conf:
+On Thu, 2010-10-28 at 21:19 +0000, Stephen Boyd wrote:
+> Nico expressed concern that fixed lpj cmdlines will break due to
+> compiler optimizations. That doesn't seem to be the case since
+> before and after this patch I get the same lpj value when running
+> my CPU at 19.2 MHz. That should be sufficiently slow enough to
+> cover any machine running Linux.
 
-mount {
-         cpuset  = /cgroup/cpuset;
-         cpu     = /cgroup/cpu;
-         cpuacct = /cgroup/cpuacct;
-         memory  = /cgroup/memory;
-         devices = /cgroup/devices;
-         freezer = /cgroup/freezer;
-         net_cls = /cgroup/net_cls;
-         blkio   = /cgroup/blkio;
-}
+I appreciate this is an exceptional case, but there are some lucky
+guys at ARM who (as routinely as they can) boot Linux on sub 1MHz
+hardware. The delay loop is something they're keen to avoid so they do
+make use of the lpj= command line option and would rather it didn't
+break on them.
 
-which enable libvirt usage of cgroups the contents of /proc/cgroups 
-looks like this before launching the guests:
+Will
 
-#subsys_name    hierarchy       num_cgroups     enabled
-cpuset  1       4       1
-ns      0       1       1
-cpu     2       4       1
-cpuacct 3       4       1
-memory  4       4       1
-devices 5       4       1
-freezer 6       4       1
-net_cls 7       1       1
-blkio   8       1       1
-
-and like this after launching the guests:
-
-#subsys_name    hierarchy       num_cgroups     enabled
-cpuset  1       68      1
-ns      0       1       1
-cpu     2       68      1
-cpuacct 3       68      1
-memory  4       68      1
-devices 5       68      1
-freezer 6       68      1
-net_cls 7       1       1
-blkio   8       1       1
-
-When running the workload the run with the patches used significantly 
-less CPU:
-
-Host CPU utilization with patches: 54.35%
-Host CPU utilization without patches: 80.89%
-
-Since the workload uses a fixed injection rate the achieved throughput 
-for both test runs was the same, however the run with the patches 
-applied did achieve better quality of service metrics.
-
-NOTE: The runs were made using kvm.git changeset 
-cec8b6b972a572b69d4902f57fb659e8a4c749af.
-
--- 
-Karl Rister <kmr@us.ibm.com>
