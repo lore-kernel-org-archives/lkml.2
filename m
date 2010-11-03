@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699Ab0KCWL3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 18:11:29 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:65154 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323Ab0KCWL0 (ORCPT
+	id S1753094Ab0KCWPf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 18:15:35 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:38464 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186Ab0KCWPc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 18:11:26 -0400
+	Wed, 3 Nov 2010 18:15:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=V0EEFQVwFP39U4Lq0c6kTfgpM6Y6qKLzIIl9wPEqw9CbeuTqjM2XgRKVGNHhaD6nck
-         OAWF9GTgKigwN1NGIPnP2bQGZpQUQob5Zv7PndaJdhKrSit/QdVyA/k1yMfTr/QtpqVl
-         wNElnEp/KUWKXcWZ3HhqtuK//30CnUo9dEWQk=
-Subject: Re: panic with 2.6.37-rc1
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Tom Gundersen <teg@jklm.no>
-Cc: LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        David Miller <davem@davemloft.net>
-In-Reply-To: <AANLkTi=mEzCMCC+K6oLOjW9xfws_+_hHq8DS3hpPB1zY@mail.gmail.com>
-References: <AANLkTi=mEzCMCC+K6oLOjW9xfws_+_hHq8DS3hpPB1zY@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 03 Nov 2010 23:11:21 +0100
-Message-ID: <1288822281.2718.30.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=RW0Xyk7VpDRv37RG/j7Zg+ffF7D5C0hHMA4fLVe88QEhf5zXjYtHPz1J5v85xbSFY0
+         pNVK395K5CMdg1mfE8jWzglls0XzhkL3Q/fSUsOQeWy3879m7SsqPwE7PqmU7DMzo+QT
+         jN1EvVpAie0hg3s2ASFIzLM1/DrnqQFaQCurk=
+MIME-Version: 1.0
+In-Reply-To: <20101103214308.GA5421@nowhere>
+References: <m2eib2uryc.fsf@gmail.com> <20101103214308.GA5421@nowhere>
+From: Reid Kleckner <reid.kleckner@gmail.com>
+Date: Wed, 3 Nov 2010 18:15:10 -0400
+Message-ID: <AANLkTikpFW_fqc6nTMspwBGZRMe1PMWVFD+aRQAab0LF@mail.gmail.com>
+Subject: Re: perf tools miscellaneous questions
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Francis Moreau <francis.moro@gmail.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>,
+        linux-perf-users@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 03 novembre 2010 Ã  23:02 +0100, Tom Gundersen a Ã©crit :
-> I get panic during boot both with 2.6.37-rc1 and with current head.
-> 
-> Here is the error message:
-> <http://www.lix.polytechnique.fr/~tom/2.6.37-rc1-panic.jpg>. My
-> .config is below.
-> 
-> Let me know if you want more info. If you want I can test patches or
-> bisect (if no one has any better suggestions).
-> 
+On Wed, Nov 3, 2010 at 5:43 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> What's exactly the 'cache-misses' event ? does it include both instructions
+>> _and_ data cache misses ? both L1 and L2 caches ?
+>>
+>> I was expecting so but the following command makes me wondering:
+>>
+>>   $ perf stat -e cache-misses:u,l1d-loads-misses:u true
+>>     Performance counter stats for 'true':
+>>
+>>                 763  cache-misses
+>>                 874  L1-dcache-load-misses
+>>
+>>         0.000916609  seconds time elapsed
+>>
+>> Here cache-misses < L1-dcache-load-misses.
+>
+>
+>
+> Dunno, will let others answer.
 
-Please test following patch, thanks
+I think it corresponds to last level cache misses, which makes sense
+here.  The difference in the two numbers represents hits to L2 (and L3
+if it exists).
 
-[PATCH] atl1 : fix panic on load
-
-Its now illegal to call netif_stop_queue() before register_netdev()
-
-Reported-by: Tom Gundersen <teg@jklm.no>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
----
- drivers/net/atlx/atl1.c |    1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/drivers/net/atlx/atl1.c b/drivers/net/atlx/atl1.c
-index 43579b3..5336310 100644
---- a/drivers/net/atlx/atl1.c
-+++ b/drivers/net/atlx/atl1.c
-@@ -3043,7 +3043,6 @@ static int __devinit atl1_probe(struct pci_dev *pdev,
- 	atl1_pcie_patch(adapter);
- 	/* assume we have no link for now */
- 	netif_carrier_off(netdev);
--	netif_stop_queue(netdev);
- 
- 	setup_timer(&adapter->phy_config_timer, atl1_phy_config,
- 		    (unsigned long)adapter);
-
-
+Reid
