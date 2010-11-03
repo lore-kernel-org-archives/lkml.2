@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266Ab0KCN0i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 09:26:38 -0400
-Received: from queueout04-winn.ispmail.ntl.com ([81.103.221.58]:48992 "EHLO
-	queueout04-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754892Ab0KCN0g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 09:26:36 -0400
-From: Ian Campbell <ijc@hellion.org.uk>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, Glauber Costa <glommer@redhat.com>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        kvm-devel <kvm@vger.kernel.org>, Eelco Dolstra <e.dolstra@tudelft.nl>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        Olivier Hanesse <olivier.hanesse@gmail.com>,
-        Avi Kivity <avi@redhat.com>
-In-Reply-To: <95805e88-b6d5-4ae2-9351-9e458656cfb8@email.android.com>
-References: <4CC708DE.1070000@goop.org>
-	 <1288115334.3530.7.camel@mothafucka.localdomain> <4CC8751E.40306@goop.org>
-	 <95805e88-b6d5-4ae2-9351-9e458656cfb8@email.android.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 03 Nov 2010 12:46:34 +0000
-Message-ID: <1288788394.9309.2.camel@cthulhu.hellion.org.uk>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 12.157.84.6
-X-SA-Exim-Mail-From: ijc@hellion.org.uk
-Subject: Re: [Xen-devel] Re: [PATCH] x86/pvclock-xen: zero last_value on
- resume
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on hopkins.hellion.org.uk)
-X-Cloudmark-Analysis: v=1.1 cv=3ENABmdyEd/Fm7fR7+mZIuMDn6+IErAeEhlfWBImZFk= c=1 sm=0 a=8DdxjWjVwYkA:10 a=IkcTkHD0fZMA:10 a=xNf9USuDAAAA:8 a=ZfRw4ET0AAAA:8 a=viOL9Ws1ThB6qEOiPgEA:9 a=p35WDmoed7oj44Ex8lwA:7 a=vStYN8ZsSugNPdkUSLEkTnSlvl8A:4 a=QEXdDO2ut3YA:10 a=KciULlu47koA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	id S1755261Ab0KCN2S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 09:28:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58356 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754892Ab0KCN2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 09:28:16 -0400
+Date: Wed, 3 Nov 2010 09:28:14 -0400 (EDT)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Anton Chikin <Anton.Chikin@dataart.com>
+Cc: "chatty@enac.fr" <chatty@enac.fr>, "spbnick@gmail.com" <spbnick@gmail.com>,
+        "anisse@astier.eu" <anisse@astier.eu>,
+        "cascardo@holoscopio.com" <cascardo@holoscopio.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Gregory Burmistrov <grig@dataart.com>,
+        Paul Osborn <Paul.Osborn@eu.panasonic.com>
+Subject: RE: [PATCH] hid: usbhid: New hid quirks for Panasonic Elite Panaboard
+ T-780 and T-880
+In-Reply-To: <3BF066A8BAB61C43B779966CEE6D7FA018BC9E1A45@e6.universe.dart.spb>
+Message-ID: <alpine.LNX.2.00.1011030925310.15851@pobox.suse.cz>
+References: <1288169825-15422-1-git-send-email-Anton.Chikin@dataart.com> <alpine.LNX.2.00.1010291453460.6879@pobox.suse.cz> <3BF066A8BAB61C43B779966CEE6D7FA018BC9E19F2@e6.universe.dart.spb> <alpine.LNX.2.00.1011011522120.15851@pobox.suse.cz>
+ <3BF066A8BAB61C43B779966CEE6D7FA018BC9E1A45@e6.universe.dart.spb>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-27 at 13:59 -0700, H. Peter Anvin wrote:
-> I'll check it this evening when I'm at a working network again :(
+On Tue, 2 Nov 2010, Anton Chikin wrote:
 
-Did this get applied? It seems to affect 2.6.32.x too
-(http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=602273) so can we tag
-it for stable as well?
+> Thank you for your feedback.
+> 
+> With the generic hid driver device is working in mouse-mode, turning it 
+> into the huge touchscreen, which is completely useless for the end-user.
+
+Still, at least some very basic and limited/crippled functionality is 
+there. So my preferred mode of operation now would be having the device 
+being claimed by generic driver and wait for your proper full-fledged 
+driver.
+
+> On some Linux systems hid driver is loaded from init.rd image, so we 
+> can't feed our quirks to it while boot process and we can't rebuild 
+> init.rd image on the user's machine because some Linux distributives 
+> doesn't have special tools preinstalled.
+> 
+> We are going to submit our driver to the Linux kernel quickly, so 
+> everyone can improve it.
+
+That would be great, I'll be happy to review and merge it. Are you 
+planning to have it as a driver on HID bus, or completely separate USB 
+driver?
 
 Thanks,
-Ian.
-
-> 
-> "Jeremy Fitzhardinge" <jeremy@goop.org> wrote:
-> 
-> > On 10/26/2010 10:48 AM, Glauber Costa wrote:
-> >> On Tue, 2010-10-26 at 09:59 -0700, Jeremy Fitzhardinge wrote:
-> >>> If the guest domain has been suspend/resumed or migrated, then the
-> >>> system clock backing the pvclock clocksource may revert to a smaller
-> >>> value (ie, can be non-monotonic across the migration/save-restore).
-> >>> Make sure we zero last_value in that case so that the domain
-> >>> continues to see clock updates.
-> >>>
-> >>> [ I don't know if kvm needs an analogous fix or not. ]
-> >> After migration, save/restore, etc, we issue an ioctl where we tell
-> >> the host the last clock value. That (in theory) guarantees
-> >monotonicity.
-> >>
-> >> I am not opposed to this patch in any way, however.
-> >
-> >Thanks.
-> >
-> >HPA, do you want to take this, or shall I send it on?
-> >
-> >Thanks,
-> >    J
-> 
 
 -- 
-Ian Campbell
-
-BOFH excuse #191:
-
-Just type 'mv * /dev/null'.
-
+Jiri Kosina
+SUSE Labs, Novell Inc.
