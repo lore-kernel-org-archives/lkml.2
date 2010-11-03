@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932494Ab0KCPbS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 11:31:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53748 "EHLO mx1.redhat.com"
+	id S932464Ab0KCPfJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 11:35:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5802 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932083Ab0KCPa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 11:30:56 -0400
+	id S932219Ab0KCPbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 11:31:09 -0400
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Subject: [PATCH 63 of 66] fix anon memory statistics with transparent hugepages
-X-Mercurial-Node: 63f97c307774c2f2ec4be60d6d39cbe4c8cc0d26
-Message-Id: <63f97c307774c2f2ec4b.1288798118@v2.random>
+Subject: [PATCH 07 of 66] update futex compound knowledge
+X-Mercurial-Node: 4c0192396a2fc13a2d0a4510d9035d14ab9ef0ed
+Message-Id: <4c0192396a2fc13a2d0a.1288798062@v2.random>
 In-Reply-To: <patchbomb.1288798055@v2.random>
 References: <patchbomb.1288798055@v2.random>
 User-Agent: Mercurial-patchbomb/1.4.1
-Date: Wed, 03 Nov 2010 16:28:38 +0100
+Date: Wed, 03 Nov 2010 16:27:42 +0100
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -40,162 +40,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@redhat.com>
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-Count each transparent hugepage as HPAGE_PMD_NR pages in the LRU
-statistics, so the Active(anon) and Inactive(anon) statistics in
-/proc/meminfo are correct.
+Futex code is smarter than most other gup_fast O_DIRECT code and knows about
+the compound internals. However now doing a put_page(head_page) will not
+release the pin on the tail page taken by gup-fast, leading to all sort of
+refcounting bugchecks. Getting a stable head_page is a little tricky.
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
+page_head = page is there because if this is not a tail page it's also the
+page_head. Only in case this is a tail page, compound_head is called, otherwise
+it's guaranteed unnecessary. And if it's a tail page compound_head has to run
+atomically inside irq disabled section __get_user_pages_fast before returning.
+Otherwise ->first_page won't be a stable pointer.
+
+Disableing irq before __get_user_page_fast and releasing irq after running
+compound_head is needed because if __get_user_page_fast returns == 1, it means
+the huge pmd is established and cannot go away from under us.
+pmdp_splitting_flush_notify in __split_huge_page_splitting will have to wait
+for local_irq_enable before the IPI delivery can return. This means
+__split_huge_page_refcount can't be running from under us, and in turn when we
+run compound_head(page) we're not reading a dangling pointer from
+tailpage->first_page. Then after we get to stable head page, we are always safe
+to call compound_lock and after taking the compound lock on head page we can
+finally re-check if the page returned by gup-fast is still a tail page. in
+which case we're set and we didn't need to split the hugepage in order to take
+a futex on it.
+
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+Acked-by: Rik van Riel <riel@redhat.com>
 ---
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -128,11 +128,19 @@ static inline int PageTransCompound(stru
+diff --git a/kernel/futex.c b/kernel/futex.c
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -219,7 +219,7 @@ get_futex_key(u32 __user *uaddr, int fsh
  {
- 	return PageCompound(page);
- }
-+static inline int hpage_nr_pages(struct page *page)
-+{
-+	if (unlikely(PageTransHuge(page)))
-+		return HPAGE_PMD_NR;
-+	return 1;
-+}
- #else /* CONFIG_TRANSPARENT_HUGEPAGE */
- #define HPAGE_PMD_SHIFT ({ BUG(); 0; })
- #define HPAGE_PMD_MASK ({ BUG(); 0; })
- #define HPAGE_PMD_SIZE ({ BUG(); 0; })
+ 	unsigned long address = (unsigned long)uaddr;
+ 	struct mm_struct *mm = current->mm;
+-	struct page *page;
++	struct page *page, *page_head;
+ 	int err;
  
-+#define hpage_nr_pages(x) 1
-+
- #define transparent_hugepage_enabled(__vma) 0
+ 	/*
+@@ -251,11 +251,46 @@ again:
+ 	if (err < 0)
+ 		return err;
  
- #define transparent_hugepage_flags 0UL
-diff --git a/include/linux/mm_inline.h b/include/linux/mm_inline.h
---- a/include/linux/mm_inline.h
-+++ b/include/linux/mm_inline.h
-@@ -1,6 +1,8 @@
- #ifndef LINUX_MM_INLINE_H
- #define LINUX_MM_INLINE_H
- 
-+#include <linux/huge_mm.h>
-+
- /**
-  * page_is_file_cache - should the page be on a file LRU or anon LRU?
-  * @page: the page to test
-@@ -24,7 +26,7 @@ __add_page_to_lru_list(struct zone *zone
- 		       struct list_head *head)
- {
- 	list_add(&page->lru, head);
--	__inc_zone_state(zone, NR_LRU_BASE + l);
-+	__mod_zone_page_state(zone, NR_LRU_BASE + l, hpage_nr_pages(page));
- 	mem_cgroup_add_lru_list(page, l);
- }
- 
-@@ -38,7 +40,7 @@ static inline void
- del_page_from_lru_list(struct zone *zone, struct page *page, enum lru_list l)
- {
- 	list_del(&page->lru);
--	__dec_zone_state(zone, NR_LRU_BASE + l);
-+	__mod_zone_page_state(zone, NR_LRU_BASE + l, -hpage_nr_pages(page));
- 	mem_cgroup_del_lru_list(page, l);
- }
- 
-@@ -73,7 +75,7 @@ del_page_from_lru(struct zone *zone, str
- 			l += LRU_ACTIVE;
- 		}
- 	}
--	__dec_zone_state(zone, NR_LRU_BASE + l);
-+	__mod_zone_page_state(zone, NR_LRU_BASE + l, -hpage_nr_pages(page));
- 	mem_cgroup_del_lru_list(page, l);
- }
- 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1139,6 +1139,7 @@ static void __split_huge_page_refcount(s
- 	int i;
- 	unsigned long head_index = page->index;
- 	struct zone *zone = page_zone(page);
-+	int zonestat;
- 
- 	/* prevent PageLRU to go away from under us, and freeze lru stats */
- 	spin_lock_irq(&zone->lru_lock);
-@@ -1203,6 +1204,15 @@ static void __split_huge_page_refcount(s
- 	__dec_zone_page_state(page, NR_ANON_TRANSPARENT_HUGEPAGES);
- 	__mod_zone_page_state(zone, NR_ANON_PAGES, HPAGE_PMD_NR);
- 
-+	/*
-+	 * A hugepage counts for HPAGE_PMD_NR pages on the LRU statistics,
-+	 * so adjust those appropriately if this page is on the LRU.
-+	 */
-+	if (PageLRU(page)) {
-+		zonestat = NR_LRU_BASE + page_lru(page);
-+		__mod_zone_page_state(zone, zonestat, -(HPAGE_PMD_NR-1));
+-	page = compound_head(page);
+-	lock_page(page);
+-	if (!page->mapping) {
+-		unlock_page(page);
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++	page_head = page;
++	if (unlikely(PageTail(page))) {
+ 		put_page(page);
++		/* serialize against __split_huge_page_splitting() */
++		local_irq_disable();
++		if (likely(__get_user_pages_fast(address, 1, 1, &page) == 1)) {
++			page_head = compound_head(page);
++			/*
++			 * page_head is valid pointer but we must pin
++			 * it before taking the PG_lock and/or
++			 * PG_compound_lock. The moment we re-enable
++			 * irqs __split_huge_page_splitting() can
++			 * return and the head page can be freed from
++			 * under us. We can't take the PG_lock and/or
++			 * PG_compound_lock on a page that could be
++			 * freed from under us.
++			 */
++			if (page != page_head) {
++				get_page(page_head);
++				put_page(page);
++			}
++			local_irq_enable();
++		} else {
++			local_irq_enable();
++			goto again;
++		}
 +	}
++#else
++	page_head = compound_head(page);
++	if (page != page_head) {
++		get_page(page_head);
++		put_page(page);
++	}
++#endif
 +
- 	ClearPageCompound(page);
- 	compound_unlock(page);
- 	spin_unlock_irq(&zone->lru_lock);
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1083,7 +1083,7 @@ unsigned long mem_cgroup_isolate_pages(u
- 		case 0:
- 			list_move(&page->lru, dst);
- 			mem_cgroup_del_lru(page);
--			nr_taken++;
-+			nr_taken += hpage_nr_pages(page);
- 			break;
- 		case -EBUSY:
- 			/* we don't affect global LRU but rotate in our LRU */
-diff --git a/mm/vmscan.c b/mm/vmscan.c
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1028,7 +1028,7 @@ static unsigned long isolate_lru_pages(u
- 		case 0:
- 			list_move(&page->lru, dst);
- 			mem_cgroup_del_lru(page);
--			nr_taken++;
-+			nr_taken += hpage_nr_pages(page);
- 			break;
- 
- 		case -EBUSY:
-@@ -1086,7 +1086,7 @@ static unsigned long isolate_lru_pages(u
- 			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
- 				list_move(&cursor_page->lru, dst);
- 				mem_cgroup_del_lru(cursor_page);
--				nr_taken++;
-+				nr_taken += hpage_nr_pages(page);
- 				nr_lumpy_taken++;
- 				if (PageDirty(cursor_page))
- 					nr_lumpy_dirty++;
-@@ -1141,14 +1141,15 @@ static unsigned long clear_active_flags(
- 	struct page *page;
- 
- 	list_for_each_entry(page, page_list, lru) {
-+		int numpages = hpage_nr_pages(page);
- 		lru = page_lru_base_type(page);
- 		if (PageActive(page)) {
- 			lru += LRU_ACTIVE;
- 			ClearPageActive(page);
--			nr_active++;
-+			nr_active += numpages;
- 		}
- 		if (count)
--			count[lru]++;
-+			count[lru] += numpages;
++	lock_page(page_head);
++	if (!page_head->mapping) {
++		unlock_page(page_head);
++		put_page(page_head);
+ 		goto again;
  	}
  
- 	return nr_active;
-@@ -1466,7 +1467,7 @@ static void move_active_pages_to_lru(str
+@@ -266,20 +301,20 @@ again:
+ 	 * it's a read-only handle, it's expected that futexes attach to
+ 	 * the object not the particular process.
+ 	 */
+-	if (PageAnon(page)) {
++	if (PageAnon(page_head)) {
+ 		key->both.offset |= FUT_OFF_MMSHARED; /* ref taken on mm */
+ 		key->private.mm = mm;
+ 		key->private.address = address;
+ 	} else {
+ 		key->both.offset |= FUT_OFF_INODE; /* inode-based key */
+-		key->shared.inode = page->mapping->host;
+-		key->shared.pgoff = page->index;
++		key->shared.inode = page_head->mapping->host;
++		key->shared.pgoff = page_head->index;
+ 	}
  
- 		list_move(&page->lru, &zone->lru[lru].list);
- 		mem_cgroup_add_lru_list(page, lru);
--		pgmoved++;
-+		pgmoved += hpage_nr_pages(page);
+ 	get_futex_key_refs(key);
  
- 		if (!pagevec_add(&pvec, page) || list_empty(list)) {
- 			spin_unlock_irq(&zone->lru_lock);
+-	unlock_page(page);
+-	put_page(page);
++	unlock_page(page_head);
++	put_page(page_head);
+ 	return 0;
+ }
+ 
