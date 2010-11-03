@@ -1,95 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932696Ab0KCPnD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 11:43:03 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:40158 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932084Ab0KCPm7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 11:42:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=WFpNkzzR6f5L8akefdbK5zoQHl1FJBPEvT+m5b7uIm7lSc+zSQNf5KSBZ0WpVxrAOO
-         dGKTrEAo08x930F6J0V0qF1GAMQ5JIp/NFzzhORexLdLvdFPWDTB5caS3KRaifORE5Rd
-         +Bx6hzfBeebxJkztPsKMh4Ye636MWTWUTWRxc=
-Date: Thu, 4 Nov 2010 00:42:49 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, wad@chromium.org, olofj@chromium.org,
-        hughd@chromium.org
-Subject: Re: [PATCH] RFC: vmscan: add min_filelist_kbytes sysctl for
- protecting the working set
-Message-ID: <20101103154249.GA1779@barrios-desktop>
-References: <20101028191523.GA14972@google.com>
- <20101101012322.605C.A69D9226@jp.fujitsu.com>
- <20101101182416.GB31189@google.com>
- <4CCF0BE3.2090700@redhat.com>
- <AANLkTi=src1L0gAFsogzCmejGOgg5uh=9O4Uw+ZmfBg4@mail.gmail.com>
- <4CCF8151.3010202@redhat.com>
- <AANLkTi=JJ-0ae+QybtR+e=4_4mpQghh61c4=TZYAw8uF@mail.gmail.com>
- <4CD0C22B.2000905@redhat.com>
- <AANLkTik8y=bh3dBJe0bFmjAUvc7y8yBpjP4DKuKU+Z2j@mail.gmail.com>
- <4CD14A6F.4010109@redhat.com>
+	id S932418Ab0KCPm5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 11:42:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6713 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932084Ab0KCPaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 11:30:01 -0400
+Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CD14A6F.4010109@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
+Subject: [PATCH 20 of 66] pte alloc trans splitting
+X-Mercurial-Node: b2a7419c442366762cfb6d206eadba9a66355061
+Message-Id: <b2a7419c442366762cfb.1288798075@v2.random>
+In-Reply-To: <patchbomb.1288798055@v2.random>
+References: <patchbomb.1288798055@v2.random>
+User-Agent: Mercurial-patchbomb/1.4.1
+Date: Wed, 03 Nov 2010 16:27:55 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Adam Litke <agl@us.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 07:41:35AM -0400, Rik van Riel wrote:
-> On 11/02/2010 11:03 PM, Minchan Kim wrote:
-> 
-> >It could.
-> >But time based approach would be same, IMHO.
-> >First of all, I don't want long latency of direct reclaim process.
-> >It could affect response of foreground process directly.
-> >
-> >If VM limits the number of pages reclaimed per second, direct reclaim
-> >process's latency will be affected. so we should avoid throttling in
-> >direct reclaim path. Agree?
-> 
-> The idea would be to not throttle the processes trying to
-> reclaim page cache pages, but to only reclaim anonymous
-> pages when the page cache pages are low (and occasionally
-> a few page cache pages, say 128 a second).
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-Fair enough. Only anon reclaim is better than thrashing of code pages. 
+pte alloc routines must wait for split_huge_page if the pmd is not
+present and not null (i.e. pmd_trans_splitting). The additional
+branches are optimized away at compile time by pmd_trans_splitting if
+the config option is off. However we must pass the vma down in order
+to know the anon_vma lock to wait for.
 
-> 
-> If too many reclaimers come in when the page cache is
-> low and no swap is available, we will OOM kill instead
-> of stalling.
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+---
 
-I understand why you use (file < pages_min).
-We can keep the threshold small value. Otherwise, 
-we can see the many OOM question. "Why OOM happens although my system have enough 
-file LRU pages?"
-
-> 
-> After all, the entire point of this patch would be to
-> avoid minutes-long latencies in triggering the OOM
-> killer.
-
-I got your point. The patch's goal is not protect working set fully, but prevent
-page cache thrashing in low file LRU. 
-It could make minutes-long latencies by reaching the OOM. 
-
-Okay. I will look into this idea.
-Thanks for the good suggestion, Rik. 
-
-> 
-> -- 
-> All rights reversed
-
--- 
-Kind regards,
-Minchan Kim
+diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
+--- a/arch/x86/kernel/tboot.c
++++ b/arch/x86/kernel/tboot.c
+@@ -133,7 +133,7 @@ static int map_tboot_page(unsigned long 
+ 	pmd = pmd_alloc(&tboot_mm, pud, vaddr);
+ 	if (!pmd)
+ 		return -1;
+-	pte = pte_alloc_map(&tboot_mm, pmd, vaddr);
++	pte = pte_alloc_map(&tboot_mm, NULL, pmd, vaddr);
+ 	if (!pte)
+ 		return -1;
+ 	set_pte_at(&tboot_mm, vaddr, pte, pfn_pte(pfn, prot));
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1117,7 +1117,8 @@ static inline int __pmd_alloc(struct mm_
+ int __pmd_alloc(struct mm_struct *mm, pud_t *pud, unsigned long address);
+ #endif
+ 
+-int __pte_alloc(struct mm_struct *mm, pmd_t *pmd, unsigned long address);
++int __pte_alloc(struct mm_struct *mm, struct vm_area_struct *vma,
++		pmd_t *pmd, unsigned long address);
+ int __pte_alloc_kernel(pmd_t *pmd, unsigned long address);
+ 
+ /*
+@@ -1186,16 +1187,18 @@ static inline void pgtable_page_dtor(str
+ 	pte_unmap(pte);					\
+ } while (0)
+ 
+-#define pte_alloc_map(mm, pmd, address)			\
+-	((unlikely(!pmd_present(*(pmd))) && __pte_alloc(mm, pmd, address))? \
+-		NULL: pte_offset_map(pmd, address))
++#define pte_alloc_map(mm, vma, pmd, address)				\
++	((unlikely(pmd_none(*(pmd))) && __pte_alloc(mm, vma,	\
++							pmd, address))?	\
++	 NULL: pte_offset_map(pmd, address))
+ 
+ #define pte_alloc_map_lock(mm, pmd, address, ptlp)	\
+-	((unlikely(!pmd_present(*(pmd))) && __pte_alloc(mm, pmd, address))? \
++	((unlikely(pmd_none(*(pmd))) && __pte_alloc(mm, NULL,	\
++							pmd, address))?	\
+ 		NULL: pte_offset_map_lock(mm, pmd, address, ptlp))
+ 
+ #define pte_alloc_kernel(pmd, address)			\
+-	((unlikely(!pmd_present(*(pmd))) && __pte_alloc_kernel(pmd, address))? \
++	((unlikely(pmd_none(*(pmd))) && __pte_alloc_kernel(pmd, address))? \
+ 		NULL: pte_offset_kernel(pmd, address))
+ 
+ extern void free_area_init(unsigned long * zones_size);
+diff --git a/mm/memory.c b/mm/memory.c
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -394,9 +394,11 @@ void free_pgtables(struct mmu_gather *tl
+ 	}
+ }
+ 
+-int __pte_alloc(struct mm_struct *mm, pmd_t *pmd, unsigned long address)
++int __pte_alloc(struct mm_struct *mm, struct vm_area_struct *vma,
++		pmd_t *pmd, unsigned long address)
+ {
+ 	pgtable_t new = pte_alloc_one(mm, address);
++	int wait_split_huge_page;
+ 	if (!new)
+ 		return -ENOMEM;
+ 
+@@ -416,14 +418,18 @@ int __pte_alloc(struct mm_struct *mm, pm
+ 	smp_wmb(); /* Could be smp_wmb__xxx(before|after)_spin_lock */
+ 
+ 	spin_lock(&mm->page_table_lock);
+-	if (!pmd_present(*pmd)) {	/* Has another populated it ? */
++	wait_split_huge_page = 0;
++	if (likely(pmd_none(*pmd))) {	/* Has another populated it ? */
+ 		mm->nr_ptes++;
+ 		pmd_populate(mm, pmd, new);
+ 		new = NULL;
+-	}
++	} else if (unlikely(pmd_trans_splitting(*pmd)))
++		wait_split_huge_page = 1;
+ 	spin_unlock(&mm->page_table_lock);
+ 	if (new)
+ 		pte_free(mm, new);
++	if (wait_split_huge_page)
++		wait_split_huge_page(vma->anon_vma, pmd);
+ 	return 0;
+ }
+ 
+@@ -436,10 +442,11 @@ int __pte_alloc_kernel(pmd_t *pmd, unsig
+ 	smp_wmb(); /* See comment in __pte_alloc */
+ 
+ 	spin_lock(&init_mm.page_table_lock);
+-	if (!pmd_present(*pmd)) {	/* Has another populated it ? */
++	if (likely(pmd_none(*pmd))) {	/* Has another populated it ? */
+ 		pmd_populate_kernel(&init_mm, pmd, new);
+ 		new = NULL;
+-	}
++	} else
++		VM_BUG_ON(pmd_trans_splitting(*pmd));
+ 	spin_unlock(&init_mm.page_table_lock);
+ 	if (new)
+ 		pte_free_kernel(&init_mm, new);
+@@ -3215,7 +3222,7 @@ int handle_mm_fault(struct mm_struct *mm
+ 	pmd = pmd_alloc(mm, pud, address);
+ 	if (!pmd)
+ 		return VM_FAULT_OOM;
+-	pte = pte_alloc_map(mm, pmd, address);
++	pte = pte_alloc_map(mm, vma, pmd, address);
+ 	if (!pte)
+ 		return VM_FAULT_OOM;
+ 
+diff --git a/mm/mremap.c b/mm/mremap.c
+--- a/mm/mremap.c
++++ b/mm/mremap.c
+@@ -47,7 +47,8 @@ static pmd_t *get_old_pmd(struct mm_stru
+ 	return pmd;
+ }
+ 
+-static pmd_t *alloc_new_pmd(struct mm_struct *mm, unsigned long addr)
++static pmd_t *alloc_new_pmd(struct mm_struct *mm, struct vm_area_struct *vma,
++			    unsigned long addr)
+ {
+ 	pgd_t *pgd;
+ 	pud_t *pud;
+@@ -62,7 +63,8 @@ static pmd_t *alloc_new_pmd(struct mm_st
+ 	if (!pmd)
+ 		return NULL;
+ 
+-	if (!pmd_present(*pmd) && __pte_alloc(mm, pmd, addr))
++	VM_BUG_ON(pmd_trans_huge(*pmd));
++	if (pmd_none(*pmd) && __pte_alloc(mm, vma, pmd, addr))
+ 		return NULL;
+ 
+ 	return pmd;
+@@ -147,7 +149,7 @@ unsigned long move_page_tables(struct vm
+ 		old_pmd = get_old_pmd(vma->vm_mm, old_addr);
+ 		if (!old_pmd)
+ 			continue;
+-		new_pmd = alloc_new_pmd(vma->vm_mm, new_addr);
++		new_pmd = alloc_new_pmd(vma->vm_mm, vma, new_addr);
+ 		if (!new_pmd)
+ 			break;
+ 		next = (new_addr + PMD_SIZE) & PMD_MASK;
