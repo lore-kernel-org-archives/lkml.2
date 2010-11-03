@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369Ab0KCBaO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 21:30:14 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:35444 "EHLO
+	id S1753492Ab0KCBaS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 21:30:18 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:34422 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752915Ab0KCBaC (ORCPT
+	with ESMTP id S1752971Ab0KCBaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 21:30:02 -0400
+	Tue, 2 Nov 2010 21:30:06 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=subject:to:from:cc:date:message-id:in-reply-to:references:
 	user-agent:mime-version:content-type:
 	content-transfer-encoding:x-system-of-record;
-	b=EU5EtVdLWAv1ZUtDSSHjIXhogLY9O+NyvPVdDinhs/2cwjAn2Q3sbxGT1sCfPZyjA
-	2wMjGeZqA7qOiTpTqjvlQ==
-Subject: [PATCH v1 01/12] Oops: Pass regs to oops_exit()
+	b=DfuyPg9XW0TsAIdirFm56br5hR4wGlDTak2+dEtxgUWvXxmDdo+idNyiikU8B/pPL
+	LBozXPjo6XrDm5Teau3wg==
+Subject: [PATCH v1 04/12] sys-rq: Add option to soft dump
 To: simon.kagstrom@netinsight.net, davem@davemloft.net
 From: Mike Waychison <mikew@google.com>
 Cc: adurbin@google.com, akpm@linux-foundation.org, chavey@google.com,
         linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
-Date: Tue, 02 Nov 2010 18:29:31 -0700
-Message-ID: <20101103012930.4641.93668.stgit@crlf.mtv.corp.google.com>
+Date: Tue, 02 Nov 2010 18:29:49 -0700
+Message-ID: <20101103012948.4641.40943.stgit@crlf.mtv.corp.google.com>
 In-Reply-To: <20101103012917.4641.57113.stgit@crlf.mtv.corp.google.com>
 References: <20101103012917.4641.57113.stgit@crlf.mtv.corp.google.com>
 User-Agent: StGit/0.15
@@ -31,123 +31,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Later commits in this series will want to see pt_regs if available when a
-machine oopses.  Pass regs if available on to oops_exit().
+It is very useful to provide some means to force the kernel logs to make it out
+via the kmsg_oops implementations on the console.  Add a new option 'Y' to
+sysrq to allow dumping of logs to kmsg_dumper drivers.
 
 Signed-off-by: Mike Waychison <mikew@google.com>
 ---
- arch/arm/kernel/traps.c     |    2 +-
- arch/parisc/kernel/traps.c  |    2 +-
- arch/powerpc/kernel/traps.c |    2 +-
- arch/s390/kernel/traps.c    |    2 +-
- arch/sh/kernel/traps_32.c   |    2 +-
- arch/x86/kernel/dumpstack.c |    2 +-
- include/linux/kernel.h      |    2 +-
- kernel/panic.c              |    2 +-
- 8 files changed, 8 insertions(+), 8 deletions(-)
+ drivers/char/sysrq.c |   14 +++++++++++++-
+ 1 files changed, 13 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
-index cda78d5..45cc7c0 100644
---- a/arch/arm/kernel/traps.c
-+++ b/arch/arm/kernel/traps.c
-@@ -280,7 +280,7 @@ void die(const char *str, struct pt_regs *regs, int err)
- 	bust_spinlocks(0);
- 	add_taint(TAINT_DIE);
- 	spin_unlock_irq(&die_lock);
--	oops_exit();
-+	oops_exit(regs);
+diff --git a/drivers/char/sysrq.c b/drivers/char/sysrq.c
+index ef31bb8..888efc5 100644
+--- a/drivers/char/sysrq.c
++++ b/drivers/char/sysrq.c
+@@ -41,6 +41,7 @@
+ #include <linux/oom.h>
+ #include <linux/slab.h>
+ #include <linux/input.h>
++#include <linux/kmsg_dump.h>
  
- 	if (in_interrupt())
- 		panic("Fatal exception in interrupt");
-diff --git a/arch/parisc/kernel/traps.c b/arch/parisc/kernel/traps.c
-index 8b58bf0..4aa5514 100644
---- a/arch/parisc/kernel/traps.c
-+++ b/arch/parisc/kernel/traps.c
-@@ -294,7 +294,7 @@ void die_if_kernel(char *str, struct pt_regs *regs, long err)
- 		panic("Fatal exception");
- 	}
+ #include <asm/ptrace.h>
+ #include <asm/irq_regs.h>
+@@ -395,6 +396,17 @@ static struct sysrq_key_op sysrq_unrt_op = {
+ 	.enable_mask	= SYSRQ_ENABLE_RTNICE,
+ };
  
--	oops_exit();
-+	oops_exit(regs);
- 	do_exit(SIGSEGV);
- }
++static void sysrq_handle_softdump(int key)
++{
++	kmsg_dump(KMSG_DUMP_SOFT, NULL);
++}
++static struct sysrq_key_op sysrq_softdump_op = {
++	.handler	= sysrq_handle_softdump,
++	.help_msg	= "soft-dump(Y)",
++	.action_msg	= "Trigger a soft dump",
++	.enable_mask	= SYSRQ_ENABLE_DUMP,
++};
++
+ /* Key Operations table and lock */
+ static DEFINE_SPINLOCK(sysrq_key_table_lock);
  
-diff --git a/arch/powerpc/kernel/traps.c b/arch/powerpc/kernel/traps.c
-index a45a63c..918c498 100644
---- a/arch/powerpc/kernel/traps.c
-+++ b/arch/powerpc/kernel/traps.c
-@@ -170,7 +170,7 @@ int die(const char *str, struct pt_regs *regs, long err)
- 	if (panic_on_oops)
- 		panic("Fatal exception");
+@@ -451,7 +463,7 @@ static struct sysrq_key_op *sysrq_key_table[36] = {
+ 	/* x: May be registered on ppc/powerpc for xmon */
+ 	NULL,				/* x */
+ 	/* y: May be registered on sparc64 for global register dump */
+-	NULL,				/* y */
++	&sysrq_softdump_op,		/* y */
+ 	&sysrq_ftrace_dump_op,		/* z */
+ };
  
--	oops_exit();
-+	oops_exit(regs);
- 	do_exit(err);
- 
- 	return 0;
-diff --git a/arch/s390/kernel/traps.c b/arch/s390/kernel/traps.c
-index 5d8f0f3..90c8259 100644
---- a/arch/s390/kernel/traps.c
-+++ b/arch/s390/kernel/traps.c
-@@ -305,7 +305,7 @@ void die(const char * str, struct pt_regs * regs, long err)
- 		panic("Fatal exception in interrupt");
- 	if (panic_on_oops)
- 		panic("Fatal exception: panic_on_oops");
--	oops_exit();
-+	oops_exit(regs);
- 	do_exit(SIGSEGV);
- }
- 
-diff --git a/arch/sh/kernel/traps_32.c b/arch/sh/kernel/traps_32.c
-index c3d86fa..6b3f31e 100644
---- a/arch/sh/kernel/traps_32.c
-+++ b/arch/sh/kernel/traps_32.c
-@@ -102,7 +102,7 @@ void die(const char * str, struct pt_regs * regs, long err)
- 	bust_spinlocks(0);
- 	add_taint(TAINT_DIE);
- 	spin_unlock_irq(&die_lock);
--	oops_exit();
-+	oops_exit(regs);
- 
- 	if (kexec_should_crash(current))
- 		crash_kexec(regs);
-diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-index 6e8752c..89c720c 100644
---- a/arch/x86/kernel/dumpstack.c
-+++ b/arch/x86/kernel/dumpstack.c
-@@ -254,7 +254,7 @@ void __kprobes oops_end(unsigned long flags, struct pt_regs *regs, int signr)
- 		/* Nest count reaches zero, release the lock. */
- 		arch_spin_unlock(&die_lock);
- 	raw_local_irq_restore(flags);
--	oops_exit();
-+	oops_exit(regs);
- 
- 	if (!signr)
- 		return;
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 2b0a35e..995eb70 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -181,7 +181,7 @@ extern long (*panic_blink)(int state);
- NORET_TYPE void panic(const char * fmt, ...)
- 	__attribute__ ((NORET_AND format (printf, 1, 2))) __cold;
- extern void oops_enter(void);
--extern void oops_exit(void);
-+extern void oops_exit(struct pt_regs *);
- void print_oops_end_marker(void);
- extern int oops_may_print(void);
- NORET_TYPE void do_exit(long error_code)
-diff --git a/kernel/panic.c b/kernel/panic.c
-index 4c13b1a..c3f39cd 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -349,7 +349,7 @@ void print_oops_end_marker(void)
-  * Called when the architecture exits its oops handler, after printing
-  * everything.
-  */
--void oops_exit(void)
-+void oops_exit(struct pt_regs *regs)
- {
- 	do_oops_enter_exit();
- 	print_oops_end_marker();
 
