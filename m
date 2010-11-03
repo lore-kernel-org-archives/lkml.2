@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754428Ab0KCJkB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 05:40:01 -0400
-Received: from isrv.corpit.ru ([86.62.121.231]:57610 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754112Ab0KCJj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 05:39:59 -0400
-Message-ID: <4CD12DED.3010902@msgid.tls.msk.ru>
-Date: Wed, 03 Nov 2010 12:39:57 +0300
-From: Michael Tokarev <mjt@tls.msk.ru>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
+	id S1754411Ab0KCJmC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 05:42:02 -0400
+Received: from mognix.dark-green.com ([88.116.226.179]:58823 "EHLO
+	mognix.dark-green.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754257Ab0KCJl7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 05:41:59 -0400
 MIME-Version: 1.0
-To: Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: bind-mount vs second mount of the same blockdev?
-X-Enigmail-Version: 0.95.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Date: Wed, 03 Nov 2010 10:41:58 +0100
+From: gimli <gimli@dark-green.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: Henrik Rydberg <rydberg@euromail.se>
+Subject: Re: [PATCH 4/6] MacBookAir3,1(3,2) hid support
+In-Reply-To: <4CD0427F.4050804@euromail.se>
+References: <799cfececb18800d63df64fc93e2228f@mognix.dark-green.com> <4CD0427F.4050804@euromail.se>
+Message-ID: <33a056946badf540124631f517eef199@mognix.dark-green.com>
+User-Agent: RoundCube Webmail/0.2.2
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="UTF-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Tue, 02 Nov 2010 17:55:27 +0100, Henrik Rydberg <rydberg@euromail.se>
+wrote:
+> On 11/02/2010 08:20 AM, gimli wrote:
+> 
+>> This patch add support for the MacBookAir3,1 and MacBookAir3,2 to the
+hid
+>> driver.
+>> 
+>> Signed-off-by: Edgar (gimli) Hucek <gimli@dark-green.com>
+>>
+> 
+> 
+> Hi Edgar,
+> 
+> thanks for the information. Are the device ids correlated to the 13'' and
+> 11''
+> versions of these machines? If so, why are they mapped to the same
+> keyboard? The
+> apple_fn_keys also covers the existing Macbook Airs, but appears not to
+be
+> used
+> for any of the new device ids.
 
-I'm trying to understand the differences between
-a bind-mount of a whole filesystem versus mounting
-the same block device the second time.  Like this:
+The keyboard layout changed on the new Air's. Thats the reason why i use
+a new apple_fn_keys for the new Air's.
 
- mount -t ext3 /dev/block /mnt/a
- mount --bind /mnt/a /mnt/b
+lg
 
-versus
+Edgar (gimli) Hucek
 
- mount -t ext3 /dev/block /mnt/a
- mount -t ext3 /dev/block /mnt/b
-
-In the second case, second mount does not happen
-but the first one is "reused" instead - this is
-visible in dmesg, since only once ext3fs prints
-a note about the mounting.
-
-Now, the first case is quite clear: we've one fs
-visible in two places, pretty much like two hard-
-links to the same file.  So things like, for
-example, fcntl locking will work "from" both
-ends.  But it is not that obvious in the second
-case, even if we clearly have some common
-"inode" in this case too.
-
-What are the differences in behavour?
-
-Thanks!
-
-/mjt
+> Thanks,
+> Henrik
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
