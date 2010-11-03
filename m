@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755277Ab0KCNt0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 09:49:26 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:51063 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755169Ab0KCNtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 09:49:25 -0400
-Date: Wed, 3 Nov 2010 06:48:33 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-CC: Jean Delvare <khali@linux-fr.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [lm-sensors] [PATCH 0/8] hwmon: applesmc: Dynamic
- configuration rewrite
-Message-ID: <20101103134833.GA12700@ericsson.com>
-References: <1288511434-5662-1-git-send-email-rydberg@euromail.se>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1288511434-5662-1-git-send-email-rydberg@euromail.se>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755307Ab0KCNuR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 09:50:17 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:42063 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755169Ab0KCNuP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 09:50:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=sgt4ACp6m7sFxdTaK7rMG9VRPY9FzmtxAxTRN3Wqa9adIU6xAPta/j0sz53UTRNNes
+         IaRBH7kCR9JWGVreq1C1qo0aYSiM5wOKoBRgaDmTPszU5/X9QMlFY1QkO1mvSMWiO2Cs
+         jd2Tv8D667VcEqgycQ1F/PC2Vjgp42MpnOdRE=
+Subject: Re: [PATCH] regulator: Staticise mc13783_powermisc_rmw()
+From: Alberto Panizzo <maramaopercheseimorto@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, Sascha Hauer <s.hauer@pengutronix.de>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+In-Reply-To: <1288757284-15812-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1288757284-15812-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 03 Nov 2010 14:50:08 +0100
+Message-ID: <1288792208.3311.96.camel@realization>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 31, 2010 at 03:50:26AM -0400, Henrik Rydberg wrote:
-> The amount of machines supported by this driver has increased rapidly
-> over the past years, and the detailed driver support of the many
-> flavors is quickly becoming a problem.
+On mer, 2010-11-03 at 00:08 -0400, Mark Brown wrote:
+> It is not used outside this driver so no need to make the symbol global.
 > 
-> This patchset introduces dynamic configuration by making the SMC
-> register set efficiently searchable, and fixes a number of outstanding
-> issues:
-> 
-> * Support for all new models since MacbookPro 6.
-> * Support for variable number of cpu sensors in the MacPros.
-> * Handles the odd temperature sensor types found on new models.
-> * Fixes minor read problems on many intermediate models.
-> 
-> The first patch is preparatory. The second patch adds the register
-> lookup cache. The third patch adds the dynamic temperature files, and
-> the fourth implements a new temperature register format. The fifth
-> patch makes the remaining features dynamically configured, and the
-> sixth patch sets up the fans dynamically. The seventh patch is purely
-> janitory, and the last patch updates the copyright.
-> 
-> As a side-effect, the file is reduced by almost five hundred lines.
-> 
-Henrik,
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-since you applied your changes on top of Joe's pr_fmt patch, I assume
-that you Ack that patch. Is that a correct assumption ?
+It's OK for me, because no other functionalities than regulator's one
+are influenced by the Power Misc register.
 
-I know you sent an Ack earlier, but it was "except for comments already made",
-so this is just for clarification.
+Acked-by: Alberto Panizzo <maramaopercheseimorto@gmail.com>
 
-Thanks,
-Guenter
+> ---
+>  drivers/regulator/mc13783-regulator.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/regulator/mc13783-regulator.c b/drivers/regulator/mc13783-regulator.c
+> index 5e6fa47..47ea999 100644
+> --- a/drivers/regulator/mc13783-regulator.c
+> +++ b/drivers/regulator/mc13783-regulator.c
+> @@ -471,8 +471,8 @@ static struct regulator_ops mc13783_fixed_regulator_ops = {
+>  	.get_voltage = mc13783_fixed_regulator_get_voltage,
+>  };
+>  
+> -int mc13783_powermisc_rmw(struct mc13783_regulator_priv *priv, u32 mask,
+> -									u32 val)
+> +static int mc13783_powermisc_rmw(struct mc13783_regulator_priv *priv, u32 mask,
+> +				 u32 val)
+>  {
+>  	struct mc13783 *mc13783 = priv->mc13783;
+>  	int ret;
+
+
+-- 
+Alberto!
+
+        Be Persistent!
+                - Greg Kroah-Hartman (FOSDEM 2010)
+
