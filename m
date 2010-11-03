@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331Ab0KCOAW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 10:00:22 -0400
-Received: from eastrmmtai101.cox.net ([68.230.240.6]:36458 "EHLO
-	eastrmmtai101.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751488Ab0KCOAT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 10:00:19 -0400
-X-Greylist: delayed 1182 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Nov 2010 10:00:19 EDT
-X-VR-Score: 250.00
-X-Authority-Analysis: v=1.1 cv=tlJZYCN2Cp4aPpLxpzU8rlN9bDQWxG6J/afkrnDjtPw=
- c=1 sm=1 a=7JPxGY7UWogA:10 a=SEPmdM5odBMA:10 a=IkcTkHD0fZMA:10
- a=zn1Su1495r7GHCsZbzywjg==:17 a=yZCvr4sxZGuyDQ5QTKMA:9
- a=WsIC1kqhyhwDaqzgvaqaYDfgE0cA:4 a=QEXdDO2ut3YA:10 a=TCyqOGwsgAYA:10
- a=xK9OVSsbje6OYMii:21 a=QMV02BEDkHqLG_S2:21 a=zn1Su1495r7GHCsZbzywjg==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; none
-Message-ID: <20101103094035.UNPVJ.2361725.imail@eastrmwml37>
-Date: Wed, 3 Nov 2010 9:40:35 -0400
-From: "W.I.N.S" <malude4@cox.net>
-Reply-To: thomasherman@onfruit.cn
-Subject: FINAL NOTIFICATION
+	id S1755357Ab0KCOAh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 10:00:37 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:55525 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755338Ab0KCOAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 10:00:35 -0400
+Date: Wed, 3 Nov 2010 15:00:33 +0100
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: guillermo arias <papaguillee18@gmail.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        linux-pcmcia@lists.infradead.org
+Subject: Re: PATCH : linux-2.6.35.4 drivers pcmcia cs.c
+Message-ID: <20101103140033.GA11915@isilmar-3.linta.de>
+Mail-Followup-To: guillermo arias <papaguillee18@gmail.com>,
+	linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+	linux-pcmcia@lists.infradead.org
+References: <AANLkTikbEgfVZmnVfbgGxbybbghXCuUgvEm03HH=i4HD@mail.gmail.com> <20101101160529.GA9306@comet.dominikbrodowski.net> <20101101220033.416.qmail@stuge.se> <AANLkTikBh3qAifA8U9--VyXZpD-vt3cuCj0M6npD4M3D@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Priority: 3 (Normal)
-Sensitivity: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikBh3qAifA8U9--VyXZpD-vt3cuCj0M6npD4M3D@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am pleased to inform you of the just concluded promotions
-that was conducted on the 2nd NOV in regards to the
-EU award promo. in this view you are to collect the
-sum of one million Dollars. grant number.
+Hey,
 
-(CT-222-6747,FGN/P-900-56).
+On Tue, Nov 02, 2010 at 03:26:42PM +0800, guillermo arias wrote:
+> To Dominic Brodowski :.
+> > it would enable CardBus on all PCMCIA bridges .
+> comment :.
+> "if (!(skt->features || SS_CAP_CARDBUS))" : refuse to enable in any
+> error(1) condition from "pc or kernel" .
 
-Please contact Thomas Herman with the following detail Below
+No, "if (!((True or False) || True))" => "if (!((True))" => "if False",
+which means we enable CardBus unconditionally if your patch is used.
 
-1) Full Names, 2) Full Addresss, 3) Sex, 4) Phone Number,
-5) Occupation, 6) Nationality, 7) Age, 8) Country.
+> To Peter Stuge :.
+> >Is it certain that the hardware *is* actually cardbus capable? .
+> comment :.
+> was probed with vpn .
+VPN?
 
-Email:                                            
-                  thomasherman@onfruit.cn
-                                  
+Also, 
 
+> >> 2) What's the output of "lspci -n -v"
+> >> 3) What's the output of "sudo lspcmcia -vvv"
+> >> 4) Are there any BIOS options you may toggle to enable CardBus?
 
-Sophia Bufford,
-Promo  Announcer.
+Best,
+	Dominik
