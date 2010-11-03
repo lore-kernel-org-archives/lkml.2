@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202Ab0KCPaO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 11:30:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35052 "EHLO mx1.redhat.com"
+	id S932185Ab0KCPaL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 11:30:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9955 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755819Ab0KCPaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 11:30:03 -0400
+	id S932114Ab0KCPaC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 11:30:02 -0400
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Subject: [PATCH 08 of 66] fix bad_page to show the real reason the page is bad
-X-Mercurial-Node: 412c4bbbe7738978ce73fc9495fa9a9bede76bfa
-Message-Id: <412c4bbbe7738978ce73.1288798063@v2.random>
+Subject: [PATCH 14 of 66] comment reminder in destroy_compound_page
+X-Mercurial-Node: aa96fcdc4d6fb38d56160c3c5b21fb0ddf1080a0
+Message-Id: <aa96fcdc4d6fb38d5616.1288798069@v2.random>
 In-Reply-To: <patchbomb.1288798055@v2.random>
 References: <patchbomb.1288798055@v2.random>
 User-Agent: Mercurial-patchbomb/1.4.1
-Date: Wed, 03 Nov 2010 16:27:43 +0100
+Date: Wed, 03 Nov 2010 16:27:49 +0100
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -42,8 +42,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andrea Arcangeli <aarcange@redhat.com>
 
-page_count shows the count of the head page, but the actual check is done on
-the tail page, so show what is really being checked.
+Warn destroy_compound_page that __split_huge_page_refcount is heavily dependent
+on its internal behavior.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 Acked-by: Rik van Riel <riel@redhat.com>
@@ -53,12 +53,11 @@ Acked-by: Mel Gorman <mel@csn.ul.ie>
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -5564,7 +5564,7 @@ void dump_page(struct page *page)
- {
- 	printk(KERN_ALERT
- 	       "page:%p count:%d mapcount:%d mapping:%p index:%#lx\n",
--		page, page_count(page), page_mapcount(page),
-+		page, atomic_read(&page->_count), page_mapcount(page),
- 		page->mapping, page->index);
- 	dump_page_flags(page->flags);
+@@ -352,6 +352,7 @@ void prep_compound_page(struct page *pag
+ 	}
  }
+ 
++/* update __split_huge_page_refcount if you change this function */
+ static int destroy_compound_page(struct page *page, unsigned long order)
+ {
+ 	int i;
