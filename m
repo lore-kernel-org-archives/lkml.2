@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293Ab0KCN4Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 09:56:24 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55809 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752243Ab0KCN4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 09:56:22 -0400
-Date: Wed, 3 Nov 2010 09:56:21 -0400 (EDT)
-From: Jiri Kosina <jkosina@suse.cz>
-To: gimli <gimli@dark-green.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Resend  [PATCH 3/4] MacbookAir3,1 and 3,2 hid support
-In-Reply-To: <7b3b313ce7138c19191295a645dfb38f@mognix.dark-green.com>
-Message-ID: <alpine.LNX.2.00.1011030953540.15851@pobox.suse.cz>
-References: <66c1cd33ff5b2d908b2b31defb8e0cd1@mognix.dark-green.com> <3e6b335b371a07cd60221a25c5b6b47d@mognix.dark-green.com> <alpine.LNX.2.00.1011030918410.15851@pobox.suse.cz> <7b3b313ce7138c19191295a645dfb38f@mognix.dark-green.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755331Ab0KCOAW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 10:00:22 -0400
+Received: from eastrmmtai101.cox.net ([68.230.240.6]:36458 "EHLO
+	eastrmmtai101.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751488Ab0KCOAT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 10:00:19 -0400
+X-Greylist: delayed 1182 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Nov 2010 10:00:19 EDT
+X-VR-Score: 250.00
+X-Authority-Analysis: v=1.1 cv=tlJZYCN2Cp4aPpLxpzU8rlN9bDQWxG6J/afkrnDjtPw=
+ c=1 sm=1 a=7JPxGY7UWogA:10 a=SEPmdM5odBMA:10 a=IkcTkHD0fZMA:10
+ a=zn1Su1495r7GHCsZbzywjg==:17 a=yZCvr4sxZGuyDQ5QTKMA:9
+ a=WsIC1kqhyhwDaqzgvaqaYDfgE0cA:4 a=QEXdDO2ut3YA:10 a=TCyqOGwsgAYA:10
+ a=xK9OVSsbje6OYMii:21 a=QMV02BEDkHqLG_S2:21 a=zn1Su1495r7GHCsZbzywjg==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; none
+Message-ID: <20101103094035.UNPVJ.2361725.imail@eastrmwml37>
+Date: Wed, 3 Nov 2010 9:40:35 -0400
+From: "W.I.N.S" <malude4@cox.net>
+Reply-To: thomasherman@onfruit.cn
+Subject: FINAL NOTIFICATION
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Priority: 3 (Normal)
+Sensitivity: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Nov 2010, gimli wrote:
+I am pleased to inform you of the just concluded promotions
+that was conducted on the 2nd NOV in regards to the
+EU award promo. in this view you are to collect the
+sum of one million Dollars. grant number.
 
-> Does this look better ? 
+(CT-222-6747,FGN/P-900-56).
 
-What I would actually prefer would be something like
+Please contact Thomas Herman with the following detail Below
+
+1) Full Names, 2) Full Addresss, 3) Sex, 4) Phone Number,
+5) Occupation, 6) Nationality, 7) Age, 8) Country.
+
+Email:                                            
+                  thomasherman@onfruit.cn
+                                  
 
 
-	if ( ... )
-		table = macbookair_fn_keys;
-	else if ( ... )
-		table = powerbook_fn_keys;
-	else
-		table = apple_fn_keys;
-
-	apple_find_translation(table, usage->code);
-
-> I also use the USB id's for the if.
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Sophia Bufford,
+Promo  Announcer.
