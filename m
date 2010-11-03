@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932620Ab0KCSgb (ORCPT <rfc822;w@1wt.eu>);
+	id S932634Ab0KCSgh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 14:36:37 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:57349 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932222Ab0KCSgb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Nov 2010 14:36:31 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:36264 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932469Ab0KCSg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 14:36:26 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
+        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Richard Cochran <richardcochran@gmail.com>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
-Subject: =?UTF-8?q?=5BPATCH=202/7=5D=20=5BRFC=5D=20hrtimers=3A=20Convert=20hrtimers=20to=20use=20timerlist=20infrastructure?=
-Date: Wed,  3 Nov 2010 11:31:14 -0700
-Message-Id: <1288809079-14663-3-git-send-email-john.stultz@linaro.org>
+        Alessandro Zummo <a.zummo@towertech.it>
+Subject: [PATCH 7/7] [RFC] Introduce Alarm (hybrid) timers
+Date: Wed,  3 Nov 2010 11:31:19 -0700
+Message-Id: <1288809079-14663-8-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1288809079-14663-1-git-send-email-john.stultz@linaro.org>
 References: <1288809079-14663-1-git-send-email-john.stultz@linaro.org>
@@ -26,373 +26,700 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Converts the hrtimer code to use the timerlist infrastructure
+So after working on my posix interface to the RTC clocks, I came
+across the Android alarm driver (by Arve Hjønnevåg) in the android
+kernel tree.
 
-Survived some light testing, but there may still be bugs.
+See: http://android.git.kernel.org/?p=kernel/common.git;a=blob;f=drivers/rtc/alarm.c;h=1250edfbdf3302f5e4ea6194847c6ef4bb7beb1c;hb=android-2.6.36
+
+The android alarm driver is different from the RTC posix clock
+interface in that rather then directly setting timers against
+the RTC device, it uses a hybrid mode, where timers are set
+against hrtimers, but when the system suspends, an RTC alarm
+is set to wake the system at the next timer expiration.
+
+There are some pluses and minuses with this approach.
+The good:
+* No need for apps to deal with a new time domain (rtc) which
+may drift or just be different from system time.
+
+* Avoids issue of selecting which rtc to use on multi-rtc systems,
+as the kernel does it for you.
+
+The bad:
+* On systems that have multiple rtc devices, we just use the first
+one, which may or may not be ideal (honestly, having multiple rtcs
+never made sense to me).
+
+* For apps that actually want to deal with the RTC clock and
+are interested in setting timers against it as a different
+time domain, this provides no user interface to do so.
+
+I don't really see the bad list as a problem, but please pipe
+up if you do.
+
+I had actually discussed this idea with Thomas earlier as being
+a potential future interface, but seeing it already in-use
+by Android verifies that it is the more interesting use mode.
+
+The android alarm driver was built on top of direct RTC
+manipulation, and also implemented its own rbtree timer
+code, so instead of trying to porting it over to my
+timerlist and RTC timer code, I just re-implemented the
+basic functionality roughly following the android in-kernel
+interface.
+
+Another large distinction is that while the in-kernel interface
+is pretty similar, the user-space interface for android alarm
+timers is via ioctls. I've instead chosen to export this
+functionality via the posix interface, as it seemed a little
+simpler and avoids creating duplicate interfaces to things like
+CLOCK_REALTIME and CLOCK_MONOTONIC under alternate names (ie:
+RTC and ELAPSED_REALTIME). Instead, if one wants to use a
+alarm timer, simply create a posix timer against either
+CLOCK_REALTIME_ALARM or CLOCK_MONOTONIC_ALARM.
+
+There is surely other bits of the android alarm code that
+I'm sure I didn't fully understand, so some of the simplifications
+that I've made may not allow Android to use this interface.
+I'd be very interested if those details could be pointed out,
+and hopefully we can find a good solution to get this useful
+functionality upstream.
+
+This patch is a very initial draft. I'm sure there are bugs.
+I just wanted to get it out for structural comment about the
+interface.
+
+Also, this patch does not depend on the posix rtc interface
+layer also included in this patchset. One or both interfaces
+may be useful, so I'm including both to get a feel for what
+folks actually like.
+
+Arve: I know you're busy now, so no rush on reviewing this.
+I just wanted to send this out to get some early feedback
+if anyone else wants to comment. I look forward to your
+input when you are a bit less swamped.
 
 Signed-off-by: John Stultz <john.stultz@linaro.org>
-CC: Alessandro Zummo <a.zummo@towertech.it>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Richard Cochran <richardcochran@gmail.com>
 CC: Arve Hjønnevåg <arve@android.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Alessandro Zummo <a.zummo@towertech.it>
 ---
- include/linux/hrtimer.h  |   32 ++++++++---------
- kernel/hrtimer.c         |   86 ++++++++++++++++------------------------------
- kernel/time/timer_list.c |    8 ++--
- 3 files changed, 49 insertions(+), 77 deletions(-)
+ include/linux/alarmtimer.h   |   29 +++
+ include/linux/posix-timers.h |    2 +
+ include/linux/time.h         |    2 +
+ kernel/time/Makefile         |    2 +-
+ kernel/time/alarmtimer.c     |  522 ++++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 556 insertions(+), 1 deletions(-)
+ create mode 100644 include/linux/alarmtimer.h
+ create mode 100644 kernel/time/alarmtimer.c
 
-diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-index fd0c1b8..019ac70 100644
---- a/include/linux/hrtimer.h
-+++ b/include/linux/hrtimer.h
-@@ -22,7 +22,7 @@
- #include <linux/wait.h>
- #include <linux/percpu.h>
- #include <linux/timer.h>
--
-+#include <linux/timerlist.h>
- 
- struct hrtimer_clock_base;
- struct hrtimer_cpu_base;
-@@ -79,8 +79,8 @@ enum hrtimer_restart {
- 
- /**
-  * struct hrtimer - the basic hrtimer structure
-- * @node:	red black tree node for time ordered insertion
-- * @_expires:	the absolute expiry time in the hrtimers internal
-+ * @node:	timerlist node, which also manages node.expires,
-+ *		the absolute expiry time in the hrtimers internal
-  *		representation. The time is related to the clock on
-  *		which the timer is based. Is setup by adding
-  *		slack to the _softexpires value. For non range timers
-@@ -101,8 +101,7 @@ enum hrtimer_restart {
-  * The hrtimer structure must be initialized by hrtimer_init()
-  */
- struct hrtimer {
--	struct rb_node			node;
--	ktime_t				_expires;
-+	struct timerlist_node		node;
- 	ktime_t				_softexpires;
- 	enum hrtimer_restart		(*function)(struct hrtimer *);
- 	struct hrtimer_clock_base	*base;
-@@ -141,8 +140,7 @@ struct hrtimer_sleeper {
- struct hrtimer_clock_base {
- 	struct hrtimer_cpu_base	*cpu_base;
- 	clockid_t		index;
--	struct rb_root		active;
--	struct rb_node		*first;
-+	struct timerlist_head	active;
- 	ktime_t			resolution;
- 	ktime_t			(*get_time)(void);
- 	ktime_t			softirq_time;
-@@ -184,43 +182,43 @@ struct hrtimer_cpu_base {
- 
- static inline void hrtimer_set_expires(struct hrtimer *timer, ktime_t time)
- {
--	timer->_expires = time;
-+	timer->node.expires = time;
- 	timer->_softexpires = time;
- }
- 
- static inline void hrtimer_set_expires_range(struct hrtimer *timer, ktime_t time, ktime_t delta)
- {
- 	timer->_softexpires = time;
--	timer->_expires = ktime_add_safe(time, delta);
-+	timer->node.expires = ktime_add_safe(time, delta);
- }
- 
- static inline void hrtimer_set_expires_range_ns(struct hrtimer *timer, ktime_t time, unsigned long delta)
- {
- 	timer->_softexpires = time;
--	timer->_expires = ktime_add_safe(time, ns_to_ktime(delta));
-+	timer->node.expires = ktime_add_safe(time, ns_to_ktime(delta));
- }
- 
- static inline void hrtimer_set_expires_tv64(struct hrtimer *timer, s64 tv64)
- {
--	timer->_expires.tv64 = tv64;
-+	timer->node.expires.tv64 = tv64;
- 	timer->_softexpires.tv64 = tv64;
- }
- 
- static inline void hrtimer_add_expires(struct hrtimer *timer, ktime_t time)
- {
--	timer->_expires = ktime_add_safe(timer->_expires, time);
-+	timer->node.expires = ktime_add_safe(timer->node.expires, time);
- 	timer->_softexpires = ktime_add_safe(timer->_softexpires, time);
- }
- 
- static inline void hrtimer_add_expires_ns(struct hrtimer *timer, u64 ns)
- {
--	timer->_expires = ktime_add_ns(timer->_expires, ns);
-+	timer->node.expires = ktime_add_ns(timer->node.expires, ns);
- 	timer->_softexpires = ktime_add_ns(timer->_softexpires, ns);
- }
- 
- static inline ktime_t hrtimer_get_expires(const struct hrtimer *timer)
- {
--	return timer->_expires;
-+	return timer->node.expires;
- }
- 
- static inline ktime_t hrtimer_get_softexpires(const struct hrtimer *timer)
-@@ -230,7 +228,7 @@ static inline ktime_t hrtimer_get_softexpires(const struct hrtimer *timer)
- 
- static inline s64 hrtimer_get_expires_tv64(const struct hrtimer *timer)
- {
--	return timer->_expires.tv64;
-+	return timer->node.expires.tv64;
- }
- static inline s64 hrtimer_get_softexpires_tv64(const struct hrtimer *timer)
- {
-@@ -239,12 +237,12 @@ static inline s64 hrtimer_get_softexpires_tv64(const struct hrtimer *timer)
- 
- static inline s64 hrtimer_get_expires_ns(const struct hrtimer *timer)
- {
--	return ktime_to_ns(timer->_expires);
-+	return ktime_to_ns(timer->node.expires);
- }
- 
- static inline ktime_t hrtimer_expires_remaining(const struct hrtimer *timer)
- {
--    return ktime_sub(timer->_expires, timer->base->get_time());
-+	return ktime_sub(timer->node.expires, timer->base->get_time());
- }
- 
- #ifdef CONFIG_HIGH_RES_TIMERS
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 72206cf..d31ad88 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -516,10 +516,13 @@ hrtimer_force_reprogram(struct hrtimer_cpu_base *cpu_base, int skip_equal)
- 
- 	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++, base++) {
- 		struct hrtimer *timer;
-+		struct timerlist_node *next;
- 
--		if (!base->first)
-+		next = timerlist_getnext(&base->active);
-+		if (!next)
- 			continue;
--		timer = rb_entry(base->first, struct hrtimer, node);
-+		timer = container_of(next, struct hrtimer, node);
+diff --git a/include/linux/alarmtimer.h b/include/linux/alarmtimer.h
+new file mode 100644
+index 0000000..ca3ab47
+--- /dev/null
++++ b/include/linux/alarmtimer.h
+@@ -0,0 +1,29 @@
++#ifndef _LINUX_ALARMTIMER_H
++#define _LINUX_ALARMTIMER_H
 +
- 		expires = ktime_sub(hrtimer_get_expires(timer), base->offset);
- 		/*
- 		 * clock_was_set() has changed base->offset so the
-@@ -840,48 +843,17 @@ EXPORT_SYMBOL_GPL(hrtimer_forward);
- static int enqueue_hrtimer(struct hrtimer *timer,
- 			   struct hrtimer_clock_base *base)
- {
--	struct rb_node **link = &base->active.rb_node;
--	struct rb_node *parent = NULL;
--	struct hrtimer *entry;
--	int leftmost = 1;
--
- 	debug_activate(timer);
++#include <linux/time.h>
++#include <linux/hrtimer.h>
++#include <linux/timerlist.h>
++#include <linux/rtc.h>
++
++enum alarmtimer_type {
++	ALARM_REALTIME,
++	ALARM_MONOTONIC,
++
++	ALARM_NUMTYPE,
++};
++
++struct alarm {
++	struct timerlist_node node;
++	ktime_t period;
++	void (*function)(struct alarm*);
++	enum alarmtimer_type type;
++	char enabled;
++};
++
++void alarm_init(struct alarm *alarm, enum alarmtimer_type type,
++		void (*function)(struct alarm *));
++void alarm_start(struct alarm *alarm, ktime_t start, ktime_t period);
++void alarm_cancel(struct alarm *alarm);
++
++#endif
+diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
+index e6b46b5..9d1ace6 100644
+--- a/include/linux/posix-timers.h
++++ b/include/linux/posix-timers.h
+@@ -5,6 +5,7 @@
+ #include <linux/list.h>
+ #include <linux/sched.h>
+ #include <linux/rtc.h>
++#include <linux/alarmtimer.h>
  
--	/*
--	 * Find the right place in the rbtree:
--	 */
--	while (*link) {
--		parent = *link;
--		entry = rb_entry(parent, struct hrtimer, node);
--		/*
--		 * We dont care about collisions. Nodes with
--		 * the same expiry time stay together.
--		 */
--		if (hrtimer_get_expires_tv64(timer) <
--				hrtimer_get_expires_tv64(entry)) {
--			link = &(*link)->rb_left;
--		} else {
--			link = &(*link)->rb_right;
--			leftmost = 0;
--		}
--	}
-+	timerlist_add(&base->active, &timer->node);
+ union cpu_time_count {
+ 	cputime_t cpu;
+@@ -65,6 +66,7 @@ struct k_itimer {
+ 			unsigned long expires;
+ 		} mmtimer;
+ 		struct rtc_timer rtctimer;
++		struct alarm alarmtimer;
+ 	} it;
+ };
  
- 	/*
--	 * Insert the timer to the rbtree and check whether it
--	 * replaces the first pending timer
--	 */
--	if (leftmost)
--		base->first = &timer->node;
--
--	rb_link_node(&timer->node, parent, link);
--	rb_insert_color(&timer->node, &base->active);
--	/*
- 	 * HRTIMER_STATE_ENQUEUED is or'ed to the current state to preserve the
- 	 * state of a possibly running callback.
- 	 */
- 	timer->state |= HRTIMER_STATE_ENQUEUED;
- 
--	return leftmost;
-+	return (&timer->node == base->active.next);
- }
+diff --git a/include/linux/time.h b/include/linux/time.h
+index 914c48d..4791858 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -290,6 +290,8 @@ struct itimerval {
+ #define CLOCK_MONOTONIC_RAW		4
+ #define CLOCK_REALTIME_COARSE		5
+ #define CLOCK_MONOTONIC_COARSE		6
++#define CLOCK_REALTIME_ALARM		7
++#define CLOCK_MONOTONIC_ALARM		8
  
  /*
-@@ -901,12 +873,7 @@ static void __remove_hrtimer(struct hrtimer *timer,
- 	if (!(timer->state & HRTIMER_STATE_ENQUEUED))
- 		goto out;
+  * The IDs of various hardware clocks:
+diff --git a/kernel/time/Makefile b/kernel/time/Makefile
+index ee26662..f85145f 100644
+--- a/kernel/time/Makefile
++++ b/kernel/time/Makefile
+@@ -1,4 +1,4 @@
+-obj-y += timekeeping.o ntp.o clocksource.o jiffies.o timer_list.o timecompare.o timeconv.o
++obj-y += timekeeping.o ntp.o clocksource.o jiffies.o timer_list.o timecompare.o timeconv.o alarmtimer.o
  
--	/*
--	 * Remove the timer from the rbtree and replace the first
--	 * entry pointer if necessary.
--	 */
--	if (base->first == &timer->node) {
--		base->first = rb_next(&timer->node);
-+	if (&timer->node == timerlist_getnext(&base->active)) {
- #ifdef CONFIG_HIGH_RES_TIMERS
- 		/* Reprogram the clock event device. if enabled */
- 		if (reprogram && hrtimer_hres_active()) {
-@@ -919,7 +886,7 @@ static void __remove_hrtimer(struct hrtimer *timer,
- 		}
- #endif
- 	}
--	rb_erase(&timer->node, &base->active);
-+	timerlist_del(&base->active, &timer->node);
- out:
- 	timer->state = newstate;
- }
-@@ -1128,11 +1095,13 @@ ktime_t hrtimer_get_next_event(void)
- 	if (!hrtimer_hres_active()) {
- 		for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++, base++) {
- 			struct hrtimer *timer;
-+			struct timerlist_node *next;
- 
--			if (!base->first)
-+			next = timerlist_getnext(&base->active);
-+			if (!next)
- 				continue;
- 
--			timer = rb_entry(base->first, struct hrtimer, node);
-+			timer = container_of(next, struct hrtimer, node);
- 			delta.tv64 = hrtimer_get_expires_tv64(timer);
- 			delta = ktime_sub(delta, base->get_time());
- 			if (delta.tv64 < mindelta.tv64)
-@@ -1162,6 +1131,7 @@ static void __hrtimer_init(struct hrtimer *timer, clockid_t clock_id,
- 
- 	timer->base = &cpu_base->clock_base[clock_id];
- 	hrtimer_init_timer_hres(timer);
-+	timerlist_init(&timer->node);
- 
- #ifdef CONFIG_TIMER_STATS
- 	timer->start_site = NULL;
-@@ -1278,14 +1248,14 @@ retry:
- 
- 	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
- 		ktime_t basenow;
--		struct rb_node *node;
-+		struct timerlist_node *node;
- 
- 		basenow = ktime_add(now, base->offset);
- 
--		while ((node = base->first)) {
-+		while ((node = timerlist_getnext(&base->active))) {
- 			struct hrtimer *timer;
- 
--			timer = rb_entry(node, struct hrtimer, node);
-+			timer = container_of(node, struct hrtimer, node);
- 
- 			/*
- 			 * The immediate goal for using the softexpires is
-@@ -1441,7 +1411,7 @@ void hrtimer_run_pending(void)
-  */
- void hrtimer_run_queues(void)
- {
--	struct rb_node *node;
-+	struct timerlist_node *node;
- 	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
- 	struct hrtimer_clock_base *base;
- 	int index, gettime = 1;
-@@ -1450,9 +1420,11 @@ void hrtimer_run_queues(void)
- 		return;
- 
- 	for (index = 0; index < HRTIMER_MAX_CLOCK_BASES; index++) {
--		base = &cpu_base->clock_base[index];
-+		struct timerlist_node *next;
- 
--		if (!base->first)
-+		base = &cpu_base->clock_base[index];
-+		next = timerlist_getnext(&base->active);
-+		if (!next)
- 			continue;
- 
- 		if (gettime) {
-@@ -1462,10 +1434,10 @@ void hrtimer_run_queues(void)
- 
- 		raw_spin_lock(&cpu_base->lock);
- 
--		while ((node = base->first)) {
-+		while ((node = next)) {
- 			struct hrtimer *timer;
- 
--			timer = rb_entry(node, struct hrtimer, node);
-+			timer = container_of(node, struct hrtimer, node);
- 			if (base->softirq_time.tv64 <=
- 					hrtimer_get_expires_tv64(timer))
- 				break;
-@@ -1630,8 +1602,10 @@ static void __cpuinit init_hrtimers_cpu(int cpu)
- 
- 	raw_spin_lock_init(&cpu_base->lock);
- 
--	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++)
-+	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
- 		cpu_base->clock_base[i].cpu_base = cpu_base;
-+		timerlist_init_head(&cpu_base->clock_base[i].active);
+ obj-$(CONFIG_GENERIC_CLOCKEVENTS_BUILD)		+= clockevents.o
+ obj-$(CONFIG_GENERIC_CLOCKEVENTS)		+= tick-common.o
+diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
+new file mode 100644
+index 0000000..407a6b5
+--- /dev/null
++++ b/kernel/time/alarmtimer.c
+@@ -0,0 +1,522 @@
++/*
++ * Alarmtimer interface
++ *
++ * This interface provides a timer which is similarto hrtimers, 
++ * but triggers a RTC alarm if the box is suspend.
++ *
++ * This interface is influenced by the Android RTC Alarm timer
++ * interface.
++ *
++ * Copyright (C) 2010 IBM Corperation
++ *
++ * Author: John Stultz <john.stultz@linaro.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#include <linux/time.h>
++#include <linux/hrtimer.h>
++#include <linux/timerlist.h>
++#include <linux/rtc.h>
++#include <linux/alarmtimer.h>
++#include <linux/mutex.h>
++#include <linux/platform_device.h>
++#include <linux/posix-timers.h>
++#include <linux/workqueue.h>
++
++
++static struct alarm_base {
++	struct mutex lock;
++	struct timerlist_head timerlist;
++	struct hrtimer timer;
++	ktime_t (*gettime)(void);
++	clockid_t base_clockid;
++	struct work_struct irqwork;
++} alarm_bases[ALARM_NUMTYPE];
++
++static struct rtc_timer rtctimer;
++static struct rtc_device *rtcdev;
++
++/**************************************************************************
++ * alarmtimer management code
++ */
++
++/*
++ * alarmtimer_enqueue - Adds an alarm timer to an alarm_base timerlist
++ * @base: pointer to the base where the timer is being run
++ * @alarm: pointer to alarm being enqueued.
++ *
++ * Adds alarm to a alarm_base timerlist and if necessary sets
++ * an hrtimer to run.
++ *
++ * Must hold base->lock when calling.
++ */
++static void alarmtimer_enqueue(struct alarm_base *base, struct alarm *alarm)
++{
++	timerlist_add(&base->timerlist, &alarm->node);
++	if (&alarm->node == timerlist_getnext(&base->timerlist)) {
++		hrtimer_try_to_cancel(&base->timer);
++		hrtimer_start(&base->timer, alarm->node.expires,
++				HRTIMER_MODE_ABS);
 +	}
- 
- 	hrtimer_init_hres(cpu_base);
- }
-@@ -1642,10 +1616,10 @@ static void migrate_hrtimer_list(struct hrtimer_clock_base *old_base,
- 				struct hrtimer_clock_base *new_base)
- {
- 	struct hrtimer *timer;
--	struct rb_node *node;
-+	struct timerlist_node *node;
- 
--	while ((node = rb_first(&old_base->active))) {
--		timer = rb_entry(node, struct hrtimer, node);
-+	while ((node = timerlist_getnext(&old_base->active))) {
-+		timer = container_of(node, struct hrtimer, node);
- 		BUG_ON(hrtimer_callback_running(timer));
- 		debug_deactivate(timer);
- 
-diff --git a/kernel/time/timer_list.c b/kernel/time/timer_list.c
-index ab8f5e3..7583b8d 100644
---- a/kernel/time/timer_list.c
-+++ b/kernel/time/timer_list.c
-@@ -79,26 +79,26 @@ print_active_timers(struct seq_file *m, struct hrtimer_clock_base *base,
- {
- 	struct hrtimer *timer, tmp;
- 	unsigned long next = 0, i;
--	struct rb_node *curr;
-+	struct timerlist_node *curr;
- 	unsigned long flags;
- 
- next_one:
- 	i = 0;
- 	raw_spin_lock_irqsave(&base->cpu_base->lock, flags);
- 
--	curr = base->first;
-+	curr = timerlist_getnext(&base->active);
- 	/*
- 	 * Crude but we have to do this O(N*N) thing, because
- 	 * we have to unlock the base when printing:
- 	 */
- 	while (curr && i < next) {
--		curr = rb_next(curr);
-+		curr = timerlist_iterate_next(curr);
- 		i++;
- 	}
- 
- 	if (curr) {
- 
--		timer = rb_entry(curr, struct hrtimer, node);
-+		timer = container_of(curr, struct hrtimer, node);
- 		tmp = *timer;
- 		raw_spin_unlock_irqrestore(&base->cpu_base->lock, flags);
- 
++}
++
++/*
++ * alarmtimer_remove - Removes an alarm timer from an alarm_base timerlist
++ * @base: pointer to the base where the timer is running
++ * @alarm: pointer to alarm being removed
++ *
++ * Removes alarm to a alarm_base timerlist and if necessary sets
++ * a new timer to run.
++ *
++ * Must hold base->lock when calling.
++ */
++static void alarmtimer_remove(struct alarm_base *base, struct alarm *alarm)
++{
++	struct timerlist_node *next = timerlist_getnext(&base->timerlist);
++
++	timerlist_del(&base->timerlist, &alarm->node);
++	if (next == &alarm->node) {
++		hrtimer_try_to_cancel(&base->timer);
++		next = timerlist_getnext(&base->timerlist);
++		if (!next)
++			return;
++		hrtimer_start(&base->timer, next->expires, HRTIMER_MODE_ABS);
++	}
++}
++
++/*
++ * alarmtimer_do_work - Handles alarm being fired.
++ * @work: pointer to workqueue being run
++ *
++ * When a timer fires, this runs through the timerlist to see
++ * which alarm timers, and run those that expired. If there are
++ * more alarm timers queued, we set the hrtimer to fire in the 
++ * future.
++ */
++void alarmtimer_do_work(struct work_struct *work)
++{
++	struct alarm_base *base = container_of(work, struct alarm_base,
++						irqwork);
++	struct timerlist_node *next;
++	ktime_t now;
++
++	mutex_lock(&base->lock);
++	now = base->gettime();
++	while((next = timerlist_getnext(&base->timerlist))) {
++		struct alarm *alarm;
++		ktime_t expired = next->expires;
++
++		if (expired.tv64 >= now.tv64)
++			break;
++
++		alarm = container_of(next, struct alarm, node);
++
++		timerlist_del(&base->timerlist, &alarm->node);
++		alarm->enabled = 0;
++		/* Re-add periodic timers */
++		if (alarm->period.tv64) {
++			alarm->node.expires = ktime_add(expired, alarm->period);
++			timerlist_add(&base->timerlist, &alarm->node);
++			alarm->enabled = 1;
++		}
++		mutex_unlock(&base->lock);
++		if (alarm->function)
++			alarm->function(alarm);
++		mutex_lock(&base->lock);
++	}
++
++	if (next) {
++		hrtimer_start(&base->timer, next->expires,
++				HRTIMER_MODE_ABS);
++	}
++	mutex_unlock(&base->lock);
++}
++
++
++/*
++ * alarmtimer_fired - Handles alarm hrtimer being fired.
++ * @timer: pointer to hrtimer being run
++ *
++ * When a timer fires, this schedules the do_work function to
++ * be run.
++ */
++static enum hrtimer_restart alarmtimer_fired(struct hrtimer *timer)
++{
++	struct alarm_base *base = container_of(timer, struct alarm_base, timer);
++	schedule_work(&base->irqwork);
++	return HRTIMER_NORESTART;
++}
++
++/*
++ * alarmtimer_suspend - Suspend time callback
++ * @dev: unused
++ * @state: unused
++ *
++ * When we are going into suspend, we look through the bases
++ * to see which is the soonest timer to expire. We then
++ * set an rtc timer to fire that far into the future, which 
++ * will wake us from suspend.
++ */
++static int alarmtimer_suspend(struct device *dev)
++{
++	struct rtc_time tm;
++	ktime_t min = ktime_set(0,0);
++	ktime_t now;
++	int i;
++
++	/* If we have no rtcdev, just return */
++	if(!rtcdev)
++		return 0;
++
++	/* Find the soonest timer to expire*/
++	for (i=0;i < ALARM_NUMTYPE; i++) {
++		struct alarm_base *base = &alarm_bases[i];
++		struct timerlist_node *next;
++		ktime_t delta;
++
++		mutex_lock(&base->lock);
++		next = timerlist_getnext(&base->timerlist);
++		mutex_unlock(&base->lock);
++		if (!next)
++			continue;
++		delta = ktime_sub(next->expires, base->gettime());
++		if (!min.tv64 || (delta.tv64 < min.tv64))
++			min = delta;
++	}
++
++	/* Setup an rtc timer to fire that far in the future */
++	rtctimer_cancel(rtcdev, &rtctimer);
++	rtc_read_time(rtcdev, &tm);
++	now = rtc_tm_to_ktime(tm);
++	now = ktime_add(now, min);
++	rtctimer_start(rtcdev, &rtctimer, now, ktime_set(0,0));
++
++	return 0;
++}
++
++/**************************************************************************
++ * alarm kernel interface code
++ */
++ 
++/*
++ * alarm_init - Initialize an alarm structure
++ * @alarm: ptr to alarm to be initialized
++ * @type: the type of the alarm
++ * @function: callback that is run when the alarm fires
++ *
++ * In-kernel interface to initializes the alarm structure.
++ */
++void alarm_init(struct alarm *alarm, enum alarmtimer_type type,
++		void (*function)(struct alarm *))
++{
++	timerlist_init(&alarm->node);
++	alarm->period = ktime_set(0,0);
++	alarm->function = function;
++	alarm->type = type;
++	alarm->enabled = 0;
++}
++
++/*
++ * alarm_start - Sets an alarm to fire
++ * @alarm: ptr to alarm to set
++ * @start: time to run the alarm
++ * @period: period at which the alarm will recur
++ *
++ * In-kernel interface set an alarm timer.
++ */
++void alarm_start(struct alarm *alarm, ktime_t start, ktime_t period)
++{
++	struct alarm_base *base = &alarm_bases[alarm->type];
++
++	mutex_lock(&base->lock);
++	if (alarm->enabled)
++		alarmtimer_remove(base, alarm);
++	alarm->node.expires = start;
++	alarm->period = period;
++	alarmtimer_enqueue(base, alarm);
++	alarm->enabled = 1;
++	mutex_unlock(&base->lock);
++}
++
++/*
++ * alarm_cancel - Tries to cancel an alarm timer
++ * @alarm: ptr to alarm to be canceled
++ *
++ * In-kernel interface to cancel an alarm timer.
++ */
++void alarm_cancel(struct alarm *alarm)
++{
++	struct alarm_base *base = &alarm_bases[alarm->type];
++
++	mutex_lock(&base->lock);
++	if (alarm->enabled)
++		alarmtimer_remove(base, alarm);
++	alarm->enabled = 0;
++	mutex_unlock(&base->lock);
++}
++
++
++/**************************************************************************
++ * alarm posix interface code 
++ */
++
++/*
++ * clock2alarm - helper that converts from clockid to alarmtypes
++ * @clockid: clockid.
++ *
++ * Helper function that converts from clockids to alarmtypes
++ */
++static enum alarmtimer_type clock2alarm(clockid_t clockid)
++{
++	if (clockid == CLOCK_REALTIME_ALARM)
++		return ALARM_REALTIME;
++	if (clockid == CLOCK_MONOTONIC_ALARM)
++		return ALARM_MONOTONIC;
++	return -1;
++}
++
++/*
++ * alarm_handle_timer - Callback for posix timers
++ * @alarm: alarm that fired
++ *
++ * Posix timer callback for expired alarm timers.
++ */
++static void alarm_handle_timer(struct alarm* alarm)
++{
++	struct k_itimer *ptr = container_of(alarm, struct k_itimer,
++						it.alarmtimer);
++	if (posix_timer_event(ptr, 0) != 0)
++		ptr->it_overrun++;
++}
++
++/*
++ * alarm_clock_getres - posix getres interface
++ * @which_clock: clockid
++ * @tp: timespec to fill
++ *
++ * Returns the granularity of underlying alarm base clock
++ */
++static int alarm_clock_getres(const clockid_t which_clock, struct timespec *tp)
++{
++	clockid_t baseid = alarm_bases[clock2alarm(which_clock)].base_clockid;
++
++	return hrtimer_get_res(baseid, tp);
++}
++
++/**
++ * alarm_clock_get - posix clock_get interface
++ * @which_clock: clockid
++ * @tp: timespec to fill.
++ *
++ * Provides the underlying alarm base time.
++ */
++static int alarm_clock_get(clockid_t which_clock, struct timespec *tp)
++{
++	clockid_t baseid = alarm_bases[clock2alarm(which_clock)].base_clockid;
++
++	if (baseid == CLOCK_REALTIME)
++		ktime_get_real_ts(tp);
++	else if (baseid == CLOCK_MONOTONIC)
++		ktime_get_ts(tp);
++	else
++		return -1;
++	return 0;
++}
++
++/**
++ * alarm_timer_create - posix timer_create interface
++ * @new_timer: k_itimer pointer to manage
++ *
++ * Initializes the k_itimer structure.
++ */
++static int alarm_timer_create(struct k_itimer *new_timer)
++{
++	struct alarm_base *base;
++
++	base = &alarm_bases[clock2alarm(new_timer->it_clock)];
++	alarm_init(&new_timer->it.alarmtimer, clock2alarm(new_timer->it_clock),
++			alarm_handle_timer);
++	return 0;
++}
++
++/**
++ * alarm_timer_get - posix timer_get interface
++ * @new_timer: k_itimer pointer
++ * @cur_setting: itimerspec data to fill
++ *
++ * Copies the itimerspec data out from the k_itimer
++ */
++static void alarm_timer_get(struct k_itimer *timr,
++				struct itimerspec *cur_setting)
++{
++	cur_setting->it_interval =
++			ktime_to_timespec(timr->it.alarmtimer.period);
++	cur_setting->it_value =
++			ktime_to_timespec(timr->it.alarmtimer.node.expires);
++	return;
++}
++
++/**
++ * alarm_timer_del - posix timer_del interface
++ * @timr: k_itimer pointer to be deleted
++ *
++ * Cancels any programmed alarms for the given timer.
++ */
++ static int alarm_timer_del(struct k_itimer *timr)
++{
++	alarm_cancel(&timr->it.alarmtimer);
++	return 0;
++}
++
++/**
++ * alarm_timer_set - posix timer_set interface
++ * @timr: k_itimer pointer to be deleted
++ * @flags: timer flags
++ * @new_setting: itimerspec to be used
++ * @old_setting: itimerspec being replaced
++ *
++ * Sets the timer to new_setting, and starts the timer.
++ */
++ static int alarm_timer_set(struct k_itimer *timr, int flags,
++				struct itimerspec *new_setting,
++				struct itimerspec *old_setting)
++{
++	/* Save old values */
++	old_setting->it_interval =
++			ktime_to_timespec(timr->it.alarmtimer.period);
++	old_setting->it_value =
++			ktime_to_timespec(timr->it.alarmtimer.node.expires);
++
++	/* If the timer was already set, cancel it */
++	alarm_cancel(&timr->it.alarmtimer);
++
++	/* start the timer */
++	alarm_start(&timr->it.alarmtimer,
++			timespec_to_ktime(new_setting->it_value),
++			timespec_to_ktime(new_setting->it_interval));
++	return 0;
++}
++
++/**
++ * no_nsleep - posix nsleep dummy interface
++ * @which_clock: ignored
++ * @flags: ignored
++ * @tsave: ignored
++ * @rmtp: ignored
++ *
++ * We don't implement nsleep yet, so this stub returns an error.
++ */
++static int no_nsleep(const clockid_t which_clock, int flags,
++		     struct timespec *tsave, struct timespec __user *rmtp)
++{
++	return -EOPNOTSUPP;
++}
++
++/**************************************************************************
++ * alarmtimer initialization code
++ */
++
++/* Suspend hook structures */
++static const struct dev_pm_ops alarmtimer_pm_ops = {
++	.suspend = alarmtimer_suspend,
++};
++
++static struct platform_driver alarmtimer_driver = {
++	.driver = {
++		.name = "alarmtimer",
++		.pm = &alarmtimer_pm_ops,
++	}
++};
++
++/**
++ * alarmtimer_init - Initialize alarm timer code
++ *
++ * This function initializes the alarm bases and registers
++ * the posix clock ids.
++ */
++static int __init alarmtimer_init(void)
++{
++	int error = 0;
++	int i;
++	struct k_clock alarm_clock = {
++		.clock_getres = alarm_clock_getres,
++		.clock_get = alarm_clock_get,
++		.clock_set = do_posix_clock_nosettime,
++		.timer_create = alarm_timer_create,
++		.timer_set = alarm_timer_set,
++		.timer_del = alarm_timer_del,
++		.timer_get = alarm_timer_get,
++		.nsleep = no_nsleep,
++	};
++
++	register_posix_clock(CLOCK_REALTIME_ALARM, &alarm_clock);
++	register_posix_clock(CLOCK_MONOTONIC_ALARM, &alarm_clock);
++
++	/* Initialize alarm bases */
++	alarm_bases[ALARM_REALTIME].base_clockid = CLOCK_REALTIME;
++	alarm_bases[ALARM_REALTIME].gettime = &ktime_get_real;
++	alarm_bases[ALARM_MONOTONIC].base_clockid = CLOCK_MONOTONIC;
++	alarm_bases[ALARM_MONOTONIC].gettime = &ktime_get;
++	for (i=0; i< ALARM_NUMTYPE; i++) {
++		timerlist_init_head(&alarm_bases[i].timerlist);
++		mutex_init(&alarm_bases[i].lock);
++		hrtimer_init(&alarm_bases[i].timer,
++				alarm_bases[i].base_clockid,
++				HRTIMER_MODE_ABS);
++		alarm_bases[i].timer.function = alarmtimer_fired;
++		INIT_WORK(&alarm_bases[i].irqwork, alarmtimer_do_work);
++	}
++	error = platform_driver_register(&alarmtimer_driver);
++	platform_device_register_simple("alarmtimer", -1, NULL, 0);
++
++	return error;
++}
++device_initcall(alarmtimer_init);
++
++/**
++ * has_wakealarm - check rtc device has wakealarm ability
++ * @dev: current device 
++ * @name_ptr: name to be returned
++ *
++ * This helper function checks to see if the rtc device can wake
++ * from suspend.
++ */
++static int __init has_wakealarm(struct device *dev, void *name_ptr)
++{
++	struct rtc_device *candidate = to_rtc_device(dev);
++
++	if (!candidate->ops->set_alarm)
++		return 0;
++	if (!device_may_wakeup(candidate->dev.parent))
++		return 0;
++
++	*(const char **)name_ptr = dev_name(dev);
++	return 1;
++}
++
++/**
++ * alarmtimer_init_late - Late initializing of alarmtimer code
++ *
++ * This function locates a rtc device to use for wakealarms.
++ * Run as late_initcall to make sure rtc devices have been
++ * registered.
++ */
++static int __init alarmtimer_init_late(void)
++{
++	char* str;
++
++	/* Find an rtc device and init the rtctimer */
++	class_find_device(rtc_class, NULL, &str, has_wakealarm);
++	if (str)
++		rtcdev = rtc_class_open(str);
++	if (!rtcdev) {
++		printk("No RTC device found, ALARM timers will not wake"
++			" from suspend");
++	}
++	rtctimer_init(&rtctimer, NULL, NULL);
++
++	return 0;
++}
++late_initcall(alarmtimer_init_late);
 -- 
 1.7.3.2.146.gca209
 
