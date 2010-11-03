@@ -1,129 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756469Ab0KCTje (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 15:39:34 -0400
-Received: from usmamail.tilera.com ([72.1.168.231]:30950 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754798Ab0KCTjd (ORCPT
+	id S932423Ab0KCTjm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 15:39:42 -0400
+Received: from smtp5-g21.free.fr ([212.27.42.5]:37645 "EHLO smtp5-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754798Ab0KCTji convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 15:39:33 -0400
-Message-ID: <4CD1BA71.3000806@tilera.com>
-Date: Wed, 3 Nov 2010 15:39:29 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Stephen Hemminger <shemminger@vyatta.com>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>
-Subject: Re: [PATCH] drivers/net/tile/: on-chip network drivers for the tile
- architecture
-References: <201011012107.oA1L7TGd031588@farm-0027.internal.tilera.com>	 <20101103125959.3231daa1@s6510>  <4CD19DCF.1040709@tilera.com> <1288806622.2511.187.camel@edumazet-laptop>
-In-Reply-To: <1288806622.2511.187.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+	Wed, 3 Nov 2010 15:39:38 -0400
+Date: Wed, 3 Nov 2010 20:40:51 +0100
+From: Jean-Francois Moine <moinejf@free.fr>
+To: maciej.rutecki@gmail.com
+Cc: =?UTF-8?B?VMO1bnU=?= Samuel <tonu@jes.ee>, linux-usb@vger.kernel.org,
+        linux-media@vger.kernel.org,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: Re: gspca for_2.6.36 - maybe does not work properly for me
+Message-ID: <20101103204051.13407da4@tele>
+In-Reply-To: <201011032007.25474.maciej.rutecki@gmail.com>
+References: <1288264077.1891.40.camel@x41.itrotid.ee>
+	<201011032007.25474.maciej.rutecki@gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/3/2010 1:50 PM, Eric Dumazet wrote:
-> Le mercredi 03 novembre 2010 à 13:37 -0400, Chris Metcalf a écrit :
->> Stephen, thanks for your feedback!
->>
->> On 11/3/2010 12:59 PM, Stephen Hemminger wrote:
->>> 1. MUST not use volatile, see volatile-considered-harmful.txt
->> The "harmful" use of volatile is in trying to fake out SMP.  Believe me,
->> with a 64-core architecture, we know our SMP guidelines. :-)  Our use here
->> is simply to force the compiler to issue a load, for the side-effect of
->> populating the TLB, for example.
->>
->> However, your response does suggest that simply the syntactic use of
->> "volatile" will cause a red flag for readers.  I'll move this to an inline
->> function in a header with a comment explaining what it's for, and use the
->> function instead.
-> Please read Documentation/volatile-considered-harmful.txt
+On Wed, 3 Nov 2010 20:07:25 +0100
+Maciej Rutecki <maciej.rutecki@gmail.com> wrote:
 
-I read it and internalized it long ago, and re-read it when I got Stephen's
-original email.  I should have said that explicitly instead of a comment
-with a smiley -- email is a tricky communication medium sometimes.
+> (add CC's)
+> On czwartek, 28 października 2010 o 13:07:57 Tõnu Samuel wrote:
+> > I am Sony PS3 Eye webcam user.
+> > 
+> > After installing 2.6.36 this camera gets recognized but actually
+> > does not work. It might be some own stupidity of improper kernel
+> > configuration but I cannot track it down at moment.
+> > 
+> > relevant dmesg:
+> > 
+> > [ 1372.224068] usb 1-5: new high speed USB device using ehci_hcd and
+> > address 5
+> > [ 1372.359574] usb 1-5: New USB device found, idVendor=1415,
+> > idProduct=2000
+> > [ 1372.359582] usb 1-5: New USB device strings: Mfr=1, Product=2,
+> > SerialNumber=0
+> > [ 1372.359588] usb 1-5: Product: USB Camera-B4.04.27.1
+> > [ 1372.359593] usb 1-5: Manufacturer: OmniVision Technologies, Inc.
+> > [ 1372.360623] gspca: probing 1415:2000
+> > [ 1372.483830] ov534: Sensor ID: 7721
+> > [ 1372.534205] ov534: frame_rate: 30
+> > [ 1372.534319] gspca: video0 created
+	[snip]
+> 2.6.35,  or  another, older kernel works OK?
 
-Several uses of "*(volatile int *)ptr" in that file are intended as
-performance hints.  A more obvious way to state this, for our compiler, is
-to say "prefetch_L1(ptr)".  This generates essentially the same code, but
-avoids the red flag for "volatile" and also reads more clearly, so it's a
-good change.
+Hi,
 
-The other use is part of a very precise dance that involves detailed
-knowledge of the Tile memory subsystem micro-architecture.  This doesn't
-really belong in the network device driver code, so I've moved it to
-<asm/cacheflush.h>, and cleaned it up, with detailed comments.  The use
-here is that our network hardware's DMA engine can be used in a mode where
-it reads directly from memory, in which case you must ensure that any
-cached values have been flushed.
+Yes, this is a regression. It has been fixed last month, but too late
+for 2.6.36 (commit f43402fa55bf5e7e190c176343015122f694857c).
 
-/*
- * Flush & invalidate a VA range that is homed remotely on a single core,
- * waiting until the memory controller holds the flushed values.
- */
-static inline void finv_buffer_remote(void *buffer, size_t size)
-{
-	char *p;
-	int i;
-
-	/*
-	 * Flush and invalidate the buffer out of the local L1/L2
-	 * and request the home cache to flush and invalidate as well.
-	 */
-	__finv_buffer(buffer, size);
-
-	/*
-	 * Wait for the home cache to acknowledge that it has processed
-	 * all the flush-and-invalidate requests.  This does not mean
-	 * that the flushed data has reached the memory controller yet,
-	 * but it does mean the home cache is processing the flushes.
-	 */
-	__insn_mf();
-
-	/*
-	 * Issue a load to the last cache line, which can't complete
-	 * until all the previously-issued flushes to the same memory
-	 * controller have also completed.  If we weren't striping
-	 * memory, that one load would be sufficient, but since we may
-	 * be, we also need to back up to the last load issued to
-	 * another memory controller, which would be the point where
-	 * we crossed an 8KB boundary (the granularity of striping
-	 * across memory controllers).  Keep backing up and doing this
-	 * until we are before the beginning of the buffer, or have
-	 * hit all the controllers.
-	 */
-	for (i = 0, p = (char *)buffer + size - 1;
-	     i < (1 << CHIP_LOG_NUM_MSHIMS()) && p >= (char *)buffer;
-	     ++i) {
-		const unsigned long STRIPE_WIDTH = 8192;
-
-		/* Force a load instruction to issue. */
-		*(volatile char *)p;
-
-		/* Jump to end of previous stripe. */
-		p -= STRIPE_WIDTH;
-		p = (char *)((unsigned long)p | (STRIPE_WIDTH - 1));
-	}
-
-	/* Wait for the loads (and thus flushes) to have completed. */
-	__insn_mf();
-}
-
-
-> Then if there is a problem, we can make change to the documentation, but
-> volatile use in new code is _strictly_ forbidden.
->
-> ACCESS_ONCE() is your friend, we might document it in
-> Documentation/volatile-considered-harmful.txt
-
-Good idea, but neither of the use cases at issue here benefit from ACCESS_ONCE.
-
-Thanks for your feedback!
+Best regards.
 
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
