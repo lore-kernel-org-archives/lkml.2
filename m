@@ -1,146 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754923Ab0KCK62 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 06:58:28 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:42193 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754352Ab0KCK6Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 06:58:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=aO61/zAak7dnWdJi3dsvzcArfhEWtSalUhYl/OvyKnfVVw6KWFih3W4RSxTYeOzCYr
-         WB5TJxWY3An3XqfodtaZ2sJLYv3kU/G0u9B2UBaqBwgs92aq59xN1fgegatXaVZYWC2J
-         lRSuazY1fm8YOY/N7i/2448YcjDbC5DMtl/lE=
-Date: Wed, 3 Nov 2010 12:58:32 +0200
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stanislaw Gruszka <sgruszka@redhat.com>
-Subject: Re: [PATCH] posix-cpu-timers: rcu_read_lock/unlock protect
- find_task_by_vpid call
-Message-ID: <20101103105832.GA30053@swordfish.minsk.epam.com>
-References: <20101102135821.GA5964@swordfish.minsk.epam.com>
- <alpine.LFD.2.00.1011021630150.9357@localhost6.localdomain6>
- <20101102160223.GC5964@swordfish.minsk.epam.com>
- <alpine.LFD.2.00.1011021704110.9357@localhost6.localdomain6>
- <20101102183308.GA17720@redhat.com>
+	id S1754986Ab0KCLAA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 07:00:00 -0400
+Received: from hera.kernel.org ([140.211.167.34]:54033 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754439Ab0KCK76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 06:59:58 -0400
+Message-ID: <4CD14089.7050709@kernel.org>
+Date: Wed, 03 Nov 2010 11:59:21 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GvXjxJ+pjyke8COw"
-Content-Disposition: inline
-In-Reply-To: <20101102183308.GA17720@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH v2.6.36-rc7] init: don't call flush_scheduled_work() from
+ do_initcalls()
+References: <4CB86F94.7080702@kernel.org>	<20101021171203.37d0d6d6.akpm@linux-foundation.org>	<4CC14ADA.9080706@kernel.org> <20101022110925.ea1263f8.akpm@linux-foundation.org>
+In-Reply-To: <20101022110925.ea1263f8.akpm@linux-foundation.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 03 Nov 2010 10:59:23 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello, Andrew.
 
---GvXjxJ+pjyke8COw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 10/22/2010 08:09 PM, Andrew Morton wrote:
+> mm..  I think we'd be OK to merge it.  Any such code is pretty badly
+> buggy and is probably also crashable with a well-timed rmmod.
+> 
+> It'll also be code which few people ever use, so any runtime checks
+> won't get us very good coverage.
+> 
+> Still, if it's not too hard to implement an "are there any scheduled
+> works which live in initmem" check then I guess that would be the
+> prudent approach.  A quite gross way of implementing that might be
+> something like
 
-On (11/02/10 19:33), Oleg Nesterov wrote:
-> > On Tue, 2 Nov 2010, Sergey Senozhatsky wrote:
-> >
-> > > > We can remove the tasklist_lock while at it. rcu_read_lock is enoug=
-h.
-> > > >
->=20
-> Yes, I believe posix-cpu-timers.c shouldn't use tasklist at all,
-> but it is not trivial to change this code.
->
->[..]=20
->=20
-> I think this change is fine, but please note that thread_group_leader()
-> check is not relaible without tasklist. If we race with de_thread()
-> find_task_by_vpid() can find the new leader before it updates its
-> ->group_leader. IOW, posix_cpu_timer_create() can fail when it shouldn't.
->=20
-> Not that I think this really matters, posix_cpu_timer_create() has
-> other problems with de_thread(). But perhaps it makes sense to
-> change posix_cpu_timer_create() to use has_group_leader_pid() instead,
-> just to make this code not look racy and avoid adding new problems.
->=20
-> The real fix, I think, should change cpu_timer_list to use
-> struct pid* instead of task_struct.
->=20
+I've been trying to implement proper check code but there is a
+problem.  It's possible to check all pending works to see whether the
+work struct itself or the work function is in initmem and warn about
+them.
 
-Hello,
-Using has_group_leader_pid instead of thread_group_leader, when tasklist_lo=
-ck=20
-is not aquired (check_clock and posix_cpu_timer_create).
+The problem is with currently running works.  As work_struct isn't
+accessible once it starts executing, struct worker would need to cache
+it for later reference.  Worker already remembers the work_struct
+pointer itself and its cwq and adding one more field to remember the
+currently running work function is easy.  However, it's only useful
+during the unlikely buggy case during init.  Given that if anything is
+still depending on initmem, it will blow up pretty reliably, I don't
+think it's worthwhile to add additional tracking just for this.  So, I
+think I'll just go ahead and drop the flush call and deal with the
+unlikely fallouts if there's any.
 
----
+Thank you.
 
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index 6842eeb..05bb717 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -37,13 +37,13 @@ static int check_clock(const clockid_t which_clock)
- 	if (pid =3D=3D 0)
- 		return 0;
-=20
--	read_lock(&tasklist_lock);
-+	rcu_read_lock();
- 	p =3D find_task_by_vpid(pid);
- 	if (!p || !(CPUCLOCK_PERTHREAD(which_clock) ?
--		   same_thread_group(p, current) : thread_group_leader(p))) {
-+		   same_thread_group(p, current) : has_group_leader_pid(p))) {
- 		error =3D -EINVAL;
- 	}
--	read_unlock(&tasklist_lock);
-+	rcu_read_unlock();
-=20
- 	return error;
- }
-@@ -390,7 +390,7 @@ int posix_cpu_timer_create(struct k_itimer *new_timer)
-=20
- 	INIT_LIST_HEAD(&new_timer->it.cpu.entry);
-=20
--	read_lock(&tasklist_lock);
-+	rcu_read_lock();
- 	if (CPUCLOCK_PERTHREAD(new_timer->it_clock)) {
- 		if (pid =3D=3D 0) {
- 			p =3D current;
-@@ -404,7 +404,7 @@ int posix_cpu_timer_create(struct k_itimer *new_timer)
- 			p =3D current->group_leader;
- 		} else {
- 			p =3D find_task_by_vpid(pid);
--			if (p && !thread_group_leader(p))
-+			if (p && !has_group_leader_pid(p))
- 				p =3D NULL;
- 		}
- 	}
-@@ -414,7 +414,7 @@ int posix_cpu_timer_create(struct k_itimer *new_timer)
- 	} else {
- 		ret =3D -EINVAL;
- 	}
--	read_unlock(&tasklist_lock);
-+	rcu_read_unlock();
-=20
- 	return ret;
- }
-
-
-
---GvXjxJ+pjyke8COw
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iJwEAQECAAYFAkzRQFgACgkQfKHnntdSXjTxBgP+PU0Gyg28KDNFzwV/d3mmKgGn
-ZgEYm/Rpq06duvQe/Ha3467v242SdMGvbbEBdsOmYQemBy6wVit5CUyZk0ih54n+
-168xmjH4l26i4nc1ELHku9XYeU0StCD1lbBM8UNivm1NfJFKyb6C9DIkn8vQOWDa
-nN27Mneuu/oZuDFSvHs=
-=eeaR
------END PGP SIGNATURE-----
-
---GvXjxJ+pjyke8COw--
+-- 
+tejun
