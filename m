@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754245Ab0KCKIM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 06:08:12 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:43870 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753736Ab0KCKIK (ORCPT
+	id S1754519Ab0KCKJK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 06:09:10 -0400
+Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:33680 "EHLO
+	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754137Ab0KCKJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 06:08:10 -0400
-Subject: Re: [PATCH v2] regulator: regulator disable supply fix
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Mattias Wallin <mattias.wallin@stericsson.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1288706135-30836-1-git-send-email-mattias.wallin@stericsson.com>
-References: <1288706135-30836-1-git-send-email-mattias.wallin@stericsson.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 03 Nov 2010 10:08:05 +0000
-Message-ID: <1288778885.3277.14.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 3 Nov 2010 06:09:09 -0400
+Message-ID: <4CD13492.9030900@euromail.se>
+Date: Wed, 03 Nov 2010 11:08:18 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: gimli <gimli@dark-green.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/6] MacBookAir3,1(3,2) hid support
+References: <799cfececb18800d63df64fc93e2228f@mognix.dark-green.com> <4CD0427F.4050804@euromail.se> <33a056946badf540124631f517eef199@mognix.dark-green.com>
+In-Reply-To: <33a056946badf540124631f517eef199@mognix.dark-green.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1PDaGT-0001sp-Ay.
+X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PDaGT-0001sp-Ay 3982a52dd1cbbee8a29ff847b58e692f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-02 at 14:55 +0100, Mattias Wallin wrote:
-> This patch fixes a disable failure when regulator supply is used.
-> A while loop in regulator disable checks for supply pointer != NULL
-> but the pointer is not always updated, resulting in the while loop
-> running too many times causing a disable failure.
+On 11/03/2010 10:41 AM, gimli wrote:
+
+> On Tue, 02 Nov 2010 17:55:27 +0100, Henrik Rydberg <rydberg@euromail.se>
+> wrote:
+>> On 11/02/2010 08:20 AM, gimli wrote:
+>>
+>>> This patch add support for the MacBookAir3,1 and MacBookAir3,2 to the
+> hid
+>>> driver.
+>>>
+>>> Signed-off-by: Edgar (gimli) Hucek <gimli@dark-green.com>
+>>>
+>>
+>>
+>> Hi Edgar,
+>>
+>> thanks for the information. Are the device ids correlated to the 13'' and
+>> 11''
+>> versions of these machines? If so, why are they mapped to the same
+>> keyboard? The
+>> apple_fn_keys also covers the existing Macbook Airs, but appears not to
+> be
+>> used
+>> for any of the new device ids.
 > 
-> Signed-off-by: Mattias Wallin <mattias.wallin@stericsson.com>
-> Acked-by: Linus Walleij <linus.walleij@stericsson.com>
-> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  drivers/regulator/core.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-> index f1d10c9..c625633 100644
-> --- a/drivers/regulator/core.c
-> +++ b/drivers/regulator/core.c
-> @@ -1359,6 +1359,7 @@ static int _regulator_disable(struct regulator_dev *rdev,
->  		struct regulator_dev **supply_rdev_ptr)
->  {
->  	int ret = 0;
-> +	*supply_rdev_ptr = NULL;
->  
->  	if (WARN(rdev->use_count <= 0,
->  			"unbalanced disables for %s\n",
+> The keyboard layout changed on the new Air's. Thats the reason why i use
+> a new apple_fn_keys for the new Air's.
 
-Applied.
 
-Thanks
+Thanks for the clarification, it all makes sense.
 
-Liam
--- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
+Did you consider using quirks for the keyboard layouts instead? Either way,
 
+Acked-by: Henrik Rydberg <rydberg@euromail.se>
+
+Thanks,
+Henrik
