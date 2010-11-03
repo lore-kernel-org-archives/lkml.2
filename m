@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932702Ab0KCPno (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 11:43:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61814 "EHLO mx1.redhat.com"
+	id S932711Ab0KCPnu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 11:43:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9396 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755837Ab0KCP36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755835Ab0KCP36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Nov 2010 11:29:58 -0400
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Subject: [PATCH 11 of 66] add pmd paravirt ops
-X-Mercurial-Node: 19e5af8e27282a543e506f480fa8f9fc8f6666e4
-Message-Id: <19e5af8e27282a543e50.1288798066@v2.random>
+Subject: [PATCH 25 of 66] split_huge_page paging
+X-Mercurial-Node: c1df1dd887b7839d19d39ceb768db920e27f7fd9
+Message-Id: <c1df1dd887b7839d19d3.1288798080@v2.random>
 In-Reply-To: <patchbomb.1288798055@v2.random>
 References: <patchbomb.1288798055@v2.random>
 User-Agent: Mercurial-patchbomb/1.4.1
-Date: Wed, 03 Nov 2010 16:27:46 +0100
+Date: Wed, 03 Nov 2010 16:28:00 +0100
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -42,95 +42,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andrea Arcangeli <aarcange@redhat.com>
 
-Paravirt ops pmd_update/pmd_update_defer/pmd_set_at. Not all might be necessary
-(vmware needs pmd_update, Xen needs set_pmd_at, nobody needs pmd_update_defer),
-but this is to keep full simmetry with pte paravirt ops, which looks cleaner
-and simpler from a common code POV.
+Paging logic that splits the page before it is unmapped and added to swap to
+ensure backwards compatibility with the legacy swap code. Eventually swap
+should natively pageout the hugepages to increase performance and decrease
+seeking and fragmentation of swap space. swapoff can just skip over huge pmd as
+they cannot be part of swap yet. In add_to_swap be careful to split the page
+only if we got a valid swap entry so we don't split hugepages with a full swap.
+
+In theory we could split pages before isolating them during the lru scan, but
+for khugepaged to be safe, I'm relying on either mmap_sem write mode, or
+PG_lock taken, so split_huge_page has to run either with mmap_sem read/write
+mode or PG_lock taken. Calling it from isolate_lru_page would make locking more
+complicated, in addition to that split_huge_page would deadlock if called by
+__isolate_lru_page because it has to take the lru lock to add the tail pages.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Acked-by: Rik van Riel <riel@redhat.com>
 Acked-by: Mel Gorman <mel@csn.ul.ie>
+Acked-by: Rik van Riel <riel@redhat.com>
 ---
 
-diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
---- a/arch/x86/include/asm/paravirt.h
-+++ b/arch/x86/include/asm/paravirt.h
-@@ -435,6 +435,11 @@ static inline void pte_update(struct mm_
- {
- 	PVOP_VCALL3(pv_mmu_ops.pte_update, mm, addr, ptep);
- }
-+static inline void pmd_update(struct mm_struct *mm, unsigned long addr,
-+			      pmd_t *pmdp)
-+{
-+	PVOP_VCALL3(pv_mmu_ops.pmd_update, mm, addr, pmdp);
-+}
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -385,6 +385,8 @@ static void collect_procs_anon(struct pa
+ 	struct task_struct *tsk;
+ 	struct anon_vma *av;
  
- static inline void pte_update_defer(struct mm_struct *mm, unsigned long addr,
- 				    pte_t *ptep)
-@@ -442,6 +447,12 @@ static inline void pte_update_defer(stru
- 	PVOP_VCALL3(pv_mmu_ops.pte_update_defer, mm, addr, ptep);
- }
++	if (unlikely(split_huge_page(page)))
++		return;
+ 	read_lock(&tasklist_lock);
+ 	av = page_lock_anon_vma(page);
+ 	if (av == NULL)	/* Not actually mapped anymore */
+diff --git a/mm/rmap.c b/mm/rmap.c
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -1372,6 +1372,7 @@ int try_to_unmap(struct page *page, enum
+ 	int ret;
  
-+static inline void pmd_update_defer(struct mm_struct *mm, unsigned long addr,
-+				    pmd_t *pmdp)
-+{
-+	PVOP_VCALL3(pv_mmu_ops.pmd_update_defer, mm, addr, pmdp);
-+}
+ 	BUG_ON(!PageLocked(page));
++	BUG_ON(PageTransHuge(page));
+ 
+ 	if (unlikely(PageKsm(page)))
+ 		ret = try_to_unmap_ksm(page, flags);
+diff --git a/mm/swap_state.c b/mm/swap_state.c
+--- a/mm/swap_state.c
++++ b/mm/swap_state.c
+@@ -157,6 +157,12 @@ int add_to_swap(struct page *page)
+ 	if (!entry.val)
+ 		return 0;
+ 
++	if (unlikely(PageTransHuge(page)))
++		if (unlikely(split_huge_page(page))) {
++			swapcache_free(entry, NULL);
++			return 0;
++		}
 +
- static inline pte_t __pte(pteval_t val)
- {
- 	pteval_t ret;
-@@ -543,6 +554,18 @@ static inline void set_pte_at(struct mm_
- 		PVOP_VCALL4(pv_mmu_ops.set_pte_at, mm, addr, ptep, pte.pte);
- }
- 
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+static inline void set_pmd_at(struct mm_struct *mm, unsigned long addr,
-+			      pmd_t *pmdp, pmd_t pmd)
-+{
-+	if (sizeof(pmdval_t) > sizeof(long))
-+		/* 5 arg words */
-+		pv_mmu_ops.set_pmd_at(mm, addr, pmdp, pmd);
-+	else
-+		PVOP_VCALL4(pv_mmu_ops.set_pmd_at, mm, addr, pmdp, pmd.pmd);
-+}
-+#endif
-+
- static inline void set_pmd(pmd_t *pmdp, pmd_t pmd)
- {
- 	pmdval_t val = native_pmd_val(pmd);
-diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
---- a/arch/x86/include/asm/paravirt_types.h
-+++ b/arch/x86/include/asm/paravirt_types.h
-@@ -265,10 +265,16 @@ struct pv_mmu_ops {
- 	void (*set_pte_at)(struct mm_struct *mm, unsigned long addr,
- 			   pte_t *ptep, pte_t pteval);
- 	void (*set_pmd)(pmd_t *pmdp, pmd_t pmdval);
-+	void (*set_pmd_at)(struct mm_struct *mm, unsigned long addr,
-+			   pmd_t *pmdp, pmd_t pmdval);
- 	void (*pte_update)(struct mm_struct *mm, unsigned long addr,
- 			   pte_t *ptep);
- 	void (*pte_update_defer)(struct mm_struct *mm,
- 				 unsigned long addr, pte_t *ptep);
-+	void (*pmd_update)(struct mm_struct *mm, unsigned long addr,
-+			   pmd_t *pmdp);
-+	void (*pmd_update_defer)(struct mm_struct *mm,
-+				 unsigned long addr, pmd_t *pmdp);
- 
- 	pte_t (*ptep_modify_prot_start)(struct mm_struct *mm, unsigned long addr,
- 					pte_t *ptep);
-diff --git a/arch/x86/kernel/paravirt.c b/arch/x86/kernel/paravirt.c
---- a/arch/x86/kernel/paravirt.c
-+++ b/arch/x86/kernel/paravirt.c
-@@ -421,8 +421,11 @@ struct pv_mmu_ops pv_mmu_ops = {
- 	.set_pte = native_set_pte,
- 	.set_pte_at = native_set_pte_at,
- 	.set_pmd = native_set_pmd,
-+	.set_pmd_at = native_set_pmd_at,
- 	.pte_update = paravirt_nop,
- 	.pte_update_defer = paravirt_nop,
-+	.pmd_update = paravirt_nop,
-+	.pmd_update_defer = paravirt_nop,
- 
- 	.ptep_modify_prot_start = __ptep_modify_prot_start,
- 	.ptep_modify_prot_commit = __ptep_modify_prot_commit,
+ 	/*
+ 	 * Radix-tree node allocations from PF_MEMALLOC contexts could
+ 	 * completely exhaust the page allocator. __GFP_NOMEMALLOC
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -964,6 +964,8 @@ static inline int unuse_pmd_range(struct
+ 	pmd = pmd_offset(pud, addr);
+ 	do {
+ 		next = pmd_addr_end(addr, end);
++		if (unlikely(pmd_trans_huge(*pmd)))
++			continue;
+ 		if (pmd_none_or_clear_bad(pmd))
+ 			continue;
+ 		ret = unuse_pte_range(vma, pmd, addr, next, entry, page);
