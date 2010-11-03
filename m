@@ -1,56 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158Ab0KCLm3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 07:42:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13669 "EHLO mx1.redhat.com"
+	id S1754197Ab0KCLnt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 07:43:49 -0400
+Received: from mga11.intel.com ([192.55.52.93]:60662 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752877Ab0KCLm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 07:42:27 -0400
-Message-ID: <4CD14A6F.4010109@redhat.com>
-Date: Wed, 03 Nov 2010 07:41:35 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+	id S1753311Ab0KCLnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 07:43:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,288,1286175600"; 
+   d="scan'208";a="623092080"
+Date: Wed, 3 Nov 2010 19:43:45 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: "Shi, Alex" <alex.shi@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>,
+        "Li, Shaohua" <shaohua.li@intel.com>,
+        "pzijlstr@redhat.com" <pzijlstr@redhat.com>
+Subject: Re: VM ops on 37-rc1
+Message-ID: <20101103114345.GA7428@localhost>
+References: <1288767341.15466.4624.camel@debian>
 MIME-Version: 1.0
-To: Minchan Kim <minchan.kim@gmail.com>
-CC: Mandeep Singh Baines <msb@chromium.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, wad@chromium.org, olofj@chromium.org,
-        hughd@chromium.org
-Subject: Re: [PATCH] RFC: vmscan: add min_filelist_kbytes sysctl for protecting
- the working set
-References: <20101028191523.GA14972@google.com>	<20101101012322.605C.A69D9226@jp.fujitsu.com>	<20101101182416.GB31189@google.com>	<4CCF0BE3.2090700@redhat.com>	<AANLkTi=src1L0gAFsogzCmejGOgg5uh=9O4Uw+ZmfBg4@mail.gmail.com>	<4CCF8151.3010202@redhat.com>	<AANLkTi=JJ-0ae+QybtR+e=4_4mpQghh61c4=TZYAw8uF@mail.gmail.com>	<4CD0C22B.2000905@redhat.com> <AANLkTik8y=bh3dBJe0bFmjAUvc7y8yBpjP4DKuKU+Z2j@mail.gmail.com>
-In-Reply-To: <AANLkTik8y=bh3dBJe0bFmjAUvc7y8yBpjP4DKuKU+Z2j@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288767341.15466.4624.camel@debian>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/02/2010 11:03 PM, Minchan Kim wrote:
+Try revert the latest change to mm/vmstat.c, Michael added code to
+show dirty thresholds there.
 
-> It could.
-> But time based approach would be same, IMHO.
-> First of all, I don't want long latency of direct reclaim process.
-> It could affect response of foreground process directly.
->
-> If VM limits the number of pages reclaimed per second, direct reclaim
-> process's latency will be affected. so we should avoid throttling in
-> direct reclaim path. Agree?
+Thanks,
+Fengguang
 
-The idea would be to not throttle the processes trying to
-reclaim page cache pages, but to only reclaim anonymous
-pages when the page cache pages are low (and occasionally
-a few page cache pages, say 128 a second).
-
-If too many reclaimers come in when the page cache is
-low and no swap is available, we will OOM kill instead
-of stalling.
-
-After all, the entire point of this patch would be to
-avoid minutes-long latencies in triggering the OOM
-killer.
-
--- 
-All rights reversed
+On Wed, Nov 03, 2010 at 02:55:41PM +0800, Shi, Alex wrote:
+> I found some ops on one of Bensely Core2 machine. The ops may pops up
+> just system after booted. 2.6.36 kernel is good. The similar ops also
+> appears on IA64 machine.   Any idea of this?
+> 
+> general protection fault: 0000 [#1] SMP
+> last sysfs file: /sys/devices/system/cpu/cpu7/cache/index2/shared_cpu_map
+> CPU 1
+> Modules linked in: video output
+> 
+> Pid: 8494, comm: sadc Not tainted 2.6.37-rc1 #1 X7DWN/X7DW3
+> RIP: 0010:[<ffffffff812c6d89>]  [<ffffffff812c6d89>] strnlen+0x11/0x1a
+> RSP: 0018:ffff88022f1ddcf0  EFLAGS: 00010297
+> RAX: 41ffffffff81a197 RBX: 0000000000000000 RCX: ffffffffffffffff
+> RDX: 41ffffffff81a197 RSI: fffffffffffffffe RDI: 41ffffffff81a197
+> RBP: ffff88022ef42000 R08: 0000000000000002 R09: ffffffff81cb7a50
+> R10: ffff88022f1ddf50 R11: ffffffff81c4e3c8 R12: 41ffffffff81a197
+> R13: 000000000000ffff R14: ffff88022ef43000 R15: ffffffff81a19438
+> FS:  00007fd06b06e6f0(0000) GS:ffff8800cfc40000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> CR2: 00007fd06b0a2000 CR3: 000000022db81000 CR4: 00000000000006e0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process sadc (pid: 8494, threadinfo ffff88022f1dc000, task ffff88022b9d5a30)
+> Stack:
+>  ffffffff812c846d ffff88022f1ddd88 ffff88022ef42000 ffffffff81a19436
+>  ffff88022ef43000 ffff88022ef42000 ffffffff812c9196 ffff88022f08e4c0
+>  0000000000001000 ffffffffff0a0004 ffffffff810b30a1 0000000000000000
+> Call Trace:
+>  [<ffffffff812c846d>] ? string+0x43/0xb5
+>  [<ffffffff812c9196>] ? vsnprintf+0x1d8/0x421
+>  [<ffffffff810b30a1>] ? vma_adjust+0x205/0x435
+>  [<ffffffff810df8f5>] ? seq_printf+0x67/0x8f
+>  [<ffffffff8160d42b>] ? mutex_lock+0x20/0x44
+>  [<ffffffff8160d42b>] ? mutex_lock+0x20/0x44
+>  [<ffffffff810a9087>] ? all_vm_events+0x60/0x73
+>  [<ffffffff8103b615>] ? put_online_cpus+0x22/0x54
+>  [<ffffffff810a9169>] ? vmstat_start+0xcf/0x103
+>  [<ffffffff810a89a5>] ? vmstat_show+0x23/0x27
+>  [<ffffffff810dfe79>] ? seq_read+0x181/0x364
+>  [<ffffffff8110d8eb>] ? proc_reg_read+0x6a/0x84
+>  [<ffffffff810c86fc>] ? vfs_read+0xa8/0x12f
+>  [<ffffffff810c8ae4>] ? sys_read+0x45/0x6e
+>  [<ffffffff8100296b>] ? system_call_fastpath+0x16/0x1b
+> Code: f2 ae 48 f7 d1 48 8d 44 11 ff 40 38 30 74 0a 48 ff c8 48 39 d0 73 f3 31 c0 c3 48 89 f8 eb 03 48 ff c0 48 ff ce 48 83 fe ff 74 05 <80> 38 00 75 ef 48 29 f8 c3 31 c0 eb 12 41 38 c8 74 0a 48 ff c2
+> RIP  [<ffffffff812c6d89>] strnlen+0x11/0x1a
+>  RSP <ffff88022f1ddcf0>
+> ---[ end trace 75434a01211a18e0 ]---
+> 
+> Sometime, the following ops appears. 
+> 
+> 
+> BUG: unable to handle kernel paging request at ffffff81a19733ff
+> IP: [<ffffffff812c6d89>] strnlen+0x11/0x1a
+> PGD 1c41067 PUD 0
+> Oops: 0000 [#3] SMP
+> last sysfs file: /sys/devices/system/cpu/cpu7/cache/index2/shared_cpu_map
+> CPU 0
+> Modules linked in: video output
+> 
+> Pid: 1781, comm: sadc Tainted: G      D     2.6.37-rc1 #1 X7DWN/X7DW3
+> RIP: 0010:[<ffffffff812c6d89>]  [<ffffffff812c6d89>] strnlen+0x11/0x1a
+> RSP: 0018:ffff88022dea1cf0  EFLAGS: 00010297
+> RAX: ffffff81a19733ff RBX: 0000000000000000 RCX: ffffffffffffffff
+> RDX: ffffff81a19733ff RSI: fffffffffffffffe RDI: ffffff81a19733ff
+> RBP: ffff88022ee38000 R08: 0000000000000002 R09: ffffffff81cb7a50
+> R10: ffff88022dea1f50 R11: ffffffff81c4e3c8 R12: ffffff81a19733ff
+> R13: 000000000000ffff R14: ffff88022ee39000 R15: ffffffff81a19438
+> FS:  00007fd6725dc6f0(0000) GS:ffff8800cfc00000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> CR2: ffffff81a19733ff CR3: 000000022e5e7000 CR4: 00000000000006f0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process sadc (pid: 1781, threadinfo ffff88022dea0000, task ffff88022e1229a0)
+> Stack:
+>  ffffffff812c846d ffff88022dea1d88 ffff88022ee38000 ffffffff81a19436
+>  ffff88022ee39000 ffff88022ee38000 ffffffff812c9196 ffff88022ee086c0
+>  0000000000001000 ffffffffff0a0004 ffffffff810b30a1 0000000000000000
+> Call Trace:
+>  [<ffffffff812c846d>] ? string+0x43/0xb5
+>  [<ffffffff812c9196>] ? vsnprintf+0x1d8/0x421
+>  [<ffffffff810b30a1>] ? vma_adjust+0x205/0x435
+>  [<ffffffff810df8f5>] ? seq_printf+0x67/0x8f
+>  [<ffffffff8160d42b>] ? mutex_lock+0x20/0x44
+>  [<ffffffff8160d42b>] ? mutex_lock+0x20/0x44
+>  [<ffffffff810a9087>] ? all_vm_events+0x60/0x73
+>  [<ffffffff8103b615>] ? put_online_cpus+0x22/0x54
+>  [<ffffffff810a9169>] ? vmstat_start+0xcf/0x103
+>  [<ffffffff810a89a5>] ? vmstat_show+0x23/0x27
+>  [<ffffffff810dfe79>] ? seq_read+0x181/0x364
+>  [<ffffffff8110d8eb>] ? proc_reg_read+0x6a/0x84
+>  [<ffffffff810c86fc>] ? vfs_read+0xa8/0x12f
+>  [<ffffffff810c8ae4>] ? sys_read+0x45/0x6e
+>  [<ffffffff8100296b>] ? system_call_fastpath+0x16/0x1b
+> Code: f2 ae 48 f7 d1 48 8d 44 11 ff 40 38 30 74 0a 48 ff c8 48 39 d0 73 f3 31 c0 c3 48 89 f8 eb 03 48 ff c0 48 ff ce 48 83 fe ff 74 05 <80> 38 00 75 ef 48 29 f8 c3 31 c0 eb 12 41 38 c8 74 0a 48 ff c2
+> RIP  [<ffffffff812c6d89>] strnlen+0x11/0x1a
+> 
+> 
