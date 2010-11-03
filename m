@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932185Ab0KCPaL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 11:30:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9955 "EHLO mx1.redhat.com"
+	id S932141Ab0KCPaG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 11:30:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7470 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932114Ab0KCPaC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 11:30:02 -0400
+	id S1755801Ab0KCP35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 11:29:57 -0400
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Subject: [PATCH 14 of 66] comment reminder in destroy_compound_page
-X-Mercurial-Node: aa96fcdc4d6fb38d56160c3c5b21fb0ddf1080a0
-Message-Id: <aa96fcdc4d6fb38d5616.1288798069@v2.random>
+Subject: [PATCH 43 of 66] don't leave orhpaned swap cache after ksm merging
+X-Mercurial-Node: d5aefe85d1dab1bb7e99f672afe68fb6a034effd
+Message-Id: <d5aefe85d1dab1bb7e99.1288798098@v2.random>
 In-Reply-To: <patchbomb.1288798055@v2.random>
 References: <patchbomb.1288798055@v2.random>
 User-Agent: Mercurial-patchbomb/1.4.1
-Date: Wed, 03 Nov 2010 16:27:49 +0100
+Date: Wed, 03 Nov 2010 16:28:18 +0100
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -42,22 +42,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andrea Arcangeli <aarcange@redhat.com>
 
-Warn destroy_compound_page that __split_huge_page_refcount is heavily dependent
-on its internal behavior.
+When swapcache is replaced by a ksm page don't leave orhpaned swap cache.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 ---
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -352,6 +352,7 @@ void prep_compound_page(struct page *pag
- 	}
- }
+diff --git a/mm/ksm.c b/mm/ksm.c
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -800,7 +800,7 @@ static int replace_page(struct vm_area_s
+ 	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
  
-+/* update __split_huge_page_refcount if you change this function */
- static int destroy_compound_page(struct page *page, unsigned long order)
- {
- 	int i;
+ 	page_remove_rmap(page);
+-	put_page(page);
++	free_page_and_swap_cache(page);
+ 
+ 	pte_unmap_unlock(ptep, ptl);
+ 	err = 0;
+@@ -846,7 +846,18 @@ static int try_to_merge_one_page(struct 
+ 	 * ptes are necessarily already write-protected.  But in either
+ 	 * case, we need to lock and check page_count is not raised.
+ 	 */
+-	if (write_protect_page(vma, page, &orig_pte) == 0) {
++	err = write_protect_page(vma, page, &orig_pte);
++
++	/*
++	 * After this mapping is wrprotected we don't need further
++	 * checks for PageSwapCache vs page_count unlock_page(page)
++	 * and we rely only on the pte_same() check run under PT lock
++	 * to ensure the pte didn't change since when we wrprotected
++	 * it under PG_lock.
++	 */
++	unlock_page(page);
++
++	if (!err) {
+ 		if (!kpage) {
+ 			/*
+ 			 * While we hold page lock, upgrade page from
+@@ -855,22 +866,22 @@ static int try_to_merge_one_page(struct 
+ 			 */
+ 			set_page_stable_node(page, NULL);
+ 			mark_page_accessed(page);
+-			err = 0;
+ 		} else if (pages_identical(page, kpage))
+ 			err = replace_page(vma, page, kpage, orig_pte);
+-	}
++	} else
++		err = -EFAULT;
+ 
+ 	if ((vma->vm_flags & VM_LOCKED) && kpage && !err) {
++		lock_page(page);	/* for LRU manipulation */
+ 		munlock_vma_page(page);
++		unlock_page(page);
+ 		if (!PageMlocked(kpage)) {
+-			unlock_page(page);
+ 			lock_page(kpage);
+ 			mlock_vma_page(kpage);
+-			page = kpage;		/* for final unlock */
++			unlock_page(kpage);
+ 		}
+ 	}
+ 
+-	unlock_page(page);
+ out:
+ 	return err;
+ }
