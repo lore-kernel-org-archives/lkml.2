@@ -1,66 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756422Ab0KCTCO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 15:02:14 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:35099 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753241Ab0KCTCM convert rfc822-to-8bit (ORCPT
+	id S1756435Ab0KCTDi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 15:03:38 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:25115 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756398Ab0KCTDh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 15:02:12 -0400
+	Wed, 3 Nov 2010 15:03:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=ETf/6kT4xii6lKikdhO2qtzMcr69ovccnjeJwGMu/J9bUYLDw0BdZDbDjoE5gLNNrk
+         7MNtv2y36hlmAfFAqrVw==
 MIME-Version: 1.0
-In-Reply-To: <201011031357.37976.sgrubb@redhat.com>
-References: <1278011263-7951-1-git-send-email-zohar@linux.vnet.ibm.com>
-	<201011031300.31522.sgrubb@redhat.com>
-	<1288805913.2939.53.camel@localhost.localdomain>
-	<201011031357.37976.sgrubb@redhat.com>
-Date: Wed, 3 Nov 2010 15:02:11 -0400
-Message-ID: <AANLkTi=MiQsBvdtcr+isqagDYzKOFH0QVb9P=6aAxWVv@mail.gmail.com>
-Subject: Re: [PATCH] security: move LSM xattrnames to xattr.h
-From: Eric Paris <eparis@parisplace.org>
-To: Steve Grubb <sgrubb@redhat.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        =?UTF-8?B?T3phbiDDh2HEn2xheWFu?= <ozan@pardus.org.tr>,
-        James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        David Safford <safford@watson.ibm.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
+In-Reply-To: <20101103181634.GF7441@kroah.com>
+References: <20101103012917.4641.57113.stgit@crlf.mtv.corp.google.com>
+ <20101103023422.GB5782@kroah.com> <AANLkTi=Oe4oJ0imCh1eoJLS0QYqSBM4pLo=dEUSiJcQb@mail.gmail.com>
+ <20101103181634.GF7441@kroah.com>
+From: Mike Waychison <mikew@google.com>
+Date: Wed, 3 Nov 2010 12:03:12 -0700
+Message-ID: <AANLkTimKWCWtuPeZhMZ75gTxB8LwAhJfy2FZnnRwthft@mail.gmail.com>
+Subject: Re: [PATCH v1 00/12] netoops support
+To: Greg KH <greg@kroah.com>
+Cc: simon.kagstrom@netinsight.net, davem@davemloft.net, adurbin@google.com,
+        akpm@linux-foundation.org, chavey@google.com,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 3, 2010 at 1:57 PM, Steve Grubb <sgrubb@redhat.com> wrote:
-> On Wednesday, November 03, 2010 01:38:33 pm Mimi Zohar wrote:
->> > > As long as we're making this change, should 'security' also be defined
->> > > outside of the __kernel__ definitions?
+On Wed, Nov 3, 2010 at 11:16 AM, Greg KH <greg@kroah.com> wrote:
+> On Tue, Nov 02, 2010 at 08:37:42PM -0700, Mike Waychison wrote:
+>> On Tue, Nov 2, 2010 at 7:34 PM, Greg KH <greg@kroah.com> wrote:
+>> > On Tue, Nov 02, 2010 at 06:29:25PM -0700, Mike Waychison wrote:
+>> >> This patchset applies to v2.6.36.
+>> >>
+>> >> The following series implements support for 'netoops', a simple driver that
+>> >> will deliver kmsg logs together with machine specifics over the network.
 >> >
->> > I guess no one fixed this before 2.6.36 was finalized. Removing the
->> > define has broke user  space compilation for anything that works on file
->> > based capabilities. I can define it myself, but if the kernel folks ever
->> > change the string, then we have more than just a compile problem, we
->> > have runtime problems because I can no longer use the correct string.
+>> > We already have the ability to send oopses over the network today,
+>> > through the network consolst stuff. What does this patch set do that is
+>> > different from our existing stuff that warrants such a big change?
 >> >
->> > So, what was the gain for breaking user space?
->> >
->> > -Steve
 >>
->> Sorry I dropped the ball. Was expecting some kind of response to my
->> question above, and then forgot about it.
+>> Hi Greg,
 >>
->> All of the 'security' xattrs were moved to fsmagic.h, including
->> capability. Not only those that EVM protects, but others like
->> XATTR_NAME_SMACKIPIN/OUT (based on Casey's request).
+>> I am a little familiar with the netconsole suppport.  I should have
+>> added a comparison to the cover email :(
+>>
+>> We never adopted netconsole for a couple different reasons.  The
+>> reasons have slightly changed over the years, but even today we find
+>> that it isn't a substitute for netoops' semantics.
 >
-> If user space has to know the exact contents of a string in order to do something that
-> the kernel understands, then its part of a public API. I've made my own define and
-> released a new copy of libcap-ng. So, if the contents of the string ever change, or
-> becomes deprecated, you'll now have user space apps using the old values no matter
-> what.
+> Ah, but it sounds like it would be better to fix up netoops to handle
+> your needs.
 
-You're right Steve, it is ABI, we broke it, and we can fix it.  What
-are you having to define and what are you including.  What files did
-you used to get these defines from?
+Perhaps, but I don't agree that overly complicating one simple driver
+to handle a wildly different set of semantics is justified when it can
+be implemented in another simple driver.
 
--Eric
+>
+>> With the number of machines we have, streaming large amounts of
+>> consoles within the data center can really add up.  This gets worse
+>> when you take into account how reliant we are on kernel logging like
+>> OOM conditions (which are very regular and very verbose).  Events in
+>> the data center (such as application growth) tend to be temporally
+>> correlated, which causes large bursts of logging when we are OOM.  We
+>> aren't so interested in this kernel verbosity from a global collection
+>> standpoint though, and haven't been keen on the amount of extra
+>> un-regulated UDP traffic it would generate.  We are however interested
+>> in kernel oopses though (which occur far less often).
+>
+> Understood, I'm sure that a change to allow this to the existing netoops
+> code would be appreciated by many.
+
+Do you mean netconsole here?
+
+>
+>> In terms of the data received, we've really benefited by having
+>> structured data in the payload.
+>
+> I bet the whole world would benefit by having the oops messages in a
+> more "structured" manner.  We have done changes in the past to provide
+> this type of thing in a "more parsable" manner, to help stuff like
+> kerneloops.org.  I'm sure that adding this type of information to the
+> main oops core/messages would be a good overall goal, instead of only
+> having it available to only this one option/user, right?
+
+It'd be great to figure out how to make this sort of data structured
+in the logs, but it's not really a battle that I'm willing to fight.
+It seems that as a community, we haven't figured out a good way to
+provide any sort of committed ABI via printk (perhaps rightly so).
+
+Another aspect that makes me _not_ want to go this route is the
+pushback we've received in the past about not having too much data get
+added to the oops messages themselves, as folks still relied on
+literal screenshots of oopses.
+
+>
+>> Another area where the two approaches have differed has been in
+>> handling of network reliability.  Historically (though less and less
+>> now), we found that we had to transmit data several times.  We also
+>> used to explicitly space out packets with delays to handle switch chip
+>> buffer overruns.  Both of these functions I presume could be added to
+>> netconsole without too much of a problem.
+>
+> Yes, I agree netconsole would be good to get this type of change.
+>
+>> Lastly, this patchset also introduces a 'one-shot' mode, which has
+>> saved our bacon several times in the past as well.  It's not totally
+>> uncommon for the kernel's crash path to be buggy, in turn causing the
+>> kernel to emit Oopses until the cows come home (or rather, until the
+>> hardware watchdogs trip).  One-shot keeps us from emitting too much
+>> garbage on the network when this happens.
+>
+> I thought we had something like "only show the first oops" somewhere in
+> the kernel, perhaps I'm just imagining things...
+>
+> If I am, adding this for all oopses would also be good.
+
+Well, there is always panic_on_oops, which we use, but that alone
+doesn't solve the recursive oops problem.
+
+>
+>> I hope the above comparison of semantics outlines the motivations we
+>> have for not using netconsole and favoring an approach like that used
+>> in netoops :)
+>
+> I think you have just convinced me that you should add this type of
+> functionality for all oops messages even more, instead of only doing it
+> for your one type of oops transport :)
+
+I think you are heavily discounting the value of structured data :(
+It also doesn't help that printk's aren't transactional to each other
+when oopsing (which essentially makes concurrently oopsing CPUs shit
+all over each other in the logs, leading to unparseable data).  You
+are welcome to push the rock up hill for structured log data though ;)
+
+> As for the user/kernel interface, perhaps exporting the data in a text
+> format that is "tagged" would be best?  Then the whole world can parse
+> it easily.
+
+FWIW, another semantic difference between netconsole and netoops (that
+I had missed in the last email) is filtering: we really do want to get
+the whole log when a crash happens, debug messages and all.
+Netconsole is subject to console filtering (which we _do_ want as
+debug messages going out the uart slows the whole world down).
+
+netconsole and netoops _do_ have bits in common, for instance the
+handling of NETDEV events and source+target configuration.  I'd rather
+those bits become common between the two than figure out how to jam
+the semantics we need into netconsole.
