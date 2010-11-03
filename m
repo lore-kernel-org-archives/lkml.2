@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756232Ab0KCR4y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 13:56:54 -0400
-Received: from mga02.intel.com ([134.134.136.20]:37250 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752903Ab0KCR4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 13:56:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,289,1286175600"; 
-   d="scan'208";a="673957520"
-Date: Thu, 4 Nov 2010 01:56:49 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        "mrubin@google.com" <mrubin@google.com>,
-        "david@fromorbit.com" <david@fromorbit.com>,
-        "axboe@kernel.dk" <axboe@kernel.dk>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        "nickpiggin@yahoo.com.au" <nickpiggin@yahoo.com.au>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] vmstat: fix offset calculation on void*
-Message-ID: <20101103175648.GA6398@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756215Ab0KCR5o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 13:57:44 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:60445 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751867Ab0KCR5k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 13:57:40 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6156"; a="60501354"
+Subject: Re: [PATCHv2 1/3] ARM: Translate delay.S into (mostly) C
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Colin Cross <ccross@android.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+In-Reply-To: <1288300770-18350-2-git-send-email-sboyd@codeaurora.org>
+References: <1288300770-18350-1-git-send-email-sboyd@codeaurora.org>
+	 <1288300770-18350-2-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 03 Nov 2010 10:57:34 -0700
+Message-ID: <1288807054.16859.2.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix regression introduced by commit 79da826aee6.
+On Thu, 2010-10-28 at 14:19 -0700, Stephen Boyd wrote:
+> We want to allow machines to override the __delay() implementation
+> at runtime so they can use a timer based __delay() routine. It's
+> easier to do this using C, so let's write udelay and friends in C.
+> 
+> We lose the #if 0 code, which according to Russell is used "to
+> make the delay loop more stable and predictable on older CPUs"
+> (see http://article.gmane.org/gmane.linux.kernel/888867 for more
+> info). We shouldn't be too worried though, since we'll soon add
+> functionality allowing a machine to set the __delay() loop
+> themselves, thus allowing machines to resurrect the commented out
+> code should they need it.
+> 
+> Nico expressed concern that fixed lpj cmdlines will break due to
+> compiler optimizations. That doesn't seem to be the case since
+> before and after this patch I get the same lpj value when running
+> my CPU at 19.2 MHz. That should be sufficiently slow enough to
+> cover any machine running Linux.
 
-	BUG: unable to handle kernel paging request at 07c06d16
-	IP: [<c050c336>] strnlen+0x6/0x20
+Nico, are you ready to sign off on this?
 
-	Call Trace:
-	 [<c050a249>] ? string+0x39/0xe0
-	 [<c042be6b>] ? __wake_up_common+0x4b/0x80
-	 [<c050afcc>] ? vsnprintf+0x1ec/0x380
-	 [<c04b380e>] ? seq_printf+0x2e/0x60
-	 [<c04829a6>] ? vmstat_show+0x26/0x30
-	 [<c04b3bb6>] ? seq_read+0xa6/0x380
-	 [<c04b3b10>] ? seq_read+0x0/0x380
-	 [<c04d5d2f>] ? proc_reg_read+0x5f/0x90
-	 [<c049c4a1>] ? vfs_read+0xa1/0x140
-	 [<c04d5cd0>] ? proc_reg_read+0x0/0x90
-	 [<c049c981>] ? sys_read+0x41/0x70
-	 [<c0402bd0>] ? sysenter_do_call+0x12/0x26
+Daniel
 
+-- 
 
-CC: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-CC: Michael Rubin <mrubin@google.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-Hopefully Tetsuo can test it soon, thanks!
-
- mm/vmstat.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- linux-2.6.orig/mm/vmstat.c	2010-11-04 01:49:12.000000000 +0800
-+++ linux-2.6/mm/vmstat.c	2010-11-04 01:49:23.000000000 +0800
-@@ -949,7 +949,7 @@ static void *vmstat_start(struct seq_fil
- 	v[PGPGIN] /= 2;		/* sectors -> kbytes */
- 	v[PGPGOUT] /= 2;
- #endif
--	return m->private + *pos;
-+	return (unsigned long *)m->private + *pos;
- }
- 
- static void *vmstat_next(struct seq_file *m, void *arg, loff_t *pos)
