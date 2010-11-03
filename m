@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932247Ab0KCPag (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 11:30:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34358 "EHLO mx1.redhat.com"
+	id S932611Ab0KCPkk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 11:40:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50884 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755804Ab0KCPac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 11:30:32 -0400
+	id S932254Ab0KCPai (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 11:30:38 -0400
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Subject: [PATCH 16 of 66] special pmd_trans_* functions
-X-Mercurial-Node: 522a9ff792e43eb0ec6a987328720fef66ffc0f0
-Message-Id: <522a9ff792e43eb0ec6a.1288798071@v2.random>
-In-Reply-To: <patchbomb.1288798055@v2.random>
-References: <patchbomb.1288798055@v2.random>
+Subject: [PATCH 00 of 66] Transparent Hugepage Support #32
+Message-Id: <patchbomb.1288798055@v2.random>
 User-Agent: Mercurial-patchbomb/1.4.1
-Date: Wed, 03 Nov 2010 16:27:51 +0100
+Date: Wed, 03 Nov 2010 16:27:35 +0100
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -40,74 +37,162 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+Some of some relevant user of the project:
 
-These returns 0 at compile time when the config option is disabled, to allow
-gcc to eliminate the transparent hugepage function calls at compile time
-without additional #ifdefs (only the export of those functions have to be
-visible to gcc but they won't be required at link time and huge_memory.o can be
-not built at all).
+KVM Virtualization
+GCC (kernel build included, requires a few liner patch to enable)
+JVM
+VMware Workstation
+HPC
 
-_PAGE_BIT_UNUSED1 is never used for pmd, only on pte.
+It would be great if it could go in -mm.
 
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Acked-by: Rik van Riel <riel@redhat.com>
----
+http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=blob;f=Documentation/vm/transhuge.txt
+http://www.linux-kvm.org/wiki/images/9/9e/2010-forum-thp.pdf
 
-diff --git a/arch/x86/include/asm/pgtable_64.h b/arch/x86/include/asm/pgtable_64.h
---- a/arch/x86/include/asm/pgtable_64.h
-+++ b/arch/x86/include/asm/pgtable_64.h
-@@ -168,6 +168,19 @@ extern void cleanup_highmap(void);
- #define	kc_offset_to_vaddr(o) ((o) | ~__VIRTUAL_MASK)
- 
- #define __HAVE_ARCH_PTE_SAME
-+
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+static inline int pmd_trans_splitting(pmd_t pmd)
-+{
-+	return pmd_val(pmd) & _PAGE_SPLITTING;
-+}
-+
-+static inline int pmd_trans_huge(pmd_t pmd)
-+{
-+	return pmd_val(pmd) & _PAGE_PSE;
-+}
-+#endif /* CONFIG_TRANSPARENT_HUGEPAGE */
-+
- #endif /* !__ASSEMBLY__ */
- 
- #endif /* _ASM_X86_PGTABLE_64_H */
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -22,6 +22,7 @@
- #define _PAGE_BIT_PAT_LARGE	12	/* On 2MB or 1GB pages */
- #define _PAGE_BIT_SPECIAL	_PAGE_BIT_UNUSED1
- #define _PAGE_BIT_CPA_TEST	_PAGE_BIT_UNUSED1
-+#define _PAGE_BIT_SPLITTING	_PAGE_BIT_UNUSED1 /* only valid on a PSE pmd */
- #define _PAGE_BIT_NX           63       /* No execute: only valid after cpuid check */
- 
- /* If _PAGE_BIT_PRESENT is clear, we use these: */
-@@ -45,6 +46,7 @@
- #define _PAGE_PAT_LARGE (_AT(pteval_t, 1) << _PAGE_BIT_PAT_LARGE)
- #define _PAGE_SPECIAL	(_AT(pteval_t, 1) << _PAGE_BIT_SPECIAL)
- #define _PAGE_CPA_TEST	(_AT(pteval_t, 1) << _PAGE_BIT_CPA_TEST)
-+#define _PAGE_SPLITTING	(_AT(pteval_t, 1) << _PAGE_BIT_SPLITTING)
- #define __HAVE_ARCH_PTE_SPECIAL
- 
- #ifdef CONFIG_KMEMCHECK
-diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -348,6 +348,11 @@ extern void untrack_pfn_vma(struct vm_ar
- 				unsigned long size);
- #endif
- 
-+#ifndef CONFIG_TRANSPARENT_HUGEPAGE
-+#define pmd_trans_huge(pmd) 0
-+#define pmd_trans_splitting(pmd) 0
-+#endif
-+
- #endif /* !__ASSEMBLY__ */
- 
- #endif /* _ASM_GENERIC_PGTABLE_H */
+http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=shortlog
+
+first: git clone git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
+or first: git clone --reference linux-2.6 git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
+later: git fetch; git checkout -f origin/master
+
+The tree is rebased and git pull won't work.
+
+http://www.kernel.org/pub/linux/kernel/people/andrea/patches/v2.6/2.6.37-rc1/transparent_hugepage-32/
+http://www.kernel.org/pub/linux/kernel/people/andrea/patches/v2.6/2.6.37-rc1/transparent_hugepage-32.gz
+
+Diff #31 -> #32:
+
+ b/clear_copy_huge_page             |   59 ++++++++--------
+
+hugetlbfs.c copy_huge_page was renamed to copy_user_huge_page.
+
+ b/kvm_transparent_hugepage         |   38 +++++-----
+
+Adjust hva_to_pfn interface change.
+
+ b/lumpy-compaction                 |   48 +++++++++++++
+
+Disable lumpy reclaim when CONFIG_COMPACTION is enabled. Agreed with Mel @
+Kernel Summit. Mel wants to defer the full removal of lumpy reclaim of a few
+releases. Disabling lumpy reclaim is needed to prevent THP to render the system
+totally unusable when reclaim starts.
+
+ b/pmd_trans_huge_migrate           |   31 +++-----
+
+Migrate can now migrate hugetlb pages. This has a chance to break on THP but it
+seems all the "magic hugetlbfs code paths" are activeted by the "destination"
+page to be huge. That never happens with THP that in fact would split the page
+making the source not huge either. So it seems the current code may co-exist
+with THP too without further changes.
+
+This update also fixes a false positive BUG_ON in remove_migration_pte that
+could materialize after handling the CPU errata(s) that shows the CPU don't
+like 4k and 2M simultaneous TLB entries. To implement the workaround without
+increasing the TLB flush cost of split_huge_page I had to set the hugepmd as
+non-present during the TLB flush (so opening a micro-window for a false
+positive in the BUG_ON check). The BUG_ON simply can be safely removed now, in
+turn solving the false positive.
+
+ remove-lumpy_reclaim               |  131 -------------------------------------
+
+lumpy reclaim not removed anymore but it gets disabled at runtime by enabling
+CONFIG_COMPACTION=y at compile time (and setting CONFIG_TRANSPARENT_HUGEPAGE=y
+implicitly selects CONFIG_COMPACTION=y of course).
+
+Full diffstat:
+
+ Documentation/vm/transhuge.txt        |  283 ++++
+ arch/alpha/include/asm/mman.h         |    2 
+ arch/mips/include/asm/mman.h          |    2 
+ arch/parisc/include/asm/mman.h        |    2 
+ arch/powerpc/mm/gup.c                 |   12 
+ arch/x86/include/asm/kvm_host.h       |    1 
+ arch/x86/include/asm/paravirt.h       |   23 
+ arch/x86/include/asm/paravirt_types.h |    6 
+ arch/x86/include/asm/pgtable-2level.h |    9 
+ arch/x86/include/asm/pgtable-3level.h |   23 
+ arch/x86/include/asm/pgtable.h        |  149 ++
+ arch/x86/include/asm/pgtable_64.h     |   28 
+ arch/x86/include/asm/pgtable_types.h  |    3 
+ arch/x86/kernel/paravirt.c            |    3 
+ arch/x86/kernel/tboot.c               |    2 
+ arch/x86/kernel/vm86_32.c             |    1 
+ arch/x86/kvm/mmu.c                    |   60 
+ arch/x86/kvm/paging_tmpl.h            |    4 
+ arch/x86/mm/gup.c                     |   28 
+ arch/x86/mm/pgtable.c                 |   66 
+ arch/xtensa/include/asm/mman.h        |    2 
+ drivers/base/node.c                   |   21 
+ fs/Kconfig                            |    2 
+ fs/exec.c                             |   44 
+ fs/proc/meminfo.c                     |   14 
+ fs/proc/page.c                        |   14 
+ include/asm-generic/mman-common.h     |    2 
+ include/asm-generic/pgtable.h         |  130 +
+ include/linux/compaction.h            |   13 
+ include/linux/gfp.h                   |   14 
+ include/linux/huge_mm.h               |  170 ++
+ include/linux/khugepaged.h            |   66 
+ include/linux/kvm_host.h              |    4 
+ include/linux/memory_hotplug.h        |   14 
+ include/linux/mm.h                    |  114 +
+ include/linux/mm_inline.h             |   19 
+ include/linux/mm_types.h              |    3 
+ include/linux/mmu_notifier.h          |   66 
+ include/linux/mmzone.h                |    1 
+ include/linux/page-flags.h            |   36 
+ include/linux/sched.h                 |    1 
+ include/linux/swap.h                  |    2 
+ kernel/fork.c                         |   12 
+ kernel/futex.c                        |   55 
+ mm/Kconfig                            |   38 
+ mm/Makefile                           |    1 
+ mm/compaction.c                       |   48 
+ mm/huge_memory.c                      | 2290 ++++++++++++++++++++++++++++++++++
+ mm/hugetlb.c                          |   69 -
+ mm/ksm.c                              |   52 
+ mm/madvise.c                          |    8 
+ mm/memcontrol.c                       |  138 +-
+ mm/memory-failure.c                   |    2 
+ mm/memory.c                           |  199 ++
+ mm/memory_hotplug.c                   |   14 
+ mm/mempolicy.c                        |   14 
+ mm/migrate.c                          |    7 
+ mm/mincore.c                          |    7 
+ mm/mmap.c                             |    7 
+ mm/mmu_notifier.c                     |   20 
+ mm/mprotect.c                         |   20 
+ mm/mremap.c                           |    9 
+ mm/page_alloc.c                       |   31 
+ mm/pagewalk.c                         |    1 
+ mm/rmap.c                             |  115 -
+ mm/sparse.c                           |    4 
+ mm/swap.c                             |  117 +
+ mm/swap_state.c                       |    6 
+ mm/swapfile.c                         |    2 
+ mm/vmscan.c                           |   43 
+ mm/vmstat.c                           |    1 
+ virt/kvm/iommu.c                      |    2 
+ virt/kvm/kvm_main.c                   |   56 
+ 73 files changed, 4485 insertions(+), 362 deletions(-)
+
+FAQ:
+
+Q: When will 1G pages be supported? (by far the most frequently asked question
+   in the last two days)
+A: Not any time soon but it's not entirly impossible... The benefit of going
+   from 2M to 1G is likely much lower than the benefit of going from 4k to 2M
+   so it's unlikely to be a worthwhile effort for a while.
+
+Q: When this will work on filebacked pages? (pagecache/swapcache/tmpfs)
+A: Not until it's merged in mainline. It's already feature complete for many
+   usages and the moment we expand into pagecache the patch would grow
+   significantly.
+
+Q: When will KSM will scan inside Transparent Hugepages?
+A: Working on that, this should materialize soon enough.
+
+Q: What is the next place where to remove split_huge_page_pmd()?
+A: mremap. JVM uses mremap in the garbage collector so the ~18% boost (no virt)
+   has further margin for optimizations.
