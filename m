@@ -1,165 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754988Ab0KCKNE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 06:13:04 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:52947 "EHLO
+	id S1754923Ab0KCKMz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 06:12:55 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:53569 "EHLO
 	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754157Ab0KCKM6 (ORCPT
+	by vger.kernel.org with ESMTP id S1754574Ab0KCKMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 06:12:58 -0400
-X-Sasl-enc: aD0emg2KFsIZR/digeERBWjxEjYPk7+YRYQypJq2cenO 1288779177
+	Wed, 3 Nov 2010 06:12:52 -0400
+X-Sasl-enc: 6OjavMa9vRv2ofnhcpPq+XBEQ+wAb0Gw9BqthPIBrtl2 1288779171
 To: tyhicks@linux.vnet.ibm.com
-Subject: [PATCH 5/5] ecryptfs: open lower files with kthread credentials
+Subject: [PATCH 4/5] ecryptfs: fixed testing of file descriptor flags
 From: Roberto Sassu <roberto.sassu@polito.it>
 Organization: Politecnico di Torino
-Date: Wed, 3 Nov 2010 11:11:40 +0100
+Date: Wed, 3 Nov 2010 11:11:34 +0100
 MIME-Version: 1.0
 Cc: kirkland@canonical.com, jmorris@namei.org,
         linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org
 Content-Type: multipart/signed;
-  boundary="nextPart1648538.6WOaLfkx6U";
+  boundary="nextPart3483669.dl6LrRtznF";
   protocol="application/pkcs7-signature";
   micalg=sha1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011031111.41084.roberto.sassu@polito.it>
+Message-Id: <201011031111.35066.roberto.sassu@polito.it>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1648538.6WOaLfkx6U
+--nextPart3483669.dl6LrRtznF
 Content-Type: text/plain;
   charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 
-Ecryptfs allows concurrent accesses to an encrypted file by opening the
-relative lower inode only once and making the returned file descriptor
-available until the ecryptfs inode is destroyed.
-The file descriptor is obtained by calling the function dentry_open() for
-the lower inode with flag O_RDWR  and the credentials of the process that
-issued the open request.
-During this procedure two issues may be encountered when using ecryptfs in
-conjunction with SELinux: first, a process needs read/write permission
-for opening a file even with flag O_RDONLY; second a process needs the
-'use' permission in the 'fd' class if the lower file was opened by another
-process with different credentials.
-This patch replaces the 'cred' structure of the current process, passed to
-the function dentry_open(), with the one associated with the 'kthread'
-kernel service.
+This patch replaces the check (lower_file->f_flags & O_RDONLY) with
+((lower_file & O_ACCMODE) =3D=3D O_RDONLY).
 
 Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 =2D--
- fs/ecryptfs/ecryptfs_kernel.h |    3 +--
- fs/ecryptfs/kthread.c         |   17 +++++++++++++----
- fs/ecryptfs/main.c            |    3 +--
- 3 files changed, 15 insertions(+), 8 deletions(-)
+ fs/ecryptfs/file.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
-index 452be3c..14d167f 100644
-=2D-- a/fs/ecryptfs/ecryptfs_kernel.h
-+++ b/fs/ecryptfs/ecryptfs_kernel.h
-@@ -759,8 +759,7 @@ int ecryptfs_init_kthread(void);
- void ecryptfs_destroy_kthread(void);
- int ecryptfs_privileged_open(struct file **lower_file,
- 			     struct dentry *lower_dentry,
-=2D			     struct vfsmount *lower_mnt,
-=2D			     const struct cred *cred);
-+			     struct vfsmount *lower_mnt);
- int ecryptfs_init_persistent_file(struct dentry *ecryptfs_dentry);
- int
- ecryptfs_write_tag_70_packet(char *dest, size_t *remaining_bytes,
-diff --git a/fs/ecryptfs/kthread.c b/fs/ecryptfs/kthread.c
-index d8c3a37..5094601 100644
-=2D-- a/fs/ecryptfs/kthread.c
-+++ b/fs/ecryptfs/kthread.c
-@@ -38,6 +38,7 @@ static struct ecryptfs_kthread_ctl {
- } ecryptfs_kthread_ctl;
-=20
- static struct task_struct *ecryptfs_kthread;
-+static struct cred *ecryptfs_kthread_cred;
-=20
- /**
-  * ecryptfs_threadfn
-@@ -74,7 +75,7 @@ static int ecryptfs_threadfn(void *ignored)
- 				mntget(req->lower_mnt);
- 				(*req->lower_file) =3D dentry_open(
- 					req->lower_dentry, req->lower_mnt,
-=2D					(O_RDWR | O_LARGEFILE), current_cred());
-+					(O_RDWR | O_LARGEFILE), ecryptfs_kthread_cred);
- 				req->flags |=3D ECRYPTFS_REQ_PROCESSED;
- 			}
- 			wake_up(&req->wait);
-@@ -99,7 +100,15 @@ int ecryptfs_init_kthread(void)
- 		rc =3D PTR_ERR(ecryptfs_kthread);
- 		printk(KERN_ERR "%s: Failed to create kernel thread; rc =3D [%d]"
- 		       "\n", __func__, rc);
-+		goto out;
-+	}
-+	ecryptfs_kthread_cred =3D prepare_kernel_cred(ecryptfs_kthread);
-+	if (IS_ERR(ecryptfs_kthread_cred)) {
-+		rc =3D PTR_ERR(ecryptfs_kthread_cred);
-+		printk(KERN_ERR "%s: Failed to obtain the credential struct; "
-+				"rc =3D [%d]\n", __func__, rc);
+diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
+index 5cfcc3c..26bd93d 100644
+=2D-- a/fs/ecryptfs/file.c
++++ b/fs/ecryptfs/file.c
+@@ -200,8 +200,8 @@ static int ecryptfs_open(struct inode *inode, struct fi=
+le *file)
+ 			ecryptfs_dentry->d_name.name, rc);
+ 		goto out_free;
  	}
-+out:
- 	return rc;
- }
-=20
-@@ -119,6 +128,7 @@ void ecryptfs_destroy_kthread(void)
- 	mutex_unlock(&ecryptfs_kthread_ctl.mux);
- 	kthread_stop(ecryptfs_kthread);
- 	wake_up(&ecryptfs_kthread_ctl.wait);
-+	put_cred(ecryptfs_kthread_cred);
- }
-=20
- /**
-@@ -133,8 +143,7 @@ void ecryptfs_destroy_kthread(void)
-  */
- int ecryptfs_privileged_open(struct file **lower_file,
- 			     struct dentry *lower_dentry,
-=2D			     struct vfsmount *lower_mnt,
-=2D			     const struct cred *cred)
-+			     struct vfsmount *lower_mnt)
- {
- 	struct ecryptfs_open_req *req;
- 	int flags =3D O_LARGEFILE;
-@@ -146,7 +155,7 @@ int ecryptfs_privileged_open(struct file **lower_file,
- 	dget(lower_dentry);
- 	mntget(lower_mnt);
- 	flags |=3D IS_RDONLY(lower_dentry->d_inode) ? O_RDONLY : O_RDWR;
-=2D	(*lower_file) =3D dentry_open(lower_dentry, lower_mnt, flags, cred);
-+	(*lower_file) =3D dentry_open(lower_dentry, lower_mnt, flags, ecryptfs_kt=
-hread_cred);
- 	if (!IS_ERR(*lower_file))
- 		goto out;
- 	if (flags & O_RDONLY) {
-diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
-index 81821d7..c07bb9a 100644
-=2D-- a/fs/ecryptfs/main.c
-+++ b/fs/ecryptfs/main.c
-@@ -117,7 +117,6 @@ void __ecryptfs_printk(const char *fmt, ...)
-  */
- int ecryptfs_init_persistent_file(struct dentry *ecryptfs_dentry)
- {
-=2D	const struct cred *cred =3D current_cred();
- 	struct ecryptfs_inode_info *inode_info =3D
- 		ecryptfs_inode_to_private(ecryptfs_dentry->d_inode);
- 	int rc =3D 0;
-@@ -130,7 +129,7 @@ int ecryptfs_init_persistent_file(struct dentry *ecrypt=
-fs_dentry)
-=20
- 		lower_dentry =3D ecryptfs_dentry_to_lower(ecryptfs_dentry);
- 		rc =3D ecryptfs_privileged_open(&inode_info->lower_file,
-=2D					      lower_dentry, lower_mnt, cred);
-+					      lower_dentry, lower_mnt);
- 		if (rc) {
- 			printk(KERN_ERR "Error opening lower persistent file "
- 			       "for lower_dentry [0x%p] and lower_mnt [0x%p]; "
+=2D	if ((ecryptfs_inode_to_private(inode)->lower_file->f_flags & O_RDONLY)
+=2D	    && !(file->f_flags & O_RDONLY)) {
++	if ((ecryptfs_inode_to_private(inode)->lower_file->f_flags & O_ACCMODE) =
+=3D=3D O_RDONLY
++	    && (file->f_flags & O_ACCMODE) !=3D O_RDONLY) {
+ 		rc =3D -EPERM;
+ 		printk(KERN_WARNING "%s: Lower persistent file is RO; eCryptfs "
+ 		       "file must hence be opened RO\n", __func__);
 =2D-=20
 1.7.2.3
 
 
---nextPart1648538.6WOaLfkx6U
+--nextPart3483669.dl6LrRtznF
 Content-Type: application/pkcs7-signature; name="smime.p7s"
 Content-Disposition: attachment; filename="smime.p7s"
 Content-Transfer-Encoding: base64
@@ -240,12 +142,12 @@ TdtCm/yxR8XUlFyZkLHfhY19VW4luxb7KZ4GiPKDERdQwBb0kja4eqSOBkAPWZ9Y8zpv4bAxggIc
 MIICGAIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBkaSBUb3Jpbm8x
 NjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eQIC
 A8EwCQYFKw4DAhoFAKCBhzAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEP
-Fw0xMDExMDMxMDExNDFaMCMGCSqGSIb3DQEJBDEWBBSq/X8SIIN2sTvxrIzCeakRwXIZGzAoBgkq
-hkiG9w0BCQ8xGzAZMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzANBgkqhkiG9w0BAQEFAASCAQBc
-kEoQ0j/cbtPUI52FNMr3I0c/Vx15SOygm5bC25UNo/6aqBR7mK2FTVZU+0T+V+5jNSWcycriYBWx
-1MgzZC3KV+79iUWtG0TRlep9XzF0LUyf1xO8B+BSEr1ceuUctLg/vlMjWiMDwAjwdI14EDL7DvLr
-xUnzGdh3tfwaMnSWGT5ythdV97Nkc4Zj6AEjVlhJ7RU6Z2fFnFsHEcycU7Wkf4yBqKTQByyFUdmG
-XMyQHf3zS4rP2B/A+inPhTVvdnfanCIi0f2p6jX/G/dnP/iqCK6Xk1azyEfH4gbdsBMyE7b3ZvPW
-Slrog3wlitoiHBaaGNdgHLoJhmb1mTSKds+AAAAAAAAA
+Fw0xMDExMDMxMDExMzVaMCMGCSqGSIb3DQEJBDEWBBTOmPhBFo5QUghjjoCFs5zwEXOjgTAoBgkq
+hkiG9w0BCQ8xGzAZMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzANBgkqhkiG9w0BAQEFAASCAQBo
+Pb81xVrFbjsSb3cexNlQg1OLy7qNz4XLMud4/vU3fpo5fzRGN5yGabPCAF68ri6RNteFfDIWHvKN
+mhpjQxhcgQ8kX9XYesE4QV7+ausn21XL5Qd+4t9RrTiPlbco0vFepERwTCfh4mYB5oZ0ZFFb4IE/
+DlsWcvSfxkMD/6oYQ9HRE4Fgp5Z9fwtV0vDGzIOloY6dwQZ00J7D5wXsGYhAnMG12srXWLY46AOX
+7qCaMWIIF4+ilsfSOZsEAq5S/HO/nfFdtwXKs8wojcx39r26f2rmSiRUr+6amyy4/7sEabAtzAgn
+/3v2tm5y1DdCCl/T1vOsQFweC+Ye9r4Qe8Y7AAAAAAAA
 
---nextPart1648538.6WOaLfkx6U--
+--nextPart3483669.dl6LrRtznF--
