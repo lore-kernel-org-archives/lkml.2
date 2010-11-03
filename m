@@ -1,145 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753516Ab0KCWss (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 18:48:48 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:60137 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323Ab0KCWsq convert rfc822-to-8bit (ORCPT
+	id S1753593Ab0KCWs7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 18:48:59 -0400
+Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:31923
+	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753546Ab0KCWs4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 18:48:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=oWOeDsMy1cjLnFz+ZUGA8dR2cdyyFYK0DrwxXWKFqF+2mp9xAYorJzrHam6hQCK8HW
-         RsUGKvX0pjRhYkvo/IFT5TI0kWkfJK8kcEpUz25iqMC6vEQjnh927OYUumVJhatIdryl
-         dE/Fe6BY8uqTYQuKWH/31FHm9RZ30TX727gZ4=
+	Wed, 3 Nov 2010 18:48:56 -0400
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bh8275dhz2dh2a8h61h)
+X-Spam-TCS-SCL: 0:0
+From: <Dinh.Nguyen@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
+        <s.hauer@pengutronix.de>, <u.kleine-koenig@pengutronix.de>,
+        <valentin.longchamp@epfl.ch>, <daniel@caiaq.de>,
+        <grant.likely@secretlab.ca>, <amit.kucheria@canonical.com>,
+        Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Subject: [PATCH] ARM: imx: Add support for low power suspend on MX51.
+Date: Wed, 3 Nov 2010 17:52:09 -0500
+Message-ID: <1288824729-11481-1-git-send-email-Dinh.Nguyen@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
 MIME-Version: 1.0
-In-Reply-To: <20101103220941.C88FA932@kernel.beaverton.ibm.com>
-References: <20101103220941.C88FA932@kernel.beaverton.ibm.com>
-Date: Thu, 4 Nov 2010 07:48:45 +0900
-Message-ID: <AANLkTi=4a6+4qQHN5pqi8Dd7-FUSn7TzauK4uUQ4YCVf@mail.gmail.com>
-Subject: Re: [PATCH] Revalidate page->mapping in do_generic_file_read()
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, arunabal@in.ibm.com,
-        sbest@us.ibm.com, stable <stable@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>,
-        Rik van Riel <riel@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-Reverse-DNS: de01egw01.freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 4, 2010 at 7:09 AM, Dave Hansen <dave@linux.vnet.ibm.com> wrote:
->
-> 70 hours into some stress tests of a 2.6.32-based enterprise kernel,
-> we ran into a NULL dereference in here:
->
->        int block_is_partially_uptodate(struct page *page, read_descriptor_t *desc,
->                                                unsigned long from)
->        {
-> ---->           struct inode *inode = page->mapping->host;
->
-> It looks like page->mapping was the culprit.  (xmon trace is below).
-> After closer examination, I realized that do_generic_file_read() does
-> a find_get_page(), and eventually locks the page before calling
-> block_is_partially_uptodate().  However, it doesn't revalidate the
-> page->mapping after the page is locked.  So, there's a small window
-> between the find_get_page() and ->is_partially_uptodate() where the
-> page could get truncated and page->mapping cleared.
->
-> We _have_ a reference, so it can't get reclaimed, but it certainly
-> can be truncated.
->
-> I think the correct thing is to check page->mapping after the
-> trylock_page(), and jump out if it got truncated.  This patch has
-> been running in the test environment for a month or so now, and we
-> have not seen this bug pop up again.
->
-> xmon info:
-> ======================================
-> 1f:mon> e
-> cpu 0x1f: Vector: 300 (Data Access) at [c0000002ae36f770]
->    pc: c0000000001e7a6c: .block_is_partially_uptodate+0xc/0x100
->    lr: c000000000142944: .generic_file_aio_read+0x1e4/0x770
->    sp: c0000002ae36f9f0
->   msr: 8000000000009032
->   dar: 0
->  dsisr: 40000000
->  current = 0xc000000378f99e30
->  paca    = 0xc000000000f66300
->    pid   = 21946, comm = bash
-> 1f:mon> r
-> R00 = 0025c0500000006d   R16 = 0000000000000000
-> R01 = c0000002ae36f9f0   R17 = c000000362cd3af0
-> R02 = c000000000e8cd80   R18 = ffffffffffffffff
-> R03 = c0000000031d0f88   R19 = 0000000000000001
-> R04 = c0000002ae36fa68   R20 = c0000003bb97b8a0
-> R05 = 0000000000000000   R21 = c0000002ae36fa68
-> R06 = 0000000000000000   R22 = 0000000000000000
-> R07 = 0000000000000001   R23 = c0000002ae36fbb0
-> R08 = 0000000000000002   R24 = 0000000000000000
-> R09 = 0000000000000000   R25 = c000000362cd3a80
-> R10 = 0000000000000000   R26 = 0000000000000002
-> R11 = c0000000001e7b60   R27 = 0000000000000000
-> R12 = 0000000042000484   R28 = 0000000000000001
-> R13 = c000000000f66300   R29 = c0000003bb97b9b8
-> R14 = 0000000000000001   R30 = c000000000e28a08
-> R15 = 000000000000ffff   R31 = c0000000031d0f88
-> pc  = c0000000001e7a6c .block_is_partially_uptodate+0xc/0x100
-> lr  = c000000000142944 .generic_file_aio_read+0x1e4/0x770
-> msr = 8000000000009032   cr  = 22000488
-> ctr = c0000000001e7a60   xer = 0000000020000000   trap =  300
-> dar = 0000000000000000   dsisr = 40000000
-> 1f:mon> t
-> [link register   ] c000000000142944 .generic_file_aio_read+0x1e4/0x770
-> [c0000002ae36f9f0] c000000000142a14 .generic_file_aio_read+0x2b4/0x770
-> (unreliable)
-> [c0000002ae36fb40] c0000000001b03e4 .do_sync_read+0xd4/0x160
-> [c0000002ae36fce0] c0000000001b153c .vfs_read+0xec/0x1f0
-> [c0000002ae36fd80] c0000000001b1768 .SyS_read+0x58/0xb0
-> [c0000002ae36fe30] c00000000000852c syscall_exit+0x0/0x40
-> --- Exception: c00 (System Call) at 00000080a840bc54
-> SP (fffca15df30) is in userspace
-> 1f:mon> di c0000000001e7a6c
-> c0000000001e7a6c  e9290000      ld      r9,0(r9)
-> c0000000001e7a70  418200c0      beq     c0000000001e7b30        #
-> .block_is_partially_uptodate+0xd0/0x100
-> c0000000001e7a74  e9440008      ld      r10,8(r4)
-> c0000000001e7a78  78a80020      clrldi  r8,r5,32
-> c0000000001e7a7c  3c000001      lis     r0,1
-> c0000000001e7a80  812900a8      lwz     r9,168(r9)
-> c0000000001e7a84  39600001      li      r11,1
-> c0000000001e7a88  7c080050      subf    r0,r8,r0
-> c0000000001e7a8c  7f805040      cmplw   cr7,r0,r10
-> c0000000001e7a90  7d6b4830      slw     r11,r11,r9
-> c0000000001e7a94  796b0020      clrldi  r11,r11,32
-> c0000000001e7a98  419d00a8      bgt     cr7,c0000000001e7b40    #
-> .block_is_partially_uptodate+0xe0/0x100
-> c0000000001e7a9c  7fa55840      cmpld   cr7,r5,r11
-> c0000000001e7aa0  7d004214      add     r8,r0,r8
-> c0000000001e7aa4  79080020      clrldi  r8,r8,32
-> c0000000001e7aa8  419c0078      blt     cr7,c0000000001e7b20    #
-> .block_is_partially_uptodate+0xc0/0x100
-> ======================================
->
-> Cc: arunabal@in.ibm.com
-> Cc: sbest@us.ibm.com
-> Cc: stable <stable@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Christoph Hellwig <hch@lst.de>
-> Cc: Al Viro <viro@zeniv.linux.org.uk>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-Nice catch.
-It was much better if you comment it.
-Thanks, Dave.
+Adds initial low power suspend functionality to MX51.
+Supports "mem" and "standby" modes.
+
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+---
+ arch/arm/mach-mx5/Makefile           |    2 +-
+ arch/arm/mach-mx5/pm.c               |   92 ++++++++++++++++++++++++++++++++++
+ arch/arm/plat-mxc/include/mach/mxc.h |    6 ++
+ 3 files changed, 99 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arm/mach-mx5/pm.c
+
+diff --git a/arch/arm/mach-mx5/Makefile b/arch/arm/mach-mx5/Makefile
+index 462f177..aefc9a1 100644
+--- a/arch/arm/mach-mx5/Makefile
++++ b/arch/arm/mach-mx5/Makefile
+@@ -3,7 +3,7 @@
+ #
+ 
+ # Object file lists.
+-obj-y   := cpu.o mm.o clock-mx51.o devices.o
++obj-y   := cpu.o mm.o clock-mx51.o devices.o pm.o
+ 
+ obj-$(CONFIG_CPU_FREQ_IMX)    += cpu_op-mx51.o
+ obj-$(CONFIG_MACH_MX51_BABBAGE) += board-mx51_babbage.o
+diff --git a/arch/arm/mach-mx5/pm.c b/arch/arm/mach-mx5/pm.c
+new file mode 100644
+index 0000000..a32640e
+--- /dev/null
++++ b/arch/arm/mach-mx5/pm.c
+@@ -0,0 +1,92 @@
++/*
++ *  Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights Reserved.
++ *
++ * The code contained herein is licensed under the GNU General Public
++ * License. You may obtain a copy of the GNU General Public License
++ * Version 2 or later at the following locations:
++ *
++ * http://www.opensource.org/licenses/gpl-license.html
++ * http://www.gnu.org/copyleft/gpl.html
++ */
++#include <linux/kernel.h>
++#include <linux/suspend.h>
++#include <linux/io.h>
++#include <asm/cacheflush.h>
++#include <asm/tlb.h>
++#include <asm/mach/map.h>
++#include <mach/system.h>
++#include "crm_regs.h"
++
++/* set cpu low power mode before WFI instruction */
++static void mxc_cpu_lp_set(enum mxc_cpu_pwr_mode mode)
++{
++	u32 plat_lpc, arm_srpgcr, ccm_clpcr;
++
++	/* always allow platform to issue a deep sleep mode request */
++	plat_lpc = __raw_readl(MXC_CORTEXA8_PLAT_LPC) &
++		~(MXC_CORTEXA8_PLAT_LPC_DSM);
++	ccm_clpcr = __raw_readl(MXC_CCM_CLPCR) & ~(MXC_CCM_CLPCR_LPM_MASK);
++	arm_srpgcr = __raw_readl(MXC_SRPG_ARM_SRPGCR) & ~(MXC_SRPGCR_PCR);
++
++	switch (mode) {
++	case WAIT_UNCLOCKED_POWER_OFF:
++	case STOP_POWER_OFF:
++		plat_lpc |= MXC_CORTEXA8_PLAT_LPC_DSM
++		    | MXC_CORTEXA8_PLAT_LPC_DBG_DSM;
++		if (mode == WAIT_UNCLOCKED_POWER_OFF) {
++			ccm_clpcr |= (0x1 << MXC_CCM_CLPCR_LPM_OFFSET);
++			ccm_clpcr &= ~MXC_CCM_CLPCR_VSTBY;
++			ccm_clpcr &= ~MXC_CCM_CLPCR_SBYOS;
++		} else {
++			ccm_clpcr |= (0x2 << MXC_CCM_CLPCR_LPM_OFFSET);
++			ccm_clpcr |= (0x3 << MXC_CCM_CLPCR_STBY_COUNT_OFFSET);
++			ccm_clpcr |= MXC_CCM_CLPCR_VSTBY;
++			ccm_clpcr |= MXC_CCM_CLPCR_SBYOS;
++		}
++		arm_srpgcr |= MXC_SRPGCR_PCR;
++		break;
++	default:
++		printk(KERN_WARNING "UNKNOWN cpu power mode: %d\n", mode);
++		return;
++	}
++
++	__raw_writel(plat_lpc, MXC_CORTEXA8_PLAT_LPC);
++	__raw_writel(ccm_clpcr, MXC_CCM_CLPCR);
++	__raw_writel(arm_srpgcr, MXC_SRPG_ARM_SRPGCR);
++}
++
++static int mx5_suspend_enter(suspend_state_t state)
++{
++	switch (state) {
++	case PM_SUSPEND_MEM:
++		mxc_cpu_lp_set(STOP_POWER_OFF);
++		break;
++	case PM_SUSPEND_STANDBY:
++		mxc_cpu_lp_set(WAIT_UNCLOCKED_POWER_OFF);
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	if (tzic_enable_wake(0) != 0)
++		return -EAGAIN;
++	cpu_do_idle();
++	return 0;
++}
++
++static int mx5_pm_valid(suspend_state_t state)
++{
++	return (state > PM_SUSPEND_ON && state <= PM_SUSPEND_MAX);
++}
++
++static const struct platform_suspend_ops mx5_suspend_ops = {
++	.valid = mx5_pm_valid,
++	.enter = mx5_suspend_enter,
++};
++
++static int __init mx5_pm_init(void)
++{
++	suspend_set_ops(&mx5_suspend_ops);
++	return 0;
++}
++device_initcall(mx5_pm_init);
+diff --git a/arch/arm/plat-mxc/include/mach/mxc.h b/arch/arm/plat-mxc/include/mach/mxc.h
+index a42c720..ece13fc 100644
+--- a/arch/arm/plat-mxc/include/mach/mxc.h
++++ b/arch/arm/plat-mxc/include/mach/mxc.h
+@@ -37,6 +37,12 @@
+ 
+ #ifndef __ASSEMBLY__
+ extern unsigned int __mxc_cpu_type;
++
++enum mxc_cpu_pwr_mode {
++	WAIT_UNCLOCKED_POWER_OFF,	/* WAIT + SRPG */
++	STOP_POWER_OFF,		/* STOP + SRPG */
++};
++int tzic_enable_wake(int is_idle);
+ #endif
+ 
+ #ifdef CONFIG_ARCH_MX1
 -- 
-Kind regards,
-Minchan Kim
+1.6.0.4
+
+
