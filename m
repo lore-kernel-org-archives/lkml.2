@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932575Ab0KCPbe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 11:31:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6202 "EHLO mx1.redhat.com"
+	id S932585Ab0KCPbh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 11:31:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932433Ab0KCPbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 11:31:08 -0400
+	id S932430Ab0KCPbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 11:31:07 -0400
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Subject: [PATCH 57 of 66] avoid breaking huge pmd invariants in case of
-	vma_adjust failures
-X-Mercurial-Node: 7109b653df89696ed9f903cb5174eea5d94729f3
-Message-Id: <7109b653df89696ed9f9.1288798112@v2.random>
+Subject: [PATCH 59 of 66] mmu_notifier_test_young
+X-Mercurial-Node: 223f722aba68e31ab9e99e8ee770ad7171e96ded
+Message-Id: <223f722aba68e31ab9e9.1288798114@v2.random>
 In-Reply-To: <patchbomb.1288798055@v2.random>
 References: <patchbomb.1288798055@v2.random>
 User-Agent: Mercurial-patchbomb/1.4.1
-Date: Wed, 03 Nov 2010 16:28:32 +0100
+Date: Wed, 03 Nov 2010 16:28:34 +0100
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -43,160 +42,261 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andrea Arcangeli <aarcange@redhat.com>
 
-An huge pmd can only be mapped if the corresponding 2M virtual range
-is fully contained in the vma. At times the VM calls split_vma twice,
-if the first split_vma succeeds and the second fail, the first
-split_vma remains in effect and it's not rolled back. For split_vma or
-vma_adjust to fail an allocation failure is needed so it's a very
-unlikely event (the out of memory killer would normally fire before
-any allocation failure is visible to kernel and userland and if an out
-of memory condition happens it's unlikely to happen exactly
-here). Nevertheless it's safer to ensure that no huge pmd can be left
-around if the vma is adjusted in a way that can't fit hugepages
-anymore at the new vm_start/vm_end address.
+For GRU and EPT, we need gup-fast to set referenced bit too (this is why it's
+correct to return 0 when shadow_access_mask is zero, it requires gup-fast to
+set the referenced bit). qemu-kvm access already sets the young bit in the pte
+if it isn't zero-copy, if it's zero copy or a shadow paging EPT minor fault we
+relay on gup-fast to signal the page is in use...
+
+We also need to check the young bits on the secondary pagetables for NPT and
+not nested shadow mmu as the data may never get accessed again by the primary
+pte.
+
+Without this closer accuracy, we'd have to remove the heuristic that avoids
+collapsing hugepages in hugepage virtual regions that have not even a single
+subpage in use.
+
+->test_young is full backwards compatible with GRU and other usages that don't
+have young bits in pagetables set by the hardware and that should nuke the
+secondary mmu mappings when ->clear_flush_young runs just like EPT does.
+
+Removing the heuristic that checks the young bit in
+khugepaged/collapse_huge_page completely isn't so bad either probably but I
+thought it was worth it and this makes it reliable.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -106,6 +106,19 @@ extern void __split_huge_page_pmd(struct
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -788,6 +788,7 @@ asmlinkage void kvm_handle_fault_on_rebo
+ #define KVM_ARCH_WANT_MMU_NOTIFIER
+ int kvm_unmap_hva(struct kvm *kvm, unsigned long hva);
+ int kvm_age_hva(struct kvm *kvm, unsigned long hva);
++int kvm_test_age_hva(struct kvm *kvm, unsigned long hva);
+ void kvm_set_spte_hva(struct kvm *kvm, unsigned long hva, pte_t pte);
+ int cpuid_maxphyaddr(struct kvm_vcpu *vcpu);
+ int kvm_cpu_has_interrupt(struct kvm_vcpu *vcpu);
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -959,6 +959,35 @@ static int kvm_age_rmapp(struct kvm *kvm
+ 	return young;
+ }
  
- extern unsigned long vma_address(struct page *page, struct vm_area_struct *vma);
- extern int hugepage_madvise(unsigned long *vm_flags);
-+extern void __vma_adjust_trans_huge(struct vm_area_struct *vma,
-+				    unsigned long start,
-+				    unsigned long end,
-+				    long adjust_next);
-+static inline void vma_adjust_trans_huge(struct vm_area_struct *vma,
-+					 unsigned long start,
-+					 unsigned long end,
-+					 long adjust_next)
++static int kvm_test_age_rmapp(struct kvm *kvm, unsigned long *rmapp,
++			      unsigned long data)
 +{
-+	if (!vma->anon_vma || vma->vm_ops || vma->vm_file)
-+		return;
-+	__vma_adjust_trans_huge(vma, start, end, adjust_next);
++	u64 *spte;
++	int young = 0;
++
++	/*
++	 * If there's no access bit in the secondary pte set by the
++	 * hardware it's up to gup-fast/gup to set the access bit in
++	 * the primary pte or in the page structure.
++	 */
++	if (!shadow_accessed_mask)
++		goto out;
++
++	spte = rmap_next(kvm, rmapp, NULL);
++	while (spte) {
++		u64 _spte = *spte;
++		BUG_ON(!(_spte & PT_PRESENT_MASK));
++		young = _spte & PT_ACCESSED_MASK;
++		if (young) {
++			young = 1;
++			break;
++		}
++		spte = rmap_next(kvm, rmapp, spte);
++	}
++out:
++	return young;
 +}
- static inline int PageTransHuge(struct page *page)
++
+ #define RMAP_RECYCLE_THRESHOLD 1000
+ 
+ static void rmap_recycle(struct kvm_vcpu *vcpu, u64 *spte, gfn_t gfn)
+@@ -979,6 +1008,11 @@ int kvm_age_hva(struct kvm *kvm, unsigne
+ 	return kvm_handle_hva(kvm, hva, 0, kvm_age_rmapp);
+ }
+ 
++int kvm_test_age_hva(struct kvm *kvm, unsigned long hva)
++{
++	return kvm_handle_hva(kvm, hva, 0, kvm_test_age_rmapp);
++}
++
+ #ifdef MMU_DEBUG
+ static int is_empty_shadow_page(u64 *spt)
  {
- 	VM_BUG_ON(PageTail(page));
-@@ -138,6 +151,12 @@ static inline int hugepage_madvise(unsig
- 	BUG_ON(0);
+diff --git a/arch/x86/mm/gup.c b/arch/x86/mm/gup.c
+--- a/arch/x86/mm/gup.c
++++ b/arch/x86/mm/gup.c
+@@ -8,6 +8,7 @@
+ #include <linux/mm.h>
+ #include <linux/vmstat.h>
+ #include <linux/highmem.h>
++#include <linux/swap.h>
+ 
+ #include <asm/pgtable.h>
+ 
+@@ -89,6 +90,7 @@ static noinline int gup_pte_range(pmd_t 
+ 		VM_BUG_ON(!pfn_valid(pte_pfn(pte)));
+ 		page = pte_page(pte);
+ 		get_page(page);
++		SetPageReferenced(page);
+ 		pages[*nr] = page;
+ 		(*nr)++;
+ 
+@@ -103,6 +105,7 @@ static inline void get_head_page_multipl
+ 	VM_BUG_ON(page != compound_head(page));
+ 	VM_BUG_ON(page_count(page) == 0);
+ 	atomic_add(nr, &page->_count);
++	SetPageReferenced(page);
+ }
+ 
+ static inline void pin_huge_page_tail(struct page *page)
+diff --git a/include/linux/mmu_notifier.h b/include/linux/mmu_notifier.h
+--- a/include/linux/mmu_notifier.h
++++ b/include/linux/mmu_notifier.h
+@@ -62,6 +62,16 @@ struct mmu_notifier_ops {
+ 				 unsigned long address);
+ 
+ 	/*
++	 * test_young is called to check the young/accessed bitflag in
++	 * the secondary pte. This is used to know if the page is
++	 * frequently used without actually clearing the flag or tearing
++	 * down the secondary mapping on the page.
++	 */
++	int (*test_young)(struct mmu_notifier *mn,
++			  struct mm_struct *mm,
++			  unsigned long address);
++
++	/*
+ 	 * change_pte is called in cases that pte mapping to page is changed:
+ 	 * for example, when ksm remaps pte to point to a new shared page.
+ 	 */
+@@ -163,6 +173,8 @@ extern void __mmu_notifier_mm_destroy(st
+ extern void __mmu_notifier_release(struct mm_struct *mm);
+ extern int __mmu_notifier_clear_flush_young(struct mm_struct *mm,
+ 					  unsigned long address);
++extern int __mmu_notifier_test_young(struct mm_struct *mm,
++				     unsigned long address);
+ extern void __mmu_notifier_change_pte(struct mm_struct *mm,
+ 				      unsigned long address, pte_t pte);
+ extern void __mmu_notifier_invalidate_page(struct mm_struct *mm,
+@@ -186,6 +198,14 @@ static inline int mmu_notifier_clear_flu
  	return 0;
  }
-+static inline void vma_adjust_trans_huge(struct vm_area_struct *vma,
-+					 unsigned long start,
-+					 unsigned long end,
-+					 long adjust_next)
-+{
-+}
- #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
  
- #endif /* _LINUX_HUGE_MM_H */
++static inline int mmu_notifier_test_young(struct mm_struct *mm,
++					  unsigned long address)
++{
++	if (mm_has_notifiers(mm))
++		return __mmu_notifier_test_young(mm, address);
++	return 0;
++}
++
+ static inline void mmu_notifier_change_pte(struct mm_struct *mm,
+ 					   unsigned long address, pte_t pte)
+ {
+@@ -313,6 +333,12 @@ static inline int mmu_notifier_clear_flu
+ 	return 0;
+ }
+ 
++static inline int mmu_notifier_test_young(struct mm_struct *mm,
++					  unsigned long address)
++{
++	return 0;
++}
++
+ static inline void mmu_notifier_change_pte(struct mm_struct *mm,
+ 					   unsigned long address, pte_t pte)
+ {
 diff --git a/mm/huge_memory.c b/mm/huge_memory.c
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
-@@ -1071,8 +1071,16 @@ pmd_t *page_check_address_pmd(struct pag
- 		goto out;
- 	if (pmd_page(*pmd) != page)
- 		goto out;
--	VM_BUG_ON(flag == PAGE_CHECK_ADDRESS_PMD_NOTSPLITTING_FLAG &&
--		  pmd_trans_splitting(*pmd));
-+	/*
-+	 * split_vma() may create temporary aliased mappings. There is
-+	 * no risk as long as all huge pmd are found and have their
-+	 * splitting bit set before __split_huge_page_refcount
-+	 * runs. Finding the same huge pmd more than once during the
-+	 * same rmap walk is not a problem.
-+	 */
-+	if (flag == PAGE_CHECK_ADDRESS_PMD_NOTSPLITTING_FLAG &&
-+	    pmd_trans_splitting(*pmd))
-+		goto out;
- 	if (pmd_trans_huge(*pmd)) {
- 		VM_BUG_ON(flag == PAGE_CHECK_ADDRESS_PMD_SPLITTING_FLAG &&
- 			  !pmd_trans_splitting(*pmd));
-@@ -2174,3 +2182,71 @@ void __split_huge_page_pmd(struct mm_str
- 	put_page(page);
- 	BUG_ON(pmd_trans_huge(*pmd));
- }
-+
-+static void split_huge_page_address(struct mm_struct *mm,
-+				    unsigned long address)
-+{
-+	pgd_t *pgd;
-+	pud_t *pud;
-+	pmd_t *pmd;
-+
-+	VM_BUG_ON(!(address & ~HPAGE_PMD_MASK));
-+
-+	pgd = pgd_offset(mm, address);
-+	if (!pgd_present(*pgd))
-+		return;
-+
-+	pud = pud_offset(pgd, address);
-+	if (!pud_present(*pud))
-+		return;
-+
-+	pmd = pmd_offset(pud, address);
-+	if (!pmd_present(*pmd))
-+		return;
-+	/*
-+	 * Caller holds the mmap_sem write mode, so a huge pmd cannot
-+	 * materialize from under us.
-+	 */
-+	split_huge_page_pmd(mm, pmd);
-+}
-+
-+void __vma_adjust_trans_huge(struct vm_area_struct *vma,
-+			     unsigned long start,
-+			     unsigned long end,
-+			     long adjust_next)
-+{
-+	/*
-+	 * If the new start address isn't hpage aligned and it could
-+	 * previously contain an hugepage: check if we need to split
-+	 * an huge pmd.
-+	 */
-+	if (start & ~HPAGE_PMD_MASK &&
-+	    (start & HPAGE_PMD_MASK) >= vma->vm_start &&
-+	    (start & HPAGE_PMD_MASK) + HPAGE_PMD_SIZE <= vma->vm_end)
-+		split_huge_page_address(vma->vm_mm, start);
-+
-+	/*
-+	 * If the new end address isn't hpage aligned and it could
-+	 * previously contain an hugepage: check if we need to split
-+	 * an huge pmd.
-+	 */
-+	if (end & ~HPAGE_PMD_MASK &&
-+	    (end & HPAGE_PMD_MASK) >= vma->vm_start &&
-+	    (end & HPAGE_PMD_MASK) + HPAGE_PMD_SIZE <= vma->vm_end)
-+		split_huge_page_address(vma->vm_mm, end);
-+
-+	/*
-+	 * If we're also updating the vma->vm_next->vm_start, if the new
-+	 * vm_next->vm_start isn't page aligned and it could previously
-+	 * contain an hugepage: check if we need to split an huge pmd.
-+	 */
-+	if (adjust_next > 0) {
-+		struct vm_area_struct *next = vma->vm_next;
-+		unsigned long nstart = next->vm_start;
-+		nstart += adjust_next << PAGE_SHIFT;
-+		if (nstart & ~HPAGE_PMD_MASK &&
-+		    (nstart & HPAGE_PMD_MASK) >= next->vm_start &&
-+		    (nstart & HPAGE_PMD_MASK) + HPAGE_PMD_SIZE <= next->vm_end)
-+			split_huge_page_address(next->vm_mm, nstart);
-+	}
-+}
-diff --git a/mm/mmap.c b/mm/mmap.c
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -589,6 +589,8 @@ again:			remove_next = 1 + (end > next->
- 		}
- 	}
+@@ -1626,7 +1626,8 @@ static int __collapse_huge_page_isolate(
+ 		VM_BUG_ON(PageLRU(page));
  
-+	vma_adjust_trans_huge(vma, start, end, adjust_next);
+ 		/* If there is no mapped pte young don't collapse the page */
+-		if (pte_young(pteval))
++		if (pte_young(pteval) || PageReferenced(page) ||
++		    mmu_notifier_test_young(vma->vm_mm, address))
+ 			referenced = 1;
+ 	}
+ 	if (unlikely(!referenced))
+@@ -1869,7 +1870,8 @@ static int khugepaged_scan_pmd(struct mm
+ 		/* cannot use mapcount: can't collapse if there's a gup pin */
+ 		if (page_count(page) != 1)
+ 			goto out_unmap;
+-		if (pte_young(pteval))
++		if (pte_young(pteval) || PageReferenced(page) ||
++		    mmu_notifier_test_young(vma->vm_mm, address))
+ 			referenced = 1;
+ 	}
+ 	if (referenced)
+diff --git a/mm/mmu_notifier.c b/mm/mmu_notifier.c
+--- a/mm/mmu_notifier.c
++++ b/mm/mmu_notifier.c
+@@ -100,6 +100,26 @@ int __mmu_notifier_clear_flush_young(str
+ 	return young;
+ }
+ 
++int __mmu_notifier_test_young(struct mm_struct *mm,
++			      unsigned long address)
++{
++	struct mmu_notifier *mn;
++	struct hlist_node *n;
++	int young = 0;
 +
- 	/*
- 	 * When changing only vma->vm_end, we don't really need anon_vma
- 	 * lock. This is a fairly rare case by itself, but the anon_vma
++	rcu_read_lock();
++	hlist_for_each_entry_rcu(mn, n, &mm->mmu_notifier_mm->list, hlist) {
++		if (mn->ops->test_young) {
++			young = mn->ops->test_young(mn, mm, address);
++			if (young)
++				break;
++		}
++	}
++	rcu_read_unlock();
++
++	return young;
++}
++
+ void __mmu_notifier_change_pte(struct mm_struct *mm, unsigned long address,
+ 			       pte_t pte)
+ {
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -372,6 +372,22 @@ static int kvm_mmu_notifier_clear_flush_
+ 	return young;
+ }
+ 
++static int kvm_mmu_notifier_test_young(struct mmu_notifier *mn,
++				       struct mm_struct *mm,
++				       unsigned long address)
++{
++	struct kvm *kvm = mmu_notifier_to_kvm(mn);
++	int young, idx;
++
++	idx = srcu_read_lock(&kvm->srcu);
++	spin_lock(&kvm->mmu_lock);
++	young = kvm_test_age_hva(kvm, address);
++	spin_unlock(&kvm->mmu_lock);
++	srcu_read_unlock(&kvm->srcu, idx);
++
++	return young;
++}
++
+ static void kvm_mmu_notifier_release(struct mmu_notifier *mn,
+ 				     struct mm_struct *mm)
+ {
+@@ -388,6 +404,7 @@ static const struct mmu_notifier_ops kvm
+ 	.invalidate_range_start	= kvm_mmu_notifier_invalidate_range_start,
+ 	.invalidate_range_end	= kvm_mmu_notifier_invalidate_range_end,
+ 	.clear_flush_young	= kvm_mmu_notifier_clear_flush_young,
++	.test_young		= kvm_mmu_notifier_test_young,
+ 	.change_pte		= kvm_mmu_notifier_change_pte,
+ 	.release		= kvm_mmu_notifier_release,
+ };
