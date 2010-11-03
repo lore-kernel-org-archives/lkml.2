@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756184Ab0KCRtV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 13:49:21 -0400
-Received: from kroah.org ([198.145.64.141]:39162 "EHLO coco.kroah.org"
+	id S932220Ab0KCRua (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 13:50:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38777 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756167Ab0KCRtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 13:49:20 -0400
-Date: Wed, 3 Nov 2010 10:46:07 -0700
-From: Greg KH <greg@kroah.com>
-To: cdhmanning@gmail.com
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 1/9] Add yaffs Kconfig and Makefile
-Message-ID: <20101103174607.GA6777@kroah.com>
-References: <1288803204-3849-1-git-send-email-cdhmanning@gmail.com> <1288803204-3849-2-git-send-email-cdhmanning@gmail.com>
+	id S1753661Ab0KCRu2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 13:50:28 -0400
+Date: Wed, 3 Nov 2010 13:50:26 -0400 (EDT)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Ross Kirk <Ross.Kirk@nexor.com>
+Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org, eparis@redhat.com
+Subject: Re: [PATCH] audit: error message typo correction
+In-Reply-To: <DF69A264612A3D4B961979B6957E8CFB040F06D4@NEXCHANGE.nexor.co.uk>
+Message-ID: <alpine.LNX.2.00.1011031350040.15851@pobox.suse.cz>
+References: <DF69A264612A3D4B961979B6957E8CFB040F06D4@NEXCHANGE.nexor.co.uk>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288803204-3849-2-git-send-email-cdhmanning@gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 04, 2010 at 05:53:16AM +1300, cdhmanning@gmail.com wrote:
-> From: Charles Manning <cdhmanning@gmail.com>
+On Fri, 22 Oct 2010, Ross Kirk wrote:
+
 > 
-> Adding yaffs2 file system.
+> Fixes a typo in the error message raised by audit when auditd has died
 > 
-> Signed-off-by: Charles Manning <cdhmanning@gmail.com>
-> ---
->  fs/yaffs2/Kconfig  |  190 ++++++++++++++++++++++++++++++++++++++++++++++++++++
->  fs/yaffs2/Makefile |   17 +++++
+> Signed-off-by: Ross Kirk <ross.kirk@nexor.com>
+> 
+> --
+> 
+> diff -up a/kernel/audit.c b/kernel/audit.c 
+> --- a/kernel/audit.c    2010-10-22 16:25:40.000000000 +0100
+> +++ b/kernel/audit.c    2010-10-22 16:25:46.000000000 +0100
+> @@ -400,7 +400,7 @@ static void kauditd_send_skb(struct sk_b
+>         if (err < 0) {
+>                 BUG_ON(err != -ECONNREFUSED); /* Shouldn't happen */
+>                 printk(KERN_ERR "audit: *NO* daemon at audit_pid=%d\n", audit_pid);
+> -               audit_log_lost("auditd dissapeared\n");
+> +               audit_log_lost("auditd disappeared\n");
+>                 audit_pid = 0;
+>                 /* we might get lucky and get this in the next auditd */
+>                 audit_hold_skb(skb);
 
-Don't do this as your first patch, make it your last one.  Otherwise the
-build will break when you apply this one to the tree.
+Asi this is not in linux-next as of today, I have put it into trivial 
+queue.
 
-Remember, we need to be able to have a correct build at every patch in
-the whole development series, otherwise tools like 'git bisect' will not
-work properly.
+Thanks,
 
-Also, is your goal to get this cleaned up good enough to get it into .38
-in the "real" place in the kernel, or do you want to see it go through
-staging and take a bit longer to get everything cleaned up properly
-before moving to the "real" location?
-
-Either is fine with me, just curious.
-
-thanks,
-
-greg k-h
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
