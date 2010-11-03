@@ -1,131 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754639Ab0KCKsT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 06:48:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29283 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754197Ab0KCKsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 06:48:16 -0400
-Date: Wed, 3 Nov 2010 12:48:12 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 1/1] vhost: TX used buffer guest signal accumulation
-Message-ID: <20101103104812.GB10555@redhat.com>
-References: <1288216693.17571.38.camel@localhost.localdomain>
- <1288240804.14342.1.camel@localhost.localdomain>
- <20101028052021.GD5599@redhat.com>
- <1288286062.11251.15.camel@localhost.localdomain>
- <20101029081027.GB22688@redhat.com>
- <1288366988.4110.5.camel@localhost.localdomain>
- <20101030200603.GA19033@redhat.com>
- <1288642673.19173.8.camel@localhost.localdomain>
+	id S1754832Ab0KCKtd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 06:49:33 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:37800 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754344Ab0KCKta convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 06:49:30 -0400
+From: <samu.p.onkalo@nokia.com>
+To: <alan@linux.intel.com>, <gregkh@suse.de>
+CC: <hmh@hmh.eng.br>, <alan@lxorguk.ukuu.org.uk>, <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+Date: Wed, 3 Nov 2010 11:48:42 +0100
+Subject: RE: sysfs and power management
+Thread-Topic: sysfs and power management
+Thread-Index: Act7Q7EqQonA4m4WQISwIzFfT8Ak8wAAGfsg
+Message-ID: <62697B07E9803846BC582181BD6FB6B836EB55EE74@NOK-EUMSG-02.mgdnok.nokia.com>
+References: <1288177143.12206.22.camel@4fid08082>
+	<20101027124816.7087436a@linux.intel.com>
+	<62697B07E9803846BC582181BD6FB6B836EB2994F4@NOK-EUMSG-02.mgdnok.nokia.com>
+	<20101027152809.39701917@lxorguk.ukuu.org.uk>
+	<20101029195039.GA26401@suse.de>
+	<20101030140047.GA24464@khazad-dum.debian.net>
+	<1288526275.2313.14.camel@noppispoppis.nmp.nokia.com>
+	<20101031142539.GA25480@suse.de>	<1288608087.26073.6.camel@4fid08082>
+	<20101101165701.2fc30368@linux.intel.com>	<20101101180740.GA17148@suse.de>
+ <20101103094452.0cfae4ec@linux.intel.com>
+In-Reply-To: <20101103094452.0cfae4ec@linux.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288642673.19173.8.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 03 Nov 2010 10:48:45.0270 (UTC) FILETIME=[B01A5760:01CB7B44]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 01, 2010 at 01:17:53PM -0700, Shirley Ma wrote:
-> On Sat, 2010-10-30 at 22:06 +0200, Michael S. Tsirkin wrote:
-> > On Fri, Oct 29, 2010 at 08:43:08AM -0700, Shirley Ma wrote:
-> > > On Fri, 2010-10-29 at 10:10 +0200, Michael S. Tsirkin wrote:
-> > > > Hmm. I don't yet understand. We are still doing copies into the
-> > per-vq
-> > > > buffer, and the data copied is really small.  Is it about cache
-> > line
-> > > > bounces?  Could you try figuring it out?
-> > > 
-> > > per-vq buffer is much less expensive than 3 put_copy() call. I will
-> > > collect the profiling data to show that.
-> > 
-> > What about __put_user? Maybe the access checks are the ones
-> > that add the cost here? I attach patches to strip access checks:
-> > they are not needed as we do them on setup time already, anyway.
-> > Can you try them out and see if performance is improved for you
-> > please?
-> > On top of this, we will need to add some scheme to accumulate signals,
-> > but that is a separate issue.
-> 
-> Yes, moving from put_user/get_user to __put_user/__get_user does improve
-> the performance by removing the checking.
 
-I mean in practice, you see a benefit from this patch?
 
-> My concern here is whether checking only in set up would be sufficient
-> for security?
+>-----Original Message-----
+>From: ext Alan Cox [mailto:alan@linux.intel.com]
+>Sent: 03 November, 2010 11:45
+>To: Greg KH
+>Cc: Onkalo Samu.P (Nokia-MS/Tampere); ext Henrique de Moraes Holschuh;
+>Alan Cox; akpm@linux-foundation.org; linux-kernel@vger.kernel.org
+>Subject: Re: sysfs and power management
+>
+>On Mon, 1 Nov 2010 11:07:40 -0700
+>Greg KH <gregkh@suse.de> wrote:
+>
+>> On Mon, Nov 01, 2010 at 04:57:01PM +0000, Alan Cox wrote:
+>> > > I took a look to that. It seems that iio is more or less sysfs
+>> > > based. There are ring buffers and event device which are chardev
+>> > > based but still the data outside ring buffer and the control is
+>> > > sysfs based.
+>> >
+>> > IIO is sysfs dependant, heavyweight and makes no sense for some of
+>> > the sysfs based drivers. IIO is also staging based and Linus
+>> > already threw out the last attempt to unify these drivers sanely
+>> > with an ALS layer - which was smaller, cleaner and better !
+>>
+>> I think we need to revisit this issue again, before iio is merged to
+>> the main kernel tree.  I've been totally ignoring the iio user/kernel
+>> api at the moment, waiting for things to settle down there
+>
+>Actually I think there is another way to do it cleanly
+>
+>Keep a flag per device (or per runtime pm struct of device)
+>
+>And on the open/close do
+>
+>	if (runtime_pm on device && device has SYSFS_PM set)
+>		pm_runtime_foo
+>
+>so that devices that need to be powered up to handle sysfs requests can
+>set a single flag and just work.
 
-It better be sufficient because the checks that put_user does
-are not effictive when run from the kernel thread, anyway.
+That is one quite clean way.
+sysfs_ops still needs function pointer to device core function which does pm_runtime
+calls.
+And there is one drawback. Driver doesn't know about new users after the first one.
+It may want to refresh results whenever a new user appears. But that is probably not
+a big issue.
 
-> Would be there is a case guest could corrupt the ring
-> later? If not, that's OK.
+-Samu
 
-You mean change the pointer after it's checked?
-If you see such a case, please holler.
 
-> > > > > > 2. How about flushing out queued stuff before we exit
-> > > > > >    the handle_tx loop? That would address most of
-> > > > > >    the spec issue. 
-> > > > > 
-> > > > > The performance is almost as same as the previous patch. I will
-> > > > resubmit
-> > > > > the modified one, adding vhost_add_used_and_signal_n after
-> > handle_tx
-> > > > > loop for processing pending queue.
-> > > > > 
-> > > > > This patch was a part of modified macvtap zero copy which I
-> > haven't
-> > > > > submitted yet. I found this helped vhost TX in general. This
-> > pending
-> > > > > queue will be used by DMA done later, so I put it in vq instead
-> > of a
-> > > > > local variable in handle_tx.
-> > > > > 
-> > > > > Thanks
-> > > > > Shirley
-> > > > 
-> > > > BTW why do we need another array? Isn't heads field exactly what
-> > we
-> > > > need
-> > > > here?
-> > > 
-> > > head field is only for up to 32, the more used buffers add and
-> > signal
-> > > accumulated the better performance is from test results.
-> > 
-> > I think we should separate the used update and signalling.  Interrupts
-> > are expensive so I can believe accumulating even up to 100 of them
-> > helps. But used head copies are already prety cheap. If we cut the
-> > overhead by x32, that should make them almost free?
-> 
-> I can separate the used update and signaling to see the best
-> performance.
-> 
-> > > That's was one
-> > > of the reason I didn't use heads. The other reason was I used these
-> > > buffer for pending dma done in mavctap zero copy patch. It could be
-> > up
-> > > to vq->num in worse case.
-> > 
-> > We can always increase that, not an issue. 
-> 
-> Good, I will change heads up to vq->num and use it.
-> 
-> Thanks
-> Shirley
 
-To clarify: the combination of __put_user and separate
-signalling is giving the same performance benefit as your
-patch?
 
-I am mostly concerned with adding code that seems to help
-speed for reasons we don't completely understand, because
-then we might break the optimization easily without noticing.
 
--- 
-MST
+
