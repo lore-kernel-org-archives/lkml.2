@@ -1,55 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932230Ab0KCRRF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 13:17:05 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:16361 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932137Ab0KCRRD (ORCPT
+	id S1756096Ab0KCRRp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 13:17:45 -0400
+Received: from bipbip.grupopie.com ([195.23.16.24]:35215 "EHLO
+	bipbip.grupopie.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753083Ab0KCRRn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 13:17:03 -0400
-Message-ID: <4CD19909.9090103@caviumnetworks.com>
-Date: Wed, 03 Nov 2010 10:16:57 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	Wed, 3 Nov 2010 13:17:43 -0400
+Message-ID: <4CD1992C.7080509@grupopie.com>
+Date: Wed, 03 Nov 2010 17:17:32 +0000
+From: Paulo Marques <pmarques@grupopie.com>
+Organization: Grupo PIE
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
 To: cdhmanning@gmail.com
 CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
 Subject: Re: [PATCH 7/9] Add yaffs tag access code
 References: <1288803204-3849-1-git-send-email-cdhmanning@gmail.com> <1288803204-3849-8-git-send-email-cdhmanning@gmail.com>
 In-Reply-To: <1288803204-3849-8-git-send-email-cdhmanning@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Nov 2010 17:17:38.0086 (UTC) FILETIME=[038B8460:01CB7B7B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2010 09:53 AM, cdhmanning@gmail.com wrote:
-[...]
-> --- /dev/null
-> +++ b/fs/yaffs2/yaffs_tagscompat.c
-> @@ -0,0 +1,454 @@
-> +/*
-> + * YAFFS: Yet Another Flash File System. A NAND-flash specific file system.
-> + *
-> + * Copyright (C) 2002-2010 Aleph One Ltd.
-> + *   for Toby Churchill Ltd and Brightstar Engineering
-> + *
-> + * Created by Charles Manning<charles@aleph1.co.uk>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include "yaffs_guts.h"
-> +#include "yaffs_tagscompat.h"
-> +#include "yaffs_ecc.h"
-> +#include "yaffs_getblockinfo.h"
-> +#include "yaffs_trace.h"
-> +
-> +static void yaffs_handle_rd_data_error(struct yaffs_dev *dev, int nand_chunk);
-> +
+cdhmanning@gmail.com wrote:
+> [...]
 > +static const char yaffs_count_bits_table[256] = {
 > +	0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
 > +	1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
@@ -76,11 +52,13 @@ On 11/03/2010 09:53 AM, cdhmanning@gmail.com wrote:
 > +	return ret_val;
 > +}
 
-As in the other file, the kernel has hweight8() that should probably be 
-used instead.
+It seems like there is a requirement for yaffs code to include Yet
+Another Bit Counting Function (YABCF) in every module... ;)
 
-On some architectures hweight8() expands to a single instruction. 
-Others should already have something as efficient as this, and if they 
-don't they probably should.
+As David Daney suggested, this should probably use the standard hweight8
+function instead.
 
-David Daney
+-- 
+Paulo Marques - www.grupopie.com
+
+"All generalizations are false."
