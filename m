@@ -1,36 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616Ab0KCVsT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 17:48:19 -0400
-Received: from mga01.intel.com ([192.55.52.88]:37320 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752564Ab0KCVsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 17:48:17 -0400
-Message-Id: <5b55a1$iidall@fmsmga002.fm.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,291,1286175600"; 
-   d="scan'208";a="623291061"
-Date: Wed, 03 Nov 2010 21:48:13 +0000
-To: Kyle McMartin <kyle@mcmartin.ca>
-Subject: Re: [PATCH] i915: reprogram power monitoring registers on resume
-Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101103202757.GJ8332@bombadil.infradead.org>
-References: <20101103202757.GJ8332@bombadil.infradead.org>
-From: Chris Wilson <chris@chris-wilson.co.uk>
+	id S1752645Ab0KCVtZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 17:49:25 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52170
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751587Ab0KCVtW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 17:49:22 -0400
+Date: Wed, 03 Nov 2010 14:49:45 -0700 (PDT)
+Message-Id: <20101103.144945.226779604.davem@davemloft.net>
+To: alex.buell@munted.org.uk
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: PING: David Miller - SPARC64
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1288812739.12638.2.camel@lithium>
+References: <1288812739.12638.2.camel@lithium>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Nov 2010 16:27:57 -0400, Kyle McMartin <kyle@mcmartin.ca> wrote:
-> From: Kyle McMartin <kyle@redhat.com>
-> 
-> Fixes issue where i915_gfx_val was reporting values several
-> orders of magnitude higher than physically possible (without
-> leaving scorch marks on my thighs at least.)
+From: Alex Buell <alex.buell@munted.org.uk>
+Date: Wed, 03 Nov 2010 19:32:19 +0000
 
-Applied to -fixes, thanks.
--Chris
+> Can you drop me an e-mail with your current e-mail address? I need to
+> talk to you about getting the X11 fbdev driver to work on the sunxvr500
+> console framebuffer device. 
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+First, I don't discuss things privately with anyone about
+free software development.
+
+I always tell people to ask their questions on the appropriate
+mailing list, but feel free to CC: me.  That way if I am too
+busy someone else has the chance to help you.
