@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846Ab0KCB34 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 21:29:56 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:34346 "EHLO
+	id S1753369Ab0KCBaO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 21:30:14 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:35444 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752660Ab0KCB3y (ORCPT
+	with ESMTP id S1752915Ab0KCBaC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 21:29:54 -0400
+	Tue, 2 Nov 2010 21:30:02 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:to:from:cc:date:message-id:user-agent:
-	mime-version:content-type:content-transfer-encoding:x-system-of-record;
-	b=HBgkcoyau/Hy7DqRDa7X0fIYc4GpPRvLnllUiEL1DVUdEhcOSXe4Azgr4COTdWNYb
-	DuggPKaQEkVy3FMwizYyg==
-Subject: [PATCH v1 00/12] netoops support
+	h=subject:to:from:cc:date:message-id:in-reply-to:references:
+	user-agent:mime-version:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=EU5EtVdLWAv1ZUtDSSHjIXhogLY9O+NyvPVdDinhs/2cwjAn2Q3sbxGT1sCfPZyjA
+	2wMjGeZqA7qOiTpTqjvlQ==
+Subject: [PATCH v1 01/12] Oops: Pass regs to oops_exit()
 To: simon.kagstrom@netinsight.net, davem@davemloft.net
 From: Mike Waychison <mikew@google.com>
 Cc: adurbin@google.com, akpm@linux-foundation.org, chavey@google.com,
         linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
-Date: Tue, 02 Nov 2010 18:29:25 -0700
-Message-ID: <20101103012917.4641.57113.stgit@crlf.mtv.corp.google.com>
+Date: Tue, 02 Nov 2010 18:29:31 -0700
+Message-ID: <20101103012930.4641.93668.stgit@crlf.mtv.corp.google.com>
+In-Reply-To: <20101103012917.4641.57113.stgit@crlf.mtv.corp.google.com>
+References: <20101103012917.4641.57113.stgit@crlf.mtv.corp.google.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -28,67 +31,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset applies to v2.6.36.
+Later commits in this series will want to see pt_regs if available when a
+machine oopses.  Pass regs if available on to oops_exit().
 
-The following series implements support for 'netoops', a simple driver that
-will deliver kmsg logs together with machine specifics over the network.
+Signed-off-by: Mike Waychison <mikew@google.com>
+---
+ arch/arm/kernel/traps.c     |    2 +-
+ arch/parisc/kernel/traps.c  |    2 +-
+ arch/powerpc/kernel/traps.c |    2 +-
+ arch/s390/kernel/traps.c    |    2 +-
+ arch/sh/kernel/traps_32.c   |    2 +-
+ arch/x86/kernel/dumpstack.c |    2 +-
+ include/linux/kernel.h      |    2 +-
+ kernel/panic.c              |    2 +-
+ 8 files changed, 8 insertions(+), 8 deletions(-)
 
-This driver is based on code used in Google's production server environment.
-We internally call the driver 'netdump', but are planning on changing the name
-to 'netoops' to follow the convention set by both the mtdoops and ramoops
-drivers.  We use these facilities to gather crash data from our entire fleet of
-machines in a light-weight manner.  We things this way because it simply isn't
-feasible to gather full crash data off of every machine in the wild that
-decides it is time to die.
+diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+index cda78d5..45cc7c0 100644
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -280,7 +280,7 @@ void die(const char *str, struct pt_regs *regs, int err)
+ 	bust_spinlocks(0);
+ 	add_taint(TAINT_DIE);
+ 	spin_unlock_irq(&die_lock);
+-	oops_exit();
++	oops_exit(regs);
+ 
+ 	if (in_interrupt())
+ 		panic("Fatal exception in interrupt");
+diff --git a/arch/parisc/kernel/traps.c b/arch/parisc/kernel/traps.c
+index 8b58bf0..4aa5514 100644
+--- a/arch/parisc/kernel/traps.c
++++ b/arch/parisc/kernel/traps.c
+@@ -294,7 +294,7 @@ void die_if_kernel(char *str, struct pt_regs *regs, long err)
+ 		panic("Fatal exception");
+ 	}
+ 
+-	oops_exit();
++	oops_exit(regs);
+ 	do_exit(SIGSEGV);
+ }
+ 
+diff --git a/arch/powerpc/kernel/traps.c b/arch/powerpc/kernel/traps.c
+index a45a63c..918c498 100644
+--- a/arch/powerpc/kernel/traps.c
++++ b/arch/powerpc/kernel/traps.c
+@@ -170,7 +170,7 @@ int die(const char *str, struct pt_regs *regs, long err)
+ 	if (panic_on_oops)
+ 		panic("Fatal exception");
+ 
+-	oops_exit();
++	oops_exit(regs);
+ 	do_exit(err);
+ 
+ 	return 0;
+diff --git a/arch/s390/kernel/traps.c b/arch/s390/kernel/traps.c
+index 5d8f0f3..90c8259 100644
+--- a/arch/s390/kernel/traps.c
++++ b/arch/s390/kernel/traps.c
+@@ -305,7 +305,7 @@ void die(const char * str, struct pt_regs * regs, long err)
+ 		panic("Fatal exception in interrupt");
+ 	if (panic_on_oops)
+ 		panic("Fatal exception: panic_on_oops");
+-	oops_exit();
++	oops_exit(regs);
+ 	do_exit(SIGSEGV);
+ }
+ 
+diff --git a/arch/sh/kernel/traps_32.c b/arch/sh/kernel/traps_32.c
+index c3d86fa..6b3f31e 100644
+--- a/arch/sh/kernel/traps_32.c
++++ b/arch/sh/kernel/traps_32.c
+@@ -102,7 +102,7 @@ void die(const char * str, struct pt_regs * regs, long err)
+ 	bust_spinlocks(0);
+ 	add_taint(TAINT_DIE);
+ 	spin_unlock_irq(&die_lock);
+-	oops_exit();
++	oops_exit(regs);
+ 
+ 	if (kexec_should_crash(current))
+ 		crash_kexec(regs);
+diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+index 6e8752c..89c720c 100644
+--- a/arch/x86/kernel/dumpstack.c
++++ b/arch/x86/kernel/dumpstack.c
+@@ -254,7 +254,7 @@ void __kprobes oops_end(unsigned long flags, struct pt_regs *regs, int signr)
+ 		/* Nest count reaches zero, release the lock. */
+ 		arch_spin_unlock(&die_lock);
+ 	raw_local_irq_restore(flags);
+-	oops_exit();
++	oops_exit(regs);
+ 
+ 	if (!signr)
+ 		return;
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 2b0a35e..995eb70 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -181,7 +181,7 @@ extern long (*panic_blink)(int state);
+ NORET_TYPE void panic(const char * fmt, ...)
+ 	__attribute__ ((NORET_AND format (printf, 1, 2))) __cold;
+ extern void oops_enter(void);
+-extern void oops_exit(void);
++extern void oops_exit(struct pt_regs *);
+ void print_oops_end_marker(void);
+ extern int oops_may_print(void);
+ NORET_TYPE void do_exit(long error_code)
+diff --git a/kernel/panic.c b/kernel/panic.c
+index 4c13b1a..c3f39cd 100644
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -349,7 +349,7 @@ void print_oops_end_marker(void)
+  * Called when the architecture exits its oops handler, after printing
+  * everything.
+  */
+-void oops_exit(void)
++void oops_exit(struct pt_regs *regs)
+ {
+ 	do_oops_enter_exit();
+ 	print_oops_end_marker();
 
-Currently, this driver only supports udp over ipv4.  When configured with an
-IPv4 address, netoops will initiate an ARP and hold a reference to the
-associated neighbor.  It uses this information when invoked via kmsg_dump() to
-fire off UDP packets via the netpoll interface.
-
-I'm posting these patches in an effort to eventually get this sort of
-functionality mainlined.  I have tried to clean this code up internally, but
-there are still several unresolved issues that would need to be worked out.  In
-particular:
-
-   * I am _NOT_ happy with the userland ABIs presented in this patchset.  They
-     were cobbled together by a variety of engineers over the years, and they
-     aren't very pretty.  I present them none-the-less to express the scope of
-     the functionality that we would like to maintain.
-
-   * I am _NOT_ happy with the data format of the transmitted packets.  It is
-     very specific to our server environment and currently:
-
-      * is hard-coded to support both userland provided information (that may
-        not be applicable to others) and
-
-      * only supports i386 and x86_64.
-
-   * UDP Port numbers are currently hard-coded.
-
-   * I am uncertain if the handling of the neighbor's validity is correct,
-
-   * The netdev event handling is probably incomplete to handle reloading of
-     the neighbor.
-
-I'd like to resolve each of the above issues in subsequent versions of this
-patchset.  I need help in identifying what the ABI should look like in
-particular.
-
-
-Patchset summary
-================
-
-1  - Pass pt_regs on to oops_exit()
-2  - Let kmsg_dumpers get access to pt_regs if available
-3  - Introduce KMSG_DUMP_SOFT
-4  - Add a sysrq trigger that calls kmsg_dump(KMSG_DUMP_SOFT) (USER ABI)
-5  - Netoops core driver. (USER ABI)
-6  - Addition of x86 specific bits to the network packets (NETWORK ABI)
-7  - Addition of userland specific bits to the network packets (USER AND
-     NETWORK ABI)
-8  - Support for "one-shot" dumping (USER ABI)
-9  - An userland interface for triggering crashes (USER ABI)
-10 - EXPORT_SYMBOL_GPL(kmsg_dump)
-11 - EXPORT_SYMBOL_GPL(arp_bind_neighbor)
-12 - Allow netoops to be compiled as a module
