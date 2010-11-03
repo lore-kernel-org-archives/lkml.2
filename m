@@ -1,61 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527Ab0KCJpQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 05:45:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2979 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754389Ab0KCJpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 05:45:13 -0400
-Date: Wed, 3 Nov 2010 11:45:08 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [RFC PATCH v2 7/7] KVM: KVM: don't break vcpu 'halt' state due
- to apfs
-Message-ID: <20101103094508.GG7881@redhat.com>
-References: <4CCE8143.3090105@cn.fujitsu.com>
- <4CCE82BC.3090000@cn.fujitsu.com>
- <20101101125551.GD31722@redhat.com>
- <4CD12FC9.9070902@cn.fujitsu.com>
+	id S1754081Ab0KCKAT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 06:00:19 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:59956 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753685Ab0KCKAQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 06:00:16 -0400
+Date: Wed, 3 Nov 2010 10:00:12 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: sfrench@samba.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        linux-cifs@vger.kernel.org, Jeff Layton <jlayton@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH v2 1/1] FS: cifs, remove unneeded NULL tests
+Message-ID: <20101103100012.GA19804@ZenIV.linux.org.uk>
+References: <1288624135-24170-1-git-send-email-jslaby@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CD12FC9.9070902@cn.fujitsu.com>
+In-Reply-To: <1288624135-24170-1-git-send-email-jslaby@suse.cz>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 05:47:53PM +0800, Xiao Guangrong wrote:
-> On 11/01/2010 08:55 PM, Gleb Natapov wrote:
-> 
-> > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> > index 2cfdf2d..f7aed95 100644
-> > --- a/arch/x86/kvm/x86.c
-> > +++ b/arch/x86/kvm/x86.c
-> > @@ -5295,8 +5295,9 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
-> >  			{
-> >  				switch(vcpu->arch.mp_state) {
-> >  				case KVM_MP_STATE_HALTED:
-> > -					vcpu->arch.mp_state =
-> > -						KVM_MP_STATE_RUNNABLE;
-> > +					if (list_empty_careful(&vcpu->async_pf.done))
-> > +						vcpu->arch.mp_state =
-> > +							KVM_MP_STATE_RUNNABLE;
-> >  				case KVM_MP_STATE_RUNNABLE:
-> >  					vcpu->arch.apf.halted = false;
-> >  					break;
-> > @@ -6279,6 +6280,7 @@ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
-> >  		vcpu->arch.fault.error_code = 0;
-> >  		vcpu->arch.fault.address = work->arch.token;
-> >  		kvm_inject_page_fault(vcpu);
-> > +		vcpu->arch.mp_state = KVM_MP_STATE_RUNNABLE;
-> >  	}
-> >  }
-> >  
-> 
-> Tested with full virtualization guests, it works well for me. Thanks!
-Thank you. Will repost properly.
+On Mon, Nov 01, 2010 at 04:08:55PM +0100, Jiri Slaby wrote:
+> Stanse found that pSMBFile in cifs_ioctl and file->f_path.dentry in
+> cifs_user_write are dereferenced prior their test to NULL.
 
---
-			Gleb.
+file->f_path.dentry is never NULL for an opened file, neither is
+file->f_path.dentry->d_inode (which cannot change for the entire
+lifetime of dentry, BTW).  IOW,
+
+> -	/* since the write may have blocked check these pointers again */
+> -	if ((file->f_path.dentry) && (file->f_path.dentry->d_inode)) {
+> -		struct inode *inode = file->f_path.dentry->d_inode;
+
+in there had always been junk.  So yes, losing these tests is the right
+thing to do.
