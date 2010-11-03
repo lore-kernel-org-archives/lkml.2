@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932222Ab0KCPaR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 11:30:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19950 "EHLO mx1.redhat.com"
+	id S932115Ab0KCPaC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 11:30:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31921 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755864Ab0KCPaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 11:30:04 -0400
+	id S1755819Ab0KCP35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 11:29:57 -0400
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Subject: [PATCH 38 of 66] memcontrol: try charging huge pages from stock
-X-Mercurial-Node: 9d26d3daf23632b20a7b67135e4db7e6d02a3669
-Message-Id: <9d26d3daf23632b20a7b.1288798093@v2.random>
+Subject: [PATCH 28 of 66] _GFP_NO_KSWAPD
+X-Mercurial-Node: b1b95be209a2927d21c769268208fa0fe3d27be0
+Message-Id: <b1b95be209a2927d21c7.1288798083@v2.random>
 In-Reply-To: <patchbomb.1288798055@v2.random>
 References: <patchbomb.1288798055@v2.random>
 User-Agent: Mercurial-patchbomb/1.4.1
-Date: Wed, 03 Nov 2010 16:28:13 +0100
+Date: Wed, 03 Nov 2010 16:28:03 +0100
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -40,57 +40,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Weiner <hannes@cmpxchg.org>
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-The stock unit is just bytes, there is no reason to only take normal
-pages from it.
+Transparent hugepage allocations must be allowed not to invoke kswapd or any
+other kind of indirect reclaim (especially when the defrag sysfs is control
+disabled). It's unacceptable to swap out anonymous pages (potentially
+anonymous transparent hugepages) in order to create new transparent hugepages.
+This is true for the MADV_HUGEPAGE areas too (swapping out a kvm virtual
+machine and so having it suffer an unbearable slowdown, so another one with
+guest physical memory marked MADV_HUGEPAGE can run 30% faster if it is running
+memory intensive workloads, makes no sense). If a transparent hugepage
+allocation fails the slowdown is minor and there is total fallback, so kswapd
+should never be asked to swapout memory to allow the high order allocation to
+succeed.
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Acked-by: Rik van Riel <riel@redhat.com>
 ---
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1658,19 +1658,19 @@ static DEFINE_PER_CPU(struct memcg_stock
- static atomic_t memcg_drain_count;
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -81,13 +81,15 @@ struct vm_area_struct;
+ #define __GFP_RECLAIMABLE ((__force gfp_t)___GFP_RECLAIMABLE) /* Page is reclaimable */
+ #define __GFP_NOTRACK	((__force gfp_t)___GFP_NOTRACK)  /* Don't track with kmemcheck */
  
++#define __GFP_NO_KSWAPD	((__force gfp_t)0x400000u)
++
  /*
-- * Try to consume stocked charge on this cpu. If success, PAGE_SIZE is consumed
-+ * Try to consume stocked charge on this cpu. If success, @val is consumed
-  * from local stock and true is returned. If the stock is 0 or charges from a
-  * cgroup which is not current target, returns false. This stock will be
-  * refilled.
+  * This may seem redundant, but it's a way of annotating false positives vs.
+  * allocations that simply cannot be supported (e.g. page tables).
   */
--static bool consume_stock(struct mem_cgroup *mem)
-+static bool consume_stock(struct mem_cgroup *mem, int val)
- {
- 	struct memcg_stock_pcp *stock;
- 	bool ret = true;
+ #define __GFP_NOTRACK_FALSE_POSITIVE (__GFP_NOTRACK)
  
- 	stock = &get_cpu_var(memcg_stock);
--	if (mem == stock->cached && stock->charge)
--		stock->charge -= PAGE_SIZE;
-+	if (mem == stock->cached && stock->charge >= val)
-+		stock->charge -= val;
- 	else /* need to call res_counter_charge */
- 		ret = false;
- 	put_cpu_var(memcg_stock);
-@@ -1915,7 +1915,7 @@ again:
- 		VM_BUG_ON(css_is_removed(&mem->css));
- 		if (mem_cgroup_is_root(mem))
- 			goto done;
--		if (page_size == PAGE_SIZE && consume_stock(mem))
-+		if (consume_stock(mem, page_size))
- 			goto done;
- 		css_get(&mem->css);
- 	} else {
-@@ -1939,7 +1939,7 @@ again:
- 			rcu_read_unlock();
- 			goto done;
- 		}
--		if (page_size == PAGE_SIZE && consume_stock(mem)) {
-+		if (consume_stock(mem, page_size)) {
- 			/*
- 			 * It seems dagerous to access memcg without css_get().
- 			 * But considering how consume_stok works, it's not
+-#define __GFP_BITS_SHIFT 22	/* Room for 22 __GFP_FOO bits */
++#define __GFP_BITS_SHIFT 23	/* Room for 23 __GFP_FOO bits */
+ #define __GFP_BITS_MASK ((__force gfp_t)((1 << __GFP_BITS_SHIFT) - 1))
+ 
+ /* This equals 0, but use constants in case they ever change */
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1996,7 +1996,8 @@ __alloc_pages_slowpath(gfp_t gfp_mask, u
+ 		goto nopage;
+ 
+ restart:
+-	wake_all_kswapd(order, zonelist, high_zoneidx);
++	if (!(gfp_mask & __GFP_NO_KSWAPD))
++		wake_all_kswapd(order, zonelist, high_zoneidx);
+ 
+ 	/*
+ 	 * OK, we're below the kswapd watermark and have kicked background
