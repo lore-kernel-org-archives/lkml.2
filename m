@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686Ab0KCKSG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 06:18:06 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64555 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754234Ab0KCKSA (ORCPT
+	id S1754887Ab0KCKTZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 06:19:25 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49068 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754605Ab0KCKSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 06:18:00 -0400
+	Wed, 3 Nov 2010 06:18:06 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=PeIYfQaSIQgpP0FXUGTL6Obd6bVjkfeu3mB3+J1XImMmKr5Ainp4Y3X5NJM1KvEdu5
-         mUoEiWpjKk/eldGhROUyR8f8mpFX4aCXHNqFkWJy3HJx7U/m2nJbcHh4yO52CSCBBFXY
-         UTEWi9wGvo7C18GCYJ4MogStAYMnmCdnCZeL0=
+        b=wPEOD/pKaeMShSbpwdb24PaW2mKl/ApqVtBa7DsVEuchK8s5OCjzJ8CEdOL7PirvDZ
+         FPmsnbi+rPPKgIFJqg00dk8WZC0jYxghiRSTQoQUKzJAYtvkgQKC66vGr1J8pAPpWnsK
+         gjSJP9u5R7fXPnVtuMMy1qgBnNh/4seVXdgDY=
 From: Marek Belisko <marek.belisko@gmail.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>,
         Marek Belisko <marek.belisko@gmail.com>
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Marek Belisko <marek.belisko@gmail.com>
-Subject: [PATCH 3/9] staging: ft1000: GEt rid of PUSHORT typedef usage.
-Date: Wed,  3 Nov 2010 11:19:49 +0100
-Message-Id: <1288779595-15793-3-git-send-email-marek.belisko@gmail.com>
+Subject: [PATCH 6/9] staging: ft1000: Get rid of ULONG typedef usage.
+Date: Wed,  3 Nov 2010 11:19:52 +0100
+Message-Id: <1288779595-15793-6-git-send-email-marek.belisko@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1288779595-15793-1-git-send-email-marek.belisko@gmail.com>
 References: <1288779595-15793-1-git-send-email-marek.belisko@gmail.com>
@@ -30,141 +30,219 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Marek Belisko <marek.belisko@gmail.com>
 ---
- drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c |    6 +++---
- drivers/staging/ft1000/ft1000-usb/ft1000_hw.c    |   18 +++++++++---------
- drivers/staging/ft1000/ft1000-usb/ft1000_hw.h    |    2 +-
- drivers/staging/ft1000/ft1000-usb/ft1000_usb.h   |    1 -
- 4 files changed, 13 insertions(+), 14 deletions(-)
+ .../staging/ft1000/ft1000-usb/ft1000_download.c    |   52 ++++++++++----------
+ drivers/staging/ft1000/ft1000-usb/ft1000_hw.c      |    2 +-
+ drivers/staging/ft1000/ft1000-usb/ft1000_usb.h     |    3 +-
+ 3 files changed, 28 insertions(+), 29 deletions(-)
 
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
-index cadfb62..6659bc7 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
-@@ -656,7 +656,7 @@ static long ft1000_ChIoctl (struct file *File, unsigned int Command,
-             USHORT qtype;
-             USHORT msgsz;
- 		struct pseudo_hdr *ppseudo_hdr;
--            PUSHORT pmsg;
-+            u16 *pmsg;
-             USHORT total_len;
-             USHORT app_index;
-             u16 status;
-@@ -766,8 +766,8 @@ static long ft1000_ChIoctl (struct file *File, unsigned int Command,
-                         // Make sure we are within the limits of the slow queue memory limitation
-                         if ( (msgsz < MAX_CMD_SQSIZE) && (msgsz > PSEUDOSZ) ) {
-                             // Need to put sequence number plus new checksum for message
--                            //pmsg = (PUSHORT)&dpram_command.dpram_blk.pseudohdr;
--                            pmsg = (PUSHORT)&dpram_data->pseudohdr;
-+                            //pmsg = (u16 *)&dpram_command.dpram_blk.pseudohdr;
-+                            pmsg = (u16 *)&dpram_data->pseudohdr;
- 				ppseudo_hdr = (struct pseudo_hdr *)pmsg;
-                             total_len = msgsz+2;
-                             if (total_len & 0x1) {
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
+index d1bc537..0a2b833 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
+@@ -123,11 +123,11 @@ struct dsp_image_info {
+ // Notes:
+ //
+ //---------------------------------------------------------------------------
+-static ULONG check_usb_db (struct ft1000_device *ft1000dev)
++static u32 check_usb_db (struct ft1000_device *ft1000dev)
+ {
+    int               loopcnt;
+    u16            temp;
+-   ULONG             status;
++   u32             status;
+ 
+    loopcnt = 0;
+    while (loopcnt < 10)
+@@ -204,7 +204,7 @@ static u16 get_handshake(struct ft1000_device *ft1000dev, u16 expected_value)
+ {
+    u16            handshake;
+    int               loopcnt;
+-   ULONG             status=0;
++   u32             status=0;
+ 	struct ft1000_info *pft1000info = netdev_priv(ft1000dev->net);
+ 
+    loopcnt = 0;
+@@ -271,13 +271,13 @@ static u16 get_handshake(struct ft1000_device *ft1000dev, u16 expected_value)
+ //---------------------------------------------------------------------------
+ static void put_handshake(struct ft1000_device *ft1000dev,u16 handshake_value)
+ {
+-    ULONG tempx;
++    u32 tempx;
+     u16 tempword;
+-    ULONG status;
++    u32 status;
+ 
+ 
+ 
+-        tempx = (ULONG)handshake_value;
++        tempx = (u32)handshake_value;
+         tempx = ntohl(tempx);
+ 
+         tempword = (u16)(tempx & 0xffff);
+@@ -292,7 +292,7 @@ static u16 get_handshake_usb(struct ft1000_device *ft1000dev, u16 expected_value
+    u16            handshake;
+    int               loopcnt;
+    u16            temp;
+-   ULONG             status=0;
++   u32             status=0;
+ 
+ 	struct ft1000_info *pft1000info = netdev_priv(ft1000dev->net);
+    loopcnt = 0;
+@@ -349,9 +349,9 @@ static void put_handshake_usb(struct ft1000_device *ft1000dev,u16 handshake_valu
+ static u16 get_request_type(struct ft1000_device *ft1000dev)
+ {
+    u16   request_type;
+-   ULONG    status;
++   u32    status;
+    u16   tempword;
+-   ULONG    tempx;
++   u32    tempx;
+ 	struct ft1000_info *pft1000info = netdev_priv(ft1000dev->net);
+ 
+    if ( pft1000info->bootmode == 1)
+@@ -377,9 +377,9 @@ static u16 get_request_type(struct ft1000_device *ft1000dev)
+ static u16 get_request_type_usb(struct ft1000_device *ft1000dev)
+ {
+    u16   request_type;
+-   ULONG    status;
++   u32    status;
+    u16   tempword;
+-   ULONG    tempx;
++   u32    tempx;
+ 	struct ft1000_info *pft1000info = netdev_priv(ft1000dev->net);
+    if ( pft1000info->bootmode == 1)
+    {
+@@ -420,9 +420,9 @@ static u16 get_request_type_usb(struct ft1000_device *ft1000dev)
+ //---------------------------------------------------------------------------
+ static long get_request_value(struct ft1000_device *ft1000dev)
+ {
+-   ULONG     value;
++   u32     value;
+    u16   tempword;
+-   ULONG    status;
++   u32    status;
+ 	struct ft1000_info *pft1000info = netdev_priv(ft1000dev->net);
+ 
+ 
+@@ -449,9 +449,9 @@ static long get_request_value(struct ft1000_device *ft1000dev)
+ #if 0
+ static long get_request_value_usb(struct ft1000_device *ft1000dev)
+ {
+-   ULONG     value;
++   u32     value;
+    u16   tempword;
+-   ULONG    status;
++   u32    status;
+    struct ft1000_info * pft1000info = netdev_priv(ft1000dev->net);
+ 
+        if (pft1000info->usbboot == 2) {
+@@ -490,8 +490,8 @@ static long get_request_value_usb(struct ft1000_device *ft1000dev)
+ //---------------------------------------------------------------------------
+ static void put_request_value(struct ft1000_device *ft1000dev, long lvalue)
+ {
+-   ULONG    tempx;
+-   ULONG    status;
++   u32    tempx;
++   u32    status;
+ 
+        tempx = ntohl(lvalue);
+        status = fix_ft1000_write_dpram32(ft1000dev, DWNLD_MAG1_SIZE_LOC, (u8 *)&tempx);
+@@ -546,9 +546,9 @@ static u16 hdr_checksum(struct pseudo_hdr *pHdr)
+ // Notes:
+ //
+ //---------------------------------------------------------------------------
+-static ULONG write_blk (struct ft1000_device *ft1000dev, u16 **pUsFile, u8 **pUcFile, long word_length)
++static u32 write_blk (struct ft1000_device *ft1000dev, u16 **pUsFile, u8 **pUcFile, long word_length)
+ {
+-   ULONG Status = STATUS_SUCCESS;
++   u32 Status = STATUS_SUCCESS;
+    u16 dpram;
+    long temp_word_length;
+    int loopcnt, i, j;
+@@ -702,9 +702,9 @@ static void usb_dnld_complete (struct urb *urb)
+ // Notes:
+ //
+ //---------------------------------------------------------------------------
+-static ULONG write_blk_fifo (struct ft1000_device *ft1000dev, u16 **pUsFile, u8 **pUcFile, long word_length)
++static u32 write_blk_fifo (struct ft1000_device *ft1000dev, u16 **pUsFile, u8 **pUcFile, long word_length)
+ {
+-   ULONG Status = STATUS_SUCCESS;
++   u32 Status = STATUS_SUCCESS;
+    int byte_length;
+    long aligncnt;
+ 
+@@ -770,7 +770,7 @@ static ULONG write_blk_fifo (struct ft1000_device *ft1000dev, u16 **pUsFile, u8
+ //  Returns:    status                  - return code
+ //---------------------------------------------------------------------------
+ 
+-u16 scram_dnldr(struct ft1000_device *ft1000dev, void *pFileStart, ULONG  FileLength)
++u16 scram_dnldr(struct ft1000_device *ft1000dev, void *pFileStart, u32  FileLength)
+ {
+    u16                     Status = STATUS_SUCCESS;
+    UINT                    uiState;
+@@ -795,8 +795,8 @@ u16 scram_dnldr(struct ft1000_device *ft1000dev, void *pFileStart, ULONG  FileLe
+    long                    loader_code_address, loader_code_size = 0;
+    long                    run_address = 0, run_size = 0;
+ 
+-   ULONG                   templong;
+-   ULONG                   image_chksum = 0;
++   u32                   templong;
++   u32                   image_chksum = 0;
+ 
+    u16                  dpram = 0;
+    u8 *pbuffer;
+@@ -1114,7 +1114,7 @@ u16 scram_dnldr(struct ft1000_device *ft1000dev, void *pFileStart, ULONG  FileLe
+                        templong = temp;
+                        temp = (u16)(pDspImageInfoV6->version >> 16);
+                        templong |= (temp << 16);
+-                   if (templong == (ULONG)requested_version)
++                   if (templong == (u32)requested_version)
+                        {
+                            bGoodVersion = TRUE;
+                            DEBUG("FT1000:download: bGoodVersion is TRUE\n");
+@@ -1123,7 +1123,7 @@ u16 scram_dnldr(struct ft1000_device *ft1000dev, void *pFileStart, ULONG  FileLe
+                            pCodeEnd = (u8 *)(pFileStart + pDspImageInfoV6->end_offset);
+                            run_address = pDspImageInfoV6->run_address;
+                            run_size = pDspImageInfoV6->image_size;
+-                           image_chksum = (ULONG)pDspImageInfoV6->checksum;
++                           image_chksum = (u32)pDspImageInfoV6->checksum;
+                            break;
+                         }
+                         pDspImageInfoV6++;
 diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-index 2f195c8..c964bf7 100644
+index 709f8da..f97826d 100644
 --- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
 +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-@@ -1209,7 +1209,7 @@ static int ft1000_copy_up_pkt (struct urb *urb)
-     //DEBUG("ft1000_copy_up_pkt: transfer_buffer_length=%d, actual_buffer_len=%d\n",
-       //       urb->transfer_buffer_length, urb->actual_length);
- 
--    chksum = (PUSHORT)ft1000dev->rx_buf;
-+    chksum = (u16 *)ft1000dev->rx_buf;
- 
-     tempword = *chksum++;
-     for (i=1; i<7; i++)
-@@ -1541,7 +1541,7 @@ static int ft1000_dsp_prov(void *arg)
-     u16 i=0;
- 	struct prov_record *ptr;
- 	struct pseudo_hdr *ppseudo_hdr;
--    PUSHORT pmsg;
-+    u16 *pmsg;
+@@ -594,7 +594,7 @@ int dsp_reload(struct ft1000_device *ft1000dev)
+ {
      u16 status;
-     USHORT TempShortBuf [256];
+     u16 tempword;
+-    ULONG templong;
++    u32 templong;
  
-@@ -1579,7 +1579,7 @@ static int ft1000_dsp_prov(void *arg)
-             len = htons(len);
-             len += PSEUDOSZ;
+ 	struct ft1000_info *pft1000info;
  
--            pmsg = (PUSHORT)ptr->pprov_data;
-+            pmsg = (u16 *)ptr->pprov_data;
- 		ppseudo_hdr = (struct pseudo_hdr *)pmsg;
-             // Insert slow queue sequence number
-             ppseudo_hdr->seq_num = info->squeseqnum++;
-@@ -1626,7 +1626,7 @@ static int ft1000_proc_drvmsg (struct ft1000_device *dev, u16 size) {
- 	struct drv_msg *pdrvmsg;
-     u16 i;
- 	struct pseudo_hdr *ppseudo_hdr;
--    PUSHORT pmsg;
-+    u16 *pmsg;
-     u16 status;
-     union {
-         u8  byte[2];
-@@ -1758,7 +1758,7 @@ static int ft1000_proc_drvmsg (struct ft1000_device *dev, u16 size) {
-                 tempword = ntohs(pdrvmsg->length);
-                 info->DSPInfoBlklen = tempword;
-                 if (tempword < (MAX_DSP_SESS_REC-4) ) {
--                    pmsg = (PUSHORT)&pdrvmsg->data[0];
-+                    pmsg = (u16 *)&pdrvmsg->data[0];
-                     for (i=0; i<((tempword+1)/2); i++) {
-                         DEBUG("FT1000:drivermsg:dsp info data = 0x%x\n", *pmsg);
-                         info->DSPInfoBlk[i+10] = *pmsg++;
-@@ -1790,10 +1790,10 @@ static int ft1000_proc_drvmsg (struct ft1000_device *dev, u16 size) {
- 
-                 // Put message into Slow Queue
-                 // Form Pseudo header
--                pmsg = (PUSHORT)info->DSPInfoBlk;
-+                pmsg = (u16 *)info->DSPInfoBlk;
-                 *pmsg++ = 0;
-                 *pmsg++ = htons(info->DSPInfoBlklen+20+info->DSPInfoBlklen);
--		ppseudo_hdr = (struct pseudo_hdr *)(PUSHORT)&info->DSPInfoBlk[2];
-+		ppseudo_hdr = (struct pseudo_hdr *)(u16 *)&info->DSPInfoBlk[2];
-                 ppseudo_hdr->length = htons(info->DSPInfoBlklen+4+info->DSPInfoBlklen);
-                 ppseudo_hdr->source = 0x10;
-                 ppseudo_hdr->destination = 0x20;
-@@ -1840,7 +1840,7 @@ static int ft1000_proc_drvmsg (struct ft1000_device *dev, u16 size) {
-               if ( (tempword & FT1000_DB_DPRAM_TX) == 0) {
-                   // Put message into Slow Queue
-                   // Form Pseudo header
--                  pmsg = (PUSHORT)&tempbuffer[0];
-+                  pmsg = (u16 *)&tempbuffer[0];
- 			ppseudo_hdr = (struct pseudo_hdr *)pmsg;
-                   ppseudo_hdr->length = htons(0x0012);
-                   ppseudo_hdr->source = 0x10;
-@@ -1861,7 +1861,7 @@ static int ft1000_proc_drvmsg (struct ft1000_device *dev, u16 size) {
-                   for (i=1; i<7; i++) {
-                       ppseudo_hdr->checksum ^= *pmsg++;
-                   }
--                  pmsg = (PUSHORT)&tempbuffer[16];
-+                  pmsg = (u16 *)&tempbuffer[16];
-                   *pmsg++ = htons(RSP_DRV_ERR_RPT_MSG);
-                   *pmsg++ = htons(0x000e);
-                   *pmsg++ = htons(info->DSP_TIME[0]);
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.h b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.h
-index c580741..a2e19d2 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.h
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.h
-@@ -4,7 +4,7 @@
- 
- #include "ft1000_usb.h"
- 
--extern u16 ft1000_read_register(struct usb_device *dev, PUSHORT Data, u8 nRegIndx);
-+extern u16 ft1000_read_register(struct usb_device *dev, u16 *Data, u8 nRegIndx);
- extern u16 ft1000_write_register(struct usb_device *dev, USHORT value, u8 nRegIndx);
- 
- #endif
 diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
-index 96665a7..7ec8845 100644
+index bc00223..64af710 100644
 --- a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
 +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
-@@ -102,7 +102,6 @@ struct prov_record {
- #define ULONG               u32 /* WTF ??? */
+@@ -98,7 +98,6 @@ struct prov_record {
+ /*end of Jim*/
+ #define DEBUG(args...) printk(KERN_INFO args)
+ 
+-#define ULONG               u32 /* WTF ??? */
  #define BOOLEAN             u8
- #define PULONG              u32 *
--#define PUSHORT             u16 *
  #define PCHAR               u8 *
  #define UINT                u32
+@@ -572,7 +571,7 @@ extern size_t FileLength;
+ extern int numofmsgbuf;
  
+ int ft1000_close (struct net_device *dev);
+-u16 scram_dnldr(struct ft1000_device *ft1000dev, void *pFileStart, ULONG  FileLength);
++u16 scram_dnldr(struct ft1000_device *ft1000dev, void *pFileStart, u32  FileLength);
+ 
+ extern struct list_head freercvpool;
+ extern spinlock_t free_buff_lock;   // lock to arbitrate free buffer list for receive command data
 -- 
 1.7.1
 
