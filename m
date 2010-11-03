@@ -1,87 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351Ab0KCJjr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 05:39:47 -0400
-Received: from mognix.dark-green.com ([88.116.226.179]:65501 "EHLO
-	mognix.dark-green.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754112Ab0KCJjp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 05:39:45 -0400
+	id S1754428Ab0KCJkB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 05:40:01 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:57610 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754112Ab0KCJj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 05:39:59 -0400
+Message-ID: <4CD12DED.3010902@msgid.tls.msk.ru>
+Date: Wed, 03 Nov 2010 12:39:57 +0300
+From: Michael Tokarev <mjt@tls.msk.ru>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
 MIME-Version: 1.0
-Date: Wed, 03 Nov 2010 10:39:41 +0100
-From: gimli <gimli@dark-green.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: Henrik Rydberg <rydberg@euromail.se>
-Subject: Re: [PATCH 1/6] MacBookAir3,1(3,2) applesmc support
-In-Reply-To: <4CD03FB0.8000605@euromail.se>
-References: <cf611abb8b842b043fd6e837cf161a39@mognix.dark-green.com> <4CD03FB0.8000605@euromail.se>
-Message-ID: <16daf2365a63093624c93857a0011008@mognix.dark-green.com>
-User-Agent: RoundCube Webmail/0.2.2
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset="UTF-8"
+To: Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: bind-mount vs second mount of the same blockdev?
+X-Enigmail-Version: 0.95.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 02 Nov 2010 17:43:28 +0100, Henrik Rydberg <rydberg@euromail.se>
-wrote:
-> On 11/02/2010 08:17 AM, gimli wrote:
-> 
->> This patch add support for the MacBookAir3,1 and MacBookAir3,2 to the
->> applesmc driver.
->> 
->> Signed-off-by: Edgar (gimli) Hucek <gimli@dark-green.com>
-> 
-> 
-> Thanks for this information. The patch is conflicting with a makeover
-> currently
-> on review, but it is a candidate for inclusion in 2.6.37 and stable.
-> 
->>  /* List of keys used to read/write fan speeds */
->> @@ -1524,11 +1528,21 @@
->>  	{ .accelerometer = 1, .light = 1, .temperature_set = 21 },
->>  /* MacBook Pro 7,1: accelerometer, backlight and temperature set 22 */
->>  	{ .accelerometer = 1, .light = 1, .temperature_set = 22 },
->> +/* MacBook Air 3,1: accelerometer, backlight and temperature set 15 */
->> +	{ .accelerometer = 0, .light = 0, .temperature_set = 23 },
->>  };
-> 
-> Comment "temperature set 15" is confusing.
-> 
+Hello.
 
-This is a copy and paste error. Should be :
+I'm trying to understand the differences between
+a bind-mount of a whole filesystem versus mounting
+the same block device the second time.  Like this:
 
-+/* MacBook Air 3,1(2): temperature set 23 */
+ mount -t ext3 /dev/block /mnt/a
+ mount --bind /mnt/a /mnt/b
 
+versus
 
+ mount -t ext3 /dev/block /mnt/a
+ mount -t ext3 /dev/block /mnt/b
 
->>  /* Note that DMI_MATCH(...,"MacBook") will match "MacBookPro1,1".
->>   * So we need to put "Apple MacBook Pro" before "Apple MacBook". */
->>  static __initdata struct dmi_system_id applesmc_whitelist[] = {
->> +	{ applesmc_dmi_match, "Apple MacBook Air 3", {
->> +	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
->> +	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookAir3,2") },
->> +		&applesmc_dmi_data[23]},
->> +	{ applesmc_dmi_match, "Apple MacBook Air 3", {
->> +	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
->> +	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookAir3,1") },
->> +		&applesmc_dmi_data[23]},
-> 
-> What is the different between models 3,1 and 3,2? If there is no
-> difference, a
-> single entry will suffice.
+In the second case, second mount does not happen
+but the first one is "reused" instead - this is
+visible in dmesg, since only once ext3fs prints
+a note about the mounting.
 
-They are both the same.
+Now, the first case is quite clear: we've one fs
+visible in two places, pretty much like two hard-
+links to the same file.  So things like, for
+example, fcntl locking will work "from" both
+ends.  But it is not that obvious in the second
+case, even if we clearly have some common
+"inode" in this case too.
 
-lg
+What are the differences in behavour?
 
-Edgar (gimli) Hucek
+Thanks!
 
-> Thanks,
-> Henrik
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
-in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+/mjt
