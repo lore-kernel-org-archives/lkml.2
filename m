@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885Ab0KCKur (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 06:50:47 -0400
-Received: from mtagate7.uk.ibm.com ([194.196.100.167]:54416 "EHLO
-	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754344Ab0KCKuo (ORCPT
+	id S1754878Ab0KCK4Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 06:56:25 -0400
+Received: from mognix.dark-green.com ([88.116.226.179]:63485 "EHLO
+	mognix.dark-green.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754311Ab0KCK4W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 06:50:44 -0400
-Message-ID: <4CD13E7B.5090804@linux.vnet.ibm.com>
-Date: Wed, 03 Nov 2010 11:50:35 +0100
-From: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
+	Wed, 3 Nov 2010 06:56:22 -0400
 MIME-Version: 1.0
-To: Mel Gorman <mel@csn.ul.ie>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 0/8] Reduce latencies and improve overall reclaim efficiency
- v2
-References: <1284553671-31574-1-git-send-email-mel@csn.ul.ie> <4CB721A1.4010508@linux.vnet.ibm.com> <20101018135535.GC30667@csn.ul.ie>
-In-Reply-To: <20101018135535.GC30667@csn.ul.ie>
-Content-Type: text/plain; charset=ISO-8859-15
+Date: Wed, 03 Nov 2010 11:56:20 +0100
+From: gimli <gimli@dark-green.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/6] MacBookAir3,1(3,2) touchpad ( bcm5974 ) support
+In-Reply-To: <4CD041AE.80009@euromail.se>
+References: <4f8c3332b3e4cdec23a7caafc534a395@mognix.dark-green.com> <4CD041AE.80009@euromail.se>
+Message-ID: <ec999a7b97caaeccf538fb50af68067c@mognix.dark-green.com>
+User-Agent: RoundCube Webmail/0.2.2
 Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="UTF-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 10/18/2010 03:55 PM, Mel Gorman wrote:
-> On Thu, Oct 14, 2010 at 05:28:33PM +0200, Christian Ehrhardt wrote:
+On Tue, 02 Nov 2010 17:51:58 +0100, Henrik Rydberg <rydberg@euromail.se>
+wrote:
+> On 11/02/2010 08:18 AM, gimli wrote:
 > 
->> Seing the patches Mel sent a few weeks ago I realized that this series
->> might be at least partially related to my reports in 1Q 2010 - so I ran my
->> testcase on a few kernels to provide you with some more backing data.
+>> This patch add support for the MacBookAir3,1 and MacBookAir3,2 to the
+>> bcm5974 driver.
+>> 
+>> Signed-off-by: Edgar (gimli) Hucek <gimli@dark-green.com>
 > 
-> Thanks very much for revisiting this.
 > 
->> Results are always the average of three iozone runs as it is known to be somewhat noisy - especially when affected by the issue I try to show here.
->> As discussed in detail in older threads the setup uses 16 disks and scales the number of concurrent iozone processes.
->> Processes are evenly distributed so that it always is one process per disk.
->> In the past we reported 40% to 80% degradation for the sequential read case based on 2.6.32 which can still be seen.
->> What we found was that the allocations for page cache with GFP_COLD flag loop a long time between try_to_free, get_page, reclaim as free makes some progress and due to that GFP_COLD allocations can loop and retry.
->> In addition my case had no writes at all, which forced congestion_wait to wait the full timeout all the time.
->>
->> Kernel (git)                   4          8         16   deviation #16 case                           comment
->> linux-2.6.30              902694    1396073    1892624                 base                              base
->> linux-2.6.32              752008     990425     932938               -50.7%     impact as reported in 1Q 2010
->> linux-2.6.35               63532      71573      64083               -96.6%                    got even worse
->> linux-2.6.35.6            176485     174442     212102               -88.8%  fixes useful, but still far away
->> linux-2.6.36-rc4-trace    119683     188997     187012               -90.1%                         still bad
->> linux-2.6.36-rc4-fix      884431    1114073    1470659               -22.3%            Mels fixes help a lot!
->>
-[...]
-> If all goes according to plan,
-> kernel 2.6.37-rc1 will be of interest. Thanks again.
+> Thanks for your patches. Do the usb message packet lengths of these new
+> device
+> ids differ in any respect from the old ones? What is the difference
+between
+> the
+> two sets of ids? Physical size? Are the devices really exactly the same?
+> 
+> Any additional information you can provide to shed light on these
+questions
+> would be greatly appreciated. My concern is that there might be more
+things
+> that
+> need to be changed for these devices.
 
-Here a measurement with 2.6.37-rc1 as confirmation of progress:
-   linux-2.6.37-rc1          876588    1161876    1643430               -13.1%       even better than 2.6.36-fix
+What i did was asuming the touchpad works similiar to the WELLSPRING3 ones.
+So i took the names from the Apple kext's and used the values from the
+WELLSPRING3.
+If i can with any debug output let me know how to make it and i'll more
+than happy
+to send it.
+As far as i see only the Size on the new ones differ. 
 
-That means 2.6.37-rc1 really shows what we hoped for.
-And it eventually even turned out a little bit better than 2.6.36 + your fixes.
+lg
 
- 
+Edgar (gimli) Hucek
 
--- 
-
-Grüsse / regards, Christian Ehrhardt
-IBM Linux Technology Center, System z Linux Performance 
+> Thanks,
+> Henrik
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
