@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932582Ab0KCPhU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 11:37:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1029 "EHLO mx1.redhat.com"
+	id S932385Ab0KCPa7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 11:30:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58662 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932393Ab0KCPbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 11:31:01 -0400
+	id S932290Ab0KCPan (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 11:30:43 -0400
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Subject: [PATCH 47 of 66] mincore transparent hugepage support
-X-Mercurial-Node: 1d89c5a161ce2227cc7e419ed667288f7a2b6ecb
-Message-Id: <1d89c5a161ce2227cc7e.1288798102@v2.random>
+Subject: [PATCH 13 of 66] export maybe_mkwrite
+X-Mercurial-Node: 15324c9c30081da3a7409b7097a1ef9b73a65d4f
+Message-Id: <15324c9c30081da3a740.1288798068@v2.random>
 In-Reply-To: <patchbomb.1288798055@v2.random>
 References: <patchbomb.1288798055@v2.random>
 User-Agent: Mercurial-patchbomb/1.4.1
-Date: Wed, 03 Nov 2010 16:28:22 +0100
+Date: Wed, 03 Nov 2010 16:27:48 +0100
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -40,79 +40,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Weiner <hannes@cmpxchg.org>
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-Handle transparent huge page pmd entries natively instead of splitting
-them into subpages.
+huge_memory.c needs it too when it fallbacks in copying hugepages into regular
+fragmented pages if hugepage allocation fails during COW.
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
 ---
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -19,6 +19,9 @@ extern struct page *follow_trans_huge_pm
- extern int zap_huge_pmd(struct mmu_gather *tlb,
- 			struct vm_area_struct *vma,
- 			pmd_t *pmd);
-+extern int mincore_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
-+			unsigned long addr, unsigned long end,
-+			unsigned char *vec);
- 
- enum transparent_hugepage_flag {
- 	TRANSPARENT_HUGEPAGE_FLAG,
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -919,6 +919,31 @@ int zap_huge_pmd(struct mmu_gather *tlb,
- 	return ret;
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -416,6 +416,19 @@ static inline void set_compound_order(st
  }
  
-+int mincore_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
-+		unsigned long addr, unsigned long end,
-+		unsigned char *vec)
+ /*
++ * Do pte_mkwrite, but only if the vma says VM_WRITE.  We do this when
++ * servicing faults for write access.  In the normal case, do always want
++ * pte_mkwrite.  But get_user_pages can cause write faults for mappings
++ * that do not have writing enabled, when used by access_process_vm.
++ */
++static inline pte_t maybe_mkwrite(pte_t pte, struct vm_area_struct *vma)
 +{
-+	int ret = 0;
-+
-+	spin_lock(&vma->vm_mm->page_table_lock);
-+	if (likely(pmd_trans_huge(*pmd))) {
-+		ret = !pmd_trans_splitting(*pmd);
-+		spin_unlock(&vma->vm_mm->page_table_lock);
-+		if (unlikely(!ret))
-+			wait_split_huge_page(vma->anon_vma, pmd);
-+		else {
-+			/*
-+			 * All logical pages in the range are present
-+			 * if backed by a huge page.
-+			 */
-+			memset(vec, 1, (end - addr) >> PAGE_SHIFT);
-+		}
-+	} else
-+		spin_unlock(&vma->vm_mm->page_table_lock);
-+
-+	return ret;
++	if (likely(vma->vm_flags & VM_WRITE))
++		pte = pte_mkwrite(pte);
++	return pte;
 +}
 +
- pmd_t *page_check_address_pmd(struct page *page,
- 			      struct mm_struct *mm,
- 			      unsigned long address,
-diff --git a/mm/mincore.c b/mm/mincore.c
---- a/mm/mincore.c
-+++ b/mm/mincore.c
-@@ -154,7 +154,13 @@ static void mincore_pmd_range(struct vm_
- 	pmd = pmd_offset(pud, addr);
- 	do {
- 		next = pmd_addr_end(addr, end);
--		split_huge_page_pmd(vma->vm_mm, pmd);
-+		if (pmd_trans_huge(*pmd)) {
-+			if (mincore_huge_pmd(vma, pmd, addr, next, vec)) {
-+				vec += (next - addr) >> PAGE_SHIFT;
-+				continue;
-+			}
-+			/* fall through */
-+		}
- 		if (pmd_none_or_clear_bad(pmd))
- 			mincore_unmapped_range(vma, addr, next, vec);
- 		else
++/*
+  * Multiple processes may "see" the same page. E.g. for untouched
+  * mappings of /dev/null, all processes see the same page full of
+  * zeroes, and text pages of executables and shared libraries have
+diff --git a/mm/memory.c b/mm/memory.c
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2048,19 +2048,6 @@ static inline int pte_unmap_same(struct 
+ 	return same;
+ }
+ 
+-/*
+- * Do pte_mkwrite, but only if the vma says VM_WRITE.  We do this when
+- * servicing faults for write access.  In the normal case, do always want
+- * pte_mkwrite.  But get_user_pages can cause write faults for mappings
+- * that do not have writing enabled, when used by access_process_vm.
+- */
+-static inline pte_t maybe_mkwrite(pte_t pte, struct vm_area_struct *vma)
+-{
+-	if (likely(vma->vm_flags & VM_WRITE))
+-		pte = pte_mkwrite(pte);
+-	return pte;
+-}
+-
+ static inline void cow_user_page(struct page *dst, struct page *src, unsigned long va, struct vm_area_struct *vma)
+ {
+ 	/*
