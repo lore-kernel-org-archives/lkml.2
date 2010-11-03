@@ -1,39 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755224Ab0KCNKf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 09:10:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57901 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755169Ab0KCNKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 09:10:31 -0400
-Date: Wed, 3 Nov 2010 06:11:03 -0700
-From: Greg KH <gregkh@suse.de>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Regression in 2.6.37-rc1 - logs spammed with "unable to
-	enumerate USB port" - bisected to commit 3df7169e
-Message-ID: <20101103131103.GC15885@suse.de>
-References: <4CD09166.4060202@lwfinger.net>
+	id S1755169Ab0KCNL4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 09:11:56 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:38139 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751616Ab0KCNLz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 09:11:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:reply-to:organization:user-agent:mime-version
+         :to:cc:subject:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=nnpH5nSoMOj6gpHICUejMRwTcQYC8ZqBwX5+Md8+60hkLc+yS7+6jlhm2ChhSdxdyJ
+         62kmZPWcLFBPYoETQrY7tpeACIy+cvw6chE4kntucReq3DE3t6JsnQ9jwh/C273ldZrx
+         acTxG3Cwvxmp/rgXEXrhcLwiLSiFVegNarN9U=
+Message-ID: <4CD15F60.8090305@gmail.com>
+Date: Wed, 03 Nov 2010 18:40:56 +0530
+From: Atul Sowani <sowani@gmail.com>
+Reply-To: sowani@gmail.com
+Organization: Digital Reality Inc.
+User-Agent: Thunderbird 2.0.0.18 (X11/20081105)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CD09166.4060202@lwfinger.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: arnaud.patard@rtp-net.org
+CC: linux-kernel@vger.kernel.org, gregkh@suse.de
+Subject: [PATCH 2.6.36 1/1] xgifb: change obsolete pci_find_device() with
+ pci_get_device().
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 02, 2010 at 05:32:06PM -0500, Larry Finger wrote:
-> Commit 3df7169e73fc1d71a39cffeacc969f6840cdf52b causes my system to spam the
-> logs with messages of the form "hub 2-0:1.0: unable to enumerate USB device on
-> port 5". Bisection was used to locate the faulty commit.
+Replaced obsolete pci_find_device() calls with pci_get_device() calls. This is
+recommended in pci.txt filei in PCI Documentation.
 
-<snip>
+Signed-off-by: Atul Sowani <sowani@gmail.com>
+---
+--- a/drivers/staging/xgifb/XGI_main_26.c	2010-10-21 02:00:22.000000000 +0530
++++ b/drivers/staging/xgifb/XGI_main_26.c	2010-11-03 18:35:18.000000000 +0530
+@@ -483,9 +483,11 @@ XGIfb_query_VGA_config_space(struct xgi_
+ 			break;
+ 		}
 
-thanks for the bisection.  Alan and I are currently at the Plumbers
-conference and will probably not be able to get to this until next week.
+-		pdev = pci_find_device(PCI_VENDOR_ID_SI, nbridge_id, pdev);
+-		if (pdev)
++		pdev = pci_get_device(PCI_VENDOR_ID_SI, nbridge_id, pdev);
++		if (pdev) {
+ 			valid_pdev = 1;
++			pci_dev_put(pdev);
++		}
+ 	}
 
-thanks,
+ 	if (!valid_pdev) {
 
-greg k-h
