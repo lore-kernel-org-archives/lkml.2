@@ -1,120 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031Ab0KCUbr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 16:31:47 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:45883 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753563Ab0KCUbp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 16:31:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=pSo4RgzbVxVIL3KqXMTLcvdv875PKPOyzm2Lenmm3rYDRJUEiXo5+yjsMl3buelc7p
-         ncBnc9BamvnWDCw2o1ZDULbUQxmvUoj9a6XuMMn/PPcdF73yG3XoIYKj2smcsQcsg2qK
-         Wvijk4uEJz60tuOvbaCjW1HwmPSSdKf5DC7jE=
-Subject: Re: [PATCH] drivers/net/tile/: on-chip network drivers for the
- tile architecture
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Stephen Hemminger <shemminger@vyatta.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-In-Reply-To: <4CD1BA71.3000806@tilera.com>
-References: <201011012107.oA1L7TGd031588@farm-0027.internal.tilera.com>
-	 <20101103125959.3231daa1@s6510>  <4CD19DCF.1040709@tilera.com>
-	 <1288806622.2511.187.camel@edumazet-laptop>  <4CD1BA71.3000806@tilera.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 03 Nov 2010 21:31:40 +0100
-Message-ID: <1288816300.2718.5.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1756049Ab0KCUmI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 16:42:08 -0400
+Received: from fieldses.org ([174.143.236.118]:50548 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754012Ab0KCUmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 16:42:05 -0400
+Date: Wed, 3 Nov 2010 16:41:48 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] locks: let the caller free file_lock on ->setlease
+ failure
+Message-ID: <20101103204147.GA6777@fieldses.org>
+References: <20101026164549.GD19445@fieldses.org>
+ <20101027083924.GA28129@infradead.org>
+ <20101027133924.GB6328@fieldses.org>
+ <201010271546.09036.arnd@arndb.de>
+ <20101027145538.GC6328@fieldses.org>
+ <20101027145929.GA5788@infradead.org>
+ <20101030212500.GE480@fieldses.org>
+ <20101031123419.GA4491@infradead.org>
+ <20101031123510.GA4520@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101031123510.GA4520@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 03 novembre 2010 à 15:39 -0400, Chris Metcalf a écrit :
+On Sun, Oct 31, 2010 at 08:35:10AM -0400, Christoph Hellwig wrote:
+> The caller allocated it, the caller should free it.  The only issue so
+> far is that we could change the flp pointer even on an error return if
+> the fl_change callback failed.  But we can simply move the flp assignment
+> after the fl_change invocation, as the callers don't care about the
+> flp return value if the setlease call failed.
+> 
+> Signed-off-by: Christoph Hellwig <hch@lst.de>
+> 
+> Index: linux-2.6/fs/cifs/cifsfs.c
+> ===================================================================
+> --- linux-2.6.orig/fs/cifs/cifsfs.c	2010-10-31 07:10:07.636004223 -0400
+> +++ linux-2.6/fs/cifs/cifsfs.c	2010-10-31 07:10:10.922004154 -0400
+> @@ -625,11 +625,8 @@ static int cifs_setlease(struct file *fi
+>  		   knows that the file won't be changed on the server
+>  		   by anyone else */
+>  		return generic_setlease(file, arg, lease);
+> -	else {
+> -		if (arg != F_UNLCK)
+> -			locks_free_lock(*lease);
+> +	else
+>  		return -EAGAIN;
+> -	}
+>  }
+>  
+>  struct file_system_type cifs_fs_type = {
+> Index: linux-2.6/fs/gfs2/file.c
+> ===================================================================
+> --- linux-2.6.orig/fs/gfs2/file.c	2010-10-31 07:10:07.643004363 -0400
+> +++ linux-2.6/fs/gfs2/file.c	2010-10-31 07:10:10.923003665 -0400
+> @@ -629,8 +629,6 @@ static ssize_t gfs2_file_aio_write(struc
+>  
+>  static int gfs2_setlease(struct file *file, long arg, struct file_lock **fl)
+>  {
+> -	if (arg != F_UNLCK)
+> -		locks_free_lock(*fl);
+>  	return -EINVAL;
+>  }
+>  
+> Index: linux-2.6/fs/locks.c
+> ===================================================================
+> --- linux-2.6.orig/fs/locks.c	2010-10-31 07:10:07.649004084 -0400
+> +++ linux-2.6/fs/locks.c	2010-10-31 07:34:10.102255587 -0400
+> @@ -1428,8 +1425,9 @@ int generic_setlease(struct file *filp,
+>  		goto out;
+>  
+>  	if (my_before != NULL) {
+> -		*flp = *my_before;
+>  		error = lease->fl_lmops->fl_change(my_before, arg);
+> +		if (!error)
+> +			*flp = *my_before;
 
-> I read it and internalized it long ago, and re-read it when I got Stephen's
-> original email.  I should have said that explicitly instead of a comment
-> with a smiley -- email is a tricky communication medium sometimes.
-> 
-> Several uses of "*(volatile int *)ptr" in that file are intended as
-> performance hints.  A more obvious way to state this, for our compiler, is
-> to say "prefetch_L1(ptr)".  This generates essentially the same code, but
-> avoids the red flag for "volatile" and also reads more clearly, so it's a
-> good change.
-> 
-> The other use is part of a very precise dance that involves detailed
-> knowledge of the Tile memory subsystem micro-architecture.  This doesn't
-> really belong in the network device driver code, so I've moved it to
-> <asm/cacheflush.h>, and cleaned it up, with detailed comments.  The use
-> here is that our network hardware's DMA engine can be used in a mode where
-> it reads directly from memory, in which case you must ensure that any
-> cached values have been flushed.
-> 
+Argh, missed this: we're leaking the passed-in lease in this case.
 
-This kind of things really must be discussed before using it in a
-network driver.
+--b.
 
-Because, an skb can be built by one CPU, queued on a qdisc queue, with
-no particular "cached values have been flushed" ...
-
-It then can be dequeued by another CPU, and given to the device.
-What happens then ?
-
-> /*
->  * Flush & invalidate a VA range that is homed remotely on a single core,
->  * waiting until the memory controller holds the flushed values.
->  */
-> static inline void finv_buffer_remote(void *buffer, size_t size)
-> {
-> 	char *p;
-> 	int i;
-> 
-> 	/*
-> 	 * Flush and invalidate the buffer out of the local L1/L2
-> 	 * and request the home cache to flush and invalidate as well.
-> 	 */
-> 	__finv_buffer(buffer, size);
-> 
-> 	/*
-> 	 * Wait for the home cache to acknowledge that it has processed
-> 	 * all the flush-and-invalidate requests.  This does not mean
-> 	 * that the flushed data has reached the memory controller yet,
-> 	 * but it does mean the home cache is processing the flushes.
-> 	 */
-> 	__insn_mf();
-> 
-> 	/*
-> 	 * Issue a load to the last cache line, which can't complete
-> 	 * until all the previously-issued flushes to the same memory
-> 	 * controller have also completed.  If we weren't striping
-> 	 * memory, that one load would be sufficient, but since we may
-> 	 * be, we also need to back up to the last load issued to
-> 	 * another memory controller, which would be the point where
-> 	 * we crossed an 8KB boundary (the granularity of striping
-> 	 * across memory controllers).  Keep backing up and doing this
-> 	 * until we are before the beginning of the buffer, or have
-> 	 * hit all the controllers.
-> 	 */
-> 	for (i = 0, p = (char *)buffer + size - 1;
-> 	     i < (1 << CHIP_LOG_NUM_MSHIMS()) && p >= (char *)buffer;
-> 	     ++i) {
-> 		const unsigned long STRIPE_WIDTH = 8192;
-> 
-> 		/* Force a load instruction to issue. */
-> 		*(volatile char *)p;
-> 
-> 		/* Jump to end of previous stripe. */
-> 		p -= STRIPE_WIDTH;
-> 		p = (char *)((unsigned long)p | (STRIPE_WIDTH - 1));
-> 	}
-> 
-> 	/* Wait for the loads (and thus flushes) to have completed. */
-> 	__insn_mf();
-> }
-> 
-
-
+>  		goto out;
+>  	}
+>  
+> @@ -1444,8 +1442,6 @@ int generic_setlease(struct file *filp,
+>  	return 0;
+>  
+>  out:
+> -	if (arg != F_UNLCK)
+> -		locks_free_lock(lease);
+>  	return error;
+>  }
+>  EXPORT_SYMBOL(generic_setlease);
+> @@ -1524,8 +1520,11 @@ static int do_fcntl_add_lease(unsigned i
+>  	}
+>  	lock_flocks();
+>  	error = __vfs_setlease(filp, arg, &fl);
+> -	if (error)
+> -		goto out_unlock;
+> +	if (error) {
+> +		unlock_flocks();
+> +		locks_free_lock(fl);
+> +		goto out_free_fasync;
+> +	}
+>  
+>  	/*
+>  	 * fasync_insert_entry() returns the old entry if any.
+> @@ -1541,12 +1540,12 @@ static int do_fcntl_add_lease(unsigned i
+>  		fl->fl_type = F_UNLCK | F_INPROGRESS;
+>  		fl->fl_break_time = jiffies - 10;
+>  		time_out_leases(inode);
+> -		goto out_unlock;
+> +	} else {
+> +		error = __f_setown(filp, task_pid(current), PIDTYPE_PID, 0);
+>  	}
+> -
+> -	error = __f_setown(filp, task_pid(current), PIDTYPE_PID, 0);
+> -out_unlock:
+>  	unlock_flocks();
+> +
+> +out_free_fasync:
+>  	if (new)
+>  		fasync_free(new);
+>  	return error;
+> Index: linux-2.6/fs/nfs/file.c
+> ===================================================================
+> --- linux-2.6.orig/fs/nfs/file.c	2010-10-31 07:10:07.658003804 -0400
+> +++ linux-2.6/fs/nfs/file.c	2010-10-31 07:10:10.936003734 -0400
+> @@ -884,7 +884,5 @@ static int nfs_setlease(struct file *fil
+>  	dprintk("NFS: setlease(%s/%s, arg=%ld)\n",
+>  			file->f_path.dentry->d_parent->d_name.name,
+>  			file->f_path.dentry->d_name.name, arg);
+> -	if (arg != F_UNLCK)
+> -		locks_free_lock(*fl);
+>  	return -EINVAL;
+>  }
+> Index: linux-2.6/fs/nfsd/nfs4state.c
+> ===================================================================
+> --- linux-2.6.orig/fs/nfsd/nfs4state.c	2010-10-31 07:10:07.666004084 -0400
+> +++ linux-2.6/fs/nfsd/nfs4state.c	2010-10-31 07:32:56.906254608 -0400
+> @@ -2652,6 +2652,7 @@ nfs4_open_delegation(struct svc_fh *fh,
+>  	if ((status = vfs_setlease(fl->fl_file, fl->fl_type, &fl))) {
+>  		dprintk("NFSD: setlease failed [%d], no delegation\n", status);
+>  		dp->dl_flock = NULL;
+> +		locks_free_lock(fl);
+>  		unhash_delegation(dp);
+>  		flag = NFS4_OPEN_DELEGATE_NONE;
+>  		goto out;
