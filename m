@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070Ab0KDOlO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 10:41:14 -0400
-Received: from cantor.suse.de ([195.135.220.2]:38022 "EHLO mx1.suse.de"
+	id S1752111Ab0KDOlU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 10:41:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42055 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751475Ab0KDOlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 10:41:11 -0400
-Date: Thu, 4 Nov 2010 10:41:10 -0400 (EDT)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Chase Douglas <chase.douglas@canonical.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Philipp Merkel <mail@philmerk.de>, Stephane Chatty <chatty@enac.fr>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] hid: egalax: Use kzalloc
-In-Reply-To: <1286991373.31864.193.camel@mini>
-Message-ID: <alpine.LNX.2.00.1011041041010.15851@pobox.suse.cz>
-References: <1286978302-30034-1-git-send-email-rydberg@euromail.se>  <1286978302-30034-2-git-send-email-rydberg@euromail.se> <1286991373.31864.193.camel@mini>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751993Ab0KDOlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 10:41:16 -0400
+Date: Wed, 3 Nov 2010 16:06:58 +0100
+From: Jan Kara <jack@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, hch@infradead.org, linux-kernel@vger.kernel.org,
+        petero2@telia.com, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        jack@suse.cz, akpm@linux-foundation.org, adilger.kernel@dilger.ca,
+        tytso@mit.edu, mfasheh@suse.com, joel.becker@oracle.com,
+        aelder@sgi.com, dm-devel@redhat.com, drbd-dev@lists.linbit.com,
+        neilb@suse.de, leochen@broadcom.com, sbranden@broadcom.com,
+        chris.mason@oracle.com, swhiteho@redhat.com, shaggy@linux.vnet.ibm.com,
+        joern@logfs.org, konishi.ryusuke@lab.ntt.co.jp,
+        reiserfs-devel@vger.kernel.org, viro@zeniv.linux.org.uk
+Subject: Re: [PATCH 4/5] block: make blkdev_get/put() handle exclusive
+ access
+Message-ID: <20101103150658.GA5627@quack.suse.cz>
+References: <1288628129-12811-1-git-send-email-tj@kernel.org>
+ <1288628129-12811-5-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288628129-12811-5-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Oct 2010, Chase Douglas wrote:
-
-> > To avoid unnecessary explicit initialization, allocate zeroed memory.
-> > 
-> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> > ---
-> >  drivers/hid/hid-egalax.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/hid/hid-egalax.c b/drivers/hid/hid-egalax.c
-> > index 54b017a..5a1b52e 100644
-> > --- a/drivers/hid/hid-egalax.c
-> > +++ b/drivers/hid/hid-egalax.c
-> > @@ -221,7 +221,7 @@ static int egalax_probe(struct hid_device *hdev, const struct hid_device_id *id)
-> >  	struct egalax_data *td;
-> >  	struct hid_report *report;
-> >  
-> > -	td = kmalloc(sizeof(struct egalax_data), GFP_KERNEL);
-> > +	td = kzalloc(sizeof(struct egalax_data), GFP_KERNEL);
-> >  	if (!td) {
-> >  		dev_err(&hdev->dev, "cannot allocate eGalax data\n");
-> >  		return -ENOMEM;
+On Mon 01-11-10 17:15:28, Tejun Heo wrote:
+> Over time, block layer has accumulated a set of APIs dealing with bdev
+> open, close, claim and release.
 > 
-> Pretty obvious.
+> * blkdev_get/put() are the primary open and close functions.
 > 
-> Acked-by: Chase Douglas <chase.douglas@canonical.com>
+> * bd_claim/release() deal with exclusive open.
+> 
+> * open/close_bdev_exclusive() are combination of open and claim and
+>   the other way around, respectively.
+> 
+> * bd_link/unlink_disk_holder() to create and remove holder/slave
+>   symlinks.
+> 
+> * open_by_devnum() wraps bdget() + blkdev_get().
+> 
+> The interface is a bit confusing and the decoupling of open and claim
+> makes it impossible to properly guarantee exclusive access as
+> in-kernel open + claim sequence can disturb the existing exclusive
+> open even before the block layer knows the current open if for another
+> exclusive access.  Reorganize the interface such that,
+...
+  The patch looks OK to me as far as ext3, ext4, and reiserfs are
+concerned. One thing I wondered about when I looked at it - does someone
+use the 'mode' argument of the blkdev_put() function (well, apart from the
+exclusive flag)? Because I've looked at a few random disk ->release()
+functions and none of them used it...
 
-Applied, thanks.
-
+								Honza
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
