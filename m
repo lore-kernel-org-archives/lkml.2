@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755955Ab0KCU2E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 16:28:04 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:34706 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753181Ab0KCU2C (ORCPT
+	id S1756001Ab0KCU3N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 16:29:13 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:14169 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753181Ab0KCU3L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 16:28:02 -0400
-Date: Wed, 3 Nov 2010 16:27:57 -0400
-From: Kyle McMartin <kyle@mcmartin.ca>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] i915: reprogram power monitoring registers on resume
-Message-ID: <20101103202757.GJ8332@bombadil.infradead.org>
+	Wed, 3 Nov 2010 16:29:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=gQI8W82D6E1fWARFatgK2YpcH/N0ovRdWovgtsqa5W08F3bTLUywe6X7WYHVpZ+WAH
+         NCOyVN2eyoq6OFG4QPRw==
+Message-ID: <4CD1C612.5080902@google.com>
+Date: Wed, 03 Nov 2010 13:29:06 -0700
+From: Mike Waychison <mikew@google.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Matt Mackall <mpm@selenic.com>
+CC: Greg KH <greg@kroah.com>, simon.kagstrom@netinsight.net,
+        davem@davemloft.net, adurbin@google.com, akpm@linux-foundation.org,
+        chavey@google.com, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH v1 00/12] netoops support
+References: <20101103012917.4641.57113.stgit@crlf.mtv.corp.google.com>	<20101103023422.GB5782@kroah.com>	<AANLkTi=Oe4oJ0imCh1eoJLS0QYqSBM4pLo=dEUSiJcQb@mail.gmail.com>	<20101103181634.GF7441@kroah.com> <AANLkTimKWCWtuPeZhMZ75gTxB8LwAhJfy2FZnnRwthft@mail.gmail.com>
+In-Reply-To: <AANLkTimKWCWtuPeZhMZ75gTxB8LwAhJfy2FZnnRwthft@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kyle McMartin <kyle@redhat.com>
+Mike Waychison wrote:
+> FWIW, another semantic difference between netconsole and netoops (that
+> I had missed in the last email) is filtering: we really do want to get
+> the whole log when a crash happens, debug messages and all.
+> Netconsole is subject to console filtering (which we _do_ want as
+> debug messages going out the uart slows the whole world down).
+> 
+> netconsole and netoops _do_ have bits in common, for instance the
+> handling of NETDEV events and source+target configuration.  I'd rather
+> those bits become common between the two than figure out how to jam
+> the semantics we need into netconsole.
 
-Fixes issue where i915_gfx_val was reporting values several
-orders of magnitude higher than physically possible (without
-leaving scorch marks on my thighs at least.)
+Hi Matt,
 
-Signed-off-by: Kyle McMartin <kyle@redhat.com>
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
----
- drivers/gpu/drm/i915/i915_suspend.c |    4 +++-
- drivers/gpu/drm/i915/intel_drv.h    |    1 +
- 2 files changed, 4 insertions(+), 1 deletions(-)
+I've been reading through the netconsole driver in response to Greg's 
+comments on this thread, and it is definitely more robust in terms of 
+configuration and handling of network device events than the netoops 
+driver I proposed.
 
-diff --git a/drivers/gpu/drm/i915/i915_suspend.c b/drivers/gpu/drm/i915/i915_suspend.c
-index 989c19d..454c064 100644
---- a/drivers/gpu/drm/i915/i915_suspend.c
-+++ b/drivers/gpu/drm/i915/i915_suspend.c
-@@ -862,8 +862,10 @@ int i915_restore_state(struct drm_device *dev)
- 	/* Clock gating state */
- 	intel_init_clock_gating(dev);
- 
--	if (HAS_PCH_SPLIT(dev))
-+	if (HAS_PCH_SPLIT(dev)) {
- 		ironlake_enable_drps(dev);
-+		intel_init_emon(dev);
-+	}
- 
- 	/* Cache mode state */
- 	I915_WRITE (CACHE_MODE_0, dev_priv->saveCACHE_MODE_0 | 0xffff0000);
-diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
-index 9af9f86..21551fe 100644
---- a/drivers/gpu/drm/i915/intel_drv.h
-+++ b/drivers/gpu/drm/i915/intel_drv.h
-@@ -296,6 +296,7 @@ extern void intel_crtc_fb_gamma_get(struct drm_crtc *crtc, u16 *red, u16 *green,
- extern void intel_init_clock_gating(struct drm_device *dev);
- extern void ironlake_enable_drps(struct drm_device *dev);
- extern void ironlake_disable_drps(struct drm_device *dev);
-+extern void intel_init_emon(struct drm_device *dev);
- 
- extern int intel_pin_and_fence_fb_obj(struct drm_device *dev,
- 				      struct drm_gem_object *obj,
--- 
-1.7.3.1
+What are your thoughts on extending netconsole with the same sort of 
+semantics that are in the netoops patchset?
 
+I'd still like to have blit-dmesg-to-the-network-on-oops semantics, 
+which seems doable by having a per-target flag for streaming of console 
+messages (enabled by default) and a flag to emit a structured full dmesg 
+dump (disabled by default).
+
+I'd be happy to change this patchset to modify the netconsole driver if 
+you agree.
+
+Thanks,
+
+Mike Waychison
