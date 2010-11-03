@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563Ab0KCU0h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 16:26:37 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:61825 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753181Ab0KCU0f convert rfc822-to-8bit (ORCPT
+	id S1755955Ab0KCU2E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 16:28:04 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:34706 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753181Ab0KCU2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 16:26:35 -0400
+	Wed, 3 Nov 2010 16:28:02 -0400
+Date: Wed, 3 Nov 2010 16:27:57 -0400
+From: Kyle McMartin <kyle@mcmartin.ca>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] i915: reprogram power monitoring registers on resume
+Message-ID: <20101103202757.GJ8332@bombadil.infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <1286890834.2670.21.camel@localhost.localdomain>
-References: <1278011263-7951-1-git-send-email-zohar@linux.vnet.ibm.com>
-	<201010121414.14486.ozan@pardus.org.tr>
-	<1286888769.2670.5.camel@localhost.localdomain>
-	<201010120919.11819.sgrubb@redhat.com>
-	<1286890834.2670.21.camel@localhost.localdomain>
-Date: Wed, 3 Nov 2010 16:26:34 -0400
-Message-ID: <AANLkTi=4Tu=26ytCYvZSADtCdAbzw6U_9pxvHRfjwa7K@mail.gmail.com>
-Subject: Re: [PATCH] security: move LSM xattrnames to xattr.h
-From: Eric Paris <eparis@parisplace.org>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Steve Grubb <sgrubb@redhat.com>,
-        =?UTF-8?B?T3phbiDDh2HEn2xheWFu?= <ozan@pardus.org.tr>,
-        James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        David Safford <safford@watson.ibm.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 12, 2010 at 9:40 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> On Tue, 2010-10-12 at 09:19 -0400, Steve Grubb wrote:
+From: Kyle McMartin <kyle@redhat.com>
 
-> Before making any changes to the kernel xattr.h, I want to understand
-> the reason for two xattr.h files, one in /usr/include/linux/ and the
-> other in /usr/include/xattr/.  /usr/include/linux/xattr.h contains those
-> elements not defined as __kernel__, while /usr/include/xattr/xattr.h
-> contains that and other definitions.  Will changing the kernel xattr.h
-> version change both?
+Fixes issue where i915_gfx_val was reporting values several
+orders of magnitude higher than physically possible (without
+leaving scorch marks on my thighs at least.)
 
-I don't know what /usr/include/xattr/ is but /usr/include/linux/ is
-where the kernel-headers are supposed to end up.  I'm guessing
-/usr/include/xattr/ is the glibc function definitions?  (my glibc
-function definitions for xattrs are in /usr/include/sys/xattr.h)
+Signed-off-by: Kyle McMartin <kyle@redhat.com>
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+---
+ drivers/gpu/drm/i915/i915_suspend.c |    4 +++-
+ drivers/gpu/drm/i915/intel_drv.h    |    1 +
+ 2 files changed, 4 insertions(+), 1 deletions(-)
 
-I sent a patch to export them all.  I didn't cc stable since it
-clearly change more than it needs to, but we really should send
-something to stable....
+diff --git a/drivers/gpu/drm/i915/i915_suspend.c b/drivers/gpu/drm/i915/i915_suspend.c
+index 989c19d..454c064 100644
+--- a/drivers/gpu/drm/i915/i915_suspend.c
++++ b/drivers/gpu/drm/i915/i915_suspend.c
+@@ -862,8 +862,10 @@ int i915_restore_state(struct drm_device *dev)
+ 	/* Clock gating state */
+ 	intel_init_clock_gating(dev);
+ 
+-	if (HAS_PCH_SPLIT(dev))
++	if (HAS_PCH_SPLIT(dev)) {
+ 		ironlake_enable_drps(dev);
++		intel_init_emon(dev);
++	}
+ 
+ 	/* Cache mode state */
+ 	I915_WRITE (CACHE_MODE_0, dev_priv->saveCACHE_MODE_0 | 0xffff0000);
+diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
+index 9af9f86..21551fe 100644
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -296,6 +296,7 @@ extern void intel_crtc_fb_gamma_get(struct drm_crtc *crtc, u16 *red, u16 *green,
+ extern void intel_init_clock_gating(struct drm_device *dev);
+ extern void ironlake_enable_drps(struct drm_device *dev);
+ extern void ironlake_disable_drps(struct drm_device *dev);
++extern void intel_init_emon(struct drm_device *dev);
+ 
+ extern int intel_pin_and_fence_fb_obj(struct drm_device *dev,
+ 				      struct drm_gem_object *obj,
+-- 
+1.7.3.1
 
--Eric
