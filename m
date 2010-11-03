@@ -1,109 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab0KCX3F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 19:29:05 -0400
-Received: from mail.perches.com ([173.55.12.10]:3983 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752830Ab0KCX3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 19:29:03 -0400
-Subject: [PATCH] CONFIG_EMBEDDED and !CONFIG_PRINTK: remove WARN_ON and
- print_symbol strings
-From: Joe Perches <joe@perches.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Matt Mackall <mpm@selenic.com>, David Woodhouse <dwmw2@infradead.org>,
-        linux-arch@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 03 Nov 2010 16:29:01 -0700
-Message-ID: <1288826941.10236.65.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753189Ab0KCXb7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 19:31:59 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:53190 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752635Ab0KCXb4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 19:31:56 -0400
+Date: Wed, 3 Nov 2010 18:31:05 -0500
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jamal Hadi Salim <hadi@cyberus.ca>, Thomas Graf <tgraf@suug.ch>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, Ben Blum <bblum@andrew.cmu.edu>
+Subject: Re: Linux 2.6.37-rc1 (net/sched: cls_cgroup)
+Message-ID: <20101103233105.GA26124@gondor.apana.org.au>
+References: <AANLkTimr3rW67HxgOUyReEW8dmmSsd4b7-Ns57mXzS1w@mail.gmail.com> <20101103142156.73c2d3c9.randy.dunlap@oracle.com> <1288821677.2718.27.camel@edumazet-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288821677.2718.27.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reduces text a bit.
+On Wed, Nov 03, 2010 at 11:01:17PM +0100, Eric Dumazet wrote:
+>
+> commits 8e039d84b323c450 
+> (cgroups: net_cls as module)
+> 
+> followed by commit f845172531f
+> (cls_cgroup: Store classid in struct sock)
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- include/asm-generic/bug.h |   11 +++++++++++
- include/linux/kallsyms.h  |    4 ++++
- kernel/panic.c            |    6 ++++++
- 3 files changed, 21 insertions(+), 0 deletions(-)
+Indeed, it looks like the tree I worked on didn't have the first
+patch applied for some reason.
 
-diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
-index c2c9ba0..0741436 100644
---- a/include/asm-generic/bug.h
-+++ b/include/asm-generic/bug.h
-@@ -61,12 +61,23 @@ struct bug_entry {
-  */
- #ifndef __WARN_TAINT
- #ifndef __ASSEMBLY__
-+
-+#ifdef CONFIG_PRINTK
- extern void warn_slowpath_fmt(const char *file, const int line,
- 		const char *fmt, ...) __attribute__((format(printf, 3, 4)));
- extern void warn_slowpath_fmt_taint(const char *file, const int line,
- 				    unsigned taint, const char *fmt, ...)
- 	__attribute__((format(printf, 4, 5)));
- extern void warn_slowpath_null(const char *file, const int line);
-+#else
-+static inline void __attribute__((format(printf, 3, 4)))
-+warn_slowpath_fmt(const char *file, const int line, const char *fmt, ...) {}
-+static inline void __attribute__((format(printf, 4, 5)))
-+warn_slowpath_fmt_taint(const char *file, const int line,
-+			unsigned taint, const char *fmt, ...) {}
-+static inline void warn_slowpath_null(const char *file, const int line) {}
-+#endif
-+
- #define WANT_WARN_ON_SLOWPATH
+Anyway, this patch should fix the problem.  Thanks Eric!
+
+cls_cgroup: Fix crash on module unload
+
+Somewhere along the lines net_cls_subsys_id became a macro when
+cls_cgroup is built as a module.  Not only did it make cls_cgroup
+completely useless, it also causes it to crash on module unload.
+
+This patch fixes this by removing that macro.
+
+Thanks to Eric Dumazet for diagnosing this problem.
+
+Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+
+diff --git a/net/sched/cls_cgroup.c b/net/sched/cls_cgroup.c
+index 37dff78..d49c40f 100644
+--- a/net/sched/cls_cgroup.c
++++ b/net/sched/cls_cgroup.c
+@@ -34,8 +34,6 @@ struct cgroup_subsys net_cls_subsys = {
+ 	.populate	= cgrp_populate,
+ #ifdef CONFIG_NET_CLS_CGROUP
+ 	.subsys_id	= net_cls_subsys_id,
+-#else
+-#define net_cls_subsys_id net_cls_subsys.subsys_id
  #endif
- #define __WARN()		warn_slowpath_null(__FILE__, __LINE__)
-diff --git a/include/linux/kallsyms.h b/include/linux/kallsyms.h
-index d8e9b3d..2e7e1e9 100644
---- a/include/linux/kallsyms.h
-+++ b/include/linux/kallsyms.h
-@@ -100,12 +100,16 @@ static inline void __check_printsym_format(const char *fmt, ...)
- {
- }
- 
-+#ifdef CONFIG_PRINTK
- static inline void print_symbol(const char *fmt, unsigned long addr)
- {
- 	__check_printsym_format(fmt, "");
- 	__print_symbol(fmt, (unsigned long)
- 		       __builtin_extract_return_addr((void *)addr));
- }
-+#else
-+static inline void print_symbol(const char *fmt, unsigned long addr) {}
-+#endif
- 
- static inline void print_ip_sym(unsigned long ip)
- {
-diff --git a/kernel/panic.c b/kernel/panic.c
-index 4c13b1a..14d7539 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -357,6 +357,9 @@ void oops_exit(void)
- }
- 
- #ifdef WANT_WARN_ON_SLOWPATH
-+
-+#ifdef CONFIG_PRINTK
-+
- struct slowpath_args {
- 	const char *fmt;
- 	va_list args;
-@@ -413,6 +416,9 @@ void warn_slowpath_null(const char *file, int line)
- 			     TAINT_WARN, NULL);
- }
- EXPORT_SYMBOL(warn_slowpath_null);
-+
-+#endif
-+
- #endif
- 
- #ifdef CONFIG_CC_STACKPROTECTOR
+ 	.module		= THIS_MODULE,
+ };
 
-
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
