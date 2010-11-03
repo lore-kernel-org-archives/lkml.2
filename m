@@ -1,181 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209Ab0KCVqN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 17:46:13 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:33295 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751296Ab0KCVqL (ORCPT
+	id S1752360Ab0KCVqn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 17:46:43 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:46275 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752254Ab0KCVqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 17:46:11 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6156"; a="60528518"
-From: Stephen Caudle <scaudle@codeaurora.org>
-To: linux@arm.linux.org.uk
-Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dwalker@codeaurora.org,
-        adharmap@codeaurora.org, miltonm@bga.com,
-        Stephen Caudle <scaudle@codeaurora.org>
-Subject: [PATCH v2] [ARM] gic: Unmask private interrupts on all cores during IRQ enable
-Date: Wed,  3 Nov 2010 17:46:02 -0400
-Message-Id: <1288820762-16077-1-git-send-email-scaudle@codeaurora.org>
-X-Mailer: git-send-email 1.7.3.2
+	Wed, 3 Nov 2010 17:46:42 -0400
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: miklos@szeredi.hu, aarcange@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, shenlinf@cn.ibm.com,
+        volobuev@us.ibm.com, mel@linux.vnet.ibm.com, dingc@cn.ibm.com,
+        lnxninja@us.ibm.com
+In-reply-to: <1288817005.4235.11393.camel@nimitz> (message from Dave Hansen on
+	Wed, 03 Nov 2010 13:43:25 -0700)
+Subject: Re: Deadlocks with transparent huge pages and userspace fs daemons
+References: <1288817005.4235.11393.camel@nimitz>
+Message-Id: <E1PDl9w-0003ea-7Z@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Wed, 03 Nov 2010 22:46:20 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some multi-core ARM chips designate a unique IRQ number for each core for
-private peripheral interrupts (PPIs). Others designate a common IRQ number
-for all cores. In the latter case, requesting/freeing private peripheral
-interrupts currently unmasks/masks the interrupt for only the
-executing core, respectively.
+On Wed, 03 Nov 2010, Dave Hansen wrote:
+> Hey Miklos,
+> 
+> When testing with a transparent huge page kernel:
+> 
+> 	http://git.kernel.org/gitweb.cgi?p=linux/kernel/git/andrea/aa.git;a=summary
+> 
+> some IBM testers ran into some deadlocks.  It appears that the
+> khugepaged process is trying to migrate one of a filesystem daemon's
+> pages while khugepaged holds the daemon's mmap_sem for write.
+> 
+> I think I've reproduced this issue in a slightly different form with
+> FUSE.  In my case, I think the FUSE process actually deadlocks on itself
+> instead of with khugepaged as in the IBM tester example that got me
+> looking at this.
+> 
+> Andrea put it this way:
+> > As long as page faults are needed to execute the I/O I doubt it's safe. But
+> > I'll definitely change khugepaged not to allocate memory. If nothing else
+> > because I don't want khugepaged to make easier to trigger issues like this. But
+> > it's hard for me to consider this a bug of khugepaged from a theoretical
+> > standpoint.
+> 
+> I tend to agree.  khugepaged makes the likelyhood of these things
+> happening much higher, but I don't think it fundamentally creates the
+> issue.
 
-With this change, request_irq will unmask a PPI on all cores so a separate
-call to enable_irq on the other cores is not required. Likewise, free_irq
-will mask a PPI on the other cores. Also, shutdown is implemented instead
-of disable to allow for lazy IRQ disabling.
+Yes, I agree too.
+ 
+I think what is happening is that the fuse daemon is trying to read a
+page.  While that is happening the page is locked.  If the daemon
+blocks on a lock_page() for that same page, that is an obvious
+deadlock.
 
-Signed-off-by: Stephen Caudle <scaudle@codeaurora.org>
----
- arch/arm/Kconfig      |    5 +++
- arch/arm/common/gic.c |   86 +++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 91 insertions(+), 0 deletions(-)
+This is not unique to fuse, for example NFS or any other network
+filesystem is used over userspace tunneling (e.g. openvpn) then the
+same thing can happen.
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 30ddd06..7f11e31 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1153,6 +1153,11 @@ config SMP
- 
- 	  If you don't know what to do here, say N.
- 
-+config IRQ_PER_CPU
-+	bool
-+	depends on SMP
-+	default n
-+
- config HAVE_ARM_SCU
- 	bool
- 	depends on SMP
-diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
-index 886daaf..937a33a 100644
---- a/arch/arm/common/gic.c
-+++ b/arch/arm/common/gic.c
-@@ -44,12 +44,25 @@ struct gic_chip_data {
- 	unsigned int wakeup_irqs[32];
- 	unsigned int enabled_irqs[32];
- #endif
-+#ifdef CONFIG_IRQ_PER_CPU
-+	struct call_single_data ppi_data[NR_CPUS];
-+#endif
- };
- 
- #ifndef MAX_GIC_NR
- #define MAX_GIC_NR	1
- #endif
- 
-+#ifdef CONFIG_IRQ_PER_CPU
-+#ifndef GIC_PPI_FIRST
-+#define GIC_PPI_FIRST	16
-+#endif
-+
-+#ifndef GIC_PPI_LAST
-+#define GIC_PPI_LAST	31
-+#endif
-+#endif
-+
- static struct gic_chip_data gic_data[MAX_GIC_NR];
- 
- static inline void __iomem *gic_dist_base(unsigned int irq)
-@@ -272,6 +285,75 @@ static int gic_set_type(unsigned int irq, unsigned int type)
- 	return 0;
- }
- 
-+#ifdef CONFIG_IRQ_PER_CPU
-+static inline void gic_smp_call_function(struct call_single_data *data)
-+{
-+	int cpu;
-+
-+	/* Make sure data is visible */
-+	smp_mb();
-+
-+	/*
-+	 * Since this function is called with interrupts disabled,
-+	 * smp_call_function can't be used here because it warns (even
-+	 * if wait = 0) when interrupts are disabled.
-+	 *
-+	 * __smp_call_function_single doesn't warn when interrupts are
-+	 * disabled and not waiting, so use it instead.
-+	 */
-+	for_each_online_cpu(cpu)
-+		if (cpu != smp_processor_id())
-+			__smp_call_function_single(cpu, data, 0);
-+}
-+
-+static void gic_mask_ppi(void *info)
-+{
-+	struct irq_desc *desc = info;
-+	gic_mask_irq(desc->irq);
-+}
-+
-+static void gic_unmask_ppi(void *info)
-+{
-+	struct irq_desc *desc = info;
-+	gic_unmask_irq(desc->irq);
-+}
-+
-+static void gic_enable_irq(unsigned int irq)
-+{
-+	struct irq_desc *desc = irq_to_desc(irq);
-+	struct gic_chip_data *gic_data = get_irq_chip_data(irq);
-+	int cpu = smp_processor_id();
-+
-+	if (irq >= GIC_PPI_FIRST && irq <= GIC_PPI_LAST) {
-+		gic_data->ppi_data[cpu].func = gic_unmask_ppi;
-+		gic_data->ppi_data[cpu].info = desc;
-+
-+		/* Unmask PPIs on all cores during enable. */
-+		gic_smp_call_function(&gic_data->ppi_data[cpu]);
-+	}
-+
-+	desc->chip->unmask(irq);
-+	desc->status &= ~IRQ_MASKED;
-+}
-+
-+static void gic_shutdown_irq(unsigned int irq)
-+{
-+	struct irq_desc *desc = irq_to_desc(irq);
-+	struct gic_chip_data *gic_data = get_irq_chip_data(irq);
-+	int cpu = smp_processor_id();
-+
-+	if (irq >= GIC_PPI_FIRST && irq <= GIC_PPI_LAST) {
-+		gic_data->ppi_data[cpu].func = gic_mask_ppi;
-+		gic_data->ppi_data[cpu].info = desc;
-+
-+		/* Mask PPIs on all cores during disable. */
-+		gic_smp_call_function(&gic_data->ppi_data[cpu]);
-+	}
-+
-+	desc->chip->mask(irq);
-+	desc->status |= IRQ_MASKED;
-+}
-+#endif
- 
- static struct irq_chip gic_chip = {
- 	.name		= "GIC",
-@@ -283,6 +365,10 @@ static struct irq_chip gic_chip = {
- #endif
- 	.set_type	= gic_set_type,
- 	.set_wake	= gic_set_wake,
-+#ifdef CONFIG_IRQ_PER_CPU
-+	.enable		= gic_enable_irq,
-+	.shutdown	= gic_shutdown_irq,
-+#endif
- };
- 
- void __init gic_cascade_irq(unsigned int gic_nr, unsigned int irq)
--- 
-1.7.3.2
+> Should we do something like make page compaction always non-blocking on
+> lock_page()?
 
---
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum
+Yes, at least on !PageUptodate() pages.
 
+Also blocking on page writeback has a similar effect.  Fuse is immune
+to that because it does writeback in a special way.  But the network
+fs over userspace tunneling case is not immune AFAICS.
+
+Thanks,
+Miklos
