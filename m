@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932352Ab0KCPax (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 11:30:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62142 "EHLO mx1.redhat.com"
+	id S932455Ab0KCPbL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 11:31:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3411 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932287Ab0KCPam (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 11:30:42 -0400
+	id S1755806Ab0KCPay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 11:30:54 -0400
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Subject: [PATCH 19 of 66] bail out gup_fast on splitting pmd
-X-Mercurial-Node: 6ba80da6e5b0d4097cabd7daf6585964457cbe5a
-Message-Id: <6ba80da6e5b0d4097cab.1288798074@v2.random>
+Subject: [PATCH 23 of 66] add pmd_huge_pte to mm_struct
+X-Mercurial-Node: 8497eaf69975ceba0c791dfc074744d68c7803d3
+Message-Id: <8497eaf69975ceba0c79.1288798078@v2.random>
 In-Reply-To: <patchbomb.1288798055@v2.random>
 References: <patchbomb.1288798055@v2.random>
 User-Agent: Mercurial-patchbomb/1.4.1
-Date: Wed, 03 Nov 2010 16:27:54 +0100
+Date: Wed, 03 Nov 2010 16:27:58 +0100
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -42,34 +42,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andrea Arcangeli <aarcange@redhat.com>
 
-Force gup_fast to take the slow path and block if the pmd is splitting, not
-only if it's none.
+This increase the size of the mm struct a bit but it is needed to preallocate
+one pte for each hugepage so that split_huge_page will not require a fail path.
+Guarantee of success is a fundamental property of split_huge_page to avoid
+decrasing swapping reliability and to avoid adding -ENOMEM fail paths that
+would otherwise force the hugepage-unaware VM code to learn rolling back in the
+middle of its pte mangling operations (if something we need it to learn
+handling pmd_trans_huge natively rather being capable of rollback). When
+split_huge_page runs a pte is needed to succeed the split, to map the newly
+splitted regular pages with a regular pte.  This way all existing VM code
+remains backwards compatible by just adding a split_huge_page* one liner. The
+memory waste of those preallocated ptes is negligible and so it is worth it.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 Acked-by: Rik van Riel <riel@redhat.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
 ---
 
-diff --git a/arch/x86/mm/gup.c b/arch/x86/mm/gup.c
---- a/arch/x86/mm/gup.c
-+++ b/arch/x86/mm/gup.c
-@@ -160,7 +160,18 @@ static int gup_pmd_range(pud_t pud, unsi
- 		pmd_t pmd = *pmdp;
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -310,6 +310,9 @@ struct mm_struct {
+ #ifdef CONFIG_MMU_NOTIFIER
+ 	struct mmu_notifier_mm *mmu_notifier_mm;
+ #endif
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++	pgtable_t pmd_huge_pte; /* protected by page_table_lock */
++#endif
+ 	/* How many tasks sharing this mm are OOM_DISABLE */
+ 	atomic_t oom_disable_count;
+ };
+diff --git a/kernel/fork.c b/kernel/fork.c
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -527,6 +527,9 @@ void __mmdrop(struct mm_struct *mm)
+ 	mm_free_pgd(mm);
+ 	destroy_context(mm);
+ 	mmu_notifier_mm_destroy(mm);
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++	VM_BUG_ON(mm->pmd_huge_pte);
++#endif
+ 	free_mm(mm);
+ }
+ EXPORT_SYMBOL_GPL(__mmdrop);
+@@ -667,6 +670,10 @@ struct mm_struct *dup_mm(struct task_str
+ 	mm->token_priority = 0;
+ 	mm->last_interval = 0;
  
- 		next = pmd_addr_end(addr, end);
--		if (pmd_none(pmd))
-+		/*
-+		 * The pmd_trans_splitting() check below explains why
-+		 * pmdp_splitting_flush has to flush the tlb, to stop
-+		 * this gup-fast code from running while we set the
-+		 * splitting bit in the pmd. Returning zero will take
-+		 * the slow path that will call wait_split_huge_page()
-+		 * if the pmd is still in splitting state. gup-fast
-+		 * can't because it has irq disabled and
-+		 * wait_split_huge_page() would never return as the
-+		 * tlb flush IPI wouldn't run.
-+		 */
-+		if (pmd_none(pmd) || pmd_trans_splitting(pmd))
- 			return 0;
- 		if (unlikely(pmd_large(pmd))) {
- 			if (!gup_huge_pmd(pmd, addr, next, write, pages, nr))
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++	mm->pmd_huge_pte = NULL;
++#endif
++
+ 	if (!mm_init(mm, tsk))
+ 		goto fail_nomem;
+ 
