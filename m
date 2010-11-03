@@ -1,101 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755510Ab0KCQOl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 12:14:41 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:51727 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753225Ab0KCQOi (ORCPT
+	id S1755501Ab0KCQQW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 12:16:22 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45140 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752777Ab0KCQQT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 12:14:38 -0400
-X-Auth-Info: S5e7wL7RpD3dlL99brAU9S+V6wEXWBOp2GBRSf3Exkc=
-Message-ID: <4CD18AAE.9040300@grandegger.com>
-Date: Wed, 03 Nov 2010 17:15:42 +0100
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	Wed, 3 Nov 2010 12:16:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=laElCdYGmA3AtT/PKt92yNuEkYY6dVlr2rfRNcfsanEBqF8XjyyKGHnK8dhJjkthvc
+         513zCJhtWpxMSAF3iHjbDMDCfPdqY0Q7u8QU2Ar/6uNPtHIhsXQ0f06BgvkzYfCiXHsI
+         49XFKwI55YfTi6/q3u41vDwG9cjubHJymk/o4=
+Message-ID: <4CD18ACB.4060108@suse.cz>
+Date: Wed, 03 Nov 2010 17:16:11 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Thunderbird/3.1.6
 MIME-Version: 1.0
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-CC: andrew.chih.howe.khor@intel.com,
-        Masayuki Ohtake <masa-korg@dsn.okisemi.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, margie.foster@intel.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        socketcan-core@lists.berlios.de, yong.y.wang@intel.com,
-        kok.howg.ewe@intel.com, joel.clark@intel.com,
-        "David S. Miller" <davem@davemloft.net>,
-        Christian Pellegrin <chripell@fsfe.org>, qi.wang@intel.com
-Subject: Re: [PATCH net-next-2.6 v2] can: Topcliff: PCH_CAN driver: Fix build
- warnings
-References: <4CCAA3D4.8070408@dsn.okisemi.com>	<4CCAC4CD.7000503@pengutronix.de> <4CCAF517.2000409@pengutronix.de>	<4CCB213A.2020206@grandegger.com> <4CCE9F0B.1000901@pengutronix.de>
-In-Reply-To: <4CCE9F0B.1000901@pengutronix.de>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+To: Greg KH <gregkh@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com, "[cleanups]"@suse.de,
+        "Dr. Werner Fink" <werner@suse.de>, Al Viro <viro@ZenIV.linux.org.uk>
+Subject: Re: [PATCH 1/1] console: add /proc/consoles
+References: <1288798509-23550-1-git-send-email-jslaby@suse.cz> <20101103161342.GA4942@suse.de>
+In-Reply-To: <20101103161342.GA4942@suse.de>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2010 12:05 PM, Marc Kleine-Budde wrote:
-> Hello,
-> 
-> On 10/29/2010 09:32 PM, Wolfgang Grandegger wrote:
-> 
-> some comments inline.
-> 
-> [...]
-...
->>>> +	if (status & PCH_LEC_ALL) {
->>>> +		priv->can.can_stats.bus_error++;
->>>> +		stats->rx_errors++;
->>>> +		switch (status & PCH_LEC_ALL) {
->>>
->>> I suggest to convert to a if-bit-set because there might be more than
->>> one bit set.
+On 11/03/2010 05:13 PM, Greg KH wrote:
+> On Wed, Nov 03, 2010 at 04:35:09PM +0100, Jiri Slaby wrote:
+>> It allows users to see what consoles are currently known to the system
+>> and with what flags.
 >>
->> Marc, what do you mean here. It's an enumeraton. Maybe the following
->> code is more clear:
+>> It is based on Werner's patch, the part about traversing fds was
+>> removed, the code was moved to kernel/printk.c, where consoles are
+>> handled and it makes more sense to me.
 > 
-> Oh, I haven't looked this one up in the datasheet.
->>
->> 	lec = status & PCH_LEC_ALL;
->> 	if (lec > 0) {
+> Why kernel/printk.c?  I don't think that makes sense, it's just a random
+> proc file, so why not put it into something like fs/proc/ instead?
 > 
-> or "if (lec)", YMMV
-> 
->> 		switch (lec) {
->>
->>>> +		case PCH_STUF_ERR:
->>>> +			cf->data[2] |= CAN_ERR_PROT_STUFF;
->>>> +			break;
->>>> +		case PCH_FORM_ERR:
->>>> +			cf->data[2] |= CAN_ERR_PROT_FORM;
->>>> +			break;
->>>> +		case PCH_ACK_ERR:
->>>> +			cf->data[2] |= CAN_ERR_PROT_LOC_ACK |
->>>> +				       CAN_ERR_PROT_LOC_ACK_DEL;
->>
->> Could you check what that type of bus error that is? Usually it's a ack
->> lost error.
->>
->>>> +			break;
->>>> +		case PCH_BIT1_ERR:
->>>> +		case PCH_BIT0_ERR:
->>>> +			cf->data[2] |= CAN_ERR_PROT_BIT;
->>>> +			break;
->>>> +		case PCH_CRC_ERR:
->>>> +			cf->data[2] |= CAN_ERR_PROT_LOC_CRC_SEQ |
->>>> +				       CAN_ERR_PROT_LOC_CRC_DEL;
->>>> +			break;
->>>> +		default:
->>>> +			iowrite32(status | PCH_LEC_ALL, &priv->regs->stat);
->>>> +			break;
->>>> +		}
->>>> +
->>>> +	}
+> Does it rely on any functions in the printk.c file?
 
-At a closer look, I doubt that the above LEC handling is correct.
-According to the manual: "when the LEC shows the value “7,” this value
-was written to the LEC by the CPU; thus, no CAN bus event was detected"
-Therefore the LEC bits should be properly *initialized* and *reset* to
-0x7, which I do not find in the code.
+No it doesn't. I will move it to fs/proc/ if that's preferred. I checked
+how VM proc stuff is handled and it was in in mm/, so I put this into
+kernel/...
 
-Wolfgang.
+(Then it will depend on the console cleanup series which I sent few
+minutes ago...)
 
+thanks,
+-- 
+js
+suse labs
