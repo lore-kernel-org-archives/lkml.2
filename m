@@ -1,162 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752745Ab0KCVvF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 17:51:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40607 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752559Ab0KCVvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 17:51:00 -0400
-Date: Wed, 3 Nov 2010 17:50:47 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, jaxboe@fusionio.com
-Cc: device-mapper development <dm-devel@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] block: rename trace_block_remap to trace_block_bio_remap
-Message-ID: <20101103215047.GC26473@redhat.com>
-References: <4AB3A393.5000709@ce.jp.nec.com>
- <4AB4F908.60307@ce.jp.nec.com>
+	id S1752843Ab0KCVvr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 17:51:47 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:56511 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752528Ab0KCVvp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 17:51:45 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=x-relay-ip:message-id:date:from:user-agent:mime-version:to:cc:
+	subject:references:in-reply-to:content-type:content-transfer-encoding;
+	b=qFme3hI0sVy/PU3gh8THcTW/j73GSaxAsDKEgq/hzTXpxrNOh/3kSCDDnP5NfBvb/
+	/4sbmwVZPoR3jrruKkCow==
+X-Relay-IP: 172.22.64.119
+Message-ID: <4CD1D919.5000209@google.com>
+Date: Wed, 03 Nov 2010 14:50:17 -0700
+From: Aaron Durbin <adurbin@google.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4AB4F908.60307@ce.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "simon.kagstrom@netinsight.net" <simon.kagstrom@netinsight.net>,
+        "David.Woodhouse@intel.com" <David.Woodhouse@intel.com>,
+        "anders.grafstrom@netinsight.net" <anders.grafstrom@netinsight.net>,
+        "Artem.Bityutskiy@nokia.com" <Artem.Bityutskiy@nokia.com>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
+        "jason.wessel@windriver.com" <jason.wessel@windriver.com>,
+        "jslaby@suse.cz" <jslaby@suse.cz>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "eparis@redhat.com" <eparis@redhat.com>, "hch@lst.de" <hch@lst.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        "Satoru Moriya"@google.com
+Subject: Re: [RFC][Patch] Adding kmsg_dump() to reboot/halt/poweroff/emergency_restart
+ path
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C11B4B724@USINDEVS01.corp.hds.com> <20101018153350.18b68c50.akpm@linux-foundation.org> <5C4C569E8A4B9B42A84A977CF070A35B2C1276CEC7@USINDEVS01.corp.hds.com>
+In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C1276CEC7@USINDEVS01.corp.hds.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename "block_remap" tracepoint to "block_bio_remap" to clarify the
-event.
+On 10/27/10 12:44, Seiji Aguchi wrote:
+> Hi,
+>
+>> What actual problem are we solving here?  Why is the current code
+>> inadequate?  It would help to demonstrate some use-case and to explain
+>> how the situation improved with this patch.
+>
+> [Purpose]
+>   My purpose is developing highly reliable logging facility for
+enterprise use.
+>
+>   I'm planning to add the following triggers of kmsg_dumper().
+>      - reboot/poweroff/halt/emergency_restart (this patch)
+>      - Machine check
+>
+>   I'm also planning to add an feature outputting kernel messages to
+NVRAM,
+>   because NVRAM is equipped with enterprise servers.
+>   We can realize highly reliable logging facility by outputting
+kernel messages to NVRAM.
+>   (NVRAM is commonly used on Mainframe and Commercial Unix as well.)
+>
+> [Use case of reboot/poweroff/halt/emergency_restart]
+>
+>   My company has often experienced the followings in our support service.
+>   - Customer's system suddenly reboots.
+>   - Customers ask us to investigate the reason of the reboot.
+>
+>   We recognize the fact itself because boot messages remain in
+/var/log/messages.
+>   However, we can't investigate the reason why the system rebooted,
+>   because the last messages don't remain.
+>   And off course we can't explain the reason.
+>
+>
+>   We can solve above problem with this patch as follows.
+>   Case1: reboot with command
+>     - We can see "Restarting system with command:" or ""Restarting
+system.".
+>
+>   Case2: halt with command
+>     - We can see "System halted.".
+>
+>   Case3: poweroff with command
+>     - We can see " Power down.".
+>
+>   Case4: emergency_restart with sysrq.
+>     - We can see "Sysrq:" outputted in __handle_sysrq().
+>
+>   Case5: emergency_restart with softdog.
+>     - We can see "Initiating system reboot" in watchdog_fire().
+>
+>   So, we can distinguish the reason of reboot, poweroff, halt and
+emergency_restart.
+>
+>   If customer executed reboot command, you may think the customer
+should know the fact.
+>   However, they often claim they don't execute the command when they
+rebooted system by mistake.
+>
+>   No evidential message remain on current Linux kernel, so we can't
+show the proof to the customer.
+>   This patch improves this situation.
+>
+> Seiji
 
-Signed-off-by: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
----
- block/blk-core.c             |   10 +++++-----
- drivers/md/dm.c              |    4 ++--
- include/trace/events/block.h |    6 +++---
- kernel/trace/blktrace.c      |   12 ++++++------
- 4 files changed, 16 insertions(+), 16 deletions(-)
+We carry patches in our kernels that do very similar things. The reason 
+is essentially the same as what you have cited. On our platforms we have 
+two different ways of storing events to an event log. One communicates 
+with the BIOS itself; the other writes bit flags to a known area of 
+non-volatile storage. That way when the machine comes back up we have a 
+clear eventlog (with times) as to what happened when. Piecing these 
+events together has proven to be invaluable for finding issues.
 
-v2: patch needed to be rebased and it should go through the Jens'
-linux-2.6-block tree.  The original v1 patch is here:
-https://patchwork.kernel.org/patch/48763/
+For both of the drivers that log these events they use a shared 
+interface that collect various events in the kernel and present them 
+through a single notifier chain for the drivers' consumption.
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index f0834e2..9d5a61f 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -33,7 +33,7 @@
- 
- #include "blk.h"
- 
--EXPORT_TRACEPOINT_SYMBOL_GPL(block_remap);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(block_bio_remap);
- EXPORT_TRACEPOINT_SYMBOL_GPL(block_rq_remap);
- EXPORT_TRACEPOINT_SYMBOL_GPL(block_bio_complete);
- 
-@@ -1336,9 +1336,9 @@ static inline void blk_partition_remap(struct bio *bio)
- 		bio->bi_sector += p->start_sect;
- 		bio->bi_bdev = bdev->bd_contains;
- 
--		trace_block_remap(bdev_get_queue(bio->bi_bdev), bio,
--				    bdev->bd_dev,
--				    bio->bi_sector - p->start_sect);
-+		trace_block_bio_remap(bdev_get_queue(bio->bi_bdev), bio,
-+				      bdev->bd_dev,
-+				      bio->bi_sector - p->start_sect);
- 	}
- }
- 
-@@ -1507,7 +1507,7 @@ static inline void __generic_make_request(struct bio *bio)
- 			goto end_io;
- 
- 		if (old_sector != -1)
--			trace_block_remap(q, bio, old_dev, old_sector);
-+			trace_block_bio_remap(q, bio, old_dev, old_sector);
- 
- 		old_sector = bio->bi_sector;
- 		old_dev = bio->bi_bdev->bd_dev;
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index 7cb1352..0a2b551 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -990,8 +990,8 @@ static void __map_bio(struct dm_target *ti, struct bio *clone,
- 	if (r == DM_MAPIO_REMAPPED) {
- 		/* the bio has been remapped so dispatch it */
- 
--		trace_block_remap(bdev_get_queue(clone->bi_bdev), clone,
--				    tio->io->bio->bi_bdev->bd_dev, sector);
-+		trace_block_bio_remap(bdev_get_queue(clone->bi_bdev), clone,
-+				      tio->io->bio->bi_bdev->bd_dev, sector);
- 
- 		generic_make_request(clone);
- 	} else if (r < 0 || r == DM_MAPIO_REQUEUE) {
-diff --git a/include/trace/events/block.h b/include/trace/events/block.h
-index d8ce278..b56c65d 100644
---- a/include/trace/events/block.h
-+++ b/include/trace/events/block.h
-@@ -486,16 +486,16 @@ TRACE_EVENT(block_split,
- );
- 
- /**
-- * block_remap - map request for a partition to the raw device
-+ * block_bio_remap - map request for a logical device to the raw device
-  * @q: queue holding the operation
-  * @bio: revised operation
-  * @dev: device for the operation
-  * @from: original sector for the operation
-  *
-- * An operation for a partition on a block device has been mapped to the
-+ * An operation for a logical device has been mapped to the
-  * raw block device.
-  */
--TRACE_EVENT(block_remap,
-+TRACE_EVENT(block_bio_remap,
- 
- 	TP_PROTO(struct request_queue *q, struct bio *bio, dev_t dev,
- 		 sector_t from),
-diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
-index bc251ed..9f42529 100644
---- a/kernel/trace/blktrace.c
-+++ b/kernel/trace/blktrace.c
-@@ -889,7 +889,7 @@ static void blk_add_trace_split(void *ignore,
- }
- 
- /**
-- * blk_add_trace_remap - Add a trace for a remap operation
-+ * blk_add_trace_bio_remap - Add a trace for a bio-remap operation
-  * @ignore:	trace callback data parameter (not used)
-  * @q:		queue the io is for
-  * @bio:	the source bio
-@@ -901,9 +901,9 @@ static void blk_add_trace_split(void *ignore,
-  *     it spans a stripe (or similar). Add a trace for that action.
-  *
-  **/
--static void blk_add_trace_remap(void *ignore,
--				struct request_queue *q, struct bio *bio,
--				dev_t dev, sector_t from)
-+static void blk_add_trace_bio_remap(void *ignore,
-+				    struct request_queue *q, struct bio *bio,
-+				    dev_t dev, sector_t from)
- {
- 	struct blk_trace *bt = q->blk_trace;
- 	struct blk_io_trace_remap r;
-@@ -1018,7 +1018,7 @@ static void blk_register_tracepoints(void)
- 	WARN_ON(ret);
- 	ret = register_trace_block_split(blk_add_trace_split, NULL);
- 	WARN_ON(ret);
--	ret = register_trace_block_remap(blk_add_trace_remap, NULL);
-+	ret = register_trace_block_bio_remap(blk_add_trace_bio_remap, NULL);
- 	WARN_ON(ret);
- 	ret = register_trace_block_rq_remap(blk_add_trace_rq_remap, NULL);
- 	WARN_ON(ret);
-@@ -1027,7 +1027,7 @@ static void blk_register_tracepoints(void)
- static void blk_unregister_tracepoints(void)
- {
- 	unregister_trace_block_rq_remap(blk_add_trace_rq_remap, NULL);
--	unregister_trace_block_remap(blk_add_trace_remap, NULL);
-+	unregister_trace_block_bio_remap(blk_add_trace_bio_remap, NULL);
- 	unregister_trace_block_split(blk_add_trace_split, NULL);
- 	unregister_trace_block_unplug_io(blk_add_trace_unplug_io, NULL);
- 	unregister_trace_block_unplug_timer(blk_add_trace_unplug_timer, NULL);
+The things we currently track and log are the following:
+- clean reboot/shutdown
+- panic
+- oops
+- die
+- NMI watchdog
+
+An example eventlog produced by our systems looks like the following 
+(63-67 are the boot numbers of the system in question):
+
+2010-10-14 10:26:06 | System Reset | 63
+2010-10-14 10:26:19 | System boot | 63
+2010-10-14 11:36:43 | Kernel Shutdown | 63 | Unknown Shutdown Reason
+2010-10-14 11:36:43 | System Reset | 64
+2010-10-14 11:36:56 | System boot | 64
+2010-10-18 14:51:54 | Kernel Shutdown | 64 | Clean
+2010-10-18 14:52:38 | System Reset | 65
+2010-10-18 14:52:51 | System boot | 65
+2010-10-26 02:44:48 | Kernel Shutdown | 65 | Oops
+2010-10-26 02:44:48 | Kernel Shutdown | 65 | Die
+2010-10-26 02:44:49 | Kernel Shutdown | 65 | Panic
+2010-10-26 02:45:43 | System Reset | 66
+2010-10-26 02:45:56 | System boot | 66
+2010-10-26 02:49:22 | Kernel Shutdown | 66 | Clean
+2010-10-26 02:50:05 | System Reset | 67
+2010-10-26 02:50:18 | System boot | 67
+2010-10-26 11:39:20 | Kernel Shutdown | 67 | Clean
+
+Hope that helps others know that we think such a mechansim is vital. I 
+can post the patches for the common infrastructure if people are interested.
+
+-Aaron
