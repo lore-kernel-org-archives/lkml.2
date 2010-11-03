@@ -1,81 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755053Ab0KCLLR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 07:11:17 -0400
-Received: from wine.ocn.ne.jp ([122.1.235.145]:55826 "EHLO smtp.wine.ocn.ne.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754257Ab0KCLLO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 07:11:14 -0400
-To: mrubin@google.com
-Cc: fengguang.wu@intel.com, david@fromorbit.com, axboe@kernel.dk,
-        kosaki.motohiro@jp.fujitsu.com, nickpiggin@yahoo.com.au,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: [2.6.37-rc1] /proc/vmstat failure.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201011010053.ADE86905.JMLFHVtSQOOFOF@I-love.SAKURA.ne.jp>
-In-Reply-To: <201011010053.ADE86905.JMLFHVtSQOOFOF@I-love.SAKURA.ne.jp>
-Message-Id: <201011032011.BAB21899.OHVQtFLSFJMFOO@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Wed, 3 Nov 2010 20:11:11 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754885Ab0KCLPv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 07:15:51 -0400
+Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:41664 "EHLO
+	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754385Ab0KCLPs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 07:15:48 -0400
+Message-ID: <4CD1444A.3030308@euromail.se>
+Date: Wed, 03 Nov 2010 12:15:22 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: gimli <gimli@dark-green.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/6] MacBookAir3,1(3,2) touchpad ( bcm5974 ) support
+References: <4f8c3332b3e4cdec23a7caafc534a395@mognix.dark-green.com> <4CD041AE.80009@euromail.se> <ec999a7b97caaeccf538fb50af68067c@mognix.dark-green.com>
+In-Reply-To: <ec999a7b97caaeccf538fb50af68067c@mognix.dark-green.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1PDbJM-0001Ch-Ap.
+X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PDbJM-0001Ch-Ap 82a1ef530877b33f1636d8e8c1ab7797
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 11/03/2010 11:56 AM, gimli wrote:
+[...]
 
-"cat /proc/vmstat" triggered below failure.
+>> Any additional information you can provide to shed light on these
+> questions
+>> would be greatly appreciated. My concern is that there might be more
+> things
+>> that
+>> need to be changed for these devices.
+> 
+> What i did was asuming the touchpad works similiar to the WELLSPRING3 ones.
+> So i took the names from the Apple kext's and used the values from the
+> WELLSPRING3.
+> If i can with any debug output let me know how to make it and i'll more
+> than happy
+> to send it.
+> As far as i see only the Size on the new ones differ. 
 
-BUG: unable to handle kernel paging request at 07c06d16
-IP: [<c050c336>] strnlen+0x6/0x20
-*pde = 00000000
-Oops: 0000 [#2] SMP
-last sysfs file: /sys/devices/pci0000:00/0000:00:11.0/0000:02:02.0/irq
-Modules linked in: ipv6 video output sbs sbshc battery ac button pcnet32 serio_raw mii floppy i2c_piix4 i2c_core rtc_cmos rtc_core rtc_lib mptspi mptscsih mptbase scsi_transport_spi ext3 jbd mbcache
 
-Pid: 2982, comm: cat Tainted: G      D     2.6.36+ #12 440BX Desktop Reference Platform/VMware Virtual Platform
-EIP: 0060:[<c050c336>] EFLAGS: 00010297 CPU: 0
-EIP is at strnlen+0x6/0x20
-EAX: 07c06d16 EBX: 07c06d16 ECX: 07c06d16 EDX: fffffffe
-ESI: df0ce000 EDI: de769f0c EBP: df0cf000 ESP: de769e80
- DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-Process cat (pid: 2982, ti=de768000 task=df0e8e00 task.ti=de768000)
-Stack:
- c050a249 ffff9f10 dea43000 00000000 00000001 c042be6b c06d1514 00000002
-<0> c06d1513 de769f0c df0ce000 c050afcc ff0a0004 ffffffff 00000000 00000004
-<0> 00001000 df0ce000 df0cf000 c06d1515 de769f10 ff0a0004 ffffffff df0ce000
-Call Trace:
- [<c050a249>] ? string+0x39/0xe0
- [<c042be6b>] ? __wake_up_common+0x4b/0x80
- [<c050afcc>] ? vsnprintf+0x1ec/0x380
- [<c04b380e>] ? seq_printf+0x2e/0x60
- [<c04829a6>] ? vmstat_show+0x26/0x30
- [<c04b3bb6>] ? seq_read+0xa6/0x380
- [<c04b3b10>] ? seq_read+0x0/0x380
- [<c04d5d2f>] ? proc_reg_read+0x5f/0x90
- [<c049c4a1>] ? vfs_read+0xa1/0x140
- [<c04d5cd0>] ? proc_reg_read+0x0/0x90
- [<c049c981>] ? sys_read+0x41/0x70
- [<c0402bd0>] ? sysenter_do_call+0x12/0x26
-Code: 90 8d 74 26 00 85 c9 57 89 c7 89 d0 74 05 f2 ae 75 01 4f 89 f8 5f c3 8d b4 26 00 00 00 00 8d bc 27 00 00 00 00 89 c1 89 c8 eb 06 <80> 38 00 74 07 40 4a 83 fa ff 75 f4 29 c8 c3 90 90 90 90 90 90
-EIP: [<c050c336>] strnlen+0x6/0x20 SS:ESP 0068:de769e80
-CR2: 0000000007c06d16
----[ end trace 051c52adf97c7465 ]---
+Thanks for the background and your work on this. Yes, let's hash out the
+reamining details in the forums, and leave this thread until then. Will get my
+hands on one of the 11'' today as well. :-)
 
-git bisect reported that commit 79da826aee6a10902ef411bc65864bd02102fa83
-"writeback: report dirty thresholds in /proc/vmstat" is first bad commit.
-
-My environment:
-  CentOS 5.5 on i686
-
-Steps to reproduce:
-  Boot and login via SSH and do "cat /proc/vmstat".
-
-  What is strange, this failure occurs when tty is /dev/pts/0 (i.e.
-  devpts filesystem / interactive ssh login session) and does not occur
-  when tty is /dev/tty1 (i.e. console login session).
-
-Regards.
+Cheers,
+Henrik
