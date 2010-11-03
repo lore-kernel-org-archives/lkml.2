@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932102Ab0KCRQr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 13:16:47 -0400
-Received: from smtp.scorch.co.nz ([27.110.127.199]:34238 "HELO scorch.co.nz"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1755487Ab0KCRQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 13:16:44 -0400
-X-Virus-Checked: Checked by ClamAV on scorch.co.nz
-From: Charles Manning <manningc2@actrix.gen.nz>
-To: David Daney <ddaney@caviumnetworks.com>
-Subject: Re: [PATCH 6/9] Add some yaffs include files
-Date: Thu, 4 Nov 2010 06:16:40 +1300
-User-Agent: KMail/1.9.10
-Cc: cdhmanning@gmail.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-References: <1288803204-3849-1-git-send-email-cdhmanning@gmail.com> <1288803204-3849-7-git-send-email-cdhmanning@gmail.com> <4CD197A1.4060600@caviumnetworks.com>
-In-Reply-To: <4CD197A1.4060600@caviumnetworks.com>
+	id S932230Ab0KCRRF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 13:17:05 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:16361 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932137Ab0KCRRD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 13:17:03 -0400
+Message-ID: <4CD19909.9090103@caviumnetworks.com>
+Date: Wed, 03 Nov 2010 10:16:57 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+To: cdhmanning@gmail.com
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 7/9] Add yaffs tag access code
+References: <1288803204-3849-1-git-send-email-cdhmanning@gmail.com> <1288803204-3849-8-git-send-email-cdhmanning@gmail.com>
+In-Reply-To: <1288803204-3849-8-git-send-email-cdhmanning@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201011040616.40884.manningc2@actrix.gen.nz>
+X-OriginalArrivalTime: 03 Nov 2010 17:17:38.0086 (UTC) FILETIME=[038B8460:01CB7B7B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 04 November 2010 06:10:57 David Daney wrote:
-> On 11/03/2010 09:53 AM, cdhmanning@gmail.com wrote:
-> > From: Charles Manning<cdhmanning@gmail.com>
-> >
-> > Adding yaffs2 file system.
-> >
-> > Signed-off-by: Charles Manning<cdhmanning@gmail.com>
-> > ---
-> >   fs/yaffs2/yaffs_guts.h  |  914
-> > +++++++++++++++++++++++++++++++++++++++++++++++ fs/yaffs2/yaffs_trace.h |
-> >   58 +++
-> >   fs/yaffs2/yportenv.h    |   90 +++++
-> >   3 files changed, 1062 insertions(+), 0 deletions(-)
-> >   create mode 100644 fs/yaffs2/yaffs_guts.h
-> >   create mode 100644 fs/yaffs2/yaffs_trace.h
-> >   create mode 100644 fs/yaffs2/yportenv.h
-> >
-> > diff --git a/fs/yaffs2/yaffs_guts.h b/fs/yaffs2/yaffs_guts.h
-> > new file mode 100644
-> > index 0000000..60770ca
-> > --- /dev/null
-> > +++ b/fs/yaffs2/yaffs_guts.h
-> > @@ -0,0 +1,914 @@
-> > +/*
-> > + * YAFFS: Yet another Flash File System . A NAND-flash specific file
-> > system. + *
-> > + * Copyright (C) 2002-2010 Aleph One Ltd.
-> > + *   for Toby Churchill Ltd and Brightstar Engineering
-> > + *
-> > + * Created by Charles Manning<charles@aleph1.co.uk>
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU Lesser General Public License version
-> > 2.1 as + * published by the Free Software Foundation.
-> > + *
-> > + * Note: Only YAFFS headers are LGPL, YAFFS C code is covered by GPL.
-> > + */
->
-> What are the implications of putting LGPL things in the kernel?
->
-> I don't know, but someone probably should think about it.
+On 11/03/2010 09:53 AM, cdhmanning@gmail.com wrote:
+[...]
+> --- /dev/null
+> +++ b/fs/yaffs2/yaffs_tagscompat.c
+> @@ -0,0 +1,454 @@
+> +/*
+> + * YAFFS: Yet Another Flash File System. A NAND-flash specific file system.
+> + *
+> + * Copyright (C) 2002-2010 Aleph One Ltd.
+> + *   for Toby Churchill Ltd and Brightstar Engineering
+> + *
+> + * Created by Charles Manning<charles@aleph1.co.uk>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include "yaffs_guts.h"
+> +#include "yaffs_tagscompat.h"
+> +#include "yaffs_ecc.h"
+> +#include "yaffs_getblockinfo.h"
+> +#include "yaffs_trace.h"
+> +
+> +static void yaffs_handle_rd_data_error(struct yaffs_dev *dev, int nand_chunk);
+> +
+> +static const char yaffs_count_bits_table[256] = {
+> +	0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
+> +	1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+> +	1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+> +	2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+> +	1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+> +	2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+> +	2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+> +	3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+> +	1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+> +	2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+> +	2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+> +	3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+> +	2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+> +	3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+> +	3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+> +	4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8
+> +};
+> +
+> +int yaffs_count_bits(u8 x)
+> +{
+> +	int ret_val;
+> +	ret_val = yaffs_count_bits_table[x];
+> +	return ret_val;
+> +}
 
-Well there's BSD stuff in the kernel too....
+As in the other file, the kernel has hweight8() that should probably be 
+used instead.
 
-This reduction in restrictions for the yaffs headers is to allow people to use 
-the headers for custom bootloader integration etc. This should not generate 
-problems for any other code.
+On some architectures hweight8() expands to a single instruction. 
+Others should already have something as efficient as this, and if they 
+don't they probably should.
 
--- Charles
-
+David Daney
