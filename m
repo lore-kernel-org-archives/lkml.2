@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899Ab0KCPeO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 11:34:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9533 "EHLO mx1.redhat.com"
+	id S932528Ab0KCPeQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 11:34:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6981 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932464Ab0KCPbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 11:31:13 -0400
+	id S1755806Ab0KCPbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 11:31:12 -0400
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Subject: [PATCH 61 of 66] use compaction for GFP_ATOMIC order > 0
-X-Mercurial-Node: b540c09bfe5160120952e12c8b76d1406364e0a8
-Message-Id: <b540c09bfe5160120952.1288798116@v2.random>
+Subject: [PATCH 27 of 66] kvm mmu transparent hugepage support
+X-Mercurial-Node: 4ccaac37884a448962e3c8d5012eb22d4ba64607
+Message-Id: <4ccaac37884a448962e3.1288798082@v2.random>
 In-Reply-To: <patchbomb.1288798055@v2.random>
 References: <patchbomb.1288798055@v2.random>
 User-Agent: Mercurial-patchbomb/1.4.1
-Date: Wed, 03 Nov 2010 16:28:36 +0100
+Date: Wed, 03 Nov 2010 16:28:02 +0100
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -40,196 +40,195 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Marcelo Tosatti <mtosatti@redhat.com>
 
-This takes advantage of memory compaction to properly generate pages of order >
-0 if regular page reclaim fails and priority level becomes more severe and we
-don't reach the proper watermarks.
+This should work for both hugetlbfs and transparent hugepages.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Acked-by: Rik van Riel <riel@redhat.com>
 ---
 
-diff --git a/include/linux/compaction.h b/include/linux/compaction.h
---- a/include/linux/compaction.h
-+++ b/include/linux/compaction.h
-@@ -11,6 +11,9 @@
- /* The full zone was compacted */
- #define COMPACT_COMPLETE	3
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -543,10 +543,20 @@ static int has_wrprotected_page(struct k
  
-+#define COMPACT_MODE_DIRECT_RECLAIM	0
-+#define COMPACT_MODE_KSWAPD		1
-+
- #ifdef CONFIG_COMPACTION
- extern int sysctl_compact_memory;
- extern int sysctl_compaction_handler(struct ctl_table *table, int write,
-@@ -20,6 +23,9 @@ extern int sysctl_extfrag_handler(struct
- 			void __user *buffer, size_t *length, loff_t *ppos);
- 
- extern int fragmentation_index(struct zone *zone, unsigned int order);
-+extern unsigned long compact_zone_order(struct zone *zone,
-+					int order, gfp_t gfp_mask,
-+					int compact_mode);
- extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 			int order, gfp_t gfp_mask, nodemask_t *mask);
- 
-@@ -59,6 +65,13 @@ static inline unsigned long try_to_compa
- 	return COMPACT_CONTINUE;
- }
- 
-+static inline unsigned long compact_zone_order(struct zone *zone,
-+					       int order, gfp_t gfp_mask,
-+					       int compact_mode)
-+{
-+	return COMPACT_CONTINUE;
-+}
-+
- static inline void defer_compaction(struct zone *zone)
+ static int host_mapping_level(struct kvm *kvm, gfn_t gfn)
  {
- }
-diff --git a/mm/compaction.c b/mm/compaction.c
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -38,6 +38,8 @@ struct compact_control {
- 	unsigned int order;		/* order a direct compactor needs */
- 	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
- 	struct zone *zone;
+-	unsigned long page_size;
++	unsigned long page_size, addr;
+ 	int i, ret = 0;
+ 
+-	page_size = kvm_host_page_size(kvm, gfn);
++	page_size = kvm_host_page_size(kvm, gfn, &addr);
 +
-+	int compact_mode;
- };
- 
- static unsigned long release_freepages(struct list_head *freelist)
-@@ -357,10 +359,10 @@ static void update_nr_listpages(struct c
- }
- 
- static int compact_finished(struct zone *zone,
--						struct compact_control *cc)
-+			    struct compact_control *cc)
- {
- 	unsigned int order;
--	unsigned long watermark = low_wmark_pages(zone) + (1 << cc->order);
-+	unsigned long watermark;
- 
- 	if (fatal_signal_pending(current))
- 		return COMPACT_PARTIAL;
-@@ -370,12 +372,27 @@ static int compact_finished(struct zone 
- 		return COMPACT_COMPLETE;
- 
- 	/* Compaction run is not finished if the watermark is not met */
-+	if (cc->compact_mode != COMPACT_MODE_KSWAPD)
-+		watermark = low_wmark_pages(zone);
-+	else
-+		watermark = high_wmark_pages(zone);
-+	watermark += (1 << cc->order);
++	/* check for transparent hugepages */
++	if (page_size == PAGE_SIZE && !kvm_is_error_hva(addr)) {
++		pfn_t pfn = hva_to_pfn(kvm, addr, 0);
 +
- 	if (!zone_watermark_ok(zone, cc->order, watermark, 0, 0))
- 		return COMPACT_CONTINUE;
++		if (!is_error_pfn(pfn) && !kvm_is_mmio_pfn(pfn) &&
++		    PageTransCompound(pfn_to_page(pfn)))
++			page_size = KVM_HPAGE_SIZE(2);
++		kvm_release_pfn_clean(pfn);
++	}
  
- 	if (cc->order == -1)
- 		return COMPACT_CONTINUE;
+ 	for (i = PT_PAGE_TABLE_LEVEL;
+ 	     i < (PT_PAGE_TABLE_LEVEL + KVM_NR_PAGE_SIZES); ++i) {
+@@ -2283,6 +2293,8 @@ static int nonpaging_map(struct kvm_vcpu
+ 	pfn_t pfn;
+ 	unsigned long mmu_seq;
  
-+	/*
-+	 * Generating only one page of the right order is not enough
-+	 * for kswapd, we must continue until we're above the high
-+	 * watermark as a pool for high order GFP_ATOMIC allocations
-+	 * too.
-+	 */
-+	if (cc->compact_mode == COMPACT_MODE_KSWAPD)
-+		return COMPACT_CONTINUE;
++	mmu_seq = vcpu->kvm->mmu_notifier_seq;
++	smp_rmb();
+ 	level = mapping_level(vcpu, gfn);
+ 
+ 	/*
+@@ -2294,8 +2306,6 @@ static int nonpaging_map(struct kvm_vcpu
+ 
+ 	gfn &= ~(KVM_PAGES_PER_HPAGE(level) - 1);
+ 
+-	mmu_seq = vcpu->kvm->mmu_notifier_seq;
+-	smp_rmb();
+ 	pfn = gfn_to_pfn(vcpu->kvm, gfn);
+ 
+ 	/* mmio */
+@@ -2601,12 +2611,12 @@ static int tdp_page_fault(struct kvm_vcp
+ 	if (r)
+ 		return r;
+ 
+-	level = mapping_level(vcpu, gfn);
+-
+-	gfn &= ~(KVM_PAGES_PER_HPAGE(level) - 1);
+-
+ 	mmu_seq = vcpu->kvm->mmu_notifier_seq;
+ 	smp_rmb();
++	level = mapping_level(vcpu, gfn);
 +
- 	/* Direct compactor: Is a suitable page free? */
- 	for (order = cc->order; order < MAX_ORDER; order++) {
- 		/* Job done if page is free of the right migratetype */
-@@ -433,8 +450,9 @@ static int compact_zone(struct zone *zon
- 	return ret;
- }
++	gfn &= ~(KVM_PAGES_PER_HPAGE(level) - 1);
++
+ 	pfn = gfn_to_pfn(vcpu->kvm, gfn);
+ 	if (is_error_pfn(pfn))
+ 		return kvm_handle_bad_page(vcpu->kvm, gfn, pfn);
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -561,13 +561,13 @@ static int FNAME(page_fault)(struct kvm_
+ 		return 0;
+ 	}
  
--static unsigned long compact_zone_order(struct zone *zone,
--						int order, gfp_t gfp_mask)
-+unsigned long compact_zone_order(struct zone *zone,
-+				 int order, gfp_t gfp_mask,
-+				 int compact_mode)
- {
- 	struct compact_control cc = {
- 		.nr_freepages = 0,
-@@ -442,6 +460,7 @@ static unsigned long compact_zone_order(
- 		.order = order,
- 		.migratetype = allocflags_to_migratetype(gfp_mask),
- 		.zone = zone,
-+		.compact_mode = compact_mode,
- 	};
- 	INIT_LIST_HEAD(&cc.freepages);
- 	INIT_LIST_HEAD(&cc.migratepages);
-@@ -476,7 +495,7 @@ unsigned long try_to_compact_pages(struc
- 	 * made because an assumption is made that the page allocator can satisfy
- 	 * the "cheaper" orders without taking special steps
- 	 */
--	if (order <= PAGE_ALLOC_COSTLY_ORDER || !may_enter_fs || !may_perform_io)
-+	if (!order || !may_enter_fs || !may_perform_io)
- 		return rc;
++	mmu_seq = vcpu->kvm->mmu_notifier_seq;
++	smp_rmb();
+ 	if (walker.level >= PT_DIRECTORY_LEVEL) {
+ 		level = min(walker.level, mapping_level(vcpu, walker.gfn));
+ 		walker.gfn = walker.gfn & ~(KVM_PAGES_PER_HPAGE(level) - 1);
+ 	}
  
- 	count_vm_event(COMPACTSTALL);
-@@ -517,7 +536,8 @@ unsigned long try_to_compact_pages(struc
- 			break;
+-	mmu_seq = vcpu->kvm->mmu_notifier_seq;
+-	smp_rmb();
+ 	pfn = gfn_to_pfn(vcpu->kvm, walker.gfn);
+ 
+ 	/* mmio */
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -301,6 +301,7 @@ void kvm_set_page_dirty(struct page *pag
+ void kvm_set_page_accessed(struct page *page);
+ 
+ pfn_t hva_to_pfn_atomic(struct kvm *kvm, unsigned long addr);
++pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr, bool atomic);
+ pfn_t gfn_to_pfn_atomic(struct kvm *kvm, gfn_t gfn);
+ pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn);
+ pfn_t gfn_to_pfn_memslot(struct kvm *kvm,
+@@ -325,7 +326,8 @@ int kvm_clear_guest_page(struct kvm *kvm
+ int kvm_clear_guest(struct kvm *kvm, gpa_t gpa, unsigned long len);
+ struct kvm_memory_slot *gfn_to_memslot(struct kvm *kvm, gfn_t gfn);
+ int kvm_is_visible_gfn(struct kvm *kvm, gfn_t gfn);
+-unsigned long kvm_host_page_size(struct kvm *kvm, gfn_t gfn);
++unsigned long kvm_host_page_size(struct kvm *kvm, gfn_t gfn,
++				 unsigned long *addr);
+ void mark_page_dirty(struct kvm *kvm, gfn_t gfn);
+ 
+ void kvm_vcpu_block(struct kvm_vcpu *vcpu);
+diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
+--- a/virt/kvm/iommu.c
++++ b/virt/kvm/iommu.c
+@@ -83,7 +83,7 @@ int kvm_iommu_map_pages(struct kvm *kvm,
  		}
  
--		status = compact_zone_order(zone, order, gfp_mask);
-+		status = compact_zone_order(zone, order, gfp_mask,
-+					    COMPACT_MODE_DIRECT_RECLAIM);
- 		rc = max(status, rc);
+ 		/* Get the page size we could use to map */
+-		page_size = kvm_host_page_size(kvm, gfn);
++		page_size = kvm_host_page_size(kvm, gfn, NULL);
  
- 		if (zone_watermark_ok(zone, order, watermark, 0, 0))
-@@ -547,6 +567,7 @@ static int compact_node(int nid)
- 			.nr_freepages = 0,
- 			.nr_migratepages = 0,
- 			.order = -1,
-+			.compact_mode = COMPACT_MODE_DIRECT_RECLAIM,
- 		};
- 
- 		zone = &pgdat->node_zones[zoneid];
-diff --git a/mm/vmscan.c b/mm/vmscan.c
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -40,6 +40,7 @@
- #include <linux/memcontrol.h>
- #include <linux/delayacct.h>
- #include <linux/sysctl.h>
-+#include <linux/compaction.h>
- 
- #include <asm/tlbflush.h>
- #include <asm/div64.h>
-@@ -2254,6 +2255,7 @@ loop_again:
- 		 * cause too much scanning of the lower zones.
- 		 */
- 		for (i = 0; i <= end_zone; i++) {
-+			int compaction;
- 			struct zone *zone = pgdat->node_zones + i;
- 			int nr_slab;
- 
-@@ -2283,9 +2285,26 @@ loop_again:
- 						lru_pages);
- 			sc.nr_reclaimed += reclaim_state->reclaimed_slab;
- 			total_scanned += sc.nr_scanned;
-+
-+			compaction = 0;
-+			if (order &&
-+			    zone_watermark_ok(zone, 0,
-+					       high_wmark_pages(zone),
-+					      end_zone, 0) &&
-+			    !zone_watermark_ok(zone, order,
-+					       high_wmark_pages(zone),
-+					       end_zone, 0)) {
-+				compact_zone_order(zone,
-+						   order,
-+						   sc.gfp_mask,
-+						   COMPACT_MODE_KSWAPD);
-+				compaction = 1;
+ 		/* Make sure the page_size does not exceed the memslot */
+ 		while ((gfn + (page_size >> PAGE_SHIFT)) > end_gfn)
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -102,8 +102,36 @@ static pfn_t fault_pfn;
+ inline int kvm_is_mmio_pfn(pfn_t pfn)
+ {
+ 	if (pfn_valid(pfn)) {
+-		struct page *page = compound_head(pfn_to_page(pfn));
+-		return PageReserved(page);
++		struct page *head;
++		struct page *tail = pfn_to_page(pfn);
++		head = compound_head(tail);
++		if (head != tail) {
++			smp_rmb();
++			/*
++			 * head may be a dangling pointer.
++			 * __split_huge_page_refcount clears PageTail
++			 * before overwriting first_page, so if
++			 * PageTail is still there it means the head
++			 * pointer isn't dangling.
++			 */
++			if (PageTail(tail)) {
++				/*
++				 * the "head" is not a dangling
++				 * pointer but the hugepage may have
++				 * been splitted from under us (and we
++				 * may not hold a reference count on
++				 * the head page so it can be reused
++				 * before we run PageReferenced), so
++				 * we've to recheck PageTail before
++				 * returning what we just read.
++				 */
++				int reserved = PageReserved(head);
++				smp_rmb();
++				if (PageTail(tail))
++					return reserved;
 +			}
-+
- 			if (zone->all_unreclaimable)
- 				continue;
--			if (nr_slab == 0 && !zone_reclaimable(zone))
-+			if (!compaction && nr_slab == 0 &&
-+			    !zone_reclaimable(zone))
- 				zone->all_unreclaimable = 1;
- 			/*
- 			 * If we've done a decent amount of scanning and
++		}
++		return PageReserved(tail);
+ 	}
+ 
+ 	return true;
+@@ -884,7 +912,8 @@ int kvm_is_visible_gfn(struct kvm *kvm, 
+ }
+ EXPORT_SYMBOL_GPL(kvm_is_visible_gfn);
+ 
+-unsigned long kvm_host_page_size(struct kvm *kvm, gfn_t gfn)
++unsigned long kvm_host_page_size(struct kvm *kvm, gfn_t gfn,
++				 unsigned long *addrp)
+ {
+ 	struct vm_area_struct *vma;
+ 	unsigned long addr, size;
+@@ -892,6 +921,8 @@ unsigned long kvm_host_page_size(struct 
+ 	size = PAGE_SIZE;
+ 
+ 	addr = gfn_to_hva(kvm, gfn);
++	if (addrp)
++		*addrp = addr;
+ 	if (kvm_is_error_hva(addr))
+ 		return PAGE_SIZE;
+ 
+@@ -946,7 +977,7 @@ unsigned long gfn_to_hva(struct kvm *kvm
+ }
+ EXPORT_SYMBOL_GPL(gfn_to_hva);
+ 
+-static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr, bool atomic)
++pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr, bool atomic)
+ {
+ 	struct page *page[1];
+ 	int npages;
