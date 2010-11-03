@@ -1,82 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672Ab0KCW4w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 18:56:52 -0400
-Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:49718 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752830Ab0KCW4u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 18:56:50 -0400
-Date: Thu, 4 Nov 2010 09:56:46 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Eric Sandeen <sandeen@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: BUG in ext4 with 2.6.37-rc1
-Message-ID: <20101103225646.GC9169@dastard>
-References: <20101102202013.GA3861@elliptictech.com>
- <4CD1A67D.5060909@redhat.com>
+	id S1753780Ab0KCW5K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 18:57:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47036 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752830Ab0KCW5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 18:57:07 -0400
+Message-ID: <4CD1E8C4.2020405@suse.cz>
+Date: Wed, 03 Nov 2010 23:57:08 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CD1A67D.5060909@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kbuild, deb-pkg: fix Architecture field when cross compiling
+References: <1288654261-8269-1-git-send-email-asbjorn@asbjorn.biz>
+In-Reply-To: <1288654261-8269-1-git-send-email-asbjorn@asbjorn.biz>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 02:14:21PM -0400, Eric Sandeen wrote:
-> On 11/2/10 4:20 PM, Nick Bowler wrote:
-> > The following BUG occurred today while compiling gcc, with 2.6.37-rc1+.
-> > More precisely, commit 7fe19da4ca38 ("preempt: fix kernel build with
-> > !CONFIG_BKL") with http://permalink.gmane.org/gmane.linux.nfs/36521
-> > applied on top.  It basically took out the whole system.
-> > 
-> >   ------------[ cut here ]------------
-> >   kernel BUG at /scratch_space/linux-2.6/fs/ext4/page-io.c:146!
+On 2.11.2010 00:31, Asbjoern Sloth Toennesen wrote:
+> If the environment variable CROSS_COMPILE is set, override
+> the Architecture control field, based on the value of the
+> ARCH environment variable.
 > 
-> 138 ext4_io_end_t *ext4_init_io_end(struct inode *inode, gfp_t flags)
-> 139 {
-> 140         ext4_io_end_t *io = NULL;
-> 141
-> 142         io = kmem_cache_alloc(io_end_cachep, flags);
-> 143         if (io) {
-> 144                 memset(io, 0, sizeof(*io));
-> 145                 io->inode = igrab(inode);
-> 146                 BUG_ON(!io->inode);
+> With this patch the following make command:
 > 
-> igrab can fail if it's being torn down:
+> 	make CROSS_COMPILE='' ARCH=i386 deb-pkg
 > 
->                 /*
->                  * Handle the case where s_op->clear_inode is not been
->                  * called yet, and somebody is calling igrab
->                  * while the inode is getting freed.
->                  */
->                 inode = NULL;
-> 
-> and boom.
+> will output an i386 Debian package instead of an amd64 one,
+> when run on amd64 machine.
 
-Oh, nasty.
+I know very little about debian packaging, but shouldn't this be done in
+all cases, regardless of CROSS_COMPILE being set or not? You even show
+in the above example that in some cases you don't need CROSS_COMPILE to
+build a kernel for a different architecture. make rpm-pkg seems to
+suffer from the same problem, btw.
 
-FWIW, the XFS code this was copied from doesn't have this problem
-because the struct inode is not tagged for reclaim in
-->destroy_inode until all writeback IO is completed.  We keep a
-separate active ioend reference count in the struct xfs_inode, and
-the inode is never freed while there are still active IO references
-(see the xfs_ioend_wait() call in xfs_fs_destroy_inode).
-
-Hence the XFS ->writepage path does not need to take inode
-references to handle the possibility of an inode being freed from
-under it because the inode lifecycle model guarantees it
-cannot occur.  Perhaps ext4 needs to copy more from XFS.... ;)
-
-BTW, io_end_cachep() probably should use a mempool (like the
-equivalent XFS ioend slab cache), otherwise ext4 won't be able to
-make writeback progress in OOM conditions and will avoid needing to
-handle ENOMEM errors in ->writepage.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Michal
