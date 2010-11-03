@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932596Ab0KCPbk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 11:31:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42397 "EHLO mx1.redhat.com"
+	id S932606Ab0KCPbm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 11:31:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11092 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932445Ab0KCPbL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 11:31:11 -0400
+	id S932485Ab0KCPbR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 11:31:17 -0400
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Subject: [PATCH 54 of 66] transparent hugepage config choice
-X-Mercurial-Node: a987d47a94fb9c39e54036ff2fb88c665d8493fe
-Message-Id: <a987d47a94fb9c39e540.1288798109@v2.random>
+Subject: [PATCH 01 of 66] disable lumpy when compaction is enabled
+X-Mercurial-Node: ca2fea6527833aad8adcff30cd662dc9b5ebc2ce
+Message-Id: <ca2fea6527833aad8adc.1288798056@v2.random>
 In-Reply-To: <patchbomb.1288798055@v2.random>
 References: <patchbomb.1288798055@v2.random>
 User-Agent: Mercurial-patchbomb/1.4.1
-Date: Wed, 03 Nov 2010 16:28:29 +0100
+Date: Wed, 03 Nov 2010 16:27:36 +0100
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -42,74 +42,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andrea Arcangeli <aarcange@redhat.com>
 
-Allow to choose between the always|madvise default for page faults and
-khugepaged at config time. madvise guarantees zero risk of higher memory
-footprint for applications (applications using madvise(MADV_HUGEPAGE) won't
-risk to use any more memory by backing their virtual regions with hugepages).
-
-Initially set the default to N and don't depend on EMBEDDED.
+Compaction is more reliable than lumpy, and lumpy makes the system unusable
+when it runs.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
 
-diff --git a/mm/Kconfig b/mm/Kconfig
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -303,9 +303,8 @@ config NOMMU_INITIAL_TRIM_EXCESS
- 	  See Documentation/nommu-mmap.txt for more information.
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -274,6 +274,7 @@ unsigned long shrink_slab(unsigned long 
+ static void set_lumpy_reclaim_mode(int priority, struct scan_control *sc,
+ 				   bool sync)
+ {
++#ifndef CONFIG_COMPACTION
+ 	enum lumpy_mode mode = sync ? LUMPY_MODE_SYNC : LUMPY_MODE_ASYNC;
  
- config TRANSPARENT_HUGEPAGE
--	bool "Transparent Hugepage Support" if EMBEDDED
-+	bool "Transparent Hugepage Support"
- 	depends on X86 && MMU
--	default y
- 	help
- 	  Transparent Hugepages allows the kernel to use huge pages and
- 	  huge tlb transparently to the applications whenever possible.
-@@ -316,6 +315,30 @@ config TRANSPARENT_HUGEPAGE
- 
- 	  If memory constrained on embedded, you may want to say N.
- 
-+choice
-+	prompt "Transparent Hugepage Support sysfs defaults"
-+	depends on TRANSPARENT_HUGEPAGE
-+	default TRANSPARENT_HUGEPAGE_ALWAYS
-+	help
-+	  Selects the sysfs defaults for Transparent Hugepage Support.
-+
-+	config TRANSPARENT_HUGEPAGE_ALWAYS
-+		bool "always"
-+	help
-+	  Enabling Transparent Hugepage always, can increase the
-+	  memory footprint of applications without a guaranteed
-+	  benefit but it will work automatically for all applications.
-+
-+	config TRANSPARENT_HUGEPAGE_MADVISE
-+		bool "madvise"
-+	help
-+	  Enabling Transparent Hugepage madvise, will only provide a
-+	  performance improvement benefit to the applications using
-+	  madvise(MADV_HUGEPAGE) but it won't risk to increase the
-+	  memory footprint of applications without a guaranteed
-+	  benefit.
-+endchoice
-+
- #
- # UP and nommu archs use km based percpu allocator
- #
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -27,7 +27,12 @@
-  * allocations.
-  */
- unsigned long transparent_hugepage_flags __read_mostly =
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS
- 	(1<<TRANSPARENT_HUGEPAGE_FLAG)|
+ 	/*
+@@ -294,11 +295,14 @@ static void set_lumpy_reclaim_mode(int p
+ 		sc->lumpy_reclaim_mode = mode;
+ 	else
+ 		sc->lumpy_reclaim_mode = LUMPY_MODE_NONE;
 +#endif
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE_MADVISE
-+	(1<<TRANSPARENT_HUGEPAGE_REQ_MADV_FLAG)|
+ }
+ 
+ static void disable_lumpy_reclaim_mode(struct scan_control *sc)
+ {
++#ifndef CONFIG_COMPACTION
+ 	sc->lumpy_reclaim_mode = LUMPY_MODE_NONE;
 +#endif
- 	(1<<TRANSPARENT_HUGEPAGE_DEFRAG_FLAG)|
- 	(1<<TRANSPARENT_HUGEPAGE_DEFRAG_KHUGEPAGED_FLAG);
+ }
+ 
+ static inline int is_page_cache_freeable(struct page *page)
+@@ -321,9 +325,11 @@ static int may_write_to_queue(struct bac
+ 	if (bdi == current->backing_dev_info)
+ 		return 1;
+ 
++#ifndef CONFIG_COMPACTION
+ 	/* lumpy reclaim for hugepage often need a lot of write */
+ 	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
+ 		return 1;
++#endif
+ 	return 0;
+ }
  
