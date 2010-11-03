@@ -1,120 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036Ab0KCVnW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 17:43:22 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:64819 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751296Ab0KCVnU (ORCPT
+	id S1752209Ab0KCVqN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 17:46:13 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:33295 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751296Ab0KCVqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 17:43:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=aqN8JdxKg32CQrFquLPC1krFwO0rQreD0YXjrb8kTKrI5T5CenqGA76iQVGDtS94ak
-         GVh8cm2YIaGDehdHj6Gg1TTVtoKUEarOjTDDRWD/3MlUY0bqvzSZdbu189RCXIMgSImt
-         ryszMzmHL5JE+f+XZw+3qS7Ci5S3BvkvbTdVo=
-Date: Wed, 3 Nov 2010 22:43:13 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Francis Moreau <francis.moro@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        linux-perf-users@vger.kernel.org
-Subject: Re: perf tools miscellaneous questions
-Message-ID: <20101103214308.GA5421@nowhere>
-References: <m2eib2uryc.fsf@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m2eib2uryc.fsf@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 3 Nov 2010 17:46:11 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6156"; a="60528518"
+From: Stephen Caudle <scaudle@codeaurora.org>
+To: linux@arm.linux.org.uk
+Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dwalker@codeaurora.org,
+        adharmap@codeaurora.org, miltonm@bga.com,
+        Stephen Caudle <scaudle@codeaurora.org>
+Subject: [PATCH v2] [ARM] gic: Unmask private interrupts on all cores during IRQ enable
+Date: Wed,  3 Nov 2010 17:46:02 -0400
+Message-Id: <1288820762-16077-1-git-send-email-scaudle@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 08:28:59PM +0100, Francis Moreau wrote:
-> Hello,
-> 
-> I'm trying to use perf-tools and also to learn some internals about
-> them. So I prefer to ask all of them in one email.
-> 
-> The first one is about the list of pre-defined events given by
-> perf-list. I couldn't find any documentations that describes these
-> events so excuse me if the question is stupid.
+Some multi-core ARM chips designate a unique IRQ number for each core for
+private peripheral interrupts (PPIs). Others designate a common IRQ number
+for all cores. In the latter case, requesting/freeing private peripheral
+interrupts currently unmasks/masks the interrupt for only the
+executing core, respectively.
 
+With this change, request_irq will unmask a PPI on all cores so a separate
+call to enable_irq on the other cores is not required. Likewise, free_irq
+will mask a PPI on the other cores. Also, shutdown is implemented instead
+of disable to allow for lazy IRQ disabling.
 
+Signed-off-by: Stephen Caudle <scaudle@codeaurora.org>
+---
+ arch/arm/Kconfig      |    5 +++
+ arch/arm/common/gic.c |   86 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 91 insertions(+), 0 deletions(-)
 
-Sorry about that. We indeed need to improve a lot the documentation.
-May be this particular part could come with the future sysfs exposure
-of the events.
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 30ddd06..7f11e31 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1153,6 +1153,11 @@ config SMP
+ 
+ 	  If you don't know what to do here, say N.
+ 
++config IRQ_PER_CPU
++	bool
++	depends on SMP
++	default n
++
+ config HAVE_ARM_SCU
+ 	bool
+ 	depends on SMP
+diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
+index 886daaf..937a33a 100644
+--- a/arch/arm/common/gic.c
++++ b/arch/arm/common/gic.c
+@@ -44,12 +44,25 @@ struct gic_chip_data {
+ 	unsigned int wakeup_irqs[32];
+ 	unsigned int enabled_irqs[32];
+ #endif
++#ifdef CONFIG_IRQ_PER_CPU
++	struct call_single_data ppi_data[NR_CPUS];
++#endif
+ };
+ 
+ #ifndef MAX_GIC_NR
+ #define MAX_GIC_NR	1
+ #endif
+ 
++#ifdef CONFIG_IRQ_PER_CPU
++#ifndef GIC_PPI_FIRST
++#define GIC_PPI_FIRST	16
++#endif
++
++#ifndef GIC_PPI_LAST
++#define GIC_PPI_LAST	31
++#endif
++#endif
++
+ static struct gic_chip_data gic_data[MAX_GIC_NR];
+ 
+ static inline void __iomem *gic_dist_base(unsigned int irq)
+@@ -272,6 +285,75 @@ static int gic_set_type(unsigned int irq, unsigned int type)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_IRQ_PER_CPU
++static inline void gic_smp_call_function(struct call_single_data *data)
++{
++	int cpu;
++
++	/* Make sure data is visible */
++	smp_mb();
++
++	/*
++	 * Since this function is called with interrupts disabled,
++	 * smp_call_function can't be used here because it warns (even
++	 * if wait = 0) when interrupts are disabled.
++	 *
++	 * __smp_call_function_single doesn't warn when interrupts are
++	 * disabled and not waiting, so use it instead.
++	 */
++	for_each_online_cpu(cpu)
++		if (cpu != smp_processor_id())
++			__smp_call_function_single(cpu, data, 0);
++}
++
++static void gic_mask_ppi(void *info)
++{
++	struct irq_desc *desc = info;
++	gic_mask_irq(desc->irq);
++}
++
++static void gic_unmask_ppi(void *info)
++{
++	struct irq_desc *desc = info;
++	gic_unmask_irq(desc->irq);
++}
++
++static void gic_enable_irq(unsigned int irq)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++	struct gic_chip_data *gic_data = get_irq_chip_data(irq);
++	int cpu = smp_processor_id();
++
++	if (irq >= GIC_PPI_FIRST && irq <= GIC_PPI_LAST) {
++		gic_data->ppi_data[cpu].func = gic_unmask_ppi;
++		gic_data->ppi_data[cpu].info = desc;
++
++		/* Unmask PPIs on all cores during enable. */
++		gic_smp_call_function(&gic_data->ppi_data[cpu]);
++	}
++
++	desc->chip->unmask(irq);
++	desc->status &= ~IRQ_MASKED;
++}
++
++static void gic_shutdown_irq(unsigned int irq)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++	struct gic_chip_data *gic_data = get_irq_chip_data(irq);
++	int cpu = smp_processor_id();
++
++	if (irq >= GIC_PPI_FIRST && irq <= GIC_PPI_LAST) {
++		gic_data->ppi_data[cpu].func = gic_mask_ppi;
++		gic_data->ppi_data[cpu].info = desc;
++
++		/* Mask PPIs on all cores during disable. */
++		gic_smp_call_function(&gic_data->ppi_data[cpu]);
++	}
++
++	desc->chip->mask(irq);
++	desc->status |= IRQ_MASKED;
++}
++#endif
+ 
+ static struct irq_chip gic_chip = {
+ 	.name		= "GIC",
+@@ -283,6 +365,10 @@ static struct irq_chip gic_chip = {
+ #endif
+ 	.set_type	= gic_set_type,
+ 	.set_wake	= gic_set_wake,
++#ifdef CONFIG_IRQ_PER_CPU
++	.enable		= gic_enable_irq,
++	.shutdown	= gic_shutdown_irq,
++#endif
+ };
+ 
+ void __init gic_cascade_irq(unsigned int gic_nr, unsigned int irq)
+-- 
+1.7.3.2
 
-
-
-> 
-> What's the difference between 'cpu-clock' and 'task-clock' event ?
-
-
-cpu-clock is based on the total time spent on the cpu. task-clock is
-based only on the time spent on the profiled task, so that doesn't count
-time spent on other tasks, it has a per thread granularity.
-
-(I might be somehow wrong in my explanation).
-
-
-
-> 
-> What's exactly the 'cache-misses' event ? does it include both instructions
-> _and_ data cache misses ? both L1 and L2 caches ?
-> 
-> I was expecting so but the following command makes me wondering:
-> 
->   $ perf stat -e cache-misses:u,l1d-loads-misses:u true
->     Performance counter stats for 'true':
-> 
->                 763  cache-misses            
->                 874  L1-dcache-load-misses   
-> 
->         0.000916609  seconds time elapsed
-> 
-> Here cache-misses < L1-dcache-load-misses.
-
-
-
-Dunno, will let others answer.
-
-
-
-> The last question is about the source code annotation done by
-> perf-report. I'm using it to locate the place in my code that generates
-> the most data cache miss events. I can read this during a perf-report
-> session:
-> 
->    [...]
->     0.00 :           df215:       c3                      retq
->     0.00 :           df216:       66 2e 0f 1f 84 00 00    nopw   %cs:0x0(%rax,%rax,1)
->     0.00 :           df21d:       00 00 00
->    10.00 :           df220:       48 8b 75 00             mov    0x0(%rbp),%rsi
->    80.00 :           df224:       48 89 df                mov    %rbx,%rdi
->     0.00 :           df227:       41 ff d4                callq  *%r12
->     0.00 :           df22a:       85 c0                   test   %eax,%eax
->    [...]
-> 
-> If I read the output correctly, most of the dcache misses are coming from
-> 'mov %rbx, %rdi', and AFAIK this intruction can't generate any dcache
-> miss. What am I missing ?
-
-
-Perhaps you need pebs to get the very precise location on your event.
-
-perf stat -e cache-misses:up,l1d-loads-misses:up true
-
-
-I think the more you add 'p', the more precise it is.
-Like:
-
-	perf stat -e cache-misses:uppp,l1d-loads-misses:uppp true
-
-Not sure how much it will accept though :)
+--
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum
 
