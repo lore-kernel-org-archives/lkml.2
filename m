@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756239Ab0KCR4H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 13:56:07 -0400
-Received: from bhuna.collabora.co.uk ([93.93.128.226]:41283 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756229Ab0KCR4F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 13:56:05 -0400
-Message-ID: <4CD1A0E7.8050602@collabora.co.uk>
-Date: Wed, 03 Nov 2010 17:50:31 +0000
-From: Ian Molton <ian.molton@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100917 Icedove/3.0.8
+	id S1756232Ab0KCR4y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 13:56:54 -0400
+Received: from mga02.intel.com ([134.134.136.20]:37250 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752903Ab0KCR4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 13:56:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,289,1286175600"; 
+   d="scan'208";a="673957520"
+Date: Thu, 4 Nov 2010 01:56:49 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        "mrubin@google.com" <mrubin@google.com>,
+        "david@fromorbit.com" <david@fromorbit.com>,
+        "axboe@kernel.dk" <axboe@kernel.dk>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
+        "nickpiggin@yahoo.com.au" <nickpiggin@yahoo.com.au>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] vmstat: fix offset calculation on void*
+Message-ID: <20101103175648.GA6398@localhost>
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: virtualization@lists.linux-foundation.org, Avi Kivity <avi@redhat.com>,
-        virtualization@lists.osdl.org, linux-kernel@vger.kernel.org,
-        QEMU Developers <qemu-devel@nongnu.org>
-Subject: Re: [Qemu-devel] Re: [PATCH] Implement a virtio GPU transport
-References: <4CAC9CD1.2050601@collabora.co.uk> <4CBD7560.6080207@redhat.com> <4CC8226F.5080807@collabora.co.uk> <201010292148.01167.rusty@rustcorp.com.au>
-In-Reply-To: <201010292148.01167.rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/10/10 12:18, Rusty Russell wrote:
-> On Wed, 27 Oct 2010 11:30:31 pm Ian Molton wrote:
->> On 19/10/10 11:39, Avi Kivity wrote:
->>> On 10/19/2010 12:31 PM, Ian Molton wrote:
->>
->>>>> 2. should start with a patch to the virtio-pci spec to document what
->>>>> you're doing
->>>>
->>>> Where can I find that spec?
->>>
->>> http://ozlabs.org/~rusty/virtio-spec/
->>
->> Ok, but I'm not patching that until theres been some review.
->
-> Fair enough; it's a bit of a PITA to patch, so it makes sense to get the
-> details nailed down first.
+Fix regression introduced by commit 79da826aee6.
 
-I thought so :)
+	BUG: unable to handle kernel paging request at 07c06d16
+	IP: [<c050c336>] strnlen+0x6/0x20
 
->> Fixed - updated patch tested and attached.
->
-> OK. FWIW, I think this is an awesome idea.  I understand others are skeptical,
-> but this seems simple and if it works and you're happy to maintain it I'm
-> happy to let you do it :)
+	Call Trace:
+	 [<c050a249>] ? string+0x39/0xe0
+	 [<c042be6b>] ? __wake_up_common+0x4b/0x80
+	 [<c050afcc>] ? vsnprintf+0x1ec/0x380
+	 [<c04b380e>] ? seq_printf+0x2e/0x60
+	 [<c04829a6>] ? vmstat_show+0x26/0x30
+	 [<c04b3bb6>] ? seq_read+0xa6/0x380
+	 [<c04b3b10>] ? seq_read+0x0/0x380
+	 [<c04d5d2f>] ? proc_reg_read+0x5f/0x90
+	 [<c049c4a1>] ? vfs_read+0xa1/0x140
+	 [<c04d5cd0>] ? proc_reg_read+0x0/0x90
+	 [<c049c981>] ? sys_read+0x41/0x70
+	 [<c0402bd0>] ? sysenter_do_call+0x12/0x26
 
-Awesoe, thanks Rusty :)
+
+CC: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+CC: Michael Rubin <mrubin@google.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+
+Hopefully Tetsuo can test it soon, thanks!
+
+ mm/vmstat.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- linux-2.6.orig/mm/vmstat.c	2010-11-04 01:49:12.000000000 +0800
++++ linux-2.6/mm/vmstat.c	2010-11-04 01:49:23.000000000 +0800
+@@ -949,7 +949,7 @@ static void *vmstat_start(struct seq_fil
+ 	v[PGPGIN] /= 2;		/* sectors -> kbytes */
+ 	v[PGPGOUT] /= 2;
+ #endif
+-	return m->private + *pos;
++	return (unsigned long *)m->private + *pos;
+ }
+ 
+ static void *vmstat_next(struct seq_file *m, void *arg, loff_t *pos)
