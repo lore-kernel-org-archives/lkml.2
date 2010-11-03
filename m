@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462Ab0KCWmZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 18:42:25 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:42247 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753311Ab0KCWmY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 18:42:24 -0400
+	id S1753499Ab0KCWrX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 18:47:23 -0400
+Received: from cantor.suse.de ([195.135.220.2]:42713 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751323Ab0KCWrU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 18:47:20 -0400
+Message-ID: <4CD1E679.5080202@suse.cz>
+Date: Wed, 03 Nov 2010 23:47:21 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-In-Reply-To: <1288822281.2718.30.camel@edumazet-laptop>
-References: <AANLkTi=mEzCMCC+K6oLOjW9xfws_+_hHq8DS3hpPB1zY@mail.gmail.com> <1288822281.2718.30.camel@edumazet-laptop>
-From: Tom Gundersen <teg@jklm.no>
-Date: Wed, 3 Nov 2010 23:42:02 +0100
-Message-ID: <AANLkTimY+cC=bu6LDb_e-Qbghd-F0RNZejhKaeXJWbY7@mail.gmail.com>
-Subject: Re: panic with 2.6.37-rc1
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        David Miller <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, kyle@redhat.com,
+        lacombar@gmail.com, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linux Media Mailing List <linux-media@vger.kernel.org>
+Subject: Re: REGRESSION: Re: [GIT] kconfig rc fixes
+References: <20101009224041.GA901@sepie.suse.cz> <4CD1E232.30406@redhat.com>
+In-Reply-To: <4CD1E232.30406@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 3, 2010 at 11:11 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Le mercredi 03 novembre 2010 à 23:02 +0100, Tom Gundersen a écrit :
->> I get panic during boot both with 2.6.37-rc1 and with current head.
+On 3.11.2010 23:29, Mauro Carvalho Chehab wrote:
+> Em 09-10-2010 18:40, Michal Marek escreveu:
+>> The following changes since commit cb655d0f3d57c23db51b981648e452988c0223f9:
 >>
->> Here is the error message:
->> <http://www.lix.polytechnique.fr/~tom/2.6.37-rc1-panic.jpg>. My
->> .config is below.
+>>   Linux 2.6.36-rc7 (2010-10-06 13:39:52 -0700)
 >>
->> Let me know if you want more info. If you want I can test patches or
->> bisect (if no one has any better suggestions).
+>> are available in the git repository at:
+>>   git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git rc-fixes
 >>
->
-> Please test following patch, thanks
->
-> [PATCH] atl1 : fix panic on load
->
-> Its now illegal to call netif_stop_queue() before register_netdev()
->
-> Reported-by: Tom Gundersen <teg@jklm.no>
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> ---
->  drivers/net/atlx/atl1.c |    1 -
->  1 file changed, 1 deletion(-)
->
-> diff --git a/drivers/net/atlx/atl1.c b/drivers/net/atlx/atl1.c
-> index 43579b3..5336310 100644
-> --- a/drivers/net/atlx/atl1.c
-> +++ b/drivers/net/atlx/atl1.c
-> @@ -3043,7 +3043,6 @@ static int __devinit atl1_probe(struct pci_dev *pdev,
->        atl1_pcie_patch(adapter);
->        /* assume we have no link for now */
->        netif_carrier_off(netdev);
-> -       netif_stop_queue(netdev);
->
->        setup_timer(&adapter->phy_config_timer, atl1_phy_config,
->                    (unsigned long)adapter);
->
->
+>> Arnaud Lacombe (1):
+>>       kconfig: delay symbol direct dependency initialization
+> 
+> This patch generated a regression with V4L build. After applying it, some Kconfig
+> dependencies that used to work with V4L Kconfig broke.
 
-The patch solves the problem. Thanks!
+You mean, the dependencies trigger a warning now, right? Also, you are
+replying to my pull request for 2.6.36-rc8, but that pull request also
+included "kconfig: Temporarily disable dependency warnings", so 2.6.36
+final is NOT affected by this, just to clarify. 2.6.37-rc1 reverted this
+workaround and I hope we come to some solution now. BTW,
+http://www.kerneltrap.com/mailarchive/linux-kernel/2010/10/7/4629122/thread
+is how a very similar issue was fixed in the i2c Kconfig (commit 0a57274
+in 2.6.37-rc1 now).
 
-Tom
+Michal
