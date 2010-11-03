@@ -1,53 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932633Ab0KCTWY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 15:22:24 -0400
-Received: from cantor.suse.de ([195.135.220.2]:37798 "EHLO mx1.suse.de"
+	id S932700Ab0KCTWb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 15:22:31 -0400
+Received: from kroah.org ([198.145.64.141]:57393 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752921Ab0KCTWU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 15:22:20 -0400
-Date: Wed, 3 Nov 2010 12:18:54 -0700
-From: Greg KH <gregkh@suse.de>
-To: Dan Carpenter <error27@gmail.com>, Andy Whitcroft <apw@canonical.com>,
-        Rahul Ruikar <rahul.ruikar@gmail.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] usb: gadget: goku_udc: add registered flag bit
-Message-ID: <20101103191854.GA9894@suse.de>
-References: <1288807358-11813-1-git-send-email-apw@canonical.com> <20101103182314.GA8010@suse.de> <20101103191238.GI14069@bicker>
+	id S1752921Ab0KCTW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 15:22:26 -0400
+Date: Wed, 3 Nov 2010 12:19:58 -0700
+From: Greg KH <greg@kroah.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar GADDIPATI <naveen.gaddipati@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCHv1] staging: Synaptics RMI4 touchpad driver support
+Message-ID: <20101103191958.GA9912@kroah.com>
+References: <1288699725-14405-1-git-send-email-naveen.gaddipati@stericsson.com> <20101102140337.GC9387@kroah.com> <4CD01CD8.3090206@stericsson.com> <20101102154029.GH11778@core.coreip.homeip.net> <20101103181058.GE7441@kroah.com> <20101103190752.GA4552@core.coreip.homeip.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101103191238.GI14069@bicker>
+In-Reply-To: <20101103190752.GA4552@core.coreip.homeip.net>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 09:12:38PM +0200, Dan Carpenter wrote:
-> On Wed, Nov 03, 2010 at 11:23:14AM -0700, Greg KH wrote:
-> > On Wed, Nov 03, 2010 at 06:02:38PM +0000, Andy Whitcroft wrote:
-> > > The commit below cleaned up error handling, in part by introducing a
-> > > registered flag bit.  This however was not added to the device
-> > > structure leding to build failures:
+On Wed, Nov 03, 2010 at 12:07:52PM -0700, Dmitry Torokhov wrote:
+> On Wed, Nov 03, 2010 at 11:10:58AM -0700, Greg KH wrote:
+> > On Tue, Nov 02, 2010 at 08:40:30AM -0700, Dmitry Torokhov wrote:
+> > > On Tue, Nov 02, 2010 at 03:14:48PM +0100, Linus Walleij wrote:
+> > > > Greg KH wrote:
+> > > > 
+> > > > >> +Wait for the official upstream synaptics rmi4 clearpad drivers as promised over the past few months
+> > > > >> +Merge any device support needed from this driver into it
+> > > > >> +Delete this driver
+> > > > > 
+> > > > > Huh?
+> > > > > 
+> > > > > Why not just add this driver to the kernel tree instead?  When the
+> > > > > "promised" driver then eventually shows up (who is promising it?) then
+> > > > > delete the thing.
 > > > 
-> > >   commit 319feaabb6c7ccd90da6e3207563c265da7d21ae
-> > >   Author: Dan Carpenter <error27@gmail.com>
-> > >   Date:   Tue Oct 5 18:55:34 2010 +0200
-> > > 
-> > >     usb: gadget: goku_udc: Fix error path
-> > > 
-> > > Add the missing registered flag bit.
+> > > The same reason as there were several wireless drivers in staging?
 > > 
+> > Ok, that's a good enough reason for me :)
 > > 
-> > Dan, is this patch below the correct fix?  Or should we be looking at
-> > some other flag?
+> > > > Well, Alan (on behalf of Ramesh Agarwal) sent out a very similar
+> > > > patch (Titled "Synaptics TM1217 Touchscreen Controller driver")
+> > > > the other day, and OTOMH that was after discussions with Synaptics
+> > > > where they said they were working on a "real" driver (a rather
+> > > > complex RMI4 bus driver) and we believe they will fix that sooner
+> > > > or later.
+> > > > 
+> > > > So, until sooner or later happens we thought we'd keep it in staging.
+> > > > 
+> > > > If you prefer both Alan and we can probably submit our patches for
+> > > > inclusion in the proper place.
+> > > > 
+> > > > A side effect may be that the Synaptics RMI4 people may have trouble
+> > > > to merge their driver into input/ since they may be requested to
+> > > > refactor the existing drivers to use it rather than merging new stuff,
+> > > > putting some burden on their shoulders.
+> > > > 
+> > > 
+> > > No, they have not been requested to change any existing [in tree]
+> > > drivers. They however been asked to convert to the driver core
+> > > primitives instead of rolling their own infprastructure to implement
+> > > devices and drivers binding.
+> > 
+> > If you don't object to this driver going in, and there is a path forward
+> > in the future for it to be able to be removed, then I will be glad to
+> > add it.
+> > 
+> > Can I add your Acked-by: to the patch for this?
 > > 
 > 
-> Yes.  This was my fault.  I forgot to send you that part of the patch.
-> 
-> Acked-by: Dan Carpenter <error27@gmail.com>
+> Umm... I haven't looked in detail, but I think it is sane enough for
+> staging... Much better than Alan's version that seemed to create a
+> separate input device for every finger. Needs to depend on INPUT and
+> probably regulators framework...  Probe function may call
+> input_free_device() after calling input_register_device() which is not
+> good.
 
-Thanks for the quick response, I'll queue this up.
+Great, thanks for this.
+
+> Basically staging is yours, you can add whatever you want to it ;)
+
+Heh, well, I try to at least cooperate with the different subsystem
+maintainers.  I don't need even more people pissed-off at me than I
+normally get :)
+
+I'll queue this up for .38.
+
+thanks,
 
 greg k-h
