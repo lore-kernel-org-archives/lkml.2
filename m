@@ -1,74 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752360Ab0KCVqn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 17:46:43 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:46275 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752254Ab0KCVqm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 17:46:42 -0400
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: miklos@szeredi.hu, aarcange@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, shenlinf@cn.ibm.com,
-        volobuev@us.ibm.com, mel@linux.vnet.ibm.com, dingc@cn.ibm.com,
-        lnxninja@us.ibm.com
-In-reply-to: <1288817005.4235.11393.camel@nimitz> (message from Dave Hansen on
-	Wed, 03 Nov 2010 13:43:25 -0700)
-Subject: Re: Deadlocks with transparent huge pages and userspace fs daemons
-References: <1288817005.4235.11393.camel@nimitz>
-Message-Id: <E1PDl9w-0003ea-7Z@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Wed, 03 Nov 2010 22:46:20 +0100
+	id S1752538Ab0KCVsF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 17:48:05 -0400
+Received: from mail.perches.com ([173.55.12.10]:3967 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752176Ab0KCVsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 17:48:04 -0400
+Subject: Re: [PATCH 1/3] Staging: comedi: fix brace coding style issue in
+ ni_tio.c This is a patch to the ni_tio.c file that fixes up a brace,
+ indentation and overlines warning found by the checkpatch.pl tool
+ Signed-off-by: Varayud Damian Alfredo <davarayud@gmail.com>
+From: Joe Perches <joe@perches.com>
+To: Damian Varayud <davarayud@gmail.com>
+Cc: gregkh@suse.de, harmonco@engr.orst.edu, sam.j.richardson@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1288819162-6330-1-git-send-email-user@netbu>
+References: <1288819162-6330-1-git-send-email-user@netbu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 03 Nov 2010 14:48:02 -0700
+Message-ID: <1288820882.10236.35.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 03 Nov 2010, Dave Hansen wrote:
-> Hey Miklos,
+On Wed, 2010-11-03 at 18:19 -0300, Damian Varayud wrote:
+> ---
+>  drivers/staging/comedi/drivers/ni_tio.c |  154 ++++++++++++++++++-------------
+>  1 files changed, 89 insertions(+), 65 deletions(-)
 > 
-> When testing with a transparent huge page kernel:
-> 
-> 	http://git.kernel.org/gitweb.cgi?p=linux/kernel/git/andrea/aa.git;a=summary
-> 
-> some IBM testers ran into some deadlocks.  It appears that the
-> khugepaged process is trying to migrate one of a filesystem daemon's
-> pages while khugepaged holds the daemon's mmap_sem for write.
-> 
-> I think I've reproduced this issue in a slightly different form with
-> FUSE.  In my case, I think the FUSE process actually deadlocks on itself
-> instead of with khugepaged as in the IBM tester example that got me
-> looking at this.
-> 
-> Andrea put it this way:
-> > As long as page faults are needed to execute the I/O I doubt it's safe. But
-> > I'll definitely change khugepaged not to allocate memory. If nothing else
-> > because I don't want khugepaged to make easier to trigger issues like this. But
-> > it's hard for me to consider this a bug of khugepaged from a theoretical
-> > standpoint.
-> 
-> I tend to agree.  khugepaged makes the likelyhood of these things
-> happening much higher, but I don't think it fundamentally creates the
-> issue.
+> diff --git a/drivers/staging/comedi/drivers/ni_tio.c b/drivers/staging/comedi/drivers/ni_tio.c
+> index a9bb6b1..dd3db48 100644
+> --- a/drivers/staging/comedi/drivers/ni_tio.c
+> +++ b/drivers/staging/comedi/drivers/ni_tio.c
+> @@ -59,8 +59,8 @@ MODULE_DESCRIPTION("Comedi support for NI general-purpose counters");
+>  MODULE_LICENSE("GPL");
+>  
+>  static inline enum Gi_Counting_Mode_Reg_Bits Gi_Alternate_Sync_Bit(enum
+> -								   ni_gpct_variant
+> -								   variant)
+> +								ni_gpct_variant
+> +								variant)
 
-Yes, I agree too.
- 
-I think what is happening is that the fuse daemon is trying to read a
-page.  While that is happening the page is locked.  If the daemon
-blocks on a lock_page() for that same page, that is an obvious
-deadlock.
+Hi Damian.
 
-This is not unique to fuse, for example NFS or any other network
-filesystem is used over userspace tunneling (e.g. openvpn) then the
-same thing can happen.
+This isn't an improvement.
 
-> Should we do something like make page compaction always non-blocking on
-> lock_page()?
+It'd be better as:
 
-Yes, at least on !PageUptodate() pages.
+static inline enum Gi_Counting_Mode_Reg_Bits
+Gi_Alternate_Sync_Bit(enum ni_gpct_variant variant)
 
-Also blocking on page writeback has a similar effect.  Fuse is immune
-to that because it does writeback in a special way.  But the network
-fs over userspace tunneling case is not immune AFAICS.
+> @@ -122,8 +122,8 @@ static inline enum Gi_Counting_Mode_Reg_Bits Gi_Prescale_X8_Bit(enum
+>  }
+>  
+>  static inline enum Gi_Counting_Mode_Reg_Bits Gi_HW_Arm_Select_Mask(enum
+> -								   ni_gpct_variant
+> -								   variant)
+> +								ni_gpct_variant
+> +								variant)
 
-Thanks,
-Miklos
+here too
+
+[]
+
+> @@ -291,21 +296,22 @@ static void __exit ni_tio_cleanup_module(void)
+>  
+>  module_exit(ni_tio_cleanup_module);
+>  
+> -struct ni_gpct_device *ni_gpct_device_construct(struct comedi_device *dev,
+> -						void (*write_register) (struct
+> -									ni_gpct
+> -									*
+> -									counter,
+> -									unsigned
+> -									bits,
+> -									enum
+> -									ni_gpct_register
+> -									reg),
+> -						unsigned (*read_register)
+> -						(struct ni_gpct *counter,
+> -						 enum ni_gpct_register reg),
+> -						enum ni_gpct_variant variant,
+> -						unsigned num_counters)
+> +struct ni_gpct_device *ni_gpct_device_construct
+> +				(struct comedi_device *dev,
+> +				void (*write_register) (struct
+> +							ni_gpct
+> +							*
+> +							counter,
+> +							unsigned
+> +							bits,
+> +							enum
+> +							ni_gpct_register
+> +							reg),
+> +				unsigned (*read_register)
+> +				(struct ni_gpct *counter,
+> +					enum ni_gpct_register reg),
+> +				enum ni_gpct_variant variant,
+> +				unsigned num_counters)
+
+And this is just plain ugly.
+
+How about:
+
+struct ni_gpct_device *
+ni_gpct_device_construct(struct comedi_device *dev,
+			 void (*write_register)(struct ni_gpct *counter,
+						unsigned bit,
+						enum ni_gpct_register reg),
+			 unsigned (*read__register)(struct ni_gpct *counter,
+						    enum ni_gpct_variant variant,
+						    unsigned num_counters))
+
+Please try to use some taste in ignoring checkpatch output
+when appropriate.  80 columns isn't dicta.
+
+cheers, Joe
+
