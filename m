@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195Ab0KCBaK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Nov 2010 21:30:10 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:35443 "EHLO
+	id S1754195Ab0KCBbd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Nov 2010 21:31:33 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:34553 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752881Ab0KCBaB (ORCPT
+	with ESMTP id S1752260Ab0KCBaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Nov 2010 21:30:01 -0400
+	Tue, 2 Nov 2010 21:30:20 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=subject:to:from:cc:date:message-id:in-reply-to:references:
 	user-agent:mime-version:content-type:
 	content-transfer-encoding:x-system-of-record;
-	b=DDVv6ebxgFWIuBQYQ4RV/9tVVfuK3pdhPiABAkwIQk/cFuc3SguIW7TpDfQoyBXdl
-	EF/bZCYQu3jAaIxwsKZVg==
-Subject: [PATCH v1 02/12] kmsg_dumper: Pass pt_regs along to dumpers.
+	b=pSd0pI5sP3HVAEMRAtO7Rq99AsSNn5cauN7rjZmzfyD6+v1Jqum6gpGaFoc08+oxI
+	QKkSB0UTenNMEu0Pv7F4w==
+Subject: [PATCH v1 07/12] netoops: Add user programmable fields to the netoops
+	packet.
 To: simon.kagstrom@netinsight.net, davem@davemloft.net
 From: Mike Waychison <mikew@google.com>
 Cc: adurbin@google.com, akpm@linux-foundation.org, chavey@google.com,
         linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
-Date: Tue, 02 Nov 2010 18:29:37 -0700
-Message-ID: <20101103012936.4641.64774.stgit@crlf.mtv.corp.google.com>
+Date: Tue, 02 Nov 2010 18:30:07 -0700
+Message-ID: <20101103013006.4641.69132.stgit@crlf.mtv.corp.google.com>
 In-Reply-To: <20101103012917.4641.57113.stgit@crlf.mtv.corp.google.com>
 References: <20101103012917.4641.57113.stgit@crlf.mtv.corp.google.com>
 User-Agent: StGit/0.15
@@ -31,148 +32,185 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A subsequent commit adding netoops functionality would like access to the
-pt_regs to have them recorded in the dump.  Pass the register values along if
-available.
+In our environment, it is important for us to capture motherboard name,
+firmware version and boot number for consideration when analyzing netoops
+dumps.
+
+We collect this information in userland at system startup (in platform specific
+ways) and plug this information into the netoops driver via files available in
+sysfs.
+
+Files introduced:
+  /sys/kernel/netdump/netdump_board_name
+  /sys/kernel/netdump/netdump_fw_version
+  /sys/kernel/netdump/netdump_boot_id
+
+If this were to be rewritten, we would probably like to have a more general way
+for userland to add to netdump packets.
 
 Signed-off-by: Mike Waychison <mikew@google.com>
 ---
- drivers/char/ramoops.c    |    4 +++-
- drivers/mtd/mtdoops.c     |    4 +++-
- include/linux/kmsg_dump.h |    8 ++++++--
- kernel/kexec.c            |    5 +++--
- kernel/panic.c            |    4 ++--
- kernel/printk.c           |    4 ++--
- 6 files changed, 19 insertions(+), 10 deletions(-)
+TODO: This would probably be better handled by havin the kernel accept some blob
+of data.  It doesn't need to know what the data itself is, as long as it is
+delivered in each packet.
+---
+ drivers/net/netoops.c |   89 ++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 84 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/char/ramoops.c b/drivers/char/ramoops.c
-index 74f00b5..9acf52c 100644
---- a/drivers/char/ramoops.c
-+++ b/drivers/char/ramoops.c
-@@ -56,7 +56,9 @@ static struct ramoops_context {
- } oops_cxt;
+diff --git a/drivers/net/netoops.c b/drivers/net/netoops.c
+index 0865212..13c4d51 100644
+--- a/drivers/net/netoops.c
++++ b/drivers/net/netoops.c
+@@ -54,7 +54,7 @@ struct netoops_msg {
+ 		u16 type;
+ 		u32 packet_count;
+ 		u32 packet_no;
+-		u32 __reserved1;
++		u32 blog_boot_id;
+ 		u8 x86_family;
+ 		u8 x86_model;
+ 		u8 x86_stepping;
+@@ -63,8 +63,13 @@ struct netoops_msg {
+ 		 * termination not required.
+ 		 */
+ 		char kernel_version[64];
+-		char __reserved2[64];
+-		char __reserved3[64];
++		/*
++		 * bios and board info come from smbios which
++		 * has a maximum string length of 64 according
++		 * to page 26 of the smbios 2.3 spec.
++		 */
++		char bios_version[64];
++		char motherboard_type[64];
+ 		/* NOTE: regs is 60 or 168 bytes */
+ 		struct pt_regs regs; /* arch specific. */
+ 		/*
+@@ -82,6 +87,10 @@ static struct neighbour *netoops_neighbour;
+ static DEFINE_SPINLOCK(netoops_lock);
+ static struct netoops_msg msg;
  
- static void ramoops_do_dump(struct kmsg_dumper *dumper,
--		enum kmsg_dump_reason reason, const char *s1, unsigned long l1,
-+		enum kmsg_dump_reason reason,
-+		struct pt_regs *pt_regs,
-+		const char *s1, unsigned long l1,
- 		const char *s2, unsigned long l2)
- {
- 	struct ramoops_context *cxt = container_of(dumper,
-diff --git a/drivers/mtd/mtdoops.c b/drivers/mtd/mtdoops.c
-index 1ee72f3..cf07cf5 100644
---- a/drivers/mtd/mtdoops.c
-+++ b/drivers/mtd/mtdoops.c
-@@ -298,7 +298,9 @@ static void find_next_position(struct mtdoops_context *cxt)
- }
- 
- static void mtdoops_do_dump(struct kmsg_dumper *dumper,
--		enum kmsg_dump_reason reason, const char *s1, unsigned long l1,
-+		enum kmsg_dump_reason reason,
-+		struct pt_regs *pt_regs,
-+		const char *s1, unsigned long l1,
- 		const char *s2, unsigned long l2)
- {
- 	struct mtdoops_context *cxt = container_of(dumper,
-diff --git a/include/linux/kmsg_dump.h b/include/linux/kmsg_dump.h
-index 24b4414..a229acc 100644
---- a/include/linux/kmsg_dump.h
-+++ b/include/linux/kmsg_dump.h
-@@ -14,6 +14,8 @@
- 
- #include <linux/list.h>
- 
-+struct pt_regs;
++static char netoops_fw_version[80];
++static char netoops_board_name[80];
++static int netoops_boot_number;
 +
- enum kmsg_dump_reason {
- 	KMSG_DUMP_OOPS,
- 	KMSG_DUMP_PANIC,
-@@ -30,6 +32,7 @@ enum kmsg_dump_reason {
-  */
- struct kmsg_dumper {
- 	void (*dump)(struct kmsg_dumper *dumper, enum kmsg_dump_reason reason,
-+			struct pt_regs *pt_regs,
- 			const char *s1, unsigned long l1,
- 			const char *s2, unsigned long l2);
- 	struct list_head list;
-@@ -37,13 +40,14 @@ struct kmsg_dumper {
- };
+ static void save_and_disable_netoops(struct net_device *dev);
+ static void restore_netoops(struct net_device *dev);
  
- #ifdef CONFIG_PRINTK
--void kmsg_dump(enum kmsg_dump_reason reason);
-+void kmsg_dump(enum kmsg_dump_reason reason, struct pt_regs *pt_regs);
- 
- int kmsg_dump_register(struct kmsg_dumper *dumper);
- 
- int kmsg_dump_unregister(struct kmsg_dumper *dumper);
- #else
--static inline void kmsg_dump(enum kmsg_dump_reason reason)
-+static inline void kmsg_dump(enum kmsg_dump_reason reason,
-+			     struct pt_regs *pt_regs)
- {
- }
- 
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index c0613f7..6e89a52 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -1078,10 +1078,11 @@ void crash_kexec(struct pt_regs *regs)
- 		if (kexec_crash_image) {
- 			struct pt_regs fixed_regs;
- 
--			kmsg_dump(KMSG_DUMP_KEXEC);
--
- 			crash_setup_regs(&fixed_regs, regs);
- 			crash_save_vmcoreinfo();
-+
-+			kmsg_dump(KMSG_DUMP_KEXEC, &fixed_regs);
-+
- 			machine_crash_shutdown(&fixed_regs);
- 			machine_kexec(kexec_crash_image);
- 		}
-diff --git a/kernel/panic.c b/kernel/panic.c
-index c3f39cd..b3a4440 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -87,7 +87,7 @@ NORET_TYPE void panic(const char * fmt, ...)
- 	 */
- 	crash_kexec(NULL);
- 
--	kmsg_dump(KMSG_DUMP_PANIC);
-+	kmsg_dump(KMSG_DUMP_PANIC, NULL);
- 
- 	/*
- 	 * Note smp_send_stop is the usual smp shutdown function, which
-@@ -353,7 +353,7 @@ void oops_exit(struct pt_regs *regs)
- {
- 	do_oops_enter_exit();
- 	print_oops_end_marker();
--	kmsg_dump(KMSG_DUMP_OOPS);
-+	kmsg_dump(KMSG_DUMP_OOPS, regs);
- }
- 
- #ifdef WANT_WARN_ON_SLOWPATH
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 8fe465a..ad0c74e 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -1532,7 +1532,7 @@ static const char *kmsg_to_str(enum kmsg_dump_reason reason)
-  * Iterate through each of the dump devices and call the oops/panic
-  * callbacks with the log buffer.
-  */
--void kmsg_dump(enum kmsg_dump_reason reason)
-+void kmsg_dump(enum kmsg_dump_reason reason, struct pt_regs *pt_regs)
- {
- 	unsigned long end;
- 	unsigned chars;
-@@ -1569,7 +1569,7 @@ void kmsg_dump(enum kmsg_dump_reason reason)
- 		return;
- 	}
- 	list_for_each_entry(dumper, &dump_list, list)
--		dumper->dump(dumper, reason, s1, l1, s2, l2);
-+		dumper->dump(dumper, reason, pt_regs, s1, l1, s2, l2);
- 	spin_unlock_irqrestore(&dump_list_lock, flags);
- }
+@@ -320,11 +329,16 @@ static void setup_packet_header(int packet_count, struct pt_regs *regs,
+ 	msg.header.dump_id = (jiffies/HZ) & 0xffff;
+ 	msg.header.packet_count = packet_count;
+ 	msg.header.header_size = sizeof(msg.header);
++	msg.header.blog_boot_id = (u32)netoops_boot_number;
+ #ifndef CONFIG_UML
+ 	msg.header.x86_family = current_cpu_data.x86;
+ 	msg.header.x86_model = current_cpu_data.x86_model;
+ 	msg.header.x86_stepping = current_cpu_data.x86_mask;
  #endif
++	strncpy(msg.header.bios_version, netoops_fw_version,
++		sizeof(msg.header.bios_version));
++	strncpy(msg.header.motherboard_type, netoops_board_name,
++		sizeof(msg.header.motherboard_type));
+ 	strncpy(msg.header.kernel_version,
+ 		utsname()->release,
+ 		min(sizeof(msg.header.kernel_version),
+@@ -431,6 +445,60 @@ static void netoops(struct kmsg_dumper *dumper, enum kmsg_dump_reason reason,
+ 	spin_unlock(&netoops_lock);
+ }
+ 
++static ssize_t netoops_show(struct kobject *kobj,
++			    struct kobj_attribute *attr,
++			    char *buf) {
++
++	if (!strcmp(attr->attr.name, "netdump_fw_version"))
++		strncpy(buf, netoops_fw_version, PAGE_SIZE);
++	else if (!strcmp(attr->attr.name, "netdump_board_name"))
++		strncpy(buf, netoops_board_name, PAGE_SIZE);
++	else if (!strcmp(attr->attr.name, "netdump_boot_number"))
++		snprintf(buf, PAGE_SIZE, "%d\n", netoops_boot_number);
++	buf[PAGE_SIZE - 1] = '\0';
++	return strnlen(buf, PAGE_SIZE);
++}
++
++static ssize_t netoops_store(struct kobject *kobj,
++			     struct kobj_attribute *attr,
++			     const char *buf,
++			     size_t count) {
++	if (!count)
++		return count;
++
++	if (!strcmp(attr->attr.name, "netdump_fw_version")) {
++		strncpy(netoops_fw_version, buf, sizeof(netoops_fw_version));
++		netoops_fw_version[sizeof(netoops_fw_version) - 1] = '\0';
++	} else if (!strcmp(attr->attr.name, "netdump_board_name")) {
++		strncpy(netoops_board_name, buf, sizeof(netoops_board_name));
++		netoops_board_name[sizeof(netoops_board_name) - 1] = '\0';
++	} else if (!strcmp(attr->attr.name, "netdump_boot_number")) {
++		((char *)buf)[count - 1] = '\0';
++		sscanf(buf, "%du", &netoops_boot_number);
++	}
++	return count;
++}
++
++static struct kobj_attribute netoops_fw_version_attribute =
++	__ATTR(netoops_fw_version, 0666, netoops_show, netoops_store);
++static struct kobj_attribute netoops_board_name_attribute =
++	__ATTR(netoops_board_name, 0666, netoops_show, netoops_store);
++static struct kobj_attribute netoops_boot_number_attribute =
++	__ATTR(netoops_boot_number, 0666, netoops_show, netoops_store);
++
++static struct attribute *attrs[] = {
++	&netoops_fw_version_attribute.attr,
++	&netoops_board_name_attribute.attr,
++	&netoops_boot_number_attribute.attr,
++	NULL,
++};
++
++static struct attribute_group attr_group = {
++	.attrs = attrs,
++};
++
++static struct kobject *netoops_kobj;
++
+ static struct kmsg_dumper netoops_dumper = {
+ 	.dump = netoops,
+ };
+@@ -530,9 +598,15 @@ static int __init netoops_init(void)
+ 	BUILD_BUG_ON(offsetof(struct netoops_msg, header.version) != 0);
+ 	BUILD_BUG_ON(offsetof(struct netoops_msg, header.dump_id) != 6);
+ 
++	netoops_kobj = kobject_create_and_add("netdump", kernel_kobj);
++	if (!netoops_kobj)
++		return -ENOMEM;
++	retval = sysfs_create_group(netoops_kobj, &attr_group);
++	if (retval)
++		goto cleanup_kobj;
+ 	retval = kmsg_dump_register(&netoops_dumper);
+ 	if (retval)
+-		goto out;
++		goto cleanup_sysfs_group;
+ 
+ 	/* Register hooks */
+ 	retval = register_netdevice_notifier(&netoops_notifier);
+@@ -550,7 +624,10 @@ cleanup_netdevice:
+ 	unregister_netdevice_notifier(&netoops_notifier);
+ cleanup_kmsg_dump:
+ 	kmsg_dump_unregister(&netoops_dumper);
+-out:
++cleanup_sysfs_group:
++	sysfs_remove_group(netoops_kobj, &attr_group);
++cleanup_kobj:
++	kobject_put(netoops_kobj);
+ 	return retval;
+ }
+ 
+@@ -560,6 +637,8 @@ static void __exit netoops_exit(void)
+ 	unregister_netdevice_notifier(&netoops_notifier);
+ 	disable_netoops();
+ 	kmsg_dump_unregister(&netoops_dumper);
++	sysfs_remove_group(netoops_kobj, &attr_group);
++	kobject_put(netoops_kobj);
+ }
+ 
+ module_init(netoops_init);
 
