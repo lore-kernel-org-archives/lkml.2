@@ -1,98 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932700Ab0KCTWb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 15:22:31 -0400
-Received: from kroah.org ([198.145.64.141]:57393 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752921Ab0KCTW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 15:22:26 -0400
-Date: Wed, 3 Nov 2010 12:19:58 -0700
-From: Greg KH <greg@kroah.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar GADDIPATI <naveen.gaddipati@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCHv1] staging: Synaptics RMI4 touchpad driver support
-Message-ID: <20101103191958.GA9912@kroah.com>
-References: <1288699725-14405-1-git-send-email-naveen.gaddipati@stericsson.com> <20101102140337.GC9387@kroah.com> <4CD01CD8.3090206@stericsson.com> <20101102154029.GH11778@core.coreip.homeip.net> <20101103181058.GE7441@kroah.com> <20101103190752.GA4552@core.coreip.homeip.net>
+	id S1755769Ab0KCT3P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 15:29:15 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:44561 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753520Ab0KCT3L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 15:29:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:message-id:user-agent:mime-version
+         :content-type;
+        b=qGcLl32nV5NDkrxFnEzmssjdqQA+9SIyYGp2TbF8/hOloPmPkq/IGAdtIVt6flJl1M
+         QCTmW/fKgjOStfKRTxi7tsegadTUu0dFqj9WKzJG3KQCgEd2/lb3+s8FKnRLzUbXp9xv
+         OGQGLDoO9LAqjVF2u1QPrLBLnJcsNoAUtgTkg=
+From: Francis Moreau <francis.moro@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: perf tools miscellaneous questions
+Date: Wed, 03 Nov 2010 20:28:59 +0100
+Message-ID: <m2eib2uryc.fsf@gmail.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101103190752.GA4552@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 12:07:52PM -0700, Dmitry Torokhov wrote:
-> On Wed, Nov 03, 2010 at 11:10:58AM -0700, Greg KH wrote:
-> > On Tue, Nov 02, 2010 at 08:40:30AM -0700, Dmitry Torokhov wrote:
-> > > On Tue, Nov 02, 2010 at 03:14:48PM +0100, Linus Walleij wrote:
-> > > > Greg KH wrote:
-> > > > 
-> > > > >> +Wait for the official upstream synaptics rmi4 clearpad drivers as promised over the past few months
-> > > > >> +Merge any device support needed from this driver into it
-> > > > >> +Delete this driver
-> > > > > 
-> > > > > Huh?
-> > > > > 
-> > > > > Why not just add this driver to the kernel tree instead?  When the
-> > > > > "promised" driver then eventually shows up (who is promising it?) then
-> > > > > delete the thing.
-> > > 
-> > > The same reason as there were several wireless drivers in staging?
-> > 
-> > Ok, that's a good enough reason for me :)
-> > 
-> > > > Well, Alan (on behalf of Ramesh Agarwal) sent out a very similar
-> > > > patch (Titled "Synaptics TM1217 Touchscreen Controller driver")
-> > > > the other day, and OTOMH that was after discussions with Synaptics
-> > > > where they said they were working on a "real" driver (a rather
-> > > > complex RMI4 bus driver) and we believe they will fix that sooner
-> > > > or later.
-> > > > 
-> > > > So, until sooner or later happens we thought we'd keep it in staging.
-> > > > 
-> > > > If you prefer both Alan and we can probably submit our patches for
-> > > > inclusion in the proper place.
-> > > > 
-> > > > A side effect may be that the Synaptics RMI4 people may have trouble
-> > > > to merge their driver into input/ since they may be requested to
-> > > > refactor the existing drivers to use it rather than merging new stuff,
-> > > > putting some burden on their shoulders.
-> > > > 
-> > > 
-> > > No, they have not been requested to change any existing [in tree]
-> > > drivers. They however been asked to convert to the driver core
-> > > primitives instead of rolling their own infprastructure to implement
-> > > devices and drivers binding.
-> > 
-> > If you don't object to this driver going in, and there is a path forward
-> > in the future for it to be able to be removed, then I will be glad to
-> > add it.
-> > 
-> > Can I add your Acked-by: to the patch for this?
-> > 
-> 
-> Umm... I haven't looked in detail, but I think it is sane enough for
-> staging... Much better than Alan's version that seemed to create a
-> separate input device for every finger. Needs to depend on INPUT and
-> probably regulators framework...  Probe function may call
-> input_free_device() after calling input_register_device() which is not
-> good.
+Hello,
 
-Great, thanks for this.
+I'm trying to use perf-tools and also to learn some internals about
+them. So I prefer to ask all of them in one email.
 
-> Basically staging is yours, you can add whatever you want to it ;)
+The first one is about the list of pre-defined events given by
+perf-list. I couldn't find any documentations that describes these
+events so excuse me if the question is stupid.
 
-Heh, well, I try to at least cooperate with the different subsystem
-maintainers.  I don't need even more people pissed-off at me than I
-normally get :)
+What's the difference between 'cpu-clock' and 'task-clock' event ?
 
-I'll queue this up for .38.
+What's exactly the 'cache-misses' event ? does it include both instructions
+_and_ data cache misses ? both L1 and L2 caches ?
 
-thanks,
+I was expecting so but the following command makes me wondering:
 
-greg k-h
+  $ perf stat -e cache-misses:u,l1d-loads-misses:u true
+    Performance counter stats for 'true':
+
+                763  cache-misses            
+                874  L1-dcache-load-misses   
+
+        0.000916609  seconds time elapsed
+
+Here cache-misses < L1-dcache-load-misses.
+
+The last question is about the source code annotation done by
+perf-report. I'm using it to locate the place in my code that generates
+the most data cache miss events. I can read this during a perf-report
+session:
+
+   [...]
+    0.00 :           df215:       c3                      retq
+    0.00 :           df216:       66 2e 0f 1f 84 00 00    nopw   %cs:0x0(%rax,%rax,1)
+    0.00 :           df21d:       00 00 00
+   10.00 :           df220:       48 8b 75 00             mov    0x0(%rbp),%rsi
+   80.00 :           df224:       48 89 df                mov    %rbx,%rdi
+    0.00 :           df227:       41 ff d4                callq  *%r12
+    0.00 :           df22a:       85 c0                   test   %eax,%eax
+   [...]
+
+If I read the output correctly, most of the dcache misses are coming from
+'mov %rbx, %rdi', and AFAIK this intruction can't generate any dcache
+miss. What am I missing ?
+
+Thanks.
+-- 
+Francis
