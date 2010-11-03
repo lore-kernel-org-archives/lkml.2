@@ -1,34 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166Ab0KCNRE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 09:17:04 -0400
-Received: from lechat.rtp-net.org ([88.191.19.38]:36783 "EHLO
-	lechat.rtp-net.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751616Ab0KCNRA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 09:17:00 -0400
-From: Arnaud Patard (Rtp) <arnaud.patard@rtp-net.org>
-To: sowani@gmail.com
-Cc: linux-kernel@vger.kernel.org, gregkh@suse.de
-Subject: Re: [PATCH 2.6.36 1/1] xgifb: change obsolete pci_find_device() with pci_get_device().
-Organization: RtpNet
-References: <4CD15F60.8090305@gmail.com>
-Date: Wed, 03 Nov 2010 14:18:09 +0100
-In-Reply-To: <4CD15F60.8090305@gmail.com> (Atul Sowani's message of "Wed, 03
-	Nov 2010 18:40:56 +0530")
-Message-ID: <87r5f25ywe.fsf@lechat.rtp-net.org>
-User-Agent: Gnus/5.110009 (No Gnus v0.9) Emacs/22.3 (gnu/linux)
+	id S1755238Ab0KCNU2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 09:20:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58102 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751616Ab0KCNU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 09:20:26 -0400
+Date: Wed, 3 Nov 2010 09:20:25 -0400 (EDT)
+From: Jiri Kosina <jkosina@suse.cz>
+To: gimli <gimli@dark-green.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Resend  [PATCH 3/4] MacbookAir3,1 and 3,2 hid support
+In-Reply-To: <3e6b335b371a07cd60221a25c5b6b47d@mognix.dark-green.com>
+Message-ID: <alpine.LNX.2.00.1011030918410.15851@pobox.suse.cz>
+References: <66c1cd33ff5b2d908b2b31defb8e0cd1@mognix.dark-green.com> <3e6b335b371a07cd60221a25c5b6b47d@mognix.dark-green.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Atul Sowani <sowani@gmail.com> writes:
+On Tue, 26 Oct 2010, gimli wrote:
 
-> Replaced obsolete pci_find_device() calls with pci_get_device() calls. This is
-> recommended in pci.txt filei in PCI Documentation.
->
-> Signed-off-by: Atul Sowani <sowani@gmail.com>
+> This patch adds support for the new MacBookAir3,1 and 3,2 to the hid
+> driver.
+> 
+> Updated names names acording Apples kext.
+> 
+> Signed-off-by: Edgar (gimli) Hucek <gimli@dark-green.com>
 
-Acked-by: Arnaud Patard <arnaud.patard@rtp-net.org>
+> -               trans = apple_find_translation((hid->product < 0x21d ||
+> +               if(hid->product >= 0x023f && hid->product <= 0x0244 ) {
+> +                       trans = apple_find_translation(macbookair_fn_keys, usage->code);
+> +               } else {
+> +                       trans = apple_find_translation((hid->product < 0x21d ||
+>                                        hid->product >= 0x300) ?
+>                                        powerbook_fn_keys : apple_fn_keys,
+>                                        usage->code);
+
+Could you please make this nicer? Having if and ternary operator both 
+there to chose the translation table looks really confusing.
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
