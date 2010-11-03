@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755735Ab0KCPBo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 11:01:44 -0400
-Received: from claw.goop.org ([74.207.240.146]:42056 "EHLO claw.goop.org"
+	id S1755597Ab0KCPBZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 11:01:25 -0400
+Received: from claw.goop.org ([74.207.240.146]:41972 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755486Ab0KCPBl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 11:01:41 -0400
+	id S1755554Ab0KCPBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 11:01:23 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: Peter Zijlstra <peterz@infradead.org>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
@@ -15,9 +15,9 @@ Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux Virtualization <virtualization@lists.linux-foundation.org>,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 13/20] x86/pvticketlock: make sure unlock is seen by everyone before checking waiters
-Date: Wed,  3 Nov 2010 10:59:54 -0400
-Message-Id: <e55c733c02d264e4929681b3ba8d43ec240b626d.1288794124.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 05/20] x86/ticketlock: make __ticket_spin_lock common
+Date: Wed,  3 Nov 2010 10:59:46 -0400
+Message-Id: <2080b3702fad2a4ec3647efe2cfef19140da8086.1288794124.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <cover.1288794124.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1288794124.git.jeremy.fitzhardinge@citrix.com>
@@ -29,45 +29,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-If we don't put a real memory barrier between the unlocking increment
-of the queue head and the check for lock waiters, we can end up with a
-deadlock as a result of the unload write being reordered with respect
-to the waiters read.  In effect, the check on the waiters count could
-happen before the unlock, which leads to a deadlock:
-
-	unlocker		locker
-	check waiters (none)
-				check lock head (timeout)
-				add to waiters
-				block
-	release lock		=> deadlock
-
-Adding a mb() barrier prevents the unlocker's waiter check from happening
-before the lock release.
+Aside from the particular form of the xadd instruction, they're identical.
+So factor out the xadd and use common code for the rest.
 
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- arch/x86/include/asm/spinlock.h |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/spinlock.h |   42 ++++++++++++++++++--------------------
+ 1 files changed, 20 insertions(+), 22 deletions(-)
 
 diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index 3deabca..b9a1aae 100644
+index 7586d7a..4f9fa24 100644
 --- a/arch/x86/include/asm/spinlock.h
 +++ b/arch/x86/include/asm/spinlock.h
-@@ -88,6 +88,13 @@ static inline void __ticket_sub_waiting(struct arch_spinlock *lock)
- 
- static __always_inline bool __ticket_lock_waiters(const struct arch_spinlock *lock)
+@@ -69,13 +69,27 @@ static __always_inline void __ticket_unlock_release(struct arch_spinlock *lock)
+  * save some instructions and make the code more elegant. There really isn't
+  * much between them in performance though, especially as locks are out of line.
+  */
+-#if (NR_CPUS < 256)
+-static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
++static __always_inline struct __raw_tickets __ticket_spin_claim(struct arch_spinlock *lock)
  {
-+	/*
-+	 * Make sure everyone sees the unlock write before we check the
-+	 * waiting count.  The processor ordering doesn't guarantee this
-+	 * because they're different memory locations.
-+	 */
-+	mb();
+-	register struct __raw_tickets inc = { .tail = 1 };
++	register struct __raw_tickets tickets = { .tail = 1 };
 +
- 	return ACCESS_ONCE(lock->waiting) != 0;
++	if (sizeof(lock->tickets.head) == sizeof(u8))
++		asm volatile (LOCK_PREFIX "xaddw %w0, %1\n"
++			      : "+r" (tickets), "+m" (lock->tickets)
++			      : : "memory", "cc");
++	else
++		asm volatile (LOCK_PREFIX "xaddl %0, %1\n"
++			     : "+r" (tickets), "+m" (lock->tickets)
++			     : : "memory", "cc");
+ 
+-	asm volatile (LOCK_PREFIX "xaddw %w0, %1\n"
+-		      : "+r" (inc), "+m" (lock->tickets) : : "memory", "cc");
++	return tickets;
++}
++
++static __always_inline void __ticket_spin_lock(struct arch_spinlock *lock)
++{
++	register struct __raw_tickets inc;
++
++	inc = __ticket_spin_claim(lock);
+ 
+ 	for (;;) {
+ 		if (inc.head == inc.tail)
+@@ -86,6 +100,7 @@ static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
+ 	barrier();		/* make sure nothing creeps before the lock is taken */
  }
- #endif	/* CONFIG_PARAVIRT_SPINLOCKS */
+ 
++#if (NR_CPUS < 256)
+ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
+ {
+ 	unsigned int tmp, new;
+@@ -105,23 +120,6 @@ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
+ 	return tmp;
+ }
+ #else
+-static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
+-{
+-	register struct __raw_tickets inc = { .tickets.tail = 1 };
+-
+-	asm volatile(LOCK_PREFIX "xaddl %0, %1\n\t"
+-		     : "+r" (inc), "+m" (lock->tickets)
+-		     : : "memory", "cc");
+-
+-	for (;;) {
+-		if (inc.head == inc.tail)
+-			return;
+-		cpu_relax();
+-		inc.head = ACCESS_ONCE(lock->tickets.head);
+-	}
+-	barrier();		/* make sure nothing creeps before the lock is taken */
+-}
+-
+ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
+ {
+ 	unsigned tmp;
 -- 
 1.7.2.3
 
