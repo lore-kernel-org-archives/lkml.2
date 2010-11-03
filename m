@@ -1,70 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311Ab0KCG7B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 02:59:01 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:44184 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753118Ab0KCG66 convert rfc822-to-8bit (ORCPT
+	id S1753518Ab0KCG7s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 02:59:48 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:56470 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753194Ab0KCG7q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 02:58:58 -0400
+	Wed, 3 Nov 2010 02:59:46 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=YIAvmbPWFql9DRN4ReI8VtYVAwNHyfUlI/J90kpRYnKwH554xP96SeZG1wK3K/LkC8
-         pp6atAGQgaJoBbZ1q6CDp1/lgDkisioMH6ND5vhAvJaCNB0vKdr3KyLks3E8F9fg83r4
-         Z4kGuf6mHezFthxZUQx4SXSQjYc4X3wIyFvyU=
-MIME-Version: 1.0
-In-Reply-To: <20101102012135.GB2648@ucw.cz>
-References: <201009161632.59210.arnd@arndb.de>
-	<201010192140.47433.oliver@neukum.org>
-	<20101019202912.GA30133@kroah.com>
-	<201010192244.41913.arnd@arndb.de>
-	<20101102012135.GB2648@ucw.cz>
-Date: Wed, 3 Nov 2010 08:58:56 +0200
-X-Google-Sender-Auth: DI6Yq_dwSQMxCWKUC0qJSM2eFS0
-Message-ID: <AANLkTim=suDPVCW+dPCxtasbUj=X8EMgGRHAiGO37cGo@mail.gmail.com>
-Subject: Re: [Ksummit-2010-discuss] [v2] Remaining BKL users, what to do
-From: Pekka Enberg <penberg@kernel.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Arnd Bergmann <arnd@arndb.de>, Greg KH <greg@kroah.com>,
-        Oliver Neukum <oliver@neukum.org>, Valdis.Kletnieks@vt.edu,
-        Dave Airlie <airlied@gmail.com>, codalist@telemann.coda.cs.cmu.edu,
-        ksummit-2010-discuss@lists.linux-foundation.org,
-        autofs@linux.kernel.org, Jan Harkes <jaharkes@cs.cmu.edu>,
-        Samuel Ortiz <samuel@sortiz.org>, Jan Kara <jack@suse.cz>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        netdev@vger.kernel.org, Anders Larsen <al@alarsen.net>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Petr Vandrovec <vandrove@vc.cvut.cz>,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        linux-fsdevel@vger.kernel.org, Evgeniy Dushistov <dushistov@mail.ru>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Hendry <andrew.hendry@gmail.com>,
-        linux-media@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=LqEnv0sY8+d+9kwuvXEAikD9o5ABsGUOQ2pNy31IT1u1P0EkU/GIEb9m7vhqyZU0mA
+         KepRXhtGXctirlDoywWocA3SXwnMWA/izl+0ts0nmo5IeJVITNJy9xXRdH8P69go2CcA
+         1tEP0ZePOwk+C4iwdXVhIjETJrKYq0Oy1gnWg=
+Subject: Re: [RFC 4/4]x86: avoid tlbstate lock if no enough cpus
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>, "hpa@zytor.com" <hpa@zytor.com>
+In-Reply-To: <1288766668.23014.117.camel@sli10-conroe>
+References: <1288766668.23014.117.camel@sli10-conroe>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 03 Nov 2010 07:59:40 +0100
+Message-ID: <1288767580.2467.636.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 2, 2010 at 3:21 AM, Pavel Machek <pavel@ucw.cz> wrote:
-> Hi!
->
->> @@ -79,6 +79,10 @@ static struct drm_driver driver = {
->>
->>  static int __init i810_init(void)
->>  {
->> +     if (num_present_cpus() > 1) {
->> +             pr_err("drm/i810 does not support SMP\n");
->> +             return -EINVAL;
->> +     }
->>       driver.num_ioctls = i810_max_ioctl;
->>       return drm_init(&driver);
->
-> Umm, and now someone onlines second cpu?
+Le mercredi 03 novembre 2010 Ã  14:44 +0800, Shaohua Li a Ã©crit :
+> This one isn't related to previous patch. If online cpus are below
+> NUM_INVALIDATE_TLB_VECTORS, we don't need the lock. The comments
+> in the code declares we don't need the check, but a hot lock still
+> needs an atomic operation and expensive, so add the check here.
+> 
+> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> ---
+>  arch/x86/mm/tlb.c |   14 +++++++-------
+>  1 file changed, 7 insertions(+), 7 deletions(-)
+> 
+> Index: linux/arch/x86/mm/tlb.c
+> ===================================================================
+> --- linux.orig/arch/x86/mm/tlb.c	2010-11-02 10:31:51.000000000 +0800
+> +++ linux/arch/x86/mm/tlb.c	2010-11-02 14:53:27.000000000 +0800
+> @@ -174,17 +174,16 @@ static void flush_tlb_others_ipi(const s
+>  {
+>  	unsigned int sender;
+>  	union smp_flush_state *f;
+> +	bool do_lock = false;
+>  
+>  	/* Caller has disabled preemption */
+>  	sender = this_cpu_read(tlb_vector_offset);
+>  	f = &flush_state[sender];
+>  
+> -	/*
+> -	 * Could avoid this lock when
+> -	 * num_online_cpus() <= NUM_INVALIDATE_TLB_VECTORS, but it is
+> -	 * probably not worth checking this for a cache-hot lock.
+> -	 */
+> -	raw_spin_lock(&f->tlbstate_lock);
+> +	if (num_online_cpus() > NUM_INVALIDATE_TLB_VECTORS) {
 
-Well, I see it's being fixed in a different way but yeah,
-num_possible_cpus() would be more appropriate here.
+Ouch, you remove a comment that pretty well explained the problem.
+
+Last time I checked, num_online_cpus() was pretty expensive on a 4096
+cpus machine, since 4096 bits array is 512 bytes long.
+
+Are you sure you didnt want to use nr_cpu_ids here ?
+
+> +		do_lock = true;
+> +		raw_spin_lock(&f->tlbstate_lock);
+> +	}
+>  
+>  	f->flush_mm = mm;
+>  	f->flush_va = va;
+> @@ -202,7 +201,8 @@ static void flush_tlb_others_ipi(const s
+>  
+>  	f->flush_mm = NULL;
+>  	f->flush_va = 0;
+> -	raw_spin_unlock(&f->tlbstate_lock);
+> +	if (do_lock)
+> +		raw_spin_unlock(&f->tlbstate_lock);
+>  }
+>  
+>  void native_flush_tlb_others(const struct cpumask *cpumask,
+> 
+
+
