@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756222Ab0KCVDS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 17:03:18 -0400
-Received: from sj-iport-6.cisco.com ([171.71.176.117]:15957 "EHLO
-	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754432Ab0KCVDQ (ORCPT
+	id S1756267Ab0KCVEj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 17:04:39 -0400
+Received: from usmamail.tilera.com ([72.1.168.231]:51707 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754432Ab0KCVEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 17:03:16 -0400
-Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAB5r0UyrR7Hu/2dsb2JhbACDIp5GcaURii6RGoEigzFzBIRXhX4
-X-IronPort-AV: E=Sophos;i="4.58,290,1286150400"; 
-   d="scan'208";a="614038483"
-From: Tom Lyon <pugs@cisco.com>
-Organization: Cisco Systems, Inc.
-To: Alex Williamson <alex.williamson@redhat.com>
-Subject: Re: [PATCH] vfio: Fix PCI 2.3 shared interrupt
-Date: Wed, 3 Nov 2010 14:03:52 -0700
-User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.5-desktop; KDE/4.4.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        kvm@vger.kernel.org
-References: <20101103201732.7400.28058.stgit@s20.home>
-In-Reply-To: <20101103201732.7400.28058.stgit@s20.home>
+	Wed, 3 Nov 2010 17:04:37 -0400
+Message-ID: <4CD1CE62.9010307@tilera.com>
+Date: Wed, 3 Nov 2010 17:04:34 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011031403.53081.pugs@cisco.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Stephen Hemminger <shemminger@vyatta.com>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>
+Subject: Re: [PATCH] drivers/net/tile/: on-chip network drivers for the tile
+ architecture
+References: <201011012107.oA1L7TGd031588@farm-0027.internal.tilera.com>	 <20101103125959.3231daa1@s6510>  <4CD19DCF.1040709@tilera.com>	 <1288806622.2511.187.camel@edumazet-laptop>  <4CD1BA71.3000806@tilera.com> <1288816300.2718.5.camel@edumazet-laptop>
+In-Reply-To: <1288816300.2718.5.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Applied.
+On 11/3/2010 4:31 PM, Eric Dumazet wrote:
+> Le mercredi 03 novembre 2010 à 15:39 -0400, Chris Metcalf a écrit 
+>> Several uses of "*(volatile int *)ptr" in that file are intended as
+>> performance hints.  A more obvious way to state this, for our compiler, is
+>> to say "prefetch_L1(ptr)".  This generates essentially the same code, but
+>> avoids the red flag for "volatile" and also reads more clearly, so it's a
+>> good change.
+>>
+>> The other use is part of a very precise dance that involves detailed
+>> knowledge of the Tile memory subsystem micro-architecture.  This doesn't
+>> really belong in the network device driver code, so I've moved it to
+>> <asm/cacheflush.h>, and cleaned it up, with detailed comments.  The use
+>> here is that our network hardware's DMA engine can be used in a mode where
+>> it reads directly from memory, in which case you must ensure that any
+>> cached values have been flushed.
+> This kind of things really must be discussed before using it in a
+> network driver.
+>
+> Because, an skb can be built by one CPU, queued on a qdisc queue, with
+> no particular "cached values have been flushed" ...
+>
+> It then can be dequeued by another CPU, and given to the device.
+> What happens then ?
 
-On Wednesday, November 03, 2010 01:17:33 pm Alex Williamson wrote:
-> Trying to be too clever with setting the irq_disabled flag.  PCI 2.3
-> disabled devices can still share IRQs, which can lead to clearing
-> the irq_disabled flag, preventing the EOI from registering, and leaving
-> the device without interrupts.  Interrupt handler should only ever
-> set irq_disabled and we can exit earlier to avoid the config space
-> access if we know we're disabled.
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> ---
-> 
->  drivers/vfio/vfio_intrs.c |    9 ++++++++-
->  1 files changed, 8 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/vfio/vfio_intrs.c b/drivers/vfio/vfio_intrs.c
-> index 604082c..73e3deb 100644
-> --- a/drivers/vfio/vfio_intrs.c
-> +++ b/drivers/vfio/vfio_intrs.c
-> @@ -57,6 +57,12 @@ irqreturn_t vfio_interrupt(int irq, void *dev_id)
-> 
->  	spin_lock_irq(&vdev->irqlock);
-> 
-> +	/* INTX disabled interrupts can still be shared */
-> +	if (vdev->irq_disabled) {
-> +		spin_unlock_irq(&vdev->irqlock);
-> +		return ret;
-> +	}
-> +
->  	if (vdev->pci_2_3) {
->  		pci_block_user_cfg_access(pdev);
-> 
-> @@ -87,7 +93,8 @@ done:
->  		ret = IRQ_HANDLED;
->  	}
-> 
-> -	vdev->irq_disabled = (ret == IRQ_HANDLED);
-> +	if (ret == IRQ_HANDLED)
-> +		vdev->irq_disabled = true;
-> 
->  	spin_unlock_irq(&vdev->irqlock);
+The particular usage here is in tile_net_tx_frags(), as you can see in the
+patch.  The skb is at the very last stage of being egressed, so we flush
+any dirty cache lines to memory before asking the hardware to transmit. 
+This is pretty standard for hardware that is not coherent with the cache.
+
+In fact, though, this is not the standard mode we run the driver in; it's
+almost always used in the cache-coherent mode ("hash_default") where we are
+reading the skb data out of the caches of the cores it is resident in.  The
+"if (!hash_default)" clause here is only true for our first-generation
+hardware (TILE64) or when using our current (TILEPro) hardware in a way
+that is basically backwards-compatible with TILE64, typically for some kind
+of cache-utilization benchmarking purpose.
+
+As to your specific question, certainly during the time an skb is being set
+up for egress, added to a qdisc queue, etc., we don't make any assumptions
+about where or how the data is cached.
+
+I'm happy to discuss specific details of how the driver works, but I
+suspect it's the usual mix of boilerplate skb management, NAPI support,
+etc., mixed in with specifics of how to set up shared memory queues for the
+ingress and egress hardware (or "firmware" since some of this is handled by
+a hypervisor layer on a dedicated core).
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
