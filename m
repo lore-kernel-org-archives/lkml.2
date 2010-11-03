@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756160Ab0KCU7B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 16:59:01 -0400
-Received: from legolas.restena.lu ([158.64.1.34]:37016 "EHLO
-	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754012Ab0KCU66 (ORCPT
+	id S1756222Ab0KCVDS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 17:03:18 -0400
+Received: from sj-iport-6.cisco.com ([171.71.176.117]:15957 "EHLO
+	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754432Ab0KCVDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 16:58:58 -0400
-Date: Wed, 3 Nov 2010 21:58:51 +0100
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Joe Perches <joe@perches.com>
-Cc: Mike Waychison <mikew@google.com>, Randy Dunlap <randy.dunlap@oracle.com>,
-        Greg KH <gregkh@suse.de>, simon.kagstrom@netinsight.net,
-        davem@davemloft.net, adurbin@google.com, akpm@linux-foundation.org,
-        chavey@google.com, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH v1 00/12] netoops support
-Message-ID: <20101103215851.2df7723f@neptune.home>
-In-Reply-To: <1288813229.10236.2.camel@Joe-Laptop>
-References: <20101103012917.4641.57113.stgit@crlf.mtv.corp.google.com>
-	<20101103023422.GB5782@kroah.com>
-	<AANLkTi=Oe4oJ0imCh1eoJLS0QYqSBM4pLo=dEUSiJcQb@mail.gmail.com>
-	<20101103181634.GF7441@kroah.com>
-	<20101103115020.ad8a4ecc.randy.dunlap@oracle.com>
-	<1288813229.10236.2.camel@Joe-Laptop>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 3 Nov 2010 17:03:16 -0400
+Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAB5r0UyrR7Hu/2dsb2JhbACDIp5GcaURii6RGoEigzFzBIRXhX4
+X-IronPort-AV: E=Sophos;i="4.58,290,1286150400"; 
+   d="scan'208";a="614038483"
+From: Tom Lyon <pugs@cisco.com>
+Organization: Cisco Systems, Inc.
+To: Alex Williamson <alex.williamson@redhat.com>
+Subject: Re: [PATCH] vfio: Fix PCI 2.3 shared interrupt
+Date: Wed, 3 Nov 2010 14:03:52 -0700
+User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.5-desktop; KDE/4.4.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        kvm@vger.kernel.org
+References: <20101103201732.7400.28058.stgit@s20.home>
+In-Reply-To: <20101103201732.7400.28058.stgit@s20.home>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201011031403.53081.pugs@cisco.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 03 November 2010 Joe Perches wrote:
-> On Wed, 2010-11-03 at 11:50 -0700, Randy Dunlap wrote:
-> > On Wed, 3 Nov 2010 11:16:34 -0700 Greg KH wrote:
-> > > On Tue, Nov 02, 2010 at 08:37:42PM -0700, Mike Waychison wrote:
-> > > > On Tue, Nov 2, 2010 at 7:34 PM, Greg KH wrote:
-> > > As for the user/kernel interface, perhaps exporting the data in a text
-> > > format that is "tagged" would be best?  Then the whole world can parse
-> > > it easily.
-> > I have been (occasionally) looking at critical kernel messages.
-> > IMO we really need an easy way to find them.
-> > They can begin with any of these strings (and others can be added
-> > too easily):
-> > BUG|panic|MCE|NMI|error:|Oops|Bad|Fatal|Unrecoverable|Unhandled|Weird
-> > We need a simple (single?) tagging method to identify any/all of these,
-> > /methinks.
+Applied.
+
+On Wednesday, November 03, 2010 01:17:33 pm Alex Williamson wrote:
+> Trying to be too clever with setting the irq_disabled flag.  PCI 2.3
+> disabled devices can still share IRQs, which can lead to clearing
+> the irq_disabled flag, preventing the EOI from registering, and leaving
+> the device without interrupts.  Interrupt handler should only ever
+> set irq_disabled and we can exit earlier to avoid the config space
+> access if we know we're disabled.
 > 
-> Simply marking these messages KERN_CRIT or higher would seem to work.
-
-That's an idea (probably better higher that can be enabled on a console with
-a specific flag), though it also invites for filter levels on a per-console
-base (e.g. let uart only show KERN_WARN..KERN_CRIT but having more verbosity
-on termial or netconsole [per target]).
-
-I've been playing with this last winter, need to dig out that code again and
-clean it up for sharing.
-
-Bruno
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> ---
+> 
+>  drivers/vfio/vfio_intrs.c |    9 ++++++++-
+>  1 files changed, 8 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/vfio/vfio_intrs.c b/drivers/vfio/vfio_intrs.c
+> index 604082c..73e3deb 100644
+> --- a/drivers/vfio/vfio_intrs.c
+> +++ b/drivers/vfio/vfio_intrs.c
+> @@ -57,6 +57,12 @@ irqreturn_t vfio_interrupt(int irq, void *dev_id)
+> 
+>  	spin_lock_irq(&vdev->irqlock);
+> 
+> +	/* INTX disabled interrupts can still be shared */
+> +	if (vdev->irq_disabled) {
+> +		spin_unlock_irq(&vdev->irqlock);
+> +		return ret;
+> +	}
+> +
+>  	if (vdev->pci_2_3) {
+>  		pci_block_user_cfg_access(pdev);
+> 
+> @@ -87,7 +93,8 @@ done:
+>  		ret = IRQ_HANDLED;
+>  	}
+> 
+> -	vdev->irq_disabled = (ret == IRQ_HANDLED);
+> +	if (ret == IRQ_HANDLED)
+> +		vdev->irq_disabled = true;
+> 
+>  	spin_unlock_irq(&vdev->irqlock);
