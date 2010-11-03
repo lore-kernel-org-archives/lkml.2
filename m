@@ -1,98 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932634Ab0KCPjN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 11:39:13 -0400
-Received: from claw.goop.org ([74.207.240.146]:60963 "EHLO claw.goop.org"
+	id S932144Ab0KCPix (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 11:38:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4259 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932350Ab0KCPjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 11:39:11 -0400
-Message-ID: <4CD18213.4030105@goop.org>
-Date: Wed, 03 Nov 2010 11:38:59 -0400
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1755870Ab0KCPaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 11:30:55 -0400
+Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@suse.de>, Jan Beulich <JBeulich@novell.com>,
-        Avi Kivity <avi@redhat.com>, Xen-devel <xen-devel@lists.xensource.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH 02/20] x86/ticketlock: convert spin loop to C
-References: <cover.1288794124.git.jeremy.fitzhardinge@citrix.com>	 <3d9083892c28a7d3ed5a0191b0b4cd013022a186.1288794124.git.jeremy.fitzhardinge@citrix.com> <1288797092.2511.141.camel@edumazet-laptop>
-In-Reply-To: <1288797092.2511.141.camel@edumazet-laptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
+Subject: [PATCH 52 of 66] enable direct defrag
+X-Mercurial-Node: db936dd7c1e500045f51ea0f7deccff86e76340d
+Message-Id: <db936dd7c1e500045f51.1288798107@v2.random>
+In-Reply-To: <patchbomb.1288798055@v2.random>
+References: <patchbomb.1288798055@v2.random>
+User-Agent: Mercurial-patchbomb/1.4.1
+Date: Wed, 03 Nov 2010 16:28:27 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Adam Litke <agl@us.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2010 11:11 AM, Eric Dumazet wrote:
-> Le mercredi 03 novembre 2010 à 10:59 -0400, Jeremy Fitzhardinge a
-> écrit :
->> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
->>
->> The inner loop of __ticket_spin_lock isn't doing anything very special,
->> so reimplement it in C.
->>
->> For the 8 bit ticket lock variant, we use a register union to get direct
->> access to the lower and upper bytes in the tickets, but unfortunately gcc
->> won't generate a direct comparison between the two halves of the register,
->> so the generated asm isn't quite as pretty as the hand-coded version.
->> However benchmarking shows that this is actually a small improvement in
->> runtime performance on some benchmarks, and never a slowdown.
->>
->> We also need to make sure there's a barrier at the end of the lock loop
->> to make sure that the compiler doesn't move any instructions from within
->> the locked region into the region where we don't yet own the lock.
->>
->> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
->> ---
->>  arch/x86/include/asm/spinlock.h |   58 +++++++++++++++++++-------------------
->>  1 files changed, 29 insertions(+), 29 deletions(-)
->>
->> diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
->> index d6d5784..6711d36 100644
->> --- a/arch/x86/include/asm/spinlock.h
->> +++ b/arch/x86/include/asm/spinlock.h
->> @@ -58,21 +58,21 @@
->>  #if (NR_CPUS < 256)
->>  static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
->>  {
->> -	unsigned short inc = 1 << TICKET_SHIFT;
->> -
->> -	asm volatile (
->> -		LOCK_PREFIX "xaddw %w0, %1\n"
->> -		"1:\t"
->> -		"cmpb %h0, %b0\n\t"
->> -		"je 2f\n\t"
->> -		"rep ; nop\n\t"
->> -		"movb %1, %b0\n\t"
->> -		/* don't need lfence here, because loads are in-order */
->> -		"jmp 1b\n"
->> -		"2:"
->> -		: "+Q" (inc), "+m" (lock->slock)
->> -		:
->> -		: "memory", "cc");
->> +	register union {
->> +		struct __raw_tickets tickets;
->> +		unsigned short slock;
->> +	} inc = { .slock = 1 << TICKET_SHIFT };
->> +
->> +	asm volatile (LOCK_PREFIX "xaddw %w0, %1\n"
->> +		      : "+Q" (inc), "+m" (lock->slock) : : "memory", "cc");
->> +
->> +	for (;;) {
->> +		if (inc.tickets.head == inc.tickets.tail)
->> +			return;
->> +		cpu_relax();
->> +		inc.tickets.head = ACCESS_ONCE(lock->tickets.head);
->> +	}
->> +	barrier();		/* make sure nothing creeps before the lock is taken */
-> Isnt this barrier() never reached ?
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-Sorry, a later patch makes this clearer.  I should have folded it in.
+With memory compaction in, and lumpy-reclaim removed, it seems safe enough to
+defrag memory during the (synchronous) transparent hugepage page faults
+(TRANSPARENT_HUGEPAGE_DEFRAG_FLAG) and not only during khugepaged (async)
+hugepage allocations that was already enabled even before memory compaction was
+in (TRANSPARENT_HUGEPAGE_DEFRAG_KHUGEPAGED_FLAG).
 
-    J
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -28,6 +28,7 @@
+  */
+ unsigned long transparent_hugepage_flags __read_mostly =
+ 	(1<<TRANSPARENT_HUGEPAGE_FLAG)|
++	(1<<TRANSPARENT_HUGEPAGE_DEFRAG_FLAG)|
+ 	(1<<TRANSPARENT_HUGEPAGE_DEFRAG_KHUGEPAGED_FLAG);
+ 
+ /* default scan 8*512 pte (or vmas) every 30 second */
