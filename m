@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932141Ab0KCPaG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 11:30:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7470 "EHLO mx1.redhat.com"
+	id S932348Ab0KCPle (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 11:41:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43958 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755801Ab0KCP35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 11:29:57 -0400
+	id S1755787Ab0KCPaK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 11:30:10 -0400
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Subject: [PATCH 43 of 66] don't leave orhpaned swap cache after ksm merging
-X-Mercurial-Node: d5aefe85d1dab1bb7e99f672afe68fb6a034effd
-Message-Id: <d5aefe85d1dab1bb7e99.1288798098@v2.random>
+Subject: [PATCH 12 of 66] no paravirt version of pmd ops
+X-Mercurial-Node: e4e1de9dfc9ba0a6f8dd92c6fb7996eb600959ed
+Message-Id: <e4e1de9dfc9ba0a6f8dd.1288798067@v2.random>
 In-Reply-To: <patchbomb.1288798055@v2.random>
 References: <patchbomb.1288798055@v2.random>
 User-Agent: Mercurial-patchbomb/1.4.1
-Date: Wed, 03 Nov 2010 16:28:18 +0100
+Date: Wed, 03 Nov 2010 16:27:47 +0100
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -42,69 +42,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andrea Arcangeli <aarcange@redhat.com>
 
-When swapcache is replaced by a ksm page don't leave orhpaned swap cache.
+No paravirt version of set_pmd_at/pmd_update/pmd_update_defer.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
 ---
 
-diff --git a/mm/ksm.c b/mm/ksm.c
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -800,7 +800,7 @@ static int replace_page(struct vm_area_s
- 	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -35,6 +35,7 @@ extern struct mm_struct *pgd_page_get_mm
+ #else  /* !CONFIG_PARAVIRT */
+ #define set_pte(ptep, pte)		native_set_pte(ptep, pte)
+ #define set_pte_at(mm, addr, ptep, pte)	native_set_pte_at(mm, addr, ptep, pte)
++#define set_pmd_at(mm, addr, pmdp, pmd)	native_set_pmd_at(mm, addr, pmdp, pmd)
  
- 	page_remove_rmap(page);
--	put_page(page);
-+	free_page_and_swap_cache(page);
+ #define set_pte_atomic(ptep, pte)					\
+ 	native_set_pte_atomic(ptep, pte)
+@@ -59,6 +60,8 @@ extern struct mm_struct *pgd_page_get_mm
  
- 	pte_unmap_unlock(ptep, ptl);
- 	err = 0;
-@@ -846,7 +846,18 @@ static int try_to_merge_one_page(struct 
- 	 * ptes are necessarily already write-protected.  But in either
- 	 * case, we need to lock and check page_count is not raised.
- 	 */
--	if (write_protect_page(vma, page, &orig_pte) == 0) {
-+	err = write_protect_page(vma, page, &orig_pte);
-+
-+	/*
-+	 * After this mapping is wrprotected we don't need further
-+	 * checks for PageSwapCache vs page_count unlock_page(page)
-+	 * and we rely only on the pte_same() check run under PT lock
-+	 * to ensure the pte didn't change since when we wrprotected
-+	 * it under PG_lock.
-+	 */
-+	unlock_page(page);
-+
-+	if (!err) {
- 		if (!kpage) {
- 			/*
- 			 * While we hold page lock, upgrade page from
-@@ -855,22 +866,22 @@ static int try_to_merge_one_page(struct 
- 			 */
- 			set_page_stable_node(page, NULL);
- 			mark_page_accessed(page);
--			err = 0;
- 		} else if (pages_identical(page, kpage))
- 			err = replace_page(vma, page, kpage, orig_pte);
--	}
-+	} else
-+		err = -EFAULT;
+ #define pte_update(mm, addr, ptep)              do { } while (0)
+ #define pte_update_defer(mm, addr, ptep)        do { } while (0)
++#define pmd_update(mm, addr, ptep)              do { } while (0)
++#define pmd_update_defer(mm, addr, ptep)        do { } while (0)
  
- 	if ((vma->vm_flags & VM_LOCKED) && kpage && !err) {
-+		lock_page(page);	/* for LRU manipulation */
- 		munlock_vma_page(page);
-+		unlock_page(page);
- 		if (!PageMlocked(kpage)) {
--			unlock_page(page);
- 			lock_page(kpage);
- 			mlock_vma_page(kpage);
--			page = kpage;		/* for final unlock */
-+			unlock_page(kpage);
- 		}
- 	}
- 
--	unlock_page(page);
- out:
- 	return err;
- }
+ #define pgd_val(x)	native_pgd_val(x)
+ #define __pgd(x)	native_make_pgd(x)
