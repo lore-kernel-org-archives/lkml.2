@@ -1,172 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755337Ab0KCOZh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 10:25:37 -0400
-Received: from mognix.dark-green.com ([88.116.226.179]:65073 "EHLO
-	mognix.dark-green.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752583Ab0KCOZg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 10:25:36 -0400
+	id S1755371Ab0KCOeO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 10:34:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36077 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755121Ab0KCOeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 10:34:12 -0400
+Date: Wed, 3 Nov 2010 10:33:59 -0400
+From: Dave Jones <davej@redhat.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Ben Gamari <bgamari.foss@gmail.com>, David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jesper Juhl <jj@chaosbits.net>
+Subject: Re: [PATCH] Add Kconfig option for default swappiness
+Message-ID: <20101103143358.GA19777@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Wu Fengguang <fengguang.wu@intel.com>,
+	Ben Gamari <bgamari.foss@gmail.com>,
+	David Rientjes <rientjes@google.com>,
+	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+	"linux-mm@kvack.org" <linux-mm@kvack.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Jesper Juhl <jj@chaosbits.net>
+References: <1288668052-32036-1-git-send-email-bgamari.foss@gmail.com>
+ <alpine.DEB.2.00.1011012030100.12298@chino.kir.corp.google.com>
+ <87oca7evbo.fsf@gmail.com>
+ <20101102140119.GA8294@localhost>
 MIME-Version: 1.0
-Date: Wed, 03 Nov 2010 15:25:28 +0100
-From: gimli <gimli@dark-green.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: Re: Resend  [PATCH 3/4] MacbookAir3,1 and 3,2 hid support
-In-Reply-To: <alpine.LNX.2.00.1011030953540.15851@pobox.suse.cz>
-References: <66c1cd33ff5b2d908b2b31defb8e0cd1@mognix.dark-green.com> <3e6b335b371a07cd60221a25c5b6b47d@mognix.dark-green.com> <alpine.LNX.2.00.1011030918410.15851@pobox.suse.cz> <7b3b313ce7138c19191295a645dfb38f@mognix.dark-green.com> <alpine.LNX.2.00.1011030953540.15851@pobox.suse.cz>
-Message-ID: <dfe20d79428280b911bd98629a8baac9@mognix.dark-green.com>
-User-Agent: RoundCube Webmail/0.2.2
-Content-Type: multipart/mixed;
-	boundary="=_03fb90f6757ccfb8da56d0982336b31f"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101102140119.GA8294@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=_03fb90f6757ccfb8da56d0982336b31f
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset="UTF-8"
+On Tue, Nov 02, 2010 at 10:01:20PM +0800, Wu Fengguang wrote:
+ 
+ > > On Mon, Nov 01, 2010 at 08:52:30AM -0400, Ben Gamari wrote:
+ > > > Ubuntu ships different kernels for desktop and server usage. From a
+ > > > packaging standpoint it would be much nicer to have this set in the
+ > > > kernel configuration. If we were to throw the setting /etc/sysctl.conf
+ > > > the kernel would depend upon the package containing sysctl(8)
+ > > > (procps). We'd rather avoid this and keep the default kernel
+ > > > configuration in one place.
+ > > 
+ > > In short, being able to specify this default in .config is just far
+ > > simpler from a packaging standpoint than the alternatives.
+ > 
+ > It's interesting to know what value you plan to use for your
+ > desktop/server systems and the rationals (is it based on any
+ > testing results?). And why it's easier to do it in kernel (hope it's
+ > not because of trouble communicating with the user space packaging
+ > team).
 
-Next try.
+Not sure why I was cc'd on this, but at least for Fedora, we still take
+the 'one kernel to rule them all' approach for every spin (and will likely
+continue to do so to maximise coverage testing) so a config option for us
+for things like this is moot.
 
-On Wed, 3 Nov 2010 09:56:21 -0400 (EDT), Jiri Kosina <jkosina@suse.cz>
-wrote:
-> On Wed, 3 Nov 2010, gimli wrote:
-> 
->> Does this look better ? 
-> 
-> What I would actually prefer would be something like
-> 
-> 
-> 	if ( ... )
-> 		table = macbookair_fn_keys;
-> 	else if ( ... )
-> 		table = powerbook_fn_keys;
-> 	else
-> 		table = apple_fn_keys;
-> 
-> 	apple_find_translation(table, usage->code);
-> 
->> I also use the USB id's for the if.
-> 
-> Thanks,
---=_03fb90f6757ccfb8da56d0982336b31f
-Content-Transfer-Encoding: base64
-Content-Type: text/plain; charset="UTF-8";
- name="hid_macbookair_2.patch"; 
-Content-Disposition: attachment;
- filename="hid_macbookair_2.patch"; 
+Whenever I've tried to push changes to our defaults through to our
+default /etc/sysctl.conf, it's been met with resistance due to beliefs
+that a) the file is there for _users_ to override decisions
+the distro made at build time and b) if this is the right default,
+why isn't the kernel setting it?
 
-ZGlmZiAtdU5yIGxpbnV4LTIuNi4zNy1yYzEvZHJpdmVycy9oaWQvaGlkLWFwcGxlLmMgbGludXgt
-Mi42LjM3LXJjMS1NYWNCb29rQWlyL2RyaXZlcnMvaGlkL2hpZC1hcHBsZS5jCi0tLSBsaW51eC0y
-LjYuMzctcmMxL2RyaXZlcnMvaGlkL2hpZC1hcHBsZS5jCTIwMTAtMTEtMDMgMTQ6MzM6MzUuMDQ5
-NjY2MDAwICswMTAwCisrKyBsaW51eC0yLjYuMzctcmMxLU1hY0Jvb2tBaXIvZHJpdmVycy9oaWQv
-aGlkLWFwcGxlLmMJMjAxMC0xMS0wMyAxNToxOToyNC41NTk2NjYwMDEgKzAxMDAKQEAgLTU5LDYg
-KzU5LDI3IEBACiAJdTggZmxhZ3M7CiB9OwogCitzdGF0aWMgY29uc3Qgc3RydWN0IGFwcGxlX2tl
-eV90cmFuc2xhdGlvbiBtYWNib29rYWlyX2ZuX2tleXNbXSA9IHsKKwl7IEtFWV9CQUNLU1BBQ0Us
-IEtFWV9ERUxFVEUgfSwKKwl7IEtFWV9FTlRFUiwJS0VZX0lOU0VSVCB9LAorCXsgS0VZX0YxLAlL
-RVlfQlJJR0hUTkVTU0RPV04sIEFQUExFX0ZMQUdfRktFWSB9LAorCXsgS0VZX0YyLAlLRVlfQlJJ
-R0hUTkVTU1VQLCAgIEFQUExFX0ZMQUdfRktFWSB9LAorCXsgS0VZX0YzLAlLRVlfU0NBTEUsICAg
-ICAgICAgIEFQUExFX0ZMQUdfRktFWSB9LAorCXsgS0VZX0Y0LAlLRVlfREFTSEJPQVJELCAgICAg
-IEFQUExFX0ZMQUdfRktFWSB9LAorCXsgS0VZX0Y2LAlLRVlfUFJFVklPVVNTT05HLCAgIEFQUExF
-X0ZMQUdfRktFWSB9LAorCXsgS0VZX0Y3LAlLRVlfUExBWVBBVVNFLCAgICAgIEFQUExFX0ZMQUdf
-RktFWSB9LAorCXsgS0VZX0Y4LAlLRVlfTkVYVFNPTkcsICAgICAgIEFQUExFX0ZMQUdfRktFWSB9
-LAorCXsgS0VZX0Y5LAlLRVlfTVVURSwgICAgICAgICAgIEFQUExFX0ZMQUdfRktFWSB9LAorCXsg
-S0VZX0YxMCwJS0VZX1ZPTFVNRURPV04sICAgICBBUFBMRV9GTEFHX0ZLRVkgfSwKKwl7IEtFWV9G
-MTEsCUtFWV9WT0xVTUVVUCwgICAgICAgQVBQTEVfRkxBR19GS0VZIH0sCisJeyBLRVlfRjEyLAlL
-RVlfRUpFQ1RDRCwgICAgICAgIEFQUExFX0ZMQUdfRktFWSB9LAorCXsgS0VZX1VQLAlLRVlfUEFH
-RVVQIH0sCisJeyBLRVlfRE9XTiwJS0VZX1BBR0VET1dOIH0sCisJeyBLRVlfTEVGVCwJS0VZX0hP
-TUUgfSwKKwl7IEtFWV9SSUdIVCwJS0VZX0VORCB9LAorCXsgfQorfTsKKwogc3RhdGljIGNvbnN0
-IHN0cnVjdCBhcHBsZV9rZXlfdHJhbnNsYXRpb24gYXBwbGVfZm5fa2V5c1tdID0gewogCXsgS0VZ
-X0JBQ0tTUEFDRSwgS0VZX0RFTEVURSB9LAogCXsgS0VZX0VOVEVSLAlLRVlfSU5TRVJUIH0sCkBA
-IC0xNTcsMTAgKzE3OCwxNSBAQAogCWlmIChmbm1vZGUpIHsKIAkJaW50IGRvX3RyYW5zbGF0ZTsK
-IAotCQl0cmFucyA9IGFwcGxlX2ZpbmRfdHJhbnNsYXRpb24oKGhpZC0+cHJvZHVjdCA8IDB4MjFk
-IHx8Ci0JCQkJCWhpZC0+cHJvZHVjdCA+PSAweDMwMCkgPwotCQkJCQlwb3dlcmJvb2tfZm5fa2V5
-cyA6IGFwcGxlX2ZuX2tleXMsCi0JCQkJCXVzYWdlLT5jb2RlKTsKKwkJaWYoaGlkLT5wcm9kdWN0
-ID49IFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzRfQU5TSSAmJgorCQkJCWhpZC0+cHJv
-ZHVjdCA8PSBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkc0QV9KSVMpIHsKKwkJCXRyYW5z
-ID0gYXBwbGVfZmluZF90cmFuc2xhdGlvbihtYWNib29rYWlyX2ZuX2tleXMsIHVzYWdlLT5jb2Rl
-KTsKKwkJfSBlbHNlIGlmIChoaWQtPnByb2R1Y3QgPCAweDIxZCB8fCBoaWQtPnByb2R1Y3QgPj0g
-MHgzMDApIHsKKwkJCXRyYW5zID0gYXBwbGVfZmluZF90cmFuc2xhdGlvbihwb3dlcmJvb2tfZm5f
-a2V5cywgdXNhZ2UtPmNvZGUpOworCQl9IGVsc2UgeworCQkJdHJhbnMgPSBhcHBsZV9maW5kX3Ry
-YW5zbGF0aW9uKGFwcGxlX2ZuX2tleXMsIHVzYWdlLT5jb2RlKTsKKwkJfQorCiAJCWlmICh0cmFu
-cykgewogCQkJaWYgKHRlc3RfYml0KHVzYWdlLT5jb2RlLCBhc2MtPnByZXNzZWRfZm4pKQogCQkJ
-CWRvX3RyYW5zbGF0ZSA9IDE7CkBAIC00NDAsNiArNDY2LDE4IEBACiAJCS5kcml2ZXJfZGF0YSA9
-IEFQUExFX0hBU19GTiB8IEFQUExFX0lTT19LRVlCT0FSRCB9LAogCXsgSElEX1VTQl9ERVZJQ0Uo
-VVNCX1ZFTkRPUl9JRF9BUFBMRSwgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HM19KSVMp
-LAogCQkuZHJpdmVyX2RhdGEgPSBBUFBMRV9IQVNfRk4gfCBBUFBMRV9SREVTQ19KSVMgfSwKKwl7
-IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfQVBQTEUsIFVTQl9ERVZJQ0VfSURfQVBQTEVf
-V0VMTFNQUklORzRfQU5TSSksCisJCS5kcml2ZXJfZGF0YSA9IEFQUExFX0hBU19GTiB9LAorCXsg
-SElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9BUFBMRSwgVVNCX0RFVklDRV9JRF9BUFBMRV9X
-RUxMU1BSSU5HNF9JU08pLAorCQkuZHJpdmVyX2RhdGEgPSBBUFBMRV9IQVNfRk4gfCBBUFBMRV9J
-U09fS0VZQk9BUkQgfSwKKwl7IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfQVBQTEUsIFVT
-Ql9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzRfSklTKSwKKwkJLmRyaXZlcl9kYXRhID0gQVBQ
-TEVfSEFTX0ZOIHwgQVBQTEVfUkRFU0NfSklTIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVO
-RE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkc0QV9BTlNJKSwKKwkJ
-LmRyaXZlcl9kYXRhID0gQVBQTEVfSEFTX0ZOIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVO
-RE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkc0QV9JU08pLAorCQku
-ZHJpdmVyX2RhdGEgPSBBUFBMRV9IQVNfRk4gfCBBUFBMRV9JU09fS0VZQk9BUkQgfSwKKwl7IEhJ
-RF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfQVBQTEUsIFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VM
-TFNQUklORzRBX0pJUyksCisJCS5kcml2ZXJfZGF0YSA9IEFQUExFX0hBU19GTiB8IEFQUExFX1JE
-RVNDX0pJUyB9LAogCXsgSElEX0JMVUVUT09USF9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9BUFBMRSwg
-VVNCX0RFVklDRV9JRF9BUFBMRV9BTFVfV0lSRUxFU1NfMjAwOV9BTlNJKSwKIAkJLmRyaXZlcl9k
-YXRhID0gQVBQTEVfTlVNTE9DS19FTVVMQVRJT04gfCBBUFBMRV9IQVNfRk4gfSwKIAl7IEhJRF9C
-TFVFVE9PVEhfREVWSUNFKFVTQl9WRU5ET1JfSURfQVBQTEUsIFVTQl9ERVZJQ0VfSURfQVBQTEVf
-QUxVX1dJUkVMRVNTXzIwMDlfSVNPKSwKZGlmZiAtdU5yIGxpbnV4LTIuNi4zNy1yYzEvZHJpdmVy
-cy9oaWQvaGlkLWNvcmUuYyBsaW51eC0yLjYuMzctcmMxLU1hY0Jvb2tBaXIvZHJpdmVycy9oaWQv
-aGlkLWNvcmUuYwotLS0gbGludXgtMi42LjM3LXJjMS9kcml2ZXJzL2hpZC9oaWQtY29yZS5jCTIw
-MTAtMTEtMDMgMTQ6MzM6MzUuMDQ5NjY2MDAwICswMTAwCisrKyBsaW51eC0yLjYuMzctcmMxLU1h
-Y0Jvb2tBaXIvZHJpdmVycy9oaWQvaGlkLWNvcmUuYwkyMDEwLTExLTAzIDE1OjE2OjM4LjgyOTY2
-NjAwMSArMDEwMApAQCAtMTI3Niw2ICsxMjc2LDEyIEBACiAJeyBISURfVVNCX0RFVklDRShVU0Jf
-VkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkczX0FOU0kpIH0s
-CiAJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQ
-UExFX1dFTExTUFJJTkczX0lTTykgfSwKIAl7IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURf
-QVBQTEUsIFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzNfSklTKSB9LAorCXsgSElEX1VT
-Ql9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9BUFBMRSwgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BS
-SU5HNF9BTlNJKSB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9BUFBMRSwgVVNC
-X0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HNF9JU08pIH0sCisJeyBISURfVVNCX0RFVklDRShV
-U0JfVkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkc0X0pJUykg
-fSwKKwl7IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfQVBQTEUsIFVTQl9ERVZJQ0VfSURf
-QVBQTEVfV0VMTFNQUklORzRBX0FOU0kpIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9S
-X0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkc0QV9JU08pIH0sCisJeyBI
-SURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX1dF
-TExTUFJJTkc0QV9KSVMpIH0sCiAJeyBISURfQkxVRVRPT1RIX0RFVklDRShVU0JfVkVORE9SX0lE
-X0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX0FMVV9XSVJFTEVTU18yMDA5X0FOU0kpIH0sCiAJ
-eyBISURfQkxVRVRPT1RIX0RFVklDRShVU0JfVkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lE
-X0FQUExFX0FMVV9XSVJFTEVTU18yMDA5X0lTTykgfSwKIAl7IEhJRF9CTFVFVE9PVEhfREVWSUNF
-KFVTQl9WRU5ET1JfSURfQVBQTEUsIFVTQl9ERVZJQ0VfSURfQVBQTEVfQUxVX1dJUkVMRVNTXzIw
-MDlfSklTKSB9LApAQCAtMTc1Niw2ICsxNzYyLDEyIEBACiAJeyBISURfVVNCX0RFVklDRShVU0Jf
-VkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkczX0FOU0kpIH0s
-CiAJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQ
-UExFX1dFTExTUFJJTkczX0lTTykgfSwKIAl7IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURf
-QVBQTEUsIFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzNfSklTKSB9LAorCXsgSElEX1VT
-Ql9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9BUFBMRSwgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BS
-SU5HNF9BTlNJKSB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9BUFBMRSwgVVNC
-X0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HNF9JU08pIH0sCisJeyBISURfVVNCX0RFVklDRShV
-U0JfVkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkc0X0pJUykg
-fSwKKwl7IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfQVBQTEUsIFVTQl9ERVZJQ0VfSURf
-QVBQTEVfV0VMTFNQUklORzRBX0FOU0kpIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9S
-X0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkc0QV9JU08pIH0sCisJeyBI
-SURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX1dF
-TExTUFJJTkc0QV9KSVMpIH0sCiAJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX0FQUExF
-LCBVU0JfREVWSUNFX0lEX0FQUExFX0ZPVU5UQUlOX1RQX09OTFkpIH0sCiAJeyBISURfVVNCX0RF
-VklDRShVU0JfVkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX0dFWVNFUjFfVFBf
-T05MWSkgfSwKIAl7IH0KZGlmZiAtdU5yIGxpbnV4LTIuNi4zNy1yYzEvZHJpdmVycy9oaWQvaGlk
-LWlkcy5oIGxpbnV4LTIuNi4zNy1yYzEtTWFjQm9va0Fpci9kcml2ZXJzL2hpZC9oaWQtaWRzLmgK
-LS0tIGxpbnV4LTIuNi4zNy1yYzEvZHJpdmVycy9oaWQvaGlkLWlkcy5oCTIwMTAtMTEtMDMgMTQ6
-MzM6MzUuMDQ5NjY2MDAwICswMTAwCisrKyBsaW51eC0yLjYuMzctcmMxLU1hY0Jvb2tBaXIvZHJp
-dmVycy9oaWQvaGlkLWlkcy5oCTIwMTAtMTEtMDMgMTU6MTY6MzguODI5NjY2MDAxICswMTAwCkBA
-IC05Nyw2ICs5NywxMiBAQAogI2RlZmluZSBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkcz
-X0FOU0kJMHgwMjM2CiAjZGVmaW5lIFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzNfSVNP
-CTB4MDIzNwogI2RlZmluZSBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkczX0pJUwkweDAy
-MzgKKyNkZWZpbmUgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HNF9BTlNJCTB4MDIzZgor
-I2RlZmluZSBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkc0X0lTTwkweDAyNDAKKyNkZWZp
-bmUgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HNF9KSVMJMHgwMjQxCisjZGVmaW5lIFVT
-Ql9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzRBX0FOU0kJMHgwMjQyCisjZGVmaW5lIFVTQl9E
-RVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzRBX0lTTwkweDAyNDMKKyNkZWZpbmUgVVNCX0RFVklD
-RV9JRF9BUFBMRV9XRUxMU1BSSU5HNEFfSklTCTB4MDI0NAogI2RlZmluZSBVU0JfREVWSUNFX0lE
-X0FQUExFX0FMVV9XSVJFTEVTU18yMDA5X0FOU0kgIDB4MDIzOQogI2RlZmluZSBVU0JfREVWSUNF
-X0lEX0FQUExFX0FMVV9XSVJFTEVTU18yMDA5X0lTTyAgIDB4MDIzYQogI2RlZmluZSBVU0JfREVW
-SUNFX0lEX0FQUExFX0FMVV9XSVJFTEVTU18yMDA5X0pJUyAgIDB4MDIzYgo=
---=_03fb90f6757ccfb8da56d0982336b31f--
+The idea keeps coming up to have some userspace thing automatically
+tune the kernel to dtrt based upon whatever profile it has been fed.
+Various implementations of things like this have come and gone
+(Arjan and myself even wrote one circa 2000). For whatever reason,
+they don't seem to catch on.
+
+	Dave
 
