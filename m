@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932413Ab0KCPiE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 11:38:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28352 "EHLO mx1.redhat.com"
+	id S932614Ab0KCPiI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 11:38:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15470 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932225Ab0KCPa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932374Ab0KCPa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Nov 2010 11:30:58 -0400
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Subject: [PATCH 21 of 66] add pmd mmu_notifier helpers
-X-Mercurial-Node: a148bf94a2d46d6cbaa6cafb0ff7ad8f793b3116
-Message-Id: <a148bf94a2d46d6cbaa6.1288798076@v2.random>
+Subject: [PATCH 48 of 66] add pmd_modify
+X-Mercurial-Node: 56d9bdb3bea58e9b3bad98f60a51f9c0fb1bc70b
+Message-Id: <56d9bdb3bea58e9b3bad.1288798103@v2.random>
 In-Reply-To: <patchbomb.1288798055@v2.random>
 References: <patchbomb.1288798055@v2.random>
 User-Agent: Mercurial-patchbomb/1.4.1
-Date: Wed, 03 Nov 2010 16:27:56 +0100
+Date: Wed, 03 Nov 2010 16:28:23 +0100
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -40,76 +40,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-Add mmu notifier helpers to handle pmd huge operations.
+Add pmd_modify() for use with mprotect() on huge pmds.
 
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Acked-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 ---
 
-diff --git a/include/linux/mmu_notifier.h b/include/linux/mmu_notifier.h
---- a/include/linux/mmu_notifier.h
-+++ b/include/linux/mmu_notifier.h
-@@ -243,6 +243,32 @@ static inline void mmu_notifier_mm_destr
- 	__pte;								\
- })
- 
-+#define pmdp_clear_flush_notify(__vma, __address, __pmdp)		\
-+({									\
-+	pmd_t __pmd;							\
-+	struct vm_area_struct *___vma = __vma;				\
-+	unsigned long ___address = __address;				\
-+	VM_BUG_ON(__address & ~HPAGE_PMD_MASK);				\
-+	mmu_notifier_invalidate_range_start(___vma->vm_mm, ___address,	\
-+					    (__address)+HPAGE_PMD_SIZE);\
-+	__pmd = pmdp_clear_flush(___vma, ___address, __pmdp);		\
-+	mmu_notifier_invalidate_range_end(___vma->vm_mm, ___address,	\
-+					  (__address)+HPAGE_PMD_SIZE);	\
-+	__pmd;								\
-+})
-+
-+#define pmdp_splitting_flush_notify(__vma, __address, __pmdp)		\
-+({									\
-+	struct vm_area_struct *___vma = __vma;				\
-+	unsigned long ___address = __address;				\
-+	VM_BUG_ON(__address & ~HPAGE_PMD_MASK);				\
-+	mmu_notifier_invalidate_range_start(___vma->vm_mm, ___address,	\
-+					    (__address)+HPAGE_PMD_SIZE);\
-+	pmdp_splitting_flush(___vma, ___address, __pmdp);		\
-+	mmu_notifier_invalidate_range_end(___vma->vm_mm, ___address,	\
-+					  (__address)+HPAGE_PMD_SIZE);	\
-+})
-+
- #define ptep_clear_flush_young_notify(__vma, __address, __ptep)		\
- ({									\
- 	int __young;							\
-@@ -254,6 +280,17 @@ static inline void mmu_notifier_mm_destr
- 	__young;							\
- })
- 
-+#define pmdp_clear_flush_young_notify(__vma, __address, __pmdp)		\
-+({									\
-+	int __young;							\
-+	struct vm_area_struct *___vma = __vma;				\
-+	unsigned long ___address = __address;				\
-+	__young = pmdp_clear_flush_young(___vma, ___address, __pmdp);	\
-+	__young |= mmu_notifier_clear_flush_young(___vma->vm_mm,	\
-+						  ___address);		\
-+	__young;							\
-+})
-+
- #define set_pte_at_notify(__mm, __address, __ptep, __pte)		\
- ({									\
- 	struct mm_struct *___mm = __mm;					\
-@@ -305,7 +342,10 @@ static inline void mmu_notifier_mm_destr
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -325,6 +325,16 @@ static inline pte_t pte_modify(pte_t pte
+ 	return __pte(val);
  }
  
- #define ptep_clear_flush_young_notify ptep_clear_flush_young
-+#define pmdp_clear_flush_young_notify pmdp_clear_flush_young
- #define ptep_clear_flush_notify ptep_clear_flush
-+#define pmdp_clear_flush_notify pmdp_clear_flush
-+#define pmdp_splitting_flush_notify pmdp_splitting_flush
- #define set_pte_at_notify set_pte_at
++static inline pmd_t pmd_modify(pmd_t pmd, pgprot_t newprot)
++{
++	pmdval_t val = pmd_val(pmd);
++
++	val &= _HPAGE_CHG_MASK;
++	val |= massage_pgprot(newprot) & ~_HPAGE_CHG_MASK;
++
++	return __pmd(val);
++}
++
+ /* mprotect needs to preserve PAT bits when updating vm_page_prot */
+ #define pgprot_modify pgprot_modify
+ static inline pgprot_t pgprot_modify(pgprot_t oldprot, pgprot_t newprot)
+diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+--- a/arch/x86/include/asm/pgtable_types.h
++++ b/arch/x86/include/asm/pgtable_types.h
+@@ -72,6 +72,7 @@
+ /* Set of bits not changed in pte_modify */
+ #define _PAGE_CHG_MASK	(PTE_PFN_MASK | _PAGE_PCD | _PAGE_PWT |		\
+ 			 _PAGE_SPECIAL | _PAGE_ACCESSED | _PAGE_DIRTY)
++#define _HPAGE_CHG_MASK (_PAGE_CHG_MASK | _PAGE_PSE)
  
- #endif /* CONFIG_MMU_NOTIFIER */
+ #define _PAGE_CACHE_MASK	(_PAGE_PCD | _PAGE_PWT)
+ #define _PAGE_CACHE_WB		(0)
