@@ -1,110 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024Ab0KDDnx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 23:43:53 -0400
-Received: from mga02.intel.com ([134.134.136.20]:55033 "EHLO mga02.intel.com"
+	id S1754323Ab0KDDof (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 23:44:35 -0400
+Received: from mail.asbjorn.biz ([217.195.185.3]:47087 "EHLO mail.asbjorn.biz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753477Ab0KDDnw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 23:43:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,293,1286175600"; 
-   d="scan'208";a="570197122"
-Date: Thu, 4 Nov 2010 11:43:49 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        "mrubin@google.com" <mrubin@google.com>,
-        "david@fromorbit.com" <david@fromorbit.com>,
-        "axboe@kernel.dk" <axboe@kernel.dk>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        "nickpiggin@yahoo.com.au" <nickpiggin@yahoo.com.au>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [2.6.37-rc1] /proc/vmstat failure.
-Message-ID: <20101104034349.GA20775@localhost>
-References: <201011010053.ADE86905.JMLFHVtSQOOFOF@I-love.SAKURA.ne.jp>
- <201011032011.BAB21899.OHVQtFLSFJMFOO@I-love.SAKURA.ne.jp>
- <20101103174643.GA4985@localhost>
- <201011040654.GDB05271.SOFJFFtOMLHOQV@I-love.SAKURA.ne.jp>
- <20101104022052.GA7800@localhost>
- <20101104025251.GA5210@cr0.nay.redhat.com>
- <20101104025341.GA18429@localhost>
- <20101104033148.GB5210@cr0.nay.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101104033148.GB5210@cr0.nay.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753477Ab0KDDoe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 23:44:34 -0400
+From: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        debian-kernel@lists.debian.org
+Subject: [PATCH] kbuild, deb-pkg: fix Architecture field when cross compiling
+Date: Thu,  4 Nov 2010 03:44:04 +0000
+Message-Id: <1288842244-6863-1-git-send-email-asbjorn@asbjorn.biz>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <4CD22ACF.1000407@asbjorn.it>
+References: <4CD22ACF.1000407@asbjorn.it>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 04, 2010 at 11:31:48AM +0800, Américo Wang wrote:
-> On Thu, Nov 04, 2010 at 10:53:41AM +0800, Wu Fengguang wrote:
-> >On Thu, Nov 04, 2010 at 10:52:51AM +0800, Américo Wang wrote:
-> >> On Thu, Nov 04, 2010 at 10:20:52AM +0800, Wu Fengguang wrote:
-> >> >On Thu, Nov 04, 2010 at 05:54:48AM +0800, Tetsuo Handa wrote:
-> >> >> Wu Fengguang wrote:
-> >> >> > On Wed, Nov 03, 2010 at 07:11:11PM +0800, Tetsuo Handa wrote:
-> >> >> > > Hello.
-> >> >> > > 
-> >> >> > > "cat /proc/vmstat" triggered below failure.
-> >> >> > > 
-> >> >> > > BUG: unable to handle kernel paging request at 07c06d16
-> >> >> > > IP: [<c050c336>] strnlen+0x6/0x20
-> >> >> > 
-> >> >> > It seems that m->private is of type (void *) while the original v is
-> >> >> > (unsigned long *). Can be fixed by the following patch.
-> >> >> 
-> >> >> Fixed by this patch. Thank you.
-> >> >
-> >> >Great, thanks!
-> >> >
-> >> >> By the way, GCC treats "(void *) + offset" as "(char *) + offset"
-> >> >> but it is GCC specific extention. Maybe we should avoid such usage
-> >> >> in order to avoid build failure for other compilers.
-> >> >
-> >> >"(void *) + offset" seems to be used quite often.
-> >> >
-> >> >I tried enable this gcc option, only to see huge amount of warnings.
-> >> >
-> >> >       -Wpointer-arith
-> >> >           Warn about anything that depends on the "size of" a
-> >> >           function type or of "void".  GNU C assigns these types a
-> >> >           size of 1, for convenience in calculations with "void *"
-> >> >           pointers and pointers to functions.
-> >> >
-> >> 
-> >> Yup! I think it is good to have this.
-> >> 
-> >> >/cc/linux-next/scripts/mod/file2alias.c:88: warning: pointer of type ‘void *’ used in arithmetic
-> >> ...
-> >> >/cc/linux-next/scripts/mod/modpost.c:1565: warning: pointer of type ‘void *’ used in arithmetic
-> >> >
-> >> 
-> >> No problem, this is from kbuild and most of them that I checked are actually fine,
-> >> we can send patches to remove these warnings.
-> >
-> >Confirmed. Now my full kernel build is complete and the above are the
-> >only warnings I see. So it should be easy to add the -Wpointer-arith
-> >check.
-> >
-> 
-> Well, after I tried to compile with it, I got lots of warnings.
-> Most of them that I checked is something like:
-> 
->  (void *) CONST_PTR + OFFSET
-> 
-> in macros. In order to fix this, we need to:
-> 
->  (void *) ((char *) CONST_PTR + OFFSET)
-> 
-> So, we have to make some efforts to kill all the warnings. :-/
+Attempt to guess the correct value of the Architecture control
+field, based on the ARCH environment variable. Fallback to letting
+deb-gencontrol use the host platform's architecture.
 
-Sorry I didn't run allyesconfig/allmodconfig as suggested by Tetsuo.
-So expect more warnings..
+With this patch the following make command:
 
-Thanks,
-Fengguang
+	make ARCH=i386 deb-pkg
+
+will output an i386 Debian package instead of an amd64 one,
+when run on amd64 machine.
+
+Signed-off-by: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
+---
+ scripts/package/builddeb |   17 ++++++++++++++++-
+ 1 files changed, 16 insertions(+), 1 deletions(-)
+
+diff --git a/scripts/package/builddeb b/scripts/package/builddeb
+index 5f1e2fc..43b8826 100644
+--- a/scripts/package/builddeb
++++ b/scripts/package/builddeb
+@@ -25,8 +25,23 @@ create_package() {
+ 	chown -R root:root "$pdir"
+ 	chmod -R go-w "$pdir"
+ 
++	# Attempt to find the correct Debian architecture
++	local forcearch="" debarch=""
++	case "$ARCH" in
++	i386|ia64)
++		debarch="$ARCH" ;;
++	x86_64)
++		debarch="amd64" ;;
++	*)
++		grep -q CONFIG_ARM=y .config &&
++			debarch=arm$(grep -q CONFIG_AEABI=y .config && echo el)
++	esac
++	if [ -n "$debarch" ] ; then
++		forcearch="-DArchitecture=$debarch"
++	fi
++
+ 	# Create the package
+-	dpkg-gencontrol -isp -p$pname -P"$pdir"
++	dpkg-gencontrol -isp $forcearch -p$pname -P"$pdir"
+ 	dpkg --build "$pdir" ..
+ }
+ 
+-- 
+1.7.2.3
+
