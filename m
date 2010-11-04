@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962Ab0KDT3T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 15:29:19 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:42120 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752934Ab0KDT3Q (ORCPT
+	id S1753049Ab0KDT3l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 15:29:41 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:64035 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752903Ab0KDT3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 15:29:16 -0400
+	Thu, 4 Nov 2010 15:29:37 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=N815VxBAxoQo2f6Bm78mizuD1v8nHizyeyeT2qM4AoedRdR7y0GFc+/LqfWVx1eFT/
-         G+yBwxDPJIlZtECsQRxjQ6ATFWsOdkKjkrW+WeQ6ehLYDnNtGVSMJ8OprIG8ZHx+n4VY
-         Q7/Icn/ZruxiJ4oVZaia68gjNxarIWHddGQAA=
-Date: Thu, 4 Nov 2010 20:29:13 +0100
+        b=gyf8YkTTxauPV4gYQ+givtsj+oM/0EGtgFJTjG/gdIUq+ihwwNOfAEOBSY8El/q/ee
+         YzQYG9CMVkH7bwXNT8c4PJHp6TM/J9cnG2MD+t2RVz0a9W33VqAASJ07dniP9LYTx3Cq
+         n6OGRB4OTBERswP2sWCvH+JQrpUdGKjOsv0Fk=
+Date: Thu, 4 Nov 2010 20:29:34 +0100
 From: Richard Cochran <richardcochran@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-api@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
@@ -22,8 +22,8 @@ Cc: linux-api@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
         John Stultz <johnstul@us.ibm.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH RFC 4/8] clock device: convert clock_settime
-Message-ID: <539a5244b2cc2319aa9054b25bb00dc4713b740d.1288897199.git.richard.cochran@omicron.at>
+Subject: [PATCH RFC 5/8] clock device: convert timer_create
+Message-ID: <996249855b4c2b680bedddf8a4e825a9d7eca3e5.1288897199.git.richard.cochran@omicron.at>
 References: <cover.1288897198.git.richard.cochran@omicron.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -34,71 +34,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch lets the clock_settime system call use dynamic clock devices.
+This patch lets the timer_create system call use dynamic clock devices.
 
 Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
 ---
- include/linux/posix-timers.h |    1 +
- kernel/posix-timers.c        |    4 ++--
- kernel/time/clockdevice.c    |   26 ++++++++++++++++++++++++++
- 3 files changed, 29 insertions(+), 2 deletions(-)
+ include/linux/clockdevice.h |    5 +++++
+ kernel/posix-timers.c       |   12 ++++++++++--
+ kernel/time/clockdevice.c   |   17 +++++++++++++++++
+ 3 files changed, 32 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
-index 7d6a4f0..864ed7b 100644
---- a/include/linux/posix-timers.h
-+++ b/include/linux/posix-timers.h
-@@ -138,5 +138,6 @@ void update_rlimit_cpu(struct task_struct *task, unsigned long rlim_new);
+diff --git a/include/linux/clockdevice.h b/include/linux/clockdevice.h
+index ae258ac..3201a28 100644
+--- a/include/linux/clockdevice.h
++++ b/include/linux/clockdevice.h
+@@ -103,4 +103,9 @@ void *clock_device_private(struct file *fp);
+  */
+ struct clock_device *clockid_to_clock_device(clockid_t id);
  
- int posix_clock_gettime(const clockid_t clock, struct timespec __user *tp);
- int posix_clock_getres(const clockid_t clock, struct timespec __user *tp);
-+int posix_clock_settime(const clockid_t clock, const struct timespec __user *t);
- 
++/*
++ * The following functions are only to be called from posix-timers.c
++ */
++int clock_device_timer_create(struct clock_device *clk, struct k_itimer *kit);
++
  #endif
 diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
-index baa6a2e..ef4e222 100644
+index ef4e222..42efbe9 100644
 --- a/kernel/posix-timers.c
 +++ b/kernel/posix-timers.c
-@@ -939,8 +939,8 @@ int do_posix_clock_nonanosleep(const clockid_t clock, int flags,
- }
- EXPORT_SYMBOL_GPL(do_posix_clock_nonanosleep);
- 
--SYSCALL_DEFINE2(clock_settime, const clockid_t, which_clock,
--		const struct timespec __user *, tp)
-+int posix_clock_settime(const clockid_t which_clock,
-+			const struct timespec __user *tp)
+@@ -39,6 +39,7 @@
+ #include <asm/uaccess.h>
+ #include <linux/list.h>
+ #include <linux/init.h>
++#include <linux/clockdevice.h>
+ #include <linux/compiler.h>
+ #include <linux/idr.h>
+ #include <linux/posix-timers.h>
+@@ -523,12 +524,15 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
+ 		struct sigevent __user *, timer_event_spec,
+ 		timer_t __user *, created_timer_id)
  {
- 	struct timespec new_tp;
++	struct clock_device *clk_dev;
+ 	struct k_itimer *new_timer;
+ 	int error, new_timer_id;
+ 	sigevent_t event;
+ 	int it_id_set = IT_ID_NOT_SET;
+ 
+-	if (invalid_clockid(which_clock))
++	clk_dev = clockid_to_clock_device(which_clock);
++
++	if (!clk_dev && invalid_clockid(which_clock))
+ 		return -EINVAL;
+ 
+ 	new_timer = alloc_posix_timer();
+@@ -591,7 +595,11 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
+ 		goto out;
+ 	}
+ 
+-	error = CLOCK_DISPATCH(which_clock, timer_create, (new_timer));
++	if (clk_dev)
++		error = clock_device_timer_create(clk_dev, new_timer);
++	else {
++		error = CLOCK_DISPATCH(which_clock, timer_create, (new_timer));
++	}
+ 	if (error)
+ 		goto out;
  
 diff --git a/kernel/time/clockdevice.c b/kernel/time/clockdevice.c
-index 6629ae7..3f2870d 100644
+index 3f2870d..166cc30 100644
 --- a/kernel/time/clockdevice.c
 +++ b/kernel/time/clockdevice.c
-@@ -238,3 +238,29 @@ SYSCALL_DEFINE2(clock_getres,
+@@ -264,3 +264,20 @@ SYSCALL_DEFINE2(clock_settime,
  	mutex_unlock(&clk->mux);
  	return err;
  }
 +
-+SYSCALL_DEFINE2(clock_settime,
-+		const clockid_t, id, const struct timespec __user *, user_ts)
++int clock_device_timer_create(struct clock_device *clk, struct k_itimer *kit)
 +{
-+	struct timespec ts;
-+	struct clock_device *clk;
 +	int err;
-+
-+	clk = clockid_to_clock_device(id);
-+	if (!clk)
-+		return posix_clock_settime(id, user_ts);
 +
 +	mutex_lock(&clk->mux);
 +
 +	if (clk->zombie)
 +		err = -ENODEV;
-+	else if (!clk->ops->clock_settime)
++	else if (!clk->ops->timer_create)
 +		err = -EOPNOTSUPP;
-+	else if (copy_from_user(&ts, user_ts, sizeof(ts)))
-+		err = -EFAULT;
 +	else
-+		err = clk->ops->clock_settime(clk->priv, &ts);
++		err = clk->ops->timer_create(clk->priv, kit);
 +
 +	mutex_unlock(&clk->mux);
 +	return err;
