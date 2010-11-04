@@ -1,61 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940Ab0KDDNg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 23:13:36 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:64509 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751488Ab0KDDNe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 23:13:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:in-reply-to:references:user-agent:date
-         :message-id:mime-version:content-type;
-        b=U9iE3mGCYs5rAzxgjZJ02p+5qJNLPVd4qGY7Mx4opatACiN2lQDHfYC7SfDLqN2BiS
-         ui9kWA8U3dMx67I0pYUh3jg+J5kjFSNnYeIP6IG38tUO8ltfJtdpKf3Bc6Bgbwf7QaYj
-         zvQ2o9qzIABEGYleZ/RQXv3Ucyg9iGvJtLQFg=
-From: Ben Gamari <bgamari.foss@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: [PATCH] Add Kconfig option for default swappiness
-In-Reply-To: <alpine.DEB.2.00.1011021235130.21387@chino.kir.corp.google.com>
-References: <1288668052-32036-1-git-send-email-bgamari.foss@gmail.com> <alpine.DEB.2.00.1011012030100.12298@chino.kir.corp.google.com> <87oca7evbo.fsf@gmail.com> <alpine.DEB.2.00.1011021235130.21387@chino.kir.corp.google.com>
-User-Agent: Notmuch/0.3.1-158-g04cd99c (http://notmuchmail.org) Emacs/23.1.1 (x86_64-pc-linux-gnu)
-Date: Wed, 03 Nov 2010 23:13:31 -0400
-Message-ID: <878w19bx2c.fsf@gmail.com>
+	id S1753371Ab0KDDTV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 23:19:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64243 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752756Ab0KDDTU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 23:19:20 -0400
+Message-ID: <4CD22627.2000607@redhat.com>
+Date: Wed, 03 Nov 2010 23:19:03 -0400
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc14 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Arnaud Lacombe <lacombar@gmail.com>
+CC: Michal Marek <mmarek@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>, kyle@redhat.com,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linux Media Mailing List <linux-media@vger.kernel.org>
+Subject: Re: REGRESSION: Re: [GIT] kconfig rc fixes
+References: <20101009224041.GA901@sepie.suse.cz>	<4CD1E232.30406@redhat.com> <AANLkTimyh-k8gYwuNi6nZFp3oviQ33+M3fDRzZ+sJN9i@mail.gmail.com>
+In-Reply-To: <AANLkTimyh-k8gYwuNi6nZFp3oviQ33+M3fDRzZ+sJN9i@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Nov 2010 12:39:52 -0700 (PDT), David Rientjes <rientjes@google.com> wrote:
-> On Tue, 2 Nov 2010, Ben Gamari wrote:
-> > Packaging concerns, as I mentioned before,
+Em 03-11-2010 22:31, Arnaud Lacombe escreveu:
+> Hi,
 > 
-> That you snipped from the changelog?
+> On Wed, Nov 3, 2010 at 6:29 PM, Mauro Carvalho Chehab
+> <mchehab@redhat.com> wrote:
+>> Em 09-10-2010 18:40, Michal Marek escreveu:
+>>>
+>>> Arnaud Lacombe (1):
+>>>       kconfig: delay symbol direct dependency initialization
+>>
+>> This patch generated a regression with V4L build. After applying it,
+>> some Kconfig dependencies that used to work with V4L Kconfig broke.
+>>
+> of course, but they were all-likely buggy. If a compiler version N
+> outputs a new legitimate warning because of a bug in the code, you do
+> not switch back to the previous version because the warning wasn't
+> there, you fix the code.
 > 
-Guilty as charged. Sorry about that, time has been in short supply
-recently.
+> That said, please point me to a false positive, eventually with a
+> minimal testcase, and I'll be happy to fix the issue.
 
-> You could say the same thing for any sysctl, it's not indicative of why 
-> this particular change is needed in the kernel.
-> 
-This is certainly true; a distribution could in principle want to tweak
-the default values of any of the sysctl knobs. If we wanted to tweak
-anything else in addition to swappiness that I wouldn't have even
-bothered to submit the patch since I'll be the first to admit that the
-precedent set by further growing the Kconfig phase space is not a
-positive one. That being said, swappiness is one of the more significant
-knobs in the vm and certainly one of the more likely to be tuned by a
-distribution.
+Arnaud,
 
-> Let's not have the "in short" answer, what's the "long" answer?
+In the case of V4L and DVB drivers, what happens is that the same 
+USB (or PCI) bridge driver can be attached to lots of
+different chipsets that do analog/digital/audio decoding/encoding.
 
-See my recent response to Wu Fengguang.
+A normal user won't need to open his USB TV stick just to see TV on it.
+It just needs to select a bridge driver, and all possible options for encoders
+and decoders are auto-selected.
 
-Cheers,
+If you're an advanced user (or are developing an embedded hardware), you
+know exactly what are the components inside the board/stick. So, the
+Kconfig allows to disable the automatic auto-selection, doing manual
+selection.
 
-- Ben
+The logic basically implements it, using Kconfig way, on a logic like:
+
+	auto = ask_user_if_ancillary_drivers_should_be_auto_selected();
+	driver_foo = ask_user_if_driver_foo_should_be_selected();
+	if (driver_foo && auto) {
+		select(bar1);
+		select(bar2);
+		select(bar3);
+		select(bar4);
+	}
+...
+	if (!auto) {
+		open_menu()
+		ask_user_if_bar1_should_be_selected();
+		ask_user_if_bar2_should_be_selected();
+		ask_user_if_bar3_should_be_selected();
+		ask_user_if_bar4_should_be_selected();
+...
+		close_menu()
+	}
+
+Or, on Kconfig language:
+
+>> config VIDEO_HELPER_CHIPS_AUTO
+>>        bool "Autoselect pertinent encoders/decoders and other helper chips"
+>>
+>> config VIDEO_IVTV
+>>        select VIDEO_WM8739 if VIDEO_HELPER_CHIPS_AUTO
+>>
+>> menu "Encoders/decoders and other helper chips"
+>>        depends on !VIDEO_HELPER_CHIPS_AUTO
+>>
+>> config VIDEO_WM8739
+>>        tristate "Wolfson Microelectronics WM8739 stereo audio ADC"
+>>
+
+I don't see anything wrong on such logic. It is valid in C, and it is also valid
+(and works properly) at Kconfig language.
+
+So, the warning is a false positive.
+
+If you want to see the real logic, just look at drivers/media/.../Kconfig stuff.
+You'll see it at almost all Kconfig files. There are hundreds of dependencies
+using this kind of logic. This is used by all tuners (21 Kconfig items, at
+drivers/media/common/Kconfig), by several I2C devices (40+ Kconfig items at
+drivers/media/video/Kconfig), and by almost all bridge drivers.
+
+Mauro.
+
