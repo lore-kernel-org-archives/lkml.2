@@ -1,62 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932070Ab0KDJZE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 05:25:04 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49034 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755418Ab0KDJZA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 05:25:00 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, stefani@seibold.net
-Subject: [RESEND PATCH] tags: put function prototypes back!
-Date: Thu,  4 Nov 2010 10:24:16 +0100
-Message-Id: <1288862656-26707-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <4C176968.8070807@suse.cz>
-References: <4C176968.8070807@suse.cz>
+	id S1755628Ab0KDJbF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 05:31:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27110 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755585Ab0KDJbC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 05:31:02 -0400
+Date: Thu, 4 Nov 2010 11:30:45 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 1/1] vhost: TX used buffer guest signal accumulation
+Message-ID: <20101104093045.GA27506@redhat.com>
+References: <1288216693.17571.38.camel@localhost.localdomain>
+ <1288240804.14342.1.camel@localhost.localdomain>
+ <20101028052021.GD5599@redhat.com>
+ <1288286062.11251.15.camel@localhost.localdomain>
+ <20101029081027.GB22688@redhat.com>
+ <1288366988.4110.5.camel@localhost.localdomain>
+ <20101030200603.GA19033@redhat.com>
+ <1288642673.19173.8.camel@localhost.localdomain>
+ <20101103104812.GB10555@redhat.com>
+ <1288849126.12932.4.camel@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288849126.12932.4.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 7db86dc (ctags: usability fix) removed function prototypes from
-tags file claiming "It makes no real sense to include function
-prototypes".
-But it is useful for quickly determining which header file developer
-needs to include to fix compilation.
+On Wed, Nov 03, 2010 at 10:38:46PM -0700, Shirley Ma wrote:
+> On Wed, 2010-11-03 at 12:48 +0200, Michael S. Tsirkin wrote:
+> > I mean in practice, you see a benefit from this patch?
+> 
+> Yes, I tested it. It does benefit the performance.
+> 
+> > > My concern here is whether checking only in set up would be
+> > sufficient
+> > > for security?
+> > 
+> > It better be sufficient because the checks that put_user does
+> > are not effictive when run from the kernel thread, anyway.
+> > 
+> > > Would be there is a case guest could corrupt the ring
+> > > later? If not, that's OK.
+> > 
+> > You mean change the pointer after it's checked?
+> > If you see such a case, please holler.
+> 
+> I wonder about it, not a such case in mind.
+> 
+> > To clarify: the combination of __put_user and separate
+> > signalling is giving the same performance benefit as your
+> > patch?
+> 
+> Yes, it has similar performance, not I haven't finished all message
+> sizes comparison yet.
+> 
+> > I am mostly concerned with adding code that seems to help
+> > speed for reasons we don't completely understand, because
+> > then we might break the optimization easily without noticing.
+> 
+> I don't think the patch I submited would break up anything.
 
-Now if someone wants to remove forward declatations (which I agree are
-baggage), write a postprocessing script.
+No, I just meant that when a patch gives some benefit, I'd like
+to understand where the benefit comes from so that I don't
+break it later.
 
-Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- scripts/tags.sh |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> It just
+> reduced the cost of per used buffer 3 put_user() calls and guest
+> signaling from one to one to many to one.
 
-diff --git a/scripts/tags.sh b/scripts/tags.sh
-index 8509bb5..e091db3 100755
---- a/scripts/tags.sh
-+++ b/scripts/tags.sh
-@@ -123,7 +123,7 @@ exuberant()
- 	-I ____cacheline_internodealigned_in_smp                \
- 	-I EXPORT_SYMBOL,EXPORT_SYMBOL_GPL                      \
- 	-I DEFINE_TRACE,EXPORT_TRACEPOINT_SYMBOL,EXPORT_TRACEPOINT_SYMBOL_GPL \
--	--extra=+f --c-kinds=-px                                \
-+	--extra=+f --c-kinds=+px                                \
- 	--regex-asm='/^ENTRY\(([^)]*)\).*/\1/'                  \
- 	--regex-c='/^SYSCALL_DEFINE[[:digit:]]?\(([^,)]*).*/sys_\1/'
- 
+One thing to note is that deferred signalling needs to be
+benchmarked with old guests which don't orphan skbs on xmit
+(or disable orphaning in both networking stack and virtio-net).
+
+> 
+> Thanks
+> Shirley
+
+OK, so I guess I'll queue the __put_user etc patches for net-next, on top of this
+I think a patch which defers signalling would be nice to have,
+then we can figure out whether a separate heads array still has benefits
+for non zero copy case: if yes what they are, if no whether it should be
+used for zero copy only for both both non-zero copy and zero copy.
+
+Makes sense?
+
 -- 
-1.7.2.3
-
+MST
