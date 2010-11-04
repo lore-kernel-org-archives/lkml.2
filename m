@@ -1,104 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753961Ab0KDEjG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 00:39:06 -0400
-Received: from brinza.cc.columbia.edu ([128.59.29.8]:56024 "EHLO
-	brinza.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751227Ab0KDEjD (ORCPT
+	id S1754139Ab0KDEpQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 00:45:16 -0400
+Received: from [120.204.251.227] ([120.204.251.227]:41242 "EHLO
+	LC-SHMAIL-01.SHANGHAI.LEADCORETECH.COM" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751300Ab0KDEpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 00:39:03 -0400
-Message-ID: <4CD237EB.6090907@cs.columbia.edu>
-Date: Thu, 04 Nov 2010 00:34:51 -0400
-From: Oren Laadan <orenl@cs.columbia.edu>
-Organization: Columbia University
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Lightning/1.0b1 Thunderbird/3.0.8
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>
-CC: Tejun Heo <tj@kernel.org>, ksummit-2010-discuss@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-References: <Pine.LNX.4.64.1011021530470.12128@takamine.ncl.cs.columbia.edu> <4CD08419.5050803@kernel.org> <20101102214706.GA28593@lst.de>
-In-Reply-To: <20101102214706.GA28593@lst.de>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 4 Nov 2010 00:45:15 -0400
+Subject: Re: Re:[PATCH v2]oom-kill: CAP_SYS_RESOURCE should get bonus
+From: "Figo.zhang" <zhangtianfei@leadcoretech.com>
+To: David Rientjes <rientjes@google.com>
+Cc: figo zhang <figo1802@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@osdl.org>
+In-Reply-To: <alpine.DEB.2.00.1011031952110.28251@chino.kir.corp.google.com>
+References: <1288662213.10103.2.camel@localhost.localdomain>
+	 <1288827804.2725.0.camel@localhost.localdomain>
+	 <alpine.DEB.2.00.1011031646110.7830@chino.kir.corp.google.com>
+	 <AANLkTimjfmLzr_9+Sf4gk0xGkFjffQ1VcCnwmCXA88R8@mail.gmail.com>
+	 <1288834737.2124.11.camel@myhost>
+	 <alpine.DEB.2.00.1011031847450.21550@chino.kir.corp.google.com>
+	 <1288836733.2124.18.camel@myhost>
+	 <alpine.DEB.2.00.1011031952110.28251@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 04 Nov 2010 12:42:10 +0800
+Message-ID: <1288845730.2102.11.camel@myhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.0 
 Content-Transfer-Encoding: 7bit
-X-No-Spam-Score: Local
+X-OriginalArrivalTime: 04 Nov 2010 04:45:11.0125 (UTC) FILETIME=[1045B850:01CB7BDB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christoph,
-
-I really wish you would have raised these concerns during the
-ksummit or thereafter. I'm here (LPC) until Friday, and would be
-happy to discuss any aspect of the linux-cr while at it (and if
-needed can post a summary to the list).
-
-On 11/02/2010 05:47 PM, Christoph Hellwig wrote:
-> Thanks Tejun,
+On Wed, 2010-11-03 at 19:54 -0700, David Rientjes wrote:
+> On Thu, 4 Nov 2010, Figo.zhang wrote:
 > 
-> your writeup brought up a lot of the same issues that I see with
-> the in-kernel C/R.  Various C/R implementations that are entirely
-> in userspace or with limited kernel assistance have been in production
-> in HPC environments for years.  I think especially for these workloads
-> C/R is an extremly useful feature, and a standard implementation would
-> do Linux well.
+> > In your new heuristic, you also get CAP_SYS_RESOURCE to protection.
+> > see fs/proc/base.c, line 1167:
+> > 	if (oom_score_adj < task->signal->oom_score_adj &&
+> > 			!capable(CAP_SYS_RESOURCE)) {
+> > 		err = -EACCES;
+> > 		goto err_sighand;
+> > 	}
 > 
-> But I think the "transparent" in-kernel one is the wrong approach.  It
-> tries to give the illusion that C/R will just work, while a lot of
-> things are simply not support.  
+> That's unchanged from the old behavior with oom_adj.
+> 
+> > so i want to protect some process like normal process not
+> > CAP_SYS_RESOUCE, i set a small oom_score_adj , if new oom_score_adj is
+> > small than now and it is not limited resource, it will not adjust, that
+> > seems not right?
+> > 
+> 
+> Tasks without CAP_SYS_RESOURCE cannot lower their own oom_score_adj, 
 
-The fact is that an in-kernel implementation can and does support
-a significantly larger feature-set.
+CAP_SYS_RESOURCE == 1 means without resource limits just like a
+superuser,
+CAP_SYS_RESOURCE == 0 means hold resource limits, like normal user,
+right?
 
-Linux-cr does not and will not support everything. Nearly all driver
-devices won't be supported in the near future (but interested vendors
-could builds such functionality into their drivers!). Also, pseudo
-file systems like sysfs, procfs, debugfs will at most get partial
-support.
+a new lower oom_score_adj will protect the process, right?
 
-But apart for that, it really covers (or will soon) nearly everything.
-So I do wonder what concretely is "a lot of things" ?
+Tasks without CAP_SYS_RESOURCE, means that it is not a superuser, why
+user canot protect it by oom_score_adj?
 
-> In this case whitelisting the allowed
-> state by requiring special APIs for all I/O (or even just standard
-> APIs as long as they are supposed by the C/R lib you're linked against)
-> is the more pragmatic, and I think faithful aproach.  In addition to
-> the amount of state not supported despite looking transparant the
+like i want to protect my program such as gnome-terminal which is
+without CAP_SYS_RESOURCE (have resource limits), 
 
-"Transparent" means that applications don't know that they are
-being checkpointed, nor do they need to cooperate. So linux-cr
-is *completely* transparent to applications that are checkpointable.
+[figo@myhost ~]$ ps -ax | grep gnome-ter
+Warning: bad ps syntax, perhaps a bogus '-'? See
+http://procps.sf.net/faq.html
+ 2280 ?        Sl     0:01 gnome-terminal
+ 8839 pts/0    S+     0:00 grep gnome-ter
+[figo@myhost ~]$ cat /proc/2280/oom_adj 
+3
+[figo@myhost ~]$ echo -17 >  /proc/2280/oom_adj 
+bash: echo: write error: Permission denied
+[figo@myhost ~]$ 
 
-Perhaps you can elaborate on the "state not supported despite
-looking transparent" - beyond what I mentioned above ?
+so, i canot protect my program.
 
-> other big problem with the patchset is that it saves the kernel internal
-> state which changes all the time from one release to another.  
 
-It is our experience that the format is pretty immune to changes
-that occur to in-kernel (and not user/ABI visible) structures.
-It mainly changes when we add new features - and I expect that
-to happen less frequently once the patchset finds its way to the
-mainline.
+> otherwise it can trivially kill other tasks.  They can, however, increase 
+> their own oom_score_adj so the oom killer prefers to kill it first.
+> 
+> I think you may be confused: CAP_SYS_RESOURCE override resource limits.
 
-> The
-> handwaiving is that a userspace tool will solve it.  I'm pretty sure
-> that's not the case; it might solve a few cases but the general
-> version n to version m conversion is impossible to maintain.  Just look
-> at the problem qemu has migration between just a handfull of version
-> of the relatively well (compared to random kernel state) defined vmstate
-> format.
 
-The problem space is smaller, because we are aiming at a simpler
-goal. We need to always know how to convert from version N to
-version N+1. Then conversion from N to N+k is a series of these
-conversions.
-
-QEMU has a broader goal: IIUC, both QEMU and KVM versions may
-change, they are not tied to each other. So the problem is harder.
-
-In linux-cr, the format is tied to the version of objects that
-the kernel that outputs/inputs the data knows. That makes things
-much simpler.
-
-Oren.
