@@ -1,415 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421Ab0KDRgp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 13:36:45 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:37450 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751740Ab0KDRgW (ORCPT
+	id S1752177Ab0KDRiX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 13:38:23 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:27817 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005Ab0KDRiV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 13:36:22 -0400
-Subject: [PATCH 3/4] crypto: algif_hash - User-space interface for hash operations
-References: <20101104173456.GA1321@gondor.apana.org.au>
-To: Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
-        netdev@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-Id: <E1PE3jX-0000MX-UB@gondolin.me.apana.org.au>
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-Date: Thu, 04 Nov 2010 12:36:19 -0500
+	Thu, 4 Nov 2010 13:38:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=GkiaDpdQCIW2ACShRaTyL6cJuYaJ1wolKqv/6CcaXOenVT8d74QPbVSEapSOpXq5L6
+         kgPtOELhtYTnCrX0Jkpw==
+Message-ID: <4CD2EF87.2030906@google.com>
+Date: Thu, 04 Nov 2010 10:38:15 -0700
+From: Mike Waychison <mikew@google.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
+CC: Matt Mackall <mpm@selenic.com>, Greg KH <greg@kroah.com>,
+        simon.kagstrom@netinsight.net, davem@davemloft.net, adurbin@google.com,
+        akpm@linux-foundation.org, chavey@google.com,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH v1 00/12] netoops support
+References: <20101103012917.4641.57113.stgit@crlf.mtv.corp.google.com> <20101103023422.GB5782@kroah.com> <AANLkTi=Oe4oJ0imCh1eoJLS0QYqSBM4pLo=dEUSiJcQb@mail.gmail.com> <20101103181634.GF7441@kroah.com> <AANLkTimKWCWtuPeZhMZ75gTxB8LwAhJfy2FZnnRwthft@mail.gmail.com> <4CD1C612.5080902@google.com> <1288817685.26428.1129.camel@calx> <4CD209F1.90708@google.com> <20101104063511.GE5210@cr0.nay.redhat.com>
+In-Reply-To: <20101104063511.GE5210@cr0.nay.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-crypto: algif_hash - User-space interface for hash operations
+Américo Wang wrote:
+> On Wed, Nov 03, 2010 at 06:18:41PM -0700, Mike Waychison wrote:
+>> Matt Mackall wrote:
+>>> On Wed, 2010-11-03 at 13:29 -0700, Mike Waychison wrote:
+>>>> Mike Waychison wrote:
+>>>>> FWIW, another semantic difference between netconsole and netoops (that
+>>>>> I had missed in the last email) is filtering: we really do want to get
+>>>>> the whole log when a crash happens, debug messages and all.
+>>>>> Netconsole is subject to console filtering (which we _do_ want as
+>>>>> debug messages going out the uart slows the whole world down).
+>>>>>
+>>>>> netconsole and netoops _do_ have bits in common, for instance the
+>>>>> handling of NETDEV events and source+target configuration.  I'd rather
+>>>>> those bits become common between the two than figure out how to jam
+>>>>> the semantics we need into netconsole.
+>>>> Hi Matt,
+>>>>
+>>>> I've been reading through the netconsole driver in response to
+>>>> Greg's comments on this thread, and it is definitely more robust
+>>>> in terms of configuration and handling of network device events
+>>>> than the netoops driver I proposed.
+>>> I've been following the discussion to see if it went anywhere
+>>> interesting..
+>>>
+>>>> What are your thoughts on extending netconsole with the same sort
+>>>> of semantics that are in the netoops patchset?
+>>> My first thought is that it's a bit unfortunate that some of the the
+>>> netconsole configgy bits weren't implemented in a generic way that would
+>>> be applicable to other netpoll clients. Some people have never gotten it
+>>> into their heads that netconsole isn't the only client.
+>>>
+>>>> I'd still like to have blit-dmesg-to-the-network-on-oops
+>>>> semantics, which seems doable by having a per-target flag for
+>>>> streaming of console messages (enabled by default) and a flag to
+>>>> emit a structured full dmesg dump (disabled by default).
+>>> I'd actually like to see you go forward with netoops. It's clear to me
+>>> that it's a different beast and complexifying netconsole with a bunch of
+>>> weird new options doesn't really sit well. If that means abstracting
+>>> some of the sysfs crap from netconsole, great.
+>> I'd be happy to take a stab at this.  This solves most of the ABI
+>> reservations that I have with this v1 patchset.
+>>
+>> Looking at netconsole, it looks to lack some locking for data
+>> consistency, and it appears that we will deadlock if we ever get a
+>> NETDEV_UNREGISTER event (due to recursively grabbing the rtnl in
+>> netpoll_cleanup).  I have a couple patches I've been hacking on this
+>> afternoon that should clear those issues up.
+>>
+> 
+> 
+> You might want to look at net-next-2.6, it has some fixes
+> from Neil.
 
-This patch adds the af_alg plugin for hash, corresponding to
-the ahash kernel operation type.
+Excellent, yes, 3b410a31 fixes the recursive rtnl deadlock I was 
+referring to.
 
-Keys can optionally be set through the setsockopt interface.
+> 
+> 
+>> I'm thinking of pushing all the target handling options down into
+>> net/core/netpoll.c.  I'll probably expose this interface as "struct
+>> netpoll_targets" where ->lock and ->list could be completely exposed
+>> to clients.  netconsole would then get a lot smaller as would
+>> netoops.
+>>
+>>> That said, I don't think netoops is an ideal name, given how closely
+>>> bound oops _events_ are with their textual output. Presumably it covers
+>>> events other than oopsen like panics too.
+>> True.  We call this code 'netdump' or 'network_dumper' internally,
+>> but I figured it'd be better to follow current conventions with
+>> ramoops and mtdoops already in the tree.  I don't really care what
+>> it's called in the end :)
+>>
+> 
+> 
+> "netdump" was used by a utility that do crash dumping over net.
+> It is deprecated now, since we have kdump.
 
-Each sendmsg call will finalise the hash unless sent with a MSG_MORE
-flag.
+Yup.  If you go back far enough, I think this was a gut of that code 
+long long ago, hence the name.
 
-Partial hash states can be cloned using accept(2).
+> 
+>>> Regarding rolling oopses: lots of machines regularly survive
+>>> oopses, so I think you ought to consider rate-limiting them (to a
+>>> configurable rate
+>>> with a very low default) rather than suppressing all but the first.
+>>>
+>> The trouble with Oopses is just that:  We don't know whether we can
+>> safely survive them or not and it's a total gamble each time we do
+>> Oops.  We can't programmatically know how crapped out the machine is,
+>> so historically we've erred on not allowing bad things to continue
+>> happening once someone notices something wrong.
+>>
+>> It's easier for us to just shoot the machine in the head
+>> (panic_on_oops) and move on than corrupt data or dead-lock in weird
+>> ways at some later point in time.  This is definitely not the
+>> behaviour I would want nor expect from my desktop or phone, but for
+>> the cluster, it's just safer.
+> 
+> We also have pause_on_oops, or we can invent a oops_once.
 
-The interface is completely synchronous, all operations will
-complete prior to the system call returning.
-
-Both sendmsg(2) and splice(2) support reading the user-space
-data directly without copying (except that the Crypto API itself
-may copy the data if alignment is off).
-
-For now only the splice(2) interface supports performing digest
-instead of init/update/final.  In future the sendmsg(2) interface
-will also be modified to use digest/finup where possible so that
-hardware that cannot return a partial hash state can still benefit
-from this interface.
-
-Thakns to Miloslav Trmac for reviewing this and contributing
-fixes and improvements.
-
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
----
-
- crypto/Kconfig      |    8 +
- crypto/Makefile     |    1 
- crypto/algif_hash.c |  321 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 330 insertions(+)
-
-diff --git a/crypto/Kconfig b/crypto/Kconfig
-index 357e3ca..6db27d7 100644
---- a/crypto/Kconfig
-+++ b/crypto/Kconfig
-@@ -844,6 +844,14 @@ config CRYPTO_ANSI_CPRNG
- config CRYPTO_USER_API
- 	tristate
- 
-+config CRYPTO_USER_API_HASH
-+	tristate "User-space interface for hash algorithms"
-+	select CRYPTO_HASH
-+	select CRYPTO_USER_API
-+	help
-+	  This option enables the user-spaces interface for hash
-+	  algorithms.
-+
- source "drivers/crypto/Kconfig"
- 
- endif	# if CRYPTO
-diff --git a/crypto/Makefile b/crypto/Makefile
-index 0b13197..14ab405 100644
---- a/crypto/Makefile
-+++ b/crypto/Makefile
-@@ -86,6 +86,7 @@ obj-$(CONFIG_CRYPTO_ANSI_CPRNG) += ansi_cprng.o
- obj-$(CONFIG_CRYPTO_TEST) += tcrypt.o
- obj-$(CONFIG_CRYPTO_GHASH) += ghash-generic.o
- obj-$(CONFIG_CRYPTO_USER_API) += af_alg.o
-+obj-$(CONFIG_CRYPTO_USER_API_HASH) += algif_hash.o
- 
- #
- # generic algorithms and the async_tx api
-diff --git a/crypto/algif_hash.c b/crypto/algif_hash.c
-new file mode 100644
-index 0000000..014ea43
---- /dev/null
-+++ b/crypto/algif_hash.c
-@@ -0,0 +1,321 @@
-+/*
-+ * algif_hash: User-space interface for hash algorithms
-+ *
-+ * This file provides the user-space API for hash algorithms.
-+ *
-+ * Copyright (c) 2010 Herbert Xu <herbert@gondor.apana.org.au>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
-+ *
-+ */
-+
-+#include <crypto/hash.h>
-+#include <crypto/if_alg.h>
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/mm.h>
-+#include <linux/module.h>
-+#include <linux/net.h>
-+#include <net/sock.h>
-+
-+struct hash_ctx {
-+	struct af_alg_sgl sgl;
-+
-+	u8 *result;
-+
-+	struct af_alg_completion completion;
-+
-+	unsigned int len;
-+	int err;
-+	bool more;
-+
-+	struct ahash_request req;
-+};
-+
-+static int hash_sendmsg(struct kiocb *unused, struct socket *sock,
-+			struct msghdr *msg, size_t ignored)
-+{
-+	int limit = ALG_MAX_PAGES * PAGE_SIZE;
-+	struct sock *sk = sock->sk;
-+	struct alg_sock *ask = alg_sk(sk);
-+	struct hash_ctx *ctx = ask->private;
-+	unsigned long iovlen;
-+	struct iovec *iov;
-+	long copied = 0;
-+	int err;
-+
-+	if (limit > sk->sk_sndbuf)
-+		limit = sk->sk_sndbuf;
-+
-+	lock_sock(sk);
-+	if (!ctx->more) {
-+		err = crypto_ahash_init(&ctx->req);
-+		if (err)
-+			goto unlock;
-+	}
-+
-+	ctx->more = 0;
-+
-+	for (iov = msg->msg_iov, iovlen = msg->msg_iovlen; iovlen > 0;
-+	     iovlen--, iov++) {
-+		unsigned long seglen = iov->iov_len;
-+		char __user *from = iov->iov_base;
-+
-+		while (seglen) {
-+			int len = min_t(unsigned long, seglen, limit);
-+			int newlen;
-+
-+			newlen = af_alg_make_sg(&ctx->sgl, from, len, 0);
-+			if (newlen < 0)
-+				goto unlock;
-+
-+			ahash_request_set_crypt(&ctx->req, ctx->sgl.sg, NULL,
-+						newlen);
-+
-+			err = af_alg_wait_for_completion(
-+				crypto_ahash_update(&ctx->req),
-+				&ctx->completion);
-+
-+			af_alg_free_sg(&ctx->sgl);
-+
-+			if (err)
-+				goto unlock;
-+
-+			seglen -= newlen;
-+			from += newlen;
-+			copied += newlen;
-+		}
-+	}
-+
-+	err = 0;
-+
-+	ctx->more = msg->msg_flags & MSG_MORE;
-+	if (!ctx->more) {
-+		ahash_request_set_crypt(&ctx->req, NULL, ctx->result, 0);
-+		err = af_alg_wait_for_completion(crypto_ahash_final(&ctx->req),
-+						 &ctx->completion);
-+	}
-+
-+unlock:
-+	release_sock(sk);
-+
-+	return err ?: copied;
-+}
-+
-+static ssize_t hash_sendpage(struct socket *sock, struct page *page,
-+			     int offset, size_t size, int flags)
-+{
-+	struct sock *sk = sock->sk;
-+	struct alg_sock *ask = alg_sk(sk);
-+	struct hash_ctx *ctx = ask->private;
-+	int err;
-+
-+	lock_sock(sk);
-+	sg_init_table(ctx->sgl.sg, 1);
-+	sg_set_page(ctx->sgl.sg, page, size, offset);
-+
-+	ahash_request_set_crypt(&ctx->req, ctx->sgl.sg, ctx->result, size);
-+
-+	if (!(flags & MSG_MORE)) {
-+		if (ctx->more)
-+			err = crypto_ahash_finup(&ctx->req);
-+		else
-+			err = crypto_ahash_digest(&ctx->req);
-+	} else {
-+		if (!ctx->more) {
-+			err = crypto_ahash_init(&ctx->req);
-+			if (err)
-+				goto unlock;
-+		}
-+
-+		err = crypto_ahash_update(&ctx->req);
-+	}
-+
-+	err = af_alg_wait_for_completion(err, &ctx->completion);
-+	if (err)
-+		goto unlock;
-+
-+	ctx->more = flags & MSG_MORE;
-+
-+unlock:
-+	release_sock(sk);
-+
-+	return err ?: size;
-+}
-+
-+static int hash_recvmsg(struct kiocb *unused, struct socket *sock,
-+			struct msghdr *msg, size_t len, int flags)
-+{
-+	struct sock *sk = sock->sk;
-+	struct alg_sock *ask = alg_sk(sk);
-+	struct hash_ctx *ctx = ask->private;
-+	unsigned ds = crypto_ahash_digestsize(crypto_ahash_reqtfm(&ctx->req));
-+	int err;
-+
-+	if (len > ds)
-+		len = ds;
-+	else if (len < ds)
-+		msg->msg_flags |= MSG_TRUNC;
-+
-+	lock_sock(sk);
-+	if (ctx->more) {
-+		ctx->more = 0;
-+		ahash_request_set_crypt(&ctx->req, NULL, ctx->result, 0);
-+		err = af_alg_wait_for_completion(crypto_ahash_final(&ctx->req),
-+						 &ctx->completion);
-+		if (err)
-+			goto unlock;
-+	}
-+
-+	err = memcpy_toiovec(msg->msg_iov, ctx->result, len);
-+
-+unlock:
-+	release_sock(sk);
-+
-+	return err ?: len;
-+}
-+
-+static int hash_accept(struct socket *sock, struct socket *newsock, int flags)
-+{
-+	struct sock *sk = sock->sk;
-+	struct alg_sock *ask = alg_sk(sk);
-+	struct hash_ctx *ctx = ask->private;
-+	struct ahash_request *req = &ctx->req;
-+	char state[crypto_ahash_statesize(crypto_ahash_reqtfm(req))];
-+	struct sock *sk2;
-+	struct alg_sock *ask2;
-+	struct hash_ctx *ctx2;
-+	int err;
-+
-+	err = crypto_ahash_export(req, state);
-+	if (err)
-+		return err;
-+
-+	err = af_alg_accept(ask->parent, newsock);
-+	if (err)
-+		return err;
-+
-+	sk2 = newsock->sk;
-+	ask2 = alg_sk(sk2);
-+	ctx2 = ask2->private;
-+	ctx2->more = 1;
-+
-+	err = crypto_ahash_import(&ctx2->req, state);
-+	if (err) {
-+		sock_orphan(sk2);
-+		sock_put(sk2);
-+	}
-+
-+	return err;
-+}
-+
-+static struct proto_ops algif_hash_ops = {
-+	.family		=	PF_ALG,
-+
-+	.connect	=	sock_no_connect,
-+	.socketpair	=	sock_no_socketpair,
-+	.getname	=	sock_no_getname,
-+	.ioctl		=	sock_no_ioctl,
-+	.listen		=	sock_no_listen,
-+	.shutdown	=	sock_no_shutdown,
-+	.getsockopt	=	sock_no_getsockopt,
-+	.mmap		=	sock_no_mmap,
-+	.bind		=	sock_no_bind,
-+	.setsockopt	=	sock_no_setsockopt,
-+	.poll		=	sock_no_poll,
-+
-+	.release	=	af_alg_release,
-+	.sendmsg	=	hash_sendmsg,
-+	.sendpage	=	hash_sendpage,
-+	.recvmsg	=	hash_recvmsg,
-+	.accept		=	hash_accept,
-+};
-+
-+static void *hash_bind(const char *name, u32 type, u32 mask)
-+{
-+	return crypto_alloc_ahash(name, type, mask);
-+}
-+
-+static void hash_release(void *private)
-+{
-+	crypto_free_ahash(private);
-+}
-+
-+static int hash_setkey(void *private, const u8 *key, unsigned int keylen)
-+{
-+	return crypto_ahash_setkey(private, key, keylen);
-+}
-+
-+static void hash_sock_destruct(struct sock *sk)
-+{
-+	struct alg_sock *ask = alg_sk(sk);
-+	struct hash_ctx *ctx = ask->private;
-+
-+	sock_kfree_s(sk, ctx->result,
-+		     crypto_ahash_digestsize(crypto_ahash_reqtfm(&ctx->req)));
-+	sock_kfree_s(sk, ctx, ctx->len);
-+	af_alg_release_parent(sk);
-+}
-+
-+static int hash_accept_parent(void *private, struct sock *sk)
-+{
-+	struct hash_ctx *ctx;
-+	struct alg_sock *ask = alg_sk(sk);
-+	unsigned len = sizeof(*ctx) + crypto_ahash_reqsize(private);
-+	unsigned ds = crypto_ahash_digestsize(private);
-+
-+	ctx = sock_kmalloc(sk, len, GFP_KERNEL);
-+	if (!ctx)
-+		return -ENOMEM;
-+
-+	ctx->result = sock_kmalloc(sk, ds, GFP_KERNEL);
-+	if (!ctx->result) {
-+		sock_kfree_s(sk, ctx, len);
-+		return -ENOMEM;
-+	}
-+
-+	memset(ctx->result, 0, ds);
-+
-+	ctx->len = len;
-+	ctx->more = 0;
-+	af_alg_init_completion(&ctx->completion);
-+
-+	ask->private = ctx;
-+
-+	ahash_request_set_tfm(&ctx->req, private);
-+	ahash_request_set_callback(&ctx->req, CRYPTO_TFM_REQ_MAY_BACKLOG,
-+				   af_alg_complete, &ctx->completion);
-+
-+	sk->sk_destruct = hash_sock_destruct;
-+
-+	return 0;
-+}
-+
-+static const struct af_alg_type algif_type_hash = {
-+	.bind		=	hash_bind,
-+	.release	=	hash_release,
-+	.setkey		=	hash_setkey,
-+	.accept		=	hash_accept_parent,
-+	.ops		=	&algif_hash_ops,
-+	.name		=	"hash",
-+	.owner		=	THIS_MODULE
-+};
-+
-+static int __init algif_hash_init(void)
-+{
-+	return af_alg_register_type(&algif_type_hash);
-+}
-+
-+static void __exit algif_hash_exit(void)
-+{
-+	int err = af_alg_unregister_type(&algif_type_hash);
-+	BUG_ON(err);
-+}
-+
-+module_init(algif_hash_init);
-+module_exit(algif_hash_exit);
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS_NETPROTO(AF_ALG);
