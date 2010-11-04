@@ -1,135 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177Ab0KDRiX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 13:38:23 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:27817 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752005Ab0KDRiV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 13:38:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=GkiaDpdQCIW2ACShRaTyL6cJuYaJ1wolKqv/6CcaXOenVT8d74QPbVSEapSOpXq5L6
-         kgPtOELhtYTnCrX0Jkpw==
-Message-ID: <4CD2EF87.2030906@google.com>
-Date: Thu, 04 Nov 2010 10:38:15 -0700
-From: Mike Waychison <mikew@google.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+	id S1752132Ab0KDRlf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 13:41:35 -0400
+Received: from nm15-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.208]:41746 "HELO
+	nm15-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751937Ab0KDRlc convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 13:41:32 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 333231.78472.bm@omp1002.mail.sp2.yahoo.com
+Message-ID: <10017.15266.qm@web110516.mail.gq1.yahoo.com>
+X-YMail-OSG: EAgJjAAVM1mdDML3l8vQr44bxhK9wkSCb.42hK7usOk3C_F
+ KM5db_vGWuM2JK1GKxRE.pPSnbXFWSbrf5DkpCSaqXAXnaVZVOAzUNQ8Pdvm
+ Zrc1ykOWSnb0NVSQBl8sjmjZ7GJrqTuZmMv2eVam3vOqZyRqmtS5n3He6Fhb
+ k6Qwxqdff9cythlOsDK1mxtZNyA4unsLiRKIyRAQt4spZuBfE8S7_YjHYBpX
+ .7g.US.j4hptbavgrvFOqmXm6oDzjpZudkhREAcBun_PdeigvyxkAwcbRgXT
+ E6faj8L1Jyh5fudXiXnhrlGQwdpjPid4h1v5o3Scq1UVQOHM7gL4EBFJ.yWn
+ I_ky4j2b2QEJES96p3ubUdOhk3WiGv97EWvt4O6iL
+X-RocketYMMF: multiplicador
+X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.284920
+Date: Thu, 4 Nov 2010 10:41:30 -0700 (PDT)
+From: =?iso-8859-1?Q?Andr=E9_Luis_Pereira_dos_Santos_-_BSRSoft?= 
+	<andre@bsrsoft.com.br>
+Reply-To: andre@bsrsoft.com.br
+Subject: [PATCH 1/1] security: Reordering the boot message security framework 2.6.37-rc1
+To: James Morris <jmorris@namei.org>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
-CC: Matt Mackall <mpm@selenic.com>, Greg KH <greg@kroah.com>,
-        simon.kagstrom@netinsight.net, davem@davemloft.net, adurbin@google.com,
-        akpm@linux-foundation.org, chavey@google.com,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH v1 00/12] netoops support
-References: <20101103012917.4641.57113.stgit@crlf.mtv.corp.google.com> <20101103023422.GB5782@kroah.com> <AANLkTi=Oe4oJ0imCh1eoJLS0QYqSBM4pLo=dEUSiJcQb@mail.gmail.com> <20101103181634.GF7441@kroah.com> <AANLkTimKWCWtuPeZhMZ75gTxB8LwAhJfy2FZnnRwthft@mail.gmail.com> <4CD1C612.5080902@google.com> <1288817685.26428.1129.camel@calx> <4CD209F1.90708@google.com> <20101104063511.GE5210@cr0.nay.redhat.com>
-In-Reply-To: <20101104063511.GE5210@cr0.nay.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-System-Of-Record: true
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Américo Wang wrote:
-> On Wed, Nov 03, 2010 at 06:18:41PM -0700, Mike Waychison wrote:
->> Matt Mackall wrote:
->>> On Wed, 2010-11-03 at 13:29 -0700, Mike Waychison wrote:
->>>> Mike Waychison wrote:
->>>>> FWIW, another semantic difference between netconsole and netoops (that
->>>>> I had missed in the last email) is filtering: we really do want to get
->>>>> the whole log when a crash happens, debug messages and all.
->>>>> Netconsole is subject to console filtering (which we _do_ want as
->>>>> debug messages going out the uart slows the whole world down).
->>>>>
->>>>> netconsole and netoops _do_ have bits in common, for instance the
->>>>> handling of NETDEV events and source+target configuration.  I'd rather
->>>>> those bits become common between the two than figure out how to jam
->>>>> the semantics we need into netconsole.
->>>> Hi Matt,
->>>>
->>>> I've been reading through the netconsole driver in response to
->>>> Greg's comments on this thread, and it is definitely more robust
->>>> in terms of configuration and handling of network device events
->>>> than the netoops driver I proposed.
->>> I've been following the discussion to see if it went anywhere
->>> interesting..
->>>
->>>> What are your thoughts on extending netconsole with the same sort
->>>> of semantics that are in the netoops patchset?
->>> My first thought is that it's a bit unfortunate that some of the the
->>> netconsole configgy bits weren't implemented in a generic way that would
->>> be applicable to other netpoll clients. Some people have never gotten it
->>> into their heads that netconsole isn't the only client.
->>>
->>>> I'd still like to have blit-dmesg-to-the-network-on-oops
->>>> semantics, which seems doable by having a per-target flag for
->>>> streaming of console messages (enabled by default) and a flag to
->>>> emit a structured full dmesg dump (disabled by default).
->>> I'd actually like to see you go forward with netoops. It's clear to me
->>> that it's a different beast and complexifying netconsole with a bunch of
->>> weird new options doesn't really sit well. If that means abstracting
->>> some of the sysfs crap from netconsole, great.
->> I'd be happy to take a stab at this.  This solves most of the ABI
->> reservations that I have with this v1 patchset.
->>
->> Looking at netconsole, it looks to lack some locking for data
->> consistency, and it appears that we will deadlock if we ever get a
->> NETDEV_UNREGISTER event (due to recursively grabbing the rtnl in
->> netpoll_cleanup).  I have a couple patches I've been hacking on this
->> afternoon that should clear those issues up.
->>
-> 
-> 
-> You might want to look at net-next-2.6, it has some fixes
-> from Neil.
+From: Andre Luis Pereira dos Santos <andre@bsrsoft.com.br>
 
-Excellent, yes, 3b410a31 fixes the recursive rtnl deadlock I was 
-referring to.
+Hi.
+I did the reorganization of the boot message security framework so that it is not issued before the start in fact occur:
 
-> 
-> 
->> I'm thinking of pushing all the target handling options down into
->> net/core/netpoll.c.  I'll probably expose this interface as "struct
->> netpoll_targets" where ->lock and ->list could be completely exposed
->> to clients.  netconsole would then get a lot smaller as would
->> netoops.
->>
->>> That said, I don't think netoops is an ideal name, given how closely
->>> bound oops _events_ are with their textual output. Presumably it covers
->>> events other than oopsen like panics too.
->> True.  We call this code 'netdump' or 'network_dumper' internally,
->> but I figured it'd be better to follow current conventions with
->> ramoops and mtdoops already in the tree.  I don't really care what
->> it's called in the end :)
->>
-> 
-> 
-> "netdump" was used by a utility that do crash dumping over net.
-> It is deprecated now, since we have kdump.
+Signed-off-by: Andre Luis Pereira dos Santos <andre@bsrsoft.com.br>
+---
 
-Yup.  If you go back far enough, I think this was a gut of that code 
-long long ago, hence the name.
+Signed-off-by: Andre Luis Pereira dos Santos <andre@bsrsoft.com.br>
+--- linux-2.6.37-rc1/security/security.c        2010-11-01 09:54:12.000000000 -0200
++++ linux-2.6.37-rc1-patched/security/security.c        2010-11-04 15:04:04.000000000 -0200
+@@ -56,12 +56,12 @@ static void __init do_security_initcalls
+  */
+ int __init security_init(void)
+ {
+-       printk(KERN_INFO "Security Framework initialized\n");
+-
+        security_fixup_ops(&default_security_ops);
+        security_ops = &default_security_ops;
+        do_security_initcalls();
 
-> 
->>> Regarding rolling oopses: lots of machines regularly survive
->>> oopses, so I think you ought to consider rate-limiting them (to a
->>> configurable rate
->>> with a very low default) rather than suppressing all but the first.
->>>
->> The trouble with Oopses is just that:  We don't know whether we can
->> safely survive them or not and it's a total gamble each time we do
->> Oops.  We can't programmatically know how crapped out the machine is,
->> so historically we've erred on not allowing bad things to continue
->> happening once someone notices something wrong.
->>
->> It's easier for us to just shoot the machine in the head
->> (panic_on_oops) and move on than corrupt data or dead-lock in weird
->> ways at some later point in time.  This is definitely not the
->> behaviour I would want nor expect from my desktop or phone, but for
->> the cluster, it's just safer.
-> 
-> We also have pause_on_oops, or we can invent a oops_once.
++       printk(KERN_INFO "Security Framework initialized\n");
++
+        return 0;
+ }
 
+
+
+      
