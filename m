@@ -1,192 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755150Ab0KDF7o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 01:59:44 -0400
-Received: from que01.suddenlink.net ([208.180.40.86]:41517 "EHLO
-	que01.suddenlink.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754847Ab0KDF7m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 01:59:42 -0400
-X-Greylist: delayed 331 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Nov 2010 01:59:42 EDT
-Message-ID: <4CD24A64.3080503@suddenlinkmail.com>
-Date: Thu, 04 Nov 2010 00:53:40 -0500
-From: "David C. Rankin" <drankinatty@suddenlinkmail.com>
-Organization: Rankin Law Firm, PLLC
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Thunderbird/3.1.6
+	id S1755089Ab0KDGBo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 02:01:44 -0400
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:53647 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754849Ab0KDGBm convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 02:01:42 -0400
+From: Naveen Kumar GADDIPATI <naveen.gaddipati@stericsson.com>
+To: "Arce, Abraham" <x0066660@ti.com>
+Cc: Linus WALLEIJ <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        Greg KH <greg@kroah.com>, Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Date: Thu, 4 Nov 2010 06:36:07 +0100
+Subject: RE: [PATCHv1] staging: Synaptics RMI4 touchpad driver support
+Thread-Topic: [PATCHv1] staging: Synaptics RMI4 touchpad driver support
+Thread-Index: Act7jIPRAEQHCY5NSnuvbzsiadSGKgADqlZgABGgFXA=
+Message-ID: <81C3A93C17462B4BBD7E272753C105791945AAD82C@EXDCVYMBSTM005.EQ1STM.local>
+References: <1288699725-14405-1-git-send-email-naveen.gaddipati@stericsson.com>
+ <20101102140337.GC9387@kroah.com> <4CD01CD8.3090206@stericsson.com>
+ <20101102154029.GH11778@core.coreip.homeip.net>
+ <20101103181058.GE7441@kroah.com>
+ <20101103190752.GA4552@core.coreip.homeip.net>
+ <20101103191958.GA9912@kroah.com>
+ <27F9C60D11D683428E133F85D2BB4A530468A82B1A@dlee03.ent.ti.com>
+In-Reply-To: <27F9C60D11D683428E133F85D2BB4A530468A82B1A@dlee03.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: kernel <linux-kernel@vger.kernel.org>
-Subject: Upgrade to recent 2.6.35 & 2.6.36 kernel causing boot failure with
- nv dmraid
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Cloudmark-Analysis: v=1.1 cv=1ySWNNja79c/jgOHmXRKbmV/BjW144TMdFddqTN+fW0= c=1 sm=0 a=OL7lo7QTkQAA:10 a=8nJEP1OIZ-IA:10 a=Jl21X7VrAAAA:8 a=Br9LfDWDAAAA:8 a=VwQbUJbxAAAA:8 a=3gq0ZD_ce0tRoPEAe1oA:9 a=bT05QF8A42Tdlf4U2pAA:7 a=eQVkgemhMsa-zMqrspph7vwvM18A:4 a=wPNLvfGTeEIA:10 a=HEdnscJc8mAA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(slightly long post -- trying to provide all relevant info)
+Hi Arce,
 
-Guys,
+I'm also the GPIO pin for interrupt with request threaded irq .
+I'm passing the irq_type from the platform data. 
+Which irq_type are you using for your platform?
 
-    I am experiencing boot failures with the newer 2.6.35 and 2.6.36 kernels
-with dmraid on an MSI K9N2 SLI Platinum board. (MS-7374) What follows is a
-collection of information gained from the Arch Linux list and in discussion with
-the redhat guys on the dm-devel (dmraid) list.
-
-    I'll start by providing links to the hardware information on the box and
-then summarize the problem. Bottom line is kernel 2.6.35-8 (and newer on Arch
-Linux) result in one of two grub errors and the boot hangs. This box has run in
-this dmraid config with everything from SuSE 10X to Arch without issue prior to
-this. I did see a similar issue with a couple of earlier 2.6.35-x kernels, but
-the next two (2.6.36-6 & 7) booted fine. Downgrading to 2.6.35-7, the box boots
-fine. The box also currently boots fine with the Arch LTS kernel (2.6.32) and
-the box boots the SuSE 11.0 kernels fine (2.6.20). So whatever the issue is, it
-has showed up in the past few kernels and is a Russian-roulette type problem.
-There are no problems with the 2 dmraid arrays on the box.
-
-Hardware:
-
-  lspci -vv info
-
-    http://www.3111skyline.com/dl/bugs/dmraid/lspci-vv.txt
-
-  dmidecode info
-
-    http://www.3111skyline.com/dl/bugs/Archlinux/aa-dmidecode.txt
-
-  dmraid metadata and fdisk info
-
-    http://www.3111skyline.com/dl/bugs/dmraid/dmraid.nvidia/
-
-    http://www.3111skyline.com/dl/bugs/dmraid/fdisk-l-info-20100817.txt
+Thanks & Regards,
+Naveen
 
 
-The problem and boot errors:
-
-    I am no kernel guru, but here is the best explanation of the problem I can
-give you. I updated the MSI x86_64 box to 2.6.35.8-1 and the boot hangs at the
-very start with the following error:
-
-Booting 'Arch Linux on Archangel'
-
-root (hd1,5)
-  Filesystem type is ext2fs, Partition type 0x83
-Kernel /vmlinuz26 root=/dev/mapper/nvidia_baacca_jap5 ro vga=794
-
-Error 24: Attempt to access block outside partition
-
-Press any key to continue...
-
-    This is the same/similar boot problem seen with one or two of the recent
-kernels. It was report to the Arch bug list at:
-	
-	https://bugs.archlinux.org/task/20918?
-	(closed because the next kernel update worked)
-
-	All of the information in bug 20918 is current for this box.
-
-    From all the discussion it has something to do with the kernel and/or dmraid
-because older kernels boot just fine with the same menu.lst and same hardware,
-but upgrading to 2.6.35.8-1 kills the box. I know it looks like grub, but all
-kernels except 2.6.35.8-1 (and newer) work with the same config??
-
-    Here is another twist. After upgrading to device-mapper-2.02.75-1 and
-reinstalling kernel26-2.6.35.8-1, the error completely changed to:
-
-Error 5: Partition table invalid or corrupt
-
-    The partition and partition table are fine on the arrays.
-
-Thoughts from the Arch Devs:
-
-  post 1:
-
-    These error are semi-random, they probably depend on where the kernel and
-initramfs files are physically located in the file system.
-
-    Grub (and all other bootloaders for that matter) use BIOS calls to access
-files on the hard drive - they rely on the BIOS (and in your case, the jmicron
-dmraid BIOS) for file access. This access seems to fail for certain areas on
-your file system.
-
-  post 2:
-
-    Aah, it just hit me: the problem may in fact be fairly random in that it may
-depend on where the initramfs is stored.  So, if the BIOS is broken, you may be
-lucky to be able to boot under one kernel, and the next upgrade places things in
-a place on disk where the BIOS bug kicks in, and you're screwed.  So it has
-nothing to do with the kernel version, grub or dmraid in this case.  Do I
-understand this correctly?
-
-  post 3:
-
-    I guess there has been something changed in the kernel26 2.6.35.8 and above
-which doesn't work with your BIOS or your RAID. Either this is a bug in kernel26
-2.6.35.8 and newer or it is not a bug but a new feature or a change which
-doesn't work with your probably outdated BIOS.
-
-    I'd suggest asking kernel upstream by either filing a bug report at
-kernel.org or asking on their mailing list.
-
-    It definitely must have something to do with the kernel. Otherwise it
-wouldn't work again after a kernel downgrade.
-
-Thoughts from the redhat dm-devel folks:
-
-    ...because you're able to access your config fine with some arch LTS
-kernels, it doesn't make sense to analyze your metadata upfront and the
-following reasons may cause the failures:
-
-    - initramfs issue not activating ATARAID mappings properly via dmraid
-
-    - drivers missing to access the mappings
-
-    - host protected area changes going together with the kernel changes
-    (eg. the "Error 24: Attempt to access block outside partition");
-    try the libata.ignore_hpa kernel paramaters described
-    in the kernel source Documentation/kernel-parameters.txt
-    to test for this one
-
-    FYI: in general dmraid doesn't rely on a particular controller, just
-    metadata signatures it discovers. You could attach the disks to some
-    other SATA controller and still access your RAID sets.
-
-Further tests I've done:
-
-    Per the suggestions of the dm-devel guys, I have tested with both
-libata.ignore_hpa=0 (default) and libata.ignore_hpa=1 (ignore limits, using full
-disk), but there is no change. I still get grub Error 24: (this is with the
-2.6.36-3 kernel)
-
-    I did another test starting with 2.6.35-7 (working), upgrade to 2.6.35-8
-(expect failure -- it did), then upgrade directly to 2.6.36-3 and (expect
-success if it was an initramfs location issue -- it failed too). Just to be
-sure, I re-made the initramfs a couple of times and tried booting with them -
-they all failed as well.
-
-    Then downgraded to 2.6.35-7 -> it works like a champ -- no matter what order
-it gets installed in. I'll follow up with the kernel folks.
-
-The conundrum:
-
-    So basically, I don't know what the heck is going on with this other than
-something got broke with the way the kernel inits the dmraid arrays resulting in
-grub thinking it is reading beyond some partition boundary or a corrupt
-partition table. Neither are correct, because simply booting an older kernel
-works fine.
-
-    So, I'm asking the smart guys here, what could have changed in the kernel
-that might cause this behavior? If you look at the lspci data (link above), the
-controller used for both arrays is the nVidia MCP78S [GeForce 8200] SATA
-Controller (RAID mode) (rev a2). Maybe a module alias change or ahci issue?
-
-    I don't know exactly what you might need to look at or what additional data
-you want, but just let me know and I'm happy to get it for you.
-
-    So what say the gurus?
-
-
--- 
-David C. Rankin, J.D.,P.E.
+> -----Original Message-----
+> From: Arce, Abraham [mailto:x0066660@ti.com]
+> Sent: Thursday, November 04, 2010 3:07 AM
+> To: Greg KH; Dmitry Torokhov
+> Cc: Linus WALLEIJ; Naveen Kumar GADDIPATI; linux-
+> kernel@vger.kernel.org; STEricsson_nomadik_linux; linux-
+> input@vger.kernel.org
+> Subject: RE: [PATCHv1] staging: Synaptics RMI4 touchpad driver support
+> 
+> Hi Naveen,
+> 
+> > From: linux-input-owner@vger.kernel.org [mailto:linux-input-
+> > owner@vger.kernel.org] On Behalf Of Greg KH
+> > Sent: Wednesday, November 03, 2010 1:20 PM
+> > To: Dmitry Torokhov
+> > Cc: Linus Walleij; Naveen Kumar GADDIPATI; linux-
+> kernel@vger.kernel.org;
+> > STEricsson_nomadik_linux; linux-input@vger.kernel.org
+> > Subject: Re: [PATCHv1] staging: Synaptics RMI4 touchpad driver
+> support
+> >
+> > On Wed, Nov 03, 2010 at 12:07:52PM -0700, Dmitry Torokhov wrote:
+> > > On Wed, Nov 03, 2010 at 11:10:58AM -0700, Greg KH wrote:
+> > > > On Tue, Nov 02, 2010 at 08:40:30AM -0700, Dmitry Torokhov wrote:
+> > > > > On Tue, Nov 02, 2010 at 03:14:48PM +0100, Linus Walleij wrote:
+> > > > > > Greg KH wrote:
+> > > > > >
+> > > > > > >> +Wait for the official upstream synaptics rmi4 clearpad
+> drivers as
+> > promised over the past few months
+> > > > > > >> +Merge any device support needed from this driver into it
+> > > > > > >> +Delete this driver
+> > > > > > >
+> > > > > > > Huh?
+> > > > > > >
+> > > > > > > Why not just add this driver to the kernel tree instead?
+> When the
+> > > > > > > "promised" driver then eventually shows up (who is
+> promising it?)
+> > then
+> > > > > > > delete the thing.
+> > > > >
+> > > > > The same reason as there were several wireless drivers in
+> staging?
+> > > >
+> > > > Ok, that's a good enough reason for me :)
+> > > >
+> > > > > > Well, Alan (on behalf of Ramesh Agarwal) sent out a very
+> similar
+> > > > > > patch (Titled "Synaptics TM1217 Touchscreen Controller
+> driver")
+> > > > > > the other day, and OTOMH that was after discussions with
+> Synaptics
+> > > > > > where they said they were working on a "real" driver (a
+> rather
+> > > > > > complex RMI4 bus driver) and we believe they will fix that
+> sooner
+> > > > > > or later.
+> > > > > >
+> > > > > > So, until sooner or later happens we thought we'd keep it in
+> staging.
+> > > > > >
+> > > > > > If you prefer both Alan and we can probably submit our
+> patches for
+> > > > > > inclusion in the proper place.
+> > > > > >
+> > > > > > A side effect may be that the Synaptics RMI4 people may have
+> trouble
+> > > > > > to merge their driver into input/ since they may be requested
+> to
+> > > > > > refactor the existing drivers to use it rather than merging
+> new stuff,
+> > > > > > putting some burden on their shoulders.
+> > > > > >
+> > > > >
+> > > > > No, they have not been requested to change any existing [in
+> tree]
+> > > > > drivers. They however been asked to convert to the driver core
+> > > > > primitives instead of rolling their own infprastructure to
+> implement
+> > > > > devices and drivers binding.
+> > > >
+> > > > If you don't object to this driver going in, and there is a path
+> forward
+> > > > in the future for it to be able to be removed, then I will be
+> glad to
+> > > > add it.
+> > > >
+> > > > Can I add your Acked-by: to the patch for this?
+> > > >
+> > >
+> > > Umm... I haven't looked in detail, but I think it is sane enough
+> for
+> > > staging... Much better than Alan's version that seemed to create a
+> > > separate input device for every finger. Needs to depend on INPUT
+> and
+> > > probably regulators framework...  Probe function may call
+> > > input_free_device() after calling input_register_device() which is
+> not
+> > > good.
+> >
+> > Great, thanks for this.
+> >
+> > > Basically staging is yours, you can add whatever you want to it ;)
+> >
+> > Heh, well, I try to at least cooperate with the different subsystem
+> > maintainers.  I don't need even more people pissed-off at me than I
+> > normally get :)
+> >
+> > I'll queue this up for .38.
+> >
+> 
+> I have done some initial testing with this patch, it includes some
+> modifications to the board file, I have a gpio acting as irq plus
+> driver code itself
+> 
+> I won't be able to get events (board will hang) unless adding the
+> following code, is this due to the usage of a gpio as interrupt? If you
+> could please clarify...
+> 
+> @@ -481,6 +483,9 @@ static int synaptics_rmi4_sensor_report(struct
+> synaptics_rmi4_data *pdata)
+> 
+> rfi);
+>                 }
+>         }
+> +
+> +       enable_irq(gpio_to_irq(pdata->irq_number));
+> +
+>         /* return the number of touch points */
+>         return touch;
+>  }
+> @@ -498,6 +503,8 @@ static irqreturn_t synaptics_rmi4_irq(int irq, void
+> *data)
+>         struct synaptics_rmi4_data *pdata = data;
+>         int touch_count;
+>         do {
+> +               disable_irq_nosync(gpio_to_irq(pdata->irq_number));
+> +
+>                 touch_count = synaptics_rmi4_sensor_report(pdata);
+>                 if (touch_count)
+>                         wait_event_timeout(pdata->wait, pdata-
+> >touch_stopped,
+> 
+> Best Regards
+> Abraham
 
