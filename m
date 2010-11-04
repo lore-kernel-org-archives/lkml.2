@@ -1,114 +1,755 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198Ab0KDU6z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 16:58:55 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:43371 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753188Ab0KDU6u (ORCPT
+	id S1753173Ab0KDVBH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 17:01:07 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:59476 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751429Ab0KDVBD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 16:58:50 -0400
+	Thu, 4 Nov 2010 17:01:03 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:references:date:in-reply-to:message-id
-         :user-agent:mime-version:content-type;
-        b=brt5fKu/Hv2hmyhCPOJwF5ljo9hpitXAU7qxjudV+u8aKVaxm3xW+ZOzdcl9keWnJU
-         PLIAMWqdpek1D1bnP5fkGOMA/cHOqTFW40hq4f6GeXy7pDwaygntcHApxZN38Viy0cm3
-         PK/4Mmvlhd34aVM93UFvItTzhfq80P+mt6/kQ=
-From: Francis Moreau <francis.moro@gmail.com>
-To: Reid Kleckner <reid.kleckner@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        linux-perf-users@vger.kernel.org
-Subject: Re: perf tools miscellaneous questions
-References: <fa.eqFHAk86WhpTuYclHhngn7QZr8Y@ifi.uio.no>
-	<fa.X++YRAJg+rmPtm3nmroZZoNU7u8@ifi.uio.no>
-	<fa.Elk8wOfBHRdKtkHIjP9hOtzVCgQ@ifi.uio.no>
-	<fa.U3fdWUGXguguIIyQ4v66/uKOhus@ifi.uio.no>
-	<fa.YTQQoGhoS6d3BaZXcZMN+l9TojQ@ifi.uio.no>
-Date: Thu, 04 Nov 2010 21:58:32 +0100
-In-Reply-To: <fa.YTQQoGhoS6d3BaZXcZMN+l9TojQ@ifi.uio.no> (Francis Moreau's
-	message of "Thu, 04 Nov 2010 08:46:09 UTC")
-Message-ID: <m24obwst53.fsf@gmail.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=hIt3y0pq4SNTTM6uUbrzBNpPj6ouz4Vlyn3zD/C1LOAcc0aNFbKVorl2jo4mQrnL+B
+         /G8hg23yQg4yZ1f0DRxA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <AANLkTi=zYAfb_izD15ROxH=C6+zPzX+XEGw7r5UUoAar@mail.gmail.com>
+References: <20101016044349.830426011@google.com> <20101016045118.529238208@google.com>
+ <AANLkTi=zYAfb_izD15ROxH=C6+zPzX+XEGw7r5UUoAar@mail.gmail.com>
+From: Paul Turner <pjt@google.com>
+Date: Thu, 4 Nov 2010 17:00:30 -0400
+Message-ID: <AANLkTin4mMQcs5=MBpTXj29KFN90VZc7snV5JzGScAn+@mail.gmail.com>
+Subject: Re: [RFC tg_shares_up improvements - v1 01/12] sched: rewrite tg_shares_up
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Chris Friesen <cfriesen@nortel.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Pierre Bourdon <pbourdon@excellency.fr>, Paul Turner <pjt@google.com>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Francis Moreau <francis.moro@gmail.com> writes:
+[resend due to html formatting creeping into first email]
 
-> Francis Moreau <francis.moro@gmail.com> writes:
+On Thu, Nov 4, 2010 at 4:58 PM, Paul Turner <pjt@google.com> wrote:
 >
+>
+> On Sat, Oct 16, 2010 at 12:43 AM, <pjt@google.com> wrote:
+>>
+>> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>>
+>> By tracking a per-cpu load-avg for each cfs_rq and folding it into a
+>> global task_group load on each tick we can rework tg_shares_up to be
+>> strictly per-cpu.
+>>
+>> This should improve cpu-cgroup performance for smp systems
+>> significantly.
+>>
+>> [ Paul: changed to use queueing cfs_rq ]
+>>
+>> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>> Signed-off-by: Paul Turner <pjt@google.com>
+>>
+>> ---
+>>  include/linux/sched.h   |    2
+>>  kernel/sched.c          |  173 ++++++++++++------------------------------------
+>>  kernel/sched_debug.c    |   15 +++-
+>>  kernel/sched_fair.c     |  166 +++++++++++++++++++++++++++++-----------------
+>>  kernel/sched_features.h |    2
+>>  kernel/sysctl.c         |   17 ----
+>>  6 files changed, 163 insertions(+), 212 deletions(-)
+>>
+>> Index: include/linux/sched.h
+>> ===================================================================
+>> --- include/linux/sched.h.orig
+>> +++ include/linux/sched.h
+>> @@ -1868,8 +1868,6 @@ static inline void wake_up_idle_cpu(int
+>>  extern unsigned int sysctl_sched_latency;
+>>  extern unsigned int sysctl_sched_min_granularity;
+>>  extern unsigned int sysctl_sched_wakeup_granularity;
+>> -extern unsigned int sysctl_sched_shares_ratelimit;
+>> -extern unsigned int sysctl_sched_shares_thresh;
+>>  extern unsigned int sysctl_sched_child_runs_first;
+>>
+>>  enum sched_tunable_scaling {
+>> Index: kernel/sched.c
+>> ===================================================================
+>> --- kernel/sched.c.orig
+>> +++ kernel/sched.c
+>> @@ -253,6 +253,8 @@ struct task_group {
+>>        /* runqueue "owned" by this group on each cpu */
+>>        struct cfs_rq **cfs_rq;
+>>        unsigned long shares;
+>> +
+>> +       atomic_t load_weight;
+>>  #endif
+>>
+>>  #ifdef CONFIG_RT_GROUP_SCHED
+>> @@ -359,15 +361,11 @@ struct cfs_rq {
+>>         */
+>>        unsigned long h_load;
+>>
+>> -       /*
+>> -        * this cpu's part of tg->shares
+>> -        */
+>> -       unsigned long shares;
+>> +       u64 load_avg;
+>> +       u64 load_period;
+>> +       u64 load_stamp;
+>>
+>> -       /*
+>> -        * load.weight at the time we set shares
+>> -        */
+>> -       unsigned long rq_weight;
+>> +       unsigned long load_contribution;
+>>  #endif
+>>  #endif
+>>  };
+>> @@ -790,20 +788,6 @@ late_initcall(sched_init_debug);
+>>  const_debug unsigned int sysctl_sched_nr_migrate = 32;
+>>
+>>  /*
+>> - * ratelimit for updating the group shares.
+>> - * default: 0.25ms
+>> - */
+>> -unsigned int sysctl_sched_shares_ratelimit = 250000;
+>> -unsigned int normalized_sysctl_sched_shares_ratelimit = 250000;
+>> -
+>> -/*
+>> - * Inject some fuzzyness into changing the per-cpu group shares
+>> - * this avoids remote rq-locks at the expense of fairness.
+>> - * default: 4
+>> - */
+>> -unsigned int sysctl_sched_shares_thresh = 4;
+>> -
+>> -/*
+>>  * period over which we average the RT time consumption, measured
+>>  * in ms.
+>>  *
+>> @@ -1352,6 +1336,12 @@ static inline void update_load_sub(struc
+>>        lw->inv_weight = 0;
+>>  }
+>>
+>> +static inline void update_load_set(struct load_weight *lw, unsigned long w)
+>> +{
+>> +       lw->weight = w;
+>> +       lw->inv_weight = 0;
+>> +}
+>> +
+>>  /*
+>>  * To aid in avoiding the subversion of "niceness" due to uneven distribution
+>>  * of tasks with abnormal "nice" values across CPUs the contribution that
+>> @@ -1540,97 +1530,44 @@ static unsigned long cpu_avg_load_per_ta
+>>
+>>  #ifdef CONFIG_FAIR_GROUP_SCHED
+>>
+>> -static __read_mostly unsigned long __percpu *update_shares_data;
+>> -
+>> -static void __set_se_shares(struct sched_entity *se, unsigned long shares);
+>> -
+>> -/*
+>> - * Calculate and set the cpu's group shares.
+>> - */
+>> -static void update_group_shares_cpu(struct task_group *tg, int cpu,
+>> -                                   unsigned long sd_shares,
+>> -                                   unsigned long sd_rq_weight,
+>> -                                   unsigned long *usd_rq_weight)
+>> -{
+>> -       unsigned long shares, rq_weight;
+>> -       int boost = 0;
+>> -
+>> -       rq_weight = usd_rq_weight[cpu];
+>> -       if (!rq_weight) {
+>> -               boost = 1;
+>> -               rq_weight = NICE_0_LOAD;
+>> -       }
+>> -
+>> -       /*
+>> -        *             \Sum_j shares_j * rq_weight_i
+>> -        * shares_i =  -----------------------------
+>> -        *                  \Sum_j rq_weight_j
+>> -        */
+>> -       shares = (sd_shares * rq_weight) / sd_rq_weight;
+>> -       shares = clamp_t(unsigned long, shares, MIN_SHARES, MAX_SHARES);
+>> -
+>> -       if (abs(shares - tg->se[cpu]->load.weight) >
+>> -                       sysctl_sched_shares_thresh) {
+>> -               struct rq *rq = cpu_rq(cpu);
+>> -               unsigned long flags;
+>> -
+>> -               raw_spin_lock_irqsave(&rq->lock, flags);
+>> -               tg->cfs_rq[cpu]->rq_weight = boost ? 0 : rq_weight;
+>> -               tg->cfs_rq[cpu]->shares = boost ? 0 : shares;
+>> -               __set_se_shares(tg->se[cpu], shares);
+>> -               raw_spin_unlock_irqrestore(&rq->lock, flags);
+>> -       }
+>> -}
+>> +static void update_cfs_load(struct cfs_rq *cfs_rq);
+>> +static void update_cfs_shares(struct cfs_rq *cfs_rq);
+>>
+>>  /*
+>> - * Re-compute the task group their per cpu shares over the given domain.
+>> - * This needs to be done in a bottom-up fashion because the rq weight of a
+>> - * parent group depends on the shares of its child groups.
+>> + * update tg->load_weight by folding this cpu's load_avg
+>>  */
+>>  static int tg_shares_up(struct task_group *tg, void *data)
+>>  {
+>> -       unsigned long weight, rq_weight = 0, sum_weight = 0, shares = 0;
+>> -       unsigned long *usd_rq_weight;
+>> -       struct sched_domain *sd = data;
+>> +       long load_avg;
+>> +       struct cfs_rq *cfs_rq;
+>>        unsigned long flags;
+>> -       int i;
+>> +       int cpu = (long)data;
+>> +       struct rq *rq;
+>>
+>> -       if (!tg->se[0])
+>> +       if (!tg->se[cpu])
+>>                return 0;
+>>
+>> -       local_irq_save(flags);
+>> -       usd_rq_weight = per_cpu_ptr(update_shares_data, smp_processor_id());
+>> -
+>> -       for_each_cpu(i, sched_domain_span(sd)) {
+>> -               weight = tg->cfs_rq[i]->load.weight;
+>> -               usd_rq_weight[i] = weight;
+>> -
+>> -               rq_weight += weight;
+>> -               /*
+>> -                * If there are currently no tasks on the cpu pretend there
+>> -                * is one of average load so that when a new task gets to
+>> -                * run here it will not get delayed by group starvation.
+>> -                */
+>> -               if (!weight)
+>> -                       weight = NICE_0_LOAD;
+>> +       rq = cpu_rq(cpu);
+>> +       cfs_rq = tg->cfs_rq[cpu];
+>>
+>> -               sum_weight += weight;
+>> -               shares += tg->cfs_rq[i]->shares;
+>> -       }
+>> +       raw_spin_lock_irqsave(&rq->lock, flags);
+>>
+>> -       if (!rq_weight)
+>> -               rq_weight = sum_weight;
+>> +       update_rq_clock(rq);
+>> +       update_cfs_load(cfs_rq);
+>>
+>> -       if ((!shares && rq_weight) || shares > tg->shares)
+>> -               shares = tg->shares;
+>> +       load_avg = div64_u64(cfs_rq->load_avg, cfs_rq->load_period+1);
+>> +       load_avg -= cfs_rq->load_contribution;
+>>
+>> -       if (!sd->parent || !(sd->parent->flags & SD_LOAD_BALANCE))
+>> -               shares = tg->shares;
+>> +       atomic_add(load_avg, &tg->load_weight);
+>> +       cfs_rq->load_contribution += load_avg;
+>>
+>> -       for_each_cpu(i, sched_domain_span(sd))
+>> -               update_group_shares_cpu(tg, i, shares, rq_weight, usd_rq_weight);
+>> +       /*
+>> +        * We need to update shares after updating tg->load_weight in
+>> +        * order to adjust the weight of groups with long running tasks.
+>> +        */
+>> +       update_cfs_shares(cfs_rq);
+>>
+>> -       local_irq_restore(flags);
+>> +       raw_spin_unlock_irqrestore(&rq->lock, flags);
+>>
+>>        return 0;
+>>  }
+>> @@ -1649,7 +1586,7 @@ static int tg_load_down(struct task_grou
+>>                load = cpu_rq(cpu)->load.weight;
+>>        } else {
+>>                load = tg->parent->cfs_rq[cpu]->h_load;
+>> -               load *= tg->cfs_rq[cpu]->shares;
+>> +               load *= tg->se[cpu]->load.weight;
+>>                load /= tg->parent->cfs_rq[cpu]->load.weight + 1;
+>>        }
+>>
+>> @@ -1658,21 +1595,16 @@ static int tg_load_down(struct task_grou
+>>        return 0;
+>>  }
+>>
+>> -static void update_shares(struct sched_domain *sd)
+>> +static void update_shares(long cpu)
+>>  {
+>> -       s64 elapsed;
+>> -       u64 now;
+>> -
+>>        if (root_task_group_empty())
+>>                return;
+>>
+>> -       now = local_clock();
+>> -       elapsed = now - sd->last_update;
+>> +       /*
+>> +        * XXX: replace with an on-demand list
+>> +        */
+>>
+>> -       if (elapsed >= (s64)(u64)sysctl_sched_shares_ratelimit) {
+>> -               sd->last_update = now;
+>> -               walk_tg_tree(tg_nop, tg_shares_up, sd);
+>> -       }
+>> +       walk_tg_tree(tg_nop, tg_shares_up, (void *)cpu);
+>>  }
+>>
+>>  static void update_h_load(long cpu)
+>> @@ -1682,7 +1614,7 @@ static void update_h_load(long cpu)
+>>
+>>  #else
+>>
+>> -static inline void update_shares(struct sched_domain *sd)
+>> +static inline void update_shares(int cpu)
+>>  {
+>>  }
+>>
+>> @@ -1807,15 +1739,6 @@ static void double_rq_unlock(struct rq *
+>>
+>>  #endif
+>>
+>> -#ifdef CONFIG_FAIR_GROUP_SCHED
+>> -static void cfs_rq_set_shares(struct cfs_rq *cfs_rq, unsigned long shares)
+>> -{
+>> -#ifdef CONFIG_SMP
+>> -       cfs_rq->shares = shares;
+>> -#endif
+>> -}
+>> -#endif
+>> -
+>>  static void calc_load_account_idle(struct rq *this_rq);
+>>  static void update_sysctl(void);
+>>  static int get_update_sysctl_factor(void);
+>> @@ -5404,7 +5327,6 @@ static void update_sysctl(void)
+>>        SET_SYSCTL(sched_min_granularity);
+>>        SET_SYSCTL(sched_latency);
+>>        SET_SYSCTL(sched_wakeup_granularity);
+>> -       SET_SYSCTL(sched_shares_ratelimit);
+>>  #undef SET_SYSCTL
+>>  }
+>>
+>> @@ -7721,8 +7643,7 @@ static void init_tg_cfs_entry(struct tas
+>>                se->cfs_rq = parent->my_q;
+>>
+>>        se->my_q = cfs_rq;
+>> -       se->load.weight = tg->shares;
+>> -       se->load.inv_weight = 0;
+>> +       update_load_set(&se->load, tg->shares);
+>>        se->parent = parent;
+>>  }
+>>  #endif
+>> @@ -7815,10 +7736,6 @@ void __init sched_init(void)
+>>
+>>  #endif /* CONFIG_CGROUP_SCHED */
+>>
+>> -#if defined CONFIG_FAIR_GROUP_SCHED && defined CONFIG_SMP
+>> -       update_shares_data = __alloc_percpu(nr_cpu_ids * sizeof(unsigned long),
+>> -                                           __alignof__(unsigned long));
+>> -#endif
+>>        for_each_possible_cpu(i) {
+>>                struct rq *rq;
+>>
+>> @@ -8386,8 +8303,7 @@ static void __set_se_shares(struct sched
+>>        if (on_rq)
+>>                dequeue_entity(cfs_rq, se, 0);
+>>
+>> -       se->load.weight = shares;
+>> -       se->load.inv_weight = 0;
+>> +       update_load_set(&se->load, shares);
+>>
+>>        if (on_rq)
+>>                enqueue_entity(cfs_rq, se, 0);
+>> @@ -8444,7 +8360,6 @@ int sched_group_set_shares(struct task_g
+>>                /*
+>>                 * force a rebalance
+>>                 */
+>> -               cfs_rq_set_shares(tg->cfs_rq[i], 0);
+>>                set_se_shares(tg->se[i], shares);
+>>        }
+>>
+>> Index: kernel/sched_debug.c
+>> ===================================================================
+>> --- kernel/sched_debug.c.orig
+>> +++ kernel/sched_debug.c
+>> @@ -202,15 +202,22 @@ void print_cfs_rq(struct seq_file *m, in
+>>        spread0 = min_vruntime - rq0_min_vruntime;
+>>        SEQ_printf(m, "  .%-30s: %Ld.%06ld\n", "spread0",
+>>                        SPLIT_NS(spread0));
+>> -       SEQ_printf(m, "  .%-30s: %ld\n", "nr_running", cfs_rq->nr_running);
+>> -       SEQ_printf(m, "  .%-30s: %ld\n", "load", cfs_rq->load.weight);
+>> -
+>>        SEQ_printf(m, "  .%-30s: %d\n", "nr_spread_over",
+>>                        cfs_rq->nr_spread_over);
+>> +       SEQ_printf(m, "  .%-30s: %ld\n", "nr_running", cfs_rq->nr_running);
+>> +       SEQ_printf(m, "  .%-30s: %ld\n", "load", cfs_rq->load.weight);
+>>  #ifdef CONFIG_FAIR_GROUP_SCHED
+>>  #ifdef CONFIG_SMP
+>> -       SEQ_printf(m, "  .%-30s: %lu\n", "shares", cfs_rq->shares);
+>> +       SEQ_printf(m, "  .%-30s: %Ld.%06ld\n", "load_avg",
+>> +                       SPLIT_NS(cfs_rq->load_avg));
+>> +       SEQ_printf(m, "  .%-30s: %Ld.%06ld\n", "load_period",
+>> +                       SPLIT_NS(cfs_rq->load_period));
+>> +       SEQ_printf(m, "  .%-30s: %ld\n", "load_contrib",
+>> +                       cfs_rq->load_contribution);
+>> +       SEQ_printf(m, "  .%-30s: %d\n", "load_tg",
+>> +                       atomic_read(&tg->load_weight));
+>>  #endif
+>> +
+>>        print_cfs_group_stats(m, cpu, cfs_rq->tg);
+>>  #endif
+>>  }
+>> Index: kernel/sched_fair.c
+>> ===================================================================
+>> --- kernel/sched_fair.c.orig
+>> +++ kernel/sched_fair.c
+>> @@ -417,7 +417,6 @@ int sched_proc_update_handler(struct ctl
+>>        WRT_SYSCTL(sched_min_granularity);
+>>        WRT_SYSCTL(sched_latency);
+>>        WRT_SYSCTL(sched_wakeup_granularity);
+>> -       WRT_SYSCTL(sched_shares_ratelimit);
+>>  #undef WRT_SYSCTL
+>>
+>>        return 0;
+>> @@ -633,7 +632,6 @@ account_entity_enqueue(struct cfs_rq *cf
+>>                list_add(&se->group_node, &cfs_rq->tasks);
+>>        }
+>>        cfs_rq->nr_running++;
+>> -       se->on_rq = 1;
+>>  }
+>>
+>>  static void
+>> @@ -647,9 +645,89 @@ account_entity_dequeue(struct cfs_rq *cf
+>>                list_del_init(&se->group_node);
+>>        }
+>>        cfs_rq->nr_running--;
+>> -       se->on_rq = 0;
+>>  }
+>>
+>> +#if defined CONFIG_SMP && defined CONFIG_FAIR_GROUP_SCHED
+>> +static void update_cfs_load(struct cfs_rq *cfs_rq)
+>> +{
+>> +       u64 period = sched_avg_period();
+>> +       u64 now, delta;
+>> +
+>> +       if (!cfs_rq)
+>> +               return;
+>> +
+>> +       now = rq_of(cfs_rq)->clock;
+>> +       delta = now - cfs_rq->load_stamp;
+>> +
+>> +       cfs_rq->load_stamp = now;
+>> +       cfs_rq->load_period += delta;
+>> +       cfs_rq->load_avg += delta * cfs_rq->load.weight;
+>> +
+>> +       while (cfs_rq->load_period > period) {
+>> +               /*
+>> +                * Inline assembly required to prevent the compiler
+>> +                * optimising this loop into a divmod call.
+>> +                * See __iter_div_u64_rem() for another example of this.
+>> +                */
+>> +               asm("" : "+rm" (cfs_rq->load_period));
+>> +               cfs_rq->load_period /= 2;
+>> +               cfs_rq->load_avg /= 2;
+>> +       }
+>> +}
+>> +
+>> +static void reweight_entity(struct cfs_rq *cfs_rq, struct sched_entity *se,
+>> +                           unsigned long weight)
+>> +{
+>> +       if (se->on_rq)
+>> +               account_entity_dequeue(cfs_rq, se);
+>> +
+>> +       update_load_set(&se->load, weight);
+>> +
+>> +       if (se->on_rq)
+>> +               account_entity_enqueue(cfs_rq, se);
+>> +}
+>> +
+>> +static void update_cfs_shares(struct cfs_rq *cfs_rq)
+>> +{
+>> +       struct task_group *tg;
+>> +       struct sched_entity *se;
+>> +       long load_weight, load, shares;
+>> +
+>> +       if (!cfs_rq)
+>> +               return;
+>> +
+>> +       tg = cfs_rq->tg;
+>> +       se = tg->se[cpu_of(rq_of(cfs_rq))];
+>> +       if (!se)
+>> +               return;
+>> +
+>> +       load = cfs_rq->load.weight;
+>> +
+>> +       load_weight = atomic_read(&tg->load_weight);
+>> +       load_weight -= cfs_rq->load_contribution;
+>> +       load_weight += load;
+>> +
+>> +       shares = (tg->shares * load);
+>> +       if (load_weight)
+>> +               shares /= load_weight;
+>> +
+>> +       if (shares < MIN_SHARES)
+>> +               shares = MIN_SHARES;
+>> +       if (shares > tg->shares)
+>> +               shares = tg->shares;
+>> +
+>> +       reweight_entity(cfs_rq_of(se), se, shares);
+>> +}
+>> +#else /* CONFIG_FAIR_GROUP_SCHED */
+>> +static inline void update_cfs_load(struct cfs_rq *cfs_rq)
+>> +{
+>> +}
+>> +
+>> +static inline void update_cfs_shares(struct cfs_rq *cfs_rq)
+>> +{
+>> +}
+>> +#endif /* CONFIG_FAIR_GROUP_SCHED */
+>> +
+>>  static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
+>>  {
+>>  #ifdef CONFIG_SCHEDSTATS
+>> @@ -771,7 +849,9 @@ enqueue_entity(struct cfs_rq *cfs_rq, st
+>>         * Update run-time statistics of the 'current'.
+>>         */
+>>        update_curr(cfs_rq);
+>> +       update_cfs_load(cfs_rq);
+>>        account_entity_enqueue(cfs_rq, se);
+>> +       update_cfs_shares(cfs_rq_of(se));
+>>
+>>        if (flags & ENQUEUE_WAKEUP) {
+>>                place_entity(cfs_rq, se, 0);
+>> @@ -782,6 +862,7 @@ enqueue_entity(struct cfs_rq *cfs_rq, st
+>>        check_spread(cfs_rq, se);
+>>        if (se != cfs_rq->curr)
+>>                __enqueue_entity(cfs_rq, se);
+>> +       se->on_rq = 1;
+>>  }
+>>
+>>  static void __clear_buddies(struct cfs_rq *cfs_rq, struct sched_entity *se)
+>> @@ -825,8 +906,11 @@ dequeue_entity(struct cfs_rq *cfs_rq, st
+>>
+>>        if (se != cfs_rq->curr)
+>>                __dequeue_entity(cfs_rq, se);
+>> +       se->on_rq = 0;
+>> +       update_cfs_load(cfs_rq);
+>>        account_entity_dequeue(cfs_rq, se);
+>>        update_min_vruntime(cfs_rq);
+>> +       update_cfs_shares(cfs_rq_of(se));
+>>
+>>        /*
+>>         * Normalize the entity after updating the min_vruntime because the
+>> @@ -1055,6 +1139,13 @@ enqueue_task_fair(struct rq *rq, struct
+>>                flags = ENQUEUE_WAKEUP;
+>>        }
+>>
+>> +       for_each_sched_entity(se) {
+>> +               struct cfs_rq *cfs_rq = cfs_rq_of(se);
+>> +
+>> +               update_cfs_load(cfs_rq);
+>> +               update_cfs_shares(cfs_rq);
+>> +       }
+>> +
+>>        hrtick_update(rq);
+>>  }
+>>
+>> @@ -1071,12 +1162,20 @@ static void dequeue_task_fair(struct rq
+>>        for_each_sched_entity(se) {
+>>                cfs_rq = cfs_rq_of(se);
+>>                dequeue_entity(cfs_rq, se, flags);
+>> +
+>>                /* Don't dequeue parent if it has other entities besides us */
+>>                if (cfs_rq->load.weight)
+>>                        break;
+>>                flags |= DEQUEUE_SLEEP;
+>>        }
+>>
+>> +       for_each_sched_entity(se) {
+>> +               struct cfs_rq *cfs_rq = cfs_rq_of(se);
+>> +
+>> +               update_cfs_load(cfs_rq);
+>> +               update_cfs_shares(cfs_rq);
+>> +       }
+>> +
+>>        hrtick_update(rq);
+>>  }
+>>
+>> @@ -1143,51 +1242,20 @@ static void task_waking_fair(struct rq *
+>>  * Adding load to a group doesn't make a group heavier, but can cause movement
+>>  * of group shares between cpus. Assuming the shares were perfectly aligned one
+>>  * can calculate the shift in shares.
+>> - *
+>> - * The problem is that perfectly aligning the shares is rather expensive, hence
+>> - * we try to avoid doing that too often - see update_shares(), which ratelimits
+>> - * this change.
+>> - *
+>> - * We compensate this by not only taking the current delta into account, but
+>> - * also considering the delta between when the shares were last adjusted and
+>> - * now.
+>> - *
+>> - * We still saw a performance dip, some tracing learned us that between
+>> - * cgroup:/ and cgroup:/foo balancing the number of affine wakeups increased
+>> - * significantly. Therefore try to bias the error in direction of failing
+>> - * the affine wakeup.
+>> - *
+>>  */
+>> -static long effective_load(struct task_group *tg, int cpu,
+>> -               long wl, long wg)
+>> +static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
+>>  {
+>>        struct sched_entity *se = tg->se[cpu];
+>>
+>>        if (!tg->parent)
+>>                return wl;
+>>
+>> -       /*
+>> -        * By not taking the decrease of shares on the other cpu into
+>> -        * account our error leans towards reducing the affine wakeups.
+>> -        */
+>> -       if (!wl && sched_feat(ASYM_EFF_LOAD))
+>> -               return wl;
+>> -
+>>        for_each_sched_entity(se) {
+>>                long S, rw, s, a, b;
+>> -               long more_w;
+>> -
+>> -               /*
+>> -                * Instead of using this increment, also add the difference
+>> -                * between when the shares were last updated and now.
+>> -                */
+>> -               more_w = se->my_q->load.weight - se->my_q->rq_weight;
+>> -               wl += more_w;
+>> -               wg += more_w;
+>>
+>> -               S = se->my_q->tg->shares;
+>> -               s = se->my_q->shares;
+>> -               rw = se->my_q->rq_weight;
+>> +               S = tg->shares;
+>
+This  needs to at least be se->my_q->tg->shares (versus tg->shares as
+we walk up the tree).
+>>
+>> +               s = se->load.weight;
+>> +               rw = se->my_q->load.weight;
+>
+I suspect we could get better accuracy if we used the new knowledge of
+global weight more directly (which we can get from the
+load_contribution without having to bounce tg->load_weight around).
 
-[...]
-
+This path needs some attention in general though so I'll leave such
+musings to a second patchset which will focus on improving group
+wake_affine behavior.
+>
+>
 >>
->> How could I know the number of cache level on my cpu ?
+>>                a = S*(rw + wl);
+>>                b = S*rw + s*wg;
+>> @@ -1508,23 +1576,6 @@ select_task_rq_fair(struct rq *rq, struc
+>>                        sd = tmp;
+>>        }
 >>
->> I tried:
+>> -#ifdef CONFIG_FAIR_GROUP_SCHED
+>> -       if (sched_feat(LB_SHARES_UPDATE)) {
+>> -               /*
+>> -                * Pick the largest domain to update shares over
+>> -                */
+>> -               tmp = sd;
+>> -               if (affine_sd && (!tmp || affine_sd->span_weight > sd->span_weight))
+>> -                       tmp = affine_sd;
+>> -
+>> -               if (tmp) {
+>> -                       raw_spin_unlock(&rq->lock);
+>> -                       update_shares(tmp);
+>> -                       raw_spin_lock(&rq->lock);
+>> -               }
+>> -       }
+>> -#endif
+>> -
+>>        if (affine_sd) {
+>>                if (cpu == prev_cpu || wake_affine(affine_sd, p, sync))
+>>                        return select_idle_sibling(p, cpu);
+>> @@ -2977,7 +3028,6 @@ static int load_balance(int this_cpu, st
+>>        schedstat_inc(sd, lb_count[idle]);
 >>
->>   $ perf stat -e cache-misses:u,l1d-loads-misses:u true
+>>  redo:
+>> -       update_shares(sd);
+>>        group = find_busiest_group(sd, this_cpu, &imbalance, idle, &sd_idle,
+>>                                   cpus, balance);
 >>
->>     Performance counter stats for 'true':
+>> @@ -3119,8 +3169,6 @@ out_one_pinned:
+>>        else
+>>                ld_moved = 0;
+>>  out:
+>> -       if (ld_moved)
+>> -               update_shares(sd);
+>>        return ld_moved;
+>>  }
 >>
->>                    802  cache-misses
->>                    937  L1-dcache-load-misses
+>> @@ -3514,6 +3562,8 @@ static void rebalance_domains(int cpu, e
+>>        int update_next_balance = 0;
+>>        int need_serialize;
 >>
->>            0.000996578  seconds time elapsed
+>> +       update_shares(cpu);
+>> +
+>>        for_each_domain(cpu, sd) {
+>>                if (!(sd->flags & SD_LOAD_BALANCE))
+>>                        continue;
+>> Index: kernel/sched_features.h
+>> ===================================================================
+>> --- kernel/sched_features.h.orig
+>> +++ kernel/sched_features.h
+>> @@ -52,8 +52,6 @@ SCHED_FEAT(ARCH_POWER, 0)
+>>  SCHED_FEAT(HRTICK, 0)
+>>  SCHED_FEAT(DOUBLE_TICK, 0)
+>>  SCHED_FEAT(LB_BIAS, 1)
+>> -SCHED_FEAT(LB_SHARES_UPDATE, 1)
+>> -SCHED_FEAT(ASYM_EFF_LOAD, 1)
 >>
->>   $ perf stat -e cache-misses:u,L2-loads-misses:u true
+>>  /*
+>>  * Spin-wait on mutex acquisition when the mutex owner is running on
+>> Index: kernel/sysctl.c
+>> ===================================================================
+>> --- kernel/sysctl.c.orig
+>> +++ kernel/sysctl.c
+>> @@ -307,15 +307,6 @@ static struct ctl_table kern_table[] = {
+>>                .extra2         = &max_wakeup_granularity_ns,
+>>        },
+>>        {
+>> -               .procname       = "sched_shares_ratelimit",
+>> -               .data           = &sysctl_sched_shares_ratelimit,
+>> -               .maxlen         = sizeof(unsigned int),
+>> -               .mode           = 0644,
+>> -               .proc_handler   = sched_proc_update_handler,
+>> -               .extra1         = &min_sched_shares_ratelimit,
+>> -               .extra2         = &max_sched_shares_ratelimit,
+>> -       },
+>> -       {
+>>                .procname       = "sched_tunable_scaling",
+>>                .data           = &sysctl_sched_tunable_scaling,
+>>                .maxlen         = sizeof(enum sched_tunable_scaling),
+>> @@ -325,14 +316,6 @@ static struct ctl_table kern_table[] = {
+>>                .extra2         = &max_sched_tunable_scaling,
+>>        },
+>>        {
+>> -               .procname       = "sched_shares_thresh",
+>> -               .data           = &sysctl_sched_shares_thresh,
+>> -               .maxlen         = sizeof(unsigned int),
+>> -               .mode           = 0644,
+>> -               .proc_handler   = proc_dointvec_minmax,
+>> -               .extra1         = &zero,
+>> -       },
+>> -       {
+>>                .procname       = "sched_migration_cost",
+>>                .data           = &sysctl_sched_migration_cost,
+>>                .maxlen         = sizeof(unsigned int),
 >>
->>    Performance counter stats for 'true':
->>
->>                   788  cache-misses
->>                    95  LLC-load-misses
->>
->>           0.001025423  seconds time elapsed
->>
->> So it looks like you're right: in my case I have this cache
->> configuration:
+>> --
 >>
 >
-> oops sorry, I replied too early...
->
-> so my cache configuration is:
->
->    L1 -> L2 -> LLC
->
-> where L2 misses is given by: 'cache-misses' - 'LLC-load-misses'
->
-> Is that correct ?
->
-> If so, I found 'cache-misses' term very not intuitive IMHO, probably
-> because I'm not an expert in cpu caches...
-
-Well thinking more about it, the above is wrong and I'm lost.
-
-If 'cache-misses' is the last level cache misses then how to interpret
-these results ?
-
-  $ perf stat -e llc-load-misses:u,llc-store-misses:u true
-
-   Performance counter stats for 'true':
-
-                   94  LLC-load-misses         
-                    0  LLC-store-misses        
-
-          0.000981840  seconds time elapsed
-
-
-  $ perf stat -e cache-misses:u true
-
-   Performance counter stats for 'true':
-
-                  796  cache-misses            
-
-          0.001345136  seconds time elapsed
-
-Here 'cache-misses' value is much more than llc misses one...
-
--- 
-Francis
