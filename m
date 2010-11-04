@@ -1,93 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752087Ab0KDXfi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 19:35:38 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:61422 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330Ab0KDXfg (ORCPT
+	id S1751613Ab0KDXkj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 19:40:39 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:28129 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144Ab0KDXkh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 19:35:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=hI0O20JqNbvxMF6SY3xMEIvuGoVvZx2m3pH686nI4QKhSfmL0CBng0nq7X/nhIsjo7
-         guJOPHoIgUmJb8qhwwQECAxaiw3TIEWxtmimkRtg4icRUYgeQ1xbtkf13OM5jdGj+zvV
-         RnGHE7gh0g/oO96yNLIuxIWbyUghLeiGmHSpY=
-Message-ID: <4CD34349.9010504@gmail.com>
-Date: Thu, 04 Nov 2010 18:35:37 -0500
-From: Steven Barrett <damentz@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100918 Icedove/3.1.4
+	Thu, 4 Nov 2010 19:40:37 -0400
+Date: Fri, 5 Nov 2010 00:29:40 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Michael Ellerman <michael@ellerman.id.au>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] iSeries: Remove unused mf_getSrcHistory function and
+ caller.
+In-Reply-To: <1288657250.16790.4.camel@concordia>
+Message-ID: <alpine.LNX.2.00.1011050026220.16015@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1010301911220.1572@swampdragon.chaosbits.net>  <1288609842.10671.7.camel@concordia>  <20101102071025.2fe5e6ca.sfr@canb.auug.org.au>  <alpine.LNX.2.00.1011012104050.12889@swampdragon.chaosbits.net>  <20101102082634.65342ce6.sfr@canb.auug.org.au>
+  <alpine.LNX.2.00.1011012218420.12889@swampdragon.chaosbits.net> <1288657250.16790.4.camel@concordia>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Sanjoy Mahajan <sanjoy@olin.edu>
-CC: Chris Mason <chris.mason@oracle.com>, Ingo Molnar <mingo@elte.hu>,
-        Pekka Enberg <penberg@kernel.org>,
-        Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Peter.Zijl@MIT.EDU
-Subject: Re: 2.6.36 io bring the system to its knees
-References: <E1PE2Jp-00031X-Tx@approx.mit.edu>
-In-Reply-To: <E1PE2Jp-00031X-Tx@approx.mit.edu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04/2010 11:05 AM, Sanjoy Mahajan wrote:
->> So this sounds like the backup is just thrashing your cache.
-> 
-> I think it's more than that.  Starting an rxvt shouldn't take 8 seconds,
-> even with a cold cache.  Actually, it does take a while, so you do have
-> a point.  I just did
-> 
->   echo 3 > /proc/sys/vm/drop_caches
-> 
-> and then started rxvt.  That takes about 3 seconds (which seems long,
-> but I don't know wherein that slowness lies), of which maybe 0.25
-> seconds is loading and running 'date':
-> 
-> $ time rxvt -e date
-> real	0m2.782s
-> user	0m0.148s
-> sys	0m0.032s
-> 
-> The 8-second delay during the rsync must have at least two causes: (1)
-> the cache is wiped out, and (2) the rxvt binary cannot be paged in
-> quickly because the disk is doing lots of other I/O.  
-> 
-> Can the system someknow that paging in the rxvt binary and shared
-> libraries is interactive I/O, because it was started by an interactive
-> process, and therefore should take priority over the rsync?
-> 
->> Does rsync have the option to do an fadvise DONTNEED?
-> 
-> I couldn't find one.  It would be good to have a solution that is
-> independent of the backup app.  (The 'locate' cron job does a similar
-> thrashing of the interactive response.)
+On Tue, 2 Nov 2010, Michael Ellerman wrote:
 
-I'm definitely no expert in Linux' file cache management, but from what
-I've experienced... isn't the real problem that the "interactive"
-processes, like your web browser or file manager, lose their inode and
-dentry cache when rsync runs?  Then while rsync is busy reading and
-writing to the disk, whenever you click on your interactive application,
-it tries to read what it lost to rsync from the disk while rsync is
-still thrashing your inode/dentry cache.
-
-This is a major problem even when my system has lots of ram (4gB on this
-laptop).
-
-What has helped me, however, is reducing vm.vfs_cache_pressure to a
-smaller value (25 here) so that Linux prefers to retain the current
-inode / dentry cache rather than suddenly give it up for a new greedy
-I/O type of program.  The only side effect is that file copying is a
-little slower than usual... totally worth it though.
-
+> On Mon, 2010-11-01 at 22:20 +0100, Jesper Juhl wrote:
+> > Hi Stephen,
+> > 
+> > On Tue, 2 Nov 2010, Stephen Rothwell wrote:
+> > 
+> > > On Mon, 1 Nov 2010 21:06:23 +0100 (CET) Jesper Juhl <jj@chaosbits.net> wrote:
+> > > >
+> > > > Remove unused function 'mf_getSrcHistory' (that will never be used ever 
+> > > > according to Stephen Rothwell).
+> > > > 
+> > > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > > 
+> > > Acked-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> > > 
+> > 
+> > Ok, so if you are the (unofficial) iSeries maintainer and you don't merge 
+> > the patch somewhere that'll eventually go up-stream, but just ACK it 
+> > (thank you for that btw), then where do I send it to get it merged?
 > 
-> -Sanjoy
+> Here. ie. linuxppc-dev.
 > 
-> `Until lions have their historians, tales of the hunt shall always
->  glorify the hunters.'  --African Proverb
+> But, while you're removing it you should remove the #if 0'ed callsite as
+> well, see mf_src_proc_show() in that file. :)
+> 
+Done. See patch below.
 
-	Steven Barrett
+
+Remove unused function 'mf_getSrcHistory' (that will never be used 
+ever according to Stephen Rothwell) and also remove most of (under 'if 
+0') code from mf_src_proc_show() where the function was called.
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ mf.c |   62 
+--------------------------------------------------------------
+ 1 file changed, 62 deletions(-)
+
+diff --git a/arch/powerpc/platforms/iseries/mf.c b/arch/powerpc/platforms/iseries/mf.c
+index 42d0a88..b5e026b 100644
+--- a/arch/powerpc/platforms/iseries/mf.c
++++ b/arch/powerpc/platforms/iseries/mf.c
+@@ -1045,71 +1045,9 @@ static const struct file_operations mf_side_proc_fops = {
+ 	.write		= mf_side_proc_write,
+ };
+ 
+-#if 0
+-static void mf_getSrcHistory(char *buffer, int size)
+-{
+-	struct IplTypeReturnStuff return_stuff;
+-	struct pending_event *ev = new_pending_event();
+-	int rc = 0;
+-	char *pages[4];
+-
+-	pages[0] = kmalloc(4096, GFP_ATOMIC);
+-	pages[1] = kmalloc(4096, GFP_ATOMIC);
+-	pages[2] = kmalloc(4096, GFP_ATOMIC);
+-	pages[3] = kmalloc(4096, GFP_ATOMIC);
+-	if ((ev == NULL) || (pages[0] == NULL) || (pages[1] == NULL)
+-			 || (pages[2] == NULL) || (pages[3] == NULL))
+-		return -ENOMEM;
+-
+-	return_stuff.xType = 0;
+-	return_stuff.xRc = 0;
+-	return_stuff.xDone = 0;
+-	ev->event.hp_lp_event.xSubtype = 6;
+-	ev->event.hp_lp_event.x.xSubtypeData =
+-		subtype_data('M', 'F', 'V', 'I');
+-	ev->event.data.vsp_cmd.xEvent = &return_stuff;
+-	ev->event.data.vsp_cmd.cmd = 4;
+-	ev->event.data.vsp_cmd.lp_index = HvLpConfig_getLpIndex();
+-	ev->event.data.vsp_cmd.result_code = 0xFF;
+-	ev->event.data.vsp_cmd.reserved = 0;
+-	ev->event.data.vsp_cmd.sub_data.page[0] = iseries_hv_addr(pages[0]);
+-	ev->event.data.vsp_cmd.sub_data.page[1] = iseries_hv_addr(pages[1]);
+-	ev->event.data.vsp_cmd.sub_data.page[2] = iseries_hv_addr(pages[2]);
+-	ev->event.data.vsp_cmd.sub_data.page[3] = iseries_hv_addr(pages[3]);
+-	mb();
+-	if (signal_event(ev) != 0)
+-		return;
+-
+- 	while (return_stuff.xDone != 1)
+- 		udelay(10);
+- 	if (return_stuff.xRc == 0)
+- 		memcpy(buffer, pages[0], size);
+-	kfree(pages[0]);
+-	kfree(pages[1]);
+-	kfree(pages[2]);
+-	kfree(pages[3]);
+-}
+-#endif
+-
+ static int mf_src_proc_show(struct seq_file *m, void *v)
+ {
+-#if 0
+-	int len;
+-
+-	mf_getSrcHistory(page, count);
+-	len = count;
+-	len -= off;
+-	if (len < count) {
+-		*eof = 1;
+-		if (len <= 0)
+-			return 0;
+-	} else
+-		len = count;
+-	*start = page + off;
+-	return len;
+-#else
+ 	return 0;
+-#endif
+ }
+ 
+ static int mf_src_proc_open(struct inode *inode, struct file *file)
+
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
+Plain text mails only, please      http://www.expita.com/nomime.html
+Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
+
