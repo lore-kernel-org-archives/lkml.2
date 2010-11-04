@@ -1,103 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752881Ab0KDTaJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 15:30:09 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44206 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752468Ab0KDTaH (ORCPT
+	id S1752985Ab0KDTaV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 15:30:21 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:51201 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752807Ab0KDTaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 15:30:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=jHyDaP+V7X4N9rN6VO6enLLrNQwuX9wItG5DBNmVfypmA2JLDVDWOrz5TFX3HI3qW/
-         DoKxn/AOCK8lINQDdg/GvolPxDwXEBoD5Me4x9v3kSWZoH+7gywU/59Jt1MOkhuksHUj
-         6xLak9LueHKp6XqyBHlOp8bx0aP0hdN6UxUNw=
-Date: Thu, 4 Nov 2010 20:30:04 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-api@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Lameter <cl@linux.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH RFC 6/8] clock device: convert timer_delete
-Message-ID: <9572b12e091e4dbab43e7c883e633fdb314fe574.1288897199.git.richard.cochran@omicron.at>
-References: <cover.1288897198.git.richard.cochran@omicron.at>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1288897198.git.richard.cochran@omicron.at>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 4 Nov 2010 15:30:08 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6157"; a="60669706"
+Subject: Re: [PATCHv2 2/3] ARM: Allow machines to override __delay()
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Colin Cross <ccross@android.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Nicolas Pitre <nico@fluxnic.net>
+In-Reply-To: <1288300770-18350-3-git-send-email-sboyd@codeaurora.org>
+References: <1288300770-18350-1-git-send-email-sboyd@codeaurora.org>
+	 <1288300770-18350-3-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 04 Nov 2010 12:30:02 -0700
+Message-ID: <1288899002.21823.3.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch lets the timer_delete system call use dynamic clock devices.
+On Thu, 2010-10-28 at 14:19 -0700, Stephen Boyd wrote:
+> +
+> +static void (*delay_fn)(unsigned long) = delay_loop;
+> +
+> +void set_delay_fn(void (*fn)(unsigned long))
+> +{
+> +       delay_fn = fn;
+> +}
 
-Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
----
- include/linux/clockdevice.h |    1 +
- kernel/posix-timers.c       |    7 +++++++
- kernel/time/clockdevice.c   |   18 ++++++++++++++++++
- 3 files changed, 26 insertions(+), 0 deletions(-)
+This needs to be a static inline in the header file.
 
-diff --git a/include/linux/clockdevice.h b/include/linux/clockdevice.h
-index 3201a28..592bd5e 100644
---- a/include/linux/clockdevice.h
-+++ b/include/linux/clockdevice.h
-@@ -107,5 +107,6 @@ struct clock_device *clockid_to_clock_device(clockid_t id);
-  * The following functions are only to be called from posix-timers.c
-  */
- int clock_device_timer_create(struct clock_device *clk, struct k_itimer *kit);
-+int clock_device_timer_delete(struct clock_device *clk, struct k_itimer *kit);
- 
- #endif
-diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
-index 42efbe9..5feb565 100644
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -857,6 +857,13 @@ static inline int common_timer_del(struct k_itimer *timer)
- 
- static inline int timer_delete_hook(struct k_itimer *timer)
- {
-+	struct clock_device *clk_dev;
-+
-+	clk_dev = clockid_to_clock_device(timer->it_clock);
-+
-+	if (clk_dev)
-+		return clock_device_timer_delete(clk_dev, timer);
-+
- 	return CLOCK_DISPATCH(timer->it_clock, timer_del, (timer));
- }
- 
-diff --git a/kernel/time/clockdevice.c b/kernel/time/clockdevice.c
-index 166cc30..27d13a4 100644
---- a/kernel/time/clockdevice.c
-+++ b/kernel/time/clockdevice.c
-@@ -281,3 +281,21 @@ int clock_device_timer_create(struct clock_device *clk, struct k_itimer *kit)
- 	mutex_unlock(&clk->mux);
- 	return err;
- }
-+
-+int clock_device_timer_delete(struct clock_device *clk, struct k_itimer *kit)
-+{
-+	int err;
-+
-+	mutex_lock(&clk->mux);
-+
-+	if (clk->zombie)
-+		err = -ENODEV;
-+	else if (!clk->ops->timer_delete)
-+		err = -EOPNOTSUPP;
-+	else
-+		err = clk->ops->timer_delete(clk->priv, kit);
-+
-+	mutex_unlock(&clk->mux);
-+
-+	return err;
-+}
+> +/*
+> + * loops = usecs * HZ * loops_per_jiffy / 1000000
+> + */
+> +void __delay(unsigned long loops)
+> +{
+> +       delay_fn(loops);
+> +}
+>  EXPORT_SYMBOL(__delay);
+
+Can we make this static inline also? I'm sure about the module issues..
+
+Daniel
+
 -- 
-1.7.0.4
+
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
