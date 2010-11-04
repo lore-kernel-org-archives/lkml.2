@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755532Ab0KDJOZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 05:14:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50756 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754108Ab0KDJOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 05:14:21 -0400
-Date: Thu, 4 Nov 2010 11:13:58 +0200
-From: Alon Levy <alevy@redhat.com>
-To: Ian Molton <ian.molton@collabora.co.uk>
-Cc: Anthony Liguori <anthony@codemonkey.ws>,
-        QEMU Developers <qemu-devel@nongnu.org>, linux-kernel@vger.kernel.org,
-        virtualization@lists.osdl.org, Avi Kivity <avi@redhat.com>,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [Qemu-devel] Re: [PATCH] Implement a virtio GPU transport
-Message-ID: <20101104091358.GA28832@playa.tlv.redhat.com>
-References: <1097264455.965471288612409433.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
- <4CCEC090.3050009@codemonkey.ws>
- <4CD1A406.3090909@collabora.co.uk>
+	id S932070Ab0KDJZE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 05:25:04 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49034 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755418Ab0KDJZA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 05:25:00 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, stefani@seibold.net
+Subject: [RESEND PATCH] tags: put function prototypes back!
+Date: Thu,  4 Nov 2010 10:24:16 +0100
+Message-Id: <1288862656-26707-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <4C176968.8070807@suse.cz>
+References: <4C176968.8070807@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CD1A406.3090909@collabora.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 06:03:50PM +0000, Ian Molton wrote:
-> On 01/11/10 13:28, Anthony Liguori wrote:
-> >On 11/01/2010 06:53 AM, Alon Levy wrote:
-> 
-> >>While we (speaking as part of the SPICE developers) want to have the same
-> >>support in our virtual GPU for 3d as we have for 2d, we just don't at
-> >>this point of time.
-> 
-> Would it be helpful to you to have /something/ that works in the
-> interim? I'm happy to work with you guys so that we dont need to
-> reinvent the wheel ;-)
-> 
+Commit 7db86dc (ctags: usability fix) removed function prototypes from
+tags file claiming "It makes no real sense to include function
+prototypes".
+But it is useful for quickly determining which header file developer
+needs to include to fix compilation.
 
-In case it wasn't clear, I think putting virtio-gl is a good idea, exactly because it works right now.
+Now if someone wants to remove forward declatations (which I agree are
+baggage), write a postprocessing script.
 
-[Snip]
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+ scripts/tags.sh |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/scripts/tags.sh b/scripts/tags.sh
+index 8509bb5..e091db3 100755
+--- a/scripts/tags.sh
++++ b/scripts/tags.sh
+@@ -123,7 +123,7 @@ exuberant()
+ 	-I ____cacheline_internodealigned_in_smp                \
+ 	-I EXPORT_SYMBOL,EXPORT_SYMBOL_GPL                      \
+ 	-I DEFINE_TRACE,EXPORT_TRACEPOINT_SYMBOL,EXPORT_TRACEPOINT_SYMBOL_GPL \
+-	--extra=+f --c-kinds=-px                                \
++	--extra=+f --c-kinds=+px                                \
+ 	--regex-asm='/^ENTRY\(([^)]*)\).*/\1/'                  \
+ 	--regex-c='/^SYSCALL_DEFINE[[:digit:]]?\(([^,)]*).*/sys_\1/'
+ 
+-- 
+1.7.2.3
+
