@@ -1,112 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab0KDAlO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 20:41:14 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:50436 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753913Ab0KDAlM (ORCPT
+	id S1754254Ab0KDBKe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 21:10:34 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:41062 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754192Ab0KDBKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 20:41:12 -0400
-From: Rene Sapiens <rene.sapiens@ti.com>
-To: greg@kroah.com
-Cc: gregkh@suse.de, nm@ti.com, felipe.contreras@gmail.com, ernesto@ti.com,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-omap@vger.kernel.org, Rene Sapiens <rene.sapiens@ti.com>
-Subject: [PATCH] staging: tidspbridge: overwrite DSP error codes
-Date: Wed,  3 Nov 2010 18:31:24 -0600
-Message-Id: <1288830684-7828-1-git-send-email-rene.sapiens@ti.com>
-X-Mailer: git-send-email 1.6.3.3
+	Wed, 3 Nov 2010 21:10:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=vWQ6Ot13cA8j9pY4hkDHPMjSLuBJ/b7eoBb/gknwSLITBr8q9rfgBDlPlU7BRzY3rZ
+         KaJ+Dtw87VzUZfALIy7fYnowNZgEbJ7cs8pRatCoxCtCDbWGOuqf8nndSm/Jz5JNDy2c
+         8cuJ0AggjUY2ra+IhtKgwUGI/4MklYfyBldGM=
+Message-ID: <4CD20820.1070406@lwfinger.net>
+Date: Wed, 03 Nov 2010 20:10:56 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.14) Gecko/20101013 SUSE/3.0.9 Thunderbird/3.0.9
+MIME-Version: 1.0
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: pali.rohar@gmail.com, Greg Kroah-Hartman <gregkh@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC/RFT] OHCI: Fix for regression in 2.6.37-rc1 since commit
+ 3df7169e7
+References: <Pine.LNX.4.44L0.1011031647140.15616-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1011031647140.15616-100000@netrider.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When calling the DSP's remote functions, the DSP returns error
-codes different from the ones managed by the kernel, the
-function's return value is shared with the MPU using a shared
-structure. This patch overwrites those error codes by kernel
-specifics and deletes unnecessary code.
+On 11/03/2010 04:04 PM, Alan Stern wrote:
+> 
+> This patch is definitely wrong -- it defeats the entire purpose of 
+> rewriting the control register!  That write was added _specifically_ to 
+> put the controller into reset, i.e., to change the functional state.
+> 
+> Furthermore, the write does the same thing as ohci_hcd.c does in its
+> ohci_usb_reset() routine.  Regardless, ohci_run() does a complete host
+> controller reset, which should override anything done in pci-quirks.c.  
+> Perhaps _that_ routine needs some attention.
 
-Signed-off-by: Rene Sapiens <rene.sapiens@ti.com>
----
- drivers/staging/tidspbridge/rmgr/disp.c |   44 +++++-------------------------
- 1 files changed, 8 insertions(+), 36 deletions(-)
+It is looking as if your patch is exposing a different bug. When I disable the
+write in pci_quirks leaving the controllers in OPER or RESUME mode, then
+ohci_run() is not called. I'm still trying to find out why.
 
-diff --git a/drivers/staging/tidspbridge/rmgr/disp.c b/drivers/staging/tidspbridge/rmgr/disp.c
-index b7ce435..560069a 100644
---- a/drivers/staging/tidspbridge/rmgr/disp.c
-+++ b/drivers/staging/tidspbridge/rmgr/disp.c
-@@ -460,17 +460,6 @@ int disp_node_create(struct disp_object *disp_obj,
- 		DBC_ASSERT(ul_bytes < (RMS_COMMANDBUFSIZE * sizeof(rms_word)));
- 		status = send_message(disp_obj, node_get_timeout(hnode),
- 				      ul_bytes, node_env);
--		if (status >= 0) {
--			/*
--			 * Message successfully received from RMS.
--			 * Return the status of the Node's create function
--			 * on the DSP-side
--			 */
--			status = (((rms_word *) (disp_obj->pbuf))[0]);
--			if (status < 0)
--				dev_dbg(bridge, "%s: DSP-side failed: 0x%x\n",
--					__func__, status);
--		}
- 	}
- func_end:
- 	return status;
-@@ -513,18 +502,6 @@ int disp_node_delete(struct disp_object *disp_obj,
- 			status = send_message(disp_obj, node_get_timeout(hnode),
- 					      sizeof(struct rms_command),
- 					      &dw_arg);
--			if (status >= 0) {
--				/*
--				 * Message successfully received from RMS.
--				 * Return the status of the Node's delete
--				 * function on the DSP-side
--				 */
--				status = (((rms_word *) (disp_obj->pbuf))[0]);
--				if (status < 0)
--					dev_dbg(bridge, "%s: DSP-side failed: "
--						"0x%x\n", __func__, status);
--			}
--
- 		}
- 	}
- 	return status;
-@@ -566,18 +543,6 @@ int disp_node_run(struct disp_object *disp_obj,
- 			status = send_message(disp_obj, node_get_timeout(hnode),
- 					      sizeof(struct rms_command),
- 					      &dw_arg);
--			if (status >= 0) {
--				/*
--				 * Message successfully received from RMS.
--				 * Return the status of the Node's execute
--				 * function on the DSP-side
--				 */
--				status = (((rms_word *) (disp_obj->pbuf))[0]);
--				if (status < 0)
--					dev_dbg(bridge, "%s: DSP-side failed: "
--						"0x%x\n", __func__, status);
--			}
--
- 		}
- 	}
- 
-@@ -739,7 +704,14 @@ static int send_message(struct disp_object *disp_obj, u32 timeout,
- 		} else {
- 			if (CHNL_IS_IO_COMPLETE(chnl_ioc_obj)) {
- 				DBC_ASSERT(chnl_ioc_obj.pbuf == pbuf);
--				status = (*((rms_word *) chnl_ioc_obj.pbuf));
-+				if (*((int *)chnl_ioc_obj.pbuf) < 0) {
-+					/* Translate DSP's to kernel error */
-+					status = -EREMOTEIO;
-+					dev_dbg(bridge, "%s: DSP-side failed:"
-+						" DSP errcode = 0x%x, Kernel "
-+						"errcode = %d\n", __func__,
-+						*(int *)pbuf, status);
-+				}
- 				*pdw_arg =
- 				    (((rms_word *) (chnl_ioc_obj.pbuf))[1]);
- 			} else {
--- 
-1.6.3.3
-
+Larry
