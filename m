@@ -1,62 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754907Ab0KDJ72 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 05:59:28 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60125 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753885Ab0KDJ71 (ORCPT
+	id S1754855Ab0KDKBH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 06:01:07 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:59373 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753368Ab0KDKBF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 05:59:27 -0400
-Date: Thu, 4 Nov 2010 10:59:20 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: linux-pcmcia@lists.infradead.org
-Cc: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: [PATCH] pcmcia/sa1100: don't put machine specific init
-	functions in .init.text
-Message-ID: <20101104095920.GB16938@pengutronix.de>
-References: <1288863974-20434-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	Thu, 4 Nov 2010 06:01:05 -0400
+Date: Thu, 4 Nov 2010 11:00:59 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>, "hpa@zytor.com" <hpa@zytor.com>
+Subject: Re: [RFC 2/4]x86: allocate 32 tlb_invalidate_interrupt handlers
+Message-ID: <20101104100058.GC32383@basil.fritz.box>
+References: <1288766661.23014.115.camel@sli10-conroe>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1288863974-20434-1-git-send-email-u.kleine-koenig@pengutronix.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1288766661.23014.115.camel@sli10-conroe>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Nov 03, 2010 at 02:44:21PM +0800, Shaohua Li wrote:
+> Add up to 32 invalidate_interrupt handler. How many handlers are
+> added depends on NUM_INVALIDATE_TLB_VECTORS. So if NUM_INVALIDATE_TLB_VECTORS
+> is smaller than 32, we don't waste icache.
 
-> [..]
-> diff --git a/drivers/pcmcia/sa1100_generic.c b/drivers/pcmcia/sa1100_generic.c
-> index 945857f..6b22859 100644
-> --- a/drivers/pcmcia/sa1100_generic.c
-> +++ b/drivers/pcmcia/sa1100_generic.c
-> @@ -64,7 +64,7 @@ static int (*sa11x0_pcmcia_hw_init[])(struct device *dev) = {
->  #endif
->  };
->  
-> -static int sa11x0_drv_pcmcia_probe(struct platform_device *dev)
-> +static int __devinit sa11x0_drv_pcmcia_probe(struct platform_device *dev)
->  {
->  	int i, ret = -ENODEV;
->  
-BTW, I wonder why sa11x0_pcmcia_hw_init doesn't need to be annotated
-with __devinitdata.  I guess the compiler just put's the array into
-sa11x0_drv_pcmcia_probe and so modpost doesn't notice.
+Just a small nit on the description: icache doesn't really
+matter for init code, it's just about binary size on disk.
 
-If you care I can resend with sa11x0_pcmcia_hw_init being marked, too.
+The patch looks ok.
 
-Best regards
-Uwe
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+-Andi
