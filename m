@@ -1,110 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255Ab0KDIqF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 04:46:05 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:62383 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754686Ab0KDIp7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 04:45:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:references:date:in-reply-to:message-id
-         :user-agent:mime-version:content-type:content-transfer-encoding;
-        b=xeVVRS/0YoZSAN498eAZmwI6VkGf1ywrzaNh/e1qTQXIbh/wZJGaPE4oYuh2hWUx0n
-         RToCGYpguzGx/9NCcPZ+EwZDzNJEShPmKMFiqpg671klBGSY3ROKv0HMK/0iHwSWbY/j
-         FXa+/x6Ms9aNJyhTvYKR4xL7rOLSUQ5+Vei0E=
-From: Francis Moreau <francis.moro@gmail.com>
-To: Reid Kleckner <reid.kleckner@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        linux-perf-users@vger.kernel.org
-Subject: Re: perf tools miscellaneous questions
-References: <fa.AyvjD8RxwvZsnL5ZXcZ+OzALKY8@ifi.uio.no>
-	<fa.wlHJxDLDciTHF6/icJo+JfjJPus@ifi.uio.no>
-	<fa.8PQyp14JyjNgKJB4NUWsi+YoZBM@ifi.uio.no>
-	<fa.ZajcSOe/t8/XBoLV1hZ7SjSJvtI@ifi.uio.no>
-Date: Thu, 04 Nov 2010 09:45:45 +0100
-In-Reply-To: <fa.ZajcSOe/t8/XBoLV1hZ7SjSJvtI@ifi.uio.no> (Francis Moreau's
-	message of "Thu, 04 Nov 2010 08:34:31 UTC")
-Message-ID: <m2pqulschy.fsf@gmail.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755297Ab0KDIqT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 04:46:19 -0400
+Received: from mga02.intel.com ([134.134.136.20]:3854 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754519Ab0KDIoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 04:44:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,294,1286175600"; 
+   d="scan'208";a="570251228"
+From: xiaohui.xin@intel.com
+To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
+        herbert@gondor.hengli.com.au, jdike@linux.intel.com
+Cc: Xin Xiaohui <xiaohui.xin@intel.com>
+Subject: [PATCH v14 12/17] Add header file for mp device.
+Date: Thu,  4 Nov 2010 17:05:08 +0800
+Message-Id: <a93eb7ead682e2168f1c8cfa88e44ca7873dc4ef.1288860478.git.xiaohui.xin@intel.com>
+X-Mailer: git-send-email 1.7.3
+In-Reply-To: <1288861513-5707-1-git-send-email-xiaohui.xin@intel.com>
+References: <1288861513-5707-1-git-send-email-xiaohui.xin@intel.com>
+In-Reply-To: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1288860477.git.xiaohui.xin@intel.com>
+References: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1288860477.git.xiaohui.xin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Francis Moreau <francis.moro@gmail.com> writes:
+From: Xin Xiaohui <xiaohui.xin@intel.com>
 
-> Reid Kleckner <reid.kleckner@gmail.com> writes:
->
->> On Wed, Nov 3, 2010 at 5:43 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->>>> What's exactly the 'cache-misses' event ? does it include both instructions
->>>> _and_ data cache misses ? both L1 and L2 caches ?
->>>>
->>
->>>> I was expecting so but the following command makes me wondering:
->>>>
->>>>   $ perf stat -e cache-misses:u,l1d-loads-misses:u true
->>>>     Performance counter stats for 'true':
->>>>
->>>>                 763  cache-misses
->>>>                 874  L1-dcache-load-misses
->>>>
->>>>         0.000916609  seconds time elapsed
->>>>
->>>> Here cache-misses < L1-dcache-load-misses.
->>>
->>>
->>>
->>> Dunno, will let others answer.
->>
->> I think it corresponds to last level cache misses, which makes sense
->> here.  The difference in the two numbers represents hits to L2 (and L3
->> if it exists).
->
-> How could I know the number of cache level on my cpu ?
->
-> I tried:
->
->   $ perf stat -e cache-misses:u,l1d-loads-misses:u true
->
->     Performance counter stats for 'true':
->
->                    802  cache-misses
->                    937  L1-dcache-load-misses
->
->            0.000996578  seconds time elapsed
->
->   $ perf stat -e cache-misses:u,L2-loads-misses:u true
->
->    Performance counter stats for 'true':
->
->                   788  cache-misses
->                    95  LLC-load-misses
->
->           0.001025423  seconds time elapsed
->
-> So it looks like you're right: in my case I have this cache
-> configuration:
->
+Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
+Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
+Reviewed-by: Jeff Dike <jdike@linux.intel.com>
+---
+ include/linux/mpassthru.h |  133 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 133 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/mpassthru.h
 
-oops sorry, I replied too early...
-
-so my cache configuration is:
-
-   L1 -> L2 -> LLC
-
-where L2 misses is given by: 'cache-misses' - 'LLC-load-misses'
-
-Is that correct ?
-
-If so, I found 'cache-misses' term very not intuitive IMHO, probably
-because I'm not an expert in cpu caches...
-
+diff --git a/include/linux/mpassthru.h b/include/linux/mpassthru.h
+new file mode 100644
+index 0000000..1115f55
+--- /dev/null
++++ b/include/linux/mpassthru.h
+@@ -0,0 +1,133 @@
++#ifndef __MPASSTHRU_H
++#define __MPASSTHRU_H
++
++#include <linux/types.h>
++#include <linux/if_ether.h>
++#include <linux/ioctl.h>
++
++/* ioctl defines */
++#define MPASSTHRU_BINDDEV      _IOW('M', 213, int)
++#define MPASSTHRU_UNBINDDEV    _IO('M', 214)
++#define MPASSTHRU_SET_MEM_LOCKED       _IOW('M', 215, unsigned long)
++#define MPASSTHRU_GET_MEM_LOCKED_NEED  _IOR('M', 216, unsigned long)
++
++#define COPY_THRESHOLD (L1_CACHE_BYTES * 4)
++#define COPY_HDR_LEN   (L1_CACHE_BYTES < 64 ? 64 : L1_CACHE_BYTES)
++
++#define DEFAULT_NEED   ((8192*2*2)*4096)
++
++struct frag {
++	u16     offset;
++	u16     size;
++};
++
++#define HASH_BUCKETS    (8192*2)
++struct page_info {
++	struct list_head        list;
++	struct page_info        *next;
++	struct page_info        *prev;
++	struct page             *pages[MAX_SKB_FRAGS];
++	struct sk_buff          *skb;
++	struct page_pool        *pool;
++
++	/* The pointer relayed to skb, to indicate
++	 * it's a external allocated skb or kernel
++	 */
++	struct skb_ext_page    ext_page;
++	/* flag to indicate read or write */
++#define INFO_READ                      0
++#define INFO_WRITE                     1
++	unsigned                flags;
++	/* exact number of locked pages */
++	unsigned                pnum;
++
++	/* The fields after that is for backend
++	 * driver, now for vhost-net.
++	 */
++	/* the kiocb structure related to */
++	struct kiocb            *iocb;
++	/* the ring descriptor index */
++	unsigned int            desc_pos;
++	/* the iovec coming from backend, we only
++	 * need few of them */
++	struct iovec            hdr[2];
++	struct iovec            iov[2];
++};
++
++struct page_pool {
++	/* the queue for rx side */
++	struct list_head        readq;
++	/* the lock to protect readq */
++	spinlock_t              read_lock;
++	/* record the orignal rlimit */
++	struct rlimit           o_rlim;
++	/* userspace wants to locked */
++	int                     locked_pages;
++	/* currently locked pages */
++	int                     cur_pages;
++	/* the memory locked before */
++	unsigned long		orig_locked_vm;
++	/* the device according to */
++	struct net_device       *dev;
++	/* the mp_port according to dev */
++	struct mp_port          port;
++	/* the hash_table list to find each locked page */
++	struct page_info        **hash_table;
++};
++
++static struct kmem_cache *ext_page_info_cache;
++
++#ifdef __KERNEL__
++#if defined(CONFIG_MEDIATE_PASSTHRU) || defined(CONFIG_MEDIATE_PASSTHRU_MODULE)
++struct socket *mp_get_socket(struct file *);
++struct page_pool *page_pool_create(struct net_device *dev,
++				   struct socket *sock);
++int async_recvmsg(struct kiocb *iocb, struct page_pool *pool,
++		  struct iovec *iov, int count, int flags);
++int async_sendmsg(struct sock *sk, struct kiocb *iocb,
++		  struct page_pool *pool, struct iovec *iov,
++		  int count);
++void async_data_ready(struct sock *sk, struct page_pool *pool);
++void dev_change_state(struct net_device *dev);
++void page_pool_destroy(struct mm_struct *mm, struct page_pool *pool);
++#else
++#include <linux/err.h>
++#include <linux/errno.h>
++struct file;
++struct socket;
++static inline struct socket *mp_get_socket(struct file *f)
++{
++	return ERR_PTR(-EINVAL);
++}
++static inline struct page_pool *page_pool_create(struct net_device *dev,
++		struct socket *sock)
++{
++	return ERR_PTR(-EINVAL);
++}
++static inline int async_recvmsg(struct kiocb *iocb, struct page_pool *pool,
++		struct iovec *iov, int count, int flags)
++{
++	return -EINVAL;
++}
++static inline int async_sendmsg(struct sock *sk, struct kiocb *iocb,
++		struct page_pool *pool, struct iovec *iov,
++		int count)
++{
++	return -EINVAL;
++}
++static inline void async_data_ready(struct sock *sk, struct page_pool *pool)
++{
++	return;
++}
++static inline void dev_change_state(struct net_device *dev)
++{
++	return;
++}
++static inline void page_pool_destroy(struct mm_struct *mm,
++				     struct page_pool *pool)
++{
++	return;
++}
++#endif /* CONFIG_MEDIATE_PASSTHRU */
++#endif /* __KERNEL__ */
++#endif /* __MPASSTHRU_H */
 -- 
-Francis
+1.7.3
+
