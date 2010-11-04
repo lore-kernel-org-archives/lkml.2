@@ -1,50 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254Ab0KDBKe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 21:10:34 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:41062 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754192Ab0KDBKc (ORCPT
+	id S1754347Ab0KDBSz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 21:18:55 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:30024 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754216Ab0KDBSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 21:10:32 -0400
+	Wed, 3 Nov 2010 21:18:53 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+        d=google.com; s=beta;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
          :references:in-reply-to:content-type:content-transfer-encoding;
-        b=vWQ6Ot13cA8j9pY4hkDHPMjSLuBJ/b7eoBb/gknwSLITBr8q9rfgBDlPlU7BRzY3rZ
-         KaJ+Dtw87VzUZfALIy7fYnowNZgEbJ7cs8pRatCoxCtCDbWGOuqf8nndSm/Jz5JNDy2c
-         8cuJ0AggjUY2ra+IhtKgwUGI/4MklYfyBldGM=
-Message-ID: <4CD20820.1070406@lwfinger.net>
-Date: Wed, 03 Nov 2010 20:10:56 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.14) Gecko/20101013 SUSE/3.0.9 Thunderbird/3.0.9
+        b=kxjdrosFAG/FNqZLg23FqB1pGG/8CI2DOSW2GmUO85pgQ8lu2IF46VgUM/wqAtFVE2
+         o/Ghzm21NOnfDd8OWQdA==
+Message-ID: <4CD209F1.90708@google.com>
+Date: Wed, 03 Nov 2010 18:18:41 -0700
+From: Mike Waychison <mikew@google.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: pali.rohar@gmail.com, Greg Kroah-Hartman <gregkh@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC/RFT] OHCI: Fix for regression in 2.6.37-rc1 since commit
- 3df7169e7
-References: <Pine.LNX.4.44L0.1011031647140.15616-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1011031647140.15616-100000@netrider.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Matt Mackall <mpm@selenic.com>
+CC: Greg KH <greg@kroah.com>, simon.kagstrom@netinsight.net,
+        davem@davemloft.net, adurbin@google.com, akpm@linux-foundation.org,
+        chavey@google.com, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH v1 00/12] netoops support
+References: <20101103012917.4641.57113.stgit@crlf.mtv.corp.google.com>	 <20101103023422.GB5782@kroah.com>	 <AANLkTi=Oe4oJ0imCh1eoJLS0QYqSBM4pLo=dEUSiJcQb@mail.gmail.com>	 <20101103181634.GF7441@kroah.com>	 <AANLkTimKWCWtuPeZhMZ75gTxB8LwAhJfy2FZnnRwthft@mail.gmail.com>	 <4CD1C612.5080902@google.com> <1288817685.26428.1129.camel@calx>
+In-Reply-To: <1288817685.26428.1129.camel@calx>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2010 04:04 PM, Alan Stern wrote:
+Matt Mackall wrote:
+> On Wed, 2010-11-03 at 13:29 -0700, Mike Waychison wrote:
+>> Mike Waychison wrote:
+>>> FWIW, another semantic difference between netconsole and netoops (that
+>>> I had missed in the last email) is filtering: we really do want to get
+>>> the whole log when a crash happens, debug messages and all.
+>>> Netconsole is subject to console filtering (which we _do_ want as
+>>> debug messages going out the uart slows the whole world down).
+>>>
+>>> netconsole and netoops _do_ have bits in common, for instance the
+>>> handling of NETDEV events and source+target configuration.  I'd rather
+>>> those bits become common between the two than figure out how to jam
+>>> the semantics we need into netconsole.
+>> Hi Matt,
+>>
+>> I've been reading through the netconsole driver in response to Greg's 
+>> comments on this thread, and it is definitely more robust in terms of 
+>> configuration and handling of network device events than the netoops 
+>> driver I proposed.
 > 
-> This patch is definitely wrong -- it defeats the entire purpose of 
-> rewriting the control register!  That write was added _specifically_ to 
-> put the controller into reset, i.e., to change the functional state.
+> I've been following the discussion to see if it went anywhere
+> interesting..
 > 
-> Furthermore, the write does the same thing as ohci_hcd.c does in its
-> ohci_usb_reset() routine.  Regardless, ohci_run() does a complete host
-> controller reset, which should override anything done in pci-quirks.c.  
-> Perhaps _that_ routine needs some attention.
+>> What are your thoughts on extending netconsole with the same sort of 
+>> semantics that are in the netoops patchset?
+> 
+> My first thought is that it's a bit unfortunate that some of the the
+> netconsole configgy bits weren't implemented in a generic way that would
+> be applicable to other netpoll clients. Some people have never gotten it
+> into their heads that netconsole isn't the only client.
+> 
+>> I'd still like to have blit-dmesg-to-the-network-on-oops semantics, 
+>> which seems doable by having a per-target flag for streaming of console 
+>> messages (enabled by default) and a flag to emit a structured full dmesg 
+>> dump (disabled by default).
+> 
+> I'd actually like to see you go forward with netoops. It's clear to me
+> that it's a different beast and complexifying netconsole with a bunch of
+> weird new options doesn't really sit well. If that means abstracting
+> some of the sysfs crap from netconsole, great. 
 
-It is looking as if your patch is exposing a different bug. When I disable the
-write in pci_quirks leaving the controllers in OPER or RESUME mode, then
-ohci_run() is not called. I'm still trying to find out why.
+I'd be happy to take a stab at this.  This solves most of the ABI 
+reservations that I have with this v1 patchset.
 
-Larry
+Looking at netconsole, it looks to lack some locking for data 
+consistency, and it appears that we will deadlock if we ever get a 
+NETDEV_UNREGISTER event (due to recursively grabbing the rtnl in 
+netpoll_cleanup).  I have a couple patches I've been hacking on this 
+afternoon that should clear those issues up.
+
+I'm thinking of pushing all the target handling options down into 
+net/core/netpoll.c.  I'll probably expose this interface as "struct 
+netpoll_targets" where ->lock and ->list could be completely exposed to 
+clients.  netconsole would then get a lot smaller as would netoops.
+
+> That said, I don't think netoops is an ideal name, given how closely
+> bound oops _events_ are with their textual output. Presumably it covers
+> events other than oopsen like panics too. 
+
+True.  We call this code 'netdump' or 'network_dumper' internally, but I 
+figured it'd be better to follow current conventions with ramoops and 
+mtdoops already in the tree.  I don't really care what it's called in 
+the end :)
+
+> 
+> Regarding rolling oopses: lots of machines regularly survive oopses, so 
+> I think you ought to consider rate-limiting them (to a configurable rate
+> with a very low default) rather than suppressing all but the first.
+> 
+
+The trouble with Oopses is just that:  We don't know whether we can 
+safely survive them or not and it's a total gamble each time we do Oops. 
+  We can't programmatically know how crapped out the machine is, so 
+historically we've erred on not allowing bad things to continue 
+happening once someone notices something wrong.
+
+It's easier for us to just shoot the machine in the head (panic_on_oops) 
+and move on than corrupt data or dead-lock in weird ways at some later 
+point in time.  This is definitely not the behaviour I would want nor 
+expect from my desktop or phone, but for the cluster, it's just safer.
