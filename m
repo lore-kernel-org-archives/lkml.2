@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751519Ab0KDNe0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 09:34:26 -0400
-Received: from mail.asbjorn.biz ([217.195.185.3]:33866 "EHLO mail.asbjorn.biz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750757Ab0KDNeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 09:34:24 -0400
-From: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] kbuild: document UTS_MACHINE environment variable
-Date: Thu,  4 Nov 2010 13:34:11 +0000
-Message-Id: <1288877651-7378-1-git-send-email-asbjorn@asbjorn.biz>
-X-Mailer: git-send-email 1.7.2.3
+	id S1751546Ab0KDNgQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 09:36:16 -0400
+Received: from dallas.jonmasters.org ([72.29.103.172]:46752 "EHLO
+	dallas.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751251Ab0KDNgN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 09:36:13 -0400
+Subject: Re: PROBLEM: i915 modesetting - weird offset graphics
+ (v2.6.37-rc1-27-gff8b16d)
+From: Jon Masters <jonathan@jonmasters.org>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: chris@chris-wilson.co.uk, intel-gfx@lists.freedesktop.org
+In-Reply-To: <1288855558.3916.293.camel@constitution.bos.jonmasters.org>
+References: <1288855558.3916.293.camel@constitution.bos.jonmasters.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: World Organi[sz]ation of Broken Dreams
+Date: Thu, 04 Nov 2010 09:37:01 -0400
+Message-ID: <1288877821.3916.296.camel@constitution.bos.jonmasters.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 74.92.29.237
+X-SA-Exim-Mail-From: jonathan@jonmasters.org
+X-SA-Exim-Scanned: No (on dallas.jonmasters.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add UTS_MACHINE to the documentation of kbuild enviroment variables.
-Description contributed by Michal Marek.
+On Thu, 2010-11-04 at 03:25 -0400, Jon Masters wrote:
 
-LKML-Reference: <4CD2A8BC.3010500@suse.cz>
-Signed-off-by: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
----
- Documentation/kbuild/kbuild.txt |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+> I upgraded the userspace on my EeePC 1015PEM netbook to the latest
+> Fedora (F15) rawhide and booted a custom kernel in order to test both
+> the RC1 and also see if the now in-staging brcm80211 behaves better (it
+> doesn't, it still can't survive suspend at all, separate issue though).
+> 
+> The xrandr output is identical in both case, showing a mode of 1024x600
+> being the one that X is currently using. Booting with i915 modesetting
+> disabled does avoid the weird offset but of course X doesn't start. I
+> can bisect this if there isn't already some suggestions from the
+> audience, in particular is to what debug information you need.
 
-diff --git a/Documentation/kbuild/kbuild.txt b/Documentation/kbuild/kbuild.txt
-index 1e5165a..2d17361 100644
---- a/Documentation/kbuild/kbuild.txt
-+++ b/Documentation/kbuild/kbuild.txt
-@@ -89,6 +89,10 @@ CROSS_COMPILE can be a part of the filename or the full path.
- 
- CROSS_COMPILE is also used for ccache in some setups.
- 
-+UTS_MACHINE
-+--------------------------------------------------
-+`uname -m` in the resulting kernel.
-+
- CF
- --------------------------------------------------
- Additional options for sparse.
--- 
-1.7.2.3
+Also, the intel-gfx list is moderated with auto-rejection. Do I really
+need to subscribe to the list just to get a mail through?
+
+Jon.
+
 
