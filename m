@@ -1,153 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751143Ab0KDEOZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 00:14:25 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:39024 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769Ab0KDEOW (ORCPT
+	id S1751357Ab0KDEPQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 00:15:16 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:60115 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750873Ab0KDEPO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 00:14:22 -0400
+	Thu, 4 Nov 2010 00:15:14 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=jk1FYJ3VRjMf5a1GeH0XSWMQofchGDypmGQovDaE72wWj5HahlIUCg0yBgjGLlGuUn
-         a/OuZEHbfvsCZ2soQfU1lKYfPgenj3RvNRoDc9Qryfh812mJIv6HRLdk4dBTLma8o+4L
-         4M7tHQ69l+zEwYMhwvUvd7i3XTiNSVC8Ke8V0=
-Date: Wed, 3 Nov 2010 21:14:10 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: "Arce, Abraham" <x0066660@ti.com>
-Cc: Greg KH <greg@kroah.com>, Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar GADDIPATI <naveen.gaddipati@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Subject: Re: [PATCHv1] staging: Synaptics RMI4 touchpad driver support
-Message-ID: <20101104041409.GB18269@core.coreip.homeip.net>
-References: <1288699725-14405-1-git-send-email-naveen.gaddipati@stericsson.com>
- <20101102140337.GC9387@kroah.com>
- <4CD01CD8.3090206@stericsson.com>
- <20101102154029.GH11778@core.coreip.homeip.net>
- <20101103181058.GE7441@kroah.com>
- <20101103190752.GA4552@core.coreip.homeip.net>
- <20101103191958.GA9912@kroah.com>
- <27F9C60D11D683428E133F85D2BB4A530468A82B1A@dlee03.ent.ti.com>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=bEshElrFFyYnUDxMNvAQn9a7zW8Be+X/hhiQuWvA+WYfeDh6XnZ/z0GQq++Ys93av2
+         c01wRsbUwdd36C57y3rzvC+jAm5eNVWNj8gFvghTq6TC4nOVJR9zt1m3JdpJcu421aSS
+         FMIM36lybI3z+SNtk4mO/xMav8Zd2y9FXjYZU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <27F9C60D11D683428E133F85D2BB4A530468A82B1A@dlee03.ent.ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4CD22627.2000607@redhat.com>
+References: <20101009224041.GA901@sepie.suse.cz>
+	<4CD1E232.30406@redhat.com>
+	<AANLkTimyh-k8gYwuNi6nZFp3oviQ33+M3fDRzZ+sJN9i@mail.gmail.com>
+	<4CD22627.2000607@redhat.com>
+Date: Thu, 4 Nov 2010 00:15:13 -0400
+Message-ID: <AANLkTi=Eb8k6gmeGqvC=Zbo2mj51oHcbCncZGt00u9Tx@mail.gmail.com>
+Subject: Re: REGRESSION: Re: [GIT] kconfig rc fixes
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Michal Marek <mmarek@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>, kyle@redhat.com,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linux Media Mailing List <linux-media@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 04:37:14PM -0500, Arce, Abraham wrote:
-> Hi Naveen,
-> 
-> > From: linux-input-owner@vger.kernel.org [mailto:linux-input-
-> > owner@vger.kernel.org] On Behalf Of Greg KH
-> > Sent: Wednesday, November 03, 2010 1:20 PM
-> > To: Dmitry Torokhov
-> > Cc: Linus Walleij; Naveen Kumar GADDIPATI; linux-kernel@vger.kernel.org;
-> > STEricsson_nomadik_linux; linux-input@vger.kernel.org
-> > Subject: Re: [PATCHv1] staging: Synaptics RMI4 touchpad driver support
-> > 
-> > On Wed, Nov 03, 2010 at 12:07:52PM -0700, Dmitry Torokhov wrote:
-> > > On Wed, Nov 03, 2010 at 11:10:58AM -0700, Greg KH wrote:
-> > > > On Tue, Nov 02, 2010 at 08:40:30AM -0700, Dmitry Torokhov wrote:
-> > > > > On Tue, Nov 02, 2010 at 03:14:48PM +0100, Linus Walleij wrote:
-> > > > > > Greg KH wrote:
-> > > > > >
-> > > > > > >> +Wait for the official upstream synaptics rmi4 clearpad drivers as
-> > promised over the past few months
-> > > > > > >> +Merge any device support needed from this driver into it
-> > > > > > >> +Delete this driver
-> > > > > > >
-> > > > > > > Huh?
-> > > > > > >
-> > > > > > > Why not just add this driver to the kernel tree instead?  When the
-> > > > > > > "promised" driver then eventually shows up (who is promising it?)
-> > then
-> > > > > > > delete the thing.
-> > > > >
-> > > > > The same reason as there were several wireless drivers in staging?
-> > > >
-> > > > Ok, that's a good enough reason for me :)
-> > > >
-> > > > > > Well, Alan (on behalf of Ramesh Agarwal) sent out a very similar
-> > > > > > patch (Titled "Synaptics TM1217 Touchscreen Controller driver")
-> > > > > > the other day, and OTOMH that was after discussions with Synaptics
-> > > > > > where they said they were working on a "real" driver (a rather
-> > > > > > complex RMI4 bus driver) and we believe they will fix that sooner
-> > > > > > or later.
-> > > > > >
-> > > > > > So, until sooner or later happens we thought we'd keep it in staging.
-> > > > > >
-> > > > > > If you prefer both Alan and we can probably submit our patches for
-> > > > > > inclusion in the proper place.
-> > > > > >
-> > > > > > A side effect may be that the Synaptics RMI4 people may have trouble
-> > > > > > to merge their driver into input/ since they may be requested to
-> > > > > > refactor the existing drivers to use it rather than merging new stuff,
-> > > > > > putting some burden on their shoulders.
-> > > > > >
-> > > > >
-> > > > > No, they have not been requested to change any existing [in tree]
-> > > > > drivers. They however been asked to convert to the driver core
-> > > > > primitives instead of rolling their own infprastructure to implement
-> > > > > devices and drivers binding.
-> > > >
-> > > > If you don't object to this driver going in, and there is a path forward
-> > > > in the future for it to be able to be removed, then I will be glad to
-> > > > add it.
-> > > >
-> > > > Can I add your Acked-by: to the patch for this?
-> > > >
-> > >
-> > > Umm... I haven't looked in detail, but I think it is sane enough for
-> > > staging... Much better than Alan's version that seemed to create a
-> > > separate input device for every finger. Needs to depend on INPUT and
-> > > probably regulators framework...  Probe function may call
-> > > input_free_device() after calling input_register_device() which is not
-> > > good.
-> > 
-> > Great, thanks for this.
-> > 
-> > > Basically staging is yours, you can add whatever you want to it ;)
-> > 
-> > Heh, well, I try to at least cooperate with the different subsystem
-> > maintainers.  I don't need even more people pissed-off at me than I
-> > normally get :)
-> > 
-> > I'll queue this up for .38.
-> > 
-> 
-> I have done some initial testing with this patch, it includes some modifications to the board file, I have a gpio acting as irq plus driver code itself
-> 
-> I won't be able to get events (board will hang) unless adding the following code, is this due to the usage of a gpio as interrupt? If you could please clarify...
-> 
-> @@ -481,6 +483,9 @@ static int synaptics_rmi4_sensor_report(struct synaptics_rmi4_data *pdata)
->                                                                         rfi);
->                 }
->         }
-> +
-> +       enable_irq(gpio_to_irq(pdata->irq_number));
-> +
->         /* return the number of touch points */
->         return touch;
->  }
-> @@ -498,6 +503,8 @@ static irqreturn_t synaptics_rmi4_irq(int irq, void *data)
->         struct synaptics_rmi4_data *pdata = data;
->         int touch_count;
->         do {
-> +               disable_irq_nosync(gpio_to_irq(pdata->irq_number));
-> +
->                 touch_count = synaptics_rmi4_sensor_report(pdata);
->                 if (touch_count)
->                         wait_event_timeout(pdata->wait, pdata->touch_stopped,
-> 
+Hi,
 
-It probably wants a threaded IRQ...
+On Wed, Nov 3, 2010 at 11:19 PM, Mauro Carvalho Chehab
+<mchehab@redhat.com> wrote:
+> Em 03-11-2010 22:31, Arnaud Lacombe escreveu:
+>> Hi,
+>>
+>> On Wed, Nov 3, 2010 at 6:29 PM, Mauro Carvalho Chehab
+>> <mchehab@redhat.com> wrote:
+>>> Em 09-10-2010 18:40, Michal Marek escreveu:
+>>>>
+>>>> Arnaud Lacombe (1):
+>>>>       kconfig: delay symbol direct dependency initialization
+>>>
+>>> This patch generated a regression with V4L build. After applying it,
+>>> some Kconfig dependencies that used to work with V4L Kconfig broke.
+>>>
+>> of course, but they were all-likely buggy. If a compiler version N
+>> outputs a new legitimate warning because of a bug in the code, you do
+>> not switch back to the previous version because the warning wasn't
+>> there, you fix the code.
+>>
+>> That said, please point me to a false positive, eventually with a
+>> minimal testcase, and I'll be happy to fix the issue.
+>
+> Arnaud,
+>
+> In the case of V4L and DVB drivers, what happens is that the same
+> USB (or PCI) bridge driver can be attached to lots of
+> different chipsets that do analog/digital/audio decoding/encoding.
+>
+> A normal user won't need to open his USB TV stick just to see TV on it.
+> It just needs to select a bridge driver, and all possible options for encoders
+> and decoders are auto-selected.
+>
+> If you're an advanced user (or are developing an embedded hardware), you
+> know exactly what are the components inside the board/stick. So, the
+> Kconfig allows to disable the automatic auto-selection, doing manual
+> selection.
+>
+> The logic basically implements it, using Kconfig way, on a logic like:
+>
+>        auto = ask_user_if_ancillary_drivers_should_be_auto_selected();
+>        driver_foo = ask_user_if_driver_foo_should_be_selected();
+>        if (driver_foo && auto) {
+>                select(bar1);
+>                select(bar2);
+>                select(bar3);
+>                select(bar4);
+>        }
+> ...
+>        if (!auto) {
+>                open_menu()
+>                ask_user_if_bar1_should_be_selected();
+>                ask_user_if_bar2_should_be_selected();
+>                ask_user_if_bar3_should_be_selected();
+>                ask_user_if_bar4_should_be_selected();
+> ...
+>                close_menu()
+>        }
+>
+no, you are hijacking Kconfig for something "illegal". Note that this
+last word is not mine, it is the word used in the language
+description:
 
--- 
-Dmitry
+  Note:
+        select should be used with care. select will force
+        a symbol to a value without visiting the dependencies.
+        By abusing select you are able to select a symbol FOO even
+        if FOO depends on BAR that is not set.
+        In general use select only for non-visible symbols
+        (no prompts anywhere) and for symbols with no dependencies.
+        That will limit the usefulness but on the other hand avoid
+        the illegal configurations all over.
+        kconfig should one day warn about such things.
+
+I guess the last line will need to be dropped, as this day has come.
+
+ - Arnaud
