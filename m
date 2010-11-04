@@ -1,62 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752767Ab0KDQF5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 12:05:57 -0400
-Received: from excas01.olin.edu ([209.94.128.49]:51290 "EHLO EXCAS01.olin.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751367Ab0KDQFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 12:05:55 -0400
-Message-ID: <E1PE2Jp-00031X-Tx@approx.mit.edu>
-To: Chris Mason <chris.mason@oracle.com>
-CC: Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@kernel.org>,
-        Aidar Kultayev <the.aidar@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, <Peter.Zijl@MIT.EDU>
-Subject: Re: 2.6.36 io bring the system to its knees
-In-Reply-To: Your message of "Tue, 02 Nov 2010 09:12:39 EDT."
-             <20101102131239.GA8680@think>
-X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.2.1
-Date: Thu, 4 Nov 2010 12:05:41 -0400
-From: Sanjoy Mahajan <sanjoy@olin.edu>
+	id S1752198Ab0KDQHJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 12:07:09 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:42366 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751803Ab0KDQHF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 12:07:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:mime-version:content-type
+         :content-transfer-encoding:message-id;
+        b=G2rWdcCFAgjbGFSsqSTAlw3gd1wn+QWHCFMd81LjXNjtKA03/RoJmVPS9miQWEG+ib
+         +5RtoNoTyL8J8cdxthcSE/+M4tfdq6iVpb4T/SFndWPNCOQ6iwPeoY+cxol1ylpfAAqo
+         If0M1gEDUdjAObkiADhsj985i+HtRyZEvk1/g=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: "linux-kernel" <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
+        rui.zhang@intel.com, len.brown@intel.com,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [REGRESSION] [2.6.37-rc1] Fan noise after suspend to ram/disk
+Date: Thu, 4 Nov 2010 17:06:58 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1; KDE/4.4.5; i686; ; )
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201011041706.59046.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> So this sounds like the backup is just thrashing your cache.
+1. 
+Last known good kernel: 2.6.36
+Bad kernel: 2.6.37-rc1
+===============================
 
-I think it's more than that.  Starting an rxvt shouldn't take 8 seconds,
-even with a cold cache.  Actually, it does take a while, so you do have
-a point.  I just did
+2. Problem:
+When I resume computer from s2ram/s2disk and current CPU temp is below lowest 
+trip point, and -- from unknown reason -- fan start in maximum speed it 
+doesn't turn off (it should).
 
-  echo 3 > /proc/sys/vm/drop_caches
+It doesn't happen always but only when fan starts work and any of trip points 
+aren't exceed. It seems that system only check temperature when exceed trip 
+point.
+===============================
 
-and then started rxvt.  That takes about 3 seconds (which seems long,
-but I don't know wherein that slowness lies), of which maybe 0.25
-seconds is loading and running 'date':
+3. /sys/cass/thermal/ info:
 
-$ time rxvt -e date
-real	0m2.782s
-user	0m0.148s
-sys	0m0.032s
+I have:
+maciek@gumis:/sys/class/thermal$ ls
+cooling_device0  cooling_device2  cooling_device4  cooling_device6  
+thermal_zone1  thermal_zone3
+cooling_device1  cooling_device3  cooling_device5  thermal_zone0    
+thermal_zone2  thermal_zone4
 
-The 8-second delay during the rsync must have at least two causes: (1)
-the cache is wiped out, and (2) the rxvt binary cannot be paged in
-quickly because the disk is doing lots of other I/O.  
+maciek@gumis:/sys/class/thermal$ cat cooling_device*/type 
+LCD
+Processor
+Processor
+Fan
+Fan
+Fan
+Fan
 
-Can the system someknow that paging in the rxvt binary and shared
-libraries is interactive I/O, because it was started by an interactive
-process, and therefore should take priority over the rsync?
+===============================
 
-> Does rsync have the option to do an fadvise DONTNEED?
+Colling device from 3 to 6 are inform what is current fan speed, for example:
+cooling_device3 = 0
+cooling_device4 = 0
+cooling_device5 = 0
+cooling_device6 = 0 
+Means that fan is off.
 
-I couldn't find one.  It would be good to have a solution that is
-independent of the backup app.  (The 'locate' cron job does a similar
-thrashing of the interactive response.)
+cooling_device3 = 0
+cooling_device4 = 0
+cooling_device5 = 0
+cooling_device6 = 1
+Means fan works on 40% of full speed (1st trip point is exceed).
 
--Sanjoy
+cooling_device3 = 1
+cooling_device4 = 1
+cooling_device5 = 1
+cooling_device6 = 1
+Means fan works on full speed (all (4) trip points is exceed).
+===============================
 
-`Until lions have their historians, tales of the hunt shall always
- glorify the hunters.'  --African Proverb
+5. State when fan works on full speed after resume:
+maciek@gumis:/sys/class/thermal$ cat cooling_device*/cur_state
+0
+0
+0
+1
+1
+1
+1
+(Runs on full speed)
+
+maciek@gumis:/sys/class/thermal$ cat thermal_zone0/trip_point_*
+256000
+critical
+78000
+active
+70000
+active
+60000
+active
+50000
+active
+
+(It's OK for current CPU temp)
+
+"sensors" command shows:
+maciek@gumis:/sys/class/thermal$ sensors
+acpitz-virtual-0
+Adapter: Virtual device
+temp1:       +37.0°C  (crit = +256.0°C)                  
+temp2:       +42.0°C  (crit = +90.0°C)                  
+temp3:       +33.0°C  (crit = +105.0°C)                  
+temp4:       +20.0°C  (crit = +90.0°C)                  
+temp5:      +100.0°C  (crit = +110.0°C)
+
+"temp1" in this model of HP notebook is only for debug purposes (I think).
+"temp2" shows CPU temp (fan speed depends on it)
+"temp5" shows fan speed in % of maximum speed.
+===============================
+
+6. I run this command, to "hot" the processor:
+"while true; do echo -n; done"
+and cancel it, when I see, that first trip point was exceed, and fan starts 
+working on lower speed.
+===============================
+
+7. When it done I saw:
+maciek@gumis:/sys/class/thermal$ cat cooling_device*/cur_state
+0
+0
+0
+0
+0
+0
+1
+
+Fan works on 40% of full speed. It's OK.
+
+maciek@gumis:/sys/class/thermal$ cat thermal_zone0/trip_point_*
+256000
+critical
+78000
+active
+70000
+active
+60000
+active
+45000
+active
+
+Last trip point was changed from 50000 to 45000 because trip point was exceed 
+(it's OK, fan stops working below 45*C or starts working on 60% speed, above 
+60*C).
+
+"sensors" show:
+maciek@gumis:/sys/class/thermal$ sensors
+acpitz-virtual-0
+Adapter: Virtual device
+temp1:       +50.0°C  (crit = +256.0°C)                  
+temp2:       +48.0°C  (crit = +90.0°C)                  
+temp3:       +34.0°C  (crit = +105.0°C)                  
+temp4:       +20.0°C  (crit = +90.0°C)                  
+temp5:       +40.0°C  (crit = +110.0°C)
+===============================
+
+Dmesg:
+http://unixy.pl/maciek/download/kernel/2.6.37-rc1/gumis/dmesg-2.6.37-rc1.txt
+
+acpidump:
+http://unixy.pl/maciek/download/kernel/2.6.37-rc1/gumis/acpidump.dat
+
+Config:
+http://unixy.pl/maciek/download/kernel/2.6.37-rc1/gumis/config-2.6.37-rc1
+
+Regards
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
