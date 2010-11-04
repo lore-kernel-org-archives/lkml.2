@@ -1,95 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755615Ab0KDK23 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 06:28:29 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39204 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755540Ab0KDK2Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 06:28:25 -0400
-Date: Thu, 4 Nov 2010 11:28:18 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Greg KH <gregkh@suse.de>
-Cc: kernel@pengutronix.de, Sergei Shtylyov <sshtylyov@mvista.com>,
-        matthieu.castet@parrot.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-        Nguyen Dinh-R00091 <R00091@freescale.com>
-Subject: Re: [PATCH] USB: ehci/mxc: compile fix
-Message-ID: <20101104102818.GC16938@pengutronix.de>
-References: <Pine.LNX.4.44L0.1010290956490.1588-100000@iolanthe.rowland.org> <1288690257-16801-1-git-send-email-u.kleine-koenig@pengutronix.de> <86A0E76937111F4C92FABEC0A20988510523CBC9@az33exm21>
+	id S1755660Ab0KDKcQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 06:32:16 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:55897 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753271Ab0KDKcN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 06:32:13 -0400
+Message-ID: <4CD28CB4.9000906@cn.fujitsu.com>
+Date: Thu, 04 Nov 2010 18:36:36 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <86A0E76937111F4C92FABEC0A20988510523CBC9@az33exm21>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH 3/3] KVM: MMU: retry #PF for softmmu
+References: <4CD28B5F.1040205@cn.fujitsu.com>
+In-Reply-To: <4CD28B5F.1040205@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-04 18:32:42,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-04 18:32:43,
+	Serialize complete at 2010-11-04 18:32:43
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Retry #PF for softmmu only when the current vcpu has the same
+root shadow page as the time when #PF occurs. it means they
+have same paging environment.
 
-On Tue, Nov 02, 2010 at 07:05:27AM -0700, Nguyen Dinh-R00091 wrote:
-> Hi Uwe,
-> 
-> > -----Original Message-----
-> > From: Uwe Kleine-König [mailto:u.kleine-koenig@pengutronix.de]
-> > Sent: Tuesday, November 02, 2010 4:31 AM
-> > To: Greg KH
-> > Cc: kernel@pengutronix.de; Sergei Shtylyov; matthieu.castet@parrot.com;
-> > linux-kernel@vger.kernel.org; linux-usb@vger.kernel.org; Nguyen Dinh-
-> > R00091; Nguyen Dinh-R00091; Alan Stern
-> > Subject: [PATCH] USB: ehci/mxc: compile fix
-> > 
-> > Commit
-> > 	65fd427 (USB: ehci tdi : let's tdi_reset set host mode)
-> > 
-> > broke the build using ARM's mx51_defconfig:
-> > 
-> >  	  CC      drivers/usb/host/ehci-hcd.o
-> >  	In file included from drivers/usb/host/ehci-hcd.c:1166:
-> >  	drivers/usb/host/ehci-mxc.c: In function 'ehci_mxc_drv_probe':
-> >  	drivers/usb/host/ehci-mxc.c:192: error: 'ehci' undeclared (first
-> > use in this function)
-> >  	drivers/usb/host/ehci-mxc.c:192: error: (Each undeclared identifier
-> > is reported only once
-> >  	drivers/usb/host/ehci-mxc.c:192: error: for each function it
-> > appears in.)
-> >  	drivers/usb/host/ehci-mxc.c:117: warning: unused variable 'temp'
-> >  	make[3]: *** [drivers/usb/host/ehci-hcd.o] Error 1
-> >  	make[2]: *** [drivers/usb/host/ehci-hcd.o] Error 2
-> >  	make[1]: *** [sub-make] Error 2
-> >  	make: *** [all] Error 2
-> > 
-> > Fix it together with the warning about the unused variable and use
-> > msleep instead of mdelay as requested by Alan Stern.
-> > 
-> > Cc: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> > Cc: Alan Stern <stern@rowland.harvard.edu>
-> > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> > ---
-> > Hello,
-> > 
-> > I currently have no hardware to test it, so I only verified it to
-> > compile.
-> > 
-> > Dinh: I changed your Tested-by to Cc for the new patch, do you care to
-> > retest?
-> 
-> Retested - check!
-Do you take this patch and "USB: Fix FSL USB driver on non Open Firmware
-systems"?
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/include/asm/kvm_host.h |    6 ++++++
+ arch/x86/kvm/mmu.c              |   33 ++++++++++++++++++++++++++++++++-
+ arch/x86/kvm/x86.c              |   16 ++++++++++++++--
+ virt/kvm/async_pf.c             |    1 +
+ 4 files changed, 53 insertions(+), 3 deletions(-)
 
-Just drop me a note if you need them resent.
-
-Best regards
-Uwe
-
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 7f20f2c..b99ef7d 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -192,6 +192,8 @@ struct kvm_mmu_page {
+ 	struct list_head link;
+ 	struct hlist_node hash_link;
+ 
++	struct kref apfs_counter;
++
+ 	/*
+ 	 * The following two entries are used to key the shadow page in the
+ 	 * hash table.
+@@ -600,6 +602,7 @@ struct kvm_x86_ops {
+ struct kvm_arch_async_pf {
+ 	u32 token;
+ 	gfn_t gfn;
++	struct kvm_mmu_page *root_sp;
+ };
+ 
+ extern struct kvm_x86_ops *kvm_x86_ops;
+@@ -697,6 +700,8 @@ void kvm_inject_nmi(struct kvm_vcpu *vcpu);
+ 
+ int fx_init(struct kvm_vcpu *vcpu);
+ 
++struct kvm_mmu_page *get_vcpu_root_sp(struct kvm_vcpu *vcpu, gva_t gva);
++void kvm_mmu_release_apf_sp(struct kvm_mmu_page *sp);
+ void kvm_mmu_flush_tlb(struct kvm_vcpu *vcpu);
+ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+ 		       const u8 *new, int bytes,
+@@ -822,6 +827,7 @@ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
+ void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu,
+ 			       struct kvm_async_pf *work);
+ bool kvm_arch_can_inject_async_page_present(struct kvm_vcpu *vcpu);
++void kvm_arch_clear_async_pf(struct kvm_async_pf *work);
+ extern bool kvm_find_async_pf_gfn(struct kvm_vcpu *vcpu, gfn_t gfn);
+ 
+ #endif /* _ASM_X86_KVM_HOST_H */
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index f3fad4f..60cc9f9 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -993,6 +993,19 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
+ 	percpu_counter_add(&kvm_total_used_mmu_pages, nr);
+ }
+ 
++static void free_shadow_page(struct kref *kref)
++{
++	struct kvm_mmu_page *sp;
++
++	sp = container_of(kref, struct kvm_mmu_page, apfs_counter);
++	kmem_cache_free(mmu_page_header_cache, sp);
++}
++
++void kvm_mmu_release_apf_sp(struct kvm_mmu_page *sp)
++{
++	kref_put(&sp->apfs_counter, free_shadow_page);;
++}
++
+ static void kvm_mmu_free_page(struct kvm *kvm, struct kvm_mmu_page *sp)
+ {
+ 	ASSERT(is_empty_shadow_page(sp->spt));
+@@ -1001,7 +1014,7 @@ static void kvm_mmu_free_page(struct kvm *kvm, struct kvm_mmu_page *sp)
+ 	__free_page(virt_to_page(sp->spt));
+ 	if (!sp->role.direct)
+ 		__free_page(virt_to_page(sp->gfns));
+-	kmem_cache_free(mmu_page_header_cache, sp);
++	kvm_mmu_release_apf_sp(sp);
+ 	kvm_mod_used_mmu_pages(kvm, -1);
+ }
+ 
+@@ -1026,6 +1039,7 @@ static struct kvm_mmu_page *kvm_mmu_alloc_page(struct kvm_vcpu *vcpu,
+ 	sp->multimapped = 0;
+ 	sp->parent_pte = parent_pte;
+ 	kvm_mod_used_mmu_pages(vcpu->kvm, +1);
++	kref_init(&sp->apfs_counter);
+ 	return sp;
+ }
+ 
+@@ -2597,11 +2611,28 @@ static int nonpaging_page_fault(struct kvm_vcpu *vcpu, gva_t gva,
+ 			     error_code & PFERR_WRITE_MASK, gfn);
+ }
+ 
++struct kvm_mmu_page *get_vcpu_root_sp(struct kvm_vcpu *vcpu, gva_t gva)
++{
++	struct kvm_shadow_walk_iterator iterator;
++	bool ret;
++
++	shadow_walk_init(&iterator, vcpu, gva);
++	ret = shadow_walk_okay(&iterator);
++	WARN_ON(!ret);
++
++	return page_header(__pa(iterator.sptep));
++}
++
+ static int kvm_arch_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn)
+ {
+ 	struct kvm_arch_async_pf arch;
++
+ 	arch.token = (vcpu->arch.apf.id++ << 12) | vcpu->vcpu_id;
+ 	arch.gfn = gfn;
++	if (!tdp_enabled) {
++		arch.root_sp = get_vcpu_root_sp(vcpu, gva);
++		kref_get(&arch.root_sp->apfs_counter);
++	}
+ 
+ 	return kvm_setup_async_pf(vcpu, gva, gfn, &arch);
+ }
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index aacc5eb..72d672f 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -6174,14 +6174,17 @@ void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu, struct kvm_async_pf *work)
+ {
+ 	int r;
+ 
+-	if (!tdp_enabled || is_error_page(work->page))
++	if (is_error_page(work->page))
+ 		return;
+ 
+ 	r = kvm_mmu_reload(vcpu);
++
+ 	if (unlikely(r))
+ 		return;
+ 
+-	vcpu->arch.mmu.page_fault(vcpu, work->gva, 0, true);
++	if (tdp_enabled ||
++	      get_vcpu_root_sp(vcpu, work->gva) == work->arch.root_sp)
++		vcpu->arch.mmu.page_fault(vcpu, work->gva, 0, true);
+ }
+ 
+ static inline u32 kvm_async_pf_hash_fn(gfn_t gfn)
+@@ -6269,10 +6272,19 @@ void kvm_arch_async_page_not_present(struct kvm_vcpu *vcpu,
+ 	}
+ }
+ 
++void kvm_arch_clear_async_pf(struct kvm_async_pf *work)
++{
++	if (!tdp_enabled)
++		kvm_mmu_release_apf_sp(work->arch.root_sp);
++}
++
+ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
+ 				 struct kvm_async_pf *work)
+ {
+ 	trace_kvm_async_pf_ready(work->arch.token, work->gva);
++
++	kvm_arch_clear_async_pf(work);
++
+ 	if (is_error_page(work->page))
+ 		work->arch.token = ~0; /* broadcast wakeup */
+ 	else
+diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
+index 74268b4..c3d4788 100644
+--- a/virt/kvm/async_pf.c
++++ b/virt/kvm/async_pf.c
+@@ -101,6 +101,7 @@ void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu)
+ 				   typeof(*work), queue);
+ 		cancel_work_sync(&work->work);
+ 		list_del(&work->queue);
++		kvm_arch_clear_async_pf(work);
+ 		if (!work->done) /* work was canceled */
+ 			kmem_cache_free(async_pf_cache, work);
+ 	}
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+1.7.0.4
+
