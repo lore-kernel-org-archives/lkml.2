@@ -1,101 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751613Ab0KDRc1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 13:32:27 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:23810 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751081Ab0KDRcY (ORCPT
+	id S1751970Ab0KDRcp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 13:32:45 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:34496 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751174Ab0KDRcn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 13:32:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=Q7SKJwpVulVOVkBaWhWXNY+0N+P9O9OZpunORHS9LTA8HUxL3NemCGG4dKjb6jR7CA
-         8T5oZjpZsD1BuXAXxH7w==
-Date: Thu, 4 Nov 2010 10:31:58 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hughd@tigran.mtv.corp.google.com
-To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-cc: linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        balbir@linux.vnet.ibm.com, nishimura@mxp.nes.nec.co.jp,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [BUGFIX][PATCH] fix wrong VM_BUG_ON() in try_charge()'s mm->owner
- check
-In-Reply-To: <AANLkTikCUdpx-jGhKdzueML39CnExumk1i_X_OZJihE2@mail.gmail.com>
-Message-ID: <alpine.LSU.2.00.1011041016520.19411@tigran.mtv.corp.google.com>
-References: <AANLkTikCUdpx-jGhKdzueML39CnExumk1i_X_OZJihE2@mail.gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Thu, 4 Nov 2010 13:32:43 -0400
+Subject: Re: task blocked for more than 120 seconds
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Roland McGrath <roland@redhat.com>,
+        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <20101104161943.GA6520@arch.trippelsdorf.de>
+References: <20101104155826.GC13818@swordfish.minsk.epam.com>
+	 <20101104161943.GA6520@arch.trippelsdorf.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 04 Nov 2010 18:32:26 +0100
+Message-ID: <1288891946.2039.31.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Nov 2010, Hiroyuki Kamezawa wrote:
-> I'm sorry for attached file, I have to use unusual mailer this time.
-> This is a fix for wrong VM_BUG_ON() for mm/memcontol.c
+On Thu, 2010-11-04 at 17:19 +0100, Markus Trippelsdorf wrote:
+> On Thu, Nov 04, 2010 at 05:58:26PM +0200, Sergey Senozhatsky wrote:
+> > Hello,
+> > Got the following traces:
+> > 
+> > [42001.449295] INFO: task openbox:17761 blocked for more than 120 seconds.
+> > [42001.449303] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> > [42001.449311] openbox       D 0000000000000003     0 17761   3723 0x00000000
+> > [42001.449321]  ffff88004ce8dc38 0000000000000046 0000000000000000 ffff88004ce8c000
+> > [42001.449333]  ffff88004ce8dfd8 0000000000012040 ffff880133010000 ffff88004ce8dfd8
+> > [42001.449343]  0000000000012040 0000000000012040 ffff88004ce8dfd8 0000000000012040
+> > [42001.449354] Call Trace:
+> > [42001.449369]  [<ffffffff814212ff>] schedule_timeout+0x38/0x220
+> > [42001.449381]  [<ffffffff81066f21>] ? mark_held_locks+0x50/0x72
+> > [42001.449389]  [<ffffffff81423dae>] ? _raw_spin_unlock_irq+0x2b/0x59
+> > [42001.449398]  [<ffffffff81036070>] ? get_parent_ip+0x11/0x41
+> > [42001.449406]  [<ffffffff81036132>] ? sub_preempt_count+0x92/0xa5
+> > [42001.449413]  [<ffffffff8142057e>] wait_for_common+0xca/0x144
+> > [42001.449421]  [<ffffffff81038b13>] ? default_wake_function+0x0/0xf
+> > [42001.449429]  [<ffffffff81423e4b>] ? _raw_spin_unlock_irqrestore+0x6f/0x74
+> > [42001.449436]  [<ffffffff81420692>] wait_for_completion+0x18/0x1a
+> > [42001.449445]  [<ffffffff81084808>] stop_one_cpu+0x8c/0xba
+> 
+> These traces look related to:
+> http://article.gmane.org/gmane.linux.kernel/1055100
+> 
+> Does reverting 34f971f6f7988be4d014eec3e3526bee6d007ffa help in your
+> case?
 
-Thanks, Kame, that's good: I've inlined it below with Balbir's Review,
-my Ack, and a Cc: stable@kernel.org.
 
-Hugh
-
-
-[PATCH] memcg: fix wrong VM_BUG_ON() in try_charge()'s mm->owner check
-
-At __mem_cgroup_try_charge(), VM_BUG_ON(!mm->owner) is checked.
-But as commented in mem_cgroup_from_task(), mm->owner can be NULL in some racy
-case. This check of VM_BUG_ON() is bad.
-
-A possible story to hit this is at swapoff()->try_to_unuse(). It passes
-mm_struct to mem_cgroup_try_charge_swapin() while mm->owner is NULL. If we
-can't get proper mem_cgroup from swap_cgroup information, mm->owner is used
-as charge target and we see NULL.
-
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reported-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: Balbir Singh <balbir@linux.vnet.ibm.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Cc: stable@kernel.org
 ---
- mm/memcontrol.c |   19 +++++++++----------
- 1 file changed, 9 insertions(+), 10 deletions(-)
+Subject: sched: Fixup cross sched_class wakeup preemption
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Sun Oct 31 12:37:04 CET 2010
 
-Index: linux-2.6.36/mm/memcontrol.c
+Instead of dealing with sched classes inside each check_preempt_curr()
+implementation, pull out this logic into the generic wakeup preemption
+path.
+
+This fixes a hang in KVM (and others) where we are waiting for the
+stop machine thread to run..
+
+Tested-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <new-submission>
+---
+ kernel/sched.c          |   39 ++++++++++++++++++++++++++++-----------
+ kernel/sched_fair.c     |    6 ------
+ kernel/sched_stoptask.c |    2 +-
+ 3 files changed, 29 insertions(+), 18 deletions(-)
+
+Index: linux-2.6/kernel/sched.c
 ===================================================================
---- linux-2.6.36.orig/mm/memcontrol.c
-+++ linux-2.6.36/mm/memcontrol.c
-@@ -1729,19 +1729,18 @@ again:
+--- linux-2.6.orig/kernel/sched.c
++++ linux-2.6/kernel/sched.c
+@@ -560,18 +560,9 @@ struct rq {
  
- 		rcu_read_lock();
- 		p = rcu_dereference(mm->owner);
--		VM_BUG_ON(!p);
- 		/*
--		 * because we don't have task_lock(), "p" can exit while
--		 * we're here. In that case, "mem" can point to root
--		 * cgroup but never be NULL. (and task_struct itself is freed
--		 * by RCU, cgroup itself is RCU safe.) Then, we have small
--		 * risk here to get wrong cgroup. But such kind of mis-account
--		 * by race always happens because we don't have cgroup_mutex().
--		 * It's overkill and we allow that small race, here.
-+		 * Because we don't have task_lock(), "p" can exit.
-+		 * In that case, "mem" can point to root or p can be NULL with
-+		 * race with swapoff. Then, we have small risk of mis-accouning.
-+		 * But such kind of mis-account by race always happens because
-+		 * we don't have cgroup_mutex(). It's overkill and we allo that
-+		 * small race, here.
-+		 * (*) swapoff at el will charge against mm-struct not against
-+		 * task-struct. So, mm->owner can be NULL.
- 		 */
- 		mem = mem_cgroup_from_task(p);
--		VM_BUG_ON(!mem);
--		if (mem_cgroup_is_root(mem)) {
-+		if (!mem || mem_cgroup_is_root(mem)) {
- 			rcu_read_unlock();
- 			goto done;
- 		}
+ static DEFINE_PER_CPU_SHARED_ALIGNED(struct rq, runqueues);
+ 
+-static inline
+-void check_preempt_curr(struct rq *rq, struct task_struct *p, int flags)
+-{
+-	rq->curr->sched_class->check_preempt_curr(rq, p, flags);
+ 
+-	/*
+-	 * A queue event has occurred, and we're going to schedule.  In
+-	 * this case, we can save a useless back to back clock update.
+-	 */
+-	if (test_tsk_need_resched(p))
+-		rq->skip_clock_update = 1;
+-}
++static inline
++void check_preempt_curr(struct rq *rq, struct task_struct *p, int flags);
+ 
+ static inline int cpu_of(struct rq *rq)
+ {
+@@ -9400,4 +9391,30 @@ void synchronize_sched_expedited(void)
+ }
+ EXPORT_SYMBOL_GPL(synchronize_sched_expedited);
+ 
++static inline
++void check_preempt_curr(struct rq *rq, struct task_struct *p, int flags)
++{
++	const struct sched_class *class;
++
++	if (p->sched_class == rq->curr->sched_class)
++		rq->curr->sched_class->check_preempt_curr(rq, p, flags);
++
++	for_each_class(class) {
++		if (class == rq->curr->sched_class)
++			break;
++		if (class == p->sched_class) {
++			resched_task(rq->curr);
++			break;
++		}
++	}
++
++	/*
++	 * A queue event has occurred, and we're going to schedule.  In
++	 * this case, we can save a useless back to back clock update.
++	 */
++	if (test_tsk_need_resched(rq->curr))
++		rq->skip_clock_update = 1;
++}
++
++
+ #endif /* #else #ifndef CONFIG_SMP */
+Index: linux-2.6/kernel/sched_fair.c
+===================================================================
+--- linux-2.6.orig/kernel/sched_fair.c
++++ linux-2.6/kernel/sched_fair.c
+@@ -1654,12 +1654,6 @@ static void check_preempt_wakeup(struct
+ 	struct cfs_rq *cfs_rq = task_cfs_rq(curr);
+ 	int scale = cfs_rq->nr_running >= sched_nr_latency;
+ 
+-	if (unlikely(rt_prio(p->prio)))
+-		goto preempt;
+-
+-	if (unlikely(p->sched_class != &fair_sched_class))
+-		return;
+-
+ 	if (unlikely(se == pse))
+ 		return;
+ 
+Index: linux-2.6/kernel/sched_stoptask.c
+===================================================================
+--- linux-2.6.orig/kernel/sched_stoptask.c
++++ linux-2.6/kernel/sched_stoptask.c
+@@ -19,7 +19,7 @@ select_task_rq_stop(struct rq *rq, struc
+ static void
+ check_preempt_curr_stop(struct rq *rq, struct task_struct *p, int flags)
+ {
+-	resched_task(rq->curr); /* we preempt everything */
++	/* we're never preempted */
+ }
+ 
+ static struct task_struct *pick_next_task_stop(struct rq *rq)
+
