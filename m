@@ -1,50 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666Ab0KDS6H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 14:58:07 -0400
-Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:50313 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751857Ab0KDS6F (ORCPT
+	id S1752690Ab0KDS72 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 14:59:28 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:57614 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752360Ab0KDS71 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 14:58:05 -0400
-Date: Thu, 4 Nov 2010 14:57:05 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Andi Kleen <andi@firstfloor.org>, bjschuma@netapp.com,
-        torvalds@linux-foundation.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [regression] NFS readdir change break fully cached nfs root
-Message-ID: <20101104185705.GA3778@elliptictech.com>
-Mail-Followup-To: Trond Myklebust <Trond.Myklebust@netapp.com>,
-	Andi Kleen <andi@firstfloor.org>, bjschuma@netapp.com,
-	torvalds@linux-foundation.org, linux-nfs@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <20101102180051.GA26089@basil.fritz.box>
- <1288731930.534.1.camel@heimdal.trondhjem.org>
- <20101103162423.GA3797@elliptictech.com>
- <1288886814.3285.5.camel@heimdal.trondhjem.org>
+	Thu, 4 Nov 2010 14:59:27 -0400
+Date: Thu, 4 Nov 2010 13:59:19 -0500
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Nicolas Kaiser <nikai@nikai.net>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Kartikey Mahendra Bhatt <kartik_me@hotmail.com>,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] crypto: cast5: simplify if-statements
+Message-ID: <20101104185919.GA2464@gondor.apana.org.au>
+References: <20101027120324.0b12a8b8@absol.kitzblitz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1288886814.3285.5.camel@heimdal.trondhjem.org>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101027120324.0b12a8b8@absol.kitzblitz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-11-04 12:06 -0400, Trond Myklebust wrote:
-> On Wed, 2010-11-03 at 12:24 -0400, Nick Bowler wrote:
-> > I applied this patch, and it solves the lockups, but there's a new
-> > problem: the directory list sometimes comes back _empty_!
-[...]
-> I found a couple more issues. Can you try this revision of the same
-> patch?
-[...]
-> NFS: Fix a couple of regressions in readdir.
+On Wed, Oct 27, 2010 at 12:03:24PM +0200, Nicolas Kaiser wrote:
+> I noticed that by factoring out common rounds from the
+> branches of the if-statements in the encryption and
+> decryption functions, the executable file size goes down
+> significantly, for crypto/cast5.ko from 26688 bytes
+> to 24336 bytes (amd64).
 
-Unfortunately, I still have the same problem (listing comes back empty
-after running the script) with the new patch.
-
+Patch applied.  Thanks a lot!
 -- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
