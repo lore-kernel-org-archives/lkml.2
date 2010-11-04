@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198Ab0KDPVO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 11:21:14 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:33067 "EHLO
+	id S1752456Ab0KDPV1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 11:21:27 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:33070 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751887Ab0KDPVM (ORCPT
+	with ESMTP id S1752070Ab0KDPVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 11:21:12 -0400
+	Thu, 4 Nov 2010 11:21:13 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: werner@suse.de, alan@lxorguk.ukuu.org.uk, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH v2 1/5] console: move for_each_console to linux/console.h
-Date: Thu,  4 Nov 2010 16:20:20 +0100
-Message-Id: <1288884024-23873-1-git-send-email-jslaby@suse.cz>
+        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Kyle McMartin <kyle@mcmartin.ca>, Helge Deller <deller@gmx.de>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        linux-parisc@vger.kernel.org
+Subject: [PATCH v2 2/5] parisc: cleanup console handling
+Date: Thu,  4 Nov 2010 16:20:21 +0100
+Message-Id: <1288884024-23873-2-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1288884024-23873-1-git-send-email-jslaby@suse.cz>
+References: <1288884024-23873-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move it out of printk.c so that we can use it all over the code. There
-are some potential users which will be converted to that macro in next
-patches.
+* use newly added for_each_console for iterating consoles
+* add proper console locking
+* do not initialize tmp twice
+* no need to declare console_drivers, it's already done in console.h
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Kyle McMartin <kyle@mcmartin.ca>
+Cc: Helge Deller <deller@gmx.de>
+Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
+Cc: linux-parisc@vger.kernel.org
 ---
- include/linux/console.h |    6 ++++++
- kernel/printk.c         |    6 ------
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ arch/parisc/kernel/pdc_cons.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/console.h b/include/linux/console.h
-index 95cf6f0..875cfb1 100644
---- a/include/linux/console.h
-+++ b/include/linux/console.h
-@@ -126,6 +126,12 @@ struct console {
- 	struct	 console *next;
- };
+diff --git a/arch/parisc/kernel/pdc_cons.c b/arch/parisc/kernel/pdc_cons.c
+index 66d1f17..11bdd68 100644
+--- a/arch/parisc/kernel/pdc_cons.c
++++ b/arch/parisc/kernel/pdc_cons.c
+@@ -92,8 +92,6 @@ static int pdc_console_setup(struct console *co, char *options)
  
-+/*
-+ * for_each_console() allows you to iterate on each console
-+ */
-+#define for_each_console(con) \
-+	for (con = console_drivers; con != NULL; con = con->next)
-+
- extern int console_set_on_cmdline;
+ static struct timer_list pdc_console_timer;
  
- extern int add_preferred_console(char *name, int idx, char *options);
-diff --git a/kernel/printk.c b/kernel/printk.c
-index b2ebaee..bf0420a 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -43,12 +43,6 @@
- #include <asm/uaccess.h>
- 
- /*
-- * for_each_console() allows you to iterate on each console
-- */
--#define for_each_console(con) \
--	for (con = console_drivers; con != NULL; con = con->next)
+-extern struct console * console_drivers;
 -
--/*
-  * Architectures can override it:
-  */
- void asmlinkage __attribute__((weak)) early_printk(const char *fmt, ...)
+ static int pdc_console_tty_open(struct tty_struct *tty, struct file *filp)
+ {
+ 
+@@ -169,11 +167,13 @@ static int __init pdc_console_tty_driver_init(void)
+ 	 * It is unregistered if the pdc console was not selected as the
+ 	 * primary console. */
+ 
+-	struct console *tmp = console_drivers;
++	struct console *tmp;
+ 
+-	for (tmp = console_drivers; tmp; tmp = tmp->next)
++	acquire_console_sem();
++	for_each_console(tmp)
+ 		if (tmp == &pdc_cons)
+ 			break;
++	release_console_sem();
+ 
+ 	if (!tmp) {
+ 		printk(KERN_INFO "PDC console driver not registered anymore, not creating %s\n", pdc_cons.name);
 -- 
 1.7.3.1
 
