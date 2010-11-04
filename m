@@ -1,90 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608Ab0KDLrU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 07:47:20 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:48691 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752072Ab0KDLrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 07:47:17 -0400
-Date: Thu, 4 Nov 2010 12:46:48 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Marcus Meissner <meissner@suse.de>
-Cc: linux-kernel@vger.kernel.org, jason.wessel@windriver.com,
-        fweisbec@gmail.com, tj@kernel.org, mort@sgi.com, akpm@osdl.org,
-        security@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of
- attacking
-Message-ID: <20101104114648.GA23381@elte.hu>
-References: <20101104100914.GC25118@suse.de>
+	id S1750913Ab0KDL52 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 07:57:28 -0400
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:36265 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782Ab0KDL5Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 07:57:25 -0400
+Message-ID: <d8ecdedc03353ad14daa29178528255e.squirrel@webmail.greenhost.nl>
+In-Reply-To: <20101104064643.GA11249@jasper.tkos.co.il>
+References: <879a6320efee16c04f0732a6887b95c1b4c6d10f.1288793522.git.baruch@tkos.co.il>
+    <e15f89ec737d2478bf5edd5369028554.squirrel@webmail.greenhost.nl>
+    <20101104064643.GA11249@jasper.tkos.co.il>
+Date: Thu, 4 Nov 2010 12:57:22 +0100 (CET)
+Subject: Re: [PATCH] drivers/misc: Altera Cyclone active serial 
+     implementation
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Baruch Siach" <baruch@tkos.co.il>
+Cc: linux-kernel@vger.kernel.org, "Andrew Morton" <akpm@linux-foundation.org>,
+        "Alex Gershgorin" <agersh@rambler.ru>
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101104100914.GC25118@suse.de>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.0
+X-Scan-Signature: 665b650f67c80b8b99b1d65e4b73bfdb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Baruch,
 
-* Marcus Meissner <meissner@suse.de> wrote:
+On Thu, November 4, 2010 07:46, Baruch Siach wrote:
+>>
+>> I think it would clear up the code a lot if you introduced a xmit_bytes()
+>> function which does the above for variable lengths, as well as the ASIO_NCS
+>> fiddling.
+>
+> I'll consider this for the next version. Keep in mind that we send a whole
+> command during nCS assertion, not arbitrary buffers. So, in the case of the
+> PAGE_PROGRAM command, we'll need to prepend the instruction and its address
+> argument to the page data. I'm not sure we end up with something more clear
+> than we have now.
 
-> Hi,
-> 
-> Making /proc/kallsyms readable only for root makes it harder for attackers to 
-> write generic kernel exploits by removing one source of knowledge where things are 
-> in the kernel.
+You just have to make the buffer slightly bigger and do something like:
 
-Cc:-ed Linus - i think he argued in favor of such a patch in the past.
+ret = copy_from_user(page_buf + 4, buf, AS_PAGE_SIZE);
+...
+page_buf[0] = AS_PAGE_PROGRAM;
+page_buf[1] = (page_count >> 8) & 0xff;
+page_buf[2] = page_count & 0xff;
+page_buf[3] = 0;
 
-I generally agree with such patches (i have written some myself), but there's a few 
-questions with this one, which make this limited change ineffective and which make 
-it harder to implement a fuller patch that makes it truly harder to figure out the 
-precise kernel build:
+Which doesn't look too bad.
 
- - The real security obstruction effect is very small from this measure alone: the 
-   overwhelming majority of our users are running distro kernels, so the Symbol.map 
-   file (and hence 99% of /proc/kallsyms content) is well-known - unless we also 
-   restrict 'uname -r' from nonprivileged users-ace. Hiding that might make sense - 
-   but the two should be in one patch really.
+(Btw, aren't [1] and [2] accidentally swapped? If it supports three
+address bytes as you say below, then middle-low-high byte seems like
+a weird order.)
 
- - ( It will break a few tools that can be run as a plain user out of box - perf
-     for example. "chmod a+r /proc/kallsyms" during bootup will work that around so
-     it's not the end of the world. )
+>> Also pass in drvdata and get the gpios from there in this function,
+>> you never have the one without the other.
+>
+> So? I want to avoid the 'drvdata->' prefix when it's not needed.
 
- - For self-built kernels it might make sense - but there's "chmod a-r
-   /proc/kallsyms" during bootup one can do already.
+Good point. Perhaps add a temporary var holding the pointer if after
+the changes there's still drvdata->gpios everywhere.
 
- - There's the side-question of module symbols - those are dynamically allocated
-   hence arguably per system. But module symbols make up only 1% on a typical 
-   booted up full distro box.
+>> You don't unlock open_lock, so this supports only one user at the time?
+>
+> Correct. I don't think anything good will come out of concurrent writes to the
+> FPGA, and read is not supported.
 
-So what does a distribution like Suse expect from this change alone? Those have 
-public packages in rpms which can be downloaded by anyone, so it makes little sense 
-to hide it - unless _all_ version information is hidden.
+Seems sensible.
 
-So i'd like to see a _full_ version info sandboxing patch that thinks through all 
-the angles and restricts uname -r kernel version info as well, and makes dmesg 
-unaccessible to users - and closes a few other information holes as well that give 
-away the exact kernel version - _that_ together will make it hard to blindly attack 
-a very specific kernel version.
+>> unsigned short?
+>
+> The largest chip currently supporting this protocol (EPCS128) has 2^16 pages,
+> but the protocol allocates 3 address bytes. So why limit ourselves? Currently
+> the code only uses the 16 LSBs, I'll change this.
 
-But without actually declaring and achieving that sandboxing goal this security 
-measure is just a feel-good thing really - and makes it harder to make more 
-difficult steps down the road, like closing 'uname -r' ...
+I think you should add a check to see if page_count isn't too big,
+or else things go silently wrong when the caller supplies a too big
+value.
 
-I fully expect Linus to overrule me on this, but hey, i had to try it and lay out my 
-arguments :-)
+>> Is 5s always enough? Is there some way to check if it's really done?
+>
+> You are right. 5 seconds are definitely not enough for the larger chips
+> (typical time of 105 seconds for EPCS128). I'll poll the "write in progress"
+> bit instead. More code to write :(.
 
-Thanks,
+If it takes that long, just poll every second or so I guess.
 
-	Ingo
+>> Maybe check the whole range before sending any data?
+>
+> What is there to check?
+
+The whole range of 'buf'. If the copy_from_user fails later on you end
+up with a partially programmed FPGA. No big deal, but avoidable.
+
+Maybe annotate buf with __user to keep Sparse happy?
+
+static ssize_t cyclone_as_write(struct file *file, const char __user *buf,
+		size_t count, loff_t *ppos)
+
+>> > diff --git a/include/linux/cyclone_as.h b/include/linux/cyclone_as.h
+>> > new file mode 100644
+>> > index 0000000..cf86955
+>> > --- /dev/null
+>> > +++ b/include/linux/cyclone_as.h
+>> > @@ -0,0 +1,23 @@
+>> > +/*
+>> > + * Copyright 2010 Alex Gershgorin, Orex Computed Radiography
+>> > + *
+>> > + * The code contained herein is licensed under the GNU General Public
+>> > + * License. You may obtain a copy of the GNU General Public License
+>> > + * Version 2 or later at the following locations:
+>> > + *
+>> > + * http://www.opensource.org/licenses/gpl-license.html
+>> > + * http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+>> > + */
+>> > +
+>> > +#ifndef __ALTERA_PROG_H
+>> > +#define __ALTERA_PROG_H
+>> > +
+>> > +struct cyclone_as_platform_data {
+>> > +	unsigned data;
+>> > +	unsigned nconfig;
+>> > +	unsigned dclk;
+>> > +	unsigned ncs;
+>> > +	unsigned nce;
+>> > +};
+>> > +
+>> > +#endif /* __ALTERA_PROG_H */
+>>
+>> I know other drivers put their header files in include/linux/ too,
+>> but is there any reason to? This seems all internal to cyclone_as.c,
+>> why not have no header file?
+>
+> This part is not internal at all. Using this struct the platform code (knowing
+> the actual machine specific GPIO wiring) passes this information to the
+> driver.
+
+Except if I'm missing some build system voodoo, no, it's totally internal.
+The driver sets it, no one else knows about it:
+
++static int __init cyclone_as_probe(struct platform_device *pdev)
++{
++	int ret, minor;
++	struct cyclone_as_device *drvdata;
++	struct device *dev;
++	struct cyclone_as_platform_data *pdata = pdev->dev.platform_data;
++
++	drvdata = devm_kzalloc(&pdev->dev, sizeof(*drvdata), GFP_KERNEL);
+
+I'm sure that dev.platform_data is void*.
+
+>> Probably not high on your list, but what about suspend support?
+>> Preventing suspend from succeeding seems like a good idea when
+>> stuff is going on.
+>
+> I'm not sure we should impose a suspend prevention in this case. The user
+> should bear the consequences if he/she decides to suspend the system in the
+> middle of FPGA programming. Maybe we should just warn.
+
+I don't think any user would ever want to suspend in the middle of
+FPGA programming. So if it happens it's most likely a mistake or
+some automatic suspend. Both should fail. The code to fail is
+slightly simpler than the code to warn too. So I'd say either let
+it fail or keep your code simpler and ignore it altogether.
+
+Greetings,
+
+Indan
+
+
