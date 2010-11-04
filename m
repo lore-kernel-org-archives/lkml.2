@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751833Ab0KDO0A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 10:26:00 -0400
-Received: from verein.lst.de ([213.95.11.210]:38765 "EHLO verein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750845Ab0KDOZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 10:25:59 -0400
-Date: Thu, 4 Nov 2010 15:25:07 +0100
-From: Christoph Hellwig <hch@lst.de>
-To: Oren Laadan <orenl@cs.columbia.edu>
-Cc: Christoph Hellwig <hch@lst.de>, Tejun Heo <tj@kernel.org>,
-        ksummit-2010-discuss@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-Message-ID: <20101104142507.GA25183@lst.de>
-References: <Pine.LNX.4.64.1011021530470.12128@takamine.ncl.cs.columbia.edu> <4CD08419.5050803@kernel.org> <20101102214706.GA28593@lst.de> <4CD237EB.6090907@cs.columbia.edu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CD237EB.6090907@cs.columbia.edu>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+	id S1751887Ab0KDO0s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 10:26:48 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43826 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845Ab0KDO0r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 10:26:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=iqTdtWP3zLn5AHMPu1lJQediyxOkydzX0TPGnW2CBDjtwMg9Yhpia7riWEj0OKi2kW
+         UXgQUoiSZxo7v6XVojtNQjb1ZeC8D7iJSsYBgkXOaBKMRGwRIlHlC+AMEPnjOUI1UssI
+         gAAk7a/5j3s3rJCWHaOpLE5t6dQHMx/A6JjD4=
+Message-ID: <4CD2C2A1.4030004@suse.cz>
+Date: Thu, 04 Nov 2010 15:26:41 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: matti.j.aaltonen@nokia.com
+CC: ext Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Jari Vanhala <ext-jari.vanhala@nokia.com>
+Subject: Re: mmotm 2010-10-31-21-24 uploaded (drivers/nfc/pn544)
+References: <201011010427.oA14R3Y6010534@imap1.linux-foundation.org>	 <20101101110024.bca61c57.randy.dunlap@oracle.com> <1288684630.1603.102.camel@masi.mnp.nokia.com>
+In-Reply-To: <1288684630.1603.102.camel@masi.mnp.nokia.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 04, 2010 at 12:34:51AM -0400, Oren Laadan wrote:
-> Hi Christoph,
+On 11/02/2010 08:57 AM, Matti J. Aaltonen wrote:
+> On Mon, 2010-11-01 at 11:00 -0700, ext Randy Dunlap wrote:
+>> Use %zd to print ssize_t variables and %zu to print size_t:
+>>
+>> drivers/nfc/pn544.c:332: warning: format '%d' expects type 'int', but argument 6 has type 'size_t'
+>> drivers/nfc/pn544.c:442: warning: format '%d' expects type 'int', but argument 6 has type 'size_t'
 > 
-> I really wish you would have raised these concerns during the
-> ksummit or thereafter. I'm here (LPC) until Friday, and would be
-> happy to discuss any aspect of the linux-cr while at it (and if
-> needed can post a summary to the list).
+> Thanks, I'll do that... I'm using Sparse and checkpatch --strict but
+> neither gave me a warning about that.
 
-Discussion technical topics with slides in a big room is utterly
-pointless.  Just like during all the other such boring talks during KS I
-was either asleep, working on something important or out of the room
-doing the extended hallway track.
+You would need a 64bit compiler to emit that for size_t.
 
-If you want to discuss invasive kernel changes with people do it by
-email.  The chance that anyone is going to listen to you is a lot
-higher.
+regards,
+-- 
+js
+suse labs
