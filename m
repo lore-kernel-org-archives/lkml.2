@@ -1,76 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab0KDWot (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 18:44:49 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:34796 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752640Ab0KDWoq convert rfc822-to-8bit (ORCPT
+	id S1753500Ab0KDWxr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 18:53:47 -0400
+Received: from 63.mail-out.ovh.net ([91.121.185.56]:49806 "HELO
+	63.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753475Ab0KDWxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 18:44:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=FzO7ca7lpoaOzGKRCrptXxBzh7NF/185ZKtImFMIlcbhjoKka17w7bpeCNPySvtHy/
-         bLx5mmBsEHPtZAC9WmTmj6johpmCVXrHkTGnXjITOS5kpvJCHbgS45CHK2cZ5meFTDiP
-         qlcDuaXsM7mjRU1oMASvqy7H4hMmJHRe0EyUg=
+	Thu, 4 Nov 2010 18:53:46 -0400
+Message-ID: <4CD33975.4010100@eukrea.com>
+Date: Thu, 04 Nov 2010 23:53:41 +0100
+From: =?ISO-8859-1?Q?Eric_B=E9nard?= <eric@eukrea.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; fr; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-In-Reply-To: <250707.83204.qm@web110504.mail.gq1.yahoo.com>
-References: <250707.83204.qm@web110504.mail.gq1.yahoo.com>
-From: Greg Freemyer <greg.freemyer@gmail.com>
-Date: Thu, 4 Nov 2010 18:44:26 -0400
-Message-ID: <AANLkTikkAL-ZzxLfa+POoyv4qCE0LUq1h+nfE2_Bn7Ji@mail.gmail.com>
-Subject: Re: [PATCH 1/1] fs: Small refactoring of the code in ext4 2.6.37-rc1
-To: andre@bsrsoft.com.br
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Dinh.Nguyen@freescale.com
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, s.hauer@pengutronix.de,
+        u.kleine-koenig@pengutronix.de, amit.kucheria@canonical.com
+Subject: Re: [PATCHv2 2/2] ARM: imx: Add mx53 support to common msl functions.
+References: <1288910773-3098-1-git-send-email-Dinh.Nguyen@freescale.com> <1288910773-3098-2-git-send-email-Dinh.Nguyen@freescale.com>
+In-Reply-To: <1288910773-3098-2-git-send-email-Dinh.Nguyen@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 4140215434258001279
+X-Ovh-Remote: 82.233.81.124 (tal33-3-82-233-81-124.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/11/4 André Luis Pereira dos Santos - BSRSoft <andre@bsrsoft.com.br>:
-> From: Andre Luis Pereira dos Santos <andre@bsrsoft.com.br>
+Hi Dinh,
+
+Le 04/11/2010 23:46, Dinh.Nguyen@freescale.com a écrit :
+> From: Dinh Nguyen<Dinh.Nguyen@freescale.com>
 >
-> Hi.
-> Small refactoring of the code in order to make minor enhancements to critical areas.
-> The notation x + 1 has been replaced by more efficient notation x + +.
+> Add mx53 support to cpu.c and mm.c.
 >
-> Signed-off-by: Andre Luis Pereira dos Santos <andre@bsrsoft.com.br>
-> ---
-> Signed-off-by: Andre Luis Pereira dos Santos <andre@bsrsoft.com.br>
-> --- linux-2.6.37-rc1/fs/ext4/extents.c  2010-11-01 09:54:12.000000000 -0200
-> +++ linux-2.6.37-rc1-patched/fs/ext4/extents.c  2010-11-04 19:54:26.000000000 -0200
-> @@ -555,9 +555,9 @@ ext4_ext_binsearch(struct inode *inode,
->        while (l <= r) {
->                m = l + (r - l) / 2;
->                if (block < le32_to_cpu(m->ee_block))
-> -                       r = m - 1;
-> +                       r = m--;
->                else
-> -                       l = m + 1;
-> +                       l = m++;
->                ext_debug("%p(%u):%p(%u):%p(%u) ", l, le32_to_cpu(l->ee_block),
->                                m, le32_to_cpu(m->ee_block),
->                                r, le32_to_cpu(r->ee_block));
-> @@ -1557,7 +1557,7 @@ static int ext4_ext_try_to_merge(struct
->                if (ext4_ext_is_uninitialized(ex))
->                        uninitialized = 1;
->                ex->ee_len = cpu_to_le16(ext4_ext_get_actual_len(ex)
-> -                               + ext4_ext_get_actual_len(ex + 1));
-> +                               + ext4_ext_get_actual_len(ex++));
->                if (uninitialized)
->                        ext4_ext_mark_uninitialized(ex);
+> Also change the method to get the silicon version from the
+> documented IIM SREV register instead of reading the ROM code.
+>
+if iMX5x IIM is like iMX27/31/35, you may need to enable the iim clock before 
+accessing the registers.
 
-But
+Eric
 
-                   r = m - 1;
-is not equivalent to
-                   r = m--;
-
-At a minimum your code no longer passes the same value to of m to ext_debug.
-
-NAK
-
-Greg
