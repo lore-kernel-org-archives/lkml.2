@@ -1,63 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752731Ab0KDTGD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 15:06:03 -0400
-Received: from nm1.bullet.mail.sp2.yahoo.com ([98.139.91.71]:43985 "HELO
-	nm1.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752676Ab0KDTF7 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 15:05:59 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 982819.26621.bm@omp1040.mail.sp2.yahoo.com
-Message-ID: <516163.98392.qm@web110512.mail.gq1.yahoo.com>
-X-YMail-OSG: VekBkB4VM1naLQKmF9zz7XbBSQosqKz9o7nVz9cY7lEIkoQ
- YaBVWQl9r9l8InKDyfPquRx9tPSkDCTJvUT.Xqmr.MzYrBf3ph4irJf.DXsy
- hPFAj9fd4slO3b3cY8XWbGlZIYXEiXuzO0Ln8.3NTmPeizszDlsDOKMNUJ7p
- UyTGS7mzegSCeoV67gcPrk2PdtJ_.P.M6GBoobc3XCjy9c3l_Ur58oxTrFlw
- XpYYndB0.DwsmG35aX3knm8nQey06sWYYwjm8._LAgPa4wGe14Ub1ibVRuNr
- hEeLDiO0tXHYC6P.rZpQHROO8euj5hZl51nbVazzwsDXms8ML4xiNNshwbSF
- xyT13lX5uCRZrozWIu6is7tWkyMZdXD.2dYPNtjY0
-X-RocketYMMF: multiplicador
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.105.279950
-Date: Thu, 4 Nov 2010 12:05:58 -0700 (PDT)
-From: =?iso-8859-1?Q?Andr=E9_Luis_Pereira_dos_Santos_-_BSRSoft?= 
-	<andre@bsrsoft.com.br>
-Reply-To: andre@bsrsoft.com.br
-Subject: [PATCH v2 1/1] security: Reordering the boot message security framework 2.6.37-rc1
-To: James Morris <jmorris@namei.org>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1752476Ab0KDTIS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 15:08:18 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:41161 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751465Ab0KDTIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 15:08:16 -0400
+Date: Thu, 4 Nov 2010 20:08:04 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Marcus Meissner <meissner@suse.de>
+Cc: linux-kernel@vger.kernel.org, jason.wessel@windriver.com,
+        fweisbec@gmail.com, tj@kernel.org, mort@sgi.com, akpm@osdl.org,
+        security@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of
+ attacking
+Message-ID: <20101104190804.GA16099@elte.hu>
+References: <20101104100914.GC25118@suse.de>
+ <20101104114648.GA23381@elte.hu>
+ <20101104122906.GH25118@suse.de>
+ <20101104135802.GA31416@elte.hu>
+ <20101104141104.GA31753@elte.hu>
+ <20101104143322.GL25118@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101104143322.GL25118@suse.de>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andre Luis Pereira dos Santos <andre@bsrsoft.com.br>
 
-Hi.
-I did the reorganization of the boot message security framework so that it is not issued before the start in fact occur:
+* Marcus Meissner <meissner@suse.de> wrote:
 
-Signed-off-by: Andre Luis Pereira dos Santos <andre@bsrsoft.com.br>
----
+> > For example, on a Fedora testbox i have this version info:
+> > 
+> >   $ uname -r
+> >   2.6.35.6-48.fc14.x86_64
+> > 
+> > Any attacker can download that rpm from:
+> > 
+> >   http://download.fedora.redhat.com/pub/fedora/linux/updates/14/x86_64/kernel-2.6.35.6-48.fc14.x86_64.rpm
+> > 
+> > And can extract the System.map from it, using rpm2cpio and cpio -i -d. That will 
+> > include all the symbol addresses - without the attacker having any access to the 
+> > System.map or /proc/kallsyms on this particular box.
+> > 
+> > I.e. on distro kernel installations (which comprise the _vast_ majority of our 
+> > userbase) your patch brings little security benefits.
+> > 
+> > What i suggested in later parts of my mail might provide more security: to 
+> > sandbox kernel version information from unprivileged user-space - if we decide 
+> > that we want to sandbox kernel version information ...
+> > 
+> > That is a big if, because it takes a considerable amount of work. Would be worth 
+> > trying it - but feel-good non-solutions that do not bring much improvement to 
+> > the majority of users IMHO hinder such efforts.
+> 
+> Hiding the OS version is really quite hard I think.
 
-Signed-off-by: Andre Luis Pereira dos Santos <andre@bsrsoft.com.br>
---- linux-2.6.37-rc1/security/security.c        2010-11-01 09:54:12.000000000 -0200
-+++ linux-2.6.37-rc1-patched/security/security.c        2010-11-04 15:04:04.000000000 -0200
-@@ -56,12 +56,12 @@ static void __init do_security_initcalls
-  */
- int __init security_init(void)
- {
--       printk(KERN_INFO "Security Framework initialized\n");
--
-        security_fixup_ops(&default_security_ops);
-        security_ops = &default_security_ops;
-        do_security_initcalls();
+Yes. Hard but it would be useful - especially if we start adding things like known 
+exploit honeypots. Forcing attackers to probe the kernel by actually running a 
+kernel exploit, and risking an alarm would be a very powerful security feature.
 
-+       printk(KERN_INFO "Security Framework initialized\n");
-+
-        return 0;
- }
+Removing version info will upset some tools/libraries that rely on kernel version 
+information for quirks though.
 
+> I mean the kernel could hide it from uname, but lsb_release, /etc/redhat-release, 
+> /etc/SuSE-release etc still exist and then you can still use the fixed address 
+> list table inside your exploit. But an exploits needs to have such a list, making 
+> it harder to write.
+> 
+> If we avoid exploits being able to just do open("/boot/System.map") it would make 
+> it a useful step harder for exploit writers.
 
-      
+Dunno. It's a very low 'barrier'.
+
+> (This will end up a arms race between us and the exploit toolkit writers of 
+> course, but hopefully not a longer one than fixing all actual problems ;)
+
+That's not really an arms race. It's more like a 'throwing a feather in the path of 
+a tornado' kind of defense. Sure, it has some effect.
+
+> I also briefly thought about kernel ASLR, but my knowledge of the kernel loading 
+> is too limited whether this is even possible or at all useful.
+
+Now ASLR for kernel addresses would be _very_ useful. We could still 'expose' useful 
+debug and instrumentation info like /proc/kallsyms, but the kernel internal offset 
+would be a per bootup secret.
+
+_That_ is a real statistical defensive security measure which would help everyone 
+and everywhere. Not hiding public info on that system and still leaving the link to 
+the public info (the version) available.
+
+(Isn't such a feature available in one of the security patches? Porting that to 
+distros and moving it upstream would add some real defense.)
+
+Thanks,
+
+	Ingo
