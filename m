@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754834Ab0KDByc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 21:54:32 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:45554
+	id S1754887Ab0KDBzs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 21:55:48 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36994
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754389Ab0KDBy3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 21:54:29 -0400
-Date: Wed, 03 Nov 2010 18:54:52 -0700 (PDT)
-Message-Id: <20101103.185452.39170079.davem@davemloft.net>
-To: teg@jklm.no
-Cc: eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: panic with 2.6.37-rc1
+	by vger.kernel.org with ESMTP id S1754411Ab0KDBzr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 21:55:47 -0400
+Date: Wed, 03 Nov 2010 18:56:11 -0700 (PDT)
+Message-Id: <20101103.185611.115918611.davem@davemloft.net>
+To: herbert@gondor.hengli.com.au
+Cc: eric.dumazet@gmail.com, randy.dunlap@oracle.com,
+        torvalds@linux-foundation.org, hadi@cyberus.ca, tgraf@suug.ch,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        bblum@andrew.cmu.edu
+Subject: Re: Linux 2.6.37-rc1 (net/sched: cls_cgroup)
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <AANLkTimY+cC=bu6LDb_e-Qbghd-F0RNZejhKaeXJWbY7@mail.gmail.com>
-References: <AANLkTi=mEzCMCC+K6oLOjW9xfws_+_hHq8DS3hpPB1zY@mail.gmail.com>
-	<1288822281.2718.30.camel@edumazet-laptop>
-	<AANLkTimY+cC=bu6LDb_e-Qbghd-F0RNZejhKaeXJWbY7@mail.gmail.com>
+In-Reply-To: <20101103233105.GA26124@gondor.apana.org.au>
+References: <20101103142156.73c2d3c9.randy.dunlap@oracle.com>
+	<1288821677.2718.27.camel@edumazet-laptop>
+	<20101103233105.GA26124@gondor.apana.org.au>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tom Gundersen <teg@jklm.no>
-Date: Wed, 3 Nov 2010 23:42:02 +0100
+From: Herbert Xu <herbert@gondor.apana.org.au>
+Date: Wed, 3 Nov 2010 18:31:05 -0500
 
-> On Wed, Nov 3, 2010 at 11:11 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
->> Le mercredi 03 novembre 2010 à 23:02 +0100, Tom Gundersen a écrit :
->>> I get panic during boot both with 2.6.37-rc1 and with current head.
->>>
->>> Here is the error message:
->>> <http://www.lix.polytechnique.fr/~tom/2.6.37-rc1-panic.jpg>. My
->>> .config is below.
->>>
->>> Let me know if you want more info. If you want I can test patches or
->>> bisect (if no one has any better suggestions).
->>>
->>
->> Please test following patch, thanks
->>
->> [PATCH] atl1 : fix panic on load
->>
->> Its now illegal to call netif_stop_queue() before register_netdev()
->>
->> Reported-by: Tom Gundersen <teg@jklm.no>
->> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
- ...
-> The patch solves the problem. Thanks!
+> cls_cgroup: Fix crash on module unload
+> 
+> Somewhere along the lines net_cls_subsys_id became a macro when
+> cls_cgroup is built as a module.  Not only did it make cls_cgroup
+> completely useless, it also causes it to crash on module unload.
+> 
+> This patch fixes this by removing that macro.
+> 
+> Thanks to Eric Dumazet for diagnosing this problem.
+> 
+> Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 
-Applied, thanks everyone.
+Applied, and queued up for -stable, thanks everyone!
