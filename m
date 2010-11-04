@@ -1,65 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124Ab0KDUym (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 16:54:42 -0400
-Received: from a-pb-sasl-sd.pobox.com ([64.74.157.62]:56126 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751849Ab0KDUyk (ORCPT
+	id S1753162Ab0KDUzk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 16:55:40 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:26584 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751849Ab0KDUzh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 16:54:40 -0400
-X-Greylist: delayed 525 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Nov 2010 16:54:40 EDT
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=subject:from:to
-	:cc:in-reply-to:references:content-type:date:message-id
-	:mime-version:content-transfer-encoding; q=dns; s=sasl; b=vT+5ma
-	L6PfXSeytwC7TjePJldoFCrLzHIrDl1w0VmzU7d6DcsXherWhY82MGtv+3lGly2h
-	oyoRhs+QbJab6V/QCFsAXyjxmwL6F9AdMuDVvttn0SzDbNpYFeNb+/PwDWCuyZlq
-	b9TKkd8Rj1W9kx74q7bg0oLvOWv8MoRF+0fFI=
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-From: Nathan Lynch <ntl@pobox.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Christoph Hellwig <hch@lst.de>, Oren Laadan <orenl@cs.columbia.edu>,
-        ksummit-2010-discuss@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, kapil@ccs.neu.edu, gene@ccs.neu.edu
-In-Reply-To: <4CD26270.5050906@kernel.org>
-References: <Pine.LNX.4.64.1011021530470.12128@takamine.ncl.cs.columbia.edu>
- <4CD08419.5050803@kernel.org>  <20101102214706.GA28593@lst.de>
- <1288835258.6132.56.camel@tp-t61>  <4CD26270.5050906@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 04 Nov 2010 15:45:37 -0500
-Message-ID: <1288903537.2897.28.camel@tp-t61>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
-Content-Transfer-Encoding: 7bit
-X-Pobox-Relay-ID: 80800626-E854-11DF-A0B6-B53272ABC92C-04752483!a-pb-sasl-sd.pobox.com
+	Thu, 4 Nov 2010 16:55:37 -0400
+Date: Thu, 4 Nov 2010 21:44:41 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: relayfs-devel@lists.sourceforge.net,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tom Zanussi <zanussi@us.ibm.com>, Tom Zanussi <tzanussi@gmail.com>,
+        Karim Yaghmour <karim@opersys.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Paul Mundt <lethal@linux-sh.org>, Jens Axboe <axboe@kernel.dk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH resend] Optimize relay_alloc_page_array() slightly by using
+ vzalloc rather than vmalloc and memset
+Message-ID: <alpine.LNX.2.00.1011042132480.15349@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-04 at 08:36 +0100, Tejun Heo wrote:
-> Hello,
-> 
-> On 11/04/2010 02:47 AM, Nathan Lynch wrote:
-> >>   In this case whitelisting the allowed
-> >> state by requiring special APIs for all I/O (or even just standard
-> >> APIs as long as they are supposed by the C/R lib you're linked against)
-> >> is the more pragmatic, and I think faithful aproach.
-> > 
-> > I don't think users will go for it.  They'll continue to use dodgy
-> > out-of-tree kernel modules and/or LD_PRELOAD hacks instead of porting
-> > their applications to a new library.  I think a C/R library is an
-> > "ideal" solution, but it's one that nobody would use - especially in
-> > HPC, unless the library somehow provides better performance.
-> 
-> I hear that there are plans to integrate one of the userland
-> snapshotting implementations with HPC workload manager.  ISTR the
-> combination to be condor + dmtcp but not sure.  I think things like
-> that make a lot of sense.
+Hi (please CC me on replies since I'm not subscribed to lists other than lkml),
 
-If you look at the C/R implementations of those two projects you'll see
-that they don't implement what I take to be hch's suggestion - a library
-or platform with special-purpose APIs to which applications are ported
-in order to gain C/R ability.  For all their good points, the projects
-you mention do interposition for glibc's syscall wrappers and provide a
-few optional hooks so apps can control certain aspects of C/R.
+We can optimize kernel/relay.c::relay_alloc_page_array() slightly by using 
+vzalloc. The patch makes these changes:
 
+ - use vzalloc instead of vmalloc+memset.
+ - remove redundant local variable 'array'.
+ - declare local 'pa_size' as const.
+
+Cuts down nicely on both source and object-code size.
+
+Now I just need to find someone to actually merge it...
+
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Acked-by: Pekka Enberg <penberg@kernel.org>
+Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+---
+ relay.c |   15 ++++-----------
+ 1 file changed, 4 insertions(+), 11 deletions(-)
+
+diff --git a/kernel/relay.c b/kernel/relay.c
+index c7cf397..859ea5a 100644
+--- a/kernel/relay.c
++++ b/kernel/relay.c
+@@ -70,17 +70,10 @@ static const struct vm_operations_struct relay_file_mmap_ops = {
+  */
+ static struct page **relay_alloc_page_array(unsigned int n_pages)
+ {
+-	struct page **array;
+-	size_t pa_size = n_pages * sizeof(struct page *);
+-
+-	if (pa_size > PAGE_SIZE) {
+-		array = vmalloc(pa_size);
+-		if (array)
+-			memset(array, 0, pa_size);
+-	} else {
+-		array = kzalloc(pa_size, GFP_KERNEL);
+-	}
+-	return array;
++	const size_t pa_size = n_pages * sizeof(struct page *);
++	if (pa_size > PAGE_SIZE)
++		return vzalloc(pa_size);
++	return kzalloc(pa_size, GFP_KERNEL);
+ }
+ 
+ /*
+
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
+Plain text mails only, please      http://www.expita.com/nomime.html
+Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
 
