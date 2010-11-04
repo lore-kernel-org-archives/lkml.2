@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755185Ab0KDKBu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 06:01:50 -0400
-Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:50791 "EHLO
-	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754602Ab0KDKBt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 06:01:49 -0400
-Message-ID: <4CD2847B.1060009@stericsson.com>
-Date: Thu, 4 Nov 2010 11:01:31 +0100
-From: Mattias Wallin <mattias.wallin@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Lightning/1.0b1 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        elinwal <linus.walleij@stericsson.com>,
-        Bengt JONSSON <bengt.g.jonsson@stericsson.com>
-Subject: [PATCH] regulator: lock supply in regulator enable
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1755117Ab0KDKJS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 06:09:18 -0400
+Received: from cantor.suse.de ([195.135.220.2]:56695 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754775Ab0KDKJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 06:09:16 -0400
+Date: Thu, 4 Nov 2010 11:09:14 +0100
+From: Marcus Meissner <meissner@suse.de>
+To: linux-kernel@vger.kernel.org, jason.wessel@windriver.com,
+        fweisbec@gmail.com, tj@kernel.org, mort@sgi.com, akpm@osdl.org
+Cc: security@kernel.org
+Subject: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of attacking
+Message-ID: <20101104100914.GC25118@suse.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: SUSE LINUX Products GmbH, GF: Markus Rex, HRB 16746 (AG Nuernberg)
+User-Agent: Mutt/1.5.9i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add locks around regulator supply enable.
 
-Signed-off-by: Mattias Wallin <mattias.wallin@stericsson.com>
----
-The previous patch I sent solves a problem seen in our system.
-This patch does not solve a problem I have seen but I still think
-it should be there. Or at least some locking of the supply in regulator enable.
-What do you guys think?
----
- drivers/regulator/core.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Hi,
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index c625633..d10ad4a 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1270,7 +1270,9 @@ static int _regulator_enable(struct regulator_dev *rdev)
+Making /proc/kallsyms readable only for root makes it harder
+for attackers to write generic kernel exploits by removing
+one source of knowledge where things are in the kernel.
+
+Signed-off-by: Marcus Meissner <meissner@suse.de>
+---
+ kernel/kallsyms.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/kallsyms.c b/kernel/kallsyms.c
+index 6f6d091..a8db257 100644
+--- a/kernel/kallsyms.c
++++ b/kernel/kallsyms.c
+@@ -546,7 +546,7 @@ static const struct file_operations kallsyms_operations = {
  
- 	/* do we need to enable the supply regulator first */
- 	if (rdev->supply) {
-+		mutex_lock(&rdev->supply->mutex);
- 		ret = _regulator_enable(rdev->supply);
-+		mutex_unlock(&rdev->supply->mutex);
- 		if (ret < 0) {
- 			printk(KERN_ERR "%s: failed to enable %s: %d\n",
- 			       __func__, rdev_get_name(rdev), ret);
+ static int __init kallsyms_init(void)
+ {
+-	proc_create("kallsyms", 0444, NULL, &kallsyms_operations);
++	proc_create("kallsyms", 0400, NULL, &kallsyms_operations);
+ 	return 0;
+ }
+ device_initcall(kallsyms_init);
 -- 
-1.6.3.3
+1.7.1
 
