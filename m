@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754524Ab0KDFdK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 01:33:10 -0400
-Received: from sncsmrelay2.nai.com ([67.97.80.206]:34498 "HELO
-	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754176Ab0KDFdG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 01:33:06 -0400
-X-Greylist: delayed 617 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Nov 2010 01:33:06 EDT
-Date: Thu, 4 Nov 2010 15:22:00 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-Message-ID: <201011040522.oA45M09r006758@goober.internal.moreton.com.au>
-CC: <gerg@uclinux.org>, <linux-kernel@vger.kernel.org>,
-        <linux-m68k@vger.kernel.org>
-Subject: [git pull] m68knommu arch fixes
-To: <torvalds@linux-foundation.org>
-X-Mailer: mail (GNU Mailutils 2.1)
-X-OriginalArrivalTime: 04 Nov 2010 05:22:46.0627 (UTC) FILETIME=[50A80330:01CB7BE0]
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754600Ab0KDFiw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 01:38:52 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:46728 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754176Ab0KDFit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 01:38:49 -0400
+Subject: Re: [RFC PATCH 1/1] vhost: TX used buffer guest signal accumulation
+From: Shirley Ma <mashirle@us.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20101103104812.GB10555@redhat.com>
+References: <1288216693.17571.38.camel@localhost.localdomain>
+	 <1288240804.14342.1.camel@localhost.localdomain>
+	 <20101028052021.GD5599@redhat.com>
+	 <1288286062.11251.15.camel@localhost.localdomain>
+	 <20101029081027.GB22688@redhat.com>
+	 <1288366988.4110.5.camel@localhost.localdomain>
+	 <20101030200603.GA19033@redhat.com>
+	 <1288642673.19173.8.camel@localhost.localdomain>
+	 <20101103104812.GB10555@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 03 Nov 2010 22:38:46 -0700
+Message-ID: <1288849126.12932.4.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2010-11-03 at 12:48 +0200, Michael S. Tsirkin wrote:
+> I mean in practice, you see a benefit from this patch?
 
-Hi Linus,
+Yes, I tested it. It does benefit the performance.
 
-Please pull from:
+> > My concern here is whether checking only in set up would be
+> sufficient
+> > for security?
+> 
+> It better be sufficient because the checks that put_user does
+> are not effictive when run from the kernel thread, anyway.
+> 
+> > Would be there is a case guest could corrupt the ring
+> > later? If not, that's OK.
+> 
+> You mean change the pointer after it's checked?
+> If you see such a case, please holler.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu.git for-linus-fixes
+I wonder about it, not a such case in mind.
 
-to get fixes for some rc1 breakage. Two things in there for minor problems
-with some of the m68k/m68knommu merged headers.
+> To clarify: the combination of __put_user and separate
+> signalling is giving the same performance benefit as your
+> patch?
+
+Yes, it has similar performance, not I haven't finished all message
+sizes comparison yet.
+
+> I am mostly concerned with adding code that seems to help
+> speed for reasons we don't completely understand, because
+> then we might break the optimization easily without noticing.
+
+I don't think the patch I submited would break up anything. It just
+reduced the cost of per used buffer 3 put_user() calls and guest
+signaling from one to one to many to one.
 
 Thanks
-Greg
+Shirley
 
-
- 
----
-The following changes since commit d88c0922fa0e2c021a028b310a641126c6d4b7dc:
-  Michel Lespinasse (1):
-        Release page reference during page fault retry
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu.git for-linus-fixes
-
-Greg Ungerer (1):
-      m68knommu: add back in declaration of do_IRQ
-
-Philippe De Muyter (1):
-      m68k, m68knommu: Do not include linux/hardirq.h in asm/irqflags.h
-
- arch/m68k/include/asm/irqflags.h |    2 ++
- arch/m68k/include/asm/machdep.h  |    1 +
- 2 files changed, 3 insertions(+), 0 deletions(-)
