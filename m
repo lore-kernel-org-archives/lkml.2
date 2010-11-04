@@ -1,119 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753118Ab0KDTax (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 15:30:53 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37223 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752927Ab0KDTav (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 15:30:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=WtYf22SnvBIwGFHf8xooE6vqUrTDFMFs5WkAkR4g6FJvmgm2+vk/b4+HjHwnjebHwu
-         CQuQsDalWeF/O6JTcGmURHiMH/LdeMNifjLfFwoDLl2ncgXk/C4DIY1dQlipIgeXKu6z
-         ZPB2hmpopgWWMzBaLgpDKR9r3G61dEtcGOj9o=
-Date: Thu, 4 Nov 2010 20:30:49 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-api@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Lameter <cl@linux.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH RFC 8/8] clock device: convert timer_settime
-Message-ID: <b01f31d7dbb6c60b9b36d7408c0be99badfa7661.1288897199.git.richard.cochran@omicron.at>
-References: <cover.1288897198.git.richard.cochran@omicron.at>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1288897198.git.richard.cochran@omicron.at>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753056Ab0KDTn7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 15:43:59 -0400
+Received: from mga02.intel.com ([134.134.136.20]:58631 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752586Ab0KDTnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 15:43:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,297,1286175600"; 
+   d="scan'208";a="570449640"
+From: Mark Allyn <mark.a.allyn@intel.com>
+To: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+Cc: Mark Allyn <mark.a.allyn@intel.com>
+Subject: [PATCH 1/1] crypto: api.c: add comments to crypto_alg_lookup and crypto_alg_larval_lookup
+Date: Thu,  4 Nov 2010 12:49:48 -0700
+Message-Id: <1288900188-19034-1-git-send-email-mark.a.allyn@intel.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch lets the timer_settime system call use dynamic clock devices.
+This is resubmitted due to errors in style
 
-Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
+Signed-off-by: Mark A. Allyn <mark.a.allyn@intel.com>
 ---
- include/linux/clockdevice.h |    3 +++
- kernel/posix-timers.c       |   12 +++++++++---
- kernel/time/clockdevice.c   |   20 ++++++++++++++++++++
- 3 files changed, 32 insertions(+), 3 deletions(-)
+ crypto/api.c |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/clockdevice.h b/include/linux/clockdevice.h
-index b56debb..d3589a0 100644
---- a/include/linux/clockdevice.h
-+++ b/include/linux/clockdevice.h
-@@ -110,5 +110,8 @@ int clock_device_timer_create(struct clock_device *clk, struct k_itimer *kit);
- int clock_device_timer_delete(struct clock_device *clk, struct k_itimer *kit);
- void clock_device_timer_gettime(struct clock_device *clk, struct k_itimer *kit,
- 				struct itimerspec *tsp);
-+int clock_device_timer_settime(struct clock_device *clk,
-+			       struct k_itimer *kit, int flags,
-+			       struct itimerspec *tsp, struct itimerspec *old);
- 
- #endif
-diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
-index d00ff73..b09e37e 100644
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -817,6 +817,7 @@ SYSCALL_DEFINE4(timer_settime, timer_t, timer_id, int, flags,
- 		const struct itimerspec __user *, new_setting,
- 		struct itimerspec __user *, old_setting)
- {
-+	struct clock_device *clk_dev;
- 	struct k_itimer *timr;
- 	struct itimerspec new_spec, old_spec;
- 	int error = 0;
-@@ -837,9 +838,14 @@ retry:
- 	if (!timr)
- 		return -EINVAL;
- 
--	error = CLOCK_DISPATCH(timr->it_clock, timer_set,
--			       (timr, flags, &new_spec, rtn));
--
-+	clk_dev = clockid_to_clock_device(timr->it_clock);
-+	if (clk_dev)
-+		error = clock_device_timer_settime(clk_dev, timr,
-+						   flags, &new_spec, rtn);
-+	else {
-+		error = CLOCK_DISPATCH(timr->it_clock, timer_set,
-+				       (timr, flags, &new_spec, rtn));
-+	}
- 	unlock_timer(timr, flag);
- 	if (error == TIMER_RETRY) {
- 		rtn = NULL;	// We already got the old time...
-diff --git a/kernel/time/clockdevice.c b/kernel/time/clockdevice.c
-index 0f6f913..3345c3a 100644
---- a/kernel/time/clockdevice.c
-+++ b/kernel/time/clockdevice.c
-@@ -314,3 +314,23 @@ void clock_device_timer_gettime(struct clock_device *clk, struct k_itimer *kit,
- out:
- 	mutex_unlock(&clk->mux);
+diff --git a/crypto/api.c b/crypto/api.c
+index 033a714..0314083 100644
+--- a/crypto/api.c
++++ b/crypto/api.c
+@@ -193,6 +193,13 @@ static struct crypto_alg *crypto_larval_wait(struct crypto_alg *alg)
+ 	return alg;
  }
-+
-+int clock_device_timer_settime(struct clock_device *clk,
-+			       struct k_itimer *kit, int flags,
-+			       struct itimerspec *tsp, struct itimerspec *old)
-+{
-+	int err;
-+
-+	mutex_lock(&clk->mux);
-+
-+	if (clk->zombie)
-+		err = -ENODEV;
-+	else if (!clk->ops->timer_settime)
-+		err = -EOPNOTSUPP;
-+	else
-+		err = clk->ops->timer_settime(clk->priv, kit, flags, tsp, old);
-+
-+	mutex_unlock(&clk->mux);
-+
-+	return err;
-+}
+ 
++/**
++ * crypto_alg_lookup() - return crypto_alg structure for an algorithm
++ * @name:	text string containing name of algorithm
++ * @type:	crypto type defined in include/linux/crypto.h
++ * @mask:	mask of allowable crypto types (use or'd list
++ *		of types as defined in include/linux/crypto.h)
++ */
+ struct crypto_alg *crypto_alg_lookup(const char *name, u32 type, u32 mask)
+ {
+ 	struct crypto_alg *alg;
+@@ -205,6 +212,14 @@ struct crypto_alg *crypto_alg_lookup(const char *name, u32 type, u32 mask)
+ }
+ EXPORT_SYMBOL_GPL(crypto_alg_lookup);
+ 
++/**
++ * crypto_alg_larval_lookup() - returns large value (larval) crypto_alg
++ *	structure for an algorithm
++ * @name:	text string containing name of algorithm
++ * @type:	crypto type defined in include/linux/crypto.h
++ * @mask:	mask of allowable crypto types (use or'd list
++ *		of types as defined in include/linux/crypto.h)
++ */
+ struct crypto_alg *crypto_larval_lookup(const char *name, u32 type, u32 mask)
+ {
+ 	struct crypto_alg *alg;
 -- 
-1.7.0.4
+1.6.3.3
 
