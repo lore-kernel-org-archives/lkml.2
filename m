@@ -1,40 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650Ab0KDPrI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 11:47:08 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:51191 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752431Ab0KDPrG (ORCPT
+	id S1752712Ab0KDP5B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 11:57:01 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:46259 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751413Ab0KDP46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 11:47:06 -0400
-Date: Thu, 4 Nov 2010 15:45:43 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Gregory Giguashvili <Gregory.Giguashvili@PDGM.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Change signal mask after vfork/clone system call
-Message-ID: <20101104154543.2a71cff1@lxorguk.ukuu.org.uk>
-In-Reply-To: <DAF636D3923A51488784A1F985996EE804206DDF@exil1.paradigmgeo.net>
-References: <DAF636D3923A51488784A1F985996EE803FCB7B0@exil1.paradigmgeo.net>
-	<DAF636D3923A51488784A1F985996EE8041FAA46@exil1.paradigmgeo.net>
-	<20101104094817.21548963@lxorguk.ukuu.org.uk>
-	<DAF636D3923A51488784A1F985996EE804206DDF@exil1.paradigmgeo.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 4 Nov 2010 11:56:58 -0400
+Message-ID: <4CD2D7A3.9000509@oracle.com>
+Date: Thu, 04 Nov 2010 08:56:19 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+CC: Eric Dumazet <eric.dumazet@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jamal Hadi Salim <hadi@cyberus.ca>, Thomas Graf <tgraf@suug.ch>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, Ben Blum <bblum@andrew.cmu.edu>
+Subject: Re: Linux 2.6.37-rc1 (net/sched: cls_cgroup)
+References: <AANLkTimr3rW67HxgOUyReEW8dmmSsd4b7-Ns57mXzS1w@mail.gmail.com> <20101103142156.73c2d3c9.randy.dunlap@oracle.com> <1288821677.2718.27.camel@edumazet-laptop> <20101103233105.GA26124@gondor.apana.org.au>
+In-Reply-To: <20101103233105.GA26124@gondor.apana.org.au>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Nov 2010 15:37:05 +0000
-Gregory Giguashvili <Gregory.Giguashvili@PDGM.com> wrote:
-
-> > Fork on pretty much any Unix like system around today does copy-on-write
-> >so while not as efficient as vfork should be fine for most purposes.
-> Yes, but the problem is that fork simply does not work when a process has huge resident size and vm.overcommit_memory=0 as preferred by Linux distributions we run on. So, processes with large RSS footprint may occasionally fail fork, even if a tiny process is to be started.
+On 11/03/10 16:31, Herbert Xu wrote:
+> On Wed, Nov 03, 2010 at 11:01:17PM +0100, Eric Dumazet wrote:
+>>
+>> commits 8e039d84b323c450 
+>> (cgroups: net_cls as module)
+>>
+>> followed by commit f845172531f
+>> (cls_cgroup: Store classid in struct sock)
 > 
-> Using vfork always works, but has the signal mask problem. Catch 22?
+> Indeed, it looks like the tree I worked on didn't have the first
+> patch applied for some reason.
+> 
+> Anyway, this patch should fix the problem.  Thanks Eric!
+> 
+> cls_cgroup: Fix crash on module unload
+> 
+> Somewhere along the lines net_cls_subsys_id became a macro when
+> cls_cgroup is built as a module.  Not only did it make cls_cgroup
+> completely useless, it also causes it to crash on module unload.
+> 
+> This patch fixes this by removing that macro.
+> 
+> Thanks to Eric Dumazet for diagnosing this problem.
+> 
+> Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 
-And is there a reason you can't mask the signals, vfork and unmask them
-again after the parent continues ?
+Tested-by: Randy Dunlap <randy.dunlap@oracle.com>
+
+Thanks.
+
+> 
+> diff --git a/net/sched/cls_cgroup.c b/net/sched/cls_cgroup.c
+> index 37dff78..d49c40f 100644
+> --- a/net/sched/cls_cgroup.c
+> +++ b/net/sched/cls_cgroup.c
+> @@ -34,8 +34,6 @@ struct cgroup_subsys net_cls_subsys = {
+>  	.populate	= cgrp_populate,
+>  #ifdef CONFIG_NET_CLS_CGROUP
+>  	.subsys_id	= net_cls_subsys_id,
+> -#else
+> -#define net_cls_subsys_id net_cls_subsys.subsys_id
+>  #endif
+>  	.module		= THIS_MODULE,
+>  };
+> 
+> Cheers,
+
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
