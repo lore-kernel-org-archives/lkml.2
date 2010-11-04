@@ -1,61 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751619Ab0KDOG6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 10:06:58 -0400
-Received: from higgs.elka.pw.edu.pl ([194.29.160.5]:65327 "EHLO
-	higgs.elka.pw.edu.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401Ab0KDOGz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 10:06:55 -0400
-X-Comment: RFC 2476 MSA function at elektron.elka.pw.edu.pl logged sender identity as: wzabolot
-Message-ID: <4CD2BDE7.2070307@elka.pw.edu.pl>
-Date: Thu, 04 Nov 2010 15:06:31 +0100
-From: Wojtek Zabolotny <W.Zabolotny@elka.pw.edu.pl>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101030 Icedove/3.0.10
+	id S1751612Ab0KDOLW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 10:11:22 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:35513 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750845Ab0KDOLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 10:11:21 -0400
+Date: Thu, 4 Nov 2010 15:11:04 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Marcus Meissner <meissner@suse.de>
+Cc: linux-kernel@vger.kernel.org, jason.wessel@windriver.com,
+        fweisbec@gmail.com, tj@kernel.org, mort@sgi.com, akpm@osdl.org,
+        security@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of
+ attacking
+Message-ID: <20101104141104.GA31753@elte.hu>
+References: <20101104100914.GC25118@suse.de>
+ <20101104114648.GA23381@elte.hu>
+ <20101104122906.GH25118@suse.de>
+ <20101104135802.GA31416@elte.hu>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: kernel 2.6.33.7 (the highest version with RT patch) does not work
- with b44 ethernet controller
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101104135802.GA31416@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have updated my RT-kernel to version 2.6.33.7-rt29 (the newest RT 
-version),
-and I've found that I've lost Ethernet connectivity.
-In the logs I could see messages like this:
-Nov  2 09:30:28 wzlaphp kernel: b44: eth0: powering down PHY
-Nov  2 09:30:28 wzlaphp kernel: b44: eth0: BUG!  Timeout waiting for bit 
-00000002 of register 42c to clear.
-Nov  2 09:30:32 wzlaphp kernel: b44: eth0: BUG!  Timeout waiting for bit 
-80000000 of register 428 to clear.
 
-I was not sure whether the probem is related to the 2.6.33.7 kernel 
-itself or with the RT patch, so I've compiled also the unpatched version 
-of 2.6.33.7
+* Ingo Molnar <mingo@elte.hu> wrote:
 
-It is also not able to communicate with my Ethernet controller, but now 
-the error messages are different:
+> * Marcus Meissner <meissner@suse.de> wrote:
+> 
+> > On Thu, Nov 04, 2010 at 12:46:48PM +0100, Ingo Molnar wrote:
+> > > 
+> > > * Marcus Meissner <meissner@suse.de> wrote:
+> > > 
+> > > > Hi,
+> > > > 
+> > > > Making /proc/kallsyms readable only for root makes it harder for attackers to 
+> > > > write generic kernel exploits by removing one source of knowledge where things are 
+> > > > in the kernel.
+> > > 
+> > > Cc:-ed Linus - i think he argued in favor of such a patch in the past.
+> > > 
+> > > I generally agree with such patches (i have written some myself), but there's a few 
+> > > questions with this one, which make this limited change ineffective and which make 
+> > > it harder to implement a fuller patch that makes it truly harder to figure out the 
+> > > precise kernel build:
+> > > 
+> > >  - The real security obstruction effect is very small from this measure alone: the 
+> > >    overwhelming majority of our users are running distro kernels, so the Symbol.map 
+> > >    file (and hence 99% of /proc/kallsyms content) is well-known - unless we also 
+> > >    restrict 'uname -r' from nonprivileged users-ace. Hiding that might make sense - 
+> > >    but the two should be in one patch really.
+> > 
+> > Of course. System.map and others also need to turn to mode 400.
+> 
+> That is not what I meant, at all.
+> 
+> It's not the System.map _on the system_.
+> 
+> It's the SuSE or Fedora kernel rpm package with a System.map in it, which package 
+> the attacker can download from a hundred mirrors on the internet, based on 'uname 
+> -r' output.
 
-b44 0000:02:0e.0: PCI INT A disabled
-b44 0000:02:0e.0: BAR 0: set to [mem 0xf4108000-0xf4109fff] (PCI address 
-[0xf4108000-0xf4109fff]
-b44 0000:02:0e.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-ssb: Core 0 found: Fast Ethernet (cc 0x806, rev 0x07, vendor 0x4243)
-ssb: Core 1 found: V90 (cc 0x807, rev 0x03, vendor 0x4243)
-ssb: Core 2 found: PCI (cc 0x804, rev 0x0A, vendor 0x4243)
-ssb: Sonics Silicon Backplane found on PCI device 0000:02:0e.0
-b44.c:v2.0
-b44: Invalid MAC address found in EEPROM
-b44 ssb1:0: Problem fetching invariants of chip, aborting.
-b44: probe of ssb1:0 failed with error -22
+For example, on a Fedora testbox i have this version info:
 
-Now I'm using the old 2.6.33.5-rt23 kernel, and everything works perfectly.
+  $ uname -r
+  2.6.35.6-48.fc14.x86_64
 
--- 
-Wojciech M Zabolotny
-wzab@ise.pw.edu.pl
+Any attacker can download that rpm from:
 
+  http://download.fedora.redhat.com/pub/fedora/linux/updates/14/x86_64/kernel-2.6.35.6-48.fc14.x86_64.rpm
 
+And can extract the System.map from it, using rpm2cpio and cpio -i -d. That will 
+include all the symbol addresses - without the attacker having any access to the 
+System.map or /proc/kallsyms on this particular box.
+
+I.e. on distro kernel installations (which comprise the _vast_ majority of our 
+userbase) your patch brings little security benefits.
+
+What i suggested in later parts of my mail might provide more security: to sandbox 
+kernel version information from unprivileged user-space - if we decide that we want 
+to sandbox kernel version information ...
+
+That is a big if, because it takes a considerable amount of work. Would be worth 
+trying it - but feel-good non-solutions that do not bring much improvement to the 
+majority of users IMHO hinder such efforts.
+
+Thanks,
+
+	Ingo
