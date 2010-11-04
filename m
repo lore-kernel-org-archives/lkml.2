@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752107Ab0KDOpo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 10:45:44 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60275 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751661Ab0KDOpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 10:45:43 -0400
-Message-ID: <4CD2C674.9000508@zytor.com>
-Date: Thu, 04 Nov 2010 10:43:00 -0400
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
+	id S1752160Ab0KDOqJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 10:46:09 -0400
+Received: from nm2-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.248]:24520 "HELO
+	nm2-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751661Ab0KDOqH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 10:46:07 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 983147.28218.bm@omp1010.mail.sp2.yahoo.com
+Message-ID: <360123.63685.qm@web110515.mail.gq1.yahoo.com>
+X-YMail-OSG: KD4Je74VM1kFPkROui3g2sRj52rzZEK7KpVELA3qaJcGAHv
+ dGLdvxrSr_ZekF0wVdJFHOha3Dnf7brf4uMRSRMWkitZ7ewyQ4t5YdJ6tJWk
+ vZWUl3OwpR760.BQbajlpw3v2gl6xkf9Q6BUJZ0BTikKsX_qEeM.KdggAFGT
+ CcEjFKFssXQxmN6YhIO9PkfQPOQyBNikhC4oBpuC38YsET1GaA7hygTDSVeE
+ amrwl8sJiG6whOEp0iLZhWexyikmX8bm5a6eH_9Lnf1i1YDe5u6CcfYH5sha
+ z6ZglM.QucafXCfYArrHuxKj8.goG5oMp4hvJayKq5WPpgycqsbHnr9tK5Zb
+ NAD3ey4gCSP6nEK3l9R8jG0H8gjgMSVruW4IkARU3
+X-RocketYMMF: multiplicador
+X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.284920
+Date: Thu, 4 Nov 2010 07:46:02 -0700 (PDT)
+From: =?iso-8859-1?Q?Andr=E9_Luis_Pereira_dos_Santos_-_BSRSoft?= 
+	<andre@bsrsoft.com.br>
+Reply-To: andre@bsrsoft.com.br
+Subject: [PATCH 1/1] security: Reordering the boot message security framework
+To: James Morris <jmorris@namei.org>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Marcus Meissner <meissner@suse.de>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, jason.wessel@windriver.com,
-        fweisbec@gmail.com, mort@sgi.com, akpm@osdl.org, security@kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of
- attacking
-References: <20101104100914.GC25118@suse.de> <20101104114648.GA23381@elte.hu> <20101104122906.GH25118@suse.de> <20101104135802.GA31416@elte.hu> <20101104141104.GA31753@elte.hu> <20101104143322.GL25118@suse.de> <4CD2C551.2000604@kernel.org>
-In-Reply-To: <4CD2C551.2000604@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04/2010 10:38 AM, Tejun Heo wrote:
-> Hello,
->
-> On 11/04/2010 03:33 PM, Marcus Meissner wrote:
->> I mean the kernel could hide it from uname, but lsb_release,
->> /etc/redhat-release, /etc/SuSE-release etc still exist and then you
->> can still use the fixed address list table inside your exploit. But an
->> exploits needs to have such a list, making it harder to write.
->
-> I do believe that making things more difficult to exploit helps.  Many
-> people seem to think it only gives false sense of security tho.
->
->> I also briefly thought about kernel ASLR, but my knowledge of the kernel
->> loading is too limited whether this is even possible or at all useful.
->
-> We already have relocatable kernel for kdump and IIRC it doesn't add
-> runtime overhead, so putting the kernel at random address shouldn't be
-> too difficult.  Not sure how useful that would be tho.
->
+From: Andre Luis Pereira dos Santos <andre@bsrsoft.com.br>
 
-It's very coarse-grained relocation, which is why it works.
+Hi.
+I did the reorganization of the boot message security framework so that it is not issued before the start in fact occur:
 
-	-hpa
+Signed-off-by: Andre Luis Pereira dos Santos <andre@bsrsoft.com.br>
+---
 
-P.S. It's not just for kdump anymore.
+Signed-off-by: Andre Luis Pereira dos Santos <andre@bsrsoft.com.br>
+--- linux-2.6.36/security/security.c    2010-10-20 18:30:22.000000000 -0200
++++ linux-2.6.36-patched/security/security.c    2010-11-04 12:20:04.000000000 -0200
+@@ -56,12 +56,13 @@ static void __init do_security_initcalls
+  */
+ int __init security_init(void)
+ {
+-       printk(KERN_INFO "Security Framework initialized\n");
+
+        security_fixup_ops(&default_security_ops);
+        security_ops = &default_security_ops;
+        do_security_initcalls();
+
++       printk(KERN_INFO "Security Framework initialized\n");
++
+        return 0;
+ }
+
+
+      
