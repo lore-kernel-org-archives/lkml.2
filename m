@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752812Ab0KDT55 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 15:57:57 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:52355 "EHLO ogre.sisk.pl"
+	id S1752877Ab0KDUB7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 16:01:59 -0400
+Received: from moh2-ve3.go2.pl ([193.17.41.208]:36945 "EHLO moh2-ve3.go2.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752038Ab0KDT5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 15:57:54 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [linux-pm] [GIT PULL] One more power management fix for 2.6.37
-Date: Thu, 4 Nov 2010 20:55:31 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <201010292358.27975.rjw@sisk.pl> <201011041424.44215.rjw@sisk.pl> <AANLkTikfGJOMpnvwJ4tTW3EXVGayyT=3s5iyhGbhKz8_@mail.gmail.com>
-In-Reply-To: <AANLkTikfGJOMpnvwJ4tTW3EXVGayyT=3s5iyhGbhKz8_@mail.gmail.com>
+	id S1752385Ab0KDUB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 16:01:57 -0400
+Message-ID: <4CD3112D.2010700@o2.pl>
+Date: Thu, 04 Nov 2010 21:01:49 +0100
+From: Maciej Szmigiero <mhej@o2.pl>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.11) Gecko/20101024 Lightning/1.0b3pre Thunderbird/3.1.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Ben Nizette <bn@niasdigital.com>
+CC: Jonathan Cameron <jic23@cam.ac.uk>, johnpol@2ka.mipt.ru,
+        linux-kernel@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>
+Subject: Re: [W1] a driver for DS2405 chip
+References: <4CC9E2A5.2010400@o2.pl> <4CCEB42F.8000102@cam.ac.uk> <4CD06C22.20204@o2.pl> <6B41915B-1667-4CA1-A73A-45B043ED8C11@niasdigital.com>
+In-Reply-To: <6B41915B-1667-4CA1-A73A-45B043ED8C11@niasdigital.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011042055.31779.rjw@sisk.pl>
+X-O2-Trust: 2, 63
+X-O2-SPF: neutral
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 04, 2010, Linus Torvalds wrote:
-> On Thu, Nov 4, 2010 at 9:24 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >
-> > OK, so I think we can relax the locking in dpm_[suspend/resume]_noirq() to
-> > avoid executing callbacks under dpm_list_mtx, like in the (untested) patch
-> > below.
+W dniu 03.11.2010 11:54, Ben Nizette pisze:
 > 
-> ABSOLUTELY NOT.
+> On 03/11/2010, at 6:53 AM, Maciej Szmigiero wrote:
 > 
-> If you drop the lock in the middle of the loop, you should remove the
-> lock around the loop entirely. There is absolutely no difference
-> between "drop lock in the middle" and "don't take lock at all".
+>> W dniu 01.11.2010 13:35, Jonathan Cameron pisze:
+>>> On 10/28/10 21:52, Maciej Szmigiero wrote:
+>>>> [W1] a driver for DS2405 chip
+>>>>
+>>>> This is a driver for DS2405 1-wire single-channel addressable switch / PIO.
+>>>> DS2405 can also work as single-channel binary remote sensor.
+>>> Perhaps handle this as a gpio chip? (be it a fairly limited one)
+>>> To my mind it would make it more generally useful...
+>>
+>> I think the GPIO infrastructure is meant for on-system GPIOs, where 1-wire devices are mostly 
+>> used for remote data acquisition.
 > 
-> Either that list traversal needs the lock or it does not. There is no
-> "it needs the lock, but not while doing random crap X in the middle of
-> traversal".
+> Nope!  The contents of drivers/gpio is split roughly 50/50 between on- and off-chip gpio expanders. 
+> 
+>> That's probably why w1_therm (for 1-wire thermometers) is not integrated with HWMON subsystem.
+> 
+> Don't know why this is but kinda sounds like it should be looked at more closely - conceptually 1-W is just another bus like, eg, SPI.
+> 
+> 	--Ben.
 
-Your're right,  it only makes sense to either leave it or remove it entirely.
 
-> If nothing can possibly change the list while calling the device, then
-> you don't need the lock. And if something _can_ change the list,
-> dropping the lock means that the list is no longer trustworthy and you
-> can't just continue in the middle.
+Looking at GPIO subsystem I think it's not a best solution for this device. One reason is that GPIOs are
+identified by integer which is either #defined by platform (as Documentation/gpio.txt says) or assigned randomly.
 
-At this point, if everyone does everything right, there should be nothing
-running in parallel with us that will attempt to modify the list.  So, I'd say
-let's drop the lock completely.
+First approach obviously doesn't fit, as I'm yet to find anybody using ds2405 for anything platform-related.
+Second leads to problems in locating particular device (numbers will depend on order of detection/plugging).
+In contrast with that, 1W subsystem provides clear and unique identification for every device as it appears under
+its hardware address.
 
-Thanks,
-Rafael
+In addition to that the chip removal code (gpiochip_remove() function) does not sleep when removal fails due
+to chip being in use, returning EBUSY instead. 
+This leads to inefficient unplugging (like trying to remove chip in loop hoping that finally somebody releases it).
+Probably this loop will also have to check if device reappeared, so the driver doesn't try to register new instance of chip
+while there is still one in existence.
+Note that Documentation/gpio.txt says "Removing a GPIO controller should be rare; use gpiochip_remove() when it is unavoidable".
+Characteristics of long W1 buses cause devices to disappear and reappear from time to time so it won't be a "rare" operation here.
+
+And all this added complexity for what? - to replace two tiny attributes under device sysfs directory?
+
+Maciej Szmigiero
