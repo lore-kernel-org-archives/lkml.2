@@ -1,77 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755122Ab0KDGIY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 02:08:24 -0400
-Received: from mailout1.paradigmgeo.com ([12.146.216.194]:42975 "EHLO
-	mailout1.paradigmgeo.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753020Ab0KDGIX convert rfc822-to-8bit (ORCPT
+	id S1755192Ab0KDGLG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 02:11:06 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:64159 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753606Ab0KDGLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 02:08:23 -0400
-From: Gregory Giguashvili <Gregory.Giguashvili@PDGM.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: Change signal mask after vfork/clone system call
-Thread-Topic: Change signal mask after vfork/clone system call
-Thread-Index: ActvYrwDS1Qou4ZiSWG8vicGxd93awMg65jw
-Date: Thu, 4 Nov 2010 06:08:17 +0000
-Message-ID: <DAF636D3923A51488784A1F985996EE8041FAA46@exil1.paradigmgeo.net>
-References: <DAF636D3923A51488784A1F985996EE803FCB7B0@exil1.paradigmgeo.net>
-In-Reply-To: <DAF636D3923A51488784A1F985996EE803FCB7B0@exil1.paradigmgeo.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.3.201]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 4 Nov 2010 02:11:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=GcpjE72ESZhDboS+BxA2go1oERCnV4aVd1jsJWOg1emYoaJZI6ABfuzLgSW5iWgtMJ
+         gNEkjbZviGmFA15C+3H77snxmJlSY4ugayb3wtV+XTuX6ZQjwRtWrkOL4XL4mYtg2meO
+         OuOpZ3lgZS5L/gqJ3xwl6vSK/Xo0iXhZ2JyQM=
+Date: Thu, 4 Nov 2010 14:15:44 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Matt Mackall <mpm@selenic.com>
+Cc: Mike Waychison <mikew@google.com>, Greg KH <greg@kroah.com>,
+        simon.kagstrom@netinsight.net, davem@davemloft.net, adurbin@google.com,
+        akpm@linux-foundation.org, chavey@google.com,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH v1 00/12] netoops support
+Message-ID: <20101104061544.GD5210@cr0.nay.redhat.com>
+References: <20101103012917.4641.57113.stgit@crlf.mtv.corp.google.com>
+ <20101103023422.GB5782@kroah.com>
+ <AANLkTi=Oe4oJ0imCh1eoJLS0QYqSBM4pLo=dEUSiJcQb@mail.gmail.com>
+ <20101103181634.GF7441@kroah.com>
+ <AANLkTimKWCWtuPeZhMZ75gTxB8LwAhJfy2FZnnRwthft@mail.gmail.com>
+ <4CD1C612.5080902@google.com>
+ <1288817685.26428.1129.camel@calx>
 MIME-Version: 1.0
-X-OriginalArrivalTime: 04 Nov 2010 06:08:18.0105 (UTC) FILETIME=[ACBE7A90:01CB7BE6]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288817685.26428.1129.camel@calx>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any comments on this issue? Is there a way to prevent signal mask inheritance when using vfork?
+On Wed, Nov 03, 2010 at 03:54:45PM -0500, Matt Mackall wrote:
+>On Wed, 2010-11-03 at 13:29 -0700, Mike Waychison wrote:
+>> Mike Waychison wrote:
+>> > FWIW, another semantic difference between netconsole and netoops (that
+>> > I had missed in the last email) is filtering: we really do want to get
+>> > the whole log when a crash happens, debug messages and all.
+>> > Netconsole is subject to console filtering (which we _do_ want as
+>> > debug messages going out the uart slows the whole world down).
+>> > 
+>> > netconsole and netoops _do_ have bits in common, for instance the
+>> > handling of NETDEV events and source+target configuration.  I'd rather
+>> > those bits become common between the two than figure out how to jam
+>> > the semantics we need into netconsole.
+>> 
+>> Hi Matt,
+>> 
+>> I've been reading through the netconsole driver in response to Greg's 
+>> comments on this thread, and it is definitely more robust in terms of 
+>> configuration and handling of network device events than the netoops 
+>> driver I proposed.
+>
+>I've been following the discussion to see if it went anywhere
+>interesting..
+>
+>> What are your thoughts on extending netconsole with the same sort of 
+>> semantics that are in the netoops patchset?
+>
+>My first thought is that it's a bit unfortunate that some of the the
+>netconsole configgy bits weren't implemented in a generic way that would
+>be applicable to other netpoll clients. Some people have never gotten it
+>into their heads that netconsole isn't the only client.
+>
 
------Original Message-----
-From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Gregory Giguashvili
-Sent: Tuesday, October 19, 2010 9:54 AM
-To: linux-kernel@vger.kernel.org
-Subject: Change signal mask after vfork/clone system call
-
-For new processes created by vfork, while signals are blocked using pthread_sigmask: is there a way in a multi-threaded parent to safely unblock signals before the new process is started? Does pthread_atfork like functionality exist for vfork-ed processes maybe?
-
-Ideally, the following code should work, except we're not allowed to call anything in the child process besides exec family of functions.
-
-sigmask_t new;
-sigmask_t old;
-sigaddset (&new, SIGCHLD);
-pthread_sigmask (SIG_BLOCK, &new, &old);
-
-switch (vfork ()) {
-case 0: // parent
-	break;
-case -1: // error
-	break;
-default: // child
-	pthread_sigmask (SIG_SETMASK, &old, NULL);
-	execv (...);
-	_exit (-1);
-}
-
-Finally, if using fork should be efficient for starting processes from applications with heavy VM/RSS memory footprint, this question becomes obsolete.
-
-Thanks
-Giga
-
----------------------------------------------------------------------------------------------------------------
-This e-mail, including any attached files, may contain confidential and privileged information for the sole use of the intended recipient. Any review, use, distribution, or disclosure by others is strictly prohibited. If you are not the intended recipient (or authorized to receive information for the intended recipient), please contact the sender by reply e-mail and delete all copies of this message.
-
-
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
----------------------------------------------------------------------------------------------------------------
-This e-mail, including any attached files, may contain confidential and privileged information for the sole use of the intended recipient. Any review, use, distribution, or disclosure by others is strictly prohibited. If you are not the intended recipient (or authorized to receive information for the intended recipient), please contact the sender by reply e-mail and delete all copies of this message.
+Really? What are other clients? I remember netdump *was* one client,
+but it is not in upstream and is deprecated, so netconsole is the only
+client in tree, AFAIK.
 
 
+>> I'd still like to have blit-dmesg-to-the-network-on-oops semantics, 
+>> which seems doable by having a per-target flag for streaming of console 
+>> messages (enabled by default) and a flag to emit a structured full dmesg 
+>> dump (disabled by default).
+>
+>I'd actually like to see you go forward with netoops. It's clear to me
+>that it's a different beast and complexifying netconsole with a bunch of
+>weird new options doesn't really sit well. If that means abstracting
+>some of the sysfs crap from netconsole, great. 
+>
+
+That would be good.
+
+
+>That said, I don't think netoops is an ideal name, given how closely
+>bound oops _events_ are with their textual output. Presumably it covers
+>events other than oopsen like panics too. 
+>
+>Regarding rolling oopses: lots of machines regularly survive oopses, so 
+>I think you ought to consider rate-limiting them (to a configurable rate
+>with a very low default) rather than suppressing all but the first.
+>
+
+We have WARN_ONCE(), maybe we can make one oops_once()...
+At least, that is not hard.
