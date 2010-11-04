@@ -1,114 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932177Ab0KDCU6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 22:20:58 -0400
-Received: from mga09.intel.com ([134.134.136.24]:4501 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754936Ab0KDCU4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 22:20:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,292,1286175600"; 
-   d="scan'208";a="674107281"
-Date: Thu, 4 Nov 2010 10:20:52 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: "mrubin@google.com" <mrubin@google.com>,
-        "david@fromorbit.com" <david@fromorbit.com>,
-        "axboe@kernel.dk" <axboe@kernel.dk>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        "nickpiggin@yahoo.com.au" <nickpiggin@yahoo.com.au>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [2.6.37-rc1] /proc/vmstat failure.
-Message-ID: <20101104022052.GA7800@localhost>
-References: <201011010053.ADE86905.JMLFHVtSQOOFOF@I-love.SAKURA.ne.jp>
- <201011032011.BAB21899.OHVQtFLSFJMFOO@I-love.SAKURA.ne.jp>
- <20101103174643.GA4985@localhost>
- <201011040654.GDB05271.SOFJFFtOMLHOQV@I-love.SAKURA.ne.jp>
+	id S1754974Ab0KDCZN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 22:25:13 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:39492 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287Ab0KDCZK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 22:25:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=VtaLaIiVzEMRe0PGEkthhXywnjjkmN/fHrIf3RCLAlcdMnoe7J2RCu+lOAwhPa0nKN
+         cVhkbYicIimDOUb3CMdCU0x3/JLGcmGx1JFn5A201/KkjVT8IcJgzfyM207xqTxZr080
+         T+WBLgUNV210/HWzmnAEeqTZAr3Sc8yMq8cPU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201011040654.GDB05271.SOFJFFtOMLHOQV@I-love.SAKURA.ne.jp>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101103162015.99475a0b.randy.dunlap@oracle.com>
+References: <AANLkTimr3rW67HxgOUyReEW8dmmSsd4b7-Ns57mXzS1w@mail.gmail.com>
+	<20101103162015.99475a0b.randy.dunlap@oracle.com>
+Date: Thu, 4 Nov 2010 10:25:09 +0800
+Message-ID: <AANLkTin5PphTtZaesEU3U0PA8NJv=Jmis8yQF6b=KbeG@mail.gmail.com>
+Subject: Re: Linux 2.6.37-rc1 (scsi_debug: list corruption)
+From: Xiaotian Feng <xtfeng@gmail.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        scsi <linux-scsi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 04, 2010 at 05:54:48AM +0800, Tetsuo Handa wrote:
-> Wu Fengguang wrote:
-> > On Wed, Nov 03, 2010 at 07:11:11PM +0800, Tetsuo Handa wrote:
-> > > Hello.
-> > > 
-> > > "cat /proc/vmstat" triggered below failure.
-> > > 
-> > > BUG: unable to handle kernel paging request at 07c06d16
-> > > IP: [<c050c336>] strnlen+0x6/0x20
-> > 
-> > It seems that m->private is of type (void *) while the original v is
-> > (unsigned long *). Can be fixed by the following patch.
-> 
-> Fixed by this patch. Thank you.
+On Thu, Nov 4, 2010 at 7:20 AM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+>
+>
+> [  102.555847] calling  scsi_debug_init+0x0/0x704 [scsi_debug] @ 3337
+> Nov  3 16:06:12 control kernel: [  102.555847] calling  scsi_deb[  102.622974] scsi_debug: host protection
+> [  102.627513] scsi4 : scsi_debug, version 1.82 [20100324], dev_size_mb=8, opts=0x0
+> Nov  3 16:06:13 control kernel: [  102.639095] initcall scsi_debug_init+0x0/0x704 [scsi_debug] returned 0 after 75039 usecs
+> Nov  3 16:06:13 [  102.651072] ------------[ cut here ]------------
+> [  102.657373] WARNING: at /local/linsrc/lnx-2637-rc1/lib/list_debug.c:26 __list_add+0x4d/0xa5()
+> [  102.666012] Hardware name: OptiPlex GX620
+> [  102.671396] list_add corruption. next->prev should be prev (ffffffff81ae5e50), but was 6b6b6b6b6b6b6b6b. (next=ffff88006c880590).
 
-Great, thanks!
+This might be related with net rds percpu_counter corruption. Does
+following patch fix your issue?
+http://patchwork.ozlabs.org/patch/69939/
 
-> By the way, GCC treats "(void *) + offset" as "(char *) + offset"
-> but it is GCC specific extention. Maybe we should avoid such usage
-> in order to avoid build failure for other compilers.
-
-"(void *) + offset" seems to be used quite often.
-
-I tried enable this gcc option, only to see huge amount of warnings.
-
-       -Wpointer-arith
-           Warn about anything that depends on the "size of" a
-           function type or of "void".  GNU C assigns these types a
-           size of 1, for convenience in calculations with "void *"
-           pointers and pointers to functions.
-
-/cc/linux-next/scripts/mod/file2alias.c: In function ‘device_id_check’:
-/cc/linux-next/scripts/mod/file2alias.c:88: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/file2alias.c:88: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/file2alias.c:88: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/file2alias.c:94: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/file2alias.c:94: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/file2alias.c:94: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/file2alias.c: In function ‘do_usb_table’:
-/cc/linux-next/scripts/mod/file2alias.c:275: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/file2alias.c: In function ‘do_table’:
-/cc/linux-next/scripts/mod/file2alias.c:870: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/file2alias.c: In function ‘handle_moddevtable’:
-/cc/linux-next/scripts/mod/file2alias.c:897: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/file2alias.c:897: warning: pointer of type ‘void *’ used in arithmetic
-  HOSTCC  scripts/mod/modpost.o
-/cc/linux-next/scripts/mod/modpost.c: In function ‘parse_elf’:
-/cc/linux-next/scripts/mod/modpost.c:412: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/modpost.c:456: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/modpost.c:472: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/modpost.c:489: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/modpost.c:491: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/modpost.c:491: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/modpost.c:494: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/modpost.c:501: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/modpost.c:503: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/modpost.c:503: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/modpost.c: In function ‘sec_name’:
-/cc/linux-next/scripts/mod/modpost.c:716: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/modpost.c:717: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/modpost.c: In function ‘sech_name’:
-/cc/linux-next/scripts/mod/modpost.c:723: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/modpost.c:724: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/modpost.c: In function ‘reloc_location’:
-/cc/linux-next/scripts/mod/modpost.c:1443: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/modpost.c:1444: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/modpost.c:1444: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/modpost.c: In function ‘section_rela’:
-/cc/linux-next/scripts/mod/modpost.c:1520: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/modpost.c:1521: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/modpost.c: In function ‘section_rel’:
-/cc/linux-next/scripts/mod/modpost.c:1564: warning: pointer of type ‘void *’ used in arithmetic
-/cc/linux-next/scripts/mod/modpost.c:1565: warning: pointer of type ‘void *’ used in arithmetic
-
-Thanks,
-Fengguang
+>
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
