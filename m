@@ -1,532 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754036Ab0KDAJv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 20:09:51 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:46111 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753749Ab0KDAJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 20:09:49 -0400
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jean Delvare <khali@linux-fr.org>
-CC: Ben Dooks <ben-linux@fluff.org>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [RFC/PATCH] i2c/busses: Add support for Diolan U2C-12 USB/I2C adapter
-Date: Wed, 3 Nov 2010 17:26:29 -0700
-Message-ID: <1288830389-13873-1-git-send-email-guenter.roeck@ericsson.com>
-X-Mailer: git-send-email 1.7.3.1
+	id S1753885Ab0KDAVs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 20:21:48 -0400
+Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:38687 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751627Ab0KDAVp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 20:21:45 -0400
+Date: Thu, 4 Nov 2010 11:21:40 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [regression, 2.6.37-rc1] 'ip link tap0 up' stuck in do_exit()
+Message-ID: <20101104002140.GA13830@dastard>
+References: <20101103062609.GB31163@dastard>
+ <1288768402.2467.665.camel@edumazet-laptop>
+ <20101103103448.GA9169@dastard>
+ <20101103112936.GB9169@dastard>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101103112936.GB9169@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
----
-This is an usb-i2c adapter I am using to connect to i2c evaluation and test
-boards. Not sure if it is worth adding it into the kernel. If yes, I'll be
-happy to add myself as maintainer.
+On Wed, Nov 03, 2010 at 10:29:36PM +1100, Dave Chinner wrote:
+> On Wed, Nov 03, 2010 at 09:34:48PM +1100, Dave Chinner wrote:
+> > On Wed, Nov 03, 2010 at 08:13:22AM +0100, Eric Dumazet wrote:
+> > > Le mercredi 03 novembre 2010 à 17:26 +1100, Dave Chinner a écrit :
+> > > > Folks,
+> > > > 
+> > > > Starting up KVM on a current mainline kernel using the tap
+> > > > device for the networking is resulting in the ip process tryin gto
+> > > > up the tap interface hanging. KVM is started with this networking
+> > > > config:
+> > > > 
+> > > > ....
+> > > >         -net nic,vlan=0,macaddr=00:e4:b6:63:63:6d,model=virtio \
+> > > >         -net tap,vlan=0,script=/vm-images/qemu-ifup,downscript=no \
+> > > > ....
+> > > > 
+> > > > And the script is effectively:
+> > > > 
+> > > > switch=br0
+> > > > if [ -n "$1" ];then
+> > > >         /usr/bin/sudo /sbin/ip link set $1 up
+> > > >         sleep 0.5s
+> > > >         /usr/bin/sudo /usr/sbin/brctl addif $switch $1
+> > > > 	exit 0
+> > > > fi
+> > > > exit 1
+> > > > 
+> > > > This is resulting in the command 'ip link set tap0 up' hanging as a zombie:
+> > > > 
+> > > > root      3005     1  0 16:53 pts/3    00:00:00 /bin/sh /vm-images/qemu-ifup tap0
+> > > > root      3011  3005  0 16:53 pts/3    00:00:00 /usr/bin/sudo /sbin/ip link set tap0 up
+> > > > root      3012  3011  0 16:53 pts/3    00:00:00 [ip] <defunct>
+> > > > 
+> > > > In do_exit() with this trace:
+> > > > 
+> > > > [ 1630.782255] ip            x ffff88063fcb3600     0  3012   3011 0x00000000
+> > > > [ 1630.789121]  ffff880631328000 0000000000000046 0000000000000000 ffff880633104380
+> > > > [ 1630.796524]  0000000000013600 ffff88062f031fd8 0000000000013600 0000000000013600
+> > > > [ 1630.803925]  ffff8806313282d8 ffff8806313282e0 ffff880631328000 0000000000013600
+> > > > [ 1630.811324] Call Trace:
+> > > > [ 1630.813760]  [<ffffffff8104a90d>] ? do_exit+0x716/0x724
+> > > > [ 1630.818964]  [<ffffffff8104a995>] ? do_group_exit+0x7a/0xa4
+> > > > [ 1630.824512]  [<ffffffff8104a9d1>] ? sys_exit_group+0x12/0x16
+> > > > [ 1630.830149]  [<ffffffff81009a82>] ? system_call_fastpath+0x16/0x1b
+> > > > 
+> > > > The address comes down to the schedule() call:
+> > > > 
+> > > > (gdb) l *(do_exit+0x716)
+> > > > 0xffffffff8104a90d is in do_exit (kernel/exit.c:1034).
+> > > > 1029            preempt_disable();
+> > > > 1030            exit_rcu();
+> > > > 1031            /* causes final put_task_struct in finish_task_switch(). */
+> > > > 1032            tsk->state = TASK_DEAD;
+> > > > 1033            schedule();
+> > > > 1034            BUG();
+> > > > 1035            /* Avoid "noreturn function does return".  */
+> > > > 1036            for (;;)
+> > > > 1037                    cpu_relax();    /* For when BUG is null */
+> > > > 1038    }
+> > > > 
+> > > > Needless to say, KVM is not starting up. This works just fine on
+> > > > 2.6.35.1 and so is a regression. I can't do a lot of testing on this as
+> > > > the host is the machine that hosts all my build and test environments....
+> > > > 
+> > > > Cheers,
+> > > > 
+> > > > Dave.
+> > > 
+> > > Could it be the same problem than 
+> > > 
+> > > http://kerneltrap.com/mailarchive/linux-netdev/2010/10/23/6288128
+> > > 
+> > > Try to revert bee31369ce16fc3898ec9a54161248c9eddb06bc ?
+> > 
+> > It's working fine on 2.6.36 right now, so it's something that came in
+> > with the .37 merge cycle...
+> 
+> Actually, the machine isn't running a 2.6.36 kernel (it had booted
+> to the working .35 kernel and I didn't notice). So i've just tested
+> a 2.6.36 kernel, and the problem _is present_ in 2.6.36. I've
+> reverted the above commit but that does not fix the problem.
 
- drivers/i2c/busses/Kconfig          |   10 +
- drivers/i2c/busses/Makefile         |    1 +
- drivers/i2c/busses/i2c-diolan-u2c.c |  455 +++++++++++++++++++++++++++++++++++
- 3 files changed, 466 insertions(+), 0 deletions(-)
- create mode 100644 drivers/i2c/busses/i2c-diolan-u2c.c
+Ok, so further investigation has shown I can reproduce this on
+2.6.32 and 2.6.35. It's not a new bug, nor do I think that it is
+a networking bug as it is not specific to the ip command.
 
-diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-index 3a6321c..d73be36 100644
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -640,6 +640,16 @@ config I2C_XILINX
- 
- comment "External I2C/SMBus adapter drivers"
- 
-+config I2C_DIOLAN_U2C
-+	tristate "Diolan U2C-12 USB adapter"
-+	depends on USB
-+	help
-+	  If you say yes to this option, support will be included for Diolan
-+	  U2C-12, a USB to I2C interface.
-+
-+	  This driver can also be built as a module.  If so, the module
-+	  will be called i2c-diolan-u2c.
-+
- config I2C_PARPORT
- 	tristate "Parallel port adapter"
- 	depends on PARPORT
-diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
-index 84cb16a..46315db 100644
---- a/drivers/i2c/busses/Makefile
-+++ b/drivers/i2c/busses/Makefile
-@@ -63,6 +63,7 @@ obj-$(CONFIG_I2C_OCTEON)	+= i2c-octeon.o
- obj-$(CONFIG_I2C_XILINX)	+= i2c-xiic.o
- 
- # External I2C/SMBus adapter drivers
-+obj-$(CONFIG_I2C_DIOLAN_U2C)	+= i2c-diolan-u2c.o
- obj-$(CONFIG_I2C_PARPORT)	+= i2c-parport.o
- obj-$(CONFIG_I2C_PARPORT_LIGHT)	+= i2c-parport-light.o
- obj-$(CONFIG_I2C_TAOS_EVM)	+= i2c-taos-evm.o
-diff --git a/drivers/i2c/busses/i2c-diolan-u2c.c b/drivers/i2c/busses/i2c-diolan-u2c.c
-new file mode 100644
-index 0000000..5f4fb74
---- /dev/null
-+++ b/drivers/i2c/busses/i2c-diolan-u2c.c
-@@ -0,0 +1,455 @@
-+/*
-+ * driver for the Diolan u2c-12 usb adapter
-+ *
-+ * Copyright (c) 2010 Ericsson AB
-+ *
-+ * Derived from:
-+ *  i2c-tiny-usb.c
-+ *  Copyright (C) 2006-2007 Till Harbaum (Till@Harbaum.org)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation, version 2.
-+ *
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/errno.h>
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/slab.h>
-+#include <linux/usb.h>
-+#include <linux/i2c.h>
-+
-+#define USB_VENDOR_ID_DIOLAN		0x0abf
-+#define USB_DEVICE_ID_DIOLAN_U2C	0x3370
-+
-+#define DIOLAN_OUT_EP		0x02
-+#define DIOLAN_IN_EP		0x84
-+
-+/* commands via USB, must match command ids in the firmware */
-+#define CMD_I2C_READ		0x01
-+#define CMD_I2C_WRITE		0x02
-+#define CMD_I2C_SCAN		0x03	/* Returns list of detected devices */
-+#define CMD_I2C_RELEASE_SDA	0x04
-+#define CMD_I2C_RELEASE_SCL	0x05
-+#define CMD_I2C_DROP_SDA	0x06
-+#define CMD_I2C_DROP_SCL	0x07
-+#define CMD_I2C_READ_SDA	0x08
-+#define CMD_I2C_READ_SCL	0x09
-+#define CMD_GET_FW_VERSION	0x0a
-+#define CMD_GET_SERIAL		0x0b
-+#define CMD_I2C_START		0x0c
-+#define CMD_I2C_STOP		0x0d
-+#define CMD_I2C_REPEATED_START	0x0e
-+#define CMD_I2C_PUT_BYTE	0x0f
-+#define CMD_I2C_GET_BYTE	0x10
-+#define CMD_I2C_PUT_ACK		0x11
-+#define CMD_I2C_GET_ACK		0x12
-+#define CMD_I2C_PUT_BYTE_ACK	0x13
-+#define CMD_I2C_GET_BYTE_ACK	0x14
-+#define CMD_I2C_SET_SPEED	0x1b
-+#define CMD_I2C_GET_SPEED	0x1c
-+#define CMD_SET_CLOCK_SYNCH	0x24
-+#define CMD_GET_CLOCK_SYNCH	0x25
-+#define CMD_SET_CLOCK_SYNCH_TO	0x26
-+#define CMD_GET_CLOCK_SYNCH_TO	0x27
-+
-+#define RESP_OK			0x00
-+#define RESP_FAILED		0x01
-+#define RESP_BAD_MEMADDR	0x04
-+#define RESP_DATA_ERR		0x05
-+#define RESP_NOT_IMPLEMENTED	0x06
-+#define RESP_NACK		0x07
-+
-+#define U2C_I2C_FREQ_FAST	0	/* 400 kHz  */
-+#define U2C_I2C_FREQ_STD	1	/* 100 kHz  */
-+#define U2C_I2C_FREQ_83KHZ	2
-+#define U2C_I2C_FREQ_71KHZ	3
-+#define U2C_I2C_FREQ_62KHZ	4
-+#define U2C_I2C_FREQ_50KHZ	6
-+#define U2C_I2C_FREQ_25KHZ	16
-+#define U2C_I2C_FREQ_10KHZ	46
-+#define U2C_I2C_FREQ_5KHZ	96
-+#define U2C_I2C_FREQ_2KHZ	242
-+
-+#define DIOLAN_USB_TIMEOUT	100
-+
-+/* Structure to hold all of our device specific stuff */
-+struct i2c_diolan_u2c {
-+	struct usb_device *usb_dev;	/* the usb device for this device */
-+	struct usb_interface *interface;/* the interface for this device */
-+	struct i2c_adapter adapter;	/* i2c related things */
-+};
-+
-+/* usb layer */
-+
-+static int diolan_usb_transfer(struct i2c_adapter *adapter, u8 * obuffer,
-+			       int olen, u8 *ibuffer, int ilen)
-+{
-+	struct i2c_diolan_u2c *dev = adapter->algo_data;
-+	int ret = 0;
-+	int actual;
-+	unsigned char inbuffer[257];
-+
-+	if (olen) {
-+		ret = usb_bulk_msg(dev->usb_dev,
-+				   usb_sndbulkpipe(dev->usb_dev, DIOLAN_OUT_EP),
-+				   obuffer, olen, &actual, DIOLAN_USB_TIMEOUT);
-+	}
-+	if (!ret) {
-+		ret = usb_bulk_msg(dev->usb_dev,
-+				   usb_rcvbulkpipe(dev->usb_dev, DIOLAN_IN_EP),
-+				   inbuffer, sizeof(inbuffer), &actual,
-+				   DIOLAN_USB_TIMEOUT);
-+		if (ret == 0 && actual > 0) {
-+			ret = min(actual, ilen);
-+			switch (inbuffer[actual - 1]) {
-+			case RESP_NACK:
-+				ret = -EINVAL;
-+				goto abort;
-+			case RESP_OK:
-+				break;
-+			default:
-+				ret = -EIO;
-+				goto abort;
-+			}
-+			if (ret)
-+				memcpy(ibuffer, inbuffer, ret);
-+		}
-+	}
-+abort:
-+	return ret;
-+}
-+
-+/*
-+ * Flush input queue.
-+ * If we don't do this at startup and the controller has queued up
-+ * messages which were not retrieved, it will stop responding
-+ * at some point.
-+ */
-+static void diolan_flush_input(struct usb_device *dev)
-+{
-+	int i;
-+
-+	for (i = 0; i < 10; i++) {
-+		int actual = 0;
-+		int ret;
-+		u8 inbuffer[257];
-+
-+		ret = usb_bulk_msg(dev, usb_rcvbulkpipe(dev, DIOLAN_IN_EP),
-+				   inbuffer, sizeof(inbuffer), &actual,
-+				   DIOLAN_USB_TIMEOUT);
-+		if (ret < 0 || actual == 0)
-+			break;
-+	}
-+}
-+
-+static int diolan_i2c_start(struct i2c_adapter *adapter)
-+{
-+	u8 buffer[1];
-+
-+	buffer[0] = CMD_I2C_START;
-+
-+	return diolan_usb_transfer(adapter, buffer, 1, buffer, 1);
-+}
-+
-+static int diolan_i2c_repeated_start(struct i2c_adapter *adapter)
-+{
-+	u8 buffer[1];
-+
-+	buffer[0] = CMD_I2C_REPEATED_START;
-+
-+	return diolan_usb_transfer(adapter, buffer, 1, buffer, 1);
-+}
-+
-+static int diolan_i2c_stop(struct i2c_adapter *adapter)
-+{
-+	u8 buffer[1];
-+
-+	buffer[0] = CMD_I2C_STOP;
-+
-+	return diolan_usb_transfer(adapter, buffer, 1, buffer, 1);
-+}
-+
-+static int diolan_i2c_get_byte_ack(struct i2c_adapter *adapter, bool ack,
-+				   u8 *byte)
-+{
-+	u8 buffer[2];
-+	int rv;
-+
-+	buffer[0] = CMD_I2C_GET_BYTE_ACK;
-+	buffer[1] = ack;
-+
-+	rv = diolan_usb_transfer(adapter, buffer, 2, buffer, 2);
-+	if (rv > 0)
-+		*byte = buffer[0];
-+	else if (rv == 0)
-+		rv = -EIO;
-+
-+	return rv;
-+}
-+
-+static int diolan_i2c_put_byte_ack(struct i2c_adapter *adapter, u8 byte)
-+{
-+	u8 buffer[2];
-+
-+	buffer[0] = CMD_I2C_PUT_BYTE_ACK;
-+	buffer[1] = byte;
-+
-+	return diolan_usb_transfer(adapter, buffer, 2, buffer, 1);
-+}
-+
-+static int diolan_set_speed(struct i2c_adapter *adapter, u8 speed)
-+{
-+	u8 buffer[2];
-+
-+	buffer[0] = CMD_I2C_SET_SPEED;
-+	buffer[1] = speed;
-+
-+	return diolan_usb_transfer(adapter, buffer, 2, buffer, 1);
-+}
-+
-+static int diolan_fw_version(struct i2c_adapter *adapter)
-+{
-+	u8 buffer[3];
-+	int ret;
-+
-+	buffer[0] = CMD_GET_FW_VERSION;
-+	ret = diolan_usb_transfer(adapter, buffer, 1, buffer, 3);
-+	if (ret == 3)
-+		dev_info(&adapter->dev,
-+			 "Diolan U2C firmware version %d.%d\n",
-+			 buffer[0], buffer[1]);
-+	return ret;
-+}
-+
-+static int diolan_get_serial(struct i2c_adapter *adapter)
-+{
-+	u8 buffer[5];
-+	int ret;
-+
-+	buffer[0] = CMD_GET_SERIAL;
-+	ret = diolan_usb_transfer(adapter, buffer, 1, buffer, 5);
-+	if (ret == 5)
-+		dev_info(&adapter->dev,
-+			 "Diolan U2C serial number %d\n", *(u32 *) &buffer[0]);
-+	return ret;
-+}
-+
-+static int diolan_scan(struct i2c_adapter *adapter)
-+{
-+	u8 buffer[257];
-+	int i, ret;
-+
-+	buffer[0] = CMD_I2C_SCAN;
-+	ret = diolan_usb_transfer(adapter, buffer, 1, buffer, 257);
-+	if (ret > 0) {
-+		for (i = 0; i < ret - 1; i++) {
-+			if (buffer[i])
-+				dev_info(&adapter->dev,
-+					 "Found I2C device at address 0x%x\n",
-+					 buffer[i] >> 1);
-+		}
-+	}
-+	return ret;
-+}
-+
-+/* i2c layer */
-+
-+static int usb_xfer(struct i2c_adapter *adapter, struct i2c_msg *msgs, int num)
-+{
-+	struct i2c_msg *pmsg;
-+	int i, j;
-+	int rc = 0;
-+
-+	rc = diolan_i2c_start(adapter);
-+	if (rc < 0)
-+		return rc;
-+
-+	for (i = 0; i < num; i++) {
-+		pmsg = &msgs[i];
-+		if (i) {
-+			rc = diolan_i2c_repeated_start(adapter);
-+			if (rc < 0)
-+				goto abort;
-+		}
-+		if (pmsg->flags & I2C_M_RD) {
-+			rc = diolan_i2c_put_byte_ack(adapter,
-+						((pmsg->addr & 0x7f) << 1) | 1);
-+			if (rc < 0)
-+				goto abort;
-+			for (j = 0; j < pmsg->len; j++) {
-+				u8 byte;
-+				bool ack = j < pmsg->len - 1;
-+
-+				/*
-+				 * Don't send NACK if this is the first byte
-+				 * of a SMBUS_BLOCK message.
-+				 */
-+				if (j == 0 && (pmsg->flags & I2C_M_RECV_LEN))
-+					ack = true;
-+
-+				rc = diolan_i2c_get_byte_ack(adapter, ack,
-+							     &byte);
-+				if (rc < 0)
-+					goto abort;
-+				/*
-+				 * Adjust count if first received byte is length
-+				 */
-+				if (j == 0 && (pmsg->flags & I2C_M_RECV_LEN)) {
-+					if (byte == 0
-+					    || byte > I2C_SMBUS_BLOCK_MAX) {
-+						rc = -EREMOTEIO;
-+						goto abort;
-+					}
-+					pmsg->len += byte;
-+				}
-+				pmsg->buf[j] = byte;
-+			}
-+		} else {
-+			rc = diolan_i2c_put_byte_ack(adapter,
-+						     (pmsg->addr & 0x7f) << 1);
-+			if (rc < 0)
-+				goto abort;
-+			for (j = 0; j < pmsg->len; j++) {
-+				rc = diolan_i2c_put_byte_ack(adapter,
-+							     pmsg->buf[j]);
-+				if (rc < 0)
-+					goto abort;
-+			}
-+		}
-+	}
-+abort:
-+	diolan_i2c_stop(adapter);
-+	return rc;
-+}
-+
-+/*
-+ * Return list of supported functionality.
-+ */
-+static u32 usb_func(struct i2c_adapter *a)
-+{
-+	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL |
-+	    I2C_FUNC_SMBUS_READ_BLOCK_DATA;
-+}
-+
-+static const struct i2c_algorithm usb_algorithm = {
-+	.master_xfer = usb_xfer,
-+	.functionality = usb_func,
-+};
-+
-+/* device layer */
-+
-+static struct usb_device_id i2c_diolan_u2c_table[] = {
-+	{USB_DEVICE(USB_VENDOR_ID_DIOLAN, USB_DEVICE_ID_DIOLAN_U2C)},
-+	{}
-+};
-+
-+MODULE_DEVICE_TABLE(usb, i2c_diolan_u2c_table);
-+
-+static void i2c_diolan_u2c_free(struct i2c_diolan_u2c *dev)
-+{
-+	usb_put_dev(dev->usb_dev);
-+	kfree(dev);
-+}
-+
-+static int i2c_diolan_u2c_probe(struct usb_interface *interface,
-+				const struct usb_device_id *id)
-+{
-+	struct i2c_diolan_u2c *dev;
-+	int retval = -ENOMEM;
-+
-+	/* allocate memory for our device state and initialize it */
-+	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
-+	if (dev == NULL) {
-+		dev_err(&interface->dev, "Out of memory\n");
-+		goto error;
-+	}
-+
-+	dev->usb_dev = usb_get_dev(interface_to_usbdev(interface));
-+	dev->interface = interface;
-+
-+	/* save our data pointer in this interface device */
-+	usb_set_intfdata(interface, dev);
-+
-+	dev_info(&interface->dev,
-+		 "Diolan U2C at bus %03d address %03d\n",
-+		 dev->usb_dev->bus->busnum, dev->usb_dev->devnum);
-+
-+	/* setup i2c adapter description */
-+	dev->adapter.owner = THIS_MODULE;
-+	dev->adapter.class = I2C_CLASS_HWMON;
-+	dev->adapter.algo = &usb_algorithm;
-+	dev->adapter.algo_data = dev;
-+	snprintf(dev->adapter.name, sizeof(dev->adapter.name),
-+		 "i2c-u2c-usb at bus %03d device %03d",
-+		 dev->usb_dev->bus->busnum, dev->usb_dev->devnum);
-+
-+	dev->adapter.dev.parent = &dev->interface->dev;
-+
-+	diolan_flush_input(dev->usb_dev);
-+
-+	/* and finally attach to i2c layer */
-+	i2c_add_adapter(&dev->adapter);
-+
-+	diolan_fw_version(&dev->adapter);
-+
-+	retval = diolan_set_speed(&dev->adapter, U2C_I2C_FREQ_STD);
-+	if (retval < 0) {
-+		dev_err(&dev->adapter.dev,
-+			"failure %d setting I2C bus frequency\n", retval);
-+		goto error_del;
-+	}
-+	diolan_get_serial(&dev->adapter);
-+	diolan_scan(&dev->adapter);
-+
-+	dev_dbg(&dev->adapter.dev, "connected i2c-u2c-usb device\n");
-+
-+	return 0;
-+
-+error_del:
-+	i2c_del_adapter(&dev->adapter);
-+	i2c_diolan_u2c_free(dev);
-+error:
-+	return retval;
-+}
-+
-+static void i2c_diolan_u2c_disconnect(struct usb_interface *interface)
-+{
-+	struct i2c_diolan_u2c *dev = usb_get_intfdata(interface);
-+
-+	i2c_del_adapter(&dev->adapter);
-+	usb_set_intfdata(interface, NULL);
-+	i2c_diolan_u2c_free(dev);
-+
-+	dev_dbg(&interface->dev, "disconnected\n");
-+}
-+
-+static struct usb_driver i2c_diolan_u2c_driver = {
-+	.name = "i2c-u2c-usb",
-+	.probe = i2c_diolan_u2c_probe,
-+	.disconnect = i2c_diolan_u2c_disconnect,
-+	.id_table = i2c_diolan_u2c_table,
-+};
-+
-+static int __init usb_i2c_diolan_u2c_init(void)
-+{
-+	/* register this driver with the USB subsystem */
-+	return usb_register(&i2c_diolan_u2c_driver);
-+}
-+
-+static void __exit usb_i2c_diolan_u2c_exit(void)
-+{
-+	/* deregister this driver with the USB subsystem */
-+	usb_deregister(&i2c_diolan_u2c_driver);
-+}
-+
-+module_init(usb_i2c_diolan_u2c_init);
-+module_exit(usb_i2c_diolan_u2c_exit);
-+
-+/* ----- end of usb layer ------------------------------------------------ */
-+
-+MODULE_AUTHOR("Guenter Roeck <guenter.roeck@ericsson.com>");
-+MODULE_DESCRIPTION("i2c-u2c-usb driver");
-+MODULE_LICENSE("GPL");
+The trigger for the problem is actually an upgrade of the sudo
+package in debian unstable which changed the behaviour of sudo (has
+some per-login/pty restriction on it now). Basically, the startup
+script I'm running does:
+
+sudo kvm .....
+
+which then executes the qemu-ifup bash script which does:
+
+	sudo ip ....
+	sudo brctl ...
+
+because at one point KVM did not create the tap device automatically
+and so kvm could be run as a user with only the ifup script
+requiring privileges to create the tap device and mark it up. When
+KVM started creating the tap device, I added the sudo to the KVM
+script, an everything worked again.
+
+Now if I take the 'sudo' out of the ifup script, the hang goes away.
+I first removed it from the ip command, and then the brctl command
+hung in the same way the ip command was hanging. Hence my thoughts
+that it is not directly related to networking utilities.
+Unfortunately, it is not trivial to reproduce as I could only
+trigger it through this kvm method, not on the command line. e.g:
+
+$ sudo bash -c "sudo ip link set tap1 up"
+
+does not hang.
+
+This sudo package upgrade coincided with kernel upgrades, and so
+that lead to my confusion about where it occurred and what triggered
+it.  Still, it appears to be a bug that has been around for some
+time.....
+
+Cheers,
+
+Dave.
 -- 
-1.7.3.1
-
+Dave Chinner
+david@fromorbit.com
