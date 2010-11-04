@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751482Ab0KDQc2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 12:32:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14818 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751269Ab0KDQc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 12:32:26 -0400
-Date: Thu, 4 Nov 2010 17:30:26 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: CAI Qian <caiqian@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, Adam Litke <agl@us.ibm.com>,
-        Avi Kivity <avi@redhat.com>, Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>,
-        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00 of 66] Transparent Hugepage Support #32
-Message-ID: <20101104163026.GH11602@random.random>
-References: <690735095.1385111288840247360.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
- <2080208615.1392881288860072684.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+	id S1751541Ab0KDQdh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 12:33:37 -0400
+Received: from amber.ccs.neu.edu ([129.10.116.51]:33069 "EHLO
+	amber.ccs.neu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269Ab0KDQdf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 12:33:35 -0400
+X-Greylist: delayed 1692 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Nov 2010 12:33:35 EDT
+Date: Thu, 4 Nov 2010 12:04:28 -0400
+From: Gene Cooperman <gene@ccs.neu.edu>
+To: Tejun Heo <tj@kernel.org>
+Cc: Nathan Lynch <ntl@pobox.com>, Christoph Hellwig <hch@lst.de>,
+        Oren Laadan <orenl@cs.columbia.edu>,
+        ksummit-2010-discuss@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, kapil@ccs.neu.edu, gene@ccs.neu.edu
+Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
+Message-ID: <20101104160428.GA10656@sundance.ccs.neu.edu>
+References: <Pine.LNX.4.64.1011021530470.12128@takamine.ncl.cs.columbia.edu>
+ <4CD08419.5050803@kernel.org>
+ <20101102214706.GA28593@lst.de>
+ <1288835258.6132.56.camel@tp-t61>
+ <4CD26270.5050906@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <2080208615.1392881288860072684.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <4CD26270.5050906@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Qian,
+Yes, we are working with Condor to have them validate DMTCP.  Time will tell.
+							- Gene
 
-On Thu, Nov 04, 2010 at 04:41:12AM -0400, CAI Qian wrote:
-> Thank Andrea for pointing out to me there are ongoing works for KSM
-> and THP integration. Sorry for the noise.
-
-No problem, thanks for your feedback!
-
-The longer answer is: PageKsm pages will already co-exist fine with
-PageTransHuge pages in the same vma with regular pages. So 3 type of
-pages in the same vma. But before KSM scan can see the content of the
-hugepages there has to be some memory pressure... So it's not ideal
-and we will make KSM able to scan inside hugepages before they're
-splitted (and to split them when it finds a match and then merge them
-in the stable tree).
-
-So it's perfectly normal that KSM becomes less effective when THP is
-enabled. But in the mainline version we have MADV_HUGEPAGE, so if you
-need KSM in full effect, you can simply "echo madvise
->/sys/kernel/mm/transparent_hugepage/enabled", and then you can decide
-if to mark a mapping either with madvise(MADV_HUGEPAGE) or
-madvise(MADV_MERGEABLE).
-
-Thanks,
-Andrea
+On Thu, Nov 04, 2010 at 08:36:16AM +0100, Tejun Heo wrote:
+> Hello,
+> 
+> On 11/04/2010 02:47 AM, Nathan Lynch wrote:
+> >>   In this case whitelisting the allowed
+> >> state by requiring special APIs for all I/O (or even just standard
+> >> APIs as long as they are supposed by the C/R lib you're linked against)
+> >> is the more pragmatic, and I think faithful aproach.
+> > 
+> > I don't think users will go for it.  They'll continue to use dodgy
+> > out-of-tree kernel modules and/or LD_PRELOAD hacks instead of porting
+> > their applications to a new library.  I think a C/R library is an
+> > "ideal" solution, but it's one that nobody would use - especially in
+> > HPC, unless the library somehow provides better performance.
+> 
+> I hear that there are plans to integrate one of the userland
+> snapshotting implementations with HPC workload manager.  ISTR the
+> combination to be condor + dmtcp but not sure.  I think things like
+> that make a lot of sense.  Scientists writing programs for HPC
+> clusters already work in given frameworks and what those applications
+> do and how to recover are pretty well confined/defined.  If you
+> integrate snapshotting with such frameworks, it becomes pretty easy
+> for both the admins and users.
+> 
+> I'll talk about other issues in the reply to Oren's email.
+> 
+> Thanks.
+> 
+> -- 
+> tejun
