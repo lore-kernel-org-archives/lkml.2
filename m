@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755406Ab0KDKYI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 06:24:08 -0400
-Received: from mail-yx0-f194.google.com ([209.85.213.194]:50403 "EHLO
-	mail-yx0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755083Ab0KDKYH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 06:24:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type;
-        b=prfCdfxtHEg+ps8DrF5PoPPrFoDCdGlybVc4k/Zat+r/1Zw/cEZ2NVcrkuYYFIoePB
-         Ac+R4WEUxf/YG77B51xZlWDOffFUXfH7w4HUVCis2L0FNzb0Ywkfi7hsr1dmRNJGzhz5
-         ajMikKnVzyTYNPTi9Abtml//+03a3AC0gddOY=
+	id S1755456Ab0KDKZU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 06:25:20 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:54804 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755083Ab0KDKZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 06:25:17 -0400
+Message-ID: <4CD28B16.4050009@cn.fujitsu.com>
+Date: Thu, 04 Nov 2010 18:29:42 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-In-Reply-To: <20101103140033.GA11915@isilmar-3.linta.de>
-References: <AANLkTikbEgfVZmnVfbgGxbybbghXCuUgvEm03HH=i4HD@mail.gmail.com>
-	<20101101160529.GA9306@comet.dominikbrodowski.net>
-	<20101101220033.416.qmail@stuge.se>
-	<AANLkTikBh3qAifA8U9--VyXZpD-vt3cuCj0M6npD4M3D@mail.gmail.com>
-	<20101103140033.GA11915@isilmar-3.linta.de>
-Date: Thu, 4 Nov 2010 18:08:50 +0800
-Message-ID: <AANLkTinTPhk_jy6LHVVLieLEP7qJkgs-rD9eb=TobvM8@mail.gmail.com>
-Subject: Re: PATCH : linux-2.6.35.4 drivers pcmcia cs.c
-From: guillermo arias <papaguillee18@gmail.com>
-To: guillermo arias <papaguillee18@gmail.com>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, linux-pcmcia@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH] KVM: remove unused function declaration
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-04 18:25:48,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-04 18:25:48,
+	Serialize complete at 2010-11-04 18:25:48
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-thanks for your time effort and dedication to us .
+Remove the declaration of kvm_mmu_set_base_ptes()
 
-To Dominic Brodowski :.
-> "if (!((True or False) || True))" => "if (!((True))" => "if False" .
-It is an logical true , but if no_error=0 and error=1 the result of :.
-# echo "$(( ! $(( 0 || 0 )) ))"
-# 1 # not bypased from the main secuence .
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/include/asm/kvm_host.h |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-To Peter Stuge .
-> VPN?
-correction :  "was probed with vnc ."
-> Also .
-> > >> 2) What's the output of "lspci -n -v"
-> > >> 3) What's the output of "sudo lspcmcia -vvv"
-in this little "Quick Replay" window if an huge text is inserted , i
-can't control it .
-> > >> 4) Are there any BIOS options you may toggle to enable CardBus? .
-no .
-
-sorry gentlemans but i try to do my best .
-//gar ; from Venezuela in an 56Kbauds pot https connection .
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 1be0058..7f20f2c 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -611,7 +611,6 @@ void kvm_mmu_destroy(struct kvm_vcpu *vcpu);
+ int kvm_mmu_create(struct kvm_vcpu *vcpu);
+ int kvm_mmu_setup(struct kvm_vcpu *vcpu);
+ void kvm_mmu_set_nonpresent_ptes(u64 trap_pte, u64 notrap_pte);
+-void kvm_mmu_set_base_ptes(u64 base_pte);
+ void kvm_mmu_set_mask_ptes(u64 user_mask, u64 accessed_mask,
+ 		u64 dirty_mask, u64 nx_mask, u64 x_mask);
+ 
+-- 
+1.7.0.4
