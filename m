@@ -1,70 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754323Ab0KDDof (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 23:44:35 -0400
-Received: from mail.asbjorn.biz ([217.195.185.3]:47087 "EHLO mail.asbjorn.biz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753477Ab0KDDoe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 23:44:34 -0400
-From: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        debian-kernel@lists.debian.org
-Subject: [PATCH] kbuild, deb-pkg: fix Architecture field when cross compiling
-Date: Thu,  4 Nov 2010 03:44:04 +0000
-Message-Id: <1288842244-6863-1-git-send-email-asbjorn@asbjorn.biz>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <4CD22ACF.1000407@asbjorn.it>
-References: <4CD22ACF.1000407@asbjorn.it>
+	id S1750923Ab0KDECv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 00:02:51 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:57729 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750725Ab0KDECt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 00:02:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=vl/WJLgyP1AxEaoF75sHFm7MpHULyesOzuJ7jrj4a5BtSRMepZnkuC0qzsPoLQqw9d
+         EQ0+keYaMTgPKyOOFYuU3fmLUWtHU06f8/0VfF6Lvt6y0ZwZjKOAKyJw7CdA9Bt2kMPH
+         UZpnubV31+hWYAJPEnfoctlWKyPr1IqGPAOuE=
+MIME-Version: 1.0
+In-Reply-To: <4CD22627.2000607@redhat.com>
+References: <20101009224041.GA901@sepie.suse.cz>
+	<4CD1E232.30406@redhat.com>
+	<AANLkTimyh-k8gYwuNi6nZFp3oviQ33+M3fDRzZ+sJN9i@mail.gmail.com>
+	<4CD22627.2000607@redhat.com>
+Date: Thu, 4 Nov 2010 00:02:48 -0400
+Message-ID: <AANLkTi=N9pioMusdLCwEzT7dUg02j9QE_ndHs0tBhuiB@mail.gmail.com>
+Subject: Re: REGRESSION: Re: [GIT] kconfig rc fixes
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Michal Marek <mmarek@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>, kyle@redhat.com,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linux Media Mailing List <linux-media@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attempt to guess the correct value of the Architecture control
-field, based on the ARCH environment variable. Fallback to letting
-deb-gencontrol use the host platform's architecture.
+Hi,
 
-With this patch the following make command:
+On Wed, Nov 3, 2010 at 11:19 PM, Mauro Carvalho Chehab
+<mchehab@redhat.com> wrote:
+>>> config VIDEO_HELPER_CHIPS_AUTO
+>>>        bool "Autoselect pertinent encoders/decoders and other helper chips"
+>>>
+>>> config VIDEO_IVTV
+>>>        select VIDEO_WM8739 if VIDEO_HELPER_CHIPS_AUTO
+>>>
+>>> menu "Encoders/decoders and other helper chips"
+>>>        depends on !VIDEO_HELPER_CHIPS_AUTO
+>>>
+>>> config VIDEO_WM8739
+>>>        tristate "Wolfson Microelectronics WM8739 stereo audio ADC"
+>>>
+>
+> I don't see anything wrong on such logic. It is valid in C, and it is also valid
+> (and works properly) at Kconfig language.
+no, it is not a valid Kconfig language, or at least, you create an
+ambiguity in the dependency tree.
 
-	make ARCH=i386 deb-pkg
+> So, the warning is a false positive.
+>
+no it is not. By saying:
 
-will output an i386 Debian package instead of an amd64 one,
-when run on amd64 machine.
+menu "Encoders/decoders and other helper chips"
+       depends on !VIDEO_HELPER_CHIPS_AUTO
 
-Signed-off-by: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
----
- scripts/package/builddeb |   17 ++++++++++++++++-
- 1 files changed, 16 insertions(+), 1 deletions(-)
+you create on all the menu's children an implicit dependency,
+!VIDEO_HELPER_CHIPS_AUTO. This is something that has ever been there;
+from `Documentation/kbuild/kconfig-language.txt':
 
-diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-index 5f1e2fc..43b8826 100644
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -25,8 +25,23 @@ create_package() {
- 	chown -R root:root "$pdir"
- 	chmod -R go-w "$pdir"
- 
-+	# Attempt to find the correct Debian architecture
-+	local forcearch="" debarch=""
-+	case "$ARCH" in
-+	i386|ia64)
-+		debarch="$ARCH" ;;
-+	x86_64)
-+		debarch="amd64" ;;
-+	*)
-+		grep -q CONFIG_ARM=y .config &&
-+			debarch=arm$(grep -q CONFIG_AEABI=y .config && echo el)
-+	esac
-+	if [ -n "$debarch" ] ; then
-+		forcearch="-DArchitecture=$debarch"
-+	fi
-+
- 	# Create the package
--	dpkg-gencontrol -isp -p$pname -P"$pdir"
-+	dpkg-gencontrol -isp $forcearch -p$pname -P"$pdir"
- 	dpkg --build "$pdir" ..
- }
- 
--- 
-1.7.2.3
+"
+[...]
+menu "Network device support"
+        depends on NET
 
+config NETDEVICES
+        ...
+endmenu
+
+All entries within the "menu" ... "endmenu" block become a submenu of
+"Network device support". All subentries inherit the dependencies from
+the menu entry, e.g. this means the dependency "NET" is added to the
+dependency list of the config option NETDEVICES.
+"
+
+Thus the warning as you also have:
+
+config VIDEO_IVTV
+       select VIDEO_WM8739 if VIDEO_HELPER_CHIPS_AUTO
+
+ie. VIDEO_IVTV selects VIDEO_WM8739 if VIDEO_HELPER_CHIPS_AUTO, but
+VIDEO_WM8739 has inherited the !VIDEO_HELPER_CHIPS_AUTO dependency.
+
+Now, if you want my true feeling, this warning should be fatal.
+
+ - Arnaud
