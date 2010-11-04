@@ -1,95 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753177Ab0KDVKv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 17:10:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49014 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752826Ab0KDVKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 17:10:48 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Richard Kralovic <Richard.Kralovic@dcs.fmph.uniba.sk>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk
-Subject: Re: CFQ and dm-crypt
-References: <4CC439ED.8090400@dcs.fmph.uniba.sk>
-	<x49y69b6qg6.fsf@segfault.boston.devel.redhat.com>
-	<4CD185C2.8000006@dcs.fmph.uniba.sk>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 04 Nov 2010 17:07:02 -0400
-In-Reply-To: <4CD185C2.8000006@dcs.fmph.uniba.sk> (Richard Kralovic's message
-	of "Wed, 03 Nov 2010 16:54:42 +0100")
-Message-ID: <x49tyjwajd5.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
+	id S1752988Ab0KDVQb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 17:16:31 -0400
+Received: from outbound.icp-qv1-irony-out1.iinet.net.au ([203.59.1.106]:20226
+	"EHLO outbound.icp-qv1-irony-out1.iinet.net.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751849Ab0KDVQa convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 17:16:30 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApEBADO/0kzL2THB/2dsb2JhbAAH4RyFRgSFD4hn
+X-IronPort-AV: E=Sophos;i="4.58,298,1286121600"; 
+   d="scan'208";a="729296279"
+Subject: Re: [W1] a driver for DS2405 chip
+Mime-Version: 1.0 (Apple Message framework v1081)
 Content-Type: text/plain; charset=us-ascii
+From: Ben Nizette <bn@niasdigital.com>
+In-Reply-To: <4CD3112D.2010700@o2.pl>
+Date: Fri, 5 Nov 2010 08:16:24 +1100
+Cc: Jonathan Cameron <jic23@cam.ac.uk>, johnpol@2ka.mipt.ru,
+        linux-kernel@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <6F19858A-1110-4B0C-9810-350567CE9A9A@niasdigital.com>
+References: <4CC9E2A5.2010400@o2.pl> <4CCEB42F.8000102@cam.ac.uk> <4CD06C22.20204@o2.pl> <6B41915B-1667-4CA1-A73A-45B043ED8C11@niasdigital.com> <4CD3112D.2010700@o2.pl>
+To: Maciej Szmigiero <mhej@o2.pl>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Kralovic <Richard.Kralovic@dcs.fmph.uniba.sk> writes:
 
-> On 11/03/10 04:23, Jeff Moyer wrote:
->>> > CFQ io scheduler relies on using task_struct current to determine which
->>> > process makes the io request. On the other hand, some dm modules (such
->>> > as dm-crypt) use separate threads for doing io. As CFQ sees only these
->>> > threads, it provides a very poor performance in such a case.
->>> >
->>> > IMHO the correct solution for this would be to store, for every io
->>> > request, the process that initiated it (and preserve this information
->>> > while the request is processed by device mapper). Would that be feasible?
->> Sure.  Try the attached patch (still an rfc) and let us know how it
->> goes.  In my environment, it speed up multiple concurrent buffered
->> readers.  I wasn't able to do a full analysis via blktrace as 2.6.37-rc1
->> seems to have broken blktrace support on my system.
->
-> Thanks for the patch. Unfortunately, I got a kernel panic quite soon
-> after booting the patched kernel. I was not able to reproduce the
-> panic in a virtual machine, so I had to manually note the backtrace,
-> thus I apologize that it's incomplete:
->
-> Fatal exception in interupt.
-> ...
-> do_invalid_op
-> cic_free_func 0x9d/0xb0
-> bio_endio 0x42/0x70
-> task_rq_lock
-> try_to_wake_up
-> invalid_op
-> cic_free_func
-> cfq_free_io_context
-> put_io_context
-> cfq_put_request
-> ...
+On 05/11/2010, at 7:01 AM, Maciej Szmigiero wrote:
 
-Hmm, clearly a reference counting issue.  I can't reproduce it, but I'll
-keep staring and trying.
+> W dniu 03.11.2010 11:54, Ben Nizette pisze:
+>> 
+>> On 03/11/2010, at 6:53 AM, Maciej Szmigiero wrote:
+>> 
+>>> W dniu 01.11.2010 13:35, Jonathan Cameron pisze:
+>>>> On 10/28/10 21:52, Maciej Szmigiero wrote:
+>>>>> [W1] a driver for DS2405 chip
+>>>>> 
+>>>>> This is a driver for DS2405 1-wire single-channel addressable switch / PIO.
+>>>>> DS2405 can also work as single-channel binary remote sensor.
+>>>> Perhaps handle this as a gpio chip? (be it a fairly limited one)
+>>>> To my mind it would make it more generally useful...
+>>> 
+>>> I think the GPIO infrastructure is meant for on-system GPIOs, where 1-wire devices are mostly 
+>>> used for remote data acquisition.
+>> 
+>> Nope!  The contents of drivers/gpio is split roughly 50/50 between on- and off-chip gpio expanders. 
+>> 
+>>> That's probably why w1_therm (for 1-wire thermometers) is not integrated with HWMON subsystem.
+>> 
+>> Don't know why this is but kinda sounds like it should be looked at more closely - conceptually 1-W is just another bus like, eg, SPI.
+>> 
+>> 	--Ben.
+> 
+> 
+> Looking at GPIO subsystem I think it's not a best solution for this device. One reason is that GPIOs are
+> identified by integer which is either #defined by platform (as Documentation/gpio.txt says) or assigned randomly.
+> 
+> First approach obviously doesn't fit, as I'm yet to find anybody using ds2405 for anything platform-related.
+> Second leads to problems in locating particular device (numbers will depend on order of detection/plugging).
+> In contrast with that, 1W subsystem provides clear and unique identification for every device as it appears under
+> its hardware address.
 
-> When I combined the patch with my previous hack on dm-crypt, it worked
-> fine; so the problem apparently goes away if cfq sees the corret io
-> context.
+Yeah I've never completely loved the randomness of this however it's hard to think of a better generic way to do this.  Note though that once a gpiochip is registered there are /sys/class/gpio/gpiochipN items that provide all the information required to work out what's going on.
 
-OK, good to know, thanks for the info.
+> 
+> In addition to that the chip removal code (gpiochip_remove() function) does not sleep when removal fails due
+> to chip being in use, returning EBUSY instead. 
+> This leads to inefficient unplugging (like trying to remove chip in loop hoping that finally somebody releases it).
+> Probably this loop will also have to check if device reappeared, so the driver doesn't try to register new instance of chip
+> while there is still one in existence.
 
-> Moreover, I noticed in the sources that cfq still uses current task on
-> many places. For example, the CPU scheduler settings are inherited if
-> there is no io priority set. Hence I was wondering if it does not make
-> more sense to store whole task_struct of the initiating process in
-> bio, instead of just io_context?
+Good point.  Sounds like it would be a good addition to gpiolib in general, would be useful for other hotpluggable busses too
 
-It's actually not that many.  elv_may_queue should also get passed the
-io_context (and I've since fixed that in my local version).  The cgroup
-code may actually require the task;  I'm waiting to hear back from Vivek
-to see if there's a way to get from io_context to cgroup.  As for the io
-priority, it may be that we can set that in the io_context as well.  I'm
-not completely sure I agree with linking a task struct into a bio.  It
-may make the exit path a bit tricky.  I'll think more about it if it
-comes to that.
+> Note that Documentation/gpio.txt says "Removing a GPIO controller should be rare; use gpiochip_remove() when it is unavoidable".
+> Characteristics of long W1 buses cause devices to disappear and reappear from time to time so it won't be a "rare" operation here.
 
-Thanks for the testing and the thoughtful comments.  I'll let you know
-when I have another patch for testing (though I'm at the Linux Plumbers
-Conference, so I'm not sure how much time I'll have to dedicate to the
-task this week).
+I don't know the history of that statement, sounds more like an implementation detail than a 'feature'.  Maybe David has more detail?
 
-Cheers,
-Jeff
+> 
+> And all this added complexity for what? - to replace two tiny attributes under device sysfs directory?
+
+Well that and standardisation!  However it does seem that while conceptually your device should present a gpio interface it's on the fringe of what gpiolib was designed to do.  I'd understand if you don't feel like making gpiolib better support hotpluggable devices however it sounds like it'd be worth doing, not just for 1-W but also, eg, USB GPIO expanders.
+
+	--Ben.
+
+> 
+> Maciej Szmigiero
+
