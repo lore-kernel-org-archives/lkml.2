@@ -1,112 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969Ab0KDXe4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 19:34:56 -0400
-Received: from nm29-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.236]:36075 "HELO
-	nm29-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751330Ab0KDXey convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 19:34:54 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 404993.84990.bm@omp1010.mail.sp2.yahoo.com
-Message-ID: <756314.4122.qm@web110514.mail.gq1.yahoo.com>
-X-YMail-OSG: MDAOUQ4VM1nerLq4URs82dn10nhWoPNdAZA3HUdx9djwYOd
- LrxAv6ykr8SSNgLnwchL2etGpNa0xyFdzedsZdI8KXWBybe6U2KlhY2owaix
- B5xQ.TvfZnSWY3vwn1ysV6CVzxT610JXQ6kv3hpUqyYeInttw9hqomlk1fRW
- BRhEjDXtdoz7lDUcKOPW6.qFYIYUow_8oMtqvIGwmeJlqVwlef_DgQFT0hmu
- T9Kjb1_crpUK2N9dOxOtlV_._QY1YH171qoUy6DyfAScAUzVvar3UxdM6ibO
- FiBjSST.8_FumfE7LlIVo.UonIdroyL8OC3e87764Ff4fXuG4yFgjKcFxjTr
- flSetEeqE8XM70I2.HuMjF1BVSIrKkQtYchC3k658
-X-RocketYMMF: multiplicador
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.284920
-Date: Thu, 4 Nov 2010 16:34:26 -0700 (PDT)
-From: =?utf-8?B?QW5kcsOpIEx1aXMgUGVyZWlyYSBkb3MgU2FudG9zIC0gQlNSU29mdA==?= 
-	<andre@bsrsoft.com.br>
-Reply-To: andre@bsrsoft.com.br
-Subject: Re: [PATCH 1/1] fs: Small refactoring of the code in ext4 2.6.37-rc1
-To: Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1752087Ab0KDXfi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 19:35:38 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:61422 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330Ab0KDXfg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 19:35:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=hI0O20JqNbvxMF6SY3xMEIvuGoVvZx2m3pH686nI4QKhSfmL0CBng0nq7X/nhIsjo7
+         guJOPHoIgUmJb8qhwwQECAxaiw3TIEWxtmimkRtg4icRUYgeQ1xbtkf13OM5jdGj+zvV
+         RnGHE7gh0g/oO96yNLIuxIWbyUghLeiGmHSpY=
+Message-ID: <4CD34349.9010504@gmail.com>
+Date: Thu, 04 Nov 2010 18:35:37 -0500
+From: Steven Barrett <damentz@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100918 Icedove/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Sanjoy Mahajan <sanjoy@olin.edu>
+CC: Chris Mason <chris.mason@oracle.com>, Ingo Molnar <mingo@elte.hu>,
+        Pekka Enberg <penberg@kernel.org>,
+        Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Peter.Zijl@MIT.EDU
+Subject: Re: 2.6.36 io bring the system to its knees
+References: <E1PE2Jp-00031X-Tx@approx.mit.edu>
+In-Reply-To: <E1PE2Jp-00031X-Tx@approx.mit.edu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello.
+On 11/04/2010 11:05 AM, Sanjoy Mahajan wrote:
+>> So this sounds like the backup is just thrashing your cache.
+> 
+> I think it's more than that.  Starting an rxvt shouldn't take 8 seconds,
+> even with a cold cache.  Actually, it does take a while, so you do have
+> a point.  I just did
+> 
+>   echo 3 > /proc/sys/vm/drop_caches
+> 
+> and then started rxvt.  That takes about 3 seconds (which seems long,
+> but I don't know wherein that slowness lies), of which maybe 0.25
+> seconds is loading and running 'date':
+> 
+> $ time rxvt -e date
+> real	0m2.782s
+> user	0m0.148s
+> sys	0m0.032s
+> 
+> The 8-second delay during the rsync must have at least two causes: (1)
+> the cache is wiped out, and (2) the rxvt binary cannot be paged in
+> quickly because the disk is doing lots of other I/O.  
+> 
+> Can the system someknow that paging in the rxvt binary and shared
+> libraries is interactive I/O, because it was started by an interactive
+> process, and therefore should take priority over the rsync?
+> 
+>> Does rsync have the option to do an fadvise DONTNEED?
+> 
+> I couldn't find one.  It would be good to have a solution that is
+> independent of the backup app.  (The 'locate' cron job does a similar
+> thrashing of the interactive response.)
 
-This is true.
-Despite having gone through all compilation and I have not noticed apparent problems, my mistake is evident in this case.
+I'm definitely no expert in Linux' file cache management, but from what
+I've experienced... isn't the real problem that the "interactive"
+processes, like your web browser or file manager, lose their inode and
+dentry cache when rsync runs?  Then while rsync is busy reading and
+writing to the disk, whenever you click on your interactive application,
+it tries to read what it lost to rsync from the disk while rsync is
+still thrashing your inode/dentry cache.
 
-I had not realized that the side effect would really be changing variables incremented and decremented.
+This is a major problem even when my system has lots of ram (4gB on this
+laptop).
 
-Thank you.
+What has helped me, however, is reducing vm.vfs_cache_pressure to a
+smaller value (25 here) so that Linux prefers to retain the current
+inode / dentry cache rather than suddenly give it up for a new greedy
+I/O type of program.  The only side effect is that file copying is a
+little slower than usual... totally worth it though.
 
-I'll think more about this type of side effect. :)
+> 
+> -Sanjoy
+> 
+> `Until lions have their historians, tales of the hunt shall always
+>  glorify the hunters.'  --African Proverb
 
-
-On Thu, 4 Nov 2010, André Luis Pereira dos Santos - BSRSoft wrote:
-
-> From: Andre Luis Pereira dos Santos <andre@bsrsoft.com.br>
->
-> Hi.
-> Small refactoring of the code in order to make minor enhancements to critical areas.
-> The notation x + 1 has been replaced by more efficient notation x + +.
->
-> Signed-off-by: Andre Luis Pereira dos Santos <andre@bsrsoft.com.br>
-> ---
-> Signed-off-by: Andre Luis Pereira dos Santos <andre@bsrsoft.com.br>
-> --- linux-2.6.37-rc1/fs/ext4/extents.c        2010-11-01 09:54:12.000000000 -0200
-> +++ linux-2.6.37-rc1-patched/fs/ext4/extents.c        2010-11-04 19:54:26.000000000 -0200
-> @@ -555,9 +555,9 @@ ext4_ext_binsearch(struct inode *inode,
->       while (l <= r) {
->               m = l + (r - l) / 2;
->               if (block < le32_to_cpu(m->ee_block))
-> -                     r = m - 1;
-> +                     r = m--;
->               else
-> -                     l = m + 1;
-> +                     l = m++;
-
-These do not give identical results.
-
-foo = bar + 1;  assigns (bar + 1) to foo.
-foo = bar--;  assigns bar to foo then decrements bar.
-foo = --bar;  decrements bar then assigns bar to foo.
-
-So your change both change the value that will be assigned to 'r' and 'l'
-and also modify 'm' which was not previously modified.
-
-
->               ext_debug("%p(%u):%p(%u):%p(%u) ", l, le32_to_cpu(l->ee_block),
->                               m, le32_to_cpu(m->ee_block),
->                               r, le32_to_cpu(r->ee_block));
-> @@ -1557,7 +1557,7 @@ static int ext4_ext_try_to_merge(struct
->               if (ext4_ext_is_uninitialized(ex))
->                       uninitialized = 1;
->               ex->ee_len = cpu_to_le16(ext4_ext_get_actual_len(ex)
-> -                             + ext4_ext_get_actual_len(ex + 1));
-> +                             + ext4_ext_get_actual_len(ex++));
-
-After your change gcc complains:
-
- fs/ext4/extents.c:1559:16: warning: operation on ‘ex’ may be undefined
- fs/ext4/extents.c:1559:16: warning: operation on ‘ex’ may be undefined
-
-which it is correct in doing since you are now modifying the value of the
-pointer which is dereferenced in the assignment. Previously the value of
-(ex+1) was simply passed to ext4_ext_get_actual_len(), but now you are
-passing the value of (ex) to ext4_ext_get_actual_len() and then
-subsequently incrementing 'ex' itself.
-
-
->               if (uninitialized)
->                       ext4_ext_mark_uninitialized(ex);
->
->
-
-
-Was this patch even compile tested?
-
-
-      
+	Steven Barrett
