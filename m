@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754716Ab0KDBuW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 21:50:22 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:44267 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754558Ab0KDBuV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754785Ab0KDBuZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 21:50:25 -0400
+Received: from mail.asbjorn.biz ([217.195.185.3]:53505 "EHLO mail.asbjorn.biz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754602Ab0KDBuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Nov 2010 21:50:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=vFbPO2n6/5bW90pDLSUfmmcQML7shX5XV6Yu+iVG6SICgdcCTUfUqJbhGT2SxuNeMO
-         2iMjShO3BnDqzp1NuQMw==
-Date: Wed, 3 Nov 2010 18:50:13 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Figo.zhang" <zhangtianfei@leadcoretech.com>
-cc: figo zhang <figo1802@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@osdl.org>
-Subject: Re:[PATCH v2]oom-kill: CAP_SYS_RESOURCE should get bonus
-In-Reply-To: <1288834737.2124.11.camel@myhost>
-Message-ID: <alpine.DEB.2.00.1011031847450.21550@chino.kir.corp.google.com>
-References: <1288662213.10103.2.camel@localhost.localdomain> <1288827804.2725.0.camel@localhost.localdomain> <alpine.DEB.2.00.1011031646110.7830@chino.kir.corp.google.com> <AANLkTimjfmLzr_9+Sf4gk0xGkFjffQ1VcCnwmCXA88R8@mail.gmail.com>
- <1288834737.2124.11.camel@myhost>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+X-Greylist: delayed 471 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Nov 2010 21:50:21 EDT
+Message-ID: <4CD20F85.7040005@asbjorn.biz>
+Date: Thu, 04 Nov 2010 01:42:29 +0000
+From: =?UTF-8?B?QXNiasO4cm4gU2xvdGggVMO4bm5lc2Vu?= <asbjorn@asbjorn.biz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101030 Icedove/3.0.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: Michal Marek <mmarek@suse.cz>
+CC: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        debian-kernel@lists.debian.org
+Subject: Re: [PATCH] kbuild, deb-pkg: fix Architecture field when cross compiling
+References: <1288654261-8269-1-git-send-email-asbjorn@asbjorn.biz> <4CD1E8C4.2020405@suse.cz>
+In-Reply-To: <4CD1E8C4.2020405@suse.cz>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Nov 2010, Figo.zhang wrote:
+On 11/03/2010 10:57 PM, Michal Marek wrote:
+> I know very little about debian packaging, but shouldn't this be done in
+> all cases, regardless of CROSS_COMPILE being set or not? You even show
+> in the above example that in some cases you don't need CROSS_COMPILE to
+> build a kernel for a different architecture.
 
-> > > CAP_SYS_RESOURCE also had better get 3% bonus for protection.
-> > >
-> > 
-> > 
-> > Would you like to elaborate as to why?
-> > 
-> > 
-> 
-> process with CAP_SYS_RESOURCE capibility which have system resource
-> limits, like journaling resource on ext3/4 filesystem, RTC clock. so it
-> also the same treatment as process with CAP_SYS_ADMIN.
-> 
+I had a problem earlier with Kbuild ignoring ARCH if CROSS_COMPILE
+wasn't set, but can't reproduce with the current kernel, but I also
+started out with upgrading it from .26, since squeezes .32 doesn't work
+on Soekris net4501. So this is no longer an issue.
 
-NACK, there's no justification that these tasks should be given a 3% 
-memory bonus in the oom killer heuristic; in fact, since they can allocate 
-without limits it is more important to target these tasks if they are 
-using an egregious amount of memory.  CAP_SYS_RESOURCE threads have the 
-ability to lower their own oom_score_adj values, thus, they should protect 
-themselves if necessary like everything else.
+The other reason for make it dependent on CROSS_COMPILE at least to
+begin with is that the ARCH -> debarch translation table doesn't have to
+be as complete since it doesn't break anything in the currently working
+non-cross compile senario. If this doesn't matter then I will send a new
+patch, that doesn't depend on CROSS_COMPILE being set.
+
+I have CC'ed the debian-kernel list, for people not on LKML:
+https://patchwork.kernel.org/patch/296182/
