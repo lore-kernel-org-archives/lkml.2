@@ -1,109 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751785Ab0KDOQO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 10:16:14 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52900 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751350Ab0KDOQL (ORCPT
+	id S1751782Ab0KDOUV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 10:20:21 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:38487 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939Ab0KDOUS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 10:16:11 -0400
+	Thu, 4 Nov 2010 10:20:18 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=rkkxZ4R2s8JXt/8mXx33OgiRyFf11nTkBagfER8z2cw9EYYs5O96Hsu4eQOHVBaAI/
-         PcbKVBjqEvQ/qzM0rg5U4H79KMej3/p2broORP+ioevIYOdUNHeeIBZdbfVCdbs96UgM
-         AJTKf241Ouwl5deQMXEKqsZS8N78BE4gttBzw=
-Date: Thu, 4 Nov 2010 22:15:58 +0800
-From: Dave Young <hidave.darkstar@gmail.com>
-To: akpm@linux-foundation.org
-Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: mmotm 2010-11-03-12-17 uploaded
-Message-ID: <20101104141557.GA2472@darkstar>
-References: <201011031919.oA3JJgkF008936@imap1.linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201011031919.oA3JJgkF008936@imap1.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=U92kuAA4rapGDruxI8KQk+hh0OzCLizAs9HekHBnMtOiCCXv9c6516qF2UdJnnWOA3
+         Cl8KsXOXtz8TxgmOu0WmBniUQRcfv5MGhHSgEtI60Sg1qNJA6339FZm+kd8vk4MrXxXR
+         KiLDFKGwbmS7ShmeZegL/qpyzId6/O0N4qZYk=
+Subject: Re: kernel 2.6.33.7 (the highest version with RT patch) does not
+ work with b44 ethernet controller
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Wojtek Zabolotny <W.Zabolotny@elka.pw.edu.pl>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <4CD2BDE7.2070307@elka.pw.edu.pl>
+References: <4CD2BDE7.2070307@elka.pw.edu.pl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 04 Nov 2010 15:20:13 +0100
+Message-ID: <1288880413.2659.103.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 12:18:16PM -0700, akpm@linux-foundation.org wrote:
-> The mm-of-the-moment snapshot 2010-11-03-12-17 has been uploaded to
+Le jeudi 04 novembre 2010 à 15:06 +0100, Wojtek Zabolotny a écrit :
+> I have updated my RT-kernel to version 2.6.33.7-rt29 (the newest RT 
+> version),
+> and I've found that I've lost Ethernet connectivity.
+> In the logs I could see messages like this:
+> Nov  2 09:30:28 wzlaphp kernel: b44: eth0: powering down PHY
+> Nov  2 09:30:28 wzlaphp kernel: b44: eth0: BUG!  Timeout waiting for bit 
+> 00000002 of register 42c to clear.
+> Nov  2 09:30:32 wzlaphp kernel: b44: eth0: BUG!  Timeout waiting for bit 
+> 80000000 of register 428 to clear.
 > 
->    http://userweb.kernel.org/~akpm/mmotm/
+> I was not sure whether the probem is related to the 2.6.33.7 kernel 
+> itself or with the RT patch, so I've compiled also the unpatched version 
+> of 2.6.33.7
 > 
-> and will soon be available at
+> It is also not able to communicate with my Ethernet controller, but now 
+> the error messages are different:
 > 
->    git://zen-kernel.org/kernel/mmotm.git
+> b44 0000:02:0e.0: PCI INT A disabled
+> b44 0000:02:0e.0: BAR 0: set to [mem 0xf4108000-0xf4109fff] (PCI address 
+> [0xf4108000-0xf4109fff]
+> b44 0000:02:0e.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
+> ssb: Core 0 found: Fast Ethernet (cc 0x806, rev 0x07, vendor 0x4243)
+> ssb: Core 1 found: V90 (cc 0x807, rev 0x03, vendor 0x4243)
+> ssb: Core 2 found: PCI (cc 0x804, rev 0x0A, vendor 0x4243)
+> ssb: Sonics Silicon Backplane found on PCI device 0000:02:0e.0
+> b44.c:v2.0
+> b44: Invalid MAC address found in EEPROM
+> b44 ssb1:0: Problem fetching invariants of chip, aborting.
+> b44: probe of ssb1:0 failed with error -22
 > 
-> It contains the following patches against 2.6.36:
+> Now I'm using the old 2.6.33.5-rt23 kernel, and everything works perfectly.
 > 
 
-While booting I got:
-[    0.766899] =================================
-[    0.767135] [ INFO: inconsistent lock state ]
-[    0.767255] 2.6.36-mm1 #1
-[    0.767371] ---------------------------------
-[    0.767490] inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
-[    0.767613] kswapd0/544 [HC0[0]:SC0[0]:HE1:SE1] takes:
-[    0.767733]  (cpu_hotplug.lock){+.+.?.}, at: [<ffffffff81041cbc>] get_online_cpus+0x3c/0x50
-[    0.768082] {RECLAIM_FS-ON-W} state was registered at:
-[    0.768203]   [<ffffffff8106c865>] mark_held_locks+0x4d/0x6b
-[    0.768369]   [<ffffffff8106c935>] lockdep_trace_alloc+0xb2/0xd7
-[    0.768534]   [<ffffffff810f721e>] kmem_cache_alloc+0x2a/0x126
-[    0.768701]   [<ffffffff81247ae9>] idr_pre_get+0x2d/0x75
-[    0.768867]   [<ffffffff81247b42>] ida_pre_get+0x11/0x73
-[    0.769032]   [<ffffffff81056344>] create_worker+0x4a/0x153
-[    0.769199]   [<ffffffff814ecbd6>] workqueue_cpu_callback+0xb9/0x205
-[    0.769366]   [<ffffffff8150c9bb>] notifier_call_chain+0x33/0x5b
-[    0.769532]   [<ffffffff810603fb>] __raw_notifier_call_chain+0x9/0xb
-[    0.769697]   [<ffffffff81503af6>] _cpu_up+0x75/0x11a
-[    0.769862]   [<ffffffff81503bf0>] cpu_up+0x55/0x6a
-[    0.770008]   [<ffffffff81ad1655>] kernel_init+0xc9/0x1e2
-[    0.770008]   [<ffffffff81003a64>] kernel_thread_helper+0x4/0x10
-[    0.770008] irq event stamp: 27
-[    0.770008] hardirqs last  enabled at (27): [<ffffffff8150923a>] _raw_spin_unlock_irqrestore+0x46/0x55
-[    0.770008] hardirqs last disabled at (26): [<ffffffff81508c8b>] _raw_spin_lock_irqsave+0x24/0x58
-[    0.770008] softirqs last  enabled at (20): [<ffffffff8104d897>] del_timer_sync+0x50/0x8f
-[    0.770008] softirqs last disabled at (18): [<ffffffff8104d85f>] del_timer_sync+0x18/0x8f
-[    0.770008] 
-[    0.770008] other info that might help us debug this:
-[    0.770008] no locks held by kswapd0/544.
-[    0.770008] 
-[    0.770008] stack backtrace:
-[    0.770008] Pid: 544, comm: kswapd0 Not tainted 2.6.36-mm1 #1
-[    0.770008] Call Trace:
-[    0.770008]  [<ffffffff8106c5a4>] valid_state+0x18b/0x19e
-[    0.770008]  [<ffffffff8100deb3>] ? save_stack_trace+0x2a/0x48
-[    0.770008]  [<ffffffff8106cf9d>] ? check_usage_forwards+0x0/0x7e
-[    0.770008]  [<ffffffff8106c6bd>] mark_lock+0x106/0x261
-[    0.770008]  [<ffffffff8100deb3>] ? save_stack_trace+0x2a/0x48
-[    0.770008]  [<ffffffff8106da58>] __lock_acquire+0x3b0/0xe14
-[    0.770008]  [<ffffffff8106e4ad>] ? __lock_acquire+0xe05/0xe14
-[    0.770008]  [<ffffffff8106c5d9>] ? mark_lock+0x22/0x261
-[    0.770008]  [<ffffffff8106e4ad>] ? __lock_acquire+0xe05/0xe14
-[    0.770008]  [<ffffffff8106e4ad>] ? __lock_acquire+0xe05/0xe14
-[    0.770008]  [<ffffffff8106e594>] lock_acquire+0xd8/0x104
-[    0.770008]  [<ffffffff81041cbc>] ? get_online_cpus+0x3c/0x50
-[    0.770008]  [<ffffffff81507a82>] __mutex_lock_common+0x48/0x34f
-[    0.770008]  [<ffffffff81041cbc>] ? get_online_cpus+0x3c/0x50
-[    0.770008]  [<ffffffff8104d46d>] ? try_to_del_timer_sync+0x6e/0x7c
-[    0.770008]  [<ffffffff81041cbc>] ? get_online_cpus+0x3c/0x50
-[    0.770008]  [<ffffffff8150923a>] ? _raw_spin_unlock_irqrestore+0x46/0x55
-[    0.770008]  [<ffffffff810d61f1>] ? calculate_normal_threshold+0x0/0x47
-[    0.770008]  [<ffffffff81507e38>] mutex_lock_nested+0x37/0x3c
-[    0.770008]  [<ffffffff81041cbc>] get_online_cpus+0x3c/0x50
-[    0.770008]  [<ffffffff810d6aa9>] set_pgdat_percpu_threshold+0x1f/0x97
-[    0.770008]  [<ffffffff810cfb06>] kswapd+0x255/0x8cb
-[    0.770008]  [<ffffffff81039c42>] ? finish_task_switch+0x44/0xeb
-[    0.770008]  [<ffffffff815070a2>] ? schedule+0x68a/0x6d7
-[    0.770008]  [<ffffffff8105bcb6>] ? autoremove_wake_function+0x0/0x38
-[    0.770008]  [<ffffffff810cf8b1>] ? kswapd+0x0/0x8cb
-[    0.770008]  [<ffffffff8105b81d>] kthread+0x9c/0xa4
-[    0.770008]  [<ffffffff81003a64>] kernel_thread_helper+0x4/0x10
-[    0.770008]  [<ffffffff81509650>] ? restore_args+0x0/0x30
-[    0.770008]  [<ffffffff8105b781>] ? kthread+0x0/0xa4
-[    0.770008]  [<ffffffff81003a60>] ? kernel_thread_helper+0x0/0x10
+Could you print the Invalid MAC address ?
+
+
+diff --git a/drivers/net/b44.c b/drivers/net/b44.c
+index c6e8631..b1b9a2b 100644
+--- a/drivers/net/b44.c
++++ b/drivers/net/b44.c
+@@ -2092,7 +2092,7 @@ static int __devinit b44_get_invariants(struct b44 *bp)
+ 	memcpy(bp->dev->dev_addr, addr, 6);
+ 
+ 	if (!is_valid_ether_addr(&bp->dev->dev_addr[0])){
+-		pr_err("Invalid MAC address found in EEPROM\n");
++		pr_err("Invalid MAC address %pM found in EEPROM\n", bp->dev->dev_addr);
+ 		return -EINVAL;
+ 	}
+ 
+
+
