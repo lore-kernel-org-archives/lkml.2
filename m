@@ -1,267 +1,766 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751613Ab0KDQmM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 12:42:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3263 "EHLO mx1.redhat.com"
+	id S1751757Ab0KDQmu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 12:42:50 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:52593 "EHLO imr4.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751064Ab0KDQmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 12:42:08 -0400
-Date: Thu, 4 Nov 2010 17:41:44 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lin Feng Shen <shenlinf@cn.ibm.com>,
-        Yuri L Volobuev <volobuev@us.ibm.com>,
-        Mel Gorman <mel@linux.vnet.ibm.com>, dingc@cn.ibm.com,
-        lnxninja <lnxninja@us.ibm.com>
-Subject: Re: Deadlocks with transparent huge pages and userspace fs daemons
-Message-ID: <20101104164144.GI11602@random.random>
-References: <1288817005.4235.11393.camel@nimitz>
+	id S1751488Ab0KDQmr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 12:42:47 -0400
+Subject: Re: [RFC/PATCH] i2c/busses: Add support for Diolan U2C-12 USB/I2C
+ adapter
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Jean Delvare <khali@linux-fr.org>
+CC: Ben Dooks <ben-linux@fluff.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20101104134314.7928cd85@endymion.delvare>
+References: <1288830389-13873-1-git-send-email-guenter.roeck@ericsson.com>
+	 <20101104134314.7928cd85@endymion.delvare>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Ericsson
+Date: Thu, 4 Nov 2010 09:41:42 -0700
+Message-ID: <1288888902.22931.165.camel@groeck-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288817005.4235.11393.camel@nimitz>
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 01:43:25PM -0700, Dave Hansen wrote:
-> Hey Miklos,
-> 
-> When testing with a transparent huge page kernel:
-> 
-> 	http://git.kernel.org/gitweb.cgi?p=linux/kernel/git/andrea/aa.git;a=summary
-> 
-> some IBM testers ran into some deadlocks.  It appears that the
-> khugepaged process is trying to migrate one of a filesystem daemon's
-> pages while khugepaged holds the daemon's mmap_sem for write.
+Hi Jean,
 
-Correct. So now I'm wondering what happens if some library of this
-daemon happens to execute a munmap that calls split_vma and allocates
-memory while holding the mmap_sem, and the memory allocation triggers
-I/O that will have to be executed by the daemon.
+On Thu, 2010-11-04 at 08:43 -0400, Jean Delvare wrote:
+> On Wed, 3 Nov 2010 17:26:29 -0700, Guenter Roeck wrote:
+> > Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> > ---
+> > This is an usb-i2c adapter I am using to connect to i2c evaluation and test
+> > boards. Not sure if it is worth adding it into the kernel. If yes, I'll be
+> > happy to add myself as maintainer.
+> 
+> Why not? This is a device other developers may want to use, and your
+> driver is relatively small, so I'm totally fine having it in the
+> upstream kernel.
+> 
+Ok.
 
-> I think I've reproduced this issue in a slightly different form with
-> FUSE.  In my case, I think the FUSE process actually deadlocks on itself
-> instead of with khugepaged as in the IBM tester example that got me
-> looking at this.
+> >  drivers/i2c/busses/Kconfig          |   10 +
+> >  drivers/i2c/busses/Makefile         |    1 +
+> >  drivers/i2c/busses/i2c-diolan-u2c.c |  455 +++++++++++++++++++++++++++++++++++
+> >  3 files changed, 466 insertions(+), 0 deletions(-)
+> >  create mode 100644 drivers/i2c/busses/i2c-diolan-u2c.c
 > 
-> Andrea put it this way:
-> > As long as page faults are needed to execute the I/O I doubt it's safe. But
-> > I'll definitely change khugepaged not to allocate memory. If nothing else
-> > because I don't want khugepaged to make easier to trigger issues like this. But
-> > it's hard for me to consider this a bug of khugepaged from a theoretical
-> > standpoint.
+> Review:
+> >
+> > diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+> > index 3a6321c..d73be36 100644
+> > --- a/drivers/i2c/busses/Kconfig
+> > +++ b/drivers/i2c/busses/Kconfig
+> > @@ -640,6 +640,16 @@ config I2C_XILINX
+> >
+> >  comment "External I2C/SMBus adapter drivers"
+> >
+> > +config I2C_DIOLAN_U2C
+> > +     tristate "Diolan U2C-12 USB adapter"
+> > +     depends on USB
+> > +     help
+> > +       If you say yes to this option, support will be included for Diolan
+> > +       U2C-12, a USB to I2C interface.
+> > +
+> > +       This driver can also be built as a module.  If so, the module
+> > +       will be called i2c-diolan-u2c.
+> > +
+> >  config I2C_PARPORT
+> >       tristate "Parallel port adapter"
+> >       depends on PARPORT
+> > diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
+> > index 84cb16a..46315db 100644
+> > --- a/drivers/i2c/busses/Makefile
+> > +++ b/drivers/i2c/busses/Makefile
+> > @@ -63,6 +63,7 @@ obj-$(CONFIG_I2C_OCTEON)    += i2c-octeon.o
+> >  obj-$(CONFIG_I2C_XILINX)     += i2c-xiic.o
+> >
+> >  # External I2C/SMBus adapter drivers
+> > +obj-$(CONFIG_I2C_DIOLAN_U2C) += i2c-diolan-u2c.o
+> >  obj-$(CONFIG_I2C_PARPORT)    += i2c-parport.o
+> >  obj-$(CONFIG_I2C_PARPORT_LIGHT)      += i2c-parport-light.o
+> >  obj-$(CONFIG_I2C_TAOS_EVM)   += i2c-taos-evm.o
+> > diff --git a/drivers/i2c/busses/i2c-diolan-u2c.c b/drivers/i2c/busses/i2c-diolan-u2c.c
+> > new file mode 100644
+> > index 0000000..5f4fb74
+> > --- /dev/null
+> > +++ b/drivers/i2c/busses/i2c-diolan-u2c.c
+> > @@ -0,0 +1,455 @@
+> > +/*
+> > + * driver for the Diolan u2c-12 usb adapter
+> > + *
+> > + * Copyright (c) 2010 Ericsson AB
+> > + *
+> > + * Derived from:
+> > + *  i2c-tiny-usb.c
+> > + *  Copyright (C) 2006-2007 Till Harbaum (Till@Harbaum.org)
+> > + *
+> > + * This program is free software; you can redistribute it and/or
+> > + * modify it under the terms of the GNU General Public License as
+> > + * published by the Free Software Foundation, version 2.
+> > + *
+> > + */
+> > +
+> > +#include <linux/kernel.h>
+> > +#include <linux/errno.h>
+> > +#include <linux/module.h>
+> > +#include <linux/types.h>
+> > +#include <linux/slab.h>
+> > +#include <linux/usb.h>
+> > +#include <linux/i2c.h>
+> > +
+> > +#define USB_VENDOR_ID_DIOLAN         0x0abf
+> > +#define USB_DEVICE_ID_DIOLAN_U2C     0x3370
 > 
-> I tend to agree.  khugepaged makes the likelyhood of these things
-> happening much higher, but I don't think it fundamentally creates the
-> issue.
+> Maybe you can submit these to http://www.linux-usb.org/usb-ids.html so
+> that lsusb identifies the device?
+> 
+Sure. Will do.
 
-Yep.
+> > +
+> > +#define DIOLAN_OUT_EP                0x02
+> > +#define DIOLAN_IN_EP         0x84
+> > +
+> > +/* commands via USB, must match command ids in the firmware */
+> > +#define CMD_I2C_READ         0x01
+> > +#define CMD_I2C_WRITE                0x02
+> > +#define CMD_I2C_SCAN         0x03    /* Returns list of detected devices */
+> > +#define CMD_I2C_RELEASE_SDA  0x04
+> > +#define CMD_I2C_RELEASE_SCL  0x05
+> > +#define CMD_I2C_DROP_SDA     0x06
+> > +#define CMD_I2C_DROP_SCL     0x07
+> > +#define CMD_I2C_READ_SDA     0x08
+> > +#define CMD_I2C_READ_SCL     0x09
+> > +#define CMD_GET_FW_VERSION   0x0a
+> > +#define CMD_GET_SERIAL               0x0b
+> > +#define CMD_I2C_START                0x0c
+> > +#define CMD_I2C_STOP         0x0d
+> > +#define CMD_I2C_REPEATED_START       0x0e
+> > +#define CMD_I2C_PUT_BYTE     0x0f
+> > +#define CMD_I2C_GET_BYTE     0x10
+> > +#define CMD_I2C_PUT_ACK              0x11
+> > +#define CMD_I2C_GET_ACK              0x12
+> > +#define CMD_I2C_PUT_BYTE_ACK 0x13
+> > +#define CMD_I2C_GET_BYTE_ACK 0x14
+> > +#define CMD_I2C_SET_SPEED    0x1b
+> > +#define CMD_I2C_GET_SPEED    0x1c
+> > +#define CMD_SET_CLOCK_SYNCH  0x24
+> > +#define CMD_GET_CLOCK_SYNCH  0x25
+> > +#define CMD_SET_CLOCK_SYNCH_TO       0x26
+> > +#define CMD_GET_CLOCK_SYNCH_TO       0x27
+> > +
+> > +#define RESP_OK                      0x00
+> > +#define RESP_FAILED          0x01
+> > +#define RESP_BAD_MEMADDR     0x04
+> > +#define RESP_DATA_ERR                0x05
+> > +#define RESP_NOT_IMPLEMENTED 0x06
+> > +#define RESP_NACK            0x07
+> > +
+> > +#define U2C_I2C_FREQ_FAST    0       /* 400 kHz  */
+> > +#define U2C_I2C_FREQ_STD     1       /* 100 kHz  */
+> 
+> Doubled spaces at end of comments.
+> 
+Fixed.
+
+> > +#define U2C_I2C_FREQ_83KHZ   2
+> > +#define U2C_I2C_FREQ_71KHZ   3
+> > +#define U2C_I2C_FREQ_62KHZ   4
+> > +#define U2C_I2C_FREQ_50KHZ   6
+> > +#define U2C_I2C_FREQ_25KHZ   16
+> > +#define U2C_I2C_FREQ_10KHZ   46
+> > +#define U2C_I2C_FREQ_5KHZ    96
+> > +#define U2C_I2C_FREQ_2KHZ    242
+> > +
+> > +#define DIOLAN_USB_TIMEOUT   100
+> 
+> Unit?
+> 
+ms, added.
+
+> > +
+> > +/* Structure to hold all of our device specific stuff */
+> > +struct i2c_diolan_u2c {
+> > +     struct usb_device *usb_dev;     /* the usb device for this device */
+> > +     struct usb
+> _interface *interface;/* the interface for this device */
+> > +     struct i2c_adapter adapter;     /* i2c related things */
+> > +};
+> > +
+> > +/* usb layer */
+> > +
+> 
+> Please document what the function below returns.
+> 
+Done
+
+> > +static int diolan_usb_transfer(struct i2c_adapter *adapter, u8 * obuffer,
+> 
+> No space between * and obuffer.
+> 
+ok. Someone should teach Lindent to stop doing that ;).
+
+> obuffer could be a const pointer, couldn't it?
+> 
+In theory yes, but then the compiler complains when calling
+usb_bulk_msg().
+
+> > +                            int olen, u8 *ibuffer, int ilen)
+> > +{
+> > +     struct i2c_diolan_u2c *dev = adapter->algo_data;
+> > +     int ret = 0;
+> > +     int actual;
+> > +     unsigned char inbuffer[257];
+> 
+> I know it doesn't matter in practice, but it's a little inconsistent to
+> use unsigned char for this buffer and u8 in all other functions.
+> 
+Changed to u8
+
+> I'm also unsure what is the point of having such a large buffer when
+> the largest block you ever transfer in practice is 5 bytes?
+> 
+I took that from the Diolan code. They always use a 257 byte temp
+buffer, since that is the maximum data size sent by the adapter. 
+You are right, I should not really need that since I don't send any long
+commands. Ultimate reason is to account for possible adapter errors, if
+it replies (or tries to reply) with more bytes than expected. Pretty
+much just playing safe.
+
+I'll have to change that to account for Ben's comments about moving DMA
+data from/to the stack.
+
+> > +
+> > +     if (olen) {
+> > +             ret = usb_bulk_msg(dev->usb_dev,
+> > +                                usb_sndbulkpipe(dev->usb_dev, DIOLAN_OUT_EP),
+> > +                                obuffer, olen, &actual, DIOLAN_USB_TIMEOUT);
+> > +     }
+> > +     if (!ret) {
+> > +             ret = usb_bulk_msg(dev->usb_dev,
+> > +                                usb_rcvbulkpipe(dev->usb_dev, DIOLAN_IN_EP),
+> > +                                inbuffer, sizeof(inbuffer), &actual,
+> > +                                DIOLAN_USB_TIMEOUT);
+> > +             if (ret == 0 && actual > 0) {
+> > +                     ret = min(actual, ilen);
+> 
+> This could be done after checking for errors.
+> 
+Moved.
+
+> > +                     switch (inbuffer[actual - 1]) {
+> > +                     case RESP_NACK:
+> > +                             ret = -EINVAL;
+> > +                             goto abort;
+> 
+> According to Documentation/i2c/fault-codes, nacks should be translated
+> to -ENXIO.
+
+Fixed.
 
 > 
-> Should we do something like make page compaction always non-blocking on
-> lock_page()?  Should we teach the VM about fuse daemons somehow?
+> > +                     case RESP_OK:
+> > +                             break;
+> > +                     default:
+> > +                             ret = -EIO;
+> > +                             goto abort;
+> > +                     }
 > 
-> INFO: task unionfs:3527 blocked for more than 120 seconds.
-> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
-> message.
-> unionfs       D ffff88007d356ec0     0  3527   3478 0x00000000
->  ffff88007b0db9a8 0000000000000082 ffffea00000650c8 ffff88007d356c70
->  ffff88007d1286a0 000000000000000d 0000000000000000 0000000000000301
->  ffff88007b0db978 ffffffff81098f70 ffff88007b0dba58 ffff880001db1f40
-> Call Trace:
->  [<ffffffff81098f70>] ? vma_prio_tree_next+0x3c/0x52
->  [<ffffffff813eb183>] io_schedule+0x38/0x4d
->  [<ffffffff8108683a>] sync_page+0x44/0x48
->  [<ffffffff813eb5e7>] __wait_on_bit_lock+0x42/0x8a
->  [<ffffffff810867f6>] ? sync_page+0x0/0x48
->  [<ffffffff810867e2>] __lock_page+0x64/0x6b
->  [<ffffffff810467bb>] ? wake_bit_function+0x0/0x2a
->  [<ffffffff810bce62>] migrate_pages+0x1df/0x66b
->  [<ffffffff810b8b33>] ? compaction_alloc+0x0/0x2b9
->  [<ffffffff8108fa2c>] ? ____pagevec_lru_add+0x13c/0x14f
->  [<ffffffff810b85e5>] compact_zone+0x331/0x54d
->  [<ffffffff810b89e4>] compact_zone_order+0xaa/0xb9
->  [<ffffffff810b8acd>] try_to_compact_pages+0xda/0x140
->  [<ffffffff8108c3f0>] __alloc_pages_nodemask+0x3a6/0x74b
->  [<ffffffff810b5db5>] alloc_pages_vma+0x110/0x13d
->  [<ffffffff810c6d6d>] do_huge_pmd_anonymous_page+0xc0/0x287
->  [<ffffffff810a0ed7>] handle_mm_fault+0x15c/0x201
->  [<ffffffff813efa5c>] do_page_fault+0x304/0x422
->  [<ffffffff810a5e8a>] ? do_brk+0x282/0x2c8
->  [<ffffffff813ed40f>] page_fault+0x1f/0x30
+> I don't see the value of gotos here, breaks would work just fine, all
+> you have to do is change your test below to "ret > 0" - or even better,
+> move the memcpy inside the switch.
 > 
-> I had to make some changes to the transparent huge page code to get this
-> to happen.  First, I made the scanning *REALLY* aggressive:
-> 
-> echo 1 > /sys/kernel/mm/transparent_hugepage/khugepaged/alloc_sleep_millisecs
-> echo 1 > /sys/kernel/mm/transparent_hugepage/khugepaged/scan_sleep_millisecs
-> echo 65536 > /sys/kernel/mm/transparent_hugepage/khugepaged/pages_to_scan
-> 
-> Then, I hacked migrate_pages() call of unmap_and_move() to always
-> 'force', so that it tries to lock_page() unconditionally.  That's just
-> to make this race more common.  I also created some large malloc()'d
-> memory areas in the unionfs daemon and touched them constantly to cause
-> lots of page faults.
-> 
-> Other relevant tasks:
-> 
-> INFO: task mmap-and-touch:3584 blocked for more than 120 seconds.
-> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> mmap-and-touc D ffff88007bd71510     0  3584   3542 0x00000000
->  ffff88007a591b88 0000000000000086 ffff88007bd57400 ffff88007bd712c0
->  ffff88007d01cd70 ffffffff00000004 ffff88007d22e578 ffff88005e5b7440
->  ffff88007a591b58 0000000181182a8c ffff88007a591b88 ffff880001c91f40
-> Call Trace:
->  [<ffffffff813eb183>] io_schedule+0x38/0x4d
->  [<ffffffff8108683a>] sync_page+0x44/0x48
->  [<ffffffff813eb5e7>] __wait_on_bit_lock+0x42/0x8a
->  [<ffffffff810867f6>] ? sync_page+0x0/0x48
->  [<ffffffff810867e2>] __lock_page+0x64/0x6b
->  [<ffffffff810467bb>] ? wake_bit_function+0x0/0x2a
->  [<ffffffff810868a1>] find_lock_page+0x39/0x5d
->  [<ffffffff81087f60>] filemap_fault+0x1a6/0x30e
->  [<ffffffff8109e5e0>] __do_fault+0x50/0x432
->  [<ffffffff8109f636>] handle_pte_fault+0x2db/0x717
->  [<ffffffff8108b67c>] ? __free_pages+0x1b/0x24
->  [<ffffffff810a0d6c>] ? __pte_alloc+0x112/0x121
->  [<ffffffff810a0f64>] handle_mm_fault+0x1e9/0x201
->  [<ffffffff813efa5c>] do_page_fault+0x304/0x422
->  [<ffffffff810cc83d>] ? sys_newfstat+0x29/0x34
->  [<ffffffff813ed40f>] page_fault+0x1f/0x30
-> INFO: task memknobs:3599 blocked for more than 120 seconds.
-> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> memknobs      D ffff88007d305b20     0  3599   3573 0x00000000
->  ffff88005e4539a8 0000000000000086 ffff88005e453978 ffff88007d3058d0
->  ffff88007dbb60d0 ffffea0000000002 000000003963d000 ffff88007a4c11e8
->  ffffea000033aa10 000000017b1e69e0 ffff88005e453988 ffff880001c51f40
-> Call Trace:
->  [<ffffffff813eb183>] io_schedule+0x38/0x4d
->  [<ffffffff8108683a>] sync_page+0x44/0x48
->  [<ffffffff813eb5e7>] __wait_on_bit_lock+0x42/0x8a
->  [<ffffffff810867f6>] ? sync_page+0x0/0x48
->  [<ffffffff810867e2>] __lock_page+0x64/0x6b
->  [<ffffffff810467bb>] ? wake_bit_function+0x0/0x2a
->  [<ffffffff810bce62>] migrate_pages+0x1df/0x66b
->  [<ffffffff810b8b33>] ? compaction_alloc+0x0/0x2b9
->  [<ffffffff8108fa2c>] ? ____pagevec_lru_add+0x13c/0x14f
->  [<ffffffff810b85e5>] compact_zone+0x331/0x54d
->  [<ffffffff810b89e4>] compact_zone_order+0xaa/0xb9
->  [<ffffffff810b8acd>] try_to_compact_pages+0xda/0x140
->  [<ffffffff8108c3f0>] __alloc_pages_nodemask+0x3a6/0x74b
->  [<ffffffff810b5db5>] alloc_pages_vma+0x110/0x13d
->  [<ffffffff810c6d6d>] do_huge_pmd_anonymous_page+0xc0/0x287
->  [<ffffffff810a0ed7>] handle_mm_fault+0x15c/0x201
->  [<ffffffff813efa5c>] do_page_fault+0x304/0x422
->  [<ffffffff81020e5e>] ? __dequeue_entity+0x2e/0x33
->  [<ffffffff81000e25>] ? __switch_to+0x22a/0x23c
->  [<ffffffff81020e7b>] ? set_next_entity+0x18/0x36
->  [<ffffffff81022e83>] ? finish_task_switch+0x3c/0x81
->  [<ffffffff813eb0a5>] ? schedule+0x6f4/0x79a
->  [<ffffffff813ed40f>] page_fault+0x1f/0x30
-> INFO: task khugepaged:515 blocked for more than 120 seconds.
-> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this
-> message.
-> khugepaged    D ffff88007d1e8360     0   515      2 0x00000000
->  ffff88007cad5d00 0000000000000046 ffff88007cad5cc0 ffff88007d1e8110
->  ffff88007d0986e0 0000000000000008 ffff88007cad5ce0 ffffffff81037e33
->  00000000ffffffff 000000017cad5d50 00000001000dd090 0000000000000002
-> Call Trace:
->  [<ffffffff81037e33>] ? lock_timer_base+0x26/0x4a
->  [<ffffffff813ec8af>] rwsem_down_failed_common+0xcc/0xfe
->  [<ffffffff813ec8f4>] rwsem_down_write_failed+0x13/0x15
->  [<ffffffff811ccef3>] call_rwsem_down_write_failed+0x13/0x20
->  [<ffffffff813ec09b>] ? down_write+0x20/0x22
->  [<ffffffff810c6174>] khugepaged+0xee0/0xf5f
->  [<ffffffff81046783>] ? autoremove_wake_function+0x0/0x38
->  [<ffffffff810c5294>] ? khugepaged+0x0/0xf5f
->  [<ffffffff810462ce>] kthread+0x81/0x89
->  [<ffffffff81002cf4>] kernel_thread_helper+0x4/0x10
->  [<ffffffff8104624d>] ? kthread+0x0/0x89
->  [<ffffffff81002cf0>] ? kernel_thread_helper+0x0/0x10
-> 
-> 
-> Original stack trace from GPFS deadlock:
-> 
-> > khugepaged    D ffff88007c823080     0    52      2 0x00000000
-> >  ffff8800378c98f0 0000000000000046 0000000000000000 001a7949f3208ca4
-> >  ffffffffffffff10 ffff880079efc670 000000002b6c79c0 00000001169be651
-> >  ffff88003780c638 ffff8800378c9fd8 0000000000010518 ffff88003780c638
-> > Call Trace:
-> >  [<ffffffff8110c060>] ? sync_page+0x0/0x50
-> >  [<ffffffff814c8a23>] io_schedule+0x73/0xc0
-> >  [<ffffffff8110c09d>] sync_page+0x3d/0x50
-> >  [<ffffffff814c914a>] __wait_on_bit_lock+0x5a/0xc0
-> >  [<ffffffff8110c037>] __lock_page+0x67/0x70
-> >  [<ffffffff81091ce0>] ? wake_bit_function+0x0/0x50
-> >  [<ffffffff81122461>] ? lru_cache_add_lru+0x21/0x40
-> >  [<ffffffff8115b730>] lock_page+0x30/0x40
-> >  [<ffffffff8115bdad>] migrate_pages+0x59d/0x5d0
-> >  [<ffffffff81152470>] ? compaction_alloc+0x0/0x370
-> >  [<ffffffff81151f1c>] compact_zone+0x4ac/0x5e0
-> >  [<ffffffff8111cd1c>] ? get_page_from_freelist+0x15c/0x820
-> >  [<ffffffff811522ce>] compact_zone_order+0x7e/0xb0
-> >  [<ffffffff81152409>] try_to_compact_pages+0x109/0x170
-> >  [<ffffffff8111e62c>] __alloc_pages_nodemask+0x55c/0x810
-> >  [<ffffffff81150374>] alloc_pages_vma+0x84/0x110
-> >  [<ffffffff8116530f>] khugepaged+0xa4f/0x1190
-> >  [<ffffffff81091ca0>] ? autoremove_wake_function+0x0/0x40
-> >  [<ffffffff811648c0>] ? khugepaged+0x0/0x1190
-> >  [<ffffffff81091936>] kthread+0x96/0xa0
-> >  [<ffffffff810141ca>] child_rip+0xa/0x20
-> >  [<ffffffff810918a0>] ? kthread+0x0/0xa0
-> >  [<ffffffff810141c0>] ? child_rip+0x0/0x20
-> > 
-> > 
-> > mmfsd         D ffff88007c823680     0  4453   4118 0x00000080          
-> >  ffff88001ad1ddf0 0000000000000082 0000000000000000 0000000000000000            
-> >  0000000000000000 ffff880037fcee40 ffff880079d40ab0 00000001169be9c1            
-> >  ffff8800782b7ad8 ffff88001ad1dfd8 0000000000010518 ffff8800782b7ad8            
-> > Call Trace:             
-> >  [<ffffffff814c8286>] ? thread_return+0x4e/0x778                
-> >  [<ffffffff81095da3>] ? __hrtimer_start_range_ns+0x1a3/0x430            
-> >  [<ffffffff814ca6b5>] rwsem_down_failed_common+0x95/0x1d0               
-> >  [<ffffffff814ca846>] rwsem_down_read_failed+0x26/0x30          
-> >  [<ffffffff81264224>] call_rwsem_down_read_failed+0x14/0x30             
-> >  [<ffffffff814c9d44>] ? down_read+0x24/0x30             
-> >  [<ffffffff814cd6fa>] do_page_fault+0x34a/0x3a0         
-> >  [<ffffffff814caf45>] page_fault+0x25/0x30              
-> 
+Moved the memcpy. Good idea.
 
-So I understand the gpfs deadlock perfectly, and like you said it's
-hard for me to consider it a definitive khugepaged bug from a
-theoretical standpoint, but I definitely plan to send a 67/66 patch
-that moves the khugepaged allocation outside of the mmap_sem write
-mode. In fact if you were to run with CONFIG_NUMA=n likely it would
-already work just fine (but if you use gpfs I bet you need NUMA=y :).
+> > +                     if (ret)
+> > +                             memcpy(ibuffer, inbuffer, ret);
+> 
+> BTW, I'm not sure why you don't use the original buffer directly?
+> memcpy is bad performance-wise.
+> 
+To account for the possibility that the adapter returns more bytes than
+I am expecting. Sure, that would be a bug, but I wanted to play safe.
 
-I need to check your other reproducer better.
+> > +             }
+> > +     }
+> > +abort:
+> > +     return ret;
+> > +}
+> > +
+> > +/*
+> > + * Flush input queue.
+> > + * If we don't do this at startup and the controller has queued up
+> > + * messages which were not retrieved, it will stop responding
+> > + * at some point.
+> > + */
+> > +static void diolan_flush_input(struct usb_device *dev)
+> > +{
+> > +     int i;
+> > +
+> > +     for (i = 0; i < 10; i++) {
+> > +             int actual = 0;
+> > +             int ret;
+> > +             u8 inbuffer[257];
+> > +
+> > +             ret = usb_bulk_msg(dev, usb_rcvbulkpipe(dev, DIOLAN_IN_EP),
+> > +                                inbuffer, sizeof(inbuffer), &actual,
+> > +                                DIOLAN_USB_TIMEOUT);
+> > +             if (ret < 0 || actual == 0)
+> > +                     break;
+> > +     }
+> 
+> Shouldn't you emit a warning of some sort and/or fail driver loading if
+> all retries were exhausted?
+> 
+Makes sense. Added.
 
-I think this could be fixed in userland, this applies to openvpn too
-if used as nfs backend.
+> > +}
+> > +
+> > +static int diolan_i2c_start(struct i2c_adapter *adapter)
+> > +{
+> > +     u8 buffer[1];
+> > +
+> > +     buffer[0] = CMD_I2C_START;
+> > +
+> > +     return diolan_usb_transfer(adapter, buffer, 1, buffer, 1);
+> > +}
+> > +
+> > +static int diolan_i2c_repeated_start(struct i2c_adapter *adapter)
+> > +{
+> > +     u8 buffer[1];
+> > +
+> > +     buffer[0] = CMD_I2C_REPEATED_START;
+> > +
+> > +     return diolan_usb_transfer(adapter, buffer, 1, buffer, 1);
+> > +}
+> > +
+> > +static int diolan_i2c_stop(struct i2c_adapter *adapter)
+> > +{
+> > +     u8 buffer[1];
+> > +
+> > +     buffer[0] = CMD_I2C_STOP;
+> > +
+> > +     return diolan_usb_transfer(adapter, buffer, 1, buffer, 1);
+> > +}
+> > +
+> > +static int diolan_i2c_get_byte_ack(struct i2c_adapter *adapter, bool ack,
+> > +                                u8 *byte)
+> > +{
+> > +     u8 buffer[2];
+> > +     int rv;
+> 
+> Why "rv" when all other functions use "ret"?
+> 
+No idea. No, actually I do.  It depends on where I copied the code from,
+if I wrote it myself, and on the other driver I am working on in
+parallel. Changed all to "ret".
 
-And for the record, this filesystem in userland scanned by khugepaged
-("fuse/gpfs") is the only open issue there is with the patchset (with
-regard to the version for 2.6.32), no other issue at all as far as
-2.6.32 is concerned so the same should apply to the 2.6.37-rc
-version. cgroups still need more work in the 2.6.37-rc version
-though. Fixing the above is actually a walk in the park compared to
-the cgroup updates, and I'll do it very soon, just I didn't think it
-was important enough to defer the submit as I can send a simple
-67/66. Plus the problem is not reproducible unless you're in the stress
-test scenario you described above that is unlikely to match any
-production environment (and no corruption can ever materialize because
-of this, it's just a subtle annoyance that we need to get rid of).
+> > +
+> > +     buffer[0] = CMD_I2C_GET_BYTE_ACK;
+> > +     buffer[1] = ack;
+> > +
+> > +     rv = diolan_usb_transfer(adapter, buffer, 2, buffer, 2);
+> > +     if (rv > 0)
+> > +             *byte = buffer[0];
+> > +     else if (rv == 0)
+> > +             rv = -EIO;
+> > +
+> > +     return rv;
+> > +}
+> > +
+> > +static int diolan_i2c_put_byte_ack(struct i2c_adapter *adapter, u8 byte)
+> > +{
+> > +     u8 buffer[2];
+> > +
+> > +     buffer[0] = CMD_I2C_PUT_BYTE_ACK;
+> > +     buffer[1] = byte;
+> > +
+> > +     return diolan_usb_transfer(adapter, buffer, 2, buffer, 1);
+> > +}
+> > +
+> > +static int diolan_set_speed(struct i2c_adapter *adapter, u8 speed)
+> > +{
+> > +     u8 buffer[2];
+> > +
+> > +     buffer[0] = CMD_I2C_SET_SPEED;
+> > +     buffer[1] = speed;
+> > +
+> > +     return diolan_usb_transfer(adapter, buffer, 2, buffer, 1);
+> > +}
+> > +
+> > +static int diolan_fw_version(struct i2c_adapter *adapter)
+> > +{
+> > +     u8 buffer[3];
+> > +     int ret;
+> > +
+> > +     buffer[0] = CMD_GET_FW_VERSION;
+> > +     ret = diolan_usb_transfer(adapter, buffer, 1, buffer, 3);
+> > +     if (ret == 3)
+> > +             dev_info(&adapter->dev,
+> > +                      "Diolan U2C firmware version %d.%d\n",
+> > +                      buffer[0], buffer[1]);
+> 
+> Unless you expect negative versions, %u would be more appropriate. Also
+> note that to be completely correct you should cast the values to
+> unsigned int before printing them.
+> 
+Ok.
 
-Thanks a lot for all very useful testing, I hope you'll be able to
-verify the fix as soon as I send it (likely next week as I'm on
-travel). If you want fix yourself go ahead, you only need to find the
-vma and do the allocation before dropping the mmap_sem read mode and
-taking the mmap_sem write mode to call collapse_huge_page (plus some
-other detail).
+> > +     return ret;
+> > +}
+> > +
+> > +static int diolan_get_serial(struct i2c_adapter *adapter)
+> > +{
+> > +     u8 buffer[5];
+> > +     int ret;
+> > +
+> > +     buffer[0] = CMD_GET_SERIAL;
+> > +     ret = diolan_usb_transfer(adapter, buffer, 1, buffer, 5);
+> > +     if (ret == 5)
+> > +             dev_info(&adapter->dev,
+> > +                      "Diolan U2C serial number %d\n", *(u32 *) &buffer[0]);
+> 
+> Will the value be displayed correctly on big-endian machines? Doesn't
+> seem so. You probably have to use le32_to_cpu().
+> Also, %d to print an unsigned number isn't good.
+> 
+Ok.
 
-Andrea
+> > +     return ret;
+> > +}
+> > +
+> > +static int diolan_scan(struct i2c_adapter *adapter)
+> > +{
+> > +     u8 buffer[257];
+> > +     int i, ret;
+> > +
+> > +     buffer[0] = CMD_I2C_SCAN;
+> > +     ret = diolan_usb_transfer(adapter, buffer, 1, buffer, 257);
+> > +     if (ret > 0) {
+> > +             for (i = 0; i < ret - 1; i++) {
+> > +                     if (buffer[i])
+> > +                             dev_info(&adapter->dev,
+> > +                                      "Found I2C device at address 0x%x\n",
+> > +                                      buffer[i] >> 1);
+> > +             }
+> > +     }
+> > +     return ret;
+> > +}
+> 
+> I don't know how exactly the device is scanning for I2C slaves, but
+> there is no provision for device discovery in the I2C specification. I
+> wouldn't do that unconditionally at driver bind time, it might confuse
+> some I2C slaves.
+> 
+> If the user wants to probe for devices, we have i2c-dev + i2cdetect for
+> this, which is more flexible.
+> 
+Agreed. This is pretty much a leftover from testing. I took it out.
+
+> > +
+> > +/* i2c layer */
+> > +
+> > +static int usb_xfer(struct i2c_adapter *adapter, struct i2c_msg *msgs, int num)
+> > +{
+> > +     struct i2c_msg *pmsg;
+> > +     int i, j;
+> > +     int rc = 0;
+> 
+> And now rc instead of ret as everywhere else? You are being creative ;)
+> 
+Just trying to give you something to comment on ;)
+
+> > +
+> > +     rc = diolan_i2c_start(adapter);
+> > +     if (rc < 0)
+> > +             return rc;
+> > +
+> > +     for (i = 0; i < num; i++) {
+> > +             pmsg = &msgs[i];
+> > +             if (i) {
+> > +                     rc = diolan_i2c_repeated_start(adapter);
+> > +                     if (rc < 0)
+> > +                             goto abort;
+> > +             }
+> > +             if (pmsg->flags & I2C_M_RD) {
+> > +                     rc = diolan_i2c_put_byte_ack(adapter,
+> > +                                             ((pmsg->addr & 0x7f) << 1) | 1);
+> 
+> Note that the mask is useless: the address is already a 7-bit value.
+> 
+The variable is defined as __u16. But you are right, it should be 7-bit
+since I did not register for 10-bit devices. I took it out. Makes the
+code better readable.
+
+> > +                     if (rc < 0)
+> > +                             goto abort;
+> > +                     for (j = 0; j < pmsg->len; j++) {
+> > +                             u8 byte;
+> > +                             bool ack = j < pmsg->len - 1;
+> > +
+> > +                             /*
+> > +                              * Don't send NACK if this is the first byte
+> > +                              * of a SMBUS_BLOCK message.
+> > +                              */
+> > +                             if (j == 0 && (pmsg->flags & I2C_M_RECV_LEN))
+> > +                                     ack = true;
+> > +
+> > +                             rc = diolan_i2c_get_byte_ack(adapter, ack,
+> > +                                                          &byte);
+> > +                             if (rc < 0)
+> > +                                     goto abort;
+> > +                             /*
+> > +                              * Adjust count if first received byte is length
+> > +                              */
+> > +                             if (j == 0 && (pmsg->flags & I2C_M_RECV_LEN)) {
+> > +                                     if (byte == 0
+> > +                                         || byte > I2C_SMBUS_BLOCK_MAX) {
+> > +                                             rc = -EREMOTEIO;
+> 
+> Should be -EPROTO according to Documentation/i2c/fault-codes.
+> 
+Ok. Note that I got that from i2c-algo-bit.c.
+
+> > +                                             goto abort;
+> > +                                     }
+> > +                                     pmsg->len += byte;
+> > +                             }
+> > +                             pmsg->buf[j] = byte;
+> > +                     }
+> > +             } else {
+> > +                     rc = diolan_i2c_put_byte_ack(adapter,
+> > +                                                  (pmsg->addr & 0x7f) << 1);
+> 
+> Useless mask.
+> 
+Ok.
+
+> > +                     if (rc < 0)
+> > +                             goto abort;
+> > +                     for (j = 0; j < pmsg->len; j++) {
+> > +                             rc = diolan_i2c_put_byte_ack(adapter,
+> > +                                                          pmsg->buf[j]);
+> > +                             if (rc < 0)
+> > +                                     goto abort;
+> > +                     }
+> > +             }
+> > +     }
+> > +abort:
+> > +     diolan_i2c_stop(adapter);
+> > +     return rc;
+> > +}
+> > +
+> > +/*
+> > + * Return list of supported functionality.
+> > + */
+> > +static u32 usb_func(struct i2c_adapter *a)
+> > +{
+> > +     return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL |
+> > +         I2C_FUNC_SMBUS_READ_BLOCK_DATA;
+> 
+> Odd indentation/alignment.
+> 
+Seems to be exactly what other drivers do, so I am a bit at loss here.
+
+> As far as I can see you also support I2C_FUNC_SMBUS_BLOCK_PROC_CALL
+> (even though it is not used by any driver I know of.)
+> 
+I'll add it in.
+
+> > +}
+> > +
+> > +static const struct i2c_algorithm usb_algorithm = {
+> > +     .master_xfer = usb_xfer,
+> > +     .functionality = usb_func,
+> > +};
+> > +
+> > +/* device layer */
+> > +
+> > +static struct usb_device_id i2c_diolan_u2c_table[] = {
+> 
+> Could this be made const?
+> 
+Yes, done.
+
+> > +     {USB_DEVICE(USB_VENDOR_ID_DIOLAN, USB_DEVICE_ID_DIOLAN_U2C)},
+> > +     {}
+> > +};
+> > +
+> > +MODULE_DEVICE_TABLE(usb, i2c_diolan_u2c_table);
+> > +
+> > +static void i2c_diolan_u2c_free(struct i2c_diolan_u2c *dev)
+> > +{
+> > +     usb_put_dev(dev->usb_dev);
+> > +     kfree(dev);
+> > +}
+> > +
+> > +static int i2c_diolan_u2c_probe(struct usb_interface *interface,
+> > +                             const struct usb_device_id *id)
+> > +{
+> > +     struct i2c_diolan_u2c *dev;
+> > +     int retval = -ENOMEM;
+> 
+> This initialization could be delayed to the point where you actually
+> need it.
+> 
+Ok.
+
+> > +
+> > +     /* allocate memory for our device state and initialize it */
+> > +     dev = kzalloc(sizeof(*dev), GFP_KERNEL);
+> > +     if (dev == NULL) {
+> > +             dev_err(&interface->dev, "Out of memory\n");
+> > +             goto error;
+> > +     }
+> > +
+> > +     dev->usb_dev = usb_get_dev(interface_to_usbdev(interface));
+> > +     dev->interface = interface;
+> > +
+> > +     /* save our data pointer in this interface device */
+> > +     usb_set_intfdata(interface, dev);
+> > +
+> > +     dev_info(&interface->dev,
+> > +              "Diolan U2C at bus %03d address %03d\n",
+> > +              dev->usb_dev->bus->busnum, dev->usb_dev->devnum);
+> > +
+> > +     /* setup i2c adapter description */
+> > +     dev->adapter.owner = THIS_MODULE;
+> > +     dev->adapter.class = I2C_CLASS_HWMON;
+> > +     dev->adapter.algo = &usb_algorithm;
+> > +     dev->adapter.algo_data = dev;
+> 
+> You are abusing algo_data here. You are supposed to use
+> i2c_get/set_adapdata() instead. algo_data is only there for providing
+> platform specific implementation details to generic i2c algorithms such
+> as i2c-algo-bit.
+> 
+Copied from i2c-tiny-usb.c. I didn't really think about it. Fixed.
+
+> > +     snprintf(dev->adapter.name, sizeof(dev->adapter.name),
+> > +              "i2c-u2c-usb at bus %03d device %03d",
+> > +              dev->usb_dev->bus->busnum, dev->usb_dev->devnum);
+> > +
+> > +     dev->adapter.dev.parent = &dev->interface->dev;
+> > +
+> > +     diolan_flush_input(dev->usb_dev);
+> > +
+> > +     /* and finally attach to i2c layer */
+> > +     i2c_add_adapter(&dev->adapter);
+> 
+> Please check for error here. It could happen!
+> 
+Same as above. Added a check.
+
+> > +
+> > +     diolan_fw_version(&dev->adapter);
+> 
+> This seems racy, and the commands below as well. Serialization of calls
+> to usb_xfer is guaranteed by i2c-core, but here you are calling other
+> functions which will access your USB interface. I'm no USB expert, but
+> diolan_usb_transfer() doesn't seem to be designed for parallel
+> execution. As your i2c adapter is already registered, usb_xfer() could
+> run in parallel with diolan_fw_version(), diolan_set_speed() etc.
+> 
+> So either you add a mutex to serialize the access yourself (which will
+> cause a run-time performance hit) or you do all your stuff _before_ the
+> adapter is publicly usable.
+> 
+Good catch. Moved to above i2c_add_adapter.
+
+> > +
+> > +     retval = diolan_set_speed(&dev->adapter, U2C_I2C_FREQ_STD);
+> > +     if (retval < 0) {
+> > +             dev_err(&dev->adapter.dev,
+> > +                     "failure %d setting I2C bus frequency\n", retval);
+> > +             goto error_del;
+> > +     }
+> 
+> Beyond the race issue, you want to fully initialize the adapter before
+> you make it visible to consumers, so speed should be set before calling
+> i2c_add_adapter().
+> 
+Ok, done.
+
+> > +     diolan_get_serial(&dev->adapter);
+> > +     diolan_scan(&dev->adapter);
+> > +
+> > +     dev_dbg(&dev->adapter.dev, "connected i2c-u2c-usb device\n");
+> > +
+> > +     return 0;
+> > +
+> > +error_del:
+> > +     i2c_del_adapter(&dev->adapter);
+> > +     i2c_diolan_u2c_free(dev);
+> > +error:
+> > +     return retval;
+> > +}
+> > +
+> > +static void i2c_diolan_u2c_disconnect(struct usb_interface *interface)
+> > +{
+> > +     struct i2c_diolan_u2c *dev = usb_get_intfdata(interface);
+> > +
+> > +     i2c_del_adapter(&dev->adapter);
+> > +     usb_set_intfdata(interface, NULL);
+> 
+> If you have to do this here, then you also have to do it in the failure
+> path of i2c_diolan_u2c_probe(), don't you?
+> 
+Presumably. Another copy from tiny-usb.c
+
+> > +     i2c_diolan_u2c_free(dev);
+> > +
+> > +     dev_dbg(&interface->dev, "disconnected\n");
+> > +}
+> > +
+> > +static struct usb_driver i2c_diolan_u2c_driver = {
+> > +     .name = "i2c-u2c-usb",
+> 
+> Why not "i2c-diolan-u2c" as the module name? Would be more consistent.
+> 
+Agreed.
+
+> > +     .probe = i2c_diolan_u2c_probe,
+> > +     .disconnect = i2c_diolan_u2c_disconnect,
+> > +     .id_table = i2c_diolan_u2c_table,
+> > +};
+> > +
+> > +static int __init usb_i2c_diolan_u2c_init(void)
+> > +{
+> > +     /* register this driver with the USB subsystem */
+> > +     return usb_register(&i2c_diolan_u2c_driver);
+> > +}
+> > +
+> > +static void __exit usb_i2c_diolan_u2c_exit(void)
+> > +{
+> > +     /* deregister this driver with the USB subsystem */
+> > +     usb_deregister(&i2c_diolan_u2c_driver);
+> > +}
+> > +
+> > +module_init(usb_i2c_diolan_u2c_init);
+> > +module_exit(usb_i2c_diolan_u2c_exit);
+> > +
+> > +/* ----- end of usb layer ------------------------------------------------ */
+> 
+> This comment is inconsistent (and useless, if you ask me.)
+> 
+Another cut-and-paste thing. Removed.
+
+> > +
+> > +MODULE_AUTHOR("Guenter Roeck <guenter.roeck@ericsson.com>");
+> > +MODULE_DESCRIPTION("i2c-u2c-usb driver");
+> > +MODULE_LICENSE("GPL");
+> 
+> 
+> --
+> Jean Delvare
+
+Thanks a lot for the review!
+
+Guenter
+
+
