@@ -1,53 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120Ab0KDAiH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 20:38:07 -0400
-Received: from gretel.risen.be ([78.46.99.137]:48066 "EHLO gretel.risen.be"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753459Ab0KDAiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 20:38:06 -0400
-X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Nov 2010 20:38:06 EDT
-Message-ID: <4CD1FF3A.2070305@aquazul.com>
-Date: Thu, 04 Nov 2010 01:32:58 +0100
-From: Mourad De Clerck <mourad@aquazul.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100918 Icedove/3.1.4
-MIME-Version: 1.0
-To: Richard Purdie <rpurdie@linux.intel.com>
-CC: Mario Schwalbe <schwalbe@inf.tu-dresden.de>,
-        Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] backlight: mbp_nvidia_bl - add support for MacBookPro7,1
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754139Ab0KDAlO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 20:41:14 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:50436 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753913Ab0KDAlM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 20:41:12 -0400
+From: Rene Sapiens <rene.sapiens@ti.com>
+To: greg@kroah.com
+Cc: gregkh@suse.de, nm@ti.com, felipe.contreras@gmail.com, ernesto@ti.com,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-omap@vger.kernel.org, Rene Sapiens <rene.sapiens@ti.com>
+Subject: [PATCH] staging: tidspbridge: overwrite DSP error codes
+Date: Wed,  3 Nov 2010 18:31:24 -0600
+Message-Id: <1288830684-7828-1-git-send-email-rene.sapiens@ti.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for the MacBook Pro 7,1 (13" mid 2010)
+When calling the DSP's remote functions, the DSP returns error
+codes different from the ones managed by the kernel, the
+function's return value is shared with the MPU using a shared
+structure. This patch overwrites those error codes by kernel
+specifics and deletes unnecessary code.
 
-Signed-off-by: Mourad De Clerck <mourad@aquazul.com>
+Signed-off-by: Rene Sapiens <rene.sapiens@ti.com>
 ---
- drivers/video/backlight/mbp_nvidia_bl.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+ drivers/staging/tidspbridge/rmgr/disp.c |   44 +++++-------------------------
+ 1 files changed, 8 insertions(+), 36 deletions(-)
 
-diff --git a/drivers/video/backlight/mbp_nvidia_bl.c b/drivers/video/backlight/mbp_nvidia_bl.c
-index 9fb533f..9c44314 100644
---- a/drivers/video/backlight/mbp_nvidia_bl.c
-+++ b/drivers/video/backlight/mbp_nvidia_bl.c
-@@ -335,6 +335,15 @@ static const struct dmi_system_id __initdata mbp_device_table[] = {
- 		},
- 		.driver_data	= (void *)&nvidia_chipset_data,
- 	},
-+	{
-+		.callback	= mbp_dmi_match,
-+		.ident		= "MacBookPro 7,1",
-+		.matches	= {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro7,1"),
-+		},
-+		.driver_data	= (void *)&nvidia_chipset_data,
-+	},
- 	{ }
- };
+diff --git a/drivers/staging/tidspbridge/rmgr/disp.c b/drivers/staging/tidspbridge/rmgr/disp.c
+index b7ce435..560069a 100644
+--- a/drivers/staging/tidspbridge/rmgr/disp.c
++++ b/drivers/staging/tidspbridge/rmgr/disp.c
+@@ -460,17 +460,6 @@ int disp_node_create(struct disp_object *disp_obj,
+ 		DBC_ASSERT(ul_bytes < (RMS_COMMANDBUFSIZE * sizeof(rms_word)));
+ 		status = send_message(disp_obj, node_get_timeout(hnode),
+ 				      ul_bytes, node_env);
+-		if (status >= 0) {
+-			/*
+-			 * Message successfully received from RMS.
+-			 * Return the status of the Node's create function
+-			 * on the DSP-side
+-			 */
+-			status = (((rms_word *) (disp_obj->pbuf))[0]);
+-			if (status < 0)
+-				dev_dbg(bridge, "%s: DSP-side failed: 0x%x\n",
+-					__func__, status);
+-		}
+ 	}
+ func_end:
+ 	return status;
+@@ -513,18 +502,6 @@ int disp_node_delete(struct disp_object *disp_obj,
+ 			status = send_message(disp_obj, node_get_timeout(hnode),
+ 					      sizeof(struct rms_command),
+ 					      &dw_arg);
+-			if (status >= 0) {
+-				/*
+-				 * Message successfully received from RMS.
+-				 * Return the status of the Node's delete
+-				 * function on the DSP-side
+-				 */
+-				status = (((rms_word *) (disp_obj->pbuf))[0]);
+-				if (status < 0)
+-					dev_dbg(bridge, "%s: DSP-side failed: "
+-						"0x%x\n", __func__, status);
+-			}
+-
+ 		}
+ 	}
+ 	return status;
+@@ -566,18 +543,6 @@ int disp_node_run(struct disp_object *disp_obj,
+ 			status = send_message(disp_obj, node_get_timeout(hnode),
+ 					      sizeof(struct rms_command),
+ 					      &dw_arg);
+-			if (status >= 0) {
+-				/*
+-				 * Message successfully received from RMS.
+-				 * Return the status of the Node's execute
+-				 * function on the DSP-side
+-				 */
+-				status = (((rms_word *) (disp_obj->pbuf))[0]);
+-				if (status < 0)
+-					dev_dbg(bridge, "%s: DSP-side failed: "
+-						"0x%x\n", __func__, status);
+-			}
+-
+ 		}
+ 	}
  
+@@ -739,7 +704,14 @@ static int send_message(struct disp_object *disp_obj, u32 timeout,
+ 		} else {
+ 			if (CHNL_IS_IO_COMPLETE(chnl_ioc_obj)) {
+ 				DBC_ASSERT(chnl_ioc_obj.pbuf == pbuf);
+-				status = (*((rms_word *) chnl_ioc_obj.pbuf));
++				if (*((int *)chnl_ioc_obj.pbuf) < 0) {
++					/* Translate DSP's to kernel error */
++					status = -EREMOTEIO;
++					dev_dbg(bridge, "%s: DSP-side failed:"
++						" DSP errcode = 0x%x, Kernel "
++						"errcode = %d\n", __func__,
++						*(int *)pbuf, status);
++				}
+ 				*pdw_arg =
+ 				    (((rms_word *) (chnl_ioc_obj.pbuf))[1]);
+ 			} else {
+-- 
+1.6.3.3
 
