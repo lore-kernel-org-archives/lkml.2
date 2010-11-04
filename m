@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab0KDJHt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 05:07:49 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55409 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754202Ab0KDJHr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 05:07:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=GGGVxJkPJ8m62XeidYW7/MAY015JKqgkXDHi8axKFNy6dJbTCEkSSn/FPA+YuvUiSe
-         7rtMlHk9uZcUXyd1c0grvZoLv2Do0sNn1MkjEiPY4LoWbkpIbQ+/nsPQIe/GjzIQfkAd
-         qUWwZADTw2BUokfsD7CECKAZ49DaIRfC8hqGs=
-Subject: Re: [PATCH v14 06/17] Use callback to deal with skb_release_data()
- specially.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: xiaohui.xin@intel.com
-Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
-        herbert@gondor.hengli.com.au, jdike@linux.intel.com
-In-Reply-To: <1288861465.2659.44.camel@edumazet-laptop>
-References: <1288861513-5707-1-git-send-email-xiaohui.xin@intel.com>
-	 <bd4abd1568dfc75daed6713f9a568bf0f895de4b.1288860477.git.xiaohui.xin@intel.com>
-	 <1288861465.2659.44.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 04 Nov 2010 10:07:43 +0100
-Message-ID: <1288861663.2659.47.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1755532Ab0KDJOZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 05:14:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50756 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754108Ab0KDJOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 05:14:21 -0400
+Date: Thu, 4 Nov 2010 11:13:58 +0200
+From: Alon Levy <alevy@redhat.com>
+To: Ian Molton <ian.molton@collabora.co.uk>
+Cc: Anthony Liguori <anthony@codemonkey.ws>,
+        QEMU Developers <qemu-devel@nongnu.org>, linux-kernel@vger.kernel.org,
+        virtualization@lists.osdl.org, Avi Kivity <avi@redhat.com>,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [Qemu-devel] Re: [PATCH] Implement a virtio GPU transport
+Message-ID: <20101104091358.GA28832@playa.tlv.redhat.com>
+References: <1097264455.965471288612409433.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+ <4CCEC090.3050009@codemonkey.ws>
+ <4CD1A406.3090909@collabora.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CD1A406.3090909@collabora.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 04 novembre 2010 à 10:04 +0100, Eric Dumazet a écrit :
-
-> Hmm, I suggest you read the comment two lines above.
+On Wed, Nov 03, 2010 at 06:03:50PM +0000, Ian Molton wrote:
+> On 01/11/10 13:28, Anthony Liguori wrote:
+> >On 11/01/2010 06:53 AM, Alon Levy wrote:
 > 
-> If destructor_arg is now cleared each time we allocate a new skb, then,
-> please move it before dataref in shinfo structure, so that the following
-> memset() does the job efficiently...
+> >>While we (speaking as part of the SPICE developers) want to have the same
+> >>support in our virtual GPU for 3d as we have for 2d, we just don't at
+> >>this point of time.
+> 
+> Would it be helpful to you to have /something/ that works in the
+> interim? I'm happy to work with you guys so that we dont need to
+> reinvent the wheel ;-)
+> 
 
+In case it wasn't clear, I think putting virtio-gl is a good idea, exactly because it works right now.
 
-Something like :
-
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index e6ba898..2dca504 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -195,6 +195,9 @@ struct skb_shared_info {
- 	__be32          ip6_frag_id;
- 	__u8		tx_flags;
- 	struct sk_buff	*frag_list;
-+	/* Intermediate layers must ensure that destructor_arg
-+	 * remains valid until skb destructor */
-+	void		*destructor_arg;
- 	struct skb_shared_hwtstamps hwtstamps;
- 
- 	/*
-@@ -202,9 +205,6 @@ struct skb_shared_info {
- 	 */
- 	atomic_t	dataref;
- 
--	/* Intermediate layers must ensure that destructor_arg
--	 * remains valid until skb destructor */
--	void *		destructor_arg;
- 	/* must be last field, see pskb_expand_head() */
- 	skb_frag_t	frags[MAX_SKB_FRAGS];
- };
-
-
-
+[Snip]
