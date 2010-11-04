@@ -1,180 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755297Ab0KDIqT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 04:46:19 -0400
-Received: from mga02.intel.com ([134.134.136.20]:3854 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754519Ab0KDIoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 04:44:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,294,1286175600"; 
-   d="scan'208";a="570251228"
-From: xiaohui.xin@intel.com
-To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
-        herbert@gondor.hengli.com.au, jdike@linux.intel.com
-Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [PATCH v14 12/17] Add header file for mp device.
-Date: Thu,  4 Nov 2010 17:05:08 +0800
-Message-Id: <a93eb7ead682e2168f1c8cfa88e44ca7873dc4ef.1288860478.git.xiaohui.xin@intel.com>
-X-Mailer: git-send-email 1.7.3
-In-Reply-To: <1288861513-5707-1-git-send-email-xiaohui.xin@intel.com>
-References: <1288861513-5707-1-git-send-email-xiaohui.xin@intel.com>
-In-Reply-To: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1288860477.git.xiaohui.xin@intel.com>
-References: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1288860477.git.xiaohui.xin@intel.com>
+	id S1755327Ab0KDIqj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 04:46:39 -0400
+Received: from mail.redflag-linux.com ([219.237.229.196]:48537 "EHLO
+	mail.redflag-linux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755057Ab0KDIqf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 04:46:35 -0400
+X-Greylist: delayed 1460 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Nov 2010 04:46:35 EDT
+Message-ID: <4CD26CC7.3090502@redflag-linux.com>
+Date: Thu, 04 Nov 2010 16:20:23 +0800
+From: =?UTF-8?B?Iua9mOWNq+W5syhQZXRlciBQYW4pIg==?= 
+	<wppan@redflag-linux.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.7) Gecko/20100324 RedFlag/3.0.1-1rf2.dt8 Thunderbird/3.0.1
+MIME-Version: 1.0
+To: tytso@mit.edu, adilger.kernel@dilger.ca
+CC: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] no need for memset since kzalloc
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xin Xiaohui <xiaohui.xin@intel.com>
-
-Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
-Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
-Reviewed-by: Jeff Dike <jdike@linux.intel.com>
+Signed-off-by: Peter Pan(潘卫平) <wppan@redflag-linux.com>
 ---
- include/linux/mpassthru.h |  133 +++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 133 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/mpassthru.h
+  fs/ext4/extents.c |    1 -
+  1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/mpassthru.h b/include/linux/mpassthru.h
-new file mode 100644
-index 0000000..1115f55
---- /dev/null
-+++ b/include/linux/mpassthru.h
-@@ -0,0 +1,133 @@
-+#ifndef __MPASSTHRU_H
-+#define __MPASSTHRU_H
-+
-+#include <linux/types.h>
-+#include <linux/if_ether.h>
-+#include <linux/ioctl.h>
-+
-+/* ioctl defines */
-+#define MPASSTHRU_BINDDEV      _IOW('M', 213, int)
-+#define MPASSTHRU_UNBINDDEV    _IO('M', 214)
-+#define MPASSTHRU_SET_MEM_LOCKED       _IOW('M', 215, unsigned long)
-+#define MPASSTHRU_GET_MEM_LOCKED_NEED  _IOR('M', 216, unsigned long)
-+
-+#define COPY_THRESHOLD (L1_CACHE_BYTES * 4)
-+#define COPY_HDR_LEN   (L1_CACHE_BYTES < 64 ? 64 : L1_CACHE_BYTES)
-+
-+#define DEFAULT_NEED   ((8192*2*2)*4096)
-+
-+struct frag {
-+	u16     offset;
-+	u16     size;
-+};
-+
-+#define HASH_BUCKETS    (8192*2)
-+struct page_info {
-+	struct list_head        list;
-+	struct page_info        *next;
-+	struct page_info        *prev;
-+	struct page             *pages[MAX_SKB_FRAGS];
-+	struct sk_buff          *skb;
-+	struct page_pool        *pool;
-+
-+	/* The pointer relayed to skb, to indicate
-+	 * it's a external allocated skb or kernel
-+	 */
-+	struct skb_ext_page    ext_page;
-+	/* flag to indicate read or write */
-+#define INFO_READ                      0
-+#define INFO_WRITE                     1
-+	unsigned                flags;
-+	/* exact number of locked pages */
-+	unsigned                pnum;
-+
-+	/* The fields after that is for backend
-+	 * driver, now for vhost-net.
-+	 */
-+	/* the kiocb structure related to */
-+	struct kiocb            *iocb;
-+	/* the ring descriptor index */
-+	unsigned int            desc_pos;
-+	/* the iovec coming from backend, we only
-+	 * need few of them */
-+	struct iovec            hdr[2];
-+	struct iovec            iov[2];
-+};
-+
-+struct page_pool {
-+	/* the queue for rx side */
-+	struct list_head        readq;
-+	/* the lock to protect readq */
-+	spinlock_t              read_lock;
-+	/* record the orignal rlimit */
-+	struct rlimit           o_rlim;
-+	/* userspace wants to locked */
-+	int                     locked_pages;
-+	/* currently locked pages */
-+	int                     cur_pages;
-+	/* the memory locked before */
-+	unsigned long		orig_locked_vm;
-+	/* the device according to */
-+	struct net_device       *dev;
-+	/* the mp_port according to dev */
-+	struct mp_port          port;
-+	/* the hash_table list to find each locked page */
-+	struct page_info        **hash_table;
-+};
-+
-+static struct kmem_cache *ext_page_info_cache;
-+
-+#ifdef __KERNEL__
-+#if defined(CONFIG_MEDIATE_PASSTHRU) || defined(CONFIG_MEDIATE_PASSTHRU_MODULE)
-+struct socket *mp_get_socket(struct file *);
-+struct page_pool *page_pool_create(struct net_device *dev,
-+				   struct socket *sock);
-+int async_recvmsg(struct kiocb *iocb, struct page_pool *pool,
-+		  struct iovec *iov, int count, int flags);
-+int async_sendmsg(struct sock *sk, struct kiocb *iocb,
-+		  struct page_pool *pool, struct iovec *iov,
-+		  int count);
-+void async_data_ready(struct sock *sk, struct page_pool *pool);
-+void dev_change_state(struct net_device *dev);
-+void page_pool_destroy(struct mm_struct *mm, struct page_pool *pool);
-+#else
-+#include <linux/err.h>
-+#include <linux/errno.h>
-+struct file;
-+struct socket;
-+static inline struct socket *mp_get_socket(struct file *f)
-+{
-+	return ERR_PTR(-EINVAL);
-+}
-+static inline struct page_pool *page_pool_create(struct net_device *dev,
-+		struct socket *sock)
-+{
-+	return ERR_PTR(-EINVAL);
-+}
-+static inline int async_recvmsg(struct kiocb *iocb, struct page_pool *pool,
-+		struct iovec *iov, int count, int flags)
-+{
-+	return -EINVAL;
-+}
-+static inline int async_sendmsg(struct sock *sk, struct kiocb *iocb,
-+		struct page_pool *pool, struct iovec *iov,
-+		int count)
-+{
-+	return -EINVAL;
-+}
-+static inline void async_data_ready(struct sock *sk, struct page_pool *pool)
-+{
-+	return;
-+}
-+static inline void dev_change_state(struct net_device *dev)
-+{
-+	return;
-+}
-+static inline void page_pool_destroy(struct mm_struct *mm,
-+				     struct page_pool *pool)
-+{
-+	return;
-+}
-+#endif /* CONFIG_MEDIATE_PASSTHRU */
-+#endif /* __KERNEL__ */
-+#endif /* __MPASSTHRU_H */
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index 0554c48..37cdb6e 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -2375,7 +2375,6 @@ again:
+  			/* go to the next level */
+  			ext_debug("move to level %d (block %llu)\n",
+  				  i + 1, ext4_idx_pblock(path[i].p_idx));
+-			memset(path + i + 1, 0, sizeof(*path));
+  			bh = sb_bread(sb, ext4_idx_pblock(path[i].p_idx));
+  			if (!bh) {
+  				/* should we reset i_size? */
 -- 
-1.7.3
+1.6.6
+
 
