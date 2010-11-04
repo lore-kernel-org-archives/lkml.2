@@ -1,58 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701Ab0KDUay (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 16:30:54 -0400
-Received: from 63.mail-out.ovh.net ([91.121.185.56]:39491 "HELO
-	63.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751598Ab0KDUaw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 16:30:52 -0400
-Message-ID: <4CD317E2.9090504@eukrea.com>
-Date: Thu, 04 Nov 2010 21:30:26 +0100
-From: =?ISO-8859-1?Q?Eric_B=E9nard?= <eric@eukrea.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; fr; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1752830Ab0KDUd5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 16:33:57 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:53337 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752305Ab0KDUdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 16:33:55 -0400
+Subject: Re: [RFC/PATCH] i2c/busses: Add support for Diolan U2C-12 USB/I2C
+ adapter
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Jean Delvare <khali@linux-fr.org>
+CC: Ben Dooks <ben-linux@fluff.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20101104211807.07a55104@endymion.delvare>
+References: <1288830389-13873-1-git-send-email-guenter.roeck@ericsson.com>
+	 <20101104134314.7928cd85@endymion.delvare>
+	 <1288888902.22931.165.camel@groeck-laptop>
+	 <20101104211807.07a55104@endymion.delvare>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Ericsson
+Date: Thu, 4 Nov 2010 13:32:45 -0700
+Message-ID: <1288902765.22931.193.camel@groeck-laptop>
 MIME-Version: 1.0
-To: Nguyen Dinh-R00091 <R00091@freescale.com>
-CC: linux-kernel@vger.kernel.org, amit.kucheria@canonical.com,
-        linux@arm.linux.org.uk, s.hauer@pengutronix.de,
-        grant.likely@secretlab.ca, linux-arm-kernel@lists.infradead.org,
-        daniel@caiaq.de, u.kleine-koenig@pengutronix.de,
-        Zhang Lily-R58066 <R58066@freescale.com>, valentin.longchamp@epfl.ch
-Subject: Re: [PATCH 2/2] ARM: imx: Add mx53 support to common msl functions.
-References: <1288736227-800-1-git-send-email-Dinh.Nguyen@freescale.com> <1288736227-800-2-git-send-email-Dinh.Nguyen@freescale.com> <4CD12833.8060204@eukrea.com> <86A0E76937111F4C92FABEC0A20988510523CEC2@az33exm21>
-In-Reply-To: <86A0E76937111F4C92FABEC0A20988510523CEC2@az33exm21>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 1721219483821452548
-X-Ovh-Remote: 82.233.81.124 (tal33-3-82-233-81-124.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dinh,
+Hi Jean,
 
-Le 04/11/2010 20:21, Nguyen Dinh-R00091 a écrit :
-> Reading the ROM code is probably the most reliable way to get the correct
-> silicon revision. Because the ROM that is on the chip is "most likely"
-> up-to-date with the silicon. "Most likely" means that 95% of the time, when
-> you get a new silicon, the ROM code will get updated. There is still a
-> chance that a new silicon will not require a ROM update.
->
-> Also the other reason is that sometimes the fuses that identify the silicon
-> revision that are used by the IIM are sometimes not blown to reflect the
-> correct revision in pre-production parts. MX51 is a post production part,
-> so in theory, the fuses are blown correctly. But since we made MX51 boards
-> available prior to going into production, reading from the IIM is not as
-> reliable as reading the ROM.
->
-Don't you think we should use the documented register which (if we believe the 
-documentation) should be 100% reliable for production CPU instead of this 
-undocumented method which from what you say is 95% reliable and here to handle 
-the case of pre production CPU ?
+On Thu, 2010-11-04 at 16:18 -0400, Jean Delvare wrote:
+> Hi Guenter,
+> 
+> On Thu, 4 Nov 2010 09:41:42 -0700, Guenter Roeck wrote:
+> > On Thu, 2010-11-04 at 08:43 -0400, Jean Delvare wrote:
+> > > I'm also unsure what is the point of having such a large buffer when
+> > > the largest block you ever transfer in practice is 5 bytes?
+> >
+> > I took that from the Diolan code. They always use a 257 byte temp
+> > buffer, since that is the maximum data size sent by the adapter. 
+> > You are right, I should not really need that since I don't send any long
+> > commands. Ultimate reason is to account for possible adapter errors, if
+> > it replies (or tries to reply) with more bytes than expected. Pretty
+> > much just playing safe.
+> 
+> Which commands are they using, which require such a large buffer? In
+> your driver, bytes are all processed one by one, which is certainly not
+> good performance-wise. If there is a way to read or write mode than one
+> byte at a time, this would be worth a try.
+> 
+There are read/write block commands. Unfortunately, I never got it
+working reliably :-(.
 
-The same problem occured on i.MX35 silicon 2.1 which where not correctly 
-detected using the ROM code.
+> > > (...)
+> > > BTW, I'm not sure why you don't use the original buffer directly?
+> > > memcpy is bad performance-wise.
+> >
+> > To account for the possibility that the adapter returns more bytes than
+> > I am expecting. Sure, that would be a bug, but I wanted to play safe.
+> 
+> Hmm, OK, that makes sense.
+> 
+> > > (...)
+> > > Should be -EPROTO according to Documentation/i2c/fault-codes.
+> >
+> > Ok. Note that I got that from i2c-algo-bit.c.
+> 
+> I would welcome a patch fixing this.
+> 
+Ok, I'll put that on my list. Note that there are several other i2c
+drivers returning -EREMOTEIO.
 
-Eric
+> > > > (...)
+> > > > +static u32 usb_func(struct i2c_adapter *a)
+> > > > +{
+> > > > +     return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL |
+> > > > +         I2C_FUNC_SMBUS_READ_BLOCK_DATA;
+> > > 
+> > > Odd indentation/alignment.
+> >
+> > Seems to be exactly what other drivers do, so I am a bit at loss here.
+> 
+> Really? Using 4 spaces for indentation is wrong. Either use a tab, or
+> align using 7 spaces.
+> 
+Ok.
+
+> > > (...)
+> > > You are abusing algo_data here. You are supposed to use
+> > > i2c_get/set_adapdata() instead. algo_data is only there for providing
+> > > platform specific implementation details to generic i2c algorithms such
+> > > as i2c-algo-bit.
+> >
+> > Copied from i2c-tiny-usb.c. I didn't really think about it. Fixed.
+> 
+> I take patches ;)
+> 
+Ok. Another one to look at if I need a break ;).
+
+Guenter
+
+
