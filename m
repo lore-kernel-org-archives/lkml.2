@@ -1,76 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751740Ab0KDSBU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 14:01:20 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:54497 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976Ab0KDSBQ (ORCPT
+	id S1751931Ab0KDSFW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 14:05:22 -0400
+Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:38704 "HELO
+	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751282Ab0KDSFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 14:01:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:reply-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=cOk6C+XrE5rplV4ZPZSj1ETRErf+I4t6W+GF3UQf2bJjNh3XbMtKniDmPRoQhl1J8p
-         ZJggXer1iFlHr37CVGsNbE/OJy9IZ69/N0KxCybTVR3DFbSmc86O63wN9nSMMqdfINGq
-         XdgFHIh9Xk8tAreLoLiUqELmWNNYruAhxk3xI=
-Date: Thu, 4 Nov 2010 14:01:07 -0400
-From: mark gross <markgross@thegnar.org>
-To: Colin Cross <ccross@android.com>
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, mark gross <markgross@thegnar.org>,
-        James Bottomley <James.Bottomley@suse.de>, stable <stable@kernel.org>
-Subject: Re: [PATCH] pm_qos: Fix reversed min and max
-Message-ID: <20101104180107.GA20826@gvim.org>
-Reply-To: markgross@thegnar.org
-References: <1288852803-12356-1-git-send-email-ccross@android.com>
+	Thu, 4 Nov 2010 14:05:20 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: MfHLYq4VM1kAYRpIuoyLpGE3Fx6f9Y_tSVWXHCX7RXm6cio
+ TV7wW9xF3BzrJFUFCIjvSuMG0Leca7DAsbL_m46TfswKA3YAUuDjBtAdWVZB
+ 9rrll5cBwTOBcXRmL2TK.RvQtOv_0INKg6IsaZPX6A8U5SECT6LrONUqEW1G
+ lXBQQphnI8nW0IZMGCevaaGPATUqywLSF1PLw3VdV8CFCWckkxzE3ye7mg._
+ vZ740DyIVKRVNm6oWfCDJECZ_wDVknkgmF9QStyJd25f30zorRZKaXPu3jwd
+ II8PJPrJe
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 4 Nov 2010 13:05:16 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] irq: use per_cpu kstat_irqs
+In-Reply-To: <1288892908.2659.175.camel@edumazet-laptop>
+Message-ID: <alpine.DEB.2.00.1011041257140.8431@router.home>
+References: <1288892908.2659.175.camel@edumazet-laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288852803-12356-1-git-send-email-ccross@android.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 11:40:03PM -0700, Colin Cross wrote:
-> pm_qos_get_value had min and max reversed, causing all pm_qos
-> requests to have no effect.
-sorry.
 
-Acked-by : mark <markgross@thegnar.org>
- 
+On Thu, 4 Nov 2010, Eric Dumazet wrote:
 
---mgross
- 
-> Change-Id: I252c764821eac8d94de57eb482c05bf6afcea15b
-> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> Cc: mark gross <markgross@thegnar.org>
-> Cc: James Bottomley <James.Bottomley@suse.de>
-> Cc: stable <stable@kernel.org>
-> Signed-off-by: Colin Cross <ccross@android.com>
-> ---
->  kernel/pm_qos_params.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
-> index 645e541..0da2837 100644
-> --- a/kernel/pm_qos_params.c
-> +++ b/kernel/pm_qos_params.c
-> @@ -120,10 +120,10 @@ static inline int pm_qos_get_value(struct pm_qos_object *o)
->  
->  	switch (o->type) {
->  	case PM_QOS_MIN:
-> -		return plist_last(&o->requests)->prio;
-> +		return plist_first(&o->requests)->prio;
->  
->  	case PM_QOS_MAX:
-> -		return plist_first(&o->requests)->prio;
-> +		return plist_last(&o->requests)->prio;
->  
->  	default:
->  		/* runtime check for not using enum */
-> -- 
-> 1.7.3.1
-> 
+>  static inline unsigned int kstat_irqs_cpu(unsigned int irq, int cpu)
+>  {
+> -       return kstat_cpu(cpu).irqs[irq];
+> +	return kstat_cpu(cpu).irqs[irq];
+>  }
+
+Whitespace fixes?
+
+Looks ok otherwise.
+
+Reviewed-by: Christoph Lameter <cl@linux.com>
