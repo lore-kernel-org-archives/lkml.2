@@ -1,92 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752370Ab0KDSvk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 14:51:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33947 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751265Ab0KDSvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 14:51:39 -0400
-Message-ID: <4CD300AC.3010708@redhat.com>
-Date: Thu, 04 Nov 2010 14:51:24 -0400
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc14 Thunderbird/3.1.6
+	id S1752618Ab0KDSy5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 14:54:57 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:57973 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751857Ab0KDSyz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 14:54:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=cxMaqk9AWtw/umXNvwuK7ORJkcYZhVN0GCr12i4n9OhCG+OaNWhBqWmBorULa+qpxJ
+         K/LioYja+N5ein7N1b/RQCP3i3Ke9cHS/YMAx1p3iCOfRycqZu3ez6SUi1DNcnfinhKs
+         2tT0vM/C0XeMB9cgEwlyo14HefOQkys3CkmYU=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Antonio Ospite <ospite@studenti.unina.it>
+Subject: Re: gspca for_2.6.36 - maybe does not work properly for me (ov534)
+Date: Thu, 4 Nov 2010 19:54:48 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1; KDE/4.4.5; i686; ; )
+Cc: =?utf-8?q?T=C3=B5nu_Samuel?= <tonu@jes.ee>, linux-usb@vger.kernel.org,
+        linux-media@vger.kernel.org,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+References: <1288264077.1891.40.camel@x41.itrotid.ee> <201011032007.25474.maciej.rutecki@gmail.com> <20101103215339.bf451689.ospite@studenti.unina.it>
+In-Reply-To: <20101103215339.bf451689.ospite@studenti.unina.it>
 MIME-Version: 1.0
-To: Arnaud Lacombe <lacombar@gmail.com>
-CC: Randy Dunlap <randy.dunlap@oracle.com>, Michal Marek <mmarek@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>, kyle@redhat.com,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linux Media Mailing List <linux-media@vger.kernel.org>
-Subject: Re: REGRESSION: Re: [GIT] kconfig rc fixes
-References: <20101009224041.GA901@sepie.suse.cz>	<4CD1E232.30406@redhat.com>	<AANLkTimyh-k8gYwuNi6nZFp3oviQ33+M3fDRzZ+sJN9i@mail.gmail.com>	<4CD22627.2000607@redhat.com>	<AANLkTi=Eb8k6gmeGqvC=Zbo2mj51oHcbCncZGt00u9Tx@mail.gmail.com>	<4CD29493.5020101@redhat.com>	<20101104101910.920efbed.randy.dunlap@oracle.com>	<4CD2F735.2040903@redhat.com> <AANLkTikx+RkV82Cb1YQfYNzVWpMqRQOnvhNY4LtS64FC@mail.gmail.com>
-In-Reply-To: <AANLkTikx+RkV82Cb1YQfYNzVWpMqRQOnvhNY4LtS64FC@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201011041954.48985.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 04-11-2010 14:32, Arnaud Lacombe escreveu:
-> Hi,
+On środa, 3 listopada 2010 o 21:53:39 Antonio Ospite wrote:
+> On Wed, 3 Nov 2010 20:07:25 +0100
 > 
-> On Thu, Nov 4, 2010 at 2:11 PM, Mauro Carvalho Chehab
-> <mchehab@redhat.com> wrote:
->> [...]
->> Yes, but this makes things worse: it will allow compiling drivers that Kernel
->> will never use, as they won't work without an I2C adapter, and the I2C adapter
->> is not compiled.
->>
->> Worse than that: if you go into all V4L bridge drivers, that implements the I2C
->> adapters and disable them, the I2C ancillary adapters will still be compiled
->> (as they won't return to 'n'), but they will never ever be used...
->>
->> So, no, this is not a solution.
->>
->> What we need is to prompt the menu only if the user wants to do some manual configuration.
->> Otherwise, just use the selects done by the drivers that implement the I2C bus adapters,
->> and have some code to use those selected I2C devices.
->>
-> These is an easy solution: doing as
-> `Documentation/kbuild/kconfig-language.txt' say it should be done:
+> Maciej Rutecki <maciej.rutecki@gmail.com> wrote:
+> > (add CC's)
+> > 
+> > On czwartek, 28 października 2010 o 13:07:57 Tõnu Samuel wrote:
+> > > I am Sony PS3 Eye webcam user.
 > 
-> config MODULES
->         bool "modules ?"
->         default y
+> Please more context in the Subject next time :)
 > 
-> config AUTO
->         bool "AUTO"
+> > > After installing 2.6.36 this camera gets recognized but actually does
+> > > not work. It might be some own stupidity of improper kernel
+> > > configuration but I cannot track it down at moment.
 > 
-> config IVTV
->         tristate "IVTV"
->         select WM42 if AUTO
+> This is fixed in 2.6.37-rc1, Mauro this should go in 2.6.36.1 as well,
+> ASAP please as we missed 2.6.36.
 > 
-> menu "TV"
->         depends on !AUTO
+> This is the thread:
+> http://www.mail-archive.com/linux-media@vger.kernel.org/msg23039.html
 > 
-> config WM42_USER
->         tristate "WM42"
->         select WM42
+> This is the patch:
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h
+> =f43402fa55bf5e7e190c176343015122f694857c
 > 
-> endmenu
-> 
-> config WM42
->         tristate
->         default n
-> 
->  - Arnaud
+> Regards,
+>    Antonio
 
-This may work, but it means that every single I2C/frontend/tuner will require two
-entries for each driver. This means to create and manage around 100+ new symbols.
-The drivers/media Kconfig files are complex enough as-is, without adding those 100+
-new artificial symbols. We should work to make things simple and improve users experience,
-and not to create artificial complexity that will make Kconfig almost unreadable.
+Thanks for the information.
 
-I still think that the easiest way to solve this is to add some logic that will
-hide the menu if a condition doesn't happen. Something like:
-	menu FOO
-		prompt if BAR
-
-or
-	menu FOO
-		show if BAR
-
-Mauro.
+Regards
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
