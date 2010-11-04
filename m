@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375Ab0KDIri (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 04:47:38 -0400
+	id S1753832Ab0KDIoD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 04:44:03 -0400
 Received: from mga02.intel.com ([134.134.136.20]:34881 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754080Ab0KDIoI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 04:44:08 -0400
+	id S1753342Ab0KDIn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 04:43:58 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.58,294,1286175600"; 
-   d="scan'208";a="570251192"
+   d="scan'208";a="570251148"
 From: xiaohui.xin@intel.com
 To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
         herbert@gondor.hengli.com.au, jdike@linux.intel.com
 Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [PATCH v14 07/17]Modify netdev_alloc_page() to get external buffer
-Date: Thu,  4 Nov 2010 17:05:03 +0800
-Message-Id: <5a5e9fe302ee1838873571fb79fdc9e617b65817.1288860477.git.xiaohui.xin@intel.com>
+Subject: [PATCH v14 02/17] Add a new struct for device to manipulate external buffer.
+Date: Thu,  4 Nov 2010 17:04:58 +0800
+Message-Id: <38fbf05a450b34e939aa1b0f3a5126711990f0cc.1288860477.git.xiaohui.xin@intel.com>
 X-Mailer: git-send-email 1.7.3
 In-Reply-To: <1288861513-5707-1-git-send-email-xiaohui.xin@intel.com>
 References: <1288861513-5707-1-git-send-email-xiaohui.xin@intel.com>
@@ -28,58 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Xin Xiaohui <xiaohui.xin@intel.com>
 
-    Currently, it can get external buffers from mp device.
+    Add a structure in structure net_device, the new field is
+    named as mp_port. It's for mediate passthru (zero-copy).
+    It contains the capability for the net device driver,
+    a socket, and an external buffer creator, external means
+    skb buffer belongs to the device may not be allocated from
+    kernel space.
 
     Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
     Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
     Reviewed-by: Jeff Dike <jdike@linux.intel.com>
 ---
- net/core/skbuff.c |   27 +++++++++++++++++++++++++++
- 1 files changed, 27 insertions(+), 0 deletions(-)
+ include/linux/netdevice.h |   25 ++++++++++++++++++++++++-
+ 1 files changed, 24 insertions(+), 1 deletions(-)
 
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 5e6d69c..f39d372 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -262,11 +262,38 @@ struct sk_buff *__netdev_alloc_skb(struct net_device *dev,
- }
- EXPORT_SYMBOL(__netdev_alloc_skb);
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 46c36ff..f6b1870 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -325,6 +325,28 @@ enum netdev_state_t {
+ 	__LINK_STATE_DORMANT,
+ };
  
-+struct page *netdev_alloc_ext_pages(struct net_device *dev, int npages)
-+{
-+	struct mp_port *port;
-+	struct skb_ext_page *ext_page = NULL;
-+
-+	port = dev->mp_port;
-+	if (!port)
-+		goto out;
-+	ext_page = port->ctor(port, NULL, npages);
-+	if (ext_page)
-+		return ext_page->page;
-+out:
-+	return NULL;
-+
-+}
-+EXPORT_SYMBOL(netdev_alloc_ext_pages);
-+
-+struct page *netdev_alloc_ext_page(struct net_device *dev)
-+{
-+	return netdev_alloc_ext_pages(dev, 1);
-+
-+}
-+EXPORT_SYMBOL(netdev_alloc_ext_page);
-+
- struct page *__netdev_alloc_page(struct net_device *dev, gfp_t gfp_mask)
- {
- 	int node = dev->dev.parent ? dev_to_node(dev->dev.parent) : -1;
- 	struct page *page;
++/*The structure for mediate passthru(zero-copy). */
++struct mp_port	{
++	/* the header len */
++	int		hdr_len;
++	/* the max payload len for one descriptor */
++	int		data_len;
++	/* the pages for DMA in one time */
++	int		npages;
++	/* the socket bind to */
++	struct socket	*sock;
++	/* the header len for virtio-net */
++	int		vnet_hlen;
++	/* the external buffer page creator */
++	struct skb_ext_page *(*ctor)(struct mp_port *,
++				struct sk_buff *, int);
++	/* the hash function attached to find according
++	 * backend ring descriptor info for one external
++	 * buffer page.
++	 */
++	struct skb_ext_page *(*hash)(struct net_device *,
++				struct page *);
++};
  
-+	if (dev_is_mpassthru(dev))
-+		return netdev_alloc_ext_page(dev);
-+
- 	page = alloc_pages_node(node, gfp_mask, 0);
- 	return page;
- }
+ /*
+  * This structure holds at boot time configured netdevice settings. They
+@@ -1045,7 +1067,8 @@ struct net_device {
+ 
+ 	/* GARP */
+ 	struct garp_port	*garp_port;
+-
++	/* mpassthru */
++	struct mp_port		*mp_port;
+ 	/* class/net/name entry */
+ 	struct device		dev;
+ 	/* space for optional device, statistics, and wireless sysfs groups */
 -- 
 1.7.3
 
