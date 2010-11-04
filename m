@@ -1,84 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755038Ab0KDF6s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 01:58:48 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43629 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754577Ab0KDF6p (ORCPT
+	id S1755061Ab0KDF7G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 01:59:06 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:60807 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754863Ab0KDF7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 01:58:45 -0400
+	Thu, 4 Nov 2010 01:59:03 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=Wwy7GvTlZr7XECCuxulzBQ7Q16pAQyH1NxoBVD/MSyOV3fOe7cRJpGC+5jyKOrGr6C
-         zO19hGXamEVB7+HsooSleWaVz4tsjmOuoC+BE1hZ+QJxidlk9W5PIXZn67ERncJOiBhZ
-         KWZNo5aXIqj64/o1yayr3SiidtgUxhsM79AUA=
-Subject: out of memory error from kernel when I open hundred of thousands
- of TCP connections
-From: springzhong <davidmahorse@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 04 Nov 2010 13:58:36 +0800
-Message-ID: <1288850316.5575.1.camel@zhongjiu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+        h=from:to:subject:user-agent:date:message-id:mime-version
+         :content-type;
+        b=X305k+/EA7VMMsLjWnYLvKSbGN8KE403eoOtQrMiunuM8Gwx7idmBbRe/nwQJ5g3uW
+         vM8SAq3xld7KI26Vuik1W6CNFyJT1XSF+cjyJwXAXI7aPJ4OLkm8mAgUVH24yrLlTi1C
+         giyIzd11vWl8emrX4GcUO2pSWLCv1CAEwy41g=
+From: Ben Gamari <bgamari.foss@gmail.com>
+To: linux-kernel@vger.kernel.org, rsync@lists.samba.org, linux-mm@kvack.org
+Subject: fadvise DONTNEED implementation (or lack thereof)
+User-Agent: Notmuch/0.3.1-158-g04cd99c (http://notmuchmail.org) Emacs/23.1.1 (x86_64-pc-linux-gnu)
+Date: Thu, 04 Nov 2010 01:58:58 -0400
+Message-ID: <87lj597hp9.fsf@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The source of serve is like:
-ListeningThread listeningThread(this, nPortNum);
-listeningThread.nPortNum=6475;
-listeningThread.Start();
-ListeningThread listeningThread2(this, 6476);
-listeningThread2.nPortNum=6476;
-listeningThread2.Start();
-ListeningThread listeningThread3(this, 6477);
-listeningThread3.nPortNum=6477;
-listeningThread3.Start();
-ListeningThread listeningThread4(this, 6477);
-listeningThread4.nPortNum=6478;
-listeningThread4.Start();
+I've recently been trying to track down the root cause of my server's
+persistent issue of thrashing horribly after being left inactive. It
+seems that the issue is likely my nightly backup schedule (using rsync)
+which traverses my entire 50GB home directory. I was surprised to find
+that rsync does not use fadvise to notify the kernel of its use-once
+data usage pattern.
 
-The source of client is like:
-for (int i = 0; i < 60000; i++)
-{
-this->Connect("127.0.0.1", nPortNum, false, pClientSocket);
-this->Connect("127.0.0.1", 6476, false, pClientSocket);
-this->Connect("127.0.0.1", 6477, false, pClientSocket);
-this->Connect("127.0.0.1", 6478, false, pClientSocket);
-}
+It looks like a patch[1] was written (although never merged, it seems)
+incorporating fadvise support, but I found its implementation rather
+odd, using mincore() and FADV_DONTNEED to kick out only regions brought
+in by rsync. It seemed to me the simpler and more appropriate solution
+would be to simply flag every touched file with FADV_NOREUSE and let the
+kernel manage automatically expelling used pages.
 
-I want to test the maximum tcp connections of linux in my netbook with
-2G memeory.
-But I just found It cannot exceed 240000 connections.Then an 
-"out of memory error" occured. But it looks like there is still a lot of
-free memory in my computer.
+After looking deeper into the kernel implementation[2] of fadvise() the
+reason for using DONTNEED became more apparant. It seems that the kernel
+implements NOREUSE as a noop. A little googling revealed[3] that I not
+the first person to encounter this limitation. It looks like a few
+folks[4] have discussed addressing the issue in the past, but nothing
+has happened as of 2.6.36. Are there plans to implement this
+functionality in the near future? It seems like the utility of fadvise
+is severely limited by lacking support for NOREUSE.
 
-I want to rechange the kernel to accept more TCP connections like one
-million tcp connections in my network.
-But I find there are too many source codes in it. 
-Could you give me any suggestions?
-I have changed my environment like this with epoll:
-/etc/security/limits.conf
-* soft nofile 802400
-* hard nofile 802400
-# End of file
+Cheers,
 
-cat /proc/sys/fs/file-max
-2204218
+- Ben
 
-cat /etc/sysctl.conf
-net.ipv4.ip_local_port_range = 1024 65000
 
-cat /proc/sys/fs/epoll/max_user_watches
-2500873
-
-It is not the limitation of file ids of linux.It is an error from kernel
-of LINUX
-
-spring zhong
-
+[1] http://insights.oetiker.ch/linux/fadvise.html
+[2] http://lxr.free-electrons.com/source/mm/fadvise.c?a=avr32
+[3] https://issues.apache.org/jira/browse/CASSANDRA-1470
+    http://chbits.blogspot.com/2010/06/lucene-and-fadvisemadvise.html
+[4] http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg179576.html
+    http://lkml.indiana.edu/hypermail/linux/kernel/0807.2/0442.html
 
