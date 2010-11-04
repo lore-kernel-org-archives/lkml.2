@@ -1,100 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092Ab0KDHw3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 03:52:29 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48711 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131Ab0KDHw0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 03:52:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=YM13MHFXvmYeXftgdRMDIo2j2O52gAG+YRllb5tCGy4wEjPEEkbpwLfUE2r3QrEEAa
-         FhMjNNdHEeOHn2m9zKA/Iq7cX4vvn1Nl2Pvn5VYvaJ3OXxQMK/48NjCkhGV55d1LRG4Q
-         PlleBC9Ylcj5hmzFTLQHCEItYxafWTnT2nFvw=
-Date: Thu, 4 Nov 2010 08:52:29 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: Re: [PATCH 7/7] [RFC] Introduce Alarm (hybrid) timers
-Message-ID: <20101104075229.GA28086@riccoc20.at.omicron.at>
-References: <1288809079-14663-1-git-send-email-john.stultz@linaro.org>
- <1288809079-14663-8-git-send-email-john.stultz@linaro.org>
+	id S1751993Ab0KDIHz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 04:07:55 -0400
+Received: from hera.kernel.org ([140.211.167.34]:47786 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751339Ab0KDIHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 04:07:53 -0400
+Message-ID: <4CD26948.7050009@kernel.org>
+Date: Thu, 04 Nov 2010 09:05:28 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288809079-14663-8-git-send-email-john.stultz@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Kapil Arya <kapil@ccs.neu.edu>
+CC: Oren Laadan <orenl@cs.columbia.edu>,
+        ksummit-2010-discuss@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, Gene Cooperman <gene@ccs.neu.edu>,
+        hch@lst.de
+Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
+References: <Pine.LNX.4.64.1011021530470.12128@takamine.ncl.cs.columbia.edu> <4CD08419.5050803@kernel.org> <AANLkTinOg6n3ZA+0gHzw9LouRuUmJ7DJwHtABRy5c=gM@mail.gmail.com>
+In-Reply-To: <AANLkTinOg6n3ZA+0gHzw9LouRuUmJ7DJwHtABRy5c=gM@mail.gmail.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 04 Nov 2010 08:05:30 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 11:31:19AM -0700, John Stultz wrote:
+Hello,
 
-> Another large distinction is that while the in-kernel interface
-> is pretty similar, the user-space interface for android alarm
-> timers is via ioctls. I've instead chosen to export this
-> functionality via the posix interface, as it seemed a little
-> simpler and avoids creating duplicate interfaces to things like
-> CLOCK_REALTIME and CLOCK_MONOTONIC under alternate names (ie:
-> RTC and ELAPSED_REALTIME). Instead, if one wants to use a
-> alarm timer, simply create a posix timer against either
-> CLOCK_REALTIME_ALARM or CLOCK_MONOTONIC_ALARM.
+On 11/04/2010 04:40 AM, Kapil Arya wrote:
+> (Sorry for resending the message; the last message contained some html
+> tags and was rejected by server)
 
-I have a comment on this, below ...
+And please also don't top-post.  Being the antisocial egomaniacs we
+are, people on lkml prefer to dissect the messages we're replying to,
+insert insulting comments right where they would be most effective and
+remove the passages which can't yield effective insults.  :-)
 
-> diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
-> index e6b46b5..9d1ace6 100644
-> --- a/include/linux/posix-timers.h
-> +++ b/include/linux/posix-timers.h
-> @@ -5,6 +5,7 @@
->  #include <linux/list.h>
->  #include <linux/sched.h>
->  #include <linux/rtc.h>
-> +#include <linux/alarmtimer.h>
->  
->  union cpu_time_count {
->  	cputime_t cpu;
-> @@ -65,6 +66,7 @@ struct k_itimer {
->  			unsigned long expires;
->  		} mmtimer;
->  		struct rtc_timer rtctimer;
-> +		struct alarm alarmtimer;
->  	} it;
->  };
+> In our personal view, a key difference between in-kernel and userland
+> approaches is the issue of security.  The Linux C/R developers state
+> the issue very well in their FAQ (question number 7):
+>> https://ckpt.wiki.kernel.org/index.php/Faq :
+>> 7. Can non-root users checkpoint/restart an application ?
+>>
+>> For now, only users with CAP_SYSADMIN privileges can C/R an
+>> application. This is to ensure that the checkpoint image has not been
+>> tampered with and will be treated like a loadable kernel-module.
 
-I have an initial dynamic clock patch set ready for review and will
-post it later today if I can. In implementing the timer_ calls, I
-began to wonder about this 'it' union. If we really allow and
-implement many kinds of dynamic clocks, then it would seem ugly to me
-to simply add yet another union member for each new clock. Wouldn't it
-be better to provide a private void pointer for the underlying
-driver's use?
+That's an interesting point but I don't think it's a dealbreaker.
+Kernel CR is gonna require userland agent anyway and access control
+can be done there.  Being able to snapshot w/o root privieldge
+definitely is a plust but it's not like CR is gonna be deployed on
+majority of desktops and servers (if so, let's talk about it then).
 
-> diff --git a/include/linux/time.h b/include/linux/time.h
-> index 914c48d..4791858 100644
-> --- a/include/linux/time.h
-> +++ b/include/linux/time.h
-> @@ -290,6 +290,8 @@ struct itimerval {
->  #define CLOCK_MONOTONIC_RAW		4
->  #define CLOCK_REALTIME_COARSE		5
->  #define CLOCK_MONOTONIC_COARSE		6
-> +#define CLOCK_REALTIME_ALARM		7
-> +#define CLOCK_MONOTONIC_ALARM		8
+> Strategies like these are easily handled in userspace.  We suspect
+> that while one may begin with a pure kernel approach, eventually,
+> one will still want to add a userland component to achieve this kind
+> of flexibility, just as BLCR has already done.
 
-I have thought about and have taken Alan Cox's anti-SYS5.4/SuS/POSIX
-enumeration arguments to heart. If you need a really good example of
-the weaknesses of that way, take a look at clock_getcpuclockid,
-pthread_getcpuclockid, and their implementation in posix-cpu-timers.c
+Yeap, agreed.  There gotta be user agents which can monitor and
+manipulate userland states.  It's a fundamentally nasty job, that of
+collecting and applying application-specific workarounds.  I've only
+glanced the dmtcp paper so my understanding is pretty superficial.
+With that in mind, can you please answer some of my curiosities?
 
-If we are serious about dynamic clocks, then we will never again touch
-the CLOCK_ list. I hope that, after reviewing the coming patch set,
-you will also agree ;)
+* As Oren pointed out in another message, there are somethings which
+  could seem a bit too visible to the target application.  Like the
+  manager thread (is it visible to the application or is it hidden by
+  the libc wrapper?) and reserved signal.  Also, while it's true that
+  all programs should be ready to handle -EINTR failure from system
+  calls, it's something which is very difficult to verify and test and
+  could lead to once-in-a-blue-moon head scratchy kind of failures.
 
-Richard
+  I think most of those issues can be tackled with minor narrow-scoped
+  changes to the kernel.  Do you guys have things on mind which the
+  kernel can do to make these things more transparent or safer?
 
+* The feats dmtcp achieves with its set of workarounds are impressive
+  but at the same time look quite hairy.  Christoph said that having a
+  standard userland C-R implementation would be quite useful and IMHO
+  it would be helpful in that direction if the implementation is
+  modularized enough so that the core functionality and the set of
+  workarounds can be easily separated.  Is it already so?
+
+Thanks.
+
+-- 
+tejun
