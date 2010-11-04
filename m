@@ -1,139 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932211Ab0KDGab (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 02:30:31 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:48311 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755104Ab0KDGa3 (ORCPT
+	id S932230Ab0KDGfJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 02:35:09 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43411 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932164Ab0KDGfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 02:30:29 -0400
+	Thu, 4 Nov 2010 02:35:06 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=vGbdEKl7xPaD6N05KtkGSbWBXykfIjDT+LaLVkKIJNTKMGMnClvz01NfkxNfYhry6A
-         KbZ20HhIpA1WHotkpUmNaTtCppHRldQkYe3HaE5uF58Tts7y3cHmWBumTMhIL3hB/jx9
-         SRTOcBwS4xDlTyODUDG2UbFttjpE5KSXg4Mts=
-Date: Thu, 4 Nov 2010 14:35:11 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Mike Waychison <mikew@google.com>
-Cc: Matt Mackall <mpm@selenic.com>, Greg KH <greg@kroah.com>,
-        simon.kagstrom@netinsight.net, davem@davemloft.net, adurbin@google.com,
-        akpm@linux-foundation.org, chavey@google.com,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH v1 00/12] netoops support
-Message-ID: <20101104063511.GE5210@cr0.nay.redhat.com>
-References: <20101103012917.4641.57113.stgit@crlf.mtv.corp.google.com>
- <20101103023422.GB5782@kroah.com>
- <AANLkTi=Oe4oJ0imCh1eoJLS0QYqSBM4pLo=dEUSiJcQb@mail.gmail.com>
- <20101103181634.GF7441@kroah.com>
- <AANLkTimKWCWtuPeZhMZ75gTxB8LwAhJfy2FZnnRwthft@mail.gmail.com>
- <4CD1C612.5080902@google.com>
- <1288817685.26428.1129.camel@calx>
- <4CD209F1.90708@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CD209F1.90708@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=PL8QpxuWH/pbaa8aCrwURXZHZs6R4XZ7O91dgw1TVCUVgZOLo7wyqNbpVdf17a3zQ0
+         S0ydPJiCd+X0GcnJ+L39aCKlad0BfaQ4qksCHr5vZNZ8BtzkIbOZurcJQdu5sZ44fZPD
+         OyxlmBQi1FsCiVbPcRb7pttt/I2GWzAk29z6w=
+From: Marek Belisko <marek.belisko@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>,
+        Marek Belisko <marek.belisko@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Marek Belisko <marek.belisko@gmail.com>
+Subject: [PATCH v2 7/9] staging: ft1000: Get rid of BOOLEAN typedef usage.
+Date: Thu,  4 Nov 2010 07:37:13 +0100
+Message-Id: <1288852633-11724-1-git-send-email-marek.belisko@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 06:18:41PM -0700, Mike Waychison wrote:
->Matt Mackall wrote:
->>On Wed, 2010-11-03 at 13:29 -0700, Mike Waychison wrote:
->>>Mike Waychison wrote:
->>>>FWIW, another semantic difference between netconsole and netoops (that
->>>>I had missed in the last email) is filtering: we really do want to get
->>>>the whole log when a crash happens, debug messages and all.
->>>>Netconsole is subject to console filtering (which we _do_ want as
->>>>debug messages going out the uart slows the whole world down).
->>>>
->>>>netconsole and netoops _do_ have bits in common, for instance the
->>>>handling of NETDEV events and source+target configuration.  I'd rather
->>>>those bits become common between the two than figure out how to jam
->>>>the semantics we need into netconsole.
->>>Hi Matt,
->>>
->>>I've been reading through the netconsole driver in response to
->>>Greg's comments on this thread, and it is definitely more robust
->>>in terms of configuration and handling of network device events
->>>than the netoops driver I proposed.
->>
->>I've been following the discussion to see if it went anywhere
->>interesting..
->>
->>>What are your thoughts on extending netconsole with the same sort
->>>of semantics that are in the netoops patchset?
->>
->>My first thought is that it's a bit unfortunate that some of the the
->>netconsole configgy bits weren't implemented in a generic way that would
->>be applicable to other netpoll clients. Some people have never gotten it
->>into their heads that netconsole isn't the only client.
->>
->>>I'd still like to have blit-dmesg-to-the-network-on-oops
->>>semantics, which seems doable by having a per-target flag for
->>>streaming of console messages (enabled by default) and a flag to
->>>emit a structured full dmesg dump (disabled by default).
->>
->>I'd actually like to see you go forward with netoops. It's clear to me
->>that it's a different beast and complexifying netconsole with a bunch of
->>weird new options doesn't really sit well. If that means abstracting
->>some of the sysfs crap from netconsole, great.
->
->I'd be happy to take a stab at this.  This solves most of the ABI
->reservations that I have with this v1 patchset.
->
->Looking at netconsole, it looks to lack some locking for data
->consistency, and it appears that we will deadlock if we ever get a
->NETDEV_UNREGISTER event (due to recursively grabbing the rtnl in
->netpoll_cleanup).  I have a couple patches I've been hacking on this
->afternoon that should clear those issues up.
->
+Signed-off-by: Marek Belisko <marek.belisko@gmail.com>
+---
+ drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c   |    2 +-
+ .../staging/ft1000/ft1000-usb/ft1000_download.c    |    2 +-
+ drivers/staging/ft1000/ft1000-usb/ft1000_hw.c      |    4 ++--
+ drivers/staging/ft1000/ft1000-usb/ft1000_usb.c     |    2 +-
+ drivers/staging/ft1000/ft1000-usb/ft1000_usb.h     |    7 +++----
+ 5 files changed, 8 insertions(+), 9 deletions(-)
 
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
+index f6b2e91..920ca52 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
+@@ -64,7 +64,7 @@ spinlock_t free_buff_lock;
+ int numofmsgbuf = 0;
+ 
+ // Global variable to indicate that all provisioning data is sent to DSP
+-//BOOLEAN fProvComplete;
++//bool fProvComplete;
+ 
+ //
+ // Table of entry-point routines for char device
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
+index 0a2b833..11b7c20 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
+@@ -785,7 +785,7 @@ u16 scram_dnldr(struct ft1000_device *ft1000dev, void *pFileStart, u32  FileLeng
+ 	struct dsp_file_hdr *pFileHdr5;
+ 	struct dsp_image_info *pDspImageInfoV6 = NULL;
+    long                    requested_version;
+-   BOOLEAN                 bGoodVersion;
++   bool                 bGoodVersion;
+ 	struct drv_msg *pMailBoxData;
+    u16                  *pUsData = NULL;
+    u16                  *pUsFile = NULL;
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
+index f97826d..1a517dd 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
+@@ -491,7 +491,7 @@ u16 fix_ft1000_write_dpram32(struct ft1000_device *ft1000dev, u16 indx, u8 *buff
+ //
+ //  Returns:    None
+ //-----------------------------------------------------------------------
+-static void card_reset_dsp (struct ft1000_device *ft1000dev, BOOLEAN value)
++static void card_reset_dsp (struct ft1000_device *ft1000dev, bool value)
+ {
+     u16 status = STATUS_SUCCESS;
+     u16 tempword;
+@@ -1479,7 +1479,7 @@ static int ft1000_chkcard (struct ft1000_device *dev) {
+ //          = 1 (successful)
+ //
+ //---------------------------------------------------------------------------
+-static BOOLEAN ft1000_receive_cmd (struct ft1000_device *dev, u16 *pbuffer, int maxsz, u16 *pnxtph) {
++static bool ft1000_receive_cmd (struct ft1000_device *dev, u16 *pbuffer, int maxsz, u16 *pnxtph) {
+     u16 size, ret;
+     u16 *ppseudohdr;
+     int i;
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
+index 4e81bdd..41bbe99 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
+@@ -36,7 +36,7 @@ static struct usb_device_id id_table[] = {
+ 
+ MODULE_DEVICE_TABLE(usb, id_table);
+ 
+-static BOOLEAN gPollingfailed = FALSE;
++static bool gPollingfailed = FALSE;
+ int ft1000_poll_thread(void *arg)
+ {
+ 	int ret = STATUS_SUCCESS;
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
+index 64af710..cf2c42e 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
+@@ -98,7 +98,6 @@ struct prov_record {
+ /*end of Jim*/
+ #define DEBUG(args...) printk(KERN_INFO args)
+ 
+-#define BOOLEAN             u8
+ #define PCHAR               u8 *
+ #define UINT                u32
+ 
+@@ -488,9 +487,9 @@ struct ft1000_info {
+ 	unsigned char usbboot;
+     unsigned short dspalive;
+     u16 ASIC_ID;
+-    BOOLEAN fProvComplete;
+-    BOOLEAN fCondResetPend;
+-    BOOLEAN fAppMsgPend;
++    bool fProvComplete;
++    bool fCondResetPend;
++    bool fAppMsgPend;
+     char *pfwimg;
+     int fwimgsz;
+     u16 DrvErrNum;
+-- 
+1.7.1
 
-You might want to look at net-next-2.6, it has some fixes
-from Neil.
-
-
->I'm thinking of pushing all the target handling options down into
->net/core/netpoll.c.  I'll probably expose this interface as "struct
->netpoll_targets" where ->lock and ->list could be completely exposed
->to clients.  netconsole would then get a lot smaller as would
->netoops.
->
->>That said, I don't think netoops is an ideal name, given how closely
->>bound oops _events_ are with their textual output. Presumably it covers
->>events other than oopsen like panics too.
->
->True.  We call this code 'netdump' or 'network_dumper' internally,
->but I figured it'd be better to follow current conventions with
->ramoops and mtdoops already in the tree.  I don't really care what
->it's called in the end :)
->
-
-
-"netdump" was used by a utility that do crash dumping over net.
-It is deprecated now, since we have kdump.
-
->>
->>Regarding rolling oopses: lots of machines regularly survive
->>oopses, so I think you ought to consider rate-limiting them (to a
->>configurable rate
->>with a very low default) rather than suppressing all but the first.
->>
->
->The trouble with Oopses is just that:  We don't know whether we can
->safely survive them or not and it's a total gamble each time we do
->Oops.  We can't programmatically know how crapped out the machine is,
->so historically we've erred on not allowing bad things to continue
->happening once someone notices something wrong.
->
->It's easier for us to just shoot the machine in the head
->(panic_on_oops) and move on than corrupt data or dead-lock in weird
->ways at some later point in time.  This is definitely not the
->behaviour I would want nor expect from my desktop or phone, but for
->the cluster, it's just safer.
-
-We also have pause_on_oops, or we can invent a oops_once.
