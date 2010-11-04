@@ -1,104 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755192Ab0KDGLG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 02:11:06 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:64159 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753606Ab0KDGLD (ORCPT
+	id S932103Ab0KDGNL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 02:13:11 -0400
+Received: from omta02-pub.suddenlink.net ([208.180.40.74]:44756 "EHLO
+	omta02.suddenlink.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753606Ab0KDGNJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 02:11:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=GcpjE72ESZhDboS+BxA2go1oERCnV4aVd1jsJWOg1emYoaJZI6ABfuzLgSW5iWgtMJ
-         gNEkjbZviGmFA15C+3H77snxmJlSY4ugayb3wtV+XTuX6ZQjwRtWrkOL4XL4mYtg2meO
-         OuOpZ3lgZS5L/gqJ3xwl6vSK/Xo0iXhZ2JyQM=
-Date: Thu, 4 Nov 2010 14:15:44 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Matt Mackall <mpm@selenic.com>
-Cc: Mike Waychison <mikew@google.com>, Greg KH <greg@kroah.com>,
-        simon.kagstrom@netinsight.net, davem@davemloft.net, adurbin@google.com,
-        akpm@linux-foundation.org, chavey@google.com,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH v1 00/12] netoops support
-Message-ID: <20101104061544.GD5210@cr0.nay.redhat.com>
-References: <20101103012917.4641.57113.stgit@crlf.mtv.corp.google.com>
- <20101103023422.GB5782@kroah.com>
- <AANLkTi=Oe4oJ0imCh1eoJLS0QYqSBM4pLo=dEUSiJcQb@mail.gmail.com>
- <20101103181634.GF7441@kroah.com>
- <AANLkTimKWCWtuPeZhMZ75gTxB8LwAhJfy2FZnnRwthft@mail.gmail.com>
- <4CD1C612.5080902@google.com>
- <1288817685.26428.1129.camel@calx>
+	Thu, 4 Nov 2010 02:13:09 -0400
+Message-ID: <4CD24ED6.1030005@suddenlinkmail.com>
+Date: Thu, 04 Nov 2010 01:12:38 -0500
+From: "David C. Rankin" <drankinatty@suddenlinkmail.com>
+Organization: Rankin Law Firm, PLLC
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288817685.26428.1129.camel@calx>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Upgrade to recent 2.6.35 & 2.6.36 kernel causing boot failure
+ with nv dmraid
+References: <4CD24A64.3080503@suddenlinkmail.com>
+In-Reply-To: <4CD24A64.3080503@suddenlinkmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Cloudmark-Analysis: v=1.1 cv=rkjybkC9Q1SXrp0j9aIMMlRGdgWt1n9sNlDOQbfJfFA= c=1 sm=0 a=Wn5zFxASGYcA:10 a=8nJEP1OIZ-IA:10 a=eII3Rc1uAAAA:8 a=BFu0leMTAAAA:8 a=HFRIDAQ4Evzq7MJJLEYA:9 a=HAmYAexYCqc9pC3MaYwA:7 a=XkNIRyNcOxUho7GnzjVe-fesNqsA:4 a=wPNLvfGTeEIA:10 a=enRK-GpJGN0A:10 a=3F2Xbh7biFsA:10 a=QKLB_qR_4l8A:10 a=rKT6jY7h-RwA:10 a=mb_7iB-5IOUA:10 a=2XfabVCTb_oA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 03:54:45PM -0500, Matt Mackall wrote:
->On Wed, 2010-11-03 at 13:29 -0700, Mike Waychison wrote:
->> Mike Waychison wrote:
->> > FWIW, another semantic difference between netconsole and netoops (that
->> > I had missed in the last email) is filtering: we really do want to get
->> > the whole log when a crash happens, debug messages and all.
->> > Netconsole is subject to console filtering (which we _do_ want as
->> > debug messages going out the uart slows the whole world down).
->> > 
->> > netconsole and netoops _do_ have bits in common, for instance the
->> > handling of NETDEV events and source+target configuration.  I'd rather
->> > those bits become common between the two than figure out how to jam
->> > the semantics we need into netconsole.
->> 
->> Hi Matt,
->> 
->> I've been reading through the netconsole driver in response to Greg's 
->> comments on this thread, and it is definitely more robust in terms of 
->> configuration and handling of network device events than the netoops 
->> driver I proposed.
->
->I've been following the discussion to see if it went anywhere
->interesting..
->
->> What are your thoughts on extending netconsole with the same sort of 
->> semantics that are in the netoops patchset?
->
->My first thought is that it's a bit unfortunate that some of the the
->netconsole configgy bits weren't implemented in a generic way that would
->be applicable to other netpoll clients. Some people have never gotten it
->into their heads that netconsole isn't the only client.
->
+On 11/04/2010 12:53 AM, David C. Rankin wrote:
+>     I don't know exactly what you might need to look at or what additional data
+> you want, but just let me know and I'm happy to get it for you.
 
-Really? What are other clients? I remember netdump *was* one client,
-but it is not in upstream and is deprecated, so netconsole is the only
-client in tree, AFAIK.
+Just FYI, the BIOS is current for the board and information on both can be found at:
 
+http://www.msi.com/index.php?func=downloaddetail&type=bios&maincat_no=1&prod_no=1443
 
->> I'd still like to have blit-dmesg-to-the-network-on-oops semantics, 
->> which seems doable by having a per-target flag for streaming of console 
->> messages (enabled by default) and a flag to emit a structured full dmesg 
->> dump (disabled by default).
->
->I'd actually like to see you go forward with netoops. It's clear to me
->that it's a different beast and complexifying netconsole with a bunch of
->weird new options doesn't really sit well. If that means abstracting
->some of the sysfs crap from netconsole, great. 
->
+direct download:
 
-That would be good.
+http://www.msi.com/index.php?func=downloadfile&dno=12299&type=bios
 
-
->That said, I don't think netoops is an ideal name, given how closely
->bound oops _events_ are with their textual output. Presumably it covers
->events other than oopsen like panics too. 
->
->Regarding rolling oopses: lots of machines regularly survive oopses, so 
->I think you ought to consider rate-limiting them (to a configurable rate
->with a very low default) rather than suppressing all but the first.
->
-
-We have WARN_ONCE(), maybe we can make one oops_once()...
-At least, that is not hard.
+-- 
+David C. Rankin, J.D.,P.E.
+Rankin Law Firm, PLLC
+510 Ochiltree Street
+Nacogdoches, Texas 75961
+Telephone: (936) 715-9333
+Facsimile: (936) 715-9339
+www.rankinlawfirm.com
