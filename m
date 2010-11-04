@@ -1,107 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751291Ab0KDMsR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 08:48:17 -0400
-Received: from mga11.intel.com ([192.55.52.93]:12868 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751157Ab0KDMsN convert rfc822-to-8bit (ORCPT
+	id S1751309Ab0KDMuJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 08:50:09 -0400
+Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:55753 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751168Ab0KDMuG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 08:48:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,295,1286175600"; 
-   d="scan'208";a="623484485"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Tejun Heo <tj@kernel.org>, Oren Laadan <orenl@cs.columbia.edu>
-CC: "ksummit-2010-discuss@lists.linux-foundation.org" 
-	<ksummit-2010-discuss@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 4 Nov 2010 05:48:10 -0700
-Subject: RE: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-Thread-Topic: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-Thread-Index: Act8BPOebk9S/wFaRWqoFhoq1zZ2jwAFpMsg
-Message-ID: <987664A83D2D224EAE907B061CE93D53016480D1DE@orsmsx505.amr.corp.intel.com>
-References: <Pine.LNX.4.64.1011021530470.12128@takamine.ncl.cs.columbia.edu>
-	<4CD08419.5050803@kernel.org> <4CD23087.30900@cs.columbia.edu>
- <4CD28033.1000700@kernel.org>
-In-Reply-To: <4CD28033.1000700@kernel.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 4 Nov 2010 08:50:06 -0400
+Date: Thu, 4 Nov 2010 23:48:28 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
+        "Li, Shaohua" <shaohua.li@intel.com>
+Subject: Re: [PATCH 00/17] [RFC] soft and dynamic dirty throttling limits
+Message-ID: <20101104124828.GC13830@dastard>
+References: <20100912154945.758129106@intel.com>
+ <20101012141716.GA26702@infradead.org>
+ <20101013030733.GV4681@dastard>
+ <20101013082611.GA6733@localhost>
+ <20101013092627.GY4681@dastard>
+ <20101101062446.GK2715@dastard>
+ <20101104034119.GA18910@localhost>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101104034119.GA18910@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> If you think only about target processes, yeah sure, you can cover
-> most of the stuff but that's not the impossible part.  What's not
-> defined is interaction with the rest of the system and userland.
-> Userland ecosystem is crazy complex.  You simply cannot stop, say,
-> banshee or even pidgin, let it mingle with the rest of the system and
-> restore it later in any safe way.
+On Thu, Nov 04, 2010 at 11:41:19AM +0800, Wu Fengguang wrote:
+> Hi Dave,
+> 
+> On Mon, Nov 01, 2010 at 02:24:46PM +0800, Dave Chinner wrote:
+> > On Wed, Oct 13, 2010 at 08:26:27PM +1100, Dave Chinner wrote:
+> > > On Wed, Oct 13, 2010 at 04:26:12PM +0800, Wu Fengguang wrote:
+> > > > On Wed, Oct 13, 2010 at 11:07:33AM +0800, Dave Chinner wrote:
+> > > > > On Tue, Oct 12, 2010 at 10:17:16AM -0400, Christoph Hellwig wrote:
+> > > > > > Wu, what's the state of this series?  It looks like we'll need it
+> > > > > > rather sooner than later - try to get at least the preparations in
+> > > > > > ASAP would be really helpful.
+> > > > > 
+> > > > > Not ready in it's current form. This load (creating millions of 1
+> > > > > byte files in parallel):
+> > > > > 
+> > > > > $ /usr/bin/time ./fs_mark -D 10000 -S0 -n 100000 -s 1 -L 63 \
+> > > > > > -d /mnt/scratch/0 -d /mnt/scratch/1 \
+> > > > > > -d /mnt/scratch/2 -d /mnt/scratch/3 \
+> > > > > > -d /mnt/scratch/4 -d /mnt/scratch/5 \
+> > > > > > -d /mnt/scratch/6 -d /mnt/scratch/7
+> > > > > 
+> > > > > Locks up all the fs_mark processes spinning in traces like the
+> > > > > following and no further progress is made when the inode cache
+> > > > > fills memory.
+> > > > 
+> > > > I reproduced the problem on a 6G/8p 2-socket 11-disk box.
+> > > > 
+> > > > The root cause is, pageout() is somehow called with low scan priority,
+> > > > which deserves more investigation.
+> > > > 
+> > > > The direct cause is, balance_dirty_pages() then keeps nr_dirty too low,
+> > > > which can be improved easily by not pushing down the soft dirty limit
+> > > > to less than 1-second worth of dirty pages.
+> > > > 
+> > > > My test box has two nodes, and their memory usage are rather unbalanced:
+> > > > (Dave, maybe you have NUMA setup too?)
+> > > 
+> > > No, I'm running the test in a single node VM.
+> > > 
+> > > FYI, I'm running the test on XFS (16TB 12 disk RAID0 stripe), using
+> > > the mount options "inode64,nobarrier,logbsize=262144,delaylog".
+> > 
+> > Any update on the current status of this patchset?
+> 
+> The last 3 patches to dynamically lower the 20% dirty limit seem
+> to hurt writeback throughput when it goes too small. That's not
+> surprising. I tried moderately increase the low bound of dynamic
+> dirty limit but tests show that it's still not enough. Days ago I
+> came up with another low bound scheme, however the test box has
+> been running LKP (and other) benchmarks for the new -rc1 release..
+> 
+> Anyway I see some tricky points in deciding the low bound for dynamic
+> dirty limit. It seems reasonable to bypass this feature for now, and
+> to test/submit the other important parts first.
+> 
+> I'm feeling relatively good about the first 14 patches to do IO-less
+> balance_dirty_pages() and larger writeback chunk size. I'll repost
+> them separately as v2 after returning to Shanghai.
 
-This is why I think it is important to define the limits of
-which kernel state features are covered (or going to be
-covered) by checkpoint/restart - and then list applications
-that are supported (Oren mentioned mysql server in this thread).
-It will always be easy for someone to point at some application
-like powertop and say "we can't migrate that, so checkpoint
-restart is therefore useless" ... this just is not true. This
-can be useful without having to be complete (as long as the
-limits are well defined).
+As I've pointed out already, increasing the writeback chunk size is
+not a good idea to do, so I'd suggest that it should be separated
+from the IO-less balance_dirty_pages() series.
 
-> I'm afraid I can't agree with that.  You can store and restore the
-> states which kernel is aware of but that's a very small fraction of
-> the whole picture.
+> Some days ago I prepared some slides which has some figures on the old
+> and new dirty throttling schemes. Hope it helps.
+> 
+> http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling.pdf
 
-See above - it may be enough to cover a significant number of
-useful cases.
+Pretty colours, but doesn't really add much to what I already
+understood from your series description. I guess it loses something
+without someone talking about them.... :/ 
 
-> Sure, you can freeze whole tree of related processes and move them
-> around, but if you think about it, it's an already broken scenario.
-> For example, dbus (or rather agents listening to it) doesn't only
-> carry states specific to the set of applications being snapshotted.
-> It also carries whole bunch of system-wide states or states for other
-> applications.  As soon as the system goes on executing after
-> checkpointing, the checkpointed image of dbus and its agents become
-> inconsistent and useless.  You can't restore it later.  You don't know
-> what happened to other parts of the system inbetween.
+Cheers,
 
-Okay - so "dbus" is in the list of "can't so that no, and will
-never be able to checkpoint/restore that class" - big deal. I'm
-getting repetitive no, but one last time: just because this can't
-handle every conceivable case doesn't make it useless.
-
-> I'm afraid that's not general or transparent at all.  It's extremely
-> invasive to how a system is setup and used.  It basically is poor
-> man's virtualization or rather partitioning without hardware support
-> and at this point I find it very difficult to justify the added
-> complexity.  Let's just make virtualization better.
-
-I don't think that you'll ever make virtualization good enough
-to make the HPC people happy.
-
->> I know of several places that do not use C/R because they can't
->> stop their long running processes for longer than a few milliseconds.
->> I know how to solve their problems with linux-cr. I doubt if any
->> userspace mechanism can get there.
->
-> I'm sure there will be some benefits to in-kernel implementation but
-> the added complexity is crazy in comparison.  I don't think it would
-> be wise to include this invasive amount of code for several places
-> which can't CR because they can't afford a few millisecs.
-
-The CR cool-aid hasn't gotten so far into my system to accept
-this claim.  If these "can't stop for more than a few milli-seconds"
-processes are HPC workloads, then I'm not seeing how you can do
-much to help them.  I think these applications are using almost
-all of the RAM on the system, and most of the pages are anonymous.
-Just how do you checkpoint several GB of dirty pages in a few
-milli-seconds (when there is almost no free memory on the system)?
-
-If you have something else in mind, then please explain a little more.
-
--Tony
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
