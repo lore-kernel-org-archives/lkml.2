@@ -1,128 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229Ab0KDVim (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 17:38:42 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:26931 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753154Ab0KDVii (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 17:38:38 -0400
-Date: Thu, 4 Nov 2010 22:27:42 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Evgeniy Polyakov <zbr@ioremap.net>
-cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Ruslan Pisarev <ruslan@rpisarev.org.ua>
-Subject: [PATCH] pohmelfs: remove unneeded conditionals before calls to
- crypto_destroy_tfm wrappers.
-Message-ID: <alpine.LNX.2.00.1011042212460.15856@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753258Ab0KDVxV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 17:53:21 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:46731 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753235Ab0KDVxS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 17:53:18 -0400
+Date: Thu, 4 Nov 2010 22:51:57 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Willy Tarreau <w@1wt.eu>
+Cc: Marcus Meissner <meissner@suse.de>, security@kernel.org, mort@sgi.com,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, fweisbec@gmail.com,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        jason.wessel@windriver.com, tj@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Security] [PATCH] kernel: make /proc/kallsyms mode 400 to
+ reduce ease of attacking
+Message-ID: <20101104215157.GA25128@elte.hu>
+References: <20101104100914.GC25118@suse.de>
+ <20101104114648.GA23381@elte.hu>
+ <20101104122906.GH25118@suse.de>
+ <20101104135802.GA31416@elte.hu>
+ <20101104141104.GA31753@elte.hu>
+ <20101104143322.GL25118@suse.de>
+ <20101104190804.GA16099@elte.hu>
+ <20101104212920.GA31256@1wt.eu>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101104212920.GA31256@1wt.eu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-crypto_free_hash() and crypto_free_ablkcipher() are just wrappers around 
-crypto_free_tfm() which is itself just a wrapper around 
-crypto_destroy_tfm().
-Passing crypto_destroy_tfm() a NULL pointer is valid, so there's no reason 
-to check for NULL first.
+* Willy Tarreau <w@1wt.eu> wrote:
 
-Removing the unneeded conditionals (which is what the patch does) brings 
-us the benefit of having to execute a few fewer test/branch instructions 
-and also reduces object code size slightly:
+> On Thu, Nov 04, 2010 at 08:08:04PM +0100, Ingo Molnar wrote:
+> > 
+> > * Marcus Meissner <meissner@suse.de> wrote:
+> > 
+> > > > For example, on a Fedora testbox i have this version info:
+> > > > 
+> > > >   $ uname -r
+> > > >   2.6.35.6-48.fc14.x86_64
+> > > > 
+> > > > Any attacker can download that rpm from:
+> > > > 
+> > > >   http://download.fedora.redhat.com/pub/fedora/linux/updates/14/x86_64/kernel-2.6.35.6-48.fc14.x86_64.rpm
+> > > > 
+> > > > And can extract the System.map from it, using rpm2cpio and cpio -i -d. That will 
+> > > > include all the symbol addresses - without the attacker having any access to the 
+> > > > System.map or /proc/kallsyms on this particular box.
+> > > > 
+> > > > I.e. on distro kernel installations (which comprise the _vast_ majority of our 
+> > > > userbase) your patch brings little security benefits.
+> > > > 
+> > > > What i suggested in later parts of my mail might provide more security: to 
+> > > > sandbox kernel version information from unprivileged user-space - if we decide 
+> > > > that we want to sandbox kernel version information ...
+> > > > 
+> > > > That is a big if, because it takes a considerable amount of work. Would be worth 
+> > > > trying it - but feel-good non-solutions that do not bring much improvement to 
+> > > > the majority of users IMHO hinder such efforts.
+> > > 
+> > > Hiding the OS version is really quite hard I think.
+> > 
+> > Yes. Hard but it would be useful - especially if we start adding things like known 
+> > exploit honeypots. Forcing attackers to probe the kernel by actually running a 
+> > kernel exploit, and risking an alarm would be a very powerful security feature.
+> > 
+> > Removing version info will upset some tools/libraries that rely on kernel 
+> > version information for quirks though.
+> 
+> Quite honnestly, it's the worst idea I've ever read to protect the kernel. Kernel 
+> version is needed at many places, when building some code which relies on presence 
+> of syscall X or Y depending on a version, etc... [...]
 
-before:
-   text    data     bss     dec     hex filename
-   8630     112    3312   12054    2f16 drivers/staging/pohmelfs/crypto.o
+Actually that's not true, since we have a kernel ABI, and since there's many 
+backports of newer kernel features into older kernels that it's generally not
+needed nor meaningful to know the kernel version for syscalls.
 
-0000000000000cbe <pohmelfs_crypto_engine_exit>:
-     cbe:       55                      push   %rbp
-     cbf:       48 89 e5                mov    %rsp,%rbp
-     cc2:       53                      push   %rbx
-     cc3:       48 83 ec 08             sub    $0x8,%rsp
-     cc7:       e8 00 00 00 00          callq  ccc <pohmelfs_crypto_engine_exit+0xe>
-     ccc:       48 ff 05 00 00 00 00    incq   0x0(%rip)        # cd3 <pohmelfs_crypto_engine_exit+0x15>
-     cd3:       48 89 fb                mov    %rdi,%rbx
-     cd6:       48 8b 7f 20             mov    0x20(%rdi),%rdi
-     cda:       48 85 ff                test   %rdi,%rdi
-     cdd:       74 0c                   je     ceb <pohmelfs_crypto_engine_exit+0x2d>
-     cdf:       48 ff 05 00 00 00 00    incq   0x0(%rip)        # ce6 <pohmelfs_crypto_engine_exit+0x28>
-     ce6:       e8 58 fa ff ff          callq  743 <crypto_free_hash>
-     ceb:       48 8b 7b 28             mov    0x28(%rbx),%rdi
-     cef:       48 85 ff                test   %rdi,%rdi
-     cf2:       75 09                   jne    cfd <pohmelfs_crypto_engine_exit+0x3f>
-     cf4:       48 ff 05 00 00 00 00    incq   0x0(%rip)        # cfb <pohmelfs_crypto_engine_exit+0x3d>
-     cfb:       eb 16                   jmp    d13 <pohmelfs_crypto_engine_exit+0x55>
-     cfd:       48 89 fe                mov    %rdi,%rsi
-     d00:       48 ff 05 00 00 00 00    incq   0x0(%rip)        # d07 <pohmelfs_crypto_engine_exit+0x49>
-     d07:       e8 00 00 00 00          callq  d0c <pohmelfs_crypto_engine_exit+0x4e>
-     d0c:       48 ff 05 00 00 00 00    incq   0x0(%rip)        # d13 <pohmelfs_crypto_engine_exit+0x55>
-     d13:       48 8b 7b 18             mov    0x18(%rbx),%rdi
-     d17:       e8 00 00 00 00          callq  d1c <pohmelfs_crypto_engine_exit+0x5e>
-     d1c:       48 ff 05 00 00 00 00    incq   0x0(%rip)        # d23 <pohmelfs_crypto_engine_exit+0x65>
-     d23:       5e                      pop    %rsi
-     d24:       5b                      pop    %rbx
-     d25:       c9                      leaveq 
-     d26:       c3                      retq  
+Returning -ENOSYS is the general standard we use to communicate syscall 
+capabilities.
 
-after:
-   text    data     bss     dec     hex filename
-   8604     112    3296   12012    2eec drivers/staging/pohmelfs/crypto.o
+In fact using kernel version to switch around library functionality is a bug i'd 
+argue.
 
-0000000000000cbe <pohmelfs_crypto_engine_exit>:
-     cbe:       55                      push   %rbp
-     cbf:       48 89 e5                mov    %rsp,%rbp
-     cc2:       53                      push   %rbx
-     cc3:       48 83 ec 08             sub    $0x8,%rsp
-     cc7:       e8 00 00 00 00          callq  ccc <pohmelfs_crypto_engine_exit+0xe>
-     ccc:       48 ff 05 00 00 00 00    incq   0x0(%rip)        # cd3 <pohmelfs_crypto_engine_exit+0x15>
-     cd3:       48 89 fb                mov    %rdi,%rbx
-     cd6:       48 8b 7f 20             mov    0x20(%rdi),%rdi
-     cda:       e8 64 fa ff ff          callq  743 <crypto_free_hash>
-     cdf:       48 8b 7b 28             mov    0x28(%rbx),%rdi
-     ce3:       48 ff 05 00 00 00 00    incq   0x0(%rip)        # cea <pohmelfs_crypto_engine_exit+0x2c>
-     cea:       48 89 fe                mov    %rdi,%rsi
-     ced:       e8 00 00 00 00          callq  cf2 <pohmelfs_crypto_engine_exit+0x34>
-     cf2:       48 8b 7b 18             mov    0x18(%rbx),%rdi
-     cf6:       48 ff 05 00 00 00 00    incq   0x0(%rip)        # cfd <pohmelfs_crypto_engine_exit+0x3f>
-     cfd:       e8 00 00 00 00          callq  d02 <pohmelfs_crypto_engine_exit+0x44>
-     d02:       48 ff 05 00 00 00 00    incq   0x0(%rip)        # d09 <pohmelfs_crypto_engine_exit+0x4b>
-     d09:       5e                      pop    %rsi
-     d0a:       5b                      pop    %rbx
-     d0b:       c9                      leaveq 
-     d0c:       c3                      retq   
+> [...] If our kernel is so buggy that we can only rely on its version to be kept 
+> secret, then we have already failed.
 
+That mischaracterises my suggestion rather heavily - which makes me suspect that you 
+misunderstood it. Here's the relevant section of what i suggested here:
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- crypto.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+> > Hard but it would be useful - especially if we start adding things like known 
+> > exploit honeypots. Forcing attackers to probe the kernel by actually running a 
+> > kernel exploit, and risking an alarm would be a very powerful security feature.
 
-diff --git a/drivers/staging/pohmelfs/crypto.c b/drivers/staging/pohmelfs/crypto.c
-index 2fdb3e0..6540864 100644
---- a/drivers/staging/pohmelfs/crypto.c
-+++ b/drivers/staging/pohmelfs/crypto.c
-@@ -130,10 +130,8 @@ err_out_exit:
- 
- void pohmelfs_crypto_engine_exit(struct pohmelfs_crypto_engine *e)
- {
--	if (e->hash)
--		crypto_free_hash(e->hash);
--	if (e->cipher)
--		crypto_free_ablkcipher(e->cipher);
-+	crypto_free_hash(e->hash);
-+	crypto_free_ablkcipher(e->cipher);
- 	kfree(e->data);
- }
- 
+An 'exploit honeypot' would be some small amount of 'detection' code for the 
+exploitable pattern of parameters (most attacks come via ioctls so we can add 
+detection for known holes without any performance hit), and the kernel would warn 
+the sysadmin that an exploit attempt has occured.
 
+The point is to make it riskier to run exploits - not to 'hide version because we 
+are so buggy'. Unprivileged attackers wont be able to know whether a kernel is 
+unpatched and wont know whether trying an actual exploit triggers a silent alarm or 
+not.
 
+I.e. i think the only true break-through in kernel security will be to add credible 
+and substantial 'strike back' functionality - to increase the risks of detection 
+(which necessiates the removal of the information whether a kernel is patched or 
+not).
 
--- 
-Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-Plain text mails only, please      http://www.expita.com/nomime.html
-Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
+As i said it's hard - but it would be a rather break-through security feature for 
+Linux. Not an 'arms race' thing where we just put obstruction in the road of 
+attackers - but some real, unavoidable risk not detectable by attackers - running on 
+most stock distro kernels. (so there would be a real economy of scale)
 
+The kerneloops client could also collect exploit attempt stats.
+
+Thanks,
+
+	Ingo
