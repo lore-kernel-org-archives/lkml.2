@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751411Ab0KDQbe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 12:31:34 -0400
-Received: from xenotime.net ([72.52.115.56]:45531 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751241Ab0KDQbc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 12:31:32 -0400
-Date: Thu, 4 Nov 2010 09:31:20 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Mark Allyn <mark.a.allyn@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH 1/1] crypto: api.c: adding doxygen comments to api
-Message-Id: <20101104093120.9e411476.rdunlap@xenotime.net>
-In-Reply-To: <1288888362-10599-1-git-send-email-mark.a.allyn@intel.com>
-References: <1288888362-10599-1-git-send-email-mark.a.allyn@intel.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751482Ab0KDQc2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 12:32:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14818 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751269Ab0KDQc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 12:32:26 -0400
+Date: Thu, 4 Nov 2010 17:30:26 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: CAI Qian <caiqian@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Adam Litke <agl@us.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>,
+        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00 of 66] Transparent Hugepage Support #32
+Message-ID: <20101104163026.GH11602@random.random>
+References: <690735095.1385111288840247360.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+ <2080208615.1392881288860072684.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2080208615.1392881288860072684.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  4 Nov 2010 09:32:42 -0700 Mark Allyn wrote:
+Hi Qian,
 
-> Signed-off-by: Mark A. Allyn <mark.a.allyn@intel.com>
+On Thu, Nov 04, 2010 at 04:41:12AM -0400, CAI Qian wrote:
+> Thank Andrea for pointing out to me there are ongoing works for KSM
+> and THP integration. Sorry for the noise.
 
-We use kernel-doc notation in kernel sources, not doxygen.
+No problem, thanks for your feedback!
 
-Please see Documentation/kernel-doc-nano-HOWTO.txt for info,
-or ask me.
+The longer answer is: PageKsm pages will already co-exist fine with
+PageTransHuge pages in the same vma with regular pages. So 3 type of
+pages in the same vma. But before KSM scan can see the content of the
+hugepages there has to be some memory pressure... So it's not ideal
+and we will make KSM able to scan inside hugepages before they're
+splitted (and to split them when it finds a match and then merge them
+in the stable tree).
 
-Thanks.
+So it's perfectly normal that KSM becomes less effective when THP is
+enabled. But in the mainline version we have MADV_HUGEPAGE, so if you
+need KSM in full effect, you can simply "echo madvise
+>/sys/kernel/mm/transparent_hugepage/enabled", and then you can decide
+if to mark a mapping either with madvise(MADV_HUGEPAGE) or
+madvise(MADV_MERGEABLE).
 
-> ---
->  crypto/api.c |   14 ++++++++++++++
->  1 files changed, 14 insertions(+), 0 deletions(-)
-> 
-> diff --git a/crypto/api.c b/crypto/api.c
-> index 033a714..a11939f 100644
-> --- a/crypto/api.c
-> +++ b/crypto/api.c
-> @@ -193,6 +193,13 @@ static struct crypto_alg *crypto_larval_wait(struct crypto_alg *alg)
->  	return alg;
->  }
->  
-> +/**
-> + * This gets the crypto_alg structure for an algorithm
-> + * it return struct crypto_alg
-> + * @name: name of the algorithm
-> + * @type: crypto type (defined at about line 31 of include/linux/crypto.h)
-> + * @mask: mask of allowable crypto types
-> + */
->  struct crypto_alg *crypto_alg_lookup(const char *name, u32 type, u32 mask)
->  {
->  	struct crypto_alg *alg;
-> @@ -205,6 +212,13 @@ struct crypto_alg *crypto_alg_lookup(const char *name, u32 type, u32 mask)
->  }
->  EXPORT_SYMBOL_GPL(crypto_alg_lookup);
->  
-> +/**
-> + * This gets the large value crypto_alg structure for an algorithm
-> + * it return struct crypto_alg
-> + * @name: name of the algorithm
-> + * @type: crypto type (defined at about line 31 of include/linux/crypto.h)
-> + * @mask: mask of allowable crypto types
-> + */
->  struct crypto_alg *crypto_larval_lookup(const char *name, u32 type, u32 mask)
->  {
->  	struct crypto_alg *alg;
-> -- 
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Thanks,
+Andrea
