@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752107Ab0KDPLA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 11:11:00 -0400
-Received: from smtp.nokia.com ([147.243.128.24]:45989 "EHLO mgw-da01.nokia.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751554Ab0KDPK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 11:10:59 -0400
-X-Greylist: delayed 2335 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Nov 2010 11:10:59 EDT
-From: Heikki Krogerus <heikki.krogerus@nokia.com>
-To: cbouatmailru@gmail.com
-Cc: dwmw2@infradead.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, ameya.palande@nokia.com,
-        markus.lehtonen@nokia.com, heikki.krogerus@nokia.com
-Subject: [PATCH 3/4] power_supply: isp1704: Set isp->dev before anything needs it
-Date: Thu,  4 Nov 2010 16:31:48 +0200
-Message-Id: <1288881109-18222-4-git-send-email-heikki.krogerus@nokia.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1288881109-18222-1-git-send-email-heikki.krogerus@nokia.com>
-References: <1288881109-18222-1-git-send-email-heikki.krogerus@nokia.com>
-X-Nokia-AV: Clean
+	id S1752107Ab0KDPUs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 11:20:48 -0400
+Received: from claw.goop.org ([74.207.240.146]:49900 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751642Ab0KDPUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 11:20:47 -0400
+Message-ID: <4CD2CF4A.9080503@goop.org>
+Date: Thu, 04 Nov 2010 11:20:42 -0400
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Jiri Slaby <jslaby@suse.cz>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        Chris Wright <chrisw@sous-sol.org>, virtualization@lists.osdl.org,
+        jirislaby@gmail.com, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH 3/3] VIDEO: xen-fb, switch to for_each_console
+References: <1288798114-23206-1-git-send-email-jslaby@suse.cz> <1288798114-23206-3-git-send-email-jslaby@suse.cz>
+In-Reply-To: <1288798114-23206-3-git-send-email-jslaby@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-isp1704_test_ulpi() is the first place that needs isp->dev
-member, so it must be set before calling the function.
+On 11/03/2010 11:28 AM, Jiri Slaby wrote:
+> Use newly added for_each_console for iterating consoles.
+>
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Cc: Jeremy Fitzhardinge <jeremy@xensource.com>
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@nokia.com>
----
- drivers/power/isp1704_charger.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+Sure, if that's what all the kids are doing these days.
 
-diff --git a/drivers/power/isp1704_charger.c b/drivers/power/isp1704_charger.c
-index 10c7cc5..77c11f1 100644
---- a/drivers/power/isp1704_charger.c
-+++ b/drivers/power/isp1704_charger.c
-@@ -391,13 +391,13 @@ static int __devinit isp1704_charger_probe(struct platform_device *pdev)
- 	if (!isp->otg)
- 		goto fail0;
- 
-+	isp->dev = &pdev->dev;
-+	platform_set_drvdata(pdev, isp);
-+
- 	ret = isp1704_test_ulpi(isp);
- 	if (ret < 0)
- 		goto fail1;
- 
--	isp->dev = &pdev->dev;
--	platform_set_drvdata(pdev, isp);
--
- 	isp->psy.name		= "isp1704";
- 	isp->psy.type		= POWER_SUPPLY_TYPE_USB;
- 	isp->psy.properties	= power_props;
--- 
-1.7.1
+Acked-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+
+    J
+
+> Cc: Chris Wright <chrisw@sous-sol.org>
+> Cc: virtualization@lists.osdl.org
+> Cc: xen-devel@lists.xensource.com
+> Cc: linux-fbdev@vger.kernel.org
+> ---
+>  drivers/video/xen-fbfront.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/video/xen-fbfront.c b/drivers/video/xen-fbfront.c
+> index 428d273..4abb0b9 100644
+> --- a/drivers/video/xen-fbfront.c
+> +++ b/drivers/video/xen-fbfront.c
+> @@ -492,7 +492,7 @@ xenfb_make_preferred_console(void)
+>  		return;
+>  
+>  	acquire_console_sem();
+> -	for (c = console_drivers; c; c = c->next) {
+> +	for_each_console(c) {
+>  		if (!strcmp(c->name, "tty") && c->index == 0)
+>  			break;
+>  	}
 
