@@ -1,94 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755628Ab0KDJbF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 05:31:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27110 "EHLO mx1.redhat.com"
+	id S932144Ab0KDJbN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 05:31:13 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:32997 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755585Ab0KDJbC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 05:31:02 -0400
-Date: Thu, 4 Nov 2010 11:30:45 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 1/1] vhost: TX used buffer guest signal accumulation
-Message-ID: <20101104093045.GA27506@redhat.com>
-References: <1288216693.17571.38.camel@localhost.localdomain>
- <1288240804.14342.1.camel@localhost.localdomain>
- <20101028052021.GD5599@redhat.com>
- <1288286062.11251.15.camel@localhost.localdomain>
- <20101029081027.GB22688@redhat.com>
- <1288366988.4110.5.camel@localhost.localdomain>
- <20101030200603.GA19033@redhat.com>
- <1288642673.19173.8.camel@localhost.localdomain>
- <20101103104812.GB10555@redhat.com>
- <1288849126.12932.4.camel@localhost.localdomain>
+	id S1755658Ab0KDJbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 05:31:09 -0400
+From: "Lesly Arackal Manuel" <leslyam@ti.com>
+To: "'Nayak, Rajendra'" <rnayak@ti.com>,
+        "'Liam Girdwood'" <lrg@slimlogic.co.uk>
+Cc: "'Axel Lin'" <axel.lin@gmail.com>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
+        "'Juha Keski-Saari'" <ext-juha.1.keski-saari@nokia.com>,
+        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
+References: <1287736702.2996.4.camel@mola> <20101022153006.GB16521@opensource.wolfsonmicro.com> <1287841635.7486.3.camel@odin> <0680EC522D0CC943BC586913CF3768C003FF2DAF9D@dbde02.ent.ti.com>
+Subject: RE: [PATCH] regulator: twl-regulator - fix twlreg_set_mode
+Date: Thu, 4 Nov 2010 15:00:55 +0530
+Message-ID: <4892AA4CA40C485CBF3C8BD5F3B35016@india.ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288849126.12932.4.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <0680EC522D0CC943BC586913CF3768C003FF2DAF9D@dbde02.ent.ti.com>
+Thread-Index: ActyuNFPXxwj6HhHRf2hO4plS+6DBQCPQjSAAcNCJyA=
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5931
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 10:38:46PM -0700, Shirley Ma wrote:
-> On Wed, 2010-11-03 at 12:48 +0200, Michael S. Tsirkin wrote:
-> > I mean in practice, you see a benefit from this patch?
-> 
-> Yes, I tested it. It does benefit the performance.
-> 
-> > > My concern here is whether checking only in set up would be
-> > sufficient
-> > > for security?
-> > 
-> > It better be sufficient because the checks that put_user does
-> > are not effictive when run from the kernel thread, anyway.
-> > 
-> > > Would be there is a case guest could corrupt the ring
-> > > later? If not, that's OK.
-> > 
-> > You mean change the pointer after it's checked?
-> > If you see such a case, please holler.
-> 
-> I wonder about it, not a such case in mind.
-> 
-> > To clarify: the combination of __put_user and separate
-> > signalling is giving the same performance benefit as your
-> > patch?
-> 
-> Yes, it has similar performance, not I haven't finished all message
-> sizes comparison yet.
-> 
-> > I am mostly concerned with adding code that seems to help
-> > speed for reasons we don't completely understand, because
-> > then we might break the optimization easily without noticing.
-> 
-> I don't think the patch I submited would break up anything.
 
-No, I just meant that when a patch gives some benefit, I'd like
-to understand where the benefit comes from so that I don't
-break it later.
+I have tested it with MMC card inserted on OMAP3630SDP board (using OMAP3
+integration tree).
 
-> It just
-> reduced the cost of per used buffer 3 put_user() calls and guest
-> signaling from one to one to many to one.
+The changes seem to be valid.
 
-One thing to note is that deferred signalling needs to be
-benchmarked with old guests which don't orphan skbs on xmit
-(or disable orphaning in both networking stack and virtio-net).
+The i2c_transfer() returns '1' on success and the twl_i2c_write() which
+calls i2c_transfer returns '0' if success and err value if it fails.
 
+After writing the MSB if it returns with check:
+if (status >= 0)
+	return status;
+It is not writing the LSB.
+
+So it should be:
+if (status < 0)
+	return status;
+
+Regards,
+Lesly AM
+
+> -----Original Message-----
+> From: Nayak, Rajendra [mailto:rnayak@ti.com]
+> Sent: Tuesday, October 26, 2010 3:40 PM
+> To: Liam Girdwood
+> Cc: Axel Lin; linux-kernel; Juha Keski-Saari; Mark Brown; Manuel, Lesly
+> Arackal
+> Subject: RE: [PATCH] regulator: twl-regulator - fix twlreg_set_mode
 > 
-> Thanks
-> Shirley
+> 
+> 
+> > -----Original Message-----
+> > From: Liam Girdwood [mailto:lrg@slimlogic.co.uk]
+> > Sent: Saturday, October 23, 2010 7:17 PM
+> > To: Nayak, Rajendra
+> > Cc: Axel Lin; linux-kernel; Juha Keski-Saari; Mark Brown
+> > Subject: Re: [PATCH] regulator: twl-regulator - fix twlreg_set_mode
+> >
+> > On Fri, 2010-10-22 at 08:30 -0700, Mark Brown wrote:
+> > > On Fri, Oct 22, 2010 at 04:38:22PM +0800, Axel Lin wrote:
+> > > > The Singular Message is 16 bits:
+> > > >         DEV_GRP[15:13] MT[12]  RES_ID[11:4]  RES_STATE[3:0]
+> > > >
+> > > > Current implementation return immedially after sucessfuly write MSB
+> part.
+> > > > To properly set mode, we need to write the complete message ( MSB
+> and LSB ).
+> > > >
+> > > > In twl.h, now we have defines for PM Master module register offsets,
+> > > > use it instead of hard coded 0x15/0x16.
+> > > >
+> > > > Use "message & 0xff" to ensure we send correct value for LSB.
+> > > >
+> > > > Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> > >
+> > > Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> > >
+> > > > I don't have this hardware handy, I appreciate if someone who has
+> the
+> > > > hardware can test this patch.
+> > >
+> > > I beleive Liam has appropriate hardware.
+> >
+> > Rejendra, care to test this ?
+> 
+> Sure, either me or Lesly will test this on one of the twl4030 based
+> platforms
+> and update.
+> 
+> >
+> > Thanks
+> >
+> > Liam
+> > --
+> > Freelance Developer, SlimLogic Ltd
+> > ASoC and Voltage Regulator Maintainer.
+> > http://www.slimlogic.co.uk
 
-OK, so I guess I'll queue the __put_user etc patches for net-next, on top of this
-I think a patch which defers signalling would be nice to have,
-then we can figure out whether a separate heads array still has benefits
-for non zero copy case: if yes what they are, if no whether it should be
-used for zero copy only for both both non-zero copy and zero copy.
 
-Makes sense?
-
--- 
-MST
