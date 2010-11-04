@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750987Ab0KDQMo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 12:12:44 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:27285 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750759Ab0KDQMm (ORCPT
+	id S1751111Ab0KDQT7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 12:19:59 -0400
+Received: from smtp-out-083.synserver.de ([212.40.180.83]:1225 "EHLO
+	smtp-out-081.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750825Ab0KDQT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 12:12:42 -0400
-Message-ID: <4CD2DB65.5060400@oracle.com>
-Date: Thu, 04 Nov 2010 09:12:21 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Thu, 4 Nov 2010 12:19:57 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: markus@trippelsdorf.de
+X-SynServer-PPID: 10519
+Date: Thu, 4 Nov 2010 17:19:43 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Roland McGrath <roland@redhat.com>,
+        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: task blocked for more than 120 seconds
+Message-ID: <20101104161943.GA6520@arch.trippelsdorf.de>
+References: <20101104155826.GC13818@swordfish.minsk.epam.com>
 MIME-Version: 1.0
-To: Xiaotian Feng <xtfeng@gmail.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        scsi <linux-scsi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 2.6.37-rc1 (scsi_debug: list corruption)
-References: <AANLkTimr3rW67HxgOUyReEW8dmmSsd4b7-Ns57mXzS1w@mail.gmail.com>	<20101103162015.99475a0b.randy.dunlap@oracle.com> <AANLkTin5PphTtZaesEU3U0PA8NJv=Jmis8yQF6b=KbeG@mail.gmail.com>
-In-Reply-To: <AANLkTin5PphTtZaesEU3U0PA8NJv=Jmis8yQF6b=KbeG@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101104155826.GC13818@swordfish.minsk.epam.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/10 19:25, Xiaotian Feng wrote:
-> On Thu, Nov 4, 2010 at 7:20 AM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
->>
->>
->> [  102.555847] calling  scsi_debug_init+0x0/0x704 [scsi_debug] @ 3337
->> Nov  3 16:06:12 control kernel: [  102.555847] calling  scsi_deb[  102.622974] scsi_debug: host protection
->> [  102.627513] scsi4 : scsi_debug, version 1.82 [20100324], dev_size_mb=8, opts=0x0
->> Nov  3 16:06:13 control kernel: [  102.639095] initcall scsi_debug_init+0x0/0x704 [scsi_debug] returned 0 after 75039 usecs
->> Nov  3 16:06:13 [  102.651072] ------------[ cut here ]------------
->> [  102.657373] WARNING: at /local/linsrc/lnx-2637-rc1/lib/list_debug.c:26 __list_add+0x4d/0xa5()
->> [  102.666012] Hardware name: OptiPlex GX620
->> [  102.671396] list_add corruption. next->prev should be prev (ffffffff81ae5e50), but was 6b6b6b6b6b6b6b6b. (next=ffff88006c880590).
+On Thu, Nov 04, 2010 at 05:58:26PM +0200, Sergey Senozhatsky wrote:
+> Hello,
+> Got the following traces:
 > 
-> This might be related with net rds percpu_counter corruption. Does
-> following patch fix your issue?
-> http://patchwork.ozlabs.org/patch/69939/
+> [42001.449295] INFO: task openbox:17761 blocked for more than 120 seconds.
+> [42001.449303] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> [42001.449311] openbox       D 0000000000000003     0 17761   3723 0x00000000
+> [42001.449321]  ffff88004ce8dc38 0000000000000046 0000000000000000 ffff88004ce8c000
+> [42001.449333]  ffff88004ce8dfd8 0000000000012040 ffff880133010000 ffff88004ce8dfd8
+> [42001.449343]  0000000000012040 0000000000012040 ffff88004ce8dfd8 0000000000012040
+> [42001.449354] Call Trace:
+> [42001.449369]  [<ffffffff814212ff>] schedule_timeout+0x38/0x220
+> [42001.449381]  [<ffffffff81066f21>] ? mark_held_locks+0x50/0x72
+> [42001.449389]  [<ffffffff81423dae>] ? _raw_spin_unlock_irq+0x2b/0x59
+> [42001.449398]  [<ffffffff81036070>] ? get_parent_ip+0x11/0x41
+> [42001.449406]  [<ffffffff81036132>] ? sub_preempt_count+0x92/0xa5
+> [42001.449413]  [<ffffffff8142057e>] wait_for_common+0xca/0x144
+> [42001.449421]  [<ffffffff81038b13>] ? default_wake_function+0x0/0xf
+> [42001.449429]  [<ffffffff81423e4b>] ? _raw_spin_unlock_irqrestore+0x6f/0x74
+> [42001.449436]  [<ffffffff81420692>] wait_for_completion+0x18/0x1a
+> [42001.449445]  [<ffffffff81084808>] stop_one_cpu+0x8c/0xba
 
-Yes, somehow that patch fixes it.
+These traces look related to:
+http://article.gmane.org/gmane.linux.kernel/1055100
 
-What good eyes you have.
+Does reverting 34f971f6f7988be4d014eec3e3526bee6d007ffa help in your
+case?
 
-thanks,
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Markus
