@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962Ab0KDUpf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 16:45:35 -0400
-Received: from isrv.corpit.ru ([86.62.121.231]:58986 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752812Ab0KDUpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 16:45:33 -0400
-Message-ID: <4CD31B6A.7040902@msgid.tls.msk.ru>
-Date: Thu, 04 Nov 2010 23:45:30 +0300
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.12) Gecko/20100913 Icedove/3.0.7
+	id S1753021Ab0KDUql (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 16:46:41 -0400
+Received: from nm1-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.202]:37284 "HELO
+	nm1-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752867Ab0KDUqk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 16:46:40 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 568012.41125.bm@omp1036.mail.sp2.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:MIME-Version:Content-Type;
+  b=NeM7MPLnGdRlHzUDgX2gnUh1wATX5hBDLdHd9oeE9YXyUwWOhLo9oHrhRZQKTxORNtwvRuwosGD6KSQC1W2Nh1w8QdhjWfigtGT9EsWXElm/aevQriRL/7+RLd4HnGpqWKV4YyIjym3wC9yfabzLwhEDe9c8jM0eZsiwEMQQjXo=;
+Message-ID: <596240.50099.qm@web180307.mail.gq1.yahoo.com>
+X-YMail-OSG: b62iuLIVM1n4D72omCoLa8FHJwXWCJHkisrd.sS21LoDwh_
+ 5vJIfiWtai0P8iCUeP9Cn0mZ7pAgssab7TiyGQNtCc7mc534xXgzBFTiN1eV
+ mpIKAULe7MHSRCpAWs_nEutvojeSa1Vcsr11Wzjr6CAAWXKvTURdbYvSanyK
+ Iqx2R8vgeJa4RD1BHx3.PDXKkKYIwjeOMo0gRmPck3yPl2UNZqaxF2arBSfJ
+ yIaxmBL_ur02aDcOFDCywkygZSm1OjHMxLQ9dsLcLPf3KsG6LpBeDkzlIH6Q
+ trVpjIRcjyUifloqnypNO6Umfx4gTjGj2yQCRZAXHZVwrq2ucBwM3Xq2AgCf
+ oiw--
+X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.284920
+Date: Thu, 4 Nov 2010 13:19:58 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: spi_butterfly null ptr dereference on unload module
+To: lkml <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net
 MIME-Version: 1.0
-To: Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Detecting bind-mounts
-X-Enigmail-Version: 1.0.1
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
 
-There are quite some talks on the 'net - questions, not
-answers - about detecting bind mounts - be it a directory
-or a file.
+--- On Thu, 11/4/10, Randy Dunlap <randy.dunlap@oracle.com> wrote:
 
-There are 2 (mostly) different kinds of applications.  One
-is cp/tar/find with --same-filesystem option (or equivalent),
-that should not cross mountpoints.  And one more, apps like
-mountpoint(1) from sysvinit - a utility to determine if a
-given path is a mountpoint.
+> Date: Thursday, November 4, 2010, 12:46 PM
+> Just load and unload the module.
 
-Neither of the two work when two directores on the same
-filesystem are bind-mounted.
+For the record ... at first impression this
+feels like a regression in another part of
+the kernel than the driver you indicate.
+I used to do that load/unload semi-regularly,
+with no errors appearing.
 
-The usual idiom is to compare st_dev of current directory and
-the parent - if they're different that's a mount point.  But
-in this case, two st_devs will be the same, so such a mount
-point will not be detected.
+However, I can't do any real testing on this,
+now, since I no longer have parport-capable
+hardware to which I can hook up one of these adapters ... and thus collect more info about
+where the bit-rot has rooted.
 
-It is even worse for bind-mounted files (as opposed to dirs):
-there's no path/file/.. entry to stat(2), and cutting the
-last component from the pathname does not work reliable due
-to symlinks (it may be a symlink from different filesystem).
+- Dave
 
-So far I know only one way to detect a bind mount like this,
-and it is unreliable anyway.  It is to parse /proc/mounts
-and try to find the object(s) in question.  Unreliable because
-of, again, symlinks, and possible complex mounts and bind-
-mounts.  And this is also very slow - imagine using this way
-for find/tar/cp --one-file-system.
 
-Is there some simpler and more reliable way? Maybe use mount
-syscall, like we use kill($pid, 0) to check existance of a
-process?
-
-And as far as I understand, the same applies to multiple
-mounts of the same filesystem.
-
-Thanks!
-
-/mjt
