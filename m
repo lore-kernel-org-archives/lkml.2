@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932103Ab0KDGNL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 02:13:11 -0400
-Received: from omta02-pub.suddenlink.net ([208.180.40.74]:44756 "EHLO
-	omta02.suddenlink.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753606Ab0KDGNJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 02:13:09 -0400
-Message-ID: <4CD24ED6.1030005@suddenlinkmail.com>
-Date: Thu, 04 Nov 2010 01:12:38 -0500
-From: "David C. Rankin" <drankinatty@suddenlinkmail.com>
-Organization: Rankin Law Firm, PLLC
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Thunderbird/3.1.6
+	id S932184Ab0KDG1P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 02:27:15 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:45668 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755104Ab0KDG1N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 02:27:13 -0400
+Date: Thu, 4 Nov 2010 07:27:09 +0100
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [linux-pm] [GIT PULL] One more power management fix for 2.6.37
+Message-ID: <20101104062709.GA3118@isilmar-3.linta.de>
+Mail-Followup-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <201010292358.27975.rjw@sisk.pl> <AANLkTikrDoKDWPMtSjJ0EjKXO7ddQZPkZ5ZvwoivkbnZ@mail.gmail.com> <20101103211855.GA29721@isilmar-3.linta.de> <201011040604.05183.rjw@sisk.pl>
 MIME-Version: 1.0
-To: kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Upgrade to recent 2.6.35 & 2.6.36 kernel causing boot failure
- with nv dmraid
-References: <4CD24A64.3080503@suddenlinkmail.com>
-In-Reply-To: <4CD24A64.3080503@suddenlinkmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Cloudmark-Analysis: v=1.1 cv=rkjybkC9Q1SXrp0j9aIMMlRGdgWt1n9sNlDOQbfJfFA= c=1 sm=0 a=Wn5zFxASGYcA:10 a=8nJEP1OIZ-IA:10 a=eII3Rc1uAAAA:8 a=BFu0leMTAAAA:8 a=HFRIDAQ4Evzq7MJJLEYA:9 a=HAmYAexYCqc9pC3MaYwA:7 a=XkNIRyNcOxUho7GnzjVe-fesNqsA:4 a=wPNLvfGTeEIA:10 a=enRK-GpJGN0A:10 a=3F2Xbh7biFsA:10 a=QKLB_qR_4l8A:10 a=rKT6jY7h-RwA:10 a=mb_7iB-5IOUA:10 a=2XfabVCTb_oA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201011040604.05183.rjw@sisk.pl>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04/2010 12:53 AM, David C. Rankin wrote:
->     I don't know exactly what you might need to look at or what additional data
-> you want, but just let me know and I'm happy to get it for you.
+On Thu, Nov 04, 2010 at 06:04:05AM +0100, Rafael J. Wysocki wrote:
+> On Wednesday, November 03, 2010, Dominik Brodowski wrote:
+> > > There's apparently an ordering problem with dpm_list_mtx and
+> > > socket->skt_mutex. Lockdep details appended.
+> > > 
+> > > Dominik, Rafael? What's the proper locking order here, and
+> > > how do we fix this?
+> > 
+> > Thanks for noting this; let's see:
+> > 
+> > - We add a PCMCIA device holding skt_mutex, therefore we have the ordering
+> >   (1) skt_mutex -> (2) dpm_list_mtx
+> > 
+> > - If we're suspending, dpm_list_mtx is held, but we need to acquire
+> >   skt_mutex as we modify some data being protected by skt_mutex
+> >   (1) dpm_list_mtx -> (2) skt_mutex
+> > 
+> > Rafael, any idea on how to solve this? How do other subsystems handle such
+> > an issue? Do they call device_add() with no locks held at all?
+> 
+> They usually do from what I can tell.
+> 
+> Also only a few of them implement the ->suspend_noirq() callback, which is the
+> one executed under dpm_list_mtx.
+> 
+> What exactly is protected by skt_mutex ?
 
-Just FYI, the BIOS is current for the board and information on both can be found at:
+e.g.
+struct pcmcia_socket {
+	...
+        u_int                   suspended_state;
+        int                     resume_status;
+	...
+}
 
-http://www.msi.com/index.php?func=downloaddetail&type=bios&maincat_no=1&prod_no=1443
+Furthermore, one has to acquire skt_mutex first before obtaining ops_mutex,
+which protects many more fields (and asserts exclusion for some code paths),
+see Documentation/pcmcia/locking.txt for details.
 
-direct download:
-
-http://www.msi.com/index.php?func=downloadfile&dno=12299&type=bios
-
--- 
-David C. Rankin, J.D.,P.E.
-Rankin Law Firm, PLLC
-510 Ochiltree Street
-Nacogdoches, Texas 75961
-Telephone: (936) 715-9333
-Facsimile: (936) 715-9339
-www.rankinlawfirm.com
+Best,
+	Dominik
