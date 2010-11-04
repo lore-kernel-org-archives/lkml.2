@@ -1,71 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751940Ab0KDCrM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 22:47:12 -0400
-Received: from mail.asbjorn.biz ([217.195.185.3]:53964 "EHLO mail.asbjorn.biz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751001Ab0KDCrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 22:47:10 -0400
-From: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        debian-kernel@lists.debian.org
-Subject: [PATCH] kbuild, deb-pkg: fix Architecture field when cross compiling
-Date: Thu,  4 Nov 2010 02:42:40 +0000
-Message-Id: <1288838560-6173-1-git-send-email-asbjorn@asbjorn.biz>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <4CD20F85.7040005@asbjorn.biz>
-References: <4CD20F85.7040005@asbjorn.biz>
+	id S1752243Ab0KDCsy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 22:48:54 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:59122 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751001Ab0KDCsu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 22:48:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=xIPz43VxY2+dRj29JtBpy61YL3KKqtzXmH3gyMUdKs/nvvzjyk06+o0RrL/iAMR6qM
+         UyMqIYMPQFIsaVZex2Jdd3RY5tz9CxXqyoT1ImvudMk/R2hbPM6sGmfBtaE8WjTxe+9p
+         uLNBogCgYWrB3XQs15BKQzG306BziJEioe9Wo=
+Date: Thu, 4 Nov 2010 10:52:51 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        "mrubin@google.com" <mrubin@google.com>,
+        "david@fromorbit.com" <david@fromorbit.com>,
+        "axboe@kernel.dk" <axboe@kernel.dk>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
+        "nickpiggin@yahoo.com.au" <nickpiggin@yahoo.com.au>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [2.6.37-rc1] /proc/vmstat failure.
+Message-ID: <20101104025251.GA5210@cr0.nay.redhat.com>
+References: <201011010053.ADE86905.JMLFHVtSQOOFOF@I-love.SAKURA.ne.jp>
+ <201011032011.BAB21899.OHVQtFLSFJMFOO@I-love.SAKURA.ne.jp>
+ <20101103174643.GA4985@localhost>
+ <201011040654.GDB05271.SOFJFFtOMLHOQV@I-love.SAKURA.ne.jp>
+ <20101104022052.GA7800@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101104022052.GA7800@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attempt to guess the correct value of the Architecture control
-field, based on the ARCH environment variable. Fallback to letting
-deb-gencontrol use the host platform's architecture.
+On Thu, Nov 04, 2010 at 10:20:52AM +0800, Wu Fengguang wrote:
+>On Thu, Nov 04, 2010 at 05:54:48AM +0800, Tetsuo Handa wrote:
+>> Wu Fengguang wrote:
+>> > On Wed, Nov 03, 2010 at 07:11:11PM +0800, Tetsuo Handa wrote:
+>> > > Hello.
+>> > > 
+>> > > "cat /proc/vmstat" triggered below failure.
+>> > > 
+>> > > BUG: unable to handle kernel paging request at 07c06d16
+>> > > IP: [<c050c336>] strnlen+0x6/0x20
+>> > 
+>> > It seems that m->private is of type (void *) while the original v is
+>> > (unsigned long *). Can be fixed by the following patch.
+>> 
+>> Fixed by this patch. Thank you.
+>
+>Great, thanks!
+>
+>> By the way, GCC treats "(void *) + offset" as "(char *) + offset"
+>> but it is GCC specific extention. Maybe we should avoid such usage
+>> in order to avoid build failure for other compilers.
+>
+>"(void *) + offset" seems to be used quite often.
+>
+>I tried enable this gcc option, only to see huge amount of warnings.
+>
+>       -Wpointer-arith
+>           Warn about anything that depends on the "size of" a
+>           function type or of "void".  GNU C assigns these types a
+>           size of 1, for convenience in calculations with "void *"
+>           pointers and pointers to functions.
+>
 
-With this patch the following make command:
+Yup! I think it is good to have this.
 
-	make ARCH=i386 deb-pkg
+>/cc/linux-next/scripts/mod/file2alias.c:88: warning: pointer of type ‘void *’ used in arithmetic
+...
+>/cc/linux-next/scripts/mod/modpost.c:1565: warning: pointer of type ‘void *’ used in arithmetic
+>
 
-will output an i386 Debian package instead of an amd64 one,
-when run on amd64 machine.
-
-Signed-off-by: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
----
- scripts/package/builddeb |   18 +++++++++++++++++-
- 1 files changed, 17 insertions(+), 1 deletions(-)
-
-diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-index 5f1e2fc..02fd63f 100644
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -25,8 +25,24 @@ create_package() {
- 	chown -R root:root "$pdir"
- 	chmod -R go-w "$pdir"
- 
-+	# Attempt to find correct debian architecture
-+	local forcearch="" debarch=""
-+	case "$ARCH" in
-+		x86_64) debarch="amd64" ;;
-+		i386|ia64) debarch="$ARCH" ;;
-+		*)
-+			case "$SUBARCH" in
-+				arm) debarch=$(grep -q CONFIG_AEABI=y .config \
-+						&& echo armel || echo arm) ;;
-+			esac
-+			;;
-+	esac
-+	if [ -n "$debarch" ] ; then
-+		forcearch="-DArchitecture=$debarch"
-+	fi
-+
- 	# Create the package
--	dpkg-gencontrol -isp -p$pname -P"$pdir"
-+	dpkg-gencontrol -isp $forcearch -p$pname -P"$pdir"
- 	dpkg --build "$pdir" ..
- }
- 
--- 
-1.7.2.3
-
+No problem, this is from kbuild and most of them that I checked are actually fine,
+we can send patches to remove these warnings.
