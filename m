@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545Ab0KDSdp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 14:33:45 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44600 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751731Ab0KDSdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 14:33:42 -0400
-Date: Thu, 4 Nov 2010 11:27:58 -0700
-From: Greg KH <gregkh@suse.de>
-To: Onkalo Samu <samu.p.onkalo@nokia.com>
-Cc: "hmh@hmh.eng.br" <hmh@hmh.eng.br>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sysfs: device-core: sysfs open close notify
-Message-ID: <20101104182758.GA19649@suse.de>
-References: <1288861417-469-1-git-send-email-samu.p.onkalo@nokia.com> <20101104132339.GC10390@suse.de> <62697B07E9803846BC582181BD6FB6B836EB63CB54@NOK-EUMSG-02.mgdnok.nokia.com> <20101104160321.GB3631@suse.de> <1288888656.2072.5.camel@noppispoppis.nmp.nokia.com>
+	id S1752601Ab0KDSeJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 14:34:09 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:35518 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858Ab0KDSeI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 14:34:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=hxH3pQ1K+e5Bf41AVCQ5oUo2PjsBXL0GBW89qauizaanrs+JF5bO4B7zeZfzkxGnfK
+         +DkaTYIeXiCOT7IfFUY9UfCjCU0UgzU0tUHUae8/IgfgFjZmQivYMUYkHBYfxba+ylt/
+         /XcspzL+eQbaSFG93zbtqkLg+A9A3KxhZJDDs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288888656.2072.5.camel@noppispoppis.nmp.nokia.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <4CD1E232.30406@redhat.com>
+References: <20101009224041.GA901@sepie.suse.cz>
+	<4CD1E232.30406@redhat.com>
+Date: Thu, 4 Nov 2010 14:34:07 -0400
+Message-ID: <AANLkTiksbQQsXDydmohz6TiR4u-QNSJkfZHnkLOKizF7@mail.gmail.com>
+Subject: Re: REGRESSION: Re: [GIT] kconfig rc fixes
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Michal Marek <mmarek@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>, kyle@redhat.com,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linux Media Mailing List <linux-media@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 04, 2010 at 06:37:36PM +0200, Onkalo Samu wrote:
-> On Thu, 2010-11-04 at 17:03 +0100, ext Greg KH wrote:
-> > On Thu, Nov 04, 2010 at 02:32:15PM +0100, samu.p.onkalo@nokia.com wrote:
-> > > It is easy to get rid of if the mode parameter is used to pass the information
-> > > that this entry uses open_close_notify.  What do you think, is it ok to use
-> > > mode also to that purpose?
-> > 
-> > Don't try to overload a parameter that has been used for the past 40+
-> > years in one way, to try to add additional side-band data that has
-> > nothing to do with it.
-> > 
-> > That way lies madness.
-> > 
-> 
-> And that is why I didn't even tried to do that in the first place - even
-> if it would have been the simple way.
-> 
-> Is the implementation ok otherwise?
-> 
-> I'll add sysfs_create_file_notify which sets the control bit save way.
-> I think it is enough if these entries can be done attribute by
-> attribute. It is still possible delete them using normal sysfs
-> operations.
+Hi,
 
-No, don't do a separate file create because no one should ever create a
-file on its own.  It should only be done by bus through a default
-attribute, or, in extreem cases, done by purposefully controlling the
-kobject uevents where you know exactly what you are doing.
+On Wed, Nov 3, 2010 at 6:29 PM, Mauro Carvalho Chehab
+<mchehab@redhat.com> wrote:
+> Basically, we have things there like:
+>
+> config VIDEO_HELPER_CHIPS_AUTO
+>        bool "Autoselect pertinent encoders/decoders and other helper chips"
+>
+> config VIDEO_IVTV
+>        select VIDEO_WM8739 if VIDEO_HELPER_CHIPS_AUTO
+>
+> menu "Encoders/decoders and other helper chips"
+>        depends on !VIDEO_HELPER_CHIPS_AUTO
+>
+> config VIDEO_WM8739
+>        tristate "Wolfson Microelectronics WM8739 stereo audio ADC"
+>
+Where do you get that code from ? this particular one is not in 2.6.37-rc1:
 
-Odds are, any user of this call wouldn't know exactly what they are
-doing, so don't give them that opportunity to mess it up.
+% git describe
+v2.6.37-rc1-27-gff8b16d
 
-thanks,
+% head -20 drivers/media/video/ivtv/Kconfig
+config VIDEO_IVTV
+        tristate "Conexant cx23416/cx23415 MPEG encoder/decoder support"
+        depends on VIDEO_V4L2 && PCI && I2C
+        depends on INPUT   # due to VIDEO_IR
+        select I2C_ALGOBIT
+        depends on VIDEO_IR
+        select VIDEO_TUNER
+        select VIDEO_TVEEPROM
+        select VIDEO_CX2341X
+        select VIDEO_CX25840
+        select VIDEO_MSP3400
+        select VIDEO_SAA711X
+        select VIDEO_SAA717X
+        select VIDEO_SAA7127
+        select VIDEO_CS53L32A
+        select VIDEO_M52790
+        select VIDEO_WM8775
+        select VIDEO_WM8739
+        select VIDEO_VP27SMPX
+        select VIDEO_UPD64031A
 
-greg k-h
+ - Arnaud
