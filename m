@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751848Ab0KDR3X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 13:29:23 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:56151 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751064Ab0KDR3V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 13:29:21 -0400
-Date: Thu, 4 Nov 2010 10:28:00 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>,
-        torvalds <torvalds@linux-foundation.org>
-Cc: Richard Purdie <rpurdie@rpsys.net>, akpm <akpm@linux-foundation.org>,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: [PATCH] leds-net5501: taints kernel, add license
-Message-Id: <20101104102800.6b1cc210.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
+	id S1751887Ab0KDRa5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 13:30:57 -0400
+Received: from xenotime.net ([72.52.115.56]:58116 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751106Ab0KDRay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 13:30:54 -0400
+Date: Thu, 4 Nov 2010 10:30:52 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: "Allyn, Mark A" <mark.a.allyn@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>
+Subject: Re: [PATCH 1/1] crypto: api.c adding kernel-doc comments
+Message-Id: <20101104103052.d8791fe5.rdunlap@xenotime.net>
+In-Reply-To: <8A0E4C92AE2D6D40AF99653191DA32316141394940@rrsmsx501.amr.corp.intel.com>
+References: <1288890442-11208-1-git-send-email-mark.a.allyn@intel.com>
+	<20101104102219.7ec24969.rdunlap@xenotime.net>
+	<8A0E4C92AE2D6D40AF99653191DA32316141394940@rrsmsx501.amr.corp.intel.com>
+Organization: YPO4
 X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -24,27 +26,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Thu, 4 Nov 2010 11:25:06 -0600 Allyn, Mark A wrote:
 
-Add MODULE_LICENSE() that matches file comments so that kernel
-is not tainted.
+> This is my first time in attempting to patch documentation. Shall I follow your suggestions by submitting a patch that depends on this patch or shall I submit the whole thing again with the corrections?
+> 
 
-	leds_net5501: module license 'unspecified' taints kernel.
+Hi Mark,
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+If your patch was already merged somewhere (even in an intermediate tree),
+you should just send a partial/update patch, but in this case, since it hasn't
+been merged anywhere (that I know of), I recommend sending a complete new patch.
+
+Thanks.
+
+> 
+> -----Original Message-----
+> From: Randy Dunlap [mailto:rdunlap@xenotime.net] 
+> Sent: Thursday, November 04, 2010 10:22 AM
+> To: Allyn, Mark A
+> Cc: linux-kernel@vger.kernel.org; linux-crypto@vger.kernel.org
+> Subject: Re: [PATCH 1/1] crypto: api.c adding kernel-doc comments
+> 
+> On Thu,  4 Nov 2010 10:07:22 -0700 Mark Allyn wrote:
+> 
+> > Add comments to crypto_alg_lookup and crypto_larval_lookup
+> > 
+> > I am re-submitting this due to errors
+> > 
+> > Signed-off-by: Mark A. Allyn <mark.a.allyn@intel.com>
+> > ---
+> >  crypto/api.c |   19 +++++++++++++++++++
+> >  1 files changed, 19 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/crypto/api.c b/crypto/api.c
+> > index 033a714..71c389d 100644
+> > --- a/crypto/api.c
+> > +++ b/crypto/api.c
+> > @@ -193,6 +193,15 @@ static struct crypto_alg *crypto_larval_wait(struct crypto_alg *alg)
+> >  	return alg;
+> >  }
+> >  
+> > +/**
+> > + * crypto_alg_lookup() return crypto_alg structure for an algorithm
+> 
+> needs hyphen between function name and "return".
+> 
+> > + * @name:	text string containing name of algorithm
+> > + * @type:	crypto type (defined at about line 31 of
+> > + *		include/linux/crypto.h)
+> > + * @mask:	mask of allowable crypto types (use or'd list
+> > + *		of types as defined at about line 31 of
+> > + *		include/linux/crypto.h)
+> 
+> drop the line numbers...
+> 
+> > + */
+> >  struct crypto_alg *crypto_alg_lookup(const char *name, u32 type, u32 mask)
+> >  {
+> >  	struct crypto_alg *alg;
+> > @@ -205,6 +214,16 @@ struct crypto_alg *crypto_alg_lookup(const char *name, u32 type, u32 mask)
+> >  }
+> >  EXPORT_SYMBOL_GPL(crypto_alg_lookup);
+> >  
+> > +/**
+> > + * crypto_alg_larval lookup() return large value (larval) crypto_alg
+> 
+>  * crypto_larval_lookup() - return large value (larval) crypto_alg
+> 
+> 
+> > + *	structure for an algorithm
+> > + * @name:	text string containing name of algorithm
+> > + * @type:	crypto type (defined at about line 31 of
+> > + *		include/linux/crypto.h)
+> > + * @mask:	mask of allowable crypto types (use or'd list
+> > + *		of types as defined at about line 31 of
+> > + *		include/linux/crypto.h)
+> > + */
+> 
+> drop the line numbers.
+> 
+> >  struct crypto_alg *crypto_larval_lookup(const char *name, u32 type, u32 mask)
+> >  {
+> >  	struct crypto_alg *alg;
+> > -- 
+
 ---
- drivers/leds/leds-net5501.c |    2 ++
- 1 file changed, 2 insertions(+)
-
-Alessandro, why does this module not have a module_exit() function?
-I.e., why can it not be unloaded?
-
-
---- lnx-2637-rc1.orig/drivers/leds/leds-net5501.c
-+++ lnx-2637-rc1/drivers/leds/leds-net5501.c
-@@ -92,3 +92,5 @@ unmap:
- }
- 
- arch_initcall(soekris_init);
-+
-+MODULE_LICENSE("GPL");
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
