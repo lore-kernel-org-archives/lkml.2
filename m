@@ -1,112 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371Ab0KDDTV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 23:19:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64243 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752756Ab0KDDTU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 23:19:20 -0400
-Message-ID: <4CD22627.2000607@redhat.com>
-Date: Wed, 03 Nov 2010 23:19:03 -0400
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc14 Thunderbird/3.1.6
+	id S1753449Ab0KDD1I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 23:27:08 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:61540 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752528Ab0KDD1G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 23:27:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=E2T1jIcalKw9koB/dCoBCWnPRQKMigdWCqzpykhUW636y559pqLPZXgxgw1q2mUavT
+         nD6j2OGgN8G7LRPjK9XnwSgqIft5XkIqzT0duEtUZAFI9QPzl7h8fw4ICqwj0usnCXvW
+         qAO31hFVLZWBL11acXfLdPKPukZmjUYoO/aas=
+Date: Thu, 4 Nov 2010 11:31:48 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        "mrubin@google.com" <mrubin@google.com>,
+        "david@fromorbit.com" <david@fromorbit.com>,
+        "axboe@kernel.dk" <axboe@kernel.dk>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
+        "nickpiggin@yahoo.com.au" <nickpiggin@yahoo.com.au>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [2.6.37-rc1] /proc/vmstat failure.
+Message-ID: <20101104033148.GB5210@cr0.nay.redhat.com>
+References: <201011010053.ADE86905.JMLFHVtSQOOFOF@I-love.SAKURA.ne.jp>
+ <201011032011.BAB21899.OHVQtFLSFJMFOO@I-love.SAKURA.ne.jp>
+ <20101103174643.GA4985@localhost>
+ <201011040654.GDB05271.SOFJFFtOMLHOQV@I-love.SAKURA.ne.jp>
+ <20101104022052.GA7800@localhost>
+ <20101104025251.GA5210@cr0.nay.redhat.com>
+ <20101104025341.GA18429@localhost>
 MIME-Version: 1.0
-To: Arnaud Lacombe <lacombar@gmail.com>
-CC: Michal Marek <mmarek@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>, kyle@redhat.com,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linux Media Mailing List <linux-media@vger.kernel.org>
-Subject: Re: REGRESSION: Re: [GIT] kconfig rc fixes
-References: <20101009224041.GA901@sepie.suse.cz>	<4CD1E232.30406@redhat.com> <AANLkTimyh-k8gYwuNi6nZFp3oviQ33+M3fDRzZ+sJN9i@mail.gmail.com>
-In-Reply-To: <AANLkTimyh-k8gYwuNi6nZFp3oviQ33+M3fDRzZ+sJN9i@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101104025341.GA18429@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 03-11-2010 22:31, Arnaud Lacombe escreveu:
-> Hi,
-> 
-> On Wed, Nov 3, 2010 at 6:29 PM, Mauro Carvalho Chehab
-> <mchehab@redhat.com> wrote:
->> Em 09-10-2010 18:40, Michal Marek escreveu:
->>>
->>> Arnaud Lacombe (1):
->>>       kconfig: delay symbol direct dependency initialization
->>
->> This patch generated a regression with V4L build. After applying it,
->> some Kconfig dependencies that used to work with V4L Kconfig broke.
->>
-> of course, but they were all-likely buggy. If a compiler version N
-> outputs a new legitimate warning because of a bug in the code, you do
-> not switch back to the previous version because the warning wasn't
-> there, you fix the code.
-> 
-> That said, please point me to a false positive, eventually with a
-> minimal testcase, and I'll be happy to fix the issue.
+On Thu, Nov 04, 2010 at 10:53:41AM +0800, Wu Fengguang wrote:
+>On Thu, Nov 04, 2010 at 10:52:51AM +0800, Américo Wang wrote:
+>> On Thu, Nov 04, 2010 at 10:20:52AM +0800, Wu Fengguang wrote:
+>> >On Thu, Nov 04, 2010 at 05:54:48AM +0800, Tetsuo Handa wrote:
+>> >> Wu Fengguang wrote:
+>> >> > On Wed, Nov 03, 2010 at 07:11:11PM +0800, Tetsuo Handa wrote:
+>> >> > > Hello.
+>> >> > > 
+>> >> > > "cat /proc/vmstat" triggered below failure.
+>> >> > > 
+>> >> > > BUG: unable to handle kernel paging request at 07c06d16
+>> >> > > IP: [<c050c336>] strnlen+0x6/0x20
+>> >> > 
+>> >> > It seems that m->private is of type (void *) while the original v is
+>> >> > (unsigned long *). Can be fixed by the following patch.
+>> >> 
+>> >> Fixed by this patch. Thank you.
+>> >
+>> >Great, thanks!
+>> >
+>> >> By the way, GCC treats "(void *) + offset" as "(char *) + offset"
+>> >> but it is GCC specific extention. Maybe we should avoid such usage
+>> >> in order to avoid build failure for other compilers.
+>> >
+>> >"(void *) + offset" seems to be used quite often.
+>> >
+>> >I tried enable this gcc option, only to see huge amount of warnings.
+>> >
+>> >       -Wpointer-arith
+>> >           Warn about anything that depends on the "size of" a
+>> >           function type or of "void".  GNU C assigns these types a
+>> >           size of 1, for convenience in calculations with "void *"
+>> >           pointers and pointers to functions.
+>> >
+>> 
+>> Yup! I think it is good to have this.
+>> 
+>> >/cc/linux-next/scripts/mod/file2alias.c:88: warning: pointer of type ‘void *’ used in arithmetic
+>> ...
+>> >/cc/linux-next/scripts/mod/modpost.c:1565: warning: pointer of type ‘void *’ used in arithmetic
+>> >
+>> 
+>> No problem, this is from kbuild and most of them that I checked are actually fine,
+>> we can send patches to remove these warnings.
+>
+>Confirmed. Now my full kernel build is complete and the above are the
+>only warnings I see. So it should be easy to add the -Wpointer-arith
+>check.
+>
 
-Arnaud,
+Well, after I tried to compile with it, I got lots of warnings.
+Most of them that I checked is something like:
 
-In the case of V4L and DVB drivers, what happens is that the same 
-USB (or PCI) bridge driver can be attached to lots of
-different chipsets that do analog/digital/audio decoding/encoding.
+ (void *) CONST_PTR + OFFSET
 
-A normal user won't need to open his USB TV stick just to see TV on it.
-It just needs to select a bridge driver, and all possible options for encoders
-and decoders are auto-selected.
+in macros. In order to fix this, we need to:
 
-If you're an advanced user (or are developing an embedded hardware), you
-know exactly what are the components inside the board/stick. So, the
-Kconfig allows to disable the automatic auto-selection, doing manual
-selection.
+ (void *) ((char *) CONST_PTR + OFFSET)
 
-The logic basically implements it, using Kconfig way, on a logic like:
-
-	auto = ask_user_if_ancillary_drivers_should_be_auto_selected();
-	driver_foo = ask_user_if_driver_foo_should_be_selected();
-	if (driver_foo && auto) {
-		select(bar1);
-		select(bar2);
-		select(bar3);
-		select(bar4);
-	}
-...
-	if (!auto) {
-		open_menu()
-		ask_user_if_bar1_should_be_selected();
-		ask_user_if_bar2_should_be_selected();
-		ask_user_if_bar3_should_be_selected();
-		ask_user_if_bar4_should_be_selected();
-...
-		close_menu()
-	}
-
-Or, on Kconfig language:
-
->> config VIDEO_HELPER_CHIPS_AUTO
->>        bool "Autoselect pertinent encoders/decoders and other helper chips"
->>
->> config VIDEO_IVTV
->>        select VIDEO_WM8739 if VIDEO_HELPER_CHIPS_AUTO
->>
->> menu "Encoders/decoders and other helper chips"
->>        depends on !VIDEO_HELPER_CHIPS_AUTO
->>
->> config VIDEO_WM8739
->>        tristate "Wolfson Microelectronics WM8739 stereo audio ADC"
->>
-
-I don't see anything wrong on such logic. It is valid in C, and it is also valid
-(and works properly) at Kconfig language.
-
-So, the warning is a false positive.
-
-If you want to see the real logic, just look at drivers/media/.../Kconfig stuff.
-You'll see it at almost all Kconfig files. There are hundreds of dependencies
-using this kind of logic. This is used by all tuners (21 Kconfig items, at
-drivers/media/common/Kconfig), by several I2C devices (40+ Kconfig items at
-drivers/media/video/Kconfig), and by almost all bridge drivers.
-
-Mauro.
-
+So, we have to make some efforts to kill all the warnings. :-/
