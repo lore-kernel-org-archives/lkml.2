@@ -1,198 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab0KDGBo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 02:01:44 -0400
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:53647 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754849Ab0KDGBm convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 02:01:42 -0400
-From: Naveen Kumar GADDIPATI <naveen.gaddipati@stericsson.com>
-To: "Arce, Abraham" <x0066660@ti.com>
-Cc: Linus WALLEIJ <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        Greg KH <greg@kroah.com>, Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Date: Thu, 4 Nov 2010 06:36:07 +0100
-Subject: RE: [PATCHv1] staging: Synaptics RMI4 touchpad driver support
-Thread-Topic: [PATCHv1] staging: Synaptics RMI4 touchpad driver support
-Thread-Index: Act7jIPRAEQHCY5NSnuvbzsiadSGKgADqlZgABGgFXA=
-Message-ID: <81C3A93C17462B4BBD7E272753C105791945AAD82C@EXDCVYMBSTM005.EQ1STM.local>
-References: <1288699725-14405-1-git-send-email-naveen.gaddipati@stericsson.com>
- <20101102140337.GC9387@kroah.com> <4CD01CD8.3090206@stericsson.com>
- <20101102154029.GH11778@core.coreip.homeip.net>
- <20101103181058.GE7441@kroah.com>
- <20101103190752.GA4552@core.coreip.homeip.net>
- <20101103191958.GA9912@kroah.com>
- <27F9C60D11D683428E133F85D2BB4A530468A82B1A@dlee03.ent.ti.com>
-In-Reply-To: <27F9C60D11D683428E133F85D2BB4A530468A82B1A@dlee03.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1753110Ab0KDGHS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 02:07:18 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:65374 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755043Ab0KDGHP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 02:07:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=uJF5d4+J9232CY/CQERkbtmXCiuBrHTuJhZlq9COTzv2POmNqkm89UQxN3Yd65dUsX
+         C6lbqzF+DVNEwW6LgZWrZNlAPdM6U7Ns3AD4wHa7A1zz09mDtfQjFoGaENZzMziDnSB6
+         dzJ3JBN0CuhtNhEaw7Jk6wN/Y9ahse8BJWi68=
+Subject: Re: out of memory error from kernel when I open hundred of
+ thousands of TCP connections
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: springzhong <davidmahorse@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <1288850316.5575.1.camel@zhongjiu>
+References: <1288850316.5575.1.camel@zhongjiu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 04 Nov 2010 07:07:01 +0100
+Message-ID: <1288850821.2718.47.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arce,
+Le jeudi 04 novembre 2010 à 13:58 +0800, springzhong a écrit :
+> The source of serve is like:
+> ListeningThread listeningThread(this, nPortNum);
+> listeningThread.nPortNum=6475;
+> listeningThread.Start();
+> ListeningThread listeningThread2(this, 6476);
+> listeningThread2.nPortNum=6476;
+> listeningThread2.Start();
+> ListeningThread listeningThread3(this, 6477);
+> listeningThread3.nPortNum=6477;
+> listeningThread3.Start();
+> ListeningThread listeningThread4(this, 6477);
+> listeningThread4.nPortNum=6478;
+> listeningThread4.Start();
+> 
+> The source of client is like:
+> for (int i = 0; i < 60000; i++)
+> {
+> this->Connect("127.0.0.1", nPortNum, false, pClientSocket);
+> this->Connect("127.0.0.1", 6476, false, pClientSocket);
+> this->Connect("127.0.0.1", 6477, false, pClientSocket);
+> this->Connect("127.0.0.1", 6478, false, pClientSocket);
+> }
+> 
+> I want to test the maximum tcp connections of linux in my netbook with
+> 2G memeory.
+> But I just found It cannot exceed 240000 connections.Then an 
+> "out of memory error" occured. But it looks like there is still a lot of
+> free memory in my computer.
+> 
+> I want to rechange the kernel to accept more TCP connections like one
+> million tcp connections in my network.
+> But I find there are too many source codes in it. 
+> Could you give me any suggestions?
+> I have changed my environment like this with epoll:
+> /etc/security/limits.conf
+> * soft nofile 802400
+> * hard nofile 802400
+> # End of file
+> 
+> cat /proc/sys/fs/file-max
+> 2204218
+> 
+> cat /etc/sysctl.conf
+> net.ipv4.ip_local_port_range = 1024 65000
+> 
+> cat /proc/sys/fs/epoll/max_user_watches
+> 2500873
+> 
+> It is not the limitation of file ids of linux.It is an error from kernel
+> of LINUX
+> 
 
-I'm also the GPIO pin for interrupt with request threaded irq .
-I'm passing the irq_type from the platform data. 
-Which irq_type are you using for your platform?
+If you run a 32bit kernel, you probably hit a LOWMEM limit : sockets
+structures are kernel structures, allocated from LOWMEM zone.
+This is about 900 MBytes in 32bit kernel, even if you have 4GB of total
+ram.
 
-Thanks & Regards,
-Naveen
+grep Low /proc/meminfo
+
+If your netbook has 2GB of memory, you could compile a kernel with a
+2G/2G User/Kernel split
+
+CONFIG_VMSPLIT_2G=y
 
 
-> -----Original Message-----
-> From: Arce, Abraham [mailto:x0066660@ti.com]
-> Sent: Thursday, November 04, 2010 3:07 AM
-> To: Greg KH; Dmitry Torokhov
-> Cc: Linus WALLEIJ; Naveen Kumar GADDIPATI; linux-
-> kernel@vger.kernel.org; STEricsson_nomadik_linux; linux-
-> input@vger.kernel.org
-> Subject: RE: [PATCHv1] staging: Synaptics RMI4 touchpad driver support
-> 
-> Hi Naveen,
-> 
-> > From: linux-input-owner@vger.kernel.org [mailto:linux-input-
-> > owner@vger.kernel.org] On Behalf Of Greg KH
-> > Sent: Wednesday, November 03, 2010 1:20 PM
-> > To: Dmitry Torokhov
-> > Cc: Linus Walleij; Naveen Kumar GADDIPATI; linux-
-> kernel@vger.kernel.org;
-> > STEricsson_nomadik_linux; linux-input@vger.kernel.org
-> > Subject: Re: [PATCHv1] staging: Synaptics RMI4 touchpad driver
-> support
-> >
-> > On Wed, Nov 03, 2010 at 12:07:52PM -0700, Dmitry Torokhov wrote:
-> > > On Wed, Nov 03, 2010 at 11:10:58AM -0700, Greg KH wrote:
-> > > > On Tue, Nov 02, 2010 at 08:40:30AM -0700, Dmitry Torokhov wrote:
-> > > > > On Tue, Nov 02, 2010 at 03:14:48PM +0100, Linus Walleij wrote:
-> > > > > > Greg KH wrote:
-> > > > > >
-> > > > > > >> +Wait for the official upstream synaptics rmi4 clearpad
-> drivers as
-> > promised over the past few months
-> > > > > > >> +Merge any device support needed from this driver into it
-> > > > > > >> +Delete this driver
-> > > > > > >
-> > > > > > > Huh?
-> > > > > > >
-> > > > > > > Why not just add this driver to the kernel tree instead?
-> When the
-> > > > > > > "promised" driver then eventually shows up (who is
-> promising it?)
-> > then
-> > > > > > > delete the thing.
-> > > > >
-> > > > > The same reason as there were several wireless drivers in
-> staging?
-> > > >
-> > > > Ok, that's a good enough reason for me :)
-> > > >
-> > > > > > Well, Alan (on behalf of Ramesh Agarwal) sent out a very
-> similar
-> > > > > > patch (Titled "Synaptics TM1217 Touchscreen Controller
-> driver")
-> > > > > > the other day, and OTOMH that was after discussions with
-> Synaptics
-> > > > > > where they said they were working on a "real" driver (a
-> rather
-> > > > > > complex RMI4 bus driver) and we believe they will fix that
-> sooner
-> > > > > > or later.
-> > > > > >
-> > > > > > So, until sooner or later happens we thought we'd keep it in
-> staging.
-> > > > > >
-> > > > > > If you prefer both Alan and we can probably submit our
-> patches for
-> > > > > > inclusion in the proper place.
-> > > > > >
-> > > > > > A side effect may be that the Synaptics RMI4 people may have
-> trouble
-> > > > > > to merge their driver into input/ since they may be requested
-> to
-> > > > > > refactor the existing drivers to use it rather than merging
-> new stuff,
-> > > > > > putting some burden on their shoulders.
-> > > > > >
-> > > > >
-> > > > > No, they have not been requested to change any existing [in
-> tree]
-> > > > > drivers. They however been asked to convert to the driver core
-> > > > > primitives instead of rolling their own infprastructure to
-> implement
-> > > > > devices and drivers binding.
-> > > >
-> > > > If you don't object to this driver going in, and there is a path
-> forward
-> > > > in the future for it to be able to be removed, then I will be
-> glad to
-> > > > add it.
-> > > >
-> > > > Can I add your Acked-by: to the patch for this?
-> > > >
-> > >
-> > > Umm... I haven't looked in detail, but I think it is sane enough
-> for
-> > > staging... Much better than Alan's version that seemed to create a
-> > > separate input device for every finger. Needs to depend on INPUT
-> and
-> > > probably regulators framework...  Probe function may call
-> > > input_free_device() after calling input_register_device() which is
-> not
-> > > good.
-> >
-> > Great, thanks for this.
-> >
-> > > Basically staging is yours, you can add whatever you want to it ;)
-> >
-> > Heh, well, I try to at least cooperate with the different subsystem
-> > maintainers.  I don't need even more people pissed-off at me than I
-> > normally get :)
-> >
-> > I'll queue this up for .38.
-> >
-> 
-> I have done some initial testing with this patch, it includes some
-> modifications to the board file, I have a gpio acting as irq plus
-> driver code itself
-> 
-> I won't be able to get events (board will hang) unless adding the
-> following code, is this due to the usage of a gpio as interrupt? If you
-> could please clarify...
-> 
-> @@ -481,6 +483,9 @@ static int synaptics_rmi4_sensor_report(struct
-> synaptics_rmi4_data *pdata)
-> 
-> rfi);
->                 }
->         }
-> +
-> +       enable_irq(gpio_to_irq(pdata->irq_number));
-> +
->         /* return the number of touch points */
->         return touch;
->  }
-> @@ -498,6 +503,8 @@ static irqreturn_t synaptics_rmi4_irq(int irq, void
-> *data)
->         struct synaptics_rmi4_data *pdata = data;
->         int touch_count;
->         do {
-> +               disable_irq_nosync(gpio_to_irq(pdata->irq_number));
-> +
->                 touch_count = synaptics_rmi4_sensor_report(pdata);
->                 if (touch_count)
->                         wait_event_timeout(pdata->wait, pdata-
-> >touch_stopped,
-> 
-> Best Regards
-> Abraham
 
