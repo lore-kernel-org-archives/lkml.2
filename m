@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007Ab0KDOiT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 10:38:19 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:38479 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751475Ab0KDOiR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 10:38:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=vMrRy50uM7x7DwLHOmMPfsDMrYiIYUgVMPMpkGgLXuw0I9AJHSr83Zg1+Bhr/8hG7f
-         93Tojf/ONnGugxjc+YrQLvAlfdee7PIzpnbIiuJyQQhtiQbnN78aVSj2aICWZXjyF9ec
-         kys90GsT471zpebE5tqGhUv2M/mevXuu32nH4=
-Subject: Re: divide error in select_task_rq_fair()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Venkatesh Pallipadi <venki@google.com>, Nikhil Rao <ncrao@google.com>,
-        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101104142853.GA11656@helgaas.com>
-References: <20101104041236.GA9389@helgaas.com>
-	 <1288847992.2718.37.camel@edumazet-laptop>
-	 <20101104142853.GA11656@helgaas.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 04 Nov 2010 15:37:54 +0100
-Message-ID: <1288881474.2659.123.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1752038Ab0KDOjJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 10:39:09 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57515 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751853Ab0KDOjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 10:39:07 -0400
+Message-ID: <4CD2C551.2000604@kernel.org>
+Date: Thu, 04 Nov 2010 15:38:09 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Marcus Meissner <meissner@suse.de>
+CC: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        jason.wessel@windriver.com, fweisbec@gmail.com, mort@sgi.com,
+        akpm@osdl.org, security@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of
+ attacking
+References: <20101104100914.GC25118@suse.de> <20101104114648.GA23381@elte.hu> <20101104122906.GH25118@suse.de> <20101104135802.GA31416@elte.hu> <20101104141104.GA31753@elte.hu> <20101104143322.GL25118@suse.de>
+In-Reply-To: <20101104143322.GL25118@suse.de>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 04 Nov 2010 14:38:11 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 04 novembre 2010 à 08:28 -0600, Bjorn Helgaas a écrit :
-> On Thu, Nov 04, 2010 at 06:19:52AM +0100, Eric Dumazet wrote:
-> > Le mercredi 03 novembre 2010 à 22:12 -0600, Bjorn Helgaas a écrit :
-> > > Hi,
-> > > 
-> > > With current upstream, I see the following crash at boot-time:
-> > > 
-> > >     Brought up 64 CPUs
-> > >     Total of 64 processors activated (289366.52 BogoMIPS).
-> > >     divide error: 0000 [#1] SMP 
-> > >     last sysfs file: 
-> > >     CPU 1 
-> > >     Modules linked in:
-> > > 
-> > >     Pid: 2, comm: kthreadd Not tainted 2.6.37-rc1-00027-gff8b16d #271 /ProLiant DL980 G7
-> > >     RIP: 0010:[<ffffffff81034645>]  [<ffffffff81034645>] select_task_rq_fair+0x62a/0x7a0
-> > > 
-> > > Complete dmesg below; let me know if you need more info.
-> > 
-> > Is the machine runs OK if you build a kernel with NR_CPUS=128 ?
-> 
-> Nope, it fails the same way with NR_CPUS=128.  Dmesg below.
+Hello,
 
-Sorry, just try 256 or 512, it seems you have a pretty big machine ?
+On 11/04/2010 03:33 PM, Marcus Meissner wrote:
+> I mean the kernel could hide it from uname, but lsb_release,
+> /etc/redhat-release, /etc/SuSE-release etc still exist and then you
+> can still use the fixed address list table inside your exploit. But an
+> exploits needs to have such a list, making it harder to write.
 
-8 nodes, but only nodes from 0-3 are populated.
+I do believe that making things more difficult to exploit helps.  Many
+people seem to think it only gives false sense of security tho.
 
+> I also briefly thought about kernel ASLR, but my knowledge of the kernel
+> loading is too limited whether this is even possible or at all useful.
 
+We already have relocatable kernel for kdump and IIRC it doesn't add
+runtime overhead, so putting the kernel at random address shouldn't be
+too difficult.  Not sure how useful that would be tho.
 
+Thanks.
+
+-- 
+tejun
