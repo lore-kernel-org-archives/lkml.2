@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751704Ab0KDR0Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 13:26:25 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:41583 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106Ab0KDR0W (ORCPT
+	id S1751848Ab0KDR3X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 13:29:23 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:56151 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751064Ab0KDR3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 13:26:22 -0400
-Date: Thu, 4 Nov 2010 13:26:13 -0400
-From: Kyle McMartin <kyle@mcmartin.ca>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, werner@suse.de,
-        alan@lxorguk.ukuu.org.uk, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com, Kyle McMartin <kyle@mcmartin.ca>,
-        Helge Deller <deller@gmx.de>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        linux-parisc@vger.kernel.org
-Subject: Re: [PATCH v2 2/5] parisc: cleanup console handling
-Message-ID: <20101104172613.GK8332@bombadil.infradead.org>
-References: <1288884024-23873-1-git-send-email-jslaby@suse.cz>
- <1288884024-23873-2-git-send-email-jslaby@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288884024-23873-2-git-send-email-jslaby@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 4 Nov 2010 13:29:21 -0400
+Date: Thu, 4 Nov 2010 10:28:00 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: lkml <linux-kernel@vger.kernel.org>,
+        torvalds <torvalds@linux-foundation.org>
+Cc: Richard Purdie <rpurdie@rpsys.net>, akpm <akpm@linux-foundation.org>,
+        Alessandro Zummo <a.zummo@towertech.it>
+Subject: [PATCH] leds-net5501: taints kernel, add license
+Message-Id: <20101104102800.6b1cc210.randy.dunlap@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 04, 2010 at 04:20:21PM +0100, Jiri Slaby wrote:
-> * use newly added for_each_console for iterating consoles
-> * add proper console locking
-> * do not initialize tmp twice
-> * no need to declare console_drivers, it's already done in console.h
-> 
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> Cc: Kyle McMartin <kyle@mcmartin.ca>
-> Cc: Helge Deller <deller@gmx.de>
-> Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-> Cc: linux-parisc@vger.kernel.org
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-This looks fine...
-Acked-by: Kyle McMartin <kyle@mcmartin.ca>
+Add MODULE_LICENSE() that matches file comments so that kernel
+is not tainted.
 
-I assume that since it depends on 1/5 you'd prefer to merge it with the
-rest?
+	leds_net5501: module license 'unspecified' taints kernel.
 
---Kyle
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ drivers/leds/leds-net5501.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+Alessandro, why does this module not have a module_exit() function?
+I.e., why can it not be unloaded?
+
+
+--- lnx-2637-rc1.orig/drivers/leds/leds-net5501.c
++++ lnx-2637-rc1/drivers/leds/leds-net5501.c
+@@ -92,3 +92,5 @@ unmap:
+ }
+ 
+ arch_initcall(soekris_init);
++
++MODULE_LICENSE("GPL");
