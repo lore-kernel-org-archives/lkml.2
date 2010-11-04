@@ -1,116 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751357Ab0KDEPQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 00:15:16 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:60115 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750873Ab0KDEPO convert rfc822-to-8bit (ORCPT
+	id S1751776Ab0KDEQu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 00:16:50 -0400
+Received: from bunsen.bytemark.co.uk ([80.68.81.6]:42096 "EHLO
+	bunsen.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911Ab0KDEQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 00:15:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=bEshElrFFyYnUDxMNvAQn9a7zW8Be+X/hhiQuWvA+WYfeDh6XnZ/z0GQq++Ys93av2
-         c01wRsbUwdd36C57y3rzvC+jAm5eNVWNj8gFvghTq6TC4nOVJR9zt1m3JdpJcu421aSS
-         FMIM36lybI3z+SNtk4mO/xMav8Zd2y9FXjYZU=
+	Thu, 4 Nov 2010 00:16:49 -0400
+Date: Thu, 4 Nov 2010 00:16:27 -0400
+From: "Emilio G. Cota" <cota@braap.org>
+To: Martyn Welch <martyn.welch@ge.com>
+Cc: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
+        devel@driverdev.osuosl.org,
+        Juan David Gonzalez Cobas <david.cobas@gmail.com>,
+        Bill Pemberton <wfp5p@virginia.edu>
+Subject: Re: [PATCH 27/30] staging/vme: rework the bus model
+Message-ID: <20101104041627.GD9037@flamenco.cs.columbia.edu>
+References: <1288055476-19438-1-git-send-email-cota@braap.org>
+ <1288055476-19438-28-git-send-email-cota@braap.org>
 MIME-Version: 1.0
-In-Reply-To: <4CD22627.2000607@redhat.com>
-References: <20101009224041.GA901@sepie.suse.cz>
-	<4CD1E232.30406@redhat.com>
-	<AANLkTimyh-k8gYwuNi6nZFp3oviQ33+M3fDRzZ+sJN9i@mail.gmail.com>
-	<4CD22627.2000607@redhat.com>
-Date: Thu, 4 Nov 2010 00:15:13 -0400
-Message-ID: <AANLkTi=Eb8k6gmeGqvC=Zbo2mj51oHcbCncZGt00u9Tx@mail.gmail.com>
-Subject: Re: REGRESSION: Re: [GIT] kconfig rc fixes
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Michal Marek <mmarek@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>, kyle@redhat.com,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linux Media Mailing List <linux-media@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288055476-19438-28-git-send-email-cota@braap.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Martyn,
 
-On Wed, Nov 3, 2010 at 11:19 PM, Mauro Carvalho Chehab
-<mchehab@redhat.com> wrote:
-> Em 03-11-2010 22:31, Arnaud Lacombe escreveu:
->> Hi,
->>
->> On Wed, Nov 3, 2010 at 6:29 PM, Mauro Carvalho Chehab
->> <mchehab@redhat.com> wrote:
->>> Em 09-10-2010 18:40, Michal Marek escreveu:
->>>>
->>>> Arnaud Lacombe (1):
->>>>       kconfig: delay symbol direct dependency initialization
->>>
->>> This patch generated a regression with V4L build. After applying it,
->>> some Kconfig dependencies that used to work with V4L Kconfig broke.
->>>
->> of course, but they were all-likely buggy. If a compiler version N
->> outputs a new legitimate warning because of a bug in the code, you do
->> not switch back to the previous version because the warning wasn't
->> there, you fix the code.
->>
->> That said, please point me to a false positive, eventually with a
->> minimal testcase, and I'll be happy to fix the issue.
->
-> Arnaud,
->
-> In the case of V4L and DVB drivers, what happens is that the same
-> USB (or PCI) bridge driver can be attached to lots of
-> different chipsets that do analog/digital/audio decoding/encoding.
->
-> A normal user won't need to open his USB TV stick just to see TV on it.
-> It just needs to select a bridge driver, and all possible options for encoders
-> and decoders are auto-selected.
->
-> If you're an advanced user (or are developing an embedded hardware), you
-> know exactly what are the components inside the board/stick. So, the
-> Kconfig allows to disable the automatic auto-selection, doing manual
-> selection.
->
-> The logic basically implements it, using Kconfig way, on a logic like:
->
->        auto = ask_user_if_ancillary_drivers_should_be_auto_selected();
->        driver_foo = ask_user_if_driver_foo_should_be_selected();
->        if (driver_foo && auto) {
->                select(bar1);
->                select(bar2);
->                select(bar3);
->                select(bar4);
->        }
-> ...
->        if (!auto) {
->                open_menu()
->                ask_user_if_bar1_should_be_selected();
->                ask_user_if_bar2_should_be_selected();
->                ask_user_if_bar3_should_be_selected();
->                ask_user_if_bar4_should_be_selected();
-> ...
->                close_menu()
->        }
->
-no, you are hijacking Kconfig for something "illegal". Note that this
-last word is not mine, it is the word used in the language
-description:
+Do you have any further comments on this patch?
+I quote below the commit message, inlining some comments since
+some messages didn't hit some of the recipients the first time.
 
-  Note:
-        select should be used with care. select will force
-        a symbol to a value without visiting the dependencies.
-        By abusing select you are able to select a symbol FOO even
-        if FOO depends on BAR that is not set.
-        In general use select only for non-visible symbols
-        (no prompts anywhere) and for symbols with no dependencies.
-        That will limit the usefulness but on the other hand avoid
-        the illegal configurations all over.
-        kconfig should one day warn about such things.
+On Mon, Oct 25, 2010 at 21:11:13 -0400, Emilio G. Cota wrote:
+> From: Emilio G. Cota <cota@braap.org>
+> 
+> The way in which VME devices and drivers are currently bound together
+> involves unnecessary contortions. Controlling a device with a VME driver
+> requires the following steps, in this order:
+(snip)
+> There are a few things I dislike about the above:
 
-I guess the last line will need to be dropped, as this day has come.
+> * installing drivers even before the bridges they need are present
+>   seems counter-intuitive and wrong.
 
- - Arnaud
+My mistake, this isn't true. As we've discussed already(*), binding
+happens both when a device is registered AND when a driver is registered.
+
+(*) http://lkml.org/lkml/2010/10/27/284
+
+> * a VME bus may need more than 32 devices--the relation to the 32 slots on
+>   a VME crate is artificial and confusing:
+(snip)
+Which translates into what I described here:
+http://lkml.org/lkml/2010/10/27/284
+
+And I resuscitate from that message the following:
+
+> Imagine the following situation:
+> 
+> - insmod vme_driver1.ko bus=0,0,0 slot=1,2,3
+> 
+> Then two days after I want to install another driver:
+> 
+> - insmod vme_driver2.ko bus=0,0,0 slot=X,Y,Z
+> 
+> Now X,Y,Z cannot be in (1,2,3), because those are understood
+> as physical slots, even if they're not (this is not VME64x)
+> 
+> So, anytime I need to install a device, I must know the slot
+> numbers of all other devices--even though there's no
+> physical meaning to it!
+
+In the model I proposed device id's ("slots") are unique
+to each driver. This way we can install drivers without
+caring whether or not other drivers have overlapping "slot" id's
+for their devices.
+
+> * .probe and .remove pass a pointer to a struct device representing a VME
+>   bridge, instead of representing the device to be added/removed.
+> 	* a bridge's module may be removed anytime and things do fall over;
+> 	  there is no refcounting at all and thus all drivers attached to
+> 	  the removed bus will oops.
+
+As discussed here no one is happy with the current state of affairs:
+http://lkml.org/lkml/2010/10/27/264
+
+Greg suggests that when a bridge is removed, all devices on top of it
+should go away. In my opinion that's the most convenient solution.
+
+This patch, however, does not allow a bridge to be removed unless all
+its devices are removed first. It's not as nice as what Greg proposes,
+but at least it's an improvement over what we've got now--it gets
+refcounting right, etc.
+
+After having inspected the USB core code I think it wouldn't be hard
+to go from this patch to a situation where a bridge can be removed
+anytime without the whole thing falling over. Before tackling that
+I'd like to hear your opinion.
+
+Thanks,
+
+		Emilio
+
