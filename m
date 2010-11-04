@@ -1,44 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755185Ab0KDKM2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 06:12:28 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60468 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754907Ab0KDKM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 06:12:26 -0400
-Message-ID: <4CD286E4.8070802@kernel.org>
-Date: Thu, 04 Nov 2010 11:11:48 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Marcus Meissner <meissner@suse.de>
-CC: linux-kernel@vger.kernel.org, jason.wessel@windriver.com,
-        fweisbec@gmail.com, mort@sgi.com, akpm@osdl.org, security@kernel.org
-Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of
- attacking
-References: <20101104100914.GC25118@suse.de>
-In-Reply-To: <20101104100914.GC25118@suse.de>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755314Ab0KDKNz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 06:13:55 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:45042 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754379Ab0KDKNx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 06:13:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=uz07Xm/DO3DcFXwxM95XMYyhKqnytbGa6nIoeS7ju8zokiiZjsVUDu5ZSLgsKXo7p3
+         1JYCR5spr/L9/08/tLX9HrwNXAJ+IjA3pts22yCklYJVDPdv9eHrvgY4wJnHPEt2ZWiV
+         DNY/nuHVxJ2eU10/S98uHtDsnQqmFL5cBHTEI=
+Subject: [PATCH] irq: better struct irqaction layout
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 04 Nov 2010 11:13:48 +0100
+Message-ID: <1288865628.2659.69.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 04 Nov 2010 10:11:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04/2010 11:09 AM, Marcus Meissner wrote:
-> Making /proc/kallsyms readable only for root makes it harder
-> for attackers to write generic kernel exploits by removing
-> one source of knowledge where things are in the kernel.
-> 
-> Signed-off-by: Marcus Meissner <meissner@suse.de>
+We currently use kmalloc-96 slab for struct irqaction allocations on
+64bit arches.
 
-I can't recall needing /proc/kallsyms when I wasn't root, so unless
-there's a compelling use case.
+This is unfortunate because of possible false sharing and two cache
+lines accesses.
 
-Acked-by: Tejun Heo <tj@kernel.org>
+Move 'name' and 'dir' fields at the end of the structure, and force a
+suitable alignement.
 
-Thanks.
+Hot path fields now use one cache line on x86_64.
 
--- 
-tejun
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+---
+ include/linux/interrupt.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index 79d0c4f..55e0d42 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -114,15 +114,15 @@ typedef irqreturn_t (*irq_handler_t)(int, void *);
+ struct irqaction {
+ 	irq_handler_t handler;
+ 	unsigned long flags;
+-	const char *name;
+ 	void *dev_id;
+ 	struct irqaction *next;
+ 	int irq;
+-	struct proc_dir_entry *dir;
+ 	irq_handler_t thread_fn;
+ 	struct task_struct *thread;
+ 	unsigned long thread_flags;
+-};
++	const char *name;
++	struct proc_dir_entry *dir;
++} ____cacheline_internodealigned_in_smp;
+ 
+ extern irqreturn_t no_action(int cpl, void *dev_id);
+ 
+
+
