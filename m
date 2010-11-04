@@ -1,391 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078Ab0KDPkR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 11:40:17 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:43046 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753062Ab0KDPkN (ORCPT
+	id S1753111Ab0KDPk3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 11:40:29 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:36753 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808Ab0KDPkZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 11:40:13 -0400
-From: Borislav Petkov <bp@amd64.org>
-To: <acme@infradead.org>, <fweisbec@gmail.com>, <mingo@elte.hu>,
-        <peterz@infradead.org>, <rostedt@goodmis.org>
-Cc: <linux-kernel@vger.kernel.org>, Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 20/20] ras: Add RAS daemon
-Date: Thu,  4 Nov 2010 16:36:56 +0100
-Message-Id: <1288885016-18295-21-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.3.1.50.g1e633
-In-Reply-To: <1288885016-18295-1-git-send-email-bp@amd64.org>
-References: <1288885016-18295-1-git-send-email-bp@amd64.org>
+	Thu, 4 Nov 2010 11:40:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=Dq0t5tzvIVko445B3If5Mz3/y5znwaX49YgbkQPHOoKCmL6IG0hnMaFzdIiBkL7t7W
+         nP2Rp50ejynw7LqMh8shdLeyhtfsJH4ZkMYXRFcelBzQVa61HvHpCL88EGD3MFpmEtxw
+         j+PejL24kh8LScpTuzXLrJzdiQ4tmtkoruoqI=
+MIME-Version: 1.0
+Date: Thu, 4 Nov 2010 16:40:21 +0100
+Message-ID: <AANLkTikCYjENib2zfz-rmAM2fZbZEzK-9jgL4D-b40xs@mail.gmail.com>
+Subject: [RFD] Perf generic context based exclusion/inclusion (was Re: [PATCH
+ 0/4] Finer granularity and task/cgroup irq time accounting)
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Venkatesh Pallipadi <venki@google.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Paul Menage <menage@google.com>, linux-kernel@vger.kernel.org,
+        Paul Turner <pjt@google.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+Le 24 août 2010 10:14, Ingo Molnar <mingo@elte.hu> a écrit :
+>
+> * Peter Zijlstra <peterz@infradead.org> wrote:
+>
+>> On Thu, 2010-07-22 at 19:12 -0700, Venkatesh Pallipadi wrote:
+>> > >
+>> > > Well, the task and cgroup information is there but what does it really
+>> > > tell me? As long as the irq & softirq time can be caused by any other
+>> > > process I don't see the value of this incorrect data point.
+>> > >
+>> >
+>> > Data point will be correct. How it gets used is a different qn. This
+>> > interface will be useful for Alert/Paranoid/Annoyed user/admin who
+>> > sees that the job exec_time is high but it is not doing any useful
+>> > work.
+>>
+>> I'm very sympathetic with Martin's POV. irq/softirq times per task
+>> don't really make sense. In the case you provide above the solution
+>> would be to subtract these times from the task execution time, not
+>> break it out. In that case he would see his task not do much, and end
+>> up with the same action list.
+>
+> Right, andthis connects to something Frederic sent a few RFC patches for
+> some time ago: finegrained irq/softirq perf stat support. If we do
+> something in this area we need a facility that enables both types of
+> statistics gathering.
+>
+> Frederic's model is based on exclusion - so you could do a perf stat run
+> that excluded softirq and hardirq execution from a workload's runtime.
+> It's nifty, as it allows the reduction of measurement noise. (IRQ and
+> softirq execution can be regarded as random noise added (or not added)
+> to execution times)
+>
+> Thanks,
+>
+>        Ingo
+>
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- tools/Makefile     |    4 +
- tools/ras/Makefile |   16 +++
- tools/ras/rasd.c   |  305 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 325 insertions(+), 0 deletions(-)
- create mode 100644 tools/ras/Makefile
- create mode 100644 tools/ras/rasd.c
 
-diff --git a/tools/Makefile b/tools/Makefile
-index 691f78b..360454c 100644
---- a/tools/Makefile
-+++ b/tools/Makefile
-@@ -37,6 +37,9 @@ export PERF_TOP_DIR
- perf: libparsevent lklib lkperflib .FORCE
- 	$(QUIET_SUBDIR0)perf/ $(QUIET_SUBDIR1)
- 
-+ras: libparsevent lklib lkperflib .FORCE
-+	$(QUIET_SUBDIR0)ras/ $(QUIET_SUBDIR1)
-+
- libparsevent: .FORCE
- 	$(QUIET_SUBDIR0)lib/trace/ $(QUIET_SUBDIR1)
- 
-@@ -51,5 +54,6 @@ clean:
- 	$(QUIET_SUBDIR0)lib/lk/ $(QUIET_SUBDIR1) clean
- 	$(QUIET_SUBDIR0)lib/perf/ $(QUIET_SUBDIR1) clean
- 	$(QUIET_SUBDIR0)perf/ $(QUIET_SUBDIR1) clean
-+	$(QUIET_SUBDIR0)ras/ $(QUIET_SUBDIR1) clean
- 
- .PHONY: clean .FORCE
-diff --git a/tools/ras/Makefile b/tools/ras/Makefile
-new file mode 100644
-index 0000000..370ae35
---- /dev/null
-+++ b/tools/ras/Makefile
-@@ -0,0 +1,16 @@
-+include ../scripts/Makefile.lib
-+
-+CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 -DNO_NEWT_SUPPORT $(EXTRA_WARNINGS) $(EXTRA_CFLAGS)
-+ALL_CFLAGS = $(CFLAGS) $(BASIC_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
-+ALL_LDFLAGS = $(LDFLAGS)
-+
-+RASLIBS=$(LIB_OUTPUT)libparsevent.a $(LIB_OUTPUT)lklib.a $(LIB_OUTPUT)lkperflib.a
-+
-+rasd: rasd.o
-+	$(QUIET_CC)$(CC) $(ALL_CFLAGS) -o $@ $^ $(RASLIBS)
-+
-+%.o: %.c
-+	$(QUIET_CC)$(CC) $(ALL_CFLAGS) -c $<
-+
-+clean:
-+	rm -rf *.o rasd
-diff --git a/tools/ras/rasd.c b/tools/ras/rasd.c
-new file mode 100644
-index 0000000..2b02742
---- /dev/null
-+++ b/tools/ras/rasd.c
-@@ -0,0 +1,305 @@
-+/*
-+ * Linux RAS daemon.
-+ *
-+ * Initial code reused from Linux Daemon Writing HOWTO
-+ */
-+
-+#include <errno.h>
-+#include <fcntl.h>
-+#include <stdio.h>
-+#include <stdint.h>
-+#include <stdlib.h>
-+#include <unistd.h>
-+#include <sys/stat.h>
-+#include <sys/mman.h>
-+#include <sys/types.h>
-+
-+#include <lk/util.h>
-+#include <lk/cpumap.h>
-+#include <lk/kernel.h>
-+#include <lk/debugfs.h>
-+#include <lk/compiler.h>
-+#include <perf/mmap.h>
-+#include <perf/util.h>
-+#include <trace/trace-event.h>
-+#include <trace/parse-events.h>
-+
-+#include "../../arch/x86/include/asm/mce.h"
-+
-+#define DBG(fmt, args...)	fprintf(stderr, "DBG %s: " fmt "\n", __func__, ##args)
-+
-+#define MMAP_PAGES	128
-+
-+#define PFX "rasd: "
-+
-+static int fds[MAX_NR_CPUS];
-+static struct mmap_data mmaps[MAX_NR_CPUS];
-+static struct event_format *mce_event;
-+static struct mce m;
-+
-+static int nr_cpus;
-+static unsigned int page_size;
-+static volatile int done = 0;
-+
-+static void sig_handler(int sig __used)
-+{
-+	done = 1;
-+}
-+
-+static void write_output(void *buf, size_t size)
-+{
-+	while (size) {
-+		int ret = write(STDOUT_FILENO, buf, size);
-+
-+		if (ret < 0)
-+			die("failed to write");
-+
-+		size -= ret;
-+		buf += ret;
-+	}
-+}
-+
-+static unsigned long long read_file(const char *file, void *buf)
-+{
-+	unsigned long long size = 0;
-+	int fd, r;
-+
-+	fd = open(file, O_RDONLY);
-+	if (fd < 0)
-+		die("Can't read '%s'", file);
-+
-+	do {
-+		r = read(fd, buf, BUFSIZ);
-+		if (r > 0)
-+			size += r;
-+	} while (r > 0);
-+
-+	close(fd);
-+
-+	return size;
-+}
-+
-+static void parse_mce_event(const char *event_name)
-+{
-+	struct stat st;
-+	char *format_path, *format_buf, *path;
-+	int fsize, err = 0;
-+
-+	path = get_tracing_file("events");
-+
-+	DBG("Got %s", path);
-+
-+	format_path = malloc_or_die(MAXPATHLEN + sizeof(event_name) + 10);
-+	sprintf(format_path, "%s/%s/format", path, event_name);
-+
-+	err = stat(format_path, &st);
-+	if (err < 0)
-+		die("accessing %s", format_path);
-+
-+	DBG("Format access %s ok", format_path);
-+
-+	fsize = get_filesize(format_path);
-+	DBG("Format file size: %d", fsize);
-+
-+	format_buf = malloc_or_die(fsize);
-+	if (!format_buf)
-+		die("allocating format buffer");
-+
-+	if (!read_file(format_path, format_buf))
-+		die("reading in format file");
-+
-+	DBG("Format file contents:\n%s", format_buf);
-+
-+	init_input_buf(format_buf, fsize);
-+
-+	mce_event = alloc_event();
-+	if (!mce_event)
-+		die("Cannot alloc mce_event");
-+
-+	mce_event->name = event_read_name();
-+	if (!mce_event->name)
-+		error("no event name");
-+
-+	mce_event->id = event_read_id();
-+	if (mce_event->id < 0)
-+		error(PFX "failed to read event id");
-+
-+	if (event_read_format(mce_event))
-+		die("parsing event");
-+
-+
-+	free(format_buf);
-+	free(format_path);
-+	free(path);
-+}
-+
-+static void fill_mce_data(void *vbuf, size_t buflen)
-+{
-+	struct format_field *field;
-+	char *buf = vbuf;
-+	u32 tp_len;
-+	unsigned i;
-+
-+	if (!buflen)
-+		return;
-+
-+	DBG("buflen %lu", buflen);
-+
-+	for (i = 0; i < buflen; i++) {
-+
-+		if (!(i & 0xf) && i)
-+			printf("\n");
-+
-+		printf("0x%2.2x ", *(unsigned char *)(buf + i));
-+	}
-+
-+	/* skip event header for now, u32 size inclusive */
-+	buf    += (sizeof(struct perf_event_header) + 4);
-+	buflen -= (sizeof(struct perf_event_header) + 4);
-+
-+	tp_len = *(u32 *)buf;
-+
-+	if (tp_len != buflen)
-+		warning("buffer size mismatch: %lu <-> %u (tp)\n", buflen, tp_len);
-+
-+	for (field = mce_event->format.fields; field; field = field->next) {
-+		if ((size_t)(field->offset + field->size) > buflen)
-+			warning("MCE buffer truncated? (off: %d <-> buflen: %lu)",
-+				field->offset, buflen);
-+
-+		DBG("field %s, offset: %d", field->name, field->offset);
-+
-+		if (!strncmp(field->name, "bank", 4))
-+			m.bank = *(u8 *)(buf + field->offset);
-+		else if (!strncmp(field->name, "status", 6))
-+			m.status = *(u64 *)(buf + field->offset);
-+		else if (!strncmp(field->name, "addr", 4))
-+			m.addr = *(u64 *)(buf + field->offset);
-+		else if (!strncmp(field->name, "misc", 4))
-+			m.misc = *(u64 *)(buf + field->offset);
-+		else if (!strncmp(field->name, "ip", 2))
-+			m.ip = *(u64 *)(buf + field->offset);
-+		else if (!strncmp(field->name, "cs", 2))
-+			m.cs = *(u8 *)(buf + field->offset);
-+		else if (!strncmp(field->name, "tsc", 3))
-+			m.tsc = *(u64 *)(buf + field->offset);
-+		else if (!strncmp(field->name, "cpu", 3))
-+			m.cpu = *(u8 *)(buf + field->offset);
-+		else
-+			DBG("skipping %s", field->name);
-+	}
-+}
-+
-+static int ras_init(void)
-+{
-+	const char *event_name = "mce/mce_record";
-+	int cpu;
-+
-+
-+	fprintf(stderr, PFX "Starting daemon.\n");
-+
-+	page_size = sysconf(_SC_PAGE_SIZE);
-+
-+	if (get_debugfs_mntpt()) {
-+		error("Cannot mount debugfs, exiting...");
-+		return 1;
-+	}
-+
-+	nr_cpus = read_cpu_map(NULL);
-+
-+	parse_mce_event(event_name);
-+	assert(event_name);
-+
-+	for (cpu = 0; cpu < nr_cpus; cpu++) {
-+		char dfs_path[MAXPATHLEN];
-+
-+		snprintf(dfs_path, MAXPATHLEN, "%s/%s%d",
-+			 debugfs_mntpt, event_name, cpu);
-+
-+		DBG("dfs_path: %s", dfs_path);
-+
-+		fds[cpu] = open(dfs_path, O_RDONLY, O_NONBLOCK);
-+		if (fds[cpu] < 0) {
-+			error("open perf event on cpu %d\n", cpu);
-+			return 1;
-+		} else
-+			DBG("cpu %d, fd %d", cpu, fds[cpu]);
-+	}
-+
-+	for (cpu = 0; cpu < nr_cpus; cpu++) {
-+		mmaps[cpu].prev = 0;
-+		mmaps[cpu].mask = MMAP_PAGES*page_size - 1;
-+		mmaps[cpu].base = mmap(NULL, (MMAP_PAGES + 1) * page_size,
-+				       PROT_READ, MAP_SHARED, fds[cpu], 0);
-+
-+		if (mmaps[cpu].base == MAP_FAILED) {
-+			error("failed to mmap with %d (%s)\n", errno, strerror(errno));
-+			return 1;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static void ras_exit(void)
-+{
-+	free(mce_event);
-+}
-+
-+int main(void)
-+{
-+	pid_t pid, sid;
-+
-+	pid = fork();
-+	if (pid < 0) {
-+		perror(PFX "Error forking daemon thread");
-+		exit(EXIT_FAILURE);
-+	}
-+
-+	/* parent can disappear now */
-+	if (pid > 0)
-+		exit(EXIT_SUCCESS);
-+
-+	umask(0);
-+
-+	/* TODO: open system logs */
-+
-+	sid = setsid();
-+	if (sid < 0) {
-+		perror(PFX "Error creating session");
-+		exit(EXIT_FAILURE);
-+	}
-+
-+	if (chdir("/") < 0) {
-+		perror(PFX "Error chdir to /");
-+		exit(EXIT_FAILURE);
-+	}
-+
-+	close(STDIN_FILENO);
-+/* 	close(STDOUT_FILENO); */
-+/*	close(STDERR_FILENO); */
-+
-+	if (ras_init())
-+		exit(EXIT_FAILURE);
-+
-+	signal(SIGCHLD, sig_handler);
-+	signal(SIGINT, sig_handler);
-+
-+	while(1) {
-+
-+		if (mmap_read_all(mmaps, nr_cpus, fill_mce_data)) {
-+			DBG("Read some mmapped data");
-+			DBG("MCE status: 0x%016llx", m.status);
-+		}
-+
-+		if (done)
-+			goto out;
-+
-+		sleep(30);
-+	}
-+
-+out:
-+	ras_exit();
-+	return 0;
-+
-+}
--- 
-1.7.3.1
+(Answering thousand years later)
 
+Concerning the softirq/hardirq filtering in perf, this is still
+something I want to do,
+but now I think we should do it differently, especially we should
+extend the idea of exclusion to the generic level.
+
+A "context" is a generic idea: this is something that starts and ends
+at specific events. It means this can be expressed with
+perf events, for example:
+
+- a context of "lock X held" starts when X is acquired and stops when
+X is released
+- a context of "irq" starts when we enter irq and ends when we exits irq.
+
+There are tons of other examples. And considering how much we can tune
+any perf event already (think about
+filters) and the variety of events flavour we have (static
+tracepoints, breakpoints, dyn probes), we can define very
+precise contexts and count whatever inside:
+
+- count cycles while we hold rq lock
+
+If you consider that events that delimit contexts can, themselves, run
+under exclusion/inclusion contexts, you can do
+complex things like in this scenario:
+
+- create a enter_irq event and a exit_irq events
+- create a lock_acquired and a lock_release event, make them
+counting/sampling only under enter_irq --- exit_irq above perf events
+based defined context
+- attach filter to these lock events, to only trigger if X is the lock name
+- create a cycles counting event, make it running under the
+lock_acquired -- lock_released above perf events based defined context
+
+The result is that you will only count cycles when we hold X under irq.
+
+I think this is definetely the direction we need to take. When the
+function tracers will be available as
+trace events, this could become intensely powerful (counting cycles
+inside some functions only, or if you hold lock X
+under function Y in softirq and.....).
+
+I'm just not sure yet about the interface, perhaps an ioctl to attach
+an event to another one
+through their fds and tell whether we want the event to enable or
+disable the counting/sampling
+on the other.
+We could have as much "enabler" or "disabler" as we want, or only one
+each, not sure yet.
+Or may be we want to create the abstraction of "contexts" using fds
+for them. Not sure.
+
+We probably also want an attr->enable_on_schedule.
+
+Anyway, I'll certainly work on that after the dwarf unwinding is good enough.
