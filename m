@@ -1,72 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556Ab0KDDJc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 23:09:32 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:42523 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751653Ab0KDDJa (ORCPT
+	id S1753116Ab0KDDMC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 23:12:02 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:37819 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752874Ab0KDDL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 23:09:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:in-reply-to:references:user-agent:date
-         :message-id:mime-version:content-type;
-        b=oi5jSOOLJ0bEcJQEdSKjqr3ho6DQI5QyC+i2IildAoVHHpKK7eaDvpIbpWcQSRg/Cj
-         ANJJwYzUCZ+LAaZIL/f2yhseU7ZrTZsRTEbZGsRmkNqhitlxvGQOq8PFK3zzOzYnhRHw
-         zXRmoA9zzPg16yHDMXZIKYfjxG1VWROIl4ejM=
-From: Ben Gamari <bgamari.foss@gmail.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: David Rientjes <rientjes@google.com>,
+	Wed, 3 Nov 2010 23:11:59 -0400
+Date: Wed, 3 Nov 2010 23:10:47 -0400 (EDT)
+From: caiqian@redhat.com
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Adam Litke <agl@us.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-mm\@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jesper Juhl <jj@chaosbits.net>, Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH] Add Kconfig option for default swappiness
-In-Reply-To: <20101102140119.GA8294@localhost>
-References: <1288668052-32036-1-git-send-email-bgamari.foss@gmail.com> <alpine.DEB.2.00.1011012030100.12298@chino.kir.corp.google.com> <87oca7evbo.fsf@gmail.com> <20101102140119.GA8294@localhost>
-User-Agent: Notmuch/0.3.1-158-g04cd99c (http://notmuchmail.org) Emacs/23.1.1 (x86_64-pc-linux-gnu)
-Date: Wed, 03 Nov 2010 23:09:27 -0400
-Message-ID: <87aalpbx94.fsf@gmail.com>
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>,
+        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Message-ID: <690735095.1385111288840247360.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <1562100965.1384941288839981384.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+Subject: Re: [PATCH 00 of 66] Transparent Hugepage Support #32
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.5.71]
+X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.21_GA_3150.RHEL4_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Nov 2010 22:01:20 +0800, Wu Fengguang <fengguang.wu@intel.com> wrote:
-> It's interesting to know what value you plan to use for your
-> desktop/server systems and the rationals (is it based on any
-> testing results?).
+There were some changes of behaviours with THP and KSM statistics demonstrated by this program, http://people.redhat.com/qcai/ksm01.c. 
 
-This is something that will likely require a great deal of research,
-thinking, and testing. I wish I could give you a better answer at the
-moment. I have read many opinions on this but have not seen enough
-evidence to suggest specific values. In the desktop case, it seems clear
-that the preferred value should be lower than the current default to
-preserve interactive performance (long latencies due to swapping is
-something that many desktop users complain about currently). I set
-swappiness to 10 on my own machines machines with good results, but mine
-is anything but a model case. I don't believe there is any direct need
-to touch the server kernel swappiness at the moment.
+There are 3 programs (A, B ,C) to allocate 128M memory each using KSM.
+A has memory content = 'c'.
+B has memory content = 'a'.
+C has memory content = 'a'.
+Then without THP,
+pages_shared = 2
+pages_sharing = 98285
+pages_sharing = 98292
+pages_unshared = 0
+pages_volatile = 17
+pages_to_scan = 98304
+sleep_millisecs = 0
+with THP,
+pages_shared is 2.
+pages_sharing is 18422.
+pages_unshared is 0.
+pages_volatile is 8.
 
-> And why it's easier to do it in kernel (hope it's not because of
-> trouble communicating with the user space packaging team).
+Later,
+A has memory content = 'c'
+B has memory content = 'b'
+C has memory content = 'a'.
+Then without THP,
+pages_shared = 3
+pages_sharing = 98296
+pages_unshared = 0
+pages_volatile = 5
+with THP,
+pages_shared = 3
+pages_sharing = 16358
+pages_unshared = 0
+pages_volatile = 23
 
-Fear not, this is certainly not the case. We would simply like to be
-able to keep this our kernel configuration self-contained. We already
-have separate packages for various kernel flavors with their own
-configurations. Allowing us to tune swappiness from the configuration
-would keep things much cleaner.
+Later,
+A has memory content = 'd'
+B has memory content = 'd'
+C has memory content = 'd'
+Then without THP,
+pages_shared = 1
+pages_sharing = 98274
+pages_unshared = 0
+pages_volatile = 29
+with THP,
+pages_shared = 1
+pages_sharing = 8668
+pages_unshared = 0
+pages_volatile = 35
 
-The other option would be to drop a file in /etc/sysctl.d from the
-kernel meta-package (e.g. linux-image-generic and
-linux-image-server). However, it would make little sense to do this
-without adding a dependency on procps to this package (although,
-admittedly, procps is in the default installation) which we would rather
-not do if possible. Furthermore, this spreads the kernel configuration
-across the system. In sum, it seems that configuring the default in the
-kernel itself is by far the most elegant way to proceed.
+Finally,
+A changes one page to 'e'
+Then without THP,
+pages_shared = 1
+pages_sharing = 98274
+pages_unshared = 1
+pages_volatile = 28
+with THP,
+pages_shared = 1
+pages_sharing = 8163
+pages_unshared = 1
+pages_volatile = 27
 
-Cheers,
+Are those differences for pages_sharing between with and without THP are expected?
 
-- Ben
+CAI Qian
