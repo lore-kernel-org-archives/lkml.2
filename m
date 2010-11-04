@@ -1,64 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181Ab0KDVfx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 17:35:53 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:51550 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752574Ab0KDVfv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 17:35:51 -0400
-To: jesse.brandeburg@intel.com
-Cc: "Tantilov, Emil S" <emil.s.tantilov@intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [E1000-devel] 2.6.36 abrupt total e1000e carrier loss (cured by reboot)
-References: <87ocaaszx1.fsf@spindle.srvr.nix>
-	<EA929A9653AAE14F841771FB1DE5A136602815A3C7@rrsmsx501.amr.corp.intel.com>
-	<87zktsskua.fsf@spindle.srvr.nix>
-	<1288837586.2835.3.camel@jbrandeb-mobl2>
-From: Nix <nix@esperi.org.uk>
-Emacs: ed  ::  20-megaton hydrogen bomb : firecracker
-Date: Thu, 04 Nov 2010 21:35:29 +0000
-In-Reply-To: <1288837586.2835.3.camel@jbrandeb-mobl2> (Jesse Brandeburg's message of "Wed, 03 Nov 2010 22:26:26 -0400")
-Message-ID: <87hbfwojq6.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) XEmacs/21.5-b29 (linux)
-MIME-Version: 1.0
+	id S1753203Ab0KDVgW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 17:36:22 -0400
+Received: from 1wt.eu ([62.212.114.60]:46911 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752574Ab0KDVgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 17:36:21 -0400
+Date: Thu, 4 Nov 2010 22:29:20 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Marcus Meissner <meissner@suse.de>, security@kernel.org, mort@sgi.com,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, fweisbec@gmail.com,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        jason.wessel@windriver.com, tj@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Security] [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of attacking
+Message-ID: <20101104212920.GA31256@1wt.eu>
+References: <20101104100914.GC25118@suse.de> <20101104114648.GA23381@elte.hu> <20101104122906.GH25118@suse.de> <20101104135802.GA31416@elte.hu> <20101104141104.GA31753@elte.hu> <20101104143322.GL25118@suse.de> <20101104190804.GA16099@elte.hu>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-DCC-STAT_FI_X86_64_VIRTUAL-Metrics: spindle 1245; Body=4 Fuz1=4 Fuz2=4
+Content-Disposition: inline
+In-Reply-To: <20101104190804.GA16099@elte.hu>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 Nov 2010, Jesse Brandeburg outgrape:
+On Thu, Nov 04, 2010 at 08:08:04PM +0100, Ingo Molnar wrote:
+> 
+> * Marcus Meissner <meissner@suse.de> wrote:
+> 
+> > > For example, on a Fedora testbox i have this version info:
+> > > 
+> > >   $ uname -r
+> > >   2.6.35.6-48.fc14.x86_64
+> > > 
+> > > Any attacker can download that rpm from:
+> > > 
+> > >   http://download.fedora.redhat.com/pub/fedora/linux/updates/14/x86_64/kernel-2.6.35.6-48.fc14.x86_64.rpm
+> > > 
+> > > And can extract the System.map from it, using rpm2cpio and cpio -i -d. That will 
+> > > include all the symbol addresses - without the attacker having any access to the 
+> > > System.map or /proc/kallsyms on this particular box.
+> > > 
+> > > I.e. on distro kernel installations (which comprise the _vast_ majority of our 
+> > > userbase) your patch brings little security benefits.
+> > > 
+> > > What i suggested in later parts of my mail might provide more security: to 
+> > > sandbox kernel version information from unprivileged user-space - if we decide 
+> > > that we want to sandbox kernel version information ...
+> > > 
+> > > That is a big if, because it takes a considerable amount of work. Would be worth 
+> > > trying it - but feel-good non-solutions that do not bring much improvement to 
+> > > the majority of users IMHO hinder such efforts.
+> > 
+> > Hiding the OS version is really quite hard I think.
+> 
+> Yes. Hard but it would be useful - especially if we start adding things like known 
+> exploit honeypots. Forcing attackers to probe the kernel by actually running a 
+> kernel exploit, and risking an alarm would be a very powerful security feature.
+> 
+> Removing version info will upset some tools/libraries that rely on kernel version 
+> information for quirks though.
 
-> On Mon, 2010-11-01 at 16:08 -0700, Nix wrote:
->> 03:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network
->> Connection
->
->> LnkCtl: ASPM L1 Enabled; RCB 64 bytes Disabled- Retrain- CommClk+
->>         ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
->
-> This is a problem, L0s and L1 don't work on these adapters, make sure
+Quite honnestly, it's the worst idea I've ever read to protect the kernel.
+Kernel version is needed at many places, when building some code which relies
+on presence of syscall X or Y depending on a version, etc... If our kernel is
+so buggy that we can only rely on its version to be kept secret, then we have
+already failed.
 
-Ah. That sounds like my problem then :) I must say spontaneous link loss
-is a rather nasty failure mode (I suspect the hardware simply forgets to
-save its state properly when powering down, am I right? So it comes up
-effectively turned off and uninitialized...)
+The kernel version should not be a secret, and anyway there are many ways to
+guess it. And judging by past exploits, some of them work on a wide variety
+of kernels so that's often pointless. It's just like when admins used to hide
+their product names from HTTP response headers, this did not stop exploits at
+all because there were always ways to guess the information.
 
-> The above could be responsible for your issue.  If you don't want to
-> disable ASPM system wide, then you could just make sure to run a recent
-> kernel with the ASPM patches, or get our e1000.sf.net e1000e driver and
-> try it, as it will work around the issue whether or not aspm is enabled.
+Also, keep in mind that the most info you'll hide from unprivileged users,
+the more you'll need root access for anything, which is a lot worse. On
+systems that are secured that way, there are sudoers for everyone to do
+anything (even ping). This becomes unmanageable and that opens even more
+flaws in the whole system. We'll be proud of saying that those are not
+kernel issues anymore but management issues but it's a bit easy to point
+the finger at the poor guy who tries to keep his system usable despite
+our efforts not to do so. And BTW, yes I *do* have access to such a system
+where sudo is required for many things and some flaws already give me root
+access.
 
-I was planning to simply split up CONFIG_PCIEASPM to allow me to turn
-it off for e1000e only, but this sounds a lot less kludgy. :)
+When you secure an environment too much, users build a sub-environment inside
+it with lower controls. It's common to see one user provide a complete tool
+suite to other users because nothing was installed for fear of opening a hole.
+But when you provide all the tools to everyone with you own account, it's just
+as if you were root. So that's just pushing the problem somewhere else.
 
-(For now, it's probably simplest to just turn ASPM off, as a quick grep
-of the kernel tree shows that that machine has no other hardware for
-which ASPM would do a blessed thing: in fact, there *is* no other
-hardware in 2.6.36 for which ASPM would do a blessed thing: so if the
-only workaround is to turn ASPM off for those adapters, for now I might
-as well just turn it off completely.)
+Focusing on ways to make the kernel more reliable when some information is
+known is more efficient than trying to hide that information and relying on
+this fact.
 
-Thanks for the advice!
+Willy
+
