@@ -1,78 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753073Ab0KDTvd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 15:51:33 -0400
-Received: from xenotime.net ([72.52.115.56]:53618 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752646Ab0KDTvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 15:51:32 -0400
-Date: Thu, 4 Nov 2010 12:51:25 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Mark Allyn <mark.a.allyn@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH 1/1] crypto: api.c: add comments to crypto_alg_lookup
- and crypto_alg_larval_lookup
-Message-Id: <20101104125125.ed177cf4.rdunlap@xenotime.net>
-In-Reply-To: <1288900188-19034-1-git-send-email-mark.a.allyn@intel.com>
-References: <1288900188-19034-1-git-send-email-mark.a.allyn@intel.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752783Ab0KDTx6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 15:53:58 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:43428 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751570Ab0KDTx4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 15:53:56 -0400
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: dave@linux.vnet.ibm.com, miklos@szeredi.hu, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, shenlinf@cn.ibm.com,
+        volobuev@us.ibm.com, mel@linux.vnet.ibm.com, dingc@cn.ibm.com,
+        lnxninja@us.ibm.com
+In-reply-to: <20101104164144.GI11602@random.random> (message from Andrea
+	Arcangeli on Thu, 4 Nov 2010 17:41:44 +0100)
+Subject: Re: Deadlocks with transparent huge pages and userspace fs daemons
+References: <1288817005.4235.11393.camel@nimitz> <20101104164144.GI11602@random.random>
+Message-Id: <E1PE5sG-0005Em-Qb@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Thu, 04 Nov 2010 20:53:28 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  4 Nov 2010 12:49:48 -0700 Mark Allyn wrote:
-
-> This is resubmitted due to errors in style
+On Thu, 4 Nov 2010, Andrea Arcangeli wrote:
+> On Wed, Nov 03, 2010 at 01:43:25PM -0700, Dave Hansen wrote:
+> > some IBM testers ran into some deadlocks.  It appears that the
+> > khugepaged process is trying to migrate one of a filesystem daemon's
+> > pages while khugepaged holds the daemon's mmap_sem for write.
 > 
-> Signed-off-by: Mark A. Allyn <mark.a.allyn@intel.com>
-> ---
->  crypto/api.c |   15 +++++++++++++++
->  1 files changed, 15 insertions(+), 0 deletions(-)
-> 
-> diff --git a/crypto/api.c b/crypto/api.c
-> index 033a714..0314083 100644
-> --- a/crypto/api.c
-> +++ b/crypto/api.c
-> @@ -193,6 +193,13 @@ static struct crypto_alg *crypto_larval_wait(struct crypto_alg *alg)
->  	return alg;
->  }
->  
-> +/**
-> + * crypto_alg_lookup() - return crypto_alg structure for an algorithm
-> + * @name:	text string containing name of algorithm
-> + * @type:	crypto type defined in include/linux/crypto.h
-> + * @mask:	mask of allowable crypto types (use or'd list
-> + *		of types as defined in include/linux/crypto.h)
-> + */
->  struct crypto_alg *crypto_alg_lookup(const char *name, u32 type, u32 mask)
->  {
->  	struct crypto_alg *alg;
-> @@ -205,6 +212,14 @@ struct crypto_alg *crypto_alg_lookup(const char *name, u32 type, u32 mask)
->  }
->  EXPORT_SYMBOL_GPL(crypto_alg_lookup);
->  
-> +/**
-> + * crypto_alg_larval_lookup() - returns large value (larval) crypto_alg
-> + *	structure for an algorithm
+> Correct. So now I'm wondering what happens if some library of this
+> daemon happens to execute a munmap that calls split_vma and allocates
+> memory while holding the mmap_sem, and the memory allocation triggers
+> I/O that will have to be executed by the daemon.
 
-That function name still does not match the actual name below.
+mmap_sem is not really relevant here(*), page lock is.  And in vmscan.c,
+there's not a single blocking lock_page().
 
+Also, as I mentioned, fuse does writeback in a special way: it copies dirty
+pages to non-page cache pages which don't interact in any way with
+reclaim.  Fuse writeback is instantaneous from the reclaim PoV.
 
-> + * @name:	text string containing name of algorithm
-> + * @type:	crypto type defined in include/linux/crypto.h
-> + * @mask:	mask of allowable crypto types (use or'd list
-> + *		of types as defined in include/linux/crypto.h)
-> + */
->  struct crypto_alg *crypto_larval_lookup(const char *name, u32 type, u32 mask)
->  {
->  	struct crypto_alg *alg;
-> -- 
+> I think this could be fixed in userland, this applies to openvpn too
+> if used as nfs backend.
 
+How?
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Thanks,
+Miklos
+
+(*) In the original gpfs trace it is relevant but only because the
+page migration is triggered by khugepaged.  In the reproduced example
+the page migration is triggered directly by an allocation.  Since page
+migration does blocking lock_page(), there's really no way to avoid a
+deadlock in that case.
