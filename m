@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974Ab0KDCZN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 22:25:13 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:39492 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287Ab0KDCZK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 22:25:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=VtaLaIiVzEMRe0PGEkthhXywnjjkmN/fHrIf3RCLAlcdMnoe7J2RCu+lOAwhPa0nKN
-         cVhkbYicIimDOUb3CMdCU0x3/JLGcmGx1JFn5A201/KkjVT8IcJgzfyM207xqTxZr080
-         T+WBLgUNV210/HWzmnAEeqTZAr3Sc8yMq8cPU=
-MIME-Version: 1.0
-In-Reply-To: <20101103162015.99475a0b.randy.dunlap@oracle.com>
-References: <AANLkTimr3rW67HxgOUyReEW8dmmSsd4b7-Ns57mXzS1w@mail.gmail.com>
-	<20101103162015.99475a0b.randy.dunlap@oracle.com>
-Date: Thu, 4 Nov 2010 10:25:09 +0800
-Message-ID: <AANLkTin5PphTtZaesEU3U0PA8NJv=Jmis8yQF6b=KbeG@mail.gmail.com>
-Subject: Re: Linux 2.6.37-rc1 (scsi_debug: list corruption)
-From: Xiaotian Feng <xtfeng@gmail.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        scsi <linux-scsi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752228Ab0KDC01 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 22:26:27 -0400
+Received: from mga09.intel.com ([134.134.136.24]:63743 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751287Ab0KDC0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 22:26:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,292,1286175600"; 
+   d="scan'208";a="674108008"
+Subject: Re: [E1000-devel] 2.6.36 abrupt total e1000e carrier loss (cured
+ by reboot)
+From: "\"Brandeburg, Jesse\"" <jesse.brandeburg@intel.com>
+To: Nix <nix@esperi.org.uk>
+Cc: "Tantilov, Emil S" <emil.s.tantilov@intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <87zktsskua.fsf@spindle.srvr.nix>
+References: <87ocaaszx1.fsf@spindle.srvr.nix>
+	 <EA929A9653AAE14F841771FB1DE5A136602815A3C7@rrsmsx501.amr.corp.intel.com>
+	 <87zktsskua.fsf@spindle.srvr.nix>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 03 Nov 2010 22:26:26 -0400
+Message-ID: <1288837586.2835.3.camel@jbrandeb-mobl2>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 4, 2010 at 7:20 AM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
->
->
-> [  102.555847] calling  scsi_debug_init+0x0/0x704 [scsi_debug] @ 3337
-> Nov  3 16:06:12 control kernel: [  102.555847] calling  scsi_deb[  102.622974] scsi_debug: host protection
-> [  102.627513] scsi4 : scsi_debug, version 1.82 [20100324], dev_size_mb=8, opts=0x0
-> Nov  3 16:06:13 control kernel: [  102.639095] initcall scsi_debug_init+0x0/0x704 [scsi_debug] returned 0 after 75039 usecs
-> Nov  3 16:06:13 [  102.651072] ------------[ cut here ]------------
-> [  102.657373] WARNING: at /local/linsrc/lnx-2637-rc1/lib/list_debug.c:26 __list_add+0x4d/0xa5()
-> [  102.666012] Hardware name: OptiPlex GX620
-> [  102.671396] list_add corruption. next->prev should be prev (ffffffff81ae5e50), but was 6b6b6b6b6b6b6b6b. (next=ffff88006c880590).
+On Mon, 2010-11-01 at 16:08 -0700, Nix wrote:
+> 03:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network
+> Connection
 
-This might be related with net rds percpu_counter corruption. Does
-following patch fix your issue?
-http://patchwork.ozlabs.org/patch/69939/
+> LnkCtl: ASPM L1 Enabled; RCB 64 bytes Disabled- Retrain- CommClk+
+>         ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
 
->
-> ---
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+This is a problem, L0s and L1 don't work on these adapters, make sure
+that the patches to the driver to disable ASPM upon load are in place
+and working (by the ASPM value above indicating ASPM Disabled)
+
+The above could be responsible for your issue.  If you don't want to
+disable ASPM system wide, then you could just make sure to run a recent
+kernel with the ASPM patches, or get our e1000.sf.net e1000e driver and
+try it, as it will work around the issue whether or not aspm is enabled.
+
+
+Jesse
+
+
