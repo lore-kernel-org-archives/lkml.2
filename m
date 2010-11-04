@@ -1,72 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877Ab0KDUB7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 16:01:59 -0400
-Received: from moh2-ve3.go2.pl ([193.17.41.208]:36945 "EHLO moh2-ve3.go2.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752385Ab0KDUB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 16:01:57 -0400
-Message-ID: <4CD3112D.2010700@o2.pl>
-Date: Thu, 04 Nov 2010 21:01:49 +0100
-From: Maciej Szmigiero <mhej@o2.pl>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.11) Gecko/20101024 Lightning/1.0b3pre Thunderbird/3.1.5
-MIME-Version: 1.0
-To: Ben Nizette <bn@niasdigital.com>
-CC: Jonathan Cameron <jic23@cam.ac.uk>, johnpol@2ka.mipt.ru,
-        linux-kernel@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>
-Subject: Re: [W1] a driver for DS2405 chip
-References: <4CC9E2A5.2010400@o2.pl> <4CCEB42F.8000102@cam.ac.uk> <4CD06C22.20204@o2.pl> <6B41915B-1667-4CA1-A73A-45B043ED8C11@niasdigital.com>
-In-Reply-To: <6B41915B-1667-4CA1-A73A-45B043ED8C11@niasdigital.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752641Ab0KDUSZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 16:18:25 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:36304 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752045Ab0KDUSX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 16:18:23 -0400
+Date: Thu, 4 Nov 2010 21:18:07 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: guenter.roeck@ericsson.com
+Cc: Ben Dooks <ben-linux@fluff.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC/PATCH] i2c/busses: Add support for Diolan U2C-12 USB/I2C 
+ adapter
+Message-ID: <20101104211807.07a55104@endymion.delvare>
+In-Reply-To: <1288888902.22931.165.camel@groeck-laptop>
+References: <1288830389-13873-1-git-send-email-guenter.roeck@ericsson.com>
+	<20101104134314.7928cd85@endymion.delvare>
+	<1288888902.22931.165.camel@groeck-laptop>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-O2-Trust: 2, 63
-X-O2-SPF: neutral
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 03.11.2010 11:54, Ben Nizette pisze:
-> 
-> On 03/11/2010, at 6:53 AM, Maciej Szmigiero wrote:
-> 
->> W dniu 01.11.2010 13:35, Jonathan Cameron pisze:
->>> On 10/28/10 21:52, Maciej Szmigiero wrote:
->>>> [W1] a driver for DS2405 chip
->>>>
->>>> This is a driver for DS2405 1-wire single-channel addressable switch / PIO.
->>>> DS2405 can also work as single-channel binary remote sensor.
->>> Perhaps handle this as a gpio chip? (be it a fairly limited one)
->>> To my mind it would make it more generally useful...
->>
->> I think the GPIO infrastructure is meant for on-system GPIOs, where 1-wire devices are mostly 
->> used for remote data acquisition.
-> 
-> Nope!  The contents of drivers/gpio is split roughly 50/50 between on- and off-chip gpio expanders. 
-> 
->> That's probably why w1_therm (for 1-wire thermometers) is not integrated with HWMON subsystem.
-> 
-> Don't know why this is but kinda sounds like it should be looked at more closely - conceptually 1-W is just another bus like, eg, SPI.
-> 
-> 	--Ben.
+Hi Guenter,
 
+On Thu, 4 Nov 2010 09:41:42 -0700, Guenter Roeck wrote:
+> On Thu, 2010-11-04 at 08:43 -0400, Jean Delvare wrote:
+> > I'm also unsure what is the point of having such a large buffer when
+> > the largest block you ever transfer in practice is 5 bytes?
+>
+> I took that from the Diolan code. They always use a 257 byte temp
+> buffer, since that is the maximum data size sent by the adapter. 
+> You are right, I should not really need that since I don't send any long
+> commands. Ultimate reason is to account for possible adapter errors, if
+> it replies (or tries to reply) with more bytes than expected. Pretty
+> much just playing safe.
 
-Looking at GPIO subsystem I think it's not a best solution for this device. One reason is that GPIOs are
-identified by integer which is either #defined by platform (as Documentation/gpio.txt says) or assigned randomly.
+Which commands are they using, which require such a large buffer? In
+your driver, bytes are all processed one by one, which is certainly not
+good performance-wise. If there is a way to read or write mode than one
+byte at a time, this would be worth a try.
 
-First approach obviously doesn't fit, as I'm yet to find anybody using ds2405 for anything platform-related.
-Second leads to problems in locating particular device (numbers will depend on order of detection/plugging).
-In contrast with that, 1W subsystem provides clear and unique identification for every device as it appears under
-its hardware address.
+> > (...)
+> > BTW, I'm not sure why you don't use the original buffer directly?
+> > memcpy is bad performance-wise.
+>
+> To account for the possibility that the adapter returns more bytes than
+> I am expecting. Sure, that would be a bug, but I wanted to play safe.
 
-In addition to that the chip removal code (gpiochip_remove() function) does not sleep when removal fails due
-to chip being in use, returning EBUSY instead. 
-This leads to inefficient unplugging (like trying to remove chip in loop hoping that finally somebody releases it).
-Probably this loop will also have to check if device reappeared, so the driver doesn't try to register new instance of chip
-while there is still one in existence.
-Note that Documentation/gpio.txt says "Removing a GPIO controller should be rare; use gpiochip_remove() when it is unavoidable".
-Characteristics of long W1 buses cause devices to disappear and reappear from time to time so it won't be a "rare" operation here.
+Hmm, OK, that makes sense.
 
-And all this added complexity for what? - to replace two tiny attributes under device sysfs directory?
+> > (...)
+> > Should be -EPROTO according to Documentation/i2c/fault-codes.
+>
+> Ok. Note that I got that from i2c-algo-bit.c.
 
-Maciej Szmigiero
+I would welcome a patch fixing this.
+
+> > > (...)
+> > > +static u32 usb_func(struct i2c_adapter *a)
+> > > +{
+> > > +     return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL |
+> > > +         I2C_FUNC_SMBUS_READ_BLOCK_DATA;
+> > 
+> > Odd indentation/alignment.
+>
+> Seems to be exactly what other drivers do, so I am a bit at loss here.
+
+Really? Using 4 spaces for indentation is wrong. Either use a tab, or
+align using 7 spaces.
+
+> > (...)
+> > You are abusing algo_data here. You are supposed to use
+> > i2c_get/set_adapdata() instead. algo_data is only there for providing
+> > platform specific implementation details to generic i2c algorithms such
+> > as i2c-algo-bit.
+>
+> Copied from i2c-tiny-usb.c. I didn't really think about it. Fixed.
+
+I take patches ;)
+
+-- 
+Jean Delvare
