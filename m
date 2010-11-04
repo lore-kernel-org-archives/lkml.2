@@ -1,89 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab0KDEpQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 00:45:16 -0400
-Received: from [120.204.251.227] ([120.204.251.227]:41242 "EHLO
-	LC-SHMAIL-01.SHANGHAI.LEADCORETECH.COM" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751300Ab0KDEpP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 00:45:15 -0400
-Subject: Re: Re:[PATCH v2]oom-kill: CAP_SYS_RESOURCE should get bonus
-From: "Figo.zhang" <zhangtianfei@leadcoretech.com>
-To: David Rientjes <rientjes@google.com>
-Cc: figo zhang <figo1802@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@osdl.org>
-In-Reply-To: <alpine.DEB.2.00.1011031952110.28251@chino.kir.corp.google.com>
-References: <1288662213.10103.2.camel@localhost.localdomain>
-	 <1288827804.2725.0.camel@localhost.localdomain>
-	 <alpine.DEB.2.00.1011031646110.7830@chino.kir.corp.google.com>
-	 <AANLkTimjfmLzr_9+Sf4gk0xGkFjffQ1VcCnwmCXA88R8@mail.gmail.com>
-	 <1288834737.2124.11.camel@myhost>
-	 <alpine.DEB.2.00.1011031847450.21550@chino.kir.corp.google.com>
-	 <1288836733.2124.18.camel@myhost>
-	 <alpine.DEB.2.00.1011031952110.28251@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 04 Nov 2010 12:42:10 +0800
-Message-ID: <1288845730.2102.11.camel@myhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.0 
+	id S1753502Ab0KDFF3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 01:05:29 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:49453 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750828Ab0KDFFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 01:05:25 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Dominik Brodowski <linux@dominikbrodowski.net>
+Subject: Re: [linux-pm] [GIT PULL] One more power management fix for 2.6.37
+Date: Thu, 4 Nov 2010 06:04:05 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+References: <201010292358.27975.rjw@sisk.pl> <AANLkTikrDoKDWPMtSjJ0EjKXO7ddQZPkZ5ZvwoivkbnZ@mail.gmail.com> <20101103211855.GA29721@isilmar-3.linta.de>
+In-Reply-To: <20101103211855.GA29721@isilmar-3.linta.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 04 Nov 2010 04:45:11.0125 (UTC) FILETIME=[1045B850:01CB7BDB]
+Message-Id: <201011040604.05183.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-03 at 19:54 -0700, David Rientjes wrote:
-> On Thu, 4 Nov 2010, Figo.zhang wrote:
-> 
-> > In your new heuristic, you also get CAP_SYS_RESOURCE to protection.
-> > see fs/proc/base.c, line 1167:
-> > 	if (oom_score_adj < task->signal->oom_score_adj &&
-> > 			!capable(CAP_SYS_RESOURCE)) {
-> > 		err = -EACCES;
-> > 		goto err_sighand;
-> > 	}
-> 
-> That's unchanged from the old behavior with oom_adj.
-> 
-> > so i want to protect some process like normal process not
-> > CAP_SYS_RESOUCE, i set a small oom_score_adj , if new oom_score_adj is
-> > small than now and it is not limited resource, it will not adjust, that
-> > seems not right?
+On Wednesday, November 03, 2010, Dominik Brodowski wrote:
+> > There's apparently an ordering problem with dpm_list_mtx and
+> > socket->skt_mutex. Lockdep details appended.
 > > 
+> > Dominik, Rafael? What's the proper locking order here, and
+> > how do we fix this?
 > 
-> Tasks without CAP_SYS_RESOURCE cannot lower their own oom_score_adj, 
-
-CAP_SYS_RESOURCE == 1 means without resource limits just like a
-superuser,
-CAP_SYS_RESOURCE == 0 means hold resource limits, like normal user,
-right?
-
-a new lower oom_score_adj will protect the process, right?
-
-Tasks without CAP_SYS_RESOURCE, means that it is not a superuser, why
-user canot protect it by oom_score_adj?
-
-like i want to protect my program such as gnome-terminal which is
-without CAP_SYS_RESOURCE (have resource limits), 
-
-[figo@myhost ~]$ ps -ax | grep gnome-ter
-Warning: bad ps syntax, perhaps a bogus '-'? See
-http://procps.sf.net/faq.html
- 2280 ?        Sl     0:01 gnome-terminal
- 8839 pts/0    S+     0:00 grep gnome-ter
-[figo@myhost ~]$ cat /proc/2280/oom_adj 
-3
-[figo@myhost ~]$ echo -17 >  /proc/2280/oom_adj 
-bash: echo: write error: Permission denied
-[figo@myhost ~]$ 
-
-so, i canot protect my program.
-
-
-> otherwise it can trivially kill other tasks.  They can, however, increase 
-> their own oom_score_adj so the oom killer prefers to kill it first.
+> Thanks for noting this; let's see:
 > 
-> I think you may be confused: CAP_SYS_RESOURCE override resource limits.
+> - We add a PCMCIA device holding skt_mutex, therefore we have the ordering
+>   (1) skt_mutex -> (2) dpm_list_mtx
+> 
+> - If we're suspending, dpm_list_mtx is held, but we need to acquire
+>   skt_mutex as we modify some data being protected by skt_mutex
+>   (1) dpm_list_mtx -> (2) skt_mutex
+> 
+> Rafael, any idea on how to solve this? How do other subsystems handle such
+> an issue? Do they call device_add() with no locks held at all?
 
+They usually do from what I can tell.
+
+Also only a few of them implement the ->suspend_noirq() callback, which is the
+one executed under dpm_list_mtx.
+
+What exactly is protected by skt_mutex ?
+
+Rafael
 
