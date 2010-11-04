@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752027Ab0KDPFV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 11:05:21 -0400
-Received: from mga11.intel.com ([192.55.52.93]:34817 "EHLO mga11.intel.com"
+	id S1751985Ab0KDPFs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 11:05:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4031 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751534Ab0KDPFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 11:05:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,296,1286175600"; 
-   d="scan'208";a="854152488"
-Date: Thu, 4 Nov 2010 11:03:52 -0400
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: dsterba@suse.cz, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andiry Xu <andiry.xu@amd.com>, Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH] USB: xhci: Use GFP_ATOMIC under spin_lock
-Message-ID: <20101104150352.GD2968@xanatos>
-References: <20101102224718.GB27513@ds.suse.cz>
- <4CD11AF7.309@suse.cz>
+	id S1751475Ab0KDPFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 11:05:47 -0400
+Date: Thu, 4 Nov 2010 11:04:00 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: device-mapper development <dm-devel@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, jack@suse.cz, leochen@broadcom.com,
+        heiko.carstens@de.ibm.com, adilger.kernel@dilger.ca,
+        konishi.ryusuke@lab.ntt.co.jp, shaggy@linux.vnet.ibm.com,
+        drbd-dev@lists.linbit.com, joel.becker@oracle.com, hch@infradead.org,
+        aelder@sgi.com, mfasheh@suse.com, joern@logfs.org,
+        reiserfs-devel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        swhiteho@redhat.com, chris.mason@oracle.com, axboe@kernel.dk,
+        tytso@mit.edu, sbranden@broadcom.com, petero2@telia.com,
+        linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 4/5] block: make blkdev_get/put() handle exclusive access
+Message-ID: <20101104150400.GA32504@redhat.com>
+References: <1288628129-12811-1-git-send-email-tj@kernel.org>
+ <1288628129-12811-5-git-send-email-tj@kernel.org>
+ <20101103161059.GA13621@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CD11AF7.309@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101103161059.GA13621@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 09:19:03AM +0100, Jiri Slaby wrote:
-> On 11/02/2010 11:47 PM, David Sterba wrote:
-> > coccinelle check scripts/coccinelle/locks/call_kern.cocci found that
-> > in drivers/usb/host/xhci.c an allocation with GFP_KERNEL is done
-> > with locks held:
+On Wed, Nov 03 2010 at 12:10pm -0400,
+Christoph Hellwig <hch@infradead.org> wrote:
+
+> On Mon, Nov 01, 2010 at 05:15:28PM +0100, Tejun Heo wrote:
+> > * blkdev_get() is extended to include exclusive access management.
+> >   @holder argument is added and, if is @FMODE_EXCL specified, it will
+> >   gain exclusive access atomically w.r.t. other exclusive accesses.
 > > 
-> > xhci_resume
-> >   spin_lock_irq(xhci->lock)
-> >     xhci_setup_msix
-> >       kmalloc(GFP_KERNEL)
-> > 
-> > Change it to GFP_ATOMIC.
+> > * blkdev_put() is similarly extended.  It now takes @mode argument and
+> >   if @FMODE_EXCL is set, it releases an exclusive access.  Also, when
+> >   the last exclusive claim is released, the holder/slave symlinks are
+> >   removed automatically.
 > 
-> Hi, I already reported that [1] and this is not enough. There are other
-> sleepy calls like request_irq inside...
-> 
-> [1] http://lkml.org/lkml/2010/10/23/17
+> Could we get rid of FMODE_EXCL and just make a non-NULL holder field
+> mean to open it exlusively (and pass a holder to the blkdev_put to
+> release it)?
 
-Andiry is looking into this.  Andiry, perhaps you don't need to take the
-xHCI spinlock in xhci_resume()?  If that function is being called
-because the PCI device is being resumed, you know nothing else is going
-to touch the xHCI host controller.  (Except maybe the BIOS, but it isn't
-going to respect xhci->lock at all.)  The USB core certainly won't touch
-the host controller until it's resumed.  Maybe we could get an interrupt
-with a port status change, but I think it's unlikely...
+I agree that the need for a FMODE_EXCL flag is awkward.  Christoph's
+proposed change should clean things up nicely.
 
-Alan, can you think of any reason the xHCI driver would need to grab its
-host controller spinlock on PCI resume?
+Other than that, for the DM bits:
 
-Sarah Sharp
+Acked-by: Mike Snitzer <snitzer@redhat.com>
