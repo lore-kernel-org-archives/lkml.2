@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754735Ab0KDFnC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 01:43:02 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:39266 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754559Ab0KDFm7 (ORCPT
+	id S1754798Ab0KDFp4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 01:45:56 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:34899 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754187Ab0KDFpy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 01:42:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=J2Nc41Zi04Lzc3wnfcjvxPySuxiqw5fHdD1bOTEFyZVwbmRNmpcCiOg6xYtDABE7J2
-         PRvr4V5IuVLQALopEYajyfzPXxTCBA4GIzY4VZi0J/gHA3xXKNWbq85hTn3ct740HxWB
-         PSVhLMrYvb9+tAeEk7DZW4Yr1PrWqjnJksmv8=
-Subject: Re: [RFC 4/4]x86: avoid tlbstate lock if no enough cpus
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>, "hpa@zytor.com" <hpa@zytor.com>
-In-Reply-To: <1288848079.23014.131.camel@sli10-conroe>
-References: <1288766668.23014.117.camel@sli10-conroe>
-	 <1288767580.2467.636.camel@edumazet-laptop>
-	 <1288767995.23014.120.camel@sli10-conroe>
-	 <1288768330.2467.660.camel@edumazet-laptop>
-	 <1288768795.23014.123.camel@sli10-conroe>
-	 <1288769123.2467.681.camel@edumazet-laptop>
-	 <1288769486.2467.690.camel@edumazet-laptop>
-	 <1288773716.23014.124.camel@sli10-conroe>
-	 <1288775282.2511.9.camel@edumazet-laptop>
-	 <1288848079.23014.131.camel@sli10-conroe>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 04 Nov 2010 06:42:46 +0100
-Message-ID: <1288849366.2718.42.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Thu, 4 Nov 2010 01:45:54 -0400
+From: "Arce, Abraham" <x0066660@ti.com>
+To: Naveen Kumar GADDIPATI <naveen.gaddipati@stericsson.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Linus WALLEIJ <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        Greg KH <greg@kroah.com>
+Date: Thu, 4 Nov 2010 00:45:45 -0500
+Subject: RE: [PATCHv1] staging: Synaptics RMI4 touchpad driver support
+Thread-Topic: [PATCHv1] staging: Synaptics RMI4 touchpad driver support
+Thread-Index: Act7jIPRAEQHCY5NSnuvbzsiadSGKgADqlZgABGgFXAAADhhgA==
+Message-ID: <27F9C60D11D683428E133F85D2BB4A530468A82CF3@dlee03.ent.ti.com>
+References: <1288699725-14405-1-git-send-email-naveen.gaddipati@stericsson.com>
+ <20101102140337.GC9387@kroah.com> <4CD01CD8.3090206@stericsson.com>
+ <20101102154029.GH11778@core.coreip.homeip.net>
+ <20101103181058.GE7441@kroah.com>
+ <20101103190752.GA4552@core.coreip.homeip.net>
+ <20101103191958.GA9912@kroah.com>
+ <27F9C60D11D683428E133F85D2BB4A530468A82B1A@dlee03.ent.ti.com>
+ <81C3A93C17462B4BBD7E272753C105791945AAD82C@EXDCVYMBSTM005.EQ1STM.local>
+In-Reply-To: <81C3A93C17462B4BBD7E272753C105791945AAD82C@EXDCVYMBSTM005.EQ1STM.local>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 04 novembre 2010 à 13:21 +0800, Shaohua Li a écrit :
-> On Wed, 2010-11-03 at 17:08 +0800, Eric Dumazet wrote:
-> > Le mercredi 03 novembre 2010 à 16:41 +0800, Shaohua Li a écrit :
-> > 
-> > > yes, this is ok. we might need avoid some cpu hotplug race too. I'll
-> > > post a new patch later.
-> > > 
-> > > 
-> > 
-> > Hmm, maybe only set the variable "must take the lock", never unset it.
-> I followed your suggestions to use nr_cpu_ids, it should be good enough.
+Hi Naveen, Dmitry,
+
+> From: Naveen Kumar GADDIPATI [mailto:naveen.gaddipati@stericsson.com]
+> 
+> Hi Arce,
+> 
+> I'm also the GPIO pin for interrupt with request threaded irq .
+> I'm passing the irq_type from the platform data.
+> Which irq_type are you using for your platform?
 > 
 
-Yes, unfortunately not on HP machines, because of their tendency to have
-holes in CPU numberings :)
+I am using the following flags
 
-This can probably can improved later.
+  IRQF_DISABLED | IRQF_TRIGGER_LOW | IRQF_TRIGGER_FALLING
 
-Thanks
+Should I get rid of the first one, IRQF_DISABLED?
 
-> Thanks,
-> Shaohua
-> 
-> 
-> This one isn't related to previous patch. If online cpus are below
-> NUM_INVALIDATE_TLB_VECTORS, we don't need the lock. The comments
-> in the code declares we don't need the check, but a hot lock still
-> needs an atomic operation and expensive, so add the check here.
-> 
-> Uses nr_cpu_ids here as suggested by Eric Dumazet.
-> 
-> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-> ---
+  IRQF_DISABLED - keep irqs disabled when calling the action handler
 
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-
-
+Best Regards
+Abraham
 
