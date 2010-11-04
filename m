@@ -1,133 +1,318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753111Ab0KDPk3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 11:40:29 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:36753 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752808Ab0KDPkZ convert rfc822-to-8bit (ORCPT
+	id S1752863Ab0KDPjg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 11:39:36 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:41989 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752830Ab0KDPj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 11:40:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Dq0t5tzvIVko445B3If5Mz3/y5znwaX49YgbkQPHOoKCmL6IG0hnMaFzdIiBkL7t7W
-         nP2Rp50ejynw7LqMh8shdLeyhtfsJH4ZkMYXRFcelBzQVa61HvHpCL88EGD3MFpmEtxw
-         j+PejL24kh8LScpTuzXLrJzdiQ4tmtkoruoqI=
-MIME-Version: 1.0
-Date: Thu, 4 Nov 2010 16:40:21 +0100
-Message-ID: <AANLkTikCYjENib2zfz-rmAM2fZbZEzK-9jgL4D-b40xs@mail.gmail.com>
-Subject: [RFD] Perf generic context based exclusion/inclusion (was Re: [PATCH
- 0/4] Finer granularity and task/cgroup irq time accounting)
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Venkatesh Pallipadi <venki@google.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Paul Menage <menage@google.com>, linux-kernel@vger.kernel.org,
-        Paul Turner <pjt@google.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 4 Nov 2010 11:39:29 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: <acme@infradead.org>, <fweisbec@gmail.com>, <mingo@elte.hu>,
+        <peterz@infradead.org>, <rostedt@goodmis.org>
+Cc: <linux-kernel@vger.kernel.org>, Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH 11/20] perf: Move rbtree to library
+Date: Thu,  4 Nov 2010 16:36:47 +0100
+Message-Id: <1288885016-18295-12-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.3.1.50.g1e633
+In-Reply-To: <1288885016-18295-1-git-send-email-bp@amd64.org>
+References: <1288885016-18295-1-git-send-email-bp@amd64.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 24 août 2010 10:14, Ingo Molnar <mingo@elte.hu> a écrit :
->
-> * Peter Zijlstra <peterz@infradead.org> wrote:
->
->> On Thu, 2010-07-22 at 19:12 -0700, Venkatesh Pallipadi wrote:
->> > >
->> > > Well, the task and cgroup information is there but what does it really
->> > > tell me? As long as the irq & softirq time can be caused by any other
->> > > process I don't see the value of this incorrect data point.
->> > >
->> >
->> > Data point will be correct. How it gets used is a different qn. This
->> > interface will be useful for Alert/Paranoid/Annoyed user/admin who
->> > sees that the job exec_time is high but it is not doing any useful
->> > work.
->>
->> I'm very sympathetic with Martin's POV. irq/softirq times per task
->> don't really make sense. In the case you provide above the solution
->> would be to subtract these times from the task execution time, not
->> break it out. In that case he would see his task not do much, and end
->> up with the same action list.
->
-> Right, andthis connects to something Frederic sent a few RFC patches for
-> some time ago: finegrained irq/softirq perf stat support. If we do
-> something in this area we need a facility that enables both types of
-> statistics gathering.
->
-> Frederic's model is based on exclusion - so you could do a perf stat run
-> that excluded softirq and hardirq execution from a workload's runtime.
-> It's nifty, as it allows the reduction of measurement noise. (IRQ and
-> softirq execution can be regarded as random noise added (or not added)
-> to execution times)
->
-> Thanks,
->
->        Ingo
->
+From: Borislav Petkov <borislav.petkov@amd.com>
 
+This is generic code anyway and will be needed by other utils so move it
+to a generic library.
 
-(Answering thousand years later)
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ tools/lib/lk/Makefile                  |    5 +++++
+ tools/lib/lk/rbtree.h                  |    1 +
+ tools/perf/Makefile                    |    6 ------
+ tools/perf/builtin-annotate.c          |    2 +-
+ tools/perf/builtin-kmem.c              |    2 +-
+ tools/perf/builtin-report.c            |    2 +-
+ tools/perf/builtin-timechart.c         |    2 +-
+ tools/perf/builtin-top.c               |    2 +-
+ tools/perf/util/callchain.h            |    2 +-
+ tools/perf/util/include/linux/rbtree.h |    1 -
+ tools/perf/util/map.h                  |    2 +-
+ tools/perf/util/session.h              |    2 +-
+ tools/perf/util/sort.h                 |    2 +-
+ tools/perf/util/strlist.h              |    2 +-
+ tools/perf/util/symbol.h               |    2 +-
+ tools/perf/util/thread.h               |    2 +-
+ tools/perf/util/ui/browser.c           |    2 +-
+ tools/perf/util/ui/browsers/hists.c    |    2 +-
+ 18 files changed, 20 insertions(+), 21 deletions(-)
+ create mode 100644 tools/lib/lk/rbtree.h
+ delete mode 100644 tools/perf/util/include/linux/rbtree.h
 
-Concerning the softirq/hardirq filtering in perf, this is still
-something I want to do,
-but now I think we should do it differently, especially we should
-extend the idea of exclusion to the generic level.
+diff --git a/tools/lib/lk/Makefile b/tools/lib/lk/Makefile
+index 985214a..32cf118 100644
+--- a/tools/lib/lk/Makefile
++++ b/tools/lib/lk/Makefile
+@@ -8,12 +8,15 @@ LIB_H += debugfs.h
+ LIB_H += util.h
+ LIB_H += types.h
+ LIB_H += cpumap.h
++LIB_H += ../../../include/linux/rbtree.h
++LIB_H += rbtree.h
+ 
+ LIB_OBJS += debugfs.o
+ LIB_OBJS += usage.o
+ LIB_OBJS += util.o
+ LIB_OBJS += cpumap.o
+ LIB_OBJS += ctype.o
++LIB_OBJS += rbtree.o
+ 
+ LIBFILE = $(LIB_OUTPUT)lklib.a
+ 
+@@ -29,6 +32,8 @@ $(LIBFILE): $(LIB_OBJS)
+ 
+ $(LIB_OBJS): $(LIB_H)
+ 
++rbtree.o: ../../../lib/rbtree.c
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -I../../../include $<
+ %.o: %.c
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
+ %.s: %.c
+diff --git a/tools/lib/lk/rbtree.h b/tools/lib/lk/rbtree.h
+new file mode 100644
+index 0000000..965901d
+--- /dev/null
++++ b/tools/lib/lk/rbtree.h
+@@ -0,0 +1 @@
++#include "../../../include/linux/rbtree.h"
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 6d06417..2c82537 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -331,7 +331,6 @@ LIB_FILE=$(OUTPUT)libperf.a
+ EXTRA_LIB_FILES=$(LIB_OUTPUT)libparsevent.a $(LIB_OUTPUT)lklib.a $(LIB_OUTPUT)lkperflib.a
+ 
+ LIB_H += ../../include/linux/perf_event.h
+-LIB_H += ../../include/linux/rbtree.h
+ LIB_H += ../../include/linux/list.h
+ LIB_H += ../../include/linux/hash.h
+ LIB_H += ../../include/linux/stringify.h
+@@ -344,7 +343,6 @@ LIB_H += util/include/linux/list.h
+ LIB_H += util/include/linux/module.h
+ LIB_H += util/include/linux/poison.h
+ LIB_H += util/include/linux/prefetch.h
+-LIB_H += util/include/linux/rbtree.h
+ LIB_H += util/include/linux/string.h
+ LIB_H += util/include/linux/types.h
+ LIB_H += util/include/asm/asm-offsets.h
+@@ -398,7 +396,6 @@ LIB_OBJS += $(OUTPUT)util/levenshtein.o
+ LIB_OBJS += $(OUTPUT)util/parse-options.o
+ LIB_OBJS += $(OUTPUT)util/parse-events.o
+ LIB_OBJS += $(OUTPUT)util/path.o
+-LIB_OBJS += $(OUTPUT)util/rbtree.o
+ LIB_OBJS += $(OUTPUT)util/bitmap.o
+ LIB_OBJS += $(OUTPUT)util/hweight.o
+ LIB_OBJS += $(OUTPUT)util/run-command.o
+@@ -958,9 +955,6 @@ $(OUTPUT)util/ui/browsers/hists.o: util/ui/browsers/hists.c $(OUTPUT)PERF-CFLAGS
+ $(OUTPUT)util/ui/browsers/map.o: util/ui/browsers/map.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
+ 
+-$(OUTPUT)util/rbtree.o: ../../lib/rbtree.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
+-
+ $(OUTPUT)util/scripting-engines/trace-event-perl.o: util/scripting-engines/trace-event-perl.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow $<
+ 
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 19f2751..7f9983b 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -12,7 +12,7 @@
+ #include "util/color.h"
+ #include <linux/list.h>
+ #include "util/cache.h"
+-#include <linux/rbtree.h>
++#include <lk/rbtree.h>
+ #include "util/symbol.h"
+ 
+ #include "perf.h"
+diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
+index 95901eb..f157a9c 100644
+--- a/tools/perf/builtin-kmem.c
++++ b/tools/perf/builtin-kmem.c
+@@ -13,7 +13,7 @@
+ 
+ #include "util/debug.h"
+ 
+-#include <linux/rbtree.h>
++#include <lk/rbtree.h>
+ 
+ struct alloc_stat;
+ typedef int (*sort_fn_t)(struct alloc_stat *, struct alloc_stat *);
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index f8564f9..76e6967 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -12,7 +12,7 @@
+ #include "util/color.h"
+ #include <linux/list.h>
+ #include "util/cache.h"
+-#include <linux/rbtree.h>
++#include <lk/rbtree.h>
+ #include "util/symbol.h"
+ #include "util/callchain.h"
+ #include "util/strlist.h"
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index fe79fc6..aa9e4fc 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -19,7 +19,7 @@
+ #include "util/color.h"
+ #include <linux/list.h>
+ #include "util/cache.h"
+-#include <linux/rbtree.h>
++#include <lk/rbtree.h>
+ #include "util/symbol.h"
+ #include "util/callchain.h"
+ #include "util/strlist.h"
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 773676f..3727a5c 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -53,7 +53,7 @@
+ #include <lk/cpumap.h>
+ #include <perf/mmap.h>
+ 
+-#include <linux/rbtree.h>
++#include <lk/rbtree.h>
+ #include <linux/unistd.h>
+ #include <linux/types.h>
+ 
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index 6de4313..e0d0dfb 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -3,7 +3,7 @@
+ 
+ #include "../perf.h"
+ #include <linux/list.h>
+-#include <linux/rbtree.h>
++#include <lk/rbtree.h>
+ #include "event.h"
+ #include "symbol.h"
+ 
+diff --git a/tools/perf/util/include/linux/rbtree.h b/tools/perf/util/include/linux/rbtree.h
+deleted file mode 100644
+index 7a243a1..0000000
+--- a/tools/perf/util/include/linux/rbtree.h
++++ /dev/null
+@@ -1 +0,0 @@
+-#include "../../../../include/linux/rbtree.h"
+diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+index 729469e..4219466 100644
+--- a/tools/perf/util/map.h
++++ b/tools/perf/util/map.h
+@@ -3,7 +3,7 @@
+ 
+ #include <linux/compiler.h>
+ #include <linux/list.h>
+-#include <linux/rbtree.h>
++#include <lk/rbtree.h>
+ #include <stdio.h>
+ #include <stdbool.h>
+ #include <lk/types.h>
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 9fa0fc2..6f2af58 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -6,7 +6,7 @@
+ #include "header.h"
+ #include "symbol.h"
+ #include "thread.h"
+-#include <linux/rbtree.h>
++#include <lk/rbtree.h>
+ #include "../../../include/linux/perf_event.h"
+ 
+ struct sample_queue;
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 0c68709..4c015e9 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -7,7 +7,7 @@
+ #include "color.h"
+ #include <linux/list.h>
+ #include "cache.h"
+-#include <linux/rbtree.h>
++#include <lk/rbtree.h>
+ #include "symbol.h"
+ #include "string.h"
+ #include "callchain.h"
+diff --git a/tools/perf/util/strlist.h b/tools/perf/util/strlist.h
+index 3ba8390..649eae3 100644
+--- a/tools/perf/util/strlist.h
++++ b/tools/perf/util/strlist.h
+@@ -1,7 +1,7 @@
+ #ifndef __PERF_STRLIST_H
+ #define __PERF_STRLIST_H
+ 
+-#include <linux/rbtree.h>
++#include <lk/rbtree.h>
+ #include <stdbool.h>
+ 
+ struct str_node {
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index ea95c27..adc7211 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -6,7 +6,7 @@
+ #include <stdint.h>
+ #include "map.h"
+ #include <linux/list.h>
+-#include <linux/rbtree.h>
++#include <lk/rbtree.h>
+ #include <stdio.h>
+ 
+ #ifdef HAVE_CPLUS_DEMANGLE
+diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
+index 688500f..1a70f60 100644
+--- a/tools/perf/util/thread.h
++++ b/tools/perf/util/thread.h
+@@ -1,7 +1,7 @@
+ #ifndef __PERF_THREAD_H
+ #define __PERF_THREAD_H
+ 
+-#include <linux/rbtree.h>
++#include <lk/rbtree.h>
+ #include <unistd.h>
+ #include "symbol.h"
+ 
+diff --git a/tools/perf/util/ui/browser.c b/tools/perf/util/ui/browser.c
+index 66f2d58..638a545 100644
+--- a/tools/perf/util/ui/browser.c
++++ b/tools/perf/util/ui/browser.c
+@@ -12,7 +12,7 @@
+ #endif
+ #include <slang.h>
+ #include <linux/list.h>
+-#include <linux/rbtree.h>
++#include <lk/rbtree.h>
+ #include <stdlib.h>
+ #include <sys/ttydefaults.h>
+ #include "browser.h"
+diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
+index 6866aa4..1d4ee98 100644
+--- a/tools/perf/util/ui/browsers/hists.c
++++ b/tools/perf/util/ui/browsers/hists.c
+@@ -5,7 +5,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <newt.h>
+-#include <linux/rbtree.h>
++#include <lk/rbtree.h>
+ 
+ #include "../../hist.h"
+ #include "../../pstack.h"
+-- 
+1.7.3.1
 
-A "context" is a generic idea: this is something that starts and ends
-at specific events. It means this can be expressed with
-perf events, for example:
-
-- a context of "lock X held" starts when X is acquired and stops when
-X is released
-- a context of "irq" starts when we enter irq and ends when we exits irq.
-
-There are tons of other examples. And considering how much we can tune
-any perf event already (think about
-filters) and the variety of events flavour we have (static
-tracepoints, breakpoints, dyn probes), we can define very
-precise contexts and count whatever inside:
-
-- count cycles while we hold rq lock
-
-If you consider that events that delimit contexts can, themselves, run
-under exclusion/inclusion contexts, you can do
-complex things like in this scenario:
-
-- create a enter_irq event and a exit_irq events
-- create a lock_acquired and a lock_release event, make them
-counting/sampling only under enter_irq --- exit_irq above perf events
-based defined context
-- attach filter to these lock events, to only trigger if X is the lock name
-- create a cycles counting event, make it running under the
-lock_acquired -- lock_released above perf events based defined context
-
-The result is that you will only count cycles when we hold X under irq.
-
-I think this is definetely the direction we need to take. When the
-function tracers will be available as
-trace events, this could become intensely powerful (counting cycles
-inside some functions only, or if you hold lock X
-under function Y in softirq and.....).
-
-I'm just not sure yet about the interface, perhaps an ioctl to attach
-an event to another one
-through their fds and tell whether we want the event to enable or
-disable the counting/sampling
-on the other.
-We could have as much "enabler" or "disabler" as we want, or only one
-each, not sure yet.
-Or may be we want to create the abstraction of "contexts" using fds
-for them. Not sure.
-
-We probably also want an attr->enable_on_schedule.
-
-Anyway, I'll certainly work on that after the dwarf unwinding is good enough.
