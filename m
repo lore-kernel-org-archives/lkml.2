@@ -1,103 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219Ab0KDOvA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 10:51:00 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:52187 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752121Ab0KDOu6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 10:50:58 -0400
-Date: Thu, 4 Nov 2010 10:50:57 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Dominik Brodowski <linux@dominikbrodowski.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [linux-pm] [GIT PULL] One more power management fix for 2.6.37
-In-Reply-To: <201011041424.44215.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1011041045350.2522-100000@netrider.rowland.org>
+	id S1752027Ab0KDPFV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 11:05:21 -0400
+Received: from mga11.intel.com ([192.55.52.93]:34817 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751534Ab0KDPFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 11:05:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,296,1286175600"; 
+   d="scan'208";a="854152488"
+Date: Thu, 4 Nov 2010 11:03:52 -0400
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: dsterba@suse.cz, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andiry Xu <andiry.xu@amd.com>, Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH] USB: xhci: Use GFP_ATOMIC under spin_lock
+Message-ID: <20101104150352.GD2968@xanatos>
+References: <20101102224718.GB27513@ds.suse.cz>
+ <4CD11AF7.309@suse.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CD11AF7.309@suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Nov 2010, Rafael J. Wysocki wrote:
-
-> OK, so I think we can relax the locking in dpm_[suspend/resume]_noirq() to
-> avoid executing callbacks under dpm_list_mtx, like in the (untested) patch
-> below.
+On Wed, Nov 03, 2010 at 09:19:03AM +0100, Jiri Slaby wrote:
+> On 11/02/2010 11:47 PM, David Sterba wrote:
+> > coccinelle check scripts/coccinelle/locks/call_kern.cocci found that
+> > in drivers/usb/host/xhci.c an allocation with GFP_KERNEL is done
+> > with locks held:
+> > 
+> > xhci_resume
+> >   spin_lock_irq(xhci->lock)
+> >     xhci_setup_msix
+> >       kmalloc(GFP_KERNEL)
+> > 
+> > Change it to GFP_ATOMIC.
 > 
-> Alan, do you see any immediate problem with that?
+> Hi, I already reported that [1] and this is not enough. There are other
+> sleepy calls like request_irq inside...
 > 
-> Rafael
-> 
-> ---
->  drivers/base/power/main.c |   17 ++++++++++++++++-
->  1 file changed, 16 insertions(+), 1 deletion(-)
-> 
-> Index: linux-2.6/drivers/base/power/main.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/base/power/main.c
-> +++ linux-2.6/drivers/base/power/main.c
-> @@ -480,15 +480,23 @@ void dpm_resume_noirq(pm_message_t state
->  
->  	mutex_lock(&dpm_list_mtx);
->  	transition_started = false;
-> -	list_for_each_entry(dev, &dpm_list, power.entry)
-> +	list_for_each_entry(dev, &dpm_list, power.entry) {
-> +		get_device(dev);
->  		if (dev->power.status > DPM_OFF) {
->  			int error;
->  
->  			dev->power.status = DPM_OFF;
-> +
-> +			mutex_unlock(&dpm_list_mtx);
-> +
->  			error = device_resume_noirq(dev, state);
-> +
-> +			mutex_lock(&dpm_list_mtx);
->  			if (error)
->  				pm_dev_err(dev, state, " early", error);
->  		}
-> +		put_device(dev);
-> +	}
->  	mutex_unlock(&dpm_list_mtx);
->  	dpm_show_time(starttime, state, "early");
->  	resume_device_irqs();
-> @@ -796,12 +804,19 @@ int dpm_suspend_noirq(pm_message_t state
->  	suspend_device_irqs();
->  	mutex_lock(&dpm_list_mtx);
->  	list_for_each_entry_reverse(dev, &dpm_list, power.entry) {
-> +		get_device(dev);
-> +		mutex_unlock(&dpm_list_mtx);
-> +
->  		error = device_suspend_noirq(dev, state);
-> +
-> +		mutex_lock(&dpm_list_mtx);
->  		if (error) {
->  			pm_dev_err(dev, state, " late", error);
-> +			put_device(dev);
->  			break;
->  		}
->  		dev->power.status = DPM_OFF_IRQ;
-> +		put_device(dev);
->  	}
->  	mutex_unlock(&dpm_list_mtx);
->  	if (error)
+> [1] http://lkml.org/lkml/2010/10/23/17
 
-This won't work if the callback tries to unregister the device, but of
-course the old code wouldn't work in that case either.  We should
-document this requirement.  It means that your get_device and
-put_device calls aren't needed.
+Andiry is looking into this.  Andiry, perhaps you don't need to take the
+xHCI spinlock in xhci_resume()?  If that function is being called
+because the PCI device is being resumed, you know nothing else is going
+to touch the xHCI host controller.  (Except maybe the BIOS, but it isn't
+going to respect xhci->lock at all.)  The USB core certainly won't touch
+the host controller until it's resumed.  Maybe we could get an interrupt
+with a port status change, but I think it's unlikely...
 
-Aside from that I don't see any problems.  In principle there shouldn't 
-be any other processes running at this time that would want to access 
-either the device or the dpm_list.  Maybe this means the socket locking 
-isn't needed in the pcmcia late-suspend and early-resume routines, 
-which would be a simpler solution.
+Alan, can you think of any reason the xHCI driver would need to grab its
+host controller spinlock on PCI resume?
 
-Alan Stern
-
+Sarah Sharp
