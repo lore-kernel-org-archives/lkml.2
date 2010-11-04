@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279Ab0KDVyz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 17:54:55 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:27084 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752340Ab0KDVyw (ORCPT
+	id S1753274Ab0KDWC7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 18:02:59 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34809 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752429Ab0KDWC5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 17:54:52 -0400
-Date: Thu, 4 Nov 2010 22:43:56 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Christoph Lameter <cl@linux.com>
-cc: Joe Perches <joe@perches.com>, jovi zhang <bookjovi@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Minchan Kim <minchan.kim@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Paul Menage <menage@google.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org
-Subject: Re: [PATCH] cgroup: Avoid a memset by using vzalloc
-In-Reply-To: <alpine.DEB.2.00.1011031108260.11625@router.home>
-Message-ID: <alpine.LNX.2.00.1011042240340.15856@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1010302333130.1572@swampdragon.chaosbits.net>  <AANLkTi=nMU3ezNFD8LKBhJxr6CmW6-qHY_Mo3HRt6Os0@mail.gmail.com>  <20101031173336.GA28141@balbir.in.ibm.com>  <alpine.LNX.2.00.1011010639410.31190@swampdragon.chaosbits.net> 
- <alpine.DEB.2.00.1011030937580.10599@router.home>  <AANLkTinhAQ7mNQWtjWCOWEHHwgUf+BynMM7jnVBMG32-@mail.gmail.com> <1288799284.15729.27.camel@Joe-Laptop> <alpine.DEB.2.00.1011031108260.11625@router.home>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Thu, 4 Nov 2010 18:02:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=QouqBG3tVijQBmceXSCnHhRyo38zFnev6Tp8R8fLRF4hDTvYVzh5cbqogvfbxwCCl0
+         dqbael4o4hCfV9IXTP9Nx4eWffp4NJLFyXMpIUn2cu9Qw2IkUxwDubW5nJzU3C3RVSyD
+         voHRk8aHoPiKKr4NE7WXsG6Jct58SiLRF0H3M=
+Message-ID: <4CD32D8B.2080709@gmail.com>
+Date: Thu, 04 Nov 2010 23:02:51 +0100
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Kyle McMartin <kyle@mcmartin.ca>
+CC: Jiri Slaby <jslaby@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        werner@suse.de, alan@lxorguk.ukuu.org.uk, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, Helge Deller <deller@gmx.de>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        linux-parisc@vger.kernel.org
+Subject: Re: [PATCH v2 2/5] parisc: cleanup console handling
+References: <1288884024-23873-1-git-send-email-jslaby@suse.cz> <1288884024-23873-2-git-send-email-jslaby@suse.cz> <20101104172613.GK8332@bombadil.infradead.org>
+In-Reply-To: <20101104172613.GK8332@bombadil.infradead.org>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Nov 2010, Christoph Lameter wrote:
+On 11/04/2010 06:26 PM, Kyle McMartin wrote:
+> On Thu, Nov 04, 2010 at 04:20:21PM +0100, Jiri Slaby wrote:
+>> * use newly added for_each_console for iterating consoles
+>> * add proper console locking
+>> * do not initialize tmp twice
+>> * no need to declare console_drivers, it's already done in console.h
+>>
+>> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+>> Cc: Kyle McMartin <kyle@mcmartin.ca>
+>> Cc: Helge Deller <deller@gmx.de>
+>> Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
+>> Cc: linux-parisc@vger.kernel.org
+> 
+> This looks fine...
+> Acked-by: Kyle McMartin <kyle@mcmartin.ca>
+> 
+> I assume that since it depends on 1/5 you'd prefer to merge it with the
+> rest?
 
-> On Wed, 3 Nov 2010, Joe Perches wrote:
-> 
-> > On Wed, 2010-11-03 at 23:20 +0800, jovi zhang wrote:
-> > > On Wed, Nov 3, 2010 at 10:38 PM, Christoph Lameter <cl@linux.com> wrote:
-> > > > On Mon, 1 Nov 2010, Jesper Juhl wrote:
-> > > >
-> > > >> On Sun, 31 Oct 2010, Balbir Singh wrote:
-> > > >
-> > > >> > > There are so many placed need vzalloc.
-> > > >> > > Thanks, Jesper.
-> > > >
-> > > >
-> > > > Could we avoid this painful exercise with a "semantic patch"?
-> >
-> > There's an existing cocci kmalloc/memset script.
-> 
-> I have it in
-> /usr/share/doc/coccinelle/examples/janitorings/kzalloc-orig.cocci.gz
-> 
-> (Ubuntu coccinelle package)
-> 
-> > Perhaps this is good enough?
-> >
-> > cp scripts/coccinelle/api/alloc/kzalloc-simple.cocci scripts/coccinelle/api/alloc/vzalloc-simple.cocci
-> > sed -i -e 's/kmalloc/vmalloc/g' -e 's/kzalloc/vzalloc/g' scripts/coccinelle/api/alloc/vzalloc-simple.cocci
-> 
-> Not sure if that is the same script but certainly a good start. Try it and
-> see if it catches all the locations that you know of?
-> 
+Yeah, I would like to, with ACKs from relevant people.
 
-I'm aware of coccinelle, but I've never used it and it looks like it'll 
-take more than just a few hours to learn, so I'm sticking with 
-bash+egrep+manual inspection for now until I get a bit more time on my 
-hands to learn coccinelle/spatch.
-
-I assume that not using spatch is not going to be an obstacle to patches 
-such as this one getting merged...?
-
-
+thanks,
 -- 
-Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-Plain text mails only, please      http://www.expita.com/nomime.html
-Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
-
+js
