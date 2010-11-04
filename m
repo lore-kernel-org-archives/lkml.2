@@ -1,63 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755061Ab0KDF7G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 01:59:06 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:60807 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754863Ab0KDF7D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 01:59:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:user-agent:date:message-id:mime-version
-         :content-type;
-        b=X305k+/EA7VMMsLjWnYLvKSbGN8KE403eoOtQrMiunuM8Gwx7idmBbRe/nwQJ5g3uW
-         vM8SAq3xld7KI26Vuik1W6CNFyJT1XSF+cjyJwXAXI7aPJ4OLkm8mAgUVH24yrLlTi1C
-         giyIzd11vWl8emrX4GcUO2pSWLCv1CAEwy41g=
-From: Ben Gamari <bgamari.foss@gmail.com>
-To: linux-kernel@vger.kernel.org, rsync@lists.samba.org, linux-mm@kvack.org
-Subject: fadvise DONTNEED implementation (or lack thereof)
-User-Agent: Notmuch/0.3.1-158-g04cd99c (http://notmuchmail.org) Emacs/23.1.1 (x86_64-pc-linux-gnu)
-Date: Thu, 04 Nov 2010 01:58:58 -0400
-Message-ID: <87lj597hp9.fsf@gmail.com>
+	id S1755110Ab0KDF7V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 01:59:21 -0400
+Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:51624 "EHLO
+	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755091Ab0KDF7T convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 01:59:19 -0400
+X-Greylist: delayed 1397 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Nov 2010 01:59:18 EDT
+From: Naveen Kumar GADDIPATI <naveen.gaddipati@stericsson.com>
+To: "Arce, Abraham" <x0066660@ti.com>
+Cc: Linus WALLEIJ <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        Greg KH <greg@kroah.com>, Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Date: Thu, 4 Nov 2010 06:59:35 +0100
+Subject: RE: [PATCHv1] staging: Synaptics RMI4 touchpad driver support
+Thread-Topic: [PATCHv1] staging: Synaptics RMI4 touchpad driver support
+Thread-Index: Act7jIPRAEQHCY5NSnuvbzsiadSGKgADqlZgABGgFXAAADhhgAAArx8Q
+Message-ID: <81C3A93C17462B4BBD7E272753C105791945AAD843@EXDCVYMBSTM005.EQ1STM.local>
+References: <1288699725-14405-1-git-send-email-naveen.gaddipati@stericsson.com>
+ <20101102140337.GC9387@kroah.com> <4CD01CD8.3090206@stericsson.com>
+ <20101102154029.GH11778@core.coreip.homeip.net>
+ <20101103181058.GE7441@kroah.com>
+ <20101103190752.GA4552@core.coreip.homeip.net>
+ <20101103191958.GA9912@kroah.com>
+ <27F9C60D11D683428E133F85D2BB4A530468A82B1A@dlee03.ent.ti.com>
+ <81C3A93C17462B4BBD7E272753C105791945AAD82C@EXDCVYMBSTM005.EQ1STM.local>
+ <27F9C60D11D683428E133F85D2BB4A530468A82CF3@dlee03.ent.ti.com>
+In-Reply-To: <27F9C60D11D683428E133F85D2BB4A530468A82CF3@dlee03.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've recently been trying to track down the root cause of my server's
-persistent issue of thrashing horribly after being left inactive. It
-seems that the issue is likely my nightly backup schedule (using rsync)
-which traverses my entire 50GB home directory. I was surprised to find
-that rsync does not use fadvise to notify the kernel of its use-once
-data usage pattern.
+Hi Arce,
 
-It looks like a patch[1] was written (although never merged, it seems)
-incorporating fadvise support, but I found its implementation rather
-odd, using mincore() and FADV_DONTNEED to kick out only regions brought
-in by rsync. It seemed to me the simpler and more appropriate solution
-would be to simply flag every touched file with FADV_NOREUSE and let the
-kernel manage automatically expelling used pages.
+I'm using irq type as IRQF_TRIGGER_FALLING | IRQF_SHARED.
 
-After looking deeper into the kernel implementation[2] of fadvise() the
-reason for using DONTNEED became more apparant. It seems that the kernel
-implements NOREUSE as a noop. A little googling revealed[3] that I not
-the first person to encounter this limitation. It looks like a few
-folks[4] have discussed addressing the issue in the past, but nothing
-has happened as of 2.6.36. Are there plans to implement this
-functionality in the near future? It seems like the utility of fadvise
-is severely limited by lacking support for NOREUSE.
+Thanks & Regards,
+Naveen
 
-Cheers,
-
-- Ben
-
-
-[1] http://insights.oetiker.ch/linux/fadvise.html
-[2] http://lxr.free-electrons.com/source/mm/fadvise.c?a=avr32
-[3] https://issues.apache.org/jira/browse/CASSANDRA-1470
-    http://chbits.blogspot.com/2010/06/lucene-and-fadvisemadvise.html
-[4] http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg179576.html
-    http://lkml.indiana.edu/hypermail/linux/kernel/0807.2/0442.html
+> -----Original Message-----
+> From: Arce, Abraham [mailto:x0066660@ti.com]
+> Sent: Thursday, November 04, 2010 11:16 AM
+> To: Naveen Kumar GADDIPATI; Dmitry Torokhov
+> Cc: Linus WALLEIJ; linux-kernel@vger.kernel.org;
+> STEricsson_nomadik_linux; linux-input@vger.kernel.org; Greg KH
+> Subject: RE: [PATCHv1] staging: Synaptics RMI4 touchpad driver support
+> 
+> Hi Naveen, Dmitry,
+> 
+> > From: Naveen Kumar GADDIPATI [mailto:naveen.gaddipati@stericsson.com]
+> >
+> > Hi Arce,
+> >
+> > I'm also the GPIO pin for interrupt with request threaded irq .
+> > I'm passing the irq_type from the platform data.
+> > Which irq_type are you using for your platform?
+> >
+> 
+> I am using the following flags
+> 
+>   IRQF_DISABLED | IRQF_TRIGGER_LOW | IRQF_TRIGGER_FALLING
+> 
+> Should I get rid of the first one, IRQF_DISABLED?
+> 
+>   IRQF_DISABLED - keep irqs disabled when calling the action handler
+> 
+> Best Regards
+> Abraham
 
