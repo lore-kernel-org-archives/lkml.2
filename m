@@ -1,116 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615Ab0KDBle (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 21:41:34 -0400
-Received: from fieldses.org ([174.143.236.118]:60066 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754294Ab0KDBlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 21:41:32 -0400
-Date: Wed, 3 Nov 2010 21:41:28 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] locks: let the caller free file_lock on ->setlease
- failure
-Message-ID: <20101104014128.GB22498@fieldses.org>
-References: <20101027083924.GA28129@infradead.org>
- <20101027133924.GB6328@fieldses.org>
- <201010271546.09036.arnd@arndb.de>
- <20101027145538.GC6328@fieldses.org>
- <20101027145929.GA5788@infradead.org>
- <20101030212500.GE480@fieldses.org>
- <20101031123419.GA4491@infradead.org>
- <20101031123510.GA4520@infradead.org>
- <20101103204147.GA6777@fieldses.org>
- <20101104014024.GA22498@fieldses.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101104014024.GA22498@fieldses.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754678Ab0KDBm0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 21:42:26 -0400
+Received: from [120.204.251.227] ([120.204.251.227]:58111 "EHLO
+	LC-SHMAIL-01.SHANGHAI.LEADCORETECH.COM" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754411Ab0KDBmX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 21:42:23 -0400
+Subject: Re:[PATCH v2]oom-kill: CAP_SYS_RESOURCE should get bonus
+From: "Figo.zhang" <zhangtianfei@leadcoretech.com>
+To: figo zhang <figo1802@gmail.com>, David Rientjes <rientjes@google.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@osdl.org>
+In-Reply-To: <AANLkTimjfmLzr_9+Sf4gk0xGkFjffQ1VcCnwmCXA88R8@mail.gmail.com>
+References: <1288662213.10103.2.camel@localhost.localdomain>
+	 <1288827804.2725.0.camel@localhost.localdomain>
+	 <alpine.DEB.2.00.1011031646110.7830@chino.kir.corp.google.com>
+	 <AANLkTimjfmLzr_9+Sf4gk0xGkFjffQ1VcCnwmCXA88R8@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 04 Nov 2010 09:38:57 +0800
+Message-ID: <1288834737.2124.11.camel@myhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.0 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Nov 2010 01:42:19.0434 (UTC) FILETIME=[84A288A0:01CB7BC1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 09:40:24PM -0400, J. Bruce Fields wrote:
-> On Wed, Nov 03, 2010 at 04:41:48PM -0400, J. Bruce Fields wrote:
-> > On Sun, Oct 31, 2010 at 08:35:10AM -0400, Christoph Hellwig wrote:
-> > > Index: linux-2.6/fs/locks.c
-> > > ===================================================================
-> > > --- linux-2.6.orig/fs/locks.c	2010-10-31 07:10:07.649004084 -0400
-> > > +++ linux-2.6/fs/locks.c	2010-10-31 07:34:10.102255587 -0400
-> > > @@ -1428,8 +1425,9 @@ int generic_setlease(struct file *filp,
-> > >  		goto out;
-> > >  
-> > >  	if (my_before != NULL) {
-> > > -		*flp = *my_before;
-> > >  		error = lease->fl_lmops->fl_change(my_before, arg);
-> > > +		if (!error)
-> > > +			*flp = *my_before;
-> > 
-> > Argh, missed this: we're leaking the passed-in lease in this case.
+
 > 
-> We could do something like this.
+> 
+> 
+> On Thu, 4 Nov 2010, Figo.zhang wrote:
+> 
+> > CAP_SYS_RESOURCE also had better get 3% bonus for protection.
+> >
+> 
+> 
+> Would you like to elaborate as to why?
+> 
+> 
 
-And while I was here I noticed:
+process with CAP_SYS_RESOURCE capibility which have system resource
+limits, like journaling resource on ext3/4 filesystem, RTC clock. so it
+also the same treatment as process with CAP_SYS_ADMIN.
 
---b.
+Best,
 
->From 072be1f975c6f839661cfc4f6c45ccb944417eea Mon Sep 17 00:00:00 2001
-From: J. Bruce Fields <bfields@redhat.com>
-Date: Wed, 3 Nov 2010 18:09:18 -0400
-Subject: [PATCH 2/2] locks: remove dead lease error-handling code
+Figo.zhang
 
-A minor oversight from f7347ce4ee7c65415f84be915c018473e7076f31,
-"fasync: re-organize fasync entry insertion to allow it under a
-spinlock": this cleanup-on-error was only needed to handle -ENOMEM.  Now
-that we're preallocating it's unneeded.
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
----
- fs/locks.c |   12 ++----------
- 1 files changed, 2 insertions(+), 10 deletions(-)
-
-diff --git a/fs/locks.c b/fs/locks.c
-index 61c22f7..0e62dd3 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -1506,7 +1506,6 @@ static int do_fcntl_add_lease(unsigned int fd, struct file *filp, long arg)
- {
- 	struct file_lock *fl, *ret;
- 	struct fasync_struct *new;
--	struct inode *inode = filp->f_path.dentry->d_inode;
- 	int error;
- 
- 	fl = lease_alloc(filp, arg);
-@@ -1520,7 +1519,7 @@ static int do_fcntl_add_lease(unsigned int fd, struct file *filp, long arg)
- 	}
- 	ret = fl;
- 	lock_flocks();
--	error = __vfs_setlease(filp, arg, &fl);
-+	error = __vfs_setlease(filp, arg, &ret);
- 	if (error) {
- 		unlock_flocks();
- 		locks_free_lock(fl);
-@@ -1538,14 +1537,7 @@ static int do_fcntl_add_lease(unsigned int fd, struct file *filp, long arg)
- 	if (!fasync_insert_entry(fd, filp, &ret->fl_fasync, new))
- 		new = NULL;
- 
--	if (error < 0) {
--		/* remove lease just inserted by setlease */
--		fl->fl_type = F_UNLCK | F_INPROGRESS;
--		fl->fl_break_time = jiffies - 10;
--		time_out_leases(inode);
--	} else {
--		error = __f_setown(filp, task_pid(current), PIDTYPE_PID, 0);
--	}
-+	error = __f_setown(filp, task_pid(current), PIDTYPE_PID, 0);
- 	unlock_flocks();
- 
- out_free_fasync:
--- 
-1.7.1
 
