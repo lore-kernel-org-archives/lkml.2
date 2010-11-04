@@ -1,106 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830Ab0KDUd5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 16:33:57 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:53337 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752305Ab0KDUdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 16:33:55 -0400
-Subject: Re: [RFC/PATCH] i2c/busses: Add support for Diolan U2C-12 USB/I2C
- adapter
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Jean Delvare <khali@linux-fr.org>
-CC: Ben Dooks <ben-linux@fluff.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101104211807.07a55104@endymion.delvare>
-References: <1288830389-13873-1-git-send-email-guenter.roeck@ericsson.com>
-	 <20101104134314.7928cd85@endymion.delvare>
-	 <1288888902.22931.165.camel@groeck-laptop>
-	 <20101104211807.07a55104@endymion.delvare>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Thu, 4 Nov 2010 13:32:45 -0700
-Message-ID: <1288902765.22931.193.camel@groeck-laptop>
+	id S1752857Ab0KDUfJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 16:35:09 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:46370 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752305Ab0KDUfH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 16:35:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=mIuwIwOvREBPEv1Kiu5fOeEiP6hGHeBmRoMtK2eGSGxzTCK/EMGuRI6lZ9Zilflgxc
+         YixkX9D3gkNm+o1EvKSbRkaDLdKtwg5gzQVRoReHDNzoQn9h4L0DRe2QBmt4WZ8K4bxg
+         VHdqYfytdoMqOCx6KUE1IIEiTz9K1SqZtklVU=
+Message-ID: <4CD318F7.8050503@gmail.com>
+Date: Fri, 05 Nov 2010 04:35:03 +0800
+From: Li Zefan <lizf.kern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.11) Gecko/20101006 Thunderbird/3.1.5
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+To: Jesper Juhl <jj@chaosbits.net>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Pavel Emelianov <xemul@openvz.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        containers@lists.linux-foundation.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2] cgroup: prefer [kv]zalloc[_node] over [kv]malloc+memset
+ in memory controller code.
+References: <alpine.LNX.2.00.1011042104140.15349@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1011042104140.15349@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean,
+> In mem_cgroup_alloc() we currently do either kmalloc() or vmalloc() then 
+> followed by memset() to zero the memory. This can be more efficiently 
+> achieved by using kzalloc() and vzalloc().
+> There's also one situation where we can use kzalloc_node() - this is 
+> what's new in this version of the patch.
+> 
+> The original patch was:
+> 
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
+> Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+>
+> Here's version 2. I'd appreciate it if someone could merge it, but I don't 
+> know who that someone would be.
+> 
 
-On Thu, 2010-11-04 at 16:18 -0400, Jean Delvare wrote:
-> Hi Guenter,
-> 
-> On Thu, 4 Nov 2010 09:41:42 -0700, Guenter Roeck wrote:
-> > On Thu, 2010-11-04 at 08:43 -0400, Jean Delvare wrote:
-> > > I'm also unsure what is the point of having such a large buffer when
-> > > the largest block you ever transfer in practice is 5 bytes?
-> >
-> > I took that from the Diolan code. They always use a 257 byte temp
-> > buffer, since that is the maximum data size sent by the adapter. 
-> > You are right, I should not really need that since I don't send any long
-> > commands. Ultimate reason is to account for possible adapter errors, if
-> > it replies (or tries to reply) with more bytes than expected. Pretty
-> > much just playing safe.
-> 
-> Which commands are they using, which require such a large buffer? In
-> your driver, bytes are all processed one by one, which is certainly not
-> good performance-wise. If there is a way to read or write mode than one
-> byte at a time, this would be worth a try.
-> 
-There are read/write block commands. Unfortunately, I never got it
-working reliably :-(.
+Normally it's Andrew Morton.
 
-> > > (...)
-> > > BTW, I'm not sure why you don't use the original buffer directly?
-> > > memcpy is bad performance-wise.
-> >
-> > To account for the possibility that the adapter returns more bytes than
-> > I am expecting. Sure, that would be a bug, but I wanted to play safe.
-> 
-> Hmm, OK, that makes sense.
-> 
-> > > (...)
-> > > Should be -EPROTO according to Documentation/i2c/fault-codes.
-> >
-> > Ok. Note that I got that from i2c-algo-bit.c.
-> 
-> I would welcome a patch fixing this.
-> 
-Ok, I'll put that on my list. Note that there are several other i2c
-drivers returning -EREMOTEIO.
-
-> > > > (...)
-> > > > +static u32 usb_func(struct i2c_adapter *a)
-> > > > +{
-> > > > +     return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL |
-> > > > +         I2C_FUNC_SMBUS_READ_BLOCK_DATA;
-> > > 
-> > > Odd indentation/alignment.
-> >
-> > Seems to be exactly what other drivers do, so I am a bit at loss here.
-> 
-> Really? Using 4 spaces for indentation is wrong. Either use a tab, or
-> align using 7 spaces.
-> 
-Ok.
-
-> > > (...)
-> > > You are abusing algo_data here. You are supposed to use
-> > > i2c_get/set_adapdata() instead. algo_data is only there for providing
-> > > platform specific implementation details to generic i2c algorithms such
-> > > as i2c-algo-bit.
-> >
-> > Copied from i2c-tiny-usb.c. I didn't really think about it. Fixed.
-> 
-> I take patches ;)
-> 
-Ok. Another one to look at if I need a break ;).
-
-Guenter
-
-
+btw, a better title is: [...] memcgroup: prefer ... over ... memset
