@@ -1,115 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754347Ab0KDBSz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Nov 2010 21:18:55 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:30024 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754216Ab0KDBSx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Nov 2010 21:18:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=kxjdrosFAG/FNqZLg23FqB1pGG/8CI2DOSW2GmUO85pgQ8lu2IF46VgUM/wqAtFVE2
-         o/Ghzm21NOnfDd8OWQdA==
-Message-ID: <4CD209F1.90708@google.com>
-Date: Wed, 03 Nov 2010 18:18:41 -0700
-From: Mike Waychison <mikew@google.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+	id S1754455Ab0KDBkh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Nov 2010 21:40:37 -0400
+Received: from fieldses.org ([174.143.236.118]:60061 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754294Ab0KDBkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Nov 2010 21:40:35 -0400
+Date: Wed, 3 Nov 2010 21:40:24 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] locks: let the caller free file_lock on ->setlease
+ failure
+Message-ID: <20101104014024.GA22498@fieldses.org>
+References: <20101026164549.GD19445@fieldses.org>
+ <20101027083924.GA28129@infradead.org>
+ <20101027133924.GB6328@fieldses.org>
+ <201010271546.09036.arnd@arndb.de>
+ <20101027145538.GC6328@fieldses.org>
+ <20101027145929.GA5788@infradead.org>
+ <20101030212500.GE480@fieldses.org>
+ <20101031123419.GA4491@infradead.org>
+ <20101031123510.GA4520@infradead.org>
+ <20101103204147.GA6777@fieldses.org>
 MIME-Version: 1.0
-To: Matt Mackall <mpm@selenic.com>
-CC: Greg KH <greg@kroah.com>, simon.kagstrom@netinsight.net,
-        davem@davemloft.net, adurbin@google.com, akpm@linux-foundation.org,
-        chavey@google.com, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH v1 00/12] netoops support
-References: <20101103012917.4641.57113.stgit@crlf.mtv.corp.google.com>	 <20101103023422.GB5782@kroah.com>	 <AANLkTi=Oe4oJ0imCh1eoJLS0QYqSBM4pLo=dEUSiJcQb@mail.gmail.com>	 <20101103181634.GF7441@kroah.com>	 <AANLkTimKWCWtuPeZhMZ75gTxB8LwAhJfy2FZnnRwthft@mail.gmail.com>	 <4CD1C612.5080902@google.com> <1288817685.26428.1129.camel@calx>
-In-Reply-To: <1288817685.26428.1129.camel@calx>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101103204147.GA6777@fieldses.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matt Mackall wrote:
-> On Wed, 2010-11-03 at 13:29 -0700, Mike Waychison wrote:
->> Mike Waychison wrote:
->>> FWIW, another semantic difference between netconsole and netoops (that
->>> I had missed in the last email) is filtering: we really do want to get
->>> the whole log when a crash happens, debug messages and all.
->>> Netconsole is subject to console filtering (which we _do_ want as
->>> debug messages going out the uart slows the whole world down).
->>>
->>> netconsole and netoops _do_ have bits in common, for instance the
->>> handling of NETDEV events and source+target configuration.  I'd rather
->>> those bits become common between the two than figure out how to jam
->>> the semantics we need into netconsole.
->> Hi Matt,
->>
->> I've been reading through the netconsole driver in response to Greg's 
->> comments on this thread, and it is definitely more robust in terms of 
->> configuration and handling of network device events than the netoops 
->> driver I proposed.
+On Wed, Nov 03, 2010 at 04:41:48PM -0400, J. Bruce Fields wrote:
+> On Sun, Oct 31, 2010 at 08:35:10AM -0400, Christoph Hellwig wrote:
+> > Index: linux-2.6/fs/locks.c
+> > ===================================================================
+> > --- linux-2.6.orig/fs/locks.c	2010-10-31 07:10:07.649004084 -0400
+> > +++ linux-2.6/fs/locks.c	2010-10-31 07:34:10.102255587 -0400
+> > @@ -1428,8 +1425,9 @@ int generic_setlease(struct file *filp,
+> >  		goto out;
+> >  
+> >  	if (my_before != NULL) {
+> > -		*flp = *my_before;
+> >  		error = lease->fl_lmops->fl_change(my_before, arg);
+> > +		if (!error)
+> > +			*flp = *my_before;
 > 
-> I've been following the discussion to see if it went anywhere
-> interesting..
-> 
->> What are your thoughts on extending netconsole with the same sort of 
->> semantics that are in the netoops patchset?
-> 
-> My first thought is that it's a bit unfortunate that some of the the
-> netconsole configgy bits weren't implemented in a generic way that would
-> be applicable to other netpoll clients. Some people have never gotten it
-> into their heads that netconsole isn't the only client.
-> 
->> I'd still like to have blit-dmesg-to-the-network-on-oops semantics, 
->> which seems doable by having a per-target flag for streaming of console 
->> messages (enabled by default) and a flag to emit a structured full dmesg 
->> dump (disabled by default).
-> 
-> I'd actually like to see you go forward with netoops. It's clear to me
-> that it's a different beast and complexifying netconsole with a bunch of
-> weird new options doesn't really sit well. If that means abstracting
-> some of the sysfs crap from netconsole, great. 
+> Argh, missed this: we're leaking the passed-in lease in this case.
 
-I'd be happy to take a stab at this.  This solves most of the ABI 
-reservations that I have with this v1 patchset.
+We could do something like this.
 
-Looking at netconsole, it looks to lack some locking for data 
-consistency, and it appears that we will deadlock if we ever get a 
-NETDEV_UNREGISTER event (due to recursively grabbing the rtnl in 
-netpoll_cleanup).  I have a couple patches I've been hacking on this 
-afternoon that should clear those issues up.
+The irritating thing is that the only lease user I understand is the
+nfsd code, and it doesn't want this lease-merging behavior; the only
+reason that fl_change is there is so it can just turn this case into an
+error every time.
 
-I'm thinking of pushing all the target handling options down into 
-net/core/netpoll.c.  I'll probably expose this interface as "struct 
-netpoll_targets" where ->lock and ->list could be completely exposed to 
-clients.  netconsole would then get a lot smaller as would netoops.
+And I have no idea what the requirements are of any other users: do
+leases behave like this on purpose, or was it just an arbitrary choice,
+and does anyone depend on it now?
 
-> That said, I don't think netoops is an ideal name, given how closely
-> bound oops _events_ are with their textual output. Presumably it covers
-> events other than oopsen like panics too. 
+In the end maybe it would be better just to leave leases as they are and
+define a new lock type for nfsd.
 
-True.  We call this code 'netdump' or 'network_dumper' internally, but I 
-figured it'd be better to follow current conventions with ramoops and 
-mtdoops already in the tree.  I don't really care what it's called in 
-the end :)
+We'd probably have to do that eventually anyway, and it'd save me trying
+to guess what the lease semantics are supposed to be....
 
-> 
-> Regarding rolling oopses: lots of machines regularly survive oopses, so 
-> I think you ought to consider rate-limiting them (to a configurable rate
-> with a very low default) rather than suppressing all but the first.
-> 
+--b.
 
-The trouble with Oopses is just that:  We don't know whether we can 
-safely survive them or not and it's a total gamble each time we do Oops. 
-  We can't programmatically know how crapped out the machine is, so 
-historically we've erred on not allowing bad things to continue 
-happening once someone notices something wrong.
+>From f5c6d51ae638af213d8bda31504f4b2287b8a801 Mon Sep 17 00:00:00 2001
+From: J. Bruce Fields <bfields@redhat.com>
+Date: Wed, 3 Nov 2010 16:49:44 -0400
+Subject: [PATCH 1/2] locks: fix leak on merging leases
 
-It's easier for us to just shoot the machine in the head (panic_on_oops) 
-and move on than corrupt data or dead-lock in weird ways at some later 
-point in time.  This is definitely not the behaviour I would want nor 
-expect from my desktop or phone, but for the cluster, it's just safer.
+We must also free the passed-in lease in the case it wasn't used because
+an existing lease was upgrade/downgraded or already existed.
+
+Note the nfsd caller doesn't care because it's fl_change callback
+returns an error in those cases.
+
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+---
+ fs/locks.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/fs/locks.c b/fs/locks.c
+index 65765cb..61c22f7 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -1504,7 +1504,7 @@ static int do_fcntl_delete_lease(struct file *filp)
+ 
+ static int do_fcntl_add_lease(unsigned int fd, struct file *filp, long arg)
+ {
+-	struct file_lock *fl;
++	struct file_lock *fl, *ret;
+ 	struct fasync_struct *new;
+ 	struct inode *inode = filp->f_path.dentry->d_inode;
+ 	int error;
+@@ -1518,6 +1518,7 @@ static int do_fcntl_add_lease(unsigned int fd, struct file *filp, long arg)
+ 		locks_free_lock(fl);
+ 		return -ENOMEM;
+ 	}
++	ret = fl;
+ 	lock_flocks();
+ 	error = __vfs_setlease(filp, arg, &fl);
+ 	if (error) {
+@@ -1525,6 +1526,8 @@ static int do_fcntl_add_lease(unsigned int fd, struct file *filp, long arg)
+ 		locks_free_lock(fl);
+ 		goto out_free_fasync;
+ 	}
++	if (ret != fl)
++		locks_free_lock(fl);
+ 
+ 	/*
+ 	 * fasync_insert_entry() returns the old entry if any.
+@@ -1532,7 +1535,7 @@ static int do_fcntl_add_lease(unsigned int fd, struct file *filp, long arg)
+ 	 * inserted it into the fasync list. Clear new so that
+ 	 * we don't release it here.
+ 	 */
+-	if (!fasync_insert_entry(fd, filp, &fl->fl_fasync, new))
++	if (!fasync_insert_entry(fd, filp, &ret->fl_fasync, new))
+ 		new = NULL;
+ 
+ 	if (error < 0) {
+-- 
+1.7.1
+
