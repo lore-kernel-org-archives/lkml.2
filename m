@@ -1,129 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368Ab0KDWgL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 18:36:11 -0400
-Received: from mao.bsc.es ([84.88.52.34]:52529 "EHLO opsmail01.bsc.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753289Ab0KDWgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 18:36:08 -0400
-X-Greylist: delayed 478 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Nov 2010 18:36:08 EDT
-Message-ID: <4CD33374.60800@bsc.es>
-Date: Thu, 04 Nov 2010 23:28:04 +0100
-From: Victor Jimenez <victor.javier@bsc.es>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	id S1753361Ab0KDWmu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 18:42:50 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:37807 "EHLO
+	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753289Ab0KDWms (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 18:42:48 -0400
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h)
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:de01egw01.freescale.net;RD:de01egw01.freescale.net;EFVD:NLI
+From: <Dinh.Nguyen@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
+        <s.hauer@pengutronix.de>, <u.kleine-koenig@pengutronix.de>,
+        <amit.kucheria@canonical.com>, <eric@eukrea.com>,
+        Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Subject: [PATCHv2 2/2] ARM: imx: Add mx53 support to common msl functions.
+Date: Thu, 4 Nov 2010 17:46:13 -0500
+Message-ID: <1288910773-3098-2-git-send-email-Dinh.Nguyen@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1288910773-3098-1-git-send-email-Dinh.Nguyen@freescale.com>
+References: <1288910773-3098-1-git-send-email-Dinh.Nguyen@freescale.com>
 MIME-Version: 1.0
-To: Francis Moreau <francis.moro@gmail.com>
-CC: Reid Kleckner <reid.kleckner@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        linux-perf-users@vger.kernel.org
-Subject: Re: perf tools miscellaneous questions
-References: <fa.eqFHAk86WhpTuYclHhngn7QZr8Y@ifi.uio.no>	<fa.X++YRAJg+rmPtm3nmroZZoNU7u8@ifi.uio.no>	<fa.Elk8wOfBHRdKtkHIjP9hOtzVCgQ@ifi.uio.no>	<fa.U3fdWUGXguguIIyQ4v66/uKOhus@ifi.uio.no>	<fa.YTQQoGhoS6d3BaZXcZMN+l9TojQ@ifi.uio.no> <m24obwst53.fsf@gmail.com>
-In-Reply-To: <m24obwst53.fsf@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Copyrighted-Material: Please visit http://www.bsc.es/disclaimer.htm
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04/2010 09:58 PM, Francis Moreau wrote:
-> Francis Moreau<francis.moro@gmail.com>  writes:
->
->> Francis Moreau<francis.moro@gmail.com>  writes:
->>
-> [...]
->
->>> How could I know the number of cache level on my cpu ?
->>>
->>> I tried:
->>>
->>>    $ perf stat -e cache-misses:u,l1d-loads-misses:u true
->>>
->>>      Performance counter stats for 'true':
->>>
->>>                     802  cache-misses
->>>                     937  L1-dcache-load-misses
->>>
->>>             0.000996578  seconds time elapsed
->>>
->>>    $ perf stat -e cache-misses:u,L2-loads-misses:u true
->>>
->>>     Performance counter stats for 'true':
->>>
->>>                    788  cache-misses
->>>                     95  LLC-load-misses
->>>
->>>            0.001025423  seconds time elapsed
->>>
->>> So it looks like you're right: in my case I have this cache
->>> configuration:
->>>
->> oops sorry, I replied too early...
->>
->> so my cache configuration is:
->>
->>     L1 ->  L2 ->  LLC
->>
->> where L2 misses is given by: 'cache-misses' - 'LLC-load-misses'
->>
->> Is that correct ?
->>
->> If so, I found 'cache-misses' term very not intuitive IMHO, probably
->> because I'm not an expert in cpu caches...
-> Well thinking more about it, the above is wrong and I'm lost.
->
-> If 'cache-misses' is the last level cache misses then how to interpret
-> these results ?
->
->    $ perf stat -e llc-load-misses:u,llc-store-misses:u true
->
->     Performance counter stats for 'true':
->
->                     94  LLC-load-misses
->                      0  LLC-store-misses
->
->            0.000981840  seconds time elapsed
->
->
->    $ perf stat -e cache-misses:u true
->
->     Performance counter stats for 'true':
->
->                    796  cache-misses
->
->            0.001345136  seconds time elapsed
->
-> Here 'cache-misses' value is much more than llc misses one...
->
-If you are measuring last level cache misses, I would recommend you to 
-use a memory intensive application/benchmark instead of /bin/true, as 
-otherwise there can be a significant variation between two runs.
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-Victor
+Add mx53 support to cpu.c and mm.c.
 
+Also change the method to get the silicon version from the
+documented IIM SREV register instead of reading the ROM code.
+
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+---
+ arch/arm/mach-mx5/cpu.c |   72 ++++++++++++++++++++++++++++++++--------------
+ arch/arm/mach-mx5/mm.c  |   52 ++++++++++++++++++++++++++++++++--
+ 2 files changed, 99 insertions(+), 25 deletions(-)
+
+diff --git a/arch/arm/mach-mx5/cpu.c b/arch/arm/mach-mx5/cpu.c
+index eaacb6e..a13d18b 100644
+--- a/arch/arm/mach-mx5/cpu.c
++++ b/arch/arm/mach-mx5/cpu.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright 2008-2009 Freescale Semiconductor, Inc. All Rights Reserved.
++ * Copyright 2008-2010 Freescale Semiconductor, Inc. All Rights Reserved.
+  *
+  * The code contained herein is licensed under the GNU General Public
+  * License. You may obtain a copy of the GNU General Public License
+@@ -20,37 +20,35 @@
+ 
+ static int cpu_silicon_rev = -1;
+ 
+-#define SI_REV 0x48
++#define SI_REV 0x24
+ 
+ static void query_silicon_parameter(void)
+ {
+-	void __iomem *rom = ioremap(MX51_IROM_BASE_ADDR, MX51_IROM_SIZE);
++	void __iomem *iim_base;
+ 	u32 rev;
+ 
+-	if (!rom) {
+-		cpu_silicon_rev = -EINVAL;
+-		return;
+-	}
++	if (cpu_is_mx51())
++		iim_base = MX51_IO_ADDRESS(MX51_IIM_BASE_ADDR);
++	else if (cpu_is_mx53())
++		iim_base = MX53_IO_ADDRESS(MX53_IIM_BASE_ADDR);
+ 
+-	rev = readl(rom + SI_REV);
++	rev = readl(iim_base + SI_REV) & 0xff;
+ 	switch (rev) {
+-	case 0x1:
+-		cpu_silicon_rev = MX51_CHIP_REV_1_0;
+-		break;
+-	case 0x2:
+-		cpu_silicon_rev = MX51_CHIP_REV_1_1;
++	case 0x0:
++		if (cpu_is_mx51())
++			cpu_silicon_rev = MX51_CHIP_REV_2_0;
++		else if (cpu_is_mx53())
++			cpu_silicon_rev = MX53_CHIP_REV_1_0;
+ 		break;
+ 	case 0x10:
+-		cpu_silicon_rev = MX51_CHIP_REV_2_0;
+-		break;
+-	case 0x20:
+-		cpu_silicon_rev = MX51_CHIP_REV_3_0;
++		if (cpu_is_mx51())
++			cpu_silicon_rev = MX51_CHIP_REV_3_0;
++		else if (cpu_is_mx53())
++			cpu_silicon_rev = MX53_CHIP_REV_2_0;
+ 		break;
+ 	default:
+ 		cpu_silicon_rev = 0;
+ 	}
+-
+-	iounmap(rom);
+ }
+ 
+ /*
+@@ -89,15 +87,39 @@ static int __init mx51_neon_fixup(void)
+ late_initcall(mx51_neon_fixup);
+ #endif
+ 
++/*
++ * Returns:
++ *	the silicon revision of the cpu
++ *	-EINVAL - not a mx53
++ */
++int mx53_revision(void)
++{
++	if (!cpu_is_mx53())
++		return -EINVAL;
++
++	if (cpu_silicon_rev == -1)
++		query_silicon_parameter();
++
++	return cpu_silicon_rev;
++}
++EXPORT_SYMBOL(mx53_revision);
++
+ static int __init post_cpu_init(void)
+ {
+ 	unsigned int reg;
+ 	void __iomem *base;
++	void __iomem *aips_addr;
+ 
+-	if (!cpu_is_mx51())
++	if (!cpu_is_mx51() || !cpu_is_mx53())
+ 		return 0;
+ 
+-	base = MX51_IO_ADDRESS(MX51_AIPS1_BASE_ADDR);
++	if (cpu_is_mx51())
++		aips_addr = MX51_IO_ADDRESS(MX51_AIPS1_BASE_ADDR);
++	else if (cpu_is_mx53())
++		aips_addr = MX53_IO_ADDRESS(MX53_AIPS1_BASE_ADDR);
++
++	base = ioremap((unsigned long)aips_addr, SZ_4K);
++
+ 	__raw_writel(0x0, base + 0x40);
+ 	__raw_writel(0x0, base + 0x44);
+ 	__raw_writel(0x0, base + 0x48);
+@@ -105,7 +127,13 @@ static int __init post_cpu_init(void)
+ 	reg = __raw_readl(base + 0x50) & 0x00FFFFFF;
+ 	__raw_writel(reg, base + 0x50);
+ 
+-	base = MX51_IO_ADDRESS(MX51_AIPS2_BASE_ADDR);
++	if (cpu_is_mx51())
++		aips_addr = MX51_IO_ADDRESS(MX51_AIPS2_BASE_ADDR);
++	else if (cpu_is_mx53())
++		aips_addr = MX53_IO_ADDRESS(MX53_AIPS2_BASE_ADDR);
++
++	base = ioremap((unsigned long)aips_addr, SZ_4K);
++
+ 	__raw_writel(0x0, base + 0x40);
+ 	__raw_writel(0x0, base + 0x44);
+ 	__raw_writel(0x0, base + 0x48);
+diff --git a/arch/arm/mach-mx5/mm.c b/arch/arm/mach-mx5/mm.c
+index bc3f30d..d2b9f2c 100644
+--- a/arch/arm/mach-mx5/mm.c
++++ b/arch/arm/mach-mx5/mm.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright 2008-2009 Freescale Semiconductor, Inc. All Rights Reserved.
++ * Copyright 2008-2010 Freescale Semiconductor, Inc. All Rights Reserved.
+  *
+  * The code contained herein is licensed under the GNU General Public
+  * License.  You may obtain a copy of the GNU General Public License
+@@ -23,7 +23,7 @@
+ /*
+  * Define the MX51 memory map.
+  */
+-static struct map_desc mxc_io_desc[] __initdata = {
++static struct map_desc mx51_mxc_io_desc[] __initdata = {
+ 	{
+ 		.virtual = MX51_IRAM_BASE_ADDR_VIRT,
+ 		.pfn = __phys_to_pfn(MX51_IRAM_BASE_ADDR),
+@@ -53,6 +53,28 @@ static struct map_desc mxc_io_desc[] __initdata = {
+ };
+ 
+ /*
++ * Define the MX53 memory map.
++ */
++static struct map_desc mx53_mxc_io_desc[] __initdata = {
++	{
++		.virtual = MX53_AIPS1_BASE_ADDR_VIRT,
++		.pfn = __phys_to_pfn(MX53_AIPS1_BASE_ADDR),
++		.length = MX53_AIPS1_SIZE,
++		.type = MT_DEVICE
++	}, {
++		.virtual = MX53_SPBA0_BASE_ADDR_VIRT,
++		.pfn = __phys_to_pfn(MX53_SPBA0_BASE_ADDR),
++		.length = MX53_SPBA0_SIZE,
++		.type = MT_DEVICE
++	}, {
++		.virtual = MX53_AIPS2_BASE_ADDR_VIRT,
++		.pfn = __phys_to_pfn(MX53_AIPS2_BASE_ADDR),
++		.length = MX53_AIPS2_SIZE,
++		.type = MT_DEVICE
++	},
++};
++
++/*
+  * This function initializes the memory map. It is called during the
+  * system startup to create static physical to virtual memory mappings
+  * for the IO modules.
+@@ -62,10 +84,19 @@ void __init mx51_map_io(void)
+ 	mxc_set_cpu_type(MXC_CPU_MX51);
+ 	mxc_iomux_v3_init(MX51_IO_ADDRESS(MX51_IOMUXC_BASE_ADDR));
+ 	mxc_arch_reset_init(MX51_IO_ADDRESS(MX51_WDOG_BASE_ADDR));
+-	iotable_init(mxc_io_desc, ARRAY_SIZE(mxc_io_desc));
++	iotable_init(mx51_mxc_io_desc, ARRAY_SIZE(mx51_mxc_io_desc));
++}
++
++void __init mx53_map_io(void)
++{
++	mxc_set_cpu_type(MXC_CPU_MX53);
++	mxc_iomux_v3_init(MX53_IO_ADDRESS(MX53_IOMUXC_BASE_ADDR));
++	mxc_arch_reset_init(MX53_IO_ADDRESS(MX53_WDOG_BASE_ADDR));
++	iotable_init(mx53_mxc_io_desc, ARRAY_SIZE(mx53_mxc_io_desc));
+ }
+ 
+ int imx51_register_gpios(void);
++int imx53_register_gpios(void);
+ 
+ void __init mx51_init_irq(void)
+ {
+@@ -84,3 +115,18 @@ void __init mx51_init_irq(void)
+ 	tzic_init_irq(tzic_virt);
+ 	imx51_register_gpios();
+ }
++
++void __init mx53_init_irq(void)
++{
++	unsigned long tzic_addr;
++	void __iomem *tzic_virt;
++
++	tzic_addr = MX53_TZIC_BASE_ADDR;
++
++	tzic_virt = ioremap(tzic_addr, SZ_16K);
++	if (!tzic_virt)
++		panic("unable to map TZIC interrupt controller\n");
++
++	tzic_init_irq(tzic_virt);
++	imx53_register_gpios();
++}
 -- 
-------------------------------------------------------------------------
-
-      Victor Jimenez Perez
-      Barcelona Supercomputing Center
-      Centro Nacional de Supercomputacion
-      WWW: http://www.bsc.es
-      e-mail: victor.javier@bsc.es
-
-------------------------------------------------------------------------
+1.6.0.4
 
 
-WARNING / LEGAL TEXT: This message is intended only for the use of the
-individual or entity to which it is addressed and may contain
-information which is privileged, confidential, proprietary, or exempt
-from disclosure under applicable law. If you are not the intended
-recipient or the person responsible for delivering the message to the
-intended recipient, you are strictly prohibited from disclosing,
-distributing, copying, or in any way using this message. If you have
-received this communication in error, please notify the sender and
-destroy and delete any copies you may have received.
-
-http://www.bsc.es/disclaimer.htm
