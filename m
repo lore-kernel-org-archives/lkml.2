@@ -1,110 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554Ab0KENv3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 09:51:29 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:61031 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751970Ab0KENv0 (ORCPT
+	id S1754572Ab0KENvi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 09:51:38 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:45053 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754557Ab0KENvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 09:51:26 -0400
+	Fri, 5 Nov 2010 09:51:36 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=M9nK6/kolTakhcWsPGnw40crSh0R4BfjsGoIIOTkm5CeLaGZUA1bS0O7sAIWxIqy59
-         fDAsqcszaRH+ZnNHQdeacZnBmzneAgOKyNvYeSbZqyoDxBol5AIWkDO6vtmaDjVVqAA3
-         Fe33d1AMqbCya7tRO94/EpOKMFXYGnItnb5lc=
-Date: Fri, 5 Nov 2010 15:51:18 +0200
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: fweisbec@gmail.com, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        akpm@linux-foundation.org, sergey.senozhatsky@gmail.com
-Subject: Re: [PATCH] watchdog:  touch_nmi_watchdog should only touch local
- cpu not every one
-Message-ID: <20101105135117.GA27712@swordfish.minsk.epam.com>
-References: <1288919932-1857-1-git-send-email-dzickus@redhat.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LQksG6bCIzRHxTLp"
-Content-Disposition: inline
-In-Reply-To: <1288919932-1857-1-git-send-email-dzickus@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=cnXRUgwVEAh8GFwMXrogRk83Pra5vq7gWZPOHZKDjq6wX0pzW6bjGF23VHw575qdHW
+         +QfflzetqwBb5I6u4zoZixRNIvQgtNgcRj7yhNkLOiIK/d+v8JytZJBRY/agS1jEsDQB
+         lIsjfq+YgHZcP6BzESKgTG4+AQBKvtmGQ/GOw=
+Subject: [PATCH 2/3 v2] regulator: Ensure enough delay time for enabling
+ regulator
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 05 Nov 2010 21:51:32 +0800
+Message-ID: <1288965092.2312.3.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Integer division will truncate the result, this patch ensures we have
+enough delay time for enabling regulator.
 
---LQksG6bCIzRHxTLp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/core.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-On (11/04/10 21:18), Don Zickus wrote:
->  void touch_nmi_watchdog(void)
->  {
-> +	/*
-> +	 * Using __raw here because some code paths have
-> +	 * preemption enabled.  If preemption is enabled
-> +	 * then interrupts should be enabled too, in which
-> +	 * case we shouldn't have to worry about the watchdog
-> +	 * going off.
-> +	 */
-> +	__raw_get_cpu_var(watchdog_nmi_touch) =3D true;
-> +
-> +	touch_softlockup_watchdog();
-> +}
-> +EXPORT_SYMBOL(touch_nmi_watchdog);
-> +
-> +void touch_all_nmi_watchdogs(void)
-> +{
->  	if (watchdog_enabled) {
->  		unsigned cpu;
-> =20
-> @@ -151,7 +166,7 @@ void touch_nmi_watchdog(void)
->  	}
->  	touch_softlockup_watchdog();
->  }
-> -EXPORT_SYMBOL(touch_nmi_watchdog);
-> +EXPORT_SYMBOL(touch_all_nmi_watchdogs);
-> =20
-
-Hello,
-Seems like no one is actually calling touch_all_nmi_watchdogs, as for now.=
-=20
-Right?
-
-
-Minor nit
-
-	touch_all_nmi_watchdogs:
-	...
-	for_each_present_cpu(cpu) {
-		if (per_cpu(watchdog_nmi_touch, cpu) !=3D true)
-			per_cpu(watchdog_nmi_touch, cpu) =3D true;
-	}
-
-
-which is, I belive, could be simplified to=20
-	for_each_present_cpu(cpu) {
-		per_cpu(watchdog_nmi_touch, cpu) =3D true;
-	}
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 5ee67ba..0ab5749 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1312,10 +1312,12 @@ static int _regulator_enable(struct regulator_dev *rdev)
+ 			if (ret < 0)
+ 				return ret;
+ 
+-			if (delay >= 1000)
++			if (delay >= 1000) {
+ 				mdelay(delay / 1000);
+-			else if (delay)
++				udelay(delay % 1000);
++			} else if (delay) {
+ 				udelay(delay);
++			}
+ 
+ 		} else if (ret < 0) {
+ 			printk(KERN_ERR "%s: is_enabled() failed for %s: %d\n",
+-- 
+1.7.0.4
 
 
 
-	Sergey
-
---LQksG6bCIzRHxTLp
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iJwEAQECAAYFAkzUC9UACgkQfKHnntdSXjRNrgQAnXsPnaY27dGQRs3IVgwGMj9O
-z7O948PSy2VwtYCzcZmG3mma/B67odNx6FS6BWZrCj1MbKE+qmc32mZvx2UuGtf+
-pVL5uorUkxhLhCVFHpJar4FDS1qPQZPsBpTkJJ7Wp3WLdwBAvHQ786AYpR8NarPs
-d7pNqLRaLIB6pIOKi0c=
-=aB3A
------END PGP SIGNATURE-----
-
---LQksG6bCIzRHxTLp--
