@@ -1,96 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754537Ab0KENsw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 09:48:52 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:33905 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751970Ab0KENst (ORCPT
+	id S1754554Ab0KENv3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 09:51:29 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:61031 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970Ab0KENv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 09:48:49 -0400
-Date: Fri, 5 Nov 2010 14:46:58 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: "acme@infradead.org" <acme@infradead.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 00/20] RAS daemon v3
-Message-ID: <20101105134658.GA24828@aftab>
-References: <1288885016-18295-1-git-send-email-bp@amd64.org>
- <4CD3F25A.6070609@infradead.org>
+	Fri, 5 Nov 2010 09:51:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=M9nK6/kolTakhcWsPGnw40crSh0R4BfjsGoIIOTkm5CeLaGZUA1bS0O7sAIWxIqy59
+         fDAsqcszaRH+ZnNHQdeacZnBmzneAgOKyNvYeSbZqyoDxBol5AIWkDO6vtmaDjVVqAA3
+         Fe33d1AMqbCya7tRO94/EpOKMFXYGnItnb5lc=
+Date: Fri, 5 Nov 2010 15:51:18 +0200
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: fweisbec@gmail.com, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        akpm@linux-foundation.org, sergey.senozhatsky@gmail.com
+Subject: Re: [PATCH] watchdog:  touch_nmi_watchdog should only touch local
+ cpu not every one
+Message-ID: <20101105135117.GA27712@swordfish.minsk.epam.com>
+References: <1288919932-1857-1-git-send-email-dzickus@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LQksG6bCIzRHxTLp"
 Content-Disposition: inline
-In-Reply-To: <4CD3F25A.6070609@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1288919932-1857-1-git-send-email-dzickus@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 05, 2010 at 08:02:34AM -0400, Mauro Carvalho Chehab wrote:
-> I tried to apply your patches here, but they didn't apply. i suspect
-> that Steven added some patches there at the meantime, as two patches
-> on your series are already on his tree. IMO, the better would be if
-> you could create a temporary tree or branch to allow us to better view
-> it.
 
-Sure:
+--LQksG6bCIzRHxTLp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git ras-v3
+On (11/04/10 21:18), Don Zickus wrote:
+>  void touch_nmi_watchdog(void)
+>  {
+> +	/*
+> +	 * Using __raw here because some code paths have
+> +	 * preemption enabled.  If preemption is enabled
+> +	 * then interrupts should be enabled too, in which
+> +	 * case we shouldn't have to worry about the watchdog
+> +	 * going off.
+> +	 */
+> +	__raw_get_cpu_var(watchdog_nmi_touch) =3D true;
+> +
+> +	touch_softlockup_watchdog();
+> +}
+> +EXPORT_SYMBOL(touch_nmi_watchdog);
+> +
+> +void touch_all_nmi_watchdogs(void)
+> +{
+>  	if (watchdog_enabled) {
+>  		unsigned cpu;
+> =20
+> @@ -151,7 +166,7 @@ void touch_nmi_watchdog(void)
+>  	}
+>  	touch_softlockup_watchdog();
+>  }
+> -EXPORT_SYMBOL(touch_nmi_watchdog);
+> +EXPORT_SYMBOL(touch_all_nmi_watchdogs);
+> =20
 
-> This example looks quite ugly to me. I doubt anyone without a
-> datasheet and after a very careful inspection would know what
-> 0x9c00410000010016 magic number means.
+Hello,
+Seems like no one is actually calling touch_all_nmi_watchdogs, as for now.=
+=20
+Right?
 
-Right, this was only a hands-on example of what otherwise a script does.
-I wanted to show what happens in detail.
 
-> I suspect that writing a wrong magic number will also produce a
-> completely undesired result.
+Minor nit
 
-That's not a problem since this is software-only injection. It actually
-makes sense to be able to inject crap so that you can test the decoding
-code:
+	touch_all_nmi_watchdogs:
+	...
+	for_each_present_cpu(cpu) {
+		if (per_cpu(watchdog_nmi_touch, cpu) !=3D true)
+			per_cpu(watchdog_nmi_touch, cpu) =3D true;
+	}
 
-[81953.494078] [Hardware Error]: MC5_STATUS: Uncorrected error, other errors lost: no, CPU context corrupt: yes, UECC Error
-[81953.505714] [Hardware Error]: Corrupted FR MCE info?
-[81953.505718] [Hardware Error]: Transaction: GEN (GEN), no timeout, Cache Level: L3/GEN, Participating Processor: GEN
 
-> So, the better it to keep the MCE code
-> internally to the driver.
-> 
-> Also, writing a magic number to a node named as "status" seems weird to me.
-> 
-> IMO, instead, it should be something like:
-> 
-> echo 1 >/sys/devices/system/edac/mce/error_inject
+which is, I belive, could be simplified to=20
+	for_each_present_cpu(cpu) {
+		per_cpu(watchdog_nmi_touch, cpu) =3D true;
+	}
 
-Well, this way you inject a random error. But you want to control the
-error types which you inject and set not only one but a couple of the
-MCi_ bank MSRs. In that manner, you can inject the address at which a
-certain MCE happens and so on.
 
-So, basically, the long term goal is to have a tool which could do all
-that. Maybe something like this:
 
-perf inject --mce --functional-unit DC --uncorrectable --pcc-corrupt --virtual-address 0xdeadbeef ...
+	Sergey
 
-or
+--LQksG6bCIzRHxTLp
+Content-Type: application/pgp-signature
 
-perf inject --mce --functional-unit IC --random --correctable --ecc
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-(I have long options so that it's clear what we do - we can make them
-shorter in the actual case.) But you get the idea. This way, you can
-inject all kinds of stuff and also in a human-readable form.
+iJwEAQECAAYFAkzUC9UACgkQfKHnntdSXjRNrgQAnXsPnaY27dGQRs3IVgwGMj9O
+z7O948PSy2VwtYCzcZmG3mma/B67odNx6FS6BWZrCj1MbKE+qmc32mZvx2UuGtf+
+pVL5uorUkxhLhCVFHpJar4FDS1qPQZPsBpTkJJ7Wp3WLdwBAvHQ786AYpR8NarPs
+d7pNqLRaLIB6pIOKi0c=
+=aB3A
+-----END PGP SIGNATURE-----
 
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+--LQksG6bCIzRHxTLp--
