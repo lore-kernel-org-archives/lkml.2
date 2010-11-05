@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab0KEU1P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 16:27:15 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:37047 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752709Ab0KEU1C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 16:27:02 -0400
-Message-ID: <4CD46892.6050408@candelatech.com>
-Date: Fri, 05 Nov 2010 13:26:58 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	id S1754742Ab0KEU1E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 16:27:04 -0400
+Received: from cantor.suse.de ([195.135.220.2]:55204 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752586Ab0KEU1B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 16:27:01 -0400
+Date: Fri, 5 Nov 2010 13:02:45 -0700
+From: Greg KH <gregkh@suse.de>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: cbouatmailru@gmail.com, kay.sievers@vrfy.org, ak@linux.intel.com,
+        axboe@kernel.dk, shemminger@vyatta.com, ebiederm@xmission.com,
+        stern@rowland.harvard.edu, James.Bottomley@suse.de,
+        akpm@linux-foundation.org, kuznet@ms2.inr.ac.ru,
+        randy.dunlap@oracle.com, tj@kernel.org, davem@davemloft.net,
+        perex@perex.cz, tiwai@suse.de, mingo@elte.hu, a.p.zijlstra@chello.nl,
+        dhowells@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [2.6.37-rc1] wait_for_sysfs prints errors.
+Message-ID: <20101105200245.GA1645@suse.de>
+References: <201011060307.GIG13040.OFFJOVHMSFLOtQ@I-love.SAKURA.ne.jp>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: NetDev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: OOM when adding ipv6 route:  How to make available more per-cpu
- memory?
-References: <4CD43C87.5040403@candelatech.com>	 <1288980361.2882.1070.camel@edumazet-laptop>	 <4CD449A5.5070305@candelatech.com> <1288988403.2665.268.camel@edumazet-laptop>
-In-Reply-To: <1288988403.2665.268.camel@edumazet-laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201011060307.GIG13040.OFFJOVHMSFLOtQ@I-love.SAKURA.ne.jp>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2010 01:20 PM, Eric Dumazet wrote:
+On Sat, Nov 06, 2010 at 03:07:55AM +0900, Tetsuo Handa wrote:
+> Hello.
+> 
+> I noticed that udevd-event started to print error messages.
+> 
+>   Starting udev: udevd-event[1682]: wait_for_sysfs: waiting for '/sys/devices/pci0000:00/0000:00:10.0/host0/ioerr_cnt' failed
+>   udevd-event[2103]: wait_for_sysfs: waiting for '/sys/devices/pci0000:00/0000:00:10.0/host0/target0:0:1/ioerr_cnt' failed
+>   udevd-event[2102]: wait_for_sysfs: waiting for '/sys/devices/pci0000:00/0000:00:10.0/host0/target0:0:0/ioerr_cnt' failed
 
-> Your vmalloc space is very fragmented. pcpu_get_vm_areas() want
-> hugepages (4MB on your machine, 2MB on mine because I have
-> CONFIG_HIGHMEM64G=y)
->
-> You could :
->
-> 1) Use a 64 bit kernel ( :) )
+That's wierd, what version of udev is this?
 
-We mostly use 64-bit, but just not for the remastered live cd image.
+> These error messages are caused by one or more of below commits.
+> (Sorry, I can't find exact one because I can't boot as of below commits.)
+> 
+> 5cfc64ce "base/platform: Safe handling for NULL platform data and resources"
+> 807508c8 "base/platform: Simplifications for NULL platform data/resources handling"
+> 39aba963 "driver core: remove CONFIG_SYSFS_DEPRECATED_V2 but keep it for block devices"
+> 
+> Is this a regression? (Is this an intended change?)
 
-> or
->
-> 2) boot parameter vmalloc=256M   to get more room
->     (default is 128 Mbytes)
+Do you still have CONFIG_SYSFS_DEPRECATED enabled?
 
-We'll try that.
+Other than that, everything works ok, right?
 
->
-> and eventually
->
-> select a 2G/2G User/Kernel split to get more LOWMEM, because big vmalloc
-> windows shrinks the LOWMEM zone. (CONFIG_VMSPLIT_2G=y)
+thanks,
 
-That sounds promising as well.
-
-
-I was also wondering if it would make sense to allow one to disable
-the snmp stats for ipv6?  I don't think I have any use for those
-stats anyway..
-
-Thanks,
-Ben
-
-
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
-
+greg k-h
