@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397Ab0KEDAQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 23:00:16 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:52799 "EHLO imr4.ericy.com"
+	id S1753420Ab0KEDBL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 23:01:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55576 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753047Ab0KEDAO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 23:00:14 -0400
-Date: Thu, 4 Nov 2010 19:59:33 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-CC: Jean Delvare <khali@linux-fr.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [lm-sensors] [PATCH 6/8] hwmon: applesmc: Dynamic creation of
- fan files
-Message-ID: <20101105025933.GE28308@ericsson.com>
-References: <1288511434-5662-1-git-send-email-rydberg@euromail.se>
- <1288511434-5662-7-git-send-email-rydberg@euromail.se>
+	id S1753047Ab0KEDBJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 23:01:09 -0400
+From: Jason Wang <jasowang@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1288511434-5662-7-git-send-email-rydberg@euromail.se>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <19667.29541.897732.941476@gargle.gargle.HOWL>
+Date: Fri, 5 Nov 2010 11:00:53 +0800
+To: Jason Wang <jasowang@redhat.com>
+Cc: rusty@rustcorp.com.au, davem@davemloft.net, markmc@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mst@redhat.com,
+        netdev@vger.kernel.org
+Subject: [V2 PATCH] virtio-net: init link state correctly
+In-Reply-To: <20101105025008.3277.87697.stgit@dhcp-91-158.nay.redhat.com>
+References: <20101105025008.3277.87697.stgit@dhcp-91-158.nay.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 31, 2010 at 03:50:32AM -0400, Henrik Rydberg wrote:
-> With the dynamic temperature group in place, the setup of fans
-> can be simplified. This patch sets up the fans dynamically, removing
-> a hundred lines of code.
-> 
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Jason Wang writes:
 
-Hi Henrik,
-
-just one minor comment.
-
-> ---
->  drivers/hwmon/applesmc.c |  188 +++++++++++-----------------------------------
->  1 files changed, 43 insertions(+), 145 deletions(-)
-> 
-> diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
-> index abbff0b..4ba20ec 100644
-> --- a/drivers/hwmon/applesmc.c
-> +++ b/drivers/hwmon/applesmc.c
-[ ... ]
-
->  static int applesmc_init_smcreg_try(void)
->  {
->         struct applesmc_registers *s = &smcreg;
-> +       u8 tmp[4];
-
-Why tmp[4] if you only read one byte ?
-
-Guenter
-
+CC netdev missed in the original patch.
+ > For device that supports VIRTIO_NET_F_STATUS, there's no need to
+ > assume the link is up and we need to call nerif_carrier_off() before
+ > querying device status, otherwise we may get wrong operstate after
+ > diver was loaded because the link watch event was not fired as
+ > expected.
+ > 
+ > For device that does not support VIRITO_NET_F_STATUS, we could not get
+ > its status through virtnet_update_status() and what we can only do is
+ > always assuming the link is up.
+ > 
+ > Signed-off-by: Jason Wang <jasowang@redhat.com>
+ > ---
+ >  drivers/net/virtio_net.c |   12 +++++++++---
+ >  1 files changed, 9 insertions(+), 3 deletions(-)
+ > 
+ > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+ > index bb6b67f..b6d4028 100644
+ > --- a/drivers/net/virtio_net.c
+ > +++ b/drivers/net/virtio_net.c
+ > @@ -986,9 +986,15 @@ static int virtnet_probe(struct virtio_device *vdev)
+ >  		goto unregister;
+ >  	}
+ >  
+ > -	vi->status = VIRTIO_NET_S_LINK_UP;
+ > -	virtnet_update_status(vi);
+ > -	netif_carrier_on(dev);
+ > +	/* Assume link up if device can't report link status,
+ > +	   otherwise get link status from config. */
+ > +	if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_STATUS)) {
+ > +		netif_carrier_off(dev);
+ > +		virtnet_update_status(vi);
+ > +	} else {
+ > +		vi->status = VIRTIO_NET_S_LINK_UP;
+ > +		netif_carrier_on(dev);
+ > +	}
+ >  
+ >  	pr_debug("virtnet: registered device %s\n", dev->name);
+ >  	return 0;
+ > 
+ > --
+ > To unsubscribe from this list: send the line "unsubscribe kvm" in
+ > the body of a message to majordomo@vger.kernel.org
+ > More majordomo info at  http://vger.kernel.org/majordomo-info.html
