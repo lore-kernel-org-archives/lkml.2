@@ -1,35 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751394Ab0KEGRc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 02:17:32 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:53499 "EHLO
+	id S1752508Ab0KEGau (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 02:30:50 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:33278 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750817Ab0KEGRa (ORCPT
+	with ESMTP id S1751309Ab0KEGas (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 02:17:30 -0400
+	Fri, 5 Nov 2010 02:30:48 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=subject:from:to:cc:in-reply-to:references:content-type:date
          :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=SlzRtWPGDLeR6GtgE1s8rc8HcsB7itbWsVSBj2m1q1fexSshf/0dKZWgzke2ZdvY5n
-         k7eWCByE6n9gWt3OmF9AqxX7EYPhDqNT0vhE1TQtgc01cIv+XfgsyOJ2q9qJC52rAE2Q
-         sJM6hm/Ch9HmEKa0I7rtHuXM21waxCZLAiOa4=
-Subject: Re: divide error in select_task_rq_fair()
+        b=RydptJRXOr7dfqFGeCsgpPU4LeEP8sl0hJcsXDwpp5q97Clt31Fl0fBPUMtzYQFXtu
+         P+vDyYdOEcqJv2IriYEYx6l9DZM6wIUQOE3ZRS87Csf0KzCNBQDELS0Jk+btCTjLWnDg
+         h/jOaXgH6ECczEPaeiS3Tn1HK1gkoO2Yy0FXA=
+Subject: Re: [PATCH 46/49] net/netfilter: Use vzalloc
 From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Venkatesh Pallipadi <venki@google.com>, Nikhil Rao <ncrao@google.com>,
-        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
+To: Joe Perches <joe@perches.com>, Jesper Juhl <jj@chaosbits.net>
+Cc: Jiri Kosina <trivial@kernel.org>, Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-In-Reply-To: <20101105020013.GA13484@helgaas.com>
-References: <20101104041236.GA9389@helgaas.com>
-	 <1288847992.2718.37.camel@edumazet-laptop>
-	 <20101104142853.GA11656@helgaas.com>
-	 <1288881474.2659.123.camel@edumazet-laptop>
-	 <20101105020013.GA13484@helgaas.com>
+In-Reply-To: <7d6da34b7e84955795717b0241000a0701cd5b34.1288925425.git.joe@perches.com>
+References: <alpine.DEB.2.00.1011031108260.11625@router.home>
+	 <7d6da34b7e84955795717b0241000a0701cd5b34.1288925425.git.joe@perches.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 05 Nov 2010 07:17:24 +0100
-Message-ID: <1288937844.3234.1.camel@edumazet-laptop>
+Date: Fri, 05 Nov 2010 07:30:40 +0100
+Message-ID: <1288938640.3234.12.camel@edumazet-laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 8bit
@@ -37,18 +35,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 04 novembre 2010 à 20:00 -0600, Bjorn Helgaas a écrit :
+Le jeudi 04 novembre 2010 à 20:08 -0700, Joe Perches a écrit :
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  net/netfilter/x_tables.c |    5 ++---
+>  1 files changed, 2 insertions(+), 3 deletions(-)
 
-> Is that going to help you debug the problem?  The solution is not going
-> to be something like "set NR_CPUS=x".  If NR_CPUS is too small, the
-> machine should still *boot*, even if we can't use all the CPUs in the
-> box.
-> 
+So many 'vzalloc' patches for net tree... 
 
-Yes, it will help to understand the layout of cpu / domains and make
-appropriate changes.
+I had _one_ patch, waiting that David actually had vzalloc() in its tree
+before sending it.
 
-Alternative is you send me such a machine :=)
+Given Jesper Juhl was doing this work, could you please take another
+one, please ?
+
+For example, explaining him how to use other tools than "bash+egrep
++manual inspection" as he mentioned in a previous mail.
+
+Really Joe, your behavior should be smarter than that.
 
 Thanks
 
