@@ -1,97 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752998Ab0KEBo6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 21:44:58 -0400
-Received: from bld-mail20.adl6.internode.on.net ([150.101.137.105]:57140 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752882Ab0KEBo5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 21:44:57 -0400
-Date: Fri, 5 Nov 2010 12:43:34 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: Chris Mason <chris.mason@oracle.com>, Ingo Molnar <mingo@elte.hu>,
-        Pekka Enberg <penberg@kernel.org>,
-        Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Nick Piggin <npiggin@suse.de>, Arjan van de Ven <arjan@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "Ted Ts'o" <tytso@mit.edu>,
-        Corrado Zoccolo <czoccolo@gmail.com>,
-        Shaohua Li <shaohua.li@intel.com>, Sanjoy Mahajan <sanjoy@olin.edu>,
-        Steven Barrett <damentz@gmail.com>
-Subject: Re: 2.6.36 io bring the system to its knees
-Message-ID: <20101105014334.GF13830@dastard>
-References: <AANLkTikRKVBzO=ruy=JDmBF28NiUdJmAqb4-1VhK0QBX@mail.gmail.com>
- <AANLkTinzJ9a+9w7G5X0uZpX2o-L8E6XW98VFKoF1R_-S@mail.gmail.com>
- <AANLkTinDDG0ZkNFJZXuV9k3nJgueUW=ph8AuHgyeAXji@mail.gmail.com>
- <AANLkTikvSGNE7uGn5p0tfJNg4Hz5WRmLRC8cXu7+GhMk@mail.gmail.com>
- <20101028090002.GA12446@elte.hu>
- <AANLkTinoGGLTN2JRwjJtF6Ra5auZVg+VSa=TyrtAkDor@mail.gmail.com>
- <20101028133036.GA30565@elte.hu>
- <20101028170132.GY27796@think>
- <alpine.LNX.2.00.1011050032440.16015@swampdragon.chaosbits.net>
- <alpine.LNX.2.00.1011050047220.16015@swampdragon.chaosbits.net>
+	id S1752846Ab0KEBya (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 21:54:30 -0400
+Received: from web81602.mail.mud.yahoo.com ([68.142.199.154]:37487 "HELO
+	web81602.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751873Ab0KEBy2 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 21:54:28 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=sbcglobal.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=RO1Q4CARzg7kaKySTAyU4O0ZjGt4ZLLfV/qunq/n43k/X22YluzVUOd1IPSDMHmNysRr2aysIQ4n/tjJogefEWuS4DYP7kg3L6OViFqiyLsJMIwYamvNkbOjrXyA04A+KxeQo7CDSGfDgCaPq+NZjWiCjheWI/EExsH45yvw6hw=;
+Message-ID: <141376.66981.qm@web81602.mail.mud.yahoo.com>
+X-YMail-OSG: L.IS7LQVM1nMI0NtksWPgFV5E6EPgnQ4DqLQHDvMt6mBNT1
+ xXiqJ8NZv7f6t46GrzIiz7Egn9OOjrvtBBB4cRLJ3lEQ_coxIg7pygyuXnGu
+ aV.Uq1M1RoMXhrF8T639vNEVB0fDo6iGwCswPFjeNV2UjQghTtZqPkN9m82b
+ QXu1xzzsV5kaR7z2ELtD78fP6qRJynJtTRu2hC0W2mxC9JdyxJlMl0WMcaOe
+ yk.B_LSfBIUUZUN1fNDnNdHNX5U8RE1hEme1OKy3G_kLL5OAFhZ0OUs7Slg-
+ -
+X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.284920
+Date: Thu, 4 Nov 2010 18:54:26 -0700 (PDT)
+From: richard-mullen@sbcglobal.net
+Subject: =?iso-8859-1?Q?Your_mail-Id_has_been_Awarded_=A3750=2C000=2E_in_the_Briti?=
+ =?iso-8859-1?Q?sh_GNLD_End_Of_Year_Promo_send_your=2E_Name=3A=2EAddress?=
+To: undisclosed recipients:;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1011050047220.16015@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 05, 2010 at 12:48:17AM +0100, Jesper Juhl wrote:
-> On Fri, 5 Nov 2010, Jesper Juhl wrote:
-> 
-> > On Thu, 28 Oct 2010, Chris Mason wrote:
-> > 
-> > > On Thu, Oct 28, 2010 at 03:30:36PM +0200, Ingo Molnar wrote:
-> > > > 
-> > > > "Many seconds freezes" and slowdowns wont be fixed via the VFS scalability patches 
-> > > > i'm afraid.
-> > > > 
-> > > > This has the appearance of some really bad IO or VM latency problem. Unfixed and 
-> > > > present in stable kernel versions going from years ago all the way to v2.6.36.
-> > > 
-> > > Hmmm, the workload you're describing here has two special parts.  First
-> > > it dramatically overloads the disk, and then it has guis doing things
-> > > waiting for the disk.
-> > > 
-> > 
-> > Just want to chime in with a 'me too'.
-> > 
-> > I see something similar on Arch Linux when doing 'pacman -Syyuv' and there 
-> > are many (as in more than 5-10) updates to apply. While the update is 
-> > running (even if that's all the system is doing) system responsiveness is 
-> > terrible - just starting 'chromium' which is usually instant (at least 
-> > less than 2 sec at worst) can take upwards of 10 seconds and the mouse 
-> > cursor in X starts to jump a bit as well and switching virtual desktops 
-> > noticably lags when redrawing the new desktop if there's a full screen app 
-> > like gimp or OpenOffice open there. This is on a Lenovo Thinkpad R61i 
-> > which has a 'Intel(R) Core(TM)2 Duo CPU T7250 @ 2.00GHz' CPU, 2GB of 
-> > memory and 499996 kilobytes of swap.
-> > 
-> Forgot to mention the kernel I currently experience this with : 
-> 
-> [jj@dragon ~]$ uname -a
-> Linux dragon 2.6.35-ARCH #1 SMP PREEMPT Sat Oct 30 21:22:26 CEST 2010 x86_64 Intel(R) Core(TM)2 Duo CPU T7250 @ 2.00GHz GenuineIntel GNU/Linux
 
-I think anyone reporting a interactivity problem also needs to
-indicate what their filesystem is, what mount paramters they are
-using, what their storage config is, whether barriers are active or
-not, what elevator they are using, whether one or more of the
-applications are issuing fsync() or sync() calls, and so on.
-
-Basically, what we need to know is whether these problems are
-isolated to a particular filesystem or storage type because
-they may simply be known problems (e.g. the ext3 fsync-the-world
-problem).
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Name/address
