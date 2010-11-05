@@ -1,68 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754923Ab0KEVKp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 17:10:45 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:42464 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752956Ab0KEVKn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 17:10:43 -0400
-X-Greylist: delayed 347 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Nov 2010 17:10:43 EDT
-Date: Fri, 5 Nov 2010 22:04:54 +0100
-From: Lars Ellenberg <lars.ellenberg@linbit.com>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Jens Axboe <jaxboe@fusionio.com>, Neil Brown <neilb@suse.de>,
-        drbd-dev@lists.linbit.com
-Subject: Re: [Drbd-dev] [PATCH] block: read i_size with i_size_read()
-Message-ID: <20101105210454.GE2321@barkeeper1-xen.linbit>
-Mail-Followup-To: Mike Snitzer <snitzer@redhat.com>,
-	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-	Jens Axboe <jaxboe@fusionio.com>, Neil Brown <neilb@suse.de>,
-	drbd-dev@lists.linbit.com
-References: <1288985241-3515-1-git-send-email-snitzer@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1288985241-3515-1-git-send-email-snitzer@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752901Ab0KEVQY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 17:16:24 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:59333 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752616Ab0KEVQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 17:16:23 -0400
+Subject: [v2][PATCH] [v2] Revalidate page->mapping in do_generic_file_read()
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, Dave Hansen <dave@linux.vnet.ibm.com>,
+        arunabal@in.ibm.com, sbest@us.ibm.com, stable <stable@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+Date: Fri, 05 Nov 2010 14:16:15 -0700
+Message-Id: <20101105211615.2D67A348@kernel.beaverton.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 05, 2010 at 03:27:21PM -0400, Mike Snitzer wrote:
-> Convert direct reads of an inode's i_size to using i_size_read().
-> 
-> i_size_{read,write} use a seqcount to protect reads from accessing
-> incomple writes.  Concurrent i_size_write()s require mutual exclussion
-> to protect the seqcount that is used by i_size_{read,write}.  But
-> i_size_read() callers do not need to use additional locking.
-> 
-> Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-> Cc: Jens Axboe <jaxboe@fusionio.com>
-> Cc: Neil Brown <neilb@suse.de>
-> Cc: drbd-dev@lists.linbit.com
-> ---
->  block/blk-core.c              |    4 ++--
->  block/compat_ioctl.c          |    4 ++--
->  block/ioctl.c                 |    6 +++---
->  drivers/block/drbd/drbd_int.h |    2 +-
->  drivers/md/md.c               |   18 +++++++++---------
->  5 files changed, 17 insertions(+), 17 deletions(-)
 
-DRBD one line fix trivially
-  Acked-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+changes from v1:
+ * added a comment
+ * changed the ->mapping check to NULL-only to make it more
+   clear that we're only checking for truncation
 
+--
 
-> NOTE: I stopped short of fixing drbd and nbd to use revalidate_disk
-> and/or i_size_write.
+70 hours into some stress tests of a 2.6.32-based enterprise kernel,
+we ran into a NULL dereference in here:
 
-Ok, we'll pick up the DRBD part of it.
+	int block_is_partially_uptodate(struct page *page, read_descriptor_t *desc,
+	                                        unsigned long from)
+	{
+---->		struct inode *inode = page->mapping->host;
 
--- 
-: Lars Ellenberg
-: LINBIT | Your Way to High Availability
-: DRBD/HA support and consulting http://www.linbit.com
+It looks like page->mapping was the culprit.  (xmon trace is below).
+After closer examination, I realized that do_generic_file_read() does
+a find_get_page(), and eventually locks the page before calling
+block_is_partially_uptodate().  However, it doesn't revalidate the
+page->mapping after the page is locked.  So, there's a small window
+between the find_get_page() and ->is_partially_uptodate() where the
+page could get truncated and page->mapping cleared.
 
-DRBD® and LINBIT® are registered trademarks of LINBIT, Austria.
+We _have_ a reference, so it can't get reclaimed, but it certainly
+can be truncated.
+
+I think the correct thing is to check page->mapping after the
+trylock_page(), and jump out if it got truncated.  This patch has
+been running in the test environment for a month or so now, and we
+have not seen this bug pop up again.
+
+xmon info:
+======================================
+1f:mon> e
+cpu 0x1f: Vector: 300 (Data Access) at [c0000002ae36f770]
+    pc: c0000000001e7a6c: .block_is_partially_uptodate+0xc/0x100
+    lr: c000000000142944: .generic_file_aio_read+0x1e4/0x770
+    sp: c0000002ae36f9f0
+   msr: 8000000000009032
+   dar: 0
+ dsisr: 40000000
+  current = 0xc000000378f99e30
+  paca    = 0xc000000000f66300
+    pid   = 21946, comm = bash
+1f:mon> r
+R00 = 0025c0500000006d   R16 = 0000000000000000
+R01 = c0000002ae36f9f0   R17 = c000000362cd3af0
+R02 = c000000000e8cd80   R18 = ffffffffffffffff
+R03 = c0000000031d0f88   R19 = 0000000000000001
+R04 = c0000002ae36fa68   R20 = c0000003bb97b8a0
+R05 = 0000000000000000   R21 = c0000002ae36fa68
+R06 = 0000000000000000   R22 = 0000000000000000
+R07 = 0000000000000001   R23 = c0000002ae36fbb0
+R08 = 0000000000000002   R24 = 0000000000000000
+R09 = 0000000000000000   R25 = c000000362cd3a80
+R10 = 0000000000000000   R26 = 0000000000000002
+R11 = c0000000001e7b60   R27 = 0000000000000000
+R12 = 0000000042000484   R28 = 0000000000000001
+R13 = c000000000f66300   R29 = c0000003bb97b9b8
+R14 = 0000000000000001   R30 = c000000000e28a08
+R15 = 000000000000ffff   R31 = c0000000031d0f88
+pc  = c0000000001e7a6c .block_is_partially_uptodate+0xc/0x100
+lr  = c000000000142944 .generic_file_aio_read+0x1e4/0x770
+msr = 8000000000009032   cr  = 22000488
+ctr = c0000000001e7a60   xer = 0000000020000000   trap =  300
+dar = 0000000000000000   dsisr = 40000000
+1f:mon> t 
+[link register   ] c000000000142944 .generic_file_aio_read+0x1e4/0x770
+[c0000002ae36f9f0] c000000000142a14 .generic_file_aio_read+0x2b4/0x770
+(unreliable)
+[c0000002ae36fb40] c0000000001b03e4 .do_sync_read+0xd4/0x160
+[c0000002ae36fce0] c0000000001b153c .vfs_read+0xec/0x1f0
+[c0000002ae36fd80] c0000000001b1768 .SyS_read+0x58/0xb0
+[c0000002ae36fe30] c00000000000852c syscall_exit+0x0/0x40
+--- Exception: c00 (System Call) at 00000080a840bc54
+SP (fffca15df30) is in userspace
+1f:mon> di c0000000001e7a6c
+c0000000001e7a6c  e9290000      ld      r9,0(r9)
+c0000000001e7a70  418200c0      beq     c0000000001e7b30        #
+.block_is_partially_uptodate+0xd0/0x100
+c0000000001e7a74  e9440008      ld      r10,8(r4)
+c0000000001e7a78  78a80020      clrldi  r8,r5,32
+c0000000001e7a7c  3c000001      lis     r0,1
+c0000000001e7a80  812900a8      lwz     r9,168(r9)
+c0000000001e7a84  39600001      li      r11,1
+c0000000001e7a88  7c080050      subf    r0,r8,r0
+c0000000001e7a8c  7f805040      cmplw   cr7,r0,r10
+c0000000001e7a90  7d6b4830      slw     r11,r11,r9
+c0000000001e7a94  796b0020      clrldi  r11,r11,32
+c0000000001e7a98  419d00a8      bgt     cr7,c0000000001e7b40    #
+.block_is_partially_uptodate+0xe0/0x100
+c0000000001e7a9c  7fa55840      cmpld   cr7,r5,r11
+c0000000001e7aa0  7d004214      add     r8,r0,r8
+c0000000001e7aa4  79080020      clrldi  r8,r8,32
+c0000000001e7aa8  419c0078      blt     cr7,c0000000001e7b20    #
+.block_is_partially_uptodate+0xc0/0x100
+======================================
+
+Cc: arunabal@in.ibm.com
+Cc: sbest@us.ibm.com
+Cc: stable <stable@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Rik van Riel <riel@redhat.com>
+---
+
+ linux-2.6.git-dave/mm/filemap.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+diff -puN mm/filemap.c~is_partially_uptodate-revalidate-page mm/filemap.c
+--- linux-2.6.git/mm/filemap.c~is_partially_uptodate-revalidate-page	2010-11-03 13:49:21.000000000 -0700
++++ linux-2.6.git-dave/mm/filemap.c	2010-11-04 06:59:08.000000000 -0700
+@@ -1016,6 +1016,9 @@ find_page:
+ 				goto page_not_up_to_date;
+ 			if (!trylock_page(page))
+ 				goto page_not_up_to_date;
++			/* Did it get truncated before we got the lock? */
++			if (!page->mapping)
++				goto page_not_up_to_date_locked;
+ 			if (!mapping->a_ops->is_partially_uptodate(page,
+ 								desc, offset))
+ 				goto page_not_up_to_date_locked;
+_
