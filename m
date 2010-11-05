@@ -1,84 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753098Ab0KEQaA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 12:30:00 -0400
-Received: from exprod5og105.obsmtp.com ([64.18.0.180]:54513 "EHLO
-	exprod5og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752667Ab0KEQ35 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 12:29:57 -0400
-Message-ID: <4CD430E4.2090907@ge.com>
-Date: Fri, 05 Nov 2010 16:29:24 +0000
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
+	id S1753813Ab0KEQfK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 12:35:10 -0400
+Received: from fieldses.org ([174.143.236.118]:55132 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753449Ab0KEQfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 12:35:08 -0400
+Date: Fri, 5 Nov 2010 12:35:04 -0400
+To: Eric Paris <eparis@redhat.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        jmorris@namei.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, viro@zeniv.linux.org.uk,
+        Dave Chinner <david@fromorbit.com>
+Subject: Re: [PATCH v1.2 0/5] IMA: making i_readcount a first class inode
+ citizen
+Message-ID: <20101105163504.GB3270@fieldses.org>
+References: <1288717707-5295-1-git-send-email-zohar@linux.vnet.ibm.com>
+ <1288721009.3047.16.camel@localhost.localdomain>
 MIME-Version: 1.0
-To: "Emilio G. Cota" <cota@braap.org>
-CC: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
-        devel@driverdev.osuosl.org,
-        Juan David Gonzalez Cobas <david.cobas@gmail.com>,
-        Bill Pemberton <wfp5p@virginia.edu>
-Subject: Re: [PATCH 04/30] staging/vme: allow non-dynamic allocation of bus
- numbers
-References: <1288055476-19438-1-git-send-email-cota@braap.org> <1288055476-19438-5-git-send-email-cota@braap.org> <4CC7F3BE.5090503@ge.com> <20101027151327.GR10869@flamenco.cs.columbia.edu> <20101104034056.GC9037@flamenco.cs.columbia.edu>
-In-Reply-To: <20101104034056.GC9037@flamenco.cs.columbia.edu>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 05 Nov 2010 16:29:38.0812 (UTC) FILETIME=[A430ABC0:01CB7D06]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288721009.3047.16.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/10 03:40, Emilio G. Cota wrote:
-> On Wed, Oct 27, 2010 at 11:13:27 -0400, Emilio G. Cota wrote:
->> On Wed, Oct 27, 2010 at 10:41:18 +0100, Martyn Welch wrote:
->>> On 26/10/10 02:10, Emilio G. Cota wrote:
->>>> From: Emilio G. Cota <cota@braap.org>
->>>>
->>>> In a configuration with several bridges, each bridge is
->>>> assigned a certain bus number depending on the order in which
->>>> vme_register_bridge is called. This can complicate multi-bridge
->>>> installations because the eventual bus numbers will depend
->>>> on the order the bridges were loaded.
->>>>
->>>> The appended allows bridges to register with a bus number of
->>>> their choice, while keeping the previous 'first come, first
->>>> served' behaviour as the default.
->>>>
->>>
->>> I can't see where this is being used.
->>
->> Each driver's .probe is fed with bus_number and slot_number.
->> Normally the driver will check that pair against what it received
->> through modparams and act accordingly.
->>
->> For this to be reliable bus numbering should be consistent on
->> a given system, i.e. it should be possible to always allocate
->> the same bus number to a given bus. Otherwise, depending on
->> which bridge is installed first, we'd get different bus numbers
->> assigned.
->>
->> Does that make it clearer now?
->>
->>> I assume this is a part of future changes you wish to make?
->>
->> AFAICT it affects the current model.
+On Tue, Nov 02, 2010 at 02:03:29PM -0400, Eric Paris wrote:
+> On Tue, 2010-11-02 at 13:08 -0400, Mimi Zohar wrote:
+> > Changelog:
+> > - renamed iget/iput_readcount to i_readcount_inc/dec (Dave Chinner's suggestion)
+> > - finished cleaning up the locking, so that: (based on Eric's comment.)
+> > 	- i_lock is not required
+> > 	- i_mutex is taken when making measurement decisions to prevent
+> > 	  file metadata(eg. permissions, xattr) changing from under it.
+> > 	- iint->mutex is taken when accessing/modifying the iint structure.
+> > - Based on the previous posting discussion, i_readcount is now defined as
+> > atomic. 
+> > 
+> > This patchset separates the incrementing/decrementing of the i_readcount,
+> > in the VFS layer, from other IMA functionality, by replacing the current
+> > ima_counts_get() call with i_readcount_inc(). Its unclear whether this
+> > call to increment i_readcount should be made earlier, like i_writecount.
+> > 
+> > The patch ordering is a bit redundant in order to leave removing the ifdef
+> > around i_readcount until the last patch. The first four patches: redefines 
+> > i_readcount as atomic, defines i_readcount_inc/dec(), moves the IMA
+> > functionality in ima_counts_get() to ima_file_check(), and removes the
+> > IMA imbalance code, simplifying IMA. The last patch removes the ifdef
+> > around i_readcount, making i_readcount into a "first class inode citizen".
+> > 
+> > The generic_setlease code could then take advantage of i_readcount.
+> >  
+> > Mimi
+> > Mimi Zohar (5):
+> >   IMA: convert i_readcount to atomic
+> >   IMA: define readcount functions
+> >   IMA: maintain i_readcount in the VFS layer
+> >   IMA: remove IMA imbalance checking
+> >   IMA: making i_readcount a first class inode citizen
 > 
-> Martyn,
 > 
-> Have you had time to re-check this one?
+> Ack on patches 1-4.  Patch 5 I'm not so sure about.  As long as IMA is
+> the only user I don't think we really want to unconditionally compile
+> i_readcount in.  I say we either leave it wrapped in CONFIG_IMA until
+> there is a second user.  Then we either unconditionally compile it in,
+> or we wrap it in something that either user can select in the Kconfig.
 > 
+> I'll let others voice their opinion.
 
-I'm afraid I haven't - I'm rather tied up at the moment. I'll try and
-set aside some time next week to look at the remaining patches you sent.
+I think it solves a real problem for the lease code.
 
-Martyn
-
-
--- 
-Martyn Welch (Principal Software Engineer)   |   Registered in England and
-GE Intelligent Platforms                     |   Wales (3828642) at 100
-T +44(0)127322748                            |   Barbirolli Square,
-Manchester,
-E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
+--b.
