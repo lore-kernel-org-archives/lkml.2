@@ -1,123 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269Ab0KEQ2X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 12:28:23 -0400
-Received: from fieldses.org ([174.143.236.118]:50286 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752667Ab0KEQ2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 12:28:19 -0400
-Date: Fri, 5 Nov 2010 12:28:11 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, hch@infradead.org, warthog9@kernel.org,
-        david@fromorbit.com, jmorris@namei.org, kyle@mcmartin.ca,
-        hpa@zytor.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, mingo@elte.hu, eparis@redhat.com,
-        viro@zeniv.linux.org.uk, Matthew Wilcox <matthew@wil.cx>
-Subject: Re: [PATCH 0/4] IMA: making i_readcount a first class inode citizen
-Message-ID: <20101105162811.GA3270@fieldses.org>
-References: <1288303325-9628-1-git-send-email-zohar@linux.vnet.ibm.com>
- <20101105011227.GB4320@fieldses.org>
- <1288955286.3135.9.camel@localhost.localdomain>
+	id S1753098Ab0KEQaA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 12:30:00 -0400
+Received: from exprod5og105.obsmtp.com ([64.18.0.180]:54513 "EHLO
+	exprod5og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752667Ab0KEQ35 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 12:29:57 -0400
+Message-ID: <4CD430E4.2090907@ge.com>
+Date: Fri, 05 Nov 2010 16:29:24 +0000
+From: Martyn Welch <martyn.welch@ge.com>
+Organization: GE Intelligent Platforms
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288955286.3135.9.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Emilio G. Cota" <cota@braap.org>
+CC: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
+        devel@driverdev.osuosl.org,
+        Juan David Gonzalez Cobas <david.cobas@gmail.com>,
+        Bill Pemberton <wfp5p@virginia.edu>
+Subject: Re: [PATCH 04/30] staging/vme: allow non-dynamic allocation of bus
+ numbers
+References: <1288055476-19438-1-git-send-email-cota@braap.org> <1288055476-19438-5-git-send-email-cota@braap.org> <4CC7F3BE.5090503@ge.com> <20101027151327.GR10869@flamenco.cs.columbia.edu> <20101104034056.GC9037@flamenco.cs.columbia.edu>
+In-Reply-To: <20101104034056.GC9037@flamenco.cs.columbia.edu>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 05 Nov 2010 16:29:38.0812 (UTC) FILETIME=[A430ABC0:01CB7D06]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 05, 2010 at 07:08:06AM -0400, Mimi Zohar wrote:
-> On Thu, 2010-11-04 at 21:12 -0400, J. Bruce Fields wrote:
-> > On Thu, Oct 28, 2010 at 06:02:01PM -0400, Mimi Zohar wrote:
-> > > On Mon, 2010-10-25 at 14:41 -0400, Eric Paris wrote:
-> > > 
-> > > <snip>
-> > > 
-> > > > I believe that IBM is going to look into making i_readcount a first
-> > > > class citizen which can be used by both IMA and generic_setlease().
-> > > > Then people could say IMA had 0 per inode overhead   :)
-> > > 
-> > > This patchset separates the incrementing/decrementing of the i_readcount,
-> > > in the VFS layer, from other IMA functionality, by replacing the current
-> > > ima_counts_get() call with iget_readcount(). Its unclear whether this
-> > > call to increment i_readcount should be made earlier. 
-> > > 
-> > > The patch ordering is a bit redundant in order to leave removing the ifdef
-> > > around i_readcount until the last patch. The first three patches: defines 
-> > > iget/iput_readcount(), moves the IMA functionality in ima_counts_get() to
-> > > ima_file_check(), and removes the IMA imbalance code, simplifying IMA. The
-> > > last patch moves iget/iput_readcount() to the fs directory and removes the
-> > > ifdef around i_readcount, making i_readcount into a "first class inode citizen".
-> > > 
-> > > The generic_setlease code could then take advantage of i_readcount, assuming
-> > > it can take the spin_lock, by doing something like:
-> > > 
-> > > -		if ((arg == F_RDLCK) && (atomic_read(&inode->i_writecount) > 0))
-> > > +
-> > > +		spin_lock(&inode->i_lock);
-> > > +		if ((arg == F_RDLCK) && (atomic_read(&inode->i_writecount) > 0)){
-> > > +			spin_unlock(&inode->i_lock);
-> > >  			goto out;
-> > > -		if ((arg == F_WRLCK)
-> > > -		    && ((atomic_read(&dentry->d_count) > 1)
-> > > -			|| (atomic_read(&inode->i_count) > 1)))
-> > > +		}
-> > > +		if ((arg == F_WRLCK) && (inode->i_readcount > 1)) {
-> > > +			spin_unlock(&inode->i_lock);
-> > >  			goto out;
-> > > +		}
-> > > +		spin_unlock(&inode->i_lock);
-> > >  	}
-> > 
-> > Seems like an improvement.
-> > 
-> > It still leaves the race:
-> > 
-> > 	may_open calls lease_break, finds no lease
-> > 
-> > 			setlease checks read/writecount, finds 0,
-> > 			creates lease
-> > 
-> > 	__dentry_open bumps read/writecount
-> > 
-> > (Is there any reason we couldn't move the break_lease to after bumping
-> > read or write count?)
-> > 
-> > --b.
+On 04/11/10 03:40, Emilio G. Cota wrote:
+> On Wed, Oct 27, 2010 at 11:13:27 -0400, Emilio G. Cota wrote:
+>> On Wed, Oct 27, 2010 at 10:41:18 +0100, Martyn Welch wrote:
+>>> On 26/10/10 02:10, Emilio G. Cota wrote:
+>>>> From: Emilio G. Cota <cota@braap.org>
+>>>>
+>>>> In a configuration with several bridges, each bridge is
+>>>> assigned a certain bus number depending on the order in which
+>>>> vme_register_bridge is called. This can complicate multi-bridge
+>>>> installations because the eventual bus numbers will depend
+>>>> on the order the bridges were loaded.
+>>>>
+>>>> The appended allows bridges to register with a bus number of
+>>>> their choice, while keeping the previous 'first come, first
+>>>> served' behaviour as the default.
+>>>>
+>>>
+>>> I can't see where this is being used.
+>>
+>> Each driver's .probe is fed with bus_number and slot_number.
+>> Normally the driver will check that pair against what it received
+>> through modparams and act accordingly.
+>>
+>> For this to be reliable bus numbering should be consistent on
+>> a given system, i.e. it should be possible to always allocate
+>> the same bus number to a given bus. Otherwise, depending on
+>> which bridge is installed first, we'd get different bus numbers
+>> assigned.
+>>
+>> Does that make it clearer now?
+>>
+>>> I assume this is a part of future changes you wish to make?
+>>
+>> AFAICT it affects the current model.
 > 
-> Right, like the ima_file_check(), which is after the __dentry_open().
-> Al, is it possible to move the break_lease() in may_open() to later?
+> Martyn,
+> 
+> Have you had time to re-check this one?
+> 
 
-That would still leave a race like:
+I'm afraid I haven't - I'm rather tied up at the moment. I'll try and
+set aside some time next week to look at the remaining patches you sent.
 
-			check count
-	bump count
-	break lease
-			set lease
+Martyn
 
-But we could extend the i_lock to prevent the lease being bumped between
-the two steps on the right-hand side.
 
-At that point I think we'd be done?  We're assured the count is still
-zero while the lease is added to the inode, so anyone in the process of
-doing an open has yet to reach the break_lease, which will see the newly
-added lease.
-
-That leaves the problem that leases really should be broken on anything
-that changes the attributes or the dentries pointing to the inode:
-setattr, link, unlink, rename, at least.
-
-One approach: add another counter to the inode named disable_leases, and
-have any of those operations do something like:
-
-	disable_lease++
-	break_lease
-	... do operation ...
-	disable_lease--
-
-?
-
---b.
+-- 
+Martyn Welch (Principal Software Engineer)   |   Registered in England and
+GE Intelligent Platforms                     |   Wales (3828642) at 100
+T +44(0)127322748                            |   Barbirolli Square,
+Manchester,
+E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
