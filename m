@@ -1,128 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841Ab0KEUfK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 16:35:10 -0400
-Received: from waste.org ([173.11.57.241]:59238 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752730Ab0KEUfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 16:35:06 -0400
-Subject: Re: [PATCH] CONFIG_EMBEDDED and !CONFIG_PRINTK: remove WARN_ON and
- print_symbol strings
-From: Matt Mackall <mpm@selenic.com>
-To: Joe Perches <joe@perches.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-arch@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1288826941.10236.65.camel@Joe-Laptop>
-References: <1288826941.10236.65.camel@Joe-Laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 05 Nov 2010 15:35:01 -0500
-Message-ID: <1288989301.18612.3.camel@calx>
+	id S1754728Ab0KEUky (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 16:40:54 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57135 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752375Ab0KEUku (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 16:40:50 -0400
+Date: Fri, 5 Nov 2010 13:40:18 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dan Carpenter <error27@gmail.com>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [RFC] [patch] fbcmap: integer overflow bug
+Message-Id: <20101105134018.2c11f283.akpm@linux-foundation.org>
+In-Reply-To: <20101027093716.GD6062@bicker>
+References: <20101027093716.GD6062@bicker>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-03 at 16:29 -0700, Joe Perches wrote:
-> Reduces text a bit.
+On Wed, 27 Oct 2010 11:37:16 +0200
+Dan Carpenter <error27@gmail.com> wrote:
 
-Looks good to me.
-
-Acked-by: Matt Mackall <mpm@selenic.com>
-
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  include/asm-generic/bug.h |   11 +++++++++++
->  include/linux/kallsyms.h  |    4 ++++
->  kernel/panic.c            |    6 ++++++
->  3 files changed, 21 insertions(+), 0 deletions(-)
+> There is an integer overflow bug in the FBIOPUTCMAP ioctl if
+> cmap->len * 2 overflows.
 > 
-> diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
-> index c2c9ba0..0741436 100644
-> --- a/include/asm-generic/bug.h
-> +++ b/include/asm-generic/bug.h
-> @@ -61,12 +61,23 @@ struct bug_entry {
->   */
->  #ifndef __WARN_TAINT
->  #ifndef __ASSEMBLY__
-> +
-> +#ifdef CONFIG_PRINTK
->  extern void warn_slowpath_fmt(const char *file, const int line,
->  		const char *fmt, ...) __attribute__((format(printf, 3, 4)));
->  extern void warn_slowpath_fmt_taint(const char *file, const int line,
->  				    unsigned taint, const char *fmt, ...)
->  	__attribute__((format(printf, 4, 5)));
->  extern void warn_slowpath_null(const char *file, const int line);
-> +#else
-> +static inline void __attribute__((format(printf, 3, 4)))
-> +warn_slowpath_fmt(const char *file, const int line, const char *fmt, ...) {}
-> +static inline void __attribute__((format(printf, 4, 5)))
-> +warn_slowpath_fmt_taint(const char *file, const int line,
-> +			unsigned taint, const char *fmt, ...) {}
-> +static inline void warn_slowpath_null(const char *file, const int line) {}
-> +#endif
-> +
->  #define WANT_WARN_ON_SLOWPATH
->  #endif
->  #define __WARN()		warn_slowpath_null(__FILE__, __LINE__)
-> diff --git a/include/linux/kallsyms.h b/include/linux/kallsyms.h
-> index d8e9b3d..2e7e1e9 100644
-> --- a/include/linux/kallsyms.h
-> +++ b/include/linux/kallsyms.h
-> @@ -100,12 +100,16 @@ static inline void __check_printsym_format(const char *fmt, ...)
->  {
->  }
->  
-> +#ifdef CONFIG_PRINTK
->  static inline void print_symbol(const char *fmt, unsigned long addr)
->  {
->  	__check_printsym_format(fmt, "");
->  	__print_symbol(fmt, (unsigned long)
->  		       __builtin_extract_return_addr((void *)addr));
->  }
-> +#else
-> +static inline void print_symbol(const char *fmt, unsigned long addr) {}
-> +#endif
->  
->  static inline void print_ip_sym(unsigned long ip)
->  {
-> diff --git a/kernel/panic.c b/kernel/panic.c
-> index 4c13b1a..14d7539 100644
-> --- a/kernel/panic.c
-> +++ b/kernel/panic.c
-> @@ -357,6 +357,9 @@ void oops_exit(void)
->  }
->  
->  #ifdef WANT_WARN_ON_SLOWPATH
-> +
-> +#ifdef CONFIG_PRINTK
-> +
->  struct slowpath_args {
->  	const char *fmt;
->  	va_list args;
-> @@ -413,6 +416,9 @@ void warn_slowpath_null(const char *file, int line)
->  			     TAINT_WARN, NULL);
->  }
->  EXPORT_SYMBOL(warn_slowpath_null);
-> +
-> +#endif
-> +
->  #endif
->  
->  #ifdef CONFIG_CC_STACKPROTECTOR
+> It's harmless, except that it messes up the cmap until someone types
+> `reset`.  It could have been caught by checking the return from
+> fb_copy_cmap().
 > 
+> Or it could have been caught by limiting the size of the cmaps to one
+> page.  The cmaps are allocated with GFP_ATOMIC and it makes sense to
+> limit them.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Different drivers use different sizes of cmaps.  There are about 150
+> drivers.  I've checked a bunch (50) of them and the larges cmap.len I've
+> found is gxt4500 which maxes out at 1024 so PAGE_SIZE is about twice that
+> length.  For some of the 50 I wasn't sure on the limit.
+> 
+> Is PAGE_SIZE a reasonable limit?  Does anyone know or do I have to audit
+> all 150 drivers?
 
+No signed-off-by:.
 
--- 
-Mathematics is the supreme nostalgia of our time.
+> diff --git a/drivers/video/fbcmap.c b/drivers/video/fbcmap.c
+> index f53b9f1..6dc5817 100644
+> --- a/drivers/video/fbcmap.c
+> +++ b/drivers/video/fbcmap.c
+> @@ -110,7 +110,9 @@ int fb_alloc_cmap(struct fb_cmap *cmap, int len, int transp)
+>      }
+>      cmap->start = 0;
+>      cmap->len = len;
+> -    fb_copy_cmap(fb_default_cmap(len), cmap);
+> +    if (fb_copy_cmap(fb_default_cmap(len), cmap))
+> +	goto fail;
+> +
+>      return 0;
+>  
+>  fail:
+> @@ -250,6 +252,9 @@ int fb_set_user_cmap(struct fb_cmap_user *cmap, struct fb_info *info)
+>  	int rc, size = cmap->len * sizeof(u16);
+>  	struct fb_cmap umap;
+>  
+> +	if (cmap->len > PAGE_SIZE || cmap->len * sizeof(u16) > PAGE_SIZE)
+> +		return -EINVAL;
+> +
+>  	memset(&umap, 0, sizeof(struct fb_cmap));
+>  	rc = fb_alloc_cmap(&umap, cmap->len, cmap->transp != NULL);
+>  	if (rc)
 
+A suitable way to fix this would be to detect the overflow only, and
+then just throw the passed-in length at kmalloc(), and let kmalloc()
+decide whether it is sane or not.
 
+To do that, one would need to implement a new
+fb_alloc_cmap_not_stupid() which takes a gfp_t, and pass in GFP_KERNEL.
+
+Feel free to sanitise the fb_alloc_cmap() indenting in [patch 1/2] as well ;)
