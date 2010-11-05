@@ -1,135 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871Ab0KETvL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 15:51:11 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:55903 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752375Ab0KETvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 15:51:08 -0400
-Date: Fri, 5 Nov 2010 12:51:01 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Nick Piggin <npiggin@kernel.dk>
-Subject: Re: [PATCH] atomic: add atomic_inc_not_zero_hint()
-Message-ID: <20101105195101.GC15561@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1288975980.2882.877.camel@edumazet-laptop>
- <20101105102038.53e36f9e.akpm@linux-foundation.org>
- <1288980046.2882.1054.camel@edumazet-laptop>
- <20101105110828.52f061b3.akpm@linux-foundation.org>
- <1288981224.2882.1105.camel@edumazet-laptop>
- <20101105112821.57f80481.akpm@linux-foundation.org>
- <1288984844.2665.52.camel@edumazet-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1288984844.2665.52.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753284Ab0KET7x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 15:59:53 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49666 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752375Ab0KET7v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 15:59:51 -0400
+Date: Fri, 5 Nov 2010 12:58:55 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>, fweisbec@gmail.com,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] watchdog:  touch_nmi_watchdog should only touch local
+ cpu not every one
+Message-Id: <20101105125855.20e5ce4c.akpm@linux-foundation.org>
+In-Reply-To: <20101105135117.GA27712@swordfish.minsk.epam.com>
+References: <1288919932-1857-1-git-send-email-dzickus@redhat.com>
+	<20101105135117.GA27712@swordfish.minsk.epam.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 05, 2010 at 08:20:44PM +0100, Eric Dumazet wrote:
-> Le vendredi 05 novembre 2010 à 11:28 -0700, Andrew Morton a écrit :
-> > But we haven't established that there _is_ duplicated code which needs
-> > that treatment.
-> > 
-> > Scanning arch/x86/include/asm/atomic.h, perhaps ATOMIC_INIT() is a
-> > candidate.  But I'm not sure that it _should_ be hoisted up - if every
-> > architecture happens to do it the same way then that's just a fluke.
-> > 
-> > 
-> 
-> Not sure I understand you. I was trying to avoid recursive includes, but
-> that should be protected anyway. I see a lot of code that could be
-> factorized in this new header (atomic_inc_not_zero() for example)
-> 
-> Thanks
-> 
-> [PATCH v3] atomic: add atomic_inc_not_zero_hint()
-> 
-> Followup of perf tools session in Netfilter WorkShop 2010
-> 
-> In network stack we make high usage of atomic_inc_not_zero() in contexts
-> we know the probable value of atomic before increment (2 for udp sockets
-> for example)
-> 
-> Using a special version of atomic_inc_not_zero() giving this hint can
-> help processor to use less bus transactions.
-> 
-> On x86 (MESI protocol) for example, this avoids entering Shared state,
-> because "lock cmpxchg" issues an RFO (Read For Ownership)
-> 
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> Cc: Christoph Lameter <cl@linux-foundation.org>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Andi Kleen <andi@firstfloor.org>
-> Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-> Cc: David Miller <davem@davemloft.net>
-> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On Fri, 5 Nov 2010 15:51:18 +0200
+Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
 
-Looks quite good to me!
+> On (11/04/10 21:18), Don Zickus wrote:
+> >  void touch_nmi_watchdog(void)
+> >  {
+> > +	/*
+> > +	 * Using __raw here because some code paths have
+> > +	 * preemption enabled.  If preemption is enabled
+> > +	 * then interrupts should be enabled too, in which
+> > +	 * case we shouldn't have to worry about the watchdog
+> > +	 * going off.
+> > +	 */
+> > +	__raw_get_cpu_var(watchdog_nmi_touch) = true;
+> > +
+> > +	touch_softlockup_watchdog();
+> > +}
+> > +EXPORT_SYMBOL(touch_nmi_watchdog);
+> > +
+> > +void touch_all_nmi_watchdogs(void)
+> > +{
+> >  	if (watchdog_enabled) {
+> >  		unsigned cpu;
+> >  
+> > @@ -151,7 +166,7 @@ void touch_nmi_watchdog(void)
+> >  	}
+> >  	touch_softlockup_watchdog();
+> >  }
+> > -EXPORT_SYMBOL(touch_nmi_watchdog);
+> > +EXPORT_SYMBOL(touch_all_nmi_watchdogs);
+> >  
+> 
+> Hello,
+> Seems like no one is actually calling touch_all_nmi_watchdogs, as for now. 
+> Right?
 
-Reviewed-by: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Yes, there doesn't seem a lot of point in adding the interface unless
+we have callers.
 
-> Cc: Nick Piggin <npiggin@kernel.dk>
-> ---
-> V3: adds the include <asm/atomic.h>
->     if hint is null, use atomic_inc_not_zero() (Paul suggestion)
-> V2: add #ifndef atomic_inc_not_zero_hint
->     kerneldoc changes
->     test that hint is not null
->     Meant to be included at end of arch/*/asm/atomic.h files
 > 
-> diff --git a/include/linux/atomic.h b/include/linux/atomic.h
-> new file mode 100644
-> index 0000000..5a7df87
-> --- /dev/null
-> +++ b/include/linux/atomic.h
-> @@ -0,0 +1,37 @@
-> +#ifndef _LINUX_ATOMIC_H
-> +#define _LINUX_ATOMIC_H
-> +#include <asm/atomic.h>
-> +
-> +/**
-> + * atomic_inc_not_zero_hint - increment if not null
-> + * @v: pointer of type atomic_t
-> + * @hint: probable value of the atomic before the increment
-> + *
-> + * This version of atomic_inc_not_zero() gives a hint of probable
-> + * value of the atomic. This helps processor to not read the memory
-> + * before doing the atomic read/modify/write cycle, lowering
-> + * number of bus transactions on some arches.
-> + *
-> + * Returns: 0 if increment was not done, 1 otherwise.
-> + */
-> +#ifndef atomic_inc_not_zero_hint
-> +static inline int atomic_inc_not_zero_hint(atomic_t *v, int hint)
-> +{
-> +	int val, c = hint;
-> +
-> +	/* sanity test, should be removed by compiler if hint is a constant */
-> +	if (!hint)
-> +		return atomic_inc_not_zero(v);
-> +
-> + 	do {
-> +		val = atomic_cmpxchg(v, c, c + 1);
-> +		if (val == c)
-> +			return 1;
-> +		c = val;
-> +	} while (c);
-> +
-> +	return 0;
-> +}
-> +#endif
-> +
-> +#endif /* _LINUX_ATOMIC_H */
+> Minor nit
+> 
+> 	touch_all_nmi_watchdogs:
+> 	...
+> 	for_each_present_cpu(cpu) {
+> 		if (per_cpu(watchdog_nmi_touch, cpu) != true)
+> 			per_cpu(watchdog_nmi_touch, cpu) = true;
+> 	}
 > 
 > 
+> which is, I belive, could be simplified to 
+> 	for_each_present_cpu(cpu) {
+> 		per_cpu(watchdog_nmi_touch, cpu) = true;
+> 	}
+
+We sometimes do this trick to avoid dirtying lots of cachelines which
+already held the correct value.  It'll be extra-benefical when dealing
+with other CPU's data, I expect.
