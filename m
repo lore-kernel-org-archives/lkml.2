@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577Ab0KERXh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 13:23:37 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33911 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754461Ab0KERXf (ORCPT
+	id S1754605Ab0KER0h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 13:26:37 -0400
+Received: from caffeine.csclub.uwaterloo.ca ([129.97.134.17]:58897 "EHLO
+	caffeine.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753202Ab0KER0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 13:23:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=kJJ6bRRO/WNgPkaaITPs/+3mMKWrj48UWaiz1IDQGvvl9geASJu4bZ16PV/u/UsbIK
-         kGq4gMPWpNDLVlB/DOqXeSoJ/N8ER6jEHP4kTMcOqi+JhEGp+x/u/IAdY8htMtugOK60
-         gSEwuLaOdVyBIEYgxeRwR48/8KfZ+CmfQOBVU=
-Subject: Re: [PATCH v2] irq: use per_cpu kstat_irqs
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <alpine.DEB.2.00.1011051153110.8161@router.home>
-References: <1288892908.2659.175.camel@edumazet-laptop>
-	 <1288973210.2882.733.camel@edumazet-laptop>
-	 <alpine.DEB.2.00.1011051153110.8161@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 05 Nov 2010 18:16:43 +0100
-Message-ID: <1288977403.2882.928.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Fri, 5 Nov 2010 13:26:35 -0400
+X-Greylist: delayed 625 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Nov 2010 13:26:35 EDT
+From: Michael Spang <mspang@csclub.uwaterloo.ca>
+To: Lennert Buytenhek <kernel@wantstofly.org>,
+        Nicolas Pitre <nico@fluxnic.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Michael Spang <mspang@csclub.uwaterloo.ca>
+Subject: [PATCH] TS-78xxx NAND resource type should be IORESOURCE_MEM
+Date: Fri,  5 Nov 2010 13:14:40 -0400
+Message-Id: <1288977280-5674-1-git-send-email-mspang@csclub.uwaterloo.ca>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 05 novembre 2010 à 11:54 -0500, Christoph Lameter a écrit :
-> On Fri, 5 Nov 2010, Eric Dumazet wrote:
-> 
-> >  static inline void kstat_incr_irqs_this_cpu(unsigned int irq,
-> >  					    struct irq_desc *desc)
-> 
-> desc is not used.
-> 
-> >  {
-> > -	kstat_this_cpu.irqs[irq]++;
-> > -	kstat_this_cpu.irqs_sum++;
-> > +	__this_cpu_inc(kstat.irqs[irq]);
-> > +	__this_cpu_inc(kstat.irqs_sum);
-> >  }
-> 
+The type was IORESOURCE_IO which is not what is expected by
+plat_nand_probe(). This device has not worked since 2d098a72
+("mtd: plat_nand: request memory resource before doing ioremap").
 
-Thats right, but it is used in CONFIG_GENERIC_HARDIRQS case.
+Signed-off-by: Michael Spang <mspang@csclub.uwaterloo.ca>
+---
+ arch/arm/mach-orion5x/ts78xx-setup.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Prototype of this function is generic, I did not change this.
-
-(I left the macro in CONFIG_GENERIC_HARDIRQS case too because I felt
-using a function could break some arches)
-
-
+diff --git a/arch/arm/mach-orion5x/ts78xx-setup.c b/arch/arm/mach-orion5x/ts78xx-setup.c
+index 16f1bd5..c1c1cd0 100644
+--- a/arch/arm/mach-orion5x/ts78xx-setup.c
++++ b/arch/arm/mach-orion5x/ts78xx-setup.c
+@@ -239,7 +239,7 @@ static struct platform_nand_data ts78xx_ts_nand_data = {
+ static struct resource ts78xx_ts_nand_resources = {
+ 	.start		= TS_NAND_DATA,
+ 	.end		= TS_NAND_DATA + 4,
+-	.flags		= IORESOURCE_IO,
++	.flags		= IORESOURCE_MEM,
+ };
+ 
+ static struct platform_device ts78xx_ts_nand_device = {
+-- 
+1.7.1
 
