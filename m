@@ -1,180 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754526Ab0KESAz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 14:00:55 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:34273 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752959Ab0KESAw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 14:00:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=D246kZU6ypv1A3yZpgqJKzHu+OJaPGCCLEfeU72rRNUk9Ic43mVtk5Ror3gFSREisj
-         97u/VuviUV3b52WgYvJIIcKPZe8amZTZGY0J1F1lpuAw5+DHkLWf7ZQ2iDJhG8LqRZIh
-         IAzdS6thhWQWN+ddMSfpbfjoYWQwP4XxOEC7U=
-Subject: Re: [PATCH] atomic: add atomic_inc_not_zero_hint()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Nick Piggin <npiggin@kernel.dk>
-In-Reply-To: <20101105102038.53e36f9e.akpm@linux-foundation.org>
-References: <1288975980.2882.877.camel@edumazet-laptop>
-	 <20101105102038.53e36f9e.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 05 Nov 2010 19:00:46 +0100
-Message-ID: <1288980046.2882.1054.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1754603Ab0KESBv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 14:01:51 -0400
+Received: from cantor.suse.de ([195.135.220.2]:52189 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752970Ab0KESBs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 14:01:48 -0400
+Date: Fri, 5 Nov 2010 14:01:42 -0400 (EDT)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Stefan Achatz <erazor_de@users.sourceforge.net>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
+        Stephane Chatty <chatty@enac.fr>,
+        Don Prince <dhprince-devel@yahoo.co.uk>,
+        Dmitry Torokhov <dtor@mail.ru>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH] HID: roccat: Add support for Roccat Kone[+]
+In-Reply-To: <1288978962.2585.15.camel@neuromancer>
+Message-ID: <alpine.LNX.2.00.1011051400250.15851@pobox.suse.cz>
+References: <1287943025.2623.16.camel@neuromancer>  <alpine.LNX.2.00.1011041418530.15851@pobox.suse.cz> <1288978962.2585.15.camel@neuromancer>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 05 novembre 2010 à 10:20 -0700, Andrew Morton a écrit :
+On Fri, 5 Nov 2010, Stefan Achatz wrote:
 
-> It totally makes sense to add include/linu/atomic.h for common things. 
-> Perhaps there's already code in arch/*/include/asm/atomic.h which
-> should be hoisted up there.  But that can't reliably be done until a
-> million files have had their #includes switched :(
+> > > This patch adds support for Roccat Kone[+] gaming mouse. Kone[+] is an enhanced version
+> > > of the old Kone with more memory for macros, a better sensor and more functionality.
+> > > This driver is conceptual similar to the existing Kone and Pyra drivers.
+> > > Userland tools can soon be found at http://sourceforge.net/projects/roccat
+> > 
+> > Seems like there is a lot of duplicate code with Roccat Kone.
+> > Is there any reason this couldn't be merged with the Roccat Kone 
+> > counterparts?
 > 
+> In fact the Kone[+] seems to be nearer to the Pyra than the old Kone.
+> Looks like the manufacturer changed the firmware programmer between some
+> devices. I wanted to wait until I see more devices of this manufacturer
+> if some kind of genealogy might be visible and remove code duplication
+> based on that.
 
-Maybe including <linux/atomic.h> only from the end of various
+It would be really nice, otherwise this gets into unmaintainable mess very 
+quickly.
 
-arch/*/include/asm/atomic.h  ?
-
-In this case, I remove the include <asm/atomic.h> from linux/atomic.h
-
-> It's quite unobvious *why* `hint' cannot be zero.  Can you please add
-> the reasoning to the comment?  Also, the local `hint' should be
-> referred to as "@hint" in a kerneldoc comment.
-
-Well ;)
-
-We want to increment the counter if its not zero.
-Typically used for refcounts, of RCU protected structures.
-
-Giving a zero hint would be curious dont you think ?
-
-I see no usage for this, and using atomic_inc_not_zero() in this case is
-the only choice, since we dont ever want to cmpxchg(v, 0, 1) (or risk
-double free and crazy things)
-
-Hmm... maybe I can add a test (compiler should optimize it anyway, since
-all usages I can foresee will use a constant hint)
-
+> > > +static ssize_t koneplus_sysfs_read_profile5_settings(struct file *fp,
+> > > +		struct kobject *kobj, struct bin_attribute *attr, char *buf,
+> > > +		loff_t off, size_t count)
+> > > +{
+> > > +	return koneplus_sysfs_read_profilex_settings(fp, kobj,
+> > > +			attr, buf, off, count, 4);
+> > > +}
+> > > +
+> > 
+> > This is really ugly. Can't you have just one read() function and 
+> > distuingish according to bin_attribute->private?
 > 
-> > +static inline int atomic_inc_not_zero_hint(atomic_t *v, int hint)
-> > +{
-> > +	int val, c = hint;
-> > +
-> > + 	do {
-> > +		val = atomic_cmpxchg(v, c, c + 1);
-> > +		if (val == c)
-> > +			return 1;
-> > +		c = val;
-> > +	} while (c);
-> > +
-> > +	return 0;
-> > +}
+> The patch comes in a view moments, if you like it I'll do the same for
+> Kone and Pyra.
+
+Would be nice, thanks for fixing it.
+
+> > > + * Copyright (c) 2010 Stefan Achatz <erazor_de@users.sourceforge.net>
+> > > + */
+> > > +
+> > > +/*
+> > > + * This program is free software; you can redistribute it and/or modify it
+> > > + * under the terms of the GNU General Public License as published by the Free
+> > > + * Software Foundation; either version 2 of the License, or (at your option)
+> > > + * any later version.
+> > > + */
+> > > +
+> > > +#include <linux/types.h>
+> > > +
+> > > +#pragma pack(push)
+> > > +#pragma pack(1)
+> > 
+> > Why?
 > 
-> Should/could this have implemented a more general
-> atomic_add_not_zero_hint() and made atomic_inc_not_zero_hint() a
-> wrapper around that?
+> What?
 
-Well, I see no practical use for this, but yes, this could be done.
+I would prefer to have comments there, explaining why those pragmas are 
+necessary.
 
-As atomic_add_not_zero() doesnt exist, I am not sure we need an
-atomic_add_not_zero_hint() yet ?
+Thanks,
 
-> 
-> Also, it might make sense to add "#ifndef atomic_inc_not_zero_hint"
-> wrappers around this function so that the arch can implement an
-> overriding custom version.  And that becomes a general rule as more
-> functions are added to include/linux/atomic.h.
-
-Ah yes, thats right !
-
-Thanks !
-
-[PATCH v2] atomic: add atomic_inc_not_zero_hint()
-
-Followup of perf tools session in Netfilter WorkShop 2010
-
-In network stack we make high usage of atomic_inc_not_zero() in contexts
-we know the probable value of atomic before increment (2 for udp sockets
-for example)
-
-Using a special version of atomic_inc_not_zero() giving this hint can
-help processor to use less bus transactions.
-
-On x86 (MESI protocol) for example, this avoids entering Shared state,
-because "lock cmpxchg" issues an RFO (Read For Ownership)
-
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: David Miller <davem@davemloft.net>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Nick Piggin <npiggin@kernel.dk>
----
-V2: add #ifndef atomic_inc_not_zero_hint
-    kerneldoc changes
-    test that hint is not null
-    Meant to be included at end of arch/*/asm/atomic.h files
-
- include/linux/atomic.h |   36 ++++++++++++++++++++++++++++++++++++
- 1 files changed, 36 insertions(+)
-
-diff --git a/include/linux/atomic.h b/include/linux/atomic.h
-new file mode 100644
-index 0000000..0897bdd
---- /dev/null
-+++ b/include/linux/atomic.h
-@@ -0,0 +1,36 @@
-+#ifndef _LINUX_ATOMIC_H
-+#define _LINUX_ATOMIC_H
-+
-+/**
-+ * atomic_inc_not_zero_hint - increment if not null
-+ * @v: pointer of type atomic_t
-+ * @hint: probable value of the atomic before the increment
-+ *
-+ * This version of atomic_inc_not_zero() gives a hint of probable
-+ * value of the atomic. This helps processor to not read memory
-+ * before doing the atomic read/modify/write cycle, lowering
-+ * number of bus transactions on some arches.
-+ * Note: @hint MUST not be 0, or increment is not done.
-+ * Returns: 0 if increment was not done, 1 otherwise.
-+ */
-+#ifndef atomic_inc_not_zero_hint
-+static inline int atomic_inc_not_zero_hint(atomic_t *v, int hint)
-+{
-+	int val, c = hint;
-+
-+	/* sanity test, should be removed by compiler if hint is a constant */
-+	if (!hint)
-+		return 0;
-+
-+ 	do {
-+		val = atomic_cmpxchg(v, c, c + 1);
-+		if (val == c)
-+			return 1;
-+		c = val;
-+	} while (c);
-+
-+	return 0;
-+}
-+#endif
-+
-+#endif /* _LINUX_ATOMIC_H */
-
-
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
