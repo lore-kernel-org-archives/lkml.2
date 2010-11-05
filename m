@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467Ab0KEDIh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 23:08:37 -0400
-Received: from mail.perches.com ([173.55.12.10]:4020 "EHLO mail.perches.com"
+	id S1753833Ab0KEDI6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 23:08:58 -0400
+Received: from mail.perches.com ([173.55.12.10]:4135 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753349Ab0KEDIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 23:08:34 -0400
+	id S1753687Ab0KEDIz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 23:08:55 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 01/49] arch/ia64: Use vzalloc
-Date: Thu,  4 Nov 2010 20:07:25 -0700
-Message-Id: <6c301491890dd0892a7e1a93bf1495f2131413f9.1288925424.git.joe@perches.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 28/49] drivers/net/pch_gbe: Use vzalloc
+Date: Thu,  4 Nov 2010 20:07:52 -0700
+Message-Id: <c38e12c7c652bb3da28566ba5cb78d0fe68f5d20.1288925425.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <alpine.DEB.2.00.1011031108260.11625@router.home>
 References: <alpine.DEB.2.00.1011031108260.11625@router.home>
@@ -24,25 +23,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- arch/ia64/kernel/perfmon.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ drivers/net/pch_gbe/pch_gbe_main.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/arch/ia64/kernel/perfmon.c b/arch/ia64/kernel/perfmon.c
-index 39e534f..3aee09d 100644
---- a/arch/ia64/kernel/perfmon.c
-+++ b/arch/ia64/kernel/perfmon.c
-@@ -829,10 +829,9 @@ pfm_rvmalloc(unsigned long size)
- 	unsigned long addr;
+diff --git a/drivers/net/pch_gbe/pch_gbe_main.c b/drivers/net/pch_gbe/pch_gbe_main.c
+index 472056b..afb7506 100644
+--- a/drivers/net/pch_gbe/pch_gbe_main.c
++++ b/drivers/net/pch_gbe/pch_gbe_main.c
+@@ -1523,12 +1523,11 @@ int pch_gbe_setup_tx_resources(struct pch_gbe_adapter *adapter,
+ 	int desNo;
  
- 	size = PAGE_ALIGN(size);
--	mem  = vmalloc(size);
-+	mem  = vzalloc(size);
- 	if (mem) {
- 		//printk("perfmon: CPU%d pfm_rvmalloc(%ld)=%p\n", smp_processor_id(), size, mem);
--		memset(mem, 0, size);
- 		addr = (unsigned long)mem;
- 		while (size > 0) {
- 			pfm_reserve_page(addr);
+ 	size = (int)sizeof(struct pch_gbe_buffer) * tx_ring->count;
+-	tx_ring->buffer_info = vmalloc(size);
++	tx_ring->buffer_info = vzalloc(size);
+ 	if (!tx_ring->buffer_info) {
+ 		pr_err("Unable to allocate memory for the buffer infomation\n");
+ 		return -ENOMEM;
+ 	}
+-	memset(tx_ring->buffer_info, 0, size);
+ 
+ 	tx_ring->size = tx_ring->count * (int)sizeof(struct pch_gbe_tx_desc);
+ 
+@@ -1573,12 +1572,11 @@ int pch_gbe_setup_rx_resources(struct pch_gbe_adapter *adapter,
+ 	int desNo;
+ 
+ 	size = (int)sizeof(struct pch_gbe_buffer) * rx_ring->count;
+-	rx_ring->buffer_info = vmalloc(size);
++	rx_ring->buffer_info = vzalloc(size);
+ 	if (!rx_ring->buffer_info) {
+ 		pr_err("Unable to allocate memory for the receive descriptor ring\n");
+ 		return -ENOMEM;
+ 	}
+-	memset(rx_ring->buffer_info, 0, size);
+ 	rx_ring->size = rx_ring->count * (int)sizeof(struct pch_gbe_rx_desc);
+ 	rx_ring->desc =	dma_alloc_coherent(&pdev->dev, rx_ring->size,
+ 					   &rx_ring->dma, GFP_KERNEL);
 -- 
 1.7.3.1.g432b3.dirty
 
