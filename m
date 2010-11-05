@@ -1,135 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985Ab0KEQXY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 12:23:24 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:60325 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752692Ab0KEQXV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 12:23:21 -0400
-Date: Fri, 5 Nov 2010 09:21:43 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] hwmon/adt7470 crash on module load (2.6.37-rc1)
-Message-Id: <20101105092143.2bd3d315.randy.dunlap@oracle.com>
-In-Reply-To: <20101105161741.459be240@endymion.delvare>
-References: <20101104170929.f5198be3.randy.dunlap@oracle.com>
-	<20101105094222.2bfbfb92@endymion.delvare>
-	<4CD4187F.1030305@oracle.com>
-	<20101105161741.459be240@endymion.delvare>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753269Ab0KEQ2X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 12:28:23 -0400
+Received: from fieldses.org ([174.143.236.118]:50286 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752667Ab0KEQ2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 12:28:19 -0400
+Date: Fri, 5 Nov 2010 12:28:11 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, hch@infradead.org, warthog9@kernel.org,
+        david@fromorbit.com, jmorris@namei.org, kyle@mcmartin.ca,
+        hpa@zytor.com, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, mingo@elte.hu, eparis@redhat.com,
+        viro@zeniv.linux.org.uk, Matthew Wilcox <matthew@wil.cx>
+Subject: Re: [PATCH 0/4] IMA: making i_readcount a first class inode citizen
+Message-ID: <20101105162811.GA3270@fieldses.org>
+References: <1288303325-9628-1-git-send-email-zohar@linux.vnet.ibm.com>
+ <20101105011227.GB4320@fieldses.org>
+ <1288955286.3135.9.camel@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288955286.3135.9.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 5 Nov 2010 16:17:41 +0100 Jean Delvare wrote:
-
-> Hi Randy,
-> 
-> On Fri, 05 Nov 2010 07:45:19 -0700, Randy Dunlap wrote:
-> > On 11/05/10 01:42, Jean Delvare wrote:
-> > > Hi Randy,
+On Fri, Nov 05, 2010 at 07:08:06AM -0400, Mimi Zohar wrote:
+> On Thu, 2010-11-04 at 21:12 -0400, J. Bruce Fields wrote:
+> > On Thu, Oct 28, 2010 at 06:02:01PM -0400, Mimi Zohar wrote:
+> > > On Mon, 2010-10-25 at 14:41 -0400, Eric Paris wrote:
 > > > 
-> > > On Thu, 4 Nov 2010 17:09:29 -0700, Randy Dunlap wrote:
-> > >> Nov  4 15:56:17 control kernel: [  173.105754] calling  adt7470_init+0x0/0x27 [adt7470] @ 4392
-> > >> Nov  4 15:56:18 [  173.113711] i2c-core: driver [adt7470] registered
-> > >> control kernel: [  173.122202] i2c i2c-15: found normal entry for adapter 15, addr 0x2c
-> > >> [  173.105754] c[  173.136181] i801_smbus 0000:00:1f.3: No response
-> > >> [  173.142478] i2c i2c-15: found normal entry for adapter 15, addr 0x2e
-> > >> Nov  4 15:56:18 [  173.151286] general protection fault: 0000 [#1] SMP DEBUG_PAGEALLOC
+> > > <snip>
 > > > 
-> > > Do you have a device at address 0x2e on this I2C adapter, or not?
+> > > > I believe that IBM is going to look into making i_readcount a first
+> > > > class citizen which can be used by both IMA and generic_setlease().
+> > > > Then people could say IMA had 0 per inode overhead   :)
+> > > 
+> > > This patchset separates the incrementing/decrementing of the i_readcount,
+> > > in the VFS layer, from other IMA functionality, by replacing the current
+> > > ima_counts_get() call with iget_readcount(). Its unclear whether this
+> > > call to increment i_readcount should be made earlier. 
+> > > 
+> > > The patch ordering is a bit redundant in order to leave removing the ifdef
+> > > around i_readcount until the last patch. The first three patches: defines 
+> > > iget/iput_readcount(), moves the IMA functionality in ima_counts_get() to
+> > > ima_file_check(), and removes the IMA imbalance code, simplifying IMA. The
+> > > last patch moves iget/iput_readcount() to the fs directory and removes the
+> > > ifdef around i_readcount, making i_readcount into a "first class inode citizen".
+> > > 
+> > > The generic_setlease code could then take advantage of i_readcount, assuming
+> > > it can take the spin_lock, by doing something like:
+> > > 
+> > > -		if ((arg == F_RDLCK) && (atomic_read(&inode->i_writecount) > 0))
+> > > +
+> > > +		spin_lock(&inode->i_lock);
+> > > +		if ((arg == F_RDLCK) && (atomic_read(&inode->i_writecount) > 0)){
+> > > +			spin_unlock(&inode->i_lock);
+> > >  			goto out;
+> > > -		if ((arg == F_WRLCK)
+> > > -		    && ((atomic_read(&dentry->d_count) > 1)
+> > > -			|| (atomic_read(&inode->i_count) > 1)))
+> > > +		}
+> > > +		if ((arg == F_WRLCK) && (inode->i_readcount > 1)) {
+> > > +			spin_unlock(&inode->i_lock);
+> > >  			goto out;
+> > > +		}
+> > > +		spin_unlock(&inode->i_lock);
+> > >  	}
 > > 
-> > AFAIK I don't even have an I2C adapter.  or is there one in the intel chipset?
-> 
-> The "i2c-15" above suggests that you have at least 16 I2C adapters on
-> your system. There are many such adapters in graphics cards, TV cards
-> (both analog and digital) and on the mainboard as well. You can get a
-> list with:
-> 
-> # modprobe i2c-dev
-> # i2cdetect -l
-> 
-> But given the problem you've just reported, I expect the above command
-> to crash on 2.6.37-rc1. You could try it on 2.6.36 to at least give me a
-> rough idea of what I2C adapters are available on your system. This
-> would help me understand what's happening.
-> 
-> Do you have any DVB adapter in this machine?
-
-Nope.
-
-> > > Are you using the adt7470 driver on this system normally, or did you
-> > > build it in just for random testing purpose?
+> > Seems like an improvement.
 > > 
-> > It's just random module testing.
+> > It still leaves the race:
 > > 
-> > >> [  173.156502] last sysfs file: /sys/module/hwmon/initstate
-> > >> [  173.156502] CPU 1 
-> > >> [  173.156502] Modules linked in: adt7470(+) ipt_MASQUERADE iptable_nat nf_nat af_packet nfsd lockd nfs_acl auth_rpcgss exportfs sco bridge stp llc bnep l2cap crc16 bluetooth rfkill sunrpc ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT xt_tcpudp nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables x_tables ipv6 p4_clockmod freq_table speedstep_lib binfmt_misc dm_mirror dm_region_hash dm_log dm_multipath scsi_dh dm_mod kvm uinput mousedev joydev ppdev snd_intel8x0 snd_ac97_codec ac97_bus snd_seq snd_seq_device snd_pcm usbkbd snd_timer led_class usbmouse usbhid hid iTCO_wdt snd dcdbas iTCO_vendor_support sg sr_mod pcspkr i2c_i801 soundcore rtc_cmos cdrom parport_pc rng_core snd_page_alloc rtc_core tg3 rtc_lib parport 8250_pnp evdev mac_hid shpchp pci_hotplug unix ide_pci_generic ide_core ata_generic pata_acpi ata_piix sd_mod crc_t10dif ext3 jbd mbcache uhci_hcd ohci_hcd ssb mmc_core pcmcia pcmcia_core firmwa!
- re_cl
-> > >>  ass ehci_hcd usbcore nls_base i915 drm_kms_helper intel_agp button intel_gtt video thermal_sys hwmon output [last unloaded: ltc4245]
-> > >> [  173.156502] 
-> > >> [  173.156502] Pid: 22, comm: kworker/1:1 Not tainted 2.6.37-rc1 #12 0HH807/OptiPlex GX620               
-> > >> [  173.156502] RIP: 0010:[<ffffffff813ea532>]  [<ffffffff813ea532>] check_modem_status+0xe7/0x29c
-> > > 
-> > > Several drivers have a function named check_modem_status(), but adt7470 is
-> > > not one of them. I'm curious how we can get there if the crash is in
-> > > driver adt7470. Stack corruption maybe?
-> > > 
-> > >> [  173.308056] RSP: 0018:ffff88007c803e18  EFLAGS: 00010006
-> > >> [  173.308056] RAX: 6b6b6b6b6b6b6b6b RBX: ffffffff82a55400 RCX: 0000000000000100
-> > >> [  173.308056] RDX: 00000000260b260a RSI: 0000000000000028 RDI: 0000000000000006
-> > >> [  173.308056] RBP: ffff88007c803e58 R08: 0000000000000006 R09: 395099858027a0e6
-> > >>
-> > >> <locked up tight here>
-> > > 
-> > > Can we see the kernel config you're running?
+> > 	may_open calls lease_break, finds no lease
 > > 
-> > Sure, it's attached.  It's close to allmodconfig, with a few kconfig
-> > options changed to =y instead of =m and some others (like debug and self-tests)
-> > disabled.
+> > 			setlease checks read/writecount, finds 0,
+> > 			creates lease
+> > 
+> > 	__dentry_open bumps read/writecount
+> > 
+> > (Is there any reason we couldn't move the break_lease to after bumping
+> > read or write count?)
+> > 
+> > --b.
 > 
-> OK. I'll try this config on my system and see if I can reproduce your
-> problem. Likely not before tomorrow though, as I have more urgent
-> issues to deal with right now.
+> Right, like the ima_file_check(), which is after the __dentry_open().
+> Al, is it possible to move the break_lease() in may_open() to later?
 
-Ack.  However, I can't reproduce the problem today, so maybe you should
-go slowly on it.  Or maybe the problem is actually somewhere else
-(like you hinted at).
+That would still leave a race like:
 
-I'll test it some more.
+			check count
+	bump count
+	break lease
+			set lease
 
-| Actually, the following command on 2.6.37-rc1 should work and answer my
-| question:
-| 
-| $ grep . /sys/bus/i2c/devices/i2c-*/name
+But we could extend the i_lock to prevent the lease being bumped between
+the two steps on the right-hand side.
 
-/sys/bus/i2c/devices/i2c-0/name:gmbus disabled
-/sys/bus/i2c/devices/i2c-10/name:GPIOE
-/sys/bus/i2c/devices/i2c-11/name:gmbus reserveddpd
-/sys/bus/i2c/devices/i2c-12/name:GPIOF
-/sys/bus/i2c/devices/i2c-13/name:gmbus (null)
-/sys/bus/i2c/devices/i2c-14/name:GPIO?
-/sys/bus/i2c/devices/i2c-15/name:SMBus I801 adapter at e8a0
-/sys/bus/i2c/devices/i2c-1/name:gmbus ssc
-/sys/bus/i2c/devices/i2c-2/name:GPIOB
-/sys/bus/i2c/devices/i2c-3/name:gmbus vga
-/sys/bus/i2c/devices/i2c-4/name:GPIOA
-/sys/bus/i2c/devices/i2c-5/name:gmbus panel
-/sys/bus/i2c/devices/i2c-6/name:GPIOC
-/sys/bus/i2c/devices/i2c-7/name:gmbus dpc
-/sys/bus/i2c/devices/i2c-8/name:GPIOD
-/sys/bus/i2c/devices/i2c-9/name:gmbus dpb
+At that point I think we'd be done?  We're assured the count is still
+zero while the lease is added to the inode, so anyone in the process of
+doing an open has yet to reach the break_lease, which will see the newly
+added lease.
 
+That leaves the problem that leases really should be broken on anything
+that changes the attributes or the dentries pointing to the inode:
+setattr, link, unlink, rename, at least.
 
-And the i2c registration sanity check patch didn't catch any problems.
+One approach: add another counter to the inode named disable_leases, and
+have any of those operations do something like:
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+	disable_lease++
+	break_lease
+	... do operation ...
+	disable_lease--
+
+?
+
+--b.
