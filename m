@@ -1,89 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab0KEQHA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 12:07:00 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:55259 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752753Ab0KEQG4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 12:06:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=pbIhNFqUMudE/tN4e3DNJ0fwu5U5y/64IYP/KOG0vHceg/Hep6mEaZvT3OCrD/Qyjg
-         Acni4GmIfvW3Kj5Bp/ehUvwEbgWuxVBglKwCdZ4eaDsy9pYKfxaHB1vZYdEkL0XcIU4C
-         dvxAS48qny76ZSAHRqRBn7+6glgphDePfs6eI=
+	id S1753620Ab0KEQHS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 12:07:18 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:51901 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1752874Ab0KEQG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 12:06:57 -0400
+X-Authenticated: #4630777
+X-Provags-ID: V01U2FsdGVkX181bUxdlQY1FTa3MBEFTC8ZHBHltsFdHF1uZ9NvcY
+	0PgQOYVqNlkNT2
+Date: Fri, 5 Nov 2010 17:05:27 +0100
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+To: eparis@redhat.com
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        viro@zeniv.linux.org.uk
+Subject: [PATCH] fanotify: if set by user unset FMODE_NONOTIFY before
+	fsnotify_perm() is called
+Message-ID: <20101105160527.GD24381@lsanfilippo.unix.rd.tt.avira.com>
 MIME-Version: 1.0
-In-Reply-To: <20101101155110.GC5985@lenovo>
-References: <4CCEB51C.7010901@web.de>
-	<20101101154536.GT4823@redhat.com>
-	<20101101155110.GC5985@lenovo>
-Date: Fri, 5 Nov 2010 17:06:55 +0100
-Message-ID: <AANLkTikVSpw-R6Jt-ZfK6sJXoRv7wJ7-vPHQGcNYkVDK@mail.gmail.com>
-Subject: Re: BUG: using smp_processor_id() in preemptible arch_trigger_all_cpu_backtrace_handler
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>, Jan Kiszka <jan.kiszka@web.de>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Eric Paris <eparis@redhat.com>, Randy Dunlap <randy.dunlap@oracle.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/11/1 Cyrill Gorcunov <gorcunov@gmail.com>:
-> On Mon, Nov 01, 2010 at 11:45:36AM -0400, Don Zickus wrote:
-> ...
->> Heh.  Yeah when I migrated the code, I completely forgot the notifier
->> chain could be called from a preemptible context (ie not NMI).
->>
->> This patch should fix it and I think it is the correct fix.  Let me know
->> how it works out.
->>
->> Cheers,
->> Don
->>
->> diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
->> index c7c9ae4..1bdd0b5 100644
->> --- a/arch/x86/kernel/apic/hw_nmi.c
->> +++ b/arch/x86/kernel/apic/hw_nmi.c
->> @@ -63,7 +63,7 @@ arch_trigger_all_cpu_backtrace_handler(struct notifier_block *self,
->>  {
->>       struct die_args *args = __args;
->>       struct pt_regs *regs;
->> -     int cpu = smp_processor_id();
->> +     int cpu;
->>
->>       switch (cmd) {
->>       case DIE_NMI:
->> @@ -74,6 +74,7 @@ arch_trigger_all_cpu_backtrace_handler(struct notifier_block *self,
->>       }
->>
->>       regs = args->regs;
->> +     cpu = smp_processor_id();
->>
->>       if (cpumask_test_cpu(cpu, to_cpumask(backtrace_mask))) {
->>               static arch_spinlock_t lock = __ARCH_SPIN_LOCK_UNLOCKED;
->>
->
->  yup, this will do the trick for a while. In general I believe we might have
-> kind of NMI exclusive chain so we wouldn't need the 'case:'s.
+Unsetting FMODE_NONOTIFY in fsnotify_open() is too late, since fsnotify_perm()
+is called before. If FMODE_NONOTIFY is set fsnotify_perm() will skip permission
+checks, so a user can still disable permission checks by setting this flag
+in an open() call.
+This patch corrects this by unsetting the flag before fsnotify_perm is called.
+
+Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+---
+This patch applies against 2.6.37-rc1
+It corrects this unsufficient fix
+http://lkml.org/lkml/2010/10/29/125
+I totally oversaw those fsnotify_perm() calls :(.
+Hopefully this one will set things right...
 
 
-Yeah.  And seperating NMIs from the rest of the DIE notifiers would
-probably improve
-performance of things like PMI handling.
-
-And I've always been confused with this "die" notifier semantic. We
-are not dying when
-we handle a counter overflow interrupt.
-The same applies to DIE_INT3, DIE_TRAP, DIE_DEBUG, ....
-
-But until then, as having a seperate notifier is quite a refactoring,
-we should enqueue Don's fix.
-Don, can you resend it with usual SOB and changelog?
-
-Thanks.
+diff -Nurp a/fs/namei.c b/fs/namei.c
+--- a/fs/namei.c	2010-11-01 12:54:12.000000000 +0100
++++ b/fs/namei.c	2010-11-05 10:53:57.000000000 +0100
+@@ -1748,6 +1748,9 @@ struct file *do_filp_open(int dfd, const
+ 	if (!(open_flag & O_CREAT))
+ 		mode = 0;
+ 
++	/* Must never be set by userspace */
++	open_flag &= ~FMODE_NONOTIFY;
++
+ 	/*
+ 	 * O_SYNC is implemented as __O_SYNC|O_DSYNC.  As many places only
+ 	 * check for O_DSYNC if the need any syncing at all we enforce it's
+diff -Nurp a/include/linux/fsnotify.h b/include/linux/fsnotify.h
+--- a/include/linux/fsnotify.h	2010-11-01 12:54:12.000000000 +0100
++++ b/include/linux/fsnotify.h	2010-11-05 10:49:51.000000000 +0100
+@@ -235,9 +235,6 @@ static inline void fsnotify_open(struct 
+ 	if (S_ISDIR(inode->i_mode))
+ 		mask |= FS_ISDIR;
+ 
+-	/* FMODE_NONOTIFY must never be set from user */
+-	file->f_mode &= ~FMODE_NONOTIFY;
+-
+ 	fsnotify_parent(path, NULL, mask);
+ 	fsnotify(inode, mask, path, FSNOTIFY_EVENT_PATH, NULL, 0);
+ }
