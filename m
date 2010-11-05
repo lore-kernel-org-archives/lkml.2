@@ -1,43 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010Ab0KEHdC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 03:33:02 -0400
-Received: from mailout1.paradigmgeo.com ([12.146.216.194]:46914 "EHLO
-	mailout1.paradigmgeo.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798Ab0KEHc7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 03:32:59 -0400
-From: Gregory Giguashvili <Gregory.Giguashvili@PDGM.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: Change signal mask after vfork/clone system call
-Thread-Topic: Change signal mask after vfork/clone system call
-Thread-Index: ActvYrwDS1Qou4ZiSWG8vicGxd93awMg65jwAAOOfoAAMbLtcA==
-Date: Fri, 5 Nov 2010 07:32:44 +0000
-Message-ID: <DAF636D3923A51488784A1F985996EE80422C6C2@exil1.paradigmgeo.net>
-References: <DAF636D3923A51488784A1F985996EE803FCB7B0@exil1.paradigmgeo.net>
-	<DAF636D3923A51488784A1F985996EE8041FAA46@exil1.paradigmgeo.net>
- <20101104094817.21548963@lxorguk.ukuu.org.uk>
-In-Reply-To: <20101104094817.21548963@lxorguk.ukuu.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.3.201]
-Content-Type: text/plain; charset="us-ascii"
+	id S1753222Ab0KEHi3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 03:38:29 -0400
+Received: from outbound.icp-qv1-irony-out3.iinet.net.au ([203.59.1.148]:39420
+	"EHLO outbound.icp-qv1-irony-out3.iinet.net.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751399Ab0KEHi2 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 03:38:28 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApEBAPtQ00zL2THB/2dsb2JhbAAH3l2FRwSNdg
+X-IronPort-AV: E=Sophos;i="4.58,301,1286121600"; 
+   d="scan'208";a="653059856"
+Subject: Re: [W1] a driver for DS2405 chip
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=us-ascii
+From: Ben Nizette <bn@niasdigital.com>
+In-Reply-To: <4CD33097.6060504@o2.pl>
+Date: Fri, 5 Nov 2010 18:38:24 +1100
+Cc: Jonathan Cameron <jic23@cam.ac.uk>, johnpol@2ka.mipt.ru,
+        linux-kernel@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginalArrivalTime: 05 Nov 2010 07:32:45.0918 (UTC) FILETIME=[A3CF1FE0:01CB7CBB]
+Message-Id: <E04775E6-5FCA-436E-BA3A-6D53691070BB@niasdigital.com>
+References: <4CC9E2A5.2010400@o2.pl> <4CCEB42F.8000102@cam.ac.uk> <4CD06C22.20204@o2.pl> <6B41915B-1667-4CA1-A73A-45B043ED8C11@niasdigital.com> <4CD3112D.2010700@o2.pl> <6F19858A-1110-4B0C-9810-350567CE9A9A@niasdigital.com> <4CD33097.6060504@o2.pl>
+To: Maciej Szmigiero <mhej@o2.pl>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Finally, if using fork should be efficient for starting processes from applications with heavy VM/RSS memory footprint, > this question becomes obsolete.
 
-What about posix_spawn API? It allows for resetting signal mask for the child process, but does it belong to fork or vfork "family"?
+On 05/11/2010, at 9:15 AM, Maciej Szmigiero wrote:
 
-Giga
----------------------------------------------------------------------------------------------------------------
-This e-mail, including any attached files, may contain confidential and privileged information for the sole use of the intended recipient. Any review, use, distribution, or disclosure by others is strictly prohibited. If you are not the intended recipient (or authorized to receive information for the intended recipient), please contact the sender by reply e-mail and delete all copies of this message.
+> W dniu 04.11.2010 22:16, Ben Nizette pisze:
+>> 
+>> On 05/11/2010, at 7:01 AM, Maciej Szmigiero wrote:
+>> 
+>> Well that and standardisation!  However it does seem that while conceptually your device should present a gpio interface it's on the fringe
+>> of what gpiolib was designed to do.  I'd understand if you don't feel like making gpiolib better support hotpluggable devices however it
+>> sounds like it'd be worth doing, not just for 1-W but also, eg, USB GPIO expanders.
+> 
+> So in your opinion is it worth "bending" the GPIO subsystem to accommodate devices like this one?
+> This doesn't seem very hard if that parent thing works, just one new function (gpiochip_remove_blocking() or similar).
+> 
 
+s/bending/extending ;-)
+
+I don't reckon it'll be long until someone starts trying to connect up other 1-W/USB/otherwise-hotpluggable expanders through gpiolib and if there are roadblocks they should be addressed.
+
+David has the last word of course but I quite like the idea.
+
+> Anyway, thanks for helping make the code better!
+
+:-)
+
+> 
+>> 	--Ben.
+> 
+> Maciej Szmigiero
 
