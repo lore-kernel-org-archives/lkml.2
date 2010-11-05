@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755110Ab0KEXMo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 19:12:44 -0400
-Received: from mail.perches.com ([173.55.12.10]:4348 "EHLO mail.perches.com"
+	id S1755190Ab0KEXNJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 19:13:09 -0400
+Received: from mail.perches.com ([173.55.12.10]:4361 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753984Ab0KEXMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 19:12:42 -0400
+	id S1755111Ab0KEXMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 19:12:44 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        cluster-devel@redhat.com, linux-mm@kvack.org,
-        linux-nfs@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH 0/7] Convert sprintf_symbol uses to %p[Ss]
-Date: Fri,  5 Nov 2010 16:12:33 -0700
-Message-Id: <1288998760-11775-1-git-send-email-joe@perches.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-nfs@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 7/7] net/sunrpc/clnt.c: Convert sprintf_symbol to %ps
+Date: Fri,  5 Nov 2010 16:12:40 -0700
+Message-Id: <1288998760-11775-8-git-send-email-joe@perches.com>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
+In-Reply-To: <1288998760-11775-1-git-send-email-joe@perches.com>
+References: <1288998760-11775-1-git-send-email-joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove unnecessary declarations of temporary buffers.
-Use %pS or %ps as appropriate.
-Minor reformatting in a couple of places.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ net/sunrpc/clnt.c |   12 ++----------
+ 1 files changed, 2 insertions(+), 10 deletions(-)
 
-Compiled, but otherwise untested.
-
-Joe Perches (7):
-  arch/arm/kernel/traps.c: Convert sprintf_symbol to %pS
-  arch/x86/kernel/pci-iommu_table.c: Convert sprintf_symbol to %pS
-  fs/gfs2/glock.c: Convert sprintf_symbol to %pS
-  fs/proc/base.c kernel/latencytop.c: Convert sprintf_symbol to %ps
-  kernel/lockdep_proc.c: Convert sprintf_symbol to %pS
-  mm: Convert sprintf_symbol to %pS
-  net/sunrpc/clnt.c: Convert sprintf_symbol to %ps
-
- arch/arm/kernel/traps.c           |    5 +----
- arch/x86/kernel/pci-iommu_table.c |   18 ++++--------------
- fs/gfs2/glock.c                   |   15 +++++++--------
- fs/proc/base.c                    |   22 ++++++++--------------
- kernel/latencytop.c               |   23 +++++++++--------------
- kernel/lockdep_proc.c             |   16 ++++++----------
- mm/slub.c                         |   11 ++++-------
- mm/vmalloc.c                      |    9 ++-------
- net/sunrpc/clnt.c                 |   12 ++----------
- 9 files changed, 43 insertions(+), 88 deletions(-)
-
+diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
+index 9dab957..0c3d395 100644
+--- a/net/sunrpc/clnt.c
++++ b/net/sunrpc/clnt.c
+@@ -1824,23 +1824,15 @@ static void rpc_show_task(const struct rpc_clnt *clnt,
+ 			  const struct rpc_task *task)
+ {
+ 	const char *rpc_waitq = "none";
+-	char *p, action[KSYM_SYMBOL_LEN];
+ 
+ 	if (RPC_IS_QUEUED(task))
+ 		rpc_waitq = rpc_qname(task->tk_waitqueue);
+ 
+-	/* map tk_action pointer to a function name; then trim off
+-	 * the "+0x0 [sunrpc]" */
+-	sprint_symbol(action, (unsigned long)task->tk_action);
+-	p = strchr(action, '+');
+-	if (p)
+-		*p = '\0';
+-
+-	printk(KERN_INFO "%5u %04x %6d %8p %8p %8ld %8p %sv%u %s a:%s q:%s\n",
++	printk(KERN_INFO "%5u %04x %6d %8p %8p %8ld %8p %sv%u %s a:%ps q:%s\n",
+ 		task->tk_pid, task->tk_flags, task->tk_status,
+ 		clnt, task->tk_rqstp, task->tk_timeout, task->tk_ops,
+ 		clnt->cl_protname, clnt->cl_vers, rpc_proc_name(task),
+-		action, rpc_waitq);
++		task->tk_action, rpc_waitq);
+ }
+ 
+ void rpc_show_tasks(void)
 -- 
 1.7.3.2.146.gca209
 
