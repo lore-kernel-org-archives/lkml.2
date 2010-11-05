@@ -1,36 +1,61 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751413Ab0KDQG5 (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Thu, 4 Nov 2010 12:06:57 -0400
-Received: from nm28-vm0.bullet.mail.ne1.yahoo.com ([98.138.91.22]:34896 "HELO
-	nm28-vm0.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750778Ab0KDQGz (ORCPT
+	id S1754274Ab0KEMUM (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Fri, 5 Nov 2010 08:20:12 -0400
+Received: from 123-242-230-45.sunnyvisiondatacenter.com ([123.242.230.45]:55868
+	"EHLO mail.hktechnology.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754228Ab0KEMUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 12:06:55 -0400
-X-Yahoo-Newman-Id: 286731.51616.bm@smtp112.mail.ne1.yahoo.com
-Message-ID: <286731.51616.bm@smtp112.mail.ne1.yahoo.com>
-Date: Thu, 4 Nov 2010 09:06:54 -0700 (PDT)
-X-Yahoo-SMTP: xblcMbyswBC5WZPXugHlLBIK_cq8AcY-
-X-YMail-OSG: IaJoHecVM1lgqzLtaqueS2wCKNKramgE77wQuHaLinbsDJM
- yAvTbKghZGX.2DYwfI5Q.tblf06M3dbT6FXduKfD8lM4wGJt9jte_3YitSB6
- YLK02UI_tovTI2AWjjKi1oD_nEJyiLkzQIrQV0.V4.2lOKwrF5uQ7jbOoTeR
- xWULqVKA5XGMIST_Tf898eJ5jqHlQW5.q0wCFZT_wyjtMQKqM8SohWqcd504
- Ukbll6Zf3g_EyHe73xTstMKzHA1d2O2qTvQvmlCGK29JtTdHMUeo-
-X-Yahoo-Newman-Property: ymail-3
-From: Looney <moyjamison@yahoo.com>
-Reply-To: <moyjamison@yahoo.com>
-To: linux-kernel@vger.kernel.org
-Subject: 
+	Fri, 5 Nov 2010 08:20:10 -0400
+Date: Fri, 5 Nov 2010 20:13:15 +0800
+To: undisclosed-recipients:;
+From: Henry Ajala <contacthenryajala@rediffmail.com>
+Reply-to: Henry Ajala <contacthenryajala@rediffmail.com>
+Subject: TO WHOM IT MAY CONCERN
+Message-ID: <73cae74403fb0e85d318d29557f7d8b0@41.190.2.113>
+X-Priority: 3
+X-Mailer: UebiMiau [PHPMailer version 1.70]
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="Big5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://www.altstadtfunken-opladen.de/rlYt6loGty.html  tolstyachka Seregi i prodavschicy Anechki.
-Please caityu Pojaluystab podojditeyu 
+
+--
+Hello,
+
+I am Mr.Henry Ajala , a certified and legitimate loan lender, i
+give out loans to serious individuals who are interested in securing a
+loan, the minimum we give out as loan is $5,000 while the maximum is
+$5,000,000.00 at a rate of 3% interest, with a duration of 2 to 20 years.
+if interested do fill out the short form below and have it sent to us as
+soon as possible.
+
+NAME:
+AGE:
+ADDRESS:
+COUNTRY:
+CONTACT PHONE NUMBER:
+OCCUPATION:
+LOAN AMOUNT:
+
+Upon receipt of the above we would contact you with a well
+calculated terms and condition's of the amount needed. Thanks as i expect
+your swift response asap. Please direct all response to this email:
+contacthenryajala@rediffmail.com
+
+Regards
+Mr.Henry Ajala
 
 
 
 
-__________________________________________________
-Do You Yahoo!?
-Tired of spam?  Yahoo! Mail has the best spam protection around 
-http://mail.yahoo.com 
+
+________________________________________________________________________
+This email has been scanned for all viruses by the iMail VirusWall Email
+Security System.
+For more information on this proactive email security service working around
+the clock,
+around the globe, visit http://viruswall.aserver.com.hk
+________________________________________________________________________ 
