@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754017Ab0KEQqS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 12:46:18 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:37544 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753947Ab0KEQqR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 12:46:17 -0400
-Date: Fri, 5 Nov 2010 17:46:08 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] Fix warning about usr/include/linux/resource.h missing an
- include
-Message-ID: <20101105174608.3f5962bb@endymion.delvare>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
+	id S1754086Ab0KEQqf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 12:46:35 -0400
+Received: from mail4.iitk.ac.in ([202.3.77.189]:41143 "EHLO mail4.iitk.ac.in"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753024Ab0KEQqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 12:46:33 -0400
+X-Greylist: delayed 3207 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Nov 2010 12:46:32 EDT
+Message-ID: <89de7a94fdb498c08106b957bade19a3.squirrel@webmail.iitk.ac.in>
+Date: Fri, 5 Nov 2010 22:14:49 +0530
+Subject: 
+From: "Vincent Cheng Hoi" <parasp@iitk.ac.in>
+Reply-To: choi_chu223@yahoo.co.jp
+User-Agent: SquirrelMail/
+MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the following warning:
-usr/include/linux/resource.h:49: found __[us]{8,16,32,64} type without #include <linux/types.h>
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
----
- include/linux/resource.h |    1 +
- 1 file changed, 1 insertion(+)
-
---- linux-2.6.37-rc1.orig/include/linux/resource.h	2010-10-21 10:01:14.000000000 +0200
-+++ linux-2.6.37-rc1/include/linux/resource.h	2010-11-05 17:22:56.000000000 +0100
-@@ -2,6 +2,7 @@
- #define _LINUX_RESOURCE_H
- 
- #include <linux/time.h>
-+#include <linux/types.h>
- 
- /*
-  * Resource control/accounting header file for linux
 
 
 -- 
-Jean Delvare
+Good day,
+
+I am Mr.Vincent Cheng Hoi Chuen, GBS, JP Chairman of the Hong Kong and
+Shanghai Banking Corporation Limited. I have a business proposal of Twenty
+Two million Five Hundred Thousand United State Dollars only for you to 
+transact with me from my bank to your country.
+
+All confirmable documents to back up the claims will be made available to
+you prior to your acceptance and as soon as I receive your return mail Via
+my email address:choi_chu223@yahoo.co.jp and I will let you know what is
+required of you.
+
+Your earliest response to this letter will be appreciated.
+
+Best Regards,
+Mr.Vincent Cheng Hoi.
