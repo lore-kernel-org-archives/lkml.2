@@ -1,251 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753797Ab0KERu3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 13:50:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44041 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752667Ab0KERu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 13:50:27 -0400
-Date: Fri, 5 Nov 2010 18:43:43 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Roland McGrath <roland@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        JANAK DESAI <janak@us.ibm.com>
-Subject: [PATCH 1/1][2nd resend] sys_unshare: remove the dead
-	CLONE_THREAD/SIGHAND/VM code
-Message-ID: <20101105174343.GB19469@redhat.com>
-References: <201010262121.o9QLLNFo016375@imap1.linux-foundation.org> <20101101024949.6074.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1011011738200.26266@chino.kir.corp.google.com> <alpine.DEB.2.00.1011021741520.21871@chino.kir.corp.google.com> <20101103112324.GA29695@redhat.com> <20101105174142.GA19469@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101105174142.GA19469@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754026Ab0KERvq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 13:51:46 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:34273 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752573Ab0KERvo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 13:51:44 -0400
+Date: Fri, 5 Nov 2010 18:51:34 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: guenter.roeck@ericsson.com, Randy Dunlap <randy.dunlap@oracle.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, lm-sensors@lm-sensors.org
+Subject: Re: [lm-sensors] hwmon/adt7470 crash on module load (2.6.37-rc1)
+Message-ID: <20101105185134.29d0b387@endymion.delvare>
+In-Reply-To: <1288976281.22931.209.camel@groeck-laptop>
+References: <20101104170929.f5198be3.randy.dunlap@oracle.com>
+	<20101105094222.2bfbfb92@endymion.delvare>
+	<4CD4187F.1030305@oracle.com>
+	<20101105161741.459be240@endymion.delvare>
+	<20101105092143.2bd3d315.randy.dunlap@oracle.com>
+	<1288976281.22931.209.camel@groeck-laptop>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup: kill the dead code which does nothing but complicates the code
-and confuses the reader.
+On Fri, 5 Nov 2010 09:58:01 -0700, Guenter Roeck wrote:
+> On Fri, 2010-11-05 at 12:21 -0400, Randy Dunlap wrote:
+> > /sys/bus/i2c/devices/i2c-0/name:gmbus disabled
+> > /sys/bus/i2c/devices/i2c-10/name:GPIOE
+> > /sys/bus/i2c/devices/i2c-11/name:gmbus reserveddpd
+> > /sys/bus/i2c/devices/i2c-12/name:GPIOF
+> > /sys/bus/i2c/devices/i2c-13/name:gmbus (null)
+> > /sys/bus/i2c/devices/i2c-14/name:GPIO?
+> 
+> The above two lines look a bit fishy to me.
 
-sys_unshare(CLONE_THREAD/SIGHAND/VM) is not really implemented, and I doubt
-very much it will ever work. At least, nobody even tried since the original
-"unshare system call -v5: system call handler function" commit
-99d1419d96d7df9cfa56bc977810be831bd5ef64 was applied more than 4 years ago.
+I had the exact same thought. And "reserveddpd" looks odd as well.
 
-And the code is not consistent. unshare_thread() always fails unconditionally,
-while unshare_sighand() and unshare_vm() pretend to work if there is nothing
-to unshare.
+> Wonder if 7b5337ddbaf7e4b71ef6fd6307c6f9ef84f636e9 or one of the other
+> recent changes in drivers/gpu/drm/i915/intel_i2c.c caused some havoc.
 
-Remove unshare_thread(), unshare_sighand(), unshare_vm() helpers and related
-variables and add a simple CLONE_THREAD | CLONE_SIGHAND| CLONE_VM check into
-check_unshare_flags().
+Thanks for the pointer. But if Randy is running 2.6.37-rc1, he doesn't
+have this commit yet. Upgrading to 2.6.37-rc1-git3 might be a good
+idea. Especially as rc1 also lacks
+cb8ea7527b813dd6e19fb07328f7867a5f0a8d0a, if I understand what git
+name-rev is telling me. Apparently the "GMBUS" code was reverted
+(whatever it is) because it caused trouble. Maybe this is the trouble
+Randy just met.
 
-Also, move the "CLONE_NEWNS needs CLONE_FS" check from check_unshare_flags()
-to sys_unshare(). This looks more consistent and matches the similar
-do_sysvsem check in sys_unshare().
+Looking at the code, I indeed see a couple things which need fixing.
+Randy, please test this patch (on top of rc1-git3) Hopefully it will
+fix your adapter names, and possibly solve your crash (but if you
+couldn't reproduce it, you won't be able to confirm this.)
 
-Note: with or without this patch "atomic_read(mm->mm_users) > 1" can give
-a false positive due to get_task_mm().
+From: Jean Delvare <khali@linux-fr.org>
+Subject: drm/i915: Fix I2C adapter registration
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Roland McGrath <roland@redhat.com>
+Fix many small bugs in I2C adapter registration:
+* Properly reject unsupported GPIO pin.
+* Fix improper use of I2C_NAME_SIZE (which is the size of
+  i2c_client.name, not i2c_adapter.name.)
+* Prefix adapter names with "i915" so that the user knows what the
+  I2C channel is connected to.
+* Fix swapped characters in the string used to name the GPIO-based
+  adapter.
+* Add missing comma in gmbus name table.
+
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 ---
+ drivers/gpu/drm/i915/intel_i2c.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
- kernel/fork.c |  123 +++++++++++-----------------------------------------------
- 1 file changed, 25 insertions(+), 98 deletions(-)
+--- linux-2.6.37-rc1.orig/drivers/gpu/drm/i915/intel_i2c.c	2010-11-02 09:19:35.000000000 +0100
++++ linux-2.6.37-rc1/drivers/gpu/drm/i915/intel_i2c.c	2010-11-05 18:38:15.000000000 +0100
+@@ -160,7 +160,7 @@ intel_gpio_create(struct drm_i915_privat
+ 	};
+ 	struct intel_gpio *gpio;
+ 
+-	if (pin < 1 || pin > 7)
++	if (pin >= ARRAY_SIZE(map_pin_to_reg) || !map_pin_to_reg[pin])
+ 		return NULL;
+ 
+ 	gpio = kzalloc(sizeof(struct intel_gpio), GFP_KERNEL);
+@@ -172,7 +172,8 @@ intel_gpio_create(struct drm_i915_privat
+ 		gpio->reg += PCH_GPIOA - GPIOA;
+ 	gpio->dev_priv = dev_priv;
+ 
+-	snprintf(gpio->adapter.name, I2C_NAME_SIZE, "GPIO%c", "?BACDEF?"[pin]);
++	snprintf(gpio->adapter.name, sizeof(gpio->adapter.name), "i915 GPIO%c",
++		 "?BACDE?F"[pin]);
+ 	gpio->adapter.owner = THIS_MODULE;
+ 	gpio->adapter.algo_data	= &gpio->algo;
+ 	gpio->adapter.dev.parent = &dev_priv->dev->pdev->dev;
+@@ -349,7 +350,7 @@ int intel_setup_gmbus(struct drm_device
+ 		"panel",
+ 		"dpc",
+ 		"dpb",
+-		"reserved"
++		"reserved",
+ 		"dpd",
+ 	};
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+@@ -366,8 +367,8 @@ int intel_setup_gmbus(struct drm_device
+ 		bus->adapter.owner = THIS_MODULE;
+ 		bus->adapter.class = I2C_CLASS_DDC;
+ 		snprintf(bus->adapter.name,
+-			 I2C_NAME_SIZE,
+-			 "gmbus %s",
++			 sizeof(bus->adapter.name),
++			 "i915 gmbus %s",
+ 			 names[i]);
+ 
+ 		bus->adapter.dev.parent = &dev->pdev->dev;
 
---- 2.6.37/kernel/fork.c~unshare-killcrap	2010-11-05 18:03:28.000000000 +0100
-+++ 2.6.37/kernel/fork.c	2010-11-05 18:09:52.000000000 +0100
-@@ -1522,38 +1522,24 @@ void __init proc_caches_init(void)
- }
- 
- /*
-- * Check constraints on flags passed to the unshare system call and
-- * force unsharing of additional process context as appropriate.
-+ * Check constraints on flags passed to the unshare system call.
-  */
--static void check_unshare_flags(unsigned long *flags_ptr)
-+static int check_unshare_flags(unsigned long unshare_flags)
- {
-+	if (unshare_flags & ~(CLONE_THREAD|CLONE_FS|CLONE_NEWNS|CLONE_SIGHAND|
-+				CLONE_VM|CLONE_FILES|CLONE_SYSVSEM|
-+				CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWNET))
-+		return -EINVAL;
- 	/*
--	 * If unsharing a thread from a thread group, must also
--	 * unshare vm.
--	 */
--	if (*flags_ptr & CLONE_THREAD)
--		*flags_ptr |= CLONE_VM;
--
--	/*
--	 * If unsharing vm, must also unshare signal handlers.
--	 */
--	if (*flags_ptr & CLONE_VM)
--		*flags_ptr |= CLONE_SIGHAND;
--
--	/*
--	 * If unsharing namespace, must also unshare filesystem information.
-+	 * Not implemented, but pretend it works if there is nothing to
-+	 * unshare. Note that unsharing CLONE_THREAD or CLONE_SIGHAND
-+	 * needs to unshare vm.
- 	 */
--	if (*flags_ptr & CLONE_NEWNS)
--		*flags_ptr |= CLONE_FS;
--}
--
--/*
-- * Unsharing of tasks created with CLONE_THREAD is not supported yet
-- */
--static int unshare_thread(unsigned long unshare_flags)
--{
--	if (unshare_flags & CLONE_THREAD)
--		return -EINVAL;
-+	if (unshare_flags & (CLONE_THREAD | CLONE_SIGHAND | CLONE_VM)) {
-+		/* FIXME: get_task_mm() increments ->mm_users */
-+		if (atomic_read(&current->mm->mm_users) > 1)
-+			return -EINVAL;
-+	}
- 
- 	return 0;
- }
-@@ -1580,34 +1566,6 @@ static int unshare_fs(unsigned long unsh
- }
- 
- /*
-- * Unsharing of sighand is not supported yet
-- */
--static int unshare_sighand(unsigned long unshare_flags, struct sighand_struct **new_sighp)
--{
--	struct sighand_struct *sigh = current->sighand;
--
--	if ((unshare_flags & CLONE_SIGHAND) && atomic_read(&sigh->count) > 1)
--		return -EINVAL;
--	else
--		return 0;
--}
--
--/*
-- * Unshare vm if it is being shared
-- */
--static int unshare_vm(unsigned long unshare_flags, struct mm_struct **new_mmp)
--{
--	struct mm_struct *mm = current->mm;
--
--	if ((unshare_flags & CLONE_VM) &&
--	    (mm && atomic_read(&mm->mm_users) > 1)) {
--		return -EINVAL;
--	}
--
--	return 0;
--}
--
--/*
-  * Unshare file descriptor table if it is being shared
-  */
- static int unshare_fd(unsigned long unshare_flags, struct files_struct **new_fdp)
-@@ -1635,45 +1593,37 @@ static int unshare_fd(unsigned long unsh
-  */
- SYSCALL_DEFINE1(unshare, unsigned long, unshare_flags)
- {
--	int err = 0;
- 	struct fs_struct *fs, *new_fs = NULL;
--	struct sighand_struct *new_sigh = NULL;
--	struct mm_struct *mm, *new_mm = NULL, *active_mm = NULL;
- 	struct files_struct *fd, *new_fd = NULL;
- 	struct nsproxy *new_nsproxy = NULL;
- 	int do_sysvsem = 0;
-+	int err;
- 
--	check_unshare_flags(&unshare_flags);
--
--	/* Return -EINVAL for all unsupported flags */
--	err = -EINVAL;
--	if (unshare_flags & ~(CLONE_THREAD|CLONE_FS|CLONE_NEWNS|CLONE_SIGHAND|
--				CLONE_VM|CLONE_FILES|CLONE_SYSVSEM|
--				CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWNET))
-+	err = check_unshare_flags(unshare_flags);
-+	if (err)
- 		goto bad_unshare_out;
- 
- 	/*
-+	 * If unsharing namespace, must also unshare filesystem information.
-+	 */
-+	if (unshare_flags & CLONE_NEWNS)
-+		unshare_flags |= CLONE_FS;
-+	/*
- 	 * CLONE_NEWIPC must also detach from the undolist: after switching
- 	 * to a new ipc namespace, the semaphore arrays from the old
- 	 * namespace are unreachable.
- 	 */
- 	if (unshare_flags & (CLONE_NEWIPC|CLONE_SYSVSEM))
- 		do_sysvsem = 1;
--	if ((err = unshare_thread(unshare_flags)))
--		goto bad_unshare_out;
- 	if ((err = unshare_fs(unshare_flags, &new_fs)))
--		goto bad_unshare_cleanup_thread;
--	if ((err = unshare_sighand(unshare_flags, &new_sigh)))
--		goto bad_unshare_cleanup_fs;
--	if ((err = unshare_vm(unshare_flags, &new_mm)))
--		goto bad_unshare_cleanup_sigh;
-+		goto bad_unshare_out;
- 	if ((err = unshare_fd(unshare_flags, &new_fd)))
--		goto bad_unshare_cleanup_vm;
-+		goto bad_unshare_cleanup_fs;
- 	if ((err = unshare_nsproxy_namespaces(unshare_flags, &new_nsproxy,
- 			new_fs)))
- 		goto bad_unshare_cleanup_fd;
- 
--	if (new_fs ||  new_mm || new_fd || do_sysvsem || new_nsproxy) {
-+	if (new_fs || new_fd || do_sysvsem || new_nsproxy) {
- 		if (do_sysvsem) {
- 			/*
- 			 * CLONE_SYSVSEM is equivalent to sys_exit().
-@@ -1699,19 +1649,6 @@ SYSCALL_DEFINE1(unshare, unsigned long, 
- 			spin_unlock(&fs->lock);
- 		}
- 
--		if (new_mm) {
--			mm = current->mm;
--			active_mm = current->active_mm;
--			current->mm = new_mm;
--			current->active_mm = new_mm;
--			if (current->signal->oom_score_adj == OOM_SCORE_ADJ_MIN) {
--				atomic_dec(&mm->oom_disable_count);
--				atomic_inc(&new_mm->oom_disable_count);
--			}
--			activate_mm(active_mm, new_mm);
--			new_mm = mm;
--		}
--
- 		if (new_fd) {
- 			fd = current->files;
- 			current->files = new_fd;
-@@ -1728,20 +1665,10 @@ bad_unshare_cleanup_fd:
- 	if (new_fd)
- 		put_files_struct(new_fd);
- 
--bad_unshare_cleanup_vm:
--	if (new_mm)
--		mmput(new_mm);
--
--bad_unshare_cleanup_sigh:
--	if (new_sigh)
--		if (atomic_dec_and_test(&new_sigh->count))
--			kmem_cache_free(sighand_cachep, new_sigh);
--
- bad_unshare_cleanup_fs:
- 	if (new_fs)
- 		free_fs_struct(new_fs);
- 
--bad_unshare_cleanup_thread:
- bad_unshare_out:
- 	return err;
- }
-
+-- 
+Jean Delvare
