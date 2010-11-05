@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145Ab0KEDOm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 23:14:42 -0400
-Received: from mail.perches.com ([173.55.12.10]:4124 "EHLO mail.perches.com"
+	id S1754165Ab0KEDOo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 23:14:44 -0400
+Received: from mail.perches.com ([173.55.12.10]:4121 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753624Ab0KEDIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753741Ab0KEDIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 4 Nov 2010 23:08:53 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
@@ -19,9 +19,9 @@ Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         John Ronciak <john.ronciak@intel.com>,
         e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 25/49] drivers/net/ixgbe: Use vzalloc
-Date: Thu,  4 Nov 2010 20:07:49 -0700
-Message-Id: <3ef4ca9d423bd0fc5dcc8dae9c8c04ce48c9c240.1288925424.git.joe@perches.com>
+Subject: [PATCH 24/49] drivers/net/ixgb: Use vzalloc
+Date: Thu,  4 Nov 2010 20:07:48 -0700
+Message-Id: <b63aacd8d05e27da93e3412a146e98939fba8e2a.1288925424.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <alpine.DEB.2.00.1011031108260.11625@router.home>
 References: <alpine.DEB.2.00.1011031108260.11625@router.home>
@@ -33,46 +33,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/ixgbe/ixgbe_main.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
+ drivers/net/ixgb/ixgb_main.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/ixgbe/ixgbe_main.c b/drivers/net/ixgbe/ixgbe_main.c
-index 2bd3eb4..c10d179 100644
---- a/drivers/net/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ixgbe/ixgbe_main.c
-@@ -4970,12 +4970,11 @@ int ixgbe_setup_tx_resources(struct ixgbe_adapter *adapter,
+diff --git a/drivers/net/ixgb/ixgb_main.c b/drivers/net/ixgb/ixgb_main.c
+index caa8192..211a169 100644
+--- a/drivers/net/ixgb/ixgb_main.c
++++ b/drivers/net/ixgb/ixgb_main.c
+@@ -669,13 +669,12 @@ ixgb_setup_tx_resources(struct ixgb_adapter *adapter)
  	int size;
  
- 	size = sizeof(struct ixgbe_tx_buffer) * tx_ring->count;
--	tx_ring->tx_buffer_info = vmalloc_node(size, tx_ring->numa_node);
-+	tx_ring->tx_buffer_info = vzalloc_node(size, tx_ring->numa_node);
- 	if (!tx_ring->tx_buffer_info)
--		tx_ring->tx_buffer_info = vmalloc(size);
-+		tx_ring->tx_buffer_info = vzalloc(size);
- 	if (!tx_ring->tx_buffer_info)
- 		goto err;
--	memset(tx_ring->tx_buffer_info, 0, size);
+ 	size = sizeof(struct ixgb_buffer) * txdr->count;
+-	txdr->buffer_info = vmalloc(size);
++	txdr->buffer_info = vzalloc(size);
+ 	if (!txdr->buffer_info) {
+ 		netif_err(adapter, probe, adapter->netdev,
+ 			  "Unable to allocate transmit descriptor ring memory\n");
+ 		return -ENOMEM;
+ 	}
+-	memset(txdr->buffer_info, 0, size);
  
  	/* round up to nearest 4K */
- 	tx_ring->size = tx_ring->count * sizeof(union ixgbe_adv_tx_desc);
-@@ -5037,15 +5036,14 @@ int ixgbe_setup_rx_resources(struct ixgbe_adapter *adapter,
+ 
+@@ -759,13 +758,12 @@ ixgb_setup_rx_resources(struct ixgb_adapter *adapter)
  	int size;
  
- 	size = sizeof(struct ixgbe_rx_buffer) * rx_ring->count;
--	rx_ring->rx_buffer_info = vmalloc_node(size, adapter->node);
-+	rx_ring->rx_buffer_info = vzalloc_node(size, adapter->node);
- 	if (!rx_ring->rx_buffer_info)
--		rx_ring->rx_buffer_info = vmalloc(size);
-+		rx_ring->rx_buffer_info = vzalloc(size);
- 	if (!rx_ring->rx_buffer_info) {
- 		e_err(probe, "vmalloc allocation failed for the Rx "
- 		      "descriptor ring\n");
- 		goto alloc_failed;
+ 	size = sizeof(struct ixgb_buffer) * rxdr->count;
+-	rxdr->buffer_info = vmalloc(size);
++	rxdr->buffer_info = vzalloc(size);
+ 	if (!rxdr->buffer_info) {
+ 		netif_err(adapter, probe, adapter->netdev,
+ 			  "Unable to allocate receive descriptor ring\n");
+ 		return -ENOMEM;
  	}
--	memset(rx_ring->rx_buffer_info, 0, size);
+-	memset(rxdr->buffer_info, 0, size);
  
  	/* Round up to nearest 4K */
- 	rx_ring->size = rx_ring->count * sizeof(union ixgbe_adv_rx_desc);
+ 
 -- 
 1.7.3.1.g432b3.dirty
 
