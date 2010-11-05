@@ -1,122 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab0KETGB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 15:06:01 -0400
-Received: from mail.windriver.com ([147.11.1.11]:46571 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754772Ab0KETFk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 15:05:40 -0400
-From: Jason Wessel <jason.wessel@windriver.com>
-To: stern@rowland.harvard.edu
-Cc: gregkh@suse.de, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kgdb-bugreport@lists.sourceforge.net,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: [RFC PATCH 2/5] usb-serial-console: try to poll the hcd vs dropping data
-Date: Fri,  5 Nov 2010 14:05:03 -0500
-Message-Id: <1288983906-31129-3-git-send-email-jason.wessel@windriver.com>
-X-Mailer: git-send-email 1.6.4.rc1
-In-Reply-To: <1288983906-31129-2-git-send-email-jason.wessel@windriver.com>
-References: <1288983906-31129-1-git-send-email-jason.wessel@windriver.com>
- <1288983906-31129-2-git-send-email-jason.wessel@windriver.com>
-X-OriginalArrivalTime: 05 Nov 2010 19:05:16.0651 (UTC) FILETIME=[61F9D3B0:01CB7D1C]
+	id S1754661Ab0KETId (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 15:08:33 -0400
+Received: from fieldses.org ([174.143.236.118]:40714 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752646Ab0KETIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 15:08:31 -0400
+Date: Fri, 5 Nov 2010 15:08:27 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, hch@infradead.org, warthog9@kernel.org,
+        david@fromorbit.com, jmorris@namei.org, kyle@mcmartin.ca,
+        hpa@zytor.com, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, mingo@elte.hu, eparis@redhat.com,
+        viro@zeniv.linux.org.uk, Matthew Wilcox <matthew@wil.cx>
+Subject: Re: [PATCH 0/4] IMA: making i_readcount a first class inode citizen
+Message-ID: <20101105190827.GC6492@fieldses.org>
+References: <1288303325-9628-1-git-send-email-zohar@linux.vnet.ibm.com>
+ <20101105011227.GB4320@fieldses.org>
+ <1288955286.3135.9.camel@localhost.localdomain>
+ <20101105162811.GA3270@fieldses.org>
+ <1288978685.3135.135.camel@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288978685.3135.135.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch tries to solve the problem that printk data is dropped
-because there are too many outstanding transmit urb's while trying to
-execute printk's to a console.  You can observe this by booting a
-kernel with a serial console and cross checking the dmesg output with
-what you received on the console or doing something like
-"echo t > /proc/sysrq-trigger".
+On Fri, Nov 05, 2010 at 01:38:05PM -0400, Mimi Zohar wrote:
+> On Fri, 2010-11-05 at 12:28 -0400, J. Bruce Fields wrote: 
+> > On Fri, Nov 05, 2010 at 07:08:06AM -0400, Mimi Zohar wrote:
+> 
+> > > Right, like the ima_file_check(), which is after the __dentry_open().
+> > > Al, is it possible to move the break_lease() in may_open() to later?
+> > 
+> > That would still leave a race like:
+> > 
+> > 			check count
+> > 	bump count
+> > 	break lease
+> > 			set lease
+> > 
+> > But we could extend the i_lock to prevent the lease being bumped between
+> > the two steps on the right-hand side.
+> 
+> The latest i_readcount patchset, i_readcount is atomic and doesn't
+> require i_lock, at least for IMA.  Have to think about this more ....
+> 
+> > At that point I think we'd be done?  We're assured the count is still
+> > zero while the lease is added to the inode, so anyone in the process of
+> > doing an open has yet to reach the break_lease, which will see the newly
+> > added lease.
+> > 
+> > That leaves the problem that leases really should be broken on anything
+> > that changes the attributes or the dentries pointing to the inode:
+> > setattr, link, unlink, rename, at least.
+> 
+> For this reason, IMA is now taking i_mutex, preventing file metadata
+> from changing.
 
-This patch takes the route of forcibly polling the hcd device to drain
-the urb queue in order to initiate the bulk write call backs.
+Lease code could do that as well.  (Probably just with a trylock,
+failing the setlease if we can't get the lock.)
 
-A few millisecond penalty will get incurred to allow the hcd
-controller to complete a write urb, else the console data is thrown
-away.  Even with any kind of delay, the latency is still lower than
-using a traditional serial port uart due to the fact that there are
-bigger buffer for use with the USB serial console kfifo
-implementation.
+That misses rename, though, which doesn't take the i_mutex on the
+renamed file.  Which makes sense.
 
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>
-CC: Alan Stern <stern@rowland.harvard.edu>
----
- drivers/usb/serial/console.c |   42 +++++++++++++++++++++++++++---------------
- 1 files changed, 27 insertions(+), 15 deletions(-)
+But a lease is used to give file server clients the right to do an open
+locally, and we want them to be able to guarantee to applications that
+the path (well, the last component, at least) still refers to the same
+file at open time.
 
-diff --git a/drivers/usb/serial/console.c b/drivers/usb/serial/console.c
-index 1ee6b2a..b09832f 100644
---- a/drivers/usb/serial/console.c
-+++ b/drivers/usb/serial/console.c
-@@ -197,13 +197,37 @@ static int usb_console_setup(struct console *co, char *options)
- 	return retval;
- }
- 
-+static void usb_do_console_write(struct usb_serial *serial,
-+				 struct usb_serial_port *port,
-+				 const char *buf, unsigned count)
-+{
-+	int retval;
-+	int loops = 100;
-+try_again:
-+	/* pass on to the driver specific version of this function if
-+	   it is available */
-+	if (serial->type->write)
-+		retval = serial->type->write(NULL, port, buf, count);
-+	else
-+		retval = usb_serial_generic_write(NULL, port, buf, count);
-+	if (retval < count && retval >= 0 && loops--) {
-+		/* poll the hcd device because the queue is full */
-+		count -= retval;
-+		buf += retval;
-+		udelay(100);
-+		usb_poll_irq(serial->dev);
-+		usb_poll_irq_schedule_flush();
-+		goto try_again;
-+	}
-+	dbg("%s - return value : %d", __func__, retval);
-+}
-+
- static void usb_console_write(struct console *co,
- 					const char *buf, unsigned count)
- {
- 	static struct usbcons_info *info = &usbcons_info;
- 	struct usb_serial_port *port = info->port;
- 	struct usb_serial *serial;
--	int retval = -ENODEV;
- 
- 	if (!port || port->serial->dev->state == USB_STATE_NOTATTACHED)
- 		return;
-@@ -230,23 +254,11 @@ static void usb_console_write(struct console *co,
- 				break;
- 			}
- 		}
--		/* pass on to the driver specific version of this function if
--		   it is available */
--		if (serial->type->write)
--			retval = serial->type->write(NULL, port, buf, i);
--		else
--			retval = usb_serial_generic_write(NULL, port, buf, i);
--		dbg("%s - return value : %d", __func__, retval);
-+		usb_do_console_write(serial, port, buf, i);
- 		if (lf) {
- 			/* append CR after LF */
- 			unsigned char cr = 13;
--			if (serial->type->write)
--				retval = serial->type->write(NULL,
--								port, &cr, 1);
--			else
--				retval = usb_serial_generic_write(NULL,
--								port, &cr, 1);
--			dbg("%s - return value : %d", __func__, retval);
-+			usb_do_console_write(serial, port, &cr, 1);
- 		}
- 		buf += i;
- 		count -= i;
--- 
-1.6.3.3
+> > One approach: add another counter to the inode named disable_leases, and
+> > have any of those operations do something like:
+> > 
+> > 	disable_lease++
+> > 	break_lease
+> > 	... do operation ...
+> > 	disable_lease--
+> > 
+> > ?
+> > 
+> 
+> lol, getting i_readcount was was hard enough. 
 
+Argh.  It really is a serious bug, for NFS at least.  And I'm a little
+out of non-inode-expanding ideas.
+
+--b.
