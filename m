@@ -1,84 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753577Ab0KEQJN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 12:09:13 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42468 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753170Ab0KEQJL (ORCPT
+	id S1753512Ab0KEQL2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 12:11:28 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:43462 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752874Ab0KEQLZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 12:09:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=pqz5sRAtqRtHMr2kfHq+WOC21v3wH/YH/nJ32Y8qi96+vLUDdbSW6b638yaVBDPDia
-         nBppXPaimLez8/Ja9WY7+ZvDS/NQSbnvCrprJvWzeJEgQtyv0xHpHoiQMupOoxEYDHo3
-         MaF0/htUXVRCeEyOzJie+fzljoU81bUGX0rGM=
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dave Young <hidave.darkstar@gmail.com>, Greg Thelen <gthelen@google.com>,
-        Andrea Righi <arighi@develer.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Minchan Kim <minchan.kim@gmail.com>
-Subject: [PATCH] memcg: use do_div to divide s64 in 32 bit machine.
-Date: Sat,  6 Nov 2010 01:08:53 +0900
-Message-Id: <1288973333-7891-1-git-send-email-minchan.kim@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Fri, 5 Nov 2010 12:11:25 -0400
+Date: Fri, 5 Nov 2010 17:09:19 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Borislav Petkov <bp@amd64.org>, Borislav Petkov <bp@alien8.de>,
+        john stultz <johnstul@us.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "avi@redhat.com" <avi@redhat.com>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>
+Subject: Re: [bisected] Clocksource tsc unstable git
+Message-ID: <20101105160919.GC25704@aftab>
+References: <20101027182608.GA1580@arch.trippelsdorf.de>
+ <20101029081831.GA7149@liondog.tnic>
+ <20101029083013.GA1553@arch.trippelsdorf.de>
+ <20101029102713.GA21125@aftab>
+ <alpine.LFD.2.00.1010291411150.2692@localhost6.localdomain6>
+ <20101029170040.GJ21125@aftab>
+ <20101029172631.GA23546@arch.trippelsdorf.de>
+ <alpine.LFD.2.00.1011011904280.2566@localhost6.localdomain6>
+ <20101101184512.GA1589@arch.trippelsdorf.de>
+ <alpine.LFD.2.00.1011021626160.9357@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1011021626160.9357@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use do_div to divide s64 value. Otherwise, build would be failed
-like Dave Young reported.
+On Tue, Nov 02, 2010 at 11:26:54AM -0400, Thomas Gleixner wrote:
+> Ok, I'm waiting for Boris to get us the confirmation from HW folks.
 
-mm/built-in.o: In function `mem_cgroup_dirty_info':
-/home/dave/vdb/build/mm/linux-2.6.36/mm/memcontrol.c:1251: undefined
-reference to `__divdi3'
-/home/dave/vdb/build/mm/linux-2.6.36/mm/memcontrol.c:1259: undefined
-reference to `__divdi3'
-make: *** [.tmp_vmlinux1] Error 1
+Ok, I don't have much but it could be something. We could use the
+minimum tick u16 value in the ACPI HPET table, offset 53:
 
-Tested-by: Dave Young <hidave.darkstar@gmail.com>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+Main Counter Minimum   2 53 Unit: Clock tick
+Clock_tick in Periodic      The minimum clock ticks can be set without lost
+Mode                        interrupts while the counter is programmed to operate in
+*Note#3                     periodic mode
+
+...
+
+* Note #3: This field is written by BIOS and may be chipset and/or
+platform dependent. This indicates the minimum value that must be used
+for any counter programmed in periodic mode to avoid lost interrupts.
+For any counter x that has been configured for periodic mode, the number
+can be programmed in any Tx_Compare Register must be greater than P,
+where P = (Minimum Period) / (Main counter period) in order to avoid
+lost interrupts.
+
+However, we don't know (yet) whether this can be used in the
+non-periodic mode too. My gut feeling says yes but I wouldn't trust it.
+
+We went and collected that value a bunch of systems and it looks like it
+would need more massaging (read: capping) since some BIOSen simply write
+crap in it. It ranges from
+
+- 0x37ee on old nVidia and Intel boards (this is definitely crap, I
+can't imagine a minimum ticks value of 14318 for a HPET but who knows)
+
+- 0x1000 on a HP machine (also fishy)
+
+- 0x10, 0x14 on current SBxxx boards
+
+- 0x80 on newer Intel boards
+
+and it looks like 0x80 is also the default value which we can use as a
+capping value. Btw, I've been running the following on the machine in
+question for a while now and no lockups so far.
+
+Opinions?
+
 ---
- mm/memcontrol.c |   16 +++++++++-------
- 1 files changed, 9 insertions(+), 7 deletions(-)
+ arch/x86/include/asm/hpet.h |    1 +
+ arch/x86/kernel/acpi/boot.c |   12 +++++++++---
+ arch/x86/kernel/hpet.c      |    3 ++-
+ 3 files changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 76386f4..a15d95e 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1247,18 +1247,20 @@ bool mem_cgroup_dirty_info(unsigned long sys_available_mem,
- 	if (dirty_param.dirty_bytes)
- 		info->dirty_thresh =
- 			DIV_ROUND_UP(dirty_param.dirty_bytes, PAGE_SIZE);
--	else
--		info->dirty_thresh =
--			(dirty_param.dirty_ratio * available_mem) / 100;
-+	else {
-+		info->dirty_thresh = dirty_param.dirty_ratio * available_mem;
-+		do_div(info->dirty_thresh, 100);
-+	}
+diff --git a/arch/x86/include/asm/hpet.h b/arch/x86/include/asm/hpet.h
+index 2c392d6..01d9480 100644
+--- a/arch/x86/include/asm/hpet.h
++++ b/arch/x86/include/asm/hpet.h
+@@ -68,6 +68,7 @@ extern unsigned long force_hpet_address;
+ extern u8 hpet_blockid;
+ extern int hpet_force_user;
+ extern u8 hpet_msi_disable;
++extern u16 hpet_min_tick;
+ extern int is_hpet_enabled(void);
+ extern int hpet_enable(void);
+ extern void hpet_disable(void);
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 71232b9..37b93e8 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -772,9 +772,6 @@ static int __init acpi_parse_hpet(struct acpi_table_header *table)
+ 		hpet_address >>= 32;
+ 	}
+ #endif
+-	printk(KERN_INFO PREFIX "HPET id: %#x base: %#lx\n",
+-	       hpet_tbl->id, hpet_address);
+-
+ 	/*
+ 	 * Allocate and initialize the HPET firmware resource for adding into
+ 	 * the resource tree during the lateinit timeframe.
+@@ -790,6 +787,15 @@ static int __init acpi_parse_hpet(struct acpi_table_header *table)
+ 	hpet_res->start = hpet_address;
+ 	hpet_res->end = hpet_address + (1 * 1024) - 1;
  
- 	if (dirty_param.dirty_background_bytes)
- 		info->background_thresh =
- 			DIV_ROUND_UP(dirty_param.dirty_background_bytes,
- 				     PAGE_SIZE);
--	else
--		info->background_thresh =
--			(dirty_param.dirty_background_ratio *
--			       available_mem) / 100;
-+	else {
-+		info->background_thresh = dirty_param.dirty_background_ratio *
-+			available_mem;
-+		do_div(info->background_thresh, 100);
++	hpet_min_tick = hpet_tbl->minimum_tick;
++	if (hpet_min_tick > 0x80) {
++		printk(KERN_WARNING PREFIX "Limiting HPET read delay to 0x80.\n");
++		hpet_min_tick = 0x80;
 +	}
++
++	printk(KERN_INFO PREFIX "HPET id: %#x base: %#lx min tick: %d\n",
++		hpet_tbl->id, hpet_address, hpet_min_tick);
++
+ 	return 0;
+ }
  
- 	info->nr_reclaimable =
- 		mem_cgroup_page_stat(MEMCG_NR_RECLAIM_PAGES);
+diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+index e49c3b9..a0b790a 100644
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -40,6 +40,7 @@ u8					hpet_msi_disable;
+ static unsigned long			hpet_num_timers;
+ #endif
+ static void __iomem			*hpet_virt_address;
++u16					hpet_min_tick = 0x80;
+ 
+ struct hpet_dev {
+ 	struct clock_event_device	evt;
+@@ -408,7 +409,7 @@ static int hpet_next_event(unsigned long delta,
+ 	 */
+ 	res = (s32)(cnt - hpet_readl(HPET_COUNTER));
+ 
+-	return res < 8 ? -ETIME : 0;
++	return res < hpet_min_tick ? -ETIME : 0;
+ }
+ 
+ static void hpet_legacy_set_mode(enum clock_event_mode mode,
 -- 
-1.7.0.5
+1.7.3.1.50.g1e633
 
+
+
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
