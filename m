@@ -1,64 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754823Ab0KETNR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 15:13:17 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:51003 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753403Ab0KETNP (ORCPT
+	id S1754710Ab0KETU7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 15:20:59 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:48526 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753283Ab0KETUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 15:13:15 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 67.188.36.105
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/d8fK5O7zzZRzo28V3MH0b
-Date: Fri, 5 Nov 2010 12:12:47 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Thomas Weber <weber@corscience.de>
-Cc: Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] OMAP2: Devkit8000: Fix mmc regulator failure
-Message-ID: <20101105191247.GR9264@atomide.com>
-References: <1288651691-14914-1-git-send-email-weber@corscience.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288651691-14914-1-git-send-email-weber@corscience.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 5 Nov 2010 15:20:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=AbJUAXY48oR7apTNO9bjMGMEyinkHpnX3gkVQdLtWFqXM4SAOhjfanxX0BS2prMDi0
+         tmzD+7VyPQkfw7tx5uhRtSqzC9Zp1tF69pVRqmXmSNgTCr/dQGrooJegD17kT/vhOZJ1
+         fDkG65zI/E4EK/6ip8jJe/Ris65Th6r/SGnUc=
+Subject: Re: [PATCH] atomic: add atomic_inc_not_zero_hint()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Nick Piggin <npiggin@kernel.dk>
+In-Reply-To: <20101105112821.57f80481.akpm@linux-foundation.org>
+References: <1288975980.2882.877.camel@edumazet-laptop>
+	 <20101105102038.53e36f9e.akpm@linux-foundation.org>
+	 <1288980046.2882.1054.camel@edumazet-laptop>
+	 <20101105110828.52f061b3.akpm@linux-foundation.org>
+	 <1288981224.2882.1105.camel@edumazet-laptop>
+	 <20101105112821.57f80481.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 05 Nov 2010 20:20:44 +0100
+Message-ID: <1288984844.2665.52.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Thomas Weber <weber@corscience.de> [101101 14:38]:
-> This patch fixes the following error:
+Le vendredi 05 novembre 2010 à 11:28 -0700, Andrew Morton a écrit :
+> But we haven't established that there _is_ duplicated code which needs
+> that treatment.
 > 
-> >regulator: VMMC1: 1850 <--> 3150 mV at 3000 mV normal
-> standby
-> >twl_reg twl_reg.6: can't register VMMC1, -22
-> >twl_reg: probe of twl_reg.6 failed with error -22
+> Scanning arch/x86/include/asm/atomic.h, perhaps ATOMIC_INIT() is a
+> candidate.  But I'm not sure that it _should_ be hoisted up - if every
+> architecture happens to do it the same way then that's just a fluke.
+> 
+> 
 
-Adding this into omap-fixes.
+Not sure I understand you. I was trying to avoid recursive includes, but
+that should be protected anyway. I see a lot of code that could be
+factorized in this new header (atomic_inc_not_zero() for example)
 
-Tony
- 
-> Signed-off-by: Thomas Weber <weber@corscience.de>
-> ---
->  arch/arm/mach-omap2/board-devkit8000.c |    3 ---
->  1 files changed, 0 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/board-devkit8000.c b/arch/arm/mach-omap2/board-devkit8000.c
-> index 067f437..53ac762 100644
-> --- a/arch/arm/mach-omap2/board-devkit8000.c
-> +++ b/arch/arm/mach-omap2/board-devkit8000.c
-> @@ -242,9 +242,6 @@ static int devkit8000_twl_gpio_setup(struct device *dev,
->  	mmc[0].gpio_cd = gpio + 0;
->  	omap2_hsmmc_init(mmc);
->  
-> -	/* link regulators to MMC adapters */
-> -	devkit8000_vmmc1_supply.dev = mmc[0].dev;
-> -
->  	/* TWL4030_GPIO_MAX + 1 == ledB, PMU_STAT (out, active low LED) */
->  	gpio_leds[2].gpio = gpio + TWL4030_GPIO_MAX + 1;
->  
-> -- 
-> 1.7.3.2
-> 
+Thanks
+
+[PATCH v3] atomic: add atomic_inc_not_zero_hint()
+
+Followup of perf tools session in Netfilter WorkShop 2010
+
+In network stack we make high usage of atomic_inc_not_zero() in contexts
+we know the probable value of atomic before increment (2 for udp sockets
+for example)
+
+Using a special version of atomic_inc_not_zero() giving this hint can
+help processor to use less bus transactions.
+
+On x86 (MESI protocol) for example, this avoids entering Shared state,
+because "lock cmpxchg" issues an RFO (Read For Ownership)
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: David Miller <davem@davemloft.net>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Nick Piggin <npiggin@kernel.dk>
+---
+V3: adds the include <asm/atomic.h>
+    if hint is null, use atomic_inc_not_zero() (Paul suggestion)
+V2: add #ifndef atomic_inc_not_zero_hint
+    kerneldoc changes
+    test that hint is not null
+    Meant to be included at end of arch/*/asm/atomic.h files
+
+diff --git a/include/linux/atomic.h b/include/linux/atomic.h
+new file mode 100644
+index 0000000..5a7df87
+--- /dev/null
++++ b/include/linux/atomic.h
+@@ -0,0 +1,37 @@
++#ifndef _LINUX_ATOMIC_H
++#define _LINUX_ATOMIC_H
++#include <asm/atomic.h>
++
++/**
++ * atomic_inc_not_zero_hint - increment if not null
++ * @v: pointer of type atomic_t
++ * @hint: probable value of the atomic before the increment
++ *
++ * This version of atomic_inc_not_zero() gives a hint of probable
++ * value of the atomic. This helps processor to not read the memory
++ * before doing the atomic read/modify/write cycle, lowering
++ * number of bus transactions on some arches.
++ *
++ * Returns: 0 if increment was not done, 1 otherwise.
++ */
++#ifndef atomic_inc_not_zero_hint
++static inline int atomic_inc_not_zero_hint(atomic_t *v, int hint)
++{
++	int val, c = hint;
++
++	/* sanity test, should be removed by compiler if hint is a constant */
++	if (!hint)
++		return atomic_inc_not_zero(v);
++
++ 	do {
++		val = atomic_cmpxchg(v, c, c + 1);
++		if (val == c)
++			return 1;
++		c = val;
++	} while (c);
++
++	return 0;
++}
++#endif
++
++#endif /* _LINUX_ATOMIC_H */
+
+
