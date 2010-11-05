@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754614Ab0KERVW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 13:21:22 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35186 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754377Ab0KERVR (ORCPT
+	id S1754577Ab0KERXh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 13:23:37 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:33911 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754461Ab0KERXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 13:21:17 -0400
-Date: Fri, 5 Nov 2010 17:19:52 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Par-Gunnar Hjalmdahl <pghatwork@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linus.walleij@stericsson.com,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lukasz.Rymanowski@tieto.com
-Subject: Re: [PATCH 5/9] mfd: Add UART support for the ST-Ericsson CG2900.
-Message-ID: <20101105171952.7ac6cf2b@lxorguk.ukuu.org.uk>
-In-Reply-To: <AANLkTimEYAmocFh_c-KftpL2zRm+LaHzgJOBX31iicLj@mail.gmail.com>
-References: <AANLkTi=XTUau_GbASJEUBgsZ_FYYmRAX6W43YtRdv2wS@mail.gmail.com>
-	<AANLkTinh3D8V8UaN8FyCouwUQ98A4RRWEHXU7Tr9XMbs@mail.gmail.com>
-	<20101029172214.25b14c2a@pyx>
-	<201010300201.01940.arnd@arndb.de>
-	<20101031120429.1ca38140@pyx>
-	<AANLkTimEYAmocFh_c-KftpL2zRm+LaHzgJOBX31iicLj@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Fri, 5 Nov 2010 13:23:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=kJJ6bRRO/WNgPkaaITPs/+3mMKWrj48UWaiz1IDQGvvl9geASJu4bZ16PV/u/UsbIK
+         kGq4gMPWpNDLVlB/DOqXeSoJ/N8ER6jEHP4kTMcOqi+JhEGp+x/u/IAdY8htMtugOK60
+         gSEwuLaOdVyBIEYgxeRwR48/8KfZ+CmfQOBVU=
+Subject: Re: [PATCH v2] irq: use per_cpu kstat_irqs
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <alpine.DEB.2.00.1011051153110.8161@router.home>
+References: <1288892908.2659.175.camel@edumazet-laptop>
+	 <1288973210.2882.733.camel@edumazet-laptop>
+	 <alpine.DEB.2.00.1011051153110.8161@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 05 Nov 2010 18:16:43 +0100
+Message-ID: <1288977403.2882.928.camel@edumazet-laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  - Introduce a new ldisc called N_H4_COMBO with a ldisc driver
-> accordingly that will be placed under drivers/char
+Le vendredi 05 novembre 2010 à 11:54 -0500, Christoph Lameter a écrit :
+> On Fri, 5 Nov 2010, Eric Dumazet wrote:
+> 
+> >  static inline void kstat_incr_irqs_this_cpu(unsigned int irq,
+> >  					    struct irq_desc *desc)
+> 
+> desc is not used.
+> 
+> >  {
+> > -	kstat_this_cpu.irqs[irq]++;
+> > -	kstat_this_cpu.irqs_sum++;
+> > +	__this_cpu_inc(kstat.irqs[irq]);
+> > +	__this_cpu_inc(kstat.irqs_sum);
+> >  }
+> 
 
-That seems sensible. That code should also be entirely hardware
-independent.
+Thats right, but it is used in CONFIG_GENERIC_HARDIRQS case.
 
-> solution more complex than actually needed. We think that creating a
-> new ldisc creates a cleaner solution. It will to some extent remind of
-> hci_ldisc, but it will not register to any framework except tty.
+Prototype of this function is generic, I did not change this.
 
-Ok. So presumably both the SPI and the tty interfaces would then use the
-same library code to do the demux - or are the protocols different ?
- 
-> We've thought about if we should switch cg2900 to a bus, but after
-> discussing this we feel that CG2900 has such individual
-> characteristics that it could be hard to create a bus that would suite
-> it. We therefore will keep the MFD type. We might in the future add
-> new chips to the driver, but they will most likely not require so much
-> rework of the driver that we will have to create something completely
-> new. We will rather create a lib file that contains common code to
-> reduce total code size of the driver.
+(I left the macro in CONFIG_GENERIC_HARDIRQS case too because I felt
+using a function could break some arches)
 
-No particular opinion either way. Whatever works best and keeps it
-modular.
+
+
