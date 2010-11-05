@@ -1,48 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753108Ab0KECSC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 22:18:02 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:58977 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752087Ab0KECR6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 22:17:58 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Greg KH <greg@kroah.com>
-Subject: Re: [00/02] TTY: move the tty core to drivers/tty
-Date: Fri, 5 Nov 2010 03:18:13 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Greg KH <gregkh@suse.de>, Jiri Slaby <jslaby@suse.cz>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        Rogier Wolff <R.E.Wolff@bitwizard.nl>,
-        "Michael H. Warfield" <mhw@wittsend.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-References: <20101104222906.GA3390@kroah.com>
-In-Reply-To: <20101104222906.GA3390@kroah.com>
+	id S1753211Ab0KECYp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 22:24:45 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:33296 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752648Ab0KECYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 22:24:41 -0400
+Date: Thu, 4 Nov 2010 19:23:48 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Jean Delvare <khali@linux-fr.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: [lm-sensors] [PATCH 3/8] hwmon: applesmc: Dynamic creation of
+ temperature files
+Message-ID: <20101105022348.GA28308@ericsson.com>
+References: <1288511434-5662-1-git-send-email-rydberg@euromail.se>
+ <1288511434-5662-4-git-send-email-rydberg@euromail.se>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011050318.13420.arnd@arndb.de>
-X-Provags-ID: V02:K0:UOq/wma0waVnbF90ekp4WzVm6opYHq+Ra7UrsMHs2hS
- Ksjm25p6Hn5mFWbzvQNecMn9lTuxRGHc2pr4bbgqcTlbv6XUWB
- QCWyp+cHg7WPWH2zE4yc5p7yQziuZoF+aQU7cELtBFgqOD0muP
- dehAMzbIKdcUrXJJzicvqRMKIqZaV7yExxWMT+zpYfG4nLkxRC
- Knu4PGU5dV9w0uUkOuftg==
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1288511434-5662-4-git-send-email-rydberg@euromail.se>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 04 November 2010, Greg KH wrote:
-> Here's the latest version of the "move the tty files around" patch that
-> I'd like to send to Linus now that -rc1 is out and things have settled
-> down.  It only moves the tty core and the vt code out of drivers/char.
-> I'll do the movement of the serial drivers and other things that were
-> discussed later, for .38, but I wanted to get this move to him now as
-> it's easiest to do so at this point in time.
+On Sun, Oct 31, 2010 at 03:50:29AM -0400, Henrik Rydberg wrote:
+> The current driver creates temperature files based on a list
+> of temperature keys given per device. Apart from slow adaption
+> to new machine models, the number of sensors also depends on
+> the number of processors. This patch looks up the temperature
+> keys dynamically, thereby supporting all models.
+> 
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 
-Ok, that sounds like a good way to stage this.
+Hi Henrik,
 
-Thanks,
+Nice cleanup. Just a coule of minor comments.
 
-	Arnd
+> ---
+>  drivers/hwmon/applesmc.c |  498 +++++++++++-----------------------------------
+>  1 files changed, 113 insertions(+), 385 deletions(-)
+> 
+> diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+> index 7f030f0..0207618 100644
+> --- a/drivers/hwmon/applesmc.c
+> +++ b/drivers/hwmon/applesmc.c
+[ ...]
+> 
+> -       pr_info("key=%d\n", s->key_count);
+> +       pr_info("key=%d temp=%d\n", s->key_count, s->temp_count);
+
+Is this useful or just noisy ? How about pr_debug instead ?
+
+> 
+>         return 0;
+>  }
+
+[ ... ] 
+
+> @@ -1429,13 +1122,66 @@ static int applesmc_dmi_match(const struct dmi_system_id *id)
+>         pr_info(" - Model %s light sensors and backlight\n",
+>                 applesmc_light ? "with" : "without");
+> 
+> -       applesmc_temperature_set =  dmi_data->temperature_set;
+> -       while (temperature_sensors_sets[applesmc_temperature_set][i] != NULL)
+> -               i++;
+> -       pr_info(" - Model with %d temperature sensors\n", i);
+> +
+
+This results in another double empty line.
+
+Guenter
