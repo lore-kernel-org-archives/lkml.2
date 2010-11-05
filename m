@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab0KEQqf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 12:46:35 -0400
-Received: from mail4.iitk.ac.in ([202.3.77.189]:41143 "EHLO mail4.iitk.ac.in"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753024Ab0KEQqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 12:46:33 -0400
-X-Greylist: delayed 3207 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Nov 2010 12:46:32 EDT
-Message-ID: <89de7a94fdb498c08106b957bade19a3.squirrel@webmail.iitk.ac.in>
-Date: Fri, 5 Nov 2010 22:14:49 +0530
-Subject: 
-From: "Vincent Cheng Hoi" <parasp@iitk.ac.in>
-Reply-To: choi_chu223@yahoo.co.jp
-User-Agent: SquirrelMail/
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+	id S1753946Ab0KEQrs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 12:47:48 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:39654 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753090Ab0KEQrq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 12:47:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=aO25Qd9kspb/ikECBjRpg+zXzLRtI6nzERoJnAaLUuwkwqUKNnbLZCA0rzc3z6CzsF
+         XgKuh+6O4T7IzGJEhbpJZERb22xAl7Mqox1OMM9FW2y8NTvb67dBiug+jOVn9g47ooEv
+         5mMarK7a/GYPFG4HWeZFeBd9+CZHgEFXMwvVU=
+Subject: Re: [PATCH v2] irq: use per_cpu kstat_irqs
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <4CD43497.1020907@kernel.org>
+References: <1288892908.2659.175.camel@edumazet-laptop>
+	 <1288973210.2882.733.camel@edumazet-laptop>  <4CD43497.1020907@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 05 Nov 2010 17:47:41 +0100
+Message-ID: <1288975661.2882.858.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Le vendredi 05 novembre 2010 à 17:45 +0100, Tejun Heo a écrit :
+> Hello,
+> 
+> On 11/05/2010 05:06 PM, Eric Dumazet wrote:
+> > V2: support for !CONFIG_SPARSE_IRQ
+> >     No white space changes.
+> > 
+> > Question : Is dynamic percpu allocator ready at this stage for all
+> > arches ? The need is NR_IRQS*4 bytes of percpu memory for 
+> > !CONFIG_SPARSE_IRQ
+> 
+> The earliest is early_irq_init(), right?  If so, percpu allocator is
+> up by then on all archs.
+> 
+
+OK thats fine then.
+
+Thanks for the clarification Tejun.
 
 
 
--- 
-Good day,
-
-I am Mr.Vincent Cheng Hoi Chuen, GBS, JP Chairman of the Hong Kong and
-Shanghai Banking Corporation Limited. I have a business proposal of Twenty
-Two million Five Hundred Thousand United State Dollars only for you to 
-transact with me from my bank to your country.
-
-All confirmable documents to back up the claims will be made available to
-you prior to your acceptance and as soon as I receive your return mail Via
-my email address:choi_chu223@yahoo.co.jp and I will let you know what is
-required of you.
-
-Your earliest response to this letter will be appreciated.
-
-Best Regards,
-Mr.Vincent Cheng Hoi.
