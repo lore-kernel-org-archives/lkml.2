@@ -1,153 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901Ab0KEVQY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 17:16:24 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:59333 "EHLO e4.ny.us.ibm.com"
+	id S1753255Ab0KEVTf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 17:19:35 -0400
+Received: from mail.atheros.com ([12.19.149.2]:58318 "EHLO mail.atheros.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752616Ab0KEVQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 17:16:23 -0400
-Subject: [v2][PATCH] [v2] Revalidate page->mapping in do_generic_file_read()
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, Dave Hansen <dave@linux.vnet.ibm.com>,
-        arunabal@in.ibm.com, sbest@us.ibm.com, stable <stable@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Fri, 05 Nov 2010 14:16:15 -0700
-Message-Id: <20101105211615.2D67A348@kernel.beaverton.ibm.com>
+	id S1752646Ab0KEVTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 17:19:33 -0400
+Date: Fri, 5 Nov 2010 14:19:31 -0700
+From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [Regression, post-2.6.35] ath9k occasionally drops out of PCI
+ config space
+Message-ID: <20101105211931.GA1921@tux>
+References: <201011052150.02245.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <201011052150.02245.rjw@sisk.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 05, 2010 at 01:50:02PM -0700, Rafael J. Wysocki wrote:
+> Hi,
+> 
+> For some time I've been experiencing a regression associated with ath9k
+> that occasionally it drops the connection with the AP and goes into a state
+> in which reading from its PCI config registers (as done by lspci) return all
+> ones.
+> 
+> It may be sort of brought back to life by a suspend/resume afterwards, but
+> then the driver cannot really handle it and realoding the driver doesn't help
+> (probe fails).  Basically, full machine reboot is needed to revive the adapter.
+> 
+> The device is:
+> 
+> 09:00.0 Network controller: Atheros Communications Inc. AR928X Wireless Network Adapter (PCI-Express) (rev 01)
+>         Subsystem: Foxconn International, Inc. Device e01f
+> 
+> and the kernel says:
+> 
+> [    9.623217] ath9k 0000:09:00.0: PCI INT A -> GSI 19 (level, low) -> IRQ 19
+> [    9.631518] ath9k 0000:09:00.0: setting latency timer to 64
+> [   10.071497] ath: EEPROM regdomain: 0x65
+> [   10.071502] ath: EEPROM indicates we should expect a direct regpair map
+> [   10.071510] ath: Country alpha2 being used: 00
+> [   10.071514] ath: Regpair used: 0x65
+> [   10.096025] phy0: Selected rate control algorithm 'ath9k_rate_control'
+> [   10.097803] Registered led device: ath9k-phy0::radio
+> [   10.098035] Registered led device: ath9k-phy0::assoc
+> [   10.098249] Registered led device: ath9k-phy0::tx
+> [   10.098483] Registered led device: ath9k-phy0::rx
+> [   10.098496] phy0: Atheros AR9280 Rev:2 mem=0xffffc900017e0000, irq=19
+> 
+> The issue is not really bisectable, because I'm unable to trigger it on demand
+> and it occurs approx. 1-2 times a day.  So, if you have any ideas what to test,
+> please let me know.
+> 
+> It is not reproducible with the 2.6.35 kernel.
 
-changes from v1:
- * added a comment
- * changed the ->mapping check to NULL-only to make it more
-   clear that we're only checking for truncation
+Please try this patch.
 
---
 
-70 hours into some stress tests of a 2.6.32-based enterprise kernel,
-we ran into a NULL dereference in here:
+From: Vasanthakumar Thiagarajan <vasanth@atheros.com>
+Date: Tue, 2 Nov 2010 23:57:34 -0700
+Subject: [PATCH] ath9k_hw: Fix AR9280 surprise removal during frequent idle on/off
 
-	int block_is_partially_uptodate(struct page *page, read_descriptor_t *desc,
-	                                        unsigned long from)
-	{
----->		struct inode *inode = page->mapping->host;
+Bit 22 of AR_WA should be set to fix the situation where chip reset
+is asynchronous to clock of analog shift registers, such that when
+reset is released, it could mess up the values of analog shift registers
+and cause some hw issue on AR9280.
 
-It looks like page->mapping was the culprit.  (xmon trace is below).
-After closer examination, I realized that do_generic_file_read() does
-a find_get_page(), and eventually locks the page before calling
-block_is_partially_uptodate().  However, it doesn't revalidate the
-page->mapping after the page is locked.  So, there's a small window
-between the find_get_page() and ->is_partially_uptodate() where the
-page could get truncated and page->mapping cleared.
+This bit is write only, but the driver does a read-modify-write
+on AR_WA without setting bit 22 in ar9002_hw_configpcipowersave()
+during radio disable. This causes surprise removal of hw. It can
+never recover from this state and the hw will become usable only
+after a power on/off cycle, and sometimes only during a cold reboot.
 
-We _have_ a reference, so it can't get reclaimed, but it certainly
-can be truncated.
+This issue can be triggered by doing frequent roaming with the
+simple/test-roam script available from the wifi-test project [1]
+when roaming between APs quickly. When roaming there is a is a high
+possibility that the device being put into idle (radio disable) state
+by mac80211 during AUTH->ASSOC. A device hardware reset would fail
+and the kernel would output:
 
-I think the correct thing is to check page->mapping after the
-trylock_page(), and jump out if it got truncated.  This patch has
-been running in the test environment for a month or so now, and we
-have not seen this bug pop up again.
+[40251.363799] ath: AWAKE -> FULL-SLEEP
+[40251.363815] ieee80211 phy17: device no longer idle - working
+[40251.363817] ath: Marking phy17 as not-idle
+[40251.363819] ath: FULL-SLEEP -> AWAKE
+[40251.415978] pciehp 0000:00:1c.3:pcie04: Card not present on Slot(3)
+[40251.419896] ath: ah->misc_mode 0x4
+[40251.428138] pciehp 0000:00:1c.3:pcie04: Card present on Slot(3)
+[40251.532247] ath: timeout (100000 us) on reg 0x9860: 0xffffffff & 0x00000001 != 0x00000000
+[40251.532250] ath: Unable to reset channel (2462 MHz), reset status -5
+[40251.532422] ath: Set channel: 5745 MHz
+[40251.540639] ath: Failed to stop TX DMA in 100 msec after killing last frame
+[40251.548826] ath: Failed to stop TX DMA in 100 msec after killing last frame
+[40251.557023] ath: Failed to stop TX DMA in 100 msec after killing last frame
+[40251.565211] ath: Failed to stop TX DMA in 100 msec after killing last frame
+[40251.573415] ath: Failed to stop TX DMA in 100 msec after killing last frame
+[40251.581603] ath: Failed to stop TX DMA in 100 msec after killing last frame
+[40251.581606] ath: Failed to stop TX DMA. Resetting hardware!
+[40251.592679] ath: DMA failed to stop in 10 ms AR_CR=0xffffffff AR_DIAG_SW=0xffffffff
+[40251.703330] ath: timeout (100000 us) on reg 0x7000: 0xffffffff & 0x00000003 != 0x00000000
+[40251.703333] ath: RTC stuck in MAC reset
+[40251.703334] ath: Chip reset failed
+[40251.703335] ath: Unable to reset hardware; reset status -22
 
-xmon info:
-======================================
-1f:mon> e
-cpu 0x1f: Vector: 300 (Data Access) at [c0000002ae36f770]
-    pc: c0000000001e7a6c: .block_is_partially_uptodate+0xc/0x100
-    lr: c000000000142944: .generic_file_aio_read+0x1e4/0x770
-    sp: c0000002ae36f9f0
-   msr: 8000000000009032
-   dar: 0
- dsisr: 40000000
-  current = 0xc000000378f99e30
-  paca    = 0xc000000000f66300
-    pid   = 21946, comm = bash
-1f:mon> r
-R00 = 0025c0500000006d   R16 = 0000000000000000
-R01 = c0000002ae36f9f0   R17 = c000000362cd3af0
-R02 = c000000000e8cd80   R18 = ffffffffffffffff
-R03 = c0000000031d0f88   R19 = 0000000000000001
-R04 = c0000002ae36fa68   R20 = c0000003bb97b8a0
-R05 = 0000000000000000   R21 = c0000002ae36fa68
-R06 = 0000000000000000   R22 = 0000000000000000
-R07 = 0000000000000001   R23 = c0000002ae36fbb0
-R08 = 0000000000000002   R24 = 0000000000000000
-R09 = 0000000000000000   R25 = c000000362cd3a80
-R10 = 0000000000000000   R26 = 0000000000000002
-R11 = c0000000001e7b60   R27 = 0000000000000000
-R12 = 0000000042000484   R28 = 0000000000000001
-R13 = c000000000f66300   R29 = c0000003bb97b9b8
-R14 = 0000000000000001   R30 = c000000000e28a08
-R15 = 000000000000ffff   R31 = c0000000031d0f88
-pc  = c0000000001e7a6c .block_is_partially_uptodate+0xc/0x100
-lr  = c000000000142944 .generic_file_aio_read+0x1e4/0x770
-msr = 8000000000009032   cr  = 22000488
-ctr = c0000000001e7a60   xer = 0000000020000000   trap =  300
-dar = 0000000000000000   dsisr = 40000000
-1f:mon> t 
-[link register   ] c000000000142944 .generic_file_aio_read+0x1e4/0x770
-[c0000002ae36f9f0] c000000000142a14 .generic_file_aio_read+0x2b4/0x770
-(unreliable)
-[c0000002ae36fb40] c0000000001b03e4 .do_sync_read+0xd4/0x160
-[c0000002ae36fce0] c0000000001b153c .vfs_read+0xec/0x1f0
-[c0000002ae36fd80] c0000000001b1768 .SyS_read+0x58/0xb0
-[c0000002ae36fe30] c00000000000852c syscall_exit+0x0/0x40
---- Exception: c00 (System Call) at 00000080a840bc54
-SP (fffca15df30) is in userspace
-1f:mon> di c0000000001e7a6c
-c0000000001e7a6c  e9290000      ld      r9,0(r9)
-c0000000001e7a70  418200c0      beq     c0000000001e7b30        #
-.block_is_partially_uptodate+0xd0/0x100
-c0000000001e7a74  e9440008      ld      r10,8(r4)
-c0000000001e7a78  78a80020      clrldi  r8,r5,32
-c0000000001e7a7c  3c000001      lis     r0,1
-c0000000001e7a80  812900a8      lwz     r9,168(r9)
-c0000000001e7a84  39600001      li      r11,1
-c0000000001e7a88  7c080050      subf    r0,r8,r0
-c0000000001e7a8c  7f805040      cmplw   cr7,r0,r10
-c0000000001e7a90  7d6b4830      slw     r11,r11,r9
-c0000000001e7a94  796b0020      clrldi  r11,r11,32
-c0000000001e7a98  419d00a8      bgt     cr7,c0000000001e7b40    #
-.block_is_partially_uptodate+0xe0/0x100
-c0000000001e7a9c  7fa55840      cmpld   cr7,r5,r11
-c0000000001e7aa0  7d004214      add     r8,r0,r8
-c0000000001e7aa4  79080020      clrldi  r8,r8,32
-c0000000001e7aa8  419c0078      blt     cr7,c0000000001e7b20    #
-.block_is_partially_uptodate+0xc0/0x100
-======================================
+This is currently only reproducible with some HB92 (Half Mini-PCIE)
+cards but the fix applies to all AR9280 cards. This patch fixes this
+issue by setting bit 22 during radio disable.
 
-Cc: arunabal@in.ibm.com
-Cc: sbest@us.ibm.com
-Cc: stable <stable@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Rik van Riel <riel@redhat.com>
+[1] http://wireless.kernel.org/en/developers/Testing/wifi-test
+
+Cc: Amod.bodas@atheros.com
+Cc: David.Quan@atheros.com
+Cc: Kyungwan.Nam@atheros.com
+Cc: stable@kernel.org
+Signed-off-by: Vasanthakumar Thiagarajan <vasanth@atheros.com>
 ---
+ drivers/net/wireless/ath/ath9k/ar9002_hw.c |    3 +++
+ drivers/net/wireless/ath/ath9k/reg.h       |    1 +
+ 2 files changed, 4 insertions(+), 0 deletions(-)
 
- linux-2.6.git-dave/mm/filemap.c |    3 +++
- 1 file changed, 3 insertions(+)
+diff --git a/drivers/net/wireless/ath/ath9k/ar9002_hw.c b/drivers/net/wireless/ath/ath9k/ar9002_hw.c
+index a0471f2..48261b7 100644
+--- a/drivers/net/wireless/ath/ath9k/ar9002_hw.c
++++ b/drivers/net/wireless/ath/ath9k/ar9002_hw.c
+@@ -410,6 +410,9 @@ static void ar9002_hw_configpcipowersave(struct ath_hw *ah,
+ 			val &= ~(AR_WA_BIT6 | AR_WA_BIT7);
+ 		}
+ 
++		if (AR_SREV_9280(ah))
++			val |= AR_WA_BIT22;
++
+ 		if (AR_SREV_9285E_20(ah))
+ 			val |= AR_WA_BIT23;
+ 
+diff --git a/drivers/net/wireless/ath/ath9k/reg.h b/drivers/net/wireless/ath/ath9k/reg.h
+index 42976b0..fa05b71 100644
+--- a/drivers/net/wireless/ath/ath9k/reg.h
++++ b/drivers/net/wireless/ath/ath9k/reg.h
+@@ -703,6 +703,7 @@
+ #define AR_WA_RESET_EN                  (1 << 18) /* Sw Control to enable PCI-Reset to POR (bit 15) */
+ #define AR_WA_ANALOG_SHIFT              (1 << 20)
+ #define AR_WA_POR_SHORT                 (1 << 21) /* PCI-E Phy reset control */
++#define AR_WA_BIT22			(1 << 22)
+ #define AR9285_WA_DEFAULT		0x004a050b
+ #define AR9280_WA_DEFAULT           	0x0040073b
+ #define AR_WA_DEFAULT               	0x0000073f
+-- 
+1.7.3.2.90.gd4c43
 
-diff -puN mm/filemap.c~is_partially_uptodate-revalidate-page mm/filemap.c
---- linux-2.6.git/mm/filemap.c~is_partially_uptodate-revalidate-page	2010-11-03 13:49:21.000000000 -0700
-+++ linux-2.6.git-dave/mm/filemap.c	2010-11-04 06:59:08.000000000 -0700
-@@ -1016,6 +1016,9 @@ find_page:
- 				goto page_not_up_to_date;
- 			if (!trylock_page(page))
- 				goto page_not_up_to_date;
-+			/* Did it get truncated before we got the lock? */
-+			if (!page->mapping)
-+				goto page_not_up_to_date_locked;
- 			if (!mapping->a_ops->is_partially_uptodate(page,
- 								desc, offset))
- 				goto page_not_up_to_date_locked;
-_
