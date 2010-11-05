@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799Ab0KEJgE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 05:36:04 -0400
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:44200 "EHLO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752307Ab0KEJgD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 05:36:03 -0400
-X-Greylist: delayed 69007 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Nov 2010 05:36:02 EDT
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-mmc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Cc: <akpm@linux-foundation.org>, Ulf Hansson <ulf.hansson@stericsson.com>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH] mmci: reset voltage after power off.
-Date: Fri, 5 Nov 2010 10:35:41 +0100
-Message-ID: <1288949741-9712-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.6.3.3
+	id S1753858Ab0KEJmo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 05:42:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10620 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752683Ab0KEJmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 05:42:39 -0400
+Subject: [RESEND PATCH] virtio-net: init link state correctly
+To: netdev@vger.kernel.org, rusty@rustcorp.com.au,
+        linux-kernel@vger.kernel.org, davem@davemloft.net
+From: Jason Wang <jasowang@redhat.com>
+Cc: markmc@redhat.com, kvm@vger.kernel.org, mst@redhat.com
+Date: Fri, 05 Nov 2010 17:47:18 +0800
+Message-ID: <20101105094718.19101.58898.stgit@dhcp-91-158.nay.redhat.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ulf Hansson <ulf.hansson@stericsson.com>
+For device that supports VIRTIO_NET_F_STATUS, there's no need to
+assume the link is up and we need to call nerif_carrier_off() before
+querying device status, otherwise we may get wrong operstate after
+diver was loaded because the link watch event was not fired as
+expected.
 
-At power off, reset OCR mask to be the highest possible voltage
-supported for the current mmc host.
+For device that does not support VIRITO_NET_F_STATUS, we could not get
+its status through virtnet_update_status() and what we can only do is
+always assuming the link is up.
 
-This solves the re-initialization during the power up sequence.
-The voltage may have been decreased due to the card accepts a lower
-voltage than the voltage used during the initialization sequence.
-We need to reset the voltage to by the host highest possible value
-since according to specification the initialization must always be
-done at high voltage.
-
-Signed-off-by: Ulf Hansson <ulf.hansson@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
 ---
- drivers/mmc/core/core.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ drivers/net/virtio_net.c |   12 +++++++++---
+ 1 files changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 8f86d70..508ed2b 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -940,6 +940,13 @@ static void mmc_power_off(struct mmc_host *host)
- {
- 	host->ios.clock = 0;
- 	host->ios.vdd = 0;
-+
-+	/*
-+	 * Reset ocr mask to be the highest possible voltage supported for
-+	 * this mmc host. This value will be used at next power up.
-+	 */
-+	host->ocr = 1 << (fls(host->ocr_avail) - 1);
-+
- 	if (!mmc_host_is_spi(host)) {
- 		host->ios.bus_mode = MMC_BUSMODE_OPENDRAIN;
- 		host->ios.chip_select = MMC_CS_DONTCARE;
--- 
-1.6.3.3
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index bb6b67f..b6d4028 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -986,9 +986,15 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 		goto unregister;
+ 	}
+ 
+-	vi->status = VIRTIO_NET_S_LINK_UP;
+-	virtnet_update_status(vi);
+-	netif_carrier_on(dev);
++	/* Assume link up if device can't report link status,
++	   otherwise get link status from config. */
++	if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_STATUS)) {
++		netif_carrier_off(dev);
++		virtnet_update_status(vi);
++	} else {
++		vi->status = VIRTIO_NET_S_LINK_UP;
++		netif_carrier_on(dev);
++	}
+ 
+ 	pr_debug("virtnet: registered device %s\n", dev->name);
+ 	return 0;
 
