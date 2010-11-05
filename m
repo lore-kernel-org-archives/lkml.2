@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561Ab0KEAKK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 20:10:10 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:50361 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751740Ab0KEAKI (ORCPT
+	id S1752559Ab0KEALy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 20:11:54 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:47939 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751966Ab0KEALu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 20:10:08 -0400
-Date: Thu, 4 Nov 2010 17:09:29 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: lm-sensors@lm-sensors.org, "Darrick J. Wong" <djwong@us.ibm.com>
-Subject: hwmon/adt7470 crash on module load (2.6.37-rc1)
-Message-Id: <20101104170929.f5198be3.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Nov 2010 20:11:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <4CD286E4.8070802@kernel.org>
+References: <20101104100914.GC25118@suse.de>
+	<4CD286E4.8070802@kernel.org>
+Date: Fri, 5 Nov 2010 08:11:49 +0800
+X-Google-Sender-Auth: dZ1GbMc6zRf2rRIgg8jMmt5Z9bA
+Message-ID: <AANLkTinC9gy1nXXp5ZZ=nF7Nta-TNmoSOmZYtzS6FApy@mail.gmail.com>
+Subject: Re: [Security] [PATCH] kernel: make /proc/kallsyms mode 400 to reduce
+ ease of attacking
+From: Eugene Teo <eugeneteo@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Marcus Meissner <meissner@suse.de>, security@kernel.org, mort@sgi.com,
+        fweisbec@gmail.com, linux-kernel@vger.kernel.org,
+        jason.wessel@windriver.com,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 4, 2010 at 6:11 PM, Tejun Heo <tj@kernel.org> wrote:
+> On 11/04/2010 11:09 AM, Marcus Meissner wrote:
+>> Making /proc/kallsyms readable only for root makes it harder
+>> for attackers to write generic kernel exploits by removing
+>> one source of knowledge where things are in the kernel.
+>>
+>> Signed-off-by: Marcus Meissner <meissner@suse.de>
+>
+> I can't recall needing /proc/kallsyms when I wasn't root, so unless
+> there's a compelling use case.
+>
+> Acked-by: Tejun Heo <tj@kernel.org>
 
+Looks good to me too.
 
-Nov  4 15:56:17 control kernel: [  173.105754] calling  adt7470_init+0x0/0x27 [adt7470] @ 4392
-Nov  4 15:56:18 [  173.113711] i2c-core: driver [adt7470] registered
-control kernel: [  173.122202] i2c i2c-15: found normal entry for adapter 15, addr 0x2c
-[  173.105754] c[  173.136181] i801_smbus 0000:00:1f.3: No response
-[  173.142478] i2c i2c-15: found normal entry for adapter 15, addr 0x2e
-Nov  4 15:56:18 [  173.151286] general protection fault: 0000 [#1] SMP DEBUG_PAGEALLOC
-[  173.156502] last sysfs file: /sys/module/hwmon/initstate
-[  173.156502] CPU 1 
-[  173.156502] Modules linked in: adt7470(+) ipt_MASQUERADE iptable_nat nf_nat af_packet nfsd lockd nfs_acl auth_rpcgss exportfs sco bridge stp llc bnep l2cap crc16 bluetooth rfkill sunrpc ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT xt_tcpudp nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables x_tables ipv6 p4_clockmod freq_table speedstep_lib binfmt_misc dm_mirror dm_region_hash dm_log dm_multipath scsi_dh dm_mod kvm uinput mousedev joydev ppdev snd_intel8x0 snd_ac97_codec ac97_bus snd_seq snd_seq_device snd_pcm usbkbd snd_timer led_class usbmouse usbhid hid iTCO_wdt snd dcdbas iTCO_vendor_support sg sr_mod pcspkr i2c_i801 soundcore rtc_cmos cdrom parport_pc rng_core snd_page_alloc rtc_core tg3 rtc_lib parport 8250_pnp evdev mac_hid shpchp pci_hotplug unix ide_pci_generic ide_core ata_generic pata_acpi ata_piix sd_mod crc_t10dif ext3 jbd mbcache uhci_hcd ohci_hcd ssb mmc_core pcmcia pcmcia_core firmware_clas!
- s ehci_hcd usbcore nls_base i915 drm_kms_helper intel_agp button intel_gtt video thermal_sys hwmon output [last unloaded: ltc4245]
-[  173.156502] 
-[  173.156502] Pid: 22, comm: kworker/1:1 Not tainted 2.6.37-rc1 #12 0HH807/OptiPlex GX620               
-[  173.156502] RIP: 0010:[<ffffffff813ea532>]  [<ffffffff813ea532>] check_modem_status+0xe7/0x29c
-[  173.308056] RSP: 0018:ffff88007c803e18  EFLAGS: 00010006
-[  173.308056] RAX: 6b6b6b6b6b6b6b6b RBX: ffffffff82a55400 RCX: 0000000000000100
-[  173.308056] RDX: 00000000260b260a RSI: 0000000000000028 RDI: 0000000000000006
-[  173.308056] RBP: ffff88007c803e58 R08: 0000000000000006 R09: 395099858027a0e6
+Acked-by: Eugene Teo <eugeneteo@kernel.org>
 
-<locked up tight here>
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Eugene
