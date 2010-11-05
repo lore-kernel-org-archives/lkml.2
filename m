@@ -1,84 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754642Ab0KESIx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 14:08:53 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56155 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753163Ab0KESIu (ORCPT
+	id S1754062Ab0KESK5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 14:10:57 -0400
+Received: from bhuna.collabora.co.uk ([93.93.128.226]:44333 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752667Ab0KESKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 14:08:50 -0400
-Date: Fri, 5 Nov 2010 11:08:28 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Nick Piggin <npiggin@kernel.dk>
-Subject: Re: [PATCH] atomic: add atomic_inc_not_zero_hint()
-Message-Id: <20101105110828.52f061b3.akpm@linux-foundation.org>
-In-Reply-To: <1288980046.2882.1054.camel@edumazet-laptop>
-References: <1288975980.2882.877.camel@edumazet-laptop>
-	<20101105102038.53e36f9e.akpm@linux-foundation.org>
-	<1288980046.2882.1054.camel@edumazet-laptop>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 5 Nov 2010 14:10:55 -0400
+Message-ID: <4CD44759.5020500@collabora.co.uk>
+Date: Fri, 05 Nov 2010 18:05:13 +0000
+From: Ian Molton <ian.molton@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100917 Icedove/3.0.8
+MIME-Version: 1.0
+To: Anthony Liguori <anthony@codemonkey.ws>
+CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        QEMU Developers <qemu-devel@nongnu.org>,
+        virtualization@lists.linux-foundation.org,
+        virtualization@lists.osdl.org, Alon Levy <alevy@redhat.com>,
+        Avi Kivity <avi@redhat.com>
+Subject: Re: [Qemu-devel] Re: [PATCH] Implement a virtio GPU transport
+References: <1097264455.965471288612409433.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>	<4CCEC090.3050009@codemonkey.ws> <4CD1A406.3090909@collabora.co.uk> <4CD1A73B.2010406@codemonkey.ws>
+In-Reply-To: <4CD1A73B.2010406@codemonkey.ws>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 05 Nov 2010 19:00:46 +0100
-Eric Dumazet <eric.dumazet@gmail.com> wrote:
+On 03/11/10 18:17, Anthony Liguori wrote:
+> On 11/03/2010 01:03 PM, Ian Molton wrote:
 
-> Le vendredi 05 novembre 2010 __ 10:20 -0700, Andrew Morton a __crit :
-> 
-> > It totally makes sense to add include/linu/atomic.h for common things. 
-> > Perhaps there's already code in arch/*/include/asm/atomic.h which
-> > should be hoisted up there.  But that can't reliably be done until a
-> > million files have had their #includes switched :(
-> > 
-> 
-> Maybe including <linux/atomic.h> only from the end of various
-> 
-> arch/*/include/asm/atomic.h  ?
+> Why is it better than using virtio-serial?
 
-heh, I guess that would work.  It breaks the standard way of doing
-these things (I think?) so let's not go there unless we have a need?
+For one thing, it enforces the PID in kernel so the guests processes 
+cant screw each other over by forging the PID passed to qemu.
 
-> In this case, I remove the include <asm/atomic.h> from linux/atomic.h
+>> My current patch touches a tiny part of the qemu sources. It works today.
+>
+> But it's not at all mergable in the current form. If you want to do the
+> work of getting it into a mergable state (cleaning up the coding style,
+> moving it to hw/, etc.) than I'm willing to consider it. But I don't
+> think a custom virtio transport is the right thing to do here.
 
-Oh.  Why?  I thought it was better the previous, standard way: thou
-shalt henceforth include liunx/atomic.h, not asm/atomic.h.  And the
-presence of linux/atomic.h will in fact trigger the checkpatch warning
-telling people to use that when they try to use asm/atomic.h.
+Hm, I thought I'd indented everything in qemus odd way... Is there a 
+codingstyle document or a checkpatch-like tool for qemu?
 
-> > > +static inline int atomic_inc_not_zero_hint(atomic_t *v, int hint)
-> > > +{
-> > > +	int val, c = hint;
-> > > +
-> > > + 	do {
-> > > +		val = atomic_cmpxchg(v, c, c + 1);
-> > > +		if (val == c)
-> > > +			return 1;
-> > > +		c = val;
-> > > +	} while (c);
-> > > +
-> > > +	return 0;
-> > > +}
-> > 
-> > Should/could this have implemented a more general
-> > atomic_add_not_zero_hint() and made atomic_inc_not_zero_hint() a
-> > wrapper around that?
-> 
-> Well, I see no practical use for this, but yes, this could be done.
-> 
-> As atomic_add_not_zero() doesnt exist, I am not sure we need an
-> atomic_add_not_zero_hint() yet ?
+I'm happy to make the code meet qemus coding style.
 
-hm, OK.  I was just checking ;)
+> However, if you want something that Just Works with the least amount of
+> code possible, just split it into a separate process and we can stick it
+> in a contrib/ directory or something.
 
+I dont see what splitting it into a seperate process buys us given we 
+still need the virtio-gl driver in order to enforce the PID. The virtio 
+driver is probably quite a bit more efficient at marshalling the data 
+too, given that it was designed alongside the userspace code.
 
+>>> I
+>>> think we can consider integrating it into QEMU (or at least simplifying
+>>> the execution of the backend) but integrating into QEMU is going to
+>>> require an awful lot of the existing code to be rewritten.
+
+Why? aside from codingstyle, whats massively wrong with it thats going 
+to demand a total rewrite?
+
+>>> Keeping it
+>>> separate has the advantage of allowing something to Just Work as an
+>>> interim solution as we wait for proper support in Spice.
+
+Why does keeping it seperate make life easier? qemu is in a git repo. 
+when the time comes, if it reall is a total replacement, git-rm will 
+nuke it all.
+
+>> I dont know why you think integrating it into qemu is hard? I've
+>> already done it.
+>
+> Adding a file that happens to compile as part of qemu even though it
+> doesn't actually integrate with qemu in any meaningful way is not
+> integrating. That's just build system manipulation.
+
+Uh? Either it compiles and works as part of qemu (which it does) or it 
+doesnt. How is that not integrated? I've added it to the configure 
+script too.
+
+-Ian
