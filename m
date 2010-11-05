@@ -1,82 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237Ab0KER74 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 13:59:56 -0400
-Received: from mga02.intel.com ([134.134.136.20]:39977 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752573Ab0KER7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 13:59:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,304,1286175600"; 
-   d="scan'208";a="674743149"
-From: Mark Allyn <mark.a.allyn@intel.com>
-To: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Cc: Mark Allyn <mark.a.allyn@intel.com>
-Subject: [PATCH 1/1] crypto: api.c: doc on crypto_alg_lookup, crypto_larval_lookup, and crypto_alg_mod_lookup
-Date: Fri,  5 Nov 2010 11:05:46 -0700
-Message-Id: <1288980346-15961-1-git-send-email-mark.a.allyn@intel.com>
-X-Mailer: git-send-email 1.6.3.3
+	id S1754526Ab0KESAz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 14:00:55 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:34273 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752959Ab0KESAw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 14:00:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=D246kZU6ypv1A3yZpgqJKzHu+OJaPGCCLEfeU72rRNUk9Ic43mVtk5Ror3gFSREisj
+         97u/VuviUV3b52WgYvJIIcKPZe8amZTZGY0J1F1lpuAw5+DHkLWf7ZQ2iDJhG8LqRZIh
+         IAzdS6thhWQWN+ddMSfpbfjoYWQwP4XxOEC7U=
+Subject: Re: [PATCH] atomic: add atomic_inc_not_zero_hint()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Nick Piggin <npiggin@kernel.dk>
+In-Reply-To: <20101105102038.53e36f9e.akpm@linux-foundation.org>
+References: <1288975980.2882.877.camel@edumazet-laptop>
+	 <20101105102038.53e36f9e.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 05 Nov 2010 19:00:46 +0100
+Message-ID: <1288980046.2882.1054.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resubmit due to errors on patch submitted 11/4/2010
+Le vendredi 05 novembre 2010 à 10:20 -0700, Andrew Morton a écrit :
 
-Signed-off-by: Mark A. Allyn <mark.a.allyn@intel.com>
+> It totally makes sense to add include/linu/atomic.h for common things. 
+> Perhaps there's already code in arch/*/include/asm/atomic.h which
+> should be hoisted up there.  But that can't reliably be done until a
+> million files have had their #includes switched :(
+> 
+
+Maybe including <linux/atomic.h> only from the end of various
+
+arch/*/include/asm/atomic.h  ?
+
+In this case, I remove the include <asm/atomic.h> from linux/atomic.h
+
+> It's quite unobvious *why* `hint' cannot be zero.  Can you please add
+> the reasoning to the comment?  Also, the local `hint' should be
+> referred to as "@hint" in a kerneldoc comment.
+
+Well ;)
+
+We want to increment the counter if its not zero.
+Typically used for refcounts, of RCU protected structures.
+
+Giving a zero hint would be curious dont you think ?
+
+I see no usage for this, and using atomic_inc_not_zero() in this case is
+the only choice, since we dont ever want to cmpxchg(v, 0, 1) (or risk
+double free and crazy things)
+
+Hmm... maybe I can add a test (compiler should optimize it anyway, since
+all usages I can foresee will use a constant hint)
+
+> 
+> > +static inline int atomic_inc_not_zero_hint(atomic_t *v, int hint)
+> > +{
+> > +	int val, c = hint;
+> > +
+> > + 	do {
+> > +		val = atomic_cmpxchg(v, c, c + 1);
+> > +		if (val == c)
+> > +			return 1;
+> > +		c = val;
+> > +	} while (c);
+> > +
+> > +	return 0;
+> > +}
+> 
+> Should/could this have implemented a more general
+> atomic_add_not_zero_hint() and made atomic_inc_not_zero_hint() a
+> wrapper around that?
+
+Well, I see no practical use for this, but yes, this could be done.
+
+As atomic_add_not_zero() doesnt exist, I am not sure we need an
+atomic_add_not_zero_hint() yet ?
+
+> 
+> Also, it might make sense to add "#ifndef atomic_inc_not_zero_hint"
+> wrappers around this function so that the arch can implement an
+> overriding custom version.  And that becomes a general rule as more
+> functions are added to include/linux/atomic.h.
+
+Ah yes, thats right !
+
+Thanks !
+
+[PATCH v2] atomic: add atomic_inc_not_zero_hint()
+
+Followup of perf tools session in Netfilter WorkShop 2010
+
+In network stack we make high usage of atomic_inc_not_zero() in contexts
+we know the probable value of atomic before increment (2 for udp sockets
+for example)
+
+Using a special version of atomic_inc_not_zero() giving this hint can
+help processor to use less bus transactions.
+
+On x86 (MESI protocol) for example, this avoids entering Shared state,
+because "lock cmpxchg" issues an RFO (Read For Ownership)
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: David Miller <davem@davemloft.net>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Nick Piggin <npiggin@kernel.dk>
 ---
- crypto/api.c |   25 +++++++++++++++++++++++++
- 1 files changed, 25 insertions(+), 0 deletions(-)
+V2: add #ifndef atomic_inc_not_zero_hint
+    kerneldoc changes
+    test that hint is not null
+    Meant to be included at end of arch/*/asm/atomic.h files
 
-diff --git a/crypto/api.c b/crypto/api.c
-index 033a714..d8a7c35 100644
---- a/crypto/api.c
-+++ b/crypto/api.c
-@@ -193,6 +193,14 @@ static struct crypto_alg *crypto_larval_wait(struct crypto_alg *alg)
- 	return alg;
- }
- 
+ include/linux/atomic.h |   36 ++++++++++++++++++++++++++++++++++++
+ 1 files changed, 36 insertions(+)
+
+diff --git a/include/linux/atomic.h b/include/linux/atomic.h
+new file mode 100644
+index 0000000..0897bdd
+--- /dev/null
++++ b/include/linux/atomic.h
+@@ -0,0 +1,36 @@
++#ifndef _LINUX_ATOMIC_H
++#define _LINUX_ATOMIC_H
++
 +/**
-+ * crypto_alg_lookup() - get the crypto_alg structure for an algorithm
-+ * @name:	text string containing name of algorithm
-+ * @type:	crypto type defined in include/linux/crypto.h
-+ * @mask:	mask of allowable crypto types (use or'd list
-+ *		of types as defined in include/linux/crypto.h)
-+ * @returns:	pointer to crypto_alg structure
++ * atomic_inc_not_zero_hint - increment if not null
++ * @v: pointer of type atomic_t
++ * @hint: probable value of the atomic before the increment
++ *
++ * This version of atomic_inc_not_zero() gives a hint of probable
++ * value of the atomic. This helps processor to not read memory
++ * before doing the atomic read/modify/write cycle, lowering
++ * number of bus transactions on some arches.
++ * Note: @hint MUST not be 0, or increment is not done.
++ * Returns: 0 if increment was not done, 1 otherwise.
 + */
- struct crypto_alg *crypto_alg_lookup(const char *name, u32 type, u32 mask)
- {
- 	struct crypto_alg *alg;
-@@ -205,6 +213,15 @@ struct crypto_alg *crypto_alg_lookup(const char *name, u32 type, u32 mask)
- }
- EXPORT_SYMBOL_GPL(crypto_alg_lookup);
- 
-+/**
-+ * crypto_larval_lookup() - gets large value (larval) crypto_alg
-+ *	structure for an algorithm
-+ * @name:	text string containing name of algorithm
-+ * @type:	crypto type defined in include/linux/crypto.h
-+ * @mask:	mask of allowable crypto types (use or'd list
-+ *		of types as defined in include/linux/crypto.h)
-+ * @returns:	pointer to crypto_alg structure
-+ */
- struct crypto_alg *crypto_larval_lookup(const char *name, u32 type, u32 mask)
- {
- 	struct crypto_alg *alg;
-@@ -247,6 +264,14 @@ int crypto_probing_notify(unsigned long val, void *v)
- }
- EXPORT_SYMBOL_GPL(crypto_probing_notify);
- 
-+/**
-+ * crypto_alg_mod_lookup() - gets the algorithm module
-+ * @name:	text string containing name of algorithm
-+ * @type:	crypto type defined in include/linux/crypto.h
-+ * @mask:	mask of allowable crypto types (use or'd list
-+ *		of types as defined in include/linux/crypto.h)
-+ * @returns:	pointer to crypto_alg structure
-+ */
- struct crypto_alg *crypto_alg_mod_lookup(const char *name, u32 type, u32 mask)
- {
- 	struct crypto_alg *alg;
--- 
-1.6.3.3
++#ifndef atomic_inc_not_zero_hint
++static inline int atomic_inc_not_zero_hint(atomic_t *v, int hint)
++{
++	int val, c = hint;
++
++	/* sanity test, should be removed by compiler if hint is a constant */
++	if (!hint)
++		return 0;
++
++ 	do {
++		val = atomic_cmpxchg(v, c, c + 1);
++		if (val == c)
++			return 1;
++		c = val;
++	} while (c);
++
++	return 0;
++}
++#endif
++
++#endif /* _LINUX_ATOMIC_H */
+
 
