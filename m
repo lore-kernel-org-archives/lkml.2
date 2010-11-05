@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742Ab0KEU1E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 16:27:04 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55204 "EHLO mx1.suse.de"
+	id S1754686Ab0KEUaQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 16:30:16 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:43776 "EHLO isrv.corpit.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752586Ab0KEU1B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 16:27:01 -0400
-Date: Fri, 5 Nov 2010 13:02:45 -0700
-From: Greg KH <gregkh@suse.de>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: cbouatmailru@gmail.com, kay.sievers@vrfy.org, ak@linux.intel.com,
-        axboe@kernel.dk, shemminger@vyatta.com, ebiederm@xmission.com,
-        stern@rowland.harvard.edu, James.Bottomley@suse.de,
-        akpm@linux-foundation.org, kuznet@ms2.inr.ac.ru,
-        randy.dunlap@oracle.com, tj@kernel.org, davem@davemloft.net,
-        perex@perex.cz, tiwai@suse.de, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        dhowells@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [2.6.37-rc1] wait_for_sysfs prints errors.
-Message-ID: <20101105200245.GA1645@suse.de>
-References: <201011060307.GIG13040.OFFJOVHMSFLOtQ@I-love.SAKURA.ne.jp>
+	id S1752454Ab0KEUaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 16:30:14 -0400
+Message-ID: <4CD46953.1010902@msgid.tls.msk.ru>
+Date: Fri, 05 Nov 2010 23:30:11 +0300
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.12) Gecko/20100913 Icedove/3.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201011060307.GIG13040.OFFJOVHMSFLOtQ@I-love.SAKURA.ne.jp>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
+CC: Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Detecting bind-mounts
+References: <4CD31B6A.7040902@msgid.tls.msk.ru> <4CD3DB5D.5040808@draigBrady.com> <4CD44D60.5050105@msgid.tls.msk.ru>
+In-Reply-To: <4CD44D60.5050105@msgid.tls.msk.ru>
+X-Enigmail-Version: 1.0.1
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 06, 2010 at 03:07:55AM +0900, Tetsuo Handa wrote:
-> Hello.
+05.11.2010 21:30, Michael Tokarev wrote:
+> 05.11.2010 13:24, Pádraig Brady wrote:
+>> On 04/11/10 20:45, Michael Tokarev wrote:
+> []
+>>> There are 2 (mostly) different kinds of applications.  One
+>>> is cp/tar/find with --same-filesystem option (or equivalent),
+>>> that should not cross mountpoints.  And one more, apps like
+>>> mountpoint(1) from sysvinit - a utility to determine if a
+>>> given path is a mountpoint.
+>>>
+>>> Neither of the two work when two directores on the same
+>>> filesystem are bind-mounted.
+> []
+>> The `stat` command recently got support for
+>> printing the mount point for a file:
+>> http://git.savannah.gnu.org/gitweb/?p=coreutils.git;a=commit;h=ddf6fb86
+>>
+>> `stat` will output the alias for a bind mounted file
+>> while `df` will output the initial mount point of its backing device
+>> So you could do something like:
+>>
+>> file=.
+>> df_mnt=$(df -P "$file" | sed -n '2s/.* \([^ ]*$\)/\1/p')
+>> stat_mnt=$(stat -c%m "$file")
+>> test "$df_mnt" = "$stat_mnt" || echo "bind mount"
 > 
-> I noticed that udevd-event started to print error messages.
+> This is incorrect in two ways.
 > 
->   Starting udev: udevd-event[1682]: wait_for_sysfs: waiting for '/sys/devices/pci0000:00/0000:00:10.0/host0/ioerr_cnt' failed
->   udevd-event[2103]: wait_for_sysfs: waiting for '/sys/devices/pci0000:00/0000:00:10.0/host0/target0:0:1/ioerr_cnt' failed
->   udevd-event[2102]: wait_for_sysfs: waiting for '/sys/devices/pci0000:00/0000:00:10.0/host0/target0:0:0/ioerr_cnt' failed
+> First of all, stat(1), even after that commit you quote,
+> still compares st_dev fields, which are the same for this
+> and parent directory in case of bind mount.  So this version
+> of stat(1) does _not_ detect a bind mount, unfortunately.
 
-That's wierd, what version of udev is this?
+And this statement, in turn, is untrue.  I apologize for the
+misinformation, it wasn't intentional.  The mentioned commit
+adds the ability to detect bind mounts indeed.  but...
 
-> These error messages are caused by one or more of below commits.
-> (Sorry, I can't find exact one because I can't boot as of below commits.)
-> 
-> 5cfc64ce "base/platform: Safe handling for NULL platform data and resources"
-> 807508c8 "base/platform: Simplifications for NULL platform data/resources handling"
-> 39aba963 "driver core: remove CONFIG_SYSFS_DEPRECATED_V2 but keep it for block devices"
-> 
-> Is this a regression? (Is this an intended change?)
+> Second, I asked for a low-level way to detect such a mount.
+> I know how to do it not as efficient as stat(2) and not as
+> reliable but much simpler than you propose above, in shell
+> or in C, and I already provided that way in my original
+> email: we just parse /proc/mounts file, this is faster and
+> more reliable than the above shell fragment which calls a
+> few external commands.
 
-Do you still have CONFIG_SYSFS_DEPRECATED enabled?
+.. the way used by stat(1) is to enumerate /proc/mounts --
+which is what I were able to come with initially.  It is slow
+and unreliable.  Hence I asked if a faster way exist.
 
-Other than that, everything works ok, right?
-
-thanks,
-
-greg k-h
+/mjt
