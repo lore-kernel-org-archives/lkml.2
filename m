@@ -1,171 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512Ab0KEQL2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 12:11:28 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:43462 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752874Ab0KEQLZ (ORCPT
+	id S1752985Ab0KEQXY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 12:23:24 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:60325 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752692Ab0KEQXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 12:11:25 -0400
-Date: Fri, 5 Nov 2010 17:09:19 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Borislav Petkov <bp@amd64.org>, Borislav Petkov <bp@alien8.de>,
-        john stultz <johnstul@us.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "avi@redhat.com" <avi@redhat.com>,
-        "mtosatti@redhat.com" <mtosatti@redhat.com>
-Subject: Re: [bisected] Clocksource tsc unstable git
-Message-ID: <20101105160919.GC25704@aftab>
-References: <20101027182608.GA1580@arch.trippelsdorf.de>
- <20101029081831.GA7149@liondog.tnic>
- <20101029083013.GA1553@arch.trippelsdorf.de>
- <20101029102713.GA21125@aftab>
- <alpine.LFD.2.00.1010291411150.2692@localhost6.localdomain6>
- <20101029170040.GJ21125@aftab>
- <20101029172631.GA23546@arch.trippelsdorf.de>
- <alpine.LFD.2.00.1011011904280.2566@localhost6.localdomain6>
- <20101101184512.GA1589@arch.trippelsdorf.de>
- <alpine.LFD.2.00.1011021626160.9357@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1011021626160.9357@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 5 Nov 2010 12:23:21 -0400
+Date: Fri, 5 Nov 2010 09:21:43 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, lm-sensors@lm-sensors.org
+Subject: Re: [lm-sensors] hwmon/adt7470 crash on module load (2.6.37-rc1)
+Message-Id: <20101105092143.2bd3d315.randy.dunlap@oracle.com>
+In-Reply-To: <20101105161741.459be240@endymion.delvare>
+References: <20101104170929.f5198be3.randy.dunlap@oracle.com>
+	<20101105094222.2bfbfb92@endymion.delvare>
+	<4CD4187F.1030305@oracle.com>
+	<20101105161741.459be240@endymion.delvare>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 02, 2010 at 11:26:54AM -0400, Thomas Gleixner wrote:
-> Ok, I'm waiting for Boris to get us the confirmation from HW folks.
+On Fri, 5 Nov 2010 16:17:41 +0100 Jean Delvare wrote:
 
-Ok, I don't have much but it could be something. We could use the
-minimum tick u16 value in the ACPI HPET table, offset 53:
+> Hi Randy,
+> 
+> On Fri, 05 Nov 2010 07:45:19 -0700, Randy Dunlap wrote:
+> > On 11/05/10 01:42, Jean Delvare wrote:
+> > > Hi Randy,
+> > > 
+> > > On Thu, 4 Nov 2010 17:09:29 -0700, Randy Dunlap wrote:
+> > >> Nov  4 15:56:17 control kernel: [  173.105754] calling  adt7470_init+0x0/0x27 [adt7470] @ 4392
+> > >> Nov  4 15:56:18 [  173.113711] i2c-core: driver [adt7470] registered
+> > >> control kernel: [  173.122202] i2c i2c-15: found normal entry for adapter 15, addr 0x2c
+> > >> [  173.105754] c[  173.136181] i801_smbus 0000:00:1f.3: No response
+> > >> [  173.142478] i2c i2c-15: found normal entry for adapter 15, addr 0x2e
+> > >> Nov  4 15:56:18 [  173.151286] general protection fault: 0000 [#1] SMP DEBUG_PAGEALLOC
+> > > 
+> > > Do you have a device at address 0x2e on this I2C adapter, or not?
+> > 
+> > AFAIK I don't even have an I2C adapter.  or is there one in the intel chipset?
+> 
+> The "i2c-15" above suggests that you have at least 16 I2C adapters on
+> your system. There are many such adapters in graphics cards, TV cards
+> (both analog and digital) and on the mainboard as well. You can get a
+> list with:
+> 
+> # modprobe i2c-dev
+> # i2cdetect -l
+> 
+> But given the problem you've just reported, I expect the above command
+> to crash on 2.6.37-rc1. You could try it on 2.6.36 to at least give me a
+> rough idea of what I2C adapters are available on your system. This
+> would help me understand what's happening.
+> 
+> Do you have any DVB adapter in this machine?
 
-Main Counter Minimum   2 53 Unit: Clock tick
-Clock_tick in Periodic      The minimum clock ticks can be set without lost
-Mode                        interrupts while the counter is programmed to operate in
-*Note#3                     periodic mode
+Nope.
 
-...
+> > > Are you using the adt7470 driver on this system normally, or did you
+> > > build it in just for random testing purpose?
+> > 
+> > It's just random module testing.
+> > 
+> > >> [  173.156502] last sysfs file: /sys/module/hwmon/initstate
+> > >> [  173.156502] CPU 1 
+> > >> [  173.156502] Modules linked in: adt7470(+) ipt_MASQUERADE iptable_nat nf_nat af_packet nfsd lockd nfs_acl auth_rpcgss exportfs sco bridge stp llc bnep l2cap crc16 bluetooth rfkill sunrpc ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT xt_tcpudp nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables x_tables ipv6 p4_clockmod freq_table speedstep_lib binfmt_misc dm_mirror dm_region_hash dm_log dm_multipath scsi_dh dm_mod kvm uinput mousedev joydev ppdev snd_intel8x0 snd_ac97_codec ac97_bus snd_seq snd_seq_device snd_pcm usbkbd snd_timer led_class usbmouse usbhid hid iTCO_wdt snd dcdbas iTCO_vendor_support sg sr_mod pcspkr i2c_i801 soundcore rtc_cmos cdrom parport_pc rng_core snd_page_alloc rtc_core tg3 rtc_lib parport 8250_pnp evdev mac_hid shpchp pci_hotplug unix ide_pci_generic ide_core ata_generic pata_acpi ata_piix sd_mod crc_t10dif ext3 jbd mbcache uhci_hcd ohci_hcd ssb mmc_core pcmcia pcmcia_core firmwa!
+ re_cl
+> > >>  ass ehci_hcd usbcore nls_base i915 drm_kms_helper intel_agp button intel_gtt video thermal_sys hwmon output [last unloaded: ltc4245]
+> > >> [  173.156502] 
+> > >> [  173.156502] Pid: 22, comm: kworker/1:1 Not tainted 2.6.37-rc1 #12 0HH807/OptiPlex GX620               
+> > >> [  173.156502] RIP: 0010:[<ffffffff813ea532>]  [<ffffffff813ea532>] check_modem_status+0xe7/0x29c
+> > > 
+> > > Several drivers have a function named check_modem_status(), but adt7470 is
+> > > not one of them. I'm curious how we can get there if the crash is in
+> > > driver adt7470. Stack corruption maybe?
+> > > 
+> > >> [  173.308056] RSP: 0018:ffff88007c803e18  EFLAGS: 00010006
+> > >> [  173.308056] RAX: 6b6b6b6b6b6b6b6b RBX: ffffffff82a55400 RCX: 0000000000000100
+> > >> [  173.308056] RDX: 00000000260b260a RSI: 0000000000000028 RDI: 0000000000000006
+> > >> [  173.308056] RBP: ffff88007c803e58 R08: 0000000000000006 R09: 395099858027a0e6
+> > >>
+> > >> <locked up tight here>
+> > > 
+> > > Can we see the kernel config you're running?
+> > 
+> > Sure, it's attached.  It's close to allmodconfig, with a few kconfig
+> > options changed to =y instead of =m and some others (like debug and self-tests)
+> > disabled.
+> 
+> OK. I'll try this config on my system and see if I can reproduce your
+> problem. Likely not before tomorrow though, as I have more urgent
+> issues to deal with right now.
 
-* Note #3: This field is written by BIOS and may be chipset and/or
-platform dependent. This indicates the minimum value that must be used
-for any counter programmed in periodic mode to avoid lost interrupts.
-For any counter x that has been configured for periodic mode, the number
-can be programmed in any Tx_Compare Register must be greater than P,
-where P = (Minimum Period) / (Main counter period) in order to avoid
-lost interrupts.
+Ack.  However, I can't reproduce the problem today, so maybe you should
+go slowly on it.  Or maybe the problem is actually somewhere else
+(like you hinted at).
 
-However, we don't know (yet) whether this can be used in the
-non-periodic mode too. My gut feeling says yes but I wouldn't trust it.
+I'll test it some more.
 
-We went and collected that value a bunch of systems and it looks like it
-would need more massaging (read: capping) since some BIOSen simply write
-crap in it. It ranges from
+| Actually, the following command on 2.6.37-rc1 should work and answer my
+| question:
+| 
+| $ grep . /sys/bus/i2c/devices/i2c-*/name
 
-- 0x37ee on old nVidia and Intel boards (this is definitely crap, I
-can't imagine a minimum ticks value of 14318 for a HPET but who knows)
+/sys/bus/i2c/devices/i2c-0/name:gmbus disabled
+/sys/bus/i2c/devices/i2c-10/name:GPIOE
+/sys/bus/i2c/devices/i2c-11/name:gmbus reserveddpd
+/sys/bus/i2c/devices/i2c-12/name:GPIOF
+/sys/bus/i2c/devices/i2c-13/name:gmbus (null)
+/sys/bus/i2c/devices/i2c-14/name:GPIO?
+/sys/bus/i2c/devices/i2c-15/name:SMBus I801 adapter at e8a0
+/sys/bus/i2c/devices/i2c-1/name:gmbus ssc
+/sys/bus/i2c/devices/i2c-2/name:GPIOB
+/sys/bus/i2c/devices/i2c-3/name:gmbus vga
+/sys/bus/i2c/devices/i2c-4/name:GPIOA
+/sys/bus/i2c/devices/i2c-5/name:gmbus panel
+/sys/bus/i2c/devices/i2c-6/name:GPIOC
+/sys/bus/i2c/devices/i2c-7/name:gmbus dpc
+/sys/bus/i2c/devices/i2c-8/name:GPIOD
+/sys/bus/i2c/devices/i2c-9/name:gmbus dpb
 
-- 0x1000 on a HP machine (also fishy)
 
-- 0x10, 0x14 on current SBxxx boards
-
-- 0x80 on newer Intel boards
-
-and it looks like 0x80 is also the default value which we can use as a
-capping value. Btw, I've been running the following on the machine in
-question for a while now and no lockups so far.
-
-Opinions?
+And the i2c registration sanity check patch didn't catch any problems.
 
 ---
- arch/x86/include/asm/hpet.h |    1 +
- arch/x86/kernel/acpi/boot.c |   12 +++++++++---
- arch/x86/kernel/hpet.c      |    3 ++-
- 3 files changed, 12 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/include/asm/hpet.h b/arch/x86/include/asm/hpet.h
-index 2c392d6..01d9480 100644
---- a/arch/x86/include/asm/hpet.h
-+++ b/arch/x86/include/asm/hpet.h
-@@ -68,6 +68,7 @@ extern unsigned long force_hpet_address;
- extern u8 hpet_blockid;
- extern int hpet_force_user;
- extern u8 hpet_msi_disable;
-+extern u16 hpet_min_tick;
- extern int is_hpet_enabled(void);
- extern int hpet_enable(void);
- extern void hpet_disable(void);
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 71232b9..37b93e8 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -772,9 +772,6 @@ static int __init acpi_parse_hpet(struct acpi_table_header *table)
- 		hpet_address >>= 32;
- 	}
- #endif
--	printk(KERN_INFO PREFIX "HPET id: %#x base: %#lx\n",
--	       hpet_tbl->id, hpet_address);
--
- 	/*
- 	 * Allocate and initialize the HPET firmware resource for adding into
- 	 * the resource tree during the lateinit timeframe.
-@@ -790,6 +787,15 @@ static int __init acpi_parse_hpet(struct acpi_table_header *table)
- 	hpet_res->start = hpet_address;
- 	hpet_res->end = hpet_address + (1 * 1024) - 1;
- 
-+	hpet_min_tick = hpet_tbl->minimum_tick;
-+	if (hpet_min_tick > 0x80) {
-+		printk(KERN_WARNING PREFIX "Limiting HPET read delay to 0x80.\n");
-+		hpet_min_tick = 0x80;
-+	}
-+
-+	printk(KERN_INFO PREFIX "HPET id: %#x base: %#lx min tick: %d\n",
-+		hpet_tbl->id, hpet_address, hpet_min_tick);
-+
- 	return 0;
- }
- 
-diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
-index e49c3b9..a0b790a 100644
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -40,6 +40,7 @@ u8					hpet_msi_disable;
- static unsigned long			hpet_num_timers;
- #endif
- static void __iomem			*hpet_virt_address;
-+u16					hpet_min_tick = 0x80;
- 
- struct hpet_dev {
- 	struct clock_event_device	evt;
-@@ -408,7 +409,7 @@ static int hpet_next_event(unsigned long delta,
- 	 */
- 	res = (s32)(cnt - hpet_readl(HPET_COUNTER));
- 
--	return res < 8 ? -ETIME : 0;
-+	return res < hpet_min_tick ? -ETIME : 0;
- }
- 
- static void hpet_legacy_set_mode(enum clock_event_mode mode,
--- 
-1.7.3.1.50.g1e633
-
-
-
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
