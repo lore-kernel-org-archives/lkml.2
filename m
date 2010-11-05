@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754683Ab0KERim (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 13:38:42 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:54138 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753021Ab0KERik (ORCPT
+	id S1754730Ab0KERmy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 13:42:54 -0400
+Received: from mail-in-16.arcor-online.net ([151.189.21.56]:40242 "EHLO
+	mail-in-16.arcor-online.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754658Ab0KERmw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 13:38:40 -0400
-Subject: Re: [PATCH 0/4] IMA: making i_readcount a first class inode citizen
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, hch@infradead.org, warthog9@kernel.org,
-        david@fromorbit.com, jmorris@namei.org, kyle@mcmartin.ca,
-        hpa@zytor.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, mingo@elte.hu, eparis@redhat.com,
-        viro@zeniv.linux.org.uk, Matthew Wilcox <matthew@wil.cx>
-In-Reply-To: <20101105162811.GA3270@fieldses.org>
-References: <1288303325-9628-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <20101105011227.GB4320@fieldses.org>
-	 <1288955286.3135.9.camel@localhost.localdomain>
-	 <20101105162811.GA3270@fieldses.org>
+	Fri, 5 Nov 2010 13:42:52 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-14.arcor-online.net 55E009C42A
+Subject: Re: [PATCH] HID: roccat: Add support for Roccat Kone[+]
+From: Stefan Achatz <erazor_de@users.sourceforge.net>
+Reply-To: erazor_de@users.sourceforge.net
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Bruno =?ISO-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
+        Stephane Chatty <chatty@enac.fr>,
+        Don Prince <dhprince-devel@yahoo.co.uk>,
+        Dmitry Torokhov <dtor@mail.ru>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+In-Reply-To: <alpine.LNX.2.00.1011041418530.15851@pobox.suse.cz>
+References: <1287943025.2623.16.camel@neuromancer>
+	 <alpine.LNX.2.00.1011041418530.15851@pobox.suse.cz>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 05 Nov 2010 13:38:05 -0400
-Message-ID: <1288978685.3135.135.camel@localhost.localdomain>
+Date: Fri, 05 Nov 2010 18:42:42 +0100
+Message-ID: <1288978962.2585.15.camel@neuromancer>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
 Content-Transfer-Encoding: 7bit
@@ -31,50 +31,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-05 at 12:28 -0400, J. Bruce Fields wrote: 
-> On Fri, Nov 05, 2010 at 07:08:06AM -0400, Mimi Zohar wrote:
+Hello,
 
-> > Right, like the ima_file_check(), which is after the __dentry_open().
-> > Al, is it possible to move the break_lease() in may_open() to later?
+Am Donnerstag, den 04.11.2010, 14:25 -0400 schrieb Jiri Kosina:
+> On Sun, 24 Oct 2010, Stefan Achatz wrote:
 > 
-> That would still leave a race like:
+> > This patch adds support for Roccat Kone[+] gaming mouse. Kone[+] is an enhanced version
+> > of the old Kone with more memory for macros, a better sensor and more functionality.
+> > This driver is conceptual similar to the existing Kone and Pyra drivers.
+> > Userland tools can soon be found at http://sourceforge.net/projects/roccat
 > 
-> 			check count
-> 	bump count
-> 	break lease
-> 			set lease
-> 
-> But we could extend the i_lock to prevent the lease being bumped between
-> the two steps on the right-hand side.
+> Seems like there is a lot of duplicate code with Roccat Kone.
+> Is there any reason this couldn't be merged with the Roccat Kone 
+> counterparts?
 
-The latest i_readcount patchset, i_readcount is atomic and doesn't
-require i_lock, at least for IMA.  Have to think about this more ....
+In fact the Kone[+] seems to be nearer to the Pyra than the old Kone.
+Looks like the manufacturer changed the firmware programmer between some
+devices. I wanted to wait until I see more devices of this manufacturer
+if some kind of genealogy might be visible and remove code duplication
+based on that.
 
-> At that point I think we'd be done?  We're assured the count is still
-> zero while the lease is added to the inode, so anyone in the process of
-> doing an open has yet to reach the break_lease, which will see the newly
-> added lease.
+> > +static ssize_t koneplus_sysfs_read_profile5_settings(struct file *fp,
+> > +		struct kobject *kobj, struct bin_attribute *attr, char *buf,
+> > +		loff_t off, size_t count)
+> > +{
+> > +	return koneplus_sysfs_read_profilex_settings(fp, kobj,
+> > +			attr, buf, off, count, 4);
+> > +}
+> > +
 > 
-> That leaves the problem that leases really should be broken on anything
-> that changes the attributes or the dentries pointing to the inode:
-> setattr, link, unlink, rename, at least.
+> This is really ugly. Can't you have just one read() function and 
+> distuingish according to bin_attribute->private?
 
-For this reason, IMA is now taking i_mutex, preventing file metadata
-from changing.
+The patch comes in a view moments, if you like it I'll do the same for
+Kone and Pyra.
 
-> One approach: add another counter to the inode named disable_leases, and
-> have any of those operations do something like:
 > 
-> 	disable_lease++
-> 	break_lease
-> 	... do operation ...
-> 	disable_lease--
+> > diff --git a/drivers/hid/hid-roccat-koneplus.h b/drivers/hid/hid-roccat-koneplus.h
+> > new file mode 100644
+> > index 0000000..bf750fa
+> > --- /dev/null
+> > +++ b/drivers/hid/hid-roccat-koneplus.h
+> > @@ -0,0 +1,229 @@
+> > +#ifndef __HID_ROCCAT_KONEPLUS_H
+> > +#define __HID_ROCCAT_KONEPLUS_H
+> > +
+> > +/*
+> > + * Copyright (c) 2010 Stefan Achatz <erazor_de@users.sourceforge.net>
+> > + */
+> > +
+> > +/*
+> > + * This program is free software; you can redistribute it and/or modify it
+> > + * under the terms of the GNU General Public License as published by the Free
+> > + * Software Foundation; either version 2 of the License, or (at your option)
+> > + * any later version.
+> > + */
+> > +
+> > +#include <linux/types.h>
+> > +
+> > +#pragma pack(push)
+> > +#pragma pack(1)
 > 
-> ?
-> 
-> --b.
+> Why?
 
-lol, getting i_readcount was was hard enough. 
+What?
 
-Mimi
+Have a nice day,
+Stefan
 
