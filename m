@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187Ab0KEDPT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 23:15:19 -0400
-Received: from mail.perches.com ([173.55.12.10]:4117 "EHLO mail.perches.com"
+	id S1754136Ab0KEDPr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 23:15:47 -0400
+Received: from mail.perches.com ([173.55.12.10]:4106 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753617Ab0KEDIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 23:08:52 -0400
+	id S1753691Ab0KEDIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 23:08:51 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
 Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
@@ -19,9 +19,9 @@ Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         John Ronciak <john.ronciak@intel.com>,
         e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 23/49] drivers/net/igbvf: Use vzalloc
-Date: Thu,  4 Nov 2010 20:07:47 -0700
-Message-Id: <9f8b974fadf646f9227bd1d5fe8e448081ec9b2b.1288925424.git.joe@perches.com>
+Subject: [PATCH 22/49] drivers/net/igb: Use vzalloc
+Date: Thu,  4 Nov 2010 20:07:46 -0700
+Message-Id: <e84a7e92e3fefb39e4870d5930ea04c8990f8e14.1288925424.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <alpine.DEB.2.00.1011031108260.11625@router.home>
 References: <alpine.DEB.2.00.1011031108260.11625@router.home>
@@ -33,17 +33,17 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/igbvf/netdev.c |    6 ++----
+ drivers/net/igb/igb_main.c |    6 ++----
  1 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/igbvf/netdev.c b/drivers/net/igbvf/netdev.c
-index 28af019..08e7459 100644
---- a/drivers/net/igbvf/netdev.c
-+++ b/drivers/net/igbvf/netdev.c
-@@ -429,10 +429,9 @@ int igbvf_setup_tx_resources(struct igbvf_adapter *adapter,
+diff --git a/drivers/net/igb/igb_main.c b/drivers/net/igb/igb_main.c
+index 892d196..67ea262 100644
+--- a/drivers/net/igb/igb_main.c
++++ b/drivers/net/igb/igb_main.c
+@@ -2436,10 +2436,9 @@ int igb_setup_tx_resources(struct igb_ring *tx_ring)
  	int size;
  
- 	size = sizeof(struct igbvf_buffer) * tx_ring->count;
+ 	size = sizeof(struct igb_buffer) * tx_ring->count;
 -	tx_ring->buffer_info = vmalloc(size);
 +	tx_ring->buffer_info = vzalloc(size);
  	if (!tx_ring->buffer_info)
@@ -52,10 +52,10 @@ index 28af019..08e7459 100644
  
  	/* round up to nearest 4K */
  	tx_ring->size = tx_ring->count * sizeof(union e1000_adv_tx_desc);
-@@ -469,10 +468,9 @@ int igbvf_setup_rx_resources(struct igbvf_adapter *adapter,
+@@ -2587,10 +2586,9 @@ int igb_setup_rx_resources(struct igb_ring *rx_ring)
  	int size, desc_len;
  
- 	size = sizeof(struct igbvf_buffer) * rx_ring->count;
+ 	size = sizeof(struct igb_buffer) * rx_ring->count;
 -	rx_ring->buffer_info = vmalloc(size);
 +	rx_ring->buffer_info = vzalloc(size);
  	if (!rx_ring->buffer_info)
