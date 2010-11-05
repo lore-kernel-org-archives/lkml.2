@@ -1,75 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132Ab0KDX7R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 19:59:17 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:28411 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967Ab0KDX7O (ORCPT
+	id S1752561Ab0KEAKK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 20:10:10 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:50361 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751740Ab0KEAKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 19:59:14 -0400
-Date: Fri, 5 Nov 2010 00:48:17 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Chris Mason <chris.mason@oracle.com>
-cc: Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@kernel.org>,
-        Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Nick Piggin <npiggin@suse.de>, Arjan van de Ven <arjan@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "Ted Ts'o" <tytso@mit.edu>,
-        Corrado Zoccolo <czoccolo@gmail.com>,
-        Shaohua Li <shaohua.li@intel.com>, Sanjoy Mahajan <sanjoy@olin.edu>,
-        Steven Barrett <damentz@gmail.com>
-Subject: Re: 2.6.36 io bring the system to its knees
-In-Reply-To: <alpine.LNX.2.00.1011050032440.16015@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1011050047220.16015@swampdragon.chaosbits.net>
-References: <AANLkTimt7wzR9RwGWbvhiOmot_zzayfCfSh_-v6yvuAP@mail.gmail.com> <AANLkTikRKVBzO=ruy=JDmBF28NiUdJmAqb4-1VhK0QBX@mail.gmail.com> <AANLkTinzJ9a+9w7G5X0uZpX2o-L8E6XW98VFKoF1R_-S@mail.gmail.com> <AANLkTinDDG0ZkNFJZXuV9k3nJgueUW=ph8AuHgyeAXji@mail.gmail.com>
- <AANLkTikvSGNE7uGn5p0tfJNg4Hz5WRmLRC8cXu7+GhMk@mail.gmail.com> <20101028090002.GA12446@elte.hu> <AANLkTinoGGLTN2JRwjJtF6Ra5auZVg+VSa=TyrtAkDor@mail.gmail.com> <20101028133036.GA30565@elte.hu> <20101028170132.GY27796@think>
- <alpine.LNX.2.00.1011050032440.16015@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 4 Nov 2010 20:10:08 -0400
+Date: Thu, 4 Nov 2010 17:09:29 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: lm-sensors@lm-sensors.org, "Darrick J. Wong" <djwong@us.ibm.com>
+Subject: hwmon/adt7470 crash on module load (2.6.37-rc1)
+Message-Id: <20101104170929.f5198be3.randy.dunlap@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 5 Nov 2010, Jesper Juhl wrote:
 
-> On Thu, 28 Oct 2010, Chris Mason wrote:
-> 
-> > On Thu, Oct 28, 2010 at 03:30:36PM +0200, Ingo Molnar wrote:
-> > > 
-> > > "Many seconds freezes" and slowdowns wont be fixed via the VFS scalability patches 
-> > > i'm afraid.
-> > > 
-> > > This has the appearance of some really bad IO or VM latency problem. Unfixed and 
-> > > present in stable kernel versions going from years ago all the way to v2.6.36.
-> > 
-> > Hmmm, the workload you're describing here has two special parts.  First
-> > it dramatically overloads the disk, and then it has guis doing things
-> > waiting for the disk.
-> > 
-> 
-> Just want to chime in with a 'me too'.
-> 
-> I see something similar on Arch Linux when doing 'pacman -Syyuv' and there 
-> are many (as in more than 5-10) updates to apply. While the update is 
-> running (even if that's all the system is doing) system responsiveness is 
-> terrible - just starting 'chromium' which is usually instant (at least 
-> less than 2 sec at worst) can take upwards of 10 seconds and the mouse 
-> cursor in X starts to jump a bit as well and switching virtual desktops 
-> noticably lags when redrawing the new desktop if there's a full screen app 
-> like gimp or OpenOffice open there. This is on a Lenovo Thinkpad R61i 
-> which has a 'Intel(R) Core(TM)2 Duo CPU T7250 @ 2.00GHz' CPU, 2GB of 
-> memory and 499996 kilobytes of swap.
-> 
-Forgot to mention the kernel I currently experience this with : 
 
-[jj@dragon ~]$ uname -a
-Linux dragon 2.6.35-ARCH #1 SMP PREEMPT Sat Oct 30 21:22:26 CEST 2010 x86_64 Intel(R) Core(TM)2 Duo CPU T7250 @ 2.00GHz GenuineIntel GNU/Linux
+Nov  4 15:56:17 control kernel: [  173.105754] calling  adt7470_init+0x0/0x27 [adt7470] @ 4392
+Nov  4 15:56:18 [  173.113711] i2c-core: driver [adt7470] registered
+control kernel: [  173.122202] i2c i2c-15: found normal entry for adapter 15, addr 0x2c
+[  173.105754] c[  173.136181] i801_smbus 0000:00:1f.3: No response
+[  173.142478] i2c i2c-15: found normal entry for adapter 15, addr 0x2e
+Nov  4 15:56:18 [  173.151286] general protection fault: 0000 [#1] SMP DEBUG_PAGEALLOC
+[  173.156502] last sysfs file: /sys/module/hwmon/initstate
+[  173.156502] CPU 1 
+[  173.156502] Modules linked in: adt7470(+) ipt_MASQUERADE iptable_nat nf_nat af_packet nfsd lockd nfs_acl auth_rpcgss exportfs sco bridge stp llc bnep l2cap crc16 bluetooth rfkill sunrpc ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT xt_tcpudp nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables x_tables ipv6 p4_clockmod freq_table speedstep_lib binfmt_misc dm_mirror dm_region_hash dm_log dm_multipath scsi_dh dm_mod kvm uinput mousedev joydev ppdev snd_intel8x0 snd_ac97_codec ac97_bus snd_seq snd_seq_device snd_pcm usbkbd snd_timer led_class usbmouse usbhid hid iTCO_wdt snd dcdbas iTCO_vendor_support sg sr_mod pcspkr i2c_i801 soundcore rtc_cmos cdrom parport_pc rng_core snd_page_alloc rtc_core tg3 rtc_lib parport 8250_pnp evdev mac_hid shpchp pci_hotplug unix ide_pci_generic ide_core ata_generic pata_acpi ata_piix sd_mod crc_t10dif ext3 jbd mbcache uhci_hcd ohci_hcd ssb mmc_core pcmcia pcmcia_core firmware_clas!
+ s ehci_hcd usbcore nls_base i915 drm_kms_helper intel_agp button intel_gtt video thermal_sys hwmon output [last unloaded: ltc4245]
+[  173.156502] 
+[  173.156502] Pid: 22, comm: kworker/1:1 Not tainted 2.6.37-rc1 #12 0HH807/OptiPlex GX620               
+[  173.156502] RIP: 0010:[<ffffffff813ea532>]  [<ffffffff813ea532>] check_modem_status+0xe7/0x29c
+[  173.308056] RSP: 0018:ffff88007c803e18  EFLAGS: 00010006
+[  173.308056] RAX: 6b6b6b6b6b6b6b6b RBX: ffffffff82a55400 RCX: 0000000000000100
+[  173.308056] RDX: 00000000260b260a RSI: 0000000000000028 RDI: 0000000000000006
+[  173.308056] RBP: ffff88007c803e58 R08: 0000000000000006 R09: 395099858027a0e6
 
--- 
-Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-Plain text mails only, please      http://www.expita.com/nomime.html
-Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
+<locked up tight here>
 
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
