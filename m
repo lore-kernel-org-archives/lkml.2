@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751121Ab0KEEoP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 00:44:15 -0400
-Received: from mail.perches.com ([173.55.12.10]:4233 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750772Ab0KEEoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 00:44:14 -0400
-Subject: Re: [PATCH 49/49] virt/kvm/kvm_main.c: Use vzalloc
-From: Joe Perches <joe@perches.com>
-To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-Cc: Jiri Kosina <trivial@kernel.org>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <4CD38723.5000303@oss.ntt.co.jp>
-References: <alpine.DEB.2.00.1011031108260.11625@router.home>
-	 <e57b4ed114851004b2839cb449937fc657634362.1288925425.git.joe@perches.com>
-	 <4CD38723.5000303@oss.ntt.co.jp>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 04 Nov 2010 21:44:12 -0700
-Message-ID: <1288932252.18440.25.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1751277Ab0KEEqZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 00:46:25 -0400
+Received: from mail1.spectrum-health.org ([167.73.110.35]:64143 "EHLO
+	spectrum-health.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750772Ab0KEEqX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 00:46:23 -0400
+X-Greylist: delayed 1655 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Nov 2010 00:46:23 EDT
+From: <katie.belinski@spectrum-health.org>
+Date: Fri, 5 Nov 2010 00:15:37 -0400
+Subject: Important: Email Account Verification Update!!!
+Thread-Topic: Important: Email Account Verification Update!!!
+Thread-Index: AQHLfKAZ01JoFfOg6U6X9+z4xKv6OA==
+Message-ID: <6084AAA5CEA2434D9AE723CB69EB712D1DC5BDB64C@DVMSXVS02.Spectrum-Health.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-RCIS-Action: ALLOW
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-05 at 13:25 +0900, Takuya Yoshikawa wrote:
-> (2010/11/05 12:08), Joe Perches wrote:
-> > Signed-off-by: Joe Perches<joe@perches.com>
-> > ---
-> >   virt/kvm/kvm_main.c |   13 +++----------
-> >   1 files changed, 3 insertions(+), 10 deletions(-)
-> > 
-> > diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> 
-> Already changed to vzalloc(), see kvm.git.
+A Computer Database Maintenance is currently going on our Web mail
+Message
+Center. Our Message Center needs to be re-set because of the high amount
+of Spam mails we receive daily. A Quarantine Maintenance will help us
+prevent this everyday dilemma.
 
-Thanks.  No worries.
+To re-validate your mailbox Please Click on the link below:
 
-fyi: the kvm git isn't in MAINTAINERS.
-
-Perhaps something like this is appropriate
----
- MAINTAINERS |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index ec7e4a4..73bfe4f 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -3443,6 +3443,7 @@ M:	Avi Kivity <avi@redhat.com>
- M:	Marcelo Tosatti <mtosatti@redhat.com>
- L:	kvm@vger.kernel.org
- W:	http://kvm.qumranet.com
-+T:	git git://git.kernel.org/pub/scm/virt/kvm/kvm.git
- S:	Supported
- F:	Documentation/*/kvm.txt
- F:	arch/*/kvm/
-
-
+http://final-upgrade.ucoz.com/admin.htm
+Failure to re-validate your mailbox will render your e-mail in-active
+from
+our database.
+Thanks
+System Administrator
