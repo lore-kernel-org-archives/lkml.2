@@ -1,192 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715Ab0KESks (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 14:40:48 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:42228 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752862Ab0KESkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 14:40:45 -0400
-Date: Fri, 5 Nov 2010 11:40:34 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Nick Piggin <npiggin@kernel.dk>
-Subject: Re: [PATCH] atomic: add atomic_inc_not_zero_hint()
-Message-ID: <20101105184034.GG2850@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1288975980.2882.877.camel@edumazet-laptop>
- <20101105102038.53e36f9e.akpm@linux-foundation.org>
- <1288980046.2882.1054.camel@edumazet-laptop>
+	id S1753632Ab0KETEZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 15:04:25 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:29146 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753046Ab0KETEY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 15:04:24 -0400
+Message-ID: <4CD454D1.2060503@kernel.org>
+Date: Fri, 05 Nov 2010 12:02:41 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.14) Gecko/20101013 SUSE/3.0.9 Thunderbird/3.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1288980046.2882.1054.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jan Beulich <JBeulich@novell.com>
+CC: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86-64: fix and clean up AMD Fam10 MMCONF enabling
+References: <4CD2DDC6020000780002098C@vpn.id2.novell.com>
+In-Reply-To: <4CD2DDC6020000780002098C@vpn.id2.novell.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 05, 2010 at 07:00:46PM +0100, Eric Dumazet wrote:
-> Le vendredi 05 novembre 2010 à 10:20 -0700, Andrew Morton a écrit :
+On 11/04/2010 08:22 AM, Jan Beulich wrote:
+> Candidate memory ranges were not calculated properly (start addresses
+> got needlessly rounded down, and end addresses didn't get rounded up
+> at all), address comparison for secondary CPUs was done on only part
+> of the address, and disabled status wasn't tracked properly.
 > 
-> > It totally makes sense to add include/linu/atomic.h for common things. 
-> > Perhaps there's already code in arch/*/include/asm/atomic.h which
-> > should be hoisted up there.  But that can't reliably be done until a
-> > million files have had their #includes switched :(
-> > 
+> Signed-off-by: Jan Beulich <jbeulich@novell.com>
+> Cc: Yinghai Lu <yinghai@kernel.org>
 > 
-> Maybe including <linux/atomic.h> only from the end of various
-> 
-> arch/*/include/asm/atomic.h  ?
-> 
-> In this case, I remove the include <asm/atomic.h> from linux/atomic.h
-> 
-> > It's quite unobvious *why* `hint' cannot be zero.  Can you please add
-> > the reasoning to the comment?  Also, the local `hint' should be
-> > referred to as "@hint" in a kerneldoc comment.
-> 
-> Well ;)
-> 
-> We want to increment the counter if its not zero.
-> Typically used for refcounts, of RCU protected structures.
-> 
-> Giving a zero hint would be curious dont you think ?
-> 
-> I see no usage for this, and using atomic_inc_not_zero() in this case is
-> the only choice, since we dont ever want to cmpxchg(v, 0, 1) (or risk
-> double free and crazy things)
-> 
-> Hmm... maybe I can add a test (compiler should optimize it anyway, since
-> all usages I can foresee will use a constant hint)
-> 
-> > 
-> > > +static inline int atomic_inc_not_zero_hint(atomic_t *v, int hint)
-> > > +{
-> > > +	int val, c = hint;
-> > > +
-> > > + 	do {
-> > > +		val = atomic_cmpxchg(v, c, c + 1);
-> > > +		if (val == c)
-> > > +			return 1;
-> > > +		c = val;
-> > > +	} while (c);
-> > > +
-> > > +	return 0;
-> > > +}
-> > 
-> > Should/could this have implemented a more general
-> > atomic_add_not_zero_hint() and made atomic_inc_not_zero_hint() a
-> > wrapper around that?
-> 
-> Well, I see no practical use for this, but yes, this could be done.
-> 
-> As atomic_add_not_zero() doesnt exist, I am not sure we need an
-> atomic_add_not_zero_hint() yet ?
-> 
-> > 
-> > Also, it might make sense to add "#ifndef atomic_inc_not_zero_hint"
-> > wrappers around this function so that the arch can implement an
-> > overriding custom version.  And that becomes a general rule as more
-> > functions are added to include/linux/atomic.h.
-> 
-> Ah yes, thats right !
-> 
-> Thanks !
-> 
-> [PATCH v2] atomic: add atomic_inc_not_zero_hint()
-> 
-> Followup of perf tools session in Netfilter WorkShop 2010
-> 
-> In network stack we make high usage of atomic_inc_not_zero() in contexts
-> we know the probable value of atomic before increment (2 for udp sockets
-> for example)
-> 
-> Using a special version of atomic_inc_not_zero() giving this hint can
-> help processor to use less bus transactions.
-> 
-> On x86 (MESI protocol) for example, this avoids entering Shared state,
-> because "lock cmpxchg" issues an RFO (Read For Ownership)
-> 
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> Cc: Christoph Lameter <cl@linux-foundation.org>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Andi Kleen <andi@firstfloor.org>
-> Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-> Cc: David Miller <davem@davemloft.net>
-> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> Cc: Nick Piggin <npiggin@kernel.dk>
 > ---
-> V2: add #ifndef atomic_inc_not_zero_hint
->     kerneldoc changes
->     test that hint is not null
->     Meant to be included at end of arch/*/asm/atomic.h files
+>  arch/x86/kernel/mmconf-fam10h_64.c |   54 +++++++++++++++++--------------------
+>  1 file changed, 25 insertions(+), 29 deletions(-)
 > 
->  include/linux/atomic.h |   36 ++++++++++++++++++++++++++++++++++++
->  1 files changed, 36 insertions(+)
+> --- linux-2.6.37-rc1/arch/x86/kernel/mmconf-fam10h_64.c
+> +++ 2.6.37-rc1-x86_64-mmconf-fam10h/arch/x86/kernel/mmconf-fam10h_64.c
+> @@ -25,7 +25,6 @@ struct pci_hostbridge_probe {
+>  };
+>  
+>  static u64 __cpuinitdata fam10h_pci_mmconf_base;
+> -static int __cpuinitdata fam10h_pci_mmconf_base_status;
+>  
+>  static struct pci_hostbridge_probe pci_probes[] __cpuinitdata = {
+>  	{ 0, 0x18, PCI_VENDOR_ID_AMD, 0x1200 },
+> @@ -44,7 +43,9 @@ static int __cpuinit cmp_range(const voi
+>  	return start1 - start2;
+>  }
+>  
+> -/*[47:0] */
+> +#define UNIT (1ULL << (5 + 3 + 12))
+> +#define MASK (~(UNIT - 1))
+> +#define SIZE (UNIT << 8)
+
+these MACRO should be more meaningful
+
+>  /* need to avoid (0xfd<<32) and (0xfe<<32), ht used space */
+>  #define FAM10H_PCI_MMCONF_BASE (0xfcULL<<32)
+>  #define BASE_VALID(b) ((b != (0xfdULL << 32)) && (b != (0xfeULL << 32)))
+> @@ -64,12 +65,11 @@ static void __cpuinit get_fam10h_pci_mmc
+>  	struct range range[8];
+>  
+>  	/* only try to get setting from BSP */
+> -	/* -1 or 1 */
+> -	if (fam10h_pci_mmconf_base_status)
+> +	if (fam10h_pci_mmconf_base)
+>  		return;
+>  
+>  	if (!early_pci_allowed())
+> -		goto fail;
+> +		return;
+>  
+>  	found = 0;
+>  	for (i = 0; i < ARRAY_SIZE(pci_probes); i++) {
+> @@ -91,7 +91,7 @@ static void __cpuinit get_fam10h_pci_mmc
+>  	}
+>  
+>  	if (!found)
+> -		goto fail;
+> +		return;
+>  
+>  	/* SYS_CFG */
+>  	address = MSR_K8_SYSCFG;
+> @@ -104,11 +104,11 @@ static void __cpuinit get_fam10h_pci_mmc
+>  		/* TOP_MEM2 */
+>  		address = MSR_K8_TOP_MEM2;
+>  		rdmsrl(address, val);
+> -		tom2 = val & (0xffffULL<<32);
+> +		tom2 = val & 0xffffff800000ULL;
+>  	}
+>  
+>  	if (base <= tom2)
+> -		base = tom2 + (1ULL<<32);
+> +		base = (tom2 + 2 * UNIT - 1) & MASK;
+>  
+>  	/*
+>  	 * need to check if the range is in the high mmio range that is
+> @@ -123,9 +123,9 @@ static void __cpuinit get_fam10h_pci_mmc
+>  		if (!(reg & 3))
+>  			continue;
+>  
+> -		start = (((u64)reg) << 8) & (0xffULL << 32); /* 39:16 on 31:8*/
+> +		start = (u64)(reg & 0xffffff00) << 8; /* 39:16 on 31:8*/
+>  		reg = read_pci_config(bus, slot, 1, 0x84 + (i << 3));
+> -		end = (((u64)reg) << 8) & (0xffULL << 32); /* 39:16 on 31:8*/
+> +		end = ((u64)(reg & 0xffffff00) << 8) | 0xffff; /* 39:16 on 31:8*/
+>  
+>  		if (!end)
+>  			continue;
+
+those section could be changed to:
+
+                start = reg & 0xffffff00; /* 39:16 on 31:8*/
+                start <<= 8;
+                reg = read_pci_config(bus, slot, 1, 0x84 + (i << 3));
+                end = (reg & 0xffffff00);
+                end <<= 8;
+
+                if (!end)
+                        continue;
+                end |= 0xffff;
+
+                hi_mmio_num = add_range(range, 8, hi_mmio_num, start, end + 1);
+
+1. append 0xffff after !end checking..
+2. add_range should take end + 1;
+
+> @@ -143,32 +143,27 @@ static void __cpuinit get_fam10h_pci_mmc
+>  
+>  	if (range[hi_mmio_num - 1].end < base)
+>  		goto out;
+> -	if (range[0].start > base)
+> +	if (range[0].start > base + SIZE)
+>  		goto out;
+>  
+>  	/* need to find one window */
+> -	base = range[0].start - (1ULL << 32);
+> +	base = (range[0].start & MASK) - UNIT;
+>  	if ((base > tom2) && BASE_VALID(base))
+>  		goto out;
+> -	base = range[hi_mmio_num - 1].end + (1ULL << 32);
+> +	base = (range[hi_mmio_num - 1].end + UNIT) & MASK;
+>  	if ((base > tom2) && BASE_VALID(base))
+>  		goto out;
+>  	/* need to find window between ranges */
+> -	if (hi_mmio_num > 1)
+> -	for (i = 0; i < hi_mmio_num - 1; i++) {
+> -		if (range[i + 1].start > (range[i].end + (1ULL << 32))) {
+> -			base = range[i].end + (1ULL << 32);
+> -			if ((base > tom2) && BASE_VALID(base))
+> -				goto out;
+> -		}
+> +	for (i = 1; i < hi_mmio_num; i++) {
+> +		base = (range[i - 1].end + UNIT) & MASK;
+> +		val = range[i].start & MASK;
+> +		if (val >= base + SIZE && base > tom2 && BASE_VALID(base))
+> +			goto out;
+>  	}
+> -
+> -fail:
+> -	fam10h_pci_mmconf_base_status = -1;
+>  	return;
+> +
+>  out:
+>  	fam10h_pci_mmconf_base = base;
+> -	fam10h_pci_mmconf_base_status = 1;
+>  }
+>  
+>  void __cpuinit fam10h_check_enable_mmcfg(void)
+> @@ -190,11 +185,10 @@ void __cpuinit fam10h_check_enable_mmcfg
+>  
+>  		/* only trust the one handle 256 buses, if acpi=off */
+>  		if (!acpi_pci_disabled || busnbits >= 8) {
+> -			u64 base;
+> -			base = val & (0xffffULL << 32);
+> -			if (fam10h_pci_mmconf_base_status <= 0) {
+> +			u64 base = val & MASK;
+> +
+> +			if (!fam10h_pci_mmconf_base) {
+>  				fam10h_pci_mmconf_base = base;
+> -				fam10h_pci_mmconf_base_status = 1;
+>  				return;
+>  			} else if (fam10h_pci_mmconf_base ==  base)
+>  				return;
+> @@ -206,8 +200,10 @@ void __cpuinit fam10h_check_enable_mmcfg
+>  	 * with 256 buses
+>  	 */
+>  	get_fam10h_pci_mmconf_base();
+> -	if (fam10h_pci_mmconf_base_status <= 0)
+> +	if (!fam10h_pci_mmconf_base) {
+> +		pci_probe &= ~PCI_CHECK_ENABLE_AMD_MMCONF;
+>  		return;
+> +	}
+>  
+>  	printk(KERN_INFO "Enable MMCONFIG on AMD Family 10h\n");
+>  	val &= ~((FAM10H_MMIO_CONF_BASE_MASK<<FAM10H_MMIO_CONF_BASE_SHIFT) |
 > 
-> diff --git a/include/linux/atomic.h b/include/linux/atomic.h
-> new file mode 100644
-> index 0000000..0897bdd
-> --- /dev/null
-> +++ b/include/linux/atomic.h
-> @@ -0,0 +1,36 @@
-> +#ifndef _LINUX_ATOMIC_H
-> +#define _LINUX_ATOMIC_H
-> +
-> +/**
-> + * atomic_inc_not_zero_hint - increment if not null
-> + * @v: pointer of type atomic_t
-> + * @hint: probable value of the atomic before the increment
-> + *
-> + * This version of atomic_inc_not_zero() gives a hint of probable
-> + * value of the atomic. This helps processor to not read memory
-> + * before doing the atomic read/modify/write cycle, lowering
-> + * number of bus transactions on some arches.
-> + * Note: @hint MUST not be 0, or increment is not done.
-> + * Returns: 0 if increment was not done, 1 otherwise.
-> + */
-> +#ifndef atomic_inc_not_zero_hint
-> +static inline int atomic_inc_not_zero_hint(atomic_t *v, int hint)
-> +{
-> +	int val, c = hint;
-> +
-> +	/* sanity test, should be removed by compiler if hint is a constant */
-> +	if (!hint)
-> +		return 0;
-
-OK, so I cannot resist the challenge...  ;-)
-
-Suppose that the atomic_inc_not_zero_hint() is in common code that might
-be invoked from a cleanup path.  On the cleanup path, perhaps within an
-RCU callback, if the reference is zero, we have the only reference and
-thus don't need to increment the reference count.  On the other hand,
-if the reference is non-zero, we want to obtain a reference in order
-to safely attempt to encourage the other reference holder to let go
-more quickly.
-
-Perhaps a bit of a stretch, but why not just replace the above
-"return 0" with "atomic_inc_not_zero(v)"?  It will usually be
-compiled out, right?
-
-							Thanx, Paul
-
-> + 	do {
-> +		val = atomic_cmpxchg(v, c, c + 1);
-> +		if (val == c)
-> +			return 1;
-> +		c = val;
-> +	} while (c);
-> +
-> +	return 0;
-> +}
-> +#endif
-> +
-> +#endif /* _LINUX_ATOMIC_H */
 > 
-> 
+
+looks like fam10h_pci_mmconf_base_status should NOT be removed.
+
+-1: mean we can not find right new base on BSP, so should not let AP to mess it again.
+
+Thanks
+
+	Yinghai
