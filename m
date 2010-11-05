@@ -1,125 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752952Ab0KEBaL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 21:30:11 -0400
-Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:55225 "EHLO
+	id S1752998Ab0KEBo6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 21:44:58 -0400
+Received: from bld-mail20.adl6.internode.on.net ([150.101.137.105]:57140 "EHLO
 	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752687Ab0KEBaI (ORCPT
+	with ESMTP id S1752882Ab0KEBo5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 21:30:08 -0400
-Date: Fri, 5 Nov 2010 12:30:03 +1100
+	Thu, 4 Nov 2010 21:44:57 -0400
+Date: Fri, 5 Nov 2010 12:43:34 +1100
 From: Dave Chinner <david@fromorbit.com>
-To: linux-kernel@vger.kernel.org
-Subject: [2.6.37-rc1, OOM] virtblk: OOM in do_virtblk_request()
-Message-ID: <20101105013003.GE13830@dastard>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: Chris Mason <chris.mason@oracle.com>, Ingo Molnar <mingo@elte.hu>,
+        Pekka Enberg <penberg@kernel.org>,
+        Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Nick Piggin <npiggin@suse.de>, Arjan van de Ven <arjan@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "Ted Ts'o" <tytso@mit.edu>,
+        Corrado Zoccolo <czoccolo@gmail.com>,
+        Shaohua Li <shaohua.li@intel.com>, Sanjoy Mahajan <sanjoy@olin.edu>,
+        Steven Barrett <damentz@gmail.com>
+Subject: Re: 2.6.36 io bring the system to its knees
+Message-ID: <20101105014334.GF13830@dastard>
+References: <AANLkTikRKVBzO=ruy=JDmBF28NiUdJmAqb4-1VhK0QBX@mail.gmail.com>
+ <AANLkTinzJ9a+9w7G5X0uZpX2o-L8E6XW98VFKoF1R_-S@mail.gmail.com>
+ <AANLkTinDDG0ZkNFJZXuV9k3nJgueUW=ph8AuHgyeAXji@mail.gmail.com>
+ <AANLkTikvSGNE7uGn5p0tfJNg4Hz5WRmLRC8cXu7+GhMk@mail.gmail.com>
+ <20101028090002.GA12446@elte.hu>
+ <AANLkTinoGGLTN2JRwjJtF6Ra5auZVg+VSa=TyrtAkDor@mail.gmail.com>
+ <20101028133036.GA30565@elte.hu>
+ <20101028170132.GY27796@think>
+ <alpine.LNX.2.00.1011050032440.16015@swampdragon.chaosbits.net>
+ <alpine.LNX.2.00.1011050047220.16015@swampdragon.chaosbits.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1011050047220.16015@swampdragon.chaosbits.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Folks,
+On Fri, Nov 05, 2010 at 12:48:17AM +0100, Jesper Juhl wrote:
+> On Fri, 5 Nov 2010, Jesper Juhl wrote:
+> 
+> > On Thu, 28 Oct 2010, Chris Mason wrote:
+> > 
+> > > On Thu, Oct 28, 2010 at 03:30:36PM +0200, Ingo Molnar wrote:
+> > > > 
+> > > > "Many seconds freezes" and slowdowns wont be fixed via the VFS scalability patches 
+> > > > i'm afraid.
+> > > > 
+> > > > This has the appearance of some really bad IO or VM latency problem. Unfixed and 
+> > > > present in stable kernel versions going from years ago all the way to v2.6.36.
+> > > 
+> > > Hmmm, the workload you're describing here has two special parts.  First
+> > > it dramatically overloads the disk, and then it has guis doing things
+> > > waiting for the disk.
+> > > 
+> > 
+> > Just want to chime in with a 'me too'.
+> > 
+> > I see something similar on Arch Linux when doing 'pacman -Syyuv' and there 
+> > are many (as in more than 5-10) updates to apply. While the update is 
+> > running (even if that's all the system is doing) system responsiveness is 
+> > terrible - just starting 'chromium' which is usually instant (at least 
+> > less than 2 sec at worst) can take upwards of 10 seconds and the mouse 
+> > cursor in X starts to jump a bit as well and switching virtual desktops 
+> > noticably lags when redrawing the new desktop if there's a full screen app 
+> > like gimp or OpenOffice open there. This is on a Lenovo Thinkpad R61i 
+> > which has a 'Intel(R) Core(TM)2 Duo CPU T7250 @ 2.00GHz' CPU, 2GB of 
+> > memory and 499996 kilobytes of swap.
+> > 
+> Forgot to mention the kernel I currently experience this with : 
+> 
+> [jj@dragon ~]$ uname -a
+> Linux dragon 2.6.35-ARCH #1 SMP PREEMPT Sat Oct 30 21:22:26 CEST 2010 x86_64 Intel(R) Core(TM)2 Duo CPU T7250 @ 2.00GHz GenuineIntel GNU/Linux
 
-Running an IO test with lots of concurrent metadata modifications
-and IO under memory pressure, I hit this OOM report:
+I think anyone reporting a interactivity problem also needs to
+indicate what their filesystem is, what mount paramters they are
+using, what their storage config is, whether barriers are active or
+not, what elevator they are using, whether one or more of the
+applications are issuing fsync() or sync() calls, and so on.
 
-[  367.866979] xfsbufd/vdb: page allocation failure. order:0, mode:0x20
-[  367.868030] Pid: 2145, comm: xfsbufd/vdb Not tainted 2.6.36-dgc+ #634
-[  367.868030] Call Trace:
-[  367.868030]  [<ffffffff811204ee>] __alloc_pages_nodemask+0x65e/0x760
-[  367.868030]  [<ffffffff811585f2>] kmem_getpages+0x62/0x160
-[  367.868030]  [<ffffffff8115960f>] fallback_alloc+0x18f/0x270
-[  367.868030]  [<ffffffff8115939b>] ____cache_alloc_node+0x9b/0x180
-[  367.868030]  [<ffffffff811592bc>] ? cache_alloc_refill+0x21c/0x260
-[  367.868030]  [<ffffffff8115999b>] __kmalloc+0x1cb/0x240
-[  367.868030]  [<ffffffff8172b891>] ? virtqueue_add_buf_gfp+0x221/0x410
-[  367.868030]  [<ffffffff8172b891>] virtqueue_add_buf_gfp+0x221/0x410
-[  367.868030]  [<ffffffff81696771>] ? blk_rq_map_sg+0x81/0x2d0
-[  367.868030]  [<ffffffff81888333>] do_virtblk_request+0x1f3/0x400
-[  367.868030]  [<ffffffff8168ef1a>] __generic_unplug_device+0x3a/0x50
-[  367.868030]  [<ffffffff8168b1ee>] elv_insert+0x8e/0x1b0
-[  367.868030]  [<ffffffff8168b35a>] __elv_add_request+0x4a/0x90
-[  367.868030]  [<ffffffff81691cf0>] __make_request+0x120/0x500
-[  367.868030]  [<ffffffff81159c44>] ? kmem_cache_alloc+0xb4/0x1e0
-[  367.868030]  [<ffffffff8168fb16>] generic_make_request+0x266/0x550
-[  367.868030]  [<ffffffff8111b985>] ? mempool_alloc_slab+0x15/0x20
-[  367.868030]  [<ffffffff814a9989>] ? xfs_buf_delwri_split+0x1a9/0x1c0
-[  367.868030]  [<ffffffff81063779>] ? kvm_clock_read+0x19/0x20
-[  367.868030]  [<ffffffff8168fe65>] submit_bio+0x65/0xe0
-[  367.868030]  [<ffffffff814a915c>] _xfs_buf_ioapply+0x18c/0x360
-[  367.868030]  [<ffffffff814ababd>] ? xfs_bdstrat_cb+0x5d/0xb0
-[  367.868030]  [<ffffffff814ab62f>] xfs_buf_iorequest+0x4f/0xd0
-[  367.868030]  [<ffffffff814ababd>] xfs_bdstrat_cb+0x5d/0xb0
-[  367.868030]  [<ffffffff814abe5f>] xfsbufd+0x10f/0x190
-[  367.868030]  [<ffffffff814abd50>] ? xfsbufd+0x0/0x190
-[  367.868030]  [<ffffffff810a6f16>] kthread+0xa6/0xb0
-[  367.868030]  [<ffffffff8103ae64>] kernel_thread_helper+0x4/0x10
-[  367.868030]  [<ffffffff81b10f90>] ? restore_args+0x0/0x30
-[  367.868030]  [<ffffffff810a6e70>] ? kthread+0x0/0xb0
-[  367.868030]  [<ffffffff8103ae60>] ? kernel_thread_helper+0x0/0x10
-[  367.868030] Mem-Info:
-[  367.868030] Node 0 DMA per-cpu:
-[  367.868030] CPU    0: hi:    0, btch:   1 usd:   0
-[  367.868030] CPU    1: hi:    0, btch:   1 usd:   0
-[  367.868030] CPU    2: hi:    0, btch:   1 usd:   0
-[  367.868030] CPU    3: hi:    0, btch:   1 usd:   0
-[  367.868030] CPU    4: hi:    0, btch:   1 usd:   0
-[  367.868030] CPU    5: hi:    0, btch:   1 usd:   0
-[  367.868030] CPU    6: hi:    0, btch:   1 usd:   0
-[  367.868030] CPU    7: hi:    0, btch:   1 usd:   0
-[  367.868030] Node 0 DMA32 per-cpu:
-[  367.868030] CPU    0: hi:  186, btch:  31 usd:   0
-[  367.868030] CPU    1: hi:  186, btch:  31 usd:  23
-[  367.868030] CPU    2: hi:  186, btch:  31 usd:   0
-[  367.868030] CPU    3: hi:  186, btch:  31 usd:   0
-[  367.868030] CPU    4: hi:  186, btch:  31 usd:   0
-[  367.868030] CPU    5: hi:  186, btch:  31 usd:   0
-[  367.868030] CPU    6: hi:  186, btch:  31 usd:   0
-[  367.868030] CPU    7: hi:  186, btch:  31 usd:   0
-[  367.868030] Node 0 Normal per-cpu:
-[  367.868030] CPU    0: hi:  186, btch:  31 usd:   0
-[  367.868030] CPU    1: hi:  186, btch:  31 usd:   0
-[  367.868030] CPU    2: hi:  186, btch:  31 usd:   0
-[  367.868030] CPU    3: hi:  186, btch:  31 usd:   0
-[  367.868030] CPU    4: hi:  186, btch:  31 usd:   0
-[  367.868030] CPU    5: hi:  186, btch:  31 usd:   0
-[  367.868030] CPU    6: hi:  186, btch:  31 usd:   0
-[  367.868030] CPU    7: hi:  186, btch:  31 usd:   0
-[  367.868030] active_anon:19790 inactive_anon:4264 isolated_anon:0
-[  367.868030]  active_file:19793 inactive_file:36538 isolated_file:32
-[  367.868030]  unevictable:0 dirty:0 writeback:0 unstable:0
-[  367.868030]  free:0 slab_reclaimable:795356 slab_unreclaimable:118472
-[  367.868030]  mapped:180 shmem:22 pagetables:523 bounce:0
-[  367.868030] Node 0 DMA free:0kB min:28kB low:32kB high:40kB active_anon:0kB inactive_anon:0kB active_file:0kB inactive_file:14804kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15684kB mlocked:0kB dirty:0kB writeback:0kB mapped:0kB shmem:0kB slab_reclaimable:4kB slab_unreclaimable:1024kB kernel_stack:0kB pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:1828 all_unreclaimable? no
-[  367.868030] lowmem_reserve[]: 0 3512 4017 4017
-[  367.868030] Node 0 DMA32 free:0kB min:7076kB low:8844kB high:10612kB active_anon:77920kB inactive_anon:15648kB active_file:65824kB inactive_file:109788kB unevictable:0kB isolated(anon):0kB isolated(file):128kB present:3596500kB mlocked:0kB dirty:0kB writeback:0kB mapped:236kB shmem:0kB slab_reclaimable:2866144kB slab_unreclaimable:409596kB kernel_stack:80kB pagetables:372kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:26652 all_unreclaimable? no
-[  367.868030] lowmem_reserve[]: 0 0 505 505
-[  367.868030] Node 0 Normal free:0kB min:1016kB low:1268kB high:1524kB active_anon:1240kB inactive_anon:1408kB active_file:13348kB inactive_file:21560kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:517120kB mlocked:0kB dirty:0kB writeback:0kB mapped:484kB shmem:88kB slab_reclaimable:315276kB slab_unreclaimable:63268kB kernel_stack:1176kB pagetables:1720kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:5375 all_unreclaimable? no
-[  367.868030] lowmem_reserve[]: 0 0 0 0
-[  367.868030] Node 0 DMA: 0*4kB 0*8kB 0*16kB 0*32kB 0*64kB 0*128kB 0*256kB 0*512kB 0*1024kB 0*2048kB 0*4096kB = 0kB
-[  367.868030] Node 0 DMA32: 0*4kB 0*8kB 0*16kB 0*32kB 0*64kB 0*128kB 0*256kB 0*512kB 0*1024kB 0*2048kB 0*4096kB = 0kB
-[  367.868030] Node 0 Normal: 0*4kB 0*8kB 0*16kB 0*32kB 0*64kB 0*128kB 0*256kB 0*512kB 0*1024kB 0*2048kB 0*4096kB = 0kB
-[  367.868030] 56938 total pagecache pages
-[  367.868030] 388 pages in swap cache
-[  367.868030] Swap cache stats: add 16495, delete 16107, find 524/722
-[  367.868030] Free swap  = 443928kB
-[  367.868030] Total swap = 497976kB
-[  367.868030] 1048560 pages RAM
-[  367.868030] 41977 pages reserved
-[  367.868030] 51560 pages shared
-[  367.868030] 949431 pages non-shared
-
-Basically, the system is _completely_ out of free pages, and failing
-allocations in the XFS metadata writeback path that could free up
-memory.
-
-I note that the code path in question in the virtio driver is doing
-GFP_ATOMIC allocations for the indirect ring structures.  However,
-these allocations are not backed by a mempool and hence the system
-OOMs rather than makes slow progress. Shouldn't this path be using a
-mempool?
+Basically, what we need to know is whether these problems are
+isolated to a particular filesystem or storage type because
+they may simply be known problems (e.g. the ext3 fsync-the-world
+problem).
 
 Cheers,
 
