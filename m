@@ -1,87 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724Ab0KEBTf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 21:19:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20172 "EHLO mx1.redhat.com"
+	id S1752863Ab0KEB3k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 21:29:40 -0400
+Received: from mga02.intel.com ([134.134.136.20]:34979 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752535Ab0KEBTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 21:19:33 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: fweisbec@gmail.com, Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        akpm@linux-foundation.org, sergey.senozhatsky@gmail.com,
-        Don Zickus <dzickus@redhat.com>
-Subject: [PATCH] watchdog:  touch_nmi_watchdog should only touch local cpu not every one
-Date: Thu,  4 Nov 2010 21:18:52 -0400
-Message-Id: <1288919932-1857-1-git-send-email-dzickus@redhat.com>
+	id S1752559Ab0KEB3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 21:29:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,299,1286175600"; 
+   d="scan'208";a="674515324"
+Subject: Re: [DRAFT PATCH 2/3] perf: Implement Nehalem uncore pmu
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        "robert.richter@amd.com" <robert.richter@amd.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        "paulus@samba.org" <paulus@samba.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <1288898929.2039.78.camel@laptop>
+References: <1288682905.12061.109.camel@minggr.sh.intel.com>
+	 <AANLkTimyTYNczZqV5gPmKfL6iYjNf3wpYYFi+5US8bP3@mail.gmail.com>
+	 <1288712023.2457.25.camel@localhost>
+	 <AANLkTi=GVVWxOpZ9Gorn4_r2tASAqOV5+BT7o92xrwJJ@mail.gmail.com>
+	 <1288898929.2039.78.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 05 Nov 2010 09:30:29 +0800
+Message-ID: <1288920629.2430.0.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I ran into a scenario where while one cpu was stuck and should have panic'd
-because of the NMI watchdog, it didn't.  The reason was another cpu was spewing
-stack dumps on to the console.  Upon investigation, I noticed that when writing
-to the console and also when dumping the stack, the watchdog is touched.
+On Fri, 2010-11-05 at 03:28 +0800, Peter Zijlstra wrote:
+> On Tue, 2010-11-02 at 17:59 +0100, Stephane Eranian wrote:
+> > I think using uncore PMU to measure per-thread is pretty much useless.
+> > Maybe it should not even be allowed. There is no way you can correlate
+> > the counts you're getting to a place in your program. Or put differently,
+> > sampling in per-thread mode using uncore is useless. 
+> 
+> Right, per-task uncore event should not be allowed. I think it as simple
+> as setting pmu::task_ctx_nr = perf_invalid_context.
 
-This causes all the cpus to reset their NMI watchdog flags and the 'stuck' cpu
-just spins forever.
+Thanks for the comments from you and Stephane.
+I'll update the patches.
 
-This change causes the semantics of touch_nmi_watchdog to be changed slightly.
-Previously, I accidentally changed the semantics and we noticed there was a
-codepath in which touch_nmi_watchdog could be touched from a preemtible area.
-That caused a BUG() to happen when CONFIG_DEBUG_PREEMPT was enabled.  I believe
-it was the acpi code.
+Lin Ming
 
-My attempt here re-introduces the change to have the touch_nmi_watchdog() code
-only touch the local cpu instead of all of the cpus.  But instead of using
-__get_cpu_var(), I use the __raw_get_cpu_var() version.
-
-This avoids the preemption problem.  However my reasoning wasn't because I was
-trying to be lazy.  Instead I rationalized it as, well if preemption is enabled
-then interrupts should be enabled to and the NMI watchdog will have no reason
-to trigger.  So it won't matter if the wrong cpu is touched because the percpu
-interrupt counters the NMI watchdog uses should still be incrementing.
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- kernel/watchdog.c |   17 ++++++++++++++++-
- 1 files changed, 16 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index dc8e168..dd0c140 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -141,6 +141,21 @@ void touch_all_softlockup_watchdogs(void)
- #ifdef CONFIG_HARDLOCKUP_DETECTOR
- void touch_nmi_watchdog(void)
- {
-+	/*
-+	 * Using __raw here because some code paths have
-+	 * preemption enabled.  If preemption is enabled
-+	 * then interrupts should be enabled too, in which
-+	 * case we shouldn't have to worry about the watchdog
-+	 * going off.
-+	 */
-+	__raw_get_cpu_var(watchdog_nmi_touch) = true;
-+
-+	touch_softlockup_watchdog();
-+}
-+EXPORT_SYMBOL(touch_nmi_watchdog);
-+
-+void touch_all_nmi_watchdogs(void)
-+{
- 	if (watchdog_enabled) {
- 		unsigned cpu;
- 
-@@ -151,7 +166,7 @@ void touch_nmi_watchdog(void)
- 	}
- 	touch_softlockup_watchdog();
- }
--EXPORT_SYMBOL(touch_nmi_watchdog);
-+EXPORT_SYMBOL(touch_all_nmi_watchdogs);
- 
- #endif
- 
--- 
-1.7.2.3
 
