@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754783Ab0KETNE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 15:13:04 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:39768 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753502Ab0KETNB (ORCPT
+	id S1754823Ab0KETNR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 15:13:17 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:51003 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753403Ab0KETNP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 15:13:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=UBxp/U+DVxsQLOyNo5eGCE9eDHs1Bl7Yv//Np3jIIzN78E/+wXyIofcvi5vr4iFxqp
-         WOXLV+kS2ms9hl1liENI0vLptV0Cb5w+uIABY1gIJQ4lSQHrY604z22Ss3oQTc1Kpb0i
-         UuC6VvJVgZevIgi8G+A8r5YuwInuGcwqlu3E4=
-Subject: Re: [PATCH] atomic: add atomic_inc_not_zero_hint()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Nick Piggin <npiggin@kernel.dk>
-In-Reply-To: <20101105184034.GG2850@linux.vnet.ibm.com>
-References: <1288975980.2882.877.camel@edumazet-laptop>
-	 <20101105102038.53e36f9e.akpm@linux-foundation.org>
-	 <1288980046.2882.1054.camel@edumazet-laptop>
-	 <20101105184034.GG2850@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 05 Nov 2010 20:12:51 +0100
-Message-ID: <1288984371.2665.13.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Fri, 5 Nov 2010 15:13:15 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 67.188.36.105
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/d8fK5O7zzZRzo28V3MH0b
+Date: Fri, 5 Nov 2010 12:12:47 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Thomas Weber <weber@corscience.de>
+Cc: Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] OMAP2: Devkit8000: Fix mmc regulator failure
+Message-ID: <20101105191247.GR9264@atomide.com>
+References: <1288651691-14914-1-git-send-email-weber@corscience.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288651691-14914-1-git-send-email-weber@corscience.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 05 novembre 2010 à 11:40 -0700, Paul E. McKenney a écrit :
-
-> OK, so I cannot resist the challenge...  ;-)
+* Thomas Weber <weber@corscience.de> [101101 14:38]:
+> This patch fixes the following error:
 > 
+> >regulator: VMMC1: 1850 <--> 3150 mV at 3000 mV normal
+> standby
+> >twl_reg twl_reg.6: can't register VMMC1, -22
+> >twl_reg: probe of twl_reg.6 failed with error -22
 
-I knew that ;)
+Adding this into omap-fixes.
 
-> Suppose that the atomic_inc_not_zero_hint() is in common code that might
-> be invoked from a cleanup path.  On the cleanup path, perhaps within an
-> RCU callback, if the reference is zero, we have the only reference and
-> thus don't need to increment the reference count.  On the other hand,
-> if the reference is non-zero, we want to obtain a reference in order
-> to safely attempt to encourage the other reference holder to let go
-> more quickly.
+Tony
+ 
+> Signed-off-by: Thomas Weber <weber@corscience.de>
+> ---
+>  arch/arm/mach-omap2/board-devkit8000.c |    3 ---
+>  1 files changed, 0 insertions(+), 3 deletions(-)
 > 
-> Perhaps a bit of a stretch, but why not just replace the above
-> "return 0" with "atomic_inc_not_zero(v)"?  It will usually be
-> compiled out, right?
-
-Yes indeed, thanks !
-
-
-
+> diff --git a/arch/arm/mach-omap2/board-devkit8000.c b/arch/arm/mach-omap2/board-devkit8000.c
+> index 067f437..53ac762 100644
+> --- a/arch/arm/mach-omap2/board-devkit8000.c
+> +++ b/arch/arm/mach-omap2/board-devkit8000.c
+> @@ -242,9 +242,6 @@ static int devkit8000_twl_gpio_setup(struct device *dev,
+>  	mmc[0].gpio_cd = gpio + 0;
+>  	omap2_hsmmc_init(mmc);
+>  
+> -	/* link regulators to MMC adapters */
+> -	devkit8000_vmmc1_supply.dev = mmc[0].dev;
+> -
+>  	/* TWL4030_GPIO_MAX + 1 == ledB, PMU_STAT (out, active low LED) */
+>  	gpio_leds[2].gpio = gpio + TWL4030_GPIO_MAX + 1;
+>  
+> -- 
+> 1.7.3.2
+> 
