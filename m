@@ -1,123 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198Ab0KECgI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 22:36:08 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:57184 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670Ab0KECgH (ORCPT
+	id S1753250Ab0KECjZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 22:39:25 -0400
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:16502
+	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752670Ab0KECjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 22:36:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Hohha05FT1GiG6+zkzwTR8aY+xtsphy06BiWGU7IOcSV+eoXI4ZWzuFWpZNSCKlDcn
-         QOaF2weK2/eb7QvU0AyVKwhfA0fBDf8FKmr5MuQS2PViz448m7CIWtNruzg+L+8cJjMO
-         xIcgltxCVSO0xxVBmngWb1gl3pjP2xHk3dn4I=
+	Thu, 4 Nov 2010 22:39:22 -0400
+X-SpamScore: -18
+X-BigFish: VPS-18(zzbb2dKbb2cK1432N98dNzz1202hzzz2fh2a8h637h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);(null);(null)
+Message-ID: <4CD36E41.50505@am.sony.com>
+Date: Thu, 4 Nov 2010 19:38:57 -0700
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Thunderbird/3.1.3
 MIME-Version: 1.0
-In-Reply-To: <20101104015249.GD19646@google.com>
-References: <20101028191523.GA14972@google.com>
-	<20101101012322.605C.A69D9226@jp.fujitsu.com>
-	<20101101182416.GB31189@google.com>
-	<AANLkTimCjUgy9sN5QzxwW960v9eNWAjMBdq3H6P20NUa@mail.gmail.com>
-	<20101104015249.GD19646@google.com>
-Date: Fri, 5 Nov 2010 11:36:05 +0900
-Message-ID: <AANLkTim45zjeVoeb3xGFxGa=UzZAz_pV_qUv8o0P_274@mail.gmail.com>
-Subject: Re: [PATCH] RFC: vmscan: add min_filelist_kbytes sysctl for
- protecting the working set
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+To: Marcus Meissner <meissner@suse.de>
+CC: Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jason.wessel@windriver.com" <jason.wessel@windriver.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "tj@kernel.org" <tj@kernel.org>, "mort@sgi.com" <mort@sgi.com>,
+        "akpm@osdl.org" <akpm@osdl.org>,
+        "security@kernel.org" <security@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, wad@chromium.org, olofj@chromium.org,
-        hughd@chromium.org
-Content-Type: text/plain; charset=ISO-8859-1
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of
+ attacking
+References: <20101104100914.GC25118@suse.de> <20101104114648.GA23381@elte.hu> <20101104122906.GH25118@suse.de>
+In-Reply-To: <20101104122906.GH25118@suse.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Reverse-DNS: mail7.fw-bc.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 4, 2010 at 10:52 AM, Mandeep Singh Baines <msb@chromium.org> wrote:
-> Minchan Kim (minchan.kim@gmail.com) wrote:
->> On Tue, Nov 2, 2010 at 3:24 AM, Mandeep Singh Baines <msb@chromium.org> wrote:
->> > I see memcg more as an isolation mechanism but I guess you could use it to
->> > isolate the working set from anon browser tab data as Kamezawa suggests.
+On 11/04/10 05:29, Marcus Meissner wrote:
+> On Thu, Nov 04, 2010 at 12:46:48PM +0100, Ingo Molnar wrote:
 >>
+>> * Marcus Meissner <meissner@suse.de> wrote:
 >>
->> I don't think current VM behavior has a problem.
->> Current problem is that you use up many memory than real memory.
->> As system memory without swap is low, VM doesn't have a many choice.
->> It ends up evict your working set to meet for user request. It's very
->> natural result for greedy user.
->>
->> Rather than OOM notifier, what we need is memory notifier.
->> AFAIR, before some years ago, KOSAKI tried similar thing .
->> http://lwn.net/Articles/268732/
->
-> Thanks! This is perfect. I wonder why its not merged. Was a different
-> solution eventually implemented? Is there another way of doing the
-> same thing?
+>>> Hi,
+>>>
+>>> Making /proc/kallsyms readable only for root makes it harder for attackers to 
+>>> write generic kernel exploits by removing one source of knowledge where things are 
+>>> in the kernel.
 
-If my remember is right, there was timing issue.
-When the application is notified, it was too late to handle it.
-Mabye KOSAKI can explain more detail problem.
+< snip >
 
-I think we need some leveling mechanism.
-For example, user can set the limits 30M, 20M, 10M, 5M.
+>> So what does a distribution like Suse expect from this change alone? Those have 
+>> public packages in rpms which can be downloaded by anyone, so it makes little sense 
+>> to hide it - unless _all_ version information is hidden.
+> 
+> It is the first patch, mostly an acceptance test balloon.
+> 
+> There are several other files handing information out, but kallsyms has
+> it all very nice and ready.
+> 
+> (timer_list, /proc/*/stat*, sl?binfo )
+>  
+>> So i'd like to see a _full_ version info sandboxing patch that thinks through all 
+>> the angles and restricts uname -r kernel version info as well, and makes dmesg 
+>> unaccessible to users - and closes a few other information holes as well that give 
+>> away the exact kernel version - _that_ together will make it hard to blindly attack 
+>> a very specific kernel version.
+> 
+> I am personally thinking of a "small steps" philosophy, one step after the other.
 
-If free memory is low below 30M, master application can require
-freeing of extra memory of background sleeping application.
-If free memory is low below 20M, master application can require
-existing of background sleeping application.
-If free memory is low below 10M, master application can kill
-none-critical application.
-If free memory is low below 5M, master application can require freeing
-of memory of critical application.
+< snip >
 
-I think this mechanism would be useful memcg, too.
+The idea of trying to hide the kernel version is absurd.  The number of different
+places that can provide a precise fingerprint of a kernel version, or a small range of
+possible kernel versions is immense.  Closing all of those places makes use and
+administration of a system more difficult, and encourages frequent use of su.
 
->
->> (I can't remember why KOSAKI quit it exactly, AFAIR, some signal time
->> can't meet yours requirement. I mean when the user receive the memory
->> low signal, it's too late. Maybe there are other causes for KOSAKi to
->> quit it.)
->> Anyway, If the system memory is low, your intelligent middleware can
->> control it very well than VM.
->
-> Agree.
->
->> In this chance, how about improving it?
->> Mandeep, Could you feel needing this feature?
->>
->
-> mem_notify seems perfect.
+Dumb examples of version clues (beyond the obvious simple ones):
 
-BTW, Regardless of mem_notify, I think this patch is useful in general
-system, too.
-We have to progress this patch.
+$ gcc -v
+Target: x86_64-redhat-linux
+gcc version 4.4.4 20100630 (Red Hat 4.4.4-10) (GCC)
 
->
->>
->>
->> > Regards,
->> > Mandeep
->> >
->> >> Thanks.
->> >>
->> >>
->> >>
->> >
->>
->>
->>
->> --
->> Kind regards,
->> Minchan Kim
->
+$ rpm -qi gcc
+Release     : 10.fc13                       Build Date: Wed Jun 30 02:54:10 2010
+
+$ rpm -qi kernel
+Version     : 2.6.33.3                          Vendor: Fedora Project
+Release     : 85.fc13                       Build Date: Thu May  6 11:35:36 2010
+
+$ ls -l /lib64
+$ ls -l /boot
+$ lsmod
 
 
+-Frank
 
--- 
-Kind regards,
-Minchan Kim
