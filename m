@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948Ab0KECAq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 22:00:46 -0400
-Received: from qmta14.emeryville.ca.mail.comcast.net ([76.96.27.212]:37730
-	"EHLO qmta14.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752087Ab0KECAo (ORCPT
+	id S1753173Ab0KECQl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 22:16:41 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:53422 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753099Ab0KECQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 22:00:44 -0400
-Date: Thu, 4 Nov 2010 20:00:13 -0600
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Venkatesh Pallipadi <venki@google.com>, Nikhil Rao <ncrao@google.com>,
-        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
-        linux-kernel@vger.kernel.org
-Subject: Re: divide error in select_task_rq_fair()
-Message-ID: <20101105020013.GA13484@helgaas.com>
-References: <20101104041236.GA9389@helgaas.com>
- <1288847992.2718.37.camel@edumazet-laptop>
- <20101104142853.GA11656@helgaas.com>
- <1288881474.2659.123.camel@edumazet-laptop>
+	Thu, 4 Nov 2010 22:16:40 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Greg KH <greg@kroah.com>
+Subject: Re: [02/02] TTY: create drivers/tty/vt and move the vt code there
+Date: Fri, 5 Nov 2010 03:17:18 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: Greg KH <gregkh@suse.de>, Jiri Slaby <jslaby@suse.cz>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        Rogier Wolff <R.E.Wolff@bitwizard.nl>,
+        "Michael H. Warfield" <mhw@wittsend.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+References: <20101104222906.GA3390@kroah.com> <20101104223001.GB3390@kroah.com> <20101104223100.GC3390@kroah.com>
+In-Reply-To: <20101104223100.GC3390@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1288881474.2659.123.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011050317.18360.arnd@arndb.de>
+X-Provags-ID: V02:K0:riA3ghW2GK+Mfd20wcZWj8645tRNPLG4F4hCkfbMBUj
+ +1QJHmXKohQIRyVYIbFdN2USxQ6cvT+vbZYWBu3OgEKD0g9sCO
+ JfmwpFpn36rHYsVpJQF37lwhkexhfkzRSVeuEbNkbsUo67aypH
+ XkPt6EWIo9fcmGGcuh9K7oesIEEIh/9vEQornlM2Pp1d9fmXWS
+ nSwB7ipxtE0tmfLBcp+9Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 04, 2010 at 03:37:54PM +0100, Eric Dumazet wrote:
-> Le jeudi 04 novembre 2010 à 08:28 -0600, Bjorn Helgaas a écrit :
-> > On Thu, Nov 04, 2010 at 06:19:52AM +0100, Eric Dumazet wrote:
-> > > Le mercredi 03 novembre 2010 à 22:12 -0600, Bjorn Helgaas a écrit :
-> > > > Hi,
-> > > > 
-> > > > With current upstream, I see the following crash at boot-time:
-> > > > 
-> > > >     Brought up 64 CPUs
-> > > >     Total of 64 processors activated (289366.52 BogoMIPS).
-> > > >     divide error: 0000 [#1] SMP 
-> > > >     last sysfs file: 
-> > > >     CPU 1 
-> > > >     Modules linked in:
-> > > > 
-> > > >     Pid: 2, comm: kthreadd Not tainted 2.6.37-rc1-00027-gff8b16d #271 /ProLiant DL980 G7
-> > > >     RIP: 0010:[<ffffffff81034645>]  [<ffffffff81034645>] select_task_rq_fair+0x62a/0x7a0
-> > > > 
-> > > > Complete dmesg below; let me know if you need more info.
-> > > 
-> > > Is the machine runs OK if you build a kernel with NR_CPUS=128 ?
-> > 
-> > Nope, it fails the same way with NR_CPUS=128.  Dmesg below.
+On Thursday 04 November 2010, Greg KH wrote:
+> From: Greg Kroah-Hartman <gregkh@suse.de>
 > 
-> Sorry, just try 256 or 512, it seems you have a pretty big machine ?
+> The vt and other related code is moved into the drivers/tty/vt directory.
+> 
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Jiri Slaby <jslaby@suse.cz>
+> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-Is that going to help you debug the problem?  The solution is not going
-to be something like "set NR_CPUS=x".  If NR_CPUS is too small, the
-machine should still *boot*, even if we can't use all the CPUs in the
-box.
-
-Bjorn
+Acked-by: Arnd Bergmann <arnd@arndb.de>
