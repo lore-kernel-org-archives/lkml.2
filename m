@@ -1,63 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753732Ab0KEI6f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 04:58:35 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:64498 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753523Ab0KEI6d (ORCPT
+	id S1753762Ab0KEJAu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 05:00:50 -0400
+Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:48496 "EHLO
+	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752307Ab0KEJAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 04:58:33 -0400
-X-Nat-Received: from [202.181.97.72]:62999 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1288947487.11027
-Message-Id: <201011050858.oA58w7Pl070809@www262.sakura.ne.jp>
-Subject: [PATCH 2.6.37-rc1 x86] Build failure with old binutils.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: heukelum@fastmail.fm, mingo@elte.hu, jbeulich@novell.com
-Cc: linux-kernel@vger.kernel.org
+	Fri, 5 Nov 2010 05:00:47 -0400
+Message-ID: <4CD3C795.3050006@euromail.se>
+Date: Fri, 05 Nov 2010 10:00:05 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+CC: Jean Delvare <khali@linux-fr.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: [lm-sensors] [PATCH 8/8] hwmon: applesmc: Update copyright information
+References: <1288511434-5662-1-git-send-email-rydberg@euromail.se> <1288511434-5662-9-git-send-email-rydberg@euromail.se> <20101105030923.GG28308@ericsson.com>
+In-Reply-To: <20101105030923.GG28308@ericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Date: Fri, 05 Nov 2010 17:58:07 +0900
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 05112010 #4215335, status: clean
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1PEI9W-0007Xy-C8.
+X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PEI9W-0007Xy-C8 f0078aff51c831085d15b34666b08236
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  AS      arch/x86/kernel/entry_32.o
-arch/x86/kernel/entry_32.S: Assembler messages:
-arch/x86/kernel/entry_32.S:398: Error: too many positional arguments
-make[2]: *** [arch/x86/kernel/entry_32.o] Error 1
-make[1]: *** [arch/x86/kernel] Error 2
-make: *** [arch/x86] Error 2
+>
 
-It seems that old binutils cannot deal
+> One suggestion - since you did that much rework, it would be nice if you could fix
+> the remaining few checkpatch errors in the file as well (and possibly the warnings).
 
-  pushl_cfi (TI_sysenter_return-THREAD_SIZE_asm+8+4*4)(%esp)
 
-line. The pushl_cfi is a macro defined as:
+Absolutely. Regarding the warnings, I was deliberately leaving the over-80 lines
+since they appear in static array listings, and as such seem to be pretty common
+in the kernel. I know these things have been discussed before. :-)
 
-  .macro pushl_cfi reg
-  pushl \reg
-  CFI_ADJUST_CFA_OFFSET 4
-  .endm
-
-$ as --version
-GNU assembler 2.15
-
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
----
- arch/x86/kernel/entry_32.S |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
---- linux-2.6.37-rc1.orig/arch/x86/kernel/entry_32.S
-+++ linux-2.6.37-rc1/arch/x86/kernel/entry_32.S
-@@ -395,7 +395,8 @@ sysenter_past_esp:
- 	 * A tiny bit of offset fixup is necessary - 4*4 means the 4 words
- 	 * pushed above; +8 corresponds to copy_thread's esp0 setting.
- 	 */
--	pushl_cfi (TI_sysenter_return-THREAD_SIZE_asm+8+4*4)(%esp)
-+	pushl (TI_sysenter_return-THREAD_SIZE_asm+8+4*4)(%esp)
-+	CFI_ADJUST_CFA_OFFSET 4
- 	CFI_REL_OFFSET eip, 0
- 
- 	pushl_cfi %eax
+Cheers,
+Henrik
