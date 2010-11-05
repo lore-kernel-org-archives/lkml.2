@@ -1,59 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508Ab0KEGau (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 02:30:50 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:33278 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309Ab0KEGas (ORCPT
+	id S1751637Ab0KEGjI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 02:39:08 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:58098 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351Ab0KEGjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 02:30:48 -0400
+	Fri, 5 Nov 2010 02:39:06 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=RydptJRXOr7dfqFGeCsgpPU4LeEP8sl0hJcsXDwpp5q97Clt31Fl0fBPUMtzYQFXtu
-         P+vDyYdOEcqJv2IriYEYx6l9DZM6wIUQOE3ZRS87Csf0KzCNBQDELS0Jk+btCTjLWnDg
-         h/jOaXgH6ECczEPaeiS3Tn1HK1gkoO2Yy0FXA=
-Subject: Re: [PATCH 46/49] net/netfilter: Use vzalloc
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Joe Perches <joe@perches.com>, Jesper Juhl <jj@chaosbits.net>
-Cc: Jiri Kosina <trivial@kernel.org>, Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <7d6da34b7e84955795717b0241000a0701cd5b34.1288925425.git.joe@perches.com>
-References: <alpine.DEB.2.00.1011031108260.11625@router.home>
-	 <7d6da34b7e84955795717b0241000a0701cd5b34.1288925425.git.joe@perches.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 05 Nov 2010 07:30:40 +0100
-Message-ID: <1288938640.3234.12.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=ezgvC0D/krM9zi2OqNZakn1esw2bhBbLRPk7ft+pIQIRXVLcrftgJPycbVaov7NgXd
+         RyUzZmtykpBTik3f6ey2yGZbxLFmMvuF+b2H7oBvpn+8+SGk8u2QWIAcVQi1ShgiS9Qw
+         NmSmpK0Nm1OcJUHDWJLDDCT2JEtHwhLO9dzk4=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTiknaHiWUzOH+MjAujk_+0JfX2x2auRCgFjUqhU-@mail.gmail.com>
+References: <AANLkTikL4Ng0mJmeO0p_gtZWticd6NO3b9daHcRX4q1Q@mail.gmail.com>
+	<AANLkTiknaHiWUzOH+MjAujk_+0JfX2x2auRCgFjUqhU-@mail.gmail.com>
+Date: Fri, 5 Nov 2010 15:39:05 +0900
+Message-ID: <AANLkTimtyAwuiG-yeKUVrviVB513vX9_q-2yjuo1mjTu@mail.gmail.com>
+Subject: Re: mmotm 2010-11-03-12-17: memcg build fail
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Dave Young <hidave.darkstar@gmail.com>
+Cc: Greg Thelen <gthelen@google.com>, Andrea Righi <arighi@develer.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 04 novembre 2010 à 20:08 -0700, Joe Perches a écrit :
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  net/netfilter/x_tables.c |    5 ++---
->  1 files changed, 2 insertions(+), 3 deletions(-)
+On Fri, Nov 5, 2010 at 2:55 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
+> Forgot cc lkml
+>
+> On Fri, Nov 5, 2010 at 1:54 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
+>> Hi,
+>>
+>> Build failed without __divdi3 on i386, known issue?
+>>
+>> mm/built-in.o: In function `mem_cgroup_dirty_info':
+>> /home/dave/vdb/build/mm/linux-2.6.36/mm/memcontrol.c:1251: undefined
+>> reference to `__divdi3'
+>> /home/dave/vdb/build/mm/linux-2.6.36/mm/memcontrol.c:1259: undefined
+>> reference to `__divdi3'
+>> make: *** [.tmp_vmlinux1] Error 1
+>>
 
-So many 'vzalloc' patches for net tree... 
+We should have used do_div.
+Below patch solve the problem?
 
-I had _one_ patch, waiting that David actually had vzalloc() in its tree
-before sending it.
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 76386f4..8e6bb59 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1247,18 +1247,19 @@ bool mem_cgroup_dirty_info(unsigned long
+sys_available_mem,
+        if (dirty_param.dirty_bytes)
+                info->dirty_thresh =
+                        DIV_ROUND_UP(dirty_param.dirty_bytes, PAGE_SIZE);
+-       else
+-               info->dirty_thresh =
+-                       (dirty_param.dirty_ratio * available_mem) / 100;
++       else {
++               info->dirty_thresh = dirty_param.dirty_ratio * available_mem;
++               do_div(info->dirty_thresh, 100);
++       }
 
-Given Jesper Juhl was doing this work, could you please take another
-one, please ?
+        if (dirty_param.dirty_background_bytes)
+                info->background_thresh =
+                        DIV_ROUND_UP(dirty_param.dirty_background_bytes,
+                                     PAGE_SIZE);
+-       else
+-               info->background_thresh =
+-                       (dirty_param.dirty_background_ratio *
+-                              available_mem) / 100;
++       else {
++               info->background_thresh =
+dirty_param.dirty_background_ratio * available_mem;
++               do_div(info->background_thresh, 100);
++       }
 
-For example, explaining him how to use other tools than "bash+egrep
-+manual inspection" as he mentioned in a previous mail.
+        info->nr_reclaimable =
+                mem_cgroup_page_stat(MEMCG_NR_RECLAIM_PAGES);
 
-Really Joe, your behavior should be smarter than that.
+>> --
+>> Regards
+>> dave
+>>
+>
+>
+>
+> --
+> Regards
+> dave
+>
 
-Thanks
 
 
+-- 
+Kind regards,
+Minchan Kim
