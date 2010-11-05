@@ -1,71 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754634Ab0KER1p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 13:27:45 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:18612 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753202Ab0KER1n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 13:27:43 -0400
-Message-ID: <4CD43E53.4010909@kernel.org>
-Date: Fri, 05 Nov 2010 10:26:43 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.14) Gecko/20101013 SUSE/3.0.9 Thunderbird/3.0.9
+	id S1754646Ab0KERao (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 13:30:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19219 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752924Ab0KERam (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 13:30:42 -0400
+From: Alex Williamson <alex.williamson@redhat.com>
+Subject: [PATCH 1/2] vfio: Fix config space virtualization
+To: pugs@cisco.com
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        kvm@vger.kernel.org, alex.williamson@redhat.com
+Date: Fri, 05 Nov 2010 11:30:40 -0600
+Message-ID: <20101105173021.1638.59462.stgit@s20.home>
+In-Reply-To: <20101105171624.1638.33349.stgit@s20.home>
+References: <20101105171624.1638.33349.stgit@s20.home>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@novell.com>
-CC: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH] x86-64: adjust section annotations in AMD Fam10 MMCONF
-  enabling code
-References: <4CD2DE1E0200007800020990@vpn.id2.novell.com>
-In-Reply-To: <4CD2DE1E0200007800020990@vpn.id2.novell.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04/2010 08:23 AM, Jan Beulich wrote:
-> check_enable_amd_mmconf_dmi() gets called only for the BSP, hence
-> everything hanging off of it can be __init*.
-> 
-> Signed-off-by: Jan Beulich <jbeulich@novell.com>
-> Cc: Yinghai Lu <yinghai@kernel.org>
-> 
-> ---
->  arch/x86/kernel/mmconf-fam10h_64.c |    7 ++++---
->  1 file changed, 4 insertions(+), 3 deletions(-)
-> 
-> --- linux-2.6.37-rc1/arch/x86/kernel/mmconf-fam10h_64.c
-> +++ 2.6.37-rc1-x86_64-mmconf-fam10h-sections/arch/x86/kernel/mmconf-fam10h_64.c
-> @@ -217,13 +217,13 @@ void __cpuinit fam10h_check_enable_mmcfg
->  	wrmsrl(address, val);
->  }
->  
-> -static int __devinit set_check_enable_amd_mmconf(const struct dmi_system_id *d)
-> +static int __init set_check_enable_amd_mmconf(const struct dmi_system_id *d)
->  {
->          pci_probe |= PCI_CHECK_ENABLE_AMD_MMCONF;
->          return 0;
->  }
->  
-> -static const struct dmi_system_id __cpuinitconst mmconf_dmi_table[] = {
-> +static const struct dmi_system_id __initconst mmconf_dmi_table[] = {
->          {
->                  .callback = set_check_enable_amd_mmconf,
->                  .ident = "Sun Microsystems Machine",
-> @@ -234,7 +234,8 @@ static const struct dmi_system_id __cpui
->  	{}
->  };
->  
-> -void __cpuinit check_enable_amd_mmconf_dmi(void)
-> +/* Called from a __cpuinit function, but only on the BSP. */
-> +void __ref check_enable_amd_mmconf_dmi(void)
->  {
->  	dmi_check_system(mmconf_dmi_table);
->  }
-> 
-> 
-> 
+We're currently masking out virtualized bits when updating both
+physical device registers and vconfig.  I think we really want
+vconfig to track virtualized bits, otherwise they're not much
+different that unwritable bits.
 
-Acked-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+---
+
+ drivers/vfio/vfio_pci_config.c |  118 ++++++++++------------------------------
+ 1 files changed, 29 insertions(+), 89 deletions(-)
+
+diff --git a/drivers/vfio/vfio_pci_config.c b/drivers/vfio/vfio_pci_config.c
+index 8304316..bb38dbe 100644
+--- a/drivers/vfio/vfio_pci_config.c
++++ b/drivers/vfio/vfio_pci_config.c
+@@ -820,21 +820,10 @@ static inline int vfio_write_config_byte(struct vfio_dev *vdev,
+ }
+ 
+ /* handle virtualized fields in the basic config space */
+-static u8 vfio_virt_basic(struct vfio_dev *vdev, int write,
++static void vfio_virt_basic(struct vfio_dev *vdev, int write,
+ 				u16 pos, u16 off, u8 val, u8 newval)
+ {
+-	switch (off) {
+-	/*
+-	 * vendor and device are virt because they don't
+-	 * show up otherwise for sr-iov vfs
+-	 */
+-	case PCI_VENDOR_ID:
+-	case PCI_VENDOR_ID + 1:
+-	case PCI_DEVICE_ID:
+-	case PCI_DEVICE_ID + 1:
+-		/* read only */
+-		val = vdev->vconfig[pos];
+-		break;
++	switch (pos) {
+ 	case PCI_COMMAND:
+ 		/*
+ 		 * If the real mem or IO enable bits are zero
+@@ -842,11 +831,15 @@ static u8 vfio_virt_basic(struct vfio_dev *vdev, int write,
+ 		 * Restore the real BARs before allowing those
+ 		 * bits to re-enable
+ 		 */
+-		if (vdev->pdev->is_virtfn)
+-			val |= PCI_COMMAND_MEMORY;
+ 		if (write) {
+ 			int upd = 0;
+ 
++			if (vfio_read_config_byte(vdev, pos, &val) < 0)
++				return;
++
++			if (vdev->pdev->is_virtfn)
++				val |= PCI_COMMAND_MEMORY;
++
+ 			upd = (newval & PCI_COMMAND_MEMORY) >
+ 			      (val & PCI_COMMAND_MEMORY);
+ 			upd += (newval & PCI_COMMAND_IO) >
+@@ -856,61 +849,26 @@ static u8 vfio_virt_basic(struct vfio_dev *vdev, int write,
+ 			vfio_write_config_byte(vdev, pos, newval);
+ 		}
+ 		break;
+-	case PCI_BASE_ADDRESS_0:
+-	case PCI_BASE_ADDRESS_0+1:
+-	case PCI_BASE_ADDRESS_0+2:
+-	case PCI_BASE_ADDRESS_0+3:
+-	case PCI_BASE_ADDRESS_1:
+-	case PCI_BASE_ADDRESS_1+1:
+-	case PCI_BASE_ADDRESS_1+2:
+-	case PCI_BASE_ADDRESS_1+3:
+-	case PCI_BASE_ADDRESS_2:
+-	case PCI_BASE_ADDRESS_2+1:
+-	case PCI_BASE_ADDRESS_2+2:
+-	case PCI_BASE_ADDRESS_2+3:
+-	case PCI_BASE_ADDRESS_3:
+-	case PCI_BASE_ADDRESS_3+1:
+-	case PCI_BASE_ADDRESS_3+2:
+-	case PCI_BASE_ADDRESS_3+3:
+-	case PCI_BASE_ADDRESS_4:
+-	case PCI_BASE_ADDRESS_4+1:
+-	case PCI_BASE_ADDRESS_4+2:
+-	case PCI_BASE_ADDRESS_4+3:
+-	case PCI_BASE_ADDRESS_5:
+-	case PCI_BASE_ADDRESS_5+1:
+-	case PCI_BASE_ADDRESS_5+2:
+-	case PCI_BASE_ADDRESS_5+3:
+-	case PCI_ROM_ADDRESS:
+-	case PCI_ROM_ADDRESS+1:
+-	case PCI_ROM_ADDRESS+2:
+-	case PCI_ROM_ADDRESS+3:
++	case PCI_BASE_ADDRESS_0 ... PCI_BASE_ADDRESS_5 + 3:
++	case PCI_ROM_ADDRESS ... PCI_ROM_ADDRESS + 3:
+ 		if (write) {
+-			vdev->vconfig[pos] = newval;
+ 			vdev->bardirty = 1;
+ 		} else {
+ 			if (vdev->bardirty)
+ 				vfio_bar_fixup(vdev);
+-			val = vdev->vconfig[pos];
+ 		}
+ 		break;
+-	default:
+-		if (write)
+-			vdev->vconfig[pos] = newval;
+-		else
+-			val = vdev->vconfig[pos];
+-		break;
+ 	}
+-	return val;
+ }
+ 
+ /*
+  * handle virtualized fields in msi capability
+  * easy, except for multiple-msi fields in flags byte
+  */
+-static u8 vfio_virt_msi(struct vfio_dev *vdev, int write,
++static void vfio_virt_msi(struct vfio_dev *vdev, int write,
+ 				u16 pos, u16 off, u8 val, u8 newval)
+ {
+-	if (off == PCI_MSI_FLAGS) {
++	if (pos == PCI_MSI_FLAGS) {
+ 		u8 num;
+ 
+ 		if (write) {
+@@ -924,18 +882,12 @@ static u8 vfio_virt_msi(struct vfio_dev *vdev, int write,
+ 			vfio_write_config_byte(vdev, pos, newval);
+ 		} else {
+ 			if (vfio_read_config_byte(vdev, pos, &val) < 0)
+-				return 0;
++				return;
+ 			val &= ~PCI_MSI_FLAGS_QMASK;
+ 			val |= vdev->msi_qmax << 1;
++			vdev->vconfig[pos] = val;
+ 		}
+-		return val;
+ 	}
+-
+-	if (write)
+-		vdev->vconfig[pos] = newval;
+-	else
+-		val = vdev->vconfig[pos];
+-	return val;
+ }
+ 
+ static int vfio_config_rwbyte(int write,
+@@ -1014,25 +966,25 @@ static int vfio_config_rwbyte(int write,
+ 		return 0;
+ 	}
+ 
++	val = vdev->vconfig[pos];
+ 	if (write) {
++		u8 pval, rbits = (~virt) & wr;
++
+ 		if (copy_from_user(&newval, buf, 1))
+ 			return -EFAULT;
+-	}
+-	/*
+-	 * We get here if there are some virt bits
+-	 * handle remaining real bits, if any
+-	 */
+-	if (~virt) {
+-		u8 rbits = (~virt) & wr;
+ 
+-		ret = vfio_read_config_byte(vdev, pos, &val);
++		ret = vfio_read_config_byte(vdev, pos, &pval);
+ 		if (ret < 0)
+ 			return ret;
+-		if (write && rbits) {
+-			val &= ~rbits;
+-			val |= (newval & rbits);
+-			vfio_write_config_byte(vdev, pos, val);
++
++		if (rbits) {
++			pval &= ~rbits;
++			pval |= (newval & rbits);
++			pci_user_write_config_byte(vdev->pdev, pos, pval);
+ 		}
++		vdev->vconfig[pos] = (pval & ~(virt | wr)) |
++				     (val & (virt & ~wr)) |
++				     (newval & wr);
+ 	}
+ 	/*
+ 	 * Now handle entirely virtual fields
+@@ -1040,32 +992,20 @@ static int vfio_config_rwbyte(int write,
+ 	if (pos < PCI_CFG_SPACE_SIZE) {
+ 		switch (cap) {
+ 		case PCI_CAP_ID_BASIC:	/* virtualize BARs */
+-			val = vfio_virt_basic(vdev, write,
+-						pos, off, val, newval);
++			vfio_virt_basic(vdev, write, pos, off, val, newval);
+ 			break;
+ 		case PCI_CAP_ID_MSI:	/* virtualize (parts of) MSI */
+-			val = vfio_virt_msi(vdev, write,
+-						pos, off, val, newval);
+-			break;
+-		default:
+-			if (write)
+-				vdev->vconfig[pos] = newval;
+-			else
+-				val = vdev->vconfig[pos];
++			vfio_virt_msi(vdev, write, pos, off, val, newval);
+ 			break;
+ 		}
+ 	} else {
+ 		/* no virt fields yet in ecaps */
+ 		switch (cap) {	/* extended capabilities */
+ 		default:
+-			if (write)
+-				vdev->vconfig[pos] = newval;
+-			else
+-				val = vdev->vconfig[pos];
+ 			break;
+ 		}
+ 	}
+-	if (!write && copy_to_user(buf, &val, 1))
++	if (!write && copy_to_user(buf, &vdev->vconfig[pos], 1))
+ 		return -EFAULT;
+ 	return 0;
+ }
+
