@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081Ab0KEDNT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 23:13:19 -0400
-Received: from mail.perches.com ([173.55.12.10]:4140 "EHLO mail.perches.com"
+	id S1753739Ab0KEDIx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 23:08:53 -0400
+Received: from mail.perches.com ([173.55.12.10]:4094 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753816Ab0KEDI5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 23:08:57 -0400
+	id S1753624Ab0KEDIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 23:08:48 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
-        Steve Hodgson <shodgson@solarflare.com>,
-        Ben Hutchings <bhutchings@solarflare.com>, netdev@vger.kernel.org,
+Cc: Divy Le Ray <divy@chelsio.com>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 30/49] drivers/net/sfc: Use vzalloc
-Date: Thu,  4 Nov 2010 20:07:54 -0700
-Message-Id: <70ba2984e2d82d5f7dd6733f8466e3b2a8774747.1288925425.git.joe@perches.com>
+Subject: [PATCH 17/49] drivers/net/cxgb3: Use vzalloc
+Date: Thu,  4 Nov 2010 20:07:41 -0700
+Message-Id: <86e0ae42a56bc458519fa0a550bc3b1c50cd86bc.1288925424.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <alpine.DEB.2.00.1011031108260.11625@router.home>
 References: <alpine.DEB.2.00.1011031108260.11625@router.home>
@@ -26,25 +24,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/sfc/filter.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ drivers/net/cxgb3/cxgb3_offload.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/sfc/filter.c b/drivers/net/sfc/filter.c
-index 52cb608..44500b5 100644
---- a/drivers/net/sfc/filter.c
-+++ b/drivers/net/sfc/filter.c
-@@ -428,10 +428,9 @@ int efx_probe_filters(struct efx_nic *efx)
- 					     GFP_KERNEL);
- 		if (!table->used_bitmap)
- 			goto fail;
--		table->spec = vmalloc(table->size * sizeof(*table->spec));
-+		table->spec = vzalloc(table->size * sizeof(*table->spec));
- 		if (!table->spec)
- 			goto fail;
--		memset(table->spec, 0, table->size * sizeof(*table->spec));
- 	}
+diff --git a/drivers/net/cxgb3/cxgb3_offload.c b/drivers/net/cxgb3/cxgb3_offload.c
+index bcf0753..5e632e2 100644
+--- a/drivers/net/cxgb3/cxgb3_offload.c
++++ b/drivers/net/cxgb3/cxgb3_offload.c
+@@ -1164,12 +1164,11 @@ static void cxgb_redirect(struct dst_entry *old, struct dst_entry *new)
+  */
+ void *cxgb_alloc_mem(unsigned long size)
+ {
+-	void *p = kmalloc(size, GFP_KERNEL);
++	void *p = kzalloc(size, GFP_KERNEL);
  
- 	return 0;
+ 	if (!p)
+-		p = vmalloc(size);
+-	if (p)
+-		memset(p, 0, size);
++		p = vzalloc(size);
++
+ 	return p;
+ }
+ 
 -- 
 1.7.3.1.g432b3.dirty
 
