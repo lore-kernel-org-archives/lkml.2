@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab0KEDLd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 23:11:33 -0400
-Received: from mail.perches.com ([173.55.12.10]:4183 "EHLO mail.perches.com"
+	id S1753923Ab0KEDJJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 23:09:09 -0400
+Received: from mail.perches.com ([173.55.12.10]:4174 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753905Ab0KEDJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 23:09:08 -0400
+	id S1753866Ab0KEDJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 23:09:06 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Jan Harkes <jaharkes@cs.cmu.edu>, coda@cs.cmu.edu,
-        codalist@TELEMANN.coda.cs.cmu.edu, linux-kernel@vger.kernel.org
-Subject: [PATCH 42/49] include/linux/coda_linux.h: Use vzalloc
-Date: Thu,  4 Nov 2010 20:08:06 -0700
-Message-Id: <1f2c6fee2d755879872b5fdd5f81d9f23569ffdd.1288925425.git.joe@perches.com>
+Cc: reiserfs-devel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 39/49] fs/reiserfs: Use vzalloc
+Date: Thu,  4 Nov 2010 20:08:03 -0700
+Message-Id: <3d1cffb03168ee990700bb6a2943d18f6600d8e6.1288925425.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <alpine.DEB.2.00.1011031108260.11625@router.home>
 References: <alpine.DEB.2.00.1011031108260.11625@router.home>
@@ -24,48 +23,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- include/linux/coda_linux.h |   26 ++++++++++++++++----------
- 1 files changed, 16 insertions(+), 10 deletions(-)
+ fs/reiserfs/journal.c |    9 +++------
+ fs/reiserfs/resize.c  |    4 +---
+ 2 files changed, 4 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/coda_linux.h b/include/linux/coda_linux.h
-index 2e914d0..57460f3 100644
---- a/include/linux/coda_linux.h
-+++ b/include/linux/coda_linux.h
-@@ -55,19 +55,25 @@ unsigned short coda_flags_to_cflags(unsigned short);
- void coda_sysctl_init(void);
- void coda_sysctl_clean(void);
- 
--#define CODA_ALLOC(ptr, cast, size) do { \
--    if (size < PAGE_SIZE) \
--        ptr = kmalloc((unsigned long) size, GFP_KERNEL); \
--    else \
--        ptr = (cast)vmalloc((unsigned long) size); \
--    if (!ptr) \
--        printk("kernel malloc returns 0 at %s:%d\n", __FILE__, __LINE__); \
--    else memset( ptr, 0, size ); \
-+#define CODA_ALLOC(ptr, cast, size)					\
-+do {									\
-+	if (size < PAGE_SIZE)						\
-+		ptr = kzalloc((unsigned long) size, GFP_KERNEL);	\
-+	else								\
-+		ptr = vzalloc((unsigned long) size);			\
-+	if (!ptr)							\
-+		printk(KERN_ERR "kernel malloc returns 0 at %s:%d\n",	\
-+		       __FILE__, __LINE__);				\
- } while (0)
- 
- 
--#define CODA_FREE(ptr,size) \
--    do { if (size < PAGE_SIZE) kfree((ptr)); else vfree((ptr)); } while (0)
-+#define CODA_FREE(ptr, size)			\
-+do {						\
-+	if (size < PAGE_SIZE)			\
-+		kfree((ptr));			\
-+	else					\
-+		vfree((ptr));			\
-+} while (0)
- 
- /* inode to cnode access functions */
+diff --git a/fs/reiserfs/journal.c b/fs/reiserfs/journal.c
+index 076c8b1..d8a2592 100644
+--- a/fs/reiserfs/journal.c
++++ b/fs/reiserfs/journal.c
+@@ -292,14 +292,13 @@ int reiserfs_allocate_list_bitmaps(struct super_block *sb,
+ 	for (i = 0; i < JOURNAL_NUM_BITMAPS; i++) {
+ 		jb = jb_array + i;
+ 		jb->journal_list = NULL;
+-		jb->bitmaps = vmalloc(mem);
++		jb->bitmaps = vzalloc(mem);
+ 		if (!jb->bitmaps) {
+ 			reiserfs_warning(sb, "clm-2000", "unable to "
+ 					 "allocate bitmaps for journal lists");
+ 			failed = 1;
+ 			break;
+ 		}
+-		memset(jb->bitmaps, 0, mem);
+ 	}
+ 	if (failed) {
+ 		free_list_bitmaps(sb, jb_array);
+@@ -354,11 +353,10 @@ static struct reiserfs_journal_cnode *allocate_cnodes(int num_cnodes)
+ 	if (num_cnodes <= 0) {
+ 		return NULL;
+ 	}
+-	head = vmalloc(num_cnodes * sizeof(struct reiserfs_journal_cnode));
++	head = vzalloc(num_cnodes * sizeof(struct reiserfs_journal_cnode));
+ 	if (!head) {
+ 		return NULL;
+ 	}
+-	memset(head, 0, num_cnodes * sizeof(struct reiserfs_journal_cnode));
+ 	head[0].prev = NULL;
+ 	head[0].next = head + 1;
+ 	for (i = 1; i < num_cnodes; i++) {
+@@ -2703,14 +2701,13 @@ int journal_init(struct super_block *sb, const char *j_dev_name,
+ 	 * dependency inversion warnings.
+ 	 */
+ 	reiserfs_write_unlock(sb);
+-	journal = SB_JOURNAL(sb) = vmalloc(sizeof(struct reiserfs_journal));
++	journal = SB_JOURNAL(sb) = vzalloc(sizeof(struct reiserfs_journal));
+ 	if (!journal) {
+ 		reiserfs_warning(sb, "journal-1256",
+ 				 "unable to get memory for journal structure");
+ 		reiserfs_write_lock(sb);
+ 		return 1;
+ 	}
+-	memset(journal, 0, sizeof(struct reiserfs_journal));
+ 	INIT_LIST_HEAD(&journal->j_bitmap_nodes);
+ 	INIT_LIST_HEAD(&journal->j_prealloc_list);
+ 	INIT_LIST_HEAD(&journal->j_working_list);
+diff --git a/fs/reiserfs/resize.c b/fs/reiserfs/resize.c
+index b3a94d2..cfb5196 100644
+--- a/fs/reiserfs/resize.c
++++ b/fs/reiserfs/resize.c
+@@ -111,15 +111,13 @@ int reiserfs_resize(struct super_block *s, unsigned long block_count_new)
+ 		/* allocate additional bitmap blocks, reallocate array of bitmap
+ 		 * block pointers */
+ 		bitmap =
+-		    vmalloc(sizeof(struct reiserfs_bitmap_info) * bmap_nr_new);
++		    vzalloc(sizeof(struct reiserfs_bitmap_info) * bmap_nr_new);
+ 		if (!bitmap) {
+ 			/* Journal bitmaps are still supersized, but the memory isn't
+ 			 * leaked, so I guess it's ok */
+ 			printk("reiserfs_resize: unable to allocate memory.\n");
+ 			return -ENOMEM;
+ 		}
+-		memset(bitmap, 0,
+-		       sizeof(struct reiserfs_bitmap_info) * bmap_nr_new);
+ 		for (i = 0; i < bmap_nr; i++)
+ 			bitmap[i] = old_bitmap[i];
  
 -- 
 1.7.3.1.g432b3.dirty
