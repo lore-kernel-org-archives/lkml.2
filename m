@@ -1,88 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964Ab0KELLX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 07:11:23 -0400
-Received: from msa105.auone-net.jp ([61.117.18.165]:58714 "EHLO
-	msa105.auone-net.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752456Ab0KELLU (ORCPT
+	id S1753953Ab0KELOs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 07:14:48 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:61152 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013Ab0KELOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 07:11:20 -0400
-X-Greylist: delayed 391 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Nov 2010 07:11:20 EDT
-Date: Fri, 5 Nov 2010 20:04:42 +0900
-From: Kusanagi Kouichi <slash@ac.auone-net.jp>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Zachary Amsden <zamsden@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Glauber Costa <glommer@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] x86: pvclock: Remove leftover scale_delta function.
+	Fri, 5 Nov 2010 07:14:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=B/vIXj8iv1Q8C8QghiIKUPGrmalGDNYbe3Kwxwfc/SNzmpOeovd+FY4IpkK5dRxeMn
+         f4KGGEpaCd2HOV4mVjlbJCPEhaFfTnoye76e5IXBDII2moMAfJWtZdz92eyrKmaqY/il
+         0G9aeaAc+CjITDpk1tovJmMh75uJTXkYK1HU0=
+Date: Fri, 5 Nov 2010 13:14:43 +0200
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Roland McGrath <roland@redhat.com>,
+        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: task blocked for more than 120 seconds
+Message-ID: <20101105111443.GD3930@swordfish>
+References: <20101104155826.GC13818@swordfish.minsk.epam.com>
+ <20101104161943.GA6520@arch.trippelsdorf.de>
+ <1288891946.2039.31.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6zdv2QT/q3FMhpsV"
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Message-Id: <20101105110444.BAF6D6FC03B@msa105.auone-net.jp>
+In-Reply-To: <1288891946.2039.31.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 92580d64e16402762e2acc3022f065397c780425
-("x86: pvclock: Move scale_delta into common header")
-forgot to remove scale_delta.
 
-Signed-off-by: Kusanagi Kouichi <slash@ac.auone-net.jp>
----
- arch/x86/kernel/pvclock.c |   38 --------------------------------------
- 1 files changed, 0 insertions(+), 38 deletions(-)
+--6zdv2QT/q3FMhpsV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
-index bab3b9e..008b91e 100644
---- a/arch/x86/kernel/pvclock.c
-+++ b/arch/x86/kernel/pvclock.c
-@@ -41,44 +41,6 @@ void pvclock_set_flags(u8 flags)
- 	valid_flags = flags;
- }
- 
--/*
-- * Scale a 64-bit delta by scaling and multiplying by a 32-bit fraction,
-- * yielding a 64-bit result.
-- */
--static inline u64 scale_delta(u64 delta, u32 mul_frac, int shift)
--{
--	u64 product;
--#ifdef __i386__
--	u32 tmp1, tmp2;
--#endif
--
--	if (shift < 0)
--		delta >>= -shift;
--	else
--		delta <<= shift;
--
--#ifdef __i386__
--	__asm__ (
--		"mul  %5       ; "
--		"mov  %4,%%eax ; "
--		"mov  %%edx,%4 ; "
--		"mul  %5       ; "
--		"xor  %5,%5    ; "
--		"add  %4,%%eax ; "
--		"adc  %5,%%edx ; "
--		: "=A" (product), "=r" (tmp1), "=r" (tmp2)
--		: "a" ((u32)delta), "1" ((u32)(delta >> 32)), "2" (mul_frac) );
--#elif defined(__x86_64__)
--	__asm__ (
--		"mul %%rdx ; shrd $32,%%rdx,%%rax"
--		: "=a" (product) : "0" (delta), "d" ((u64)mul_frac) );
--#else
--#error implement me!
--#endif
--
--	return product;
--}
--
- static u64 pvclock_get_nsec_offset(struct pvclock_shadow_time *shadow)
- {
- 	u64 delta = native_read_tsc() - shadow->tsc_timestamp;
--- 
-1.7.2.3
+On (11/04/10 18:32), Peter Zijlstra wrote:
+> Subject: sched: Fixup cross sched_class wakeup preemption
+> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Date: Sun Oct 31 12:37:04 CET 2010
+>=20
+> Instead of dealing with sched classes inside each check_preempt_curr()
+> implementation, pull out this logic into the generic wakeup preemption
+> path.
+>=20
+> This fixes a hang in KVM (and others) where we are waiting for the
+> stop machine thread to run..
+>=20
 
+Hello,
+
+Peter, patch seems to work.
+
+
+Tested-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+
+
+	Sergey
+
+--6zdv2QT/q3FMhpsV
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iJwEAQECAAYFAkzT5yMACgkQfKHnntdSXjSMKgQAoOYFAMjyR/bDaUwHmyS7CaOj
+olq2k5iWZtzh2p+az/cnsn8exrRooTXon2N/6UF30CMr/J0e/oqr5of2Tfq3wiXj
+nw/NHIS/xisJwFvkdZlUbZ3v/n6TGZsodbJjnC0fnWRbQ0Waw5aM/0+nNr1jnqn0
+NQ57lRhE2eXtf7bssgY=
+=SeBw
+-----END PGP SIGNATURE-----
+
+--6zdv2QT/q3FMhpsV--
