@@ -1,101 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730Ab0KERmy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 13:42:54 -0400
-Received: from mail-in-16.arcor-online.net ([151.189.21.56]:40242 "EHLO
-	mail-in-16.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754658Ab0KERmw (ORCPT
+	id S1754725Ab0KERps (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 13:45:48 -0400
+Received: from smtp-out-084.synserver.de ([212.40.180.84]:1055 "HELO
+	smtp-out-086.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S1753193Ab0KERpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 13:42:52 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-14.arcor-online.net 55E009C42A
-Subject: Re: [PATCH] HID: roccat: Add support for Roccat Kone[+]
-From: Stefan Achatz <erazor_de@users.sourceforge.net>
-Reply-To: erazor_de@users.sourceforge.net
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Bruno =?ISO-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
-        Stephane Chatty <chatty@enac.fr>,
-        Don Prince <dhprince-devel@yahoo.co.uk>,
-        Dmitry Torokhov <dtor@mail.ru>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-In-Reply-To: <alpine.LNX.2.00.1011041418530.15851@pobox.suse.cz>
-References: <1287943025.2623.16.camel@neuromancer>
-	 <alpine.LNX.2.00.1011041418530.15851@pobox.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 05 Nov 2010 18:42:42 +0100
-Message-ID: <1288978962.2585.15.camel@neuromancer>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	Fri, 5 Nov 2010 13:45:46 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: markus@trippelsdorf.de
+X-SynServer-PPID: 10007
+Date: Fri, 5 Nov 2010 18:45:40 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
+        john stultz <johnstul@us.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "avi@redhat.com" <avi@redhat.com>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>
+Subject: Re: [bisected] Clocksource tsc unstable git
+Message-ID: <20101105174540.GA1562@arch.trippelsdorf.de>
+References: <20101029083013.GA1553@arch.trippelsdorf.de>
+ <20101029102713.GA21125@aftab>
+ <alpine.LFD.2.00.1010291411150.2692@localhost6.localdomain6>
+ <20101029170040.GJ21125@aftab>
+ <20101029172631.GA23546@arch.trippelsdorf.de>
+ <alpine.LFD.2.00.1011011904280.2566@localhost6.localdomain6>
+ <20101101184512.GA1589@arch.trippelsdorf.de>
+ <alpine.LFD.2.00.1011021626160.9357@localhost6.localdomain6>
+ <20101105160919.GC25704@aftab>
+ <20101105164225.GA1594@arch.trippelsdorf.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101105164225.GA1594@arch.trippelsdorf.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-Am Donnerstag, den 04.11.2010, 14:25 -0400 schrieb Jiri Kosina:
-> On Sun, 24 Oct 2010, Stefan Achatz wrote:
+On Fri, Nov 05, 2010 at 05:42:25PM +0100, Markus Trippelsdorf wrote:
+> On Fri, Nov 05, 2010 at 05:09:19PM +0100, Borislav Petkov wrote:
+> > On Tue, Nov 02, 2010 at 11:26:54AM -0400, Thomas Gleixner wrote:
+> > > Ok, I'm waiting for Boris to get us the confirmation from HW folks.
+> > 
+> > +++ b/arch/x86/kernel/hpet.c
+> > @@ -40,6 +40,7 @@ u8					hpet_msi_disable;
+> >  static unsigned long			hpet_num_timers;
+> >  #endif
+> >  static void __iomem			*hpet_virt_address;
+> > +u16					hpet_min_tick = 0x80;
 > 
-> > This patch adds support for Roccat Kone[+] gaming mouse. Kone[+] is an enhanced version
-> > of the old Kone with more memory for macros, a better sensor and more functionality.
-> > This driver is conceptual similar to the existing Kone and Pyra drivers.
-> > Userland tools can soon be found at http://sourceforge.net/projects/roccat
+> Wouldn't:
 > 
-> Seems like there is a lot of duplicate code with Roccat Kone.
-> Is there any reason this couldn't be merged with the Roccat Kone 
-> counterparts?
-
-In fact the Kone[+] seems to be nearer to the Pyra than the old Kone.
-Looks like the manufacturer changed the firmware programmer between some
-devices. I wanted to wait until I see more devices of this manufacturer
-if some kind of genealogy might be visible and remove code duplication
-based on that.
-
-> > +static ssize_t koneplus_sysfs_read_profile5_settings(struct file *fp,
-> > +		struct kobject *kobj, struct bin_attribute *attr, char *buf,
-> > +		loff_t off, size_t count)
-> > +{
-> > +	return koneplus_sysfs_read_profilex_settings(fp, kobj,
-> > +			attr, buf, off, count, 4);
-> > +}
-> > +
+> +u16                                  hpet_min_tick;
 > 
-> This is really ugly. Can't you have just one read() function and 
-> distuingish according to bin_attribute->private?
+> make more sense, if you want to use the value detected in boot.c?
 
-The patch comes in a view moments, if you like it I'll do the same for
-Kone and Pyra.
-
-> 
-> > diff --git a/drivers/hid/hid-roccat-koneplus.h b/drivers/hid/hid-roccat-koneplus.h
-> > new file mode 100644
-> > index 0000000..bf750fa
-> > --- /dev/null
-> > +++ b/drivers/hid/hid-roccat-koneplus.h
-> > @@ -0,0 +1,229 @@
-> > +#ifndef __HID_ROCCAT_KONEPLUS_H
-> > +#define __HID_ROCCAT_KONEPLUS_H
-> > +
-> > +/*
-> > + * Copyright (c) 2010 Stefan Achatz <erazor_de@users.sourceforge.net>
-> > + */
-> > +
-> > +/*
-> > + * This program is free software; you can redistribute it and/or modify it
-> > + * under the terms of the GNU General Public License as published by the Free
-> > + * Software Foundation; either version 2 of the License, or (at your option)
-> > + * any later version.
-> > + */
-> > +
-> > +#include <linux/types.h>
-> > +
-> > +#pragma pack(push)
-> > +#pragma pack(1)
-> 
-> Why?
-
-What?
-
-Have a nice day,
-Stefan
-
+Please scratch that.
+-- 
+Markus
