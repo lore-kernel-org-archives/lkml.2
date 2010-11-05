@@ -1,107 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751637Ab0KEGjI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 02:39:08 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:58098 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751351Ab0KEGjG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 02:39:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=ezgvC0D/krM9zi2OqNZakn1esw2bhBbLRPk7ft+pIQIRXVLcrftgJPycbVaov7NgXd
-         RyUzZmtykpBTik3f6ey2yGZbxLFmMvuF+b2H7oBvpn+8+SGk8u2QWIAcVQi1ShgiS9Qw
-         NmSmpK0Nm1OcJUHDWJLDDCT2JEtHwhLO9dzk4=
+	id S1752720Ab0KEGnf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 02:43:35 -0400
+Received: from c-67-162-90-113.hsd1.in.comcast.net ([67.162.90.113]:60740 "HELO
+	kosh.dhis.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751582Ab0KEGne (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 02:43:34 -0400
+Message-ID: <20101105064332.1678.qmail@kosh.dhis.org>
+From: pacman@kosh.dhis.org
+Subject: Re: Pegasos OHCI bug (was Re: PROBLEM: memory corrupting bug,
+To: linuxppc-dev@lists.ozlabs.org
+Date: Fri, 5 Nov 2010 01:43:32 -0500 (GMT+5)
+Cc: segher@kernel.crashing.org (Segher Boessenkool),
+        linux-kernel@vger.kernel.org
+In-Reply-To: <53195.84.105.60.153.1288311394.squirrel@gate.crashing.org>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTiknaHiWUzOH+MjAujk_+0JfX2x2auRCgFjUqhU-@mail.gmail.com>
-References: <AANLkTikL4Ng0mJmeO0p_gtZWticd6NO3b9daHcRX4q1Q@mail.gmail.com>
-	<AANLkTiknaHiWUzOH+MjAujk_+0JfX2x2auRCgFjUqhU-@mail.gmail.com>
-Date: Fri, 5 Nov 2010 15:39:05 +0900
-Message-ID: <AANLkTimtyAwuiG-yeKUVrviVB513vX9_q-2yjuo1mjTu@mail.gmail.com>
-Subject: Re: mmotm 2010-11-03-12-17: memcg build fail
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Dave Young <hidave.darkstar@gmail.com>
-Cc: Greg Thelen <gthelen@google.com>, Andrea Righi <arighi@develer.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 5, 2010 at 2:55 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
-> Forgot cc lkml
->
-> On Fri, Nov 5, 2010 at 1:54 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
->> Hi,
->>
->> Build failed without __divdi3 on i386, known issue?
->>
->> mm/built-in.o: In function `mem_cgroup_dirty_info':
->> /home/dave/vdb/build/mm/linux-2.6.36/mm/memcontrol.c:1251: undefined
->> reference to `__divdi3'
->> /home/dave/vdb/build/mm/linux-2.6.36/mm/memcontrol.c:1259: undefined
->> reference to `__divdi3'
->> make: *** [.tmp_vmlinux1] Error 1
->>
+Segher Boessenkool writes:
+> 
+> > Now I'm just trying to find the more correct way of doing it, without
+> > hardcoded addresses. That'll be something like this:
+> >
+> >   search the device tree for OHCI nodes
+> >   for each OHCI node
+> >     get assigned-addresses
+> >     map-in
+> >     set HCR
+> >     wait for acknowledgement
+> >     map-out
+ 
+> Sounds like it should work, yes.
+> 
 
-We should have used do_div.
-Below patch solve the problem?
+I have a mostly-finished patch to do the above. I'll include it below, but
+first a few words about why it's only mostly finished.
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 76386f4..8e6bb59 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1247,18 +1247,19 @@ bool mem_cgroup_dirty_info(unsigned long
-sys_available_mem,
-        if (dirty_param.dirty_bytes)
-                info->dirty_thresh =
-                        DIV_ROUND_UP(dirty_param.dirty_bytes, PAGE_SIZE);
--       else
--               info->dirty_thresh =
--                       (dirty_param.dirty_ratio * available_mem) / 100;
-+       else {
-+               info->dirty_thresh = dirty_param.dirty_ratio * available_mem;
-+               do_div(info->dirty_thresh, 100);
-+       }
+The other Pegasos workarounds are in fixup_device_tree_chrp, and I don't see
+anything like an "if(machine_is_pegasos)" around them. What keeps them from
+being erroneously run on other CHRP-type machines? I made this patch mainly
+by copying pieces of other functions from prom_init.c, but couldn't find the
+"test for Pegasos before running a Pegasos workaround" piece.
 
-        if (dirty_param.dirty_background_bytes)
-                info->background_thresh =
-                        DIV_ROUND_UP(dirty_param.dirty_background_bytes,
-                                     PAGE_SIZE);
--       else
--               info->background_thresh =
--                       (dirty_param.dirty_background_ratio *
--                              available_mem) / 100;
-+       else {
-+               info->background_thresh =
-dirty_param.dirty_background_ratio * available_mem;
-+               do_div(info->background_thresh, 100);
-+       }
+Another issue is, since the firmware doesn't give me a "compatible" property
+with the details of the controller, I just have to assume that it's
+little-endian. I'm not sure if that's clean, since the real ohci driver
+supports both endiannesses, with at least 3 different Kconfig options(!) to
+choose between them.
 
-        info->nr_reclaimable =
-                mem_cgroup_page_stat(MEMCG_NR_RECLAIM_PAGES);
+Then there's the volatile which I guess is supposed to be replaced by
+something else, but I don't know what the something else is. I believe this
+usage is extremely close to what volatile was meant for.
 
->> --
->> Regards
->> dave
->>
->
->
->
-> --
-> Regards
-> dave
->
+Finally, when I updated to a more recent upstream kernel to test the patch, I
+found that an intervening commit (3df7169e73fc1d71a39cffeacc969f6840cdf52b,
+OHCI: work around for nVidia shutdown problem) has had a major effect,
+on the appearance of my bug.
 
+Before that change, the window in which the bug could strike was from the end
+of prom_init (when the kernel believes that devices are quiescent) to the
+initialization of the ohci-hcd driver (which actually quietens the device, or
+at least directs its scribbling to a properly allocated page). After the
+change, the window ends at some point early in the PCI bus setup. That's a
+window so small that with a new kernel, I can't provoke a symptom even if I
+try.
 
+Mostly-finished patch:
+
+diff --git a/arch/powerpc/kernel/prom_init.c b/arch/powerpc/kernel/prom_init.c
+index 941ff4d..a14f21b 100644
+--- a/arch/powerpc/kernel/prom_init.c
++++ b/arch/powerpc/kernel/prom_init.c
+@@ -2237,6 +2237,81 @@ static void __init fixup_device_tree_chrp(void)
+ 		}
+ 	}
+ }
++
++/*
++ * Pegasos firmware doesn't quiesce OHCI controllers, so do it manually
++ */
++static void __init pegasos_quiesce(void)
++{
++	phandle node, parent_node;
++	ihandle parent_ih;
++	int rc;
++	char type[16], *path;
++	u32 prop[5], map_size;
++	prom_arg_t ohci_virt;
++
++	for (node = 0; prom_next_node(&node); ) {
++		memset(type, 0, sizeof(type));
++		prom_getprop(node, "device_type", type, sizeof(type));
++		if (strcmp(type, RELOC("usb")) != 0)
++			continue;
++
++		/* Parent should be a PCI bus (so class-code makes sense).
++		   class-code should be 0x0C0310 */
++		parent_node = call_prom("parent", 1, 1, node);
++		if (!parent_node)
++			continue;
++		rc = prom_getprop(node, "class-code", prop, sizeof(u32));
++		if (rc != sizeof(u32) || prop[0] != 0x0c0310)
++			continue;
++
++		rc = prom_getprop(node, "assigned-addresses",
++				  prop, 5*sizeof(u32));
++		if (rc != 5*sizeof(u32))
++			continue;
++
++		/* Open the parent and call map-in */
++
++		/* It seems OF doesn't null-terminate the path :-( */
++		path = RELOC(prom_scratch);
++		memset(path, 0, PROM_SCRATCH_SIZE);
++
++		if (call_prom("package-to-path", 3, 1, parent_node,
++			      path, PROM_SCRATCH_SIZE-1) == PROM_ERROR)
++			continue;
++		parent_ih = call_prom("open", 1, 1, path);
++
++		/* Get the OHCI node's pathname, for printing later */
++		memset(path, 0, PROM_SCRATCH_SIZE);
++		call_prom("package-to-path", 3, 1, node,
++			  path, PROM_SCRATCH_SIZE-1);
++
++		map_size = prop[4];
++		if (call_prom_ret("call-method", 6, 2, &ohci_virt,
++				  ADDR("map-in"), parent_ih,
++				  map_size, prop[0], prop[1], prop[2]) == 0) {
++			prom_printf("resetting OHCI device %s...", path);
++
++			/* Set HostControllerReset (==1) in HcCommandStatus,
++			 * located at offset 8 in the register area. The <<24
++			 * is because the CPU is big-endian and the device is
++			 * little-endian. */
++			*(volatile u32 *)(ohci_virt + 8) |= (1<<24);
++
++			/* controller should acknowledge by zeroing the bit
++			 * within 10us. waiting 1ms should be plenty. */
++			call_prom("interpret", 1, 1, "1 ms");
++			if (*(volatile u32 *)(ohci_virt + 8) & (1<<24))
++				prom_printf("failed\n");
++			else
++				prom_printf("done\n");
++
++			call_prom("call-method", 4, 1, ADDR("map-out"),
++				  parent_ih, map_size, ohci_virt);
++		}
++		call_prom("close", 1, 0, parent_ih);
++	}
++}
+ #else
+ #define fixup_device_tree_chrp()
+ #endif
+@@ -2642,6 +2717,7 @@ unsigned long __init prom_init(unsigned long r3, unsigned long r4,
+ 	 * devices etc...
+ 	 */
+ 	prom_printf("Calling quiesce...\n");
++	pegasos_quiesce();
+ 	call_prom("quiesce", 0, 0);
+ 
+ 	/*
 
 -- 
-Kind regards,
-Minchan Kim
+Alan Curry
