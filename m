@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755207Ab0KEXNa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 19:13:30 -0400
-Received: from mail.perches.com ([173.55.12.10]:4357 "EHLO mail.perches.com"
+	id S1755090Ab0KEXRT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 19:17:19 -0400
+Received: from gold.linx.net ([195.66.232.40]:44158 "EHLO gold.linx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755086Ab0KEXMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 19:12:43 -0400
-From: Joe Perches <joe@perches.com>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 5/7] kernel/lockdep_proc.c: Convert sprintf_symbol to %pS
-Date: Fri,  5 Nov 2010 16:12:38 -0700
-Message-Id: <1288998760-11775-6-git-send-email-joe@perches.com>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
-In-Reply-To: <1288998760-11775-1-git-send-email-joe@perches.com>
-References: <1288998760-11775-1-git-send-email-joe@perches.com>
+	id S1754058Ab0KEXRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 19:17:17 -0400
+X-Greylist: delayed 455 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Nov 2010 19:17:17 EDT
+Subject: Re: BUG in ext4 with 2.6.37-rc1
+From: Tony Vroon <tony@linx.net>
+To: Nick Bowler <nbowler@elliptictech.com>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+In-Reply-To: <20101102202013.GA3861@elliptictech.com>
+References: <20101102202013.GA3861@elliptictech.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-puDy6ThfF+Hryjgr37cA"
+Organization: London Internet Exchange (LINX; AS5459)
+Date: Fri, 05 Nov 2010 23:09:49 +0000
+Message-ID: <1288998589.2961.3.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- kernel/lockdep_proc.c |   16 ++++++----------
- 1 files changed, 6 insertions(+), 10 deletions(-)
 
-diff --git a/kernel/lockdep_proc.c b/kernel/lockdep_proc.c
-index 59b76c8..1969d2f 100644
---- a/kernel/lockdep_proc.c
-+++ b/kernel/lockdep_proc.c
-@@ -494,7 +494,6 @@ static void seq_stats(struct seq_file *m, struct lock_stat_data *data)
- 		namelen += 2;
- 
- 	for (i = 0; i < LOCKSTAT_POINTS; i++) {
--		char sym[KSYM_SYMBOL_LEN];
- 		char ip[32];
- 
- 		if (class->contention_point[i] == 0)
-@@ -503,15 +502,13 @@ static void seq_stats(struct seq_file *m, struct lock_stat_data *data)
- 		if (!i)
- 			seq_line(m, '-', 40-namelen, namelen);
- 
--		sprint_symbol(sym, class->contention_point[i]);
- 		snprintf(ip, sizeof(ip), "[<%p>]",
- 				(void *)class->contention_point[i]);
--		seq_printf(m, "%40s %14lu %29s %s\n", name,
--				stats->contention_point[i],
--				ip, sym);
-+		seq_printf(m, "%40s %14lu %29s %pS\n",
-+			   name, stats->contention_point[i],
-+			   ip, (void *)class->contention_point[i]);
- 	}
- 	for (i = 0; i < LOCKSTAT_POINTS; i++) {
--		char sym[KSYM_SYMBOL_LEN];
- 		char ip[32];
- 
- 		if (class->contending_point[i] == 0)
-@@ -520,12 +517,11 @@ static void seq_stats(struct seq_file *m, struct lock_stat_data *data)
- 		if (!i)
- 			seq_line(m, '-', 40-namelen, namelen);
- 
--		sprint_symbol(sym, class->contending_point[i]);
- 		snprintf(ip, sizeof(ip), "[<%p>]",
- 				(void *)class->contending_point[i]);
--		seq_printf(m, "%40s %14lu %29s %s\n", name,
--				stats->contending_point[i],
--				ip, sym);
-+		seq_printf(m, "%40s %14lu %29s %pS\n",
-+			   name, stats->contending_point[i],
-+			   ip, (void *)class->contending_point[i]);
- 	}
- 	if (i) {
- 		seq_puts(m, "\n");
--- 
-1.7.3.2.146.gca209
+--=-puDy6ThfF+Hryjgr37cA
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Tue, 2010-11-02 at 16:20 -0400, Nick Bowler wrote:
+>   ------------[ cut here ]------------
+>   kernel BUG at /scratch_space/linux-2.6/fs/ext4/page-io.c:146!
+>   invalid opcode: 0000 [#1] PREEMPT SMP=20
+
+Confirmed, it's an issue here too.
+I have just hit this one 2 times in a row within 20 minutes. Please CC
+me if you need any fix tested; looks like I'm off to 2.6.26 until this
+is fixed.
+
+Linux prometheus 2.6.37-rc1-00040-g0660a9b #1 SMP PREEMPT Fri Nov 5
+22:09:58 GMT 2010 x86_64 Six-Core AMD Opteron(tm) Processor 2435
+AuthenticAMD GNU/Linux
+
+I can provide .config if needed; have digital photos of the oops if they
+are deemed useful. The BUG hit at the exact same line as you though.
+
+Regards,
+--=20
+Tony Vroon
+UNIX systems administrator
+London Internet Exchange Ltd, Trinity Court, Trinity Street,
+Peterborough, PE1 1DA
+Registered in England number 3137929
+E-Mail: tony@linx.net
+
+--=-puDy6ThfF+Hryjgr37cA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
+
+iEYEABECAAYFAkzUjr0ACgkQp5vW4rUFj5qX8wCfc/kqVAr/S05pc6+sGZxIvWGu
+tawAnjsj1YfDgsAyLVWYorhKKQJ5Vtoz
+=+8xe
+-----END PGP SIGNATURE-----
+
+--=-puDy6ThfF+Hryjgr37cA--
 
