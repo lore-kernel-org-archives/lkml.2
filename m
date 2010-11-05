@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754256Ab0KEDQt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 23:16:49 -0400
+	id S1753614Ab0KEDIq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 23:08:46 -0400
 Received: from mail.perches.com ([173.55.12.10]:4035 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753580Ab0KEDIp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 23:08:45 -0400
+	id S1753479Ab0KEDIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 23:08:39 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Neil Brown <neilb@suse.de>, dm-devel@redhat.com,
-        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 14/49] drivers/md: Use vzalloc
-Date: Thu,  4 Nov 2010 20:07:38 -0700
-Message-Id: <fb14aa0a6cfe2754ecc9c8e7cd5be07a5431e33f.1288925424.git.joe@perches.com>
+Cc: Chas Williams <chas@cmf.nrl.navy.mil>,
+        linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 07/49] drivers/atm: Use vzalloc
+Date: Thu,  4 Nov 2010 20:07:31 -0700
+Message-Id: <e8478739350c39bf9f08dc6f66edcec8033a0e04.1288925424.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <alpine.DEB.2.00.1011031108260.11625@router.home>
 References: <alpine.DEB.2.00.1011031108260.11625@router.home>
@@ -24,62 +25,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/md/dm-log.c             |    3 +--
- drivers/md/dm-snap-persistent.c |    3 +--
- drivers/md/dm-table.c           |    4 +---
- 3 files changed, 3 insertions(+), 7 deletions(-)
+ drivers/atm/idt77252.c |   11 ++++++-----
+ drivers/atm/lanai.c    |    3 +--
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/md/dm-log.c b/drivers/md/dm-log.c
-index 33420e6..8f00e38 100644
---- a/drivers/md/dm-log.c
-+++ b/drivers/md/dm-log.c
-@@ -487,7 +487,7 @@ static int create_log_context(struct dm_dirty_log *log, struct dm_target *ti,
- 	memset(lc->sync_bits, (sync == NOSYNC) ? -1 : 0, bitset_size);
- 	lc->sync_count = (sync == NOSYNC) ? region_count : 0;
+diff --git a/drivers/atm/idt77252.c b/drivers/atm/idt77252.c
+index bce5732..8c09e32 100644
+--- a/drivers/atm/idt77252.c
++++ b/drivers/atm/idt77252.c
+@@ -3459,27 +3459,28 @@ init_card(struct atm_dev *dev)
  
--	lc->recovering_bits = vmalloc(bitset_size);
-+	lc->recovering_bits = vzalloc(bitset_size);
- 	if (!lc->recovering_bits) {
- 		DMWARN("couldn't allocate sync bitset");
- 		vfree(lc->sync_bits);
-@@ -499,7 +499,6 @@ static int create_log_context(struct dm_dirty_log *log, struct dm_target *ti,
- 		kfree(lc);
- 		return -ENOMEM;
+ 	size = sizeof(struct vc_map *) * card->tct_size;
+ 	IPRINTK("%s: allocate %d byte for VC map.\n", card->name, size);
+-	if (NULL == (card->vcs = vmalloc(size))) {
++	card->vcs = vzalloc(size);
++	if (!card->vcs) {
+ 		printk("%s: memory allocation failure.\n", card->name);
+ 		deinit_card(card);
+ 		return -1;
  	}
--	memset(lc->recovering_bits, 0, bitset_size);
- 	lc->sync_search = 0;
- 	log->context = lc;
+-	memset(card->vcs, 0, size);
  
-diff --git a/drivers/md/dm-snap-persistent.c b/drivers/md/dm-snap-persistent.c
-index 2129cdb..8eb943f 100644
---- a/drivers/md/dm-snap-persistent.c
-+++ b/drivers/md/dm-snap-persistent.c
-@@ -174,10 +174,9 @@ static int alloc_area(struct pstore *ps)
- 	if (!ps->area)
- 		goto err_area;
+ 	size = sizeof(struct vc_map *) * card->scd_size;
+ 	IPRINTK("%s: allocate %d byte for SCD to VC mapping.\n",
+ 	        card->name, size);
+-	if (NULL == (card->scd2vc = vmalloc(size))) {
++	card->scd2vc = vzalloc(size);
++	if (!card->scd2vc) {
+ 		printk("%s: memory allocation failure.\n", card->name);
+ 		deinit_card(card);
+ 		return -1;
+ 	}
+-	memset(card->scd2vc, 0, size);
  
--	ps->zero_area = vmalloc(len);
-+	ps->zero_area = vzalloc(len);
- 	if (!ps->zero_area)
- 		goto err_zero_area;
--	memset(ps->zero_area, 0, len);
- 
- 	ps->header_area = vmalloc(len);
- 	if (!ps->header_area)
-diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
-index 90267f8..d6a91f7 100644
---- a/drivers/md/dm-table.c
-+++ b/drivers/md/dm-table.c
-@@ -151,9 +151,7 @@ void *dm_vcalloc(unsigned long nmemb, unsigned long elem_size)
- 		return NULL;
- 
- 	size = nmemb * elem_size;
--	addr = vmalloc(size);
--	if (addr)
--		memset(addr, 0, size);
-+	addr = vzalloc(size);
- 
- 	return addr;
+ 	size = sizeof(struct tst_info) * (card->tst_size - 2);
+ 	IPRINTK("%s: allocate %d byte for TST to VC mapping.\n",
+ 		card->name, size);
+-	if (NULL == (card->soft_tst = vmalloc(size))) {
++	card->soft_tst = vmalloc(size);
++	if (!card->soft_tst) {
+ 		printk("%s: memory allocation failure.\n", card->name);
+ 		deinit_card(card);
+ 		return -1;
+diff --git a/drivers/atm/lanai.c b/drivers/atm/lanai.c
+index cbe15a8..5cec592 100644
+--- a/drivers/atm/lanai.c
++++ b/drivers/atm/lanai.c
+@@ -1457,10 +1457,9 @@ static int __devinit vcc_table_allocate(struct lanai_dev *lanai)
+ 	return (lanai->vccs == NULL) ? -ENOMEM : 0;
+ #else
+ 	int bytes = (lanai->num_vci) * sizeof(struct lanai_vcc *);
+-	lanai->vccs = (struct lanai_vcc **) vmalloc(bytes);
++	lanai->vccs = vzalloc(bytes);
+ 	if (unlikely(lanai->vccs == NULL))
+ 		return -ENOMEM;
+-	memset(lanai->vccs, 0, bytes);
+ 	return 0;
+ #endif
  }
 -- 
 1.7.3.1.g432b3.dirty
