@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab0KEDBL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 23:01:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55576 "EHLO mx1.redhat.com"
+	id S1753400Ab0KEDF0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 23:05:26 -0400
+Received: from mga03.intel.com ([143.182.124.21]:65534 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753047Ab0KEDBJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 23:01:09 -0400
-From: Jason Wang <jasowang@redhat.com>
+	id S1752087Ab0KEDFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 23:05:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,300,1286175600"; 
+   d="scan'208";a="344914671"
+Date: Fri, 5 Nov 2010 11:19:51 -0400
+From: Youquan Song <youquan.song@linux.intel.com>
+To: davej@redhat.com
+Cc: arjan@linux.intel.com, venki@google.com, youquan.song@intel.com,
+        cpufreq-list@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] cpufreq: Fix ondemand governor powersave_bias execution
+	time misuse
+Message-ID: <20101105151951.GA10743@linux-youquan.bj.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <19667.29541.897732.941476@gargle.gargle.HOWL>
-Date: Fri, 5 Nov 2010 11:00:53 +0800
-To: Jason Wang <jasowang@redhat.com>
-Cc: rusty@rustcorp.com.au, davem@davemloft.net, markmc@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, mst@redhat.com,
-        netdev@vger.kernel.org
-Subject: [V2 PATCH] virtio-net: init link state correctly
-In-Reply-To: <20101105025008.3277.87697.stgit@dhcp-91-158.nay.redhat.com>
-References: <20101105025008.3277.87697.stgit@dhcp-91-158.nay.redhat.com>
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jason Wang writes:
+Ondemand governor use powersave_bias tunable to do aggressive power save by
+decrease CPU average frequency. The average frequency achieve by adjust low and
+high frequency's execution time proportion during one sample time interval.  
 
-CC netdev missed in the original patch.
- > For device that supports VIRTIO_NET_F_STATUS, there's no need to
- > assume the link is up and we need to call nerif_carrier_off() before
- > querying device status, otherwise we may get wrong operstate after
- > diver was loaded because the link watch event was not fired as
- > expected.
- > 
- > For device that does not support VIRITO_NET_F_STATUS, we could not get
- > its status through virtnet_update_status() and what we can only do is
- > always assuming the link is up.
- > 
- > Signed-off-by: Jason Wang <jasowang@redhat.com>
- > ---
- >  drivers/net/virtio_net.c |   12 +++++++++---
- >  1 files changed, 9 insertions(+), 3 deletions(-)
- > 
- > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
- > index bb6b67f..b6d4028 100644
- > --- a/drivers/net/virtio_net.c
- > +++ b/drivers/net/virtio_net.c
- > @@ -986,9 +986,15 @@ static int virtnet_probe(struct virtio_device *vdev)
- >  		goto unregister;
- >  	}
- >  
- > -	vi->status = VIRTIO_NET_S_LINK_UP;
- > -	virtnet_update_status(vi);
- > -	netif_carrier_on(dev);
- > +	/* Assume link up if device can't report link status,
- > +	   otherwise get link status from config. */
- > +	if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_STATUS)) {
- > +		netif_carrier_off(dev);
- > +		virtnet_update_status(vi);
- > +	} else {
- > +		vi->status = VIRTIO_NET_S_LINK_UP;
- > +		netif_carrier_on(dev);
- > +	}
- >  
- >  	pr_debug("virtnet: registered device %s\n", dev->name);
- >  	return 0;
- > 
- > --
- > To unsubscribe from this list: send the line "unsubscribe kvm" in
- > the body of a message to majordomo@vger.kernel.org
- > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Current kernel, only the high frequency executes in time proportion, but the low
+frequency wrongly execute in one whole sample time interval when powersave_bias
+is set.  
+
+The patch fix it by set low frequency execution time to it deserved. 
+
+Signed-off-by: Youquan Song <youquan.song@intel.com>
+---
+
+diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+index c631f27..01d84fa 100644
+--- a/drivers/cpufreq/cpufreq_ondemand.c
++++ b/drivers/cpufreq/cpufreq_ondemand.c
+@@ -666,6 +666,8 @@ static void do_dbs_timer(struct work_struct *work)
+ 	} else {
+ 		__cpufreq_driver_target(dbs_info->cur_policy,
+ 			dbs_info->freq_lo, CPUFREQ_RELATION_H);
++		if (dbs_info->sample_type == DBS_SUB_SAMPLE)
++			delay = dbs_info->freq_lo_jiffies;
+ 	}
+ 	queue_delayed_work_on(cpu, kondemand_wq, &dbs_info->work, delay);
+ 	mutex_unlock(&dbs_info->timer_mutex);
