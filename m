@@ -1,61 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592Ab0KESIC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 14:08:02 -0400
-Received: from wine.ocn.ne.jp ([122.1.235.145]:64110 "EHLO smtp.wine.ocn.ne.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752646Ab0KESIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 14:08:00 -0400
-To: cbouatmailru@gmail.com, gregkh@suse.de, kay.sievers@vrfy.org,
-        ak@linux.intel.com
-Cc: axboe@kernel.dk, shemminger@vyatta.com, ebiederm@xmission.com,
-        stern@rowland.harvard.edu, James.Bottomley@suse.de,
-        akpm@linux-foundation.org, kuznet@ms2.inr.ac.ru,
-        randy.dunlap@oracle.com, tj@kernel.org, davem@davemloft.net,
-        perex@perex.cz, tiwai@suse.de, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        dhowells@redhat.com, linux-kernel@vger.kernel.org
-Subject: [2.6.37-rc1] wait_for_sysfs prints errors.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Message-Id: <201011060307.GIG13040.OFFJOVHMSFLOtQ@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Sat, 6 Nov 2010 03:07:55 +0900
+	id S1754642Ab0KESIx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 14:08:53 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56155 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753163Ab0KESIu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 14:08:50 -0400
+Date: Fri, 5 Nov 2010 11:08:28 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [PATCH] atomic: add atomic_inc_not_zero_hint()
+Message-Id: <20101105110828.52f061b3.akpm@linux-foundation.org>
+In-Reply-To: <1288980046.2882.1054.camel@edumazet-laptop>
+References: <1288975980.2882.877.camel@edumazet-laptop>
+	<20101105102038.53e36f9e.akpm@linux-foundation.org>
+	<1288980046.2882.1054.camel@edumazet-laptop>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Fri, 05 Nov 2010 19:00:46 +0100
+Eric Dumazet <eric.dumazet@gmail.com> wrote:
 
-I noticed that udevd-event started to print error messages.
+> Le vendredi 05 novembre 2010 __ 10:20 -0700, Andrew Morton a __crit :
+> 
+> > It totally makes sense to add include/linu/atomic.h for common things. 
+> > Perhaps there's already code in arch/*/include/asm/atomic.h which
+> > should be hoisted up there.  But that can't reliably be done until a
+> > million files have had their #includes switched :(
+> > 
+> 
+> Maybe including <linux/atomic.h> only from the end of various
+> 
+> arch/*/include/asm/atomic.h  ?
 
-  Starting udev: udevd-event[1682]: wait_for_sysfs: waiting for '/sys/devices/pci0000:00/0000:00:10.0/host0/ioerr_cnt' failed
-  udevd-event[2103]: wait_for_sysfs: waiting for '/sys/devices/pci0000:00/0000:00:10.0/host0/target0:0:1/ioerr_cnt' failed
-  udevd-event[2102]: wait_for_sysfs: waiting for '/sys/devices/pci0000:00/0000:00:10.0/host0/target0:0:0/ioerr_cnt' failed
+heh, I guess that would work.  It breaks the standard way of doing
+these things (I think?) so let's not go there unless we have a need?
 
-These error messages are caused by one or more of below commits.
-(Sorry, I can't find exact one because I can't boot as of below commits.)
+> In this case, I remove the include <asm/atomic.h> from linux/atomic.h
 
-5cfc64ce "base/platform: Safe handling for NULL platform data and resources"
-807508c8 "base/platform: Simplifications for NULL platform data/resources handling"
-39aba963 "driver core: remove CONFIG_SYSFS_DEPRECATED_V2 but keep it for block devices"
+Oh.  Why?  I thought it was better the previous, standard way: thou
+shalt henceforth include liunx/atomic.h, not asm/atomic.h.  And the
+presence of linux/atomic.h will in fact trigger the checkpatch warning
+telling people to use that when they try to use asm/atomic.h.
 
-Is this a regression? (Is this an intended change?)
+> > > +static inline int atomic_inc_not_zero_hint(atomic_t *v, int hint)
+> > > +{
+> > > +	int val, c = hint;
+> > > +
+> > > + 	do {
+> > > +		val = atomic_cmpxchg(v, c, c + 1);
+> > > +		if (val == c)
+> > > +			return 1;
+> > > +		c = val;
+> > > +	} while (c);
+> > > +
+> > > +	return 0;
+> > > +}
+> > 
+> > Should/could this have implemented a more general
+> > atomic_add_not_zero_hint() and made atomic_inc_not_zero_hint() a
+> > wrapper around that?
+> 
+> Well, I see no practical use for this, but yes, this could be done.
+> 
+> As atomic_add_not_zero() doesnt exist, I am not sure we need an
+> atomic_add_not_zero_hint() yet ?
 
-2.6.36 was OK and below is tail of bisection log.
+hm, OK.  I was just checking ;)
 
-# good: [da0d7f982d538f4a5bcdddb84df4a484a3b1770b] pch_phub: fix build warnings
-git bisect good da0d7f982d538f4a5bcdddb84df4a484a3b1770b
-# bad: [39aba963d937edb20db7d9d93e6dda5d2adfdcdd] driver core: remove CONFIG_SYSFS_DEPRECATED_V2 but keep it for block devices
-git bisect bad 39aba963d937edb20db7d9d93e6dda5d2adfdcdd
-# skip: [5cfc64ceb6222aabec640ba76e89529a8fc2c1f0] base/platform: Safe handling for NULL platform data and resources
-git bisect skip 5cfc64ceb6222aabec640ba76e89529a8fc2c1f0
-# skip: [807508c8ff9af6ce8f25c5ca5f3eb06a8e7d3286] base/platform: Simplifications for NULL platform data/resources handling
-git bisect skip 807508c8ff9af6ce8f25c5ca5f3eb06a8e7d3286
-# skip: [87544653abe4a03324bc85dae32d5bdaabcfccef] debugfs: mark me as the maintainer
-git bisect skip 87544653abe4a03324bc85dae32d5bdaabcfccef
 
-My environment is CentOS 5.5(GCC 4.1.2) i686 with 512MB RAM.
-
-Regards.
