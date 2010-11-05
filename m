@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876Ab0KEDJC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 23:09:02 -0400
-Received: from mail.perches.com ([173.55.12.10]:4142 "EHLO mail.perches.com"
+	id S1753979Ab0KEDM1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 23:12:27 -0400
+Received: from mail.perches.com ([173.55.12.10]:4152 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753828Ab0KEDI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 23:08:58 -0400
+	id S1753850Ab0KEDJB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 23:09:01 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Ramkrishna Vepa <ramkrishna.vepa@exar.com>,
-        Sivakumar Subramani <sivakumar.subramani@exar.com>,
-        Sreenivasa Honnur <sreenivasa.honnur@exar.com>,
-        Jon Mason <jon.mason@exar.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 31/49] drivers/net/vxge: Use vzalloc
-Date: Thu,  4 Nov 2010 20:07:55 -0700
-Message-Id: <172075d8c39f4abb1533a483862d2e394fec5999.1288925425.git.joe@perches.com>
+Cc: Jing Huang <huangj@brocade.com>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Willem Riede <osst@riede.org>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>, linux-driver@qlogic.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        osst-users@lists.sourceforge.net
+Subject: [PATCH 34/49] drivers/scsi: Use vzalloc
+Date: Thu,  4 Nov 2010 20:07:58 -0700
+Message-Id: <a5b5595719fe07b0d6b1c0bced4c70179c5b30df.1288925425.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <alpine.DEB.2.00.1011031108260.11625@router.home>
 References: <alpine.DEB.2.00.1011031108260.11625@router.home>
@@ -27,136 +28,191 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/vxge/vxge-config.c |   37 +++++++++----------------------------
- 1 files changed, 9 insertions(+), 28 deletions(-)
+ drivers/scsi/bfa/bfad.c         |    3 +--
+ drivers/scsi/bfa/bfad_debugfs.c |    8 ++------
+ drivers/scsi/cxgbi/libcxgbi.h   |    9 +++------
+ drivers/scsi/osst.c             |    3 +--
+ drivers/scsi/qla2xxx/qla_attr.c |    3 +--
+ drivers/scsi/qla2xxx/qla_bsg.c  |    3 +--
+ drivers/scsi/scsi_debug.c       |    7 ++-----
+ 7 files changed, 11 insertions(+), 25 deletions(-)
 
-diff --git a/drivers/net/vxge/vxge-config.c b/drivers/net/vxge/vxge-config.c
-index 906a3ca3..0c0a4e4 100644
---- a/drivers/net/vxge/vxge-config.c
-+++ b/drivers/net/vxge/vxge-config.c
-@@ -776,14 +776,12 @@ vxge_hw_device_initialize(
- 	if (status != VXGE_HW_OK)
- 		goto exit;
+diff --git a/drivers/scsi/bfa/bfad.c b/drivers/scsi/bfa/bfad.c
+index 1f93897..10dc5d2 100644
+--- a/drivers/scsi/bfa/bfad.c
++++ b/drivers/scsi/bfa/bfad.c
+@@ -600,13 +600,12 @@ retry:
+ 		meminfo_elem = &hal_meminfo->meminfo[i];
+ 		switch (meminfo_elem->mem_type) {
+ 		case BFA_MEM_TYPE_KVA:
+-			kva = vmalloc(meminfo_elem->mem_len);
++			kva = vzalloc(meminfo_elem->mem_len);
+ 			if (kva == NULL) {
+ 				bfad_hal_mem_release(bfad);
+ 				rc = BFA_STATUS_ENOMEM;
+ 				goto ext;
+ 			}
+-			memset(kva, 0, meminfo_elem->mem_len);
+ 			meminfo_elem->kva = kva;
+ 			break;
+ 		case BFA_MEM_TYPE_DMA:
+diff --git a/drivers/scsi/bfa/bfad_debugfs.c b/drivers/scsi/bfa/bfad_debugfs.c
+index 1fedeeb..0f7af51 100644
+--- a/drivers/scsi/bfa/bfad_debugfs.c
++++ b/drivers/scsi/bfa/bfad_debugfs.c
+@@ -79,7 +79,7 @@ bfad_debugfs_open_fwtrc(struct inode *inode, struct file *file)
  
--	hldev = (struct __vxge_hw_device *)
--			vmalloc(sizeof(struct __vxge_hw_device));
-+	hldev = vzalloc(sizeof(struct __vxge_hw_device));
- 	if (hldev == NULL) {
- 		status = VXGE_HW_ERR_OUT_OF_MEMORY;
- 		goto exit;
+ 	fw_debug->buffer_len = sizeof(struct bfa_trc_mod_s);
+ 
+-	fw_debug->debug_buffer = vmalloc(fw_debug->buffer_len);
++	fw_debug->debug_buffer = vzalloc(fw_debug->buffer_len);
+ 	if (!fw_debug->debug_buffer) {
+ 		kfree(fw_debug);
+ 		printk(KERN_INFO "bfad[%d]: Failed to allocate fwtrc buffer\n",
+@@ -87,8 +87,6 @@ bfad_debugfs_open_fwtrc(struct inode *inode, struct file *file)
+ 		return -ENOMEM;
  	}
  
--	memset(hldev, 0, sizeof(struct __vxge_hw_device));
- 	hldev->magic = VXGE_HW_DEVICE_MAGIC;
+-	memset(fw_debug->debug_buffer, 0, fw_debug->buffer_len);
+-
+ 	spin_lock_irqsave(&bfad->bfad_lock, flags);
+ 	rc = bfa_debug_fwtrc(&bfad->bfa,
+ 			fw_debug->debug_buffer,
+@@ -123,7 +121,7 @@ bfad_debugfs_open_fwsave(struct inode *inode, struct file *file)
  
- 	vxge_hw_device_debug_set(hldev, VXGE_ERR, VXGE_COMPONENT_ALL);
-@@ -1627,15 +1625,12 @@ __vxge_hw_mempool_grow(struct vxge_hw_mempool *mempool, u32 num_allocate,
- 		 * allocate new memblock and its private part at once.
- 		 * This helps to minimize memory usage a lot. */
- 		mempool->memblocks_priv_arr[i] =
--				vmalloc(mempool->items_priv_size * n_items);
-+				vzalloc(mempool->items_priv_size * n_items);
- 		if (mempool->memblocks_priv_arr[i] == NULL) {
- 			status = VXGE_HW_ERR_OUT_OF_MEMORY;
- 			goto exit;
+ 	fw_debug->buffer_len = sizeof(struct bfa_trc_mod_s);
+ 
+-	fw_debug->debug_buffer = vmalloc(fw_debug->buffer_len);
++	fw_debug->debug_buffer = vzalloc(fw_debug->buffer_len);
+ 	if (!fw_debug->debug_buffer) {
+ 		kfree(fw_debug);
+ 		printk(KERN_INFO "bfad[%d]: Failed to allocate fwsave buffer\n",
+@@ -131,8 +129,6 @@ bfad_debugfs_open_fwsave(struct inode *inode, struct file *file)
+ 		return -ENOMEM;
+ 	}
+ 
+-	memset(fw_debug->debug_buffer, 0, fw_debug->buffer_len);
+-
+ 	spin_lock_irqsave(&bfad->bfad_lock, flags);
+ 	rc = bfa_debug_fwsave(&bfad->bfa,
+ 			fw_debug->debug_buffer,
+diff --git a/drivers/scsi/cxgbi/libcxgbi.h b/drivers/scsi/cxgbi/libcxgbi.h
+index c57d59d..7627e37 100644
+--- a/drivers/scsi/cxgbi/libcxgbi.h
++++ b/drivers/scsi/cxgbi/libcxgbi.h
+@@ -658,14 +658,11 @@ static inline u32 cxgbi_tag_nonrsvd_bits(struct cxgbi_tag_format *tformat,
+ 	return v1 | v2;
+ }
+ 
+-static inline void *cxgbi_alloc_big_mem(unsigned int size,
+-					gfp_t gfp)
++static inline void *cxgbi_alloc_big_mem(unsigned int size, gfp_t gfp)
+ {
+-	void *p = kmalloc(size, gfp);
++	void *p = kzalloc(size, gfp);
+ 	if (!p)
+-		p = vmalloc(size);
+-	if (p)
+-		memset(p, 0, size);
++		p = vzalloc(size);
+ 	return p;
+ }
+ 
+diff --git a/drivers/scsi/osst.c b/drivers/scsi/osst.c
+index 54de1d1..02bc1cc 100644
+--- a/drivers/scsi/osst.c
++++ b/drivers/scsi/osst.c
+@@ -2296,11 +2296,10 @@ static int osst_write_header(struct osst_tape * STp, struct osst_request ** aSRp
+ 	if (STp->raw) return 0;
+ 
+ 	if (STp->header_cache == NULL) {
+-		if ((STp->header_cache = (os_header_t *)vmalloc(sizeof(os_header_t))) == NULL) {
++		if ((STp->header_cache = vzalloc(sizeof(os_header_t))) == NULL) {
+ 			printk(KERN_ERR "%s:E: Failed to allocate header cache\n", name);
+ 			return (-ENOMEM);
+ 		}
+-		memset(STp->header_cache, 0, sizeof(os_header_t));
+ #if DEBUG
+ 		printk(OSST_DEB_MSG "%s:D: Allocated and cleared memory for header cache\n", name);
+ #endif
+diff --git a/drivers/scsi/qla2xxx/qla_attr.c b/drivers/scsi/qla2xxx/qla_attr.c
+index bc8194f..7151b04 100644
+--- a/drivers/scsi/qla2xxx/qla_attr.c
++++ b/drivers/scsi/qla2xxx/qla_attr.c
+@@ -271,7 +271,7 @@ qla2x00_sysfs_write_optrom_ctl(struct file *filp, struct kobject *kobj,
+ 		    ha->optrom_size - start : size;
+ 
+ 		ha->optrom_state = QLA_SREADING;
+-		ha->optrom_buffer = vmalloc(ha->optrom_region_size);
++		ha->optrom_buffer = vzalloc(ha->optrom_region_size);
+ 		if (ha->optrom_buffer == NULL) {
+ 			qla_printk(KERN_WARNING, ha,
+ 			    "Unable to allocate memory for optrom retrieval "
+@@ -291,7 +291,6 @@ qla2x00_sysfs_write_optrom_ctl(struct file *filp, struct kobject *kobj,
+ 		    "Reading flash region -- 0x%x/0x%x.\n",
+ 		    ha->optrom_region_start, ha->optrom_region_size));
+ 
+-		memset(ha->optrom_buffer, 0, ha->optrom_region_size);
+ 		ha->isp_ops->read_optrom(vha, ha->optrom_buffer,
+ 		    ha->optrom_region_start, ha->optrom_region_size);
+ 		break;
+diff --git a/drivers/scsi/qla2xxx/qla_bsg.c b/drivers/scsi/qla2xxx/qla_bsg.c
+index 31a4121..27f7f79 100644
+--- a/drivers/scsi/qla2xxx/qla_bsg.c
++++ b/drivers/scsi/qla2xxx/qla_bsg.c
+@@ -1356,7 +1356,7 @@ qla2x00_optrom_setup(struct fc_bsg_job *bsg_job, struct qla_hw_data *ha,
+ 		ha->optrom_state = QLA_SREADING;
+ 	}
+ 
+-	ha->optrom_buffer = vmalloc(ha->optrom_region_size);
++	ha->optrom_buffer = vzalloc(ha->optrom_region_size);
+ 	if (!ha->optrom_buffer) {
+ 		qla_printk(KERN_WARNING, ha,
+ 		    "Read: Unable to allocate memory for optrom retrieval "
+@@ -1366,7 +1366,6 @@ qla2x00_optrom_setup(struct fc_bsg_job *bsg_job, struct qla_hw_data *ha,
+ 		return -ENOMEM;
+ 	}
+ 
+-	memset(ha->optrom_buffer, 0, ha->optrom_region_size);
+ 	return 0;
+ }
+ 
+diff --git a/drivers/scsi/scsi_debug.c b/drivers/scsi/scsi_debug.c
+index 2c36bae..e6aaad4 100644
+--- a/drivers/scsi/scsi_debug.c
++++ b/drivers/scsi/scsi_debug.c
+@@ -3305,12 +3305,11 @@ static int __init scsi_debug_init(void)
+ 			       (sdebug_sectors_per * sdebug_heads);
+ 	}
+ 
+-	fake_storep = vmalloc(sz);
++	fake_storep = vzalloc(sz);
+ 	if (NULL == fake_storep) {
+ 		printk(KERN_ERR "scsi_debug_init: out of memory, 1\n");
+ 		return -ENOMEM;
+ 	}
+-	memset(fake_storep, 0, sz);
+ 	if (scsi_debug_num_parts > 0)
+ 		sdebug_build_parts(fake_storep, sz);
+ 
+@@ -3355,7 +3354,7 @@ static int __init scsi_debug_init(void)
+ 
+ 		map_size = (sdebug_store_sectors / scsi_debug_unmap_granularity);
+ 		map_bytes = map_size >> 3;
+-		map_storep = vmalloc(map_bytes);
++		map_storep = vzalloc(map_bytes);
+ 
+ 		printk(KERN_INFO "scsi_debug_init: %lu provisioning blocks\n",
+ 		       map_size);
+@@ -3366,8 +3365,6 @@ static int __init scsi_debug_init(void)
+ 			goto free_vm;
  		}
  
--		memset(mempool->memblocks_priv_arr[i], 0,
--			     mempool->items_priv_size * n_items);
+-		memset(map_storep, 0x0, map_bytes);
 -
- 		/* allocate DMA-capable memblock */
- 		mempool->memblocks_arr[i] =
- 			__vxge_hw_blockpool_malloc(mempool->devh,
-@@ -1707,13 +1702,11 @@ __vxge_hw_mempool_create(
- 		goto exit;
- 	}
- 
--	mempool = (struct vxge_hw_mempool *)
--			vmalloc(sizeof(struct vxge_hw_mempool));
-+	mempool = vzalloc(sizeof(struct vxge_hw_mempool));
- 	if (mempool == NULL) {
- 		status = VXGE_HW_ERR_OUT_OF_MEMORY;
- 		goto exit;
- 	}
--	memset(mempool, 0, sizeof(struct vxge_hw_mempool));
- 
- 	mempool->devh			= devh;
- 	mempool->memblock_size		= memblock_size;
-@@ -1733,31 +1726,27 @@ __vxge_hw_mempool_create(
- 
- 	/* allocate array of memblocks */
- 	mempool->memblocks_arr =
--		(void **) vmalloc(sizeof(void *) * mempool->memblocks_max);
-+		vzalloc(sizeof(void *) * mempool->memblocks_max);
- 	if (mempool->memblocks_arr == NULL) {
- 		__vxge_hw_mempool_destroy(mempool);
- 		status = VXGE_HW_ERR_OUT_OF_MEMORY;
- 		mempool = NULL;
- 		goto exit;
- 	}
--	memset(mempool->memblocks_arr, 0,
--		sizeof(void *) * mempool->memblocks_max);
- 
- 	/* allocate array of private parts of items per memblocks */
- 	mempool->memblocks_priv_arr =
--		(void **) vmalloc(sizeof(void *) * mempool->memblocks_max);
-+		vzalloc(sizeof(void *) * mempool->memblocks_max);
- 	if (mempool->memblocks_priv_arr == NULL) {
- 		__vxge_hw_mempool_destroy(mempool);
- 		status = VXGE_HW_ERR_OUT_OF_MEMORY;
- 		mempool = NULL;
- 		goto exit;
- 	}
--	memset(mempool->memblocks_priv_arr, 0,
--		    sizeof(void *) * mempool->memblocks_max);
- 
- 	/* allocate array of memblocks DMA objects */
--	mempool->memblocks_dma_arr = (struct vxge_hw_mempool_dma *)
--		vmalloc(sizeof(struct vxge_hw_mempool_dma) *
-+	mempool->memblocks_dma_arr =
-+		vzalloc(sizeof(struct vxge_hw_mempool_dma) *
- 			mempool->memblocks_max);
- 
- 	if (mempool->memblocks_dma_arr == NULL) {
-@@ -1766,20 +1755,15 @@ __vxge_hw_mempool_create(
- 		mempool = NULL;
- 		goto exit;
- 	}
--	memset(mempool->memblocks_dma_arr, 0,
--			sizeof(struct vxge_hw_mempool_dma) *
--			mempool->memblocks_max);
- 
- 	/* allocate hash array of items */
--	mempool->items_arr =
--		(void **) vmalloc(sizeof(void *) * mempool->items_max);
-+	mempool->items_arr = vzalloc(sizeof(void *) * mempool->items_max);
- 	if (mempool->items_arr == NULL) {
- 		__vxge_hw_mempool_destroy(mempool);
- 		status = VXGE_HW_ERR_OUT_OF_MEMORY;
- 		mempool = NULL;
- 		goto exit;
- 	}
--	memset(mempool->items_arr, 0, sizeof(void *) * mempool->items_max);
- 
- 	/* calculate initial number of memblocks */
- 	memblocks_to_allocate = (mempool->items_initial +
-@@ -4242,15 +4226,12 @@ vxge_hw_vpath_open(struct __vxge_hw_device *hldev,
- 	if (status != VXGE_HW_OK)
- 		goto vpath_open_exit1;
- 
--	vp = (struct __vxge_hw_vpath_handle *)
--		vmalloc(sizeof(struct __vxge_hw_vpath_handle));
-+	vp = vzalloc(sizeof(struct __vxge_hw_vpath_handle));
- 	if (vp == NULL) {
- 		status = VXGE_HW_ERR_OUT_OF_MEMORY;
- 		goto vpath_open_exit2;
- 	}
- 
--	memset(vp, 0, sizeof(struct __vxge_hw_vpath_handle));
--
- 	vp->vpath = vpath;
- 
- 	if (vpath->vp_config->fifo.enable == VXGE_HW_FIFO_ENABLE) {
+ 		/* Map first 1KB for partition table */
+ 		if (scsi_debug_num_parts)
+ 			map_region(0, 2);
 -- 
 1.7.3.1.g432b3.dirty
 
