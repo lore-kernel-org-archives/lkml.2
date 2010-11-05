@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191Ab0KEFom (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 01:44:42 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:39517 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192Ab0KEFok (ORCPT
+	id S1752331Ab0KEFzn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 01:55:43 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:47099 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192Ab0KEFzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 01:44:40 -0400
+	Fri, 5 Nov 2010 01:55:41 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type
-         :content-transfer-encoding;
-        b=RfwZy0eT2+RICgLYspJEUsIzAaqHwMAeTeMEkNly6xSQUpIOiJUjv3VlRDG3UdyAV4
-         fah+V7bdD91vqelw8ITf56X4s/gGClXuOaYy2OglPidmnPNLaKHow94PNMnd4vXi9N05
-         pk/JnbQtoX5KPV1YTdDwnaAf4zOJ7bSLBcUoA=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=erG9uV+3A2vHVRM3G4GhLaL3Y7EUWo3+BR04GiGuYAZApD2E3lVD4phQdkM5qGr2g4
+         Q/HJvtNwLtoNGw6BvHMU80ndDjdUfP1wsOtU88Rhpr3iW20/KfepIa4EJ/JyZ4NLfi3l
+         yrCoaROUK9Vw++aRYSfYVzp5WGe4Z01Pnl2os=
 MIME-Version: 1.0
-Date: Fri, 5 Nov 2010 13:44:38 +0800
-Message-ID: <AANLkTi=wi8DJaMMxjYTex8A_FiB0071Tk_dx1pudtUpD@mail.gmail.com>
-Subject: [PATCH] kdb: fix memory leak
-From: jovi zhang <bookjovi@gmail.com>
-To: Jason Wessel <jason.wessel@windriver.com>, Martin Hicks <mort@sgi.com>,
-        Dmitry Torokhov <dtor@mail.ru>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTikL4Ng0mJmeO0p_gtZWticd6NO3b9daHcRX4q1Q@mail.gmail.com>
+References: <AANLkTikL4Ng0mJmeO0p_gtZWticd6NO3b9daHcRX4q1Q@mail.gmail.com>
+Date: Fri, 5 Nov 2010 13:55:40 +0800
+Message-ID: <AANLkTiknaHiWUzOH+MjAujk_+0JfX2x2auRCgFjUqhU-@mail.gmail.com>
+Subject: Re: mmotm 2010-11-03-12-17: memcg build fail
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Greg Thelen <gthelen@google.com>, Andrea Righi <arighi@develer.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id oA55iwFn000768
 
-fix memory leak in kdb_main.c
+Forgot cc lkml
 
-Signed-off-by: jovi zhang <bookjovi@gmail.com>
-kernel/debug/kdb/kdb_main.c | Â  13 +++++++------
-1 files changed, 7 insertions(+), 6 deletions(-)
+On Fri, Nov 5, 2010 at 1:54 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
+> Hi,
+>
+> Build failed without __divdi3 on i386, known issue?
+>
+> mm/built-in.o: In function `mem_cgroup_dirty_info':
+> /home/dave/vdb/build/mm/linux-2.6.36/mm/memcontrol.c:1251: undefined
+> reference to `__divdi3'
+> /home/dave/vdb/build/mm/linux-2.6.36/mm/memcontrol.c:1259: undefined
+> reference to `__divdi3'
+> make: *** [.tmp_vmlinux1] Error 1
+>
+> --
+> Regards
+> dave
+>
 
-diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index 37755d6..3ab3fee 100644
---- a/kernel/debug/kdb/kdb_main.c
-+++ b/kernel/debug/kdb/kdb_main.c
-@@ -2361,7 +2361,7 @@ static int kdb_pid(int argc, const char **argv)
-Â */
-static int kdb_ll(int argc, const char **argv)
-{
-- Â  Â  Â  int diag;
-+ Â  Â  Â  int diag = 0;
-Â  Â  Â  Â unsigned long addr;
-Â  Â  Â  Â long offset = 0;
-Â  Â  Â  Â unsigned long va;
-@@ -2400,20 +2400,21 @@ static int kdb_ll(int argc, const char **argv)
-Â  Â  Â  Â  Â  Â  Â  Â char buf[80];
 
-Â  Â  Â  Â  Â  Â  Â  Â if (KDB_FLAG(CMD_INTERRUPT))
-- Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  return 0;
-+ Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  goto out;
 
-Â  Â  Â  Â  Â  Â  Â  Â sprintf(buf, "%s " kdb_machreg_fmt "\n", command, va);
-Â  Â  Â  Â  Â  Â  Â  Â diag = kdb_parse(buf);
-Â  Â  Â  Â  Â  Â  Â  Â if (diag)
-- Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  return diag;
-+ Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  goto out;
-
-Â  Â  Â  Â  Â  Â  Â  Â addr = va + linkoffset;
-Â  Â  Â  Â  Â  Â  Â  Â if (kdb_getword(&va, addr, sizeof(va)))
-- Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  return 0;
-+ Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  goto out;
-Â  Â  Â  Â }
-- Â  Â  Â  kfree(command);
-
-- Â  Â  Â  return 0;
-+out:
-+ Â  Â  Â  kfree(command);
-+ Â  Â  Â  return diag;
-}
-
-static int kdb_kgdb(int argc, const char **argv)
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Regards
+dave
