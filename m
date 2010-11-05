@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753659Ab0KEDQw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 23:16:52 -0400
-Received: from mail.perches.com ([173.55.12.10]:4054 "EHLO mail.perches.com"
+	id S1753528Ab0KEDIm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 23:08:42 -0400
+Received: from mail.perches.com ([173.55.12.10]:4057 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753574Ab0KEDIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 23:08:44 -0400
+	id S1753349Ab0KEDIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 23:08:38 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org,
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 13/49] drivers/isdn: Use vzalloc
-Date: Thu,  4 Nov 2010 20:07:37 -0700
-Message-Id: <db22c78aa7c3934f5ec61efcfa0b7a6e66411190.1288925424.git.joe@perches.com>
+Subject: [PATCH 06/49] crypto: Use vzalloc
+Date: Thu,  4 Nov 2010 20:07:30 -0700
+Message-Id: <0a38da3a2e3a157f239a64b87f1a941ea4e0798c.1288925424.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <alpine.DEB.2.00.1011031108260.11625@router.home>
 References: <alpine.DEB.2.00.1011031108260.11625@router.home>
@@ -24,68 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/isdn/i4l/isdn_common.c   |    4 ++--
- drivers/isdn/mISDN/dsp_core.c    |    3 +--
- drivers/isdn/mISDN/l1oip_codec.c |    6 ++----
- 3 files changed, 5 insertions(+), 8 deletions(-)
+ crypto/deflate.c |    3 +--
+ crypto/zlib.c    |    3 +--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/isdn/i4l/isdn_common.c b/drivers/isdn/i4l/isdn_common.c
-index 15632bd..2601d5c 100644
---- a/drivers/isdn/i4l/isdn_common.c
-+++ b/drivers/isdn/i4l/isdn_common.c
-@@ -2315,11 +2315,11 @@ static int __init isdn_init(void)
- 	int i;
- 	char tmprev[50];
+diff --git a/crypto/deflate.c b/crypto/deflate.c
+index 463dc85..cbc7a33 100644
+--- a/crypto/deflate.c
++++ b/crypto/deflate.c
+@@ -48,12 +48,11 @@ static int deflate_comp_init(struct deflate_ctx *ctx)
+ 	int ret = 0;
+ 	struct z_stream_s *stream = &ctx->comp_stream;
  
--	if (!(dev = vmalloc(sizeof(isdn_dev)))) {
-+	dev = vzalloc(sizeof(isdn_dev));
-+	if (!dev) {
- 		printk(KERN_WARNING "isdn: Could not allocate device-struct.\n");
- 		return -EIO;
+-	stream->workspace = vmalloc(zlib_deflate_workspacesize());
++	stream->workspace = vzalloc(zlib_deflate_workspacesize());
+ 	if (!stream->workspace) {
+ 		ret = -ENOMEM;
+ 		goto out;
  	}
--	memset((char *) dev, 0, sizeof(isdn_dev));
- 	init_timer(&dev->timer);
- 	dev->timer.function = isdn_timer_funct;
- 	spin_lock_init(&dev->lock);
-diff --git a/drivers/isdn/mISDN/dsp_core.c b/drivers/isdn/mISDN/dsp_core.c
-index 6f5b548..a255de5 100644
---- a/drivers/isdn/mISDN/dsp_core.c
-+++ b/drivers/isdn/mISDN/dsp_core.c
-@@ -1052,12 +1052,11 @@ dspcreate(struct channel_req *crq)
- 	if (crq->protocol != ISDN_P_B_L2DSP
- 	 && crq->protocol != ISDN_P_B_L2DSPHDLC)
- 		return -EPROTONOSUPPORT;
--	ndsp = vmalloc(sizeof(struct dsp));
-+	ndsp = vzalloc(sizeof(struct dsp));
- 	if (!ndsp) {
- 		printk(KERN_ERR "%s: vmalloc struct dsp failed\n", __func__);
+-	memset(stream->workspace, 0, zlib_deflate_workspacesize());
+ 	ret = zlib_deflateInit2(stream, DEFLATE_DEF_LEVEL, Z_DEFLATED,
+ 	                        -DEFLATE_DEF_WINBITS, DEFLATE_DEF_MEMLEVEL,
+ 	                        Z_DEFAULT_STRATEGY);
+diff --git a/crypto/zlib.c b/crypto/zlib.c
+index c3015733..739b8fc 100644
+--- a/crypto/zlib.c
++++ b/crypto/zlib.c
+@@ -95,11 +95,10 @@ static int zlib_compress_setup(struct crypto_pcomp *tfm, void *params,
+ 	zlib_comp_exit(ctx);
+ 
+ 	workspacesize = zlib_deflate_workspacesize();
+-	stream->workspace = vmalloc(workspacesize);
++	stream->workspace = vzalloc(workspacesize);
+ 	if (!stream->workspace)
  		return -ENOMEM;
- 	}
--	memset(ndsp, 0, sizeof(struct dsp));
- 	if (dsp_debug & DEBUG_DSP_CTRL)
- 		printk(KERN_DEBUG "%s: creating new dsp instance\n", __func__);
  
-diff --git a/drivers/isdn/mISDN/l1oip_codec.c b/drivers/isdn/mISDN/l1oip_codec.c
-index bbfd1b8..5a89972 100644
---- a/drivers/isdn/mISDN/l1oip_codec.c
-+++ b/drivers/isdn/mISDN/l1oip_codec.c
-@@ -330,14 +330,12 @@ l1oip_4bit_alloc(int ulaw)
- 		return 0;
- 
- 	/* alloc conversion tables */
--	table_com = vmalloc(65536);
--	table_dec = vmalloc(512);
-+	table_com = vzalloc(65536);
-+	table_dec = vzalloc(512);
- 	if (!table_com || !table_dec) {
- 		l1oip_4bit_free();
- 		return -ENOMEM;
- 	}
--	memset(table_com, 0, 65536);
--	memset(table_dec, 0, 512);
- 	/* generate compression table */
- 	i1 = 0;
- 	while (i1 < 256) {
+-	memset(stream->workspace, 0, workspacesize);
+ 	ret = zlib_deflateInit2(stream,
+ 				tb[ZLIB_COMP_LEVEL]
+ 					? nla_get_u32(tb[ZLIB_COMP_LEVEL])
 -- 
 1.7.3.1.g432b3.dirty
 
