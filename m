@@ -1,95 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925Ab0KELIV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 07:08:21 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:55032 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752456Ab0KELIT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 07:08:19 -0400
-Subject: Re: [PATCH 0/4] IMA: making i_readcount a first class inode citizen
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, hch@infradead.org, warthog9@kernel.org,
-        david@fromorbit.com, jmorris@namei.org, kyle@mcmartin.ca,
-        hpa@zytor.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, mingo@elte.hu, eparis@redhat.com,
-        viro@zeniv.linux.org.uk, Matthew Wilcox <matthew@wil.cx>
-In-Reply-To: <20101105011227.GB4320@fieldses.org>
-References: <1288303325-9628-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <20101105011227.GB4320@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 05 Nov 2010 07:08:06 -0400
-Message-ID: <1288955286.3135.9.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	id S1753964Ab0KELLX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 07:11:23 -0400
+Received: from msa105.auone-net.jp ([61.117.18.165]:58714 "EHLO
+	msa105.auone-net.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752456Ab0KELLU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 07:11:20 -0400
+X-Greylist: delayed 391 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Nov 2010 07:11:20 EDT
+Date: Fri, 5 Nov 2010 20:04:42 +0900
+From: Kusanagi Kouichi <slash@ac.auone-net.jp>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Zachary Amsden <zamsden@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Glauber Costa <glommer@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] x86: pvclock: Remove leftover scale_delta function.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-Id: <20101105110444.BAF6D6FC03B@msa105.auone-net.jp>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-04 at 21:12 -0400, J. Bruce Fields wrote:
-> On Thu, Oct 28, 2010 at 06:02:01PM -0400, Mimi Zohar wrote:
-> > On Mon, 2010-10-25 at 14:41 -0400, Eric Paris wrote:
-> > 
-> > <snip>
-> > 
-> > > I believe that IBM is going to look into making i_readcount a first
-> > > class citizen which can be used by both IMA and generic_setlease().
-> > > Then people could say IMA had 0 per inode overhead   :)
-> > 
-> > This patchset separates the incrementing/decrementing of the i_readcount,
-> > in the VFS layer, from other IMA functionality, by replacing the current
-> > ima_counts_get() call with iget_readcount(). Its unclear whether this
-> > call to increment i_readcount should be made earlier. 
-> > 
-> > The patch ordering is a bit redundant in order to leave removing the ifdef
-> > around i_readcount until the last patch. The first three patches: defines 
-> > iget/iput_readcount(), moves the IMA functionality in ima_counts_get() to
-> > ima_file_check(), and removes the IMA imbalance code, simplifying IMA. The
-> > last patch moves iget/iput_readcount() to the fs directory and removes the
-> > ifdef around i_readcount, making i_readcount into a "first class inode citizen".
-> > 
-> > The generic_setlease code could then take advantage of i_readcount, assuming
-> > it can take the spin_lock, by doing something like:
-> > 
-> > -		if ((arg == F_RDLCK) && (atomic_read(&inode->i_writecount) > 0))
-> > +
-> > +		spin_lock(&inode->i_lock);
-> > +		if ((arg == F_RDLCK) && (atomic_read(&inode->i_writecount) > 0)){
-> > +			spin_unlock(&inode->i_lock);
-> >  			goto out;
-> > -		if ((arg == F_WRLCK)
-> > -		    && ((atomic_read(&dentry->d_count) > 1)
-> > -			|| (atomic_read(&inode->i_count) > 1)))
-> > +		}
-> > +		if ((arg == F_WRLCK) && (inode->i_readcount > 1)) {
-> > +			spin_unlock(&inode->i_lock);
-> >  			goto out;
-> > +		}
-> > +		spin_unlock(&inode->i_lock);
-> >  	}
-> 
-> Seems like an improvement.
-> 
-> It still leaves the race:
-> 
-> 	may_open calls lease_break, finds no lease
-> 
-> 			setlease checks read/writecount, finds 0,
-> 			creates lease
-> 
-> 	__dentry_open bumps read/writecount
-> 
-> (Is there any reason we couldn't move the break_lease to after bumping
-> read or write count?)
-> 
-> --b.
+Commit 92580d64e16402762e2acc3022f065397c780425
+("x86: pvclock: Move scale_delta into common header")
+forgot to remove scale_delta.
 
-Right, like the ima_file_check(), which is after the __dentry_open().
-Al, is it possible to move the break_lease() in may_open() to later?
+Signed-off-by: Kusanagi Kouichi <slash@ac.auone-net.jp>
+---
+ arch/x86/kernel/pvclock.c |   38 --------------------------------------
+ 1 files changed, 0 insertions(+), 38 deletions(-)
 
-thanks,
-
-Mimi
+diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
+index bab3b9e..008b91e 100644
+--- a/arch/x86/kernel/pvclock.c
++++ b/arch/x86/kernel/pvclock.c
+@@ -41,44 +41,6 @@ void pvclock_set_flags(u8 flags)
+ 	valid_flags = flags;
+ }
+ 
+-/*
+- * Scale a 64-bit delta by scaling and multiplying by a 32-bit fraction,
+- * yielding a 64-bit result.
+- */
+-static inline u64 scale_delta(u64 delta, u32 mul_frac, int shift)
+-{
+-	u64 product;
+-#ifdef __i386__
+-	u32 tmp1, tmp2;
+-#endif
+-
+-	if (shift < 0)
+-		delta >>= -shift;
+-	else
+-		delta <<= shift;
+-
+-#ifdef __i386__
+-	__asm__ (
+-		"mul  %5       ; "
+-		"mov  %4,%%eax ; "
+-		"mov  %%edx,%4 ; "
+-		"mul  %5       ; "
+-		"xor  %5,%5    ; "
+-		"add  %4,%%eax ; "
+-		"adc  %5,%%edx ; "
+-		: "=A" (product), "=r" (tmp1), "=r" (tmp2)
+-		: "a" ((u32)delta), "1" ((u32)(delta >> 32)), "2" (mul_frac) );
+-#elif defined(__x86_64__)
+-	__asm__ (
+-		"mul %%rdx ; shrd $32,%%rdx,%%rax"
+-		: "=a" (product) : "0" (delta), "d" ((u64)mul_frac) );
+-#else
+-#error implement me!
+-#endif
+-
+-	return product;
+-}
+-
+ static u64 pvclock_get_nsec_offset(struct pvclock_shadow_time *shadow)
+ {
+ 	u64 delta = native_read_tsc() - shadow->tsc_timestamp;
+-- 
+1.7.2.3
 
