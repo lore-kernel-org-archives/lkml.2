@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789Ab0KEVfA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 17:35:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60005 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751600Ab0KEVe6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 17:34:58 -0400
-Date: Fri, 5 Nov 2010 22:34:56 +0100
-From: Jan Kara <jack@suse.cz>
-To: Jan Engelhardt <jengelh@medozas.de>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <jens.axboe@oracle.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, stable@kernel.org,
-        gregkh@suse.de
-Subject: Re: Sync writeback still broken
-Message-ID: <20101105213456.GB25520@quack.suse.cz>
-References: <20100212091609.GB1025@kernel.dk>
- <alpine.LFD.2.00.1002120722270.7792@localhost.localdomain>
- <alpine.LSU.2.01.1002131356250.20838@obet.zrqbmnf.qr>
- <20100215144938.GD3434@quack.suse.cz>
- <alpine.LSU.2.01.1002151629380.27775@obet.zrqbmnf.qr>
- <alpine.LSU.2.01.1006271842220.1495@obet.zrqbmnf.qr>
- <alpine.LNX.2.01.1010250115360.16022@obet.zrqbmnf.qr>
- <20101031122437.GA6296@quack.suse.cz>
- <20101031224012.GB13207@quack.suse.cz>
- <20101105213324.GA25520@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101105213324.GA25520@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753302Ab0KEVe5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 17:34:57 -0400
+Received: from elettra.colt-to.towertech.it ([213.215.222.70]:44169 "EHLO
+	smtp.towertech.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751600Ab0KEVez (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 17:34:55 -0400
+Date: Fri, 5 Nov 2010 22:35:04 +0100
+From: Alessandro Zummo <a.zummo@towertech.it>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        torvalds <torvalds@linux-foundation.org>,
+        Richard Purdie <rpurdie@rpsys.net>, akpm <akpm@linux-foundation.org>,
+        Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+Subject: Re: [PATCH] leds-net5501: taints kernel, add license
+Message-ID: <20101105223504.2ba8f261@linux.lan.towertech.it>
+In-Reply-To: <20101104102800.6b1cc210.randy.dunlap@oracle.com>
+References: <20101104102800.6b1cc210.randy.dunlap@oracle.com>
+Organization: Tower Technologies
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 05-11-10 22:33:24, Jan Kara wrote:
->   I needed one more patch to resolve the issue (attached) which I've just
-> posted for review and possible inclusion. I had a similar one long time ago
-> but now I'm better able to explain why it works because of tracepoints.
-> Yay! ;). With those three patches I'm not able to trigger livelocks (but
-> sync takes still 15 minutes because the througput to disk is about 4MB/s -
-> no big surprise given the random nature of the load)
-  PS: And big thanks to you for providing the test case and your
-persistence ;)
- 
-								Honza
+On Thu, 4 Nov 2010 10:28:00 -0700
+Randy Dunlap <randy.dunlap@oracle.com> wrote:
+
+> Alessandro, why does this module not have a module_exit() function?
+> I.e., why can it not be unloaded?
+> 
+
+ I believe there's no particular reason. 
+ Bjarke Istrup Pedersen is taking care of this code (CCd).
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+
+ Best regards,
+
+ Alessandro Zummo,
+  Tower Technologies - Torino, Italy
+
+  http://www.towertech.it
+
