@@ -1,62 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074Ab0KEDKY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 23:10:24 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:35878 "EHLO imr3.ericy.com"
+	id S1754015Ab0KEDJQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 23:09:16 -0400
+Received: from mail.perches.com ([173.55.12.10]:4195 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753911Ab0KEDKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 23:10:19 -0400
-Date: Thu, 4 Nov 2010 20:09:23 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-CC: Jean Delvare <khali@linux-fr.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [lm-sensors] [PATCH 8/8] hwmon: applesmc: Update copyright
- information
-Message-ID: <20101105030923.GG28308@ericsson.com>
-References: <1288511434-5662-1-git-send-email-rydberg@euromail.se>
- <1288511434-5662-9-git-send-email-rydberg@euromail.se>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1288511434-5662-9-git-send-email-rydberg@euromail.se>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753934Ab0KEDJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 23:09:10 -0400
+From: Joe Perches <joe@perches.com>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Subject: [PATCH 44/49] mm: Use vzalloc
+Date: Thu,  4 Nov 2010 20:08:08 -0700
+Message-Id: <fb9608ce19d2a2a536be8330c40fc922583a5bda.1288925425.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
+In-Reply-To: <alpine.DEB.2.00.1011031108260.11625@router.home>
+References: <alpine.DEB.2.00.1011031108260.11625@router.home>
+In-Reply-To: <cover.1288925424.git.joe@perches.com>
+References: <cover.1288925424.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 31, 2010 at 03:50:34AM -0400, Henrik Rydberg wrote:
-> With the preceding patches, git blame assigns about half of
-> the file to the present author. Add a line to the copyright
-> to reflect this.
-> 
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> ---
->  drivers/hwmon/applesmc.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
-> index c09cd2e..7ae37eb 100644
-> --- a/drivers/hwmon/applesmc.c
-> +++ b/drivers/hwmon/applesmc.c
-> @@ -4,6 +4,7 @@
->   * computers.
->   *
->   * Copyright (C) 2007 Nicolas Boichat <nicolas@boichat.ch>
-> + * Copyright (C) 2010 Henrik Rydberg <rydberg@euromail.se>
->   *
->   * Based on hdaps.c driver:
->   * Copyright (C) 2005 Robert Love <rml@novell.com>
-> -- 
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ mm/memcontrol.c  |    5 ++---
+ mm/page_cgroup.c |    3 +--
+ mm/percpu.c      |    8 ++------
+ mm/swapfile.c    |    3 +--
+ 4 files changed, 6 insertions(+), 13 deletions(-)
 
-
-Hi Henrik,
-
-overall excellent cleanup. 
-
-One suggestion - since you did that much rework, it would be nice if you could fix
-the remaining few checkpatch errors in the file as well (and possibly the warnings).
-
-Guenter
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 9a99cfa..90da698 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -4199,14 +4199,13 @@ static struct mem_cgroup *mem_cgroup_alloc(void)
+ 
+ 	/* Can be very big if MAX_NUMNODES is very big */
+ 	if (size < PAGE_SIZE)
+-		mem = kmalloc(size, GFP_KERNEL);
++		mem = kzalloc(size, GFP_KERNEL);
+ 	else
+-		mem = vmalloc(size);
++		mem = vzalloc(size);
+ 
+ 	if (!mem)
+ 		return NULL;
+ 
+-	memset(mem, 0, size);
+ 	mem->stat = alloc_percpu(struct mem_cgroup_stat_cpu);
+ 	if (!mem->stat) {
+ 		if (size < PAGE_SIZE)
+diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
+index 5bffada..34970c7 100644
+--- a/mm/page_cgroup.c
++++ b/mm/page_cgroup.c
+@@ -450,11 +450,10 @@ int swap_cgroup_swapon(int type, unsigned long max_pages)
+ 	length = ((max_pages/SC_PER_PAGE) + 1);
+ 	array_size = length * sizeof(void *);
+ 
+-	array = vmalloc(array_size);
++	array = vzalloc(array_size);
+ 	if (!array)
+ 		goto nomem;
+ 
+-	memset(array, 0, array_size);
+ 	ctrl = &swap_cgroup_ctrl[type];
+ 	mutex_lock(&swap_cgroup_mutex);
+ 	ctrl->length = length;
+diff --git a/mm/percpu.c b/mm/percpu.c
+index efe8168..9e16d1c 100644
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -293,12 +293,8 @@ static void *pcpu_mem_alloc(size_t size)
+ 
+ 	if (size <= PAGE_SIZE)
+ 		return kzalloc(size, GFP_KERNEL);
+-	else {
+-		void *ptr = vmalloc(size);
+-		if (ptr)
+-			memset(ptr, 0, size);
+-		return ptr;
+-	}
++	else
++		return vzalloc(size);
+ }
+ 
+ /**
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index 67ddaaf..43e6988 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -2044,13 +2044,12 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
+ 		goto bad_swap;
+ 
+ 	/* OK, set up the swap map and apply the bad block list */
+-	swap_map = vmalloc(maxpages);
++	swap_map = vzalloc(maxpages);
+ 	if (!swap_map) {
+ 		error = -ENOMEM;
+ 		goto bad_swap;
+ 	}
+ 
+-	memset(swap_map, 0, maxpages);
+ 	nr_good_pages = maxpages - 1;	/* omit header page */
+ 
+ 	for (i = 0; i < swap_header->info.nr_badpages; i++) {
+-- 
+1.7.3.1.g432b3.dirty
 
