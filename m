@@ -1,62 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495Ab0KERT6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 13:19:58 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:58395 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753159Ab0KERTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 13:19:54 -0400
-Subject: Re: [PATCH] xfs: linux-2.6: xfs_ioctl: fix information leak to
- userland
-From: Alex Elder <aelder@sgi.com>
-Reply-To: aelder@sgi.com
-To: Vasiliy Kulikov <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, xfs-masters@oss.sgi.com,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <dchinner@redhat.com>,
-        Eric Sandeen <sandeen@redhat.com>,
-        Arkadiusz =?UTF-8?Q?Mi=C5=9Bkiewicz?= <arekm@maven.pl>,
-        xfs@oss.sgi.com, linux-kernel@vger.kernel.org
-In-Reply-To: <1288448778-5373-1-git-send-email-segooon@gmail.com>
-References: <1288448778-5373-1-git-send-email-segooon@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 05 Nov 2010 12:19:49 -0500
-Message-ID: <1288977589.2295.27.camel@doink>
+	id S1754561Ab0KERVQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 13:21:16 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41553 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754377Ab0KERVO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 13:21:14 -0400
+Date: Fri, 5 Nov 2010 10:20:38 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [PATCH] atomic: add atomic_inc_not_zero_hint()
+Message-Id: <20101105102038.53e36f9e.akpm@linux-foundation.org>
+In-Reply-To: <1288975980.2882.877.camel@edumazet-laptop>
+References: <1288975980.2882.877.camel@edumazet-laptop>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 05 Nov 2010 17:19:49.0874 (UTC) FILETIME=[A6EC4520:01CB7D0D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-10-30 at 18:26 +0400, Vasiliy Kulikov wrote:
-> al_hreq is copied from userland.  If al_hreq.buflen is not properly aligned then
-> xfs_attr_list will ignore the last bytes of kbuf.  These bytes are unitialized.
-> It leads to leaking of contents of kernel stack memory.
+On Fri, 05 Nov 2010 17:53:00 +0100
+Eric Dumazet <eric.dumazet@gmail.com> wrote:
+
+> Andrew
 > 
-> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+> atomic_inc_not_zero() / atomic_add_unless() ... are spreaded in many
+> arch/xxx/include/asm/atomic.h, but they are generic.
+> 
+> Apparently there is no centralization of some common atomic features...
+> 
+> What do you think adding a new file so that we can move common
+> definitions in it ?
+> 
+> Thanks
+> 
+> [PATCH] atomic: add atomic_inc_not_zero_hint()
+> 
+> Followup of perf tools session in Netfilter WorkShop 2010
+> 
+> In network stack we make high usage of atomic_inc_not_zero() in contexts
+> we know the probable value of atomic before increment (2 for udp sockets
+> for example)
+> 
+> Using a special version of atomic_inc_not_zero() giving this hint can
+> help processor to use less bus transactions.
+> 
+> On x86 (MESI protocol) for example, this avoids entering Shared state,
+> because "lock cmpxchg" issues an RFO (Read For Ownership)
+
+It totally makes sense to add include/linu/atomic.h for common things. 
+Perhaps there's already code in arch/*/include/asm/atomic.h which
+should be hoisted up there.  But that can't reliably be done until a
+million files have had their #includes switched :(
+
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> Cc: Christoph Lameter <cl@linux-foundation.org>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Andi Kleen <andi@firstfloor.org>
+> Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+> Cc: David Miller <davem@davemloft.net>
+> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> Cc: Nick Piggin <npiggin@kernel.dk>
 > ---
->  Compile tested.
+>  include/linux/atomic.h |   29 +++++++++++++++++++++++++++++
+>  1 file changed, 29 insertions(+)
 > 
->  fs/xfs/linux-2.6/xfs_ioctl.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/xfs/linux-2.6/xfs_ioctl.c b/fs/xfs/linux-2.6/xfs_ioctl.c
-> index 2ea238f..ad442d9 100644
-> --- a/fs/xfs/linux-2.6/xfs_ioctl.c
-> +++ b/fs/xfs/linux-2.6/xfs_ioctl.c
-> @@ -416,7 +416,7 @@ xfs_attrlist_by_handle(
->  	if (IS_ERR(dentry))
->  		return PTR_ERR(dentry);
->  
-> -	kbuf = kmalloc(al_hreq.buflen, GFP_KERNEL);
-> +	kbuf = kzalloc(al_hreq.buflen, GFP_KERNEL);
->  	if (!kbuf)
->  		goto out_dput;
->  
+> diff --git a/include/linux/atomic.h b/include/linux/atomic.h
+> new file mode 100644
+> index 0000000..c04327a
+> --- /dev/null
+> +++ b/include/linux/atomic.h
+> @@ -0,0 +1,29 @@
+> +#ifndef _LINUX_ATOMIC_H
+> +#define _LINUX_ATOMIC_H
+> +#include <asm/atomic.h>
+> +
+> +/**
+> + * atomic_inc_not_zero_hint - increment if not null
+> + * @v: pointer of type atomic_t
+> + * @hint: probable value of the atomic before the increment
+> + *
+> + * This version of atomic_inc_not_zero() gives a hint of probable
+> + * value of the atomic. This helps processor to not read the memory
+> + * before doing the atomic read/modify/write cycle, lowering
+> + * number of bus transactions on some arches.
+> + * Note: hint MUST not be 0 !
+> + */
 
-Looks good.  I will take this in and will send
-it to Linus for 2.6.37.  Thanks.
+It's quite unobvious *why* `hint' cannot be zero.  Can you please add
+the reasoning to the comment?  Also, the local `hint' should be
+referred to as "@hint" in a kerneldoc comment.
 
-Reviewed-by: Alex Elder <aelder@sgi.com>
+> +static inline int atomic_inc_not_zero_hint(atomic_t *v, int hint)
+> +{
+> +	int val, c = hint;
+> +
+> + 	do {
+> +		val = atomic_cmpxchg(v, c, c + 1);
+> +		if (val == c)
+> +			return 1;
+> +		c = val;
+> +	} while (c);
+> +
+> +	return 0;
+> +}
 
+Should/could this have implemented a more general
+atomic_add_not_zero_hint() and made atomic_inc_not_zero_hint() a
+wrapper around that?
+
+Also, it might make sense to add "#ifndef atomic_inc_not_zero_hint"
+wrappers around this function so that the arch can implement an
+overriding custom version.  And that becomes a general rule as more
+functions are added to include/linux/atomic.h.
