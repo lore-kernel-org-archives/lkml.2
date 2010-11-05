@@ -1,99 +1,403 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847Ab0KEUJJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 16:09:09 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:60927 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752270Ab0KEUJH convert rfc822-to-8bit (ORCPT
+	id S1754733Ab0KEUUK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 16:20:10 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:65421 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751893Ab0KEUUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 16:09:07 -0400
+	Fri, 5 Nov 2010 16:20:09 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=jBcQjxlGpkFEEiWls7bL6vdTm53sP4r3tIYRwoHm0GuiyjeO4WJQHk2X048Sw0UKTK
-         IfYu1pWoT+OLZX4t53Gg==
-MIME-Version: 1.0
-In-Reply-To: <20101105035114.GA6698@nowhere>
-References: <AANLkTikCYjENib2zfz-rmAM2fZbZEzK-9jgL4D-b40xs@mail.gmail.com>
-	<AANLkTikukr3d+GmWDdPB9jfwAAuMUgNwb06WXPZgRFwc@mail.gmail.com>
-	<20101105035114.GA6698@nowhere>
-Date: Fri, 5 Nov 2010 13:09:03 -0700
-Message-ID: <AANLkTinvWzZfFtUB8bxh1EAXX43_bNDyss=xZfuGSwvW@mail.gmail.com>
-Subject: Re: [RFD] Perf generic context based exclusion/inclusion (was Re:
- [PATCH 0/4] Finer granularity and task/cgroup irq time accounting)
-From: Venkatesh Pallipadi <venki@google.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Paul Menage <menage@google.com>, linux-kernel@vger.kernel.org,
-        Paul Turner <pjt@google.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=dPHrD1FDpyu81bqH4XrDfSIdkj4+DWEn8dM5DB1SZUSPwllmhGSDXdPkES2HELEtEy
+         yKm/W+kfGmECnfWaR/FGpLrEWfeoQilkFBietYVBIU+znxZ5oKLYM4Fuwx0ER1dIFUrP
+         82/6tSREMhU/kWwsRYIrIhAhjBopmIfz+CCZ8=
+Subject: Re: OOM when adding ipv6 route:  How to make available more
+ per-cpu memory?
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ben Greear <greearb@candelatech.com>
+Cc: NetDev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
+In-Reply-To: <4CD449A5.5070305@candelatech.com>
+References: <4CD43C87.5040403@candelatech.com>
+	 <1288980361.2882.1070.camel@edumazet-laptop>
+	 <4CD449A5.5070305@candelatech.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 05 Nov 2010 21:20:03 +0100
+Message-ID: <1288988403.2665.268.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 4, 2010 at 8:51 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Thu, Nov 04, 2010 at 12:46:42PM -0700, Venkatesh Pallipadi wrote:
->> On Thu, Nov 4, 2010 at 8:40 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-<snip>
->
->
->> - This may be a bit odd and probably there is some other way of doing
->> this better. But, one other context we may want to track is the sleep
->> or wait at certain points. What I am thinking is something like how
->> long are we waiting on this kmalloc when we are holding this mutex
->> kind of info. May be it is best to do this as having sleep in kmalloc
->> as a context.
->
->
->
-> If I understand you well, you want to define a context made of a
-> sleeping time?
->
-> The problem is that it means defining an empty context:
-> nothing happens in task X while it is sleeping (by definition), so
-> capturing any events, or counting whatever counter in this slice
-> would never report anything.
->
-> OTOH you can capture trace events and get the time between a
-> sleep and a wake up event, then you can compute the difference
-> from a post processing script in perf tools.
->
+Le vendredi 05 novembre 2010 Ã  11:15 -0700, Ben Greear a Ã©crit :
 
-Agree. Sleeping context won't work in general. I was just thinking
-aloud on whether there is a way to tie up sleep trace event with a pid
-and mutex being held, so that something like "how long did this thread
-wait in this kmalloc while being in some critical section" can be
-captured. So, post processing trace events is a better option here.
+> root@lanforge-ubuntu:/home/lanforge# cat /proc/vmallocinfo
+> 0xf7ffe000-0xf8000000    8192 hpet_enable+0x2d/0x1b8 phys=fed00000 ioremap
+> 0xf8002000-0xf8004000    8192 acpi_os_map_memory+0x16/0x1f phys=df79e000 ioremap
+> 0xf8004000-0xf8007000   12288 acpi_os_map_memory+0x16/0x1f phys=df7a0000 ioremap
+> 0xf8008000-0xf800a000    8192 acpi_os_map_memory+0x16/0x1f phys=df790000 ioremap
+> 0xf800b000-0xf8010000   20480 module_alloc+0x72/0x80 pages=4 vmalloc
+> 0xf8010000-0xf8019000   36864 acpi_os_map_memory+0x16/0x1f phys=df790000 ioremap
+> 0xf801a000-0xf801c000    8192 module_alloc+0x72/0x80 pages=1 vmalloc
+> 0xf801d000-0xf8020000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8023000-0xf8026000   12288 module_alloc+0x72/0x80 pages=2 vmalloc
+> 0xf8026000-0xf8028000    8192 msix_capability_init+0xae/0x2b0 phys=fa4fe000 ioremap
+> 0xf8028000-0xf802a000    8192 module_alloc+0x72/0x80 pages=1 vmalloc
+> 0xf802b000-0xf802e000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf802f000-0xf8032000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8033000-0xf8036000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8037000-0xf803a000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf803b000-0xf803e000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf803f000-0xf8048000   36864 module_alloc+0x72/0x80 pages=8 vmalloc
+> 0xf804b000-0xf8055000   40960 module_alloc+0x72/0x80 pages=9 vmalloc
+> 0xf8056000-0xf8059000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf805b000-0xf8063000   32768 module_alloc+0x72/0x80 pages=7 vmalloc
+> 0xf8066000-0xf8068000    8192 msix_capability_init+0xae/0x2b0 phys=fa4fa000 ioremap
+> 0xf8068000-0xf8070000   32768 module_alloc+0x72/0x80 pages=7 vmalloc
+> 0xf8072000-0xf8075000   12288 module_alloc+0x72/0x80 pages=2 vmalloc
+> 0xf8076000-0xf8083000   53248 module_alloc+0x72/0x80 pages=12 vmalloc
+> 0xf8084000-0xf8087000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8088000-0xf808b000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf808c000-0xf808f000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8090000-0xf8093000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8094000-0xf8097000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8098000-0xf809b000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf809c000-0xf809f000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf80a2000-0xf80ad000   45056 module_alloc+0x72/0x80 pages=10 vmalloc
+> 0xf80ae000-0xf80b2000   16384 module_alloc+0x72/0x80 pages=3 vmalloc
+> 0xf80b3000-0xf80b6000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf80b7000-0xf80ba000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf80bb000-0xf80be000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf80bf000-0xf80c2000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf80c3000-0xf80c6000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf80c8000-0xf80cd000   20480 pci_iomap+0x81/0x90 phys=fa4fc000 ioremap
+> 0xf80ce000-0xf80d1000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf80d2000-0xf80d5000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf80d6000-0xf80d9000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf80da000-0xf80dd000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf80de000-0xf80e1000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf80e2000-0xf80e5000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf80e6000-0xf80e9000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf80ea000-0xf80ed000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf80ee000-0xf80f1000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf80f2000-0xf80f5000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf80f6000-0xf80f9000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf80fa000-0xf80fd000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf80fe000-0xf8101000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8102000-0xf8105000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8106000-0xf8109000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf810a000-0xf810d000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf810d000-0xf8118000   45056 module_alloc+0x72/0x80 pages=10 vmalloc
+> 0xf8119000-0xf811c000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf811d000-0xf8120000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8121000-0xf8124000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8125000-0xf8128000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8129000-0xf812c000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf812d000-0xf8130000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8130000-0xf8132000    8192 module_alloc+0x72/0x80 pages=1 vmalloc
+> 0xf8133000-0xf8136000   12288 module_alloc+0x72/0x80 pages=2 vmalloc
+> 0xf8137000-0xf813a000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf813e000-0xf8140000    8192 msix_capability_init+0xae/0x2b0 phys=fa4f6000 ioremap
+> 0xf8140000-0xf8145000   20480 pci_iomap+0x81/0x90 phys=fa4f8000 ioremap
+> 0xf8146000-0xf8148000    8192 msix_capability_init+0xae/0x2b0 phys=fa4f2000 ioremap
+> 0xf8148000-0xf814d000   20480 pci_iomap+0x81/0x90 phys=fa4f4000 ioremap
+> 0xf814e000-0xf8150000    8192 msix_capability_init+0xae/0x2b0 phys=fa4ee000 ioremap
+> 0xf8150000-0xf8155000   20480 pci_iomap+0x81/0x90 phys=fa4f0000 ioremap
+> 0xf8156000-0xf8158000    8192 msix_capability_init+0xae/0x2b0 phys=fa4ea000 ioremap
+> 0xf8158000-0xf815d000   20480 pci_iomap+0x81/0x90 phys=fa4ec000 ioremap
+> 0xf815e000-0xf8160000    8192 msix_capability_init+0xae/0x2b0 phys=fa4e6000 ioremap
+> 0xf8160000-0xf8165000   20480 pci_iomap+0x81/0x90 phys=fa4e8000 ioremap
+> 0xf8166000-0xf8168000    8192 msix_capability_init+0xae/0x2b0 phys=fa4e2000 ioremap
+> 0xf8168000-0xf816d000   20480 pci_iomap+0x81/0x90 phys=fa4e4000 ioremap
+> 0xf816e000-0xf8170000    8192 module_alloc+0x72/0x80 pages=1 vmalloc
+> 0xf8170000-0xf8175000   20480 pci_iomap+0x81/0x90 phys=fa4e0000 ioremap
+> 0xf8176000-0xf8179000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf817a000-0xf817d000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf817e000-0xf8181000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8182000-0xf8185000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8186000-0xf8189000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf818e000-0xf819d000   61440 module_alloc+0x72/0x80 pages=14 vmalloc
+> 0xf819e000-0xf81a1000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf81a2000-0xf81a5000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf81a6000-0xf81a9000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf81aa000-0xf81ad000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf81ae000-0xf81b1000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf81b2000-0xf81b5000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf81b6000-0xf81b9000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf81ba000-0xf81bd000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf81be000-0xf81c1000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf81c2000-0xf81c5000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf81fe000-0xf8201000   12288 e1000e_setup_tx_resources+0x27/0xb0 [e1000e] pages=2 vmalloc
+> 0xf8202000-0xf8205000   12288 e1000e_setup_rx_resources+0x2a/0x120 [e1000e] pages=2 vmalloc
+> 0xf8206000-0xf8209000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf820c000-0xf820f000   12288 module_alloc+0x72/0x80 pages=2 vmalloc
+> 0xf8210000-0xf8213000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8214000-0xf8217000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8218000-0xf821c000   16384 module_alloc+0x72/0x80 pages=3 vmalloc
+> 0xf8225000-0xf8228000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8229000-0xf822b000    8192 module_alloc+0x72/0x80 pages=1 vmalloc
+> 0xf82ab000-0xf82ae000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf82af000-0xf82b2000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf82b3000-0xf82b6000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf82b7000-0xf82ba000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf82bb000-0xf82be000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf82bf000-0xf82c2000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf82c3000-0xf82c6000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf82c7000-0xf82ca000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf82cb000-0xf82ce000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf82cf000-0xf82d2000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf82d3000-0xf82d6000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf82d7000-0xf82da000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf82db000-0xf82de000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf82df000-0xf82e2000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf82e3000-0xf82e6000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf82e7000-0xf82ea000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf82eb000-0xf82ee000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf82ef000-0xf82f2000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8332000-0xf8363000  200704 module_alloc+0x72/0x80 pages=48 vmalloc
+> 0xf8364000-0xf8367000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8368000-0xf836b000   12288 e1000e_setup_tx_resources+0x27/0xb0 [e1000e] pages=2 vmalloc
+> 0xf836c000-0xf836f000   12288 e1000e_setup_rx_resources+0x2a/0x120 [e1000e] pages=2 vmalloc
+> 0xf8370000-0xf8373000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8374000-0xf8377000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8378000-0xf837b000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf837c000-0xf837f000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf837f000-0xf83a0000  135168 module_alloc+0x72/0x80 pages=32 vmalloc
+> 0xf83a1000-0xf83a4000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf83a5000-0xf83a8000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf83a9000-0xf83ac000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf83ad000-0xf83b0000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf83b0000-0xf83ba000   40960 module_alloc+0x72/0x80 pages=9 vmalloc
+> 0xf83bb000-0xf83bd000    8192 module_alloc+0x72/0x80 pages=1 vmalloc
+> 0xf83be000-0xf83c1000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf83cc000-0xf83e5000  102400 module_alloc+0x72/0x80 pages=24 vmalloc
+> 0xf83ec000-0xf83ee000    8192 msix_capability_init+0xae/0x2b0 phys=faedc000 ioremap
+> 0xf83f0000-0xf83f2000    8192 msix_capability_init+0xae/0x2b0 phys=fa69c000 ioremap
+> 0xf83fa000-0xf83fc000    8192 msix_capability_init+0xae/0x2b0 phys=fafdc000 ioremap
+> 0xf83fe000-0xf8400000    8192 msix_capability_init+0xae/0x2b0 phys=fa698000 ioremap
+> 0xf8400000-0xf8421000  135168 e1000_probe+0x206/0x9d0 [e1000e] phys=faee0000 ioremap
+> 0xf8422000-0xf8424000    8192 msix_capability_init+0xae/0x2b0 phys=fa79c000 ioremap
+> 0xf8426000-0xf8428000    8192 msix_capability_init+0xae/0x2b0 phys=fa798000 ioremap
+> 0xf842a000-0xf842c000    8192 msix_capability_init+0xae/0x2b0 phys=fa99c000 ioremap
+> 0xf842e000-0xf8430000    8192 msix_capability_init+0xae/0x2b0 phys=fa998000 ioremap
+> 0xf8432000-0xf8434000    8192 msix_capability_init+0xae/0x2b0 phys=faa9c000 ioremap
+> 0xf8436000-0xf8438000    8192 msix_capability_init+0xae/0x2b0 phys=faa98000 ioremap
+> 0xf843a000-0xf843c000    8192 msix_capability_init+0xae/0x2b0 phys=fac9c000 ioremap
+> 0xf843e000-0xf8440000    8192 msix_capability_init+0xae/0x2b0 phys=fac98000 ioremap
+> 0xf8440000-0xf8461000  135168 igb_probe+0x1f5/0x87a [igb] phys=fa6e0000 ioremap
+> 0xf8462000-0xf8464000    8192 msix_capability_init+0xae/0x2b0 phys=fad9c000 ioremap
+> 0xf8466000-0xf8468000    8192 msix_capability_init+0xae/0x2b0 phys=fad98000 ioremap
+> 0xf846c000-0xf846e000    8192 module_alloc+0x72/0x80 pages=1 vmalloc
+> 0xf8476000-0xf8478000    8192 module_alloc+0x72/0x80 pages=1 vmalloc
+> 0xf8480000-0xf84a1000  135168 e1000_probe+0x206/0x9d0 [e1000e] phys=fafe0000 ioremap
+> 0xf84a9000-0xf84af000   24576 module_alloc+0x72/0x80 pages=5 vmalloc
+> 0xf84bc000-0xf84bf000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf84c0000-0xf84e1000  135168 igb_probe+0x1f5/0x87a [igb] phys=fa660000 ioremap
+> 0xf84e2000-0xf84e5000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf84e6000-0xf84e9000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf84ea000-0xf84ed000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf84ee000-0xf84f1000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf84f2000-0xf84f5000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf84f6000-0xf84f9000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf84fb000-0xf84ff000   16384 module_alloc+0x72/0x80 pages=3 vmalloc
+> 0xf8500000-0xf8521000  135168 igb_probe+0x1f5/0x87a [igb] phys=fa7e0000 ioremap
+> 0xf8522000-0xf852f000   53248 module_alloc+0x72/0x80 pages=12 vmalloc
+> 0xf8530000-0xf8533000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8534000-0xf8537000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8538000-0xf853b000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf853c000-0xf853f000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8540000-0xf8561000  135168 igb_probe+0x1f5/0x87a [igb] phys=fa760000 ioremap
+> 0xf8562000-0xf8565000   12288 module_alloc+0x72/0x80 pages=2 vmalloc
+> 0xf8566000-0xf8569000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf856a000-0xf856c000    8192 module_alloc+0x72/0x80 pages=1 vmalloc
+> 0xf856d000-0xf8570000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8571000-0xf8574000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8575000-0xf8578000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8579000-0xf857c000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf857d000-0xf857f000    8192 swap_cgroup_swapon+0x3c/0x140 pages=1 vmalloc
+> 0xf8580000-0xf85a1000  135168 igb_probe+0x1f5/0x87a [igb] phys=fa9e0000 ioremap
+> 0xf85a2000-0xf85a5000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf85a6000-0xf85a9000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf85aa000-0xf85ad000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf85af000-0xf85b7000   32768 module_alloc+0x72/0x80 pages=7 vmalloc
+> 0xf85b8000-0xf85bb000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf85bc000-0xf85bf000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf85c0000-0xf85e1000  135168 igb_probe+0x1f5/0x87a [igb] phys=fa960000 ioremap
+> 0xf85e2000-0xf85ed000   45056 sys_swapon+0x5a6/0xa40 pages=10 vmalloc
+> 0xf85ee000-0xf8600000   73728 module_alloc+0x72/0x80 pages=17 vmalloc
+> 0xf8600000-0xf8621000  135168 igb_probe+0x1f5/0x87a [igb] phys=faae0000 ioremap
+> 0xf8622000-0xf8625000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8626000-0xf8629000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf862a000-0xf862d000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf862e000-0xf8631000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8632000-0xf8635000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8636000-0xf8639000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf863a000-0xf863d000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8640000-0xf8661000  135168 igb_probe+0x1f5/0x87a [igb] phys=faa60000 ioremap
+> 0xf8662000-0xf8665000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8666000-0xf8669000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf866a000-0xf866d000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf866e000-0xf8671000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8672000-0xf8675000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8676000-0xf8679000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf867a000-0xf867d000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8680000-0xf86a1000  135168 igb_probe+0x1f5/0x87a [igb] phys=face0000 ioremap
+> 0xf86a2000-0xf86a5000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf86a6000-0xf86a9000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf86aa000-0xf86ad000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf86ae000-0xf86b1000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf86b2000-0xf86b5000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf86b6000-0xf86b9000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf86ba000-0xf86bd000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf86c0000-0xf86e1000  135168 igb_probe+0x1f5/0x87a [igb] phys=fac60000 ioremap
+> 0xf86e2000-0xf86e5000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8700000-0xf8721000  135168 igb_probe+0x1f5/0x87a [igb] phys=fade0000 ioremap
+> 0xf8740000-0xf8761000  135168 igb_probe+0x1f5/0x87a [igb] phys=fad60000 ioremap
+> 0xf8762000-0xf8767000   20480 module_alloc+0x72/0x80 pages=4 vmalloc
+> 0xf8768000-0xf876b000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf876c000-0xf876f000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8770000-0xf8773000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8774000-0xf8777000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8778000-0xf877b000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf877c000-0xf877f000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8780000-0xf8783000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8784000-0xf8787000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8788000-0xf878b000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf878c000-0xf878f000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8790000-0xf8793000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8793000-0xf87a4000   69632 module_alloc+0x72/0x80 pages=16 vmalloc
+> 0xf87a5000-0xf87a8000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf87aa000-0xf87e7000  249856 module_alloc+0x72/0x80 pages=60 vmalloc
+> 0xf87f4000-0xf87f7000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf87f8000-0xf87fb000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf87fe000-0xf8877000  495616 module_alloc+0x72/0x80 pages=120 vmalloc
+> 0xf8878000-0xf887b000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf887c000-0xf887f000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8880000-0xf8883000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8884000-0xf8887000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8888000-0xf888b000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf888c000-0xf888f000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8890000-0xf8893000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8894000-0xf8897000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf8898000-0xf889b000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf889c000-0xf889f000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf88a0000-0xf88a3000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf88a4000-0xf88a7000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf88a8000-0xf88ab000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf88ac000-0xf88af000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xf88af000-0xf88d5000  155648 module_alloc+0x72/0x80 pages=37 vmalloc
+> 0xf8a65000-0xf8a67000    8192 module_alloc+0x72/0x80 pages=1 vmalloc
+> 0xfa026000-0xfa028000    8192 acpi_os_map_memory+0x16/0x1f phys=df79e000 ioremap
+> 0xfa02a000-0xfa02c000    8192 acpi_os_map_memory+0x16/0x1f phys=df790000 ioremap
+> 0xfa03a000-0xfa03c000    8192 acpi_os_map_memory+0x16/0x1f phys=df790000 ioremap
+> 0xfa03e000-0xfa040000    8192 acpi_os_map_memory+0x16/0x1f phys=df790000 ioremap
+> 0xfa042000-0xfa044000    8192 acpi_os_map_memory+0x16/0x1f phys=df79e000 ioremap
+> 0xfa046000-0xfa048000    8192 acpi_os_map_memory+0x16/0x1f phys=df79a000 ioremap
+> 0xfa04a000-0xfa04c000    8192 acpi_os_map_memory+0x16/0x1f phys=df79a000 ioremap
+> 0xfa04e000-0xfa050000    8192 acpi_os_map_memory+0x16/0x1f phys=df79a000 ioremap
+> 0xfa052000-0xfa054000    8192 acpi_os_map_memory+0x16/0x1f phys=df79a000 ioremap
+> 0xfa056000-0xfa058000    8192 acpi_os_map_memory+0x16/0x1f phys=df79a000 ioremap
+> 0xfa05e000-0xfa060000    8192 acpi_os_map_memory+0x16/0x1f phys=fed1f000 ioremap
+> 0xfa06e000-0xfa070000    8192 usb_hcd_pci_probe+0x17b/0x350 phys=fa4de000 ioremap
+> 0xfa072000-0xfa074000    8192 usb_hcd_pci_probe+0x17b/0x350 phys=fa4dc000 ioremap
+> 0xfa78c000-0xfa79d000   69632 module_alloc+0x72/0x80 pages=16 vmalloc
+> 0xfa805000-0xfa84a000  282624 module_alloc+0x72/0x80 pages=68 vmalloc
+> 0xfc000000-0xfc400000 4194304 pcpu_get_vm_areas+0x0/0x610 vmalloc
+> 0xfc400000-0xfc800000 4194304 pcpu_get_vm_areas+0x0/0x610 vmalloc
+> 0xfc93f000-0xfc941000    8192 module_alloc+0x72/0x80 pages=1 vmalloc
+> 0xfc94b000-0xfc94e000   12288 module_alloc+0x72/0x80 pages=2 vmalloc
+> 0xfc95e000-0xfc964000   24576 module_alloc+0x72/0x80 pages=5 vmalloc
+> 0xfc96f000-0xfc972000   12288 module_alloc+0x72/0x80 pages=2 vmalloc
+> 0xfcdcc000-0xfcddf000   77824 module_alloc+0x72/0x80 pages=18 vmalloc
+> 0xfce11000-0xfce14000   12288 reqsk_queue_alloc+0x54/0xd0 pages=2 vmalloc
+> 0xfce15000-0xfce18000   12288 reqsk_queue_alloc+0x54/0xd0 pages=2 vmalloc
+> 0xfce19000-0xfce1c000   12288 reqsk_queue_alloc+0x54/0xd0 pages=2 vmalloc
+> 0xfce21000-0xfce23000    8192 module_alloc+0x72/0x80 pages=1 vmalloc
+> 0xfce2a000-0xfce2c000    8192 module_alloc+0x72/0x80 pages=1 vmalloc
+> 0xfce30000-0xfce33000   12288 reqsk_queue_alloc+0x54/0xd0 pages=2 vmalloc
+> 0xfce34000-0xfce37000   12288 reqsk_queue_alloc+0x54/0xd0 pages=2 vmalloc
+> 0xfce38000-0xfce3b000   12288 reqsk_queue_alloc+0x54/0xd0 pages=2 vmalloc
+> 0xfd0e7000-0xfd0ea000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd0eb000-0xfd0ee000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd0ef000-0xfd0f2000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd0f3000-0xfd0f6000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd0f7000-0xfd0fa000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd0fb000-0xfd0fe000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd0ff000-0xfd102000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd103000-0xfd106000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd107000-0xfd10a000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd10b000-0xfd10e000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd10f000-0xfd112000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd113000-0xfd116000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd117000-0xfd11a000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd11b000-0xfd11e000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd11f000-0xfd122000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd123000-0xfd126000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd127000-0xfd12a000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd12b000-0xfd12e000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd12f000-0xfd132000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd133000-0xfd136000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd137000-0xfd13a000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd13b000-0xfd13e000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd13f000-0xfd142000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd143000-0xfd146000   12288 igb_setup_tx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd147000-0xfd14a000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd14b000-0xfd14e000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd14f000-0xfd152000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd153000-0xfd156000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd157000-0xfd15a000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd15b000-0xfd15e000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd15f000-0xfd162000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd163000-0xfd166000   12288 igb_setup_rx_resources+0x27/0x140 [igb] pages=2 vmalloc
+> 0xfd1b2000-0xfd1b6000   16384 module_alloc+0x72/0x80 pages=3 vmalloc
+> 0xfd1bf000-0xfd1c1000    8192 module_alloc+0x72/0x80 pages=1 vmalloc
+> 0xfd1cb000-0xfd1ce000   12288 module_alloc+0x72/0x80 pages=2 vmalloc
+> 0xfd1d5000-0xfd1d7000    8192 module_alloc+0x72/0x80 pages=1 vmalloc
+> 0xfd1de000-0xfd1e0000    8192 module_alloc+0x72/0x80 pages=1 vmalloc
+> 0xfd1e8000-0xfd1ea000    8192 module_alloc+0x72/0x80 pages=1 vmalloc
+> 0xfd1f2000-0xfd1f4000    8192 module_alloc+0x72/0x80 pages=1 vmalloc
+> 0xfd1fb000-0xfd1fd000    8192 module_alloc+0x72/0x80 pages=1 vmalloc
+> 0xfd205000-0xfd207000    8192 module_alloc+0x72/0x80 pages=1 vmalloc
+> 0xfd20f000-0xfd211000    8192 module_alloc+0x72/0x80 pages=1 vmalloc
+> 0xfd219000-0xfd21b000    8192 module_alloc+0x72/0x80 pages=1 vmalloc
+> 0xfd223000-0xfd225000    8192 module_alloc+0x72/0x80 pages=1 vmalloc
+> 0xfd22d000-0xfd22f000    8192 module_alloc+0x72/0x80 pages=1 vmalloc
+> 0xfd23a000-0xfd23c000    8192 module_alloc+0x72/0x80 pages=1 vmalloc
+> 0xfd248000-0xfd24c000   16384 module_alloc+0x72/0x80 pages=3 vmalloc
+> 0xfd400000-0xfd800000 4194304 pcpu_get_vm_areas+0x0/0x610 vmalloc
+> 0xfd800000-0xfdc00000 4194304 pcpu_get_vm_areas+0x0/0x610 vmalloc
+> 0xfdc00000-0xfe000000 4194304 pcpu_get_vm_areas+0x0/0x610 vmalloc
+> 0xfe000000-0xfe400000 4194304 pcpu_get_vm_areas+0x0/0x610 vmalloc
+> 0xfe400000-0xfe800000 4194304 pcpu_get_vm_areas+0x0/0x610 vmalloc
+> 0xfe800000-0xfec00000 4194304 pcpu_get_vm_areas+0x0/0x610 vmalloc
+> 0xfec00000-0xff000000 4194304 pcpu_get_vm_areas+0x0/0x610 vmalloc
+> 0xff000000-0xff400000 4194304 pcpu_get_vm_areas+0x0/0x610 vmalloc
+> 
 
-Thanks,
-Venki
+Thanks
 
->> - Few other examples of this being useful is to count events only when
->> these two or more locks are held together or how long we were waiting
->> on one spinlock while we are holding one spinlock.
->
->
-> Agreed. For that you can combine two levels of contexts, let's say you want
-> to count instructions when we hold lock Y when we also hold lock X
-> (the lock dependency order beeing X -> Y), but you don't want to count
-> when you hold Y without X:
->
-> - create two perf events: lock_acquire and lock_release, apply filter on lock name X
-> - create two perf events: lock_acquire and lock_release, apply filter on lock name Y
-> - apply the first pair of lock events as an inclusive context for the second pair
->  (which means the second pair must only count/sample on the context delimited by the
->  first pair)
-> - create a perf event that count instructions, apply the second above pair as an
->  inclusive context.
->
->
->
+Your vmalloc space is very fragmented. pcpu_get_vm_areas() want
+hugepages (4MB on your machine, 2MB on mine because I have
+CONFIG_HIGHMEM64G=y)
+
+You could :
+
+1) Use a 64 bit kernel ( :) )
+
+or
+
+2) boot parameter vmalloc=256M   to get more room
+   (default is 128 Mbytes)
+
+and eventually
+
+select a 2G/2G User/Kernel split to get more LOWMEM, because big vmalloc
+windows shrinks the LOWMEM zone. (CONFIG_VMSPLIT_2G=y)
+
+
+
