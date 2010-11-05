@@ -1,43 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939Ab0KEKYx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 06:24:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40987 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752705Ab0KEKYv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 06:24:51 -0400
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH] X86: Cleanup idle= internal variables by getting rid of idle_halt idle_nomwait
-Date: Fri, 5 Nov 2010 11:24:49 +0100
-User-Agent: KMail/1.13.3 (Linux/2.6.31.5-0.1-desktop; KDE/4.4.3; x86_64; ; )
-Cc: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        stable@kernel.org, LKML <linux-kernel@vger.kernel.org>
-References: <201011021441.09258.trenn@suse.de> <alpine.LFD.2.00.1011030150560.3378@localhost.localdomain> <201011031706.15248.trenn@suse.de>
-In-Reply-To: <201011031706.15248.trenn@suse.de>
+	id S1753898Ab0KEKb0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 06:31:26 -0400
+Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:1549 "HELO
+	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752481Ab0KEKbY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 06:31:24 -0400
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Nov 2010 06:31:23 EDT
+Message-ID: <4CD3DB5D.5040808@draigBrady.com>
+Date: Fri, 05 Nov 2010 10:24:29 +0000
+From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011051124.49973.trenn@suse.de>
+To: Michael Tokarev <mjt@tls.msk.ru>
+CC: Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Detecting bind-mounts
+References: <4CD31B6A.7040902@msgid.tls.msk.ru>
+In-Reply-To: <4CD31B6A.7040902@msgid.tls.msk.ru>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Len,
+On 04/11/10 20:45, Michael Tokarev wrote:
+> Hello.
+> 
+> There are quite some talks on the 'net - questions, not
+> answers - about detecting bind mounts - be it a directory
+> or a file.
+> 
+> There are 2 (mostly) different kinds of applications.  One
+> is cp/tar/find with --same-filesystem option (or equivalent),
+> that should not cross mountpoints.  And one more, apps like
+> mountpoint(1) from sysvinit - a utility to determine if a
+> given path is a mountpoint.
+> 
+> Neither of the two work when two directores on the same
+> filesystem are bind-mounted.
+> 
+> The usual idiom is to compare st_dev of current directory and
+> the parent - if they're different that's a mount point.  But
+> in this case, two st_devs will be the same, so such a mount
+> point will not be detected.
+> 
+> It is even worse for bind-mounted files (as opposed to dirs):
+> there's no path/file/.. entry to stat(2), and cutting the
+> last component from the pathname does not work reliable due
+> to symlinks (it may be a symlink from different filesystem).
+> 
+> So far I know only one way to detect a bind mount like this,
+> and it is unreliable anyway.  It is to parse /proc/mounts
+> and try to find the object(s) in question.  Unreliable because
+> of, again, symlinks, and possible complex mounts and bind-
+> mounts.  And this is also very slow - imagine using this way
+> for find/tar/cp --one-file-system.
+> 
+> Is there some simpler and more reliable way? Maybe use mount
+> syscall, like we use kill($pid, 0) to check existance of a
+> process?
+> 
+> And as far as I understand, the same applies to multiple
+> mounts of the same filesystem.
 
-On Wednesday 03 November 2010 17:06:14 Thomas Renninger wrote:
-> On Wednesday 03 November 2010 07:33:54 Len Brown wrote:
-...
-> > That function and all these idle workaround flags
-> > need to be re-whacked.
-> Whatabout this (compile tested (on x86_64/ia64)).
-> Adding lkml as this affects x86 core code.
-as this mostly affects intel_idle and acpi processor driver,
-can you apply this one to your acpi test branch if you are
-ok with it.
+The `stat` command recently got support for
+printing the mount point for a file:
+http://git.savannah.gnu.org/gitweb/?p=coreutils.git;a=commit;h=ddf6fb86
 
-Thanks,
+`stat` will output the alias for a bind mounted file
+while `df` will output the initial mount point of its backing device
+So you could do something like:
 
-     Thomas
+file=.
+df_mnt=$(df -P "$file" | sed -n '2s/.* \([^ ]*$\)/\1/p')
+stat_mnt=$(stat -c%m "$file")
+test "$df_mnt" = "$stat_mnt" || echo "bind mount"
+
+cheers,
+Pádraig.
