@@ -1,295 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751674Ab0KEF1y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 01:27:54 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:60442 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750848Ab0KEF1v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 01:27:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Kg8L3ZiwubYUjLPykgJUAba5VOqirC6sa0m35gkH2fypcb5yrpqGfzVdKrpWqKbe1E
-         bjrnYITQAzb6Wrh3hy9gCmKJuWVcNeykB5Q9vnskh2s/pjaS7OVWaeMiMjvjV6CRKD2Z
-         dNKoF85c/G9oaKCYHOyXj1PdFeT2jcWigdr0I=
-Date: Fri, 5 Nov 2010 06:27:46 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: mathieu.desnoyers@efficios.com, dhowells@redhat.com,
-        loic.minier@linaro.org, dhaval.giani@gmail.com, tglx@linutronix.de,
-        peterz@infradead.org, linux-kernel@vger.kernel.org,
-        josh@joshtriplett.org
-Subject: Re: dyntick-hpc and RCU
-Message-ID: <20101105052740.GB6698@nowhere>
-References: <20101104232148.GA28037@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101104232148.GA28037@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751590Ab0KEFb1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 01:31:27 -0400
+Received: from mail.perches.com ([173.55.12.10]:4244 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750848Ab0KEFbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 01:31:24 -0400
+Subject: Re: [PATCH 36/49] drivers/video: Use vzalloc
+From: Joe Perches <joe@perches.com>
+To: Dave Young <hidave.darkstar@gmail.com>
+Cc: Jiri Kosina <trivial@kernel.org>, Jaya Kumar <jayalk@intworks.biz>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xen.org,
+        virtualization@lists.osdl.org
+In-Reply-To: <AANLkTinpKni-pfEzo=OwZZePVHapafVHJOydDoDU268_@mail.gmail.com>
+References: <cover.1288925424.git.joe@perches.com>
+	 <alpine.DEB.2.00.1011031108260.11625@router.home>
+	 <a1c4c46381ac1867c4af3edb811e58a721957842.1288925425.git.joe@perches.com>
+	 <AANLkTinpKni-pfEzo=OwZZePVHapafVHJOydDoDU268_@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 04 Nov 2010 22:31:22 -0700
+Message-ID: <1288935082.18440.31.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 04, 2010 at 04:21:48PM -0700, Paul E. McKenney wrote:
-> Hello!
-> 
-> Just wanted some written record of our discussion this Wednesday.
-> I don't have an email address for Jim Houston, and I am not sure I have
-> all of the attendees, but here goes anyway.  Please don't hesitate to
-> reply with any corrections!
+On Fri, 2010-11-05 at 13:27 +0800, Dave Young wrote:
+> On Fri, Nov 5, 2010 at 11:08 AM, Joe Perches <joe@perches.com> wrote:
+> > diff --git a/drivers/video/arcfb.c b/drivers/video/arcfb.c
+> > @@ -515,11 +515,10 @@ static int __devinit arcfb_probe(struct platform_device *dev)
+> >
+> >        /* We need a flat backing store for the Arc's
+> >           less-flat actual paged framebuffer */
+> > -       if (!(videomemory = vmalloc(videomemorysize)))
+> > +       videomemory = vmalloc(videomemorysize);
+> typo?
+
+Yes. Thanks for catching that.
 
-
-
-Thanks a lot for doing this. I was about to send you an email
-to get such a summarize. Especially for the 5th proposition that
-was actually not clear to me.
-
-
-
-
-> 
-> The goal is to be able to turn of scheduling-clock interrupts for
-> long-running user-mode execution when there is but one runnable task
-> on a given CPU, but while still allowing RCU to function correctly.
-> In particular, we need to minimize (or better, eliminate) any source
-> of interruption to such a CPU.  We discussed these approaches, along
-> with their advantages and disadvantages:
-> 
-> 1.	If a user task is executing in dyntick-hpc mode, inform RCU
-> 	of all kernel/user transitions, calling rcu_enter_nohz()
-> 	on each transition to user-mode execution and calling
-> 	rcu_exit_nohz() on each transition to kernel-mode execution.
-> 
-> 	+	Transitions due to interrupts and NMIs are already
-> 		handled by the existing dyntick-idle code.
-> 
-> 	+	RCU works without changes.
-> 
-> 	-	-Every- exception path must be located and instrumented.
-
-
-Yeah, that's bad.
-
-
-
-> 
-> 	-	Every system call must be instrumented.
-
-
-
-
-Not really, we just need to enter into the syscall slow path mode (which
-is still a "-" point, but at least we don't need to inspect every syscalls).
-
-
-
-> 
-> 	-	The system-call return fastpath is disabled by this
-> 		approach, increasing the overhead of system calls.
-
-
-Yep.
-
-
-
-> 
-> 	--	The scheduling-clock timer must be restarted on each
-> 		transition to kernel-mode execution.  This is thought
-> 		to be difficult on some of the exception code paths,
-> 		and has high overhead regardless.
-
-
-
-Right.
-
-
-
-> 
-> 2.	Like #1 above, but instead of starting up the scheduling-clock
-> 	timer on the CPU transitioning into the kernel, instead wake
-> 	up a kthread that IPIs this CPU.  This has roughly the same
-> 	advantages and disadvantages as #1 above, but substitutes
-> 	a less-ugly kthread-wakeup operation in place of starting
-> 	the scheduling-clock timer.
-> 
-> 	There are a number of variations on this approach, but the
-> 	rest of them are infeasible due to the fact that irq-disable
-> 	and preempt-disable code sections are implicit read-side
-> 	critical sections for RCU-sched.
-
-
-
-
-Yep, that approach is a bit better than 1.
-
-
-
-
-> 3.	Substitute an RCU implementation similar to Jim Houston's
-> 	real-time RCU implementation used by Concurrent.  (Jim posted
-> 	this in 2004: http://lkml.org/lkml/2004/8/30/87 against
-> 	2.6.1.1-mm4.)  In this implementation, the RCU grace periods
-> 	are driven out of rcu_read_unlock(), so that there is no
-> 	dependency on the scheduler-clock interrupt.
-> 
-> 	+	Allows dyntick-hpc to simply require this alternative
-> 		RCU implementation, without the need to interact
-> 		with it.
-> 
-> 	0	This implementation disables preemption across
-> 		RCU read-side critical sections, which might be
-> 		unacceptable for some users.  Or it might be OK,
-> 		we were unable to determine this.
-
-
-
-(Probably because of my misunderstanding of the question at that time)
-
-Requiring a preemption disabled style rcu read side critical section
-is probably not acceptable for our goals. This cpu isolation thing
-is targeted for HPC purpose (in which case I suspect it's perfectly
-fine to have preemption disabled in rcu_read_lock()) but also for real
-time purposes (in which case we need rcu_read_lock() to be preemptable).
-
-So this is rather a drawback.
-
-
-
-
-> 
-> 	0	This implementation increases the overhead of
-> 		rcu_read_lock() and rcu_read_unlock().  However,
-> 		this is probably acceptable, especially given that
-> 		the workloads in question execute almost entirely
-> 		in user space.
-
-
-
-This overhead might need to be measured, if it's actually measurable),
-but yeah.
-
-
-
-> 
-> 	---	Implicit RCU-sched and RCU-bh read-side critical
-> 		sections would need to be explicitly marked with
-> 		rcu_read_lock_sched() and rcu_read_lock_bh(),
-> 		respectively.  Implicit critical sections include
-> 		disabled preemption, disabled interrupts, hardirq
-> 		handlers, and NMI handlers.  This change would
-> 		require a large, intrusive, high-regression-risk patch.
-> 		In addition, the hardirq-handler portion has been proposed
-> 		and rejected in the past.
-
-
-
-Now an alternative is to find who is really concerned by this
-by looking at the users of rcu_dereference_sched() and
-rcu_derefence_bh() (there are very few), and then convert them to use
-rcu_read_lock(), and then get rid of the sched and bh rcu flavours.
-Not sure we want that though. But it's just to notice that removing
-the call to rcu_bh_qs() after each softirq handler or rcu_check_callbacks()
-from the timer could somehow cancel the overhead from the rcu_read_unlock()
-calls.
-
-OTOH, on traditional rcu configs, this requires the overhead of calling
-rcu_read_lock() in sched/bh critical section that usually would have relied
-on the implicit grace period.
-
-I guess this is probably a loss in the final picture.
-
-Yet another solution is to require users of bh and sched rcu flavours to
-call a specific rcu_read_lock_sched()/bh, or something similar, that would
-be only implemented in this new rcu config. We would only need to touch the
-existing users and the future ones instead of adding an explicit call
-to every implicit paths.
-
-
-
-> 
-> 4.	Substitute an RCU implementation based on one of the
-> 	user-level RCU implementations.  This has roughly the same
-> 	advantages and disadvantages as does #3 above.
-> 
-> 5.	Don't tell RCU about dyntick-hpc mode, but instead make RCU
-> 	push processing through via some processor that is kept out
-> 	of dyntick-hpc mode.
-
-
-
-I don't understand what you mean.
-Do you mean that dyntick-hpc cpu would enqueue rcu callbacks to
-another CPU? But how does that protect rcu critical sections
-in our dyntick-hpc CPU?
-
-
-
-
->       This requires that the rcutree RCU
-> 	priority boosting be pushed further along so that RCU grace period
-> 	and callback processing is done in kthread context, permitting
-> 	remote forcing of grace periods.
-
-
-
-I should have a look at the rcu priority boosting to understand what you
-mean here.
-
-
-
->       The RCU_JIFFIES_TILL_FORCE_QS
-> 	macro is promoted to a config variable, retaining its value
-> 	of 3 in absence of dyntick-hpc, but getting value of HZ
-> 	(or thereabouts) for dyntick-hpc builds.  In dyntick-hpc
-> 	builds, force_quiescent_state() would push grace periods
-> 	for CPUs lacking a scheduling-clock interrupt.
-> 
-> 	+	Relatively small changes to RCU, some of which is
-> 		coming with RCU priority boosting anyway.
-> 
-> 	+	No need to inform RCU of user/kernel transitions.
-> 
-> 	+	No need to turn scheduling-clock interrupts on
-> 		at each user/kernel transition.
-> 
-> 	-	Some IPIs to dyntick-hpc CPUs remain, but these
-> 		are down in the every-second-or-so frequency,
-> 		so hopefully are not a real problem.
-
-
-Hmm, I hope we could avoid that, ideally the task in userspace shouldn't be
-interrupted at all.
-
-I wonder if we shouldn't go back to #3 eventually.
-
-
-
-> 
-> 6.	Your idea here!
-> 
-> The general consensus at the end of the meeting was that #5 was most
-> likely to work out the best.
-
-
-At that time yeah.
-
-But now I don't know, I really need to dig deeper into it and really
-understand how #5 works before picking that orientation :)
-
-For now #3 seems to me more viable (with one of the adds I proposed).
-
-
-
-> 							Thanx, Paul
-> 
-> PS.  If anyone knows Jim Houston's email address, please feel free
->      to forward to him.
-
-
-I'll try to find him tomorrow and ask him his mail address :)
-
-Thanks a lot!
 
