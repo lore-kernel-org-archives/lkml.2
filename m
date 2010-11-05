@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755090Ab0KEXRT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 19:17:19 -0400
-Received: from gold.linx.net ([195.66.232.40]:44158 "EHLO gold.linx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754058Ab0KEXRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 19:17:17 -0400
-X-Greylist: delayed 455 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Nov 2010 19:17:17 EDT
-Subject: Re: BUG in ext4 with 2.6.37-rc1
-From: Tony Vroon <tony@linx.net>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-In-Reply-To: <20101102202013.GA3861@elliptictech.com>
-References: <20101102202013.GA3861@elliptictech.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-puDy6ThfF+Hryjgr37cA"
-Organization: London Internet Exchange (LINX; AS5459)
-Date: Fri, 05 Nov 2010 23:09:49 +0000
-Message-ID: <1288998589.2961.3.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755165Ab0KEXRw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 19:17:52 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:17658 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755054Ab0KEXRv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 19:17:51 -0400
+From: David Daney <ddaney@caviumnetworks.com>
+To: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Cc: David Daney <ddaney@caviumnetworks.com>,
+        Stephane Eranian <eranian@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH] watchdog: Fix section missmatch and potential undefined behavior.
+Date: Fri,  5 Nov 2010 16:17:39 -0700
+Message-Id: <1288999059-14573-1-git-send-email-ddaney@caviumnetworks.com>
+X-Mailer: git-send-email 1.7.2.3
+X-OriginalArrivalTime: 05 Nov 2010 23:18:28.0025 (UTC) FILETIME=[C0BD8A90:01CB7D3F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit d9ca07a05ce1c42ac9717e54eaea4546a3a80978 introduces the section
+missmatch.  Now that we reference no_watchdog from non-__init code it
+can no longer be __initdata.
 
---=-puDy6ThfF+Hryjgr37cA
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/watchdog.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-On Tue, 2010-11-02 at 16:20 -0400, Nick Bowler wrote:
->   ------------[ cut here ]------------
->   kernel BUG at /scratch_space/linux-2.6/fs/ext4/page-io.c:146!
->   invalid opcode: 0000 [#1] PREEMPT SMP=20
-
-Confirmed, it's an issue here too.
-I have just hit this one 2 times in a row within 20 minutes. Please CC
-me if you need any fix tested; looks like I'm off to 2.6.26 until this
-is fixed.
-
-Linux prometheus 2.6.37-rc1-00040-g0660a9b #1 SMP PREEMPT Fri Nov 5
-22:09:58 GMT 2010 x86_64 Six-Core AMD Opteron(tm) Processor 2435
-AuthenticAMD GNU/Linux
-
-I can provide .config if needed; have digital photos of the oops if they
-are deemed useful. The BUG hit at the exact same line as you though.
-
-Regards,
---=20
-Tony Vroon
-UNIX systems administrator
-London Internet Exchange Ltd, Trinity Court, Trinity Street,
-Peterborough, PE1 1DA
-Registered in England number 3137929
-E-Mail: tony@linx.net
-
---=-puDy6ThfF+Hryjgr37cA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-
-iEYEABECAAYFAkzUjr0ACgkQp5vW4rUFj5qX8wCfc/kqVAr/S05pc6+sGZxIvWGu
-tawAnjsj1YfDgsAyLVWYorhKKQJ5Vtoz
-=+8xe
------END PGP SIGNATURE-----
-
---=-puDy6ThfF+Hryjgr37cA--
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index bafba68..6e3c41a 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -43,7 +43,7 @@ static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts_saved);
+ static DEFINE_PER_CPU(struct perf_event *, watchdog_ev);
+ #endif
+ 
+-static int __initdata no_watchdog;
++static int no_watchdog;
+ 
+ 
+ /* boot commands */
+-- 
+1.7.2.3
 
