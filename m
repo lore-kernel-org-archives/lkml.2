@@ -1,82 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898Ab0KEKb0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 06:31:26 -0400
-Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:1549 "HELO
-	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752481Ab0KEKbY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 06:31:24 -0400
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Nov 2010 06:31:23 EDT
-Message-ID: <4CD3DB5D.5040808@draigBrady.com>
-Date: Fri, 05 Nov 2010 10:24:29 +0000
-From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+	id S1753967Ab0KEKbh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 06:31:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15917 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752481Ab0KEKb2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 06:31:28 -0400
+Date: Fri, 5 Nov 2010 12:31:24 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 2/3] KVM: MMU: don not retry #PF for nonpaging guest
+Message-ID: <20101105103124.GD14910@redhat.com>
+References: <4CD28B5F.1040205@cn.fujitsu.com>
+ <4CD28BCA.1060907@cn.fujitsu.com>
+ <20101104103548.GE6018@redhat.com>
+ <4CD39886.4050909@cn.fujitsu.com>
+ <20101105074533.GC14910@redhat.com>
+ <4CD3BA50.1000002@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Michael Tokarev <mjt@tls.msk.ru>
-CC: Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Detecting bind-mounts
-References: <4CD31B6A.7040902@msgid.tls.msk.ru>
-In-Reply-To: <4CD31B6A.7040902@msgid.tls.msk.ru>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CD3BA50.1000002@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/10 20:45, Michael Tokarev wrote:
-> Hello.
+On Fri, Nov 05, 2010 at 04:03:28PM +0800, Xiao Guangrong wrote:
+> On 11/05/2010 03:45 PM, Gleb Natapov wrote:
 > 
-> There are quite some talks on the 'net - questions, not
-> answers - about detecting bind mounts - be it a directory
-> or a file.
+> >>
+> >> It looks like something broken: apfs can generated in L2 guest (nested ntp guest)
+> >> and be retried in L1 guest.
+> >>
+> > Why is this a problem? apf will be generate on direct map even when L2
+> > guest is running so it should be OK to prefault it into direct map on
+> > completion.
+> > 
 > 
-> There are 2 (mostly) different kinds of applications.  One
-> is cp/tar/find with --same-filesystem option (or equivalent),
-> that should not cross mountpoints.  And one more, apps like
-> mountpoint(1) from sysvinit - a utility to determine if a
-> given path is a mountpoint.
-> 
-> Neither of the two work when two directores on the same
-> filesystem are bind-mounted.
-> 
-> The usual idiom is to compare st_dev of current directory and
-> the parent - if they're different that's a mount point.  But
-> in this case, two st_devs will be the same, so such a mount
-> point will not be detected.
-> 
-> It is even worse for bind-mounted files (as opposed to dirs):
-> there's no path/file/.. entry to stat(2), and cutting the
-> last component from the pathname does not work reliable due
-> to symlinks (it may be a symlink from different filesystem).
-> 
-> So far I know only one way to detect a bind mount like this,
-> and it is unreliable anyway.  It is to parse /proc/mounts
-> and try to find the object(s) in question.  Unreliable because
-> of, again, symlinks, and possible complex mounts and bind-
-> mounts.  And this is also very slow - imagine using this way
-> for find/tar/cp --one-file-system.
-> 
-> Is there some simpler and more reliable way? Maybe use mount
-> syscall, like we use kill($pid, 0) to check existance of a
-> process?
-> 
-> And as far as I understand, the same applies to multiple
-> mounts of the same filesystem.
+> The nested_cr3 is different between L2 and L1, fix L2's page fault in L1's page table
+> is useless.
+But we are fixing L0 page faults in L0 page table. We do not start apf
+because of L1 faulted in its page table.
 
-The `stat` command recently got support for
-printing the mount point for a file:
-http://git.savannah.gnu.org/gitweb/?p=coreutils.git;a=commit;h=ddf6fb86
-
-`stat` will output the alias for a bind mounted file
-while `df` will output the initial mount point of its backing device
-So you could do something like:
-
-file=.
-df_mnt=$(df -P "$file" | sed -n '2s/.* \([^ ]*$\)/\1/p')
-stat_mnt=$(stat -c%m "$file")
-test "$df_mnt" = "$stat_mnt" || echo "bind mount"
-
-cheers,
-Pádraig.
+--
+			Gleb.
