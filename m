@@ -1,154 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754945Ab0KEWW0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 18:22:26 -0400
-Received: from tarap.cc.columbia.edu ([128.59.29.7]:59839 "EHLO
-	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753476Ab0KEWWY (ORCPT
+	id S1754968Ab0KEWZc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 18:25:32 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:46869 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752641Ab0KEWZa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 18:22:24 -0400
-Message-ID: <4CD4842A.5050009@cs.columbia.edu>
-Date: Fri, 05 Nov 2010 18:24:42 -0400
-From: Oren Laadan <orenl@cs.columbia.edu>
-Organization: Columbia University
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Lightning/1.0b1 Thunderbird/3.0.10
+	Fri, 5 Nov 2010 18:25:30 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Kapil Arya <kapil@ccs.neu.edu>,
-        ksummit-2010-discuss@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Gene Cooperman <gene@ccs.neu.edu>,
-        hch@lst.de
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-References: <Pine.LNX.4.64.1011021530470.12128@takamine.ncl.cs.columbia.edu> <4CD08419.5050803@kernel.org> <AANLkTinOg6n3ZA+0gHzw9LouRuUmJ7DJwHtABRy5c=gM@mail.gmail.com> <4CD26948.7050009@kernel.org>
-In-Reply-To: <4CD26948.7050009@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-No-Spam-Score: Local
+In-Reply-To: <20101103161837.fad11d79.randy.dunlap@oracle.com>
+References: <AANLkTimr3rW67HxgOUyReEW8dmmSsd4b7-Ns57mXzS1w@mail.gmail.com> <20101103161837.fad11d79.randy.dunlap@oracle.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 5 Nov 2010 15:24:36 -0700
+Message-ID: <AANLkTimnHFHJq13xpJ0ZgLmpd+cHmHH5sQ4HWtL_MrMT@mail.gmail.com>
+Subject: Re: Linux 2.6.37-rc1 (libipw remove_proc_entry warning)
+To: Randy Dunlap <randy.dunlap@oracle.com>, Pavel Roskin <proski@gnu.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-wireless@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=0003255747468cf32a049455beed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--0003255747468cf32a049455beed
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
+This bug seems to be due to commit 27ae60f8f7aac ("ipw2x00: replace
+"ieee80211" with "libipw" where appropriate"), where Pavel did this:
 
-On 11/04/2010 04:05 AM, Tejun Heo wrote:
-> Hello,
+-       libipw_proc =3D proc_mkdir(DRV_NAME, init_net.proc_net);
++       libipw_proc =3D proc_mkdir("ieee80211", init_net.proc_net);
+
+but then the cleanup was kept as
+
+        remove_proc_entry(DRV_NAME, init_net.proc_net);
+
+in both places (both in the failure case and in the unload case). The
+error string is also total crap, and says
+
+     "Unable to create " DRV_NAME " proc directory\n");
+
+Even though it doesn't actually create a proc directory named DRV_NAME at a=
+ll.
+
+So that patch looks like total and utter crap to me. The commit message say=
+s
+
+  "Keep /proc/net/ieee80211 under the original name to avoid breaking user
+    interface."
+
+but the thing is, it really didn't fix anything but that one create
+thing. It needs to fix all the other cases too.
+
+Totally UNTESTED patch attached. It may or may not compile. And maybe
+it doesn't catch all cases, but it should catch the obvious ones.
+
+                           Linus
+
+On Wed, Nov 3, 2010 at 4:18 PM, Randy Dunlap <randy.dunlap@oracle.com> wrot=
+e:
 >
-> On 11/04/2010 04:40 AM, Kapil Arya wrote:
->> (Sorry for resending the message; the last message contained some html
->> tags and was rejected by server)
+> Nov =A03 16:03:11 control kernel: [ =A0 74.701367] =A0 =A0 (5170000[ =A0 =
+74.846676] calling =A0libipw_init+0x0/0xe4 [libipw] @ 2992
+> [ =A0 74.852356] libipw: 802.11 data/management/control stack, git-1.1.13
+> [ =A0 74.858790] libipw: Copyright (C) 2004-2005 Intel Corporation <jketr=
+eno@linux.intel.com>
+> [ =A0 74.866977] initcall libipw_init+0x0/0xe4 [libipw] returned 0 after =
+14318 usecs
+> Nov =A03 16:03:11 control kernel: [ =A0 74.846676] calling =A0libipw_iNov=
+ =A03 16:03:11 control kernel: [ =A0 74.852356] libipw: 802.11 data/managem=
+ent/control stack, git-1.1.13
+> Nov =A03 16:03:11 control kernel: [ =A0 74.858790] libipw: C
 >
-> And please also don't top-post.  Being the antisocial egomaniacs we
-> are, people on lkml prefer to dissect the messages we're replying to,
-> insert insulting comments right where they would be most effective and
-> remove the passages which can't yield effective insults.  :-)
 >
->> In our personal view, a key difference between in-kernel and userland
->> approaches is the issue of security.  The Linux C/R developers state
->> the issue very well in their FAQ (question number 7):
->>> https://ckpt.wiki.kernel.org/index.php/Faq :
->>> 7. Can non-root users checkpoint/restart an application ?
->>>
->>> For now, only users with CAP_SYSADMIN privileges can C/R an
->>> application. This is to ensure that the checkpoint image has not been
->>> tampered with and will be treated like a loadable kernel-module.
+> [ =A0 78.273409] ------------[ cut here ]------------
+> [ =A0 78.278210] WARNING: at /local/linsrc/lnx-2637-rc1/fs/proc/generic.c=
+:816 remove_proc_entry+0x156/0x35e()
+> Nov =A03 16:03:14 [ =A0 78.288314] Hardware name: OptiPlex GX620
+> control kernel: [ =A0 78.294870] name 'libipw'
+> [ =A0 78.298520] Modules linked in: libipw(-) lib80211 cfg80211 ipt_MASQU=
+ERADE iptable_nat nf_nat af_packet nfsd lockd nfs_acl auth_rpcgss exportfs =
+sco bridge stp llc bnep l2cap crc16 bluetoothNov =A03 16:03:14 =A0rfkillcon=
+trol kernel: =A0sunrpc[ =A0 78.278210] W ipt_REJECTARNING: at /loca nf_conn=
+track_ipv4l/linsrc/lnx-263 nf_defrag_ipv47-rc1/fs/proc/ge iptable_filterner=
+ic.c:816 remo ip_tablesve_proc_entry+0x ip6t_REJECT156/0x35e()
+> Nov =A0xt_tcpudp 3 16:03:14 cont nf_conntrack_ipv6rol kernel: [ =A0 =A0nf=
+_defrag_ipv678.288314] Hardw xt_stateare name: OptiPl nf_conntrackex GX620 =
+=A0 =A0 =A0 =A0 ip6table_filter
+> Nov =A03 1 ip6_tables6:03:14 control =A0x_tableskernel: [ =A0 78.2 ipv694=
+870] name 'lib p4_clockmodipw'
+> =A0freq_table speedstep_lib binfmt_misc dm_mirror dm_region_hash dm_log d=
+m_multipath scsi_dh dm_mod kvm uinput mousedev joydev snd_intel8x0 snd_ac97=
+_codec ac97_bus ppdev snd_seq snd_seq_device usbmouse snd_pcm led_class usb=
+kbd snd_timer usbhid iTCO_wdt hid snd iTCO_vendor_support tg3 sr_mod dcdbas=
+ cdrom soundcore i2c_i801 rtc_cmos sg pcspkr rng_core parport_pc snd_page_a=
+lloc rtc_core shpchp evdev rtc_lib parport 8250_pnp pci_hotplug mac_hid uni=
+x ide_pci_generic ide_core ata_generic pata_acpi ata_piix sd_mod crc_t10dif=
+ ext3 jbd mbcache uhci_hcd ohci_hcd ssb mmc_core pcmcia pcmcia_core firmwar=
+e_class ehci_hcd usbcore nls_base i915 drm_kms_helper intel_agp button inte=
+l_gtt video thermal_sys hwmon output [last unloaded: mperf]
+> [ =A0 78.429364] Pid: 3067, comm: rmmod Not tainted 2.6.37-rc1 #10
+> [ =A0 78.435209] Call Trace:
+> [ =A0 78.437982] =A0[<ffffffff8107e1ed>] warn_slowpath_common+0xc6/0xf3
+> [ =A0 78.444119] =A0[<ffffffff8107e30a>] warn_slowpath_fmt+0x5b/0x6b
+> [ =A0 78.449973] =A0[<ffffffff81550dbb>] ? _raw_spin_unlock+0x40/0x4b
+> [ =A0 78.456247] =A0[<ffffffff8123d37e>] remove_proc_entry+0x156/0x35e
+> Nov =A03 16:03:14 [ =A0 78.462289] =A0[<ffffffff81017d29>] ? native_sched=
+_clock+0x3b/0x6d
+> control kernel: [ =A0 78.470047] =A0[<ffffffff810b067f>] ? sched_clock_cp=
+u+0x147/0x160
+> [ =A0 78.298520] M[ =A0 78.477041] =A0[<ffffffff81137479>] ? trace_hardir=
+qs_off+0x10/0x4a
+> odules linked in: libipw(-) lib80211 cfg80211 ip[ =A0 78.487138] =A0[<fff=
+fffff810b0742>] ? local_clock+0xaa/0xf4
+> t_MASQUERADE iptable_nat nf_nat [ =A0 78.496297] =A0[<ffffffff810c0ab9>] =
+? lock_release_holdtime+0x41/0x177
+> Nov =A03 16:03:14 [ =A0 78.505725] =A0[<ffffffff810c3a1b>] ? lock_release=
+_nested+0xfb/0x133
+> Nov =A03 16:03:14 [ =A0 78.514477] =A0[<ffffffffa0c39cad>] libipw_exit+0x=
+49/0x5d [libipw]
+> Nov =A03 16:03:14 [ =A0 78.523311] =A0[<ffffffff810d3310>] sys_delete_mod=
+ule+0x2d6/0x368
+> [ =A0 78.531755] =A0[<ffffffff8154f9cb>] ? lockdep_sys_exit_thunk+0x35/0x=
+67
+> Nov =A03 16:03:14 Nov =A03 16:03:14 [ =A0 78.540954] =A0[<ffffffff810fd60=
+f>] ? audit_syscall_entry+0x172/0x1a5
+> Nov =A03 16:03:14 [ =A0 78.550029] =A0[<ffffffff8154f955>] ? trace_hardir=
+qs_on_thunk+0x3a/0x3f
+> Nov =A03 16:03:14 [ =A0 78.559196] =A0[<ffffffff8100ea72>] system_call_fa=
+stpath+0x16/0x1b
+> Nov =A03 16:03:14 [ =A0 78.567700] ---[ end trace b9ae9f3ab8d89ea5 ]---
 >
-> That's an interesting point but I don't think it's a dealbreaker.
-> Kernel CR is gonna require userland agent anyway and access control
-> can be done there.
-
-Indeed, this is a restriction on the new eclone() syscall, and can
-be addressed with proper userspace tools (including crypo-sign the
-checkpoint image). There core of the c/r code allows a user to
-restore anything within the user's privilege level.
-
-> Being able to snapshot w/o root privieldge
-> definitely is a plust but it's not like CR is gonna be deployed on
-> majority of desktops and servers (if so, let's talk about it then).
-
-Why not ?  it has zero overhead when not in use, and a reasonable
-code footprint (which can be reduced by modularizing some of it,
-but that's outside the point).
-
->> Strategies like these are easily handled in userspace.  We suspect
->> that while one may begin with a pure kernel approach, eventually,
->> one will still want to add a userland component to achieve this kind
->> of flexibility, just as BLCR has already done.
 >
-> Yeap, agreed.  There gotta be user agents which can monitor and
-> manipulate userland states.  It's a fundamentally nasty job, that of
-
-Are we talking about distributed checkpoint or "standalone" ?
-
-DMTCP relies on user agents to allow distributed/remote execution
-in a manner mostly transparent to the application. Many distributed
-systems don't require (and do not use) user agents. Consider a
-multi-tier system with web server, sql server and some applications
-server. These are not suitable to DMTCP's mode or work.
-
-(This is not to say DMTCP isn't useful - it's a clever piece of
-software with specific goals and more geared towards HPC needs).
-
-Now regarding "standalone" c/r, if you want to save/restore single
-or a subset of processes of a system without the rest of it, then
-you will always need user agents, regardless of userspace/kernel
-method. Likewise, their work on those tools will be as useful
-independently of which c/r 'engine' it uses.
-
-When you include all the relevant processes (e.g. an entire VNC
-session, a web server, HPC and batch jobs), you generally don't
-need the user agents. The checkpoint is self-contained, and linux-cr
-can provide you that guarantee at checkpoint time.
-
-> collecting and applying application-specific workarounds.  I've only
-> glanced the dmtcp paper so my understanding is pretty superficial.
-> With that in mind, can you please answer some of my curiosities?
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code =
+***
 >
-> * As Oren pointed out in another message, there are somethings which
->   could seem a bit too visible to the target application.  Like the
->   manager thread (is it visible to the application or is it hidden by
->   the libc wrapper?) and reserved signal.  Also, while it's true that
->   all programs should be ready to handle -EINTR failure from system
->   calls, it's something which is very difficult to verify and test and
->   could lead to once-in-a-blue-moon head scratchy kind of failures.
 
-If there is a will, there is (almost always) a way ;)
+--0003255747468cf32a049455beed
+Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gg5mteeg0
 
-What MTCP does, IIUC, is wrap around the applications with a complete
-pid-namespace (and more) in userspace. There are/were also commercial
-products that do that. It's a tremendous effort and I'm impressed by
-their (MTCP) work so far.
-
-It is important to understand that it has a price tag: performance
-and complexity. It's usually useful for HPC needs, but unsuitable
-for the generic server/VPS space.
-
->
->   I think most of those issues can be tackled with minor narrow-scoped
->   changes to the kernel.  Do you guys have things on mind which the
->   kernel can do to make these things more transparent or safer?
-
-Hmmm... the kernel already does much of it - for instance, we have
-neat pid-namespace infrastructure; does it make sense to go into
-the trouble of adding interfaces to provide for pid-virtalization
-in userspace ?  we should be past that ...
-
-Moreover, your objection was based on the apparent complexity of
-a badly presented aggregate diff (and I disagree: most of that
-are simple refactoring and cleanups). However, that very set of
-"narrow-scoped changes" to the kernel that you suggest, will take
-life in the form of kernel patches that will do more than these
-and will achieve less.
-
-> * The feats dmtcp achieves with its set of workarounds are impressive
->   but at the same time look quite hairy.  Christoph said that having a
->   standard userland C-R implementation would be quite useful and IMHO
->   it would be helpful in that direction if the implementation is
->   modularized enough so that the core functionality and the set of
->   workarounds can be easily separated.  Is it already so?
-
- From what I understand, the 'wrapper' functionality to support
-distributed operation is said to be well modularized from the
-actual c/r engine - which will allow it to use better c/r engines;
-and coincidentally, I have one in mind... ;)
-
-Oren.
+IGRyaXZlcnMvbmV0L3dpcmVsZXNzL2lwdzJ4MDAvbGliaXB3X21vZHVsZS5jIHwgICAgOSArKysr
+Ky0tLS0KIDEgZmlsZXMgY2hhbmdlZCwgNSBpbnNlcnRpb25zKCspLCA0IGRlbGV0aW9ucygtKQoK
+ZGlmZiAtLWdpdCBhL2RyaXZlcnMvbmV0L3dpcmVsZXNzL2lwdzJ4MDAvbGliaXB3X21vZHVsZS5j
+IGIvZHJpdmVycy9uZXQvd2lyZWxlc3MvaXB3MngwMC9saWJpcHdfbW9kdWxlLmMKaW5kZXggMzJk
+ZWUyYy4uZDVlZjY5NiAxMDA2NDQKLS0tIGEvZHJpdmVycy9uZXQvd2lyZWxlc3MvaXB3MngwMC9s
+aWJpcHdfbW9kdWxlLmMKKysrIGIvZHJpdmVycy9uZXQvd2lyZWxlc3MvaXB3MngwMC9saWJpcHdf
+bW9kdWxlLmMKQEAgLTU0LDYgKzU0LDcgQEAKIAogI2RlZmluZSBEUlZfREVTQ1JJUFRJT04gIjgw
+Mi4xMSBkYXRhL21hbmFnZW1lbnQvY29udHJvbCBzdGFjayIKICNkZWZpbmUgRFJWX05BTUUgICAg
+ICAgICJsaWJpcHciCisjZGVmaW5lIERSVl9QUk9DTkFNRQkiaWVlZTgwMjExIgogI2RlZmluZSBE
+UlZfVkVSU0lPTglMSUJJUFdfVkVSU0lPTgogI2RlZmluZSBEUlZfQ09QWVJJR0hUICAgIkNvcHly
+aWdodCAoQykgMjAwNC0yMDA1IEludGVsIENvcnBvcmF0aW9uIDxqa2V0cmVub0BsaW51eC5pbnRl
+bC5jb20+IgogCkBAIC0yOTMsMTYgKzI5NCwxNiBAQCBzdGF0aWMgaW50IF9faW5pdCBsaWJpcHdf
+aW5pdCh2b2lkKQogCXN0cnVjdCBwcm9jX2Rpcl9lbnRyeSAqZTsKIAogCWxpYmlwd19kZWJ1Z19s
+ZXZlbCA9IGRlYnVnOwotCWxpYmlwd19wcm9jID0gcHJvY19ta2RpcigiaWVlZTgwMjExIiwgaW5p
+dF9uZXQucHJvY19uZXQpOworCWxpYmlwd19wcm9jID0gcHJvY19ta2RpcihEUlZfUFJPQ05BTUUs
+IGluaXRfbmV0LnByb2NfbmV0KTsKIAlpZiAobGliaXB3X3Byb2MgPT0gTlVMTCkgewotCQlMSUJJ
+UFdfRVJST1IoIlVuYWJsZSB0byBjcmVhdGUgIiBEUlZfTkFNRQorCQlMSUJJUFdfRVJST1IoIlVu
+YWJsZSB0byBjcmVhdGUgIiBEUlZfUFJPQ05BTUUKIAkJCQkiIHByb2MgZGlyZWN0b3J5XG4iKTsK
+IAkJcmV0dXJuIC1FSU87CiAJfQogCWUgPSBwcm9jX2NyZWF0ZSgiZGVidWdfbGV2ZWwiLCBTX0lS
+VUdPIHwgU19JV1VTUiwgbGliaXB3X3Byb2MsCiAJCQkmZGVidWdfbGV2ZWxfcHJvY19mb3BzKTsK
+IAlpZiAoIWUpIHsKLQkJcmVtb3ZlX3Byb2NfZW50cnkoRFJWX05BTUUsIGluaXRfbmV0LnByb2Nf
+bmV0KTsKKwkJcmVtb3ZlX3Byb2NfZW50cnkoRFJWX1BST0NOQU1FLCBpbml0X25ldC5wcm9jX25l
+dCk7CiAJCWxpYmlwd19wcm9jID0gTlVMTDsKIAkJcmV0dXJuIC1FSU87CiAJfQpAQCAtMzE5LDcg
+KzMyMCw3IEBAIHN0YXRpYyB2b2lkIF9fZXhpdCBsaWJpcHdfZXhpdCh2b2lkKQogI2lmZGVmIENP
+TkZJR19MSUJJUFdfREVCVUcKIAlpZiAobGliaXB3X3Byb2MpIHsKIAkJcmVtb3ZlX3Byb2NfZW50
+cnkoImRlYnVnX2xldmVsIiwgbGliaXB3X3Byb2MpOwotCQlyZW1vdmVfcHJvY19lbnRyeShEUlZf
+TkFNRSwgaW5pdF9uZXQucHJvY19uZXQpOworCQlyZW1vdmVfcHJvY19lbnRyeShEUlZfUFJPQ05B
+TUUsIGluaXRfbmV0LnByb2NfbmV0KTsKIAkJbGliaXB3X3Byb2MgPSBOVUxMOwogCX0KICNlbmRp
+ZgkJCQkvKiBDT05GSUdfTElCSVBXX0RFQlVHICovCg==
+--0003255747468cf32a049455beed--
