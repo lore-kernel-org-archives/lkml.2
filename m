@@ -1,42 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736Ab0KEPHA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 11:07:00 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:34117 "EHLO e9.ny.us.ibm.com"
+	id S1752900Ab0KEPK2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 11:10:28 -0400
+Received: from cantor.suse.de ([195.135.220.2]:46626 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752201Ab0KEPG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 11:06:58 -0400
-Date: Fri, 5 Nov 2010 08:06:48 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: mathieu.desnoyers@efficios.com, dhowells@redhat.com,
-        loic.minier@linaro.org, dhaval.giani@gmail.com, tglx@linutronix.de,
-        peterz@infradead.org, linux-kernel@vger.kernel.org,
-        josh@joshtriplett.org
-Subject: Re: dyntick-hpc and RCU
-Message-ID: <20101105150648.GB2850@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20101104232148.GA28037@linux.vnet.ibm.com>
- <20101105052740.GB6698@nowhere>
- <AANLkTi=RiYTsYfh9sBLBzKeZWJp8HOCP+RnOTQA-MFHL@mail.gmail.com>
+	id S1751451Ab0KEPK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 11:10:26 -0400
+Date: Fri, 5 Nov 2010 11:10:23 -0400 (EDT)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Joe Perches <joe@perches.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Jesper Juhl <jj@chaosbits.net>,
+        Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 46/49] net/netfilter: Use vzalloc
+In-Reply-To: <1288940146.18440.55.camel@Joe-Laptop>
+Message-ID: <alpine.LNX.2.00.1011051108270.15851@pobox.suse.cz>
+References: <alpine.DEB.2.00.1011031108260.11625@router.home>  <7d6da34b7e84955795717b0241000a0701cd5b34.1288925425.git.joe@perches.com>  <1288938640.3234.12.camel@edumazet-laptop> <1288940146.18440.55.camel@Joe-Laptop>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=RiYTsYfh9sBLBzKeZWJp8HOCP+RnOTQA-MFHL@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 05, 2010 at 06:38:17AM +0100, Frederic Weisbecker wrote:
-> 2010/11/5 Frederic Weisbecker <fweisbec@gmail.com>:
-> > For now #3 seems to me more viable (with one of the adds I proposed).
+On Thu, 4 Nov 2010, Joe Perches wrote:
+
+> I also think a single rolled-up single patch is good.
 > 
-> Doh, but I forgot it's not preemptable! So #2 looks then more viable.
-> Unless we can tweak #3 into getting it preemptable.
+> I believe Jiri Kosina can easily apply all these individual patches as a 
+> single patch if he chooses.
 
-There are ways of getting preemptiblity working.  This might not be
-all that big a modification to TREE_PREEMPT_RCU, now that I think
-of it.
+I will, after this settles a little bit (the same for the WARN series). 
+I prefer waiting a bit before applying your patches usually. 
 
-							Thanx, Paul
+First to see what lands in linux-next through maintainer's trees, second 
+to gather Acks.
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
