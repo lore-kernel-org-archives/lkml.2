@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751560Ab0KEHOI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 03:14:08 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:48810 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab0KEHOD convert rfc822-to-8bit (ORCPT
+	id S1752385Ab0KEHQU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 03:16:20 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38134 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827Ab0KEHQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 03:14:03 -0400
+	Fri, 5 Nov 2010 03:16:17 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=lP6jXVshzD/hB1EbUmVnAlVFnULOKCz+TW5q7zm+HHfb+nSrhbCmRTN61f4k8ndWoR
-         mesJzSBQv3v1D/R3NSYntZzqap81UqOPmt+1V8IN2E7N1ogJwXymMfR//n5Qtbqalcve
-         0NaCsq82vo6NAaQ0TmWR2xtDRGVOZPXDFimVE=
-MIME-Version: 1.0
-In-Reply-To: <201011050327.06607.arnd@arndb.de>
-References: <201009161632.59210.arnd@arndb.de>
-	<20101102012135.GB2648@ucw.cz>
-	<AANLkTim=suDPVCW+dPCxtasbUj=X8EMgGRHAiGO37cGo@mail.gmail.com>
-	<201011050327.06607.arnd@arndb.de>
-Date: Fri, 5 Nov 2010 09:14:02 +0200
-X-Google-Sender-Auth: ntxtr9G9wQHHmcuuekcwejLaD1Y
-Message-ID: <AANLkTimm79DJaLcr2rxz1UWd1SNdf+=s7y_YO_+N5g0d@mail.gmail.com>
-Subject: Re: [Ksummit-2010-discuss] [v2] Remaining BKL users, what to do
-From: Pekka Enberg <penberg@kernel.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: ksummit-2010-discuss@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Machek <pavel@ucw.cz>,
-        Greg KH <greg@kroah.com>, Oliver Neukum <oliver@neukum.org>,
-        Valdis.Kletnieks@vt.edu, Dave Airlie <airlied@gmail.com>,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=G26H5rwlb1ugT5vANmnYgjPS+hZJztl5hhUNSynO16mtYsecHPZwHRH1zyEH92AaKf
+         IOslvfoc3/D0luY1zlDx2W3H5ieoJC6+1TjdWTEPbhqpGK7stvCVLk52fGUljH6MSJcE
+         gQ8HLSFsQsx8/UK9PQfh33Di5IX+ilo3AYrIY=
+Subject: Re: [PATCH 46/49] net/netfilter: Use vzalloc
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Jesper Juhl <jj@chaosbits.net>, Jiri Kosina <trivial@kernel.org>,
+        Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1288940146.18440.55.camel@Joe-Laptop>
+References: <alpine.DEB.2.00.1011031108260.11625@router.home>
+	 <7d6da34b7e84955795717b0241000a0701cd5b34.1288925425.git.joe@perches.com>
+	 <1288938640.3234.12.camel@edumazet-laptop>
+	 <1288940146.18440.55.camel@Joe-Laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 05 Nov 2010 08:16:11 +0100
+Message-ID: <1288941371.3234.31.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 5, 2010 at 4:27 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Wednesday 03 November 2010, Pekka Enberg wrote:
->> On Tue, Nov 2, 2010 at 3:21 AM, Pavel Machek <pavel@ucw.cz> wrote:
->> > Hi!
->> >
->> >> @@ -79,6 +79,10 @@ static struct drm_driver driver = {
->> >>
->> >>  static int __init i810_init(void)
->> >>  {
->> >> +     if (num_present_cpus() > 1) {
->> >> +             pr_err("drm/i810 does not support SMP\n");
->> >> +             return -EINVAL;
->> >> +     }
->> >>       driver.num_ioctls = i810_max_ioctl;
->> >>       return drm_init(&driver);
->> >
->> > Umm, and now someone onlines second cpu?
->>
->> Well, I see it's being fixed in a different way but yeah,
->> num_possible_cpus() would be more appropriate here.
->
-> (trimming Cc list again)
->
-> I thought that patch was still current, what other way are we fixing it now?
+Le jeudi 04 novembre 2010 Ã  23:55 -0700, Joe Perches a Ã©crit :
+> On Fri, 2010-11-05 at 07:30 +0100, Eric Dumazet wrote:
+> > I had _one_ patch, waiting that David actually had vzalloc() in its tree
+> > before sending it.
+> 
+> Fine by me, use yours.
 
-Oh, I just read the thread wrong. If you repost with
-num_possible_cpus, feel free to add my ACK.
+I dont care at all, only to say that David tree was not ready yet.
+
+
+> 
+> > Given Jesper Juhl was doing this work, could you please take another
+> > one, please ?
+> > For example, explaining him how to use other tools than "bash+egrep
+> > +manual inspection" as he mentioned in a previous mail.
+> 
+> Jesper Juhl was both pointed at the cocci docs and
+> given a cocci script.  He said he'd investigate it
+> when he could.  I trust he will get to it.
+> 
+
+Yes, yet you posted patches, knowing he was working on the _same_
+subject.
+
+I remember other occurrences of such behavior.
+
+I find this behavior very unfriendly, time consuming, and not useful.
+
+We try to work together, to increase our common knowledge, not to throw
+a bunch of patches "just because I know better than you"
+
+
+
