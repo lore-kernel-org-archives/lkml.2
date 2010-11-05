@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753099Ab0KEC1O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Nov 2010 22:27:14 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:53739 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752087Ab0KEC1L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Nov 2010 22:27:11 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Pekka Enberg <penberg@kernel.org>,
-        ksummit-2010-discuss@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [Ksummit-2010-discuss] [v2] Remaining BKL users, what to do
-Date: Fri, 5 Nov 2010 03:27:06 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Pavel Machek <pavel@ucw.cz>, Greg KH <greg@kroah.com>,
-        Oliver Neukum <oliver@neukum.org>, Valdis.Kletnieks@vt.edu,
-        Dave Airlie <airlied@gmail.com>, dri-devel@lists.freedesktop.org
-References: <201009161632.59210.arnd@arndb.de> <20101102012135.GB2648@ucw.cz> <AANLkTim=suDPVCW+dPCxtasbUj=X8EMgGRHAiGO37cGo@mail.gmail.com>
-In-Reply-To: <AANLkTim=suDPVCW+dPCxtasbUj=X8EMgGRHAiGO37cGo@mail.gmail.com>
+	id S1753208Ab0KECcx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Nov 2010 22:32:53 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:44303 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752670Ab0KECcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Nov 2010 22:32:51 -0400
+Date: Thu, 4 Nov 2010 19:32:09 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Jean Delvare <khali@linux-fr.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: [lm-sensors] [PATCH 4/8] hwmon: applesmc: Handle new
+ temperature format
+Message-ID: <20101105023209.GB28308@ericsson.com>
+References: <1288511434-5662-1-git-send-email-rydberg@euromail.se>
+ <1288511434-5662-5-git-send-email-rydberg@euromail.se>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011050327.06607.arnd@arndb.de>
-X-Provags-ID: V02:K0:p+nyeRVyq/aR8dXn2cXz2/GE48a2laKsnoYQnMW2sJ9
- cGfn+iKKYQApcNmYsgn4SDOgoXc3fZlp/44T/6vemLCD0b/qr2
- r/IxOUVLTgF6eQCwdy1MOq0jNs2/1P8faw8NJ0v1XkBBYRW9iB
- kCUdF+ZgexTd/TqurJJ2/PYFDaXj86/zIU29CFOkhVO/x3fMoF
- QlNTDERjzBdqz+oxw9Rnw==
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1288511434-5662-5-git-send-email-rydberg@euromail.se>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 03 November 2010, Pekka Enberg wrote:
-> On Tue, Nov 2, 2010 at 3:21 AM, Pavel Machek <pavel@ucw.cz> wrote:
-> > Hi!
-> >
-> >> @@ -79,6 +79,10 @@ static struct drm_driver driver = {
-> >>
-> >>  static int __init i810_init(void)
-> >>  {
-> >> +     if (num_present_cpus() > 1) {
-> >> +             pr_err("drm/i810 does not support SMP\n");
-> >> +             return -EINVAL;
-> >> +     }
-> >>       driver.num_ioctls = i810_max_ioctl;
-> >>       return drm_init(&driver);
-> >
-> > Umm, and now someone onlines second cpu?
+On Sun, Oct 31, 2010 at 03:50:30AM -0400, Henrik Rydberg wrote:
+> The recent Macbooks have temperature registers of a new type.
+> This patch adds the logic to handle them.
 > 
-> Well, I see it's being fixed in a different way but yeah,
-> num_possible_cpus() would be more appropriate here.
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> ---
+>  drivers/hwmon/applesmc.c |   12 +++++++++---
+>  1 files changed, 9 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+> index 0207618..ec92aff 100644
+> --- a/drivers/hwmon/applesmc.c
+> +++ b/drivers/hwmon/applesmc.c
+> @@ -733,13 +733,19 @@ static ssize_t applesmc_show_temperature(struct device *dev,
+>  	ret = applesmc_get_entry_by_index(index, &entry);
+>  	if (ret)
+>  		return ret;
+> +	if (entry.len > 2)
+> +		return -EINVAL;
+>  
+> -	ret = applesmc_read_entry(&entry, buffer, 2);
+> +	ret = applesmc_read_entry(&entry, buffer, entry.len);
+>  	if (ret)
+>  		return ret;
+>  
+> -	temp = buffer[0]*1000;
+> -	temp += (buffer[1] >> 6) * 250;
+> +	if (entry.len == 2) {
+> +		temp = buffer[0]*1000;
 
-(trimming Cc list again)
+Should be 
+		temp = buffer[0] * 1000;
 
-I thought that patch was still current, what other way are we fixing it now?
+Otherwise looks good.
 
-Since I'm planning to do one more series for 2.6.37 to take care of the
-remaining BKL users, should I push the patch above plus the one that
-marks the module as "depends on !PREEMPT || BROKEN", or should that go through
-the DRM tree?
-
-Pavel: The only board that has this chipset with multiple sockets is for
-Pentium III and does not have hotplug sockets, so num_present_cpus 
-is the same as num_possible_cpus here. I can change it to num_possible_cpus
-of course.
-
-	Arnd
+Guenter
