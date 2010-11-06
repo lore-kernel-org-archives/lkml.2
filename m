@@ -1,72 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753752Ab0KFIrd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 04:47:33 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:50769 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752966Ab0KFIr3 (ORCPT
+	id S1753835Ab0KFI7O (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 04:59:14 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63547 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752994Ab0KFI7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 04:47:29 -0400
+	Sat, 6 Nov 2010 04:59:08 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:content-transfer-encoding:user-agent;
-        b=uPw8ZCcjXAkykjydemaa5D7P/4MmFMWNG+1zCRtz0AWLJZQ/lWywc/qh84YlYN7VwI
-         xAfV+cyhsgWDlAQoKLDGiiX8Gck76pz237+GoJcSN05R81yzJra7zYpkM82UGyxMefNQ
-         +RDb/27sw7X5k8xsYx2h5+vbZf8a+xgBFxApw=
-Date: Sat, 6 Nov 2010 11:47:24 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH] perf, ui: Eliminate stack-smashing protection compiler
-	complain
-Message-ID: <20101106084724.GA5956@lenovo>
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=rotWIYob9dfFIf5GmUmNt8q7UTwDZKlmpZCE7EqLLSAACk7dzT8/+PC9l2GJACjt7m
+         +nAUbELDzI2cUyGeficfWTS0OGk5gXn3YOOC5LucybzrziBG9SCxrZHVXd7DZSAMgXSe
+         jJVuQLAHIvyreFeyWt9mAgm2yg8kYeqTzJyYY=
+Message-ID: <4CD5181C.7040706@gmail.com>
+Date: Sat, 06 Nov 2010 09:55:56 +0100
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+CC: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Tim Bird <tim.bird@am.sony.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>
+Subject: [PATCH 00/16 v2] pramfs: persistent and protected RAM Filesystem
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- The gcc complains on Yes, No being allocated from stack space. Make
-them conts to feel compiler happy.
+Hi all,
 
- |    CC util/ui/util.o
- | cc1: warnings being treated as errors
- | util/ui/util.c: In function ‘ui__dialog_yesno’:
- | util/ui/util.c:108: error: not protecting function: no buffer at least 8 bytes long
- | make: *** [util/ui/util.o] Error 1
+I send the patch series again. I fix documentation problems reported by
+Randy Dunlap and Kieran Bingham. I reworked the memory protection
+functions according to the suggestions of Andi Kleen.
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: Frédéric Weisbecker <fweisbec@gmail.com>
-CC: Ingo Molnar <mingo@elte.hu>
----
+I ask to Andrew to evaluate to insert this fs in mainline.
 
-Since it seems only me who has such error I presume ssp-buffer-size=8 set
-for mine local version of gcc (gcc version 4.3.3 (Ubuntu 4.3.3-5ubuntu4))
-
- tools/perf/util/ui/util.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-Index: linux-2.6.git/tools/perf/util/ui/util.c
-=====================================================================
---- linux-2.6.git.orig/tools/perf/util/ui/util.c
-+++ linux-2.6.git/tools/perf/util/ui/util.c
-@@ -104,9 +104,10 @@ out_destroy_form:
- 	return rc;
- }
- 
-+static const char yes[] = "Yes", no[] = "No";
-+
- bool ui__dialog_yesno(const char *msg)
- {
- 	/* newtWinChoice should really be accepting const char pointers... */
--	char yes[] = "Yes", no[] = "No";
--	return newtWinChoice(NULL, yes, no, (char *)msg) == 1;
-+	return newtWinChoice(NULL, (char *)yes, (char *)no, (char *)msg) == 1;
- }
+Marco
