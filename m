@@ -1,40 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753580Ab0KFBEV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 21:04:21 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:45682 "EHLO zene.cmpxchg.org"
+	id S1754880Ab0KFBGo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 21:06:44 -0400
+Received: from gold.linx.net ([195.66.232.40]:39969 "EHLO gold.linx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752709Ab0KFBEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 21:04:20 -0400
-Date: Sat, 6 Nov 2010 02:03:57 +0100
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Young <hidave.darkstar@gmail.com>,
-        Greg Thelen <gthelen@google.com>, Andrea Righi <arighi@develer.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH] memcg: use do_div to divide s64 in 32 bit machine.
-Message-ID: <20101106010357.GD23393@cmpxchg.org>
-References: <1288973333-7891-1-git-send-email-minchan.kim@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288973333-7891-1-git-send-email-minchan.kim@gmail.com>
-11;rgb: 0000/0000/0000From: Johannes Weiner <hannes@cmpxchg.org>
-From: hannes@cmpxchg.org
+	id S1753046Ab0KFBGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 21:06:41 -0400
+Subject: Re: BUG in ext4 with 2.6.37-rc1
+From: Tony Vroon <tony@linx.net>
+To: Theodore Tso <tytso@MIT.EDU>
+Cc: Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org
+In-Reply-To: <0C557864-9D5C-45A3-8DDF-114E4DD22258@mit.edu>
+References: <20101102202013.GA3861@elliptictech.com>
+	 <1288998589.2961.3.camel@localhost>
+	 <0C557864-9D5C-45A3-8DDF-114E4DD22258@mit.edu>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-/dISZGFlckwavfyJqBRE"
+Organization: London Internet Exchange (LINX; AS5459)
+Date: Sat, 06 Nov 2010 01:06:50 +0000
+Message-ID: <1289005610.2961.21.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 06, 2010 at 01:08:53AM +0900, Minchan Kim wrote:
-> Use do_div to divide s64 value. Otherwise, build would be failed
-> like Dave Young reported.
 
-I thought about that too, but then I asked myself why you would want
-to represent a number of pages as signed 64bit type, even on 32 bit?
+--=-/dISZGFlckwavfyJqBRE
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Isn't the much better fix to get the types right instead?
+On Fri, 2010-11-05 at 20:33 -0400, Theodore Tso wrote:
+> And if you have the stack trace easily to hand, it would be useful to mak=
+e sure that part is the same as well.
+
+Seemingly identical between 2.6.36-09452-g2d10d87 &
+2.6.37-rc1-00040-g0660a9b, both had cvs as the active process.
+This one is from 2.6.37-rc1-00040-g0660a9b:
+
+Call Trace:
+ [<ffffffff810e6716>] ? ext4_bio_write_page+0x176/0x30a
+ [<ffffffff810e25db>] ? mpage_da_submit_io+0x2ad/0x31e
+ [<ffffffff8106d034>] ? pagevec_lookup_tag+0x18/0x1f
+ [<ffffffff810e5c56>] ? write_cache_pages_da+0xad/0x36d
+ [<ffffffff810e5ac3>] ? mpage_da_map_and_submit+0x2c4/0x2da
+ [<ffffffff810edbba>] ? ext4_journal_start_sb+0xd4/0x108
+ [<ffffffff810269ac>] ? should_resched+0x5/0x26
+ [<ffffffff810a2f26>] ? _cond_resched+0x9/0x1e
+ [<ffffffff810e61ee>] ? ext4_da_writepages+0x2d8/0x422
+ [<ffffffff810b3471>] ? __getblk+0x1c/0x2d4
+ [<ffffffff81065cad>] ? __filemap_fdatawrite_range+0x48/0x4d
+ [<ffffffff810ff15c>] ? jbd2_journal_begin_ordered_truncated+0x72/0x9b
+ [<ffffffff810bb060>] ? fsnotify_clear_marks_by_inode+0x8a/0xc7
+ [<ffffffff810e5359>] ? ext4_evict_inode+0x56/0x241
+ [<ffffffff810a4c62>] ? evict+0x1a/0x89
+ [<ffffffff810a51dd>] ? iput+0x20d/0x246
+ [<ffffffff8109d85f>] ? do_unlinkat+0xf4/0x14c
+ [<ffffffff810029ab>] ? system_call_fastpath+0x16/0x1b
+
+> Many thanks,
+> -- Ted
+
+Regards,
+--=20
+Tony Vroon
+UNIX systems administrator
+London Internet Exchange Ltd, Trinity Court, Trinity Street,
+Peterborough, PE1 1DA
+Registered in England number 3137929
+E-Mail: tony@linx.net
+
+--=-/dISZGFlckwavfyJqBRE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
+
+iEYEABECAAYFAkzUqioACgkQp5vW4rUFj5ps9QCeJRcBiMJYexxD6f6ythERnl+4
+1IgAnj49QxepY6RDd2PqLGRG6V/unFkD
+=R7hZ
+-----END PGP SIGNATURE-----
+
+--=-/dISZGFlckwavfyJqBRE--
+
