@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736Ab0KFSaW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 14:30:22 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:47858 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751828Ab0KFSaU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 14:30:20 -0400
-Date: Sat, 6 Nov 2010 11:28:52 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Siarhei Liakh <sliakh.lkml@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-next@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
-        James Morris <jmorris@namei.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>
-Subject: RO/NX protection for loadable kernel modules
-Message-ID: <20101106182852.GC5327@outflux.net>
+	id S1752918Ab0KFSan (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 14:30:43 -0400
+Received: from nm29-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.236]:22419 "HELO
+	nm29-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752675Ab0KFSal convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Nov 2010 14:30:41 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 992858.88936.bm@omp1022.mail.sp2.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=j64CwAxO9u0JuElwyUpL3BBIfvLK3F4jkzXNhclKuDcxQxLH/cGiwuyLP6IcvO27mbfIygnDr3r9vcFAZC2Q32miRf/UC84zrB9Jfa4pnkuWRo3mZkuC7mHQ3RtRTXKqgHk1OLQTic+STcMs+7UUmKk/DxuHCv8Gg/Wmd/lbk4I=;
+Message-ID: <502882.59497.qm@web180306.mail.gq1.yahoo.com>
+X-YMail-OSG: _JHUYckVM1nsuzaXihwINGUh9.aDzr_0fa9CWcEFxlDs9Mk
+ rHUWf9MAQ77o9alP5P.QjS3i.c_bDEqw2wv8rafMjK8JAVLUkBRxD8jnxgL2
+ fPGN14mSf3U9xEtu5f_RB_n7mfqdw9SBJBz.5jhIlBWqcxQgh59j_r577F61
+ Fu9IOmmbt8RM6JyuKqpe_SB4ql8cTidcZuwNlBCWMtFz8c7tnbQ_7ZwCSny8
+ 3rW1prhXheBbhCEH7HqiBl9Xgqa4mhN3y2JZu7Wif8aAy7mfr4OF0RhtS_gn
+ Bvwy4yalhKAwLO66yemE1jEGtabLgstwNbGQfM4PPlI4bvYaVAw73DHjHFsj
+ omg3dfpUtUnugp0R.edc4XRvtMVZGmcbMevGTraQ-
+X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.284920
+Date: Sat, 6 Nov 2010 11:30:40 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [PATCH] usb: core: fix information leak to userland
+To: Vasiliy Kulikov <segooon@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Cc: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Oliver Neukum <oliver@neukum.org>, Andi Kleen <ak@linux.intel.com>,
+        Chris Frey <cdfrey@foursquare.net>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <Pine.LNX.4.44L0.1011061419490.28403-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: Canonical
-X-HELO: www.outflux.net
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter, anyone? What is the state of this? I can see it in the tip tree,
-but it doesn't appear associated with a branch. What will it take to
-get this into Linus's tree?
 
-http://git.kernel.org/?p=linux/kernel/git/x86/linux-2.6-tip.git;a=commitdiff;h=65187d24fa3ef60f691f847c792e8eaca7e19251
 
-This feature is needed before the function-pointer const-ification patches
-will really have any meaning.
+--- On Sat, 11/6/10, Alan Stern <stern@rowland.harvard.edu> wrote:
 
-Thanks,
+> Are you sure that adding an initializer
+> like this will zero out the 
+> padding bytes?  It might be safer just to call
+> memset.
 
--Kees
+ISTR the C standard says things get initted to
+zero in this case too ... and that compilers will
+as a rule use memset to do it.  One could look
+at the generated code to make sure of that.
 
-On Tue, Oct 19, 2010 at 09:45:39PM -0700, Kees Cook wrote:
-> On Mon, Feb 08, 2010 at 11:59:44AM +1030, Rusty Russell wrote:
-> > On Tue, 2 Feb 2010 04:36:49 pm H. Peter Anvin wrote:
-> > > On 02/01/2010 07:59 PM, Rusty Russell wrote:
-> > > > On Tue, 2 Feb 2010 10:09:53 am Siarhei Liakh wrote:
-> > > >> This patch is a logical extension of the protection provided by
-> > > >> CONFIG_DEBUG_RODATA to LKMs. The protection is provided by splitting
-> > > >> module_core and module_init into three logical parts each and setting
-> > > >> appropriate page access permissions for each individual section:
-> > > >>
-> > > >>   1. Code: RO+X
-> > > >>   2. RO data: RO+NX
-> > > >>   3. RW data: RW+NX
-> > > >
-> > > > Thanks, applied!
-> > > 
-> > > I also applied this to the -tip tree... do you prefer to carry it or 
-> > > should I leave it as is?
-> > 
-> > I'm always happy for you to do my work for me!  There are no other module
-> > patches likely to conflict.
-> > 
-> > Acked-by: Rusty Russell <rusty@rustcorp.com.au>
-> 
-> Sorry for losing track, but where did this patch end up? I don't see it
-> in any of the trees I've looked in.
+There's certainly a fair amount of code I've seen
+that uses runtime initializers like that, to zero
+memory.  I can't believe i's _all_ broken!  ;)
 
--- 
-Kees Cook
-Ubuntu Security Team
+- Dave
+
+
