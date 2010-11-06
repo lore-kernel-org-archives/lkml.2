@@ -1,92 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323Ab0KFToP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 15:44:15 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:49044 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752210Ab0KFToO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 15:44:14 -0400
-Date: Sat, 6 Nov 2010 12:44:08 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Joe Korty <joe.korty@ccur.com>, fweisbec@gmail.com, dhowells@redhat.com,
-        loic.minier@linaro.org, dhaval.giani@gmail.com, tglx@linutronix.de,
-        peterz@infradead.org, linux-kernel@vger.kernel.org,
-        josh@joshtriplett.org
-Subject: Re: [PATCH] a local-timer-free version of RCU
-Message-ID: <20101106194408.GK15561@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20101104232148.GA28037@linux.vnet.ibm.com>
- <20101105210059.GA27317@tsunami.ccur.com>
- <20101106192812.GI15561@linux.vnet.ibm.com>
- <20101106193456.GA14197@Krystal>
- <20101106194219.GA24135@Krystal>
+	id S1753162Ab0KFT5N (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 15:57:13 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:36909 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752612Ab0KFT5M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Nov 2010 15:57:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=MTHRIv6ttePlX0oLD4wS49xTbk6coKUUFNqiLmo5uJakhaExgBO2ZfmxL5R6Ywy0NV
+         8dYkvhlN6cZVqoK+00TVsXfoHjkQPl+2DhSFUoIzDbbX3FPNIDSCpbHo8qVc/NQYufoq
+         qqCAkSi7jvvTk5/0vJmaIu/eKolPnKRM3QvKU=
+Date: Sat, 6 Nov 2010 12:57:05 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Tracey Dent <tdent48227@gmail.com>
+Cc: jkosina@suse.cz, linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        spbnick@gmail.com, chatty@enac.fr
+Subject: Re: [PATCH 1/2] Drivers: hid: Makefile: Cleaned up Makefile
+Message-ID: <20101106195705.GA26765@core.coreip.homeip.net>
+References: <1289070464-3392-1-git-send-email-tdent48227@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101106194219.GA24135@Krystal>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1289070464-3392-1-git-send-email-tdent48227@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 06, 2010 at 03:42:19PM -0400, Mathieu Desnoyers wrote:
-> * Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
-> > > > +/**
-> > > > + * rcu_read_unlock - marks the end of an RCU read-side critical section.
-> > > > + * Check if a RCU batch was started while we were in the critical
-> > > > + * section.  If so, call rcu_quiescent() join the rendezvous.
-> > > > + *
-> > > > + * See rcu_read_lock() for more information.
-> > > > + */
-> > > > +void __rcu_read_unlock(void)
-> > > > +{
-> > > > +	struct rcu_data *r;
-> > > > +	int	cpu, flags;
-> > > > +
-> > 
-> > Another memory barrier would be needed here to ensure that the memory accesses
-> > performed within the C.S. are not reordered wrt nest_count decrement.
-> 
-> Nevermind. xchg() acts as a memory barrier, and nest_count is only ever touched
-> by the local CPU. No memory barrier needed here.
+Hi Tracey,
 
-You beat me to it.  ;-)
+On Sat, Nov 06, 2010 at 03:07:43PM -0400, Tracey Dent wrote:
+> Changed Makefile to use <modules>-y instead of <modules>-objs.
+> 
 
-							Thanx, Paul
+Changelog normally should say why something has been done as what has
+been done is pretty clear from the patch itself.
 
-> Thanks,
-> 
-> Mathieu
-> 
-> > 
-> > > > +	cpu = smp_processor_id();
-> > > > +	r = &per_cpu(rcu_data, cpu);
-> > > > +	if (--r->nest_count == 0) {
-> > > > +		flags = xchg(&r->flags, 0);
-> > > > +		if (flags & DO_RCU_COMPLETION)
-> > > > +			rcu_quiescent(cpu);
-> > > > +	}
-> > > > +}
-> > > > +EXPORT_SYMBOL(__rcu_read_unlock);
-> > 
-> > Thanks,
-> > 
-> > Mathieu
-> > 
-> > -- 
-> > Mathieu Desnoyers
-> > Operating System Efficiency R&D Consultant
-> > EfficiOS Inc.
-> > http://www.efficios.com
-> 
-> -- 
-> Mathieu Desnoyers
-> Operating System Efficiency R&D Consultant
-> EfficiOS Inc.
-> http://www.efficios.com
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Thanks.
+
+-- 
+Dmitry
