@@ -1,70 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944Ab0KFBQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 21:16:26 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:52217 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752709Ab0KFBQY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 21:16:24 -0400
-Date: Fri, 5 Nov 2010 18:16:10 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Gene Cooperman <gene@ccs.neu.edu>
-Cc: "Luck, Tony" <tony.luck@intel.com>, Kapil Arya <kapil@ccs.neu.edu>,
-        Oren Laadan <orenl@cs.columbia.edu>,
-        "ksummit-2010-discuss@lists.linux-foundation.org" 
-	<ksummit-2010-discuss@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-Message-ID: <20101106011610.GA12449@count0.beaverton.ibm.com>
-References: <Pine.LNX.4.64.1011021530470.12128@takamine.ncl.cs.columbia.edu>
- <4CD08419.5050803@kernel.org>
- <4CD23087.30900@cs.columbia.edu>
- <AANLkTikgPKeZUih6_12JWSNy=Vsz2UP9HR7wHOz4q6ST@mail.gmail.com>
- <987664A83D2D224EAE907B061CE93D53016485FE6E@orsmsx505.amr.corp.intel.com>
- <20101105171703.GA1760@sundance.ccs.neu.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101105171703.GA1760@sundance.ccs.neu.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753170Ab0KFBvG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 21:51:06 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:58344 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751870Ab0KFBu7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 21:50:59 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: cdhmanning@gmail.com
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 1/9] Add yaffs Kconfig and Makefile
+In-Reply-To: Your message of "Thu, 04 Nov 2010 05:53:16 +1300."
+             <1288803204-3849-2-git-send-email-cdhmanning@gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1288803204-3849-1-git-send-email-cdhmanning@gmail.com>
+            <1288803204-3849-2-git-send-email-cdhmanning@gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1289008258_4426P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Fri, 05 Nov 2010 21:50:58 -0400
+Message-ID: <10039.1289008258@localhost>
+X-Mirapoint-Received-SPF: 128.173.34.103 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020208.4CD4B482.013F,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 05, 2010 at 01:17:03PM -0400, Gene Cooperman wrote:
-> On Fri, Nov 05, 2010 at 04:57:33AM -0700, Luck, Tony wrote:
-> > > Oren noted that sometimes it's important to stop the process only
-> > > for a few milliseconds while one checkpoints. In DMTCP, we do that
-> > > by configuring with --enable-forked-checkpointing. This causes us
-> > > to fork a child process taking advantage of copy-on-write and then
-> > > checkpoint the memory pages of the child while the parent continues
-> > > to execute.
-> > 
-> > Interesting ... but while the process is only stopped for the duration
-> > of the fork, it may be taking COW faults on almost every page it
-> > touches.  I think this will not work well for large HPC applications
-> > that allocate most of physical memory as anonymous pages for the
-> > application. It may even result in an OOM kill if you don't complete
-> > the checkpoint of the child and have it exit in a timely manner.
-> > 
-> > -Tony
-> > 
+--==_Exmh_1289008258_4426P
+Content-Type: text/plain; charset=us-ascii
+
+On Thu, 04 Nov 2010 05:53:16 +1300, cdhmanning@gmail.com said:
+> From: Charles Manning <cdhmanning@gmail.com>
 > 
-> I agree with you that forked checkpointing is probably not what you
-> want in the middle of an HPC computation.  But isn't that part of
-> the nature of COW?  Whether the COW is invoked within the kernel,
-> or from outside the kernel via fork --- in either case, when you have
-> mostly dirty pages, you will have to copy most of the pages.
+> Adding yaffs2 file system.
 
-The current linux-cr approach to handling [dirty] pages doesn't use COW.
-The tasks are frozen using the cgroup freezer and thus unable to modify
-the pages. So we don't have to mess with page tables nor do we pay
-any extra overhead for page faults.
+> +config YAFFS_DOES_ECC
+> +	bool "Lets Yaffs do its own ECC"
+> +	depends on YAFFS_FS && YAFFS_YAFFS1 && !YAFFS_9BYTE_TAGS
+> +	default n
+> +	help
+> +	  This enables Yaffs to use its own ECC functions instead of using
+> +	  the ones from the generic MTD-NAND driver.
+> +
+> +	  If unsure, say N.
 
-If we ever implement thawed checkpointing -- checkpointing while
-the task isn't frozen -- then we'd probably use COW and see
-the same faults. The difference then would be that in-kernel we
-wouldn't have one extra task per mm being checkpointed.
+Why does this exist at all? Are there any cases where the Yaffs ECC is better
+than the MTD versions? If so, why aren't we fixing the MTD versions?
 
-Cheers,
-	-Matt Helsley
+> +config YAFFS_DISABLE_TAGS_ECC
+> +	bool "Disable YAFFS from doing ECC on tags by default"
+> +	depends on YAFFS_FS && YAFFS_YAFFS2
+> +	default n
+> +	help
+> +	  This defaults Yaffs to using its own ECC calculations on tags instead of
+> +	  just relying on the MTD.
+> +	  This behavior can also be overridden with tags_ecc_on and
+> +	  tags_ecc_off mount options.
+> +
+> +	  If unsure, say N.
+
+Similarly here - why would somebody want this?
+
+> +config YAFFS_EMPTY_LOST_AND_FOUND
+> +	bool "Empty lost and found on boot"
+> +	depends on YAFFS_FS
+> +	default n
+> +	help
+> +	  If this is enabled then the contents of lost and found is
+> +	  automatically dumped at mount.
+
+Wow.. Just.. wow.   Under what use case is this a good idea for a config option
+as opposed to a mount option?
+
+
+
+--==_Exmh_1289008258_4426P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFM1LSCcC3lWbTT17ARAparAKCkdqmXdDgU5yaTIzZ3Z/D/KGBzbACg0RP8
+T4FSkgZJB67XUFQ6wnz54Yg=
+=FB6H
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1289008258_4426P--
+
