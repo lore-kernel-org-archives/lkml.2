@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029Ab0KFRwM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 13:52:12 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:43482 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751467Ab0KFRwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 13:52:11 -0400
-Date: Sat, 6 Nov 2010 10:51:55 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: Vasiliy Kulikov <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Arnd Bergmann <arnd@arndb.de>, Oliver Neukum <oliver@neukum.org>,
-        Joe Perches <joe@perches.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: misc: iowarrior: fix information leak to userland
-Message-ID: <20101106175155.GB5327@outflux.net>
-References: <1289054492-18278-1-git-send-email-segooon@gmail.com>
+	id S1751779Ab0KFSFl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 14:05:41 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:53096 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751467Ab0KFSFk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Nov 2010 14:05:40 -0400
+Date: Sat, 6 Nov 2010 14:05:30 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Alessio Igor Bogani <abogani@texware.it>
+Cc: Jan Kara <jack@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
+        Christoph Hellwig <hch@infradead.org>, Tim Bird <tim.bird@am.sony.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] udf: Add missed protection for s_lvid_dirty
+Message-ID: <20101106180530.GB13315@infradead.org>
+References: <1289065631-2256-1-git-send-email-abogani@texware.it>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1289054492-18278-1-git-send-email-segooon@gmail.com>
-Organization: Canonical
-X-HELO: www.outflux.net
+In-Reply-To: <1289065631-2256-1-git-send-email-abogani@texware.it>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 06, 2010 at 05:41:31PM +0300, Vasiliy Kulikov wrote:
-> Structure iowarrior_info is copied to userland with padding byted
-> between "serial" and "revision" fields uninitialized.  It leads to
-> leaking of contents of kernel stack memory.
-> 
-> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+On Sat, Nov 06, 2010 at 06:47:08PM +0100, Alessio Igor Bogani wrote:
+> As reported in udf_sb.h the udf_sb_infoi's structure member s_lvid_dirty should
+> be protected by s_alloc_mutex. Added that mutex on a couple of places where it
+> miss.
 
-Acked-by: Kees Cook <kees.cook@canonical.com>
+The whole s_lvid_dirty flag doesn't make any sense to me.  As a start it
+simply duplicates s_dirty in the VFS superblock, but even more it just
+controls the dirty state of s_lvid_bh.  I think you could simply kill
+s_lvid_dirty, plus s_dirty inside udf and replace all calls to
+udf_updated_lvid with a simple mark_buffer_dirty(sbi->s_lvid_bh) and
+also get rid of all the locking around it.
 
-> ---
->  Compile tested.
-> 
->  drivers/usb/misc/iowarrior.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/usb/misc/iowarrior.c b/drivers/usb/misc/iowarrior.c
-> index 3756641..c9078e4 100644
-> --- a/drivers/usb/misc/iowarrior.c
-> +++ b/drivers/usb/misc/iowarrior.c
-> @@ -553,6 +553,7 @@ static long iowarrior_ioctl(struct file *file, unsigned int cmd,
->  			/* needed for power consumption */
->  			struct usb_config_descriptor *cfg_descriptor = &dev->udev->actconfig->desc;
->  
-> +			memset(&info, 0, sizeof(info));
->  			/* directly from the descriptor */
->  			info.vendor = le16_to_cpu(dev->udev->descriptor.idVendor);
->  			info.product = dev->product_id;
-> -- 
-> 1.7.0.4
--- 
-Kees Cook
-Ubuntu Security Team
+While looking at this I also noticed that large parts of udf_open_lvid
+and udf_close_lvid are basically duplicate.  The only difference seems
+to be setting an integrityType of LVID_INTEGRITY_TYPE_OPEN vs
+LVID_INTEGRITY_TYPE_CLOSE and updating a few revision counters on close.
+If you're interested in working on udf that seems like a nice little
+cleanup.
