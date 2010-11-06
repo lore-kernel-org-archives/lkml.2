@@ -1,86 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880Ab0KFBGo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 21:06:44 -0400
-Received: from gold.linx.net ([195.66.232.40]:39969 "EHLO gold.linx.net"
+	id S1753944Ab0KFBQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 21:16:26 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:52217 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753046Ab0KFBGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 21:06:41 -0400
-Subject: Re: BUG in ext4 with 2.6.37-rc1
-From: Tony Vroon <tony@linx.net>
-To: Theodore Tso <tytso@MIT.EDU>
-Cc: Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org
-In-Reply-To: <0C557864-9D5C-45A3-8DDF-114E4DD22258@mit.edu>
-References: <20101102202013.GA3861@elliptictech.com>
-	 <1288998589.2961.3.camel@localhost>
-	 <0C557864-9D5C-45A3-8DDF-114E4DD22258@mit.edu>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-/dISZGFlckwavfyJqBRE"
-Organization: London Internet Exchange (LINX; AS5459)
-Date: Sat, 06 Nov 2010 01:06:50 +0000
-Message-ID: <1289005610.2961.21.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752709Ab0KFBQY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 21:16:24 -0400
+Date: Fri, 5 Nov 2010 18:16:10 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Gene Cooperman <gene@ccs.neu.edu>
+Cc: "Luck, Tony" <tony.luck@intel.com>, Kapil Arya <kapil@ccs.neu.edu>,
+        Oren Laadan <orenl@cs.columbia.edu>,
+        "ksummit-2010-discuss@lists.linux-foundation.org" 
+	<ksummit-2010-discuss@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
+Message-ID: <20101106011610.GA12449@count0.beaverton.ibm.com>
+References: <Pine.LNX.4.64.1011021530470.12128@takamine.ncl.cs.columbia.edu>
+ <4CD08419.5050803@kernel.org>
+ <4CD23087.30900@cs.columbia.edu>
+ <AANLkTikgPKeZUih6_12JWSNy=Vsz2UP9HR7wHOz4q6ST@mail.gmail.com>
+ <987664A83D2D224EAE907B061CE93D53016485FE6E@orsmsx505.amr.corp.intel.com>
+ <20101105171703.GA1760@sundance.ccs.neu.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101105171703.GA1760@sundance.ccs.neu.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 05, 2010 at 01:17:03PM -0400, Gene Cooperman wrote:
+> On Fri, Nov 05, 2010 at 04:57:33AM -0700, Luck, Tony wrote:
+> > > Oren noted that sometimes it's important to stop the process only
+> > > for a few milliseconds while one checkpoints. In DMTCP, we do that
+> > > by configuring with --enable-forked-checkpointing. This causes us
+> > > to fork a child process taking advantage of copy-on-write and then
+> > > checkpoint the memory pages of the child while the parent continues
+> > > to execute.
+> > 
+> > Interesting ... but while the process is only stopped for the duration
+> > of the fork, it may be taking COW faults on almost every page it
+> > touches.  I think this will not work well for large HPC applications
+> > that allocate most of physical memory as anonymous pages for the
+> > application. It may even result in an OOM kill if you don't complete
+> > the checkpoint of the child and have it exit in a timely manner.
+> > 
+> > -Tony
+> > 
+> 
+> I agree with you that forked checkpointing is probably not what you
+> want in the middle of an HPC computation.  But isn't that part of
+> the nature of COW?  Whether the COW is invoked within the kernel,
+> or from outside the kernel via fork --- in either case, when you have
+> mostly dirty pages, you will have to copy most of the pages.
 
---=-/dISZGFlckwavfyJqBRE
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+The current linux-cr approach to handling [dirty] pages doesn't use COW.
+The tasks are frozen using the cgroup freezer and thus unable to modify
+the pages. So we don't have to mess with page tables nor do we pay
+any extra overhead for page faults.
 
-On Fri, 2010-11-05 at 20:33 -0400, Theodore Tso wrote:
-> And if you have the stack trace easily to hand, it would be useful to mak=
-e sure that part is the same as well.
+If we ever implement thawed checkpointing -- checkpointing while
+the task isn't frozen -- then we'd probably use COW and see
+the same faults. The difference then would be that in-kernel we
+wouldn't have one extra task per mm being checkpointed.
 
-Seemingly identical between 2.6.36-09452-g2d10d87 &
-2.6.37-rc1-00040-g0660a9b, both had cvs as the active process.
-This one is from 2.6.37-rc1-00040-g0660a9b:
-
-Call Trace:
- [<ffffffff810e6716>] ? ext4_bio_write_page+0x176/0x30a
- [<ffffffff810e25db>] ? mpage_da_submit_io+0x2ad/0x31e
- [<ffffffff8106d034>] ? pagevec_lookup_tag+0x18/0x1f
- [<ffffffff810e5c56>] ? write_cache_pages_da+0xad/0x36d
- [<ffffffff810e5ac3>] ? mpage_da_map_and_submit+0x2c4/0x2da
- [<ffffffff810edbba>] ? ext4_journal_start_sb+0xd4/0x108
- [<ffffffff810269ac>] ? should_resched+0x5/0x26
- [<ffffffff810a2f26>] ? _cond_resched+0x9/0x1e
- [<ffffffff810e61ee>] ? ext4_da_writepages+0x2d8/0x422
- [<ffffffff810b3471>] ? __getblk+0x1c/0x2d4
- [<ffffffff81065cad>] ? __filemap_fdatawrite_range+0x48/0x4d
- [<ffffffff810ff15c>] ? jbd2_journal_begin_ordered_truncated+0x72/0x9b
- [<ffffffff810bb060>] ? fsnotify_clear_marks_by_inode+0x8a/0xc7
- [<ffffffff810e5359>] ? ext4_evict_inode+0x56/0x241
- [<ffffffff810a4c62>] ? evict+0x1a/0x89
- [<ffffffff810a51dd>] ? iput+0x20d/0x246
- [<ffffffff8109d85f>] ? do_unlinkat+0xf4/0x14c
- [<ffffffff810029ab>] ? system_call_fastpath+0x16/0x1b
-
-> Many thanks,
-> -- Ted
-
-Regards,
---=20
-Tony Vroon
-UNIX systems administrator
-London Internet Exchange Ltd, Trinity Court, Trinity Street,
-Peterborough, PE1 1DA
-Registered in England number 3137929
-E-Mail: tony@linx.net
-
---=-/dISZGFlckwavfyJqBRE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-
-iEYEABECAAYFAkzUqioACgkQp5vW4rUFj5ps9QCeJRcBiMJYexxD6f6ythERnl+4
-1IgAnj49QxepY6RDd2PqLGRG6V/unFkD
-=R7hZ
------END PGP SIGNATURE-----
-
---=-/dISZGFlckwavfyJqBRE--
-
+Cheers,
+	-Matt Helsley
