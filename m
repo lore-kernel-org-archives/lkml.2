@@ -1,107 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827Ab0KFPO3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 11:14:29 -0400
-Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:59645 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753169Ab0KFPO1 (ORCPT
+	id S1754444Ab0KFPtP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 11:49:15 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:40779 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753186Ab0KFPtO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 11:14:27 -0400
-Date: Sun, 7 Nov 2010 02:12:37 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: dave b <db.pub.mail@gmail.com>
-Cc: Sanjoy Mahajan <sanjoy@olin.edu>, Jesper Juhl <jj@chaosbits.net>,
-        Chris Mason <chris.mason@oracle.com>, Ingo Molnar <mingo@elte.hu>,
-        Pekka Enberg <penberg@kernel.org>,
-        Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Nick Piggin <npiggin@suse.de>, Arjan van de Ven <arjan@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "Ted Ts'o" <tytso@mit.edu>,
-        Corrado Zoccolo <czoccolo@gmail.com>,
-        Shaohua Li <shaohua.li@intel.com>, Steven Barrett <damentz@gmail.com>
-Subject: Re: 2.6.36 io bring the system to its knees
-Message-ID: <20101106151237.GM13830@dastard>
-References: <20101105014334.GF13830@dastard>
- <E1PELiI-0001Pj-8g@approx.mit.edu>
- <AANLkTimON_GL6vRF9=_U6oRFQ30EYssx3wv5xdNsU9JM@mail.gmail.com>
+	Sat, 6 Nov 2010 11:49:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:in-reply-to:references:user-agent:date
+         :message-id:mime-version:content-type:content-transfer-encoding;
+        b=xH3LTBCw2QjNt6uy4n8sDP1LSDsU0XGfcoNCEuCxpNQoYir8jN6ogtUXfMRlSxbiY4
+         RhYYIer9ZA7MV6pqC6FO+YKtWe2kZZu2p4Je3eoSLEh6EmeyCxCAFmcAdJUsppSBT9tp
+         ZXBSUEEgPPjSGEU46qhACO40muYq6oZE4ktrY=
+From: Ben Gamari <bgamari.foss@gmail.com>
+To: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Christoph Egger <siccegge@cs.fau.de>
+Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Bus error on make allyesconfig, kernelbuild with HEAD
+In-Reply-To: <87d3qicwxn.fsf@gmail.com>
+References: <20100729105225.GA13192@faui48a.informatik.uni-erlangen.de> <AANLkTi=cYgV69VyNZ+TKs_f-+3AJmyo_RaYS57R72j50@mail.gmail.com> <20100729121002.GC13192@faui48a.informatik.uni-erlangen.de> <20100730084353.GB5638@cr0.nay.redhat.com> <87d3qicwxn.fsf@gmail.com>
+User-Agent: Notmuch/0.3.1-158-g04cd99c (http://notmuchmail.org) Emacs/23.1.1 (x86_64-pc-linux-gnu)
+Date: Sat, 06 Nov 2010 11:49:10 -0400
+Message-ID: <87aalmcv0p.fsf@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimON_GL6vRF9=_U6oRFQ30EYssx3wv5xdNsU9JM@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 07, 2010 at 01:10:24AM +1100, dave b wrote:
-> I now personally have thought that this problem is the kernel not
-> keeping track of reads vs writers properly  or not providing enough
-> time to reading processes as writing ones which look like they are
-> blocking the system....
+On Sat, 06 Nov 2010 11:07:48 -0400, Ben Gamari <bgamari.foss@gmail.com> wrote:
+> On Fri, 30 Jul 2010 16:43:53 +0800, Américo Wang <xiyou.wangcong@gmail.com> wrote:
+> > This is useful. :) Looks like parse_dep_file() accesses out of
+> > the mmap'ed memory range...
+> > 
+> Did anything ever happen with this? I seem to be experiencing similar
+> issues while cross-compiling for ARM on x86-64. All tested kernels
+> (v2.6.35 to master) fail with,
 
-Could be anything from that description....
+Here is .fixdep.d:
 
-> If you want to do a simple test do an unlimited dd  (or two dd's of a
-> limited size, say 10gb) and a find /
-> Tell me how it goes :)
 
-The find runs at IO latency speed while the dd processes run at disk
-bandwidth:
-
-Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await  svctm  %util
-vda               0.00     0.00    0.00    0.00     0.00     0.00     0.00     0.00    0.00   0.00   0.00
-vdb               0.00     0.00   58.00 1251.00     0.45   556.54   871.45    26.69   20.39   0.72  94.32
-sda               0.00     0.00    0.00    0.00     0.00     0.00     0.00     0.00    0.00   0.00   0.00
-
-That looks pretty normal to me for XFS and the noop IO scheduler,
-and there are no signs of latency or interactive problems in
-the system at all. Kill the dd's and:
-
-Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await  svctm  %util
-vda               0.00     0.00    0.00    0.00     0.00     0.00 0.00     0.00    0.00   0.00   0.00
-vdb               0.00     0.00  214.80    0.40     1.68     0.00 15.99     0.33    1.54   1.54  33.12
-sda               0.00     0.00    0.00    0.00     0.00     0.00 0.00     0.00    0.00   0.00   0.00
-
-And the find runs 3-4x faster, but ~200 iops is about the limit
-I'd expect from 7200rpm SATA drives given a single thread issuing IO
-(i.e. 5ms average seek time).
-
-> ( the system will stall)
-
-No, the system doesn't stall at all. It runs just fine. Sure,
-anything that requires IO on the loaded filesystem is _slower_, but
-if you're writing huge files to it that's pretty much expected. The
-root drive (on a different spindle) is still perfectly responsive on
-a cold cache:
-
-$ sudo time find / -xdev > /dev/null
-0.10user 1.87system 0:03.39elapsed 58%CPU (0avgtext+0avgdata 7008maxresident)k
-0inputs+0outputs (1major+844minor)pagefaults 0swap
-
-So what you describe is not a systemic problem, but a problem that
-your system configuration triggers. That's why we need to know
-_exactly_ how your storage subsystem is configured....
-
-> http://article.gmane.org/gmane.linux.kernel.device-mapper.dm-crypt/4561
-> iirc can reproduce this on plain ext3.
-
-You're pointing to a "fsync-tester" program that exercises a
-well-known problem with ext3 (sync-the-world-on-fsync). Other
-filesystems do not have that design flaw so don't suffer from
-interactivity problems uner these workloads.  As it is, your above
-dd workload example is not related to this fsync problem, either.
-
-This is what I'm trying to point out - you need to describe in
-significant detail your setup and what your applications are doing
-so we can identify if you are seeing a known problem or not. If you
-are seeing problems as a result of the above ext3 fsync problem,
-then the simple answer is "don't use ext3".
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+fixdep.o: scripts/basic/fixdep.c \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/sys/types.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/features.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/sys/cdefs.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/wordsize.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/gnu/stubs.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/types.h \
+ /usr/lib/gcc/x86_64-linux-gnu/4.4.3/include/stddef.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/typesizes.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/time.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/endian.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/endian.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/byteswap.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/sys/select.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/select.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/sigset.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/time.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/sys/sysmacros.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/pthreadtypes.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/sys/stat.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/stat.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/sys/mman.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/mman.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/unistd.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/posix_opt.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/confname.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/getopt.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/unistd.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/fcntl.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/fcntl.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/fcntl2.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/string.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/xlocale.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/string.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/string2.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/stdlib.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/string3.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/alloca.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/stdlib.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/stdio.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/libio.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/_G_config.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/wchar.h \
+ /usr/lib/gcc/x86_64-linux-gnu/4.4.3/include/stdarg.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/stdio_lim.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/sys_errlist.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/stdio.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/stdio2.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/limits.h \
+ /usr/lib/gcc/x86_64-linux-gnu/4.4.3/include-fixed/limits.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/posix1_lim.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/local_lim.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/linux/limits.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/posix2_lim.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/ctype.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/arpa/inet.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/netinet/in.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/stdint.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/wchar.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/sys/socket.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/sys/uio.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/uio.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/socket.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/sockaddr.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/asm/socket.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/asm/sockios.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/socket2.h \
+ /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/in.h
