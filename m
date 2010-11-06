@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752518Ab0KFSzY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 14:55:24 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:55795 "EHLO
+	id S1752863Ab0KFS63 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 14:58:29 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:41682 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121Ab0KFSzX (ORCPT
+	with ESMTP id S1752040Ab0KFS62 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 14:55:23 -0400
+	Sat, 6 Nov 2010 14:58:28 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=cnia29KpO69Ul9qJGGlTkEPfceAb3o/tHG+OTsbgWxf6omFsG0frMfo3c295EWrlI/
-         WZJiH2z+ANRKrAAuFtCTFfOxTPh4DZ56gVdK/p1b0Sa1WPTERBqHRLj/8+D1TVipfDtz
-         w4Sa9FdrZAM2PLmmrvVzkpz9SaSES4JMjwfA8=
+        b=C8UYstWZNdneX5Y06ySv8SgA8GRbXcoTc2YYKQaar3AEXYI38yoM7FRv1MQqrqtEFG
+         OCdWb2556HtMT92hkRn0mrXS6ReXsYigb31Z1MbTQli80IEJnaRIuypcvKTdt2CEtxDj
+         UzlwBA7QHH12h82JC0+KLkRRNgHUrawAc6xP4=
 From: Tracey Dent <tdent48227@gmail.com>
-To: geoff@infradead.org
-Cc: linuxppc-dev@lists.ozlabs.org, cbe-oss-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Tracey Dent <tdent48227@gmail.com>
-Subject: [Resend][PATCH] Drivers: ps3: Makefile: replace the use of <module>-objs with <module>-y
-Date: Sat,  6 Nov 2010 14:55:35 -0400
-Message-Id: <1289069735-2034-1-git-send-email-tdent48227@gmail.com>
+To: ecashin@coraid.com, sage@newdream.net
+Cc: yehuda@hq.newdream.net, linux-kernel@vger.kernel.org,
+        Tracey Dent <tdent48227@gmail.com>
+Subject: [Resend][PATCH 1/2] Drivers: block: Makefile: replace the use of <module>-objs with <module>-y
+Date: Sat,  6 Nov 2010 14:58:37 -0400
+Message-Id: <1289069918-2085-1-git-send-email-tdent48227@gmail.com>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,21 +29,19 @@ Changed <module>-objs to <module>-y in Makefile.
 
 Signed-off-by: Tracey Dent <tdent48227@gmail.com>
 ---
- drivers/ps3/Makefile |    2 +-
+ drivers/block/Makefile |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/ps3/Makefile b/drivers/ps3/Makefile
-index ccea15c..50cb1e1 100644
---- a/drivers/ps3/Makefile
-+++ b/drivers/ps3/Makefile
-@@ -1,6 +1,6 @@
- obj-$(CONFIG_PS3_VUART) += ps3-vuart.o
- obj-$(CONFIG_PS3_PS3AV) += ps3av_mod.o
--ps3av_mod-objs		+= ps3av.o ps3av_cmd.o
-+ps3av_mod-y		:= ps3av.o ps3av_cmd.o
- obj-$(CONFIG_PPC_PS3) += sys-manager-core.o
- obj-$(CONFIG_PS3_SYS_MANAGER) += ps3-sys-manager.o
- obj-$(CONFIG_PS3_STORAGE) += ps3stor_lib.o
+diff --git a/drivers/block/Makefile b/drivers/block/Makefile
+index d7f463d..40528ba 100644
+--- a/drivers/block/Makefile
++++ b/drivers/block/Makefile
+@@ -39,4 +39,4 @@ obj-$(CONFIG_XEN_BLKDEV_FRONTEND)	+= xen-blkfront.o
+ obj-$(CONFIG_BLK_DEV_DRBD)     += drbd/
+ obj-$(CONFIG_BLK_DEV_RBD)     += rbd.o
+ 
+-swim_mod-objs	:= swim.o swim_asm.o
++swim_mod-y	:= swim.o swim_asm.o
 -- 
 1.7.3.2.146.gca209
 
