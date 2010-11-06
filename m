@@ -1,37 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986Ab0KFSx7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 14:53:59 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:57220 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751739Ab0KFSx5 (ORCPT
+	id S1752518Ab0KFSzY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 14:55:24 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:55795 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751121Ab0KFSzX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 14:53:57 -0400
-Date: Sat, 6 Nov 2010 19:53:50 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Davidlohr Bueso <dave@gnu.org>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mce: fix RCU lockdep from mce_log()
-Message-ID: <20101106185350.GA23824@basil.fritz.box>
-References: <1288993499.2065.4.camel@cowboy>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288993499.2065.4.camel@cowboy>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 6 Nov 2010 14:55:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=cnia29KpO69Ul9qJGGlTkEPfceAb3o/tHG+OTsbgWxf6omFsG0frMfo3c295EWrlI/
+         WZJiH2z+ANRKrAAuFtCTFfOxTPh4DZ56gVdK/p1b0Sa1WPTERBqHRLj/8+D1TVipfDtz
+         w4Sa9FdrZAM2PLmmrvVzkpz9SaSES4JMjwfA8=
+From: Tracey Dent <tdent48227@gmail.com>
+To: geoff@infradead.org
+Cc: linuxppc-dev@lists.ozlabs.org, cbe-oss-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Tracey Dent <tdent48227@gmail.com>
+Subject: [Resend][PATCH] Drivers: ps3: Makefile: replace the use of <module>-objs with <module>-y
+Date: Sat,  6 Nov 2010 14:55:35 -0400
+Message-Id: <1289069735-2034-1-git-send-email-tdent48227@gmail.com>
+X-Mailer: git-send-email 1.7.3.2.146.gca209
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 05, 2010 at 06:44:59PM -0300, Davidlohr Bueso wrote:
-> Hi,
-> 
-> Please review this patch, I am not very familiar with MCE/RCU so I'm not sure that this is the correct fix (otherwise consider it a bug report :)).
-> This does "fix" the message though and I can use MCE normally.
+Changed <module>-objs to <module>-y in Makefile.
 
-The patch is certainly not correct. The variable needs to be read
-independently of the mutex.
+Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+---
+ drivers/ps3/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
--Andi
+diff --git a/drivers/ps3/Makefile b/drivers/ps3/Makefile
+index ccea15c..50cb1e1 100644
+--- a/drivers/ps3/Makefile
++++ b/drivers/ps3/Makefile
+@@ -1,6 +1,6 @@
+ obj-$(CONFIG_PS3_VUART) += ps3-vuart.o
+ obj-$(CONFIG_PS3_PS3AV) += ps3av_mod.o
+-ps3av_mod-objs		+= ps3av.o ps3av_cmd.o
++ps3av_mod-y		:= ps3av.o ps3av_cmd.o
+ obj-$(CONFIG_PPC_PS3) += sys-manager-core.o
+ obj-$(CONFIG_PS3_SYS_MANAGER) += ps3-sys-manager.o
+ obj-$(CONFIG_PS3_STORAGE) += ps3stor_lib.o
+-- 
+1.7.3.2.146.gca209
+
