@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783Ab0KFS0P (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 14:26:15 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:41354 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751654Ab0KFS0N (ORCPT
+	id S1752948Ab0KFS00 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 14:26:26 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:60924 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752889Ab0KFS0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 14:26:13 -0400
+	Sat, 6 Nov 2010 14:26:24 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=AjZcseV87D5N/iZUbtJcG0/sDo2ZlkzPhX3QZWz7KU4Q6PJd1EA27DpcSN+55Cc28a
-         1CKQAi5JZDoph6IFythdOXfRD7pgqD4kp7n4Qh6pg3VJ5unoBG+G1jNqKkLqlpeLfzj+
-         6azldAepjdrlEY0omtgRXdr31OzGlfMztMrxM=
+        b=pRtioPB0iv+m0GtaEMATFDI44h7GZprL4g6j8otbhhbeINAtfzb+iIBZoP7o1YCD//
+         6qxmv8TPvAOBKc6ELbvyU3V+rx3SIFcHpRsCusUubsbMnAT8B5GQ7SeeJfiHPAQr/k7D
+         J3t8MA9tYX/xaCwVXpETrL9PL7kew0p+KZVB0=
 From: Rabin Vincent <rabin@rab.in>
 To: linux-arm-kernel@lists.infradead.org
 Cc: Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Tim Bird <tim.bird@am.sony.com>, linux-kernel@vger.kernel.org,
         Rabin Vincent <rabin@rab.in>
-Subject: [PATCH 2/6] ARM: place C irq handlers in IRQ_ENTRY for ftrace
-Date: Sat,  6 Nov 2010 23:55:50 +0530
-Message-Id: <1289067954-5080-2-git-send-email-rabin@rab.in>
+Subject: [PATCH 4/6] ARM: ftrace: function graph tracer support
+Date: Sat,  6 Nov 2010 23:55:52 +0530
+Message-Id: <1289067954-5080-4-git-send-email-rabin@rab.in>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1289067954-5080-1-git-send-email-rabin@rab.in>
 References: <1289067954-5080-1-git-send-email-rabin@rab.in>
@@ -30,138 +30,171 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When FUNCTION_GRAPH_TRACER is enabled, place do_IRQ() and friends in the
-IRQ_ENTRY section so that the irq-related features of the function graph
-tracer work.
+From: Tim Bird <tim.bird@am.sony.com>
 
+Cc: Tim Bird <tim.bird@am.sony.com>
+[rabin@rab.in: rebase on top of latest code,
+	       keep code in ftrace.c instead of separate file,
+	       check for ftrace_graph_entry also]
 Signed-off-by: Rabin Vincent <rabin@rab.in>
 ---
- arch/arm/include/asm/system.h |    5 +++++
- arch/arm/include/asm/traps.h  |   23 +++++++++++++++++++++--
- arch/arm/kernel/irq.c         |    4 +++-
- arch/arm/kernel/smp.c         |    5 +++--
- arch/arm/kernel/vmlinux.lds.S |    1 +
- 5 files changed, 33 insertions(+), 5 deletions(-)
+ arch/arm/kernel/Makefile       |    3 +-
+ arch/arm/kernel/entry-common.S |   46 ++++++++++++++++++++++++++++++++++++++++
+ arch/arm/kernel/ftrace.c       |   34 +++++++++++++++++++++++++++++
+ 3 files changed, 82 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/include/asm/system.h b/arch/arm/include/asm/system.h
-index 1120f18..ec4327a 100644
---- a/arch/arm/include/asm/system.h
-+++ b/arch/arm/include/asm/system.h
-@@ -63,6 +63,11 @@
- #include <asm/outercache.h>
+diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+index 078dd22..b3225d4 100644
+--- a/arch/arm/kernel/Makefile
++++ b/arch/arm/kernel/Makefile
+@@ -5,7 +5,7 @@
+ CPPFLAGS_vmlinux.lds := -DTEXT_OFFSET=$(TEXT_OFFSET)
+ AFLAGS_head.o        := -DTEXT_OFFSET=$(TEXT_OFFSET)
  
- #define __exception	__attribute__((section(".exception.text")))
+-ifdef CONFIG_DYNAMIC_FTRACE
++ifdef CONFIG_FUNCTION_TRACER
+ CFLAGS_REMOVE_ftrace.o = -pg
+ endif
+ 
+@@ -33,6 +33,7 @@ obj-$(CONFIG_SMP)		+= smp.o
+ obj-$(CONFIG_HAVE_ARM_SCU)	+= smp_scu.o
+ obj-$(CONFIG_HAVE_ARM_TWD)	+= smp_twd.o
+ obj-$(CONFIG_DYNAMIC_FTRACE)	+= ftrace.o
++obj-$(CONFIG_FUNCTION_GRAPH_TRACER)	+= ftrace.o
+ obj-$(CONFIG_KEXEC)		+= machine_kexec.o relocate_kernel.o
+ obj-$(CONFIG_KPROBES)		+= kprobes.o kprobes-decode.o
+ obj-$(CONFIG_ATAGS_PROC)	+= atags.o
+diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
+index fe1d586..9f17662 100644
+--- a/arch/arm/kernel/entry-common.S
++++ b/arch/arm/kernel/entry-common.S
+@@ -148,6 +148,20 @@ ENDPROC(ret_from_fork)
+ 	adr	r0, .Lftrace_stub
+ 	cmp	r0, r2
+ 	bne	1f
++
 +#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-+#define __exception_irq_entry	__irq_entry
-+#else
-+#define __exception_irq_entry	__exception
++	ldr     r1, =ftrace_graph_return
++	ldr     r2, [r1]
++	cmp     r0, r2
++	bne     ftrace_graph_caller\suffix
++
++	ldr     r1, =ftrace_graph_entry
++	ldr     r2, [r1]
++	ldr     r0, =ftrace_graph_entry_stub
++	cmp     r0, r2
++	bne     ftrace_graph_caller\suffix
 +#endif
++
+ 	mcount_exit
  
- struct thread_info;
- struct task_struct;
-diff --git a/arch/arm/include/asm/traps.h b/arch/arm/include/asm/traps.h
-index af5d5d1..1b960d5 100644
---- a/arch/arm/include/asm/traps.h
-+++ b/arch/arm/include/asm/traps.h
-@@ -15,13 +15,32 @@ struct undef_hook {
- void register_undef_hook(struct undef_hook *hook);
- void unregister_undef_hook(struct undef_hook *hook);
+ 1: 	mcount_get_lr	r1			@ lr of instrumented func
+@@ -172,6 +186,15 @@ ftrace_call\suffix:
+ 	mcount_exit
+ .endm
+ 
++.macro __ftrace_graph_caller
++	sub	r0, fp, #4		@ &lr of instrumented routine (&parent)
++	mov	r1, lr			@ instrumented routine (func)
++	sub	r1, r1, #MCOUNT_INSN_SIZE
++	mov	r2, fp			@ frame pointer
++	bl	prepare_ftrace_return
++	mcount_exit
++.endm
++
+ #ifdef CONFIG_OLD_MCOUNT
+ /*
+  * mcount
+@@ -206,6 +229,12 @@ ENTRY(ftrace_caller_old)
+ ENDPROC(ftrace_caller_old)
+ #endif
  
 +#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-+static inline int __in_irqentry_text(unsigned long ptr)
-+{
-+	extern char __irqentry_text_start[];
-+	extern char __irqentry_text_end[];
-+
-+	return ptr >= (unsigned long)&__irqentry_text_start &&
-+	       ptr < (unsigned long)&__irqentry_text_end;
-+}
-+#else
-+static inline int __in_irqentry_text(unsigned long ptr)
-+{
-+	return 0;
-+}
++ENTRY(ftrace_graph_caller_old)
++	__ftrace_graph_caller
++ENDPROC(ftrace_graph_caller_old)
 +#endif
 +
- static inline int in_exception_text(unsigned long ptr)
- {
- 	extern char __exception_text_start[];
- 	extern char __exception_text_end[];
-+	int in;
+ .purgem mcount_enter
+ .purgem mcount_get_lr
+ .purgem mcount_exit
+@@ -244,10 +273,27 @@ ENTRY(ftrace_caller)
+ ENDPROC(ftrace_caller)
+ #endif
+ 
++#ifdef CONFIG_FUNCTION_GRAPH_TRACER
++ENTRY(ftrace_graph_caller)
++	__ftrace_graph_caller
++ENDPROC(ftrace_graph_caller)
++#endif
 +
-+	in = ptr >= (unsigned long)&__exception_text_start &&
-+	     ptr < (unsigned long)&__exception_text_end;
+ .purgem mcount_enter
+ .purgem mcount_get_lr
+ .purgem mcount_exit
  
--	return ptr >= (unsigned long)&__exception_text_start &&
--	       ptr < (unsigned long)&__exception_text_end;
-+	return in ? : __in_irqentry_text(ptr);
++#ifdef CONFIG_FUNCTION_GRAPH_TRACER
++	.globl return_to_handler
++return_to_handler:
++	stmdb	sp!, {r0-r3}
++	mov	r0, fp			@ frame pointer
++	bl	ftrace_return_to_handler
++	mov	lr, r0			@ r0 has real ret addr
++	ldmia	sp!, {r0-r3}
++	mov	pc, lr
++#endif
++
+ ENTRY(ftrace_stub)
+ .Lftrace_stub:
+ 	mov	pc, lr
+diff --git a/arch/arm/kernel/ftrace.c b/arch/arm/kernel/ftrace.c
+index 971ac8c..7a702a5 100644
+--- a/arch/arm/kernel/ftrace.c
++++ b/arch/arm/kernel/ftrace.c
+@@ -24,6 +24,7 @@
+ #define	NOP		0xe8bd4000	/* pop {lr} */
+ #endif
+ 
++#ifdef CONFIG_DYNAMIC_FTRACE
+ #ifdef CONFIG_OLD_MCOUNT
+ #define OLD_MCOUNT_ADDR	((unsigned long) mcount)
+ #define OLD_FTRACE_ADDR ((unsigned long) ftrace_caller_old)
+@@ -193,3 +194,36 @@ int __init ftrace_dyn_arch_init(void *data)
+ 
+ 	return 0;
  }
- 
- extern void __init early_trap_init(void);
-diff --git a/arch/arm/kernel/irq.c b/arch/arm/kernel/irq.c
-index 36ad3be..6d61633 100644
---- a/arch/arm/kernel/irq.c
-+++ b/arch/arm/kernel/irq.c
-@@ -35,6 +35,7 @@
- #include <linux/list.h>
- #include <linux/kallsyms.h>
- #include <linux/proc_fs.h>
-+#include <linux/ftrace.h>
- 
- #include <asm/system.h>
- #include <asm/mach/irq.h>
-@@ -105,7 +106,8 @@ unlock:
-  * come via this function.  Instead, they should provide their
-  * own 'handler'
-  */
--asmlinkage void __exception asm_do_IRQ(unsigned int irq, struct pt_regs *regs)
-+asmlinkage void __exception_irq_entry
-+asm_do_IRQ(unsigned int irq, struct pt_regs *regs)
- {
- 	struct pt_regs *old_regs = set_irq_regs(regs);
- 
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 8c19595..bbca898 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -16,6 +16,7 @@
- #include <linux/cache.h>
- #include <linux/profile.h>
- #include <linux/errno.h>
-+#include <linux/ftrace.h>
- #include <linux/mm.h>
- #include <linux/err.h>
- #include <linux/cpu.h>
-@@ -457,7 +458,7 @@ static void ipi_timer(void)
- }
- 
- #ifdef CONFIG_LOCAL_TIMERS
--asmlinkage void __exception do_local_timer(struct pt_regs *regs)
-+asmlinkage void __exception_irq_entry do_local_timer(struct pt_regs *regs)
- {
- 	struct pt_regs *old_regs = set_irq_regs(regs);
- 	int cpu = smp_processor_id();
-@@ -544,7 +545,7 @@ static void ipi_cpu_stop(unsigned int cpu)
-  *
-  *  Bit 0 - Inter-processor function call
-  */
--asmlinkage void __exception do_IPI(struct pt_regs *regs)
-+asmlinkage void __exception_irq_entry do_IPI(struct pt_regs *regs)
- {
- 	unsigned int cpu = smp_processor_id();
- 	struct ipi_data *ipi = &per_cpu(ipi_data, cpu);
-diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
-index cead889..897c1a8 100644
---- a/arch/arm/kernel/vmlinux.lds.S
-+++ b/arch/arm/kernel/vmlinux.lds.S
-@@ -101,6 +101,7 @@ SECTIONS
- 			__exception_text_start = .;
- 			*(.exception.text)
- 			__exception_text_end = .;
-+			IRQENTRY_TEXT
- 			TEXT_TEXT
- 			SCHED_TEXT
- 			LOCK_TEXT
++#endif /* CONFIG_DYNAMIC_FTRACE */
++
++#ifdef CONFIG_FUNCTION_GRAPH_TRACER
++void prepare_ftrace_return(unsigned long *parent, unsigned long self_addr,
++			   unsigned long frame_pointer)
++{
++	unsigned long return_hooker = (unsigned long) &return_to_handler;
++	struct ftrace_graph_ent trace;
++	unsigned long old;
++	int err;
++
++	if (unlikely(atomic_read(&current->tracing_graph_pause)))
++		return;
++
++	old = *parent;
++	*parent = return_hooker;
++
++	err = ftrace_push_return_trace(old, self_addr, &trace.depth,
++				       frame_pointer);
++	if (err == -EBUSY) {
++		*parent = old;
++		return;
++	}
++
++	trace.func = self_addr;
++
++	/* Only trace if the calling function expects to */
++	if (!ftrace_graph_entry(&trace)) {
++		current->curr_ret_stack--;
++		*parent = old;
++	}
++}
++#endif /* CONFIG_FUNCTION_GRAPH_TRACER */
 -- 
 1.7.2.3
 
