@@ -1,129 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403Ab0KFQYB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 12:24:01 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:46788 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755237Ab0KFQX7 (ORCPT
+	id S1755330Ab0KFQY3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 12:24:29 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:42079 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754788Ab0KFQY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 12:23:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=xPiCwH39HbzTefhfHoEMSt4RFKd4klISPUaKINyOPefnD5Zh/AwLaY+67EgW0a3z0W
-         TVkyutMbKn8o1XydC/neT9VMARzhtnEGLSnzFyfeQVh47N3oqXmKsHKP8exBwVXK+bSH
-         4DVyZqa2z2ItXz9jwJJnZ/9dTZi2woQMl4yA8=
-From: Johan Meiring <johanmeiring@gmail.com>
-To: gregkh@suse.de, greg@kroah.com, johanmeiring@gmail.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/6] Staging: wlan-ng: fix coding style issues in prism2mgmt.c
-Date: Sat,  6 Nov 2010 18:23:44 +0200
-Message-Id: <1289060625-13872-1-git-send-email-johanmeiring@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Sat, 6 Nov 2010 12:24:28 -0400
+Date: Sat, 6 Nov 2010 17:24:26 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Ben Gamari <bgamari.foss@gmail.com>
+Cc: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Christoph Egger <siccegge@cs.fau.de>, linux-kernel@vger.kernel.org,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Michal Marek <mmarek@suse.cz>
+Subject: Re: Bus error on make allyesconfig, kernelbuild with HEAD
+Message-ID: <20101106162426.GA14361@merkur.ravnborg.org>
+References: <20100729105225.GA13192@faui48a.informatik.uni-erlangen.de> <AANLkTi=cYgV69VyNZ+TKs_f-+3AJmyo_RaYS57R72j50@mail.gmail.com> <20100729121002.GC13192@faui48a.informatik.uni-erlangen.de> <20100730084353.GB5638@cr0.nay.redhat.com> <87d3qicwxn.fsf@gmail.com> <87aalmcv0p.fsf@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <87aalmcv0p.fsf@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to prism2mgmt.c that fixes coding style issues found by checkpatch.pl. Three instances of the 80 char line limit being exceeded have been kept as is so that string literals are not split up.
+On Sat, Nov 06, 2010 at 11:49:10AM -0400, Ben Gamari wrote:
+> On Sat, 06 Nov 2010 11:07:48 -0400, Ben Gamari <bgamari.foss@gmail.com> wrote:
+> > On Fri, 30 Jul 2010 16:43:53 +0800, Américo Wang <xiyou.wangcong@gmail.com> wrote:
+> > > This is useful. :) Looks like parse_dep_file() accesses out of
+> > > the mmap'ed memory range...
+> > > 
+> > Did anything ever happen with this? I seem to be experiencing similar
+> > issues while cross-compiling for ARM on x86-64. All tested kernels
+> > (v2.6.35 to master) fail with,
 
-Signed-off-by: Johan Meiring <johanmeiring@gmail.com>
----
- drivers/staging/wlan-ng/prism2mgmt.c |   26 ++++++++++++++------------
- 1 files changed, 14 insertions(+), 12 deletions(-)
+Too k a quick look.
+Does the following patch fix it?
 
-diff --git a/drivers/staging/wlan-ng/prism2mgmt.c b/drivers/staging/wlan-ng/prism2mgmt.c
-index 04514a8..6675c82 100644
---- a/drivers/staging/wlan-ng/prism2mgmt.c
-+++ b/drivers/staging/wlan-ng/prism2mgmt.c
-@@ -213,8 +213,8 @@ int prism2mgmt_scan(wlandevice_t *wlandev, void *msgp)
- 		u16 wordbuf[17];
- 
- 		result = hfa384x_drvr_setconfig16(hw,
--						  HFA384x_RID_CNFROAMINGMODE,
--						  HFA384x_ROAMMODE_HOSTSCAN_HOSTROAM);
-+					HFA384x_RID_CNFROAMINGMODE,
-+					HFA384x_ROAMMODE_HOSTSCAN_HOSTROAM);
- 		if (result) {
- 			printk(KERN_ERR
- 			       "setconfig(ROAMINGMODE) failed. result=%d\n",
-@@ -258,8 +258,8 @@ int prism2mgmt_scan(wlandevice_t *wlandev, void *msgp)
- 		}
- 		/* ibss options */
- 		result = hfa384x_drvr_setconfig16(hw,
--						  HFA384x_RID_CREATEIBSS,
--						  HFA384x_CREATEIBSS_JOINCREATEIBSS);
-+					HFA384x_RID_CREATEIBSS,
-+					HFA384x_CREATEIBSS_JOINCREATEIBSS);
- 		if (result) {
- 			printk(KERN_ERR "Failed to set CREATEIBSS.\n");
- 			msg->resultcode.data =
-@@ -416,7 +416,8 @@ int prism2mgmt_scan_results(wlandevice_t *wlandev, void *msgp)
- #define REQBASICRATE(N) \
- 	if ((count >= N) && DOT11_RATE5_ISBASIC_GET(item->supprates[(N)-1])) { \
- 		req->basicrate ## N .data = item->supprates[(N)-1]; \
--		req->basicrate ## N .status = P80211ENUM_msgitem_status_data_ok; \
-+		req->basicrate ## N .status = \
-+			P80211ENUM_msgitem_status_data_ok; \
- 	}
- 
- 	REQBASICRATE(1);
-@@ -431,7 +432,8 @@ int prism2mgmt_scan_results(wlandevice_t *wlandev, void *msgp)
- #define REQSUPPRATE(N) \
- 	if (count >= N) { \
- 		req->supprate ## N .data = item->supprates[(N)-1]; \
--		req->supprate ## N .status = P80211ENUM_msgitem_status_data_ok; \
-+		req->supprate ## N .status = \
-+			P80211ENUM_msgitem_status_data_ok; \
- 	}
- 
- 	REQSUPPRATE(1);
-@@ -1102,7 +1104,7 @@ int prism2mgmt_wlansniff(wlandevice_t *wlandev, void *msgp)
- 		result = hfa384x_drvr_disable(hw, 0);
- 		if (result) {
- 			pr_debug
--			    ("failed to disable port 0 after sniffing, result=%d\n",
-+			("failed to disable port 0 after sniffing, result=%d\n",
- 			     result);
- 			goto failed;
- 		}
-@@ -1137,7 +1139,7 @@ int prism2mgmt_wlansniff(wlandevice_t *wlandev, void *msgp)
- 			result = hfa384x_drvr_enable(hw, 0);
- 			if (result) {
- 				pr_debug
--				    ("failed to enable port to presniff setting, result=%d\n",
-+				("failed to enable port to presniff setting, result=%d\n",
- 				     result);
- 				goto failed;
- 			}
-@@ -1161,7 +1163,7 @@ int prism2mgmt_wlansniff(wlandevice_t *wlandev, void *msgp)
- 						  &(hw->presniff_port_type));
- 				if (result) {
- 					pr_debug
--					    ("failed to read porttype, result=%d\n",
-+					("failed to read porttype, result=%d\n",
- 					     result);
- 					goto failed;
- 				}
-@@ -1171,7 +1173,7 @@ int prism2mgmt_wlansniff(wlandevice_t *wlandev, void *msgp)
- 						  &(hw->presniff_wepflags));
- 				if (result) {
- 					pr_debug
--					    ("failed to read wepflags, result=%d\n",
-+					("failed to read wepflags, result=%d\n",
- 					     result);
- 					goto failed;
- 				}
-@@ -1238,8 +1240,8 @@ int prism2mgmt_wlansniff(wlandevice_t *wlandev, void *msgp)
- 
- 			if (result) {
- 				pr_debug
--				    ("failed to set wepflags=0x%04x, result=%d\n",
--				     word, result);
-+				  ("failed to set wepflags=0x%04x, result=%d\n",
-+				   word, result);
- 				goto failed;
- 			}
- 		}
--- 
-1.7.1
+if m == p then we will stay in the while look looking for a space.
+I did not audit all of the code - there may be other issues..
+
+	Sam
+
+diff --git a/scripts/basic/fixdep.c b/scripts/basic/fixdep.c
+index ea26b23..f472ada 100644
+--- a/scripts/basic/fixdep.c
++++ b/scripts/basic/fixdep.c
+@@ -318,7 +318,7 @@ static void parse_dep_file(void *map, size_t len)
+ 		while (m < end && (*m == ' ' || *m == '\\' || *m == '\n'))
+ 			m++;
+ 		p = m;
+-		while (p < end && *p != ' ') p++;
++		while (p <= end && *p != ' ') p++;
+ 		if (p == end) {
+ 			do p--; while (!isalnum(*p));
+ 			p++;
 
