@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191Ab0KFSQW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 14:16:22 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:53046 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751580Ab0KFSQV (ORCPT
+	id S1752445Ab0KFSVy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 14:21:54 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:40028 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751673Ab0KFSVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 14:16:21 -0400
-Date: Sat, 6 Nov 2010 14:16:17 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Alessio Igor Bogani <abogani@texware.it>
-Cc: Jan Kara <jack@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
-        Christoph Hellwig <hch@infradead.org>, Tim Bird <tim.bird@am.sony.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] udf: Replace bkl with a mutex for protect
- udf_sb_info struct
-Message-ID: <20101106181617.GE13315@infradead.org>
-References: <1289065631-2256-1-git-send-email-abogani@texware.it>
- <1289065631-2256-4-git-send-email-abogani@texware.it>
+	Sat, 6 Nov 2010 14:21:52 -0400
+Date: Sat, 6 Nov 2010 14:21:50 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Vasiliy Kulikov <segooon@gmail.com>
+cc: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Oliver Neukum <oliver@neukum.org>, Andi Kleen <ak@linux.intel.com>,
+        Chris Frey <cdfrey@foursquare.net>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: core: fix information leak to userland
+In-Reply-To: <1289054488-18233-1-git-send-email-segooon@gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1011061419490.28403-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289065631-2256-4-git-send-email-abogani@texware.it>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +		mutex_lock(&sbi->lock);
->  		result = udf_relocate_blocks(inode->i_sb,
->  						old_block, &new_block);
-> +		mutex_unlock(&sbi->lock);
+On Sat, 6 Nov 2010, Vasiliy Kulikov wrote:
 
-Moving the locking inside udf_relocate_blocks would be cleaner.
-
-> @@ -570,7 +569,7 @@ static int udf_remount_fs(struct super_block *sb, int *flags, char *options)
->  	if (!udf_parse_options(options, &uopt, true))
->  		return -EINVAL;
+> Structure usbdevfs_connectinfo is copied to userland with padding byted
+> after "slow" field uninitialized.  It leads to leaking of contents of
+> kernel stack memory.
+> 
+> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+> ---
+>  Compile tested.
+> 
+>  drivers/usb/core/devio.c |    7 ++++---
+>  1 files changed, 4 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
+> index f1aaff6..045bb4b 100644
+> --- a/drivers/usb/core/devio.c
+> +++ b/drivers/usb/core/devio.c
+> @@ -965,10 +965,11 @@ static int proc_getdriver(struct dev_state *ps, void __user *arg)
 >  
-> -	lock_kernel();
-> +	mutex_lock(&sbi->lock);
-
-What are you protecting against here?  Concurrent remount calls are
-protects against by the VFS.  Is there any reader that takes sbi->lock
-to get a consistent view of the various options?  It doesn't seem you
-introduce one in this series, so it seems we could do fine without any
-locking.
-
-> -		unlock_kernel();
->  		return -ENOMEM;
->  	}
+>  static int proc_connectinfo(struct dev_state *ps, void __user *arg)
+>  {
+> -	struct usbdevfs_connectinfo ci;
+> +	struct usbdevfs_connectinfo ci = {
+> +		.devnum = ps->dev->devnum,
+> +		.slow = ps->dev->speed == USB_SPEED_LOW
+> +	};
 >  
-> +	mutex_init(&sbi->lock);
-> +	mutex_lock(&sbi->lock);
+> -	ci.devnum = ps->dev->devnum;
+> -	ci.slow = ps->dev->speed == USB_SPEED_LOW;
+>  	if (copy_to_user(arg, &ci, sizeof(ci)))
+>  		return -EFAULT;
+>  	return 0;
 
-What are you locking against here?  I can't fine anything that puts the
-superblock on a global list in fill_super, and I can't find any code
-that would look a superblock up that's not fully set up.  I don't think
-synchronization here in fill_super is needed at all.
+Are you sure that adding an initializer like this will zero out the 
+padding bytes?  It might be safer just to call memset.  This is not 
+exactly a hot path, after all.
 
-> +	/* Serialize writer access, replace the old bkl */
-> +	struct mutex lock;
-
-Same comment as for the per-inode mutex applies here, too.
+Alan Stern
 
