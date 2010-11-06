@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755279Ab0KFJHg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 05:07:36 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:38022 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1753764Ab0KFJHA (ORCPT
+	id S1754249Ab0KFJJo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 05:09:44 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56567 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753733Ab0KFJJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 05:07:00 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: jirislaby@gmail.com
-Cc: linux-kernel@vger.kernel.org, Mark Fasheh <mfasheh@suse.com>,
-        Joel Becker <joel.becker@oracle.com>, ocfs2-devel@oss.oracle.com,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: [PATCH] ocfs2: fix memory leak
-Date: Sat,  6 Nov 2010 10:06:52 +0100
-Message-Id: <1289034412-24278-4-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1289034412-24278-1-git-send-email-jslaby@suse.cz>
-References: <1289034412-24278-1-git-send-email-jslaby@suse.cz>
+	Sat, 6 Nov 2010 05:09:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=m/UdxN0dsWg38ty2fvnoirzIQvW8SE5cYju8oV5Hpk42ef5ZywfAorXgDEQy0TKAWu
+         dO7e98GgQxCTk3S1FcumhS3jUwf5JKrlHllKagcy3IFTkwIO2A2Ssk+vKORFNnBnQniL
+         U9FsuM/DCATNlXOY5Q9FLa36G19FqbhMsYreM=
+Message-ID: <4CD51A9B.7010806@gmail.com>
+Date: Sat, 06 Nov 2010 10:06:35 +0100
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+CC: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] arm: fix compilation warning during compilation
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stanse found that o2hb_heartbeat_group_make_item leaks some memory on
-fail paths. Fix the paths by adding a new label and jump there.
+From: Marco Stornelli <marco.stornelli@gmail.com>
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Joel Becker <joel.becker@oracle.com>
-Cc: ocfs2-devel@oss.oracle.com
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org
+During compilation of 2.6.36 for Beagle board, there a are a couple of warnings. This patch fix them.
+
+Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
 ---
- fs/ocfs2/cluster/heartbeat.c |   14 ++++++++++----
- 1 files changed, 10 insertions(+), 4 deletions(-)
 
-diff --git a/fs/ocfs2/cluster/heartbeat.c b/fs/ocfs2/cluster/heartbeat.c
-index 52c7557..9f26ac9 100644
---- a/fs/ocfs2/cluster/heartbeat.c
-+++ b/fs/ocfs2/cluster/heartbeat.c
-@@ -1964,8 +1964,10 @@ static struct config_item *o2hb_heartbeat_group_make_item(struct config_group *g
- 	if (reg == NULL)
- 		return ERR_PTR(-ENOMEM);
- 
--	if (strlen(name) > O2HB_MAX_REGION_NAME_LEN)
--		return ERR_PTR(-ENAMETOOLONG);
-+	if (strlen(name) > O2HB_MAX_REGION_NAME_LEN) {
-+		ret = -ENAMETOOLONG;
-+		goto free;
-+	}
- 
- 	spin_lock(&o2hb_live_lock);
- 	reg->hr_region_num = 0;
-@@ -1974,7 +1976,8 @@ static struct config_item *o2hb_heartbeat_group_make_item(struct config_group *g
- 							 O2NM_MAX_REGIONS);
- 		if (reg->hr_region_num >= O2NM_MAX_REGIONS) {
- 			spin_unlock(&o2hb_live_lock);
--			return ERR_PTR(-EFBIG);
-+			ret = -EFBIG;
-+			goto free;
- 		}
- 		set_bit(reg->hr_region_num, o2hb_region_bitmap);
- 	}
-@@ -1986,10 +1989,13 @@ static struct config_item *o2hb_heartbeat_group_make_item(struct config_group *g
- 	ret = o2hb_debug_region_init(reg, o2hb_debug_dir);
- 	if (ret) {
- 		config_item_put(&reg->hr_item);
--		return ERR_PTR(ret);
-+		goto free;
- 	}
- 
- 	return &reg->hr_item;
-+free:
-+	kfree(reg);
-+	return ERR_PTR(ret);
+--- linux-2.6.36-orig/arch/arm/plat-omap/include/plat/usb.h	2010-10-20 22:30:22.000000000 +0200
++++ linux-2.6.36/arch/arm/plat-omap/include/plat/usb.h	2010-11-01 09:44:13.000000000 +0100
+@@ -105,7 +105,7 @@ static inline void omap1_usb_init(struct
+ #if defined(CONFIG_ARCH_OMAP_OTG) || defined(CONFIG_ARCH_OMAP_OTG_MODULE)
+ void omap2_usbfs_init(struct omap_usb_config *pdata);
+ #else
+-static inline omap2_usbfs_init(struct omap_usb_config *pdata)
++static inline void omap2_usbfs_init(struct omap_usb_config *pdata)
+ {
  }
- 
- static void o2hb_heartbeat_group_drop_item(struct config_group *group,
--- 
-1.7.3.1
-
+ #endif
+--- linux-2.6.36-orig/arch/arm/mach-omap2/mux.c	2010-10-20 22:30:22.000000000 +0200
++++ linux-2.6.36/arch/arm/mach-omap2/mux.c	2010-11-01 10:21:29.000000000 +0100
+@@ -87,7 +87,7 @@ static char *omap_mux_options;
+ int __init omap_mux_init_gpio(int gpio, int val)
+ {
+ 	struct omap_mux_entry *e;
+-	struct omap_mux *gpio_mux;
++	struct omap_mux *gpio_mux = NULL;
+ 	u16 old_mode;
+ 	u16 mux_mode;
+ 	int found = 0;
 
