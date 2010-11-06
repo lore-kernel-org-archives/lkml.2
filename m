@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751034Ab0KGEv4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 00:51:56 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:54643 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814Ab0KGEvz (ORCPT
+	id S1751313Ab0KGFJx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 01:09:53 -0400
+Received: from digitalprovisions.com ([67.192.254.68]:2310 "EHLO
+	digitalprovisions.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750946Ab0KGFJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 00:51:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=nth02Xoa4VPsrCXupv3Ufa83XyVDJte356iaiK/efVFQdVJK1+fDf+tfDylJ6jozua
-         vcI3dbs/MpaIsIQp1nfMQgk60yTKgqsWG1lVfS6LthBM2dtd9UqsyezsLG2Z4B4S3rCd
-         2ijf59XERZ0lLVmkiKMZMcilzLCueGxgyE4UE=
-Message-ID: <4CD63067.8010506@gmail.com>
-Date: Sat, 06 Nov 2010 21:51:51 -0700
-From: JD <jd1008@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
+	Sun, 7 Nov 2010 01:09:52 -0400
+X-Greylist: delayed 1493 seconds by postgrey-1.27 at vger.kernel.org; Sun, 07 Nov 2010 01:09:51 EDT
+Reply-To: <info.enalotto@gazeta.pl>
+From: "Super Enalotto Annual-Prize 2010" <info.ballot@iol.pt>
+Subject: Super Enalotto Annual-Prize 2010
+Date: Sun, 7 Nov 2010 05:15:03 +0800
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Question/help re: themake scripts in 2.6.36
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain;
+	charset="Windows-1251"
 Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-Id: <201011061715401.SM00256@User>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have compiled 2.6.36 (i686) without any problems.
-Since then, I have decided to change a couple of
-config variables (using xconfig).
-When done, running make all
-causes the make scripts to stop compilation after building
-a few objects, and spawn a shell.
-Since I have no idea what to do in that shell, I exit
-that shell, and the compilaton continues.
-This takes place 3 times before compilation is complete.
+Super Enalotto Annual-Prize 2010.
 
-Now, when I type make modules_install install,
-only modules_install is done. /boot does not get
-populated and /boot/grub/grub.conf is unchanged.
+This mail is to notify you that your Email 
+Address attached to a Reference Number: 
+EG/069713160012 and a Serial nr: 2443-05
+has won an Award Sum of  915,810.00 Euros) 
+(Nine Hundred And Fifteen Thousand Eight 
+Hundred And Ten Euro) In an Email Sweepstakes 
+program held in our company - Super Enalotto. 
 
-The currently installed and running 2.6.36-1
-went through a similar scenario during build,
-but at least install did work.
-Now the install does not work.
-Befor the present build attempt,
-I had edited the Makefile to change the EXTRAVERSION to -2
-in order not to clobber the installed  2.6.36-1
+Please contact the claim officer through 
+the below given contact information.
+ 
+SECOEX SEGURIDAD. S.A.
+Dr. Jose Marin Lopez. 
+Tel: + 34 634 059 946. 
+Email: secoexs@aol.com
 
-Could someone tell me what to do to force the install in /boot?
-/lib/modules does have 2.6.36-2.fc13.i686 fully populated.
-
-Thanx,
-
-JD
+Yours Sincerely,
+Mrs. Anastasio Vito Cecilio. 
+Public Relation Officer.
