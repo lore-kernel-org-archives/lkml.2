@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451Ab0KFLSM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 07:18:12 -0400
-Received: from wine.ocn.ne.jp ([122.1.235.145]:56301 "EHLO smtp.wine.ocn.ne.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750817Ab0KFLSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 07:18:10 -0400
-To: gregkh@suse.de, kay.sievers@vrfy.org
-Cc: cbouatmailru@gmail.com, ak@linux.intel.com, axboe@kernel.dk,
-        shemminger@vyatta.com, ebiederm@xmission.com,
-        stern@rowland.harvard.edu, James.Bottomley@suse.de,
-        akpm@linux-foundation.org, kuznet@ms2.inr.ac.ru,
-        randy.dunlap@oracle.com, tj@kernel.org, davem@davemloft.net,
-        perex@perex.cz, tiwai@suse.de, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        dhowells@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [2.6.37-rc1] udevd-event prints errors.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201011060307.GIG13040.OFFJOVHMSFLOtQ@I-love.SAKURA.ne.jp>
-	<20101105200245.GA1645@suse.de>
-In-Reply-To: <20101105200245.GA1645@suse.de>
-Message-Id: <201011062018.ADJ30249.OVOOJFMFHQFStL@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Sat, 6 Nov 2010 20:18:07 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752812Ab0KFLVd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 07:21:33 -0400
+Received: from smtp-vbr11.xs4all.nl ([194.109.24.31]:4334 "EHLO
+	smtp-vbr11.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751969Ab0KFLVc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Nov 2010 07:21:32 -0400
+X-Greylist: delayed 364 seconds by postgrey-1.27 at vger.kernel.org; Sat, 06 Nov 2010 07:21:32 EDT
+Message-ID: <4CD538CA.8010901@xs4all.nl>
+Date: Sat, 06 Nov 2010 12:15:22 +0100
+From: Jim <jim876@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.11) Gecko/20101020 Thunderbird/3.1.5
+MIME-Version: 1.0
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: gcc 4.5.1 / as 2.20.51.0.11 miscompiling  drivers/char/i8k.c ?
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH wrote:
-> On Sat, Nov 06, 2010 at 03:07:55AM +0900, Tetsuo Handa wrote:
-> > Hello.
-> > 
-> > I noticed that udevd-event started to print error messages.
-> > 
-> >   Starting udev: udevd-event[1682]: wait_for_sysfs: waiting for '/sys/devices/pci0000:00/0000:00:10.0/host0/ioerr_cnt' failed
-> >   udevd-event[2103]: wait_for_sysfs: waiting for '/sys/devices/pci0000:00/0000:00:10.0/host0/target0:0:1/ioerr_cnt' failed
-> >   udevd-event[2102]: wait_for_sysfs: waiting for '/sys/devices/pci0000:00/0000:00:10.0/host0/target0:0:0/ioerr_cnt' failed
-> 
-> That's wierd, what version of udev is this?
-> 
 
-# rpm -qf /sbin/udevd
-udev-095-14.21.el5_5.1
-# /usr/bin/udevinfo -V
-udevinfo, version 095
+After upgrading my Dell laptop, both OS+kernel the i8k interface was giving
+nonsensical output. As it turned out it's not the kernel but compiler
+upgrade which broke this.
 
-> > These error messages are caused by one or more of below commits.
-> > (Sorry, I can't find exact one because I can't boot as of below commits.)
-> > 
-> > 5cfc64ce "base/platform: Safe handling for NULL platform data and resources"
-> > 807508c8 "base/platform: Simplifications for NULL platform data/resources handling"
-> > 39aba963 "driver core: remove CONFIG_SYSFS_DEPRECATED_V2 but keep it for block devices"
-> > 
-> > Is this a regression? (Is this an intended change?)
-> 
-> Do you still have CONFIG_SYSFS_DEPRECATED enabled?
-> 
-Oh, around above commits, CONFIG_SYSFS_DEPRECATED has changed to "n"
-by some reason. I changed to
+Guys at Archlinux have found the underlying cause (but don't seem to have
+submitted a patch yet):
+  https://bbs.archlinux.org/viewtopic.php?pid=780692#p780692
+gcc seems to optimize the assembly statements away.
 
-  # grep CONFIG_SYSFS .config
-  CONFIG_SYSFS_DEPRECATED=y
-  CONFIG_SYSFS_DEPRECATED_V2=y
-  CONFIG_SYSFS=y
+And indeed, applying this patch makes the i8k interface work again,
+i.e. replacing the asm(..) construct by  asm volatile(..)
 
-and re-bisected. Now it turned out that
+--- i8k.c.ORIG  2010-08-02 17:20:46.000000000 +0200
++++ i8k.c       2010-10-30 13:03:07.000000000 +0200
+@@ -119,7 +119,7 @@
+        int eax = regs->eax;
 
-  39aba963 "driver core: remove CONFIG_SYSFS_DEPRECATED_V2 but keep it for block devices"
+ #if defined(CONFIG_X86_64)
+-       asm("pushq %%rax\n\t"
++       asm volatile("pushq %%rax\n\t"
+                "movl 0(%%rax),%%edx\n\t"
+                "pushq %%rdx\n\t"
+                "movl 4(%%rax),%%ebx\n\t"
+@@ -145,7 +145,7 @@
+                :    "a"(regs)
+                :    "%ebx", "%ecx", "%edx", "%esi", "%edi", "memory");
+ #else
+-       asm("pushl %%eax\n\t"
++       asm volatile("pushl %%eax\n\t"
+            "movl 0(%%eax),%%edx\n\t"
+            "push %%edx\n\t"
+            "movl 4(%%eax),%%ebx\n\t"
 
-is the commit which caused these error messages.
 
-Guessing from error messages, changes in drivers/scsi/hosts.c and
-drivers/scsi/scsi_scan.c might be involved.
+gcc version:
+Reading specs from /usr/lib/gcc/i486-slackware-linux/4.5.1/specs
+COLLECT_GCC=gcc
+COLLECT_LTO_WRAPPER=/usr/libexec/gcc/i486-slackware-linux/4.5.1/lto-wrapper
+Target: i486-slackware-linux
+Configured with: ../gcc-4.5.1/configure --prefix=/usr --libdir=/usr/lib
+--mandir=/usr/man --infodir=/usr/info --enable-shared --enable-bootstrap
+--enable-languages=ada,c,c++,fortran,java,objc --enable-threads=posix
+--enable-checking=release --with-system-zlib
+--with-python-dir=/lib/python2.6/site-packages
+--disable-libunwind-exceptions --enable-__cxa_atexit --enable-libssp
+--with-gnu-ld --verbose --with-arch=i486 --target=i486-slackware-linux
+--build=i486-slackware-linux --host=i486-slackware-linux
+Thread model: posix
+gcc version 4.5.1 (GCC)
 
-> Other than that, everything works ok, right?
-Right.
+as version:
+GNU assembler (Linux/GNU Binutils) 2.20.51.0.11.20100810
+Copyright 2010 Free Software Foundation, Inc.
+This program is free software; you may redistribute it under the terms of
+the GNU General Public License version 3 or later.
+This program has absolutely no warranty.
+This assembler was configured for a target of `i486-slackware-linux'.
 
-Regards.
+I would be happy to submit a proper patch if I new this is actually the
+correct fix, also there might be other places in the kernel source
+suffering from this ??
+
+Thanks,
+  Jim Bos
+
