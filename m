@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246Ab0KFTDm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 15:03:42 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:60091 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753099Ab0KFTDl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 15:03:41 -0400
-Date: Sat, 6 Nov 2010 15:03:32 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Christoph Hellwig <hch@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, willy@debian.org, sfr@canb.auug.org.au
-Subject: Re: [PATCH 1/2] locks: let the caller free file_lock on ->setlease
- failure
-Message-ID: <20101106190332.GA15850@infradead.org>
-References: <20101027083924.GA28129@infradead.org>
- <20101027133924.GB6328@fieldses.org>
- <201010271546.09036.arnd@arndb.de>
- <20101027145538.GC6328@fieldses.org>
- <20101027145929.GA5788@infradead.org>
- <20101030212500.GE480@fieldses.org>
- <20101031123419.GA4491@infradead.org>
- <20101031123510.GA4520@infradead.org>
- <20101103204147.GA6777@fieldses.org>
- <20101104014024.GA22498@fieldses.org>
+	id S1753238Ab0KFTEp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 15:04:45 -0400
+Received: from mail.asbjorn.biz ([217.195.185.3]:58139 "EHLO mail.asbjorn.biz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751828Ab0KFTEo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Nov 2010 15:04:44 -0400
+Message-ID: <4CD5A6C8.8030603@asbjorn.biz>
+Date: Sat, 06 Nov 2010 19:04:40 +0000
+From: =?UTF-8?B?QXNiasO4cm4gU2xvdGggVMO4bm5lc2Vu?= <asbjorn@asbjorn.biz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101030 Icedove/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101104014024.GA22498@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Sven-Haegar Koch <haegar@sdinet.de>
+CC: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, debian-kernel@lists.debian.org
+Subject: Re: [PATCH] kbuild, deb-pkg: select userland architecture based on
+ UTS_MACHINE
+References: <4CD406C7.8090801@asbjorn.biz> <1288963808-7057-1-git-send-email-asbjorn@asbjorn.biz> <alpine.DEB.2.02.1011051437500.13287@aurora.sdinet.de>
+In-Reply-To: <alpine.DEB.2.02.1011051437500.13287@aurora.sdinet.de>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 09:40:24PM -0400, J. Bruce Fields wrote:
-> The irritating thing is that the only lease user I understand is the
-> nfsd code, and it doesn't want this lease-merging behavior; the only
-> reason that fl_change is there is so it can just turn this case into an
-> error every time.
-
-Yes.
-
-> And I have no idea what the requirements are of any other users: do
-> leases behave like this on purpose, or was it just an arbitrary choice,
-> and does anyone depend on it now?
-
-Adding Willy and Stephen to the Cc list as they wrote the code.
-
-> In the end maybe it would be better just to leave leases as they are and
-> define a new lock type for nfsd.
+On 11/05/2010 01:42 PM, Sven-Haegar Koch wrote:
+> On Fri, 5 Nov 2010, Asbjoern Sloth Toennesen wrote:
+> 
+>> Instead of creating the debian package for the compiling userland,
+>> create it for a userland matching the kernel thats being compiled.
+> 
+>> Eg. with this patch the following make command:
+>>
+>> 	make ARCH=i386 deb-pkg
+>>
+>> will output an i386 Debian package instead of an amd64 one,
+>> when run on an amd64 machine.
+> 
+> How do I either select a differnet package-arch or reverse to the 
+> current way?
+> 
+> I am right now using 'make ARCH=x86_64 deb-pkg' on a 32bit userspace
+> environment running with a 64bit kernel, wanting to create packages to 
+> be installed in this i386 arch.
 >
-> We'd probably have to do that eventually anyway, and it'd save me trying
-> to guess what the lease semantics are supposed to be....
+> (As I want 64bit support where possible (mostly for AES-NI support in 
+> dm-crypt), but don't have the time available to do a complete userspace 
+> reinstall and reconfiguration)
 
-I'd rather see both leases and the nfs4 delegations detangled from the
-locks.c code.  It's far too much of a mess already anyway.
+Sounds like an one off thing, so in your case forcing the installation
+should work:
 
-> Subject: [PATCH 1/2] locks: fix leak on merging leases
-> 
-> We must also free the passed-in lease in the case it wasn't used because
-> an existing lease was upgrade/downgraded or already existed.
-> 
-> Note the nfsd caller doesn't care because it's fl_change callback
-> returns an error in those cases.
+	dpkg --force-architecture linux-image-*.deb
 
-The patch looks good to me.  Care to feed it to Linus?
+The problem with that approach is that it doesn't work with APT, but I
+doubt that there are any private APT repositories with this environment.
 
+The issue with one kernel and 2 userspaces will also arise in sparc,
+when the sparc64 userland gets going. So it will need to be dealt with
+at some point, so I create a 3 lines additional patch for it.
