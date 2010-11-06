@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753524Ab0KFWmD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 18:42:03 -0400
-Received: from tarap.cc.columbia.edu ([128.59.29.7]:63174 "EHLO
-	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753173Ab0KFWmB (ORCPT
+	id S1753578Ab0KFWzo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 18:55:44 -0400
+Received: from brinza.cc.columbia.edu ([128.59.29.8]:49773 "EHLO
+	brinza.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753173Ab0KFWzn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 18:42:01 -0400
-Message-ID: <4CD5D99A.8000402@cs.columbia.edu>
-Date: Sat, 06 Nov 2010 18:41:30 -0400
+	Sat, 6 Nov 2010 18:55:43 -0400
+Message-ID: <4CD5DCE3.3000109@cs.columbia.edu>
+Date: Sat, 06 Nov 2010 18:55:31 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 Organization: Columbia University
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Lightning/1.0b1 Thunderbird/3.0.10
 MIME-Version: 1.0
-To: Gene Cooperman <gene@ccs.neu.edu>
-CC: Matt Helsley <matthltc@us.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Kapil Arya <kapil@ccs.neu.edu>,
+To: Kapil Arya <kapil@ccs.neu.edu>
+CC: Tejun Heo <tj@kernel.org>, Gene Cooperman <gene@ccs.neu.edu>,
         ksummit-2010-discuss@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org, hch@lst.de
 Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-References: <Pine.LNX.4.64.1011021530470.12128@takamine.ncl.cs.columbia.edu> <4CD08419.5050803@kernel.org> <AANLkTinOg6n3ZA+0gHzw9LouRuUmJ7DJwHtABRy5c=gM@mail.gmail.com> <4CD26948.7050009@kernel.org> <20101104164401.GC10656@sundance.ccs.neu.edu> <4CD3CE29.2010105@kernel.org> <20101106053204.GB12449@count0.beaverton.ibm.com> <20101106204008.GA31077@sundance.ccs.neu.edu>
-In-Reply-To: <20101106204008.GA31077@sundance.ccs.neu.edu>
+References: <Pine.LNX.4.64.1011021530470.12128@takamine.ncl.cs.columbia.edu> <4CD08419.5050803@kernel.org> <AANLkTinOg6n3ZA+0gHzw9LouRuUmJ7DJwHtABRy5c=gM@mail.gmail.com> <4CD26948.7050009@kernel.org> <20101104164401.GC10656@sundance.ccs.neu.edu> <4CD3CE29.2010105@kernel.org> <AANLkTimDXKsBCxbsEOfgkYV2R8FK=bhFdmx9UQow5hqp@mail.gmail.com>
+In-Reply-To: <AANLkTimDXKsBCxbsEOfgkYV2R8FK=bhFdmx9UQow5hqp@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-No-Spam-Score: Local
@@ -29,158 +28,141 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 11/06/2010 04:40 PM, Gene Cooperman wrote:
-> By the way, Oren, Kapil and I are hoping to find time in the next few
-> days to talk offline.  Apparently the Linux C/R and DMTCP had continued
 
-That was my understanding too. However, I also felt that I'd better
-clarify a key point first.
+On 11/05/2010 08:36 PM, Kapil Arya wrote:
+>> I'm probably missing something but can't you stop the application
+>> using PTRACE_ATTACH?  You wouldn't need to hijack a signal or worry
+>> about -EINTR failures (there are some exceptions but nothing really to
+>> worry about).  Also, unless the manager thread needs to be always
+>> online, you can inject manager thread by manipulating the target
+>> process states while taking a snapshot.
+> 
+> In fact CryoPid uses exactly the same approach and has been around for around 5
+> years. Not as much development effort has gone into CryoPid as DMTCP and so its
+> application coverage is not as broad. But the larger issue for using PTRACE is
+> that you can not have two superiors tracing the same inferior process. So if you
+> want to checkpoint a gdb session or valgrind or tmux or strace, then you can not
+> directly control and quiesce the inferior process being traced.
+> 
+> Beyond that, we also have a vision (not yet implemented) of process
+> virtualization by which one can change the behavior of a program. For example,
+> if a distributed computation runs over infiniband, can we migrate to a TCP/IP
+> cluster. For this, one needs the flexibility of wrappers around system calls.
+> This vision of process virtualization also motivates why our own research
+> project has steered away from in-kernel C/R.
 
-> for some years unaware of each other.  We appreciate that a huge amount
-> of work has gone into both of the approaches, and so we'd like to reap
-> the benefit of the experiences of the two approaches.  We're still learning
-> more about each others' approaches.  Below, I'll try to answer as best
-> I can the questions that Matt brings up.  Since Matt brings up _lots_
-> of questions, and I add my own topics, I thought it best to add a table
-> of contents to this e-mail.  For each topic, you'll see a discussion
-> inline below.
+This is a very useful vision. However, it is unrelated to how you
+do c/r, but rather to what you do after you restart and before you
+let the application resume execution.
+
+For example, in your example, you'd need to wrap the library calls
+(e.g. of MPI implementation) and replaced them to use TCP/IP or
+infiniband. Wrapping on system calls won't help you.
+
+Or you could just replace the resource - e.g., make the restarted
+application use s socket for stdout instead of the tty, so you can
+redirect the output to where-ever.
+
+Both methods are orthogonal to the c/r itself: linux-cr will allow
+you to replace/modify resources if you so wish, and I suspect that
+MTCP also can/will.
+
+Interposing on library calls is possible with MTCP methods, or
+using binary instrumentation, or PIN, or DynInst, or LD_PRELOAD.
+
+The only two reasons to interpose on systems calls, as I noted
+in earlier message (http://lkml.org/lkml/2010/11/5/262 - see
+points "2)" and "3)" about userland-workarounds):
+
+One - to virtualize in userspace reosurces (e.g. pids) that the
+kernel already knows how to virtualize.
+
+Two - to track state of resources during execution and lie about
+their state when needed, because userspace can't cleanly save
+and restore their state.
+
+Virtualization through interposition is extremely tricky in and
+out of the kernel. The examples given throughout this thread (by
+either side) expose the tip of the iceberg. Interposition as a
+technique  is full of security and other pitfalls, as discussed
+by extensive literature in the area. (I cited in another email).
+
+So I'll repeat the question I asked there: is re-reimplementing
+chunks of kernel functionality and all namespaces in userspace
+the way to go ?
+
+> 
+>>> But since you ask :-), there is one thing on our wish list.  We
+>>> handle address space randomization, vdso, vsyscall, and so on quite
+>>> well.  We do not turn off address space randomization (although on
+>>> restart, we map user segments back to their original addresses).
+>>> Probably the randomized value of brk (end-of-data or end of heap) is
+>>> the thing that gave us the most troubles and that's where the code
+>>> is the most hairy.
+>>
 
 [snip]
 
-> 2.  Directly checkpointing a single X11 app
->   [ Our own preferred approach, as opposed to checkpinting an entire desktop;
->     This is easy, but we just haven't had the time lately.  I estimate
->     the time to do it is about one person working straight out for two weeks
->     or so.  But who has that much spare time.  :-)  ]
+> The design of DMTCP was decided upon roughly during the period from Linux 2.6.3
+> through Linux 2.6.18. At that time, /proc/*/net did not exist. You are right
+> that this can provide much better design for DMTCP and eliminate some of our
+> wrappers. Thanks very much for pointing this out. We are now egar to implement a
+> new design based on /proc/*/net in the near future.
+> 
+> Since /proc/*/net provides a simpler design for sockets, we started wondering
+> what other simplifications may be possible. Here is one possibility, in the case
+> of shared file descriptors, DMTCP goes through two barriers in order to decide
+> which process will be responsible for checkpointing which shared-file
+> descriptor. It works and the overhead is reasonable, but if you have additional
+> suggestion for this case, we would be very interested.
 
-Hmmm... that sounds pretty fast .. given that you will need to
-save and reconstruct an arbitrary state kept by the X server...
+What is "reasonable" overhead ?
+For which applications ?
+What about a 'kernel make' ?
+What about servers (db, web, etc) ?
+What about VPSs/VDIs ?
+Can we do better, including for HPC ?
+...
 
-More importantly, this line of thought was brought up in this
-thread multiple times, yet in a very misleading way.
+> 
+>> I think this is why userland CR implementation makes much more sense.
+>> Most of states visible to a userland process are rather rigidly
+>> defined by standards and, ultimately, ABI and the kernel exports most
+>> of those information to userland one way or the other.  Given the
+>> right set of needed features, most of which are probabaly already
+>> implemented, a userland implementation should have access to most
+>> information necessary to checkpoint without resorting to too messy
+>> methods and then there inevitably needs to be some workarounds to make
+>> CR'd processes behave properly w.r.t. other states on the system, so
+>> userland workarounds are inevitable anyway unless it resorts to
+>> preemtive separation using namespaces and containers, which I frankly
+>> think isn't much of value already and more so going forward.
+> 
+> Its a very good point and we agree completely. Here are some examples where we
+> believe, a userland component is inevitable even if one begins with in-kernel
+> C/R:
 
-The question is _not_ whether one can do c/r of a single apps
-without their surrounding environment. The answer for that is
-simple: it _is_ possible either using proper (and more likely
-per-app) wrappers, or by adapting the apps to tolerate that.
+Exactly !  Wrapping around apps to isolate them from the environment
+is desirable, regardless of how you technically c/r the apps, when
+you want to be able to c/r apps outside their native environment.
 
-The above is entirely orthogonal to whether the c/r is in kernel
-or in userspace.
+Generally, you can either include the environment in the checkpoint,
+or provide wrappers to virtualize it after restart, or modify the app
+so that it knows how to adapt to new environments after restart.
 
-So for terminal based apps, one can use 'screen'. For individual X
-apps, one can use a light VNC server with proper embedding in the
-desktop (e.g. metavnc). Or you could use screen-for-X like 'xpra'.
-Or you can write wrappers (messy or hairy or not) that will try to
-do that, or you could modify the apps. IIUC, dmtcp chose the way
-of the wrappers.
+Either way, you need to technically c/r the app, no matter how much
+userspace trickery you may choose to apply afterwards if needed. And
+doing so in-kernel is more transparent (yes, transparent means that
+it does not require LD_PRELOAD or collaboration of the application!
+nor does it require userspace virtualizations of so many things
+already provided by the kernel today), more generic, more flexible,
+provides more guarantees, cover more types or states of resources,
+and can perform significantly better.
 
-But that is independent of where you do c/r !  The issue on the
-table is whether the _core_ c/r should go in kernel or userspace.
-Those wrappers of dmtcp are great and will be useful with either
-approach.
-
-So let us please _not_ argue that only one approach can c/r apps
-or processes out of their context. That is inaccurate and misleading.
-
-And while one may argue that one use-case is more important than
-another, let us also _not_ dismiss such use cases (as was argued
-by others in this thread). For example, c/r of a full desktop
-session in VNC, or a VPS, is a perfectly valid and useful case.
+And then, if you want to work with dmtcp's type of scenarios, you
+could use the generic c/r and apply their wrappers on top of it !
 
 [snip]
-
-> 4. inotify and NSCD
->   [ We try to virtualize a single app, instead of also checkpointing
->     inotify and NSCD themselves.  It would have been interesting to consider
->     checkpointing them in userland, but that would require root privilege,
->     and one core design principle we have, is that all of our C/R is
->     completely unprivileged.  So, we would see distributing DMTCP as
->     a package in a distro, and letting individual users decide for
->     what computation they might want to use it. ]
-
-FYI, inotify() is a syscall and does not require root privileges. It's
-a kernel API used to get notifications of changes to file system inodes.
-for instance, it's commonly used by file managers (e.g. nautilus).
-
-> 
-> 5. Checkpointing DRM state and other graphics chip state
->   [ It comes down to virtualization around a single app versus checkpointing
->     _all_ of X. --- Two different approaches. ]
-> 
-> 6. kernel c/r of input devices might be alot easier
->   [ We agree with you.  By virtualizing around a single app, we hope
->     to avoid this issue. ]
-
-Back to the point argued above, "virtualization around a single app"
-are the wrappers that allow to take an app out of context and sort of
-implant it in another context. It's a very desirable feature, but
-orthogonal to the c/r technique.
-
-> 
-> 7. C/R for link/open/rm/open/write/read puzzle
-> 
-> 8.  What happens if the DMTCP coordinator ( checkpoint control process) dies?
->   [ The same thing that happens if a user process dies.  We kill the whole
->     computation, and restart.  At restart, we use a new coordinator.
->     Coordinators are stateless. ]
-> 
-> 9. We try to hide the reserved signal (SIGUSR2 by default) ...
->   [ Matt says this is a mess, but we note that glibc does this too. ]
-> 
-> 10. checkpoint, gdb and PTRACE_ATTACH
->   [ DMTCP does not use PTRACE_ATTACH in its implementation.  So, we can
->     and do fully support user processes that use PTRACE_ATTACH. ]
-
-Hmm... can you really c/r from userspace a process that was, at
-checkpoint time, in a ptrace-stopped state at an arbitrary kernel
-ptrace-hook ?  I strongly suspect the answer is "no", definitely
-not unless you also virtualize and replicate the entire in-kernel
-ptrace functionality in userspace,
-
-> 
-> 11. DMTCP, ABIs, can there be a race condition between the ckpt thread and
->   user threads of an app?
->   [ DMTCP doesn't introduce any new ABIs.  There may be a misconception here.
->     If we can talk at length off-line, I could explain more about
->     the DMTCP design.  Inline, I explain why race conditions should
->     not be an issue. ]
-
-I beg to differ. Virtualization that relies on a "black box" (in
-the sense that it works around an API but not integrated into the
-API, like dmtcp does) has been shown time and again to be racy. The
-common term is TOCTTOU races. See "Traps and Pitfalls: Practical
-Problems in System Call Interposition Based Security Tools" for
-example (http://www.stanford.edu/~talg/papers/traps/abstract.html),
-and many others that cite (or not) this work.
-
-I believe the way dmtcp virtualizes the pid-namespace makes no
-exception to this rule.
-
-[snip]
-
-> 
-> I think we would need to elaborate with individual cases.  But as I wrote
-> above, DMTCP and Linux C/R started with two different philosophies.
-> I'm not sure if you fully understood the DMTCP goals and philosophy yet,
-> but I hope my comments above help clarify it.
-
-Yes, let's look into the goals:
-
-dmtcp aims to provide c/r for a certain class of applications and
-envrionments. For this dmtcp offers:
-(1) userspace c/r engine and c/r-oriented virtualization, and
-(2) userspace (often per-application or per-environment) wrappers.
-
-linux-cr provides (3) generic, transparent  kernel-based c/r engine
-(yes, transparent! without userspace virtualization, LD_PRELOAD
-tricks, or collaboration of the developer/application/user).
-
-So let's compare apples to apples - let's compare (3) to (1).
-All of the work related to item (2) applies to and benefits
-from either.
-
-(Now looking forward to discuss more details with dmtcp team on
-Tuesday and on :)
 
 Thanks,
 
