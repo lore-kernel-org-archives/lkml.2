@@ -1,45 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822Ab0KFOXz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 10:23:55 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:51355 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752882Ab0KFOXz (ORCPT
+	id S1754139Ab0KFOjT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 10:39:19 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:45646 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752882Ab0KFOjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 10:23:55 -0400
+	Sat, 6 Nov 2010 10:39:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=bMlSe2IxtJQbHuB92Yf8eqKdUEL5jLOKDQz5OeYm4YhbFi3gXgeKKp9FPkpe8ZWQW5
+         TuA2ustqXNM5t4d+FV6Ru0klY3ql/IbBCwkM1bUS47GR/aUid08FZN0YTbGD3MHcCBMB
+         llQperLtvqyztPiTojvx2s43eMW1N4COjS8G4=
+Date: Sat, 6 Nov 2010 17:39:11 +0300
+From: Vasiliy Kulikov <segooon@gmail.com>
+To: walter harms <wharms@bfs.de>
+Cc: kernel-janitors@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Jiri Pirko <jpirko@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] net: packet: fix information leak to userland
+Message-ID: <20101106143911.GA17428@albatros>
+References: <1288545028-16436-1-git-send-email-segooon@gmail.com>
+ <4CCE84E2.9050801@bfs.de>
 MIME-Version: 1.0
-In-Reply-To: <201011062018.ADJ30249.OVOOJFMFHQFStL@I-love.SAKURA.ne.jp>
-References: <201011060307.GIG13040.OFFJOVHMSFLOtQ@I-love.SAKURA.ne.jp>
- <20101105200245.GA1645@suse.de> <201011062018.ADJ30249.OVOOJFMFHQFStL@I-love.SAKURA.ne.jp>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Sat, 6 Nov 2010 15:23:38 +0100
-Message-ID: <AANLkTi=BL4N7T1VDU2Pxd3pmm-=TwzRN_JqWeMFahEY=@mail.gmail.com>
-Subject: Re: [2.6.37-rc1] udevd-event prints errors.
-To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Cc: gregkh@suse.de, cbouatmailru@gmail.com, ak@linux.intel.com,
-        axboe@kernel.dk, shemminger@vyatta.com, ebiederm@xmission.com,
-        stern@rowland.harvard.edu, James.Bottomley@suse.de,
-        akpm@linux-foundation.org, kuznet@ms2.inr.ac.ru,
-        randy.dunlap@oracle.com, tj@kernel.org, davem@davemloft.net,
-        perex@perex.cz, tiwai@suse.de, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        dhowells@redhat.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CCE84E2.9050801@bfs.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 6, 2010 at 12:18, Tetsuo Handa
-<penguin-kernel@i-love.sakura.ne.jp> wrote:
+On Mon, Nov 01, 2010 at 10:14 +0100, walter harms wrote:
+> 
+> 
+> Vasiliy Kulikov schrieb:
+> > packet_getname_spkt() doesn't initialize all members of sa_data field of
+> > sockaddr struct if strlen(dev->name) < 13.  This structure is then copied
+> > to userland.  It leads to leaking of contents of kernel stack memory.
+> > We have to fully fill sa_data with strncpy() instead of strlcpy().
+> > 
+> > The same with packet_getname(): it doesn't initialize sll_pkttype field of
+> > sockaddr_ll.  Set it to zero.
+> > 
+> > Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+> > ---
+> >  net/packet/af_packet.c |    3 ++-
+> >  1 files changed, 2 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+> > index 3616f27..0856a13 100644
+> > --- a/net/packet/af_packet.c
+> > +++ b/net/packet/af_packet.c
+> > @@ -1719,7 +1719,7 @@ static int packet_getname_spkt(struct socket *sock, struct sockaddr *uaddr,
+> >  	rcu_read_lock();
+> >  	dev = dev_get_by_index_rcu(sock_net(sk), pkt_sk(sk)->ifindex);
+> >  	if (dev)
+> > -		strlcpy(uaddr->sa_data, dev->name, 15);
+> > +		strncpy(uaddr->sa_data, dev->name, 14);
+> >  	else
+> >  		memset(uaddr->sa_data, 0, 14);
+> 
+> if i understand the code correcly the max size for dev->name is IFNAMSIZ.
 
->> Other than that, everything works ok, right?
-> Right.
+For dev->name - IFNAMSIZ, for uaddr->sa_data - 14.
 
-It's something that should be fixed in the udev rules. This is the
-fixed line, we used in later releases. It adds an additional match to
-prevent the warning you see:
-  SUBSYSTEM=="scsi", KERNEL=="[0-9]*:[0-9]*", WAIT_FOR_SYSFS="ioerr_cnt"
+> You can simply that part:
+> 
+> memset(uaddr->sa_data, 0, IFNAMSIZ);
+> dev = dev_get_by_index_rcu(sock_net(sk), pkt_sk(sk)->ifindex);
+> if (dev)
+> 	strlcpy(uaddr->sa_data, dev->name, IFNAMSIZ);
 
-All of that is not needed with current kernels, it was a hacky
-workaround for broken sysfs/event timing issues we had years ago.
+This will overflow uaddr->sa_data.  Also I don't see any difficulty to
+fill the array only once.
 
-Kay
+> you should send that as separate patch.
+> re,
+>  wh
+> 
+> 
+> >  	rcu_read_unlock();
+> > @@ -1742,6 +1742,7 @@ static int packet_getname(struct socket *sock, struct sockaddr *uaddr,
+> >  	sll->sll_family = AF_PACKET;
+> >  	sll->sll_ifindex = po->ifindex;
+> >  	sll->sll_protocol = po->num;
+> > +	sll->sll_pkttype = 0;
+> >  	rcu_read_lock();
+> >  	dev = dev_get_by_index_rcu(sock_net(sk), po->ifindex);
+> >  	if (dev) {
+
+Thanks,
+
+-- 
+Vasiliy
