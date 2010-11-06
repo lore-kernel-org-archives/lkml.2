@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804Ab0KFSrF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 14:47:05 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:44432 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751828Ab0KFSrD (ORCPT
+	id S1751799Ab0KFSsh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 14:48:37 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:45810 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919Ab0KFSsg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 14:47:03 -0400
-Date: Sat, 6 Nov 2010 14:47:02 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: David Brownell <david-b@pacbell.net>
-cc: Vasiliy Kulikov <segooon@gmail.com>, <kernel-janitors@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Oliver Neukum <oliver@neukum.org>,
-        Andi Kleen <ak@linux.intel.com>, Chris Frey <cdfrey@foursquare.net>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: core: fix information leak to userland
-In-Reply-To: <502882.59497.qm@web180306.mail.gq1.yahoo.com>
-Message-ID: <Pine.LNX.4.44L0.1011061441150.28403-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sat, 6 Nov 2010 14:48:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=n7fsT5vmKdl5swRqirutPpbU4LeTdMrp3/0FHbJMRbrv0lYHWrZmwAdSiITYag5Kf8
+         Dqd3Bvle3QmSksV8keVeQ+uzliGCMz7GhKt/Xe450dZEw56jwkdOrCuqvxT1x1kxS2Us
+         eHpC77SwF0sTrNkj4f4kz+VvuF6Z5m8ttjBeU=
+From: Tracey Dent <tdent48227@gmail.com>
+To: greg@kroah.com
+Cc: linux-kernel@vger.kernel.org, Tracey Dent <tdent48227@gmail.com>
+Subject: [PATCH] Staging: speakup: spk_types: trival coding style issue
+Date: Sat,  6 Nov 2010 14:48:48 -0400
+Message-Id: <1289069328-1812-1-git-send-email-tdent48227@gmail.com>
+X-Mailer: git-send-email 1.7.3.2.146.gca209
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 6 Nov 2010, David Brownell wrote:
+Checkpatch.pl gives WARNING: missing space after struct definition.
+This patch fixes that warning that was on line 55.
 
-> --- On Sat, 11/6/10, Alan Stern <stern@rowland.harvard.edu> wrote:
-> 
-> > Are you sure that adding an initializer
-> > like this will zero out the 
-> > padding bytes?  It might be safer just to call
-> > memset.
-> 
-> ISTR the C standard says things get initted to
-> zero in this case too ... and that compilers will
-> as a rule use memset to do it.  One could look
-> at the generated code to make sure of that.
+Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+---
+ drivers/staging/speakup/spk_types.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Unfortunately I don't have a copy of the C standard here to consult.  
-However...  Although I'm perfectly willing to believe that the standard
-requires fields in a structure to be initialized to 0 if they
-aren't mentioned explicitly in the initializer, I'm considerably more
-doubtful that it also requires padding to be initialized!
-
-And I certainly wouldn't want to depend on compilers _always_ using 
-memset to do this initialization.
-
-> There's certainly a fair amount of code I've seen
-> that uses runtime initializers like that, to zero
-> memory.  I can't believe i's _all_ broken!  ;)
-
-Zeroing memory that belongs to a declared field is different from 
-zeroing padding bytes.  Maybe what you remember seeing is the first and 
-not the second.
-
-Alan Stern
+diff --git a/drivers/staging/speakup/spk_types.h b/drivers/staging/speakup/spk_types.h
+index 840bddb..d36c90e 100644
+--- a/drivers/staging/speakup/spk_types.h
++++ b/drivers/staging/speakup/spk_types.h
+@@ -52,7 +52,7 @@ typedef int (*special_func)(struct vc_data *vc, u_char type, u_char ch,
+ 
+ #define COLOR_BUFFER_SIZE 160
+ 
+-struct spk_highlight_color_track{
++struct spk_highlight_color_track {
+ 	/* Count of each background color */
+ 	unsigned int bgcount[8];
+ 	/* Buffer for characters drawn with each background color */
+-- 
+1.7.3
 
