@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751557Ab0KFFBQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 01:01:16 -0400
-Received: from nm3-vm0.bullet.mail.sp2.yahoo.com ([98.139.90.230]:20073 "HELO
-	nm3-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751359Ab0KFFBN convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 01:01:13 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 823995.43277.bm@omp1036.mail.sp2.yahoo.com
-Message-ID: <516164.25539.qm@web110514.mail.gq1.yahoo.com>
-X-YMail-OSG: dyUbAZsVM1mRnv3zsi2.x7P7SUwn5Gg4yyfdlmIR97_enr.
- S1bB1IQMAqmxq0iBa18UyEPJMn0uEl7C4sgBSuxFYf1hdBtTkMvJixaBt3mK
- zxzXjE1CMgPM1xQB.5APGZ17xOf7bJ2dIPv7vLBGLRuVW88FxRRSQW3ixywK
- MYiepDun2y51oJnIvWG3_5CeRHkw1UdGZrxqo5yOmvzii9VGZf8ZTf8HH0Gp
- KsSib4FZ6Va8V96.2PqNAVH0vkQ3KgOkJpLnTDPstmWXXjfjNS8hK1aC7h_I
- B4MoOpQJ8gDzlkCUZ0c86UJsJXXEPWqAorLYeLPfMWYkrDqipvsHFcwGSEhj
- 8WA8we8V_1PDAIJRIdrINM0cLLXZ1FsSDPgauL_il
-X-RocketYMMF: multiplicador
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.284920
-Date: Fri, 5 Nov 2010 22:01:11 -0700 (PDT)
-From: =?iso-8859-1?Q?Andr=E9_Luis_Pereira_dos_Santos_-_BSRSoft?= 
-	<andre@bsrsoft.com.br>
-Reply-To: andre@bsrsoft.com.br
-Subject: [PATCH 1/1] virt: ack_flush() function removed for lack of apparent use 2.6.37-rc1
-To: Avi Kivity <avi@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+	id S1751526Ab0KFFHG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 01:07:06 -0400
+Received: from kroah.org ([198.145.64.141]:56248 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750717Ab0KFFHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Nov 2010 01:07:04 -0400
+Date: Fri, 5 Nov 2010 22:07:21 -0700
+From: Greg KH <greg@kroah.com>
+To: Yehuda Sadeh Weinraub <yehudasa@gmail.com>
+Cc: ceph-devel@vger.kernel.org, Sage Weil <sage@newdream.net>,
         linux-kernel@vger.kernel.org
+Subject: Re: [RFC] rbd sysfs interface
+Message-ID: <20101106050721.GA2194@kroah.com>
+References: <AANLkTinOeby9P847gJFn_t0h5nDY7cfi3cW9hEaUrS1v@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinOeby9P847gJFn_t0h5nDY7cfi3cW9hEaUrS1v@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+On Fri, Nov 05, 2010 at 04:09:31PM -0700, Yehuda Sadeh Weinraub wrote:
+> The rbd module that was recently merged into the linux kernel on the
+> 2.6.37-rc1 merge window is based on the osdblk device driver. Other
+> than being somewhat confusing (as in ceph we use the term osd too) it
+> had been a valuable resource and jump started the development effort.
+> One thing that we inherited from osdblk is the sysfs class interface
+> that was used there. Generally, there is a single flat class control
+> directory that allows adding, removing and listing of devices. For rbd
+> we expanded this interface to include all snapshots operations too.
+> This, however, might not be completely suitable to rbd. First, there
+> might be many different devices, so that having a single control for
+> all is cumbersome. The problem is exacerbated with rbd snapshots, as
+> there can be many snapshots to a single device, so using a single
+> control for all devices and snapshots doesn't scale.
+> 
+> Another point to consider is the integration with udev, so that
+> devices can be created and mapped automaticallty to /dev.
+> We'd like to replace the current rbd class interface, and if possible
+> to make it asap, so that the current interfaces won't be set in stone
+> once 2.6.37 is out. At this point we wanted to do something like the
+> following:
+> 
+> Under /sys/class/rbd there'd we'll keep the 'add' entry that adds rbd devices:
+> 
+>  # echo "10.0.0.1 name=admin rbd myimage" > /sys/class/rbd/add
+> 
+> The devices that'll be created still be enumerated, and there'll be a
+> subdirectory under rbd/ for each (actually a soft link to
+> /sys/devices/virtual/rbd/<id>). For each device we'll have multiple
+> read-only properties (name, pool, size, client_id, major, cur_snap,
+> snapshots) and a few control entries that'll allow controlling it
+> (e.g., remove, refresh, snap_create, snap_rollback).
+> 
+> We're not sure whether the available snapshots go under the device
+> (e.g., rbd/<id>/snaps/...) or just keep it on a single 'snapshots'
+> entry.
+> 
+> Does this seem sane? Any comments would be greatly appreciated.
 
-Ack_flush function () is not used anywhere in the code and apparently has no function currently defined.
+It sounds like you need to use configfs instead of sysfs, as your model
+was the reason it was created.
 
-Unless there are plans to use it in the future, I took it out via this patch code for readability.
+Have you tried that?
 
+thanks,
 
-
-Signed-off-by: Andre Luis Pereira dos Santos <andre@bsrsoft.com.br>
----
-Signed-off-by: Andre Luis Pereira dos Santos <andre@bsrsoft.com.br>
---- linux-2.6.37-rc1/virt/kvm/kvm_main.c	2010-11-01 09:54:12.000000000 -0200
-+++ linux-2.6.37-rc1-patched/virt/kvm/kvm_main.c	2010-11-06 02:43:56.000000000 -0200
-@@ -132,9 +132,6 @@ void vcpu_put(struct kvm_vcpu *vcpu)
- 	mutex_unlock(&vcpu->mutex);
- }
- 
--static void ack_flush(void *_completed)
--{
--}
- 
- static bool make_all_cpus_request(struct kvm *kvm, unsigned int req)
- {
-
-
-      
+greg k-h
