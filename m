@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948Ab0KFS00 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 14:26:26 -0400
+	id S1753018Ab0KFS0b (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 14:26:31 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:60924 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752889Ab0KFS0Y (ORCPT
+	with ESMTP id S1752977Ab0KFS03 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 14:26:24 -0400
+	Sat, 6 Nov 2010 14:26:29 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=pRtioPB0iv+m0GtaEMATFDI44h7GZprL4g6j8otbhhbeINAtfzb+iIBZoP7o1YCD//
-         6qxmv8TPvAOBKc6ELbvyU3V+rx3SIFcHpRsCusUubsbMnAT8B5GQ7SeeJfiHPAQr/k7D
-         J3t8MA9tYX/xaCwVXpETrL9PL7kew0p+KZVB0=
+        b=T4Df7bPMCRpoR0htcKnw+Q+0OYfaxIA+fAdd2zSQSJf9BYXXuT6lbYjuNml6pWXj41
+         ZhPmuMAgzLG0PiRl9dCXesowoMbLThiHjVNx70uPwULAU0Oja8yfHpQDB55+AGmnUaLh
+         VyHzVN8oVCZhP2Y0LiLuYhvhxFrwIdfoPRYHw=
 From: Rabin Vincent <rabin@rab.in>
 To: linux-arm-kernel@lists.infradead.org
 Cc: Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Tim Bird <tim.bird@am.sony.com>, linux-kernel@vger.kernel.org,
         Rabin Vincent <rabin@rab.in>
-Subject: [PATCH 4/6] ARM: ftrace: function graph tracer support
-Date: Sat,  6 Nov 2010 23:55:52 +0530
-Message-Id: <1289067954-5080-4-git-send-email-rabin@rab.in>
+Subject: [PATCH 5/6] ARM: ftrace: graph tracer + dynamic ftrace
+Date: Sat,  6 Nov 2010 23:55:53 +0530
+Message-Id: <1289067954-5080-5-git-send-email-rabin@rab.in>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1289067954-5080-1-git-send-email-rabin@rab.in>
 References: <1289067954-5080-1-git-send-email-rabin@rab.in>
@@ -30,171 +30,153 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tim Bird <tim.bird@am.sony.com>
+Support the graph tracer + dynamic ftrace combination on ARM.
 
-Cc: Tim Bird <tim.bird@am.sony.com>
-[rabin@rab.in: rebase on top of latest code,
-	       keep code in ftrace.c instead of separate file,
-	       check for ftrace_graph_entry also]
 Signed-off-by: Rabin Vincent <rabin@rab.in>
 ---
- arch/arm/kernel/Makefile       |    3 +-
- arch/arm/kernel/entry-common.S |   46 ++++++++++++++++++++++++++++++++++++++++
- arch/arm/kernel/ftrace.c       |   34 +++++++++++++++++++++++++++++
- 3 files changed, 82 insertions(+), 1 deletions(-)
+ arch/arm/kernel/entry-common.S |   12 +++++++
+ arch/arm/kernel/ftrace.c       |   69 +++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 76 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-index 078dd22..b3225d4 100644
---- a/arch/arm/kernel/Makefile
-+++ b/arch/arm/kernel/Makefile
-@@ -5,7 +5,7 @@
- CPPFLAGS_vmlinux.lds := -DTEXT_OFFSET=$(TEXT_OFFSET)
- AFLAGS_head.o        := -DTEXT_OFFSET=$(TEXT_OFFSET)
- 
--ifdef CONFIG_DYNAMIC_FTRACE
-+ifdef CONFIG_FUNCTION_TRACER
- CFLAGS_REMOVE_ftrace.o = -pg
- endif
- 
-@@ -33,6 +33,7 @@ obj-$(CONFIG_SMP)		+= smp.o
- obj-$(CONFIG_HAVE_ARM_SCU)	+= smp_scu.o
- obj-$(CONFIG_HAVE_ARM_TWD)	+= smp_twd.o
- obj-$(CONFIG_DYNAMIC_FTRACE)	+= ftrace.o
-+obj-$(CONFIG_FUNCTION_GRAPH_TRACER)	+= ftrace.o
- obj-$(CONFIG_KEXEC)		+= machine_kexec.o relocate_kernel.o
- obj-$(CONFIG_KPROBES)		+= kprobes.o kprobes-decode.o
- obj-$(CONFIG_ATAGS_PROC)	+= atags.o
 diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
-index fe1d586..9f17662 100644
+index 9f17662..aae802e 100644
 --- a/arch/arm/kernel/entry-common.S
 +++ b/arch/arm/kernel/entry-common.S
-@@ -148,6 +148,20 @@ ENDPROC(ret_from_fork)
- 	adr	r0, .Lftrace_stub
- 	cmp	r0, r2
- 	bne	1f
-+
+@@ -183,12 +183,24 @@ ENDPROC(ret_from_fork)
+ ftrace_call\suffix:
+ 	bl	ftrace_stub
+ 
 +#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-+	ldr     r1, =ftrace_graph_return
-+	ldr     r2, [r1]
-+	cmp     r0, r2
-+	bne     ftrace_graph_caller\suffix
-+
-+	ldr     r1, =ftrace_graph_entry
-+	ldr     r2, [r1]
-+	ldr     r0, =ftrace_graph_entry_stub
-+	cmp     r0, r2
-+	bne     ftrace_graph_caller\suffix
++	.globl ftrace_graph_call\suffix
++ftrace_graph_call\suffix:
++	mov	r0, r0
 +#endif
 +
- 	mcount_exit
- 
- 1: 	mcount_get_lr	r1			@ lr of instrumented func
-@@ -172,6 +186,15 @@ ftrace_call\suffix:
  	mcount_exit
  .endm
  
-+.macro __ftrace_graph_caller
-+	sub	r0, fp, #4		@ &lr of instrumented routine (&parent)
-+	mov	r1, lr			@ instrumented routine (func)
-+	sub	r1, r1, #MCOUNT_INSN_SIZE
-+	mov	r2, fp			@ frame pointer
-+	bl	prepare_ftrace_return
-+	mcount_exit
-+.endm
-+
- #ifdef CONFIG_OLD_MCOUNT
- /*
-  * mcount
-@@ -206,6 +229,12 @@ ENTRY(ftrace_caller_old)
- ENDPROC(ftrace_caller_old)
- #endif
- 
-+#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-+ENTRY(ftrace_graph_caller_old)
-+	__ftrace_graph_caller
-+ENDPROC(ftrace_graph_caller_old)
+ .macro __ftrace_graph_caller
+ 	sub	r0, fp, #4		@ &lr of instrumented routine (&parent)
++#ifdef CONFIG_DYNAMIC_FTRACE
++	@ called from __ftrace_caller, saved in mcount_enter
++	ldr	r1, [sp, #16]		@ instrumented routine (func)
++#else
++	@ called from __mcount, untouched in lr
+ 	mov	r1, lr			@ instrumented routine (func)
 +#endif
-+
- .purgem mcount_enter
- .purgem mcount_get_lr
- .purgem mcount_exit
-@@ -244,10 +273,27 @@ ENTRY(ftrace_caller)
- ENDPROC(ftrace_caller)
- #endif
- 
-+#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-+ENTRY(ftrace_graph_caller)
-+	__ftrace_graph_caller
-+ENDPROC(ftrace_graph_caller)
-+#endif
-+
- .purgem mcount_enter
- .purgem mcount_get_lr
- .purgem mcount_exit
- 
-+#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-+	.globl return_to_handler
-+return_to_handler:
-+	stmdb	sp!, {r0-r3}
-+	mov	r0, fp			@ frame pointer
-+	bl	ftrace_return_to_handler
-+	mov	lr, r0			@ r0 has real ret addr
-+	ldmia	sp!, {r0-r3}
-+	mov	pc, lr
-+#endif
-+
- ENTRY(ftrace_stub)
- .Lftrace_stub:
- 	mov	pc, lr
+ 	sub	r1, r1, #MCOUNT_INSN_SIZE
+ 	mov	r2, fp			@ frame pointer
+ 	bl	prepare_ftrace_return
 diff --git a/arch/arm/kernel/ftrace.c b/arch/arm/kernel/ftrace.c
-index 971ac8c..7a702a5 100644
+index 7a702a5..c0062ad 100644
 --- a/arch/arm/kernel/ftrace.c
 +++ b/arch/arm/kernel/ftrace.c
-@@ -24,6 +24,7 @@
- #define	NOP		0xe8bd4000	/* pop {lr} */
+@@ -60,9 +60,9 @@ static unsigned long adjust_address(struct dyn_ftrace *rec, unsigned long addr)
+ }
  #endif
  
-+#ifdef CONFIG_DYNAMIC_FTRACE
- #ifdef CONFIG_OLD_MCOUNT
- #define OLD_MCOUNT_ADDR	((unsigned long) mcount)
- #define OLD_FTRACE_ADDR ((unsigned long) ftrace_caller_old)
-@@ -193,3 +194,36 @@ int __init ftrace_dyn_arch_init(void *data)
+-/* construct a branch (BL) instruction to addr */
+ #ifdef CONFIG_THUMB2_KERNEL
+-static unsigned long ftrace_call_replace(unsigned long pc, unsigned long addr)
++static unsigned long ftrace_gen_branch(unsigned long pc, unsigned long addr,
++				       bool link)
+ {
+ 	unsigned long s, j1, j2, i1, i2, imm10, imm11;
+ 	unsigned long first, second;
+@@ -84,15 +84,22 @@ static unsigned long ftrace_call_replace(unsigned long pc, unsigned long addr)
+ 	j2 = (!i2) ^ s;
  
- 	return 0;
+ 	first = 0xf000 | (s << 10) | imm10;
+-	second = 0xd000 | (j1 << 13) | (j2 << 11) | imm11;
++	second = 0x9000 | (j1 << 13) | (j2 << 11) | imm11;
++	if (link)
++		second |= 1 << 14;
+ 
+ 	return (second << 16) | first;
  }
-+#endif /* CONFIG_DYNAMIC_FTRACE */
+ #else
+-static unsigned long ftrace_call_replace(unsigned long pc, unsigned long addr)
++static unsigned long ftrace_gen_branch(unsigned long pc, unsigned long addr,
++				       bool link)
+ {
++	unsigned long opcode = 0xea000000;
+ 	long offset;
+ 
++	if (link)
++		opcode |= 1 << 24;
 +
-+#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-+void prepare_ftrace_return(unsigned long *parent, unsigned long self_addr,
-+			   unsigned long frame_pointer)
+ 	offset = (long)addr - (long)(pc + 8);
+ 	if (unlikely(offset < -33554432 || offset > 33554428)) {
+ 		/* Can't generate branches that far (from ARM ARM). Ftrace
+@@ -104,10 +111,15 @@ static unsigned long ftrace_call_replace(unsigned long pc, unsigned long addr)
+ 
+ 	offset = (offset >> 2) & 0x00ffffff;
+ 
+-	return 0xeb000000 | offset;
++	return opcode | offset;
+ }
+ #endif
+ 
++static unsigned long ftrace_call_replace(unsigned long pc, unsigned long addr)
 +{
-+	unsigned long return_hooker = (unsigned long) &return_to_handler;
-+	struct ftrace_graph_ent trace;
-+	unsigned long old;
-+	int err;
-+
-+	if (unlikely(atomic_read(&current->tracing_graph_pause)))
-+		return;
-+
-+	old = *parent;
-+	*parent = return_hooker;
-+
-+	err = ftrace_push_return_trace(old, self_addr, &trace.depth,
-+				       frame_pointer);
-+	if (err == -EBUSY) {
-+		*parent = old;
-+		return;
-+	}
-+
-+	trace.func = self_addr;
-+
-+	/* Only trace if the calling function expects to */
-+	if (!ftrace_graph_entry(&trace)) {
-+		current->curr_ret_stack--;
-+		*parent = old;
-+	}
++	return ftrace_gen_branch(pc, addr, true);
 +}
-+#endif /* CONFIG_FUNCTION_GRAPH_TRACER */
++
+ static int ftrace_modify_code(unsigned long pc, unsigned long old,
+ 			      unsigned long new)
+ {
+@@ -226,4 +238,51 @@ void prepare_ftrace_return(unsigned long *parent, unsigned long self_addr,
+ 		*parent = old;
+ 	}
+ }
++
++#ifdef CONFIG_DYNAMIC_FTRACE
++extern unsigned long ftrace_graph_call;
++extern unsigned long ftrace_graph_call_old;
++extern void ftrace_graph_caller_old(void);
++
++static int __ftrace_modify_caller(unsigned long *callsite,
++				  void (*func) (void), bool enable)
++{
++	unsigned long caller_fn = (unsigned long) func;
++	unsigned long pc = (unsigned long) callsite;
++	unsigned long branch = ftrace_gen_branch(pc, caller_fn, false);
++	unsigned long nop = 0xe1a00000;	/* mov r0, r0 */
++	unsigned long old = enable ? nop : branch;
++	unsigned long new = enable ? branch : nop;
++
++	return ftrace_modify_code(pc, old, new);
++}
++
++static int ftrace_modify_graph_caller(bool enable)
++{
++	int ret;
++
++	ret = __ftrace_modify_caller(&ftrace_graph_call,
++				     ftrace_graph_caller,
++				     enable);
++
++#ifdef CONFIG_OLD_MCOUNT
++	if (!ret)
++		ret = __ftrace_modify_caller(&ftrace_graph_call_old,
++					     ftrace_graph_caller_old,
++					     enable);
++#endif
++
++	return ret;
++}
++
++int ftrace_enable_ftrace_graph_caller(void)
++{
++	return ftrace_modify_graph_caller(true);
++}
++
++int ftrace_disable_ftrace_graph_caller(void)
++{
++	return ftrace_modify_graph_caller(false);
++}
++#endif /* CONFIG_DYNAMIC_FTRACE */
+ #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
 -- 
 1.7.2.3
 
