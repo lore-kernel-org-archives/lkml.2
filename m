@@ -1,34 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361Ab0KFLk7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 07:40:59 -0400
-Received: from pindarots.xs4all.nl ([80.101.128.228]:49208 "EHLO
-	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752960Ab0KFLk7 (ORCPT
+	id S1754296Ab0KFLye (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 07:54:34 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:36076 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753266Ab0KFLyd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 07:40:59 -0400
-Message-ID: <4CD53EC7.3070306@xs4all.nl>
-Date: Sat, 06 Nov 2010 12:40:55 +0100
-From: Udo van den Heuvel <udovdh@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Anca Emanuel <anca.emanuel@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: task vboxgetty:16758 blocked for more than 120 seconds. 2.6.35.7
-References: <4CD53AE6.5090204@xs4all.nl> <AANLkTik7_9Ovfv5kkMBRdeZrJf5Q01usKU9d4xcCLiuz@mail.gmail.com>
-In-Reply-To: <AANLkTik7_9Ovfv5kkMBRdeZrJf5Q01usKU9d4xcCLiuz@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 6 Nov 2010 07:54:33 -0400
+Subject: Re: [PATCH] regulator: lock supply in regulator enable
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Mattias Wallin <mattias.wallin@stericsson.com>
+Cc: "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Bengt JONSSON <bengt.g.jonsson@stericsson.com>
+In-Reply-To: <4CD29C7D.4050500@stericsson.com>
+References: <4CD2847B.1060009@stericsson.com>
+	 <1288865910.3277.23.camel@odin>  <4CD28FA6.9030303@stericsson.com>
+	 <1288869112.3277.25.camel@odin>  <4CD29C7D.4050500@stericsson.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 06 Nov 2010 11:54:28 +0000
+Message-ID: <1289044468.3318.14.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-11-06 12:31, Anca Emanuel wrote:
-> Did you tried this ?
-> http://lkml.org/lkml/2010/11/4/247
+On Thu, 2010-11-04 at 12:43 +0100, Mattias Wallin wrote:
+> > Sorry, got a busy schedule atm. Can you give us your reasoning behind
+> > why you think we need a lock here ?
+> Yes, when we enter regulator_enable() we take the lock only for that specific regulator rdev->mutex
+> and calls the locked function _regulator_enable().
+> This locked function then checks if we have a supply and recursively calls the locked _regulator_enable() again but with the supply rdev as argument.
+> The supply rdev regulator is however not locked at this stage, only the "original" supplied regulator is locked.
+> So if we have two regulators with the same supply regulator trying to enable at approx. the same time they will both
+> enter the _regulator_enable without locks and we could get a race condition.
+> This would probably result in reference counting error and unbalanced regulator warnings.
+> 
+> In our system we make use the regulator hierarchy quite heavily.
+> > 
 
-Doesn't fully apply over 2.6.35.7:
-linux-2.6.orig/kernel/sched_stoptask.c is not present.
+Applied.
 
-Udo
+Thanks
+
+Liam
+-- 
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
+
