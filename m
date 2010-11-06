@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753535Ab0KFXHo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 19:07:44 -0400
-Received: from poseidon.ceid.upatras.gr ([150.140.141.169]:42230 "EHLO
-	poseidon.ceid.upatras.gr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751183Ab0KFXHn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 19:07:43 -0400
-X-Greylist: delayed 2189 seconds by postgrey-1.27 at vger.kernel.org; Sat, 06 Nov 2010 19:07:43 EDT
-Message-ID: <50673.41.203.64.246.1289082665.squirrel@webmail.ceid.upatras.gr>
-Date: Sun, 7 Nov 2010 00:31:05 +0200 (EET)
-Subject: Your ATM Debit Card
-From: "Mr Dave Walker" <kurupis@ceid.upatras.gr>
-Reply-To: mrdavewalker@yahoo.com.hk
-User-Agent: SquirrelMail/1.4.8-5.el5_3.7
+	id S1753669Ab0KFXMX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 19:12:23 -0400
+Received: from kroah.org ([198.145.64.141]:59206 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752237Ab0KFXMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Nov 2010 19:12:22 -0400
+Date: Sat, 6 Nov 2010 16:09:44 -0700
+From: Greg KH <greg@kroah.com>
+To: "Ted Ts'o" <tytso@mit.edu>, Elvis Dowson <elvis.dowson@mac.com>,
+        Janakiram Sistla <janakiram.sistla@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Forked android kernel development from linux kernel mainline
+Message-ID: <20101106230944.GA8985@kroah.com>
+References: <01784A8B-36A0-4E8A-9729-23C2B19351F8@mac.com> <AANLkTi=UxhRdcDaoKaYVWhPkp_e-uLF4=zhXs7gutkgx@mail.gmail.com> <20101106181202.GA6927@kroah.com> <20101106192259.GB2935@thunk.org>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101106192259.GB2935@thunk.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Nov 06, 2010 at 03:22:59PM -0400, Ted Ts'o wrote:
+> Given that the Android kernel developers have already spent upwards of
+> ten times the amount of engineering hours it would take forward port
+> their kernel patches to each upstream kernel version for the next
+> several years, finding a path that meets their requirements as well as
+> those of the upstream kernel maintainers may not be a trivial thing.
+> 
+> Also keep in mind that someone no less than Linus Torvalds has said
+> that sometimes forks are good, and that the _freedom_ to fork is
+> critical.  But if anyone feels that figuring out some way to make the
+> android kernel patches (a) upstreamable, and (b) compatible with
+> android's userspace is their itch to scratch, the other part of the
+> open source ethos is that they are certainly free to try.
 
+As per the Rusty Russell rule of lkml etiquette, we are all allowed to
+participate, or start, one massive, no-holds-barred, ugly as mud flame
+war per year.  Remembering that the year was going to be over soon and I
+didn't think I had met my quota for this yet, I started to respond to
+this email.
 
+But after composing it, I realized that it was not going to change
+anyone's feelings about the manner, nor cause anything constructive to
+ever occur, besides giving zillions of electrons something to do
+lighting up /. comment threads.  So I've deleted it, and will just
+respond with this simple line:
 
+  I respectively disagree with your opinion, so we will have to just
+  agree to disagree at the moment.
 
+The carrots need to be pulled from the garden now, before the next rain
+sets in up here in the Pacific northwest, turning them into orange and
+purple mush, so I'll go do that, getting my hands dirty with real dirt,
+instead of wearing out my fingertips in creating virtual mud here.
 
-We hereby officially notify you about the present arrangement to pay you
-your over due contract/inheritance funds which you could not complete the
-process of the released of your transfer pin code through the Digitalized
-Payment System. We have decided to pay your funds without any requested
-fee but through (ATM Master Express Credit Card) This arrangement was
-initiated/constituted by the World Bank and Paris Club, due to fraudulent
-activities going on within the African Region.
+cordially,
 
-The World Bank and Paris Club introduced this payment arrangement as to
-enable our contractors/inheritance beneficiary to receive their funds
-without any interference. the ATM Master Express Credit Card was
-contracted and powered by GOLD CARD WORLD WIDE. Your ATM Master Card Worth
-the sum of 6.8 Million United States Dollars of which you can be able to
-withdraw the sum of 20,000 United States Dollars Per Dey as soon as the
-card gets to you and has been activated.
-
-Below are few list of tracking numbers you can track from UPS and Fedex
-website to confirm people like you who have received their payment
-successfully.
-
-Tracking Number: H7909125721
-Tracking Name: E MNAICKER
-
-Click on the Link Below and Put the Tracking number Above;
-http://wwwapps.ups.com/WebTracking/track?loc=en_US
-Reconfirm the following information to us for security reasons:
-
-Please  confirm your details below for proper delivery via the Fedex
-Delivery Service
-
-Full Name:
-Address:
-Phone Number:
-Country:
-
-Note that you are to send the sum of  $385 usd to our delivery agent
-officer with the information below. Note that it is all your outstanding
-funds and contract that is been uploaded in the ATM Card, so as soon as
-you meet up with the delivery requirement we shall proceed with the
-delivery to your home address.
-
-Receiver Name: Mr Eddy Bernard
-Address:4th Floor, Ikoyi Lagos, Nigeria
-Test Question: Parcel
-Answer: Delivery
-
-You can give me a call at +2348079065128 email  mrdavewalker@datafull.com
-for more information.
-
-Upon the receipt of this information we are going to proceed to despatch
-the card directly to your nominated mailing addresss.So you absolutely
-have nothing to worry about as all we need is your prompt response and
-co-operation.
-
+greg k-h
