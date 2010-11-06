@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369Ab0KFKpu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 06:45:50 -0400
-Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:40176 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754615Ab0KFKps (ORCPT
+	id S1755349Ab0KFK5w (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 06:57:52 -0400
+Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:1770 "HELO
+	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754588Ab0KFK5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 06:45:48 -0400
-Date: Sat, 6 Nov 2010 21:42:11 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Christoph Hellwig <hch@lst.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Chris Mason <chris.mason@oracle.com>,
-        "Li, Shaohua" <shaohua.li@intel.com>, Greg Thelen <gthelen@google.com>
-Subject: Re: [PATCH 00/17] [RFC] soft and dynamic dirty throttling limits
-Message-ID: <20101106104211.GL13830@dastard>
-References: <20100912154945.758129106@intel.com>
- <20101012141716.GA26702@infradead.org>
- <20101013030733.GV4681@dastard>
- <20101013082611.GA6733@localhost>
- <20101013092627.GY4681@dastard>
- <20101101062446.GK2715@dastard>
- <20101104034119.GA18910@localhost>
- <20101104131228.GA22718@lst.de>
- <20101105145639.GA6300@localhost>
+	Sat, 6 Nov 2010 06:57:51 -0400
+Message-ID: <4CD53499.90308@draigBrady.com>
+Date: Sat, 06 Nov 2010 10:57:29 +0000
+From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101105145639.GA6300@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Michael Tokarev <mjt@tls.msk.ru>
+CC: Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Detecting bind-mounts
+References: <4CD31B6A.7040902@msgid.tls.msk.ru> <4CD3DB5D.5040808@draigBrady.com> <4CD44D60.5050105@msgid.tls.msk.ru> <4CD46953.1010902@msgid.tls.msk.ru> <4CD4A231.1010000@draigBrady.com> <4CD4A5B4.5090204@msgid.tls.msk.ru>
+In-Reply-To: <4CD4A5B4.5090204@msgid.tls.msk.ru>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 05, 2010 at 10:56:39PM +0800, Wu Fengguang wrote:
-> On Thu, Nov 04, 2010 at 09:12:28PM +0800, Christoph Hellwig wrote:
-> > On Thu, Nov 04, 2010 at 11:41:19AM +0800, Wu Fengguang wrote:
-> > > I'm feeling relatively good about the first 14 patches to do IO-less
-> > > balance_dirty_pages() and larger writeback chunk size. I'll repost
-> > > them separately as v2 after returning to Shanghai.
-> > 
-> > Going for as small as possible patchsets is a pretty good idea.  Just
-> > getting the I/O less balance_dirty_pages on it's own would be a really
-> > good start, as that's one of the really criticial pieces of
-> > infrastructure that a lot of people are waiting for.  Getting it into
-> > linux-mm/linux-next ASAP so that it gets a lot of testing would be
-> > highly useful.
+On 06/11/10 00:47, Michael Tokarev wrote:
+> 06.11.2010 03:32, Pádraig Brady wrote:
+> []
+>> As for a fast way, I don't think one exists.
+>> BTW I'm not sure your examples are actually valid.
+>> If a file/dir is bind mounted to the same file system, then
+>> `find -xdev` should be listing it (as it has the same dev).
 > 
-> OK, I'll do a smaller IO-less balance_dirty_pages() patchset (it's
-> good to know which part is the most relevant one, which is not always
-> obvious by my limited field experiences), which will further reduce
-> the possible risk of unexpected regressions.
+> Think what, say, cp or tar with --one-file-system option are
+> used for.  It is usually to copy a system to another place.
+> There, we only want single copy of everything, and with current
+> situation it will be two, with additional mess with hardlinks
+> for files wich were hardlinks already (due to optimizations
+> done by the utils based on link counts).
 
-Which is good given the recent history of writeback mods. :/
+Fair enough, but that starts to overlap with how hardlinks
+are handled.  If you're following symlinks then you can't
+use the hardlink count. Note the du utility has recently
+handled this by using a "di-set" to efficiently exclude
+duplicate dev,inode pairs.
 
-> Currently the -mm tree includes Greg's patchset "memcg: per cgroup
-> dirty page accounting". I'm going to rebase my patches onto it,
-> however I'd like to first make sure if Greg's patches are going to be
-> pushed in the next merge window. I personally have no problem with
-> that.  Andrew?
+> 
+> find -xdev is a bit different since it explicitly mentions
+> "dev", and in my examples the device is actually the same.
+> But usage case can be the same as for cp/tar above too, or
+> may be different.
+> 
+>> You want a separate option --same-mount or something,
+>> though I don't know what it would be useful for.
+> 
+> Stopping at the bind-mount dir definitely is useful, see
+> above for the "main" (and very important) usage case (this
+> can be solved differently on linux too - by cloning a new
+> namespace and removing the bind mounts before doing that
+> copy. but this is, again, ugly at best).
+> 
+> Note that this "main" usage case requires fast way to
+> determine mount points...
 
-Well, I'd prefer that you provide a git tree that I can just pull
-into my current working branch to test. Having to pull in a thousand
-other changes to test your writeback changes makes it much harder
-for me as I'd have to establish a new stable performance/behavioural
-baseline before starting to analyse your series. If it's based on
-mainline then I've already got that baseline....
+I can see how it would be useful, yes.
 
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+cheers,
+Pádraig.
