@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752644Ab0KFFpi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 01:45:38 -0400
-Received: from mga03.intel.com ([143.182.124.21]:36090 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752133Ab0KFFpg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 01:45:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,306,1286175600"; 
-   d="scan'208";a="345338992"
-Subject: Re: [RFC 1/4]x86: cleanup vector usage
-From: Shaohua Li <shaohua.li@intel.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>, "hpa@zytor.com" <hpa@zytor.com>
-In-Reply-To: <20101105205516.GB5678@lenovo>
-References: <1288766658.23014.114.camel@sli10-conroe>
-	 <20101105205516.GB5678@lenovo>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 06 Nov 2010 13:45:34 +0800
-Message-ID: <1289022334.2029.3.camel@shli-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1752989Ab0KFFva (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 01:51:30 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:52006 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752311Ab0KFFv2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Nov 2010 01:51:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=awpywhAI4G7Q6Fd4IwwirgPr7f0uihb8pz7uGk07a6w1cFAShZS35sAjniematI/SD
+         IzwPDoS5Ie/3dpR89pNdeVmEKTy8a6ek37qXOjOAPkdmqhkXzamJb9fBa953mt3VPB1C
+         VSXHa2Qks4CLcb5AJHE5876b+CsdQmrXYZ41o=
+MIME-Version: 1.0
+In-Reply-To: <20101106050721.GA2194@kroah.com>
+References: <AANLkTinOeby9P847gJFn_t0h5nDY7cfi3cW9hEaUrS1v@mail.gmail.com>
+	<20101106050721.GA2194@kroah.com>
+Date: Fri, 5 Nov 2010 22:51:26 -0700
+Message-ID: <AANLkTinQK_9qp-8jJ5j3-ChUjwhGiGzAmCu5cBtHX75g@mail.gmail.com>
+Subject: Re: [RFC] rbd sysfs interface
+From: Yehuda Sadeh Weinraub <yehudasa@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: ceph-devel@vger.kernel.org, Sage Weil <sage@newdream.net>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-11-06 at 04:55 +0800, Cyrill Gorcunov wrote:
-> On Wed, Nov 03, 2010 at 02:44:18PM +0800, Shaohua Li wrote:
-> > Cleanup the vector usage and make them continuous if possible.
-> > 
-> > Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-> > ---
-> ...
-> > -#define X86_PLATFORM_IPI_VECTOR		0xed
-> > +#define X86_PLATFORM_IPI_VECTOR		0xf7
-> >  
-> >  /*
-> >   * IRQ work vector:
-> >   */
-> > -#define IRQ_WORK_VECTOR			0xec
-> > +#define IRQ_WORK_VECTOR			0xf6
-> >  
-> > -#define UV_BAU_MESSAGE			0xea
-> > +#define UV_BAU_MESSAGE			0xf5
-> >  
-> >  /*
-> >   * Self IPI vector for machine checks
-> >   */
-> > -#define MCE_SELF_VECTOR			0xeb
-> > +#define MCE_SELF_VECTOR			0xf4
-> >  
-> >  /* Xen vector callback to receive events in a HVM domain */
-> > -#define XEN_HVM_EVTCHN_CALLBACK		0xe9
-> > +#define XEN_HVM_EVTCHN_CALLBACK		0xf3
-> > +
-> 
->  Hi Li, this is not just a cleanup -- irq priority were changed as
-> well, but I suppose it's harmless ;)
-I didn't change the local apic timer vector because the comments say the
-priority is important. For others, I do suppose it's harmless.
+On Fri, Nov 5, 2010 at 10:07 PM, Greg KH <greg@kroah.com> wrote:
+> On Fri, Nov 05, 2010 at 04:09:31PM -0700, Yehuda Sadeh Weinraub wrote:
+>>
+>> Does this seem sane? Any comments would be greatly appreciated.
+>
+> It sounds like you need to use configfs instead of sysfs, as your model
+> was the reason it was created.
+>
+> Have you tried that?
 
+Oh, will look at it now. With ceph (although for a different purpose)
+we went through proc -> sysfs -> debugfs, however, it seems that we've
+missed at least one userspace-kernel channel.
+
+Thanks,
+Yehuda
