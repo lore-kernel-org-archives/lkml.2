@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862Ab0KFP4u (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 11:56:50 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:54492 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753955Ab0KFP4s (ORCPT
+	id S1754925Ab0KFQWW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 12:22:22 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:63103 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754276Ab0KFQWV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 11:56:48 -0400
-Date: Sat, 6 Nov 2010 08:48:36 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Embedded <linux-embedded@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Tim Bird <tim.bird@am.sony.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 16/16 v2] pramfs: Makefile and Kconfig
-Message-Id: <20101106084836.b9ba01f6.randy.dunlap@oracle.com>
-In-Reply-To: <4CD51969.3060603@gmail.com>
-References: <4CD51969.3060603@gmail.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 6 Nov 2010 12:22:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=A7P6caTllHADPzsTO74Tstrzr4Bcvpa8sEgvBgulPPP4nAhlJLgVhSB4M++2bCA96k
+         dhMoijs9XCiIW0PmfbkXopDCF8gegAFEmvbapnxjVwRQ9IffugdZcdkGiXGUQFg0MhVl
+         mWk0Ht5C8U6KOXdinVM7rnbXqSWdVr0H/QnY4=
+From: Johan Meiring <johanmeiring@gmail.com>
+To: gregkh@suse.de, greg@kroah.com, johanmeiring@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/6] Staging: wlan-ng: fixed coding style issues in p80211netdev.c
+Date: Sat,  6 Nov 2010 18:21:59 +0200
+Message-Id: <1289060520-13741-1-git-send-email-johanmeiring@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 06 Nov 2010 10:01:29 +0100 Marco Stornelli wrote:
+This is a patch to the p80211netdev.c file that fixes warnings that were found by the checkpatch.pl tool
 
-> From: Marco Stornelli <marco.stornelli@gmail.com>
-> 
-> Makefile and Kconfig.
-> 
-> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
-> ---
-> +config TEST_MODULE
-> +	tristate "PRAMFS Test"
-> +	depends on PRAMFS && m
-> +	select PRAMFS_TEST
-> +	help
-> +	  Say Y here to build a simple module to test the protection of
-> +	  PRAMFS. The module will be called pramfs_test.
-
-Since kconfig symbols are global, this one needs something like
-PRAMFS_ as a prefix, please.
-
-
-> diff -Nurp linux-2.6.36-orig/fs/pramfs/Makefile linux-2.6.36/fs/pramfs/Makefile
-> --- linux-2.6.36-orig/fs/pramfs/Makefile	1970-01-01 01:00:00.000000000 +0100
-> +++ linux-2.6.36/fs/pramfs/Makefile	2010-09-14 18:49:52.000000000 +0200
-> @@ -0,0 +1,14 @@
-> +#
-> +# Makefile for the linux pram-filesystem routines.
-> +#
-> +
-> +obj-$(CONFIG_PRAMFS) += pramfs.o
-> +obj-$(CONFIG_TEST_MODULE) += pramfs_test.o
-> +
-> +pramfs-y := balloc.o dir.o file.o inode.o namei.o super.o symlink.o
-> +
-> +pramfs-$(CONFIG_PRAMFS_WRITE_PROTECT) += wprotect.o
-> +pramfs-$(CONFIG_PRAMFS_XIP) += xip.o
-> +pramfs-$(CONFIG_PRAMFS_XATTR) += xattr.o xattr_user.o xattr_trusted.o desctree.o
-> +pramfs-$(CONFIG_PRAMFS_POSIX_ACL) += acl.o
-> +pramfs-$(CONFIG_PRAMFS_SECURITY) += xattr_security.o
-
-
+Signed-off-by: Johan Meiring <johanmeiring@gmail.com>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ drivers/staging/wlan-ng/p80211netdev.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/wlan-ng/p80211netdev.c b/drivers/staging/wlan-ng/p80211netdev.c
+index aa1792c..aa7f4f9 100644
+--- a/drivers/staging/wlan-ng/p80211netdev.c
++++ b/drivers/staging/wlan-ng/p80211netdev.c
+@@ -301,7 +301,8 @@ static void p80211netdev_rx_bh(unsigned long arg)
+ 					if (memcmp
+ 					    (hdr->a1, wlandev->netdev->dev_addr,
+ 					     ETH_ALEN) != 0) {
+-						/* but reject anything else that isn't multicast */
++						/* but reject anything else that
++						   isn't multicast */
+ 						if (!(hdr->a1[0] & 0x01)) {
+ 							dev_kfree_skb(skb);
+ 							continue;
+@@ -770,7 +771,8 @@ int wlan_setup(wlandevice_t *wlandev, struct device *physdev)
+ 	}
+ 
+ 	/* Allocate and initialize the struct device */
+-	netdev = alloc_netdev(sizeof(struct wireless_dev), "wlan%d", ether_setup);
++	netdev = alloc_netdev(sizeof(struct wireless_dev), "wlan%d",
++		ether_setup);
+ 	if (netdev == NULL) {
+ 		printk(KERN_ERR "Failed to alloc netdev.\n");
+ 		wlan_free_wiphy(wiphy);
+-- 
+1.7.1
+
