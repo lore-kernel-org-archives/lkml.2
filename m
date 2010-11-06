@@ -1,77 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220Ab0KFDgG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 23:36:06 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:28056 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752981Ab0KFDgE (ORCPT
+	id S1750897Ab0KFEGw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 00:06:52 -0400
+Received: from serrano.cc.columbia.edu ([128.59.29.6]:65305 "EHLO
+	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717Ab0KFEGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 23:36:04 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6158"; a="60789634"
-Message-ID: <4CD4CD21.8080801@codeaurora.org>
-Date: Fri, 05 Nov 2010 20:36:01 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.11) Gecko/20101013 Thunderbird/3.1.5
+	Sat, 6 Nov 2010 00:06:50 -0400
+Message-ID: <4CD4D431.7030104@cs.columbia.edu>
+Date: Sat, 06 Nov 2010 00:06:09 -0400
+From: Oren Laadan <orenl@cs.columbia.edu>
+Organization: Columbia University
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Lightning/1.0b1 Thunderbird/3.0.10
 MIME-Version: 1.0
-To: Daniel Walker <dwalker@codeaurora.org>
-CC: Russell King <linux@arm.linux.org.uk>, Nicolas Pitre <nico@fluxnic.net>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Colin Cross <ccross@android.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv2 2/3] ARM: Allow machines to override __delay()
-References: <1288300770-18350-1-git-send-email-sboyd@codeaurora.org>	<1288300770-18350-3-git-send-email-sboyd@codeaurora.org>	<1288899002.21823.3.camel@c-dwalke-linux.qualcomm.com>	<4CD31E67.60107@codeaurora.org>	<1288905414.21823.12.camel@c-dwalke-linux.qualcomm.com>	<4CD47C6E.3050702@codeaurora.org> <1289000592.15381.23.camel@m0nster>
-In-Reply-To: <1289000592.15381.23.camel@m0nster>
+To: Matt Helsley <matthltc@us.ibm.com>
+CC: Gene Cooperman <gene@ccs.neu.edu>, "Luck, Tony" <tony.luck@intel.com>,
+        Kapil Arya <kapil@ccs.neu.edu>,
+        "ksummit-2010-discuss@lists.linux-foundation.org" 
+	<ksummit-2010-discuss@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
+References: <Pine.LNX.4.64.1011021530470.12128@takamine.ncl.cs.columbia.edu> <4CD08419.5050803@kernel.org> <4CD23087.30900@cs.columbia.edu> <AANLkTikgPKeZUih6_12JWSNy=Vsz2UP9HR7wHOz4q6ST@mail.gmail.com> <987664A83D2D224EAE907B061CE93D53016485FE6E@orsmsx505.amr.corp.intel.com> <20101105171703.GA1760@sundance.ccs.neu.edu> <20101106011610.GA12449@count0.beaverton.ibm.com>
+In-Reply-To: <20101106011610.GA12449@count0.beaverton.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2010 04:43 PM, Daniel Walker wrote:
-> On Fri, 2010-11-05 at 14:51 -0700, Stephen Boyd wrote:
->> Ok. Doing that increases the size of my vmlinux.
+
+
+On 11/05/2010 09:16 PM, Matt Helsley wrote:
+> On Fri, Nov 05, 2010 at 01:17:03PM -0400, Gene Cooperman wrote:
+>> On Fri, Nov 05, 2010 at 04:57:33AM -0700, Luck, Tony wrote:
+>>>> Oren noted that sometimes it's important to stop the process only
+>>>> for a few milliseconds while one checkpoints. In DMTCP, we do that
+>>>> by configuring with --enable-forked-checkpointing. This causes us
+>>>> to fork a child process taking advantage of copy-on-write and then
+>>>> checkpoint the memory pages of the child while the parent continues
+>>>> to execute.
+>>>
+>>> Interesting ... but while the process is only stopped for the duration
+>>> of the fork, it may be taking COW faults on almost every page it
+>>> touches.  I think this will not work well for large HPC applications
+>>> that allocate most of physical memory as anonymous pages for the
+>>> application. It may even result in an OOM kill if you don't complete
+>>> the checkpoint of the child and have it exit in a timely manner.
+>>>
+>>> -Tony
+>>>
 >>
->> $ size vmlinux.orig vmlinux.new
->>    text    data     bss     dec     hex filename
->> 7091426  594512 1244648 8930586  88451a vmlinux.orig
->> 7091514  594512 1244648 8930674  884572 vmlinux.new
->
-> This is what I get,
->
->    text    data     bss     dec     hex filename
-> 2168427  104288  186176 2458891  25850b ../build-test/vmlinux.orig
-> 2168379  104288  186176 2458843  2584db ../build-test/vmlinux.new
->
-> Your patch has something wrong with it, which I fixed. Details below,
->
-[snip]
->> - */
->> -void __delay(unsigned long loops)
->> -{
->> -	delay_fn(loops);
->> -}
->>  EXPORT_SYMBOL(__delay);
->
-> You need to modify this EXPORT_SYMBOL to delay_fn since __delay doesn't
-> exist anymore.
+>> I agree with you that forked checkpointing is probably not what you
+>> want in the middle of an HPC computation.  But isn't that part of
+>> the nature of COW?  Whether the COW is invoked within the kernel,
+>> or from outside the kernel via fork --- in either case, when you have
+>> mostly dirty pages, you will have to copy most of the pages.
+> 
+> The current linux-cr approach to handling [dirty] pages doesn't use COW.
+> The tasks are frozen using the cgroup freezer and thus unable to modify
+> the pages. So we don't have to mess with page tables nor do we pay
+> any extra overhead for page faults.
 
-Wait. Doesn't this mean we're exporting delay_fn instead of __delay now?
-i.e. the symbol name has changed and modules can no longer call __delay?
-That sounds bad.
+The current linux-cr patchset leaves out any optimizations
+for simplicity of reviewing - first get it working and reviewed.
+We experienced with optimizations with previous systems.
 
-If I make that change, my kernel size is exactly the same before and
-after. It may sound like a win since you got a decrease and I got a net
-zero, but I'm not sure since the symbol has changed. I could make
-__delay a function pointer and assign it directly but I'm not very
-interested to expose a function pointer to modules allowing them to
-modify it at any time (easily). Actually, I should probably mark
-set_delay_fn __init so it gets thrown away after init when its far too
-late to switch the delay function anyway. That would give you the space
-savings you want and allow me to keep the delay_fn static to delay.c
+> 
+> If we ever implement thawed checkpointing -- checkpointing while
+> the task isn't frozen -- then we'd probably use COW and see
+> the same faults. The difference then would be that in-kernel we
+> wouldn't have one extra task per mm being checkpointed.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Thawed checkpointing can be done with any COW tax, by leveraging
+the native hardware dirty bit in page tables. There is no need to
+trigger additional checkpoints. Tracking modified pages using the
+dirty bit is a feature also desired by the KVM community, and we
+plan to work with them on implementing it.
 
+Oren.
