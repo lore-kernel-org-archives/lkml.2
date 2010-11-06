@@ -1,39 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557Ab0KFUwr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 16:52:47 -0400
-Received: from aspirin.dii.utk.edu ([160.36.0.81]:40926 "EHLO
-	aspirin.dii.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753244Ab0KFUwq (ORCPT
+	id S1753551Ab0KFVAg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 17:00:36 -0400
+Received: from brinza.cc.columbia.edu ([128.59.29.8]:41571 "EHLO
+	brinza.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753090Ab0KFVAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 16:52:46 -0400
-Date: Sat, 6 Nov 2010 16:52:06 -0400 (EDT)
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: Francis Moreau <francis.moro@gmail.com>
-cc: Victor Jimenez <victor.javier@bsc.es>,
-        Reid Kleckner <reid.kleckner@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        linux-perf-users@vger.kernel.org
-Subject: Re: perf tools miscellaneous questions
-In-Reply-To: <alpine.DEB.2.00.1011061642020.29635@cl320.eecs.utk.edu>
-Message-ID: <alpine.DEB.2.00.1011061651310.30242@cl320.eecs.utk.edu>
-References: <fa.SSgtQesEhEQa5DUYUwBV3fWtoV4@ifi.uio.no> <fa.dD5ur5Phqa1TLmYBE2NVKCQMjTw@ifi.uio.no> <fa.Xj1lA7n6nIJYL40CeRDpQzSKlfc@ifi.uio.no> <fa.xcyA+VzIXesq6qsPU6ADM4xdCKY@ifi.uio.no> <fa.MOg61Pcfdp2SJnwM2GFdOxP+xt0@ifi.uio.no> <fa.4sHfhlc/fMhpYgKda4IfUHZ7jMY@ifi.uio.no>
- <m2wros3pzf.fsf@gmail.com> <alpine.DEB.2.00.1011051000310.26020@cl320.eecs.utk.edu> <m262wao6k7.fsf@gmail.com> <alpine.DEB.2.00.1011061642020.29635@cl320.eecs.utk.edu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Sat, 6 Nov 2010 17:00:36 -0400
+Message-ID: <4CD5C1D9.7050509@cs.columbia.edu>
+Date: Sat, 06 Nov 2010 17:00:09 -0400
+From: Oren Laadan <orenl@cs.columbia.edu>
+Organization: Columbia University
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Lightning/1.0b1 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Gene Cooperman <gene@ccs.neu.edu>
+CC: "Luck, Tony" <tony.luck@intel.com>, Kapil Arya <kapil@ccs.neu.edu>,
+        "ksummit-2010-discuss@lists.linux-foundation.org" 
+	<ksummit-2010-discuss@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
+References: <Pine.LNX.4.64.1011021530470.12128@takamine.ncl.cs.columbia.edu> <4CD08419.5050803@kernel.org> <4CD23087.30900@cs.columbia.edu> <AANLkTikgPKeZUih6_12JWSNy=Vsz2UP9HR7wHOz4q6ST@mail.gmail.com> <987664A83D2D224EAE907B061CE93D53016485FE6E@orsmsx505.amr.corp.intel.com> <20101105171703.GA1760@sundance.ccs.neu.edu>
+In-Reply-To: <20101105171703.GA1760@sundance.ccs.neu.edu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 6 Nov 2010, Vince Weaver wrote:
 
-> For your Core2 you want the Intel Software Developer's Manual, volume 2B.  
-> Google should find it.
 
-typo, sorry, I meant Volume 3B.
+On 11/05/2010 01:17 PM, Gene Cooperman wrote:
+> On Fri, Nov 05, 2010 at 04:57:33AM -0700, Luck, Tony wrote:
+>>> Oren noted that sometimes it's important to stop the process only
+>>> for a few milliseconds while one checkpoints. In DMTCP, we do that
+>>> by configuring with --enable-forked-checkpointing. This causes us
+>>> to fork a child process taking advantage of copy-on-write and then
+>>> checkpoint the memory pages of the child while the parent continues
+>>> to execute.
+>>
+>> Interesting ... but while the process is only stopped for the duration
+>> of the fork, it may be taking COW faults on almost every page it
+>> touches.  I think this will not work well for large HPC applications
+>> that allocate most of physical memory as anonymous pages for the
+>> application. It may even result in an OOM kill if you don't complete
+>> the checkpoint of the child and have it exit in a timely manner.
+>>
+>> -Tony
+>>
+> 
+> I agree with you that forked checkpointing is probably not what you
+> want in the middle of an HPC computation.  But isn't that part of
+> the nature of COW?  Whether the COW is invoked within the kernel,
+> or from outside the kernel via fork --- in either case, when you have
+> mostly dirty pages, you will have to copy most of the pages.
+> Do I understand your point correctly?			Thanks,
+> 							- Gene
 
-Vince
+COW is one way of reducing down time (whether through fork or
+in-kernel checkpoint). However, it is possible to avoid using
+it (and thus avoid extra page faults and memory overload) by
+using the page-table "dirty" bit to track dirty pages. This way
+one can "pre-copy" the checkpoint image while the application is
+running, without additional overhead (the idea is similar to how
+live-migration is done).
+
+Oren.
