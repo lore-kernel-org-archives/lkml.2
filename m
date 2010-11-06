@@ -1,48 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417Ab0KFOxO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 10:53:14 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40918 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754061Ab0KFOxN (ORCPT
+	id S1754400Ab0KFPAd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 11:00:33 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:42147 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753143Ab0KFPAc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 10:53:13 -0400
+	Sat, 6 Nov 2010 11:00:32 -0400
+Message-ID: <4CD56D94.2000806@cs.helsinki.fi>
+Date: Sat, 06 Nov 2010 17:00:36 +0200
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-In-Reply-To: <20101106121605.GA6736@redhat.com>
-References: <AANLkTimr3rW67HxgOUyReEW8dmmSsd4b7-Ns57mXzS1w@mail.gmail.com>
- <20101103161638.ddc75ace.randy.dunlap@oracle.com> <AANLkTinj2sk==Jw7ZL3RvO_M7iRPW0sQy8dsvabo-V5h@mail.gmail.com>
- <4CD48D5E.10309@oracle.com> <AANLkTi=3f6f5MoZAX4C4ufYkopn8Z_xrR6nd-GzkoDhg@mail.gmail.com>
- <20101106121605.GA6736@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 6 Nov 2010 07:52:15 -0700
-Message-ID: <AANLkTinrkpf=aYcB_987_5dfPPLUG2mdEF4UDQ-ZpJCZ@mail.gmail.com>
-Subject: Re: Linux 2.6.37-rc1 (floppy module load: no device found)
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, Jens Axboe <jaxboe@fusionio.com>,
-        David Miller <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Joe Perches <joe@perches.com>
+CC: Jiri Kosina <trivial@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 6/7] mm: Convert sprintf_symbol to %pS
+References: <1288998760-11775-1-git-send-email-joe@perches.com> <1288998760-11775-7-git-send-email-joe@perches.com>
+In-Reply-To: <1288998760-11775-7-git-send-email-joe@perches.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 6, 2010 at 5:16 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+On 6.11.2010 1.12, Joe Perches wrote:
+> Signed-off-by: Joe Perches<joe@perches.com>
+
+Acked-by: Pekka Enberg <penberg@kernel.org>
+
+I think this ought to go through Andrew's tree rather than the trivial tree.
+
+> ---
+>   mm/slub.c    |   11 ++++-------
+>   mm/vmalloc.c |    9 ++-------
+>   2 files changed, 6 insertions(+), 14 deletions(-)
 >
-> While scanning the floopy code, I found one more instance of trying to
-> access disk->queue pointer after doing put_disk() on gendisk. For some
-> reason, floppy moule still loads/unloads fine. May be object is still
-> around with right pointer values.
+> diff --git a/mm/slub.c b/mm/slub.c
+> index 8fd5401..43b3857 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -3660,7 +3660,7 @@ static int list_locations(struct kmem_cache *s, char *buf,
+>   		len += sprintf(buf + len, "%7ld ", l->count);
+>
+>   		if (l->addr)
+> -			len += sprint_symbol(buf + len, (unsigned long)l->addr);
+> +			len += sprintf(buf + len, "%pS", (void *)l->addr);
+>   		else
+>   			len += sprintf(buf + len, "<not-available>");
+>
+> @@ -3969,12 +3969,9 @@ SLAB_ATTR(min_partial);
+>
+>   static ssize_t ctor_show(struct kmem_cache *s, char *buf)
+>   {
+> -	if (s->ctor) {
+> -		int n = sprint_symbol(buf, (unsigned long)s->ctor);
+> -
+> -		return n + sprintf(buf + n, "\n");
+> -	}
+> -	return 0;
+> +	if (!s->ctor)
+> +		return 0;
+> +	return sprintf(buf, "%pS\n", s->ctor);
+>   }
+>   SLAB_ATTR_RO(ctor);
+>
+> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+> index a3d66b3..b7e18f6 100644
+> --- a/mm/vmalloc.c
+> +++ b/mm/vmalloc.c
+> @@ -2450,13 +2450,8 @@ static int s_show(struct seq_file *m, void *p)
+>   	seq_printf(m, "0x%p-0x%p %7ld",
+>   		v->addr, v->addr + v->size, v->size);
+>
+> -	if (v->caller) {
+> -		char buff[KSYM_SYMBOL_LEN];
+> -
+> -		seq_putc(m, ' ');
+> -		sprint_symbol(buff, (unsigned long)v->caller);
+> -		seq_puts(m, buff);
+> -	}
+> +	if (v->caller)
+> +		seq_printf(m, " %pS", v->caller);
+>
+>   	if (v->nr_pages)
+>   		seq_printf(m, " pages=%d", v->nr_pages);
 
-Yes - the normal use-after-free is fairly silent and only causes
-problems if something re-allocates the same memory immediately, which
-is quite a small race to hit under normal load.
-
-But if you had had slab poisoning on, you'd have seen the same oops
-Randy did (well, not the exact same one since the call trace would be
-slightly different due to being from a different point, but _very_
-similar).
-
-Anyway, applied.
-
-                        Linus
