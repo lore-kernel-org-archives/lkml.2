@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380Ab0KFTEz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 15:04:55 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:60109 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753056Ab0KFTEx (ORCPT
+	id S1753304Ab0KFTEw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 15:04:52 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:49893 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753056Ab0KFTEv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 15:04:53 -0400
-Date: Sat, 6 Nov 2010 15:04:50 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Christoph Hellwig <hch@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: nfsd changes for 2.6.37
-Message-ID: <20101106190450.GC15850@infradead.org>
-References: <20101026164549.GD19445@fieldses.org>
- <20101027083924.GA28129@infradead.org>
- <20101027133924.GB6328@fieldses.org>
- <201010271546.09036.arnd@arndb.de>
- <20101027145538.GC6328@fieldses.org>
- <20101027145929.GA5788@infradead.org>
- <20101030212500.GE480@fieldses.org>
- <20101031123419.GA4491@infradead.org>
- <20101101150214.GA27029@fieldses.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101101150214.GA27029@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sat, 6 Nov 2010 15:04:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=JUC5k2nvGdfh0ERu4Y/IkyXoNtxtDIkQlXjDqYbZ7uVZSR1xUp35Rh/tfHKbSAHF2V
+         qf6ZhbDJzstbyFzmpx+1mdzZCHOU4KamuTsxEZM8tGasB6tIgof10I89/xdn4mESnIFb
+         mL/c09BO0wF3RP89ttPUvbj/FMOJFacfnkQPI=
+From: Tracey Dent <tdent48227@gmail.com>
+To: mchehab@redhat.com
+Cc: linux-kernel@vger.kernel.org, borislav.petkov@amd.com,
+        Tracey Dent <tdent48227@gmail.com>
+Subject: [PATCH] Drivers: edac: Makfile: Cleaned up Makefile
+Date: Sat,  6 Nov 2010 15:05:07 -0400
+Message-Id: <1289070307-2563-1-git-send-email-tdent48227@gmail.com>
+X-Mailer: git-send-email 1.7.3.2.146.gca209
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Btw, the nfsd delegation code still has a few comments referring to the
-BKL.  This should probably be cleaned up:
+Changed Makefile to use <modules>-y instead of <modules>-objs.
 
-fs/nfsd/nfs4state.c: * Called from break_lease() with lock_kernel() held.
-fs/nfsd/nfs4state.c:    /* only place dl_time is set. protected by lock_kernel*/
-fs/nfsd/nfs4state.c: * Called by locks_free_lock() with lock_kernel() held.
-fs/nfsd/nfs4state.c: * Called from setlease() with lock_kernel() held
+Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+---
+ drivers/edac/Makefile |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/edac/Makefile b/drivers/edac/Makefile
+index b378139..9b53eda 100644
+--- a/drivers/edac/Makefile
++++ b/drivers/edac/Makefile
+@@ -10,16 +10,16 @@ obj-$(CONFIG_EDAC)			:= edac_stub.o
+ obj-$(CONFIG_EDAC_MM_EDAC)		+= edac_core.o
+ obj-$(CONFIG_EDAC_MCE)			+= edac_mce.o
+ 
+-edac_core-objs	:= edac_mc.o edac_device.o edac_mc_sysfs.o edac_pci_sysfs.o
+-edac_core-objs	+= edac_module.o edac_device_sysfs.o
++edac_core-y	:= edac_mc.o edac_device.o edac_mc_sysfs.o edac_pci_sysfs.o
++edac_core-y	+= edac_module.o edac_device_sysfs.o
+ 
+ ifdef CONFIG_PCI
+-edac_core-objs	+= edac_pci.o edac_pci_sysfs.o
++edac_core-y	+= edac_pci.o edac_pci_sysfs.o
+ endif
+ 
+ obj-$(CONFIG_EDAC_MCE_INJ)		+= mce_amd_inj.o
+ 
+-edac_mce_amd-objs			:= mce_amd.o
++edac_mce_amd-y			:= mce_amd.o
+ obj-$(CONFIG_EDAC_DECODE_MCE)		+= edac_mce_amd.o
+ 
+ obj-$(CONFIG_EDAC_AMD76X)		+= amd76x_edac.o
+-- 
+1.7.3.1.104.gc752e
 
