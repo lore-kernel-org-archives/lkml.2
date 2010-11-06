@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244Ab0KFGCr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 02:02:47 -0400
-Received: from web31812.mail.mud.yahoo.com ([68.142.207.75]:44491 "HELO
-	web31812.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752961Ab0KFGCp (ORCPT
+	id S1753554Ab0KFGs0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 02:48:26 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:60941 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753305Ab0KFGsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 02:02:45 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
-  b=hsWQ66HtTQvvjoGybaWXh4E0ZeCxTmRVPxeQYBN2/JDELJFbqKQ8y7Q6Do0eXux5CNEJrElrUd4Z9d9BL95ezw1G9qjxAfn600GF2JOeWKzy/ehia/0e85mcpCX5RFU7r0lXUacxL4Zv+nNabZGTKRbDJQUe4nKo8cLSO6kr3U8=;
-Message-ID: <380694.87733.qm@web31812.mail.mud.yahoo.com>
-X-YMail-OSG: jUQMrxcVM1lCfSvviZAXkX5..3rsxGS.Yxy3Q2miHq8.Nsy
- uLbxQGWn.4hIFjfSu1BVN3CRd0kV6APV_2Yrey.7H9KsjPiL6l3TJHyecC0S
- _rWbEjq7Rki2ohXnfKKFr6.mR6X_yNt4xPrv_Xz8BLpkaUq1asb99puBVOjo
- oleCH0KRDzYqk6QuyzzJJ.eCsqacvpd9S3cGdEcq.Mzo14MMeYJUAQiIhXjo
- c46PCcndFV62vntBg2jg4IAj0F7jt1zMaIQ4wYBhizJ9ixHnKTYPxzsosIFZ
- AG0LK_NLQ3dUmzk4IUID_jfb.qEeJWh6gwXaduHe4KNpEqitxmNmqBsk-
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.285259
-Date: Fri, 5 Nov 2010 23:02:43 -0700 (PDT)
-From: Luben Tuikov <ltuikov@yahoo.com>
-Reply-To: ltuikov@yahoo.com
-Subject: SCSI TMF processing; tag allocation
-To: Greg KH <greg@kroah.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tj@kernel.org, jens.axboe@oracle.com,
-        James.Bottomley@suse.de
+	Sat, 6 Nov 2010 02:48:23 -0400
+Date: Fri, 5 Nov 2010 23:48:13 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Nathan Lynch <ntl@pobox.com>
+Cc: Tejun Heo <tj@kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Oren Laadan <orenl@cs.columbia.edu>,
+        ksummit-2010-discuss@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, kapil@ccs.neu.edu, gene@ccs.neu.edu
+Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
+Message-ID: <20101106064813.GC11535@count0.beaverton.ibm.com>
+References: <Pine.LNX.4.64.1011021530470.12128@takamine.ncl.cs.columbia.edu>
+ <4CD08419.5050803@kernel.org>
+ <20101102214706.GA28593@lst.de>
+ <1288835258.6132.56.camel@tp-t61>
+ <4CD26270.5050906@kernel.org>
+ <1288903537.2897.28.camel@tp-t61>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288903537.2897.28.camel@tp-t61>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is the following scenario:
+On Thu, Nov 04, 2010 at 03:45:37PM -0500, Nathan Lynch wrote:
+> On Thu, 2010-11-04 at 08:36 +0100, Tejun Heo wrote:
+> > Hello,
+> > 
+> > On 11/04/2010 02:47 AM, Nathan Lynch wrote:
+> > >>   In this case whitelisting the allowed
+> > >> state by requiring special APIs for all I/O (or even just standard
+> > >> APIs as long as they are supposed by the C/R lib you're linked against)
+> > >> is the more pragmatic, and I think faithful aproach.
+> > > 
+> > > I don't think users will go for it.  They'll continue to use dodgy
+> > > out-of-tree kernel modules and/or LD_PRELOAD hacks instead of porting
+> > > their applications to a new library.  I think a C/R library is an
+> > > "ideal" solution, but it's one that nobody would use - especially in
+> > > HPC, unless the library somehow provides better performance.
+> > 
+> > I hear that there are plans to integrate one of the userland
+> > snapshotting implementations with HPC workload manager.  ISTR the
+> > combination to be condor + dmtcp but not sure.  I think things like
+> > that make a lot of sense.
+> 
+> If you look at the C/R implementations of those two projects you'll see
+> that they don't implement what I take to be hch's suggestion - a library
+> or platform with special-purpose APIs to which applications are ported
+> in order to gain C/R ability.  For all their good points, the projects
 
-Tags 2, 3, ..., X are pending in the device, NOT necessarily submitted in that order (this is the "task set").
+And even if they did, I don't think asking application developers to use
+such a broad API -- one that requires special APIs for all I/O -- is
+practical for many of the purposes outlined at kernel summit.
+I think DMTCP is better off for not attempting to mandate such APIs.
 
-Tag 8 times out and is aborted via TMF ABORT TASK. Immediately the device returns okay and the driver says to SCSI core that all is well.
+How rare is it for an application or library to change the underlying
+APIs it uses? How many applications have been ported say from Gnome to
+KDE (or vice-versa) over the lifetime of the project? Relative to all
+the other applications? I would hazard a guess that most were rewritten
+rather than ported and that those that were ported are an utterly
+insignificant fraction of what's out there.
 
-SCSI Core sends TUR immediately, reusing the tag, tag 8.
+It's much better to offer tools that, as much as possible, don't care
+which APIs the applications use.
 
-Then the rest of the commands that were pending in the task set complete with success (2, 3, ..., X, and 8), in the order they were submitted, since tasks 2 to X are I/O commands and 8 being TUR has no implicit HEAD OF QUEUE it completes last with success. Now the device task set is empty. Those commands are completed okay with the Linux device driver with SCSI Core (meaning done() were called, result is 0).
-
-SCSI Core though, continues to abort the rest of the task set, tags 2, ..., X. The device says okay, since they are not in its task set. So SCSI Core's error "handling" routine, sends ABORT TASK for TAG 3. *BUT* since tag 3 is free, immediately after the TMF, we see TUR with, guess what, tag 3, since as far as SCSI/Block layer are concerned, tag 3 is free
-(bitmap in the block layer).
-
-Sure enough, the device receives both, back to back: first the ABORT TASK
-TMF with tag of task to be managed (TTBM) of 3, and then it receives TUR
-with tag of 3. Sure enough the device aborts the TUR.
-
-TUR times out with SCSI Core/block layer and we see SCSI Core tries to
-abort it again, by sending another ABORT TASK TMF with TTBM of 3, that of
-the TUR.
-
-At the same time error handling goes on and sends ABORT TASK TMF for the rest of the commands in the task set and at the end sends LU RESET and I_T Nexus reset (well, the driver that is, but nevertheless).
-
-There are several issues here involving people at various layers (not in any/priority order):
-
-First, SCSI Core should probably send ABORT TASK SET. Sending ABORT TASK for each task at the device is also okay, but adds transport overhead.
-
-Second, SCSI Core should not send ABORT TASK for a completed task. Sure, the device will reply with FUNCTION COMPLETE either way, but in the
-aforementioned case the task server aborts a command which wasn't
-intended to be aborted (and since the tag was reused--see below). That is,
-if the command is in the "eh" queue, and is completed, don't send ABORT
-TASK for it.
-
-Third, and most importantly, tags should form an increasing sequence and should not be reused until all other tags after it and before it have been reused. This for example can be accomplished if one were to use
-find_next_zero_bit() with non-zero "offset", it being the last allocated
-tag in a modulo the number of tags manner. That is, find_next_zero_bit()
-could wrap as well as starting from an offset or the caller could implement
-that via two calls to this function, in blk_queue_start_tag().
-
-Forth, transport protocols need tags for other purposes than just sending
-I/O commands, for example sending task management functions. LLDDs should
-be given callbacks to allocate a free tag, only if #3 above is implemented.
-
-Fifth, all commands that enter queuecommand() should be tagged, regardless
-of whether the device supports tags and how many. At the moment, this
-isn't so, and transports are forced to reserve the first tag the
-transport supports for non-tagged commands and the rest for tagged
-commands. For example INQUIRY coming untagged (tag 0), and then
-READ coming with tag 0 (tagged). This adds additional work for LLDDs to
-check whether the "request" is tagged or not and assign it a tag if
-it is not, or offset the tag if it is tagged with the offset reserved
-for untagged tasks (normally just one).
-
-    Luben
-
+Cheers,
+	-Matt Helsley
