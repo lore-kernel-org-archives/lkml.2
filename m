@@ -1,57 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab0KFTeX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 15:34:23 -0400
-Received: from snt0-omc1-s41.snt0.hotmail.com ([65.54.61.78]:26176 "EHLO
-	snt0-omc1-s41.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751283Ab0KFTeX convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 15:34:23 -0400
-X-Greylist: delayed 368 seconds by postgrey-1.27 at vger.kernel.org; Sat, 06 Nov 2010 15:34:22 EDT
-Message-ID: <SNT127-W65587F1714D03CB57D611DE64D0@phx.gbl>
-X-Originating-IP: [78.23.102.215]
-From: Nico <segfault2@hotmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: AGP Aperture question
-Date: Sat, 6 Nov 2010 20:28:13 +0100
-Importance: Normal
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1753220Ab0KFTfC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 15:35:02 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:49569 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751696Ab0KFTfA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Nov 2010 15:35:00 -0400
+Date: Sat, 6 Nov 2010 15:34:56 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Joe Korty <joe.korty@ccur.com>, fweisbec@gmail.com, dhowells@redhat.com,
+        loic.minier@linaro.org, dhaval.giani@gmail.com, tglx@linutronix.de,
+        peterz@infradead.org, linux-kernel@vger.kernel.org,
+        josh@joshtriplett.org
+Subject: Re: [PATCH] a local-timer-free version of RCU
+Message-ID: <20101106193456.GA14197@Krystal>
+References: <20101104232148.GA28037@linux.vnet.ibm.com> <20101105210059.GA27317@tsunami.ccur.com> <20101106192812.GI15561@linux.vnet.ibm.com>
 MIME-Version: 1.0
-X-OriginalArrivalTime: 06 Nov 2010 19:28:13.0206 (UTC) FILETIME=[C0E13360:01CB7DE8]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101106192812.GI15561@linux.vnet.ibm.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 15:32:50 up 44 days, 23:35,  5 users,  load average: 0.21, 0.20,
+	0.14
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> On Fri, Nov 05, 2010 at 05:00:59PM -0400, Joe Korty wrote:
+[...]
+> > + *
+> > + * RCU read-side critical sections may be nested.  Any deferred actions
+> > + * will be deferred until the outermost RCU read-side critical section
+> > + * completes.
+> > + *
+> > + * It is illegal to block while in an RCU read-side critical section.
+> > + */
+> > +void __rcu_read_lock(void)
+> > +{
+> > +	struct rcu_data *r;
+> > +
+> > +	r = &per_cpu(rcu_data, smp_processor_id());
+> > +	if (r->nest_count++ == 0)
+> > +		/*
+> > +		 * Set the flags value to show that we are in
+> > +		 * a read side critical section.  The code starting
+> > +		 * a batch uses this to determine if a processor
+> > +		 * needs to participate in the batch.  Including
+> > +		 * a sequence allows the remote processor to tell
+> > +		 * that a critical section has completed and another
+> > +		 * has begun.
+> > +		 */
+> > +		r->flags = IN_RCU_READ_LOCK | (r->sequence++ << 2);
+> 
+> It seems to me that we need a memory barrier here -- what am I missing?
 
+Agreed, I spotted it too. One more is needed, see below,
 
+> 
+> > +}
+> > +EXPORT_SYMBOL(__rcu_read_lock);
+> > +
+> > +/**
+> > + * rcu_read_unlock - marks the end of an RCU read-side critical section.
+> > + * Check if a RCU batch was started while we were in the critical
+> > + * section.  If so, call rcu_quiescent() join the rendezvous.
+> > + *
+> > + * See rcu_read_lock() for more information.
+> > + */
+> > +void __rcu_read_unlock(void)
+> > +{
+> > +	struct rcu_data *r;
+> > +	int	cpu, flags;
+> > +
 
+Another memory barrier would be needed here to ensure that the memory accesses
+performed within the C.S. are not reordered wrt nest_count decrement.
 
+> > +	cpu = smp_processor_id();
+> > +	r = &per_cpu(rcu_data, cpu);
+> > +	if (--r->nest_count == 0) {
+> > +		flags = xchg(&r->flags, 0);
+> > +		if (flags & DO_RCU_COMPLETION)
+> > +			rcu_quiescent(cpu);
+> > +	}
+> > +}
+> > +EXPORT_SYMBOL(__rcu_read_unlock);
 
-Hi,
+Thanks,
 
-I just assembled a new machine here based on an MSI 770-C45 mobo with an Phenom II X4 955 CPU. Everything is running flawlessly (on 2.6.36), after fiddling a bit with my old disks, but today after going through the dmesg, I noticed the following which got me curious and would also like to know if I should worry about it or of it has any bad impact on something...
+Mathieu
 
-Checking aperture...
-No AGP bridge found
-Node 0: aperture @ 20000000 size 32 MB
-Aperture pointing to e820 RAM. Ignoring.
-Your BIOS doesn't leave a aperture memory hole
-Please enable the IOMMU option in the BIOS setup
-This costs you 64 MB of RAM
-Mapping aperture over 65536 KB of RAM @ 20000000
-
-
-and later on in dmesg, I see the following...
-
-PCI-DMA: Disabling AGP.
-PCI-DMA: aperture base @ 20000000 size 65536 KB
-PCI-DMA: using GART IOMMU.
-PCI-DMA: Reserving 64MB of IOMMU area in the AGP aperture
-
-I looked in my BIOS settings but couldn't find anything about Aperture or IOMMU. There's no such option at all in there. So, is the above something to be concerned about? Does it have any negative impact on the system?
-
-Please CC me as I'm not subbed to the list :)
-
-Thanks
- 		 	   		  
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
