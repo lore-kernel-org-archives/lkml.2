@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab0KFQY3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 12:24:29 -0400
-Received: from pfepa.post.tele.dk ([195.41.46.235]:42079 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754788Ab0KFQY2 (ORCPT
+	id S1755410Ab0KFQZF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 12:25:05 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:52739 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754788Ab0KFQZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 12:24:28 -0400
-Date: Sat, 6 Nov 2010 17:24:26 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Ben Gamari <bgamari.foss@gmail.com>
-Cc: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Christoph Egger <siccegge@cs.fau.de>, linux-kernel@vger.kernel.org,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Michal Marek <mmarek@suse.cz>
-Subject: Re: Bus error on make allyesconfig, kernelbuild with HEAD
-Message-ID: <20101106162426.GA14361@merkur.ravnborg.org>
-References: <20100729105225.GA13192@faui48a.informatik.uni-erlangen.de> <AANLkTi=cYgV69VyNZ+TKs_f-+3AJmyo_RaYS57R72j50@mail.gmail.com> <20100729121002.GC13192@faui48a.informatik.uni-erlangen.de> <20100730084353.GB5638@cr0.nay.redhat.com> <87d3qicwxn.fsf@gmail.com> <87aalmcv0p.fsf@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <87aalmcv0p.fsf@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Sat, 6 Nov 2010 12:25:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=vrxRijODXVwIX6xvcBl1AMbRlJVxGJPivr0Oe/mrS0wNgJeSoYiHrz8dNkIgapZEY3
+         qYJ4iFR7+GWdHjRQ09Hhzoi3AEQ8spmVXNygahRM2zji8pituej9vZuSjVG82D/PL3GW
+         YQ32lKhUWdt2/nlJESB77V912pYBk421/mls4=
+From: Johan Meiring <johanmeiring@gmail.com>
+To: gregkh@suse.de, greg@kroah.com, johanmeiring@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org, sjakub@gmail.com
+Subject: [PATCH 6/6] Staging: asus_oled: fix coding style issue in asus_oled.c
+Date: Sat,  6 Nov 2010 18:24:46 +0200
+Message-Id: <1289060686-13904-1-git-send-email-johanmeiring@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 06, 2010 at 11:49:10AM -0400, Ben Gamari wrote:
-> On Sat, 06 Nov 2010 11:07:48 -0400, Ben Gamari <bgamari.foss@gmail.com> wrote:
-> > On Fri, 30 Jul 2010 16:43:53 +0800, Américo Wang <xiyou.wangcong@gmail.com> wrote:
-> > > This is useful. :) Looks like parse_dep_file() accesses out of
-> > > the mmap'ed memory range...
-> > > 
-> > Did anything ever happen with this? I seem to be experiencing similar
-> > issues while cross-compiling for ARM on x86-64. All tested kernels
-> > (v2.6.35 to master) fail with,
+This is a patch to the asus_oled.c file that fixes up brace and enum warning found by the checkpatch.pl tool
 
-Too k a quick look.
-Does the following patch fix it?
+Signed-off-by: Johan Meiring <johanmeiring@gmail.com>
+---
+ drivers/staging/asus_oled/asus_oled.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-if m == p then we will stay in the while look looking for a space.
-I did not audit all of the code - there may be other issues..
-
-	Sam
-
-diff --git a/scripts/basic/fixdep.c b/scripts/basic/fixdep.c
-index ea26b23..f472ada 100644
---- a/scripts/basic/fixdep.c
-+++ b/scripts/basic/fixdep.c
-@@ -318,7 +318,7 @@ static void parse_dep_file(void *map, size_t len)
- 		while (m < end && (*m == ' ' || *m == '\\' || *m == '\n'))
- 			m++;
- 		p = m;
--		while (p < end && *p != ' ') p++;
-+		while (p <= end && *p != ' ') p++;
- 		if (p == end) {
- 			do p--; while (!isalnum(*p));
- 			p++;
+diff --git a/drivers/staging/asus_oled/asus_oled.c b/drivers/staging/asus_oled/asus_oled.c
+index 8c95d8c..1dda9fb 100644
+--- a/drivers/staging/asus_oled/asus_oled.c
++++ b/drivers/staging/asus_oled/asus_oled.c
+@@ -70,7 +70,7 @@ module_param(start_off, uint, 0644);
+ MODULE_PARM_DESC(start_off,
+ 		 "Set to 1 to switch off OLED display after it is attached");
+ 
+-enum oled_pack_mode{
++enum oled_pack_mode {
+ 	PACK_MODE_G1,
+ 	PACK_MODE_G50,
+ 	PACK_MODE_LAST
+-- 
+1.7.1
 
