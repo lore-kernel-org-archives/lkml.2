@@ -1,103 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220Ab0KFTfC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 15:35:02 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:49569 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751696Ab0KFTfA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 15:35:00 -0400
-Date: Sat, 6 Nov 2010 15:34:56 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Joe Korty <joe.korty@ccur.com>, fweisbec@gmail.com, dhowells@redhat.com,
-        loic.minier@linaro.org, dhaval.giani@gmail.com, tglx@linutronix.de,
-        peterz@infradead.org, linux-kernel@vger.kernel.org,
-        josh@joshtriplett.org
-Subject: Re: [PATCH] a local-timer-free version of RCU
-Message-ID: <20101106193456.GA14197@Krystal>
-References: <20101104232148.GA28037@linux.vnet.ibm.com> <20101105210059.GA27317@tsunami.ccur.com> <20101106192812.GI15561@linux.vnet.ibm.com>
+	id S1753183Ab0KFTke (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 15:40:34 -0400
+Received: from mga11.intel.com ([192.55.52.93]:54408 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752210Ab0KFTkd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Nov 2010 15:40:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,308,1286175600"; 
+   d="scan'208";a="624186692"
+Message-ID: <4CD5AF26.3010202@intel.com>
+Date: Sat, 06 Nov 2010 12:40:22 -0700
+From: Dan Williams <dan.j.williams@intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101106192812.GI15561@linux.vnet.ibm.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 15:32:50 up 44 days, 23:35,  5 users,  load average: 0.21, 0.20,
-	0.14
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Tracey Dent <tdent48227@gmail.com>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "agust@denx.de" <agust@denx.de>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>
+Subject: Re: [PATCH 1/2] Drivers: dma: Makefile: Cleaned up Makefile
+References: <1289070217-2513-1-git-send-email-tdent48227@gmail.com>
+In-Reply-To: <1289070217-2513-1-git-send-email-tdent48227@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> On Fri, Nov 05, 2010 at 05:00:59PM -0400, Joe Korty wrote:
-[...]
-> > + *
-> > + * RCU read-side critical sections may be nested.  Any deferred actions
-> > + * will be deferred until the outermost RCU read-side critical section
-> > + * completes.
-> > + *
-> > + * It is illegal to block while in an RCU read-side critical section.
-> > + */
-> > +void __rcu_read_lock(void)
-> > +{
-> > +	struct rcu_data *r;
-> > +
-> > +	r = &per_cpu(rcu_data, smp_processor_id());
-> > +	if (r->nest_count++ == 0)
-> > +		/*
-> > +		 * Set the flags value to show that we are in
-> > +		 * a read side critical section.  The code starting
-> > +		 * a batch uses this to determine if a processor
-> > +		 * needs to participate in the batch.  Including
-> > +		 * a sequence allows the remote processor to tell
-> > +		 * that a critical section has completed and another
-> > +		 * has begun.
-> > +		 */
-> > +		r->flags = IN_RCU_READ_LOCK | (r->sequence++ << 2);
-> 
-> It seems to me that we need a memory barrier here -- what am I missing?
+On 11/06/2010 12:03 PM, Tracey Dent wrote:
+> Use the ccflag-y instead of EXTRA_CFLAGS.
 
-Agreed, I spotted it too. One more is needed, see below,
+Thanks for the patch.
 
-> 
-> > +}
-> > +EXPORT_SYMBOL(__rcu_read_lock);
-> > +
-> > +/**
-> > + * rcu_read_unlock - marks the end of an RCU read-side critical section.
-> > + * Check if a RCU batch was started while we were in the critical
-> > + * section.  If so, call rcu_quiescent() join the rendezvous.
-> > + *
-> > + * See rcu_read_lock() for more information.
-> > + */
-> > +void __rcu_read_unlock(void)
-> > +{
-> > +	struct rcu_data *r;
-> > +	int	cpu, flags;
-> > +
+Please make the subject line: "drivers/dma/: Use the ccflag-y instead of 
+EXTRA_CFLAGS", and the description say why it is preferable to use 
+ccflag-y over EXTRA_CFLAGS.
 
-Another memory barrier would be needed here to ensure that the memory accesses
-performed within the C.S. are not reordered wrt nest_count decrement.
+That would make easy for me to judge why I should apply this.
 
-> > +	cpu = smp_processor_id();
-> > +	r = &per_cpu(rcu_data, cpu);
-> > +	if (--r->nest_count == 0) {
-> > +		flags = xchg(&r->flags, 0);
-> > +		if (flags & DO_RCU_COMPLETION)
-> > +			rcu_quiescent(cpu);
-> > +	}
-> > +}
-> > +EXPORT_SYMBOL(__rcu_read_unlock);
+Ditto for [PATCH 2/2]
 
-Thanks,
+--
+Dan
 
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
