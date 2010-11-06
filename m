@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304Ab0KFTEw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 15:04:52 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:49893 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753056Ab0KFTEv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 15:04:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=JUC5k2nvGdfh0ERu4Y/IkyXoNtxtDIkQlXjDqYbZ7uVZSR1xUp35Rh/tfHKbSAHF2V
-         qf6ZhbDJzstbyFzmpx+1mdzZCHOU4KamuTsxEZM8tGasB6tIgof10I89/xdn4mESnIFb
-         mL/c09BO0wF3RP89ttPUvbj/FMOJFacfnkQPI=
-From: Tracey Dent <tdent48227@gmail.com>
-To: mchehab@redhat.com
-Cc: linux-kernel@vger.kernel.org, borislav.petkov@amd.com,
-        Tracey Dent <tdent48227@gmail.com>
-Subject: [PATCH] Drivers: edac: Makfile: Cleaned up Makefile
-Date: Sat,  6 Nov 2010 15:05:07 -0400
-Message-Id: <1289070307-2563-1-git-send-email-tdent48227@gmail.com>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
+	id S1753401Ab0KFTFd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 15:05:33 -0400
+Received: from mail.asbjorn.biz ([217.195.185.3]:45602 "EHLO mail.asbjorn.biz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752910Ab0KFTFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Nov 2010 15:05:32 -0400
+From: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        debian-kernel@lists.debian.org
+Subject: [PATCH] kbuild, deb-pkg: support overriding userland architecture
+Date: Sat,  6 Nov 2010 19:05:20 +0000
+Message-Id: <1289070320-20726-1-git-send-email-asbjorn@asbjorn.biz>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <4CD5A6C8.8030603@asbjorn.biz>
+References: <4CD5A6C8.8030603@asbjorn.biz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changed Makefile to use <modules>-y instead of <modules>-objs.
+Usefull if building for sparc64 userland, because the
+sparc and sparc64 userlands use the same 64-bit kernel,
+making it impossible to always select the correct userland
+architecture for the resulting debian package.
 
-Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+Might also be usefull, if you want a i386 userland with a amd64 kernel.
+
+Example usage:
+	make DEBARCH=i386 deb-pkg
+
+This patch is based on my 'kbuild, deb-pkg: select
+userland architecture based on UTS_MACHINE' patch.
+
+LKML-reference: <alpine.DEB.2.02.1011051437500.13287@aurora.sdinet.de>
+Signed-off-by: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
 ---
- drivers/edac/Makefile |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ scripts/package/builddeb |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/edac/Makefile b/drivers/edac/Makefile
-index b378139..9b53eda 100644
---- a/drivers/edac/Makefile
-+++ b/drivers/edac/Makefile
-@@ -10,16 +10,16 @@ obj-$(CONFIG_EDAC)			:= edac_stub.o
- obj-$(CONFIG_EDAC_MM_EDAC)		+= edac_core.o
- obj-$(CONFIG_EDAC_MCE)			+= edac_mce.o
- 
--edac_core-objs	:= edac_mc.o edac_device.o edac_mc_sysfs.o edac_pci_sysfs.o
--edac_core-objs	+= edac_module.o edac_device_sysfs.o
-+edac_core-y	:= edac_mc.o edac_device.o edac_mc_sysfs.o edac_pci_sysfs.o
-+edac_core-y	+= edac_module.o edac_device_sysfs.o
- 
- ifdef CONFIG_PCI
--edac_core-objs	+= edac_pci.o edac_pci_sysfs.o
-+edac_core-y	+= edac_pci.o edac_pci_sysfs.o
- endif
- 
- obj-$(CONFIG_EDAC_MCE_INJ)		+= mce_amd_inj.o
- 
--edac_mce_amd-objs			:= mce_amd.o
-+edac_mce_amd-y			:= mce_amd.o
- obj-$(CONFIG_EDAC_DECODE_MCE)		+= edac_mce_amd.o
- 
- obj-$(CONFIG_EDAC_AMD76X)		+= amd76x_edac.o
+diff --git a/scripts/package/builddeb b/scripts/package/builddeb
+index 0043ccd..4772a73 100644
+--- a/scripts/package/builddeb
++++ b/scripts/package/builddeb
+@@ -54,6 +54,9 @@ create_package() {
+ 		echo "Please add support for $UTS_MACHINE to ${0} ..." >&2
+ 		echo "" >&2
+ 	esac
++	if [ -n "$DEBARCH" ] ; then
++		debarch="$DEBARCH"
++	fi
+ 	if [ -n "$debarch" ] ; then
+ 		forcearch="-DArchitecture=$debarch"
+ 	fi
 -- 
-1.7.3.1.104.gc752e
+1.7.2.3
 
