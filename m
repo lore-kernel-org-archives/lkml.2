@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256Ab0KFAm7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Nov 2010 20:42:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2031 "EHLO mx1.redhat.com"
+	id S1755288Ab0KFArv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Nov 2010 20:47:51 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:47808 "EHLO isrv.corpit.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753554Ab0KFAm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Nov 2010 20:42:57 -0400
-Date: Fri, 5 Nov 2010 22:40:12 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm <kvm@vger.kernel.org>
-Subject: [GIT PULL] KVM updates for 2.6.37-rc1
-Message-ID: <20101106004012.GA3647@amt.cnet>
+	id S1755192Ab0KFArt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Nov 2010 20:47:49 -0400
+Message-ID: <4CD4A5B4.5090204@msgid.tls.msk.ru>
+Date: Sat, 06 Nov 2010 03:47:48 +0300
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.12) Gecko/20100913 Icedove/3.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
+CC: Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Detecting bind-mounts
+References: <4CD31B6A.7040902@msgid.tls.msk.ru> <4CD3DB5D.5040808@draigBrady.com> <4CD44D60.5050105@msgid.tls.msk.ru> <4CD46953.1010902@msgid.tls.msk.ru> <4CD4A231.1010000@draigBrady.com>
+In-Reply-To: <4CD4A231.1010000@draigBrady.com>
+X-Enigmail-Version: 1.0.1
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+06.11.2010 03:32, Pádraig Brady wrote:
+[]
+> As for a fast way, I don't think one exists.
+> BTW I'm not sure your examples are actually valid.
+> If a file/dir is bind mounted to the same file system, then
+> `find -xdev` should be listing it (as it has the same dev).
 
-Linus, please pull from
+Think what, say, cp or tar with --one-file-system option are
+used for.  It is usually to copy a system to another place.
+There, we only want single copy of everything, and with current
+situation it will be two, with additional mess with hardlinks
+for files wich were hardlinks already (due to optimizations
+done by the utils based on link counts).
 
-    git://git.kernel.org/pub/scm/virt/kvm/kvm.git kvm-updates/2.6.37
+find -xdev is a bit different since it explicitly mentions
+"dev", and in my examples the device is actually the same.
+But usage case can be the same as for cp/tar above too, or
+may be different.
 
-To receive the following updates:
+> You want a separate option --same-mount or something,
+> though I don't know what it would be useful for.
 
-Jan Kiszka (1):
-      KVM: x86: Issue smp_call_function_many with preemption disabled
+Stopping at the bind-mount dir definitely is useful, see
+above for the "main" (and very important) usage case (this
+can be solved differently on linux too - by cloning a new
+namespace and removing the bind mounts before doing that
+copy. but this is, again, ugly at best).
 
-Marcelo Tosatti (1):
-      KVM: MMU: fix rmap_remove on non present sptes
+Note that this "main" usage case requires fast way to
+determine mount points...
 
-Michael S. Tsirkin (1):
-      KVM: Write protect memory after slot swap
-
-Scott Wood (4):
-      PPC: KVM: Book E doesn't have __end_interrupts.
-      KVM: PPC: e500: Call kvm_vcpu_uninit() before kvmppc_e500_tlb_uninit().
-      KVM: PPC: BookE: fix sleep with interrupts disabled
-      KVM: PPC: BookE: Load the lower half of MSR
-
-Vasiliy Kulikov (2):
-      KVM: PPC: fix information leak to userland
-      KVM: x86: fix information leak to userland
-
-
- arch/powerpc/kernel/kvm.c           |    2 +-
- arch/powerpc/kvm/booke_interrupts.S |    2 +-
- arch/powerpc/kvm/e500.c             |    2 +-
- arch/powerpc/kvm/powerpc.c          |    1 +
- arch/powerpc/kvm/timing.c           |    2 --
- arch/x86/kvm/mmu.c                  |    9 +++++----
- arch/x86/kvm/x86.c                  |   16 ++++++++++++----
- 7 files changed, 21 insertions(+), 13 deletions(-)
-
-
+/mjt
