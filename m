@@ -1,48 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989Ab0KFFva (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 01:51:30 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:52006 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752311Ab0KFFv2 (ORCPT
+	id S1753244Ab0KFGCr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 02:02:47 -0400
+Received: from web31812.mail.mud.yahoo.com ([68.142.207.75]:44491 "HELO
+	web31812.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752961Ab0KFGCp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 01:51:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=awpywhAI4G7Q6Fd4IwwirgPr7f0uihb8pz7uGk07a6w1cFAShZS35sAjniematI/SD
-         IzwPDoS5Ie/3dpR89pNdeVmEKTy8a6ek37qXOjOAPkdmqhkXzamJb9fBa953mt3VPB1C
-         VSXHa2Qks4CLcb5AJHE5876b+CsdQmrXYZ41o=
+	Sat, 6 Nov 2010 02:02:45 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
+  b=hsWQ66HtTQvvjoGybaWXh4E0ZeCxTmRVPxeQYBN2/JDELJFbqKQ8y7Q6Do0eXux5CNEJrElrUd4Z9d9BL95ezw1G9qjxAfn600GF2JOeWKzy/ehia/0e85mcpCX5RFU7r0lXUacxL4Zv+nNabZGTKRbDJQUe4nKo8cLSO6kr3U8=;
+Message-ID: <380694.87733.qm@web31812.mail.mud.yahoo.com>
+X-YMail-OSG: jUQMrxcVM1lCfSvviZAXkX5..3rsxGS.Yxy3Q2miHq8.Nsy
+ uLbxQGWn.4hIFjfSu1BVN3CRd0kV6APV_2Yrey.7H9KsjPiL6l3TJHyecC0S
+ _rWbEjq7Rki2ohXnfKKFr6.mR6X_yNt4xPrv_Xz8BLpkaUq1asb99puBVOjo
+ oleCH0KRDzYqk6QuyzzJJ.eCsqacvpd9S3cGdEcq.Mzo14MMeYJUAQiIhXjo
+ c46PCcndFV62vntBg2jg4IAj0F7jt1zMaIQ4wYBhizJ9ixHnKTYPxzsosIFZ
+ AG0LK_NLQ3dUmzk4IUID_jfb.qEeJWh6gwXaduHe4KNpEqitxmNmqBsk-
+X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.285259
+Date: Fri, 5 Nov 2010 23:02:43 -0700 (PDT)
+From: Luben Tuikov <ltuikov@yahoo.com>
+Reply-To: ltuikov@yahoo.com
+Subject: SCSI TMF processing; tag allocation
+To: Greg KH <greg@kroah.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tj@kernel.org, jens.axboe@oracle.com,
+        James.Bottomley@suse.de
 MIME-Version: 1.0
-In-Reply-To: <20101106050721.GA2194@kroah.com>
-References: <AANLkTinOeby9P847gJFn_t0h5nDY7cfi3cW9hEaUrS1v@mail.gmail.com>
-	<20101106050721.GA2194@kroah.com>
-Date: Fri, 5 Nov 2010 22:51:26 -0700
-Message-ID: <AANLkTinQK_9qp-8jJ5j3-ChUjwhGiGzAmCu5cBtHX75g@mail.gmail.com>
-Subject: Re: [RFC] rbd sysfs interface
-From: Yehuda Sadeh Weinraub <yehudasa@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: ceph-devel@vger.kernel.org, Sage Weil <sage@newdream.net>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 5, 2010 at 10:07 PM, Greg KH <greg@kroah.com> wrote:
-> On Fri, Nov 05, 2010 at 04:09:31PM -0700, Yehuda Sadeh Weinraub wrote:
->>
->> Does this seem sane? Any comments would be greatly appreciated.
->
-> It sounds like you need to use configfs instead of sysfs, as your model
-> was the reason it was created.
->
-> Have you tried that?
+Here is the following scenario:
 
-Oh, will look at it now. With ceph (although for a different purpose)
-we went through proc -> sysfs -> debugfs, however, it seems that we've
-missed at least one userspace-kernel channel.
+Tags 2, 3, ..., X are pending in the device, NOT necessarily submitted in that order (this is the "task set").
 
-Thanks,
-Yehuda
+Tag 8 times out and is aborted via TMF ABORT TASK. Immediately the device returns okay and the driver says to SCSI core that all is well.
+
+SCSI Core sends TUR immediately, reusing the tag, tag 8.
+
+Then the rest of the commands that were pending in the task set complete with success (2, 3, ..., X, and 8), in the order they were submitted, since tasks 2 to X are I/O commands and 8 being TUR has no implicit HEAD OF QUEUE it completes last with success. Now the device task set is empty. Those commands are completed okay with the Linux device driver with SCSI Core (meaning done() were called, result is 0).
+
+SCSI Core though, continues to abort the rest of the task set, tags 2, ..., X. The device says okay, since they are not in its task set. So SCSI Core's error "handling" routine, sends ABORT TASK for TAG 3. *BUT* since tag 3 is free, immediately after the TMF, we see TUR with, guess what, tag 3, since as far as SCSI/Block layer are concerned, tag 3 is free
+(bitmap in the block layer).
+
+Sure enough, the device receives both, back to back: first the ABORT TASK
+TMF with tag of task to be managed (TTBM) of 3, and then it receives TUR
+with tag of 3. Sure enough the device aborts the TUR.
+
+TUR times out with SCSI Core/block layer and we see SCSI Core tries to
+abort it again, by sending another ABORT TASK TMF with TTBM of 3, that of
+the TUR.
+
+At the same time error handling goes on and sends ABORT TASK TMF for the rest of the commands in the task set and at the end sends LU RESET and I_T Nexus reset (well, the driver that is, but nevertheless).
+
+There are several issues here involving people at various layers (not in any/priority order):
+
+First, SCSI Core should probably send ABORT TASK SET. Sending ABORT TASK for each task at the device is also okay, but adds transport overhead.
+
+Second, SCSI Core should not send ABORT TASK for a completed task. Sure, the device will reply with FUNCTION COMPLETE either way, but in the
+aforementioned case the task server aborts a command which wasn't
+intended to be aborted (and since the tag was reused--see below). That is,
+if the command is in the "eh" queue, and is completed, don't send ABORT
+TASK for it.
+
+Third, and most importantly, tags should form an increasing sequence and should not be reused until all other tags after it and before it have been reused. This for example can be accomplished if one were to use
+find_next_zero_bit() with non-zero "offset", it being the last allocated
+tag in a modulo the number of tags manner. That is, find_next_zero_bit()
+could wrap as well as starting from an offset or the caller could implement
+that via two calls to this function, in blk_queue_start_tag().
+
+Forth, transport protocols need tags for other purposes than just sending
+I/O commands, for example sending task management functions. LLDDs should
+be given callbacks to allocate a free tag, only if #3 above is implemented.
+
+Fifth, all commands that enter queuecommand() should be tagged, regardless
+of whether the device supports tags and how many. At the moment, this
+isn't so, and transports are forced to reserve the first tag the
+transport supports for non-tagged commands and the rest for tagged
+commands. For example INQUIRY coming untagged (tag 0), and then
+READ coming with tag 0 (tagged). This adds additional work for LLDDs to
+check whether the "request" is tagged or not and assign it a tag if
+it is not, or offset the tag if it is tagged with the offset reserved
+for untagged tasks (normally just one).
+
+    Luben
+
