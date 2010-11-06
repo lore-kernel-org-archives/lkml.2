@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170Ab0KFTDZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 15:03:25 -0400
+	id S1752985Ab0KFTDX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 15:03:23 -0400
 Received: from mail-iw0-f174.google.com ([209.85.214.174]:58097 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750981Ab0KFTDY (ORCPT
+	with ESMTP id S1750981Ab0KFTDW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 15:03:24 -0400
+	Sat, 6 Nov 2010 15:03:22 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=aUApMGQ6OfUnnChOOum0PuayCjhyXASbB5c3MnTKN7BnvRvSBC9tdx7tzuQpDNU+yF
-         TJcWQB4o5+3wy7rn3cQStnX5nrrzAEOJgWczbNPC0ONVmeK7W2blVCeko0kO7oNEFZw7
-         e3E6Sw2v7Hlq10OM5GKhfXTBgBFuoQz23En5w=
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=hjwjdRZfJ+GIoc0hneI2ORhWM5a5ZToeFlw+skbcmCQWYMesJ2B9hNClQVxgL0L831
+         VMQaHGPkicWh3t3x41oZ988cXQmpE/KuWlDJdf49w8HyLxKTrFsc0M3aRBhrIPjO0BhS
+         YKd+/Ci++q1S7JA+cXn2rm0BBCEuZs+Hh1hZY=
 From: Tracey Dent <tdent48227@gmail.com>
 To: dan.j.williams@intel.com
 Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         s.hauer@pengutronix.de, agust@denx.de, linus.walleij@stericsson.com,
         Tracey Dent <tdent48227@gmail.com>
-Subject: [PATCH 2/2] Drivers: dma: ioat: Makeile: Cleaned up Makefile
-Date: Sat,  6 Nov 2010 15:03:37 -0400
-Message-Id: <1289070217-2513-2-git-send-email-tdent48227@gmail.com>
+Subject: [PATCH 1/2] Drivers: dma: Makefile: Cleaned up Makefile
+Date: Sat,  6 Nov 2010 15:03:36 -0400
+Message-Id: <1289070217-2513-1-git-send-email-tdent48227@gmail.com>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
-In-Reply-To: <1289070217-2513-1-git-send-email-tdent48227@gmail.com>
-References: <1289070217-2513-1-git-send-email-tdent48227@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changed Makefile to use <modules>-y instead of <modules>-objs.
+Use the ccflag-y instead of EXTRA_CFLAGS.
 
 Signed-off-by: Tracey Dent <tdent48227@gmail.com>
 ---
- drivers/dma/ioat/Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/dma/Makefile |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/dma/ioat/Makefile b/drivers/dma/ioat/Makefile
-index 8997d3f..0ff7270 100644
---- a/drivers/dma/ioat/Makefile
-+++ b/drivers/dma/ioat/Makefile
-@@ -1,2 +1,2 @@
- obj-$(CONFIG_INTEL_IOATDMA) += ioatdma.o
--ioatdma-objs := pci.o dma.o dma_v2.o dma_v3.o dca.o
-+ioatdma-y := pci.o dma.o dma_v2.o dma_v3.o dca.o
+diff --git a/drivers/dma/Makefile b/drivers/dma/Makefile
+index a8a84f4..64b21f5 100644
+--- a/drivers/dma/Makefile
++++ b/drivers/dma/Makefile
+@@ -1,8 +1,8 @@
+ ifeq ($(CONFIG_DMADEVICES_DEBUG),y)
+-	EXTRA_CFLAGS	+= -DDEBUG
++	ccflags-y	+= -DDEBUG
+ endif
+ ifeq ($(CONFIG_DMADEVICES_VDEBUG),y)
+-	EXTRA_CFLAGS	+= -DVERBOSE_DEBUG
++	ccflags-y	+= -DVERBOSE_DEBUG
+ endif
+ 
+ obj-$(CONFIG_DMA_ENGINE) += dmaengine.o
 -- 
 1.7.3.1.104.gc752e
 
