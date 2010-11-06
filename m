@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753067Ab0KFTLP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 15:11:15 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33713 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121Ab0KFTLO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 15:11:14 -0400
-Date: Sat, 6 Nov 2010 12:10:42 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: Sanjoy Mahajan <sanjoy@olin.edu>
-Cc: Dave Chinner <david@fromorbit.com>, Jesper Juhl <jj@chaosbits.net>,
-        Chris Mason <chris.mason@oracle.com>, Ingo Molnar <mingo@elte.hu>,
-        Pekka Enberg <penberg@kernel.org>,
-        Aidar Kultayev <the.aidar@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Nick Piggin <npiggin@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
-        "Ted Ts'o" <tytso@mit.edu>, Corrado Zoccolo <czoccolo@gmail.com>,
-        Shaohua Li <shaohua.li@intel.com>, Steven Barrett <damentz@gmail.com>
-Subject: Re: 2.6.36 io bring the system to its knees
-Message-ID: <20101106121042.10b3d96b@infradead.org>
-In-Reply-To: <E1PELiI-0001Pj-8g@approx.mit.edu>
-References: <20101105014334.GF13830@dastard>
-	<E1PELiI-0001Pj-8g@approx.mit.edu>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1752989Ab0KFTXI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 15:23:08 -0400
+Received: from THUNK.ORG ([69.25.196.29]:45163 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752534Ab0KFTXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Nov 2010 15:23:07 -0400
+Date: Sat, 6 Nov 2010 15:22:59 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Greg KH <greg@kroah.com>
+Cc: Elvis Dowson <elvis.dowson@mac.com>,
+        Janakiram Sistla <janakiram.sistla@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Forked android kernel development from linux kernel mainline
+Message-ID: <20101106192259.GB2935@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Greg KH <greg@kroah.com>,
+	Elvis Dowson <elvis.dowson@mac.com>,
+	Janakiram Sistla <janakiram.sistla@gmail.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <01784A8B-36A0-4E8A-9729-23C2B19351F8@mac.com>
+ <AANLkTi=UxhRdcDaoKaYVWhPkp_e-uLF4=zhXs7gutkgx@mail.gmail.com>
+ <20101106181202.GA6927@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101106181202.GA6927@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 5 Nov 2010 08:48:13 -0400
-Sanjoy Mahajan <sanjoy@olin.edu> wrote:
+On Sat, Nov 06, 2010 at 11:12:02AM -0700, Greg KH wrote:
+> Are you willing to maintain the android kernel code in the mainline
+> kernel tree?  If so, I will be glad to add it back in, but as no one was
+> willing to do the work, it was removed.  It's as simple as that.
 
-> Dave Chinner <david@fromorbit.com> wrote:
-> 
-> > I think anyone reporting a interactivity problem also needs to
-> > indicate what their filesystem is, what mount paramters they are
-> > using, what their storage config is, whether barriers are active or
-> > not, what elevator they are using, whether one or more of the
-> > applications are issuing fsync() or sync() calls, and so on.
-> 
-> Good idea.  
-> 
-> The filesystems are all ext3 with default mount parameters.  The
-> dmesgs say that the filesystems are mounted in ordered data mode and
-> that barriers are not enabled.
+Note that whoever needs maintain the Android kernel code in mainline
+needs to be working with both the Android kernel developers as well as
+the upstream maintainers, in hopes of finding a way to find a path
+which meets the requirements of both the android kernel developers and
+the upstream kernel maintainers.
 
-btw few more things to try (from my standard rc.local script):
+Otherwise, it's highly likely that no forward progress will get made,
+and the code will get yanked from staging after 6-9 months of no
+forward progress.
 
-echo 4096 > /sys/block/sda/queue/nr_requests
+Given that the Android kernel developers have already spent upwards of
+ten times the amount of engineering hours it would take forward port
+their kernel patches to each upstream kernel version for the next
+several years, finding a path that meets their requirements as well as
+those of the upstream kernel maintainers may not be a trivial thing.
 
-for i in `pidof kjournald` ; do ionice -c1 -p $i ; done
+Also keep in mind that someone no less than Linus Torvalds has said
+that sometimes forks are good, and that the _freedom_ to fork is
+critical.  But if anyone feels that figuring out some way to make the
+android kernel patches (a) upstreamable, and (b) compatible with
+android's userspace is their itch to scratch, the other part of the
+open source ethos is that they are certainly free to try.
 
-echo 75 >  /proc/sys/vm/dirty_ratio
+	      				- Ted
 
-
-(replace sda with whatever your disk is of course)
-
--- 
-Arjan van de Ven 	Intel Open Source Technology Centre
-For development, discussion and tips for power savings, 
-visit http://www.lesswatts.org
+P.S.  I speak for myself, and not for my employer.
