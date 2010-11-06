@@ -1,90 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753671Ab0KFGwF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 02:52:05 -0400
-Received: from web31801.mail.mud.yahoo.com ([68.142.207.64]:26699 "HELO
-	web31801.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753443Ab0KFGwD convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 02:52:03 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=TLhegPlivmyX7C5iSONcRi5kWSzycUoY/BrFPtcu2rm7a5KgEMjqFnrvedida8ZqAA8SKJC7EoW1JFr3dSNR6D9rGUJ08CNN1WRBXvmZVtgcG0igOxPMvvRmqM+ATc6PUncon+TirtH5NmKPTusJAVQkHUxvCEl7Nn7+plcR3dk=;
-Message-ID: <87456.32791.qm@web31801.mail.mud.yahoo.com>
-X-YMail-OSG: kqicqmQVM1lhcGsQTTy.m7rdDvkbOF04aG.dERMGHl3Pk9r
- 2jtmvvgS1ysr1GS8h9a86HdVWr2zAkqw4._c881Chd8MkB9FaI6vswwMPkET
- E9BaAvvU3H5MX8jaVso08bGA2y1ke37A4e4Np6phTEmn1ZaxbRkxOsT6Jcyw
- 09baw3MFMDf43pIoyc_Sg2Lk6vj45BB8vzPqrXUBwIg.xQMHyDh.GjVmX6hy
- 6qadikisqB8A8ZSWj8s3QRb40rMGMiX.l7x3nFTt4OXKP2NLIkRxxDb_tErI
- AbUX04NiK5Es5JPvd1f04YidYVpQsHDlh06mTgdJheU0A2YvNrWtcr2Q8n.c
- 6UylRJn4-
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.285259
-Date: Fri, 5 Nov 2010 23:52:00 -0700 (PDT)
-From: Luben Tuikov <ltuikov@yahoo.com>
-Reply-To: ltuikov@yahoo.com
-Subject: Re: [PATCH] [USB] UAS: Achitecture; TMF; more
-To: Greg KH <greg@kroah.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthew Wilcox <willy@linux.intel.com>
-In-Reply-To: <20101106051447.GA2327@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753775Ab0KFH0k (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 03:26:40 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:46637 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753305Ab0KFH0i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Nov 2010 03:26:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=QmdB2BRrDvV8bNfJDkTJyUTrxfsKG9TjGtqun0wpbRY21vLffAPohh+eOqtYCWIIED
+         GZs6fLwRHnXNyzerd574xCz5wojnSizYjhX2K6ujwMbCUdzAnK4wIPK5ls1s/2y8qdIF
+         pTM0JPwF7FTo8gtWQtGzO8Qws3LmJEa8mS/WY=
+Subject: Re: OOM when adding ipv6 route:  How to make available more
+ per-cpu memory?
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ben Greear <greearb@candelatech.com>
+Cc: NetDev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
+In-Reply-To: <4CD49C2F.3060904@candelatech.com>
+References: <4CD43C87.5040403@candelatech.com>
+	 <1288980361.2882.1070.camel@edumazet-laptop>
+	 <4CD449A5.5070305@candelatech.com>
+	 <1288988403.2665.268.camel@edumazet-laptop>
+	 <1288995103.2665.653.camel@edumazet-laptop>
+	 <4CD49C2F.3060904@candelatech.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 06 Nov 2010 08:26:32 +0100
+Message-ID: <1289028392.2665.2418.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---- On Fri, 11/5/10, Greg KH <greg@kroah.com> wrote:
-> > This patch changes 86% of the driver. More is to come,
-> but this is
-> > a self-contained patch so it can be applied.
+Le vendredi 05 novembre 2010 à 17:07 -0700, Ben Greear a écrit :
+
+> We just tried creating 1000 macvlans with IPv6 addrs on a 64-bit machine
+> with 12GB RAM.  Only around 520 interfaces properly set their IPs, and
+> again there are errors about of-of-memory from 'ip', but no obvious
+> splats in dmesg.
 > 
-> No it can not at all, sorry.
+> 'top' shows 10G or so free.
+> 
+> It will take some time to figure out what exactly is returning
+> the ENOMEM....
 
-Greg, would you accept a brand new driver, say uastoo.c (just like
-8139too.c came about, remember?), or would you say "This is 14% the same
-as uas.c, and thus cannot go in"?
+At least, nothing to do with percpu stuff ?
 
-Is 14% difference too much or too little?  Surely, the sum of
-small tiny individual patches, *would* replace 86% of the driver. BTW,
-there are more things to fix even on top of that.
+On my 4GB machine, 16 'cpus' (but 32 possible cpus), I was able to
+allocate.
+8192 percpu 8192 bytes structures
 
-(I wonder how much similar 8139too.c was to rtl8139.c... when 8139too.c
-got in back about 10 years ago? I bet it was more than 14%. Hey, I'm building precedent here.)
+(total : 32 * 8192 * 8192 = 2 Gbytes)
 
-Or would you say "only individual patches even if it changes 100% of the
-code".
+setup_percpu: NR_CPUS:32 nr_cpumask_bits:32 nr_cpu_ids:32 nr_node_ids:2
+PERCPU: Embedded 26 pages/cpu @ffff88007fc00000 s76032 r8192 d22272 u131072
+pcpu-alloc: s76032 r8192 d22272 u131072 alloc=1*2097152
+pcpu-alloc: [0] 00 02 04 06 08 10 12 14 17 19 21 23 25 27 29 31 
+pcpu-alloc: [1] 01 03 05 07 09 11 13 15 16 18 20 22 24 26 28 30 
 
-> Remember, patches do one single thing at a time.
+grep Vmalloc /proc/meminfo 
+VmallocTotal:   34359738367 kB
+VmallocUsed:     2202592 kB
+VmallocChunk:   34356996456 kB
 
-I wholeheartedly agree. One thing at a time. Self-contained, well defined. 
+Make sure udev / hotplug is not the problem, if you create your devices
+very fast.
 
-I really did want to do that with uas.c but it was really hard. I was
-like "where to begin?"  There was no one single change to say "here it
-is" without changing something else.
+(modprobe dummy numdummies=2000) can be very slow because of that.
+All tasks are fighting for RTNL or sysfs mutex.
 
-> This patch is equivalant to deleting the file and replacing it with a
-> totally different driver, which is unacceptable.
 
-I did want to submit them one at a time. I really did. But one change
-necessitated another in order to keep things consistent, and it ended
-up like this, one single commit in my git tree.
-
-I really do have one single commit as this "patch".  I really did want
-to submit it as individual one at a time. But there was no well defined "one at a time".
-
-> Please break all of these changes up into individual
-> patches and resubmit them.� That's the only way we can take
-> them.
-
-That, or a new driver perhaps?
-The net effect of individual patches would be the same, leaving only
-14% of the code the same and maybe less with the more work pending.
-Perhaps a new driver acknowledging it is based on this one FWIW?
-
-> I also suggest you go re-read Documentation/development_process/ as well.
-
-Did Willy reply to your query about the previous patches? I didn't see
-his reply.
 
