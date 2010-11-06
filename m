@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752867Ab0KFS0V (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 14:26:21 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:55505 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751654Ab0KFS0S (ORCPT
+	id S1753139Ab0KFS0h (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 14:26:37 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:41354 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752836Ab0KFS0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 14:26:18 -0400
+	Sat, 6 Nov 2010 14:26:34 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=nZiGdG+Kjt7nwrO2s7aV+V9zHNHwF81J8gSuE9CTFlO+NYrjNpTNNSCe9XN0rSzbEO
-         zXb5WZxAcAJiAloYO3LIHDOa4NcJ+9Wmrja4cj5tQwoEegYHPINkFVDird/kvINuyXYf
-         QLFBR/XQQ5WApfQcMbk6+RJteSm+PPGCmNoWM=
+        b=hzub7bWDnCjWA6nqQavjtiCDFuTsxyPhLmZ+js7YmeAZr9ygOr/azM2A/NX1bqr9IP
+         K1lUXv4jJIj6ObSKkH/Ve7k1nTLL0ywcf8gm0mRn9GVB9+mhXJYOgt+uU5ekVpsxQqJ0
+         GoXjxDnlGaJlFU6k4h4BiTZ5EfT22wcosobig=
 From: Rabin Vincent <rabin@rab.in>
 To: linux-arm-kernel@lists.infradead.org
 Cc: Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Tim Bird <tim.bird@am.sony.com>, linux-kernel@vger.kernel.org,
         Rabin Vincent <rabin@rab.in>
-Subject: [PATCH 3/6] ARM: ftrace: use gas macros to avoid code duplication
-Date: Sat,  6 Nov 2010 23:55:51 +0530
-Message-Id: <1289067954-5080-3-git-send-email-rabin@rab.in>
+Subject: [PATCH 6/6] ARM: ftrace: enable function graph tracer
+Date: Sat,  6 Nov 2010 23:55:54 +0530
+Message-Id: <1289067954-5080-6-git-send-email-rabin@rab.in>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1289067954-5080-1-git-send-email-rabin@rab.in>
 References: <1289067954-5080-1-git-send-email-rabin@rab.in>
@@ -30,197 +30,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use assembler macros to avoid copy/pasting code between the
-implementations of the two variants of the mcount call.
+Add the options to enable the function graph tracer on ARM.  Function
+graph tracer support requires frame pointers, so exclude Thumb-2 and
+also explicitly select FRAME_POINTER in FUNCTION_GRAPH_TRACER since
+FUNCTION_TRACER doesn't select FRAME_POINTER when ARM_UNWIND is used
+Therefore, with GCC 4.4.0+, you get plain function tracing without frame
+pointers, but you'll need them if you want function graph tracing.
 
 Signed-off-by: Rabin Vincent <rabin@rab.in>
 ---
- arch/arm/kernel/entry-common.S |  146 ++++++++++++++++++++++------------------
- 1 files changed, 80 insertions(+), 66 deletions(-)
+ arch/arm/Kconfig     |    1 +
+ kernel/trace/Kconfig |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
-index 8bfa987..fe1d586 100644
---- a/arch/arm/kernel/entry-common.S
-+++ b/arch/arm/kernel/entry-common.S
-@@ -141,98 +141,112 @@ ENDPROC(ret_from_fork)
- #endif
- #endif
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index a19a526..c5e96ff 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -14,6 +14,7 @@ config ARM
+ 	select HAVE_FUNCTION_TRACER if (!XIP_KERNEL)
+ 	select HAVE_FTRACE_MCOUNT_RECORD if (!XIP_KERNEL)
+ 	select HAVE_DYNAMIC_FTRACE if (!XIP_KERNEL)
++	select HAVE_FUNCTION_GRAPH_TRACER if (!THUMB2_KERNEL)
+ 	select HAVE_GENERIC_DMA_COHERENT
+ 	select HAVE_KERNEL_GZIP
+ 	select HAVE_KERNEL_LZO
+diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
+index e04b8bc..ff23dcf 100644
+--- a/kernel/trace/Kconfig
++++ b/kernel/trace/Kconfig
+@@ -141,6 +141,7 @@ config FUNCTION_TRACER
  
--#ifdef CONFIG_DYNAMIC_FTRACE
--ENTRY(__gnu_mcount_nc)
--	mov	ip, lr
--	ldmia	sp!, {lr}
--	mov	pc, ip
--ENDPROC(__gnu_mcount_nc)
-+.macro __mcount suffix
-+	mcount_enter
-+	ldr	r0, =ftrace_trace_function
-+	ldr	r2, [r0]
-+	adr	r0, .Lftrace_stub
-+	cmp	r0, r2
-+	bne	1f
-+	mcount_exit
- 
--ENTRY(ftrace_caller)
--	stmdb	sp!, {r0-r3, lr}
--	mov	r0, lr
-+1: 	mcount_get_lr	r1			@ lr of instrumented func
-+	mov	r0, lr				@ instrumented function
-+	sub	r0, r0, #MCOUNT_INSN_SIZE
-+	adr	lr, BSYM(2f)
-+	mov	pc, r2
-+2:	mcount_exit
-+.endm
-+
-+.macro __ftrace_caller suffix
-+	mcount_enter
-+
-+	mcount_get_lr	r1			@ lr of instrumented func
-+	mov	r0, lr				@ instrumented function
- 	sub	r0, r0, #MCOUNT_INSN_SIZE
--	ldr	r1, [sp, #20]
- 
--	.global	ftrace_call
--ftrace_call:
-+	.globl ftrace_call\suffix
-+ftrace_call\suffix:
- 	bl	ftrace_stub
--	ldmia	sp!, {r0-r3, ip, lr}
--	mov	pc, ip
--ENDPROC(ftrace_caller)
-+
-+	mcount_exit
-+.endm
- 
- #ifdef CONFIG_OLD_MCOUNT
-+/*
-+ * mcount
-+ */
-+
-+.macro mcount_enter
-+	stmdb	sp!, {r0-r3, lr}
-+.endm
-+
-+.macro mcount_get_lr reg
-+	ldr	\reg, [fp, #-4]
-+.endm
-+
-+.macro mcount_exit
-+	ldr	lr, [fp, #-4]
-+	ldmia	sp!, {r0-r3, pc}
-+.endm
-+
- ENTRY(mcount)
-+#ifdef CONFIG_DYNAMIC_FTRACE
- 	stmdb	sp!, {lr}
- 	ldr	lr, [fp, #-4]
- 	ldmia	sp!, {pc}
-+#else
-+	__mcount _old
-+#endif
- ENDPROC(mcount)
- 
-+#ifdef CONFIG_DYNAMIC_FTRACE
- ENTRY(ftrace_caller_old)
--	stmdb	sp!, {r0-r3, lr}
--	ldr	r1, [fp, #-4]
--	mov	r0, lr
--	sub	r0, r0, #MCOUNT_INSN_SIZE
--
--	.globl ftrace_call_old
--ftrace_call_old:
--	bl	ftrace_stub
--	ldr	lr, [fp, #-4]			@ restore lr
--	ldmia	sp!, {r0-r3, pc}
-+	__ftrace_caller _old
- ENDPROC(ftrace_caller_old)
- #endif
- 
--#else
-+.purgem mcount_enter
-+.purgem mcount_get_lr
-+.purgem mcount_exit
-+#endif
- 
--ENTRY(__gnu_mcount_nc)
-+/*
-+ * __gnu_mcount_nc
-+ */
-+
-+.macro mcount_enter
- 	stmdb	sp!, {r0-r3, lr}
--	ldr	r0, =ftrace_trace_function
--	ldr	r2, [r0]
--	adr	r0, .Lftrace_stub
--	cmp	r0, r2
--	bne	gnu_trace
-+.endm
-+
-+.macro mcount_get_lr reg
-+	ldr	\reg, [sp, #20]
-+.endm
-+
-+.macro mcount_exit
- 	ldmia	sp!, {r0-r3, ip, lr}
- 	mov	pc, ip
-+.endm
- 
--gnu_trace:
--	ldr	r1, [sp, #20]			@ lr of instrumented routine
--	mov	r0, lr
--	sub	r0, r0, #MCOUNT_INSN_SIZE
--	adr	lr, BSYM(1f)
--	mov	pc, r2
--1:
--	ldmia	sp!, {r0-r3, ip, lr}
-+ENTRY(__gnu_mcount_nc)
-+#ifdef CONFIG_DYNAMIC_FTRACE
-+	mov	ip, lr
-+	ldmia	sp!, {lr}
- 	mov	pc, ip
-+#else
-+	__mcount
-+#endif
- ENDPROC(__gnu_mcount_nc)
- 
--#ifdef CONFIG_OLD_MCOUNT
--/*
-- * This is under an ifdef in order to force link-time errors for people trying
-- * to build with !FRAME_POINTER with a GCC which doesn't use the new-style
-- * mcount.
-- */
--ENTRY(mcount)
--	stmdb	sp!, {r0-r3, lr}
--	ldr	r0, =ftrace_trace_function
--	ldr	r2, [r0]
--	adr	r0, ftrace_stub
--	cmp	r0, r2
--	bne	trace
--	ldr	lr, [fp, #-4]			@ restore lr
--	ldmia	sp!, {r0-r3, pc}
--
--trace:
--	ldr	r1, [fp, #-4]			@ lr of instrumented routine
--	mov	r0, lr
--	sub	r0, r0, #MCOUNT_INSN_SIZE
--	mov	lr, pc
--	mov	pc, r2
--	ldr	lr, [fp, #-4]			@ restore lr
--	ldmia	sp!, {r0-r3, pc}
--ENDPROC(mcount)
-+#ifdef CONFIG_DYNAMIC_FTRACE
-+ENTRY(ftrace_caller)
-+	__ftrace_caller
-+ENDPROC(ftrace_caller)
- #endif
- 
--#endif /* CONFIG_DYNAMIC_FTRACE */
-+.purgem mcount_enter
-+.purgem mcount_get_lr
-+.purgem mcount_exit
- 
- ENTRY(ftrace_stub)
- .Lftrace_stub:
+ config FUNCTION_GRAPH_TRACER
+ 	bool "Kernel Function Graph Tracer"
++	select FRAME_POINTER if ARM_UNWIND
+ 	depends on HAVE_FUNCTION_GRAPH_TRACER
+ 	depends on FUNCTION_TRACER
+ 	depends on !X86_32 || !CC_OPTIMIZE_FOR_SIZE
 -- 
 1.7.2.3
 
