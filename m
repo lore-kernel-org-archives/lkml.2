@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754296Ab0KFLye (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 07:54:34 -0400
+	id S1754628Ab0KFLyv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 07:54:51 -0400
 Received: from mail-wy0-f174.google.com ([74.125.82.174]:36076 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753266Ab0KFLyd (ORCPT
+	with ESMTP id S1754276Ab0KFLyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 07:54:33 -0400
-Subject: Re: [PATCH] regulator: lock supply in regulator enable
+	Sat, 6 Nov 2010 07:54:49 -0400
+Subject: RE: [PATCH] regulator: twl-regulator - fix twlreg_set_mode
 From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Mattias Wallin <mattias.wallin@stericsson.com>
-Cc: "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Bengt JONSSON <bengt.g.jonsson@stericsson.com>
-In-Reply-To: <4CD29C7D.4050500@stericsson.com>
-References: <4CD2847B.1060009@stericsson.com>
-	 <1288865910.3277.23.camel@odin>  <4CD28FA6.9030303@stericsson.com>
-	 <1288869112.3277.25.camel@odin>  <4CD29C7D.4050500@stericsson.com>
+To: Lesly Arackal Manuel <leslyam@ti.com>
+Cc: "'Nayak, Rajendra'" <rnayak@ti.com>, "'Axel Lin'" <axel.lin@gmail.com>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
+        "'Juha Keski-Saari'" <ext-juha.1.keski-saari@nokia.com>,
+        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <BD28781F6C8B49EB8AEACE6365DBFFEA@india.ti.com>
+References: <1287736702.2996.4.camel@mola>
+	 <20101022153006.GB16521@opensource.wolfsonmicro.com>
+	 <1287841635.7486.3.camel@odin>
+	 <0680EC522D0CC943BC586913CF3768C003FF2DAF9D@dbde02.ent.ti.com>
+	 <BD28781F6C8B49EB8AEACE6365DBFFEA@india.ti.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 06 Nov 2010 11:54:28 +0000
-Message-ID: <1289044468.3318.14.camel@odin>
+Date: Sat, 06 Nov 2010 11:54:45 +0000
+Message-ID: <1289044485.3318.16.camel@odin>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -29,18 +30,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-04 at 12:43 +0100, Mattias Wallin wrote:
-> > Sorry, got a busy schedule atm. Can you give us your reasoning behind
-> > why you think we need a lock here ?
-> Yes, when we enter regulator_enable() we take the lock only for that specific regulator rdev->mutex
-> and calls the locked function _regulator_enable().
-> This locked function then checks if we have a supply and recursively calls the locked _regulator_enable() again but with the supply rdev as argument.
-> The supply rdev regulator is however not locked at this stage, only the "original" supplied regulator is locked.
-> So if we have two regulators with the same supply regulator trying to enable at approx. the same time they will both
-> enter the _regulator_enable without locks and we could get a race condition.
-> This would probably result in reference counting error and unbalanced regulator warnings.
+On Thu, 2010-11-04 at 15:08 +0530, Lesly Arackal Manuel wrote:
+> Forgot to mention-
 > 
-> In our system we make use the regulator hierarchy quite heavily.
+> Only omap hsmmc driver is using regulator_set_mode() which will call
+> twlreg_set_mode().
+> 
+> > -----Original Message-----
+> > From: Lesly Arackal Manuel [mailto:leslyam@ti.com]
+> > Sent: Thursday, November 04, 2010 3:01 PM
+> > To: 'Nayak, Rajendra'; 'Liam Girdwood'
+> > Cc: 'Axel Lin'; 'linux-kernel'; 'Juha Keski-Saari'; 'Mark Brown'
+> > Subject: RE: [PATCH] regulator: twl-regulator - fix twlreg_set_mode
+> > 
+> > 
+> > I have tested it with MMC card inserted on OMAP3630SDP board (using OMAP3
+> > integration tree).
+> > 
+> > The changes seem to be valid.
+> > 
+> > The i2c_transfer() returns '1' on success and the twl_i2c_write() which
+> > calls i2c_transfer returns '0' if success and err value if it fails.
+> > 
+> > After writing the MSB if it returns with check:
+> > if (status >= 0)
+> > 	return status;
+> > It is not writing the LSB.
+> > 
+> > So it should be:
+> > if (status < 0)
+> > 	return status;
+> > 
+> > Regards,
+> > Lesly AM
 > > 
 
 Applied.
