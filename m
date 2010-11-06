@@ -1,91 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499Ab0KFTIC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 15:08:02 -0400
-Received: from nm5.bullet.mail.sp2.yahoo.com ([98.139.91.75]:34353 "HELO
-	nm5.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753128Ab0KFTH7 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 15:07:59 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 843643.61933.bm@omp1017.mail.sp2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=Ooqt0DdeNNb6Nwf44HSvICHZbq0R29nmPdYORjdeIAL3fzgOjp27XCJdN+ya0JqmtNMU+zG9YeDkKZANdgBVK2JhuTuKVdaGvnB4tqzAvqgVbB1gBlgKTYkP8Qq+aPCZP/mWjxsSsJZAaSzp45+Yj5S/BjbPJrx4WU5JubF1Vjk=;
-Message-ID: <305211.72066.qm@web180314.mail.gq1.yahoo.com>
-X-YMail-OSG: FX5s2PEVM1lTjcLnFfH0T1eJe3utt7D.sg8KPFLAcTBCjC2
- iTPHjc5eck0MNRo9DtIAr_sUiaL0bZOn.HeiFIdGNRLR0xpJSih2CbKXf56Z
- ziGyVg816rJ1qBj3HZfqYvSPUHYyUf2B.clOH72wd9TrjGkpVHJi7wY6e697
- BHHf0nXdbayMXENVmI_rPadOLqYmrbIuFOX62GQT9BYJ6HCa_JxEvSuqPkEQ
- dR6KPpZtV2GmNl705pJFTxM3uaREBnphjD4ixgAS46kgc77wDGeZ_EY78YW3
- SIJCHpRljDU7b6vWByUA037xwVvdtrzdTiwZls9TXXBQjpJTyM6lKa.Tg32g
- TCSsWB9hXKddKG3uQ9lSh_B.1bRMBO7eWAlg3cus-
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.284920
-Date: Sat, 6 Nov 2010 12:07:57 -0700 (PDT)
-From: David Brownell <david-b@pacbell.net>
-Subject: Re: [PATCH] usb: core: fix information leak to userland
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Vasiliy Kulikov <segooon@gmail.com>, kernel-janitors@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>, Oliver Neukum <oliver@neukum.org>,
-        Andi Kleen <ak@linux.intel.com>, Chris Frey <cdfrey@foursquare.net>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <Pine.LNX.4.44L0.1011061441150.28403-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753067Ab0KFTLP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 15:11:15 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33713 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751121Ab0KFTLO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Nov 2010 15:11:14 -0400
+Date: Sat, 6 Nov 2010 12:10:42 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Sanjoy Mahajan <sanjoy@olin.edu>
+Cc: Dave Chinner <david@fromorbit.com>, Jesper Juhl <jj@chaosbits.net>,
+        Chris Mason <chris.mason@oracle.com>, Ingo Molnar <mingo@elte.hu>,
+        Pekka Enberg <penberg@kernel.org>,
+        Aidar Kultayev <the.aidar@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Nick Piggin <npiggin@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
+        "Ted Ts'o" <tytso@mit.edu>, Corrado Zoccolo <czoccolo@gmail.com>,
+        Shaohua Li <shaohua.li@intel.com>, Steven Barrett <damentz@gmail.com>
+Subject: Re: 2.6.36 io bring the system to its knees
+Message-ID: <20101106121042.10b3d96b@infradead.org>
+In-Reply-To: <E1PELiI-0001Pj-8g@approx.mit.edu>
+References: <20101105014334.GF13830@dastard>
+	<E1PELiI-0001Pj-8g@approx.mit.edu>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 5 Nov 2010 08:48:13 -0400
+Sanjoy Mahajan <sanjoy@olin.edu> wrote:
 
-
---- On Sat, 11/6/10, Alan Stern <stern@rowland.harvard.edu> wrote:
-
-
-> > 
+> Dave Chinner <david@fromorbit.com> wrote:
 > 
-> Unfortunately I don't have a copy of the C standard here to
-> consult.  
-> However...  Although I'm perfectly willing to believe
-> that the standard
-> requires fields in a structure to be initialized to 0 if
-> they
-> aren't mentioned explicitly in the initializer, I'm
-> considerably more
-> doubtful that it also requires padding to be initialized!
-
-ISTR initialization-to-zero is the standard
-behavior defined for all _memory_ that gets
-initialized ... not just named fields ...
-whether the init is "static", "bss", or not.
+> > I think anyone reporting a interactivity problem also needs to
+> > indicate what their filesystem is, what mount paramters they are
+> > using, what their storage config is, whether barriers are active or
+> > not, what elevator they are using, whether one or more of the
+> > applications are issuing fsync() or sync() calls, and so on.
 > 
-> And I certainly wouldn't want to depend on compilers
-> _always_ using 
-> memset to do this initialization.
-
-Of course not; just rely on init-to-zero, and
-let the compiler worry about efficiency. In
-some cases memset(); in others, the result
-might be as if memset were inlined, so only
-a few "write a zero at this address" type
-instructions would be needed.
+> Good idea.  
 > 
-> > There's certainly a fair amount of code I've seen
-> > that uses runtime initializers like that, to zero
-> > memory.  I can't believe i's _all_ broken! 
-> ;)
-> 
-> Zeroing memory that belongs to a declared field is
-> different from 
-> zeroing padding bytes.  Maybe what you remember seeing
-> is the first and 
-> not the second.
+> The filesystems are all ext3 with default mount parameters.  The
+> dmesgs say that the filesystems are mounted in ordered data mode and
+> that barriers are not enabled.
 
-I remember seeing both, and at one point looking
-at the issue to verify that padding was treated
-uniformly (like other memory).  Also, writing code
-that relied on zero-initted padding.
+btw few more things to try (from my standard rc.local script):
 
-- Dave
+echo 4096 > /sys/block/sda/queue/nr_requests
 
+for i in `pidof kjournald` ; do ionice -c1 -p $i ; done
+
+echo 75 >  /proc/sys/vm/dirty_ratio
+
+
+(replace sda with whatever your disk is of course)
+
+-- 
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
