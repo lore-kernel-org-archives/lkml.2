@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750890Ab0KGEhS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 00:37:18 -0400
-Received: from mx.kppk.gov.my ([202.75.7.157]:58508 "EHLO mx.kppk.gov.my"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750781Ab0KGEhQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 00:37:16 -0400
-X-Greylist: delayed 3180 seconds by postgrey-1.27 at vger.kernel.org; Sun, 07 Nov 2010 00:37:16 EDT
-Date: Sun, 7 Nov 2010 11:29:33 +0800 (MYT)
-From: Dshmulik <khairulanuar@kppk.gov.my>
-Reply-To: Dshmulik <timiala@voila.fr>
-Message-ID: <1244240540.123981289100573901.JavaMail.root@jati.kppk.gov.my>
-In-Reply-To: <436833705.123961289100566006.JavaMail.root@jati.kppk.gov.my>
-Subject: Urgent Enquiry
+	id S1751034Ab0KGEv4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 00:51:56 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:54643 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814Ab0KGEvz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 00:51:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:subject
+         :content-type:content-transfer-encoding;
+        b=nth02Xoa4VPsrCXupv3Ufa83XyVDJte356iaiK/efVFQdVJK1+fDf+tfDylJ6jozua
+         vcI3dbs/MpaIsIQp1nfMQgk60yTKgqsWG1lVfS6LthBM2dtd9UqsyezsLG2Z4B4S3rCd
+         2ijf59XERZ0lLVmkiKMZMcilzLCueGxgyE4UE=
+Message-ID: <4CD63067.8010506@gmail.com>
+Date: Sat, 06 Nov 2010 21:51:51 -0700
+From: JD <jd1008@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: linux-kernel@vger.kernel.org
+Subject: Question/help re: themake scripts in 2.6.36
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [60.53.48.33]
-X-Mailer: Zimbra 5.0.11_GA_2695.RHEL5_64 (ZimbraWebClient - IE7 (Win)/5.0.11_GA_2695.RHEL5_64)
-To: undisclosed-recipients:;
-X-kppk-MailScanner-Information: Please contact the ISP for more information
-X-kppk-MailScanner-ID: A10C698E9714.A4AE9
-X-kppk-MailScanner: Found to be clean
-X-kppk-MailScanner-From: khairulanuar@kppk.gov.my
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have 95 kg of Switz refined gold, 99.99(24 karat).
+I have compiled 2.6.36 (i686) without any problems.
+Since then, I have decided to change a couple of
+config variables (using xconfig).
+When done, running make all
+causes the make scripts to stop compilation after building
+a few objects, and spawn a shell.
+Since I have no idea what to do in that shell, I exit
+that shell, and the compilaton continues.
+This takes place 3 times before compilation is complete.
 
-Should you be interested to buy it, please reply me for more and better arrangement on the method of transaction;
+Now, when I type make modules_install install,
+only modules_install is done. /boot does not get
+populated and /boot/grub/grub.conf is unchanged.
 
-I will offer you cheaper than the international gold price. 
+The currently installed and running 2.6.36-1
+went through a similar scenario during build,
+but at least install did work.
+Now the install does not work.
+Befor the present build attempt,
+I had edited the Makefile to change the EXTRAVERSION to -2
+in order not to clobber the installed  2.6.36-1
 
-If we can develop a certain level of trust between us, I will consider letting you lift it to your country and sell, then pay me based on the price we will agree on as I am only interested to sell it to a capable client instead of selling per kilo.
+Could someone tell me what to do to force the install in /boot?
+/lib/modules does have 2.6.36-2.fc13.i686 fully populated.
 
-Please get back to me. 
+Thanx,
 
--- 
-This message has been scanned for viruses and
-dangerous content by MailScanner, and is
-believed to be clean.
-
+JD
