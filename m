@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846Ab0KGOnl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 09:43:41 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:43405 "EHLO
+	id S1753279Ab0KGOqj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 09:46:39 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:59259 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751966Ab0KGOnk (ORCPT
+	with ESMTP id S1752938Ab0KGOqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 09:43:40 -0500
+	Sun, 7 Nov 2010 09:46:37 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=tXC54BaHQhs0cEeOZmSded1mZi5FVYxUSVhvsItIqvZ1KjQM4xyaBiFFjqq1kvRUCl
-         MPv48unmWTIYXNcJ+RYGRc6Kn5c3fuqpG0ZLAY163AFHTzZ0pIx9/9DT+w909w8IG2BR
-         QwM8v1CDQbOXDU2nOxlhLbQlSKUH05BJBooUI=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=KYLRtvRmcT9edoA2o1wAyd2seuYn9J7rLuiWTsT5tsM8SvV/tIWE3cAxLZ0vNVazEJ
+         VhH0Rb1OqQpaKTtADvajBwcVK2luxthJZtv+hNOsLZr1bE47+nOwDSjo+AkQ+o80zofT
+         SxZ8ab4ie+JWOBKNp6egtuC4jfb1LXgkK3FZM=
 From: Tracey Dent <tdent48227@gmail.com>
-To: bp@amd64.org
-Cc: mchehab@redhat.com, linux-kernel@vger.kernel.org,
+To: dmitry.torokhov@gmail.com
+Cc: jkosina@suse.cz, chatty@enac.fr, spbnick@gmail.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         Tracey Dent <tdent48227@gmail.com>
-Subject: [PATCH] Drivers: edac: Makfile: Cleaned up Makefile
-Date: Sun,  7 Nov 2010 09:43:33 -0500
-Message-Id: <1289141013-1399-1-git-send-email-tdent48227@gmail.com>
+Subject: [PATCH 2/2] Drivers: hid: usbhid: Makefile: Cleaned up Makefile
+Date: Sun,  7 Nov 2010 09:46:28 -0500
+Message-Id: <1289141188-1447-2-git-send-email-tdent48227@gmail.com>
 X-Mailer: git-send-email 1.7.3.2.161.g3089c
+In-Reply-To: <1289141188-1447-1-git-send-email-tdent48227@gmail.com>
+References: <1289141188-1447-1-git-send-email-tdent48227@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,34 +33,32 @@ deprecated and should now be switched. According to (documentation/kbuild/makefi
 
 Signed-off-by: Tracey Dent <tdent48227@gmail.com>
 ---
- drivers/edac/Makefile |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/hid/usbhid/Makefile |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/edac/Makefile b/drivers/edac/Makefile
-index b378139..9b53eda 100644
---- a/drivers/edac/Makefile
-+++ b/drivers/edac/Makefile
-@@ -10,16 +10,16 @@ obj-$(CONFIG_EDAC)			:= edac_stub.o
- obj-$(CONFIG_EDAC_MM_EDAC)		+= edac_core.o
- obj-$(CONFIG_EDAC_MCE)			+= edac_mce.o
+diff --git a/drivers/hid/usbhid/Makefile b/drivers/hid/usbhid/Makefile
+index 1329ecb..db3cf31 100644
+--- a/drivers/hid/usbhid/Makefile
++++ b/drivers/hid/usbhid/Makefile
+@@ -3,15 +3,15 @@
+ #
  
--edac_core-objs	:= edac_mc.o edac_device.o edac_mc_sysfs.o edac_pci_sysfs.o
--edac_core-objs	+= edac_module.o edac_device_sysfs.o
-+edac_core-y	:= edac_mc.o edac_device.o edac_mc_sysfs.o edac_pci_sysfs.o
-+edac_core-y	+= edac_module.o edac_device_sysfs.o
+ # Multipart objects.
+-usbhid-objs	:= hid-core.o hid-quirks.o
++usbhid-y	:= hid-core.o hid-quirks.o
  
- ifdef CONFIG_PCI
--edac_core-objs	+= edac_pci.o edac_pci_sysfs.o
-+edac_core-y	+= edac_pci.o edac_pci_sysfs.o
+ # Optional parts of multipart objects.
+ 
+ ifeq ($(CONFIG_USB_HIDDEV),y)
+-	usbhid-objs	+= hiddev.o
++	usbhid-y	+= hiddev.o
+ endif
+ ifeq ($(CONFIG_HID_PID),y)
+-	usbhid-objs	+= hid-pidff.o
++	usbhid-y	+= hid-pidff.o
  endif
  
- obj-$(CONFIG_EDAC_MCE_INJ)		+= mce_amd_inj.o
- 
--edac_mce_amd-objs			:= mce_amd.o
-+edac_mce_amd-y			:= mce_amd.o
- obj-$(CONFIG_EDAC_DECODE_MCE)		+= edac_mce_amd.o
- 
- obj-$(CONFIG_EDAC_AMD76X)		+= amd76x_edac.o
+ obj-$(CONFIG_USB_HID)		+= usbhid.o
 -- 
 1.7.3.1.104.gc752e
 
