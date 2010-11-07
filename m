@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709Ab0KGWIi (ORCPT <rfc822;w@1wt.eu>);
+	id S1752936Ab0KGWIn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 17:08:43 -0500
+Received: from kroah.org ([198.145.64.141]:34442 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752063Ab0KGWIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 7 Nov 2010 17:08:38 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:22705 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751313Ab0KGWIh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 17:08:37 -0500
-Date: Sun, 7 Nov 2010 22:57:18 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: Ingo Molnar <mingo@redhat.com>, x86@kernel.org
-Subject: [PATCH] x86 apic: Including a header once is enough, no need to do
- it twice (asm/atomic.h)
-Message-ID: <alpine.LNX.2.00.1011072253360.26247@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+Date: Sun, 7 Nov 2010 13:59:08 -0800
+From: Greg KH <greg@kroah.com>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Anca Emanuel <anca.emanuel@gmail.com>, Elvis Dowson <elvis.dowson@mac.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Forked android kernel development from linux kernel mainline
+Message-ID: <20101107215908.GA21070@kroah.com>
+References: <01784A8B-36A0-4E8A-9729-23C2B19351F8@mac.com> <AANLkTi=UxhRdcDaoKaYVWhPkp_e-uLF4=zhXs7gutkgx@mail.gmail.com> <20101106181202.GA6927@kroah.com> <39580686-A899-4689-BAAD-AF5546B34E49@mac.com> <AANLkTimVsUsrmTvsHqFiqJh1hhryMBemGyW+kYLKGgEu@mail.gmail.com> <20101107155757.GA13736@kroah.com> <AANLkTik=UWwRLOaHMfVifYiQPpSwoYuA6J1EoL5BOgJY@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTik=UWwRLOaHMfVifYiQPpSwoYuA6J1EoL5BOgJY@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Nov 07, 2010 at 04:44:48PM -0500, Arnaud Lacombe wrote:
+> Hi,
+> 
+> On Sun, Nov 7, 2010 at 10:57 AM, Greg KH <greg@kroah.com> wrote:
+> > [...]
+> >
+> Just a small comment to say that Android is not the only one (but
+> certainly the most visible, and thus easiest to bash on) not making
+> effort to get their stuff in mainline. OpenWRT people are also
+> maintaining their fork of the kernel, without even using git, and not
+> contributing much to mainline (I'm certainly mistaken on that last
+> comment).
 
-In arch/x86/kernel/apic/apic.c, <asm/atomic.h> is included twice. Once is 
-enough.
+Isn't the openwrt stuff just drivers and some arch specific code?
+Nothing that is core infrastructure, and nothing preventing them from
+submitting the drivers and arch code if they want to, right?
 
+If so, why don't you submit it?  Why don't they?
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- apic.c |    1 -
- 1 file changed, 1 deletion(-)
+curious,
 
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index 850657d..3f838d5 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -52,7 +52,6 @@
- #include <asm/mce.h>
- #include <asm/kvm_para.h>
- #include <asm/tsc.h>
--#include <asm/atomic.h>
- 
- unsigned int num_processors;
- 
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+greg k-h
