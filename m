@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183Ab0KGCFp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 22:05:45 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:33850 "EHLO e4.ny.us.ibm.com"
+	id S1753669Ab0KGCGU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 22:06:20 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:36915 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752852Ab0KGCFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752863Ab0KGCFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 6 Nov 2010 22:05:42 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -14,9 +14,9 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 10/12] rcu: update documentation/comments for Lai's adoption patch
-Date: Sat,  6 Nov 2010 19:05:30 -0700
-Message-Id: <1289095532-5398-10-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 08/12] rcu,cleanup: move synchronize_sched_expedited() out of sched.c
+Date: Sat,  6 Nov 2010 19:05:28 -0700
+Message-Id: <1289095532-5398-8-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.6
 In-Reply-To: <20101107020507.GA4974@linux.vnet.ibm.com>
 References: <20101107020507.GA4974@linux.vnet.ibm.com>
@@ -24,99 +24,229 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lai's RCU-callback immediate-adoption patch changes the RCU tracing
-output, so update tracing.txt.  Also update a few comments to clarify
-the synchronization design.
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
+The first version of synchronize_sched_expedited() used the migration
+code in the scheduler, and was therefore implemented in kernel/sched.c.
+However, the more recent version of this code no longer uses the
+migration code, so this commit moves it to the main RCU source files.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- Documentation/RCU/trace.txt |   12 ++++--------
- kernel/rcutree.c            |   10 ++++++----
- kernel/rcutree_plugin.h     |    2 +-
- 3 files changed, 11 insertions(+), 13 deletions(-)
+ include/linux/rcupdate.h |    1 -
+ include/linux/rcutiny.h  |    5 +++
+ include/linux/rcutree.h  |    1 +
+ kernel/rcutree_plugin.h  |   71 ++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/sched.c           |   69 --------------------------------------------
+ 5 files changed, 77 insertions(+), 70 deletions(-)
 
-diff --git a/Documentation/RCU/trace.txt b/Documentation/RCU/trace.txt
-index ff6d3f1..6a8c73f 100644
---- a/Documentation/RCU/trace.txt
-+++ b/Documentation/RCU/trace.txt
-@@ -134,7 +134,8 @@ o	"ci" is the number of RCU callbacks that have been invoked for
- 	been registered in absence of CPU-hotplug activity.
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 7142ee3..49e8e16 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -66,7 +66,6 @@ extern void call_rcu_sched(struct rcu_head *head,
+ extern void synchronize_sched(void);
+ extern void rcu_barrier_bh(void);
+ extern void rcu_barrier_sched(void);
+-extern void synchronize_sched_expedited(void);
+ extern int sched_expedited_torture_stats(char *page);
  
- o	"co" is the number of RCU callbacks that have been orphaned due to
--	this CPU going offline.
-+	this CPU going offline.  These orphaned callbacks have been moved
-+	to an arbitrarily chosen online CPU.
- 
- o	"ca" is the number of RCU callbacks that have been adopted due to
- 	other CPUs going offline.  Note that ci+co-ca+ql is the number of
-@@ -172,12 +173,12 @@ o	"gpnum" is the number of grace periods that have started.  It is
- 
- The output of "cat rcu/rcuhier" looks as follows, with very long lines:
- 
--c=6902 g=6903 s=2 jfq=3 j=72c7 nfqs=13142/nfqsng=0(13142) fqlh=6 oqlen=0
-+c=6902 g=6903 s=2 jfq=3 j=72c7 nfqs=13142/nfqsng=0(13142) fqlh=6
- 1/1 .>. 0:127 ^0    
- 3/3 .>. 0:35 ^0    0/0 .>. 36:71 ^1    0/0 .>. 72:107 ^2    0/0 .>. 108:127 ^3    
- 3/3f .>. 0:5 ^0    2/3 .>. 6:11 ^1    0/0 .>. 12:17 ^2    0/0 .>. 18:23 ^3    0/0 .>. 24:29 ^4    0/0 .>. 30:35 ^5    0/0 .>. 36:41 ^0    0/0 .>. 42:47 ^1    0/0 .>. 48:53 ^2    0/0 .>. 54:59 ^3    0/0 .>. 60:65 ^4    0/0 .>. 66:71 ^5    0/0 .>. 72:77 ^0    0/0 .>. 78:83 ^1    0/0 .>. 84:89 ^2    0/0 .>. 90:95 ^3    0/0 .>. 96:101 ^4    0/0 .>. 102:107 ^5    0/0 .>. 108:113 ^0    0/0 .>. 114:119 ^1    0/0 .>. 120:125 ^2    0/0 .>. 126:127 ^3    
- rcu_bh:
--c=-226 g=-226 s=1 jfq=-5701 j=72c7 nfqs=88/nfqsng=0(88) fqlh=0 oqlen=0
-+c=-226 g=-226 s=1 jfq=-5701 j=72c7 nfqs=88/nfqsng=0(88) fqlh=0
- 0/1 .>. 0:127 ^0    
- 0/3 .>. 0:35 ^0    0/0 .>. 36:71 ^1    0/0 .>. 72:107 ^2    0/0 .>. 108:127 ^3    
- 0/3f .>. 0:5 ^0    0/3 .>. 6:11 ^1    0/0 .>. 12:17 ^2    0/0 .>. 18:23 ^3    0/0 .>. 24:29 ^4    0/0 .>. 30:35 ^5    0/0 .>. 36:41 ^0    0/0 .>. 42:47 ^1    0/0 .>. 48:53 ^2    0/0 .>. 54:59 ^3    0/0 .>. 60:65 ^4    0/0 .>. 66:71 ^5    0/0 .>. 72:77 ^0    0/0 .>. 78:83 ^1    0/0 .>. 84:89 ^2    0/0 .>. 90:95 ^3    0/0 .>. 96:101 ^4    0/0 .>. 102:107 ^5    0/0 .>. 108:113 ^0    0/0 .>. 114:119 ^1    0/0 .>. 120:125 ^2    0/0 .>. 126:127 ^3
-@@ -216,11 +217,6 @@ o	"fqlh" is the number of calls to force_quiescent_state() that
- 	exited immediately (without even being counted in nfqs above)
- 	due to contention on ->fqslock.
- 
--o	"oqlen" is the number of callbacks on the "orphan" callback
--	list.  RCU callbacks are placed on this list by CPUs going
--	offline, and are "adopted" either by the CPU helping the outgoing
--	CPU or by the next rcu_barrier*() call, whichever comes first.
--
- o	Each element of the form "1/1 0:127 ^0" represents one struct
- 	rcu_node.  Each line represents one level of the hierarchy, from
- 	root to leaves.  It is best to think of the rcu_data structures
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 669d7fe..120820f 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1668,7 +1668,9 @@ static void _rcu_barrier(struct rcu_state *rsp,
- 	 * decrement rcu_barrier_cpu_count -- otherwise the first CPU
- 	 * might complete its grace period before all of the other CPUs
- 	 * did their increment, causing this function to return too
--	 * early.
-+	 * early.  Note that on_each_cpu() disables irqs, which prevents
-+	 * any CPUs from coming online or going offline until each online
-+	 * CPU has queued its RCU-barrier callback.
- 	 */
- 	atomic_set(&rcu_barrier_cpu_count, 1);
- 	on_each_cpu(rcu_barrier_func, (void *)call_rcu_func, 1);
-@@ -1797,9 +1799,9 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
- 	case CPU_DYING:
- 	case CPU_DYING_FROZEN:
- 		/*
--		 * The whole machine is "stopped" except this cpu, so we can
--		 * touch any data without introducing corruption. And we send
--		 * the callbacks to an attribute chosen online cpu.
-+		 * The whole machine is "stopped" except this CPU, so we can
-+		 * touch any data without introducing corruption. We send the
-+		 * dying CPU's callbacks to an arbitrarily chosen online CPU.
- 		 */
- 		rcu_send_cbs_to_online(&rcu_bh_state);
- 		rcu_send_cbs_to_online(&rcu_sched_state);
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 0de359b..643c8f6 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -774,7 +774,7 @@ static void __cpuinit rcu_preempt_init_percpu_data(int cpu)
+ static inline void __rcu_read_lock_bh(void)
+diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
+index ea025a6..30ebd7c 100644
+--- a/include/linux/rcutiny.h
++++ b/include/linux/rcutiny.h
+@@ -60,6 +60,11 @@ static inline void synchronize_rcu_bh_expedited(void)
+ 	synchronize_sched();
  }
  
- /*
-- * Move preemptable DYING RCU's callbacks to other online CPU.
-+ * Move preemptable RCU's callbacks from dying CPU to other online CPU.
++static inline void synchronize_sched_expedited(void)
++{
++	synchronize_sched();
++}
++
+ #ifdef CONFIG_TINY_RCU
+ 
+ static inline void rcu_preempt_note_context_switch(void)
+diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
+index c0e9683..3a93348 100644
+--- a/include/linux/rcutree.h
++++ b/include/linux/rcutree.h
+@@ -48,6 +48,7 @@ static inline void exit_rcu(void)
+ #endif /* #else #ifdef CONFIG_TREE_PREEMPT_RCU */
+ 
+ extern void synchronize_rcu_bh(void);
++extern void synchronize_sched_expedited(void);
+ extern void synchronize_rcu_expedited(void);
+ 
+ static inline void synchronize_rcu_bh_expedited(void)
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 71a4147..21df7f3 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -25,6 +25,7 @@
   */
- static void rcu_preempt_send_cbs_to_online(void)
- {
+ 
+ #include <linux/delay.h>
++#include <linux/stop_machine.h>
+ 
+ /*
+  * Check the RCU kernel configuration parameters and print informative
+@@ -1014,6 +1015,76 @@ static void __init __rcu_init_preempt(void)
+ 
+ #endif /* #else #ifdef CONFIG_TREE_PREEMPT_RCU */
+ 
++#ifndef CONFIG_SMP
++
++void synchronize_sched_expedited(void)
++{
++	cond_resched();
++}
++EXPORT_SYMBOL_GPL(synchronize_sched_expedited);
++
++#else /* #ifndef CONFIG_SMP */
++
++static atomic_t synchronize_sched_expedited_count = ATOMIC_INIT(0);
++
++static int synchronize_sched_expedited_cpu_stop(void *data)
++{
++	/*
++	 * There must be a full memory barrier on each affected CPU
++	 * between the time that try_stop_cpus() is called and the
++	 * time that it returns.
++	 *
++	 * In the current initial implementation of cpu_stop, the
++	 * above condition is already met when the control reaches
++	 * this point and the following smp_mb() is not strictly
++	 * necessary.  Do smp_mb() anyway for documentation and
++	 * robustness against future implementation changes.
++	 */
++	smp_mb(); /* See above comment block. */
++	return 0;
++}
++
++/*
++ * Wait for an rcu-sched grace period to elapse, but use "big hammer"
++ * approach to force grace period to end quickly.  This consumes
++ * significant time on all CPUs, and is thus not recommended for
++ * any sort of common-case code.
++ *
++ * Note that it is illegal to call this function while holding any
++ * lock that is acquired by a CPU-hotplug notifier.  Failing to
++ * observe this restriction will result in deadlock.
++ */
++void synchronize_sched_expedited(void)
++{
++	int snap, trycount = 0;
++
++	smp_mb();  /* ensure prior mod happens before capturing snap. */
++	snap = atomic_read(&synchronize_sched_expedited_count) + 1;
++	get_online_cpus();
++	while (try_stop_cpus(cpu_online_mask,
++			     synchronize_sched_expedited_cpu_stop,
++			     NULL) == -EAGAIN) {
++		put_online_cpus();
++		if (trycount++ < 10)
++			udelay(trycount * num_online_cpus());
++		else {
++			synchronize_sched();
++			return;
++		}
++		if (atomic_read(&synchronize_sched_expedited_count) - snap > 0) {
++			smp_mb(); /* ensure test happens before caller kfree */
++			return;
++		}
++		get_online_cpus();
++	}
++	atomic_inc(&synchronize_sched_expedited_count);
++	smp_mb__after_atomic_inc(); /* ensure post-GP actions seen after GP. */
++	put_online_cpus();
++}
++EXPORT_SYMBOL_GPL(synchronize_sched_expedited);
++
++#endif /* #else #ifndef CONFIG_SMP */
++
+ #if !defined(CONFIG_RCU_FAST_NO_HZ)
+ 
+ /*
+diff --git a/kernel/sched.c b/kernel/sched.c
+index ae8f75a..d1e8889 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -9131,72 +9131,3 @@ struct cgroup_subsys cpuacct_subsys = {
+ };
+ #endif	/* CONFIG_CGROUP_CPUACCT */
+ 
+-#ifndef CONFIG_SMP
+-
+-void synchronize_sched_expedited(void)
+-{
+-	barrier();
+-}
+-EXPORT_SYMBOL_GPL(synchronize_sched_expedited);
+-
+-#else /* #ifndef CONFIG_SMP */
+-
+-static atomic_t synchronize_sched_expedited_count = ATOMIC_INIT(0);
+-
+-static int synchronize_sched_expedited_cpu_stop(void *data)
+-{
+-	/*
+-	 * There must be a full memory barrier on each affected CPU
+-	 * between the time that try_stop_cpus() is called and the
+-	 * time that it returns.
+-	 *
+-	 * In the current initial implementation of cpu_stop, the
+-	 * above condition is already met when the control reaches
+-	 * this point and the following smp_mb() is not strictly
+-	 * necessary.  Do smp_mb() anyway for documentation and
+-	 * robustness against future implementation changes.
+-	 */
+-	smp_mb(); /* See above comment block. */
+-	return 0;
+-}
+-
+-/*
+- * Wait for an rcu-sched grace period to elapse, but use "big hammer"
+- * approach to force grace period to end quickly.  This consumes
+- * significant time on all CPUs, and is thus not recommended for
+- * any sort of common-case code.
+- *
+- * Note that it is illegal to call this function while holding any
+- * lock that is acquired by a CPU-hotplug notifier.  Failing to
+- * observe this restriction will result in deadlock.
+- */
+-void synchronize_sched_expedited(void)
+-{
+-	int snap, trycount = 0;
+-
+-	smp_mb();  /* ensure prior mod happens before capturing snap. */
+-	snap = atomic_read(&synchronize_sched_expedited_count) + 1;
+-	get_online_cpus();
+-	while (try_stop_cpus(cpu_online_mask,
+-			     synchronize_sched_expedited_cpu_stop,
+-			     NULL) == -EAGAIN) {
+-		put_online_cpus();
+-		if (trycount++ < 10)
+-			udelay(trycount * num_online_cpus());
+-		else {
+-			synchronize_sched();
+-			return;
+-		}
+-		if (atomic_read(&synchronize_sched_expedited_count) - snap > 0) {
+-			smp_mb(); /* ensure test happens before caller kfree */
+-			return;
+-		}
+-		get_online_cpus();
+-	}
+-	atomic_inc(&synchronize_sched_expedited_count);
+-	smp_mb__after_atomic_inc(); /* ensure post-GP actions seen after GP. */
+-	put_online_cpus();
+-}
+-EXPORT_SYMBOL_GPL(synchronize_sched_expedited);
+-
+-#endif /* #else #ifndef CONFIG_SMP */
 -- 
 1.7.0.6
 
