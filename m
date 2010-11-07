@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914Ab0KGIDz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 03:03:55 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:41175 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752069Ab0KGIDy (ORCPT
+	id S1753121Ab0KGIEp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 03:04:45 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:51998 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752470Ab0KGIEo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 03:03:54 -0500
+	Sun, 7 Nov 2010 03:04:44 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=M2d4MeoMvZO2T9ZhgA/tn+40Cf1pGG6qzbIznW1B+i3Q4X6vKHWA8tLVrfyTeRJ1vH
-         VD+C6xwADanGs37B6vzsrWkql2cO04Io+MZMSVzRsVIAMsYv4rSLwXYsV6OO1cpNpstr
-         aFg3yOgCPmbzmrBD4zE2fDTszTX00usIF9qqA=
-Date: Sun, 7 Nov 2010 16:06:48 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Anders Kaseorg <andersk@ksplice.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        Tim Abbott <tabbott@ksplice.com>
-Subject: Re: [PATCH] module: Update prototype for ref_module (formerly
-	use_module)
-Message-ID: <20101107080648.GN3046@hack>
-References: <alpine.DEB.2.00.1011051702090.3947@dr-wily.mit.edu>
+        h=mime-version:reply-to:from:date:message-id:subject:to:cc
+         :content-type;
+        b=T+sft7hxHmvRsvGRB4BT0b2cvzs+u3US8l3HYhQYAtK4OUxnWCcIPqMXKiZbS2VtdQ
+         R86bs5VwctvAB0ICbkEH8E1OQFm4CaqoRdFa3uodTpwc1eTkwNoum/BrfqAp9YfHfax1
+         +98ifVPk2InhvQ4kTZu0YMrpIQ5bc8JgUZHa0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1011051702090.3947@dr-wily.mit.edu>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Reply-To: mtk.manpages@gmail.com
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+Date: Sun, 7 Nov 2010 09:04:22 +0100
+Message-ID: <AANLkTi=mM2GoL=+umHJ6dDCqa7dNmG3=ra8xDOW4QCEV@mail.gmail.com>
+Subject: Inconsistent credential checking in prlimit() syscall
+To: Neil Horman <nhorman@tuxdriver.com>, Jiri Slaby <jslaby@novell.com>
+Cc: marcin.slusarz@gmail.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <jmorris@namei.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Michael Kerrisk <mtk.manpages@googlemail.com>,
+        Linux API <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 05, 2010 at 05:05:46PM -0400, Anders Kaseorg wrote:
->Commit 9bea7f23952d5948f8e5dfdff4de09bb9981fb5f renamed use_module to
->ref_module (and changed its return value), but forgot to update this
->prototype in module.h.
->
->Signed-off-by: Anders Kaseorg <andersk@ksplice.com>
+Hello Neil, Jiri,
 
-Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
+I  started documenting the prlimit() system call added in 2.6.36, and
+found the permission checks to be rather inconsistent with any other
+kernel-userspace API. They are:
 
-I am wondering why we find this after 5 months! :-/
+CAP_SYS_RESOURCE ||
+(c-uid == t-uid && c0uid == t-euid && c-uid == t-suid) &&
+(c-gid == t-gid && c-gid == t-guid && c-gid == t-sgid)
 
->---
-> include/linux/module.h |    2 +-
-> 1 files changed, 1 insertions(+), 1 deletions(-)
->
->diff --git a/include/linux/module.h b/include/linux/module.h
->index aace066..caf6105 100644
->--- a/include/linux/module.h
->+++ b/include/linux/module.h
->@@ -514,7 +514,7 @@ static inline void __module_get(struct module *module)
-> #define symbol_put_addr(p) do { } while(0)
-> 
-> #endif /* CONFIG_MODULE_UNLOAD */
->-int use_module(struct module *a, struct module *b);
->+int ref_module(struct module *a, struct module *b);
-> 
-> /* This is a #define so the string doesn't get put in every .o file */
-> #define module_name(mod)			\
->-- 
->1.7.3.1
->
->--
->To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
->Please read the FAQ at  http://www.tux.org/lkml/
+(uid == real UID; euid == effective UID; suid == save set-user-ID; and
+analogously for GIDs; c- == caller's ID, and t- == target process's
+ID)
+
+In other words, for an unprivileged user, all UIDs of the target
+process must match the calling process's real UID *and* all GIDs of
+the target process must match the calling process's real GID.
+
+What is the reason that the checks for prlimit() aren't similar to say
+setpriority(), whose checks are the much simpler, and make no mention
+of GIDs:
+
+c-euid == t-uid || c-euid == t-euid
+
+?
+
+Thanks,
+
+Michael
+
+PS see also http://linux-man-pages.blogspot.com/2010/11/system-call-credential-checking-tale-of.html
 
 -- 
-Live like a child, think like the god.
- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
