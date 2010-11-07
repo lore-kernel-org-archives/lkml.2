@@ -1,164 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568Ab0KGWP4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 17:15:56 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:45344 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752014Ab0KGWPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 17:15:08 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Greg Thelen <gthelen@google.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Young <hidave.darkstar@gmail.com>,
-        Andrea Righi <arighi@develer.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch 3/4] memcg: break out event counters from other stats
-Date: Sun,  7 Nov 2010 23:14:38 +0100
-Message-Id: <20101107220353.684449249@cmpxchg.org>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <20101107215030.007259800@cmpxchg.org>
-References: <20101107215030.007259800@cmpxchg.org>
-User-Agent: quilt/0.48-1
-References: <1288973333-7891-1-git-send-email-minchan.kim@gmail.com> <20101106010357.GD23393@cmpxchg.org> <AANLkTin9m65JVKRuStZ1-qhU5_1AY-GcbBRC0TodsfYC@mail.gmail.com> <20101107215030.007259800@cmpxchg.org>
-Content-Disposition: inline; filename=memcg-break-out-event-counters-from-other-stats.patch
+	id S1752731Ab0KGWWm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 17:22:42 -0500
+Received: from smtp.scorch.co.nz ([27.110.127.199]:45442 "HELO scorch.co.nz"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1751417Ab0KGWWk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 17:22:40 -0500
+X-Virus-Checked: Checked by ClamAV on scorch.co.nz
+From: Charles Manning <manningc2@actrix.gen.nz>
+To: Chris Snook <chris.snook@gmail.com>
+Subject: Re: [PATCH 1/9] Add yaffs Kconfig and Makefile
+Date: Mon, 8 Nov 2010 11:22:36 +1300
+User-Agent: KMail/1.9.10
+Cc: Valdis.Kletnieks@vt.edu, cdhmanning@gmail.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+References: <1288803204-3849-1-git-send-email-cdhmanning@gmail.com> <201011080959.35220.manningc2@actrix.gen.nz> <AANLkTikZ19E3EXQ+DPKvWRXYZdmpin0Z_2QAnyFoFm6i@mail.gmail.com>
+In-Reply-To: <AANLkTikZ19E3EXQ+DPKvWRXYZdmpin0Z_2QAnyFoFm6i@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+Message-Id: <201011081122.37145.manningc2@actrix.gen.nz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For increasing and decreasing per-cpu cgroup usage counters it makes
-sense to use signed types, as single per-cpu values might go negative
-during updates.  But this is not the case for only-ever-increasing
-event counters.
+On Monday 08 November 2010 10:45:32 Chris Snook wrote:
+> On Sun, Nov 7, 2010 at 4:59 PM, Charles Manning <manningc2@actrix.gen.nz> 
+wrote:
+> > On Saturday 06 November 2010 14:50:58 Valdis.Kletnieks@vt.edu wrote:
+> >> On Thu, 04 Nov 2010 05:53:16 +1300, cdhmanning@gmail.com said:
+> >> > From: Charles Manning <cdhmanning@gmail.com>
+> >> > +config YAFFS_EMPTY_LOST_AND_FOUND
+> >> > +   bool "Empty lost and found on boot"
+> >> > +   depends on YAFFS_FS
+> >> > +   default n
+> >> > +   help
+> >> > +     If this is enabled then the contents of lost and found is
+> >> > +     automatically dumped at mount.
+> >>
+> >> Wow.. Just.. wow.
+> >
+> > What does that mean?
+> >
+> >> Under what use case is this a good idea for a config
+> >> option as opposed to a mount option?
+> >
+> > It is both.
+> >
+> > Providing a config option provides the system integrator with flexibility
+> > in how they set things up.
+>
+> Does the config option override the mount option, or does the mount
+> option override the config option? 
 
-All the counters have been signed 64-bit so far, which was enough to
-count events even with the sign bit wasted.
+Config sets up a default, mount options can override those.
 
-The next patch narrows the usage counters type (on 32-bit CPUs, that
-is), though, so break out the event counters and make them unsigned
-words as they should have been from the start.
+> No matter what you do, someone 
+> will be surprised, and that's a bad thing.  I'm having difficulty
+> imagining a circumstance when you couldn't simply do this in userspace
+> immediately after mount, but if for whatever reason you need
+> mount+dump to be an atomic operation,
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- mm/memcontrol.c |   49 +++++++++++++++++++++++++++++++++++++------------
- 1 file changed, 37 insertions(+), 12 deletions(-)
+Sure it could be done in user space, but it is easier to handle this in the 
+mount.
 
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -85,21 +85,23 @@ enum mem_cgroup_stat_index {
- 	 */
- 	MEM_CGROUP_STAT_CACHE, 	   /* # of pages charged as cache */
- 	MEM_CGROUP_STAT_RSS,	   /* # of pages charged as anon rss */
--	MEM_CGROUP_STAT_PGPGIN_COUNT,	/* # of pages paged in */
--	MEM_CGROUP_STAT_PGPGOUT_COUNT,	/* # of pages paged out */
- 	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
- 	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
- 	MEM_CGROUP_STAT_FILE_DIRTY,	/* # of dirty pages in page cache */
- 	MEM_CGROUP_STAT_FILE_WRITEBACK,		/* # of pages under writeback */
- 	MEM_CGROUP_STAT_FILE_UNSTABLE_NFS,	/* # of NFS unstable pages */
- 	MEM_CGROUP_STAT_DATA, /* end of data requires synchronization */
--	/* incremented at every  pagein/pageout */
--	MEM_CGROUP_EVENTS = MEM_CGROUP_STAT_DATA,
- 	MEM_CGROUP_ON_MOVE,	/* someone is moving account between groups */
--
- 	MEM_CGROUP_STAT_NSTATS,
- };
- 
-+enum mem_cgroup_events_index {
-+	MEM_CGROUP_EVENTS_PGPGIN,	/* # of pages paged in */
-+	MEM_CGROUP_EVENTS_PGPGOUT,	/* # of pages paged out */
-+	MEM_CGROUP_EVENTS_COUNT,	/* # of pages paged in/out */
-+	MEM_CGROUP_EVENTS_NSTATS,
-+};
-+
- enum {
- 	MEM_CGROUP_DIRTY_RATIO,
- 	MEM_CGROUP_DIRTY_LIMIT_IN_BYTES,
-@@ -109,6 +111,7 @@ enum {
- 
- struct mem_cgroup_stat_cpu {
- 	s64 count[MEM_CGROUP_STAT_NSTATS];
-+	unsigned long events[MEM_CGROUP_EVENTS_NSTATS];
- };
- 
- /*
-@@ -612,6 +615,22 @@ static void mem_cgroup_swap_statistics(s
- 	this_cpu_add(mem->stat->count[MEM_CGROUP_STAT_SWAPOUT], val);
- }
- 
-+static unsigned long mem_cgroup_read_events(struct mem_cgroup *mem,
-+					    enum mem_cgroup_events_index idx)
-+{
-+	unsigned long val = 0;
-+	int cpu;
-+
-+	for_each_online_cpu(cpu)
-+		val += per_cpu(mem->stat->events[idx], cpu);
-+#ifdef CONFIG_HOTPLUG_CPU
-+	spin_lock(&mem->pcp_counter_lock);
-+	val += mem->nocpu_base.events[idx];
-+	spin_unlock(&mem->pcp_counter_lock);
-+#endif
-+	return val;
-+}
-+
- static void mem_cgroup_charge_statistics(struct mem_cgroup *mem,
- 					 struct page_cgroup *pc,
- 					 bool charge)
-@@ -626,10 +645,10 @@ static void mem_cgroup_charge_statistics
- 		__this_cpu_add(mem->stat->count[MEM_CGROUP_STAT_RSS], val);
- 
- 	if (charge)
--		__this_cpu_inc(mem->stat->count[MEM_CGROUP_STAT_PGPGIN_COUNT]);
-+		__this_cpu_inc(mem->stat->events[MEM_CGROUP_EVENTS_PGPGIN]);
- 	else
--		__this_cpu_inc(mem->stat->count[MEM_CGROUP_STAT_PGPGOUT_COUNT]);
--	__this_cpu_inc(mem->stat->count[MEM_CGROUP_EVENTS]);
-+		__this_cpu_inc(mem->stat->events[MEM_CGROUP_EVENTS_PGPGOUT]);
-+	__this_cpu_inc(mem->stat->events[MEM_CGROUP_EVENTS_COUNT]);
- 
- 	preempt_enable();
- }
-@@ -651,9 +670,9 @@ static unsigned long mem_cgroup_get_loca
- 
- static bool __memcg_event_check(struct mem_cgroup *mem, int event_mask_shift)
- {
--	s64 val;
-+	unsigned long val;
- 
--	val = this_cpu_read(mem->stat->count[MEM_CGROUP_EVENTS]);
-+	val = this_cpu_read(mem->stat->events[MEM_CGROUP_EVENTS_COUNT]);
- 
- 	return !(val & ((1 << event_mask_shift) - 1));
- }
-@@ -2055,6 +2074,12 @@ static void mem_cgroup_drain_pcp_counter
- 		per_cpu(mem->stat->count[i], cpu) = 0;
- 		mem->nocpu_base.count[i] += x;
- 	}
-+	for (i = 0; i < MEM_CGROUP_EVENTS_NSTATS; i++) {
-+		unsigned long x = per_cpu(mem->stat->events[i], cpu);
-+
-+		per_cpu(mem->stat->events[i], cpu) = 0;
-+		mem->nocpu_base.events[i] += x;
-+	}
- 	/* need to clear ON_MOVE value, works as a kind of lock. */
- 	per_cpu(mem->stat->count[MEM_CGROUP_ON_MOVE], cpu) = 0;
- 	spin_unlock(&mem->pcp_counter_lock);
-@@ -3892,9 +3917,9 @@ mem_cgroup_get_local_stat(struct mem_cgr
- 	s->stat[MCS_RSS] += val * PAGE_SIZE;
- 	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_FILE_MAPPED);
- 	s->stat[MCS_FILE_MAPPED] += val * PAGE_SIZE;
--	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_PGPGIN_COUNT);
-+	val = mem_cgroup_read_events(mem, MEM_CGROUP_EVENTS_PGPGIN);
- 	s->stat[MCS_PGPGIN] += val;
--	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_PGPGOUT_COUNT);
-+	val = mem_cgroup_read_events(mem, MEM_CGROUP_EVENTS_PGPGOUT);
- 	s->stat[MCS_PGPGOUT] += val;
- 	if (do_swap_account) {
- 		val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_SWAPOUT);
+> it *really* should not be 
+> polluting the kernel configuration.
 
+Perhaps just make it a mount option.
 
+>
+> There are a whole bunch of options in here that appear to be intended
+> to support various different stages of development.  Is there some
+> reason why you can't call that mess of permutations YAFFS1, and merge
+> a clean YAFFS2 patch that doesn't depend on it? 
+
+You seem to misunderstand what YAFFS1 and YAFFS2 are.
+
+Your point is well taken though. Many of these options are "tweaks" that could 
+be dropped form Kconfig and only offered as mount options.
+
+> I know that you're 
+> trying to support multiple operating systems with the same codebase,
+> but once your code is merged it will get patched by other people
+> making kernel-wide changes, and testing (or even eyeballing) all those
+> permutations will be far outside the realm of feasibility.
+
+To be clear: none of the Kconfig options relate to other OS support.
+
+It is my intention to continue to support other OSs and backporting + new 
+features though yaffs.net and patch those into mainstream. While some future 
+changes might make this infeasible, I'll cross that bridge when we get to it.  
+I'm not going to give up yet.
+
+-- Charles
