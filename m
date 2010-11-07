@@ -1,76 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753109Ab0KGOqh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 09:46:37 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:59259 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752408Ab0KGOqf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 09:46:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=jWRZZb40DVdwIWl2goTvN0KHcw/y0FmdL0KbI6fBrflxVMRL+JIOPlIOupH3dMt1n4
-         gVYs3cJQwbePAgb4Pt7TIvhXxD0Yko5pOduXSr1EE7xsNXtNdoSMJcosFkOdUNwZ56Rp
-         Va5NocWkWAWz/FD11h1KH087YnOqBJxfphVDY=
-From: Tracey Dent <tdent48227@gmail.com>
-To: dmitry.torokhov@gmail.com
-Cc: jkosina@suse.cz, chatty@enac.fr, spbnick@gmail.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tracey Dent <tdent48227@gmail.com>
-Subject: [PATCH 1/2] Drivers: hid: Makefile: Cleaned up Makefile
-Date: Sun,  7 Nov 2010 09:46:27 -0500
-Message-Id: <1289141188-1447-1-git-send-email-tdent48227@gmail.com>
-X-Mailer: git-send-email 1.7.3.2.161.g3089c
+	id S1753250Ab0KGPGG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 10:06:06 -0500
+Received: from cantor.suse.de ([195.135.220.2]:45494 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752938Ab0KGPGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 10:06:03 -0500
+Date: Sun, 7 Nov 2010 16:06:01 +0100
+From: Jan Kara <jack@suse.cz>
+To: Alessio Igor Bogani <abogani@texware.it>
+Cc: Jan Kara <jack@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
+        Christoph Hellwig <hch@infradead.org>, Tim Bird <tim.bird@am.sony.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] udf: Add missed protection for s_lvid_dirty
+Message-ID: <20101107150601.GG5126@quack.suse.cz>
+References: <1289065631-2256-1-git-send-email-abogani@texware.it>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289065631-2256-1-git-send-email-abogani@texware.it>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changed Makefile to use <modules>-y instead of <modules>-objs because -objs is
-deprecated and should now be switched. According to (documentation/kbuild/makefiles.txt).
+On Sat 06-11-10 18:47:08, Alessio Igor Bogani wrote:
+> As reported in udf_sb.h the udf_sb_infoi's structure member s_lvid_dirty should
+> be protected by s_alloc_mutex. Added that mutex on a couple of places where it
+> miss.
+> 
+> This work was supported by a hardware donation from the CE Linux Forum.
+  Thanks for doing the work! I actually did some work on BKL removal in UDF
+before I learned that you also started working on it. My series is not
+complete and needs testing but the sb-locking is better explained there I
+think so it should address Christoph's comments. So could you maybe base your
+changes on patches I already have?
+  I've pushed the branch with my BKL patches to:
+git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-udf-2.6
+  to branch
+bkl_removal
+  Basically it is missing removal of BKL usage for protection of extents
+in a buffer. I wanted to use inode->i_alloc_sem for that if it won't be too
+ugly, otherwise some fs-private rw semaphore. I specifically didn't want to
+use mutex because that would unnecessarily serialize parallel readers.
 
-Signed-off-by: Tracey Dent <tdent48227@gmail.com>
----
- drivers/hid/Makefile |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
-index c335605..dad858b 100644
---- a/drivers/hid/Makefile
-+++ b/drivers/hid/Makefile
-@@ -1,7 +1,7 @@
- #
- # Makefile for the HID driver
- #
--hid-objs			:= hid-core.o hid-input.o
-+hid-y			:= hid-core.o hid-input.o
- 
- ifdef CONFIG_DEBUG_FS
- 	hid-objs		+= hid-debug.o
-@@ -11,18 +11,18 @@ obj-$(CONFIG_HID)		+= hid.o
- 
- hid-$(CONFIG_HIDRAW)		+= hidraw.o
- 
--hid-logitech-objs		:= hid-lg.o
-+hid-logitech-y		:= hid-lg.o
- ifdef CONFIG_LOGITECH_FF
--	hid-logitech-objs	+= hid-lgff.o
-+	hid-logitech-y	+= hid-lgff.o
- endif
- ifdef CONFIG_LOGIRUMBLEPAD2_FF
--	hid-logitech-objs	+= hid-lg2ff.o
-+	hid-logitech-y	+= hid-lg2ff.o
- endif
- ifdef CONFIG_LOGIG940_FF
--	hid-logitech-objs	+= hid-lg3ff.o
-+	hid-logitech-y	+= hid-lg3ff.o
- endif
- ifdef CONFIG_LOGIWII_FF
--	hid-logitech-objs	+= hid-lg4ff.o
-+	hid-logitech-y	+= hid-lg4ff.o
- endif
- 
- obj-$(CONFIG_HID_3M_PCT)	+= hid-3m-pct.o
+								Honza
 -- 
-1.7.3.1.104.gc752e
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
