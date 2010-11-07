@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752416Ab0KGMIe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 07:08:34 -0500
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:51341 "EHLO kernel.dk"
+	id S1752395Ab0KGMNP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 07:13:15 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:44841 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752219Ab0KGMIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 07:08:32 -0500
-Message-ID: <4CD696B4.6070002@kernel.dk>
-Date: Sun, 07 Nov 2010 13:08:20 +0100
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: dave b <db.pub.mail@gmail.com>
-CC: Sanjoy Mahajan <sanjoy@olin.edu>, Dave Chinner <david@fromorbit.com>,
-        Jesper Juhl <jj@chaosbits.net>, Chris Mason <chris.mason@oracle.com>,
-        Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@kernel.org>,
-        Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1752122Ab0KGMNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 07:13:14 -0500
+Date: Sun, 7 Nov 2010 13:12:35 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Willy Tarreau <w@1wt.eu>
+Cc: Marcus Meissner <meissner@suse.de>, security@kernel.org, mort@sgi.com,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, fweisbec@gmail.com,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        jason.wessel@windriver.com, tj@kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Nick Piggin <npiggin@suse.de>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "Ted Ts'o" <tytso@mit.edu>,
-        Corrado Zoccolo <czoccolo@gmail.com>,
-        Shaohua Li <shaohua.li@intel.com>, Steven Barrett <damentz@gmail.com>
-Subject: Re: 2.6.36 io bring the system to its knees
-References: <20101105014334.GF13830@dastard> <E1PELiI-0001Pj-8g@approx.mit.edu> <AANLkTimON_GL6vRF9=_U6oRFQ30EYssx3wv5xdNsU9JM@mail.gmail.com>
-In-Reply-To: <AANLkTimON_GL6vRF9=_U6oRFQ30EYssx3wv5xdNsU9JM@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Security] [PATCH] kernel: make /proc/kallsyms mode 400 to
+ reduce ease of attacking
+Message-ID: <20101107121235.GA6221@elte.hu>
+References: <20101104190804.GA16099@elte.hu>
+ <20101104212920.GA31256@1wt.eu>
+ <20101104215157.GA25128@elte.hu>
+ <20101104223526.GC31236@1wt.eu>
+ <20101107085016.GA23843@elte.hu>
+ <20101107094932.GT4627@1wt.eu>
+ <20101107112709.GA2634@elte.hu>
+ <20101107114156.GV4627@1wt.eu>
+ <20101107114756.GB3759@elte.hu>
+ <20101107115626.GX4627@1wt.eu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101107115626.GX4627@1wt.eu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-11-06 15:10, dave b wrote:
-> I now personally have thought that this problem is the kernel not
-> keeping track of reads vs writers properly  or not providing enough
-> time to reading processes as writing ones which look like they are
-> blocking the system....
-> 
-> If you want to do a simple test do an unlimited dd  (or two dd's of a
-> limited size, say 10gb) and a find /
-> Tell me how it goes :) ( the system will stall)
-> (obviously stop the dd after some time :) ).
-> 
-> http://article.gmane.org/gmane.linux.kernel.device-mapper.dm-crypt/4561
-> iirc can reproduce this on plain ext3.
 
-As already mentioned, ext3 is just not a good choice for this sort of
-thing. Did you have atimes enabled?
+* Willy Tarreau <w@1wt.eu> wrote:
 
--- 
-Jens Axboe
+> [...]
+>
+> It's precisely because you're making a special case of the security bug that you 
+> want to hide bugs from user-space by cheating on version.
 
+You claimed this for the second time and i'm denying it for the second time.
+
+The goal of fuzzing the version inforation is _not_ to 'hide bugs from user-space by 
+cheating on version'. The goal is to introduce uncertainty to attackers, so that a 
+honeypot silent alarm can warn the admin.
+
+Why are you putting words in my mouth?
+
+Thanks,
+
+	Ingo
