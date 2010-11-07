@@ -1,80 +1,332 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714Ab0KGUIW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 15:08:22 -0500
-Received: from mail.bluewatersys.com ([202.124.120.130]:62425 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751441Ab0KGUIU (ORCPT
+	id S1752242Ab0KGUTM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 15:19:12 -0500
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:50125 "EHLO
+	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750826Ab0KGUTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 15:08:20 -0500
-Message-ID: <4CD7076D.80507@bluewatersys.com>
-Date: Mon, 08 Nov 2010 09:09:17 +1300
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
-MIME-Version: 1.0
-To: Marco Stornelli <marco.stornelli@gmail.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Embedded <linux-embedded@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Tim Bird <tim.bird@am.sony.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 08/16 v2] pramfs: headers
-References: <4CD518C5.6000509@gmail.com>
-In-Reply-To: <4CD518C5.6000509@gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Sun, 7 Nov 2010 15:19:10 -0500
+From: "Henrik Rydberg" <rydberg@euromail.se>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chris Bagwell <chris@cnpbagwell.com>,
+        Chase Douglas <chasedouglas@gmail.com>, Takashi Iwai <tiwai@suse.de>,
+        Rafi Rubin <rafi@seas.upenn.edu>, Henrik Rydberg <rydberg@euromail.se>
+Subject: [PATCH] input: Introduce light-weight contact tracking
+Date: Sun,  7 Nov 2010 21:18:28 +0100
+Message-Id: <1289161108-32309-1-git-send-email-rydberg@euromail.se>
+X-Mailer: git-send-email 1.7.1
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1PFBhT-0002Yw-7Q.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PFBhT-0002Yw-7Q 88c550908514823c2252d534bc48a6d8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2010 09:58 PM, Marco Stornelli wrote:
-> From: Marco Stornelli <marco.stornelli@gmail.com>
-> 
-> Definitions for the PRAMFS filesystem.
-> 
-> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
-> ---
-> diff -Nurp linux-2.6.36-orig/fs/pramfs/pram.h linux-2.6.36/fs/pramfs/pram.h
-> --- linux-2.6.36-orig/fs/pramfs/pram.h	1970-01-01 01:00:00.000000000 +0100
-> +++ linux-2.6.36/fs/pramfs/pram.h	2010-10-30 12:02:45.000000000 +0200
-> @@ -0,0 +1,317 @@
+Some kernel drivers demand the use of contact tracking for proper
+filtering and pointer emulation. With one exception, these drivers
+are limited to a maximum of four concurrent contacts. This patch adds
+a simple matcher for up to four contacts, with these notable properties:
 
-> +/*
-> + * Structure of the super block in PRAMFS
-> + */
-> +struct pram_super_block {
-> +	__be16	s_sum;          /* checksum of this sb, including padding */
-> +	__be64	s_size;         /* total size of fs in bytes */
-> +	__be32	s_blocksize;    /* blocksize in bytes */
-> +	__be32	s_inodes_count;	/* total inodes count (used or free) */
-> +	__be32	s_free_inodes_count;/* free inodes count */
-> +	__be32	s_free_inode_hint;  /* start hint for locating free inodes */
-> +	__be32	s_blocks_count;	/* total data blocks count (used or free) */
-> +	__be32	s_free_blocks_count;/* free data blocks count */
-> +	__be32	s_free_blocknr_hint;/* free data blocks count */
-> +	__be64	s_bitmap_start; /* data block in-use bitmap location */
-> +	__be32	s_bitmap_blocks;/* size of bitmap in number of blocks */
-> +	__be32	s_mtime;	/* Mount time */
-> +	__be32	s_wtime;	/* Write time */
-> +	__be16	s_magic;	/* Magic signature */
-> +	char	s_volume_name[16]; /* volume name */
-> +};
+* Fixed-time computation scheme
+* Approximately 1.4 times faster than mtdev at 4 fingers [1]
+* Approximately 4.0 times faster than mtdev at 2 fingers [1]
 
-Is there a particular reason to use big endian types for the data
-structures? On a little endian machine you will end up converting values
-everywhere. I assume that you don't expect the machine to change
-endianess between reboots :-). If this is for generating/reading
-filesystems from userspace, wouldn't it be better to have the userspace
-tools specify the target endianess and do the conversions there?
+The matcher uses a fixed-size, auto-generated table [2], and is
+guaranteed to complete within a couple of hundred cycles. This makes
+is suitable as an opt-in also for drivers running in interrupt
+context.
 
-~Ryan
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 
+[1] running the mtdev-matching benchmark on a regular 64-bit machine
+[2] http://bitmath.org/code/mtdev/
+---
+Hi Dmitry,
+
+It has been a long time coming, and here is my proposition for
+in-kernel multitouch contact tracking. The idea is to use this small,
+limited matcher together with the upcoming synaptics and ntrig changes
+to make those drivers fully operational. The matcher also bridges a
+major gap in the transition to the MT slots protocol; with up to four
+contacts tracked in-kernel, we can treat all hid drivers and
+two-finger devices the same way. Only bcm5974 then remains, and there
+is some hope that it can be made to work with slots as well.
+
+The matcher is about a hundred lines of code and a kilobyte of static
+data. I put it in a separate file, in case it would be better
+configured as a module.
+
+I imagine you would prefer to get this kind of patch together with
+some actual change, but I wanted to check what you think of it
+first. One additional patch with pointer emulation support is planned,
+but that one seems better bundled with the MT support in input.c.
+
+The synaptics patches are currently cooking at Bagwell's, and we
+already discussed the API a bit. Something ntrig-ish is cooking at
+Rubin's, and there is also the ntrig driver in Ubuntu 10.10 to
+consider. All-in-all, it is my hope that posting this patch will
+simplify the synchronization of our efforts.
+
+Cheers,
+Henrik
+
+ drivers/input/Makefile    |    2 +-
+ drivers/input/input-trk.c |  194 +++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/input-trk.h |   30 +++++++
+ 3 files changed, 225 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/input/input-trk.c
+ create mode 100644 include/linux/input-trk.h
+
+diff --git a/drivers/input/Makefile b/drivers/input/Makefile
+index 7ad212d..eaa663c 100644
+--- a/drivers/input/Makefile
++++ b/drivers/input/Makefile
+@@ -5,7 +5,7 @@
+ # Each configuration option enables a list of files.
+ 
+ obj-$(CONFIG_INPUT)		+= input-core.o
+-input-core-objs := input.o input-compat.o ff-core.o
++input-core-objs := input.o input-compat.o ff-core.o input-trk.o
+ 
+ obj-$(CONFIG_INPUT_FF_MEMLESS)	+= ff-memless.o
+ obj-$(CONFIG_INPUT_POLLDEV)	+= input-polldev.o
+diff --git a/drivers/input/input-trk.c b/drivers/input/input-trk.c
+new file mode 100644
+index 0000000..ca08cd2
+--- /dev/null
++++ b/drivers/input/input-trk.c
+@@ -0,0 +1,193 @@
++/*
++ * Input Multitouch Tracking Library
++ *
++ * Copyright (c) 2010 Henrik Rydberg
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ */
++
++#include <linux/input-trk.h>
++
++/* generated by mtdev-kernel - do not edit */
++static const u8 match_data[] = {
++	0, 0, 1, 0, 1, 2, 0, 1, 2, 3, 0, 0, 0, 0, 1, 1,
++	1, 0, 0, 0, 1, 2, 1, 1, 0, 2, 2, 1, 2, 0, 0, 0,
++	1, 2, 3, 1, 1, 0, 2, 3, 2, 1, 2, 0, 3, 3, 1, 2,
++	3, 0, 0, 0, 1, 1, 1, 2, 1, 0, 0, 3, 0, 1, 1, 3,
++	1, 0, 2, 2, 3, 1, 2, 0, 0, 4, 0, 1, 2, 2, 4, 2,
++	1, 0, 0, 5, 0, 2, 1, 1, 5, 2, 0, 1, 1, 4, 1, 0,
++	2, 3, 2, 4, 1, 2, 0, 3, 3, 4, 1, 2, 3, 0, 0, 5,
++	0, 1, 2, 3, 2, 5, 2, 1, 0, 3, 3, 5, 2, 1, 3, 0,
++	0, 6, 0, 2, 1, 3, 1, 6, 2, 0, 1, 3, 3, 6, 2, 3,
++	1, 0, 0, 7, 0, 2, 3, 1, 1, 7, 2, 0, 3, 1, 2, 7,
++	2, 3, 0, 1, 0, 0, 1, 1, 2, 2, 1, 2, 1, 0, 0, 3,
++	0, 1, 1, 4, 2, 0, 3, 4, 2, 1, 0, 5, 0, 2, 2, 5,
++	1, 2, 2, 4, 6, 2, 1, 0, 1, 5, 6, 2, 0, 1, 2, 3,
++	7, 1, 2, 0, 0, 5, 7, 0, 2, 1, 1, 3, 8, 1, 0, 2,
++	0, 4, 8, 0, 1, 2, 2, 5, 8, 2, 1, 0, 3, 3, 5, 8,
++	2, 1, 3, 0, 1, 6, 8, 2, 0, 1, 3, 3, 6, 8, 2, 3,
++	1, 0, 1, 7, 8, 2, 0, 3, 1, 2, 7, 8, 2, 3, 0, 1,
++	2, 4, 9, 1, 2, 0, 3, 3, 4, 9, 1, 2, 3, 0, 0, 6,
++	9, 0, 2, 1, 3, 3, 6, 9, 3, 2, 1, 0, 0, 7, 9, 0,
++	2, 3, 1, 2, 7, 9, 3, 2, 0, 1, 1, 4, 10, 1, 0, 2,
++	3, 3, 4, 10, 1, 3, 2, 0, 0, 5, 10, 0, 1, 2, 3, 3,
++	5, 10, 3, 1, 2, 0, 0, 7, 10, 0, 3, 2, 1, 1, 7, 10,
++	3, 0, 2, 1, 1, 4, 11, 1, 0, 3, 2, 2, 4, 11, 1, 3,
++	0, 2, 0, 5, 11, 0, 1, 3, 2, 2, 5, 11, 3, 1, 0, 2,
++	0, 6, 11, 0, 3, 1, 2, 1, 6, 11, 3, 0, 1, 2, 0, 0,
++	1, 1, 2, 2, 3, 3, 1, 2, 1, 0, 0, 3, 0, 1, 1, 4,
++	2, 0, 3, 4, 2, 1, 0, 5, 0, 2, 2, 5, 1, 2, 1, 6,
++	3, 0, 3, 6, 3, 1, 5, 6, 3, 2, 0, 7, 0, 3, 2, 7,
++	1, 3, 4, 7, 2, 3, 2, 4, 6, 2, 1, 0, 1, 5, 6, 2,
++	0, 1, 2, 3, 7, 1, 2, 0, 0, 5, 7, 0, 2, 1, 1, 3,
++	8, 1, 0, 2, 0, 4, 8, 0, 1, 2, 2, 4, 9, 3, 1, 0,
++	1, 5, 9, 3, 0, 1, 2, 7, 9, 3, 2, 0, 5, 7, 9, 3,
++	2, 1, 1, 8, 9, 3, 0, 2, 4, 8, 9, 3, 1, 2, 2, 3,
++	10, 1, 3, 0, 0, 5, 10, 0, 3, 1, 2, 6, 10, 2, 3, 0,
++	5, 6, 10, 2, 3, 1, 0, 8, 10, 0, 3, 2, 3, 8, 10, 1,
++	3, 2, 1, 3, 11, 1, 0, 3, 0, 4, 11, 0, 1, 3, 1, 6,
++	11, 2, 0, 3, 4, 6, 11, 2, 1, 3, 0, 7, 11, 0, 2, 3,
++	3, 7, 11, 1, 2, 3, 3, 6, 9, 12, 3, 2, 1, 0, 2, 7,
++	9, 12, 3, 2, 0, 1, 3, 5, 10, 12, 3, 1, 2, 0, 1, 7,
++	10, 12, 3, 0, 2, 1, 2, 5, 11, 12, 3, 1, 0, 2, 1, 6,
++	11, 12, 3, 0, 1, 2, 3, 6, 8, 13, 2, 3, 1, 0, 2, 7,
++	8, 13, 2, 3, 0, 1, 3, 4, 10, 13, 1, 3, 2, 0, 0, 7,
++	10, 13, 0, 3, 2, 1, 2, 4, 11, 13, 1, 3, 0, 2, 0, 6,
++	11, 13, 0, 3, 1, 2, 3, 5, 8, 14, 2, 1, 3, 0, 1, 7,
++	8, 14, 2, 0, 3, 1, 3, 4, 9, 14, 1, 2, 3, 0, 0, 7,
++	9, 14, 0, 2, 3, 1, 1, 4, 11, 14, 1, 0, 3, 2, 0, 5,
++	11, 14, 0, 1, 3, 2, 2, 5, 8, 15, 2, 1, 0, 3, 1, 6,
++	8, 15, 2, 0, 1, 3, 2, 4, 9, 15, 1, 2, 0, 3, 0, 6,
++	9, 15, 0, 2, 1, 3, 1, 4, 10, 15, 1, 0, 2, 3, 0, 5,
++	10, 15, 0, 1, 2, 3,
++};
++
++/* generated by mtdev-kernel - do not edit */
++static const int match_index[][5] = {
++	{ 0, 0, 1, 3, 6 },
++	{ 10, 10, 12, 18, 30 },
++	{ 50, 50, 54, 62, 92 },
++	{ 164, 164, 170, 194, 230 },
++	{ 398, 398, 406, 454, 598 },
++	{ 790 }
++};
++
++static void set_dist(u32 *dist,
++		     const struct trk_coord *b1, const struct trk_coord *e1,
++		     const struct trk_coord *b2, const struct trk_coord *e2)
++{
++	const struct trk_coord *p, *q;
++
++	for (p = b1; p != e1; p++)
++		for (q = b2; q != e2; q++)
++			*dist++ = abs(q->x - p->x) + abs(q->y - p->y);
++}
++
++const u8 *match_four(const struct trk_coord *old, int nslot,
++		     const struct trk_coord *pos, int npos)
++{
++	u32 d[16], obj, t;
++	const u8 *p, *b, *e;
++	const int *at;
++
++	set_dist(d, old, old + nslot, pos, pos + npos);
++
++	at = &match_index[nslot][npos];
++	b = &match_data[at[0]];
++	e = &match_data[at[1]];
++
++	obj = UINT_MAX, p = b;
++
++	switch (min(nslot, npos)) {
++	case 1:
++		for (; b != e; b += npos) {
++			t = d[*b++];
++			if (t < obj)
++				obj = t, p = b;
++		}
++		break;
++	case 2:
++		for (; b != e; b += npos) {
++			t = d[*b++], t += d[*b++];
++			if (t < obj)
++				obj = t, p = b;
++		}
++		break;
++	case 3:
++		for (; b != e; b += npos) {
++			t = d[*b++], t += d[*b++], t += d[*b++];
++			if (t < obj)
++				obj = t, p = b;
++		}
++		break;
++	case 4:
++		for (; b != e; b += npos) {
++			t = d[*b++], t += d[*b++], t += d[*b++], t += d[*b++];
++			if (t < obj)
++				obj = t, p = b;
++		}
++		break;
++	}
++
++	return p;
++}
++
++static int get_mt_value(const struct input_mt_slot *slot, unsigned code)
++{
++	return slot->abs[code - ABS_MT_FIRST];
++}
++
++/**
++ * input_trk_assign_slots_by_coord() - perform a best-match assignment
++ * @dev: input device with allocated MT slots
++ * @slots: the slot assignment to be filled
++ * @coords: the coordinate array to match
++ * @num_coords: number of coordinates
++ *
++ * Performs a best match against the current contacts and returns
++ * the slot assignment list. New contacts are assigned to unused
++ * slots.
++ *
++ * Returns zero on success, or negative error in case of failure.
++ */
++int input_trk_assign_slots_by_coord(struct input_dev *dev, int *slots,
++				    const struct trk_coord *coords,
++				    int num_coords)
++{
++	struct trk_coord old[4];
++	int old2slot[4], nold, i;
++	const u8 *p;
++
++	if (!dev->mt)
++		return -ENXIO;
++	if (dev->mtsize < 2 || dev->mtsize > 4)
++		return -ENXIO;
++	if (num_coords > dev->mtsize)
++		return -EINVAL;
++	if (num_coords < 1)
++		return 0;
++
++	nold = 0;
++	for (i = 0; i < dev->mtsize; i++) {
++		const struct input_mt_slot *mt = &dev->mt[i];
++		if (get_mt_value(mt, ABS_MT_TRACKING_ID) < 0)
++			continue;
++		old[nold].x = get_mt_value(mt, ABS_MT_POSITION_X);
++		old[nold].y = get_mt_value(mt, ABS_MT_POSITION_Y);
++		old2slot[nold++] = i;
++	}
++
++	p = match_four(old, nold, coords, num_coords);
++
++	for (i = 0; i < dev->mtsize; i++)
++		if (get_mt_value(&dev->mt[i], ABS_MT_TRACKING_ID) < 0)
++			old2slot[nold++] = i;
++
++	for (i = 0; i < num_coords; i++)
++		slots[i] = old2slot[p[i]];
++
++	return 0;
++}
++EXPORT_SYMBOL(input_trk_assign_slots_by_coord);
+diff --git a/include/linux/input-trk.h b/include/linux/input-trk.h
+new file mode 100644
+index 0000000..e10e312
+--- /dev/null
++++ b/include/linux/input-trk.h
+@@ -0,0 +1,30 @@
++#ifndef _INPUT_TRK_H
++#define _INPUT_TRK_H
++
++/*
++ * Input Multitouch Tracking Library
++ *
++ * Copyright (c) 2010 Henrik Rydberg
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ */
++
++#include <linux/input.h>
++
++/**
++ * struct trk_coord - contact coordinate
++ * @x: horizontal coordinate
++ * @y: vertical coordinate
++ */
++struct trk_coord {
++	int x;
++	int y;
++};
++
++int input_trk_assign_slots_by_coord(struct input_dev *dev, int *slots,
++				    const struct trk_coord *coords,
++				    int num_coords);
++
++#endif
 -- 
-Bluewater Systems Ltd - ARM Technology Solution Centre
+1.7.1
 
-Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
-ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
-http://www.bluewatersys.com	New Zealand
-Phone: +64 3 3779127		Freecall: Australia 1800 148 751
-Fax:   +64 3 3779135			  USA 1800 261 2934
