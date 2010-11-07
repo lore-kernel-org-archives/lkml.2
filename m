@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753580Ab0KGCGS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 22:06:18 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:49264 "EHLO e2.ny.us.ibm.com"
+	id S1753503Ab0KGCGQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 22:06:16 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:36692 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752918Ab0KGCFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752522Ab0KGCFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 6 Nov 2010 22:05:42 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -14,9 +14,9 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 09/12] rcu,cleanup: simplify the code when cpu is dying
-Date: Sat,  6 Nov 2010 19:05:29 -0700
-Message-Id: <1289095532-5398-9-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 05/12] rcu: document TINY_RCU and TINY_PREEMPT_RCU tracing.
+Date: Sat,  6 Nov 2010 19:05:25 -0700
+Message-Id: <1289095532-5398-5-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.6
 In-Reply-To: <20101107020507.GA4974@linux.vnet.ibm.com>
 References: <20101107020507.GA4974@linux.vnet.ibm.com>
@@ -24,253 +24,162 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-
-When we handle the CPU_DYING notifier, the whole system is stopped except
-for the current CPU.  We therefore need no synchronization with the other
-CPUs.  This allows us to move any orphaned RCU callbacks directly to the
-list of any online CPU without needing to run them through the global
-orphan lists.  These global orphan lists can therefore be dispensed with.
-This commit makes thes changes, though currently victimizes CPU 0 @@@.
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree.c        |   81 ++++++++++++----------------------------------
- kernel/rcutree.h        |   16 ++-------
- kernel/rcutree_plugin.h |    8 ++--
- kernel/rcutree_trace.c  |    4 +-
- 4 files changed, 31 insertions(+), 78 deletions(-)
+ Documentation/RCU/trace.txt |  132 ++++++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 124 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index ccdc04c..669d7fe 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -67,9 +67,6 @@ static struct lock_class_key rcu_node_class[NUM_RCU_LVLS];
- 	.gpnum = -300, \
- 	.completed = -300, \
- 	.onofflock = __RAW_SPIN_LOCK_UNLOCKED(&structname.onofflock), \
--	.orphan_cbs_list = NULL, \
--	.orphan_cbs_tail = &structname.orphan_cbs_list, \
--	.orphan_qlen = 0, \
- 	.fqslock = __RAW_SPIN_LOCK_UNLOCKED(&structname.fqslock), \
- 	.n_force_qs = 0, \
- 	.n_force_qs_ngp = 0, \
-@@ -984,53 +981,31 @@ rcu_check_quiescent_state(struct rcu_state *rsp, struct rcu_data *rdp)
- #ifdef CONFIG_HOTPLUG_CPU
+diff --git a/Documentation/RCU/trace.txt b/Documentation/RCU/trace.txt
+index a851118..ff6d3f1 100644
+--- a/Documentation/RCU/trace.txt
++++ b/Documentation/RCU/trace.txt
+@@ -1,18 +1,22 @@
+ CONFIG_RCU_TRACE debugfs Files and Formats
  
- /*
-- * Move a dying CPU's RCU callbacks to the ->orphan_cbs_list for the
-- * specified flavor of RCU.  The callbacks will be adopted by the next
-- * _rcu_barrier() invocation or by the CPU_DEAD notifier, whichever
-- * comes first.  Because this is invoked from the CPU_DYING notifier,
-- * irqs are already disabled.
-+ * Move a dying CPU's RCU callbacks to online CPU's callback list.
-+ * Synchronization is not required because this function executes
-+ * in stop_machine() context.
-  */
--static void rcu_send_cbs_to_orphanage(struct rcu_state *rsp)
-+static void rcu_send_cbs_to_online(struct rcu_state *rsp)
- {
- 	int i;
-+	/* current DYING CPU is cleared in the cpu_online_mask */
-+	int receive_cpu = cpumask_any(cpu_online_mask);
- 	struct rcu_data *rdp = this_cpu_ptr(rsp->rda);
-+	struct rcu_data *receive_rdp = per_cpu_ptr(rsp->rda, receive_cpu);
  
- 	if (rdp->nxtlist == NULL)
- 		return;  /* irqs disabled, so comparison is stable. */
--	raw_spin_lock(&rsp->onofflock);  /* irqs already disabled. */
--	*rsp->orphan_cbs_tail = rdp->nxtlist;
--	rsp->orphan_cbs_tail = rdp->nxttail[RCU_NEXT_TAIL];
+-The rcutree implementation of RCU provides debugfs trace output that
+-summarizes counters and state.  This information is useful for debugging
+-RCU itself, and can sometimes also help to debug abuses of RCU.
+-The following sections describe the debugfs files and formats.
++The rcutree and rcutiny implementations of RCU provide debugfs trace
++output that summarizes counters and state.  This information is useful for
++debugging RCU itself, and can sometimes also help to debug abuses of RCU.
++The following sections describe the debugfs files and formats, first
++for rcutree and next for rcutiny.
+ 
+ 
+-Hierarchical RCU debugfs Files and Formats
++CONFIG_TREE_RCU and CONFIG_TREE_PREEMPT_RCU debugfs Files and Formats
+ 
+-This implementation of RCU provides three debugfs files under the
++These implementations of RCU provides five debugfs files under the
+ top-level directory RCU: rcu/rcudata (which displays fields in struct
+-rcu_data), rcu/rcugp (which displays grace-period counters), and
+-rcu/rcuhier (which displays the struct rcu_node hierarchy).
++rcu_data), rcu/rcudata.csv (which is a .csv spreadsheet version of
++rcu/rcudata), rcu/rcugp (which displays grace-period counters),
++rcu/rcuhier (which displays the struct rcu_node hierarchy), and
++rcu/rcu_pending (which displays counts of the reasons that the
++rcu_pending() function decided that there was core RCU work to do).
+ 
+ The output of "cat rcu/rcudata" looks as follows:
+ 
+@@ -326,3 +330,115 @@ o	"nn" is the number of times that this CPU needed nothing.  Alert
+ 	readers will note that the rcu "nn" number for a given CPU very
+ 	closely matches the rcu_bh "np" number for that same CPU.  This
+ 	is due to short-circuit evaluation in rcu_pending().
 +
-+	*receive_rdp->nxttail[RCU_NEXT_TAIL] = rdp->nxtlist;
-+	receive_rdp->nxttail[RCU_NEXT_TAIL] = rdp->nxttail[RCU_NEXT_TAIL];
-+	receive_rdp->qlen += rdp->qlen;
-+	receive_rdp->n_cbs_adopted += rdp->qlen;
-+	rdp->n_cbs_orphaned += rdp->qlen;
 +
- 	rdp->nxtlist = NULL;
- 	for (i = 0; i < RCU_NEXT_SIZE; i++)
- 		rdp->nxttail[i] = &rdp->nxtlist;
--	rsp->orphan_qlen += rdp->qlen;
--	rdp->n_cbs_orphaned += rdp->qlen;
- 	rdp->qlen = 0;
--	raw_spin_unlock(&rsp->onofflock);  /* irqs remain disabled. */
--}
--
--/*
-- * Adopt previously orphaned RCU callbacks.
-- */
--static void rcu_adopt_orphan_cbs(struct rcu_state *rsp)
--{
--	unsigned long flags;
--	struct rcu_data *rdp;
--
--	raw_spin_lock_irqsave(&rsp->onofflock, flags);
--	rdp = this_cpu_ptr(rsp->rda);
--	if (rsp->orphan_cbs_list == NULL) {
--		raw_spin_unlock_irqrestore(&rsp->onofflock, flags);
--		return;
--	}
--	*rdp->nxttail[RCU_NEXT_TAIL] = rsp->orphan_cbs_list;
--	rdp->nxttail[RCU_NEXT_TAIL] = rsp->orphan_cbs_tail;
--	rdp->qlen += rsp->orphan_qlen;
--	rdp->n_cbs_adopted += rsp->orphan_qlen;
--	rsp->orphan_cbs_list = NULL;
--	rsp->orphan_cbs_tail = &rsp->orphan_cbs_list;
--	rsp->orphan_qlen = 0;
--	raw_spin_unlock_irqrestore(&rsp->onofflock, flags);
- }
- 
- /*
-@@ -1081,8 +1056,6 @@ static void __rcu_offline_cpu(int cpu, struct rcu_state *rsp)
- 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
- 	if (need_report & RCU_OFL_TASKS_EXP_GP)
- 		rcu_report_exp_rnp(rsp, rnp);
--
--	rcu_adopt_orphan_cbs(rsp);
- }
- 
- /*
-@@ -1100,11 +1073,7 @@ static void rcu_offline_cpu(int cpu)
- 
- #else /* #ifdef CONFIG_HOTPLUG_CPU */
- 
--static void rcu_send_cbs_to_orphanage(struct rcu_state *rsp)
--{
--}
--
--static void rcu_adopt_orphan_cbs(struct rcu_state *rsp)
-+static void rcu_send_cbs_to_online(struct rcu_state *rsp)
- {
- }
- 
-@@ -1702,10 +1671,7 @@ static void _rcu_barrier(struct rcu_state *rsp,
- 	 * early.
- 	 */
- 	atomic_set(&rcu_barrier_cpu_count, 1);
--	preempt_disable(); /* stop CPU_DYING from filling orphan_cbs_list */
--	rcu_adopt_orphan_cbs(rsp);
- 	on_each_cpu(rcu_barrier_func, (void *)call_rcu_func, 1);
--	preempt_enable(); /* CPU_DYING can again fill orphan_cbs_list */
- 	if (atomic_dec_and_test(&rcu_barrier_cpu_count))
- 		complete(&rcu_barrier_completion);
- 	wait_for_completion(&rcu_barrier_completion);
-@@ -1831,18 +1797,13 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
- 	case CPU_DYING:
- 	case CPU_DYING_FROZEN:
- 		/*
--		 * preempt_disable() in _rcu_barrier() prevents stop_machine(),
--		 * so when "on_each_cpu(rcu_barrier_func, (void *)type, 1);"
--		 * returns, all online cpus have queued rcu_barrier_func().
--		 * The dying CPU clears its cpu_online_mask bit and
--		 * moves all of its RCU callbacks to ->orphan_cbs_list
--		 * in the context of stop_machine(), so subsequent calls
--		 * to _rcu_barrier() will adopt these callbacks and only
--		 * then queue rcu_barrier_func() on all remaining CPUs.
-+		 * The whole machine is "stopped" except this cpu, so we can
-+		 * touch any data without introducing corruption. And we send
-+		 * the callbacks to an attribute chosen online cpu.
- 		 */
--		rcu_send_cbs_to_orphanage(&rcu_bh_state);
--		rcu_send_cbs_to_orphanage(&rcu_sched_state);
--		rcu_preempt_send_cbs_to_orphanage();
-+		rcu_send_cbs_to_online(&rcu_bh_state);
-+		rcu_send_cbs_to_online(&rcu_sched_state);
-+		rcu_preempt_send_cbs_to_online();
- 		break;
- 	case CPU_DEAD:
- 	case CPU_DEAD_FROZEN:
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index 91d4170..1a54be2 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -203,8 +203,8 @@ struct rcu_data {
- 	long		qlen_last_fqs_check;
- 					/* qlen at last check for QS forcing */
- 	unsigned long	n_cbs_invoked;	/* count of RCU cbs invoked. */
--	unsigned long	n_cbs_orphaned;	/* RCU cbs sent to orphanage. */
--	unsigned long	n_cbs_adopted;	/* RCU cbs adopted from orphanage. */
-+	unsigned long   n_cbs_orphaned; /* RCU cbs orphaned by dying CPU */
-+	unsigned long   n_cbs_adopted;  /* RCU cbs adopted from dying CPU */
- 	unsigned long	n_force_qs_snap;
- 					/* did other CPU force QS recently? */
- 	long		blimit;		/* Upper limit on a processed batch */
-@@ -309,15 +309,7 @@ struct rcu_state {
- 	/* End of fields guarded by root rcu_node's lock. */
- 
- 	raw_spinlock_t onofflock;		/* exclude on/offline and */
--						/*  starting new GP.  Also */
--						/*  protects the following */
--						/*  orphan_cbs fields. */
--	struct rcu_head *orphan_cbs_list;	/* list of rcu_head structs */
--						/*  orphaned by all CPUs in */
--						/*  a given leaf rcu_node */
--						/*  going offline. */
--	struct rcu_head **orphan_cbs_tail;	/* And tail pointer. */
--	long orphan_qlen;			/* Number of orphaned cbs. */
-+						/*  starting new GP. */
- 	raw_spinlock_t fqslock;			/* Only one task forcing */
- 						/*  quiescent states. */
- 	unsigned long jiffies_force_qs;		/* Time at which to invoke */
-@@ -390,7 +382,7 @@ static void rcu_report_exp_rnp(struct rcu_state *rsp, struct rcu_node *rnp);
- static int rcu_preempt_pending(int cpu);
- static int rcu_preempt_needs_cpu(int cpu);
- static void __cpuinit rcu_preempt_init_percpu_data(int cpu);
--static void rcu_preempt_send_cbs_to_orphanage(void);
-+static void rcu_preempt_send_cbs_to_online(void);
- static void __init __rcu_init_preempt(void);
- static void rcu_needs_cpu_flush(void);
- 
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 21df7f3..0de359b 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -774,11 +774,11 @@ static void __cpuinit rcu_preempt_init_percpu_data(int cpu)
- }
- 
- /*
-- * Move preemptable RCU's callbacks to ->orphan_cbs_list.
-+ * Move preemptable DYING RCU's callbacks to other online CPU.
-  */
--static void rcu_preempt_send_cbs_to_orphanage(void)
-+static void rcu_preempt_send_cbs_to_online(void)
- {
--	rcu_send_cbs_to_orphanage(&rcu_preempt_state);
-+	rcu_send_cbs_to_online(&rcu_preempt_state);
- }
- 
- /*
-@@ -1002,7 +1002,7 @@ static void __cpuinit rcu_preempt_init_percpu_data(int cpu)
- /*
-  * Because there is no preemptable RCU, there are no callbacks to move.
-  */
--static void rcu_preempt_send_cbs_to_orphanage(void)
-+static void rcu_preempt_send_cbs_to_online(void)
- {
- }
- 
-diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
-index 78ad3c3..c8e9785 100644
---- a/kernel/rcutree_trace.c
-+++ b/kernel/rcutree_trace.c
-@@ -166,13 +166,13 @@ static void print_one_rcu_state(struct seq_file *m, struct rcu_state *rsp)
- 
- 	gpnum = rsp->gpnum;
- 	seq_printf(m, "c=%lu g=%lu s=%d jfq=%ld j=%x "
--		      "nfqs=%lu/nfqsng=%lu(%lu) fqlh=%lu oqlen=%ld\n",
-+		      "nfqs=%lu/nfqsng=%lu(%lu) fqlh=%lu\n",
- 		   rsp->completed, gpnum, rsp->signaled,
- 		   (long)(rsp->jiffies_force_qs - jiffies),
- 		   (int)(jiffies & 0xffff),
- 		   rsp->n_force_qs, rsp->n_force_qs_ngp,
- 		   rsp->n_force_qs - rsp->n_force_qs_ngp,
--		   rsp->n_force_qs_lh, rsp->orphan_qlen);
-+		   rsp->n_force_qs_lh);
- 	for (rnp = &rsp->node[0]; rnp - &rsp->node[0] < NUM_RCU_NODES; rnp++) {
- 		if (rnp->level != level) {
- 			seq_puts(m, "\n");
++CONFIG_TINY_RCU and CONFIG_TINY_PREEMPT_RCU debugfs Files and Formats
++
++These implementations of RCU provides a single debugfs file under the
++top-level directory RCU, namely rcu/rcudata, which displays fields in
++rcu_bh_ctrlblk, rcu_sched_ctrlblk and, for CONFIG_TINY_PREEMPT_RCU,
++rcu_preempt_ctrlblk.
++
++The output of "cat rcu/rcudata" is as follows:
++
++rcu_preempt: qlen=24 gp=1097669 g197/p197/c197 tasks=...
++             ttb=. btg=no ntb=184 neb=0 nnb=183 j=01f7 bt=0274
++             normal balk: nt=1097669 gt=0 bt=371 b=0 ny=25073378 nos=0
++             exp balk: bt=0 nos=0
++rcu_sched: qlen: 0
++rcu_bh: qlen: 0
++
++This is split into rcu_preempt, rcu_sched, and rcu_bh sections, with the
++rcu_preempt section appearing only in CONFIG_TINY_PREEMPT_RCU builds.
++The last three lines of the rcu_preempt section appear only in
++CONFIG_RCU_BOOST kernel builds.  The fields are as follows:
++
++o	"qlen" is the number of RCU callbacks currently waiting either
++	for an RCU grace period or waiting to be invoked.  This is the
++	only field present for rcu_sched and rcu_bh, due to the
++	short-circuiting of grace period in those two cases.
++
++o	"gp" is the number of grace periods that have completed.
++
++o	"g197/p197/c197" displays the grace-period state, with the
++	"g" number being the number of grace periods that have started
++	(mod 256), the "p" number being the number of grace periods
++	that the CPU has responded to (also mod 256), and the "c"
++	number being the number of grace periods that have completed
++	(once again mode 256).
++
++	Why have both "gp" and "g"?  Because the data flowing into
++	"gp" is only present in a CONFIG_RCU_TRACE kernel.
++
++o	"tasks" is a set of bits.  The first bit is "T" if there are
++	currently tasks that have recently blocked within an RCU
++	read-side critical section, the second bit is "N" if any of the
++	aforementioned tasks are blocking the current RCU grace period,
++	and the third bit is "E" if any of the aforementioned tasks are
++	blocking the current expedited grace period.  Each bit is "."
++	if the corresponding condition does not hold.
++
++o	"ttb" is a single bit.  It is "B" if any of the blocked tasks
++	need to be priority boosted and "." otherwise.
++
++o	"btg" indicates whether boosting has been carried out during
++	the current grace period, with "exp" indicating that boosting
++	is in progress for an expedited grace period, "no" indicating
++	that boosting has not yet started for a normal grace period,
++	"begun" indicating that boosting has bebug for a normal grace
++	period, and "done" indicating that boosting has completed for
++	a normal grace period.
++
++o	"ntb" is the total number of tasks subjected to RCU priority boosting
++	periods since boot.
++
++o	"neb" is the number of expedited grace periods that have had
++	to resort to RCU priority boosting since boot.
++
++o	"nnb" is the number of normal grace periods that have had
++	to resort to RCU priority boosting since boot.
++
++o	"j" is the low-order 12 bits of the jiffies counter in hexadecimal.
++
++o	"bt" is the low-order 12 bits of the value that the jiffies counter
++	will have at the next time that boosting is scheduled to begin.
++
++o	In the line beginning with "normal balk", the fields are as follows:
++
++	o	"nt" is the number of times that the system balked from
++		boosting because there were no blocked tasks to boost.
++		Note that the system will balk from boosting even if the
++		grace period is overdue when the currently running task
++		is looping within an RCU read-side critical section.
++		There is no point in boosting in this case, because
++		boosting a running task won't make it run any faster.
++
++	o	"gt" is the number of times that the system balked
++		from boosting because, although there were blocked tasks,
++		none of them were preventing the current grace period
++		from completing.
++
++	o	"bt" is the number of times that the system balked
++		from boosting because boosting was already in progress.
++
++	o	"b" is the number of times that the system balked from
++		boosting because boosting had already completed for
++		the grace period in question.
++
++	o	"ny" is the number of times that the system balked from
++		boosting because it was not yet time to start boosting
++		the grace period in question.
++
++	o	"nos" is the number of times that the system balked from
++		boosting for inexplicable ("not otherwise specified")
++		reasons.  This can actually happen due to races involving
++		increments of the jiffies counter.
++
++o	In the line beginning with "exp balk", the fields are as follows:
++
++	o	"bt" is the number of times that the system balked from
++		boosting because there were no blocked tasks to boost.
++
++	o	"nos" is the number of times that the system balked from
++		 boosting for inexplicable ("not otherwise specified")
++		 reasons.
 -- 
 1.7.0.6
 
