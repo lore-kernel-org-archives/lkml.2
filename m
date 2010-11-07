@@ -1,73 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753634Ab0KGXJe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 18:09:34 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:44608 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753453Ab0KGXJd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 18:09:33 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Fm2ztz+eiRSl/56zjZJqnxmu/rt6VW1ybMMWeGB5BsqjZt2v+mMRke/6tOgU7An2ak
-         dE8r2/ubpmO4a0N8uH9JP4kYF7JNXHHBW2t9h/PtBaT1qN0QUq+MN3T/p1ZL72LST1ii
-         ztuQ9Y68AUbwX2fCYbXO55cs8ofdXT3wHrdzg=
+	id S1753693Ab0KGXLd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 18:11:33 -0500
+Received: from ozlabs.org ([203.10.76.45]:37881 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753120Ab0KGXLb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 18:11:31 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Jason Wang <jasowang@redhat.com>
+Subject: Re: [RESEND PATCH] virtio-net: init link state correctly
+Date: Mon, 8 Nov 2010 09:41:27 +1030
+User-Agent: KMail/1.13.5 (Linux/2.6.35-22-generic-pae; KDE/4.5.1; i686; ; )
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
+        markmc@redhat.com, kvm@vger.kernel.org, mst@redhat.com
+References: <20101105094718.19101.58898.stgit@dhcp-91-158.nay.redhat.com>
+In-Reply-To: <20101105094718.19101.58898.stgit@dhcp-91-158.nay.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20101107215908.GA21070@kroah.com>
-References: <01784A8B-36A0-4E8A-9729-23C2B19351F8@mac.com>
-	<AANLkTi=UxhRdcDaoKaYVWhPkp_e-uLF4=zhXs7gutkgx@mail.gmail.com>
-	<20101106181202.GA6927@kroah.com>
-	<39580686-A899-4689-BAAD-AF5546B34E49@mac.com>
-	<AANLkTimVsUsrmTvsHqFiqJh1hhryMBemGyW+kYLKGgEu@mail.gmail.com>
-	<20101107155757.GA13736@kroah.com>
-	<AANLkTik=UWwRLOaHMfVifYiQPpSwoYuA6J1EoL5BOgJY@mail.gmail.com>
-	<20101107215908.GA21070@kroah.com>
-Date: Sun, 7 Nov 2010 18:09:33 -0500
-Message-ID: <AANLkTimMpGiEHgx03k22wiH-1uzAL-KJm3GADe4bBF_J@mail.gmail.com>
-Subject: Re: Forked android kernel development from linux kernel mainline
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: Anca Emanuel <anca.emanuel@gmail.com>, Elvis Dowson <elvis.dowson@mac.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011080941.28190.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 5 Nov 2010 08:17:18 pm Jason Wang wrote:
+> For device that supports VIRTIO_NET_F_STATUS, there's no need to
+> assume the link is up and we need to call nerif_carrier_off() before
+> querying device status, otherwise we may get wrong operstate after
+> diver was loaded because the link watch event was not fired as
+> expected.
+> 
+> For device that does not support VIRITO_NET_F_STATUS, we could not get
+> its status through virtnet_update_status() and what we can only do is
+> always assuming the link is up.
+> 
+> Acked-by: Michael S. Tsirkin <mst@redhat.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-On Sun, Nov 7, 2010 at 4:59 PM, Greg KH <greg@kroah.com> wrote:
-> On Sun, Nov 07, 2010 at 04:44:48PM -0500, Arnaud Lacombe wrote:
->> Hi,
->>
->> On Sun, Nov 7, 2010 at 10:57 AM, Greg KH <greg@kroah.com> wrote:
->> > [...]
->> >
->> Just a small comment to say that Android is not the only one (but
->> certainly the most visible, and thus easiest to bash on) not making
->> effort to get their stuff in mainline. OpenWRT people are also
->> maintaining their fork of the kernel, without even using git, and not
->> contributing much to mainline (I'm certainly mistaken on that last
->> comment).
->
-> Isn't the openwrt stuff just drivers and some arch specific code?
-> Nothing that is core infrastructure, and nothing preventing them from
-> submitting the drivers and arch code if they want to, right?
->
->From what I can see, yes.
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
 
-> If so, why don't you submit it?
->
-because I have no knowledge on the code, nor have any documentation on
-the underlying hardware. That said, it's in my TODO, but stuff keeps
-getting in before this entry.
-
->Why don't they?
->
-I just checked with some dev on IRC, there might be a time issue. The
-patches have been synced with 2.6.36 recently (a month ago). So
-there're still hope :)
-
- - Arnaud
+Thanks!
+Rusty.
