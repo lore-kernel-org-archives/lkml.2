@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751165Ab0KGSCJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 13:02:09 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:55672 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750759Ab0KGSCI (ORCPT
+	id S1751568Ab0KGSJe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 13:09:34 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:48204 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006Ab0KGSJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 13:02:08 -0500
-From: Andi Kleen <andi@firstfloor.org>
-To: Marcus Meissner <meissner@suse.de>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        jason.wessel@windriver.com, fweisbec@gmail.com, tj@kernel.org,
-        mort@sgi.com, akpm@osdl.org, security@kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of attacking
-References: <20101104100914.GC25118@suse.de> <20101104114648.GA23381@elte.hu>
-	<20101104122906.GH25118@suse.de> <20101104135802.GA31416@elte.hu>
-	<20101104141104.GA31753@elte.hu> <20101104143322.GL25118@suse.de>
-Date: Sun, 07 Nov 2010 19:02:02 +0100
-In-Reply-To: <20101104143322.GL25118@suse.de> (Marcus Meissner's message of
-	"Thu, 4 Nov 2010 15:33:22 +0100")
-Message-ID: <871v6xt3l1.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Sun, 7 Nov 2010 13:09:33 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:in-reply-to:references:user-agent:date
+         :message-id:mime-version:content-type;
+        b=cskJI/dqfovcdW9L0Ld6x80rHrSOcL2Puh+q03261C8Q8s4zP+mnca3eC8WbyYoxiu
+         SRODLAtOxdiwBiui54Puk13CCO7pBzMkMsSexhr4ywpw3S4qjC7FaV4EiXOZi5GKuv4z
+         bBbKBB+WfZCk7f7t38g3kdBM39ZP9tNwAJ83Y=
+From: Ben Gamari <bgamari.foss@gmail.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Christoph Egger <siccegge@cs.fau.de>, linux-kernel@vger.kernel.org,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Michal Marek <mmarek@suse.cz>
+Subject: Re: Bus error on make allyesconfig, kernelbuild with HEAD
+In-Reply-To: <20101107170700.GA22684@merkur.ravnborg.org>
+References: <20100729105225.GA13192@faui48a.informatik.uni-erlangen.de> <AANLkTi=cYgV69VyNZ+TKs_f-+3AJmyo_RaYS57R72j50@mail.gmail.com> <20100729121002.GC13192@faui48a.informatik.uni-erlangen.de> <20100730084353.GB5638@cr0.nay.redhat.com> <87d3qicwxn.fsf@gmail.com> <87aalmcv0p.fsf@gmail.com> <20101106162426.GA14361@merkur.ravnborg.org> <87tyjtjd7m.fsf@gmail.com> <20101107170700.GA22684@merkur.ravnborg.org>
+User-Agent: Notmuch/0.3.1-158-g04cd99c (http://notmuchmail.org) Emacs/23.1.1 (x86_64-pc-linux-gnu)
+Date: Sun, 07 Nov 2010 13:09:30 -0500
+Message-ID: <87mxplypid.fsf@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marcus Meissner <meissner@suse.de> writes:
->
-> I also briefly thought about kernel ASLR, but my knowledge of the kernel
-> loading is too limited whether this is even possible or at all useful.
+On Sun, 7 Nov 2010 18:07:00 +0100, Sam Ravnborg <sam@ravnborg.org> wrote:
+> Interesting and valueable information!
+> 
+> Looks like fstat() failed for some odd reason
+> Could you try to check the return value of fstat().
+> 
+fixdep: fstat failed: Invalid argument
 
-Kernel ASLR sounds like a good idea, although there are some traps.
+Interesting indeed. According to my manpage fstat doesn't even return
+EINVAL.
 
-On 32bit the available range is not too great, only a few hundred MB
-max. Probably less on a larger systems, there will conflicts with a
-large mem_map.  On 64bit x86 it's nearly 2GB and somewhat easier
-(although a large mem_map may still be a problem)
-
-You still want to not stray too much from a 2MB alignment
-to make sure most of the main kernel is handled by a single 2MB TLB
-entry. 
-
-It would not be too hard to do today using kexec and loading the kernel
-twice.  Right now the kexec command doesn't allow specifying
-the address, but the kernel interface supports it, so it could
-be just implemented in the user tool.
-
-Doing it with a single boot sequence would be a bit more work.
-Right now the relocation entries are not put into the bzImage
-and that would be needed.
-
-That would not cover modules, but it shouldn't be too difficult
-to do it for those either.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+- Ben
