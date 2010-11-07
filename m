@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752446Ab0KGSde (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 13:33:34 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40178 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751374Ab0KGSdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 13:33:33 -0500
-X-User-Agent: K-9 Mail for Android
-References: <20101104100914.GC25118@suse.de> <20101104114648.GA23381@elte.hu> <20101104122906.GH25118@suse.de> <20101104135802.GA31416@elte.hu> <20101104141104.GA31753@elte.hu> <20101104143322.GL25118@suse.de> <871v6xt3l1.fsf@basil.nowhere.org>
-In-Reply-To: <871v6xt3l1.fsf@basil.nowhere.org>
+	id S1752533Ab0KGSeb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 13:34:31 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:37963 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374Ab0KGSea (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 13:34:30 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:subject:message-id:user-agent:x-archive
+         :mime-version:content-type;
+        b=STWuO44Y/cKjGW62sSK7QYCeKBIhCM2eB9uEOr+0kcvPluzlhd1YSWTW46qFsLBx3r
+         HYHRDlqcYtS7bMjEG/PrO9dVmr5pH+MuowTAw3ftNNfXpzU8Xnq5CbdC6ucjK7GiOR8I
+         RtrtxYqOfLHVg5DpmJGB/jNlETNKtx0JkqhEA=
+Date: Sun, 7 Nov 2010 16:34:23 -0200 (BRST)
+From: =?ISO-8859-15?Q?Fr=E9d=E9ric_L=2E_W=2E_Meunier?= <2@pervalidus.net>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Kernel crash with 2.6.36
+Message-ID: <alpine.LNX.2.00.1011071631550.2636@dyndns.pervalidus.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+X-Archive: encrypt
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of attacking
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sun, 07 Nov 2010 10:32:33 -0800
-To: Andi Kleen <andi@firstfloor.org>, Marcus Meissner <meissner@suse.de>
-CC: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        jason.wessel@windriver.com, fweisbec@gmail.com, tj@kernel.org,
-        mort@sgi.com, akpm@osdl.org, security@kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <a4676065-571a-4dda-bd3a-798a9b2d7edf@email.android.com>
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We already do virtual relocation on 32 bits, and replicating that on 64 bits wouldn't be hard.  However, the linkage script strongly assumes congruency mod 2/4 MiB, and that is probably nontrivial to change.  However, that still gives about 9 bits of entrophy to play with.  The question is if that is enough, or if we'd have to do more clever hacks.
+Is this supposed to be a bug in 2.6.36 ? Firefox was running, but I 
+wasn't browsing with it. The computer just locked up, first killing X. 
+SysRq didn't work.
 
-
-
-"Andi Kleen" <andi@firstfloor.org> wrote:
-
->Marcus Meissner <meissner@suse.de> writes:
->>
->> I also briefly thought about kernel ASLR, but my knowledge of the
->kernel
->> loading is too limited whether this is even possible or at all
->useful.
->
->Kernel ASLR sounds like a good idea, although there are some traps.
->
->On 32bit the available range is not too great, only a few hundred MB
->max. Probably less on a larger systems, there will conflicts with a
->large mem_map.  On 64bit x86 it's nearly 2GB and somewhat easier
->(although a large mem_map may still be a problem)
->
->You still want to not stray too much from a 2MB alignment
->to make sure most of the main kernel is handled by a single 2MB TLB
->entry. 
->
->It would not be too hard to do today using kexec and loading the kernel
->twice.  Right now the kexec command doesn't allow specifying
->the address, but the kernel interface supports it, so it could
->be just implemented in the user tool.
->
->Doing it with a single boot sequence would be a bit more work.
->Right now the relocation entries are not put into the bzImage
->and that would be needed.
->
->That would not cover modules, but it shouldn't be too difficult
->to do it for those either.
->
->-Andi
->
->-- 
->ak@linux.intel.com -- Speaking for myself only.
-
--- 
-Sent from my mobile phone.  Please pardon any lack of formatting.
+Nov  7 16:21:23 pervalidus kernel: BUG: unable to handle kernel NULL pointer dereference at (null)
+Nov  7 16:21:23 pervalidus kernel: IP: [<c118cc76>] skb_dequeue+0x38/0x4a
+Nov  7 16:21:23 pervalidus kernel: *pde = 00000000 
+Nov  7 16:21:23 pervalidus kernel: Oops: 0002 [#1] PREEMPT SMP 
+Nov  7 16:21:23 pervalidus kernel: last sysfs file: /sys/devices/platform/it87.552/in4_input
+Nov  7 16:21:23 pervalidus kernel: Modules linked in: pppoe pppox ppp_generic slhc af_packet snd_seq_oss snd_seq_midi_event snd_seq snd_pcm_oss snd_mixer_oss powernow_k8 freq_table mperf it87 hwmon_vid ipt_LOG xt_tcpudp iptable_filter ip_tables x_tables fuse joydev tuner_simple tuner_types radeon ati_agp usbhid hid ttm drm_kms_helper tuner tvaudio drm tda7432 snd_emu10k1 snd_rawmidi snd_ac97_codec ac97_bus bttv snd_pcm v4l2_common snd_seq_device videodev snd_timer v4l1_compat videobuf_dma_sg snd_page_alloc videobuf_core snd_util_mem ir_lirc_codec rtc_cmos rtc_core rtc_lib lirc_dev btcx_risc ir_common agpgart ir_core thermal tveeprom i2c_piix4 i2c_algo_bit sr_mod 8250_pnp processor ohci_hcd parport_pc snd_hwdep k8temp i2c_core cdrom 8250 cfbcopyarea ehci_hcd snd usbcore soundcore emu10k1_gp gameport nls_base evdev sg cfbimgblt parport serial_core r8169 cfbfillrect thermal_sys hwmon mii pcspkr floppy psmouse button
+Nov  7 16:21:23 pervalidus kernel: 
+Nov  7 16:21:23 pervalidus kernel: Pid: 10468, comm: firefox-bin Not tainted 2.6.36 #1 GA-MA69VM-S2/GA-MA69VM-S2
+Nov  7 16:21:23 pervalidus kernel: EIP: 0060:[<c118cc76>] EFLAGS: 00210096 CPU: 0
+Nov  7 16:21:23 pervalidus kernel: EIP is at skb_dequeue+0x38/0x4a
+Nov  7 16:21:23 pervalidus kernel: EAX: 00200246 EBX: f6b1de40 ECX: 00000000 EDX: 00009e9e
+Nov  7 16:21:23 pervalidus kernel: ESI: f6715680 EDI: f6b1d180 EBP: ed911dec ESP: ed911de0
+Nov  7 16:21:23 pervalidus kernel: DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+Nov  7 16:21:23 pervalidus kernel: Process firefox-bin (pid: 10468, ti=ed911000 task=f673acb0 task.ti=ed911000)
+Nov  7 16:21:23 pervalidus kernel: Stack:
+Nov  7 16:21:23 pervalidus kernel: f6715600 00000001 ed911e50 ed911e70 c11da7e0 f673acb0 f673acb0 00000000
+Nov  7 16:21:23 pervalidus kernel: <0> f44b7680 f673acb0 f67156d8 f671576c 00000001 f6715674 00000000 00000000
+Nov  7 16:21:23 pervalidus kernel: <0> ed911eb0 ed911e90 ffffffa1 f6715794 00000020 f6b1de40 f6987580 f6622f80
+Nov  7 16:21:23 pervalidus kernel: Call Trace:
+Nov  7 16:21:23 pervalidus kernel: [<c11da7e0>] ? unix_stream_recvmsg+0x103/0x424
+Nov  7 16:21:23 pervalidus kernel: [<c11ea637>] ? _raw_spin_unlock_irqrestore+0x16/0x21
+Nov  7 16:21:23 pervalidus kernel: [<c1188f69>] ? sock_aio_read+0xe8/0xf2
+Nov  7 16:21:23 pervalidus kernel: [<c1079cb0>] ? do_sync_read+0x8a/0xc5
+Nov  7 16:21:23 pervalidus kernel: [<c107a205>] ? vfs_read+0x83/0xa8
+Nov  7 16:21:23 pervalidus kernel: [<c107a2be>] ? sys_read+0x3b/0x5d
+Nov  7 16:21:23 pervalidus kernel: [<c1002690>] ? sysenter_do_call+0x12/0x26
+Nov  7 16:21:23 pervalidus kernel: Code: e8 3c d7 05 00 8b 1f 39 fb 75 04 31 db eb 1e 85 db 74 1a ff 4f 08 8b 3b 8b 4b 04 c7 03 00 00 00 00 c7 43 04 00 00 00 00 89 4f 04 <89> 39 89 c2 89 f0 e8 a0 d9 05 00 89 d8 5b 5e 5f c9 c3 55 89 e5 
+Nov  7 16:21:23 pervalidus kernel: EIP: [<c118cc76>] skb_dequeue+0x38/0x4a SS:ESP 0068:ed911de0
+Nov  7 16:21:23 pervalidus kernel: CR2: 0000000000000000
+Nov  7 16:21:23 pervalidus kernel: ---[ end trace 4cd73789c5986bc8 ]---
+Nov  7 16:21:23 pervalidus kernel: note: firefox-bin[10468] exited with preempt_count 2
