@@ -1,50 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654Ab0KGIi3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 03:38:29 -0500
-Received: from asmtpout029.mac.com ([17.148.16.104]:52657 "EHLO
-	asmtpout029.mac.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753467Ab0KGIi2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 03:38:28 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=us-ascii
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0
- ipscore=0 suspectscore=0 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
- adjust=0 reason=mlx engine=6.0.2-1004200000 definitions=main-1011070010
-X-Proofpoint-Virus-Version: vendor=fsecure
- engine=2.50.10432:5.2.15,1.0.148,0.0.0000
- definitions=2010-11-07_02:2010-11-05,2010-11-07,1970-01-01 signatures=0
-Subject: Re: Forked android kernel development from linux kernel mainline
-From: Elvis Dowson <elvis.dowson@mac.com>
-In-reply-to: <20101106181202.GA6927@kroah.com>
-Date: Sun, 07 Nov 2010 12:38:07 +0400
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-id: <39580686-A899-4689-BAAD-AF5546B34E49@mac.com>
-References: <01784A8B-36A0-4E8A-9729-23C2B19351F8@mac.com>
- <AANLkTi=UxhRdcDaoKaYVWhPkp_e-uLF4=zhXs7gutkgx@mail.gmail.com>
- <20101106181202.GA6927@kroah.com>
-To: Greg KH <greg@kroah.com>
-X-Mailer: Apple Mail (2.1081)
+	id S1753862Ab0KGIut (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 03:50:49 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:34027 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753794Ab0KGIur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 03:50:47 -0500
+Date: Sun, 7 Nov 2010 09:50:16 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Willy Tarreau <w@1wt.eu>
+Cc: Marcus Meissner <meissner@suse.de>, security@kernel.org, mort@sgi.com,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, fweisbec@gmail.com,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        jason.wessel@windriver.com, tj@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Security] [PATCH] kernel: make /proc/kallsyms mode 400 to
+ reduce ease of attacking
+Message-ID: <20101107085016.GA23843@elte.hu>
+References: <20101104100914.GC25118@suse.de>
+ <20101104114648.GA23381@elte.hu>
+ <20101104122906.GH25118@suse.de>
+ <20101104135802.GA31416@elte.hu>
+ <20101104141104.GA31753@elte.hu>
+ <20101104143322.GL25118@suse.de>
+ <20101104190804.GA16099@elte.hu>
+ <20101104212920.GA31256@1wt.eu>
+ <20101104215157.GA25128@elte.hu>
+ <20101104223526.GC31236@1wt.eu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101104223526.GC31236@1wt.eu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HI Greg,
 
-On Nov 6, 2010, at 10:12 PM, Greg KH wrote:
+* Willy Tarreau <w@1wt.eu> wrote:
 
-> Are you willing to maintain the android kernel code in the mainline
-> kernel tree?  If so, I will be glad to add it back in, but as no one was
-> willing to do the work, it was removed.  It's as simple as that.
+> On Thu, Nov 04, 2010 at 10:51:57PM +0100, Ingo Molnar wrote:
+> > > Quite honnestly, it's the worst idea I've ever read to protect the kernel. Kernel 
+> > > version is needed at many places, when building some code which relies on presence 
+> > > of syscall X or Y depending on a version, etc... [...]
+> > 
+> > Actually that's not true, since we have a kernel ABI, and since there's many 
+> > backports of newer kernel features into older kernels that it's generally not
+> > needed nor meaningful to know the kernel version for syscalls.
+> > 
+> > Returning -ENOSYS is the general standard we use to communicate syscall 
+> > capabilities.
+> > 
+> > In fact using kernel version to switch around library functionality is a bug i'd 
+> > argue.
+> 
+> I'm sorry Ingo, but I still don't agree. We've had several versions of epoll, 
+> several (some even buggy) versions of splice() which cannot even be detected 
+> without checking the kernel release. And those are just two that immediately come 
+> to my mind. If we've been providing a version for the last 19 years, it surely had 
+> some valid uses.
 
-I'm willing to do this. I'll start off initially with support for TI OMAP 35xx
-and TI OMAP 4440, build and test initially on the Gumstix Overo,
-BeagleBoard and PandaBoard. 
+I'm sorry Willy, but you are mostly wrong - and there's no need to speculate here 
+really. Just try the patch below :-)
 
-I'll start with v2.6.37-rc1 and android-froyo-2.2, and try to do the required
-changes to get it accepted into mainline by v2.6.39.
+If your claim that 'kernel version is needed at many places' is true then why am i 
+seeing this on a pretty general distro box bootup:
 
-Elvis Dowson
+ [root@aldebaran ~]# uname -a
+ Linux aldebaran 2.6.99-tip-01574-g6ba54c9-dirty #1 SMP Sun Nov 7 10:24:38 CET 2010 x86_64 x86_64 x86_64 GNU/Linux
 
+?
+
+Yes, some user-space might be unhappy if we set the version _back_ to say 2.4.0, but 
+we could (as the patch below) fuzz up the version information from unprivileged 
+attackers easily.
+
+_Future_ ABI breakages that necessiate a version check are clearly frowned upon, so 
+this patch could even be considered a debugging feature: it makes it harder to 
+create ABI incompatibilities (at least for unprivileged user-space).
+
+So you can think of version fuzzing also as the ultimate ABI check.
+
+( This is a real defensive measure - here's a reason why attackers try stealth
+  remote fingerprinting of a target system first: they really want to avoid 
+  detection and knowing the exact OS and version of a target tells them which 
+  attacks can be tried with a higher chance of success. Same goes for local attacks 
+  as well.
+
+  And once we have _that_, version fuzzing, removing kallsyms is one of the many 
+  measures we need to use to hide the true version of the kernel from unprivileged 
+  user-space. )
+
+Thanks,
+
+	Ingo
+
+Index: linux/Makefile
+===================================================================
+--- linux.orig/Makefile
++++ linux/Makefile
+@@ -1,7 +1,7 @@
+ VERSION = 2
+ PATCHLEVEL = 6
+-SUBLEVEL = 37
+-EXTRAVERSION = -rc1
++SUBLEVEL = 99
++EXTRAVERSION =
+ NAME = Flesh-Eating Bats with Fangs
+ 
+ # *DOCUMENTATION*
