@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279Ab0KGOqj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 09:46:39 -0500
+	id S1753109Ab0KGOqh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 09:46:37 -0500
 Received: from mail-iw0-f174.google.com ([209.85.214.174]:59259 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752938Ab0KGOqh (ORCPT
+	with ESMTP id S1752408Ab0KGOqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 09:46:37 -0500
+	Sun, 7 Nov 2010 09:46:35 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=KYLRtvRmcT9edoA2o1wAyd2seuYn9J7rLuiWTsT5tsM8SvV/tIWE3cAxLZ0vNVazEJ
-         VhH0Rb1OqQpaKTtADvajBwcVK2luxthJZtv+hNOsLZr1bE47+nOwDSjo+AkQ+o80zofT
-         SxZ8ab4ie+JWOBKNp6egtuC4jfb1LXgkK3FZM=
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=jWRZZb40DVdwIWl2goTvN0KHcw/y0FmdL0KbI6fBrflxVMRL+JIOPlIOupH3dMt1n4
+         gVYs3cJQwbePAgb4Pt7TIvhXxD0Yko5pOduXSr1EE7xsNXtNdoSMJcosFkOdUNwZ56Rp
+         Va5NocWkWAWz/FD11h1KH087YnOqBJxfphVDY=
 From: Tracey Dent <tdent48227@gmail.com>
 To: dmitry.torokhov@gmail.com
 Cc: jkosina@suse.cz, chatty@enac.fr, spbnick@gmail.com,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         Tracey Dent <tdent48227@gmail.com>
-Subject: [PATCH 2/2] Drivers: hid: usbhid: Makefile: Cleaned up Makefile
-Date: Sun,  7 Nov 2010 09:46:28 -0500
-Message-Id: <1289141188-1447-2-git-send-email-tdent48227@gmail.com>
+Subject: [PATCH 1/2] Drivers: hid: Makefile: Cleaned up Makefile
+Date: Sun,  7 Nov 2010 09:46:27 -0500
+Message-Id: <1289141188-1447-1-git-send-email-tdent48227@gmail.com>
 X-Mailer: git-send-email 1.7.3.2.161.g3089c
-In-Reply-To: <1289141188-1447-1-git-send-email-tdent48227@gmail.com>
-References: <1289141188-1447-1-git-send-email-tdent48227@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,32 +31,46 @@ deprecated and should now be switched. According to (documentation/kbuild/makefi
 
 Signed-off-by: Tracey Dent <tdent48227@gmail.com>
 ---
- drivers/hid/usbhid/Makefile |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/hid/Makefile |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/hid/usbhid/Makefile b/drivers/hid/usbhid/Makefile
-index 1329ecb..db3cf31 100644
---- a/drivers/hid/usbhid/Makefile
-+++ b/drivers/hid/usbhid/Makefile
-@@ -3,15 +3,15 @@
+diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
+index c335605..dad858b 100644
+--- a/drivers/hid/Makefile
++++ b/drivers/hid/Makefile
+@@ -1,7 +1,7 @@
  #
+ # Makefile for the HID driver
+ #
+-hid-objs			:= hid-core.o hid-input.o
++hid-y			:= hid-core.o hid-input.o
  
- # Multipart objects.
--usbhid-objs	:= hid-core.o hid-quirks.o
-+usbhid-y	:= hid-core.o hid-quirks.o
+ ifdef CONFIG_DEBUG_FS
+ 	hid-objs		+= hid-debug.o
+@@ -11,18 +11,18 @@ obj-$(CONFIG_HID)		+= hid.o
  
- # Optional parts of multipart objects.
+ hid-$(CONFIG_HIDRAW)		+= hidraw.o
  
- ifeq ($(CONFIG_USB_HIDDEV),y)
--	usbhid-objs	+= hiddev.o
-+	usbhid-y	+= hiddev.o
+-hid-logitech-objs		:= hid-lg.o
++hid-logitech-y		:= hid-lg.o
+ ifdef CONFIG_LOGITECH_FF
+-	hid-logitech-objs	+= hid-lgff.o
++	hid-logitech-y	+= hid-lgff.o
  endif
- ifeq ($(CONFIG_HID_PID),y)
--	usbhid-objs	+= hid-pidff.o
-+	usbhid-y	+= hid-pidff.o
+ ifdef CONFIG_LOGIRUMBLEPAD2_FF
+-	hid-logitech-objs	+= hid-lg2ff.o
++	hid-logitech-y	+= hid-lg2ff.o
+ endif
+ ifdef CONFIG_LOGIG940_FF
+-	hid-logitech-objs	+= hid-lg3ff.o
++	hid-logitech-y	+= hid-lg3ff.o
+ endif
+ ifdef CONFIG_LOGIWII_FF
+-	hid-logitech-objs	+= hid-lg4ff.o
++	hid-logitech-y	+= hid-lg4ff.o
  endif
  
- obj-$(CONFIG_USB_HID)		+= usbhid.o
+ obj-$(CONFIG_HID_3M_PCT)	+= hid-3m-pct.o
 -- 
 1.7.3.1.104.gc752e
 
