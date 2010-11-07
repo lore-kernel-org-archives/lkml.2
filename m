@@ -1,74 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966Ab0KGMwO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 07:52:14 -0500
-Received: from 1wt.eu ([62.212.114.60]:47169 "EHLO 1wt.eu"
+	id S1752471Ab0KGM4W (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 07:56:22 -0500
+Received: from mx01.sz.bfs.de ([194.94.69.103]:14733 "EHLO mx01.sz.bfs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751146Ab0KGMwN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 07:52:13 -0500
-Date: Sun, 7 Nov 2010 13:51:20 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Marcus Meissner <meissner@suse.de>, security@kernel.org, mort@sgi.com,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, fweisbec@gmail.com,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        jason.wessel@windriver.com, tj@kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Security] [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of attacking
-Message-ID: <20101107125120.GA4627@1wt.eu>
-References: <20101104223526.GC31236@1wt.eu> <20101107085016.GA23843@elte.hu> <20101107094932.GT4627@1wt.eu> <20101107112709.GA2634@elte.hu> <20101107114156.GV4627@1wt.eu> <20101107114756.GB3759@elte.hu> <20101107115626.GX4627@1wt.eu> <20101107121235.GA6221@elte.hu> <20101107122227.GY4627@1wt.eu> <20101107123232.GB6512@elte.hu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101107123232.GB6512@elte.hu>
-User-Agent: Mutt/1.4.2.3i
+	id S1751440Ab0KGM4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 07:56:21 -0500
+Message-ID: <4CD6A1F2.9040301@bfs.de>
+Date: Sun, 07 Nov 2010 13:56:18 +0100
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.14) Gecko/20101013 SUSE/3.0.9 Thunderbird/3.0.9
+MIME-Version: 1.0
+To: Vasiliy Kulikov <segooon@gmail.com>
+CC: kernel-janitors@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Jiri Pirko <jpirko@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] net: packet: fix information leak to userland
+References: <1288545028-16436-1-git-send-email-segooon@gmail.com> <4CCE84E2.9050801@bfs.de> <20101106143911.GA17428@albatros> <4CD68F7E.5050407@bfs.de> <20101107120636.GA7101@albatros>
+In-Reply-To: <20101107120636.GA7101@albatros>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 07, 2010 at 01:32:32PM +0100, Ingo Molnar wrote:
-> No. The 'exploit honeypot' mechanism i outlined is really simple, and it means what 
-> i explained already:
-> 
->  - attacker breaks into unprivileged user-space
-> 
->  - attacker runs exploit
-> 
->  - exploit attempt gets detected by the 'exploit honeypot' kernel code and a 
->    (silent) warning goes to the admin (via a syslog message for example)
-> 
->  - attacker only sees that the attack did not succeed
-> 
-> This makes it _unsafe_ (for many types of attackers) to run an exploit locally.
 
-It's already unsafe and has always been. When running local kernel exploits,
-it's common to find lots of segfault traces in dmesg. It's common to hang the
-machine (the vmsplice exploit had a 50% failure rate from my tests).
 
-> > That's not much different than trying to fire the exploit itself. [...]
+Am 07.11.2010 13:06, schrieb Vasiliy Kulikov:
+> On Sun, Nov 07, 2010 at 12:37 +0100, walter harms wrote:
+>> Am 06.11.2010 15:39, schrieb Vasiliy Kulikov:
+>>> On Mon, Nov 01, 2010 at 10:14 +0100, walter harms wrote:
+>>>> Vasiliy Kulikov schrieb:
+>>>>> @@ -1719,7 +1719,7 @@ static int packet_getname_spkt(struct socket *sock, struct sockaddr *uaddr,
+>>>>>  	rcu_read_lock();
+>>>>>  	dev = dev_get_by_index_rcu(sock_net(sk), pkt_sk(sk)->ifindex);
+>>>>>  	if (dev)
+>>>>> -		strlcpy(uaddr->sa_data, dev->name, 15);
+>>>>> +		strncpy(uaddr->sa_data, dev->name, 14);
+>>>>>  	else
+>>>>>  		memset(uaddr->sa_data, 0, 14);
+>>>>
+>>>> if i understand the code correcly the max size for dev->name is IFNAMSIZ.
+>>>
+>>> For dev->name - IFNAMSIZ, for uaddr->sa_data - 14.
+>>>
+>>
+>>
+>> did not notice, since uaddr->sa_data should take dev->name this does no look very
+>> clever. How is the size of  sa_data defined ?
 > 
-> Erm, the difference is possible _detection_ via a silent alarm.
->
-> There's a huge difference between 'attempting an exploit and being caught' and 'not 
-> even trying the exploit because based on the kernel version the attacker knows it 
-> wont work'.
+> Magic size...
+> 
+> ~/linux/include/linux/socket.h:
+> 
+> struct sockaddr {
+> 	sa_family_t	sa_family;	/* address family, AF_xxx	*/
+> 	char		sa_data[14];	/* 14 bytes of protocol address	*/
+> };
+> 
+> 
+>> Would it hurt when some uses IFNAMSIZ here ?
+> 
 
-And there's an even bigger difference between leaving traces of a failed
-exploit attempt and successfully getting the exploit to work because the
-system is not updated in time. That's been my point since the beginning,
-most kernel exploits are run very early when released to the public. So
-that's when a simple "uptime" will tell you it's safe to run your exploit.
-And if you want to hide the uptime, let's simply check the creation date
-of /dev/shm, or that a file you left in /tmp has not been removed by the
-admin's scripts which clean that up at boot, etc...
+so i should be more direct. the idea was :
+char		sa_data[IFNAMSIZ];
 
-In my opinion this is not efficient at all. Also, I've already been involved
-in post-mortem diags on compromised machines. If the intruder is not a known
-local user, he does not care at all being caught. Leaving rootkits everywhere
-is generally not a problem for them, some don't even take care of clearing
-the logs, because they bounced from already compromised systems.
 
-Willy
 
+> If copy _to_ sa_data string of maximum IFNAMSIZ bytes - yes.
+> 
+> 
+> In packet_getname_spkt() the output buffer is 128 bytes, so it doesn't
+> really overflows anything.  I don't think that *_getname() implementations
+> don't know this.
+> 
+>> Perhaps someone who know more about the network stack can figure out what is actualy done
+>> with uaddr->sa_data.
+> 
+> Yeah, also I wonder whether it is always NULL-terminated string or not.
+> 
+>> looks like a can of worms.
+>>
+>>
+>> In packet_bind_spkt() they will copy a char[15], obviously it is a real problem.
+> 
+> No, packet_bind_spkt() copies 14-byte string into array of 15 bytes.
+> The vice versa would be a bug.
+> 
+
+ups your are right, wrong way around. it still does not look clever.
+I have the feeling that the basic idea what to store the string with out \0.
+
+according to this:
+http://www.gnu.org/s/libc/manual/html_node/Address-Formats.html
+
+It should work.
+
+re,
+ wh
