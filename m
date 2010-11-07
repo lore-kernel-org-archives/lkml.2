@@ -1,118 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588Ab0KGR1q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 12:27:46 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:19843 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752846Ab0KGR1o (ORCPT
+	id S1753500Ab0KGRtM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 12:49:12 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:52729 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751756Ab0KGRtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 12:27:44 -0500
-Date: Sun, 7 Nov 2010 18:16:26 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Dave Chinner <david@fromorbit.com>
-cc: Chris Mason <chris.mason@oracle.com>, Ingo Molnar <mingo@elte.hu>,
-        Pekka Enberg <penberg@kernel.org>,
-        Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Nick Piggin <npiggin@suse.de>, Arjan van de Ven <arjan@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "Ted Ts'o" <tytso@mit.edu>,
-        Corrado Zoccolo <czoccolo@gmail.com>,
-        Shaohua Li <shaohua.li@intel.com>, Sanjoy Mahajan <sanjoy@olin.edu>,
-        Steven Barrett <damentz@gmail.com>
-Subject: Re: 2.6.36 io bring the system to its knees
-In-Reply-To: <20101105014334.GF13830@dastard>
-Message-ID: <alpine.LNX.2.00.1011071753560.26056@swampdragon.chaosbits.net>
-References: <AANLkTikRKVBzO=ruy=JDmBF28NiUdJmAqb4-1VhK0QBX@mail.gmail.com> <AANLkTinzJ9a+9w7G5X0uZpX2o-L8E6XW98VFKoF1R_-S@mail.gmail.com> <AANLkTinDDG0ZkNFJZXuV9k3nJgueUW=ph8AuHgyeAXji@mail.gmail.com> <AANLkTikvSGNE7uGn5p0tfJNg4Hz5WRmLRC8cXu7+GhMk@mail.gmail.com>
- <20101028090002.GA12446@elte.hu> <AANLkTinoGGLTN2JRwjJtF6Ra5auZVg+VSa=TyrtAkDor@mail.gmail.com> <20101028133036.GA30565@elte.hu> <20101028170132.GY27796@think> <alpine.LNX.2.00.1011050032440.16015@swampdragon.chaosbits.net>
- <alpine.LNX.2.00.1011050047220.16015@swampdragon.chaosbits.net> <20101105014334.GF13830@dastard>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 7 Nov 2010 12:49:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=IeZWJP8UbWQD8DbY+bGHn+FN/5VM46kzr6ApEpgKZ+h4VyonYPYVDnAoriIMYzn0Rn
+         qz9XPUOgEVFaA2OD0n7s5pj4qNUSc6IAqbtS2xl2kkV7OjovMyZ3Gd/2kpVZ7cMZLsN0
+         3KK4LobUgyQtC6FCtift2VAUUpCom7g+r8w7Q=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <4CD6B7FA.3050005@redhat.com>
+References: <AANLkTim6WTCChWGbTb-PUGd2AERGibeRtgan-WDznf2s@mail.gmail.com>
+	<4CD6B7FA.3050005@redhat.com>
+Date: Sun, 7 Nov 2010 18:49:09 +0100
+Message-ID: <AANLkTikbsU+SGAaoq_oek=7tfDdjg+0wFoydhA+K9ZU+@mail.gmail.com>
+Subject: Re: [PATCH] DM-CRYPT: Scale to multiple CPUs v3 on 2.6.37-rc* ?
+From: Matt <jackdachef@gmail.com>
+To: Milan Broz <mbroz@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, dm-devel@redhat.com,
+        htd@fancy-poultry.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 5 Nov 2010, Dave Chinner wrote:
-
-> On Fri, Nov 05, 2010 at 12:48:17AM +0100, Jesper Juhl wrote:
-> > On Fri, 5 Nov 2010, Jesper Juhl wrote:
-> > 
-> > > On Thu, 28 Oct 2010, Chris Mason wrote:
-> > > 
-> > > > On Thu, Oct 28, 2010 at 03:30:36PM +0200, Ingo Molnar wrote:
-> > > > > 
-> > > > > "Many seconds freezes" and slowdowns wont be fixed via the VFS scalability patches 
-> > > > > i'm afraid.
-> > > > > 
-> > > > > This has the appearance of some really bad IO or VM latency problem. Unfixed and 
-> > > > > present in stable kernel versions going from years ago all the way to v2.6.36.
-> > > > 
-> > > > Hmmm, the workload you're describing here has two special parts.  First
-> > > > it dramatically overloads the disk, and then it has guis doing things
-> > > > waiting for the disk.
-> > > > 
-> > > 
-> > > Just want to chime in with a 'me too'.
-> > > 
-> > > I see something similar on Arch Linux when doing 'pacman -Syyuv' and there 
-> > > are many (as in more than 5-10) updates to apply. While the update is 
-> > > running (even if that's all the system is doing) system responsiveness is 
-> > > terrible - just starting 'chromium' which is usually instant (at least 
-> > > less than 2 sec at worst) can take upwards of 10 seconds and the mouse 
-> > > cursor in X starts to jump a bit as well and switching virtual desktops 
-> > > noticably lags when redrawing the new desktop if there's a full screen app 
-> > > like gimp or OpenOffice open there. This is on a Lenovo Thinkpad R61i 
-> > > which has a 'Intel(R) Core(TM)2 Duo CPU T7250 @ 2.00GHz' CPU, 2GB of 
-> > > memory and 499996 kilobytes of swap.
-> > > 
-> > Forgot to mention the kernel I currently experience this with : 
-> > 
-> > [jj@dragon ~]$ uname -a
-> > Linux dragon 2.6.35-ARCH #1 SMP PREEMPT Sat Oct 30 21:22:26 CEST 2010 x86_64 Intel(R) Core(TM)2 Duo CPU T7250 @ 2.00GHz GenuineIntel GNU/Linux
-> 
-> I think anyone reporting a interactivity problem also needs to
-> indicate what their filesystem is, what mount paramters they are
-> using, what their storage config is, whether barriers are active or
-> not, what elevator they are using, whether one or more of the
-> applications are issuing fsync() or sync() calls, and so on.
+On Sun, Nov 7, 2010 at 3:30 PM, Milan Broz <mbroz@redhat.com> wrote:
 >
-Some details below.
+> On 11/06/2010 11:16 PM, Matt wrote:
+>> before diving into testing out 2.6.37-rc* kernels I wanted to make
+>> sure that the patch:
+>>
+>> [dm-devel] [PATCH] DM-CRYPT: Scale to multiple CPUs v3
+>>
+>> is safe to use with e.g. >2.6.37-rc1 kernels
+>>
+>> I know that it's not a "fix all" patch but it significantly seems to
+>> speed up my backup jobs (by factor 2-3)
+>> and 2.6.37* has evolved that much that interactivity isn't hurt too much
+>
+> yes, it should work for the simple mappings without problems.
+>
+> I hope we will fix the patch soon to be ready for upstream.
+>
+> Milan
+>
 
-[jj@dragon ~]$ mount
-proc on /proc type proc (rw,relatime)
-sys on /sys type sysfs (rw,relatime)
-udev on /dev type devtmpfs 
-(rw,nosuid,relatime,size=10240k,nr_inodes=255749,mode=755)
-/dev/disk/by-uuid/61d104a5-4f7b-40ef-a9c8-44ad2765513e on / type ext4 (rw,commit=0)
-devpts on /dev/pts type devpts (rw)
-shm on /dev/shm type tmpfs (rw,nosuid,nodev)
+Hi Milan,
 
-[root@dragon ~]# hdparm -v /dev/disk/by-uuid/61d104a5-4f7b-40ef-a9c8-44ad2765513e
+thanks for your answer !
 
-/dev/disk/by-uuid/61d104a5-4f7b-40ef-a9c8-44ad2765513e:
- multcount     = 16 (on)
- IO_support    =  1 (32-bit)
- readonly      =  0 (off)
- readahead     = 256 (on)
- geometry      = 9729/255/63, sectors = 25220160, start = 119644560
+Unfortunately I have to post a "Warning" that it's currently not safe
+(at least for me) to use it
 
-[root@dragon ~]# dmesg | grep -i ext4
-EXT4-fs (sda4): mounted filesystem with ordered data mode. Opts: (null)
-EXT4-fs (sda4): re-mounted. Opts: (null)
-EXT4-fs (sda4): re-mounted. Opts: (null)
-EXT4-fs (sda4): re-mounted. Opts: commit=0
+a few hours ago before 2.6.37-rc1 was tagged I already had shortly
+tested it with the dm-crypt multi-cpu patch and massive "silent" data
+corruption or loss occured:
 
-The elevator in use is CFQ.
+fortunately I don't/didn't see any data-corruption on my /home
+partition (yet) but everytime I boot into my system things are screwed
+up on the root-partition, e.g.:
 
-The app that's causing the system to behave this way (the 'pacman' package 
-manager in Arch Linux) makes a few calls (2-4)  to fsync() during its run, 
-but that's all.
+where
+eselect opengl list would show
+>Available OpenGL implementations:
+>  [1]   ati *
+>  [2]   xorg-x11
+
+normally it's
+>cat /etc/env.d/03opengl
+># Configuration file for eselect
+># This file has been automatically generated.
+>LDPATH="/usr/lib32/opengl/ati/lib:/usr/lib64/opengl/ati/lib"
+>OPENGL_PROFILE="ati"
 
 
--- 
-Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-Plain text mails only, please      http://www.expita.com/nomime.html
-Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
+it currently says:
 
+>eselect opengl list
+>Available OpenGL implementations:
+>  [1]   ati
+>  [2]   xorg-x11
+
+
+>cat /etc/env.d/03opengl
+># Configuration file for eselect
+
+and another example was a corrupted /etc/init.d/killprocs
+
+so since this (a corrupted killprocs) already had happened in the past
+(last time due to a hardlock with fglrx/amd's catalyst driver) I
+thought it was some kind of system problem which could be fixed:
+I fired up a rebuild-job (emerge -e system) for my system and (surely)
+some other stuff disappeared - after 2-3 reboots I wanted to continue
+finishing the rebuild and gcc was gone (!)
+
+I don't have the time to re-test everything since this is my testing &
+production machine (I'll play back a system-backup tarball) but this
+didn't happen (yet) with 2.6.36 and
+the following patches related to multi-cpu dm-crypt:
+
+* [dm-devel] [PATCH] DM-CRYPT: Scale to multiple CPUs v3
+* [PATCH] Use generic private pointer in per-cpu struct
+
+so it seems to be safe.
+
+It has to be changes which got introduced with 2.6.37* which broke
+stuff. 2.6.36 seems to work perfectly fine with those 2 patches since
+several days already
+
+I'll stick with 2.6.36 for some time now
+
+Thanks !
+
+Matt
