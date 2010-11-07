@@ -1,180 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752122Ab0KGL7a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 06:59:30 -0500
-Received: from home.kolivas.org ([59.167.196.135]:36019 "EHLO home.kolivas.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751887Ab0KGL72 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 06:59:28 -0500
-From: Con Kolivas <kernel@kolivas.org>
-To: linux-kernel@vger.kernel.org
-Subject: Linux kernel compression with lrzip
-Date: Sun, 7 Nov 2010 22:59:25 +1100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-ck1; KDE/4.4.5; x86_64; ; )
+	id S1752350Ab0KGMGo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 07:06:44 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:42252 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752294Ab0KGMGn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 07:06:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=oDaj7sq5CuS4yzJgiwRRSZohSm5zVlSxFyAgnMvl/NBm4B3wYVNgP2GCrjyQEW/wF8
+         1AHULSgBaf2lqTQjY74vFJstIVmwEuQaFe0nAL4npIlvSJby3a0nPHJdBDvXiCgcpZcN
+         knYHxqZ9uzIlRUIvdPGNTSvLgySJsOlmgPk4U=
+Date: Sun, 7 Nov 2010 15:06:36 +0300
+From: Vasiliy Kulikov <segooon@gmail.com>
+To: walter harms <wharms@bfs.de>
+Cc: kernel-janitors@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Jiri Pirko <jpirko@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] net: packet: fix information leak to userland
+Message-ID: <20101107120636.GA7101@albatros>
+References: <1288545028-16436-1-git-send-email-segooon@gmail.com>
+ <4CCE84E2.9050801@bfs.de>
+ <20101106143911.GA17428@albatros>
+ <4CD68F7E.5050407@bfs.de>
 MIME-Version: 1.0
-X-Length: 5137
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011072259.25625.kernel@kolivas.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CD68F7E.5050407@bfs.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all
+On Sun, Nov 07, 2010 at 12:37 +0100, walter harms wrote:
+> Am 06.11.2010 15:39, schrieb Vasiliy Kulikov:
+> > On Mon, Nov 01, 2010 at 10:14 +0100, walter harms wrote:
+> >> Vasiliy Kulikov schrieb:
+> >>> @@ -1719,7 +1719,7 @@ static int packet_getname_spkt(struct socket *sock, struct sockaddr *uaddr,
+> >>>  	rcu_read_lock();
+> >>>  	dev = dev_get_by_index_rcu(sock_net(sk), pkt_sk(sk)->ifindex);
+> >>>  	if (dev)
+> >>> -		strlcpy(uaddr->sa_data, dev->name, 15);
+> >>> +		strncpy(uaddr->sa_data, dev->name, 14);
+> >>>  	else
+> >>>  		memset(uaddr->sa_data, 0, 14);
+> >>
+> >> if i understand the code correcly the max size for dev->name is IFNAMSIZ.
+> > 
+> > For dev->name - IFNAMSIZ, for uaddr->sa_data - 14.
+> > 
+> 
+> 
+> did not notice, since uaddr->sa_data should take dev->name this does no look very
+> clever. How is the size of  sa_data defined ?
 
-Let's do this backwards. Data first.
+Magic size...
 
+~/linux/include/linux/socket.h:
 
-tarball of every 3 point linux kernel from 2.6.0 to 2.6.36
-
-9748285440 linux-2.6.0-2.6.36.tar
-
-
-compressed file
-
-136516013 linux-2.6.0-2.6.36.tar.lrz
-
-
-Compressed size: 1.4%
-
-
-Compression time:
-
-00:19:22.086
-
-
-Decompression time:
-
-00:03:02.564
-
-
-http://lrzip.kolivas.org
-
-
-Now for the introduction
-
-Lrzip is a compression application I've been working on that is based on the 
-original excellent application rzip by Andrew Tridgell. Rzip worked by having 
-a preprocessor stage with a massive compression window up to 900MB for long 
-distance redundancy compaction and then compressing the data with bz2. Lrzip 
-was a project I began based on rzip which tried to extend the initial 
-compression window beyond 900MB and to use lzma as the back end for the 2nd 
-stage compression. The idea was that as file sizes got bigger, and machines 
-had more ram, it would keep getting more and more useful.
-
-After many iterations on lrzip, I've been able to significantly expand on this 
-idea and make it address 64 bit sized files, ram sizes, and bigger windows. 
-Previously the limit was based on available ram and how much of the file being 
-compressed could be mmapped. The current version (0.5.2) is able to use 
-unlimited sized compression windows for the preprocessor stage using two 
-sliding mmap windows I invented to match the hash search algorithm of rzip 
-which can go beyond the size of the ram available. Basically the larger the 
-file, and the more redundant information in the file, the more the compression 
-is you can achieve.
-
-Anyway the relevance of this to kernel folk is that the linux kernel is a 
-perfect test case for long distance redundancy when multiple kernel trees are 
-compressed.
-
-So here's the lowdown. All of these results were conducted on a 3GHz quad core 
-64 bit machine with 8GB ram on a 160GB SSD so hard drive speed is a 
-(relatively) insignificant part of the times.
+struct sockaddr {
+	sa_family_t	sa_family;	/* address family, AF_xxx	*/
+	char		sa_data[14];	/* 14 bytes of protocol address	*/
+};
 
 
-Starting with linux kernel 2.6.36
+> Would it hurt when some uses IFNAMSIZ here ?
 
-413511680 linux-2.6.36.tar
-70277083 linux-2.6.36.tar.bz2
-59905365 linux-2.6.36.tar.lrz
-
-Compression:
-Compression Ratio: 6.903. Average Compression Speed:  1.582MB/s.           
-Total time: 00:04:08.896
-
-Decompression:
-Average DeCompression Speed: 17.130MB/s
-Total time: 00:00:22.557
+If copy _to_ sa_data string of maximum IFNAMSIZ bytes - yes.
 
 
-So trying my best to show off what lrzip is good at, I grabbed every 3 point 
-2.6 linux kernel release. That's every release from 2.6.0 to 2.6.36 as a 
-tarball, not as patches. It came to a 9.1GB file. Now each kernel tree is 
-going to be repeating an -awful- lot of data, but given that they have gotten 
-progressively larger, and span gigabytes, normal compression doesn't really 
-offer much. This is where the rzip compaction stage over the full size of the 
-file comes in handy. The more redundant information there is over large 
-distances, the better. [insert joke about the linux kernel and redundant 
-information here]. (-MU means Maximum Unlimited; maximum ram and unlimited 
-window size).
+In packet_getname_spkt() the output buffer is 128 bytes, so it doesn't
+really overflows anything.  I don't think that *_getname() implementations
+don't know this.
 
+> Perhaps someone who know more about the network stack can figure out what is actualy done
+> with uaddr->sa_data.
 
-9748285440 linux-2.6.0-2.6.36.tar
+Yeah, also I wonder whether it is always NULL-terminated string or not.
 
-lrzip -MU linux-2.6.0-2.6.36.tar
+> looks like a can of worms.
+> 
+> 
+> In packet_bind_spkt() they will copy a char[15], obviously it is a real problem.
 
-136516013 linux-2.6.0-2.6.36.tar.lrz
+No, packet_bind_spkt() copies 14-byte string into array of 15 bytes.
+The vice versa would be a bug.
 
-Compression:
-Compression Ratio: 71.408. Average Compression Speed:  8.000MB/s.
-Total time: 00:19:22.086
+> re,
+>  wh
+> 
+> 
+> >> You can simply that part:
+> >>
+> >> memset(uaddr->sa_data, 0, IFNAMSIZ);
+> >> dev = dev_get_by_index_rcu(sock_net(sk), pkt_sk(sk)->ifindex);
+> >> if (dev)
+> >> 	strlcpy(uaddr->sa_data, dev->name, IFNAMSIZ);
+> > 
+> > This will overflow uaddr->sa_data.  Also I don't see any difficulty to
+> > fill the array only once.
+> > 
+> >> you should send that as separate patch.
+> >> re,
+> >>  wh
+> >>
+> >>
+> >>>  	rcu_read_unlock();
+> >>> @@ -1742,6 +1742,7 @@ static int packet_getname(struct socket *sock, struct sockaddr *uaddr,
+> >>>  	sll->sll_family = AF_PACKET;
+> >>>  	sll->sll_ifindex = po->ifindex;
+> >>>  	sll->sll_protocol = po->num;
+> >>> +	sll->sll_pkttype = 0;
+> >>>  	rcu_read_lock();
+> >>>  	dev = dev_get_by_index_rcu(sock_net(sk), po->ifindex);
+> >>>  	if (dev) {
+> > 
+> > Thanks,
+> > 
 
-That's 9.1GB to 130MB (1.4%) in 20 minutes.
-
-Decompression:
-Average DeCompression Speed: 51.359MB/s
-Total time: 00:03:02.564
-
-
-At 130MB, it's small enough for me to even offer the entire 3 point stable 
-release for download from my piddly little server. So here's the file, if 
-anyone wanted to confirm its validity, or just to download them all :)
-
-http://ck.kolivas.org/linux-2.6.0-2.6.36.tar.lrz
-
-
-lrzip also has an lzo and zpaq backend for those who want to extract every 
-last drop of compression out of it at the cost of a bit more time. zpaq is 
-EIGHT TIMES slower during the backend compression phase compared to lzma 
-whereas lzo is almost instant after the rzip phase. Note that this file loses 
-most of its size during the preprocessor stage so it doesn't end up taking 8x 
-longer to compress with zpaq:
-
-
-lrzip -MUz linux-2.6.0-2.6.36.tar
-
-121021214 linux-2.6.0-2.6.36.tar.lrz
-
-Compression:
-Compression Ratio: 80.550. Average Compression Speed:  3.041MB/s.
-Total time: 00:50:56.537
-
-That's 9.1GB to 115MB (1.2%) in 51 mins.
-
-Decompression time is about 52 minutes (yes it's longer than compression!)
-
-
-Now, I am NOT proposing lrzip be used as a drop in replacement for the 
-existing compression formats in use. It does work on stdin/stdout but 
-inefficiently except on compression from stdin. It does not have any archive 
-facilities beyond compressing the one file, so it comes with an lrztar and 
-lrzuntar wrapper to do basic directory archiving. It uses a LOT of ram, and 
-although it has the ability to use an unlimited sized compression windows 
-unconstrained by ram, the bigger the discrepancy between the file size and the 
-ram, the slower it will get. (Decompression typically uses 10x less ram than 
-compression).
-
-Nevertheless, I home some people with lots of similar files lying around, like 
-kernel hackers, will hopefully find it a useful tool, as will people with 
-database dumps and the like. I also wonder if features of this compression 
-approach might be helpful for other projects that deal with huge amounts of 
-data and have large memory requirements. When I mentioned the sliding mmap 
-feature online, git using lots of memory during its compression phase was 
-mentioned, so perhaps there are other uses for the sliding mmap idea as a way 
-of reducing memory usage. There's some documentation of it in the code in 
-rzip.c and I wrote briefly about it in my blog: http://ck-hack.blogspot.com
-
-
-Enjoy!
 -- 
--ck
+Vasiliy
