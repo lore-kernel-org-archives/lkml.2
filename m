@@ -1,125 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752350Ab0KGMGo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 07:06:44 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:42252 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752294Ab0KGMGn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 07:06:43 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=oDaj7sq5CuS4yzJgiwRRSZohSm5zVlSxFyAgnMvl/NBm4B3wYVNgP2GCrjyQEW/wF8
-         1AHULSgBaf2lqTQjY74vFJstIVmwEuQaFe0nAL4npIlvSJby3a0nPHJdBDvXiCgcpZcN
-         knYHxqZ9uzIlRUIvdPGNTSvLgySJsOlmgPk4U=
-Date: Sun, 7 Nov 2010 15:06:36 +0300
-From: Vasiliy Kulikov <segooon@gmail.com>
-To: walter harms <wharms@bfs.de>
-Cc: kernel-janitors@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Jiri Pirko <jpirko@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] net: packet: fix information leak to userland
-Message-ID: <20101107120636.GA7101@albatros>
-References: <1288545028-16436-1-git-send-email-segooon@gmail.com>
- <4CCE84E2.9050801@bfs.de>
- <20101106143911.GA17428@albatros>
- <4CD68F7E.5050407@bfs.de>
+	id S1752416Ab0KGMIe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 07:08:34 -0500
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:51341 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752219Ab0KGMIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 07:08:32 -0500
+Message-ID: <4CD696B4.6070002@kernel.dk>
+Date: Sun, 07 Nov 2010 13:08:20 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CD68F7E.5050407@bfs.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: dave b <db.pub.mail@gmail.com>
+CC: Sanjoy Mahajan <sanjoy@olin.edu>, Dave Chinner <david@fromorbit.com>,
+        Jesper Juhl <jj@chaosbits.net>, Chris Mason <chris.mason@oracle.com>,
+        Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@kernel.org>,
+        Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Nick Piggin <npiggin@suse.de>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "Ted Ts'o" <tytso@mit.edu>,
+        Corrado Zoccolo <czoccolo@gmail.com>,
+        Shaohua Li <shaohua.li@intel.com>, Steven Barrett <damentz@gmail.com>
+Subject: Re: 2.6.36 io bring the system to its knees
+References: <20101105014334.GF13830@dastard> <E1PELiI-0001Pj-8g@approx.mit.edu> <AANLkTimON_GL6vRF9=_U6oRFQ30EYssx3wv5xdNsU9JM@mail.gmail.com>
+In-Reply-To: <AANLkTimON_GL6vRF9=_U6oRFQ30EYssx3wv5xdNsU9JM@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 07, 2010 at 12:37 +0100, walter harms wrote:
-> Am 06.11.2010 15:39, schrieb Vasiliy Kulikov:
-> > On Mon, Nov 01, 2010 at 10:14 +0100, walter harms wrote:
-> >> Vasiliy Kulikov schrieb:
-> >>> @@ -1719,7 +1719,7 @@ static int packet_getname_spkt(struct socket *sock, struct sockaddr *uaddr,
-> >>>  	rcu_read_lock();
-> >>>  	dev = dev_get_by_index_rcu(sock_net(sk), pkt_sk(sk)->ifindex);
-> >>>  	if (dev)
-> >>> -		strlcpy(uaddr->sa_data, dev->name, 15);
-> >>> +		strncpy(uaddr->sa_data, dev->name, 14);
-> >>>  	else
-> >>>  		memset(uaddr->sa_data, 0, 14);
-> >>
-> >> if i understand the code correcly the max size for dev->name is IFNAMSIZ.
-> > 
-> > For dev->name - IFNAMSIZ, for uaddr->sa_data - 14.
-> > 
+On 2010-11-06 15:10, dave b wrote:
+> I now personally have thought that this problem is the kernel not
+> keeping track of reads vs writers properly  or not providing enough
+> time to reading processes as writing ones which look like they are
+> blocking the system....
 > 
+> If you want to do a simple test do an unlimited dd  (or two dd's of a
+> limited size, say 10gb) and a find /
+> Tell me how it goes :) ( the system will stall)
+> (obviously stop the dd after some time :) ).
 > 
-> did not notice, since uaddr->sa_data should take dev->name this does no look very
-> clever. How is the size of  sa_data defined ?
+> http://article.gmane.org/gmane.linux.kernel.device-mapper.dm-crypt/4561
+> iirc can reproduce this on plain ext3.
 
-Magic size...
-
-~/linux/include/linux/socket.h:
-
-struct sockaddr {
-	sa_family_t	sa_family;	/* address family, AF_xxx	*/
-	char		sa_data[14];	/* 14 bytes of protocol address	*/
-};
-
-
-> Would it hurt when some uses IFNAMSIZ here ?
-
-If copy _to_ sa_data string of maximum IFNAMSIZ bytes - yes.
-
-
-In packet_getname_spkt() the output buffer is 128 bytes, so it doesn't
-really overflows anything.  I don't think that *_getname() implementations
-don't know this.
-
-> Perhaps someone who know more about the network stack can figure out what is actualy done
-> with uaddr->sa_data.
-
-Yeah, also I wonder whether it is always NULL-terminated string or not.
-
-> looks like a can of worms.
-> 
-> 
-> In packet_bind_spkt() they will copy a char[15], obviously it is a real problem.
-
-No, packet_bind_spkt() copies 14-byte string into array of 15 bytes.
-The vice versa would be a bug.
-
-> re,
->  wh
-> 
-> 
-> >> You can simply that part:
-> >>
-> >> memset(uaddr->sa_data, 0, IFNAMSIZ);
-> >> dev = dev_get_by_index_rcu(sock_net(sk), pkt_sk(sk)->ifindex);
-> >> if (dev)
-> >> 	strlcpy(uaddr->sa_data, dev->name, IFNAMSIZ);
-> > 
-> > This will overflow uaddr->sa_data.  Also I don't see any difficulty to
-> > fill the array only once.
-> > 
-> >> you should send that as separate patch.
-> >> re,
-> >>  wh
-> >>
-> >>
-> >>>  	rcu_read_unlock();
-> >>> @@ -1742,6 +1742,7 @@ static int packet_getname(struct socket *sock, struct sockaddr *uaddr,
-> >>>  	sll->sll_family = AF_PACKET;
-> >>>  	sll->sll_ifindex = po->ifindex;
-> >>>  	sll->sll_protocol = po->num;
-> >>> +	sll->sll_pkttype = 0;
-> >>>  	rcu_read_lock();
-> >>>  	dev = dev_get_by_index_rcu(sock_net(sk), po->ifindex);
-> >>>  	if (dev) {
-> > 
-> > Thanks,
-> > 
+As already mentioned, ext3 is just not a good choice for this sort of
+thing. Did you have atimes enabled?
 
 -- 
-Vasiliy
+Jens Axboe
+
