@@ -1,125 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752751Ab0KGUim (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 15:38:42 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:26682 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521Ab0KGUik convert rfc822-to-8bit (ORCPT
+	id S1752863Ab0KGUl4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 15:41:56 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:39852 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752533Ab0KGUlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 15:38:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=fkqwT0L70TQG2k/anBYxrb3zflnZsI90yIvSLc6ukSdm+y9jETuCD9qQzEL/MP0ov4
-         L9SzKFvVzbDedbjlM+xQ==
+	Sun, 7 Nov 2010 15:41:55 -0500
+Date: Sun, 7 Nov 2010 21:41:53 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: John Stultz <johnstul@us.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Clark Williams <williams@redhat.com>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH] Greatly improve TSC calibration using a delayed
+ workqueue
+Message-ID: <20101107204153.GA17592@basil.fritz.box>
+References: <1289003985-29060-1-git-send-email-johnstul@us.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1011071952510.26247@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1011071952510.26247@swampdragon.chaosbits.net>
-Date: Sun, 7 Nov 2010 12:38:35 -0800
-X-Google-Sender-Auth: -kxbRIjKgyXUx6oj-hoO25_EF7Y
-Message-ID: <AANLkTinJF3uYibP9QNXNU3WavThzkZ17w30+6m2DKgjb@mail.gmail.com>
-Subject: Re: [PATCH RFC] ARM ETM driver: Do not deref potentially null pointer
- and don't allocate and free mem while holding lock.
-From: Colin Cross <ccross@android.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: Alexander Shishkin <virtuoso@slind.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Dmitry Torokhov <dtor@mail.ru>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289003985-29060-1-git-send-email-johnstul@us.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 7, 2010 at 11:12 AM, Jesper Juhl <jj@chaosbits.net> wrote:
-> Hello,
->
-> Looking at etb_read() in arch/arm/kernel/etm.c I noticed two things.
->
->  1. We are allocting and freeing 'buf' with vmalloc() while holding a
->    mutex locked. I cannot see any reason why we have to hold the mutex
->    just to allocate and free a bit of memory, so I moved it outside the
->    lock.
->
->  2. If the memory allocation fails we'll dereference a null pointer
->    further down since we never check the vmalloc() return value.
->        for (i = 0; i < length / 4; i++)
->                buf[i] = etb_readl(t, ETBR_READMEM);
->    The best way I could find to handle this was to simply return 0 when
->    we can't allocate memory, but there might be a better option that I
->    just couldn't find - in any case it is better than crashing the
->    kernel.
->
-> Please consider merging, but please also review carefully first since I'm
-> not familliar with this code.
->
-> CC me on replies please.
->
->
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  etm.c |    8 +++++---
->  1 file changed, 5 insertions(+), 3 deletions(-)
->
->  note: completely untested patch since I have neither hardware nor
->  toolchain to test it, so please review carefully and test before applying
->  it.
->
-> diff --git a/arch/arm/kernel/etm.c b/arch/arm/kernel/etm.c
-> index 11db628..30f845b 100644
-> --- a/arch/arm/kernel/etm.c
-> +++ b/arch/arm/kernel/etm.c
-> @@ -274,7 +274,10 @@ static ssize_t etb_read(struct file *file, char __user *data,
->        long length;
->        struct tracectx *t = file->private_data;
->        u32 first = 0;
-> -       u32 *buf;
-> +       u32 *buf = vmalloc(length);
-You can't move the vmalloc out of the lock, length is uninitialized here
+Hi John,
 
+> +	/*
+> +	 * Since the timer is started early in boot, we may be
+> +	 * delayed the first time we expire. So set the timer
+> +	 * again once we know timers are working.
+> +	 */
+> +	if (tsc_start == -1) {
+> +		/*
+> +		 * Only set hpet once, to avoid mixing hardware
+> +		 * if the hpet becomes enabled later.
+> +		 */
+> +		hpet = is_hpet_enabled();
+> +		schedule_delayed_work(&tsc_irqwork, HZ);
+> +		tsc_start = tsc_read_refs(&ref_start, hpet);
+> +		return;
+> +	}
 > +
-> +       if (!buf)
-> +               return 0;
-ssize_t is signed so you can return -ENOMEM
+> +	tsc_stop = tsc_read_refs(&ref_stop, hpet);
 
->        mutex_lock(&t->mutex);
->
-> @@ -292,7 +295,6 @@ static ssize_t etb_read(struct file *file, char __user *data,
->        etb_writel(t, first, ETBR_READADDR);
->
->        length = min(total * 4, (int)len);
-> -       buf = vmalloc(length);
->
->        dev_dbg(t->dev, "ETB buffer length: %d\n", total);
->        dev_dbg(t->dev, "ETB status reg: %x\n", etb_readl(t, ETBR_STATUS));
-> @@ -310,10 +312,10 @@ static ssize_t etb_read(struct file *file, char __user *data,
->        etb_lock(t);
->
->        length -= copy_to_user(data, buf, length);
-> -       vfree(buf);
->
->  out:
->        mutex_unlock(&t->mutex);
-> +       vfree(buf);
->
->        return length;
->  }
->
->
->
-> --
-> Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-> Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
-> Plain text mails only, please.
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+The HPET init code stops, starts the HPET. I think you need some
+way to protect against that here, e.g. a variable and rearming the 
+timer if it's true.
+
+Another issue may be races against suspend, but that may be too
+obscure.
+
+I also worry a bit about NMIs etc. running later during this
+and messing up the measurement, but I guess the longer period
+makes up for it.
+
+The rest of the patch looks ok to me.
+
+-Andi
