@@ -1,63 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244Ab0KGW4q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 17:56:46 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:49807 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751953Ab0KGW4o convert rfc822-to-8bit (ORCPT
+	id S1753120Ab0KGXAc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 18:00:32 -0500
+Received: from x35.xmailserver.org ([64.71.152.41]:35714 "EHLO
+	x35.xmailserver.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369Ab0KGXAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 17:56:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=FVVdei14kPBmVJWFO44aPjBSvJFjs3ZAFvWerNJVKPys/sPi+9+8mbSf/grLM+qEht
-         AIGaiW2585pCaJPXmtQcWzhRPL4dMVMj1dUxgxKF/bapS0rsokdJMgCMbX5DfczrV9En
-         IBUXXXyi6SC17vUGYBVW/kKgHJl8hwn1KToxs=
+	Sun, 7 Nov 2010 18:00:31 -0500
+X-AuthUser: davidel@xmailserver.org
+Date: Sun, 7 Nov 2010 14:59:27 -0800 (PST)
+From: Davide Libenzi <davidel@xmailserver.org>
+X-X-Sender: davide@davide-lnx1
+To: Matt Helsley <matthltc@us.ibm.com>
+cc: Tejun Heo <tj@kernel.org>, Oren Laadan <orenl@cs.columbia.edu>,
+        ksummit-2010-discuss@lists.linux-foundation.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
+In-Reply-To: <20101106101209.GD11535@count0.beaverton.ibm.com>
+Message-ID: <alpine.DEB.2.00.1011071032001.29896@davide-lnx1>
+References: <Pine.LNX.4.64.1011021530470.12128@takamine.ncl.cs.columbia.edu> <4CD08419.5050803@kernel.org> <4CD23087.30900@cs.columbia.edu> <4CD28033.1000700@kernel.org> <20101106101209.GD11535@count0.beaverton.ibm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+X-GPG-FINGRPRINT: CFAE 5BEE FD36 F65E E640  56FE 0974 BF23 270F 474E
+X-GPG-PUBLIC_KEY: http://www.xmailserver.org/davidel.asc
 MIME-Version: 1.0
-In-Reply-To: <20101107220353.115646194@cmpxchg.org>
-References: <1288973333-7891-1-git-send-email-minchan.kim@gmail.com>
-	<20101106010357.GD23393@cmpxchg.org>
-	<AANLkTin9m65JVKRuStZ1-qhU5_1AY-GcbBRC0TodsfYC@mail.gmail.com>
-	<20101107215030.007259800@cmpxchg.org>
-	<20101107220353.115646194@cmpxchg.org>
-Date: Mon, 8 Nov 2010 07:56:43 +0900
-Message-ID: <AANLkTi=qO84k-KWaG2R_nQr7vxRA2E7DbO4=XhVrFzjv@mail.gmail.com>
-Subject: Re: [patch 1/4] memcg: use native word to represent dirtyable pages
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Greg Thelen <gthelen@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Young <hidave.darkstar@gmail.com>,
-        Andrea Righi <arighi@develer.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 8, 2010 at 7:14 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> The memory cgroup dirty info calculation currently uses a signed
-> 64-bit type to represent the amount of dirtyable memory in pages.
->
-> This can instead be changed to an unsigned word, which will allow the
-> formula to function correctly with up to 160G of LRU pages on a 32-bit
-> system, assuming 4k pages.  That should be plenty even when taking
-> racy folding of the per-cpu counters into account.
->
-> This fixes a compilation error on 32-bit systems as this code tries to
-> do 64-bit division.
->
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> Reported-by: Dave Young <hidave.darkstar@gmail.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+On Sat, 6 Nov 2010, Matt Helsley wrote:
+
+> Yes, our patches touch a wide variety of kernel code. You have just failed
+> to appreciate how "wide" the kernel ABI truly is. You can't really count
+> it by number of syscalls, number of pseudo-filesystems, etc. There's
+> also the intended behavior of those interfaces to consider. Each piece
+> of checkpoint/restart code is relatively self-contained. This can be
+> confirmed merely by looking at many of the patches we've already posted
+> enabling checkpoint/restart of that feature. Until you've tried to
+> implement checkpoint/restart for an interface or until you've bothered
+> to review a patch for one of them (my favorite on is eventfd:
+> http://www.mail-archive.com/devel@openvz.org/msg21565.html ) please
+> don't tell us it's too complex. Then compare that with your proposed
+> ghastly stack of userspace cards -- ptrace (really more like strace) +
+> LD_PRELOAD + a daemon...
+> 
+> Incidentally, 20k lines of code is less than many pieces of the kernel.
+> It's less than many:
+> 
+> Filesystems (I've selected ones designed for rotating media or networks usually..)
+> 	ext4, nfs, ocfs2, xfs, reiserfs, ntfs, gfs2, jfs, cifs, ubifs, nilfs2, btrfs
+> 
+> Non-filesystem file-system support code:
+> 	nfsd, nls
+> 
+> It's less than one of the simpler DRM graphics drivers -- i915:
+> 	$ cd drivers/gpu/drm/i915
+> 	$ wc -l *.[ch]
+> 	...
+> 	41481 total
+> 
+> It's less than any one of the lpfc, bfa, aic7xxx, qla2xxx, and mpt2sas
+> drivers I see under scsi. Perhaps a more fair comparison might be to compare
+> a single driver to a single checkpointable kernel interface but it's
+> a more-fair comparison that skews even more in our favor.
+
+Please, do not compare things like single file systems, drivers, or 
+otherwise fairly isolated components, with this "thing".
+This thing touches a freaky-large number of subsystems, effectively 
+adding a glueage between them, which can might end up causing problems 
+(and/or restrict design choices) in the future.
+The naked patch looks like just a sugar coating to me, which left out 300+ 
+lines of extra logic in epoll alone.
+This is one of the widest, deepest, intrusive patches I have seen in a 
+while, whose inclusion would require a little bit more than handwaving and 
+continuous re-posting IMO.
 
 
--- 
-Kind regards,
-Minchan Kim
+
+- Davide
+
+
