@@ -1,30 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753713Ab0KGQbJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 11:31:09 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:49437 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753631Ab0KGQbG (ORCPT
+	id S1753772Ab0KGQbU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 11:31:20 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:58581 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753624Ab0KGQbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 11:31:06 -0500
+	Sun, 7 Nov 2010 11:31:18 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=YMLXQib0x/9xhtb7yitWQcC/TNgWArum+XUCO/h/sMgjchfZH1/e3VBuq8FKckFbOx
-         SWqNYrPbmo15YxqE2nOk/ShsHziGFkQDITF/K1t4lhorV9rlULZQFzOeuFI96xKv0R3L
-         RvpLBKX13cMeO6GTMPwPwkAcZmE16g2a9D9pA=
+        b=qXlPei5fISx40S4WtuaME6I2ERv72Y3KaXr6juZBOgO2OdikdV/d+aKkif3Qp42jTb
+         o1iENf244yNUFJADRmVTH+rRDhxTZqls5JQmTQQLF5jb16uqeToimpliz8BfsjYM655c
+         U5p71Ax6GMn9s2Fskcpwsj34TD5gOiaapfAb8=
 From: Alexey Charkov <alchark@gmail.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: vt8500-wm8505-linux-kernel@googlegroups.com,
         Alexey Charkov <alchark@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, Feng Tang <feng.tang@intel.com>,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/6 v2] input: Add support for VIA VT8500 and compatibles in i8042
-Date: Sun,  7 Nov 2010 19:28:54 +0300
-Message-Id: <1289147348-31969-3-git-send-email-alchark@gmail.com>
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 4/6 v2] usb: Add support for VIA VT8500 and compatibles in EHCI HCD
+Date: Sun,  7 Nov 2010 19:28:55 +0300
+Message-Id: <1289147348-31969-4-git-send-email-alchark@gmail.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <1289147348-31969-1-git-send-email-alchark@gmail.com>
 References: <1289147348-31969-1-git-send-email-alchark@gmail.com>
@@ -32,9 +30,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VIA and WonderMedia Systems-on-Chip feature a standard i8042-compatible
-keyboard and mouse controller. This adds necessary glue to enable use
-of the standard driver with these systems.
+VIA and WonderMedia Systems-on-Chip feature a standard EHCI host
+controller. This adds necessary glue to use the standard driver
+with these systems.
 
 Signed-off-by: Alexey Charkov <alchark@gmail.com>
 ---
@@ -42,126 +40,227 @@ Signed-off-by: Alexey Charkov <alchark@gmail.com>
 Please review and (if appropriate) commit to a relevant git tree for
 further integration in 2.6.38.
 
-Previous version of this code was 'Acked-by: Dmitry Torokhov <dtor@mail.ru>'
-This one only differs by using runtime-selected IRQ definitions instead
-of static compile-time preprocessor macros.
+Compared to the previous submission, this code just contains a rebase
+against the latest changes introduced in 2.6.37 merge window.
 
-Relevant register and interrupt definitions are provided by PATCH 1/6 in
-this series, so one would need that to make use of this code.
+Relevant platform definitions are introduced by PATCH 1/6 in this series,
+so one would need that to make use of this code.
 
- drivers/input/serio/Kconfig        |    3 +-
- drivers/input/serio/i8042-vt8500.h |   74 ++++++++++++++++++++++++++++++++++++
- drivers/input/serio/i8042.h        |    2 +
- 3 files changed, 78 insertions(+), 1 deletions(-)
- create mode 100644 drivers/input/serio/i8042-vt8500.h
+Due credits go to the community for providing feedback, advice and
+testing.
 
-diff --git a/drivers/input/serio/Kconfig b/drivers/input/serio/Kconfig
-index 6256233..ff799f3 100644
---- a/drivers/input/serio/Kconfig
-+++ b/drivers/input/serio/Kconfig
-@@ -21,7 +21,8 @@ if SERIO
- config SERIO_I8042
- 	tristate "i8042 PC Keyboard controller" if EMBEDDED || !X86
- 	default y
--	depends on !PARISC && (!ARM || ARCH_SHARK || FOOTBRIDGE_HOST) && \
-+	depends on !PARISC && \
-+		  (!ARM || ARCH_SHARK || ARCH_VT8500 || FOOTBRIDGE_HOST) && \
- 		   (!SUPERH || SH_CAYMAN) && !M68K && !BLACKFIN
- 	help
- 	  i8042 is the chip over which the standard AT keyboard and PS/2
-diff --git a/drivers/input/serio/i8042-vt8500.h b/drivers/input/serio/i8042-vt8500.h
+ drivers/usb/Kconfig            |    1 +
+ drivers/usb/host/ehci-hcd.c    |    5 +
+ drivers/usb/host/ehci-vt8500.c |  172 ++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 178 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/usb/host/ehci-vt8500.c
+
+diff --git a/drivers/usb/Kconfig b/drivers/usb/Kconfig
+index 67eb377..7d13506 100644
+--- a/drivers/usb/Kconfig
++++ b/drivers/usb/Kconfig
+@@ -66,6 +66,7 @@ config USB_ARCH_HAS_EHCI
+ 	default y if ARCH_AT91SAM9G45
+ 	default y if ARCH_MXC
+ 	default y if ARCH_OMAP3
++	default y if ARCH_VT8500
+ 	default PCI
+ 
+ # ARM SA1111 chips have a non-PCI based "OHCI-compatible" USB host interface.
+diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+index 502a7e6..10f985d 100644
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -1216,6 +1216,11 @@ MODULE_LICENSE ("GPL");
+ #define PLATFORM_DRIVER		ehci_octeon_driver
+ #endif
+ 
++#ifdef CONFIG_ARCH_VT8500
++#include "ehci-vt8500.c"
++#define	PLATFORM_DRIVER		vt8500_ehci_driver
++#endif
++
+ #if !defined(PCI_DRIVER) && !defined(PLATFORM_DRIVER) && \
+     !defined(PS3_SYSTEM_BUS_DRIVER) && !defined(OF_PLATFORM_DRIVER) && \
+     !defined(XILINX_OF_PLATFORM_DRIVER)
+diff --git a/drivers/usb/host/ehci-vt8500.c b/drivers/usb/host/ehci-vt8500.c
 new file mode 100644
-index 0000000..4ff9e1c
+index 0000000..2016806
 --- /dev/null
-+++ b/drivers/input/serio/i8042-vt8500.h
-@@ -0,0 +1,74 @@
-+#ifndef _I8042_VT8500_H
-+#define _I8042_VT8500_H
-+
-+#include <mach/mmio_regs.h>
-+#include <mach/irq_defs.h>
-+
++++ b/drivers/usb/host/ehci-vt8500.c
+@@ -0,0 +1,172 @@
 +/*
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published by
-+ * the Free Software Foundation.
++ * drivers/usb/host/ehci-vt8500.c
++ *
++ * Copyright (C) 2010 Alexey Charkov <alchark@gmail.com>
++ *
++ * Based on ehci-au1xxx.c
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
 + */
 +
-+static void __iomem *regbase;
++#include <linux/platform_device.h>
 +
-+/*
-+ * Names.
-+ */
-+
-+#define I8042_KBD_PHYS_DESC "vt8500ps2/serio0"
-+#define I8042_AUX_PHYS_DESC "vt8500ps2/serio1"
-+#define I8042_MUX_PHYS_DESC "vt8500ps2/serio%d"
-+
-+/*
-+ * IRQs.
-+ */
-+
-+#define I8042_KBD_IRQ	(wmt_current_irqs->ps2kbd)
-+#define I8042_AUX_IRQ	(wmt_current_irqs->ps2mouse)
-+
-+
-+/*
-+ * Register numbers.
-+ */
-+
-+#define I8042_COMMAND_REG	(regbase + 0x4)
-+#define I8042_STATUS_REG	(regbase + 0x4)
-+#define I8042_DATA_REG		(regbase + 0x0)
-+
-+static inline int i8042_read_data(void)
++static int ehci_update_device(struct usb_hcd *hcd, struct usb_device *udev)
 +{
-+	return readl(I8042_DATA_REG);
++	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
++	int rc = 0;
++
++	if (!udev->parent) /* udev is root hub itself, impossible */
++		rc = -1;
++	/* we only support lpm device connected to root hub yet */
++	if (ehci->has_lpm && !udev->parent->parent) {
++		rc = ehci_lpm_set_da(ehci, udev->devnum, udev->portnum);
++		if (!rc)
++			rc = ehci_lpm_check(ehci, udev->portnum);
++	}
++	return rc;
 +}
 +
-+static inline int i8042_read_status(void)
-+{
-+	return readl(I8042_STATUS_REG);
-+}
++static const struct hc_driver vt8500_ehci_hc_driver = {
++	.description		= hcd_name,
++	.product_desc		= "VT8500 EHCI",
++	.hcd_priv_size		= sizeof(struct ehci_hcd),
 +
-+static inline void i8042_write_data(int val)
-+{
-+	writel(val, I8042_DATA_REG);
-+}
++	/*
++	 * generic hardware linkage
++	 */
++	.irq			= ehci_irq,
++	.flags			= HCD_MEMORY | HCD_USB2,
 +
-+static inline void i8042_write_command(int val)
-+{
-+	writel(val, I8042_COMMAND_REG);
-+}
++	/*
++	 * basic lifecycle operations
++	 */
++	.reset			= ehci_init,
++	.start			= ehci_run,
++	.stop			= ehci_stop,
++	.shutdown		= ehci_shutdown,
 +
-+static inline int i8042_platform_init(void)
++	/*
++	 * managing i/o requests and associated device resources
++	 */
++	.urb_enqueue		= ehci_urb_enqueue,
++	.urb_dequeue		= ehci_urb_dequeue,
++	.endpoint_disable	= ehci_endpoint_disable,
++	.endpoint_reset		= ehci_endpoint_reset,
++
++	/*
++	 * scheduling support
++	 */
++	.get_frame_number	= ehci_get_frame,
++
++	/*
++	 * root hub support
++	 */
++	.hub_status_data	= ehci_hub_status_data,
++	.hub_control		= ehci_hub_control,
++	.bus_suspend		= ehci_bus_suspend,
++	.bus_resume		= ehci_bus_resume,
++	.relinquish_port	= ehci_relinquish_port,
++	.port_handed_over	= ehci_port_handed_over,
++
++	/*
++	 * call back when device connected and addressed
++	 */
++	.update_device =	ehci_update_device,
++
++	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
++};
++
++static int vt8500_ehci_drv_probe(struct platform_device *pdev)
 +{
-+	i8042_reset = true;
-+	regbase = ioremap(wmt_current_regs->ps2, SZ_1K);
-+	if (!regbase)
++	struct usb_hcd *hcd;
++	struct ehci_hcd *ehci;
++	struct resource *res;
++	int ret;
++
++	if (usb_disabled())
 +		return -ENODEV;
++
++	if (pdev->resource[1].flags != IORESOURCE_IRQ) {
++		pr_debug("resource[1] is not IORESOURCE_IRQ");
++		return -ENOMEM;
++	}
++	hcd = usb_create_hcd(&vt8500_ehci_hc_driver, &pdev->dev, "VT8500");
++	if (!hcd)
++		return -ENOMEM;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	hcd->rsrc_start = res->start;
++	hcd->rsrc_len = resource_size(res);
++
++	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
++		pr_debug("request_mem_region failed");
++		ret = -EBUSY;
++		goto err1;
++	}
++
++	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
++	if (!hcd->regs) {
++		pr_debug("ioremap failed");
++		ret = -ENOMEM;
++		goto err2;
++	}
++
++	ehci = hcd_to_ehci(hcd);
++	ehci->caps = hcd->regs;
++	ehci->regs = hcd->regs + HC_LENGTH(readl(&ehci->caps->hc_capbase));
++
++	dbg_hcs_params(ehci, "reset");
++	dbg_hcc_params(ehci, "reset");
++
++	/* cache this readonly data; minimize chip reads */
++	ehci->hcs_params = readl(&ehci->caps->hcs_params);
++
++	ehci_port_power(ehci, 1);
++
++	ret = usb_add_hcd(hcd, pdev->resource[1].start,
++			  IRQF_DISABLED | IRQF_SHARED);
++	if (ret == 0) {
++		platform_set_drvdata(pdev, hcd);
++		return ret;
++	}
++
++	iounmap(hcd->regs);
++err2:
++	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
++err1:
++	usb_put_hcd(hcd);
++	return ret;
++}
++
++static int vt8500_ehci_drv_remove(struct platform_device *pdev)
++{
++	struct usb_hcd *hcd = platform_get_drvdata(pdev);
++
++	usb_remove_hcd(hcd);
++	iounmap(hcd->regs);
++	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
++	usb_put_hcd(hcd);
++	platform_set_drvdata(pdev, NULL);
 +
 +	return 0;
 +}
 +
-+static inline void i8042_platform_exit(void)
-+{
-+	iounmap(regbase);
-+}
++static struct platform_driver vt8500_ehci_driver = {
++	.probe		= vt8500_ehci_drv_probe,
++	.remove		= vt8500_ehci_drv_remove,
++	.shutdown	= usb_hcd_platform_shutdown,
++	.driver = {
++		.name	= "vt8500-ehci",
++		.owner	= THIS_MODULE,
++	}
++};
 +
-+#endif /* _I8042_VT8500_H */
-diff --git a/drivers/input/serio/i8042.h b/drivers/input/serio/i8042.h
-index cbc1beb..bdb2aeb 100644
---- a/drivers/input/serio/i8042.h
-+++ b/drivers/input/serio/i8042.h
-@@ -16,6 +16,8 @@
- 
- #if defined(CONFIG_MACH_JAZZ)
- #include "i8042-jazzio.h"
-+#elif defined(CONFIG_ARCH_VT8500)
-+#include "i8042-vt8500.h"
- #elif defined(CONFIG_SGI_HAS_I8042)
- #include "i8042-ip22io.h"
- #elif defined(CONFIG_SNI_RM)
++MODULE_ALIAS("platform:vt8500-ehci");
 -- 
 1.7.3.2
 
