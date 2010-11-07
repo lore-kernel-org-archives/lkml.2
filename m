@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753120Ab0KGWsf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 17:48:35 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:23195 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752195Ab0KGWse (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 17:48:34 -0500
-Date: Sun, 7 Nov 2010 23:37:15 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: =?ISO-8859-15?Q?Jonathan_Neusch=E4fer?= <j.neuschaefer@gmx.net>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fix spelling in drivers/misc/Kconfig
-In-Reply-To: <alpine.LNX.2.00.1011072331150.26247@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1011072336190.26247@swampdragon.chaosbits.net>
-References: <20101107224114.GB19747@debian.debian> <alpine.LNX.2.00.1011072331150.26247@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1220595651-1289169435=:26247"
+	id S1753213Ab0KGWxZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 17:53:25 -0500
+Received: from gold.linx.net ([195.66.232.40]:58128 "EHLO gold.linx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751439Ab0KGWxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 17:53:23 -0500
+Subject: Re: [PATCH -BUGFIX] Re: BUG in ext4 with 2.6.37-rc1
+From: Tony Vroon <tony@linx.net>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+In-Reply-To: <20101107212143.GA28396@thunk.org>
+References: <20101102202013.GA3861@elliptictech.com>
+	 <20101103181412.GH25614@thunk.org> <20101103182229.GA8766@elliptictech.com>
+	 <20101103205306.GA3627@elliptictech.com> <20101107212143.GA28396@thunk.org>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-KzD+RMcyujP4saWCmT7d"
+Organization: London Internet Exchange (LINX; AS5459)
+Date: Sun, 07 Nov 2010 22:53:35 +0000
+Message-ID: <1289170415.2853.3.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
 
---8323328-1220595651-1289169435=:26247
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+--=-KzD+RMcyujP4saWCmT7d
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Sun, 7 Nov 2010, Jesper Juhl wrote:
+On Sun, 2010-11-07 at 16:21 -0500, Ted Ts'o wrote:
+> OK, I think I have a new version of the patch that should fix both the
+> original and the second BUG_ON which you reported.
+> Subject: [PATCH -v2] ext4: handle writeback of inodes which are being fre=
+ed
 
-> On Sun, 7 Nov 2010, Jonathan Neuschäfer wrote:
-> 
-> > Hello list.
-> > 
-> > This patch should be trivial and obvious.
-> > 
-> > Please CC me in replies.
-> > 
-> > Jonathan
-> > ---
-> > 
-> 
-> Hi Jonathan,
-> 
-> You should:
-> 
->  - add a Signed-off-by: line (see Documentation/SubmittingPatches).
->  - add output from 'diffstat' (again see Documentation/SubmittingPatches).
->  - include patches inline, not as attachments.
->  - add trivial@kernel.org to CC for trivial stuff such as this.
-> 
+Tested-By: Tony Vroon <tony@linx.net>
 
-By the way, your patch looks fine, so feel free to add 
+This survived a 'cvs up' in /cvs/gentoo-x86 with only the CVS directory
+in place; a workload that died at roughly 90% before. I did my best to
+recreate the heavy I/O conditions that existed when it died there
+before, with Evolution being opened just as cvs starts the first writes.
+I opened Transmission-gtk with a few LiveDVD ISOs just for good measure.
+The system was loaded enough for "su -" to stall for 20 seconds at some
+points but ext4 survived now.
 
-Reviewed-by: Jesper Juhl <jj@chaosbits.net>
+I do believe you have found the culprit, many thanks :)
 
-after your own Signed-off-by: line when you re-submit the patch :-)
+Regards,
+--=20
+Tony Vroon
+UNIX systems administrator
+London Internet Exchange Ltd, Trinity Court, Trinity Street,
+Peterborough, PE1 1DA
+Registered in England number 3137929
+E-Mail: tony@linx.net
 
+--=-KzD+RMcyujP4saWCmT7d
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
--- 
-Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
 
---8323328-1220595651-1289169435=:26247--
+iEYEABECAAYFAkzXLe8ACgkQp5vW4rUFj5rg5QCfbPZRL9u/k92Ury0JkB4I447s
+yOoAnRA4DJz7HbjHHmznckbmu1rkSSTS
+=SR2l
+-----END PGP SIGNATURE-----
+
+--=-KzD+RMcyujP4saWCmT7d--
+
