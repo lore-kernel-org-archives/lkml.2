@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933Ab0KGLsX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 06:48:23 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:57890 "EHLO mx3.mail.elte.hu"
+	id S1752019Ab0KGLwG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 06:52:06 -0500
+Received: from 1wt.eu ([62.212.114.60]:47123 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750824Ab0KGLsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 06:48:22 -0500
-Date: Sun, 7 Nov 2010 12:47:56 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Willy Tarreau <w@1wt.eu>
+	id S1751762Ab0KGLwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 06:52:05 -0500
+Date: Sun, 7 Nov 2010 12:51:45 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Ingo Molnar <mingo@elte.hu>
 Cc: Marcus Meissner <meissner@suse.de>, security@kernel.org, mort@sgi.com,
         Peter Zijlstra <a.p.zijlstra@chello.nl>, fweisbec@gmail.com,
         "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
@@ -16,79 +16,59 @@ Cc: Marcus Meissner <meissner@suse.de>, security@kernel.org, mort@sgi.com,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Security] [PATCH] kernel: make /proc/kallsyms mode 400 to
- reduce ease of attacking
-Message-ID: <20101107114756.GB3759@elte.hu>
-References: <20101104141104.GA31753@elte.hu>
- <20101104143322.GL25118@suse.de>
- <20101104190804.GA16099@elte.hu>
- <20101104212920.GA31256@1wt.eu>
- <20101104215157.GA25128@elte.hu>
- <20101104223526.GC31236@1wt.eu>
- <20101107085016.GA23843@elte.hu>
- <20101107094932.GT4627@1wt.eu>
- <20101107112709.GA2634@elte.hu>
- <20101107114156.GV4627@1wt.eu>
-MIME-Version: 1.0
+Subject: Re: [Security] [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of attacking
+Message-ID: <20101107115145.GW4627@1wt.eu>
+References: <20101104135802.GA31416@elte.hu> <20101104141104.GA31753@elte.hu> <20101104143322.GL25118@suse.de> <20101104190804.GA16099@elte.hu> <20101104212920.GA31256@1wt.eu> <20101104215157.GA25128@elte.hu> <20101104223526.GC31236@1wt.eu> <20101107085016.GA23843@elte.hu> <20101107094932.GT4627@1wt.eu> <20101107114237.GA3759@elte.hu>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101107114156.GV4627@1wt.eu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20101107114237.GA3759@elte.hu>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Willy Tarreau <w@1wt.eu> wrote:
-
-> On Sun, Nov 07, 2010 at 12:27:09PM +0100, Ingo Molnar wrote:
-> > > I don't understand the point you're trying to make with this patch. [...]
-> > 
-> > It was a simple experiement to support my rather simple argument which you disputed.
+On Sun, Nov 07, 2010 at 12:42:37PM +0100, Ingo Molnar wrote:
 > 
-> OK
+> * Willy Tarreau <w@1wt.eu> wrote:
 > 
-> > > [...] Obviously we can pretend to be any version, [...]
-> > 
-> > Ok, it's a pretty cavalier style of arguing that you now essentially turn around 
-> > your earlier claim that the 'kernel version is needed at many places' and say what 
-> > i've been saying, prefixed with 'obviously' ;-)
+> > [...] I was explaining that doing this will not prevent them from guessing the 
+> > precise kernel version, [...]
 > 
-> Huh ?
+> Well, which is exactly what i have said to Marcus early on in this discussion:
 > 
-> > Yes, it's obvious that the kernel version is not needed for many functional purposes 
-> > on a modern distro - and that was my exact point.
-> > 
-> > I cannot think of a single valid case where the proper user-space solution to some 
-> > ABI compatibility detail is a kernel version check.
+>  |
+>  | What i suggested in later parts of my mail might provide more security: to sandbox 
+>  | kernel version information from unprivileged user-space - if we decide that we 
+>  | want to sandbox kernel version information ...
+>  |
+>  | That is a big if, because it takes a considerable amount of work. Would be worth 
+>  | trying it - but feel-good non-solutions that do not bring much improvement to the 
+>  | majority of users IMHO hinder such efforts.
+>  |
 > 
-> Ingo, I believe you did not read a single line of my previous mail, because I 
-> precisely gave you counter-examples of that. [...]
+> The 'considerable amount of work' refers not to the utsname version fuzzing patch 
+> (it's a 10-liner patch, literally), but to controlling the channels of version 
+> information you mentioned (uptime, the /boot timestamp), and some other channels you 
+> did not mention: dmesg, various /sys and /proc entries that leak version 
+> information, etc.
 
-I did read it and saw no valid counter-examples. You mentioned this one:
+I did not mention dmesg because it's already sometimes hidden from users (eg,
+when iptables logs there).
 
- > Take the splice() data corruption bug for instance. I believe it was fixed in 
- > 2.6.26 or 2.6.27 and backported late in the 2.6.25.X stable branch. Due to this, 
- > without knowing the kernel version, the user can't know whether it's safe to use 
- > splice() or not. I'm particularly aware of this one because I got quite a bunch 
- > of questions from users on this subject. But certainly there are a bunch of other 
- > ones.
+> All must be closed down for unprivileged user-space, for this to be effective, 
+> obviously.
 
-That example is entirely bogus. The correct answer to a buggy, data-corrupting 
-kernel is a fixed kernel. No ifs and when. No version checks in user-space. If 
-user-space ever works around a bug in that fashion it's entirely broken and 
-_deserves_ to be further broken via version fuzzing.
+This would only be effective against finding a precise version. There's
+no need for that, what you want is to hide kernel pointers, and your issue
+is that in distro kernels, same kernels have the same pointers. It would be
+much more efficient to work on a method to randomize all pointers than to
+try to hide a kernel version hoping a user is not able to guess what it is.
+Even if you'd hide the uptime, there are many ways to find it. In my opinion,
+it's a race in the wrong direction, and which has several negative side
+effects on the normal user.
 
-Do you know of a single such actual vmsplice() version check example in user-space, 
-or have you just made it up?
+Better attack the problem than its symptoms.
 
-Thanks,
+Willy
 
-	Ingo
