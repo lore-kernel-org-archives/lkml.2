@@ -1,83 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901Ab0KGADr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 20:03:47 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:56223 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753855Ab0KGADp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 20:03:45 -0400
-Subject: Re: [PATCH 0/4] IMA: making i_readcount a first class inode citizen
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, hch@infradead.org, warthog9@kernel.org,
-        david@fromorbit.com, jmorris@namei.org, kyle@mcmartin.ca,
-        hpa@zytor.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, mingo@elte.hu, eparis@redhat.com,
-        viro@zeniv.linux.org.uk, Matthew Wilcox <matthew@wil.cx>
-In-Reply-To: <20101105190827.GC6492@fieldses.org>
-References: <1288303325-9628-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <20101105011227.GB4320@fieldses.org>
-	 <1288955286.3135.9.camel@localhost.localdomain>
-	 <20101105162811.GA3270@fieldses.org>
-	 <1288978685.3135.135.camel@localhost.localdomain>
-	 <20101105190827.GC6492@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 06 Nov 2010 20:03:39 -0400
-Message-ID: <1289088219.3268.4.camel@localhost.localdomain>
+	id S1753939Ab0KGAPL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 20:15:11 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35848 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753860Ab0KGAPK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Nov 2010 20:15:10 -0400
+Date: Sun, 7 Nov 2010 00:13:41 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: david@lang.hm, Anca Emanuel <anca.emanuel@gmail.com>,
+        Greg KH <greg@kroah.com>, Elvis Dowson <elvis.dowson@mac.com>,
+        Janakiram Sistla <janakiram.sistla@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Forked android kernel development from linux kernel mainline
+Message-ID: <20101107001341.4e39c631@lxorguk.ukuu.org.uk>
+In-Reply-To: <20101107000348.GF2935@thunk.org>
+References: <01784A8B-36A0-4E8A-9729-23C2B19351F8@mac.com>
+	<AANLkTi=UxhRdcDaoKaYVWhPkp_e-uLF4=zhXs7gutkgx@mail.gmail.com>
+	<20101106181202.GA6927@kroah.com>
+	<20101106192259.GB2935@thunk.org>
+	<AANLkTikQoAbsKX=N-ST3KVqSxBnA6OhNvd7FehLDnn=V@mail.gmail.com>
+	<20101106234029.GC2935@thunk.org>
+	<alpine.DEB.2.00.1011061646170.29342@asgard.lang.hm>
+	<20101107000348.GF2935@thunk.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-05 at 15:08 -0400, J. Bruce Fields wrote:
-> On Fri, Nov 05, 2010 at 01:38:05PM -0400, Mimi Zohar wrote:
-> > On Fri, 2010-11-05 at 12:28 -0400, J. Bruce Fields wrote: 
-> > > On Fri, Nov 05, 2010 at 07:08:06AM -0400, Mimi Zohar wrote:
-> > 
-> > > > Right, like the ima_file_check(), which is after the __dentry_open().
-> > > > Al, is it possible to move the break_lease() in may_open() to later?
-> > > 
-> > > That would still leave a race like:
-> > > 
-> > > 			check count
-> > > 	bump count
-> > > 	break lease
-> > > 			set lease
-> > > 
-> > > But we could extend the i_lock to prevent the lease being bumped between
-> > > the two steps on the right-hand side.
-> > 
-> > The latest i_readcount patchset, i_readcount is atomic and doesn't
-> > require i_lock, at least for IMA.  Have to think about this more ....
-> > 
-> > > At that point I think we'd be done?  We're assured the count is still
-> > > zero while the lease is added to the inode, so anyone in the process of
-> > > doing an open has yet to reach the break_lease, which will see the newly
-> > > added lease.
-> > > 
-> > > That leaves the problem that leases really should be broken on anything
-> > > that changes the attributes or the dentries pointing to the inode:
-> > > setattr, link, unlink, rename, at least.
-> > 
-> > For this reason, IMA is now taking i_mutex, preventing file metadata
-> > from changing.
+On Sat, 6 Nov 2010 20:03:48 -0400
+"Ted Ts'o" <tytso@mit.edu> wrote:
+
+> On Sat, Nov 06, 2010 at 04:52:26PM -0700, david@lang.hm wrote:
+> > also, none of these other patches resulted in device drivers
+> > developed for a distro being incompatible with mainline.
 > 
-> Lease code could do that as well.  (Probably just with a trylock,
-> failing the setlease if we can't get the lock.)
-> 
-> That misses rename, though, which doesn't take the i_mutex on the
-> renamed file.  Which makes sense.
+> What, people can't delete a couple of single lines of code before
+> submitting the device driver upstream to mainline?
 
-fs/namei.c: vfs_rename_other() seems to be taking the i_mutex.  Am I
-looking in the wrong place?
-
-> But a lease is used to give file server clients the right to do an open
-> locally, and we want them to be able to guarantee to applications that
-> the path (well, the last component, at least) still refers to the same
-> file at open time.
-
-Mimi
+I've always wondered that but never seen a good answer from the Android
+people as to why they don't push the stuff without the wakelock bits and
+just keep "add wakelock" patches for those as they do for the core kernel
+stuff they hack about.
 
