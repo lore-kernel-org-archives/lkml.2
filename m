@@ -1,39 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339Ab0KGXDJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 18:03:09 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:42199 "EHLO
+	id S1753400Ab0KGXFM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 18:05:12 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:42203 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752462Ab0KGXDI (ORCPT
+	with ESMTP id S1752462Ab0KGXFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 18:03:08 -0500
+	Sun, 7 Nov 2010 18:05:10 -0500
+Date: Mon, 8 Nov 2010 00:05:09 +0100
 From: Andi Kleen <andi@firstfloor.org>
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: Jim <jim876@xs4all.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        gcc@gcc.gnu.org
-Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling  drivers/char/i8k.c ?
-References: <4CD538CA.8010901@xs4all.nl> <87wroostw3.fsf@basil.nowhere.org>
-	<m2hbfsu57i.fsf@igel.home>
-Date: Mon, 08 Nov 2010 00:03:02 +0100
-In-Reply-To: <m2hbfsu57i.fsf@igel.home> (Andreas Schwab's message of "Sun, 07
-	Nov 2010 23:41:37 +0100")
-Message-ID: <87k4kospnd.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+To: Milan Broz <mbroz@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Matt <jackdachef@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, dm-devel@redhat.com,
+        htd@fancy-poultry.org
+Subject: Re: [PATCH] DM-CRYPT: Scale to multiple CPUs v3 on 2.6.37-rc* ?
+Message-ID: <20101107230508.GB17592@basil.fritz.box>
+References: <AANLkTim6WTCChWGbTb-PUGd2AERGibeRtgan-WDznf2s@mail.gmail.com>
+ <4CD6B7FA.3050005@redhat.com>
+ <AANLkTikbsU+SGAaoq_oek=7tfDdjg+0wFoydhA+K9ZU+@mail.gmail.com>
+ <AANLkTinna7BiGHogXnn1iEG6ccUAjFM3p3S3aHpv=h-E@mail.gmail.com>
+ <20101107194547.GA12521@basil.fritz.box>
+ <4CD71C8B.1050604@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CD71C8B.1050604@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andreas Schwab <schwab@linux-m68k.org> writes:
->
-> The asm fails to mention that it modifies *regs.
+On Sun, Nov 07, 2010 at 10:39:23PM +0100, Milan Broz wrote:
+> On 11/07/2010 08:45 PM, Andi Kleen wrote:
+> >> I read about barrier-problems and data getting to the partition when
+> >> using dm-crypt and several layers so I don't know if that could be
+> >> related
+> > 
+> > Barriers seem to be totally broken on dm-crypt currently.
+> 
+> Can you explain it?
 
-It has a memory clobber, that should be enough, no?
+e.g. the btrfs mailing list is full of corruption reports
+on dm-crypt and most of the symptoms point to broken barriers.
 
-Besides in any case it cannot be eliminated because it has
-valid non dead inputs and outputs.
+> Barriers/flush change should work, if it is broken, it is not only dm-crypt.
+> (dm-crypt simply relies on dm-core implementation, when barrier/flush
+> request come to dmcrypt, all previous IO must be already finished).
+
+Possibly, at least it doesn't seem to work.
 
 -Andi
 -- 
