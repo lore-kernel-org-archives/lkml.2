@@ -1,98 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887Ab0KGXbn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 18:31:43 -0500
-Received: from amber.ccs.neu.edu ([129.10.116.51]:49838 "EHLO
-	amber.ccs.neu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753453Ab0KGXbl (ORCPT
+	id S1753922Ab0KGXmM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 18:42:12 -0500
+Received: from mail3.sea5.speakeasy.net ([69.17.117.42]:32977 "EHLO
+	mail3.sea5.speakeasy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753864Ab0KGXmL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 18:31:41 -0500
-Date: Sun, 7 Nov 2010 18:31:31 -0500
-From: Gene Cooperman <gene@ccs.neu.edu>
-To: Oren Laadan <orenl@cs.columbia.edu>
-Cc: Gene Cooperman <gene@ccs.neu.edu>, Matt Helsley <matthltc@us.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Kapil Arya <kapil@ccs.neu.edu>,
-        ksummit-2010-discuss@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, hch@lst.de,
-        Linux Containers <containers@lists.osdl.org>
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-Message-ID: <20101107233131.GK31077@sundance.ccs.neu.edu>
-References: <Pine.LNX.4.64.1011021530470.12128@takamine.ncl.cs.columbia.edu>
- <4CD08419.5050803@kernel.org>
- <AANLkTinOg6n3ZA+0gHzw9LouRuUmJ7DJwHtABRy5c=gM@mail.gmail.com>
- <4CD26948.7050009@kernel.org>
- <20101104164401.GC10656@sundance.ccs.neu.edu>
- <4CD3CE29.2010105@kernel.org>
- <20101106053204.GB12449@count0.beaverton.ibm.com>
- <20101106204008.GA31077@sundance.ccs.neu.edu>
- <4CD71DB4.7050608@cs.columbia.edu>
+	Sun, 7 Nov 2010 18:42:11 -0500
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Sun, 07 Nov 2010 18:42:11 EST
+From: Frank Mori Hess <fmhess@speakeasy.net>
+Reply-To: fmhess@users.sourceforge.net
+To: Jesper Juhl <jj@chaosbits.net>
+Subject: Re: [PATCH] staging, comedi, das16: das16_attach() needs to free allocated resources on failure
+Date: Sun, 7 Nov 2010 18:35:23 -0500
+User-Agent: KMail/1.9.9
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Gustavo Silva <silvagustavo@users.sourceforge.net>,
+        Tejun Heo <tj@kernel.org>, Arun Thomas <arun.thomas@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Frank Mori Hess <fmhess@users.sourceforge.net>,
+        "Chris R. Baugher" <baugher@enteract.com>,
+        "David A. Schleef" <ds@schleef.org>
+References: <alpine.LNX.2.00.1011072126150.26247@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1011072126150.26247@swampdragon.chaosbits.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CD71DB4.7050608@cs.columbia.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: multipart/signed;
+  boundary="nextPart26313492.Ld3SFGdR5A";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011071835.28692.fmhess@speakeasy.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 07, 2010 at 04:44:20PM -0500, Oren Laadan wrote:
-> [cc'ing linux containers mailing list]
-> 
-> On 11/06/2010 04:40 PM, Gene Cooperman wrote:
-> 
-> >8.  What happens if the DMTCP coordinator ( checkpoint control process) dies?
-> >   [ The same thing that happens if a user process dies.  We kill the whole
-> >     computation, and restart.  At restart, we use a new coordinator.
-> >     Coordinators are stateless. ]
-> 
-> My experience is different:
-> 
-> I downloaded dmtcp and followed the quick-start guide:
-> (1) "dmtcp_coordinator" on one terminal
-> (2) "dmtcp_checkpoint bash" on another terminal
-> 
-> Then I:
-> (3) pkill -9 dmtcp_coordinator
-> ... oops - 'bash' died.
-> 
-> I didn't even try to take a checkpoint :(
+--nextPart26313492.Ld3SFGdR5A
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: inline
 
-You're right.  I just reproduced your example.  But please remember that
-we're working in a design space where if any process of a computation
-dies, then we kill the computation and restart.  It doesn't matter to us
-if it's a user process or the DMTCP coordinator that died.  I do think
-this is getting too detailed for the LKML list, but since you bring it
-up, here is the analysis.  The user bash process exits with:
+On Sunday 07 November 2010, Jesper Juhl wrote:
+> Hi,
+>
+> In drivers/staging/comedi/drivers/das16.c::das16_attach() there are many
+> potential failure scenarios. However, the driver neglects to free
+> resources it has allocated if failures happen.
 
-[31331] ERROR at dmtcpmessagetypes.cpp:62 in assertValid; REASON='JASSERT(strcmp ( DMTCP_MAGIC_STRING,_magicBits ) == 0) failed'
-     _magicBits = 
-Message: read invalid message, _magicBits mismatch.  Did DMTCP coordinator die uncleanly?
+This patch appears to be wrong.  The driver's detach function will be=20
+called by the core if the attach function returns with an error.  The=20
+resources are freed there.
 
-This means that when the DMTCP coordinator died, it sent a message to the
-checkpoint thread within the user process.  The message was ill-formed.
-The current DMTCP code says that if a checkpoint thread receives an
-ill-formed message from the coordinator, then it should die.  It's not
-hard to change the protocol between DMTCP coordinator and checkpoint
-thread of the user process into a more robust protocol with RETRY, further
-ACK, etc.  We haven't done this.  Right now, the user simply restarts from
-the last checkpoint.  If one process of a computation has been compromised
-(either DMTCP coordinator or user process), then the whole computation
-has been compromised.  I think in a previous version of DMTCP, the policy
-was to allow the computation to continue when the coordinator dies.
-Policies change.
 
-But I think you're missing the larger point.  We've developed DMTCP
-over six years, largely with programmers who are much less experienced
-than the kernel developers.  Yet DMTCP works reliably for many users.
-I consider this a credit to the DMTCP design.  The Linux C/R design
-is also excellent.
+--nextPart26313492.Ld3SFGdR5A
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-Can we get back to questions of design, using the implementations as
-reference implementations?  If you don't object, I'll also skip replying
-to the other post, since I think we're getting too detailed.  I'm having
-trouble keeping up with the posts.  :-)  An offline discussion will
-give us time to look more carefully at these issues, and draw more
-careful conclusions.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
 
-Thanks,
-- Gene
+iD8DBQBM1ze95vihyNWuA4URApZrAKCDv6kCMz/3p6uV0v5BQtES2pvPfQCglB6A
+ioqOJqWivOP9G51KduUA0Oo=
+=HapF
+-----END PGP SIGNATURE-----
+
+--nextPart26313492.Ld3SFGdR5A--
