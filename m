@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539Ab0KGXHN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 18:07:13 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:35273 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752936Ab0KGXHL (ORCPT
+	id S1753634Ab0KGXJe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 18:09:34 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:44608 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753453Ab0KGXJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 18:07:11 -0500
+	Sun, 7 Nov 2010 18:09:33 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:in-reply-to:references:user-agent:date
-         :message-id:mime-version:content-type;
-        b=UYov4oFMCraPTrrPs5FQ97h5AUNCIi+NHtbOaknvYZnQqKNsRIdM5+s5QpbuwidS43
-         WBbSo734F6/aN8xzqeu9ytWJ3GfejGfkSrAQme/dEoplpSxSDmNbN97wDD88FKcpv2By
-         vLX0sT8ys9ltJ8Vjs4KytJ9e771dmwhL1YOoQ=
-From: Ben Gamari <bgamari.foss@gmail.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Christoph Egger <siccegge@cs.fau.de>, linux-kernel@vger.kernel.org,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Michal Marek <mmarek@suse.cz>
-Subject: Re: fstat suddenly return -EINVAL [Was: Bus error on make allyesconfig, kernelbuild with HEAD]
-In-Reply-To: <20101107223056.GA23871@merkur.ravnborg.org>
-References: <20100729105225.GA13192@faui48a.informatik.uni-erlangen.de> <AANLkTi=cYgV69VyNZ+TKs_f-+3AJmyo_RaYS57R72j50@mail.gmail.com> <20100729121002.GC13192@faui48a.informatik.uni-erlangen.de> <20100730084353.GB5638@cr0.nay.redhat.com> <87d3qicwxn.fsf@gmail.com> <87aalmcv0p.fsf@gmail.com> <20101106162426.GA14361@merkur.ravnborg.org> <87tyjtjd7m.fsf@gmail.com> <20101107170700.GA22684@merkur.ravnborg.org> <87mxplypid.fsf@gmail.com> <20101107223056.GA23871@merkur.ravnborg.org>
-User-Agent: Notmuch/0.3.1-158-g04cd99c (http://notmuchmail.org) Emacs/23.1.1 (x86_64-pc-linux-gnu)
-Date: Sun, 07 Nov 2010 18:07:08 -0500
-Message-ID: <87lj54raw3.fsf@gmail.com>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Fm2ztz+eiRSl/56zjZJqnxmu/rt6VW1ybMMWeGB5BsqjZt2v+mMRke/6tOgU7An2ak
+         dE8r2/ubpmO4a0N8uH9JP4kYF7JNXHHBW2t9h/PtBaT1qN0QUq+MN3T/p1ZL72LST1ii
+         ztuQ9Y68AUbwX2fCYbXO55cs8ofdXT3wHrdzg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20101107215908.GA21070@kroah.com>
+References: <01784A8B-36A0-4E8A-9729-23C2B19351F8@mac.com>
+	<AANLkTi=UxhRdcDaoKaYVWhPkp_e-uLF4=zhXs7gutkgx@mail.gmail.com>
+	<20101106181202.GA6927@kroah.com>
+	<39580686-A899-4689-BAAD-AF5546B34E49@mac.com>
+	<AANLkTimVsUsrmTvsHqFiqJh1hhryMBemGyW+kYLKGgEu@mail.gmail.com>
+	<20101107155757.GA13736@kroah.com>
+	<AANLkTik=UWwRLOaHMfVifYiQPpSwoYuA6J1EoL5BOgJY@mail.gmail.com>
+	<20101107215908.GA21070@kroah.com>
+Date: Sun, 7 Nov 2010 18:09:33 -0500
+Message-ID: <AANLkTimMpGiEHgx03k22wiH-1uzAL-KJm3GADe4bBF_J@mail.gmail.com>
+Subject: Re: Forked android kernel development from linux kernel mainline
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: Anca Emanuel <anca.emanuel@gmail.com>, Elvis Dowson <elvis.dowson@mac.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 7 Nov 2010 23:30:56 +0100, Sam Ravnborg <sam@ravnborg.org> wrote:
-> I looked briefly at the fstat implmnetation in the kernel and
-> this did not give me any hints.
-> I therefore changed to subject to attrack attention of more readers.
-> 
-Thanks!
+Hi,
 
-> Can you supply us with a bit more information about your system:
-> - filesystem (as fstat seems to reach filesystem specific code)
-> - glibc version 
-> - box (architecture + 32 or 64 bit kernel)
-> - do you see other things misbehave or is this only a kernel build thing
-> 
-> If you have provided this info in the past I have missed it.
-> 
-The kernel tree resides on an ext4 partition. The machine has two Xeon
-E5520 processors and runs 64-bit Ubuntu 10.04 which uses eglibc 2.11.1.
-Note that the kernel is being cross-compiled for ARM under an
-OpenEmbedded toolchain (have tried both gcc 4.4.4 and 4.5). This is the
-only strange behavior that I know of.
+On Sun, Nov 7, 2010 at 4:59 PM, Greg KH <greg@kroah.com> wrote:
+> On Sun, Nov 07, 2010 at 04:44:48PM -0500, Arnaud Lacombe wrote:
+>> Hi,
+>>
+>> On Sun, Nov 7, 2010 at 10:57 AM, Greg KH <greg@kroah.com> wrote:
+>> > [...]
+>> >
+>> Just a small comment to say that Android is not the only one (but
+>> certainly the most visible, and thus easiest to bash on) not making
+>> effort to get their stuff in mainline. OpenWRT people are also
+>> maintaining their fork of the kernel, without even using git, and not
+>> contributing much to mainline (I'm certainly mistaken on that last
+>> comment).
+>
+> Isn't the openwrt stuff just drivers and some arch specific code?
+> Nothing that is core infrastructure, and nothing preventing them from
+> submitting the drivers and arch code if they want to, right?
+>
+>From what I can see, yes.
 
-Cheers,
+> If so, why don't you submit it?
+>
+because I have no knowledge on the code, nor have any documentation on
+the underlying hardware. That said, it's in my TODO, but stuff keeps
+getting in before this entry.
 
-- Ben
+>Why don't they?
+>
+I just checked with some dev on IRC, there might be a time issue. The
+patches have been synced with 2.6.36 recently (a month ago). So
+there're still hope :)
+
+ - Arnaud
