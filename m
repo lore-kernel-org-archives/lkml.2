@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752345Ab0KGCFN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 22:05:13 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:38832 "EHLO e3.ny.us.ibm.com"
+	id S1753323Ab0KGCFq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 22:05:46 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:49758 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751905Ab0KGCFL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 22:05:11 -0400
-Date: Sat, 6 Nov 2010 19:05:07 -0700
+	id S1752867Ab0KGCFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Nov 2010 22:05:42 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com
-Subject: [PATCH RFC tip/core/rcu 0/12] preview of RCU patches for 2.6.38
-Message-ID: <20101107020507.GA4974@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 12/12] rcu: Make synchronize_srcu_expedited() fast if running readers
+Date: Sat,  6 Nov 2010 19:05:32 -0700
+Message-Id: <1289095532-5398-12-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.0.6
+In-Reply-To: <20101107020507.GA4974@linux.vnet.ibm.com>
+References: <20101107020507.GA4974@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+The synchronize_srcu_expedited() function is currently quick if there
+are no active readers, but will delay a full jiffy if there are any.
+If these readers leave their SRCU read-side critical sections quickly,
+this is way too long to wait.  So this commit first waits ten microseconds,
+and only then falls back to jiffy-at-a-time waiting.
 
-This patchset contains RCU priority boosting for the tiny RCU
-implementations and a number of fixes and cleanups.  The patches
-are as follows:
+Reported-by: Avi Kivity <avi@redhat.com>
+Reported-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ kernel/srcu.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
-1.	Add rcutorture tests to check for boosting.
-2-6.	RCU priority boosting for the tiny RCU implementations.
-7.	Fix a few naming holdouts from old Classic RCU.
-8.	Move synchronize_sched_expedited() out of sched.c
-	(from Lai Jiangshan).
-9.	Simplify the RCU callback orphan/adopt code for CPU hotplug
-	(from Lai Jiangshan).
-10.	Update RCU tracing documentation to reflect patch #9.
-11.	Fix a race condition in synchronize_sched_expedited(),
-	but Tejun Heo has suggested another approach that might
-	be better longer term.
-12.	Make synchronize_srcu_expedited() spin for a bit to avoid
-	blocking -- again, there may be a better long-term fix.
+diff --git a/kernel/srcu.c b/kernel/srcu.c
+index c71e075..a48caa7 100644
+--- a/kernel/srcu.c
++++ b/kernel/srcu.c
+@@ -31,6 +31,7 @@
+ #include <linux/rcupdate.h>
+ #include <linux/sched.h>
+ #include <linux/smp.h>
++#include <linux/delay.h>
+ #include <linux/srcu.h>
+ 
+ static int init_srcu_struct_fields(struct srcu_struct *sp)
+@@ -203,9 +204,14 @@ static void __synchronize_srcu(struct srcu_struct *sp, void (*sync_func)(void))
+ 	 * all srcu_read_lock() calls using the old counters have completed.
+ 	 * Their corresponding critical sections might well be still
+ 	 * executing, but the srcu_read_lock() primitives themselves
+-	 * will have finished executing.
++	 * will have finished executing.  We initially give readers
++	 * an arbitrarily chosen 10 microseconds to get out of their
++	 * SRCU read-side critical sections, then loop waiting 1/HZ
++	 * seconds per iteration.
+ 	 */
+ 
++	if (srcu_readers_active_idx(sp, idx))
++		udelay(10);
+ 	while (srcu_readers_active_idx(sp, idx))
+ 		schedule_timeout_interruptible(1);
+ 
+-- 
+1.7.0.6
 
-For a testing-only version of this patchset from git, please see:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/testing
-
-							Thanx, Paul
-
- Documentation/RCU/trace.txt   |   12 -
- b/Documentation/RCU/trace.txt |  132 ++++++++++++-
- b/include/linux/init_task.h   |    9 
- b/include/linux/rcupdate.h    |    1 
- b/include/linux/rcutiny.h     |    8 
- b/include/linux/rcutree.h     |    1 
- b/include/linux/sched.h       |   11 -
- b/init/Kconfig                |   39 +++
- b/kernel/rcutiny.c            |   71 +++++--
- b/kernel/rcutiny_plugin.h     |   15 -
- b/kernel/rcutorture.c         |  270 ++++++++++++++++++++++++++-
- b/kernel/rcutree.c            |   81 ++------
- b/kernel/rcutree.h            |   16 -
- b/kernel/rcutree_plugin.h     |   71 +++++++
- b/kernel/rcutree_trace.c      |    8 
- b/kernel/sched.c              |   69 ------
- b/kernel/srcu.c               |    8 
- include/linux/rcupdate.h      |    1 
- include/linux/rcutiny.h       |    5 
- include/linux/rcutree.h       |    1 
- init/Kconfig                  |    1 
- kernel/rcutiny.c              |   70 +++----
- kernel/rcutiny_plugin.h       |  418 ++++++++++++++++++++++++++++++++++++++++--
- kernel/rcutree.c              |   10 -
- kernel/rcutree_plugin.h       |   28 ++
- kernel/rcutree_trace.c        |    4 
- 26 files changed, 1090 insertions(+), 270 deletions(-)
