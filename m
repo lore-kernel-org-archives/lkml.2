@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969Ab0KGLot (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 06:44:49 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:55176 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751727Ab0KGLor convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 06:44:47 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=rBrOitsG3qQAADsm6kyuy/QG/GVcynw8ocA4Hx9vgSfbkJafZ8l2lwKjiP3QYzl3w5
-         k00qzLO2L6yhp+gGtcMDQq6Vofty8lOkY83o2hGTaEk7xQGxwUt7E5zT+t3NqH7u5wVX
-         vlgSTNZSdOTO0R4yI7KCnlwCaRMT5LWAKVybQ=
+	id S1751981Ab0KGLpu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 06:45:50 -0500
+Received: from mx1.fusionio.com ([64.244.102.30]:59578 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751590Ab0KGLpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 06:45:49 -0500
+X-ASG-Debug-ID: 1289130348-085bb4b20001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4CD69163.1030407@fusionio.com>
+Date: Sun, 7 Nov 2010 12:45:39 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-In-Reply-To: <39580686-A899-4689-BAAD-AF5546B34E49@mac.com>
-References: <01784A8B-36A0-4E8A-9729-23C2B19351F8@mac.com>
-	<AANLkTi=UxhRdcDaoKaYVWhPkp_e-uLF4=zhXs7gutkgx@mail.gmail.com>
-	<20101106181202.GA6927@kroah.com>
-	<39580686-A899-4689-BAAD-AF5546B34E49@mac.com>
-Date: Sun, 7 Nov 2010 13:44:45 +0200
-Message-ID: <AANLkTimVsUsrmTvsHqFiqJh1hhryMBemGyW+kYLKGgEu@mail.gmail.com>
-Subject: Re: Forked android kernel development from linux kernel mainline
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: Elvis Dowson <elvis.dowson@mac.com>
-Cc: Greg KH <greg@kroah.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Mike Snitzer <snitzer@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Neil Brown <neilb@suse.de>,
+        "drbd-dev@lists.linbit.com" <drbd-dev@lists.linbit.com>
+Subject: Re: [PATCH] block: read i_size with i_size_read()
+References: <1288985241-3515-1-git-send-email-snitzer@redhat.com>
+X-ASG-Orig-Subj: Re: [PATCH] block: read i_size with i_size_read()
+In-Reply-To: <1288985241-3515-1-git-send-email-snitzer@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1289130348
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.4533 1.0000 0.0000
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.45935
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 7, 2010 at 10:38 AM, Elvis Dowson <elvis.dowson@mac.com> wrote:
-> HI Greg,
->
-> On Nov 6, 2010, at 10:12 PM, Greg KH wrote:
->
->> Are you willing to maintain the android kernel code in the mainline
->> kernel tree?  If so, I will be glad to add it back in, but as no one was
->> willing to do the work, it was removed.  It's as simple as that.
->
-> I'm willing to do this. I'll start off initially with support for TI OMAP 35xx
-> and TI OMAP 4440, build and test initially on the Gumstix Overo,
-> BeagleBoard and PandaBoard.
->
-> I'll start with v2.6.37-rc1 and android-froyo-2.2, and try to do the required
-> changes to get it accepted into mainline by v2.6.39.
->
-> Elvis Dowson
+On 2010-11-05 20:27, Mike Snitzer wrote:
+> Convert direct reads of an inode's i_size to using i_size_read().
+> 
+> i_size_{read,write} use a seqcount to protect reads from accessing
+> incomple writes.  Concurrent i_size_write()s require mutual exclussion
+> to protect the seqcount that is used by i_size_{read,write}.  But
+> i_size_read() callers do not need to use additional locking.
 
-Read this: https://wiki.linaro.org/Releases/1105?action=AttachFile&do=get&target=Linaro+Cycle+2+Requirements+18+September+2010.pdf
-( http://is.gd/gNP7y )
+Thanks Mike, I'll queue this up.
 
-[quote]
-Android Strategy
-Sponsor: Yves V. (Freescale)
-Leads: Loïc, Scott B.
-WGs: Kernel Consolidation, Toolchain
-...
+-- 
+Jens Axboe
 
-A2.2 Support upstreaming of Android patches
-[/quote]
-
-Linaro is going in the same direction.
