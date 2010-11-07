@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222Ab0KGWgF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 17:36:05 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:23057 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751417Ab0KGWgD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 17:36:03 -0500
-Date: Sun, 7 Nov 2010 23:24:44 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
+	id S1752985Ab0KGWlY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 17:41:24 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:54602 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1751727Ab0KGWlX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 17:41:23 -0500
+X-Authenticated: #41721828
+X-Provags-ID: V01U2FsdGVkX18TGitu5BYThoU663ASI2x6nUs4soA3KmJim4MKwd
+	NlxkIoijTwtll+
+Date: Sun, 7 Nov 2010 23:41:14 +0100
+From: Jonathan =?iso-8859-1?Q?Neusch=E4fer?= <j.neuschaefer@gmx.net>
 To: linux-kernel@vger.kernel.org
-cc: trivial@kernel.org, linux-rdma@vger.kernel.org,
-        Steve Wise <swise@chelsio.com>, Roland Dreier <rolandd@cisco.com>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>
-Subject: [PATCH][trivial] infiniband: Only include linux/mutex.h once in
- drivers/infiniband/hw/cxgb4/iw_cxgb4.h .
-Message-ID: <alpine.LNX.2.00.1011072321150.26247@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+Subject: [PATCH] fix spelling in drivers/misc/Kconfig
+Message-ID: <20101107224114.GB19747@debian.debian>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/mixed; boundary="4bRzO86E/ozDv8r1"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only include the header linux/mutex.h once inside 
-drivers/infiniband/hw/cxgb4/iw_cxgb4.h
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+--4bRzO86E/ozDv8r1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+Hello list.
+
+This patch should be trivial and obvious.
+
+Please CC me in replies.
+
+Jonathan
 ---
- iw_cxgb4.h |    1 -
- 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/infiniband/hw/cxgb4/iw_cxgb4.h b/drivers/infiniband/hw/cxgb4/iw_cxgb4.h
-index 16032cd..42bb575 100644
---- a/drivers/infiniband/hw/cxgb4/iw_cxgb4.h
-+++ b/drivers/infiniband/hw/cxgb4/iw_cxgb4.h
-@@ -46,7 +46,6 @@
- #include <linux/timer.h>
- #include <linux/io.h>
- #include <linux/kfifo.h>
--#include <linux/mutex.h>
+--4bRzO86E/ozDv8r1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline; filename=drivers
+
+--- drivers/misc/Kconfig.orig	2010-11-07 22:56:37.000000000 +0100
++++ drivers/misc/Kconfig	2010-11-07 23:00:00.000000000 +0100
+@@ -402,7 +402,7 @@
+ 	  DAC7512 16-bit digital-to-analog converter.
  
- #include <asm/byteorder.h>
+ 	  This driver can also be built as a module. If so, the module
+-	  will be calles ti_dac7512.
++	  will be called ti_dac7512.
  
+ config VMWARE_BALLOON
+ 	tristate "VMware Balloon Driver"
 
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+--4bRzO86E/ozDv8r1--
