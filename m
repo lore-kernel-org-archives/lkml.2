@@ -1,40 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab0KGX2b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 18:28:31 -0500
-Received: from ozlabs.org ([203.10.76.45]:41868 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753878Ab0KGX23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 18:28:29 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] Char: virtio_console, fix memory leak
-Date: Mon, 8 Nov 2010 09:58:22 +1030
-User-Agent: KMail/1.13.5 (Linux/2.6.35-22-generic-pae; KDE/4.5.1; i686; ; )
-Cc: Jiri Slaby <jslaby@suse.cz>, jirislaby@gmail.com,
-        Amit Shah <amit.shah@redhat.com>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>, linux-kernel@vger.kernel.org
-References: <1289034412-24278-1-git-send-email-jslaby@suse.cz> <1289034412-24278-2-git-send-email-jslaby@suse.cz>
-In-Reply-To: <1289034412-24278-2-git-send-email-jslaby@suse.cz>
+	id S1753887Ab0KGXbn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 18:31:43 -0500
+Received: from amber.ccs.neu.edu ([129.10.116.51]:49838 "EHLO
+	amber.ccs.neu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753453Ab0KGXbl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 18:31:41 -0500
+Date: Sun, 7 Nov 2010 18:31:31 -0500
+From: Gene Cooperman <gene@ccs.neu.edu>
+To: Oren Laadan <orenl@cs.columbia.edu>
+Cc: Gene Cooperman <gene@ccs.neu.edu>, Matt Helsley <matthltc@us.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Kapil Arya <kapil@ccs.neu.edu>,
+        ksummit-2010-discuss@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, hch@lst.de,
+        Linux Containers <containers@lists.osdl.org>
+Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
+Message-ID: <20101107233131.GK31077@sundance.ccs.neu.edu>
+References: <Pine.LNX.4.64.1011021530470.12128@takamine.ncl.cs.columbia.edu>
+ <4CD08419.5050803@kernel.org>
+ <AANLkTinOg6n3ZA+0gHzw9LouRuUmJ7DJwHtABRy5c=gM@mail.gmail.com>
+ <4CD26948.7050009@kernel.org>
+ <20101104164401.GC10656@sundance.ccs.neu.edu>
+ <4CD3CE29.2010105@kernel.org>
+ <20101106053204.GB12449@count0.beaverton.ibm.com>
+ <20101106204008.GA31077@sundance.ccs.neu.edu>
+ <4CD71DB4.7050608@cs.columbia.edu>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011080958.23163.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CD71DB4.7050608@cs.columbia.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 6 Nov 2010 07:36:50 pm Jiri Slaby wrote:
-> Stanse found that in init_vqs, memory is leaked under certain
-> circumstanses (the fail path order is incorrect). Fix that by checking
-> allocations in one turn and free all of them at once if some fails
-> (some may be NULL, but this is OK).
+On Sun, Nov 07, 2010 at 04:44:20PM -0500, Oren Laadan wrote:
+> [cc'ing linux containers mailing list]
+> 
+> On 11/06/2010 04:40 PM, Gene Cooperman wrote:
+> 
+> >8.  What happens if the DMTCP coordinator ( checkpoint control process) dies?
+> >   [ The same thing that happens if a user process dies.  We kill the whole
+> >     computation, and restart.  At restart, we use a new coordinator.
+> >     Coordinators are stateless. ]
+> 
+> My experience is different:
+> 
+> I downloaded dmtcp and followed the quick-start guide:
+> (1) "dmtcp_coordinator" on one terminal
+> (2) "dmtcp_checkpoint bash" on another terminal
+> 
+> Then I:
+> (3) pkill -9 dmtcp_coordinator
+> ... oops - 'bash' died.
+> 
+> I didn't even try to take a checkpoint :(
 
-Good catch, thanks!
+You're right.  I just reproduced your example.  But please remember that
+we're working in a design space where if any process of a computation
+dies, then we kill the computation and restart.  It doesn't matter to us
+if it's a user process or the DMTCP coordinator that died.  I do think
+this is getting too detailed for the LKML list, but since you bring it
+up, here is the analysis.  The user bash process exits with:
 
-I generally prefer the static rather than lazy method of cleanup, but
-in this case it's ugly both before and after...
+[31331] ERROR at dmtcpmessagetypes.cpp:62 in assertValid; REASON='JASSERT(strcmp ( DMTCP_MAGIC_STRING,_magicBits ) == 0) failed'
+     _magicBits = 
+Message: read invalid message, _magicBits mismatch.  Did DMTCP coordinator die uncleanly?
 
-Applied,
-Rusty.
+This means that when the DMTCP coordinator died, it sent a message to the
+checkpoint thread within the user process.  The message was ill-formed.
+The current DMTCP code says that if a checkpoint thread receives an
+ill-formed message from the coordinator, then it should die.  It's not
+hard to change the protocol between DMTCP coordinator and checkpoint
+thread of the user process into a more robust protocol with RETRY, further
+ACK, etc.  We haven't done this.  Right now, the user simply restarts from
+the last checkpoint.  If one process of a computation has been compromised
+(either DMTCP coordinator or user process), then the whole computation
+has been compromised.  I think in a previous version of DMTCP, the policy
+was to allow the computation to continue when the coordinator dies.
+Policies change.
+
+But I think you're missing the larger point.  We've developed DMTCP
+over six years, largely with programmers who are much less experienced
+than the kernel developers.  Yet DMTCP works reliably for many users.
+I consider this a credit to the DMTCP design.  The Linux C/R design
+is also excellent.
+
+Can we get back to questions of design, using the implementations as
+reference implementations?  If you don't object, I'll also skip replying
+to the other post, since I think we're getting too detailed.  I'm having
+trouble keeping up with the posts.  :-)  An offline discussion will
+give us time to look more carefully at these issues, and draw more
+careful conclusions.
+
+Thanks,
+- Gene
