@@ -1,123 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714Ab0KGTrx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 14:47:53 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:21158 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232Ab0KGTrw (ORCPT
+	id S1752801Ab0KGTxj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 14:53:39 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:34523 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751747Ab0KGTxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 14:47:52 -0500
-Date: Sun, 7 Nov 2010 20:36:33 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-input@vger.kernel.org
-cc: linux-kernel@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        =?ISO-8859-15?Q?Andr=E9_Goddard_Rosa?= <andre.goddard@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH RFC] serio HIL MLC: don't deref null, don't leak and return
- proper error
-Message-ID: <alpine.LNX.2.00.1011072024100.26247@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 7 Nov 2010 14:53:37 -0500
+From: Andi Kleen <andi@firstfloor.org>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        x86@kernel.org
+Subject: [PATCH] x86: fix apic.h unused but set warnings
+Date: Sun,  7 Nov 2010 20:53:26 +0100
+Message-Id: <1289159606-17417-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Andi Kleen <ak@linux.intel.com>
 
-While reviewing various users of kernel memory allocation functions I came 
-across drivers/input/serio/hil_mlc.c::hil_mlc_register() and noticed that
- - it calls kzalloc() buf fails to check for a NULL return before use.
- - it makes several allocations and if one fails it doesn't free the 
-   previous ones.
- - It doesn't return -ENOMEM in the failed memory allocation case (it just 
-   crashes).
-This patch corrects all of the above and also reworks the only caller of 
-this function that I could find 
-(drivers/input/serio/hp_sdc_mlc.c::hp_sdc_mlc_out()) so that it now checks 
-the return value of hil_mlc_register() and properly propagate it on 
-failure and I also restructured the code to remove some labels and goto's 
-to make it, IMHO nicer to read.
+[Andrew, can you please put this in your tree for submission.
+This was submitted some time ago, but x86@ is a blackhole unfortunately and
+this warnings really makes gcc 4.6 extremly noisy.]
 
-I have no hardware to test, so please review carefully and let me know if 
-I've done something completely stupid. Please don't merge this RFC patch 
-unless at least one or more people who know this code and can actually 
-test it have ACK'ed it.
+Fix
 
-Ohh and please do CC me on replies.
+linux-2.6/arch/x86/include/asm/apic.h: In function 'native_apic_msr_read':
+linux-2.6/arch/x86/include/asm/apic.h:144:11: warning: variable 'high' set but not used [-Wunused-but-set-variable]
+linux-2.6/arch/x86/include/asm/apic.h: In function 'x2apic_enabled':
+linux-2.6/arch/x86/include/asm/apic.h:184:11: warning: variable 'msr2' set but not used [-Wunused-but-set-variable]
 
+which happen with a gcc 4.6 build
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Since this is in a frequently included header these warnings are printed
+very frequently and make a gcc 4.6 build very noisy.
+
+Cc: x86@kernel.org
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- hil_mlc.c    |    5 +++++
- hp_sdc_mlc.c |   18 +++++++++---------
- 2 files changed, 14 insertions(+), 9 deletions(-)
+ arch/x86/include/asm/apic.h |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/input/serio/hil_mlc.c b/drivers/input/serio/hil_mlc.c
-index e5624d8..bfd3865 100644
---- a/drivers/input/serio/hil_mlc.c
-+++ b/drivers/input/serio/hil_mlc.c
-@@ -932,6 +932,11 @@ int hil_mlc_register(hil_mlc *mlc)
- 		hil_mlc_copy_di_scratch(mlc, i);
- 		mlc_serio = kzalloc(sizeof(*mlc_serio), GFP_KERNEL);
- 		mlc->serio[i] = mlc_serio;
-+		if (!mlc->serio[i]) {
-+			for (; i >= 0; i--)
-+				kfree(mlc->serio[i]);
-+			return -ENOMEM;
-+		}
- 		snprintf(mlc_serio->name, sizeof(mlc_serio->name)-1, "HIL_SERIO%d", i);
- 		snprintf(mlc_serio->phys, sizeof(mlc_serio->phys)-1, "HIL%d", i);
- 		mlc_serio->id			= hil_mlc_serio_id;
-diff --git a/drivers/input/serio/hp_sdc_mlc.c b/drivers/input/serio/hp_sdc_mlc.c
-index 7d2b820..d50f067 100644
---- a/drivers/input/serio/hp_sdc_mlc.c
-+++ b/drivers/input/serio/hp_sdc_mlc.c
-@@ -305,6 +305,7 @@ static void hp_sdc_mlc_out(hil_mlc *mlc)
- static int __init hp_sdc_mlc_init(void)
+diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+index 286de34..9c4e06b 100644
+--- a/arch/x86/include/asm/apic.h
++++ b/arch/x86/include/asm/apic.h
+@@ -141,12 +141,12 @@ static inline void native_apic_msr_write(u32 reg, u32 v)
+ 
+ static inline u32 native_apic_msr_read(u32 reg)
  {
- 	hil_mlc *mlc = &hp_sdc_mlc;
-+	int err;
+-	u32 low, high;
++	u32 low;
  
- #ifdef __mc68000__
- 	if (!MACH_IS_HP300)
-@@ -323,22 +324,21 @@ static int __init hp_sdc_mlc_init(void)
- 	mlc->out = &hp_sdc_mlc_out;
- 	mlc->priv = &hp_sdc_mlc_priv;
+ 	if (reg == APIC_DFR)
+ 		return -1;
  
--	if (hil_mlc_register(mlc)) {
-+	err = hil_mlc_register(mlc);
-+	if (err) {
- 		printk(KERN_WARNING PREFIX "Failed to register MLC structure with hil_mlc\n");
--		goto err0;
-+		return err;
- 	}
- 
- 	if (hp_sdc_request_hil_irq(&hp_sdc_mlc_isr)) {
- 		printk(KERN_WARNING PREFIX "Request for raw HIL ISR hook denied\n");
--		goto err1;
-+		if (hil_mlc_unregister(mlc))
-+			printk(KERN_ERR PREFIX "Failed to unregister MLC structure with hil_mlc.\n"
-+				"This is bad.  Could cause an oops.\n");
-+		return -EBUSY;
- 	}
-+
- 	return 0;
-- err1:
--	if (hil_mlc_unregister(mlc))
--		printk(KERN_ERR PREFIX "Failed to unregister MLC structure with hil_mlc.\n"
--			"This is bad.  Could cause an oops.\n");
-- err0:
--	return -EBUSY;
+-	rdmsr(APIC_BASE_MSR + (reg >> 4), low, high);
++	rdmsrl(APIC_BASE_MSR + (reg >> 4), low);
+ 	return low;
  }
  
- static void __exit hp_sdc_mlc_exit(void)
-
-
-
+@@ -181,12 +181,12 @@ extern void enable_x2apic(void);
+ extern void x2apic_icr_write(u32 low, u32 id);
+ static inline int x2apic_enabled(void)
+ {
+-	int msr, msr2;
++	int msr;
+ 
+ 	if (!cpu_has_x2apic)
+ 		return 0;
+ 
+-	rdmsr(MSR_IA32_APICBASE, msr, msr2);
++	rdmsrl(MSR_IA32_APICBASE, msr);
+ 	if (msr & X2APIC_ENABLE)
+ 		return 1;
+ 	return 0;
 -- 
-Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
+1.7.1
 
