@@ -1,57 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751798Ab0KGVrX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 16:47:23 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:49695 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750759Ab0KGVrV convert rfc822-to-8bit (ORCPT
+	id S1751791Ab0KGVtI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 16:49:08 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54281 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750759Ab0KGVtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 16:47:21 -0500
+	Sun, 7 Nov 2010 16:49:06 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Djf8EMtdubAN1M18QSe4DVpkWZJdBPNHZaiFotZLxwtItLlGA0px0fb58IAF3gWWWF
-         cHAsKKsC1kYtutxkNU5rDMofz6dztFAPSRLZuwqBA4DQBGDJh9xdqhY2vN9A2pCP2A1E
-         RPN1JhFyXWAfZVeqB7pMx0dZxcbWqUDdD6O9c=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=iASpE12jyQq82boGNA3dCba8pBE/AYvYxM5i9NRRTCFS/yFqPEDXvyu4Y8YhVebRFq
+         aBCLfgqgfLFEUBzYR+K/q9Pr6nNvYJCbh19Rm54d0Qoykcaemt6/i/OayUdashpeD3s5
+         4qlw/lK4WsM1EjifthebXhJ07VwlBq+cKvrG8=
+Date: Sun, 7 Nov 2010 22:49:02 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] perf, ui: Eliminate stack-smashing protection compiler
+	complain
+Message-ID: <20101107214900.GE11134@nowhere>
+References: <20101106084724.GA5956@lenovo>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikfyR+Xc9DURME_Dy8p4GmX1PAGt+JjUNCAu5S5@mail.gmail.com>
-References: <01784A8B-36A0-4E8A-9729-23C2B19351F8@mac.com>
-	<AANLkTi=UxhRdcDaoKaYVWhPkp_e-uLF4=zhXs7gutkgx@mail.gmail.com>
-	<20101106181202.GA6927@kroah.com>
-	<39580686-A899-4689-BAAD-AF5546B34E49@mac.com>
-	<AANLkTimVsUsrmTvsHqFiqJh1hhryMBemGyW+kYLKGgEu@mail.gmail.com>
-	<20101107155757.GA13736@kroah.com>
-	<6477C549-DB75-407C-9B9B-5869A3B8D2BD@mac.com>
-	<20101107213138.GA20342@kroah.com>
-	<AANLkTikfyR+Xc9DURME_Dy8p4GmX1PAGt+JjUNCAu5S5@mail.gmail.com>
-Date: Sun, 7 Nov 2010 16:47:21 -0500
-Message-ID: <AANLkTi=nXCrRvtxtDcKnbFdFs_J09U4Q-yAhKSjjKkzE@mail.gmail.com>
-Subject: Re: Forked android kernel development from linux kernel mainline
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: Elvis Dowson <elvis.dowson@mac.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101106084724.GA5956@lenovo>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 7, 2010 at 4:46 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
-> Hi,
->
-> On Sun, Nov 7, 2010 at 4:31 PM, Greg KH <greg@kroah.com> wrote:
->> On Mon, Nov 08, 2010 at 12:06:03AM +0400, Elvis Dowson wrote:
->>> Hi Greg,
->>> † † † † † † † † † I just saw the presentation you made on the subject for the 2010 CELF Embedded Linux Conference
->>>
->>> https://github.com/gregkh/android-presentation/raw/master/android-kernel.pdf
->>
->> Please see the video of the talk to get the context for the slides.
->>
-> Say that I somehow hate to complain on large diffusion mailing list :)
->
-Looks I replied to the wrong mail, sorry for that :/
+On Sat, Nov 06, 2010 at 11:47:24AM +0300, Cyrill Gorcunov wrote:
+>  The gcc complains on Yes, No being allocated from stack space. Make
+> them conts to feel compiler happy.
+> 
+>  |    CC util/ui/util.o
+>  | cc1: warnings being treated as errors
+>  | util/ui/util.c: In function ‚Äòui__dialog_yesno‚Äô:
+>  | util/ui/util.c:108: error: not protecting function: no buffer at least 8 bytes long
+>  | make: *** [util/ui/util.o] Error 1
+> 
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> CC: Arnaldo Carvalho de Melo <acme@redhat.com>
+> CC: Fr√©d√©ric Weisbecker <fweisbec@gmail.com>
+> CC: Ingo Molnar <mingo@elte.hu>
+> ---
 
- - Arnaud
+
+
+I hope we can finally queue this one fix, the warning is there
+for a while now, and this patch looks quite sensible :)
+
+
+
+> 
+> Since it seems only me who has such error I presume ssp-buffer-size=8 set
+> for mine local version of gcc (gcc version 4.3.3 (Ubuntu 4.3.3-5ubuntu4))
+> 
+>  tools/perf/util/ui/util.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> Index: linux-2.6.git/tools/perf/util/ui/util.c
+> =====================================================================
+> --- linux-2.6.git.orig/tools/perf/util/ui/util.c
+> +++ linux-2.6.git/tools/perf/util/ui/util.c
+> @@ -104,9 +104,10 @@ out_destroy_form:
+>  	return rc;
+>  }
+>  
+> +static const char yes[] = "Yes", no[] = "No";
+>  bool ui__dialog_yesno(const char *msg)
+>  {
+>  	/* newtWinChoice should really be accepting const char pointers... */
+> -	char yes[] = "Yes", no[] = "No";
+> -	return newtWinChoice(NULL, yes, no, (char *)msg) == 1;
+> +	return newtWinChoice(NULL, (char *)yes, (char *)no, (char *)msg) == 1;
+>  }
+
