@@ -1,121 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848Ab0KGNRE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 08:17:04 -0500
-Received: from nm6-vm0.bullet.mail.ukl.yahoo.com ([217.146.183.234]:43158 "HELO
-	nm6-vm0.bullet.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752471Ab0KGNRC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 08:17:02 -0500
-X-Yahoo-Newman-Id: 988078.14080.bm@omp1015.mail.ukl.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.fr;
-  h=DKIM-Signature:Message-ID:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:Received:Date:From:To:Cc:Subject;
-  b=uH+4/hUtXoO3G6+o53fmklklZfL7wzwIAvYTfAooiqlQkA64+Tanvjf1HY4XnDIrEmQu8V0jhZ7RbQVWXoHIjKYwVtFNSnlXCmjspF2sEiV624rvPchfUA8wK9b/PjDSBlIE0e+AL15bkZ+WWahO/XZ0lksEcrvXcfcNHDF0P4Q=  ;
-Message-ID: <927142.41127.qm@smtp141.mail.ukl.yahoo.com>
-X-Yahoo-SMTP: zgdcvJ6swBBcTOk5fgveL37ak9AQxYCP7GdO
-X-YMail-OSG: D9je0qYVM1l2bocq5dTBmvWUw.prIMw3_JBMZFRpKdtYAvk
- 4ZDoMb9OOgX6gxjv_D1J3z7yWk4Y5j0n0ayfFlBVZhF.TgAdudpkjwKLdOQK
- CfOxO9YPLFyeVFrQYJOzigc5QzSKKIT0.WV3RwJiK3c10z_Ne2agff5hEn6B
- BfWiYNzRBXJOmIvv6WJoWqC9Mz7zvVb62WZihVZu1vO1k4AEQ4mvCUSLNGxc
- vvsEKvJJylOjfwY9twFzkKDLbUCBYaCJq5CIjsL3hto.pjXUgbOL2AH4Jz0o
- oW.OlkiIvqO49ZP2QcBgOFHkpbkjr8NEU1J4-
-X-Yahoo-Newman-Property: ymail-3
-Date: Sun, 07 Nov 2010 14:10:47 +0100
-From: Lionel Debroux <lionel_debroux@yahoo.fr>
-To: kernel-janitors@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] hibernation: constify platform_hibernation_ops
+	id S1752894Ab0KGNZE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 08:25:04 -0500
+Received: from atlantis.8hz.com ([212.129.237.78]:62587 "EHLO atlantis.8hz.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752693Ab0KGNZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 08:25:02 -0500
+X-Greylist: delayed 395 seconds by postgrey-1.27 at vger.kernel.org; Sun, 07 Nov 2010 08:25:02 EST
+Date: Sun, 7 Nov 2010 13:18:25 +0000
+From: Sean Young <sean@mess.org>
+To: David =?iso-8859-1?Q?H=E4rdeman?= <david@hardeman.nu>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        jesse.barnes@intel.com
+Subject: [PATCH] Fix Winbond CIR driver initialisation
+Message-ID: <20101107131825.GA40383@atlantis.8hz.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch against mainline.
+Booting a vanilla kernel results in:
 
+[    4.771256] Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
+[    4.771365] serial8250: ttyS0 at I/O 0x3f8 (irq = 4) is a 16550A
+[    4.771452] serial8250: ttyS1 at I/O 0x2f8 (irq = 3) is a NS16550A
+[    4.771674] 00:03: ttyS0 at I/O 0x3f8 (irq = 4) is a 16550A
+
+Which prevents the winbond-cir driver from initialising since ttyS1 is 
+a bastardised serial port, which can only be used for IR using the 
+winbond-cir driver.
+
+[   13.947470] Winbond CIR 00:03: Region 0x2f8-0x2ff already in use!
+[   13.947741] Winbond CIR 00:03: disabled
+[   13.947746] Winbond CIR: probe of 00:03 failed with error -16
+
+A workaround is to boot with argument 8250.nr_uarts=1. This is not really 
+desirable, so this patch makes ttyS1 go away.
+
+This is tested on an Intel DG45ID motherboard with the real serial port 
+enabled and disabled in the BIOS.
+
+Signed-off-by: Sean Young <sean@mess.org>
 ---
-
-Subject: [PATCH] hibernation: constify platform_hibernation_ops
-
-Derived from the grsecurity patch.
-
-Signed-off-by: Lionel Debroux <lionel_debroux@yahoo.fr>
----
- drivers/acpi/sleep.c    |    4 ++--
- include/linux/suspend.h |   24 ++++++++++++------------
- 2 files changed, 14 insertions(+), 14 deletions(-)
-
-diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
-index 721d93b..5149c9b 100644
---- a/drivers/acpi/sleep.c
-+++ b/drivers/acpi/sleep.c
-@@ -498,7 +498,7 @@ static void acpi_pm_thaw(void)
- 	acpi_enable_all_runtime_gpes();
- }
+diff --git a/drivers/input/misc/winbond-cir.c b/drivers/input/misc/winbond-cir.c
+index 64f1de7..3da8b49 100644
+--- a/drivers/input/misc/winbond-cir.c
++++ b/drivers/input/misc/winbond-cir.c
+@@ -57,6 +57,7 @@
+ #include <linux/bitrev.h>
+ #include <linux/bitops.h>
+ #include <linux/slab.h>
++#include <linux/serial_8250.h>
  
--static struct platform_hibernation_ops acpi_hibernation_ops = {
-+static const struct platform_hibernation_ops acpi_hibernation_ops = {
- 	.begin = acpi_hibernation_begin,
- 	.end = acpi_pm_end,
- 	.pre_snapshot = acpi_pm_prepare,
-@@ -541,7 +541,7 @@ static int acpi_hibernation_begin_old(void)
-  * The following callbacks are used if the pre-ACPI 2.0 suspend ordering has
-  * been requested.
-  */
--static struct platform_hibernation_ops acpi_hibernation_ops_old = {
-+static const struct platform_hibernation_ops acpi_hibernation_ops_old = {
- 	.begin = acpi_hibernation_begin_old,
- 	.end = acpi_pm_end,
- 	.pre_snapshot = acpi_pm_pre_suspend,
-diff --git a/include/linux/suspend.h b/include/linux/suspend.h
-index 2669751..37857e3 100644
---- a/include/linux/suspend.h
-+++ b/include/linux/suspend.h
-@@ -217,16 +217,16 @@ extern void mark_free_pages(struct zone *zone);
-  *	platforms which require special recovery actions in that situation.
-  */
- struct platform_hibernation_ops {
--	int (*begin)(void);
--	void (*end)(void);
--	int (*pre_snapshot)(void);
--	void (*finish)(void);
--	int (*prepare)(void);
--	int (*enter)(void);
--	void (*leave)(void);
--	int (*pre_restore)(void);
--	void (*restore_cleanup)(void);
--	void (*recover)(void);
-+	int (* const begin)(void);
-+	void (* const end)(void);
-+	int (* const pre_snapshot)(void);
-+	void (* const finish)(void);
-+	int (* const prepare)(void);
-+	int (* const enter)(void);
-+	void (* const leave)(void);
-+	int (* const pre_restore)(void);
-+	void (* const restore_cleanup)(void);
-+	void (* const recover)(void);
- };
+ #define DRVNAME "winbond-cir"
  
- #ifdef CONFIG_HIBERNATION
-@@ -245,7 +245,7 @@ extern void swsusp_set_page_free(struct page *);
- extern void swsusp_unset_page_free(struct page *);
- extern unsigned long get_safe_page(gfp_t gfp_mask);
+@@ -1392,10 +1393,22 @@ wbcir_probe(struct pnp_dev *device, const struct pnp_device_id *dev_id)
+ 	}
  
--extern void hibernation_set_ops(struct platform_hibernation_ops *ops);
-+extern void hibernation_set_ops(const struct platform_hibernation_ops *ops);
- extern int hibernate(void);
- extern bool system_entering_hibernation(void);
- #else /* CONFIG_HIBERNATION */
-@@ -253,7 +253,7 @@ static inline int swsusp_page_is_forbidden(struct page *p) { return 0; }
- static inline void swsusp_set_page_free(struct page *p) {}
- static inline void swsusp_unset_page_free(struct page *p) {}
+ 	if (!request_region(data->sbase, SP_IOMEM_LEN, DRVNAME)) {
+-		dev_err(dev, "Region 0x%lx-0x%lx already in use!\n",
+-			data->sbase, data->sbase + SP_IOMEM_LEN - 1);
+-		err = -EBUSY;
+-		goto exit_release_ebase;
++		bool ok = false;
++#ifdef CONFIG_SERIAL_8250
++		/*
++		 * This device is a hacked serial port which will be
++		 * detected by the serial 8250 driver.
++		 */
++		dev_info(device, "Unregistering phony serial port ttyS1\n");
++		serial8250_unregister_port(1);
++		ok = request_region(data->sbase, SP_IOMEM_LEN, DRVNAME);
++#endif
++		if (!ok) {
++			dev_err(dev, "Region 0x%lx-0x%lx already in use!\n",
++				data->sbase, data->sbase + SP_IOMEM_LEN - 1);
++			err = -EBUSY;
++			goto exit_release_ebase;
++		}
+ 	}
  
--static inline void hibernation_set_ops(struct platform_hibernation_ops *ops) {}
-+static inline void hibernation_set_ops(const struct platform_hibernation_ops *ops) {}
- static inline int hibernate(void) { return -ENOSYS; }
- static inline bool system_entering_hibernation(void) { return false; }
- #endif /* CONFIG_HIBERNATION */
--- 
-1.7.3.2.161.g3089c
-
-
+ 	err = request_irq(data->irq, wbcir_irq_handler,
