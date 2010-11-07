@@ -1,94 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753739Ab0KGQtF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 11:49:05 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:46941 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751675Ab0KGQtD (ORCPT
+	id S1753582Ab0KGQy3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 11:54:29 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:60628 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752141Ab0KGQy1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 11:49:03 -0500
+	Sun, 7 Nov 2010 11:54:27 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=jUdVoz2XdxeSiAZoKAqerPGsODbCUozmbGAKM4KGLYqjT3Q0uzX5l/+X2DJtKP0r5i
-         g2E9ebq02UrD17ocUQAb125EWy74dWdK+ZEqD2kF/TXiBwbV2oN7EtS4CjQ+qw6JL1q9
-         TQXGh3yZUbj1mH/x4f4E4TOiApZ+QHGE8HiOA=
-From: Ben Gamari <bgamari.foss@gmail.com>
-To: xiyou.wangcong@gmail.com, Christoph Egger <siccegge@cs.fau.de>,
-        linux-kernel@vger.kernel.org,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Michal Marek <mmarek@suse.cz>
-Cc: Ben Gamari <bgamari.foss@gmail.com>
-Subject: [PATCH] Debug fixdep
-Date: Sun,  7 Nov 2010 11:48:53 -0500
-Message-Id: <1289148533-15106-1-git-send-email-bgamari.foss@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <87tyjtjd7m.fsf@gmail.com>
-References: <87tyjtjd7m.fsf@gmail.com>
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=TE8VERYRYmgCasGX5wTkskNEh8ktqUWHpgeYqZHCHmQ29cz508kN59vYpPFrj64INT
+         CEgvnNbeuMalB+3GrICCA6xsRnNXVhsd4C2M2uMWgz2z3YCMvUZqARtGvOo0rvbyo8Zx
+         vkKTs8/yiPkNh7EoMvHFnjzTgsHknMJBb/b2k=
+Message-ID: <4CD6D9BE.3030206@garzik.org>
+Date: Sun, 07 Nov 2010 11:54:22 -0500
+From: Jeff Garzik <jeff@garzik.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+CC: linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] SCSI host lock push-down
+References: <20101105002409.GA21714@havoc.gtf.org> <4CD52059.7010503@s5r6.in-berlin.de>
+In-Reply-To: <4CD52059.7010503@s5r6.in-berlin.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----
- scripts/basic/fixdep.c |   16 ++++++++++++++--
- 1 files changed, 14 insertions(+), 2 deletions(-)
+On 11/06/2010 05:31 AM, Stefan Richter wrote:
+> Jeff Garzik wrote:
+>> An alternate arrangement, not presented by this patch, might
+>> be preferred:  in order to make it clear that queuecommand
+>> locking has changed, one could s/queuecommand/queuecommand_nl/ in
+>> Scsi_Host_Template, in order to guarantee that drivers are either
+>> (a) upgraded or (b) broken at compile time.  Compile-time detection of
+>> new locking may be desirable, and I'll volunteer to change my patch to
+>> do that, if community members prefer that route instead of below.
+>
+> I followed only a fraction of the related discussion.  Thus I wonder why a
+> renaming of scsi_host_template.queuecommand was not part of these attempts
+> from the very outset.
+>
+> Given the choice between compile-time breakage of unconverted drivers and
+> silent invalidation of potential locking assumptions at runtime, the
+> preferable way forward is quite clear IMO.
 
-diff --git a/scripts/basic/fixdep.c b/scripts/basic/fixdep.c
-index ea26b23..f1b58d6 100644
---- a/scripts/basic/fixdep.c
-+++ b/scripts/basic/fixdep.c
-@@ -303,6 +303,9 @@ static void parse_dep_file(void *map, size_t len)
- 	char *p;
- 	char s[PATH_MAX];
- 
-+        fprintf(stderr, "map=%p, len=%zx\n", map, len);
-+        fprintf(stderr, "m=%p, end=%p\n", m, end);
-+        fprintf(stderr, "eh?=%zx\n", (size_t)end - (size_t)len);
- 	p = strchr(m, ':');
- 	if (!p) {
- 		fprintf(stderr, "fixdep: parse error\n");
-@@ -314,16 +317,23 @@ static void parse_dep_file(void *map, size_t len)
- 
- 	clear_config();
- 
-+        fprintf(stderr, "map=%p, len=%zx, end=%p\n", map, len, end);
- 	while (m < end) {
--		while (m < end && (*m == ' ' || *m == '\\' || *m == '\n'))
-+		while (m <= end && (*m == ' ' || *m == '\\' || *m == '\n')) {
-+                        fprintf(stderr, "m=%p\n", m);
- 			m++;
-+                }
- 		p = m;
--		while (p < end && *p != ' ') p++;
-+                fprintf(stderr, "A: p=%p, end=%p, str=%s\n", p, end, p);
-+		while (p <= end && *p != ' ') p++;
-+                fprintf(stderr, "B: p=%p, end=%p\n", p, end);
- 		if (p == end) {
- 			do p--; while (!isalnum(*p));
-+                        fprintf(stderr, "c%c ", *p);
- 			p++;
- 		}
- 		memcpy(s, m, p-m); s[p-m] = 0;
-+                fprintf(stderr, "C: p=%p, s=%s\n", p, s);
- 		if (strrcmp(s, "include/generated/autoconf.h") &&
- 		    strrcmp(s, "arch/um/include/uml-config.h") &&
- 		    strrcmp(s, ".ver")) {
-@@ -342,6 +352,7 @@ static void print_deps(void)
- 	int fd;
- 	void *map;
- 
-+        fprintf(stderr, "file=%s\n", depfile);
- 	fd = open(depfile, O_RDONLY);
- 	if (fd < 0) {
- 		fprintf(stderr, "fixdep: ");
-@@ -354,6 +365,7 @@ static void print_deps(void)
- 		close(fd);
- 		return;
- 	}
-+        fprintf(stderr, "st.size=%zx\n", st.st_size);
- 	map = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
- 	if ((long) map == -1) {
- 		perror("fixdep: mmap");
--- 
-1.7.0.4
+I am leaning towards a rename, but wanted to see what others thought.
+
+
+> (Since no coexistence period of .queuecommand and .queuecommand_nl or
+> .unlocked_queuecommand is planned, how about you rename it to .queue_command?
+> Follows Linux naming conventions more closely.)
+
+To me, that name lacks a clear "locking changed" signal, for a random 
+engineer who simply stumbles upon the queuecommand -> queue_command 
+rename change one day.
+
+	Jeff
+
 
