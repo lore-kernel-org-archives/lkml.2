@@ -1,101 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752471Ab0KGM4W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 07:56:22 -0500
-Received: from mx01.sz.bfs.de ([194.94.69.103]:14733 "EHLO mx01.sz.bfs.de"
+	id S1752740Ab0KGM4c (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 07:56:32 -0500
+Received: from 1wt.eu ([62.212.114.60]:47180 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751440Ab0KGM4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 07:56:21 -0500
-Message-ID: <4CD6A1F2.9040301@bfs.de>
-Date: Sun, 07 Nov 2010 13:56:18 +0100
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.14) Gecko/20101013 SUSE/3.0.9 Thunderbird/3.0.9
-MIME-Version: 1.0
-To: Vasiliy Kulikov <segooon@gmail.com>
-CC: kernel-janitors@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Jiri Pirko <jpirko@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] net: packet: fix information leak to userland
-References: <1288545028-16436-1-git-send-email-segooon@gmail.com> <4CCE84E2.9050801@bfs.de> <20101106143911.GA17428@albatros> <4CD68F7E.5050407@bfs.de> <20101107120636.GA7101@albatros>
-In-Reply-To: <20101107120636.GA7101@albatros>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752676Ab0KGM4a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 07:56:30 -0500
+Date: Sun, 7 Nov 2010 13:55:31 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Marcus Meissner <meissner@suse.de>, security@kernel.org, mort@sgi.com,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, fweisbec@gmail.com,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        jason.wessel@windriver.com, tj@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Security] [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of attacking
+Message-ID: <20101107125531.GB4627@1wt.eu>
+References: <20101104143322.GL25118@suse.de> <20101104190804.GA16099@elte.hu> <20101104212920.GA31256@1wt.eu> <20101104215157.GA25128@elte.hu> <20101104223526.GC31236@1wt.eu> <20101107085016.GA23843@elte.hu> <20101107094932.GT4627@1wt.eu> <20101107114237.GA3759@elte.hu> <20101107115145.GW4627@1wt.eu> <20101107123746.GA5413@elte.hu>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101107123746.GA5413@elte.hu>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Nov 07, 2010 at 01:37:46PM +0100, Ingo Molnar wrote:
+> > [...] There's no need for that, what you want is to hide kernel pointers, [...]
+> 
+> That's a new claim from you - and when put like that it's wrong too:
 
+It's where the discussion started and it's still in the subject of the thread !
+You noted that with distro kernels, hiding kallsyms is useless since uname -r
+reveals what kernel to download to get them anyway. Which is true !
 
-Am 07.11.2010 13:06, schrieb Vasiliy Kulikov:
-> On Sun, Nov 07, 2010 at 12:37 +0100, walter harms wrote:
->> Am 06.11.2010 15:39, schrieb Vasiliy Kulikov:
->>> On Mon, Nov 01, 2010 at 10:14 +0100, walter harms wrote:
->>>> Vasiliy Kulikov schrieb:
->>>>> @@ -1719,7 +1719,7 @@ static int packet_getname_spkt(struct socket *sock, struct sockaddr *uaddr,
->>>>>  	rcu_read_lock();
->>>>>  	dev = dev_get_by_index_rcu(sock_net(sk), pkt_sk(sk)->ifindex);
->>>>>  	if (dev)
->>>>> -		strlcpy(uaddr->sa_data, dev->name, 15);
->>>>> +		strncpy(uaddr->sa_data, dev->name, 14);
->>>>>  	else
->>>>>  		memset(uaddr->sa_data, 0, 14);
->>>>
->>>> if i understand the code correcly the max size for dev->name is IFNAMSIZ.
->>>
->>> For dev->name - IFNAMSIZ, for uaddr->sa_data - 14.
->>>
->>
->>
->> did not notice, since uaddr->sa_data should take dev->name this does no look very
->> clever. How is the size of  sa_data defined ?
-> 
-> Magic size...
-> 
-> ~/linux/include/linux/socket.h:
-> 
-> struct sockaddr {
-> 	sa_family_t	sa_family;	/* address family, AF_xxx	*/
-> 	char		sa_data[14];	/* 14 bytes of protocol address	*/
-> };
-> 
-> 
->> Would it hurt when some uses IFNAMSIZ here ?
-> 
+Reason why it would be more efficient to find how we could randomize those
+pointers at runtime.
 
-so i should be more direct. the idea was :
-char		sa_data[IFNAMSIZ];
+(...)
+> Anyway, i wasnt particularly successful in conveying my past arguments to you so i'd 
+> rather leave the discussion at this point. You made your points and i made my points 
+> as well.
 
+That's also what I was about to say. Let's agree we disagree and have a
+nice sunday afternoon. We can bring the discussion back around a beer if
+you happen to pass by Paris :-)
 
+Cheers,
+Willy
 
-> If copy _to_ sa_data string of maximum IFNAMSIZ bytes - yes.
-> 
-> 
-> In packet_getname_spkt() the output buffer is 128 bytes, so it doesn't
-> really overflows anything.  I don't think that *_getname() implementations
-> don't know this.
-> 
->> Perhaps someone who know more about the network stack can figure out what is actualy done
->> with uaddr->sa_data.
-> 
-> Yeah, also I wonder whether it is always NULL-terminated string or not.
-> 
->> looks like a can of worms.
->>
->>
->> In packet_bind_spkt() they will copy a char[15], obviously it is a real problem.
-> 
-> No, packet_bind_spkt() copies 14-byte string into array of 15 bytes.
-> The vice versa would be a bug.
-> 
-
-ups your are right, wrong way around. it still does not look clever.
-I have the feeling that the basic idea what to store the string with out \0.
-
-according to this:
-http://www.gnu.org/s/libc/manual/html_node/Address-Formats.html
-
-It should work.
-
-re,
- wh
