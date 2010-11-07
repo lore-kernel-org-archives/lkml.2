@@ -1,56 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213Ab0KGWll (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 17:41:41 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:43397 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751953Ab0KGWlj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 17:41:39 -0500
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Jim <jim876@xs4all.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        gcc@gcc.gnu.org
-Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling  drivers/char/i8k.c ?
-References: <4CD538CA.8010901@xs4all.nl> <87wroostw3.fsf@basil.nowhere.org>
-X-Yow: Yow!  Are we wet yet?
-Date: Sun, 07 Nov 2010 23:41:37 +0100
-In-Reply-To: <87wroostw3.fsf@basil.nowhere.org> (Andi Kleen's message of "Sun,
-	07 Nov 2010 22:31:24 +0100")
-Message-ID: <m2hbfsu57i.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1753176Ab0KGWmw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 17:42:52 -0500
+Received: from smtp.scorch.co.nz ([27.110.127.199]:45496 "HELO scorch.co.nz"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1751981Ab0KGWmv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 17:42:51 -0500
+X-Virus-Checked: Checked by ClamAV on scorch.co.nz
+From: Charles Manning <manningc2@actrix.gen.nz>
+To: Jesper Juhl <jj@chaosbits.net>
+Subject: Re: [PATCH 2/9] Add yaffs allocator, bitmap and attrib source
+Date: Mon, 8 Nov 2010 11:42:47 +1300
+User-Agent: KMail/1.9.10
+Cc: Charles Manning <cdhmanning@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+References: <1288803204-3849-1-git-send-email-cdhmanning@gmail.com> <1288803204-3849-3-git-send-email-cdhmanning@gmail.com> <alpine.LNX.2.00.1011042357380.16015@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1011042357380.16015@swampdragon.chaosbits.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201011081142.48215.manningc2@actrix.gen.nz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi Kleen <andi@firstfloor.org> writes:
-
-> Jim <jim876@xs4all.nl> writes:
+On Friday 05 November 2010 12:01:07 Jesper Juhl wrote:
+> On Thu, 4 Nov 2010, cdhmanning@gmail.com wrote:
+> [snip]
 >
->> After upgrading my Dell laptop, both OS+kernel the i8k interface was giving
->> nonsensical output. As it turned out it's not the kernel but compiler
->> upgrade which broke this.
->>
->> Guys at Archlinux have found the underlying cause (but don't seem to have
->> submitted a patch yet):
->>   https://bbs.archlinux.org/viewtopic.php?pid=780692#p780692
->> gcc seems to optimize the assembly statements away.
->>
->> And indeed, applying this patch makes the i8k interface work again,
->> i.e. replacing the asm(..) construct by  asm volatile(..)
+> > +void yaffs_free_raw_obj(struct yaffs_dev *dev, struct yaffs_obj *obj)
+> > +{
+> > +
+> > +     struct yaffs_allocator *allocator = dev->allocator;
+> > +
+> > +     if (!allocator)
+> > +             YBUG();
+> > +     else {
+> > +             /* Link into the free list. */
+> > +             obj->siblings.next = (struct list_head
+> > *)(allocator->free_objs); +             allocator->free_objs = obj;
+> > +             allocator->n_free_objects++;
+> > +     }
+> > +}
+> > +
+> > +void yaffs_deinit_raw_tnodes_and_objs(struct yaffs_dev *dev)
+> > +{
+> > +     if (dev->allocator) {
+> > +             yaffs_deinit_raw_tnodes(dev);
+> > +             yaffs_deinit_raw_objs(dev);
+> > +
+> > +             YFREE(dev->allocator);
+> > +             dev->allocator = NULL;
+> > +     } else
+> > +             YBUG();
+> > +}
+> > +
+> > +void yaffs_init_raw_tnodes_and_objs(struct yaffs_dev *dev)
+> > +{
+> > +     struct yaffs_allocator *allocator;
+> > +
+> > +     if (!dev->allocator) {
+> > +             allocator = YMALLOC(sizeof(struct yaffs_allocator));
+> > +             if (allocator) {
+> > +                     dev->allocator = allocator;
+> > +                     yaffs_init_raw_tnodes(dev);
+> > +                     yaffs_init_raw_objs(dev);
+> > +             }
+> > +     } else
+> > +             YBUG();
+> > +}
 >
-> The compiler really should not optimize the asm away, because
-> it has both input and output arguments which are later used.
-> "asm volatile" normally just means "don't move significantly"
+> Tiny style issue; Documentation/CodingStyle says:
+>
+> "Do not unnecessarily use braces where a single statement will do.
+>
+> if (condition)
+>         action();
+>
+> This does not apply if one branch of a conditional statement is a single
+> statement. Use braces in both branches.
+>
+> if (condition) {
+>         do_this();
+>         do_that();
+> } else {
+>         otherwise();
+> }
+> "
+>
+> So, in the above, you should have curly braces around both the 'if' and
+> 'else' parts since one of them is more than one statement.
 
-The asm fails to mention that it modifies *regs.
+Thanks Jesper
 
-Andreas.
+Aargh!!  I had the code  the right way and changed it! My bad for misreading 
+the CodingStyle.
 
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+I have corrected this for the next patch drop, probably a week out.
+
+-- Charles
