@@ -1,126 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063Ab0KGTmb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 14:42:31 -0500
-Received: from amber.ccs.neu.edu ([129.10.116.51]:50673 "EHLO
-	amber.ccs.neu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834Ab0KGTma (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 14:42:30 -0500
-Date: Sun, 7 Nov 2010 14:42:22 -0500
-From: Gene Cooperman <gene@ccs.neu.edu>
-To: Oren Laadan <orenl@cs.columbia.edu>
-Cc: Kapil Arya <kapil@ccs.neu.edu>, Tejun Heo <tj@kernel.org>,
-        Gene Cooperman <gene@ccs.neu.edu>,
-        ksummit-2010-discuss@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, hch@lst.de
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-Message-ID: <20101107194222.GG31077@sundance.ccs.neu.edu>
-References: <Pine.LNX.4.64.1011021530470.12128@takamine.ncl.cs.columbia.edu>
- <4CD08419.5050803@kernel.org>
- <AANLkTinOg6n3ZA+0gHzw9LouRuUmJ7DJwHtABRy5c=gM@mail.gmail.com>
- <4CD26948.7050009@kernel.org>
- <20101104164401.GC10656@sundance.ccs.neu.edu>
- <4CD3CE29.2010105@kernel.org>
- <AANLkTimDXKsBCxbsEOfgkYV2R8FK=bhFdmx9UQow5hqp@mail.gmail.com>
- <4CD5DCE3.3000109@cs.columbia.edu>
+	id S1752258Ab0KGTni (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 14:43:38 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:48115 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750834Ab0KGTng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 14:43:36 -0500
+Date: Sun, 7 Nov 2010 11:43:30 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: sergey.senozhatsky@gmail.com, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mingo@elte.hu
+Subject: Re: [PATCH] rcu_read_lock/unlock protect find_task_by_vpid call
+Message-ID: <20101107194330.GE15561@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20101029125550.GA3932@swordfish.minsk.epam.com>
+ <20101029201648.GK2367@linux.vnet.ibm.com>
+ <20101030093234.GK3932@swordfish.minsk.epam.com>
+ <201010302214.DDF98906.MSFJOFtFHOLQVO@I-love.SAKURA.ne.jp>
+ <20101030210244.GE2664@linux.vnet.ibm.com>
+ <201010310833.CCE89052.FtQFHSOFLOOJMV@I-love.SAKURA.ne.jp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CD5DCE3.3000109@cs.columbia.edu>
+In-Reply-To: <201010310833.CCE89052.FtQFHSOFLOOJMV@I-love.SAKURA.ne.jp>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'd like to add a few clafifications, below, about DMTCP concerning
-Oren's comments.  I'd also like to point out that we've had about 100
-downloads per month from sourceforge (and some interesting use cases
-from end users) over the last year (although the sourceforge numbers
-do go up and down :-) ).  In general, I think we'll all understand the
-situation better after having had the opportunity to talk offline.
-Below are some clarifications about DMTCP.
-===
-
-> For example, in your example, you'd need to wrap the library calls
-> (e.g. of MPI implementation) and replaced them to use TCP/IP or
-> infiniband. Wrapping on system calls won't help you.
-
-We do not put any wrappers around MPI library calls.  MPI calls things
-like open, close, connect, listen, execve({"ssh", ...}, ...), etc.
-At this time, DMTCP adds wrappers _only_ around calls to libc.so
-and libpthread.so .  This is sufficient to checkpoint a distributed
-computation like MPI.
-
-> The only two reasons to interpose on systems calls, ...
+On Sun, Oct 31, 2010 at 08:33:35AM +0900, Tetsuo Handa wrote:
+> Paul E. McKenney wrote:
+> > So we should remove the lockdep_tasklist_lock_is_held() and then
+> > apply Sergey's patch, correct?
 > 
-> One - to virtualize in userspace reosurces (e.g. pids) that the
-> kernel already knows how to virtualize.
+> Yes. rcu_lockdep_assert(rcu_read_lock_held()) in find_task_by_pid_ns()
+> is correct and callers need to use rcu_read_lock().
 > 
-> Two - to track state of resources during execution and lie about
-> their state when needed, because userspace can't cleanly save
-> and restore their state.
+> As of 2.6.32, there are 20+ users who missed rcu_read_lock().
+> So, similar reports will be posted like popcorn.
+> http://kerneltrap.org/mailarchive/linux-kernel/2009/12/11/4518016
 
-Just a small correction about interposition.  The primary "Reason Two"
-for interposing on system calls should be to _spy_ on what the user process
-is doing and save that information.  For the most part, we do not
-_lie about their state when needed_.  I agree that virtualization of pids
-is an exception where we have to lie, but that was already stated as
-"Reason One" above.  At restart time, we may also recreate resources that are
-no longer in the kernel.  But this is not an example of interposition.
-I suppose that it is an example of lying, but every C/R technique will
-need to do this.
-    Later, perhaps Oren, Kapil and I can browse the DMTCP code together,
-and we can look exactly at what each wrapper is doing.  The system call
-wrappers are, in fact, the smaller part of the DMTCP code.  It's about
-3000 lines of code.  For anybody who is curious about what our wrappers do,
-please download the DMTCP source code, and look at
-.../dmtcp/src/*wrapper*.cpp .
+OK, let's see how these are in 2.6.36...   The summary is that almost
+all of the popcorn kernels have already popped.
 
-> So I'll repeat the question I asked there: is re-reimplementing
-> chunks of kernel functionality and all namespaces in userspace
-> the way to go ?
+> Users missing read_lock(&tasklist_lock) when calling find_task_by_vpid():
+> 
+>   get_net_ns_by_pid() in net/core/net_namespace.c
 
-If you're referring to interposition here, that takes place essentially
-in the wrappers, and the wrappers are only 3000 lines of code in DMTCP.
-Also, I don't believe that we're "re-implementing chunks of kernel
-functionality", but let's continue that discussion offline.
+	Fixed with rcu_read_lock().
 
-> What is "reasonable" overhead ?
-> For which applications ?
-> What about a 'kernel make' ?
-> What about servers (db, web, etc) ?
-> What about VPSs/VDIs ?
-> Can we do better, including for HPC ?
+>   seq_print_userip_objs() in kernel/trace/trace_output.c
 
-Again, all good questions that will be answered more easily offline.
+	Fixed with rcu_read_lock().
 
-> ... (yes, transparent means that
-> it does not require LD_PRELOAD or collaboration of the application!
-> nor does it require userspace virtualizations of so many things
-> already provided by the kernel today), more generic, more flexible,
-> provides more guarantees, cover more types or states of resources,
-> and can perform significantly better.
+>   fill_pid() in kernel/taskstats.c
 
-I still haven't understood why you object to the DMTCP use of LD_PRELOAD.
-How will the user app ever know that we used LD_PRELOAD, since we remove
-LD_PRELOAD from the environment before the user app libraries and main
-can begin?  And, if you really object to LD_PRELOAD, then there are
-other ways to capture control.  Similarly, I'll have to understand better
-what you mean by the _collaboration of the application_.  DMTCP operates
-on unmodified application binaries.  Basically, if _transparent_ means
-that one is not allowed to use anything at all from userland, then I
-agree with you that no userland checkpointing can ever be transparent.
-But, I think that's a biased definition of _transparent_.  :-)
+	This one seems to be named fill_stats_for_pid(), and it
+	is fixed with rcu_read_lock().
 
-> And then, if you want to work with dmtcp's type of scenarios, you
-> could use the generic c/r and apply their wrappers on top of it !
+>   fill_tgid() in kernel/taskstats.c
 
-Agreed.  As before, I'm looking forward to us analyzing all the
-use cases offline.  I think that we're all (myself included) in the
-situation of the three blind men and the elephant.  I think part of the
-misunderstanding is that we're each thinking about a different use case,
-and so we (myself included) end up comparing apples and oranges.
+	This one seems to be named fill_stats_for_tgid(), and it
+	is fixed with rcu_read_lock().
 
-Thanks,
-- Gene
+>   futex_find_get_task() in kernel/futex.c
+
+	Fixed with rcu_read_lock().
+
+>   SYSCALL_DEFINE3(get_robust_list) in kernel/futex.c
+
+	Fixed with rcu_read_lock().
+
+>   compat_sys_get_robust_list() in kernel/futex_compat.c
+
+	Fixed with rcu_read_lock().
+
+>   ptrace_get_task_struct() in kernel/ptrace.c
+
+	Fixed with rcu_read_lock().
+
+>   do_send_specific() in kernel/signal.c
+
+	Fixed with rcu_read_lock().
+
+>   find_get_context() in kernel/perf_event.c
+
+	Fixed with rcu_read_lock() plus code motion.
+
+>   posix_cpu_clock_get() in kernel/posix-cpu-timers.c
+
+	Fixed with rcu_read_lock().
+
+>   good_sigevent() in kernel/posix-timers.c
+
+	Fixed with rcu_read_lock() in caller.
+
+>   attach_task_by_pid() in kernel/cgroup.c
+
+	Fixed with rcu_read_lock().
+
+>   SYSCALL_DEFINE1(getpgid) in kernel/sys.c
+
+	Fixed with rcu_read_lock().
+
+>   SYSCALL_DEFINE1(getsid) in kernel/sys.c
+
+	Fixed with rcu_read_lock().
+
+>   do_sched_setscheduler() in kernel/sched.c
+
+	Fixed with rcu_read_lock().
+
+> 
+> Users missing rcu_read_lock() when calling find_task_by_vpid():
+> 
+>   SYSCALL_DEFINE3(ioprio_set) in fs/ioprio.c
+
+	Patches in flight.
+
+>   SYSCALL_DEFINE2(ioprio_get) in fs/ioprio.c
+
+	Patches in flight.
+
+>   cap_get_target_pid() in kernel/capability.c
+
+	Fixed with rcu_read_lock().
+
+>   audit_prepare_user_tty() in kernel/audit.c
+
+	Fixed with rcu_read_lock().
+
+>   audit_receive_msg() in kernel/audit.c
+
+	Fixed with rcu_read_lock(), two instances.
+
+>   check_clock() in kernel/posix-cpu-timers.c
+
+	This one has read_lock(&tasklist_lock).
+
+>   posix_cpu_timer_create() in kernel/posix-cpu-timers.c
+
+	This one has read_lock(&tasklist_lock).
+
+>   SYSCALL_DEFINE3(setpriority) in kernel/sys.c
+
+	This one has both read_lock(&tasklist_lock) and rcu_read_lock().
+	Both belt -and- suspenders...
+
+>   SYSCALL_DEFINE2(getpriority) in kernel/sys.c
+
+	Ditto.
+
+>   SYSCALL_DEFINE2(setpgid) in kernel/sys.c
+
+	This one has both write_lock_irq(&tasklist_lock) and
+	rcu_read_lock().  -Serious- belt along with the suspenders...
+
+>   SYSCALL_DEFINE1(sched_getscheduler) in kernel/sched.c
+
+	Fixed with rcu_read_lock().
+
+>   SYSCALL_DEFINE2(sched_getparam) in kernel/sched.c
+
+	Fixed with rcu_read_lock().
+
+>   sched_setaffinity() in kernel/sched.c
+
+	Fixed with rcu_read_lock().
+
+>   sched_getaffinity() in kernel/sched.c
+
+	Fixed with rcu_read_lock().
+
+>   SYSCALL_DEFINE2(sched_rr_get_interval) in kernel/sched.c
+
+	Fixed with rcu_read_lock().
+
+>   tomoyo_is_select_one() in security/tomoyo/common.c
+
+	This one has both read_lock(&tasklist_lock) and rcu_read_lock().
+	Both belt -and- suspenders...  (Also renamed to tomoyo_select_one().)
+
+>   tomoyo_read_pid() in security/tomoyo/common.c
+
+	This one has both read_lock(&tasklist_lock) and rcu_read_lock().
+	Both belt -and- suspenders...
+
+>   SYSCALL_DEFINE6(move_pages) in mm/migrate.c
+
+	This one does read_lock(&tasklist_lock).
+
+>   SYSCALL_DEFINE4(migrate_pages) in mm/mempolicy.c
+
+	No call to find_task_by_vpid() in migrate_pages() anymore,
+	but there is one protected by read_lock(&tasklist_lock) in
+	move_pages().
+
+>   find_process_by_pid() in arch/mips/kernel/mips-mt-fpaff.c
+
+	No change, so let's check the callers:
+
+	mipsmt_sys_sched_setaffinity(): rcu_read_lock().
+	mipsmt_sys_sched_getaffinity(): read_lock(&tasklist_lock).
+	do_sched_setscheduler(): rcu_read_lock().
+	sched_getscheduler(): rcu_read_lock().
+	sched_getparam(): rcu_read_lock().
+	sched_setaffinity(): rcu_read_lock().
+	sched_getaffinity(); rcu_read_lock().
+	sched_rr_get_interval(): rcu_read_lock().
+
+	So all of these are protected.
+
+>   pfm_get_task() in arch/ia64/kernel/perfmon.c
+
+	This one does read_lock(&tasklist_lock).
+
+>   cxn_pin_by_pid() in arch/frv/mm/mmu-context.c
+
+	This one does read_lock(&tasklist_lock).
+
+> 
+> Users missing read_lock(&tasklist_lock) when calling find_task_by_pid_ns():
+> 
+>   rest_init() in init/main.c
+
+	Fixed with rcu_read_lock().
+
+>   proc_pid_lookup() in fs/proc/base.c
+
+	Fixed with rcu_read_lock().
+
+>   proc_task_lookup() in fs/proc/base.c
+
+	Fixed with rcu_read_lock().
+
+>   first_tid() in fs/proc/base.c
+
+	Fixed with rcu_read_lock().
+
+>   getthread() in kernel/kgdb.c
+
+	This is now in kernel/debug/gdbstub.c...  It looks to need
+	an rcu_read_lock().  It has a comment, but...
+
+>   mconsole_stack() in arch/um/drivers/mconsole_kern.c
+
+	This one still needs help.
+
+> 
+> Users missing rcu_read_lock() when calling find_task_by_pid_ns():
+> 
+>   rest_init() in init/main.c
+
+	Fixed with rcu_read_lock().
+
+>   getthread() in kernel/kgdb.c
+
+	This one still needs help.
+
+>   mconsole_stack() in arch/um/drivers/mconsole_kern.c
+
+	This one still needs help.
+
+So mostly there...
+
+							Thanx, Paul
