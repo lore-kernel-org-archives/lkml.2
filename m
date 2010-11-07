@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195Ab0KGWEu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 17:04:50 -0500
-Received: from wine.ocn.ne.jp ([122.1.235.145]:56964 "EHLO smtp.wine.ocn.ne.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750759Ab0KGWEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 17:04:48 -0500
-To: paulmck@linux.vnet.ibm.com
-Cc: sergey.senozhatsky@gmail.com, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, mingo@elte.hu
-Subject: Re: [PATCH] rcu_read_lock/unlock protect find_task_by_vpid call
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <20101030093234.GK3932@swordfish.minsk.epam.com>
-	<201010302214.DDF98906.MSFJOFtFHOLQVO@I-love.SAKURA.ne.jp>
-	<20101030210244.GE2664@linux.vnet.ibm.com>
-	<201010310833.CCE89052.FtQFHSOFLOOJMV@I-love.SAKURA.ne.jp>
-	<20101107194330.GE15561@linux.vnet.ibm.com>
-In-Reply-To: <20101107194330.GE15561@linux.vnet.ibm.com>
-Message-Id: <201011080704.GIH17609.SFVQLtJOOHFFMO@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Mon, 8 Nov 2010 07:04:43 +0900
-Mime-Version: 1.0
+	id S1752368Ab0KGWHr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 17:07:47 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:52376 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751417Ab0KGWHp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 17:07:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=lZnLBmXBEDDBTNKmw71wv83b0IbP9NxpO6nqeDvor74hTk16/fsQfpvIsDCUKnzqmX
+         6kCxJjtlylc/shXsQN2vn8M5fgmkXXBt0ybDSQAN2sTDj09qPk1iYxaAM1r5JCPO2Po7
+         JHWdWE8c5A4lG8k6TQFYqapZbjocSDvcvzuQk=
+Date: Mon, 8 Nov 2010 01:07:42 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Stephane Eranian <eranian@google.com>, robert.richter@amd.com,
+        paulus@samba.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        CoreyAshford <cjashfor@linux.vnet.ibm.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [DRAFT PATCH 0/3] perf: Add Intel Nehalem uncore pmu support
+Message-ID: <20101107220742.GL6731@lenovo>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
-
-Paul E. McKenney wrote:
-> > Users missing rcu_read_lock() when calling find_task_by_vpid():
-> > 
-> >   check_clock() in kernel/posix-cpu-timers.c
+On Tue, Nov 02, 2010 at 03:27:38PM +0800, Lin Ming wrote:
+> Hi, all
 > 
-> 	This one has read_lock(&tasklist_lock).
+> Here is the draft patch to add Intel Nehalem uncore pmu support.
+> It's not fully functional, but I threw it out early to get comments.
 > 
-Excuse me. Holding tasklist_lock lock does not help.
-We must call rcu_read_lock() explicitly.
-That's why 9728e5d6 "kernel/pid.c: update comment on find_task_by_pid_ns" was made.
 
-I think there are users who needlessly call read_lock(&tasklist_lock)
-when they can use rcu_read_lock() instead.
-But I don't know when to use read_lock(&tasklist_lock).
+ Hi Ming, sorry for late response, though there are already a lot
+of comments anyway :) Great job!
 
-If read_lock(&tasklist_lock) is needed only when we want to access
-the "struct task_struct" after rcu_read_unlock(), maybe it is cleaner to
-use a helper like
-
-struct task_struct *find_task_and_get(pid_t pid)
-{
-	struct task_struct *task;
-	read_lock(&tasklist_lock);
-	rcu_read_lock();
-	task = find_task_by_vpid(pid);
-	rcu_read_unlock();
-	if (task)
-		get_task_struct(task);
-	read_unlock(&tasklist_lock);
-	return task;
-}
-
-and hide tasklist_lock.
-
-Regards.
+ Cyrill
