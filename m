@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181Ab0KGO3k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 09:29:40 -0500
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:53255 "EHLO h5.dl5rb.org.uk"
+	id S1753218Ab0KGOai (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 09:30:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25653 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752882Ab0KGO3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 09:29:39 -0500
-Date: Sun, 7 Nov 2010 14:29:33 +0000
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Check vmalloc return value in vpe_open
-Message-ID: <20101107142933.GA7999@linux-mips.org>
-References: <alpine.LNX.2.00.1010301823350.1572@swampdragon.chaosbits.net>
+	id S1752882Ab0KGOah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 09:30:37 -0500
+Message-ID: <4CD6B7FA.3050005@redhat.com>
+Date: Sun, 07 Nov 2010 15:30:18 +0100
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100918 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1010301823350.1572@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Matt <jackdachef@gmail.com>
+CC: Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, dm-devel@redhat.com
+Subject: Re: [PATCH] DM-CRYPT: Scale to multiple CPUs v3 on 2.6.37-rc* ?
+References: <AANLkTim6WTCChWGbTb-PUGd2AERGibeRtgan-WDznf2s@mail.gmail.com>
+In-Reply-To: <AANLkTim6WTCChWGbTb-PUGd2AERGibeRtgan-WDznf2s@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 30, 2010 at 06:37:16PM +0200, Jesper Juhl wrote:
 
-> I noticed that the return value of the 
-> vmalloc() call in arch/mips/kernel/vpe.c::vpe_open() is not checked, so we 
-> potentially store a null pointer in v->pbuffer. As far as I can tell this 
-> will be a problem. However, I don't know the mips code at all, so there 
-> may be something, somewhere where I did not look, that handles this in a 
-> safe manner but I couldn't find it.
+On 11/06/2010 11:16 PM, Matt wrote:
+> before diving into testing out 2.6.37-rc* kernels I wanted to make
+> sure that the patch:
 > 
-> To me it looks like we should do what the patch below implements and check 
-> for a null return and then return -ENOMEM in that case. Comments?
+> [dm-devel] [PATCH] DM-CRYPT: Scale to multiple CPUs v3
+> 
+> is safe to use with e.g. >2.6.37-rc1 kernels
+> 
+> I know that it's not a "fix all" patch but it significantly seems to
+> speed up my backup jobs (by factor 2-3)
+> and 2.6.37* has evolved that much that interactivity isn't hurt too much
 
-All users check if the buffer was successfully allocated so the code is
-safe wrt. to that.
+yes, it should work for the simple mappings without problems.
 
-Doesn't mean that it's not a pukeogenic piece of code.  Look at the use of
-v->pbuffer in vpe_release for example.  First use it the vmalloc'ed memory
-then carefully check the pointer for being non-NULL before calling vfree.
-If the pointer could actually be non-NULL that's too late and vfree does
-that check itself anyway.  And more such gems, general uglyness and
-freedom of concept.  It used to be even worse.
+I hope we will fix the patch soon to be ready for upstream.
 
-  Ralf
+Milan
