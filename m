@@ -1,67 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323Ab0KGD0k (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 23:26:40 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:52834 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753018Ab0KGD0j convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 23:26:39 -0400
-Subject: Re: [GIT] HID
-Mime-Version: 1.0 (Apple Message framework v1081)
-Content-Type: text/plain; charset=us-ascii
-From: Jarod Wilson <jarod@wilsonet.com>
-In-Reply-To: <alpine.LNX.2.00.1010240816140.6879@pobox.suse.cz>
-Date: Sat, 6 Nov 2010 23:26:34 -0400
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <436F4442-6174-4A5B-BB7F-5B7678AE5048@wilsonet.com>
-References: <alpine.LNX.2.00.1010232314400.6879@pobox.suse.cz> <AANLkTikc74bA+OPJjhLUHu_mp59L=SKnPTXjPK=E28U5@mail.gmail.com> <alpine.LNX.2.00.1010240816140.6879@pobox.suse.cz>
-To: Jiri Kosina <jkosina@suse.cz>
-X-Mailer: Apple Mail (2.1081)
+	id S1750890Ab0KGEhS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 00:37:18 -0400
+Received: from mx.kppk.gov.my ([202.75.7.157]:58508 "EHLO mx.kppk.gov.my"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750781Ab0KGEhQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 00:37:16 -0400
+X-Greylist: delayed 3180 seconds by postgrey-1.27 at vger.kernel.org; Sun, 07 Nov 2010 00:37:16 EDT
+Date: Sun, 7 Nov 2010 11:29:33 +0800 (MYT)
+From: Dshmulik <khairulanuar@kppk.gov.my>
+Reply-To: Dshmulik <timiala@voila.fr>
+Message-ID: <1244240540.123981289100573901.JavaMail.root@jati.kppk.gov.my>
+In-Reply-To: <436833705.123961289100566006.JavaMail.root@jati.kppk.gov.my>
+Subject: Urgent Enquiry
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [60.53.48.33]
+X-Mailer: Zimbra 5.0.11_GA_2695.RHEL5_64 (ZimbraWebClient - IE7 (Win)/5.0.11_GA_2695.RHEL5_64)
+To: undisclosed-recipients:;
+X-kppk-MailScanner-Information: Please contact the ISP for more information
+X-kppk-MailScanner-ID: A10C698E9714.A4AE9
+X-kppk-MailScanner: Found to be clean
+X-kppk-MailScanner-From: khairulanuar@kppk.gov.my
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Oct 24, 2010, at 2:19 AM, Jiri Kosina wrote:
+I have 95 kg of Switz refined gold, 99.99(24 karat).
 
-> On Sat, 23 Oct 2010, Jarod Wilson wrote:
-> 
->>> please pull from 'for-linus' branch at
->>> 
->>>  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
->>> 
->>> to receive the HID subsystem patches below. Mostly adding support for a
->>> few new multitouch toys, and improving already existing drivers. Plus some
->>> bugfixes which were not urgent enough for .36.
->> 
->> *cough*
->> 
->> https://patchwork.kernel.org/patch/161481/
->> 
->> What's a guy gotta do to get that patch merged too? :)
-> 
-> Bah, it's still pending in my TODO folder, sorry for that. I am not really 
-> convinced whether it's the right aproach.
-> 
-> First, I'll go check HUT how much non-standard the usages you are adding 
-> to generic code, are.
+Should you be interested to buy it, please reply me for more and better arrangement on the method of transaction;
 
-Just the four under HID_UP_TIVOVENDOR, I believe. Everything else should be bog-standard.
+I will offer you cheaper than the international gold price. 
 
-> Perhaps it would satisfy separate driver on the hid 
-> bus?
-> (Second, I hope to shovel all the 'drivers' which only do specialized 
-> mappings into userspace/udev actually).
+If we can develop a certain level of trust between us, I will consider letting you lift it to your country and sell, then pay me based on the price we will agree on as I am only interested to sell it to a capable client instead of selling per kilo.
 
-Yeah, I've heard that mentioned as Coming Soon(tm) for a while now though... ;)
-
-Looks like the patch does require trivial massaging to apply now, I could do that and chop out the four vendor-specific usages and resubmit just the parts I believe are entirely in line with the HUT, then try to figure out what all is required on the udev side.
+Please get back to me. 
 
 -- 
-Jarod Wilson
-jarod@wilsonet.com
-
-
+This message has been scanned for viruses and
+dangerous content by MailScanner, and is
+believed to be clean.
 
