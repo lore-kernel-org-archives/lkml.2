@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134Ab0KGHlh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 02:41:37 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:33725 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717Ab0KGHlf convert rfc822-to-8bit (ORCPT
+	id S1752208Ab0KGHoR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 02:44:17 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:59654 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751748Ab0KGHoQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 02:41:35 -0500
+	Sun, 7 Nov 2010 02:44:16 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=lKdV+K64A46WBhx8YDaPpcfVm9Z94cvFNMoJDYeT91MsiU/cUw8cZTdwQ235cAXLiw
-         iUKiPEnSj5+Lt7zo0fDjs1/tPrlQPhNwClsm0EuxJoUmmLrOt4JTnwpvDYux3kqq+eVz
-         JJ8Tvnjva5gqrctxV01dR1pzSN5uMnB49zG4Y=
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=QBMAiUo2WjftS0vLQhGs/8R7F+S1H7LoQede3vRmYwR/hg2ZSxN8MSE+y33/6yjft4
+         ZD8az9x7dZVbeitUogX5ZSh/N2d5/TJtDM39RvTcllTCHCgQFJeWXOZGLbeAmuzMIf4r
+         xe4ire94Z8HQLMWA09Ykxrqc7LA3WKygFIq3g=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Ian Kumlien <pomac@demius.net>
+Subject: Re: High [extra timer interrupt] count in powertop since 2.6.36
+Date: Sun, 7 Nov 2010 08:44:10 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1; KDE/4.4.5; i686; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <alpine.LNX.2.00.1010310148450.24290@twilight.pomac.com>
+In-Reply-To: <alpine.LNX.2.00.1010310148450.24290@twilight.pomac.com>
 MIME-Version: 1.0
-Date: Sun, 7 Nov 2010 13:41:34 +0600
-Message-ID: <AANLkTimW+GdKZEZdR5DtAp8=D7muTOvVcvuPoiCR2Y2p@mail.gmail.com>
-Subject: [PATCH] x86, hw_nmi: Move backtrace_mask declaration under ARCH_HAS_NMI_WATCHDOG.
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=windows-1252
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 8BIT
+Message-Id: <201011070844.10643.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-backtrace_mask has been used under the code context of
-ARCH_HAS_NMI_WATCHDOG. So put it into that context.
-We were warned by the following warning:
+On niedziela, 31 paÅºdziernika 2010 o 01:52:08 Ian Kumlien wrote:
+> Hi,
+> 
+> I have been searching the list for anyone else seeing this,
+> but i haven't found anything yet - Any ideas on how to debug?
+> 
+> From powertop:
+> Top causes for wakeups:
+>    84.7% (1673.3)   [extra timer interrupt]
+> 
+> Thats a little bit high in my opinion, for some reason it seems to be
+> ignored since the actual number of wakeups seems to be ~367 or so.
+> 
+> Ideas? Suggestions?
 
-arch/x86/kernel/apic/hw_nmi.c:21: warning: ‘backtrace_mask’ defined but not used
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=22272
+for your bug report, please add your address to the CC list in there, thanks!
 
-
-Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
----
-
-diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
-index cefd694..62f6e1e 100644
---- a/arch/x86/kernel/apic/hw_nmi.c
-+++ b/arch/x86/kernel/apic/hw_nmi.c
-@@ -17,15 +17,16 @@
- #include <linux/nmi.h>
- #include <linux/module.h>
-
--/* For reliability, we're prepared to waste bits here. */
--static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
--
- u64 hw_nmi_get_sample_period(void)
- {
- 	return (u64)(cpu_khz) * 1000 * 60;
- }
-
- #ifdef ARCH_HAS_NMI_WATCHDOG
-+
-+/* For reliability, we're prepared to waste bits here. */
-+static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
-+
- void arch_trigger_all_cpu_backtrace(void)
- {
- 	int i;
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
