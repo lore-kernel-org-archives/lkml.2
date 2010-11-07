@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834Ab0KGI47 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 03:56:59 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:49352 "EHLO mx3.mail.elte.hu"
+	id S1753885Ab0KGJD7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 04:03:59 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:51291 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751886Ab0KGI46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 03:56:58 -0500
-Date: Sun, 7 Nov 2010 09:56:41 +0100
+	id S1753716Ab0KGJDy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 04:03:54 -0500
+Date: Sun, 7 Nov 2010 10:03:37 +0100
 From: Ingo Molnar <mingo@elte.hu>
 To: Willy Tarreau <w@1wt.eu>
 Cc: Marcus Meissner <meissner@suse.de>, security@kernel.org, mort@sgi.com,
@@ -18,7 +18,7 @@ Cc: Marcus Meissner <meissner@suse.de>, security@kernel.org, mort@sgi.com,
         Thomas Gleixner <tglx@linutronix.de>
 Subject: Re: [Security] [PATCH] kernel: make /proc/kallsyms mode 400 to
  reduce ease of attacking
-Message-ID: <20101107085641.GB23843@elte.hu>
+Message-ID: <20101107090337.GC23843@elte.hu>
 References: <20101104100914.GC25118@suse.de>
  <20101104114648.GA23381@elte.hu>
  <20101104122906.GH25118@suse.de>
@@ -48,24 +48,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Willy Tarreau <w@1wt.eu> wrote:
 
-> > Not an 'arms race' thing where we just put obstruction in the road of attackers 
-> > - but some real, unavoidable risk not detectable by attackers - running on most 
-> > stock distro kernels. (so there would be a real economy of scale)
-> > 
-> > The kerneloops client could also collect exploit attempt stats.
+> > An 'exploit honeypot' would be some small amount of 'detection' code for the 
+> > exploitable pattern of parameters (most attacks come via ioctls so we can add 
+> > detection for known holes without any performance hit), and the kernel would 
+> > warn the sysadmin that an exploit attempt has occured.
 > 
-> Well, in my opinion, either the attacker is remote and you can already get many 
-> info, or he's local and has time to precisely qualify the environment in order not 
-> to leave the slightest trace. [...]
+> If we pollute the ioctl code with all the CVEs we have accumulated over the years, 
+> I bet we'd get a performance hit and will probably introduce new bugs due to the 
+> harder to maintain code.
 
-Your view of how attackers operate is rather simplistic. Knowing the precise 
-environment (via remote or local measures) is a big tactical advantage to them.
+That's just wrong, because it's usually not the same ioctl hit with dozens of CVEs, 
+but lots of CVEs are spread out amongst lots of ioctls. You need to come up with 
+something more concrete than "I bet" to support that claim ;-)
 
-See the very patch we are discussing. People are submitting patches to hide certain 
-pieces of information exactly because that information is an advantage to attackers.
+> > The point is to make it riskier to run exploits - not to 'hide version because 
+> > we are so buggy'. Unprivileged attackers wont be able to know whether a kernel 
+> > is unpatched and wont know whether trying an actual exploit triggers a silent 
+> > alarm or not.
+> 
+> In my opinion, hiding the distro-specific part of the version should not cause too 
+> much harm, but still I find this useless.
+>
+> 
+> You see, I've used the vmsplice exploit at one place. Do you know how I did ? $ 
+> cat /etc/redhat-release
+> 
+> Then I opened the box and installed the DVD showing the same version on a spare PC 
+> to experiment with it. Once I got the exploit to reliably work without crashing 
+> the kernel nor leaving traces, I dared launching it on the target machine and it 
+> worked. Uname -r was not involved there. [...]
 
-And my point is that "if you want to hide information do it effectively - or if it's 
-too hard dont do it at all".
+Sigh, you _still_ have not understood my point and you clearly dont seem to know how 
+honeypots work.
+
+An 'exploit honeypot' kernel feature, on a patched kernel, would at that point warn 
+the admin that local user XXX tried to run an exploit.
+
+The point is that the attacker cannot know whether it's safe to run the exploit on 
+the box (will result in a compromise), or is not safe to run the exploit (the 
+honeypot code will warn the admin).
+
+Uname -r fuzzing is not needed because the attacker 'needs to run it' to compromise 
+a vulnerable system (as you seem to believe). It's done because if the attacker runs 
+it on a _not vulnerable machine_, it keeps him from running the exploit.
+
+In short, it removes the 'is it safe to try this exploit' information from the 
+system - and if there's also a honeypot there, it introduces a real (and if done 
+well enough, undetectable) risk of detection for the attacker.
 
 Thanks,
 
