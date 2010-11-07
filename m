@@ -1,109 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940Ab0KGVmA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 16:42:00 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:22438 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753467Ab0KGVl7 (ORCPT
+	id S1753848Ab0KGVl6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 16:41:58 -0500
+Received: from serrano.cc.columbia.edu ([128.59.29.6]:34565 "EHLO
+	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753467Ab0KGVl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 16:41:59 -0500
-Date: Sun, 7 Nov 2010 22:30:39 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-btrfs@vger.kernel.org
-cc: Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org
-Subject: btrfs: potential null derefs
-Message-ID: <alpine.LNX.2.00.1011062302390.24801@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 7 Nov 2010 16:41:57 -0500
+Message-ID: <4CD71DB4.7050608@cs.columbia.edu>
+Date: Sun, 07 Nov 2010 16:44:20 -0500
+From: Oren Laadan <orenl@cs.columbia.edu>
+Organization: Columbia University
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Lightning/1.0b1 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Gene Cooperman <gene@ccs.neu.edu>
+CC: Matt Helsley <matthltc@us.ibm.com>, Tejun Heo <tj@kernel.org>,
+        Kapil Arya <kapil@ccs.neu.edu>,
+        ksummit-2010-discuss@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, hch@lst.de,
+        Linux Containers <containers@lists.osdl.org>
+Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
+References: <Pine.LNX.4.64.1011021530470.12128@takamine.ncl.cs.columbia.edu> <4CD08419.5050803@kernel.org> <AANLkTinOg6n3ZA+0gHzw9LouRuUmJ7DJwHtABRy5c=gM@mail.gmail.com> <4CD26948.7050009@kernel.org> <20101104164401.GC10656@sundance.ccs.neu.edu> <4CD3CE29.2010105@kernel.org> <20101106053204.GB12449@count0.beaverton.ibm.com> <20101106204008.GA31077@sundance.ccs.neu.edu>
+In-Reply-To: <20101106204008.GA31077@sundance.ccs.neu.edu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+[cc'ing linux containers mailing list]
 
-There are a number of potential NULL pointer dereferences in BTRFS - see 
-below.
+On 11/06/2010 04:40 PM, Gene Cooperman wrote:
 
-Unfortunately I don't know what the best way to deal with these are in 
-BTRFS, so I'll leave the bug fixing to others and stick to just reporting 
-them.
+> 8.  What happens if the DMTCP coordinator ( checkpoint control process) dies?
+>    [ The same thing that happens if a user process dies.  We kill the whole
+>      computation, and restart.  At restart, we use a new coordinator.
+>      Coordinators are stateless. ]
 
+My experience is different:
 
-In fs/btrfs/file.c::btrfs_file_aio_write() we do this:
-...
-	pages = kmalloc(nrptrs * sizeof(struct page *), GFP_KERNEL);
-...[skip lots of lines that don't touch 'pages']...
-		memset(pages, 0, sizeof(struct page *) * nrptrs);
+I downloaded dmtcp and followed the quick-start guide:
+(1) "dmtcp_coordinator" on one terminal
+(2) "dmtcp_checkpoint bash" on another terminal
 
-		ret = btrfs_delalloc_reserve_space(inode, write_bytes);
-		if (ret)
-			goto out;
+Then I:
+(3) pkill -9 dmtcp_coordinator
+... oops - 'bash' died.
 
-		ret = prepare_pages(root, file, pages, num_pages,
-				    pos, first_index, last_index,
-				    write_bytes);
-...
+I didn't even try to take a checkpoint :(
 
-since kmalloc() may fail and return a NULL pointer this could potentially 
-go bad.
-
-Also in fs/btrfs/compression.c::btrfs_submit_compressed_write() there's 
-this:
-...
-	cb = kmalloc(compressed_bio_size(root, compressed_len), GFP_NOFS);
-	atomic_set(&cb->pending_bios, 0);
-	cb->errors = 0;
-...
-
-Which will also dereference a NULL pointer when kmalloc() fails.
-
-and in the same function:
-...
- 	bio = compressed_bio_alloc(bdev, first_byte, GFP_NOFS);
-	bio->bi_private = cb;
-...
-			bio = compressed_bio_alloc(bdev, first_byte, GFP_NOFS);
-			bio->bi_private = cb;
-...
-
-Which are also potential NULL derefs since (at least as far as I can 
-tell) compressed_bio_alloc() can also fail and return NULL.
-
-And then in btrfs_submit_compressed_read() :
-...
-	cb = kmalloc(compressed_bio_size(root, compressed_len), GFP_NOFS);
-	atomic_set(&cb->pending_bios, 0);
-	cb->errors = 0;
-...
-	cb->compressed_pages = kmalloc(sizeof(struct page *) * nr_pages,
-				       GFP_NOFS);
-	bdev = BTRFS_I(inode)->root->fs_info->fs_devices->latest_bdev;
-
-	for (page_index = 0; page_index < nr_pages; page_index++) {
-		cb->compressed_pages[page_index] = alloc_page(GFP_NOFS |
-				      			      __GFP_HIGHMEM);
-	}
-...
-			comp_bio = compressed_bio_alloc(bdev, cur_disk_byte,
-							GFP_NOFS);
-			comp_bio->bi_private = cb;
-...
-
-All 3 risk dereferencing a NULL pointer when the allocations fail.
-
-
-Enjoy ;-)
-
-
-
-PS.
-  Please CC me on replies.
-
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-Plain text mails only, please      http://www.expita.com/nomime.html
-Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
-
+Oren.
