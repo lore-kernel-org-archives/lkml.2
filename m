@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121Ab0KGIEp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 03:04:45 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:51998 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752470Ab0KGIEo (ORCPT
+	id S1753253Ab0KGIWw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 03:22:52 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:55505 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805Ab0KGIWu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 03:04:44 -0500
+	Sun, 7 Nov 2010 03:22:50 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:reply-to:from:date:message-id:subject:to:cc
-         :content-type;
-        b=T+sft7hxHmvRsvGRB4BT0b2cvzs+u3US8l3HYhQYAtK4OUxnWCcIPqMXKiZbS2VtdQ
-         R86bs5VwctvAB0ICbkEH8E1OQFm4CaqoRdFa3uodTpwc1eTkwNoum/BrfqAp9YfHfax1
-         +98ifVPk2InhvQ4kTZu0YMrpIQ5bc8JgUZHa0=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=rXCV727Yz0vlSdVUHkYLa/5NwTWQIMEfA/Ji0N50pp5FVtHSKZissIQ6HYVZ0K/tu7
+         twSUI5z83a0DVrCXXyZYNuUcDTJyM76toMr2tA+gZGdFrpzGAyEf2ECNr+kZq3J4OQ5C
+         2wU+tFqeP/k7AIni4a6gmYRZN6f6srUQw7P5s=
+Date: Sun, 7 Nov 2010 16:24:07 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, debian-kernel@lists.debian.org
+Subject: Re: [PATCH] kbuild, deb-pkg: support overriding userland
+	architecture
+Message-ID: <20101107082407.GO3046@hack>
+References: <4CD5A6C8.8030603@asbjorn.biz> <1289070320-20726-1-git-send-email-asbjorn@asbjorn.biz>
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-From: Michael Kerrisk <mtk.manpages@gmail.com>
-Date: Sun, 7 Nov 2010 09:04:22 +0100
-Message-ID: <AANLkTi=mM2GoL=+umHJ6dDCqa7dNmG3=ra8xDOW4QCEV@mail.gmail.com>
-Subject: Inconsistent credential checking in prlimit() syscall
-To: Neil Horman <nhorman@tuxdriver.com>, Jiri Slaby <jslaby@novell.com>
-Cc: marcin.slusarz@gmail.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Morris <jmorris@namei.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Michael Kerrisk <mtk.manpages@googlemail.com>,
-        Linux API <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289070320-20726-1-git-send-email-asbjorn@asbjorn.biz>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Neil, Jiri,
+On Sat, Nov 06, 2010 at 07:05:20PM +0000, Asbjoern Sloth Toennesen wrote:
+>Usefull if building for sparc64 userland, because the
+>sparc and sparc64 userlands use the same 64-bit kernel,
+>making it impossible to always select the correct userland
+>architecture for the resulting debian package.
+>
+>Might also be usefull, if you want a i386 userland with a amd64 kernel.
+>
+>Example usage:
+>	make DEBARCH=i386 deb-pkg
+>
+>This patch is based on my 'kbuild, deb-pkg: select
+>userland architecture based on UTS_MACHINE' patch.
+>
 
-I  started documenting the prlimit() system call added in 2.6.36, and
-found the permission checks to be rather inconsistent with any other
-kernel-userspace API. They are:
+This is a good idea. :)
 
-CAP_SYS_RESOURCE ||
-(c-uid == t-uid && c0uid == t-euid && c-uid == t-suid) &&
-(c-gid == t-gid && c-gid == t-guid && c-gid == t-sgid)
+Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
 
-(uid == real UID; euid == effective UID; suid == save set-user-ID; and
-analogously for GIDs; c- == caller's ID, and t- == target process's
-ID)
-
-In other words, for an unprivileged user, all UIDs of the target
-process must match the calling process's real UID *and* all GIDs of
-the target process must match the calling process's real GID.
-
-What is the reason that the checks for prlimit() aren't similar to say
-setpriority(), whose checks are the much simpler, and make no mention
-of GIDs:
-
-c-euid == t-uid || c-euid == t-euid
-
-?
-
-Thanks,
-
-Michael
-
-PS see also http://linux-man-pages.blogspot.com/2010/11/system-call-credential-checking-tale-of.html
+Thanks.
 
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
+Live like a child, think like the god.
+ 
