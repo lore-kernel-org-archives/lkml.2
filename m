@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020Ab0KGHjS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 02:39:18 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:45512 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751507Ab0KGHjR (ORCPT
+	id S1752134Ab0KGHlh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 02:41:37 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:33725 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717Ab0KGHlf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 02:39:17 -0500
+	Sun, 7 Nov 2010 02:41:35 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=jmOxBwyz319aCpqt0pphDxD99yKiEdGVf6rnM4NPsKgijyRR5aWGi387aLQFbdyBic
-         HBWurd1AuNFiB2SFgukskt6KzfV8ovb2PgA9GyAf4D3O9s7yUrmtEgAa+vjcsfIqiC5g
-         N3fK9qmds/r/C9sH82H+ueohX5/JIyMDqSHSc=
-Date: Sun, 7 Nov 2010 15:42:13 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: JD <jd1008@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Question/help re: themake scripts in 2.6.36
-Message-ID: <20101107074213.GL3046@hack>
-References: <4CD63067.8010506@gmail.com>
+        h=mime-version:date:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=lKdV+K64A46WBhx8YDaPpcfVm9Z94cvFNMoJDYeT91MsiU/cUw8cZTdwQ235cAXLiw
+         iUKiPEnSj5+Lt7zo0fDjs1/tPrlQPhNwClsm0EuxJoUmmLrOt4JTnwpvDYux3kqq+eVz
+         JJ8Tvnjva5gqrctxV01dR1pzSN5uMnB49zG4Y=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CD63067.8010506@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Date: Sun, 7 Nov 2010 13:41:34 +0600
+Message-ID: <AANLkTimW+GdKZEZdR5DtAp8=D7muTOvVcvuPoiCR2Y2p@mail.gmail.com>
+Subject: [PATCH] x86, hw_nmi: Move backtrace_mask declaration under ARCH_HAS_NMI_WATCHDOG.
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 06, 2010 at 09:51:51PM -0700, JD wrote:
-> I have compiled 2.6.36 (i686) without any problems.
-> Since then, I have decided to change a couple of
-> config variables (using xconfig).
+backtrace_mask has been used under the code context of
+ARCH_HAS_NMI_WATCHDOG. So put it into that context.
+We were warned by the following warning:
+
+arch/x86/kernel/apic/hw_nmi.c:21: warning: ‘backtrace_mask’ defined but not used
 
 
-You can use 'make oldconfig'.
+Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+---
 
-> When done, running make all
-> causes the make scripts to stop compilation after building
-> a few objects, and spawn a shell.
-> Since I have no idea what to do in that shell, I exit
-> that shell, and the compilaton continues.
-> This takes place 3 times before compilation is complete.
->
+diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
+index cefd694..62f6e1e 100644
+--- a/arch/x86/kernel/apic/hw_nmi.c
++++ b/arch/x86/kernel/apic/hw_nmi.c
+@@ -17,15 +17,16 @@
+ #include <linux/nmi.h>
+ #include <linux/module.h>
 
+-/* For reliability, we're prepared to waste bits here. */
+-static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
+-
+ u64 hw_nmi_get_sample_period(void)
+ {
+ 	return (u64)(cpu_khz) * 1000 * 60;
+ }
 
-What? How can make spawn a shell...
-
-Can you copy and paste what you see and what you get
-from your terminal?
-
-> Now, when I type make modules_install install,
-> only modules_install is done. /boot does not get
-> populated and /boot/grub/grub.conf is unchanged.
->
-> The currently installed and running 2.6.36-1
-> went through a similar scenario during build,
-> but at least install did work.
-> Now the install does not work.
-> Befor the present build attempt,
-> I had edited the Makefile to change the EXTRAVERSION to -2
-> in order not to clobber the installed  2.6.36-1
->
-> Could someone tell me what to do to force the install in /boot?
-> /lib/modules does have 2.6.36-2.fc13.i686 fully populated.
->
-
-Since you are using Fedora, you can try grubby or new-kernel-pkg.
-
--- 
-Live like a child, think like the god.
- 
+ #ifdef ARCH_HAS_NMI_WATCHDOG
++
++/* For reliability, we're prepared to waste bits here. */
++static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
++
+ void arch_trigger_all_cpu_backtrace(void)
+ {
+ 	int i;
