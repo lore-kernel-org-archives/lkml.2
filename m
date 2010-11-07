@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab0KGPGG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 10:06:06 -0500
-Received: from cantor.suse.de ([195.135.220.2]:45494 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752938Ab0KGPGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 10:06:03 -0500
-Date: Sun, 7 Nov 2010 16:06:01 +0100
-From: Jan Kara <jack@suse.cz>
-To: Alessio Igor Bogani <abogani@texware.it>
-Cc: Jan Kara <jack@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
-        Christoph Hellwig <hch@infradead.org>, Tim Bird <tim.bird@am.sony.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] udf: Add missed protection for s_lvid_dirty
-Message-ID: <20101107150601.GG5126@quack.suse.cz>
-References: <1289065631-2256-1-git-send-email-abogani@texware.it>
+	id S1753343Ab0KGPYT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 10:24:19 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:34186 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752938Ab0KGPYR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 10:24:17 -0500
+From: Arun Bhanu <arun@bhanu.net>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stefani Seibold <stefani@seibold.net>, Alan Cox <alan@linux.intel.com>,
+        Andi Kleen <ak@linux.intel.com>, Arun Bhanu <arun@bhanu.net>
+Subject: [PATCH] drivers/char/nozomi.c: fix unused variable compiler warning
+Date: Sun,  7 Nov 2010 23:20:55 +0800
+Message-Id: <1289143255-587-1-git-send-email-arun@bhanu.net>
+X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289065631-2256-1-git-send-email-abogani@texware.it>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 06-11-10 18:47:08, Alessio Igor Bogani wrote:
-> As reported in udf_sb.h the udf_sb_infoi's structure member s_lvid_dirty should
-> be protected by s_alloc_mutex. Added that mutex on a couple of places where it
-> miss.
-> 
-> This work was supported by a hardware donation from the CE Linux Forum.
-  Thanks for doing the work! I actually did some work on BKL removal in UDF
-before I learned that you also started working on it. My series is not
-complete and needs testing but the sb-locking is better explained there I
-think so it should address Christoph's comments. So could you maybe base your
-changes on patches I already have?
-  I've pushed the branch with my BKL patches to:
-git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-udf-2.6
-  to branch
-bkl_removal
-  Basically it is missing removal of BKL usage for protection of extents
-in a buffer. I wanted to use inode->i_alloc_sem for that if it won't be too
-ugly, otherwise some fs-private rw semaphore. I specifically didn't want to
-use mutex because that would unnecessarily serialize parallel readers.
+Remove the unused variable argp to fix the following warning.
 
-								Honza
+drivers/char/nozomi.c: In function ‘ntty_ioctl’:
+drivers/char/nozomi.c:1831:8: warning: unused variable ‘argp’
+
+Signed-off-by: Arun Bhanu <arun@bhanu.net>
+---
+ drivers/char/nozomi.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/char/nozomi.c b/drivers/char/nozomi.c
+index dd3f9b1..294d03e 100644
+--- a/drivers/char/nozomi.c
++++ b/drivers/char/nozomi.c
+@@ -1828,7 +1828,6 @@ static int ntty_ioctl(struct tty_struct *tty, struct file *file,
+ 		      unsigned int cmd, unsigned long arg)
+ {
+ 	struct port *port = tty->driver_data;
+-	void __user *argp = (void __user *)arg;
+ 	int rval = -ENOIOCTLCMD;
+ 
+ 	DBG1("******** IOCTL, cmd: %d", cmd);
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.3.2
+
