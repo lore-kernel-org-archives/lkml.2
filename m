@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751908Ab0KGGdk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 01:33:40 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:13686 "EHLO
+	id S1752047Ab0KGGsS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 01:48:18 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:13771 "EHLO
 	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751162Ab0KGGdk (ORCPT
+	with ESMTP id S1751764Ab0KGGsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 01:33:40 -0500
-Date: Sun, 7 Nov 2010 07:22:26 +0100 (CET)
+	Sun, 7 Nov 2010 01:48:18 -0500
+Date: Sun, 7 Nov 2010 07:37:03 +0100 (CET)
 From: Jesper Juhl <jj@chaosbits.net>
-To: Greg Kroah-Hartman <greg@kroah.com>
-cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Florian Schilhabel <florian.c.schilhabel@googlemail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rtl8712: remove unneeded local variable in _malloc in
- osdep_service.h header
-In-Reply-To: <alpine.LNX.2.00.1011070715330.25327@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1011070721331.25327@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1011070715330.25327@swampdragon.chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: Greg Kroah-Hartman <gregkh@suse.de>, David Cross <david.cross@cypress.com>
+Subject: [PATCH] Cypress WestBridge OMAP3430 Kernel Hal: Remove unneeded
+ local variables from alloc functions
+Message-ID: <alpine.LNX.2.00.1011070731380.25327@swampdragon.chaosbits.net>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -25,42 +21,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 7 Nov 2010, Jesper Juhl wrote:
+Hi,
 
-> Hi,
-> 
-> The local variable 'ret' in 
+In 
+drivers/staging/westbridge/astoria/arch/arm/mach-omap2/cyashalomap_kernel.c
+the local variables 'ret_p' are not needed and should just go away.
 
-Arrgh, mixed up two mails I was composing, the above should of course have 
-read "The local variable 'pbuf' in"
+I have no way to test this code, but I believe the change is obviously 
+correct. Please consider it.
 
-> drivers/staging/rtl8712/osdep_service.h::_malloc() is completely unneeded, 
-> so let's remove it.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
-> diff --git a/drivers/staging/rtl8712/osdep_service.h b/drivers/staging/rtl8712/osdep_service.h
->  osdep_service.h |    5 +----
->  1 file changed, 1 insertion(+), 4 deletions(-)
-> 
-> index d1674cd..a6e3f19 100644
-> --- a/drivers/staging/rtl8712/osdep_service.h
-> +++ b/drivers/staging/rtl8712/osdep_service.h
-> @@ -196,10 +196,7 @@ static inline void sleep_schedulable(int ms)
->  
->  static inline u8 *_malloc(u32 sz)
->  {
-> -	u8 *pbuf;
-> -
-> -	pbuf =	kmalloc(sz, GFP_ATOMIC);
-> -	return pbuf;
-> +	return kmalloc(sz, GFP_ATOMIC);
->  }
->  
->  static inline unsigned char _cancel_timer_ex(struct timer_list *ptimer)
-> 
-> 
-> 
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ cyashalomap_kernel.c |   10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/staging/westbridge/astoria/arch/arm/mach-omap2/cyashalomap_kernel.c b/drivers/staging/westbridge/astoria/arch/arm/mach-omap2/cyashalomap_kernel.c
+index a678029..ad0c61d 100644
+--- a/drivers/staging/westbridge/astoria/arch/arm/mach-omap2/cyashalomap_kernel.c
++++ b/drivers/staging/westbridge/astoria/arch/arm/mach-omap2/cyashalomap_kernel.c
+@@ -2127,10 +2127,7 @@ void cy_as_hal_pll_lock_loss_handler(cy_as_hal_device_tag tag)
+  */
+ void *cy_as_hal_alloc(uint32_t cnt)
+ {
+-	void *ret_p;
+-
+-	ret_p = kmalloc(cnt, GFP_ATOMIC);
+-	return ret_p;
++	return kmalloc(cnt, GFP_ATOMIC);
+ }
+ 
+ /*
+@@ -2150,10 +2147,7 @@ void cy_as_hal_free(void *mem_p)
+  */
+ void *cy_as_hal_c_b_alloc(uint32_t cnt)
+ {
+-	void *ret_p;
+-
+-	ret_p = kmalloc(cnt, GFP_ATOMIC);
+-	return ret_p;
++	return kmalloc(cnt, GFP_ATOMIC);
+ }
+ 
+ /*
+
 
 -- 
 Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
