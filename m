@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985Ab0KGCwB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Nov 2010 22:52:01 -0400
-Received: from [196.200.177.4] ([196.200.177.4]:33428 "EHLO
-	servmail.fstbm.ac.ma" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752445Ab0KGCwA (ORCPT
+	id S1753323Ab0KGD0k (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Nov 2010 23:26:40 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:52834 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753018Ab0KGD0j convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Nov 2010 22:52:00 -0400
-X-Greylist: delayed 35082 seconds by postgrey-1.27 at vger.kernel.org; Sat, 06 Nov 2010 22:51:59 EDT
-Message-ID: <49478.41.217.65.11.1289061702.squirrel@mail.fstbm.ac.ma>
-Date: Sat, 6 Nov 2010 16:41:42 -0000 (WET)
-Subject: Can We Trust You?
-From: "Sgt. Brown Richard" <brownrichard10064@yahoo.com.hk>
-Reply-To: brownrichard10024@yahoo.com.hk
-User-Agent: SquirrelMail/1.4.3a-12.EL4.centos4
-X-Mailer: SquirrelMail/1.4.3a-12.EL4.centos4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-fstbm-MailScanner-Information: Please contact the ISP for more information
-X-MailScanner-ID: oA6GfoPa017289
-X-fstbm-MailScanner: Found to be clean
-X-fstbm-MailScanner-From: brownrichard10064@yahoo.com.hk
-To: unlisted-recipients:; (no To-header on input)
+	Sat, 6 Nov 2010 23:26:39 -0400
+Subject: Re: [GIT] HID
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=us-ascii
+From: Jarod Wilson <jarod@wilsonet.com>
+In-Reply-To: <alpine.LNX.2.00.1010240816140.6879@pobox.suse.cz>
+Date: Sat, 6 Nov 2010 23:26:34 -0400
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <436F4442-6174-4A5B-BB7F-5B7678AE5048@wilsonet.com>
+References: <alpine.LNX.2.00.1010232314400.6879@pobox.suse.cz> <AANLkTikc74bA+OPJjhLUHu_mp59L=SKnPTXjPK=E28U5@mail.gmail.com> <alpine.LNX.2.00.1010240816140.6879@pobox.suse.cz>
+To: Jiri Kosina <jkosina@suse.cz>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Oct 24, 2010, at 2:19 AM, Jiri Kosina wrote:
 
+> On Sat, 23 Oct 2010, Jarod Wilson wrote:
+> 
+>>> please pull from 'for-linus' branch at
+>>> 
+>>>  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
+>>> 
+>>> to receive the HID subsystem patches below. Mostly adding support for a
+>>> few new multitouch toys, and improving already existing drivers. Plus some
+>>> bugfixes which were not urgent enough for .36.
+>> 
+>> *cough*
+>> 
+>> https://patchwork.kernel.org/patch/161481/
+>> 
+>> What's a guy gotta do to get that patch merged too? :)
+> 
+> Bah, it's still pending in my TODO folder, sorry for that. I am not really 
+> convinced whether it's the right aproach.
+> 
+> First, I'll go check HUT how much non-standard the usages you are adding 
+> to generic code, are.
 
+Just the four under HID_UP_TIVOVENDOR, I believe. Everything else should be bog-standard.
 
-Dear friend,
+> Perhaps it would satisfy separate driver on the hid 
+> bus?
+> (Second, I hope to shovel all the 'drivers' which only do specialized 
+> mappings into userspace/udev actually).
 
+Yeah, I've heard that mentioned as Coming Soon(tm) for a while now though... ;)
 
-I do hope my email meet you well, I am Sgt.Brown Richard a U.S. Army in
-Iraq . I write you this email to ask for your agreement to receive the sum
-of 30 Million dollars on our behalf. My partner and I need a good partner
-someone we can trust to actualize this venture. The money is from oil
-proceeds and legal. And we are transferring it via the safe passage of a
-diplomatic courier. If you agree,
-
-
-get yourself a deal by replying to: brownrichard10024@yahoo.com.hk  Once you
-receive the funds, you are to take a reward of 30% and keep our part. If
-you have good business plan, you can invest our share too. We seek your
-confidentiality in this business transaction.We await your response and
-wish to furnish you with more comprehensive details.
-
-
-Your buddy,
-
-Sgt. Brown Richard
+Looks like the patch does require trivial massaging to apply now, I could do that and chop out the four vendor-specific usages and resubmit just the parts I believe are entirely in line with the HUT, then try to figure out what all is required on the udev side.
 
 -- 
-This message has been scanned for viruses and
-dangerous content by MailScanner, and is
-believed to be clean.
+Jarod Wilson
+jarod@wilsonet.com
+
+
 
