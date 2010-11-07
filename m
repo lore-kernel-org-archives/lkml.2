@@ -1,107 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751785Ab0KGLhj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 06:37:39 -0500
-Received: from mx01.sz.bfs.de ([194.94.69.103]:14323 "EHLO mx01.sz.bfs.de"
+	id S1751879Ab0KGLmu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 06:42:50 -0500
+Received: from 1wt.eu ([62.212.114.60]:47112 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751540Ab0KGLhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 06:37:37 -0500
-Message-ID: <4CD68F7E.5050407@bfs.de>
-Date: Sun, 07 Nov 2010 12:37:34 +0100
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.14) Gecko/20101013 SUSE/3.0.9 Thunderbird/3.0.9
-MIME-Version: 1.0
-To: Vasiliy Kulikov <segooon@gmail.com>
-CC: kernel-janitors@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Jiri Pirko <jpirko@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] net: packet: fix information leak to userland
-References: <1288545028-16436-1-git-send-email-segooon@gmail.com> <4CCE84E2.9050801@bfs.de> <20101106143911.GA17428@albatros>
-In-Reply-To: <20101106143911.GA17428@albatros>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751687Ab0KGLmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 06:42:49 -0500
+Date: Sun, 7 Nov 2010 12:41:56 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Marcus Meissner <meissner@suse.de>, security@kernel.org, mort@sgi.com,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, fweisbec@gmail.com,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        jason.wessel@windriver.com, tj@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Security] [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of attacking
+Message-ID: <20101107114156.GV4627@1wt.eu>
+References: <20101104135802.GA31416@elte.hu> <20101104141104.GA31753@elte.hu> <20101104143322.GL25118@suse.de> <20101104190804.GA16099@elte.hu> <20101104212920.GA31256@1wt.eu> <20101104215157.GA25128@elte.hu> <20101104223526.GC31236@1wt.eu> <20101107085016.GA23843@elte.hu> <20101107094932.GT4627@1wt.eu> <20101107112709.GA2634@elte.hu>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101107112709.GA2634@elte.hu>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Am 06.11.2010 15:39, schrieb Vasiliy Kulikov:
-> On Mon, Nov 01, 2010 at 10:14 +0100, walter harms wrote:
->>
->>
->> Vasiliy Kulikov schrieb:
->>> packet_getname_spkt() doesn't initialize all members of sa_data field of
->>> sockaddr struct if strlen(dev->name) < 13.  This structure is then copied
->>> to userland.  It leads to leaking of contents of kernel stack memory.
->>> We have to fully fill sa_data with strncpy() instead of strlcpy().
->>>
->>> The same with packet_getname(): it doesn't initialize sll_pkttype field of
->>> sockaddr_ll.  Set it to zero.
->>>
->>> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
->>> ---
->>>  net/packet/af_packet.c |    3 ++-
->>>  1 files changed, 2 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
->>> index 3616f27..0856a13 100644
->>> --- a/net/packet/af_packet.c
->>> +++ b/net/packet/af_packet.c
->>> @@ -1719,7 +1719,7 @@ static int packet_getname_spkt(struct socket *sock, struct sockaddr *uaddr,
->>>  	rcu_read_lock();
->>>  	dev = dev_get_by_index_rcu(sock_net(sk), pkt_sk(sk)->ifindex);
->>>  	if (dev)
->>> -		strlcpy(uaddr->sa_data, dev->name, 15);
->>> +		strncpy(uaddr->sa_data, dev->name, 14);
->>>  	else
->>>  		memset(uaddr->sa_data, 0, 14);
->>
->> if i understand the code correcly the max size for dev->name is IFNAMSIZ.
+On Sun, Nov 07, 2010 at 12:27:09PM +0100, Ingo Molnar wrote:
+> > I don't understand the point you're trying to make with this patch. [...]
 > 
-> For dev->name - IFNAMSIZ, for uaddr->sa_data - 14.
+> It was a simple experiement to support my rather simple argument which you disputed.
+
+OK
+
+> > [...] Obviously we can pretend to be any version, [...]
 > 
+> Ok, it's a pretty cavalier style of arguing that you now essentially turn around 
+> your earlier claim that the 'kernel version is needed at many places' and say what 
+> i've been saying, prefixed with 'obviously' ;-)
 
+Huh ?
 
-did not notice, since uaddr->sa_data should take dev->name this does no look very
-clever. How is the size of  sa_data defined ? Would it hurt when some uses IFNAMSIZ here ?
-Perhaps someone who know more about the network stack can figure out what is actualy done
-with uaddr->sa_data.
-
-looks like a can of worms.
-
-
-In packet_bind_spkt() they will copy a char[15], obviously it is a real problem.
-
-re,
- wh
-
-
->> You can simply that part:
->>
->> memset(uaddr->sa_data, 0, IFNAMSIZ);
->> dev = dev_get_by_index_rcu(sock_net(sk), pkt_sk(sk)->ifindex);
->> if (dev)
->> 	strlcpy(uaddr->sa_data, dev->name, IFNAMSIZ);
+> Yes, it's obvious that the kernel version is not needed for many functional purposes 
+> on a modern distro - and that was my exact point.
 > 
-> This will overflow uaddr->sa_data.  Also I don't see any difficulty to
-> fill the array only once.
-> 
->> you should send that as separate patch.
->> re,
->>  wh
->>
->>
->>>  	rcu_read_unlock();
->>> @@ -1742,6 +1742,7 @@ static int packet_getname(struct socket *sock, struct sockaddr *uaddr,
->>>  	sll->sll_family = AF_PACKET;
->>>  	sll->sll_ifindex = po->ifindex;
->>>  	sll->sll_protocol = po->num;
->>> +	sll->sll_pkttype = 0;
->>>  	rcu_read_lock();
->>>  	dev = dev_get_by_index_rcu(sock_net(sk), po->ifindex);
->>>  	if (dev) {
-> 
-> Thanks,
-> 
+> I cannot think of a single valid case where the proper user-space solution to some 
+> ABI compatibility detail is a kernel version check.
+
+Ingo, I believe you did not read a single line of my previous mail, because I
+precisely gave you counter-examples of that. The first use is simply the user
+running "uname -a" to see if *he* can safely enable feature X or Y which is
+known to be badly broken in some old versions.
+
+> I'd even argue that we want to 
+> keep unprivileged user-space from being able to implement such crappy version checks 
+> ...
+
+I'd say that *YOU* want that despite the fact that on mainstream distros, it
+buys nothing since it's easy to guess the real version anyway as I showed you.
+Don't forget that you proposed this in order to hide symbols from a small set
+of well-known distro kernels. And the most important in my opinion is that it
+does not bring anything to those who are currently victim of exploits : those
+who don't upgrade, because their uptime alone is enough to *know* that the
+vuln you want to exploit is still there.
+
+At some places, your proposal would probably end up with uname being
+chmoded +s so that users stop asking the admin for trivial things. That
+really makes no sense.
+
+Willy
+
