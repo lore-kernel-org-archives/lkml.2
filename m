@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368Ab0KGWHr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 17:07:47 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:52376 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751417Ab0KGWHp (ORCPT
+	id S1752709Ab0KGWIi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 17:08:38 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:22705 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751313Ab0KGWIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 17:07:45 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=lZnLBmXBEDDBTNKmw71wv83b0IbP9NxpO6nqeDvor74hTk16/fsQfpvIsDCUKnzqmX
-         6kCxJjtlylc/shXsQN2vn8M5fgmkXXBt0ybDSQAN2sTDj09qPk1iYxaAM1r5JCPO2Po7
-         JHWdWE8c5A4lG8k6TQFYqapZbjocSDvcvzuQk=
-Date: Mon, 8 Nov 2010 01:07:42 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Stephane Eranian <eranian@google.com>, robert.richter@amd.com,
-        paulus@samba.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        CoreyAshford <cjashfor@linux.vnet.ibm.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [DRAFT PATCH 0/3] perf: Add Intel Nehalem uncore pmu support
-Message-ID: <20101107220742.GL6731@lenovo>
+	Sun, 7 Nov 2010 17:08:37 -0500
+Date: Sun, 7 Nov 2010 22:57:18 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: Ingo Molnar <mingo@redhat.com>, x86@kernel.org
+Subject: [PATCH] x86 apic: Including a header once is enough, no need to do
+ it twice (asm/atomic.h)
+Message-ID: <alpine.LNX.2.00.1011072253360.26247@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 02, 2010 at 03:27:38PM +0800, Lin Ming wrote:
-> Hi, all
-> 
-> Here is the draft patch to add Intel Nehalem uncore pmu support.
-> It's not fully functional, but I threw it out early to get comments.
-> 
 
- Hi Ming, sorry for late response, though there are already a lot
-of comments anyway :) Great job!
+In arch/x86/kernel/apic/apic.c, <asm/atomic.h> is included twice. Once is 
+enough.
 
- Cyrill
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ apic.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 850657d..3f838d5 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -52,7 +52,6 @@
+ #include <asm/mce.h>
+ #include <asm/kvm_para.h>
+ #include <asm/tsc.h>
+-#include <asm/atomic.h>
+ 
+ unsigned int num_processors;
+ 
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
+Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
