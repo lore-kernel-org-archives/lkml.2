@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753862Ab0KGIut (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 03:50:49 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:34027 "EHLO mx3.mail.elte.hu"
+	id S1753834Ab0KGI47 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 03:56:59 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:49352 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753794Ab0KGIur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 03:50:47 -0500
-Date: Sun, 7 Nov 2010 09:50:16 +0100
+	id S1751886Ab0KGI46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 03:56:58 -0500
+Date: Sun, 7 Nov 2010 09:56:41 +0100
 From: Ingo Molnar <mingo@elte.hu>
 To: Willy Tarreau <w@1wt.eu>
 Cc: Marcus Meissner <meissner@suse.de>, security@kernel.org, mort@sgi.com,
@@ -18,7 +18,7 @@ Cc: Marcus Meissner <meissner@suse.de>, security@kernel.org, mort@sgi.com,
         Thomas Gleixner <tglx@linutronix.de>
 Subject: Re: [Security] [PATCH] kernel: make /proc/kallsyms mode 400 to
  reduce ease of attacking
-Message-ID: <20101107085016.GA23843@elte.hu>
+Message-ID: <20101107085641.GB23843@elte.hu>
 References: <20101104100914.GC25118@suse.de>
  <20101104114648.GA23381@elte.hu>
  <20101104122906.GH25118@suse.de>
@@ -48,73 +48,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Willy Tarreau <w@1wt.eu> wrote:
 
-> On Thu, Nov 04, 2010 at 10:51:57PM +0100, Ingo Molnar wrote:
-> > > Quite honnestly, it's the worst idea I've ever read to protect the kernel. Kernel 
-> > > version is needed at many places, when building some code which relies on presence 
-> > > of syscall X or Y depending on a version, etc... [...]
+> > Not an 'arms race' thing where we just put obstruction in the road of attackers 
+> > - but some real, unavoidable risk not detectable by attackers - running on most 
+> > stock distro kernels. (so there would be a real economy of scale)
 > > 
-> > Actually that's not true, since we have a kernel ABI, and since there's many 
-> > backports of newer kernel features into older kernels that it's generally not
-> > needed nor meaningful to know the kernel version for syscalls.
-> > 
-> > Returning -ENOSYS is the general standard we use to communicate syscall 
-> > capabilities.
-> > 
-> > In fact using kernel version to switch around library functionality is a bug i'd 
-> > argue.
+> > The kerneloops client could also collect exploit attempt stats.
 > 
-> I'm sorry Ingo, but I still don't agree. We've had several versions of epoll, 
-> several (some even buggy) versions of splice() which cannot even be detected 
-> without checking the kernel release. And those are just two that immediately come 
-> to my mind. If we've been providing a version for the last 19 years, it surely had 
-> some valid uses.
+> Well, in my opinion, either the attacker is remote and you can already get many 
+> info, or he's local and has time to precisely qualify the environment in order not 
+> to leave the slightest trace. [...]
 
-I'm sorry Willy, but you are mostly wrong - and there's no need to speculate here 
-really. Just try the patch below :-)
+Your view of how attackers operate is rather simplistic. Knowing the precise 
+environment (via remote or local measures) is a big tactical advantage to them.
 
-If your claim that 'kernel version is needed at many places' is true then why am i 
-seeing this on a pretty general distro box bootup:
+See the very patch we are discussing. People are submitting patches to hide certain 
+pieces of information exactly because that information is an advantage to attackers.
 
- [root@aldebaran ~]# uname -a
- Linux aldebaran 2.6.99-tip-01574-g6ba54c9-dirty #1 SMP Sun Nov 7 10:24:38 CET 2010 x86_64 x86_64 x86_64 GNU/Linux
-
-?
-
-Yes, some user-space might be unhappy if we set the version _back_ to say 2.4.0, but 
-we could (as the patch below) fuzz up the version information from unprivileged 
-attackers easily.
-
-_Future_ ABI breakages that necessiate a version check are clearly frowned upon, so 
-this patch could even be considered a debugging feature: it makes it harder to 
-create ABI incompatibilities (at least for unprivileged user-space).
-
-So you can think of version fuzzing also as the ultimate ABI check.
-
-( This is a real defensive measure - here's a reason why attackers try stealth
-  remote fingerprinting of a target system first: they really want to avoid 
-  detection and knowing the exact OS and version of a target tells them which 
-  attacks can be tried with a higher chance of success. Same goes for local attacks 
-  as well.
-
-  And once we have _that_, version fuzzing, removing kallsyms is one of the many 
-  measures we need to use to hide the true version of the kernel from unprivileged 
-  user-space. )
+And my point is that "if you want to hide information do it effectively - or if it's 
+too hard dont do it at all".
 
 Thanks,
 
 	Ingo
-
-Index: linux/Makefile
-===================================================================
---- linux.orig/Makefile
-+++ linux/Makefile
-@@ -1,7 +1,7 @@
- VERSION = 2
- PATCHLEVEL = 6
--SUBLEVEL = 37
--EXTRAVERSION = -rc1
-+SUBLEVEL = 99
-+EXTRAVERSION =
- NAME = Flesh-Eating Bats with Fangs
- 
- # *DOCUMENTATION*
