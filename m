@@ -1,61 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477Ab0KGRHF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 12:07:05 -0500
-Received: from pfepa.post.tele.dk ([195.41.46.235]:60790 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753132Ab0KGRHD (ORCPT
+	id S1753582Ab0KGRIs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 12:08:48 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60951 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629Ab0KGRIr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 12:07:03 -0500
-Date: Sun, 7 Nov 2010 18:07:00 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Ben Gamari <bgamari.foss@gmail.com>
-Cc: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Christoph Egger <siccegge@cs.fau.de>, linux-kernel@vger.kernel.org,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Michal Marek <mmarek@suse.cz>
-Subject: Re: Bus error on make allyesconfig, kernelbuild with HEAD
-Message-ID: <20101107170700.GA22684@merkur.ravnborg.org>
-References: <20100729105225.GA13192@faui48a.informatik.uni-erlangen.de> <AANLkTi=cYgV69VyNZ+TKs_f-+3AJmyo_RaYS57R72j50@mail.gmail.com> <20100729121002.GC13192@faui48a.informatik.uni-erlangen.de> <20100730084353.GB5638@cr0.nay.redhat.com> <87d3qicwxn.fsf@gmail.com> <87aalmcv0p.fsf@gmail.com> <20101106162426.GA14361@merkur.ravnborg.org> <87tyjtjd7m.fsf@gmail.com>
+	Sun, 7 Nov 2010 12:08:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ccgIVEQmqeMqrwej3WRtxVEfwHBPLC9Rkd2fpF2rJ1hmB4aCK7rKOmcTGG/Hg7z/0m
+         3cxESg3yZTkMSj9ZESxzjiJuP3OSDWzDDG3dyH1EAd+8D7usLMx+vCJag5zjh1mwsYRx
+         o0FXdEq7lVhYf3KlfChvioUCqXaXyV7m4PHVM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <87tyjtjd7m.fsf@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20101107165745.GB1759@n2100.arm.linux.org.uk>
+References: <1289147348-31969-1-git-send-email-alchark@gmail.com>
+	<20101107165745.GB1759@n2100.arm.linux.org.uk>
+Date: Sun, 7 Nov 2010 20:08:45 +0300
+Message-ID: <AANLkTimFJ=Brx4pDiUqZOKDfABaDg0s_yFC7EkZGi7D8@mail.gmail.com>
+Subject: Re: [PATCH 1/6 v2] ARM: Add basic architecture support for
+ VIA/WonderMedia 85xx SoC's
+From: Alexey Charkov <alchark@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        Eric Miao <eric.y.miao@gmail.com>,
+        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 07, 2010 at 11:44:13AM -0500, Ben Gamari wrote:
-> On Sat, 6 Nov 2010 17:24:26 +0100, Sam Ravnborg <sam@ravnborg.org> wrote:
-> > Took a quick look.
-> > Does the following patch fix it?
-> > 
-> > if m == p then we will stay in the while look looking for a space.
-> > I did not audit all of the code - there may be other issues..
-> > 
-> P.S. Sorry for the noise
-> 
-> Looks like something very odd is happening here. Seems like stat is
-> giving us the wrong size. As seen below, ls reports the file size to be
-> 5247 whereas st.stat indicates a size substantially larger than
-> that. Output from make with attached patch applied:
-> 
-> $ ls -l scripts/basic/.fixdep.d
-> -rw-r--r-- 1 bgamari bgamari 5247 2010-11-07 11:35 scripts/basic/.fixdep.d
-> $ make V=1
-> In file included from /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/stdlib.h:903,
->                  from scripts/basic/fixdep.c:112:
-> /usr/local/angstrom/arm/arm-angstrom-linux-gnueabi/usr/include/bits/stdlib.h:65: warning: no previous prototype for ‘ptsname_r’
-> file=scripts/basic/.fixdep.d
-> st.size=2ad5f6cecb36
+2010/11/7 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+> On Sun, Nov 07, 2010 at 07:28:52PM +0300, Alexey Charkov wrote:
+>> +static inline void preallocate_fb(struct vt8500fb_platform_data *p,
+>> +                               unsigned long align) {
+>> +     p->video_mem_len = (p->xres_virtual * p->yres_virtual * 4) >>
+>> +                     (p->bpp > 16 ? 0 : (p->bpp > 8 ? 1 :
+>> +                                     (8 / p->bpp) + 1));
+>> +     p->video_mem_phys = (unsigned long)memblock_alloc(p->video_mem_len,
+>> +                                                       align);
+>> +     p->video_mem_virt = phys_to_virt(p->video_mem_phys);
+>> +}
+> ...
+>> +void __init vt8500_map_io(void)
+>> +{
+>> +     wmt_current_regs = &wmt_regmaps[VT8500_INDEX];
+>> +     wmt_current_irqs = &wmt_irqs[VT8500_INDEX];
+>> +     set_data();
+>> +#ifdef CONFIG_FB_VT8500
+>> +     panels[current_panel_idx].bpp = 16; /* Always use RGB565 */
+>> +     preallocate_fb(&panels[current_panel_idx], SZ_4M);
+>> +     vt8500_device_lcdc.dev.platform_data = &panels[current_panel_idx];
+>> +#endif
+>> +     iotable_init(vt8500_io_desc, ARRAY_SIZE(vt8500_io_desc));
+>> +}
+> ...
+>> +void __init wm8505_map_io(void)
+>> +{
+>> +     wmt_current_regs = &wmt_regmaps[WM8505_INDEX];
+>> +     wmt_current_irqs = &wmt_irqs[WM8505_INDEX];
+>> +     set_data();
+>> +#ifdef CONFIG_FB_WM8505
+>> +     panels[current_panel_idx].bpp = 32; /* Always use RGB888 */
+>> +     preallocate_fb(&panels[current_panel_idx], 32);
+>> +     vt8500_device_wm8505_fb.dev.platform_data = &panels[current_panel_idx];
+>> +#endif
+>> +     iotable_init(vt8500_io_desc, ARRAY_SIZE(vt8500_io_desc));
+>> +}
+>
+> I'd much prefer that the allocation of memblock memory is done via the
+> 'reserve' machine callback, rather than trying to group it into the IO
+> mapping callback.  Is there a reason it can't be?
+>
 
-Interesting and valueable information!
+I believe it can. Thanks for the info, I just didn't know about that.
+Will fix this shortly.
 
-Looks like fstat() failed for some odd reason
-Could you try to check the return value of fstat().
-
-If it retruns less than 0 then print out errno (preferable using perror()).
-
-	Sam
+Is it OK to leave resources assignment in map_io or is there a better
+place to do that as well?
