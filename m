@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab0KGVPM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 16:15:12 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:60092 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753289Ab0KGVPJ (ORCPT
+	id S1753361Ab0KGVQE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 16:16:04 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:22133 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753128Ab0KGVQC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 16:15:09 -0500
-From: Stefan Weil <weil@mail.berlios.de>
-Cc: Stefan Weil <weil@mail.berlios.de>, Ashish Gupta <asg@thelearninglabs.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Blackfin: Fix spelling in unused code (struct name)
-Date: Sun,  7 Nov 2010 22:14:53 +0100
-Message-Id: <1289164493-9124-1-git-send-email-weil@mail.berlios.de>
-X-Mailer: git-send-email 1.7.2.3
-X-Provags-ID: V02:K0:iA5ruCx+4zpwSFcYDaSWRuZNEbKOYnCayq374KNgzTQ
- 4yBB11/AkYBtlgGjVffKQ4GSnciQXZpW/aAn55vAaG5IJz1MdC
- HiMjAG8fzUPEPPcu3rGZXF4NrU1mTEmTrUjMf8gm4ephMSdht9
- R35My33QAfdds9R+pxGV257Zp8fr4rse+hk7h458GhbGKB5SYL
- uwc2Q524dd4vrmtxVYMxIfnk+S+RIl2nz+WUoVKL2tXaLOWFQ1
- uHci4nm5aOj9E
-To: unlisted-recipients:; (no To-header on input)
+	Sun, 7 Nov 2010 16:16:02 -0500
+Date: Sun, 7 Nov 2010 22:04:43 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-usb@vger.kernel.org
+cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] UWB: Return UWB_RSV_ALLOC_NOT_FOUND rather than crashing on
+ NULL dereference if kzalloc fails
+Message-ID: <alpine.LNX.2.00.1011072158211.26247@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-platfrom -> platform
+Hi,
 
-This changes a struct name. The related code is conditionally
-compiled and won't work because the include file linux/gpio-decoder.h
-is missing, so removing this code would be an even better solution.
+Crashing on a null pointer deref is never a nice thing to do. It seems to 
+me that it's better to simply return UWB_RSV_ALLOC_NOT_FOUND if kzalloc() 
+fails in uwb_rsv_find_best_allocation().
 
-If the missing include file is added, it must fix the spelling, too.
+I may be wrong since I have no way to test this (except compile test) and 
+this is unknown code to me, so please review carefully.
 
-Cc: Ashish Gupta <asg@thelearninglabs.com>
-Cc: Mike Frysinger <vapier@gentoo.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: uclinux-dist-devel@blackfin.uclinux.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Stefan Weil <weil@mail.berlios.de>
+Please CC me on replies.
+
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- arch/blackfin/mach-bf527/boards/tll6527m.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ allocator.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/blackfin/mach-bf527/boards/tll6527m.c b/arch/blackfin/mach-bf527/boards/tll6527m.c
-index 9ec5757..89ae87b 100644
---- a/arch/blackfin/mach-bf527/boards/tll6527m.c
-+++ b/arch/blackfin/mach-bf527/boards/tll6527m.c
-@@ -193,7 +193,7 @@ static unsigned gpio_addr_inputs[] = {
- 	GPIO_PG1, GPIO_PH9, GPIO_PH10
- };
+diff --git a/drivers/uwb/allocator.c b/drivers/uwb/allocator.c
+index 436e4f7..e45e673 100644
+--- a/drivers/uwb/allocator.c
++++ b/drivers/uwb/allocator.c
+@@ -326,7 +326,8 @@ int uwb_rsv_find_best_allocation(struct uwb_rsv *rsv, struct uwb_mas_bm *availab
+ 	int bit_index;
  
--static struct gpio_decoder_platfrom_data spi_decoded_cs = {
-+static struct gpio_decoder_platform_data spi_decoded_cs = {
- 	.base		= EXP_GPIO_SPISEL_BASE,
- 	.input_addrs	= gpio_addr_inputs,
- 	.nr_input_addrs = ARRAY_SIZE(gpio_addr_inputs),
+ 	ai = kzalloc(sizeof(struct uwb_rsv_alloc_info), GFP_KERNEL);
+-	
++	if (!ai)
++		return UWB_RSV_ALLOC_NOT_FOUND;
+ 	ai->min_mas = rsv->min_mas;
+ 	ai->max_mas = rsv->max_mas;
+ 	ai->max_interval = rsv->max_interval;
+
+
 -- 
-1.7.2.3
+Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
+Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
 
