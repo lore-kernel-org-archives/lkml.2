@@ -1,177 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752343Ab0KGTcI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 14:32:08 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54956 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752121Ab0KGTcH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 14:32:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=jiY7InHuw1/UiUTB9MP+Nx9hJaVsdEQSGN8ggHU9kFbtu7lQkiwaGx0xnVKkEGnyNg
-         P9w1RxBbnKY2elxJFBBQ/sg64WMPvqwOVt5kwi1+mIpya+y3iRow9IfHbpibLhAnLg7h
-         9aDOcqnW6yqwwEEEgaQLclkM8lR5Qlte3OLGI=
+	id S1752320Ab0KGTfW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 14:35:22 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:56600 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751232Ab0KGTfV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 14:35:21 -0500
+Date: Sun, 7 Nov 2010 11:35:20 -0800
+From: Kees Cook <kees.cook@canonical.com>
+To: linux-kernel@vger.kernel.org
+Subject: [Security] proactive defense: using read-only memory
+Message-ID: <20101107193520.GO5327@outflux.net>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikbsU+SGAaoq_oek=7tfDdjg+0wFoydhA+K9ZU+@mail.gmail.com>
-References: <AANLkTim6WTCChWGbTb-PUGd2AERGibeRtgan-WDznf2s@mail.gmail.com>
-	<4CD6B7FA.3050005@redhat.com>
-	<AANLkTikbsU+SGAaoq_oek=7tfDdjg+0wFoydhA+K9ZU+@mail.gmail.com>
-Date: Sun, 7 Nov 2010 20:32:05 +0100
-Message-ID: <AANLkTinna7BiGHogXnn1iEG6ccUAjFM3p3S3aHpv=h-E@mail.gmail.com>
-Subject: Re: [PATCH] DM-CRYPT: Scale to multiple CPUs v3 on 2.6.37-rc* ?
-From: Matt <jackdachef@gmail.com>
-To: Milan Broz <mbroz@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, dm-devel@redhat.com,
-        htd@fancy-poultry.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 7, 2010 at 6:49 PM, Matt <jackdachef@gmail.com> wrote:
-> On Sun, Nov 7, 2010 at 3:30 PM, Milan Broz <mbroz@redhat.com> wrote:
->>
->> On 11/06/2010 11:16 PM, Matt wrote:
->>> before diving into testing out 2.6.37-rc* kernels I wanted to make
->>> sure that the patch:
->>>
->>> [dm-devel] [PATCH] DM-CRYPT: Scale to multiple CPUs v3
->>>
->>> is safe to use with e.g. >2.6.37-rc1 kernels
->>>
->>> I know that it's not a "fix all" patch but it significantly seems to
->>> speed up my backup jobs (by factor 2-3)
->>> and 2.6.37* has evolved that much that interactivity isn't hurt too much
->>
->> yes, it should work for the simple mappings without problems.
->>
->> I hope we will fix the patch soon to be ready for upstream.
->>
->> Milan
->>
->
-> Hi Milan,
->
-> thanks for your answer !
->
-> Unfortunately I have to post a "Warning" that it's currently not safe
-> (at least for me) to use it
->
-> a few hours ago before 2.6.37-rc1 was tagged I already had shortly
-> tested it with the dm-crypt multi-cpu patch and massive "silent" data
-> corruption or loss occured:
->
-> fortunately I don't/didn't see any data-corruption on my /home
-> partition (yet) but everytime I boot into my system things are screwed
-> up on the root-partition, e.g.:
->
-> where
-> eselect opengl list would show
->>Available OpenGL implementations:
->>  [1]   ati *
->>  [2]   xorg-x11
->
-> normally it's
->>cat /etc/env.d/03opengl
->># Configuration file for eselect
->># This file has been automatically generated.
->>LDPATH="/usr/lib32/opengl/ati/lib:/usr/lib64/opengl/ati/lib"
->>OPENGL_PROFILE="ati"
->
->
-> it currently says:
->
->>eselect opengl list
->>Available OpenGL implementations:
->>  [1]   ati
->>  [2]   xorg-x11
->
->
->>cat /etc/env.d/03opengl
->># Configuration file for eselect
->
-> and another example was a corrupted /etc/init.d/killprocs
->
-> so since this (a corrupted killprocs) already had happened in the past
-> (last time due to a hardlock with fglrx/amd's catalyst driver) I
-> thought it was some kind of system problem which could be fixed:
-> I fired up a rebuild-job (emerge -e system) for my system and (surely)
-> some other stuff disappeared - after 2-3 reboots I wanted to continue
-> finishing the rebuild and gcc was gone (!)
->
-> I don't have the time to re-test everything since this is my testing &
-> production machine (I'll play back a system-backup tarball) but this
-> didn't happen (yet) with 2.6.36 and
-> the following patches related to multi-cpu dm-crypt:
->
-> * [dm-devel] [PATCH] DM-CRYPT: Scale to multiple CPUs v3
-> * [PATCH] Use generic private pointer in per-cpu struct
->
-> so it seems to be safe.
->
-> It has to be changes which got introduced with 2.6.37* which broke
-> stuff. 2.6.36 seems to work perfectly fine with those 2 patches since
-> several days already
->
-> I'll stick with 2.6.36 for some time now
->
-> Thanks !
->
-> Matt
->
+Hi,
 
-sorry - I forgot to include the most important part:
+While Dan Rosenberg is working to make things harder to locate potential
+targets in the kernel through fixing kernel address leaks[1], I'd like
+to approach a related proactive security measure: enforcing read-only
+memory for things that would make good targets.
 
-the system-partition is on an LVM/Volume Group that sits on an
-cryptsetup partition so:
+The proposal is simple: as much of the kernel should be read-only as
+possible, most especially function pointers and other execution control
+points, which are the easiest target to exploit when an arbitrary kernel
+memory write becomes available[2] to an attacker. There has been past work
+to "const"ify function pointer tables, and this should continue. However,
+there are a few things that need further attention:
 
-cryptsetup (luks) -> LVM/Volume Group (2 partitions, one of them
-system - the other swap) -> system (ext4)
+- Modules need to be correctly marked RO/NX. This patch exists[3], but is
+  not in mainline. It needs to be in mainline.
 
-[cryptsetup -> LVM -> ext4-partition]
+- Pointers to function table also need to be marked read-only after
+  they are set. An example of this is the security_ops table pointer. It
+  gets set once at boot, and never changes again. These need to be handled
+  so it isn't possible to just trivially reaim the entire security_ops
+  table lookup somewhere else.
 
-the mount-options were/are:
+- Architectures besides just x86 need to be considered.
 
-noatime,nodiratime,barrier=1
+- Entry points to set_kernel_text_rw() and similar need to be blockable.
+  Having these symbols available make kernel memory modification trivial;
+  there needs to be a way to disable these features for people that want
+  to harden their kernel further (though it obviously breaks things like
+  ftrace, ksplice, etc, but that should be the admin's choice).
 
-sometimes also
+The PaX solution[4] to most of this is to rearrange the loader and memory
+sections of the kernel to make use of .rodata fully. For function table
+pointers (and other critical things like GDT) that are less commonly
+changed, PaX uses a simple approach of just disabling write-protection
+when changing variables. For example:
 
-noatime,nodiratime,barrier=1,commit=600
-(when the system runs for several hours to make it consume less
-energy/write less)
+    pax_open_kernel();
+    security_ops = &default_security_ops;
+    pax_close_kernel();
 
-the other settings are:
+And pax_(open|close)_kernel() are _inline_ functions so that
+return-oriented-programming attacks cannot leave the system with
+write-protection disabled:
 
-echo "3000" > /proc/sys/vm/dirty_expire_centisecs
-echo "1500"  > /proc/sys/vm/dirty_writeback_centisecs
-echo "15" > /proc/sys/vm/dirty_background_ratio
-echo "50"   > /proc/sys/vm/dirty_ratio
-echo "50" > /proc/sys/vm/vfs_cache_pressure
+static inline unsigned long native_pax_open_kernel(void)
+{
+   unsigned long cr0;
 
-i/o scheduler: cfq
+   preempt_disable();
+   barrier();
+   cr0 = read_cr0() ^ X86_CR0_WP;
+   BUG_ON(unlikely(cr0 & X86_CR0_WP));
+   write_cr0(cr0);
+   return cr0 ^ X86_CR0_WP;
+}
 
-as already mentioned - this problem didn't appear or wasn't noticable
-(yet) with or until 2.6.36 - my system-memory should also be
-error-free (tested via memtest86), the harddisk too (previously tested
-several times via badblocks without errors)
+And finally, we'll need to go through and address the remaining missing
+"const" needs. My intention is to try to get through all these kinds of
+changes, but it is going to need the help and understanding of many
+subsystem maintainers. Hardening the kernel against manipulation is a win
+for everyone. I'd like to try to move this forward, but I'd really
+appreciate getting help with it; this will only be successful if people are
+on board with it.
 
-during every shutdown, reboot, hibernate, etc.
+Thanks,
 
-I do a manual:
+-Kees
 
-sync && sdparm -C sync /dev/foo
+P.S. If anyone would like to help us try to get more pieces of PaX and
+grsecurity into mainline, please choose a thing you'd like to drive
+forward, sign up[5] for it, and get to working on it.
 
-to make sure data gets to the partition
 
-I read about barrier-problems and data getting to the partition when
-using dm-crypt and several layers so I don't know if that could be
-related
+[1] http://marc.info/?l=linux-netdev&m=128907432600565&w=2
+    http://marc.info/?t=128907683400002&r=1&w=2
 
-Regards
+[2] proactive security assumes there will be future kernel security
+    vulnerabilities and seeks to harden the system against exploitation.
+    For evidence of the steady stream of vulnerabilities, see:
+    http://lwn.net/Articles/410606/
 
-Matt
+[3] http://git.kernel.org/?p=linux/kernel/git/x86/linux-2.6-tip.git;a=commitdiff;h=65187d24fa3ef60f691f847c792e8eaca7e19251
+
+[4] http://grsecurity.net/test.php
+    This feature is specifically "CONFIG_PAX_KERNEXEC".
+
+[5] https://wiki.ubuntu.com/SecurityTeam/Roadmap/KernelHardening#Upstream%20Hardening
+
+-- 
+Kees Cook
+Ubuntu Security Team
