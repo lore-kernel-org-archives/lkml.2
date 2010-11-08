@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755618Ab0KHV7H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 16:59:07 -0500
-Received: from mga11.intel.com ([192.55.52.93]:65012 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755266Ab0KHV7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 16:59:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,170,1288594800"; 
-   d="scan'208";a="855447311"
-Message-ID: <4CD872A6.1020903@linux.intel.com>
-Date: Mon, 08 Nov 2010 13:59:02 -0800
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	id S1755745Ab0KHV7b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 16:59:31 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:59798 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755693Ab0KHV7a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 16:59:30 -0500
+Date: Mon, 8 Nov 2010 16:59:27 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Jason Wessel <jason.wessel@windriver.com>
+cc: gregkh@suse.de, USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        <kgdb-bugreport@lists.sourceforge.net>,
+        Alan Cox <alan@linux.intel.com>, Oliver Neukum <oliver@neukum.org>
+Subject: Re: [RFC PATCH 1/5] usb-hcd: implement polling a specific usb device
+In-Reply-To: <4CD85575.2080305@windriver.com>
+Message-ID: <Pine.LNX.4.44L0.1011081650090.1340-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Eric Dumazet <eric.dumazet@gmail.com>, John Kacur <jkacur@redhat.com>
-Subject: Re: [PATCH V3] futex: add futex_q static initializer
-References: <1289250770-16533-1-git-send-email-dvhart@linux.intel.com> <1289252428-18383-1-git-send-email-dvhart@linux.intel.com> <alpine.LFD.2.00.1011082247160.2900@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1011082247160.2900@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2010 01:48 PM, Thomas Gleixner wrote:
-> On Mon, 8 Nov 2010, Darren Hart wrote:
+On Mon, 8 Nov 2010, Jason Wessel wrote:
 
->>   /*
->>    * Hash buckets are shared by all the futex_keys that hash to the same
->>    * location.  Each key may have multiple futex_q structures, one for each task
->> @@ -1751,7 +1757,6 @@ static int futex_wait_setup(u32 __user *uaddr, u32 val, unsigned int flags,
->>   	 * rare, but normal.
->>   	 */
->>   retry:
->> -	q->key = FUTEX_KEY_INIT;
->
-> You sure about that one in the retry path ?
->
->> @@ -1906,11 +1907,7 @@ static int futex_lock_pi(u32 __user *uaddr, unsigned int flags, int detect,
->>   		hrtimer_set_expires(&to->timer, *time);
->>   	}
->>
->> -	q.pi_state = NULL;
->> -	q.rt_waiter = NULL;
->> -	q.requeue_pi_key = NULL;
->>   retry:
->> -	q.key = FUTEX_KEY_INIT;
->
-> Ditto
+> > Let's put it this way: Your polling mechanism has conflated two 
+> > separate issues.  The matter of polling the host controller driver is 
+> > distinct from the question of which URBs to stick on the queue.
+> > 
+> > While kdb is running, it makes sense to give back only the URBs that 
+> > are for the console device.  But if you are polling during the normal 
+> > operation of printk and the usb serial console, then there's no reason 
+> > not to give back all the URBs that complete during polling.
+> > 
+> 
+> That is an interesting way to look at things...  You metioned I
+> conflated to issues, but in my mind they were the same (kdb vs printk
+> requiremetns).  I just figured we should do the minimum possible when
+> trying to exec a printk() because we want it to be as reliable as
+> possible.  I had the following example in mind where a usb camera
+> driver executes a pile of printk()'s and the poll kicks in, we would
+> only like the completion handler to run for the usb serial device and
+> to defer the rest.
 
-Yes, these are fine. get_futex_key (called immediately after retry: in 
-both cases) will set the mm or inode or error out. On error we return 
-immediately. No need to zero both.ptr.
+It's true that drivers might not expect URB completions to occur in the
+middle of a printk.  Particularly on UP systems with interrupts
+disabled!  And there is always a possibility of deadlock: If an URB
+completion handler takes a spinlock and then calls printk, draining the
+queue could end up waiting on the same spinlock.  But of course the
+same thing would happen regardless of whether or not URBs are deferred
+via the queue.
 
-Thanks,
+It seems clear that you don't want to drain the queue while kdb is 
+running, so the usb serial console code shouldn't do it.  This in turn 
+implies that when polling during normal console operation, URBs should 
+not be put on the queue.  Try doing things that way and see if you run 
+into trouble.
 
--- 
-Darren Hart
-Embedded Linux Kernel
+> What about the printk() case though?  My argument for queuing and
+> scheduling was to minimize the ability that printk() will get deferred
+> by something else.
+
+I don't think giving back URBs at the end of a printk is any better 
+than giving them back in the middle of a printk.  For example, consider 
+the case where there are two printk statements in a row.
+
+The place you will really run into trouble is if the driver for the 
+USB console serial device includes a printk in its completion handler!
+
+Alan Stern
+
