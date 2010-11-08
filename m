@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab0KHLin (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 06:38:43 -0500
-Received: from dallas.jonmasters.org ([72.29.103.172]:54570 "EHLO
-	dallas.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754492Ab0KHLim (ORCPT
+	id S1754724Ab0KHLke (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 06:40:34 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:46092 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754492Ab0KHLkd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 06:38:42 -0500
-Subject: Re: [bisected] offset display bug in i915
-From: Jon Masters <jonathan@jonmasters.org>
-To: James Courtier-Dutton <james.dutton@gmail.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTinOeu28+uJ=4KwKtn5CPZJyo=VuyhvuNUOgbe+L@mail.gmail.com>
-References: <1289211512.3916.383.camel@constitution.bos.jonmasters.org>
-	 <b9dded$h0q3am@orsmga002.jf.intel.com>
-	 <1289213695.3916.396.camel@constitution.bos.jonmasters.org>
-	 <AANLkTinOeu28+uJ=4KwKtn5CPZJyo=VuyhvuNUOgbe+L@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: World Organi[sz]ation of Broken Dreams
-Date: Mon, 08 Nov 2010 06:38:55 -0500
-Message-ID: <1289216335.3916.407.camel@constitution.bos.jonmasters.org>
+	Mon, 8 Nov 2010 06:40:33 -0500
+Date: Mon, 8 Nov 2010 11:38:53 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: <ilkka.koskinen@nokia.com>
+Cc: <linux-input@vger.kernel.org>, <dmitry.torokhov@gmail.com>,
+        <linux-kernel@vger.kernel.org>,
+        <spi-devel-general@lists.sourceforge.net>
+Subject: Re: [PATCH] input: spi: Driver for SPI data stream driven vibrator
+Message-ID: <20101108113853.772b960e@lxorguk.ukuu.org.uk>
+In-Reply-To: <F80267346F10C541946CBE8909F1C39E36817A8845@NOK-EUMSG-02.mgdnok.nokia.com>
+References: <1288013463-21722-1-git-send-email-ilkka.koskinen@nokia.com>
+	<20101107235157.728ea5b6@lxorguk.ukuu.org.uk>
+	<F80267346F10C541946CBE8909F1C39E36817A8845@NOK-EUMSG-02.mgdnok.nokia.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 74.92.29.237
-X-SA-Exim-Mail-From: jonathan@jonmasters.org
-X-SA-Exim-Scanned: No (on dallas.jonmasters.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-08 at 11:33 +0000, James Courtier-Dutton wrote:
-> On 8 November 2010 10:54, Jon Masters <jonathan@jonmasters.org> wrote:
+On Mon, 8 Nov 2010 12:08:07 +0100
+<ilkka.koskinen@nokia.com> wrote:
+
+> Hi,
+> 
+> >From: ext Alan Cox [mailto:alan@lxorguk.ukuu.org.uk]
+> >Sent: 08 November, 2010 01:52
 > >
-> > Here is the EDID output after booting:
+> >> +	datalen = p->custom_len * sizeof(p->custom_data[0]);
 > >
-> > [jcm@monticello ~]$ hexdump /sys/class/drm/card0-LVDS-1/edid
-> > 0000000 ff00 ffff ffff 00ff 6422 03e9 8544 0001
-> > 0000010 141c 0301 1680 780d 860a 9426 5157 2790
-> > 0000020 4f21 0054 0000 0101 0101 0101 0101 0101
-> > 0000030 0101 0101 0101 1194 b000 5840 2019 2335
-> > 0000040 0045 81dc 0000 1900 1416 d800 5840 2026
-> > 0000050 235d 0415 81dc 0000 0000 0000 fe00 0000
-> > 0000060 0000 0000 0000 0000 0000 0000 0000 fe00
-> > 0000070 0000 0000 0000 0000 0100 0000 0000 f200
-> > 0000080
+> >signed
 > >
-> hexdump -C  is a little easier to read and compare with other hexdumps.
+> >> +	if (datalen > MAX_EFFECT_SIZE) {
+> >
+> >unsigned
+> 
+> It should be unsigned. I'll fix it.
+> 
+> >> +	memcpy(einfo->buf, p->custom_data, datalen);
+> >
+> >ungood
+> 
+> Yep, that's clearly wrong too. Should be copy_from_user() I suppose.
 
-Yea, but I already ran edid-decode for Chris.
+That I hadn't considered - and I'm not sure whether the caller is passed
+a kernel copy or not. The problem I was looking at was just the signed
+case
 
-Chris: I suggest your idea of hacking up edid-decode to also take
-hexdumps is a good idea for the future. That way you can feed it the
-output from xrandr, or from people who like me don't realize that it's
-preferred to post the interpreted output.
+	datalen < 0
+	if (datalen > MAX ..)
+		Nope
 
-Jon.
-
+	memcpy(kernel, mysource, vastly more than intended (unsigned))
 
