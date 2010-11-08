@@ -1,35 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754639Ab0KHOBB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 09:01:01 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:33875 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753803Ab0KHOBA (ORCPT
+	id S1754688Ab0KHOCC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 09:02:02 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58516 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753803Ab0KHOCA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 09:01:00 -0500
-Date: Mon, 8 Nov 2010 13:59:40 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: linux-kernel@vger.kernel.org, security@kernel.org
-Subject: Re: [PATCH RFC] Restrictions on module loading
-Message-ID: <20101108135940.64844587@lxorguk.ukuu.org.uk>
-In-Reply-To: <1289219016.10229.14.camel@dan>
-References: <1289179439.3090.205.camel@Dan>
-	<20101108102013.0861725b@lxorguk.ukuu.org.uk>
-	<1289219016.10229.14.camel@dan>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 8 Nov 2010 09:02:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=OOKrkurLNBiyCNnYS/Ukpvu2SEuNUbuHjEYTxN/93aG9RUIC22I5NKpFlw0qjrKVdh
+         Lr2SbCjfdjG+Tdgmrs+IkWdq8br2wcngOhIGfzRapT1SiIZ5xucZKa/TmS0vbOh9Q6dV
+         Pi7QgLJza03JFq9mUNadcFzV1xlmBvaT6yjsM=
+Message-ID: <4CD802B4.1040704@gmail.com>
+Date: Mon, 08 Nov 2010 15:01:24 +0100
+From: Thomas Weber <thomas.weber.linux@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101104 Lightning/1.0b2 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Manuel Stahl <manuel.stahl@iis.fraunhofer.de>
+CC: linux-serial@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <greg@kroah.com>, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH resend] Add sc16is7x2 driver
+References: <4CAD818B.2070603@iis.fraunhofer.de>
+In-Reply-To: <4CAD818B.2070603@iis.fraunhofer.de>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> As far as I can tell, modules_disabled was first included in 2.6.31, so
-> it's hardly what I'd call "long standing".  However, I see your point -
+Am 07.10.2010 10:15, schrieb Manuel Stahl:
+> This patch adds support for the sc16is7x2 SPI to UART chips.
+> Each chip has two UARTs and 8 GPIOs.
 
-One year, two months, plus shipped in numerous major distributions.
-That's long standing in the Linux world.
+Hello Manuel,
 
-Alan
+can you send the patch inline?
+
+Why you check in your probe function the gpio_base but not the uart_base?
+
+
+Thomas
+
+
+
