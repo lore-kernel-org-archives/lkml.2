@@ -1,34 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754799Ab0KHOu4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 09:50:56 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:55467 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752627Ab0KHOuz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 09:50:55 -0500
-Date: Mon, 8 Nov 2010 09:50:54 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [RFCv3 10/21] tcm: Add SPC-4 compliant Persistent Reservations
- (PR)
-Message-ID: <20101108145054.GA1295@infradead.org>
-References: <1287441467-19915-1-git-send-email-nab@linux-iscsi.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287441467-19915-1-git-send-email-nab@linux-iscsi.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1754823Ab0KHOvs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 09:51:48 -0500
+Received: from sh.osrg.net ([192.16.179.4]:42443 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752627Ab0KHOvr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 09:51:47 -0500
+Date: Mon, 8 Nov 2010 23:50:47 +0900
+To: hch@infradead.org
+Cc: nab@linux-iscsi.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, fujita.tomonori@lab.ntt.co.jp,
+        michaelc@cs.wisc.edu, hch@lst.de, hare@suse.de,
+        James.Bottomley@suse.de, axboe@kernel.dk, bharrosh@panasas.com
+Subject: Re: [RFCv3 00/21] TCM Core and TCM_Loop patches for v2.6.37
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20101108143307.GA22121@infradead.org>
+References: <1287441313-19703-1-git-send-email-nab@linux-iscsi.org>
+	<20101108143307.GA22121@infradead.org>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20101108234328C.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 08 Nov 2010 23:50:50 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gcc on 32-bit x86 doesn't seem too happy about the stack usage here:
+On Mon, 8 Nov 2010 09:33:07 -0500
+Christoph Hellwig <hch@infradead.org> wrote:
 
-drivers/target/target_core_pr.c: In function '__core_scsi3_update_aptpl_buf':
-drivers/target/target_core_pr.c:1955: warning: the frame size of 1116 bytes is larger than 1024 bytes
+> I promised you and James to get back to a throughout review for more
+> than just the backends.  It's still in progress, but here is what I
+> think is most important:
 
+Agreed about all the comments. I complained about similar issues
+publicly and privately.
+
+btw, when I'm back to Japan, I resume to work on the ibmvscsis driver.
+
+
+>  - Sort of the the namepspace for both the file names and function
+>    names.  I think you reluctantly agreed to do that a while ago anyway,
+>    but I think it's time to bite the bullet now.  Please agree on a
+>    common prefix for both function names and modules.  I think the
+>    target name in the directory structure is the best one, but I really
+>    don't care too much.  The transport_ prefix used in some code is
+>    really misleading, and the se_ in other isn't too helpful either.
+
+Agreed. And as I said, we definitely need to fix the module names
+before the mainline inclusion.
