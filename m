@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119Ab0KHHlc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 02:41:32 -0500
-Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:46006 "EHLO
+	id S1754156Ab0KHHld (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 02:41:33 -0500
+Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:56480 "EHLO
 	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754025Ab0KHHl3 (ORCPT
+	with ESMTP id S1751789Ab0KHHl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 8 Nov 2010 02:41:29 -0500
 From: Dave Chinner <david@fromorbit.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] dio: scale unaligned IO tracking via multiple lists
-Date: Mon,  8 Nov 2010 18:40:22 +1100
-Message-Id: <1289202023-15102-3-git-send-email-david@fromorbit.com>
+Subject: [PATCH 3/3] dio: add a mempool for the unaligned block structures
+Date: Mon,  8 Nov 2010 18:40:23 +1100
+Message-Id: <1289202023-15102-4-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1289202023-15102-1-git-send-email-david@fromorbit.com>
 References: <1289202023-15102-1-git-send-email-david@fromorbit.com>
@@ -22,125 +22,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Chinner <dchinner@redhat.com>
 
-To avoid concerns that a single list and lock tracking the unaligned
-IOs will not scale appropriately, create multiple lists and locks
-and chose them by hashing the unaligned block being zeroed.
+We need the zero block tracking structure allocation to succeed.
+Silently failing and potentially allowing data corruption is not an
+option. Add a mempool to ensure this allocation will always succeed.
 
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
 ---
- fs/direct-io.c |   49 ++++++++++++++++++++++++++++++++++++-------------
- 1 files changed, 36 insertions(+), 13 deletions(-)
+ fs/direct-io.c |   14 +++++++++++---
+ 1 files changed, 11 insertions(+), 3 deletions(-)
 
 diff --git a/fs/direct-io.c b/fs/direct-io.c
-index 1a69efd..353ac52 100644
+index 353ac52..f8d7f6d 100644
 --- a/fs/direct-io.c
 +++ b/fs/direct-io.c
-@@ -152,8 +152,28 @@ struct dio_zero_block {
- 	atomic_t	ref;		/* reference count */
- };
+@@ -161,12 +161,22 @@ struct dio_zero_block_head {
+ static struct dio_zero_block_head dio_zero_blocks[DIO_ZERO_BLOCK_NR];
+ #define to_dio_zero_head(zb)	(&dio_zero_blocks[zb % DIO_ZERO_BLOCK_NR])
  
--static DEFINE_SPINLOCK(dio_zero_block_lock);
--static LIST_HEAD(dio_zero_block_list);
-+#define DIO_ZERO_BLOCK_NR	37LL
-+struct dio_zero_block_head {
-+	struct list_head	list;
-+	spinlock_t		lock;
-+};
++/* a small mempool just to guarantee progress. */
++#define DIO_ZERO_BLOCK_ENTRIES	2
++static mempool_t *dio_zero_block_pool;
 +
-+static struct dio_zero_block_head dio_zero_blocks[DIO_ZERO_BLOCK_NR];
-+#define to_dio_zero_head(zb)	(&dio_zero_blocks[zb % DIO_ZERO_BLOCK_NR])
-+
-+
-+static int __init
-+dio_init_zero_block(void)
-+{
-+	int i;
-+
-+	for (i = 0; i < DIO_ZERO_BLOCK_NR; i++) {
-+		spin_lock_init(&dio_zero_blocks[i].lock);
-+		INIT_LIST_HEAD(&dio_zero_blocks[i].list);
-+	}
-+	return 0;
-+}
-+subsys_initcall(dio_init_zero_block);
  
- /*
-  * Add a filesystem block to the list of blocks we are tracking.
-@@ -161,6 +181,7 @@ static LIST_HEAD(dio_zero_block_list);
- static void
- dio_start_zero_block(struct dio *dio, sector_t zero_block)
+ static int __init
+ dio_init_zero_block(void)
  {
-+	struct dio_zero_block_head *zbh = to_dio_zero_head(zero_block);
+ 	int i;
+ 
++	dio_zero_block_pool = mempool_create_kmalloc_pool(
++					DIO_ZERO_BLOCK_ENTRIES,
++					sizeof(struct dio_zero_block));
++	if (!dio_zero_block_pool)
++		panic("dio: can't create zero block pool");
++
+ 	for (i = 0; i < DIO_ZERO_BLOCK_NR; i++) {
+ 		spin_lock_init(&dio_zero_blocks[i].lock);
+ 		INIT_LIST_HEAD(&dio_zero_blocks[i].list);
+@@ -184,9 +194,7 @@ dio_start_zero_block(struct dio *dio, sector_t zero_block)
+ 	struct dio_zero_block_head *zbh = to_dio_zero_head(zero_block);
  	struct dio_zero_block *zb;
  
- 	zb = kmalloc(sizeof(*zb), GFP_NOIO);
-@@ -172,9 +193,9 @@ dio_start_zero_block(struct dio *dio, sector_t zero_block)
- 	zb->dio = dio;
- 	atomic_set(&zb->ref, 1);
- 
--	spin_lock(&dio_zero_block_lock);
--	list_add(&zb->dio_list, &dio_zero_block_list);
--	spin_unlock(&dio_zero_block_lock);
-+	spin_lock(&zbh->lock);
-+	list_add(&zb->dio_list, &zbh->list);
-+	spin_unlock(&zbh->lock);
- }
- 
- static void
-@@ -193,21 +214,22 @@ dio_drop_zero_block(struct dio_zero_block *zb)
- static int
- dio_wait_zero_block(struct dio *dio, sector_t zero_block)
- {
-+	struct dio_zero_block_head *zbh = to_dio_zero_head(zero_block);
- 	struct dio_zero_block *zb;
- 
--	spin_lock(&dio_zero_block_lock);
--	list_for_each_entry(zb, &dio_zero_block_list, dio_list) {
-+	spin_lock(&zbh->lock);
-+	list_for_each_entry(zb, &zbh->list, dio_list) {
- 		if (zb->dio->inode != dio->inode)
- 			continue;
- 		if (zb->zero_block != zero_block)
- 			continue;
- 		atomic_inc(&zb->ref);
--		spin_unlock(&dio_zero_block_lock);
-+		spin_unlock(&zbh->lock);
- 		wait_event(zb->wq, (list_empty(&zb->dio_list)));
- 		dio_drop_zero_block(zb);
- 		return 1;
- 	}
--	spin_unlock(&dio_zero_block_lock);
-+	spin_unlock(&zbh->lock);
- 	return 0;
- }
- 
-@@ -216,21 +238,22 @@ dio_wait_zero_block(struct dio *dio, sector_t zero_block)
-  */
- static void dio_end_zero_block(struct dio *dio, sector_t zero_block)
- {
-+	struct dio_zero_block_head *zbh = to_dio_zero_head(zero_block);
- 	struct dio_zero_block *zb;
- 
--	spin_lock(&dio_zero_block_lock);
--	list_for_each_entry(zb, &dio_zero_block_list, dio_list) {
-+	spin_lock(&zbh->lock);
-+	list_for_each_entry(zb, &zbh->list, dio_list) {
- 		if (zb->dio->inode != dio->inode)
- 			continue;
- 		if (zb->zero_block != zero_block)
- 			continue;
- 		list_del_init(&zb->dio_list);
--		spin_unlock(&dio_zero_block_lock);
-+		spin_unlock(&zbh->lock);
- 		wake_up(&zb->wq);
- 		dio_drop_zero_block(zb);
- 		return;
- 	}
--	spin_unlock(&dio_zero_block_lock);
-+	spin_unlock(&zbh->lock);
- }
- 
- /*
+-	zb = kmalloc(sizeof(*zb), GFP_NOIO);
+-	if (!zb)
+-		return;
++	zb = mempool_alloc(dio_zero_block_pool, GFP_NOIO);
+ 	INIT_LIST_HEAD(&zb->dio_list);
+ 	init_waitqueue_head(&zb->wq);
+ 	zb->zero_block = zero_block;
 -- 
 1.7.2.3
 
