@@ -1,96 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab0KHTnz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 14:43:55 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:53717 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753169Ab0KHTnx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 14:43:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:references:date:in-reply-to:message-id
-         :user-agent:mime-version:content-type;
-        b=diR7nlHQC7zoLVUfY6666ldZH+pIapqErPTCqOvA5G71yTNAvPI4fueSFW3vRZ7S4T
-         MB3gZOjXHbH/Ya8+5M7vTRo3gsnv+ZTXAO69j8BvfRt2A54QICNC9qXS9y5raa2cdgvK
-         672LNEx45EnTv6t4pgu8f02ydmGUug5xjxIK8=
-From: Francis Moreau <francis.moro@gmail.com>
-To: Vince Weaver <vweaver1@eecs.utk.edu>
-Cc: Victor Jimenez <victor.javier@bsc.es>,
-        Reid Kleckner <reid.kleckner@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        linux-perf-users@vger.kernel.org
-Subject: Re: perf tools miscellaneous questions
-References: <fa.SSgtQesEhEQa5DUYUwBV3fWtoV4@ifi.uio.no>
-	<fa.dD5ur5Phqa1TLmYBE2NVKCQMjTw@ifi.uio.no>
-	<fa.Xj1lA7n6nIJYL40CeRDpQzSKlfc@ifi.uio.no>
-	<fa.xcyA+VzIXesq6qsPU6ADM4xdCKY@ifi.uio.no>
-	<fa.MOg61Pcfdp2SJnwM2GFdOxP+xt0@ifi.uio.no>
-	<fa.4sHfhlc/fMhpYgKda4IfUHZ7jMY@ifi.uio.no> <m2wros3pzf.fsf@gmail.com>
-	<alpine.DEB.2.00.1011051000310.26020@cl320.eecs.utk.edu>
-	<m262wao6k7.fsf@gmail.com>
-	<alpine.DEB.2.00.1011061642020.29635@cl320.eecs.utk.edu>
-Date: Mon, 08 Nov 2010 20:43:48 +0100
-In-Reply-To: <alpine.DEB.2.00.1011061642020.29635@cl320.eecs.utk.edu> (Vince
-	Weaver's message of "Sat, 6 Nov 2010 16:50:35 -0400 (EDT)")
-Message-ID: <m24obr1tzf.fsf@gmail.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1753809Ab0KHTtJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 14:49:09 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:56534 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752503Ab0KHTtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 14:49:08 -0500
+Date: Mon, 8 Nov 2010 11:49:04 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Joe Korty <joe.korty@ccur.com>, mathieu.desnoyers@efficios.com,
+        dhowells@redhat.com, loic.minier@linaro.org, dhaval.giani@gmail.com,
+        tglx@linutronix.de, peterz@infradead.org, linux-kernel@vger.kernel.org,
+        josh@joshtriplett.org
+Subject: Re: [PATCH] a local-timer-free version of RCU
+Message-ID: <20101108194904.GC4032@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20101104232148.GA28037@linux.vnet.ibm.com>
+ <20101105210059.GA27317@tsunami.ccur.com>
+ <20101106192812.GI15561@linux.vnet.ibm.com>
+ <20101108150644.GB5466@nowhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101108150644.GB5466@nowhere>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vince Weaver <vweaver1@eecs.utk.edu> writes:
+On Mon, Nov 08, 2010 at 04:06:47PM +0100, Frederic Weisbecker wrote:
+> On Sat, Nov 06, 2010 at 12:28:12PM -0700, Paul E. McKenney wrote:
+> > On Fri, Nov 05, 2010 at 05:00:59PM -0400, Joe Korty wrote:
+> > > +/**
+> > > + * synchronize_sched - block until all CPUs have exited any non-preemptive
+> > > + * kernel code sequences.
+> > > + *
+> > > + * This means that all preempt_disable code sequences, including NMI and
+> > > + * hardware-interrupt handlers, in progress on entry will have completed
+> > > + * before this primitive returns.  However, this does not guarantee that
+> > > + * softirq handlers will have completed, since in some kernels
+> > 
+> > OK, so your approach treats preempt_disable code sequences as RCU
+> > read-side critical sections by relying on the fact that the per-CPU
+> > ->krcud task cannot run until such code sequences complete, correct?
+> > 
+> > This seems to require that each CPU's ->krcud task be awakened at
+> > least once per grace period, but I might well be missing something.
+> 
+> 
+> 
+> I understood it differently, but I might also be wrong as well. krcud
+> executes the callbacks, but it is only woken up for CPUs that want to
+> execute callbacks, not for those that only signal a quiescent state,
+> which is only determined in two ways through rcu_poll_other_cpus():
+> 
+> - if the CPU is in an rcu_read_lock() critical section, it has the
+>   IN_RCU_READ_LOCK flag. If so then we set up its DO_RCU_COMPLETION flag so
+>   that it signals its quiescent state on rcu_read_unlock().
+> 
+> - otherwise it's in a quiescent state.
+> 
+> 
+> This works for rcu and rcu bh critical sections.
 
-> This is rapidly getting of topic, especially for linux-kernel
+Unfortunately, local_irq_save() is allowed to stand in for
+rcu_read_lock_bh().  :-/
 
-Don't think so but feel free to remove LKML from Cc.
+> But this works in rcu sched critical sections only if rcu_read_lock_sched() has
+> been called explicitly, otherwise that doesn't work (in preempt_disable(),
+> local_irq_save(), etc...). I think this is what is not complete when
+> Joe said it's not yet a complete rcu implementation.
+> 
+> This is also the part that scaries me most :)
 
-[...]
+And if we can make all the the preempt_disable(), local_irq_disable(), ...
+invoke rcu_read_lock(), then we have some chance of being able to dispense
+with the IPIs to CPUs not having callbacks that need to be executed.
 
-> Most events are poorly documented, if at all.  And the Linux kernel 
-> predefined event list is loosely based upon the intel architectural
-> events, which not every processor has and I've heard from insiders saying 
-> that you should be very careful for the results from those events.
-
-I agree, that's why I try to clarify some events.
-
-Perf tools are cool stuffs, IMHO, but it's pretty hard for me to
-interpret results. I tried to compare some numbers in my previous posts
-but I got some 'random' figures for now.
-
-Another example is given below where I'm trying to bench a 2 functions
-which do the same thing but differently.
-
-   $ perf stat -e cache-misses:u,l1d-loads-misses:u,cycles:u -p $(pgrep test)
-     C-c C-c
-    Performance counter stats for process id '30263':
-   
-                406532  cache-misses            
-               4986030  L1-dcache-load-misses   
-             120247366  cycles                  
-   
-           2.482196928  seconds time elapsed
-   
-   
-   $ perf stat -e cache-misses:u,l1d-loads-misses:u,cycles:u -p $(pgrep test)
-     C-c C-c
-    Performance counter stats for process id '30271':
-   
-                459683  cache-misses            
-               2513338  L1-dcache-load-misses   
-             159968076  cycles                  
-   
-           2.129021265  seconds time elapsed
-
-Which numbers are important here ? cache-misses ? L1-dcache-load-misses
-?
-
-I just can say that the first run looks faster.
-
--- 
-Francis
+							Thanx, Paul
