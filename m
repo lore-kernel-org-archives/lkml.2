@@ -1,118 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753177Ab0KHPcZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 10:32:25 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:65269 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035Ab0KHPcW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 10:32:22 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=UHWIJPa4VOvxc2ly8gepgxVW47oKbo432VOBlUP8AqZPcUDFJNst9f14wkh2AIwYWv
-         16dlW7g7wuPnPqE0G1oipNokPv34bdfli6gbNrJRO2JaF3m4Ms6d4RUHevI/uZH8LCgs
-         X+cmu4z+iQGlYjFwyW3zzqZhBRqno6K8+E4ac=
-Date: Mon, 8 Nov 2010 16:32:17 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: "Udo A. Steinberg" <udo@hypervisor.org>, Joe Korty <joe.korty@ccur.com>,
-        mathieu.desnoyers@efficios.com, dhowells@redhat.com,
-        loic.minier@linaro.org, dhaval.giani@gmail.com, tglx@linutronix.de,
-        peterz@infradead.org, linux-kernel@vger.kernel.org,
-        josh@joshtriplett.org
-Subject: Re: [PATCH] a local-timer-free version of RCU
-Message-ID: <20101108153214.GC5466@nowhere>
-References: <20101104232148.GA28037@linux.vnet.ibm.com> <20101105210059.GA27317@tsunami.ccur.com> <20101106192812.GI15561@linux.vnet.ibm.com> <20101108031136.0766149f@laptop.hypervisor.org> <20101108031936.63a13ff2@laptop.hypervisor.org> <20101108025400.GA2580@linux.vnet.ibm.com>
+	id S1751971Ab0KHPfd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 10:35:33 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:36865 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751147Ab0KHPfc (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Mon, 8 Nov 2010 10:35:32 -0500
+Date: Mon, 8 Nov 2010 10:34:04 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org
+Subject: Re: [PATCH] x86: pci/xen, fix memory leak
+Message-ID: <20101108153404.GA8637@dumpdata.com>
+References: <1289034412-24278-1-git-send-email-jslaby@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101108025400.GA2580@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1289034412-24278-1-git-send-email-jslaby@suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 07, 2010 at 06:54:00PM -0800, Paul E. McKenney wrote:
-> On Mon, Nov 08, 2010 at 03:19:36AM +0100, Udo A. Steinberg wrote:
-> > On Mon, 8 Nov 2010 03:11:36 +0100 Udo A. Steinberg (UAS) wrote:
-> > 
-> > UAS> On Sat, 6 Nov 2010 12:28:12 -0700 Paul E. McKenney (PEM) wrote:
-> > UAS> 
-> > UAS> PEM> > + * rcu_quiescent() is called from rcu_read_unlock() when a
-> > UAS> PEM> > + * RCU batch was started while the rcu_read_lock/rcu_read_unlock
-> > UAS> PEM> > + * critical section was executing.
-> > UAS> PEM> > + */
-> > UAS> PEM> > +
-> > UAS> PEM> > +void rcu_quiescent(int cpu)
-> > UAS> PEM> > +{
-> > UAS> PEM> 
-> > UAS> PEM> What prevents two different CPUs from calling this concurrently?
-> > UAS> PEM> Ah, apparently nothing -- the idea being that
-> > UAS> PEM> rcu_grace_period_complete() sorts it out.  Though if the second
-> > UAS> PEM> CPU was delayed, it seems like it might incorrectly end a
-> > UAS> PEM> subsequent grace period as follows:
-> > UAS> PEM> 
-> > UAS> PEM> o	CPU 0 clears the second-to-last bit.
-> > UAS> PEM> 
-> > UAS> PEM> o	CPU 1 clears the last bit.
-> > UAS> PEM> 
-> > UAS> PEM> o	CPU 1 sees that the mask is empty, so invokes
-> > UAS> PEM> 	rcu_grace_period_complete(), but is delayed in the function
-> > UAS> PEM> 	preamble.
-> > UAS> PEM> 
-> > UAS> PEM> o	CPU 0 sees that the mask is empty, so invokes
-> > UAS> PEM> 	rcu_grace_period_complete(), ending the grace period.
-> > UAS> PEM> 	Because the RCU_NEXT_PENDING is set, it also starts
-> > UAS> PEM> 	a new grace period.
-> > UAS> PEM> 
-> > UAS> PEM> o	CPU 1 continues in rcu_grace_period_complete(),
-> > UAS> PEM> incorrectly ending the new grace period.
-> > UAS> PEM> 
-> > UAS> PEM> Or am I missing something here?
-> > UAS> 
-> > UAS> The scenario you describe seems possible. However, it should be easily
-> > UAS> fixed by passing the perceived batch number as another parameter to
-> > UAS> rcu_set_state() and making it part of the cmpxchg. So if the caller
-> > UAS> tries to set state bits on a stale batch number (e.g., batch !=
-> > UAS> rcu_batch), it can be detected.
-> > UAS> 
-> > UAS> There is a similar, although harmless, issue in call_rcu(): Two CPUs can
-> > UAS> concurrently add callbacks to their respective nxt list and compute the
-> > UAS> same value for nxtbatch. One CPU succeeds in setting the PENDING bit
-> > UAS> while observing COMPLETE to be clear, so it starts a new batch.
-> > 
-> > Correction: while observing COMPLETE to be set!
-> > 
-> > UAS> Afterwards, the other CPU also sets the PENDING bit, but this time for
-> > UAS> the next batch. So it ends up requesting nxtbatch+1, although there is
-> > UAS> no need to. This also would be fixed by making the batch number part of
-> > UAS> the cmpxchg.
+On Sat, Nov 06, 2010 at 10:06:49AM +0100, Jiri Slaby wrote:
+> Stanse found that xen_setup_msi_irqs leaks memory when
+> xen_allocate_pirq fails. Free the memory in that fail path.
+
+Duh! Yes, sticking it in the queue for bug-fixes. Thank you
+for finding it.
 > 
-> Another approach is to map the underlying algorithm onto the TREE_RCU
-> data structures.  And make preempt_disable(), local_irq_save(), and
-> friends invoke rcu_read_lock() -- irq and nmi handlers already have
-> the dyntick calls into RCU, so should be easy to handle as well.
-> Famous last words.  ;-)
-
-
-So, this looks very scary for performances to add rcu_read_lock() in
-preempt_disable() and local_irq_save(), that notwithstanding it won't
-handle the "raw" rcu sched implicit path. We should check all rcu_dereference_sched
-users to ensure there are not in such raw path.
-
-
-There is also my idea from the other discussion: change rcu_read_lock_sched()
-semantics and map it to rcu_read_lock() in this rcu config (would be a nop
-in other configs). So every users of rcu_dereference_sched() would now need
-to protect their critical section with this.
-Would it be too late to change this semantic?
-
-What is scary with this is that it also changes rcu sched semantics, and users
-of call_rcu_sched() and synchronize_sched(), who rely on that to do more
-tricky things than just waiting for rcu_derefence_sched() pointer grace periods,
-like really wanting for preempt_disable and local_irq_save/disable, those
-users will be screwed... :-(  ...unless we also add relevant rcu_read_lock_sched()
-for them...
-
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: xen-devel@lists.xensource.com
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: x86@kernel.org
+> ---
+>  arch/x86/pci/xen.c |    8 +++++---
+>  1 files changed, 5 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+> index 117f5b8..d7b5109 100644
+> --- a/arch/x86/pci/xen.c
+> +++ b/arch/x86/pci/xen.c
+> @@ -147,8 +147,10 @@ static int xen_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+>  		irq = xen_allocate_pirq(v[i], 0, /* not sharable */
+>  			(type == PCI_CAP_ID_MSIX) ?
+>  			"pcifront-msi-x" : "pcifront-msi");
+> -		if (irq < 0)
+> -			return -1;
+> +		if (irq < 0) {
+> +			ret = -1;
+> +			goto free;
+> +		}
+>  
+>  		ret = set_irq_msi(irq, msidesc);
+>  		if (ret)
+> @@ -164,7 +166,7 @@ error:
+>  	if (ret == -ENODEV)
+>  		dev_err(&dev->dev, "Xen PCI frontend has not registered" \
+>  			" MSI/MSI-X support!\n");
+> -
+> +free:
+>  	kfree(v);
+>  	return ret;
+>  }
+> -- 
+> 1.7.3.1
+> 
