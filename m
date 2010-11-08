@@ -1,49 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754111Ab0KHTj5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 14:39:57 -0500
-Received: from www.tglx.de ([62.245.132.106]:50599 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753691Ab0KHTjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 14:39:55 -0500
-Date: Mon, 8 Nov 2010 20:39:11 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Darren Hart <dvhart@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Matt Fleming <matt@console-pimps.org>, mingo@elte.hu,
-        eric.dumazet@gmail.com, jkacur@redhat.com,
-        Darren Hart <dvhltc@us.ibm.com>
-Subject: Re: [PATCH 3/3] futex: add futex_q static initializer
-In-Reply-To: <1289239951.2191.0.camel@laptop>
-Message-ID: <alpine.LFD.2.00.1011082037200.2900@localhost6.localdomain6>
-References: <1288216466-14309-1-git-send-email-dvhart@linux.intel.com>  <1288216466-14309-4-git-send-email-dvhart@linux.intel.com>  <alpine.LFD.2.00.1011081724460.2900@localhost6.localdomain6> <1289239951.2191.0.camel@laptop>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754241Ab0KHTnz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 14:43:55 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53717 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753169Ab0KHTnx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 14:43:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type;
+        b=diR7nlHQC7zoLVUfY6666ldZH+pIapqErPTCqOvA5G71yTNAvPI4fueSFW3vRZ7S4T
+         MB3gZOjXHbH/Ya8+5M7vTRo3gsnv+ZTXAO69j8BvfRt2A54QICNC9qXS9y5raa2cdgvK
+         672LNEx45EnTv6t4pgu8f02ydmGUug5xjxIK8=
+From: Francis Moreau <francis.moro@gmail.com>
+To: Vince Weaver <vweaver1@eecs.utk.edu>
+Cc: Victor Jimenez <victor.javier@bsc.es>,
+        Reid Kleckner <reid.kleckner@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>,
+        linux-perf-users@vger.kernel.org
+Subject: Re: perf tools miscellaneous questions
+References: <fa.SSgtQesEhEQa5DUYUwBV3fWtoV4@ifi.uio.no>
+	<fa.dD5ur5Phqa1TLmYBE2NVKCQMjTw@ifi.uio.no>
+	<fa.Xj1lA7n6nIJYL40CeRDpQzSKlfc@ifi.uio.no>
+	<fa.xcyA+VzIXesq6qsPU6ADM4xdCKY@ifi.uio.no>
+	<fa.MOg61Pcfdp2SJnwM2GFdOxP+xt0@ifi.uio.no>
+	<fa.4sHfhlc/fMhpYgKda4IfUHZ7jMY@ifi.uio.no> <m2wros3pzf.fsf@gmail.com>
+	<alpine.DEB.2.00.1011051000310.26020@cl320.eecs.utk.edu>
+	<m262wao6k7.fsf@gmail.com>
+	<alpine.DEB.2.00.1011061642020.29635@cl320.eecs.utk.edu>
+Date: Mon, 08 Nov 2010 20:43:48 +0100
+In-Reply-To: <alpine.DEB.2.00.1011061642020.29635@cl320.eecs.utk.edu> (Vince
+	Weaver's message of "Sat, 6 Nov 2010 16:50:35 -0400 (EDT)")
+Message-ID: <m24obr1tzf.fsf@gmail.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 8 Nov 2010, Peter Zijlstra wrote:
+Vince Weaver <vweaver1@eecs.utk.edu> writes:
 
-> On Mon, 2010-11-08 at 17:42 +0100, Thomas Gleixner wrote:
-> > > +#define FUTEX_Q_INIT \
-> > > +     { /* list gets initialized in queue_me()*/ \
-> > > +       .task = NULL, NULL, FUTEX_KEY_INIT \
-> > > +     , NULL, NULL, NULL, FUTEX_BITSET_MATCH_ANY }
-> > > +
-> > 
-> > That should be a static readonly variable with a proper C99
-> > initializer. 
-> 
-> Well, it doesn't need to actually be an existing variable, but yeah it
-> should definately use C99 initializers.
+> This is rapidly getting of topic, especially for linux-kernel
 
-If you have multiple instances of q = q_init; the static variable is
-more efficient vs. code/data size 
+Don't think so but feel free to remove LKML from Cc.
 
-Thanks,
+[...]
 
-	tglx
+> Most events are poorly documented, if at all.  And the Linux kernel 
+> predefined event list is loosely based upon the intel architectural
+> events, which not every processor has and I've heard from insiders saying 
+> that you should be very careful for the results from those events.
 
+I agree, that's why I try to clarify some events.
 
+Perf tools are cool stuffs, IMHO, but it's pretty hard for me to
+interpret results. I tried to compare some numbers in my previous posts
+but I got some 'random' figures for now.
+
+Another example is given below where I'm trying to bench a 2 functions
+which do the same thing but differently.
+
+   $ perf stat -e cache-misses:u,l1d-loads-misses:u,cycles:u -p $(pgrep test)
+     C-c C-c
+    Performance counter stats for process id '30263':
+   
+                406532  cache-misses            
+               4986030  L1-dcache-load-misses   
+             120247366  cycles                  
+   
+           2.482196928  seconds time elapsed
+   
+   
+   $ perf stat -e cache-misses:u,l1d-loads-misses:u,cycles:u -p $(pgrep test)
+     C-c C-c
+    Performance counter stats for process id '30271':
+   
+                459683  cache-misses            
+               2513338  L1-dcache-load-misses   
+             159968076  cycles                  
+   
+           2.129021265  seconds time elapsed
+
+Which numbers are important here ? cache-misses ? L1-dcache-load-misses
+?
+
+I just can say that the first run looks faster.
+
+-- 
+Francis
