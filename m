@@ -1,100 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087Ab0KHIxr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 03:53:47 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:56264 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860Ab0KHIxq (ORCPT
+	id S1753752Ab0KHI4c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 03:56:32 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:43400 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752368Ab0KHI4b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 03:53:46 -0500
+	Mon, 8 Nov 2010 03:56:31 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=tG0vsWs9ao2zYalE0Vd6nR7c10ULIdnq0AN5W3WhtEEP5BiHXjWA87m6fS7dwCi8lv
-         v5Q7T6nh+csZ6eLmCO+/6U5RRHaHwQwMTp74RsDj1gZerpDqYVR60r26f+RmF1tkzck0
-         GBvvWmlRe8i1rwi0nhrN/vLcMA5NsFzFPSErw=
-Subject: Re: [PATCH 4/4] fs: rcu protect inode hash lookups
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com
-In-Reply-To: <1289201305-14866-5-git-send-email-david@fromorbit.com>
-References: <1289201305-14866-1-git-send-email-david@fromorbit.com>
-	 <1289201305-14866-5-git-send-email-david@fromorbit.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 08 Nov 2010 09:53:41 +0100
-Message-ID: <1289206421.2820.32.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=sATvnrY7sCJ53LI1Wky5WSQk9f5AlkdLltGluOOKTSuD7CQdJhBJKwxhSbiNpFny6k
+         jXGUHUdvbM0QB9VJ6nu5jdSpNLiaxonIx8BE/tFmr2l5B8fLSTH7j+RmoWib0gobTv5j
+         eTcykxdWZcxRODdMwvKmbvOcYz+hV7TCTNoI4=
+MIME-Version: 1.0
+Date: Mon, 8 Nov 2010 16:56:30 +0800
+Message-ID: <AANLkTi=BKkfWFt=Une0mggm_=X_VpfhT4g8Nt=cAnFqj@mail.gmail.com>
+Subject: 2.6.36 oops in intel_ring_advance() (i915/DRM) when running opengl programs
+From: Adrian Bono <adrian.bono@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 08 novembre 2010 à 18:28 +1100, Dave Chinner a écrit :
-> From: Dave Chinner <dchinner@redhat.com>
-> 
-> Now that inodes are using RCU freeing, we can walk the hash lists
-> using RCU protection during lookups. Convert all the hash list
-> operations to use RCU-based operators and drop the inode_hash_lock
-> around pure lookup operations.
-> 
-> Because we are using SLAB_DESTROY_BY_RCU, we need to be careful
-> about the lockless lookups and the way we initialise the struct
-> inode during allocation. The inode->i_lock is the critical item we
-> need to avoid touching when allocating an inode, so move the
-> initialisation of this lock to the slab constructor so that we can
-> reliably use the lock even after the inode has been freed or is in
-> the process of being allocated or initialised.
-> 
-> We also need to change the order of checks during hash lookups to
-> validate we have an active inode before we skip it. That means we
-> need to revalidate the inode number and superblock after we have
-> checked it for being freed or unhashed under the inode->i_lock.
-> 
-> Finally, during traversals an inode can be freed and reallocated and
-> linked into a new hash chain, so an RCU safe traversal can jump to a
-> different chain without indication. On a cache miss we need to
-> validate that we ended the search on the same hash chain we started
-> on. Do this by converting the hash lists to the hlist_null list type
-> and checking the list null on walk termination.
-> 
-> Signed-off-by: Dave Chinner <dchinner@redhat.com>
-> ---
+Hello,
 
-Very nice stuff Dave !
+I tested 2.6.36 on an Asus laptop with an Intel GM965 chipset. I first
+noticed the oops when i tried to run Virtualbox, which links to
+opengl, and i tried reproducing it with glxgears, which it
+consistently does.
 
-I have one question
-
-> diff --git a/include/linux/list_nulls.h b/include/linux/list_nulls.h
-> index 5d10ae36..29762d1 100644
-> --- a/include/linux/list_nulls.h
-> +++ b/include/linux/list_nulls.h
-> @@ -83,6 +83,13 @@ static inline void hlist_nulls_del(struct hlist_nulls_node *n)
->  	n->pprev = LIST_POISON2;
->  }
->  
-> +/* after that we'll appear to be on some hlist and hlist_nulls_del will work */
-> +static inline void hlist_nulls_add_fake(struct hlist_nulls_node *n)
-> +{
-> +	n->next = (struct hlist_nulls_node *)1UL;
-> +	n->pprev = &n->next;
-> +}
-> +
+I also noticed an earlier email on this oops, from august 16, 2010,
+that didn't get any replies.
+http://kerneltrap.org/mailarchive/linux-kernel/2010/8/16/4607090
 
 
-I am not sure why you need to change n->next here ?
-
-This might restart lookups (making them doing a 'goto repeat', and
-possibly abort a lookup on slot 0 of hash chain, since this is a 'nulls'
-value for slot 0.
-
-So at least I suggest adding a comment, and possibly use a different
-slot number (outside of slot ranges). If so, change documentation to
-restrict to 2^(BITS_PER_LONG-2) number of possible slots in hash table.
-
-n->next = (struct hlist_nulls_node *)(1UL | (1UL << (BITS_PER_LONG-1));
+Here's output from syslog:
 
 
-
+Oct 27 21:49:02 subgenius kernel: Oops: 0000 [#1] PREEMPT SMP
+Oct 27 21:49:02 subgenius kernel: last sysfs file:
+/sys/devices/platform/coretemp.1/temp1_input
+Oct 27 21:49:02 subgenius kernel: Modules linked in: vboxnetflt
+vboxdrv coretemp hwmon usbhid usb_storage usb_libusual uhci_hcd
+ehci_hcd usbcore snd_hda_codec_realtek snd_hda_intel snd_hda_codec
+snd_pcm snd_timer snd soundcore snd_page_alloc ath5k ath i915
+drm_kms_helper drm fb fbdev i2c_algo_bit cfbcopyarea video backlight
+output cfbimgblt cfbfillrect intel_agp agpgart
+Oct 27 21:49:02 subgenius kernel:
+Oct 27 21:49:02 subgenius kernel: Pid: 1846, comm: glxgears Not
+tainted 2.6.36 #1 A8Le       /A8Le
+Oct 27 21:49:02 subgenius kernel: EIP: 0060:[<00000000>] EFLAGS: 00210202 CPU: 1
+Oct 27 21:49:02 subgenius kernel: EIP is at 0x0
+Oct 27 21:49:02 subgenius kernel: EAX: f722a800 EBX: 00000001 ECX:
+f6888014 EDX: f6888014
+Oct 27 21:49:02 subgenius kernel: ESI: 00000002 EDI: f68aafd0 EBP:
+f1f5fea8 ESP: f1f5fe4c
+Oct 27 21:49:02 subgenius kernel:  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+Oct 27 21:49:02 subgenius kernel: Process glxgears (pid: 1846,
+ti=f1f5e000 task=f6564000 task.ti=f1f5e000)
+Oct 27 21:49:02 subgenius kernel: Stack:
+Oct 27 21:49:02 subgenius kernel:  f8365a73 f834af85 00000002 f722a800
+f6888000 f802b898 00000000 f68aafc8
+Oct 27 21:49:02 subgenius kernel: <0> 00000001 00000000 00000002
+00000000 f1f5fea8 f722a800 00000018 f1e2c500
+Oct 27 21:49:02 subgenius kernel: <0> f82302f0 bf882c08 4018644b
+f8375534 00000018 f722a82c f834ac06 bf882c64
+Oct 27 21:49:02 subgenius kernel: Call Trace:
+Oct 27 21:49:02 subgenius kernel:  [<f8365a73>] ?
+intel_ring_advance+0xe/0xf [i915]
+Oct 27 21:49:02 subgenius kernel:  [<f834af85>] ?
+i915_cmdbuffer+0x37f/0x413 [i915]
+Oct 27 21:49:02 subgenius kernel:  [<f82302f0>] ? drm_ioctl+0x221/0x297 [drm]
+Oct 27 21:49:02 subgenius kernel:  [<f834ac06>] ?
+i915_cmdbuffer+0x0/0x413 [i915]
+Oct 27 21:49:02 subgenius kernel:  [<c106514b>] ? do_wp_page+0x67d/0x6b3
+Oct 27 21:49:02 subgenius kernel:  [<c11621b8>] ? pty_write+0x3d/0x43
+Oct 27 21:49:02 subgenius kernel:  [<c1066698>] ? handle_mm_fault+0x79c/0x858
+Oct 27 21:49:02 subgenius kernel:  [<c1023575>] ? __wake_up+0x29/0x39
+Oct 27 21:49:02 subgenius kernel:  [<f82300cf>] ? drm_ioctl+0x0/0x297 [drm]
+Oct 27 21:49:02 subgenius kernel:  [<c1082e42>] ? vfs_ioctl+0x16/0x2f
+Oct 27 21:49:02 subgenius kernel:  [<c108334c>] ? do_vfs_ioctl+0x438/0x470
+Oct 27 21:49:02 subgenius kernel:  [<c1018a26>] ? do_page_fault+0x31a/0x324
+Oct 27 21:49:02 subgenius kernel:  [<c1044820>] ? sys_futex+0xfc/0x111
+Oct 27 21:49:02 subgenius kernel:  [<c10833b0>] ? sys_ioctl+0x2c/0x42
+Oct 27 21:49:02 subgenius kernel:  [<c12590f1>] ? syscall_call+0x7/0xb
+Oct 27 21:49:02 subgenius kernel: Code:  Bad EIP value.
+Oct 27 21:49:02 subgenius kernel: EIP: [<00000000>] 0x0 SS:ESP 0068:f1f5fe4c
+Oct 27 21:49:02 subgenius kernel: CR2: 0000000000000000
+Oct 27 21:49:02 subgenius kernel: ---[ end trace ccff8844e71a655b ]---
