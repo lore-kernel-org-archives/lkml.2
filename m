@@ -1,174 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab0KHKxY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 05:53:24 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41708 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754365Ab0KHKxW (ORCPT
+	id S1754431Ab0KHKyu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 05:54:50 -0500
+Received: from dallas.jonmasters.org ([72.29.103.172]:43246 "EHLO
+	dallas.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753503Ab0KHKyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 05:53:22 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=uE/iuWbMGe9ahyZHd37b040jgjL749aHoezcyzIz7QQInguijtNK+DSQYke2krK/s7
-         MPMZcGgiPcD3oy83nGKZO9XJaeWozE7CfLBJPXUtCo99CBOCnb4JGJ+EPk2wKJJvS3e/
-         x+Itou1y5VcarzzoI4OUeh6fX+uVmKt7/nbaU=
-Subject: Re: [PATCH] mxcmmc: Add the ability to bind a regulator to manage
- the MMC card voltage
-From: Alberto Panizzo <maramaopercheseimorto@gmail.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: Daniel Mack <daniel@caiaq.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Eric =?ISO-8859-1?Q?B=E9nard?= <eric@eukrea.com>,
-        Fabio Estevam <fabioestevam@yahoo.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-In-Reply-To: <1288949275.3072.3.camel@realization>
-References: <1288656337.29881.13.camel@realization>
-	 <20101102073932.GB6017@pengutronix.de>
-	 <1288949275.3072.3.camel@realization>
+	Mon, 8 Nov 2010 05:54:49 -0500
+Subject: Re: [bisected] offset display bug in i915
+From: Jon Masters <jonathan@jonmasters.org>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <b9dded$h0q3am@orsmga002.jf.intel.com>
+References: <1289211512.3916.383.camel@constitution.bos.jonmasters.org>
+	 <b9dded$h0q3am@orsmga002.jf.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 08 Nov 2010 11:53:15 +0100
-Message-ID: <1289213595.3425.23.camel@realization>
+Organization: World Organi[sz]ation of Broken Dreams
+Date: Mon, 08 Nov 2010 05:54:55 -0500
+Message-ID: <1289213695.3916.396.camel@constitution.bos.jonmasters.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
 Content-Transfer-Encoding: 7bit
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 74.92.29.237
+X-SA-Exim-Mail-From: jonathan@jonmasters.org
+X-SA-Exim-Scanned: No (on dallas.jonmasters.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On ven, 2010-11-05 at 10:28 +0100, Alberto Panizzo wrote:
-> On mar, 2010-11-02 at 08:39 +0100, Sascha Hauer wrote:
-> > On Tue, Nov 02, 2010 at 01:05:37AM +0100, Alberto Panizzo wrote:
-> > > This implementation is based on the pxamci.c driver and it will
-> > > be used to support the mx31_3ds machine.
-> > > 
-> > > Signed-off-by: Alberto Panizzo <maramaopercheseimorto@gmail.com>
+On Mon, 2010-11-08 at 10:27 +0000, Chris Wilson wrote:
+> On Mon, 08 Nov 2010 05:18:32 -0500, Jon Masters <jonathan@jonmasters.org> wrote:
+> > Hi Chris,
 > > 
-> > Looks good to me
-> > 
-> > Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
-> > 
-
-Chris,
-Please, any comment on this one?
-
-Thanks,
-Alberto!
-
+> > The following patch that you recently committed breaks my ASUS Eee PC
+> > 1015PEM by causing the display to be offset by about 1 inch (a few
+> > centimeters) when the mode is (re)set during boot. I previously posted
+> > both photographs and video of the problem in another "PROBLEM" thread.
 > 
-> > > ---
-> > > 
-> > > This patch is based on the pengutronix for-rmk branch and apply to the
-> > > linus tre, version:2.6.37-rc1
-> > > 
-> > > ..cc the lists, sorry for the double mail.
-> > > 
-> > >  drivers/mmc/host/mxcmmc.c |   48 +++++++++++++++++++++++++++++++++++++++-----
-> > >  1 files changed, 42 insertions(+), 6 deletions(-)
-> > > 
-> > > diff --git a/drivers/mmc/host/mxcmmc.c b/drivers/mmc/host/mxcmmc.c
-> > > index 350f78e..e4637fc 100644
-> > > --- a/drivers/mmc/host/mxcmmc.c
-> > > +++ b/drivers/mmc/host/mxcmmc.c
-> > > @@ -31,6 +31,7 @@
-> > >  #include <linux/clk.h>
-> > >  #include <linux/io.h>
-> > >  #include <linux/gpio.h>
-> > > +#include <linux/regulator/consumer.h>
-> > >  
-> > >  #include <asm/dma.h>
-> > >  #include <asm/irq.h>
-> > > @@ -141,10 +142,45 @@ struct mxcmci_host {
-> > >  
-> > >  	struct work_struct	datawork;
-> > >  	spinlock_t		lock;
-> > > +
-> > > +	struct regulator	*vcc;
-> > >  };
-> > >  
-> > >  static void mxcmci_set_clk_rate(struct mxcmci_host *host, unsigned int clk_ios);
-> > >  
-> > > +static inline void mxcmci_init_ocr(struct mxcmci_host *host)
-> > > +{
-> > > +#ifdef CONFIG_REGULATOR
-> > > +	host->vcc = regulator_get(mmc_dev(host->mmc), "vmmc");
-> > > +
-> > > +	if (IS_ERR(host->vcc)) {
-> > > +		host->vcc = NULL;
-> > > +	} else {
-> > > +		host->mmc->ocr_avail = mmc_regulator_get_ocrmask(host->vcc);
-> > > +		if (host->pdata && host->pdata->ocr_avail)
-> > > +			dev_warn(mmc_dev(host->mmc),
-> > > +				"pdata->ocr_avail will not be used\n");
-> > > +	}
-> > > +#endif
-> > > +	if (host->vcc == NULL) {
-> > > +		/* fall-back to platform data */
-> > > +		if (host->pdata && host->pdata->ocr_avail)
-> > > +			host->mmc->ocr_avail = host->pdata->ocr_avail;
-> > > +		else
-> > > +			host->mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
-> > > +	}
-> > > +}
-> > > +
-> > > +static inline void mxcmci_set_power(struct mxcmci_host *host, unsigned int vdd)
-> > > +{
-> > > +#ifdef CONFIG_REGULATOR
-> > > +	if (host->vcc)
-> > > +		mmc_regulator_set_ocr(host->vcc, vdd);
-> > > +#endif
-> > > +	if (host->pdata && host->pdata->setpower)
-> > > +		host->pdata->setpower(mmc_dev(host->mmc), vdd);
-> > > +}
-> > > +
-> > >  static inline int mxcmci_use_dma(struct mxcmci_host *host)
-> > >  {
-> > >  	return host->do_dma;
-> > > @@ -680,9 +716,9 @@ static void mxcmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
-> > >  		host->cmdat &= ~CMD_DAT_CONT_BUS_WIDTH_4;
-> > >  
-> > >  	if (host->power_mode != ios->power_mode) {
-> > > -		if (host->pdata && host->pdata->setpower)
-> > > -			host->pdata->setpower(mmc_dev(mmc), ios->vdd);
-> > > +		mxcmci_set_power(host, ios->vdd);
-> > >  		host->power_mode = ios->power_mode;
-> > > +
-> > >  		if (ios->power_mode == MMC_POWER_ON)
-> > >  			host->cmdat |= CMD_DAT_CONT_INIT;
-> > >  	}
-> > > @@ -808,10 +844,7 @@ static int mxcmci_probe(struct platform_device *pdev)
-> > >  	host->pdata = pdev->dev.platform_data;
-> > >  	spin_lock_init(&host->lock);
-> > >  
-> > > -	if (host->pdata && host->pdata->ocr_avail)
-> > > -		mmc->ocr_avail = host->pdata->ocr_avail;
-> > > -	else
-> > > -		mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
-> > > +	mxcmci_init_ocr(host);
-> > >  
-> > >  	if (host->pdata && host->pdata->dat3_card_detect)
-> > >  		host->default_irq_mask =
-> > > @@ -916,6 +949,9 @@ static int mxcmci_remove(struct platform_device *pdev)
-> > >  
-> > >  	mmc_remove_host(mmc);
-> > >  
-> > > +	if (host->vcc)
-> > > +		regulator_put(host->vcc);
-> > > +
-> > >  	if (host->pdata && host->pdata->exit)
-> > >  		host->pdata->exit(&pdev->dev, mmc);
-> > >  
-> > > -- 
-> > > 1.6.3.3
-> > > 
-> > > 
-> > > 
-> > > 
-> > > 
-> > 
+> [snip]
+> 
+> > I'll look at the patch. Either the EDID is *not* consistent (in which
+> > case, why are we not seeing other bugs like this?) or there is something
+> > specific to this system or panel used.
+> 
+> Interesting. Or even downright bizarre! Can you disable the caching
+> (hopefully the patch is still revertible) and save the EDID
+> (/sys/class/drm/card0-LVDS-1/edid) periodically? Might be simplest just to
+> dump the EDID every time we probe the LVDS if it has changed.
+
+Already onto it. It's 6am here so I'll sleep soon ;) but I just applied
+the following patch and booted it/logged into X without the problem
+(apologies if evolution corrupts it, I usually send patches with mutt):
+
+>From c2fed0d864935603b1d71c71ae53d197f52e346f Mon Sep 17 00:00:00 2001
+From: Jon Masters <jcm@jonmasters.org>
+Date: Mon, 8 Nov 2010 05:39:42 -0500
+Subject: [PATCH] drm/i915: revert LVDS EDID cacheing
+
+The previous commit v2.6.36-rc5-173-g219adae changed the Intel i915
+driver to cache the EDID result obtained from the panel, but in so
+doing broke some systems by causing weird modesetting problems.
+
+Signed-off-by: Jon Masters <jcm@jonmasters.org>
+---
+ drivers/gpu/drm/i915/intel_lvds.c |   19 +++++++++++--------
+ 1 files changed, 11 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/intel_lvds.c
+b/drivers/gpu/drm/i915/intel_lvds.c
+index f1a6499..78153df 100644
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -44,7 +44,7 @@
+ struct intel_lvds {
+ 	struct intel_encoder base;
+ 
+-	struct edid *edid;
++	bool edid_good;
+ 
+ 	int fitting_mode;
+ 	u32 pfit_control;
+@@ -479,12 +479,14 @@ static int intel_lvds_get_modes(struct
+drm_connector *connector)
+ {
+ 	struct intel_lvds *intel_lvds = intel_attached_lvds(connector);
+ 	struct drm_device *dev = connector->dev;
++	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	struct drm_display_mode *mode;
+ 
+-	if (intel_lvds->edid) {
+-		drm_mode_connector_update_edid_property(connector,
+-							intel_lvds->edid);
+-		return drm_add_edid_modes(connector, intel_lvds->edid);
++	if (intel_lvds->edid_good) {
++		int ret = intel_ddc_get_modes(connector,
++					      &dev_priv->gmbus[GMBUS_PORT_PANEL].adapter);
++		if (ret)
++			return ret;
+ 	}
+ 
+ 	mode = drm_mode_duplicate(dev, intel_lvds->fixed_mode);
+@@ -937,10 +939,11 @@ void intel_lvds_init(struct drm_device *dev)
+ 	 * Attempt to get the fixed panel mode from DDC.  Assume that the
+ 	 * preferred mode is the right one.
+ 	 */
+-	intel_lvds->edid = drm_get_edid(connector,
+-					&dev_priv->gmbus[pin].adapter);
++	intel_lvds->edid_good = true;
++	if (!intel_ddc_get_modes(connector,
+&dev_priv->gmbus[GMBUS_PORT_PANEL].adapter))
++		intel_lvds->edid_good = false;
+ 
+-	if (!intel_lvds->edid) {
++	if (!intel_lvds->edid_good) {
+ 		/* Didn't get an EDID, so
+ 		 * Set wide sync ranges so we get all modes
+ 		 * handed to valid_mode for checking
+-- 
+1.7.3.2
+
+Here is the EDID output after booting:
+
+[jcm@monticello ~]$ hexdump /sys/class/drm/card0-LVDS-1/edid
+0000000 ff00 ffff ffff 00ff 6422 03e9 8544 0001
+0000010 141c 0301 1680 780d 860a 9426 5157 2790
+0000020 4f21 0054 0000 0101 0101 0101 0101 0101
+0000030 0101 0101 0101 1194 b000 5840 2019 2335
+0000040 0045 81dc 0000 1900 1416 d800 5840 2026
+0000050 235d 0415 81dc 0000 0000 0000 fe00 0000
+0000060 0000 0000 0000 0000 0000 0000 0000 fe00
+0000070 0000 0000 0000 0000 0100 0000 0000 f200
+0000080
+
+Sounds like you are suggesting that I hack up the intel_lvds to just
+printk the EDID when it is read? I can look at that, probably after
+sleeping. Perhaps you can also send me a patch to get what you want? I'm
+on IRC, and pingable later on today if you want me to try stuff.
+
+Jon.
 
 
