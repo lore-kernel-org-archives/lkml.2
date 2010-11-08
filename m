@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877Ab0KHPGT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 10:06:19 -0500
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:55461 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754835Ab0KHPGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 10:06:18 -0500
-Message-ID: <4CD811ED.8010901@fusionio.com>
-Date: Mon, 08 Nov 2010 16:06:21 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1754896Ab0KHPGx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 10:06:53 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:40515 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754835Ab0KHPGw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 10:06:52 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=PYLyT0lGsBlZwMroQTaf18JlWQOzMgtNRpsOXo0cCXqeSymqyZZoEdW/mqGj7FesqL
+         x5PbXAbP+T85tqAM80ys8cA6nhSc0gXfPpzcoQzz+86PRVRAqg8PuHHxX8lTlHD5qtMR
+         pjkZtaXCYxk7wEfqWd5D3cDRqpxeaO5yLqG7o=
+Date: Mon, 8 Nov 2010 16:06:47 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Joe Korty <joe.korty@ccur.com>, mathieu.desnoyers@efficios.com,
+        dhowells@redhat.com, loic.minier@linaro.org, dhaval.giani@gmail.com,
+        tglx@linutronix.de, peterz@infradead.org, linux-kernel@vger.kernel.org,
+        josh@joshtriplett.org
+Subject: Re: [PATCH] a local-timer-free version of RCU
+Message-ID: <20101108150644.GB5466@nowhere>
+References: <20101104232148.GA28037@linux.vnet.ibm.com> <20101105210059.GA27317@tsunami.ccur.com> <20101106192812.GI15561@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Shaohua Li <shaohua.li@intel.com>, lkml <linux-kernel@vger.kernel.org>,
-        "czoccolo@gmail.com" <czoccolo@gmail.com>
-Subject: Re: [patch 3/3]cfq-iosched: don't idle if a deep seek queue is slow
-References: <1289182045.23014.191.camel@sli10-conroe> <20101108142054.GB16767@redhat.com>
-In-Reply-To: <20101108142054.GB16767@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101106192812.GI15561@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-11-08 15:20, Vivek Goyal wrote:
-> On Mon, Nov 08, 2010 at 10:07:25AM +0800, Shaohua Li wrote:
->> If a deep seek queue slowly deliver requests but disk is much faster, idle
->> for the queue just wastes disk throughput. If the queue delevers all requests
->> before half its slice is used, the patch disable idle for it.
->> In my test, application delivers 32 requests one time, the disk can accept
->> 128 requests at maxium and disk is fast. without the patch, the throughput
->> is just around 30m/s, while with it, the speed is about 80m/s. The disk is
->> a SSD, but is detected as a rotational disk. I can configure it as SSD, but
->> I thought the deep seek queue logic should be fixed too, for example,
->> considering a fast raid.
->>
+On Sat, Nov 06, 2010 at 12:28:12PM -0700, Paul E. McKenney wrote:
+> On Fri, Nov 05, 2010 at 05:00:59PM -0400, Joe Korty wrote:
+> > +/**
+> > + * synchronize_sched - block until all CPUs have exited any non-preemptive
+> > + * kernel code sequences.
+> > + *
+> > + * This means that all preempt_disable code sequences, including NMI and
+> > + * hardware-interrupt handlers, in progress on entry will have completed
+> > + * before this primitive returns.  However, this does not guarantee that
+> > + * softirq handlers will have completed, since in some kernels
 > 
-> Hi Shaohua,
+> OK, so your approach treats preempt_disable code sequences as RCU
+> read-side critical sections by relying on the fact that the per-CPU
+> ->krcud task cannot run until such code sequences complete, correct?
 > 
-> So looks like you are trying to cut down queue idling in the case when
-> device is fast and idling hurts. That's a noble goal, just that detetction
-> of this condition only for deep queues does not seem to cover lots of
-> cases. Manually one can set slice_idle=0 to handle this situation.
-> 
-> What about if you have lots of sequential queues (not deep) and they all
-> will still idle.
-> 
-> Secondly, what if driver is just buffering lots of requests in its device
-> queue and not necessarily device is processing the reuqests faster.
+> This seems to require that each CPU's ->krcud task be awakened at
+> least once per grace period, but I might well be missing something.
 
-That is not a valid concern, a driver should never extract more than it
-can process (pretty much) immediately.
 
-> So I think it is a good idea to cut down on idling if we can find that
-> underlying device is fast and idling on queue might hurt more. But
-> discovering this only using deep queues does not sound very appleaing to
-> me. This is help only a particular workload which is driving deep queues.
-> So if there was a generic mechanism to tackle this, that would be much
-> better.
 
-Agree, we could use better metrics for this.
+I understood it differently, but I might also be wrong as well. krcud
+executes the callbacks, but it is only woken up for CPUs that want to
+execute callbacks, not for those that only signal a quiescent state,
+which is only determined in two ways through rcu_poll_other_cpus():
 
--- 
-Jens Axboe
+- if the CPU is in an rcu_read_lock() critical section, it has the
+  IN_RCU_READ_LOCK flag. If so then we set up its DO_RCU_COMPLETION flag so
+  that it signals its quiescent state on rcu_read_unlock().
+
+- otherwise it's in a quiescent state.
+
+
+This works for rcu and rcu bh critical sections.
+But this works in rcu sched critical sections only if rcu_read_lock_sched() has
+been called explicitly, otherwise that doesn't work (in preempt_disable(),
+local_irq_save(), etc...). I think this is what is not complete when
+Joe said it's not yet a complete rcu implementation.
+
+This is also the part that scaries me most :)
 
