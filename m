@@ -1,96 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754149Ab0KHNZt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 08:25:49 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44662 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753128Ab0KHNZs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 08:25:48 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Y33jZlqILcNdVBz4X7lprM0Wyip0i0ABHxGDqHXWmyTMfVGsr59SI5X7aUjgAXhqNR
-         OHYQ5sfSfVohJPNiP+vwtCSG3Fp3Ytv8gqk6eF65iWfjFlxHGISzXBb2clW8wC+6F9ZA
-         MN6kjPZGMNWEOoqinQGVbjS3i7W5GXp8I+S4Q=
-From: Marek Belisko <marek.belisko@gmail.com>
-To: Ben Dooks <ben-linux@fluff.org>
-Cc: Marek Belisko <marek.belisko@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: s3c2440: mini2440: Add touchscreen support for mini2440.
-Date: Mon,  8 Nov 2010 14:27:50 +0100
-Message-Id: <1289222870-22580-1-git-send-email-marek.belisko@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	id S1754286Ab0KHN2a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 08:28:30 -0500
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:56482 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753803Ab0KHN23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 08:28:29 -0500
+Message-ID: <4CD7FAFD.1060802@fusionio.com>
+Date: Mon, 08 Nov 2010 14:28:29 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
+MIME-Version: 1.0
+To: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
+CC: Daniel J Blueman <daniel.blueman@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [2.6.37-rc1] sys_ioprio_set and RCU locking...
+References: <AANLkTi=xj6xW5SnrdQos4P-MtJP8+fwfaa3r7LPfdLh4@mail.gmail.com> <20101107185433.GD15561@linux.vnet.ibm.com>
+In-Reply-To: <20101107185433.GD15561@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch add support for mini2440 touchscreen.
-Some code borrowed from:
-git://repo.or.cz/linux-2.6/mini2440.git
+On 2010-11-07 19:54, Paul E. McKenney wrote:
+> On Tue, Nov 02, 2010 at 12:15:30PM +0000, Daniel J Blueman wrote:
+>> With 2.6.37-rc1, I observe sys_ioprio_set not taking the RCU lock [1]
+>> across access to the task credentials.
+>>
+>> Inspecting the code in fs/ioprio.c, the tasklist_lock is held for read
+>> across the __task_cred call, which is presumably sufficient to prevent
+>> the task credentials becoming stale.
+>>
+>> Thus, is there preference to take the RCU lock for read across the
+>> credential access eg at [2], or annotate the call?
+>>
+>> Thanks,
+>>   Daniel
+>>
+>> --- [1]
+>>
+>> ===================================================
+>>
+>> [ INFO: suspicious rcu_dereference_check() usage. ]
+>>
+>> ---------------------------------------------------
+>>
+>> kernel/pid.c:419 invoked rcu_dereference_check() without protection!
+>>
+>>
+>>
+>> other info that might help us debug this:
+>>
+>>
+>>
+>>
+>> rcu_scheduler_active = 1, debug_locks = 1
+>>
+>> 1 lock held by start-stop-daem/2246:
+>>
+>>  #0:  (tasklist_lock){.?.?..}, at: [<ffffffff811a2dfa>]
+>> sys_ioprio_set+0x8a/0x400
+>>
+>>
+>>
+>> stack backtrace:
+>>
+>> Pid: 2246, comm: start-stop-daem Not tainted 2.6.37-rc1-330cd+ #2
+>>
+>> Call Trace:
+>>
+>>  [<ffffffff8109f5f4>] lockdep_rcu_dereference+0xa4/0xc0
+>>
+>>  [<ffffffff81085651>] find_task_by_pid_ns+0x81/0x90
+>>
+>>  [<ffffffff8108567d>] find_task_by_vpid+0x1d/0x20
+>>
+>>  [<ffffffff811a3160>] sys_ioprio_set+0x3f0/0x400
+>>
+>>  [<ffffffff816efa79>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>>
+>>  [<ffffffff81003482>] system_call_fastpath+0x16/0x1b
+>>
+>>
+>> --- [2]
+>>
+>> Take the RCU lock for read across acquiring the pointer to the task
+>> credentials and dereferencing it.
+> 
+> Jens, does this look sane?
 
-Signed-off-by: Marek Belisko <marek.belisko@gmail.com>
----
- arch/arm/mach-s3c2440/mach-mini2440.c |   17 +++++++++++++++--
- 1 files changed, 15 insertions(+), 2 deletions(-)
+Yes, looks clean enough to me.
 
-diff --git a/arch/arm/mach-s3c2440/mach-mini2440.c b/arch/arm/mach-s3c2440/mach-mini2440.c
-index f62bb4c..766d9f4 100644
---- a/arch/arm/mach-s3c2440/mach-mini2440.c
-+++ b/arch/arm/mach-s3c2440/mach-mini2440.c
-@@ -47,6 +47,7 @@
- #include <plat/iic.h>
- #include <plat/mci.h>
- #include <plat/udc.h>
-+#include <plat/ts.h>
- 
- #include <linux/mtd/mtd.h>
- #include <linux/mtd/nand.h>
-@@ -506,6 +507,11 @@ static struct i2c_board_info mini2440_i2c_devs[] __initdata = {
- 	},
- };
- 
-+static struct s3c2410_ts_mach_info mini2440_ts_cfg __initdata = {
-+	.delay = 10000,
-+	.presc = 0xff, /* slow as we can go */
-+};
-+
- static struct platform_device *mini2440_devices[] __initdata = {
- 	&s3c_device_ohci,
- 	&s3c_device_wdt,
-@@ -522,6 +528,7 @@ static struct platform_device *mini2440_devices[] __initdata = {
- 	&s3c_device_sdi,
- 	&s3c_device_iis,
- 	&mini2440_audio,
-+	&s3c_device_adc,
- };
- 
- static void __init mini2440_map_io(void)
-@@ -605,8 +612,13 @@ static void mini2440_parse_features(
- 			features->done |= FEATURE_BACKLIGHT;
- 			break;
- 		case 't':
--			printk(KERN_INFO "MINI2440: '%c' ignored, "
--				"touchscreen not compiled in\n", f);
-+			if (features->done & FEATURE_TOUCH)
-+				printk(KERN_INFO "MINI2440: '%c' ignored, "
-+					"touchscreen already set\n", f);
-+			else
-+				features->optional[features->count++] =
-+						&s3c_device_ts;
-+			features->done |= FEATURE_TOUCH;
- 			break;
- 		case 'c':
- 			if (features->done & FEATURE_CAMERA)
-@@ -677,6 +689,7 @@ static void __init mini2440_init(void)
- 	s3c24xx_mci_set_platdata(&mini2440_mmc_cfg);
- 	s3c_nand_set_platdata(&mini2440_nand_info);
- 	s3c_i2c0_set_platdata(NULL);
-+	s3c24xx_ts_set_platdata(&mini2440_ts_cfg);
- 
- 	i2c_register_board_info(0, mini2440_i2c_devs,
- 				ARRAY_SIZE(mini2440_i2c_devs));
 -- 
-1.7.1
+Jens Axboe
 
