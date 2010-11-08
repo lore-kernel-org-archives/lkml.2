@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208Ab0KHTuY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 14:50:24 -0500
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:41589 "EHLO e6.ny.us.ibm.com"
+	id S1753143Ab0KHTww (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 14:52:52 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:52823 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752503Ab0KHTuX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 14:50:23 -0500
-Date: Mon, 8 Nov 2010 11:50:19 -0800
+	id S1751703Ab0KHTwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 14:52:51 -0500
+Date: Mon, 8 Nov 2010 11:52:48 -0800
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Joe Korty <joe.korty@ccur.com>
+To: houston.jim@comcast.net
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        "mathieu.desnoyers@efficios.com" <mathieu.desnoyers@efficios.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "loic.minier@linaro.org" <loic.minier@linaro.org>,
-        "dhaval.giani@gmail.com" <dhaval.giani@gmail.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "josh@joshtriplett.org" <josh@joshtriplett.org>,
-        Jim Houston <jim.houston@comcast.net>
+        "Udo A. Steinberg" <udo@hypervisor.org>,
+        Joe Korty <joe.korty@ccur.com>,
+        mathieu desnoyers <mathieu.desnoyers@efficios.com>,
+        dhowells@redhat.com, loic minier <loic.minier@linaro.org>,
+        dhaval giani <dhaval.giani@gmail.com>, tglx@linutronix.de,
+        peterz@infradead.org, linux-kernel@vger.kernel.org,
+        josh@joshtriplett.org
 Subject: Re: [PATCH] a local-timer-free version of RCU
-Message-ID: <20101108195019.GD4032@linux.vnet.ibm.com>
+Message-ID: <20101108195248.GE4032@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <20101104232148.GA28037@linux.vnet.ibm.com>
- <20101105210059.GA27317@tsunami.ccur.com>
- <20101106192812.GI15561@linux.vnet.ibm.com>
- <20101108150644.GB5466@nowhere>
- <20101108151829.GB8996@tsunami.ccur.com>
+References: <757455806.950179.1289232791283.JavaMail.root@sz0076a.westchester.pa.mail.comcast.net>
+ <881839960.950383.1289232938613.JavaMail.root@sz0076a.westchester.pa.mail.comcast.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101108151829.GB8996@tsunami.ccur.com>
+In-Reply-To: <881839960.950383.1289232938613.JavaMail.root@sz0076a.westchester.pa.mail.comcast.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 08, 2010 at 10:18:29AM -0500, Joe Korty wrote:
-> On Mon, Nov 08, 2010 at 10:06:47AM -0500, Frederic Weisbecker wrote:
-> > On Sat, Nov 06, 2010 at 12:28:12PM -0700, Paul E. McKenney wrote:
-> >> OK, so your approach treats preempt_disable code sequences as RCU
-> >> read-side critical sections by relying on the fact that the per-CPU
-> >> ->krcud task cannot run until such code sequences complete, correct?
-> >> 
-> >> This seems to require that each CPU's ->krcud task be awakened at
-> >> least once per grace period, but I might well be missing something.
-> > 
-> > I understood it differently, but I might also be wrong as well. krcud
-> > executes the callbacks, but it is only woken up for CPUs that want to
-> > execute callbacks, not for those that only signal a quiescent state,
-> > which is only determined in two ways through rcu_poll_other_cpus():
-> > 
-> > - if the CPU is in an rcu_read_lock() critical section, it has the
-> >   IN_RCU_READ_LOCK flag. If so then we set up its DO_RCU_COMPLETION flag so
-> >   that it signals its quiescent state on rcu_read_unlock().
-> > 
-> > - otherwise it's in a quiescent state.
-> > 
-> > This works for rcu and rcu bh critical sections.
-> > But this works in rcu sched critical sections only if rcu_read_lock_sched() has
-> > been called explicitly, otherwise that doesn't work (in preempt_disable(),
-> > local_irq_save(), etc...). I think this is what is not complete when
-> > Joe said it's not yet a complete rcu implementation.
-> > 
-> > This is also the part that scaries me most :)
+On Mon, Nov 08, 2010 at 04:15:38PM +0000, houston.jim@comcast.net wrote:
+> Hi Everyone,
 > 
-> Mostly, I meant that the new RCU API interfaces that have come into
-> existance since 2004 were only hastily wrapped or NOPed by me to get
-> things going.
+> I'm sorry started this thread and have not been able to keep up
+> with the discussion.  I agree that the problems described are real.
 
-Ah, understood.
+Not a problem -- your patch is helpful in any case.
 
-> Jim's method only works with explicit rcu_read_lock..unlock sequences,
-> implicit sequences via preempt_disable..enable and the like are not
-> handled.  I had thought all such sequences were converted to rcu_read_lock
-> but maybe that is not yet correct.
+> > > UAS> PEM> o	CPU 1 continues in rcu_grace_period_complete(),
+> > > UAS> PEM> incorrectly ending the new grace period.
+> > > UAS> PEM> 
+> > > UAS> PEM> Or am I missing something here?
+> > > UAS> 
+> > > UAS> The scenario you describe seems possible. However, it should be easily
+> > > UAS> fixed by passing the perceived batch number as another parameter to
+> > > UAS> rcu_set_state() and making it part of the cmpxchg. So if the caller
+> > > UAS> tries to set state bits on a stale batch number (e.g., batch !=
+> > > UAS> rcu_batch), it can be detected.
+> 
+> My thought on how to fix this case is to only hand off the DO_RCU_COMPLETION
+> to a single cpu.  The rcu_unlock which receives this hand off would clear its
+> own bit and then call rcu_poll_other_cpus to complete the process.
 
-Not yet, unfortunately.  Having them all marked, for lockdep if nothing
-else, could be a big benefit.
+Or we could map to TREE_RCU's data structures, with one thread per
+leaf rcu_node structure.
 
-> Jim will have to comment on the full history.  He is incommunicado
-> at the moment; hopefully he will be able to participate sometime in
-> the next few days.
+> > What is scary with this is that it also changes rcu sched semantics, and users
+> > of call_rcu_sched() and synchronize_sched(), who rely on that to do more
+> > tricky things than just waiting for rcu_derefence_sched() pointer grace periods,
+> > like really wanting for preempt_disable and local_irq_save/disable, those
+> > users will be screwed... :-(  ...unless we also add relevant rcu_read_lock_sched()
+> > for them...
+> 
+> I need to stare at the code and get back up to speed. I expect that the synchronize_sched
+> path in my patch is just plain broken.
 
-Sounds good!
+Again, not a problem -- we have a couple approaches that might work.
+That said, additional ideas are always welcome!
 
 							Thanx, Paul
