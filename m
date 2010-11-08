@@ -1,221 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755522Ab0KHTIc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 14:08:32 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:35314 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753635Ab0KHTIb (ORCPT
+	id S1752736Ab0KHTTa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 14:19:30 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:40865 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752141Ab0KHTT2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 14:08:31 -0500
-Message-ID: <4CD84A81.3000208@euromail.se>
-Date: Mon, 08 Nov 2010 20:07:45 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Mon, 8 Nov 2010 14:19:28 -0500
+Date: Mon, 8 Nov 2010 14:19:26 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Jason Wessel <jason.wessel@windriver.com>
+cc: gregkh@suse.de, USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        <kgdb-bugreport@lists.sourceforge.net>,
+        Alan Cox <alan@linux.intel.com>, Oliver Neukum <oliver@neukum.org>
+Subject: Re: [RFC PATCH 1/5] usb-hcd: implement polling a specific usb device
+In-Reply-To: <4CD81995.8060003@windriver.com>
+Message-ID: <Pine.LNX.4.44L0.1011081355050.1340-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Rafi Rubin <rafi@seas.upenn.edu>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Chris Bagwell <chris@cnpbagwell.com>,
-        Chase Douglas <chasedouglas@gmail.com>, Takashi Iwai <tiwai@suse.de>,
-        =?ISO-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
-Subject: Re: [PATCH] input: Introduce light-weight contact tracking
-References: <1289161108-32309-1-git-send-email-rydberg@euromail.se> <4CD724BC.8020702@seas.upenn.edu> <4CD80FCB.20903@euromail.se> <4CD82B28.4060706@seas.upenn.edu>
-In-Reply-To: <4CD82B28.4060706@seas.upenn.edu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1PFX4F-0001E3-Bx.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PFX4F-0001E3-Bx 9235065229e84a40d07b37fb5c5ca530
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2010 05:54 PM, Rafi Rubin wrote:
+On Mon, 8 Nov 2010, Jason Wessel wrote:
 
-> On 11/08/2010 09:57 AM, Henrik Rydberg wrote:
->> Hi Rafi,
->>
->> what tree does this patch apply to?
+> >> +static void usb_poll_irq_flush_helper(struct work_struct *dummy)
+> >> +{
+> >> +	struct urb *urb;
+> >> +	struct urb *scratch;
+> >> +	unsigned long flags;
+> >> +
+> >> +	mutex_lock(&usb_poll_irq_flush_mutex);
+> > 
+> > What is this mutex used for?
 > 
-> It should apply to the torvalds/linux-2.6 master branch.
+> 
+> This mutex exists because I did not see a way to create a static
+> workqueue with the attribute WQ_NON_REENTRANT.  When the workqueue
+> does not have this attribute there is a corner case that between two
+> usb poll intervals (one being handled on cpu 0 and the next on cpu 1)
+> that you can get two units of work to run concurrently.
 
+So this reduces to the more fundamental question of why you need to use 
+a workqueue in the first place.
 
-Odd, seems the patch was damaged somehow. Applies and compiles, thanks.
+> >> +	local_irq_save(flags);
+> > 
+> > Isn't this function meant to be called with interrupts disabled on all 
+> > CPUs anyway?
+> 
+> 
+> The usb_poll_irq_flush_helper() is called from a work queue at some
+> point after the work had been originally been scheduled with the IRQ's
+> off.  We might be able to simply lock the HCD instead, but it looked
+> like the this code should really be called with the irq's off.  I came
+> to that conclusion based on looking at if the irqs were on or off in
+> the original context the HCD giveback was executed.
+> 
+> If you believe we don't need it, we'll simply remove the irq
+> save/restore.
 
-> The "complex" set of parameters was intended for more advanced users to give
-> some feedback to help improve the driver.  Though given the lack of feedback, I
-> guess you're right that there's little reason to expose them to users.
+Oh, there's no question that interrupts need to be disabled.  However 
+if this routine isn't called from a workqueue then interrupts will 
+already be disabled.
 
+> >> +void usb_poll_irq_schedule_flush(void)
+> >> +{
+> >> +	schedule_work(&usb_poll_irq_flush_work);
+> >> +}
+> >> +EXPORT_SYMBOL_GPL(usb_poll_irq_schedule_flush);
+> > 
+> > Why do you want to do this in a workqueue?  Just move all the code from 
+> > usb_poll_irq_flush_helper over here directly.
+> > 
+> 
+> 
+> I want this in a work queue because we need to schedule this to run at
+> a later point when the interrupts are restored.
 
-Sounds good. Would you agree that applying a modified version of the ubuntu
-patch is the simplest way forward?
+Why?  Why not run it before interrupts are restored?
 
-> The ubuntu 10.10 code does do filtering better than without filtering, but in
-> trying it I've been seeing ghosts and have needed to calibrate multiple times
-> per day (though that may be the result of a new screen being a little off).
-> Furthermore while ripping out the filter code, you also ripped out single touch
-> support for single touch firmwares, which apparently a few people still use.
+>  If I don't put the
+> code here, it has to get duplicated in the kdb keyboard stack, as well
+> as the usb serial console code.  The alternative is that we need a
+> logical place to drain the queue at another point in the kernel or a
+> timer.
 
+The queue should be drained just before you exit the debugger.
 
-Yes, thanks, I got a report regarding the single touch firmwares and was
-planning to include it.
+> The "schedule later via a workqueue" seemed the path of least
+> resistance.
+> 
+> You could argue that we might have a user of this API that would want
+> to flush the delayed urb queue in a safe place.  For now though, the
+> two users of the new poll API (kdb, and usb serial console) do not
+> need it and this leads me to believe we would be best served to not
+> export the flush helper.
 
+Why should usb serial console need to use the queue?
 
-> Even without the ghost problem, it simply does not track as well.  The ntrig
-> only reports every 8-24ms which is a long enough period to move quite a
-> distance.
+Let's put it this way: Your polling mechanism has conflated two 
+separate issues.  The matter of polling the host controller driver is 
+distinct from the question of which URBs to stick on the queue.
 
+While kdb is running, it makes sense to give back only the URBs that 
+are for the console device.  But if you are polling during the normal 
+operation of printk and the usb serial console, then there's no reason 
+not to give back all the URBs that complete during polling.
 
-True, since it is using a greedy algorithm. This is what the exact in-kernel
-tracking code is supposed to remedy. To be precise, the ubuntu version uses the
-so-obtained assignment for filtering only - the tracking is still performed in
-mtdev in userspace.
+In other words, usb_poll_irq() doesn't need to set or clear
+usb_poll_hcd_device.  (Incidentally, that's not a very good name -- I'd 
+change to it usb_poll_device.)  Instead, set that pointer when you 
+enter the debugger and clear it when you leave the debugger, at which 
+time you can drain the queue.
 
-> In drawing up corner cases I realized that motion where two fingers
-> are co-linear with the vector of motion require quite a bit of care to avoid
-> perverting the tracking.
+> >> --- a/include/linux/usb.h
+> >> @@ -1188,6 +1192,7 @@ struct urb {
+> >> +	struct list_head poll_list;	/* Added to the poll queue */
+> > 
+> > You don't need to add an additional list_head to struct urb -- it
+> > already contains too much stuff.  Simply use urb_list; that's what it's
+> > for.
+> > 
+> 
+> 
+> It looked to me like it might have already been used when I was
+> sifting through the other code in drivers/usb/*, but if you say it is
+> safe, I trust you.  :-)
 
+As the kerneldoc comment says, it is for use by whoever owns the URB.  
+Just before the URB is given back to the driver, the USB core no longer 
+owns it and the driver doesn't yet own it.  Hence kdb can take 
+ownership of the URB.
 
-Yes, this is one example of why exact matching is needed.
+> >> +static void usb_do_console_write(struct usb_serial *serial,
+> >> +				 struct usb_serial_port *port,
+> >> +				 const char *buf, unsigned count)
+> >> +{
+> >> +	int retval;
+> >> +	int loops = 100;
+> >> +try_again:
+> >> +	/* pass on to the driver specific version of this function if
+> >> +	   it is available */
+> >> +	if (serial->type->write)
+> >> +		retval = serial->type->write(NULL, port, buf, count);
+> >> +	else
+> >> +		retval = usb_serial_generic_write(NULL, port, buf, count);
+> >> +	if (retval < count && retval >= 0 && loops--) {
+> >> +		/* poll the hcd device because the queue is full */
+> > 
+> > In fact you can call the poll routine on every iteration.  Only the 
+> > udelay needs to wait for the queue to be full.
+> 
+> 
+> I figured it would be best to sleep a bit but if you feel we should be
+> able to poll every time we could go with a udelay(1) and loops =
+> 10000, or udelay(10) and loops(1000).
 
-> Greedily assigning matches based purely on distance
-> can cause a flip.  Even global distance minimization is not reliable when we use
-> linear distance as the cost.  A full analysis would require quadric distances
-> and the global minimization tends to be an n^3 approach.  I'm sure we could
-> reduce that a bit, but it just seems a bit heavy handed.
+You don't need any delay when polling.  But polling does take some
+time, so it will slow things down a little.  I don't know, perhaps
+leaving it the way it is will be best for now.
 
+Alan Stern
 
-The patch that started this thread implements exact matching, which means
-finding the optimal slot assignments that minimizes a measure of the distance of
-all movements. The implementation is very fast, but still needs to be cut off at
-some arbitrary number. Four seems to be a natural breakpoint. The fact that
-matching scales badly is one of the major headaches, and the reason mtdev is
-implemented in userspace. The middle-way proposed here is a balance that seems
-to cater for existing hardware at the same time as expecting hardware to provide
-their own tracking in the future.
-
-> By contrast just a little bit of extra work to estimate the position based on
-> the difference in position of the previous two points (which every algorithm
-> discussed seems to do anyway) doesn't seem that egregious.
-
-
-Using exact matching instead of greedy matching is what makes it work well. It
-is very robust and parameter-free. On the eclectic side, one can certainly go
-beyond that by optimizing for both position differences and speed differences
-(maximum smoothness). However, I doubt it makes any difference on the
-finger-tracking use case.
-
-> The style of the code still assumes that we might want to adjust the
-> aggressiveness of filtering ghosts and drops.  I agree it would be nice to be
-> able to come up with a single value for each and hard code it, but I'm not
-> willing to just assume that I can determine that value.
-
-
-The ghost detection in the ubuntu version could probably be improved a bit, but
-the biggest experience gain would probably come from automatic calibration.
-
-> Also, for graceful
-> degradation and repair, I would like to be able to code it so that those
-> thresholds grow a little bit as a device drifts and then drop them again when
-> calibration is run.
-
-
-Tricky - perhaps a measure of the number of filtered ghosts could be used to
-determine when it is time to recalibrate.
-
->
-> Also, if you're going to criticize code for complexity, I would recommend some
-> comments that explain your code beyond "this is a generated table, don't change
-> it".
-
-
-Hehe, the quote is actually wrong. ;-)
-
-Of course you are right. More documentation is a good thing, and I will add more
-of it. The code does at least refer to the generating program, and the commit
-message tells where that program can be found. To discuss details, here is a
-listing of some of that code:
-
-/*
- * Combinatorial formulation
- *
- * x_ij = 1 if slot i and contact j are connected, zero otherwise
- *
- * sum_i x_ij <= 1 for all j; each contact picks at most one slot
- *
- * sum_j x_ij <= 1 for all i; each slot is picked by at most one contact
- *
- * sum_ij x_ij == min(nslot, npos); assign every contact possible
- *
- * Arrange x_ij as a bitmask; x_00 x_01 x_02.. x_10 x_11 x_12...
- *
- * Up to five slots, this is readily enumerable.
- */
-
-static int illegal(int nslot, int npos, unsigned x)
-{
-	int i, j, sum;
-
-	for (j = 0; j < npos; j++) {
-		sum = 0;
-		for (i = 0; i < nslot; i++)
-			sum += GETBIT(x, i * npos + j);
-		if (sum > 1)
-			return 1;
-	}
-	for (i = 0; i < nslot; i++) {
-		sum = 0;
-		for (j = 0; j < npos; j++)
-			sum += GETBIT(x, i * npos + j);
-		if (sum > 1)
-			return 1;
-	}
-
-	sum = bitcount(x);
-	return sum != minval(nslot, npos);
-}
-
-static int generate_assignments(int nslot, int npos)
-{
-	static int ncol;
-	unsigned x, nx = BITMASK(nslot * npos);
-	int slots[SLOT_MAX];
-	int i, n = 0;
-
-	for (x = 0; x < nx; x++) {
-		if (illegal(nslot, npos, x))
-			continue;
-		for (i = 0; i < nslot * npos; i++) {
-			if (GETBIT(x, i)) {
-				if (ncol++ % 16 == 0)
-					printf("\n\t%d,", i);
-				else
-					printf(" %d,", i);
-				n++;
-			}
-		}
-		get_slots(slots, nslot, npos, x);
-		for (i = 0; i < npos; i++) {
-			if (ncol++ % 16 == 0)
-				printf("\n\t%d,", slots[i]);
-			else
-				printf(" %d,", slots[i]);
-			n++;
-		}
-	}
-
-	return n;
-}
-
-For every (number of used slots, number of current contacts) pair, two
-consecutive arrays of values are generated. The first contains the matrix
-indices corresponding to a certain mapping from contacts to slots. The second
-contains the actual slot assignment.
-
-To find the optimal matching, one simply scans through the appropriate index
-array, extracting the slot assignment corresponding to the minimum sum of matrix
-elements. This process is combinatorial and in general scales much worse than
-for instance the hungarian algorithm, but for small numbers, it can be
-implemented with very good speed.
-
-Cheers,
-Henrik
