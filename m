@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab0KHKPZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 05:15:25 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:59830 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752702Ab0KHKPX (ORCPT
+	id S1753503Ab0KHKSR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 05:18:17 -0500
+Received: from dallas.jonmasters.org ([72.29.103.172]:46781 "EHLO
+	dallas.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752372Ab0KHKSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 05:15:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=UzOvB2Chw7hZG18yLUGZ1eJ+Y4dXUHx/DDgM3DYc8ICjUXylxnA2ebSK1X/wUuoHPG
-         +3Wz5F+VyZUHYZuwKza3VKjkA6+wH6PdEZDp15mLwdwxCoC5v7feEJL8z41G3ImRxcFI
-         ChyNBLfTd5RCmnHXFYHWf+VDMY4ELbwjAjpss=
-Date: Mon, 8 Nov 2010 18:20:02 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Ben Gamari <bgamari.foss@gmail.com>
-Cc: Sam Ravnborg <sam@ravnborg.org>,
-        =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Christoph Egger <siccegge@cs.fau.de>, linux-kernel@vger.kernel.org,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Michal Marek <mmarek@suse.cz>
-Subject: Re: fstat suddenly return -EINVAL [Was: Bus error on make
- allyesconfig, kernelbuild with HEAD]
-Message-ID: <20101108101920.GA5527@cr0.nay.redhat.com>
-References: <20100729121002.GC13192@faui48a.informatik.uni-erlangen.de>
- <20100730084353.GB5638@cr0.nay.redhat.com>
- <87d3qicwxn.fsf@gmail.com>
- <87aalmcv0p.fsf@gmail.com>
- <20101106162426.GA14361@merkur.ravnborg.org>
- <87tyjtjd7m.fsf@gmail.com>
- <20101107170700.GA22684@merkur.ravnborg.org>
- <87mxplypid.fsf@gmail.com>
- <20101107223056.GA23871@merkur.ravnborg.org>
- <87lj54raw3.fsf@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87lj54raw3.fsf@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 8 Nov 2010 05:18:16 -0500
+Subject: [bisected] offset display bug in i915
+From: Jon Masters <jonathan@jonmasters.org>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: World Organi[sz]ation of Broken Dreams
+Date: Mon, 08 Nov 2010 05:18:32 -0500
+Message-ID: <1289211512.3916.383.camel@constitution.bos.jonmasters.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 74.92.29.237
+X-SA-Exim-Mail-From: jonathan@jonmasters.org
+X-SA-Exim-Scanned: No (on dallas.jonmasters.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 07, 2010 at 06:07:08PM -0500, Ben Gamari wrote:
->On Sun, 7 Nov 2010 23:30:56 +0100, Sam Ravnborg <sam@ravnborg.org> wrote:
->> I looked briefly at the fstat implmnetation in the kernel and
->> this did not give me any hints.
->> I therefore changed to subject to attrack attention of more readers.
->> 
->Thanks!
->
->> Can you supply us with a bit more information about your system:
->> - filesystem (as fstat seems to reach filesystem specific code)
->> - glibc version 
->> - box (architecture + 32 or 64 bit kernel)
->> - do you see other things misbehave or is this only a kernel build thing
->> 
->> If you have provided this info in the past I have missed it.
->> 
->The kernel tree resides on an ext4 partition. The machine has two Xeon
->E5520 processors and runs 64-bit Ubuntu 10.04 which uses eglibc 2.11.1.
->Note that the kernel is being cross-compiled for ARM under an
->OpenEmbedded toolchain (have tried both gcc 4.4.4 and 4.5). This is the
->only strange behavior that I know of.
->
+Hi Chris,
 
-But fixdep should be compiled by the host compiler...
+The following patch that you recently committed breaks my ASUS Eee PC
+1015PEM by causing the display to be offset by about 1 inch (a few
+centimeters) when the mode is (re)set during boot. I previously posted
+both photographs and video of the problem in another "PROBLEM" thread.
 
-So, does this error also occur when you do non-cross compiling on the
-same partition?
+Here is the offending commit found through bisection:
 
-Thanks for your testing!
+219adae138513bae20b256f1946b9cb3b75ca05c is the first bad commit
+commit 219adae138513bae20b256f1946b9cb3b75ca05c
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Thu Sep 16 23:05:10 2010 +0100
+
+    drm/i915: Cache LVDS EDID
+    
+    We assume that the panel is permenantly connected and that the EDID
+    data is consistent from boot, so simply cache the whole EDID for the
+    panel.
+    
+    Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+
+I'll look at the patch. Either the EDID is *not* consistent (in which
+case, why are we not seeing other bugs like this?) or there is something
+specific to this system or panel used.
+
+Jon.
+
+
