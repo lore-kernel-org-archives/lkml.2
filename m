@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755673Ab0KHUeR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 15:34:17 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:3983 "EHLO
+	id S1755729Ab0KHUel (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 15:34:41 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:11484 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755638Ab0KHUeN (ORCPT
+	with ESMTP id S1755607Ab0KHUeC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 15:34:13 -0500
+	Mon, 8 Nov 2010 15:34:02 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=subject:to:from:cc:date:message-id:in-reply-to:references:
 	user-agent:mime-version:content-type:
 	content-transfer-encoding:x-system-of-record;
-	b=mmr9QnHytL8ukJSLakWnAMqCGtBdLXWpRm0vNJhTitVaFiakBFIV6lmfxoZ2S29Wi
-	H2YvYmCAEZY7bWPiVwWAQ==
-Subject: [PATCH v2 22/23] netoops: Add one-shot mode
+	b=EYN+F3sIt4D/NVKM0KPKDqWYT0Nv6VOfC+alK3vgVeZIkCzM5Q4KWpx5fi9rYFmj2
+	bkKs30RNszTY4iFYHCgBg==
+Subject: [PATCH v2 21/23] netoops: Add user programmable fields to the netoops
+	packet.
 To: simon.kagstrom@netinsight.net, davem@davemloft.net, nhorman@tuxdriver.com,
         Matt Mackall <mpm@selenic.com>
 From: Mike Waychison <mikew@google.com>
@@ -21,8 +22,8 @@ Cc: adurbin@google.com, linux-kernel@vger.kernel.org, chavey@google.com,
         Greg KH <greg@kroah.com>,
         =?utf-8?q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
         akpm@linux-foundation.org, linux-api@vger.kernel.org
-Date: Mon, 08 Nov 2010 12:33:47 -0800
-Message-ID: <20101108203346.22479.10201.stgit@crlf.mtv.corp.google.com>
+Date: Mon, 08 Nov 2010 12:33:41 -0800
+Message-ID: <20101108203340.22479.22958.stgit@crlf.mtv.corp.google.com>
 In-Reply-To: <20101108203120.22479.19708.stgit@crlf.mtv.corp.google.com>
 References: <20101108203120.22479.19708.stgit@crlf.mtv.corp.google.com>
 User-Agent: StGit/0.15
@@ -34,100 +35,184 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometimes it is possible to have a kernel crashing that continuously
-Oopses.  In this case, we do not want the network dumper get called over
-and over again, as we may only be interested in the first Oops that a
-kernel emits (especially in cases where we panic_on_oops).
+In our environment, it is important for us to capture motherboard name,
+firmware version and boot number for consideration when analyzing netoops
+dumps.
 
-In order to support this dumping policy, this commit introduces a file
-call /proc/sys/kernel/net_dump_one_shot that contains a boolean as to
-whether or not the netoops driver will operate in one-shot mode.
+We collect this information in userland at system startup (in platform
+specific ways) and plug this information into the netoops driver via
+files available in sysfs.
 
-Note that 'soft' dumps do not disable the netoops driver when one-shot
-mode is enabled.
+Files introduced:
+  /sys/kernel/netdump/netdump_board_name
+  /sys/kernel/netdump/netdump_fw_version
+  /sys/kernel/netdump/netdump_boot_id
+
+If this were to be rewritten, we would probably like to have a more
+general way for userland to add to netdump packets.
 
 Signed-off-by: Mike Waychison <mikew@google.com>
 ---
-TODO: ABI needs a better home.
+TODO: This would probably be better handled by having the kernel accept
+some blob of data.  It doesn't need to know what the data itself is, as
+long as it is delivered in each packet.
 ---
- drivers/net/netoops.c |   37 +++++++++++++++++++++++++++++++++++++
- 1 files changed, 37 insertions(+), 0 deletions(-)
+ drivers/net/netoops.c |   93 ++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 88 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/net/netoops.c b/drivers/net/netoops.c
-index 5cbb732..1ffd0f0 100644
+index f63e12a..5cbb732 100644
 --- a/drivers/net/netoops.c
 +++ b/drivers/net/netoops.c
-@@ -97,6 +97,8 @@ struct netoops_msg {
- } __attribute__ ((packed));
+@@ -68,7 +68,7 @@ struct netoops_msg {
+ 		u16 type;
+ 		u32 packet_count;
+ 		u32 packet_no;
+-		u32 __reserved1;
++		u32 blog_boot_id;
+ 		u8 x86_family;
+ 		u8 x86_model;
+ 		u8 x86_stepping;
+@@ -77,8 +77,13 @@ struct netoops_msg {
+ 		 * termination not required.
+ 		 */
+ 		char kernel_version[64];
+-		char __reserved2[64];
+-		char __reserved3[64];
++		/*
++		 * bios and board info come from smbios which
++		 * has a maximum string length of 64 according
++		 * to page 26 of the smbios 2.3 spec.
++		 */
++		char bios_version[64];
++		char motherboard_type[64];
+ 		/* NOTE: regs is 60 or 168 bytes */
+ 		struct pt_regs regs; /* arch specific. */
+ 		/*
+@@ -93,7 +98,12 @@ struct netoops_msg {
  
  static struct netoops_msg msg;
-+static int network_dumper_one_shot = 1;
-+static int network_dumper_disabled;
  
- static char netoops_fw_version[80];
- static char netoops_board_name[80];
-@@ -221,6 +223,10 @@ static void netoops(struct kmsg_dumper *dumper, enum kmsg_dump_reason reason,
- 		netoops_send_segment(packet_count_2, s1, l1);
- 	}
- 
-+	/* Should we disable ourselves now? */
-+	if (!soft_dump && network_dumper_one_shot)
-+		network_dumper_disabled = 1;
+-static void setup_packet_header(int packet_count, int soft_dump)
++static char netoops_fw_version[80];
++static char netoops_board_name[80];
++static int netoops_boot_number;
 +
++static void setup_packet_header(int packet_count, struct pt_regs *regs,
++				int soft_dump)
+ {
+ 	msg.header.version = NETOOPS_VERSION;
+ 	msg.header.arch = NETOOPS_ARCH;
+@@ -102,11 +112,16 @@ static void setup_packet_header(int packet_count, int soft_dump)
+ 	msg.header.dump_id = (jiffies/HZ) & 0xffff;
+ 	msg.header.packet_count = packet_count;
+ 	msg.header.header_size = sizeof(msg.header);
++	msg.header.blog_boot_id = (u32)netoops_boot_number;
+ #ifndef CONFIG_UML
+ 	msg.header.x86_family = current_cpu_data.x86;
+ 	msg.header.x86_model = current_cpu_data.x86_model;
+ 	msg.header.x86_stepping = current_cpu_data.x86_mask;
+ #endif
++	strncpy(msg.header.bios_version, netoops_fw_version,
++		sizeof(msg.header.bios_version));
++	strncpy(msg.header.motherboard_type, netoops_board_name,
++		sizeof(msg.header.motherboard_type));
+ 	strncpy(msg.header.kernel_version,
+ 		utsname()->release,
+ 		min(sizeof(msg.header.kernel_version),
+@@ -209,6 +224,60 @@ static void netoops(struct kmsg_dumper *dumper, enum kmsg_dump_reason reason,
  	spin_unlock_irqrestore(&targets.lock, flags);
  }
  
-@@ -282,6 +288,28 @@ static struct kmsg_dumper netoops_dumper = {
++static ssize_t netoops_show(struct kobject *kobj,
++			    struct kobj_attribute *attr,
++			    char *buf) {
++
++	if (!strcmp(attr->attr.name, "netdump_fw_version"))
++		strncpy(buf, netoops_fw_version, PAGE_SIZE);
++	else if (!strcmp(attr->attr.name, "netdump_board_name"))
++		strncpy(buf, netoops_board_name, PAGE_SIZE);
++	else if (!strcmp(attr->attr.name, "netdump_boot_number"))
++		snprintf(buf, PAGE_SIZE, "%d\n", netoops_boot_number);
++	buf[PAGE_SIZE - 1] = '\0';
++	return strnlen(buf, PAGE_SIZE);
++}
++
++static ssize_t netoops_store(struct kobject *kobj,
++			     struct kobj_attribute *attr,
++			     const char *buf,
++			     size_t count) {
++	if (!count)
++		return count;
++
++	if (!strcmp(attr->attr.name, "netdump_fw_version")) {
++		strncpy(netoops_fw_version, buf, sizeof(netoops_fw_version));
++		netoops_fw_version[sizeof(netoops_fw_version) - 1] = '\0';
++	} else if (!strcmp(attr->attr.name, "netdump_board_name")) {
++		strncpy(netoops_board_name, buf, sizeof(netoops_board_name));
++		netoops_board_name[sizeof(netoops_board_name) - 1] = '\0';
++	} else if (!strcmp(attr->attr.name, "netdump_boot_number")) {
++		((char *)buf)[count - 1] = '\0';
++		sscanf(buf, "%du", &netoops_boot_number);
++	}
++	return count;
++}
++
++static struct kobj_attribute netoops_fw_version_attribute =
++	__ATTR(netoops_fw_version, 0666, netoops_show, netoops_store);
++static struct kobj_attribute netoops_board_name_attribute =
++	__ATTR(netoops_board_name, 0666, netoops_show, netoops_store);
++static struct kobj_attribute netoops_boot_number_attribute =
++	__ATTR(netoops_boot_number, 0666, netoops_show, netoops_store);
++
++static struct attribute *attrs[] = {
++	&netoops_fw_version_attribute.attr,
++	&netoops_board_name_attribute.attr,
++	&netoops_boot_number_attribute.attr,
++	NULL,
++};
++
++static struct attribute_group attr_group = {
++	.attrs = attrs,
++};
++
++static struct kobject *netoops_kobj;
++
+ static struct kmsg_dumper netoops_dumper = {
  	.dump = netoops,
  };
- 
-+static struct ctl_table kern_table[] = {
-+	{
-+		.procname       = "net_dump_one_shot",
-+		.data           = &network_dumper_one_shot,
-+		.maxlen         = sizeof(int),
-+		.mode           = 0644,
-+		.proc_handler   = &proc_dointvec,
-+	},
-+	{},
-+};
-+
-+static struct ctl_table root_table[] = {
-+	{
-+		.procname	= "kernel",
-+		.mode		= 0555,
-+		.child		= kern_table,
-+	},
-+	{}
-+};
-+
-+static struct ctl_table_header *proc_table_header;
-+
- static int __init netoops_init(void)
- {
- 	int retval = -EINVAL;
-@@ -309,7 +337,15 @@ static int __init netoops_init(void)
+@@ -228,11 +297,23 @@ static int __init netoops_init(void)
  	if (retval)
- 		goto out_sysfs_group;
+ 		goto out;
  
-+	proc_table_header = register_sysctl_table(root_table);
-+	if (!proc_table_header) {
-+		retval = -EINVAL;
-+		goto out_kmsg_dump;
-+	}
++	netoops_kobj = kobject_create_and_add("netoops", kernel_kobj);
++	if (!netoops_kobj)
++		goto out_targets;
 +
- 	return 0;
-+out_kmsg_dump:
-+	kmsg_dump_unregister(&netoops_dumper);
- out_sysfs_group:
- 	sysfs_remove_group(netoops_kobj, &attr_group);
- out_kobj:
-@@ -322,6 +358,7 @@ out:
++	retval = sysfs_create_group(netoops_kobj, &attr_group);
++	if (retval)
++		goto out_kobj;
++
+ 	retval = kmsg_dump_register(&netoops_dumper);
+ 	if (retval)
+-		goto out_targets;
++		goto out_sysfs_group;
  
+ 	return 0;
++out_sysfs_group:
++	sysfs_remove_group(netoops_kobj, &attr_group);
++out_kobj:
++	kobject_put(netoops_kobj);
+ out_targets:
+ 	unregister_netpoll_targets(&targets);
+ out:
+@@ -242,6 +323,8 @@ out:
  static void __exit netoops_exit(void)
  {
-+	unregister_sysctl_table(proc_table_header);
  	kmsg_dump_unregister(&netoops_dumper);
- 	sysfs_remove_group(netoops_kobj, &attr_group);
- 	kobject_put(netoops_kobj);
++	sysfs_remove_group(netoops_kobj, &attr_group);
++	kobject_put(netoops_kobj);
+ 	unregister_netpoll_targets(&targets);
+ }
+ 
 
