@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753934Ab0KHMUW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 07:20:22 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:54841 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753845Ab0KHMUT (ORCPT
+	id S1753684Ab0KHMXn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 07:23:43 -0500
+Received: from mx1.vsecurity.com ([209.67.252.12]:61094 "EHLO
+	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752304Ab0KHMXm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 07:20:19 -0500
-From: Andi Kleen <andi@firstfloor.org>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Stephane Eranian <eranian@google.com>, robert.richter@amd.com,
-        Cyrill Gorcunov <gorcunov@gmail.com>, paulus@samba.org,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [DRAFT PATCH 2/3] perf: Implement Nehalem uncore pmu
-References: <1288682905.12061.109.camel@minggr.sh.intel.com>
-Date: Mon, 08 Nov 2010 13:20:13 +0100
-In-Reply-To: <1288682905.12061.109.camel@minggr.sh.intel.com> (Lin Ming's
-	message of "Tue, 02 Nov 2010 15:28:25 +0800")
-Message-ID: <87vd48qa6a.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 8 Nov 2010 07:23:42 -0500
+Subject: Re: [PATCH RFC] Restrictions on module loading
+From: Dan Rosenberg <drosenberg@vsecurity.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org, security@kernel.org
+In-Reply-To: <20101108102013.0861725b@lxorguk.ukuu.org.uk>
+References: <1289179439.3090.205.camel@Dan>
+	 <20101108102013.0861725b@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 08 Nov 2010 07:23:36 -0500
+Message-ID: <1289219016.10229.14.camel@dan>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lin Ming <ming.m.lin@intel.com> writes:
 
-Looking at a an old patch.
+> NAK - Its a long standing ABI.
 
-> +
-> +static void uncore_pmu_disable_events(void)
-> +{
-> +	struct uncore_cpu_hw_events *cpuc = &__get_cpu_var(uncore_cpu_hw_events);
-> +	int node = numa_node_id();
+As far as I can tell, modules_disabled was first included in 2.6.31, so
+it's hardly what I'd call "long standing".  However, I see your point -
+it's definitely not my intention to surprise anyone by changing security
+features out from under them.
 
-Using numa_node_id() here implies this can't be used when NUMA is turned
-off. Better use the package id.
+I do think merging the features makes sense in this case.  I'll rework
+this to keep the "modules_disabled" name, where a value of "0" means
+default behavior, a value of "1" means no loading or unloading (and no
+changing it back), and the new value of "2" incorporates the
+restrictions I'm intending to enforce.
 
--Andi
+> 
+> I've no objection to modules_restrict although I doubt it'll ever get
+> used in the real world, but better to extend the meaning of the existing
+> interface, not remove stuff.
+> 
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+There has been interest in improving the ease with which users can
+enforce restrictions on automatic module loading.  No one is being
+forced to use it.
+
+-Dan
+
+
