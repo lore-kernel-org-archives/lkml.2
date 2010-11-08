@@ -1,130 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754378Ab0KHUqj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 15:46:39 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:40953 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752714Ab0KHUqh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 15:46:37 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=xQoQFCwsOpsFtSnnnxwSHog+mBwVt2IrZ941IhrXaitNyqgJZb+LHxbAeZsPngfYIZ
-         a9g7EITpdeLtaUcupZ3KOdq2mLzcY/FJApxAVbnBffvnN4jOynLJ368/pq3LEisTdmPI
-         GiJl5xDCZqIs8dE700sDtVvNyAEFiy5uF3ehM=
-Subject: Re: 2.6.37-rc1-git5 -- WARNING: at net/ipv4/devinet.c:137
- in_dev_finish_destroy+0x3d/0x6e()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: paulmck@linux.vnet.ibm.com, Miles Lane <miles.lane@gmail.com>,
-        ilpo.jarvinen@helsinki.fi, LKML <linux-kernel@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, netdev@vger.kernel.org
-In-Reply-To: <20101108204240.GA1585@arch.trippelsdorf.de>
-References: <AANLkTinVyf4CpxdzEWUn7zTyOrAMKY3H9Dct-HfopiSD@mail.gmail.com>
-	 <20101108200600.GG4032@linux.vnet.ibm.com>
-	 <1289248166.2790.1.camel@edumazet-laptop>
-	 <20101108204240.GA1585@arch.trippelsdorf.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 08 Nov 2010 21:46:31 +0100
-Message-ID: <1289249191.2790.3.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1754835Ab0KHUsJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 15:48:09 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:60373 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754208Ab0KHUsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 15:48:07 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Subject: Re: [Regression, post-2.6.35] ath9k occasionally drops out of PCI config space
+Date: Mon, 8 Nov 2010 21:47:13 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+References: <201011052150.02245.rjw@sisk.pl> <20101105211931.GA1921@tux>
+In-Reply-To: <20101105211931.GA1921@tux>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011082147.14170.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 08 novembre 2010 à 21:42 +0100, Markus Trippelsdorf a écrit :
-> On Mon, Nov 08, 2010 at 09:29:26PM +0100, Eric Dumazet wrote:
-> > Le lundi 08 novembre 2010 à 12:06 -0800, Paul E. McKenney a écrit :
-> > > On Mon, Nov 08, 2010 at 02:56:06PM -0500, Miles Lane wrote:
-> > > > WARNING: at net/ipv4/devinet.c:137 in_dev_finish_destroy+0x3d/0x6e()
-> > > > Hardware name: UL50VT
-> > > > Modules linked in: ipv6 snd_hda_codec_hdmi snd_hda_codec_realtek
-> > > > snd_hda_intel snd_hda_codec snd_pcm_oss snd_hwdep snd_mixer_oss
-> > > > snd_seq_dummy snd_pcm snd_seq_oss snd_seq_midi iwlagn snd_rawmidi
-> > > > snd_seq_midi_event snd_seq iwlcore uvcvideo snd_timer mac80211
-> > > > snd_seq_device videodev v4l1_compat v4l2_compat_ioctl32 i915 snd
-> > > > rtc_cmos rtc_core psmouse cfg80211 soundcore drm_kms_helper
-> > > > snd_page_alloc rtc_lib asus_laptop video battery ac sparse_keymap wmi
-> > > > button rfkill processor power_supply led_class usb_storage sg sr_mod
-> > > > sd_mod cdrom atl1c ehci_hcd uhci_hcd thermal thermal_sys hwmon
-> > > > Pid: 0, comm: kworker/0:0 Not tainted 2.6.37-rc1-git5 #10
-> > > > Call Trace:
-> > > >  <IRQ>  [<ffffffff8103767e>] warn_slowpath_common+0x80/0x98
-> > > >  [<ffffffff810376ab>] warn_slowpath_null+0x15/0x17
-> > > >  [<ffffffff8130d549>] in_dev_finish_destroy+0x3d/0x6e
-> > > >  [<ffffffff8130d58e>] in_dev_put+0x14/0x16
-> > > >  [<ffffffff8130d5ab>] inet_rcu_free_ifa+0x1b/0x27
-> > > >  [<ffffffff810834a8>] __rcu_process_callbacks+0x1a4/0x2bc
-> > > >  [<ffffffff8108363b>] rcu_process_callbacks+0x7b/0x82
-> > > >  [<ffffffff8103cb9c>] __do_softirq+0xb8/0x15a
-> > > >  [<ffffffff8100394c>] call_softirq+0x1c/0x28
-> > > >  [<ffffffff81005637>] do_softirq+0x38/0x81
-> > > >  [<ffffffff8103cce9>] irq_exit+0x45/0x94
-> > > >  [<ffffffff8101ac1f>] smp_apic_timer_interrupt+0x78/0x86
-> > > >  [<ffffffff81003413>] apic_timer_interrupt+0x13/0x20
-> > > >  <EOI>  [<ffffffff8134aff6>] ? _raw_spin_unlock_irqrestore+0x3c/0x69
-> > > >  [<ffffffff81059cb3>] clockevents_notify+0x11e/0x12d
-> > > >  [<ffffffffa008e561>] ? acpi_idle_enter_bm+0x236/0x271 [processor]
-> > > >  [<ffffffffa008dfce>] lapic_timer_state_broadcast+0x41/0x43 [processor]
-> > > >  [<ffffffffa008e588>] acpi_idle_enter_bm+0x25d/0x271 [processor]
-> > > >  [<ffffffff8129db30>] cpuidle_idle_call+0x9e/0xda
-> > > >  [<ffffffff810012ea>] cpu_idle+0xce/0x10c
-> > > >  [<ffffffff81343ce8>] start_secondary+0x1fc/0x205
-> > > > ---[ end trace 1d49bc8ff0266634 ]---
-> > > > Freeing alive in_device ffff88013fe536d0
-> > > 
-> > > Ilpo, thoughts?
-> > > 
+On Friday, November 05, 2010, Luis R. Rodriguez wrote:
+> On Fri, Nov 05, 2010 at 01:50:02PM -0700, Rafael J. Wysocki wrote:
+> > Hi,
 > > 
-> > Hmm... 
+> > For some time I've been experiencing a regression associated with ath9k
+> > that occasionally it drops the connection with the AP and goes into a state
+> > in which reading from its PCI config registers (as done by lspci) return all
+> > ones.
 > > 
-> >     WARN_ON(idev->mc_list);
+> > It may be sort of brought back to life by a suspend/resume afterwards, but
+> > then the driver cannot really handle it and realoding the driver doesn't help
+> > (probe fails).  Basically, full machine reboot is needed to revive the adapter.
 > > 
-> > Might be a problem with refcounts somewhere...
+> > The device is:
+> > 
+> > 09:00.0 Network controller: Atheros Communications Inc. AR928X Wireless Network Adapter (PCI-Express) (rev 01)
+> >         Subsystem: Foxconn International, Inc. Device e01f
+> > 
+> > and the kernel says:
+> > 
+> > [    9.623217] ath9k 0000:09:00.0: PCI INT A -> GSI 19 (level, low) -> IRQ 19
+> > [    9.631518] ath9k 0000:09:00.0: setting latency timer to 64
+> > [   10.071497] ath: EEPROM regdomain: 0x65
+> > [   10.071502] ath: EEPROM indicates we should expect a direct regpair map
+> > [   10.071510] ath: Country alpha2 being used: 00
+> > [   10.071514] ath: Regpair used: 0x65
+> > [   10.096025] phy0: Selected rate control algorithm 'ath9k_rate_control'
+> > [   10.097803] Registered led device: ath9k-phy0::radio
+> > [   10.098035] Registered led device: ath9k-phy0::assoc
+> > [   10.098249] Registered led device: ath9k-phy0::tx
+> > [   10.098483] Registered led device: ath9k-phy0::rx
+> > [   10.098496] phy0: Atheros AR9280 Rev:2 mem=0xffffc900017e0000, irq=19
+> > 
+> > The issue is not really bisectable, because I'm unable to trigger it on demand
+> > and it occurs approx. 1-2 times a day.  So, if you have any ideas what to test,
+> > please let me know.
+> > 
+> > It is not reproducible with the 2.6.35 kernel.
 > 
-> I have similar warnings in my logs, although its at
-> net/ipv4/devinet.c:136 in my case. Happened altogether three times in
-> the last few days and they all look the same:
+> Please try this patch.
+
+It _appears_ to help.  At least I haven't been able to reproduce the problem
+since I applied it, which was on Saturday early in the morning.
+
+Still, I also haven't used wireless a lot since that time, because I've been
+traveling mostly.
+
+Thanks,
+Rafael
+
+
+> From: Vasanthakumar Thiagarajan <vasanth@atheros.com>
+> Date: Tue, 2 Nov 2010 23:57:34 -0700
+> Subject: [PATCH] ath9k_hw: Fix AR9280 surprise removal during frequent idle on/off
 > 
-> Nov  5 17:31:35 arch kernel: WARNING: at net/ipv4/devinet.c:136 in_dev_finish_destroy+0x5c/0x90()
-> Nov  5 17:31:35 arch kernel: Hardware name: System Product Name
-> Nov  5 17:31:35 arch kernel: Pid: 0, comm: kworker/0:1 Not tainted 2.6.37-rc1-00027-gff8b16d-dirty #4
-> Nov  5 17:31:35 arch kernel: Call Trace:
-> Nov  5 17:31:35 arch kernel: <IRQ>  [<ffffffff8105c9f6>] ? warn_slowpath_common+0x76/0xc0
-> Nov  5 17:31:35 arch kernel: [<ffffffff8141889c>] ? in_dev_finish_destroy+0x5c/0x90
-> Nov  5 17:31:35 arch kernel: [<ffffffff813c49e8>] ? dst_destroy+0x68/0x120
-> Nov  5 17:31:35 arch kernel: [<ffffffff813e888f>] ? dst_rcu_free+0x1f/0x30
-> Nov  5 17:31:35 arch kernel: [<ffffffff81090e0c>] ? __rcu_process_callbacks+0xfc/0x2f0
-> Nov  5 17:31:35 arch kernel: [<ffffffff8109103f>] ? rcu_process_callbacks+0x3f/0x70
-> Nov  5 17:31:35 arch kernel: [<ffffffff810621bc>] ? __do_softirq+0x9c/0x120
-> Nov  5 17:31:35 arch kernel: [<ffffffff81030fc9>] ? timer_interrupt+0x19/0x30
-> Nov  5 17:31:35 arch kernel: [<ffffffff8102ea4c>] ? call_softirq+0x1c/0x30
-> Nov  5 17:31:35 arch kernel: [<ffffffff8103080d>] ? do_softirq+0x4d/0x80
-> Nov  5 17:31:35 arch kernel: [<ffffffff8106232d>] ? irq_exit+0x8d/0x90
-> Nov  5 17:31:35 arch kernel: [<ffffffff810306c7>] ? do_IRQ+0x67/0xe0
-> Nov  5 17:31:35 arch kernel: [<ffffffff8144a153>] ? ret_from_intr+0x0/0xa
-> Nov  5 17:31:35 arch kernel: <EOI>  [<ffffffff81035ba0>] ? default_idle+0x20/0x40
-> Nov  5 17:31:35 arch kernel: [<ffffffff81035c12>] ? c1e_idle+0x52/0xf0
-> Nov  5 17:31:35 arch kernel: [<ffffffff8102c12c>] ? cpu_idle+0x4c/0xa0
-> Nov  5 17:31:35 arch kernel: ---[ end trace 143683935de8f41f ]---
-> Nov  5 17:31:35 arch kernel: Freeing alive in_device ffff88011ffba600
+> Bit 22 of AR_WA should be set to fix the situation where chip reset
+> is asynchronous to clock of analog shift registers, such that when
+> reset is released, it could mess up the values of analog shift registers
+> and cause some hw issue on AR9280.
 > 
-
-Hmm....
-
-Is commit 1f1b9c9990205759aae31b7734b0ede41a867f32 present in your
-kernel ? (fib: fib_result_assign() should not change fib refcounts)
-
-Could you provide some information ?
-
-ifconfig -a
-
-ip ro
-
-Thanks
-
+> This bit is write only, but the driver does a read-modify-write
+> on AR_WA without setting bit 22 in ar9002_hw_configpcipowersave()
+> during radio disable. This causes surprise removal of hw. It can
+> never recover from this state and the hw will become usable only
+> after a power on/off cycle, and sometimes only during a cold reboot.
+> 
+> This issue can be triggered by doing frequent roaming with the
+> simple/test-roam script available from the wifi-test project [1]
+> when roaming between APs quickly. When roaming there is a is a high
+> possibility that the device being put into idle (radio disable) state
+> by mac80211 during AUTH->ASSOC. A device hardware reset would fail
+> and the kernel would output:
+> 
+> [40251.363799] ath: AWAKE -> FULL-SLEEP
+> [40251.363815] ieee80211 phy17: device no longer idle - working
+> [40251.363817] ath: Marking phy17 as not-idle
+> [40251.363819] ath: FULL-SLEEP -> AWAKE
+> [40251.415978] pciehp 0000:00:1c.3:pcie04: Card not present on Slot(3)
+> [40251.419896] ath: ah->misc_mode 0x4
+> [40251.428138] pciehp 0000:00:1c.3:pcie04: Card present on Slot(3)
+> [40251.532247] ath: timeout (100000 us) on reg 0x9860: 0xffffffff & 0x00000001 != 0x00000000
+> [40251.532250] ath: Unable to reset channel (2462 MHz), reset status -5
+> [40251.532422] ath: Set channel: 5745 MHz
+> [40251.540639] ath: Failed to stop TX DMA in 100 msec after killing last frame
+> [40251.548826] ath: Failed to stop TX DMA in 100 msec after killing last frame
+> [40251.557023] ath: Failed to stop TX DMA in 100 msec after killing last frame
+> [40251.565211] ath: Failed to stop TX DMA in 100 msec after killing last frame
+> [40251.573415] ath: Failed to stop TX DMA in 100 msec after killing last frame
+> [40251.581603] ath: Failed to stop TX DMA in 100 msec after killing last frame
+> [40251.581606] ath: Failed to stop TX DMA. Resetting hardware!
+> [40251.592679] ath: DMA failed to stop in 10 ms AR_CR=0xffffffff AR_DIAG_SW=0xffffffff
+> [40251.703330] ath: timeout (100000 us) on reg 0x7000: 0xffffffff & 0x00000003 != 0x00000000
+> [40251.703333] ath: RTC stuck in MAC reset
+> [40251.703334] ath: Chip reset failed
+> [40251.703335] ath: Unable to reset hardware; reset status -22
+> 
+> This is currently only reproducible with some HB92 (Half Mini-PCIE)
+> cards but the fix applies to all AR9280 cards. This patch fixes this
+> issue by setting bit 22 during radio disable.
+> 
+> [1] http://wireless.kernel.org/en/developers/Testing/wifi-test
+> 
+> Cc: Amod.bodas@atheros.com
+> Cc: David.Quan@atheros.com
+> Cc: Kyungwan.Nam@atheros.com
+> Cc: stable@kernel.org
+> Signed-off-by: Vasanthakumar Thiagarajan <vasanth@atheros.com>
+> ---
+>  drivers/net/wireless/ath/ath9k/ar9002_hw.c |    3 +++
+>  drivers/net/wireless/ath/ath9k/reg.h       |    1 +
+>  2 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/ath/ath9k/ar9002_hw.c b/drivers/net/wireless/ath/ath9k/ar9002_hw.c
+> index a0471f2..48261b7 100644
+> --- a/drivers/net/wireless/ath/ath9k/ar9002_hw.c
+> +++ b/drivers/net/wireless/ath/ath9k/ar9002_hw.c
+> @@ -410,6 +410,9 @@ static void ar9002_hw_configpcipowersave(struct ath_hw *ah,
+>  			val &= ~(AR_WA_BIT6 | AR_WA_BIT7);
+>  		}
+>  
+> +		if (AR_SREV_9280(ah))
+> +			val |= AR_WA_BIT22;
+> +
+>  		if (AR_SREV_9285E_20(ah))
+>  			val |= AR_WA_BIT23;
+>  
+> diff --git a/drivers/net/wireless/ath/ath9k/reg.h b/drivers/net/wireless/ath/ath9k/reg.h
+> index 42976b0..fa05b71 100644
+> --- a/drivers/net/wireless/ath/ath9k/reg.h
+> +++ b/drivers/net/wireless/ath/ath9k/reg.h
+> @@ -703,6 +703,7 @@
+>  #define AR_WA_RESET_EN                  (1 << 18) /* Sw Control to enable PCI-Reset to POR (bit 15) */
+>  #define AR_WA_ANALOG_SHIFT              (1 << 20)
+>  #define AR_WA_POR_SHORT                 (1 << 21) /* PCI-E Phy reset control */
+> +#define AR_WA_BIT22			(1 << 22)
+>  #define AR9285_WA_DEFAULT		0x004a050b
+>  #define AR9280_WA_DEFAULT           	0x0040073b
+>  #define AR_WA_DEFAULT               	0x0000073f
+> 
 
