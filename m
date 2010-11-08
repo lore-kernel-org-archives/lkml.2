@@ -1,157 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755507Ab0KHTDG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 14:03:06 -0500
-Received: from smtp-out-102.synserver.de ([212.40.180.102]:1026 "HELO
-	smtp-out-096.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1753635Ab0KHTDE (ORCPT
+	id S1755515Ab0KHTFI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 14:05:08 -0500
+Received: from pfepa.post.tele.dk ([195.41.46.235]:43091 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753635Ab0KHTFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 14:03:04 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: markus@trippelsdorf.de
-X-SynServer-PPID: 27315
-Date: Mon, 8 Nov 2010 20:02:58 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: dri-devel@lists.freedesktop.org
-Cc: linux-kernel@vger.kernel.org, airlied@linux.ie
-Subject: Re: Radeon RS780 - BUG: unable to handle kernel NULL pointer
- dereference
-Message-ID: <20101108190258.GA1623@arch.trippelsdorf.de>
-References: <20101108170221.GA1602@arch.trippelsdorf.de>
- <20101108170737.GA1617@arch.trippelsdorf.de>
- <20101108184301.GA1614@arch.trippelsdorf.de>
+	Mon, 8 Nov 2010 14:05:06 -0500
+Date: Mon, 8 Nov 2010 20:05:01 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Ben Gamari <bgamari.foss@gmail.com>
+Cc: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Christoph Egger <siccegge@cs.fau.de>, linux-kernel@vger.kernel.org,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Michal Marek <mmarek@suse.cz>
+Subject: Re: fstat suddenly return -EINVAL [Was: Bus error on make
+	allyesconfig, kernelbuild with HEAD]
+Message-ID: <20101108190501.GA26866@merkur.ravnborg.org>
+References: <20101106162426.GA14361@merkur.ravnborg.org> <87tyjtjd7m.fsf@gmail.com> <20101107170700.GA22684@merkur.ravnborg.org> <87mxplypid.fsf@gmail.com> <20101107223056.GA23871@merkur.ravnborg.org> <87lj54raw3.fsf@gmail.com> <20101108101920.GA5527@cr0.nay.redhat.com> <87d3qgq9ca.fsf@gmail.com> <20101108182209.GA26742@merkur.ravnborg.org> <87d3qfejy5.fsf@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101108184301.GA1614@arch.trippelsdorf.de>
+In-Reply-To: <87d3qfejy5.fsf@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 08, 2010 at 07:43:02PM +0100, Markus Trippelsdorf wrote:
-> On Mon, Nov 08, 2010 at 06:07:37PM +0100, Markus Trippelsdorf wrote:
-> > On Mon, Nov 08, 2010 at 06:02:21PM +0100, Markus Trippelsdorf wrote:
-> > > I can trigger a kernel crash on my system by simply loading this png
-> > > image with firefox:
-> > > http://mediaarchive.cern.ch/MediaArchive/Photo/Public/2010/1011251/1011251_01/1011251_01-A4-at-144-dpi.jpg
-> > 
-> > Sorry the above link is wrong, this is the right one (that triggers the
-> > crash):
-> > http://cdsweb.cern.ch/record/1305179/files/HI-150431-630470-huge.png
+> >
+> fstat appears to be failing for every file (the file= line is printed
+> right before the fstat; there seems to be a corresponding error for
+> every file= so I'm inferring that it must always fail):
 > 
-> I triggered it a few more times and took the attached picture.
-> It points to the BUG() call at drivers/gpu/drm/ttm/ttm_bo.c:1628 .
-> (Sorry for the bad picture quality)
+> $ make
+>   HOSTCC  scripts/basic/fixdep
+> file=scripts/basic/.fixdep.d
+> fixdep: fstat failed: Invalid argument
 
-And here the same BUG in plaintext (should be a bit easier to read):
+But open succedd - because we see no output from that one.
 
-Nov  8 19:28:23 arch kernel: ------------[ cut here ]------------
-Nov  8 19:28:23 arch kernel: kernel BUG at drivers/gpu/drm/ttm/ttm_bo.c:1628!
-Nov  8 19:28:23 arch kernel: invalid opcode: 0000 [#1] PREEMPT SMP
-Nov  8 19:28:23 arch kernel: last sysfs file: /sys/devices/pci0000:00/0000:00:18.3/temp1_input
-Nov  8 19:28:23 arch kernel: CPU 1
-Nov  8 19:28:23 arch kernel: Pid: 1541, comm: X Not tainted 2.6.37-rc1-00116-g151f52f-dirty #31 M4A78T-E/System Product Name
-Nov  8 19:28:23 arch kernel: RIP: 0010:[<ffffffff8121f0ff>]  [<ffffffff8121f0ff>] ttm_bo_init+0x30f/0x340
-Nov  8 19:28:23 arch kernel: RSP: 0018:ffff88011b0fbbe8  EFLAGS: 00010246
-Nov  8 19:28:23 arch kernel: RAX: ffff8800da881778 RBX: ffff8800da881620 RCX: ffff88011b15ed78
-Nov  8 19:28:23 arch kernel: RDX: ffff8800c1556040 RSI: ffff88011ff22770 RDI: 000000000017adfb
-Nov  8 19:28:23 arch kernel: RBP: ffff8800da881648 R08: 0000000000000000 R09: ffff8800c1556040
-Nov  8 19:28:23 arch kernel: R10: 000000000ff85205 R11: ffff8800dae19200 R12: 0000000000000001
-Nov  8 19:28:23 arch kernel: R13: ffff88011ff22528 R14: ffff88011ff22778 R15: 0000000000000000
-Nov  8 19:28:23 arch kernel: FS:  00007f2043043700(0000) GS:ffff8800dfc80000(0000) knlGS:0000000000000000
-Nov  8 19:28:23 arch kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-Nov  8 19:28:23 arch kernel: CR2: 00007f203d057000 CR3: 000000011b12b000 CR4: 00000000000006e0
-Nov  8 19:28:23 arch kernel: DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-Nov  8 19:28:23 arch kernel: DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Nov  8 19:28:23 arch kernel: Process X (pid: 1541, threadinfo ffff88011b0fa000, task ffff88011c959c20)
-Nov  8 19:28:23 arch kernel: Stack:
-Nov  8 19:28:23 arch kernel: 0000000000000000 ffff8800da881648 ffff88011b0fbd00 ffff8800da881600
-Nov  8 19:28:23 arch kernel: ffff88011ff22000 0000000000000000 0000000000000001 00000000fffffff4
-Nov  8 19:28:23 arch kernel: ffff88011b0fbd00 ffffffff8125294d 0000000000000000 ffffffff00000001
-Nov  8 19:28:23 arch kernel: Call Trace:
-Nov  8 19:28:23 arch kernel: [<ffffffff8125294d>] ? radeon_bo_create+0x14d/0x250
-Nov  8 19:28:23 arch kernel: [<ffffffff812526c0>] ? radeon_ttm_bo_destroy+0x0/0xb0
-Nov  8 19:28:23 arch kernel: [<ffffffff812671cc>] ? radeon_gem_object_create+0x8c/0x130
-Nov  8 19:28:23 arch kernel: [<ffffffff81267634>] ? radeon_gem_create_ioctl+0x54/0xd0
-Nov  8 19:28:23 arch kernel: [<ffffffff813ab26d>] ? sock_aio_read+0x10d/0x120
-Nov  8 19:28:23 arch kernel: [<ffffffff8120963c>] ? drm_ioctl+0x39c/0x450
-Nov  8 19:28:23 arch kernel: [<ffffffff812675e0>] ? radeon_gem_create_ioctl+0x0/0xd0
-Nov  8 19:28:23 arch kernel: [<ffffffff810dd2c9>] ? do_vfs_ioctl+0xa9/0x610
-Nov  8 19:28:23 arch kernel: [<ffffffff810dd879>] ? sys_ioctl+0x49/0x80
-Nov  8 19:28:23 arch kernel: [<ffffffff810ce24e>] ? sys_read+0x4e/0x90
-Nov  8 19:28:23 arch kernel: [<ffffffff8102dc2b>] ? system_call_fastpath+0x16/0x1b
-Nov  8 19:28:23 arch kernel: Code: e8 fb ff ff 85 c0 0f 85 68 ff ff ff 48 8b 7c 24 08 89 04 24 e8 83 d9 ff ff 8b 04 24 48 83 c4 18 5b 5d 41 5c 41 5d 41 5e 41 5f c3 <0f> 0b 48 c7 c7 60 a4 55 81 31 c0 e8 14 80 22 00 b8 ea ff ff ff
-Nov  8 19:28:23 arch kernel: RIP  [<ffffffff8121f0ff>] ttm_bo_init+0x30f/0x340
-Nov  8 19:28:23 arch kernel: RSP <ffff88011b0fbbe8>
-Nov  8 19:28:23 arch kernel: ---[ end trace 328a9acba7691d6e ]---
-Nov  8 19:28:23 arch kernel: note: X[1541] exited with preempt_count 1
-Nov  8 19:28:23 arch kernel: BUG: scheduling while atomic: X/1541/0x10000002
-Nov  8 19:28:23 arch kernel: Pid: 1541, comm: X Tainted: G      D     2.6.37-rc1-00116-g151f52f-dirty #31
-Nov  8 19:28:23 arch kernel: Call Trace:
-Nov  8 19:28:23 arch kernel: [<ffffffff81447ad9>] ? schedule+0x639/0x850
-Nov  8 19:28:23 arch kernel: [<ffffffff8105826d>] ? __cond_resched+0x1d/0x30
-Nov  8 19:28:23 arch kernel: [<ffffffff81447f2f>] ? _cond_resched+0x2f/0x40
-Nov  8 19:28:23 arch kernel: [<ffffffff810b57fc>] ? unmap_vmas+0x82c/0x9c0
-Nov  8 19:28:23 arch kernel: [<ffffffff810bcb62>] ? exit_mmap+0xe2/0x1a0
-Nov  8 19:28:23 arch kernel: [<ffffffff8105a705>] ? mmput+0x25/0xc0
-Nov  8 19:28:23 arch kernel: [<ffffffff8105e734>] ? exit_mm+0x104/0x130
-Nov  8 19:28:23 arch kernel: [<ffffffff81079ebf>] ? hrtimer_try_to_cancel+0x3f/0x80
-Nov  8 19:28:23 arch kernel: [<ffffffff81089d0a>] ? acct_collect+0x9a/0x1a0
-Nov  8 19:28:23 arch kernel: [<ffffffff8106045a>] ? do_exit+0x5aa/0x760
-Nov  8 19:28:23 arch kernel: [<ffffffff81447163>] ? printk+0x40/0x45
-Nov  8 19:28:23 arch kernel: [<ffffffff8105e33c>] ? kmsg_dump+0x7c/0x150
-Nov  8 19:28:23 arch kernel: [<ffffffff81031fda>] ? oops_end+0x9a/0xe0
-Nov  8 19:28:23 arch kernel: [<ffffffff8102ee74>] ? do_invalid_op+0x84/0xa0
-Nov  8 19:28:23 arch kernel: [<ffffffff8121f0ff>] ? ttm_bo_init+0x30f/0x340
-Nov  8 19:28:23 arch kernel: [<ffffffff810ddf50>] ? __pollwait+0x0/0x110
-Nov  8 19:28:23 arch kernel: [<ffffffff8102e7d5>] ? invalid_op+0x15/0x20
-Nov  8 19:28:23 arch kernel: [<ffffffff8121f0ff>] ? ttm_bo_init+0x30f/0x340
-Nov  8 19:28:23 arch kernel: [<ffffffff8121efe3>] ? ttm_bo_init+0x1f3/0x340
-Nov  8 19:28:23 arch kernel: [<ffffffff8125294d>] ? radeon_bo_create+0x14d/0x250
-Nov  8 19:28:23 arch kernel: [<ffffffff812526c0>] ? radeon_ttm_bo_destroy+0x0/0xb0
-Nov  8 19:28:23 arch kernel: [<ffffffff812671cc>] ? radeon_gem_object_create+0x8c/0x130
-Nov  8 19:28:23 arch kernel: [<ffffffff81267634>] ? radeon_gem_create_ioctl+0x54/0xd0
-Nov  8 19:28:23 arch kernel: [<ffffffff813ab26d>] ? sock_aio_read+0x10d/0x120
-Nov  8 19:28:23 arch kernel: [<ffffffff8120963c>] ? drm_ioctl+0x39c/0x450
-Nov  8 19:28:23 arch kernel: [<ffffffff812675e0>] ? radeon_gem_create_ioctl+0x0/0xd0
-Nov  8 19:28:23 arch kernel: [<ffffffff810dd2c9>] ? do_vfs_ioctl+0xa9/0x610
-Nov  8 19:28:23 arch kernel: [<ffffffff810dd879>] ? sys_ioctl+0x49/0x80
-Nov  8 19:28:23 arch kernel: [<ffffffff810ce24e>] ? sys_read+0x4e/0x90
-Nov  8 19:28:23 arch kernel: [<ffffffff8102dc2b>] ? system_call_fastpath+0x16/0x1b
-Nov  8 19:28:23 arch kernel: BUG: scheduling while atomic: X/1541/0x10000002
-Nov  8 19:28:23 arch kernel: Pid: 1541, comm: X Tainted: G      D     2.6.37-rc1-00116-g151f52f-dirty #31
-Nov  8 19:28:23 arch kernel: Call Trace:
-Nov  8 19:28:23 arch kernel: [<ffffffff81447ad9>] ? schedule+0x639/0x850
-Nov  8 19:28:23 arch kernel: [<ffffffff8105826d>] ? __cond_resched+0x1d/0x30
-Nov  8 19:28:23 arch kernel: [<ffffffff81447f2f>] ? _cond_resched+0x2f/0x40
-Nov  8 19:28:23 arch kernel: [<ffffffff810b57fc>] ? unmap_vmas+0x82c/0x9c0
-Nov  8 19:28:23 arch kernel: [<ffffffff810bcb62>] ? exit_mmap+0xe2/0x1a0
-Nov  8 19:28:23 arch kernel: [<ffffffff8105a705>] ? mmput+0x25/0xc0
-Nov  8 19:28:23 arch kernel: [<ffffffff8105e734>] ? exit_mm+0x104/0x130
-Nov  8 19:28:23 arch kernel: [<ffffffff81079ebf>] ? hrtimer_try_to_cancel+0x3f/0x80
-Nov  8 19:28:23 arch kernel: [<ffffffff81089d0a>] ? acct_collect+0x9a/0x1a0
-Nov  8 19:28:23 arch kernel: [<ffffffff8106045a>] ? do_exit+0x5aa/0x760
-Nov  8 19:28:23 arch kernel: [<ffffffff81447163>] ? printk+0x40/0x45
-Nov  8 19:28:23 arch kernel: [<ffffffff8105e33c>] ? kmsg_dump+0x7c/0x150
-Nov  8 19:28:23 arch kernel: [<ffffffff81031fda>] ? oops_end+0x9a/0xe0
-Nov  8 19:28:23 arch kernel: [<ffffffff8102ee74>] ? do_invalid_op+0x84/0xa0
-Nov  8 19:28:23 arch kernel: [<ffffffff8121f0ff>] ? ttm_bo_init+0x30f/0x340
-Nov  8 19:28:23 arch kernel: [<ffffffff810ddf50>] ? __pollwait+0x0/0x110
-Nov  8 19:28:23 arch kernel: [<ffffffff8102e7d5>] ? invalid_op+0x15/0x20
-Nov  8 19:28:23 arch kernel: [<ffffffff8121f0ff>] ? ttm_bo_init+0x30f/0x340
-Nov  8 19:28:23 arch kernel: [<ffffffff8121efe3>] ? ttm_bo_init+0x1f3/0x340
-Nov  8 19:28:23 arch kernel: [<ffffffff8125294d>] ? radeon_bo_create+0x14d/0x250
-Nov  8 19:28:23 arch kernel: [<ffffffff812526c0>] ? radeon_ttm_bo_destroy+0x0/0xb0
-Nov  8 19:28:23 arch kernel: [<ffffffff812671cc>] ? radeon_gem_object_create+0x8c/0x130
-Nov  8 19:28:23 arch kernel: [<ffffffff81267634>] ? radeon_gem_create_ioctl+0x54/0xd0
-Nov  8 19:28:23 arch kernel: [<ffffffff813ab26d>] ? sock_aio_read+0x10d/0x120
-Nov  8 19:28:23 arch kernel: [<ffffffff8120963c>] ? drm_ioctl+0x39c/0x450
-Nov  8 19:28:23 arch kernel: [<ffffffff812675e0>] ? radeon_gem_create_ioctl+0x0/0xd0
-Nov  8 19:28:23 arch kernel: [<ffffffff810dd2c9>] ? do_vfs_ioctl+0xa9/0x610
-Nov  8 19:28:23 arch kernel: [<ffffffff810dd879>] ? sys_ioctl+0x49/0x80
-Nov  8 19:28:23 arch kernel: [<ffffffff810ce24e>] ? sys_read+0x4e/0x90
-Nov  8 19:28:23 arch kernel: [<ffffffff8102dc2b>] ? system_call_fastpath+0x16/0x1b
+> It actually seems as if the problem might be that none of these files
+> actually exist:
+> 
+> $ find scripts -iname .*.d
+> $
+> 
+> How are .d files supposed to be generated?
+
+They are generated by kbuild.
+See scripts/Kbuild.include:
+
+# Execute the command and also postprocess generated .d dependencies file.
+if_changed_dep = $(if $(strip $(any-prereq) $(arg-check) ),                  \
+        @set -e;                                                             \
+        $(echo-cmd) $(cmd_$(1));                                             \
+        scripts/basic/fixdep $(depfile) $@ '$(make-cmd)' > $(dot-target).tmp;\
+==>     rm -f $(depfile);                                                    \
+        mv -f $(dot-target).tmp $(dot-target).cmd)
 
 
--- 
-Markus
+If you delete the line marked "==>" then you should have .d files are a build.
+
+> > From your previous posting it looks like you have some special setting
+> > that impact your choice of HOST gcc.
+> > Do you define HOSTCC somewhere?
+> > 
+> I don't think I do define HOSTCC anywhere. My cross compilation
+> environment is as follows,
+> 
+> source /usr/local/angstrom/arm/environment-setup
+> export ARCH=arm
+> export CROSS_COMPILE=arm-angstrom-linux-gnueabi-
+So far it looks OK.
+
+> export CC=${CROSS_COMPILE}gcc
+> export CXX=${CROSS_COMPILE}g++
+This part is wrong. The kernel will do this for you.
+It should not cause any harm...
+
+> 
+> OE_ENV_ROOT=/home/bgamari/OE/angstrom-dev
+> SYSROOT=$OE_ENV_ROOT/sysroots/armv7a-angstrom-linux-gnueabi
+> export LD_LIBRARY_PATH=$SYSROOT/lib:$SYSROOT/usr/lib
+> export CFLAGS=-I$OE_ROOT/lib/gcc/arm-angstrom-linux-gnueabi/4.3.1/include
+
+These looks unrelated.
+
+	Sam
