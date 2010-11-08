@@ -1,162 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529Ab0KHNsy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 08:48:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39616 "EHLO mx1.redhat.com"
+	id S1754496Ab0KHNwT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 08:52:19 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:34811 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753449Ab0KHNsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 08:48:53 -0500
-Date: Mon, 8 Nov 2010 14:48:41 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: alan@lxorguk.ukuu.org.uk, gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tty: prevent DOS in the flush_to_ldisc
-Message-ID: <20101108134840.GA3275@jolsa.brq.redhat.com>
-References: <1288163451-3973-1-git-send-email-jolsa@redhat.com>
+	id S1752037Ab0KHNwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 08:52:18 -0500
+Date: Mon, 8 Nov 2010 05:52:04 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Daniel J Blueman <daniel.blueman@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [2.6.37-rc1] sys_ioprio_set and RCU locking...
+Message-ID: <20101108135204.GE2580@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <AANLkTi=xj6xW5SnrdQos4P-MtJP8+fwfaa3r7LPfdLh4@mail.gmail.com>
+ <20101107185433.GD15561@linux.vnet.ibm.com>
+ <4CD7FAFD.1060802@fusionio.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1288163451-3973-1-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4CD7FAFD.1060802@fusionio.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi, any feedback?
+On Mon, Nov 08, 2010 at 02:28:29PM +0100, Jens Axboe wrote:
+> On 2010-11-07 19:54, Paul E. McKenney wrote:
+> > On Tue, Nov 02, 2010 at 12:15:30PM +0000, Daniel J Blueman wrote:
+> >> With 2.6.37-rc1, I observe sys_ioprio_set not taking the RCU lock [1]
+> >> across access to the task credentials.
+> >>
+> >> Inspecting the code in fs/ioprio.c, the tasklist_lock is held for read
+> >> across the __task_cred call, which is presumably sufficient to prevent
+> >> the task credentials becoming stale.
+> >>
+> >> Thus, is there preference to take the RCU lock for read across the
+> >> credential access eg at [2], or annotate the call?
+> >>
+> >> Thanks,
+> >>   Daniel
+> >>
+> >> --- [1]
+> >>
+> >> ===================================================
+> >>
+> >> [ INFO: suspicious rcu_dereference_check() usage. ]
+> >>
+> >> ---------------------------------------------------
+> >>
+> >> kernel/pid.c:419 invoked rcu_dereference_check() without protection!
+> >>
+> >>
+> >>
+> >> other info that might help us debug this:
+> >>
+> >>
+> >>
+> >>
+> >> rcu_scheduler_active = 1, debug_locks = 1
+> >>
+> >> 1 lock held by start-stop-daem/2246:
+> >>
+> >>  #0:  (tasklist_lock){.?.?..}, at: [<ffffffff811a2dfa>]
+> >> sys_ioprio_set+0x8a/0x400
+> >>
+> >>
+> >>
+> >> stack backtrace:
+> >>
+> >> Pid: 2246, comm: start-stop-daem Not tainted 2.6.37-rc1-330cd+ #2
+> >>
+> >> Call Trace:
+> >>
+> >>  [<ffffffff8109f5f4>] lockdep_rcu_dereference+0xa4/0xc0
+> >>
+> >>  [<ffffffff81085651>] find_task_by_pid_ns+0x81/0x90
+> >>
+> >>  [<ffffffff8108567d>] find_task_by_vpid+0x1d/0x20
+> >>
+> >>  [<ffffffff811a3160>] sys_ioprio_set+0x3f0/0x400
+> >>
+> >>  [<ffffffff816efa79>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> >>
+> >>  [<ffffffff81003482>] system_call_fastpath+0x16/0x1b
+> >>
+> >>
+> >> --- [2]
+> >>
+> >> Take the RCU lock for read across acquiring the pointer to the task
+> >> credentials and dereferencing it.
+> > 
+> > Jens, does this look sane?
+> 
+> Yes, looks clean enough to me.
 
-thanks,
-jirka
+Very good!  Are you willing to take the patch in your tree?
 
-On Wed, Oct 27, 2010 at 09:10:51AM +0200, Jiri Olsa wrote:
-> hi,
-> 
-> there's a small window inside the flush_to_ldisc function,
-> where the tty is unlocked and calling ldisc's receive_buf
-> function. If in this window new buffer is added to the tty,
-> the processing might never leave the flush_to_ldisc function.
-> 
-> This scenario will hog the cpu, causing other tty processing
-> starving, and making it impossible to interface the computer
-> via tty.
-> 
-> I was able to exploit this via pty interface by sending only
-> control characters to the master input, causing the flush_to_ldisc
-> to be scheduled, but never actually generate any output.
-> 
-> To reproduce, please run multiple instances of following code.
-> 
-> ---
-> #define _XOPEN_SOURCE
-> #include <stdlib.h>
-> #include <stdio.h>
-> #include <sys/types.h>
-> #include <sys/stat.h>
-> #include <fcntl.h>
-> 
-> int main(int argc, char **argv)
-> {
-> 	int i, slave, master = getpt();
-> 	char buf[8192];
-> 
-> 	sprintf(buf, "%s", ptsname(master));
-> 	grantpt(master);
-> 	unlockpt(master);
-> 
-> 	slave = open(buf, O_RDWR);
-> 	if (slave < 0) {
-> 		perror("open slave failed");
-> 		return 1;
-> 	}
-> 
-> 	for(i = 0; i < sizeof(buf); i++)
-> 		buf[i] = rand() % 32;
-> 
-> 	while(1) {
-> 		write(master, buf, sizeof(buf));
-> 	}
-> 
-> 	return 0;
-> }
-> ---
-> 
-> The attached patch (based on -next tree) fixes this by adding threshold
-> for processed data. When the threshold is reached, the current work is
-> rescheduled, so another could run.
-> 
-> The threshold is set to the tty buffer maximum size.
-> 
-> wbr,
-> jirka
-> 
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> ---
->  drivers/char/tty_buffer.c |   15 ++++++++++++++-
->  include/linux/tty.h       |    1 +
->  2 files changed, 15 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/char/tty_buffer.c b/drivers/char/tty_buffer.c
-> index cc1e985..7703114 100644
-> --- a/drivers/char/tty_buffer.c
-> +++ b/drivers/char/tty_buffer.c
-> @@ -58,7 +58,7 @@ static struct tty_buffer *tty_buffer_alloc(struct tty_struct *tty, size_t size)
->  {
->  	struct tty_buffer *p;
->  
-> -	if (tty->buf.memory_used + size > 65536)
-> +	if (tty->buf.memory_used + size > TTY_BUFFER_MAXSIZE)
->  		return NULL;
->  	p = kmalloc(sizeof(struct tty_buffer) + 2 * size, GFP_ATOMIC);
->  	if (p == NULL)
-> @@ -414,6 +414,7 @@ static void flush_to_ldisc(struct work_struct *work)
->  
->  	if (!test_and_set_bit(TTY_FLUSHING, &tty->flags)) {
->  		struct tty_buffer *head;
-> +		int count_acc = 0;
->  		while ((head = tty->buf.head) != NULL) {
->  			int count;
->  			char *char_buf;
-> @@ -436,11 +437,23 @@ static void flush_to_ldisc(struct work_struct *work)
->  				schedule_delayed_work(&tty->buf.work, 1);
->  				break;
->  			}
-> +			/*
-> +			 * There's a possibility tty might get new buffer
-> +			 * added during the unlock window below. We could
-> +			 * end up spinning in here forever hogging the CPU
-> +			 * completely. To avoid this let's have a rest each
-> +			 * time we process the maximum one tty can hold.
-> +			 */
-> +			if (count_acc > TTY_BUFFER_MAXSIZE) {
-> +				schedule_delayed_work(&tty->buf.work, 1);
-> +				break;
-> +			}
->  			if (count > tty->receive_room)
->  				count = tty->receive_room;
->  			char_buf = head->char_buf_ptr + head->read;
->  			flag_buf = head->flag_buf_ptr + head->read;
->  			head->read += count;
-> +			count_acc += count;
->  			spin_unlock_irqrestore(&tty->buf.lock, flags);
->  			disc->ops->receive_buf(tty, char_buf,
->  							flag_buf, count);
-> diff --git a/include/linux/tty.h b/include/linux/tty.h
-> index e500171..708e299 100644
-> --- a/include/linux/tty.h
-> +++ b/include/linux/tty.h
-> @@ -80,6 +80,7 @@ struct tty_buffer {
->   */
->  
->  #define TTY_BUFFER_PAGE	(((PAGE_SIZE - sizeof(struct tty_buffer)) / 2) & ~0xFF)
-> +#define TTY_BUFFER_MAXSIZE	(65536)
->  
->  
->  struct tty_bufhead {
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+							Thanx, Paul
