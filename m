@@ -1,61 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286Ab0KHIo4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 03:44:56 -0500
-Received: from smtp.nokia.com ([192.100.122.230]:60965 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754264Ab0KHIoz (ORCPT
+	id S1753087Ab0KHIxr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 03:53:47 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:56264 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751860Ab0KHIxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 03:44:55 -0500
-From: Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com>
-To: tony@atomide.com
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        ext-eugeny.kuznetsov@nokia.com
-Subject: [PATCHv3 1/1] omap: Ptr "isr_reg" tracked as NULL was dereferenced
-Date: Mon,  8 Nov 2010 11:38:36 +0300
-Message-Id: <cd6fa21776a4564d602cc072358a4bf79a9fe883.1289205105.git.EXT-Eugeny.Kuznetsov@nokia.com>
-X-Mailer: git-send-email 1.6.3.3
-X-OriginalArrivalTime: 08 Nov 2010 08:44:13.0184 (UTC) FILETIME=[1E754000:01CB7F21]
-X-Nokia-AV: Clean
+	Mon, 8 Nov 2010 03:53:46 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=tG0vsWs9ao2zYalE0Vd6nR7c10ULIdnq0AN5W3WhtEEP5BiHXjWA87m6fS7dwCi8lv
+         v5Q7T6nh+csZ6eLmCO+/6U5RRHaHwQwMTp74RsDj1gZerpDqYVR60r26f+RmF1tkzck0
+         GBvvWmlRe8i1rwi0nhrN/vLcMA5NsFzFPSErw=
+Subject: Re: [PATCH 4/4] fs: rcu protect inode hash lookups
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com
+In-Reply-To: <1289201305-14866-5-git-send-email-david@fromorbit.com>
+References: <1289201305-14866-1-git-send-email-david@fromorbit.com>
+	 <1289201305-14866-5-git-send-email-david@fromorbit.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 08 Nov 2010 09:53:41 +0100
+Message-ID: <1289206421.2820.32.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Evgeny Kuznetsov <ext-eugeny.kuznetsov@nokia.com>
+Le lundi 08 novembre 2010 à 18:28 +1100, Dave Chinner a écrit :
+> From: Dave Chinner <dchinner@redhat.com>
+> 
+> Now that inodes are using RCU freeing, we can walk the hash lists
+> using RCU protection during lookups. Convert all the hash list
+> operations to use RCU-based operators and drop the inode_hash_lock
+> around pure lookup operations.
+> 
+> Because we are using SLAB_DESTROY_BY_RCU, we need to be careful
+> about the lockless lookups and the way we initialise the struct
+> inode during allocation. The inode->i_lock is the critical item we
+> need to avoid touching when allocating an inode, so move the
+> initialisation of this lock to the slab constructor so that we can
+> reliably use the lock even after the inode has been freed or is in
+> the process of being allocated or initialised.
+> 
+> We also need to change the order of checks during hash lookups to
+> validate we have an active inode before we skip it. That means we
+> need to revalidate the inode number and superblock after we have
+> checked it for being freed or unhashed under the inode->i_lock.
+> 
+> Finally, during traversals an inode can be freed and reallocated and
+> linked into a new hash chain, so an RCU safe traversal can jump to a
+> different chain without indication. On a cache miss we need to
+> validate that we ended the search on the same hash chain we started
+> on. Do this by converting the hash lists to the hlist_null list type
+> and checking the list null on walk termination.
+> 
+> Signed-off-by: Dave Chinner <dchinner@redhat.com>
+> ---
 
-Value of "isr_reg" pointer is depend on configuration and GPIO method.
-Potentially it may have NULL value and it is dereferenced later
-in code. Warning and exit from function are added in this case.
+Very nice stuff Dave !
 
-Signed-off-by: Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com>
----
- arch/arm/plat-omap/gpio.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+I have one question
 
-diff --git a/arch/arm/plat-omap/gpio.c b/arch/arm/plat-omap/gpio.c
-index c05c653..e0e2fa7 100644
---- a/arch/arm/plat-omap/gpio.c
-+++ b/arch/arm/plat-omap/gpio.c
-@@ -1318,6 +1318,10 @@ static void gpio_irq_handler(unsigned int irq, struct irq_desc *desc)
- 	if (bank->method == METHOD_GPIO_44XX)
- 		isr_reg = bank->base + OMAP4_GPIO_IRQSTATUS0;
- #endif
-+
-+	if (WARN_ON(!isr_reg))
-+		goto exit;
-+
- 	while(1) {
- 		u32 isr_saved, level_mask = 0;
- 		u32 enabled;
-@@ -1377,6 +1381,7 @@ static void gpio_irq_handler(unsigned int irq, struct irq_desc *desc)
- 	configured, we must unmask the bank interrupt only after
- 	handler(s) are executed in order to avoid spurious bank
- 	interrupt */
-+exit:
- 	if (!unmasked)
- 		desc->chip->unmask(irq);
- 
--- 
-1.6.3.3
+> diff --git a/include/linux/list_nulls.h b/include/linux/list_nulls.h
+> index 5d10ae36..29762d1 100644
+> --- a/include/linux/list_nulls.h
+> +++ b/include/linux/list_nulls.h
+> @@ -83,6 +83,13 @@ static inline void hlist_nulls_del(struct hlist_nulls_node *n)
+>  	n->pprev = LIST_POISON2;
+>  }
+>  
+> +/* after that we'll appear to be on some hlist and hlist_nulls_del will work */
+> +static inline void hlist_nulls_add_fake(struct hlist_nulls_node *n)
+> +{
+> +	n->next = (struct hlist_nulls_node *)1UL;
+> +	n->pprev = &n->next;
+> +}
+> +
+
+
+I am not sure why you need to change n->next here ?
+
+This might restart lookups (making them doing a 'goto repeat', and
+possibly abort a lookup on slot 0 of hash chain, since this is a 'nulls'
+value for slot 0.
+
+So at least I suggest adding a comment, and possibly use a different
+slot number (outside of slot ranges). If so, change documentation to
+restrict to 2^(BITS_PER_LONG-2) number of possible slots in hash table.
+
+n->next = (struct hlist_nulls_node *)(1UL | (1UL << (BITS_PER_LONG-1));
+
+
 
