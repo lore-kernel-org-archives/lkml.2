@@ -1,86 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754890Ab0KHVPu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 16:15:50 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:60503 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751394Ab0KHVPt (ORCPT
+	id S1754378Ab0KHVU3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 16:20:29 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:39700
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753232Ab0KHVU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 16:15:49 -0500
-Subject: Re: [RFCv3 00/21] TCM Core and TCM_Loop patches for v2.6.37
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>
-In-Reply-To: <20101108143307.GA22121@infradead.org>
-References: <1287441313-19703-1-git-send-email-nab@linux-iscsi.org>
-	 <20101108143307.GA22121@infradead.org>
-Content-Type: text/plain
-Date: Mon, 08 Nov 2010 13:10:36 -0800
-Message-Id: <1289250636.27226.50.camel@haakon2.linux-iscsi.org>
+	Mon, 8 Nov 2010 16:20:28 -0500
+Date: Mon, 08 Nov 2010 13:20:51 -0800 (PST)
+Message-Id: <20101108.132051.48494580.davem@davemloft.net>
+To: mpm@selenic.com
+Cc: mikew@google.com, simon.kagstrom@netinsight.net, nhorman@tuxdriver.com,
+        adurbin@google.com, linux-kernel@vger.kernel.org, chavey@google.com,
+        greg@kroah.com, xiyou.wangcong@gmail.com, akpm@linux-foundation.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH v2 00/23] netoops support
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1289249727.18612.228.camel@calx>
+References: <20101108203120.22479.19708.stgit@crlf.mtv.corp.google.com>
+	<1289249727.18612.228.camel@calx>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-08 at 09:33 -0500, Christoph Hellwig wrote:
-> Hi Nick,
-> 
-> I promised you and James to get back to a throughout review for more
-> than just the backends.  It's still in progress, but here is what I
-> think is most important:
-> 
->  - Sort of the the namepspace for both the file names and function
->    names.  I think you reluctantly agreed to do that a while ago anyway,
->    but I think it's time to bite the bullet now.  Please agree on a
->    common prefix for both function names and modules.  I think the
->    target name in the directory structure is the best one, but I really
->    don't care too much.  The transport_ prefix used in some code is
->    really misleading, and the se_ in other isn't too helpful either.
+From: Matt Mackall <mpm@selenic.com>
+Date: Mon, 08 Nov 2010 14:55:27 -0600
 
-Fair enough.  So for the sake on continuity I am happy to rename
-functions that are available externally to frontends with a target_*()
-prefix and primary data structures to a tcm_* prefix.  
+> This much of your set looks very nice to me, but I'd like to get some
+> more eyeballs on the first four. Dave?
 
->  - make sure backends, frontends and core/ code under drivers/target/
->    are properly separated
-
-So at this point only the backend code still lives in drivers/target,
-while everything related to frontends resides in
-drivers/target/$TCM_MODNAME.  Now moving IBLOCK, FILEIO, PSCSI and
-RAMDISK .c and .h files into drivers/target/backend/ to resolve this
-item..
-
->  - clean up the exported - both as in EXPORT_SYMBOL and simply global
->    functions.  There's a lot of things that should be static or not
->    exported to modules but is right now.  The scripts/namespace.pl
->    script in the kernel tree is a great helper for that.
-
-<nod>  I will follow up with an audit of this code, most of which is
-coming from target_core_transport.c
-
->  - Similarly the headers could use some re-arrangement.  I've been
->    trying to make sense of what each header does but couldn't find it.
->    In the optimal world you'd have one header for the front-end API,
->    one of the back-end API and one or more for common structures
->    and defintions.  All with a comment explaining what they are there
->    for.
-> 
-
-Yes, the documentation that I have been promising will help clear this
-up.  target_core_transport.h contains the struct se_subsystem_api that
-is used for backend code, and target_core_fabric_ops.h contains the
-struct target_core_fabric_ops used by frontend drivers.  There is still
-a handful of other includes required for frontend drivers, but I did
-spend time on this recently to clean up what is made available in
-include/target.  
-
---nab
-
+If it's not sent to netdev, I'm less likely to see it :-)
