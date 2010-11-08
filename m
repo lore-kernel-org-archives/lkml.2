@@ -1,61 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829Ab0KHHMW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 02:12:22 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45692 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752402Ab0KHHMV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 02:12:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=PZySHhi79HyD/5drgOyI7f9OEfJB0+aNnMHnduRHOOSxCjoKJvE67y6G0wERhZqaxB
-         mUr+jeykiht/v+Aa3paJY6d4HDYxD7/3UI63IpReskwIJaWdShPUf0sLmAiL5HphMlxk
-         rFzvDdQkU7lzybbFa+4kM2qtfPbTN22xlpnF0=
+	id S1752826Ab0KHHST (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 02:18:19 -0500
+Received: from ozlabs.org ([203.10.76.45]:42210 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752035Ab0KHHSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 02:18:18 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Anders Kaseorg <andersk@ksplice.com>
+Subject: Re: [PATCH] module: Update prototype for ref_module (formerly use_module)
+Date: Mon, 8 Nov 2010 17:48:07 +1030
+User-Agent: KMail/1.13.5 (Linux/2.6.35-22-generic-pae; KDE/4.5.1; i686; ; )
+Cc: linux-kernel@vger.kernel.org, Tim Abbott <tabbott@ksplice.com>
+References: <alpine.DEB.2.00.1011051702090.3947@dr-wily.mit.edu>
+In-Reply-To: <alpine.DEB.2.00.1011051702090.3947@dr-wily.mit.edu>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=40758wF4Z6GDfm809miA-hnCnSQdwA9bALX0+@mail.gmail.com>
-References: <AANLkTi=40758wF4Z6GDfm809miA-hnCnSQdwA9bALX0+@mail.gmail.com>
-From: Changli Gao <xiaosuo@gmail.com>
-Date: Mon, 8 Nov 2010 15:12:00 +0800
-Message-ID: <AANLkTim_qtAO-muZk4q9N=_DFsvAcQprnLDx7XOe3aNg@mail.gmail.com>
-Subject: Re: how to read one udp packet with more than one recvfrom() calls?
-To: ranjith kumar <ranjithproxy@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011081748.07467.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 8, 2010 at 3:08 PM, ranjith kumar <ranjithproxy@gmail.com> wrote:
-> Hi,
->
-> I  have implemented client and server programs using udp
-> protocol(files are attached).
-> UDP packet size is 500bytes.
->
-> I want to read these 500bytes in two calls to recvfrom(). First time
-> reading 100bytes and second time 400bytes.
-> How to do this?
->
-> When I tried to change the third argument of recvfrom(size_t len),
-> from 500 to 100, first 100bytes are read correctly.
-> But when I call recvfrom() second time with len=400, it is reading the
-> first 400bytes of "next udp packet".
-> Why? Isn't it possible to read one udp packet in two calls to
-> recvfrom()/read()????
->
+On Sat, 6 Nov 2010 07:35:46 am Anders Kaseorg wrote:
+> Commit 9bea7f23952d5948f8e5dfdff4de09bb9981fb5f renamed use_module to
+> ref_module (and changed its return value), but forgot to update this
+> prototype in module.h.
 
-recvmsg(2):
+Hmm, didn't one of these go via akpm?
 
-       MSG_PEEK
-              This  flag  causes the receive operation to return data from the
-              beginning of the receive queue without removing that  data  from
-              the queue.  Thus, a subsequent receive call will return the same
-              data.
+I'll send it along now...
 
--- 
-Regards,
-Changli Gao(xiaosuo@gmail.com)
+Thanks!
+Rusty.
