@@ -1,44 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561Ab0KHKFv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 05:05:51 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47518 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751633Ab0KHKFu (ORCPT
+	id S1752875Ab0KHKNK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 05:13:10 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:53395 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752372Ab0KHKNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 05:05:50 -0500
-Date: Mon, 8 Nov 2010 10:03:42 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Kees Cook <kees.cook@canonical.com>, Siarhei Liakh <sliakh.lkml@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Security] proactive defense: using read-only memory, RO/NX
- modules
-Message-ID: <20101108100342.61dde238@lxorguk.ukuu.org.uk>
-In-Reply-To: <20101108061324.GA30540@elte.hu>
-References: <20101107193520.GO5327@outflux.net>
-	<20101108061324.GA30540@elte.hu>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Nov 2010 05:13:08 -0500
+From: Bernhard Walle <walle@corscience.de>
+To: linux-doc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] Documentation: gpio: Clarify usage of poll(2)
+Date: Mon,  8 Nov 2010 11:12:56 +0100
+Message-Id: <1289211176-9094-1-git-send-email-walle@corscience.de>
+X-Mailer: git-send-email 1.7.1
+X-Provags-ID: V02:K0:llIGHF+LYgr05azJOZAP0BBZUduvWHiNDJuHZ2CQZWw
+ CV2W7BuXtYEh9cYnA3f27GKXQJ+tuzIpTtfZmJStBKATx43GgR
+ 2BZRWVb/2mIFVzfzG4pPbXiKE1fG0bbiQuYm8Bn06h37w9AT4D
+ i18qddI6/39oXQlMCZtdSgu/loKVlEpi39VfmXpgYwqQarCycY
+ vOj7hBRaojUD55uVLyI6A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Nice! IMHO we need more of that. (If the readonly section gets big enough in 
-> practice we could perhaps even mark it large-page in the future. It could serve as 
-> an allocator to module code as well - that would probably be a speedup even for 
-> modules.)
+Add a bit more information how to use poll(2) on GPIO value files
+correctly. For me it was not clear that I need to poll(2) for
+POLLPRI|POLLERR or select(2) for exceptfds.
 
-You ideally want one other thing to go with it. While a non-guest can't
-support it the marking of pages "permanently and irrevocably" readonly in
-a guest is something a hypedvisor can happily enforce and provide for the
-lifetime of the guest.
+Signed-off-by: Bernhard Walle <walle@corscience.de>
+---
+ Documentation/gpio.txt |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-Alan
+diff --git a/Documentation/gpio.txt b/Documentation/gpio.txt
+index 9633da0..792faa3 100644
+--- a/Documentation/gpio.txt
++++ b/Documentation/gpio.txt
+@@ -617,6 +617,16 @@ and have the following read/write attributes:
+ 		is configured as an output, this value may be written;
+ 		any nonzero value is treated as high.
+ 
++		If the pin can be configured as interrupt-generating interrupt
++		and if it has been configured to generate interrupts (see the
++		description of "edge"), you can poll(2) on that file and
++		poll(2) will return whenever the interrupt was triggered. If
++		you use poll(2), set the events POLLPRI and POLLERR. If you
++		use select(2), set the file descriptor in exceptfds. After
++		poll(2) returns, either lseek(2) to the beginning of the sysfs
++		file and read the new value or close the file and re-open it
++		to read the value.
++
+ 	"edge" ... reads as either "none", "rising", "falling", or
+ 		"both". Write these strings to select the signal edge(s)
+ 		that will make poll(2) on the "value" file return.
+-- 
+1.7.1
+
