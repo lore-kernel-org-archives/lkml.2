@@ -1,37 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753326Ab0KHBnR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 20:43:17 -0500
-Received: from kroah.org ([198.145.64.141]:40120 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751966Ab0KHBnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 20:43:16 -0500
-Date: Sun, 7 Nov 2010 17:42:56 -0800
-From: Greg KH <greg@kroah.com>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: Anca Emanuel <anca.emanuel@gmail.com>, Elvis Dowson <elvis.dowson@mac.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Forked android kernel development from linux kernel mainline
-Message-ID: <20101108014256.GB24260@kroah.com>
-References: <01784A8B-36A0-4E8A-9729-23C2B19351F8@mac.com> <AANLkTi=UxhRdcDaoKaYVWhPkp_e-uLF4=zhXs7gutkgx@mail.gmail.com> <20101106181202.GA6927@kroah.com> <39580686-A899-4689-BAAD-AF5546B34E49@mac.com> <AANLkTimVsUsrmTvsHqFiqJh1hhryMBemGyW+kYLKGgEu@mail.gmail.com> <20101107155757.GA13736@kroah.com> <AANLkTik=UWwRLOaHMfVifYiQPpSwoYuA6J1EoL5BOgJY@mail.gmail.com> <20101107215908.GA21070@kroah.com> <AANLkTimMpGiEHgx03k22wiH-1uzAL-KJm3GADe4bBF_J@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimMpGiEHgx03k22wiH-1uzAL-KJm3GADe4bBF_J@mail.gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1753862Ab0KHB5J (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 20:57:09 -0500
+Received: from server109-228-6-236.live-servers.net ([109.228.6.236]:58223
+	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752603Ab0KHB5I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 20:57:08 -0500
+X-Greylist: delayed 1343 seconds by postgrey-1.27 at vger.kernel.org; Sun, 07 Nov 2010 20:57:08 EST
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Uwe Helm <uwe.helm@googlemail.com>
+Cc: linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [PATCH] drm/i915: Avoid might_fault during pwrite whilst holding our mutex
+Date: Mon,  8 Nov 2010 01:34:28 +0000
+Message-Id: <1289180068-12109-1-git-send-email-chris@chris-wilson.co.uk>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <AANLkTi=rFCaDCMz3woo=ABtM7TesZK2_cKghnwv4B_Jv@mail.gmail.com>
+References: <AANLkTi=rFCaDCMz3woo=ABtM7TesZK2_cKghnwv4B_Jv@mail.gmail.com>
+X-Originating-IP: 78.156.66.37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 07, 2010 at 06:09:33PM -0500, Arnaud Lacombe wrote:
-> >Why don't they?
-> >
-> I just checked with some dev on IRC, there might be a time issue. The
-> patches have been synced with 2.6.36 recently (a month ago). So
-> there're still hope :)
+... and so prevent a potential circular reference:
 
-Have a pointer to the patch?
+  [ INFO: possible circular locking dependency detected ]
+  2.6.37-rc1-uwe1+ #4
+  -------------------------------------------------------
+  Xorg/1401 is trying to acquire lock:
+   (&mm->mmap_sem){++++++}, at: [<c01e4ddb>] might_fault+0x4b/0xa0
 
-thanks,
+  but task is already holding lock:
+   (&dev->struct_mutex){+.+.+.}, at: [<f869c3ac>]
+  i915_mutex_lock_interruptible+0x3c/0x60 [i915]
 
-greg k-h
+  which lock already depends on the new lock.
+
+When the locking around the pwrite ioctl was simplified, I did not spot
+that the phys path never took any locks and so we introduced this
+potential circular reference.
+
+Reported-by: Uwe Helm <uwe.helm@googlemail.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+---
+ drivers/gpu/drm/i915/i915_gem.c |   25 ++++++++++++++++---------
+ 1 files changed, 16 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index 984eb6e..eba9b16 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -4878,17 +4878,24 @@ i915_gem_phys_pwrite(struct drm_device *dev, struct drm_gem_object *obj,
+ 		     struct drm_file *file_priv)
+ {
+ 	struct drm_i915_gem_object *obj_priv = to_intel_bo(obj);
+-	void *obj_addr;
+-	int ret;
+-	char __user *user_data;
++	void *vaddr = obj_priv->phys_obj->handle->vaddr + args->offset;
++	char __user *user_data = (char __user *) (uintptr_t) args->data_ptr;
+ 
+-	user_data = (char __user *) (uintptr_t) args->data_ptr;
+-	obj_addr = obj_priv->phys_obj->handle->vaddr + args->offset;
++	DRM_DEBUG_DRIVER("vaddr %p, %lld\n", vaddr, args->size);
+ 
+-	DRM_DEBUG_DRIVER("obj_addr %p, %lld\n", obj_addr, args->size);
+-	ret = copy_from_user(obj_addr, user_data, args->size);
+-	if (ret)
+-		return -EFAULT;
++	if (__copy_from_user_inatomic_nocache(vaddr, user_data, args->size)) {
++		unsigned long unwritten;
++
++		/* The physical object once assigned is fixed for the lifetime
++		 * of the obj, so we can safely drop the lock and continue
++		 * to access vaddr.
++		 */
++		mutex_unlock(&dev->struct_mutex);
++		unwritten = copy_from_user(vaddr, user_data, args->size);
++		mutex_lock(&dev->struct_mutex);
++		if (unwritten)
++			return -EFAULT;
++	}
+ 
+ 	drm_agp_chipset_flush(dev);
+ 	return 0;
+-- 
+1.7.2.3
+
