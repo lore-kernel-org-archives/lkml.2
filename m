@@ -1,78 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438Ab0KHG6L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 01:58:11 -0500
-Received: from tango.tkos.co.il ([62.219.50.35]:54807 "EHLO tango.tkos.co.il"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751765Ab0KHG6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 01:58:07 -0500
-Date: Mon, 8 Nov 2010 08:57:37 +0200
-From: Baruch Siach <baruch@tkos.co.il>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Alex Gershgorin <agersh@rambler.ru>
-Subject: Re: [PATCH] drivers/misc: Altera Cyclone active serial
- implementation
-Message-ID: <20101108065737.GA10452@jasper.tkos.co.il>
-References: <879a6320efee16c04f0732a6887b95c1b4c6d10f.1288793522.git.baruch@tkos.co.il>
- <20101106181930.GB6927@kroah.com>
+	id S1752604Ab0KHHIt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 02:08:49 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:57577 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752123Ab0KHHIs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 02:08:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=Epuu51NpkFtZW36ESRBRFC5pTtULwcQBMhvTdMBipxV+llM9BvhHWnzFHKsXOYJB61
+         j4I+5s5ESmfEmjK6BwQXXJUzKk/SfQecrHH46X5Lf7o3rCElgfVnA4P5G76erUlRZ8uy
+         zf0hfEZ/tNQlDuBLU8t72UMFJHv2jjafXHTBw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101106181930.GB6927@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Mon, 8 Nov 2010 12:38:47 +0530
+Message-ID: <AANLkTi=40758wF4Z6GDfm809miA-hnCnSQdwA9bALX0+@mail.gmail.com>
+Subject: how to read one udp packet with more than one recvfrom() calls?
+From: ranjith kumar <ranjithproxy@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=20cf3054a047a5f7540494854b56
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+--20cf3054a047a5f7540494854b56
+Content-Type: text/plain; charset=ISO-8859-1
 
-On Sat, Nov 06, 2010 at 11:19:30AM -0700, Greg KH wrote:
-> On Wed, Nov 03, 2010 at 04:21:35PM +0200, Baruch Siach wrote:
-> > From: Alex Gershgorin <agersh@rambler.ru>
-> > 
-> > The active serial protocol can be used to program Altera Cyclone FPGA devices.
-> > This driver uses the kernel gpio interface to implement the active serial
-> > protocol.
-> > 
-> > Signed-off-by: Alex Gershgorin <agersh@rambler.ru>
-> > Signed-off-by: Baruch Siach <baruch@tkos.co.il>
-> > ---
+Hi,
 
-[snip]
+I  have implemented client and server programs using udp
+protocol(files are attached).
+UDP packet size is 500bytes.
 
-> > +static struct class *cyclone_as_class;
-> 
-> Please don't create your own class just for a single driver.  Just use
-> the misc class interface instead, as all you really want/need here is a
-> character device node, right?
+I want to read these 500bytes in two calls to recvfrom(). First time
+reading 100bytes and second time 400bytes.
+How to do this?
 
-Searching for 'mist' under include/linux/ I couldn't find this "misc class 
-interface". Can you enlighten me?
+When I tried to change the third argument of recvfrom(size_t len),
+from 500 to 100, first 100bytes are read correctly.
+But when I call recvfrom() second time with len=400, it is reading the
+first 400bytes of "next udp packet".
+Why? Isn't it possible to read one udp packet in two calls to
+recvfrom()/read()????
 
-I did find the "miscdevices" interface in include/linux/miscdevice.h.  I also 
-tried this one before going on to create a class of my own. However, this 
-interface seems to be limited to singleton devices. Can I use 
-MISC_DYNAMIC_MINOR to create multiple device nodes? Is there any example for 
-this?
+Thanks in advance.
 
-> And as discussed at the Plumbers conference this past week, we don't
-> want to add any new 'struct class' implementations to the kernel from
-> now on, as it's the overall wrong thing to do.
-> 
-> > --- /dev/null
-> > +++ b/include/linux/cyclone_as.h
-> 
-> Why do you need a .h file at all?
+--20cf3054a047a5f7540494854b56
+Content-Type: application/octet-stream; name="client.c"
+Content-Disposition: attachment; filename="client.c"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gg90frnc0
 
-Look at the content of this file. I need to pass GPIO numbers from the 
-platform code under arch/ to the driver. For this I use a platform_data 
-struct, which must be visible to the platform code. Is there a better way to 
-do this?
+I2luY2x1ZGU8c3RkaW8uaD4NCiNpbmNsdWRlIDxzeXMvdHlwZXMuaD4NCiNpbmNsdWRlIDxzdHJp
+bmcuaD4NCiNpbmNsdWRlIDxzeXMvdHlwZXMuaD4NCiNpbmNsdWRlIDx1bmlzdGQuaD4NCiNpbmNs
+dWRlIDxzeXMvdGltZS5oPg0KI2luY2x1ZGUgPHN0ZGlvLmg+DQojaW5jbHVkZSA8bmV0aW5ldC9p
+bi5oPg0KI2luY2x1ZGUgPHN5cy9zb2NrZXQuaD4NCiNpbmNsdWRlIDxuZXRpbmV0L2luLmg+DQoj
+aW5jbHVkZSA8YXJwYS9pbmV0Lmg+DQojaW5jbHVkZSA8c3RyaW5nLmg+DQoNCiNkZWZpbmUgQlVG
+TEVOIDUwMA0KI2RlZmluZSBQT1JUICA1MDAwDQojZGVmaW5lIE5QQUNLICA1DQoNCiANCiNkZWZp
+bmUgU1JWX0lQICIxMDcuMTA5LjM4LjMyIg0KIC8qIGZwcmludGYoc3Rkb3V0LCksICNpbmNsdWRl
+cyBhbmQgI2RlZmluZXMgbGlrZSBpbiB0aGUgc2VydmVyICovDQoNCiBpbnQgbWFpbih2b2lkKQ0K
+IHsNCiAgIHN0cnVjdCBzb2NrYWRkcl9pbiBzaV9vdGhlcjsNCiAgIGludCBzLCBpLCBzbGVuPXNp
+emVvZihzaV9vdGhlcik7DQogICBjaGFyIGJ1ZltCVUZMRU5dOw0KDQogICBpZiAoKHM9c29ja2V0
+KEFGX0lORVQsIFNPQ0tfREdSQU0sIElQUFJPVE9fVURQKSk9PS0xKQ0KICAgICBmcHJpbnRmKHN0
+ZG91dCwic29ja2V0Iik7DQoNCiAgIG1lbXNldCgoY2hhciAqKSAmc2lfb3RoZXIsIDAsIHNpemVv
+ZihzaV9vdGhlcikpOw0KICAgc2lfb3RoZXIuc2luX2ZhbWlseSA9IEFGX0lORVQ7DQogICBzaV9v
+dGhlci5zaW5fcG9ydCA9IGh0b25zKFBPUlQpOw0KICAgaWYgKGluZXRfYXRvbihTUlZfSVAsICZz
+aV9vdGhlci5zaW5fYWRkcik9PTApIHsNCiAgICAgZnByaW50ZihzdGRlcnIsICJpbmV0X2F0b24o
+KSBmYWlsZWRcbiIpOw0KICAgICBleGl0KDEpOw0KICAgfQ0KDQogICBmb3IgKGk9MDsgaTxOUEFD
+SzsgaSsrKSB7DQogICAgIHByaW50ZigiU2VuZGluZyBwYWNrZXQgJWRcbiIsIGkpOw0KICAgICBz
+cHJpbnRmKGJ1ZiwgIlRoaXMgaXMgcGFja2V0ICVkXG4iLCBpKTsNCi8vCXdyaXRlKHMsYnVmLEJV
+RkxFTik7DQogICAgIGlmIChzZW5kdG8ocywgYnVmLCBCVUZMRU4sIDAsICZzaV9vdGhlciwgc2xl
+bik9PS0xKQ0KICAgICAgZnByaW50ZihzdGRvdXQsInNlbmR0bygpIik7DQogICB9DQoNCiAgIGNs
+b3NlKHMpOw0KICAgcmV0dXJuIDA7DQogfQ0KDQo=
+--20cf3054a047a5f7540494854b56
+Content-Type: application/octet-stream; name="server.c"
+Content-Disposition: attachment; filename="server.c"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gg90fucq1
 
-baruch
-
--- 
-                                                     ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
+I2luY2x1ZGU8c3RkaW8uaD4NCiNpbmNsdWRlIDxzeXMvdHlwZXMuaD4NCiNpbmNsdWRlIDxzdHJp
+bmcuaD4NCiNpbmNsdWRlIDxzeXMvdHlwZXMuaD4NCiNpbmNsdWRlIDx1bmlzdGQuaD4NCiNpbmNs
+dWRlIDxzeXMvdGltZS5oPg0KI2luY2x1ZGUgPHN0ZGlvLmg+DQojaW5jbHVkZSA8bmV0aW5ldC9p
+bi5oPg0KI2luY2x1ZGUgPHN5cy9zb2NrZXQuaD4NCiNpbmNsdWRlIDxuZXRpbmV0L2luLmg+DQoj
+aW5jbHVkZSA8YXJwYS9pbmV0Lmg+DQojaW5jbHVkZSA8c3RyaW5nLmg+DQoNCiNkZWZpbmUgQlVG
+TEVOIDUwMA0KI2RlZmluZSBQT1JUICA1MDAwDQojZGVmaW5lIE5QQUNLICA1DQoNCg0KDQp2b2lk
+IGRpZXAoY2hhciAqcykNCnsNCglwZXJyb3Iocyk7DQoJZXhpdCgxKTsNCn0NCg0KaW50IG1haW4o
+dm9pZCkNCnsNCglzdHJ1Y3Qgc29ja2FkZHJfaW4gc2lfbWUsIHNpX290aGVyOw0KCWludCBzLCBp
+LCBzbGVuPXNpemVvZihzaV9vdGhlcik7DQoJY2hhciBidWZbQlVGTEVOXTsNCg0KCWlmICgocz1z
+b2NrZXQoQUZfSU5FVCwgU09DS19ER1JBTSwgSVBQUk9UT19VRFApKT09LTEpDQoJCWRpZXAoInNv
+Y2tldCIpOw0KDQoJbWVtc2V0KChjaGFyICopICZzaV9tZSwgMCwgc2l6ZW9mKHNpX21lKSk7DQoJ
+c2lfbWUuc2luX2ZhbWlseSA9IEFGX0lORVQ7DQoJc2lfbWUuc2luX3BvcnQgPSBodG9ucyhQT1JU
+KTsNCglzaV9tZS5zaW5fYWRkci5zX2FkZHIgPSBodG9ubChJTkFERFJfQU5ZKTsNCglpZiAoYmlu
+ZChzLCAmc2lfbWUsIHNpemVvZihzaV9tZSkpPT0tMSkNCgkJZGllcCgiYmluZCIpOw0KDQoJZm9y
+IChpPTA7IGk8TlBBQ0s7IGkrKykgew0KCQlpZiAocmVjdmZyb20ocywgYnVmLCBCVUZMRU4sIDAs
+ICZzaV9vdGhlciwgJnNsZW4pPT0tMSkNCgkJCWRpZXAoInJlY3Zmcm9tKCkiKTsNCi8vCXJlYWQo
+cyxidWYsQlVGTEVOKTsNCgkJcHJpbnRmKCJSZWNlaXZlZCBwYWNrZXQgZnJvbSAlczolZFxuRGF0
+YTogJXNcblxuIiwgDQoJCQkJaW5ldF9udG9hKHNpX290aGVyLnNpbl9hZGRyKSwgbnRvaHMoc2lf
+b3RoZXIuc2luX3BvcnQpLCBidWYpOw0KCX0NCg0KCWNsb3NlKHMpOw0KCXJldHVybiAwOw0KfQ0K
+--20cf3054a047a5f7540494854b56--
