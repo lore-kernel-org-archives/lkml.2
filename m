@@ -1,58 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab0KHKSR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 05:18:17 -0500
-Received: from dallas.jonmasters.org ([72.29.103.172]:46781 "EHLO
-	dallas.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752372Ab0KHKSQ (ORCPT
+	id S1753669Ab0KHKU1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 05:20:27 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:47434 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751633Ab0KHKU0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 05:18:16 -0500
-Subject: [bisected] offset display bug in i915
-From: Jon Masters <jonathan@jonmasters.org>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: World Organi[sz]ation of Broken Dreams
-Date: Mon, 08 Nov 2010 05:18:32 -0500
-Message-ID: <1289211512.3916.383.camel@constitution.bos.jonmasters.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 74.92.29.237
-X-SA-Exim-Mail-From: jonathan@jonmasters.org
-X-SA-Exim-Scanned: No (on dallas.jonmasters.org); SAEximRunCond expanded to false
+	Mon, 8 Nov 2010 05:20:26 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Date: Mon, 08 Nov 2010 12:22:51 +0100
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCH v7] USB device driver of Topcliff PCH
+In-reply-to: <20101103183750.GA23043@hexapodia.org>
+To: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>,
+        Andy Isaacson <adi@hexapodia.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>, "Wang, Qi" <qi.wang@intel.com>,
+        "Wang, Yong Y" <yong.y.wang@intel.com>,
+        Andrew <andrew.chih.howe.khor@intel.com>,
+        Intel OTC <joel.clark@intel.com>,
+        "Foster, Margie" <margie.foster@intel.com>,
+        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>
+Message-id: <op.vlum8dzo7p4s8u@pikus>
+Organization: Samsung Electronics
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.62 (Linux)
+References: <4CC55AD9.6020800@dsn.okisemi.com>
+ <20101103183750.GA23043@hexapodia.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+> On Mon, Oct 25, 2010 at 07:24:25PM +0900, Toshiharu Okada wrote:
+>> +	if (!list_empty(&ep->queue)) {
+>> +		dev_dbg(&dev->pdev->dev, "%s: list not empty", __func__);
+>> +		ret = -EAGAIN;
+>> +	} else if (!halt) {	/* halt or clear halt */
+>> +		pch_udc_ep_clear_stall(ep);
+>> +		ret = 0;
+>> +	} else {
+>> +		if (ep->num == PCH_UDC_EP0)
+>> +			ep->dev->stall = 1;
+>> +		pch_udc_ep_set_stall(ep);
+>> +		pch_udc_enable_ep_interrupts(ep->dev,
+>> +					     PCH_UDC_EPINT(ep->in, ep->num));
+>> +		ret = 0;
+>> +	}
 
-The following patch that you recently committed breaks my ASUS Eee PC
-1015PEM by causing the display to be offset by about 1 inch (a few
-centimeters) when the mode is (re)set during boot. I previously posted
-both photographs and video of the problem in another "PROBLEM" thread.
+On Wed, 03 Nov 2010 19:37:50 +0100, Andy Isaacson <adi@hexapodia.org> wrote:
+> I think this would be clearer as
+>
+> +	if (!list_empty(&ep->queue)) {
+> +		dev_dbg(&dev->pdev->dev, "%s: list not empty", __func__);
+> +		ret = -EAGAIN;
+> +	}
+> +	if (halt) {
+> +		if (ep->num == PCH_UDC_EP0)
+> +			ep->dev->stall = 1;
+> +		pch_udc_ep_set_stall(ep);
+> +		pch_udc_enable_ep_interrupts(ep->dev,
+> +					     PCH_UDC_EPINT(ep->in, ep->num));
+> +		ret = 0;
+> +	} else {
+> +		pch_udc_ep_clear_stall(ep);
+> +		ret = 0;
+> +	}
 
-Here is the offending commit found through bisection:
+This changes the behavior of the construct though.
 
-219adae138513bae20b256f1946b9cb3b75ca05c is the first bad commit
-commit 219adae138513bae20b256f1946b9cb3b75ca05c
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Thu Sep 16 23:05:10 2010 +0100
+> because:
+> 1. if (!list_empty  is a standalone check, there is no if/else if/else
+> connection between list_empty() and halt.
 
-    drm/i915: Cache LVDS EDID
-    
-    We assume that the panel is permenantly connected and that the EDID
-    data is consistent from boot, so simply cache the whole EDID for the
-    panel.
-    
-    Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+This depends on how you look at it.  The way I see it is that there are three
+mutually exclusive cases: the list is not empty, it is a halt, it is not a
+halt.  This way, if-else-if-else seems like a good construct to me.
 
-I'll look at the patch. Either the EDID is *not* consistent (in which
-case, why are we not seeing other bugs like this?) or there is something
-specific to this system or panel used.
+> 2. I prefer if (foo) {} else {} instead of if (!foo) {} else {}, unless
+> there is a significant reason to do the negated test.
 
-Jon.
+I agree on that though.
 
+>> +	pr_debug("%s: %s", __func__, usbep->name);
+>
+> There are probably too many pr_debug() and dev_dbg()s in this driver.
+> Please reconsider which ones are appropriate for mainline.
 
+Do we really care?  Just don't define DEBUG...
+
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
