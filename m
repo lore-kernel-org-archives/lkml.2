@@ -1,54 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012Ab0KIKQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 05:16:27 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:64145 "EHLO
+	id S1755034Ab0KIKQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 05:16:29 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:59760 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754970Ab0KIKQY convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754973Ab0KIKQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 9 Nov 2010 05:16:24 -0500
 From: Arnd Bergmann <arnd@arndb.de>
-To: vt8500-wm8505-linux-kernel@googlegroups.com
-Subject: Re: [PATCH 6/6 v2] ARM: Add support for the display controllers in VT8500 and WM8505
-Date: Mon, 8 Nov 2010 09:47:37 +0100
+To: Richard Cochran <richardcochran@gmail.com>
+Subject: Re: [PATCH RFC 1/8] Introduce dynamic clock devices
+Date: Mon, 8 Nov 2010 07:38:41 +0100
 User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Alexey Charkov <alchark@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-References: <1289147348-31969-1-git-send-email-alchark@gmail.com> <1289147348-31969-6-git-send-email-alchark@gmail.com>
-In-Reply-To: <1289147348-31969-6-git-send-email-alchark@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Christoph Lameter <cl@linux.com>,
+        John Stultz <johnstul@us.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+References: <cover.1288897198.git.richard.cochran@omicron.at> <031a33e771a3c8bd95ed2c88ede4820b7675ceca.1288897198.git.richard.cochran@omicron.at>
+In-Reply-To: <031a33e771a3c8bd95ed2c88ede4820b7675ceca.1288897198.git.richard.cochran@omicron.at>
 MIME-Version: 1.0
-Content-Type: Text/Plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <201011080947.37522.arnd@arndb.de>
-X-Provags-ID: V02:K0:uR7lSrYmCCTnXKMh82WtoywwtBz+HM530m7HUkV+ZDA
- yjOGoJlG4u+YY5uAgoufm6IhrPS1tTMXv9gwDMym9wIhU9b8Ey
- hd3G73C+7bWTMUELhKl9UaLES7j8jtRybI1NhzLlM2DOzSF6uv
- 0c1EBA2bjD1Mqba+K6TyTcWIjOXhkyn0NXDNpoL+pQ26MWbZ3L
- ldrgU+GeU9XJvkhXLilJA==
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011080738.41871.arnd@arndb.de>
+X-Provags-ID: V02:K0:mKvYUMnKWpUqovuBu3ii9j42oIJPndyOlb3sj+3n12d
+ UKxUCazZJXvWKxtU1lye/tDRUkh+ub9fjLXWqlhGjtM1aLZ8nu
+ DAhoJv1Gkd5CVVAPvN3wjpgi4z4qOGNMm3F3cHJ8KAmI5hYzql
+ Qee6ymFf4eZmLfCalfUIegkv8nljvnvR8ylPNlM5DGCHMYSXjC
+ gxdH7vhd4e4L8584VzAMA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 07 November 2010, Alexey Charkov wrote:
->  drivers/video/Kconfig         |   26 +++
->  drivers/video/Makefile        |    3 +
->  drivers/video/vt8500lcdfb.c   |  452 +++++++++++++++++++++++++++++++++++++++++
->  drivers/video/vt8500lcdfb.h   |   34 +++
->  drivers/video/wm8505fb.c      |  438 +++++++++++++++++++++++++++++++++++++++
->  drivers/video/wm8505fb_regs.h |   76 +++++++
->  drivers/video/wmt_ge_rops.c   |  186 +++++++++++++++++
->  drivers/video/wmt_ge_rops.h   |    5 +
+On Thursday 04 November 2010, Richard Cochran wrote:
+> This patch adds support for adding and removing clock devices. The clock
+> lifetime cycle is patterned after usb devices. Each clock is represented
+> by a standard character device. In addition, the driver may optionally
+> implemented custom character device operations.
+> 
+> The clock devices do not yet do anything useful. This patch merely
+> provides some needed infrastructure.
+> +/**
+> + * create_clock_device() - register a new clock
 
->From a very brief look, the two drivers look rather similar. What is the
-reason to have separate drivers instead of just one?
+I'd call this clock_device_create() etc, putting all clock_device functions
+in a common namespace with the clock_device_ prefix
 
-Could you perhaps take the common parts and move them into a third module
-that exports symbols to be used by the two drivers?
+> +#define MAX_CLKDEV BITS_PER_LONG
+> +static DECLARE_BITMAP(clocks_map, MAX_CLKDEV);
+> +static DEFINE_MUTEX(clocks_mux); /* protects 'clocks_map' */
+
+Using "_mux" as a postfix for the name is highly unusual, this normally
+means multiplex, not mutual exlusion.
+
+You could probably avoid the need for this mutex altogether if you use
+the atomic bit operations (e.g. test_and_set_bit).
+
+> +struct clock_device {
+> +	struct file_operations fops;
+> +	struct file_operations *driver_fops;
+> +	struct clock_device_operations *ops;
+> +	struct cdev cdev;
+> +	struct kref kref;
+> +	struct mutex mux;
+> +	void *priv;
+> +	int index;
+> +	bool zombie;
+> +};
+
+You should really not need the file_operations here, neither the
+struct nor the pointer. Just define a static file_operations
+structure containing clock_device_open and clock_device_release,
+and whatever else you might need, then add the driver's operations
+to clock_device_operations, and pass the clock_device pointer
+directly to them, instead of passing the file/inode pointers.
 
 	Arnd
 
