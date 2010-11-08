@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755691Ab0KHUlX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 15:41:23 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:46362 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755369Ab0KHUlU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 15:41:20 -0500
-Subject: Re: Q: perf_event && event->owner
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Prasad <prasad@linux.vnet.ibm.com>, Roland McGrath <roland@redhat.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101108201108.GA6777@nowhere>
-References: <20101108145647.GA3426@redhat.com>
-	 <20101108145754.GB3434@redhat.com>  <20101108201108.GA6777@nowhere>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 08 Nov 2010 21:41:12 +0100
-Message-ID: <1289248872.2191.27.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755631Ab0KHUkv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 15:40:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7694 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755525Ab0KHUkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 15:40:46 -0500
+From: Josef Bacik <josef@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        xfs@oss.sgi.com, joel.becker@oracle.com, cmm@us.ibm.com,
+        cluster-devel@redhat.com
+Subject: [PATCH 3/6] Ocfs2: handle hole punching via fallocate properly
+Date: Mon,  8 Nov 2010 15:32:04 -0500
+Message-Id: <1289248327-16308-3-git-send-email-josef@redhat.com>
+In-Reply-To: <1289248327-16308-1-git-send-email-josef@redhat.com>
+References: <1289248327-16308-1-git-send-email-josef@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-08 at 21:11 +0100, Frederic Weisbecker wrote:
-> Perhaps the real owner should be the task on which we attach our
-> breakpoint.
+This patch just makes ocfs2 use its UNRESERVP ioctl when we get the hole punch
+flag in fallocate.  I didn't test it, but it seems simple enough.  Thanks,
 
-No the point of event->owner is to point to the task that creates the
-event, not the task we possibly attach it to (that should be reachable
-through event->ctx->task).
+Signed-off-by: Josef Bacik <josef@redhat.com>
+---
+ fs/ocfs2/file.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
-As to removing event->owner as Oleg suggests, its a published ABI and
-there might be people using it.
-
-The use-case is a monitor thread wanting to stop all monitoring it
-initiated, for example because its wants to synchronize various counters
-attached to different tasks etc..
-
+diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
+index 77b4c04..ad23a18 100644
+--- a/fs/ocfs2/file.c
++++ b/fs/ocfs2/file.c
+@@ -1992,6 +1992,7 @@ static long ocfs2_fallocate(struct inode *inode, int mode, loff_t offset,
+ 	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+ 	struct ocfs2_space_resv sr;
+ 	int change_size = 1;
++	int cmd = OCFS2_IOC_RESVSP64;
+ 
+ 	if (!ocfs2_writes_unwritten_extents(osb))
+ 		return -EOPNOTSUPP;
+@@ -2002,12 +2003,15 @@ static long ocfs2_fallocate(struct inode *inode, int mode, loff_t offset,
+ 	if (mode & FALLOC_FL_KEEP_SIZE)
+ 		change_size = 0;
+ 
++	if (mode & FALLOC_FL_PUNCH_HOLE)
++		cmd = OCFS2_IOC_UNRESVSP64;
++
+ 	sr.l_whence = 0;
+ 	sr.l_start = (s64)offset;
+ 	sr.l_len = (s64)len;
+ 
+-	return __ocfs2_change_file_space(NULL, inode, offset,
+-					 OCFS2_IOC_RESVSP64, &sr, change_size);
++	return __ocfs2_change_file_space(NULL, inode, offset, cmd, &sr,
++					 change_size);
+ }
+ 
+ int ocfs2_check_range_for_refcount(struct inode *inode, loff_t pos,
+-- 
+1.6.6.1
 
