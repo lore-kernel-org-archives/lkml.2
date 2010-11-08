@@ -1,51 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754823Ab0KHOvs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 09:51:48 -0500
-Received: from sh.osrg.net ([192.16.179.4]:42443 "EHLO sh.osrg.net"
+	id S1754858Ab0KHO6Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 09:58:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4913 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752627Ab0KHOvr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 09:51:47 -0500
-Date: Mon, 8 Nov 2010 23:50:47 +0900
-To: hch@infradead.org
-Cc: nab@linux-iscsi.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, fujita.tomonori@lab.ntt.co.jp,
-        michaelc@cs.wisc.edu, hch@lst.de, hare@suse.de,
-        James.Bottomley@suse.de, axboe@kernel.dk, bharrosh@panasas.com
-Subject: Re: [RFCv3 00/21] TCM Core and TCM_Loop patches for v2.6.37
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20101108143307.GA22121@infradead.org>
-References: <1287441313-19703-1-git-send-email-nab@linux-iscsi.org>
-	<20101108143307.GA22121@infradead.org>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20101108234328C.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 08 Nov 2010 23:50:50 +0900 (JST)
+	id S1754603Ab0KHO6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 09:58:23 -0500
+Date: Mon, 8 Nov 2010 09:58:09 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-btrfs@vger.kernel.org, dm-devel@redhat.com,
+        Milan Broz <mbroz@redhat.com>, Matt <jackdachef@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, htd@fancy-poultry.org
+Subject: Re: DM-CRYPT: Scale to multiple CPUs v3 on 2.6.37-rc* ?
+Message-ID: <20101108145809.GD29714@redhat.com>
+References: <AANLkTim6WTCChWGbTb-PUGd2AERGibeRtgan-WDznf2s@mail.gmail.com>
+ <4CD6B7FA.3050005@redhat.com>
+ <AANLkTikbsU+SGAaoq_oek=7tfDdjg+0wFoydhA+K9ZU+@mail.gmail.com>
+ <AANLkTinna7BiGHogXnn1iEG6ccUAjFM3p3S3aHpv=h-E@mail.gmail.com>
+ <20101107194547.GA12521@basil.fritz.box>
+ <4CD71C8B.1050604@redhat.com>
+ <20101107230508.GB17592@basil.fritz.box>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101107230508.GB17592@basil.fritz.box>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 8 Nov 2010 09:33:07 -0500
-Christoph Hellwig <hch@infradead.org> wrote:
+On Sun, Nov 07 2010 at  6:05pm -0500,
+Andi Kleen <andi@firstfloor.org> wrote:
 
-> I promised you and James to get back to a throughout review for more
-> than just the backends.  It's still in progress, but here is what I
-> think is most important:
+> On Sun, Nov 07, 2010 at 10:39:23PM +0100, Milan Broz wrote:
+> > On 11/07/2010 08:45 PM, Andi Kleen wrote:
+> > >> I read about barrier-problems and data getting to the partition when
+> > >> using dm-crypt and several layers so I don't know if that could be
+> > >> related
+> > > 
+> > > Barriers seem to be totally broken on dm-crypt currently.
+> > 
+> > Can you explain it?
+> 
+> e.g. the btrfs mailing list is full of corruption reports
+> on dm-crypt and most of the symptoms point to broken barriers.
 
-Agreed about all the comments. I complained about similar issues
-publicly and privately.
+[cc'ing linux-btrfs, hopefully in the future dm-devel will get cc'd when
+concerns about DM come up on linux-btrfs (or other lists)]
 
-btw, when I'm back to Japan, I resume to work on the ibmvscsis driver.
+I spoke with Josef Bacik and these corruption reports are apparently
+against older kernels (e.g. <= 2.6.33).  I say <= 2.6.33 because:
 
+https://btrfs.wiki.kernel.org/index.php/Gotchas states:
+"btrfs volumes on top of dm-crypt block devices (and possibly LVM)
+require write-caching to be turned off on the underlying HDD. Failing to
+do so, in the event of a power failure, may result in corruption not yet
+handled by btrfs code. (2.6.33)"
 
->  - Sort of the the namepspace for both the file names and function
->    names.  I think you reluctantly agreed to do that a while ago anyway,
->    but I think it's time to bite the bullet now.  Please agree on a
->    common prefix for both function names and modules.  I think the
->    target name in the directory structure is the best one, but I really
->    don't care too much.  The transport_ prefix used in some code is
->    really misleading, and the se_ in other isn't too helpful either.
+But Josef was not aware of any reports with kernels newer than 2.6.32
+(F12).
 
-Agreed. And as I said, we definitely need to fix the module names
-before the mainline inclusion.
+Josef also noted that until last week btrfs wouldn't retry another
+mirror in the face of some corruption, the fix is here:
+http://git.kernel.org/?p=linux/kernel/git/mason/btrfs-unstable.git;a=commit;h=cb44921a09221
+
+This obviously doesn't fix any source of corruption but it makes btrfs
+more resilient when it encounters the corruption.
+
+> > Barriers/flush change should work, if it is broken, it is not only dm-crypt.
+> > (dm-crypt simply relies on dm-core implementation, when barrier/flush
+> > request come to dmcrypt, all previous IO must be already finished).
+> 
+> Possibly, at least it doesn't seem to work.
+
+Can you please be more specific?  What test(s)?  What kernel(s)?
+
+Any pointers to previous (and preferably: recent) reports would be
+appreciated.
+
+The DM barrier code has seen considerable change recently (via flush+fua
+changes in 2.6.37).  Those changes have been tested quite a bit
+(including ext4 consistency after a crash).
+
+But even prior to those flush+fua changes DM's support for barriers
+(Linux >= 2.6.31) was held to be robust.  No known (at least no
+reported) issues with DM's barrier support.
+
+Mike
