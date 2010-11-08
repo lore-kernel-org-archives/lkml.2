@@ -1,52 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754255Ab0KHQgJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 11:36:09 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:42747 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751682Ab0KHQgH (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 8 Nov 2010 11:36:07 -0500
-Date: Mon, 8 Nov 2010 11:34:11 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Milton Miller <miltonm@bga.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, jbarnes@virtuousgeek.org,
-        linux-pci@vger.kernel.org, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: Re: [PATCH 1/1] PCI: xen-pcifront, fix PCI reference leak
-Message-ID: <20101108163411.GA2638@dumpdata.com>
-References: <1288881090-27335-1-git-send-email-jslaby@suse.cz>
- <xenfront-reffix-fixreq@mdm.bga.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <xenfront-reffix-fixreq@mdm.bga.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754680Ab0KHQhc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 11:37:32 -0500
+Received: from caiajhbdcaib.dreamhost.com ([208.97.132.81]:47095 "EHLO
+	homiemail-a7.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752720Ab0KHQhb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 11:37:31 -0500
+X-Greylist: delayed 2143 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Nov 2010 11:37:31 EST
+Subject: Re: [PATCH] rcu_read_lock/unlock protect find_task_by_vpid call
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <20101108161801.GD3971@swordfish.minsk.epam.com>
+References: <20101029125550.GA3932@swordfish.minsk.epam.com>
+	 <1289232095.2206.5.camel@cowboy>
+	 <20101108161801.GD3971@swordfish.minsk.epam.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 08 Nov 2010 13:37:20 -0300
+Message-ID: <1289234240.2206.6.camel@cowboy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 04, 2010 at 12:27:07PM -0600, Milton Miller wrote:
-> On 2010-11-04 at about 14:31:30 Jiri Slaby wrote:
-> > Stanse found that when pdev is found and has no driver a reference is
-> > leaked in pcifront_common_process. So add pci_dev_put there. For the
-> > pdev == NULL case, pci_dev_put(NULL) is fine.
-> 
-> While that may be true, the dev_err(&pcidev->dev ... is a NULL pointer
-> deref.
+On Mon, 2010-11-08 at 18:18 +0200, Sergey Senozhatsky wrote:
+> On (11/08/10 13:01), Davidlohr Bueso wrote:
+> > On Fri, 2010-10-29 at 15:55 +0300, Sergey Senozhatsky wrote:
+> > > Commit 4221a9918e38b7494cee341dda7b7b4bb8c04bde "Add RCU check for 
+> > > find_task_by_vpid()" introduced rcu_lockdep_assert to find_task_by_pid_ns.
+> > > Assertion failed in sys_ioprio_get. The patch is fixing assertion
+> > > failure in ioprio_set as well. 
+> > > 
+> > >  ===================================================
+> > >  [ INFO: suspicious rcu_dereference_check() usage. ]
+> > >  ---------------------------------------------------
+> > >  kernel/pid.c:419 invoked rcu_dereference_check() without protection!
+> > >  
+> > >  rcu_scheduler_active = 1, debug_locks = 0
+> > >  1 lock held by iotop/4254:
+> > >  #0:  (tasklist_lock){.?.?..}, at: [<ffffffff811104b4>] sys_ioprio_get+0x22/0x2da
+> > >  
+> > >  stack backtrace:
+> > >  Pid: 4254, comm: iotop Not tainted
+> > >  Call Trace:
+> > >  [<ffffffff810656f2>] lockdep_rcu_dereference+0xaa/0xb2
+> > >  [<ffffffff81053c67>] find_task_by_pid_ns+0x4f/0x68
+> > >  [<ffffffff81053c9d>] find_task_by_vpid+0x1d/0x1f
+> > >  [<ffffffff811104e2>] sys_ioprio_get+0x50/0x2da
+> > >  [<ffffffff81002182>] system_call_fastpath+0x16/0x1b
+> > >  
+> > > 
+> > > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> > > 
+> > > ---
+> > > 
+> > > diff --git a/fs/ioprio.c b/fs/ioprio.c
+> > > index 748cfb9..666343d 100644
+> > > --- a/fs/ioprio.c
+> > > +++ b/fs/ioprio.c
+> > > @@ -113,8 +113,11 @@ SYSCALL_DEFINE3(ioprio_set, int, which, int, who, int, ioprio)
+> > >  		case IOPRIO_WHO_PROCESS:
+> > >  			if (!who)
+> > >  				p = current;
+> > > -			else
+> > > +			else {
+> > > +				rcu_read_lock();
+> > >  				p = find_task_by_vpid(who);
+> > > +				rcu_read_unlock();
+> > > +			}
+> > >  			if (p)
+> > >  				ret = set_task_ioprio(p, ioprio);
+> > >  			break;
+> > > @@ -202,8 +205,11 @@ SYSCALL_DEFINE2(ioprio_get, int, which, int, who)
+> > >  		case IOPRIO_WHO_PROCESS:
+> > >  			if (!who)
+> > >  				p = current;
+> > > -			else
+> > > +			else {
+> > > +				rcu_read_lock();
+> > >  				p = find_task_by_vpid(who);
+> > > +				rcu_read_unlock();
+> > > +			}
+> > >  			if (p)
+> > >  				ret = get_task_ioprio(p);
+> > >  			break;
+> > 
+> > If you add the rcu_read_lock/unlock() sections, we would also need to
+> > update the comment above accordingly.
+> >
 
-I've put the fix in the branch (stable/xen-pcifront-fixes) that I will ask Linus
-to pull.. but what options did you need to find this?
+Ah, yes indeed, misread the cases, sorry about the noise.
 
-I tried to run this before putting your and Milton fix in:
-konrad@phenom:~/tar/stanse-1.1.2$ java -jar ./stanse.jar  ~/work/linux/drivers/pci/xen-pcifront.c 
-Stanse version "1.1.2"
-Copyright (c) 2008-2010 Masaryk University, Brno
+Thanks,
+Davidlohr
 
-STANSE_HOME not specified. Using the location of stanse.jar.
-Checking for bugs:
-<-> File: /home/konrad/work/linux/drivers/pci/xen-pcifront.c
-<-> --------------------------------
-Done.
-
-And no warnings?
