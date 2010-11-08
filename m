@@ -1,62 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208Ab0KHVZW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 16:25:22 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:41646 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754897Ab0KHVZV (ORCPT
+	id S1755339Ab0KHVac (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 16:30:32 -0500
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:41495 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755011Ab0KHVab (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 16:25:21 -0500
-Subject: Re: [RFCv3 00/21] TCM Core and TCM_Loop patches for v2.6.37
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
-        Joel Becker <joel.becker@oracle.com>
-In-Reply-To: <20101108143952.GB22121@infradead.org>
-References: <1287441313-19703-1-git-send-email-nab@linux-iscsi.org>
-	 <20101108143952.GB22121@infradead.org>
-Content-Type: text/plain
-Date: Mon, 08 Nov 2010 13:20:07 -0800
-Message-Id: <1289251207.27226.59.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Nov 2010 16:30:31 -0500
+Date: Tue, 9 Nov 2010 06:30:08 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Alexey Charkov <alchark@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/6 v3] ARM: Add support for the display controllers in VT8500 and WM8505
+Message-ID: <20101108213008.GB17708@linux-sh.org>
+References: <1289147348-31969-1-git-send-email-alchark@gmail.com> <1289147348-31969-6-git-send-email-alchark@gmail.com> <20101108041721.GA11605@linux-sh.org> <20101108141407.GA25739@alchark-u3s.lan> <20101108204315.GA12050@linux-sh.org> <AANLkTikXffMT9ZiUpm2QAoW+KPJN3MBf55Dgruj1EJN0@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikXffMT9ZiUpm2QAoW+KPJN3MBf55Dgruj1EJN0@mail.gmail.com>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-08 at 09:39 -0500, Christoph Hellwig wrote:
-> Some comments on the configfs to backend API:
+On Tue, Nov 09, 2010 at 12:15:19AM +0300, Alexey Charkov wrote:
+> 2010/11/8 Paul Mundt <lethal@linux-sh.org>:
+> >> + ?? ?? if (!fbi)
+> >> + ?? ?? ?? ?? ?? ?? return 0;
+> >> +
+> > I would kill this test as well. If this ever triggers, something horribly
+> > wrong has happened and you likely have bigger things to worry about.
 > 
->  - the various get_*_info methods look like they really should use
->    the seq_file API.  That gives you safety against overflows,
->    and simplifies the code.
+> But a couple of extra instructions for error handling to hold in the
+> kernel binary should not hurt, should they? Are there benefits aside
+> from code compaction?
+> 
+It's not a realistic situation. The only way this would trigger is if the
+pointer you got handed is one that didn't go through the probe path or
+was otherwise corrupted. If it was corrupted, you're going to notice
+regardless. The driver core does sensible refcounting already, there's no
+need to second guess it.
 
-Hmmm, it is my understanding that seq_file is currently not available
-for configfs.  Also, we never going to expect these particular calls to
-return anything close to PAGE_SIZE, so I am not sure how much of an
-issue this really is.
+> >> diff --git a/drivers/video/wmt_ge_rops.c b/drivers/video/wmt_ge_rops.c
+> >> new file mode 100644
+> >> index 0000000..b201a60
+> >> --- /dev/null
+> >> +++ b/drivers/video/wmt_ge_rops.c
+> >> +EXPORT_SYMBOL(wmt_ge_fillrect);
+> >> +EXPORT_SYMBOL(wmt_ge_copyarea);
+> >> +EXPORT_SYMBOL(wmt_ge_sync);
+> >> +
+> > ...
+> >
+> > Is there a particular reason why you are favouring EXPORT_SYMBOL? In
+> > general we prefer that new infrastructure patches and the like stick with
+> > EXPORT_SYMBOL_GPL, as this discourages use by non-GPLed modules going
+> > forward.
+> >
+> 
+> Well, I have no personal preference towards these, so I just took what
+> was in cfb*.c as a guidance. If the *_GPL variant is more welcome, it
+> can be changed.
+> 
+Those exports go back a ways. The idea with the _GPL exports was not to
+change symbol export behaviour retroactively, so the old ones stay the
+way they were and newer stuff can choose which way it wants to go. If you
+are not using this driver with an out-of-tree non-GPLed module then you
+are advised to use the GPL variants so others don't either.
 
->  - why are show_configfs_dev_params and get_dev_info separate
->    methods if they always end up calling the same code?
+> >> +static int __devinit wmt_ge_rops_probe(struct platform_device *pdev)
+> >> +{
+> > ...
+> >> + ?? ?? regbase = ioremap(res->start, resource_size(res));
+> >> + ?? ?? if (regbase == NULL) {
+> >> + ?? ?? ?? ?? ?? ?? dev_err(&pdev->dev, "failed to map I/O memory\n");
+> >> + ?? ?? ?? ?? ?? ?? ret = -EBUSY;
+> >> + ?? ?? ?? ?? ?? ?? goto error;
+> >> + ?? ?? }
+> >> +
+> > You might also want to do something like:
+> >
+> > ?? ?? ?? ??/* Only one ROP engine is presently supported. */
+> > ?? ?? ?? ??if (unlikely(regbase)) {
+> > ?? ?? ?? ?? ?? ?? ?? ??WARN_ON(1);
+> > ?? ?? ?? ?? ?? ?? ?? ??return -EBUSY;
+> > ?? ?? ?? ??}
+> >
+> > ?? ?? ?? ??regbase = ioremap(...);
+> > ?? ?? ?? ??...
+> >
+> 
+> But for that I'd have to initialize regbase to NULL (so as not to use
+> an uninitialized variable), wouldn't I? checkpatch.pl complains on
+> that...
+> 
+No, regbase is BSS initialized, so it will already be cleared.
 
-Hmmm, this was some legacy informational code that no longer has a
-reason to be seperate.  I will get this merged into a single function.
+> >> +static int __devexit wmt_ge_rops_remove(struct platform_device *pdev)
+> >> +{
+> >> + ?? ?? iounmap(regbase);
+> >> + ?? ?? return 0;
+> >> +}
+> >> +
+> > You're missing a:
+> >
+> > ?? ?? ?? ??writel(0, regbase + GE_ENABLE_OFF);
+> >
+> > here?
+> >
+> 
+> In fact, this module only uses a subset of GE functions, so I'm
+> somewhat reluctant to disable the hardware altogether when unloading
+> the module. And should the hardware really be disabled when the driver
+> is removed?
+> 
+You're the only one who can answer that. I just noticed in your other
+drivers that this is the pattern that you opted for, so I thought
+that perhaps this was an oversight in the rop engine code.
 
->  - the set_configfs_dev_params method implementation contains some
->    rather nast parsing code.  They look like they really should use
->    the parser.h helpers we use for mount option parsing.
-
-<nod>  This code current expects the the incoming buffer to be in the
-form of 'key0=value0,key1=value1,key2=value2' etc.   Assuming that
-parser.h code can handle the comma seperated values, I will look at
-getting these converted as well.
-
---nab
-
+Having said that, the general expectation is that a remove will balance
+out the probe. If the probe is enabling random blocks then the remove
+should be disabling them. If this driver is primarily used as a client by
+the other drivers and you're concerned from it being ripped out
+underneath them, then a bit more thinking and refcounting is needed. This
+is however something that can be done later if its a direction you wish
+to head in.
