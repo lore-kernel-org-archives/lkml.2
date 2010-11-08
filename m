@@ -1,96 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755806Ab0KHW6K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 17:58:10 -0500
-Received: from mga02.intel.com ([134.134.136.20]:23351 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752932Ab0KHW6J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 17:58:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,171,1288594800"; 
-   d="scan'208";a="571497119"
-Message-ID: <4CD8807E.90306@linux.intel.com>
-Date: Mon, 08 Nov 2010 14:58:06 -0800
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	id S1755798Ab0KHXBD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 18:01:03 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37978 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753114Ab0KHXBA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 18:01:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=mxAWdy3IttPWhZBoxad3AoOvjYmFmqoCmuqqTkNXYEu7I8qcFkdELH5wZTMVfUTGMq
+         2NG5yp1koHiOCtlIStt+HqWJwfrb2l5coAyfSsBEkdeMrz8nfpqKk9qveAFlfhlFPchC
+         4czdOCGN/5jLz44ZRxOIQaaWDhV6UVkdZCZZA=
 MIME-Version: 1.0
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "lkml, " <linux-kernel@vger.kernel.org>
-Subject: futex requeue_pi breakage
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <AANLkTinZF-47WQyF5k1Nv64NjfMNSQ-+oE0eGycR24NM@mail.gmail.com>
+References: <AANLkTinZF-47WQyF5k1Nv64NjfMNSQ-+oE0eGycR24NM@mail.gmail.com>
+Date: Tue, 9 Nov 2010 01:00:59 +0200
+Message-ID: <AANLkTikB0zhN13u5OtRwviOv-rFDW-vFTmq0t7ALuO7N@mail.gmail.com>
+Subject: Re: [GIT PULL] fixes for tidspbridge 2.6.37-rc1
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Greg KH <greg@kroah.com>, linux-omap@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven,
+On Sun, Nov 7, 2010 at 11:36 PM, Felipe Contreras
+<felipe.contreras@gmail.com> wrote:
+> The situation of tidspbridge driver on staging has been pretty sad,
+> basically, it has never worked. This is a step backwards from the
+> previous situation where it was clear which branch to use to get it
+> working. Unfortunately, the ARM and OMAP trees haven't made it easy,
+> as changes in those trees have broken it even further.
 
-As we've discussed, the following changes break the futex_requeue_pi 
-testcase I use to validate the futex_requeue_pi feature introduced in 
-2.6.32(ish).
+Here's another try, this one has only one patch that needs omap
+maintainers to ack.
 
-	commit 43fa5460fe60dea5c610490a1d263415419c60f6
-	    sched: Try not to migrate higher priority RT tasks
+ git://gitorious.org/~felipec/linux-omap/felipec.git fc-dsp-fix-v37-rc1-min
 
-	commit b3bc211cfe7d5fe94b310480d78e00bea96fbf2a
-	    sched: Give CPU bound RT tasks preference
+These are the changes since v2.6.37-rc1:
 
-The source to this test is here:
-
-http://git.kernel.org/?p=linux/kernel/git/dvhart/futextest.git;a=summary
-branch: futex-lock
-file: futextest/functional/futex_requeue_pi.c
-
-The futex_requeue_pi test main loop runs as sched_other while all the 
-child threads are spawned as sched_fifo 1. This scenario results in the 
-parent thread spinning in futex_wait_queue_me (most likely on the hash 
-bucket spinlock) while attempting a pthread_join() on the rt child 
-threads. However, if I run with chrt, forcing the parent thread to fifo 
-1, it completes reliably:
-
-$ sudo chrt -f 1 ./futex_requeue_pi
-futex_requeue_pi: Test requeue functionality
-         Arguments: broadcast=0 locked=0 owner=0 timeout=0ns
-Result:  PASS
-
-Whereas as sched_other:
-$ sudo ./futex_requeue_pi
-futex_requeue_pi: Test requeue functionality
-         Arguments: broadcast=0 locked=0 owner=0 timeout=0ns
-<hang>
-
-$ ps -eLo tid,rtprio,wchan:20,comm | grep futex
-  1987      - futex_wait_queue_me  auditd
-  1988      - futex_wait_queue_me  audispd
-  5533      - futex_wait_queue_me  rsyslogd
-  5547      - futex_wait_queue_me  futex_requeue_p
-  5549      1 futex_wait_queue_me  futex_requeue_p
-  5550      1 futex_wait_queue_me  futex_requeue_p
-  5551      1 futex_wait_queue_me  futex_requeue_p
-  5552      1 futex_wait_queue_me  futex_requeue_p
-  5553      1 futex_wait_queue_me  futex_requeue_p
-  5554      1 futex_wait_queue_me  futex_requeue_p
-  5555      1 futex_wait_queue_me  futex_requeue_p
-  5556      1 futex_wait_queue_me  futex_requeue_p
-  5557      1 futex_wait_queue_me  futex_requeue_p
-  5558      1 ?                    futex_requeue_p
-  5559      1 ?                    futex_requeue_p
-
-I'm still thinking through how your changes would impact this, and if 
-there could be some assumption in the futex code that fails with those 
-changes. I wanted to get the information out there in case it triggers 
-any insight from you.
-
-This suggests that somehow an rt task blocked while holding a spinlock 
-(without issuing a warning to the console) or that somehow a SCHED_OTHER 
-task preempted an RT task which is not getting scheduled on another CPU. 
-Neither of these seem likely.
-
-Thanks,
+Felipe Contreras (14):
+      Revert "staging: tidspbridge - update Kconfig to select IOMMU module"
+      Revert "staging: tidspbridge - remove dmm custom module"
+      Revert "staging: tidspbridge - deprecate
+reserve/unreserve_memory funtions"
+      Revert "staging: tidspbridge - remove reserved memory clean up"
+      Revert "staging: tidspbridge: remove dw_dmmu_base from cfg_hostres struct"
+      Revert "staging: tidspbridge - move all iommu related code to a new file"
+      Revert "staging: tidspbridge - remove hw directory"
+      Revert "staging: tidspbridge - fix mmufault support"
+      Revert "staging: tidspbridge - remove custom mmu code from tiomap3430.c"
+      Revert "staging: tidspbridge - rename bridge_brd_mem_map/unmap
+to a proper name"
+      Revert "staging: tidspbridge - move shared memory iommu maps to
+tiomap3430.c"
+      Revert "staging: tidspbridge: replace iommu custom for
+opensource implementation"
+      staging: tidspbridge: hack to make it compile on v37-rc1
+      omap: dsp: remove shm from normal memory
 
 -- 
-Darren Hart
-Embedded Linux Kernel
+Felipe Contreras
