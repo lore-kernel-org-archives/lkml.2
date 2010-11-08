@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756065Ab0KHXVc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 18:21:32 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:39387 "EHLO
+	id S1756054Ab0KHXVU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 18:21:20 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:19264 "EHLO
 	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751727Ab0KHXV3 (ORCPT
+	with ESMTP id S1755992Ab0KHXVS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 18:21:29 -0500
-Date: Tue, 9 Nov 2010 00:10:02 +0100 (CET)
+	Mon, 8 Nov 2010 18:21:18 -0500
+Date: Tue, 9 Nov 2010 00:09:51 +0100 (CET)
 From: Jesper Juhl <jj@chaosbits.net>
 To: linux-kernel@vger.kernel.org
-cc: Greg Kroah-Hartman <gregkh@suse.de>, Brett Rudley <brudley@broadcom.com>,
-        Henry Ptasinski <henryp@broadcom.com>, Nohee Ko <noheek@broadcom.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: [PATCH 11/17][trivial] staging, brcm80211: Remove unnecessary casts
- of void ptr returning alloc function return values
-Message-ID: <alpine.LNX.2.00.1011082346040.23697@swampdragon.chaosbits.net>
+cc: Greg Kroah-Hartman <gregkh@suse.de>, Dan Carpenter <error27@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>, devel@driverdev.osuosl.org
+Subject: [PATCH 10/17][trivial] staging, bcm: Remove unnecessary casts of
+ void ptr returning alloc function return values
+Message-ID: <alpine.LNX.2.00.1011082342560.23697@swampdragon.chaosbits.net>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -31,117 +30,173 @@ The [vk][cmz]alloc(_node) family of functions return void pointers which
 it's completely unnecessary/pointless to cast to other pointer types since
 that happens implicitly.
 
-This patch removes such casts from drivers/staging/brcm80211/
+This patch removes such casts from drivers/staging/bcm/
 
 
 Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- wl_cfg80211.c |   23 +++++++++++------------
- wl_iw.c       |    7 ++-----
- 2 files changed, 13 insertions(+), 17 deletions(-)
+ CmHost.c       |    2 +-
+ InterfaceDld.c |   27 +++++++++++++--------------
+ Misc.c         |   12 +++++-------
+ 3 files changed, 19 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c b/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c
-index 3f29488..0011521 100644
---- a/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c
-+++ b/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c
-@@ -705,7 +705,7 @@ wl_run_iscan(struct wl_iscan_ctrl *iscan, struct wlc_ssid *ssid, u16 action)
+diff --git a/drivers/staging/bcm/CmHost.c b/drivers/staging/bcm/CmHost.c
+index 6f388a3..0d9a34a 100644
+--- a/drivers/staging/bcm/CmHost.c
++++ b/drivers/staging/bcm/CmHost.c
+@@ -1778,7 +1778,7 @@ ULONG StoreCmControlResponseMessage(PMINI_ADAPTER Adapter,PVOID pvBuffer,UINT *p
+ 	}
+ 	// For DSA_REQ, only upto "psfAuthorizedSet" parameter should be accessed by driver!
  
- 	if (ssid && ssid->SSID_len)
- 		params_size += sizeof(struct wlc_ssid);
--	params = (struct wl_iscan_params *)kzalloc(params_size, GFP_KERNEL);
-+	params = kzalloc(params_size, GFP_KERNEL);
- 	if (unlikely(!params))
- 		return -ENOMEM;
- 	memset(params, 0, params_size);
-@@ -2794,53 +2794,52 @@ static void wl_init_eloop_handler(struct wl_event_loop *el)
+-	pstAddIndication=(stLocalSFAddIndication *)kmalloc(sizeof(*pstAddIndication), GFP_KERNEL);
++	pstAddIndication=kmalloc(sizeof(*pstAddIndication), GFP_KERNEL);
+ 	if(NULL==pstAddIndication)
+ 		return 0;
  
- static s32 wl_init_priv_mem(struct wl_priv *wl)
+diff --git a/drivers/staging/bcm/InterfaceDld.c b/drivers/staging/bcm/InterfaceDld.c
+index 60c0f29..1a61c7b 100644
+--- a/drivers/staging/bcm/InterfaceDld.c
++++ b/drivers/staging/bcm/InterfaceDld.c
+@@ -6,7 +6,7 @@ int InterfaceFileDownload( PVOID arg,
+                         struct file *flp,
+                         unsigned int on_chip_loc)
  {
--	wl->scan_results = (void *)kzalloc(WL_SCAN_BUF_MAX, GFP_KERNEL);
-+	wl->scan_results = kzalloc(WL_SCAN_BUF_MAX, GFP_KERNEL);
- 	if (unlikely(!wl->scan_results)) {
- 		WL_ERR(("Scan results alloc failed\n"));
- 		goto init_priv_mem_out;
- 	}
--	wl->conf = (void *)kzalloc(sizeof(*wl->conf), GFP_KERNEL);
-+	wl->conf = kzalloc(sizeof(*wl->conf), GFP_KERNEL);
- 	if (unlikely(!wl->conf)) {
- 		WL_ERR(("wl_conf alloc failed\n"));
- 		goto init_priv_mem_out;
- 	}
--	wl->profile = (void *)kzalloc(sizeof(*wl->profile), GFP_KERNEL);
-+	wl->profile = kzalloc(sizeof(*wl->profile), GFP_KERNEL);
- 	if (unlikely(!wl->profile)) {
- 		WL_ERR(("wl_profile alloc failed\n"));
- 		goto init_priv_mem_out;
- 	}
--	wl->bss_info = (void *)kzalloc(WL_BSS_INFO_MAX, GFP_KERNEL);
-+	wl->bss_info = kzalloc(WL_BSS_INFO_MAX, GFP_KERNEL);
- 	if (unlikely(!wl->bss_info)) {
- 		WL_ERR(("Bss information alloc failed\n"));
- 		goto init_priv_mem_out;
- 	}
--	wl->scan_req_int =
--	    (void *)kzalloc(sizeof(*wl->scan_req_int), GFP_KERNEL);
-+	wl->scan_req_int = kzalloc(sizeof(*wl->scan_req_int), GFP_KERNEL);
- 	if (unlikely(!wl->scan_req_int)) {
- 		WL_ERR(("Scan req alloc failed\n"));
- 		goto init_priv_mem_out;
- 	}
--	wl->ioctl_buf = (void *)kzalloc(WL_IOCTL_LEN_MAX, GFP_KERNEL);
-+	wl->ioctl_buf = kzalloc(WL_IOCTL_LEN_MAX, GFP_KERNEL);
- 	if (unlikely(!wl->ioctl_buf)) {
- 		WL_ERR(("Ioctl buf alloc failed\n"));
- 		goto init_priv_mem_out;
- 	}
--	wl->extra_buf = (void *)kzalloc(WL_EXTRA_BUF_MAX, GFP_KERNEL);
-+	wl->extra_buf = kzalloc(WL_EXTRA_BUF_MAX, GFP_KERNEL);
- 	if (unlikely(!wl->extra_buf)) {
- 		WL_ERR(("Extra buf alloc failed\n"));
- 		goto init_priv_mem_out;
- 	}
--	wl->iscan = (void *)kzalloc(sizeof(*wl->iscan), GFP_KERNEL);
-+	wl->iscan = kzalloc(sizeof(*wl->iscan), GFP_KERNEL);
- 	if (unlikely(!wl->iscan)) {
- 		WL_ERR(("Iscan buf alloc failed\n"));
- 		goto init_priv_mem_out;
- 	}
--	wl->fw = (void *)kzalloc(sizeof(*wl->fw), GFP_KERNEL);
-+	wl->fw = kzalloc(sizeof(*wl->fw), GFP_KERNEL);
- 	if (unlikely(!wl->fw)) {
- 		WL_ERR(("fw object alloc failed\n"));
- 		goto init_priv_mem_out;
- 	}
--	wl->pmk_list = (void *)kzalloc(sizeof(*wl->pmk_list), GFP_KERNEL);
-+	wl->pmk_list = kzalloc(sizeof(*wl->pmk_list), GFP_KERNEL);
- 	if (unlikely(!wl->pmk_list)) {
- 		WL_ERR(("pmk list alloc failed\n"));
- 		goto init_priv_mem_out;
-diff --git a/drivers/staging/brcm80211/brcmfmac/wl_iw.c b/drivers/staging/brcm80211/brcmfmac/wl_iw.c
-index 979a494..97beae0 100644
---- a/drivers/staging/brcm80211/brcmfmac/wl_iw.c
-+++ b/drivers/staging/brcm80211/brcmfmac/wl_iw.c
-@@ -3690,8 +3690,7 @@ int wl_iw_attach(struct net_device *dev, void *dhdp)
- 		return -ENOMEM;
- 	memset(iscan, 0, sizeof(iscan_info_t));
+-    char            *buff=NULL;
++    char            *buff;
+    // unsigned int    reg=0;
+     mm_segment_t    oldfs={0};
+     int             errno=0, len=0 /*,is_config_file = 0*/;
+@@ -14,7 +14,7 @@ int InterfaceFileDownload( PVOID arg,
+ 	PS_INTERFACE_ADAPTER psIntfAdapter = (PS_INTERFACE_ADAPTER)arg;
+ 	//PMINI_ADAPTER Adapter = psIntfAdapter->psAdapter;
  
--	iscan->iscan_ex_params_p =
--	    (wl_iscan_params_t *) kmalloc(params_size, GFP_KERNEL);
-+	iscan->iscan_ex_params_p = kmalloc(params_size, GFP_KERNEL);
- 	if (!iscan->iscan_ex_params_p)
- 		return -ENOMEM;
- 	iscan->iscan_ex_param_size = params_size;
-@@ -3723,9 +3722,7 @@ int wl_iw_attach(struct net_device *dev, void *dhdp)
- 	priv_dev = dev;
- 	MUTEX_LOCK_SOFTAP_SET_INIT(iw->pub);
- #endif
--	g_scan = NULL;
--
--	g_scan = (void *)kmalloc(G_SCAN_RESULTS, GFP_KERNEL);
-+	g_scan = kmalloc(G_SCAN_RESULTS, GFP_KERNEL);
- 	if (!g_scan)
- 		return -ENOMEM;
+-    buff=(PCHAR)kmalloc(MAX_TRANSFER_CTRL_BYTE_USB, GFP_KERNEL);
++    buff=kmalloc(MAX_TRANSFER_CTRL_BYTE_USB, GFP_KERNEL);
+     if(!buff)
+     {
+         return -ENOMEM;
+@@ -57,7 +57,7 @@ int InterfaceFileReadbackFromChip( PVOID arg,
+                         struct file *flp,
+                         unsigned int on_chip_loc)
+ {
+-    char            *buff=NULL, *buff_readback=NULL;
++    char            *buff, *buff_readback;
+     unsigned int    reg=0;
+     mm_segment_t    oldfs={0};
+     int             errno=0, len=0, is_config_file = 0;
+@@ -66,8 +66,8 @@ int InterfaceFileReadbackFromChip( PVOID arg,
+ 	INT				Status = STATUS_SUCCESS;
+ 	PS_INTERFACE_ADAPTER psIntfAdapter = (PS_INTERFACE_ADAPTER)arg;
  
+-    buff=(PCHAR)kmalloc(MAX_TRANSFER_CTRL_BYTE_USB, GFP_DMA);
+-    buff_readback=(PCHAR)kmalloc(MAX_TRANSFER_CTRL_BYTE_USB , GFP_DMA);
++    buff=kmalloc(MAX_TRANSFER_CTRL_BYTE_USB, GFP_DMA);
++    buff_readback=kmalloc(MAX_TRANSFER_CTRL_BYTE_USB , GFP_DMA);
+     if(!buff || !buff_readback)
+     {
+         bcm_kfree(buff);
+@@ -236,7 +236,7 @@ static int bcm_download_buffer(PMINI_ADAPTER Adapter,
+ 	unsigned char *mappedbuffer, unsigned int u32FirmwareLength,
+ 	unsigned long u32StartingAddress)
+ {
+-    char            *buff=NULL;
++    char            *buff;
+     unsigned int    len = 0;
+ 	int 			retval = STATUS_SUCCESS;
+ 	buff = kzalloc(MAX_TRANSFER_CTRL_BYTE_USB, GFP_KERNEL);
+@@ -302,16 +302,15 @@ static int bcm_buffer_readback(PMINI_ADAPTER Adapter,
+ 	unsigned char *mappedbuffer, unsigned int u32FirmwareLength,
+ 	unsigned long u32StartingAddress)
+ {
+-	unsigned char *buff = NULL;
+-	unsigned char *readbackbuff = NULL;
++	unsigned char *buff;
++	unsigned char *readbackbuff;
+ 	unsigned int  len = u32FirmwareLength;
+ 	int retval = STATUS_SUCCESS;
+ 
+-    buff=(unsigned char *)kzalloc(MAX_TRANSFER_CTRL_BYTE_USB, GFP_KERNEL);
++    buff=kzalloc(MAX_TRANSFER_CTRL_BYTE_USB, GFP_KERNEL);
+ 	if(NULL == buff)
+ 		return -ENOMEM;
+-	readbackbuff =  (unsigned char *)kzalloc(MAX_TRANSFER_CTRL_BYTE_USB,
+-					GFP_KERNEL);
++	readbackbuff = kzalloc(MAX_TRANSFER_CTRL_BYTE_USB, GFP_KERNEL);
+ 	if(NULL == readbackbuff)
+ 	{
+ 		bcm_kfree(buff);
+@@ -375,7 +374,7 @@ int bcm_ioctl_fw_download(PMINI_ADAPTER Adapter, FIRMWARE_INFO *psFwInfo)
+ 	else
+ 	{
+ 
+-		buff = (PUCHAR)kzalloc(psFwInfo->u32FirmwareLength,GFP_KERNEL);
++		buff = kzalloc(psFwInfo->u32FirmwareLength,GFP_KERNEL);
+ 		if(buff==NULL)
+ 		{
+ 			BCM_DEBUG_PRINT(Adapter,DBG_TYPE_INITEXIT, MP_INIT, DBG_LVL_ALL,"Failed in allocation memory");
+@@ -450,11 +449,11 @@ static INT buffRdbkVerify(PMINI_ADAPTER Adapter,
+ 			PUCHAR mappedbuffer, UINT u32FirmwareLength,
+ 			ULONG u32StartingAddress)
+ {
+-	PUCHAR readbackbuff = NULL;
++	PUCHAR readbackbuff;
+ 	UINT len = u32FirmwareLength;
+ 	INT retval = STATUS_SUCCESS;
+ 
+-	readbackbuff = (PUCHAR)kzalloc(MAX_TRANSFER_CTRL_BYTE_USB,GFP_KERNEL);
++	readbackbuff = kzalloc(MAX_TRANSFER_CTRL_BYTE_USB,GFP_KERNEL);
+ 	if(NULL == readbackbuff)
+ 	{
+ 		BCM_DEBUG_PRINT(Adapter,DBG_TYPE_INITEXIT, MP_INIT, DBG_LVL_ALL, "MEMORY ALLOCATION FAILED");
+diff --git a/drivers/staging/bcm/Misc.c b/drivers/staging/bcm/Misc.c
+index 22550f7..6ffd5e5 100644
+--- a/drivers/staging/bcm/Misc.c
++++ b/drivers/staging/bcm/Misc.c
+@@ -60,8 +60,7 @@ InitAdapter(PMINI_ADAPTER psAdapter)
+     //init_waitqueue_head(&psAdapter->device_wake_queue);
+     psAdapter->fw_download_done=FALSE;
+ 
+-    psAdapter->pvOsDepData = (PLINUX_DEP_DATA) kmalloc(sizeof(LINUX_DEP_DATA),
+-                 GFP_KERNEL);
++    psAdapter->pvOsDepData = kmalloc(sizeof(LINUX_DEP_DATA), GFP_KERNEL);
+ 
+     if(psAdapter->pvOsDepData == NULL)
+ 	{
+@@ -73,8 +72,7 @@ InitAdapter(PMINI_ADAPTER psAdapter)
+ 	default_wimax_protocol_initialize(psAdapter);
+ 	for (i=0;i<MAX_CNTRL_PKTS;i++)
+ 	{
+-		psAdapter->txctlpacket[i] = (char *)kmalloc(MAX_CNTL_PKT_SIZE,
+-												GFP_KERNEL);
++		psAdapter->txctlpacket[i] = kmalloc(MAX_CNTL_PKT_SIZE, GFP_KERNEL);
+ 		if(!psAdapter->txctlpacket[i])
+ 		{
+ 			BCM_DEBUG_PRINT(psAdapter,DBG_TYPE_INITEXIT, MP_INIT, DBG_LVL_ALL, "No More Cntl pkts got, max got is %d", i);
+@@ -1360,7 +1358,7 @@ int bcm_parse_target_params(PMINI_ADAPTER Adapter)
+ 	int len = 0;
+ 	loff_t	pos = 0;
+ 
+-	buff=(PCHAR)kmalloc(BUFFER_1K, GFP_KERNEL);
++	buff=kmalloc(BUFFER_1K, GFP_KERNEL);
+ 	if(!buff)
+ 	{
+ 		return -ENOMEM;
+@@ -1540,12 +1538,12 @@ VOID doPowerAutoCorrection(PMINI_ADAPTER psAdapter)
+ #if 0
+ static unsigned char *ReadMacAddrEEPROM(PMINI_ADAPTER Adapter, ulong dwAddress)
+ {
+-	unsigned char *pucmacaddr = NULL;
++	unsigned char *pucmacaddr;
+ 	int status = 0, i=0;
+ 	unsigned int temp =0;
+ 
+ 
+-	pucmacaddr = (unsigned char *)kmalloc(MAC_ADDRESS_SIZE, GFP_KERNEL);
++	pucmacaddr = kmalloc(MAC_ADDRESS_SIZE, GFP_KERNEL);
+ 	if(!pucmacaddr)
+ 	{
+ 		BCM_DEBUG_PRINT(Adapter,DBG_TYPE_PRINTK, 0, 0, "No Buffers to Read the EEPROM Address\n");
+
 
 
 -- 
