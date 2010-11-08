@@ -1,133 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822Ab0KHQpb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 11:45:31 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:25263 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752204Ab0KHQpa (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 8 Nov 2010 11:45:30 -0500
-Date: Mon, 8 Nov 2010 11:43:26 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Joe Perches <joe@perches.com>
-Cc: Jiri Kosina <trivial@kernel.org>, Jaya Kumar <jayalk@intworks.biz>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xen.org,
-        virtualization@lists.osdl.org
-Subject: Re: [PATCH 36/49] drivers/video: Use vzalloc
-Message-ID: <20101108164325.GB2638@dumpdata.com>
-References: <cover.1288925424.git.joe@perches.com>
- <a1c4c46381ac1867c4af3edb811e58a721957842.1288925425.git.joe@perches.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <a1c4c46381ac1867c4af3edb811e58a721957842.1288925425.git.joe@perches.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754877Ab0KHQpk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 11:45:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46855 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754849Ab0KHQpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 11:45:38 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: fweisbec@gmail.com, Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        akpm@linux-foundation.org, sergey.senozhatsky@gmail.com,
+        Don Zickus <dzickus@redhat.com>
+Subject: [PATCH v2] watchdog:  touch_nmi_watchdog should only touch local cpu not every one
+Date: Mon,  8 Nov 2010 11:44:35 -0500
+Message-Id: <1289234675-2400-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 04, 2010 at 08:08:00PM -0700, Joe Perches wrote:
-> Signed-off-by: Joe Perches <joe@perches.com>
+I ran into a scenario where while one cpu was stuck and should have panic'd
+because of the NMI watchdog, it didn't.  The reason was another cpu was spewing
+stack dumps on to the console.  Upon investigation, I noticed that when writing
+to the console and also when dumping the stack, the watchdog is touched.
 
-Looks good on xen-fb.
+This causes all the cpus to reset their NMI watchdog flags and the 'stuck' cpu
+just spins forever.
 
+This change causes the semantics of touch_nmi_watchdog to be changed slightly.
+Previously, I accidentally changed the semantics and we noticed there was a
+codepath in which touch_nmi_watchdog could be touched from a preemtible area.
+That caused a BUG() to happen when CONFIG_DEBUG_PREEMPT was enabled.  I believe
+it was the acpi code.
 
-> ---
->  drivers/video/arcfb.c        |    5 ++---
->  drivers/video/broadsheetfb.c |    4 +---
->  drivers/video/hecubafb.c     |    5 ++---
->  drivers/video/metronomefb.c  |    4 +---
->  drivers/video/xen-fbfront.c  |    3 +--
->  5 files changed, 7 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/video/arcfb.c b/drivers/video/arcfb.c
-> index 3ec4923..86573e2 100644
-> --- a/drivers/video/arcfb.c
-> +++ b/drivers/video/arcfb.c
-> @@ -515,11 +515,10 @@ static int __devinit arcfb_probe(struct platform_device *dev)
->  
->  	/* We need a flat backing store for the Arc's
->  	   less-flat actual paged framebuffer */
-> -	if (!(videomemory = vmalloc(videomemorysize)))
-> +	videomemory = vmalloc(videomemorysize);
-> +	if (!videomemory)
->  		return retval;
->  
-> -	memset(videomemory, 0, videomemorysize);
-> -
->  	info = framebuffer_alloc(sizeof(struct arcfb_par), &dev->dev);
->  	if (!info)
->  		goto err;
-> diff --git a/drivers/video/broadsheetfb.c b/drivers/video/broadsheetfb.c
-> index ebda687..377dde3 100644
-> --- a/drivers/video/broadsheetfb.c
-> +++ b/drivers/video/broadsheetfb.c
-> @@ -1101,12 +1101,10 @@ static int __devinit broadsheetfb_probe(struct platform_device *dev)
->  
->  	videomemorysize = roundup((dpyw*dpyh), PAGE_SIZE);
->  
-> -	videomemory = vmalloc(videomemorysize);
-> +	videomemory = vzalloc(videomemorysize);
->  	if (!videomemory)
->  		goto err_fb_rel;
->  
-> -	memset(videomemory, 0, videomemorysize);
-> -
->  	info->screen_base = (char *)videomemory;
->  	info->fbops = &broadsheetfb_ops;
->  
-> diff --git a/drivers/video/hecubafb.c b/drivers/video/hecubafb.c
-> index c77bcc6..a941e6f 100644
-> --- a/drivers/video/hecubafb.c
-> +++ b/drivers/video/hecubafb.c
-> @@ -231,11 +231,10 @@ static int __devinit hecubafb_probe(struct platform_device *dev)
->  
->  	videomemorysize = (DPY_W*DPY_H)/8;
->  
-> -	if (!(videomemory = vmalloc(videomemorysize)))
-> +	videomemory = vzalloc(videomemorysize);
-> +	if (!videomemory)
->  		return retval;
->  
-> -	memset(videomemory, 0, videomemorysize);
-> -
->  	info = framebuffer_alloc(sizeof(struct hecubafb_par), &dev->dev);
->  	if (!info)
->  		goto err_fballoc;
-> diff --git a/drivers/video/metronomefb.c b/drivers/video/metronomefb.c
-> index 63ed3b7..c0c358c 100644
-> --- a/drivers/video/metronomefb.c
-> +++ b/drivers/video/metronomefb.c
-> @@ -628,12 +628,10 @@ static int __devinit metronomefb_probe(struct platform_device *dev)
->  	/* we need to add a spare page because our csum caching scheme walks
->  	 * to the end of the page */
->  	videomemorysize = PAGE_SIZE + (fw * fh);
-> -	videomemory = vmalloc(videomemorysize);
-> +	videomemory = vzalloc(videomemorysize);
->  	if (!videomemory)
->  		goto err_fb_rel;
->  
-> -	memset(videomemory, 0, videomemorysize);
-> -
->  	info->screen_base = (char __force __iomem *)videomemory;
->  	info->fbops = &metronomefb_ops;
->  
-> diff --git a/drivers/video/xen-fbfront.c b/drivers/video/xen-fbfront.c
-> index 428d273..81fcaea 100644
-> --- a/drivers/video/xen-fbfront.c
-> +++ b/drivers/video/xen-fbfront.c
-> @@ -395,10 +395,9 @@ static int __devinit xenfb_probe(struct xenbus_device *dev,
->  	spin_lock_init(&info->dirty_lock);
->  	spin_lock_init(&info->resize_lock);
->  
-> -	info->fb = vmalloc(fb_size);
-> +	info->fb = vzalloc(fb_size);
->  	if (info->fb == NULL)
->  		goto error_nomem;
-> -	memset(info->fb, 0, fb_size);
->  
->  	info->nr_pages = (fb_size + PAGE_SIZE - 1) >> PAGE_SHIFT;
->  
-> -- 
-> 1.7.3.1.g432b3.dirty
+My attempt here re-introduces the change to have the touch_nmi_watchdog() code
+only touch the local cpu instead of all of the cpus.  But instead of using
+__get_cpu_var(), I use the __raw_get_cpu_var() version.
+
+This avoids the preemption problem.  However my reasoning wasn't because I was
+trying to be lazy.  Instead I rationalized it as, well if preemption is enabled
+then interrupts should be enabled to and the NMI watchdog will have no reason
+to trigger.  So it won't matter if the wrong cpu is touched because the percpu
+interrupt counters the NMI watchdog uses should still be incrementing.
+
+V2:  remove touch_all_nmi_watchdog code
+
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ kernel/watchdog.c |   17 ++++++++++++++++-
+ 1 files changed, 16 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index dc8e168..dd0c140 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -141,6 +141,21 @@ void touch_all_softlockup_watchdogs(void)
+ #ifdef CONFIG_HARDLOCKUP_DETECTOR
+ void touch_nmi_watchdog(void)
+ {
++	/*
++	 * Using __raw here because some code paths have
++	 * preemption enabled.  If preemption is enabled
++	 * then interrupts should be enabled too, in which
++	 * case we shouldn't have to worry about the watchdog
++	 * going off.
++	 */
++	__raw_get_cpu_var(watchdog_nmi_touch) = true;
++
++	touch_softlockup_watchdog();
++}
++EXPORT_SYMBOL(touch_nmi_watchdog);
++
++void touch_all_nmi_watchdogs(void)
++{
+ 	if (watchdog_enabled) {
+ 		unsigned cpu;
+ 
+@@ -151,7 +166,7 @@ void touch_nmi_watchdog(void)
+ 	}
+ 	touch_softlockup_watchdog();
+ }
+-EXPORT_SYMBOL(touch_nmi_watchdog);
++EXPORT_SYMBOL(touch_all_nmi_watchdogs);
+ 
+ #endif
+ 
+-- 
+1.7.2.3
+
