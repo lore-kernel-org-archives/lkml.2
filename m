@@ -1,59 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752122Ab0KHPTh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 10:19:37 -0500
-Received: from baron.coraid.com ([12.51.113.4]:58056 "EHLO coraid.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752106Ab0KHPTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 10:19:36 -0500
-X-Greylist: delayed 943 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Nov 2010 10:19:36 EST
-Subject: Re: [Resend][PATCH 2/2] Drivers: block: aoe: Makefile: replace the use of <module>-objs with <module>-y
-Mime-Version: 1.0 (Apple Message framework v1081)
+	id S1752063Ab0KHPUu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 10:20:50 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:46395 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1751006Ab0KHPUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 10:20:49 -0500
+X-Authenticated: #41721828
+X-Provags-ID: V01U2FsdGVkX1+GpjJtBYCGEnCE/iqkuWsGitRX26eNom69ovidBk
+	HT1ecP4Op+oCKJ
+Date: Mon, 8 Nov 2010 16:20:44 +0100
+From: Jonathan =?iso-8859-1?Q?Neusch=E4fer?= <j.neuschaefer@gmx.net>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fix spelling in drivers/misc/Kconfig
+Message-ID: <20101108152044.GA1296@debian.debian>
+References: <20101107224114.GB19747@debian.debian>
+ <alpine.LNX.2.00.1011072331150.26247@swampdragon.chaosbits.net>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Ed Cashin <ecashin@coraid.com>
-In-Reply-To: <1289069918-2085-2-git-send-email-tdent48227@gmail.com>
-Date: Mon, 8 Nov 2010 10:03:24 -0500
-Cc: sage@newdream.net, yehuda@hq.newdream.net, linux-kernel@vger.kernel.org,
-        Tracey Dent <tdent48227@gmail.com>
-Content-Transfer-Encoding: 7bit
-Message-Id: <EDA33B3B-F9C9-4C45-B20D-C985DFC95C2F@coraid.com>
-References: <1289069918-2085-1-git-send-email-tdent48227@gmail.com> <1289069918-2085-2-git-send-email-tdent48227@gmail.com>
-To: akpm@linux-foundation.org
-X-Mailer: Apple Mail (2.1081)
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1011072331150.26247@swampdragon.chaosbits.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Nov 6, 2010, at 2:58 PM, Tracey Dent wrote:
-
-> Changed <module>-objs to <module>-y in Makefile.
-
-Andrew Morton, hi.  I don't know whether Tracey Dent is expecting
-me to push this change to Linus, but lately you've been pushing the
-aoe changes.  I see similar changes in other
-drivers on the LKML, so if it looks good to you, would you mind please
-picking up this patch?
-
-> Signed-off-by: Tracey Dent <tdent48227@gmail.com>
-> ---
-> drivers/block/aoe/Makefile |    2 +-
-> 1 files changed, 1 insertions(+), 1 deletions(-)
+On Sun, Nov 07, 2010 at 11:34:53PM +0100, Jesper Juhl wrote:
+> You should:
 > 
-> diff --git a/drivers/block/aoe/Makefile b/drivers/block/aoe/Makefile
-> index e76d997..06ea82c 100644
-> --- a/drivers/block/aoe/Makefile
-> +++ b/drivers/block/aoe/Makefile
-> @@ -3,4 +3,4 @@
-> #
-> 
-> obj-$(CONFIG_ATA_OVER_ETH)	+= aoe.o
-> -aoe-objs := aoeblk.o aoechr.o aoecmd.o aoedev.o aoemain.o aoenet.o
-> +aoe-y := aoeblk.o aoechr.o aoecmd.o aoedev.o aoemain.o aoenet.o
-> -- 
-> 1.7.3.2.146.gca209
-> 
+>  - add a Signed-off-by: line (see Documentation/SubmittingPatches).
+>  - add output from 'diffstat' (again see Documentation/SubmittingPatches).
+>  - include patches inline, not as attachments.
+>  - add trivial@kernel.org to CC for trivial stuff such as this.
 
--- 
-  Ed Cashin
-  ecashin@coraid.com
+Thanks for your advice.
 
+Jonathan
