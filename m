@@ -1,122 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756128Ab0KHXWc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 18:22:32 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:19472 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755936Ab0KHXWa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 18:22:30 -0500
-Date: Tue, 9 Nov 2010 00:11:03 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: trivial@kernel.org, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Roel Kluin <roel.kluin@gmail.com>,
-        Dan Carpenter <error27@gmail.com>, alsa-devel@alsa-project.org
-Subject: [PATCH 17/17][trivial] Sound, OSS:  Remove unnecessary casts of void
- ptr returning alloc function return values
-Message-ID: <alpine.LNX.2.00.1011090003530.23697@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754722Ab0KHXTm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 18:19:42 -0500
+Received: from mga03.intel.com ([143.182.124.21]:42412 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754099Ab0KHXTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 18:19:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,171,1288594800"; 
+   d="scan'208";a="346159512"
+Message-Id: <20101108231726.993880740@intel.com>
+User-Agent: quilt/0.48-1
+Date: Tue, 09 Nov 2010 07:09:19 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>
+cc: Christoph Hellwig <hch@lst.de>, Jan Engelhardt <jengelh@medozas.de>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3/5] writeback: stop background/kupdate works from livelocking other works
+References: <20101108230916.826791396@intel.com>
+Content-Disposition: inline; filename=0002-mm-Stop-background-writeback-if-there-is-other-work-.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Jan Kara <jack@suse.cz>
 
-The [vk][cmz]alloc(_node) family of functions return void pointers which
-it's completely unnecessary/pointless to cast to other pointer types since
-that happens implicitly.
+Background writeback are easily livelockable (from a definition of their
+target). This is inconvenient because it can make sync(1) stall forever waiting
+on its queued work to be finished. Generally, when a flusher thread has
+some work queued, someone submitted the work to achieve a goal more specific
+than what background writeback does. So it makes sense to give it a priority
+over a generic page cleaning.
 
-This patch removes such casts from sound/oss/
+Thus we interrupt background writeback if there is some other work to do. We
+return to the background writeback after completing all the queued work.
 
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- midibuf.c   |    4 ++--
- pss.c       |    6 +++---
- sequencer.c |    4 ++--
- 3 files changed, 7 insertions(+), 7 deletions(-)
+ fs/fs-writeback.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/sound/oss/midibuf.c b/sound/oss/midibuf.c
-index 782b3b8..ceedb1e 100644
---- a/sound/oss/midibuf.c
-+++ b/sound/oss/midibuf.c
-@@ -178,7 +178,7 @@ int MIDIbuf_open(int dev, struct file *file)
- 		return err;
+--- linux-next.orig/fs/fs-writeback.c	2010-11-07 21:56:42.000000000 +0800
++++ linux-next/fs/fs-writeback.c	2010-11-07 22:00:51.000000000 +0800
+@@ -651,6 +651,15 @@ static long wb_writeback(struct bdi_writ
+ 			break;
  
- 	parms[dev].prech_timeout = MAX_SCHEDULE_TIMEOUT;
--	midi_in_buf[dev] = (struct midi_buf *) vmalloc(sizeof(struct midi_buf));
-+	midi_in_buf[dev] = vmalloc(sizeof(struct midi_buf));
- 
- 	if (midi_in_buf[dev] == NULL)
- 	{
-@@ -188,7 +188,7 @@ int MIDIbuf_open(int dev, struct file *file)
- 	}
- 	midi_in_buf[dev]->len = midi_in_buf[dev]->head = midi_in_buf[dev]->tail = 0;
- 
--	midi_out_buf[dev] = (struct midi_buf *) vmalloc(sizeof(struct midi_buf));
-+	midi_out_buf[dev] = vmalloc(sizeof(struct midi_buf));
- 
- 	if (midi_out_buf[dev] == NULL)
- 	{
-diff --git a/sound/oss/pss.c b/sound/oss/pss.c
-index e19dd5d..9b800ce 100644
---- a/sound/oss/pss.c
-+++ b/sound/oss/pss.c
-@@ -859,7 +859,7 @@ static int pss_coproc_ioctl(void *dev_info, unsigned int cmd, void __user *arg,
- 			return 0;
- 
- 		case SNDCTL_COPR_LOAD:
--			buf = (copr_buffer *) vmalloc(sizeof(copr_buffer));
-+			buf = vmalloc(sizeof(copr_buffer));
- 			if (buf == NULL)
- 				return -ENOSPC;
- 			if (copy_from_user(buf, arg, sizeof(copr_buffer))) {
-@@ -871,7 +871,7 @@ static int pss_coproc_ioctl(void *dev_info, unsigned int cmd, void __user *arg,
- 			return err;
- 		
- 		case SNDCTL_COPR_SENDMSG:
--			mbuf = (copr_msg *)vmalloc(sizeof(copr_msg));
-+			mbuf = vmalloc(sizeof(copr_msg));
- 			if (mbuf == NULL)
- 				return -ENOSPC;
- 			if (copy_from_user(mbuf, arg, sizeof(copr_msg))) {
-@@ -895,7 +895,7 @@ static int pss_coproc_ioctl(void *dev_info, unsigned int cmd, void __user *arg,
- 
- 		case SNDCTL_COPR_RCVMSG:
- 			err = 0;
--			mbuf = (copr_msg *)vmalloc(sizeof(copr_msg));
-+			mbuf = vmalloc(sizeof(copr_msg));
- 			if (mbuf == NULL)
- 				return -ENOSPC;
- 			data = (unsigned short *)mbuf->data;
-diff --git a/sound/oss/sequencer.c b/sound/oss/sequencer.c
-index e85789e..5ea1098 100644
---- a/sound/oss/sequencer.c
-+++ b/sound/oss/sequencer.c
-@@ -1646,13 +1646,13 @@ void sequencer_init(void)
- {
- 	if (sequencer_ok)
- 		return;
--	queue = (unsigned char *)vmalloc(SEQ_MAX_QUEUE * EV_SZ);
-+	queue = vmalloc(SEQ_MAX_QUEUE * EV_SZ);
- 	if (queue == NULL)
- 	{
- 		printk(KERN_ERR "sequencer: Can't allocate memory for sequencer output queue\n");
- 		return;
- 	}
--	iqueue = (unsigned char *)vmalloc(SEQ_MAX_QUEUE * IEV_SZ);
-+	iqueue = vmalloc(SEQ_MAX_QUEUE * IEV_SZ);
- 	if (iqueue == NULL)
- 	{
- 		printk(KERN_ERR "sequencer: Can't allocate memory for sequencer input queue\n");
+ 		/*
++		 * Background writeout and kupdate-style writeback are
++		 * easily livelockable. Stop them if there is other work
++		 * to do so that e.g. sync can proceed.
++		 */
++		if ((work->for_background || work->for_kupdate) &&
++		    !list_empty(&wb->bdi->work_list))
++			break;
++
++		/*
+ 		 * For background writeout, stop when we are below the
+ 		 * background dirty threshold
+ 		 */
 
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
 
