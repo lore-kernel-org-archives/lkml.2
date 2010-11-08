@@ -1,91 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603Ab0KHO2s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 09:28:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54005 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753684Ab0KHO2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 09:28:47 -0500
-Date: Mon, 8 Nov 2010 09:28:42 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
-        czoccolo@gmail.com
-Subject: Re: [patch 2/3]cfq-iosched: schedule dispatch for noidle queue
-Message-ID: <20101108142842.GC16767@redhat.com>
-References: <1289182038.23014.190.camel@sli10-conroe>
+	id S1754688Ab0KHOdO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 09:33:14 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:57546 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754286Ab0KHOdN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 09:33:13 -0500
+Date: Mon, 8 Nov 2010 09:33:07 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
+        Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>
+Subject: Re: [RFCv3 00/21] TCM Core and TCM_Loop patches for v2.6.37
+Message-ID: <20101108143307.GA22121@infradead.org>
+References: <1287441313-19703-1-git-send-email-nab@linux-iscsi.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1289182038.23014.190.camel@sli10-conroe>
+In-Reply-To: <1287441313-19703-1-git-send-email-nab@linux-iscsi.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 08, 2010 at 10:07:18AM +0800, Shaohua Li wrote:
-> A queue is idle at cfq_dispatch_requests(), but it gets noidle later. Unless
-> other task explictly does unplug or all requests are drained, we will not
-> deliever requests to the disk even cfq_arm_slice_timer doesn't make the
-> queue idle. For example, cfq_should_idle() returns true because of
-> service_tree->count == 1, and then other queues are added. Note, I didn't
-> see obvious performance impacts so far with the patch, but just thought
-> this could be a problem.
-> 
-> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-> 
-> ---
->  block/cfq-iosched.c |   23 ++++++++++++++++++++++-
->  1 file changed, 22 insertions(+), 1 deletion(-)
-> 
-> Index: linux/block/cfq-iosched.c
-> ===================================================================
-> --- linux.orig/block/cfq-iosched.c	2010-11-08 08:41:20.000000000 +0800
-> +++ linux/block/cfq-iosched.c	2010-11-08 08:43:51.000000000 +0800
-> @@ -3265,6 +3265,10 @@ cfq_should_preempt(struct cfq_data *cfqd
->  	if (cfq_class_rt(new_cfqq) && !cfq_class_rt(cfqq))
->  		return true;
->  
-> +	/* An idle queue should not be idle now for some reason */
-> +	if (RB_EMPTY_ROOT(&cfqq->sort_list) && !cfq_should_idle(cfqd, cfqq))
-> +		return true;
-> +
->  	if (!cfqd->active_cic || !cfq_cfqq_wait_request(cfqq))
->  		return false;
->  
-> @@ -3508,8 +3512,25 @@ static void cfq_completed_request(struct
->  		}
->  	}
->  
-> -	if (!cfqd->rq_in_driver)
-> +	if (!cfqd->rq_in_driver) {
->  		cfq_schedule_dispatch(cfqd);
-> +		return;
-> +	}
-> +	/*
-> +	 * A queue is idle at cfq_dispatch_requests(), but it gets noidle
-> +	 * later. We schedule a dispatch if the queue has no requests,
-> +	 * otherwise the disk is actually in idle till all requests
-> +	 * are finished even cfq_arm_slice_timer doesn't make the queue idle
-> +	 * */
+Hi Nick,
 
-Why do we have to wait for all requests to finish in device? Will driver
-most likely not ask for next request when 1-2 requests have completed
-and at that time we should expire the queue if queue is no more marked
-as "noidle"?
+I promised you and James to get back to a throughout review for more
+than just the backends.  It's still in progress, but here is what I
+think is most important:
 
-Vivek
+ - Sort of the the namepspace for both the file names and function
+   names.  I think you reluctantly agreed to do that a while ago anyway,
+   but I think it's time to bite the bullet now.  Please agree on a
+   common prefix for both function names and modules.  I think the
+   target name in the directory structure is the best one, but I really
+   don't care too much.  The transport_ prefix used in some code is
+   really misleading, and the se_ in other isn't too helpful either.
+ - make sure backends, frontends and core/ code under drivers/target/
+   are properly separated
+ - clean up the exported - both as in EXPORT_SYMBOL and simply global
+   functions.  There's a lot of things that should be static or not
+   exported to modules but is right now.  The scripts/namespace.pl
+   script in the kernel tree is a great helper for that.
+ - Similarly the headers could use some re-arrangement.  I've been
+   trying to make sense of what each header does but couldn't find it.
+   In the optimal world you'd have one header for the front-end API,
+   one of the back-end API and one or more for common structures
+   and defintions.  All with a comment explaining what they are there
+   for.
 
-> +	cfqq = cfqd->active_queue;
-> +	if (!cfqq)
-> +		return;
-> +
-> +	if (RB_EMPTY_ROOT(&cfqq->sort_list) && !cfq_should_idle(cfqd, cfqq) &&
-> +	    (!cfqd->cfq_group_idle || cfqq->cfqg->nr_cfqq > 1)) {
-> +		cfq_del_timer(cfqd, cfqq);
-> +		cfq_schedule_dispatch(cfqd);
-> +	}
->  }
->  
->  /*
-> 
