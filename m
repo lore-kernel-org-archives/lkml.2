@@ -1,124 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351Ab0KHSBl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 13:01:41 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:48381 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755126Ab0KHSBj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 13:01:39 -0500
+	id S1755369Ab0KHSCA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 13:02:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8907 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755261Ab0KHSB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 13:01:59 -0500
+Date: Mon, 8 Nov 2010 19:01:47 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org
+Subject: [PATCHv2] tty: prevent DOS in the flush_to_ldisc
+Message-ID: <20101108180147.GB3275@jolsa.brq.redhat.com>
+References: <1288163451-3973-1-git-send-email-jolsa@redhat.com>
+ <20101108134840.GA3275@jolsa.brq.redhat.com>
+ <20101108140938.06b7ee65@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <ec622bb7-57d1-4aa2-80f1-65fa4b3fa7eb@VA3EHSMHS033.ehs.local>
-References: <20101014161724.18966.42340.stgit@localhost6.localdomain6>
- <4CD7FB27.9030804@monstr.eu> <ec622bb7-57d1-4aa2-80f1-65fa4b3fa7eb@VA3EHSMHS033.ehs.local>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 8 Nov 2010 13:01:18 -0500
-X-Google-Sender-Auth: ZbYoDx4HcqXZppK3dOpmS_MOJ0A
-Message-ID: <AANLkTinMoqqMKeEFiD=xHwa5DS+5qY6xN2r236SZQEba@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/3] spi/xilinx: Merge OF and non-OF drivers
-To: John Linn <John.Linn@xilinx.com>
-Cc: monstr@monstr.eu, spi-devel-general@lists.sourceforge.net,
-        richard.rojfors@mocean-labs.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101108140938.06b7ee65@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 8, 2010 at 9:34 AM, John Linn <John.Linn@xilinx.com> wrote:
->> -----Original Message-----
->> From: Michal Simek [mailto:monstr@monstr.eu]
->> Sent: Monday, November 08, 2010 6:29 AM
->> To: grant.likely@secretlab.ca
->> Cc: spi-devel-general@lists.sourceforge.net; richard.rojfors@mocean-labs.com; John Linn; linux-
->> kernel@vger.kernel.org
->> Subject: Re: [RFC PATCH 0/3] spi/xilinx: Merge OF and non-OF drivers
->>
->> Hi Grant,
->>
->> Grant Likely wrote:
->> > Since of_platform_bus_type has been merged with the platform_bus_type,
->> > a single platform driver can now support both use cases.  This patch
->> > series merges the two halves of the xilinx_spi device driver.
->> >
->> > Compile tested only.  I haven't booted this yet.
->>
->> I have tested it on sp605 and works well. Have you added that patches
->> to your repository? Or are they somewhere else? Who is responsible for?
->>
->> I would like to also discuss one change which is related mmc_spi kernel driver.
->> Let me describe the problem. Microblaze can use dma in all addresses
->> that's why dma_mask is setup to 0xffffffff in of_platform_device_create.
->> Xilinx spi driver doesn't support dma but mmc_spi driver is checking dma_mask in parent device
->> which is xilinx spi driver.
->>
->> Here is the corresponding the part of code (Expect dma_mask=zero for no dma operations).
->> mmc_spi.c:~1395
->>       if (spi->master->dev.parent->dma_mask) {
->>               struct device   *dev = spi->master->dev.parent;
->>
->>               host->dma_dev = dev;
->>
->>
->> Based on this one our customer came with the following solution to setup
->> dma_mask in xilinx_spi to zero and then mmc_spi doesn't setup dma operation.
->>
->> I think that this is nice solution but I would like to be sure that I didn't miss anything.
->> After that i will create proper patch with description.
->
-> Seems reasonable to me.
+On Mon, Nov 08, 2010 at 02:09:38PM +0000, Alan Cox wrote:
+> On Mon, 8 Nov 2010 14:48:41 +0100
+> Jiri Olsa <jolsa@redhat.com> wrote:
+> 
+> > hi, any feedback?
+> 
+> Don't think I saw this before.
+> 
+> > > The attached patch (based on -next tree) fixes this by adding threshold
+> > > for processed data. When the threshold is reached, the current work is
+> > > rescheduled, so another could run.
+> > > 
+> > > The threshold is set to the tty buffer maximum size.
+> 
+> That is an n_tty concept really - most other ldiscs simply eat stuff as
+> it hits them. It's also something we've got some evidence may need to
+> become a variable, but would still make sense.
+> 
+> Would it be simpler to remember the queue end before the first iteration
+> and not go past the queue end as it was at the entry to flush_to_ldisc.
 
-Hmmm, that actually is not sane.  Ideally, drivers should never be
-mucking with the dma mask.  It is supposed to only be set by the code
-actually registering the device.  The mmc code should not be looking
-at the parent's dma mask to determine if DMA is available; the spi bus
-drivers should be explicitly stating whether or not it supports DMA.
-The mmc_spi code is doing the wrong thing here.
+hi,
 
-That being said, until the mmc_spi code is fixed (and all the users
-are fixed up so DMA still works) then this patch is probably the best
-solution.  However, please note that dev->dma_mask is a pointer, so
-you should actually be setting it to NULL.
+thanks for answering :)
+I changed the patch to check on the tail buffer instead..
+seems it's better.
 
-g.
+wbr,
+jirka
+---
 
->
-> Thanks,
-> John
->
->>
->>
->> diff --git a/drivers/spi/xilinx_spi.c b/drivers/spi/xilinx_spi.c
->> index 7adaef6..3612e1b 100644
->> --- a/drivers/spi/xilinx_spi.c
->> +++ b/drivers/spi/xilinx_spi.c
->> @@ -519,6 +519,9 @@ static int __devinit xilinx_spi_probe(struct platform_device *dev)
->>         }
->>
->>         platform_set_drvdata(dev, master);
->> +       /* clear the dma_mask, to try to disable use of dma */
->> +       dev->dev.dma_mask = 0;
->> +
->>         return 0;
->>  }
->>
->>
->> Thanks,
->> Michal
->>
->>
->> --
->> Michal Simek, Ing. (M.Eng)
->> w: www.monstr.eu p: +42-0-721842854
->> Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
->> Microblaze U-BOOT custodian
->
->
-> This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
->
+There's a small window inside the flush_to_ldisc function,
+where the tty is unlocked and calling ldisc's receive_buf
+function. If in this window new buffer is added to the tty,
+the processing might never leave the flush_to_ldisc function.
 
+This scenario will hog the cpu, causing other tty processing
+starving, and making it impossible to interface the computer
+via tty.
 
+I was able to exploit this via pty interface by sending only
+control characters to the master input, causing the flush_to_ldisc
+to be scheduled, but never actually generate any output.
 
+To reproduce, please run multiple instances of following code.
+
+- SNIP
+#define _XOPEN_SOURCE
+#include <stdlib.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+int main(int argc, char **argv)
+{
+        int i, slave, master = getpt();
+        char buf[8192];
+
+        sprintf(buf, "%s", ptsname(master));
+        grantpt(master);
+        unlockpt(master);
+
+        slave = open(buf, O_RDWR);
+        if (slave < 0) {
+                perror("open slave failed");
+                return 1;
+        }
+
+        for(i = 0; i < sizeof(buf); i++)
+                buf[i] = rand() % 32;
+
+        while(1) {
+                write(master, buf, sizeof(buf));
+        }
+
+        return 0;
+}
+- SNIP
+
+The attached patch (based on -next tree) fixes this by checking on the
+tty buffer tail. Once it's reached, the current work is rescheduled
+and another could run.
+
+wbr,
+jirka
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ drivers/char/tty_buffer.c |   14 ++++++++++++--
+ 1 files changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/char/tty_buffer.c b/drivers/char/tty_buffer.c
+index cc1e985..d8210ca 100644
+--- a/drivers/char/tty_buffer.c
++++ b/drivers/char/tty_buffer.c
+@@ -413,7 +413,8 @@ static void flush_to_ldisc(struct work_struct *work)
+ 	spin_lock_irqsave(&tty->buf.lock, flags);
+ 
+ 	if (!test_and_set_bit(TTY_FLUSHING, &tty->flags)) {
+-		struct tty_buffer *head;
++		struct tty_buffer *head, *tail = tty->buf.tail;
++		int seen_tail = 0;
+ 		while ((head = tty->buf.head) != NULL) {
+ 			int count;
+ 			char *char_buf;
+@@ -423,6 +424,15 @@ static void flush_to_ldisc(struct work_struct *work)
+ 			if (!count) {
+ 				if (head->next == NULL)
+ 					break;
++				/*
++				  There's a possibility tty might get new buffer
++				  added during the unlock window below. We could
++				  end up spinning in here forever hogging the CPU
++				  completely. To avoid this let's have a rest each
++				  time we processed the tail buffer.
++				*/
++				if (tail == head)
++					seen_tail = 1;
+ 				tty->buf.head = head->next;
+ 				tty_buffer_free(tty, head);
+ 				continue;
+@@ -432,7 +442,7 @@ static void flush_to_ldisc(struct work_struct *work)
+ 			   line discipline as we want to empty the queue */
+ 			if (test_bit(TTY_FLUSHPENDING, &tty->flags))
+ 				break;
+-			if (!tty->receive_room) {
++			if (!tty->receive_room || seen_tail) {
+ 				schedule_delayed_work(&tty->buf.work, 1);
+ 				break;
+ 			}
 -- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+1.7.1
+
