@@ -1,82 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773Ab0KHLq6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 06:46:58 -0500
-Received: from nfitmail.nfit.au.dk ([130.225.31.129]:5664 "EHLO
-	smtp.nfit.au.dk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754712Ab0KHLq5 (ORCPT
+	id S1754771Ab0KHLsJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 06:48:09 -0500
+Received: from ausc60ps301.us.dell.com ([143.166.148.206]:60643 "EHLO
+	ausc60ps301.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754497Ab0KHLsI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 06:46:57 -0500
-X-Greylist: delayed 512 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Nov 2010 06:46:57 EST
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: =?iso-8859-1?q?S=F8ren_Sandmann_Pedersen?= <ssp@redhat.com>, mingo@elte.hu,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/1] x86: Eliminate bp argument from the stack tracing routines
-References: <ye8ljj3mlj5.fsf@camel16.daimi.au.dk>
-	<1288955674-2744-1-git-send-email-ssp@redhat.com>
-	<20101107212412.GB11134@nowhere>
-From: Soeren Sandmann <sandmann@daimi.au.dk>
-Date: 08 Nov 2010 12:38:22 +0100
-In-Reply-To: <20101107212412.GB11134@nowhere>
-Message-ID: <ye87hgorqoh.fsf@camel17.daimi.au.dk>
-User-Agent: Gnus/5.09 (Gnus v5.9.0) Emacs/21.4
-MIME-Version: 1.0
+	Mon, 8 Nov 2010 06:48:08 -0500
+X-Loopcount0: from 10.152.240.141
+Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
+Mime-Version: 1.0 (Apple Message framework v1081)
 Content-Type: text/plain; charset=us-ascii
-X-NFIT-ADSL: 0
-X-NFIT-RelayAddr: 130.225.16.136
-X-Sim: 1ad06880742ac38d89e209d1b9ba03db254b3b224bf2e2c627762c80f561ab8f 1680
-X-NFIT-Solido-Score: 0.
+From: Paul Koning <paul_koning@dell.com>
+In-Reply-To: <AANLkTi=tC01jshWAr_HyVs6-HKK-Puarb6cLpxZyg-Kr@mail.gmail.com>
+Date: Mon, 8 Nov 2010 06:47:59 -0500
+Cc: Andi Kleen <andi@firstfloor.org>, Andreas Schwab <schwab@linux-m68k.org>,
+        Jim <jim876@xs4all.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        gcc@gcc.gnu.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <E1D1023D-4F2D-4EF4-8E97-CC5685B57A19@dell.com>
+References: <4CD538CA.8010901@xs4all.nl>	<87wroostw3.fsf@basil.nowhere.org>	<m2hbfsu57i.fsf@igel.home>	<87k4kospnd.fsf@basil.nowhere.org>	<AANLkTikG6kBxSrO7EZ5_nZqTKqo8Rjm2stoEGVJWxanz@mail.gmail.com>	<877hgorrj1.fsf@basil.nowhere.org> <AANLkTi=tC01jshWAr_HyVs6-HKK-Puarb6cLpxZyg-Kr@mail.gmail.com>
+To: Richard Guenther <richard.guenther@gmail.com>
+X-Mailer: Apple Mail (2.1081)
+X-OriginalArrivalTime: 08 Nov 2010 11:48:00.0695 (UTC) FILETIME=[CB5DE470:01CB7F3A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Frederic Weisbecker <fweisbec@gmail.com> writes:
 
-> > (FWIW, this
-> > 
-> > diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-> > index 461a85d..d977d26 100644
-> > --- a/arch/x86/kernel/cpu/perf_event.c
-> > +++ b/arch/x86/kernel/cpu/perf_event.c
-> > @@ -1653,7 +1653,7 @@ static const struct stacktrace_ops backtrace_ops = {
-> >  	.warning_symbol		= backtrace_warning_symbol,
-> >  	.stack			= backtrace_stack,
-> >  	.address		= backtrace_address,
-> > -	.walk_stack		= print_context_stack_bp,
-> > +	.walk_stack		= print_context_stack,
-> >  };
-> > 
-> > makes it produce correct kernel callchains. And yes, I did compile the
-> > kernel with CONFIG_FRAME_POINTER).
+On Nov 8, 2010, at 6:20 AM, Richard Guenther wrote:
+
+> On Mon, Nov 8, 2010 at 12:20 PM, Andi Kleen <andi@firstfloor.org> wrote:
+>> Richard Guenther <richard.guenther@gmail.com> writes:
+>> 
+>>> On Mon, Nov 8, 2010 at 12:03 AM, Andi Kleen <andi@firstfloor.org> wrote:
+>>>> Andreas Schwab <schwab@linux-m68k.org> writes:
+>>>>> 
+>>>>> The asm fails to mention that it modifies *regs.
+>>>> 
+>>>> It has a memory clobber, that should be enough, no?
+>>> 
+>>> No.  A memory clobber does not cover automatic storage.
+>> 
+>> That's a separate problem.
+>> 
+>>> Btw, I can't see a testcase anywhere so I just assume Andreas got
+>>> it right as usual.
+>> 
+>> An asm with live inputs and outputs should never be optimized
+>> way. If 4.5.1 started doing that it's seriously broken.
 > 
-> 
-> 
-> What do you see is broken in 64 bits perf callchains? Can you please provide
-> me more details so that I can fix the issue?
+> Please provide a testcase, such asms can be optimized if the
+> outputs are dead.
 
-Apparently, the problem only happens when using the hrtimer based
-events. I don't think there is a way to make perf use those from the
-command line, but if you apply this:
+I don't know about 4.5, but I noticed that with 4.6 (trunk), testcasese like gcc.c-torture/compile/20000804-1.c optimize away the asm and all the operand generation except for -O0.
 
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -294,6 +294,12 @@ static void create_counter(int counter, int cpu)
-                attr->enable_on_exec = 1;
-        }
- 
-+       if (attr->config == PERF_COUNT_HW_CPU_CYCLES && attr->type ==
-PERF_TYPE_HARDWARE)
-+       {
-+           attr->type = PERF_TYPE_SOFTWARE;
-+           attr->config = PERF_COUNT_SW_CPU_CLOCK;
-+       }
-+       
-        for (thread_index = 0; thread_index < thread_num; thread_index++) {
- try_again:
-                fd[nr_cpu][counter][thread_index] = sys_perf_event_open(attr,
+	paul
 
-you should be able to see the problem.  You can also try sysprof; it
-always uses the software counters.
-
-
-Soren
