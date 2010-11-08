@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745Ab0KHV7b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 16:59:31 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:59798 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755693Ab0KHV7a (ORCPT
+	id S1755760Ab0KHWBc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 17:01:32 -0500
+Received: from mga11.intel.com ([192.55.52.93]:3233 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751069Ab0KHWBb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 16:59:30 -0500
-Date: Mon, 8 Nov 2010 16:59:27 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Jason Wessel <jason.wessel@windriver.com>
-cc: gregkh@suse.de, USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        <kgdb-bugreport@lists.sourceforge.net>,
-        Alan Cox <alan@linux.intel.com>, Oliver Neukum <oliver@neukum.org>
-Subject: Re: [RFC PATCH 1/5] usb-hcd: implement polling a specific usb device
-In-Reply-To: <4CD85575.2080305@windriver.com>
-Message-ID: <Pine.LNX.4.44L0.1011081650090.1340-100000@iolanthe.rowland.org>
+	Mon, 8 Nov 2010 17:01:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,171,1288594800"; 
+   d="scan'208";a="855448320"
+From: "Berg, Johannes" <johannes.berg@intel.com>
+To: Andi Kleen <andi@firstfloor.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        "Guy, Wey-Yi W" <wey-yi.w.guy@intel.com>
+Date: Mon, 8 Nov 2010 22:01:11 +0000
+Subject: RE: [PATCH] iwl3945: Fix oops at module load
+Thread-Topic: [PATCH] iwl3945: Fix oops at module load
+Thread-Index: Act/j5ABPPhKV6aKRH2UWQCPdnfX6gAAL1kA
+Message-ID: <C5C86A19469DAE48AAAD0E5F3716E44501D40EE169@irsmsx504.ger.corp.intel.com>
+References: <1289253271-19981-1-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1289253271-19981-1-git-send-email-andi@firstfloor.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 8 Nov 2010, Jason Wessel wrote:
-
-> > Let's put it this way: Your polling mechanism has conflated two 
-> > separate issues.  The matter of polling the host controller driver is 
-> > distinct from the question of which URBs to stick on the queue.
-> > 
-> > While kdb is running, it makes sense to give back only the URBs that 
-> > are for the console device.  But if you are polling during the normal 
-> > operation of printk and the usb serial console, then there's no reason 
-> > not to give back all the URBs that complete during polling.
-> > 
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> That is an interesting way to look at things...  You metioned I
-> conflated to issues, but in my mind they were the same (kdb vs printk
-> requiremetns).  I just figured we should do the minimum possible when
-> trying to exec a printk() because we want it to be as reliable as
-> possible.  I had the following example in mind where a usb camera
-> driver executes a pile of printk()'s and the poll kicks in, we would
-> only like the completion handler to run for the usb serial device and
-> to defer the rest.
+> On my laptop the iwl3945 driver oopsed at boot with 2.6.37-rc1
+> in __dev_printk.
+> 
+> The problem is that for some reason it prints the sw scan
+> warning, but does that before the pci device is initialized
+> in the driver private structure. This leads to an oops
+> in the warning print code.
+> 
+> Move the warning after the device has been initialized.
 
-It's true that drivers might not expect URB completions to occur in the
-middle of a printk.  Particularly on UP systems with interrupts
-disabled!  And there is always a possibility of deadlock: If an URB
-completion handler takes a spinlock and then calls printk, draining the
-queue could end up waiting on the same spinlock.  But of course the
-same thing would happen regardless of whether or not URBs are deferred
-via the queue.
+Yup, something like this is needed, sorry about this!
+I believe we have a fix for this in the pipeline somewhere.
 
-It seems clear that you don't want to drain the queue while kdb is 
-running, so the usb serial console code shouldn't do it.  This in turn 
-implies that when polling during normal console operation, URBs should 
-not be put on the queue.  Try doing things that way and see if you run 
-into trouble.
-
-> What about the printk() case though?  My argument for queuing and
-> scheduling was to minimize the ability that printk() will get deferred
-> by something else.
-
-I don't think giving back URBs at the end of a printk is any better 
-than giving them back in the middle of a printk.  For example, consider 
-the case where there are two printk statements in a row.
-
-The place you will really run into trouble is if the driver for the 
-USB console serial device includes a printk in its completion handler!
-
-Alan Stern
+johannes
+--------------------------------------------------------------------------------------
+Intel GmbH
+Dornacher Strasse 1
+85622 Feldkirchen/Muenchen, Deutschland 
+Sitz der Gesellschaft: Feldkirchen bei Muenchen
+Geschaeftsfuehrer: Douglas Lusk, Peter Gleissner, Hannes Schwaderer
+Registergericht: Muenchen HRB 47456 
+Ust.-IdNr./VAT Registration No.: DE129385895
+Citibank Frankfurt a.M. (BLZ 502 109 00) 600119052
 
