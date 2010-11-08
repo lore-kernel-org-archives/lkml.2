@@ -1,100 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074Ab0KHChK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 21:37:10 -0500
-Received: from os.inf.tu-dresden.de ([141.76.48.99]:39475 "EHLO
-	os.inf.tu-dresden.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753829Ab0KHChJ (ORCPT
+	id S1754098Ab0KHCm0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 21:42:26 -0500
+Received: from nwd2mail11.analog.com ([137.71.25.57]:58888 "EHLO
+	nwd2mail11.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754010Ab0KHCmZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 21:37:09 -0500
-Date: Mon, 8 Nov 2010 03:11:36 +0100
-From: "Udo A. Steinberg" <udo@hypervisor.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Joe Korty <joe.korty@ccur.com>, fweisbec@gmail.com,
-        mathieu.desnoyers@efficios.com, dhowells@redhat.com,
-        loic.minier@linaro.org, dhaval.giani@gmail.com, tglx@linutronix.de,
-        peterz@infradead.org, linux-kernel@vger.kernel.org,
-        josh@joshtriplett.org
-Subject: Re: [PATCH] a local-timer-free version of RCU
-Message-ID: <20101108031136.0766149f@laptop.hypervisor.org>
-In-Reply-To: <20101106192812.GI15561@linux.vnet.ibm.com>
-References: <20101104232148.GA28037@linux.vnet.ibm.com>
-	<20101105210059.GA27317@tsunami.ccur.com>
-	<20101106192812.GI15561@linux.vnet.ibm.com>
-X-Mailer: X-Mailer 5.0 Gold
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/IFZ/RhRDAMbWDgTaLvmOIp/"; protocol="application/pgp-signature"
+	Sun, 7 Nov 2010 21:42:25 -0500
+X-IronPort-AV: E=Sophos;i="4.58,311,1286164800"; 
+   d="scan'208";a="24480646"
+From: "Zhang, Sonic" <Sonic.Zhang@analog.com>
+To: Joe Perches <joe@perches.com>, Mike Frysinger <vapier@gentoo.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+CC: "uclinux-dist-devel@blackfin.uclinux.org" 
+	<uclinux-dist-devel@blackfin.uclinux.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Sun, 7 Nov 2010 21:45:04 -0500
+Subject: RE: [PATCH] drivers/serial/bfin_5xx.c: Fix line continuation defects
+Thread-Topic: [PATCH] drivers/serial/bfin_5xx.c: Fix line continuation
+ defects
+Thread-Index: Act+wDLDzkcsPg+ATd+V0+84S/YvywALjqHA
+Message-ID: <DB904C5425BA6F4E8424B3B51A1414D16578BD03B2@NWD2CMBX1.ad.analog.com>
+References: <1289164223.29216.316.camel@Joe-Laptop>
+In-Reply-To: <1289164223.29216.316.camel@Joe-Laptop>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-CN, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/IFZ/RhRDAMbWDgTaLvmOIp/
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+>-----Original Message-----
+>From: Joe Perches [mailto:joe@perches.com]
+>Sent: Monday, November 08, 2010 5:10 AM
+>To: Zhang, Sonic; Mike Frysinger; Greg Kroah-Hartman
+>Cc: uclinux-dist-devel@blackfin.uclinux.org;
+>linux-kernel@vger.kernel.org
+>Subject: [PATCH] drivers/serial/bfin_5xx.c: Fix line
+>continuation defects
+>
+>Signed-off-by: Joe Perches <joe@perches.com>
 
-On Sat, 6 Nov 2010 12:28:12 -0700 Paul E. McKenney (PEM) wrote:
 
-PEM> > + * rcu_quiescent() is called from rcu_read_unlock() when a
-PEM> > + * RCU batch was started while the rcu_read_lock/rcu_read_unlock
-PEM> > + * critical section was executing.
-PEM> > + */
-PEM> > +
-PEM> > +void rcu_quiescent(int cpu)
-PEM> > +{
-PEM>=20
-PEM> What prevents two different CPUs from calling this concurrently?
-PEM> Ah, apparently nothing -- the idea being that
-PEM> rcu_grace_period_complete() sorts it out.  Though if the second CPU was
-PEM> delayed, it seems like it might incorrectly end a subsequent grace
-PEM> period as follows:
-PEM>=20
-PEM> o	CPU 0 clears the second-to-last bit.
-PEM>=20
-PEM> o	CPU 1 clears the last bit.
-PEM>=20
-PEM> o	CPU 1 sees that the mask is empty, so invokes
-PEM> 	rcu_grace_period_complete(), but is delayed in the function
-PEM> 	preamble.
-PEM>=20
-PEM> o	CPU 0 sees that the mask is empty, so invokes
-PEM> 	rcu_grace_period_complete(), ending the grace period.
-PEM> 	Because the RCU_NEXT_PENDING is set, it also starts
-PEM> 	a new grace period.
-PEM>=20
-PEM> o	CPU 1 continues in rcu_grace_period_complete(), incorrectly
-PEM> 	ending the new grace period.
-PEM>=20
-PEM> Or am I missing something here?
+Acked-by: Sonic Zhang <sonic.zhang@analog.com>
 
-The scenario you describe seems possible. However, it should be easily fixed
-by passing the perceived batch number as another parameter to rcu_set_state=
-()
-and making it part of the cmpxchg. So if the caller tries to set state bits
-on a stale batch number (e.g., batch !=3D rcu_batch), it can be detected.
+Thanks
 
-There is a similar, although harmless, issue in call_rcu(): Two CPUs can
-concurrently add callbacks to their respective nxt list and compute the same
-value for nxtbatch. One CPU succeeds in setting the PENDING bit while
-observing COMPLETE to be clear, so it starts a new batch. Afterwards, the
-other CPU also sets the PENDING bit, but this time for the next batch. So
-it ends up requesting nxtbatch+1, although there is no need to. This also
-would be fixed by making the batch number part of the cmpxchg.
+Sonic Zhang
 
-Cheers,
-
-	- Udo
-
---Sig_/IFZ/RhRDAMbWDgTaLvmOIp/
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkzXXFkACgkQnhRzXSM7nSkPuQCeIoTlzCTAG0nAyXy9CRqgi53i
-7asAnAwqyjXL/K2P0DcSVJYU8eIiIhtZ
-=V9Np
------END PGP SIGNATURE-----
-
---Sig_/IFZ/RhRDAMbWDgTaLvmOIp/--
+>---
+> drivers/serial/bfin_5xx.c |    6 ++----
+> 1 files changed, 2 insertions(+), 4 deletions(-)
+>
+>diff --git a/drivers/serial/bfin_5xx.c
+>b/drivers/serial/bfin_5xx.c index a9eff2b..351cc03 100644
+>--- a/drivers/serial/bfin_5xx.c
+>+++ b/drivers/serial/bfin_5xx.c
+>@@ -734,8 +734,7 @@ static int bfin_serial_startup(struct
+>uart_port *port)
+>                       IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING |
+>                       IRQF_DISABLED, "BFIN_UART_CTS", uart)) {
+>                       uart->cts_pin = -1;
+>-                      pr_info("Unable to attach BlackFin UART
+>CTS interrupt.\
+>-                               So, disable it.\n");
+>+                      pr_info("Unable to attach BlackFin UART
+>CTS interrupt. So, disable
+>+it.\n");
+>               }
+>       }
+>       if (uart->rts_pin >= 0) {
+>@@ -747,8 +746,7 @@ static int bfin_serial_startup(struct
+>uart_port *port)
+>       if (request_irq(uart->status_irq,
+>               bfin_serial_mctrl_cts_int,
+>               IRQF_DISABLED, "BFIN_UART_MODEM_STATUS", uart)) {
+>-              pr_info("Unable to attach BlackFin UART Modem \
+>-                      Status interrupt.\n");
+>+              pr_info("Unable to attach BlackFin UART Modem
+>Status interrupt.\n");
+>       }
+>
+>       /* CTS RTS PINs are negative assertive. */
+>
+>
+>
