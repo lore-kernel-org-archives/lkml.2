@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755816Ab0KHWFE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 17:05:04 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:49045 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755782Ab0KHWFD (ORCPT
+	id S1755740Ab0KHWJn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 17:09:43 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:43481 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752605Ab0KHWJm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 17:05:03 -0500
-Subject: Re: [PATCH] Greatly improve TSC calibration using a delayed
- workqueue
-From: john stultz <johnstul@us.ibm.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Clark Williams <williams@redhat.com>
-In-Reply-To: <20101107204153.GA17592@basil.fritz.box>
-References: <1289003985-29060-1-git-send-email-johnstul@us.ibm.com>
-	 <20101107204153.GA17592@basil.fritz.box>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 08 Nov 2010 14:04:47 -0800
-Message-ID: <1289253887.2798.40.camel@localhost.localdomain>
+	Mon, 8 Nov 2010 17:09:42 -0500
+Subject: Re: [RFCv3 00/21] TCM Core and TCM_Loop patches for v2.6.37
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
+        Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>,
+        Joel Becker <joel.becker@oracle.com>
+In-Reply-To: <20101108214825.GA26609@infradead.org>
+References: <1287441313-19703-1-git-send-email-nab@linux-iscsi.org>
+	 <20101108143952.GB22121@infradead.org>
+	 <1289251207.27226.59.camel@haakon2.linux-iscsi.org>
+	 <20101108214825.GA26609@infradead.org>
+Content-Type: text/plain
+Date: Mon, 08 Nov 2010 14:04:29 -0800
+Message-Id: <1289253869.27226.75.camel@haakon2.linux-iscsi.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-11-07 at 21:41 +0100, Andi Kleen wrote:
-> Hi John,
+On Mon, 2010-11-08 at 16:48 -0500, Christoph Hellwig wrote:
+> On Mon, Nov 08, 2010 at 01:20:07PM -0800, Nicholas A. Bellinger wrote:
+> > Hmmm, it is my understanding that seq_file is currently not available
+> > for configfs.  Also, we never going to expect these particular calls to
+> > return anything close to PAGE_SIZE, so I am not sure how much of an
+> > issue this really is.
 > 
-> > +	/*
-> > +	 * Since the timer is started early in boot, we may be
-> > +	 * delayed the first time we expire. So set the timer
-> > +	 * again once we know timers are working.
-> > +	 */
-> > +	if (tsc_start == -1) {
-> > +		/*
-> > +		 * Only set hpet once, to avoid mixing hardware
-> > +		 * if the hpet becomes enabled later.
-> > +		 */
-> > +		hpet = is_hpet_enabled();
-> > +		schedule_delayed_work(&tsc_irqwork, HZ);
-> > +		tsc_start = tsc_read_refs(&ref_start, hpet);
-> > +		return;
-> > +	}
-> > +
-> > +	tsc_stop = tsc_read_refs(&ref_stop, hpet);
+> Seq_file is avaible for anything where you can plug in file_operations.
+> If configfs doesn't allow plugging in file_operations that's a serious
+> deficit.  If you need less than a page of data single_open provides a
+> simplified version of seq_file with a similar but much simpler API.
+
+Hmmm, I recall asking Joel about this at some point back in 2008 and
+back then I believe configfs was still limited to a PAGE_SIZE.
+
+Joel, any comments here on the usage of seq_file() w/ configfs..?
+
 > 
-> The HPET init code stops, starts the HPET. I think you need some
-> way to protect against that here, e.g. a variable and rearming the 
-> timer if it's true.
+> > >  - the set_configfs_dev_params method implementation contains some
+> > >    rather nast parsing code.  They look like they really should use
+> > >    the parser.h helpers we use for mount option parsing.
+> > 
+> > <nod>  This code current expects the the incoming buffer to be in the
+> > form of 'key0=value0,key1=value1,key2=value2' etc.   Assuming that
+> > parser.h code can handle the comma seperated values, I will look at
+> > getting these converted as well.
+> 
+> That's exactly how mount options work.
+> 
 
-Interesting. Thanks for pointing that out! Couldn't I just start the
-calibration after fs_initcall (when the hpet_late_init runs) to avoid
-this as well? 
+<nod>  Ok, I will get this code converted to use parser.h.
 
-> Another issue may be races against suspend, but that may be too
-> obscure.
-
-Yea, that seems fairly obscure. Basically you'd have to suspend in the
-first second as the system came up. In that case the code will throw out
-any calibration refinement that's over 1% off of the initial boot
-calibration, so I think this is ok trade off.
-
-> I also worry a bit about NMIs etc. running later during this
-> and messing up the measurement, but I guess the longer period
-> makes up for it.
-
-Yea, the 1 second period should help minimize any disturbance, and
-again, this is just a refinement over the existing calibration, so if
-its more then 1% off of the boot time fast calibration, we'll throw it
-out.
-
-> The rest of the patch looks ok to me.
-
-Thanks for the review!
--john
+--nab
 
