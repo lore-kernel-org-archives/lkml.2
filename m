@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755847Ab0KHXbk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 18:31:40 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:60830 "EHLO ogre.sisk.pl"
+	id S1755946Ab0KHXe3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 18:34:29 -0500
+Received: from mail.perches.com ([173.55.12.10]:4660 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750878Ab0KHXbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 18:31:39 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Daniel J Blueman <daniel.blueman@gmail.com>
-Subject: Re: [2.6.37-rc1, patch] gianfar: fix sleep in atomic...
-Date: Tue, 9 Nov 2010 00:30:42 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
-References: <AANLkTimf_mVrRPEcj8qBbYw1iYHfWdeKUNS3Kk-dfhTT@mail.gmail.com>
-In-Reply-To: <AANLkTimf_mVrRPEcj8qBbYw1iYHfWdeKUNS3Kk-dfhTT@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1753902Ab0KHXe2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 18:34:28 -0500
+Subject: Re: [PATCH 08/17][trivial] scsi: Remove unnecessary casts of void
+ ptr returning alloc function return values
+From: Joe Perches <joe@perches.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org,
+        linux-scsi@vger.kernel.org, osst-users@lists.sourceforge.net,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Hannes Reinecke <hare@suse.de>
+In-Reply-To: <alpine.LNX.2.00.1011082334400.23697@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1011082334400.23697@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 08 Nov 2010 15:34:26 -0800
+Message-ID: <1289259266.29216.486.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011090030.42693.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 02, 2010, Daniel J Blueman wrote:
-> Since device_set_wakeup_enable now sleeps, it should not be called
-> from a critical section. Since wol_en is not updated elsewhere, we can
-> omit the locking entirely.
-> 
-> Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+On Tue, 2010-11-09 at 00:09 +0100, Jesper Juhl wrote:
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> diff --git a/drivers/scsi/aic7xxx/aic7xxx_core.c b/drivers/scsi/aic7xxx/aic7xxx_core.c
+[]
+> @@ -4780,7 +4780,7 @@ ahc_init_scbdata(struct ahc_softc *ahc)
+>  	SLIST_INIT(&scb_data->sg_maps);
+>  
+>  	/* Allocate SCB resources */
+> -	scb_data->scbarray = (struct scb *)kmalloc(sizeof(struct scb) * AHC_SCB_MAX_ALLOC, GFP_ATOMIC);
+> +	scb_data->scbarray = kmalloc(sizeof(struct scb) * AHC_SCB_MAX_ALLOC, GFP_ATOMIC);
+>  	if (scb_data->scbarray == NULL)
+>  		return (ENOMEM);
+>  	memset(scb_data->scbarray, 0, sizeof(struct scb) * AHC_SCB_MAX_ALLOC);
 
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+This would be better as:
 
-> diff --git a/drivers/net/gianfar_ethtool.c b/drivers/net/gianfar_ethtool.c
-> index 5c566eb..e641d7c 100644
-> --- a/drivers/net/gianfar_ethtool.c
-> +++ b/drivers/net/gianfar_ethtool.c
-> @@ -635,10 +635,8 @@ static int gfar_set_wol(struct net_device *dev,
-> struct ethtool_wolinfo *wol)
->  	if (wol->wolopts & ~WAKE_MAGIC)
->  		return -EINVAL;
-> 
-> -	spin_lock_irqsave(&priv->bflock, flags);
->  	priv->wol_en = wol->wolopts & WAKE_MAGIC ? 1 : 0;
->  	device_set_wakeup_enable(&dev->dev, priv->wol_en);
-> -	spin_unlock_irqrestore(&priv->bflock, flags);
-> 
->  	return 0;
->  }
-> 
+	scb_data->scbarray = kcalloc(AHC_SCB_MAX_ALLOC, sizeof(struct scb), GFP_ATOMIC)
+
+without the memset.
+
 
