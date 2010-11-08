@@ -1,38 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754863Ab0KHRHo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 12:07:44 -0500
-Received: from smtp-out-096.synserver.de ([212.40.180.96]:1119 "HELO
-	smtp-out-091.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1753869Ab0KHRHo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 12:07:44 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: markus@trippelsdorf.de
-X-SynServer-PPID: 26651
-Date: Mon, 8 Nov 2010 18:07:37 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: dri-devel@lists.freedesktop.org
-Cc: linux-kernel@vger.kernel.org, airlied@linux.ie
-Subject: Re: Radeon RS780 - BUG: unable to handle kernel NULL pointer
- dereference
-Message-ID: <20101108170737.GA1617@arch.trippelsdorf.de>
-References: <20101108170221.GA1602@arch.trippelsdorf.de>
+	id S1754758Ab0KHRJv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 12:09:51 -0500
+Received: from quartz.orcorp.ca ([139.142.54.143]:40682 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751904Ab0KHRJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 12:09:50 -0500
+Date: Mon, 8 Nov 2010 10:09:37 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        keyrings@linux-nfs.org, linux-crypto@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        Mimi Zohar <zohar@us.ibm.com>
+Subject: Re: [PATCH v1.2 3/4] keys: add new trusted key-type
+Message-ID: <20101108170937.GA31501@obsidianresearch.com>
+References: <1289230246-3856-1-git-send-email-zohar@linux.vnet.ibm.com> <1289230246-3856-4-git-send-email-zohar@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101108170221.GA1602@arch.trippelsdorf.de>
+In-Reply-To: <1289230246-3856-4-git-send-email-zohar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 08, 2010 at 06:02:21PM +0100, Markus Trippelsdorf wrote:
-> I can trigger a kernel crash on my system by simply loading this png
-> image with firefox:
-> http://mediaarchive.cern.ch/MediaArchive/Photo/Public/2010/1011251/1011251_01/1011251_01-A4-at-144-dpi.jpg
+On Mon, Nov 08, 2010 at 10:30:45AM -0500, Mimi Zohar wrote:
 
-Sorry the above link is wrong, this is the right one (that triggers the
-crash):
-http://cdsweb.cern.ch/record/1305179/files/HI-150431-630470-huge.png
--- 
-Markus
+> pcrlock=n    extends the designated PCR 'n' with a random value,
+>              so that a key sealed to that PCR may not be unsealed
+>              again until after a reboot.
+
+Nice, but this seems very strange to me, since it has nothing to do
+with the key and could be done easially in userspace?
+
+Jason
