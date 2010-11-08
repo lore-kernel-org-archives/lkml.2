@@ -1,103 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231Ab0KHNUI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 08:20:08 -0500
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:33110 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752926Ab0KHNUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 08:20:05 -0500
-Date: Mon, 8 Nov 2010 05:19:58 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, mingo@elte.hu
-Subject: Re: [PATCH] rcu_read_lock/unlock protect find_task_by_vpid call
-Message-ID: <20101108131958.GD2580@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20101030093234.GK3932@swordfish.minsk.epam.com>
- <201010302214.DDF98906.MSFJOFtFHOLQVO@I-love.SAKURA.ne.jp>
- <20101030210244.GE2664@linux.vnet.ibm.com>
- <201010310833.CCE89052.FtQFHSOFLOOJMV@I-love.SAKURA.ne.jp>
- <20101107194330.GE15561@linux.vnet.ibm.com>
- <201011080704.GIH17609.SFVQLtJOOHFFMO@I-love.SAKURA.ne.jp>
- <20101108030116.GB2580@linux.vnet.ibm.com>
- <20101108102817.GN27712@swordfish.minsk.epam.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101108102817.GN27712@swordfish.minsk.epam.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754149Ab0KHNZt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 08:25:49 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44662 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753128Ab0KHNZs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 08:25:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Y33jZlqILcNdVBz4X7lprM0Wyip0i0ABHxGDqHXWmyTMfVGsr59SI5X7aUjgAXhqNR
+         OHYQ5sfSfVohJPNiP+vwtCSG3Fp3Ytv8gqk6eF65iWfjFlxHGISzXBb2clW8wC+6F9ZA
+         MN6kjPZGMNWEOoqinQGVbjS3i7W5GXp8I+S4Q=
+From: Marek Belisko <marek.belisko@gmail.com>
+To: Ben Dooks <ben-linux@fluff.org>
+Cc: Marek Belisko <marek.belisko@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: s3c2440: mini2440: Add touchscreen support for mini2440.
+Date: Mon,  8 Nov 2010 14:27:50 +0100
+Message-Id: <1289222870-22580-1-git-send-email-marek.belisko@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 08, 2010 at 12:28:17PM +0200, Sergey Senozhatsky wrote:
-> On (11/07/10 19:01), Paul E. McKenney wrote:
-> > On Mon, Nov 08, 2010 at 07:04:43AM +0900, Tetsuo Handa wrote:
-> > > Hello.
-> > > 
-> > > Paul E. McKenney wrote:
-> > > > > Users missing rcu_read_lock() when calling find_task_by_vpid():
-> > > > > 
-> > > > >   check_clock() in kernel/posix-cpu-timers.c
-> > > > 
-> > > > 	This one has read_lock(&tasklist_lock).
-> > > > 
-> > > Excuse me. Holding tasklist_lock lock does not help.
-> > > We must call rcu_read_lock() explicitly.
-> > > That's why 9728e5d6 "kernel/pid.c: update comment on find_task_by_pid_ns" was made.
-> > 
-> > OK, good point, there are a few more kernels of unpopped corn here.
-> >
-> 
-> Hello,
-> I prepared a patch for posix-cpu-timers. 
-> 
-> [PATCH] posix-cpu-timers: rcu_read_lock/unlock protect find_task_by_vpid call
-> Reviewed-by: Oleg Nesterov <oleg@redhat.com>
-> 
-> http://lkml.org/lkml/2010/11/3/257
+Patch add support for mini2440 touchscreen.
+Some code borrowed from:
+git://repo.or.cz/linux-2.6/mini2440.git
 
-Ah, very good, thank you!!!
+Signed-off-by: Marek Belisko <marek.belisko@gmail.com>
+---
+ arch/arm/mach-s3c2440/mach-mini2440.c |   17 +++++++++++++++--
+ 1 files changed, 15 insertions(+), 2 deletions(-)
 
-							Thanx, Paul
-
-> 	Sergey
-> 
->  
-> > > I think there are users who needlessly call read_lock(&tasklist_lock)
-> > > when they can use rcu_read_lock() instead.
-> > > But I don't know when to use read_lock(&tasklist_lock).
-> > > 
-> > > If read_lock(&tasklist_lock) is needed only when we want to access
-> > > the "struct task_struct" after rcu_read_unlock(), maybe it is cleaner to
-> > > use a helper like
-> > > 
-> > > struct task_struct *find_task_and_get(pid_t pid)
-> > > {
-> > > 	struct task_struct *task;
-> > > 	read_lock(&tasklist_lock);
-> > > 	rcu_read_lock();
-> > > 	task = find_task_by_vpid(pid);
-> > > 	rcu_read_unlock();
-> > > 	if (task)
-> > > 		get_task_struct(task);
-> > > 	read_unlock(&tasklist_lock);
-> > > 	return task;
-> > > }
-> > > 
-> > > and hide tasklist_lock.
-> > 
-> > This makes a lot of sense to me!  That said, most of the current
-> > open-coded variants of your find_task_and_get() seem to have the
-> > rcu_read_unlock() after the get_task_struct() rather than before.  But I
-> > don't claim to understand the locking design of this part of the kernel
-> > well enough to say which is the best approach.
-> > 
-> > So, either way, will you be submitting the patches for this?
-> > 
-> > 							Thanx, Paul
-> > 
-
+diff --git a/arch/arm/mach-s3c2440/mach-mini2440.c b/arch/arm/mach-s3c2440/mach-mini2440.c
+index f62bb4c..766d9f4 100644
+--- a/arch/arm/mach-s3c2440/mach-mini2440.c
++++ b/arch/arm/mach-s3c2440/mach-mini2440.c
+@@ -47,6 +47,7 @@
+ #include <plat/iic.h>
+ #include <plat/mci.h>
+ #include <plat/udc.h>
++#include <plat/ts.h>
+ 
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/nand.h>
+@@ -506,6 +507,11 @@ static struct i2c_board_info mini2440_i2c_devs[] __initdata = {
+ 	},
+ };
+ 
++static struct s3c2410_ts_mach_info mini2440_ts_cfg __initdata = {
++	.delay = 10000,
++	.presc = 0xff, /* slow as we can go */
++};
++
+ static struct platform_device *mini2440_devices[] __initdata = {
+ 	&s3c_device_ohci,
+ 	&s3c_device_wdt,
+@@ -522,6 +528,7 @@ static struct platform_device *mini2440_devices[] __initdata = {
+ 	&s3c_device_sdi,
+ 	&s3c_device_iis,
+ 	&mini2440_audio,
++	&s3c_device_adc,
+ };
+ 
+ static void __init mini2440_map_io(void)
+@@ -605,8 +612,13 @@ static void mini2440_parse_features(
+ 			features->done |= FEATURE_BACKLIGHT;
+ 			break;
+ 		case 't':
+-			printk(KERN_INFO "MINI2440: '%c' ignored, "
+-				"touchscreen not compiled in\n", f);
++			if (features->done & FEATURE_TOUCH)
++				printk(KERN_INFO "MINI2440: '%c' ignored, "
++					"touchscreen already set\n", f);
++			else
++				features->optional[features->count++] =
++						&s3c_device_ts;
++			features->done |= FEATURE_TOUCH;
+ 			break;
+ 		case 'c':
+ 			if (features->done & FEATURE_CAMERA)
+@@ -677,6 +689,7 @@ static void __init mini2440_init(void)
+ 	s3c24xx_mci_set_platdata(&mini2440_mmc_cfg);
+ 	s3c_nand_set_platdata(&mini2440_nand_info);
+ 	s3c_i2c0_set_platdata(NULL);
++	s3c24xx_ts_set_platdata(&mini2440_ts_cfg);
+ 
+ 	i2c_register_board_info(0, mini2440_i2c_devs,
+ 				ARRAY_SIZE(mini2440_i2c_devs));
+-- 
+1.7.1
 
