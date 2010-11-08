@@ -1,92 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab0KHIAi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 03:00:38 -0500
-Received: from vpn.id2.novell.com ([195.33.99.129]:55378 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752731Ab0KHIAh convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:4:1>);
-	Mon, 8 Nov 2010 03:00:37 -0500
-Message-Id: <4CD7BC300200007800020E08@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Mon, 08 Nov 2010 08:00:32 +0000
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Yinghai Lu" <yinghai@kernel.org>
-Cc: <mingo@elte.hu>, <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
-        <hpa@zytor.com>
-Subject: Re: [PATCH] x86-64: fix and clean up AMD Fam10 MMCONF enabling
-References: <4CD2DDC6020000780002098C@vpn.id2.novell.com>
- <4CD454D1.2060503@kernel.org>
-In-Reply-To: <4CD454D1.2060503@kernel.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1753729Ab0KHIBt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 03:01:49 -0500
+Received: from icebox.esperi.org.uk ([81.187.191.129]:54100 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751452Ab0KHIBs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 03:01:48 -0500
+To: <jesse.brandeburg@intel.com>
+Cc: "Tantilov, Emil S" <emil.s.tantilov@intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [E1000-devel] 2.6.36 abrupt total e1000e carrier loss (cured by reboot)
+References: <87ocaaszx1.fsf@spindle.srvr.nix>
+	<EA929A9653AAE14F841771FB1DE5A136602815A3C7@rrsmsx501.amr.corp.intel.com>
+	<87zktsskua.fsf@spindle.srvr.nix>
+	<1288837586.2835.3.camel@jbrandeb-mobl2>
+From: Nix <nix@esperi.org.uk>
+Emacs: impress your (remaining) friends and neighbors.
+Date: Mon, 08 Nov 2010 08:01:29 +0000
+In-Reply-To: <1288837586.2835.3.camel@jbrandeb-mobl2> (Jesse Brandeburg's message of "Wed, 03 Nov 2010 22:26:26 -0400")
+Message-ID: <87wrooi6qu.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) XEmacs/21.5-b29 (linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-DCC-STAT_FI_X86_64_VIRTUAL-Metrics: spindle 1245; Body=4 Fuz1=4 Fuz2=4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 05.11.10 at 20:02, Yinghai Lu <yinghai@kernel.org> wrote:
-> On 11/04/2010 08:22 AM, Jan Beulich wrote:
->> @@ -123,9 +123,9 @@ static void __cpuinit get_fam10h_pci_mmc
->>  		if (!(reg & 3))
->>  			continue;
->>  
->> -		start = (((u64)reg) << 8) & (0xffULL << 32); /* 39:16 on 31:8*/
->> +		start = (u64)(reg & 0xffffff00) << 8; /* 39:16 on 31:8*/
->>  		reg = read_pci_config(bus, slot, 1, 0x84 + (i << 3));
->> -		end = (((u64)reg) << 8) & (0xffULL << 32); /* 39:16 on 31:8*/
->> +		end = ((u64)(reg & 0xffffff00) << 8) | 0xffff; /* 39:16 on 31:8*/
->>  
->>  		if (!end)
->>  			continue;
-> 
-> those section could be changed to:
-> 
->                 start = reg & 0xffffff00; /* 39:16 on 31:8*/
->                 start <<= 8;
->                 reg = read_pci_config(bus, slot, 1, 0x84 + (i << 3));
->                 end = (reg & 0xffffff00);
->                 end <<= 8;
-> 
->                 if (!end)
->                         continue;
->                 end |= 0xffff;
-> 
->                 hi_mmio_num = add_range(range, 8, hi_mmio_num, start, end + 1);
-> 
-> 1. append 0xffff after !end checking..
+On 4 Nov 2010, Jesse Brandeburg spake thusly:
+> The above could be responsible for your issue.  If you don't want to
+> disable ASPM system wide, then you could just make sure to run a recent
+> kernel with the ASPM patches, or get our e1000.sf.net e1000e driver and
+> try it, as it will work around the issue whether or not aspm is enabled.
 
-Yes, this one I missed, but it gets fixed by the follow-up patch
-anyway (if I'm to re-submit, I'll fold in that second patch anyway).
+For the record, cherry-picking ff10e13cd06f3dbe90e9fffc3c2dd2057a116e4b
+(the periodic phy-crash-and-reset check) atop 2.6.36 seems to have fixed
+it: at least, the machine has been up for a day now without trouble.
+This commit doesn't seem to be in Greg's stable-queue yet, but seems
+like a good candidate.
 
-> 2. add_range should take end + 1;
-
-That's only after your change making use of this function.
-
->> @@ -206,8 +200,10 @@ void __cpuinit fam10h_check_enable_mmcfg
->>  	 * with 256 buses
->>  	 */
->>  	get_fam10h_pci_mmconf_base();
->> -	if (fam10h_pci_mmconf_base_status <= 0)
->> +	if (!fam10h_pci_mmconf_base) {
->> +		pci_probe &= ~PCI_CHECK_ENABLE_AMD_MMCONF;
->>  		return;
->> +	}
->>  
->>  	printk(KERN_INFO "Enable MMCONFIG on AMD Family 10h\n");
->>  	val &= ~((FAM10H_MMIO_CONF_BASE_MASK<<FAM10H_MMIO_CONF_BASE_SHIFT) |
->> 
->> 
-> 
-> looks like fam10h_pci_mmconf_base_status should NOT be removed.
-> 
-> -1: mean we can not find right new base on BSP, so should not let AP to mess 
-> it again.
-
-Note that is now achieved by clearing PCI_CHECK_ENABLE_AMD_MMCONF
-from pci_probe (imo a better way, as it inhibits code elsewhere which
-is protected by checks of this bit).
-
-Jan
-
+It's still rather gruesome that anything like this is even needed, but
+as long as it only fires every hour or so I guess I can live with it.
+Are there firmware updates or something that might fix this properly in
+the end?
