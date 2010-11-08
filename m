@@ -1,95 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab0KHRwi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 12:52:38 -0500
-Received: from web31801.mail.mud.yahoo.com ([68.142.207.64]:48796 "HELO
-	web31801.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752883Ab0KHRwh convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 12:52:37 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=52kz64pmke2+xfimJ8kDYJioDbp024wqTBRwPWQ8SWV0eYOqvE1P6KzzOoNkpJZ28qMx5X2FxYoIDxv+98W3II6m74ONuiObL1muNE/n/JzvY7LI8g84192Z1ejDdwCtNpcLVFbNE2OBn7VzzY8sPw1av9ZNO64m2X7iz1Rlpkg=;
-Message-ID: <732901.49803.qm@web31801.mail.mud.yahoo.com>
-X-YMail-OSG: 8CF4ZaAVM1mdFicZvE3hlB7FBAvmBZ9sgE.LxVPeQ1hM2.i
- EVSL5FZDJQLMpLSpFLX5ig0RC5MdQZzlBvzcmbNKwXH5QCGanLWwiCBFkDpa
- T1U3jtExl2C1J6lUh0Hr4k6_vDECJ1GEKJ0qrSGKBLIb4QbVMOublG4pVCuH
- uldGKUaeBd6XOaYxfSVZpAvZKrxMIGL1fsAGSFSQo5haQUUIxJfc_9GjD_C4
- Z8pRwScCDSmOSGrMDO2k0ULu6YoPvL407HO9BTroYDR5nlSe5VoIcaBkEzRj
- vQF4GQL423PlFL2v86AEooIq7GBoxk4GJ_OToaOcypnpscIMD6Lbfbd2yl2g
- 3Q.veudM-
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.285259
-Date: Mon, 8 Nov 2010 09:52:36 -0800 (PST)
-From: Luben Tuikov <ltuikov@yahoo.com>
-Reply-To: ltuikov@yahoo.com
-Subject: Re: [PATCH] [USB] UAS: Rename urbs by pipe
-To: Matthew Wilcox <willy@linux.intel.com>
-Cc: Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755249Ab0KHRzT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 12:55:19 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:61903 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752693Ab0KHRzR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 12:55:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=OoOaE8HjP8EBbgzYXM5x6kRBVjz2VoO9zXa6UxflWXrua4p4gVRWIAm6TYuyCSerMq
+         wqZdeakvjLUSssnxchNW57eTIpnw2Fp0EhfZ2pU3bTo4VEjg84hM4BIAZgw3RjSQSbV/
+         lPjbERZ9tm3DU4WAWE0Ybeuv56rpWvUYwEBkM=
+Subject: Re: OOM when adding ipv6 route:  How to make available more
+ per-cpu memory?
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ben Greear <greearb@candelatech.com>
+Cc: NetDev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
+In-Reply-To: <4CD83752.1070501@candelatech.com>
+References: <4CD43C87.5040403@candelatech.com>
+	 <1288980361.2882.1070.camel@edumazet-laptop>
+	 <4CD449A5.5070305@candelatech.com>
+	 <1288988403.2665.268.camel@edumazet-laptop>
+	 <1288995103.2665.653.camel@edumazet-laptop>
+	 <4CD49C2F.3060904@candelatech.com>
+	 <1289028392.2665.2418.camel@edumazet-laptop>
+	 <4CD58B9C.2030006@candelatech.com>
+	 <1289214131.2820.187.camel@edumazet-laptop>
+	 <4CD83752.1070501@candelatech.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 08 Nov 2010 18:55:12 +0100
+Message-ID: <1289238912.3167.4.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---- On Mon, 11/8/10, Luben Tuikov <ltuikov@yahoo.com> wrote:
-> --- On Mon, 11/8/10, Matthew Wilcox
-> <willy@linux.intel.com>
-> wrote:
-> > -0700, Luben Tuikov wrote:
-> > > The reason to do this is to accommodate sending
-> > > different IU types using the existing
-> > > infrastructure.
-> > 
-> > Applied, with a modified changelog entry ...
-> 
-> Again, where is it applied and what is the (new) modified
-> changelog entry? Why would you leave this detail out in your
-> response to the patch?
+Le lundi 08 novembre 2010 Ã  09:45 -0800, Ben Greear a Ã©crit :
 
-Please have some professional integrity and EITHER a) ask me to
-resubmit the patch with a new change log (what would you like?) or b) discuss it here publicly.
+> That helps.  I'm getting all of the IP addrs set now, but
+> having trouble with some of the default gateways (I have one
+> routing table per interface).
+> 
+> ./local/sbin/ip -6 route replace default via 2002:9:8::1 dev eth7#458 table 726
+> RTNETLINK answers: No buffer space available
+> 
+> dmesg is full of this:
+> 
+> [247106.294743] ipv6: Neighbour table overflow.
+> 
+> 
+> A quick look in /proc didn't show a tunable for this, but I'll
+> go grub through the code.
+> 
+> As for the route/max_size, it would be nice to see some useful kernel
+> message in dmesg when this hit.  Just telling the user '-ENOMEM'
+> is not at all sufficient to help them figure out the problem.
 
-See my previous post on your other modification of the change log
-to my other patch against your code.
+Sure, patches are welcomed. Apparently nobody yet used ipv6 with so many
+devices / routes, and this nobody contributed to extend limits.
 
 > 
-> > 
-> > >      struct urb *data_out_urb;
-> > >      struct list_head list;
-> > >  };
-> > >  
-> > > -/* I hate forward declarations, but I actually
-> have a
-> > loop */
-> > >  static int uas_submit_urbs(struct scsi_cmnd
-> > *cmnd,
-> > >         
-> >         struct uas_dev_info
-> > *devinfo, gfp_t gfp);
-> > >  
-> > 
-> > Except for this spurious chunk.
-> 
-> Sorry, please help us understand: You'll LEAVE a
-> self-gratifying, narcissistic and pompous statement like "I
-> hate forward-declarations"? Why would you use such a strong
-> word? Why would you "hate"? How about: "I don't like" or "I
-> know lk style discourages", etc. Why would you add /one
-> more/ "hate" word into the kernel?
-> 
-> I think everyone sees why this forward-decl is needed.
-> 
-> I wonder if the relation of the number of the "hate" word
-> in the linux kernel versus time correlates to something,
-> anything? Now that's easier to track and analyze in time
-> using git.
-> 
-> Compared to people losing their homes and jobs nowadays,
-> I'll take a forward declaration any time of day and night.
-> 
-> Bottom line: please consider the patch as is.
-> 
-> 
+> For that matter, why is there such a limit anyway?  IPv4 doesn't appear
+> to have any such limit?
+
+There are limits for ipv4, much bigger, you probably never noticed.
+
+
+/proc/sys/net/ipv4/route/gc_elasticity:8
+/proc/sys/net/ipv4/route/gc_interval:60
+/proc/sys/net/ipv4/route/gc_min_interval:0
+/proc/sys/net/ipv4/route/gc_min_interval_ms:500
+/proc/sys/net/ipv4/route/gc_thresh:131072
+/proc/sys/net/ipv4/route/gc_timeout:300
+/proc/sys/net/ipv4/route/max_size:2097152    <<< HERE
+/proc/sys/net/ipv4/route/min_adv_mss:256
+/proc/sys/net/ipv4/route/min_pmtu:552
+/proc/sys/net/ipv4/route/mtu_expires:600
+/proc/sys/net/ipv4/route/redirect_load:2
+/proc/sys/net/ipv4/route/redirect_number:9
+/proc/sys/net/ipv4/route/redirect_silence:2048
+
+I suggest followup discussion can got to netdev only, now per-cpu it not
+anymore the problem ?
+
+
+
+
