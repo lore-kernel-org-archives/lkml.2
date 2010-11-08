@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014Ab0KHXUm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 18:20:42 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:39364 "EHLO
+	id S1756031Ab0KHXVH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 18:21:07 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:19235 "EHLO
 	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751727Ab0KHXUk (ORCPT
+	with ESMTP id S1751727Ab0KHXVF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 18:20:40 -0500
-Date: Tue, 9 Nov 2010 00:09:13 +0100 (CET)
+	Mon, 8 Nov 2010 18:21:05 -0500
+Date: Tue, 9 Nov 2010 00:09:38 +0100 (CET)
 From: Jesper Juhl <jj@chaosbits.net>
 To: linux-kernel@vger.kernel.org
-cc: trivial@kernel.org, Ulrich Kunitz <kune@deine-taler.de>,
-        Daniel Drake <dsd@gentoo.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH 07/17][trivial] net, wireless: Remove unnecessary casts of
+cc: Greg Kroah-Hartman <gregkh@suse.de>, Vipin Mehta <vmehta@atheros.com>,
+        devel@driverdev.osuosl.org
+Subject: [PATCH 09/17][trivial] staging, ath6kl: Remove unnecessary casts of
  void ptr returning alloc function return values
-Message-ID: <alpine.LNX.2.00.1011082330390.23697@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1011082338300.23697@swampdragon.chaosbits.net>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -30,27 +28,27 @@ The [vk][cmz]alloc(_node) family of functions return void pointers which
 it's completely unnecessary/pointless to cast to other pointer types since
 that happens implicitly.
 
-This patch removes such casts from drivers/net/
+This patch removes such casts from drivers/staging/ath6kl/
 
 
 Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- zd_chip.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-diff --git a/drivers/net/wireless/zd1211rw/zd_chip.c b/drivers/net/wireless/zd1211rw/zd_chip.c
-index 87a95bc..dfcebed 100644
---- a/drivers/net/wireless/zd1211rw/zd_chip.c
-+++ b/drivers/net/wireless/zd1211rw/zd_chip.c
-@@ -117,8 +117,7 @@ int zd_ioread32v_locked(struct zd_chip *chip, u32 *values, const zd_addr_t *addr
- 
- 	/* Allocate a single memory block for values and addresses. */
- 	count16 = 2*count;
--	a16 = (zd_addr_t *) kmalloc(count16 * (sizeof(zd_addr_t) + sizeof(u16)),
--		                   GFP_KERNEL);
-+	a16 = kmalloc(count16 * (sizeof(zd_addr_t) + sizeof(u16)), GFP_KERNEL);
- 	if (!a16) {
- 		dev_dbg_f(zd_chip_dev(chip),
- 			  "error ENOMEM in allocation of a16\n");
+ hif.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/staging/ath6kl/hif/sdio/linux_sdio/src/hif.c b/drivers/staging/ath6kl/hif/sdio/linux_sdio/src/hif.c
+index c307a55..6454a86 100644
+--- a/drivers/staging/ath6kl/hif/sdio/linux_sdio/src/hif.c
++++ b/drivers/staging/ath6kl/hif/sdio/linux_sdio/src/hif.c
+@@ -1188,7 +1188,7 @@ addHifDevice(struct sdio_func *func)
+     HIF_DEVICE *hifdevice;
+     AR_DEBUG_PRINTF(ATH_DEBUG_TRACE, ("AR6000: addHifDevice\n"));
+     AR_DEBUG_ASSERT(func != NULL);
+-    hifdevice = (HIF_DEVICE *)kzalloc(sizeof(HIF_DEVICE), GFP_KERNEL);
++    hifdevice = kzalloc(sizeof(HIF_DEVICE), GFP_KERNEL);
+     AR_DEBUG_ASSERT(hifdevice != NULL);
+ #if HIF_USE_DMA_BOUNCE_BUFFER
+     hifdevice->dma_buffer = kmalloc(HIF_DMA_BUFFER_SIZE, GFP_KERNEL);
 
 
 
