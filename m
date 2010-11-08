@@ -1,133 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab0KHIjM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 03:39:12 -0500
-Received: from mga14.intel.com ([143.182.124.37]:50464 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754185Ab0KHIjL convert rfc822-to-8bit (ORCPT
+	id S1754286Ab0KHIo4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 03:44:56 -0500
+Received: from smtp.nokia.com ([192.100.122.230]:60965 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754264Ab0KHIoz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 03:39:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,313,1286175600"; 
-   d="scan'208";a="345820087"
-From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mst@redhat.com" <mst@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "herbert@gondor.apana.org.au" <herbert@gondor.hengli.com.au>,
-        "jdike@linux.intel.com" <jdike@linux.intel.com>
-Date: Mon, 8 Nov 2010 16:39:04 +0800
-Subject: RE: Re:[PATCH v14 06/17] Use callback to deal with
- skb_release_data() specially.
-Thread-Topic: Re:[PATCH v14 06/17] Use callback to deal with
- skb_release_data() specially.
-Thread-Index: Act/HmvBSTiY/7fyS5GA3ORaOZJIugAAa7Pw
-Message-ID: <F2E9EB7348B8264F86B6AB8151CE2D79338D121C55@shsmsx502.ccr.corp.intel.com>
-References: <1288861663.2659.47.camel@edumazet-laptop>
-	 <1289203430-5935-1-git-send-email-xiaohui.xin@intel.com>
- <1289204686.2478.375.camel@edumazet-laptop>
-In-Reply-To: <1289204686.2478.375.camel@edumazet-laptop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 8 Nov 2010 03:44:55 -0500
+From: Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com>
+To: tony@atomide.com
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        ext-eugeny.kuznetsov@nokia.com
+Subject: [PATCHv3 1/1] omap: Ptr "isr_reg" tracked as NULL was dereferenced
+Date: Mon,  8 Nov 2010 11:38:36 +0300
+Message-Id: <cd6fa21776a4564d602cc072358a4bf79a9fe883.1289205105.git.EXT-Eugeny.Kuznetsov@nokia.com>
+X-Mailer: git-send-email 1.6.3.3
+X-OriginalArrivalTime: 08 Nov 2010 08:44:13.0184 (UTC) FILETIME=[1E754000:01CB7F21]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: Eric Dumazet [mailto:eric.dumazet@gmail.com]
->Sent: Monday, November 08, 2010 4:25 PM
->To: Xin, Xiaohui
->Cc: netdev@vger.kernel.org; kvm@vger.kernel.org; linux-kernel@vger.kernel.org;
->mst@redhat.com; mingo@elte.hu; davem@davemloft.net; herbert@gondor.apana.org.au;
->jdike@linux.intel.com
->Subject: Re: Re:[PATCH v14 06/17] Use callback to deal with skb_release_data() specially.
->
->Le lundi 08 novembre 2010 à 16:03 +0800, xiaohui.xin@intel.com a écrit :
->> From: Xin Xiaohui <xiaohui.xin@intel.com>
->>
->> >> Hmm, I suggest you read the comment two lines above.
->> >>
->> >> If destructor_arg is now cleared each time we allocate a new skb, then,
->> >> please move it before dataref in shinfo structure, so that the following
->> >> memset() does the job efficiently...
->> >
->> >
->> >Something like :
->> >
->> >diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
->> >index e6ba898..2dca504 100644
->> >--- a/include/linux/skbuff.h
->> >+++ b/include/linux/skbuff.h
->> >@@ -195,6 +195,9 @@ struct skb_shared_info {
->> > 	__be32          ip6_frag_id;
->> > 	__u8		tx_flags;
->> > 	struct sk_buff	*frag_list;
->> >+	/* Intermediate layers must ensure that destructor_arg
->> >+	 * remains valid until skb destructor */
->> >+	void		*destructor_arg;
->> > 	struct skb_shared_hwtstamps hwtstamps;
->> >
->> > 	/*
->> >@@ -202,9 +205,6 @@ struct skb_shared_info {
->> > 	 */
->> > 	atomic_t	dataref;
->> >
->> >-	/* Intermediate layers must ensure that destructor_arg
->> >-	 * remains valid until skb destructor */
->> >-	void *		destructor_arg;
->> > 	/* must be last field, see pskb_expand_head() */
->> > 	skb_frag_t	frags[MAX_SKB_FRAGS];
->> > };
->> >
->> >
->>
->> Will that affect the cache line?
->
->What do you mean ?
->
->> Or, we can move the line to clear destructor_arg to the end of __alloc_skb().
->> It looks like as the following, which one do you prefer?
->>
->> Thanks
->> Xiaohui
->>
->> ---
->>  net/core/skbuff.c |    8 ++++++++
->>  1 files changed, 8 insertions(+), 0 deletions(-)
->>
->> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
->> index c83b421..df852f2 100644
->> --- a/net/core/skbuff.c
->> +++ b/net/core/skbuff.c
->> @@ -224,6 +224,7 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
->>
->>  		child->fclone = SKB_FCLONE_UNAVAILABLE;
->>  	}
->> +	shinfo->destructor_arg = NULL;
->>  out:
->>  	return skb;
->>  nodata:
->
->I dont understand why you want to do this.
->
->This adds an instruction, makes code bigger, and no obvious gain for me,
->at memory transactions side.
->
->If integrated in the existing memset(), cost is an extra iteration to
->perform the clear of this field.
->
-Ok. Thanks for this explanation and will update with your solution.
+From: Evgeny Kuznetsov <ext-eugeny.kuznetsov@nokia.com>
 
-Thanks
-Xiaohui
+Value of "isr_reg" pointer is depend on configuration and GPIO method.
+Potentially it may have NULL value and it is dereferenced later
+in code. Warning and exit from function are added in this case.
 
+Signed-off-by: Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com>
+---
+ arch/arm/plat-omap/gpio.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/plat-omap/gpio.c b/arch/arm/plat-omap/gpio.c
+index c05c653..e0e2fa7 100644
+--- a/arch/arm/plat-omap/gpio.c
++++ b/arch/arm/plat-omap/gpio.c
+@@ -1318,6 +1318,10 @@ static void gpio_irq_handler(unsigned int irq, struct irq_desc *desc)
+ 	if (bank->method == METHOD_GPIO_44XX)
+ 		isr_reg = bank->base + OMAP4_GPIO_IRQSTATUS0;
+ #endif
++
++	if (WARN_ON(!isr_reg))
++		goto exit;
++
+ 	while(1) {
+ 		u32 isr_saved, level_mask = 0;
+ 		u32 enabled;
+@@ -1377,6 +1381,7 @@ static void gpio_irq_handler(unsigned int irq, struct irq_desc *desc)
+ 	configured, we must unmask the bank interrupt only after
+ 	handler(s) are executed in order to avoid spurious bank
+ 	interrupt */
++exit:
+ 	if (!unmasked)
+ 		desc->chip->unmask(irq);
+ 
+-- 
+1.6.3.3
 
