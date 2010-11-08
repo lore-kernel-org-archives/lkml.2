@@ -1,105 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403Ab0KHSMA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 13:12:00 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:20910 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753067Ab0KHSL6 (ORCPT
+	id S1755417Ab0KHSMH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 13:12:07 -0500
+Received: from mga02.intel.com ([134.134.136.20]:3612 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755396Ab0KHSL7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 13:11:58 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6161"; a="61075890"
-Subject: Re: [PATCHv2 2/3] ARM: Allow machines to override __delay()
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Russell King <linux@arm.linux.org.uk>, Nicolas Pitre <nico@fluxnic.net>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Colin Cross <ccross@android.com>, linux-arm-kernel@lists.infradead.org
-In-Reply-To: <4CD4CD21.8080801@codeaurora.org>
-References: <1288300770-18350-1-git-send-email-sboyd@codeaurora.org>
-	 <1288300770-18350-3-git-send-email-sboyd@codeaurora.org>
-	 <1288899002.21823.3.camel@c-dwalke-linux.qualcomm.com>
-	 <4CD31E67.60107@codeaurora.org>
-	 <1288905414.21823.12.camel@c-dwalke-linux.qualcomm.com>
-	 <4CD47C6E.3050702@codeaurora.org> <1289000592.15381.23.camel@m0nster>
-	 <4CD4CD21.8080801@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 08 Nov 2010 10:11:50 -0800
-Message-ID: <1289239910.6024.12.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Nov 2010 13:11:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,169,1288594800"; 
+   d="scan'208";a="675438157"
+From: "Tantilov, Emil S" <emil.s.tantilov@intel.com>
+To: Nix <nix@esperi.org.uk>, "Brandeburg, Jesse" <jesse.brandeburg@intel.com>
+CC: "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 8 Nov 2010 11:11:57 -0700
+Subject: RE: [E1000-devel] 2.6.36 abrupt total e1000e carrier loss (cured by
+ reboot)
+Thread-Topic: [E1000-devel] 2.6.36 abrupt total e1000e carrier loss (cured
+ by reboot)
+Thread-Index: Act/Gyqx03bok3nzQQql23TBXObbawAVJlMg
+Message-ID: <EA929A9653AAE14F841771FB1DE5A13660283A6815@rrsmsx501.amr.corp.intel.com>
+References: <87ocaaszx1.fsf@spindle.srvr.nix>
+	<EA929A9653AAE14F841771FB1DE5A136602815A3C7@rrsmsx501.amr.corp.intel.com>
+	<87zktsskua.fsf@spindle.srvr.nix>	<1288837586.2835.3.camel@jbrandeb-mobl2>
+ <87wrooi6qu.fsf@spindle.srvr.nix>
+In-Reply-To: <87wrooi6qu.fsf@spindle.srvr.nix>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-05 at 20:36 -0700, Stephen Boyd wrote:
-> On 11/05/2010 04:43 PM, Daniel Walker wrote:
-> > On Fri, 2010-11-05 at 14:51 -0700, Stephen Boyd wrote:
-> >> Ok. Doing that increases the size of my vmlinux.
-> >>
-> >> $ size vmlinux.orig vmlinux.new
-> >>    text    data     bss     dec     hex filename
-> >> 7091426  594512 1244648 8930586  88451a vmlinux.orig
-> >> 7091514  594512 1244648 8930674  884572 vmlinux.new
-> >
-> > This is what I get,
-> >
-> >    text    data     bss     dec     hex filename
-> > 2168427  104288  186176 2458891  25850b ../build-test/vmlinux.orig
-> > 2168379  104288  186176 2458843  2584db ../build-test/vmlinux.new
-> >
-> > Your patch has something wrong with it, which I fixed. Details below,
-> >
-> [snip]
-> >> - */
-> >> -void __delay(unsigned long loops)
-> >> -{
-> >> -	delay_fn(loops);
-> >> -}
-> >>  EXPORT_SYMBOL(__delay);
-> >
-> > You need to modify this EXPORT_SYMBOL to delay_fn since __delay doesn't
-> > exist anymore.
+Nix wrote:
+> On 4 Nov 2010, Jesse Brandeburg spake thusly:
+>> The above could be responsible for your issue.  If you don't want to
+>> disable ASPM system wide, then you could just make sure to run a
+>> recent kernel with the ASPM patches, or get our e1000.sf.net e1000e
+>> driver and try it, as it will work around the issue whether or not
+>> aspm is enabled. 
 > 
-> Wait. Doesn't this mean we're exporting delay_fn instead of __delay now?
-> i.e. the symbol name has changed and modules can no longer call __delay?
-> That sounds bad.
+> For the record, cherry-picking
+> ff10e13cd06f3dbe90e9fffc3c2dd2057a116e4b (the periodic
+> phy-crash-and-reset check) atop 2.6.36 seems to have fixed it: at
+> least, the machine has been up for a day now without trouble. This
+> commit doesn't seem to be in Greg's stable-queue yet, but seems like
+> a good candidate. 
 
-The modules would just call the new symbol. It would be a problem for
-binary modules, but we don't really cater to binary modules. Like you
-suggest below you could change the name to __delay().
+This patch should have no effect on your issue if it is indeed ASPM related.
+The ASPM issue can be intermittent and I have seen systems run for 3-5 days until the failure occurs, so one day doesn't necessarily rule it out.
 
-> If I make that change, my kernel size is exactly the same before and
-> after. It may sound like a win since you got a decrease and I got a net
-> zero, but I'm not sure since the symbol has changed. I could make
+BTW - what is the exact make/model of your system (dmidecode).
 
-I can't imagine how it's a net zero change for you. The change is
-removing two global functions.
-
-> __delay a function pointer and assign it directly but I'm not very
-> interested to expose a function pointer to modules allowing them to
-> modify it at any time (easily). Actually, I should probably mark
-> set_delay_fn __init so it gets thrown away after init when its far too
-> late to switch the delay function anyway. That would give you the space
-> savings you want and allow me to keep the delay_fn static to delay.c
-
-I don't think we need to protect other code authors to that degree. You
-could put down a comment letting people know it's bad to alter __delay
-after bootup .. I doubt this API will be used all that often..
-
-Marking it __init only saves run time space it doesn't reduce the image
-size. However, since set_delay_fn is likely to be used in __init
-sections already, and it's inline, means the code is likely to get
-removed in that case too. So doing it the way I'm suggesting give you a
-smaller image size, and smaller runtime size.
-
-Daniel
-
--- 
-
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Thanks,
+Emil
