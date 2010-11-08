@@ -1,53 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753684Ab0KHMXn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 07:23:43 -0500
-Received: from mx1.vsecurity.com ([209.67.252.12]:61094 "EHLO
-	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752304Ab0KHMXm (ORCPT
+	id S1753892Ab0KHMdy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 07:33:54 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:21549 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752709Ab0KHMdx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 07:23:42 -0500
-Subject: Re: [PATCH RFC] Restrictions on module loading
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, security@kernel.org
-In-Reply-To: <20101108102013.0861725b@lxorguk.ukuu.org.uk>
-References: <1289179439.3090.205.camel@Dan>
-	 <20101108102013.0861725b@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 08 Nov 2010 07:23:36 -0500
-Message-ID: <1289219016.10229.14.camel@dan>
+	Mon, 8 Nov 2010 07:33:53 -0500
+Date: Mon, 8 Nov 2010 13:33:42 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Joe Perches <joe@perches.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: Re: [RFC PATCH] include/linux/kernel.h: Add config option for    
+ pr_fmt(fmt)
+Message-ID: <20101108133342.7217866c@endymion.delvare>
+In-Reply-To: <1288390250.28828.228.camel@Joe-Laptop>
+References: <1287713982.16920.39.camel@Joe-Laptop>
+	<20101026110335.3a4c7679@endymion.delvare>
+	<1288201301.4145.122.camel@Joe-Laptop>
+	<20101028093529.503c3a28@endymion.delvare>
+	<1288252476.1836.9.camel@Joe-Laptop>
+	<20101028104354.6aaca07c@endymion.delvare>
+	<1288390250.28828.228.camel@Joe-Laptop>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Joe,
 
-> NAK - Its a long standing ABI.
+Sorry for the late answer.
 
-As far as I can tell, modules_disabled was first included in 2.6.31, so
-it's hardly what I'd call "long standing".  However, I see your point -
-it's definitely not my intention to surprise anyone by changing security
-features out from under them.
-
-I do think merging the features makes sense in this case.  I'll rework
-this to keep the "modules_disabled" name, where a value of "0" means
-default behavior, a value of "1" means no loading or unloading (and no
-changing it back), and the new value of "2" incorporates the
-restrictions I'm intending to enforce.
-
+On Fri, 29 Oct 2010 15:10:50 -0700, Joe Perches wrote:
+> On Thu, 2010-10-28 at 10:43 +0200, Jean Delvare wrote:
+> > Besides, linux-next is meant for integration testing. We already know
+> > that the change will integrate fine, in that it won't cause a build
+> > failure or runtime crash. We also know that, without the tree-wide
+> > cleanup of many driver, the change will cause duplicate prefixes in
+> > many messages.
+> > 
+> > There's little point in testing something we know will not be good
+> > enough. Better prepare all the driver patches, and test the whole thing
+> > when it's ready. I know it will be a very large and intrusive patchset,
+> > but this can certainly be done with Andrew's support.
 > 
-> I've no objection to modules_restrict although I doubt it'll ever get
-> used in the real world, but better to extend the meaning of the existing
-> interface, not remove stuff.
+> I think you underestimate the time, effort and acceptance
+> levels by the various arches and maintainers required.
 > 
+> Also, it's not just drivers, it's arch, lib, and kernel.
+> (...)
 
-There has been interest in improving the ease with which users can
-enforce restrictions on automatic module loading.  No one is being
-forced to use it.
+I've had time to think about it all some more, and I have to admit that
+my counter-proposal doesn't really fly. Changing everything at once
+throughout the whole kernel tree is simply too difficult.
 
--Dan
+So I hate to admit it, but your initial proposal was certainly better,
+because it can be done one subsystem at a time. So I think we should
+forget about my objections and go on with your first patchset.
 
+That being said, to avoid messing up the kernel tree completely, I
+think we need a clearly defined plan before we start. This plan should
+include:
+* A clear statement of goal.
+* An explanation of the steps we have to go through to reach it.
+* An rough schedule of when it will happen (in either time or kernel
+  versions) with a deadline after which changing the default definition
+  of pr_fmt() will be considered OK.
 
+And the plan should be made known to all subsystem maintainers, with
+publicly visible progress tracking. Otherwise I fear it will take
+forever to reach your goal.
+
+Thanks,
+-- 
+Jean Delvare
