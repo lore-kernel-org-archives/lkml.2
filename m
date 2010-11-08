@@ -1,101 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604Ab0KHHIt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 02:08:49 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:57577 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752123Ab0KHHIs (ORCPT
+	id S1752829Ab0KHHMW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 02:12:22 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45692 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752402Ab0KHHMV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 02:08:48 -0500
+	Mon, 8 Nov 2010 02:12:21 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=Epuu51NpkFtZW36ESRBRFC5pTtULwcQBMhvTdMBipxV+llM9BvhHWnzFHKsXOYJB61
-         j4I+5s5ESmfEmjK6BwQXXJUzKk/SfQecrHH46X5Lf7o3rCElgfVnA4P5G76erUlRZ8uy
-         zf0hfEZ/tNQlDuBLU8t72UMFJHv2jjafXHTBw=
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=PZySHhi79HyD/5drgOyI7f9OEfJB0+aNnMHnduRHOOSxCjoKJvE67y6G0wERhZqaxB
+         mUr+jeykiht/v+Aa3paJY6d4HDYxD7/3UI63IpReskwIJaWdShPUf0sLmAiL5HphMlxk
+         rFzvDdQkU7lzybbFa+4kM2qtfPbTN22xlpnF0=
 MIME-Version: 1.0
-Date: Mon, 8 Nov 2010 12:38:47 +0530
-Message-ID: <AANLkTi=40758wF4Z6GDfm809miA-hnCnSQdwA9bALX0+@mail.gmail.com>
-Subject: how to read one udp packet with more than one recvfrom() calls?
-From: ranjith kumar <ranjithproxy@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=20cf3054a047a5f7540494854b56
+In-Reply-To: <AANLkTi=40758wF4Z6GDfm809miA-hnCnSQdwA9bALX0+@mail.gmail.com>
+References: <AANLkTi=40758wF4Z6GDfm809miA-hnCnSQdwA9bALX0+@mail.gmail.com>
+From: Changli Gao <xiaosuo@gmail.com>
+Date: Mon, 8 Nov 2010 15:12:00 +0800
+Message-ID: <AANLkTim_qtAO-muZk4q9N=_DFsvAcQprnLDx7XOe3aNg@mail.gmail.com>
+Subject: Re: how to read one udp packet with more than one recvfrom() calls?
+To: ranjith kumar <ranjithproxy@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf3054a047a5f7540494854b56
-Content-Type: text/plain; charset=ISO-8859-1
+On Mon, Nov 8, 2010 at 3:08 PM, ranjith kumar <ranjithproxy@gmail.com> wrote:
+> Hi,
+>
+> I  have implemented client and server programs using udp
+> protocol(files are attached).
+> UDP packet size is 500bytes.
+>
+> I want to read these 500bytes in two calls to recvfrom(). First time
+> reading 100bytes and second time 400bytes.
+> How to do this?
+>
+> When I tried to change the third argument of recvfrom(size_t len),
+> from 500 to 100, first 100bytes are read correctly.
+> But when I call recvfrom() second time with len=400, it is reading the
+> first 400bytes of "next udp packet".
+> Why? Isn't it possible to read one udp packet in two calls to
+> recvfrom()/read()????
+>
 
-Hi,
+recvmsg(2):
 
-I  have implemented client and server programs using udp
-protocol(files are attached).
-UDP packet size is 500bytes.
+       MSG_PEEK
+              This  flag  causes the receive operation to return data from the
+              beginning of the receive queue without removing that  data  from
+              the queue.  Thus, a subsequent receive call will return the same
+              data.
 
-I want to read these 500bytes in two calls to recvfrom(). First time
-reading 100bytes and second time 400bytes.
-How to do this?
-
-When I tried to change the third argument of recvfrom(size_t len),
-from 500 to 100, first 100bytes are read correctly.
-But when I call recvfrom() second time with len=400, it is reading the
-first 400bytes of "next udp packet".
-Why? Isn't it possible to read one udp packet in two calls to
-recvfrom()/read()????
-
-Thanks in advance.
-
---20cf3054a047a5f7540494854b56
-Content-Type: application/octet-stream; name="client.c"
-Content-Disposition: attachment; filename="client.c"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gg90frnc0
-
-I2luY2x1ZGU8c3RkaW8uaD4NCiNpbmNsdWRlIDxzeXMvdHlwZXMuaD4NCiNpbmNsdWRlIDxzdHJp
-bmcuaD4NCiNpbmNsdWRlIDxzeXMvdHlwZXMuaD4NCiNpbmNsdWRlIDx1bmlzdGQuaD4NCiNpbmNs
-dWRlIDxzeXMvdGltZS5oPg0KI2luY2x1ZGUgPHN0ZGlvLmg+DQojaW5jbHVkZSA8bmV0aW5ldC9p
-bi5oPg0KI2luY2x1ZGUgPHN5cy9zb2NrZXQuaD4NCiNpbmNsdWRlIDxuZXRpbmV0L2luLmg+DQoj
-aW5jbHVkZSA8YXJwYS9pbmV0Lmg+DQojaW5jbHVkZSA8c3RyaW5nLmg+DQoNCiNkZWZpbmUgQlVG
-TEVOIDUwMA0KI2RlZmluZSBQT1JUICA1MDAwDQojZGVmaW5lIE5QQUNLICA1DQoNCiANCiNkZWZp
-bmUgU1JWX0lQICIxMDcuMTA5LjM4LjMyIg0KIC8qIGZwcmludGYoc3Rkb3V0LCksICNpbmNsdWRl
-cyBhbmQgI2RlZmluZXMgbGlrZSBpbiB0aGUgc2VydmVyICovDQoNCiBpbnQgbWFpbih2b2lkKQ0K
-IHsNCiAgIHN0cnVjdCBzb2NrYWRkcl9pbiBzaV9vdGhlcjsNCiAgIGludCBzLCBpLCBzbGVuPXNp
-emVvZihzaV9vdGhlcik7DQogICBjaGFyIGJ1ZltCVUZMRU5dOw0KDQogICBpZiAoKHM9c29ja2V0
-KEFGX0lORVQsIFNPQ0tfREdSQU0sIElQUFJPVE9fVURQKSk9PS0xKQ0KICAgICBmcHJpbnRmKHN0
-ZG91dCwic29ja2V0Iik7DQoNCiAgIG1lbXNldCgoY2hhciAqKSAmc2lfb3RoZXIsIDAsIHNpemVv
-ZihzaV9vdGhlcikpOw0KICAgc2lfb3RoZXIuc2luX2ZhbWlseSA9IEFGX0lORVQ7DQogICBzaV9v
-dGhlci5zaW5fcG9ydCA9IGh0b25zKFBPUlQpOw0KICAgaWYgKGluZXRfYXRvbihTUlZfSVAsICZz
-aV9vdGhlci5zaW5fYWRkcik9PTApIHsNCiAgICAgZnByaW50ZihzdGRlcnIsICJpbmV0X2F0b24o
-KSBmYWlsZWRcbiIpOw0KICAgICBleGl0KDEpOw0KICAgfQ0KDQogICBmb3IgKGk9MDsgaTxOUEFD
-SzsgaSsrKSB7DQogICAgIHByaW50ZigiU2VuZGluZyBwYWNrZXQgJWRcbiIsIGkpOw0KICAgICBz
-cHJpbnRmKGJ1ZiwgIlRoaXMgaXMgcGFja2V0ICVkXG4iLCBpKTsNCi8vCXdyaXRlKHMsYnVmLEJV
-RkxFTik7DQogICAgIGlmIChzZW5kdG8ocywgYnVmLCBCVUZMRU4sIDAsICZzaV9vdGhlciwgc2xl
-bik9PS0xKQ0KICAgICAgZnByaW50ZihzdGRvdXQsInNlbmR0bygpIik7DQogICB9DQoNCiAgIGNs
-b3NlKHMpOw0KICAgcmV0dXJuIDA7DQogfQ0KDQo=
---20cf3054a047a5f7540494854b56
-Content-Type: application/octet-stream; name="server.c"
-Content-Disposition: attachment; filename="server.c"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gg90fucq1
-
-I2luY2x1ZGU8c3RkaW8uaD4NCiNpbmNsdWRlIDxzeXMvdHlwZXMuaD4NCiNpbmNsdWRlIDxzdHJp
-bmcuaD4NCiNpbmNsdWRlIDxzeXMvdHlwZXMuaD4NCiNpbmNsdWRlIDx1bmlzdGQuaD4NCiNpbmNs
-dWRlIDxzeXMvdGltZS5oPg0KI2luY2x1ZGUgPHN0ZGlvLmg+DQojaW5jbHVkZSA8bmV0aW5ldC9p
-bi5oPg0KI2luY2x1ZGUgPHN5cy9zb2NrZXQuaD4NCiNpbmNsdWRlIDxuZXRpbmV0L2luLmg+DQoj
-aW5jbHVkZSA8YXJwYS9pbmV0Lmg+DQojaW5jbHVkZSA8c3RyaW5nLmg+DQoNCiNkZWZpbmUgQlVG
-TEVOIDUwMA0KI2RlZmluZSBQT1JUICA1MDAwDQojZGVmaW5lIE5QQUNLICA1DQoNCg0KDQp2b2lk
-IGRpZXAoY2hhciAqcykNCnsNCglwZXJyb3Iocyk7DQoJZXhpdCgxKTsNCn0NCg0KaW50IG1haW4o
-dm9pZCkNCnsNCglzdHJ1Y3Qgc29ja2FkZHJfaW4gc2lfbWUsIHNpX290aGVyOw0KCWludCBzLCBp
-LCBzbGVuPXNpemVvZihzaV9vdGhlcik7DQoJY2hhciBidWZbQlVGTEVOXTsNCg0KCWlmICgocz1z
-b2NrZXQoQUZfSU5FVCwgU09DS19ER1JBTSwgSVBQUk9UT19VRFApKT09LTEpDQoJCWRpZXAoInNv
-Y2tldCIpOw0KDQoJbWVtc2V0KChjaGFyICopICZzaV9tZSwgMCwgc2l6ZW9mKHNpX21lKSk7DQoJ
-c2lfbWUuc2luX2ZhbWlseSA9IEFGX0lORVQ7DQoJc2lfbWUuc2luX3BvcnQgPSBodG9ucyhQT1JU
-KTsNCglzaV9tZS5zaW5fYWRkci5zX2FkZHIgPSBodG9ubChJTkFERFJfQU5ZKTsNCglpZiAoYmlu
-ZChzLCAmc2lfbWUsIHNpemVvZihzaV9tZSkpPT0tMSkNCgkJZGllcCgiYmluZCIpOw0KDQoJZm9y
-IChpPTA7IGk8TlBBQ0s7IGkrKykgew0KCQlpZiAocmVjdmZyb20ocywgYnVmLCBCVUZMRU4sIDAs
-ICZzaV9vdGhlciwgJnNsZW4pPT0tMSkNCgkJCWRpZXAoInJlY3Zmcm9tKCkiKTsNCi8vCXJlYWQo
-cyxidWYsQlVGTEVOKTsNCgkJcHJpbnRmKCJSZWNlaXZlZCBwYWNrZXQgZnJvbSAlczolZFxuRGF0
-YTogJXNcblxuIiwgDQoJCQkJaW5ldF9udG9hKHNpX290aGVyLnNpbl9hZGRyKSwgbnRvaHMoc2lf
-b3RoZXIuc2luX3BvcnQpLCBidWYpOw0KCX0NCg0KCWNsb3NlKHMpOw0KCXJldHVybiAwOw0KfQ0K
---20cf3054a047a5f7540494854b56--
+-- 
+Regards,
+Changli Gao(xiaosuo@gmail.com)
