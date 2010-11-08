@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754375Ab0KHN3S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 08:29:18 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:45709 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754266Ab0KHN3R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 08:29:17 -0500
-Message-ID: <4CD7FB27.9030804@monstr.eu>
-Date: Mon, 08 Nov 2010 14:29:11 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.18 (X11/20081120)
+	id S1754249Ab0KHNik (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 08:38:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7082 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753870Ab0KHNij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 08:38:39 -0500
+Date: Mon, 8 Nov 2010 08:37:45 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>, fweisbec@gmail.com,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] watchdog:  touch_nmi_watchdog should only touch local
+ cpu not every one
+Message-ID: <20101108133745.GJ4823@redhat.com>
+References: <1288919932-1857-1-git-send-email-dzickus@redhat.com>
+ <20101105135117.GA27712@swordfish.minsk.epam.com>
+ <20101105125855.20e5ce4c.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: spi-devel-general@lists.sourceforge.net, richard.rojfors@mocean-labs.com,
-        john.linn@xilinx.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/3] spi/xilinx: Merge OF and non-OF drivers
-References: <20101014161724.18966.42340.stgit@localhost6.localdomain6>
-In-Reply-To: <20101014161724.18966.42340.stgit@localhost6.localdomain6>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101105125855.20e5ce4c.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
-
-Grant Likely wrote:
-> Since of_platform_bus_type has been merged with the platform_bus_type,
-> a single platform driver can now support both use cases.  This patch
-> series merges the two halves of the xilinx_spi device driver.
+On Fri, Nov 05, 2010 at 12:58:55PM -0700, Andrew Morton wrote:
+> On Fri, 5 Nov 2010 15:51:18 +0200
+> Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
 > 
-> Compile tested only.  I haven't booted this yet.
+> > On (11/04/10 21:18), Don Zickus wrote:
+> > >  void touch_nmi_watchdog(void)
+> > >  {
+> > > +	/*
+> > > +	 * Using __raw here because some code paths have
+> > > +	 * preemption enabled.  If preemption is enabled
+> > > +	 * then interrupts should be enabled too, in which
+> > > +	 * case we shouldn't have to worry about the watchdog
+> > > +	 * going off.
+> > > +	 */
+> > > +	__raw_get_cpu_var(watchdog_nmi_touch) = true;
+> > > +
+> > > +	touch_softlockup_watchdog();
+> > > +}
+> > > +EXPORT_SYMBOL(touch_nmi_watchdog);
+> > > +
+> > > +void touch_all_nmi_watchdogs(void)
+> > > +{
+> > >  	if (watchdog_enabled) {
+> > >  		unsigned cpu;
+> > >  
+> > > @@ -151,7 +166,7 @@ void touch_nmi_watchdog(void)
+> > >  	}
+> > >  	touch_softlockup_watchdog();
+> > >  }
+> > > -EXPORT_SYMBOL(touch_nmi_watchdog);
+> > > +EXPORT_SYMBOL(touch_all_nmi_watchdogs);
+> > >  
+> > 
+> > Hello,
+> > Seems like no one is actually calling touch_all_nmi_watchdogs, as for now. 
+> > Right?
+> 
+> Yes, there doesn't seem a lot of point in adding the interface unless
+> we have callers.
 
-I have tested it on sp605 and works well. Have you added that patches
-to your repository? Or are they somewhere else? Who is responsible for?
+Yeah I wasn't sure how to deal with that.  It didn't seem like any of the
+callers was relying on the fact that touch_nmi_watchdog() touched
+everyone.  I just provided it as an option in case I misread someone's use
+of the touch_nmi_watchdog.
 
-I would like to also discuss one change which is related mmc_spi kernel driver.
-Let me describe the problem. Microblaze can use dma in all addresses
-that's why dma_mask is setup to 0xffffffff in of_platform_device_create.
-Xilinx spi driver doesn't support dma but mmc_spi driver is checking dma_mask in parent device
-which is xilinx spi driver.
+I'll repost and remove it then.
 
-Here is the corresponding the part of code (Expect dma_mask=zero for no dma operations).
-mmc_spi.c:~1395
-	if (spi->master->dev.parent->dma_mask) {
-		struct device	*dev = spi->master->dev.parent;
+Thanks for the feedback.
 
-		host->dma_dev = dev;
-
-
-Based on this one our customer came with the following solution to setup
-dma_mask in xilinx_spi to zero and then mmc_spi doesn't setup dma operation.
-
-I think that this is nice solution but I would like to be sure that I didn't miss anything.
-After that i will create proper patch with description.
-
-
-diff --git a/drivers/spi/xilinx_spi.c b/drivers/spi/xilinx_spi.c
-index 7adaef6..3612e1b 100644
---- a/drivers/spi/xilinx_spi.c
-+++ b/drivers/spi/xilinx_spi.c
-@@ -519,6 +519,9 @@ static int __devinit xilinx_spi_probe(struct platform_device *dev)
-        }
-
-        platform_set_drvdata(dev, master);
-+       /* clear the dma_mask, to try to disable use of dma */
-+       dev->dev.dma_mask = 0;
-+
-        return 0;
- }
-
-
-Thanks,
-Michal
-
-
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+Cheers,
+Don
