@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751091Ab0KHFOK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 00:14:10 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:60655 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750860Ab0KHFOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 00:14:09 -0500
-Date: Sun, 7 Nov 2010 21:14:02 -0800
-From: Kees Cook <kees.cook@canonical.com>
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: linux-kernel@vger.kernel.org, security@kernel.org
-Subject: Re: [PATCH RFC] Restrictions on module loading
-Message-ID: <20101108051402.GA5876@outflux.net>
-References: <1289179439.3090.205.camel@Dan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289179439.3090.205.camel@Dan>
-Organization: Canonical
-X-HELO: www.outflux.net
+	id S1751185Ab0KHFVR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 00:21:17 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:44306 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750776Ab0KHFVQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 00:21:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=fHrKZA1RZ8m4rJs+eJKe6tcWzkiD/aisfOKpsZYRka+Ts/W9kg+twBuIPEy3aa5koa
+         R7dcrTJlWdlTQASSQ/nwbPWRis6zQY9XaUkx79cTj8Y2xSMV+MZD94ajuCt03Uu0v2Su
+         aT2C66a8rI/hPd6vb5Y5SsK3B6qNaqVbUVI3E=
+Subject: [PATCH] ASoC: Return proper error if snd_soc_register_dais fails
+	in psc_i2s_of_probe
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain
+Date: Mon, 08 Nov 2010 13:24:58 +0800
+Message-Id: <1289193898.682.3.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 07, 2010 at 08:23:59PM -0500, Dan Rosenberg wrote:
-> A significant portion of kernel vulnerabilities do not affect core code,
-> but rather individual modules.  Unfortunately, there is no global kernel
-> setting to restrict unprivileged users from triggering the automatic
-> loading of kernel modules, for example by creating a socket using a
-> packet family that is compiled as a module and not already loaded.  On
-> most distributions, this creates a significant attack surface, and
-> requires maintenance of blacklists and other inelegant solutions to a
-> general problem.
-> 
-> The below patch replaces the existing "modules_disable" sysctl with a
-> finer-grained "modules_restrict" sysctl.  By default, this is set at 0,
-> which results in no deviation from normal module loading behavior.  When
-> set to 1, unprivileged users cannot trigger the automatic loading of
-> modules.  This behavior is based on grsecurity's GRKERNSEC_MODHARDEN
-> setting.  The current check is against current_uid(), since several
-> distributions explicitly remove CAP_SYS_MODULE from root processes, some
-> of which incidentally cause (and rely on) the automatic loading of
-> modules.  I expect this to be a point of discussion.
-> 
-> When set to 2, modules may not be loaded or unloaded by anyone, and the
-> sysctl may not be changed from that point forward.  This is designed to
-> provide protection against kernel module rootkits.
-> 
-> Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/fsl/mpc5200_psc_i2s.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Acked-by: Kees Cook <kees.cook@canonical.com>
-
-This looks great to me. There will be a small amount of pain for people
-that are already using modules_disabled=1, but I think the audience is so
-small that it won't be a problem to switch to modules_restrict=2.
-
--Kees
-
+diff --git a/sound/soc/fsl/mpc5200_psc_i2s.c b/sound/soc/fsl/mpc5200_psc_i2s.c
+index 74ffed4..9018fa5 100644
+--- a/sound/soc/fsl/mpc5200_psc_i2s.c
++++ b/sound/soc/fsl/mpc5200_psc_i2s.c
+@@ -160,7 +160,7 @@ static int __devinit psc_i2s_of_probe(struct platform_device *op,
+ 	rc = snd_soc_register_dais(&op->dev, psc_i2s_dai, ARRAY_SIZE(psc_i2s_dai));
+ 	if (rc != 0) {
+ 		pr_err("Failed to register DAI\n");
+-		return 0;
++		return rc;
+ 	}
+ 
+ 	psc_dma = dev_get_drvdata(&op->dev);
 -- 
-Kees Cook
-Ubuntu Security Team
+1.7.2
+
+
+
