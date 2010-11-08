@@ -1,103 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680Ab0KHQhc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 11:37:32 -0500
-Received: from caiajhbdcaib.dreamhost.com ([208.97.132.81]:47095 "EHLO
-	homiemail-a7.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752720Ab0KHQhb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 11:37:31 -0500
-X-Greylist: delayed 2143 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Nov 2010 11:37:31 EST
-Subject: Re: [PATCH] rcu_read_lock/unlock protect find_task_by_vpid call
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <20101108161801.GD3971@swordfish.minsk.epam.com>
-References: <20101029125550.GA3932@swordfish.minsk.epam.com>
-	 <1289232095.2206.5.camel@cowboy>
-	 <20101108161801.GD3971@swordfish.minsk.epam.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 08 Nov 2010 13:37:20 -0300
-Message-ID: <1289234240.2206.6.camel@cowboy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754758Ab0KHQmi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 11:42:38 -0500
+Received: from kroah.org ([198.145.64.141]:35650 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752204Ab0KHQmh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 11:42:37 -0500
+Date: Mon, 8 Nov 2010 08:41:25 -0800
+From: Greg KH <greg@kroah.com>
+To: David Vrabel <david.vrabel@csr.com>
+Cc: Jesper Juhl <jj@chaosbits.net>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] UWB: Return UWB_RSV_ALLOC_NOT_FOUND rather than
+ crashing on NULL dereference if kzalloc fails
+Message-ID: <20101108164125.GC10892@kroah.com>
+References: <alpine.LNX.2.00.1011072158211.26247@swampdragon.chaosbits.net>
+ <4CD7F056.6080405@csr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CD7F056.6080405@csr.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-08 at 18:18 +0200, Sergey Senozhatsky wrote:
-> On (11/08/10 13:01), Davidlohr Bueso wrote:
-> > On Fri, 2010-10-29 at 15:55 +0300, Sergey Senozhatsky wrote:
-> > > Commit 4221a9918e38b7494cee341dda7b7b4bb8c04bde "Add RCU check for 
-> > > find_task_by_vpid()" introduced rcu_lockdep_assert to find_task_by_pid_ns.
-> > > Assertion failed in sys_ioprio_get. The patch is fixing assertion
-> > > failure in ioprio_set as well. 
-> > > 
-> > >  ===================================================
-> > >  [ INFO: suspicious rcu_dereference_check() usage. ]
-> > >  ---------------------------------------------------
-> > >  kernel/pid.c:419 invoked rcu_dereference_check() without protection!
-> > >  
-> > >  rcu_scheduler_active = 1, debug_locks = 0
-> > >  1 lock held by iotop/4254:
-> > >  #0:  (tasklist_lock){.?.?..}, at: [<ffffffff811104b4>] sys_ioprio_get+0x22/0x2da
-> > >  
-> > >  stack backtrace:
-> > >  Pid: 4254, comm: iotop Not tainted
-> > >  Call Trace:
-> > >  [<ffffffff810656f2>] lockdep_rcu_dereference+0xaa/0xb2
-> > >  [<ffffffff81053c67>] find_task_by_pid_ns+0x4f/0x68
-> > >  [<ffffffff81053c9d>] find_task_by_vpid+0x1d/0x1f
-> > >  [<ffffffff811104e2>] sys_ioprio_get+0x50/0x2da
-> > >  [<ffffffff81002182>] system_call_fastpath+0x16/0x1b
-> > >  
-> > > 
-> > > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> > > 
-> > > ---
-> > > 
-> > > diff --git a/fs/ioprio.c b/fs/ioprio.c
-> > > index 748cfb9..666343d 100644
-> > > --- a/fs/ioprio.c
-> > > +++ b/fs/ioprio.c
-> > > @@ -113,8 +113,11 @@ SYSCALL_DEFINE3(ioprio_set, int, which, int, who, int, ioprio)
-> > >  		case IOPRIO_WHO_PROCESS:
-> > >  			if (!who)
-> > >  				p = current;
-> > > -			else
-> > > +			else {
-> > > +				rcu_read_lock();
-> > >  				p = find_task_by_vpid(who);
-> > > +				rcu_read_unlock();
-> > > +			}
-> > >  			if (p)
-> > >  				ret = set_task_ioprio(p, ioprio);
-> > >  			break;
-> > > @@ -202,8 +205,11 @@ SYSCALL_DEFINE2(ioprio_get, int, which, int, who)
-> > >  		case IOPRIO_WHO_PROCESS:
-> > >  			if (!who)
-> > >  				p = current;
-> > > -			else
-> > > +			else {
-> > > +				rcu_read_lock();
-> > >  				p = find_task_by_vpid(who);
-> > > +				rcu_read_unlock();
-> > > +			}
-> > >  			if (p)
-> > >  				ret = get_task_ioprio(p);
-> > >  			break;
+On Mon, Nov 08, 2010 at 12:43:02PM +0000, David Vrabel wrote:
+> Jesper Juhl wrote:
+> > Hi,
 > > 
-> > If you add the rcu_read_lock/unlock() sections, we would also need to
-> > update the comment above accordingly.
-> >
+> > Crashing on a null pointer deref is never a nice thing to do. It seems to 
+> > me that it's better to simply return UWB_RSV_ALLOC_NOT_FOUND if kzalloc() 
+> > fails in uwb_rsv_find_best_allocation().
+> 
+> This is fine.
+> 
+> struct uwb_rsv_alloc_info is not that large (about 414 bytes I think) so
+> it could possibly go on the stack and avoid the allocation.
+> 
+> Acked-by: David Vrabel <david.vrabel@csr.com>
+> 
+> Greg, seeing as I'm not maintaining the UWB subsystem any more do you
+> want to pick this (and future) UWB patches?
 
-Ah, yes indeed, misread the cases, sorry about the noise.
+Yes, I can do that, and will take this one.
 
-Thanks,
-Davidlohr
+thanks,
 
+greg k-h
