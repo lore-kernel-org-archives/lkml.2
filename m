@@ -1,44 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab0KHOjy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 09:39:54 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:51730 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754473Ab0KHOjw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 09:39:52 -0500
-Date: Mon, 8 Nov 2010 09:39:52 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <bharrosh@panasas.com>
-Subject: Re: [RFCv3 00/21] TCM Core and TCM_Loop patches for v2.6.37
-Message-ID: <20101108143952.GB22121@infradead.org>
-References: <1287441313-19703-1-git-send-email-nab@linux-iscsi.org>
+	id S1754795Ab0KHOli (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 09:41:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2260 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754454Ab0KHOlh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 09:41:37 -0500
+Date: Mon, 8 Nov 2010 09:41:14 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86, hw_nmi: Move backtrace_mask declaration under
+ ARCH_HAS_NMI_WATCHDOG.
+Message-ID: <20101108144113.GA29110@redhat.com>
+References: <AANLkTimW+GdKZEZdR5DtAp8=D7muTOvVcvuPoiCR2Y2p@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1287441313-19703-1-git-send-email-nab@linux-iscsi.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimW+GdKZEZdR5DtAp8=D7muTOvVcvuPoiCR2Y2p@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Nov 07, 2010 at 01:41:34PM +0600, Rakib Mullick wrote:
+> backtrace_mask has been used under the code context of
+> ARCH_HAS_NMI_WATCHDOG. So put it into that context.
+> We were warned by the following warning:
+> 
+> arch/x86/kernel/apic/hw_nmi.c:21: warning: ‘backtrace_mask’ defined but not used
 
-Some comments on the configfs to backend API:
+Thanks, I'll pull that into my tree.
 
- - the various get_*_info methods look like they really should use
-   the seq_file API.  That gives you safety against overflows,
-   and simplifies the code.
- - why are show_configfs_dev_params and get_dev_info separate
-   methods if they always end up calling the same code?
- - the set_configfs_dev_params method implementation contains some
-   rather nast parsing code.  They look like they really should use
-   the parser.h helpers we use for mount option parsing.
+Cheers,
+Don
+
+> 
+> 
+> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+> ---
+> 
+> diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
+> index cefd694..62f6e1e 100644
+> --- a/arch/x86/kernel/apic/hw_nmi.c
+> +++ b/arch/x86/kernel/apic/hw_nmi.c
+> @@ -17,15 +17,16 @@
+>  #include <linux/nmi.h>
+>  #include <linux/module.h>
+> 
+> -/* For reliability, we're prepared to waste bits here. */
+> -static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
+> -
+>  u64 hw_nmi_get_sample_period(void)
+>  {
+>  	return (u64)(cpu_khz) * 1000 * 60;
+>  }
+> 
+>  #ifdef ARCH_HAS_NMI_WATCHDOG
+> +
+> +/* For reliability, we're prepared to waste bits here. */
+> +static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
+> +
+>  void arch_trigger_all_cpu_backtrace(void)
+>  {
+>  	int i;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
