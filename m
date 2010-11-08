@@ -1,77 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020Ab0KHXqC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 18:46:02 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:53357 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755890Ab0KHXqB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 18:46:01 -0500
-Date: Tue, 9 Nov 2010 00:45:34 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Greg Thelen <gthelen@google.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Young <hidave.darkstar@gmail.com>,
-        Andrea Righi <arighi@develer.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 4/4] memcg: use native word page statistics counters
-Message-ID: <20101108234533.GN23393@cmpxchg.org>
-References: <20101107215030.007259800@cmpxchg.org>
- <1288973333-7891-1-git-send-email-minchan.kim@gmail.com>
- <20101106010357.GD23393@cmpxchg.org>
- <AANLkTin9m65JVKRuStZ1-qhU5_1AY-GcbBRC0TodsfYC@mail.gmail.com>
- <20101107215030.007259800@cmpxchg.org>
- <20101107220353.964566018@cmpxchg.org>
- <xr93vd478kgx.fsf@ninji.mtv.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <xr93vd478kgx.fsf@ninji.mtv.corp.google.com>
+	id S1755996Ab0KHXpQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 18:45:16 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:59200 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755467Ab0KHXpO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 18:45:14 -0500
+X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=74v60TW3Y-gA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=gu6fZOg2AAAA:8 a=VwQbUJbxAAAA:8 a=S-QtpY3SQ5ks6XbVL3oA:9 a=qwCTWqbciIPAnsd31dkA:7 a=Ef-JUBfW_cHJ1hYF7FULocnx_IIA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: [ANNOUNCE v2] ktest.pl: Easy and flexible testing script for Linux
+ Kernel Developers (now with config bisect)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Jon Masters <jcm@redhat.com>, corbet <corbet@lwn.net>,
+        Jake Edge <jake@lwn.net>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>, lmr@redhat.com,
+        Greg Kroah-Hartman <gregkh@suse.de>, autotest@test.kernel.org,
+        Vivek Goyal <vgoyal@redhat.com>, Clark Williams <williams@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tim Bird <tim.bird@am.sony.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 08 Nov 2010 18:45:10 -0500
+Message-ID: <1289259910.12418.77.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 08, 2010 at 03:27:26PM -0800, Greg Thelen wrote:
-> Johannes Weiner <hannes@cmpxchg.org> writes:
-> > --- a/include/linux/memcontrol.h
-> > +++ b/include/linux/memcontrol.h
-> > @@ -157,7 +157,7 @@ static inline void mem_cgroup_dec_page_s
-> >  bool mem_cgroup_has_dirty_limit(void);
-> >  bool mem_cgroup_dirty_info(unsigned long sys_available_mem,
-> >  			   struct dirty_info *info);
-> > -s64 mem_cgroup_page_stat(enum mem_cgroup_nr_pages_item item);
-> > +long mem_cgroup_page_stat(enum mem_cgroup_nr_pages_item item);
-> 
-> Ooops.  I missed something in my review.
-> 
-> mem_cgroup_page_stat() appears twice in memcontrol.h The return value
-> should match regardless of if CONFIG_CGROUP_MEM_RES_CTLR is set.
-> 
-> I suggest integrating the following into you patch ([patch 4/4] memcg:
-> use native word page statistics counters):
+I previously posted the announcement about ktest (and shamelessly
+promoted it at both Kernel Summit and Linux Plumbers), but I just
+updated it with a new feature.
 
-Right you are!  Thanks.
+  TEST_TYPE = config_bisect
 
-	Hannes
+(See http://marc.info/?l=linux-kernel&m=128829496215347 for original
+post)
 
-> ---
->  include/linux/memcontrol.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index 4e046d6..7a3d915 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -351,7 +351,7 @@ static inline bool mem_cgroup_dirty_info(unsigned long sys_available_mem,
->         return false;
->  }
->  
-> -static inline s64 mem_cgroup_page_stat(enum mem_cgroup_nr_pages_item item)
-> +static inline long mem_cgroup_page_stat(enum mem_cgroup_nr_pages_item item)
->  {
->         return -ENOSYS;
->  }
+With the new config_bisect, the config is tested in halves. To handle
+strange dependencies, the following is done.
+
+First the "bad-config" needs to be prepared for the current working git
+tree. As with all other tests, a "min-config" may be specified and that
+will be override any config settings in the "bad-config". Since this may
+produce new settings to be set (or removed) some preparation needs to be
+done. This is done automatically with ktest:
+
+1) overrides all configs with what is in the MIN_CONFIG or ADD_CONFIG
+settings.
+
+2) Runs the result through a make oldconfig to see if what may have been
+added or removed (it reports these).
+
+3) creates what is about to be tested and again runs the make oldconfig
+to see if anything else might have been removed by dependencies.
+
+All of the above changes are reported by the tool.
+
+
+Finally, it gets into the bisect. It starts with a list of configs to
+test. It cuts it in half, and then creates a .config file, and runs that
+through oldconfig. If none of the configs in the list are enabled
+(because they all depend on configs in the other half) then the second
+half of the list is tried. If there's still no configs set, there must
+be a circular dependency and the test fails here (but this should never
+happen).
+
+It compiles, and performs the type of test specified by the
+CONFIG_BISECT_TYPE option (build, boot or test). If it passes, then all
+the configs that were enabled in the .config are removed from the
+configs to test and added to the good configs to always enable. This
+allows for configs in the other half to be enabled if they depended on
+these configs.
+
+If the test fails, then we have a new subset of configs that is known to
+cause the failure. Any config that was not set in the .config for this
+run is removed from the test and will not be enabled again.
+
+This iterates until we have one config left and that config will be
+reported.
+
+Because of dependencies and selects, the config reported may not be the
+only config to cause the error. If you find that you can still produce
+an error after disabling the config it reports, then simply disable it
+and run the bisect again. Most likely it will turn up the problem. I may
+automate this part in the future.
+
+Anyway, you can download the latest ktest from:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/ktest.git
+
+I need to write up a man page and perhaps more documentation. The
+sample.conf that comes in that repo has loads of information on how to
+do the tests.
+
+
+Have fun!
+
+-- Steve
+
+
