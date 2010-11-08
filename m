@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751789Ab0KHG3t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 01:29:49 -0500
-Received: from nm19.bullet.mail.ukl.yahoo.com ([217.146.183.193]:47708 "HELO
-	nm19.bullet.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751633Ab0KHG3r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 01:29:47 -0500
-X-Yahoo-Newman-Id: 740093.69906.bm@omp1020.mail.ukl.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.fr;
-  h=DKIM-Signature:Message-ID:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:Received:Date:From:To:Cc:Subject;
-  b=gNJyVcPzN108xAQmrff7HEkzMrsauN8YY1eRGVfxSxJuD2EqBtKgbJsjrPsZMHoWcOeYy7e/dKqLbjavgYfHQy/fxlPDvg/wKTQ1ylalEtjzhLdm6zH/Z3xTCSVHZ+2i9Npt5yefShqiaheXMeWxFtA58HjS1OxVILaYiwi+mog=  ;
-Message-ID: <684104.78681.qm@smtp127.mail.ukl.yahoo.com>
-X-Yahoo-SMTP: zgdcvJ6swBBcTOk5fgveL37ak9AQxYCP7GdO
-X-YMail-OSG: UnzweHIVM1lTXBIXMQz2luieVcuqKBLhw.NiOO1Y27STBIR
- WeffYLcWcORuf5KP7D_NjsQJtEZvD7NHlm6FB1fGlJTXLjOh8zzj6h5CBF70
- 3vtXwtDuytpYp5lDPmJy_XcIuECz_ed6cfOPAiIAPMn62G0VBfEucmLubfAi
- C1U_7PLTqsjv6QX8OdtpeR9S_6AJHfqf.PtUKkvyBMF.M7PHXgNbNUqU1Oqe
- 8effSpsrpTyt6PVS53pjULxUTpj2yrKoQhh.rjqwEAp917X.jnMwppwARtdZ
- b8jQl3YIfm4BfFe6Oit1OtKBoLbgPzw.OmgmhpOTXTeWRxRTAh3uDaLQJq6n
- UAJmv.EQk
-X-Yahoo-Newman-Property: ymail-3
-Date: Mon, 08 Nov 2010 07:29:55 +0100
-From: Lionel Debroux <lionel_debroux@yahoo.fr>
-To: kernel-janitors@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] scripts/checkpatch.pl: add ata_port_operations to the list of ops that ought to be const.
+	id S1752098Ab0KHGaF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 01:30:05 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:45991 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751932Ab0KHGaC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 01:30:02 -0500
+Date: Mon, 8 Nov 2010 07:29:16 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Willy Tarreau <w@1wt.eu>, Marcus Meissner <meissner@suse.de>,
+        security@kernel.org, mort@sgi.com,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, fweisbec@gmail.com,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        jason.wessel@windriver.com, tj@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Security] [PATCH] kernel: make /proc/kallsyms mode 400 to
+ reduce ease of attacking
+Message-ID: <20101108062916.GA31133@elte.hu>
+References: <20101107085016.GA23843@elte.hu>
+ <20101107094932.GT4627@1wt.eu>
+ <20101107112709.GA2634@elte.hu>
+ <20101107114156.GV4627@1wt.eu>
+ <20101107114756.GB3759@elte.hu>
+ <20101107115626.GX4627@1wt.eu>
+ <20101107121235.GA6221@elte.hu>
+ <20101107122227.GY4627@1wt.eu>
+ <20101107123232.GB6512@elte.hu>
+ <20101107152720.7e2c472e@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101107152720.7e2c472e@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch against mainline.
 
----
+* Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 
-Subject: [PATCH] scripts/checkpatch.pl: add ata_port_operations to the list of ops that ought to be const.
+> > This makes it _unsafe_ (for many types of attackers) to run an exploit locally.
+> 
+> They don't care.
 
-I noticed that many ata_port_operations instances are constified
-by the grsecurity patch, so it may be desirable to reduce the
-introduction of non-const instances through checkpatch.pl.
+Sure, script kiddies and botnet builders wont care - i.e. attacks where the 
+individual target is low value, or where either the attacker or the attacked is 
+stupid.
 
-Signed-off-by: Lionel Debroux <lionel_debroux@yahoo.fr>
----
- scripts/checkpatch.pl |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+But it's different when a skilled attacker meets a skilled defense: all the 
+exploits/attacks against high-value targets i've seen showed a great deal of care 
+taken to avoid detection.
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index e3c7fc0..33fab2e 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2810,6 +2810,7 @@ sub process {
- # check for various ops structs, ensure they are const.
- 		my $struct_ops = qr{acpi_dock_ops|
- 				address_space_operations|
-+				ata_port_operations|
- 				backlight_ops|
- 				block_device_operations|
- 				dentry_operations|
--- 
-1.7.3.2.161.g3089c
+Future trends are also clear: eventually, as more and more of our lives are lived on 
+the network, home boxes are becoming more and more valuable. So i think 
+concentrating on the psychology of the skilled attacker would not be unwise. YMMV.
+
+Thanks,
+
+	Ingo
