@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755282Ab0KHUcv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 15:32:51 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:3092 "EHLO
+	id S1755569Ab0KHUdx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 15:33:53 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:3735 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752453Ab0KHUcs (ORCPT
+	with ESMTP id S1755559Ab0KHUdu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 15:32:48 -0500
+	Mon, 8 Nov 2010 15:33:50 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=subject:to:from:cc:date:message-id:in-reply-to:references:
 	user-agent:mime-version:content-type:
 	content-transfer-encoding:x-system-of-record;
-	b=WVB/DrLli5xo8ZOmB/2LcKGqkbQlA5MX+21MKY6norHAq1LzYypqi4cs4Fjm+H/fm
-	QpWGevudzeDEwuCTJxxRg==
-Subject: [PATCH v2 08/23] netconsole: Split out netpoll_targets init/exit
+	b=Eipcx0ph+kHpRb+iTyk0WfEHntepXnbUKC1oqneUVTHUu70Q6n9CPzLCfDdr3v3Kc
+	NzKiEzk1lKizWa+TMR6Pw==
+Subject: [PATCH v2 18/23] sys-rq: Add option to soft dump
 To: simon.kagstrom@netinsight.net, davem@davemloft.net, nhorman@tuxdriver.com,
         Matt Mackall <mpm@selenic.com>
 From: Mike Waychison <mikew@google.com>
@@ -21,8 +21,8 @@ Cc: adurbin@google.com, linux-kernel@vger.kernel.org, chavey@google.com,
         Greg KH <greg@kroah.com>,
         =?utf-8?q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
         akpm@linux-foundation.org, linux-api@vger.kernel.org
-Date: Mon, 08 Nov 2010 12:32:23 -0800
-Message-ID: <20101108203222.22479.14559.stgit@crlf.mtv.corp.google.com>
+Date: Mon, 08 Nov 2010 12:33:23 -0800
+Message-ID: <20101108203322.22479.47929.stgit@crlf.mtv.corp.google.com>
 In-Reply-To: <20101108203120.22479.19708.stgit@crlf.mtv.corp.google.com>
 References: <20101108203120.22479.19708.stgit@crlf.mtv.corp.google.com>
 User-Agent: StGit/0.15
@@ -34,155 +34,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As part of the factoring to move target handling out of netconsole,
-abstract the construction and destruction of struct netpoll_targets
-into their own functions.
+It is very useful to provide some means to force the kernel logs to make it out
+via the kmsg_oops implementations on the console.  Add a new option 'Y' to
+sysrq to allow dumping of logs to kmsg_dumper drivers.
 
 Signed-off-by: Mike Waychison <mikew@google.com>
 ---
- drivers/net/netconsole.c |   69 ++++++++++++++++++++++++++++------------------
- 1 files changed, 42 insertions(+), 27 deletions(-)
+ drivers/char/sysrq.c |   14 +++++++++++++-
+ 1 files changed, 13 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
-index 8ea4c5c..54d124c 100644
---- a/drivers/net/netconsole.c
-+++ b/drivers/net/netconsole.c
-@@ -660,13 +660,14 @@ static struct config_item_type netconsole_subsys_type = {
- 	.ct_owner	= THIS_MODULE,
+diff --git a/drivers/char/sysrq.c b/drivers/char/sysrq.c
+index eaa5d3e..058d3c8 100644
+--- a/drivers/char/sysrq.c
++++ b/drivers/char/sysrq.c
+@@ -41,6 +41,7 @@
+ #include <linux/oom.h>
+ #include <linux/slab.h>
+ #include <linux/input.h>
++#include <linux/kmsg_dump.h>
+ 
+ #include <asm/ptrace.h>
+ #include <asm/irq_regs.h>
+@@ -395,6 +396,17 @@ static struct sysrq_key_op sysrq_unrt_op = {
+ 	.enable_mask	= SYSRQ_ENABLE_RTNICE,
  };
  
--static int __init dynamic_netpoll_targets_init(struct netpoll_targets *nts)
-+static int __init dynamic_netpoll_targets_init(const char *subsys_name,
-+					       struct netpoll_targets *nts)
- {
- 	struct configfs_subsystem *subsys = &nts->configfs_subsys;
++static void sysrq_handle_softdump(int key)
++{
++	kmsg_dump(KMSG_DUMP_SOFT, NULL);
++}
++static struct sysrq_key_op sysrq_softdump_op = {
++	.handler	= sysrq_handle_softdump,
++	.help_msg	= "soft-dump(Y)",
++	.action_msg	= "Trigger a soft dump",
++	.enable_mask	= SYSRQ_ENABLE_DUMP,
++};
++
+ /* Key Operations table and lock */
+ static DEFINE_SPINLOCK(sysrq_key_table_lock);
  
- 	config_group_init(&subsys->su_group);
- 	mutex_init(&subsys->su_mutex);
--	strncpy((char *)&subsys->su_group.cg_item.ci_namebuf, "netconsole",
-+	strncpy((char *)&subsys->su_group.cg_item.ci_namebuf, subsys_name,
- 		CONFIGFS_ITEM_NAME_LEN);
- 	subsys->su_group.cg_item.ci_type = &netconsole_subsys_type;
- 	return configfs_register_subsystem(subsys);
-@@ -814,13 +815,15 @@ static struct console netconsole = {
- 	.write	= write_msg,
+@@ -451,7 +463,7 @@ static struct sysrq_key_op *sysrq_key_table[36] = {
+ 	/* x: May be registered on ppc/powerpc for xmon */
+ 	NULL,				/* x */
+ 	/* y: May be registered on sparc64 for global register dump */
+-	NULL,				/* y */
++	&sysrq_softdump_op,		/* y */
+ 	&sysrq_ftrace_dump_op,		/* z */
  };
  
--static int __init init_netconsole(void)
-+static int __init register_netpoll_targets(const char *subsys_name,
-+					   struct netpoll_targets *nts,
-+					   char *static_targets)
- {
- 	int err;
- 	struct netconsole_target *nt, *tmp;
--	unsigned long flags;
- 	char *target_config;
--	char *input = config;
-+	char *input = static_targets;
-+	unsigned long flags;
- 
- 	if (strnlen(input, MAX_PARAM_LENGTH)) {
- 		while ((target_config = strsep(&input, ";"))) {
-@@ -829,41 +832,33 @@ static int __init init_netconsole(void)
- 				err = PTR_ERR(nt);
- 				goto fail;
- 			}
--			/* Dump existing printks when we register */
--			netconsole.flags |= CON_PRINTBUFFER;
- 
--			spin_lock_irqsave(&targets.lock, flags);
--			list_add(&nt->list, &targets.list);
--			spin_unlock_irqrestore(&targets.lock, flags);
-+			spin_lock_irqsave(&nts->lock, flags);
-+			list_add(&nt->list, &nts->list);
-+			spin_unlock_irqrestore(&nts->lock, flags);
- 		}
- 	}
- 
--	targets.netdev_notifier.notifier_call = netconsole_netdev_event;
--	err = register_netdevice_notifier(&targets.netdev_notifier);
-+	nts->netdev_notifier.notifier_call = netconsole_netdev_event;
-+	err = register_netdevice_notifier(&nts->netdev_notifier);
- 	if (err)
- 		goto fail;
- 
--	err = dynamic_netpoll_targets_init(&targets);
-+	err = dynamic_netpoll_targets_init(subsys_name, nts);
- 	if (err)
- 		goto undonotifier;
- 
--	register_console(&netconsole);
--	printk(KERN_INFO "netconsole: network logging started\n");
--
--	return err;
-+	return 0;
- 
- undonotifier:
--	unregister_netdevice_notifier(&targets.netdev_notifier);
--
-+	unregister_netdevice_notifier(&nts->netdev_notifier);
- fail:
--	printk(KERN_ERR "netconsole: cleaning up\n");
--
- 	/*
- 	 * Remove all targets and destroy them (only targets created
- 	 * from the boot/module option exist here). Skipping the list
- 	 * lock is safe here, and netpoll_cleanup() will sleep.
- 	 */
--	list_for_each_entry_safe(nt, tmp, &targets.list, list) {
-+	list_for_each_entry_safe(nt, tmp, &nts->list, list) {
- 		list_del(&nt->list);
- 		free_param_target(nt);
- 	}
-@@ -871,13 +866,12 @@ fail:
- 	return err;
- }
- 
--static void __exit cleanup_netconsole(void)
-+static void __exit unregister_netpoll_targets(struct netpoll_targets *nts)
- {
- 	struct netconsole_target *nt, *tmp;
- 
--	unregister_console(&netconsole);
--	dynamic_netpoll_targets_exit(&targets);
--	unregister_netdevice_notifier(&targets.netdev_notifier);
-+	dynamic_netpoll_targets_exit(nts);
-+	unregister_netdevice_notifier(&nts->netdev_notifier);
- 
- 	/*
- 	 * Targets created via configfs pin references on our module
-@@ -887,11 +881,32 @@ static void __exit cleanup_netconsole(void)
- 	 * destroy them. Skipping the list lock is safe here, and
- 	 * netpoll_cleanup() will sleep.
- 	 */
--	list_for_each_entry_safe(nt, tmp, &targets.list, list) {
-+	list_for_each_entry_safe(nt, tmp, &nts->list, list) {
- 		list_del(&nt->list);
- 		free_param_target(nt);
- 	}
- }
- 
-+static int __init init_netconsole(void)
-+{
-+	int err;
-+	err = register_netpoll_targets("netconsole", &targets, config);
-+	if (err)
-+		return err;
-+	/* Dump existing printks if we registered any targets */
-+	if (!list_empty(&targets.list))
-+		netconsole.flags |= CON_PRINTBUFFER;
-+	register_console(&netconsole);
-+	printk(KERN_INFO "netconsole: network logging started\n");
-+
-+	return 0;
-+}
-+
-+static void __exit cleanup_netconsole(void)
-+{
-+	unregister_console(&netconsole);
-+	unregister_netpoll_targets(&targets);
-+}
-+
- module_init(init_netconsole);
- module_exit(cleanup_netconsole);
 
