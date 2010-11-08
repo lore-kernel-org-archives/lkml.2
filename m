@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab0KHOFy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 09:05:54 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:36720 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754231Ab0KHOFw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 09:05:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=oUESSuT1xOZt7yYm3n27hWzsuR9vrHi8cFIzPJd5nDxTHo8zneXRkLCJgePuWcWU/Y
-         fKDShjzv1dsWhK/j4U7cGrnPDP/dSHag2dHcw74/SxVc1qDCDcIMESYmRUpSgyR8XZwD
-         itIrMK/sH8TtJ/O7BHT2MbdglrVHJKhnb2TFk=
+	id S1754791Ab0KHOHy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 09:07:54 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57460 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754284Ab0KHOHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 09:07:52 -0500
+Message-ID: <20E08A7079E04279971AFD632B5A00A9@wipblrx0099946>
+From: "Hemanth V" <hemanthv@ti.com>
+To: "Jonathan Cameron" <jic23@cam.ac.uk>, "Dmitry Torokhov" <dtor@mail.ru>
+Cc: "LKML" <linux-kernel@vger.kernel.org>, <linux-iio@vger.kernel.org>,
+        <linux-input@vger.kernel.org>,
+        "Manuel Stahl" <manuel.stahl@iis.fraunhofer.de>,
+        "Jean Delvare" <khali@linux-fr.org>, "Greg KH" <greg@kroah.com>,
+        "Alan Cox" <alan@lxorguk.ukuu.org.uk>,
+        "Andrew Morton" <akpm@linux-foundation.org>, <drivers@analog.com>,
+        <achew@nvidia.com>, "Donggeun Kim" <dg77.kim@samsung.com>
+References: <4C98C7FE.4050305@cam.ac.uk> <03d301cb5bd4$152287d0$LocalHost@wipblrx0099946> <4C9C927B.1010500@cam.ac.uk> <4CA06714.8080008@cam.ac.uk> <4CA46126.7020104@cam.ac.uk>
+Subject: Re: Sensor event related attribute naming.
+Date: Mon, 8 Nov 2010 19:37:03 +0530
 MIME-Version: 1.0
-In-Reply-To: <4C0670E2.1090708@netservers.co.uk>
-References: <2d460de71003260850x7f90d04cy79ac853464108182@mail.gmail.com>
- <20100326160226.0159ac3b@lxorguk.ukuu.org.uk> <4BACE827.4070006@gmail.com>
- <20100326170428.6c1ad66c@lxorguk.ukuu.org.uk> <4BB31E00.8060204@netservers.co.uk>
- <20100529021624.GA2538@brick.ozlabs.ibm.com> <4C03E1CD.4000809@netservers.co.uk>
- <4C0670E2.1090708@netservers.co.uk>
-From: Richard Hartmann <richih.mailinglist@gmail.com>
-Date: Mon, 8 Nov 2010 15:05:30 +0100
-Message-ID: <AANLkTi=GHmqeb=8rMZAnpqdKGbTEf2mRYhygX1aC2hyD@mail.gmail.com>
-Subject: Re: [Patch] fix packet loss and massive ping spikes with PPP multi-link
-To: Ben McKeegan <ben@netservers.co.uk>
-Cc: Paul Mackerras <paulus@samba.org>, netdev@vger.kernel.org,
-        linux-ppp@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "Alexander E. Patrakov" <patrakov@gmail.com>,
-        linux-kernel@vger.kernel.org, gabriele.paoloni@intel.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.5843
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5579
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 2, 2010 at 16:55, Ben McKeegan <ben@netservers.co.uk> wrote:
+----- Original Message ----- 
+From: "Jonathan Cameron" <jic23@cam.ac.uk>
+To: "Jonathan Cameron" <jic23@cam.ac.uk>
+Sent: Thursday, September 30, 2010 3:36 PM
+Subject: Re: Sensor event related attribute naming.
 
-> Still working on this, updating the patch wasn't as trivial as I thought as
-> it clashed with Gabriele Paoloni's ppp_mp_explode redesign.  However, while
-> looking at this code I believe I have found a bug which might have been
-> contributing to the poor performance the OP was experiencing.   For the case
-> where channel speeds are unknown and there are more than 2 channels it would
-> miscalculate the fragment sizes so they are not balanced on the channels.
+
+> Given the lack of further comment, I went ahead and implemented the above 
+> naming
+> scheme for IIO. As the above discussion with Hemanth shows, there are some 
+> corner cases
+> that will need futher thought in the future.
 >
-> Patch for the bug to follow immediately.
 
-Is there any update on this? It's been quite some time since you last updated
-on this issue.
+Jonathan, haven't seen many comments on this. Do u think the reason
+might be that these interfaces are hidden behind a HAL layer like in android 
+and
+might not be a burning issue for many people.
+
+Thanks
+Hemanth
 
 
-Thanks a lot,
-Richard
