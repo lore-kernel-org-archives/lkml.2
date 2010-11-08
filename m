@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571Ab0KHTbU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 14:31:20 -0500
-Received: from brinza.cc.columbia.edu ([128.59.29.8]:49881 "EHLO
-	brinza.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752141Ab0KHTbT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 14:31:19 -0500
-Message-ID: <4CD850C0.7020609@cs.columbia.edu>
-Date: Mon, 08 Nov 2010 14:34:24 -0500
-From: Oren Laadan <orenl@cs.columbia.edu>
-Organization: Columbia University
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Lightning/1.0b1 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Gene Cooperman <gene@ccs.neu.edu>
-CC: Kapil Arya <kapil@ccs.neu.edu>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, hch@lst.de,
-        Linux Containers <containers@lists.osdl.org>
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-References: <20101104164401.GC10656@sundance.ccs.neu.edu> <4CD3CE29.2010105@kernel.org> <AANLkTimDXKsBCxbsEOfgkYV2R8FK=bhFdmx9UQow5hqp@mail.gmail.com> <4CD5DCE3.3000109@cs.columbia.edu> <20101107194222.GG31077@sundance.ccs.neu.edu> <4CD71A6B.3020905@cs.columbia.edu> <20101107230516.GJ31077@sundance.ccs.neu.edu> <4CD774CA.8030004@cs.columbia.edu> <20101108162630.GN31077@sundance.ccs.neu.edu> <4CD83DF4.4080009@cs.columbia.edu> <20101108183701.GA20262@sundance.ccs.neu.edu>
-In-Reply-To: <20101108183701.GA20262@sundance.ccs.neu.edu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-No-Spam-Score: Local
+	id S1753757Ab0KHTb4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 14:31:56 -0500
+Received: from thunk.org ([69.25.196.29]:60130 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752458Ab0KHTbz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 14:31:55 -0500
+Date: Mon, 08 Nov 2010 14:31:45 -0500
+Message-Id: <E1PFXRR-0008CI-6M@tytso-glaptop>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] ext4 update for 2.6.37-rc2
+From: "Theodore Ts'o" <tytso@mit.edu>
+Phone: (781) 391-3464
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
+Please pull from:
 
-On 11/08/2010 01:37 PM, Gene Cooperman wrote:
-> Thanks for the careful response, Oren.  For others who read this,
-> one could interpret Oren's rapid post as criticizing the work of
-> Andres Lagar Cavilla.  I'm sure that this was not Oren's intention.
-> Please read below for a brief clarification of the novelty of SnowFlock.
+  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git for_linus
 
-Err... yes, that was careless of me. I was too focused on
-getting the thread back to track. Thanks for pointing out.
+This provides a number of bug fixes, including some regressions that
+were introduced in 2.6.37-rc1.  It also includes some new tracepoints
+that I used to find the regressions.
 
->>> about live migration, have you also looked at the work of
->>> Andres Lagar Caviilla on SnowFlock?
->>>      http://andres.lagarcavilla.com/publications/LagarCavillaEurosys09.pdf
->>> He does live migration of entire virtual machines, again with very
->>> small delay.  Of course, the issue for any type of live migration is that
->>> if the rate of dirtying pages is very high (e.g. HPC), then there is
->>> still a delay or slow response, due to page faults to a remote host.
->>
->> VMware, Xen and KVM already do live migration. However, VMs
->> are a separate beast.
->
-> I absolutely agree with your point that live migration of
-> applications is a different beast, and technically very novel.
->      Since I know Andres Lagar Cavilla personally, I also feel obligated
-> to comment why SnowFlock truly is novel in the VM space.  First, as Andres
-> writes:
-> "SnowFlock is an open-source project [SnowFlock] built on the Xen 3.0.3
-> VMM [Barham 2003]."
-> In the abstract, Andres points out one of the major points of novelty:
-> "To evaluate SnowFlock, we focus on the demanding
-> scenario of services requiring on-the-fly creation of hundreds
-> of parallel workers in order to solve computationallyintensive
-> queries in seconds."
-> We must be careful that we don't destroy someone's reputation without
-> a careful study of their work.
+					- Ted
 
-Yes, it's really nice work - I saw it when I visited there.
-(Coincidentally the post-copy idea with Xen appeared also in
-VEE 09 briefly before).
+Dmitry Monakhov (1):
+      ext4: do not try to grab the s_umount semaphore in ext4_quota_off
 
-Oren.
+Lukas Czerner (1):
+      ext4: fix lazyinit hang after removing request
 
+Theodore Ts'o (6):
+      ext4: "ret" may be used uninitialized in ext4_lazyinit_thread()
+      ext4: initialize the percpu counters before replaying the journal
+      ext4: handle writeback of inodes which are being freed
+      ext4: fix potential race when freeing ext4_io_page structures
+      ext4: Don't call sb_issue_discard() in ext4_free_blocks()
+      ext4: Add new ext4 inode tracepoints
+
+ fs/ext4/ext4.h              |    4 +-
+ fs/ext4/inode.c             |    3 +
+ fs/ext4/mballoc.c           |    2 -
+ fs/ext4/page-io.c           |   97 ++++++++++++++++++++--------------------
+ fs/ext4/super.c             |  102 ++++++++++++++++++++++++++-----------------
+ include/trace/events/ext4.h |   97 ++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 214 insertions(+), 91 deletions(-)
