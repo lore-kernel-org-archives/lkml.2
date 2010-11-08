@@ -1,95 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755397Ab0KHShJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 13:37:09 -0500
-Received: from amber.ccs.neu.edu ([129.10.116.51]:48904 "EHLO
-	amber.ccs.neu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752720Ab0KHShH (ORCPT
+	id S1755490Ab0KHSlJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 13:41:09 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:50462 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755479Ab0KHSlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 13:37:07 -0500
-Date: Mon, 8 Nov 2010 13:37:01 -0500
-From: Gene Cooperman <gene@ccs.neu.edu>
-To: Oren Laadan <orenl@cs.columbia.edu>
-Cc: Gene Cooperman <gene@ccs.neu.edu>, Kapil Arya <kapil@ccs.neu.edu>,
-        Tejun Heo <tj@kernel.org>,
-        ksummit-2010-discuss@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, hch@lst.de,
-        Linux Containers <containers@lists.osdl.org>
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-Message-ID: <20101108183701.GA20262@sundance.ccs.neu.edu>
-References: <20101104164401.GC10656@sundance.ccs.neu.edu>
- <4CD3CE29.2010105@kernel.org>
- <AANLkTimDXKsBCxbsEOfgkYV2R8FK=bhFdmx9UQow5hqp@mail.gmail.com>
- <4CD5DCE3.3000109@cs.columbia.edu>
- <20101107194222.GG31077@sundance.ccs.neu.edu>
- <4CD71A6B.3020905@cs.columbia.edu>
- <20101107230516.GJ31077@sundance.ccs.neu.edu>
- <4CD774CA.8030004@cs.columbia.edu>
- <20101108162630.GN31077@sundance.ccs.neu.edu>
- <4CD83DF4.4080009@cs.columbia.edu>
+	Mon, 8 Nov 2010 13:41:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=nxH+VVhBqrvwEqKnzhe7KscWnR+rxHxwVj78iL4NqAcPpytDKtaq1Js/fSrfaMp6k8
+         u+jAAcuIzpN/fI+wo3wOTJMyJ8OHUTXIVI2NAUz+GAOeMgzez7T4fI3CQBPXzWQ8WwIq
+         fJlBJmazmf9mRXcrbLKZM3iZQ8/qz+Vm/Kl+4=
+Date: Mon, 8 Nov 2010 19:41:00 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prasad <prasad@linux.vnet.ibm.com>, Roland McGrath <roland@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Q: perf_event && task->ptrace_bps[]
+Message-ID: <20101108184057.GB5375@nowhere>
+References: <20101108145647.GA3426@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CD83DF4.4080009@cs.columbia.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101108145647.GA3426@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the careful response, Oren.  For others who read this,
-one could interpret Oren's rapid post as criticizing the work of
-Andres Lagar Cavilla.  I'm sure that this was not Oren's intention.
-Please read below for a brief clarification of the novelty of SnowFlock.
-    Anyway, I really look forward to the phone discussion.  I've also
-enjoyed our interchange, for giving me an opportunity to explain more about
-the DMTCP design.  Thank you.
-                                                        Best wishes,
-                                                        - Gene
+On Mon, Nov 08, 2010 at 03:56:47PM +0100, Oleg Nesterov wrote:
+> Hello.
+> 
+> I am trying to understand the usage of hw-breakpoints in arch_ptrace().
+> ptrace_set_debugreg() and related code looks obviously racy. Nothing
+> protects us against flush_ptrace_hw_breakpoint() called by the dying
+> tracee. Afaics we can leak perf_event or use the already freed memory
+> or both.
+> 
+> Am I missed something?
+> 
+> Looking into the git history, I don't even know which patch should be
+> blamed (if I am right), there were too many changes. I noticed that
+> 2ebd4ffb6d0cb877787b1e42be8485820158857e "perf events: Split out task
+> search into helper" moved the PF_EXITING check from find_get_context().
+> This check coould help if sys_ptrace() races with SIGKILL, but it was
+> racy anyway.
+> 
+> It is not clear to me what should be done. Looking more, I do not
+> understand the scope of perf_event/ctx at all, sys_perf_event_open()
+> looks wrong too, see the next email I am going to send.
+> 
+> Oleg.
+> 
 
-On Mon, Nov 08, 2010 at 01:14:12PM -0500, Oren Laadan wrote:
-> Hi,
-> 
-> Ok, I'll bite the bullet for now - to be continued...
-> 
-> Just one important clarification:
-> 
-> >>Linux-cr can do live migration - e.g. VDI, move the desktop - in
-> >>which case skype's sockets' network stacks are reconstructed,
-> >>transparently to both skype (local apps) and the peer (remote apps).
-> >>Then, at the destination host and skype continues to work.
-> >
-> >That's a really cool thing to do, and it's definitely not part of what
-> >DMTCP does.  It might be possible to do userland live migration,
-> >but it's definitely not part of our current scope.  But if we're talking
-> >about live migration, have you also looked at the work of
-> >Andres Lagar Caviilla on SnowFlock?
-> >     http://andres.lagarcavilla.com/publications/LagarCavillaEurosys09.pdf
-> >He does live migration of entire virtual machines, again with very
-> >small delay.  Of course, the issue for any type of live migration is that
-> >if the rate of dirtying pages is very high (e.g. HPC), then there is
-> >still a delay or slow response, due to page faults to a remote host.
-> 
-> VMware, Xen and KVM already do live migration. However, VMs
-> are a separate beast.
 
-I absolutely agree with your point that live migration of
-applications is a different beast, and technically very novel.
-    Since I know Andres Lagar Cavilla personally, I also feel obligated
-to comment why SnowFlock truly is novel in the VM space.  First, as Andres
-writes:
-"SnowFlock is an open-source project [SnowFlock] built on the Xen 3.0.3
-VMM [Barham 2003]."
-In the abstract, Andres points out one of the major points of novelty:
-"To evaluate SnowFlock, we focus on the demanding
-scenario of services requiring on-the-fly creation of hundreds
-of parallel workers in order to solve computationallyintensive
-queries in seconds."
-We must be careful that we don't destroy someone's reputation without
-a careful study of their work.
+But I don't understand how ptrace_set_debugreg() and flush_old_exec() can
+happen at the same time. The parent can only do the ptrace request when
+the child is stopped, right? But it can't be stopped in flush_old_exec()...?
 
-> We are concerned about _application_ level c/r and migration
-> (complete containers or individual applications). Many proven
-> techniques from the VM world apply to our context too (in your
-> example, post-copy migration).
-> 
-> Oren.
+Not sure how any race can happen here. I am certainly missing something obvious.
+
+Thanks.
+
