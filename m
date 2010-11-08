@@ -1,90 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753862Ab0KHB5J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 20:57:09 -0500
-Received: from server109-228-6-236.live-servers.net ([109.228.6.236]:58223
-	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752603Ab0KHB5I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 20:57:08 -0500
-X-Greylist: delayed 1343 seconds by postgrey-1.27 at vger.kernel.org; Sun, 07 Nov 2010 20:57:08 EST
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Uwe Helm <uwe.helm@googlemail.com>
-Cc: linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [PATCH] drm/i915: Avoid might_fault during pwrite whilst holding our mutex
-Date: Mon,  8 Nov 2010 01:34:28 +0000
-Message-Id: <1289180068-12109-1-git-send-email-chris@chris-wilson.co.uk>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <AANLkTi=rFCaDCMz3woo=ABtM7TesZK2_cKghnwv4B_Jv@mail.gmail.com>
-References: <AANLkTi=rFCaDCMz3woo=ABtM7TesZK2_cKghnwv4B_Jv@mail.gmail.com>
-X-Originating-IP: 78.156.66.37
+	id S1753986Ab0KHCHR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 21:07:17 -0500
+Received: from mga02.intel.com ([134.134.136.20]:19120 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753174Ab0KHCHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 21:07:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,311,1286175600"; 
+   d="scan'208";a="571193569"
+Subject: [patch 1/3]cfq-iosched: do cleanup
+From: Shaohua Li <shaohua.li@intel.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Jens Axboe <jaxboe@fusionio.com>, vgoyal@redhat.com, czoccolo@gmail.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 08 Nov 2010 10:07:13 +0800
+Message-ID: <1289182033.23014.189.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-... and so prevent a potential circular reference:
+some random fixes for cfq-iosched. My last post seems lost, so repost
+them.
 
-  [ INFO: possible circular locking dependency detected ]
-  2.6.37-rc1-uwe1+ #4
-  -------------------------------------------------------
-  Xorg/1401 is trying to acquire lock:
-   (&mm->mmap_sem){++++++}, at: [<c01e4ddb>] might_fault+0x4b/0xa0
+Thanks,
+Shaohua
 
-  but task is already holding lock:
-   (&dev->struct_mutex){+.+.+.}, at: [<f869c3ac>]
-  i915_mutex_lock_interruptible+0x3c/0x60 [i915]
 
-  which lock already depends on the new lock.
+Some functions should return boolean.
 
-When the locking around the pwrite ioctl was simplified, I did not spot
-that the phys path never took any locks and so we introduced this
-potential circular reference.
-
-Reported-by: Uwe Helm <uwe.helm@googlemail.com>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 ---
- drivers/gpu/drm/i915/i915_gem.c |   25 ++++++++++++++++---------
- 1 files changed, 16 insertions(+), 9 deletions(-)
+ block/cfq-iosched.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-index 984eb6e..eba9b16 100644
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -4878,17 +4878,24 @@ i915_gem_phys_pwrite(struct drm_device *dev, struct drm_gem_object *obj,
- 		     struct drm_file *file_priv)
+Index: linux/block/cfq-iosched.c
+===================================================================
+--- linux.orig/block/cfq-iosched.c	2010-11-01 13:34:53.000000000 +0800
++++ linux/block/cfq-iosched.c	2010-11-08 09:54:32.000000000 +0800
+@@ -646,11 +646,11 @@ cfq_set_prio_slice(struct cfq_data *cfqd
+ static inline bool cfq_slice_used(struct cfq_queue *cfqq)
  {
- 	struct drm_i915_gem_object *obj_priv = to_intel_bo(obj);
--	void *obj_addr;
--	int ret;
--	char __user *user_data;
-+	void *vaddr = obj_priv->phys_obj->handle->vaddr + args->offset;
-+	char __user *user_data = (char __user *) (uintptr_t) args->data_ptr;
+ 	if (cfq_cfqq_slice_new(cfqq))
+-		return 0;
++		return false;
+ 	if (time_before(jiffies, cfqq->slice_end))
+-		return 0;
++		return false;
  
--	user_data = (char __user *) (uintptr_t) args->data_ptr;
--	obj_addr = obj_priv->phys_obj->handle->vaddr + args->offset;
-+	DRM_DEBUG_DRIVER("vaddr %p, %lld\n", vaddr, args->size);
+-	return 1;
++	return true;
+ }
  
--	DRM_DEBUG_DRIVER("obj_addr %p, %lld\n", obj_addr, args->size);
--	ret = copy_from_user(obj_addr, user_data, args->size);
--	if (ret)
--		return -EFAULT;
-+	if (__copy_from_user_inatomic_nocache(vaddr, user_data, args->size)) {
-+		unsigned long unwritten;
-+
-+		/* The physical object once assigned is fixed for the lifetime
-+		 * of the obj, so we can safely drop the lock and continue
-+		 * to access vaddr.
-+		 */
-+		mutex_unlock(&dev->struct_mutex);
-+		unwritten = copy_from_user(vaddr, user_data, args->size);
-+		mutex_lock(&dev->struct_mutex);
-+		if (unwritten)
-+			return -EFAULT;
-+	}
+ /*
+@@ -1901,10 +1901,10 @@ static bool cfq_should_idle(struct cfq_d
+ 	 * in their service tree.
+ 	 */
+ 	if (service_tree->count == 1 && cfq_cfqq_sync(cfqq))
+-		return 1;
++		return true;
+ 	cfq_log_cfqq(cfqd, cfqq, "Not idling. st->count:%d",
+ 			service_tree->count);
+-	return 0;
++	return false;
+ }
  
- 	drm_agp_chipset_flush(dev);
- 	return 0;
--- 
-1.7.2.3
+ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
+@@ -2367,12 +2367,12 @@ static inline bool cfq_slice_used_soon(s
+ {
+ 	/* the queue hasn't finished any request, can't estimate */
+ 	if (cfq_cfqq_slice_new(cfqq))
+-		return 1;
++		return true;
+ 	if (time_after(jiffies + cfqd->cfq_slice_idle * cfqq->dispatched,
+ 		cfqq->slice_end))
+-		return 1;
++		return true;
+ 
+-	return 0;
++	return false;
+ }
+ 
+ static bool cfq_may_dispatch(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+
+
 
