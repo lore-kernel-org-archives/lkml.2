@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415Ab0KHQ2k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 11:28:40 -0500
-Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:37812 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753869Ab0KHQ2j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 11:28:39 -0500
-Date: Mon, 8 Nov 2010 11:28:32 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: "Ted Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH -v4] ext4: handle writeback of inodes which are being
- freed
-Message-ID: <20101108162832.GA22401@elliptictech.com>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-	linux-ext4@vger.kernel.org
-References: <20101102202013.GA3861@elliptictech.com>
- <20101103181412.GH25614@thunk.org>
- <20101103182229.GA8766@elliptictech.com>
- <20101103205306.GA3627@elliptictech.com>
- <20101107212143.GA28396@thunk.org>
- <20101108011919.GN13830@dastard>
- <20101108050052.GA3099@thunk.org>
- <20101108060535.GB3099@thunk.org>
+	id S1754255Ab0KHQgJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 11:36:09 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:42747 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751682Ab0KHQgH (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Mon, 8 Nov 2010 11:36:07 -0500
+Date: Mon, 8 Nov 2010 11:34:11 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Milton Miller <miltonm@bga.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, jbarnes@virtuousgeek.org,
+        linux-pci@vger.kernel.org, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, jirislaby@gmail.com
+Subject: Re: [PATCH 1/1] PCI: xen-pcifront, fix PCI reference leak
+Message-ID: <20101108163411.GA2638@dumpdata.com>
+References: <1288881090-27335-1-git-send-email-jslaby@suse.cz>
+ <xenfront-reffix-fixreq@mdm.bga.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101108060535.GB3099@thunk.org>
-Organization: Elliptic Technologies Inc.
+In-Reply-To: <xenfront-reffix-fixreq@mdm.bga.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-11-08 01:05 -0500, Ted Ts'o wrote:
-> Subject: [PATCH -v4] ext4: handle writeback of inodes which are being freed
+On Thu, Nov 04, 2010 at 12:27:07PM -0600, Milton Miller wrote:
+> On 2010-11-04 at about 14:31:30 Jiri Slaby wrote:
+> > Stanse found that when pdev is found and has no driver a reference is
+> > leaked in pcifront_common_process. So add pci_dev_put there. For the
+> > pdev == NULL case, pci_dev_put(NULL) is fine.
+> 
+> While that may be true, the dev_err(&pcidev->dev ... is a NULL pointer
+> deref.
 
-After several successful 'make install' tests with this patch:
+I've put the fix in the branch (stable/xen-pcifront-fixes) that I will ask Linus
+to pull.. but what options did you need to find this?
 
-Tested-by: Nick Bowler <nbowler@elliptictech.com>
+I tried to run this before putting your and Milton fix in:
+konrad@phenom:~/tar/stanse-1.1.2$ java -jar ./stanse.jar  ~/work/linux/drivers/pci/xen-pcifront.c 
+Stanse version "1.1.2"
+Copyright (c) 2008-2010 Masaryk University, Brno
 
-Thanks.
+STANSE_HOME not specified. Using the location of stanse.jar.
+Checking for bugs:
+<-> File: /home/konrad/work/linux/drivers/pci/xen-pcifront.c
+<-> --------------------------------
+Done.
 
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+And no warnings?
