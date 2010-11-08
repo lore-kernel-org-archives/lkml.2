@@ -1,88 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849Ab0KHWMn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 17:12:43 -0500
-Received: from mga02.intel.com ([134.134.136.20]:60301 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755554Ab0KHWMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 17:12:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,171,1288594800"; 
-   d="scan'208";a="675510903"
-Subject: Re: [PATCH] iwl3945: Fix oops at module load
-From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        "Berg, Johannes" <johannes.berg@intel.com>
-In-Reply-To: <1289253271-19981-1-git-send-email-andi@firstfloor.org>
-References: <1289253271-19981-1-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 08 Nov 2010 14:08:42 -0800
-Message-ID: <1289254122.12056.86.camel@wwguy-huron>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1755849Ab0KHWP0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 17:15:26 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:57938 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755445Ab0KHWPZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 17:15:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=m7MVPkBkfUR6eASYbRQW5KuNGM5/Rbpd/NARWprAlWG7o4iLi3cFv8SV7vNKToZTat
+         jVm1po5o/BR+os9zYYC7w0xxjGLITzlxmajoNuMnBTkKb/CR6RV9tY9Yi7JSnCPtQKX+
+         OTOHbSTIhXviTKt908aFqbHKBwM8w/wQpSTc8=
+MIME-Version: 1.0
+In-Reply-To: <201011091022.11836.manningc2@actrix.gen.nz>
+References: <1288803204-3849-1-git-send-email-cdhmanning@gmail.com>
+ <201011081122.37145.manningc2@actrix.gen.nz> <AANLkTi=m1uq=0dpMxZqMmDnMTMxU09T=Q5eqz+O3uDeC@mail.gmail.com>
+ <201011091022.11836.manningc2@actrix.gen.nz>
+From: Chris Snook <chris.snook@gmail.com>
+Date: Mon, 8 Nov 2010 18:15:03 -0400
+Message-ID: <AANLkTi=yBaRyLjpcbkmSWxXtwPAuzccxdA=Zd3ZM7Mzi@mail.gmail.com>
+Subject: Re: [PATCH 1/9] Add yaffs Kconfig and Makefile
+To: Charles Manning <manningc2@actrix.gen.nz>
+Cc: Valdis.Kletnieks@vt.edu, cdhmanning@gmail.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andi,
+On Mon, Nov 8, 2010 at 5:22 PM, Charles Manning <manningc2@actrix.gen.nz> wrote:
+> On Monday 08 November 2010 23:24:08 Chris Snook wrote:
+>> On Sun, Nov 7, 2010 at 6:22 PM, Charles Manning <manningc2@actrix.gen.nz>
+> wrote:
+>> > On Monday 08 November 2010 10:45:32 Chris Snook wrote:
+>> >> On Sun, Nov 7, 2010 at 4:59 PM, Charles Manning
+>> >> <manningc2@actrix.gen.nz>
+>> >
+>> > wrote:
+>> >> > On Saturday 06 November 2010 14:50:58 Valdis.Kletnieks@vt.edu wrote:
+>> >> >> On Thu, 04 Nov 2010 05:53:16 +1300, cdhmanning@gmail.com said:
+>> >> >> > From: Charles Manning <cdhmanning@gmail.com>
+>> >> >> > +config YAFFS_EMPTY_LOST_AND_FOUND
+>> >> >> > +   bool "Empty lost and found on boot"
+>> >> >> > +   depends on YAFFS_FS
+>> >> >> > +   default n
+>> >> >> > +   help
+>> >> >> > +     If this is enabled then the contents of lost and found is
+>> >> >> > +     automatically dumped at mount.
+>> >> >>
+>> >> >> Wow.. Just.. wow.
+>> >> >
+>> >> > What does that mean?
+>> >> >
+>> >> >> Under what use case is this a good idea for a config
+>> >> >> option as opposed to a mount option?
+>> >> >
+>> >> > It is both.
+>> >> >
+>> >> > Providing a config option provides the system integrator with
+>> >> > flexibility in how they set things up.
+>> >>
+>> >> Does the config option override the mount option, or does the mount
+>> >> option override the config option?
+>> >
+>> > Config sets up a default, mount options can override those.
+>> >
+>> >> No matter what you do, someone
+>> >> will be surprised, and that's a bad thing.  I'm having difficulty
+>> >> imagining a circumstance when you couldn't simply do this in userspace
+>> >> immediately after mount, but if for whatever reason you need
+>> >> mount+dump to be an atomic operation,
+>> >
+>> > Sure it could be done in user space, but it is easier to handle this in
+>> > the mount.
+>>
+>> We generally try to do things in userspace unless there's a clear
+>> advantage to doing them in the kernel.  This behavior creates an
+>> unnecessary special case for file deletion.
+>
+> This feature was actually requested by one of the major phone players.
+> Doing this at mount is more efficient and simpler than doing it in start up
+> scripts.
 
-On Mon, 2010-11-08 at 13:54 -0800, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> On my laptop the iwl3945 driver oopsed at boot with 2.6.37-rc1
-> in __dev_printk.
-> 
-> The problem is that for some reason it prints the sw scan
-> warning, but does that before the pci device is initialized
-> in the driver private structure. This leads to an oops
-> in the warning print code.
-> 
-> Move the warning after the device has been initialized.
-> 
-> Cc: Johannes.berg@intel.com
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  drivers/net/wireless/iwlwifi/iwl3945-base.c |   11 +++++------
->  1 files changed, 5 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/net/wireless/iwlwifi/iwl3945-base.c b/drivers/net/wireless/iwlwifi/iwl3945-base.c
-> index 8f8c4b7..3910ec2 100644
-> --- a/drivers/net/wireless/iwlwifi/iwl3945-base.c
-> +++ b/drivers/net/wireless/iwlwifi/iwl3945-base.c
-> @@ -3995,6 +3995,11 @@ static int iwl3945_pci_probe(struct pci_dev *pdev, const struct pci_device_id *e
->  	priv->contexts[IWL_RXON_CTX_BSS].station_devtype = RXON_DEV_TYPE_ESS;
->  	priv->contexts[IWL_RXON_CTX_BSS].unused_devtype = RXON_DEV_TYPE_ESS;
->  
-> +	IWL_DEBUG_INFO(priv, "*** LOAD DRIVER ***\n");
-> +	priv->cfg = cfg;
-> +	priv->pci_dev = pdev;
-> +	priv->inta_mask = CSR_INI_SET_MASK;
-> +
->  	/*
->  	 * Disabling hardware scan means that mac80211 will perform scans
->  	 * "the hard way", rather than using device's scan.
-> @@ -4004,12 +4009,6 @@ static int iwl3945_pci_probe(struct pci_dev *pdev, const struct pci_device_id *e
->  		iwl3945_hw_ops.hw_scan = NULL;
->  	}
->  
-> -
-> -	IWL_DEBUG_INFO(priv, "*** LOAD DRIVER ***\n");
-> -	priv->cfg = cfg;
-> -	priv->pci_dev = pdev;
-> -	priv->inta_mask = CSR_INI_SET_MASK;
-> -
->  	if (iwl_alloc_traffic_mem(priv))
->  		IWL_ERR(priv, "Not enough memory to generate traffic log\n");
->  
+Fine with me.  Faster boot is a perfectly legitimate technical reason.
+ (Userspace developers being too lazy to add a line to an initscript
+is not.)
 
-I believe the fix already in
-http://git.kernel.org/?p=linux/kernel/git/iwlwifi/iwlwifi-2.6.git;a=summary
-commit#6e0922e0781884ff4eb3638f10a91b63b6120207
+>> > Your point is well taken though. Many of these options are "tweaks" that
+>> > could be dropped form Kconfig and only offered as mount options.
+>>
+>> Thanks.  I know we've allowed a lot of stupid Kconfig options in the
+>> past, but Kconfig bloat is getting to be a real problem.
+>
+> I'm trying to understand where you see that problem coming from.
+>
+> I agree fully that there were pollution issues when file systems stored their
+> configs in fs/kconfig, making this file a mess.
+>
+> Is it really a problem to have many configs? Consider:
+> * All the configs are in fs/yaffs2/Kconfig. They don't clutter a common file.
+> * If you're not using yaffs2 then the .config only has  "CONFIG_YAFFS_FS is
+> not set". Hardly an overhead to non-yaffs users.
+>
+> I do agree that there are some configs that should be cleaned up/removed, and
+> maybe described better. I'll fix that for the next patch set.
 
-Thanks
-Wey
-
+Sorry, I should have scrutinized your Kconfig conditions more
+carefully.  You've done it the right way.
