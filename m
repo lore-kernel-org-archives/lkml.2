@@ -1,65 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477Ab0KHHwB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 02:52:01 -0500
-Received: from isrv.corpit.ru ([86.62.121.231]:58719 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751278Ab0KHHwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 02:52:00 -0500
-Message-ID: <4CD7AC1D.4010701@msgid.tls.msk.ru>
-Date: Mon, 08 Nov 2010 10:51:57 +0300
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.12) Gecko/20100913 Icedove/3.0.7
-MIME-Version: 1.0
-To: ranjith kumar <ranjithproxy@gmail.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: how to read one udp packet with more than one recvfrom() calls?
-References: <AANLkTi=40758wF4Z6GDfm809miA-hnCnSQdwA9bALX0+@mail.gmail.com>
-In-Reply-To: <AANLkTi=40758wF4Z6GDfm809miA-hnCnSQdwA9bALX0+@mail.gmail.com>
-X-Enigmail-Version: 1.0.1
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753545Ab0KHIAi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 03:00:38 -0500
+Received: from vpn.id2.novell.com ([195.33.99.129]:55378 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752731Ab0KHIAh convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:4:1>);
+	Mon, 8 Nov 2010 03:00:37 -0500
+Message-Id: <4CD7BC300200007800020E08@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Mon, 08 Nov 2010 08:00:32 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Yinghai Lu" <yinghai@kernel.org>
+Cc: <mingo@elte.hu>, <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
+        <hpa@zytor.com>
+Subject: Re: [PATCH] x86-64: fix and clean up AMD Fam10 MMCONF enabling
+References: <4CD2DDC6020000780002098C@vpn.id2.novell.com>
+ <4CD454D1.2060503@kernel.org>
+In-Reply-To: <4CD454D1.2060503@kernel.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-08.11.2010 10:08, ranjith kumar wrote:
-> Hi,
+>>> On 05.11.10 at 20:02, Yinghai Lu <yinghai@kernel.org> wrote:
+> On 11/04/2010 08:22 AM, Jan Beulich wrote:
+>> @@ -123,9 +123,9 @@ static void __cpuinit get_fam10h_pci_mmc
+>>  		if (!(reg & 3))
+>>  			continue;
+>>  
+>> -		start = (((u64)reg) << 8) & (0xffULL << 32); /* 39:16 on 31:8*/
+>> +		start = (u64)(reg & 0xffffff00) << 8; /* 39:16 on 31:8*/
+>>  		reg = read_pci_config(bus, slot, 1, 0x84 + (i << 3));
+>> -		end = (((u64)reg) << 8) & (0xffULL << 32); /* 39:16 on 31:8*/
+>> +		end = ((u64)(reg & 0xffffff00) << 8) | 0xffff; /* 39:16 on 31:8*/
+>>  
+>>  		if (!end)
+>>  			continue;
 > 
-> I  have implemented client and server programs using udp
-> protocol(files are attached).
-> UDP packet size is 500bytes.
+> those section could be changed to:
 > 
-> I want to read these 500bytes in two calls to recvfrom(). First time
-> reading 100bytes and second time 400bytes.
-> How to do this?
+>                 start = reg & 0xffffff00; /* 39:16 on 31:8*/
+>                 start <<= 8;
+>                 reg = read_pci_config(bus, slot, 1, 0x84 + (i << 3));
+>                 end = (reg & 0xffffff00);
+>                 end <<= 8;
+> 
+>                 if (!end)
+>                         continue;
+>                 end |= 0xffff;
+> 
+>                 hi_mmio_num = add_range(range, 8, hi_mmio_num, start, end + 1);
+> 
+> 1. append 0xffff after !end checking..
 
-There's no way to do so.  According to the udp(7) manpage:
+Yes, this one I missed, but it gets fixed by the follow-up patch
+anyway (if I'm to re-submit, I'll fold in that second patch anyway).
 
- All receive operations return only one packet.  When the packet is
- smaller than the passed buffer, only that much data is  returned; when
- it is bigger, the packet is truncated and the MSG_TRUNC flag is set.
- MSG_WAITALL is not supported.
+> 2. add_range should take end + 1;
 
-This is intentional, because the kernel does not keep the received
-packets, it either delivers them right to the application or drops
-them.  There's no sophisticated queue/stream management like for tcp.
+That's only after your change making use of this function.
 
-For current speeds, one wants to _reduce_ number of system calls
-made, not to increase them as you're trying to do, in order to
-process as many data in one go as possible.  This is why new
-system calls like mrecvfrom are being proposed.
+>> @@ -206,8 +200,10 @@ void __cpuinit fam10h_check_enable_mmcfg
+>>  	 * with 256 buses
+>>  	 */
+>>  	get_fam10h_pci_mmconf_base();
+>> -	if (fam10h_pci_mmconf_base_status <= 0)
+>> +	if (!fam10h_pci_mmconf_base) {
+>> +		pci_probe &= ~PCI_CHECK_ENABLE_AMD_MMCONF;
+>>  		return;
+>> +	}
+>>  
+>>  	printk(KERN_INFO "Enable MMCONFIG on AMD Family 10h\n");
+>>  	val &= ~((FAM10H_MMIO_CONF_BASE_MASK<<FAM10H_MMIO_CONF_BASE_SHIFT) |
+>> 
+>> 
+> 
+> looks like fam10h_pci_mmconf_base_status should NOT be removed.
+> 
+> -1: mean we can not find right new base on BSP, so should not let AP to mess 
+> it again.
 
-> When I tried to change the third argument of recvfrom(size_t len),
-> from 500 to 100, first 100bytes are read correctly.
-> But when I call recvfrom() second time with len=400, it is reading the
-> first 400bytes of "next udp packet".
-> Why? Isn't it possible to read one udp packet in two calls to
-> recvfrom()/read()????
+Note that is now achieved by clearing PCI_CHECK_ENABLE_AMD_MMCONF
+from pci_probe (imo a better way, as it inhibits code elsewhere which
+is protected by checks of this bit).
 
-This is how UDP is designed to work, and how it works on other
-operating systems too.
+Jan
 
-/mjt
