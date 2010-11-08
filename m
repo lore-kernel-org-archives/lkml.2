@@ -1,96 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754285Ab0KHTtf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 14:49:35 -0500
-Received: from mail.bluewatersys.com ([202.124.120.130]:16790 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754055Ab0KHTtd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 14:49:33 -0500
-Message-ID: <4CD85489.8000503@bluewatersys.com>
-Date: Tue, 09 Nov 2010 08:50:33 +1300
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+	id S1754208Ab0KHTuY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 14:50:24 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:41589 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752503Ab0KHTuX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 14:50:23 -0500
+Date: Mon, 8 Nov 2010 11:50:19 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Joe Korty <joe.korty@ccur.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        "mathieu.desnoyers@efficios.com" <mathieu.desnoyers@efficios.com>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        "loic.minier@linaro.org" <loic.minier@linaro.org>,
+        "dhaval.giani@gmail.com" <dhaval.giani@gmail.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "josh@joshtriplett.org" <josh@joshtriplett.org>,
+        Jim Houston <jim.houston@comcast.net>
+Subject: Re: [PATCH] a local-timer-free version of RCU
+Message-ID: <20101108195019.GD4032@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20101104232148.GA28037@linux.vnet.ibm.com>
+ <20101105210059.GA27317@tsunami.ccur.com>
+ <20101106192812.GI15561@linux.vnet.ibm.com>
+ <20101108150644.GB5466@nowhere>
+ <20101108151829.GB8996@tsunami.ccur.com>
 MIME-Version: 1.0
-To: Marco Stornelli <marco.stornelli@gmail.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Embedded <linux-embedded@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Tim Bird <tim.bird@am.sony.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 08/16 v2] pramfs: headers
-References: <4CD518C5.6000509@gmail.com>	<4CD7076D.80507@bluewatersys.com> <AANLkTinJJG0K=BPS0CPzDWcgpRn_yPxZ819N408SwD6d@mail.gmail.com>
-In-Reply-To: <AANLkTinJJG0K=BPS0CPzDWcgpRn_yPxZ819N408SwD6d@mail.gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101108151829.GB8996@tsunami.ccur.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2010 08:49 PM, Marco Stornelli wrote:
-> 2010/11/7 Ryan Mallon <ryan@bluewatersys.com>:
->> On 11/06/2010 09:58 PM, Marco Stornelli wrote:
->>> From: Marco Stornelli <marco.stornelli@gmail.com>
->>>
->>> Definitions for the PRAMFS filesystem.
->>>
->>> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
->>> ---
->>> diff -Nurp linux-2.6.36-orig/fs/pramfs/pram.h linux-2.6.36/fs/pramfs/pram.h
->>> --- linux-2.6.36-orig/fs/pramfs/pram.h        1970-01-01 01:00:00.000000000 +0100
->>> +++ linux-2.6.36/fs/pramfs/pram.h     2010-10-30 12:02:45.000000000 +0200
->>> @@ -0,0 +1,317 @@
->>
->>> +/*
->>> + * Structure of the super block in PRAMFS
->>> + */
->>> +struct pram_super_block {
->>> +     __be16  s_sum;          /* checksum of this sb, including padding */
->>> +     __be64  s_size;         /* total size of fs in bytes */
->>> +     __be32  s_blocksize;    /* blocksize in bytes */
->>> +     __be32  s_inodes_count; /* total inodes count (used or free) */
->>> +     __be32  s_free_inodes_count;/* free inodes count */
->>> +     __be32  s_free_inode_hint;  /* start hint for locating free inodes */
->>> +     __be32  s_blocks_count; /* total data blocks count (used or free) */
->>> +     __be32  s_free_blocks_count;/* free data blocks count */
->>> +     __be32  s_free_blocknr_hint;/* free data blocks count */
->>> +     __be64  s_bitmap_start; /* data block in-use bitmap location */
->>> +     __be32  s_bitmap_blocks;/* size of bitmap in number of blocks */
->>> +     __be32  s_mtime;        /* Mount time */
->>> +     __be32  s_wtime;        /* Write time */
->>> +     __be16  s_magic;        /* Magic signature */
->>> +     char    s_volume_name[16]; /* volume name */
->>> +};
->>
->> Is there a particular reason to use big endian types for the data
->> structures? On a little endian machine you will end up converting values
->> everywhere. I assume that you don't expect the machine to change
->> endianess between reboots :-). If this is for generating/reading
->> filesystems from userspace, wouldn't it be better to have the userspace
->> tools specify the target endianess and do the conversions there?
->>
->> ~Ryan
+On Mon, Nov 08, 2010 at 10:18:29AM -0500, Joe Korty wrote:
+> On Mon, Nov 08, 2010 at 10:06:47AM -0500, Frederic Weisbecker wrote:
+> > On Sat, Nov 06, 2010 at 12:28:12PM -0700, Paul E. McKenney wrote:
+> >> OK, so your approach treats preempt_disable code sequences as RCU
+> >> read-side critical sections by relying on the fact that the per-CPU
+> >> ->krcud task cannot run until such code sequences complete, correct?
+> >> 
+> >> This seems to require that each CPU's ->krcud task be awakened at
+> >> least once per grace period, but I might well be missing something.
+> > 
+> > I understood it differently, but I might also be wrong as well. krcud
+> > executes the callbacks, but it is only woken up for CPUs that want to
+> > execute callbacks, not for those that only signal a quiescent state,
+> > which is only determined in two ways through rcu_poll_other_cpus():
+> > 
+> > - if the CPU is in an rcu_read_lock() critical section, it has the
+> >   IN_RCU_READ_LOCK flag. If so then we set up its DO_RCU_COMPLETION flag so
+> >   that it signals its quiescent state on rcu_read_unlock().
+> > 
+> > - otherwise it's in a quiescent state.
+> > 
+> > This works for rcu and rcu bh critical sections.
+> > But this works in rcu sched critical sections only if rcu_read_lock_sched() has
+> > been called explicitly, otherwise that doesn't work (in preempt_disable(),
+> > local_irq_save(), etc...). I think this is what is not complete when
+> > Joe said it's not yet a complete rcu implementation.
+> > 
+> > This is also the part that scaries me most :)
 > 
-> Yes, there is a reason. In the first review a comment was: the fs must
-> have a fix endianess layout. This fs is designed for the embedded
-> world mainly. Since most of cpus used in this case are big-endian, it
-> means that for typical use case, there is no cost for endianess
-> conversion.
+> Mostly, I meant that the new RCU API interfaces that have come into
+> existance since 2004 were only hastily wrapped or NOPed by me to get
+> things going.
 
-ARM, which is a large portion of the embedded space, is typically little
-endian.
+Ah, understood.
 
-Why does a filesystem need to have a specific endianess layout?
-Especially for a highly specialised filesystem like this.
+> Jim's method only works with explicit rcu_read_lock..unlock sequences,
+> implicit sequences via preempt_disable..enable and the like are not
+> handled.  I had thought all such sequences were converted to rcu_read_lock
+> but maybe that is not yet correct.
 
-~Ryan
+Not yet, unfortunately.  Having them all marked, for lockdep if nothing
+else, could be a big benefit.
 
--- 
-Bluewater Systems Ltd - ARM Technology Solution Centre
+> Jim will have to comment on the full history.  He is incommunicado
+> at the moment; hopefully he will be able to participate sometime in
+> the next few days.
 
-Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
-ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
-http://www.bluewatersys.com	New Zealand
-Phone: +64 3 3779127		Freecall: Australia 1800 148 751
-Fax:   +64 3 3779135			  USA 1800 261 2934
+Sounds good!
+
+							Thanx, Paul
