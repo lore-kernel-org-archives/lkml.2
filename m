@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab0KHCHa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 21:07:30 -0500
-Received: from mga11.intel.com ([192.55.52.93]:23827 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754026Ab0KHCH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 21:07:28 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,311,1286175600"; 
-   d="scan'208";a="624431479"
-Subject: [patch 3/3]cfq-iosched: don't idle if a deep seek queue is slow
-From: Shaohua Li <shaohua.li@intel.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Jens Axboe <jaxboe@fusionio.com>, vgoyal@redhat.com, czoccolo@gmail.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 08 Nov 2010 10:07:25 +0800
-Message-ID: <1289182045.23014.191.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1754024Ab0KHCKP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 21:10:15 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:51604 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752892Ab0KHCKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 21:10:14 -0500
+Message-ID: <4CD75D0B.1000305@cn.fujitsu.com>
+Date: Mon, 08 Nov 2010 10:14:35 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 2/3] KVM: MMU: don not retry #PF for nonpaging guest
+References: <4CD28B5F.1040205@cn.fujitsu.com> <4CD28BCA.1060907@cn.fujitsu.com> <20101104103548.GE6018@redhat.com> <4CD39886.4050909@cn.fujitsu.com> <20101105074533.GC14910@redhat.com> <4CD3BA50.1000002@cn.fujitsu.com> <20101105103124.GD14910@redhat.com>
+In-Reply-To: <20101105103124.GD14910@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-08 10:10:40,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-08 10:10:41,
+	Serialize complete at 2010-11-08 10:10:41
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a deep seek queue slowly deliver requests but disk is much faster, idle
-for the queue just wastes disk throughput. If the queue delevers all requests
-before half its slice is used, the patch disable idle for it.
-In my test, application delivers 32 requests one time, the disk can accept
-128 requests at maxium and disk is fast. without the patch, the throughput
-is just around 30m/s, while with it, the speed is about 80m/s. The disk is
-a SSD, but is detected as a rotational disk. I can configure it as SSD, but
-I thought the deep seek queue logic should be fixed too, for example,
-considering a fast raid.
+On 11/05/2010 06:31 PM, Gleb Natapov wrote:
+> On Fri, Nov 05, 2010 at 04:03:28PM +0800, Xiao Guangrong wrote:
+>> On 11/05/2010 03:45 PM, Gleb Natapov wrote:
+>>
+>>>>
+>>>> It looks like something broken: apfs can generated in L2 guest (nested ntp guest)
+>>>> and be retried in L1 guest.
+>>>>
+>>> Why is this a problem? apf will be generate on direct map even when L2
+>>> guest is running so it should be OK to prefault it into direct map on
+>>> completion.
+>>>
+>>
+>> The nested_cr3 is different between L2 and L1, fix L2's page fault in L1's page table
+>> is useless.
+> But we are fixing L0 page faults in L0 page table. We do not start apf
+> because of L1 faulted in its page table.
+> 
 
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+Hi Gleb,
 
----
- block/cfq-iosched.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+For example, NPT Guest L1 runs on Host, and Nested NPT Guest L2 runs on Guest L1.
+Now, Guest L2 is running, has below sequences:
 
-Index: linux/block/cfq-iosched.c
-===================================================================
---- linux.orig/block/cfq-iosched.c	2010-11-08 08:43:51.000000000 +0800
-+++ linux/block/cfq-iosched.c	2010-11-08 08:49:52.000000000 +0800
-@@ -2293,6 +2293,17 @@ static struct cfq_queue *cfq_select_queu
- 		goto keep_queue;
- 	}
- 
-+	/*
-+	 * This is a deep seek queue, but the device is much faster than
-+	 * the queue can deliver, don't idle
-+	 **/
-+	if (CFQQ_SEEKY(cfqq) && cfq_cfqq_idle_window(cfqq) &&
-+	    (cfq_cfqq_slice_new(cfqq) ||
-+	    (cfqq->slice_end - jiffies > jiffies - cfqq->slice_start))) {
-+		cfq_clear_cfqq_deep(cfqq);
-+		cfq_clear_cfqq_idle_window(cfqq);
-+	}
-+
- 	if (cfqq->dispatched && cfq_should_idle(cfqd, cfqq)) {
- 		cfqq = NULL;
- 		goto keep_queue;
+a: NPF/PF occurs in L2 Guest, and generates a apf(named A-apf), then
+   L2 Guest is blocked
+
+b: a external event wakes up L2 Guest, and let it run again.
+
+c: L2 Guest VMEXIT to L1 Guest because L2 Guest's action is intercepted by Guest L1
+
+d: When cpu enter L1 Guest, A-apf is completed, then it will retry A-apf in
+   L1 Guest's mmu context, and this 'retry' is useless.
+
+Could you please point it out for me if i missed something. :-)
 
 
