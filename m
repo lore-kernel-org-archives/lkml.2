@@ -1,102 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726Ab0KHOCI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 09:02:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44474 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754701Ab0KHOCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 09:02:06 -0500
-Date: Mon, 8 Nov 2010 09:02:03 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
-        czoccolo@gmail.com
-Subject: Re: [patch 2/3]cfq-iosched: schedule dispatch for noidle queue
-Message-ID: <20101108140202.GA16767@redhat.com>
-References: <1289182038.23014.190.camel@sli10-conroe>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289182038.23014.190.camel@sli10-conroe>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754765Ab0KHOCV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 09:02:21 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:54071 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754733Ab0KHOCR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 09:02:17 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=rbwYpscXq5kA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=E3MmHjMt4svKmJBv5-oA:9 a=2xI6gc31P2UvG3BLxJN6L2KdryUA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] Tracing: do export trace_set_clr_event
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+In-Reply-To: <5b55a1$ijitko@fmsmga002.fm.intel.com>
+References: <1289196312-25323-1-git-send-email-yuanhan.liu@linux.intel.com>
+	 <20101108095610.GA22592@infradead.org>
+	 <5b55a1$ijitko@fmsmga002.fm.intel.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 08 Nov 2010 09:02:14 -0500
+Message-ID: <1289224934.12418.1.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 08, 2010 at 10:07:18AM +0800, Shaohua Li wrote:
-> A queue is idle at cfq_dispatch_requests(), but it gets noidle later. Unless
-> other task explictly does unplug or all requests are drained, we will not
-> deliever requests to the disk even cfq_arm_slice_timer doesn't make the
-> queue idle. For example, cfq_should_idle() returns true because of
-> service_tree->count == 1, and then other queues are added. Note, I didn't
-> see obvious performance impacts so far with the patch, but just thought
-> this could be a problem.
-> 
-> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+On Mon, 2010-11-08 at 10:14 +0000, Chris Wilson wrote:
 
-Hi Shaohua,
+> The question then became how to enable register tracing upon module load?
+> This was the simpler proposal, add a module parameter to enable the
+> tracepoints - hence the exporting of this routine. The alternative that we
+> are mulling over is whether it is possible for ftrace to parse a trace= on
+> every module load to manipulate the tracepoints within that module.
 
-I am unable to understand what problem are you solving here. So a queue
-currently has property as "idle" and we idle on that. And then some event
-happens which makes it "noidle". What is that event?
+I like the trace=on parameter much better. If that is set we could
+enable the tracepoints of that module at load time. I really do not want
+to export the function that was proposed in that patch.
 
-To my knowledge generally it is arrival of a new request. If that's the case,
-then upon arrival of new request in same queue, we will dispatch it and then
-when device asks for more request, we should be expering the cfqq and dispatch
-requests from other queues.
+-- Steve
 
-So I am really not sure what's the problem here which you are trying to 
-fix. Can you give more details.
 
-Vivek
-
- 
-
-> 
-> ---
->  block/cfq-iosched.c |   23 ++++++++++++++++++++++-
->  1 file changed, 22 insertions(+), 1 deletion(-)
-> 
-> Index: linux/block/cfq-iosched.c
-> ===================================================================
-> --- linux.orig/block/cfq-iosched.c	2010-11-08 08:41:20.000000000 +0800
-> +++ linux/block/cfq-iosched.c	2010-11-08 08:43:51.000000000 +0800
-> @@ -3265,6 +3265,10 @@ cfq_should_preempt(struct cfq_data *cfqd
->  	if (cfq_class_rt(new_cfqq) && !cfq_class_rt(cfqq))
->  		return true;
->  
-> +	/* An idle queue should not be idle now for some reason */
-> +	if (RB_EMPTY_ROOT(&cfqq->sort_list) && !cfq_should_idle(cfqd, cfqq))
-> +		return true;
-> +
->  	if (!cfqd->active_cic || !cfq_cfqq_wait_request(cfqq))
->  		return false;
->  
-> @@ -3508,8 +3512,25 @@ static void cfq_completed_request(struct
->  		}
->  	}
->  
-> -	if (!cfqd->rq_in_driver)
-> +	if (!cfqd->rq_in_driver) {
->  		cfq_schedule_dispatch(cfqd);
-> +		return;
-> +	}
-> +	/*
-> +	 * A queue is idle at cfq_dispatch_requests(), but it gets noidle
-> +	 * later. We schedule a dispatch if the queue has no requests,
-> +	 * otherwise the disk is actually in idle till all requests
-> +	 * are finished even cfq_arm_slice_timer doesn't make the queue idle
-> +	 * */
-> +	cfqq = cfqd->active_queue;
-> +	if (!cfqq)
-> +		return;
-> +
-> +	if (RB_EMPTY_ROOT(&cfqq->sort_list) && !cfq_should_idle(cfqd, cfqq) &&
-> +	    (!cfqd->cfq_group_idle || cfqq->cfqg->nr_cfqq > 1)) {
-> +		cfq_del_timer(cfqd, cfqq);
-> +		cfq_schedule_dispatch(cfqd);
-> +	}
->  }
->  
->  /*
-> 
