@@ -1,71 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755410Ab0KHVyq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 16:54:46 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:33943 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754351Ab0KHVyo (ORCPT
+	id S1755557Ab0KHVzm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 16:55:42 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:60963 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751069Ab0KHVzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 16:54:44 -0500
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-wireless@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Johannes.berg@intel.com
-Subject: [PATCH] iwl3945: Fix oops at module load
-Date: Mon,  8 Nov 2010 22:54:31 +0100
-Message-Id: <1289253271-19981-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.1
+	Mon, 8 Nov 2010 16:55:41 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-operating-system
+         :user-agent;
+        b=KMfYS7wCY9ldNk2ib4UmeOHnHnbdx+ATuKq55fStYcpukq9qFrBycvVOMC1anMoeNW
+         Hbe60E9aUeVYBiYv/eEw==
+Date: Mon, 8 Nov 2010 13:55:25 -0800
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Mandeep Singh Baines <msb@chromium.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, wad@chromium.org, olofj@chromium.org,
+        hughd@chromium.org
+Subject: Re: [PATCH] RFC: vmscan: add min_filelist_kbytes sysctl for
+ protecting the working set
+Message-ID: <20101108215524.GB7363@google.com>
+References: <20101028191523.GA14972@google.com>
+ <20101101012322.605C.A69D9226@jp.fujitsu.com>
+ <20101101182416.GB31189@google.com>
+ <4CCF0BE3.2090700@redhat.com>
+ <AANLkTi=src1L0gAFsogzCmejGOgg5uh=9O4Uw+ZmfBg4@mail.gmail.com>
+ <4CCF8151.3010202@redhat.com>
+ <20101103224055.GC19646@google.com>
+ <4CD2D18C.9080407@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CD2D18C.9080407@redhat.com>
+X-Operating-System: Linux/2.6.32-gg252-generic (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Rik van Riel (riel@redhat.com) wrote:
+> On 11/03/2010 06:40 PM, Mandeep Singh Baines wrote:
+> 
+> >I've created a patch which takes a slightly different approach.
+> >Instead of limiting how fast pages get reclaimed, the patch limits
+> >how fast the active list gets scanned. This should result in the
+> >active list being a better measure of the working set. I've seen
+> >fairly good results with this patch and a scan inteval of 1
+> >centisecond. I see no thrashing when the scan interval is non-zero.
+> >
+> >I've made it a tunable because I don't know what to set the scan
+> >interval. The final patch could set the value based on HZ and some
+> >other system parameters. Maybe relate it to sched_period?
+> 
+> I like your approach. For file pages it looks like it
+> could work fine, since new pages always start on the
+> inactive file list.
+> 
+> However, for anonymous pages I could see your patch
+> leading to problems, because all anonymous pages start
+> on the active list.  With a scan interval of 1
+> centiseconds, that means there would be a limit of 3200
+> pages, or 12MB of anonymous memory that can be moved to
+> the inactive list a second.
+> 
 
-On my laptop the iwl3945 driver oopsed at boot with 2.6.37-rc1
-in __dev_printk.
+Good point.
 
-The problem is that for some reason it prints the sw scan
-warning, but does that before the pci device is initialized
-in the driver private structure. This leads to an oops
-in the warning print code.
+> I have seen systems with single SATA disks push out
+> several times that to swap per second, which matters
+> when someone starts up a program that is just too big
+> to fit in memory and requires that something is pushed
+> out.
+> 
+> That would reduce the size of the inactive list to
+> zero, reducing our page replacement to a slow FIFO
+> at best, causing false OOM kills at worst.
+> 
+> Staying with a default of 0 would of course not do
+> anything, which would make merging the code not too
+> useful.
+> 
+> I believe we absolutely need to preserve the ability
+> to evict pages quickly, when new pages are brought
+> into memory or allocated quickly.
+> 
 
-Move the warning after the device has been initialized.
+Agree.
 
-Cc: Johannes.berg@intel.com
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- drivers/net/wireless/iwlwifi/iwl3945-base.c |   11 +++++------
- 1 files changed, 5 insertions(+), 6 deletions(-)
+Instead of doing one scan of SWAP_CLUSTER_MAX pages per vmscan_interval,
+we could one "full" scan per vmscan_interval. You could do one full scan
+all at once or scan SWAP_CLUSTER_MAX every scan until you've scanned
+the whole list.
 
-diff --git a/drivers/net/wireless/iwlwifi/iwl3945-base.c b/drivers/net/wireless/iwlwifi/iwl3945-base.c
-index 8f8c4b7..3910ec2 100644
---- a/drivers/net/wireless/iwlwifi/iwl3945-base.c
-+++ b/drivers/net/wireless/iwlwifi/iwl3945-base.c
-@@ -3995,6 +3995,11 @@ static int iwl3945_pci_probe(struct pci_dev *pdev, const struct pci_device_id *e
- 	priv->contexts[IWL_RXON_CTX_BSS].station_devtype = RXON_DEV_TYPE_ESS;
- 	priv->contexts[IWL_RXON_CTX_BSS].unused_devtype = RXON_DEV_TYPE_ESS;
- 
-+	IWL_DEBUG_INFO(priv, "*** LOAD DRIVER ***\n");
-+	priv->cfg = cfg;
-+	priv->pci_dev = pdev;
-+	priv->inta_mask = CSR_INI_SET_MASK;
-+
- 	/*
- 	 * Disabling hardware scan means that mac80211 will perform scans
- 	 * "the hard way", rather than using device's scan.
-@@ -4004,12 +4009,6 @@ static int iwl3945_pci_probe(struct pci_dev *pdev, const struct pci_device_id *e
- 		iwl3945_hw_ops.hw_scan = NULL;
- 	}
- 
--
--	IWL_DEBUG_INFO(priv, "*** LOAD DRIVER ***\n");
--	priv->cfg = cfg;
--	priv->pci_dev = pdev;
--	priv->inta_mask = CSR_INI_SET_MASK;
--
- 	if (iwl_alloc_traffic_mem(priv))
- 		IWL_ERR(priv, "Not enough memory to generate traffic log\n");
- 
--- 
-1.7.1
+Psuedo code:
 
+if (zone->to_scan[file] == 0 && !list_scanned_recently(zone, file))
+	zone->to_scan[file] = list_get_size(zone, file);
+if (zone->to_scan[file]) {
+	shrink_active_list(nr_to_scan, zone, sc, priority, file);
+	zone->to_scan[file] -= min(zone->to_scan[file], nr_to_scan);
+}
+
+> However, speed limits are probably a very good idea
+> once a cache has been reduced to a smaller size, or
+> when most IO bypasses the reclaim-speed-limited cache.
+> 
+> -- 
+> All rights reversed
