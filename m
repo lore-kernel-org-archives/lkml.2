@@ -1,110 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584Ab0KHLaw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 06:30:52 -0500
-Received: from caiajhbdcbef.dreamhost.com ([208.97.132.145]:39805 "EHLO
-	homiemail-a2.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754422Ab0KHLau convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 06:30:50 -0500
-Subject: Re: [PATCH] mce: fix RCU lockdep from mce_log()
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: paulmck@linux.vnet.ibm.com
-Cc: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101107133950.GV15561@linux.vnet.ibm.com>
-References: <1288993499.2065.4.camel@cowboy>
-	 <20101106185350.GA23824@basil.fritz.box>
-	 <20101107133950.GV15561@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 08 Nov 2010 08:30:19 -0300
-Message-ID: <1289215819.2318.3.camel@cowboy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8BIT
+	id S1754681Ab0KHLdJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 06:33:09 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:48851 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754461Ab0KHLdH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 06:33:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=QCd66YCXCWLC6mrQkUvQ+jlsRS38zNjvqFSVYZiWrKzuTJVO1SDfVKIufR76JREH2Q
+         wT88mWYYElJJoEAFNDMbEvQAaQfgTsd22v6ulIiUPwirztH+7e/hvh1ZDTtS1kenB0Xd
+         Le3Ijf/Mz/aJAsAwbYbhzjGkghGTqFr/tDUfI=
+MIME-Version: 1.0
+In-Reply-To: <1289213695.3916.396.camel@constitution.bos.jonmasters.org>
+References: <1289211512.3916.383.camel@constitution.bos.jonmasters.org>
+	<b9dded$h0q3am@orsmga002.jf.intel.com>
+	<1289213695.3916.396.camel@constitution.bos.jonmasters.org>
+Date: Mon, 8 Nov 2010 11:33:06 +0000
+Message-ID: <AANLkTinOeu28+uJ=4KwKtn5CPZJyo=VuyhvuNUOgbe+L@mail.gmail.com>
+Subject: Re: [bisected] offset display bug in i915
+From: James Courtier-Dutton <james.dutton@gmail.com>
+To: Jon Masters <jonathan@jonmasters.org>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-11-07 at 05:39 -0800, Paul E. McKenney wrote:
-> On Sat, Nov 06, 2010 at 07:53:50PM +0100, Andi Kleen wrote:
-> > On Fri, Nov 05, 2010 at 06:44:59PM -0300, Davidlohr Bueso wrote:
-> > > Hi,
-> > > 
-> > > Please review this patch, I am not very familiar with MCE/RCU so I'm not sure that this is the correct fix (otherwise consider it a bug report :)).
-> > > This does "fix" the message though and I can use MCE normally.
-> > 
-> > The patch is certainly not correct. The variable needs to be read
-> > independently of the mutex.
-> 
-> This code is simply checking the value of the pointer, and therefore
-> need not protect any actual dereferences.  So why not replace the
-> rcu_dereference_check_mce() with rcu_access_pointer()?  If this is
-> OK, please see the patch below.
-> 
-> BTW, assigning the value returned by rcu_access_pointer() into a
-> variable often indicates a bug.  ;-)
-> 
-> 							Thanx, Paul
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index 7a35b72..4d29d50 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -1625,7 +1625,7 @@ out:
->  static unsigned int mce_poll(struct file *file, poll_table *wait)
->  {
->  	poll_wait(file, &mce_wait, wait);
-> -	if (rcu_dereference_check_mce(mcelog.next))
-> +	if (rcu_access_pointer(mcelog.next))
-
-this doesn't compile (mcelog.next is an index):
-
-arch/x86/kernel/cpu/mcheck/mce.c: In function ‘mce_poll’:
-arch/x86/kernel/cpu/mcheck/mce.c:1628: error: invalid type argument of
-‘unary *’ (have ‘unsigned int’)
-arch/x86/kernel/cpu/mcheck/mce.c:1628: warning: type defaults to ‘int’
-in declaration of ‘_________p1’
-arch/x86/kernel/cpu/mcheck/mce.c:1628: error: invalid type argument of
-‘unary *’ (have ‘unsigned int’)
-arch/x86/kernel/cpu/mcheck/mce.c:1628: warning: type defaults to ‘int’
-in declaration of ‘type name’
-arch/x86/kernel/cpu/mcheck/mce.c:1628: warning: cast to pointer from
-integer of different size
-arch/x86/kernel/cpu/mcheck/mce.c:1628: error: invalid type argument of
-‘unary *’ (have ‘unsigned int’)
-arch/x86/kernel/cpu/mcheck/mce.c:1628: warning: type defaults to ‘int’
-in declaration of ‘type name’
-make[4]: *** [arch/x86/kernel/cpu/mcheck/mce.o] Error 1
-
-
-Since the mutex is independent, what about this patch?
-
- Signed-off-by: Davidlohr Bueso <dave@gnu.org>
-
----
- arch/x86/kernel/cpu/mcheck/mce.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c
-b/arch/x86/kernel/cpu/mcheck/mce.c
-index 7a35b72..cc1c673 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1625,7 +1625,7 @@ out:
- static unsigned int mce_poll(struct file *file, poll_table *wait)
- {
- 	poll_wait(file, &mce_wait, wait);
--	if (rcu_dereference_check_mce(mcelog.next))
-+	if (rcu_dereference_index_check(mcelog.next,
-rcu_read_lock_sched_held()))
- 		return POLLIN | POLLRDNORM;
- 	if (!mce_apei_read_done && apei_check_mce())
- 		return POLLIN | POLLRDNORM;
--- 
-1.7.1
-
-
-
+On 8 November 2010 10:54, Jon Masters <jonathan@jonmasters.org> wrote:
+>
+> Here is the EDID output after booting:
+>
+> [jcm@monticello ~]$ hexdump /sys/class/drm/card0-LVDS-1/edid
+> 0000000 ff00 ffff ffff 00ff 6422 03e9 8544 0001
+> 0000010 141c 0301 1680 780d 860a 9426 5157 2790
+> 0000020 4f21 0054 0000 0101 0101 0101 0101 0101
+> 0000030 0101 0101 0101 1194 b000 5840 2019 2335
+> 0000040 0045 81dc 0000 1900 1416 d800 5840 2026
+> 0000050 235d 0415 81dc 0000 0000 0000 fe00 0000
+> 0000060 0000 0000 0000 0000 0000 0000 0000 fe00
+> 0000070 0000 0000 0000 0000 0100 0000 0000 f200
+> 0000080
+>
+hexdump -C  is a little easier to read and compare with other hexdumps.
