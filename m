@@ -1,84 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755373Ab0KHSF3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 13:05:29 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:33963 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755278Ab0KHSF2 (ORCPT
+	id S1755392Ab0KHSHE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 13:07:04 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:2221 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755363Ab0KHSHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 13:05:28 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=OIfuPxBBLltShuYt0b4vVYTB21ZFolQdgIXdlrffkUTUi6560k1XpPZgQaitcs4C4Q
-         ujPpOOXAMA83MaNO6IB4LwzV5S13BKb06GTbt2LPyuI5leFE0lFG+hncV1nGqMwpt/CP
-         dNP/RHRiC+7r/FshnC24ej3BRXWSYJ+OTlfho=
-Date: Mon, 8 Nov 2010 19:05:23 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>, akpm@linux-foundation.org,
-        sergey.senozhatsky@gmail.com
-Subject: Re: [PATCH v2] watchdog:  touch_nmi_watchdog should only touch
-	local cpu not every one
-Message-ID: <20101108180518.GA5375@nowhere>
-References: <1289234675-2400-1-git-send-email-dzickus@redhat.com>
+	Mon, 8 Nov 2010 13:07:01 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp03.nvidia.com on Mon, 08 Nov 2010 10:06:18 -0800
+Date: Mon, 8 Nov 2010 10:06:16 -0800
+From: rmorell@nvidia.com
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf: Remove hardcoded include paths for elfutils
+Message-ID: <20101108180616.GB24197@morell.nvidia.com>
+References: <1288923830-4586-1-git-send-email-rmorell@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1289234675-2400-1-git-send-email-dzickus@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1288923830-4586-1-git-send-email-rmorell@nvidia.com>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 08, 2010 at 11:44:35AM -0500, Don Zickus wrote:
-> I ran into a scenario where while one cpu was stuck and should have panic'd
-> because of the NMI watchdog, it didn't.  The reason was another cpu was spewing
-> stack dumps on to the console.  Upon investigation, I noticed that when writing
-> to the console and also when dumping the stack, the watchdog is touched.
-> 
-> This causes all the cpus to reset their NMI watchdog flags and the 'stuck' cpu
-> just spins forever.
-> 
-> This change causes the semantics of touch_nmi_watchdog to be changed slightly.
-> Previously, I accidentally changed the semantics and we noticed there was a
-> codepath in which touch_nmi_watchdog could be touched from a preemtible area.
-> That caused a BUG() to happen when CONFIG_DEBUG_PREEMPT was enabled.  I believe
-> it was the acpi code.
-> 
-> My attempt here re-introduces the change to have the touch_nmi_watchdog() code
-> only touch the local cpu instead of all of the cpus.  But instead of using
-> __get_cpu_var(), I use the __raw_get_cpu_var() version.
-> 
-> This avoids the preemption problem.  However my reasoning wasn't because I was
-> trying to be lazy.  Instead I rationalized it as, well if preemption is enabled
-> then interrupts should be enabled to and the NMI watchdog will have no reason
-> to trigger.  So it won't matter if the wrong cpu is touched because the percpu
-> interrupt counters the NMI watchdog uses should still be incrementing.
-> 
-> V2:  remove touch_all_nmi_watchdog code
+Now with maintainers in To:
+(sorry for the noise)
 
-
-Are you sure you did? :)
-
-
-> +void touch_all_nmi_watchdogs(void)
-> +{
->  	if (watchdog_enabled) {
->  		unsigned cpu;
+On Thu, Nov 04, 2010 at 07:23:50PM -0700, Robert Morell wrote:
+> This change removes the use of hardcoded absolute
+> "/usr/include/elfutils" paths from the perf build.  The problem with
+> hardcoded paths is that it prevents them from being overridden by
+> $prefix or by -I in CFLAGS (e.g., for cross-compiling purposes).
+> 
+> Instead, just include the "elfutils/" subdirectory as a relative path
+> when files are needed from that directory.
+> 
+> Tested by building perf:
+> - Cross-compiled for ARM on x86_64
+> - Built natively on x86_64
+> - Built on x86_64 with /usr/include/elfutils moved to another location
+>   and manually included in CFLAGS
+> 
+> Signed-off-by: Robert Morell <rmorell@nvidia.com>
+> ---
+>  tools/perf/Makefile            |    4 ++--
+>  tools/perf/feature-tests.mak   |    4 ++--
+>  tools/perf/util/probe-finder.h |    6 +++---
+>  3 files changed, 7 insertions(+), 7 deletions(-)
+> 
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index d1db0f6..74b684d 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -507,7 +507,7 @@ PERFLIBS = $(LIB_FILE)
+>  -include config.mak
 >  
-> @@ -151,7 +166,7 @@ void touch_nmi_watchdog(void)
->  	}
->  	touch_softlockup_watchdog();
->  }
-> -EXPORT_SYMBOL(touch_nmi_watchdog);
-> +EXPORT_SYMBOL(touch_all_nmi_watchdogs);
->  
+>  ifndef NO_DWARF
+> -FLAGS_DWARF=$(ALL_CFLAGS) -I/usr/include/elfutils -ldw -lelf $(ALL_LDFLAGS) $(EXTLIBS)
+> +FLAGS_DWARF=$(ALL_CFLAGS) -ldw -lelf $(ALL_LDFLAGS) $(EXTLIBS)
+>  ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF)),y)
+>  	msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
+>  	NO_DWARF := 1
+> @@ -554,7 +554,7 @@ ifndef NO_DWARF
+>  ifeq ($(origin PERF_HAVE_DWARF_REGS), undefined)
+>  	msg := $(warning DWARF register mappings have not been defined for architecture $(ARCH), DWARF support disabled);
+>  else
+> -	BASIC_CFLAGS += -I/usr/include/elfutils -DDWARF_SUPPORT
+> +	BASIC_CFLAGS += -DDWARF_SUPPORT
+>  	EXTLIBS += -lelf -ldw
+>  	LIB_OBJS += $(OUTPUT)util/probe-finder.o
+>  endif # PERF_HAVE_DWARF_REGS
+> diff --git a/tools/perf/feature-tests.mak b/tools/perf/feature-tests.mak
+> index b253db6..b041ca6 100644
+> --- a/tools/perf/feature-tests.mak
+> +++ b/tools/perf/feature-tests.mak
+> @@ -9,8 +9,8 @@ endef
+>  ifndef NO_DWARF
+>  define SOURCE_DWARF
+>  #include <dwarf.h>
+> -#include <libdw.h>
+> -#include <version.h>
+> +#include <elfutils/libdw.h>
+> +#include <elfutils/version.h>
+>  #ifndef _ELFUTILS_PREREQ
+>  #error
 >  #endif
+> diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
+> index bba69d4..beaefc3 100644
+> --- a/tools/perf/util/probe-finder.h
+> +++ b/tools/perf/util/probe-finder.h
+> @@ -34,9 +34,9 @@ extern int find_available_vars_at(int fd, struct perf_probe_event *pev,
+>  				  bool externs);
 >  
+>  #include <dwarf.h>
+> -#include <libdw.h>
+> -#include <libdwfl.h>
+> -#include <version.h>
+> +#include <elfutils/libdw.h>
+> +#include <elfutils/libdwfl.h>
+> +#include <elfutils/version.h>
+>  
+>  struct probe_finder {
+>  	struct perf_probe_event	*pev;		/* Target probe event */
 > -- 
-> 1.7.2.3
+> 1.7.2.2
 > 
-
