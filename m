@@ -1,52 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754454Ab0KHOSj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 09:18:39 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:55541 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752926Ab0KHOSi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 09:18:38 -0500
-X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=1qZAFK7FH7YA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=Y_2azpK4U78DZyq78gIA:9 a=J47mCEbZsYno2K0CdizqnXRMLXcA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] powerpc: Add jump label support
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: linuxppc-dev@ozlabs.org, Kumar Gala <kumar.gala@freescale.com>,
-        "David S.Miller" <davem@davemloft.net>, jbaron@redhat.com,
-        linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>
-In-Reply-To: <45fbc3cd7f6ce404d1e25bf01695fb629d86189d.1289189560.git.michael@ellerman.id.au>
-References: <45fbc3cd7f6ce404d1e25bf01695fb629d86189d.1289189560.git.michael@ellerman.id.au>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 08 Nov 2010 09:18:35 -0500
-Message-ID: <1289225915.12418.2.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754639Ab0KHOU7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 09:20:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2462 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754158Ab0KHOU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 09:20:58 -0500
+Date: Mon, 8 Nov 2010 09:20:54 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
+        czoccolo@gmail.com
+Subject: Re: [patch 3/3]cfq-iosched: don't idle if a deep seek queue is slow
+Message-ID: <20101108142054.GB16767@redhat.com>
+References: <1289182045.23014.191.camel@sli10-conroe>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289182045.23014.191.camel@sli10-conroe>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-08 at 15:12 +1100, Michael Ellerman wrote:
-> This patch adds support for the new "jump label" feature.
-
-Darn it! I wanted to port this!!!
-
-;-)
-
+On Mon, Nov 08, 2010 at 10:07:25AM +0800, Shaohua Li wrote:
+> If a deep seek queue slowly deliver requests but disk is much faster, idle
+> for the queue just wastes disk throughput. If the queue delevers all requests
+> before half its slice is used, the patch disable idle for it.
+> In my test, application delivers 32 requests one time, the disk can accept
+> 128 requests at maxium and disk is fast. without the patch, the throughput
+> is just around 30m/s, while with it, the speed is about 80m/s. The disk is
+> a SSD, but is detected as a rotational disk. I can configure it as SSD, but
+> I thought the deep seek queue logic should be fixed too, for example,
+> considering a fast raid.
 > 
-> Built for 64 & 32 bit, tested on 64 bit. Survives a kernel build under
-> perf with all tracepoints enabled, and manual inspection of the patched
-> code looks right. But still, lightly tested, YMMV.
+
+Hi Shaohua,
+
+So looks like you are trying to cut down queue idling in the case when
+device is fast and idling hurts. That's a noble goal, just that detetction
+of this condition only for deep queues does not seem to cover lots of
+cases. Manually one can set slice_idle=0 to handle this situation.
+
+What about if you have lots of sequential queues (not deep) and they all
+will still idle.
+
+Secondly, what if driver is just buffering lots of requests in its device
+queue and not necessarily device is processing the reuqests faster.
+
+So I think it is a good idea to cut down on idling if we can find that
+underlying device is fast and idling on queue might hurt more. But
+discovering this only using deep queues does not sound very appleaing to
+me. This is help only a particular workload which is driving deep queues.
+So if there was a generic mechanism to tackle this, that would be much
+better.
+
+Vivek
+ 
+ 
+
+> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 > 
-> Unlike x86 and sparc we just merrily patch the code with no locks etc,
-> as far as I know this is safe, but I'm not really sure what the x86/sparc
-> code is protecting against so maybe it's not.
-
-Thanks, I'll give it a test on my electra as soon as I get a gcc 4.5.1
-cross compiler working.
-
--- Steve
-
-
+> ---
+>  block/cfq-iosched.c |   11 +++++++++++
+>  1 file changed, 11 insertions(+)
+> 
+> Index: linux/block/cfq-iosched.c
+> ===================================================================
+> --- linux.orig/block/cfq-iosched.c	2010-11-08 08:43:51.000000000 +0800
+> +++ linux/block/cfq-iosched.c	2010-11-08 08:49:52.000000000 +0800
+> @@ -2293,6 +2293,17 @@ static struct cfq_queue *cfq_select_queu
+>  		goto keep_queue;
+>  	}
+>  
+> +	/*
+> +	 * This is a deep seek queue, but the device is much faster than
+> +	 * the queue can deliver, don't idle
+> +	 **/
+> +	if (CFQQ_SEEKY(cfqq) && cfq_cfqq_idle_window(cfqq) &&
+> +	    (cfq_cfqq_slice_new(cfqq) ||
+> +	    (cfqq->slice_end - jiffies > jiffies - cfqq->slice_start))) {
+> +		cfq_clear_cfqq_deep(cfqq);
+> +		cfq_clear_cfqq_idle_window(cfqq);
+> +	}
+> +
+>  	if (cfqq->dispatched && cfq_should_idle(cfqd, cfqq)) {
+>  		cfqq = NULL;
+>  		goto keep_queue;
+> 
