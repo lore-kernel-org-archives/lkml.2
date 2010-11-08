@@ -1,116 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158Ab0KHNRO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 08:17:14 -0500
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:47651 "EHLO e2.ny.us.ibm.com"
+	id S1754231Ab0KHNUI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 08:20:08 -0500
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:33110 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753620Ab0KHNRN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 08:17:13 -0500
-Date: Mon, 8 Nov 2010 05:17:08 -0800
+	id S1752926Ab0KHNUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 08:20:05 -0500
+Date: Mon, 8 Nov 2010 05:19:58 -0800
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Davidlohr Bueso <dave@gnu.org>
-Cc: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mce: fix RCU lockdep from mce_log()
-Message-ID: <20101108131708.GC2580@linux.vnet.ibm.com>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mingo@elte.hu
+Subject: Re: [PATCH] rcu_read_lock/unlock protect find_task_by_vpid call
+Message-ID: <20101108131958.GD2580@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <1288993499.2065.4.camel@cowboy>
- <20101106185350.GA23824@basil.fritz.box>
- <20101107133950.GV15561@linux.vnet.ibm.com>
- <1289215819.2318.3.camel@cowboy>
+References: <20101030093234.GK3932@swordfish.minsk.epam.com>
+ <201010302214.DDF98906.MSFJOFtFHOLQVO@I-love.SAKURA.ne.jp>
+ <20101030210244.GE2664@linux.vnet.ibm.com>
+ <201010310833.CCE89052.FtQFHSOFLOOJMV@I-love.SAKURA.ne.jp>
+ <20101107194330.GE15561@linux.vnet.ibm.com>
+ <201011080704.GIH17609.SFVQLtJOOHFFMO@I-love.SAKURA.ne.jp>
+ <20101108030116.GB2580@linux.vnet.ibm.com>
+ <20101108102817.GN27712@swordfish.minsk.epam.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1289215819.2318.3.camel@cowboy>
+In-Reply-To: <20101108102817.GN27712@swordfish.minsk.epam.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 08, 2010 at 08:30:19AM -0300, Davidlohr Bueso wrote:
-> On Sun, 2010-11-07 at 05:39 -0800, Paul E. McKenney wrote:
-> > On Sat, Nov 06, 2010 at 07:53:50PM +0100, Andi Kleen wrote:
-> > > On Fri, Nov 05, 2010 at 06:44:59PM -0300, Davidlohr Bueso wrote:
-> > > > Hi,
-> > > > 
-> > > > Please review this patch, I am not very familiar with MCE/RCU so I'm not sure that this is the correct fix (otherwise consider it a bug report :)).
-> > > > This does "fix" the message though and I can use MCE normally.
+On Mon, Nov 08, 2010 at 12:28:17PM +0200, Sergey Senozhatsky wrote:
+> On (11/07/10 19:01), Paul E. McKenney wrote:
+> > On Mon, Nov 08, 2010 at 07:04:43AM +0900, Tetsuo Handa wrote:
+> > > Hello.
 > > > 
-> > > The patch is certainly not correct. The variable needs to be read
-> > > independently of the mutex.
+> > > Paul E. McKenney wrote:
+> > > > > Users missing rcu_read_lock() when calling find_task_by_vpid():
+> > > > > 
+> > > > >   check_clock() in kernel/posix-cpu-timers.c
+> > > > 
+> > > > 	This one has read_lock(&tasklist_lock).
+> > > > 
+> > > Excuse me. Holding tasklist_lock lock does not help.
+> > > We must call rcu_read_lock() explicitly.
+> > > That's why 9728e5d6 "kernel/pid.c: update comment on find_task_by_pid_ns" was made.
 > > 
-> > This code is simply checking the value of the pointer, and therefore
-> > need not protect any actual dereferences.  So why not replace the
-> > rcu_dereference_check_mce() with rcu_access_pointer()?  If this is
-> > OK, please see the patch below.
+> > OK, good point, there are a few more kernels of unpopped corn here.
+> >
+> 
+> Hello,
+> I prepared a patch for posix-cpu-timers. 
+> 
+> [PATCH] posix-cpu-timers: rcu_read_lock/unlock protect find_task_by_vpid call
+> Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+> 
+> http://lkml.org/lkml/2010/11/3/257
+
+Ah, very good, thank you!!!
+
+							Thanx, Paul
+
+> 	Sergey
+> 
+>  
+> > > I think there are users who needlessly call read_lock(&tasklist_lock)
+> > > when they can use rcu_read_lock() instead.
+> > > But I don't know when to use read_lock(&tasklist_lock).
+> > > 
+> > > If read_lock(&tasklist_lock) is needed only when we want to access
+> > > the "struct task_struct" after rcu_read_unlock(), maybe it is cleaner to
+> > > use a helper like
+> > > 
+> > > struct task_struct *find_task_and_get(pid_t pid)
+> > > {
+> > > 	struct task_struct *task;
+> > > 	read_lock(&tasklist_lock);
+> > > 	rcu_read_lock();
+> > > 	task = find_task_by_vpid(pid);
+> > > 	rcu_read_unlock();
+> > > 	if (task)
+> > > 		get_task_struct(task);
+> > > 	read_unlock(&tasklist_lock);
+> > > 	return task;
+> > > }
+> > > 
+> > > and hide tasklist_lock.
 > > 
-> > BTW, assigning the value returned by rcu_access_pointer() into a
-> > variable often indicates a bug.  ;-)
+> > This makes a lot of sense to me!  That said, most of the current
+> > open-coded variants of your find_task_and_get() seem to have the
+> > rcu_read_unlock() after the get_task_struct() rather than before.  But I
+> > don't claim to understand the locking design of this part of the kernel
+> > well enough to say which is the best approach.
+> > 
+> > So, either way, will you be submitting the patches for this?
 > > 
 > > 							Thanx, Paul
 > > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > 
-> > diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> > index 7a35b72..4d29d50 100644
-> > --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> > +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> > @@ -1625,7 +1625,7 @@ out:
-> >  static unsigned int mce_poll(struct file *file, poll_table *wait)
-> >  {
-> >  	poll_wait(file, &mce_wait, wait);
-> > -	if (rcu_dereference_check_mce(mcelog.next))
-> > +	if (rcu_access_pointer(mcelog.next))
-> 
-> this doesn't compile (mcelog.next is an index):
-> 
-> arch/x86/kernel/cpu/mcheck/mce.c: In function ‘mce_poll’:
-> arch/x86/kernel/cpu/mcheck/mce.c:1628: error: invalid type argument of
-> ‘unary *’ (have ‘unsigned int’)
-> arch/x86/kernel/cpu/mcheck/mce.c:1628: warning: type defaults to ‘int’
-> in declaration of ‘_________p1’
-> arch/x86/kernel/cpu/mcheck/mce.c:1628: error: invalid type argument of
-> ‘unary *’ (have ‘unsigned int’)
-> arch/x86/kernel/cpu/mcheck/mce.c:1628: warning: type defaults to ‘int’
-> in declaration of ‘type name’
-> arch/x86/kernel/cpu/mcheck/mce.c:1628: warning: cast to pointer from
-> integer of different size
-> arch/x86/kernel/cpu/mcheck/mce.c:1628: error: invalid type argument of
-> ‘unary *’ (have ‘unsigned int’)
-> arch/x86/kernel/cpu/mcheck/mce.c:1628: warning: type defaults to ‘int’
-> in declaration of ‘type name’
-> make[4]: *** [arch/x86/kernel/cpu/mcheck/mce.o] Error 1
-> 
-> 
-> Since the mutex is independent, what about this patch?
 
-Looks good to me!
 
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
->  Signed-off-by: Davidlohr Bueso <dave@gnu.org>
-> 
-> ---
->  arch/x86/kernel/cpu/mcheck/mce.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c
-> b/arch/x86/kernel/cpu/mcheck/mce.c
-> index 7a35b72..cc1c673 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -1625,7 +1625,7 @@ out:
->  static unsigned int mce_poll(struct file *file, poll_table *wait)
->  {
->  	poll_wait(file, &mce_wait, wait);
-> -	if (rcu_dereference_check_mce(mcelog.next))
-> +	if (rcu_dereference_index_check(mcelog.next,
-> rcu_read_lock_sched_held()))
->  		return POLLIN | POLLRDNORM;
->  	if (!mce_apei_read_done && apei_check_mce())
->  		return POLLIN | POLLRDNORM;
-> -- 
-> 1.7.1
-> 
-> 
-> 
