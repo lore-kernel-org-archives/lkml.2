@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055Ab0KHCbk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Nov 2010 21:31:40 -0500
-Received: from mga11.intel.com ([192.55.52.93]:48273 "EHLO mga11.intel.com"
+	id S1754078Ab0KHCdL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Nov 2010 21:33:11 -0500
+Received: from mail.lang.hm ([64.81.33.126]:39838 "EHLO bifrost.lang.hm"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753681Ab0KHCbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Nov 2010 21:31:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,311,1286175600"; 
-   d="scan'208";a="855128712"
-Date: Mon, 8 Nov 2010 09:45:27 -0500
-From: Youquan Song <youquan.song@linux.intel.com>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Youquan Song <youquan.song@linux.intel.com>, davej@redhat.com,
-        venki@google.com, youquan.song@intel.com, cpufreq@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpufreq: Fix ondemand governor powersave_bias
-	execution time misuse
-Message-ID: <20101108144527.GA13617@linux-youquan.bj.intel.com>
-References: <20101105151951.GA10743@linux-youquan.bj.intel.com> <4CD3EF31.9060909@linux.intel.com>
+	id S1753681Ab0KHCdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Nov 2010 21:33:09 -0500
+Date: Sun, 7 Nov 2010 18:32:40 -0800 (PST)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: Davide Libenzi <davidel@xmailserver.org>
+cc: Matt Helsley <matthltc@us.ibm.com>, Tejun Heo <tj@kernel.org>,
+        Oren Laadan <orenl@cs.columbia.edu>,
+        ksummit-2010-discuss@lists.linux-foundation.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
+In-Reply-To: <alpine.DEB.2.00.1011071032001.29896@davide-lnx1>
+Message-ID: <alpine.DEB.2.00.1011071817560.24952@asgard.lang.hm>
+References: <Pine.LNX.4.64.1011021530470.12128@takamine.ncl.cs.columbia.edu> <4CD08419.5050803@kernel.org> <4CD23087.30900@cs.columbia.edu> <4CD28033.1000700@kernel.org> <20101106101209.GD11535@count0.beaverton.ibm.com>
+ <alpine.DEB.2.00.1011071032001.29896@davide-lnx1>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CD3EF31.9060909@linux.intel.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 11/5/2010 11:19 AM, Youquan Song wrote:
->> Ondemand governor use powersave_bias tunable to do aggressive power save by
->> decrease CPU average frequency. The average frequency achieve by adjust low and
->> high frequency's execution time proportion during one sample time interval.
->>
->> Current kernel, only the high frequency executes in time proportion, but the low
->> frequency wrongly execute in one whole sample time interval when powersave_bias
->> is set.
->>
->> The patch fix it by set low frequency execution time to it deserved.
->>
->> Signed-off-by: Youquan Song<youquan.song@intel.com>
->> ---
->
->
-> while your patch looks correct, I think the whole feature is wonky and 
-> likely ought to be removed...........
+On Sun, 7 Nov 2010, Davide Libenzi wrote:
 
-powersave_bias should be a useful feature, which give user an
-opportunity to set the CPU to work at wider average frequency accord to real
- workload requirement, not just CPU frequency specific at P0,P1,...Pn.
-At the same time, it meets end user power comsumpation requirement in
-some degree. 
-Unfortunately, it does not work for a long time.
+> Please, do not compare things like single file systems, drivers, or
+> otherwise fairly isolated components, with this "thing".
+> This thing touches a freaky-large number of subsystems, effectively
+> adding a glueage between them, which can might end up causing problems
+> (and/or restrict design choices) in the future.
 
-Thanks
--Youquan
+I've got a question about the ABI that would be created
+
+I see two possible areas that could be considered an ABI
+
+1. control of the C/R process
+
+   This is very clearly a userspace ABI, to be figured out and locked down 
+like any other ABI
+
+2. the details of how things are stored and added back into a system
+
+   This is not as clear. at one extreme, this could be like the module 
+interface, (the checkpointed image is only guaranteed to work on a new 
+system with a kernel compiled with the same config options as the system 
+it was checkpointed from). At the other extreme, this could be something 
+that allows you to ckeckpoint an image on 2.6.40 and restore it on 2.6.80. 
+Or it could be something in between.
+
+I don't see any way that it is sane to make the C/R image defiition and 
+interface (#2) be an ABI that is guaranteed to never change without 
+hurting future kernel development (exactly the type of things that Davide 
+is worried about above), but what sort of guarantee are people interested 
+in?
+
+is it enough to sa that it must be the same kernel version compiled with 
+the same options? (or at least the same options for some list of things 
+that matter, most device drivers probably would not matter for example)
+
+or would you need compatibility across all compile options for a kernel 
+release?
+
+would you require compatibility between 2.6.x.y and 2.6.x.z?
+
+would you require compatibility between 2.6.x and 2.6.x+n (for some value 
+of n)?
+
+is this something that could go in with the weakest guarantee initially, 
+and then as everyone is more comfortable with it, start extending the 
+guarantee (and as-needed adding code to the kernel to maintain 
+compatibility with old images)?
+
+would you require compatibility between 2.6.x and 2.6.x-n?
+
+David Lang
