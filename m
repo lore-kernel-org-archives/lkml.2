@@ -1,58 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753736Ab0KHKVh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 05:21:37 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47994 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753339Ab0KHKVg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 05:21:36 -0500
-Date: Mon, 8 Nov 2010 10:20:13 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: linux-kernel@vger.kernel.org, security@kernel.org
-Subject: Re: [PATCH RFC] Restrictions on module loading
-Message-ID: <20101108102013.0861725b@lxorguk.ukuu.org.uk>
-In-Reply-To: <1289179439.3090.205.camel@Dan>
-References: <1289179439.3090.205.camel@Dan>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754074Ab0KHKXV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 05:23:21 -0500
+Received: from smtp.nokia.com ([147.243.1.48]:19368 "EHLO mgw-sa02.nokia.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753289Ab0KHKXU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 05:23:20 -0500
+Date: Mon, 8 Nov 2010 12:22:40 +0200
+From: Heikki Krogerus <heikki.krogerus@nokia.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: cbouatmailru@gmail.com, dwmw2@infradead.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, ameya.palande@nokia.com,
+        markus.lehtonen@nokia.com
+Subject: Re: [PATCH 4/4] power_supply: isp1704: Detect charger after probe
+Message-ID: <20101108102240.GA7451@esdhcp041123.research.nokia.com>
+References: <1288881109-18222-1-git-send-email-heikki.krogerus@nokia.com>
+ <1288881109-18222-5-git-send-email-heikki.krogerus@nokia.com>
+ <4CD41E9D.2000702@ru.mvista.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="C7zPtVaVf+AK4Oqc"
+Content-Disposition: inline
+In-Reply-To: <4CD41E9D.2000702@ru.mvista.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> loading of kernel modules, for example by creating a socket using a
-> packet family that is compiled as a module and not already loaded.  On
-> most distributions, this creates a significant attack surface, and
-> requires maintenance of blacklists and other inelegant solutions to a
-> general problem.
 
-Those inelegant solutions work rather better in a lot of situations
-because most distributions will fall flat on their face if auto loading
-isn't active and they are more flexible.
+--C7zPtVaVf+AK4Oqc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> The below patch replaces the existing "modules_disable" sysctl with a
+Hi,
 
-NAK - Its a long standing ABI.
+On Fri, Nov 05, 2010 at 04:11:25PM +0100, ext Sergei Shtylyov wrote:
+> > @@ -422,6 +422,23 @@ static int __devinit isp1704_charger_probe(struct platform_device *pdev)
+> >
+> >   	dev_info(isp->dev, "registered with product id %s\n", isp->model);
+> >
+> > +	/*
+> > +	 * Taking over the D+ pullup.
+> > +	 *
+> > +	 * FIXME: The device will be disconnected if the it was already
+>                                                       ^^^
+>     "the" is not needed here.
 
-> When set to 2, modules may not be loaded or unloaded by anyone, and the
-> sysctl may not be changed from that point forward.  This is designed to
-> provide protection against kernel module rootkits.
+Here's the fix removing the extra "the". Thanks.
 
-I've no objection to modules_restrict although I doubt it'll ever get
-used in the real world, but better to extend the meaning of the existing
-interface, not remove stuff.
+-- 
+heikki
 
-If you have "security" in your address the please think like a security
-person - users with security relying upon writing to modules_disable are
-*not* going to notice a one line log entry somewhere about unable to open
-{filename that doesn't look important}.
+--C7zPtVaVf+AK4Oqc
+Content-Type: text/x-diff; charset=us-ascii
+Content-Disposition: attachment; filename="0001-power_supply-isp1704-Detect-charger-after-probe.patch"
 
-So your change is actually *bad* for security in its current form, you
-remove the facilities they rely upon.
+>From 22adc046938bdb57adca5acf59fd94539d5e0110 Mon Sep 17 00:00:00 2001
+From: Heikki Krogerus <heikki.krogerus@nokia.com>
+Date: Thu, 4 Nov 2010 16:14:22 +0200
+Subject: [PATCH] power_supply: isp1704: Detect charger after probe
 
-Alan
+If the device is booted up with cable connected, or the
+module is loaded after plugging in the cable, the
+notification has come and gone, so not relying on it at
+probe time. Instead this checks the VBUS level manually
+after probe.
 
+Signed-off-by: Heikki Krogerus <heikki.krogerus@nokia.com>
+---
+ drivers/power/isp1704_charger.c |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/power/isp1704_charger.c b/drivers/power/isp1704_charger.c
+index 77c11f1..2ad9b14 100644
+--- a/drivers/power/isp1704_charger.c
++++ b/drivers/power/isp1704_charger.c
+@@ -422,6 +422,23 @@ static int __devinit isp1704_charger_probe(struct platform_device *pdev)
+ 
+ 	dev_info(isp->dev, "registered with product id %s\n", isp->model);
+ 
++	/*
++	 * Taking over the D+ pullup.
++	 *
++	 * FIXME: The device will be disconnected if it was already
++	 * enumerated. The charger driver should be always loaded before any
++	 * gadget is loaded.
++	 */
++	if (isp->otg->gadget)
++		usb_gadget_disconnect(isp->otg->gadget);
++
++	/* Detect charger if VBUS is valid (the cable was already plugged). */
++	ret = otg_io_read(isp->otg, ULPI_USB_INT_STS);
++	if ((ret & ULPI_INT_VBUS_VALID) && !isp->otg->default_a) {
++		isp->event = USB_EVENT_VBUS;
++		schedule_work(&isp->work);
++	}
++
+ 	return 0;
+ fail2:
+ 	power_supply_unregister(&isp->psy);
+-- 
+1.7.1
+
+
+--C7zPtVaVf+AK4Oqc--
