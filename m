@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755903Ab0KHXUJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 18:20:09 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:39349 "EHLO
+	id S1755989Ab0KHXUT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 18:20:19 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:39355 "EHLO
 	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755971Ab0KHXUH (ORCPT
+	with ESMTP id S1751437Ab0KHXUR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 18:20:07 -0500
-Date: Tue, 9 Nov 2010 00:08:41 +0100 (CET)
+	Mon, 8 Nov 2010 18:20:17 -0500
+Date: Tue, 9 Nov 2010 00:08:50 +0100 (CET)
 From: Jesper Juhl <jj@chaosbits.net>
 To: linux-kernel@vger.kernel.org
-cc: trivial@kernel.org, linux-media@vger.kernel.org,
-        Jelle Foks <jelle@foks.us>, Gerd Knorr <kraxel@bytesex.org>,
-        Steven Toth <stoth@linuxtv.org>
-Subject: [PATCH 04/17][trivial] drivers/media/, cx231xx-417: Remove unnecessary
+cc: trivial@kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 05/17][trivial] drivers/message/, i2o: Remove unnecessary
  casts of void ptr returning alloc function return values
-Message-ID: <alpine.LNX.2.00.1011082318590.23697@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1011082323470.23697@swampdragon.chaosbits.net>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -29,35 +27,28 @@ The [vk][cmz]alloc(_node) family of functions return void pointers which
 it's completely unnecessary/pointless to cast to other pointer types since
 that happens implicitly.
 
-This patch removes such casts from drivers/media/
+This patch removes such casts from drivers/message/
 
 
 Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- cx231xx-417.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-diff --git a/drivers/media/video/cx231xx/cx231xx-417.c b/drivers/media/video/cx231xx/cx231xx-417.c
-index aab21f3..42075dc 100644
---- a/drivers/media/video/cx231xx/cx231xx-417.c
-+++ b/drivers/media/video/cx231xx/cx231xx-417.c
-@@ -941,14 +941,14 @@ static int cx231xx_load_firmware(struct cx231xx *dev)
- 	u16 _buffer_size = 4096;
- 	u8 *p_buffer;
- 
--	p_current_fw = (u32 *)vmalloc(1884180*4);
-+	p_current_fw = vmalloc(1884180*4);
- 	p_fw = p_current_fw;
- 	if (p_current_fw == 0) {
- 		dprintk(2, "FAIL!!!\n");
- 		return -1;
- 	}
- 
--	p_buffer = (u8 *)vmalloc(4096);
-+	p_buffer = vmalloc(4096);
- 	if (p_buffer == 0) {
- 		dprintk(2, "FAIL!!!\n");
- 		return -1;
+ i2o_config.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
+diff --git a/drivers/message/i2o/i2o_config.c b/drivers/message/i2o/i2o_config.c
+index 7d3cc57..098de2b 100644
+--- a/drivers/message/i2o/i2o_config.c
++++ b/drivers/message/i2o/i2o_config.c
+@@ -1044,8 +1044,7 @@ static long i2o_cfg_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+ 
+ static int cfg_open(struct inode *inode, struct file *file)
+ {
+-	struct i2o_cfg_info *tmp =
+-	    (struct i2o_cfg_info *)kmalloc(sizeof(struct i2o_cfg_info),
++	struct i2o_cfg_info *tmp = kmalloc(sizeof(struct i2o_cfg_info),
+ 					   GFP_KERNEL);
+ 	unsigned long flags;
+ 
 
 
 -- 
