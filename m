@@ -1,112 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab0KHSHE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 13:07:04 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:2221 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755363Ab0KHSHB (ORCPT
+	id S1755364Ab0KHSLj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 13:11:39 -0500
+Received: from serrano.cc.columbia.edu ([128.59.29.6]:61385 "EHLO
+	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753035Ab0KHSLi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 13:07:01 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp03.nvidia.com on Mon, 08 Nov 2010 10:06:18 -0800
-Date: Mon, 8 Nov 2010 10:06:16 -0800
-From: rmorell@nvidia.com
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf: Remove hardcoded include paths for elfutils
-Message-ID: <20101108180616.GB24197@morell.nvidia.com>
-References: <1288923830-4586-1-git-send-email-rmorell@nvidia.com>
+	Mon, 8 Nov 2010 13:11:38 -0500
+Message-ID: <4CD83DF4.4080009@cs.columbia.edu>
+Date: Mon, 08 Nov 2010 13:14:12 -0500
+From: Oren Laadan <orenl@cs.columbia.edu>
+Organization: Columbia University
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Lightning/1.0b1 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288923830-4586-1-git-send-email-rmorell@nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Gene Cooperman <gene@ccs.neu.edu>
+CC: Kapil Arya <kapil@ccs.neu.edu>, Tejun Heo <tj@kernel.org>,
+        ksummit-2010-discuss@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, hch@lst.de,
+        Linux Containers <containers@lists.osdl.org>
+Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
+References: <AANLkTinOg6n3ZA+0gHzw9LouRuUmJ7DJwHtABRy5c=gM@mail.gmail.com> <4CD26948.7050009@kernel.org> <20101104164401.GC10656@sundance.ccs.neu.edu> <4CD3CE29.2010105@kernel.org> <AANLkTimDXKsBCxbsEOfgkYV2R8FK=bhFdmx9UQow5hqp@mail.gmail.com> <4CD5DCE3.3000109@cs.columbia.edu> <20101107194222.GG31077@sundance.ccs.neu.edu> <4CD71A6B.3020905@cs.columbia.edu> <20101107230516.GJ31077@sundance.ccs.neu.edu> <4CD774CA.8030004@cs.columbia.edu> <20101108162630.GN31077@sundance.ccs.neu.edu>
+In-Reply-To: <20101108162630.GN31077@sundance.ccs.neu.edu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now with maintainers in To:
-(sorry for the noise)
+Hi,
 
-On Thu, Nov 04, 2010 at 07:23:50PM -0700, Robert Morell wrote:
-> This change removes the use of hardcoded absolute
-> "/usr/include/elfutils" paths from the perf build.  The problem with
-> hardcoded paths is that it prevents them from being overridden by
-> $prefix or by -I in CFLAGS (e.g., for cross-compiling purposes).
-> 
-> Instead, just include the "elfutils/" subdirectory as a relative path
-> when files are needed from that directory.
-> 
-> Tested by building perf:
-> - Cross-compiled for ARM on x86_64
-> - Built natively on x86_64
-> - Built on x86_64 with /usr/include/elfutils moved to another location
->   and manually included in CFLAGS
-> 
-> Signed-off-by: Robert Morell <rmorell@nvidia.com>
-> ---
->  tools/perf/Makefile            |    4 ++--
->  tools/perf/feature-tests.mak   |    4 ++--
->  tools/perf/util/probe-finder.h |    6 +++---
->  3 files changed, 7 insertions(+), 7 deletions(-)
-> 
-> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> index d1db0f6..74b684d 100644
-> --- a/tools/perf/Makefile
-> +++ b/tools/perf/Makefile
-> @@ -507,7 +507,7 @@ PERFLIBS = $(LIB_FILE)
->  -include config.mak
->  
->  ifndef NO_DWARF
-> -FLAGS_DWARF=$(ALL_CFLAGS) -I/usr/include/elfutils -ldw -lelf $(ALL_LDFLAGS) $(EXTLIBS)
-> +FLAGS_DWARF=$(ALL_CFLAGS) -ldw -lelf $(ALL_LDFLAGS) $(EXTLIBS)
->  ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF)),y)
->  	msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
->  	NO_DWARF := 1
-> @@ -554,7 +554,7 @@ ifndef NO_DWARF
->  ifeq ($(origin PERF_HAVE_DWARF_REGS), undefined)
->  	msg := $(warning DWARF register mappings have not been defined for architecture $(ARCH), DWARF support disabled);
->  else
-> -	BASIC_CFLAGS += -I/usr/include/elfutils -DDWARF_SUPPORT
-> +	BASIC_CFLAGS += -DDWARF_SUPPORT
->  	EXTLIBS += -lelf -ldw
->  	LIB_OBJS += $(OUTPUT)util/probe-finder.o
->  endif # PERF_HAVE_DWARF_REGS
-> diff --git a/tools/perf/feature-tests.mak b/tools/perf/feature-tests.mak
-> index b253db6..b041ca6 100644
-> --- a/tools/perf/feature-tests.mak
-> +++ b/tools/perf/feature-tests.mak
-> @@ -9,8 +9,8 @@ endef
->  ifndef NO_DWARF
->  define SOURCE_DWARF
->  #include <dwarf.h>
-> -#include <libdw.h>
-> -#include <version.h>
-> +#include <elfutils/libdw.h>
-> +#include <elfutils/version.h>
->  #ifndef _ELFUTILS_PREREQ
->  #error
->  #endif
-> diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
-> index bba69d4..beaefc3 100644
-> --- a/tools/perf/util/probe-finder.h
-> +++ b/tools/perf/util/probe-finder.h
-> @@ -34,9 +34,9 @@ extern int find_available_vars_at(int fd, struct perf_probe_event *pev,
->  				  bool externs);
->  
->  #include <dwarf.h>
-> -#include <libdw.h>
-> -#include <libdwfl.h>
-> -#include <version.h>
-> +#include <elfutils/libdw.h>
-> +#include <elfutils/libdwfl.h>
-> +#include <elfutils/version.h>
->  
->  struct probe_finder {
->  	struct perf_probe_event	*pev;		/* Target probe event */
-> -- 
-> 1.7.2.2
-> 
+Ok, I'll bite the bullet for now - to be continued...
+
+Just one important clarification:
+
+>> Linux-cr can do live migration - e.g. VDI, move the desktop - in
+>> which case skype's sockets' network stacks are reconstructed,
+>> transparently to both skype (local apps) and the peer (remote apps).
+>> Then, at the destination host and skype continues to work.
+>
+> That's a really cool thing to do, and it's definitely not part of what
+> DMTCP does.  It might be possible to do userland live migration,
+> but it's definitely not part of our current scope.  But if we're talking
+> about live migration, have you also looked at the work of
+> Andres Lagar Caviilla on SnowFlock?
+>      http://andres.lagarcavilla.com/publications/LagarCavillaEurosys09.pdf
+> He does live migration of entire virtual machines, again with very
+> small delay.  Of course, the issue for any type of live migration is that
+> if the rate of dirtying pages is very high (e.g. HPC), then there is
+> still a delay or slow response, due to page faults to a remote host.
+
+VMware, Xen and KVM already do live migration. However, VMs
+are a separate beast.
+
+We are concerned about _application_ level c/r and migration
+(complete containers or individual applications). Many proven
+techniques from the VM world apply to our context too (in your
+example, post-copy migration).
+
+Oren.
