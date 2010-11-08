@@ -1,40 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887Ab0KHJwN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 04:52:13 -0500
-Received: from www.tglx.de ([62.245.132.106]:54297 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752160Ab0KHJwM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 04:52:12 -0500
-Date: Mon, 8 Nov 2010 10:51:54 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Thomas Meyer <thomas@m3y3r.de>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.36: kernel panic in cascade (Fatal exception in interrupt)
-In-Reply-To: <201011080014.33354.thomas@m3y3r.de>
-Message-ID: <alpine.LFD.2.00.1011081047500.2900@localhost6.localdomain6>
-References: <201011032334.30662.thomas@m3y3r.de> <201011080014.33354.thomas@m3y3r.de>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1752823Ab0KHJ4N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 04:56:13 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:35158 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072Ab0KHJ4M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 04:56:12 -0500
+Date: Mon, 8 Nov 2010 04:56:10 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, chris@chris-wilson.co.uk,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] Tracing: do export trace_set_clr_event
+Message-ID: <20101108095610.GA22592@infradead.org>
+References: <1289196312-25323-1-git-send-email-yuanhan.liu@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289196312-25323-1-git-send-email-yuanhan.liu@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 8 Nov 2010, Thomas Meyer wrote:
-> > 
-> > [   300.000697] Pid: 0, comm: kworker/0:0 Not tainted 2.6.36 #2 MS-7250/MS-7250
-> > [   300.000815] RIP: 0010:[<ffffffff8105faf4>]  [<ffffffff8105faf4>] cascade+0x54/0x7a
+On Mon, Nov 08, 2010 at 02:05:12PM +0800, Yuanhan Liu wrote:
+> Trace event belongs to a module does exist only when the module is
+> loaded. Well, we can use trace_set_clr_event funtion to enable some
+> trace event at the module init routine, so that we will not miss
+> something while loading then module.
+> 
+> So, Export the trace_set_clr_event function so that module can use it.
 
-Can you please enable
+Which module?
 
-CONFIG_DEBUG_OBJECTS
-CONFIG_DEBUG_OBJECTS_FREE
-CONFIG_DEBUG_OBJECTS_TIMERS
-and set CONFIG_DEBUG_OBJECTS_ENABLE_DEFAULT to 1
-
-That should give us more useful data.
-
-Thanks,
-
-	tglx
