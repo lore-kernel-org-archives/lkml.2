@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751025Ab0KHFHz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 00:07:55 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:49809 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750701Ab0KHFHy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 00:07:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=nPL+pmBdwOujCYDxclwNdv8mRRyac3p20vwb3w4gyemzWZNTjwYUKu/G4TQuV50nV9
-         79FwXcZwL9btGwWf/TpmBBIcRewClU4263sRxrKphlAu6mekoy+r5HQ4lyxIzK/D42nq
-         O3PSobpDR38BF7RM9Gpl4PVFi9Ubjykmb/gY0=
-Subject: [PATCH] hwmon: (adt7470) Return proper error code for
-	adt7470_probe()
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Jean Delvare <khali@linux-fr.org>, "Darrick J. Wong" <djwong@us.ibm.com>,
-        lm-sensors@lm-sensors.org
-Content-Type: text/plain
-Date: Mon, 08 Nov 2010 13:11:33 +0800
-Message-Id: <1289193093.682.1.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1751091Ab0KHFOK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 00:14:10 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:60655 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750860Ab0KHFOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 00:14:09 -0500
+Date: Sun, 7 Nov 2010 21:14:02 -0800
+From: Kees Cook <kees.cook@canonical.com>
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: linux-kernel@vger.kernel.org, security@kernel.org
+Subject: Re: [PATCH RFC] Restrictions on module loading
+Message-ID: <20101108051402.GA5876@outflux.net>
+References: <1289179439.3090.205.camel@Dan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289179439.3090.205.camel@Dan>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/hwmon/adt7470.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+On Sun, Nov 07, 2010 at 08:23:59PM -0500, Dan Rosenberg wrote:
+> A significant portion of kernel vulnerabilities do not affect core code,
+> but rather individual modules.  Unfortunately, there is no global kernel
+> setting to restrict unprivileged users from triggering the automatic
+> loading of kernel modules, for example by creating a socket using a
+> packet family that is compiled as a module and not already loaded.  On
+> most distributions, this creates a significant attack surface, and
+> requires maintenance of blacklists and other inelegant solutions to a
+> general problem.
+> 
+> The below patch replaces the existing "modules_disable" sysctl with a
+> finer-grained "modules_restrict" sysctl.  By default, this is set at 0,
+> which results in no deviation from normal module loading behavior.  When
+> set to 1, unprivileged users cannot trigger the automatic loading of
+> modules.  This behavior is based on grsecurity's GRKERNSEC_MODHARDEN
+> setting.  The current check is against current_uid(), since several
+> distributions explicitly remove CAP_SYS_MODULE from root processes, some
+> of which incidentally cause (and rely on) the automatic loading of
+> modules.  I expect this to be a point of discussion.
+> 
+> When set to 2, modules may not be loaded or unloaded by anyone, and the
+> sysctl may not be changed from that point forward.  This is designed to
+> provide protection against kernel module rootkits.
+> 
+> Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
 
-diff --git a/drivers/hwmon/adt7470.c b/drivers/hwmon/adt7470.c
-index 9e77571..87d92a5 100644
---- a/drivers/hwmon/adt7470.c
-+++ b/drivers/hwmon/adt7470.c
-@@ -1286,8 +1286,10 @@ static int adt7470_probe(struct i2c_client *client,
- 	init_completion(&data->auto_update_stop);
- 	data->auto_update = kthread_run(adt7470_update_thread, client,
- 					dev_name(data->hwmon_dev));
--	if (IS_ERR(data->auto_update))
-+	if (IS_ERR(data->auto_update)) {
-+		err = PTR_ERR(data->auto_update);
- 		goto exit_unregister;
-+	}
- 
- 	return 0;
- 
+Acked-by: Kees Cook <kees.cook@canonical.com>
+
+This looks great to me. There will be a small amount of pain for people
+that are already using modules_disabled=1, but I think the audience is so
+small that it won't be a problem to switch to modules_restrict=2.
+
+-Kees
+
 -- 
-1.7.2
-
-
-
+Kees Cook
+Ubuntu Security Team
