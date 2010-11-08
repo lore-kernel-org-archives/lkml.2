@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752875Ab0KHKNK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 05:13:10 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:53395 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752372Ab0KHKNI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 05:13:08 -0500
-From: Bernhard Walle <walle@corscience.de>
-To: linux-doc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] Documentation: gpio: Clarify usage of poll(2)
-Date: Mon,  8 Nov 2010 11:12:56 +0100
-Message-Id: <1289211176-9094-1-git-send-email-walle@corscience.de>
-X-Mailer: git-send-email 1.7.1
-X-Provags-ID: V02:K0:llIGHF+LYgr05azJOZAP0BBZUduvWHiNDJuHZ2CQZWw
- CV2W7BuXtYEh9cYnA3f27GKXQJ+tuzIpTtfZmJStBKATx43GgR
- 2BZRWVb/2mIFVzfzG4pPbXiKE1fG0bbiQuYm8Bn06h37w9AT4D
- i18qddI6/39oXQlMCZtdSgu/loKVlEpi39VfmXpgYwqQarCycY
- vOj7hBRaojUD55uVLyI6A==
+	id S1753339Ab0KHKOY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 05:14:24 -0500
+Received: from mga11.intel.com ([192.55.52.93]:35216 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751684Ab0KHKOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 05:14:23 -0500
+Message-Id: <5b55a1$ijitko@fmsmga002.fm.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,313,1286175600"; 
+   d="scan'208";a="624522904"
+Date: Mon, 08 Nov 2010 10:14:19 +0000
+To: Christoph Hellwig <hch@infradead.org>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Subject: Re: [PATCH] Tracing: do export trace_set_clr_event
+Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+In-Reply-To: <20101108095610.GA22592@infradead.org>
+References: <1289196312-25323-1-git-send-email-yuanhan.liu@linux.intel.com> <20101108095610.GA22592@infradead.org>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a bit more information how to use poll(2) on GPIO value files
-correctly. For me it was not clear that I need to poll(2) for
-POLLPRI|POLLERR or select(2) for exceptfds.
+On Mon, 8 Nov 2010 04:56:10 -0500, Christoph Hellwig <hch@infradead.org> wrote:
+> On Mon, Nov 08, 2010 at 02:05:12PM +0800, Yuanhan Liu wrote:
+> > Trace event belongs to a module does exist only when the module is
+> > loaded. Well, we can use trace_set_clr_event funtion to enable some
+> > trace event at the module init routine, so that we will not miss
+> > something while loading then module.
+> > 
+> > So, Export the trace_set_clr_event function so that module can use it.
+> 
+> Which module?
 
-Signed-off-by: Bernhard Walle <walle@corscience.de>
----
- Documentation/gpio.txt |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+drm/i915. The scenario is that we want to enable a tracepoint to record
+(selected) register writes both at runtime and module-load time. mmiotrace
+is not quite sufficient for our needs, since we want to be enable
+recording around a troublesome application from within X (i.e. without
+having to ask the user to reload the module after enabling mmiotrace). We
+also want to exclude the bit-banging registers from being traced since
+they generate voluminous noise. So we settled on adding a tracepoint to
+the our register read/write routines.
 
-diff --git a/Documentation/gpio.txt b/Documentation/gpio.txt
-index 9633da0..792faa3 100644
---- a/Documentation/gpio.txt
-+++ b/Documentation/gpio.txt
-@@ -617,6 +617,16 @@ and have the following read/write attributes:
- 		is configured as an output, this value may be written;
- 		any nonzero value is treated as high.
- 
-+		If the pin can be configured as interrupt-generating interrupt
-+		and if it has been configured to generate interrupts (see the
-+		description of "edge"), you can poll(2) on that file and
-+		poll(2) will return whenever the interrupt was triggered. If
-+		you use poll(2), set the events POLLPRI and POLLERR. If you
-+		use select(2), set the file descriptor in exceptfds. After
-+		poll(2) returns, either lseek(2) to the beginning of the sysfs
-+		file and read the new value or close the file and re-open it
-+		to read the value.
-+
- 	"edge" ... reads as either "none", "rising", "falling", or
- 		"both". Write these strings to select the signal edge(s)
- 		that will make poll(2) on the "value" file return.
+The question then became how to enable register tracing upon module load?
+This was the simpler proposal, add a module parameter to enable the
+tracepoints - hence the exporting of this routine. The alternative that we
+are mulling over is whether it is possible for ftrace to parse a trace= on
+every module load to manipulate the tracepoints within that module.
+-Chris
+
 -- 
-1.7.1
-
+Chris Wilson, Intel Open Source Technology Centre
