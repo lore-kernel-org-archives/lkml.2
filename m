@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755891Ab0KHWPc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 17:15:32 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:57938 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755870Ab0KHWPa (ORCPT
+	id S1755491Ab0KHWZr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 17:25:47 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:14811 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754351Ab0KHWZq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 17:15:30 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Y1Bc+TkRJInBoNuuA5z3E4awO8m7YyVRDTU9X5duHb9+mUeAGHXue4xKYWEMpMyC4W
-         Np7OkQYqGv0PaDIxCNhxO3Ze4LrAs19oHyzg9jhZsFHQXsqDKHYfamqAnm60p+6oRalO
-         68dtto4XLaEvWm4zQAiq0zT+U19uLryiMXpsQ=
-Date: Tue, 9 Nov 2010 01:15:29 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        x86@kernel.org
-Subject: Re: [PATCH] x86: fix apic.h unused but set warnings v2
-Message-ID: <20101108221528.GH6273@lenovo>
-References: <1289251229-19589-1-git-send-email-andi@firstfloor.org> <alpine.LFD.2.00.1011082238420.2900@localhost6.localdomain6> <87oc9zqy0l.fsf@basil.nowhere.org>
+	Mon, 8 Nov 2010 17:25:46 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:references:date:in-reply-to:message-id:
+	user-agent:mime-version:content-type:content-transfer-encoding;
+	b=Z7EY4EjqSyJ1FBL26SbHfus3biXj5oqUQfEuKQb3q6GkchNPziTJuQX1f8/ZWQXKX
+	CQo+iQfC3fnsW7Wc0GGrA==
+From: Greg Thelen <gthelen@google.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Young <hidave.darkstar@gmail.com>,
+        Andrea Righi <arighi@develer.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/4] memcg: use native word to represent dirtyable pages
+References: <1288973333-7891-1-git-send-email-minchan.kim@gmail.com>
+	<20101106010357.GD23393@cmpxchg.org>
+	<AANLkTin9m65JVKRuStZ1-qhU5_1AY-GcbBRC0TodsfYC@mail.gmail.com>
+	<20101107215030.007259800@cmpxchg.org>
+	<20101107220353.115646194@cmpxchg.org>
+	<AANLkTi=qO84k-KWaG2R_nQr7vxRA2E7DbO4=XhVrFzjv@mail.gmail.com>
+Date: Mon, 08 Nov 2010 14:25:15 -0800
+In-Reply-To: <AANLkTi=qO84k-KWaG2R_nQr7vxRA2E7DbO4=XhVrFzjv@mail.gmail.com>
+	(Minchan Kim's message of "Mon, 8 Nov 2010 07:56:43 +0900")
+Message-ID: <xr93aaljbghg.fsf@ninji.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87oc9zqy0l.fsf@basil.nowhere.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 08, 2010 at 10:57:30PM +0100, Andi Kleen wrote:
-> Thomas Gleixner <tglx@linutronix.de> writes:
-> 
-> > On Mon, 8 Nov 2010, Andi Kleen wrote:
-> >>  static inline u32 native_apic_msr_read(u32 reg)
-> >>  {
-> >> -	u32 low, high;
-> >> +	u32 low;
-> >>  
-> >>  	if (reg == APIC_DFR)
-> >>  		return -1;
-> >>  
-> >> -	rdmsr(APIC_BASE_MSR + (reg >> 4), low, high);
-> >> -	return low;
-> >> +	rdmsrl(APIC_BASE_MSR + (reg >> 4), low);
-> >> +	return (u32)low;
-> >
-> > What's the point of casting u32 to u32 ?
-> 
-> One of the earlier reviewers thought adding an explicit cast would make
-> the truncation in the code clearer.  I didn't full agree either, but 
-> still did the change.
-> 
-> -Andi
+Minchan Kim <minchan.kim@gmail.com> writes:
 
-Well, Andi I proposed to define variable as u64 and convert it back to u32 at procedure
-exit point. That would be clean, and I still think so ;) Though I'm fine with
-either way (I just thought about ones who will be reading this code in future,
-and since most the rdmsrl callers already use u64 and unsigned long, this would
-be consistent as well).
-
-  Cyrill
+> On Mon, Nov 8, 2010 at 7:14 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+>> The memory cgroup dirty info calculation currently uses a signed
+>> 64-bit type to represent the amount of dirtyable memory in pages.
+>>
+>> This can instead be changed to an unsigned word, which will allow the
+>> formula to function correctly with up to 160G of LRU pages on a 32-bit
+Is is really 160G of LRU pages?  On 32-bit machine we use a 32 bit
+unsigned page number.  With a 4KiB page size, I think that maps 16TiB
+(1<<(32+12)) bytes.  Or is there some other limit?
+>> system, assuming 4k pages.  That should be plenty even when taking
+>> racy folding of the per-cpu counters into account.
+>>
+>> This fixes a compilation error on 32-bit systems as this code tries to
+>> do 64-bit division.
+>>
+>> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+>> Reported-by: Dave Young <hidave.darkstar@gmail.com>
+> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Reviewed-by: Greg Thelen <gthelen@google.com>
