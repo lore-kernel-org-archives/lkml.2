@@ -1,56 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754377Ab0KHKtP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 05:49:15 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:49076 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753798Ab0KHKtO (ORCPT
+	id S1754444Ab0KHKxY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 05:53:24 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41708 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754365Ab0KHKxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 05:49:14 -0500
+	Mon, 8 Nov 2010 05:53:22 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=e2Nb1mwfdNcAqyJ1UUxIjrrtLlWYDgTaUump5UqJIj3K4e/VSCah5ABG5ofwBNHNyE
-         CICQLCqgwSLB1dii2mZ8tiYC+L4bv3d4PqHjMSSDoZs/W9xElnrrF/vmR5hz7XAxKru6
-         u88SkRclOpZ0KHtSh9v+FkfaLc4ZBBLyW6WWs=
-MIME-Version: 1.0
-In-Reply-To: <87k4kospnd.fsf@basil.nowhere.org>
-References: <4CD538CA.8010901@xs4all.nl>
-	<87wroostw3.fsf@basil.nowhere.org>
-	<m2hbfsu57i.fsf@igel.home>
-	<87k4kospnd.fsf@basil.nowhere.org>
-Date: Mon, 8 Nov 2010 11:49:13 +0100
-Message-ID: <AANLkTikG6kBxSrO7EZ5_nZqTKqo8Rjm2stoEGVJWxanz@mail.gmail.com>
-Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
-From: Richard Guenther <richard.guenther@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Andreas Schwab <schwab@linux-m68k.org>, Jim <jim876@xs4all.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        gcc@gcc.gnu.org
-Content-Type: text/plain; charset=ISO-8859-1
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=uE/iuWbMGe9ahyZHd37b040jgjL749aHoezcyzIz7QQInguijtNK+DSQYke2krK/s7
+         MPMZcGgiPcD3oy83nGKZO9XJaeWozE7CfLBJPXUtCo99CBOCnb4JGJ+EPk2wKJJvS3e/
+         x+Itou1y5VcarzzoI4OUeh6fX+uVmKt7/nbaU=
+Subject: Re: [PATCH] mxcmmc: Add the ability to bind a regulator to manage
+ the MMC card voltage
+From: Alberto Panizzo <maramaopercheseimorto@gmail.com>
+To: Chris Ball <cjb@laptop.org>
+Cc: Daniel Mack <daniel@caiaq.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Eric =?ISO-8859-1?Q?B=E9nard?= <eric@eukrea.com>,
+        Fabio Estevam <fabioestevam@yahoo.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+In-Reply-To: <1288949275.3072.3.camel@realization>
+References: <1288656337.29881.13.camel@realization>
+	 <20101102073932.GB6017@pengutronix.de>
+	 <1288949275.3072.3.camel@realization>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 08 Nov 2010 11:53:15 +0100
+Message-ID: <1289213595.3425.23.camel@realization>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 8, 2010 at 12:03 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> Andreas Schwab <schwab@linux-m68k.org> writes:
->>
->> The asm fails to mention that it modifies *regs.
->
-> It has a memory clobber, that should be enough, no?
+On ven, 2010-11-05 at 10:28 +0100, Alberto Panizzo wrote:
+> On mar, 2010-11-02 at 08:39 +0100, Sascha Hauer wrote:
+> > On Tue, Nov 02, 2010 at 01:05:37AM +0100, Alberto Panizzo wrote:
+> > > This implementation is based on the pxamci.c driver and it will
+> > > be used to support the mx31_3ds machine.
+> > > 
+> > > Signed-off-by: Alberto Panizzo <maramaopercheseimorto@gmail.com>
+> > 
+> > Looks good to me
+> > 
+> > Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+> > 
 
-No.  A memory clobber does not cover automatic storage.
+Chris,
+Please, any comment on this one?
 
-Btw, I can't see a testcase anywhere so I just assume Andreas got
-it right as usual.
+Thanks,
+Alberto!
 
-Richard.
+> 
+> > > ---
+> > > 
+> > > This patch is based on the pengutronix for-rmk branch and apply to the
+> > > linus tre, version:2.6.37-rc1
+> > > 
+> > > ..cc the lists, sorry for the double mail.
+> > > 
+> > >  drivers/mmc/host/mxcmmc.c |   48 +++++++++++++++++++++++++++++++++++++++-----
+> > >  1 files changed, 42 insertions(+), 6 deletions(-)
+> > > 
+> > > diff --git a/drivers/mmc/host/mxcmmc.c b/drivers/mmc/host/mxcmmc.c
+> > > index 350f78e..e4637fc 100644
+> > > --- a/drivers/mmc/host/mxcmmc.c
+> > > +++ b/drivers/mmc/host/mxcmmc.c
+> > > @@ -31,6 +31,7 @@
+> > >  #include <linux/clk.h>
+> > >  #include <linux/io.h>
+> > >  #include <linux/gpio.h>
+> > > +#include <linux/regulator/consumer.h>
+> > >  
+> > >  #include <asm/dma.h>
+> > >  #include <asm/irq.h>
+> > > @@ -141,10 +142,45 @@ struct mxcmci_host {
+> > >  
+> > >  	struct work_struct	datawork;
+> > >  	spinlock_t		lock;
+> > > +
+> > > +	struct regulator	*vcc;
+> > >  };
+> > >  
+> > >  static void mxcmci_set_clk_rate(struct mxcmci_host *host, unsigned int clk_ios);
+> > >  
+> > > +static inline void mxcmci_init_ocr(struct mxcmci_host *host)
+> > > +{
+> > > +#ifdef CONFIG_REGULATOR
+> > > +	host->vcc = regulator_get(mmc_dev(host->mmc), "vmmc");
+> > > +
+> > > +	if (IS_ERR(host->vcc)) {
+> > > +		host->vcc = NULL;
+> > > +	} else {
+> > > +		host->mmc->ocr_avail = mmc_regulator_get_ocrmask(host->vcc);
+> > > +		if (host->pdata && host->pdata->ocr_avail)
+> > > +			dev_warn(mmc_dev(host->mmc),
+> > > +				"pdata->ocr_avail will not be used\n");
+> > > +	}
+> > > +#endif
+> > > +	if (host->vcc == NULL) {
+> > > +		/* fall-back to platform data */
+> > > +		if (host->pdata && host->pdata->ocr_avail)
+> > > +			host->mmc->ocr_avail = host->pdata->ocr_avail;
+> > > +		else
+> > > +			host->mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
+> > > +	}
+> > > +}
+> > > +
+> > > +static inline void mxcmci_set_power(struct mxcmci_host *host, unsigned int vdd)
+> > > +{
+> > > +#ifdef CONFIG_REGULATOR
+> > > +	if (host->vcc)
+> > > +		mmc_regulator_set_ocr(host->vcc, vdd);
+> > > +#endif
+> > > +	if (host->pdata && host->pdata->setpower)
+> > > +		host->pdata->setpower(mmc_dev(host->mmc), vdd);
+> > > +}
+> > > +
+> > >  static inline int mxcmci_use_dma(struct mxcmci_host *host)
+> > >  {
+> > >  	return host->do_dma;
+> > > @@ -680,9 +716,9 @@ static void mxcmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+> > >  		host->cmdat &= ~CMD_DAT_CONT_BUS_WIDTH_4;
+> > >  
+> > >  	if (host->power_mode != ios->power_mode) {
+> > > -		if (host->pdata && host->pdata->setpower)
+> > > -			host->pdata->setpower(mmc_dev(mmc), ios->vdd);
+> > > +		mxcmci_set_power(host, ios->vdd);
+> > >  		host->power_mode = ios->power_mode;
+> > > +
+> > >  		if (ios->power_mode == MMC_POWER_ON)
+> > >  			host->cmdat |= CMD_DAT_CONT_INIT;
+> > >  	}
+> > > @@ -808,10 +844,7 @@ static int mxcmci_probe(struct platform_device *pdev)
+> > >  	host->pdata = pdev->dev.platform_data;
+> > >  	spin_lock_init(&host->lock);
+> > >  
+> > > -	if (host->pdata && host->pdata->ocr_avail)
+> > > -		mmc->ocr_avail = host->pdata->ocr_avail;
+> > > -	else
+> > > -		mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
+> > > +	mxcmci_init_ocr(host);
+> > >  
+> > >  	if (host->pdata && host->pdata->dat3_card_detect)
+> > >  		host->default_irq_mask =
+> > > @@ -916,6 +949,9 @@ static int mxcmci_remove(struct platform_device *pdev)
+> > >  
+> > >  	mmc_remove_host(mmc);
+> > >  
+> > > +	if (host->vcc)
+> > > +		regulator_put(host->vcc);
+> > > +
+> > >  	if (host->pdata && host->pdata->exit)
+> > >  		host->pdata->exit(&pdev->dev, mmc);
+> > >  
+> > > -- 
+> > > 1.6.3.3
+> > > 
+> > > 
+> > > 
+> > > 
+> > > 
+> > 
 
-> Besides in any case it cannot be eliminated because it has
-> valid non dead inputs and outputs.
->
-> -Andi
-> --
-> ak@linux.intel.com -- Speaking for myself only.
->
+
