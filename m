@@ -1,91 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858Ab0KHO6Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 09:58:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4913 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754603Ab0KHO6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 09:58:23 -0500
-Date: Mon, 8 Nov 2010 09:58:09 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-btrfs@vger.kernel.org, dm-devel@redhat.com,
-        Milan Broz <mbroz@redhat.com>, Matt <jackdachef@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, htd@fancy-poultry.org
-Subject: Re: DM-CRYPT: Scale to multiple CPUs v3 on 2.6.37-rc* ?
-Message-ID: <20101108145809.GD29714@redhat.com>
-References: <AANLkTim6WTCChWGbTb-PUGd2AERGibeRtgan-WDznf2s@mail.gmail.com>
- <4CD6B7FA.3050005@redhat.com>
- <AANLkTikbsU+SGAaoq_oek=7tfDdjg+0wFoydhA+K9ZU+@mail.gmail.com>
- <AANLkTinna7BiGHogXnn1iEG6ccUAjFM3p3S3aHpv=h-E@mail.gmail.com>
- <20101107194547.GA12521@basil.fritz.box>
- <4CD71C8B.1050604@redhat.com>
- <20101107230508.GB17592@basil.fritz.box>
+	id S1754835Ab0KHO6V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 09:58:21 -0500
+Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:59565 "EHLO
+	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754603Ab0KHO6U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 09:58:20 -0500
+Message-ID: <4CD80FCB.20903@euromail.se>
+Date: Mon, 08 Nov 2010 15:57:15 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101107230508.GB17592@basil.fritz.box>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rafi Rubin <rafi@seas.upenn.edu>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Chris Bagwell <chris@cnpbagwell.com>,
+        Chase Douglas <chasedouglas@gmail.com>, Takashi Iwai <tiwai@suse.de>,
+        =?ISO-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
+Subject: Re: [PATCH] input: Introduce light-weight contact tracking
+References: <1289161108-32309-1-git-send-email-rydberg@euromail.se> <4CD724BC.8020702@seas.upenn.edu>
+In-Reply-To: <4CD724BC.8020702@seas.upenn.edu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1PFTA0-0002Gl-9k.
+X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PFTA0-0002Gl-9k ad338f1fbd4118e740b5dba0210706e2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 07 2010 at  6:05pm -0500,
-Andi Kleen <andi@firstfloor.org> wrote:
+On 11/07/2010 11:14 PM, Rafi Rubin wrote:
 
-> On Sun, Nov 07, 2010 at 10:39:23PM +0100, Milan Broz wrote:
-> > On 11/07/2010 08:45 PM, Andi Kleen wrote:
-> > >> I read about barrier-problems and data getting to the partition when
-> > >> using dm-crypt and several layers so I don't know if that could be
-> > >> related
-> > > 
-> > > Barriers seem to be totally broken on dm-crypt currently.
-> > 
-> > Can you explain it?
+> On 11/07/2010 03:18 PM, Henrik Rydberg wrote:
+>> The synaptics patches are currently cooking at Bagwell's, and we
+>> already discussed the API a bit. Something ntrig-ish is cooking at
+>> Rubin's, and there is also the ntrig driver in Ubuntu 10.10 to
+>> consider. All-in-all, it is my hope that posting this patch will
+>> simplify the synchronization of our efforts.
 > 
-> e.g. the btrfs mailing list is full of corruption reports
-> on dm-crypt and most of the symptoms point to broken barriers.
-
-[cc'ing linux-btrfs, hopefully in the future dm-devel will get cc'd when
-concerns about DM come up on linux-btrfs (or other lists)]
-
-I spoke with Josef Bacik and these corruption reports are apparently
-against older kernels (e.g. <= 2.6.33).  I say <= 2.6.33 because:
-
-https://btrfs.wiki.kernel.org/index.php/Gotchas states:
-"btrfs volumes on top of dm-crypt block devices (and possibly LVM)
-require write-caching to be turned off on the underlying HDD. Failing to
-do so, in the event of a power failure, may result in corruption not yet
-handled by btrfs code. (2.6.33)"
-
-But Josef was not aware of any reports with kernels newer than 2.6.32
-(F12).
-
-Josef also noted that until last week btrfs wouldn't retry another
-mirror in the face of some corruption, the fix is here:
-http://git.kernel.org/?p=linux/kernel/git/mason/btrfs-unstable.git;a=commit;h=cb44921a09221
-
-This obviously doesn't fix any source of corruption but it makes btrfs
-more resilient when it encounters the corruption.
-
-> > Barriers/flush change should work, if it is broken, it is not only dm-crypt.
-> > (dm-crypt simply relies on dm-core implementation, when barrier/flush
-> > request come to dmcrypt, all previous IO must be already finished).
+> Since Henrik brought it up, here's the tracking code I've been working on.  I
+> have not run performance tests.  My goals for this code are perhaps a little
+> different.
 > 
-> Possibly, at least it doesn't seem to work.
+> - efficient for the common case where contact ordering stays consistent
+> - arbitrary number of contacts
+> - motion estimation to improve tracking
+> - leveraging tracking for error filtering
+> 
+> Also for fun, I was playing with smoothing in this particular version of the code.
+> 
+> For now, I'm sending this just for review and discussion.
 
-Can you please be more specific?  What test(s)?  What kernel(s)?
 
-Any pointers to previous (and preferably: recent) reports would be
-appreciated.
+Hi Rafi,
 
-The DM barrier code has seen considerable change recently (via flush+fua
-changes in 2.6.37).  Those changes have been tested quite a bit
-(including ext4 consistency after a crash).
+what tree does this patch apply to?
 
-But even prior to those flush+fua changes DM's support for barriers
-(Linux >= 2.6.31) was held to be robust.  No known (at least no
-reported) issues with DM's barrier support.
+I think the situation with this driver is slightly cumbersome. Perhaps there is
+a small conflict of interest here, but I hope we will be able to resolve it
+quickly. I see little benefit in duplicating the tracking efforts. Since greedy
+matching algorithms are not provably suited to the task, I think any such
+algorithm should first be tested and benchmarked thoroughly, preferably in the
+mtdev context.
 
-Mike
+Regarding the ntrig driver, fact is it does not work very well. Contacts are
+occasionally dropped, and spurious ghosts make multitouch gestures not work
+properly. There are also many parameters in the driver, which are difficult to
+use in practice. Therefore, in the Ubuntu 10.10 kernel, a rather large ntrig
+patch has been applied, improving those issues.
+
+The way the data is extracted in 2.6.36 leads to many dropped contacts. The
+ubuntu patch remedies this problem, so no particular logic for drops is needed.
+Instead, more effort is put into removing ghost contacts, which greatly improves
+the actual experience with multitouch gestures.
+
+In order for ghost removal to work, the contacts need to be tracked. Because of
+the deficiencies of the ntrig firmware, this needs to be done in software. The
+ubuntu patch contains a simple greedy tracking mechanism, which did not seem
+good enough to upstream, so I never upstreamed it.
+
+With the proposed matcher (http://lkml.org/lkml/2010/11/7/122), the situation is
+different. The ubuntu patch can be modified to use the matcher, which I believe
+will make it ready for upstream. Since the patch also removes all parameters
+from the driver, the usability aspect is improved.
+
+With the above said, it seems to me that the simplest way forward is to modify
+and upstream the ubuntu patches. Would you agree?
+
+Regarding support for more than four fingers, there is a single device which
+reports six contacts from the firmware. Getting four good contacts out of it
+will be a major improvement, and IMO good enough. It seems likely that future
+firmware will handle tracking properly, so this should all be a stop-gap measure
+anyways.
+
+We talked earlier about the possibility to perform automatic calibration of the
+driver. This would be the last major step towards a fully functional,
+maintenance-free driver.
+
+I hope we will be able to agree on the direction of this driver, such that
+duplicated work is minimized and the focus stays with the user experience of the
+ntrig devices.
+
+Thanks,
+Henrik
