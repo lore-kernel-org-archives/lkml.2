@@ -1,225 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755242Ab0KHUgW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 15:36:22 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:2995 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755172Ab0KHUck (ORCPT
+	id S1754446Ab0KHUkS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 15:40:18 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:35381 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753835Ab0KHUkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 15:32:40 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:to:from:cc:date:message-id:in-reply-to:references:
-	user-agent:mime-version:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=PxhD7p2PM+3MFFgMQBcNQ6Ks35TLfgRrb96F5dtrhk0/mHNWL3N/FfzrN5GZqtvCN
-	KOoSDwPiLJYAE9Jv0Ip7Q==
-Subject: [PATCH v2 06/23] netconsole: Push configfs_subsystem into
-	netpoll_targets
-To: simon.kagstrom@netinsight.net, davem@davemloft.net, nhorman@tuxdriver.com,
-        Matt Mackall <mpm@selenic.com>
-From: Mike Waychison <mikew@google.com>
-Cc: adurbin@google.com, linux-kernel@vger.kernel.org, chavey@google.com,
-        Greg KH <greg@kroah.com>,
-        =?utf-8?q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
-        akpm@linux-foundation.org, linux-api@vger.kernel.org
-Date: Mon, 08 Nov 2010 12:32:12 -0800
-Message-ID: <20101108203211.22479.12196.stgit@crlf.mtv.corp.google.com>
-In-Reply-To: <20101108203120.22479.19708.stgit@crlf.mtv.corp.google.com>
-References: <20101108203120.22479.19708.stgit@crlf.mtv.corp.google.com>
-User-Agent: StGit/0.15
+	Mon, 8 Nov 2010 15:40:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ZB6vZlRUKvfH1NqtDG4FYta+K5Da8sfxxGqfd7vxrdslL5oq1PSVW1coiREUlnNaKE
+         Kcan0X6FktFCRUGND0kXvD/SjsUU7Phk4bFDZUg7iqiItkFLr6t7Nwq2uUhJIqigEZ6G
+         VJvL8gPRSnPLJJqrq+1TRbB6mQlIbkecK2aXo=
+Date: Mon, 8 Nov 2010 21:40:11 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: "Udo A. Steinberg" <udo@hypervisor.org>, Joe Korty <joe.korty@ccur.com>,
+        mathieu.desnoyers@efficios.com, dhowells@redhat.com,
+        loic.minier@linaro.org, dhaval.giani@gmail.com, tglx@linutronix.de,
+        peterz@infradead.org, linux-kernel@vger.kernel.org,
+        josh@joshtriplett.org
+Subject: Re: [PATCH] a local-timer-free version of RCU
+Message-ID: <20101108204007.GB6777@nowhere>
+References: <20101104232148.GA28037@linux.vnet.ibm.com> <20101105210059.GA27317@tsunami.ccur.com> <20101106192812.GI15561@linux.vnet.ibm.com> <20101108031136.0766149f@laptop.hypervisor.org> <20101108031936.63a13ff2@laptop.hypervisor.org> <20101108025400.GA2580@linux.vnet.ibm.com> <20101108153214.GC5466@nowhere> <20101108193832.GB4032@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101108193832.GB4032@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is a step in the preparation of pushing the target handling
-code out of netconsole and into netpoll proper where it can be used by
-other clients.
+On Mon, Nov 08, 2010 at 11:38:32AM -0800, Paul E. McKenney wrote:
+> On Mon, Nov 08, 2010 at 04:32:17PM +0100, Frederic Weisbecker wrote:
+> > So, this looks very scary for performances to add rcu_read_lock() in
+> > preempt_disable() and local_irq_save(), that notwithstanding it won't
+> > handle the "raw" rcu sched implicit path.
+> 
+> Ah -- I would arrange for the rcu_read_lock() to be added only in the
+> dyntick-hpc case.  So no effect on normal builds, overhead is added only
+> in the dyntick-hpc case.
 
-Here, we move the configfs_subsystem bits out of global scope and
-package it in the netpoll_targets structure that will maintain a set of
-targets.  There is a bit of code that is rearranged due to needing to
-provide netconsole_subsys_type in scope much earlier in the file.  This
-has the added benefit of folding all of the dynamic target handling code
-under a single #ifdef CONFIG_NETCONSOLE_DYNAMIC block.
 
-Signed-off-by: Mike Waychison <mikew@google.com>
----
- drivers/net/netconsole.c |  132 ++++++++++++++++++++++------------------------
- 1 files changed, 64 insertions(+), 68 deletions(-)
 
-diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
-index f28681b..55f72ba 100644
---- a/drivers/net/netconsole.c
-+++ b/drivers/net/netconsole.c
-@@ -68,6 +68,9 @@ __setup("netconsole=", option_setup);
- struct netpoll_targets {
- 	struct list_head list;
- 	spinlock_t lock;
-+#ifdef	CONFIG_NETCONSOLE_DYNAMIC
-+	struct configfs_subsystem configfs_subsys;
-+#endif
- };
- #define DEFINE_NETPOLL_TARGETS(x) struct netpoll_targets x = \
- 	{ .list = LIST_HEAD_INIT(x.list), \
-@@ -112,63 +115,8 @@ struct netconsole_target {
- 	struct work_struct	cleanup_work;
- };
+Yeah sure, but I wonder if the resulting rcu config will have a
+large performance impact because of that.
+
+In fact, my worry is: if the last resort to have a sane non-timer based
+rcu is to bloat fast path functions like preempt_disable() or local_irq...
+(that notwithstanding we have a bloated rcu_read_unlock() on this rcu config
+because of its main nature), wouldn't it be better to eventually pick the
+syscall/exception tweaked fast path version?
+
+Perhaps I'll need to measure the impact of both, but I suspect I'll get
+controversial results depending on the workload.
+
+
  
--#ifdef	CONFIG_NETCONSOLE_DYNAMIC
--
--static struct configfs_subsystem netconsole_subsys;
--
--static int __init dynamic_netconsole_init(void)
--{
--	config_group_init(&netconsole_subsys.su_group);
--	mutex_init(&netconsole_subsys.su_mutex);
--	return configfs_register_subsystem(&netconsole_subsys);
--}
--
--static void __exit dynamic_netconsole_exit(void)
--{
--	configfs_unregister_subsystem(&netconsole_subsys);
--}
--
--/*
-- * Targets that were created by parsing the boot/module option string
-- * do not exist in the configfs hierarchy (and have NULL names) and will
-- * never go away, so make these a no-op for them.
-- */
--static void netconsole_target_get(struct netconsole_target *nt)
--{
--	if (config_item_name(&nt->item))
--		config_item_get(&nt->item);
--}
--
--static void netconsole_target_put(struct netconsole_target *nt)
--{
--	if (config_item_name(&nt->item))
--		config_item_put(&nt->item);
--}
--
--#else	/* !CONFIG_NETCONSOLE_DYNAMIC */
--
--static int __init dynamic_netconsole_init(void)
--{
--	return 0;
--}
--
--static void __exit dynamic_netconsole_exit(void)
--{
--}
--
--/*
-- * No danger of targets going away from under us when dynamic
-- * reconfigurability is off.
-- */
--static void netconsole_target_get(struct netconsole_target *nt)
--{
--}
--
--static void netconsole_target_put(struct netconsole_target *nt)
--{
--}
--
--#endif	/* CONFIG_NETCONSOLE_DYNAMIC */
-+static void netconsole_target_get(struct netconsole_target *nt);
-+static void netconsole_target_put(struct netconsole_target *nt);
- 
- static void deferred_netpoll_cleanup(struct work_struct *work)
- {
-@@ -711,15 +659,63 @@ static struct config_item_type netconsole_subsys_type = {
- 	.ct_owner	= THIS_MODULE,
- };
- 
--/* The netconsole configfs subsystem */
--static struct configfs_subsystem netconsole_subsys = {
--	.su_group	= {
--		.cg_item	= {
--			.ci_namebuf	= "netconsole",
--			.ci_type	= &netconsole_subsys_type,
--		},
--	},
--};
-+static int __init dynamic_netpoll_targets_init(struct netpoll_targets *nts)
-+{
-+	struct configfs_subsystem *subsys = &nts->configfs_subsys;
-+
-+	config_group_init(&subsys->su_group);
-+	mutex_init(&subsys->su_mutex);
-+	strncpy((char *)&subsys->su_group.cg_item.ci_namebuf, "netconsole",
-+		CONFIGFS_ITEM_NAME_LEN);
-+	subsys->su_group.cg_item.ci_type = &netconsole_subsys_type;
-+	return configfs_register_subsystem(subsys);
-+}
-+
-+static void __exit dynamic_netpoll_targets_exit(struct netpoll_targets *nts)
-+{
-+	configfs_unregister_subsystem(&nts->configfs_subsys);
-+}
-+
-+/*
-+ * Targets that were created by parsing the boot/module option string
-+ * do not exist in the configfs hierarchy (and have NULL names) and will
-+ * never go away, so make these a no-op for them.
-+ */
-+static void netconsole_target_get(struct netconsole_target *nt)
-+{
-+	if (config_item_name(&nt->item))
-+		config_item_get(&nt->item);
-+}
-+
-+static void netconsole_target_put(struct netconsole_target *nt)
-+{
-+	if (config_item_name(&nt->item))
-+		config_item_put(&nt->item);
-+}
-+
-+#else	/* !CONFIG_NETCONSOLE_DYNAMIC */
-+
-+static int __init dynamic_netpoll_targets_init(const char *subsys_name,
-+					       struct netpoll_targets *nts)
-+{
-+	return 0;
-+}
-+
-+static void __exit dynamic_netpoll_targets_exit(struct netpoll_targets *nts)
-+{
-+}
-+
-+/*
-+ * No danger of targets going away from under us when dynamic
-+ * reconfigurability is off.
-+ */
-+static void netconsole_target_get(struct netconsole_target *nt)
-+{
-+}
-+
-+static void netconsole_target_put(struct netconsole_target *nt)
-+{
-+}
- 
- #endif	/* CONFIG_NETCONSOLE_DYNAMIC */
- 
-@@ -847,7 +843,7 @@ static int __init init_netconsole(void)
- 	if (err)
- 		goto fail;
- 
--	err = dynamic_netconsole_init();
-+	err = dynamic_netpoll_targets_init(&targets);
- 	if (err)
- 		goto undonotifier;
- 
-@@ -880,7 +876,7 @@ static void __exit cleanup_netconsole(void)
- 	struct netconsole_target *nt, *tmp;
- 
- 	unregister_console(&netconsole);
--	dynamic_netconsole_exit();
-+	dynamic_netpoll_targets_exit(&targets);
- 	unregister_netdevice_notifier(&netconsole_netdev_notifier);
- 
- 	/*
+> > There is also my idea from the other discussion: change rcu_read_lock_sched()
+> > semantics and map it to rcu_read_lock() in this rcu config (would be a nop
+> > in other configs). So every users of rcu_dereference_sched() would now need
+> > to protect their critical section with this.
+> > Would it be too late to change this semantic?
+> 
+> I was expecting that we would fold RCU, RCU bh, and RCU sched into
+> the same set of primitives (as Jim Houston did), but again only in the
+> dyntick-hpc case.
+
+
+Yeah, the resulting change must be NULL in others rcu configs.
+
+
+
+> However, rcu_read_lock_bh() would still disable BH,
+> and similarly, rcu_read_lock_sched() would still disable preemption.
+
+
+
+Probably yeah, otherwise there will be a kind of sense split against
+the usual rcu_read_lock() and everybody will be confused.
+
+Perhaps we need a different API for the underlying rcu_read_lock()
+call in the other flavours when preempt is already disabled or
+bh is already disabled:
+
+	rcu_enter_read_lock_sched();
+	__rcu_read_lock_sched();
+	rcu_start_read_lock_sched();
+
+	(same for bh)
+
+Hmm...
+
+
+> > What is scary with this is that it also changes rcu sched semantics, and users
+> > of call_rcu_sched() and synchronize_sched(), who rely on that to do more
+> > tricky things than just waiting for rcu_derefence_sched() pointer grace periods,
+> > like really wanting for preempt_disable and local_irq_save/disable, those
+> > users will be screwed... :-(  ...unless we also add relevant rcu_read_lock_sched()
+> > for them...
+> 
+> So rcu_read_lock() would be the underlying primitive.  The implementation
+> of rcu_read_lock_sched() would disable preemption and then invoke
+> rcu_read_lock().  The implementation of rcu_read_lock_bh() would
+> disable BH and then invoke rcu_read_lock().  This would allow
+> synchronize_rcu_sched() and synchronize_rcu_bh() to simply invoke
+> synchronize_rcu().
+> 
+> Seem reasonable?
+
+
+Perfect. That could be further optimized with what I said above but
+other than that, that's what I was thinking about.
 
