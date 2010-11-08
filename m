@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754098Ab0KHJId (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 04:08:33 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41983 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752224Ab0KHJIc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 04:08:32 -0500
-Date: Mon, 8 Nov 2010 09:08:03 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Joe Perches <joe@perches.com>, Sascha Hauer <kernel@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arch/arm/plat-mxc/cpufreq.c: Fix line continuation
-	defect
-Message-ID: <20101108090803.GA13157@n2100.arm.linux.org.uk>
-References: <1289164215.29216.315.camel@Joe-Laptop> <20101108081808.GN16938@pengutronix.de>
+	id S1754215Ab0KHJI5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 04:08:57 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:33643 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752057Ab0KHJI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 04:08:56 -0500
+Date: Mon, 8 Nov 2010 10:08:21 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Greg Thelen <gthelen@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Young <hidave.darkstar@gmail.com>,
+        Andrea Righi <arighi@develer.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 4/4] memcg: use native word page statistics counters
+Message-ID: <20101108090820.GI23393@cmpxchg.org>
+References: <1288973333-7891-1-git-send-email-minchan.kim@gmail.com>
+ <20101106010357.GD23393@cmpxchg.org>
+ <AANLkTin9m65JVKRuStZ1-qhU5_1AY-GcbBRC0TodsfYC@mail.gmail.com>
+ <20101107215030.007259800@cmpxchg.org>
+ <20101107220353.964566018@cmpxchg.org>
+ <AANLkTinLK5DiG3ZkEFSAJNZrPKK7aXiPPYQ6z9M6RPhc@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101108081808.GN16938@pengutronix.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <AANLkTinLK5DiG3ZkEFSAJNZrPKK7aXiPPYQ6z9M6RPhc@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 08, 2010 at 09:18:08AM +0100, Uwe Kleine-König wrote:
-> Hi Joe,
+On Mon, Nov 08, 2010 at 09:01:54AM +0900, Minchan Kim wrote:
+> On Mon, Nov 8, 2010 at 7:14 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > The statistic counters are in units of pages, there is no reason to
+> > make them 64-bit wide on 32-bit machines.
+> >
+> > Make them native words.  Since they are signed, this leaves 31 bit on
+> > 32-bit machines, which can represent roughly 8TB assuming a page size
+> > of 4k.
+> >
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 > 
-> On Sun, Nov 07, 2010 at 01:10:15PM -0800, Joe Perches wrote:
-> > Signed-off-by: Joe Perches <joe@perches.com>
-> > ---
-> >  arch/arm/plat-mxc/cpufreq.c |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/arch/arm/plat-mxc/cpufreq.c b/arch/arm/plat-mxc/cpufreq.c
-> > index 039538e..9f358af 100644
-> > --- a/arch/arm/plat-mxc/cpufreq.c
-> > +++ b/arch/arm/plat-mxc/cpufreq.c
-> > @@ -154,8 +154,8 @@ static int __init mxc_cpufreq_init(struct cpufreq_policy *policy)
-> >  	ret = cpufreq_frequency_table_cpuinfo(policy, imx_freq_table);
-> >  
-> >  	if (ret < 0) {
-> > -		printk(KERN_ERR "%s: failed to register i.MXC CPUfreq \
-> > -				with error code %d\n", __func__, ret);
-> > +		printk(KERN_ERR "%s: failed to register i.MXC CPUfreq with error code %d\n",
-> > +		       __func__, ret);
-> I'd prefer
-> +		printk(KERN_ERR "%s: failed to register i.MXC CPUfreq "
-> +				"with error code %d\n", __func__, ret);
+> This patch changes mem_cgroup_recursive_idx_stat with
+> mem_cgroup_recursive_stat as well.
+> As you know, It would be better to be another patch although it's
+> trivial. But I don't mind it.
+> I like the name. :)
 
-No - you don't wrap error messages.  It's the one exception to the 80
-column rule.
+I also feel that it's not too nice to mix such cleanups with
+functionality changes.  But I found the name too appalling to leave it
+alone, and a separate patch not worth the trouble.
+
+If somebody has strong feelings, I will happily split it up.
+
+Thanks for your review, Minchan.
+
+	Hannes
