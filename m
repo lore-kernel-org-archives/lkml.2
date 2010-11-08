@@ -1,167 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007Ab0KHM4o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 07:56:44 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56458 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660Ab0KHM4n convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 07:56:43 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=fE8vKjFJKBmUmf32gKUm3TNfdphUUGfiEfe1goYrpbdMmCmmXGBmUmnS0WoRkOK/PF
-         bKZuIKv++b+D0CPE34VjC9u/qyGo93MANBVwJP26bDxdcokag8DmYEvkCbHMm3GC4xp/
-         dThiZWB6OsJMRQ8a4UHGcdglAHDmuu2R68OJE=
+	id S1754158Ab0KHNRO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 08:17:14 -0500
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:47651 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753620Ab0KHNRN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 08:17:13 -0500
+Date: Mon, 8 Nov 2010 05:17:08 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Davidlohr Bueso <dave@gnu.org>
+Cc: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mce: fix RCU lockdep from mce_log()
+Message-ID: <20101108131708.GC2580@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1288993499.2065.4.camel@cowboy>
+ <20101106185350.GA23824@basil.fritz.box>
+ <20101107133950.GV15561@linux.vnet.ibm.com>
+ <1289215819.2318.3.camel@cowboy>
 MIME-Version: 1.0
-In-Reply-To: <20101108041721.GA11605@linux-sh.org>
-References: <1289147348-31969-1-git-send-email-alchark@gmail.com>
-	<1289147348-31969-6-git-send-email-alchark@gmail.com>
-	<20101108041721.GA11605@linux-sh.org>
-Date: Mon, 8 Nov 2010 12:56:42 +0000
-Message-ID: <AANLkTimkrK9T7G3=K_Ob1SuK64DrGJD3WNoangPp_ryW@mail.gmail.com>
-Subject: Re: [PATCH 6/6 v2] ARM: Add support for the display controllers in
- VT8500 and WM8505
-From: Alexey Charkov <alchark@gmail.com>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: linux-arm-kernel@lists.infradead.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1289215819.2318.3.camel@cowboy>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/11/8 Paul Mundt <lethal@linux-sh.org>:
-> On Sun, Nov 07, 2010 at 07:28:57PM +0300, Alexey Charkov wrote:
->> +static int __devinit vt8500lcd_probe(struct platform_device *pdev)
->> +{
->
-> ...
->
->> +     addr = fbi;
->> +     addr = addr + sizeof(struct vt8500lcd_info);
->> +     fbi->fb.pseudo_palette  = addr;
->> +
-> ...
->
->> +     fbi->palette_size       = PAGE_ALIGN(512);
->> +     fbi->palette_cpu        = dma_alloc_coherent(&pdev->dev,
->> +                                                  fbi->palette_size,
->> +                                                  &fbi->palette_phys,
->> +                                                  GFP_KERNEL);
->> +     if (fbi->fb.pseudo_palette == NULL) {
->> +             dev_err(&pdev->dev, "Failed to allocate palette buffer\n");
->> +             ret = -ENOMEM;
->> +             goto failed_free_io;
->> +     }
->> +
-> This looks like a bogus test, you've already allocated enough space for
-> the pseudo_palette and will have bailed out on the kmalloc() failing well
-> before this. You also don't have any error handling for fbi->palette_cpu,
-> which is presumably what you intended to do here.
->
+On Mon, Nov 08, 2010 at 08:30:19AM -0300, Davidlohr Bueso wrote:
+> On Sun, 2010-11-07 at 05:39 -0800, Paul E. McKenney wrote:
+> > On Sat, Nov 06, 2010 at 07:53:50PM +0100, Andi Kleen wrote:
+> > > On Fri, Nov 05, 2010 at 06:44:59PM -0300, Davidlohr Bueso wrote:
+> > > > Hi,
+> > > > 
+> > > > Please review this patch, I am not very familiar with MCE/RCU so I'm not sure that this is the correct fix (otherwise consider it a bug report :)).
+> > > > This does "fix" the message though and I can use MCE normally.
+> > > 
+> > > The patch is certainly not correct. The variable needs to be read
+> > > independently of the mutex.
+> > 
+> > This code is simply checking the value of the pointer, and therefore
+> > need not protect any actual dereferences.  So why not replace the
+> > rcu_dereference_check_mce() with rcu_access_pointer()?  If this is
+> > OK, please see the patch below.
+> > 
+> > BTW, assigning the value returned by rcu_access_pointer() into a
+> > variable often indicates a bug.  ;-)
+> > 
+> > 							Thanx, Paul
+> > 
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > 
+> > diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> > index 7a35b72..4d29d50 100644
+> > --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> > +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> > @@ -1625,7 +1625,7 @@ out:
+> >  static unsigned int mce_poll(struct file *file, poll_table *wait)
+> >  {
+> >  	poll_wait(file, &mce_wait, wait);
+> > -	if (rcu_dereference_check_mce(mcelog.next))
+> > +	if (rcu_access_pointer(mcelog.next))
+> 
+> this doesn't compile (mcelog.next is an index):
+> 
+> arch/x86/kernel/cpu/mcheck/mce.c: In function ‘mce_poll’:
+> arch/x86/kernel/cpu/mcheck/mce.c:1628: error: invalid type argument of
+> ‘unary *’ (have ‘unsigned int’)
+> arch/x86/kernel/cpu/mcheck/mce.c:1628: warning: type defaults to ‘int’
+> in declaration of ‘_________p1’
+> arch/x86/kernel/cpu/mcheck/mce.c:1628: error: invalid type argument of
+> ‘unary *’ (have ‘unsigned int’)
+> arch/x86/kernel/cpu/mcheck/mce.c:1628: warning: type defaults to ‘int’
+> in declaration of ‘type name’
+> arch/x86/kernel/cpu/mcheck/mce.c:1628: warning: cast to pointer from
+> integer of different size
+> arch/x86/kernel/cpu/mcheck/mce.c:1628: error: invalid type argument of
+> ‘unary *’ (have ‘unsigned int’)
+> arch/x86/kernel/cpu/mcheck/mce.c:1628: warning: type defaults to ‘int’
+> in declaration of ‘type name’
+> make[4]: *** [arch/x86/kernel/cpu/mcheck/mce.o] Error 1
+> 
+> 
+> Since the mutex is independent, what about this patch?
 
-True, this has to be corrected (old copy-paste error left unnoticed
-somehow). It's also deallocated wrongly in the error path, which I
-have just noticed.
+Looks good to me!
 
->> +static int __devexit vt8500lcd_remove(struct platform_device *pdev)
->> +{
->> +     struct vt8500lcd_info *fbi = platform_get_drvdata(pdev);
->> +     struct resource *res;
->> +     int irq;
->> +
->> +     if (!fbi)
->> +             return 0;
->> +
->> +     unregister_framebuffer(&fbi->fb);
->> +
->> +     writel(0, fbi->regbase);
->> +
->> +     if (fbi->fb.cmap.len)
->> +             fb_dealloc_cmap(&fbi->fb.cmap);
->> +
->> +     irq = platform_get_irq(pdev, 0);
->> +     free_irq(irq, fbi);
->> +
->> +     iounmap(fbi->regbase);
->> +
->
-> You're also missing a dma_free_coherent() here.
->
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-True, will be fixed.
-
->> +static int __devinit wm8505fb_probe(struct platform_device *pdev)
->> +{
->> +     fbi->fb.screen_base     = pdata->video_mem_virt;
->> +     fbi->fb.screen_size     = pdata->video_mem_len;
->> +
-> ...
->
->> +failed_free_mem:
->> +     free_pages_exact(fbi->fb.screen_base, fbi->fb.screen_size);
->
-> ...
->
-> What in the name of all that is holy are you doing here? If you need to
-> have your platform deal with virtual address allocation and freeing then
-> you should pass in callbacks for that and hide the instrumentation
-> details there. Presently this is tying you down to an alloc_pages_exact()
-> interface buried in the board setup, which isn't going to mesh well with
-> other platforms that may wish to go about this an alternate way (like
-> memblock reservations).
->
-
-Actually, this is a leftover from a previous implementation with
-alloc_pages_exact(), which could not work for larger screen sizes (due
-to the framebuffer growing over 4MB). Now memory is reserved via
-memblock, so this should have probably been just dropped.
-
->> diff --git a/drivers/video/wmt_ge_rops.c b/drivers/video/wmt_ge_rops.c
->> new file mode 100644
->> index 0000000..c71f97e
->> --- /dev/null
->> +++ b/drivers/video/wmt_ge_rops.c
->> +void __iomem *regbase;
->> +
-> Uhm, no. If this is only used in this driver then just make it static.
-> Given that you are using the driver model here though and could
-> theoretically support multiple rop engines, you're much better off making
-> this private data and burying it under the appropriate per-device data
-> structures.
->
-
-Is that platform_{set,get}_drvdata() what you are talking about? Using
-multiple engines seems extremely unlikely, though :)
-
->> +int wmt_ge_sync(struct fb_info *p)
->> +{
->> +     while (readl(regbase + GE_STATUS_OFF) & 4)
->> +             /* busy wait */;
->> +
->> +     return 0;
->> +}
->> +EXPORT_SYMBOL(wmt_ge_sync);
->> +
-> While I admire your optimism in your hardware, experience suggests you
-> really want a timeout here. You may also wish to insert a cpu_relax()
-> here.
->
-
-I wonder if this callback is allowed to sleep? In principle, the
-hardware seems to support interrupt generation on operation
-completion, so maybe wait_event_interruptible_timeout() could be used
-here to remove the busy wait altogether?
-
-Thank you for the comments, Paul!
-
-Best regards,
-Alexey
+>  Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+> 
+> ---
+>  arch/x86/kernel/cpu/mcheck/mce.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c
+> b/arch/x86/kernel/cpu/mcheck/mce.c
+> index 7a35b72..cc1c673 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -1625,7 +1625,7 @@ out:
+>  static unsigned int mce_poll(struct file *file, poll_table *wait)
+>  {
+>  	poll_wait(file, &mce_wait, wait);
+> -	if (rcu_dereference_check_mce(mcelog.next))
+> +	if (rcu_dereference_index_check(mcelog.next,
+> rcu_read_lock_sched_held()))
+>  		return POLLIN | POLLRDNORM;
+>  	if (!mce_apei_read_done && apei_check_mce())
+>  		return POLLIN | POLLRDNORM;
+> -- 
+> 1.7.1
+> 
+> 
+> 
