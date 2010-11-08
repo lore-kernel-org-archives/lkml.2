@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753733Ab0KHTd4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 14:33:56 -0500
-Received: from gw0.danplanet.com ([71.245.107.82]:53041 "EHLO
-	mail.danplanet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752503Ab0KHTdz (ORCPT
+	id S1753902Ab0KHTgm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 14:36:42 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:47910 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753446Ab0KHTgl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 14:33:55 -0500
-X-Greylist: delayed 1684 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Nov 2010 14:33:55 EST
-To: Gene Cooperman <gene@ccs.neu.edu>
-Cc: Oren Laadan <orenl@cs.columbia.edu>, Kapil Arya <kapil@ccs.neu.edu>,
-        Tejun Heo <tj@kernel.org>,
-        ksummit-2010-discuss@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, hch@lst.de
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-References: <AANLkTinOg6n3ZA+0gHzw9LouRuUmJ7DJwHtABRy5c=gM@mail.gmail.com>
-	<4CD26948.7050009@kernel.org>
-	<20101104164401.GC10656@sundance.ccs.neu.edu>
-	<4CD3CE29.2010105@kernel.org>
-	<AANLkTimDXKsBCxbsEOfgkYV2R8FK=bhFdmx9UQow5hqp@mail.gmail.com>
-	<4CD5DCE3.3000109@cs.columbia.edu>
-	<20101107194222.GG31077@sundance.ccs.neu.edu>
-	<4CD71A6B.3020905@cs.columbia.edu>
-	<20101107230516.GJ31077@sundance.ccs.neu.edu>
-	<4CD774CA.8030004@cs.columbia.edu>
-	<20101108162630.GN31077@sundance.ccs.neu.edu>
-From: Dan Smith <danms@us.ibm.com>
-Date: Mon, 08 Nov 2010 11:05:48 -0800
-In-Reply-To: <20101108162630.GN31077@sundance.ccs.neu.edu> (Gene Cooperman's message of "Mon\, 8 Nov 2010 11\:26\:30 -0500")
-Message-ID: <8739rbpreb.fsf@localhost6.localdomain6>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	Mon, 8 Nov 2010 14:36:41 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=WW0Iy4xTVI9zcqBGRnVdG7HlbQ38NeANufZtUNXkzMqNAa2roNiCdknTU+QnhlPvvd
+         Sd3kjTzRYcLRKOdxhdsw9enyXAarIlcOXJsJYfd6L1wCuXXcP+buexzV/mInCpEXWobv
+         DkcABubStxSKdJ3sZEnHCxqG7KYkZBgirMGac=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20101108190258.GA1623@arch.trippelsdorf.de>
+References: <20101108170221.GA1602@arch.trippelsdorf.de>
+	<20101108170737.GA1617@arch.trippelsdorf.de>
+	<20101108184301.GA1614@arch.trippelsdorf.de>
+	<20101108190258.GA1623@arch.trippelsdorf.de>
+Date: Mon, 8 Nov 2010 14:36:39 -0500
+Message-ID: <AANLkTimT71Y_hFVjKbY5GFBJ7wP9AWo8RgurYiftneo+@mail.gmail.com>
+Subject: Re: Radeon RS780 - BUG: unable to handle kernel NULL pointer dereference
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        airlied@linux.ie
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GC> As before, Oren, let's have that phone discussion so that we can
-GC> preprocess a lot of this, instead of acting like the the three
-GC> blind men and the elephant.  I will _tell you_ the strengths and
-GC> weaknesses of DMTCP on the phone, instead of you having to guess
-GC> at them here on LKML.  And of course, I hope you will be similarly
-GC> frank about Linux C/R on the phone.
+On Mon, Nov 8, 2010 at 2:02 PM, Markus Trippelsdorf
+<markus@trippelsdorf.de> wrote:
+> On Mon, Nov 08, 2010 at 07:43:02PM +0100, Markus Trippelsdorf wrote:
+>> On Mon, Nov 08, 2010 at 06:07:37PM +0100, Markus Trippelsdorf wrote:
+>> > On Mon, Nov 08, 2010 at 06:02:21PM +0100, Markus Trippelsdorf wrote:
+>> > > I can trigger a kernel crash on my system by simply loading this png
+>> > > image with firefox:
+>> > > http://mediaarchive.cern.ch/MediaArchive/Photo/Public/2010/1011251/1011251_01/1011251_01-A4-at-144-dpi.jpg
+>> >
+>> > Sorry the above link is wrong, this is the right one (that triggers the
+>> > crash):
+>> > http://cdsweb.cern.ch/record/1305179/files/HI-150431-630470-huge.png
+>>
+>> I triggered it a few more times and took the attached picture.
+>> It points to the BUG() call at drivers/gpu/drm/ttm/ttm_bo.c:1628 .
+>> (Sorry for the bad picture quality)
+>
+> And here the same BUG in plaintext (should be a bit easier to read):
+>
+> Nov  8 19:28:23 arch kernel: ------------[ cut here ]------------
+> Nov  8 19:28:23 arch kernel: kernel BUG at drivers/gpu/drm/ttm/ttm_bo.c:1628!
 
-I want to be in on that discussion too, as do a lot of other people
-here.  However, I doubt we'll all be able to find a common spot on our
-collective schedules, nor would that conversation be archived for
-posterity.  I think sticking to LKML is the right (and time-tested)
-approach.
+Quite puzzling it is as if there was already a bo at same offset in rb
+tree but not
+in vm mm. Maybe some other race in destruction...
 
-OL> Linux-cr can do live migration - e.g. VDI, move the desktop - in
-OL> which case skype's sockets' network stacks are reconstructed,
-OL> transparently to both skype (local apps) and the peer (remote
-OL> apps).  Then, at the destination host and skype continues to work.
-
-GC> That's a really cool thing to do, and it's definitely not part of
-GC> what DMTCP does.  It might be possible to do userland live
-GC> migration, but it's definitely not part of our current scope.
-
-How would you go about doing that in userland?  With the current
-linux-cr implementation, I can move something like sshd or sendmail
-from one machine to another without a remote (connected) client
-noticing anything more than a bit of delay during the move.
-
-I think that saving and restoring the state of a TCP connection from
-userland is probably a good example of a case where it makes sense to
-have it as part of a C/R function, but not necessarily exposed in /sys
-or /proc somewhere.  Unless it can be argued that doing so is not
-useful, I think that's a good talking point for discussing the kernel
-vs. user approach, no?
-
--- 
-Dan Smith
-IBM Linux Technology Center
+Cheers,
+Jerome Glisse
