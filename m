@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661Ab0KIKOR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 05:14:17 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60311 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754086Ab0KIKOP (ORCPT
+	id S1754789Ab0KIKQK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 05:16:10 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:55674 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754086Ab0KIKQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 05:14:15 -0500
-Date: Tue, 9 Nov 2010 11:14:06 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Alberto Panizzo <maramaopercheseimorto@gmail.com>
-Cc: Chris Ball <cjb@laptop.org>, Daniel Mack <daniel@caiaq.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric =?iso-8859-1?Q?B=E9nard?= <eric@eukrea.com>,
-        Fabio Estevam <fabioestevam@yahoo.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Linus Walleij <linus.ml.walleij@gmail.com>
-Subject: Re: [PATCH] mxcmmc: update the regulator support code to the
-	latest API
-Message-ID: <20101109101406.GW16938@pengutronix.de>
-References: <1288656337.29881.13.camel@realization> <20101102073932.GB6017@pengutronix.de> <1288949275.3072.3.camel@realization> <1289213595.3425.23.camel@realization> <20101108143746.GA23201@void.printf.net> <1289297390.3020.27.camel@realization>
+	Tue, 9 Nov 2010 05:16:07 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Richard Cochran <richardcochran@gmail.com>
+Subject: Re: [PATCH RFC 2/8] clock device: convert clock_gettime
+Date: Mon, 8 Nov 2010 07:56:50 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Christoph Lameter <cl@linux.com>,
+        John Stultz <johnstul@us.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+References: <cover.1288897198.git.richard.cochran@omicron.at> <81ccd2674ebf26332898761ba6b7b54f395a15bd.1288897199.git.richard.cochran@omicron.at>
+In-Reply-To: <81ccd2674ebf26332898761ba6b7b54f395a15bd.1288897199.git.richard.cochran@omicron.at>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1289297390.3020.27.camel@realization>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011080756.50930.arnd@arndb.de>
+X-Provags-ID: V02:K0:ztKWzJSs/qQQVb3FjPxTalahsrSWSYcOxayLaiI1eSC
+ sVe1KP5V1iy6wtSQsPMg8RChLrEGWhK/eDnAvp8uiQxGz/g3dN
+ 4TEKk7bK/9kq1ip+8VUp0i3UXyEwf44ohAWPdHCGH1/EPNQQvc
+ 41v3iPb/Yk/305/1CYiu5StWS747wf8fvRak0O0Hm2XiU99dFq
+ uTPPDxKsFVwwKay2hkDcQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 09, 2010 at 11:09:50AM +0100, Alberto Panizzo wrote:
-> 
-> This fix also the build problem introduced by my previous patch
-> due to unhanded API changes introduced by
-s/handed/handled/ ?
+On Thursday 04 November 2010, Richard Cochran wrote:
+> diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
+> index 3e23844..70f40e6 100644
+> --- a/include/linux/posix-timers.h
+> +++ b/include/linux/posix-timers.h
+> @@ -17,10 +17,22 @@ struct cpu_timer_list {
+>  	int firing;
+>  };
+>  
+> +/* Bit fields within a clockid:
+> + *
+> + * The most significant 29 bits hold either a pid or a file descriptor.
+> + *
+> + * Bit 2 indicates whether a cpu clock refers to a thread or a process.
+> + *
+> + * Bits 1 and 0 give the type: PROF=0, VIRT=1, SCHED=2, or FD=3.
+> + *
+> + * A clockid is invalid if bits 2, 1, and 0 all set (see also CLOCK_INVALID
+> + * in include/linux/time.h)
+> + */
+> +
+>  #define 	(clock)		((pid_t) ~((clock) >> 3))
+>  #define CPUCLOCK_PERTHREAD(clock) \
+>  	(((clock) & (clockid_t) CPUCLOCK_PERTHREAD_MASK) != 0)
+> -#define CPUCLOCK_PID_MASK	7
+> +
+>  #define CPUCLOCK_PERTHREAD_MASK	4
+>  #define CPUCLOCK_WHICH(clock)	((clock) & (clockid_t) CPUCLOCK_CLOCK_MASK)
+>  #define CPUCLOCK_CLOCK_MASK	3
+> @@ -28,12 +40,17 @@ struct cpu_timer_list {
+>  #define CPUCLOCK_VIRT		1
+>  #define CPUCLOCK_SCHED		2
+>  #define CPUCLOCK_MAX		3
+> +#define CLOCKFD			CPUCLOCK_MAX
+> +#define CLOCKFD_MASK		(CPUCLOCK_PERTHREAD_MASK|CPUCLOCK_CLOCK_MASK)
 
-> commit:99fc5131018cbdc3cf42ce09fb394a4e8b053c74
-Linus wants to have the commit shortlog for references to other commits.
-After doing:
+It looks like you are turning a kernel internal interface into a user ABI,
+which I think is highly questionable. Using the bits like this internally is
+ok, but making it part of the syscall ABI means that we can never change this
+in the future.
 
-	git config --global alias.one "show -s --pretty='format:%h (%s)'"
+Maybe I was misunderstanding your patch though.
 
-once you can simply use the output of
+	Arnd
 
-	git one 99fc5131018cbdc3cf42ce09fb394a4e8b053c74
-
-for that.
-
-Best regards
-Uwe
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
