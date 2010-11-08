@@ -1,39 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752614Ab0KHPoV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 10:44:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2111 "EHLO mx1.redhat.com"
+	id S1753139Ab0KHPp3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 10:45:29 -0500
+Received: from mga03.intel.com ([143.182.124.21]:21984 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751421Ab0KHPoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 10:44:20 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] dio: add a mempool for the unaligned block structures
-References: <1289202023-15102-1-git-send-email-david@fromorbit.com>
-	<1289202023-15102-4-git-send-email-david@fromorbit.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 08 Nov 2010 10:40:37 -0500
-In-Reply-To: <1289202023-15102-4-git-send-email-david@fromorbit.com> (Dave
-	Chinner's message of "Mon, 8 Nov 2010 18:40:23 +1100")
-Message-ID: <x49wron962y.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1752258Ab0KHPp2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 10:45:28 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,314,1286175600"; 
+   d="scan'208";a="345953253"
+Date: Mon, 8 Nov 2010 23:45:24 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Minchan Kim <minchan.kim@gmail.com>, Greg Thelen <gthelen@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Young <hidave.darkstar@gmail.com>,
+        Andrea Righi <arighi@develer.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: memcg writeout throttling, was: [patch 4/4] memcg: use native
+ word page statistics counters
+Message-ID: <20101108154524.GA9530@localhost>
+References: <1288973333-7891-1-git-send-email-minchan.kim@gmail.com>
+ <20101106010357.GD23393@cmpxchg.org>
+ <AANLkTin9m65JVKRuStZ1-qhU5_1AY-GcbBRC0TodsfYC@mail.gmail.com>
+ <20101107215030.007259800@cmpxchg.org>
+ <20101107220353.964566018@cmpxchg.org>
+ <AANLkTinh+LEQYGe9dDOKBwNnVVXMiFYpDqkqvvpNe9H8@mail.gmail.com>
+ <20101108093715.GJ23393@cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101108093715.GJ23393@cmpxchg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Chinner <david@fromorbit.com> writes:
+On Mon, Nov 08, 2010 at 05:37:16PM +0800, Johannes Weiner wrote:
+> On Mon, Nov 08, 2010 at 09:07:35AM +0900, Minchan Kim wrote:
+> > BTW, let me ask a question.
+> > dirty_writeback_pages seems to be depends on mem_cgroup_page_stat's
+> > result(ie, negative) for separate global and memcg.
+> > But mem_cgroup_page_stat could return negative value by per-cpu as
+> > well as root cgroup.
+> > If I understand right, Isn't it a problem?
+> 
+> Yes, the numbers are not reliable and may be off by some.  It appears
+> to me that the only sensible interpretation of a negative sum is to
+> assume zero, though.  So to be honest, I don't understand the fallback
+> to global state when the local state fluctuates around low values.
 
-> From: Dave Chinner <dchinner@redhat.com>
->
-> We need the zero block tracking structure allocation to succeed.
-> Silently failing and potentially allowing data corruption is not an
-> option. Add a mempool to ensure this allocation will always succeed.
->
-> Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Agreed. It does not make sense to compare values from different domains.
 
-Acked-by: Jeff Moyer <jmoyer@redhat.com>
+The bdi stats use percpu_counter_sum_positive() which never return
+negative values. It may be suitable for memcg page counts, too.
+
+> This function is also only used in throttle_vm_writeout(), where the
+> outcome is compared to the global dirty threshold.  So using the
+> number of writeback pages _from the current cgroup_ and falling back
+> to global writeback pages when this number is low makes no sense to me
+> at all.
+> 
+> I looks like it should rather compare the cgroup state with the cgroup
+> limit, and the global state with the global limit.
+
+Right.
+
+> Can somebody explain the reasoning behind this?  And in case it makes
+> sense after all, put a comment into this function?
+
+It seems a better match to test sc->mem_cgroup rather than
+mem_cgroup_from_task(current). The latter could make mismatches. When
+someone is changing the memcg limits and hence triggers memcg
+reclaims, the current task is actually the (unrelated) shell. It's
+also possible for the memcg task to trigger _global_ direct reclaim.
+
+Thanks,
+Fengguang
