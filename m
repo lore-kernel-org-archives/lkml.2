@@ -1,91 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569Ab0KHVLG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 16:11:06 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:59759 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753979Ab0KHVLE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 16:11:04 -0500
-Date: Mon, 8 Nov 2010 13:09:39 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Mike Waychison <mikew@google.com>
-Cc: simon.kagstrom@netinsight.net, davem@davemloft.net, nhorman@tuxdriver.com,
-        Matt Mackall <mpm@selenic.com>, adurbin@google.com,
-        linux-kernel@vger.kernel.org, chavey@google.com,
-        Greg KH <greg@kroah.com>,
-        =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        akpm@linux-foundation.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH v2 18/23] sys-rq: Add option to soft dump
-Message-Id: <20101108130939.13436673.randy.dunlap@oracle.com>
-In-Reply-To: <20101108203322.22479.47929.stgit@crlf.mtv.corp.google.com>
-References: <20101108203120.22479.19708.stgit@crlf.mtv.corp.google.com>
-	<20101108203322.22479.47929.stgit@crlf.mtv.corp.google.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755583Ab0KHVNB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 16:13:01 -0500
+Received: from mga14.intel.com ([143.182.124.37]:59958 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754730Ab0KHVNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 16:13:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,170,1288594800"; 
+   d="scan'208";a="346111000"
+From: Darren Hart <dvhart@linux.intel.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Darren Hart <dvhart@linux.intel.com>, Darren Hart <dvhltc@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Eric Dumazet <eric.dumazet@gmail.com>, John Kacur <jkacur@redhat.com>
+Subject: [PATCH V2] futex: add futex_q static initializer
+Date: Mon,  8 Nov 2010 13:12:50 -0800
+Message-Id: <1289250770-16533-1-git-send-email-dvhart@linux.intel.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <alpine.LFD.2.00.1011082037200.2900@localhost6.localdomain6>
+References: <alpine.LFD.2.00.1011082037200.2900@localhost6.localdomain6>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 08 Nov 2010 12:33:23 -0800 Mike Waychison wrote:
+The futex_q struct has grown considerably over the last couple years. I
+believe it now merits a static initializer to avoid uninitialized data
+errors (having spent more time than I care to admit debugging an uninitialized
+q.bitset in an experimental new op code).
 
-> It is very useful to provide some means to force the kernel logs to make it out
-> via the kmsg_oops implementations on the console.  Add a new option 'Y' to
-> sysrq to allow dumping of logs to kmsg_dumper drivers.
-> 
-> Signed-off-by: Mike Waychison <mikew@google.com>
+With the key initializer built in, several of the FUTEX_KEY_INIT calls can
+be removed.
 
-Hi,
+V2: use a static variable instead of an init macro.
+    use a C99 initializer and don't rely on variable ordering in the struct.
 
-Please add 'y' to Documentation/sysrq.txt .
-
-> ---
->  drivers/char/sysrq.c |   14 +++++++++++++-
->  1 files changed, 13 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/char/sysrq.c b/drivers/char/sysrq.c
-> index eaa5d3e..058d3c8 100644
-> --- a/drivers/char/sysrq.c
-> +++ b/drivers/char/sysrq.c
-> @@ -41,6 +41,7 @@
->  #include <linux/oom.h>
->  #include <linux/slab.h>
->  #include <linux/input.h>
-> +#include <linux/kmsg_dump.h>
->  
->  #include <asm/ptrace.h>
->  #include <asm/irq_regs.h>
-> @@ -395,6 +396,17 @@ static struct sysrq_key_op sysrq_unrt_op = {
->  	.enable_mask	= SYSRQ_ENABLE_RTNICE,
->  };
->  
-> +static void sysrq_handle_softdump(int key)
-> +{
-> +	kmsg_dump(KMSG_DUMP_SOFT, NULL);
-> +}
-> +static struct sysrq_key_op sysrq_softdump_op = {
-> +	.handler	= sysrq_handle_softdump,
-> +	.help_msg	= "soft-dump(Y)",
-> +	.action_msg	= "Trigger a soft dump",
-> +	.enable_mask	= SYSRQ_ENABLE_DUMP,
-> +};
-> +
->  /* Key Operations table and lock */
->  static DEFINE_SPINLOCK(sysrq_key_table_lock);
->  
-> @@ -451,7 +463,7 @@ static struct sysrq_key_op *sysrq_key_table[36] = {
->  	/* x: May be registered on ppc/powerpc for xmon */
->  	NULL,				/* x */
->  	/* y: May be registered on sparc64 for global register dump */
-> -	NULL,				/* y */
-> +	&sysrq_softdump_op,		/* y */
->  	&sysrq_ftrace_dump_op,		/* z */
->  };
-
-
+Signed-off-by: Darren Hart <dvhltc@us.ibm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+CC: Eric Dumazet <eric.dumazet@gmail.com>
+CC: John Kacur <jkacur@redhat.com>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ kernel/futex.c |   25 ++++++++++---------------
+ 1 files changed, 10 insertions(+), 15 deletions(-)
+
+diff --git a/kernel/futex.c b/kernel/futex.c
+index fd3fbe1..1eea066 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -131,6 +131,12 @@ struct futex_q {
+ 	u32 bitset;
+ };
+ 
++static struct futex_q futex_q_init = {
++	/* list gets initialized in queue_me()*/ 
++	.key = FUTEX_KEY_INIT,
++	.bitset = FUTEX_BITSET_MATCH_ANY
++};
++
+ /*
+  * Hash buckets are shared by all the futex_keys that hash to the same
+  * location.  Each key may have multiple futex_q structures, one for each task
+@@ -1751,7 +1757,6 @@ static int futex_wait_setup(u32 __user *uaddr, u32 val, unsigned int flags,
+ 	 * rare, but normal.
+ 	 */
+ retry:
+-	q->key = FUTEX_KEY_INIT;
+ 	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q->key);
+ 	if (unlikely(ret != 0))
+ 		return ret;
+@@ -1792,16 +1797,12 @@ static int futex_wait(u32 __user *uaddr, unsigned int flags, u32 val,
+ 	struct hrtimer_sleeper timeout, *to = NULL;
+ 	struct restart_block *restart;
+ 	struct futex_hash_bucket *hb;
+-	struct futex_q q;
++	struct futex_q q = futex_q_init;
+ 	int ret;
+ 
+ 	if (!bitset)
+ 		return -EINVAL;
+-
+-	q.pi_state = NULL;
+ 	q.bitset = bitset;
+-	q.rt_waiter = NULL;
+-	q.requeue_pi_key = NULL;
+ 
+ 	if (abs_time) {
+ 		to = &timeout;
+@@ -1892,7 +1893,7 @@ static int futex_lock_pi(u32 __user *uaddr, unsigned int flags, int detect,
+ {
+ 	struct hrtimer_sleeper timeout, *to = NULL;
+ 	struct futex_hash_bucket *hb;
+-	struct futex_q q;
++	struct futex_q q = futex_q_init;
+ 	int res, ret;
+ 
+ 	if (refill_pi_state_cache())
+@@ -1906,11 +1907,7 @@ static int futex_lock_pi(u32 __user *uaddr, unsigned int flags, int detect,
+ 		hrtimer_set_expires(&to->timer, *time);
+ 	}
+ 
+-	q.pi_state = NULL;
+-	q.rt_waiter = NULL;
+-	q.requeue_pi_key = NULL;
+ retry:
+-	q.key = FUTEX_KEY_INIT;
+ 	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q.key);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+@@ -2198,8 +2195,8 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+ 	struct rt_mutex_waiter rt_waiter;
+ 	struct rt_mutex *pi_mutex = NULL;
+ 	struct futex_hash_bucket *hb;
+-	union futex_key key2;
+-	struct futex_q q;
++	union futex_key key2 = FUTEX_KEY_INIT;
++	struct futex_q q = futex_q_init;
+ 	int res, ret;
+ 
+ 	if (!bitset)
+@@ -2222,12 +2219,10 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+ 	debug_rt_mutex_init_waiter(&rt_waiter);
+ 	rt_waiter.task = NULL;
+ 
+-	key2 = FUTEX_KEY_INIT;
+ 	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+ 
+-	q.pi_state = NULL;
+ 	q.bitset = bitset;
+ 	q.rt_waiter = &rt_waiter;
+ 	q.requeue_pi_key = &key2;
+-- 
+1.7.1
+
