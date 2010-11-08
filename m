@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754327Ab0KHORE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 09:17:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43911 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752926Ab0KHORC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 09:17:02 -0500
-Date: Mon, 8 Nov 2010 14:16:36 +0000
-From: Alasdair G Kergon <agk@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Milan Broz <mbroz@redhat.com>, Matt <jackdachef@gmail.com>,
-        dm-devel@redhat.com, Linux Kernel <linux-kernel@vger.kernel.org>,
-        htd@fancy-poultry.org
-Subject: Re: [dm-devel] [PATCH] DM-CRYPT: Scale to multiple CPUs v3 on
-	2.6.37-rc* ?
-Message-ID: <20101108141635.GD15253@agk-dp.fab.redhat.com>
-Mail-Followup-To: Andi Kleen <andi@firstfloor.org>,
-	Milan Broz <mbroz@redhat.com>, Matt <jackdachef@gmail.com>,
-	dm-devel@redhat.com, Linux Kernel <linux-kernel@vger.kernel.org>,
-	htd@fancy-poultry.org
-References: <AANLkTim6WTCChWGbTb-PUGd2AERGibeRtgan-WDznf2s@mail.gmail.com> <4CD6B7FA.3050005@redhat.com> <AANLkTikbsU+SGAaoq_oek=7tfDdjg+0wFoydhA+K9ZU+@mail.gmail.com> <AANLkTinna7BiGHogXnn1iEG6ccUAjFM3p3S3aHpv=h-E@mail.gmail.com> <20101107194547.GA12521@basil.fritz.box> <4CD71C8B.1050604@redhat.com> <20101107230508.GB17592@basil.fritz.box>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101107230508.GB17592@basil.fritz.box>
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: Amberley Place, 107-111 Peascod
-	Street, Windsor, Berkshire, SL4 1TE.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754454Ab0KHOSj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 09:18:39 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:55541 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752926Ab0KHOSi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 09:18:38 -0500
+X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=1qZAFK7FH7YA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=Y_2azpK4U78DZyq78gIA:9 a=J47mCEbZsYno2K0CdizqnXRMLXcA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] powerpc: Add jump label support
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Michael Ellerman <michael@ellerman.id.au>
+Cc: linuxppc-dev@ozlabs.org, Kumar Gala <kumar.gala@freescale.com>,
+        "David S.Miller" <davem@davemloft.net>, jbaron@redhat.com,
+        linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>
+In-Reply-To: <45fbc3cd7f6ce404d1e25bf01695fb629d86189d.1289189560.git.michael@ellerman.id.au>
+References: <45fbc3cd7f6ce404d1e25bf01695fb629d86189d.1289189560.git.michael@ellerman.id.au>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 08 Nov 2010 09:18:35 -0500
+Message-ID: <1289225915.12418.2.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 08, 2010 at 12:05:09AM +0100, Andi Kleen wrote:
-> e.g. the btrfs mailing list is full of corruption reports
-> on dm-crypt and most of the symptoms point to broken barriers.
+On Mon, 2010-11-08 at 15:12 +1100, Michael Ellerman wrote:
+> This patch adds support for the new "jump label" feature.
 
-linux-btrfs?  I'm not subscribed, but I the searches I've tried
-don't show it to be "full of corruption reports".
+Darn it! I wanted to port this!!!
 
-Could you post links to the threads concerned so we can investigate?
+;-)
 
-Are we just talking -rc1 or earlier too?
+> 
+> Built for 64 & 32 bit, tested on 64 bit. Survives a kernel build under
+> perf with all tracepoints enabled, and manual inspection of the patched
+> code looks right. But still, lightly tested, YMMV.
+> 
+> Unlike x86 and sparc we just merrily patch the code with no locks etc,
+> as far as I know this is safe, but I'm not really sure what the x86/sparc
+> code is protecting against so maybe it's not.
 
-Thanks,
-Alasdair
+Thanks, I'll give it a test on my electra as soon as I get a gcc 4.5.1
+cross compiler working.
+
+-- Steve
+
 
