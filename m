@@ -1,140 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753077Ab0KHTyv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 14:54:51 -0500
-Received: from mail.windriver.com ([147.11.1.11]:48274 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752034Ab0KHTyu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 14:54:50 -0500
-Message-ID: <4CD85575.2080305@windriver.com>
-Date: Mon, 08 Nov 2010 13:54:29 -0600
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1753641Ab0KHT4G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 14:56:06 -0500
+Received: from www.tglx.de ([62.245.132.106]:43040 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752670Ab0KHT4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 14:56:03 -0500
+Date: Mon, 8 Nov 2010 20:55:49 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Thomas Meyer <thomas@m3y3r.de>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, "Ted Ts'o" <tytso@mit.edu>
+Subject: Re: 2.6.36: kernel panic in cascade (Fatal exception in interrupt)
+In-Reply-To: <1289242528.11571.8.camel@localhost.localdomain>
+Message-ID: <alpine.LFD.2.00.1011082039360.2900@localhost6.localdomain6>
+References: <201011032334.30662.thomas@m3y3r.de>  <201011080014.33354.thomas@m3y3r.de>  <alpine.LFD.2.00.1011081047500.2900@localhost6.localdomain6> <1289242528.11571.8.camel@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: gregkh@suse.de, USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        kgdb-bugreport@lists.sourceforge.net, Alan Cox <alan@linux.intel.com>,
-        Oliver Neukum <oliver@neukum.org>
-Subject: Re: [RFC PATCH 1/5] usb-hcd: implement polling a specific usb device
-References: <Pine.LNX.4.44L0.1011081355050.1340-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1011081355050.1340-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Nov 2010 19:54:31.0417 (UTC) FILETIME=[C2649690:01CB7F7E]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2010 01:19 PM, Alan Stern wrote:
-> On Mon, 8 Nov 2010, Jason Wessel wrote:
+On Mon, 8 Nov 2010, Thomas Meyer wrote:
+
+> Am Montag, den 08.11.2010, 10:51 +0100 schrieb Thomas Gleixner: 
+> > On Mon, 8 Nov 2010, Thomas Meyer wrote:
+> > > > 
+> > > > [   300.000697] Pid: 0, comm: kworker/0:0 Not tainted 2.6.36 #2 MS-7250/MS-7250
+> > > > [   300.000815] RIP: 0010:[<ffffffff8105faf4>]  [<ffffffff8105faf4>] cascade+0x54/0x7a
+> > 
+> > Can you please enable
+> > 
+> > CONFIG_DEBUG_OBJECTS
+> > CONFIG_DEBUG_OBJECTS_FREE
+> > CONFIG_DEBUG_OBJECTS_TIMERS
+> > and set CONFIG_DEBUG_OBJECTS_ENABLE_DEFAULT to 1
+> > 
+> > That should give us more useful data.
 > 
->>>> +static void usb_poll_irq_flush_helper(struct work_struct *dummy)
->>>> +{
->>>> +	struct urb *urb;
->>>> +	struct urb *scratch;
->>>> +	unsigned long flags;
->>>> +
->>>> +	mutex_lock(&usb_poll_irq_flush_mutex);
->>> What is this mutex used for?
->>
->> This mutex exists because I did not see a way to create a static
->> workqueue with the attribute WQ_NON_REENTRANT.  When the workqueue
->> does not have this attribute there is a corner case that between two
->> usb poll intervals (one being handled on cpu 0 and the next on cpu 1)
->> that you can get two units of work to run concurrently.
+> First results:
 > 
-> So this reduces to the more fundamental question of why you need to use 
-> a workqueue in the first place.
->
-[clip]
->
-> The queue should be drained just before you exit the debugger.
+> WARNING: at lib/debugobjects.c:259 debug_print_object+0x5b/0x63()
+> Hardware name: MS-7250
+> ODEBUG: free active (active state 0) object type: timer_list
 
+That means that ext4_put_super() is kfree'ing something which has an
+active timer embedded. That explains the crash in cascade() very well.
 
-I think this is the key issue here.  There is no debugger running.
-The context of kdb has nothing to do with this patch.
+I leave it to the ext4 experts to solve it for real :)
 
-In this case the input source was printk() constantly calling the usb
-serial console write until there are no more kfifo buffers left and we
-need to poll the usb hcd to push some of the data out.
-
-The easiest example is to look at what happens when you set
-console=ttyUSB0,115200 as a kernel boot argument.  
-
-irq's off
-  console_register(with usb device) {
-    loop() {
-       write_all_console_boot_log_so_far()
-    }
-  }
-irq's on
-... more printk's ...
-
-It is not obvious where another good place exists to drain the queue.
-You mentioned before interrupts are restored, but I don't see how we
-can do that in this case without putting lots of other hook points or
-potentially adding to the hot path of irq restore (which is obviously
-a no-no).
-
-What about another option?  Perhaps we drain the queue the next time
-the HCD runs when it is not in the polling context?  If we do that,
-then we can possibly eliminate the poll schedule all together, but I
-believe there is a corner case where if you do not receive any irq
-events for a while the queued urb completions hang in limbo.
-
+> Modules linked in: floppy radeon ttm drm_kms_helper
+> Pid: 2259, comm: umount Not tainted 2.6.36 #4
+> Call Trace:
+> [<ffffffff810577d2>] warn_slowpath_common+0x80/0x98
+> [<ffffffff8105787e>] warn_slowpath_fmt+0x41/0x43
+> [<ffffffff812cab46>] debug_print_object+0x5b/0x63
+> [<ffffffff812cb024>] debug_check_no_obj_freed+0x94/0x1d3
+> [<ffffffff817032d3>] ? _raw_spin_unlock_irq+0x1f/0x2a
+> [<ffffffff810e4cd7>] kfree+0x75/0xb6
+> [<ffffffff81172c75>] ? ext4_put_super+0x32b/0x33a
+> [<ffffffff81172c75>] ext4_put_super+0x32b/0x33a
+> [<ffffffff810ed276>] generic_shutdown_super+0x51/0xd2
+> [<ffffffff810ed319>] kill_block_super+0x22/0x3a
+> [<ffffffff810ecda6>] deactivate_locked_super+0x21/0x41
+> [<ffffffff810ed220>] deactivate_super+0x40/0x45
+> [<ffffffff811010a5>] mntput_no_expire+0xdd/0x10b
+> [<ffffffff8110161a>] sys_umount+0x2d2/0x2fd
+> [<ffffffff81705f1e>] ? do_page_fault+0x217/0x244
+> [<ffffffff81022a2b>] system_call_fastpath+0x16/0x1b
 > 
->> The "schedule later via a workqueue" seemed the path of least
->> resistance.
->>
->> You could argue that we might have a user of this API that would want
->> to flush the delayed urb queue in a safe place.  For now though, the
->> two users of the new poll API (kdb, and usb serial console) do not
->> need it and this leads me to believe we would be best served to not
->> export the flush helper.
-> 
-> Why should usb serial console need to use the queue?
-> 
-> Let's put it this way: Your polling mechanism has conflated two 
-> separate issues.  The matter of polling the host controller driver is 
-> distinct from the question of which URBs to stick on the queue.
-> 
-> While kdb is running, it makes sense to give back only the URBs that 
-> are for the console device.  But if you are polling during the normal 
-> operation of printk and the usb serial console, then there's no reason 
-> not to give back all the URBs that complete during polling.
-> 
+> I didn't encounter a kernel crash with the DEBUG_OBJECT options enabled.
 
-That is an interesting way to look at things...  You metioned I
-conflated to issues, but in my mind they were the same (kdb vs printk
-requiremetns).  I just figured we should do the minimum possible when
-trying to exec a printk() because we want it to be as reliable as
-possible.  I had the following example in mind where a usb camera
-driver executes a pile of printk()'s and the poll kicks in, we would
-only like the completion handler to run for the usb serial device and
-to defer the rest.
-
-> In other words, usb_poll_irq() doesn't need to set or clear
-> usb_poll_hcd_device.  (Incidentally, that's not a very good name -- I'd 
-> change to it usb_poll_device.)
-
-Seems resonable to me.  Its life has changed a bit since we originally
-started talking about it.
-
-> Instead, set that pointer when you enter the debugger and clear it
-> when you leave the debugger, at which time you can drain the queue.
-
-In the kdb keyboard patch we already have such a place we can do this,
-and that is where the schedule logic occurs.  The other reason I opted
-for the scheduling vs running it before kernel execution is completely
-resumed is on the off chance something has other locks or mutexes
-required by another cpu.
-
-What about the printk() case though?  My argument for queuing and
-scheduling was to minimize the ability that printk() will get deferred
-by something else.
-
+That's the point of DEBUG_OBJECTs :) It detects and corrects the
+problem in most cases and keeps the box alive with a useful error
+report.
 
 Thanks,
-Jason.
+
+	tglx
