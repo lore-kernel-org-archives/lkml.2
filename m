@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752927Ab0KHPkF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 10:40:05 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39022 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751792Ab0KHPkE (ORCPT
+	id S1752662Ab0KHPlP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 10:41:15 -0500
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:28339 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751607Ab0KHPlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 10:40:04 -0500
-Date: Mon, 8 Nov 2010 23:39:57 +0800
-From: Arun Bhanu <ab@arunbhanu.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: suspicious rcu_dereference_check() usage splat
-Message-ID: <20101108153957.GA3418@deepthought.bhanu.net>
-Reply-To: Arun Bhanu <ab@arunbhanu.com>
-Mail-Followup-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	linux-kernel@vger.kernel.org
-References: <20101107071414.GA3600@deepthought.bhanu.net>
- <20101107185013.GC15561@linux.vnet.ibm.com>
+	Mon, 8 Nov 2010 10:41:14 -0500
+Message-ID: <4CD81A0B.30209@vmware.com>
+Date: Mon, 08 Nov 2010 16:40:59 +0100
+From: Thomas Hellstrom <thellstrom@vmware.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100624 Mandriva/3.0.5-0.1mdv2009.1 (2009.1) Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20101107185013.GC15561@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vasiliy Kulikov <segooon@gmail.com>
+CC: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        David Airlie <airlied@linux.ie>, Dave Airlie <airlied@redhat.com>,
+        Jakob Bornecrantz <jakob@vmware.com>,
+        Dan Carpenter <error27@gmail.com>, Jerome Glisse <jglisse@redhat.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] gpu: drm: vmwgfx: fix information leak to userland
+References: <1289054477-18100-1-git-send-email-segooon@gmail.com>
+In-Reply-To: <1289054477-18100-1-git-send-email-segooon@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> On Sun, Nov 07, 2010 at 03:14:14PM +0800, Arun Bhanu wrote:
-> > I got the following splat while booting 2.6.37-rc1+
-> > (ff8b16d7e15a8ba2a6086645614a483e048e3fbf).
-> > 
-> > [    9.381536] ===================================================
-> > [    9.382380] [ INFO: suspicious rcu_dereference_check() usage. ]
-> > [    9.382867] ---------------------------------------------------
-> > [    9.383412] kernel/pid.c:419 invoked rcu_dereference_check() without protection!
-> > [    9.383959] 
-> > [    9.383959] other info that might help us debug this:
-> > [    9.383960] 
-> > [    9.385599] 
-> > [    9.385599] rcu_scheduler_active = 1, debug_locks = 0
-> > [    9.386686] 1 lock held by readahead/365:
-> > [    9.387227]  #0:  (tasklist_lock){.+.+..}, at: [<c05188f3>] sys_ioprio_set+0x84/0x261
-> > [    9.387765] 
-> > [    9.387765] stack backtrace:
-> > [    9.388840] Pid: 365, comm: readahead Not tainted 2.6.37-rc1-ab1.fc14.i686.PAE+ #1
-> > [    9.389374] Call Trace:
-> > [    9.389909]  [<c07e57ba>] ? printk+0x25/0x2b
-> > [    9.390453]  [<c046b21a>] lockdep_rcu_dereference+0x7d/0x86
-> > [    9.390986]  [<c0459304>] find_task_by_pid_ns+0x3f/0x53
-> > [    9.391521]  [<c0459335>] find_task_by_vpid+0x1d/0x1f
-> > [    9.392050]  [<c051891b>] sys_ioprio_set+0xac/0x261
-> > [    9.392574]  [<c046d80f>] ? trace_hardirqs_on_caller+0xfe/0x11f
-> > [    9.393110]  [<c040951f>] sysenter_do_call+0x12/0x38
-> > 
-> > Complete dmesg and config attached. Let me know if you want me to test
-> > any patches.
-> 
-> Could you please try the patch at http://lkml.org/lkml/2010/10/29/168?
+On 11/06/2010 03:41 PM, Vasiliy Kulikov wrote:
+> Structure drm_vmw_fence_rep is copied to userland with field "pad64"
+> uninitialized.  It leads to leaking of contents of kernel stack memory.
+>
+> Signed-off-by: Vasiliy Kulikov<segooon@gmail.com>
+> ---
+>   Compile tested.
+>
+>   drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c |    1 +
+>   1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c b/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
+> index 51d9f9f..76954e3 100644
+> --- a/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
+> +++ b/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
+> @@ -691,6 +691,7 @@ int vmw_execbuf_ioctl(struct drm_device *dev, void *data,
+>
+>   	fence_rep.error = ret;
+>   	fence_rep.fence_seq = (uint64_t) sequence;
+> +	fence_rep.pad64 = 0;
+>
+>   	user_fence_rep = (struct drm_vmw_fence_rep __user *)
+>   	    (unsigned long)arg->fence_rep;
+>    
+Reviewed-by: Thomas Hellstrom <thellstrom@vmware.com>
 
-Thanks for the pointer. With the above patch applied I am no longer
-seeing the splat.
-
-Tested-by: Arun Bhanu <arun@bhanu.net>
-
-> 
-> 							Thanx, Paul
-> 
-> > -Arun
-
-[snip]
-
--Arun
