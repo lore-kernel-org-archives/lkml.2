@@ -1,89 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab0KHU3d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 15:29:33 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:50213 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751743Ab0KHU3c (ORCPT
+	id S1754923Ab0KHUcU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 15:32:20 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:2738 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754772Ab0KHUcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 15:29:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=iYvkI8XTxGElFzloiWj8Pm48DAvH/wAOBDPk6/UdAo2GTNgY5k9SrjAnnshWf+tftc
-         V1/EPWC/E5zWPUAd2lLLbYwWfXZG2wiYtU4YHb3GzRCI+rDM6ealXRqyfxkBHyTtrZKT
-         cf2ynXDb9KwGJU8WZqscxv9cmSDQ5C4GHULRA=
-Subject: Re: 2.6.37-rc1-git5 -- WARNING: at net/ipv4/devinet.c:137
- in_dev_finish_destroy+0x3d/0x6e()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Miles Lane <miles.lane@gmail.com>, ilpo.jarvinen@helsinki.fi,
-        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        netdev@vger.kernel.org
-In-Reply-To: <20101108200600.GG4032@linux.vnet.ibm.com>
-References: <AANLkTinVyf4CpxdzEWUn7zTyOrAMKY3H9Dct-HfopiSD@mail.gmail.com>
-	 <20101108200600.GG4032@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 08 Nov 2010 21:29:26 +0100
-Message-ID: <1289248166.2790.1.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Mon, 8 Nov 2010 15:32:18 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=subject:to:from:cc:date:message-id:in-reply-to:references:
+	user-agent:mime-version:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=WXdqt7knvzaCDsuTn/smrLxtI455gOOHr6+Ot96wJQJf1e+d+kaB2QaS7V88Ej/EP
+	wi90FZ/jHKymlqSXGtxFg==
+Subject: [PATCH v2 02/23] netconsole: Introduce locking over the netpoll fields
+To: simon.kagstrom@netinsight.net, davem@davemloft.net, nhorman@tuxdriver.com,
+        Matt Mackall <mpm@selenic.com>
+From: Mike Waychison <mikew@google.com>
+Cc: adurbin@google.com, linux-kernel@vger.kernel.org, chavey@google.com,
+        Greg KH <greg@kroah.com>,
+        =?utf-8?q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
+        akpm@linux-foundation.org, linux-api@vger.kernel.org
+Date: Mon, 08 Nov 2010 12:31:48 -0800
+Message-ID: <20101108203147.22479.8515.stgit@crlf.mtv.corp.google.com>
+In-Reply-To: <20101108203120.22479.19708.stgit@crlf.mtv.corp.google.com>
+References: <20101108203120.22479.19708.stgit@crlf.mtv.corp.google.com>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 08 novembre 2010 à 12:06 -0800, Paul E. McKenney a écrit :
-> On Mon, Nov 08, 2010 at 02:56:06PM -0500, Miles Lane wrote:
-> > WARNING: at net/ipv4/devinet.c:137 in_dev_finish_destroy+0x3d/0x6e()
-> > Hardware name: UL50VT
-> > Modules linked in: ipv6 snd_hda_codec_hdmi snd_hda_codec_realtek
-> > snd_hda_intel snd_hda_codec snd_pcm_oss snd_hwdep snd_mixer_oss
-> > snd_seq_dummy snd_pcm snd_seq_oss snd_seq_midi iwlagn snd_rawmidi
-> > snd_seq_midi_event snd_seq iwlcore uvcvideo snd_timer mac80211
-> > snd_seq_device videodev v4l1_compat v4l2_compat_ioctl32 i915 snd
-> > rtc_cmos rtc_core psmouse cfg80211 soundcore drm_kms_helper
-> > snd_page_alloc rtc_lib asus_laptop video battery ac sparse_keymap wmi
-> > button rfkill processor power_supply led_class usb_storage sg sr_mod
-> > sd_mod cdrom atl1c ehci_hcd uhci_hcd thermal thermal_sys hwmon
-> > Pid: 0, comm: kworker/0:0 Not tainted 2.6.37-rc1-git5 #10
-> > Call Trace:
-> >  <IRQ>  [<ffffffff8103767e>] warn_slowpath_common+0x80/0x98
-> >  [<ffffffff810376ab>] warn_slowpath_null+0x15/0x17
-> >  [<ffffffff8130d549>] in_dev_finish_destroy+0x3d/0x6e
-> >  [<ffffffff8130d58e>] in_dev_put+0x14/0x16
-> >  [<ffffffff8130d5ab>] inet_rcu_free_ifa+0x1b/0x27
-> >  [<ffffffff810834a8>] __rcu_process_callbacks+0x1a4/0x2bc
-> >  [<ffffffff8108363b>] rcu_process_callbacks+0x7b/0x82
-> >  [<ffffffff8103cb9c>] __do_softirq+0xb8/0x15a
-> >  [<ffffffff8100394c>] call_softirq+0x1c/0x28
-> >  [<ffffffff81005637>] do_softirq+0x38/0x81
-> >  [<ffffffff8103cce9>] irq_exit+0x45/0x94
-> >  [<ffffffff8101ac1f>] smp_apic_timer_interrupt+0x78/0x86
-> >  [<ffffffff81003413>] apic_timer_interrupt+0x13/0x20
-> >  <EOI>  [<ffffffff8134aff6>] ? _raw_spin_unlock_irqrestore+0x3c/0x69
-> >  [<ffffffff81059cb3>] clockevents_notify+0x11e/0x12d
-> >  [<ffffffffa008e561>] ? acpi_idle_enter_bm+0x236/0x271 [processor]
-> >  [<ffffffffa008dfce>] lapic_timer_state_broadcast+0x41/0x43 [processor]
-> >  [<ffffffffa008e588>] acpi_idle_enter_bm+0x25d/0x271 [processor]
-> >  [<ffffffff8129db30>] cpuidle_idle_call+0x9e/0xda
-> >  [<ffffffff810012ea>] cpu_idle+0xce/0x10c
-> >  [<ffffffff81343ce8>] start_secondary+0x1fc/0x205
-> > ---[ end trace 1d49bc8ff0266634 ]---
-> > Freeing alive in_device ffff88013fe536d0
-> 
-> Ilpo, thoughts?
-> 
+The netconsole driver currently doesn't do any locking over its
+configuration fields.  This can cause problems if we were to ever have
+concurrent writing to fields while somebody is enabling the service.
 
-Hmm... 
+For simplicity, this patch extends targets_list_lock to cover all
+configuration fields within the targets.  Macros are also added here to
+wrap accessors so that we check whether the target has been enabled with
+locking handled.
 
-    WARN_ON(idev->mc_list);
+Signed-off-by: Mike Waychison <mikew@google.com>
+---
+ drivers/net/netconsole.c |  114 ++++++++++++++++++++++++++--------------------
+ 1 files changed, 64 insertions(+), 50 deletions(-)
 
-Might be a problem with refcounts somewhere...
-
-Miles, is it reproductible ?
-
-Thanks
-
+diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
+index c87a49e..6e16888 100644
+--- a/drivers/net/netconsole.c
++++ b/drivers/net/netconsole.c
+@@ -327,6 +327,7 @@ static ssize_t store_enabled(struct netconsole_target *nt,
+ 			     const char *buf,
+ 			     size_t count)
+ {
++	unsigned long flags;
+ 	int err;
+ 	long enabled;
+ 
+@@ -335,6 +336,10 @@ static ssize_t store_enabled(struct netconsole_target *nt,
+ 		return enabled;
+ 
+ 	if (enabled) {	/* 1 */
++		spin_lock_irqsave(&target_list_lock, flags);
++		if (nt->enabled)
++			goto busy;
++		spin_unlock_irqrestore(&target_list_lock, flags);
+ 
+ 		/*
+ 		 * Skip netpoll_parse_options() -- all the attributes are
+@@ -343,18 +348,28 @@ static ssize_t store_enabled(struct netconsole_target *nt,
+ 		netpoll_print_options(&nt->np);
+ 
+ 		err = netpoll_setup(&nt->np);
++		spin_lock_irqsave(&target_list_lock, flags);
++		if (err)
++			nt->enabled = 0;
++		else
++			nt->enabled = 1;
++		spin_unlock_irqrestore(&target_list_lock, flags);
+ 		if (err)
+ 			return err;
+ 
+ 		printk(KERN_INFO "netconsole: network logging started\n");
+-
+ 	} else {	/* 0 */
++		spin_lock_irqsave(&target_list_lock, flags);
++		nt->enabled = 0;
++		spin_unlock_irqrestore(&target_list_lock, flags);
++
+ 		netpoll_cleanup(&nt->np);
+ 	}
+ 
+-	nt->enabled = enabled;
+-
+ 	return strnlen(buf, count);
++busy:
++	spin_unlock_irqrestore(&target_list_lock, flags);
++	return -EBUSY;
+ }
+ 
+ static ssize_t store_dev_name(struct netconsole_target *nt,
+@@ -363,13 +378,6 @@ static ssize_t store_dev_name(struct netconsole_target *nt,
+ {
+ 	size_t len;
+ 
+-	if (nt->enabled) {
+-		printk(KERN_ERR "netconsole: target (%s) is enabled, "
+-				"disable to update parameters\n",
+-				config_item_name(&nt->item));
+-		return -EINVAL;
+-	}
+-
+ 	strlcpy(nt->np.dev_name, buf, IFNAMSIZ);
+ 
+ 	/* Get rid of possible trailing newline from echo(1) */
+@@ -387,13 +395,6 @@ static ssize_t store_local_port(struct netconsole_target *nt,
+ 	long local_port;
+ #define __U16_MAX	((__u16) ~0U)
+ 
+-	if (nt->enabled) {
+-		printk(KERN_ERR "netconsole: target (%s) is enabled, "
+-				"disable to update parameters\n",
+-				config_item_name(&nt->item));
+-		return -EINVAL;
+-	}
+-
+ 	local_port = strtol10_check_range(buf, 0, __U16_MAX);
+ 	if (local_port < 0)
+ 		return local_port;
+@@ -410,13 +411,6 @@ static ssize_t store_remote_port(struct netconsole_target *nt,
+ 	long remote_port;
+ #define __U16_MAX	((__u16) ~0U)
+ 
+-	if (nt->enabled) {
+-		printk(KERN_ERR "netconsole: target (%s) is enabled, "
+-				"disable to update parameters\n",
+-				config_item_name(&nt->item));
+-		return -EINVAL;
+-	}
+-
+ 	remote_port = strtol10_check_range(buf, 0, __U16_MAX);
+ 	if (remote_port < 0)
+ 		return remote_port;
+@@ -430,13 +424,6 @@ static ssize_t store_local_ip(struct netconsole_target *nt,
+ 			      const char *buf,
+ 			      size_t count)
+ {
+-	if (nt->enabled) {
+-		printk(KERN_ERR "netconsole: target (%s) is enabled, "
+-				"disable to update parameters\n",
+-				config_item_name(&nt->item));
+-		return -EINVAL;
+-	}
+-
+ 	nt->np.local_ip = in_aton(buf);
+ 
+ 	return strnlen(buf, count);
+@@ -446,13 +433,6 @@ static ssize_t store_remote_ip(struct netconsole_target *nt,
+ 			       const char *buf,
+ 			       size_t count)
+ {
+-	if (nt->enabled) {
+-		printk(KERN_ERR "netconsole: target (%s) is enabled, "
+-				"disable to update parameters\n",
+-				config_item_name(&nt->item));
+-		return -EINVAL;
+-	}
+-
+ 	nt->np.remote_ip = in_aton(buf);
+ 
+ 	return strnlen(buf, count);
+@@ -466,13 +446,6 @@ static ssize_t store_remote_mac(struct netconsole_target *nt,
+ 	char *p = (char *) buf;
+ 	int i;
+ 
+-	if (nt->enabled) {
+-		printk(KERN_ERR "netconsole: target (%s) is enabled, "
+-				"disable to update parameters\n",
+-				config_item_name(&nt->item));
+-		return -EINVAL;
+-	}
+-
+ 	for (i = 0; i < ETH_ALEN - 1; i++) {
+ 		remote_mac[i] = simple_strtoul(p, &p, 16);
+ 		if (*p != ':')
+@@ -496,15 +469,56 @@ invalid:
+  * Attribute definitions for netconsole_target.
+  */
+ 
+-#define NETCONSOLE_TARGET_ATTR_RO(_name)				\
++#define __NETCONSOLE_TARGET_ATTR_RO(_name, _prefix_...)			\
+ static struct netconsole_target_attr netconsole_target_##_name =	\
+-	__CONFIGFS_ATTR(_name, S_IRUGO, show_##_name, NULL)
++	__CONFIGFS_ATTR(_name, S_IRUGO, show_##_prefix_##_name, NULL)
+ 
+-#define NETCONSOLE_TARGET_ATTR_RW(_name)				\
++#define __NETCONSOLE_TARGET_ATTR_RW(_name, _prefix_...)			\
+ static struct netconsole_target_attr netconsole_target_##_name =	\
+-	__CONFIGFS_ATTR(_name, S_IRUGO | S_IWUSR, show_##_name, store_##_name)
++	__CONFIGFS_ATTR(_name, S_IRUGO | S_IWUSR,			\
++			show_##_prefix_##_name, store_##_prefix_##_name)
++
++#define NETCONSOLE_WRAP_ATTR_STORE(_name)				\
++static ssize_t store_locked_##_name(struct netconsole_target *nt,	\
++				    const char *buf,			\
++				    size_t count)			\
++{									\
++	unsigned long flags;						\
++	ssize_t ret;							\
++	spin_lock_irqsave(&target_list_lock, flags);			\
++	if (nt->enabled) {						\
++		printk(KERN_ERR "netconsole: target (%s) is enabled, "	\
++				"disable to update parameters\n",	\
++				config_item_name(&nt->item));		\
++		spin_unlock_irqrestore(&target_list_lock, flags);	\
++		return -EBUSY;						\
++	}								\
++	ret = store_##_name(nt, buf, count);				\
++	spin_unlock_irqrestore(&target_list_lock, flags);		\
++	return ret;							\
++}
++
++#define NETCONSOLE_WRAP_ATTR_SHOW(_name)				\
++static ssize_t show_locked_##_name(struct netconsole_target *nt, char *buf) \
++{									\
++	unsigned long flags;						\
++	ssize_t ret;							\
++	spin_lock_irqsave(&target_list_lock, flags);			\
++	ret = show_##_name(nt, buf);					\
++	spin_unlock_irqrestore(&target_list_lock, flags);		\
++	return ret;							\
++}
++
++#define NETCONSOLE_TARGET_ATTR_RW(_name)				\
++		NETCONSOLE_WRAP_ATTR_STORE(_name)			\
++		NETCONSOLE_WRAP_ATTR_SHOW(_name)			\
++		__NETCONSOLE_TARGET_ATTR_RW(_name, locked_)
++
++#define NETCONSOLE_TARGET_ATTR_RO(_name)				\
++		NETCONSOLE_WRAP_ATTR_SHOW(_name)			\
++		__NETCONSOLE_TARGET_ATTR_RO(_name, locked_)
+ 
+-NETCONSOLE_TARGET_ATTR_RW(enabled);
++__NETCONSOLE_TARGET_ATTR_RW(enabled);
+ NETCONSOLE_TARGET_ATTR_RW(dev_name);
+ NETCONSOLE_TARGET_ATTR_RW(local_port);
+ NETCONSOLE_TARGET_ATTR_RW(remote_port);
 
