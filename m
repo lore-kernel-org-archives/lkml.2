@@ -1,101 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756101Ab0KHXYR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 18:24:17 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:19005 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754152Ab0KHXTi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756061Ab0KHXYP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 18:24:15 -0500
+Received: from mga09.intel.com ([134.134.136.24]:15198 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754156Ab0KHXTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 8 Nov 2010 18:19:38 -0500
-Date: Tue, 9 Nov 2010 00:08:11 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: trivial@kernel.org, amd64-microcode@amd64.org, x86@kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 02/17][trivial] x86: Remove unnecessary casts of void ptr
- returning alloc function return values
-Message-ID: <alpine.LNX.2.00.1011082310220.23697@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,171,1288594800"; 
+   d="scan'208";a="571503169"
+Message-Id: <20101108231726.848034006@intel.com>
+User-Agent: quilt/0.48-1
+Date: Tue, 09 Nov 2010 07:09:18 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>
+cc: Christoph Hellwig <hch@lst.de>, Jan Engelhardt <jengelh@medozas.de>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/5] writeback: trace wakeup event for background writeback
+References: <20101108230916.826791396@intel.com>
+Content-Disposition: inline; filename=mutt-wfg-t61-1000-20494-6680a464460b57571
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This tracks when balance_dirty_pages() tries to wakeup the flusher
+thread for background writeback (if it was not started already).
 
-The [vk][cmz]alloc(_node) family of functions return void pointers which
-it's completely unnecessary/pointless to cast to other pointer types since
-that happens implicitly.
-
-This patch removes such casts from arch/x86
-
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Suggested-by: Christoph Hellwig <hch@infradead.org>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- kernel/microcode_amd.c |    2 +-
- platform/uv/tlb_uv.c   |   13 ++++++-------
- 2 files changed, 7 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
-index e1af7c0..ce0cb47 100644
---- a/arch/x86/kernel/microcode_amd.c
-+++ b/arch/x86/kernel/microcode_amd.c
-@@ -212,7 +212,7 @@ static int install_equiv_cpu_table(const u8 *buf)
- 		return 0;
- 	}
+ fs/fs-writeback.c                |    1 +
+ include/trace/events/writeback.h |    1 +
+ 2 files changed, 2 insertions(+)
+
+--- linux-next.orig/include/trace/events/writeback.h	2010-11-07 21:54:19.000000000 +0800
++++ linux-next/include/trace/events/writeback.h	2010-11-07 21:56:42.000000000 +0800
+@@ -81,6 +81,7 @@ DEFINE_EVENT(writeback_class, name, \
+ 	TP_ARGS(bdi))
  
--	equiv_cpu_table = (struct equiv_cpu_entry *) vmalloc(size);
-+	equiv_cpu_table = vmalloc(size);
- 	if (!equiv_cpu_table) {
- 		pr_err("failed to allocate equivalent CPU table\n");
- 		return 0;
-diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
-index 20ea20a..a318194 100644
---- a/arch/x86/platform/uv/tlb_uv.c
-+++ b/arch/x86/platform/uv/tlb_uv.c
-@@ -1343,8 +1343,8 @@ uv_activation_descriptor_init(int node, int pnode)
- 	 * each bau_desc is 64 bytes; there are 8 (UV_ITEMS_PER_DESCRIPTOR)
- 	 * per cpu; and up to 32 (UV_ADP_SIZE) cpu's per uvhub
+ DEFINE_WRITEBACK_EVENT(writeback_nowork);
++DEFINE_WRITEBACK_EVENT(writeback_wake_background);
+ DEFINE_WRITEBACK_EVENT(writeback_wake_thread);
+ DEFINE_WRITEBACK_EVENT(writeback_wake_forker_thread);
+ DEFINE_WRITEBACK_EVENT(writeback_bdi_register);
+--- linux-next.orig/fs/fs-writeback.c	2010-11-07 21:54:19.000000000 +0800
++++ linux-next/fs/fs-writeback.c	2010-11-07 21:56:42.000000000 +0800
+@@ -169,6 +169,7 @@ void bdi_start_background_writeback(stru
+ 	 * We just wake up the flusher thread. It will perform background
+ 	 * writeback as soon as there is no other work to do.
  	 */
--	bau_desc = (struct bau_desc *)kmalloc_node(sizeof(struct bau_desc)*
--		UV_ADP_SIZE*UV_ITEMS_PER_DESCRIPTOR, GFP_KERNEL, node);
-+	bau_desc = kmalloc_node(sizeof(struct bau_desc) * UV_ADP_SIZE
-+				* UV_ITEMS_PER_DESCRIPTOR, GFP_KERNEL, node);
- 	BUG_ON(!bau_desc);
- 
- 	pa = uv_gpa(bau_desc); /* need the real nasid*/
-@@ -1402,9 +1402,9 @@ uv_payload_queue_init(int node, int pnode)
- 	struct bau_payload_queue_entry *pqp_malloc;
- 	struct bau_control *bcp;
- 
--	pqp = (struct bau_payload_queue_entry *) kmalloc_node(
--		(DEST_Q_SIZE + 1) * sizeof(struct bau_payload_queue_entry),
--		GFP_KERNEL, node);
-+	pqp = kmalloc_node((DEST_Q_SIZE + 1)
-+			   * sizeof(struct bau_payload_queue_entry),
-+			   GFP_KERNEL, node);
- 	BUG_ON(!pqp);
- 	pqp_malloc = pqp;
- 
-@@ -1520,8 +1520,7 @@ static void __init uv_init_per_cpu(int nuvhubs)
- 
- 	timeout_us = calculate_destination_timeout();
- 
--	uvhub_descs = (struct uvhub_desc *)
--		kmalloc(nuvhubs * sizeof(struct uvhub_desc), GFP_KERNEL);
-+	uvhub_descs = kmalloc(nuvhubs * sizeof(struct uvhub_desc), GFP_KERNEL);
- 	memset(uvhub_descs, 0, nuvhubs * sizeof(struct uvhub_desc));
- 	uvhub_mask = kzalloc((nuvhubs+7)/8, GFP_KERNEL);
- 	for_each_present_cpu(cpu) {
++	trace_writeback_wake_background(bdi);
+ 	spin_lock_bh(&bdi->wb_lock);
+ 	bdi_wakeup_flusher(bdi);
+ 	spin_unlock_bh(&bdi->wb_lock);
 
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
 
