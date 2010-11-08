@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754543Ab0KHLUs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 06:20:48 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:44314 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754475Ab0KHLUq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 06:20:46 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Bny2H5rxFTR8YnGcqiMlCofqF5qYkjGmCZ9gIum8/z8WJj1zF2sBO2JllnpxIizr4R
-         jfh0W0BbYfuAEhtmwgFdDvvj6K3bj+W+rfQX3eat86czRSGcwFgKsy9J5ygSXUeWE5Cv
-         IAgkONof1QkmvV8RTB1Xzv/jnSC4ewEK+rL5I=
+	id S1754566Ab0KHLVe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 06:21:34 -0500
+Received: from mga02.intel.com ([134.134.136.20]:50574 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754444Ab0KHLVd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 06:21:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,313,1286175600"; 
+   d="scan'208";a="675315190"
+Date: Mon, 8 Nov 2010 06:21:31 -0500
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Luben Tuikov <ltuikov@yahoo.com>
+Cc: Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] [USB] UAS: Use kzalloc instead of kmalloc
+Message-ID: <20101108112131.GG4173@linux.intel.com>
+References: <628096.54960.qm@web31807.mail.mud.yahoo.com>
 MIME-Version: 1.0
-In-Reply-To: <877hgorrj1.fsf@basil.nowhere.org>
-References: <4CD538CA.8010901@xs4all.nl>
-	<87wroostw3.fsf@basil.nowhere.org>
-	<m2hbfsu57i.fsf@igel.home>
-	<87k4kospnd.fsf@basil.nowhere.org>
-	<AANLkTikG6kBxSrO7EZ5_nZqTKqo8Rjm2stoEGVJWxanz@mail.gmail.com>
-	<877hgorrj1.fsf@basil.nowhere.org>
-Date: Mon, 8 Nov 2010 12:20:46 +0100
-Message-ID: <AANLkTi=tC01jshWAr_HyVs6-HKK-Puarb6cLpxZyg-Kr@mail.gmail.com>
-Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
-From: Richard Guenther <richard.guenther@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Andreas Schwab <schwab@linux-m68k.org>, Jim <jim876@xs4all.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        gcc@gcc.gnu.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <628096.54960.qm@web31807.mail.mud.yahoo.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 8, 2010 at 12:20 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> Richard Guenther <richard.guenther@gmail.com> writes:
->
->> On Mon, Nov 8, 2010 at 12:03 AM, Andi Kleen <andi@firstfloor.org> wrote:
->>> Andreas Schwab <schwab@linux-m68k.org> writes:
->>>>
->>>> The asm fails to mention that it modifies *regs.
->>>
->>> It has a memory clobber, that should be enough, no?
->>
->> No.  A memory clobber does not cover automatic storage.
->
-> That's a separate problem.
->
->> Btw, I can't see a testcase anywhere so I just assume Andreas got
->> it right as usual.
->
-> An asm with live inputs and outputs should never be optimized
-> way. If 4.5.1 started doing that it's seriously broken.
+On Wed, Oct 27, 2010 at 01:22:22PM -0700, Luben Tuikov wrote:
+> "Be conservative in what you send, liberal in what
+> you accept." -- In the spirit of this adage, don't
+> send Command IUs with randomly filled in data in
+> the reserved fields. (Yes, this shows up on the
+> wire.)
 
-Please provide a testcase, such asms can be optimized if the
-outputs are dead.
+Applied, with a better changelog entry ...
 
-Richard.
+> @@ -660,7 +660,7 @@ static int uas_probe(struct usb_interface *intf, const struct usb_device_id *id)
+>  			return -ENODEV;
+>  	}
+>  
+> -	devinfo = kmalloc(sizeof(struct uas_dev_info), GFP_KERNEL);
+> +	devinfo = kzalloc(sizeof(struct uas_dev_info), GFP_KERNEL);
+>  	if (!devinfo)
+>  		return -ENOMEM;
+>  
 
-> -Andi
->
-> --
-> ak@linux.intel.com -- Speaking for myself only.
->
+Except for this hunk, which isn't an IU and doesn't go out on the wire.
+
