@@ -1,52 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754599Ab0KISPy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 13:15:54 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:43127 "EHLO smtp.outflux.net"
+	id S1754644Ab0KISQJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 13:16:09 -0500
+Received: from mail.perches.com ([173.55.12.10]:4753 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752812Ab0KISPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 13:15:53 -0500
-Date: Tue, 9 Nov 2010 10:15:51 -0800
-From: Kees Cook <kees.cook@canonical.com>
-To: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] x86: only CPU features determine NX capabilities
-Message-ID: <20101109181551.GI5876@outflux.net>
-References: <20101109181157.GE5876@outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101109181157.GE5876@outflux.net>
-Organization: Canonical
-X-HELO: www.outflux.net
+	id S1754387Ab0KISQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 13:16:05 -0500
+Subject: [PATCH] fs/ext2/super.c: Use printf extension %pV
+From: Joe Perches <joe@perches.com>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 09 Nov 2010 10:16:03 -0800
+Message-ID: <1289326563.1823.85.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the NX feature boot warning when NX is missing to correctly
-reflect that BIOSes cannot disable NX now.
+Using %pV reduces the number of printk calls and
+eliminates any possible message interleaving from
+other printk calls.
 
-Signed-off-by: Kees Cook <kees.cook@canonical.com>
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- arch/x86/mm/setup_nx.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ fs/ext2/super.c |   25 +++++++++++++++++--------
+ 1 files changed, 17 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/mm/setup_nx.c b/arch/x86/mm/setup_nx.c
-index a3250aa..410531d 100644
---- a/arch/x86/mm/setup_nx.c
-+++ b/arch/x86/mm/setup_nx.c
-@@ -41,7 +41,7 @@ void __init x86_report_nx(void)
+diff --git a/fs/ext2/super.c b/fs/ext2/super.c
+index d89e0b6..27822b9 100644
+--- a/fs/ext2/super.c
++++ b/fs/ext2/super.c
+@@ -43,9 +43,10 @@ static int ext2_remount (struct super_block * sb, int * flags, char * data);
+ static int ext2_statfs (struct dentry * dentry, struct kstatfs * buf);
+ static int ext2_sync_fs(struct super_block *sb, int wait);
+ 
+-void ext2_error (struct super_block * sb, const char * function,
+-		 const char * fmt, ...)
++void ext2_error(struct super_block *sb, const char *function,
++		const char *fmt, ...)
  {
- 	if (!cpu_has_nx) {
- 		printk(KERN_NOTICE "Notice: NX (Execute Disable) protection "
--		       "missing in CPU or disabled in BIOS!\n");
-+		       "missing in CPU!\n");
- 	} else {
- #if defined(CONFIG_X86_64) || defined(CONFIG_X86_PAE)
- 		if (disable_nx) {
--- 
-1.7.2.3
++	struct va_format vaf;
+ 	va_list args;
+ 	struct ext2_sb_info *sbi = EXT2_SB(sb);
+ 	struct ext2_super_block *es = sbi->s_es;
+@@ -59,9 +60,13 @@ void ext2_error (struct super_block * sb, const char * function,
+ 	}
+ 
+ 	va_start(args, fmt);
+-	printk(KERN_CRIT "EXT2-fs (%s): error: %s: ", sb->s_id, function);
+-	vprintk(fmt, args);
+-	printk("\n");
++
++	vaf.fmt = fmt;
++	vaf.va = &args;
++
++	printk(KERN_CRIT "EXT2-fs (%s): error: %s: %pV\n",
++	       sb->s_id, function, &vaf);
++
+ 	va_end(args);
+ 
+ 	if (test_opt(sb, ERRORS_PANIC))
+@@ -76,12 +81,16 @@ void ext2_error (struct super_block * sb, const char * function,
+ void ext2_msg(struct super_block *sb, const char *prefix,
+ 		const char *fmt, ...)
+ {
++	struct va_format vaf;
+ 	va_list args;
+ 
+ 	va_start(args, fmt);
+-	printk("%sEXT2-fs (%s): ", prefix, sb->s_id);
+-	vprintk(fmt, args);
+-	printk("\n");
++
++	vaf.fmt = fmt;
++	vaf.va = &args;
++
++	printk("%sEXT2-fs (%s): %pV\n", prefix, sb->s_id, &vaf);
++
+ 	va_end(args);
+ }
+ 
 
 
--- 
-Kees Cook
-Ubuntu Security Team
