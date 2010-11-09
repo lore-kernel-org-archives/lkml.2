@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226Ab0KINeb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 08:34:31 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:59268 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752035Ab0KINea (ORCPT
+	id S1753165Ab0KINmf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 08:42:35 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47969 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751959Ab0KINmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 08:34:30 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 6/6 v3] ARM: Add support for the display controllers in VT8500 and WM8505
-Date: Tue, 9 Nov 2010 14:33:45 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Mundt <lethal@linux-sh.org>, Alexey Charkov <alchark@gmail.com>,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-References: <1289147348-31969-1-git-send-email-alchark@gmail.com> <20101109110407.GE2869@n2100.arm.linux.org.uk> <AANLkTinWNoGJoDu6Ok8Ni5OuAXN29H7Bd3YMyUq6qfFq@mail.gmail.com>
-In-Reply-To: <AANLkTinWNoGJoDu6Ok8Ni5OuAXN29H7Bd3YMyUq6qfFq@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	Tue, 9 Nov 2010 08:42:32 -0500
+Date: Tue, 9 Nov 2010 13:40:50 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Sreedhara DS <sreedhara.ds@intel.com>, Alan Cox <alan@linux.intel.com>,
+        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH] intel_scu_ipc: fix signedness bug
+Message-ID: <20101109134050.1ad58680@lxorguk.ukuu.org.uk>
+In-Reply-To: <1288246119.5153.1.camel@mola>
+References: <1288246119.5153.1.camel@mola>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011091433.45387.arnd@arndb.de>
-X-Provags-ID: V02:K0:sJLNTo4WE8beLFzflnuLpCozKE+NuzJi4k/mVmjCEWO
- XTnoJC/hRQZELYsfdsFft9+FlE4DifyC7UO5WgDaSgT+WBFXKv
- 82UbCZKrq5N5wzgRUrKD/wrP2YJHJsNMi1t/sapfPeDZ+ysSBh
- UB1WznV4rsc9RgTM4PVzkSlBPvdAn3GStHBMCeD1MpVQwfh0Ej
- A1qEmhhLVmhPiNIS4dnaw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 November 2010, Geert Uytterhoeven wrote:
-> >
-> > It looks to me like the only arch in the kernel which doesn't support
-> > generic irq is sh.
+On Thu, 28 Oct 2010 14:08:39 +0800
+Axel Lin <axel.lin@gmail.com> wrote:
+
+> busy_loop() returns negative error code, thus change err variable
+> from u32 to int to properly propagate correct error code.
 > 
-> IIRC, m68k, sparc32, and s390.
+> Also remove unneeded initialization for err and i variables.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Yes, and among those, no driver in s390 should need asm/irq.h either because
-they do not have interrupt numbers -- every device on s390 has an implicit
-interrupt.
+This was already partly fixed in my tree but added the other fixes.
 
-	Arnd
+Thanks
+Alan
