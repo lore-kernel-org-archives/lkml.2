@@ -1,211 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418Ab0KIIGk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 03:06:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18765 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753099Ab0KIIGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 03:06:38 -0500
-Date: Tue, 9 Nov 2010 10:06:31 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 3/3] KVM: MMU: retry #PF for softmmu
-Message-ID: <20101109080631.GJ9036@redhat.com>
-References: <4CD28B5F.1040205@cn.fujitsu.com>
- <4CD28CB4.9000906@cn.fujitsu.com>
+	id S1753459Ab0KIIHH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 03:07:07 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:34000 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753099Ab0KIIHE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 03:07:04 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=G5Jb6r7pgBISVne3/Y4R9vldLeED53pPCrZlIJRaUEuSlg/Ksmrq0dbiRCXAA9Ybfy
+         amkiMkO2F/a1T9Vwfy+ttfGRhPhpSlTBPlTA7auXo8K80LfOFVdBWdKKwN9hqUkp7Iax
+         OOivk8y2nnsSLWWMe2ULpBqtt/tGaoquMJbiY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CD28CB4.9000906@cn.fujitsu.com>
+In-Reply-To: <AANLkTi=YjrnD6owL-xv41XYaDFwy+K9SyymnoNuKhAzN@mail.gmail.com>
+References: <4CD51A9B.7010806@gmail.com>
+	<20101108091302.GO16938@pengutronix.de>
+	<AANLkTinmQtrLJcjxRSwbHARrgE-4FEaJeDt4R8C2tLHY@mail.gmail.com>
+	<AANLkTi=YjrnD6owL-xv41XYaDFwy+K9SyymnoNuKhAzN@mail.gmail.com>
+Date: Tue, 9 Nov 2010 09:07:03 +0100
+Message-ID: <AANLkTim8++gbgfnUpEM=cbdRcLxttEhqccHC5_COz-LK@mail.gmail.com>
+Subject: Re: [PATCH] arm: fix compilation warning during compilation
+From: Marco Stornelli <marco.stornelli@gmail.com>
+To: "Gadiyar, Anand" <gadiyar@ti.com>
+Cc: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, Sanjeev Premi <premi@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 04, 2010 at 06:36:36PM +0800, Xiao Guangrong wrote:
-> Retry #PF for softmmu only when the current vcpu has the same
-> root shadow page as the time when #PF occurs. it means they
-> have same paging environment.
-> 
-Avi had an idea to allocate spte at the fault time, get reference
-to it and populate it on completion instead of prefaulting. How hard
-will it be?
+2010/11/8 Gadiyar, Anand <gadiyar@ti.com>:
+> 2010/11/8 Marco Stornelli <marco.stornelli@gmail.com>:
+>> 2010/11/8 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
+>>> Hello,
+>>>
+>>> On Sat, Nov 06, 2010 at 10:06:35AM +0100, Marco Stornelli wrote:
+>>>> From: Marco Stornelli <marco.stornelli@gmail.com>
+>>>>
+>>>> During compilation of 2.6.36 for Beagle board, there a are a couple of warnings. This patch fix them.
+>>> Please break lines for commit logs at around 76 chars and mention the
+>>> exact compiler warning being fixed.
+>>>
+>>
+>> My compiler version is gcc 4.4.1. Two warning: variable gpio_mux may
+>> be used not initialized (false positive, I agree); second: compiler
+>> fix the void lack in the inline function with an int. Obviously there
+>> is a lack of return type that it must be void.
+>>
+>
+> Marco,
+>
+> Both of these are fixed in 2.6.37-rc1.
+>
+> Commits afc28bc0ec and ca828760f9 respectively.
+>
+> - Anand
+>
 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-> ---
->  arch/x86/include/asm/kvm_host.h |    6 ++++++
->  arch/x86/kvm/mmu.c              |   33 ++++++++++++++++++++++++++++++++-
->  arch/x86/kvm/x86.c              |   16 ++++++++++++++--
->  virt/kvm/async_pf.c             |    1 +
->  4 files changed, 53 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index 7f20f2c..b99ef7d 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -192,6 +192,8 @@ struct kvm_mmu_page {
->  	struct list_head link;
->  	struct hlist_node hash_link;
->  
-> +	struct kref apfs_counter;
-> +
->  	/*
->  	 * The following two entries are used to key the shadow page in the
->  	 * hash table.
-> @@ -600,6 +602,7 @@ struct kvm_x86_ops {
->  struct kvm_arch_async_pf {
->  	u32 token;
->  	gfn_t gfn;
-> +	struct kvm_mmu_page *root_sp;
->  };
->  
->  extern struct kvm_x86_ops *kvm_x86_ops;
-> @@ -697,6 +700,8 @@ void kvm_inject_nmi(struct kvm_vcpu *vcpu);
->  
->  int fx_init(struct kvm_vcpu *vcpu);
->  
-> +struct kvm_mmu_page *get_vcpu_root_sp(struct kvm_vcpu *vcpu, gva_t gva);
-> +void kvm_mmu_release_apf_sp(struct kvm_mmu_page *sp);
->  void kvm_mmu_flush_tlb(struct kvm_vcpu *vcpu);
->  void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
->  		       const u8 *new, int bytes,
-> @@ -822,6 +827,7 @@ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
->  void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu,
->  			       struct kvm_async_pf *work);
->  bool kvm_arch_can_inject_async_page_present(struct kvm_vcpu *vcpu);
-> +void kvm_arch_clear_async_pf(struct kvm_async_pf *work);
->  extern bool kvm_find_async_pf_gfn(struct kvm_vcpu *vcpu, gfn_t gfn);
->  
->  #endif /* _ASM_X86_KVM_HOST_H */
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index f3fad4f..60cc9f9 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -993,6 +993,19 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
->  	percpu_counter_add(&kvm_total_used_mmu_pages, nr);
->  }
->  
-> +static void free_shadow_page(struct kref *kref)
-> +{
-> +	struct kvm_mmu_page *sp;
-> +
-> +	sp = container_of(kref, struct kvm_mmu_page, apfs_counter);
-> +	kmem_cache_free(mmu_page_header_cache, sp);
-> +}
-> +
-> +void kvm_mmu_release_apf_sp(struct kvm_mmu_page *sp)
-> +{
-> +	kref_put(&sp->apfs_counter, free_shadow_page);;
-> +}
-> +
->  static void kvm_mmu_free_page(struct kvm *kvm, struct kvm_mmu_page *sp)
->  {
->  	ASSERT(is_empty_shadow_page(sp->spt));
-> @@ -1001,7 +1014,7 @@ static void kvm_mmu_free_page(struct kvm *kvm, struct kvm_mmu_page *sp)
->  	__free_page(virt_to_page(sp->spt));
->  	if (!sp->role.direct)
->  		__free_page(virt_to_page(sp->gfns));
-> -	kmem_cache_free(mmu_page_header_cache, sp);
-> +	kvm_mmu_release_apf_sp(sp);
->  	kvm_mod_used_mmu_pages(kvm, -1);
->  }
->  
-> @@ -1026,6 +1039,7 @@ static struct kvm_mmu_page *kvm_mmu_alloc_page(struct kvm_vcpu *vcpu,
->  	sp->multimapped = 0;
->  	sp->parent_pte = parent_pte;
->  	kvm_mod_used_mmu_pages(vcpu->kvm, +1);
-> +	kref_init(&sp->apfs_counter);
->  	return sp;
->  }
->  
-> @@ -2597,11 +2611,28 @@ static int nonpaging_page_fault(struct kvm_vcpu *vcpu, gva_t gva,
->  			     error_code & PFERR_WRITE_MASK, gfn);
->  }
->  
-> +struct kvm_mmu_page *get_vcpu_root_sp(struct kvm_vcpu *vcpu, gva_t gva)
-> +{
-> +	struct kvm_shadow_walk_iterator iterator;
-> +	bool ret;
-> +
-> +	shadow_walk_init(&iterator, vcpu, gva);
-> +	ret = shadow_walk_okay(&iterator);
-> +	WARN_ON(!ret);
-> +
-> +	return page_header(__pa(iterator.sptep));
-> +}
-> +
->  static int kvm_arch_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn)
->  {
->  	struct kvm_arch_async_pf arch;
-> +
->  	arch.token = (vcpu->arch.apf.id++ << 12) | vcpu->vcpu_id;
->  	arch.gfn = gfn;
-> +	if (!tdp_enabled) {
-> +		arch.root_sp = get_vcpu_root_sp(vcpu, gva);
-> +		kref_get(&arch.root_sp->apfs_counter);
-> +	}
->  
->  	return kvm_setup_async_pf(vcpu, gva, gfn, &arch);
->  }
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index aacc5eb..72d672f 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -6174,14 +6174,17 @@ void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu, struct kvm_async_pf *work)
->  {
->  	int r;
->  
-> -	if (!tdp_enabled || is_error_page(work->page))
-> +	if (is_error_page(work->page))
->  		return;
->  
->  	r = kvm_mmu_reload(vcpu);
-> +
->  	if (unlikely(r))
->  		return;
->  
-> -	vcpu->arch.mmu.page_fault(vcpu, work->gva, 0, true);
-> +	if (tdp_enabled ||
-> +	      get_vcpu_root_sp(vcpu, work->gva) == work->arch.root_sp)
-> +		vcpu->arch.mmu.page_fault(vcpu, work->gva, 0, true);
->  }
->  
->  static inline u32 kvm_async_pf_hash_fn(gfn_t gfn)
-> @@ -6269,10 +6272,19 @@ void kvm_arch_async_page_not_present(struct kvm_vcpu *vcpu,
->  	}
->  }
->  
-> +void kvm_arch_clear_async_pf(struct kvm_async_pf *work)
-> +{
-> +	if (!tdp_enabled)
-> +		kvm_mmu_release_apf_sp(work->arch.root_sp);
-> +}
-> +
->  void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
->  				 struct kvm_async_pf *work)
->  {
->  	trace_kvm_async_pf_ready(work->arch.token, work->gva);
-> +
-> +	kvm_arch_clear_async_pf(work);
-> +
->  	if (is_error_page(work->page))
->  		work->arch.token = ~0; /* broadcast wakeup */
->  	else
-> diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
-> index 74268b4..c3d4788 100644
-> --- a/virt/kvm/async_pf.c
-> +++ b/virt/kvm/async_pf.c
-> @@ -101,6 +101,7 @@ void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu)
->  				   typeof(*work), queue);
->  		cancel_work_sync(&work->work);
->  		list_del(&work->queue);
-> +		kvm_arch_clear_async_pf(work);
->  		if (!work->done) /* work was canceled */
->  			kmem_cache_free(async_pf_cache, work);
->  	}
-> -- 
-> 1.7.0.4
+Very good. Thanks.
 
---
-			Gleb.
+Marco
