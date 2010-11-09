@@ -1,41 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755494Ab0KIBux (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 20:50:53 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:45333 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754219Ab0KIBuw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 20:50:52 -0500
-Date: Tue, 9 Nov 2010 02:50:51 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, x86@kernel.org
-Subject: Re: [PATCH] x86: fix apic.h unused but set warnings v2
-Message-ID: <20101109015051.GC21551@basil.fritz.box>
-References: <1289251229-19589-1-git-send-email-andi@firstfloor.org>
- <alpine.LFD.2.00.1011082238420.2900@localhost6.localdomain6>
- <87oc9zqy0l.fsf@basil.nowhere.org>
- <20101108221528.GH6273@lenovo>
+	id S1755432Ab0KICFi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 21:05:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20441 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754387Ab0KICFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 21:05:36 -0500
+Date: Mon, 8 Nov 2010 21:05:09 -0500
+From: Josef Bacik <josef@redhat.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Josef Bacik <josef@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, joel.becker@oracle.com,
+        cmm@us.ibm.com, cluster-devel@redhat.com
+Subject: Re: [PATCH 2/6] XFS: handle hole punching via fallocate properly
+Message-ID: <20101109020509.GB27816@dhcp231-156.rdu.redhat.com>
+References: <1289248327-16308-1-git-send-email-josef@redhat.com> <1289248327-16308-2-git-send-email-josef@redhat.com> <20101109012254.GE2715@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101108221528.GH6273@lenovo>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101109012254.GE2715@dastard>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Well, Andi I proposed to define variable as u64 and convert it back to u32 at procedure
-> exit point. That would be clean, and I still think so ;) Though I'm fine with
-> either way (I just thought about ones who will be reading this code in future,
-> and since most the rdmsrl callers already use u64 and unsigned long, this would
-> be consistent as well).
+On Tue, Nov 09, 2010 at 12:22:54PM +1100, Dave Chinner wrote:
+> On Mon, Nov 08, 2010 at 03:32:03PM -0500, Josef Bacik wrote:
+> > This patch simply allows XFS to handle the hole punching flag in fallocate
+> > properly.  I've tested this with a little program that does a bunch of random
+> > hole punching with FL_KEEP_SIZE and without it to make sure it does the right
+> > thing.  Thanks,
+> > 
+> > Signed-off-by: Josef Bacik <josef@redhat.com>
+> > ---
+> >  fs/xfs/linux-2.6/xfs_iops.c |   12 +++++++++---
+> >  1 files changed, 9 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/fs/xfs/linux-2.6/xfs_iops.c b/fs/xfs/linux-2.6/xfs_iops.c
+> > index 96107ef..99df347 100644
+> > --- a/fs/xfs/linux-2.6/xfs_iops.c
+> > +++ b/fs/xfs/linux-2.6/xfs_iops.c
+> > @@ -516,6 +516,7 @@ xfs_vn_fallocate(
+> >  	loff_t		new_size = 0;
+> >  	xfs_flock64_t	bf;
+> >  	xfs_inode_t	*ip = XFS_I(inode);
+> > +	int		cmd = XFS_IOC_RESVSP;
+> >  
+> >  	/* preallocation on directories not yet supported */
+> >  	error = -ENODEV;
+> > @@ -528,17 +529,22 @@ xfs_vn_fallocate(
+> >  
+> >  	xfs_ilock(ip, XFS_IOLOCK_EXCL);
+> >  
+> > +	if (mode & FALLOC_FL_PUNCH_HOLE)
+> > +		cmd = XFS_IOC_UNRESVSP;
+> > +
+> >  	/* check the new inode size is valid before allocating */
+> >  	if (!(mode & FALLOC_FL_KEEP_SIZE) &&
+> >  	    offset + len > i_size_read(inode)) {
+> > -		new_size = offset + len;
+> > +		if (cmd == XFS_IOC_UNRESVSP)
+> > +			new_size = offset;
+> > +		else
+> > +			new_size = offset + len;
+> 
+> What semantic is FALLOC_FL_KEEP_SIZE supposed to convey during a
+> hole punch? Doesn't this just turn the hole punch operation into
+> a truncate? If so, what's the point of punching the hole when you
+> can just call ftruncate() to get the same result?
+>
 
-I didn't use u64 because that would use more code on i386
+Well your UNRESVSP can do the same thing as a ftruncate so I figured it was ok
+to just go ahead and use it rather than add complexity, especially since I don't
+understand this crazy fs of yours ;).
+ 
+> I'd suggest that FALLOC_FL_PUNCH_HOLE should, by definition, not
+> change the file size, and have no option to be able to change it.
+> This needs to be defined and documented - can you include a man
+> page update in this series that defines the expected behaviour
+> of FALLOC_FL_PUNCH_HOLE?
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Oh I see you mean don't allow hole punch to change the size at all.  I was
+thinking of doing this originally, but like I said above I figured that there
+was no harm in doing the equivalent of an ftruncate.  But you are right, theres
+no sense in duplicating functionality, I'll change it to keep PUNCH_HOLE from
+changin the size.  Now I just need to figure out where that man page is...
+
+Josef
