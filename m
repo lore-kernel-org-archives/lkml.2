@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755321Ab0KIVmQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 16:42:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49152 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752446Ab0KIVmN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 16:42:13 -0500
-Date: Tue, 9 Nov 2010 22:40:36 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 43 of 66] don't leave orhpaned swap cache after ksm
- merging
-Message-ID: <20101109214036.GE6809@random.random>
-References: <patchbomb.1288798055@v2.random>
- <d5aefe85d1dab1bb7e99.1288798098@v2.random>
- <20101109120747.BC4B.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101109120747.BC4B.A69D9226@jp.fujitsu.com>
+	id S1755300Ab0KIVl7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 16:41:59 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:40544 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753659Ab0KIVlz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 16:41:55 -0500
+Subject: Re: [PATCH] Greatly improve TSC calibration using a delayed
+ workqueue
+From: john stultz <johnstul@us.ibm.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Clark Williams <williams@redhat.com>
+In-Reply-To: <20101109134355.GA29433@basil.fritz.box>
+References: <1289003985-29060-1-git-send-email-johnstul@us.ibm.com>
+	 <20101107204153.GA17592@basil.fritz.box>
+	 <1289253887.2798.40.camel@localhost.localdomain>
+	 <20101109134355.GA29433@basil.fritz.box>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 09 Nov 2010 13:41:40 -0800
+Message-ID: <1289338900.9434.51.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 09, 2010 at 12:08:25PM +0900, KOSAKI Motohiro wrote:
-> > From: Andrea Arcangeli <aarcange@redhat.com>
-> > 
-> > When swapcache is replaced by a ksm page don't leave orhpaned swap cache.
-> > 
-> > Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> > Reviewed-by: Rik van Riel <riel@redhat.com>
+On Tue, 2010-11-09 at 14:43 +0100, Andi Kleen wrote:
+> > Interesting. Thanks for pointing that out! Couldn't I just start the
+> > calibration after fs_initcall (when the hpet_late_init runs) to avoid
+> > this as well? 
 > 
-> This explanation seems to tell this is bugfix. If so, please separate
-> this one from THP and will send mainline and -stable soon.
+> Yes that probably would work.  Or use the barrier infrastructure 
+> in workqueue.c
+> 
+> > 
+> > > Another issue may be races against suspend, but that may be too
+> > > obscure.
+> > 
+> > Yea, that seems fairly obscure. Basically you'd have to suspend in the
+> > first second as the system came up. In that case the code will throw out
+> > any calibration refinement that's over 1% off of the initial boot
+> > calibration, so I think this is ok trade off.
+> 
+> It may happen with opportunistic suspend if the system boots very fast.
 
-Right. I'm uncertain if this is so bad to require -stable I think, if
-it was more urgent I would have submitted already separately but it's
-true it's not THP specific.
+Right, but a system using opportunistic suspend will have a hard enough
+time keeping close NTP sync on its own given the frequent switching
+between the fine-grained ntp adjusted clocksource during run-time and
+the coarse non-adjusted RTC/persisitent_clock while suspended.
 
-It's only fatal for cloud computing, where the manager has to decide
-to migrate more VM to one node, but it won't if it sees tons of swap
-used and it will think there's not enough margin for KSM cows until
-the VM is migrated back to another node.
+So I think such a system would be fine it falls back to using just the
+boot-calibration for TSC freq rather then the refined calibration freq
+calculated by this patch (which will happen automatically if the refined
+calibration is off by 1%).
+
+Does that seem like a reasonable tradeoff?
+
+thanks
+-john
+
+
+
