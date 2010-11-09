@@ -1,62 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358Ab0KIW0r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 17:26:47 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54163 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753904Ab0KIW0q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 17:26:46 -0500
-Date: Tue, 9 Nov 2010 23:26:45 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Uwe =?iso-8859-15?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Dinh.Nguyen@freescale.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        amit.kucheria@canonical.com, eric@eukrea.com
-Subject: Re: [PATCHv3 2/2] ARM: imx: Add mx53 support to common msl
-	functions.
-Message-ID: <20101109222645.GJ6017@pengutronix.de>
-References: <1288972551-21877-1-git-send-email-Dinh.Nguyen@freescale.com> <1288972551-21877-2-git-send-email-Dinh.Nguyen@freescale.com> <20101109220207.GH6017@pengutronix.de> <20101109221213.GC16938@pengutronix.de>
+	id S1754707Ab0KIW2d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 17:28:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54240 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751607Ab0KIW23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 17:28:29 -0500
+Date: Tue, 9 Nov 2010 23:28:27 +0100
+From: Jan Kara <jack@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Hellwig <hch@lst.de>,
+        Jan Engelhardt <jengelh@medozas.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/5] writeback: stop background/kupdate works from
+ livelocking other works
+Message-ID: <20101109222827.GJ4936@quack.suse.cz>
+References: <20101108230916.826791396@intel.com>
+ <20101108231726.993880740@intel.com>
+ <20101109131310.f442d210.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101109221213.GC16938@pengutronix.de>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 23:23:45 up 129 days, 13:34, 34 users,  load average: 0.00, 0.79,
-	2.40
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20101109131310.f442d210.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 09, 2010 at 11:12:13PM +0100, Uwe Kleine-König wrote:
-> Hello,
-> 
-> > > -	if (!cpu_is_mx51())
-> > > +	if (!cpu_is_mx51() || !cpu_is_mx53())
-> > >  		return 0;
+  Hi,
+
+On Tue 09-11-10 13:13:10, Andrew Morton wrote:
+> On Tue, 09 Nov 2010 07:09:19 +0800
+> Wu Fengguang <fengguang.wu@intel.com> wrote:
+> I find the description to be somewhat incomplete...
+  OK, so let me fill in the gaps ;)
+
+> > From: Jan Kara <jack@suse.cz>
 > > 
-> > The code below runs for every SoC except i.MX51 and i.MX53. This is
-> > surely not what you want.
-> Hmm, for i.MX51 !cpu_is_mx53() is true, so the return 0 is always taken,
-> isn't it? :-)
+> > Background writeback are easily livelockable (from a definition of their
+> > target).
+> 
+> *why* is background writeback easily livelockable?  Under which
+> circumstances does this happen and how does it come about?
+> 
+> > This is inconvenient because it can make sync(1) stall forever waiting
+> > on its queued work to be finished.
+> 
+> Again, why?  Because there are works queued from the flusher thread,
+> but that thread is stuck in a livelocked state in <unspecified code
+> location> so it is unable to service the other works?  But the pocess
+> which called sync() will as a last resort itself perform all the
+> required IO, will it not?  If so, how can it livelock?
+  New description which should address above questions:
+Background writeback is easily livelockable in a loop in wb_writeback() by
+a process continuously re-dirtying pages (or continuously appending to a
+file). This is in fact intended as the target of background writeback is to
+write dirty pages it can find as long as we are over
+dirty_background_threshold.
 
-Gna, I remember I ran in this trap not so long time ago ;)
+But the above behavior gets inconvenient at times because no other work
+queued in the flusher thread's queue gets processed. In particular,
+since e.g. sync(1) relies on flusher thread to do all the IO for it,
+sync(1) can hang forever waiting for flusher thread to do the work.
 
-Sascha
+Generally, when a flusher thread has some work queued, someone submitted
+the work to achieve a goal more specific than what background writeback
+does. Moreover by working on the specific work, we also reduce amount of
+dirty pages which is exactly the target of background writeout. So it makes
+sense to give specific work a priority over a generic page cleaning.
 
+Thus we interrupt background writeback if there is some other work to do. We
+return to the background writeback after completing all the queued work.
+
+Is it better now?
+
+> > Generally, when a flusher thread has
+> > some work queued, someone submitted the work to achieve a goal more specific
+> > than what background writeback does. So it makes sense to give it a priority
+> > over a generic page cleaning.
+> > 
+> > Thus we interrupt background writeback if there is some other work to do. We
+> > return to the background writeback after completing all the queued work.
+> > 
+> > Signed-off-by: Jan Kara <jack@suse.cz>
+> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > ---
+> >  fs/fs-writeback.c |    9 +++++++++
+> >  1 file changed, 9 insertions(+)
+> > 
+> > --- linux-next.orig/fs/fs-writeback.c	2010-11-07 21:56:42.000000000 +0800
+> > +++ linux-next/fs/fs-writeback.c	2010-11-07 22:00:51.000000000 +0800
+> > @@ -651,6 +651,15 @@ static long wb_writeback(struct bdi_writ
+> >  			break;
+> >  
+> >  		/*
+> > +		 * Background writeout and kupdate-style writeback are
+> > +		 * easily livelockable. Stop them if there is other work
+> > +		 * to do so that e.g. sync can proceed.
+> > +		 */
+> > +		if ((work->for_background || work->for_kupdate) &&
+> > +		    !list_empty(&wb->bdi->work_list))
+> > +			break;
+> > +
+> > +		/*
+> >  		 * For background writeout, stop when we are below the
+> >  		 * background dirty threshold
+> >  		 */
+> 
+> So...  what prevents higher priority works (eg, sync(1)) from
+> livelocking or seriously retarding background or kudate writeout?
+  If other work than background or kupdate writeout livelocks, it's a bug
+which should be fixed (either by setting sensible nr_to_write or by tagging
+like we do it for WB_SYNC_ALL writeback). Of course, higher priority work
+can be running when background or kupdate writeout would need to run as
+well. But the idea here is that the purpose of background/kupdate types of
+writeout is to get rid of dirty data and any type of writeout does this so
+working on it we also work on background/kupdate writeout only possibly
+less efficiently.
+
+								Honza
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
