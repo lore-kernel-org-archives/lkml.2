@@ -1,77 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309Ab0KIW4Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 17:56:25 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:53334 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754490Ab0KIW4Y (ORCPT
+	id S1754879Ab0KIW7M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 17:59:12 -0500
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:15935 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753279Ab0KIW7K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 17:56:24 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:cc:content-type;
-        b=R5TYcU5uWlolHrv9IhEqG682BT7Few2YIm+331OQD2sIWa0VnET22SYdlxquonG84F
-         mdnDitDWbQKIckpaNxuV5uzE4iscpBdJ2iMtIFDwcq0xAa0CrwWKjZ28u6zj6G030UDB
-         jrvtcQx7lfeAKfWULBgC5ggpg2aWGaKYctqp0=
-MIME-Version: 1.0
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Tue, 9 Nov 2010 14:56:02 -0800
-Message-ID: <AANLkTimz=0MknJnivvEb_Uq4fjDWFDUN5ug=kOo+eocd@mail.gmail.com>
-Subject: Compat-wireless for 2.6.37-rc1 - 802.11, Bluetooth and Ethernet backported
-To: linux-wireless <linux-wireless@vger.kernel.org>
-Cc: linux-bluetooth <linux-bluetooth@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 9 Nov 2010 17:59:10 -0500
+From: David Daney <ddaney@caviumnetworks.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Daney <ddaney@caviumnetworks.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH] exec_domain: Establish a Linux32 domain on CONFIG_COMPAT systems.
+Date: Tue,  9 Nov 2010 14:59:00 -0800
+Message-Id: <1289343540-8319-1-git-send-email-ddaney@caviumnetworks.com>
+X-Mailer: git-send-email 1.7.2.3
+X-OriginalArrivalTime: 09 Nov 2010 22:59:51.0233 (UTC) FILETIME=[D0BB9B10:01CB8061]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus released 2.6.37-rc1 a couple of weeks ago and we now have our
-first vanilla release for the same kernel. This is a stable  [1]
-compat-wireless-2.6.36-rc7-1 [2], this release has no extra patches
-applied on top and at this point I am a bit lazy to go ahead and suck
-these in so please note you'll likely end up with a lot of stable
-patches missing but I will hope that in the next linux-next.git these
-get sucked in and I can simply use ./scripts/admin-updates.sh -s to
-suck them in for the rc2 release.
+If PER_LINUX32 is set calling sys_personality, we will try to
+find the corresponding exec_domain.  This causes us to try to load a
+module for personality-8.  After running the userspace module loader
+and failing to find the module, we fall back to the default.
 
-Please report any issues ASAP but be-aware there are a few stable
-patches missing still. I'd trust the compat-wireless-2.6.36-5-spn
-right now more if you are looking for something really stable, but I
-do expect this release to stabilize after a couple of RCs. For details
-on changes you can refer to the now very highly detailed
-ChangeLog-2.6.37-rc1-wireless [3] which includes the changes for
-compat.git, compat-wireless.git and the Linux kernel for the
-backported subsystems.
+We can avoid the failed module loading overhead by building-in the
+linux32_exec_domain for systems that have CONFIG_COMPAT.
 
-Origin remote URL:
-git://git.kernel.org/pub/scm/linux/kernel/git/hpa/linux-2.6-allstable.git
-This is a stable compat-wireless release
+I noticed this on MIPS64 systems, but it is a general problem and
+applies to x86 among others.  Admittedly sys_personality() is probably
+not in the hot path of many programs, but the overhead of the extra
+exec_domain is fairly small.
 
-compat-wireless code metrics
+Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/exec_domain.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-    739355 - Total upstream lines of code being pulled
-      2163 - backport code changes
-      1909 - backport code additions
-       254 - backport code deletions
-      6324 - backport from compat module
-      8487 - total backport code
-    1.1479 - % of code consists of backport work
+diff --git a/kernel/exec_domain.c b/kernel/exec_domain.c
+index 0dbeae3..9335495 100644
+--- a/kernel/exec_domain.c
++++ b/kernel/exec_domain.c
+@@ -34,6 +34,17 @@ static unsigned long ident_map[32] = {
+ 	24,	25,	26,	27,	28,	29,	30,	31
+ };
+ 
++#ifdef CONFIG_COMPAT
++static struct exec_domain linux32_exec_domain = {
++	.name		= "Linux32",		/* name */
++	.handler	= default_handler,	/* lcall7 causes a seg fault. */
++	.pers_low	= PER_LINUX32,
++	.pers_high	= PER_LINUX32,
++	.signal_map	= ident_map,		/* Identity map signals. */
++	.signal_invmap	= ident_map,		/*  - both ways. */
++};
++#endif
++
+ struct exec_domain default_exec_domain = {
+ 	.name		= "Linux",		/* name */
+ 	.handler	= default_handler,	/* lcall7 causes a seg fault. */
+@@ -41,6 +52,9 @@ struct exec_domain default_exec_domain = {
+ 	.pers_high	= 0,			/* PER_LINUX personality. */
+ 	.signal_map	= ident_map,		/* Identity map signals. */
+ 	.signal_invmap	= ident_map,		/*  - both ways. */
++#ifdef CONFIG_COMPAT
++	.next		= &linux32_exec_domain,
++#endif
+ };
+ 
+ 
+-- 
+1.7.2.3
 
-Base tree: linux-2.6-allstable.git
-Base tree version: v2.6.37-rc1
-compat-wireless release: compat-wireless-v2.6.37-rc1-1
-
-Cleaning up the release ...
-Creating compat-wireless-2.6.37-rc1-1.tar.bz2 ...
-
-Compat-wireles release: compat-wireless-2.6.37-rc1-1
-Size: 3.7M	compat-wireless-2.6.37-rc1-1.tar.bz2
-sha1sum: 60b1c6e9d421f039e22b62901de816a46931a603
-compat-wireless-2.6.37-rc1-1.tar.bz2
-
-  Luis
-
-[1] http://wireless.kernel.org/en/users/Download/stable
-[2] http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.37/compat-wireless-2.6.37-1.tar.bz2
-[3] http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.37/ChangeLog-2.6.37-wireless
