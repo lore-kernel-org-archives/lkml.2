@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754280Ab0KITyk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 14:54:40 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:45326 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754202Ab0KITyh (ORCPT
+	id S1754490Ab0KITyw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 14:54:52 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:56340 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754202Ab0KITyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 14:54:37 -0500
+	Tue, 9 Nov 2010 14:54:41 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=PB2VoVIc4tSOv6zzsLa8n+u+5Bn8hZzQGTt5RIKEAMR8QDuIfd2QAXTjUlSx6O5Nxu
-         6604txW/DQ4bH3xTbxUonceOE4IZ2QW5JEqi336HysJ5zC8r78Uy11qM1UBytLXymRrn
-         3gQIqpwWcvCp3HjJJQNO9h8MWKyAVcrZB8yhs=
+        b=KEyLnd9fNEkDqqm42BaAnCnhfOSIbEyl2XgkusC2wQpBIJujii+5WnizkJOqezu7VD
+         qFhvn6G5tOxtikXvUDKh+PxndYB+HPcH0CqDY02kvgOjlIfj1Fg5rDeLFSqE4zP/Ea93
+         Uc3NO+vpjuX+PdZkUQcVlNFmRh6++GLKq9U5M=
 From: dirk.brandewie@gmail.com
 To: linux-kernel@vger.kernel.org
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>, x86@kernel.org
-Subject: [PATCH 4/6] ce4100: Add errata fixes for UART on CE4100
-Date: Tue,  9 Nov 2010 12:08:07 -0800
-Message-Id: <395c11879580e72e3a47272ef8cf5e04fa334210.1289331834.git.dirk.brandewie@gmail.com>
+Cc: Dirk Brandewie <dirk.brandewie@gmail.com>, x86@kernel.org,
+        linux-usb@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>
+Subject: [PATCH 6/6] ce4100: Add support for CE4100 EHCI IP block to EHCI driver
+Date: Tue,  9 Nov 2010 12:08:09 -0800
+Message-Id: <3b35daeb1bbc42f758e3407a8b28d21dd999c5d9.1289331834.git.dirk.brandewie@gmail.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <cover.1289331834.git.dirk.brandewie@gmail.com>
 References: <cover.1289331834.git.dirk.brandewie@gmail.com>
@@ -28,143 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dirk Brandewie <dirk.brandewie@gmail.com>
 
-This patch enables the UART on the CE4100.  The UART has a couple of
-issues that need to be worked around.  First the UART is mostly PC
-compatible except that it is clocked eight times faster than a
-standard PC so the default configuration provided in
-arch/x86/include/asm/serial.h needs to be overridden. Second the TX
-interrupt may not be set correctly all the time. Lastly accessing the
-UART via I/O space for early_prink() hangs the chip when the IOAPIC is
-enabled.
-
-A custom mem_serial_in() is provided to work around the TX interrupt
-issue. The configuration issues are dealt with in the call back
-registered with the 8250 driver via serial8250_set_isa_configurator()
+This patch adds support for the EHCI IP block present on the Intel
+CE4100.
 
 Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
+CC: linux-usb@vger.kernel.org
+CC: David Brownell <dbrownell@users.sourceforge.net>
 ---
- arch/x86/kernel/ce4100.c |   92 ++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 89 insertions(+), 3 deletions(-)
+ drivers/usb/host/ehci-pci.c |    4 ++++
+ include/linux/pci_ids.h     |    1 +
+ 2 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/ce4100.c b/arch/x86/kernel/ce4100.c
-index b8f1c48..d2c0d51 100644
---- a/arch/x86/kernel/ce4100.c
-+++ b/arch/x86/kernel/ce4100.c
-@@ -12,25 +12,111 @@
- #include <linux/kernel.h>
- #include <linux/irq.h>
- #include <linux/module.h>
-+#include <linux/serial_reg.h>
-+#include <linux/serial_8250.h>
- 
- #include <asm/setup.h>
--
-+#include <asm/io.h>
- 
- static int ce4100_i8042_detect(void)
- {
- 	return 0;
- }
- 
--static void __init sdv_arch_setup(void)
-+static void __init sdv_find_smp_config(void)
- {
-+}
-+
-+#ifdef CONFIG_SERIAL_8250
-+
- 
-+static unsigned int mem_serial_in(struct uart_port *p, int offset)
-+{
-+	offset = offset << p->regshift;
-+	return readl(p->membase + offset);
- }
- 
-+/*
-+ * The UART Tx interrupts are not set under some conditions and therefore serial
-+ * transmission hangs. This is a silicon issue and has not been root caused. The
-+ * workaround for this silicon issue checks UART_LSR_THRE bit and UART_LSR_TEMT
-+ * bit of LSR register in interrupt handler to see whether at least one of these
-+ * two bits is set, if so then process the transmit request. If this workaround
-+ * is not applied, then the serial transmission may hang. This workaround is for
-+ * errata number 9 in Errata - B step.
-+*/
- 
--static void __init sdv_find_smp_config(void)
-+static unsigned int ce4100_mem_serial_in(struct uart_port *p, int offset)
-+{
-+	unsigned int ret, ier, lsr;
-+
-+	if (offset == UART_IIR) {
-+		offset = offset << p->regshift;
-+		ret = readl(p->membase + offset);
-+		if (ret & UART_IIR_NO_INT) {
-+			/* see if the TX interrupt should have really set */
-+			ier = mem_serial_in(p, UART_IER);
-+			/* see if the UART's XMIT interrupt is enabled */
-+			if (ier & UART_IER_THRI) {
-+				lsr = mem_serial_in(p, UART_LSR);
-+				/* now check to see if the UART should be
-+				   generating an interrupt (but isn't) */
-+				if (lsr & (UART_LSR_THRE | UART_LSR_TEMT))
-+					ret &= ~UART_IIR_NO_INT;
-+			}
+diff --git a/drivers/usb/host/ehci-pci.c b/drivers/usb/host/ehci-pci.c
+index a1e8d27..724da36 100644
+--- a/drivers/usb/host/ehci-pci.c
++++ b/drivers/usb/host/ehci-pci.c
+@@ -124,6 +124,10 @@ static int ehci_pci_setup(struct usb_hcd *hcd)
+ 			ehci_info(ehci, "disable lpm for langwell/penwell\n");
+ 			ehci->has_lpm = 0;
+ 		}
++		if (pdev->device == PCI_DEVICE_ID_INTEL_CE4100_USB) {
++			hcd->has_tt = 1;
++			tdi_reset(ehci);
 +		}
-+	} else
-+		ret =  mem_serial_in(p, offset);
-+	return ret;
-+}
-+
-+static void ce4100_mem_serial_out(struct uart_port *p, int offset, int value)
-+{
-+	offset = offset << p->regshift;
-+	writel(value, p->membase + offset);
-+}
-+
-+static void ce4100_serial_fixup(int port, struct uart_port *up,
-+	unsigned short *capabilites)
-+{
-+#ifdef CONFIG_EARLY_PRINTK
-+	/*
-+	 * Over ride the legacy port configuration that comes from
-+	 * asm/serial.h. Using the ioport driver then switching to the
-+	 * PCI memmaped driver hangs the IOAPIC
-+	 */
-+	if (up->iotype !=  UPIO_MEM32) {
-+		up->uartclk  = 14745600;
-+		up->mapbase = 0xdffe0200;
-+		set_fixmap_nocache(FIX_EARLYCON_MEM_BASE,
-+				up->mapbase & PAGE_MASK);
-+		up->membase =
-+			(void __iomem *)__fix_to_virt(FIX_EARLYCON_MEM_BASE);
-+		up->membase += up->mapbase & ~PAGE_MASK;
-+		up->iotype   = UPIO_MEM32;
-+		up->regshift = 2;
-+	}
-+#endif
-+	up->iobase = 0;
-+	up->serial_in = ce4100_mem_serial_in;
-+	up->serial_out = ce4100_mem_serial_out;
-+
-+	*capabilites |= (1 << 12);
-+}
-+
-+static __init void sdv_serial_fixup(void)
- {
-+	serial8250_set_isa_configurator(ce4100_serial_fixup);
- }
- 
-+#else
-+static inline void sdv_serial_fixup(void);
-+#endif
-+
-+static void __init sdv_arch_setup(void)
-+{
-+	sdv_serial_fixup();
-+}
- 
- /*
-  * CE4100 specific x86_init function overrides and early setup
+ 		break;
+ 	case PCI_VENDOR_ID_TDI:
+ 		if (pdev->device == PCI_DEVICE_ID_TDI_EHCI) {
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index 84f7130..7790f40 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -2631,6 +2631,7 @@
+ #define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_RANK_REV2  0x2db2
+ #define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_TC_REV2    0x2db3
+ #define PCI_DEVICE_ID_INTEL_CE4100_UART	0x2e66
++#define PCI_DEVICE_ID_INTEL_CE4100_USB	0x2e70
+ #define PCI_DEVICE_ID_INTEL_82855PM_HB	0x3340
+ #define PCI_DEVICE_ID_INTEL_IOAT_TBG4	0x3429
+ #define PCI_DEVICE_ID_INTEL_IOAT_TBG5	0x342a
 -- 
 1.7.2.3
 
