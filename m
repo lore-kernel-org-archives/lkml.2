@@ -1,165 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548Ab0KIJ0f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 04:26:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57116 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753630Ab0KIJ0a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 04:26:30 -0500
-Date: Tue, 9 Nov 2010 11:26:25 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/3] KVM: MMU: don not retry #PF for nonpaging guest
-Message-ID: <20101109092625.GK9036@redhat.com>
-References: <4CD28B5F.1040205@cn.fujitsu.com>
- <4CD28BCA.1060907@cn.fujitsu.com>
- <20101104103548.GE6018@redhat.com>
- <4CD39886.4050909@cn.fujitsu.com>
- <20101109080357.GI9036@redhat.com>
- <4CD90AE8.7070003@cn.fujitsu.com>
+	id S1754086Ab0KIJ31 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 04:29:27 -0500
+Received: from smtp-out-105.synserver.de ([212.40.180.105]:1079 "HELO
+	smtp-out-105.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753630Ab0KIJ3Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 04:29:24 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: markus@trippelsdorf.de
+X-SynServer-PPID: 2354
+Date: Tue, 9 Nov 2010 10:29:20 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Thomas Hellstrom <thellstrom@vmware.com>
+Cc: Jerome Glisse <j.glisse@gmail.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "airlied@linux.ie" <airlied@linux.ie>,
+        Michel =?iso-8859-1?Q?D=E4nzer?= <daenzer@vmware.com>
+Subject: Re: Radeon RS780 - BUG: unable to handle kernel NULL pointer
+ dereference
+Message-ID: <20101109092920.GA1542@arch.trippelsdorf.de>
+References: <20101108170221.GA1602@arch.trippelsdorf.de>
+ <20101108170737.GA1617@arch.trippelsdorf.de>
+ <20101108184301.GA1614@arch.trippelsdorf.de>
+ <20101108190258.GA1623@arch.trippelsdorf.de>
+ <AANLkTi=fo3rnBp8Fs6H+ivP6R+x=QDzBLyi+DmT-LNHV@mail.gmail.com>
+ <4CD879BC.5060008@vmware.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4CD90AE8.7070003@cn.fujitsu.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4CD879BC.5060008@vmware.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 09, 2010 at 04:48:40PM +0800, Xiao Guangrong wrote:
-> On 11/09/2010 04:03 PM, Gleb Natapov wrote:
-> > On Fri, Nov 05, 2010 at 01:39:18PM +0800, Xiao Guangrong wrote:
-> >> On 11/04/2010 06:35 PM, Gleb Natapov wrote:
-> >>> On Thu, Nov 04, 2010 at 06:32:42PM +0800, Xiao Guangrong wrote:
-> >>>> nonpaing guest's 'direct_map' is also true, retry #PF for those
-> >>>> guests is useless, so use 'tdp_enabled' instead
-> >>>>
-> >>> nonpaging guest will not attempt async pf. 
+On Mon, Nov 08, 2010 at 11:29:16PM +0100, Thomas Hellstrom wrote:
+> On 11/08/2010 09:53 PM, Jerome Glisse wrote:
+> >On Mon, Nov 8, 2010 at 2:02 PM, Markus Trippelsdorf
+> ><markus@trippelsdorf.de>  wrote:
+> >>On Mon, Nov 08, 2010 at 07:43:02PM +0100, Markus Trippelsdorf wrote:
+> >>>On Mon, Nov 08, 2010 at 06:07:37PM +0100, Markus Trippelsdorf wrote:
+> >>>>On Mon, Nov 08, 2010 at 06:02:21PM +0100, Markus Trippelsdorf wrote:
+> >>>>>I can trigger a kernel crash on my system by simply loading this png
+> >>>>>image with firefox:
+> >>>>>http://mediaarchive.cern.ch/MediaArchive/Photo/Public/2010/1011251/1011251_01/1011251_01-A4-at-144-dpi.jpg
+> >>>>Sorry the above link is wrong, this is the right one (that triggers the
+> >>>>crash):
+> >>>>http://cdsweb.cern.ch/record/1305179/files/HI-150431-630470-huge.png
+> >>>I triggered it a few more times and took the attached picture.
+> >>>It points to the BUG() call at drivers/gpu/drm/ttm/ttm_bo.c:1628 .
+> >>>(Sorry for the bad picture quality)
+> >>And here the same BUG in plaintext (should be a bit easier to read):
 > >>
-> >> Ah, my mistake, but why we can not attempt async pf for nonpaging guest?
+> >>Nov  8 19:28:23 arch kernel: ------------[ cut here ]------------
+> >>Nov  8 19:28:23 arch kernel: kernel BUG at drivers/gpu/drm/ttm/ttm_bo.c:1628!
 > >>
-> >>> And by checking tdp_enabled
-> >>> here instead of direct_map we will screw nested ntp.
-> >>>
-> >>
-> >> It looks like something broken: apfs can generated in L2 guest (nested ntp guest)
-> >> and be retried in L1 guest.
-> >>
-> > OK now when Xiao explained me the problem privately I can review this.
-> > 
-> >> Below patch fix it and let nonpaging guest support async pf. I'll post it properly
-> >> if you like. :-)
-> >>
-> > Apf for nonpaging guest should be separate patch of course.
+> >Thomas this bug seems to point to a case where we endup trying adding
+> >an entry to
+> >same offset in the rb tree for addr_space_mm. After reviewing
+> >carefully the locking
+> >around the rb tree modification&  addr_space_mm i am fairly confident
+> >that no race can
+> >occur. Would you have any idea on what might go wrong here ? I guess i would
+> >ultimately need to dump mm&  rb tree state when BUG get trigger to try
+> >to understand
+> >states of things.
 > 
-> Sure, i'll separate it when i post.
+> I agree there shouldn't be a race in this case.
+> The locking around these operations is simple and straightforward.
 > 
-> > 
-> >> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> >> index 7f20f2c..606978e 100644
-> >> --- a/arch/x86/include/asm/kvm_host.h
-> >> +++ b/arch/x86/include/asm/kvm_host.h
-> >> @@ -600,6 +600,7 @@ struct kvm_x86_ops {
-> >>  struct kvm_arch_async_pf {
-> >>  	u32 token;
-> >>  	gfn_t gfn;
-> >> +	bool softmmu;
-> >>  };
-> >>  
-> >>  extern struct kvm_x86_ops *kvm_x86_ops;
-> >> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> >> index f3fad4f..48ca312 100644
-> >> --- a/arch/x86/kvm/mmu.c
-> >> +++ b/arch/x86/kvm/mmu.c
-> >>  static int kvm_arch_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn)
-> >> @@ -2602,6 +2607,7 @@ static int kvm_arch_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn)
-> >>  	struct kvm_arch_async_pf arch;
-> >>  	arch.token = (vcpu->arch.apf.id++ << 12) | vcpu->vcpu_id;
-> >>  	arch.gfn = gfn;
-> >> +	arch.softmmu = mmu_is_softmmu(vcpu);
-> >>  
-> > We can do:
-> >         if (mmu_is_nested(vcpu))
-> > 		gva = vcpu->mmu.gva_to_gpa(gva);
-> > And this should fix everything no?
-> > 
-> 
-> No, since it can't help us to avoid NPF when nested guest run again.
-> 
-Of course it will not prevent NPF if L2 guest touches it again, but from
-correctness point of view it is OK. So if L1 will re-use the page for
-L1 process the page will be already mapped. Not a huge gain I agree, but
-fix is much more simple.
+> So this IMHO should either be a memory corruption or a bug in the
+> range manager. I've never seen this BUG trigger before. Dumping mm /
+> rb tree contents or bisecting should probably find the culprit.
 
-> More detailed:
-> 
->    +--------------+ nested guest VA
-> L2 | nested guest |
->    +--------------+ nested guest PA       +    +
->       |                                   |    |
->    +--------------+ guest VA              |    |
-> L1 | guest        |                       |    |
->    +--------------+ guest PA          +   |    V
->       |                               |   |
->    +--------------+ host VA           |   |
-> L0 | host         |                   |   |
->    +--------------+ host PA           V   V
->                                     PT10 PT20 PT21
-> 
-> If do it like this way, we will prefault 'gva' in PT10, but L2 guest's
-> running not depends on it(PT10), the same NPF is avoid only we prefault
-> it in PT20.
-> 
-> >>  	return kvm_setup_async_pf(vcpu, gva, gfn, &arch);
-> >>  }
-> >> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> >> index 2044302..d826d78 100644
-> >> --- a/arch/x86/kvm/x86.c
-> >> +++ b/arch/x86/kvm/x86.c
-> >> @@ -6172,9 +6172,10 @@ EXPORT_SYMBOL_GPL(kvm_set_rflags);
-> >>  
-> >>  void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu, struct kvm_async_pf *work)
-> >>  {
-> >> +	bool softmmu = mmu_is_softmmu(vcpu);
-> >>  	int r;
-> >>  
-> >> -	if (!vcpu->arch.mmu.direct_map || is_error_page(work->page))
-> >> +	if (softmmu || work->arch.softmmu || is_error_page(work->page))
-> >>  		return;
-> >>  
-> >>  	r = kvm_mmu_reload(vcpu);
-> >> diff --git a/arch/x86/kvm/x86.h b/arch/x86/kvm/x86.h
-> >> index 2cea414..48796c7 100644
-> >> --- a/arch/x86/kvm/x86.h
-> >> +++ b/arch/x86/kvm/x86.h
-> >> @@ -55,6 +55,11 @@ static inline bool mmu_is_nested(struct kvm_vcpu *vcpu)
-> >>  	return vcpu->arch.walk_mmu == &vcpu->arch.nested_mmu;
-> >>  }
-> >>  
-> >> +static inline bool mmu_is_softmmu(struct kvm_vcpu *vcpu)
-> >> +{
-> >> +	return !tdp_enabled || mmu_is_nested(vcpu);
-> >> +}
-> >> +
-> > Isn't this the same as checking vcpu->arch.mmu.direct_map? The only
-> > difference that this will be true for nonpaging mode too but this is
-> > even better since we can prefault in nonpaging mode.
-> > 
-> 
-> Um, maybe prefault in nonpaging mode is unreliable, 
-> 
-> For shadow page: it doesn't know the CR0.PG is changed, for example, when apf is
-> generated CR0.PG = 1 and when apf is completed CR0.PG = 0, it can prefault in
-> different mmu context.
-We can (and may be should) call kvm_clear_async_pf_completion_queue() on
-CR0.PG 1->0 transaction.
+OK I've found the buggy commit by bisection:
 
-> 
-> For nested paging: if nested guest vcpu is nonpaging. it will prefault PT10's NPF
-> in PT20, it means apf is generated in L1 guest and prefault in L2 guest. 
-I think for that L1 should be in nonpaging mode and it is impossible to
-run nested guest while vcpu is nonpaging.
+e376573f7267390f4e1bdc552564b6fb913bce76 is the first bad commit                                                                                     
+commit e376573f7267390f4e1bdc552564b6fb913bce76                                                                                                      
+Author: Michel Dänzer <daenzer@vmware.com>                                                                                                           
+Date:   Thu Jul 8 12:43:28 2010 +1000                                                                                                                
+                                                                                                                                                     
+    drm/radeon: fall back to GTT if bo creation/validation in VRAM fails.                                                                            
+                                                                                                                                                     
+    This fixes a problem where on low VRAM cards we'd run out of space for validation.                                                               
+                                                                                                                                                     
+    [airlied: Tested on my M7, Thinkpad T42, compiz works with no problems.]                                                                         
+                                                                                                                                                     
+    Signed-off-by: Michel Dänzer <daenzer@vmware.com>                                                                                                
+    Cc: stable@kernel.org                                                                                                                            
+    Signed-off-by: Dave Airlie <airlied@redhat.com> 
 
---
-			Gleb.
+Please note that this is an old commit from 2.6.36-rc. When I revert it the
+kernel no longer crashes. Instead I see the following in my dmesg:
+
+[TTM] Failed to find memory space for buffer 0xffff880113e10e48 eviction.
+[TTM] No space for ffff880113e10e48 (25650 pages, 102600K, 100M)
+[TTM]   placement[0]=0x00070002 (1)
+[TTM]     has_type: 1
+[TTM]     use_type: 1
+[TTM]     flags: 0x0000000A
+[TTM]     gpu_offset: 0xA0000000
+[TTM]     size: 131072
+[TTM]     available_caching: 0x00070000
+[TTM]     default_caching: 0x00010000
+[TTM]  0x00000000-0x00000001:        1: used
+[TTM]  0x00000001-0x00000011:       16: used
+[TTM]  0x00000011-0x00000111:      256: used
+[TTM]  0x00000111-0x00000211:      256: used
+[TTM]  0x00000211-0x00000248:       55: free
+[TTM]  0x00000248-0x0000024c:        4: used
+[TTM]  0x0000024c-0x00001976:     5930: free
+[TTM]  0x00001976-0x000021aa:     2100: used
+[TTM]  0x000021aa-0x0000285f:     1717: free
+[TTM]  0x0000285f-0x00002860:        1: used
+[TTM]  0x00002860-0x00002873:       19: free
+[TTM]  0x00002873-0x000029b3:      320: used
+[TTM]  0x000029b3-0x00020000:   120397: free
+[TTM]  total: 131072, used 2954 free 128118
+[drm:radeon_cs_ioctl] *ERROR* Failed to parse relocation -12!
+radeon 0000:01:05.0: object_init failed for (117555200, 0x00000004)
+[drm:radeon_gem_object_create] *ERROR* Failed to allocate GEM object (117555200, 4, 4096, -12)
+radeon 0000:01:05.0: object_init failed for (117555200, 0x00000004)
+[drm:radeon_gem_object_create] *ERROR* Failed to allocate GEM object (117555200, 4, 4096, -12)
+radeon 0000:01:05.0: object_init failed for (117555200, 0x00000004)
+[drm:radeon_gem_object_create] *ERROR* Failed to allocate GEM object (117555200, 4, 4096, -12)
+radeon 0000:01:05.0: object_init failed for (117555200, 0x00000004)
+[drm:radeon_gem_object_create] *ERROR* Failed to allocate GEM object (117555200, 4, 4096, -12)
+radeon 0000:01:05.0: object_init failed for (117555200, 0x00000004)
+...
+
+And the following in the xorg log buffer:
+
+Failed to alloc memory
+Failed to allocat:
+   size:     : 117555200 bytes
+   alignment : 0 bytes
+   domains   : 4
+...
+
+-- 
+Markus
