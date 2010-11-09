@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755191Ab0KIB2K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 20:28:10 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:52963 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754180Ab0KIB2J (ORCPT
+	id S1755396Ab0KIB2d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 20:28:33 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:45287 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754180Ab0KIB2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 20:28:09 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=rufVdBVhNBUYMAZtN+K9mZpVWOooppEhpm7MedkCUY0T++l0pQq6Rvh9bzo0wvxYoa
-         I5AID0XQH7I5bhGTaj6U1qlHoDrG6iNmsHtsKWi6zuVnta3vp9ZVuU6uzaT8q07uYakT
-         QGTansElP1M31vpDjaqyfCCiEH8cry3VGxXUA=
+	Mon, 8 Nov 2010 20:28:32 -0500
+From: Andi Kleen <andi@firstfloor.org>
+To: Mike Waychison <mikew@google.com>
+Cc: simon.kagstrom@netinsight.net, davem@davemloft.net, nhorman@tuxdriver.com,
+        Matt Mackall <mpm@selenic.com>, adurbin@google.com,
+        linux-kernel@vger.kernel.org, chavey@google.com,
+        Greg KH <greg@kroah.com>,
+        =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        akpm@linux-foundation.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH v2 00/23] netoops support
+References: <20101108203120.22479.19708.stgit@crlf.mtv.corp.google.com>
+Date: Tue, 09 Nov 2010 02:28:26 +0100
+In-Reply-To: <20101108203120.22479.19708.stgit@crlf.mtv.corp.google.com> (Mike
+	Waychison's message of "Mon, 08 Nov 2010 12:31:36 -0800")
+Message-ID: <87k4knqo91.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1289265320-7025-1-git-send-email-gthelen@google.com>
-References: <1289265320-7025-1-git-send-email-gthelen@google.com>
-Date: Tue, 9 Nov 2010 10:28:08 +0900
-Message-ID: <AANLkTikDUkFgZ67tLeB080UhQByOc4yk4xmKTyEkJYq4@mail.gmail.com>
-Subject: Re: [PATCH] memcg: avoid overflow in memcg_hierarchical_free_pages()
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 9, 2010 at 10:15 AM, Greg Thelen <gthelen@google.com> wrote:
-> Use page counts rather than byte counts to avoid overflowing
-> unsigned long local variables.
->
-> Signed-off-by: Greg Thelen <gthelen@google.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Mike Waychison <mikew@google.com> writes:
+
+I'm still not fully convinced this needs to be a fully separate
+mechanism from netconsole.  It seems a lot of work to implement
+basically log level.
+
+Maybe netconsole could be patched to support only dumping KERN_EMERG?
+
+But I guess the structured logging has some advantages, although
+there have been certainly oops parsers (e.g. kerneloops.org) without it.
+
+>    * I am _NOT_ happy with the remaining userland ABIs presented in this
+>      patchset.  Specifically the files "net_dump_now",
+>      "net_dump_one_shot", "netdump_fw_version", "netdump_board_name"
+>      and
+
+fw_version and board_name is known by the kernel anyways through the DMI
+interface, assuming the BIOS supplies that.  We also dump it already
+on a standard oops. So why not just use that directly?
+
+As a general user ABI perhaps simply an unstructured string is better
+that is included in the packet.
+
+-Andi
+
 -- 
-Kind regards,
-Minchan Kim
+ak@linux.intel.com -- Speaking for myself only.
