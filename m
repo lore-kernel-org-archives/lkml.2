@@ -1,144 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab0KIJ31 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 04:29:27 -0500
-Received: from smtp-out-105.synserver.de ([212.40.180.105]:1079 "HELO
-	smtp-out-105.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753630Ab0KIJ3Y (ORCPT
+	id S1753745Ab0KIJbf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 04:31:35 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:12992 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753048Ab0KIJbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 04:29:24 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: markus@trippelsdorf.de
-X-SynServer-PPID: 2354
-Date: Tue, 9 Nov 2010 10:29:20 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Thomas Hellstrom <thellstrom@vmware.com>
-Cc: Jerome Glisse <j.glisse@gmail.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "airlied@linux.ie" <airlied@linux.ie>,
-        Michel =?iso-8859-1?Q?D=E4nzer?= <daenzer@vmware.com>
-Subject: Re: Radeon RS780 - BUG: unable to handle kernel NULL pointer
- dereference
-Message-ID: <20101109092920.GA1542@arch.trippelsdorf.de>
-References: <20101108170221.GA1602@arch.trippelsdorf.de>
- <20101108170737.GA1617@arch.trippelsdorf.de>
- <20101108184301.GA1614@arch.trippelsdorf.de>
- <20101108190258.GA1623@arch.trippelsdorf.de>
- <AANLkTi=fo3rnBp8Fs6H+ivP6R+x=QDzBLyi+DmT-LNHV@mail.gmail.com>
- <4CD879BC.5060008@vmware.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4CD879BC.5060008@vmware.com>
+	Tue, 9 Nov 2010 04:31:31 -0500
+Date: Tue, 9 Nov 2010 10:31:19 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Joe Perches <joe@perches.com>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
+        Jim Cromie <jim.cromie@gmail.com>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 19/32] drivers/hwmon/pc87360.c: Use pr_fmt and
+ pr_<level>
+Message-ID: <20101109103119.4cb66327@endymion.delvare>
+In-Reply-To: <190459d6c56001d564155d8a73ee8e47024b6149.1287556801.git.joe@perches.com>
+References: <20101020035346.GA20178@ericsson.com>
+	<190459d6c56001d564155d8a73ee8e47024b6149.1287556801.git.joe@perches.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 08, 2010 at 11:29:16PM +0100, Thomas Hellstrom wrote:
-> On 11/08/2010 09:53 PM, Jerome Glisse wrote:
-> >On Mon, Nov 8, 2010 at 2:02 PM, Markus Trippelsdorf
-> ><markus@trippelsdorf.de>  wrote:
-> >>On Mon, Nov 08, 2010 at 07:43:02PM +0100, Markus Trippelsdorf wrote:
-> >>>On Mon, Nov 08, 2010 at 06:07:37PM +0100, Markus Trippelsdorf wrote:
-> >>>>On Mon, Nov 08, 2010 at 06:02:21PM +0100, Markus Trippelsdorf wrote:
-> >>>>>I can trigger a kernel crash on my system by simply loading this png
-> >>>>>image with firefox:
-> >>>>>http://mediaarchive.cern.ch/MediaArchive/Photo/Public/2010/1011251/1011251_01/1011251_01-A4-at-144-dpi.jpg
-> >>>>Sorry the above link is wrong, this is the right one (that triggers the
-> >>>>crash):
-> >>>>http://cdsweb.cern.ch/record/1305179/files/HI-150431-630470-huge.png
-> >>>I triggered it a few more times and took the attached picture.
-> >>>It points to the BUG() call at drivers/gpu/drm/ttm/ttm_bo.c:1628 .
-> >>>(Sorry for the bad picture quality)
-> >>And here the same BUG in plaintext (should be a bit easier to read):
-> >>
-> >>Nov  8 19:28:23 arch kernel: ------------[ cut here ]------------
-> >>Nov  8 19:28:23 arch kernel: kernel BUG at drivers/gpu/drm/ttm/ttm_bo.c:1628!
-> >>
-> >Thomas this bug seems to point to a case where we endup trying adding
-> >an entry to
-> >same offset in the rb tree for addr_space_mm. After reviewing
-> >carefully the locking
-> >around the rb tree modification&  addr_space_mm i am fairly confident
-> >that no race can
-> >occur. Would you have any idea on what might go wrong here ? I guess i would
-> >ultimately need to dump mm&  rb tree state when BUG get trigger to try
-> >to understand
-> >states of things.
+Hi Joe,
+
+On Tue, 19 Oct 2010 23:51:43 -0700, Joe Perches wrote:
+> Added #define pr_fmt KBUILD_MODNAME ": " fmt
+> Converted printks to pr_<level>
+> Coalesced any long formats
+> Removed prefixes from formats
 > 
-> I agree there shouldn't be a race in this case.
-> The locking around these operations is simple and straightforward.
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  drivers/hwmon/pc87360.c |   32 +++++++++++++-------------------
+>  1 files changed, 13 insertions(+), 19 deletions(-)
+
+
+The following is left in the driver:
+
+
+#ifdef DEBUG
+			printk(KERN_DEBUG "pc87360: Fan 1: mon=%d "
+			       "ctrl=%d inv=%d\n", (confreg[0]>>2)&1,
+			       (confreg[0]>>3)&1, (confreg[0]>>4)&1);
+			printk(KERN_DEBUG "pc87360: Fan 2: mon=%d "
+			       "ctrl=%d inv=%d\n", (confreg[0]>>5)&1,
+			       (confreg[0]>>6)&1, (confreg[0]>>7)&1);
+			printk(KERN_DEBUG "pc87360: Fan 3: mon=%d "
+			       "ctrl=%d inv=%d\n", confreg[1]&1,
+			       (confreg[1]>>1)&1, (confreg[1]>>2)&1);
+#endif
+
+Is there any reason why you didn't convert these to pr_debug()?
+
 > 
-> So this IMHO should either be a memory corruption or a bug in the
-> range manager. I've never seen this BUG trigger before. Dumping mm /
-> rb tree contents or bisecting should probably find the culprit.
+> diff --git a/drivers/hwmon/pc87360.c b/drivers/hwmon/pc87360.c
+> index 68e69a4..f8459a9 100644
+> --- a/drivers/hwmon/pc87360.c
+> +++ b/drivers/hwmon/pc87360.c
+> @@ -33,6 +33,8 @@
+>   *  the standard Super-I/O addresses is used (0x2E/0x2F or 0x4E/0x4F).
+>   */
+>  
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+>  #include <linux/module.h>
+>  #include <linux/init.h>
+>  #include <linux/slab.h>
+> @@ -1031,16 +1033,15 @@ static int __init pc87360_find(int sioaddr, u8 *devid, unsigned short *addresses
+>  
+>  		val = superio_inb(sioaddr, ACT);
+>  		if (!(val & 0x01)) {
+> -			printk(KERN_INFO "pc87360: Device 0x%02x not "
+> -			       "activated\n", logdev[i]);
+> +			pr_info("Device 0x%02x not activated\n", logdev[i]);
+>  			continue;
+>  		}
+>  
+>  		val = (superio_inb(sioaddr, BASE) << 8)
+>  		    | superio_inb(sioaddr, BASE + 1);
+>  		if (!val) {
+> -			printk(KERN_INFO "pc87360: Base address not set for "
+> -			       "device 0x%02x\n", logdev[i]);
+> +			pr_info("Base address not set for device 0x%02x\n",
+> +				logdev[i]);
+>  			continue;
+>  		}
+>  
+> @@ -1071,14 +1072,11 @@ static int __init pc87360_find(int sioaddr, u8 *devid, unsigned short *addresses
+>  				confreg[3] = superio_inb(sioaddr, 0x25);
+>  
+>  				if (confreg[2] & 0x40) {
+> -					printk(KERN_INFO "pc87360: Using "
+> -					       "thermistors for temperature "
+> -					       "monitoring\n");
+> +					pr_info("Using thermistors for temperature monitoring\n");
 
-OK I've found the buggy commit by bisection:
+I know checkpatch.pl no longer complains about long lines when they
+include a string, but 98 columns seems excessive to me. It would be
+easy enough to spread over two lines.
 
-e376573f7267390f4e1bdc552564b6fb913bce76 is the first bad commit                                                                                     
-commit e376573f7267390f4e1bdc552564b6fb913bce76                                                                                                      
-Author: Michel Dänzer <daenzer@vmware.com>                                                                                                           
-Date:   Thu Jul 8 12:43:28 2010 +1000                                                                                                                
-                                                                                                                                                     
-    drm/radeon: fall back to GTT if bo creation/validation in VRAM fails.                                                                            
-                                                                                                                                                     
-    This fixes a problem where on low VRAM cards we'd run out of space for validation.                                                               
-                                                                                                                                                     
-    [airlied: Tested on my M7, Thinkpad T42, compiz works with no problems.]                                                                         
-                                                                                                                                                     
-    Signed-off-by: Michel Dänzer <daenzer@vmware.com>                                                                                                
-    Cc: stable@kernel.org                                                                                                                            
-    Signed-off-by: Dave Airlie <airlied@redhat.com> 
+>  				}
+>  				if (confreg[3] & 0xE0) {
+> -					printk(KERN_INFO "pc87360: VID "
+> -					       "inputs routed (mode %u)\n",
+> -					       confreg[3] >> 5);
+> +					pr_info("VID inputs routed (mode %u)\n",
+> +						confreg[3] >> 5);
+>  				}
+>  			}
+>  		}
+> @@ -1616,7 +1614,7 @@ static int __init pc87360_device_add(unsigned short address)
+>  	pdev = platform_device_alloc("pc87360", address);
+>  	if (!pdev) {
+>  		err = -ENOMEM;
+> -		printk(KERN_ERR "pc87360: Device allocation failed\n");
+> +		pr_err("Device allocation failed\n");
+>  		goto exit;
+>  	}
+>  
+> @@ -1639,15 +1637,13 @@ static int __init pc87360_device_add(unsigned short address)
+>  
+>  	err = platform_device_add_resources(pdev, res, res_count);
+>  	if (err) {
+> -		printk(KERN_ERR "pc87360: Device resources addition failed "
+> -		       "(%d)\n", err);
+> +		pr_err("Device resources addition failed (%d)\n", err);
+>  		goto exit_device_put;
+>  	}
+>  
+>  	err = platform_device_add(pdev);
+>  	if (err) {
+> -		printk(KERN_ERR "pc87360: Device addition failed (%d)\n",
+> -		       err);
+> +		pr_err("Device addition failed (%d)\n", err);
+>  		goto exit_device_put;
+>  	}
+>  
+> @@ -1666,8 +1662,7 @@ static int __init pc87360_init(void)
+>  
+>  	if (pc87360_find(0x2e, &devid, extra_isa)
+>  	 && pc87360_find(0x4e, &devid, extra_isa)) {
+> -		printk(KERN_WARNING "pc87360: PC8736x not detected, "
+> -		       "module not inserted.\n");
+> +		pr_warn("PC8736x not detected, module not inserted\n");
+>  		return -ENODEV;
+>  	}
+>  
+> @@ -1680,8 +1675,7 @@ static int __init pc87360_init(void)
+>  	}
+>  
+>  	if (address == 0x0000) {
+> -		printk(KERN_WARNING "pc87360: No active logical device, "
+> -		       "module not inserted.\n");
+> +		pr_warn("No active logical device, module not inserted\n");
+>  		return -ENODEV;
+>  	}
+>  
 
-Please note that this is an old commit from 2.6.36-rc. When I revert it the
-kernel no longer crashes. Instead I see the following in my dmesg:
-
-[TTM] Failed to find memory space for buffer 0xffff880113e10e48 eviction.
-[TTM] No space for ffff880113e10e48 (25650 pages, 102600K, 100M)
-[TTM]   placement[0]=0x00070002 (1)
-[TTM]     has_type: 1
-[TTM]     use_type: 1
-[TTM]     flags: 0x0000000A
-[TTM]     gpu_offset: 0xA0000000
-[TTM]     size: 131072
-[TTM]     available_caching: 0x00070000
-[TTM]     default_caching: 0x00010000
-[TTM]  0x00000000-0x00000001:        1: used
-[TTM]  0x00000001-0x00000011:       16: used
-[TTM]  0x00000011-0x00000111:      256: used
-[TTM]  0x00000111-0x00000211:      256: used
-[TTM]  0x00000211-0x00000248:       55: free
-[TTM]  0x00000248-0x0000024c:        4: used
-[TTM]  0x0000024c-0x00001976:     5930: free
-[TTM]  0x00001976-0x000021aa:     2100: used
-[TTM]  0x000021aa-0x0000285f:     1717: free
-[TTM]  0x0000285f-0x00002860:        1: used
-[TTM]  0x00002860-0x00002873:       19: free
-[TTM]  0x00002873-0x000029b3:      320: used
-[TTM]  0x000029b3-0x00020000:   120397: free
-[TTM]  total: 131072, used 2954 free 128118
-[drm:radeon_cs_ioctl] *ERROR* Failed to parse relocation -12!
-radeon 0000:01:05.0: object_init failed for (117555200, 0x00000004)
-[drm:radeon_gem_object_create] *ERROR* Failed to allocate GEM object (117555200, 4, 4096, -12)
-radeon 0000:01:05.0: object_init failed for (117555200, 0x00000004)
-[drm:radeon_gem_object_create] *ERROR* Failed to allocate GEM object (117555200, 4, 4096, -12)
-radeon 0000:01:05.0: object_init failed for (117555200, 0x00000004)
-[drm:radeon_gem_object_create] *ERROR* Failed to allocate GEM object (117555200, 4, 4096, -12)
-radeon 0000:01:05.0: object_init failed for (117555200, 0x00000004)
-[drm:radeon_gem_object_create] *ERROR* Failed to allocate GEM object (117555200, 4, 4096, -12)
-radeon 0000:01:05.0: object_init failed for (117555200, 0x00000004)
-...
-
-And the following in the xorg log buffer:
-
-Failed to alloc memory
-Failed to allocat:
-   size:     : 117555200 bytes
-   alignment : 0 bytes
-   domains   : 4
-...
 
 -- 
-Markus
+Jean Delvare
