@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495Ab0KIJt3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 04:49:29 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:33823 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754047Ab0KIJt1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 04:49:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=fCYhQz8qxHPYaArnetNOXhofiMuWe6G0dSBPTSsNbKCACvF9XhPQpFJGLs782zDifo
-         Sg2McN054uq7/62b70y4+49q9sqsyC0Z7XGCBxfcxJlqTagaZOV1JO/v1tgBPZNV4RfK
-         u5gCnDojycwU/rWyFZXBQ3PejpjuL35yfWnlA=
-MIME-Version: 1.0
-In-Reply-To: <20101109093925.GA21814@linux-sh.org>
-References: <1289147348-31969-1-git-send-email-alchark@gmail.com>
-	<1289147348-31969-6-git-send-email-alchark@gmail.com>
-	<20101108041721.GA11605@linux-sh.org>
-	<20101108141407.GA25739@alchark-u3s.lan>
-	<20101108204315.GA12050@linux-sh.org>
-	<AANLkTikXffMT9ZiUpm2QAoW+KPJN3MBf55Dgruj1EJN0@mail.gmail.com>
-	<20101108213008.GB17708@linux-sh.org>
-	<20101108234239.GA20819@alchark-u3s.lan>
-	<20101108235407.GB18385@linux-sh.org>
-	<AANLkTim047K-RjLLcz3124Wm+-he8s5AirAsD6R_kitN@mail.gmail.com>
-	<20101109093925.GA21814@linux-sh.org>
-Date: Tue, 9 Nov 2010 12:49:25 +0300
-Message-ID: <AANLkTi=es0vAWeNjWMDEi8Es97uxsgb9A2aNovp7z8Uh@mail.gmail.com>
-Subject: Re: [PATCH 6/6 v4] ARM: Add support for the display controllers in
- VT8500 and WM8505
-From: Alexey Charkov <alchark@gmail.com>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: linux-arm-kernel@lists.infradead.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+	id S1754527Ab0KIJut (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 04:50:49 -0500
+Received: from trinity.fluff.org ([89.16.178.74]:59924 "EHLO trinity.fluff.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754256Ab0KIJur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 04:50:47 -0500
+Date: Tue, 9 Nov 2010 09:50:12 +0000
+From: Ben Dooks <ben-i2c@fluff.org>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: "Wang, Qi" <qi.wang@intel.com>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        "Khor, Andrew Chih Howe" <andrew.chih.howe.khor@intel.com>,
+        "Wang, Yong Y" <yong.y.wang@intel.com>,
+        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
         Ralf Baechle <ralf@linux-mips.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+        srinidhi kasagar <srinidhi.kasagar@stericsson.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] EG20T: Update PCH_I2C driver to 2.6.36
+Message-ID: <20101109095012.GA21564@trinity.fluff.org>
+References: <4CD8CD32.5000909@dsn.okisemi.com> <D5AB6E638E5A3E4B8F4406B113A5A19A3012F51E@shsmsx501.ccr.corp.intel.com> <20101109092944.0670d428@endymion.delvare>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101109092944.0670d428@endymion.delvare>
+X-Disclaimer: These are my views alone.
+X-URL: http://www.fluff.org/
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@trinity.fluff.org
+X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/11/9 Paul Mundt <lethal@linux-sh.org>:
-> On Tue, Nov 09, 2010 at 03:03:01AM +0300, Alexey Charkov wrote:
->> Is there anybody I should address specifically to get this merged?
->>
-> I've set up an fbdev tree now, so I'll just take this through there. It
-> looks like the ordering shouldn't be important, so this can be applied
-> independent of the rest, and it simply won't show up until the other bits
-> have settled in .38.
->
+I'll have a look at this
 
-Yes, the different parts of the patch series are completely
-independent, apart from the corresponding platform definitions and
-memblock reservations that take place in PATCH 1/6 (which contains
-basic board code).
+-- 
+Ben
 
-Thanks,
-Alexey
+Q:      What's a light-year?
+A:      One-third less calories than a regular year.
+
