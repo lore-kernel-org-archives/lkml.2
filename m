@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752649Ab0KINVl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 08:21:41 -0500
-Received: from smtp-out-108.synserver.de ([212.40.180.108]:1366 "HELO
-	smtp-out-108.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751217Ab0KINVl (ORCPT
+	id S1751222Ab0KIN1Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 08:27:16 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:42311 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214Ab0KIN1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 08:21:41 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: markus@trippelsdorf.de
-X-SynServer-PPID: 17258
-Date: Tue, 9 Nov 2010 14:21:38 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, john stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@amd64.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>, avi@redhat.com,
-        mtosatti@redhat.com
-Subject: Re: [bisected] Clocksource tsc unstable git
-Message-ID: <20101109132138.GA3110@arch.trippelsdorf.de>
-References: <20101026112052.GA1672@arch.trippelsdorf.de>
- <20101026131843.GC17852@aftab>
- <20101026135808.GB1672@arch.trippelsdorf.de>
- <alpine.LFD.2.00.1010261747250.3115@localhost6.localdomain6>
- <1288120736.2645.9.camel@localhost>
- <20101027142622.GA1555@arch.trippelsdorf.de>
- <20101027182608.GA1580@arch.trippelsdorf.de>
- <1288208215.3673.16.camel@laptop>
- <20101109125842.GA8636@osiris.boeblingen.de.ibm.com>
+	Tue, 9 Nov 2010 08:27:13 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:subject:date:user-agent:cc:references:in-reply-to
+         :organization:mime-version:content-type:content-transfer-encoding
+         :message-id;
+        b=OvoIZv6Yfs5ZQ0EQtNa15tB95bCltyDsOLiKaRUcDojF2reQgniPbO5VBkI4xH31m9
+         aMCFdAqNZ6YXnjGmUp3i2vW78eE4wiN7+7g3h+0dZSic1zPudqG5Kjbe2/G5T9ogPhGa
+         kNXlr/FN/A1ocABAYttnUj9jcktlaACI21eQI=
+From: Florian Fainelli <florian@openwrt.org>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Subject: Re: Forked android kernel development from linux kernel mainline
+Date: Tue, 9 Nov 2010 14:27:09 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.35-22-server; KDE/4.5.1; x86_64; ; )
+Cc: Greg KH <greg@kroah.com>, Anca Emanuel <anca.emanuel@gmail.com>,
+        Elvis Dowson <elvis.dowson@mac.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        openwrt-devel@lists.openwrt.org
+References: <01784A8B-36A0-4E8A-9729-23C2B19351F8@mac.com> <20101107155757.GA13736@kroah.com> <AANLkTik=UWwRLOaHMfVifYiQPpSwoYuA6J1EoL5BOgJY@mail.gmail.com>
+In-Reply-To: <AANLkTik=UWwRLOaHMfVifYiQPpSwoYuA6J1EoL5BOgJY@mail.gmail.com>
+Organization: OpenWrt
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101109125842.GA8636@osiris.boeblingen.de.ibm.com>
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011091427.09050.florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 09, 2010 at 01:58:42PM +0100, Heiko Carstens wrote:
-> On Wed, Oct 27, 2010 at 09:36:55PM +0200, Peter Zijlstra wrote:
-> > On Wed, 2010-10-27 at 20:26 +0200, markus@trippelsdorf.de wrote:
-> > > 
-> > > 34f971f6f7988be4d014eec3e3526bee6d007ffa is the first bad commit
-> > > commit 34f971f6f7988be4d014eec3e3526bee6d007ffa
-> > > Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > > Date:   Wed Sep 22 13:53:15 2010 +0200
-> > > 
-> > >     sched: Create special class for stop/migrate work
-> > > 
-> > >     In order to separate the stop/migrate work thread from the SCHED_FIFO
-> > >     implementation, create a special class for it that is of higher priority than
-> > >     SCHED_FIFO itself.
-> > > 
-> > >     This currently solves a problem where cpu-hotplug consumes so much cpu-time
-> > >     that the SCHED_FIFO class gets throttled, but has the bandwidth replenishment
-> > >     timer pending on the now dead cpu.
-> > > 
-> > >     It is also required for when we add the planned deadline scheduling class above
-> > >     SCHED_FIFO, as the stop/migrate thread still needs to transcent those tasks.
-> > > 
-> > >     Tested-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-> > >     Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > >     LKML-Reference: <1285165776.2275.1022.camel@laptop>
-> > >     Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> > > 
-> > > Reverting the commit solves the kvm hang issue.
-> > > (If this issue is related to my original tsc problem is of course open for
-> > > debate, but I have a strong hunch it is.) 
-> > 
-> > Too weird,.. what does the hang look like?
-> > 
-> > Can you generate a sysrq-t dump? The thing I'm looking for is the
-> > migration/# thread being runnable but not being current.
-> > 
-> > How can I reproduce this?
-> 
-> I think there is a bug in pick_next_task_stop() in sched_stopclass.c:
-> 
-> If a stop-task scheduling class task (well... the migration thread ;) sets
-> its state to TASK_INTERRUPTIBLE and then gets preempted it will never
-> scheduled again, because pick_next_task_stop() ignores all tasks with a
-> state != TASK_RUNNING:
-> ...
-> 
-> I would guess something like the below would probably fix it.
-> Does that make any sense or did I miss something obvious?
+Arnaud,
 
-You've missed the fact that Peter already has a patch that fixes the
-problem, but he never bothered to post it in this thread.
+On Sunday 07 November 2010 22:44:48 Arnaud Lacombe wrote:
+> Hi,
+> 
+> On Sun, Nov 7, 2010 at 10:57 AM, Greg KH <greg@kroah.com> wrote:
+> > [...]
+> 
+> Just a small comment to say that Android is not the only one (but
+> certainly the most visible, and thus easiest to bash on) not making
+> effort to get their stuff in mainline. OpenWRT people are also
+> maintaining their fork of the kernel, without even using git, and not
+> contributing much to mainline (I'm certainly mistaken on that last
+> comment).
 
-http://article.gmane.org/gmane.linux.kernel/1058018
+You are a bit rude and mistaking at the same time. We did contribute back TI 
+AR7, Mikrotik RB532, RDC R-321x, IXP4xx to name a few and a lot of various 
+patches on different related projects.
 
--- 
-Markus
+So I do agree the situation is not the best because we still maintain too many 
+patches in the OpenWrt repository, especially since the added value of OpenWrt 
+do not only resides in the kernel patches for a specific target.
+
+Please understand that we are just human beings and right now, ar71xx is 
+becoming more and more present on the wireless routers market, that's why 
+developpers (Imre and Gabor) are being kept busy making this target work fine 
+on all of the routers out there (and it's not just about 1 or 2 models, we are 
+talking about nearly 50, all of these with different hardware integration, thus 
+challenges).
+
+The fact that we are using subversion is purely gratuitous, remember this is 
+just a tool after all. The flat structure that we have, and the per-kernel 
+version patches still makes it easy for people to pick whatever they need from 
+our tree. Certainly this is not ideal, but no major stopper.
+
+> 
+> I'm still stuck to use their 2.6.32 to use my AR71xx-based (MIPS)
+> boards, just this part is +15kloc.
+
+2.6.36 support for ar71xx is out there since Oct 8th.
+--
+Florian
