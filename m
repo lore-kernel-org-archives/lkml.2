@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931Ab0KIEU3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 23:20:29 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:45812 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752463Ab0KIEU2 (ORCPT
+	id S1753195Ab0KIEUx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 23:20:53 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:64778 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752807Ab0KIEUu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 23:20:28 -0500
-X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=G8nEuqI5rvEA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=TBVoxVdAAAAA:8 a=VnNF1IyMAAAA:8 a=meVymXHHAAAA:8 a=foYzmIb4j8EzVg5wDOMA:9 a=MBrjrYFkM3LJr2Pv4WUwdMPMZL0A:4 a=PUjeQqilurYA:10 a=rW6DTWptwo0A:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: [PATCH] PCI hotplug: ibmphp: Add check to prevent reading beyond
- mapped area
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Chandru Siddalingappa <chandru@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 08 Nov 2010 23:20:27 -0500
-Message-ID: <1289276427.12418.86.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Nov 2010 23:20:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=uOZ/cZUR7RnBnYxOTkgIECjBqNv4tWglBGObA9kXLqVqWofX3PejaF5DrlwTiD6F0G
+         hXFp8NjFzZfy10KShgPiKd9htLyUOgPjHIvoWuQXC1HcNrCquHfCqyIWCr0xi5vxInQ7
+         0354IKhdzg88HvBB6n+qf3R/tBiHuPS4yIyQ4=
+MIME-Version: 1.0
+In-Reply-To: <1289250954.2790.11.camel@edumazet-laptop>
+References: <AANLkTinVyf4CpxdzEWUn7zTyOrAMKY3H9Dct-HfopiSD@mail.gmail.com>
+	<20101108200600.GG4032@linux.vnet.ibm.com>
+	<1289248166.2790.1.camel@edumazet-laptop>
+	<20101108204240.GA1585@arch.trippelsdorf.de>
+	<1289249191.2790.3.camel@edumazet-laptop>
+	<20101108205511.GB1585@arch.trippelsdorf.de>
+	<1289250954.2790.11.camel@edumazet-laptop>
+Date: Mon, 8 Nov 2010 23:20:49 -0500
+Message-ID: <AANLkTik6EXFDNw0uJfCSPj8gucQvFi3423kCG+pjS=vJ@mail.gmail.com>
+Subject: Re: [PATCH] inet: fix ip_mc_drop_socket()
+From: Miles Lane <miles.lane@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        David Miller <davem@davemloft.net>, paulmck@linux.vnet.ibm.com,
+        ilpo.jarvinen@helsinki.fi, LKML <linux-kernel@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While testing various randconfigs with ktest.pl, I hit the following panic:
+Looks good here.
 
-BUG: unable to handle kernel paging request at f7e54b03
-IP: [<c0d63409>] ibmphp_access_ebda+0x101/0x19bb
-
-Adding printks, I found that the loop that reads the ebda blocks
-can move out of the mapped section.
-
-ibmphp_access_ebda: start=f7e44c00 size=5120 end=f7e46000
-ibmphp_access_ebda: io_mem=f7e44d80 offset=384
-ibmphp_access_ebda: io_mem=f7e54b03 offset=65283
-
-The start of the iomap was at f7e44c00 and had a size of 5120,
-making the end f7e46000. We start with an offset of 0x180 or
-384, giving the first read at 0xf7e44d80. Reading that location
-yields 65283, which is much bigger than the 5120 that was allocated
-and makes the next read at f7e54b03 which is outside the mapped area.
-
-Perhaps this is a bug in the driver, or buggy hardware, but this patch
-is more about not crashing my box on start up and just giving a warning
-if it detects this error.
-
-This patch at least lets my box boot with just a warning.
-
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Chandru Siddalingappa <chandru@linux.vnet.ibm.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
----
- drivers/pci/hotplug/ibmphp_ebda.c |    6 ++++++
- 1 file changed, 6 insertions(+)
-
-Index: linux-test.git/drivers/pci/hotplug/ibmphp_ebda.c
-===================================================================
---- linux-test.git.orig/drivers/pci/hotplug/ibmphp_ebda.c	2010-11-08 23:02:04.514138224 -0500
-+++ linux-test.git/drivers/pci/hotplug/ibmphp_ebda.c	2010-11-08 23:02:38.021316682 -0500
-@@ -276,6 +276,12 @@ int __init ibmphp_access_ebda (void)
- 
- 	for (;;) {
- 		offset = next_offset;
-+
-+		/* Make sure what we read is still in the mapped section */
-+		if (WARN(offset > (ebda_sz * 1024 - 4),
-+			 "ibmphp_ebda: next read is beyond ebda_sz\n"))
-+			break;
-+
- 		next_offset = readw (io_mem + offset);	/* offset of next blk */
- 
- 		offset += 2;
-
-
+On Mon, Nov 8, 2010 at 4:15 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Hmm, I believe I found the bug.
+>
+> Thanks guys !
+>
+> [PATCH] inet: fix ip_mc_drop_socket()
+>
+> commit 8723e1b4ad9be4444 (inet: RCU changes in inetdev_by_index())
+> forgot one call site in ip_mc_drop_socket()
+>
+> We should not decrease idev refcount after inetdev_by_index() call,
+> since refcount is not increased anymore.
+>
+> Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+> Reported-by: Miles Lane <miles.lane@gmail.com>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> ---
+>  net/ipv4/igmp.c |    4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
+>
+> diff --git a/net/ipv4/igmp.c b/net/ipv4/igmp.c
+> index c8877c6..3c53c2d 100644
+> --- a/net/ipv4/igmp.c
+> +++ b/net/ipv4/igmp.c
+> @@ -2306,10 +2306,8 @@ void ip_mc_drop_socket(struct sock *sk)
+>
+>                in_dev = inetdev_by_index(net, iml->multi.imr_ifindex);
+>                (void) ip_mc_leave_src(sk, iml, in_dev);
+> -               if (in_dev != NULL) {
+> +               if (in_dev != NULL)
+>                        ip_mc_dec_group(in_dev, iml->multi.imr_multiaddr.s_addr);
+> -                       in_dev_put(in_dev);
+> -               }
+>                /* decrease mem now to avoid the memleak warning */
+>                atomic_sub(sizeof(*iml), &sk->sk_omem_alloc);
+>                call_rcu(&iml->rcu, ip_mc_socklist_reclaim);
+>
+>
+>
