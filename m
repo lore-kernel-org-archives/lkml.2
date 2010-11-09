@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218Ab0KIUBZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 15:01:25 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:13508 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752513Ab0KIUBW (ORCPT
+	id S1754347Ab0KIUBd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 15:01:33 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:33026 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754099Ab0KIUBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 15:01:22 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:references:date:message-id:user-agent:
-	mime-version:content-type;
-	b=mN/KgKhfFoSXVuoagh9h4ytRSeOKiB+qZmnb/V7n/BzOaC6JRcoQ8EPh7GA21HwOK
-	Db9nmhb6XVm28nty2xcRA==
-From: Greg Thelen <gthelen@google.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <balbir@in.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] memcg: fix unit mismatch in memcg oom limit calculation
-References: <20101109110521.GS23393@cmpxchg.org>
-Date: Tue, 09 Nov 2010 12:00:26 -0800
-Message-ID: <xr93iq068dyd.fsf@ninji.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Tue, 9 Nov 2010 15:01:24 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=d+9AthJR8tWzvGiJFgdEr1CF6bjsAIJFut6j7Rdnp4455bRWr3wqksmB1H/AQzA6eq
+         Aipi9fxx9U6x+eD78T8zlTMPzDrHU7yqSoTTYo4UT+FTsKeyKRttS3jJqJ3A64Ku4i0q
+         fL1tlrSjTVRULQz9dEXZxVI37UVNWd4k95fIo=
+Date: Tue, 9 Nov 2010 22:01:18 +0200
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] include/linux/kernel.h: Move logging bits to
+ include/linux/logging.h
+Message-ID: <20101109200118.GA13016@core2.telecom.by>
+References: <1289281110-8559-1-git-send-email-joe@perches.com>
+ <AANLkTime8YvyHysZF5sX6V2mXWJ0FUtdecpVFgRGqYm6@mail.gmail.com>
+ <1289328235.1823.108.camel@Joe-Laptop>
+ <AANLkTi=rTw+ByhdGc9prjwvqt_TT=NmOYzEjns1LffLC@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=rTw+ByhdGc9prjwvqt_TT=NmOYzEjns1LffLC@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Johannes Weiner <hannes@cmpxchg.org> writes:
+On Tue, Nov 09, 2010 at 10:49:19AM -0800, Linus Torvalds wrote:
+> On Tue, Nov 9, 2010 at 10:43 AM, Joe Perches <joe@perches.com> wrote:
+> >
+> > diff from V1 - Don't add pr_<level>_once macros
+> >
+> >  include/linux/kernel.h  |  244 +--------------------------------------
+> >  include/linux/logging.h |  295 +++++++++++++++++++++++++++++++++++++++++++++++
+> >  2 files changed, 296 insertions(+), 243 deletions(-)
+> >  create mode 100644 include/linux/logging.h
+> 
+> So where do the extra 53 lines come from now?
+> 
+> This still is clearly not just code movement, and it's impossible for
+> me to see what actually changed. Something must have.
 
-> Adding the number of swap pages to the byte limit of a memory control
-> group makes no sense.  Convert the pages to bytes before adding them.
->
-> The only user of this code is the OOM killer, and the way it is used
-> means that the error results in a higher OOM badness value.  Since the
-> cgroup limit is the same for all tasks in the cgroup, the error should
-> have no practical impact at the moment.
->
-> But let's not wait for future or changing users to trip over it.
-
-Thanks for the fix.
-
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Reviewed-by: Greg Thelen <gthelen@google.com>
-
-> ---
->  mm/memcontrol.c |    5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
->
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1552,8 +1552,9 @@ u64 mem_cgroup_get_limit(struct mem_cgro
->  	u64 limit;
->  	u64 memsw;
->  
-> -	limit = res_counter_read_u64(&memcg->res, RES_LIMIT) +
-> -			total_swap_pages;
-> +	limit = res_counter_read_u64(&memcg->res, RES_LIMIT);
-> +	limit += total_swap_pages << PAGE_SHIFT;
-> +
->  	memsw = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
->  	/*
->  	 * If memsw is finite and limits the amount of swap space available
+Why linux_banner is moved?
+Why linux_proc_banner is moved?
+Why header is not named printk.h?
+Why random stuff like log_buf_kexec_setup() and hexdump is moved?
