@@ -1,77 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755111Ab0KIXgy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 18:36:54 -0500
-Received: from ozlabs.org ([203.10.76.45]:56000 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753075Ab0KIXgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 18:36:53 -0500
-Subject: Re: [RFC][PATCH] perf: sysfs type id
-From: Michael Ellerman <michael@ellerman.id.au>
-Reply-To: michael@ellerman.id.au
-To: Greg KH <gregkh@suse.de>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
-        Stephane Eranian <eranian@google.com>,
-        "robert.richter" <robert.richter@amd.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        fweisbec <fweisbec@gmail.com>, paulus <paulus@samba.org>,
-        Kay Sievers <kay.sievers@vrfy.org>, "H. Peter Anvin" <hpa@zytor.com>
-In-Reply-To: <20101109221338.GA19947@suse.de>
-References: <1289339119.2191.92.camel@laptop>
-	 <20101109221338.GA19947@suse.de>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-kOVRoZWi8KWI7d1wzZ2i"
-Date: Wed, 10 Nov 2010 10:36:51 +1100
-Message-ID: <1289345811.10536.8.camel@concordia>
+	id S1755075Ab0KIXha (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 18:37:30 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:59440 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751436Ab0KIXh3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 18:37:29 -0500
+Date: Tue, 9 Nov 2010 23:35:41 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: David Rientjes <rientjes@google.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
+Subject: Re: [resend][PATCH 2/4] Revert "oom: deprecate oom_adj tunable"
+Message-ID: <20101109233541.13be4cd5@lxorguk.ukuu.org.uk>
+In-Reply-To: <alpine.DEB.2.00.1011091523370.26837@chino.kir.corp.google.com>
+References: <20101101030353.607A.A69D9226@jp.fujitsu.com>
+	<alpine.DEB.2.00.1011011232120.6822@chino.kir.corp.google.com>
+	<20101109105801.BC30.A69D9226@jp.fujitsu.com>
+	<alpine.DEB.2.00.1011091523370.26837@chino.kir.corp.google.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> It's deprecated for a few years so users can gradually convert to the new 
+> tunable, it wasn't removed when the new one was introduced.  A higher 
+> resolution tunable that scales linearly with a unit is an advantage for 
+> Linux (for the minority of users who care about oom killing priority 
+> beyond the heuristic) and I think a few years is enough time for users to 
+> do a simple conversion to the new tunable.
 
---=-kOVRoZWi8KWI7d1wzZ2i
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Documentation/ABI/obsolete/
 
-On Tue, 2010-11-09 at 14:13 -0800, Greg KH wrote:
-> On Tue, Nov 09, 2010 at 10:45:19PM +0100, Peter Zijlstra wrote:
-> > The below is a RFC patch adding dynamic type ids to perf.
-> >=20
-> > We need to represent PMUs in sysfs because we want to allow multiple
-> > (loadable) PMUs and need a way to identify them.
-> >=20
-> > This patch creates a new device class "pmu" and adds a single attribute
-> > "type" to it. This device attribute will expose the dynamic type id as
-> > required by perf_event_attr::type.
-> >=20
-> > The sysfs layout looks like:
-> >=20
-> > [root@westmere ~]# cd /sys/class/pmu/
->=20
-> You missed the embedded track at Plumbers where we talked about never
-> adding another class to the kernel.  Please use bus_id instead for this.
+should have all obsoletes in it.
 
-At least in the examples I've seen creating a bus requires a lot more
-code than a class. Or is there a shortcut I don't know about when it's a
-virtual bus?
-
-(Interested because I have code that is using a class)
-
-cheers
-
-
---=-kOVRoZWi8KWI7d1wzZ2i
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAkzZ2xAACgkQdSjSd0sB4dKYBQCfWeTdWA702YoEQVBOuFZoAki4
-h2sAoKXuF7hGZA+pGFFpyG2u4iD3DYua
-=/VgC
------END PGP SIGNATURE-----
-
---=-kOVRoZWi8KWI7d1wzZ2i--
-
+Alan
