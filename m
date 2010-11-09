@@ -1,72 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab0KIKil (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 05:38:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49553 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755000Ab0KIKij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 05:38:39 -0500
-Message-ID: <4CD9249B.2090803@redhat.com>
-Date: Tue, 09 Nov 2010 12:38:19 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@siemens.com>
-CC: Markus Trippelsdorf <markus@trippelsdorf.de>, kvm <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [kvm.git & 2.6.37-rc1] KVM deadlock with CONFIG_PREEMPT host
-References: <4CD7BD00.2020703@siemens.com> <20101108091849.GC3975@arch.trippelsdorf.de> <4CD7D0B2.80600@siemens.com>
-In-Reply-To: <4CD7D0B2.80600@siemens.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755141Ab0KIKlN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 05:41:13 -0500
+Received: from darkcity.gna.ch ([195.226.6.51]:40098 "EHLO mail.gna.ch"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754789Ab0KIKlK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 05:41:10 -0500
+X-Greylist: delayed 467 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Nov 2010 05:41:09 EST
+X-Amavis-Alert: BAD HEADER SECTION, Improper folded header field made up
+	entirely of whitespace (char 09 hex): Face: ...MWASAkVVViQjzP\n
+	jycPrvgA\n\t\n R1goSzOnkp14Y[...]
+Subject: Re: Radeon RS780 - BUG: unable to handle kernel NULL pointer
+ dereference
+From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
+To: Thomas Hellstrom <thellstrom@vmware.com>
+Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>
+In-Reply-To: <4CD91D58.7080508@vmware.com>
+References: <20101108170221.GA1602@arch.trippelsdorf.de>
+	 <20101108170737.GA1617@arch.trippelsdorf.de>
+	 <20101108184301.GA1614@arch.trippelsdorf.de>
+	 <20101108190258.GA1623@arch.trippelsdorf.de>
+	 <AANLkTi=fo3rnBp8Fs6H+ivP6R+x=QDzBLyi+DmT-LNHV@mail.gmail.com>
+	 <4CD879BC.5060008@vmware.com>	<20101109092920.GA1542@arch.trippelsdorf.de>
+	 <4CD91A07.1060308@vmware.com>  <4CD91D58.7080508@vmware.com>
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
+ jycPrvgA	
+ R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 09 Nov 2010 11:32:57 +0100
+Message-ID: <1289298777.10682.63.camel@thor.local>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2010 12:28 PM, Jan Kiszka wrote:
-> Am 08.11.2010 10:18, Markus Trippelsdorf wrote:
-> >  On Mon, Nov 08, 2010 at 10:04:00AM +0100, Jan Kiszka wrote:
-> >>  Hi,
+On Die, 2010-11-09 at 11:07 +0100, Thomas Hellstrom wrote: 
+> On 11/09/2010 10:53 AM, Thomas Hellstrom wrote:
+> > On 11/09/2010 10:29 AM, Markus Trippelsdorf wrote:
+> >> OK I've found the buggy commit by bisection:
 > >>
-> >>  I'm seeing lock-ups of the QEMU process on kvm.git as well as current
-> >>  upstream kernels. This is a backtrace of the hanging VCPU thread:
+> >> e376573f7267390f4e1bdc552564b6fb913bce76 is the first bad commit
+> >> commit e376573f7267390f4e1bdc552564b6fb913bce76
+> >> Author: Michel Dänzer<daenzer@vmware.com>
+> >> Date:   Thu Jul 8 12:43:28 2010 +1000
 > >>
-> >>  [<ffffffff810a27bc>] __stop_cpus+0x184/0x1a7
-> >>  [<ffffffff810a286f>] try_stop_cpus+0x40/0x59
-> >>  [<ffffffff8103a30c>] synchronize_sched_expedited+0x84/0x9d
-> >>  [<ffffffff810715a3>] __synchronize_srcu+0x33/0x72
-> >>  [<ffffffff810715f7>] synchronize_srcu_expedited+0x15/0x17
-> >>  [<ffffffffa06602ae>] __kvm_set_memory_region+0x6a3/0x782 [kvm]
-> >>  [<ffffffffa06603c4>] kvm_set_memory_region+0x37/0x50 [kvm]
-> >>  [<ffffffffa0661c30>] kvm_vm_ioctl_set_memory_region+0x18/0x1a [kvm]
-> >>  [<ffffffffa0661e5f>] kvm_vm_ioctl+0x22d/0x3b1 [kvm]
-> >>  [<ffffffff81143c26>] do_vfs_ioctl+0x5a1/0x5e2
-> >>  [<ffffffff81143cbd>] sys_ioctl+0x56/0x79
-> >>  [<ffffffff81002df2>] system_call_fastpath+0x16/0x1b
-> >>  [<ffffffffffffffff>] 0xffffffffffffffff
+> >>      drm/radeon: fall back to GTT if bo creation/validation in VRAM 
+> >> fails.
 > >>
-> >>  This issue disappears when disabling CONFIG_PREEMPT on the host.
-> >>  According to some rough bisecting, it was imported into kvm.git with
-> >>  merge 146d3bb06b. Given that RCU is involved, I also tried
-> >>  force-enabling non-preemptible CONFIG_TREE_RCU again, but that made no
-> >>  difference as long as PREEMPT is on.
+> >>      This fixes a problem where on low VRAM cards we'd run out of 
+> >> space for validation.
 > >>
-> >>  Can anyone confirm this or does someone have an idea what goes wrong? Of
-> >>  course, .config will be provided if required.
+> >>      [airlied: Tested on my M7, Thinkpad T42, compiz works with no 
+> >> problems.]
+> >>
+> >>      Signed-off-by: Michel Dänzer<daenzer@vmware.com>
+> >>      Cc: stable@kernel.org
+> >>      Signed-off-by: Dave Airlie<airlied@redhat.com>
+> >>
+> >> Please note that this is an old commit from 2.6.36-rc. When I revert 
+> >> it the
+> >> kernel no longer crashes. Instead I see the following in my dmesg:
+> >>
 > >
-> >  This patch should help (,it fixes the problem in my case):
-> >  http://article.gmane.org/gmane.linux.kernel/1058018
->
-> Yeah, that works here as well.
->
-> Would be a nice-to-have in kvm.git until it's pull via the next upstream
-> merge. At least for me this bug triggers at every VM boot.
->
+> > Hmm, so this sounds like something in the Radeon eviction error path 
+> > is causing corruption.
+> > I had a similar problem with vmwgfx, when I tried to unref a BO 
+> > _after_ ttm_bo_init() failed.
+> > ttm_bo_init() is really supposed to call unref itself for various 
+> > reasons,  so calling unref() or kfree() after a failed ttm_bo_init() 
+> > will cause corruption.
+> >
+> > In any case, the error below also suggests something is a bit fragile 
+> > in the Radeon driver:
+> >
+> > First, an accelerated eviction may fail, like in the message below, 
+> > but then there must always be a backup plan, like unaccelerated 
+> > eviction to system. On BO creation, there are a number of placement 
+> > strategies, but if all else fails, it should be possible to initially 
+> > place the BO in system memory.
+> >
+> > Second, If bo validation fails during a command submission, due to 
+> > insufficient VRAM / TT, then the driver should retry the complete 
+> > validation cycle after first blocking all other validators and then 
+> > evicting everything not pinned, to avoid failures due to fragmentation.
+> >
+> > /Thomas
+> >
+> 
+> Indeed, it seems like the commit you mention just retries ttm_bo_init() 
+> after it previously failed. At that point the bo has been destroyed, so 
+> that is probably what's causing the BUG you are seeing.
+> 
+> Admittedly, ttm_bo_init() calling unref on failure is not properly 
+> documented in the function description.  The reason for doing so is to 
+> have a single path for freeing all BO resources already allocated on the 
+> point of failure.
 
-I just did so.  Testing with CONFIG_PREEMPT is important.
+Does the patch below fix the problem?
+
+
+commit e224472eedbda391ddb6d8b88f26e82e1c3b036b
+Author: Michel Dänzer <daenzer@vmware.com>
+Date:   Tue Nov 9 11:30:41 2010 +0100
+
+    drm/radeon/kms: Fix retrying ttm_bo_init() after it failed once.
+    
+    If ttm_bo_init() returns failure, it already destroyed the BO, so we need to
+    retry from scratch.
+    
+    Signed-off-by: Michel Dänzer <daenzer@vmware.com>
+    Cc: stable@kernel.org
+
+diff --git a/drivers/gpu/drm/radeon/radeon_object.c b/drivers/gpu/drm/radeon/radeon_object.c
+index 1b9004e..bbe92d5 100644
+--- a/drivers/gpu/drm/radeon/radeon_object.c
++++ b/drivers/gpu/drm/radeon/radeon_object.c
+@@ -102,6 +102,8 @@ int radeon_bo_create(struct radeon_device *rdev, struct drm_gem_object *gobj,
+ 		type = ttm_bo_type_device;
+ 	}
+ 	*bo_ptr = NULL;
++
++retry:
+ 	bo = kzalloc(sizeof(struct radeon_bo), GFP_KERNEL);
+ 	if (bo == NULL)
+ 		return -ENOMEM;
+@@ -109,8 +111,6 @@ int radeon_bo_create(struct radeon_device *rdev, struct drm_gem_object *gobj,
+ 	bo->gobj = gobj;
+ 	bo->surface_reg = -1;
+ 	INIT_LIST_HEAD(&bo->list);
+-
+-retry:
+ 	radeon_ttm_placement_from_domain(bo, domain);
+ 	/* Kernel allocation are uninterruptible */
+ 	mutex_lock(&rdev->vram_mutex);
+
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Earthling Michel Dänzer           |                http://www.vmware.com
+Libre software enthusiast         |          Debian, X and DRI developer
