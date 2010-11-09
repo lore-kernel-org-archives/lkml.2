@@ -1,66 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550Ab0KIM02 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 07:26:28 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54437 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755167Ab0KIM01 (ORCPT
+	id S1755576Ab0KIM0t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 07:26:49 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:2263 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755013Ab0KIM0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 07:26:27 -0500
-Date: Tue, 9 Nov 2010 12:24:37 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "Figo.zhang" <zhangtianfei@leadcoretech.com>
-Cc: David Rientjes <rientjes@google.com>, figo zhang <figo1802@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@osdl.org>
-Subject: Re: [PATCH v2]oom-kill: CAP_SYS_RESOURCE should get bonus
-Message-ID: <20101109122437.2e0d71fd@lxorguk.ukuu.org.uk>
-In-Reply-To: <20101109195726.BC9E.A69D9226@jp.fujitsu.com>
-References: <1288834737.2124.11.camel@myhost>
-	<alpine.DEB.2.00.1011031847450.21550@chino.kir.corp.google.com>
-	<20101109195726.BC9E.A69D9226@jp.fujitsu.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 9 Nov 2010 07:26:46 -0500
+Message-ID: <00fd01cb8009$5efc5fd0$66f8800a@maildom.okisemi.com>
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: "Oliver Hartkopp" <socketcan@hartkopp.net>
+Cc: "Wolfgang Grandegger" <wg@grandegger.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Wolfram Sang" <w.sang@pengutronix.de>,
+        "Christian Pellegrin" <chripell@fsfe.org>,
+        "Barry Song" <21cnbao@gmail.com>,
+        "Samuel Ortiz" <sameo@linux.intel.com>,
+        <socketcan-core@lists.berlios.de>, <netdev@vger.kernel.org>,
+        "LKML" <linux-kernel@vger.kernel.org>,
+        <andrew.chih.howe.khor@intel.com>, <qi.wang@intel.com>,
+        <margie.foster@intel.com>, <yong.y.wang@intel.com>,
+        "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>,
+        <kok.howg.ewe@intel.com>, <joel.clark@intel.com>,
+        "Marc Kleine-Budde" <mkl@pengutronix.de>
+References: <4CCAA3D4.8070408@dsn.okisemi.com> <4CCAC4CD.7000503@pengutronix.de> <4CCAFA68.2030903@hartkopp.net>
+Subject: Re: [PATCH net-next-2.6 v2] can: Topcliff: PCH_CAN driver: Fix build warnings
+Date: Tue, 9 Nov 2010 21:26:41 +0900
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > process with CAP_SYS_RESOURCE capibility which have system resource
-> > > limits, like journaling resource on ext3/4 filesystem, RTC clock. so it
-> > > also the same treatment as process with CAP_SYS_ADMIN.
-> > > 
-> > 
-> > NACK, there's no justification that these tasks should be given a 3% 
-> > memory bonus in the oom killer heuristic; in fact, since they can allocate 
-> > without limits it is more important to target these tasks if they are 
-> > using an egregious amount of memory.
+Sorry, for late response.
+On Saturday, October 30, 2010 1:46 AM,  Oliver Hartkopp wrote:
+
 > 
-> David, Stupid are YOU. you removed CAP_SYS_RESOURCE condition with ZERO
-> explanation and Figo reported a regression. That's enough the reason to
-> undo. YOU have a guilty to explain why do you want to change and why
-> do you think it has justification.
+> It's just a question if the driver for an Intel Chipset should/could ignore
+> the endian problematic.
 > 
-> Don't blame bug reporter. That's completely wrong.
+> If this is intended the driver should only appear in Kconfig depending on X86
+> or little endian systems.
 
-Can people stop throwing things at each other and worry about the facts
+This driver is for only x86 processor.
+I have no intention to support processor except x86.
 
-- If it's a regression it should get reverted or fixed. But is it
-  actually a regression ? Has the underlying behaviour changed in a
-  problematic way?
+> 
+> Besides this remark, the struct pch_can_regs could also be defined in a way
+> that every single CAN payload data byte could be accessed directly to allow
+> e.g. this code in pch_can_rx_normal():
+> 
+> cf->data[0] = ioread8(&priv->regs->if1_data0);
+> cf->data[1] = ioread8(&priv->regs->if1_data1);
+> cf->data[2] = ioread8(&priv->regs->if1_data2);
+> (..)
+> cf->data[6] = ioread8(&priv->regs->if1_data6);
+> cf->data[7] = ioread8(&priv->regs->if1_data7);
+> 
+> This is easy to understand and additionally endian aware.
 
-"CAP_SYS_RESOURCE threads have the ability to lower their own oom_score_adj
- values, thus, they should protect themselves if necessary like
- everything else."
+I agree. Thease codes are very simple.
+I will modify like above.
 
-The reverse can be argued equally - that they can unprotect themselves if
-necessary. In fact it seems to be a "point of view" sort of question
-which way you deal with CAP_SYS_RESOURCE, and that to me argues that
-changing from old expected behaviour to a new behaviour is a regression.
+> 
+> In opposite to this:
+> 
+> + if (cf->can_dlc > 2) {
+> + u32 data1 = *((u16 *)&cf->data[2]);
+> + iowrite32(data1, &priv->regs->if2_dataa2);
+> + }
+> 
+> Which puts a little? endian u16 into the big endian register layout.
+> Sorry i'm just getting curious on this register access implementation.
 
+I think cf->data is like below
+MSB----------LSB
+D3-D2-D1-D0
+D7-D6-D5-D4
 
+*((u16 *)&cf->data[2]) means "D3-D2".
+This order coprresponds to register order.
+data register is like below
+MSB----------LSB
+**-**-D3-D2
 
+** means reserved area.
+
+Thanks,
+
+Tomoya MORINAGA
+OKI SEMICONDUCTOR CO., LTD.
