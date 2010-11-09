@@ -1,48 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835Ab0KINUq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 08:20:46 -0500
-Received: from mga01.intel.com ([192.55.52.88]:45470 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752130Ab0KINUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 08:20:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,174,1288594800"; 
-   d="scan'208";a="855709214"
-Date: Tue, 9 Nov 2010 21:20:59 +0800
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: linux-kernel@vger.kernel.org, rostedt@goodmis.org, fweisbec@gmail.com,
-        mingo@redhat.com
-Subject: Re: [PATCH 2/4] tracing: introduce trace_set_clr_module_event
-Message-ID: <20101109132058.GA22928@localhost.localdomain>
-References: <1289293967-31761-1-git-send-email-yuanhan.liu@linux.intel.com>
- <1289293967-31761-2-git-send-email-yuanhan.liu@linux.intel.com>
- <20101109112320.GA21828@localhost.localdomain>
- <b9dded$h15mrt@orsmga002.jf.intel.com>
+	id S1752649Ab0KINVl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 08:21:41 -0500
+Received: from smtp-out-108.synserver.de ([212.40.180.108]:1366 "HELO
+	smtp-out-108.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751217Ab0KINVl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 08:21:41 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: markus@trippelsdorf.de
+X-SynServer-PPID: 17258
+Date: Tue, 9 Nov 2010 14:21:38 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, john stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@amd64.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>, avi@redhat.com,
+        mtosatti@redhat.com
+Subject: Re: [bisected] Clocksource tsc unstable git
+Message-ID: <20101109132138.GA3110@arch.trippelsdorf.de>
+References: <20101026112052.GA1672@arch.trippelsdorf.de>
+ <20101026131843.GC17852@aftab>
+ <20101026135808.GB1672@arch.trippelsdorf.de>
+ <alpine.LFD.2.00.1010261747250.3115@localhost6.localdomain6>
+ <1288120736.2645.9.camel@localhost>
+ <20101027142622.GA1555@arch.trippelsdorf.de>
+ <20101027182608.GA1580@arch.trippelsdorf.de>
+ <1288208215.3673.16.camel@laptop>
+ <20101109125842.GA8636@osiris.boeblingen.de.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <b9dded$h15mrt@orsmga002.jf.intel.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20101109125842.GA8636@osiris.boeblingen.de.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 09, 2010 at 11:27:18AM +0000, Chris Wilson wrote:
-> I've not looked closely at this yet, but it seems like we should be able
-> to hook into a trace_module_notify 
+On Tue, Nov 09, 2010 at 01:58:42PM +0100, Heiko Carstens wrote:
+> On Wed, Oct 27, 2010 at 09:36:55PM +0200, Peter Zijlstra wrote:
+> > On Wed, 2010-10-27 at 20:26 +0200, markus@trippelsdorf.de wrote:
+> > > 
+> > > 34f971f6f7988be4d014eec3e3526bee6d007ffa is the first bad commit
+> > > commit 34f971f6f7988be4d014eec3e3526bee6d007ffa
+> > > Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > > Date:   Wed Sep 22 13:53:15 2010 +0200
+> > > 
+> > >     sched: Create special class for stop/migrate work
+> > > 
+> > >     In order to separate the stop/migrate work thread from the SCHED_FIFO
+> > >     implementation, create a special class for it that is of higher priority than
+> > >     SCHED_FIFO itself.
+> > > 
+> > >     This currently solves a problem where cpu-hotplug consumes so much cpu-time
+> > >     that the SCHED_FIFO class gets throttled, but has the bandwidth replenishment
+> > >     timer pending on the now dead cpu.
+> > > 
+> > >     It is also required for when we add the planned deadline scheduling class above
+> > >     SCHED_FIFO, as the stop/migrate thread still needs to transcent those tasks.
+> > > 
+> > >     Tested-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+> > >     Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > >     LKML-Reference: <1285165776.2275.1022.camel@laptop>
+> > >     Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> > > 
+> > > Reverting the commit solves the kvm hang issue.
+> > > (If this issue is related to my original tsc problem is of course open for
+> > > debate, but I have a strong hunch it is.) 
+> > 
+> > Too weird,.. what does the hang look like?
+> > 
+> > Can you generate a sysrq-t dump? The thing I'm looking for is the
+> > migration/# thread being runnable but not being current.
+> > 
+> > How can I reproduce this?
+> 
+> I think there is a bug in pick_next_task_stop() in sched_stopclass.c:
+> 
+> If a stop-task scheduling class task (well... the migration thread ;) sets
+> its state to TASK_INTERRUPTIBLE and then gets preempted it will never
+> scheduled again, because pick_next_task_stop() ignores all tasks with a
+> state != TASK_RUNNING:
+> ...
+> 
+> I would guess something like the below would probably fix it.
+> Does that make any sense or did I miss something obvious?
 
-But there should be someplace to enable these events, right?  And how do
-you tell trace_module_notify to just enable one or several specific
-event?
+You've missed the fact that Peter already has a patch that fixes the
+problem, but he never bothered to post it in this thread.
 
->and implement a generic option parser
-> from within trace/ as opposed to each individual module.
-Nope, this patch does implement a generic option parser within trace/, and
-we just call this function from a module.
+http://article.gmane.org/gmane.linux.kernel/1058018
 
-Thanks.
-
---
-Yuanhan Liu
+-- 
+Markus
