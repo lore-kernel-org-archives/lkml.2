@@ -1,78 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753659Ab0KIXxX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 18:53:23 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:54018 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751978Ab0KIXxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 18:53:23 -0500
-Date: Tue, 9 Nov 2010 15:53:14 -0800
-From: Kees Cook <kees.cook@canonical.com>
+	id S1754158Ab0KIX4F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 18:56:05 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:22905 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752442Ab0KIX4B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 18:56:01 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=os7EFg7yKTPlh76e+fdf8L5ePP3cNK/34r/RLVkai10yOwcOqjfnvcvTqYAFml77If
+         p1S2RGjmPvXXkYw4OJ4w==
+Date: Tue, 9 Nov 2010 15:55:53 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
 To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [Security] [PATCH v3 0/4] x86: clear XD_DISABLED flag on Intel
- to regain NX
-Message-ID: <20101109235314.GD5876@outflux.net>
-References: <20101109181157.GE5876@outflux.net>
- <20101109183142.4ebfa737@lxorguk.ukuu.org.uk>
- <20101109185604.GK5876@outflux.net>
- <20101109225000.1b90e720@lxorguk.ukuu.org.uk>
+cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [patch] oom: document obsolete oom_adj tunable
+In-Reply-To: <alpine.DEB.2.00.1011091547030.30112@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1011091555210.30112@chino.kir.corp.google.com>
+References: <20101101030353.607A.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1011011232120.6822@chino.kir.corp.google.com> <20101109105801.BC30.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1011091523370.26837@chino.kir.corp.google.com> <20101109233541.13be4cd5@lxorguk.ukuu.org.uk>
+ <alpine.DEB.2.00.1011091547030.30112@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101109225000.1b90e720@lxorguk.ukuu.org.uk>
-Organization: Canonical
-X-HELO: www.outflux.net
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+/proc/pid/oom_adj was deprecated in August 2010 with the introduction of
+the new oom killer heuristic.
 
-On Tue, Nov 09, 2010 at 10:50:00PM +0000, Alan Cox wrote:
-> On Tue, 9 Nov 2010 10:56:04 -0800
-> Kees Cook <kees.cook@canonical.com> wrote:
-> 
-> > On Tue, Nov 09, 2010 at 06:31:42PM +0000, Alan Cox wrote:
-> > > > In a review[1] of reported hardware being used by Ubuntu bug reporters,
-> > > > almost 10% of systems had an incorrectly configured BIOS, leaving their
-> > > > systems unable to use the NX features of their CPU.
-> > > 
-> > > Ouch
-> > 
-> > Yeah :(
-> > 
-> > > > This change will clear the MSR_IA32_MISC_ENABLE_XD_DISABLE bit so that NX
-> > > > cannot be inappropriately controlled by the BIOS on Intel CPUs.  If, under
-> > > > very strange hardware configurations, NX actually needs to be disabled,
-> > > > "noexec=off" can be used to restore the prior behavior.
-> > > 
-> > > Have you done an audit of CPU errata to ensure that none of these cases
-> > > are ones where the BIOS has disabled it to avoid an erratum. I'd hate to
-> > > turn it on and find out the BIOS actually turned it off for good reason !
-> > 
-> > Where can I find those details?
-> 
-> In the errata manuals for each processor released by the relevant
-> vendors. As they are aggregated into families and they have an index in
-> the front it shouldn't take too long to check the ones your 10% scan
-> found.
+This patch copies the Documentation/feature-removal-schedule.txt entry
+for this tunable to the Documentation/ABI/obsolete directory so nobody
+misses it.
 
-Only Intel has this problem (it's the only CPU that defines this MSR), so
-that'll reduce it. But Google is of no help to me on this; where can I find
-these documents?
+Reported-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ Documentation/ABI/obsolete/proc-pid-oom_adj |   22 ++++++++++++++++++++++
+ 1 files changed, 22 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/obsolete/proc-pid-oom_adj
 
-> I'm not specifically aware of any but I do know for example that there
-> are other CPU BIOS disablable features that some systems disable in the
-> BIOS for good reason (an ancient example being the original Pentium
-> REP MOVS optimisation on some steppings)
-
-By definition there should be fewer errata CPUs than those than need their
-BIOS ignored, so I still think this patch makes sense (especially since it
-can trivially be worked around with the noexec=off boot option).
-
--Kees
-
--- 
-Kees Cook
-Ubuntu Security Team
+diff --git a/Documentation/ABI/obsolete/proc-pid-oom_adj b/Documentation/ABI/obsolete/proc-pid-oom_adj
+new file mode 100644
+--- /dev/null
++++ b/Documentation/ABI/obsolete/proc-pid-oom_adj
+@@ -0,0 +1,22 @@
++What:	/proc/<pid>/oom_adj
++When:	August 2012
++Why:	/proc/<pid>/oom_adj allows userspace to influence the oom killer's
++	badness heuristic used to determine which task to kill when the kernel
++	is out of memory.
++
++	The badness heuristic has since been rewritten since the introduction of
++	this tunable such that its meaning is deprecated.  The value was
++	implemented as a bitshift on a score generated by the badness()
++	function that did not have any precise units of measure.  With the
++	rewrite, the score is given as a proportion of available memory to the
++	task allocating pages, so using a bitshift which grows the score
++	exponentially is, thus, impossible to tune with fine granularity.
++
++	A much more powerful interface, /proc/<pid>/oom_score_adj, was
++	introduced with the oom killer rewrite that allows users to increase or
++	decrease the badness() score linearly.  This interface will replace
++	/proc/<pid>/oom_adj.
++
++	A warning will be emitted to the kernel log if an application uses this
++	deprecated interface.  After it is printed once, future warnings will be
++	suppressed until the kernel is rebooted.
