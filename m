@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230Ab0KIV0H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 16:26:07 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:34478 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755150Ab0KIV0F convert rfc822-to-8bit (ORCPT
+	id S1755171Ab0KIVaT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 16:30:19 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:49201 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753431Ab0KIVaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 16:26:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Q2Hpy0BmrSmZMZOTsmH/LoYc0He1KDS6bojcxtXNuWZe0kqMzLD4ZkpdWhR7ZSCznG
-         BVe7/yRktvX8TXkE71v/CATrdc0Hdp5YS+J26cl8gfgIua+7iWmwbwuQPQ9ZfhjINBqj
-         deJBJRN4asYtavy4rtwvnANU/scV4uH3VvyhM=
+	Tue, 9 Nov 2010 16:30:17 -0500
+Date: Tue, 9 Nov 2010 22:29:23 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Maciej Rutecki <maciej.rutecki@gmail.com>
+Cc: Borislav Petkov <bp@amd64.org>, Bjorn Helgaas <bjorn.helgaas@hp.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: AMD boot freeze bisected to
+ b126b4703afa4010b161784a43650337676dd03b
+Message-ID: <20101109212923.GA5415@aftab>
+References: <20101102170335.GC24927@aftab>
+ <201011092132.45442.maciej.rutecki@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinLORQ7Hyn7nqkNZhRbP8iTGRfAXibgY2VeZTPq@mail.gmail.com>
-References: <AANLkTinZF-47WQyF5k1Nv64NjfMNSQ-+oE0eGycR24NM@mail.gmail.com>
-	<AANLkTikB0zhN13u5OtRwviOv-rFDW-vFTmq0t7ALuO7N@mail.gmail.com>
-	<201011091729.17679.arnd@arndb.de>
-	<AANLkTikMjAh+LAFaWELyiJc+ou+N8v_7xhrwHRbBZZQF@mail.gmail.com>
-	<20101109173536.GE9264@atomide.com>
-	<AANLkTinLORQ7Hyn7nqkNZhRbP8iTGRfAXibgY2VeZTPq@mail.gmail.com>
-Date: Tue, 9 Nov 2010 23:26:04 +0200
-Message-ID: <AANLkTimmd=jKk_x4DNao_NG9dEiQtQvOQ=TePn-Dgc_b@mail.gmail.com>
-Subject: Re: [GIT PULL] fixes for tidspbridge 2.6.37-rc1
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg KH <greg@kroah.com>, linux-omap@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201011092132.45442.maciej.rutecki@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 9, 2010 at 7:52 PM, Guzman Lugo, Fernando
-<fernando.lugo@ti.com> wrote:
-> On Tue, Nov 9, 2010 at 11:35 AM, Tony Lindgren <tony@atomide.com> wrote:
->> * Guzman Lugo, Fernando <fernando.lugo@ti.com> [101109 08:36]:
->>>
->>> tidspbridge iommu change are working fine all the patches and few fixes after
->>> that are alredy sent. what breaks tidspbridge, is the unmerged
->>> dependencies in linux omap tree, specifically the iommu module patches
->>> and the SG patch.
->>
->> Care to post a series of the missing patches listed above?
->
-> Here are the missing patches:
->
-> Fernando Guzman Lugo (4):
->  iovmm: no gap checking for fixed address
->  iovmm: add superpages support to fixed da address
->  iovmm: replace __iounmap with omap_iounmap
->  iommu: create new api to set valid da range
->
-> and
->  scatterlist: define SG chain for arm architecture
+On Tue, Nov 09, 2010 at 03:32:45PM -0500, Maciej Rutecki wrote:
+> I created a Bugzilla entry at 
+> https://bugzilla.kernel.org/show_bug.cgi?id=22552
+> for your bug report, please add your address to the CC list in there, thanks!
 
-Those are not the only patches needed, you would also need:
- omap: iommu: make iva2 iommu selectable
- staging: tidspbridge: enable iva2 iommu
-
-And the one that actually uses the new API for the da range which
-hasn't even been submitted to the mailing list.
-
-Personally, I haven't seen the new iommu code working correctly.
+You didn't have to - Bjorn already did that:
+https://bugzilla.kernel.org/show_bug.cgi?id=22062
 
 -- 
-Felipe Contreras
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
