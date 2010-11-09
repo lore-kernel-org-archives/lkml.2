@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751785Ab0KIFht (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 00:37:49 -0500
-Received: from mail.perches.com ([173.55.12.10]:4688 "EHLO mail.perches.com"
+	id S1751981Ab0KIFib (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 00:38:31 -0500
+Received: from mail.perches.com ([173.55.12.10]:4690 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751273Ab0KIFhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 00:37:47 -0500
+	id S1751448Ab0KIFia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 00:38:30 -0500
 From: Joe Perches <joe@perches.com>
-To: Linus Torvalds <litorvalds@linux-foundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org
 Subject: [PATCH] include/linux/kernel.h: Move logging bits to include/linux/logging.h
-Date: Mon,  8 Nov 2010 21:37:46 -0800
-Message-Id: <1289281066-8529-1-git-send-email-joe@perches.com>
+Date: Mon,  8 Nov 2010 21:38:30 -0800
+Message-Id: <1289281110-8559-1-git-send-email-joe@perches.com>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
