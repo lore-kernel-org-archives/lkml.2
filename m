@@ -1,77 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158Ab0KIX4F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 18:56:05 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:22905 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752442Ab0KIX4B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 18:56:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=os7EFg7yKTPlh76e+fdf8L5ePP3cNK/34r/RLVkai10yOwcOqjfnvcvTqYAFml77If
-         p1S2RGjmPvXXkYw4OJ4w==
-Date: Tue, 9 Nov 2010 15:55:53 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [patch] oom: document obsolete oom_adj tunable
-In-Reply-To: <alpine.DEB.2.00.1011091547030.30112@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1011091555210.30112@chino.kir.corp.google.com>
-References: <20101101030353.607A.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1011011232120.6822@chino.kir.corp.google.com> <20101109105801.BC30.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1011091523370.26837@chino.kir.corp.google.com> <20101109233541.13be4cd5@lxorguk.ukuu.org.uk>
- <alpine.DEB.2.00.1011091547030.30112@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754400Ab0KIX4i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 18:56:38 -0500
+Received: from cantor.suse.de ([195.135.220.2]:56443 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752670Ab0KIX4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 18:56:36 -0500
+Date: Wed, 10 Nov 2010 00:56:32 +0100
+From: Jan Kara <jack@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Hellwig <hch@lst.de>,
+        Jan Engelhardt <jengelh@medozas.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/5] writeback: stop background/kupdate works from
+ livelocking other works
+Message-ID: <20101109235632.GD11214@quack.suse.cz>
+References: <20101108230916.826791396@intel.com>
+ <20101108231726.993880740@intel.com>
+ <20101109131310.f442d210.akpm@linux-foundation.org>
+ <20101109222827.GJ4936@quack.suse.cz>
+ <20101109150006.05892241.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101109150006.05892241.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-/proc/pid/oom_adj was deprecated in August 2010 with the introduction of
-the new oom killer heuristic.
+On Tue 09-11-10 15:00:06, Andrew Morton wrote:
+> On Tue, 9 Nov 2010 23:28:27 +0100
+> Jan Kara <jack@suse.cz> wrote:
+> >   New description which should address above questions:
+> > Background writeback is easily livelockable in a loop in wb_writeback() by
+> > a process continuously re-dirtying pages (or continuously appending to a
+> > file). This is in fact intended as the target of background writeback is to
+> > write dirty pages it can find as long as we are over
+> > dirty_background_threshold.
+> 
+> Well.  The objective of the kupdate function is utterly different.
+> 
+> > But the above behavior gets inconvenient at times because no other work
+> > queued in the flusher thread's queue gets processed. In particular,
+> > since e.g. sync(1) relies on flusher thread to do all the IO for it,
+> 
+> That's fixable by doing the work synchronously within sync_inodes_sb(),
+> rather than twiddling thumbs wasting a thread resource while waiting
+> for kernel threads to do it.  As an added bonus, this even makes cpu
+> time accounting more accurate ;)
+> 
+> Please remind me why we decided to hand the sync_inodes_sb() work off
+> to other threads?
+  Because when sync(1) does IO on it's own, it competes for the device with
+the flusher thread running in parallel thus resulting in more seeks.
 
-This patch copies the Documentation/feature-removal-schedule.txt entry
-for this tunable to the Documentation/ABI/obsolete directory so nobody
-misses it.
+> > sync(1) can hang forever waiting for flusher thread to do the work.
+> > 
+> > Generally, when a flusher thread has some work queued, someone submitted
+> > the work to achieve a goal more specific than what background writeback
+> > does. Moreover by working on the specific work, we also reduce amount of
+> > dirty pages which is exactly the target of background writeout. So it makes
+> > sense to give specific work a priority over a generic page cleaning.
+> > 
+> > Thus we interrupt background writeback if there is some other work to do. We
+> > return to the background writeback after completing all the queued work.
+> > 
+...
+> > > So...  what prevents higher priority works (eg, sync(1)) from
+> > > livelocking or seriously retarding background or kudate writeout?
+> >   If other work than background or kupdate writeout livelocks, it's a bug
+> > which should be fixed (either by setting sensible nr_to_write or by tagging
+> > like we do it for WB_SYNC_ALL writeback). Of course, higher priority work
+> > can be running when background or kupdate writeout would need to run as
+> > well. But the idea here is that the purpose of background/kupdate types of
+> > writeout is to get rid of dirty data and any type of writeout does this so
+> > working on it we also work on background/kupdate writeout only possibly
+> > less efficiently.
+> 
+> The kupdate function is a data-integrity/quality-of-service sort of
+> thing.
+> 
+> And what I'm asking is whether this change enables scenarios in which
+> these threads can be kept so busy that the kupdate function gets
+> interrupted so frequently that we can have dirty memory not being
+> written back for arbitrarily long periods of time?
+  So let me compare:
+What kupdate writeback does:
+  queue inodes older than dirty_expire_centisecs
+  while some inode in the queue
+    write MAX_WRITEBACK_PAGES from each inode queued
+    break if nr_to_write <= 0
 
-Reported-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- Documentation/ABI/obsolete/proc-pid-oom_adj |   22 ++++++++++++++++++++++
- 1 files changed, 22 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/obsolete/proc-pid-oom_adj
+What any other WB_SYNC_NONE writeback (let me call it "normal WB_SYNC_NONE
+writeback") does:
+  queue all dirty inodes 
+  while some inode in the queue
+    write MAX_WRITEBACK_PAGES from each inode queued
+    break if nr_to_write <= 0
 
-diff --git a/Documentation/ABI/obsolete/proc-pid-oom_adj b/Documentation/ABI/obsolete/proc-pid-oom_adj
-new file mode 100644
---- /dev/null
-+++ b/Documentation/ABI/obsolete/proc-pid-oom_adj
-@@ -0,0 +1,22 @@
-+What:	/proc/<pid>/oom_adj
-+When:	August 2012
-+Why:	/proc/<pid>/oom_adj allows userspace to influence the oom killer's
-+	badness heuristic used to determine which task to kill when the kernel
-+	is out of memory.
-+
-+	The badness heuristic has since been rewritten since the introduction of
-+	this tunable such that its meaning is deprecated.  The value was
-+	implemented as a bitshift on a score generated by the badness()
-+	function that did not have any precise units of measure.  With the
-+	rewrite, the score is given as a proportion of available memory to the
-+	task allocating pages, so using a bitshift which grows the score
-+	exponentially is, thus, impossible to tune with fine granularity.
-+
-+	A much more powerful interface, /proc/<pid>/oom_score_adj, was
-+	introduced with the oom killer rewrite that allows users to increase or
-+	decrease the badness() score linearly.  This interface will replace
-+	/proc/<pid>/oom_adj.
-+
-+	A warning will be emitted to the kernel log if an application uses this
-+	deprecated interface.  After it is printed once, future warnings will be
-+	suppressed until the kernel is rebooted.
+
+There only one kind of WB_SYNC_ALL writeback - the one which writes
+everything.
+
+So after WB_SYNC_ALL writeback (provided all livelocks are fixed ;)
+obviously no old data should be unwritten in memory. Normal WB_SYNC_NONE
+writeback differs from a kupdate one *only* in the fact that we queue all
+inodes instead of only the old ones. We start writing old inodes first and
+go inode by inode writing MAX_WRITEBACK_PAGES from each. Now because the
+queue can be longer for normal WB_SYNC_NONE writeback, it can take longer
+before we return to the old inodes. So if normal writeback interrupts
+kupdate one, it can take longer before all data of old inodes get to disk.
+But we always get the old data to disk - essentially at the same time at
+which kupdate writeback would get them to disk if dirty_expire_centisecs
+was 0.
+
+Is this enough? Do you want any of this in the changelog?
+
+Thanks for the inquiry btw. It made me cleanup my thoughts on the subject ;)
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
