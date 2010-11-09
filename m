@@ -1,158 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755510Ab0KIWBh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 17:01:37 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:19988 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752627Ab0KIWBe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 17:01:34 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:references:date:message-id:user-agent:
-	mime-version:content-type;
-	b=RHV46TTUqMtp4acUBCdpyqnmiNEhXOY8n6BC32F0Zeu/7K+F0d22YE5j96aMMiL6U
-	eEy+zD7sbEEav/7X/WM0Q==
-From: Greg Thelen <gthelen@google.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <balbir@in.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: mem_cgroup_get_limit() return type, was [patch] memcg: fix unit mismatch in memcg oom limit calculation
-References: <20101109110521.GS23393@cmpxchg.org>
-	<xr93iq068dyd.fsf@ninji.mtv.corp.google.com>
-	<alpine.DEB.2.00.1011091327420.7730@chino.kir.corp.google.com>
-Date: Tue, 09 Nov 2010 14:01:07 -0800
-Message-ID: <xr9362w66tss.fsf@ninji.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1755572Ab0KIWBx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 17:01:53 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:48661 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754371Ab0KIWBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 17:01:52 -0500
+Date: Tue, 9 Nov 2010 16:01:44 -0600
+From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+To: Roberto Sassu <roberto.sassu@polito.it>
+Cc: kirkland@canonical.com, jmorris@namei.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 0/5] ecryptfs fixes
+Message-ID: <20101109220144.GA3599@boyd.l.tihix.com>
+References: <201011031111.06669.roberto.sassu@polito.it>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201011031111.06669.roberto.sassu@polito.it>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Rientjes <rientjes@google.com> writes:
+On Wed Nov 03, 2010 at 11:11:06AM +0100, Roberto Sassu <roberto.sassu@polito.it> wrote:
+> This patch set applies to the latest kernel 2.6.37-rc1.
+> 
+> 
+> Roberto Sassu (5):
+>   ecryptfs: moved ECRYPTFS_SUPER_MAGIC definition to linux/magic.h
+>   ecryptfs: missing initialization of the superblock 'magic' field
+>   ecryptfs: test lower_file pointer when lower_file_mutex is locked
+>   ecryptfs: fixed testing of file descriptor flags
+>   ecryptfs: open lower files with kthread credentials
 
-> On Tue, 9 Nov 2010, Greg Thelen wrote:
->
->> Johannes Weiner <hannes@cmpxchg.org> writes:
->> 
->> > Adding the number of swap pages to the byte limit of a memory control
->> > group makes no sense.  Convert the pages to bytes before adding them.
->> >
->> > The only user of this code is the OOM killer, and the way it is used
->> > means that the error results in a higher OOM badness value.  Since the
->> > cgroup limit is the same for all tasks in the cgroup, the error should
->> > have no practical impact at the moment.
->> >
->> > But let's not wait for future or changing users to trip over it.
->> 
->> Thanks for the fix.
->> 
->
-> Nice catch, but it's done in the opposite way: the oom killer doesn't use 
-> byte limits but page limits.  So this needs to be
->
-> 	(res_counter_read_u64(&memcg->res, RES_LIMIT) >> PAGE_SHIFT) +
-> 			total_swap_pages;
+Hey Roberto - I pushed these patches to
+git://git.kernel.org/pub/scm/linux/kernel/git/ecryptfs/ecryptfs-2.6.git#next
 
-In -mm, the oom killer queries memcg for a byte limit using
-mem_cgroup_get_limit(). The following is from
-mem_cgroup_out_of_memory():
+Thanks,
+Tyler
 
-	limit = mem_cgroup_get_limit(mem) >> PAGE_SHIFT;
+> 
+>  fs/ecryptfs/ecryptfs_kernel.h |    4 +---
+>  fs/ecryptfs/file.c            |   20 +++++++++-----------
+>  fs/ecryptfs/inode.c           |   32 ++++++++++++++------------------
+>  fs/ecryptfs/kthread.c         |   17 +++++++++++++----
+>  fs/ecryptfs/main.c            |    5 +++--
+>  include/linux/magic.h         |    1 +
+>  6 files changed, 41 insertions(+), 38 deletions(-)
+> 
+> -- 
+> 1.7.2.3
 
-So I think the "[patch] memcg: fix unit mismatch in memcg oom limit
-calculation" is correct.  Although a simpler interface, would involve
-changing mem_cgroup_get_limit() to return a page count instead of a byte
-count and thus save the oom killer from having to do the conversion:
 
-commit d12e5eded4505a673a7d77d8adab7fce30c7a680
-Author: Greg Thelen <gthelen@google.com>
-Date:   Tue Nov 9 13:46:38 2010 -0800
-
-    memcg: change mem_cgroup_get_limit() return type
-    
-    The mem_cgroup_get_limit() interface routine returns a
-    byte count.  The only consumer of this data is the oom
-    killer, which really wants a page count.
-    
-    This change converts mem_cgroup_get_limit() to return a
-    page count rather than a byte count.  This makes the
-    memcg interface more consistent with the rest of the mm.
-    This even makes the memcg interface more consistent.  Most other
-    memcg interface routines operate on page counts, not byte counts.
-    
-    Signed-off-by: Greg Thelen <gthelen@google.com>
-
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 3433784..0a8720e 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -163,7 +163,7 @@ unsigned long mem_cgroup_page_stat(struct mem_cgroup *mem,
- 
- unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
- 						gfp_t gfp_mask);
--u64 mem_cgroup_get_limit(struct mem_cgroup *mem);
-+unsigned long mem_cgroup_get_limit(struct mem_cgroup *mem);
- 
- #else /* CONFIG_CGROUP_MEM_RES_CTLR */
- struct mem_cgroup;
-@@ -368,7 +368,7 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
- }
- 
- static inline
--u64 mem_cgroup_get_limit(struct mem_cgroup *mem)
-+unsigned long mem_cgroup_get_limit(struct mem_cgroup *mem)
- {
- 	return 0;
- }
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 7b9ecdc..90efb5d 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1569,22 +1569,23 @@ static int mem_cgroup_count_children(struct mem_cgroup *mem)
- }
- 
- /*
-- * Return the memory (and swap, if configured) limit for a memcg.
-+ * Return the memory (and swap, if configured) limit for a memcg expressed as
-+ * a page count.
-  */
--u64 mem_cgroup_get_limit(struct mem_cgroup *memcg)
-+unsigned long mem_cgroup_get_limit(struct mem_cgroup *memcg)
- {
- 	u64 limit;
- 	u64 memsw;
- 
--	limit = res_counter_read_u64(&memcg->res, RES_LIMIT);
--	limit += total_swap_pages << PAGE_SHIFT;
-+	limit = res_counter_read_u64(&memcg->res, RES_LIMIT) >> PAGE_SHIFT;
-+	limit += total_swap_pages;
- 
--	memsw = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
-+	memsw = res_counter_read_u64(&memcg->memsw, RES_LIMIT) >> PAGE_SHIFT;
- 	/*
- 	 * If memsw is finite and limits the amount of swap space available
- 	 * to this memcg, return that limit.
- 	 */
--	return min(limit, memsw);
-+	return min(min(limit, memsw), ULONG_MAX);
- }
- 
- /*
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 7dcca55..9ccc59f 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -538,7 +538,7 @@ void mem_cgroup_out_of_memory(struct mem_cgroup *mem, gfp_t gfp_mask)
- 	struct task_struct *p;
- 
- 	check_panic_on_oom(CONSTRAINT_MEMCG, gfp_mask, 0, NULL);
--	limit = mem_cgroup_get_limit(mem) >> PAGE_SHIFT;
-+	limit = mem_cgroup_get_limit(mem);
- 	read_lock(&tasklist_lock);
- retry:
- 	p = select_bad_process(&points, limit, mem, NULL);
