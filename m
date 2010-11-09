@@ -1,78 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879Ab0KIW7M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 17:59:12 -0500
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:15935 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753279Ab0KIW7K (ORCPT
+	id S1755009Ab0KIXBP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 18:01:15 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33172 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751265Ab0KIXBO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 17:59:10 -0500
-From: David Daney <ddaney@caviumnetworks.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Daney <ddaney@caviumnetworks.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH] exec_domain: Establish a Linux32 domain on CONFIG_COMPAT systems.
-Date: Tue,  9 Nov 2010 14:59:00 -0800
-Message-Id: <1289343540-8319-1-git-send-email-ddaney@caviumnetworks.com>
-X-Mailer: git-send-email 1.7.2.3
-X-OriginalArrivalTime: 09 Nov 2010 22:59:51.0233 (UTC) FILETIME=[D0BB9B10:01CB8061]
+	Tue, 9 Nov 2010 18:01:14 -0500
+Date: Tue, 9 Nov 2010 15:00:06 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Wu Fengguang <fengguang.wu@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Christoph Hellwig <hch@lst.de>, Jan Engelhardt <jengelh@medozas.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/5] writeback: stop background/kupdate works from
+ livelocking other works
+Message-Id: <20101109150006.05892241.akpm@linux-foundation.org>
+In-Reply-To: <20101109222827.GJ4936@quack.suse.cz>
+References: <20101108230916.826791396@intel.com>
+	<20101108231726.993880740@intel.com>
+	<20101109131310.f442d210.akpm@linux-foundation.org>
+	<20101109222827.GJ4936@quack.suse.cz>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If PER_LINUX32 is set calling sys_personality, we will try to
-find the corresponding exec_domain.  This causes us to try to load a
-module for personality-8.  After running the userspace module loader
-and failing to find the module, we fall back to the default.
+On Tue, 9 Nov 2010 23:28:27 +0100
+Jan Kara <jack@suse.cz> wrote:
 
-We can avoid the failed module loading overhead by building-in the
-linux32_exec_domain for systems that have CONFIG_COMPAT.
+>   Hi,
+> 
+> On Tue 09-11-10 13:13:10, Andrew Morton wrote:
+> > On Tue, 09 Nov 2010 07:09:19 +0800
+> > Wu Fengguang <fengguang.wu@intel.com> wrote:
+> > I find the description to be somewhat incomplete...
+>   OK, so let me fill in the gaps ;)
+> 
+> > > From: Jan Kara <jack@suse.cz>
+> > > 
+> > > Background writeback are easily livelockable (from a definition of their
+> > > target).
+> > 
+> > *why* is background writeback easily livelockable?  Under which
+> > circumstances does this happen and how does it come about?
+> > 
+> > > This is inconvenient because it can make sync(1) stall forever waiting
+> > > on its queued work to be finished.
+> > 
+> > Again, why?  Because there are works queued from the flusher thread,
+> > but that thread is stuck in a livelocked state in <unspecified code
+> > location> so it is unable to service the other works?  But the pocess
+> > which called sync() will as a last resort itself perform all the
+> > required IO, will it not?  If so, how can it livelock?
+>   New description which should address above questions:
+> Background writeback is easily livelockable in a loop in wb_writeback() by
+> a process continuously re-dirtying pages (or continuously appending to a
+> file). This is in fact intended as the target of background writeback is to
+> write dirty pages it can find as long as we are over
+> dirty_background_threshold.
 
-I noticed this on MIPS64 systems, but it is a general problem and
-applies to x86 among others.  Admittedly sys_personality() is probably
-not in the hot path of many programs, but the overhead of the extra
-exec_domain is fairly small.
+Well.  The objective of the kupdate function is utterly different.
 
-Signed-off-by: David Daney <ddaney@caviumnetworks.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
----
- kernel/exec_domain.c |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
+> But the above behavior gets inconvenient at times because no other work
+> queued in the flusher thread's queue gets processed. In particular,
+> since e.g. sync(1) relies on flusher thread to do all the IO for it,
 
-diff --git a/kernel/exec_domain.c b/kernel/exec_domain.c
-index 0dbeae3..9335495 100644
---- a/kernel/exec_domain.c
-+++ b/kernel/exec_domain.c
-@@ -34,6 +34,17 @@ static unsigned long ident_map[32] = {
- 	24,	25,	26,	27,	28,	29,	30,	31
- };
- 
-+#ifdef CONFIG_COMPAT
-+static struct exec_domain linux32_exec_domain = {
-+	.name		= "Linux32",		/* name */
-+	.handler	= default_handler,	/* lcall7 causes a seg fault. */
-+	.pers_low	= PER_LINUX32,
-+	.pers_high	= PER_LINUX32,
-+	.signal_map	= ident_map,		/* Identity map signals. */
-+	.signal_invmap	= ident_map,		/*  - both ways. */
-+};
-+#endif
-+
- struct exec_domain default_exec_domain = {
- 	.name		= "Linux",		/* name */
- 	.handler	= default_handler,	/* lcall7 causes a seg fault. */
-@@ -41,6 +52,9 @@ struct exec_domain default_exec_domain = {
- 	.pers_high	= 0,			/* PER_LINUX personality. */
- 	.signal_map	= ident_map,		/* Identity map signals. */
- 	.signal_invmap	= ident_map,		/*  - both ways. */
-+#ifdef CONFIG_COMPAT
-+	.next		= &linux32_exec_domain,
-+#endif
- };
- 
- 
--- 
-1.7.2.3
+That's fixable by doing the work synchronously within sync_inodes_sb(),
+rather than twiddling thumbs wasting a thread resource while waiting
+for kernel threads to do it.  As an added bonus, this even makes cpu
+time accounting more accurate ;)
+
+Please remind me why we decided to hand the sync_inodes_sb() work off
+to other threads?
+
+> sync(1) can hang forever waiting for flusher thread to do the work.
+> 
+> Generally, when a flusher thread has some work queued, someone submitted
+> the work to achieve a goal more specific than what background writeback
+> does. Moreover by working on the specific work, we also reduce amount of
+> dirty pages which is exactly the target of background writeout. So it makes
+> sense to give specific work a priority over a generic page cleaning.
+> 
+> Thus we interrupt background writeback if there is some other work to do. We
+> return to the background writeback after completing all the queued work.
+> 
+> Is it better now?
+> 
+> > > Generally, when a flusher thread has
+> > > some work queued, someone submitted the work to achieve a goal more specific
+> > > than what background writeback does. So it makes sense to give it a priority
+> > > over a generic page cleaning.
+> > > 
+> > > Thus we interrupt background writeback if there is some other work to do. We
+> > > return to the background writeback after completing all the queued work.
+> > > 
+> > > Signed-off-by: Jan Kara <jack@suse.cz>
+> > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > > ---
+> > >  fs/fs-writeback.c |    9 +++++++++
+> > >  1 file changed, 9 insertions(+)
+> > > 
+> > > --- linux-next.orig/fs/fs-writeback.c	2010-11-07 21:56:42.000000000 +0800
+> > > +++ linux-next/fs/fs-writeback.c	2010-11-07 22:00:51.000000000 +0800
+> > > @@ -651,6 +651,15 @@ static long wb_writeback(struct bdi_writ
+> > >  			break;
+> > >  
+> > >  		/*
+> > > +		 * Background writeout and kupdate-style writeback are
+> > > +		 * easily livelockable. Stop them if there is other work
+> > > +		 * to do so that e.g. sync can proceed.
+> > > +		 */
+> > > +		if ((work->for_background || work->for_kupdate) &&
+> > > +		    !list_empty(&wb->bdi->work_list))
+> > > +			break;
+> > > +
+> > > +		/*
+> > >  		 * For background writeout, stop when we are below the
+> > >  		 * background dirty threshold
+> > >  		 */
+> > 
+> > So...  what prevents higher priority works (eg, sync(1)) from
+> > livelocking or seriously retarding background or kudate writeout?
+>   If other work than background or kupdate writeout livelocks, it's a bug
+> which should be fixed (either by setting sensible nr_to_write or by tagging
+> like we do it for WB_SYNC_ALL writeback). Of course, higher priority work
+> can be running when background or kupdate writeout would need to run as
+> well. But the idea here is that the purpose of background/kupdate types of
+> writeout is to get rid of dirty data and any type of writeout does this so
+> working on it we also work on background/kupdate writeout only possibly
+> less efficiently.
+
+The kupdate function is a data-integrity/quality-of-service sort of
+thing.
+
+And what I'm asking is whether this change enables scenarios in which
+these threads can be kept so busy that the kupdate function gets
+interrupted so frequently that we can have dirty memory not being
+written back for arbitrarily long periods of time?
 
