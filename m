@@ -1,78 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755125Ab0KIKas (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 05:30:48 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:63475 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754105Ab0KIKap (ORCPT
+	id S1755091Ab0KIKde (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 05:33:34 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58129 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754105Ab0KIKdd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 05:30:45 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=i076OxzC9uhbdVY2DGKvDoHzCKnkgcMyBOpwRoeagWrCNjtUOF98jaubWBybZD+q8B
-         /H6EiA7oSVCY0k3jYuCSgJUpKQExQo5mZRT0ZJa3UBL2VMEF6tZBNxNa3SKEJgTrGfYk
-         aToD0sWHu357aShWZYrZUkPlymQLaJ4cBJM0U=
-Subject: Re: [PATCH] mxcmmc: update the regulator support code to the
- latest API
-From: Alberto Panizzo <maramaopercheseimorto@gmail.com>
-To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Chris Ball <cjb@laptop.org>, Daniel Mack <daniel@caiaq.de>,
+	Tue, 9 Nov 2010 05:33:33 -0500
+Date: Tue, 9 Nov 2010 10:33:12 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: Alexey Charkov <alchark@gmail.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
         Andrew Morton <akpm@linux-foundation.org>,
-        Eric =?ISO-8859-1?Q?B=E9nard?= <eric@eukrea.com>,
-        Fabio Estevam <fabioestevam@yahoo.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Linus Walleij <linus.ml.walleij@gmail.com>
-In-Reply-To: <20101109101406.GW16938@pengutronix.de>
-References: <1288656337.29881.13.camel@realization>
-	 <20101102073932.GB6017@pengutronix.de>
-	 <1288949275.3072.3.camel@realization>
-	 <1289213595.3425.23.camel@realization>
-	 <20101108143746.GA23201@void.printf.net>
-	 <1289297390.3020.27.camel@realization>
-	 <20101109101406.GW16938@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 09 Nov 2010 11:30:38 +0100
-Message-ID: <1289298638.3020.30.camel@realization>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 8bit
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 6/6 v3] ARM: Add support for the display controllers in
+	VT8500 and WM8505
+Message-ID: <20101109103312.GA2869@n2100.arm.linux.org.uk>
+References: <1289147348-31969-1-git-send-email-alchark@gmail.com> <1289147348-31969-6-git-send-email-alchark@gmail.com> <20101108041721.GA11605@linux-sh.org> <20101108141407.GA25739@alchark-u3s.lan> <20101108204315.GA12050@linux-sh.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101108204315.GA12050@linux-sh.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On mar, 2010-11-09 at 11:14 +0100, Uwe Kleine-König wrote:
-> On Tue, Nov 09, 2010 at 11:09:50AM +0100, Alberto Panizzo wrote:
-> > 
-> > This fix also the build problem introduced by my previous patch
-> > due to unhanded API changes introduced by
-> s/handed/handled/ ?
-> 
-> > commit:99fc5131018cbdc3cf42ce09fb394a4e8b053c74
-> Linus wants to have the commit shortlog for references to other commits.
-> After doing:
-> 
-> 	git config --global alias.one "show -s --pretty='format:%h (%s)'"
-> 
-> once you can simply use the output of
-> 
-> 	git one 99fc5131018cbdc3cf42ce09fb394a4e8b053c74
-> 
-> for that.
+On Tue, Nov 09, 2010 at 05:43:16AM +0900, Paul Mundt wrote:
+> > diff --git a/drivers/video/vt8500lcdfb.c b/drivers/video/vt8500lcdfb.c
+> > new file mode 100644
+> > index 0000000..640d8a3
+> > --- /dev/null
+> > +++ b/drivers/video/vt8500lcdfb.c
+> > +#include <asm/irq.h>
+> > +
+> linux/irq.h is preferred here.
 
-Ok Uwe,
-I will update my patch pushing rules on this.
-A cleaner patch will be sent soon.
-
-Best Regards,
-
--- 
-Alberto!
-
-        Be Persistent!
-                - Greg Kroah-Hartman (FOSDEM 2010)
-
+I assume you've read the comment at the top of linux/irq.h ?
