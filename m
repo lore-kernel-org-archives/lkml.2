@@ -1,77 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431Ab0KIEnW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 23:43:22 -0500
-Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:49692 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752484Ab0KIEnT (ORCPT
+	id S1753277Ab0KIE5P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 23:57:15 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:45217 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752725Ab0KIE5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 23:43:19 -0500
-Date: Tue, 9 Nov 2010 15:42:42 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: "Ted Ts'o" <tytso@mit.edu>, Josef Bacik <josef@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        xfs@oss.sgi.com, joel.becker@oracle.com, cmm@us.ibm.com,
-        cluster-devel@redhat.com
-Subject: Re: [PATCH 1/6] fs: add hole punching to fallocate
-Message-ID: <20101109044242.GH2715@dastard>
-References: <1289248327-16308-1-git-send-email-josef@redhat.com>
- <20101109011222.GD2715@dastard>
- <20101109033038.GF3099@thunk.org>
+	Mon, 8 Nov 2010 23:57:12 -0500
+Message-ID: <001601cb7fca$918dc5e0$66f8800a@maildom.okisemi.com>
+From: "Toshiharu Okada" <toshiharu-linux@dsn.okisemi.com>
+To: =?utf-8?Q?Micha=C5=82_Nazarewicz?= <m.nazarewicz@samsung.com>,
+        "Andy Isaacson" <adi@hexapodia.org>
+Cc: "Greg Kroah-Hartman" <gregkh@suse.de>,
+        "LKML" <linux-kernel@vger.kernel.org>,
+        "linux-usb" <linux-usb@vger.kernel.org>,
+        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
+        "Andrew" <andrew.chih.howe.khor@intel.com>,
+        "Intel OTC" <joel.clark@intel.com>,
+        "Foster, Margie" <margie.foster@intel.com>,
+        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>
+References: <4CC55AD9.6020800@dsn.okisemi.com> <20101103183750.GA23043@hexapodia.org> <op.vlum8dzo7p4s8u@pikus>
+Subject: Re: [PATCH v7] USB device driver of Topcliff PCH
+Date: Tue, 9 Nov 2010 13:57:05 +0900
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101109033038.GF3099@thunk.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="utf-8"
+Content-Transfer-Encoding: 8bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 08, 2010 at 10:30:38PM -0500, Ted Ts'o wrote:
-> On Tue, Nov 09, 2010 at 12:12:22PM +1100, Dave Chinner wrote:
-> > Hole punching was not included originally in fallocate() for a
-> > variety of reasons. IIRC, they were along the lines of:
-> > 
-> > 	1 de-allocating of blocks in an allocation syscall is wrong.
-> > 	  People wanted a new syscall for this functionality.
-....
-> > I guess that leaves #1 to be debated;
-> > I don't think there is any problem with doing what you propose.
-> 
-> I don't have a problem either.
-> 
-> As a completely separate proposal, what do people think about an
-> FALLOCATE_FL_ZEROIZE after which time the blocks are allocated, but
-> reading from them returns zero.
+Hi Michal
 
-That's exactly the new XFS_IOC_ZERO_RANGE ioctl in 2.6.36 does
-(commit 447223520520b17d3b6d0631aa4838fbaf8eddb4 "xfs: Introduce
-XFS_IOC_ZERO_RANGE") The git commit I pointed to in the last email
-is the rudimentary fallocate() interface support I have for that
-code which goes along with an xfs_io patch I have. Given that there
-seems to be interest for this operation, I'll flesh it out into a
-proper patch....
+Thank you for your comment.
+I will modify to "if-else-if-else" as follows.
 
-> This could be done either by (a)
-> sending a discard in the case of devices where discard_zeros_data is
-> true and discard_granularty is less than the fs block size, or (b) by
-> setting the uninitialized flag in the extent tree.
+-----------
+if (!list_empty(&ep->queue)) {
+    dev_dbg(&dev->pdev->dev, "%s: list not empty", __func__);
+    ret = -EAGAIN;
+} else {
+    if (halt) { /* halt or clear halt */
+        if (ep->num == PCH_UDC_EP0)
+            ep->dev->stall = 1;
+        pch_udc_ep_set_stall(ep);
+        pch_udc_enable_ep_interrupts(ep->dev, PCH_UDC_EPINT(ep->in,
+ep->num));
+        ret = 0;
+    } else {
+        pch_udc_ep_clear_stall(ep);
+        ret = 0;
+    }
+}
+-------------
 
-Implementation is up to the filesystem. However, XFS does (b)
-because:
+Best regards
+Toshiharu Okada (OKI SEMICONDUCTOR)
+-----
+Date: Mon, 08 Nov 2010 12:22:51 +0100
+From: "Michał Nazarewicz" <m.nazarewicz@samsung.com>
+> On Wed, 03 Nov 2010 19:37:50 +0100, Andy Isaacson <adi@hexapodia.org>
+wrote:
+> > I think this would be clearer as
+> >
+> > + if (!list_empty(&ep->queue)) {
+> > + dev_dbg(&dev->pdev->dev, "%s: list not empty", __func__);
+> > + ret = -EAGAIN;
+> > + }
+> > + if (halt) {
+> > + if (ep->num == PCH_UDC_EP0)
+> > + ep->dev->stall = 1;
+> > + pch_udc_ep_set_stall(ep);
+> > + pch_udc_enable_ep_interrupts(ep->dev,
+> > +      PCH_UDC_EPINT(ep->in, ep->num));
+> > + ret = 0;
+> > + } else {
+> > + pch_udc_ep_clear_stall(ep);
+> > + ret = 0;
+> > + }
+>
+> This changes the behavior of the construct though.
+>
+> > because:
+> > 1. if (!list_empty  is a standalone check, there is no if/else if/else
+> > connection between list_empty() and halt.
+>
+> This depends on how you look at it.  The way I see it is that there are
+three
+> mutually exclusive cases: the list is not empty, it is a halt, it is not a
+> halt.  This way, if-else-if-else seems like a good construct to me.
+>
+> > 2. I prefer if (foo) {} else {} instead of if (!foo) {} else {}, unless
+> > there is a significant reason to do the negated test.
+>
+> I agree on that though.
+>
+> >> + pr_debug("%s: %s", __func__, usbep->name);
+> >
+> > There are probably too many pr_debug() and dev_dbg()s in this driver.
+> > Please reconsider which ones are appropriate for mainline.
+>
+> Do we really care?  Just don't define DEBUG...
+>
+> -- 
+> Best regards,                                        _     _
+> | Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+> | Computer Science,  Michał "mina86" Nazarewicz       (o o)
+> +----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-	1) it was extremely simple to implement (one of the
-	   advantages of having an exceedingly complex allocation
-	   interface to begin with :P)
-	2) conversion is atomic, fast and reliable
-	3) it is independent of the underlying storage; and
-	4) reads of unwritten extents operate at memory speed,
-	   not disk speed.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
