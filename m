@@ -1,91 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753165Ab0KIWNh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 17:13:37 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:34602 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752163Ab0KIWNe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 17:13:34 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=mdj9WYtBSZ5kpShAosnmdEzWsr2JkaY06Bh5pDYsvpL3jt8uAOqhHy6XCNemdj7Z8w
-         OXYtBsXq6t0fiABXbeYt/HP6BU+3i4/HdIrNa78b7+DJMR5YbH3+Vf+E3UJeCu5MqRQT
-         RIorBdz9B/kuHv3lteXxujHB/lPf6neEEcIaA=
+	id S1754420Ab0KIWNu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 17:13:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53955 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753781Ab0KIWNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 17:13:48 -0500
+Date: Tue, 9 Nov 2010 14:13:38 -0800
+From: Greg KH <gregkh@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Lin Ming <ming.m.lin@intel.com>, Stephane Eranian <eranian@google.com>,
+        "robert.richter" <robert.richter@amd.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        fweisbec <fweisbec@gmail.com>, paulus <paulus@samba.org>,
+        Kay Sievers <kay.sievers@vrfy.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [RFC][PATCH] perf: sysfs type id
+Message-ID: <20101109221338.GA19947@suse.de>
+References: <1289339119.2191.92.camel@laptop>
 MIME-Version: 1.0
-In-Reply-To: <20101109183208.GG9264@atomide.com>
-References: <AANLkTinZF-47WQyF5k1Nv64NjfMNSQ-+oE0eGycR24NM@mail.gmail.com>
-	<AANLkTikB0zhN13u5OtRwviOv-rFDW-vFTmq0t7ALuO7N@mail.gmail.com>
-	<201011091729.17679.arnd@arndb.de>
-	<AANLkTikMjAh+LAFaWELyiJc+ou+N8v_7xhrwHRbBZZQF@mail.gmail.com>
-	<20101109173536.GE9264@atomide.com>
-	<AANLkTinLORQ7Hyn7nqkNZhRbP8iTGRfAXibgY2VeZTPq@mail.gmail.com>
-	<20101109183208.GG9264@atomide.com>
-Date: Wed, 10 Nov 2010 00:13:32 +0200
-Message-ID: <AANLkTikoUiPe1o7OH07ZWzr+9dj-YZ5hEKiqcNun1wNZ@mail.gmail.com>
-Subject: Re: [GIT PULL] fixes for tidspbridge 2.6.37-rc1
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>, Greg KH <greg@kroah.com>,
-        linux-omap@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289339119.2191.92.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 9, 2010 at 8:32 PM, Tony Lindgren <tony@atomide.com> wrote:
-> * Guzman Lugo, Fernando <fernando.lugo@ti.com> [101109 09:43]:
->> On Tue, Nov 9, 2010 at 11:35 AM, Tony Lindgren <tony@atomide.com> wrote:
->> > * Guzman Lugo, Fernando <fernando.lugo@ti.com> [101109 08:36]:
->> >>
->> >> tidspbridge iommu change are working fine all the patches and few fixes after
->> >> that are alredy sent. what breaks tidspbridge, is the unmerged
->> >> dependencies in linux omap tree, specifically the iommu module patches
->> >> and the SG patch.
->> >
->> > Care to post a series of the missing patches listed above?
->>
->> Here are the missing patches:
->>
->> Fernando Guzman Lugo (4):
->>   iovmm: no gap checking for fixed address
->>   iovmm: add superpages support to fixed da address
->>   iovmm: replace __iounmap with omap_iounmap
->>   iommu: create new api to set valid da range
->
-> Yeah this is stuff for Hiroshi to look at and queue for
-> 2.6.28. No way we can merge these now.
+On Tue, Nov 09, 2010 at 10:45:19PM +0100, Peter Zijlstra wrote:
+> The below is a RFC patch adding dynamic type ids to perf.
+> 
+> We need to represent PMUs in sysfs because we want to allow multiple
+> (loadable) PMUs and need a way to identify them.
+> 
+> This patch creates a new device class "pmu" and adds a single attribute
+> "type" to it. This device attribute will expose the dynamic type id as
+> required by perf_event_attr::type.
+> 
+> The sysfs layout looks like:
+> 
+> [root@westmere ~]# cd /sys/class/pmu/
 
-Right, and he hasn't ack'ed them yet. So there's a chance they don't
-get into 2.6.38 either.
+You missed the embedded track at Plumbers where we talked about never
+adding another class to the kernel.  Please use bus_id instead for this.
 
->> and
->>   scatterlist: define SG chain for arm architecture
->
-> And this we need to test carefully it's not something we
-> can just merge.
->
-> Has this been tested to work with omap MMC drivers?
->
-> I'm not at all convinced the drivers can deal with
-> chained SG lists.. This may not show up with light
-> testing, the SG lists can be very small in most cases.
->
-> So this would have to be tested to make sure the
-> the chained SG list handled properly. The same goes
-> for other omap drivers that may be using SG.
+> [root@westmere pmu]# ls -la
+> total 0
+> drwxr-xr-x  2 root root 0 2010-11-09 22:22 .
+> drwxr-xr-x 47 root root 0 2010-11-09 22:22 ..
+> lrwxrwxrwx  1 root root 0 2010-11-09 22:22 breakpoint -> ../../devices/virtual/pmu/breakpoint
+> lrwxrwxrwx  1 root root 0 2010-11-09 22:22 cpu -> ../../devices/virtual/pmu/cpu
+> lrwxrwxrwx  1 root root 0 2010-11-09 22:22 frob -> ../../devices/virtual/pmu/frob
+> lrwxrwxrwx  1 root root 0 2010-11-09 22:22 software -> ../../devices/virtual/pmu/software
+> lrwxrwxrwx  1 root root 0 2010-11-09 22:22 tracepoint -> ../../devices/virtual/pmu/tracepoint
+> [root@westmere pmu]# cd frob/
+> [root@westmere frob]# ls -la
+> total 0
+> drwxr-xr-x 3 root root    0 2010-11-09 22:22 .
+> drwxr-xr-x 7 root root    0 2010-11-09 22:22 ..
+> drwxr-xr-x 2 root root    0 2010-11-09 22:23 power
+> lrwxrwxrwx 1 root root    0 2010-11-09 22:23 subsystem -> ../../../../class/pmu
+> -r--r--r-- 1 root root 4096 2010-11-09 22:23 type
+> -rw-r--r-- 1 root root 4096 2010-11-09 22:22 uevent
+> [root@westmere frob]# cat type 
+> 6
+> 
+> Not at all sure what all those power bits mean, Greg?
 
-And the change doesn't affect OMAP only, it's for all ARM platforms.
+All devices get a "default" power directory by the core, not much you
+can do about it.
 
-The proposal from Russell was to do it only on OMAP, but I haven't
-seen a patch that does that yet. Hopefully this would go into 2.6.38,
-but again, it might not.
+thanks,
 
--- 
-Felipe Contreras
+greg k-h
