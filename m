@@ -1,79 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673Ab0KISc0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 13:32:26 -0500
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:56326 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754329Ab0KIScW (ORCPT
+	id S1754686Ab0KISdM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 13:33:12 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48509 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753977Ab0KISdC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 13:32:22 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 67.188.36.105
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/hIrHQ1Lyx4q/o+HzQr6iJ
-Date: Tue, 9 Nov 2010 10:32:09 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Greg KH <greg@kroah.com>, linux-omap@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>
-Subject: Re: [GIT PULL] fixes for tidspbridge 2.6.37-rc1
-Message-ID: <20101109183208.GG9264@atomide.com>
-References: <AANLkTinZF-47WQyF5k1Nv64NjfMNSQ-+oE0eGycR24NM@mail.gmail.com>
- <AANLkTikB0zhN13u5OtRwviOv-rFDW-vFTmq0t7ALuO7N@mail.gmail.com>
- <201011091729.17679.arnd@arndb.de>
- <AANLkTikMjAh+LAFaWELyiJc+ou+N8v_7xhrwHRbBZZQF@mail.gmail.com>
- <20101109173536.GE9264@atomide.com>
- <AANLkTinLORQ7Hyn7nqkNZhRbP8iTGRfAXibgY2VeZTPq@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinLORQ7Hyn7nqkNZhRbP8iTGRfAXibgY2VeZTPq@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 9 Nov 2010 13:33:02 -0500
+Date: Tue, 9 Nov 2010 18:31:42 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Kees Cook <kees.cook@canonical.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [Security] [PATCH v3 0/4] x86: clear XD_DISABLED flag on Intel
+ to regain NX
+Message-ID: <20101109183142.4ebfa737@lxorguk.ukuu.org.uk>
+In-Reply-To: <20101109181157.GE5876@outflux.net>
+References: <20101109181157.GE5876@outflux.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Guzman Lugo, Fernando <fernando.lugo@ti.com> [101109 09:43]:
-> On Tue, Nov 9, 2010 at 11:35 AM, Tony Lindgren <tony@atomide.com> wrote:
-> > * Guzman Lugo, Fernando <fernando.lugo@ti.com> [101109 08:36]:
-> >>
-> >> tidspbridge iommu change are working fine all the patches and few fixes after
-> >> that are alredy sent. what breaks tidspbridge, is the unmerged
-> >> dependencies in linux omap tree, specifically the iommu module patches
-> >> and the SG patch.
-> >
-> > Care to post a series of the missing patches listed above?
-> 
-> Here are the missing patches:
-> 
-> Fernando Guzman Lugo (4):
->   iovmm: no gap checking for fixed address
->   iovmm: add superpages support to fixed da address
->   iovmm: replace __iounmap with omap_iounmap
->   iommu: create new api to set valid da range
+> In a review[1] of reported hardware being used by Ubuntu bug reporters,
+> almost 10% of systems had an incorrectly configured BIOS, leaving their
+> systems unable to use the NX features of their CPU.
 
-Yeah this is stuff for Hiroshi to look at and queue for
-2.6.28. No way we can merge these now.
- 
-> and
->   scatterlist: define SG chain for arm architecture
+Ouch
 
-And this we need to test carefully it's not something we
-can just merge.
+> This change will clear the MSR_IA32_MISC_ENABLE_XD_DISABLE bit so that NX
+> cannot be inappropriately controlled by the BIOS on Intel CPUs.  If, under
+> very strange hardware configurations, NX actually needs to be disabled,
+> "noexec=off" can be used to restore the prior behavior.
 
-Has this been tested to work with omap MMC drivers?
+Have you done an audit of CPU errata to ensure that none of these cases
+are ones where the BIOS has disabled it to avoid an erratum. I'd hate to
+turn it on and find out the BIOS actually turned it off for good reason !
 
-I'm not at all convinced the drivers can deal with
-chained SG lists.. This may not show up with light
-testing, the SG lists can be very small in most cases.
-
-So this would have to be tested to make sure the
-the chained SG list handled properly. The same goes
-for other omap drivers that may be using SG.
-
-Regards,
-
-Tony
+Alan
