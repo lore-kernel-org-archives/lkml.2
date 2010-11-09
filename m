@@ -1,37 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403Ab0KIWA0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 17:00:26 -0500
-Received: from b.mail.sonic.net ([64.142.19.5]:59284 "EHLO b.mail.sonic.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754180Ab0KIWAW convert rfc822-to-8bit (ORCPT
+	id S1755510Ab0KIWBh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 17:01:37 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:19988 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752627Ab0KIWBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 17:00:22 -0500
-X-Greylist: delayed 2196 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Nov 2010 17:00:21 EST
-Subject: Re: [Wireshark-dev] usbmon: size of different fields?
-Mime-Version: 1.0 (Apple Message framework v1082)
-Content-Type: text/plain; charset=iso-8859-1
-From: Guy Harris <guy@alum.mit.edu>
-In-Reply-To: <4CD9A96D.1010306@freemail.hu>
-Date: Tue, 9 Nov 2010 13:23:28 -0800
-Cc: Pete Zaitcev <zaitcev@redhat.com>, linux-usb@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <E6FD75ED-7E13-47DC-B9F9-6C8C09C3C4AC@alum.mit.edu>
-References: <4CD8ECE4.1090206@freemail.hu> <20101109075056.59a2e7d8@lembas.zaitcev.lan> <4CD9A96D.1010306@freemail.hu>
-To: Developer support list for Wireshark <wireshark-dev@wireshark.org>
-X-Mailer: Apple Mail (2.1082)
+	Tue, 9 Nov 2010 17:01:34 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:references:date:message-id:user-agent:
+	mime-version:content-type;
+	b=RHV46TTUqMtp4acUBCdpyqnmiNEhXOY8n6BC32F0Zeu/7K+F0d22YE5j96aMMiL6U
+	eEy+zD7sbEEav/7X/WM0Q==
+From: Greg Thelen <gthelen@google.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <balbir@in.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: mem_cgroup_get_limit() return type, was [patch] memcg: fix unit mismatch in memcg oom limit calculation
+References: <20101109110521.GS23393@cmpxchg.org>
+	<xr93iq068dyd.fsf@ninji.mtv.corp.google.com>
+	<alpine.DEB.2.00.1011091327420.7730@chino.kir.corp.google.com>
+Date: Tue, 09 Nov 2010 14:01:07 -0800
+Message-ID: <xr9362w66tss.fsf@ninji.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+David Rientjes <rientjes@google.com> writes:
 
-On Nov 9, 2010, at 12:05 PM, Németh Márton wrote:
+> On Tue, 9 Nov 2010, Greg Thelen wrote:
+>
+>> Johannes Weiner <hannes@cmpxchg.org> writes:
+>> 
+>> > Adding the number of swap pages to the byte limit of a memory control
+>> > group makes no sense.  Convert the pages to bytes before adding them.
+>> >
+>> > The only user of this code is the OOM killer, and the way it is used
+>> > means that the error results in a higher OOM badness value.  Since the
+>> > cgroup limit is the same for all tasks in the cgroup, the error should
+>> > have no practical impact at the moment.
+>> >
+>> > But let's not wait for future or changing users to trip over it.
+>> 
+>> Thanks for the fix.
+>> 
+>
+> Nice catch, but it's done in the opposite way: the oom killer doesn't use 
+> byte limits but page limits.  So this needs to be
+>
+> 	(res_counter_read_u64(&memcg->res, RES_LIMIT) >> PAGE_SHIFT) +
+> 			total_swap_pages;
 
-> OK, that's clear, the byte order of the API structure fields are in "host endian"
-> order. The API structures are already saved by Wireshark into file for quite some
-> time.
+In -mm, the oom killer queries memcg for a byte limit using
+mem_cgroup_get_limit(). The following is from
+mem_cgroup_out_of_memory():
 
-...and tcpdump.  Support for capturing on USB on Linux has been in libpcap since at least libpcap 1.0.
+	limit = mem_cgroup_get_limit(mem) >> PAGE_SHIFT;
 
-When reading a pcap file, or a pcap-ng file section, written on a machine with a byte order opposite from that of the machine reading the file, libpcap and Wireshark's Wiretap library byte-swap most host-byte-order fields into the byte order of the host reading the file; the exceptions are the iso_rec structure and the isochronous descriptors.
+So I think the "[patch] memcg: fix unit mismatch in memcg oom limit
+calculation" is correct.  Although a simpler interface, would involve
+changing mem_cgroup_get_limit() to return a page count instead of a byte
+count and thus save the oom killer from having to do the conversion:
+
+commit d12e5eded4505a673a7d77d8adab7fce30c7a680
+Author: Greg Thelen <gthelen@google.com>
+Date:   Tue Nov 9 13:46:38 2010 -0800
+
+    memcg: change mem_cgroup_get_limit() return type
+    
+    The mem_cgroup_get_limit() interface routine returns a
+    byte count.  The only consumer of this data is the oom
+    killer, which really wants a page count.
+    
+    This change converts mem_cgroup_get_limit() to return a
+    page count rather than a byte count.  This makes the
+    memcg interface more consistent with the rest of the mm.
+    This even makes the memcg interface more consistent.  Most other
+    memcg interface routines operate on page counts, not byte counts.
+    
+    Signed-off-by: Greg Thelen <gthelen@google.com>
+
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 3433784..0a8720e 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -163,7 +163,7 @@ unsigned long mem_cgroup_page_stat(struct mem_cgroup *mem,
+ 
+ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+ 						gfp_t gfp_mask);
+-u64 mem_cgroup_get_limit(struct mem_cgroup *mem);
++unsigned long mem_cgroup_get_limit(struct mem_cgroup *mem);
+ 
+ #else /* CONFIG_CGROUP_MEM_RES_CTLR */
+ struct mem_cgroup;
+@@ -368,7 +368,7 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+ }
+ 
+ static inline
+-u64 mem_cgroup_get_limit(struct mem_cgroup *mem)
++unsigned long mem_cgroup_get_limit(struct mem_cgroup *mem)
+ {
+ 	return 0;
+ }
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 7b9ecdc..90efb5d 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1569,22 +1569,23 @@ static int mem_cgroup_count_children(struct mem_cgroup *mem)
+ }
+ 
+ /*
+- * Return the memory (and swap, if configured) limit for a memcg.
++ * Return the memory (and swap, if configured) limit for a memcg expressed as
++ * a page count.
+  */
+-u64 mem_cgroup_get_limit(struct mem_cgroup *memcg)
++unsigned long mem_cgroup_get_limit(struct mem_cgroup *memcg)
+ {
+ 	u64 limit;
+ 	u64 memsw;
+ 
+-	limit = res_counter_read_u64(&memcg->res, RES_LIMIT);
+-	limit += total_swap_pages << PAGE_SHIFT;
++	limit = res_counter_read_u64(&memcg->res, RES_LIMIT) >> PAGE_SHIFT;
++	limit += total_swap_pages;
+ 
+-	memsw = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
++	memsw = res_counter_read_u64(&memcg->memsw, RES_LIMIT) >> PAGE_SHIFT;
+ 	/*
+ 	 * If memsw is finite and limits the amount of swap space available
+ 	 * to this memcg, return that limit.
+ 	 */
+-	return min(limit, memsw);
++	return min(min(limit, memsw), ULONG_MAX);
+ }
+ 
+ /*
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 7dcca55..9ccc59f 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -538,7 +538,7 @@ void mem_cgroup_out_of_memory(struct mem_cgroup *mem, gfp_t gfp_mask)
+ 	struct task_struct *p;
+ 
+ 	check_panic_on_oom(CONSTRAINT_MEMCG, gfp_mask, 0, NULL);
+-	limit = mem_cgroup_get_limit(mem) >> PAGE_SHIFT;
++	limit = mem_cgroup_get_limit(mem);
+ 	read_lock(&tasklist_lock);
+ retry:
+ 	p = select_bad_process(&points, limit, mem, NULL);
