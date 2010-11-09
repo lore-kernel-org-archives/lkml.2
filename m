@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591Ab0KIN4O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 08:56:14 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:39812 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751448Ab0KIN4N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 08:56:13 -0500
-X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=9-zhcS6hyJAA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=QyXUC8HyAAAA:8 a=_HXIdPbaxWApDmnL9u4A:9 a=rFWuAbzv549cd-Gt1UninRMkJ54A:4 a=PUjeQqilurYA:10 a=ZkfbeE0DKQP_ZAZZ:21 a=zrqvh1gMVXjpYASF:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 2/4] tracing: introduce trace_set_clr_module_event
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Yuanhan Liu <yuanhan.liu@linux.intel.com>, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, mingo@redhat.com
-In-Reply-To: <0d30dc$k4dmjb@orsmga001.jf.intel.com>
-References: <1289293967-31761-1-git-send-email-yuanhan.liu@linux.intel.com>
-	 <1289293967-31761-2-git-send-email-yuanhan.liu@linux.intel.com>
-	 <20101109112320.GA21828@localhost.localdomain>
-	 <b9dded$h15mrt@orsmga002.jf.intel.com>
-	 <20101109132058.GA22928@localhost.localdomain>
-	 <0d30dc$k4dmjb@orsmga001.jf.intel.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 09 Nov 2010 08:56:11 -0500
-Message-ID: <1289310971.12418.89.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752756Ab0KIN5Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 08:57:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31402 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751265Ab0KIN5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 08:57:22 -0500
+From: Andreas Schwab <schwab@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Michael Matz <matz@suse.de>, Dave Korn <dave.korn.cygwin@gmail.com>,
+        Richard Guenther <richard.guenther@gmail.com>, Jim <jim876@xs4all.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        gcc@gcc.gnu.org
+Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
+References: <4CD538CA.8010901@xs4all.nl> <87wroostw3.fsf@basil.nowhere.org>
+	<m2hbfsu57i.fsf@igel.home> <87k4kospnd.fsf@basil.nowhere.org>
+	<AANLkTikG6kBxSrO7EZ5_nZqTKqo8Rjm2stoEGVJWxanz@mail.gmail.com>
+	<877hgorrj1.fsf@basil.nowhere.org> <4CD843DC.10106@gmail.com>
+	<Pine.LNX.4.64.1011091352460.29956@wotan.suse.de>
+	<20101109134816.GB29433@basil.fritz.box>
+X-Yow: Mary Tyler Moore's SEVENTH HUSBAND is wearing my DACRON TANK TOP
+ in a cheap hotel in HONOLULU!
+Date: Tue, 09 Nov 2010 14:57:01 +0100
+In-Reply-To: <20101109134816.GB29433@basil.fritz.box> (Andi Kleen's message of
+	"Tue, 9 Nov 2010 14:48:16 +0100")
+Message-ID: <m3lj52txaq.fsf@redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-09 at 13:31 +0000, Chris Wilson wrote:
-> On Tue, 9 Nov 2010 21:20:59 +0800, Yuanhan Liu <yuanhan.liu@linux.intel.com> wrote:
-> > On Tue, Nov 09, 2010 at 11:27:18AM +0000, Chris Wilson wrote:
-> > > I've not looked closely at this yet, but it seems like we should be able
-> > > to hook into a trace_module_notify 
-> > 
-> > But there should be someplace to enable these events, right?  And how do
-> > you tell trace_module_notify to just enable one or several specific
-> > event?
-> 
-> Yes, I was thinking of extending the module loader to permit core to
-> hook into parse_args() and so the trace= facility could work with any
-> module without exporting any new functions.
+Andi Kleen <andi@firstfloor.org> writes:
 
-Exactly, if you want, I probably could whip up a patch.
+> @@ -142,7 +142,7 @@ static int i8k_smm(struct smm_regs *regs)
+>  		"lahf\n\t"
+>  		"shrl $8,%%eax\n\t"
+>  		"andl $1,%%eax\n"
+> -		:"=a"(rc)
+> +		:"=a"(rc), "=m" (*regs)
 
--- Steve
+I think this should be "+m".
 
+Andreas.
 
+-- 
+Andreas Schwab, schwab@redhat.com
+GPG Key fingerprint = D4E8 DBE3 3813 BB5D FA84  5EC7 45C6 250E 6F00 984E
+"And now for something completely different."
