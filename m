@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896Ab0KIMyc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 07:54:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12108 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751165Ab0KIMy3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 07:54:29 -0500
-Date: Tue, 9 Nov 2010 07:53:50 -0500
-From: Josef Bacik <josef@redhat.com>
-To: Will Newton <will.newton@gmail.com>
-Cc: Josef Bacik <josef@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, joel.becker@oracle.com,
-        cmm@us.ibm.com, cluster-devel@redhat.com
-Subject: Re: [PATCH 5/6] Btrfs: fail if we try to use hole punch
-Message-ID: <20101109125350.GE27816@dhcp231-156.rdu.redhat.com>
-References: <1289248327-16308-1-git-send-email-josef@redhat.com> <1289248327-16308-5-git-send-email-josef@redhat.com> <AANLkTiksTsZqo1yUNVEJSiwE-7ccyWDv+wLvTZaoZOJ0@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTiksTsZqo1yUNVEJSiwE-7ccyWDv+wLvTZaoZOJ0@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1751825Ab0KIM6O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 07:58:14 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60582 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221Ab0KIM6L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 07:58:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=ZQna/kMpfpuL+zEr7TI63fqvUez7WQ3GQnz+e6UzTzH/aMf2vNQbpQjlvrIkix/kbS
+         OHNeeY705v6ox+pJ/MPfvoX5oLQIuCyXkfUQ6KV1bYLg7f6mfB/XwN2t4OlrjHIDFFhv
+         1tauYNGP+ocQ1yNUsCj7zKPsP9qMXJn5/VthU=
+From: Marek Belisko <marek.belisko@gmail.com>
+To: Vincent Sanders <support@simtec.co.uk>
+Cc: Marek Belisko <marek.belisko@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] input: touchscreen: s3c2410: Add ABS_PRESSURE event sending.
+Date: Tue,  9 Nov 2010 14:00:16 +0100
+Message-Id: <1289307616-10336-1-git-send-email-marek.belisko@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 09, 2010 at 10:05:34AM +0000, Will Newton wrote:
-> On Mon, Nov 8, 2010 at 8:32 PM, Josef Bacik <josef@redhat.com> wrote:
-> 
-> Hi Josef,
-> 
-> > Btrfs doesn't have the ability to punch holes yet, so make sure we return
-> > EOPNOTSUPP if we try to use hole punching through fallocate.  This support can
-> > be added later.  Thanks,
-> >
-> > Signed-off-by: Josef Bacik <josef@redhat.com>
-> > ---
-> >  fs/btrfs/inode.c |    4 ++++
-> >  1 files changed, 4 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-> > index 78877d7..c590add 100644
-> > --- a/fs/btrfs/inode.c
-> > +++ b/fs/btrfs/inode.c
-> > @@ -6936,6 +6936,10 @@ static long btrfs_fallocate(struct inode *inode, int mode,
-> >        alloc_start = offset & ~mask;
-> >        alloc_end =  (offset + len + mask) & ~mask;
-> >
-> > +       /* We only support the FALLOC_FL_KEEP_SIZE mode */
-> > +       if (mode && (mode & FALLOC_FL_KEEP_SIZE))
-> > +               return -EOPNOTSUPP;
-> > +
-> 
-> This test looks rather odd. Why do we need to test that mode is
-> non-zero AND that mode has a specific bit set? Is there a missing !
-> here?
+This patch add sending of event ABS_PRESSURE for
+s3c24xx touchscreen.
 
-Yeah I'm missing a !, I copy and pasted the wrong bit when I went around adding
-this check to everybody, I'll be fixing it up for the next go around.  Thanks,
+Signed-off-by: Marek Belisko <marek.belisko@gmail.com>
+---
+ drivers/input/touchscreen/s3c2410_ts.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-Josef
+diff --git a/drivers/input/touchscreen/s3c2410_ts.c b/drivers/input/touchscreen/s3c2410_ts.c
+index 8feb7f3..a937105 100644
+--- a/drivers/input/touchscreen/s3c2410_ts.c
++++ b/drivers/input/touchscreen/s3c2410_ts.c
+@@ -126,6 +126,7 @@ static void touch_timer_fire(unsigned long data)
+ 			input_report_abs(ts.input, ABS_Y, ts.yp);
+ 
+ 			input_report_key(ts.input, BTN_TOUCH, 1);
++			input_report_abs(ts.input, ABS_PRESSURE, 1);
+ 			input_sync(ts.input);
+ 
+ 			ts.xp = 0;
+@@ -140,6 +141,7 @@ static void touch_timer_fire(unsigned long data)
+ 		ts.count = 0;
+ 
+ 		input_report_key(ts.input, BTN_TOUCH, 0);
++		input_report_abs(ts.input, ABS_PRESSURE, 0);
+ 		input_sync(ts.input);
+ 
+ 		writel(WAIT4INT | INT_DOWN, ts.io + S3C2410_ADCTSC);
+@@ -314,10 +316,12 @@ static int __devinit s3c2410ts_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	ts.input = input_dev;
+-	ts.input->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
++	ts.input->evbit[0] = BIT_MASK(EV_SYN) | BIT_MASK(EV_KEY) |
++				BIT_MASK(EV_ABS);
+ 	ts.input->keybit[BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH);
+ 	input_set_abs_params(ts.input, ABS_X, 0, 0x3FF, 0, 0);
+ 	input_set_abs_params(ts.input, ABS_Y, 0, 0x3FF, 0, 0);
++	input_set_abs_params(ts.input, ABS_PRESSURE, 0, 1, 0, 0);
+ 
+ 	ts.input->name = "S3C24XX TouchScreen";
+ 	ts.input->id.bustype = BUS_HOST;
+-- 
+1.7.1
+
