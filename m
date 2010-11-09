@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935Ab0KIVZz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 16:25:55 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:2499 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753569Ab0KIVZx (ORCPT
+	id S1755230Ab0KIV0H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 16:26:07 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:34478 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755150Ab0KIV0F convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 16:25:53 -0500
+	Tue, 9 Nov 2010 16:26:05 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=gIY7TvVEh5DlMJalfSdbltysLh9Iy1hRwv7sUhTOF+/m4CCbyhnpELFlRygad/lx2u
-         uKJVuHwWo0JYo9a3cpPw==
-Date: Tue, 9 Nov 2010 13:25:47 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "Figo.zhang" <zhangtianfei@leadcoretech.com>,
-        figo zhang <figo1802@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@osdl.org>
-Subject: Re: [PATCH v2]oom-kill: CAP_SYS_RESOURCE should get bonus
-In-Reply-To: <alpine.DEB.2.00.1011091300510.7730@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1011091319300.7730@chino.kir.corp.google.com>
-References: <1288834737.2124.11.camel@myhost> <alpine.DEB.2.00.1011031847450.21550@chino.kir.corp.google.com> <20101109195726.BC9E.A69D9226@jp.fujitsu.com> <20101109122437.2e0d71fd@lxorguk.ukuu.org.uk>
- <alpine.DEB.2.00.1011091300510.7730@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Q2Hpy0BmrSmZMZOTsmH/LoYc0He1KDS6bojcxtXNuWZe0kqMzLD4ZkpdWhR7ZSCznG
+         BVe7/yRktvX8TXkE71v/CATrdc0Hdp5YS+J26cl8gfgIua+7iWmwbwuQPQ9ZfhjINBqj
+         deJBJRN4asYtavy4rtwvnANU/scV4uH3VvyhM=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+In-Reply-To: <AANLkTinLORQ7Hyn7nqkNZhRbP8iTGRfAXibgY2VeZTPq@mail.gmail.com>
+References: <AANLkTinZF-47WQyF5k1Nv64NjfMNSQ-+oE0eGycR24NM@mail.gmail.com>
+	<AANLkTikB0zhN13u5OtRwviOv-rFDW-vFTmq0t7ALuO7N@mail.gmail.com>
+	<201011091729.17679.arnd@arndb.de>
+	<AANLkTikMjAh+LAFaWELyiJc+ou+N8v_7xhrwHRbBZZQF@mail.gmail.com>
+	<20101109173536.GE9264@atomide.com>
+	<AANLkTinLORQ7Hyn7nqkNZhRbP8iTGRfAXibgY2VeZTPq@mail.gmail.com>
+Date: Tue, 9 Nov 2010 23:26:04 +0200
+Message-ID: <AANLkTimmd=jKk_x4DNao_NG9dEiQtQvOQ=TePn-Dgc_b@mail.gmail.com>
+Subject: Re: [GIT PULL] fixes for tidspbridge 2.6.37-rc1
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg KH <greg@kroah.com>, linux-omap@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Nov 2010, David Rientjes wrote:
+On Tue, Nov 9, 2010 at 7:52 PM, Guzman Lugo, Fernando
+<fernando.lugo@ti.com> wrote:
+> On Tue, Nov 9, 2010 at 11:35 AM, Tony Lindgren <tony@atomide.com> wrote:
+>> * Guzman Lugo, Fernando <fernando.lugo@ti.com> [101109 08:36]:
+>>>
+>>> tidspbridge iommu change are working fine all the patches and few fixes after
+>>> that are alredy sent. what breaks tidspbridge, is the unmerged
+>>> dependencies in linux omap tree, specifically the iommu module patches
+>>> and the SG patch.
+>>
+>> Care to post a series of the missing patches listed above?
+>
+> Here are the missing patches:
+>
+> Fernando Guzman Lugo (4):
+>  iovmm: no gap checking for fixed address
+>  iovmm: add superpages support to fixed da address
+>  iovmm: replace __iounmap with omap_iounmap
+>  iommu: create new api to set valid da range
+>
+> and
+>  scatterlist: define SG chain for arm architecture
 
-> I didn't check earlier, but CAP_SYS_RESOURCE hasn't had a place in the oom 
-> killer's heuristic in over five years, so what regression are we referring 
-> to in this thread?  These tasks already have full control over 
-> oom_score_adj to modify its oom killing priority in either direction.
-> 
+Those are not the only patches needed, you would also need:
+ omap: iommu: make iva2 iommu selectable
+ staging: tidspbridge: enable iva2 iommu
 
-Yes, CAP_SYS_RESOURCE was a part of the heuristic in 2.6.25 along with 
-CAP_SYS_ADMIN and was removed with the rewrite; when I said it "hasn't had 
-a place in the oom killer's heuristic," I meant it's an unnecessary 
-extention to CAP_SYS_ADMIN and allows for killing innocent tasks when a 
-CAP_SYS_RESOURCE task is using too much memory.
+And the one that actually uses the new API for the da range which
+hasn't even been submitted to the mailing list.
 
-The fundamental issue here is whether or not we should give a bonus to 
-CAP_SYS_RESOURCE tasks because they are, by definition, allowed to access 
-extra resources and we're willing to sacrifice other tasks for that.  This 
-is antagonist to the oom killer's sole goal, however, which is to kill the 
-task consuming the largest amount of memory unless protected by userspace 
-(which CAP_SYS_RESOURCE has completely control in doing).
+Personally, I haven't seen the new iommu code working correctly.
 
-Since these threads have complete ability to give themselves this bonus 
-(echo -30 > /proc/self/oom_score_adj), I don't think this needs to be a 
-part of the core heuristic nor with such an arbitrary value of 3% (the old 
-heuristic divided its badness score by 4, another arbitrary value).
+-- 
+Felipe Contreras
