@@ -1,139 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266Ab0KISBV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 13:01:21 -0500
-Received: from mail.perches.com ([173.55.12.10]:4748 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753887Ab0KISBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 13:01:17 -0500
-Subject: [PATCH] fs/ext4/super.c: Use printf extension %pV
-From: Joe Perches <joe@perches.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1754448Ab0KISBq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 13:01:46 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:39734 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754310Ab0KISBn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 13:01:43 -0500
+Subject: Re: Q: perf_event && event->owner
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Prasad <prasad@linux.vnet.ibm.com>, Roland McGrath <roland@redhat.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20101109174219.GA8279@redhat.com>
+References: <20101108145647.GA3426@redhat.com>
+	 <20101108145754.GB3434@redhat.com> <20101108201108.GA6777@nowhere>
+	 <20101109155714.GA1903@redhat.com> <1289321804.2191.57.camel@laptop>
+	 <20101109165805.GA6971@redhat.com> <1289322469.2191.59.camel@laptop>
+	 <20101109174219.GA8279@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 09 Nov 2010 10:01:16 -0800
-Message-ID: <1289325676.1823.78.camel@Joe-Laptop>
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 09 Nov 2010 19:01:43 +0100
+Message-ID: <1289325703.2191.60.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using %pV reduces the number of printk calls and
-eliminates any possible message interleaving from
-other printk calls.
+On Tue, 2010-11-09 at 18:42 +0100, Oleg Nesterov wrote:
+> On 11/09, Peter Zijlstra wrote:
+> >
+> > Ah,.. quite so. So how about we explicitly destroy the list when the
+> > task dies?
+> 
+> Yes, I think it makes sense to destroy the list and set ->owner = NULL.
+> If we reset the owner, we can also avoid get_task_struct().
+> 
+> The only problem is perf_event_release_kernel(), it can race with the
+> exiting event->owner. It can do get_task_struct() under rcu lock temporary,
+> just to take the mutex and remove the entry.
+> 
+> > > And ptrace(), it doesn't use sys_perf_event_open() to create the event.
+> >
+> > Right, I guess it uses kernel based things, I guess we could not add
+> > kernel based counters to the list.
+> 
+> Agreed, another case when event->owner should be NULL.
+> 
+> 
+> 
+> Hmm. With or without these changes. Shouldn't perf_event_release_kernel()
+> remove the event from list before anything else? Otherwise, afaics a thread
+> which does close(event_fd) can race with creator doing prctl(EVENTS_ENABLE),
+> no?
 
-In function __ext4_grp_locked_error also added
-KERN_CONT to some printks.
+I think you're right, how about something like this?
 
-Signed-off-by: Joe Perches <joe@perches.com>
 ---
- fs/ext4/super.c |   51 ++++++++++++++++++++++++++++++++++-----------------
- 1 files changed, 34 insertions(+), 17 deletions(-)
-
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 40131b7..48ef60e 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -388,13 +388,17 @@ static void ext4_handle_error(struct super_block *sb)
- void __ext4_error(struct super_block *sb, const char *function,
- 		  unsigned int line, const char *fmt, ...)
- {
-+	struct va_format vaf;
- 	va_list args;
+Index: linux-2.6/kernel/perf_event.c
+===================================================================
+--- linux-2.6.orig/kernel/perf_event.c
++++ linux-2.6/kernel/perf_event.c
+@@ -2234,11 +2234,6 @@ int perf_event_release_kernel(struct per
+ 	raw_spin_unlock_irq(&ctx->lock);
+ 	mutex_unlock(&ctx->mutex);
  
- 	va_start(args, fmt);
--	printk(KERN_CRIT "EXT4-fs error (device %s): %s:%d: comm %s: ",
--	       sb->s_id, function, line, current->comm);
--	vprintk(fmt, args);
--	printk("\n");
-+
-+	vaf.fmt = fmt;
-+	vaf.va = &args;
-+
-+	printk(KERN_CRIT "EXT4-fs error (device %s): %s:%d: comm %s: %pV\n",
-+	       sb->s_id, function, line, current->comm, &vaf);
-+
- 	va_end(args);
+-	mutex_lock(&event->owner->perf_event_mutex);
+-	list_del_init(&event->owner_entry);
+-	mutex_unlock(&event->owner->perf_event_mutex);
+-	put_task_struct(event->owner);
+-
+ 	free_event(event);
  
- 	ext4_handle_error(sb);
-@@ -543,28 +547,35 @@ void __ext4_abort(struct super_block *sb, const char *function,
- 		panic("EXT4-fs panic from previous error\n");
+ 	return 0;
+@@ -2254,6 +2249,12 @@ static int perf_release(struct inode *in
+ 
+ 	file->private_data = NULL;
+ 
++	if (event->owner) {
++		mutex_lock(&event->owner->perf_event_mutex);
++		list_del_init(&event->owner_entry);
++		mutex_unlock(&event->owner->perf_event_mutex);
++	}
++
+ 	return perf_event_release_kernel(event);
  }
  
--void ext4_msg (struct super_block * sb, const char *prefix,
--		   const char *fmt, ...)
-+void ext4_msg(struct super_block *sb, const char *prefix, const char *fmt, ...)
- {
-+	struct va_format vaf;
- 	va_list args;
+@@ -5677,7 +5678,7 @@ SYSCALL_DEFINE5(perf_event_open,
+ 	mutex_unlock(&ctx->mutex);
  
- 	va_start(args, fmt);
--	printk("%sEXT4-fs (%s): ", prefix, sb->s_id);
--	vprintk(fmt, args);
--	printk("\n");
+ 	event->owner = current;
+-	get_task_struct(current);
 +
-+	vaf.fmt = fmt;
-+	vaf.va = &args;
+ 	mutex_lock(&current->perf_event_mutex);
+ 	list_add_tail(&event->owner_entry, &current->perf_event_list);
+ 	mutex_unlock(&current->perf_event_mutex);
+@@ -5745,12 +5746,6 @@ perf_event_create_kernel_counter(struct 
+ 	++ctx->generation;
+ 	mutex_unlock(&ctx->mutex);
+ 
+-	event->owner = current;
+-	get_task_struct(current);
+-	mutex_lock(&current->perf_event_mutex);
+-	list_add_tail(&event->owner_entry, &current->perf_event_list);
+-	mutex_unlock(&current->perf_event_mutex);
+-
+ 	return event;
+ 
+ err_free:
+@@ -5901,8 +5896,16 @@ static void perf_event_exit_task_context
+  */
+ void perf_event_exit_task(struct task_struct *child)
+ {
++	struct perf_event *event, *tmp;
+ 	int ctxn;
+ 
++	mutex_lock(&child->perf_event_mutex);
++	list_for_each_entry_safe(event, tmp, &child->perf_event_list,
++				 owner_entry) {
++		list_del_init(&event->owner_entry);
++	}
++	mutex_unlock(&child->perf_event_mutex);
 +
-+	printk("%sEXT4-fs (%s): %pV\n", prefix, sb->s_id, &vaf);
-+
- 	va_end(args);
+ 	for_each_task_context_nr(ctxn)
+ 		perf_event_exit_task_context(child, ctxn);
  }
- 
- void __ext4_warning(struct super_block *sb, const char *function,
- 		    unsigned int line, const char *fmt, ...)
- {
-+	struct va_format vaf;
- 	va_list args;
- 
- 	va_start(args, fmt);
--	printk(KERN_WARNING "EXT4-fs warning (device %s): %s:%d: ",
--	       sb->s_id, function, line);
--	vprintk(fmt, args);
--	printk("\n");
-+
-+	vaf.fmt = fmt;
-+	vaf.va = &args;
-+
-+	printk(KERN_WARNING "EXT4-fs warning (device %s): %s:%d: %pV\n",
-+	       sb->s_id, function, line, &vaf);
-+
- 	va_end(args);
- }
- 
-@@ -575,21 +586,27 @@ void __ext4_grp_locked_error(const char *function, unsigned int line,
- __releases(bitlock)
- __acquires(bitlock)
- {
-+	struct va_format vaf;
- 	va_list args;
- 	struct ext4_super_block *es = EXT4_SB(sb)->s_es;
- 
- 	es->s_last_error_ino = cpu_to_le32(ino);
- 	es->s_last_error_block = cpu_to_le64(block);
- 	__save_error_info(sb, function, line);
-+
- 	va_start(args, fmt);
-+
-+	vaf.fmt = fmt;
-+	vaf.va = &args;
-+
- 	printk(KERN_CRIT "EXT4-fs error (device %s): %s:%d: group %u",
- 	       sb->s_id, function, line, grp);
- 	if (ino)
--		printk("inode %lu: ", ino);
-+		printk(KERN_CONT "inode %lu: ", ino);
- 	if (block)
--		printk("block %llu:", (unsigned long long) block);
--	vprintk(fmt, args);
--	printk("\n");
-+		printk(KERN_CONT "block %llu:", (unsigned long long) block);
-+	printk(KERN_CONT "%pV\n", &vaf);
-+
- 	va_end(args);
- 
- 	if (test_opt(sb, ERRORS_CONT)) {
-
 
