@@ -1,124 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180Ab0KIXk1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 18:40:27 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:36170 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751418Ab0KIXk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 18:40:26 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [linux-pm] [GIT PULL] One more power management fix for 2.6.37
-Date: Wed, 10 Nov 2010 00:39:17 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <Pine.LNX.4.44L0.1011041045350.2522-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1011041045350.2522-100000@netrider.rowland.org>
+	id S1754892Ab0KIXll (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 18:41:41 -0500
+Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:50091 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752166Ab0KIXlk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 18:41:40 -0500
+Date: Wed, 10 Nov 2010 10:40:49 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: "Ted Ts'o" <tytso@mit.edu>, Josef Bacik <josef@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        xfs@oss.sgi.com, joel.becker@oracle.com, cmm@us.ibm.com,
+        cluster-devel@redhat.com
+Subject: Re: [PATCH 1/6] fs: add hole punching to fallocate
+Message-ID: <20101109234049.GQ2715@dastard>
+References: <1289248327-16308-1-git-send-email-josef@redhat.com>
+ <20101109011222.GD2715@dastard>
+ <20101109033038.GF3099@thunk.org>
+ <20101109044242.GH2715@dastard>
+ <20101109214147.GK3099@thunk.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011100039.17689.rjw@sisk.pl>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101109214147.GK3099@thunk.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 04, 2010, Alan Stern wrote:
-> On Thu, 4 Nov 2010, Rafael J. Wysocki wrote:
-...
-> This won't work if the callback tries to unregister the device, but of
-> course the old code wouldn't work in that case either.  We should
-> document this requirement.
+On Tue, Nov 09, 2010 at 04:41:47PM -0500, Ted Ts'o wrote:
+> On Tue, Nov 09, 2010 at 03:42:42PM +1100, Dave Chinner wrote:
+> > Implementation is up to the filesystem. However, XFS does (b)
+> > because:
+> > 
+> > 	1) it was extremely simple to implement (one of the
+> > 	   advantages of having an exceedingly complex allocation
+> > 	   interface to begin with :P)
+> > 	2) conversion is atomic, fast and reliable
+> > 	3) it is independent of the underlying storage; and
+> > 	4) reads of unwritten extents operate at memory speed,
+> > 	   not disk speed.
+> 
+> Yeah, I was thinking that using a device-style TRIM might be better
+> since future attempts to write to it won't require a separate seek to
+> modify the extent tree.  But yeah, there are a bunch of advantages of
+> simply mutating the extent tree.
+> 
+> While we're on the subject of changes to fallocate, what do people
+> think of FALLOC_FL_EXPOSE_OLD_DATA, which requires either root
+> privileges or (if capabilities are in use) CAP_DAC_OVERRIDE &&
+> CAP_MAC_OVERRIDE && CAP_SYS_ADMIN.  This would allow a trusted process
+> to fallocate blocks with the extent already marked initialized.  I've
+> had two requests for such functionality for ext4 already.  
 
-As per our discussion in Boston I think we may actually allow
-devices to be unregistered during the late and early phases and
-avoid the locking problem with PCMCIA at the same time.
+We removed that ability from XFS about three years ago because it's
+a massive security hole. e.g. what happens if the file is world
+readable, even though the process that called
+FALLOC_FL_EXPOSE_OLD_DATA was privileged and was allowed to expose
+such data? Or the file is chmod 777 after being exposed?
 
-So, what about the patch below?
+The historical reason for such behaviour existing in XFS was that in
+1997 the CPU and IO latency cost of unwritten extent conversion was
+significant, so users with real physical security (i.e. marines with
+guns) were able to make use of fast preallocation with no conversion
+overhead without caring about the security implications. These days,
+the performance overhead of unwritten extent conversion is minimal -
+I generally can't measure a difference in IO performance as a result
+of it - so there is simply no good reaѕon for leaving such a gaping
+security hole in the system.
 
-Rafael
+If anyone wants to read the underlying data, then use fiemap to map
+the physical blocks and read it directly from the block device. That
+requires root privileges but does not open any new stale data
+exposure problems....
 
----
- drivers/base/power/main.c |   36 +++++++++++++++++++++++++++++++-----
- 1 file changed, 31 insertions(+), 5 deletions(-)
+> (Take for example a trusted cluster filesystem backend that checks the
+> object checksum before returning any data to the user; and if the
+> check fails the cluster file system will try to use some other replica
+> stored on some other server.)
 
-Index: linux-2.6/drivers/base/power/main.c
-===================================================================
---- linux-2.6.orig/drivers/base/power/main.c
-+++ linux-2.6/drivers/base/power/main.c
-@@ -475,20 +475,33 @@ End:
-  */
- void dpm_resume_noirq(pm_message_t state)
- {
--	struct device *dev;
-+	struct list_head list;
- 	ktime_t starttime = ktime_get();
- 
-+	INIT_LIST_HEAD(&list);
- 	mutex_lock(&dpm_list_mtx);
--	transition_started = false;
--	list_for_each_entry(dev, &dpm_list, power.entry)
-+	while (!list_empty(&dpm_list)) {
-+		struct device *dev = to_device(dpm_list.next);
-+
-+		get_device(dev);
- 		if (dev->power.status > DPM_OFF) {
- 			int error;
- 
- 			dev->power.status = DPM_OFF;
-+			mutex_unlock(&dpm_list_mtx);
-+
- 			error = device_resume_noirq(dev, state);
-+
-+			mutex_lock(&dpm_list_mtx);
- 			if (error)
- 				pm_dev_err(dev, state, " early", error);
- 		}
-+		if (!list_empty(&dev->power.entry))
-+			list_move_tail(&dev->power.entry, &list);
-+		put_device(dev);
-+	}
-+	list_splice(&list, &dpm_list);
-+	transition_started = false;
- 	mutex_unlock(&dpm_list_mtx);
- 	dpm_show_time(starttime, state, "early");
- 	resume_device_irqs();
-@@ -789,20 +802,33 @@ End:
-  */
- int dpm_suspend_noirq(pm_message_t state)
- {
--	struct device *dev;
-+	struct list_head list;
- 	ktime_t starttime = ktime_get();
- 	int error = 0;
- 
-+	INIT_LIST_HEAD(&list);
- 	suspend_device_irqs();
- 	mutex_lock(&dpm_list_mtx);
--	list_for_each_entry_reverse(dev, &dpm_list, power.entry) {
-+	while (!list_empty(&dpm_list)) {
-+		struct device *dev = to_device(dpm_list.prev);
-+
-+		get_device(dev);
-+		mutex_unlock(&dpm_list_mtx);
-+
- 		error = device_suspend_noirq(dev, state);
-+
-+		mutex_lock(&dpm_list_mtx);
- 		if (error) {
- 			pm_dev_err(dev, state, " late", error);
-+			put_device(dev);
- 			break;
- 		}
- 		dev->power.status = DPM_OFF_IRQ;
-+		if (!list_empty(&dev->power.entry))
-+			list_move(&dev->power.entry, &list);
-+		put_device(dev);
- 	}
-+	list_splice_tail(&list, &dpm_list);
- 	mutex_unlock(&dpm_list_mtx);
- 	if (error)
- 		dpm_resume_noirq(resume_event(state));
+IOWs, all they want to do is avoid the unwritten extent conversion
+overhead. Time has shown that a bad security/performance tradeoff
+decision was made 13 years ago in XFS, so I see little reason to
+repeat it for ext4 today....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
