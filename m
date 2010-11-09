@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754182Ab0KIRDa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 12:03:30 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:59044 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972Ab0KIRD3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 12:03:29 -0500
-Date: Tue, 9 Nov 2010 09:03:13 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Alexey Fisher <bug-track@fisher-privat.net>
-Cc: <linux-kernel@vger.kernel.org>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Subject: Re: [PATCH 0/2] FAT unified kernel messages
-Message-Id: <20101109090313.c55168ac.randy.dunlap@oracle.com>
-In-Reply-To: <1289321718-6373-1-git-send-email-bug-track@fisher-privat.net>
-References: <1289321718-6373-1-git-send-email-bug-track@fisher-privat.net>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754208Ab0KIREh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 12:04:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6326 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751972Ab0KIREe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 12:04:34 -0500
+Date: Tue, 9 Nov 2010 17:58:05 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Prasad <prasad@linux.vnet.ibm.com>, Roland McGrath <roland@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Q: perf_event && event->owner
+Message-ID: <20101109165805.GA6971@redhat.com>
+References: <20101108145647.GA3426@redhat.com> <20101108145754.GB3434@redhat.com> <20101108201108.GA6777@nowhere> <20101109155714.GA1903@redhat.com> <1289321804.2191.57.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289321804.2191.57.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  9 Nov 2010 17:55:16 +0100 Alexey Fisher wrote:
+On 11/09, Peter Zijlstra wrote:
+>
+> On Tue, 2010-11-09 at 16:57 +0100, Oleg Nesterov wrote:
+> >
+> > If the creator of perf_event dies, nobody can use its ->perf_event_list
+> > anyway. What is the point to keep the reference to the dead task_struct
+> > and preserve this ->perf_event_list?
+>
+> But when the owner dies it will close all its fds, which means it will
+> clear its tsk->perf_event_list, no? (With exception of the case where
+> the fd was passed through a unix-socket to another process).
 
-> Hi all,
-> i do not know best place to send patches for FAT fs, so i send it here.
+fork(), pthread_create(). Only __fput() calls ->release, when the last
+reference to file goes away.
 
-This mailing list is fine, but you should also Cc: the maintainer as listed
-in the MAINTAINERS file:
+And ptrace(), it doesn't use sys_perf_event_open() to create the event.
 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Oleg.
 
-
-> This patchset add function fat_msg and remplace all printk to use it.
-> The major differnce is - it add device name to all messages. 
-> 
-> For example old log:
->  FAT: im filed.
-> new one:
->  FAT-fs (sda1): im filed.
-> 
-> Second reson is, to make FAT logs more grep frendly. So you can grep by "-fs"
-> for (EXT[4,3,2] and FAT), or by device.
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
