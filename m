@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707Ab0KIS0V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 13:26:21 -0500
-Received: from ns2.cypress.com ([157.95.67.5]:63548 "EHLO ns2.cypress.com"
+	id S1754742Ab0KIS00 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 13:26:26 -0500
+Received: from ns2.cypress.com ([157.95.67.5]:63556 "EHLO ns2.cypress.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754599Ab0KIS0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 13:26:16 -0500
+	id S1754705Ab0KIS0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 13:26:22 -0500
 From: Kevin McNeely <kev@cypress.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: David Brown <davidb@codeaurora.org>, Trilok Soni <tsoni@codeaurora.org>,
@@ -16,9 +16,9 @@ Cc: David Brown <davidb@codeaurora.org>, Trilok Soni <tsoni@codeaurora.org>,
         Simtec Linux Team <linux@simtec.co.uk>,
         Henrik Rydberg <rydberg@euromail.se>, Luotao Fu <l.fu@pengutronix.de>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] spi: Cypress TTSP G3 MTDEV SPI Device Driver
-Date: Tue,  9 Nov 2010 10:25:19 -0800
-Message-Id: <1289327120-2612-3-git-send-email-kev@cypress.com>
+Subject: [PATCH] i2c: Cypress TTSP G3 MTDEV I2C Device Driver
+Date: Tue,  9 Nov 2010 10:25:18 -0800
+Message-Id: <1289327120-2612-2-git-send-email-kev@cypress.com>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <Kevin McNeely <kev@cypress.com>
 References: <Kevin McNeely <kev@cypress.com>
@@ -27,33 +27,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initial release of Cypress TTSP Gen3 SPI Device Driver.
-Provides SPI communication modules for the Cypress
+Initial release of Cypress TTSP Gen3 I2C Device Driver.
+Provides i2C communication modules for the Cypress
 TTSP Gen3 MTDEV Core Driver.
 
 Signed-off-by: Kevin McNeely <kev@cypress.com>
 ---
- drivers/input/touchscreen/Kconfig      |   10 +
+ drivers/input/touchscreen/Kconfig      |   10 ++
  drivers/input/touchscreen/Makefile     |    1 +
- drivers/input/touchscreen/cyttsp_spi.c |  303 ++++++++++++++++++++++++++++++++
- 3 files changed, 314 insertions(+), 0 deletions(-)
- create mode 100644 drivers/input/touchscreen/cyttsp_spi.c
+ drivers/input/touchscreen/cyttsp_i2c.c |  185 ++++++++++++++++++++++++++++++++
+ 3 files changed, 196 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/input/touchscreen/cyttsp_i2c.c
 
 diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
-index ee5a31b..052d5e2 100644
+index ee5a31b..bc21ed9 100644
 --- a/drivers/input/touchscreen/Kconfig
 +++ b/drivers/input/touchscreen/Kconfig
 @@ -132,6 +132,16 @@ config TOUCHSCREEN_CYTTSP_CORE
  
  	  If unsure, say N.
  
-+config TOUCHSCREEN_CYTTSP_SPI
-+	bool "Cypress TTSP touchscreen SPI driver"
-+	depends on SPI_MASTER
++config TOUCHSCREEN_CYTTSP_I2C
++	bool "Cypress TTSP touchscreen I2C driver"
++	depends on I2C
 +	depends on TOUCHSCREEN_CYTTSP_CORE
 +	help
 +	  Say Y here if you have a Cypress TTSP touchscreen
-+	  connected to your system with a SPI interface.
++	  connected to your system with an I2C interface.
 +
 +	  If unsure, say N.
 +
@@ -61,25 +61,25 @@ index ee5a31b..052d5e2 100644
  	tristate "Touchscreen support for Dialog Semiconductor DA9034"
  	depends on PMIC_DA903X
 diff --git a/drivers/input/touchscreen/Makefile b/drivers/input/touchscreen/Makefile
-index f629af9..89557f2 100644
+index f629af9..9c142b8 100644
 --- a/drivers/input/touchscreen/Makefile
 +++ b/drivers/input/touchscreen/Makefile
 @@ -17,6 +17,7 @@ obj-$(CONFIG_TOUCHSCREEN_BITSY)		+= h3600_ts_input.o
  obj-$(CONFIG_TOUCHSCREEN_BU21013)       += bu21013_ts.o
  obj-$(CONFIG_TOUCHSCREEN_CY8CTMG110)	+= cy8ctmg110_ts.o
  obj-$(CONFIG_TOUCHSCREEN_CYTTSP_CORE)	+= cyttsp_core.o
-+obj-$(CONFIG_TOUCHSCREEN_CYTTSP_SPI)	+= cyttsp_spi.o
++obj-$(CONFIG_TOUCHSCREEN_CYTTSP_I2C)	+= cyttsp_i2c.o
  obj-$(CONFIG_TOUCHSCREEN_DA9034)	+= da9034-ts.o
  obj-$(CONFIG_TOUCHSCREEN_DYNAPRO)	+= dynapro.o
  obj-$(CONFIG_TOUCHSCREEN_HAMPSHIRE)	+= hampshire.o
-diff --git a/drivers/input/touchscreen/cyttsp_spi.c b/drivers/input/touchscreen/cyttsp_spi.c
+diff --git a/drivers/input/touchscreen/cyttsp_i2c.c b/drivers/input/touchscreen/cyttsp_i2c.c
 new file mode 100644
-index 0000000..9f05de4
+index 0000000..cacfe4d
 --- /dev/null
-+++ b/drivers/input/touchscreen/cyttsp_spi.c
-@@ -0,0 +1,303 @@
++++ b/drivers/input/touchscreen/cyttsp_i2c.c
+@@ -0,0 +1,185 @@
 +/* Source for:
-+ * Cypress TrueTouch(TM) Standard Product (TTSP) SPI touchscreen driver.
++ * Cypress TrueTouch(TM) Standard Product (TTSP) I2C touchscreen driver.
 + * For use with Cypress Txx3xx parts.
 + * Supported parts include:
 + * CY8CTST341
@@ -107,172 +107,50 @@ index 0000000..9f05de4
 +
 +#include "cyttsp_core.h"
 +
-+#include <linux/spi/spi.h>
-+#include <linux/delay.h>
++#include <linux/i2c.h>
++#include <linux/slab.h>
 +
-+#define CY_SPI_WR_OP      0x00 /* r/~w */
-+#define CY_SPI_RD_OP      0x01
-+#define CY_SPI_CMD_BYTES  4
-+#define CY_SPI_SYNC_BYTES 2
-+#define CY_SPI_SYNC_ACK1  0x62 /* from protocol v.2 */
-+#define CY_SPI_SYNC_ACK2  0x9D /* from protocol v.2 */
-+#define CY_SPI_DATA_SIZE  128
-+#define CY_SPI_DATA_BUF_SIZE (CY_SPI_CMD_BYTES + CY_SPI_DATA_SIZE)
-+#define CY_SPI_BITS_PER_WORD 8
++#define CY_I2C_DATA_SIZE  128
 +
-+struct cyttsp_spi {
++struct cyttsp_i2c {
 +	struct cyttsp_bus_ops ops;
-+	struct spi_device *spi_client;
++	struct i2c_client *client;
 +	void *ttsp_client;
-+	u8 wr_buf[CY_SPI_DATA_BUF_SIZE];
-+	u8 rd_buf[CY_SPI_DATA_BUF_SIZE];
++	u8 wr_buf[CY_I2C_DATA_SIZE];
 +};
 +
-+static void spi_complete(void *arg)
++static s32 ttsp_i2c_read_block_data(void *handle, u8 addr,
++	u8 length, void *values)
 +{
-+	complete(arg);
-+}
++	struct cyttsp_i2c *ts = container_of(handle, struct cyttsp_i2c, ops);
++	int retval = 0;
 +
-+static int spi_sync_tmo(struct cyttsp_spi *ts, struct spi_message *message)
-+{
-+	DECLARE_COMPLETION_ONSTACK(done);
-+	int status;
-+
-+	message->complete = spi_complete;
-+	message->context = &done;
-+	status = spi_async(ts->spi_client, message);
-+	if (status == 0) {
-+		int ret = wait_for_completion_interruptible_timeout(&done, HZ);
-+		if (!ret) {
-+			dev_dbg(ts->ops.dev, "%s: timeout\n", __func__);
-+			status = -EIO;
-+		} else
-+			status = message->status;
-+	}
-+	message->context = NULL;
-+	return status;
-+}
-+
-+static int cyttsp_spi_xfer_(u8 op, struct cyttsp_spi *ts,
-+			    u8 reg, u8 *buf, int length)
-+{
-+	struct spi_message msg;
-+	struct spi_transfer xfer = { 0 };
-+	u8 *wr_buf = ts->wr_buf;
-+	u8 *rd_buf = ts->rd_buf;
-+	int retval;
-+	int i;
-+
-+	if (length > CY_SPI_DATA_SIZE) {
-+		dev_dbg(ts->ops.dev, "%s: length %d is too big.\n",
-+			__func__, length);
-+		return -EINVAL;
-+	}
-+	dev_dbg(ts->ops.dev, "%s: OP=%s length=%d\n", __func__,
-+		   op == CY_SPI_RD_OP ? "Read" : "Write", length);
-+
-+	wr_buf[0] = 0x00; /* header byte 0 */
-+	wr_buf[1] = 0xFF; /* header byte 1 */
-+	wr_buf[2] = reg;  /* reg index */
-+	wr_buf[3] = op;   /* r/~w */
-+	if (op == CY_SPI_WR_OP)
-+		memcpy(wr_buf + CY_SPI_CMD_BYTES, buf, length);
-+
-+	xfer.tx_buf = wr_buf;
-+	xfer.rx_buf = rd_buf;
-+	xfer.len = length + CY_SPI_CMD_BYTES;
-+
-+	if ((op == CY_SPI_RD_OP) && (xfer.len < 32))
-+		xfer.len += 1;
-+
-+	spi_message_init(&msg);
-+	spi_message_add_tail(&xfer, &msg);
-+	retval = spi_sync_tmo(ts, &msg);
-+	if (retval < 0) {
-+		dev_dbg(ts->ops.dev, "%s: spi_sync_tmo() error %d\n",
-+			__func__, retval);
-+		retval = 0;
-+	}
-+	if (op == CY_SPI_RD_OP) {
-+		for (i = 0; i < (length + CY_SPI_CMD_BYTES - 1); i++) {
-+			if ((rd_buf[i] != CY_SPI_SYNC_ACK1) ||
-+				(rd_buf[i + 1] != CY_SPI_SYNC_ACK2)) {
-+				continue;
-+			}
-+			if (i <= (CY_SPI_CMD_BYTES - 1)) {
-+				memcpy(buf, (rd_buf + i + CY_SPI_SYNC_BYTES),
-+					length);
-+				return 0;
-+			}
-+		}
-+		dev_dbg(ts->ops.dev, "%s: byte sync error\n", __func__);
-+		retval = 1;
-+	}
-+	return retval;
-+}
-+
-+static int cyttsp_spi_xfer(u8 op, struct cyttsp_spi *ts,
-+			    u8 reg, u8 *buf, int length)
-+{
-+	int tries;
-+	int retval;
-+
-+	if (op == CY_SPI_RD_OP) {
-+		for (tries = CY_NUM_RETRY; tries; tries--) {
-+			retval = cyttsp_spi_xfer_(op, ts, reg, buf, length);
-+			if (retval == 0)
-+				break;
-+			else
-+				msleep(20);
-+		}
-+	} else {
-+		retval = cyttsp_spi_xfer_(op, ts, reg, buf, length);
-+	}
-+
-+	return retval;
-+}
-+
-+static s32 ttsp_spi_read_block_data(void *handle, u8 addr,
-+				    u8 length, void *data)
-+{
-+	struct cyttsp_spi *ts = container_of(handle, struct cyttsp_spi, ops);
-+	int retval;
-+
-+	retval = cyttsp_spi_xfer(CY_SPI_RD_OP, ts, addr, data, length);
++	retval = i2c_master_send(ts->client, &addr, 1);
 +	if (retval < 0)
-+		dev_dbg(ts->ops.dev,  "%s: ttsp_spi_read_block_data failed\n",
-+			__func__);
-+
-+	/* Do not print the above error if the data sync bytes were not found.
-+	 * This is a normal condition for the bootloader loader startup and need
-+	 * to retry until data sync bytes are found.
-+	 */
-+	if (retval > 0)
-+		retval = -1;	/* now signal fail; so retry can be done */
-+
-+	return retval;
-+}
-+
-+static s32 ttsp_spi_write_block_data(void *handle, u8 addr,
-+				     u8 length, const void *data)
-+{
-+	struct cyttsp_spi *ts = container_of(handle, struct cyttsp_spi, ops);
-+	int retval;
-+
-+	retval = cyttsp_spi_xfer(CY_SPI_WR_OP, ts, addr, (void *)data, length);
-+	if (retval < 0)
-+		dev_dbg(ts->ops.dev, "%s: ttsp_spi_write_block_data failed\n",
-+			__func__);
-+
-+	if (retval == -EIO)
-+		return 0;
-+	else
 +		return retval;
++
++	retval = i2c_master_recv(ts->client, values, length);
++
++	return (retval < 0) ? retval : 0;
 +}
 +
-+static s32 ttsp_spi_tch_ext(void *handle, void *values)
++static s32 ttsp_i2c_write_block_data(void *handle, u8 addr,
++	u8 length, const void *values)
 +{
-+	struct cyttsp_spi *ts = container_of(handle, struct cyttsp_spi, ops);
++	struct cyttsp_i2c *ts = container_of(handle, struct cyttsp_i2c, ops);
++	int retval;
++
++	ts->wr_buf[0] = addr;
++	memcpy(&ts->wr_buf[1], values, length);
++
++	retval = i2c_master_send(ts->client, ts->wr_buf, length+1);
++
++	return (retval < 0) ? retval : 0;
++}
++
++static s32 ttsp_i2c_tch_ext(void *handle, void *values)
++{
++	struct cyttsp_i2c *ts = container_of(handle, struct cyttsp_i2c, ops);
 +	int retval = 0;
 +
 +	/* TODO: Add custom touch extension handling code here
@@ -280,42 +158,38 @@ index 0000000..9f05de4
 +	 *	retval = 0 if normal touch handling is required,
 +	 *	retval > 0 if normal touch handling is *not* required
 +	 */
-+
 +	if (!ts || !values)
 +		retval = -EIO;
 +
 +	return retval;
 +}
-+
-+static int __devinit cyttsp_spi_probe(struct spi_device *spi)
++static int __devinit cyttsp_i2c_probe(struct i2c_client *client,
++	const struct i2c_device_id *id)
 +{
-+	struct cyttsp_spi *ts;
++	struct cyttsp_i2c *ts;
 +	int retval;
 +
-+	/* Set up SPI*/
-+	spi->bits_per_word = CY_SPI_BITS_PER_WORD;
-+	spi->mode = SPI_MODE_0;
-+	retval = spi_setup(spi);
-+	if (retval < 0) {
-+		dev_dbg(&spi->dev, "%s: SPI setup error %d\n",
-+			__func__, retval);
-+		return retval;
-+	}
++	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C))
++		return -EIO;
 +
++	/* allocate and clear memory */
 +	ts = kzalloc(sizeof(*ts), GFP_KERNEL);
 +	if (ts == NULL) {
-+		dev_dbg(&spi->dev, "%s: Error, kzalloc\n", __func__);
++		dev_dbg(&client->dev, "%s: Error, kzalloc.\n", __func__);
 +		retval = -ENOMEM;
 +		goto error_alloc_data_failed;
 +	}
-+	ts->spi_client = spi;
-+	dev_set_drvdata(&spi->dev, ts);
-+	ts->ops.write = ttsp_spi_write_block_data;
-+	ts->ops.read = ttsp_spi_read_block_data;
-+	ts->ops.ext = ttsp_spi_tch_ext;
-+	ts->ops.dev = &spi->dev;
 +
-+	retval = cyttsp_core_init(&ts->ops, &spi->dev,  &ts->ttsp_client);
++	/* register driver_data */
++	ts->client = client;
++	i2c_set_clientdata(client, ts);
++	ts->ops.write = ttsp_i2c_write_block_data;
++	ts->ops.read = ttsp_i2c_read_block_data;
++	ts->ops.ext = ttsp_i2c_tch_ext;
++	ts->ops.dev = &client->dev;
++	ts->ops.dev->bus = &i2c_bus_type;
++
++	retval = cyttsp_core_init(&ts->ops, &client->dev, &ts->ttsp_client);
 +	if (retval)
 +		goto ttsp_core_err;
 +
@@ -329,58 +203,66 @@ index 0000000..9f05de4
 +	return retval;
 +}
 +
-+static int __devexit cyttsp_spi_remove(struct spi_device *spi)
-+{
-+	struct cyttsp_spi *ts = dev_get_drvdata(&spi->dev);
 +
++/* registered in driver struct */
++static int __devexit cyttsp_i2c_remove(struct i2c_client *client)
++{
++	struct cyttsp_i2c *ts;
++
++	ts = i2c_get_clientdata(client);
 +	cyttsp_core_release(ts->ttsp_client);
 +	kfree(ts);
 +	return 0;
 +}
 +
 +#ifdef CONFIG_PM
-+static int cyttsp_spi_suspend(struct spi_device *spi, pm_message_t message)
++static int cyttsp_i2c_suspend(struct i2c_client *client, pm_message_t message)
 +{
-+	return cyttsp_suspend(dev_get_drvdata(&spi->dev));
++	return cyttsp_suspend(dev_get_drvdata(&client->dev));
 +}
 +
-+static int cyttsp_spi_resume(struct spi_device *spi)
++static int cyttsp_i2c_resume(struct i2c_client *client)
 +{
-+	return cyttsp_resume(dev_get_drvdata(&spi->dev));
++	return cyttsp_resume(dev_get_drvdata(&client->dev));
 +}
 +#endif
 +
-+static struct spi_driver cyttsp_spi_driver = {
++static const struct i2c_device_id cyttsp_i2c_id[] = {
++	{ CY_I2C_NAME, 0 },  { }
++};
++
++static struct i2c_driver cyttsp_i2c_driver = {
 +	.driver = {
-+		.name = CY_SPI_NAME,
-+		.bus = &spi_bus_type,
++		.name = CY_I2C_NAME,
 +		.owner = THIS_MODULE,
 +	},
-+	.probe = cyttsp_spi_probe,
-+	.remove = __devexit_p(cyttsp_spi_remove),
++	.probe = cyttsp_i2c_probe,
++	.remove = __devexit_p(cyttsp_i2c_remove),
++	.id_table = cyttsp_i2c_id,
 +#ifdef CONFIG_PM
-+	.suspend = cyttsp_spi_suspend,
-+	.resume = cyttsp_spi_resume,
++	.suspend = cyttsp_i2c_suspend,
++	.resume = cyttsp_i2c_resume,
 +#endif
 +};
 +
-+static int __init cyttsp_spi_init(void)
++static int __init cyttsp_i2c_init(void)
 +{
-+	return spi_register_driver(&cyttsp_spi_driver);
++	return i2c_add_driver(&cyttsp_i2c_driver);
 +}
-+module_init(cyttsp_spi_init);
 +
-+static void __exit cyttsp_spi_exit(void)
++static void __exit cyttsp_i2c_exit(void)
 +{
-+	spi_unregister_driver(&cyttsp_spi_driver);
++	return i2c_del_driver(&cyttsp_i2c_driver);
 +}
-+module_exit(cyttsp_spi_exit);
 +
-+MODULE_ALIAS("spi:cyttsp");
++module_init(cyttsp_i2c_init);
++module_exit(cyttsp_i2c_exit);
++
++MODULE_ALIAS("i2c:cyttsp");
 +MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("Cypress TrueTouch(R) Standard Product (TTSP) SPI driver");
++MODULE_DESCRIPTION("Cypress TrueTouch(R) Standard Product (TTSP) I2C driver");
 +MODULE_AUTHOR("Cypress");
-+
++MODULE_DEVICE_TABLE(i2c, cyttsp_i2c_id);
 -- 
 1.7.2.1
 
