@@ -1,92 +1,413 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754408Ab0KIUnL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 15:43:11 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:59397 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350Ab0KIUnI convert rfc822-to-8bit (ORCPT
+	id S1754879Ab0KIUsZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 15:48:25 -0500
+Received: from nm7.bullet.mail.ukl.yahoo.com ([217.146.182.248]:46217 "HELO
+	nm7.bullet.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753911Ab0KIUsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 15:43:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=WHRi0jwkEDIJeQbjmeY4aFOxaFZAQg8bPB/c0uLnKmYGAnVaT4aUybbDpY2nHCG3KD
-         v1M5sy2jpPwklL3I2MvVh7I/s17l7B2axbTZiclPmk51gS11TLiSgtqI1q19jRapTO7S
-         lQlyvKaosANQUPEjZRnqlI2cZnXDcZQ/UNlls=
-MIME-Version: 1.0
-In-Reply-To: <20101025235804.GA11760@outflux.net>
-References: <20101025235804.GA11760@outflux.net>
-Date: Tue, 9 Nov 2010 22:43:07 +0200
-X-Google-Sender-Auth: RV803rItPJhwHQGSFQbtp_gpchY
-Message-ID: <AANLkTi=c4kt46Pa1FA-e8=36Vn0KcmZgHHKWKZ_bgvzL@mail.gmail.com>
-Subject: Re: [PATCH] ipc: explicitly clear stack memory in user structs
-From: Pekka Enberg <penberg@kernel.org>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        Manfred Spraul <manfred@colorfullife.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 9 Nov 2010 15:48:20 -0500
+X-Yahoo-Newman-Id: 128123.20695.bm@omp1013.mail.ukl.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.fr;
+  h=DKIM-Signature:Message-ID:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:Received:Date:From:To:Cc:Subject;
+  b=MS9IKJo8GZOBTlSMp1NeJZXlEDnhFeb4aQEW4B9oiNl3lT6HF2Lz+A4MZwvUDGOL32vdpe7I5JdMfLlWI+6gOwhuENaitJK2VZC7kl9nu2+I5ylIWw3uLl7HK0s/M5xudcgxa75vh41uf4T4vUOqRakQ592Ho1BD+F55n1TM7YI=  ;
+Message-ID: <902792.32985.qm@smtp148.mail.ukl.yahoo.com>
+X-Yahoo-SMTP: zgdcvJ6swBBcTOk5fgveL37ak9AQxYCP7GdO
+X-YMail-OSG: jtDsVq4VM1mjtDK8t0hiB7rZhlt6Byyo0AdaZUxKWUT6cT.
+ qBz4QzA2Np..DqdoRh35swa9EXa0XJqSSzKuR1k4NdI19RlFP8RwDLp9jNyC
+ tA3xr7c6Qxy31o4C_vfXAJvjHkpuv98iS2CU8ASQo4.Ia2S4otPfpjlMqxcN
+ ECtP4o3ROM4HWS7G5fH95vqjVJk69zE7ozt1kY5V.L1KzgDLCIag1wCYFfAx
+ BWeCnj5K50Z0_idFxR9jmpqN6eILK31zeTxfvmyrBk7ZkuIugNpmSLCPtI.B
+ yvEXDPKjmFE1shJiFQiCrCUWow5x0RMRD77wfY55m_nK85rfCZwxDsr1_J9w
+ .jYB1TZ4SZsJlCfylciM-
+X-Yahoo-Newman-Property: ymail-3
+Date: Tue, 09 Nov 2010 21:48:29 +0100
+From: Lionel Debroux <lionel_debroux@yahoo.fr>
+To: kernel-janitors@vger.kernel.org
+Cc: Kees Cook <kees.cook@canonical.com>, Emese Revfy <re.emese@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3 v2] backlight: constify backlight_ops
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 26, 2010 at 2:58 AM, Kees Cook <kees.cook@canonical.com> wrote:
-> CVE-2010-4072
->
-> The old shm interface will leak a few bytes of stack contents. Explicitly
-> clear structure using memset instead of C99-style initialization in case
-> there are ever holes in the packing.
->
-> Cc: stable <stable@kernel.org>
-> Signed-off-by: Kees Cook <kees.cook@canonical.com>
+Patch against mainline.
 
-This looks like a genuine bug fix but I don't see this patch in
-mainline. Why is that?
+One non-const struct instance constified by this patch was added after the
+the introduction of backlight_ops in checkpatch.pl's list of "should be const"
+structs (79404849e90a41ea2109bd0e2f7c7164b0c4ce73).
 
-> ---
->
-> This was originally sent as http://lkml.org/lkml/2010/10/6/486 but was
-> never taken into any tree.
->
-> ---
->  ipc/shm.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
->
-> diff --git a/ipc/shm.c b/ipc/shm.c
-> index 52ed77e..f943b1e 100644
-> --- a/ipc/shm.c
-> +++ b/ipc/shm.c
-> @@ -473,6 +473,7 @@ static inline unsigned long copy_shmid_to_user(void __user *buf, struct shmid64_
->            {
->                struct shmid_ds out;
->
-> +               memset(&out, 0, sizeof(out));
->                ipc64_perm_to_ipc_perm(&in->shm_perm, &out.shm_perm);
->                out.shm_segsz   = in->shm_segsz;
->                out.shm_atime   = in->shm_atime;
-> @@ -524,6 +525,7 @@ static inline unsigned long copy_shminfo_to_user(void __user *buf, struct shminf
->            {
->                struct shminfo out;
->
-> +               memset(&out, 0, sizeof(out));
->                if(in->shmmax > INT_MAX)
->                        out.shmmax = INT_MAX;
->                else
-> --
-> 1.7.1
->
-> --
-> Kees Cook
-> Ubuntu Security Team
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Changes since v1: commit message only.
+
+---
+
+Subject: [PATCH 1/3] backlight: constify backlight_ops
+
+backlight_device_register has been expecting a const "ops" argument, and using
+it as such, since 9905a43b2d563e6f89e4c63c4278ada03f2ebb14. Let's make the
+remaining backlight_ops instances const.
+
+Inspired by hunks of the grsecurity patch, updated for newer kernels.
+
+Signed-off-by: Lionel Debroux <lionel_debroux@yahoo.fr>
+---
+ drivers/acpi/video.c                            |    2 +-
+ drivers/gpu/drm/nouveau/nouveau_backlight.c     |    4 ++--
+ drivers/macintosh/via-pmu-backlight.c           |    4 ++--
+ drivers/platform/x86/acer-wmi.c                 |    2 +-
+ drivers/platform/x86/asus-laptop.c              |    2 +-
+ drivers/platform/x86/asus_acpi.c                |    2 +-
+ drivers/platform/x86/dell-laptop.c              |    2 +-
+ drivers/platform/x86/eeepc-laptop.c             |    2 +-
+ drivers/platform/x86/fujitsu-laptop.c           |    2 +-
+ drivers/platform/x86/sony-laptop.c              |    2 +-
+ drivers/platform/x86/thinkpad_acpi.c            |    2 +-
+ drivers/platform/x86/toshiba_acpi.c             |    2 +-
+ drivers/staging/msm/msm_fb_bl.c                 |    2 +-
+ drivers/staging/olpc_dcon/olpc_dcon.c           |    2 +-
+ drivers/staging/samsung-laptop/samsung-laptop.c |    2 +-
+ drivers/video/atmel_lcdfb.c                     |    2 +-
+ drivers/video/aty/aty128fb.c                    |    2 +-
+ drivers/video/aty/atyfb_base.c                  |    2 +-
+ drivers/video/aty/radeon_backlight.c            |    2 +-
+ drivers/video/backlight/88pm860x_bl.c           |    2 +-
+ drivers/video/backlight/max8925_bl.c            |    2 +-
+ drivers/video/nvidia/nv_backlight.c             |    2 +-
+ drivers/video/omap2/displays/panel-taal.c       |    2 +-
+ drivers/video/riva/fbdev.c                      |    2 +-
+ 24 files changed, 26 insertions(+), 26 deletions(-)
+
+diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+index 5cd0228..15a0fde 100644
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -260,7 +260,7 @@ static int acpi_video_set_brightness(struct backlight_device *bd)
+ 				vd->brightness->levels[request_level]);
+ }
+ 
+-static struct backlight_ops acpi_backlight_ops = {
++static const struct backlight_ops acpi_backlight_ops = {
+ 	.get_brightness = acpi_video_get_brightness,
+ 	.update_status  = acpi_video_set_brightness,
+ };
+diff --git a/drivers/gpu/drm/nouveau/nouveau_backlight.c b/drivers/gpu/drm/nouveau/nouveau_backlight.c
+index 406228f..8933e98 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_backlight.c
++++ b/drivers/gpu/drm/nouveau/nouveau_backlight.c
+@@ -58,7 +58,7 @@ static int nv40_set_intensity(struct backlight_device *bd)
+ 	return 0;
+ }
+ 
+-static struct backlight_ops nv40_bl_ops = {
++static const struct backlight_ops nv40_bl_ops = {
+ 	.options = BL_CORE_SUSPENDRESUME,
+ 	.get_brightness = nv40_get_intensity,
+ 	.update_status = nv40_set_intensity,
+@@ -81,7 +81,7 @@ static int nv50_set_intensity(struct backlight_device *bd)
+ 	return 0;
+ }
+ 
+-static struct backlight_ops nv50_bl_ops = {
++static const struct backlight_ops nv50_bl_ops = {
+ 	.options = BL_CORE_SUSPENDRESUME,
+ 	.get_brightness = nv50_get_intensity,
+ 	.update_status = nv50_set_intensity,
+diff --git a/drivers/macintosh/via-pmu-backlight.c b/drivers/macintosh/via-pmu-backlight.c
+index 1cec02f..ade1e65 100644
+--- a/drivers/macintosh/via-pmu-backlight.c
++++ b/drivers/macintosh/via-pmu-backlight.c
+@@ -15,7 +15,7 @@
+ 
+ #define MAX_PMU_LEVEL 0xFF
+ 
+-static struct backlight_ops pmu_backlight_data;
++static const struct backlight_ops pmu_backlight_data;
+ static DEFINE_SPINLOCK(pmu_backlight_lock);
+ static int sleeping, uses_pmu_bl;
+ static u8 bl_curve[FB_BACKLIGHT_LEVELS];
+@@ -115,7 +115,7 @@ static int pmu_backlight_get_brightness(struct backlight_device *bd)
+ 	return bd->props.brightness;
+ }
+ 
+-static struct backlight_ops pmu_backlight_data = {
++static const struct backlight_ops pmu_backlight_data = {
+ 	.get_brightness	= pmu_backlight_get_brightness,
+ 	.update_status	= pmu_backlight_update_status,
+ 
+diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+index c8c6537..1d0b707 100644
+--- a/drivers/platform/x86/acer-wmi.c
++++ b/drivers/platform/x86/acer-wmi.c
+@@ -915,7 +915,7 @@ static int update_bl_status(struct backlight_device *bd)
+ 	return 0;
+ }
+ 
+-static struct backlight_ops acer_bl_ops = {
++static const struct backlight_ops acer_bl_ops = {
+ 	.get_brightness = read_brightness,
+ 	.update_status = update_bl_status,
+ };
+diff --git a/drivers/platform/x86/asus-laptop.c b/drivers/platform/x86/asus-laptop.c
+index 60a5a5c..3640599 100644
+--- a/drivers/platform/x86/asus-laptop.c
++++ b/drivers/platform/x86/asus-laptop.c
+@@ -621,7 +621,7 @@ static int update_bl_status(struct backlight_device *bd)
+ 	return asus_lcd_set(asus, value);
+ }
+ 
+-static struct backlight_ops asusbl_ops = {
++static const struct backlight_ops asusbl_ops = {
+ 	.get_brightness = asus_read_brightness,
+ 	.update_status = update_bl_status,
+ };
+diff --git a/drivers/platform/x86/asus_acpi.c b/drivers/platform/x86/asus_acpi.c
+index ca05aef..4633fd8 100644
+--- a/drivers/platform/x86/asus_acpi.c
++++ b/drivers/platform/x86/asus_acpi.c
+@@ -1467,7 +1467,7 @@ static int asus_hotk_remove(struct acpi_device *device, int type)
+ 	return 0;
+ }
+ 
+-static struct backlight_ops asus_backlight_data = {
++static const struct backlight_ops asus_backlight_data = {
+ 	.get_brightness = read_brightness,
+ 	.update_status  = set_brightness_status,
+ };
+diff --git a/drivers/platform/x86/dell-laptop.c b/drivers/platform/x86/dell-laptop.c
+index cf8a89a..34657f9 100644
+--- a/drivers/platform/x86/dell-laptop.c
++++ b/drivers/platform/x86/dell-laptop.c
+@@ -546,7 +546,7 @@ out:
+ 	return buffer->output[1];
+ }
+ 
+-static struct backlight_ops dell_ops = {
++static const struct backlight_ops dell_ops = {
+ 	.get_brightness = dell_get_intensity,
+ 	.update_status  = dell_send_intensity,
+ };
+diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
+index b2edfdc..c062a65 100644
+--- a/drivers/platform/x86/eeepc-laptop.c
++++ b/drivers/platform/x86/eeepc-laptop.c
+@@ -1115,7 +1115,7 @@ static int update_bl_status(struct backlight_device *bd)
+ 	return set_brightness(bd, bd->props.brightness);
+ }
+ 
+-static struct backlight_ops eeepcbl_ops = {
++static const struct backlight_ops eeepcbl_ops = {
+ 	.get_brightness = read_brightness,
+ 	.update_status = update_bl_status,
+ };
+diff --git a/drivers/platform/x86/fujitsu-laptop.c b/drivers/platform/x86/fujitsu-laptop.c
+index f44cd26..34d0dc5 100644
+--- a/drivers/platform/x86/fujitsu-laptop.c
++++ b/drivers/platform/x86/fujitsu-laptop.c
+@@ -437,7 +437,7 @@ static int bl_update_status(struct backlight_device *b)
+ 	return ret;
+ }
+ 
+-static struct backlight_ops fujitsubl_ops = {
++static const struct backlight_ops fujitsubl_ops = {
+ 	.get_brightness = bl_get_brightness,
+ 	.update_status = bl_update_status,
+ };
+diff --git a/drivers/platform/x86/sony-laptop.c b/drivers/platform/x86/sony-laptop.c
+index f200677..f8b2fc9 100644
+--- a/drivers/platform/x86/sony-laptop.c
++++ b/drivers/platform/x86/sony-laptop.c
+@@ -856,7 +856,7 @@ static int sony_backlight_get_brightness(struct backlight_device *bd)
+ }
+ 
+ static struct backlight_device *sony_backlight_device;
+-static struct backlight_ops sony_backlight_ops = {
++static const struct backlight_ops sony_backlight_ops = {
+ 	.update_status = sony_backlight_update_status,
+ 	.get_brightness = sony_backlight_get_brightness,
+ };
+diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
+index 2d61186..0e4387c 100644
+--- a/drivers/platform/x86/thinkpad_acpi.c
++++ b/drivers/platform/x86/thinkpad_acpi.c
+@@ -6109,7 +6109,7 @@ static void tpacpi_brightness_notify_change(void)
+ 			       BACKLIGHT_UPDATE_HOTKEY);
+ }
+ 
+-static struct backlight_ops ibm_backlight_data = {
++static const struct backlight_ops ibm_backlight_data = {
+ 	.get_brightness = brightness_get,
+ 	.update_status  = brightness_update_status,
+ };
+diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
+index 06f304f..81bca5a 100644
+--- a/drivers/platform/x86/toshiba_acpi.c
++++ b/drivers/platform/x86/toshiba_acpi.c
+@@ -840,7 +840,7 @@ static void remove_toshiba_proc_entries(void)
+ 	remove_proc_entry("version", toshiba_proc_dir);
+ }
+ 
+-static struct backlight_ops toshiba_backlight_data = {
++static const struct backlight_ops toshiba_backlight_data = {
+         .get_brightness = get_lcd,
+         .update_status  = set_lcd_status,
+ };
+diff --git a/drivers/staging/msm/msm_fb_bl.c b/drivers/staging/msm/msm_fb_bl.c
+index 033fc94..2a80775 100644
+--- a/drivers/staging/msm/msm_fb_bl.c
++++ b/drivers/staging/msm/msm_fb_bl.c
+@@ -42,7 +42,7 @@ static int msm_fb_bl_update_status(struct backlight_device *pbd)
+ 	return 0;
+ }
+ 
+-static struct backlight_ops msm_fb_bl_ops = {
++static const struct backlight_ops msm_fb_bl_ops = {
+ 	.get_brightness = msm_fb_bl_get_brightness,
+ 	.update_status = msm_fb_bl_update_status,
+ };
+diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c b/drivers/staging/olpc_dcon/olpc_dcon.c
+index 75aa7a36..d40ff41 100644
+--- a/drivers/staging/olpc_dcon/olpc_dcon.c
++++ b/drivers/staging/olpc_dcon/olpc_dcon.c
+@@ -616,7 +616,7 @@ static struct device_attribute dcon_device_files[] = {
+ 	__ATTR(resumeline, 0644, dcon_resumeline_show, dcon_resumeline_store),
+ };
+ 
+-static struct backlight_ops dcon_bl_ops = {
++static const struct backlight_ops dcon_bl_ops = {
+ 	.get_brightness = dconbl_get,
+ 	.update_status = dconbl_set
+ };
+diff --git a/drivers/staging/samsung-laptop/samsung-laptop.c b/drivers/staging/samsung-laptop/samsung-laptop.c
+index eb44b60..80eeec6 100644
+--- a/drivers/staging/samsung-laptop/samsung-laptop.c
++++ b/drivers/staging/samsung-laptop/samsung-laptop.c
+@@ -269,7 +269,7 @@ static int update_status(struct backlight_device *bd)
+ 	return 0;
+ }
+ 
+-static struct backlight_ops backlight_ops = {
++static const struct backlight_ops backlight_ops = {
+ 	.get_brightness	= get_brightness,
+ 	.update_status	= update_status,
+ };
+diff --git a/drivers/video/atmel_lcdfb.c b/drivers/video/atmel_lcdfb.c
+index 8dce251..bac16345 100644
+--- a/drivers/video/atmel_lcdfb.c
++++ b/drivers/video/atmel_lcdfb.c
+@@ -111,7 +111,7 @@ static int atmel_bl_get_brightness(struct backlight_device *bl)
+ 	return lcdc_readl(sinfo, ATMEL_LCDC_CONTRAST_VAL);
+ }
+ 
+-static struct backlight_ops atmel_lcdc_bl_ops = {
++static const struct backlight_ops atmel_lcdc_bl_ops = {
+ 	.update_status = atmel_bl_update_status,
+ 	.get_brightness = atmel_bl_get_brightness,
+ };
+diff --git a/drivers/video/aty/aty128fb.c b/drivers/video/aty/aty128fb.c
+index 34a0851..dd9de2e 100644
+--- a/drivers/video/aty/aty128fb.c
++++ b/drivers/video/aty/aty128fb.c
+@@ -1786,7 +1786,7 @@ static int aty128_bl_get_brightness(struct backlight_device *bd)
+ 	return bd->props.brightness;
+ }
+ 
+-static struct backlight_ops aty128_bl_data = {
++static const struct backlight_ops aty128_bl_data = {
+ 	.get_brightness	= aty128_bl_get_brightness,
+ 	.update_status	= aty128_bl_update_status,
+ };
+diff --git a/drivers/video/aty/atyfb_base.c b/drivers/video/aty/atyfb_base.c
+index 5bf9123..4d5c413 100644
+--- a/drivers/video/aty/atyfb_base.c
++++ b/drivers/video/aty/atyfb_base.c
+@@ -2221,7 +2221,7 @@ static int aty_bl_get_brightness(struct backlight_device *bd)
+ 	return bd->props.brightness;
+ }
+ 
+-static struct backlight_ops aty_bl_data = {
++static const struct backlight_ops aty_bl_data = {
+ 	.get_brightness = aty_bl_get_brightness,
+ 	.update_status	= aty_bl_update_status,
+ };
+diff --git a/drivers/video/aty/radeon_backlight.c b/drivers/video/aty/radeon_backlight.c
+index 256966e..9b811dd 100644
+--- a/drivers/video/aty/radeon_backlight.c
++++ b/drivers/video/aty/radeon_backlight.c
+@@ -128,7 +128,7 @@ static int radeon_bl_get_brightness(struct backlight_device *bd)
+ 	return bd->props.brightness;
+ }
+ 
+-static struct backlight_ops radeon_bl_data = {
++static const struct backlight_ops radeon_bl_data = {
+ 	.get_brightness = radeon_bl_get_brightness,
+ 	.update_status	= radeon_bl_update_status,
+ };
+diff --git a/drivers/video/backlight/88pm860x_bl.c b/drivers/video/backlight/88pm860x_bl.c
+index 38ffc3f..c789c46 100644
+--- a/drivers/video/backlight/88pm860x_bl.c
++++ b/drivers/video/backlight/88pm860x_bl.c
+@@ -155,7 +155,7 @@ out:
+ 	return -EINVAL;
+ }
+ 
+-static struct backlight_ops pm860x_backlight_ops = {
++static const struct backlight_ops pm860x_backlight_ops = {
+ 	.options	= BL_CORE_SUSPENDRESUME,
+ 	.update_status	= pm860x_backlight_update_status,
+ 	.get_brightness	= pm860x_backlight_get_brightness,
+diff --git a/drivers/video/backlight/max8925_bl.c b/drivers/video/backlight/max8925_bl.c
+index b2b2c7b..209acc1 100644
+--- a/drivers/video/backlight/max8925_bl.c
++++ b/drivers/video/backlight/max8925_bl.c
+@@ -92,7 +92,7 @@ static int max8925_backlight_get_brightness(struct backlight_device *bl)
+ 	return ret;
+ }
+ 
+-static struct backlight_ops max8925_backlight_ops = {
++static const struct backlight_ops max8925_backlight_ops = {
+ 	.options	= BL_CORE_SUSPENDRESUME,
+ 	.update_status	= max8925_backlight_update_status,
+ 	.get_brightness	= max8925_backlight_get_brightness,
+diff --git a/drivers/video/nvidia/nv_backlight.c b/drivers/video/nvidia/nv_backlight.c
+index 2fb552a..6aac6d1 100644
+--- a/drivers/video/nvidia/nv_backlight.c
++++ b/drivers/video/nvidia/nv_backlight.c
+@@ -87,7 +87,7 @@ static int nvidia_bl_get_brightness(struct backlight_device *bd)
+ 	return bd->props.brightness;
+ }
+ 
+-static struct backlight_ops nvidia_bl_ops = {
++static const struct backlight_ops nvidia_bl_ops = {
+ 	.get_brightness = nvidia_bl_get_brightness,
+ 	.update_status	= nvidia_bl_update_status,
+ };
+diff --git a/drivers/video/omap2/displays/panel-taal.c b/drivers/video/omap2/displays/panel-taal.c
+index e1c765d..61026f9 100644
+--- a/drivers/video/omap2/displays/panel-taal.c
++++ b/drivers/video/omap2/displays/panel-taal.c
+@@ -465,7 +465,7 @@ static int taal_bl_get_intensity(struct backlight_device *dev)
+ 	return 0;
+ }
+ 
+-static struct backlight_ops taal_bl_ops = {
++static const struct backlight_ops taal_bl_ops = {
+ 	.get_brightness = taal_bl_get_intensity,
+ 	.update_status  = taal_bl_update_status,
+ };
+diff --git a/drivers/video/riva/fbdev.c b/drivers/video/riva/fbdev.c
+index 618f36b..da38818 100644
+--- a/drivers/video/riva/fbdev.c
++++ b/drivers/video/riva/fbdev.c
+@@ -331,7 +331,7 @@ static int riva_bl_get_brightness(struct backlight_device *bd)
+ 	return bd->props.brightness;
+ }
+ 
+-static struct backlight_ops riva_bl_ops = {
++static const struct backlight_ops riva_bl_ops = {
+ 	.get_brightness = riva_bl_get_brightness,
+ 	.update_status	= riva_bl_update_status,
+ };
+-- 
+1.7.3.2.161.g3089c
+
