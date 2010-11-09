@@ -1,143 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448Ab0KIXaM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 18:30:12 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:63004 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002Ab0KIXaJ convert rfc822-to-8bit (ORCPT
+	id S1754830Ab0KIXdS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 18:33:18 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:10714 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752835Ab0KIXdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 18:30:09 -0500
+	Tue, 9 Nov 2010 18:33:16 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=UBZsLwe/ajQXZsF75qs+qVTL7Og6EbroUx4nzd0i6SIUwlbvcI6bsoVL7Wv3Gy/m0x
-         stswyaogdJk54F1nRwiPQW9ZCvEs/DCZ9ZMDZnk5fbqYgs/2xwkcouSX6KPsO1KfOy5t
-         mMKJM57ypNbwavaBAc1EaNBbHYcNW8LXT/pss=
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=GP0f74i/Z3X9OW4blxC6Pa8WYRVi8CFfnHGk3GD6oDsmefEBLh4NtvfdX1LCYDOUv+
+         glQDjSqPu8B9XMp5/tCw==
+Date: Tue, 9 Nov 2010 15:33:04 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
+Subject: Re: [resend][PATCH 2/4] Revert "oom: deprecate oom_adj tunable"
+In-Reply-To: <20101109105801.BC30.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1011091523370.26837@chino.kir.corp.google.com>
+References: <20101101030353.607A.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1011011232120.6822@chino.kir.corp.google.com> <20101109105801.BC30.A69D9226@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimm0d2fQMkdw9gA+rOqEcBHtJpAB9JRpYDKOxw=@mail.gmail.com>
-References: <AANLkTimm0d2fQMkdw9gA+rOqEcBHtJpAB9JRpYDKOxw=@mail.gmail.com>
-Date: Wed, 10 Nov 2010 00:30:07 +0100
-Message-ID: <AANLkTi=bkzZd0c+kM4ZsQ-y0xmMedfB5AhTS+4ohen_P@mail.gmail.com>
-Subject: Re: error in dmesg
-From: Sasa Ostrouska <casaxa@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, I forgot to mntion that thi is on a 2.6.33.4 slackware 64bit linux.
+On Tue, 9 Nov 2010, KOSAKI Motohiro wrote:
 
+> > > > The new tunable added in 2.6.36, /proc/pid/oom_score_adj, is necessary for 
+> > > > the units that the badness score now uses.  We need a tunable with a much 
+> > > 
+> > > Who we?
+> > > 
+> > 
+> > Linux users who care about prioritizing tasks for oom kill with a tunable 
+> > that (1) has a unit, (2) has a higher resolution, and (3) is linear and 
+> > not exponential.  
+> 
+> No. Majority user don't care. You only talk about your case. Don't ignore
+> end user.
+> 
 
-On Wed, Nov 10, 2010 at 12:26 AM, Sasa Ostrouska <casaxa@gmail.com> wrote:
-> Hi I get this eror during boot on my machine:
->
-> TCP cubic registered
-> Initializing XFRM netlink socket
-> NET: Registered protocol family 17
-> ata1: softreset failed (device not ready)
-> ata3: softreset failed (device not ready)
-> ata3: applying SB600 PMP SRST workaround and retrying
-> ata1: applying SB600 PMP SRST workaround and retrying
-> usb 1-1: New USB device found, idVendor=0424, idProduct=2502
-> usb 1-1: New USB device strings: Mfr=0, Product=0, SerialNumber=0
-> hub 1-1:1.0: USB hub found
-> hub 1-1:1.0: 2 ports detected
-> irq 16: nobody cared (try booting with the "irqpoll" option)
-> Pid: 0, comm: swapper Not tainted 2.6.33.4 #3
-> Call Trace:
->  <IRQ>  [<ffffffff81098d3b>] __report_bad_irq+0x2b/0xa0
->  [<ffffffff81098f3c>] note_interrupt+0x18c/0x1d0
->  [<ffffffff8106c54b>] ? sched_clock_tick+0x5b/0x90
->  [<ffffffff8109961d>] handle_fasteoi_irq+0xbd/0xf0
->  [<ffffffff81005ab2>] handle_irq+0x22/0x30
->  [<ffffffff81a0347c>] do_IRQ+0x6c/0xf0
->  [<ffffffff81a02f93>] ret_from_intr+0x0/0xa
->  <EOI>  [<ffffffff8100c058>] ? default_idle+0x38/0x80
->  [<ffffffff8100c123>] c1e_idle+0x83/0x100
->  [<ffffffff8106b3da>] ? atomic_notifier_call_chain+0x1a/0x20
->  [<ffffffff8100155d>] cpu_idle+0xad/0x100
->  [<ffffffff819fb727>] start_secondary+0x17b/0x17f
-> handlers:
-> [<ffffffff81865420>] (usb_hcd_irq+0x0/0x70)
-> Disabling IRQ #16
-> ata3: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-> ata3.00: ATA-8: WDC WD3200AAKS-00B3A0, 01.03A01, max UDMA/133
-> ata3.00: 625142448 sectors, multi 16: LBA48 NCQ (depth 31/32), AA
-> ata3.00: SB600 AHCI: limiting to 255 sectors per cmd
-> ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-> ata3.00: SB600 AHCI: limiting to 255 sectors per cmd
-> ata3.00: configured for UDMA/133
-> ata1.00: ATA-8: WDC WD3200AAKS-00YGA0, 12.01C02, max UDMA/133
-> ata1.00: 625142448 sectors, multi 16: LBA48 NCQ (depth 31/32), AA
-> ata1.00: SB600 AHCI: limiting to 255 sectors per cmd
-> ata1.00: SB600 AHCI: limiting to 255 sectors per cmd
-> ata1.00: configured for UDMA/133
-> scsi 0:0:0:0: Direct-Access     ATA      WDC WD3200AAKS-0 12.0 PQ: 0 ANSI: 5
-> sd 0:0:0:0: [sda] 625142448 512-byte logical blocks: (320 GB/298 GiB)
-> sd 0:0:0:0: [sda] Write Protect is off
-> sd 0:0:0:0: [sda] Mode Sense: 00 3a 00 00
-> sd 0:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn't
-> support DPO or FUA
->  sda: sda1 sda2 sda3 sda4 < sda5 sda6 sda7 sda8 sda9 >
-> sd 0:0:0:0: [sda] Attached SCSI disk
-> usb 5-2: new low speed USB device using ohci_hcd and address 2
-> ata2: softreset failed (device not ready)
-> ata2: applying SB600 PMP SRST workaround and retrying
-> usb 5-2: New USB device found, idVendor=413c, idProduct=3016
-> usb 5-2: New USB device strings: Mfr=0, Product=2, SerialNumber=0
-> usb 5-2: Product: Dell Premium USB Optical Mouse
-> ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-> ata2.00: ATAPI: Optiarc DVD RW AD-7191S, 1.01, max UDMA/100
-> ata2.00: SB600 AHCI: limiting to 255 sectors per cmd
-> ata2.00: SB600 AHCI: limiting to 255 sectors per cmd
-> ata2.00: configured for UDMA/100
-> scsi 1:0:0:0: CD-ROM            Optiarc  DVD RW AD-7191S  1.01 PQ: 0 ANSI: 5
-> sr0: scsi3-mmc drive: 48x/12x writer dvd-ram cd/rw xa/form2 cdda tray
-> Uniform CD-ROM driver Revision: 3.20
-> sr 1:0:0:0: Attached scsi CD-ROM sr0
-> scsi 2:0:0:0: Direct-Access     ATA      WDC WD3200AAKS-0 01.0 PQ: 0 ANSI: 5
-> sd 2:0:0:0: [sdb] 625142448 512-byte logical blocks: (320 GB/298 GiB)
-> sd 2:0:0:0: [sdb] Write Protect is off
-> sd 2:0:0:0: [sdb] Mode Sense: 00 3a 00 00
-> sd 2:0:0:0: [sdb] Write cache: enabled, read cache: enabled, doesn't
-> support DPO or FUA
->  sdb: sdb1
-> sd 2:0:0:0: [sdb] Attached SCSI disk
-> irq 17: nobody cared (try booting with the "irqpoll" option)
-> Pid: 0, comm: swapper Not tainted 2.6.33.4 #3
-> Call Trace:
->  <IRQ>  [<ffffffff81098d3b>] __report_bad_irq+0x2b/0xa0
->  [<ffffffff81098f3c>] note_interrupt+0x18c/0x1d0
->  [<ffffffff8106c54b>] ? sched_clock_tick+0x5b/0x90
->  [<ffffffff8109961d>] handle_fasteoi_irq+0xbd/0xf0
->  [<ffffffff81005ab2>] handle_irq+0x22/0x30
->  [<ffffffff81a0347c>] do_IRQ+0x6c/0xf0
->  [<ffffffff81a02f93>] ret_from_intr+0x0/0xa
->  <EOI>  [<ffffffff8100c058>] ? default_idle+0x38/0x80
->  [<ffffffff8100c123>] c1e_idle+0x83/0x100
->  [<ffffffff8106b3da>] ? atomic_notifier_call_chain+0x1a/0x20
->  [<ffffffff8100155d>] cpu_idle+0xad/0x100
->  [<ffffffff819fb727>] start_secondary+0x17b/0x17f
-> handlers:
-> [<ffffffff81865420>] (usb_hcd_irq+0x0/0x70)
-> [<ffffffff81865420>] (usb_hcd_irq+0x0/0x70)
-> Disabling IRQ #17
-> registered taskstats version 1
-> md: Waiting for all devices to be available before autodetect
-> md: If you don't use raid, use raid=noautodetect
-> md: Autodetecting RAID arrays.
-> md: Scanned 0 and added 0 devices.
-> md: autorun ...
-> md: ... autorun DONE.
->
->
-> Whats going wrong ?
->
-> Rgds
-> Saxa
->
-> PS: CC me since I'm not on the list.
->
+If they don't care, then they won't be using oom_adj, so you're point 
+about it's deprecation is irrelevant.
+
+Other users do want a more powerful userspace interface with a unit and 
+higher resolution (I am one of them), there's no requirement that those 
+users need to be in the majority.
+
+> > Memcg doesn't solve this issue without incurring a 1% 
+> > memory cost.
+> 
+> Look at a real.
+> All major distributions has already turn on memcg. End user don't need
+> to pay additional cost.
+> 
+
+Memcg also has a command-line disabling option to avoid incurring this 1% 
+memory cost when you're not going to be using it.
+
+> > No, it doesn't, and you completely and utterly failed to show a single 
+> > usecase that broke as a result of this because nobody can currently use 
+> > oom_adj for anything other than polarization.  Thus, there's no backwards 
+> > compatibility issue.
+> 
+> No. I showed. 
+> 1) Google code search showed some application are using this feature.
+> 	http://www.google.com/codesearch?as_q=oom_adj&btnG=Search+Code&hl=ja&as_package=&as_lang=&as_filename=&as_class=&as_function=&as_license=&as_case=
+> 
+
+oom_adj isn't removed, it's deprecated.  These users are using a 
+deprecated interface and have a few years to convert to using the new 
+interface (if it ever is actually removed).
+
+> 2) Not body use oom_adj other than polarization even though there are a few.
+>    example, kde are using.
+> 	http://www.google.com/codesearch/p?hl=ja#MPJuLvSvNYM/pub/kde/unstable/snapshots/kdelibs.tar.bz2%7CWClmGVN5niU/kdelibs-1164923/kinit/start_kdeinit.c&q=oom_adj%20kde%205
+> 
+> When you are talking polarization issue, you blind a real. Don't talk your dream.
+> 
+
+I don't understand what you're trying to say here, but the current users 
+of oom_adj that aren't +15 or -16 (or OOM_DISABLE) are arbitrary based 
+relative to other tasks such as +5, +10, etc.  They don't have any 
+semantics other than being arbitrarily relative because it doesn't work in 
+a linear way or with a scale.
+
+> 3) udev are using this feature. It's one of major linux component and you broke.
+> 
+> http://www.google.com/codesearch/p?hl=ja#KVTjzuVpblQ/pub/linux/utils/kernel/hotplug/udev-072.tar.bz2%7CwUSE-Ay3lLI/udev-072/udevd.c&q=oom_adj
+> 
+> You don't have to break our userland. you can't rewrite or deprecate 
+> old one. It's used! You can only add orthogonal new knob.
+> 
+
+That's incorrect, I didn't break anything by deprecating a tunable for a 
+few years.  oom_adj gets converted roughly into an equivalent (but linear) 
+oom_score_adj.
+
+Unfortunately for your argument, you can't show a single example of a 
+current oom_adj user that has a scientific calculation behind its value 
+that is now broken on the linear scale.
+
+> > Yes, I've tested it, and it deprecates the tunable as expected.  A single 
+> > warning message serves the purpose well: let users know one time without 
+> > being overly verbose that the tunable is deprecated and give them 
+> > sufficient time (2 years) to start using the new tunable.  That's how 
+> > deprecation is done.
+> 
+> no sense.
+> 
+> Why do their application need to rewrite for *YOU*? Okey, you will got
+> benefit from your new knob. But NOBDOY use the new one. and People need
+> to rewrite their application even though no benefit. 
+> 
+> Don't do selfish userland breakage!
+> 
+
+It's deprecated for a few years so users can gradually convert to the new 
+tunable, it wasn't removed when the new one was introduced.  A higher 
+resolution tunable that scales linearly with a unit is an advantage for 
+Linux (for the minority of users who care about oom killing priority 
+beyond the heuristic) and I think a few years is enough time for users to 
+do a simple conversion to the new tunable.
