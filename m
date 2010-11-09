@@ -1,122 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221Ab0KINqq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 08:46:46 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:41273 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751165Ab0KINqo (ORCPT
+	id S1753555Ab0KINq7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 08:46:59 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:53590 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753431Ab0KINq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 08:46:44 -0500
+	Tue, 9 Nov 2010 08:46:58 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=iOC0r06EQCd4sysPBSe6x2GG4PpuuyT8yc5H+VKJ/qq1d7VCFrA4Ou9uQrT5gqeREc
-         l6xxAc7Dgb1RrpxirCcty6m/bQMt9EwcU0quFCy+KVv+AT+djSd1Y274MJ7dPRpPyVM9
-         gegdRnpIW6UaDitXm30d0ZCEU56VqZh/k0HF0=
-Date: Tue, 9 Nov 2010 19:16:45 +0530
-From: Rabin Vincent <rabin@rab.in>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Tim Bird <tim.bird@am.sony.com>
-Subject: Re: [PATCH 6/6] ARM: ftrace: enable function graph tracer
-Message-ID: <20101109134644.GA3163@debian>
-References: <1289067954-5080-1-git-send-email-rabin@rab.in>
- <1289067954-5080-6-git-send-email-rabin@rab.in>
- <AANLkTin8UO9ixVep0jKK8H5roWEVRDJW4khUpT2TpPs+@mail.gmail.com>
- <20101108091858.GP16938@pengutronix.de>
- <AANLkTinmSn1fqKv8sCCP8d0-_0HsLrhtorXvHCovOYve@mail.gmail.com>
+        h=mime-version:sender:from:date:x-google-sender-auth:message-id
+         :subject:to:content-type;
+        b=o6dSmYZf5X9qFGghEIoZ8jHnNsB/xDSKeo8Onx3az1VRZuxbJwS6F4CRW6GpUsGxth
+         ntryHG9QD0/9kWtLl3qyGsjMkshgbH3Q92lQM6BbpKgmkhAydsh9iFKeNFcOz1lGFCSa
+         NE6jONrR1HbNMUS9tt+GHM/2zzdJ/+BRgmupY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinmSn1fqKv8sCCP8d0-_0HsLrhtorXvHCovOYve@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Tue, 9 Nov 2010 08:46:36 -0500
+X-Google-Sender-Auth: lmIkyrr2o15D9YZg1EbJQaylkdY
+Message-ID: <AANLkTikA6hZDV0A30fku7VT7Z1P8OqxcsF-EK95pBdD=@mail.gmail.com>
+Subject: HPET (?) related hangs and breakage in 2.6.35,36
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 08, 2010 at 10:42:57AM +0000, Catalin Marinas wrote:
-> 2010/11/8 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
-> > On Sat, Nov 06, 2010 at 07:06:28PM +0000, Catalin Marinas wrote:
-> >> On Saturday, November 6, 2010, Rabin Vincent <rabin@rab.in> wrote:
-> >> > --- a/kernel/trace/Kconfig
-> >> > +++ b/kernel/trace/Kconfig
-> >> > @@ -141,6 +141,7 @@ config FUNCTION_TRACER
-> >> >
-> >> >  config FUNCTION_GRAPH_TRACER
-> >> >         bool "Kernel Function Graph Tracer"
-> >> > +       select FRAME_POINTER if ARM_UNWIND
-> >>
-> >> Would it be better to modify FRAME_POINTER definition in the ARM
-> >> Kconfig so that it is enabled automatically when FUNCTION_GRAPH_TRACER
-> >> is enabled?
-> > I don't like that suggestion much because it hides the dependency.
-> > Moreover a "default y if FUNCTION_GRAPH_TRACER" doesn't work if a
-> > precondition for FRAME_POINTER isn't true.  Rabin's approach at least
-> > generates a warning.
-> 
-> If a precondition for FRAME_POINTER isn't true, we should not force it
-> via 'select'. We try to get rid of such warnings in the kernel.
-> 
-> However, on ARM the FRAME_POINTER depends on !THUMB2_KERNEL but for
-> Thumb-2 kernels HAVE_FUNCTION_GRAPH_TRACER is also disabled, so there
-> isn't a dependency issue here. It's more like a personal preference to
-> keep the changes within the arch/arm tree.
+Hi all-
 
-OK, new patch below.
+I have a problem, possibly HPET related, that's gotten a lot worse in
+2.6.35 and later.  It is present in the latest Fedora 14 kernel
+(2.6.35-blahblahblah) and in kernel.org's 2.6.36.
 
->From ce3856933234b0976068be8bdc46340dcf31ef6f Mon Sep 17 00:00:00 2001
-From: Rabin Vincent <rabin@rab.in>
-Date: Sat, 6 Nov 2010 23:03:53 +0530
-Subject: [PATCHv2] ARM: ftrace: enable function graph tracer
+After several minutes of uptime, my system freezes in a strange way.
+All of userspace and some kernel services freeze hard (no mouse, no
+typing, etc.)  Caps-lock works intermittently, as does (I think)
+pinging.  The only debug output I've been able to get is this (typed
+from a blurry photo because netconsole dies along with everything
+else):
 
-Add the options to enable the function graph tracer on ARM.  Function
-graph tracer support requires frame pointers, so exclude Thumb-2 and
-also make sure FRAME_POINTER gets enabled when FUNCTION_GRAPH_TRACER is
-used, since FUNCTION_TRACER doesn't "select FRAME_POINTER" when
-ARM_UNWIND is used.  Therefore, with GCC 4.4.0+, you get plain function
-tracing without frame pointers, but you'll need them if you want
-function graph tracing.
+[ 5478.244722] Clocksource tsc unstable (delta = 101399051316 ns)
+[ 5478.367958] Switching to clocksource hpet
+[ 5543.729698] BUG: soft lockup - CPU #1 stuck for 61s! [migration/1:6]
+[ 5543.729743] Modules linked in: [...]
 
-Signed-off-by: Rabin Vincent <rabin@rab.in>
----
- arch/arm/Kconfig       |    1 +
- arch/arm/Kconfig.debug |    2 +-
- 2 files changed, 2 insertions(+), 1 deletions(-)
+At this point, even SysRq only works some of the time (it'll work for
+a few seconds then die for awhile).  Banging on the keyboard doesn't
+appear to help, and I'd expect it to if all that was wrong was that I
+was losing wakeups.
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index a19a526..c5e96ff 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -14,6 +14,7 @@ config ARM
- 	select HAVE_FUNCTION_TRACER if (!XIP_KERNEL)
- 	select HAVE_FTRACE_MCOUNT_RECORD if (!XIP_KERNEL)
- 	select HAVE_DYNAMIC_FTRACE if (!XIP_KERNEL)
-+	select HAVE_FUNCTION_GRAPH_TRACER if (!THUMB2_KERNEL)
- 	select HAVE_GENERIC_DMA_COHERENT
- 	select HAVE_KERNEL_GZIP
- 	select HAVE_KERNEL_LZO
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 2fd0b99..eac62085 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -23,7 +23,7 @@ config STRICT_DEVMEM
- config FRAME_POINTER
- 	bool
- 	depends on !THUMB2_KERNEL
--	default y if !ARM_UNWIND
-+	default y if !ARM_UNWIND || FUNCTION_GRAPH_TRACER
- 	help
- 	  If you say N here, the resulting kernel will be slightly smaller and
- 	  faster. However, if neither FRAME_POINTER nor ARM_UNWIND are enabled,
--- 
-1.7.2.3
+IIRC I got the tsc unstable messages on older kernels with similarly
+insanely large deltas but the system kept working.
 
+Booting with hpet=disable not only makes the system stable but
+prevents the clocksource tsc unstable message.  ntpd doesn't seem to
+complain about my clock, either (and on a different machine with a (I
+think) particularly crappy onboard clock, ntpd complains loudly, so I
+assume that ntpd would tell me if my clock didn't work right).
+
+CPU is Intel Xeon W5320 at 2.67GHz and /proc/cpuinfo says tsc, rdtscp,
+constant_tsc, nonstop_tsc, so the TSC should be good.
+Motherboard is Asus P6T WS PRO rev 1.xx running a BIOS from 02/26/2009
+(version 0603).
+
+My guess is that my hpet (or its driver) is broken enough to bring
+down userspace and that the kernel incorrectly trusts the hpet more
+than the TSC.
+
+--Andy
