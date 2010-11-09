@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754614Ab0KIWfM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 17:35:12 -0500
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:38159 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751607Ab0KIWfH (ORCPT
+	id S1754938Ab0KIWff (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 17:35:35 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59534 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752481Ab0KIWfd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 17:35:07 -0500
-X-Greylist: delayed 604 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Nov 2010 17:35:07 EST
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
-Cc: aaro.koskinen@iki.fi, Thomas Winischhofer <thomas@winischhofer.net>
-Subject: [PATCH] sisfb: limit POST memory test according to PCI resource length
-Date: Wed, 10 Nov 2010 00:25:04 +0200
-Message-Id: <1289341504-1038-1-git-send-email-aaro.koskinen@iki.fi>
-X-Mailer: git-send-email 1.5.6.5
+	Tue, 9 Nov 2010 17:35:33 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version;
+        b=uFlENJZk3harpgjckhu6F0GSErwhkryXSK7Im7zpWDngYu4jL7Gt0M9Zw7CSJPBS6T
+         K10R/pXKvI+FyUVeVlqYcozWJK/j4E9W+hIz3wEldkiupIGUepVm7SQJeWKGOErj4knQ
+         JUJaXNtRn0u0KnDYteFSdIwxrqyd5eo4CifOU=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Markus Gapp <markus.gapp@gmx.net>, Jan Kara <jack@suse.cz>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: [PATCH] reiserfs: Fix inode mutex - reiserfs lock misordering
+Date: Tue,  9 Nov 2010 23:35:27 +0100
+Message-Id: <1289342127-11410-1-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-regression
+X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the POST memory test fails, the driver may access illegal memory
-areas. Instead of hard coding the maximum size, set it according to the
-PCI resource length. DRAM sizing will later adjust video_size to the
-correct value.
+reiserfs_unpack() locks the inode mutex with
+reiserfs_mutex_lock_safe() to protect against reiserfs lock
+dependency. However this protection requires to have the
+reiserfs lock to be locked.
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: Thomas Winischhofer <thomas@winischhofer.net>
+This is the case if reiserfs_unpack() is called by reiserfs_ioctl
+but not from reiserfs_quota_on() when it tries to unpack tails of
+quota files.
+
+Fix the ordering of the two locks in reiserfs_unpack() to
+fix this issue.
+
+Reported-by: Markus Gapp <markus.gapp@gmx.net>
+Reported-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- drivers/video/sis/sis_main.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ fs/reiserfs/ioctl.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/video/sis/sis_main.c b/drivers/video/sis/sis_main.c
-index b52f8e4..8a528aa 100644
---- a/drivers/video/sis/sis_main.c
-+++ b/drivers/video/sis/sis_main.c
-@@ -4514,7 +4514,7 @@ sisfb_post_sis300(struct pci_dev *pdev)
- 	} else {
- #endif
- 		/* Need to map max FB size for finding out about RAM size */
--		mapsize = 64 << 20;
-+		mapsize = ivideo->video_size;
- 		sisfb_post_map_vram(ivideo, &mapsize, 4);
- 
- 		if(ivideo->video_vbase) {
-@@ -4680,7 +4680,7 @@ sisfb_post_xgi_ramsize(struct sis_video_info *ivideo)
- 	orSISIDXREG(SISSR, 0x20, (0x80 | 0x04));
- 
- 	/* Need to map max FB size for finding out about RAM size */
--	mapsize = 256 << 20;
-+	mapsize = ivideo->video_size;
- 	sisfb_post_map_vram(ivideo, &mapsize, 32);
- 
- 	if(!ivideo->video_vbase) {
-@@ -5936,6 +5936,7 @@ sisfb_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+diff --git a/fs/reiserfs/ioctl.c b/fs/reiserfs/ioctl.c
+index adf22b4..d2a7955 100644
+--- a/fs/reiserfs/ioctl.c
++++ b/fs/reiserfs/ioctl.c
+@@ -184,12 +184,11 @@ int reiserfs_unpack(struct inode *inode, struct file *filp)
+ 		return 0;
  	}
  
- 	ivideo->video_base = pci_resource_start(pdev, 0);
-+	ivideo->video_size = pci_resource_len(pdev, 0);
- 	ivideo->mmio_base  = pci_resource_start(pdev, 1);
- 	ivideo->mmio_size  = pci_resource_len(pdev, 1);
- 	ivideo->SiS_Pr.RelIO = pci_resource_start(pdev, 2) + 0x30;
+-	/* we need to make sure nobody is changing the file size beneath
+-	 ** us
+-	 */
+-	reiserfs_mutex_lock_safe(&inode->i_mutex, inode->i_sb);
+ 	depth = reiserfs_write_lock_once(inode->i_sb);
+ 
++	/* we need to make sure nobody is changing the file size beneath us */
++	reiserfs_mutex_lock_safe(&inode->i_mutex, inode->i_sb);
++
+ 	write_from = inode->i_size & (blocksize - 1);
+ 	/* if we are on a block boundary, we are already unpacked.  */
+ 	if (write_from == 0) {
 -- 
-1.5.6.5
+1.6.2.3
 
