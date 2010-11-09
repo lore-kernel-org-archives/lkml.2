@@ -1,40 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755478Ab0KIMJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 07:09:29 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:45646 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755407Ab0KIMJ2 (ORCPT
+	id S1755426Ab0KIMKN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 07:10:13 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:34680 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754515Ab0KIMKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 07:09:28 -0500
-Date: Tue, 9 Nov 2010 12:06:49 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: linux-kernel@vger.kernel.org, security@kernel.org, stable@kernel.org
-Subject: Re: [PATCH] Restrict unprivileged access to kernel syslog
-Message-ID: <20101109120649.62b487e8@lxorguk.ukuu.org.uk>
-In-Reply-To: <1289273338.6287.128.camel@dan>
-References: <1289273338.6287.128.camel@dan>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Nov 2010 07:10:11 -0500
+Date: Tue, 9 Nov 2010 07:07:52 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Mike Waychison <mikew@google.com>
+Cc: simon.kagstrom@netinsight.net, davem@davemloft.net,
+        Matt Mackall <mpm@selenic.com>, adurbin@google.com,
+        linux-kernel@vger.kernel.org, chavey@google.com,
+        Greg KH <greg@kroah.com>,
+        =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        akpm@linux-foundation.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH v2 04/23] netconsole: Call netpoll_cleanup() in process
+ context
+Message-ID: <20101109120752.GA18269@hmsreliant.think-freely.org>
+References: <20101108203120.22479.19708.stgit@crlf.mtv.corp.google.com>
+ <20101108203159.22479.48774.stgit@crlf.mtv.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101108203159.22479.48774.stgit@crlf.mtv.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 08 Nov 2010 22:28:58 -0500
-Dan Rosenberg <drosenberg@vsecurity.com> wrote:
+On Mon, Nov 08, 2010 at 12:32:00PM -0800, Mike Waychison wrote:
+> The netconsole driver currently deadlocks if a NETDEV_UNREGISTER event
+> is received while netconsole is in use, which in turn causes it to pin a
+> reference to the network device.  The first deadlock was dealt with in
+> 3b410a31 so that we wouldn't recursively grab RTNL, but even calling
+> __netpoll_cleanup isn't safe to do considering that we are in atomic
+> context.  __netpoll_cleanup assumes it can sleep and has several
+> sleeping calls, such as synchronize_rcu_bh and
+> cancel_rearming_delayed_work.
+> 
+> Fix this by deferring netpoll_cleanup using scheduling work that
+> operates in process context.  We have to grab a reference to the
+> config_item in this case as we need to pin the item in place until it is
+> operated on.
+> 
+> Signed-off-by: Mike Waychison <mikew@google.com>
+> ---
+>  drivers/net/netconsole.c |   55 ++++++++++++++++++++++++++++++++++++++++------
+>  1 files changed, 48 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
+> index 288a025..02ba5c4 100644
+> --- a/drivers/net/netconsole.c
+> +++ b/drivers/net/netconsole.c
+> @@ -106,6 +106,7 @@ struct netconsole_target {
+>  #endif
+>  	int			np_state;
+>  	struct netpoll		np;
+> +	struct work_struct	cleanup_work;
+>  };
+>  
+>  #ifdef	CONFIG_NETCONSOLE_DYNAMIC
+> @@ -166,6 +167,22 @@ static void netconsole_target_put(struct netconsole_target *nt)
+>  
+>  #endif	/* CONFIG_NETCONSOLE_DYNAMIC */
+>  
+> +static void deferred_netpoll_cleanup(struct work_struct *work)
+> +{
+> +	struct netconsole_target *nt;
+> +	unsigned long flags;
+> +
+> +	nt = container_of(work, struct netconsole_target, cleanup_work);
+> +	netpoll_cleanup(&nt->np);
+> +
+> +	spin_lock_irqsave(&target_list_lock, flags);
+> +	BUG_ON(nt->np_state != NETPOLL_CLEANING);
+> +	nt->np_state = NETPOLL_DISABLED;
+> +	spin_unlock_irqrestore(&target_list_lock, flags);
+> +
+> +	netconsole_target_put(nt);
+> +}
+> +
+Where is the synchronization on the new work queue when the module is getting
+removed? The target get/put code does nothing to the module refcount, and
+cleanup_netconsole just deletes targets, it doesn't block or fail on netconsole
+refcounts, so you could run this work after the module has been removed and oops
+the system.
 
-> The kernel syslog contains debugging information that is often useful
-> during exploitation of other vulnerabilities, such as kernel heap
-> addresses.  Rather than futilely attempt to sanitize hundreds (or
-> thousands) of printk statements and simultaneously cripple useful
-> debugging functionality, it is far simpler to create an option that
-> prevents unprivileged users from reading the syslog.
-
-Except for anything that appears on the screen - which is remotely
-readable via the screen access APIs. Looks sane to me (pointless but
-sane) and the checks match the ones needed to redirect the console so you
-need CAP_SYS_ADMIN either way.
+Neil
+ 
