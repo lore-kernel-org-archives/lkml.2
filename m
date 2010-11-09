@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754225Ab0KIUXs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 15:23:48 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:26898 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752039Ab0KIUXq (ORCPT
+	id S1754082Ab0KIU1M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 15:27:12 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:41138 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752347Ab0KIU1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 15:23:46 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=Z0d9CbefxdyYWY4W2VpuYUkhW8XbgiwqumIOb4Z80OOrPM8O58sw8gO0EHep+k5D7
-	De+iuuUddyJXAjfC1MDjw==
-From: Greg Thelen <gthelen@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Minchan Kim <minchan.kim@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Greg Thelen <gthelen@google.com>
-Subject: [PATCH] memcg: mark mem_cgroup_page_stat() underflow unlikely
-Date: Tue,  9 Nov 2010 12:21:58 -0800
-Message-Id: <1289334118-4448-1-git-send-email-gthelen@google.com>
-X-Mailer: git-send-email 1.7.3.1
+	Tue, 9 Nov 2010 15:27:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=OHtM1LO9WllEBS0N4NXtw9SVJO4nyShS6f2hTm18huFTgI2ntvXvtXCNFYuwsIjO8W
+         Rsnu+DAxPUWe5PC84p4VMrEINZ76lsEl6yOlr8pDzZIjVOVO5TaqRfwatv31iicfFICp
+         S6Ln/tJFS7q/XgAEbaFc4Ddj/z/uU2528Uup8=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Paul Rolland (=?utf-8?b?44Od44O844Or44O744Ot44Op44Oz?=) 
+	<rol@witbe.net>
+Subject: Re: [2.6.37-rc1] drm:i195 errors
+Date: Tue, 9 Nov 2010 21:26:59 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1; KDE/4.4.5; i686; ; )
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20101102155813.09cb2c6e@tux.DEF.witbe.net>
+In-Reply-To: <20101102155813.09cb2c6e@tux.DEF.witbe.net>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011092126.59432.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add unlikely() to indicate that underflow of per-cpu counter
-sum is not expected.
+On wtorek, 2 listopada 2010 o 15:58:13 Paul Rolland wrote:
+> Hello,
+> 
+> I was previously running 2.6.36, without noticing any messages related to
+> i915/DRM, but now I can see some :
+> 
+> Nov  2 14:21:53 tux kernel: [drm:i915_gem_mmap_gtt_ioctl] *ERROR*
+> Attempting to mmap a purgeable buffer
+> 
+> and also :
+> 
+> Nov  2 15:45:35 tux kernel: [drm:intel_panel_get_max_backlight] *ERROR*
+> fixme: max PWM is zero.
+> 
 
-The underflow is already handled, but should have been
-marked unlikely.
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=22542
+for your bug report, please add your address to the CC list in there, thanks!
 
-Reported-by: Wu Fengguang <fengguang.wu@intel.com>
-Signed-off-by: Greg Thelen <gthelen@google.com>
----
- mm/memcontrol.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index ed070d0..e8fbade 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1393,7 +1393,7 @@ unsigned long mem_cgroup_page_stat(struct mem_cgroup *mem,
- 	 * value.  This function returns an unsigned value, so round it up to
- 	 * zero to avoid returning a very large value.
- 	 */
--	if (value < 0)
-+	if (unlikely(value < 0))
- 		value = 0;
- 
- 	put_online_cpus();
 -- 
-1.7.3.1
-
+Maciej Rutecki
+http://www.maciek.unixy.pl
