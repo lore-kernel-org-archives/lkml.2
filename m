@@ -1,97 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755065Ab0KIVQx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 16:16:53 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:52988 "EHLO
+	id S1755021Ab0KIVSa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 16:18:30 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:45811 "EHLO
 	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754212Ab0KIVQv convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752122Ab0KIVS3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 16:16:51 -0500
-MIME-Version: 1.0
-In-Reply-To: <4CD8F884.30409@monstr.eu>
-References: <20101014161724.18966.42340.stgit@localhost6.localdomain6>
- <4CD7FB27.9030804@monstr.eu> <ec622bb7-57d1-4aa2-80f1-65fa4b3fa7eb@VA3EHSMHS033.ehs.local>
- <AANLkTinMoqqMKeEFiD=xHwa5DS+5qY6xN2r236SZQEba@mail.gmail.com> <4CD8F884.30409@monstr.eu>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 9 Nov 2010 14:16:30 -0700
-X-Google-Sender-Auth: ioGMJ2skzl2saWQyfd5wBhvCAxI
-Message-ID: <AANLkTimGwW-v1VQyOM3fmE-6wNf7g64W1YNALh2kd=54@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/3] spi/xilinx: Merge OF and non-OF drivers
-To: monstr@monstr.eu
-Cc: John Linn <John.Linn@xilinx.com>, spi-devel-general@lists.sourceforge.net,
-        richard.rojfors@mocean-labs.com, linux-kernel@vger.kernel.org,
-        dbrownell@users.sourceforge.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 9 Nov 2010 16:18:29 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=ow3H99trVF46hWBjhEv77E96Mz7Z+Aqer1qSuZK6ePztgHko9qKaby9pHQCm/bld9l
+         atPvInbbiEA5GhJsmk2uqM02moow1jBVlMfNV4vVv2Is01Ni8FMWU2+ka9yjtJ88g6Iq
+         XudeMeHgmsubsP9lRjySJUGkItQNRRqa7TfCE=
+From: tzanussi@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: acme@ghostprotocols.net, mingo@elte.hu, fweisbec@gmail.com
+Subject: [PATCH 0/7] perf trace command-line cleanup
+Date: Tue,  9 Nov 2010 15:18:15 -0600
+Message-Id: <1289337502-2492-1-git-send-email-tzanussi@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 9, 2010 at 12:30 AM, Michal Simek <monstr@monstr.eu> wrote:
-> Hi, [cc: David Brownell]
->
-> Grant Likely wrote:
->> On Mon, Nov 8, 2010 at 9:34 AM, John Linn <John.Linn@xilinx.com> wrote:
->>>> -----Original Message-----
->>>> From: Michal Simek [mailto:monstr@monstr.eu]
->>>> Sent: Monday, November 08, 2010 6:29 AM
->>>> To: grant.likely@secretlab.ca
->>>> Cc: spi-devel-general@lists.sourceforge.net; richard.rojfors@mocean-labs.com; John Linn; linux-
->>>> kernel@vger.kernel.org
->>>> Subject: Re: [RFC PATCH 0/3] spi/xilinx: Merge OF and non-OF drivers
->>>>
->>>> Hi Grant,
->>>>
->>>> Grant Likely wrote:
->>>>> Since of_platform_bus_type has been merged with the platform_bus_type,
->>>>> a single platform driver can now support both use cases.  This patch
->>>>> series merges the two halves of the xilinx_spi device driver.
->>>>>
->>>>> Compile tested only.  I haven't booted this yet.
->>>> I have tested it on sp605 and works well. Have you added that patches
->>>> to your repository? Or are they somewhere else? Who is responsible for?
->>>>
->>>> I would like to also discuss one change which is related mmc_spi kernel driver.
->>>> Let me describe the problem. Microblaze can use dma in all addresses
->>>> that's why dma_mask is setup to 0xffffffff in of_platform_device_create.
->>>> Xilinx spi driver doesn't support dma but mmc_spi driver is checking dma_mask in parent device
->>>> which is xilinx spi driver.
->>>>
->>>> Here is the corresponding the part of code (Expect dma_mask=zero for no dma operations).
->>>> mmc_spi.c:~1395
->>>>       if (spi->master->dev.parent->dma_mask) {
->>>>               struct device   *dev = spi->master->dev.parent;
->>>>
->>>>               host->dma_dev = dev;
->>>>
->>>>
->>>> Based on this one our customer came with the following solution to setup
->>>> dma_mask in xilinx_spi to zero and then mmc_spi doesn't setup dma operation.
->>>>
->>>> I think that this is nice solution but I would like to be sure that I didn't miss anything.
->>>> After that i will create proper patch with description.
->>> Seems reasonable to me.
->>
->> Hmmm, that actually is not sane.  Ideally, drivers should never be
->> mucking with the dma mask.  It is supposed to only be set by the code
->> actually registering the device.  The mmc code should not be looking
->> at the parent's dma mask to determine if DMA is available; the spi bus
->> drivers should be explicitly stating whether or not it supports DMA.
->> The mmc_spi code is doing the wrong thing here.
->
-> I have no problem to fix mmc_spi driver but what is the standard way how to detect
-> DMA capability for this case? This part of code is in mmc_spi from the beginning that's why I am
-> wondering that none complain about.
->
-> David?
->
-> Sorry I don't have HW where I can test it. :-(
+From: Tom Zanussi <tom.zanussi@linux.intel.com>
 
-Nobody will have *all* the hardware required to test it.  The solution
-is actually really hard because it requires auditing all of the spi
-bus drivers, figuring out which ones of them support dma, and then
-publishing that information in a way readable by the spi_device
-drivers.  For the time being, you're solution is probably the most
-reasonable.
+There are currently some inconsistencies in perf trace command-line
+handling - for example, the system-wide param is hard-coded into the
+canned scripts, and the user doesn't have any option to avoid it.
+This patchset removes that limitation and cleans up some related
+complications introduced by live-mode.  It also more clearly documents
+usage, and fixes up a couple other minor problems.
 
-g.
+This patchset can also be pulled from here:
+
+git://github.com/zanussi/linux-2.6.git perf-trace-updates
+
+
+Tom Zanussi (7):
+  perf trace scripting: fix some small memory leaks and missing error
+    checks
+  perf trace scripting: remove system-wide param from shell scripts
+  perf record: make the record options available outside perf record
+  perf trace record: handle commands correctly
+  perf trace: live-mode command-line cleanup
+  perf trace: update Documentation with new perf trace variants
+  perf trace: update usage
+
+ tools/perf/Documentation/perf-trace.txt            |   57 +++++-
+ tools/perf/builtin-record.c                        |   10 +-
+ tools/perf/builtin-trace.c                         |  209 ++++++++++++++------
+ tools/perf/scripts/perl/bin/failed-syscalls-record |    2 +-
+ tools/perf/scripts/perl/bin/rw-by-file-record      |    2 +-
+ tools/perf/scripts/perl/bin/rw-by-pid-record       |    2 +-
+ tools/perf/scripts/perl/bin/rwtop-record           |    2 +-
+ tools/perf/scripts/perl/bin/wakeup-latency-record  |    2 +-
+ tools/perf/scripts/perl/bin/workqueue-stats-record |    2 +-
+ .../python/bin/failed-syscalls-by-pid-record       |    2 +-
+ .../scripts/python/bin/futex-contention-record     |    2 +-
+ tools/perf/scripts/python/bin/netdev-times-record  |    2 +-
+ .../perf/scripts/python/bin/sched-migration-record |    2 +-
+ tools/perf/scripts/python/bin/sctop-record         |    2 +-
+ .../python/bin/syscall-counts-by-pid-record        |    2 +-
+ .../perf/scripts/python/bin/syscall-counts-record  |    2 +-
+ 16 files changed, 217 insertions(+), 85 deletions(-)
+
+-- 
+Tom Zanussi, Intel Open Source Technology Center
