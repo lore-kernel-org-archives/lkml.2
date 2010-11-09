@@ -1,81 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751526Ab0KIDSy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 22:18:54 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53312 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939Ab0KIDSx (ORCPT
+	id S1751820Ab0KIDY5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 22:24:57 -0500
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:53348 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751265Ab0KIDY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 22:18:53 -0500
+	Mon, 8 Nov 2010 22:24:56 -0500
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
 From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 01 of 66] disable lumpy when compaction is enabled
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-mm@kvack.org,
+To: Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [PATCH] vmstat: fix offset calculation on void*
+Cc: kosaki.motohiro@jp.fujitsu.com,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-In-Reply-To: <ca2fea6527833aad8adc.1288798056@v2.random>
-References: <patchbomb.1288798055@v2.random> <ca2fea6527833aad8adc.1288798056@v2.random>
-Message-Id: <20101109121318.BC51.A69D9226@jp.fujitsu.com>
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        "mrubin@google.com" <mrubin@google.com>,
+        "david@fromorbit.com" <david@fromorbit.com>,
+        "axboe@kernel.dk" <axboe@kernel.dk>,
+        "nickpiggin@yahoo.com.au" <nickpiggin@yahoo.com.au>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20101103175648.GA6398@localhost>
+References: <20101103175648.GA6398@localhost>
+Message-Id: <20101109122527.BC57.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue,  9 Nov 2010 12:18:49 +0900 (JST)
+Date: Tue,  9 Nov 2010 12:24:49 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Andrea Arcangeli <aarcange@redhat.com>
+> Fix regression introduced by commit 79da826aee6.
 > 
-> Compaction is more reliable than lumpy, and lumpy makes the system unusable
-> when it runs.
+> 	BUG: unable to handle kernel paging request at 07c06d16
+> 	IP: [<c050c336>] strnlen+0x6/0x20
 > 
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> 	Call Trace:
+> 	 [<c050a249>] ? string+0x39/0xe0
+> 	 [<c042be6b>] ? __wake_up_common+0x4b/0x80
+> 	 [<c050afcc>] ? vsnprintf+0x1ec/0x380
+> 	 [<c04b380e>] ? seq_printf+0x2e/0x60
+> 	 [<c04829a6>] ? vmstat_show+0x26/0x30
+> 	 [<c04b3bb6>] ? seq_read+0xa6/0x380
+> 	 [<c04b3b10>] ? seq_read+0x0/0x380
+> 	 [<c04d5d2f>] ? proc_reg_read+0x5f/0x90
+> 	 [<c049c4a1>] ? vfs_read+0xa1/0x140
+> 	 [<c04d5cd0>] ? proc_reg_read+0x0/0x90
+> 	 [<c049c981>] ? sys_read+0x41/0x70
+> 	 [<c0402bd0>] ? sysenter_do_call+0x12/0x26
+> 
+> 
+> CC: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> CC: Michael Rubin <mrubin@google.com>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 > ---
 > 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -274,6 +274,7 @@ unsigned long shrink_slab(unsigned long 
->  static void set_lumpy_reclaim_mode(int priority, struct scan_control *sc,
->  				   bool sync)
->  {
-> +#ifndef CONFIG_COMPACTION
->  	enum lumpy_mode mode = sync ? LUMPY_MODE_SYNC : LUMPY_MODE_ASYNC;
->  
->  	/*
-> @@ -294,11 +295,14 @@ static void set_lumpy_reclaim_mode(int p
->  		sc->lumpy_reclaim_mode = mode;
->  	else
->  		sc->lumpy_reclaim_mode = LUMPY_MODE_NONE;
-> +#endif
+> Hopefully Tetsuo can test it soon, thanks!
+> 
+>  mm/vmstat.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> --- linux-2.6.orig/mm/vmstat.c	2010-11-04 01:49:12.000000000 +0800
+> +++ linux-2.6/mm/vmstat.c	2010-11-04 01:49:23.000000000 +0800
+> @@ -949,7 +949,7 @@ static void *vmstat_start(struct seq_fil
+>  	v[PGPGIN] /= 2;		/* sectors -> kbytes */
+>  	v[PGPGOUT] /= 2;
+>  #endif
+> -	return m->private + *pos;
+> +	return (unsigned long *)m->private + *pos;
 >  }
+>  
+>  static void *vmstat_next(struct seq_file *m, void *arg, loff_t *pos)
 
-I'm talking very personal thing now. I'm usually testing both feature.
-Then, runtime switching makes my happy :-)
-However I don't know what are you and Mel talking and agree about this.
-So, If many developer prefer this approach, I don't oppose anymore.
+Good catch!
+	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-But, I bet almost all distro choose CONFIG_COMPACTION=y. then, lumpy code
-will become nearly dead code. So, I like just kill than dead code. however
-it is also only my preference. ;)
+
 
 
 
