@@ -1,84 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071Ab0KIJGx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 04:06:53 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52110 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751629Ab0KIJGt (ORCPT
+	id S1752938Ab0KIJJw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 04:09:52 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:52735 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981Ab0KIJJs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 04:06:49 -0500
+	Tue, 9 Nov 2010 04:09:48 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=Yw4pu1l9WdCMyZUmU+HyflK9xAvFKppRFstWY2X8SzoaVBRt0tKv/ELlBmGhNiKHI0
-         FWUePpQNGNEzYLjRCitVsQC6jxO29jMdm0PRPxtJ24kvJdtaZXKta44C/VQUP/2+UFnu
-         vk1xsWBsO5UFtowOyYLygqM1A2zV/U5beuDeI=
-From: Mika Westerberg <mika.westerberg@iki.fi>
-To: linux-arm-kernel@lists.infradead.org
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Mika Westerberg <ext-mika.1.westerberg@nokia.com>
-Subject: [PATCH 1/4] proc/vmcore: allow archs to override vmcore_elf_check_arch()
-Date: Tue,  9 Nov 2010 11:06:10 +0200
-Message-Id: <df680f67f33d8b0ef815045b53f205b3ff35de63.1289292124.git.mika.westerberg@iki.fi>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <cover.1289292124.git.mika.westerberg@iki.fi>
-References: <cover.1289292124.git.mika.westerberg@iki.fi>
-In-Reply-To: <cover.1289292124.git.mika.westerberg@iki.fi>
-References: <cover.1289292124.git.mika.westerberg@iki.fi>
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=aV+cTM0GzESscAFafoyb7S12NUqH9+wm6Foq/5WHWCJFcL8/XzulGcD7K0z42tSHU2
+         lUmkYaix9RmYHj3zFu3WXaJbe+CjqxHhqMZMKgOy1+ZOiADJTBBpoanbQJWlNo5GHLHP
+         o3x62cIAxYQt2Deb+2xsSkIjIOtSEilgs4dsE=
+Date: Tue, 9 Nov 2010 11:09:31 +0200
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, sergey.senozhatsky@gmail.com
+Subject: Re: suspicious rcu_dereference_check() usage splat
+Message-ID: <20101109090931.GH3971@swordfish.minsk.epam.com>
+References: <20101107071414.GA3600@deepthought.bhanu.net>
+ <20101107185013.GC15561@linux.vnet.ibm.com>
+ <20101108153957.GA3418@deepthought.bhanu.net>
+ <20101108202437.GH4032@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+Z7/5fzWRHDJ0o7Q"
+Content-Disposition: inline
+In-Reply-To: <20101108202437.GH4032@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mika Westerberg <ext-mika.1.westerberg@nokia.com>
 
-Allow architectures to redefine this macro if needed. This is useful for
-example in architectures where 64-bit ELF vmcores are not supported.
-Specifying zero vmcore_elf64_check_arch() allows compiler to optimize
-away unnecessary parts of parse_crash_elf64_headers().
+--+Z7/5fzWRHDJ0o7Q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-We also rename the macro to vmcore_elf64_check_arch() to reflect that it
-is used for 64-bit vmcores only.
+On (11/08/10 12:24), Paul E. McKenney wrote:
+> Looking over the patch again, the scope of the RCU read-side critical
+> section needs to expand to cover the use of the pointer as well as the
+> call to find_task_by_vpid().  So, for example:
+>=20
+> 		case IOPRIO_WHO_PROCESS:
+> 			rcu_read_lock();
+> 			if (!who)
+> 				p =3D current;
+> 			else
+> 				p =3D find_task_by_vpid(who);
+> 			if (p)
+> 				ret =3D set_task_ioprio(p, ioprio);
+> 			rcu_read_unlock();
+> 			break;
+> 		case IOPRIO_WHO_PGRP:
+>=20
+>=20
+> Otherwise, the task could go away before the last use.
+>=20
+> Sergey, could you please make this change and re-post your patch?
+>=20
+> 							Thanx, Paul
+>=20
 
-Signed-off-by: Mika Westerberg <ext-mika.1.westerberg@nokia.com>
----
- fs/proc/vmcore.c           |    2 +-
- include/linux/crash_dump.h |    9 ++++++++-
- 2 files changed, 9 insertions(+), 2 deletions(-)
+Hello,
+Should we protect set_task_ioprio? Critical operations are protected
+with rcu_read_lock/rcu_read_unlock in set_task_ioprio, the rest is protected
+via task_lock(task)/task_unlock(task).
 
-diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-index 2367fb3..74802bc5 100644
---- a/fs/proc/vmcore.c
-+++ b/fs/proc/vmcore.c
-@@ -499,7 +499,7 @@ static int __init parse_crash_elf64_headers(void)
- 	/* Do some basic Verification. */
- 	if (memcmp(ehdr.e_ident, ELFMAG, SELFMAG) != 0 ||
- 		(ehdr.e_type != ET_CORE) ||
--		!vmcore_elf_check_arch(&ehdr) ||
-+		!vmcore_elf64_check_arch(&ehdr) ||
- 		ehdr.e_ident[EI_CLASS] != ELFCLASS64 ||
- 		ehdr.e_ident[EI_VERSION] != EV_CURRENT ||
- 		ehdr.e_version != EV_CURRENT ||
-diff --git a/include/linux/crash_dump.h b/include/linux/crash_dump.h
-index 0026f26..088cd4a 100644
---- a/include/linux/crash_dump.h
-+++ b/include/linux/crash_dump.h
-@@ -20,7 +20,14 @@ extern ssize_t copy_oldmem_page(unsigned long, char *, size_t,
- #define vmcore_elf_check_arch_cross(x) 0
- #endif
- 
--#define vmcore_elf_check_arch(x) (elf_check_arch(x) || vmcore_elf_check_arch_cross(x))
-+/*
-+ * Architecture code can redefine this if there are any special checks
-+ * needed for 64-bit ELF vmcores. In case of 32-bit only architecture,
-+ * this can be set to zero.
-+ */
-+#ifndef vmcore_elf64_check_arch
-+#define vmcore_elf64_check_arch(x) (elf_check_arch(x) || vmcore_elf_check_arch_cross(x))
-+#endif
- 
- /*
-  * is_kdump_kernel() checks whether this kernel is booting after a panic of
--- 
-1.7.2.3
 
+	Sergey
+
+--+Z7/5fzWRHDJ0o7Q
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iJwEAQECAAYFAkzZD8sACgkQfKHnntdSXjThQwP+JG6kYPHV867PXF+WUx2nP5tK
+CzafMgFIwBdWk08T2Bd3WnPaK6U7Xyb5py+GcbC8vuExAB3eBdFiYqyKt1nMRYsl
+dZM8q6JXomz4yD7g4V0jHXuQwINdjje+ga4oEOxbSEy9h8AgsEhBo9Wsz1FUPh68
+z7JLvsz1AGrSt9yWj5U=
+=5xNs
+-----END PGP SIGNATURE-----
+
+--+Z7/5fzWRHDJ0o7Q--
