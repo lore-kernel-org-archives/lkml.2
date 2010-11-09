@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754284Ab0KIJZk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 04:25:40 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:5180 "EHLO
+	id S1754421Ab0KIJZr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 04:25:47 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:6662 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754143Ab0KIJZf (ORCPT
+	with ESMTP id S1754322Ab0KIJZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 04:25:35 -0500
+	Tue, 9 Nov 2010 04:25:43 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=JF8kbnPchfGHi2ZDaHiCrk6hOZ3DmNhPOeIfQgxts8qhBnLSTHqRmb39vfZRQYLnC
-	z3c6R9Lc4dWdRESTYjXKQ==
+	b=MTohIZV60amfLBMLrryBmUJra7u7JZqPny78QgyqXJ4zWvHiTpU9GOWz2x9ND83UM
+	e8KWqdNgzmo8DLTIR9pBQ==
 From: Greg Thelen <gthelen@google.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
@@ -20,9 +20,9 @@ Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
         Wu Fengguang <fengguang.wu@intel.com>,
         Minchan Kim <minchan.kim@gmail.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Greg Thelen <gthelen@google.com>
-Subject: [PATCH 4/6] memcg: simplify mem_cgroup_page_stat()
-Date: Tue,  9 Nov 2010 01:24:29 -0800
-Message-Id: <1289294671-6865-5-git-send-email-gthelen@google.com>
+Subject: [PATCH 6/6] memcg: make mem_cgroup_page_stat() return value unsigned
+Date: Tue,  9 Nov 2010 01:24:31 -0800
+Message-Id: <1289294671-6865-7-git-send-email-gthelen@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1289294671-6865-1-git-send-email-gthelen@google.com>
 References: <1289294671-6865-1-git-send-email-gthelen@google.com>
@@ -30,80 +30,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cgroup given to mem_cgroup_page_stat() is no allowed to be
-NULL or the root cgroup.  So there is no need to complicate the code
-handling those cases.
+mem_cgroup_page_stat() used to return a negative page count
+value to indicate value.
+
+mem_cgroup_page_stat() has changed so it never returns
+error so convert the return value to the traditional page
+count type (unsigned long).
 
 Signed-off-by: Greg Thelen <gthelen@google.com>
 ---
- mm/memcontrol.c |   48 ++++++++++++++++++++++--------------------------
- 1 files changed, 22 insertions(+), 26 deletions(-)
+ include/linux/memcontrol.h |    6 +++---
+ mm/memcontrol.c            |   12 ++++++++++--
+ 2 files changed, 13 insertions(+), 5 deletions(-)
 
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index a81dfda..3433784 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -158,8 +158,8 @@ bool mem_cgroup_has_dirty_limit(void);
+ bool mem_cgroup_dirty_info(unsigned long sys_available_mem,
+ 			   struct mem_cgroup *memcg,
+ 			   struct dirty_info *info);
+-long mem_cgroup_page_stat(struct mem_cgroup *mem,
+-			  enum mem_cgroup_nr_pages_item item);
++unsigned long mem_cgroup_page_stat(struct mem_cgroup *mem,
++				   enum mem_cgroup_nr_pages_item item);
+ 
+ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+ 						gfp_t gfp_mask);
+@@ -354,7 +354,7 @@ static inline bool mem_cgroup_dirty_info(unsigned long sys_available_mem,
+ 	return false;
+ }
+ 
+-static inline long mem_cgroup_page_stat(struct mem_cgroup *mem,
++static inline unsigned long mem_cgroup_page_stat(struct mem_cgroup *mem,
+ 					enum mem_cgroup_nr_pages_item item)
+ {
+ 	return -ENOSYS;
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index eb621ee..f8df350 100644
+index ccdbb7e..ed070d0 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -1364,12 +1364,10 @@ memcg_hierarchical_free_pages(struct mem_cgroup *mem)
- 
- /*
-  * mem_cgroup_page_stat() - get memory cgroup file cache statistics
-- * @mem:	optional memory cgroup to query.  If NULL, use current task's
-- *		cgroup.
-+ * @mem:	memory cgroup to query
-  * @item:	memory statistic item exported to the kernel
+@@ -1361,8 +1361,8 @@ memcg_hierarchical_free_pages(struct mem_cgroup *mem)
   *
-- * Return the accounted statistic value or negative value if current task is
-- * root cgroup.
-+ * Return the accounted statistic value.
+  * Return the accounted statistic value.
   */
- long mem_cgroup_page_stat(struct mem_cgroup *mem,
- 			  enum mem_cgroup_nr_pages_item item)
-@@ -1377,29 +1375,27 @@ long mem_cgroup_page_stat(struct mem_cgroup *mem,
+-long mem_cgroup_page_stat(struct mem_cgroup *mem,
+-			  enum mem_cgroup_nr_pages_item item)
++unsigned long mem_cgroup_page_stat(struct mem_cgroup *mem,
++				   enum mem_cgroup_nr_pages_item item)
+ {
  	struct mem_cgroup *iter;
  	long value;
+@@ -1388,6 +1388,14 @@ long mem_cgroup_page_stat(struct mem_cgroup *mem,
+ 	for_each_mem_cgroup_tree(iter, mem)
+ 		value += mem_cgroup_local_page_stat(iter, item);
  
-+	VM_BUG_ON(!mem);
-+	VM_BUG_ON(mem_cgroup_is_root(mem));
-+
- 	get_online_cpus();
--	rcu_read_lock();
--	if (!mem)
--		mem = mem_cgroup_from_task(current);
--	if (__mem_cgroup_has_dirty_limit(mem)) {
--		/*
--		 * If we're looking for dirtyable pages we need to evaluate
--		 * free pages depending on the limit and usage of the parents
--		 * first of all.
--		 */
--		if (item == MEMCG_NR_DIRTYABLE_PAGES)
--			value = memcg_hierarchical_free_pages(mem);
--		else
--			value = 0;
--		/*
--		 * Recursively evaluate page statistics against all cgroup
--		 * under hierarchy tree
--		 */
--		for_each_mem_cgroup_tree(iter, mem)
--			value += mem_cgroup_local_page_stat(iter, item);
--	} else
--		value = -EINVAL;
--	rcu_read_unlock();
-+
 +	/*
-+	 * If we're looking for dirtyable pages we need to evaluate
-+	 * free pages depending on the limit and usage of the parents
-+	 * first of all.
++	 * The sum of unlocked per-cpu counters may yield a slightly negative
++	 * value.  This function returns an unsigned value, so round it up to
++	 * zero to avoid returning a very large value.
 +	 */
-+	if (item == MEMCG_NR_DIRTYABLE_PAGES)
-+		value = memcg_hierarchical_free_pages(mem);
-+	else
++	if (value < 0)
 +		value = 0;
-+	/*
-+	 * Recursively evaluate page statistics against all cgroup
-+	 * under hierarchy tree
-+	 */
-+	for_each_mem_cgroup_tree(iter, mem)
-+		value += mem_cgroup_local_page_stat(iter, item);
 +
  	put_online_cpus();
  
