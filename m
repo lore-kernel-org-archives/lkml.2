@@ -1,61 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269Ab0KIIDP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 03:03:15 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43671 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753082Ab0KIIDN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 03:03:13 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: fadvise DONTNEED implementation (or lack thereof)
-Cc: kosaki.motohiro@jp.fujitsu.com, Ben Gamari <bgamari.foss@gmail.com>,
-        linux-kernel@vger.kernel.org, rsync@lists.samba.org,
-        linux-mm@kvack.org
-In-Reply-To: <20101109162525.BC87.A69D9226@jp.fujitsu.com>
-References: <87lj597hp9.fsf@gmail.com> <20101109162525.BC87.A69D9226@jp.fujitsu.com>
-Message-Id: <20101109170303.BC90.A69D9226@jp.fujitsu.com>
+	id S1753370Ab0KIIEF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 03:04:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40886 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753082Ab0KIIEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 03:04:02 -0500
+Date: Tue, 9 Nov 2010 10:03:57 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 2/3] KVM: MMU: don not retry #PF for nonpaging guest
+Message-ID: <20101109080357.GI9036@redhat.com>
+References: <4CD28B5F.1040205@cn.fujitsu.com>
+ <4CD28BCA.1060907@cn.fujitsu.com>
+ <20101104103548.GE6018@redhat.com>
+ <4CD39886.4050909@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue,  9 Nov 2010 17:03:09 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CD39886.4050909@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > I've recently been trying to track down the root cause of my server's
-> > persistent issue of thrashing horribly after being left inactive. It
-> > seems that the issue is likely my nightly backup schedule (using rsync)
-> > which traverses my entire 50GB home directory. I was surprised to find
-> > that rsync does not use fadvise to notify the kernel of its use-once
-> > data usage pattern.
-> > 
-> > It looks like a patch[1] was written (although never merged, it seems)
-> > incorporating fadvise support, but I found its implementation rather
-> > odd, using mincore() and FADV_DONTNEED to kick out only regions brought
-> > in by rsync. It seemed to me the simpler and more appropriate solution
-> > would be to simply flag every touched file with FADV_NOREUSE and let the
-> > kernel manage automatically expelling used pages.
-> > 
-> > After looking deeper into the kernel implementation[2] of fadvise() the
-> > reason for using DONTNEED became more apparant. It seems that the kernel
-> > implements NOREUSE as a noop. A little googling revealed[3] that I not
-> > the first person to encounter this limitation. It looks like a few
-> > folks[4] have discussed addressing the issue in the past, but nothing
-> > has happened as of 2.6.36. Are there plans to implement this
-> > functionality in the near future? It seems like the utility of fadvise
-> > is severely limited by lacking support for NOREUSE.
+On Fri, Nov 05, 2010 at 01:39:18PM +0800, Xiao Guangrong wrote:
+> On 11/04/2010 06:35 PM, Gleb Natapov wrote:
+> > On Thu, Nov 04, 2010 at 06:32:42PM +0800, Xiao Guangrong wrote:
+> >> nonpaing guest's 'direct_map' is also true, retry #PF for those
+> >> guests is useless, so use 'tdp_enabled' instead
+> >>
+> > nonpaging guest will not attempt async pf. 
 > 
-> btw, Other OSs seems to also don't implement it.
-> example,
+> Ah, my mistake, but why we can not attempt async pf for nonpaging guest?
+> 
+> > And by checking tdp_enabled
+> > here instead of direct_map we will screw nested ntp.
+> > 
+> 
+> It looks like something broken: apfs can generated in L2 guest (nested ntp guest)
+> and be retried in L1 guest.
+> 
+OK now when Xiao explained me the problem privately I can review this.
 
-I've heared other OSs status of fadvise() from private mail.
+> Below patch fix it and let nonpaging guest support async pf. I'll post it properly
+> if you like. :-)
+> 
+Apf for nonpaging guest should be separate patch of course.
 
-NetBSD: no-op (as linux)
-FreeBSD/DragonflyBSD/OpenBSD: don't exist posix_fadvise(2)
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index 7f20f2c..606978e 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -600,6 +600,7 @@ struct kvm_x86_ops {
+>  struct kvm_arch_async_pf {
+>  	u32 token;
+>  	gfn_t gfn;
+> +	bool softmmu;
+>  };
+>  
+>  extern struct kvm_x86_ops *kvm_x86_ops;
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index f3fad4f..48ca312 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+>  static int kvm_arch_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn)
+> @@ -2602,6 +2607,7 @@ static int kvm_arch_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn)
+>  	struct kvm_arch_async_pf arch;
+>  	arch.token = (vcpu->arch.apf.id++ << 12) | vcpu->vcpu_id;
+>  	arch.gfn = gfn;
+> +	arch.softmmu = mmu_is_softmmu(vcpu);
+>  
+We can do:
+        if (mmu_is_nested(vcpu))
+		gva = vcpu->mmu.gva_to_gpa(gva);
+And this should fix everything no?
 
+>  	return kvm_setup_async_pf(vcpu, gva, gfn, &arch);
+>  }
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 2044302..d826d78 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -6172,9 +6172,10 @@ EXPORT_SYMBOL_GPL(kvm_set_rflags);
+>  
+>  void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu, struct kvm_async_pf *work)
+>  {
+> +	bool softmmu = mmu_is_softmmu(vcpu);
+>  	int r;
+>  
+> -	if (!vcpu->arch.mmu.direct_map || is_error_page(work->page))
+> +	if (softmmu || work->arch.softmmu || is_error_page(work->page))
+>  		return;
+>  
+>  	r = kvm_mmu_reload(vcpu);
+> diff --git a/arch/x86/kvm/x86.h b/arch/x86/kvm/x86.h
+> index 2cea414..48796c7 100644
+> --- a/arch/x86/kvm/x86.h
+> +++ b/arch/x86/kvm/x86.h
+> @@ -55,6 +55,11 @@ static inline bool mmu_is_nested(struct kvm_vcpu *vcpu)
+>  	return vcpu->arch.walk_mmu == &vcpu->arch.nested_mmu;
+>  }
+>  
+> +static inline bool mmu_is_softmmu(struct kvm_vcpu *vcpu)
+> +{
+> +	return !tdp_enabled || mmu_is_nested(vcpu);
+> +}
+> +
+Isn't this the same as checking vcpu->arch.mmu.direct_map? The only
+difference that this will be true for nonpaging mode too but this is
+even better since we can prefault in nonpaging mode.
 
-
+--
+			Gleb.
