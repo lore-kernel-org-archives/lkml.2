@@ -1,130 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755383Ab0KIKxK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 05:53:10 -0500
-Received: from casper.infradead.org ([85.118.1.10]:55068 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755069Ab0KIKxG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 05:53:06 -0500
-Message-ID: <4CD9280C.40204@infradead.org>
-Date: Tue, 09 Nov 2010 08:53:00 -0200
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
-MIME-Version: 1.0
-To: Maciej Szmigiero <mhej@o2.pl>
-CC: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [V4L][SAA7134] fix tda9887 detection on cold and eeprom read
- corruption on warm Medion 7134
-References: <4CC5C568.4090809@o2.pl>
-In-Reply-To: <4CC5C568.4090809@o2.pl>
-Content-Type: text/plain; charset=UTF-8
+	id S1755275Ab0KIK6E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 05:58:04 -0500
+Received: from mga14.intel.com ([143.182.124.37]:65019 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755085Ab0KIK6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 05:58:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,174,1288594800"; 
+   d="scan'208";a="346376485"
+Date: Tue, 9 Nov 2010 10:37:37 +0000
+From: Alan Cox <alan@linux.intel.com>
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Mike Frysinger <vapier@gentoo.org>,
+        Feng Tang <feng.tang@intel.com>, Tobias Klauser <tklauser@distanz.ch>,
+        linux-kernel@vger.kernel.org, yong.y.wang@intel.com, qi.wang@intel.com,
+        kok.howg.ewe@intel.com, andrew.chih.howe.khor@intel.com
+Subject: Re: [PATCH] EG20T: Update PCH_UART driver to 2.6.36
+Message-ID: <20101109103737.40bfab7b@linux.intel.com>
+In-Reply-To: <4CD8D5A2.1080202@dsn.okisemi.com>
+References: <4CD8D5A2.1080202@dsn.okisemi.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 25-10-2010 15:59, Maciej Szmigiero escreveu:
-> [V4L][SAA7134] fix tda9887 detection on cold and eeprom read corruption on warm Medion 7134
-> 
-> When Medion 7134 analog+DVB-T card is cold (after powerup) the tda9887 analog demodulator
-> won't show on i2c bus.
-> This results in no signal on analog TV. After loading driver for second time
-> eeprom (required for tuner autodetection) read is corrupted, but tda9987 is detected
-> properly and analog TV works when tuner model is forced.
-> 
-> Fix tda9887 problem by moving its detect code after tuner setup which unhides it.
-> The eeprom read issue is fixed by opening i2c gate in DVB-T demodulator.
-> 
-> Tested on Medion 7134 and also tested for reference on Typhoon Cardbus Hybrid
-> (which also uses saa7134 driver).
-> 
-> Signed-off-by: Maciej Szmigiero <mhej@o2.pl>
-> 
-> --- a/drivers/media/video/saa7134/saa7134-cards.c	2010-08-02 00:11:14.000000000 +0200
-> +++ b/drivers/media/video/saa7134/saa7134-cards.c	2010-10-25 19:19:08.000000000 +0200
-> @@ -7249,12 +7249,37 @@
->  		break;
->  	case SAA7134_BOARD_MD7134:
->  	{
-> -		u8 subaddr;
-> +		u8 subaddr, dmdregval;
->  		u8 data[3];
->  		int ret, tuner_t;
-> +		struct i2c_msg i2cgatemsg_r[] = { {.addr = 0x08, .flags = 0,
-> +						.buf = &subaddr, .len = 1},
-> +						{.addr = 0x08,
-> +							.flags = I2C_M_RD,
-> +						.buf = &dmdregval, .len = 1} };
-> +		struct i2c_msg i2cgatemsg_w[] = { {.addr = 0x08, .flags = 0,
-> +						.buf = data, .len = 2} };
->  		struct i2c_msg msg[] = {{.addr=0x50, .flags=0, .buf=&subaddr, .len = 1},
->  					{.addr=0x50, .flags=I2C_M_RD, .buf=data, .len = 3}};
->  
-> +		/* open i2c gate in DVB-T demod */
-> +		/* so eeprom read won't be corrupted */
-> +		subaddr = 0x7;
-> +		ret = i2c_transfer(&dev->i2c_adap, i2cgatemsg_r, 2);
-> +		if ((ret == 2) && (dmdregval & 0x2)) {
-> +			printk(KERN_NOTICE "%s DVB-T demod i2c gate was left"
-> +						    " closed\n", dev->name);
-> +			printk(KERN_NOTICE "%s previous informational"
-> +					    " EEPROM read might have been"
-> +					    " corrupted\n", dev->name);
 
-hmm... I don't think we need those debug messages on normal cases. Also, we want the log
-shown as:
-	saa7134: <foo>
-and not as:
-	saa7134 <foo>
+> +#ifdef CONFIG_PCH_DMA
+> + #include <linux/dmaengine.h>
+> + #include <linux/pch_dma.h>
+> +#endif
+
+The PCH DMA will have been included in the kernel anyway before this
+merge so you can remove the ifdefs and include it regardless
+
+
+> +#if !defined(PORT_PCH_256FIFO) || !defined(PORT_PCH_64FIFO)
+> + #undef PORT_PCH_256FIFO
+> + #undef PORT_PCH_64FIFO
+> + #define PORT_PCH_256FIFO	(PORT_MAX_8250+1) /* PCH UART with
+> 256 byte
+> +						     FIFO */
+> + #define PORT_PCH_64FIFO	(PORT_MAX_8250+2) /* PCH UART with
+> 64 byte
+> +						     FIFO */
+> +#endif
+
+FIFO config really all wants to be done at runtime.
+
+
+
+> +static inline void wr(void __iomem *addr, unsigned int value)
+> +{
+> +#if PCH_UART_DMA_REG_BOUNDARY == 4
+> +	iowrite32(value, addr);
+> +#else
+> +	iowrite8(value, (void *)addr);
+
+Why the cast ?
+
+> +#endif
+
+Again you've got magic ifdefs with no explanation ?
+> +}
+> +
+> +static void pch_uart_hal_request(struct pci_dev *pdev, int fifosize,
+> +				 int base_baud)
+> +{
+> +	struct eg20t_port *priv = pci_get_drvdata(pdev);
+> +
+> +	priv->trigger_level = 1;
+> +	priv->fcr = 0;
+> +}
+> +
+> +static int __get_msr(struct eg20t_port *priv, void __iomem *base)
+> +{
+
+Please avoid __ names for functions
+
+> +	unsigned int msr;
+> +
+> +	msr = rr(base + PCH_UART_MSR);
+> +	priv->dmsr |= msr & PCH_UART_MSR_DELTA;
+> +
+> +	return (int)msr;
+
+Why - if it is unsigned then why not return unsigned values ?
+
+
+> +static int pch_uart_hal_enable_interrupt(struct eg20t_port *priv,
+> +					 unsigned int flag)
+> +{
+> +	void __iomem *base;
+> +	int ret;
+> +
+> +	base = priv->membase;
+> +	ret = __pch_uart_hal_enable_interrupt(base, flag);
+> +
+> +	return ret;
+
+Why not just
+
+	"return __pch_uart_hal_enable_interrupt(priv->membase, flag);"
+
+in fact why not just remove all these wrappers entirely ?
+
+
+> +static int push_rx(struct eg20t_port *priv, const unsigned char *buf,
+> +		   int size)
+> +{
+> +	struct uart_port *port;
+> +	struct tty_struct *tty;
+> +	int sz, i, j;
+> +	int loop;
+> +	int pushed;
+> +
+> +	port = &priv->port;
+> +	tty = port->state->port.tty;
+
+tty ports are refcounted
+
+	tty = tty_port_tty_get(...)
+
+and when finished tty_kref_put(tty);
+
+Also tty may be NULL, if the port closed as you were doing this, so
+check the return from tty_port_tty_get and act accordingly.
+
+
+> +static int handle_error(struct eg20t_port *priv, int err)
+> +{
+> +	int ret = 0;
+> +	return ret;
+> +}
+
+Why ?????
 
 > +
-> +			data[0] = 0x7;
-> +			data[1] = (dmdregval & ~0x2);
-> +			if (i2c_transfer(&dev->i2c_adap, i2cgatemsg_w, 1) != 1)
-> +				printk(KERN_ERR "early i2c gate"
-> +						" open failure\n");
+> +#ifndef CONFIG_PCH_DMA
 
-Gah. A message like that should really specify the dev->name, and the board.
+DMA should be runtime configuration - vendors need to build generic
+kernels so need things like DMA switching to be done on load not on
+compile
 
-> +		}
+
+
+
+> +static void pch_uart_set_mctrl(struct uart_port *port, unsigned int
+> mctrl) +{
+> +}
+
+Seems to be unimplemented ?
+
+
+> +static void pch_uart_set_termios(struct uart_port *port,
+> +				 struct ktermios *termios, struct
+> ktermios *old) +{
+> +	int baud;
+> +	unsigned int parity, bits, stb;
+> +	struct eg20t_port *priv;
+> +	unsigned long flags;
 > +
->  		subaddr= 0x14;
->  		tuner_t = 0;
->  
-> @@ -7522,10 +7547,6 @@
->  			v4l2_i2c_new_subdev(&dev->v4l2_dev,
->  				&dev->i2c_adap, "tuner", "tuner",
->  				dev->radio_addr, NULL);
-> -		if (has_demod)
-> -			v4l2_i2c_new_subdev(&dev->v4l2_dev,
-> -				&dev->i2c_adap, "tuner", "tuner",
-> -				0, v4l2_i2c_tuner_addrs(ADDRS_DEMOD));
->  		if (dev->tuner_addr == ADDR_UNSET) {
->  			enum v4l2_i2c_tuner_type type =
->  				has_demod ? ADDRS_TV_WITH_DEMOD : ADDRS_TV;
-> @@ -7542,6 +7563,15 @@
->  
->  	saa7134_tuner_setup(dev);
->  
-> +	/* some cards (Medion 7134 for example) needs tuner to be setup */
-> +	/* before tda9887 shows itself on i2c bus */
-> +	if ((TUNER_ABSENT != dev->tuner_type)
-> +			&& (dev->tda9887_conf & TDA9887_PRESENT)) {
-> +		v4l2_i2c_new_subdev(&dev->v4l2_dev,
-> +			&dev->i2c_adap, "tuner", "tuner",
-> +			0, v4l2_i2c_tuner_addrs(ADDRS_DEMOD));
+> +	priv = container_of(port, struct eg20t_port, port);
+> +	switch (termios->c_cflag & CSIZE) {
+> +	case CS5:
+> +		bits = PCH_UART_HAL_5BIT;
+> +		break;
+> +	case CS6:
+> +		bits = PCH_UART_HAL_6BIT;
+> +		break;
+> +	case CS7:
+> +		bits = PCH_UART_HAL_7BIT;
+> +		break;
+> +	default:		/* CS8 */
+> +		bits = PCH_UART_HAL_8BIT;
+> +		break;
 > +	}
+> +	if (termios->c_cflag & CSTOPB)
+> +		stb = PCH_UART_HAL_STB2;
+> +	else
+> +		stb = PCH_UART_HAL_STB1;
 > +
->  	switch (dev->board) {
->  	case SAA7134_BOARD_BEHOLD_COLUMBUS_TVFM:
->  	case SAA7134_BOARD_AVERMEDIA_CARDBUS_501:
+> +	if (termios->c_cflag & PARENB) {
+> +		if (!(termios->c_cflag & PARODD))
+> +			parity = PCH_UART_HAL_PARITY_ODD;
+> +		else
+> +			parity = PCH_UART_HAL_PARITY_EVEN;
+> +
+> +	} else {
+> +		parity = PCH_UART_HAL_PARITY_NONE;
+> +	}
 
-The order change for the demod probe will likely break support for other boards.
-If the problem is specific to Medion 7134, what you should do, instead, is to
-change the order just for MD7134 (so, inside the switch(dev->board)).
+If you don't support CPARMRK then you should clear that bit in
+termios->c_flag so the caller knows it couldn't be set.
 
-Cheers,
-Mauro.
+
+> +	baud = uart_get_baud_rate(port, termios, old, 0,
+> port->uartclk / 16); +
+> +	spin_lock_irqsave(&port->lock, flags);
+> +
+> +	uart_update_timeout(port, termios->c_cflag, baud);
+> +	pch_uart_hal_set_line(priv, baud, parity, bits, stb);
+
+Baud rate should also be written back here
+
+       /* Don't rewrite B0 */
+        if (tty_termios_baud_rate(termios))
+                tty_termios_encode_baud_rate(termios, baud, baud);
+
+> +	txbuf = __get_free_page(GFP_KERNEL|GFP_DMA);
+> +	if (!txbuf)
+> +		goto init_port_error_end;
+> +
+> +	rxbuf = __get_free_page(GFP_KERNEL|GFP_DMA);
+> +	if (!rxbuf)
+> +		goto init_port_free_txbuf;
+
+No - for bus masterable DMA buffers use the dma_alloc_coherent
+interfaces with the correct device pointer, otherwise it will break on
+a system with an IOMMU.
+
+I assume the correct device in this case would be the DMA controller ?
+
+
+The big thing I don't understand here is the locking model - what stops
+interrupts and other things interfering with each other. For almost all
+of the calls coming from the serial layer the port lock protects them
+but I see no protection on the IRQ side at all ?
+
+
