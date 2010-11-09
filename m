@@ -1,45 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685Ab0KIWUc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 17:20:32 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:56328 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1754158Ab0KIWUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 17:20:30 -0500
-X-Authenticated: #41721828
-X-Provags-ID: V01U2FsdGVkX183M+gA+7M3J6FBePbJ9SbimEXcXx0hyoS1E8G5fT
-	rXR/CapZ/ERguc
-Date: Tue, 9 Nov 2010 23:20:26 +0100
-From: Jonathan =?utf-8?Q?Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>
-To: trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] spelling fix in drivers/misc/Kconfig
-Message-ID: <20101109222026.GA1293@debian.debian>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Y-GMX-Trusted: 0
+	id S1754916Ab0KIWWZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 17:22:25 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:59048 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753497Ab0KIWWX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 17:22:23 -0500
+Subject: Re: [RFC][PATCH] perf: sysfs type id
+From: Peter Zijlstra <peterz@infradead.org>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Lin Ming <ming.m.lin@intel.com>, Stephane Eranian <eranian@google.com>,
+        "robert.richter" <robert.richter@amd.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        fweisbec <fweisbec@gmail.com>, paulus <paulus@samba.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <AANLkTimb=R0aqtfL=eZpwj=KqJchHU+nhMnjk5ME9BNr@mail.gmail.com>
+References: <1289339119.2191.92.camel@laptop>
+	 <AANLkTimb=R0aqtfL=eZpwj=KqJchHU+nhMnjk5ME9BNr@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 09 Nov 2010 23:22:27 +0100
+Message-ID: <1289341347.2191.97.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jonathan Neuschäfer
----
-Kernel version: 2.6.37-rc1
+On Tue, 2010-11-09 at 23:11 +0100, Kay Sievers wrote:
+> On Tue, Nov 9, 2010 at 22:45, Peter Zijlstra <peterz@infradead.org> wrote:
+> > The below is a RFC patch adding dynamic type ids to perf.
+> >
+> > We need to represent PMUs in sysfs because we want to allow multiple
+> > (loadable) PMUs and need a way to identify them.
+> >
+> > This patch creates a new device class "pmu" and adds a single attribute
+> > "type" to it. This device attribute will expose the dynamic type id as
+> > required by perf_event_attr::type.
+> >
+> > The sysfs layout looks like:
+> >
+> > [root@westmere ~]# cd /sys/class/pmu/
+> 
+> Please use a 'bus_type' instead of 'class'.
+> 
+> I'm very sure, some day, you'll need global attributes for the pmu
+> stuff, and class -- unlike bus -- has its own subdir where you can go
+> wild, without mixing things with the list-of-devices. :)
 
- drivers/misc/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Having its own subdir sounds like a pro, so I'm somewhat confused. Also
+the pmu (or event_source as Ingo would like it getting called) seems
+like a class of devices not a bus.
 
---- linux-2.6/drivers/misc/Kconfig	2010-11-07 22:56:37.000000000 +0100
-+++ linux-hacking/drivers/misc/Kconfig	2010-11-08 21:10:13.000000000 +0100
-@@ -402,7 +402,7 @@
- 	  DAC7512 16-bit digital-to-analog converter.
- 
- 	  This driver can also be built as a module. If so, the module
--	  will be calles ti_dac7512.
-+	  will be called ti_dac7512.
- 
- config VMWARE_BALLOON
- 	tristate "VMware Balloon Driver"
+USB/PCI/I2C/ISA are all buses.. pmu/event_source not so much, they are
+very different (sometimes even pure software) things that provide a
+common interface -- they generate events which we can count and sample.
+
+/me dazed & confused, please do explain.
+
+> No new stuff should use 'class', it's not extensible.
+
+Hrm.. when I introduced the bdi stuff class was _the_ thing to use.
