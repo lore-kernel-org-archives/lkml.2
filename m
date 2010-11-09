@@ -1,86 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754181Ab0KIUFJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 15:05:09 -0500
-Received: from relay02.digicable.hu ([92.249.128.188]:48317 "EHLO
-	relay02.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752437Ab0KIUFG (ORCPT
+	id S1754179Ab0KIUGt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 15:06:49 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:55793 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753325Ab0KIUGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 15:05:06 -0500
-Message-ID: <4CD9A96D.1010306@freemail.hu>
-Date: Tue, 09 Nov 2010 21:05:01 +0100
-From: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
+	Tue, 9 Nov 2010 15:06:45 -0500
+Message-ID: <4CD9A9B8.70708@vlnb.net>
+Date: Tue, 09 Nov 2010 23:06:16 +0300
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: Pete Zaitcev <zaitcev@redhat.com>
-CC: linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Developer support list for Wireshark 
-	<wireshark-dev@wireshark.org>
-Subject: Re: usbmon: size of different fields?
-References: <4CD8ECE4.1090206@freemail.hu> <20101109075056.59a2e7d8@lembas.zaitcev.lan>
-In-Reply-To: <20101109075056.59a2e7d8@lembas.zaitcev.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Original: 94.21.97.45
+To: Greg KH <greg@kroah.com>
+CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
+        Bart Van Assche <bart.vanassche@gmail.com>,
+        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
+        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Hannes Reinecke <hare@suse.de>,
+        Richard Sharpe <realrichardsharpe@gmail.com>,
+        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
+Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
+References: <20101011213235.GA11489@kroah.com> <4CB4AEB9.30501@vlnb.net> <20101012190345.GA25737@kroah.com> <4CB75E81.7000208@vlnb.net> <20101014200413.GA30831@kroah.com> <4CC1CA4D.1090609@vlnb.net> <20101022175624.GA13640@kroah.com> <4CC1DAA2.7030602@vlnb.net> <20101022185437.GA9103@kroah.com> <4CD8566D.1020202@vlnb.net> <20101109002829.GA22633@kroah.com>
+In-Reply-To: <20101109002829.GA22633@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:DwePvuOeNsnlMbaSg8DQRNRNoBdRmGWJboLArfEQ/gL
+ FjtGEwhViDzldW4jGg5aV051j+X/dF1GR6veW7jizQAkmh0i66
+ FwbYzOa82JeUyK9pVfcTkTFgT9NTakQxIf53GjbYfxcI0xIJ/J
+ PyNjv7ns3QsuXGiF3KDpAGkZqhbQBinJe1CPb5UVnx58btvtOZ
+ 7q8iNbvMEX5QIIgWOWN5A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pete Zaitcev wrote:
-> On Tue, 09 Nov 2010 07:40:36 +0100
-> Németh Márton <nm127@freemail.hu> wrote:
-> 
->> I'm looking at the struct mon_bin_hdr and struct mon_bin_isodesc in file
->> f=drivers/usb/mon/mon_bin.c
-> 
-> Actually you're supposed to be looking at Documentation/usb/usbmon.txt.
-> If there is a discrepancy between the usbmon.txt and mon_bin.c, I want
-> to know about it.
-
-There is only minor differences between Documentation/usb/usbmon.txt and
-drivers/usb/mon/mon_bin.c . These are as follows:
- - the busnum field is u16 in txt and "unsigned short" in c file
- - the field "length" (in txt) has different name "len_urb" (in c)
-
-The ISO description structure is missing from the txt description but
-this can be found in drivers/usb/mon/mon_bin.c .
-
->> As far as I understand u64, s64, u32 and s32 have always fixed bit lengths.
+Greg KH, on 11/09/2010 03:28 AM wrote:
+> On Mon, Nov 08, 2010 at 10:58:37PM +0300, Vladislav Bolkhovitin wrote:
+>> Greg KH, on 10/22/2010 10:54 PM wrote:
+>>> On Fri, Oct 22, 2010 at 10:40:34PM +0400, Vladislav Bolkhovitin wrote:
+>>>>>> +	unsigned int tgt_kobj_initialized:1;
+>>>>>
+>>>>> It's the middle of the merge window, and I'm about to go on vacation, so
+>>>>> I didn't read this patch after this line.
+>>>>>
+>>>>> It's obvious that this patch is wrong, you shouldn't need to worry about
+>>>>> this.  And even if you did, you don't need this flag.
+>>>>>
+>>>>> Why are you trying to do something that no one else needs?  Why make
+>>>>> things harder than they have to be.
+>>>>
+>>>> I tried to explain that to you in http://lkml.org/lkml/2010/10/14/291
+>>>> and mentioned there the need to create this flag to track
+>>>> half-initialized kobjects. You agreed
+>>>> (http://lkml.org/lkml/2010/10/14/299) that don't return half-initialized
+>>>> objects is a regular kernel practice, but then requested to strictly
+>>>> bound the larger object freeing to its kobject release(), which means
+>>>> that all SYSFS creating functions now have to return half-initialized
+>>>> SYSFS hierarchy in case of any error. Hence the flag to track it.
+>>>
+>>> I agreed that you needed to do something about it, not that this is the
+>>> correct way to do it.
+>>>
+>>> Think for a second as to why your code path looks different from EVERY
+>>> other kobject user in the kernel.  Perhaps it is incorrect?  You don't
+>>> need all this completion mess, in fact, it's wrong.
+>>>
+>>> Just do what everyone else does please, as that is the simpler, and
+>>> correct, way to do it.
 >>
->> What about "unsigned char", "char", "unsigned int" and "int"? May their size in bits
->> differ in different architecture?
+>> Hello Greg,
+>>
+>> Why SCST objects are different from most other kernel objects and why
+>> they can't be implemented the same way as them is exactly what I'm
+>> trying to explain you. Let me try again from a bit different angle.
 > 
-> No they may not. They sizes are always the same on any architecture,
-> as long as Linux supports it.
-
-So to summarize, the following table is valid on all architectures. Right?
-
-  type in Linux  | size in bits
-  ---------------+---------------
-  unsigned char  | 8bit
-  char           | 8bit
-  unsigned int   | 32bit
-  int            | 32bit
-
->> I'm asking this because I was dealing with the USB packet dissectors for Wireshark
->> and it is possible to capture the USB traffic on one computer and then transfer
->> the file to another computer.
+> I'm sorry, but I just don't buy it.
 > 
-> Do be careful here, because the struct you're talking about is a part
-> of API, not a network stream. Its field sizes are rigidly defined, but
-> the byte order is host! You MUST NOT attempt to store it in pcap files.
+>> SCST objects are different from the most other kernel objects, because
+>> they are very complex, hence complex to initialize and delete with
+>> dependencies in order how initialization and delete actions should be
+>> performed.
+> 
+> Then don't abuse kobjects with this "different" type of kobject, as that
+> is not how the kobject code was designed to be used.
+> 
+> It was only designed to be used with the "sane" type of kernel objects
+> :)
 
-OK, that's clear, the byte order of the API structure fields are in "host endian"
-order. The API structures are already saved by Wireshark into file for quite some
-time. There is already a discussion on endianness topic together with ISO descritors:
+SCST objects are generally 1:1 mapping of SCSI Architecture Model (SAM)
+objects. Is SAM insane and should have been designed with kobjects in
+mind? ;)
 
-  Wireshark Bug 5370 - Add support for USB isochronous
-  https://bugs.wireshark.org/bugzilla/show_bug.cgi?id=5370
+>> Particularly, SCST objects have a lot of attributes and sub-objects,
+>> so their kobjects can't be inited and exposed to SYSFS or removed from
+>> it until they reach some point during initialization or delete
+>> correspondingly, otherwise their attributes' reads and writes can
+>> crash.
+> 
+> That sounds like an implementation error.  No other kernel code has that
+> problem from what I can see.
+> 
+>> Note, SCST's kobjects are not the only kobjects in the kernel using the
+>> completion based delete. See, for instance, ktype_cpufreq, ktype_cpuidle
+>> or ext4_ktype.
+> 
+> ext4 is using this to get stuff under the /sys/fs/ext4 location.
 
-There is an other problem which I found about capturing ISO USB packets with
-mmap, this problem seems to be originated from Linux kernel:
+"To get stuff under /sys/..." is exactly for what SCST needs kobjects.
+SCST objects are user interface agnostic and can be equally well exposed
+to user space via SYSFS, PROCFS, or anything else, like CONFIGFS or
+custom IOCTLs.
 
-  Kernel Bug Tracker Bug 22182 - usbmon: completed ISO packet content is not fully arriving with mmap
-  https://bugzilla.kernel.org/show_bug.cgi?id=22182
+> And
+> even there, I don't think it is using kobjects correctly, but I really
+> don't want to go audit that code at the moment.
+> 
+> cpufreq and cpuidle is also probably incorrect, but again, I don't feel
+> like auditing it right now.
 
-	Márton Németh
+Sorry, but what is incorrect in the working implementation without any
+bugs doing its job in the simplest, smallest and clearest way?
+
+If those objects remade to free themselves in the kobjects release(),
+what value would it add to them? Would the implementation be simpler,
+smaller or clearer? Not, I believe, new implementation would be only
+bigger and less clear. So, what's the point to do it to make the code worse?
+
+>>> Oh, and why are you using a kobject at all anyway?  Shouldn't you be
+>>> using a 'struct device'?
+>>
+>> We need only to represent our internal SCST objects on the SYSFS. The
+>> objects are not devices, but special entities for special purposes. For
+>> instance, struct scst_session is a representation of SCSI I_T nexuses.
+>> Struct scst_tgt_dev - I_T_L nexuses. Another example is struct scst_acg,
+>> which is a representation of per initiator access control groups to
+>> determine which initiators can see which LUNs. Hence, for such purpose
+>> kobjects are fully sufficient.
+> 
+> No, you should be using a struct device as you are putting stuff into
+> the device tree.  NEVER put a kobject into the device tree, that is just
+> wrong and will cause problems.
+
+Hmm, we never put any stuff into the device tree. Why do you think we
+do? None of SCST objects has any relation to any hardware device, hence
+there's no need to touch the device tree.
+
+Thanks,
+Vlad
