@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab0KIVl5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 16:41:57 -0500
-Received: from thunk.org ([69.25.196.29]:46964 "EHLO thunker.thunk.org"
+	id S1755321Ab0KIVmQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 16:42:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49152 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753289Ab0KIVlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 16:41:55 -0500
-Date: Tue, 9 Nov 2010 16:41:47 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Josef Bacik <josef@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, joel.becker@oracle.com,
-        cmm@us.ibm.com, cluster-devel@redhat.com
-Subject: Re: [PATCH 1/6] fs: add hole punching to fallocate
-Message-ID: <20101109214147.GK3099@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Dave Chinner <david@fromorbit.com>, Josef Bacik <josef@redhat.com>,
-	linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-	linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-	xfs@oss.sgi.com, joel.becker@oracle.com, cmm@us.ibm.com,
-	cluster-devel@redhat.com
-References: <1289248327-16308-1-git-send-email-josef@redhat.com>
- <20101109011222.GD2715@dastard>
- <20101109033038.GF3099@thunk.org>
- <20101109044242.GH2715@dastard>
+	id S1752446Ab0KIVmN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 16:42:13 -0500
+Date: Tue, 9 Nov 2010 22:40:36 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 43 of 66] don't leave orhpaned swap cache after ksm
+ merging
+Message-ID: <20101109214036.GE6809@random.random>
+References: <patchbomb.1288798055@v2.random>
+ <d5aefe85d1dab1bb7e99.1288798098@v2.random>
+ <20101109120747.BC4B.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101109044242.GH2715@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <20101109120747.BC4B.A69D9226@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 09, 2010 at 03:42:42PM +1100, Dave Chinner wrote:
-> Implementation is up to the filesystem. However, XFS does (b)
-> because:
+On Tue, Nov 09, 2010 at 12:08:25PM +0900, KOSAKI Motohiro wrote:
+> > From: Andrea Arcangeli <aarcange@redhat.com>
+> > 
+> > When swapcache is replaced by a ksm page don't leave orhpaned swap cache.
+> > 
+> > Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> > Reviewed-by: Rik van Riel <riel@redhat.com>
 > 
-> 	1) it was extremely simple to implement (one of the
-> 	   advantages of having an exceedingly complex allocation
-> 	   interface to begin with :P)
-> 	2) conversion is atomic, fast and reliable
-> 	3) it is independent of the underlying storage; and
-> 	4) reads of unwritten extents operate at memory speed,
-> 	   not disk speed.
+> This explanation seems to tell this is bugfix. If so, please separate
+> this one from THP and will send mainline and -stable soon.
 
-Yeah, I was thinking that using a device-style TRIM might be better
-since future attempts to write to it won't require a separate seek to
-modify the extent tree.  But yeah, there are a bunch of advantages of
-simply mutating the extent tree.
+Right. I'm uncertain if this is so bad to require -stable I think, if
+it was more urgent I would have submitted already separately but it's
+true it's not THP specific.
 
-While we're on the subject of changes to fallocate, what do people
-think of FALLOC_FL_EXPOSE_OLD_DATA, which requires either root
-privileges or (if capabilities are in use) CAP_DAC_OVERRIDE &&
-CAP_MAC_OVERRIDE && CAP_SYS_ADMIN.  This would allow a trusted process
-to fallocate blocks with the extent already marked initialized.  I've
-had two requests for such functionality for ext4 already.  
-
-(Take for example a trusted cluster filesystem backend that checks the
-object checksum before returning any data to the user; and if the
-check fails the cluster file system will try to use some other replica
-stored on some other server.)
-
-    		     	  		    	 - Ted
+It's only fatal for cloud computing, where the manager has to decide
+to migrate more VM to one node, but it won't if it sees tons of swap
+used and it will think there's not enough margin for KSM cows until
+the VM is migrated back to another node.
