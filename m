@@ -1,72 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449Ab0KIJOr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 04:14:47 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:11846 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752337Ab0KIJOo convert rfc822-to-8bit (ORCPT
+	id S1753262Ab0KIJQl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 04:16:41 -0500
+Received: from exprod5og110.obsmtp.com ([64.18.0.20]:57728 "HELO
+	exprod5og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752596Ab0KIJQj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 04:14:44 -0500
-Date: Tue, 9 Nov 2010 10:14:36 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: axel.lin@gmail.com
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Simon Guinot <sguinot@lacie.com>, lm-sensors@lm-sensors.org
-Subject: Re: [PATCH] hwmon: (gpio-fan) Fix fan_ctrl_init error path
-Message-ID: <20101109101436.4346ea3b@endymion.delvare>
-In-Reply-To: <AANLkTim9mNy+ocftWn0ZiGPyefjhc-eXj3gunFw1Q04s@mail.gmail.com>
-References: <1289279919.14461.7.camel@mola>
-	<20101109090147.155dd1e9@endymion.delvare>
-	<AANLkTim9mNy+ocftWn0ZiGPyefjhc-eXj3gunFw1Q04s@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 9 Nov 2010 04:16:39 -0500
+Message-ID: <4CD91172.4010007@panasas.com>
+Date: Tue, 09 Nov 2010 11:16:34 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
+        Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [RFC v2 16/21] tcm: Add PSCSI subsystem plugin
+References: <1285195867-11728-1-git-send-email-nab@linux-iscsi.org>	 <4CD01EE2.20705@panasas.com> <1289279587.19946.69.camel@haakon2.linux-iscsi.org>
+In-Reply-To: <1289279587.19946.69.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 09 Nov 2010 09:16:37.0636 (UTC) FILETIME=[CFDAD440:01CB7FEE]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Nov 2010 16:22:02 +0800, Axel Lin wrote:
-> 2010/11/9 Jean Delvare <khali@linux-fr.org>:
-> > On Tue, 09 Nov 2010 13:18:39 +0800, Axel Lin wrote:
-> >> Remove sysfs entries before return -ENODEV.
-> >>
-> >> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> >> ---
-> >>  drivers/hwmon/gpio-fan.c |    4 +++-
-> >>  1 files changed, 3 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/drivers/hwmon/gpio-fan.c b/drivers/hwmon/gpio-fan.c
-> >> index aa701a1..d2e66b4 100644
-> >> --- a/drivers/hwmon/gpio-fan.c
-> >> +++ b/drivers/hwmon/gpio-fan.c
-> >> @@ -388,11 +388,13 @@ static int fan_ctrl_init(struct gpio_fan_data *fan_data,
-> >>       fan_data->speed_index = get_fan_speed_index(fan_data);
-> >>       if (fan_data->speed_index < 0) {
-> >>               err = -ENODEV;
-> >> -             goto err_free_gpio;
-> >> +             goto err_remove_sysfs;
-> >>       }
-> >>
-> >>       return 0;
-> >>
-> >> +err_remove_sysfs:
-> >> +     sysfs_remove_group(&pdev->dev.kobj, &gpio_fan_ctrl_group);
-> >>  err_free_gpio:
-> >>       for (i = i - 1; i >= 0; i--)
-> >>               gpio_free(ctrl[i]);
-> >
-> > Oh, and while you're here, fan_alarm_init() needs some love as well.
-> > There's a "return 0" in the middle which clearly can't be correct.
-> I think this part is correct. see the comment:
->         /*
->          * If the alarm GPIO don't support interrupts, just leave
->          * without initializing the fail notification support.
->          */
+On 11/09/2010 07:13 AM, Nicholas A. Bellinger wrote:
+> <More follow up on Boaz comments from last week>
+> 
 
-Oops, my bad. I should have read the comments before blaming the
-author :(
+<snip>
 
--- 
-Jean Delvare
+>>> +static inline void pscsi_blk_init_request(
+>>> +	struct se_task *task,
+>>> +	struct pscsi_plugin_task *pt,
+>>> +	struct request *req,
+>>> +	int bidi_read)
+>>> +{
+>>> +	/*
+>>> +	 * Defined as "scsi command" in include/linux/blkdev.h.
+>>> +	 */
+>>> +	req->cmd_type = REQ_TYPE_BLOCK_PC;
+>>> +	/*
+>>> +	 * For the extra BIDI-COMMAND READ struct request we do not
+>>> +	 * need to setup the remaining structure members
+>>> +	 */
+>>> +	if (bidi_read)
+>>> +		return;
+>>> +	/*
+>>> +	 * Setup the done function pointer for struct request,
+>>> +	 * also set the end_io_data pointer.to struct se_task.
+>>> +	 */
+>>> +	req->end_io = pscsi_req_done;
+>>> +	req->end_io_data = (void *)task;
+>>> +	/*
+>>> +	 * Load the referenced struct se_task's SCSI CDB into
+>>> +	 * include/linux/blkdev.h:struct request->cmd
+>>> +	 */
+>>> +	req->cmd_len = scsi_command_size(pt->pscsi_cdb);
+>>> +	req->cmd = &pt->pscsi_cdb[0];
+>>
+>> Here!   req->cmd = TASK_CMD(task)->t_task_cdb;
+>>
+>> I don't see in this patch the actual memcpy of TASK_CMD(task)->t_task_cdb into
+>> pt->pscsi_cdb, which I suspect is done in Generic code through the use of
+>> ->get_cdb(struct se_task *);?
+>>
+>> If so then it means all the plugins have their own copy of the CDB? Now I finally
+>> understand the get_max_cdb_len().
+>>
+>> All that could be totally clean. All plugins use the TASK_CMD(task)->t_task_cdb
+>> directly. Then get_max_cdb_len(), get_cdb(), the memcpy() and all these extra buffers
+>> just magically go away.
+> 
+> As described in the last response, the T_TASK(cmd)->t_task_cdb is used
+> as a base for all CDBs, and is the primary storage for all *non*
+> SCF_SCSI_DATA_SG_IO_CDB type ops.
+> 
+> For all bulk SCF_SCSI_DATA_SG_IO_CDB, we will memcpy
+> T_TASK(cmd)->t_task_cdb into the backend specific location (for
+> TCM/pSCSI this is pt->pscsi_cdb[])  and then update the LBA+length when
+> splitting the single received struct se_cmd across multiple struct
+> se_task w/ backend descriptors due to backend struct
+> se_dev_limits->limits.max_sectors limitations for underlying backend HW.
+> 
+
+OK Thanks I was missing this part. Sorry I only looked at the patches and
+not the complete code.
+
+So for pSCSI could you use the cmnd buffer at struct request? Maybe
+postpone a little bit the patching of the cdb to after the request allocation.
+Than anything bigger then 16 bytes (max cmnd at struct request) you allocate
+and free on request completion.
+But all that could be cleaned up later. You are currently busy with bigger
+stuff, just as a future note.
+
+The rest look good. I have some holes in my knowledge of how you did bidi.
+I promise to one of these days actually clone the tree and look at the real
+code.
+My goal is to have Lio-iscsi => lio-pSCSI => iscsi-initiator as a passthrough
+of OSD commands. That will prove things are done right.
+
+Also a Lio-iscsi => lio-tgt_if => tgtd-user-mode should also be very useful
+and OSD-able
+
+Thanks, Nic. Hope you feeling better now
+Boaz
