@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab0KIRP2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 12:15:28 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:50023 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751792Ab0KIRP1 (ORCPT
+	id S1753493Ab0KIRRB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 12:17:01 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:45491 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818Ab0KIRRA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 12:15:27 -0500
-Date: Tue, 9 Nov 2010 12:15:22 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Nick Piggin <npiggin@kernel.dk>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [patch 1/6] fs: icache RCU free inodes
-Message-ID: <20101109171522.GA4522@infradead.org>
-References: <20101109124610.GB11477@amd>
- <AANLkTi=b3dEmoTgrJ2xMTUzgM-mUQNNx6J9jeLq2=mtf@mail.gmail.com>
- <1289319698.2774.16.camel@edumazet-laptop>
- <AANLkTimJCgsPqB9ihbScr1RdZ+XGk2tq7LZNfh109Skv@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimJCgsPqB9ihbScr1RdZ+XGk2tq7LZNfh109Skv@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 9 Nov 2010 12:17:00 -0500
+Date: Tue, 9 Nov 2010 09:16:46 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: David Lutolf <david@lutolf.ch>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: duplicate symbol
+Message-Id: <20101109091646.bda98776.randy.dunlap@oracle.com>
+In-Reply-To: <1289295651-995eb1fafe32ac083b721f6ec0720266@lutolf.ch>
+References: <1289295651-995eb1fafe32ac083b721f6ec0720266@lutolf.ch>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 09, 2010 at 09:08:17AM -0800, Linus Torvalds wrote:
-> Again, this is only an issue for non-dentry lookup. For the dentry
-> case, we know that if the dentry still exists, then the inode still
-> exists. So we don't need to check a stable inode pointer if we just
-> verify the stability of the dentry - and we'll have to do that anyway
-> obviously.
+On Tue, 09 Nov 2010 10:40:51 +0100 David Lutolf wrote:
 
-If the dentry still exists we have a reference on the inode and never
-call into the inode hash.
+> in the kernel config, we can find
+> 
+> CS5535_GPIO (Device drivers -> Character devices)
+> GPIO_CS5535 (Device drivers -> GPIO support)
+> 
+> this looks like it should be cleaned out
 
-> In other words: let's bite off the complexity in small chunks. Let's
-> keep the inode lock approach for now for the actual inode lists and
-> hash lookups. I think they are almost entirely independent issues from
-> the dentry path.
+Well, it's unfortunate, undesirable, and confusing, but not incorrect AFAICT.
 
-I'm defintively in favour of splitting things into small chunks.  I
-don't particularly care how we do it.  inode_lock scaling seems the
-most simple bit to me, and even that turned out to be a massive
-amount of work to do properly.
+drivers/char/Kconfig:
 
-Doing the dentry_lock splitup last starts to look more and more
-interesting given how messy inode_lock is, though.
+config CS5535_GPIO
+	tristate "AMD CS5535/CS5536 GPIO (Geode Companion Device)"
+
+drivers/gpio/Kconfig:
+
+config GPIO_CS5535
+	tristate "AMD CS5535/CS5536 GPIO support"
+	depends on PCI && !CS5535_GPIO
+
+
+Still, I agree that a change would be good/helpful.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
