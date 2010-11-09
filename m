@@ -1,35 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab0KIRWn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 12:22:43 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:37266
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753587Ab0KIRWl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 12:22:41 -0500
-Date: Tue, 09 Nov 2010 09:23:05 -0800 (PST)
-Message-Id: <20101109.092305.39190582.davem@davemloft.net>
-To: joe@perches.com
-Cc: trivial@kernel.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 35/39] net/core/dev.c: Update WARN uses
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <2f05cefa4dc86594a2d7335c7978b1ae781bef0e.1288471898.git.joe@perches.com>
-References: <cover.1288471897.git.joe@perches.com>
-	<2f05cefa4dc86594a2d7335c7978b1ae781bef0e.1288471898.git.joe@perches.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1754208Ab0KIRYQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 12:24:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53856 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752658Ab0KIRYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 12:24:15 -0500
+Date: Tue, 9 Nov 2010 18:17:54 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Roland McGrath <roland@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        JANAK DESAI <janak@us.ibm.com>
+Subject: Re: [PATCH 1/1][2nd resend] sys_unshare: remove the dead
+	CLONE_THREAD/SIGHAND/VM code
+Message-ID: <20101109171754.GB6971@redhat.com>
+References: <20101105174142.GA19469@redhat.com> <20101105174343.GB19469@redhat.com> <20101109201742.BCA1.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101109201742.BCA1.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Sat, 30 Oct 2010 14:08:52 -0700
+On 11/09, KOSAKI Motohiro wrote:
+>
+> > -static void check_unshare_flags(unsigned long *flags_ptr)
+> > +static int check_unshare_flags(unsigned long unshare_flags)
+> >  {
+> > +	if (unshare_flags & ~(CLONE_THREAD|CLONE_FS|CLONE_NEWNS|CLONE_SIGHAND|
+> > +				CLONE_VM|CLONE_FILES|CLONE_SYSVSEM|
+> > +				CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWNET))
+> > +		return -EINVAL;
+>
+> Please put WARN_ON_ONCE() explicitly. That's good way to find hidden
+> user if exist and getting better bug report.
 
-> Coalesce long formats.
-> Add missing newlines.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+Perhaps... but this needs a separate change.
 
-Applied.
+Please note that this check was simply moved from sys_unshare(), this
+patch shouldn't have any visible effect.
+
+Personally, I think it would be even better if, say, unshare(CLONE_THREAD)
+returned -EINVAL unconditionally.
+
+> And, I've reveied this patch and I've found no fault. but I will not put
+> my ack because I think I haven't understand original intention perhaps.
+
+Thanks!
+
+IIRC, the main (only?) motivation for sys_unshare() was unshare_fs().
+Most probably unshare_thread/vm were added as placeholders.
+
+Oleg.
+
