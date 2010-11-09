@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213Ab0KICb1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 21:31:27 -0500
-Received: from mga02.intel.com ([134.134.136.20]:30952 "EHLO mga02.intel.com"
+	id S1754631Ab0KICb6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 21:31:58 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:41273 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752563Ab0KICb0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 21:31:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,172,1288594800"; 
-   d="scan'208";a="675588496"
-Subject: Re: [patch 3/3]cfq-iosched: don't idle if a deep seek queue is slow
-From: Shaohua Li <shaohua.li@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>, lkml <linux-kernel@vger.kernel.org>,
-        "czoccolo@gmail.com" <czoccolo@gmail.com>
-In-Reply-To: <20101109022846.GA29847@redhat.com>
-References: <1289182045.23014.191.camel@sli10-conroe>
-	 <20101108142054.GB16767@redhat.com> <4CD811ED.8010901@fusionio.com>
-	 <1289266602.23014.202.camel@sli10-conroe>
-	 <20101109022846.GA29847@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 09 Nov 2010 10:31:24 +0800
-Message-ID: <1289269884.23014.210.camel@sli10-conroe>
+	id S1752563Ab0KICb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 21:31:57 -0500
+Date: Tue, 9 Nov 2010 13:31:55 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?B?IlV3ZSBLbGVpbmUtS8O2bmlnIg==?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Jing Huang <huangj@brocade.com>
+Subject: linux-next: manual merge of the trivial tree with Linus' tree
+Message-Id: <20101109133155.e979a39b.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-09 at 10:28 +0800, Vivek Goyal wrote:
-> On Tue, Nov 09, 2010 at 09:36:42AM +0800, Shaohua Li wrote:
-> > On Mon, 2010-11-08 at 23:06 +0800, Jens Axboe wrote:
-> > > On 2010-11-08 15:20, Vivek Goyal wrote:
-> > > > On Mon, Nov 08, 2010 at 10:07:25AM +0800, Shaohua Li wrote:
-> > > >> If a deep seek queue slowly deliver requests but disk is much faster, idle
-> > > >> for the queue just wastes disk throughput. If the queue delevers all requests
-> > > >> before half its slice is used, the patch disable idle for it.
-> > > >> In my test, application delivers 32 requests one time, the disk can accept
-> > > >> 128 requests at maxium and disk is fast. without the patch, the throughput
-> > > >> is just around 30m/s, while with it, the speed is about 80m/s. The disk is
-> > > >> a SSD, but is detected as a rotational disk. I can configure it as SSD, but
-> > > >> I thought the deep seek queue logic should be fixed too, for example,
-> > > >> considering a fast raid.
-> > > >>
-> > > > 
-> > > > Hi Shaohua,
-> > > > 
-> > > > So looks like you are trying to cut down queue idling in the case when
-> > > > device is fast and idling hurts. That's a noble goal, just that detetction
-> > > > of this condition only for deep queues does not seem to cover lots of
-> > > > cases. Manually one can set slice_idle=0 to handle this situation.
-> > > > 
-> > > > What about if you have lots of sequential queues (not deep) and they all
-> > > > will still idle.
-> > > > 
-> > > > Secondly, what if driver is just buffering lots of requests in its device
-> > > > queue and not necessarily device is processing the reuqests faster.
-> > > 
-> > > That is not a valid concern, a driver should never extract more than it
-> > > can process (pretty much) immediately.
-> > > 
-> > > > So I think it is a good idea to cut down on idling if we can find that
-> > > > underlying device is fast and idling on queue might hurt more. But
-> > > > discovering this only using deep queues does not sound very appleaing to
-> > > > me. This is help only a particular workload which is driving deep queues.
-> > > > So if there was a generic mechanism to tackle this, that would be much
-> > > > better.
-> > > 
-> > > Agree, we could use better metrics for this.
-> > Agree we'd better have a better method to measure device speed, but this
-> > seems not easy. Even in a fast device, a request might take long time to
-> > finish when NCQ is enabled. Before we have generic mechanism, we still
-> > need fix some particular cases.
-> 
-> Do you have a real workload for this case or it is just one of the synthetic
-> workload simulated using fio?
-No, no real workload. We do a lot of fio tests with different scripts,
-this is from one of our tests.
+Hi Jiri,
 
+Today's linux-next merge of the trivial tree got a conflict in
+drivers/scsi/bfa/bfa_fcpim.c between commit
+5fbe25c7a664601666895e8f95eaa59bd9741392 ("[SCSI] bfa: fix comments for c
+files") from Linus' tree and commit
+b595076a180a56d1bb170e6eceda6eb9d76f4cd3 ("tree-wide: fix comment/printk
+typos") from the trivial tree.
+
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/scsi/bfa/bfa_fcpim.c
+index 135c442,aabbf3d..0000000
+--- a/drivers/scsi/bfa/bfa_fcpim.c
++++ b/drivers/scsi/bfa/bfa_fcpim.c
+@@@ -2091,8 -2091,8 +2091,8 @@@ bfa_ioim_sm_cleanup_qfull(struct bfa_io
+  		break;
+  
+  	case BFA_IOIM_SM_ABORT:
+ -		/**
+ +		/*
+- 		 * IO is alraedy being cleaned up implicitly
++ 		 * IO is already being cleaned up implicitly
+  		 */
+  		ioim->io_cbfn = __bfa_cb_ioim_abort;
+  		break;
