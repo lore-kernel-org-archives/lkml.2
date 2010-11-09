@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754275Ab0KIVAh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 16:00:37 -0500
-Received: from thunk.org ([69.25.196.29]:52794 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753341Ab0KIVAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 16:00:36 -0500
-Date: Tue, 9 Nov 2010 16:00:30 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Joe Perches <joe@perches.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] include/linux/kernel.h: Move logging bits to
- include/linux/logging.h
-Message-ID: <20101109210030.GI3099@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Joe Perches <joe@perches.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-kernel@vger.kernel.org
-References: <1289281110-8559-1-git-send-email-joe@perches.com>
- <AANLkTime8YvyHysZF5sX6V2mXWJ0FUtdecpVFgRGqYm6@mail.gmail.com>
- <1289328235.1823.108.camel@Joe-Laptop>
- <AANLkTi=rTw+ByhdGc9prjwvqt_TT=NmOYzEjns1LffLC@mail.gmail.com>
- <1289330276.1823.125.camel@Joe-Laptop>
+	id S1754212Ab0KIVFf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 16:05:35 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:51654 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379Ab0KIVFe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 16:05:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=ScKHEpyDv+Rp6wZYSax8T6EtNWS8NvbiFwpZHBhDBuvywKZqbg9F1PZondKu/tRwDv
+         hVFQEKF+PgMDROoPKRHQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289330276.1823.125.camel@Joe-Laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <4CD78946.5060405@cn.fujitsu.com>
+References: <4CC146A4.9090505@cn.fujitsu.com>
+	<4CC146BA.7080009@cn.fujitsu.com>
+	<AANLkTikf-1kLStxqi5UjP=vn3pqVBHy0OA7ibeWTkJ5z@mail.gmail.com>
+	<4CD78946.5060405@cn.fujitsu.com>
+Date: Tue, 9 Nov 2010 13:05:31 -0800
+Message-ID: <AANLkTim6d1fQLZbkmZST3PTN0RMSs3m=oossF81pYBn9@mail.gmail.com>
+Subject: Re: [PATCH 1/7] cgroups: Shrink struct cgroup_subsys
+From: Paul Menage <menage@google.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: "akpm >> Andrew Morton" <akpm@linux-foundation.org>,
+        Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        containers@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 09, 2010 at 11:17:56AM -0800, Joe Perches wrote:
-> 
-> Differences in logging.h to original kernel.h
-> were done for cleanliness and checkpatch.
+On Sun, Nov 7, 2010 at 9:23 PM, Li Zefan <lizf@cn.fujitsu.com> wrote:
+>
+> bool active;
+> bool disabled;
+> ...
+>
+> ?
+>
+> With alignment 5-8 bool values == 8 bytes in 64-bit machine, compared to
+> 4 bytes with the approach this patch takes.
 
-Yet another reason why I detest mindless use of checkpatch.  And as a
-maintainer, I balance the value of code movement patches in particular
-against how it breaks other people's patches, and how unless I do
-*very* careful review, people can sneak in changes that could either
-(a) break code accidentally, or even (b) introduce security holes
-deliberately.  (i.e., if I was in charge of the cyber warfare division
-of some large nation state, a really obvious way of trying to insert
-vulnerabilities into code is to send "cleanup" patches that move code
-around, and introduce some subtle buffer overrun or other
-security change.)
+I meant specifying it as:
 
-As a result, I spend extra time reviewing patches that move code
-around, and I **really** dislike patches that try to do any kind of
-cleanup (checkpatch.pl or otherwise) at the same time as they move
-code around.
+bool active:1;
+bool disabled:1;
 
-	       	    	    	      	   - Ted
+i.e. keeping the bit-sized flags but also keeping the bool semantics.
+Having said that, I'm not really sure why saving 12 bytes per
+subsystem is worth a patch.
+
+Paul
