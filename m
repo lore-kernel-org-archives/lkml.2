@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226Ab0KIJZa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 04:25:30 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:6522 "EHLO
+	id S1754284Ab0KIJZk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 04:25:40 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:5180 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753030Ab0KIJZ1 (ORCPT
+	with ESMTP id S1754143Ab0KIJZf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 04:25:27 -0500
+	Tue, 9 Nov 2010 04:25:35 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=wI2xxz6qhDlk2O3pITppDlPAyl1GRJeXMbrpb9YuLIKyfDV97zmxeXDCexbFYtnfD
-	E6/np9ChPrODJ5zHATYhw==
+	b=JF8kbnPchfGHi2ZDaHiCrk6hOZ3DmNhPOeIfQgxts8qhBnLSTHqRmb39vfZRQYLnC
+	z3c6R9Lc4dWdRESTYjXKQ==
 From: Greg Thelen <gthelen@google.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
@@ -20,9 +20,9 @@ Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
         Wu Fengguang <fengguang.wu@intel.com>,
         Minchan Kim <minchan.kim@gmail.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Greg Thelen <gthelen@google.com>
-Subject: [PATCH 2/6] memcg: pass mem_cgroup to mem_cgroup_dirty_info()
-Date: Tue,  9 Nov 2010 01:24:27 -0800
-Message-Id: <1289294671-6865-3-git-send-email-gthelen@google.com>
+Subject: [PATCH 4/6] memcg: simplify mem_cgroup_page_stat()
+Date: Tue,  9 Nov 2010 01:24:29 -0800
+Message-Id: <1289294671-6865-5-git-send-email-gthelen@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1289294671-6865-1-git-send-email-gthelen@google.com>
 References: <1289294671-6865-1-git-send-email-gthelen@google.com>
@@ -30,96 +30,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pass mem_cgroup parameter through memcg_dirty_info() into
-mem_cgroup_dirty_info().  This allows for querying dirty memory
-information from a particular cgroup, rather than just the
-current task's cgroup.
+The cgroup given to mem_cgroup_page_stat() is no allowed to be
+NULL or the root cgroup.  So there is no need to complicate the code
+handling those cases.
 
 Signed-off-by: Greg Thelen <gthelen@google.com>
 ---
- include/linux/memcontrol.h |    2 ++
- mm/memcontrol.c            |    5 +++--
- mm/page-writeback.c        |    9 ++++++---
- 3 files changed, 11 insertions(+), 5 deletions(-)
+ mm/memcontrol.c |   48 ++++++++++++++++++++++--------------------------
+ 1 files changed, 22 insertions(+), 26 deletions(-)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 89a9278..a81dfda 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -156,6 +156,7 @@ static inline void mem_cgroup_dec_page_stat(struct page *page,
- 
- bool mem_cgroup_has_dirty_limit(void);
- bool mem_cgroup_dirty_info(unsigned long sys_available_mem,
-+			   struct mem_cgroup *memcg,
- 			   struct dirty_info *info);
- long mem_cgroup_page_stat(struct mem_cgroup *mem,
- 			  enum mem_cgroup_nr_pages_item item);
-@@ -347,6 +348,7 @@ static inline bool mem_cgroup_has_dirty_limit(void)
- }
- 
- static inline bool mem_cgroup_dirty_info(unsigned long sys_available_mem,
-+					 struct mem_cgroup *memcg,
- 					 struct dirty_info *info)
- {
- 	return false;
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 1bff7cf..eb621ee 100644
+index eb621ee..f8df350 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -1239,11 +1239,11 @@ static void __mem_cgroup_dirty_param(struct vm_dirty_param *param,
-  * "memcg" will not be freed while holding rcu_read_lock().
+@@ -1364,12 +1364,10 @@ memcg_hierarchical_free_pages(struct mem_cgroup *mem)
+ 
+ /*
+  * mem_cgroup_page_stat() - get memory cgroup file cache statistics
+- * @mem:	optional memory cgroup to query.  If NULL, use current task's
+- *		cgroup.
++ * @mem:	memory cgroup to query
+  * @item:	memory statistic item exported to the kernel
+  *
+- * Return the accounted statistic value or negative value if current task is
+- * root cgroup.
++ * Return the accounted statistic value.
   */
- bool mem_cgroup_dirty_info(unsigned long sys_available_mem,
-+			   struct mem_cgroup *memcg,
- 			   struct dirty_info *info)
- {
- 	struct vm_dirty_param dirty_param;
- 	unsigned long available_mem;
--	struct mem_cgroup *memcg;
+ long mem_cgroup_page_stat(struct mem_cgroup *mem,
+ 			  enum mem_cgroup_nr_pages_item item)
+@@ -1377,29 +1375,27 @@ long mem_cgroup_page_stat(struct mem_cgroup *mem,
+ 	struct mem_cgroup *iter;
  	long value;
- 	bool valid = false;
  
-@@ -1251,7 +1251,8 @@ bool mem_cgroup_dirty_info(unsigned long sys_available_mem,
- 		return false;
++	VM_BUG_ON(!mem);
++	VM_BUG_ON(mem_cgroup_is_root(mem));
++
+ 	get_online_cpus();
+-	rcu_read_lock();
+-	if (!mem)
+-		mem = mem_cgroup_from_task(current);
+-	if (__mem_cgroup_has_dirty_limit(mem)) {
+-		/*
+-		 * If we're looking for dirtyable pages we need to evaluate
+-		 * free pages depending on the limit and usage of the parents
+-		 * first of all.
+-		 */
+-		if (item == MEMCG_NR_DIRTYABLE_PAGES)
+-			value = memcg_hierarchical_free_pages(mem);
+-		else
+-			value = 0;
+-		/*
+-		 * Recursively evaluate page statistics against all cgroup
+-		 * under hierarchy tree
+-		 */
+-		for_each_mem_cgroup_tree(iter, mem)
+-			value += mem_cgroup_local_page_stat(iter, item);
+-	} else
+-		value = -EINVAL;
+-	rcu_read_unlock();
++
++	/*
++	 * If we're looking for dirtyable pages we need to evaluate
++	 * free pages depending on the limit and usage of the parents
++	 * first of all.
++	 */
++	if (item == MEMCG_NR_DIRTYABLE_PAGES)
++		value = memcg_hierarchical_free_pages(mem);
++	else
++		value = 0;
++	/*
++	 * Recursively evaluate page statistics against all cgroup
++	 * under hierarchy tree
++	 */
++	for_each_mem_cgroup_tree(iter, mem)
++		value += mem_cgroup_local_page_stat(iter, item);
++
+ 	put_online_cpus();
  
- 	rcu_read_lock();
--	memcg = mem_cgroup_from_task(current);
-+	if (!memcg)
-+		memcg = mem_cgroup_from_task(current);
- 	if (!__mem_cgroup_has_dirty_limit(memcg))
- 		goto done;
- 	__mem_cgroup_dirty_param(&dirty_param, memcg);
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index dc3dbe3..d717fa9 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -461,12 +461,15 @@ void global_dirty_info(struct dirty_info *info)
-  * Calculate the background-writeback and dirty-throttling thresholds and dirty
-  * usage metrics from the current task's memcg dirty limit parameters.  Returns
-  * false if no memcg limits exist.
-+ *
-+ * @memcg may be NULL if the current task's memcg should be used.
-+ * @info is the location where the dirty information is written.
-  */
--static bool memcg_dirty_info(struct dirty_info *info)
-+static bool memcg_dirty_info(struct mem_cgroup *memcg, struct dirty_info *info)
- {
- 	unsigned long available_memory = determine_dirtyable_memory();
- 
--	if (!mem_cgroup_dirty_info(available_memory, info))
-+	if (!mem_cgroup_dirty_info(available_memory, memcg, info))
- 		return false;
- 
- 	adjust_dirty_info(info);
-@@ -534,7 +537,7 @@ static void balance_dirty_pages(struct address_space *mapping,
- 
- 		global_dirty_info(&sys_info);
- 
--		if (!memcg_dirty_info(&memcg_info))
-+		if (!memcg_dirty_info(NULL, &memcg_info))
- 			memcg_info = sys_info;
- 
- 		/*
+ 	return value;
 -- 
 1.7.3.1
 
