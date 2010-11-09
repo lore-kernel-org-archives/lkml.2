@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856Ab0KIJZH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 04:25:07 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:4836 "EHLO
+	id S1754137Ab0KIJZU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 04:25:20 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:4926 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753030Ab0KIJZC (ORCPT
+	with ESMTP id S1753940Ab0KIJZN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 04:25:02 -0500
+	Tue, 9 Nov 2010 04:25:13 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=AtF3BaxHIBSFIWrv9tsYkgzuWww9/fJ/uddPRvAU1ScSx2nvmfgKOQ1rIrTv/1Yck
-	Kfyw/LvwKpuBNr8v3y8zg==
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=hnAZZN1KhFINyDUnw+bXtNuckqgUpC7Bli1ksdpjNfBq480J/K775CODtgXpU1mVM
+	NReRfLmkHFluR2xCl7Bqw==
 From: Greg Thelen <gthelen@google.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
@@ -20,150 +20,40 @@ Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
         Wu Fengguang <fengguang.wu@intel.com>,
         Minchan Kim <minchan.kim@gmail.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Greg Thelen <gthelen@google.com>
-Subject: [PATCH 1/6] memcg: add mem_cgroup parameter to mem_cgroup_page_stat()
-Date: Tue,  9 Nov 2010 01:24:26 -0800
-Message-Id: <1289294671-6865-2-git-send-email-gthelen@google.com>
+Subject: [PATCH 0/6] *** memcg: make throttle_vm_writeout() cgroup aware ***
+Date: Tue,  9 Nov 2010 01:24:25 -0800
+Message-Id: <1289294671-6865-1-git-send-email-gthelen@google.com>
 X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1289294671-6865-1-git-send-email-gthelen@google.com>
-References: <1289294671-6865-1-git-send-email-gthelen@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This new parameter can be used to query dirty memory usage
-from a given memcg rather than the current task's memcg.
+This series aims to:
+- Make throttle_vm_writeout() cgroup aware.  Prior to this patch, cgroup reclaim
+  would consider global dirty limits when deciding to throttle.  Now cgroup
+  limits are used if the cgroup being reclaimed has dirty limits.
 
-Signed-off-by: Greg Thelen <gthelen@google.com>
----
- include/linux/memcontrol.h |    6 ++++--
- mm/memcontrol.c            |   37 +++++++++++++++++++++----------------
- mm/page-writeback.c        |    2 +-
- 3 files changed, 26 insertions(+), 19 deletions(-)
+- Part of making throttle_vm_writeout() cgroup aware involves fixing a negative
+  value signaling error in mem_cgroup_page_stat().  Previously,
+  mem_cgroup_page_stat() could falsely return a negative value if a per-cpu
+  counter sum was negative.  Calling routines considered negative a special
+  "cgroup does not have limits" value.
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 7a3d915..89a9278 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -157,7 +157,8 @@ static inline void mem_cgroup_dec_page_stat(struct page *page,
- bool mem_cgroup_has_dirty_limit(void);
- bool mem_cgroup_dirty_info(unsigned long sys_available_mem,
- 			   struct dirty_info *info);
--long mem_cgroup_page_stat(enum mem_cgroup_nr_pages_item item);
-+long mem_cgroup_page_stat(struct mem_cgroup *mem,
-+			  enum mem_cgroup_nr_pages_item item);
- 
- unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
- 						gfp_t gfp_mask);
-@@ -351,7 +352,8 @@ static inline bool mem_cgroup_dirty_info(unsigned long sys_available_mem,
- 	return false;
- }
- 
--static inline long mem_cgroup_page_stat(enum mem_cgroup_nr_pages_item item)
-+static inline long mem_cgroup_page_stat(struct mem_cgroup *mem,
-+					enum mem_cgroup_nr_pages_item item)
- {
- 	return -ENOSYS;
- }
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index d8a06d6..1bff7cf 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1245,22 +1245,20 @@ bool mem_cgroup_dirty_info(unsigned long sys_available_mem,
- 	unsigned long available_mem;
- 	struct mem_cgroup *memcg;
- 	long value;
-+	bool valid = false;
- 
- 	if (mem_cgroup_disabled())
- 		return false;
- 
- 	rcu_read_lock();
- 	memcg = mem_cgroup_from_task(current);
--	if (!__mem_cgroup_has_dirty_limit(memcg)) {
--		rcu_read_unlock();
--		return false;
--	}
-+	if (!__mem_cgroup_has_dirty_limit(memcg))
-+		goto done;
- 	__mem_cgroup_dirty_param(&dirty_param, memcg);
--	rcu_read_unlock();
- 
--	value = mem_cgroup_page_stat(MEMCG_NR_DIRTYABLE_PAGES);
-+	value = mem_cgroup_page_stat(memcg, MEMCG_NR_DIRTYABLE_PAGES);
- 	if (value < 0)
--		return false;
-+		goto done;
- 
- 	available_mem = min((unsigned long)value, sys_available_mem);
- 
-@@ -1280,17 +1278,21 @@ bool mem_cgroup_dirty_info(unsigned long sys_available_mem,
- 			(dirty_param.dirty_background_ratio *
- 			       available_mem) / 100;
- 
--	value = mem_cgroup_page_stat(MEMCG_NR_RECLAIM_PAGES);
-+	value = mem_cgroup_page_stat(memcg, MEMCG_NR_RECLAIM_PAGES);
- 	if (value < 0)
--		return false;
-+		goto done;
- 	info->nr_reclaimable = value;
- 
--	value = mem_cgroup_page_stat(MEMCG_NR_WRITEBACK);
-+	value = mem_cgroup_page_stat(memcg, MEMCG_NR_WRITEBACK);
- 	if (value < 0)
--		return false;
-+		goto done;
- 	info->nr_writeback = value;
- 
--	return true;
-+	valid = true;
-+
-+done:
-+	rcu_read_unlock();
-+	return valid;
- }
- 
- static inline bool mem_cgroup_can_swap(struct mem_cgroup *memcg)
-@@ -1361,20 +1363,23 @@ memcg_hierarchical_free_pages(struct mem_cgroup *mem)
- 
- /*
-  * mem_cgroup_page_stat() - get memory cgroup file cache statistics
-- * @item:      memory statistic item exported to the kernel
-+ * @mem:	optional memory cgroup to query.  If NULL, use current task's
-+ *		cgroup.
-+ * @item:	memory statistic item exported to the kernel
-  *
-  * Return the accounted statistic value or negative value if current task is
-  * root cgroup.
-  */
--long mem_cgroup_page_stat(enum mem_cgroup_nr_pages_item item)
-+long mem_cgroup_page_stat(struct mem_cgroup *mem,
-+			  enum mem_cgroup_nr_pages_item item)
- {
- 	struct mem_cgroup *iter;
--	struct mem_cgroup *mem;
- 	long value;
- 
- 	get_online_cpus();
- 	rcu_read_lock();
--	mem = mem_cgroup_from_task(current);
-+	if (!mem)
-+		mem = mem_cgroup_from_task(current);
- 	if (__mem_cgroup_has_dirty_limit(mem)) {
- 		/*
- 		 * If we're looking for dirtyable pages we need to evaluate
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index a477f59..dc3dbe3 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -135,7 +135,7 @@ static unsigned long dirty_writeback_pages(void)
- {
- 	unsigned long ret;
- 
--	ret = mem_cgroup_page_stat(MEMCG_NR_DIRTY_WRITEBACK_PAGES);
-+	ret = mem_cgroup_page_stat(NULL, MEMCG_NR_DIRTY_WRITEBACK_PAGES);
- 	if ((long)ret < 0)
- 		ret = global_page_state(NR_UNSTABLE_NFS) +
- 			global_page_state(NR_WRITEBACK);
+Greg Thelen (6):
+  memcg: add mem_cgroup parameter to mem_cgroup_page_stat()
+  memcg: pass mem_cgroup to mem_cgroup_dirty_info()
+  memcg: make throttle_vm_writeout() memcg aware
+  memcg: simplify mem_cgroup_page_stat()
+  memcg: simplify mem_cgroup_dirty_info()
+  memcg: make mem_cgroup_page_stat() return value unsigned
+
+ include/linux/memcontrol.h |    8 +++-
+ include/linux/writeback.h  |    2 +-
+ mm/memcontrol.c            |   92 ++++++++++++++++++++++---------------------
+ mm/page-writeback.c        |   40 ++++++++++---------
+ mm/vmscan.c                |    2 +-
+ 5 files changed, 77 insertions(+), 67 deletions(-)
+
 -- 
 1.7.3.1
 
