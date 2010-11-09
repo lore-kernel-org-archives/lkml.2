@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484Ab0KISY1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 13:24:27 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59815 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752166Ab0KISYY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 13:24:24 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Nishanth Menon <nm@ti.com>
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] PM: Hide OPP configuration when SoCs do not provide an implementation
-Date: Tue,  9 Nov 2010 18:24:16 +0000
-Message-Id: <1289327056-27950-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.1
+	id S1754627Ab0KISYl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 13:24:41 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49119 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754545Ab0KISYj convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 13:24:39 -0500
+MIME-Version: 1.0
+In-Reply-To: <1289281110-8559-1-git-send-email-joe@perches.com>
+References: <1289281110-8559-1-git-send-email-joe@perches.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 9 Nov 2010 10:23:25 -0800
+Message-ID: <AANLkTime8YvyHysZF5sX6V2mXWJ0FUtdecpVFgRGqYm6@mail.gmail.com>
+Subject: Re: [PATCH] include/linux/kernel.h: Move logging bits to include/linux/logging.h
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the OPP API is only useful with an appropraite SoC-specific
-implementation there is no point in offering the ability to enable
-the API on general systems. Provide an ARCH_HAS OPP Kconfig symbol
-which masks out the option unless selected by an implementation.
+On Mon, Nov 8, 2010 at 9:38 PM, Joe Perches <joe@perches.com> wrote:
+> Move the logging bits from kernel.h into logging.h so that
+> there is a bit more logical separation of the generic from
+> the logging specific parts.
+>
+> Add pr_<level>_once macros to logging.h.
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  include/linux/kernel.h  |  246 +-----------------------------------
+>  include/linux/logging.h |  322 +++++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 324 insertions(+), 244 deletions(-)
+>  create mode 100644 include/linux/logging.h
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- Documentation/power/opp.txt |    3 +++
- kernel/power/Kconfig        |    4 ++++
- 2 files changed, 7 insertions(+), 0 deletions(-)
+I detest patches like this.
 
-diff --git a/Documentation/power/opp.txt b/Documentation/power/opp.txt
-index 44d87ad..cd44558 100644
---- a/Documentation/power/opp.txt
-+++ b/Documentation/power/opp.txt
-@@ -37,6 +37,9 @@ Typical usage of the OPP library is as follows:
- SoC framework	-> modifies on required cases certain OPPs	-> OPP layer
- 		-> queries to search/retrieve information	->
- 
-+Architectures that provide a SoC framework for OPP should select ARCH_HAS_OPP
-+to make the OPP layer available.
-+
- OPP layer expects each domain to be represented by a unique device pointer. SoC
- framework registers a set of initial OPPs per device with the OPP layer. This
- list is expected to be an optimally small number typically around 5 per device.
-diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
-index 29bff61..a5aff3e 100644
---- a/kernel/power/Kconfig
-+++ b/kernel/power/Kconfig
-@@ -246,9 +246,13 @@ config PM_OPS
- 	depends on PM_SLEEP || PM_RUNTIME
- 	default y
- 
-+config ARCH_HAS_OPP
-+	bool
-+
- config PM_OPP
- 	bool "Operating Performance Point (OPP) Layer library"
- 	depends on PM
-+	depends on ARCH_HAS_OPP
- 	---help---
- 	  SOCs have a standard set of tuples consisting of frequency and
- 	  voltage pairs that the device will support per voltage domain. This
--- 
-1.7.1
+The code movement makes it really hard to see what changed. So if you
+do code movement, please do _only_ code movement, and send a separate
+patch that actually changes things.
 
+                             Linus
