@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752756Ab0KIN5Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 08:57:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31402 "EHLO mx1.redhat.com"
+	id S1753019Ab0KIN6z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 08:58:55 -0500
+Received: from mga14.intel.com ([143.182.124.37]:44949 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751265Ab0KIN5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 08:57:22 -0500
-From: Andreas Schwab <schwab@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Michael Matz <matz@suse.de>, Dave Korn <dave.korn.cygwin@gmail.com>,
-        Richard Guenther <richard.guenther@gmail.com>, Jim <jim876@xs4all.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        gcc@gcc.gnu.org
-Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
-References: <4CD538CA.8010901@xs4all.nl> <87wroostw3.fsf@basil.nowhere.org>
-	<m2hbfsu57i.fsf@igel.home> <87k4kospnd.fsf@basil.nowhere.org>
-	<AANLkTikG6kBxSrO7EZ5_nZqTKqo8Rjm2stoEGVJWxanz@mail.gmail.com>
-	<877hgorrj1.fsf@basil.nowhere.org> <4CD843DC.10106@gmail.com>
-	<Pine.LNX.4.64.1011091352460.29956@wotan.suse.de>
-	<20101109134816.GB29433@basil.fritz.box>
-X-Yow: Mary Tyler Moore's SEVENTH HUSBAND is wearing my DACRON TANK TOP
- in a cheap hotel in HONOLULU!
-Date: Tue, 09 Nov 2010 14:57:01 +0100
-In-Reply-To: <20101109134816.GB29433@basil.fritz.box> (Andi Kleen's message of
-	"Tue, 9 Nov 2010 14:48:16 +0100")
-Message-ID: <m3lj52txaq.fsf@redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1751222Ab0KIN6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 08:58:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,174,1288594800"; 
+   d="scan'208";a="346432925"
+Date: Tue, 9 Nov 2010 21:59:12 +0800
+From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: linux-kernel@vger.kernel.org, rostedt@goodmis.org, fweisbec@gmail.com,
+        mingo@redhat.com
+Subject: Re: [PATCH 2/4] tracing: introduce trace_set_clr_module_event
+Message-ID: <20101109135912.GB22928@localhost.localdomain>
+References: <1289293967-31761-1-git-send-email-yuanhan.liu@linux.intel.com>
+ <1289293967-31761-2-git-send-email-yuanhan.liu@linux.intel.com>
+ <20101109112320.GA21828@localhost.localdomain>
+ <b9dded$h15mrt@orsmga002.jf.intel.com>
+ <20101109132058.GA22928@localhost.localdomain>
+ <0d30dc$k4dmjb@orsmga001.jf.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0d30dc$k4dmjb@orsmga001.jf.intel.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi Kleen <andi@firstfloor.org> writes:
+On Tue, Nov 09, 2010 at 01:31:27PM +0000, Chris Wilson wrote:
+> On Tue, 9 Nov 2010 21:20:59 +0800, Yuanhan Liu <yuanhan.liu@linux.intel.com> wrote:
+> > On Tue, Nov 09, 2010 at 11:27:18AM +0000, Chris Wilson wrote:
+> > > I've not looked closely at this yet, but it seems like we should be able
+> > > to hook into a trace_module_notify 
+> > 
+> > But there should be someplace to enable these events, right?  And how do
+> > you tell trace_module_notify to just enable one or several specific
+> > event?
+> 
+> Yes, I was thinking of extending the module loader to permit core to
+> hook into parse_args() and so the trace= facility could work with any
+> module without exporting any new functions.
 
-> @@ -142,7 +142,7 @@ static int i8k_smm(struct smm_regs *regs)
->  		"lahf\n\t"
->  		"shrl $8,%%eax\n\t"
->  		"andl $1,%%eax\n"
-> -		:"=a"(rc)
-> +		:"=a"(rc), "=m" (*regs)
+Got your idea. But is it OK? 
 
-I think this should be "+m".
+Thanks.
 
-Andreas.
+--
+Yuanhan Liu
 
--- 
-Andreas Schwab, schwab@redhat.com
-GPG Key fingerprint = D4E8 DBE3 3813 BB5D FA84  5EC7 45C6 250E 6F00 984E
-"And now for something completely different."
