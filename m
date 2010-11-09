@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751273Ab0KIFHV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 00:07:21 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:33489 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843Ab0KIFHR (ORCPT
+	id S1751448Ab0KIFOw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 00:14:52 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:57783 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750959Ab0KIFOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 00:07:17 -0500
+	Tue, 9 Nov 2010 00:14:51 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:content-type;
-        b=Jw6a1X3cpf6csZSw5UGiWfHFclCGKFXKCSNGTZ/g+gJonozvE4aCb1AyRX9qjJYHjE
-         nimODOUo831u7t8g2YePLWgNCUWhLIYOH778cQwghJ4b/urOWM9AXOXCrVh0Y/WM3vdR
-         sXrAGYSesUOC8OHicyuZrmXUve1B7JBrgRBt0=
-MIME-Version: 1.0
-From: Luke Hutchison <luke.hutch@gmail.com>
-Date: Tue, 9 Nov 2010 00:06:36 -0500
-Message-ID: <AANLkTimXSSU7Mc05URg3HsONC4iyDTMVJdRxvQ1fNntH@mail.gmail.com>
-Subject: "BUG: soft lockup - CPU#0 stuck for 61s! [kswapd0:184]"
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=aFglAmEsC0+QtEO8U8zj7/Z92X6rvXOMkdVPJAE3OnWBsIJRT5wZmklAdKNIBPSBMS
+         V9ykxOIpMr1nToChQPCU5wcUze+nBqwALWtlWFzm5N2tTHLQEH24Dm/ODKHedl3oiw3P
+         JfJsvI3ApB8puVLRb6h/jJLEeOe5mZcj7ymjw=
+Subject: [PATCH] hwmon: (gpio-fan) Fix fan_ctrl_init error path
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Simon Guinot <sguinot@lacie.com>, lm-sensors@lm-sensors.org
+Content-Type: text/plain
+Date: Tue, 09 Nov 2010 13:18:39 +0800
+Message-Id: <1289279919.14461.7.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Remove sysfs entries before return -ENODEV.
 
-I just wanted to report a bug upstream that is affecting the latest
-versions of at least both Fedora and Ubuntu. CPUs somehow lock up
-under load, producing errors of the form "BUG: soft lockup - CPU#0
-stuck for 61s! [kswapd0:184]"
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/hwmon/gpio-fan.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-The Fedora Bug report is here:
-https://bugzilla.redhat.com/show_bug.cgi?id=649694 -- however you can
-find lots of references to the error message on other distributions
-(including Ubuntu) by googling  "bug soft lockup cpu stuck".
+diff --git a/drivers/hwmon/gpio-fan.c b/drivers/hwmon/gpio-fan.c
+index aa701a1..d2e66b4 100644
+--- a/drivers/hwmon/gpio-fan.c
++++ b/drivers/hwmon/gpio-fan.c
+@@ -388,11 +388,13 @@ static int fan_ctrl_init(struct gpio_fan_data *fan_data,
+ 	fan_data->speed_index = get_fan_speed_index(fan_data);
+ 	if (fan_data->speed_index < 0) {
+ 		err = -ENODEV;
+-		goto err_free_gpio;
++		goto err_remove_sysfs;
+ 	}
+ 
+ 	return 0;
+ 
++err_remove_sysfs:
++	sysfs_remove_group(&pdev->dev.kobj, &gpio_fan_ctrl_group);
+ err_free_gpio:
+ 	for (i = i - 1; i >= 0; i--)
+ 		gpio_free(ctrl[i]);
+-- 
+1.7.2
 
-Lockups seem to happen on server-class hardware under heavy loads when
-the machine is swapping.  This can lead to the entire machine locking
-up in some reported cases (although so far only individual CPUs seem
-to have locked up in my case, not the entire machine).  The point at
-which the CPU hangs varies -- see the dmesg output I attached to the
-Fedora bug report above.
 
-My machine is a 12-way Xeon X5680 system with ext3, AFS and XFS
-filesystems (XFS is running on hardware RAID).  Please let me know if
-you need other info that would be helpful to diagnosing the problem.
 
-Thank you,
-Luke Hutchison
