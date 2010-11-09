@@ -1,133 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550Ab0KIImA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 03:42:00 -0500
-Received: from mga11.intel.com ([192.55.52.93]:40053 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754269Ab0KIIlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 03:41:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,174,1288594800"; 
-   d="scan'208";a="624917815"
-From: xiaohui.xin@intel.com
-To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
-        herbert@gondor.hengli.com.au, jdike@linux.intel.com
-Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [PATCH v15 17/17] An example how to alloc user buffer based on napi_gro_frags() interface.
-Date: Tue,  9 Nov 2010 17:03:22 +0800
-Message-Id: <1a921f5237c4ce2ed7d739a6d4e28dac11436de2.1289280887.git.xiaohui.xin@intel.com>
-X-Mailer: git-send-email 1.7.3
-In-Reply-To: <1289293402-4791-1-git-send-email-xiaohui.xin@intel.com>
-References: <1289293402-4791-1-git-send-email-xiaohui.xin@intel.com>
-In-Reply-To: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1289280885.git.xiaohui.xin@intel.com>
-References: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1289280885.git.xiaohui.xin@intel.com>
+	id S1754617Ab0KIImh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 03:42:37 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:11108 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754475Ab0KIImd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 03:42:33 -0500
+Date: Tue, 9 Nov 2010 09:42:23 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH] include/linux/kernel.h: Add config option for 
+ pr_fmt(fmt)
+Message-ID: <20101109094223.376d8b80@endymion.delvare>
+In-Reply-To: <20101109030723.GA22732@ericsson.com>
+References: <1287713982.16920.39.camel@Joe-Laptop>
+	<20101026110335.3a4c7679@endymion.delvare>
+	<1288201301.4145.122.camel@Joe-Laptop>
+	<20101028093529.503c3a28@endymion.delvare>
+	<1288252476.1836.9.camel@Joe-Laptop>
+	<20101028104354.6aaca07c@endymion.delvare>
+	<1288390250.28828.228.camel@Joe-Laptop>
+	<20101108133342.7217866c@endymion.delvare>
+	<20101108165526.GA20229@ericsson.com>
+	<1289236563.29216.328.camel@Joe-Laptop>
+	<20101109030723.GA22732@ericsson.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xin Xiaohui <xiaohui.xin@intel.com>
+Hi Guenter,
 
-This example is made on ixgbe driver which using napi_gro_frags().
-It can get buffers from guest side directly using netdev_alloc_page()
-and release guest buffers using netdev_free_page().
+On Mon, 8 Nov 2010 19:07:23 -0800, Guenter Roeck wrote:
+> I'll start applying the patches to my next tree. I'll get back to you if I run
+> into trouble.
+> 
+> Jean, do you want to take some of the patches, or should I take them all ?
 
-Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
----
- drivers/net/ixgbe/ixgbe_main.c |   37 +++++++++++++++++++++++++++++++++----
- 1 files changed, 33 insertions(+), 4 deletions(-)
+I'll take the it87, lm78, pc87360, pc87427 and w83781d patches. Please
+take all the rest. Thanks!
 
-diff --git a/drivers/net/ixgbe/ixgbe_main.c b/drivers/net/ixgbe/ixgbe_main.c
-index a4a5263..9f5598b 100644
---- a/drivers/net/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ixgbe/ixgbe_main.c
-@@ -1032,7 +1032,14 @@ static inline void ixgbe_release_rx_desc(struct ixgbe_hw *hw,
- static bool is_rx_buffer_mapped_as_page(struct ixgbe_rx_buffer *bi,
- 					struct net_device *dev)
- {
--	return true;
-+	return dev_is_mpassthru(dev);
-+}
-+
-+static u32 get_page_skb_offset(struct net_device *dev)
-+{
-+	if (!dev_is_mpassthru(dev))
-+		return 0;
-+	return dev->mp_port->vnet_hlen;
- }
- 
- /**
-@@ -1105,7 +1112,8 @@ static void ixgbe_alloc_rx_buffers(struct ixgbe_adapter *adapter,
- 				adapter->alloc_rx_page_failed++;
- 				goto no_buffers;
- 			}
--			bi->page_skb_offset = 0;
-+			bi->page_skb_offset =
-+				get_page_skb_offset(adapter->netdev);
- 			bi->dma = dma_map_page(&pdev->dev, bi->page_skb,
- 					bi->page_skb_offset,
- 					(PAGE_SIZE / 2),
-@@ -1242,8 +1250,10 @@ static bool ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
- 			len = le16_to_cpu(rx_desc->wb.upper.length);
- 		}
- 
--		if (is_no_buffer(rx_buffer_info))
-+		if (is_no_buffer(rx_buffer_info)) {
-+			printk("no buffers\n");
- 			break;
-+		}
- 		cleaned = true;
- 
- 		if (!rx_buffer_info->mapped_as_page) {
-@@ -1299,6 +1309,11 @@ static bool ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
- 						rx_buffer_info->page_skb,
- 						rx_buffer_info->page_skb_offset,
- 						len);
-+				if (dev_is_mpassthru(netdev) &&
-+						netdev->mp_port->hash)
-+					skb_shinfo(skb)->destructor_arg =
-+						netdev->mp_port->hash(netdev,
-+						rx_buffer_info->page_skb);
- 				rx_buffer_info->page_skb = NULL;
- 				skb->len += len;
- 				skb->data_len += len;
-@@ -1316,7 +1331,8 @@ static bool ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
- 			                   upper_len);
- 
- 			if ((rx_ring->rx_buf_len > (PAGE_SIZE / 2)) ||
--			    (page_count(rx_buffer_info->page) != 1))
-+			    (page_count(rx_buffer_info->page) != 1) ||
-+				dev_is_mpassthru(netdev))
- 				rx_buffer_info->page = NULL;
- 			else
- 				get_page(rx_buffer_info->page);
-@@ -6529,6 +6545,16 @@ static void ixgbe_netpoll(struct net_device *netdev)
- }
- #endif
- 
-+#if defined(CONFIG_MEDIATE_PASSTHRU) || defined(CONFIG_MEDIATE_PASSTHRU_MODULE)
-+static int ixgbe_ndo_mp_port_prep(struct net_device *dev, struct mp_port *port)
-+{
-+	port->hdr_len = 128;
-+	port->data_len = 2048;
-+	port->npages = 1;
-+	return 0;
-+}
-+#endif
-+
- static const struct net_device_ops ixgbe_netdev_ops = {
- 	.ndo_open 		= ixgbe_open,
- 	.ndo_stop		= ixgbe_close,
-@@ -6548,6 +6574,9 @@ static const struct net_device_ops ixgbe_netdev_ops = {
- 	.ndo_set_vf_vlan	= ixgbe_ndo_set_vf_vlan,
- 	.ndo_set_vf_tx_rate	= ixgbe_ndo_set_vf_bw,
- 	.ndo_get_vf_config	= ixgbe_ndo_get_vf_config,
-+#if defined(CONFIG_MEDIATE_PASSTHRU) || defined(CONFIG_MEDIATE_PASSTHRU_MODULE)
-+	.ndo_mp_port_prep	= ixgbe_ndo_mp_port_prep,
-+#endif
- #ifdef CONFIG_NET_POLL_CONTROLLER
- 	.ndo_poll_controller	= ixgbe_netpoll,
- #endif
 -- 
-1.7.3
-
+Jean Delvare
