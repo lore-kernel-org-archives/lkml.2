@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401Ab0KIOTG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 09:19:06 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:55776 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702Ab0KIOTE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 09:19:04 -0500
-From: Andi Kleen <andi@firstfloor.org>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [patch 1/6] fs: icache RCU free inodes
-References: <20101109124610.GB11477@amd>
-Date: Tue, 09 Nov 2010 15:19:02 +0100
-In-Reply-To: <20101109124610.GB11477@amd> (Nick Piggin's message of "Tue, 9
-	Nov 2010 23:46:10 +1100")
-Message-ID: <87lj52pokp.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1753520Ab0KIOUu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 09:20:50 -0500
+Received: from kroah.org ([198.145.64.141]:43202 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752156Ab0KIOUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 09:20:47 -0500
+Date: Tue, 9 Nov 2010 06:20:53 -0800
+From: Greg KH <greg@kroah.com>
+To: Am??rico Wang <xiyou.wangcong@gmail.com>
+Cc: Mike Waychison <mikew@google.com>, simon.kagstrom@netinsight.net,
+        davem@davemloft.net, nhorman@tuxdriver.com,
+        Matt Mackall <mpm@selenic.com>, adurbin@google.com,
+        linux-kernel@vger.kernel.org, chavey@google.com,
+        akpm@linux-foundation.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH v2 12/23] netpoll: Introduce netpoll_target configs
+Message-ID: <20101109142053.GA3067@kroah.com>
+References: <20101108203120.22479.19708.stgit@crlf.mtv.corp.google.com> <20101108203246.22479.60118.stgit@crlf.mtv.corp.google.com> <20101109033024.GA5220@cr0.nay.redhat.com> <20101109042732.GC5220@cr0.nay.redhat.com> <AANLkTingq8R8bc-4fwhBQomdhTgff+fN_vE-pc5zofKX@mail.gmail.com> <20101109090645.GG5220@cr0.nay.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101109090645.GG5220@cr0.nay.redhat.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nick Piggin <npiggin@kernel.dk> writes:
+On Tue, Nov 09, 2010 at 05:06:45PM +0800, Am??rico Wang wrote:
+> On Tue, Nov 09, 2010 at 12:34:24AM -0800, Mike Waychison wrote:
+> >On Mon, Nov 8, 2010 at 8:27 PM, Am??rico Wang <xiyou.wangcong@gmail.com> wrote:
+> >> On Tue, Nov 09, 2010 at 11:30:24AM +0800, Am??rico Wang wrote:
+> >>>
+> >> ....
+> >>>
+> >>>So, either we need to de-modulize configfs or replace configfs API
+> >>>with sysfs API. Personally, I prefer the former one, I don't think
+> >>>configfs should be a module as long as it can provide API's
+> >>>for other subsystems, like debugfs.
+> >>>
+> >>
+> >> To clarify, I meant "as long as the API it provides can be used by
+> >> other core subsystems".
+> >>
+> >
+> >Ya, I see the problem with it being a tristate.
+> >
+> >Why not just make netconsole support being compiled in force configfs
+> >to be compiled in?  Or does that just set bad precedent?
+> 
+> That is what netconsole does now, and this is fine, since netconsole is
+> a module too, however, after you move that code into netpoll, then netpoll
+> will have a dependence on it, we will have problems.
+> 
+> I think we can let NETPOLL_TARGET depend on CONFIGFS_FS=y, but I still
+> see no reason why CONFIGFS_FS should be a module.
 
-> So here is the inode RCU code. It's obviously not worth doing until the
-> actual rcu-walk path walking is in, but I'd like to get opinions on it.
-> It would be nice to merge it in Al's tree at some point, though.
+No, just have the NETPOLL_TARGET set CONFIG_FS to y, don't force the
+code to always be that way if the user isn't going to want that option.
 
-I read the patch. It was quite monotonous (I guess that's a good thing)
-But it wasn't clear to me why you added the INIT_LIST_HEAD()s
-everywhere. Is this for stopping parallel walkers?
+So as it originally was should have been fine.
 
-Ok there's a comment in the doc: "VFS expects it to be initialized"
-Is that really true today?  I don't think the old code does that.
+thanks,
 
-Other than that it seems straight forward.
-
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+greg k-h
