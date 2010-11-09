@@ -1,91 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751436Ab0KIP5D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 10:57:03 -0500
-Received: from caiajhbdcahe.dreamhost.com ([208.97.132.74]:44835 "EHLO
-	homiemail-a1.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751069Ab0KIP5B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 10:57:01 -0500
-Subject: Re: [ANNOUNCE] fbdev git tree.
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: linux-fbdev@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
-        James Simmons <jsimmons@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org
-In-Reply-To: <20101109093204.GB21086@linux-sh.org>
-References: <20101109093204.GB21086@linux-sh.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 09 Nov 2010 12:56:48 -0300
-Message-ID: <1289318208.2260.9.camel@cowboy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1751978Ab0KIQDm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 11:03:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14542 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751792Ab0KIQDl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 11:03:41 -0500
+Date: Tue, 9 Nov 2010 16:57:14 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prasad <prasad@linux.vnet.ibm.com>, Roland McGrath <roland@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Q: perf_event && event->owner
+Message-ID: <20101109155714.GA1903@redhat.com>
+References: <20101108145647.GA3426@redhat.com> <20101108145754.GB3434@redhat.com> <20101108201108.GA6777@nowhere>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101108201108.GA6777@nowhere>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-09 at 18:32 +0900, Paul Mundt wrote:
-> As I find myself spending more time reviewing and merging fbdev patches
-> lately, and in an effort to offload some of the pressure on -mm, I've
-> opted to start a git tree to start collecting and merging fbdev changes.
-> 
-> I plan to get a patchwork queue established for the list as well so that
-> things don't fall through the cracks (the link will be posted once it's
-> been established). People will be able to see the status of their patches
-> this way, rather than wondering whether things are being picked up,
-> overlooked, or forced through an alternate merge strategy (We have had
-> reasonable success with this with the SH tree, so here's hoping that the
-> same approach will work well here, too).
-> 
-> I've already made a note about this to akpm off-list, so fbdev patches
-> that pop up outside of the regular channels that I may be unaware of
-> should still have a reasonable chance of being intercepted and rerouted
-> (although the mmotm is rather devoid of drivers/video churn at the
-> moment).
-> 
-> I'll be combing through the list archives to see if there is anything
-> glaringly outstanding (the HDMI/EDID work comes to mind) and working on
-> getting the oustanding issues there resolved. If anyone has any
-> outstanding patches that have fallen through the cracks, now would be a
-> good time to provide pointers!
-> 
-> Given the point that we're at with .38 bits now and a cursory look at
-> -next shows that there's already quite a bit of drivers/video churn
-> coming in from git trees. It will likely take a few cycles to get people
-> used to the idea of there being an active fbdev tree to merge through,
-> but with any luck it will be a fairly natural transition. I'll be
-> contacting and working with git tree owners separately so there aren't
-> any surprises.
-> 
-> The tree can be found at:
-> 
-> 	git://git.kernel.org/pub/scm/linux/kernel/git/lethal/fbdev-2.6.git
-> 
+On 11/08, Frederic Weisbecker wrote:
+>
+> On Mon, Nov 08, 2010 at 03:57:54PM +0100, Oleg Nesterov wrote:
+> > Another thing I can't understand, event->owner/owner_entry.
+> >
+> > Say, some thread calls sys_perf_event_open() and creates the event.
+> > It becomes its owner. Now this thread exits, but fd/event are still
+> > here, and event->owner refers to the dead task_struct.
+>
+> Hmm, it seems to me that the last reference to the events are
+> put in __perf_event_exit_task,
 
-Could this be added to the MAINTAINERS file?
+I think no, in this case sys_perf_event_open() owns the event. IOW,
+perf_release() frees this perf_event. But this doesn't matter.
 
- FRAMEBUFFER LAYER
- L:     linux-fbdev@vger.kernel.org
- W:     http://linux-fbdev.sourceforge.net/
-+T:
-git://git.kernel.org/pub/scm/linux/kernel/git/lethal/fbdev-2.6.git
- S:     Orphan
- F:     Documentation/fb/
- F:     drivers/video/fb*
+> and then free_event() is called
+> there, which rcu queues the event to be released.
+>
+> Not sure where is the issue here.
 
-> Stephen, if you could add this with the master branch to -next, it would
-> be appreciated. For the moment I expect most of the patches to follow a
-> fairly linear line of development, but there may be cause for topic
-> branches as new (or contested) patch sets arise.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+I am not saying this is buggy. But it looks very strange to me.
 
+If the creator of perf_event dies, nobody can use its ->perf_event_list
+anyway. What is the point to keep the reference to the dead task_struct
+and preserve this ->perf_event_list?
+
+And why do we need ->owner at all? Afaics, it is _only_ needed to find
+->perf_event_mutex in perf_event_release_kernel(). And this mutex only
+protects ->perf_event_list (mostly for prctl).
+
+Of course, I understand that it is not completely trivial to change this.
+The exiting creator can clear its ->perf_event_list and set
+event->owner = NULL, but then perf_event_release_kernel() should
+avoid the races with do_exit() somehow.
+
+> > ptrace looks even more strange. Debugger can attach the breakpoint
+> > to the tracee and then exit/detach. ->ptrace_bps events still point
+> > to the same (may be dead) task. Even if another debugger attaches
+> > and reuses these events.
+>
+>
+>
+> Hmm, in this case ptrace_bps will continue to trigger on the task
+> they were applied.
+>
+> On the other hand, you're right, I'm not sure that the debugger is
+> the correct owner for the breakpoints.
+> I think it works though, looking at perf_event_create_kernel_counter():
+>
+> 	event->owner = current;
+> 	get_task_struct(current);
+>
+> (current is the debugger)
+>
+> On perf_event_release_kernel():
+>
+> 	put_task_struct(event->owner);
+>
+> So even if the debugger dies, we keep a valid owner, it works but just makes
+> few sense as the debugger can change.
+
+Yes, it works, but I am not sure about "valid" above ;) Even if the previous
+debugger doesn't exit.
+
+And. Suppose that the new debugger attaches and reuses ->ptrace_bps[],
+everything works.
+
+Now, the former debugger does prctl(PR_TASK_PERF_EVENTS_DISABLE) and
+suddenly bps stop working.
+
+Not to mention this looks racy. Can't prctl() doing perf_event_disable/enable
+race with modify_user_hw_breakpoint/unregister_hw_breakpoint/etc ?
+
+> Perhaps the real owner should be the task on which we attach our breakpoint.
+
+Not sure... What for?
+
+In any case, I don't think the tracee should "control" this event.
+
+Oleg.
 
