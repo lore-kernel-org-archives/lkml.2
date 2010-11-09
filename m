@@ -1,89 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755199Ab0KIWlB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 17:41:01 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:48256 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752835Ab0KIWk7 (ORCPT
+	id S1754889Ab0KIWon (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 17:44:43 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40730 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752835Ab0KIWol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 17:40:59 -0500
-MIME-Version: 1.0
-In-Reply-To: <1289341347.2191.97.camel@laptop>
-References: <1289339119.2191.92.camel@laptop> <AANLkTimb=R0aqtfL=eZpwj=KqJchHU+nhMnjk5ME9BNr@mail.gmail.com>
- <1289341347.2191.97.camel@laptop>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Tue, 9 Nov 2010 23:40:43 +0100
-Message-ID: <AANLkTinGJApOAnQVfwLNcV1H2CUPNR4JbKASi92HgUro@mail.gmail.com>
-Subject: Re: [RFC][PATCH] perf: sysfs type id
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Lin Ming <ming.m.lin@intel.com>, Stephane Eranian <eranian@google.com>,
-        "robert.richter" <robert.richter@amd.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        fweisbec <fweisbec@gmail.com>, paulus <paulus@samba.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 9 Nov 2010 17:44:41 -0500
+Date: Tue, 9 Nov 2010 14:43:46 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Hellwig <hch@lst.de>,
+        Jan Engelhardt <jengelh@medozas.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/5] writeback: avoid livelocking WB_SYNC_ALL writeback
+Message-Id: <20101109144346.21d6a5e4.akpm@linux-foundation.org>
+In-Reply-To: <20101108231727.139062518@intel.com>
+References: <20101108230916.826791396@intel.com>
+	<20101108231727.139062518@intel.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 9, 2010 at 23:22, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, 2010-11-09 at 23:11 +0100, Kay Sievers wrote:
->> On Tue, Nov 9, 2010 at 22:45, Peter Zijlstra <peterz@infradead.org> wrote:
->> > The below is a RFC patch adding dynamic type ids to perf.
->> >
->> > We need to represent PMUs in sysfs because we want to allow multiple
->> > (loadable) PMUs and need a way to identify them.
->> >
->> > This patch creates a new device class "pmu" and adds a single attribute
->> > "type" to it. This device attribute will expose the dynamic type id as
->> > required by perf_event_attr::type.
->> >
->> > The sysfs layout looks like:
->> >
->> > [root@westmere ~]# cd /sys/class/pmu/
->>
->> Please use a 'bus_type' instead of 'class'.
->>
->> I'm very sure, some day, you'll need global attributes for the pmu
->> stuff, and class -- unlike bus -- has its own subdir where you can go
->> wild, without mixing things with the list-of-devices. :)
->
-> Having its own subdir sounds like a pro, so I'm somewhat confused. Also
-> the pmu (or event_source as Ingo would like it getting called) seems
-> like a class of devices not a bus.
->
-> USB/PCI/I2C/ISA are all buses.. pmu/event_source not so much, they are
-> very different (sometimes even pure software) things that provide a
-> common interface -- they generate events which we can count and sample.
->
-> /me dazed & confused, please do explain.
+On Tue, 09 Nov 2010 07:09:20 +0800
+Wu Fengguang <fengguang.wu@intel.com> wrote:
 
-Don't get confused by the 'bus' name, it's used for many things which
-are not hardware buses. Class is just almost the same as a bus inside
-and outside the kernel. Things like libudev don't even allow you to
-distinguish the both, there is only a 'subsystem'. The class export in
-/sys is not extensible at all, and therefore it should be avoided for
-new stuff.
+> From: Jan Kara <jack@suse.cz>
+> 
+> When wb_writeback() is called in WB_SYNC_ALL mode, work->nr_to_write is
+> usually set to LONG_MAX. The logic in wb_writeback() then calls
+> __writeback_inodes_sb() with nr_to_write == MAX_WRITEBACK_PAGES and thus
+> we easily end up with negative nr_to_write after the function returns.
 
-We will make all classes and buses show up in /sys/subsystem/. The
-current silly split between a class and a bus has absolutely no
-consistent meaning, and serves no purpose. After /sys/subsystem/
-exists, class and bus will only be compat links pointing to the
-entries in /sys/subsystem/.
+No, nr_to_write can only be negative if the filesystem wrote back more
+pages than requested.
 
-There is _one_ tree at /sys/devices/, and will be _one_ classification
-at /sys/subsystem/ which lists all-devices-of-the-same-subsystem and
-has an extensible subdir like bus has today.
+> wb_writeback() then decides we need another round of writeback but this
+> is wrong in some cases! For example when a single large file is
+> continuously dirtied, we would never finish syncing it because each pass
+> would be able to write MAX_WRITEBACK_PAGES and inode dirty timestamp
+> never gets updated (as inode is never completely clean).
 
-It's partly described in some outdated version in Documentation/sysfs-rules.txt.
+Well we shouldn't have asked the function to write LONG_MAX pages then!
 
->> No new stuff should use 'class', it's not extensible.
->
-> Hrm.. when I introduced the bdi stuff class was _the_ thing to use.
+The way this used to work was to try to write back N=(total dirty pages
++ total unstable pages + various fudge factors) to each superblock.  So
+each superblock will get fully written back unless someone is madly
+writing to it.  If that _is_ happening then we'll write a large amount
+of data to it and will then give up and move onto the next superblock.
 
-Yeah, it does really matter for very simple things, but never for
-stuff that reads -- before it even exists -- as "we will add links to
-... and subbdirs, and have ...' :)
+But the "large amount of data" is constrained to a sane upper limit:
+total amount of dirty memory plus fudge factors.  Increasing that sane
+upper limit to an insane 2^63-1 pages will *of course* cause sync() to
+livelock.
 
-Kay
+Why was that sane->insane change made?
+
+> Fix the issue by setting nr_to_write to LONG_MAX in WB_SYNC_ALL mode. We
+> do not need nr_to_write in WB_SYNC_ALL mode anyway since livelock
+> avoidance is done differently for it.
+
+Here the changelog should spell out what "done differently" means. 
+Because I really am unsure what is begin referred to.
+
+I don't really see how this patch changes anything.  For WB_SYNC_ALL
+requests the code will still try to write out 2^63 pages, only it does
+it all in a single writeback_inodes_wb() call.  What prevents that call
+itself from getting livelocked?
+
+Perhaps the unmentioned problem here is that each call to
+writeback_inodes_wb(MAX_WRITEBACK_PAGES) will restart its walk across
+the inode lists.  So instead of giving up on a being-written-to-file,
+we continuously revisit it again and again and again.
+
+Correct?  If so, please add the description.  If incorrect, please add
+the description as well ;)
+
+
+Root cause time: it's those damn per-sb inode lists *again*.  They're
+just awful.  We need some data structure there which is more amenable
+to being iterated over.  Something against which we can store cursors,
+for a start.
+
+
