@@ -1,66 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab0KIRoc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 12:44:32 -0500
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:5113 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752776Ab0KIRob (ORCPT
+	id S1754143Ab0KIRpN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 12:45:13 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52651 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753820Ab0KIRpL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 12:44:31 -0500
-Message-ID: <4CD9887E.3040607@caviumnetworks.com>
-Date: Tue, 09 Nov 2010 09:44:30 -0800
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Tue, 9 Nov 2010 12:45:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:content-type
+         :content-transfer-encoding;
+        b=BuVgS5hWLn9bGqs0Lflh4rnZlvB3yFAr06VOgLT0mmC7Jk2mSWvTP4AdttRYol7qo/
+         +LpEIKduH8EiVe5INWGdpAgEIy0wGEmBNB5lpR0UZ90vmda5KdioBhgMXNUGWoh6OYKd
+         Qjpif29qx2onnj3l1rhw/kFj3XUfVLUNKvfUo=
 MIME-Version: 1.0
-To: Kees Cook <kees.cook@canonical.com>
-CC: linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>
-Subject: Re: [linux-next] automatic use of checkpatch.pl for security?
-References: <20101109173357.GA5876@outflux.net>
-In-Reply-To: <20101109173357.GA5876@outflux.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 09 Nov 2010 17:45:11.0889 (UTC) FILETIME=[DBC45410:01CB8035]
+In-Reply-To: <20101109153805.GB3146@kryptos.osrc.amd.com>
+References: <AANLkTikA6hZDV0A30fku7VT7Z1P8OqxcsF-EK95pBdD=@mail.gmail.com>
+ <4CD966D8.4000602@ladisch.de> <20101109153805.GB3146@kryptos.osrc.amd.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Tue, 9 Nov 2010 12:44:48 -0500
+X-Google-Sender-Auth: E0pMKDZO9O3cX2pE6gDKwjg8f5s
+Message-ID: <AANLkTi=cUGGpkgWcbX=KMxzu+E=Toy_O+LeLoAFFUAsh@mail.gmail.com>
+Subject: Re: HPET (?) related hangs and breakage in 2.6.35,36
+To: Borislav Petkov <bp@amd64.org>, Clemens Ladisch <clemens@ladisch.de>,
+        Andrew Lutomirski <luto@mit.edu>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86 <x86@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2010 09:33 AM, Kees Cook wrote:
-> Hi,
+On Tue, Nov 9, 2010 at 10:38 AM, Borislav Petkov <bp@amd64.org> wrote:
+> On Tue, Nov 09, 2010 at 04:20:56PM +0100, Clemens Ladisch wrote:
+>> Andrew Lutomirski wrote:
+>> > After several minutes of uptime, my system freezes in a strange way.
+>> > All of userspace and some kernel services freeze hard (no mouse, no
+>> > typing, etc.)  Caps-lock works intermittently, as does (I think)
+>> > pinging.  The only debug output I've been able to get is this (typed
+>> > from a blurry photo because netconsole dies along with everything
+>> > else):
+>> >
+>> > [ 5478.244722] Clocksource tsc unstable (delta = 101399051316 ns)
+>> > [ 5478.367958] Switching to clocksource hpet
+>> > [ 5543.729698] BUG: soft lockup - CPU #1 stuck for 61s! [migration/1:6]
+>>
+>> Looks like this one:
+>> http://lkml.org/lkml/2010/10/26/126
 >
-> In an effort to continue the constification work, it'd be nice to
-> not accidentally introduce regressions or add additional work. Since
-> checkpatch.pl already knows to warn about a lot of things including const
-> structures, it would be great to have all commits going through linux-next
-> (or something) have to pass at least a subset of checkpatch.pl's checks.
+> I don't think so: the one at the URL above is 37-rc1 specific (issue
+> came in during the merge window) while Andrew's problem can be
+> reproduced with 35 and 36, reportedly.
 >
-> For example, Lionel Debroux pointed out to me that looking at the last
-> 1000 commits, there are a lot of warnings, including things like:
+> Anyway, adding more people to Cc.
+
+I may have just reproduced after a couple of days of uptime it in
+2.6.36 with hpet=disable (in any case, the system hung and netconsole
+didn't work).
+
+I'm currently testing the hpet_min_tick stuff, backported to 2.6.36,
+with hpet on.  Haven't had a problem yet, but I'll see what happens
+after a few hours.  So far, it said:
+
+ACPI: HPET id: 0x8086a301 base: 0xfed00000 min tick: 128
+
+Is there any way that a tsc delta of >100 seconds occurring awhile
+after bootup on Nehalem with a single socket can real (as opposed to a
+bug making the kernel think that there was a delta when there really
+wasn't)?
+
+--Andy
+
 >
-> WARNING: struct dma_map_ops should normally be const
-> #499: FILE: arch/mips/mm/dma-default.c:301:
-> +static struct dma_map_ops mips_default_dma_map_ops = {
+> --
+> Regards/Gruss,
+> Boris.
 >
-> Can we add some kind of automatic checking to actually give checkpatch.pl
-> some real teeth for at least some of its checks?
+> Advanced Micro Devices GmbH
+> Einsteinring 24, 85609 Dornach
+> General Managers: Alberto Bozzo, Andrew Bowd
+> Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+> Registergericht Muenchen, HRB Nr. 43632
 >
-
-Ok, did you actually try to make it const as suggested?  If you had, you 
-would have found that there are declarations throughout the code base 
-that conflict with checkpatch.pl's suggestion.
-
-There are several things we could do:
-
-1) Force people to clean up the entire kernel tree before making trivial 
-changes that checkpatch.pl might complain about.
-
-2) Change checkpatch.pl so that it doesn't complain about this.
-
-3) Make reasonable changes and ignore the checkpatch.pl warning.
-
-
-In that specific case you cite, #3 was chosen.
-
-If you gate admission to linux-next with some sort of automated check 
-like this, I fear the wrath of the disgruntled masses may fall upon you.
-
-David Daney
+>
