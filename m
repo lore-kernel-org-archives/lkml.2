@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755202Ab0KIVtp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 16:49:45 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:57612 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753708Ab0KIVtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 16:49:45 -0500
-Date: Tue, 9 Nov 2010 13:49:12 -0800
-From: Kees Cook <kees.cook@canonical.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        Manfred Spraul <manfred@colorfullife.com>
-Subject: Re: [PATCH] ipc: explicitly clear stack memory in user structs
-Message-ID: <20101109214912.GW5876@outflux.net>
-References: <20101025235804.GA11760@outflux.net>
- <AANLkTi=c4kt46Pa1FA-e8=36Vn0KcmZgHHKWKZ_bgvzL@mail.gmail.com>
- <20101109205008.GU5876@outflux.net>
- <4CD9B463.6090504@kernel.org>
- <AANLkTin1FmyN7_-Jg9AWizfQ04+rVWhFRcpYZykBRJ0f@mail.gmail.com>
+	id S1755403Ab0KIVt6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 16:49:58 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:48470 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754002Ab0KIVt4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 16:49:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=db53FnOm1ucf6baoELiBQ/gcbv4M2iYuRTk4k1uF32/3MQgvAxUueQplx0+mP5Qjqu
+         +n+q5D5JtA+B9gvV2sSZdTmwb32LanFKX7eTji/qksU5hyQbBYAlxx9ePbjU4vG3yjHQ
+         odmKqv4FZCYZAHRoEahHNrGqVX7nYtPbHexss=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTin1FmyN7_-Jg9AWizfQ04+rVWhFRcpYZykBRJ0f@mail.gmail.com>
-Organization: Canonical
-X-HELO: www.outflux.net
+In-Reply-To: <4CD9B07E.70502@fusionio.com>
+References: <AANLkTi=xj6xW5SnrdQos4P-MtJP8+fwfaa3r7LPfdLh4@mail.gmail.com>
+	<20101107185433.GD15561@linux.vnet.ibm.com>
+	<4CD7FAFD.1060802@fusionio.com>
+	<20101108135204.GE2580@linux.vnet.ibm.com>
+	<4CD80162.9000607@fusionio.com>
+	<4CD9B07E.70502@fusionio.com>
+Date: Tue, 9 Nov 2010 21:49:54 +0000
+Message-ID: <AANLkTi=hbObSQC2=mwtb6cy399Srt-mL47zgfvth57fQ@mail.gmail.com>
+Subject: Re: [2.6.37-rc1] sys_ioprio_set and RCU locking...
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pekka,
+On 9 November 2010 20:35, Jens Axboe <jaxboe@fusionio.com> wrote:
+> On 2010-11-08 14:55, Jens Axboe wrote:
+>>>>>> Take the RCU lock for read across acquiring the pointer to the task
+>>>>>> credentials and dereferencing it.
+>>>>>
+>>>>> Jens, does this look sane?
+>>>>
+>>>> Yes, looks clean enough to me.
+>>>
+>>> Very good!  Are you willing to take the patch in your tree?
+>>
+>> Certainly, I'm in the middle of patch monkeying now anyway. Will queue
+>> it up.
+>
+> The patch was buggy, I discovered that it does not do the proper
+> RCU unlock if we fail the uid match. Merged version here:
+>
+> http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=1a882abdbf9579ad0e5655f928e4ede30db301e6
 
-On Tue, Nov 09, 2010 at 11:34:50PM +0200, Pekka Enberg wrote:
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=3af54c9bd9e6f14f896aac1bb0e8405ae0bc7a44
+Brown paper bag moment! Good catch, Jens.
 
-Yes, it looks like Vasiliy Kulikov's version[0] from Oct 30th went in
-instead of my second[1] or third[2] posting of the patches earlier in the
-month.
-
--Kees
-
-[0] http://lkml.org/lkml/2010/10/30/30
-[1] http://lkml.org/lkml/2010/10/6/486
-[2] http://lkml.org/lkml/2010/10/25/447
-
+Dan
 -- 
-Kees Cook
-Ubuntu Security Team
+Daniel J Blueman
