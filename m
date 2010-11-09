@@ -1,109 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755087Ab0KIUwE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 15:52:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51235 "EHLO mx1.redhat.com"
+	id S1754922Ab0KIUyc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 15:54:32 -0500
+Received: from imr4.ericy.com ([198.24.6.8]:36919 "EHLO imr4.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754915Ab0KIUwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 15:52:00 -0500
-Date: Tue, 9 Nov 2010 15:51:38 -0500
-From: Josef Bacik <josef@redhat.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Josef Bacik <josef@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, joel.becker@oracle.com,
-        cmm@us.ibm.com, cluster-devel@redhat.com
-Subject: Re: [PATCH 1/6] fs: add hole punching to fallocate
-Message-ID: <20101109205138.GA4465@localhost.localdomain>
-References: <1289248327-16308-1-git-send-email-josef@redhat.com> <20101109011222.GD2715@dastard>
+	id S1753911Ab0KIUyb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 15:54:31 -0500
+Subject: Re: [PATCH 04/11] hwmon: applesmc: Introduce a register lookup
+ table (rev2)
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Jean Delvare <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <4CD9A1DC.2000407@euromail.se>
+References: <1289315711-3011-1-git-send-email-rydberg@euromail.se>
+	 <1289315711-3011-5-git-send-email-rydberg@euromail.se>
+	 <1289329469.22931.221.camel@groeck-laptop>  <4CD9A1DC.2000407@euromail.se>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Ericsson
+Date: Tue, 9 Nov 2010 12:53:44 -0800
+Message-ID: <1289336024.22931.243.camel@groeck-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101109011222.GD2715@dastard>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 09, 2010 at 12:12:22PM +1100, Dave Chinner wrote:
-> On Mon, Nov 08, 2010 at 03:32:02PM -0500, Josef Bacik wrote:
-> > Hole punching has already been implemented by XFS and OCFS2, and has the
-> > potential to be implemented on both BTRFS and EXT4 so we need a generic way to
-> > get to this feature.  The simplest way in my mind is to add FALLOC_FL_PUNCH_HOLE
-> > to fallocate() since it already looks like the normal fallocate() operation.
-> > I've tested this patch with XFS and BTRFS to make sure XFS did what it's
-> > supposed to do and that BTRFS failed like it was supposed to.  Thank you,
+Hi Henrik,
+
+On Tue, 2010-11-09 at 14:32 -0500, Henrik Rydberg wrote:
+> Hi Guenter,
+> 
+> >> +/*
+> 
+> >> + * applesmc_init_smcreg_try - Try to initialize register cache. Idempotent.
+> >> + */
+> >> +static int applesmc_init_smcreg_try(void)
+> >> +{
+> >> +       struct applesmc_registers *s = &smcreg;
+> >> +       int ret;
+> >> +
+> >> +       if (s->init_complete)
+> >> +               return 0;
+> >> +
+> >> +       mutex_init(&s->mutex);
+> >> +
+> > I am a bit concerned that mutex_init() can be called multiple times. Are
+> > you sure this is safe ?
+> 
+> 
+> mutex_destroy() is defined as a nop, so I guess the question is whether anything
+> could be holding the lock when entering a second init. There are no sysfs files
+> created at that point, so I would say no. The mutex could be put back with a
+> static initializer, if this is not satisfactory. The real reason to move it to
+> the smcreg struct was to force a rename of the mutex itself.
+> 
+
+Alternatively, you could move the mutex initialization to the beginning
+of applesmc_init_smcreg() and make it
+	mutex_init(&smcreg.mutex);
+
 > > 
-> > Signed-off-by: Josef Bacik <josef@redhat.com>
-> > ---
-> >  fs/open.c              |    2 +-
-> >  include/linux/falloc.h |    1 +
-> >  2 files changed, 2 insertions(+), 1 deletions(-)
+> >> +       ret = read_register_count(&s->key_count);
+> >> +       if (ret)
+> >> +               return ret;
+> >> +
+> >> +       if (!s->cache)
+> >> +               s->cache = kcalloc(s->key_count, sizeof(*s->cache), GFP_KERNEL);
+> >> +       if (!s->cache)
+> >> +               return -ENOMEM;
+> >> +
+> >> +       s->init_complete = true;
+> >> +
+> >> +       pr_info("key=%d\n", s->key_count);
+> >> +
+> > Hope that means more to macbook users than it does to me ;).
+> 
+> 
+> It means a lot from a diagnostic point of view - a normal user does not really
+> care about the dmesg output anyways. :-)
+> 
+Ok, guess I am not a normal user ;).
+
+> >> +static int applesmc_init_smcreg(void)
+> >> +{
+> >> +       int ms, ret;
+> >> +
+> >> +       for (ms = 0; ms < INIT_TIMEOUT_MSECS; ms += INIT_WAIT_MSECS) {
+> >> +               ret = applesmc_init_smcreg_try();
+> >> +               if (!ret)
+> >> +                       return 0;
+> >> +               pr_warn("slow init, retrying\n");
 > > 
-> > diff --git a/fs/open.c b/fs/open.c
-> > index 4197b9e..ab8dedf 100644
-> > --- a/fs/open.c
-> > +++ b/fs/open.c
-> > @@ -223,7 +223,7 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
-> >  		return -EINVAL;
-> >  
-> >  	/* Return error if mode is not supported */
-> > -	if (mode && !(mode & FALLOC_FL_KEEP_SIZE))
-> > +	if (mode && (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE)))
-> >  		return -EOPNOTSUPP;
-> >  
-> >  	if (!(file->f_mode & FMODE_WRITE))
-> > diff --git a/include/linux/falloc.h b/include/linux/falloc.h
-> > index 3c15510..851cba2 100644
-> > --- a/include/linux/falloc.h
-> > +++ b/include/linux/falloc.h
-> > @@ -2,6 +2,7 @@
-> >  #define _FALLOC_H_
-> >  
-> >  #define FALLOC_FL_KEEP_SIZE	0x01 /* default is extend size */
-> > +#define FALLOC_FL_PUNCH_HOLE	0X02 /* de-allocates range */
+> > INIT_WAIT_MS is 50ms, so you issue this warning every 50ms for up to
+> > five seconds. Pretty noisy... sure that is what you want ? Also, does it
+> > really make sense to retry if the error is ENOMEM ?
 > 
-> Hole punching was not included originally in fallocate() for a
-> variety of reasons. IIRC, they were along the lines of:
 > 
-> 	1 de-allocating of blocks in an allocation syscall is wrong.
-> 	  People wanted a new syscall for this functionality.
-> 	2 no glibc interface needs it
-> 	3 at the time, only XFS supported punching holes, so there
-> 	  is not need to support it in a generic interface
-> 	4 the use cases presented were not considered compelling
-> 	  enough to justify the additional complexity (!)
-> 
-> In the end, I gave up arguing for it to be included because just
-> getting the FALLOC_FL_KEEP_SIZE functionality was a hard enough
-> battle.
-> 
-> Anyway, #3 isn't the case any more, #4 was just an excuse not to
-> support anything ext4 couldn't do and lots of apps are calling
-> fallocate directly (because glibc can't use FALLOC_FL_KEEP_SIZE) so
-> #2 isn't an issue, either. I guess that leaves #1 to be debated;
-> I don't think there is any problem with doing what you propose.
-> 
-> What I will suggest is that this requires a generic xfstest to be
-> written and support added to xfs_io to enable that test (and others)
-> to issue hole punches. Something along the lines of test 242 which I
-> wrote for testing all the edge case of XFS_IOC_ZERO_RANGE (*) would be
-> good.
-> 
+> With the empirical failure rate, it is extremely unlikely to get more than a
+> couple of failures in a row - information which in itself could be very useful.
 
-So this was relatively simple, adding a flag to falloc for xfs_io and such.  Got
-a test going and it worked great on XFS.  Then I went to make sure it worked on
-non-XFS, and thats where I've run into pain.  Turns out xfs_io -c "bmap" only
-works on XFS.  So I thought to myself "well how hard could it be to make this
-thing use fiemap?", hahaha I'm an idiot.  So I've been adding a xfs_io -c
-"fiemap" that spits things out similar to bmap, and it will probably be tomorrow
-when I finish it.
+You would have alternative options, though, with less noise. For
+example, something along the line of
 
-So good news is my simple patches seem to work just fine for hole-punch, bad
-news is its going to take me another day to have all the infrastructure to test
-it on non-XFS filesystems.
+	for (...) {
+		...
+		if (!ret) {
+			if (ms)
+				pr_info("smcreg initialization took %d ms\n", ms);
+			return 0;
+		}
+	...
+	}
+	pr_err("smcreg initialization failed\n");
 
-Also did you want me to rebase my patches on your fallocate() version of
-ZERO_RANGE?  Thanks,
+> A direct escape on ENOMEM makes sense, though.
+> 
+> Changing the place of the mutex will ripple through all patches, so I will
+> resend from this one onwards. I suppose you have more comments on the following
+> patches?
 
-Josef
+Maybe it won't be that bad if you initialize it as I suggested above.
+
+Regarding additional comments - I don't know yet. I didn't have time to
+look into the other patches yet. I'll try to do that by tonight.
+
+Guenter
+
+
