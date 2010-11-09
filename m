@@ -1,255 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab0KIOjZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 09:39:25 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:51144 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752278Ab0KIOjY (ORCPT
+	id S1753676Ab0KIOkh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 09:40:37 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:46255 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751497Ab0KIOkf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 09:39:24 -0500
-X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=UWg-Qlbn-4MA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=fmaj7kj-lKekgylYl0cA:9 a=344ybyEbL4znXTF9KeEA:7 a=JoRZQ-HPhlggArN_cyjZeKT4aXMA:4 a=PUjeQqilurYA:10 a=YDQRsSeSArhnPFKf:21 a=fkYse-gh5apvq2ul:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] Delegate unknown module parameters to interested
- parties
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Yuanhan Liu <yuanhan.liu@linux.intel.com>, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, mingo@redhat.com,
-        Rusty Russell <rusty@rustcorp.com.au>
-In-Reply-To: <1289311867-10096-1-git-send-email-chris@chris-wilson.co.uk>
-References: <0d30dc$k4dmjb@orsmga001.jf.intel.com>
-	 <1289311867-10096-1-git-send-email-chris@chris-wilson.co.uk>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 09 Nov 2010 09:39:21 -0500
-Message-ID: <1289313561.12418.96.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Nov 2010 09:40:35 -0500
+Date: Tue, 9 Nov 2010 15:39:41 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Borislav Petkov <bp@alien8.de>, john stultz <johnstul@us.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "avi@redhat.com" <avi@redhat.com>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>
+Subject: Re: [bisected] Clocksource tsc unstable git
+Message-ID: <20101109143941.GA31121@aftab>
+References: <20101029170040.GJ21125@aftab>
+ <20101029172631.GA23546@arch.trippelsdorf.de>
+ <alpine.LFD.2.00.1011011904280.2566@localhost6.localdomain6>
+ <20101101184512.GA1589@arch.trippelsdorf.de>
+ <alpine.LFD.2.00.1011021626160.9357@localhost6.localdomain6>
+ <20101105160919.GC25704@aftab>
+ <20101105164225.GA1594@arch.trippelsdorf.de>
+ <20101105212749.GA1559@arch.trippelsdorf.de>
+ <20101105213248.GB28493@aftab>
+ <alpine.LFD.2.00.1011091500220.2900@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1011091500220.2900@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Added Rusty "Module God" Russell ]
-
-
-On Tue, 2010-11-09 at 14:11 +0000, Chris Wilson wrote:
-> This is a sketch of what I had in mind for trace to do the event
-> initialisation on the modules behalf.
+On Tue, Nov 09, 2010 at 09:02:13AM -0500, Thomas Gleixner wrote:
+> > actually your board is not what concerns me, 20 ticks is still ok, more
+> > or less, but there are other machines which contain absurd values in
+> > there like 0x37ee or 0x1000 (a Broadcom chipset). We'll need to give a
+> > change like that a good run before we can be absolutely sure it doesn't
+> > break any machines.
 > 
-> ---
->  include/linux/module.h      |    8 ++++++++
->  include/linux/moduleparam.h |    3 ++-
->  init/main.c                 |    8 ++++----
->  kernel/module.c             |   21 ++++++++++++++++++++-
->  kernel/params.c             |   10 ++++++----
->  kernel/trace/trace_events.c |   15 ++++++++++++++-
->  6 files changed, 54 insertions(+), 11 deletions(-)
-> 
-> diff --git a/include/linux/module.h b/include/linux/module.h
-> index b29e745..84daad8 100644
-> --- a/include/linux/module.h
-> +++ b/include/linux/module.h
-> @@ -241,6 +241,14 @@ enum module_state
->  	MODULE_STATE_GOING,
->  };
->  
-> +#define MODULE_UNKNOWN_PARAM (MODULE_STATE_GOING + 1)
-> +
-> +struct module_unknown_param {
-> +	struct module *mod;
-> +	char *param;
-> +	char *val;
-> +};
-> +
->  struct module
->  {
->  	enum module_state state;
-> diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
-> index 112adf8..5e24ec1 100644
-> --- a/include/linux/moduleparam.h
-> +++ b/include/linux/moduleparam.h
-> @@ -265,7 +265,8 @@ extern int parse_args(const char *name,
->  		      char *args,
->  		      const struct kernel_param *params,
->  		      unsigned num,
-> -		      int (*unknown)(char *param, char *val));
-> +		      int (*unknown)(char *param, char *val, void *data),
-> +		      void *data);
->  
->  /* Called by module remove. */
->  #ifdef CONFIG_SYSFS
-> diff --git a/init/main.c b/init/main.c
-> index e59af24..782780e 100644
-> --- a/init/main.c
-> +++ b/init/main.c
-> @@ -267,7 +267,7 @@ early_param("loglevel", loglevel);
->   * Unknown boot options get handed to init, unless they look like
->   * unused parameters (modprobe will find them in /proc/cmdline).
->   */
-> -static int __init unknown_bootoption(char *param, char *val)
-> +static int __init unknown_bootoption(char *param, char *val, void *data)
->  {
->  	/* Change NUL term back to "=", to make "param" the whole string. */
->  	if (val) {
-> @@ -455,7 +455,7 @@ static noinline void __init_refok rest_init(void)
->  }
->  
->  /* Check for early params. */
-> -static int __init do_early_param(char *param, char *val)
-> +static int __init do_early_param(char *param, char *val, void *data)
->  {
->  	const struct obs_kernel_param *p;
->  
-> @@ -475,7 +475,7 @@ static int __init do_early_param(char *param, char *val)
->  
->  void __init parse_early_options(char *cmdline)
->  {
-> -	parse_args("early options", cmdline, NULL, 0, do_early_param);
-> +	parse_args("early options", cmdline, NULL, 0, do_early_param, NULL);
->  }
->  
->  /* Arch code calls this early on, or if not, just before other parsing. */
-> @@ -578,7 +578,7 @@ asmlinkage void __init start_kernel(void)
->  	parse_early_param();
->  	parse_args("Booting kernel", static_command_line, __start___param,
->  		   __stop___param - __start___param,
-> -		   &unknown_bootoption);
-> +		   &unknown_bootoption, NULL);
->  	/*
->  	 * These use large bootmem allocations and must precede
->  	 * kmem_cache_init()
-> diff --git a/kernel/module.c b/kernel/module.c
-> index 2df4630..87ce541 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -2544,6 +2544,24 @@ static int post_relocation(struct module *mod, const struct load_info *info)
->  	return module_finalize(info->hdr, info->sechdrs, mod);
->  }
->  
-> +static int unknown_param(char *param, char *val, void *data)
-> +{
-> +	struct module_unknown_param arg;
-> +	int ret;
-> +
-> +	arg.mod = data;
-> +	arg.param = param;
-> +	arg.val = val;
-> +
-> +	ret = blocking_notifier_call_chain(&module_notify_list,
-> +					  MODULE_UNKNOWN_PARAM,
-> +					  &arg);
-> +	if (ret & NOTIFY_STOP_MASK)
-> +		return notifier_to_errno(ret);
-> +
-> +	return -ENOENT;
-> +}
-> +
->  /* Allocate and load the module: note that size of section 0 is always
->     zero, and we rely on this for optional sections. */
->  static struct module *load_module(void __user *umod,
-> @@ -2637,7 +2655,8 @@ static struct module *load_module(void __user *umod,
->  	mutex_unlock(&module_mutex);
->  
->  	/* Module is ready to execute: parsing args may do that. */
-> -	err = parse_args(mod->name, mod->args, mod->kp, mod->num_kp, NULL);
-> +	err = parse_args(mod->name, mod->args, mod->kp, mod->num_kp,
-> +			 unknown_param, mod);
->  	if (err < 0)
->  		goto unlink;
->  
-> diff --git a/kernel/params.c b/kernel/params.c
-> index 08107d1..d8c707c 100644
-> --- a/kernel/params.c
-> +++ b/kernel/params.c
-> @@ -87,7 +87,8 @@ static int parse_one(char *param,
->  		     char *val,
->  		     const struct kernel_param *params,
->  		     unsigned num_params,
-> -		     int (*handle_unknown)(char *param, char *val))
-> +		     int (*handle_unknown)(char *param, char *val, void *data),
-> +		     void *data)
->  {
->  	unsigned int i;
->  	int err;
-> @@ -109,7 +110,7 @@ static int parse_one(char *param,
->  
->  	if (handle_unknown) {
->  		DEBUGP("Unknown argument: calling %p\n", handle_unknown);
-> -		return handle_unknown(param, val);
-> +		return handle_unknown(param, val, data);
->  	}
->  
->  	DEBUGP("Unknown argument `%s'\n", param);
-> @@ -173,7 +174,8 @@ int parse_args(const char *name,
->  	       char *args,
->  	       const struct kernel_param *params,
->  	       unsigned num,
-> -	       int (*unknown)(char *param, char *val))
-> +	       int (*unknown)(char *param, char *val, void *data),
-> +	       void *data)
->  {
->  	char *param, *val;
->  
-> @@ -188,7 +190,7 @@ int parse_args(const char *name,
->  
->  		args = next_arg(args, &param, &val);
->  		irq_was_disabled = irqs_disabled();
-> -		ret = parse_one(param, val, params, num, unknown);
-> +		ret = parse_one(param, val, params, num, unknown, data);
->  		if (irq_was_disabled && !irqs_disabled()) {
->  			printk(KERN_WARNING "parse_args(): option '%s' enabled "
->  					"irq's!\n", param);
-> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-> index 0725eea..d23cbf3 100644
-> --- a/kernel/trace/trace_events.c
-> +++ b/kernel/trace/trace_events.c
-> @@ -1330,10 +1330,21 @@ static void trace_module_remove_events(struct module *mod)
->  	up_write(&trace_event_mutex);
->  }
->  
-> +static int trace_module_unknown_param(struct module_unknown_param *arg)
-> +{
-> +	if (strcmp(arg->param, "trace") == 0) {
-> +		int ret = trace_set_clr_module_event(arg->mod, arg->val, 1);
+> If the ACPI entry is known to be flaky, shouldn't we simply err out on
+> the safe side and use 128 ticks in any case, which is not a really big
+> deal.
 
-This of course assumes that arg->mod is the system. Perhaps I could
-rewrite this to only enable events in this module.
+Yep, this is what my proposed fix does. I set it by default to 0x80 and
+the hpet detection code in acpi_parse_hpet() overrides it if it is less
+than that (and obviously a sensible value written by the BIOS).
 
-> +		return NOTIFY_STOP_MASK | (NOTIFY_OK - ret);
-> +	}
-> +
-> +	return NOTIFY_OK;
-> +}
+Otherwise it issues a warning. Come to think of it, we shouldn't be
+issuing a warning because this'll scream on a very high number of
+systems, IMHO, especially older boards. Instead, we should issue it in
+dmesg during boot just in case.
+
+The other concern I have is whether min tick of 128 would work for _all_
+possible HPET implementations - I don't know whether there are some very
+b0rked incarnations which delay HPET accesses to more than 128 cycles.
+Kinda hard to say.
+
+So, to be more specific, here's what I have in mind:
+
+--
+From: Borislav Petkov <borislav.petkov@amd.com>
+Date: Thu, 4 Nov 2010 00:01:49 +0100
+Subject: [PATCH] HPET: Fix HPET readout for small deltas
+
+Some HPET implementations might require longer delay when accessing the
+HPET than what 995bd3bb5c78f3ff71339803c0b8337ed36d64fb established (8
+cycles). Generally, the proper value should be programmed by BIOS and
+written into the ACPI HPET table as the main counter minimum tick in
+periodic mode (offset 53).
+
+We assume that value as the minimum value a delta can be in order to
+reprogram the HPET successfully. For BIOSen which contain crap, we fall
+back to a default value of 128 cycles which should be sensible on all
+more or less sane HPET implementations.
+
+LKML-Reference: <20101026112052.GA1672@arch.trippelsdorf.de>
+Not-Yet-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/include/asm/hpet.h |    1 +
+ arch/x86/kernel/acpi/boot.c |   10 +++++++---
+ arch/x86/kernel/hpet.c      |    3 ++-
+ 3 files changed, 10 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/include/asm/hpet.h b/arch/x86/include/asm/hpet.h
+index 2c392d6..01d9480 100644
+--- a/arch/x86/include/asm/hpet.h
++++ b/arch/x86/include/asm/hpet.h
+@@ -68,6 +68,7 @@ extern unsigned long force_hpet_address;
+ extern u8 hpet_blockid;
+ extern int hpet_force_user;
+ extern u8 hpet_msi_disable;
++extern u16 hpet_min_tick;
+ extern int is_hpet_enabled(void);
+ extern int hpet_enable(void);
+ extern void hpet_disable(void);
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 71232b9..91a46bc 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -772,9 +772,6 @@ static int __init acpi_parse_hpet(struct acpi_table_header *table)
+ 		hpet_address >>= 32;
+ 	}
+ #endif
+-	printk(KERN_INFO PREFIX "HPET id: %#x base: %#lx\n",
+-	       hpet_tbl->id, hpet_address);
+-
+ 	/*
+ 	 * Allocate and initialize the HPET firmware resource for adding into
+ 	 * the resource tree during the lateinit timeframe.
+@@ -790,6 +787,13 @@ static int __init acpi_parse_hpet(struct acpi_table_header *table)
+ 	hpet_res->start = hpet_address;
+ 	hpet_res->end = hpet_address + (1 * 1024) - 1;
+ 
++	/* Accept only sensible values written by BIOS */
++	if (hpet_tbl->minimum_tick < hpet_min_tick)
++		hpet_min_tick = hpet_tbl->minimum_tick;
++
++	printk(KERN_INFO PREFIX "HPET id: %#x base: %#lx min tick: %d\n",
++		hpet_tbl->id, hpet_address, hpet_min_tick);
++
+ 	return 0;
+ }
+ 
+diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+index ae03cab..a0b790a 100644
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -40,6 +40,7 @@ u8					hpet_msi_disable;
+ static unsigned long			hpet_num_timers;
+ #endif
+ static void __iomem			*hpet_virt_address;
++u16					hpet_min_tick = 0x80;
+ 
+ struct hpet_dev {
+ 	struct clock_event_device	evt;
+@@ -408,7 +409,7 @@ static int hpet_next_event(unsigned long delta,
+ 	 */
+ 	res = (s32)(cnt - hpet_readl(HPET_COUNTER));
+ 
+-	return res < 8 ? -ETIME : 0;
++	return res < hpet_min_tick ? -ETIME : 0;
+ }
+ 
+ static void hpet_legacy_set_mode(enum clock_event_mode mode,
+-- 
+1.7.3.1.50.g1e633
 
 
-Wow! I was just going to add a direct hook into the module code, but
-this is much more generic!
-
--- Steve
-
-> +
->  static int trace_module_notify(struct notifier_block *self,
->  			       unsigned long val, void *data)
->  {
->  	struct module *mod = data;
-> +	int ret = 0;
->  
->  	mutex_lock(&event_mutex);
->  	switch (val) {
-> @@ -1343,10 +1354,12 @@ static int trace_module_notify(struct notifier_block *self,
->  	case MODULE_STATE_GOING:
->  		trace_module_remove_events(mod);
->  		break;
-> +	case MODULE_UNKNOWN_PARAM:
-> +		ret = trace_module_unknown_param(data);
->  	}
->  	mutex_unlock(&event_mutex);
->  
-> -	return 0;
-> +	return ret;
->  }
->  #else
->  static int trace_module_notify(struct notifier_block *self,
 
 
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
