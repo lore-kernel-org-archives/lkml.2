@@ -1,41 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601Ab0KIBqD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 20:46:03 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:41135 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754162Ab0KIBqB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 20:46:01 -0500
-Date: Tue, 9 Nov 2010 02:46:00 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        "Berg, Johannes" <johannes.berg@intel.com>
-Subject: Re: [PATCH] iwl3945: Fix oops at module load
-Message-ID: <20101109014559.GA21551@basil.fritz.box>
-References: <1289253271-19981-1-git-send-email-andi@firstfloor.org>
- <1289254122.12056.86.camel@wwguy-huron>
+	id S1754960Ab0KIBsO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 20:48:14 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:53156 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752899Ab0KIBsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 20:48:13 -0500
+Date: Tue, 9 Nov 2010 02:47:47 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memcg: avoid overflow in memcg_hierarchical_free_pages()
+Message-ID: <20101109014746.GP23393@cmpxchg.org>
+References: <1289265320-7025-1-git-send-email-gthelen@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1289254122.12056.86.camel@wwguy-huron>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1289265320-7025-1-git-send-email-gthelen@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I believe the fix already in
-> http://git.kernel.org/?p=linux/kernel/git/iwlwifi/iwlwifi-2.6.git;a=summary
-> commit#6e0922e0781884ff4eb3638f10a91b63b6120207
+On Mon, Nov 08, 2010 at 05:15:20PM -0800, Greg Thelen wrote:
+> Use page counts rather than byte counts to avoid overflowing
+> unsigned long local variables.
+> 
+> Signed-off-by: Greg Thelen <gthelen@google.com>
 
-Thanks. Can that please be sent to Linus ASAP? It doesn't really
-help my laptop if it's in some obscure git tree.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
