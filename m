@@ -1,90 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501Ab0KIVxd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 16:53:33 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:36842 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754142Ab0KIVxb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 16:53:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=HtDf9zvNcHugZNv6UZXw0w/LI5HIoab1x7CJ9Xp3oZc9uQULeE/ZH0C2M8/gabKLnv
-         iN/PlNjZo6jjNbog8jpv9aRJMpENefGYPf6qPZIbCee4pgts1SOop0PsxfipouS2YE+7
-         sqAXYB9/8lB0+MiINQqU3LNqTAHUY0v8lm3WY=
+	id S1755550Ab0KIVyD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 16:54:03 -0500
+Received: from cantor.suse.de ([195.135.220.2]:53538 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754276Ab0KIVyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 16:54:01 -0500
+Date: Tue, 9 Nov 2010 22:53:57 +0100
+From: Jan Kara <jack@suse.cz>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: Dave Chinner <david@fromorbit.com>, Josef Bacik <josef@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        xfs@oss.sgi.com, joel.becker@oracle.com, cmm@us.ibm.com,
+        cluster-devel@redhat.com
+Subject: Re: [PATCH 1/6] fs: add hole punching to fallocate
+Message-ID: <20101109215357.GI4936@quack.suse.cz>
+References: <1289248327-16308-1-git-send-email-josef@redhat.com>
+ <20101109011222.GD2715@dastard>
+ <20101109033038.GF3099@thunk.org>
+ <20101109044242.GH2715@dastard>
+ <20101109214147.GK3099@thunk.org>
 MIME-Version: 1.0
-In-Reply-To: <20101109175828.GA27627@kroah.com>
-References: <AANLkTinZF-47WQyF5k1Nv64NjfMNSQ-+oE0eGycR24NM@mail.gmail.com>
-	<AANLkTikB0zhN13u5OtRwviOv-rFDW-vFTmq0t7ALuO7N@mail.gmail.com>
-	<201011091729.17679.arnd@arndb.de>
-	<20101109165509.GA9698@kroah.com>
-	<AANLkTinFW431t9XFqHc=wZAws9gjT0ikrc03J83kH7iF@mail.gmail.com>
-	<20101109172511.GA10958@kroah.com>
-	<AANLkTi=CKERMcSLXwQa7G55P69DO--UPN9HgOScHP_yO@mail.gmail.com>
-	<20101109175828.GA27627@kroah.com>
-Date: Tue, 9 Nov 2010 23:53:29 +0200
-Message-ID: <AANLkTin0Lszi6MVo8GBWmpvMQRL3V+VGbtGdaMkBe5XO@mail.gmail.com>
-Subject: Re: [GIT PULL] fixes for tidspbridge 2.6.37-rc1
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-omap@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101109214147.GK3099@thunk.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 9, 2010 at 7:58 PM, Greg KH <greg@kroah.com> wrote:
-> If it is easy to revert and push later, then the "revert just this
-> piece" should be done now.
->
-> Seriously, I'm getting very confused here, and am very annoyed by the
-> whole thing.
+On Tue 09-11-10 16:41:47, Ted Ts'o wrote:
+> On Tue, Nov 09, 2010 at 03:42:42PM +1100, Dave Chinner wrote:
+> > Implementation is up to the filesystem. However, XFS does (b)
+> > because:
+> > 
+> > 	1) it was extremely simple to implement (one of the
+> > 	   advantages of having an exceedingly complex allocation
+> > 	   interface to begin with :P)
+> > 	2) conversion is atomic, fast and reliable
+> > 	3) it is independent of the underlying storage; and
+> > 	4) reads of unwritten extents operate at memory speed,
+> > 	   not disk speed.
+> 
+> Yeah, I was thinking that using a device-style TRIM might be better
+> since future attempts to write to it won't require a separate seek to
+> modify the extent tree.  But yeah, there are a bunch of advantages of
+> simply mutating the extent tree.
+> 
+> While we're on the subject of changes to fallocate, what do people
+> think of FALLOC_FL_EXPOSE_OLD_DATA, which requires either root
+> privileges or (if capabilities are in use) CAP_DAC_OVERRIDE &&
+> CAP_MAC_OVERRIDE && CAP_SYS_ADMIN.  This would allow a trusted process
+> to fallocate blocks with the extent already marked initialized.  I've
+> had two requests for such functionality for ext4 already.  
+> 
+> (Take for example a trusted cluster filesystem backend that checks the
+> object checksum before returning any data to the user; and if the
+> check fails the cluster file system will try to use some other replica
+> stored on some other server.)
+  Hum, could you elaborate a bit? I fail to see how above fallocate() flag
+could be used to help solving this problem... Just curious...
 
-With good reason.
-
-> Here's what I don't like:
->  - the original driver didn't even seem to work properly
-
-It _was_ working properly, when it was a separate branch, but the
-merge to staging wasn't done correctly, so it has never worked there.
-
->  - people sent me patches they never tested and broke things even worse
-
-Part of the blame goes to TI. Even if you have the hardware, it's not
-straightforward to test this. I have struggled to improve the
-situation on user-space with the gst-dsp and dsp-tools projects, which
-btw have not received support from TI, but apparently they were not
-used to test this (neither was the "official" solution from TI which
-is much harder to set up).
-
->  - some people have no respect for the omap maintainers and what they
->    think about things, or even basic knowledge of the kernel
->    development cycle.
-
-I don't think this is the case. The opinion of the OMAP maintainers is
-valuable in order to cleanup the mess that is this driver. But _first_
-it has to work. Most people are not developers, they just want to use
-this driver.
-
->  - I do not have this hardware so I can't test anything.
->
-> So, from now on, I'm not taking ANYONES patches for this driver unless
-> it gets an ack from the driver maintainer, Omar Luna.
->
-> Actually, no, I'm not going to take any patch unless it _comes from_
-> Omar.  Omar, please work to queue up patches and test them, and then
-> send them to me for merging.
->
-> Any questions?
-
-You mean after this pull, or should Omar re-send this pull request?
-
+								Honza
 -- 
-Felipe Contreras
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
