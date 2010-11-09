@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660Ab0KISw4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 13:52:56 -0500
-Received: from asmtpout025.mac.com ([17.148.16.100]:52046 "EHLO
-	asmtpout025.mac.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753190Ab0KISwz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 13:52:55 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=us-ascii
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0
- ipscore=0 suspectscore=0 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
- adjust=0 reason=mlx engine=6.0.2-1004200000 definitions=main-1011090112
-X-Proofpoint-Virus-Version: vendor=fsecure
- engine=2.50.10432:5.2.15,1.0.148,0.0.0000
- definitions=2010-11-09_12:2010-11-09,2010-11-09,1970-01-01 signatures=0
-Subject: Re: Forked android kernel development from linux kernel mainline
-From: Elvis Dowson <elvis.dowson@mac.com>
-In-reply-to: <alpine.DEB.2.00.1011091042120.28359@asgard.lang.hm>
-Date: Tue, 09 Nov 2010 22:52:13 +0400
-Message-id: <8EE12C84-9CAE-46F2-8B13-3CF9B9E91F7B@mac.com>
-References: <01784A8B-36A0-4E8A-9729-23C2B19351F8@mac.com>
- <AANLkTi=UxhRdcDaoKaYVWhPkp_e-uLF4=zhXs7gutkgx@mail.gmail.com>
- <20101106181202.GA6927@kroah.com>
- <39580686-A899-4689-BAAD-AF5546B34E49@mac.com>
- <AANLkTimVsUsrmTvsHqFiqJh1hhryMBemGyW+kYLKGgEu@mail.gmail.com>
- <20101107155757.GA13736@kroah.com>
- <6477C549-DB75-407C-9B9B-5869A3B8D2BD@mac.com>
- <DC5F0A5D-0107-4214-A4D7-6FDA166518BA@mac.com>
- <20101109182437.GA13499@kroah.com>
- <58CAEF9F-BAB3-4F31-A524-70649F965BDE@mac.com>
- <alpine.DEB.2.00.1011091042120.28359@asgard.lang.hm>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-X-Mailer: Apple Mail (2.1081)
+	id S1754751Ab0KISyr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 13:54:47 -0500
+Received: from mailbigip.dreamhost.com ([208.97.132.5]:43880 "EHLO
+	homiemail-a4.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752344Ab0KISyp convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 13:54:45 -0500
+X-Greylist: delayed 7149 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Nov 2010 13:54:45 EST
+Subject: Re: [PATCH] serial: 8250: fix uninitialized compiler warning
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        linux-serial@vger.kernel.org
+In-Reply-To: <20101109183310.2ac49f38@lxorguk.ukuu.org.uk>
+References: <1289321723.2260.14.camel@cowboy>
+	 <20101109183310.2ac49f38@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 09 Nov 2010 15:54:36 -0300
+Message-ID: <1289328876.2260.37.camel@cowboy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2010-11-09 at 18:33 +0000, Alan Cox wrote:
+> On Tue, 09 Nov 2010 13:55:23 -0300
+> Davidlohr Bueso <dave@gnu.org> wrote:
+> 
+> > From: Davidlohr Bueso <dave@gnu.org>
+> > 
+> > This addresses:
+> > 
+> >   CC [M]  drivers/serial/8250.o
+> > drivers/serial/8250.c: In function ‘serial8250_shutdown’:
+> > drivers/serial/8250.c:1696: warning: ‘i’ may be used uninitialized in this function
+> > drivers/serial/8250.c:1696: note: ‘i’ was declared here
+> 
+> NAK - pleass see the four or five previous discussions on this one.
+> 
+Yes I should have googled this one before sending.
 
-On Nov 9, 2010, at 10:42 PM, david@lang.hm wrote:
+> The current compilers all seem to get it right anyway.
 
-> you can modify them, but unless those modifications get used, what good are they?
+This is with gcc 4.4.5 (ubuntu 10.10 - latest), released on October 1st,
+2010 (quite current).
 
-It would at least help us get android into mainline, and allow hand-set manufacturers to 
-baseline from a newer kernel version, and prevent the fork. 
+Thanks,
+Davidlohr
 
-Elvis Dowson
 
