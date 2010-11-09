@@ -1,61 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403Ab0KIVt6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 16:49:58 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:48470 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754002Ab0KIVt4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 16:49:56 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=db53FnOm1ucf6baoELiBQ/gcbv4M2iYuRTk4k1uF32/3MQgvAxUueQplx0+mP5Qjqu
-         +n+q5D5JtA+B9gvV2sSZdTmwb32LanFKX7eTji/qksU5hyQbBYAlxx9ePbjU4vG3yjHQ
-         odmKqv4FZCYZAHRoEahHNrGqVX7nYtPbHexss=
+	id S1755508Ab0KIVur (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 16:50:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12189 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755458Ab0KIVue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 16:50:34 -0500
+Date: Tue, 9 Nov 2010 22:49:14 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 61 of 66] use compaction for GFP_ATOMIC order > 0
+Message-ID: <20101109214914.GF6809@random.random>
+References: <patchbomb.1288798055@v2.random>
+ <b540c09bfe5160120952.1288798116@v2.random>
+ <20101109151440.BC75.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <4CD9B07E.70502@fusionio.com>
-References: <AANLkTi=xj6xW5SnrdQos4P-MtJP8+fwfaa3r7LPfdLh4@mail.gmail.com>
-	<20101107185433.GD15561@linux.vnet.ibm.com>
-	<4CD7FAFD.1060802@fusionio.com>
-	<20101108135204.GE2580@linux.vnet.ibm.com>
-	<4CD80162.9000607@fusionio.com>
-	<4CD9B07E.70502@fusionio.com>
-Date: Tue, 9 Nov 2010 21:49:54 +0000
-Message-ID: <AANLkTi=hbObSQC2=mwtb6cy399Srt-mL47zgfvth57fQ@mail.gmail.com>
-Subject: Re: [2.6.37-rc1] sys_ioprio_set and RCU locking...
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101109151440.BC75.A69D9226@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 November 2010 20:35, Jens Axboe <jaxboe@fusionio.com> wrote:
-> On 2010-11-08 14:55, Jens Axboe wrote:
->>>>>> Take the RCU lock for read across acquiring the pointer to the task
->>>>>> credentials and dereferencing it.
->>>>>
->>>>> Jens, does this look sane?
->>>>
->>>> Yes, looks clean enough to me.
->>>
->>> Very good!  Are you willing to take the patch in your tree?
->>
->> Certainly, I'm in the middle of patch monkeying now anyway. Will queue
->> it up.
->
-> The patch was buggy, I discovered that it does not do the proper
-> RCU unlock if we fail the uid match. Merged version here:
->
-> http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=1a882abdbf9579ad0e5655f928e4ede30db301e6
+On Tue, Nov 09, 2010 at 07:27:37PM +0900, KOSAKI Motohiro wrote:
+> > From: Andrea Arcangeli <aarcange@redhat.com>
+> > 
+> > This takes advantage of memory compaction to properly generate pages of order >
+> > 0 if regular page reclaim fails and priority level becomes more severe and we
+> > don't reach the proper watermarks.
+> > 
+> > Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> 
+> First, I don't think this patch is related to GFP_ATOMIC. So, I think the 
+> patch title is a bit misleading.
+> 
+> Second, this patch has two changes. 1) remove PAGE_ALLOC_COSTLY_ORDER 
+> threshold 2) implement background compaction. please separate them.
 
-Brown paper bag moment! Good catch, Jens.
+Well the subject isn't entirely misleading: background compaction in
+kswapd is only for the GFP_ATOMIC so GFP_ATOMIC order >0 allocations
+are definitely related to this patch.
 
-Dan
--- 
-Daniel J Blueman
+Then I ended up then allowing compaction for all order of allocations
+as it doesn't make sense to fail order 2 for the kernel stack and
+succeed order 9 but it's true I can split that off, I will split it
+for #33, thanks for allowing me to clean up the stuff better.
+
+> Third, This patch makes a lot of PFN order page scan and churn LRU
+> aggressively. I'm not sure this aggressive lru shuffling is safe and
+> works effective. I hope you provide some demonstration and/or show 
+> benchmark result.
+
+The patch will increase the amount of compaction for GFP_ATOMIC order
+>0, but it won't alter the amount of free pages in the system, but
+it'll satisfy the in-function-of order watermarks that are right now
+ignored. If user asked GFP_ATOMIC order > 0, this is what it asks,
+it's up to the user not to ask for it if it's not worthwhile. If user
+doesn't want this but it just wants to poll the LRU it should use
+GFP_ATOMIC|__GFP_NO_KSWAPD.
+
+The benchmark results I don't have at the moment but this has been
+tested with tg3 with jumbo packets that trigger order 2 allocation and
+no degradation was noticed. To be fair it didn't significantly improve
+the amount of order 2 (9046 bytes large skb) allocated from irq
+though, but I thought it was good idea to keep it in case there are
+less aggressive/frequent users doing similar things.
+
+Overall the more important part of the patch is the point 2) that I
+can make it cleaner by splitting it off as you noticed and I will do
+it.
