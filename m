@@ -1,93 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380Ab0KIRZr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 12:25:47 -0500
-Received: from mail.perches.com ([173.55.12.10]:4742 "EHLO mail.perches.com"
+	id S1754322Ab0KIRZj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 12:25:39 -0500
+Received: from kroah.org ([198.145.64.141]:37904 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754347Ab0KIRZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 12:25:43 -0500
-Subject: Re: [PATCH 1/2] Introduce fat_msg() for unified kernel messages
-From: Joe Perches <joe@perches.com>
-To: Alexey Fisher <bug-track@fisher-privat.net>
-Cc: linux-kernel@vger.kernel.org, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-In-Reply-To: <1289321718-6373-2-git-send-email-bug-track@fisher-privat.net>
-References: <1289321718-6373-1-git-send-email-bug-track@fisher-privat.net>
-	 <1289321718-6373-2-git-send-email-bug-track@fisher-privat.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 09 Nov 2010 09:25:41 -0800
-Message-ID: <1289323541.1823.73.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753781Ab0KIRZf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 12:25:35 -0500
+Date: Tue, 9 Nov 2010 09:25:11 -0800
+From: Greg KH <greg@kroah.com>
+To: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        linux-omap@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [GIT PULL] fixes for tidspbridge 2.6.37-rc1
+Message-ID: <20101109172511.GA10958@kroah.com>
+References: <AANLkTinZF-47WQyF5k1Nv64NjfMNSQ-+oE0eGycR24NM@mail.gmail.com>
+ <AANLkTikB0zhN13u5OtRwviOv-rFDW-vFTmq0t7ALuO7N@mail.gmail.com>
+ <201011091729.17679.arnd@arndb.de>
+ <20101109165509.GA9698@kroah.com>
+ <AANLkTinFW431t9XFqHc=wZAws9gjT0ikrc03J83kH7iF@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinFW431t9XFqHc=wZAws9gjT0ikrc03J83kH7iF@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-09 at 17:55 +0100, Alexey Fisher wrote:
-> Add fat_msg() function to unify printkas. And use it
-> to report mounts and remounts.
-
-Hi Alexey.
-
-> new dmesg looks like this:
-> [ 6264.957109] FAT-fs (sdg1): Mounted. Opts: uid=1000,gid=1000,shortname=mixed,dmask=0077,utf8=1,showexec,flush
-> [ 6402.175028] FAT-fs (sdg1): re-mounted. Opts: (null)
+On Tue, Nov 09, 2010 at 11:04:18AM -0600, Guzman Lugo, Fernando wrote:
+> On Tue, Nov 9, 2010 at 10:55 AM, Greg KH <greg@kroah.com> wrote:
+> > On Tue, Nov 09, 2010 at 05:29:17PM +0100, Arnd Bergmann wrote:
+> >> On Tuesday 09 November 2010, Felipe Contreras wrote:
+> >> > Felipe Contreras (14):
+> >> >       Revert "staging: tidspbridge - update Kconfig to select IOMMU module"
+> >> >       Revert "staging: tidspbridge - remove dmm custom module"
+> >> >       Revert "staging: tidspbridge - deprecate reserve/unreserve_memory funtions"
+> >> >       Revert "staging: tidspbridge - remove reserved memory clean up"
+> >> >       Revert "staging: tidspbridge: remove dw_dmmu_base from cfg_hostres struct"
+> >> >       Revert "staging: tidspbridge - move all iommu related code to a new file"
+> >> >       Revert "staging: tidspbridge - remove hw directory"
+> >> >       Revert "staging: tidspbridge - fix mmufault support"
+> >> >       Revert "staging: tidspbridge - remove custom mmu code from tiomap3430.c"
+> >> >       Revert "staging: tidspbridge - rename bridge_brd_mem_map/unmap to a proper name"
+> >> >       Revert "staging: tidspbridge - move shared memory iommu maps to tiomap3430.c"
+> >> >       Revert "staging: tidspbridge: replace iommu custom for opensource implementation"
+> >>
+> >> That adds quite a lot of crap back in that was removed by Fernando earlier:
+> >>
+> >>  44 files changed, 3733 insertions(+), 847 deletions(-)
+> >>
+> >> It may have been premature to merge the patches as you say, but now that
+> >> they are in, I'd vote for giving Fernando a chance to fix up any damage
+> >> that was done in the process rather than just reverting all the useful
+> >> changes.
+> >
+> > In looking at this further, I agree.
+> >
+> > Felipe, are all of these really needing to be reverted?  How about
+> > picking out the functional changes that need to be resolved instead of
+> > just rolling back everything that has been done here.  Surely not all of
+> > these are wrong, right?
 > 
-> Signed-off-by: Alexey Fisher <bug-track@fisher-privat.net>
-> ---
->  fs/fat/inode.c |   20 ++++++++++++++++++++
->  1 files changed, 20 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-> index ad6998a..4699173 100644
-> --- a/fs/fat/inode.c
-> +++ b/fs/fat/inode.c
-> @@ -37,6 +37,20 @@
->  static int fat_default_codepage = CONFIG_FAT_DEFAULT_CODEPAGE;
->  static char fat_default_iocharset[] = CONFIG_FAT_DEFAULT_IOCHARSET;
->  
-> +/* unify messages.
-> + * this function is copy of ext4_msg() from fs/ext4/super.c
-> + */
-> +void fat_msg(struct super_block *sb, const char *prefix,
-> +			const char *fmt, ...)
-> +{
-> +	va_list args;
-> +
-> +	va_start(args, fmt);
-> +	printk("%sFAT-fs (%s): ", prefix, sb->s_id);
-> +	vprintk(fmt, args);
-> +	printk("\n");
-> +	va_end(args);
-> +}
+> Patches are _NOT_ wrong, missing dependencies break the bridge.
+> Without that dependencies the first patch of the set won't work and
+> all other patches have dependency on the first one, so all of them
+> need to be reverted.
 
-A few comments:
+How about hand-reverting only the wrong patch, so the other work isn't
+lost?  I'd much prefer that.
 
-The first patch should put the prototype for fat_msg in
-fs/fat/fat.h file and the body as done here.
+thanks,
 
-The prototype should use attribute_ printf so format
-and argument are type checked.
-
-This would be better using the %pV extension so a
-single printk call is done and the dmesg log can not be
-interleaved.
-
-prefix is a bit misleading, perhaps level is better.
-
-void __attribute__ ((format (printf, 3, 4))) 
-fat_msg(struct super_block *sb, const char *level, const char *fmt, ...)
-{
-	struct va_format vaf;
-	va_list args;
-
-	va_start(args, fmt);
-	vaf.fmt = fmt;
-	vaf.args = &args;
-
-	printk("%sFAT-fs (%s): %pV\n", level, sb->s_id, &vaf);
-
-	va_end(args);
-}
-
-
+greg k-h
