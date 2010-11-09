@@ -1,102 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753662Ab0KICPq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 21:15:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28030 "EHLO mx1.redhat.com"
+	id S1753509Ab0KICZL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 21:25:11 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:47575 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752107Ab0KICPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 21:15:45 -0500
-Date: Mon, 8 Nov 2010 21:15:40 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
-        "czoccolo@gmail.com" <czoccolo@gmail.com>
-Subject: Re: [patch 2/3]cfq-iosched: schedule dispatch for noidle queue
-Message-ID: <20101109021540.GA29210@redhat.com>
-References: <1289182038.23014.190.camel@sli10-conroe>
- <20101108142842.GC16767@redhat.com>
- <1289266267.23014.196.camel@sli10-conroe>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289266267.23014.196.camel@sli10-conroe>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751147Ab0KICZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 21:25:10 -0500
+From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+To: a.p.zijlstra@chello.nl, acme@redhat.com, mingo@elte.hu
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Subject: [PATCH] perf: convert usages of profile_cpu in builtin-top.c to use cpu_list
+Date: Mon,  8 Nov 2010 18:20:45 -0800
+Message-Id: <1289269245-9388-1-git-send-email-cjashfor@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 09, 2010 at 09:31:07AM +0800, Shaohua Li wrote:
-> On Mon, 2010-11-08 at 22:28 +0800, Vivek Goyal wrote:
-> > On Mon, Nov 08, 2010 at 10:07:18AM +0800, Shaohua Li wrote:
-> > > A queue is idle at cfq_dispatch_requests(), but it gets noidle later. Unless
-> > > other task explictly does unplug or all requests are drained, we will not
-> > > deliever requests to the disk even cfq_arm_slice_timer doesn't make the
-> > > queue idle. For example, cfq_should_idle() returns true because of
-> > > service_tree->count == 1, and then other queues are added. Note, I didn't
-> > > see obvious performance impacts so far with the patch, but just thought
-> > > this could be a problem.
-> > > 
-> > > Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-> > > 
-> > > ---
-> > >  block/cfq-iosched.c |   23 ++++++++++++++++++++++-
-> > >  1 file changed, 22 insertions(+), 1 deletion(-)
-> > > 
-> > > Index: linux/block/cfq-iosched.c
-> > > ===================================================================
-> > > --- linux.orig/block/cfq-iosched.c	2010-11-08 08:41:20.000000000 +0800
-> > > +++ linux/block/cfq-iosched.c	2010-11-08 08:43:51.000000000 +0800
-> > > @@ -3265,6 +3265,10 @@ cfq_should_preempt(struct cfq_data *cfqd
-> > >  	if (cfq_class_rt(new_cfqq) && !cfq_class_rt(cfqq))
-> > >  		return true;
-> > >  
-> > > +	/* An idle queue should not be idle now for some reason */
-> > > +	if (RB_EMPTY_ROOT(&cfqq->sort_list) && !cfq_should_idle(cfqd, cfqq))
-> > > +		return true;
-> > > +
-> > >  	if (!cfqd->active_cic || !cfq_cfqq_wait_request(cfqq))
-> > >  		return false;
-> > >  
-> > > @@ -3508,8 +3512,25 @@ static void cfq_completed_request(struct
-> > >  		}
-> > >  	}
-> > >  
-> > > -	if (!cfqd->rq_in_driver)
-> > > +	if (!cfqd->rq_in_driver) {
-> > >  		cfq_schedule_dispatch(cfqd);
-> > > +		return;
-> > > +	}
-> > > +	/*
-> > > +	 * A queue is idle at cfq_dispatch_requests(), but it gets noidle
-> > > +	 * later. We schedule a dispatch if the queue has no requests,
-> > > +	 * otherwise the disk is actually in idle till all requests
-> > > +	 * are finished even cfq_arm_slice_timer doesn't make the queue idle
-> > > +	 * */
-> > 
-> > Why do we have to wait for all requests to finish in device? Will driver
-> > most likely not ask for next request when 1-2 requests have completed
-> > and at that time we should expire the queue if queue is no more marked
-> > as "noidle"?
-> The issue is a queue is idle just because it's the last queue of the
-> service tree. Then a new queue is added and the idled queue should not
-> idle now. we should preempt the idled queue soon. does this make sense
-> to you?
+profile_cpu was left over from an earlier implementation that supported
+running perf top on a single CPU.  profile_cpu was no longer set by
+any switch and usages of it resulted in dead code.
 
-If that's the case then you should just modify should_preempt() so that
-addition of a new queue could preempt an empty queue which has now become
-noidle.
+Instead, convert the code to use cpu_list, which is set by the -C <cpu_list>
+option.
 
-You have also modified cfq_completed_request() function, which will wake
-up the worker thread and then try to dispatch a request. IMHO, in practice
-driver asks for new request almost immediately and you don't gain much
-by this additional wakeup.
+Also improved the printing of nr_cpus and cpu_list by correcting the plurals.
 
-So my point being, that we increased the code complexity for no visible
-performance improvement also increased thread wakeups resulting in more
-cpu consumption.
+Signed-off-by: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+---
+ tools/perf/builtin-top.c |   12 +++++-------
+ 1 files changed, 5 insertions(+), 7 deletions(-)
 
-If there was a visible performance gain in your testing then it would have
-made sense but you said that you did not notice any improvements. Then
-why to increase the complexity.
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index b513e40..dd62580 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -69,7 +69,6 @@ static int			target_tid			=     -1;
+ static pid_t			*all_tids			=      NULL;
+ static int			thread_num			=      0;
+ static bool			inherit				=  false;
+-static int			profile_cpu			=     -1;
+ static int			nr_cpus				=      0;
+ static int			realtime_prio			=      0;
+ static bool			group				=  false;
+@@ -558,13 +557,13 @@ static void print_sym_table(void)
+ 	else
+ 		printf(" (all");
+ 
+-	if (profile_cpu != -1)
+-		printf(", cpu: %d)\n", profile_cpu);
++	if (cpu_list)
++		printf(", CPU%s: %s)\n", nr_cpus > 1 ? "s" : "", cpu_list);
+ 	else {
+ 		if (target_tid != -1)
+ 			printf(")\n");
+ 		else
+-			printf(", %d CPUs)\n", nr_cpus);
++			printf(", %d CPU%s)\n", nr_cpus, nr_cpus > 1 ? "s" : "");
+ 	}
+ 
+ 	printf("%-*.*s\n", win_width, win_width, graph_dotted_line);
+@@ -1187,11 +1186,10 @@ int group_fd;
+ static void start_counter(int i, int counter)
+ {
+ 	struct perf_event_attr *attr;
+-	int cpu;
++	int cpu = -1;
+ 	int thread_index;
+ 
+-	cpu = profile_cpu;
+-	if (target_tid == -1 && profile_cpu == -1)
++	if (target_tid == -1)
+ 		cpu = cpumap[i];
+ 
+ 	attr = attrs + counter;
+-- 
+1.7.0.4
 
-Vivek
