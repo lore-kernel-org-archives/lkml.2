@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754788Ab0KIWTI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 17:19:08 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:48358 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752835Ab0KIWTG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 17:19:06 -0500
-Date: Tue, 9 Nov 2010 14:19:05 -0800
-From: Kees Cook <kees.cook@canonical.com>
-To: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] x86: only CPU features determine NX capabilities
-Message-ID: <20101109221905.GB5876@outflux.net>
-References: <20101109221704.GX5876@outflux.net>
+	id S1754685Ab0KIWUc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 17:20:32 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:56328 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1754158Ab0KIWUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 17:20:30 -0500
+X-Authenticated: #41721828
+X-Provags-ID: V01U2FsdGVkX183M+gA+7M3J6FBePbJ9SbimEXcXx0hyoS1E8G5fT
+	rXR/CapZ/ERguc
+Date: Tue, 9 Nov 2010 23:20:26 +0100
+From: Jonathan =?utf-8?Q?Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] spelling fix in drivers/misc/Kconfig
+Message-ID: <20101109222026.GA1293@debian.debian>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20101109221704.GX5876@outflux.net>
-Organization: Canonical
-X-HELO: www.outflux.net
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the NX feature boot warning when NX is missing to correctly
-reflect that BIOSes cannot disable NX now.
-
-Signed-off-by: Kees Cook <kees.cook@canonical.com>
-Acked-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Jonathan Neuschäfer
 ---
- arch/x86/mm/setup_nx.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Kernel version: 2.6.37-rc1
 
-diff --git a/arch/x86/mm/setup_nx.c b/arch/x86/mm/setup_nx.c
-index a3250aa..410531d 100644
---- a/arch/x86/mm/setup_nx.c
-+++ b/arch/x86/mm/setup_nx.c
-@@ -41,7 +41,7 @@ void __init x86_report_nx(void)
- {
- 	if (!cpu_has_nx) {
- 		printk(KERN_NOTICE "Notice: NX (Execute Disable) protection "
--		       "missing in CPU or disabled in BIOS!\n");
-+		       "missing in CPU!\n");
- 	} else {
- #if defined(CONFIG_X86_64) || defined(CONFIG_X86_PAE)
- 		if (disable_nx) {
--- 
-1.7.2.3
+ drivers/misc/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-
--- 
-Kees Cook
-Ubuntu Security Team
+--- linux-2.6/drivers/misc/Kconfig	2010-11-07 22:56:37.000000000 +0100
++++ linux-hacking/drivers/misc/Kconfig	2010-11-08 21:10:13.000000000 +0100
+@@ -402,7 +402,7 @@
+ 	  DAC7512 16-bit digital-to-analog converter.
+ 
+ 	  This driver can also be built as a module. If so, the module
+-	  will be calles ti_dac7512.
++	  will be called ti_dac7512.
+ 
+ config VMWARE_BALLOON
+ 	tristate "VMware Balloon Driver"
