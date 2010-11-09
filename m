@@ -1,248 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547Ab0KIVwQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 16:52:16 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:53990 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754142Ab0KIVwN (ORCPT
+	id S1755501Ab0KIVxd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 16:53:33 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:36842 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754142Ab0KIVxb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 16:52:13 -0500
+	Tue, 9 Nov 2010 16:53:31 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=oRl3ssTXpOexUiKI9vgNo6oL7wDqbMyVmY8RMG4eMawGLoh2g2QeNNfVOOqUG3fg2W
-         dJNmdmLJRC5XFCdTQ1T19n4ViDu9/h84QAqrYJJrIsavoCvcbKfRy8u+Cge0xlf3FByy
-         0EtMrbR7rjD0JoyqwlO395Ag2V8X3O7wdx40A=
-Message-ID: <4CD9C300.6040405@gmail.com>
-Date: Tue, 09 Nov 2010 22:54:08 +0100
-From: Emese Revfy <re.emese@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100903 Lightning/1.0b2pre Thunderbird/3.1.2
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=HtDf9zvNcHugZNv6UZXw0w/LI5HIoab1x7CJ9Xp3oZc9uQULeE/ZH0C2M8/gabKLnv
+         iN/PlNjZo6jjNbog8jpv9aRJMpENefGYPf6qPZIbCee4pgts1SOop0PsxfipouS2YE+7
+         sqAXYB9/8lB0+MiINQqU3LNqTAHUY0v8lm3WY=
 MIME-Version: 1.0
-To: Kees Cook <kees.cook@canonical.com>
-CC: Lionel Debroux <lionel_debroux@yahoo.fr>, linux-kernel@vger.kernel.org,
-        Brad Spengler <spender@grsecurity.net>
-Subject: Re: status of constification
-References: <20101108223844.GS5876@outflux.net>
-In-Reply-To: <20101108223844.GS5876@outflux.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20101109175828.GA27627@kroah.com>
+References: <AANLkTinZF-47WQyF5k1Nv64NjfMNSQ-+oE0eGycR24NM@mail.gmail.com>
+	<AANLkTikB0zhN13u5OtRwviOv-rFDW-vFTmq0t7ALuO7N@mail.gmail.com>
+	<201011091729.17679.arnd@arndb.de>
+	<20101109165509.GA9698@kroah.com>
+	<AANLkTinFW431t9XFqHc=wZAws9gjT0ikrc03J83kH7iF@mail.gmail.com>
+	<20101109172511.GA10958@kroah.com>
+	<AANLkTi=CKERMcSLXwQa7G55P69DO--UPN9HgOScHP_yO@mail.gmail.com>
+	<20101109175828.GA27627@kroah.com>
+Date: Tue, 9 Nov 2010 23:53:29 +0200
+Message-ID: <AANLkTin0Lszi6MVo8GBWmpvMQRL3V+VGbtGdaMkBe5XO@mail.gmail.com>
+Subject: Re: [GIT PULL] fixes for tidspbridge 2.6.37-rc1
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-omap@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/10 23:38, Kees Cook wrote:
-> Hi,
-> 
-> So, I'm trying to come up to speed on what's still outstanding in the
-> effort to constify function pointers. I saw patches from Emese Revfy
-> go in, and I saw Lionel Debroux's recent patches. What already-created
-> work still needs attention? I know there's more code to be written,
-> but I'm trying to find any patches that have already been written but
-> have not gone upstream yet.
+On Tue, Nov 9, 2010 at 7:58 PM, Greg KH <greg@kroah.com> wrote:
+> If it is easy to revert and push later, then the "revert just this
+> piece" should be done now.
+>
+> Seriously, I'm getting very confused here, and am very annoyed by the
+> whole thing.
 
-Hi, 
+With good reason.
 
-I will gladly break up my current patch for the next -rc by structure
-type or maintainer (some preferred it one way or the other) and send
-it in some time next week so that you can handle the upstream submission
-process (I will continue to maintain my patch in grsecurity).
+> Here's what I don't like:
+>  - the original driver didn't even seem to work properly
 
-There are many structures that can be constified, you can use the following
-command to find most of them (use it on an allyesconfig kernel preferably):
+It _was_ working properly, when it was a separate branch, but the
+merge to staging wasn't done correctly, so it has never worked there.
 
-grep _ops System.map |grep -Ewi 'b|d' | awk '{print $3}' | \
-while read i ; do cscope -d -L -1 $i | grep -E "struct[ \t]*([^ ]*)[ \t]*" \
---color=none -o | awk '{print $2}' ; done |sort -u
+>  - people sent me patches they never tested and broke things even worse
 
-Also there are always new instances of structures going in that should have
-been constified.
+Part of the blame goes to TI. Even if you have the hardware, it's not
+straightforward to test this. I have struggled to improve the
+situation on user-space with the gst-dsp and dsp-tools projects, which
+btw have not received support from TI, but apparently they were not
+used to test this (neither was the "official" solution from TI which
+is much harder to set up).
 
-I tried to automate the whole process with Coccinelle but I abandoned it
-because Coccinelle didn't support recursive header file inclusion at the time.
-If someone feels like fixing Coccinelle then I would quickly finish my script
-(it has a few bugs because I could never test it for real), but see the end
-of the mail for the current version. I think it would be a good idea because
-it would take a few hours only to generate a constification patch for a new
-kernel. One thing that probably cannot be automated with Coccinelle is that
-once the script determines that a given structure cannot be constified, it
-cannot undo already emitted patches for the given structure so it must be
-cleaned up by post processing script.
+>  - some people have no respect for the omap maintainers and what they
+>    think about things, or even basic knowledge of the kernel
+>    development cycle.
 
---
-Emese
+I don't think this is the case. The opinion of the OMAP maintainers is
+valuable in order to cleanup the mess that is this driver. But _first_
+it has to work. Most people are not developers, they just want to use
+this driver.
 
+>  - I do not have this hardware so I can't test anything.
+>
+> So, from now on, I'm not taking ANYONES patches for this driver unless
+> it gets an ack from the driver maintainer, Omar Luna.
+>
+> Actually, no, I'm not going to take any patch unless it _comes from_
+> Omar.  Omar, please work to queue up patches and test them, and then
+> send them to me for merging.
+>
+> Any questions?
 
-// spatch.opt -sp_file $1 -include_headers -local_includes -all_includes -I "include/" -dir $2
+You mean after this pull, or should Omar re-send this pull request?
 
-@initialize:python@
-noconst = []
-
-@stc@
-identifier idtype, y;
-type t;
-position p;
-@@
-struct idtype {
-	...
-	t (*y)(...);@p
-	...
-};
-
-@notjustfp@
-identifier stc.idtype, y;
-type t;
-position p != stc.p;
-@@
-struct idtype {
-	...
-	t y;@p
-	...
-};
-
-@script:python depends on notjustfp@
-@@
-cocci.include_match(False)
-
-@variable@
-identifier stc.idtype, idvariant, id;
-@@
-(
-	struct idtype idvariant = {
-		...
-	};
-|
-	struct idtype idvariant;
-|
-	struct idtype *idvariant;
-|
-	struct id {
-		...
-		struct idtype idvariant;
-		...
-	};
-)
-
-@script:python@
-y << variable.idvariant;
-@@
-if y in noconst:
-	cocci.include_match(False)
-
-@alreadyconst@
-identifier stc.idtype, variable.idvariant, id;
-@@
-(
-	const struct idtype idvariant;
-|
-	const struct idtype idvariant = {
-		...
-	};
-|
-	const struct idtype *idvariant;
-|
-	struct id {
-		...
-		const struct idtype idvariant;
-		...
-	};
-)
-
-@script:python depends on alreadyconst@
-@@
-cocci.include_match(False)
-
-@fn_declaration@
-identifier stc.idtype, variable.idvariant, fn;
-type t;
-@@
-t fn(struct idtype *idvariant);
-
-@fn_definition@
-identifier stc.idtype, variable.idvariant, fn;
-type t;
-@@
-t fn(struct idtype *idvariant)
-{
-	...
-}
-
-// TODO: handle var.field1.field2, var->field1->field2
-@assignement@
-identifier variable.idvariant, x, idptr;
-@@
-(
-	idvariant.x = ...;
-|
-	idvariant->x = ...;
-|
-	idptr = &idvariant;
-	...
-	idptr->x = ...;
-|
-	memcpy(&idvariant, ...);
-|
-	memcpy(idvariant.x, ...);
-|
-	memcpy(idvariant->x, ...);
-|
-	idvariant = kzalloc(...);
-|
-	idvariant = kmalloc(...);
-)
-
-@script:python depends on assignement@
-x << stc.idtype;
-y << variable.idvariant;
-@@
-print "Cannot be const: %s-%s" % (x, y)
-noconst.append(y)
-cocci.include_match(False)
-
-@depends on stc && !fn_declaration && !fn_definition@
-identifier stc.idtype, variable.idvariant, id;
-@@
-(
--struct idtype idvariant = {
-+const struct idtype idvariant = {
-		...
- };
-|
--struct idtype idvariant;
-+const struct idtype idvariant;
-|
--struct idtype *idvariant;
-+const struct idtype *idvariant;
-|
--struct idtype *idvariant = NULL;
-+const struct idtype *idvariant = NULL;
-|
-struct id {
-...
--struct idtype idvariant;
-+const struct idtype idvariant;
-...
- };
-)
-
-@depends on stc && fn_declaration && !fn_definition@
-identifier stc.idtype, variable.idvariant, fn_declaration.fn;
-type fn_declaration.t;
-@@
-t fn(
--struct idtype *idvariant
-+const struct idtype *idvariant
- );
-
-@depends on stc && !fn_declaration && fn_definition@
-identifier stc.idtype, variable.idvariant, fn_definition.fn;
-type fn_definition.t;
-@@
-t fn(
--struct idtype *idvariant
-+const struct idtype *idvariant
- )
- {
- 	...
- }
-
+-- 
+Felipe Contreras
