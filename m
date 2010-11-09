@@ -1,72 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab0KICPA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 21:15:00 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:53456 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751682Ab0KICO6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 21:14:58 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=aQmaYMNa/XGou8/LhCwy97LVUREesSA1ryrbmohfK++52PTXiihmYrZBKQ/EmqsI1h
-         9flbR41zORiauXRiCyijWIQuWsSnkCv2XOsXL5rZiriQ2fte/LcIwBQfUN2EEU3NVoLs
-         DhbFD7Mg3eS+2Njobxfb6ndswNGn/j3ymIgnA=
+	id S1753662Ab0KICPq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 21:15:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28030 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752107Ab0KICPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 21:15:45 -0500
+Date: Mon, 8 Nov 2010 21:15:40 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
+        "czoccolo@gmail.com" <czoccolo@gmail.com>
+Subject: Re: [patch 2/3]cfq-iosched: schedule dispatch for noidle queue
+Message-ID: <20101109021540.GA29210@redhat.com>
+References: <1289182038.23014.190.camel@sli10-conroe>
+ <20101108142842.GC16767@redhat.com>
+ <1289266267.23014.196.camel@sli10-conroe>
 MIME-Version: 1.0
-In-Reply-To: <20101108130543.1188a63f.akpm@linux-foundation.org>
-References: <1289069918-2085-1-git-send-email-tdent48227@gmail.com>
-	<1289069918-2085-2-git-send-email-tdent48227@gmail.com>
-	<EDA33B3B-F9C9-4C45-B20D-C985DFC95C2F@coraid.com>
-	<20101108130543.1188a63f.akpm@linux-foundation.org>
-Date: Mon, 8 Nov 2010 21:14:58 -0500
-Message-ID: <AANLkTi=fY6jxCw46zZWoX+eRvk8CaV+nwY=GaoMqFWbC@mail.gmail.com>
-Subject: Re: [Resend][PATCH 2/2] Drivers: block: aoe: Makefile: replace the
- use of <module>-objs with <module>-y
-From: Tracey Dent <tdent48227@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ed Cashin <ecashin@coraid.com>, sage@newdream.net, yehuda@hq.newdream.net,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289266267.23014.196.camel@sli10-conroe>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/8/10, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Mon, 8 Nov 2010 10:03:24 -0500
-> Ed Cashin <ecashin@coraid.com> wrote:
->
->> On Nov 6, 2010, at 2:58 PM, Tracey Dent wrote:
->>
->> > Changed <module>-objs to <module>-y in Makefile.
->>
->> Andrew Morton, hi.  I don't know whether Tracey Dent is expecting
->> me to push this change to Linus, but lately you've been pushing the
->> aoe changes.  I see similar changes in other
->> drivers on the LKML, so if it looks good to you, would you mind please
->> picking up this patch?
->
-> I queued both patches - I guess I'll send them to Jens.
->
-> I queued them as "unchangelogged patches".  Because what the changelogs told
-> us was utterly obvious from reading the patch.
->
-> What the changelogs didn't tell us was _why_ the change was made.  And
-> guess what?  I don't have a clue!  I just haven't been following these
-> kbuild minutea.
->
-> Tracey, please send a description of *why* this change is being made
-> and I'll add it to the changelogs.  Please include that explanation in
-> all such patches.
->
+On Tue, Nov 09, 2010 at 09:31:07AM +0800, Shaohua Li wrote:
+> On Mon, 2010-11-08 at 22:28 +0800, Vivek Goyal wrote:
+> > On Mon, Nov 08, 2010 at 10:07:18AM +0800, Shaohua Li wrote:
+> > > A queue is idle at cfq_dispatch_requests(), but it gets noidle later. Unless
+> > > other task explictly does unplug or all requests are drained, we will not
+> > > deliever requests to the disk even cfq_arm_slice_timer doesn't make the
+> > > queue idle. For example, cfq_should_idle() returns true because of
+> > > service_tree->count == 1, and then other queues are added. Note, I didn't
+> > > see obvious performance impacts so far with the patch, but just thought
+> > > this could be a problem.
+> > > 
+> > > Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> > > 
+> > > ---
+> > >  block/cfq-iosched.c |   23 ++++++++++++++++++++++-
+> > >  1 file changed, 22 insertions(+), 1 deletion(-)
+> > > 
+> > > Index: linux/block/cfq-iosched.c
+> > > ===================================================================
+> > > --- linux.orig/block/cfq-iosched.c	2010-11-08 08:41:20.000000000 +0800
+> > > +++ linux/block/cfq-iosched.c	2010-11-08 08:43:51.000000000 +0800
+> > > @@ -3265,6 +3265,10 @@ cfq_should_preempt(struct cfq_data *cfqd
+> > >  	if (cfq_class_rt(new_cfqq) && !cfq_class_rt(cfqq))
+> > >  		return true;
+> > >  
+> > > +	/* An idle queue should not be idle now for some reason */
+> > > +	if (RB_EMPTY_ROOT(&cfqq->sort_list) && !cfq_should_idle(cfqd, cfqq))
+> > > +		return true;
+> > > +
+> > >  	if (!cfqd->active_cic || !cfq_cfqq_wait_request(cfqq))
+> > >  		return false;
+> > >  
+> > > @@ -3508,8 +3512,25 @@ static void cfq_completed_request(struct
+> > >  		}
+> > >  	}
+> > >  
+> > > -	if (!cfqd->rq_in_driver)
+> > > +	if (!cfqd->rq_in_driver) {
+> > >  		cfq_schedule_dispatch(cfqd);
+> > > +		return;
+> > > +	}
+> > > +	/*
+> > > +	 * A queue is idle at cfq_dispatch_requests(), but it gets noidle
+> > > +	 * later. We schedule a dispatch if the queue has no requests,
+> > > +	 * otherwise the disk is actually in idle till all requests
+> > > +	 * are finished even cfq_arm_slice_timer doesn't make the queue idle
+> > > +	 * */
+> > 
+> > Why do we have to wait for all requests to finish in device? Will driver
+> > most likely not ask for next request when 1-2 requests have completed
+> > and at that time we should expire the queue if queue is no more marked
+> > as "noidle"?
+> The issue is a queue is idle just because it's the last queue of the
+> service tree. Then a new queue is added and the idled queue should not
+> idle now. we should preempt the idled queue soon. does this make sense
+> to you?
 
-Is this good?
+If that's the case then you should just modify should_preempt() so that
+addition of a new queue could preempt an empty queue which has now become
+noidle.
 
-Changed Makefile to use <modules>-y instead of <modules>-objs because -objs is
-deprecated and should now be switched. According to
-(documentation/kbuild/makefiles.txt).
+You have also modified cfq_completed_request() function, which will wake
+up the worker thread and then try to dispatch a request. IMHO, in practice
+driver asks for new request almost immediately and you don't gain much
+by this additional wakeup.
 
-regards
+So my point being, that we increased the code complexity for no visible
+performance improvement also increased thread wakeups resulting in more
+cpu consumption.
 
-td
+If there was a visible performance gain in your testing then it would have
+made sense but you said that you did not notice any improvements. Then
+why to increase the complexity.
+
+Vivek
