@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870Ab0KIXJN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 18:09:13 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:51323 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002Ab0KIXJM convert rfc822-to-8bit (ORCPT
+	id S1754857Ab0KIXJV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 18:09:21 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52226 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752627Ab0KIXJS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 18:09:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Y3WNsMgaaRZGd1yNtj4CqihuamGpfzA2T+CurHrKFYZq2ZafuYur19R5FwXy9j18i+
-         InyJbkXZFgafEyQy6R8qJPOtRvia63gitkEImQ1Zm6ZTsifOmJ61bcdGDYKo9/c7TwOl
-         fCJDZAIRWqIrWm2ytkszSWbrWsLGh/IBa/jZg=
-MIME-Version: 1.0
-In-Reply-To: <1289294671-6865-3-git-send-email-gthelen@google.com>
-References: <1289294671-6865-1-git-send-email-gthelen@google.com>
-	<1289294671-6865-3-git-send-email-gthelen@google.com>
-Date: Wed, 10 Nov 2010 08:09:06 +0900
-Message-ID: <AANLkTi=Nd6qy5S0zLUN80iEhQab3rGK77waVihEhN4ia@mail.gmail.com>
-Subject: Re: [PATCH 2/6] memcg: pass mem_cgroup to mem_cgroup_dirty_info()
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 9 Nov 2010 18:09:18 -0500
+Date: Tue, 9 Nov 2010 15:09:06 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Kees Cook <kees.cook@canonical.com>, Pekka Enberg <penberg@kernel.org>,
+        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Jiri Slaby <jslaby@suse.cz>, "David S. Miller" <davem@davemloft.net>,
+        Hugh Dickins <hughd@google.com>,
+        Manfred Spraul <manfred@colorfullife.com>
+Subject: Re: [PATCH] ipc: explicitly clear stack memory in user structs
+Message-Id: <20101109150906.af2804ac.akpm@linux-foundation.org>
+In-Reply-To: <AANLkTint3yM44CouOvG_oA2K=_iC9AJuw-sJoB_HTUMT@mail.gmail.com>
+References: <20101025235804.GA11760@outflux.net>
+	<AANLkTi=c4kt46Pa1FA-e8=36Vn0KcmZgHHKWKZ_bgvzL@mail.gmail.com>
+	<20101109205008.GU5876@outflux.net>
+	<AANLkTint3yM44CouOvG_oA2K=_iC9AJuw-sJoB_HTUMT@mail.gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 9, 2010 at 6:24 PM, Greg Thelen <gthelen@google.com> wrote:
-> Pass mem_cgroup parameter through memcg_dirty_info() into
-> mem_cgroup_dirty_info().  This allows for querying dirty memory
-> information from a particular cgroup, rather than just the
-> current task's cgroup.
->
-> Signed-off-by: Greg Thelen <gthelen@google.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+On Tue, 9 Nov 2010 14:46:30 -0800
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
--- 
-Kind regards,
-Minchan Kim
+> On Tue, Nov 9, 2010 at 12:50 PM, Kees Cook <kees.cook@canonical.com> wrote:
+> >
+> > No one has committed it. I don't know why; I've sent it a few times now.
+> 
+> You seem to have sent it just to lkml. At least in this case the patch
+> itself was not sent to me (only the subsequent replies were), and the
+> choice of recipients was fairly odd apart from Andrew (who probably
+> _is_ the right person).
+
+It's in my backlog queue.  Waaaay back.  
+
+The -rc1 merging and kermel summit put me way behind (again) and when
+I'm way behind, I start to work in reverse order (mainly to avoid
+looking at older versions of patches).  And when I'm working in
+time-reverse order, things which were sent a long time ago get delayed
+even more.
+
+The good news is that the longer I take to merge something, the less
+likely it is that I'll actually merge it ;) Either it got shot down or
+a new version came out or someone else merged it.
+
