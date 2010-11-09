@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550Ab0KIVyD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 16:54:03 -0500
-Received: from cantor.suse.de ([195.135.220.2]:53538 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754276Ab0KIVyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 16:54:01 -0500
-Date: Tue, 9 Nov 2010 22:53:57 +0100
-From: Jan Kara <jack@suse.cz>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Dave Chinner <david@fromorbit.com>, Josef Bacik <josef@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        xfs@oss.sgi.com, joel.becker@oracle.com, cmm@us.ibm.com,
-        cluster-devel@redhat.com
-Subject: Re: [PATCH 1/6] fs: add hole punching to fallocate
-Message-ID: <20101109215357.GI4936@quack.suse.cz>
-References: <1289248327-16308-1-git-send-email-josef@redhat.com>
- <20101109011222.GD2715@dastard>
- <20101109033038.GF3099@thunk.org>
- <20101109044242.GH2715@dastard>
- <20101109214147.GK3099@thunk.org>
+	id S1755528Ab0KIVzK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 16:55:10 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:47488 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754832Ab0KIVzG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 16:55:06 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAFpR2Ux5LcZK/2dsb2JhbACiJ3K9bYVKBA
+Date: Wed, 10 Nov 2010 08:55:00 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Nick Piggin <npiggin@kernel.dk>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [patch 1/6] fs: icache RCU free inodes
+Message-ID: <20101109215500.GD3246@amd>
+References: <20101109124610.GB11477@amd>
+ <AANLkTi=b3dEmoTgrJ2xMTUzgM-mUQNNx6J9jeLq2=mtf@mail.gmail.com>
+ <1289319698.2774.16.camel@edumazet-laptop>
+ <AANLkTimJCgsPqB9ihbScr1RdZ+XGk2tq7LZNfh109Skv@mail.gmail.com>
+ <20101109171522.GA4522@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101109214147.GK3099@thunk.org>
+In-Reply-To: <20101109171522.GA4522@infradead.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 09-11-10 16:41:47, Ted Ts'o wrote:
-> On Tue, Nov 09, 2010 at 03:42:42PM +1100, Dave Chinner wrote:
-> > Implementation is up to the filesystem. However, XFS does (b)
-> > because:
-> > 
-> > 	1) it was extremely simple to implement (one of the
-> > 	   advantages of having an exceedingly complex allocation
-> > 	   interface to begin with :P)
-> > 	2) conversion is atomic, fast and reliable
-> > 	3) it is independent of the underlying storage; and
-> > 	4) reads of unwritten extents operate at memory speed,
-> > 	   not disk speed.
+On Tue, Nov 09, 2010 at 12:15:22PM -0500, Christoph Hellwig wrote:
+> On Tue, Nov 09, 2010 at 09:08:17AM -0800, Linus Torvalds wrote:
+> > Again, this is only an issue for non-dentry lookup. For the dentry
+> > case, we know that if the dentry still exists, then the inode still
+> > exists. So we don't need to check a stable inode pointer if we just
+> > verify the stability of the dentry - and we'll have to do that anyway
+> > obviously.
 > 
-> Yeah, I was thinking that using a device-style TRIM might be better
-> since future attempts to write to it won't require a separate seek to
-> modify the extent tree.  But yeah, there are a bunch of advantages of
-> simply mutating the extent tree.
-> 
-> While we're on the subject of changes to fallocate, what do people
-> think of FALLOC_FL_EXPOSE_OLD_DATA, which requires either root
-> privileges or (if capabilities are in use) CAP_DAC_OVERRIDE &&
-> CAP_MAC_OVERRIDE && CAP_SYS_ADMIN.  This would allow a trusted process
-> to fallocate blocks with the extent already marked initialized.  I've
-> had two requests for such functionality for ext4 already.  
-> 
-> (Take for example a trusted cluster filesystem backend that checks the
-> object checksum before returning any data to the user; and if the
-> check fails the cluster file system will try to use some other replica
-> stored on some other server.)
-  Hum, could you elaborate a bit? I fail to see how above fallocate() flag
-could be used to help solving this problem... Just curious...
+> If the dentry still exists we have a reference on the inode and never
+> call into the inode hash.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+That would be nice. Unfortuately I don't know if the dentry still
+exists.
+
+
+> > In other words: let's bite off the complexity in small chunks. Let's
+> > keep the inode lock approach for now for the actual inode lists and
+> > hash lookups. I think they are almost entirely independent issues from
+> > the dentry path.
+> 
+> I'm defintively in favour of splitting things into small chunks.  I
+> don't particularly care how we do it.  inode_lock scaling seems the
+> most simple bit to me, and even that turned out to be a massive
+> amount of work to do properly.
+
+That is because the locking model was made much more complex and less
+regular than it needed to be. If you have a model where i_lock ==
+inode_lock for the context of that inode, it's simple and restructuring
+the code can happen _in parallel_ rather than with dependencies on the
+inode locking.
+
+The several inode data structures are *trivial*. Simple structures,
+trivial operations to insert/remove/lookup. The *hard* part is locking
+the actual inode itself and ensuring it is not subject to unwanted
+concurrency. If you make i_lock exclude everything withot exception,
+then it's not hard to verify it.
+
+> Doing the dentry_lock splitup last starts to look more and more
+> interesting given how messy inode_lock is, though.
+
+It's not actually, if the locking is done right. And it will need to
+be this time because yes it is more complex than icache, so ad hoc
+approach won't work.
+
