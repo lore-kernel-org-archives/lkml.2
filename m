@@ -1,70 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021Ab0KIVSa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 16:18:30 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:45811 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752122Ab0KIVS3 (ORCPT
+	id S1755167Ab0KIVSe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 16:18:34 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:35283 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752122Ab0KIVSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 16:18:29 -0500
+	Tue, 9 Nov 2010 16:18:31 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=ow3H99trVF46hWBjhEv77E96Mz7Z+Aqer1qSuZK6ePztgHko9qKaby9pHQCm/bld9l
-         atPvInbbiEA5GhJsmk2uqM02moow1jBVlMfNV4vVv2Is01Ni8FMWU2+ka9yjtJ88g6Iq
-         XudeMeHgmsubsP9lRjySJUGkItQNRRqa7TfCE=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=KXvDvnAhrof86Pyf8YLgvIx/5/GT/gk8V6uoZ72Hy16pE3bx4RB+IGdUppsiPegygr
+         HW0VVemMRG/EyR137iQRd9wO0EoU/o0cQkVATtHk5H5kMEH9KvVfog5SUQdBNlRceK8A
+         kjuQt7FUyXyc8wU5LKH7TfuPAo6nt2IHwm54M=
 From: tzanussi@gmail.com
 To: linux-kernel@vger.kernel.org
 Cc: acme@ghostprotocols.net, mingo@elte.hu, fweisbec@gmail.com
-Subject: [PATCH 0/7] perf trace command-line cleanup
-Date: Tue,  9 Nov 2010 15:18:15 -0600
-Message-Id: <1289337502-2492-1-git-send-email-tzanussi@gmail.com>
+Subject: [PATCH 1/7] perf trace scripting: fix some small memory leaks and missing error checks
+Date: Tue,  9 Nov 2010 15:18:16 -0600
+Message-Id: <1289337502-2492-2-git-send-email-tzanussi@gmail.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1289337502-2492-1-git-send-email-tzanussi@gmail.com>
+References: <1289337502-2492-1-git-send-email-tzanussi@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tom Zanussi <tom.zanussi@linux.intel.com>
 
-There are currently some inconsistencies in perf trace command-line
-handling - for example, the system-wide param is hard-coded into the
-canned scripts, and the user doesn't have any option to avoid it.
-This patchset removes that limitation and cleans up some related
-complications introduced by live-mode.  It also more clearly documents
-usage, and fixes up a couple other minor problems.
+Free the other two fields of script_desc which somehow got overlooked,
+free malloc'ed args in case exec fails, and add missing checks for
+failed mallocs.
 
-This patchset can also be pulled from here:
+Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
+---
+ tools/perf/builtin-trace.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-git://github.com/zanussi/linux-2.6.git perf-trace-updates
-
-
-Tom Zanussi (7):
-  perf trace scripting: fix some small memory leaks and missing error
-    checks
-  perf trace scripting: remove system-wide param from shell scripts
-  perf record: make the record options available outside perf record
-  perf trace record: handle commands correctly
-  perf trace: live-mode command-line cleanup
-  perf trace: update Documentation with new perf trace variants
-  perf trace: update usage
-
- tools/perf/Documentation/perf-trace.txt            |   57 +++++-
- tools/perf/builtin-record.c                        |   10 +-
- tools/perf/builtin-trace.c                         |  209 ++++++++++++++------
- tools/perf/scripts/perl/bin/failed-syscalls-record |    2 +-
- tools/perf/scripts/perl/bin/rw-by-file-record      |    2 +-
- tools/perf/scripts/perl/bin/rw-by-pid-record       |    2 +-
- tools/perf/scripts/perl/bin/rwtop-record           |    2 +-
- tools/perf/scripts/perl/bin/wakeup-latency-record  |    2 +-
- tools/perf/scripts/perl/bin/workqueue-stats-record |    2 +-
- .../python/bin/failed-syscalls-by-pid-record       |    2 +-
- .../scripts/python/bin/futex-contention-record     |    2 +-
- tools/perf/scripts/python/bin/netdev-times-record  |    2 +-
- .../perf/scripts/python/bin/sched-migration-record |    2 +-
- tools/perf/scripts/python/bin/sctop-record         |    2 +-
- .../python/bin/syscall-counts-by-pid-record        |    2 +-
- .../perf/scripts/python/bin/syscall-counts-record  |    2 +-
- 16 files changed, 217 insertions(+), 85 deletions(-)
-
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 2f8df45..368e624 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -337,6 +337,8 @@ static struct script_desc *script_desc__new(const char *name)
+ static void script_desc__delete(struct script_desc *s)
+ {
+ 	free(s->name);
++	free(s->half_liner);
++	free(s->args);
+ 	free(s);
+ }
+ 
+@@ -626,6 +628,9 @@ int cmd_trace(int argc, const char **argv, const char *prefix __used)
+ 			close(live_pipe[0]);
+ 
+ 			__argv = malloc(6 * sizeof(const char *));
++			if (!__argv)
++				die("malloc");
++
+ 			__argv[0] = "/bin/sh";
+ 			__argv[1] = record_script_path;
+ 			__argv[2] = "-q";
+@@ -634,6 +639,7 @@ int cmd_trace(int argc, const char **argv, const char *prefix __used)
+ 			__argv[5] = NULL;
+ 
+ 			execvp("/bin/sh", (char **)__argv);
++			free(__argv);
+ 			exit(-1);
+ 		}
+ 
+@@ -641,6 +647,8 @@ int cmd_trace(int argc, const char **argv, const char *prefix __used)
+ 		close(live_pipe[1]);
+ 
+ 		__argv = malloc((argc + 3) * sizeof(const char *));
++		if (!__argv)
++			die("malloc");
+ 		__argv[0] = "/bin/sh";
+ 		__argv[1] = report_script_path;
+ 		for (i = 2; i < argc; i++)
+@@ -650,6 +658,7 @@ int cmd_trace(int argc, const char **argv, const char *prefix __used)
+ 		__argv[i++] = NULL;
+ 
+ 		execvp("/bin/sh", (char **)__argv);
++		free(__argv);
+ 		exit(-1);
+ 	}
+ 
+@@ -661,6 +670,8 @@ int cmd_trace(int argc, const char **argv, const char *prefix __used)
+ 		}
+ 
+ 		__argv = malloc((argc + 1) * sizeof(const char *));
++		if (!__argv)
++			die("malloc");
+ 		__argv[0] = "/bin/sh";
+ 		__argv[1] = script_path;
+ 		for (i = 3; i < argc; i++)
+@@ -668,7 +679,7 @@ int cmd_trace(int argc, const char **argv, const char *prefix __used)
+ 		__argv[argc - 1] = NULL;
+ 
+ 		execvp("/bin/sh", (char **)__argv);
++		free(__argv);
+ 		exit(-1);
+ 	}
+ 
 -- 
 Tom Zanussi, Intel Open Source Technology Center
+
