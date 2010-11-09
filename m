@@ -1,90 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574Ab0KIDwp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 22:52:45 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:54626 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984Ab0KIDwo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 22:52:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=wCQ7osoKbLOs+9qYwq3Oo6oK+3SyP5tdwc8knWz6SG1ldQBAccGXkN691Xp6sJeHt1
-         5t6wbl35akf5gzNdlSeA==
-MIME-Version: 1.0
-In-Reply-To: <20101109124426.312f9979.nishimura@mxp.nes.nec.co.jp>
-References: <1289265320-7025-1-git-send-email-gthelen@google.com> <20101109124426.312f9979.nishimura@mxp.nes.nec.co.jp>
-From: Greg Thelen <gthelen@google.com>
-Date: Mon, 8 Nov 2010 19:52:20 -0800
-Message-ID: <AANLkTi=7sKC_911w7NPtsX_uQ20EapC3QjMrU9Y5iA8N@mail.gmail.com>
-Subject: Re: [PATCH] memcg: avoid overflow in memcg_hierarchical_free_pages()
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1752492Ab0KIEDB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 23:03:01 -0500
+Received: from ozlabs.org ([203.10.76.45]:53719 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751984Ab0KIEC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 23:02:59 -0500
+Subject: Re: [PATCH] powerpc: Add jump label support
+From: Michael Ellerman <michael@ellerman.id.au>
+Reply-To: michael@ellerman.id.au
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linuxppc-dev@ozlabs.org,
+        jbaron@redhat.com, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Anton Blanchard <anton@samba.org>,
+        Kumar Gala <kumar.gala@freescale.com>
+In-Reply-To: <1289274119.12418.79.camel@gandalf.stny.rr.com>
+References: <45fbc3cd7f6ce404d1e25bf01695fb629d86189d.1289189560.git.michael@ellerman.id.au>
+	 <20101109133517.b6be28bf.sfr@canb.auug.org.au>
+	 <1289273608.21111.194.camel@concordia>
+	 <1289274119.12418.79.camel@gandalf.stny.rr.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-IkgJDMo06ESIiYhjjcHt"
+Date: Tue, 09 Nov 2010 15:02:56 +1100
+Message-ID: <1289275376.21111.227.camel@concordia>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 8, 2010 at 7:44 PM, Daisuke Nishimura
-<nishimura@mxp.nes.nec.co.jp> wrote:
-> On Mon,  8 Nov 2010 17:15:20 -0800
-> Greg Thelen <gthelen@google.com> wrote:
->
->> Use page counts rather than byte counts to avoid overflowing
->> unsigned long local variables.
->>
->> Signed-off-by: Greg Thelen <gthelen@google.com>
->> ---
->>  mm/memcontrol.c |   10 +++++-----
->>  1 files changed, 5 insertions(+), 5 deletions(-)
->>
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index 6c7115d..b287afd 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -1345,17 +1345,17 @@ memcg_hierarchical_free_pages(struct mem_cgroup *mem)
->>  {
->>       unsigned long free, min_free;
->>
-> hmm, the default value of RES_LIMIT is LLONG_MAX, so I think we must declare
-> "free" as unsinged long long to avoid overflow.
 
-Agreed.  I am testing a fix for that issue now.  I do not want
-complicate this patch with the RES_LIMIT issue you mention.  The fix
-will be in a separate patch.
+--=-IkgJDMo06ESIiYhjjcHt
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> Thanks,
-> Daisuke Nishimura.
->
->> -     min_free = global_page_state(NR_FREE_PAGES) << PAGE_SHIFT;
->> +     min_free = global_page_state(NR_FREE_PAGES);
->>
->>       while (mem) {
->> -             free = res_counter_read_u64(&mem->res, RES_LIMIT) -
->> -                     res_counter_read_u64(&mem->res, RES_USAGE);
->> +             free = (res_counter_read_u64(&mem->res, RES_LIMIT) -
->> +                     res_counter_read_u64(&mem->res, RES_USAGE)) >>
->> +                     PAGE_SHIFT;
->>               min_free = min(min_free, free);
->>               mem = parent_mem_cgroup(mem);
->>       }
->>
->> -     /* Translate free memory in pages */
->> -     return min_free >> PAGE_SHIFT;
->> +     return min_free;
->>  }
->>
->>  /*
->> --
->> 1.7.3.1
->>
->
+On Mon, 2010-11-08 at 22:41 -0500, Steven Rostedt wrote:
+> On Tue, 2010-11-09 at 14:33 +1100, Michael Ellerman wrote:
+>=20
+> > > You don't need this protection in a file that is not exported to user
+> > > space.
+> >=20
+> > Ah true. I'll respin after I've heard if anyone has tested it :)
+>=20
+> Don't wait for me. I'm stuck debugging some other crap. Getting a 4.5
+> PPC compiler working is very low on my priority list, unfortunately. :-(
+
+No worries, testing is for sissies anyway.
+
+There are 4.5.0 crosses on kernel.org, I think they're the same as the
+ones I'm using, which seem to work on powerpc at least.
+
+http://kernel.org/pub/tools/crosstool/files/bin/x86_64/4.5.0/
+
+cheers
+
+
+--=-IkgJDMo06ESIiYhjjcHt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkzYx/AACgkQdSjSd0sB4dIEkgCeL3KbuRYU2OJi8Jw4QVgootyF
+gIQAnA1tyXLKJWYDzCo03E3gYEhZk+rd
+=/Dt7
+-----END PGP SIGNATURE-----
+
+--=-IkgJDMo06ESIiYhjjcHt--
+
