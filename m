@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474Ab0KIEW4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 23:22:56 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:40240 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753209Ab0KIEWv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 23:22:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=liaYONAUf1SVjPN007IeN9Dj50oE+kTfBuVdD5K9PB4LzIcDydxX4mzIMXdzc5ZLLq
-         /A4yU9j1qvHawrwcPzNYfH9C4izKiTVfSWd/tIzsJbZvvbCqZnPCm3F/ofhJYebr4mFc
-         +SAgddI6hb58CfXTBPeNMo+Srv6WVXOptHj+0=
-Date: Tue, 9 Nov 2010 12:27:32 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-Cc: Mike Waychison <mikew@google.com>, simon.kagstrom@netinsight.net,
-        davem@davemloft.net, nhorman@tuxdriver.com,
-        Matt Mackall <mpm@selenic.com>, adurbin@google.com,
-        linux-kernel@vger.kernel.org, chavey@google.com,
-        Greg KH <greg@kroah.com>, akpm@linux-foundation.org,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH v2 12/23] netpoll: Introduce netpoll_target configs
-Message-ID: <20101109042732.GC5220@cr0.nay.redhat.com>
-References: <20101108203120.22479.19708.stgit@crlf.mtv.corp.google.com>
- <20101108203246.22479.60118.stgit@crlf.mtv.corp.google.com>
- <20101109033024.GA5220@cr0.nay.redhat.com>
+	id S1753387Ab0KIEYH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 23:24:07 -0500
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:37650 "EHLO h5.dl5rb.org.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752931Ab0KIEYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 23:24:04 -0500
+Date: Tue, 9 Nov 2010 00:48:09 +0000
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Julia Lawall <julia@diku.dk>
+Cc: kernel-janitors@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/14] arch/mips/pmc-sierra/yosemite/setup.c: delete
+ double assignment
+Message-ID: <20101109004808.GA10116@linux-mips.org>
+References: <1288088743-3725-1-git-send-email-julia@diku.dk>
+ <1288088743-3725-7-git-send-email-julia@diku.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101109033024.GA5220@cr0.nay.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1288088743-3725-7-git-send-email-julia@diku.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 09, 2010 at 11:30:24AM +0800, Américo Wang wrote:
->
-....
->
->So, either we need to de-modulize configfs or replace configfs API
->with sysfs API. Personally, I prefer the former one, I don't think
->configfs should be a module as long as it can provide API's
->for other subsystems, like debugfs.
->
+On Tue, Oct 26, 2010 at 12:25:35PM +0200, Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
+> 
+> Delete successive assignments to the same location.
 
-To clarify, I meant "as long as the API it provides can be used by
-other core subsystems".
+[...]
+
+> This change also makes the variable cpu_clock_freq be not used in the
+> current file.  If this is the correct change to plat_time_init, then
+> perhaps the declaration of that variable should be moved elsewhere, or the
+> variable should be deleted completely.
+
+The 2nd assignment is a temporary override for debugging purpose that is
+it's there intionsionally.
+
+Thanks!
+
+  Ralf
