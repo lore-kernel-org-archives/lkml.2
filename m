@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873Ab0KIIor (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 03:44:47 -0500
+	id S1754770Ab0KIIpU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 03:45:20 -0500
 Received: from mga11.intel.com ([192.55.52.93]:40024 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754142Ab0KIIlk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 03:41:40 -0500
+	id S1754040Ab0KIIlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 03:41:36 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,174,1288594800"; 
-   d="scan'208";a="624917743"
+   d="scan'208";a="624917725"
 From: xiaohui.xin@intel.com
 To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
         herbert@gondor.hengli.com.au, jdike@linux.intel.com
 Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [PATCH v15 08/17]Modify netdev_free_page() to release external buffer
-Date: Tue,  9 Nov 2010 17:03:13 +0800
-Message-Id: <0f65152a86d2c0f90945cb8fd67a2eb330728229.1289280886.git.xiaohui.xin@intel.com>
+Subject: [PATCH v15 06/17] Use callback to deal with skb_release_data() specially.
+Date: Tue,  9 Nov 2010 17:03:11 +0800
+Message-Id: <52fc15c05611c5af3802c19822fd6e9d5158669f.1289280886.git.xiaohui.xin@intel.com>
 X-Mailer: git-send-email 1.7.3
 In-Reply-To: <1289293402-4791-1-git-send-email-xiaohui.xin@intel.com>
 References: <1289293402-4791-1-git-send-email-xiaohui.xin@intel.com>
@@ -28,68 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Xin Xiaohui <xiaohui.xin@intel.com>
 
-Currently, it can get external buffers from mp device.
+If buffer is external, then use the callback to destruct
+buffers.
 
 Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
 Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
 Reviewed-by: Jeff Dike <jdike@linux.intel.com>
 ---
- include/linux/skbuff.h |    4 +++-
- net/core/skbuff.c      |   24 ++++++++++++++++++++++++
- 2 files changed, 27 insertions(+), 1 deletions(-)
+ include/linux/skbuff.h |    7 ++++---
+ net/core/skbuff.c      |    7 +++++++
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
 diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 6e1e991..6309ce6 100644
+index 696e690..6e1e991 100644
 --- a/include/linux/skbuff.h
 +++ b/include/linux/skbuff.h
-@@ -1586,9 +1586,11 @@ static inline struct page *netdev_alloc_page(struct net_device *dev)
- 	return __netdev_alloc_page(dev, GFP_ATOMIC);
- }
+@@ -199,14 +199,15 @@ struct skb_shared_info {
+ 	struct sk_buff	*frag_list;
+ 	struct skb_shared_hwtstamps hwtstamps;
  
-+extern void __netdev_free_page(struct net_device *dev, struct page *page);
++	/* Intermediate layers must ensure that destructor_arg
++	 * remains valid until skb destructor */
++	void *		destructor_arg;
 +
- static inline void netdev_free_page(struct net_device *dev, struct page *page)
- {
--	__free_page(page);
-+	__netdev_free_page(dev, page);
- }
+ 	/*
+ 	 * Warning : all fields before dataref are cleared in __alloc_skb()
+ 	 */
+ 	atomic_t	dataref;
  
- /**
+-	/* Intermediate layers must ensure that destructor_arg
+-	 * remains valid until skb destructor */
+-	void *		destructor_arg;
+ 	/* must be last field, see pskb_expand_head() */
+ 	skb_frag_t	frags[MAX_SKB_FRAGS];
+ };
 diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index a1018bd..3d81113 100644
+index c83b421..68e197e 100644
 --- a/net/core/skbuff.c
 +++ b/net/core/skbuff.c
-@@ -298,6 +298,30 @@ struct page *__netdev_alloc_page(struct net_device *dev, gfp_t gfp_mask)
- }
- EXPORT_SYMBOL(__netdev_alloc_page);
+@@ -343,6 +343,13 @@ static void skb_release_data(struct sk_buff *skb)
+ 		if (skb_has_frags(skb))
+ 			skb_drop_fraglist(skb);
  
-+void netdev_free_ext_page(struct net_device *dev, struct page *page)
-+{
-+	struct skb_ext_page *ext_page = NULL;
-+	if (dev_is_mpassthru(dev) && dev->mp_port->hash) {
-+		ext_page = dev->mp_port->hash(dev, page);
-+		if (ext_page)
-+			ext_page->dtor(ext_page);
-+		else
-+			__free_page(page);
-+	}
-+}
-+EXPORT_SYMBOL(netdev_free_ext_page);
++		if (skb->dev && dev_is_mpassthru(skb->dev)) {
++			struct skb_ext_page *ext_page =
++				skb_shinfo(skb)->destructor_arg;
++			if (ext_page && ext_page->dtor)
++				ext_page->dtor(ext_page);
++		}
 +
-+void __netdev_free_page(struct net_device *dev, struct page *page)
-+{
-+	if (dev_is_mpassthru(dev)) {
-+		netdev_free_ext_page(dev, page);
-+		return;
-+	}
-+
-+	__free_page(page);
-+}
-+EXPORT_SYMBOL(__netdev_free_page);
-+
- void skb_add_rx_frag(struct sk_buff *skb, int i, struct page *page, int off,
- 		int size)
- {
+ 		kfree(skb->head);
+ 	}
+ }
 -- 
 1.7.3
 
