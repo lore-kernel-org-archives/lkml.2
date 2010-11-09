@@ -1,107 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab0KIInv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 03:43:51 -0500
-Received: from mga11.intel.com ([192.55.52.93]:40024 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754210Ab0KIIlp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 03:41:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,174,1288594800"; 
-   d="scan'208";a="624917763"
-From: xiaohui.xin@intel.com
-To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
-        herbert@gondor.hengli.com.au, jdike@linux.intel.com
-Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [PATCH v15 11/17] Add a hook to intercept external buffers from NIC driver.
-Date: Tue,  9 Nov 2010 17:03:16 +0800
-Message-Id: <5288ec35e729b69e9bfdc627abcecfef1ab2ec15.1289280886.git.xiaohui.xin@intel.com>
-X-Mailer: git-send-email 1.7.3
-In-Reply-To: <1289293402-4791-1-git-send-email-xiaohui.xin@intel.com>
-References: <1289293402-4791-1-git-send-email-xiaohui.xin@intel.com>
-In-Reply-To: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1289280885.git.xiaohui.xin@intel.com>
-References: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1289280885.git.xiaohui.xin@intel.com>
+	id S1754842Ab0KIIoW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 03:44:22 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:59879 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754212Ab0KIIoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 03:44:19 -0500
+Message-ID: <4CD90AE8.7070003@cn.fujitsu.com>
+Date: Tue, 09 Nov 2010 16:48:40 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 2/3] KVM: MMU: don not retry #PF for nonpaging guest
+References: <4CD28B5F.1040205@cn.fujitsu.com> <4CD28BCA.1060907@cn.fujitsu.com> <20101104103548.GE6018@redhat.com> <4CD39886.4050909@cn.fujitsu.com> <20101109080357.GI9036@redhat.com>
+In-Reply-To: <20101109080357.GI9036@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-09 16:44:45,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-09 16:44:45,
+	Serialize complete at 2010-11-09 16:44:45
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xin Xiaohui <xiaohui.xin@intel.com>
+On 11/09/2010 04:03 PM, Gleb Natapov wrote:
+> On Fri, Nov 05, 2010 at 01:39:18PM +0800, Xiao Guangrong wrote:
+>> On 11/04/2010 06:35 PM, Gleb Natapov wrote:
+>>> On Thu, Nov 04, 2010 at 06:32:42PM +0800, Xiao Guangrong wrote:
+>>>> nonpaing guest's 'direct_map' is also true, retry #PF for those
+>>>> guests is useless, so use 'tdp_enabled' instead
+>>>>
+>>> nonpaging guest will not attempt async pf. 
+>>
+>> Ah, my mistake, but why we can not attempt async pf for nonpaging guest?
+>>
+>>> And by checking tdp_enabled
+>>> here instead of direct_map we will screw nested ntp.
+>>>
+>>
+>> It looks like something broken: apfs can generated in L2 guest (nested ntp guest)
+>> and be retried in L1 guest.
+>>
+> OK now when Xiao explained me the problem privately I can review this.
+> 
+>> Below patch fix it and let nonpaging guest support async pf. I'll post it properly
+>> if you like. :-)
+>>
+> Apf for nonpaging guest should be separate patch of course.
 
-The hook is called in __netif_receive_skb().
+Sure, i'll separate it when i post.
 
-Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
-Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
-Reviewed-by: Jeff Dike <jdike@linux.intel.com>
----
- net/core/dev.c |   40 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 40 insertions(+), 0 deletions(-)
+> 
+>> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+>> index 7f20f2c..606978e 100644
+>> --- a/arch/x86/include/asm/kvm_host.h
+>> +++ b/arch/x86/include/asm/kvm_host.h
+>> @@ -600,6 +600,7 @@ struct kvm_x86_ops {
+>>  struct kvm_arch_async_pf {
+>>  	u32 token;
+>>  	gfn_t gfn;
+>> +	bool softmmu;
+>>  };
+>>  
+>>  extern struct kvm_x86_ops *kvm_x86_ops;
+>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+>> index f3fad4f..48ca312 100644
+>> --- a/arch/x86/kvm/mmu.c
+>> +++ b/arch/x86/kvm/mmu.c
+>>  static int kvm_arch_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn)
+>> @@ -2602,6 +2607,7 @@ static int kvm_arch_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn)
+>>  	struct kvm_arch_async_pf arch;
+>>  	arch.token = (vcpu->arch.apf.id++ << 12) | vcpu->vcpu_id;
+>>  	arch.gfn = gfn;
+>> +	arch.softmmu = mmu_is_softmmu(vcpu);
+>>  
+> We can do:
+>         if (mmu_is_nested(vcpu))
+> 		gva = vcpu->mmu.gva_to_gpa(gva);
+> And this should fix everything no?
+> 
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 84fbb83..bdad1c8 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2814,6 +2814,40 @@ int __skb_bond_should_drop(struct sk_buff *skb, struct net_device *master)
- }
- EXPORT_SYMBOL(__skb_bond_should_drop);
- 
-+#if defined(CONFIG_MEDIATE_PASSTHRU) || defined(CONFIG_MEDIATE_PASSTHRU_MODULE)
-+/* Add a hook to intercept mediate passthru(zero-copy) packets,
-+ * and insert it to the socket queue owned by mp_port specially.
-+ */
-+static inline struct sk_buff *handle_mpassthru(struct sk_buff *skb,
-+					       struct packet_type **pt_prev,
-+					       int *ret,
-+					       struct net_device *orig_dev)
-+{
-+	struct mp_port *mp_port = NULL;
-+	struct sock *sk = NULL;
-+
-+	if (!dev_is_mpassthru(skb->dev) && !dev_is_mpassthru(orig_dev))
-+		return skb;
-+	if (dev_is_mpassthru(skb->dev))
-+		mp_port = skb->dev->mp_port;
-+	else if (orig_dev->master == skb->dev && dev_is_mpassthru(orig_dev))
-+		mp_port = orig_dev->mp_port;
-+
-+	if (*pt_prev) {
-+		*ret = deliver_skb(skb, *pt_prev, orig_dev);
-+		*pt_prev = NULL;
-+	}
-+
-+	sk = mp_port->sock->sk;
-+	skb_queue_tail(&sk->sk_receive_queue, skb);
-+	sk->sk_state_change(sk);
-+
-+	return NULL;
-+}
-+#else
-+#define handle_mpassthru(skb, pt_prev, ret, orig_dev)     (skb)
-+#endif
-+
- static int __netif_receive_skb(struct sk_buff *skb)
- {
- 	struct packet_type *ptype, *pt_prev;
-@@ -2891,6 +2925,11 @@ static int __netif_receive_skb(struct sk_buff *skb)
- ncls:
- #endif
- 
-+	/* To intercept mediate passthru(zero-copy) packets here */
-+	skb = handle_mpassthru(skb, &pt_prev, &ret, orig_dev);
-+	if (!skb)
-+		goto out;
-+
- 	/* Handle special case of bridge or macvlan */
- 	rx_handler = rcu_dereference(skb->dev->rx_handler);
- 	if (rx_handler) {
-@@ -2983,6 +3022,7 @@ err:
- EXPORT_SYMBOL(netdev_mp_port_prep);
- #endif
- 
-+
- /**
-  *	netif_receive_skb - process receive buffer from network
-  *	@skb: buffer to process
--- 
-1.7.3
+No, since it can't help us to avoid NPF when nested guest run again.
 
+More detailed:
+
+   +--------------+ nested guest VA
+L2 | nested guest |
+   +--------------+ nested guest PA       +    +
+      |                                   |    |
+   +--------------+ guest VA              |    |
+L1 | guest        |                       |    |
+   +--------------+ guest PA          +   |    V
+      |                               |   |
+   +--------------+ host VA           |   |
+L0 | host         |                   |   |
+   +--------------+ host PA           V   V
+                                    PT10 PT20 PT21
+
+If do it like this way, we will prefault 'gva' in PT10, but L2 guest's
+running not depends on it(PT10), the same NPF is avoid only we prefault
+it in PT20.
+
+>>  	return kvm_setup_async_pf(vcpu, gva, gfn, &arch);
+>>  }
+>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+>> index 2044302..d826d78 100644
+>> --- a/arch/x86/kvm/x86.c
+>> +++ b/arch/x86/kvm/x86.c
+>> @@ -6172,9 +6172,10 @@ EXPORT_SYMBOL_GPL(kvm_set_rflags);
+>>  
+>>  void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu, struct kvm_async_pf *work)
+>>  {
+>> +	bool softmmu = mmu_is_softmmu(vcpu);
+>>  	int r;
+>>  
+>> -	if (!vcpu->arch.mmu.direct_map || is_error_page(work->page))
+>> +	if (softmmu || work->arch.softmmu || is_error_page(work->page))
+>>  		return;
+>>  
+>>  	r = kvm_mmu_reload(vcpu);
+>> diff --git a/arch/x86/kvm/x86.h b/arch/x86/kvm/x86.h
+>> index 2cea414..48796c7 100644
+>> --- a/arch/x86/kvm/x86.h
+>> +++ b/arch/x86/kvm/x86.h
+>> @@ -55,6 +55,11 @@ static inline bool mmu_is_nested(struct kvm_vcpu *vcpu)
+>>  	return vcpu->arch.walk_mmu == &vcpu->arch.nested_mmu;
+>>  }
+>>  
+>> +static inline bool mmu_is_softmmu(struct kvm_vcpu *vcpu)
+>> +{
+>> +	return !tdp_enabled || mmu_is_nested(vcpu);
+>> +}
+>> +
+> Isn't this the same as checking vcpu->arch.mmu.direct_map? The only
+> difference that this will be true for nonpaging mode too but this is
+> even better since we can prefault in nonpaging mode.
+> 
+
+Um, maybe prefault in nonpaging mode is unreliable, 
+
+For shadow page: it doesn't know the CR0.PG is changed, for example, when apf is
+generated CR0.PG = 1 and when apf is completed CR0.PG = 0, it can prefault in
+different mmu context.
+
+For nested paging: if nested guest vcpu is nonpaging. it will prefault PT10's NPF
+in PT20, it means apf is generated in L1 guest and prefault in L2 guest. 
