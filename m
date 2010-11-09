@@ -1,117 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753152Ab0KIQjt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 11:39:49 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:60089 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752826Ab0KIQjr (ORCPT
+	id S1753279Ab0KIQkX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 11:40:23 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50284
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752988Ab0KIQkU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 11:39:47 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Edgar (gimli) Hucek" <gimli@dark-green.com>, stable@kernel.org,
-        Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH] input: bcm5974: Add support for MacBookAir3
-Date: Tue,  9 Nov 2010 17:38:42 +0100
-Message-Id: <1289320722-1948-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.7.1
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1PFrES-00038B-Bt.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PFrES-00038B-Bt 047f0d9abcfb7b198302f7f9a9e1008f
+	Tue, 9 Nov 2010 11:40:20 -0500
+Date: Tue, 09 Nov 2010 08:40:45 -0800 (PST)
+Message-Id: <20101109.084045.104069884.davem@davemloft.net>
+To: dave@gnu.org
+Cc: robert.olsson@its.uu.se, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] net: replace min with min_t in pktgen_if_write
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1289320633.2260.12.camel@cowboy>
+References: <1289320633.2260.12.camel@cowboy>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id oA9Ged1W023901
 
-From: Edgar (gimli) Hucek <gimli@dark-green.com>
+From: Davidlohr Bueso <dave@gnu.org>
+Date: Tue, 09 Nov 2010 13:37:13 -0300
 
-This patch adds support for the MacBookAir3,1 and MacBookAir3,2
-models.
+> From: Davidlohr Bueso <dave@gnu.org>
+> 
+> This addresses the following compiler (gcc 4.4.5) warning:
+> 
+>   CC [M]  net/core/pktgen.o
+> net/core/pktgen.c: In function °pktgen_if_write¢:
+> net/core/pktgen.c:890: warning: comparison of distinct pointer types lacks a cast
+> 
+> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
 
-[rydberg@euromail.se: touchpad range calibration]
-Cc: stable@kernel.org
-Signed-off-by: Edgar (gimli) Hucek <gimli@dark-green.com>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
-Hi Dmitry, Jiri,
+Already fixed in net-2.6:
 
-This patch was seen on lkml last week, and has now been excercised by
-a larger set of users. As usual, this patch should go before or
-together with the HID changes, so as not to break basic support from
-the non-MT HID driver.
+commit 86c2c0a8a4965ae5cbc0ff97ed39a4472e8e9b23
+Author: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Date:   Sat Nov 6 20:11:38 2010 +0000
 
-Cheers,
-Henrik
+    NET: pktgen - fix compile warning
+    
+    This should fix the following warning:
+    
+    net/core/pktgen.c: In function °pktgen_if_write¢:
+    net/core/pktgen.c:890: warning: comparison of distinct pointer types lacks a cast
+    
+    Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+    Reviewed-by: Nelson Elhage <nelhage@ksplice.com>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
 
- drivers/input/mouse/bcm5974.c |   40 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 40 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/input/mouse/bcm5974.c b/drivers/input/mouse/bcm5974.c
-index b952317..ee82851 100644
---- a/drivers/input/mouse/bcm5974.c
-+++ b/drivers/input/mouse/bcm5974.c
-@@ -55,6 +55,14 @@
- #define USB_DEVICE_ID_APPLE_WELLSPRING3_ANSI	0x0236
- #define USB_DEVICE_ID_APPLE_WELLSPRING3_ISO	0x0237
- #define USB_DEVICE_ID_APPLE_WELLSPRING3_JIS	0x0238
-+/* MacbookAir3,2 (unibody), aka wellspring5 */
-+#define USB_DEVICE_ID_APPLE_WELLSPRING4_ANSI	0x023f
-+#define USB_DEVICE_ID_APPLE_WELLSPRING4_ISO	0x0240
-+#define USB_DEVICE_ID_APPLE_WELLSPRING4_JIS	0x0241
-+/* MacbookAir3,1 (unibody), aka wellspring4 */
-+#define USB_DEVICE_ID_APPLE_WELLSPRING4A_ANSI	0x0242
-+#define USB_DEVICE_ID_APPLE_WELLSPRING4A_ISO	0x0243
-+#define USB_DEVICE_ID_APPLE_WELLSPRING4A_JIS	0x0244
+diff --git a/net/core/pktgen.c b/net/core/pktgen.c
+index fbce4b0..1992cd0 100644
+--- a/net/core/pktgen.c
++++ b/net/core/pktgen.c
+@@ -887,7 +887,7 @@ static ssize_t pktgen_if_write(struct file *file,
+ 	i += len;
  
- #define BCM5974_DEVICE(prod) {					\
- 	.match_flags = (USB_DEVICE_ID_MATCH_DEVICE |		\
-@@ -80,6 +88,14 @@ static const struct usb_device_id bcm5974_table[] = {
- 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING3_ANSI),
- 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING3_ISO),
- 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING3_JIS),
-+	/* MacbookAir3,2 */
-+	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING4_ANSI),
-+	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING4_ISO),
-+	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING4_JIS),
-+	/* MacbookAir3,1 */
-+	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING4A_ANSI),
-+	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING4A_ISO),
-+	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING4A_JIS),
- 	/* Terminating entry */
- 	{}
- };
-@@ -234,6 +250,30 @@ static const struct bcm5974_config bcm5974_config_table[] = {
- 		{ DIM_X, DIM_X / SN_COORD, -4460, 5166 },
- 		{ DIM_Y, DIM_Y / SN_COORD, -75, 6700 }
- 	},
-+	{
-+		USB_DEVICE_ID_APPLE_WELLSPRING4_ANSI,
-+		USB_DEVICE_ID_APPLE_WELLSPRING4_ISO,
-+		USB_DEVICE_ID_APPLE_WELLSPRING4_JIS,
-+		HAS_INTEGRATED_BUTTON,
-+		0x84, sizeof(struct bt_data),
-+		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
-+		{ DIM_PRESSURE, DIM_PRESSURE / SN_PRESSURE, 0, 300 },
-+		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
-+		{ DIM_X, DIM_X / SN_COORD, -4620, 5140 },
-+		{ DIM_Y, DIM_Y / SN_COORD, -150, 6600 }
-+	},
-+	{
-+		USB_DEVICE_ID_APPLE_WELLSPRING4A_ANSI,
-+		USB_DEVICE_ID_APPLE_WELLSPRING4A_ISO,
-+		USB_DEVICE_ID_APPLE_WELLSPRING4A_JIS,
-+		HAS_INTEGRATED_BUTTON,
-+		0x84, sizeof(struct bt_data),
-+		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
-+		{ DIM_PRESSURE, DIM_PRESSURE / SN_PRESSURE, 0, 300 },
-+		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
-+		{ DIM_X, DIM_X / SN_COORD, -4616, 5112 },
-+		{ DIM_Y, DIM_Y / SN_COORD, -142, 5234 }
-+	},
- 	{}
- };
- 
--- 
-1.7.1
-
+ 	if (debug) {
+-		size_t copy = min(count, 1023);
++		size_t copy = min_t(size_t, count, 1023);
+ 		char tb[copy + 1];
+ 		if (copy_from_user(tb, user_buffer, copy))
+ 			return -EFAULT;
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
