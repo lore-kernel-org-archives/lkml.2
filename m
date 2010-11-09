@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796Ab0KIS4S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 13:56:18 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:59957 "EHLO smtp.outflux.net"
+	id S1754770Ab0KIS6d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 13:58:33 -0500
+Received: from imr3.ericy.com ([198.24.6.13]:56576 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753075Ab0KIS4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 13:56:14 -0500
-Date: Tue, 9 Nov 2010 10:56:04 -0800
-From: Kees Cook <kees.cook@canonical.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [Security] [PATCH v3 0/4] x86: clear XD_DISABLED flag on Intel
- to regain NX
-Message-ID: <20101109185604.GK5876@outflux.net>
-References: <20101109181157.GE5876@outflux.net>
- <20101109183142.4ebfa737@lxorguk.ukuu.org.uk>
+	id S1752344Ab0KIS6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 13:58:31 -0500
+Subject: Re: [PATCH 03/11] drivers/hwmon/applesmc.c: Use pr_fmt and
+ pr_<level>
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Jean Delvare <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>
+In-Reply-To: <1289315711-3011-4-git-send-email-rydberg@euromail.se>
+References: <1289315711-3011-1-git-send-email-rydberg@euromail.se>
+	 <1289315711-3011-4-git-send-email-rydberg@euromail.se>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Ericsson
+Date: Tue, 9 Nov 2010 10:57:46 -0800
+Message-ID: <1289329066.22931.214.camel@groeck-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101109183142.4ebfa737@lxorguk.ukuu.org.uk>
-Organization: Canonical
-X-HELO: www.outflux.net
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 09, 2010 at 06:31:42PM +0000, Alan Cox wrote:
-> > In a review[1] of reported hardware being used by Ubuntu bug reporters,
-> > almost 10% of systems had an incorrectly configured BIOS, leaving their
-> > systems unable to use the NX features of their CPU.
+On Tue, 2010-11-09 at 10:15 -0500, Henrik Rydberg wrote:
+> From: Joe Perches <joe@perches.com>
 > 
-> Ouch
-
-Yeah :(
-
-> > This change will clear the MSR_IA32_MISC_ENABLE_XD_DISABLE bit so that NX
-> > cannot be inappropriately controlled by the BIOS on Intel CPUs.  If, under
-> > very strange hardware configurations, NX actually needs to be disabled,
-> > "noexec=off" can be used to restore the prior behavior.
+> Added #define pr_fmt KBUILD_MODNAME ": " fmt
+> Converted printks to pr_<level>
+> Coalesced any long formats
+> Removed prefixes from formats
 > 
-> Have you done an audit of CPU errata to ensure that none of these cases
-> are ones where the BIOS has disabled it to avoid an erratum. I'd hate to
-> turn it on and find out the BIOS actually turned it off for good reason !
+> Signed-off-by: Joe Perches <joe@perches.com>
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 
-Where can I find those details?
+Applied (replacing Joe's original patch).
 
--Kees
+Thanks,
+Guenter
 
--- 
-Kees Cook
-Ubuntu Security Team
+
