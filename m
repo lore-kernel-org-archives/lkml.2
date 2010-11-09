@@ -1,110 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab0KIJlm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 04:41:42 -0500
-Received: from ns39351.ovh.net ([91.121.21.191]:33110 "EHLO ns39351.ovh.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752993Ab0KIJll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 04:41:41 -0500
-Date: Tue, 9 Nov 2010 09:41:32 +0000
-From: Simon Guinot <simon@sequanux.org>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Simon Guinot <sguinot@lacie.com>, lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] [PATCH v2] hwmon: (gpio-fan) Fix fan_ctrl_init
- error path
-Message-ID: <20101109094132.GD32648@kw.sim.vm.gnt>
-References: <1289292108.28671.1.camel@mola>
+	id S1754377Ab0KIJnY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 04:43:24 -0500
+Received: from dgate10.ts.fujitsu.com ([80.70.172.49]:9329 "EHLO
+	dgate10.ts.fujitsu.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753348Ab0KIJnU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 04:43:20 -0500
+DomainKey-Signature: s=s1536a; d=ts.fujitsu.com; c=nofws; q=dns;
+  h=X-SBRSScore:X-IronPort-AV:Received:X-IronPort-AV:
+   Received:Received:Message-ID:Date:From:Organization:
+   User-Agent:MIME-Version:To:CC:Subject:References:
+   In-Reply-To:Content-Type:Content-Transfer-Encoding;
+  b=sslHRcvV0REGGnFvfpOTnI/L53p192v1GjYTRa9+brpCH23ghbY5NR7A
+   WSKXdT9eVlCxkjSEMNjfnIU9cWn3KVLD7w7UwCqvlyUhVS0FuQ+wM8H7i
+   hQZN5eDbP5bzzEEuBF9FeWFPgxcihFWCKi+CrRpm1pG0Um1drGvYZcD8D
+   fvPf+MgL7zN9YXyKxj463vFFV5MK09r/fM4MFP0GSho+YCBPcFUBcBDKZ
+   o2LSzLZvG0JxETvse8KXq0GQ7hDdI;
+X-SBRSScore: None
+X-IronPort-AV: E=Sophos;i="4.59,174,1288566000"; 
+   d="scan'208";a="58384468"
+X-IronPort-AV: E=Sophos;i="4.59,173,1288566000"; 
+   d="scan'208";a="102514896"
+Message-ID: <4CD917AB.6070705@ts.fujitsu.com>
+Date: Tue, 09 Nov 2010 10:43:07 +0100
+From: Martin Wilck <martin.wilck@ts.fujitsu.com>
+Organization: Fujitsu Technology Solutions
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de-AT; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="C1iGAkRnbeBonpVg"
-Content-Disposition: inline
-In-Reply-To: <1289292108.28671.1.camel@mola>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Wichert, Gerhard" <gerhard.wichert@ts.fujitsu.com>,
+        Greg KH <greg@kroah.com>
+Subject: Re: [PATCH] fix size checks for mmap() on /proc/bus/pci files (resent)
+References: <4cbffbf8.Qhs/h1a0ymU/N8ON%martin.wilck@ts.fujitsu.com>
+In-Reply-To: <4cbffbf8.Qhs/h1a0ymU/N8ON%martin.wilck@ts.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Jesse & linux-pci,
 
---C1iGAkRnbeBonpVg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+may I kindly ask if anyone has had a look at this patch yet?
 
-On Tue, Nov 09, 2010 at 04:41:48PM +0800, Axel Lin wrote:
-> In current implementation, the sysfs entries is not removed before return=
- -ENODEV.
->=20
-> Creating the sysfs attribute should be the last thing done by the functio=
-n,
-> after all the rest has been successful.
-> Otherwise there is a small window during which user-space can access the =
-attribute
-> but the driver isn't ready to deal with the requests.
->=20
-> Fix it by moving sysfs_create_group to be the last thing done by the func=
-tion.
->=20
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+https://patchwork.kernel.org/patch/270271/
+http://kerneltrap.org/mailarchive/linux-kernel/2010/10/21/4635039
 
-Thanks for the patch.
+Regards
+Martin
 
-Acked-by: Simon Guinot <sguinot@lacie.com>
+-- 
+Dr. Martin Wilck
+PRIMERGY System Software Engineer
+x86 Server Engineering
 
-> ---
->  drivers/hwmon/gpio-fan.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
->=20
-> diff --git a/drivers/hwmon/gpio-fan.c b/drivers/hwmon/gpio-fan.c
-> index aa701a1..f141a1d 100644
-> --- a/drivers/hwmon/gpio-fan.c
-> +++ b/drivers/hwmon/gpio-fan.c
-> @@ -376,10 +376,6 @@ static int fan_ctrl_init(struct gpio_fan_data *fan_d=
-ata,
->  		}
->  	}
-> =20
-> -	err =3D sysfs_create_group(&pdev->dev.kobj, &gpio_fan_ctrl_group);
-> -	if (err)
-> -		goto err_free_gpio;
-> -
->  	fan_data->num_ctrl =3D num_ctrl;
->  	fan_data->ctrl =3D ctrl;
->  	fan_data->num_speed =3D pdata->num_speed;
-> @@ -391,6 +387,10 @@ static int fan_ctrl_init(struct gpio_fan_data *fan_d=
-ata,
->  		goto err_free_gpio;
->  	}
-> =20
-> +	err =3D sysfs_create_group(&pdev->dev.kobj, &gpio_fan_ctrl_group);
-> +	if (err)
-> +		goto err_free_gpio;
-> +
->  	return 0;
-> =20
->  err_free_gpio:
-> --=20
-> 1.7.2
->=20
->=20
->=20
->=20
-> _______________________________________________
-> lm-sensors mailing list
-> lm-sensors@lm-sensors.org
-> http://lists.lm-sensors.org/mailman/listinfo/lm-sensors
-
---C1iGAkRnbeBonpVg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkzZF0wACgkQgtp0PDeOcDrX0QCfXzeBApH/+3+ZL7w7/x3kUHIi
-FmAAnRReJqF13v9nk/wY64d2+MF01JEv
-=9Z0I
------END PGP SIGNATURE-----
-
---C1iGAkRnbeBonpVg--
+FUJITSU
+Fujitsu Technology Solutions GmbH
+Heinz-Nixdorf-Ring 1
+33106 Paderborn, Germany
+Phone:			++49 5251 525 2796
+Fax:			++49 5251 525 2820
+Email:			martin.wilck@ts.fujitsu.com
+Internet:		http://ts.fujitsu.com
+Company Details:	http://ts.fujitsu.com/imprint
