@@ -1,116 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370Ab0KIIEF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 03:04:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40886 "EHLO mx1.redhat.com"
+	id S1753418Ab0KIIGk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 03:06:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18765 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753082Ab0KIIEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 03:04:02 -0500
-Date: Tue, 9 Nov 2010 10:03:57 +0200
+	id S1753099Ab0KIIGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 03:06:38 -0500
+Date: Tue, 9 Nov 2010 10:06:31 +0200
 From: Gleb Natapov <gleb@redhat.com>
 To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/3] KVM: MMU: don not retry #PF for nonpaging guest
-Message-ID: <20101109080357.GI9036@redhat.com>
+Subject: Re: [PATCH 3/3] KVM: MMU: retry #PF for softmmu
+Message-ID: <20101109080631.GJ9036@redhat.com>
 References: <4CD28B5F.1040205@cn.fujitsu.com>
- <4CD28BCA.1060907@cn.fujitsu.com>
- <20101104103548.GE6018@redhat.com>
- <4CD39886.4050909@cn.fujitsu.com>
+ <4CD28CB4.9000906@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CD39886.4050909@cn.fujitsu.com>
+In-Reply-To: <4CD28CB4.9000906@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 05, 2010 at 01:39:18PM +0800, Xiao Guangrong wrote:
-> On 11/04/2010 06:35 PM, Gleb Natapov wrote:
-> > On Thu, Nov 04, 2010 at 06:32:42PM +0800, Xiao Guangrong wrote:
-> >> nonpaing guest's 'direct_map' is also true, retry #PF for those
-> >> guests is useless, so use 'tdp_enabled' instead
-> >>
-> > nonpaging guest will not attempt async pf. 
+On Thu, Nov 04, 2010 at 06:36:36PM +0800, Xiao Guangrong wrote:
+> Retry #PF for softmmu only when the current vcpu has the same
+> root shadow page as the time when #PF occurs. it means they
+> have same paging environment.
 > 
-> Ah, my mistake, but why we can not attempt async pf for nonpaging guest?
-> 
-> > And by checking tdp_enabled
-> > here instead of direct_map we will screw nested ntp.
-> > 
-> 
-> It looks like something broken: apfs can generated in L2 guest (nested ntp guest)
-> and be retried in L1 guest.
-> 
-OK now when Xiao explained me the problem privately I can review this.
+Avi had an idea to allocate spte at the fault time, get reference
+to it and populate it on completion instead of prefaulting. How hard
+will it be?
 
-> Below patch fix it and let nonpaging guest support async pf. I'll post it properly
-> if you like. :-)
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+> ---
+>  arch/x86/include/asm/kvm_host.h |    6 ++++++
+>  arch/x86/kvm/mmu.c              |   33 ++++++++++++++++++++++++++++++++-
+>  arch/x86/kvm/x86.c              |   16 ++++++++++++++--
+>  virt/kvm/async_pf.c             |    1 +
+>  4 files changed, 53 insertions(+), 3 deletions(-)
 > 
-Apf for nonpaging guest should be separate patch of course.
-
 > diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index 7f20f2c..606978e 100644
+> index 7f20f2c..b99ef7d 100644
 > --- a/arch/x86/include/asm/kvm_host.h
 > +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -600,6 +600,7 @@ struct kvm_x86_ops {
+> @@ -192,6 +192,8 @@ struct kvm_mmu_page {
+>  	struct list_head link;
+>  	struct hlist_node hash_link;
+>  
+> +	struct kref apfs_counter;
+> +
+>  	/*
+>  	 * The following two entries are used to key the shadow page in the
+>  	 * hash table.
+> @@ -600,6 +602,7 @@ struct kvm_x86_ops {
 >  struct kvm_arch_async_pf {
 >  	u32 token;
 >  	gfn_t gfn;
-> +	bool softmmu;
+> +	struct kvm_mmu_page *root_sp;
 >  };
 >  
 >  extern struct kvm_x86_ops *kvm_x86_ops;
+> @@ -697,6 +700,8 @@ void kvm_inject_nmi(struct kvm_vcpu *vcpu);
+>  
+>  int fx_init(struct kvm_vcpu *vcpu);
+>  
+> +struct kvm_mmu_page *get_vcpu_root_sp(struct kvm_vcpu *vcpu, gva_t gva);
+> +void kvm_mmu_release_apf_sp(struct kvm_mmu_page *sp);
+>  void kvm_mmu_flush_tlb(struct kvm_vcpu *vcpu);
+>  void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+>  		       const u8 *new, int bytes,
+> @@ -822,6 +827,7 @@ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
+>  void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu,
+>  			       struct kvm_async_pf *work);
+>  bool kvm_arch_can_inject_async_page_present(struct kvm_vcpu *vcpu);
+> +void kvm_arch_clear_async_pf(struct kvm_async_pf *work);
+>  extern bool kvm_find_async_pf_gfn(struct kvm_vcpu *vcpu, gfn_t gfn);
+>  
+>  #endif /* _ASM_X86_KVM_HOST_H */
 > diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index f3fad4f..48ca312 100644
+> index f3fad4f..60cc9f9 100644
 > --- a/arch/x86/kvm/mmu.c
 > +++ b/arch/x86/kvm/mmu.c
+> @@ -993,6 +993,19 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
+>  	percpu_counter_add(&kvm_total_used_mmu_pages, nr);
+>  }
+>  
+> +static void free_shadow_page(struct kref *kref)
+> +{
+> +	struct kvm_mmu_page *sp;
+> +
+> +	sp = container_of(kref, struct kvm_mmu_page, apfs_counter);
+> +	kmem_cache_free(mmu_page_header_cache, sp);
+> +}
+> +
+> +void kvm_mmu_release_apf_sp(struct kvm_mmu_page *sp)
+> +{
+> +	kref_put(&sp->apfs_counter, free_shadow_page);;
+> +}
+> +
+>  static void kvm_mmu_free_page(struct kvm *kvm, struct kvm_mmu_page *sp)
+>  {
+>  	ASSERT(is_empty_shadow_page(sp->spt));
+> @@ -1001,7 +1014,7 @@ static void kvm_mmu_free_page(struct kvm *kvm, struct kvm_mmu_page *sp)
+>  	__free_page(virt_to_page(sp->spt));
+>  	if (!sp->role.direct)
+>  		__free_page(virt_to_page(sp->gfns));
+> -	kmem_cache_free(mmu_page_header_cache, sp);
+> +	kvm_mmu_release_apf_sp(sp);
+>  	kvm_mod_used_mmu_pages(kvm, -1);
+>  }
+>  
+> @@ -1026,6 +1039,7 @@ static struct kvm_mmu_page *kvm_mmu_alloc_page(struct kvm_vcpu *vcpu,
+>  	sp->multimapped = 0;
+>  	sp->parent_pte = parent_pte;
+>  	kvm_mod_used_mmu_pages(vcpu->kvm, +1);
+> +	kref_init(&sp->apfs_counter);
+>  	return sp;
+>  }
+>  
+> @@ -2597,11 +2611,28 @@ static int nonpaging_page_fault(struct kvm_vcpu *vcpu, gva_t gva,
+>  			     error_code & PFERR_WRITE_MASK, gfn);
+>  }
+>  
+> +struct kvm_mmu_page *get_vcpu_root_sp(struct kvm_vcpu *vcpu, gva_t gva)
+> +{
+> +	struct kvm_shadow_walk_iterator iterator;
+> +	bool ret;
+> +
+> +	shadow_walk_init(&iterator, vcpu, gva);
+> +	ret = shadow_walk_okay(&iterator);
+> +	WARN_ON(!ret);
+> +
+> +	return page_header(__pa(iterator.sptep));
+> +}
+> +
 >  static int kvm_arch_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn)
-> @@ -2602,6 +2607,7 @@ static int kvm_arch_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn)
+>  {
 >  	struct kvm_arch_async_pf arch;
+> +
 >  	arch.token = (vcpu->arch.apf.id++ << 12) | vcpu->vcpu_id;
 >  	arch.gfn = gfn;
-> +	arch.softmmu = mmu_is_softmmu(vcpu);
+> +	if (!tdp_enabled) {
+> +		arch.root_sp = get_vcpu_root_sp(vcpu, gva);
+> +		kref_get(&arch.root_sp->apfs_counter);
+> +	}
 >  
-We can do:
-        if (mmu_is_nested(vcpu))
-		gva = vcpu->mmu.gva_to_gpa(gva);
-And this should fix everything no?
-
 >  	return kvm_setup_async_pf(vcpu, gva, gfn, &arch);
 >  }
 > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 2044302..d826d78 100644
+> index aacc5eb..72d672f 100644
 > --- a/arch/x86/kvm/x86.c
 > +++ b/arch/x86/kvm/x86.c
-> @@ -6172,9 +6172,10 @@ EXPORT_SYMBOL_GPL(kvm_set_rflags);
->  
->  void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu, struct kvm_async_pf *work)
+> @@ -6174,14 +6174,17 @@ void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu, struct kvm_async_pf *work)
 >  {
-> +	bool softmmu = mmu_is_softmmu(vcpu);
 >  	int r;
 >  
-> -	if (!vcpu->arch.mmu.direct_map || is_error_page(work->page))
-> +	if (softmmu || work->arch.softmmu || is_error_page(work->page))
+> -	if (!tdp_enabled || is_error_page(work->page))
+> +	if (is_error_page(work->page))
 >  		return;
 >  
 >  	r = kvm_mmu_reload(vcpu);
-> diff --git a/arch/x86/kvm/x86.h b/arch/x86/kvm/x86.h
-> index 2cea414..48796c7 100644
-> --- a/arch/x86/kvm/x86.h
-> +++ b/arch/x86/kvm/x86.h
-> @@ -55,6 +55,11 @@ static inline bool mmu_is_nested(struct kvm_vcpu *vcpu)
->  	return vcpu->arch.walk_mmu == &vcpu->arch.nested_mmu;
+> +
+>  	if (unlikely(r))
+>  		return;
+>  
+> -	vcpu->arch.mmu.page_fault(vcpu, work->gva, 0, true);
+> +	if (tdp_enabled ||
+> +	      get_vcpu_root_sp(vcpu, work->gva) == work->arch.root_sp)
+> +		vcpu->arch.mmu.page_fault(vcpu, work->gva, 0, true);
 >  }
 >  
-> +static inline bool mmu_is_softmmu(struct kvm_vcpu *vcpu)
+>  static inline u32 kvm_async_pf_hash_fn(gfn_t gfn)
+> @@ -6269,10 +6272,19 @@ void kvm_arch_async_page_not_present(struct kvm_vcpu *vcpu,
+>  	}
+>  }
+>  
+> +void kvm_arch_clear_async_pf(struct kvm_async_pf *work)
 > +{
-> +	return !tdp_enabled || mmu_is_nested(vcpu);
+> +	if (!tdp_enabled)
+> +		kvm_mmu_release_apf_sp(work->arch.root_sp);
 > +}
 > +
-Isn't this the same as checking vcpu->arch.mmu.direct_map? The only
-difference that this will be true for nonpaging mode too but this is
-even better since we can prefault in nonpaging mode.
+>  void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
+>  				 struct kvm_async_pf *work)
+>  {
+>  	trace_kvm_async_pf_ready(work->arch.token, work->gva);
+> +
+> +	kvm_arch_clear_async_pf(work);
+> +
+>  	if (is_error_page(work->page))
+>  		work->arch.token = ~0; /* broadcast wakeup */
+>  	else
+> diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
+> index 74268b4..c3d4788 100644
+> --- a/virt/kvm/async_pf.c
+> +++ b/virt/kvm/async_pf.c
+> @@ -101,6 +101,7 @@ void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu)
+>  				   typeof(*work), queue);
+>  		cancel_work_sync(&work->work);
+>  		list_del(&work->queue);
+> +		kvm_arch_clear_async_pf(work);
+>  		if (!work->done) /* work was canceled */
+>  			kmem_cache_free(async_pf_cache, work);
+>  	}
+> -- 
+> 1.7.0.4
 
 --
 			Gleb.
