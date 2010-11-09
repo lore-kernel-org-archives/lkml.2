@@ -1,45 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438Ab0KIMLQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 07:11:16 -0500
-Received: from mx1.vsecurity.com ([209.67.252.12]:63122 "EHLO
-	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754822Ab0KIMLP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 07:11:15 -0500
-Subject: Re: [PATCH] Restrict unprivileged access to kernel syslog
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, security@kernel.org, stable@kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>
-In-Reply-To: <20101109112350.GA29800@elte.hu>
-References: <1289273338.6287.128.camel@dan> <20101109112350.GA29800@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 09 Nov 2010 07:11:12 -0500
-Message-ID: <1289304672.6287.132.camel@dan>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1755370Ab0KIMPP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 07:15:15 -0500
+Received: from mga01.intel.com ([192.55.52.88]:22216 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754569Ab0KIMPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 07:15:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,174,1288594800"; 
+   d="scan'208";a="855692522"
+Date: Tue, 9 Nov 2010 20:15:08 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/6] memcg: make mem_cgroup_page_stat() return value
+ unsigned
+Message-ID: <20101109121508.GA2764@localhost>
+References: <1289294671-6865-1-git-send-email-gthelen@google.com>
+ <1289294671-6865-7-git-send-email-gthelen@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289294671-6865-7-git-send-email-gthelen@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
+On Tue, Nov 09, 2010 at 05:24:31PM +0800, Greg Thelen wrote:
+> mem_cgroup_page_stat() used to return a negative page count
+> value to indicate value.
 > 
-> The initialization to zero is implicit, no need to write it out.
+> mem_cgroup_page_stat() has changed so it never returns
+> error so convert the return value to the traditional page
+> count type (unsigned long).
 > 
+> Signed-off-by: Greg Thelen <gthelen@google.com>
+> ---
 
-I'll resend after the first round of comments.
+> +	/*
+> +	 * The sum of unlocked per-cpu counters may yield a slightly negative
+> +	 * value.  This function returns an unsigned value, so round it up to
+> +	 * zero to avoid returning a very large value.
+> +	 */
+> +	if (value < 0)
+> +		value = 0;
 
-> Also, it would also be useful to have a CONFIG_SECURITY_RESTRICT_DMESG=y option 
-> introduced by your patch as well, which flag allows a distro or user to disable 
-> unprivileged syslog reading via the kernel config.
+nitpick: it's good candidate for unlikely().
 
-Are you suggesting having the existence of the sysctl depend on
-CONFIG_SECURITY_RESTRICT_DMESG, or having a choice between a sysctl
-(when config is disabled) and having restrictions always on (when config
-is enabled)?
+Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
 
--Dan
+Sorry, I lose track to the source code after so many patches.
+It would help if you can put the patches to a git tree.
 
+Thanks,
+Fengguang
