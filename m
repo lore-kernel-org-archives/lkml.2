@@ -1,60 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711Ab0KISiQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 13:38:16 -0500
-Received: from asmtpout027.mac.com ([17.148.16.102]:45148 "EHLO
-	asmtpout027.mac.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754488Ab0KISiP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 13:38:15 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; CHARSET=US-ASCII
-X-Proofpoint-Virus-Version: vendor=fsecure
- engine=2.50.10432:5.2.15,1.0.148,0.0.0000
- definitions=2010-11-09_12:2010-11-09,2010-11-09,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0
- ipscore=0 suspectscore=0 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
- adjust=0 reason=mlx engine=6.0.2-1004200000 definitions=main-1011090112
-Subject: Re: Forked android kernel development from linux kernel mainline
-From: Elvis Dowson <elvis.dowson@mac.com>
-In-reply-to: <20101109182437.GA13499@kroah.com>
-Date: Tue, 09 Nov 2010 22:37:54 +0400
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-id: <58CAEF9F-BAB3-4F31-A524-70649F965BDE@mac.com>
-References: <01784A8B-36A0-4E8A-9729-23C2B19351F8@mac.com>
- <AANLkTi=UxhRdcDaoKaYVWhPkp_e-uLF4=zhXs7gutkgx@mail.gmail.com>
- <20101106181202.GA6927@kroah.com>
- <39580686-A899-4689-BAAD-AF5546B34E49@mac.com>
- <AANLkTimVsUsrmTvsHqFiqJh1hhryMBemGyW+kYLKGgEu@mail.gmail.com>
- <20101107155757.GA13736@kroah.com>
- <6477C549-DB75-407C-9B9B-5869A3B8D2BD@mac.com>
- <DC5F0A5D-0107-4214-A4D7-6FDA166518BA@mac.com>
- <20101109182437.GA13499@kroah.com>
+	id S1754722Ab0KISky (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 13:40:54 -0500
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:41781 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753253Ab0KISkx convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 13:40:53 -0500
+MIME-Version: 1.0
+In-Reply-To: <20101109175828.GA27627@kroah.com>
+References: <AANLkTinZF-47WQyF5k1Nv64NjfMNSQ-+oE0eGycR24NM@mail.gmail.com>
+	<AANLkTikB0zhN13u5OtRwviOv-rFDW-vFTmq0t7ALuO7N@mail.gmail.com>
+	<201011091729.17679.arnd@arndb.de>
+	<20101109165509.GA9698@kroah.com>
+	<AANLkTinFW431t9XFqHc=wZAws9gjT0ikrc03J83kH7iF@mail.gmail.com>
+	<20101109172511.GA10958@kroah.com>
+	<AANLkTi=CKERMcSLXwQa7G55P69DO--UPN9HgOScHP_yO@mail.gmail.com>
+	<20101109175828.GA27627@kroah.com>
+Date: Tue, 9 Nov 2010 12:40:51 -0600
+Message-ID: <AANLkTimDUx-by0MStp3O0L0xGW-okdCqAbDrJHuCewd7@mail.gmail.com>
+Subject: Re: [GIT PULL] fixes for tidspbridge 2.6.37-rc1
+From: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
 To: Greg KH <greg@kroah.com>
-X-Mailer: Apple Mail (2.1081)
+Cc: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        linux-omap@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Hi,
 
-On Nov 9, 2010, at 10:24 PM, Greg KH wrote:
+> Seriously, I'm getting very confused here, and am very annoyed by the
+> whole thing.
+>
+> Here's what I don't like:
+>  - the original driver didn't even seem to work properly
+>  - people sent me patches they never tested and broke things even worse
+>  - some people have no respect for the omap maintainers and what they
+>    think about things, or even basic knowledge of the kernel
+>    development cycle.
+>  - I do not have this hardware so I can't test anything.
+>
+> So, from now on, I'm not taking ANYONES patches for this driver unless
+> it gets an ack from the driver maintainer, Omar Luna.
+>
+> Actually, no, I'm not going to take any patch unless it _comes from_
+> Omar.  Omar, please work to queue up patches and test them, and then
+> send them to me for merging.
+>
+> Any questions?
+>
+> If anyone doesn't like this because they feel that the current driver is
+> broken, well, I can easily solve that by just deleting the whole thing
+> from the tree right now.  Would that be a better idea?
 
-> If you have the rights to make the changes to the andoid userspace code,
-> great.  Otherwise you are not going to get very far.
+I'm fine to queue the patches.
 
-Isn't the whole Android stack licensed under Apache 2.0? Doesn't everyone 
-have full access to the android userspace code? 
+For now, yes, the driver is/has-been broken, and everybody has been
+trying for the last two cycles to fix some dependencies (and
+unfortunately we do it at the last minute or even after it can't be
+done anymore, *sometimes*)... I have been kindly educated by both LO
+and staging tree maintainers that it is just a bad practice to hurry
+things up and not comply with the development standards.
 
-In your slides, you made several references to only google developers being
-able to modify the low-level libraries, which I admit I still don't understand.
+If 2.6.36 or .37 tidspbridge is needed I'll keep each branch with
+their dependent patches in d.o-z (TI's git server), if anybody
+(Felipe) wants to keep their own branches I'm fine with that I can
+sync with them privately to hear any concerns or something else.
 
-If we have full access to the source under an Apache 2.0 license, what would 
-prevent us from making the required modifications and re-releasing the 
-modified sources under the same Apache 2.0 license?
+I'll create the branches and sent an announce to both lists.
 
-Best regards,
+All dependencies need to be acked long before 2.6.38-rc1 and it is the
+responsibility of the senders to track their acceptance.
 
-Elvis Dowson
+Thanks for your suggestions and bearing with this situation, I'll
+follow them and solve your dislikes about it (the hardware part it
+might not be possible :/).
 
+BTW, the testing environment for tidspbridge will be gst-dsp, any
+stress testsuites will be run in addition, I'll detail more of it in
+the upcoming mail.
+
+Regards,
+
+Omar
