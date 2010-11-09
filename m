@@ -1,54 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754895Ab0KIKTi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 05:19:38 -0500
-Received: from hera.kernel.org ([140.211.167.34]:57279 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754494Ab0KIKTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 05:19:37 -0500
-Message-ID: <4CD91FDD.3030603@kernel.org>
-Date: Tue, 09 Nov 2010 11:18:05 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	id S1755001Ab0KIKVm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 05:21:42 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:49070 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754609Ab0KIKVj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 05:21:39 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=JDXQrYdj+TP3seAs01jwPHyms+4qu6fQxa7fB1KU6GwQNy61I7+4e4JvPLf8Lc2Im8
+         5gcsenLBHiY1cX4MG16KN+j/IdNfUeG7Lg368jpazVBbx939P40HPukCReZXNKXqUlIJ
+         NvZDhICd1f6pSg2LJ6l5atHnWZpxim3kCkdGA=
+Date: Tue, 9 Nov 2010 12:21:24 +0200
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Subject: [PATCH] ioprio: rcu_read_lock/unlock protect find_task_by_vpid call
+ (V2)
+Message-ID: <20101109102124.GA3916@swordfish.minsk.epam.com>
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: axboe@kernel.dk, hch@infradead.org, linux-kernel@vger.kernel.org,
-        petero2@telia.com, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        akpm@linux-foundation.org, adilger.kernel@dilger.ca, tytso@mit.edu,
-        mfasheh@suse.com, joel.becker@oracle.com, aelder@sgi.com,
-        dm-devel@redhat.com, drbd-dev@lists.linbit.com, neilb@suse.de,
-        leochen@broadcom.com, sbranden@broadcom.com, chris.mason@oracle.com,
-        swhiteho@redhat.com, shaggy@linux.vnet.ibm.com, joern@logfs.org,
-        konishi.ryusuke@lab.ntt.co.jp, reiserfs-devel@vger.kernel.org,
-        viro@zeniv.linux.org.uk
-Subject: Re: [PATCH 4/5] block: make blkdev_get/put() handle exclusive access
-References: <1288628129-12811-1-git-send-email-tj@kernel.org> <1288628129-12811-5-git-send-email-tj@kernel.org> <20101103150658.GA5627@quack.suse.cz>
-In-Reply-To: <20101103150658.GA5627@quack.suse.cz>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 09 Nov 2010 10:18:11 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Commit 4221a9918e38b7494cee341dda7b7b4bb8c04bde "Add RCU check for
+find_task_by_vpid()" introduced rcu_lockdep_assert to find_task_by_pid_ns.
+Assertion failed in sys_ioprio_get. The patch is fixing assertion
+failure in ioprio_set as well.
 
-On 11/03/2010 04:06 PM, Jan Kara wrote:
-> On Mon 01-11-10 17:15:28, Tejun Heo wrote:
->   The patch looks OK to me as far as ext3, ext4, and reiserfs are
-> concerned. One thing I wondered about when I looked at it - does someone
-> use the 'mode' argument of the blkdev_put() function (well, apart from the
-> exclusive flag)? Because I've looked at a few random disk ->release()
-> functions and none of them used it...
+ kernel/pid.c:419 invoked rcu_dereference_check() without protection!
 
-Yeah, I thought about removing @mode and make blkdev_put() take
-@holder for exclusive releases.  From what I can see, it doesn't seem
-like any implementation cares but it's customary to have access to
-@mode on ->release(), so I decided to keep it.  It's rather flaky as
-there's no mechanism to check or enforce it tho.
+ stack backtrace:
+ Pid: 4254, comm: iotop Not tainted
+ Call Trace:
+ [<ffffffff810656f2>] lockdep_rcu_dereference+0xaa/0xb2
+ [<ffffffff81053c67>] find_task_by_pid_ns+0x4f/0x68
+ [<ffffffff81053c9d>] find_task_by_vpid+0x1d/0x1f
+ [<ffffffff811104e2>] sys_ioprio_get+0x50/0x2da
+ [<ffffffff81002182>] system_call_fastpath+0x16/0x1b
+                     
+V2: rcu critical section expanded according to comment by Paul E. McKenne:
+| Looking over the patch again, the scope of the RCU read-side critical
+| section needs to expand to cover the use of the pointer as well as the
+| call to find_task_by_vpid().
+                                                                
 
-Thanks.
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
--- 
-tejun
+---
+
+diff --git a/fs/ioprio.c b/fs/ioprio.c
+index 748cfb9..64cd50b 100644
+--- a/fs/ioprio.c
++++ b/fs/ioprio.c
+@@ -111,12 +111,14 @@ SYSCALL_DEFINE3(ioprio_set, int, which, int, who, int, ioprio)
+ 	read_lock(&tasklist_lock);
+ 	switch (which) {
+ 		case IOPRIO_WHO_PROCESS:
++			rcu_read_lock();
+ 			if (!who)
+ 				p = current;
+ 			else
+ 				p = find_task_by_vpid(who);
+ 			if (p)
+ 				ret = set_task_ioprio(p, ioprio);
++			rcu_read_unlock();
+ 			break;
+ 		case IOPRIO_WHO_PGRP:
+ 			if (!who)
+@@ -200,12 +202,14 @@ SYSCALL_DEFINE2(ioprio_get, int, which, int, who)
+ 	read_lock(&tasklist_lock);
+ 	switch (which) {
+ 		case IOPRIO_WHO_PROCESS:
++			rcu_read_lock();
+ 			if (!who)
+ 				p = current;
+ 			else
+ 				p = find_task_by_vpid(who);
+ 			if (p)
+ 				ret = get_task_ioprio(p);
++			rcu_read_unlock();
+ 			break;
+ 		case IOPRIO_WHO_PGRP:
+ 			if (!who)
+
