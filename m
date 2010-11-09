@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755370Ab0KIMPP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 07:15:15 -0500
-Received: from mga01.intel.com ([192.55.52.88]:22216 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754569Ab0KIMPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 07:15:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,174,1288594800"; 
-   d="scan'208";a="855692522"
-Date: Tue, 9 Nov 2010 20:15:08 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/6] memcg: make mem_cgroup_page_stat() return value
- unsigned
-Message-ID: <20101109121508.GA2764@localhost>
-References: <1289294671-6865-1-git-send-email-gthelen@google.com>
- <1289294671-6865-7-git-send-email-gthelen@google.com>
+	id S1755492Ab0KIMRA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 07:17:00 -0500
+Received: from astoria.ccjclearline.com ([64.235.106.9]:58817 "EHLO
+	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755062Ab0KIMQz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 07:16:55 -0500
+Date: Tue, 9 Nov 2010 07:16:48 -0500 (EST)
+From: "Robert P. J. Day" <rpjday@crashcourse.ca>
+X-X-Sender: rpjday@localhost6.localdomain6
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: running my kernel scanning scripts on your favourite part of the
+ tree
+Message-ID: <alpine.DEB.2.00.1011090711410.5783@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289294671-6865-7-git-send-email-gthelen@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - crashcourse.ca
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 09, 2010 at 05:24:31PM +0800, Greg Thelen wrote:
-> mem_cgroup_page_stat() used to return a negative page count
-> value to indicate value.
-> 
-> mem_cgroup_page_stat() has changed so it never returns
-> error so convert the return value to the traditional page
-> count type (unsigned long).
-> 
-> Signed-off-by: Greg Thelen <gthelen@google.com>
-> ---
 
-> +	/*
-> +	 * The sum of unlocked per-cpu counters may yield a slightly negative
-> +	 * value.  This function returns an unsigned value, so round it up to
-> +	 * zero to avoid returning a very large value.
-> +	 */
-> +	if (value < 0)
-> +		value = 0;
+  not sure when i'll get the time to do another pass over the kernel
+source tree with my kernel cleanup scripts but anyone who's
+interested is welcome to download the scripts from here:
 
-nitpick: it's good candidate for unlikely().
+  http://www.crashcourse.ca/wiki/index.php/Kernel_cleanup_scripts
 
-Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
+to check out whatever part of the tree they want.
 
-Sorry, I lose track to the source code after so many patches.
-It would help if you can put the patches to a git tree.
+  as a simple example, i can run the script to find "badref" config
+variables on, say, the drivers/mtd part of the tree:
 
-Thanks,
-Fengguang
+$ ../s/find_badref_configs.sh drivers/mtd
+>>>>> MTD_SUPERH_RESERVE
+drivers/mtd/maps/solutionengine.c:38:#ifdef CONFIG_MTD_SUPERH_RESERVE
+drivers/mtd/maps/solutionengine.c:44:		.size = CONFIG_MTD_SUPERH_RESERVE,
+drivers/mtd/maps/solutionengine.c:54:#endif /* CONFIG_MTD_SUPERH_RESERVE */
+drivers/mtd/maps/solutionengine.c:97:#ifdef CONFIG_MTD_SUPERH_RESERVE
+drivers/mtd/maps/solutionengine.c:100:		       CONFIG_MTD_SUPERH_RESERVE);
+drivers/mtd/maps/solutionengine.c:104:#endif /* CONFIG_MTD_SUPERH_RESERVE */
+$
+
+  that tells me that, under drivers/mtd, there's some file that
+insists on testing CONFIG_MTD_SUPERH_RESERVE even though no Kconfig
+file defines such a variable.
+
+  the other common check is to look for the exact opposite --
+variables defined in a Kconfig file that are never tested anywhere.
+once again, let's pick on drivers/mtd:
+
+$ ../s/find_unused_configs.sh drivers/mtd
+===== MTD_NAND_ATMEL_ECC_SOFT
+drivers/mtd/nand/Kconfig:375:config MTD_NAND_ATMEL_ECC_SOFT
+$
+
+  that should be self-explanatory.  anyway, have at it if it interests
+you.
+
+rday
+
+
+-- 
+
+========================================================================
+Robert P. J. Day                               Waterloo, Ontario, CANADA
+                        http://crashcourse.ca
+
+Twitter:                                       http://twitter.com/rpjday
+LinkedIn:                               http://ca.linkedin.com/in/rpjday
+========================================================================
