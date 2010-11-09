@@ -1,102 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab0KITdj (ORCPT <rfc822;w@1wt.eu>);
+	id S1754129Ab0KITdo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 14:33:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49435 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753671Ab0KITdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 9 Nov 2010 14:33:39 -0500
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:34385 "EHLO
-	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753671Ab0KITdi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 14:33:38 -0500
-Message-ID: <4CD9A1DC.2000407@euromail.se>
-Date: Tue, 09 Nov 2010 20:32:44 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+Message-ID: <4CD9A209.6070807@redhat.com>
+Date: Tue, 09 Nov 2010 14:33:29 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
 MIME-Version: 1.0
-To: guenter.roeck@ericsson.com
-CC: Jean Delvare <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/11] hwmon: applesmc: Introduce a register lookup table
- (rev2)
-References: <1289315711-3011-1-git-send-email-rydberg@euromail.se>	 <1289315711-3011-5-git-send-email-rydberg@euromail.se> <1289329469.22931.221.camel@groeck-laptop>
-In-Reply-To: <1289329469.22931.221.camel@groeck-laptop>
-Content-Type: text/plain; charset=UTF-8
+To: Jeff Layton <jlayton@redhat.com>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        esandeen@redhat.com, jmoyer@redhat.com, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] clear PageError bit in msync & fsync
+References: <20101109114422.3918e7f6@annuminas.surriel.com> <20101109142109.224267d0@corrin.poochiereds.net>
+In-Reply-To: <20101109142109.224267d0@corrin.poochiereds.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1PFtvz-0004PM-8F.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PFtvz-0004PM-8F 9552764d810efd1a6066e9570f080152
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
+On 11/09/2010 02:21 PM, Jeff Layton wrote:
 
->> +/*
+> This does leave the page in sort of a funky state. The uptodate bit
+> will still probably be set, but the dirty bit won't be. The page will
+> be effectively "disconnected" from the backing store until someone
+> writes to it.
+>
+> I suppose though that this is the best that can reasonably be done in
+> this situation however...
 
->> + * applesmc_init_smcreg_try - Try to initialize register cache. Idempotent.
->> + */
->> +static int applesmc_init_smcreg_try(void)
->> +{
->> +       struct applesmc_registers *s = &smcreg;
->> +       int ret;
->> +
->> +       if (s->init_complete)
->> +               return 0;
->> +
->> +       mutex_init(&s->mutex);
->> +
-> I am a bit concerned that mutex_init() can be called multiple times. Are
-> you sure this is safe ?
+I spent a few days looking for alternatives, and indeed I found
+nothing better...
 
+There are essentially two possibilities:
+1) the VM can potentially be filled up with uncleanable dirty pages, or
+2) pages that hit an IO error are left in a clean state, so they can
+    be reclaimed under memory pressure
 
-mutex_destroy() is defined as a nop, so I guess the question is whether anything
-could be holding the lock when entering a second init. There are no sysfs files
-created at that point, so I would say no. The mutex could be put back with a
-static initializer, if this is not satisfactory. The real reason to move it to
-the smcreg struct was to force a rename of the mutex itself.
+Alternative 1 could cause the entire system to deadlock, while
+option 2 puts the onus on userland apps to rewrite the data
+from a failed msync/fsync.
 
-> 
->> +       ret = read_register_count(&s->key_count);
->> +       if (ret)
->> +               return ret;
->> +
->> +       if (!s->cache)
->> +               s->cache = kcalloc(s->key_count, sizeof(*s->cache), GFP_KERNEL);
->> +       if (!s->cache)
->> +               return -ENOMEM;
->> +
->> +       s->init_complete = true;
->> +
->> +       pr_info("key=%d\n", s->key_count);
->> +
-> Hope that means more to macbook users than it does to me ;).
+Currently the VM has behaviour #2 which is preserved with my
+patch.
 
+The only difference with my patch is, we won't keep returning
+-EIO on subsequent, error free, msync or fsync calls to files
+that had an IO error at some previous point in the past.
 
-It means a lot from a diagnostic point of view - a normal user does not really
-care about the dmesg output anyways. :-)
-
->> +static int applesmc_init_smcreg(void)
->> +{
->> +       int ms, ret;
->> +
->> +       for (ms = 0; ms < INIT_TIMEOUT_MSECS; ms += INIT_WAIT_MSECS) {
->> +               ret = applesmc_init_smcreg_try();
->> +               if (!ret)
->> +                       return 0;
->> +               pr_warn("slow init, retrying\n");
-> 
-> INIT_WAIT_MS is 50ms, so you issue this warning every 50ms for up to
-> five seconds. Pretty noisy... sure that is what you want ? Also, does it
-> really make sense to retry if the error is ENOMEM ?
-
-
-With the empirical failure rate, it is extremely unlikely to get more than a
-couple of failures in a row - information which in itself could be very useful.
-A direct escape on ENOMEM makes sense, though.
-
-Changing the place of the mutex will ripple through all patches, so I will
-resend from this one onwards. I suppose you have more comments on the following
-patches?
-
-Thanks,
-Henrik
+-- 
+All rights reversed
