@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754082Ab0KIU1M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 15:27:12 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:41138 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752347Ab0KIU1H (ORCPT
+	id S1754448Ab0KIU2D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 15:28:03 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:44227 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752134Ab0KIU2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 15:27:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=OHtM1LO9WllEBS0N4NXtw9SVJO4nyShS6f2hTm18huFTgI2ntvXvtXCNFYuwsIjO8W
-         Rsnu+DAxPUWe5PC84p4VMrEINZ76lsEl6yOlr8pDzZIjVOVO5TaqRfwatv31iicfFICp
-         S6Ln/tJFS7q/XgAEbaFc4Ddj/z/uU2528Uup8=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Paul Rolland (=?utf-8?b?44Od44O844Or44O744Ot44Op44Oz?=) 
-	<rol@witbe.net>
-Subject: Re: [2.6.37-rc1] drm:i195 errors
-Date: Tue, 9 Nov 2010 21:26:59 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1; KDE/4.4.5; i686; ; )
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20101102155813.09cb2c6e@tux.DEF.witbe.net>
-In-Reply-To: <20101102155813.09cb2c6e@tux.DEF.witbe.net>
+	Tue, 9 Nov 2010 15:28:00 -0500
+Date: Tue, 9 Nov 2010 15:27:55 -0500
+From: Andy Whitcroft <apw@canonical.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Dan Carpenter <error27@gmail.com>, Rahul Ruikar <rahul.ruikar@gmail.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] usb: gadget: goku_udc: add registered flag bit
+Message-ID: <20101109202755.GC1984@penfold>
+References: <1288807358-11813-1-git-send-email-apw@canonical.com>
+ <20101103182314.GA8010@suse.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011092126.59432.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101103182314.GA8010@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On wtorek, 2 listopada 2010 o 15:58:13 Paul Rolland wrote:
-> Hello,
+On Wed, Nov 03, 2010 at 11:23:14AM -0700, Greg KH wrote:
+> On Wed, Nov 03, 2010 at 06:02:38PM +0000, Andy Whitcroft wrote:
+> > The commit below cleaned up error handling, in part by introducing a
+> > registered flag bit.  This however was not added to the device
+> > structure leding to build failures:
+> > 
+> >   commit 319feaabb6c7ccd90da6e3207563c265da7d21ae
+> >   Author: Dan Carpenter <error27@gmail.com>
+> >   Date:   Tue Oct 5 18:55:34 2010 +0200
+> > 
+> >     usb: gadget: goku_udc: Fix error path
+> > 
+> > Add the missing registered flag bit.
 > 
-> I was previously running 2.6.36, without noticing any messages related to
-> i915/DRM, but now I can see some :
 > 
-> Nov  2 14:21:53 tux kernel: [drm:i915_gem_mmap_gtt_ioctl] *ERROR*
-> Attempting to mmap a purgeable buffer
+> Dan, is this patch below the correct fix?  Or should we be looking at
+> some other flag?
 > 
-> and also :
-> 
-> Nov  2 15:45:35 tux kernel: [drm:intel_panel_get_max_backlight] *ERROR*
-> fixme: max PWM is zero.
-> 
+> [Andy, please always cc: the original patch author when reporting
+> problems, to not do so is a bit rude and causes others (i.e. me) extra
+> work.]
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=22542
-for your bug report, please add your address to the CC list in there, thanks!
+Appologies.  I thought I used get_maintainers which I thought pulled in
+the recent committers.  More care next time.
 
-
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+-apw
