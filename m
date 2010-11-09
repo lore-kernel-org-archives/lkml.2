@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754970Ab0KIDFs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 22:05:48 -0500
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:52699 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753843Ab0KIDFr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 22:05:47 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 29 of 66] don't alloc harder for gfp nomemalloc even if nowait
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-In-Reply-To: <ed6c78af29bc105fcee3.1288798084@v2.random>
-References: <patchbomb.1288798055@v2.random> <ed6c78af29bc105fcee3.1288798084@v2.random>
-Message-Id: <20101109120549.BC48.A69D9226@jp.fujitsu.com>
+	id S1755222Ab0KIDHs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 22:07:48 -0500
+Received: from imr3.ericy.com ([198.24.6.13]:35484 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753190Ab0KIDHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 22:07:47 -0500
+Date: Mon, 8 Nov 2010 19:07:23 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Joe Perches <joe@perches.com>
+CC: Jean Delvare <khali@linux-fr.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH] include/linux/kernel.h: Add config option for
+ pr_fmt(fmt)
+Message-ID: <20101109030723.GA22732@ericsson.com>
+References: <1287713982.16920.39.camel@Joe-Laptop>
+ <20101026110335.3a4c7679@endymion.delvare>
+ <1288201301.4145.122.camel@Joe-Laptop>
+ <20101028093529.503c3a28@endymion.delvare>
+ <1288252476.1836.9.camel@Joe-Laptop>
+ <20101028104354.6aaca07c@endymion.delvare>
+ <1288390250.28828.228.camel@Joe-Laptop>
+ <20101108133342.7217866c@endymion.delvare>
+ <20101108165526.GA20229@ericsson.com>
+ <1289236563.29216.328.camel@Joe-Laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue,  9 Nov 2010 12:05:40 +0900 (JST)
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1289236563.29216.328.camel@Joe-Laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Andrea Arcangeli <aarcange@redhat.com>
+On Mon, Nov 08, 2010 at 12:16:03PM -0500, Joe Perches wrote:
+> On Mon, 2010-11-08 at 08:55 -0800, Guenter Roeck wrote:
+> > On Mon, Nov 08, 2010 at 07:33:42AM -0500, Jean Delvare wrote:
+> > > Changing everything at once
+> > > throughout the whole kernel tree is simply too difficult.
+> > > So I hate to admit it,
 > 
-> Not worth throwing away the precious reserved free memory pool for allocations
-> that can fail gracefully (either through mempool or because they're transhuge
-> allocations later falling back to 4k allocations).
+> I try to value my own opinion rather less highly than I used to
+> so I can discount it better when I'm proven wrong.
 > 
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> ---
+> That must come from being married...
 > 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1941,7 +1941,12 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
->  	alloc_flags |= (__force int) (gfp_mask & __GFP_HIGH);
->  
->  	if (!wait) {
-> -		alloc_flags |= ALLOC_HARDER;
-> +		/*
-> +		 * Not worth trying to allocate harder for
-> +		 * __GFP_NOMEMALLOC even if it can't schedule.
-> +		 */
-> +		if  (!(gfp_mask & __GFP_NOMEMALLOC))
-> +			alloc_flags |= ALLOC_HARDER;
->  		/*
->  		 * Ignore cpuset if GFP_ATOMIC (!wait) rather than fail alloc.
->  		 * See also cpuset_zone_allowed() comment in kernel/cpuset.c.
+;)
 
-I like this.
-	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > go on with your first patchset.
+> > I pretty much came to the same conclusion. No objections here anymore either.
+> 
+> Is there anything you need from me?
+> 
+I'll start applying the patches to my next tree. I'll get back to you if I run
+into trouble.
 
+Jean, do you want to take some of the patches, or should I take them all ?
 
-
-
+Guenter
