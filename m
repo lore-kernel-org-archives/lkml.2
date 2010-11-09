@@ -1,77 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566Ab0KIVzX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 16:55:23 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:35928 "EHLO ogre.sisk.pl"
+	id S1755403Ab0KIWA0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 17:00:26 -0500
+Received: from b.mail.sonic.net ([64.142.19.5]:59284 "EHLO b.mail.sonic.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754237Ab0KIVzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 16:55:21 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Daniel J Blueman <daniel.blueman@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH] gianfar: Do not call device_set_wakeup_enable() under a spinlock
-Date: Tue, 9 Nov 2010 22:54:19 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Francois Romieu <romieu@fr.zoreil.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
-References: <AANLkTimf_mVrRPEcj8qBbYw1iYHfWdeKUNS3Kk-dfhTT@mail.gmail.com> <201011090030.42693.rjw@sisk.pl>
-In-Reply-To: <201011090030.42693.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011092254.19550.rjw@sisk.pl>
+	id S1754180Ab0KIWAW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 17:00:22 -0500
+X-Greylist: delayed 2196 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Nov 2010 17:00:21 EST
+Subject: Re: [Wireshark-dev] usbmon: size of different fields?
+Mime-Version: 1.0 (Apple Message framework v1082)
+Content-Type: text/plain; charset=iso-8859-1
+From: Guy Harris <guy@alum.mit.edu>
+In-Reply-To: <4CD9A96D.1010306@freemail.hu>
+Date: Tue, 9 Nov 2010 13:23:28 -0800
+Cc: Pete Zaitcev <zaitcev@redhat.com>, linux-usb@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <E6FD75ED-7E13-47DC-B9F9-6C8C09C3C4AC@alum.mit.edu>
+References: <4CD8ECE4.1090206@freemail.hu> <20101109075056.59a2e7d8@lembas.zaitcev.lan> <4CD9A96D.1010306@freemail.hu>
+To: Developer support list for Wireshark <wireshark-dev@wireshark.org>
+X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 09, 2010, Rafael J. Wysocki wrote:
-> On Tuesday, November 02, 2010, Daniel J Blueman wrote:
-> > Since device_set_wakeup_enable now sleeps, it should not be called
-> > from a critical section. Since wol_en is not updated elsewhere, we can
-> > omit the locking entirely.
-> > 
-> > Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
-> 
-> Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-Having reconsidered that I think it may be better to do something like in the
-patch below.
+On Nov 9, 2010, at 12:05 PM, Németh Márton wrote:
 
-This is a regression fix, so please apply if there are no objections.
+> OK, that's clear, the byte order of the API structure fields are in "host endian"
+> order. The API structures are already saved by Wireshark into file for quite some
+> time.
 
-Thanks,
-Rafael
+...and tcpdump.  Support for capturing on USB on Linux has been in libpcap since at least libpcap 1.0.
 
----
-From: Rafael J. Wysocki <rjw@sisk.pl>
-Subject: gianfar: Do not call device_set_wakeup_enable() under a spinlock
-
-The gianfar driver calls device_set_wakeup_enable() under a spinlock,
-which causes a problem to happen after the recent core power
-management changes, because this function can sleep now.  Fix this
-by moving the device_set_wakeup_enable() call out of the
-spinlock-protected area.
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/net/gianfar_ethtool.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-Index: linux-2.6/drivers/net/gianfar_ethtool.c
-===================================================================
---- linux-2.6.orig/drivers/net/gianfar_ethtool.c
-+++ linux-2.6/drivers/net/gianfar_ethtool.c
-@@ -635,9 +635,10 @@ static int gfar_set_wol(struct net_devic
- 	if (wol->wolopts & ~WAKE_MAGIC)
- 		return -EINVAL;
- 
-+	device_set_wakeup_enable(&dev->dev, wol->wolopts & WAKE_MAGIC);
-+
- 	spin_lock_irqsave(&priv->bflock, flags);
--	priv->wol_en = wol->wolopts & WAKE_MAGIC ? 1 : 0;
--	device_set_wakeup_enable(&dev->dev, priv->wol_en);
-+	priv->wol_en =  !!device_may_wakeup(&dev->dev);
- 	spin_unlock_irqrestore(&priv->bflock, flags);
- 
- 	return 0;
+When reading a pcap file, or a pcap-ng file section, written on a machine with a byte order opposite from that of the machine reading the file, libpcap and Wireshark's Wiretap library byte-swap most host-byte-order fields into the byte order of the host reading the file; the exceptions are the iso_rec structure and the isochronous descriptors.
