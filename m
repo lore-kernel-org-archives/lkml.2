@@ -1,49 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752402Ab0KIQXP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 11:23:15 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:49008 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751340Ab0KIQXM (ORCPT
+	id S1752569Ab0KIQYV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 11:24:21 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:56453 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751497Ab0KIQYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 11:23:12 -0500
-Date: Wed, 10 Nov 2010 01:22:49 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Davidlohr Bueso <dave@gnu.org>
-Cc: linux-fbdev@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
-        James Simmons <jsimmons@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org
-Subject: Re: [ANNOUNCE] fbdev git tree.
-Message-ID: <20101109162249.GB22740@linux-sh.org>
-References: <20101109093204.GB21086@linux-sh.org> <1289318208.2260.9.camel@cowboy>
+	Tue, 9 Nov 2010 11:24:17 -0500
+Date: Tue, 9 Nov 2010 11:24:15 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [patch 3/6] fs: dcache documentation cleanup
+Message-ID: <20101109162415.GA6217@infradead.org>
+References: <20101109124610.GB11477@amd>
+ <20101109125854.GD11477@amd>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1289318208.2260.9.camel@cowboy>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+In-Reply-To: <20101109125854.GD11477@amd>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 09, 2010 at 12:56:48PM -0300, Davidlohr Bueso wrote:
-> On Tue, 2010-11-09 at 18:32 +0900, Paul Mundt wrote:
-> > The tree can be found at:
-> > 
-> > 	git://git.kernel.org/pub/scm/linux/kernel/git/lethal/fbdev-2.6.git
-> > 
-> 
-> Could this be added to the MAINTAINERS file?
-> 
->  FRAMEBUFFER LAYER
->  L:     linux-fbdev@vger.kernel.org
->  W:     http://linux-fbdev.sourceforge.net/
-> +T:
-> git://git.kernel.org/pub/scm/linux/kernel/git/lethal/fbdev-2.6.git
->  S:     Orphan
->  F:     Documentation/fb/
->  F:     drivers/video/fb*
-> 
-Yes, I'll queue an update for that later. I was going to wait until the
-patchwork stuff came up and then update it all in one shot.
+The patch looks good and I'm fine with sending it off to Linus ASAP.
+But the commit message should not contain misc blurbs like the one
+below.
+
