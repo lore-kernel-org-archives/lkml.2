@@ -1,40 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754179Ab0KIT7J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 14:59:09 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:49922 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753325Ab0KIT7G (ORCPT
+	id S1754218Ab0KIUBZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 15:01:25 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:13508 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752513Ab0KIUBW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 14:59:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=Uca8aHc/W6DDwAy6oSpMn0XivRlFhIZSzg6oMnBV9xj6Ji2s8L37ISSnd/B9lNtCso
-         PtaLbnRoqFBHnCmCuFPkALeKp+kG18EFGXXmpAUnsvA+ECbiojtNlJ1cffKihdKsFf+V
-         X9871hQ2dc4u7sD4ON8VxOM8Eqkt5wdqKluM0=
+	Tue, 9 Nov 2010 15:01:22 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:references:date:message-id:user-agent:
+	mime-version:content-type;
+	b=mN/KgKhfFoSXVuoagh9h4ytRSeOKiB+qZmnb/V7n/BzOaC6JRcoQ8EPh7GA21HwOK
+	Db9nmhb6XVm28nty2xcRA==
+From: Greg Thelen <gthelen@google.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <balbir@in.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] memcg: fix unit mismatch in memcg oom limit calculation
+References: <20101109110521.GS23393@cmpxchg.org>
+Date: Tue, 09 Nov 2010 12:00:26 -0800
+Message-ID: <xr93iq068dyd.fsf@ninji.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20101109190028.GL5876@outflux.net>
-References: <20101109181157.GE5876@outflux.net>
-	<20101109181434.GF5876@outflux.net>
-	<AANLkTi=BiYsoMJzzphh=ddpq=jkAMafnB0WdRkMXsd8L@mail.gmail.com>
-	<20101109190028.GL5876@outflux.net>
-Date: Tue, 9 Nov 2010 21:59:05 +0200
-X-Google-Sender-Auth: xIaRvYOe4ADa9VflIZKbI6iNZds
-Message-ID: <AANLkTikdu0uyGL92G6ZiQMciHov0+QLL3XX-V3oeJUOi@mail.gmail.com>
-Subject: Re: [PATCH 1/4] x86: rename verify_cpu_64.S to verify_cpu.S
-From: Pekka Enberg <penberg@kernel.org>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 9, 2010 at 9:00 PM, Kees Cook <kees.cook@canonical.com> wrote:
-> The code is 32bit already, and can be used in 32bit routines.
->
-> Signed-off-by: Kees Cook <kees.cook@canonical.com>
+Johannes Weiner <hannes@cmpxchg.org> writes:
 
-Acked-by: Pekka Enberg <penberg@kernel.org>
+> Adding the number of swap pages to the byte limit of a memory control
+> group makes no sense.  Convert the pages to bytes before adding them.
+>
+> The only user of this code is the OOM killer, and the way it is used
+> means that the error results in a higher OOM badness value.  Since the
+> cgroup limit is the same for all tasks in the cgroup, the error should
+> have no practical impact at the moment.
+>
+> But let's not wait for future or changing users to trip over it.
+
+Thanks for the fix.
+
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Reviewed-by: Greg Thelen <gthelen@google.com>
+
+> ---
+>  mm/memcontrol.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+>
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1552,8 +1552,9 @@ u64 mem_cgroup_get_limit(struct mem_cgro
+>  	u64 limit;
+>  	u64 memsw;
+>  
+> -	limit = res_counter_read_u64(&memcg->res, RES_LIMIT) +
+> -			total_swap_pages;
+> +	limit = res_counter_read_u64(&memcg->res, RES_LIMIT);
+> +	limit += total_swap_pages << PAGE_SHIFT;
+> +
+>  	memsw = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
+>  	/*
+>  	 * If memsw is finite and limits the amount of swap space available
