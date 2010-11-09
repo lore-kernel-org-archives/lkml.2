@@ -1,137 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752818Ab0KIH3j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 02:29:39 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:36964 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752284Ab0KIH3g (ORCPT
+	id S1752900Ab0KIHa3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 02:30:29 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56905 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751924Ab0KIHa2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 02:29:36 -0500
-Message-ID: <004801cb7fdf$dbd27af0$66f8800a@maildom.okisemi.com>
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "Kyungmin Park" <kmpark@infradead.org>
-Cc: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Andrew\"" <andrew.chih.howe.khor@intel.com>, <kok.howg.ewe@intel.com>
-References: <4CD8DE9C.4040505@dsn.okisemi.com> <AANLkTimfnj8GcSwmALjaZUBsiq6ssaVuzVZZsZHRYmiX@mail.gmail.com>
-Subject: Re: A MMC card transfer issue
-Date: Tue, 9 Nov 2010 16:29:34 +0900
+	Tue, 9 Nov 2010 02:30:28 -0500
+Message-ID: <4CD8F884.30409@monstr.eu>
+Date: Tue, 09 Nov 2010 08:30:12 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.18 (X11/20081120)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="ISO-8859-1"
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: John Linn <John.Linn@xilinx.com>, spi-devel-general@lists.sourceforge.net,
+        richard.rojfors@mocean-labs.com, linux-kernel@vger.kernel.org,
+        dbrownell@users.sourceforge.net
+Subject: Re: [RFC PATCH 0/3] spi/xilinx: Merge OF and non-OF drivers
+References: <20101014161724.18966.42340.stgit@localhost6.localdomain6> <4CD7FB27.9030804@monstr.eu> <ec622bb7-57d1-4aa2-80f1-65fa4b3fa7eb@VA3EHSMHS033.ehs.local> <AANLkTinMoqqMKeEFiD=xHwa5DS+5qY6xN2r236SZQEba@mail.gmail.com>
+In-Reply-To: <AANLkTinMoqqMKeEFiD=xHwa5DS+5qY6xN2r236SZQEba@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Park,
+Hi, [cc: David Brownell]
 
-Thank you for your information.
-I will try it soon.
+Grant Likely wrote:
+> On Mon, Nov 8, 2010 at 9:34 AM, John Linn <John.Linn@xilinx.com> wrote:
+>>> -----Original Message-----
+>>> From: Michal Simek [mailto:monstr@monstr.eu]
+>>> Sent: Monday, November 08, 2010 6:29 AM
+>>> To: grant.likely@secretlab.ca
+>>> Cc: spi-devel-general@lists.sourceforge.net; richard.rojfors@mocean-labs.com; John Linn; linux-
+>>> kernel@vger.kernel.org
+>>> Subject: Re: [RFC PATCH 0/3] spi/xilinx: Merge OF and non-OF drivers
+>>>
+>>> Hi Grant,
+>>>
+>>> Grant Likely wrote:
+>>>> Since of_platform_bus_type has been merged with the platform_bus_type,
+>>>> a single platform driver can now support both use cases.  This patch
+>>>> series merges the two halves of the xilinx_spi device driver.
+>>>>
+>>>> Compile tested only.  I haven't booted this yet.
+>>> I have tested it on sp605 and works well. Have you added that patches
+>>> to your repository? Or are they somewhere else? Who is responsible for?
+>>>
+>>> I would like to also discuss one change which is related mmc_spi kernel driver.
+>>> Let me describe the problem. Microblaze can use dma in all addresses
+>>> that's why dma_mask is setup to 0xffffffff in of_platform_device_create.
+>>> Xilinx spi driver doesn't support dma but mmc_spi driver is checking dma_mask in parent device
+>>> which is xilinx spi driver.
+>>>
+>>> Here is the corresponding the part of code (Expect dma_mask=zero for no dma operations).
+>>> mmc_spi.c:~1395
+>>>       if (spi->master->dev.parent->dma_mask) {
+>>>               struct device   *dev = spi->master->dev.parent;
+>>>
+>>>               host->dma_dev = dev;
+>>>
+>>>
+>>> Based on this one our customer came with the following solution to setup
+>>> dma_mask in xilinx_spi to zero and then mmc_spi doesn't setup dma operation.
+>>>
+>>> I think that this is nice solution but I would like to be sure that I didn't miss anything.
+>>> After that i will create proper patch with description.
+>> Seems reasonable to me.
+> 
+> Hmmm, that actually is not sane.  Ideally, drivers should never be
+> mucking with the dma mask.  It is supposed to only be set by the code
+> actually registering the device.  The mmc code should not be looking
+> at the parent's dma mask to determine if DMA is available; the spi bus
+> drivers should be explicitly stating whether or not it supports DMA.
+> The mmc_spi code is doing the wrong thing here.
 
-Thanks,
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
------ Original Message ----- 
-From: "Kyungmin Park" <kmpark@infradead.org>
-To: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-Cc: <linux-mmc@vger.kernel.org>; <linux-kernel@vger.kernel.org>; "Andrew"" <andrew.chih.howe.khor@intel.com>;
-<kok.howg.ewe@intel.com>
-Sent: Tuesday, November 09, 2010 2:53 PM
-Subject: Re: A MMC card transfer issue
+I have no problem to fix mmc_spi driver but what is the standard way how to detect
+DMA capability for this case? This part of code is in mmc_spi from the beginning that's why I am
+wondering that none complain about.
+
+David?
+
+Sorry I don't have HW where I can test it. :-(
+
+> 
+> That being said, until the mmc_spi code is fixed (and all the users
+> are fixed up so DMA still works) then this patch is probably the best
+> solution.  However, please note that dev->dma_mask is a pointer, so
+> you should actually be setting it to NULL.
+
+Yes truth.
+
+Michal
 
 
-> 2010/11/9 Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>:
-> > I am facing the issue about some MMC cards on Intel EG20T PCH (Platform Controller Hub).
-> > The linux version is 2.6.36.
-> > I can not transfer data the MMC cards (e.g. Transcned MMC card).
-> > The card is 1 bit bus width. And the card is according to MMC specification V3.x.
-> > And the EG20T has a 4 bit bus width capability
-> > Linux MMC standard driver decides the card bus width as 4 bit,
-> > if the MMC specification version is larger than or equal to V4.0 like below.
-> >
-> > linux/drivers/mmc/core/mmc.c
-> >
-> > 505 /*
-> > 506 * Activate wide bus (if supported).
-> > 507 */
-> > 508 if ((card->csd.mmca_vsn >= CSD_SPEC_VER_4) &&
-> > 509 (host->caps & (MMC_CAP_4_BIT_DATA | MMC_CAP_8_BIT_DATA))) {
-> > 510 unsigned ext_csd_bit, bus_width;
-> > 511
-> > 512 if (host->caps & MMC_CAP_8_BIT_DATA) {
-> > 513 ext_csd_bit = EXT_CSD_BUS_WIDTH_8;
-> > 514 bus_width = MMC_BUS_WIDTH_8;
-> > 515 } else {
-> > 516 ext_csd_bit = EXT_CSD_BUS_WIDTH_4;
-> > 517 bus_width = MMC_BUS_WIDTH_4;
-> > 518 }
-> > 519
-> > 520 err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-> > 521 EXT_CSD_BUS_WIDTH, ext_csd_bit);
-> > 522
-> > 523 if (err && err != -EBADMSG)
-> > 524 goto free_card;
-> > 525
-> > 526 if (err) {
-> > 527 printk(KERN_WARNING "%s: switch to bus width %d "
-> > 528 "failed\n", mmc_hostname(card->host),
-> > 529 1 << bus_width);
-> > 530 err = 0;
-> > 531 } else {
-> > 532 mmc_set_bus_width(card->host, bus_width);
-> > 533 }
-> > 534 }
-> > 535
-> >
-> > However the MMC specification version id is the same as V3.x and V4.0.
-> > Therefore the driver uses the 4 bit bus width for the MMC card
-> > even if the card has only 1 bit bus width.
-> > I modified the driver to use 1 bit bus width only tentatively and confirmed that
-> > we can mount the card and R/W correctly.
-> >
-> > I think we can not support MMC_CAP_4_BIT_DATA or MMC_CAP_8_BIT_DATA in MMC V4.0.
-> >
-> > How do you think ?
->
-> You can find a patch for 4-bit support. the problem is there's some
-> bug related so it set the 4 & 8 bit support both.
-> So line 512 is always true. you can just remove the one line like this.
->
-> It's quirk-and-dirty patch. now we try to find a generic solution to
-> solve this issue.
-> --- a/drivers/mmc/host/sdhci.c
-> +++ b/drivers/mmc/host/sdhci.c
-> @@ -1849,7 +1849,7 @@ int sdhci_add_host(struct sdhci_host *host)
->         mmc->caps |= MMC_CAP_SDIO_IRQ;
->
->         if (!(host->quirks & SDHCI_QUIRK_FORCE_1_BIT_DATA))
-> -               mmc->caps |= MMC_CAP_4_BIT_DATA | MMC_CAP_8_BIT_DATA;
-> +               mmc->caps |= MMC_CAP_4_BIT_DATA;
->
->         if (caps & SDHCI_CAN_DO_HISPD)
->                 mmc->caps |= MMC_CAP_SD_HIGHSPEED | MMC_CAP_MMC_HIGHSPEED;
->
-> Thank you,
-> Kyungmin Park
-> >
-> > --
-> > Thanks,
-> > Tomoya MORINAGA(OKI SEMICONDUCTOR CO., LTD.)
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at http://vger.kernel.org/majordomo-info.html
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
 
+> 
+> g.
+> 
+>> Thanks,
+>> John
+>>
+>>>
+>>> diff --git a/drivers/spi/xilinx_spi.c b/drivers/spi/xilinx_spi.c
+>>> index 7adaef6..3612e1b 100644
+>>> --- a/drivers/spi/xilinx_spi.c
+>>> +++ b/drivers/spi/xilinx_spi.c
+>>> @@ -519,6 +519,9 @@ static int __devinit xilinx_spi_probe(struct platform_device *dev)
+>>>         }
+>>>
+>>>         platform_set_drvdata(dev, master);
+>>> +       /* clear the dma_mask, to try to disable use of dma */
+>>> +       dev->dev.dma_mask = 0;
+>>> +
+>>>         return 0;
+>>>  }
+>>>
+>>>
+>>> Thanks,
+>>> Michal
+>>>
+>>>
+>>> --
+>>> Michal Simek, Ing. (M.Eng)
+>>> w: www.monstr.eu p: +42-0-721842854
+>>> Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+>>> Microblaze U-BOOT custodian
+>>
+>> This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
+>>
+> 
+> 
+> 
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
