@@ -1,168 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754322Ab0KIJkA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 04:40:00 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:9869 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752993Ab0KIJj5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 04:39:57 -0500
-Date: Tue, 9 Nov 2010 10:39:48 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Joe Perches <joe@perches.com>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 32/32] drivers/hwmon/w83781d.c: Use pr_fmt and
- pr_<level>
-Message-ID: <20101109103948.25919efe@endymion.delvare>
-In-Reply-To: <1ce82b2a1c726d252483c508053eff046abcf132.1287556801.git.joe@perches.com>
-References: <20101020035346.GA20178@ericsson.com>
-	<1ce82b2a1c726d252483c508053eff046abcf132.1287556801.git.joe@perches.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754086Ab0KIJlm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 04:41:42 -0500
+Received: from ns39351.ovh.net ([91.121.21.191]:33110 "EHLO ns39351.ovh.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752993Ab0KIJll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 04:41:41 -0500
+Date: Tue, 9 Nov 2010 09:41:32 +0000
+From: Simon Guinot <simon@sequanux.org>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Simon Guinot <sguinot@lacie.com>, lm-sensors@lm-sensors.org
+Subject: Re: [lm-sensors] [PATCH v2] hwmon: (gpio-fan) Fix fan_ctrl_init
+ error path
+Message-ID: <20101109094132.GD32648@kw.sim.vm.gnt>
+References: <1289292108.28671.1.camel@mola>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="C1iGAkRnbeBonpVg"
+Content-Disposition: inline
+In-Reply-To: <1289292108.28671.1.camel@mola>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
 
-On Tue, 19 Oct 2010 23:51:56 -0700, Joe Perches wrote:
-> Added #define pr_fmt KBUILD_MODNAME ": " fmt
-> Converted printks to pr_<level>
-> Coalesced any long formats
-> Removed prefixes from formats
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+--C1iGAkRnbeBonpVg
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Tue, Nov 09, 2010 at 04:41:48PM +0800, Axel Lin wrote:
+> In current implementation, the sysfs entries is not removed before return=
+ -ENODEV.
+>=20
+> Creating the sysfs attribute should be the last thing done by the functio=
+n,
+> after all the rest has been successful.
+> Otherwise there is a small window during which user-space can access the =
+attribute
+> but the driver isn't ready to deal with the requests.
+>=20
+> Fix it by moving sysfs_create_group to be the last thing done by the func=
+tion.
+>=20
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+
+Thanks for the patch.
+
+Acked-by: Simon Guinot <sguinot@lacie.com>
+
 > ---
->  drivers/hwmon/w83781d.c |   29 ++++++++++++++---------------
->  1 files changed, 14 insertions(+), 15 deletions(-)
-> 
-> diff --git a/drivers/hwmon/w83781d.c b/drivers/hwmon/w83781d.c
-> index c84b9b4..d452a20 100644
-> --- a/drivers/hwmon/w83781d.c
-> +++ b/drivers/hwmon/w83781d.c
-> @@ -33,6 +33,8 @@
->  
->  */
->  
-> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> +
->  #include <linux/module.h>
->  #include <linux/init.h>
->  #include <linux/slab.h>
-> @@ -1798,8 +1800,7 @@ w83781d_isa_found(unsigned short address)
->  	 * individually for the probing phase. */
->  	for (port = address; port < address + W83781D_EXTENT; port++) {
->  		if (!request_region(port, 1, "w83781d")) {
-> -			pr_debug("w83781d: Failed to request port 0x%x\n",
-> -				 port);
-> +			pr_debug("Failed to request port 0x%x\n", port);
->  			goto release;
+>  drivers/hwmon/gpio-fan.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+>=20
+> diff --git a/drivers/hwmon/gpio-fan.c b/drivers/hwmon/gpio-fan.c
+> index aa701a1..f141a1d 100644
+> --- a/drivers/hwmon/gpio-fan.c
+> +++ b/drivers/hwmon/gpio-fan.c
+> @@ -376,10 +376,6 @@ static int fan_ctrl_init(struct gpio_fan_data *fan_d=
+ata,
 >  		}
 >  	}
-> @@ -1811,7 +1812,7 @@ w83781d_isa_found(unsigned short address)
->  	if (inb_p(address + 2) != val
->  	 || inb_p(address + 3) != val
->  	 || inb_p(address + 7) != val) {
-> -		pr_debug("w83781d: Detection failed at step 1\n");
-> +		pr_debug("Detection failed at step 1\n");
+> =20
+> -	err =3D sysfs_create_group(&pdev->dev.kobj, &gpio_fan_ctrl_group);
+> -	if (err)
+> -		goto err_free_gpio;
+> -
+>  	fan_data->num_ctrl =3D num_ctrl;
+>  	fan_data->ctrl =3D ctrl;
+>  	fan_data->num_speed =3D pdata->num_speed;
+> @@ -391,6 +387,10 @@ static int fan_ctrl_init(struct gpio_fan_data *fan_d=
+ata,
+>  		goto err_free_gpio;
+>  	}
+> =20
+> +	err =3D sysfs_create_group(&pdev->dev.kobj, &gpio_fan_ctrl_group);
+> +	if (err)
+> +		goto err_free_gpio;
+> +
+>  	return 0;
+> =20
+>  err_free_gpio:
+> --=20
+> 1.7.2
+>=20
+>=20
+>=20
+>=20
+> _______________________________________________
+> lm-sensors mailing list
+> lm-sensors@lm-sensors.org
+> http://lists.lm-sensors.org/mailman/listinfo/lm-sensors
 
-I think this would be the right time to change this to:
+--C1iGAkRnbeBonpVg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-		pr_debug("Detection failed at step %d\n", 1);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-and do the same for all 6 messages below, so that the compiler can
-store the string only once in the binary.
+iEYEARECAAYFAkzZF0wACgkQgtp0PDeOcDrX0QCfXzeBApH/+3+ZL7w7/x3kUHIi
+FmAAnRReJqF13v9nk/wY64d2+MF01JEv
+=9Z0I
+-----END PGP SIGNATURE-----
 
->  		goto release;
->  	}
->  #undef REALLY_SLOW_IO
-> @@ -1820,14 +1821,14 @@ w83781d_isa_found(unsigned short address)
->  	   MSB (busy flag) should be clear initially, set after the write. */
->  	save = inb_p(address + W83781D_ADDR_REG_OFFSET);
->  	if (save & 0x80) {
-> -		pr_debug("w83781d: Detection failed at step 2\n");
-> +		pr_debug("Detection failed at step 2\n");
->  		goto release;
->  	}
->  	val = ~save & 0x7f;
->  	outb_p(val, address + W83781D_ADDR_REG_OFFSET);
->  	if (inb_p(address + W83781D_ADDR_REG_OFFSET) != (val | 0x80)) {
->  		outb_p(save, address + W83781D_ADDR_REG_OFFSET);
-> -		pr_debug("w83781d: Detection failed at step 3\n");
-> +		pr_debug("Detection failed at step 3\n");
->  		goto release;
->  	}
->  
-> @@ -1835,7 +1836,7 @@ w83781d_isa_found(unsigned short address)
->  	outb_p(W83781D_REG_CONFIG, address + W83781D_ADDR_REG_OFFSET);
->  	val = inb_p(address + W83781D_DATA_REG_OFFSET);
->  	if (val & 0x80) {
-> -		pr_debug("w83781d: Detection failed at step 4\n");
-> +		pr_debug("Detection failed at step 4\n");
->  		goto release;
->  	}
->  	outb_p(W83781D_REG_BANK, address + W83781D_ADDR_REG_OFFSET);
-> @@ -1844,19 +1845,19 @@ w83781d_isa_found(unsigned short address)
->  	val = inb_p(address + W83781D_DATA_REG_OFFSET);
->  	if ((!(save & 0x80) && (val != 0xa3))
->  	 || ((save & 0x80) && (val != 0x5c))) {
-> -		pr_debug("w83781d: Detection failed at step 5\n");
-> +		pr_debug("Detection failed at step 5\n");
->  		goto release;
->  	}
->  	outb_p(W83781D_REG_I2C_ADDR, address + W83781D_ADDR_REG_OFFSET);
->  	val = inb_p(address + W83781D_DATA_REG_OFFSET);
->  	if (val < 0x03 || val > 0x77) {	/* Not a valid I2C address */
-> -		pr_debug("w83781d: Detection failed at step 6\n");
-> +		pr_debug("Detection failed at step 6\n");
->  		goto release;
->  	}
->  
->  	/* The busy flag should be clear again */
->  	if (inb_p(address + W83781D_ADDR_REG_OFFSET) & 0x80) {
-> -		pr_debug("w83781d: Detection failed at step 7\n");
-> +		pr_debug("Detection failed at step 7\n");
->  		goto release;
->  	}
->  
-> @@ -1871,7 +1872,7 @@ w83781d_isa_found(unsigned short address)
->  		found = 1;
->  
->  	if (found)
-> -		pr_info("w83781d: Found a %s chip at %#x\n",
-> +		pr_info("Found a %s chip at %#x\n",
->  			val == 0x30 ? "W83782D" : "W83781D", (int)address);
->  
->   release:
-> @@ -1894,21 +1895,19 @@ w83781d_isa_device_add(unsigned short address)
->  	pdev = platform_device_alloc("w83781d", address);
->  	if (!pdev) {
->  		err = -ENOMEM;
-> -		printk(KERN_ERR "w83781d: Device allocation failed\n");
-> +		pr_err("Device allocation failed\n");
->  		goto exit;
->  	}
->  
->  	err = platform_device_add_resources(pdev, &res, 1);
->  	if (err) {
-> -		printk(KERN_ERR "w83781d: Device resource addition failed "
-> -		       "(%d)\n", err);
-> +		pr_err("Device resource addition failed (%d)\n", err);
->  		goto exit_device_put;
->  	}
->  
->  	err = platform_device_add(pdev);
->  	if (err) {
-> -		printk(KERN_ERR "w83781d: Device addition failed (%d)\n",
-> -		       err);
-> +		pr_err("Device addition failed (%d)\n", err);
->  		goto exit_device_put;
->  	}
->  
-
-
--- 
-Jean Delvare
+--C1iGAkRnbeBonpVg--
