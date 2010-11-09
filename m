@@ -1,133 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752027Ab0KID3C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 22:29:02 -0500
-Received: from mx1.vsecurity.com ([209.67.252.12]:63822 "EHLO
-	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751265Ab0KID3B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 22:29:01 -0500
-Subject: [PATCH] Restrict unprivileged access to kernel syslog
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-To: linux-kernel@vger.kernel.org
-Cc: security@kernel.org, stable@kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 08 Nov 2010 22:28:58 -0500
-Message-ID: <1289273338.6287.128.camel@dan>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1752130Ab0KIDau (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 22:30:50 -0500
+Received: from THUNK.ORG ([69.25.196.29]:35768 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751287Ab0KIDat (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 22:30:49 -0500
+Date: Mon, 8 Nov 2010 22:30:38 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Josef Bacik <josef@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, joel.becker@oracle.com,
+        cmm@us.ibm.com, cluster-devel@redhat.com
+Subject: Re: [PATCH 1/6] fs: add hole punching to fallocate
+Message-ID: <20101109033038.GF3099@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Dave Chinner <david@fromorbit.com>, Josef Bacik <josef@redhat.com>,
+	linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+	linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+	xfs@oss.sgi.com, joel.becker@oracle.com, cmm@us.ibm.com,
+	cluster-devel@redhat.com
+References: <1289248327-16308-1-git-send-email-josef@redhat.com>
+ <20101109011222.GD2715@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101109011222.GD2715@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel syslog contains debugging information that is often useful
-during exploitation of other vulnerabilities, such as kernel heap
-addresses.  Rather than futilely attempt to sanitize hundreds (or
-thousands) of printk statements and simultaneously cripple useful
-debugging functionality, it is far simpler to create an option that
-prevents unprivileged users from reading the syslog.
+On Tue, Nov 09, 2010 at 12:12:22PM +1100, Dave Chinner wrote:
+> Hole punching was not included originally in fallocate() for a
+> variety of reasons. IIRC, they were along the lines of:
+> 
+> 	1 de-allocating of blocks in an allocation syscall is wrong.
+> 	  People wanted a new syscall for this functionality.
+> 	2 no glibc interface needs it
+> 	3 at the time, only XFS supported punching holes, so there
+> 	  is not need to support it in a generic interface
+> 	4 the use cases presented were not considered compelling
+> 	  enough to justify the additional complexity (!)
+> 
+> In the end, I gave up arguing for it to be included because just
+> getting the FALLOC_FL_KEEP_SIZE functionality was a hard enough
+> battle.
+> 
+> Anyway, #3 isn't the case any more, #4 was just an excuse not to
+> support anything ext4 couldn't do and lots of apps are calling
+> fallocate directly (because glibc can't use FALLOC_FL_KEEP_SIZE) so
+> #2 isn't an issue, either.
 
-This patch, loosely based on grsecurity's GRKERNSEC_DMESG, creates the
-dmesg_restrict sysctl.  When set to "0", the default, no restrictions
-are enforced.  When set to "1", only users with CAP_SYS_ADMIN can read
-the kernel syslog via dmesg(8) or other mechanisms.
+I don't recall anyone arguing #4 because of ext4, but I get very tired
+of the linux-fsdevel bike-shed painting parties, so I often will
+concede whatever is necessary just to get the !@#! interface in,
+assuming we could add more flags later....
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
----
- Documentation/sysctl/kernel.txt |   11 +++++++++++
- include/linux/kernel.h          |    1 +
- kernel/printk.c                 |    2 ++
- kernel/sysctl.c                 |    9 +++++++++
- security/commoncap.c            |    2 ++
- 5 files changed, 25 insertions(+), 0 deletions(-)
+glibc does support fallocate(), BTW; it's just posix_fallocate() that
+doesn't use FALLOC_FL_KEEP_SIZE.
 
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index 3894eaa..c6bac30 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -28,6 +28,7 @@ show up in /proc/sys/kernel:
- - core_uses_pid
- - ctrl-alt-del
- - dentry-state
-+- dmesg_restrict
- - domainname
- - hostname
- - hotplug
-@@ -213,6 +214,16 @@ to decide what to do with it.
- 
- ==============================================================
- 
-+dmesg_restrict:
-+
-+This toggle indicates whether unprivileged users are prevented 
-+from using dmesg(8) to view messages from the kernel's log
-+buffer.  By default, it is set to (0), resulting in no 
-+restrictions.  When set to (1), users must have CAP_SYS_ADMIN
-+to use dmesg(8).
-+
-+==============================================================
-+
- domainname & hostname:
- 
- These files can be used to set the NIS/YP domainname and the
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 450092c..f0d0088 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -293,6 +293,7 @@ extern bool printk_timed_ratelimit(unsigned long *caller_jiffies,
- 				   unsigned int interval_msec);
- 
- extern int printk_delay_msec;
-+extern int dmesg_restrict;
- 
- /*
-  * Print a one-time message (analogous to WARN_ONCE() et al):
-diff --git a/kernel/printk.c b/kernel/printk.c
-index b2ebaee..99b1ec3 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -261,6 +261,8 @@ static inline void boot_delay_msec(void)
- }
- #endif
- 
-+int dmesg_restrict = 0;
-+
- int do_syslog(int type, char __user *buf, int len, bool from_file)
- {
- 	unsigned i, j, limit, count;
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index c33a1ed..b65bf63 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -704,6 +704,15 @@ static struct ctl_table kern_table[] = {
- 	},
- #endif
- 	{
-+		.procname	= "dmesg_restrict",
-+		.data		= &dmesg_restrict,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec_minmax,
-+		.extra1		= &zero,
-+		.extra2		= &one,
-+	},
-+	{
- 		.procname	= "ngroups_max",
- 		.data		= &ngroups_max,
- 		.maxlen		= sizeof (int),
-diff --git a/security/commoncap.c b/security/commoncap.c
-index 5e632b4..04b80f9 100644
---- a/security/commoncap.c
-+++ b/security/commoncap.c
-@@ -895,6 +895,8 @@ int cap_syslog(int type, bool from_file)
- {
- 	if (type != SYSLOG_ACTION_OPEN && from_file)
- 		return 0;
-+	if (dmesg_restrict && !capable(CAP_SYS_ADMIN))
-+		return -EPERM;
- 	if ((type != SYSLOG_ACTION_READ_ALL &&
- 	     type != SYSLOG_ACTION_SIZE_BUFFER) && !capable(CAP_SYS_ADMIN))
- 		return -EPERM;
+> I guess that leaves #1 to be debated;
+> I don't think there is any problem with doing what you propose.
 
+I don't have a problem either.
 
+As a completely separate proposal, what do people think about an
+FALLOCATE_FL_ZEROIZE after which time the blocks are allocated, but
+reading from them returns zero.  This could be done either by (a)
+sending a discard in the case of devices where discard_zeros_data is
+true and discard_granularty is less than the fs block size, or (b) by
+setting the uninitialized flag in the extent tree.
+
+						- Ted
