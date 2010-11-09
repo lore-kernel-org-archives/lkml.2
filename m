@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158Ab0KIIlk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 03:41:40 -0500
-Received: from mga01.intel.com ([192.55.52.88]:35531 "EHLO mga01.intel.com"
+	id S1754743Ab0KIInv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 03:43:51 -0500
+Received: from mga11.intel.com ([192.55.52.93]:40024 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754037Ab0KIIlf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 03:41:35 -0500
+	id S1754210Ab0KIIlp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 03:41:45 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,174,1288594800"; 
-   d="scan'208";a="624917709"
+   d="scan'208";a="624917763"
 From: xiaohui.xin@intel.com
 To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
         herbert@gondor.hengli.com.au, jdike@linux.intel.com
 Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [PATCH v15 04/17]Add a function make external buffer owner to query capability.
-Date: Tue,  9 Nov 2010 17:03:09 +0800
-Message-Id: <74292887b1ddbeede664065dc5988ebe15425185.1289280885.git.xiaohui.xin@intel.com>
+Subject: [PATCH v15 11/17] Add a hook to intercept external buffers from NIC driver.
+Date: Tue,  9 Nov 2010 17:03:16 +0800
+Message-Id: <5288ec35e729b69e9bfdc627abcecfef1ab2ec15.1289280886.git.xiaohui.xin@intel.com>
 X-Mailer: git-send-email 1.7.3
 In-Reply-To: <1289293402-4791-1-git-send-email-xiaohui.xin@intel.com>
 References: <1289293402-4791-1-git-send-email-xiaohui.xin@intel.com>
@@ -28,78 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Xin Xiaohui <xiaohui.xin@intel.com>
 
-The external buffer owner can use the functions to get
-the capability of the underlying NIC driver.
+The hook is called in __netif_receive_skb().
 
 Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
-Signed-off-by: Zhao Yu <yzhaonew@gmail.com>
+Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
 Reviewed-by: Jeff Dike <jdike@linux.intel.com>
 ---
- include/linux/netdevice.h |    2 ++
- net/core/dev.c            |   41 +++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 43 insertions(+), 0 deletions(-)
+ net/core/dev.c |   40 ++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 40 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 575777f..8dcf6de 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -1736,6 +1736,8 @@ extern gro_result_t	napi_frags_finish(struct napi_struct *napi,
- 					  gro_result_t ret);
- extern struct sk_buff *	napi_frags_skb(struct napi_struct *napi);
- extern gro_result_t	napi_gro_frags(struct napi_struct *napi);
-+extern int netdev_mp_port_prep(struct net_device *dev,
-+				struct mp_port *port);
- 
- static inline void napi_free_frags(struct napi_struct *napi)
- {
 diff --git a/net/core/dev.c b/net/core/dev.c
-index 660dd41..84fbb83 100644
+index 84fbb83..bdad1c8 100644
 --- a/net/core/dev.c
 +++ b/net/core/dev.c
-@@ -2942,6 +2942,47 @@ out:
- 	return ret;
+@@ -2814,6 +2814,40 @@ int __skb_bond_should_drop(struct sk_buff *skb, struct net_device *master)
  }
+ EXPORT_SYMBOL(__skb_bond_should_drop);
  
-+/* To support meidate passthru(zero-copy) with NIC driver,
-+ * we'd better query NIC driver for the capability it can
-+ * provide, especially for packet split mode, now we only
-+ * query for the header size, and the payload a descriptor
-+ * may carry.
-+ * Now, it's only called by mpassthru device.
-+ */
 +#if defined(CONFIG_MEDIATE_PASSTHRU) || defined(CONFIG_MEDIATE_PASSTHRU_MODULE)
-+int netdev_mp_port_prep(struct net_device *dev,
-+		struct mp_port *port)
++/* Add a hook to intercept mediate passthru(zero-copy) packets,
++ * and insert it to the socket queue owned by mp_port specially.
++ */
++static inline struct sk_buff *handle_mpassthru(struct sk_buff *skb,
++					       struct packet_type **pt_prev,
++					       int *ret,
++					       struct net_device *orig_dev)
 +{
-+	int rc;
-+	int npages, data_len;
-+	const struct net_device_ops *ops = dev->netdev_ops;
++	struct mp_port *mp_port = NULL;
++	struct sock *sk = NULL;
 +
-+	if (ops->ndo_mp_port_prep) {
-+		rc = ops->ndo_mp_port_prep(dev, port);
-+		if (rc)
-+			return rc;
-+	} else
-+		return -EINVAL;
++	if (!dev_is_mpassthru(skb->dev) && !dev_is_mpassthru(orig_dev))
++		return skb;
++	if (dev_is_mpassthru(skb->dev))
++		mp_port = skb->dev->mp_port;
++	else if (orig_dev->master == skb->dev && dev_is_mpassthru(orig_dev))
++		mp_port = orig_dev->mp_port;
 +
-+	if (port->hdr_len <= 0)
-+		goto err;
++	if (*pt_prev) {
++		*ret = deliver_skb(skb, *pt_prev, orig_dev);
++		*pt_prev = NULL;
++	}
 +
-+	npages = port->npages;
-+	data_len = port->data_len;
-+	if (npages <= 0 || npages > MAX_SKB_FRAGS ||
-+			(data_len < PAGE_SIZE * (npages - 1) ||
-+			 data_len > PAGE_SIZE * npages))
-+		goto err;
++	sk = mp_port->sock->sk;
++	skb_queue_tail(&sk->sk_receive_queue, skb);
++	sk->sk_state_change(sk);
 +
-+	return 0;
-+err:
-+	dev_warn(&dev->dev, "invalid page constructor parameters\n");
-+
-+	return -EINVAL;
++	return NULL;
 +}
-+EXPORT_SYMBOL(netdev_mp_port_prep);
++#else
++#define handle_mpassthru(skb, pt_prev, ret, orig_dev)     (skb)
 +#endif
++
+ static int __netif_receive_skb(struct sk_buff *skb)
+ {
+ 	struct packet_type *ptype, *pt_prev;
+@@ -2891,6 +2925,11 @@ static int __netif_receive_skb(struct sk_buff *skb)
+ ncls:
+ #endif
+ 
++	/* To intercept mediate passthru(zero-copy) packets here */
++	skb = handle_mpassthru(skb, &pt_prev, &ret, orig_dev);
++	if (!skb)
++		goto out;
++
+ 	/* Handle special case of bridge or macvlan */
+ 	rx_handler = rcu_dereference(skb->dev->rx_handler);
+ 	if (rx_handler) {
+@@ -2983,6 +3022,7 @@ err:
+ EXPORT_SYMBOL(netdev_mp_port_prep);
+ #endif
+ 
 +
  /**
   *	netif_receive_skb - process receive buffer from network
