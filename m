@@ -1,56 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753864Ab0KIIew (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 03:34:52 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:46409 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753820Ab0KIIev convert rfc822-to-8bit (ORCPT
+	id S1753901Ab0KIIiH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 03:38:07 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:39596 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753820Ab0KIIiD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 03:34:51 -0500
+	Tue, 9 Nov 2010 03:38:03 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=eJNCMy+qQfnCcdgBNiBc3VriOIYn2Kef2Rn6FeAUHOWUvaJNpe4aDB4W5YzjzZjXyJ
-         cozgGF5Ge879tzVOFmMg==
-MIME-Version: 1.0
-In-Reply-To: <20101109042732.GC5220@cr0.nay.redhat.com>
-References: <20101108203120.22479.19708.stgit@crlf.mtv.corp.google.com>
- <20101108203246.22479.60118.stgit@crlf.mtv.corp.google.com>
- <20101109033024.GA5220@cr0.nay.redhat.com> <20101109042732.GC5220@cr0.nay.redhat.com>
-From: Mike Waychison <mikew@google.com>
-Date: Tue, 9 Nov 2010 00:34:24 -0800
-Message-ID: <AANLkTingq8R8bc-4fwhBQomdhTgff+fN_vE-pc5zofKX@mail.gmail.com>
-Subject: Re: [PATCH v2 12/23] netpoll: Introduce netpoll_target configs
-To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
-Cc: simon.kagstrom@netinsight.net, davem@davemloft.net, nhorman@tuxdriver.com,
-        Matt Mackall <mpm@selenic.com>, adurbin@google.com,
-        linux-kernel@vger.kernel.org, chavey@google.com,
-        Greg KH <greg@kroah.com>, akpm@linux-foundation.org,
-        linux-api@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=v16XXGP4pLYYp3fBcCUGVXtadCqoY9I3fHwrlwcTWjPfTxN7ogx4Gh6HG7rK0c4skf
+         Wh6qxwemrJjfa/IluZLPAN3Fmb6Y7VFko4NQEVazdVfwiJ4gOvBICTXgei7sYzXrNYni
+         UrKqdXLiPYXikcTGt6NHU0U/F+9NNsKmY5zSo=
+Subject: [PATCH v2] hwmon: (gpio-fan) Fix fan_ctrl_init error path
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Simon Guinot <sguinot@lacie.com>, lm-sensors@lm-sensors.org
+Content-Type: text/plain
+Date: Tue, 09 Nov 2010 16:41:48 +0800
+Message-Id: <1289292108.28671.1.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 8, 2010 at 8:27 PM, Américo Wang <xiyou.wangcong@gmail.com> wrote:
-> On Tue, Nov 09, 2010 at 11:30:24AM +0800, Américo Wang wrote:
->>
-> ....
->>
->>So, either we need to de-modulize configfs or replace configfs API
->>with sysfs API. Personally, I prefer the former one, I don't think
->>configfs should be a module as long as it can provide API's
->>for other subsystems, like debugfs.
->>
->
-> To clarify, I meant "as long as the API it provides can be used by
-> other core subsystems".
->
+In current implementation, the sysfs entries is not removed before return -ENODEV.
 
-Ya, I see the problem with it being a tristate.
+Creating the sysfs attribute should be the last thing done by the function,
+after all the rest has been successful.
+Otherwise there is a small window during which user-space can access the attribute
+but the driver isn't ready to deal with the requests.
 
-Why not just make netconsole support being compiled in force configfs
-to be compiled in?  Or does that just set bad precedent?
+Fix it by moving sysfs_create_group to be the last thing done by the function.
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/hwmon/gpio-fan.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/hwmon/gpio-fan.c b/drivers/hwmon/gpio-fan.c
+index aa701a1..f141a1d 100644
+--- a/drivers/hwmon/gpio-fan.c
++++ b/drivers/hwmon/gpio-fan.c
+@@ -376,10 +376,6 @@ static int fan_ctrl_init(struct gpio_fan_data *fan_data,
+ 		}
+ 	}
+ 
+-	err = sysfs_create_group(&pdev->dev.kobj, &gpio_fan_ctrl_group);
+-	if (err)
+-		goto err_free_gpio;
+-
+ 	fan_data->num_ctrl = num_ctrl;
+ 	fan_data->ctrl = ctrl;
+ 	fan_data->num_speed = pdata->num_speed;
+@@ -391,6 +387,10 @@ static int fan_ctrl_init(struct gpio_fan_data *fan_data,
+ 		goto err_free_gpio;
+ 	}
+ 
++	err = sysfs_create_group(&pdev->dev.kobj, &gpio_fan_ctrl_group);
++	if (err)
++		goto err_free_gpio;
++
+ 	return 0;
+ 
+ err_free_gpio:
+-- 
+1.7.2
+
+
+
