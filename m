@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab0KIOud (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 09:50:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4500 "EHLO mx1.redhat.com"
+	id S1752365Ab0KIOvj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 09:51:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31424 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751731Ab0KIOub convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 09:50:31 -0500
-Date: Tue, 9 Nov 2010 07:50:56 -0700
-From: Pete Zaitcev <zaitcev@redhat.com>
-To: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
-Cc: linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Developer support list for Wireshark 
-	<wireshark-dev@wireshark.org>,
-        zaitcev@redhat.com
-Subject: Re: usbmon: size of different fields?
-Message-ID: <20101109075056.59a2e7d8@lembas.zaitcev.lan>
-In-Reply-To: <4CD8ECE4.1090206@freemail.hu>
-References: <4CD8ECE4.1090206@freemail.hu>
-Organization: Red Hat, Inc.
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1751233Ab0KIOvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 09:51:37 -0500
+Date: Tue, 9 Nov 2010 15:54:20 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Roland McGrath <roland@redhat.com>, stable@kernel.org
+Subject: Re: [PATCH] posix-cpu-timers: workaround to suppress the problems
+ with mt exec
+Message-ID: <20101109145419.GA26445@redhat.com>
+References: <20101102135821.GA5964@swordfish.minsk.epam.com>
+ <alpine.LFD.2.00.1011021630150.9357@localhost6.localdomain6>
+ <20101102160223.GC5964@swordfish.minsk.epam.com>
+ <alpine.LFD.2.00.1011021704110.9357@localhost6.localdomain6>
+ <20101102183308.GA17720@redhat.com>
+ <20101103105832.GA30053@swordfish.minsk.epam.com>
+ <20101103124835.GA604@redhat.com>
+ <20101103161059.GA13530@redhat.com>
+ <20101105155342.GA13606@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101105155342.GA13606@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 09 Nov 2010 07:40:36 +0100
-Németh Márton <nm127@freemail.hu> wrote:
-
-> I'm looking at the struct mon_bin_hdr and struct mon_bin_isodesc in file
-> f=drivers/usb/mon/mon_bin.c
-
-Actually you're supposed to be looking at Documentation/usb/usbmon.txt.
-If there is a discrepancy between the usbmon.txt and mon_bin.c, I want
-to know about it.
-
-> As far as I understand u64, s64, u32 and s32 have always fixed bit lengths.
+On Fri, Nov 05, 2010 at 04:53:42PM +0100, Oleg Nesterov wrote:
+> posix-cpu-timers.c correctly assumes that the dying process does
+> posix_cpu_timers_exit_group() and removes all !CPUCLOCK_PERTHREAD
+> timers from signal->cpu_timers list.
 > 
-> What about "unsigned char", "char", "unsigned int" and "int"? May their size in bits
-> differ in different architecture?
+> But, it also assumes that timer->it.cpu.task is always the group
+> leader, and thus the dead ->task means the dead thread group.
+> 
+> This is obviously not true after de_thread() changes the leader.
+> After that almost every posix_cpu_timer_ method has problems.
+> 
+> It is not simple to fix this bug correctly. First of all, I think
+> that timer->it.cpu should use struct pid instead of task_struct.
+> Also, the locking should be reworked completely. In particular,
+> tasklist_lock should not be used at all. This all needs a lot of
+> nontrivial and hard-to-test changes.
+> 
+> Change __exit_signal() to do posix_cpu_timers_exit_group() when
+> the old leader dies during exec. This is not the fix, just the
+> temporary hack to hide the problem for 2.6.37 and stable. IOW,
+> this is obviously wrong but this is what we currently have anyway:
+> cpu timers do not work after mt exec.
+> 
+> In theory this change adds another race. The exiting leader can
+> detach the timers which were attached to the new leader. However,
+> the window between de_thread() and release_task() is small, we
+> can pretend that sys_timer_create() was called before de_thread().
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-No they may not. They sizes are always the same on any architecture,
-as long as Linux supports it.
+Reviewed-by: Stanislaw Gruszka <sgruszka@redhat.com>
 
-> I'm asking this because I was dealing with the USB packet dissectors for Wireshark
-> and it is possible to capture the USB traffic on one computer and then transfer
-> the file to another computer.
-
-Do be careful here, because the struct you're talking about is a part
-of API, not a network stream. Its field sizes are rigidly defined, but
-the byte order is host! You MUST NOT attempt to store it in pcap files.
-
--- Pete
