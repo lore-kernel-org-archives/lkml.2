@@ -1,85 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055Ab0KITn2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 14:43:28 -0500
-Received: from mail.perches.com ([173.55.12.10]:4770 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753325Ab0KITn1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 14:43:27 -0500
-Subject: Re: [PATCH 1/2] Idd fat_msg() to unified kernel messages for FAT
- fs.
-From: Joe Perches <joe@perches.com>
-To: Alexey Fisher <bug-track@fisher-privat.net>
-Cc: linux-kernel@vger.kernel.org, hirofumi@mail.parknet.co.jp
-In-Reply-To: <1289329124-14358-1-git-send-email-bug-track@fisher-privat.net>
-References: <1289321718-6373-1-git-send-email-bug-track@fisher-privat.net>
-	 <1289321718-6373-2-git-send-email-bug-track@fisher-privat.net>
-	 <1289329124-14358-1-git-send-email-bug-track@fisher-privat.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 09 Nov 2010 11:43:25 -0800
-Message-ID: <1289331805.28590.17.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1753911Ab0KITql (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 14:46:41 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:47144 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753325Ab0KITqk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 14:46:40 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=MhoeAaL3fEgC9bWvE3wiEHeJg0ZbEi/0CgVBc8QlD2bwUGHykw9byR/L2TfhYcZfyP
+         591f7+T/padvywkZooR5Pskxt4YuXsYdNS8YJ8sb6EveTveDNUGLORE1oTXDrFWIMZxT
+         9edZES1V59E09Dm/lsf4R6HntSN/IEIGaffa8=
+MIME-Version: 1.0
+In-Reply-To: <20101109191908.GO5876@outflux.net>
+References: <20101109181157.GE5876@outflux.net>
+	<20101109181525.GH5876@outflux.net>
+	<AANLkTimzAaj1Z-jyCLBPKGzp_PWw2hwkYy_XeLo8CKPP@mail.gmail.com>
+	<20101109191908.GO5876@outflux.net>
+Date: Tue, 9 Nov 2010 21:46:39 +0200
+X-Google-Sender-Auth: qwRNm9Pb0lR6n1CIPj4-Vbmh31g
+Message-ID: <AANLkTi=zU=RxqMX_h=BM4WchgCbwTi9tWa0SkhxmDwcg@mail.gmail.com>
+Subject: Re: [PATCH 3/4] x86: call verify_cpu during 32bit CPU startup
+From: Pekka Enberg <penberg@kernel.org>
+To: Kees Cook <kees.cook@canonical.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-09 at 19:58 +0100, Alexey Fisher wrote:
-> Add fat_msg() function to unify printkas. And use it
-> to report mounts and remounts.
-> 
-> new dmesg looks like this:
-> [ 6264.957109] FAT-fs (sdg1): Mounted. Opts: uid=1000,gid=1000,shortname=mixed,dmask=0077,utf8=1,showexec,flush
-> [ 6402.175028] FAT-fs (sdg1): re-mounted. Opts: (null)
-> 
-> v2 - add prototype to fat.h;
->      úse %pV; rename prefix to level;
+> On Tue, Nov 09, 2010 at 09:09:18PM +0200, Pekka Enberg wrote:
+>> On Tue, Nov 9, 2010 at 8:15 PM, Kees Cook <kees.cook@canonical.com> wrote:
+>> > The XD_DISABLE-clearing side-effect needs to happen on 32bit CPU
+>> > start-up as well.
+>> >
+>> > Signed-off-by: Kees Cook <kees.cook@canonical.com>
+>>
+>> The patch description here is pretty damn terse. Why do we need the
+>> clearing for? Does not clearing XD_DISABLE cause some problem?
 
-Hi again Alexey.
+On Tue, Nov 9, 2010 at 9:19 PM, Kees Cook <kees.cook@canonical.com> wrote:
+> The clearing needs to happen for both 32bit and 64bit, but the 32bit init
+> routines were not calling verify_cpu() yet. This adds that path to gain the
+> side-effect. (See patch 0 for why clearing XD_DISABLE is important.)
 
-I think putting this function in misc.c is better
-because __fat_fs_error is already in that file.
+I actually don't see 0/4 or 2/4 on LKML yet. It would be better to
+have the rationale in the patch that changes the code for future
+reference. The summary email will be lost in the noise much more
+easily.
 
-Patch 1 should just add the prototype and function
-and maybe convert __fat_fs_error to use %pV.
-
-Maybe the __fat_fs_error %pV conversion is a
-separate patch.
-
-The last patch should do the conversions to
-fat_msg.
-
-Perhaps add this to misc.c:
-
-diff --git a/fs/fat/misc.c b/fs/fat/misc.c
-index 970e682..b497918 100644
---- a/fs/fat/misc.c
-+++ b/fs/fat/misc.c
-@@ -24,15 +24,18 @@ void __fat_fs_error(struct super_block *s, int report, const char *fmt, ...)
- {
- 	struct fat_mount_options *opts = &MSDOS_SB(s)->options;
- 	va_list args;
-+	struct va_format vaf;
- 
- 	if (report) {
--		printk(KERN_ERR "FAT: Filesystem error (dev %s)\n", s->s_id);
--
--		printk(KERN_ERR "    ");
- 		va_start(args, fmt);
--		vprintk(fmt, args);
-+
-+		vaf.fmt = fmt;
-+		vaf.va = &args;
-+
-+		printk(KERN_ERR "FAT: Filesystem error (dev %s): %pV\n",
-+		       s->s_id, &vaf);
-+
- 		va_end(args);
--		printk("\n");
- 	}
- 
- 	if (opts->errors == FAT_ERRORS_PANIC)
-
-
-
+                        Pekka
