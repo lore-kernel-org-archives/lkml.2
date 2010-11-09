@@ -1,40 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752480Ab0KIQZB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 11:25:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38575 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751223Ab0KIQZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 11:25:00 -0500
-Date: Tue, 9 Nov 2010 17:18:27 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Prasad <prasad@linux.vnet.ibm.com>, Roland McGrath <roland@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Q: perf_event && event->owner
-Message-ID: <20101109161827.GB1903@redhat.com>
-References: <20101108145647.GA3426@redhat.com> <20101108145754.GB3434@redhat.com> <20101108201108.GA6777@nowhere> <1289248872.2191.27.camel@laptop>
+	id S1752720Ab0KIQZV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 11:25:21 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:48444 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752443Ab0KIQZS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 11:25:18 -0500
+Date: Tue, 9 Nov 2010 11:25:16 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [patch 4/6] fs: d_delete change
+Message-ID: <20101109162516.GB6217@infradead.org>
+References: <20101109124610.GB11477@amd>
+ <20101109130133.GE11477@amd>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1289248872.2191.27.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20101109130133.GE11477@amd>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08, Peter Zijlstra wrote:
->
-> As to removing event->owner as Oleg suggests, its a published ABI and
-> there might be people using it.
-
-This was my main question.
-
-It's a pity ;) This ABI doesn't look very nice, but OK.
-
-Oleg.
+The patch looks fine to me, and I'm also fine with merging it ASAP.
+But the patch subject and commit message are not very descriptive.
 
