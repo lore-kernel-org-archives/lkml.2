@@ -1,57 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754291Ab0KIRtH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 12:49:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34853 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752670Ab0KIRtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 12:49:03 -0500
-Date: Tue, 9 Nov 2010 18:42:20 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Prasad <prasad@linux.vnet.ibm.com>, Roland McGrath <roland@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Q: perf_event && event->owner
-Message-ID: <20101109174219.GA8279@redhat.com>
-References: <20101108145647.GA3426@redhat.com> <20101108145754.GB3434@redhat.com> <20101108201108.GA6777@nowhere> <20101109155714.GA1903@redhat.com> <1289321804.2191.57.camel@laptop> <20101109165805.GA6971@redhat.com> <1289322469.2191.59.camel@laptop>
+	id S1754400Ab0KIRtm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 12:49:42 -0500
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:44841 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754131Ab0KIRtj convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 12:49:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289322469.2191.59.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20101109172511.GA10958@kroah.com>
+References: <AANLkTinZF-47WQyF5k1Nv64NjfMNSQ-+oE0eGycR24NM@mail.gmail.com>
+	<AANLkTikB0zhN13u5OtRwviOv-rFDW-vFTmq0t7ALuO7N@mail.gmail.com>
+	<201011091729.17679.arnd@arndb.de>
+	<20101109165509.GA9698@kroah.com>
+	<AANLkTinFW431t9XFqHc=wZAws9gjT0ikrc03J83kH7iF@mail.gmail.com>
+	<20101109172511.GA10958@kroah.com>
+Date: Tue, 9 Nov 2010 11:49:30 -0600
+Message-ID: <AANLkTi=CKERMcSLXwQa7G55P69DO--UPN9HgOScHP_yO@mail.gmail.com>
+Subject: Re: [GIT PULL] fixes for tidspbridge 2.6.37-rc1
+From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+To: Greg KH <greg@kroah.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        linux-omap@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09, Peter Zijlstra wrote:
+On Tue, Nov 9, 2010 at 11:25 AM, Greg KH <greg@kroah.com> wrote:
+> On Tue, Nov 09, 2010 at 11:04:18AM -0600, Guzman Lugo, Fernando wrote:
+>> On Tue, Nov 9, 2010 at 10:55 AM, Greg KH <greg@kroah.com> wrote:
+>> > On Tue, Nov 09, 2010 at 05:29:17PM +0100, Arnd Bergmann wrote:
+>> >> On Tuesday 09 November 2010, Felipe Contreras wrote:
+>> >> > Felipe Contreras (14):
+>> >> >       Revert "staging: tidspbridge - update Kconfig to select IOMMU module"
+>> >> >       Revert "staging: tidspbridge - remove dmm custom module"
+>> >> >       Revert "staging: tidspbridge - deprecate reserve/unreserve_memory funtions"
+>> >> >       Revert "staging: tidspbridge - remove reserved memory clean up"
+>> >> >       Revert "staging: tidspbridge: remove dw_dmmu_base from cfg_hostres struct"
+>> >> >       Revert "staging: tidspbridge - move all iommu related code to a new file"
+>> >> >       Revert "staging: tidspbridge - remove hw directory"
+>> >> >       Revert "staging: tidspbridge - fix mmufault support"
+>> >> >       Revert "staging: tidspbridge - remove custom mmu code from tiomap3430.c"
+>> >> >       Revert "staging: tidspbridge - rename bridge_brd_mem_map/unmap to a proper name"
+>> >> >       Revert "staging: tidspbridge - move shared memory iommu maps to tiomap3430.c"
+>> >> >       Revert "staging: tidspbridge: replace iommu custom for opensource implementation"
+>> >>
+>> >> That adds quite a lot of crap back in that was removed by Fernando earlier:
+>> >>
+>> >>  44 files changed, 3733 insertions(+), 847 deletions(-)
+>> >>
+>> >> It may have been premature to merge the patches as you say, but now that
+>> >> they are in, I'd vote for giving Fernando a chance to fix up any damage
+>> >> that was done in the process rather than just reverting all the useful
+>> >> changes.
+>> >
+>> > In looking at this further, I agree.
+>> >
+>> > Felipe, are all of these really needing to be reverted?  How about
+>> > picking out the functional changes that need to be resolved instead of
+>> > just rolling back everything that has been done here.  Surely not all of
+>> > these are wrong, right?
+>>
+>> Patches are _NOT_ wrong, missing dependencies break the bridge.
+>> Without that dependencies the first patch of the set won't work and
+>> all other patches have dependency on the first one, so all of them
+>> need to be reverted.
 >
-> Ah,.. quite so. So how about we explicitly destroy the list when the
-> task dies?
+> How about hand-reverting only the wrong patch, so the other work isn't
+> lost?  I'd much prefer that.
 
-Yes, I think it makes sense to destroy the list and set ->owner = NULL.
-If we reset the owner, we can also avoid get_task_struct().
+Unfortunately any of the iommu migration patches will work correctly
+without the dependencies on iommu module patches. There are some
+patches which cleanup the code, but thanks to the iommu migrations the
+files can disappear complete other wise I need to check and only clean
+what is not needed and leave what the old custom implementation is
+using, which will need a lot of rework in the patches. According with
+Felipe Contreras it is very easy reverting and pushing after. I don't
+like the idea of reverting all iommu patches, however looks the
+easiest solution. Unless the dependencies patches can be merged the
+would be the best solution.
 
-The only problem is perf_event_release_kernel(), it can race with the
-exiting event->owner. It can do get_task_struct() under rcu lock temporary,
-just to take the mutex and remove the entry.
+Regards,
+Fernando.
 
-> > And ptrace(), it doesn't use sys_perf_event_open() to create the event.
 >
-> Right, I guess it uses kernel based things, I guess we could not add
-> kernel based counters to the list.
-
-Agreed, another case when event->owner should be NULL.
-
-
-
-Hmm. With or without these changes. Shouldn't perf_event_release_kernel()
-remove the event from list before anything else? Otherwise, afaics a thread
-which does close(event_fd) can race with creator doing prctl(EVENTS_ENABLE),
-no?
-
-Oleg.
-
+> thanks,
+>
+> greg k-h
+>
