@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755076Ab0KIVQG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 16:16:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10000 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753500Ab0KIVQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 16:16:03 -0500
-Message-ID: <4CD9BA08.2000002@redhat.com>
-Date: Tue, 09 Nov 2010 16:15:52 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+	id S1755140Ab0KIVQT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 16:16:19 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:56374 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754890Ab0KIVQQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 16:16:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=v6Zz+Xc04Hp80DaCuWTk1RAQQiJLhvl3lf1YNHEDbeNgtn3SOyGFsodzToEmEIzWaD
+         UQSDptHyCe9mL+z1gyYQ==
+Date: Tue, 9 Nov 2010 13:16:12 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: "Figo.zhang" <figo1802@gmail.com>
+cc: lkml <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@osdl.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v2]mm/oom-kill: direct hardware access processes should
+ get bonus
+In-Reply-To: <1289305468.10699.2.camel@localhost.localdomain>
+Message-ID: <alpine.DEB.2.00.1011091307240.7730@chino.kir.corp.google.com>
+References: <1288662213.10103.2.camel@localhost.localdomain> <1289305468.10699.2.camel@localhost.localdomain>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: "Ted Ts'o" <tytso@mit.edu>, Jeff Layton <jlayton@redhat.com>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        esandeen@redhat.com, jmoyer@redhat.com, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] clear PageError bit in msync & fsync
-References: <20101109114422.3918e7f6@annuminas.surriel.com> <20101109142109.224267d0@corrin.poochiereds.net> <4CD9A209.6070807@redhat.com> <20101109210715.GJ3099@thunk.org>
-In-Reply-To: <20101109210715.GJ3099@thunk.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2010 04:07 PM, Ted Ts'o wrote:
-> On Tue, Nov 09, 2010 at 02:33:29PM -0500, Rik van Riel wrote:
->>
->> There are essentially two possibilities:
->> 1) the VM can potentially be filled up with uncleanable dirty pages, or
->> 2) pages that hit an IO error are left in a clean state, so they can
->>     be reclaimed under memory pressure
->>
->> Alternative 1 could cause the entire system to deadlock, while
->> option 2 puts the onus on userland apps to rewrite the data
->> from a failed msync/fsync.
->>
->> Currently the VM has behaviour #2 which is preserved with my
->> patch.
->>
->> The only difference with my patch is, we won't keep returning
->> -EIO on subsequent, error free, msync or fsync calls to files
->> that had an IO error at some previous point in the past.
->
-> Do we guarantee that the application will get EIO at least once?  I
-> thought there were issues where the error bit could get lost if the
-> page writeback was triggered by sync() run by a third-party
-> application.
+On Tue, 9 Nov 2010, Figo.zhang wrote:
 
-There is no such guarantee in the current kernel, either
-with or without my patch.
+>  
+> the victim should not directly access hardware devices like Xorg server,
+> because the hardware could be left in an unpredictable state, although 
+> user-application can set /proc/pid/oom_score_adj to protect it. so i think
+> those processes should get 3% bonus for protection.
+> 
 
-A third application calling fsync or msync can get the
-EIO cleared, so the application that did the write does
-not see it.
+The logic here is wrong: if killing these tasks can leave hardware in an 
+unpredictable state (and that state is presumably harmful), then they 
+should be completely immune from oom killing since you're still leaving 
+them exposed here to be killed.
 
-The VM could also reclaim the PageError page due to
-memory pressure, so the application calling fsync or
-msync does not see it.
+So the question that needs to be answered is: why do these threads deserve 
+to use 3% more memory (not >4%) than others without getting killed?  If 
+there was some evidence that these threads have a certain quantity of 
+memory they require as a fundamental attribute of CAP_SYS_RAWIO, then I 
+have no objection, but that's going to be expressed in a memory quantity 
+not a percentage as you have here.
 
-I see no good way in which we could guarantee that
-every process calling msync or fsync on a file that
-had an IO error in the past gets EIO once - at least,
-not without every one of them always getting EIO on
-the file even after the IO path is good again...
+The CAP_SYS_ADMIN heuristic has a background: it is used in the oom killer 
+because we have used the same 3% in __vm_enough_memory() for a long time 
+and we want consistency amongst the heuristics.  Adding additional bonuses 
+with arbitrary values like 3% of memory for things like CAP_SYS_RAWIO 
+makes the heuristic less predictable and moves us back toward the old 
+heuristic which was almost entirely arbitrary.
 
--- 
-All rights reversed
+Now before KOSAKI-san comes out and says the old heuristic considered 
+CAP_SYS_RAWIO and the new one does not so it _must_ be a regression: the 
+old heuristic also divided the badness score by 4 for that capability as a 
+completely arbitrary value (just like 3% is here).  Other traits like 
+runtime and nice levels were also removed from the heuristic.  What needs 
+to be shown is that CAP_SYS_RAWIO requires additional memory just to run 
+or we should neglect to free 3% of memory, which could be gigabytes, 
+because it has this trait.
