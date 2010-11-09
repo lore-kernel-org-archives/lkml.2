@@ -1,62 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751358Ab0KIMr0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 07:47:26 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:58113 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1749667Ab0KIMrZ (ORCPT
+	id S1751551Ab0KIMsB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 07:48:01 -0500
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:56555 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750869Ab0KIMsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 07:47:25 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Richard Cochran <richardcochran@gmail.com>
-Subject: Re: [PATCH RFC 2/8] clock device: convert clock_gettime
-Date: Tue, 9 Nov 2010 13:47:00 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Christoph Lameter <cl@linux.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-References: <cover.1288897198.git.richard.cochran@omicron.at> <201011080756.50930.arnd@arndb.de> <20101109102641.GB2690@riccoc20.at.omicron.at>
-In-Reply-To: <20101109102641.GB2690@riccoc20.at.omicron.at>
+	Tue, 9 Nov 2010 07:48:00 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAOrQ2Ex5LcZK/2dsb2JhbACiHnK/OoVKBA
+Date: Tue, 9 Nov 2010 23:47:57 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [patch 2/6] fs: icache avoid RCU freeing for pseudo fs
+Message-ID: <20101109124757.GC11477@amd>
+References: <20101109124610.GB11477@amd>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011091347.00310.arnd@arndb.de>
-X-Provags-ID: V02:K0:3SO2a6Za3eirzZ9tTxbt1tr2s/3kaPoP5wEOw1VQV8W
- +9c2ymGt/1KOfLn7zJo1Lqr4mw9rj/NiLwcPrxZKGIyYAwA58H
- UkJPmaD0TA9fBYKkMVR2XrTaXvo6GuyCpeC1ISzs2DDlOYgf9r
- iURoXJO+EA8kZmL/oWzuIln/3Y8CrAmUbgAklfOzvp63K27zoA
- AW4uKac8Q++fCAUTemN9A==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101109124610.GB11477@amd>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 November 2010, Richard Cochran wrote:
-> On Mon, Nov 08, 2010 at 07:56:50AM +0100, Arnd Bergmann wrote:
-> > On Thursday 04 November 2010, Richard Cochran wrote:
-> > >  #define CPUCLOCK_PERTHREAD_MASK	4
-> > >  #define CPUCLOCK_WHICH(clock)	((clock) & (clockid_t) CPUCLOCK_CLOCK_MASK)
-> > >  #define CPUCLOCK_CLOCK_MASK	3
-> > > @@ -28,12 +40,17 @@ struct cpu_timer_list {
-> > >  #define CPUCLOCK_VIRT		1
-> > >  #define CPUCLOCK_SCHED		2
-> > >  #define CPUCLOCK_MAX		3
-> > > +#define CLOCKFD			CPUCLOCK_MAX
-> > > +#define CLOCKFD_MASK		(CPUCLOCK_PERTHREAD_MASK|CPUCLOCK_CLOCK_MASK)
-> > 
-> > It looks like you are turning a kernel internal interface into a user ABI,
-> > which I think is highly questionable. Using the bits like this internally is
-> > ok, but making it part of the syscall ABI means that we can never change this
-> > in the future.
-> 
-> This set of defines is already part of the ABI and has been copied
-> into glibc.  I am extending the (mis)use of the clock id by adding one
-> more case.
+Filesystems that don't put inode on any RCU list or reachable by rcu-walk
+dentries do not need to RCU free their inodes.
 
-Ok, that is very different then. I wonder why posix-timers.h is not an exported
-header file, it might be good to change that to make it explicit which parts of
-it define the ABI and which parts are kernel internal.
+Signed-off-by: Nick Piggin <npiggin@kernel.dk>
 
-	Arnd
+---
+ fs/inode.c          |    6 ++++++
+ fs/pipe.c           |    6 +++++-
+ include/linux/fs.h  |    1 +
+ include/linux/net.h |    1 +
+ net/socket.c        |   17 +++++++++--------
+ 5 files changed, 22 insertions(+), 9 deletions(-)
+
+Index: linux-2.6/net/socket.c
+===================================================================
+--- linux-2.6.orig/net/socket.c	2010-11-09 22:11:10.000000000 +1100
++++ linux-2.6/net/socket.c	2010-11-09 22:11:10.000000000 +1100
+@@ -262,20 +262,21 @@ static struct inode *sock_alloc_inode(st
+ }
+ 
+ 
+-static void sock_free_rcu(struct rcu_head *head)
++
++static void wq_free_rcu(struct rcu_head *head)
+ {
+-	struct inode *inode = container_of(head, struct inode, i_rcu);
+-	struct socket_alloc *ei = container_of(inode, struct socket_alloc,
+-								vfs_inode);
++	struct socket_wq *wq = container_of(head, struct socket_wq, rcu);
+ 
+-	kfree(ei->socket.wq);
+-	INIT_LIST_HEAD(&inode->i_dentry);
+-	kmem_cache_free(sock_inode_cachep, ei);
++	kfree(wq);
+ }
+ 
+ static void sock_destroy_inode(struct inode *inode)
+ {
+-	call_rcu(&inode->i_rcu, sock_free_rcu);
++	struct socket_alloc *ei;
++
++	ei = container_of(inode, struct socket_alloc, vfs_inode);
++	call_rcu(&ei->socket.wq->rcu, wq_free_rcu);
++	kmem_cache_free(sock_inode_cachep, ei);
+ }
+ 
+ static void init_once(void *foo)
+Index: linux-2.6/fs/inode.c
+===================================================================
+--- linux-2.6.orig/fs/inode.c	2010-11-09 22:11:10.000000000 +1100
++++ linux-2.6/fs/inode.c	2010-11-09 22:11:10.000000000 +1100
+@@ -255,6 +255,12 @@ static struct inode *alloc_inode(struct
+ 	return inode;
+ }
+ 
++void free_inode_nonrcu(struct inode *inode)
++{
++	kmem_cache_free(inode_cachep, inode);
++}
++EXPORT_SYMBOL(free_inode_nonrcu);
++
+ void __destroy_inode(struct inode *inode)
+ {
+ 	BUG_ON(inode_has_buffers(inode));
+Index: linux-2.6/fs/pipe.c
+===================================================================
+--- linux-2.6.orig/fs/pipe.c	2010-11-09 22:11:00.000000000 +1100
++++ linux-2.6/fs/pipe.c	2010-11-09 22:11:10.000000000 +1100
+@@ -1241,6 +1241,10 @@ long pipe_fcntl(struct file *file, unsig
+ 	return ret;
+ }
+ 
++static const struct super_operations pipefs_ops = {
++	.destroy_inode = free_inode_nonrcu,
++};
++
+ /*
+  * pipefs should _never_ be mounted by userland - too much of security hassle,
+  * no real gain from having the whole whorehouse mounted. So we don't need
+@@ -1250,7 +1254,7 @@ long pipe_fcntl(struct file *file, unsig
+ static struct dentry *pipefs_mount(struct file_system_type *fs_type,
+ 			 int flags, const char *dev_name, void *data)
+ {
+-	return mount_pseudo(fs_type, "pipe:", NULL, PIPEFS_MAGIC);
++	return mount_pseudo(fs_type, "pipe:", &pipefs_ops, PIPEFS_MAGIC);
+ }
+ 
+ static struct file_system_type pipe_fs_type = {
+Index: linux-2.6/include/linux/fs.h
+===================================================================
+--- linux-2.6.orig/include/linux/fs.h	2010-11-09 22:11:10.000000000 +1100
++++ linux-2.6/include/linux/fs.h	2010-11-09 22:11:10.000000000 +1100
+@@ -2233,6 +2233,7 @@ extern void iget_failed(struct inode *);
+ extern void end_writeback(struct inode *);
+ extern void __destroy_inode(struct inode *);
+ extern struct inode *new_inode(struct super_block *);
++extern void free_inode_nonrcu(struct inode *inode);
+ extern int should_remove_suid(struct dentry *);
+ extern int file_remove_suid(struct file *);
+ 
+Index: linux-2.6/include/linux/net.h
+===================================================================
+--- linux-2.6.orig/include/linux/net.h	2010-11-09 22:11:10.000000000 +1100
++++ linux-2.6/include/linux/net.h	2010-11-09 22:11:10.000000000 +1100
+@@ -120,6 +120,7 @@ enum sock_shutdown_cmd {
+ struct socket_wq {
+ 	wait_queue_head_t	wait;
+ 	struct fasync_struct	*fasync_list;
++	struct rcu_head		rcu;
+ } ____cacheline_aligned_in_smp;
+ 
+ /**
