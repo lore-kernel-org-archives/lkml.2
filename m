@@ -1,73 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755140Ab0KIVQT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 16:16:19 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:56374 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754890Ab0KIVQQ (ORCPT
+	id S1755065Ab0KIVQx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 16:16:53 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:52988 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754212Ab0KIVQv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 16:16:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=v6Zz+Xc04Hp80DaCuWTk1RAQQiJLhvl3lf1YNHEDbeNgtn3SOyGFsodzToEmEIzWaD
-         UQSDptHyCe9mL+z1gyYQ==
-Date: Tue, 9 Nov 2010 13:16:12 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Figo.zhang" <figo1802@gmail.com>
-cc: lkml <linux-kernel@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@osdl.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH v2]mm/oom-kill: direct hardware access processes should
- get bonus
-In-Reply-To: <1289305468.10699.2.camel@localhost.localdomain>
-Message-ID: <alpine.DEB.2.00.1011091307240.7730@chino.kir.corp.google.com>
-References: <1288662213.10103.2.camel@localhost.localdomain> <1289305468.10699.2.camel@localhost.localdomain>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 9 Nov 2010 16:16:51 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+In-Reply-To: <4CD8F884.30409@monstr.eu>
+References: <20101014161724.18966.42340.stgit@localhost6.localdomain6>
+ <4CD7FB27.9030804@monstr.eu> <ec622bb7-57d1-4aa2-80f1-65fa4b3fa7eb@VA3EHSMHS033.ehs.local>
+ <AANLkTinMoqqMKeEFiD=xHwa5DS+5qY6xN2r236SZQEba@mail.gmail.com> <4CD8F884.30409@monstr.eu>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 9 Nov 2010 14:16:30 -0700
+X-Google-Sender-Auth: ioGMJ2skzl2saWQyfd5wBhvCAxI
+Message-ID: <AANLkTimGwW-v1VQyOM3fmE-6wNf7g64W1YNALh2kd=54@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/3] spi/xilinx: Merge OF and non-OF drivers
+To: monstr@monstr.eu
+Cc: John Linn <John.Linn@xilinx.com>, spi-devel-general@lists.sourceforge.net,
+        richard.rojfors@mocean-labs.com, linux-kernel@vger.kernel.org,
+        dbrownell@users.sourceforge.net
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Nov 2010, Figo.zhang wrote:
+On Tue, Nov 9, 2010 at 12:30 AM, Michal Simek <monstr@monstr.eu> wrote:
+> Hi, [cc: David Brownell]
+>
+> Grant Likely wrote:
+>> On Mon, Nov 8, 2010 at 9:34 AM, John Linn <John.Linn@xilinx.com> wrote:
+>>>> -----Original Message-----
+>>>> From: Michal Simek [mailto:monstr@monstr.eu]
+>>>> Sent: Monday, November 08, 2010 6:29 AM
+>>>> To: grant.likely@secretlab.ca
+>>>> Cc: spi-devel-general@lists.sourceforge.net; richard.rojfors@mocean-labs.com; John Linn; linux-
+>>>> kernel@vger.kernel.org
+>>>> Subject: Re: [RFC PATCH 0/3] spi/xilinx: Merge OF and non-OF drivers
+>>>>
+>>>> Hi Grant,
+>>>>
+>>>> Grant Likely wrote:
+>>>>> Since of_platform_bus_type has been merged with the platform_bus_type,
+>>>>> a single platform driver can now support both use cases.  This patch
+>>>>> series merges the two halves of the xilinx_spi device driver.
+>>>>>
+>>>>> Compile tested only.  I haven't booted this yet.
+>>>> I have tested it on sp605 and works well. Have you added that patches
+>>>> to your repository? Or are they somewhere else? Who is responsible for?
+>>>>
+>>>> I would like to also discuss one change which is related mmc_spi kernel driver.
+>>>> Let me describe the problem. Microblaze can use dma in all addresses
+>>>> that's why dma_mask is setup to 0xffffffff in of_platform_device_create.
+>>>> Xilinx spi driver doesn't support dma but mmc_spi driver is checking dma_mask in parent device
+>>>> which is xilinx spi driver.
+>>>>
+>>>> Here is the corresponding the part of code (Expect dma_mask=zero for no dma operations).
+>>>> mmc_spi.c:~1395
+>>>>       if (spi->master->dev.parent->dma_mask) {
+>>>>               struct device   *dev = spi->master->dev.parent;
+>>>>
+>>>>               host->dma_dev = dev;
+>>>>
+>>>>
+>>>> Based on this one our customer came with the following solution to setup
+>>>> dma_mask in xilinx_spi to zero and then mmc_spi doesn't setup dma operation.
+>>>>
+>>>> I think that this is nice solution but I would like to be sure that I didn't miss anything.
+>>>> After that i will create proper patch with description.
+>>> Seems reasonable to me.
+>>
+>> Hmmm, that actually is not sane.  Ideally, drivers should never be
+>> mucking with the dma mask.  It is supposed to only be set by the code
+>> actually registering the device.  The mmc code should not be looking
+>> at the parent's dma mask to determine if DMA is available; the spi bus
+>> drivers should be explicitly stating whether or not it supports DMA.
+>> The mmc_spi code is doing the wrong thing here.
+>
+> I have no problem to fix mmc_spi driver but what is the standard way how to detect
+> DMA capability for this case? This part of code is in mmc_spi from the beginning that's why I am
+> wondering that none complain about.
+>
+> David?
+>
+> Sorry I don't have HW where I can test it. :-(
 
->  
-> the victim should not directly access hardware devices like Xorg server,
-> because the hardware could be left in an unpredictable state, although 
-> user-application can set /proc/pid/oom_score_adj to protect it. so i think
-> those processes should get 3% bonus for protection.
-> 
+Nobody will have *all* the hardware required to test it.  The solution
+is actually really hard because it requires auditing all of the spi
+bus drivers, figuring out which ones of them support dma, and then
+publishing that information in a way readable by the spi_device
+drivers.  For the time being, you're solution is probably the most
+reasonable.
 
-The logic here is wrong: if killing these tasks can leave hardware in an 
-unpredictable state (and that state is presumably harmful), then they 
-should be completely immune from oom killing since you're still leaving 
-them exposed here to be killed.
-
-So the question that needs to be answered is: why do these threads deserve 
-to use 3% more memory (not >4%) than others without getting killed?  If 
-there was some evidence that these threads have a certain quantity of 
-memory they require as a fundamental attribute of CAP_SYS_RAWIO, then I 
-have no objection, but that's going to be expressed in a memory quantity 
-not a percentage as you have here.
-
-The CAP_SYS_ADMIN heuristic has a background: it is used in the oom killer 
-because we have used the same 3% in __vm_enough_memory() for a long time 
-and we want consistency amongst the heuristics.  Adding additional bonuses 
-with arbitrary values like 3% of memory for things like CAP_SYS_RAWIO 
-makes the heuristic less predictable and moves us back toward the old 
-heuristic which was almost entirely arbitrary.
-
-Now before KOSAKI-san comes out and says the old heuristic considered 
-CAP_SYS_RAWIO and the new one does not so it _must_ be a regression: the 
-old heuristic also divided the badness score by 4 for that capability as a 
-completely arbitrary value (just like 3% is here).  Other traits like 
-runtime and nice levels were also removed from the heuristic.  What needs 
-to be shown is that CAP_SYS_RAWIO requires additional memory just to run 
-or we should neglect to free 3% of memory, which could be gigabytes, 
-because it has this trait.
+g.
