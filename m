@@ -1,88 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755242Ab0KIVhW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 16:37:22 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:47525 "EHLO e8.ny.us.ibm.com"
+	id S1755281Ab0KIVho (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 16:37:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30975 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754642Ab0KIVhS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 16:37:18 -0500
-Subject: Re: [PATCH RFC 2/8] clock device: convert clock_gettime
-From: john stultz <johnstul@us.ibm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Richard Cochran <richardcochran@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Christoph Lameter <cl@linux.com>,
+	id S1753901Ab0KIVhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 16:37:43 -0500
+Date: Tue, 9 Nov 2010 22:36:06 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <201011080756.50930.arnd@arndb.de>
-References: <cover.1288897198.git.richard.cochran@omicron.at>
-	 <81ccd2674ebf26332898761ba6b7b54f395a15bd.1288897199.git.richard.cochran@omicron.at>
-	 <201011080756.50930.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 09 Nov 2010 13:37:02 -0800
-Message-ID: <1289338622.9434.46.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 02 of 66] mm, migration: Fix race between
+ shift_arg_pages and rmap_walk by guaranteeing rmap_walk finds PTEs created
+ within the temporary stack
+Message-ID: <20101109213606.GD6809@random.random>
+References: <patchbomb.1288798055@v2.random>
+ <ad7a334318ea379be733.1288798057@v2.random>
+ <20101109120109.BC42.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101109120109.BC42.A69D9226@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-08 at 07:56 +0100, Arnd Bergmann wrote:
-> On Thursday 04 November 2010, Richard Cochran wrote:
-> > diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
-> > index 3e23844..70f40e6 100644
-> > --- a/include/linux/posix-timers.h
-> > +++ b/include/linux/posix-timers.h
-> > @@ -17,10 +17,22 @@ struct cpu_timer_list {
-> >  	int firing;
-> >  };
-> >  
-> > +/* Bit fields within a clockid:
-> > + *
-> > + * The most significant 29 bits hold either a pid or a file descriptor.
-> > + *
-> > + * Bit 2 indicates whether a cpu clock refers to a thread or a process.
-> > + *
-> > + * Bits 1 and 0 give the type: PROF=0, VIRT=1, SCHED=2, or FD=3.
-> > + *
-> > + * A clockid is invalid if bits 2, 1, and 0 all set (see also CLOCK_INVALID
-> > + * in include/linux/time.h)
-> > + */
-> > +
-> >  #define 	(clock)		((pid_t) ~((clock) >> 3))
-> >  #define CPUCLOCK_PERTHREAD(clock) \
-> >  	(((clock) & (clockid_t) CPUCLOCK_PERTHREAD_MASK) != 0)
-> > -#define CPUCLOCK_PID_MASK	7
-> > +
-> >  #define CPUCLOCK_PERTHREAD_MASK	4
-> >  #define CPUCLOCK_WHICH(clock)	((clock) & (clockid_t) CPUCLOCK_CLOCK_MASK)
-> >  #define CPUCLOCK_CLOCK_MASK	3
-> > @@ -28,12 +40,17 @@ struct cpu_timer_list {
-> >  #define CPUCLOCK_VIRT		1
-> >  #define CPUCLOCK_SCHED		2
-> >  #define CPUCLOCK_MAX		3
-> > +#define CLOCKFD			CPUCLOCK_MAX
-> > +#define CLOCKFD_MASK		(CPUCLOCK_PERTHREAD_MASK|CPUCLOCK_CLOCK_MASK)
+On Tue, Nov 09, 2010 at 12:01:55PM +0900, KOSAKI Motohiro wrote:
+> Hi
 > 
-> It looks like you are turning a kernel internal interface into a user ABI,
-> which I think is highly questionable. Using the bits like this internally is
-> ok, but making it part of the syscall ABI means that we can never change this
-> in the future.
+> > From: Andrea Arcangeli <aarcange@redhat.com>
+> > 
+> > Page migration requires rmap to be able to find all migration ptes
+> > created by migration. If the second rmap_walk clearing migration PTEs
+> > misses an entry, it is left dangling causing a BUG_ON to trigger during
+> > fault. For example;
+> > 
+> > [  511.201534] kernel BUG at include/linux/swapops.h:105!
+> > [  511.201534] invalid opcode: 0000 [#1] PREEMPT SMP
+> > [  511.201534] last sysfs file: /sys/block/sde/size
+> > [  511.201534] CPU 0
+> > [  511.201534] Modules linked in: kvm_amd kvm dm_crypt loop i2c_piix4 serio_raw tpm_tis shpchp evdev tpm i2c_core pci_hotplug tpm_bios wmi processor button ext3 jbd mbcache dm_mirror dm_region_hash dm_log dm_snapshot dm_mod raid10 raid456 async_raid6_recov async_pq raid6_pq async_xor xor async_memcpy async_tx raid1 raid0 multipath linear md_mod sg sr_mod cdrom sd_mod ata_generic ahci libahci libata ide_pci_generic ehci_hcd ide_core r8169 mii ohci_hcd scsi_mod floppy thermal fan thermal_sys
+> > [  511.888526]
+> > [  511.888526] Pid: 20431, comm: date Not tainted 2.6.34-rc4-mm1-fix-swapops #6 GA-MA790GP-UD4H/GA-MA790GP-UD4H
+> > [  511.888526] RIP: 0010:[<ffffffff811094ff>]  [<ffffffff811094ff>] migration_entry_wait+0xc1/0x129
 > 
-> Maybe I was misunderstanding your patch though.
+> Do you mean current linus-tree code is broken? do we need to merge this
+> ASAP and need to backport stable tree?
 
+No current upstream is not broken here, but it's required with THP
+unless I add the below block to huge_memory.c rmap walks too. I am
+afraid to forget special cases like the below in the long term, so the
+fewer special/magic cases there are in the kernel to remember forever
+the better for me, as it's less likely I introduce hard-to-reproduce
+bugs later on in the kernel when I add more rmap walks.
 
-As Richard already mentioned, the cpuclocks has already exported this as
-ABI and its used in pthread_getcpuclockid().
+-
+-               /*
+-                * During exec, a temporary VMA is setup and later
+-               moved.
+-                * The VMA is moved under the anon_vma lock but not
+-               the
+-                * page tables leading to a race where migration
+-               cannot
+-                * find the migration ptes. Rather than increasing the
+-                * locking requirements of exec(), migration skips
+-                * temporary VMAs until after exec() completes.
+-                */
+-               if (PAGE_MIGRATION && (flags & TTU_MIGRATION) &&
+-                               is_vma_temporary_stack(vma))
+-                       continue;
+-
 
-I wonder thought if it would be worth having a syscall to convert from
-fd to clock_id so it could be more flexible in the future. But it may
-not be worth it, as we're probably already limited by the cpuclock
-implementation.
+Now if Linus tells me to drop this patch, I will add the above block
+to huge_memory.c, and then I can drop this 2/66 patch immediately
+(hopefully the user stack will never be born as an hugepage or the
+randomizing mremap during execve will be executed with perfect 2m
+aligned offsets or then it wouldn't work anymore, but for now I can
+safely remove this patch and add the above block to huge_memory.c).
 
-thanks
--john
-
-
-
+I see the ugliness in exec.c, but I think we're less likely to have
+bugs in the kernel in the future without the above magic in every
+remap walk that needs to be accurate (like huge_memory.c and
+migrate.c), the rmap walks are complicated enough already for my
+taste. But I'm totally fine either ways, as I think I can remember.
