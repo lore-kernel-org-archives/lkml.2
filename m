@@ -1,52 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754941Ab0KIUvp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 15:51:45 -0500
-Received: from freeflow.nu ([178.79.134.28]:53438 "EHLO freeflow.nu"
+	id S1755087Ab0KIUwE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 15:52:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51235 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753151Ab0KIUvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 15:51:43 -0500
-Message-ID: <4CD9B463.6090504@kernel.org>
-Date: Tue, 09 Nov 2010 22:51:47 +0200
-From: Pekka Enberg <penberg@kernel.org>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1754915Ab0KIUwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 15:52:00 -0500
+Date: Tue, 9 Nov 2010 15:51:38 -0500
+From: Josef Bacik <josef@redhat.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Josef Bacik <josef@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, joel.becker@oracle.com,
+        cmm@us.ibm.com, cluster-devel@redhat.com
+Subject: Re: [PATCH 1/6] fs: add hole punching to fallocate
+Message-ID: <20101109205138.GA4465@localhost.localdomain>
+References: <1289248327-16308-1-git-send-email-josef@redhat.com> <20101109011222.GD2715@dastard>
 MIME-Version: 1.0
-To: Kees Cook <kees.cook@canonical.com>
-CC: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        Manfred Spraul <manfred@colorfullife.com>
-Subject: Re: [PATCH] ipc: explicitly clear stack memory in user structs
-References: <20101025235804.GA11760@outflux.net> <AANLkTi=c4kt46Pa1FA-e8=36Vn0KcmZgHHKWKZ_bgvzL@mail.gmail.com> <20101109205008.GU5876@outflux.net>
-In-Reply-To: <20101109205008.GU5876@outflux.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101109011222.GD2715@dastard>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9.11.2010 22.50, Kees Cook wrote:
-> Hi Pekka,
->
-> On Tue, Nov 09, 2010 at 10:43:07PM +0200, Pekka Enberg wrote:
->> On Tue, Oct 26, 2010 at 2:58 AM, Kees Cook<kees.cook@canonical.com>  wrote:
->>> CVE-2010-4072
->>>
->>> The old shm interface will leak a few bytes of stack contents. Explicitly
->>> clear structure using memset instead of C99-style initialization in case
->>> there are ever holes in the packing.
->>>
->>> Cc: stable<stable@kernel.org>
->>> Signed-off-by: Kees Cook<kees.cook@canonical.com>
->> This looks like a genuine bug fix but I don't see this patch in
->> mainline. Why is that?
-> No one has committed it. I don't know why; I've sent it a few times now.
+On Tue, Nov 09, 2010 at 12:12:22PM +1100, Dave Chinner wrote:
+> On Mon, Nov 08, 2010 at 03:32:02PM -0500, Josef Bacik wrote:
+> > Hole punching has already been implemented by XFS and OCFS2, and has the
+> > potential to be implemented on both BTRFS and EXT4 so we need a generic way to
+> > get to this feature.  The simplest way in my mind is to add FALLOC_FL_PUNCH_HOLE
+> > to fallocate() since it already looks like the normal fallocate() operation.
+> > I've tested this patch with XFS and BTRFS to make sure XFS did what it's
+> > supposed to do and that BTRFS failed like it was supposed to.  Thank you,
+> > 
+> > Signed-off-by: Josef Bacik <josef@redhat.com>
+> > ---
+> >  fs/open.c              |    2 +-
+> >  include/linux/falloc.h |    1 +
+> >  2 files changed, 2 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/fs/open.c b/fs/open.c
+> > index 4197b9e..ab8dedf 100644
+> > --- a/fs/open.c
+> > +++ b/fs/open.c
+> > @@ -223,7 +223,7 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
+> >  		return -EINVAL;
+> >  
+> >  	/* Return error if mode is not supported */
+> > -	if (mode && !(mode & FALLOC_FL_KEEP_SIZE))
+> > +	if (mode && (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE)))
+> >  		return -EOPNOTSUPP;
+> >  
+> >  	if (!(file->f_mode & FMODE_WRITE))
+> > diff --git a/include/linux/falloc.h b/include/linux/falloc.h
+> > index 3c15510..851cba2 100644
+> > --- a/include/linux/falloc.h
+> > +++ b/include/linux/falloc.h
+> > @@ -2,6 +2,7 @@
+> >  #define _FALLOC_H_
+> >  
+> >  #define FALLOC_FL_KEEP_SIZE	0x01 /* default is extend size */
+> > +#define FALLOC_FL_PUNCH_HOLE	0X02 /* de-allocates range */
+> 
+> Hole punching was not included originally in fallocate() for a
+> variety of reasons. IIRC, they were along the lines of:
+> 
+> 	1 de-allocating of blocks in an allocation syscall is wrong.
+> 	  People wanted a new syscall for this functionality.
+> 	2 no glibc interface needs it
+> 	3 at the time, only XFS supported punching holes, so there
+> 	  is not need to support it in a generic interface
+> 	4 the use cases presented were not considered compelling
+> 	  enough to justify the additional complexity (!)
+> 
+> In the end, I gave up arguing for it to be included because just
+> getting the FALLOC_FL_KEEP_SIZE functionality was a hard enough
+> battle.
+> 
+> Anyway, #3 isn't the case any more, #4 was just an excuse not to
+> support anything ext4 couldn't do and lots of apps are calling
+> fallocate directly (because glibc can't use FALLOC_FL_KEEP_SIZE) so
+> #2 isn't an issue, either. I guess that leaves #1 to be debated;
+> I don't think there is any problem with doing what you propose.
+> 
+> What I will suggest is that this requires a generic xfstest to be
+> written and support added to xfs_io to enable that test (and others)
+> to issue hole punches. Something along the lines of test 242 which I
+> wrote for testing all the edge case of XFS_IOC_ZERO_RANGE (*) would be
+> good.
+> 
 
-Andrew, would you mind picking this up and route it to the appropriate 
-person if necessary?
+So this was relatively simple, adding a flag to falloc for xfs_io and such.  Got
+a test going and it worked great on XFS.  Then I went to make sure it worked on
+non-XFS, and thats where I've run into pain.  Turns out xfs_io -c "bmap" only
+works on XFS.  So I thought to myself "well how hard could it be to make this
+thing use fiemap?", hahaha I'm an idiot.  So I've been adding a xfs_io -c
+"fiemap" that spits things out similar to bmap, and it will probably be tomorrow
+when I finish it.
 
-Acked-by: Pekka Enberg <penberg@kernel.org>
+So good news is my simple patches seem to work just fine for hole-punch, bad
+news is its going to take me another day to have all the infrastructure to test
+it on non-XFS filesystems.
 
-             Pekka
+Also did you want me to rebase my patches on your fallocate() version of
+ZERO_RANGE?  Thanks,
+
+Josef
