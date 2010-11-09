@@ -1,98 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146Ab0KIWrO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 17:47:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54657 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755042Ab0KIWrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 17:47:11 -0500
-Date: Tue, 9 Nov 2010 23:47:10 +0100
-From: Jan Kara <jack@suse.cz>
-To: Joe Perches <joe@perches.com>
-Cc: Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs/ext2/super.c: Use printf extension %pV
-Message-ID: <20101109224710.GB11214@quack.suse.cz>
-References: <1289326563.1823.85.camel@Joe-Laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289326563.1823.85.camel@Joe-Laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755428Ab0KIWsS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 17:48:18 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57771 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754424Ab0KIWsP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 17:48:15 -0500
+Date: Tue, 9 Nov 2010 14:47:28 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Hellwig <hch@lst.de>,
+        Jan Engelhardt <jengelh@medozas.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] writeback: check skipped pages on WB_SYNC_ALL
+Message-Id: <20101109144728.d405453d.akpm@linux-foundation.org>
+In-Reply-To: <20101108231727.275529265@intel.com>
+References: <20101108230916.826791396@intel.com>
+	<20101108231727.275529265@intel.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 09-11-10 10:16:03, Joe Perches wrote:
-> Using %pV reduces the number of printk calls and
-> eliminates any possible message interleaving from
-> other printk calls.
-  Thanks. Merged.
+On Tue, 09 Nov 2010 07:09:21 +0800
+Wu Fengguang <fengguang.wu@intel.com> wrote:
 
-							Honza
-
+> In WB_SYNC_ALL mode, filesystems are not expected to skip dirty pages on
+> temporal lock contentions or non fatal errors, otherwise sync() will
+> return without actually syncing the skipped pages. Add a check to
+> catch possible redirty_page_for_writepage() callers that violate this
+> expectation.
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
+> I'd recommend to keep this check in -mm tree for some time and fixup the
+> possible warnings before pushing it to upstream.
+> 
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 > ---
->  fs/ext2/super.c |   25 +++++++++++++++++--------
->  1 files changed, 17 insertions(+), 8 deletions(-)
+>  fs/fs-writeback.c |    1 +
+>  1 file changed, 1 insertion(+)
 > 
-> diff --git a/fs/ext2/super.c b/fs/ext2/super.c
-> index d89e0b6..27822b9 100644
-> --- a/fs/ext2/super.c
-> +++ b/fs/ext2/super.c
-> @@ -43,9 +43,10 @@ static int ext2_remount (struct super_block * sb, int * flags, char * data);
->  static int ext2_statfs (struct dentry * dentry, struct kstatfs * buf);
->  static int ext2_sync_fs(struct super_block *sb, int wait);
->  
-> -void ext2_error (struct super_block * sb, const char * function,
-> -		 const char * fmt, ...)
-> +void ext2_error(struct super_block *sb, const char *function,
-> +		const char *fmt, ...)
->  {
-> +	struct va_format vaf;
->  	va_list args;
->  	struct ext2_sb_info *sbi = EXT2_SB(sb);
->  	struct ext2_super_block *es = sbi->s_es;
-> @@ -59,9 +60,13 @@ void ext2_error (struct super_block * sb, const char * function,
->  	}
->  
->  	va_start(args, fmt);
-> -	printk(KERN_CRIT "EXT2-fs (%s): error: %s: ", sb->s_id, function);
-> -	vprintk(fmt, args);
-> -	printk("\n");
-> +
-> +	vaf.fmt = fmt;
-> +	vaf.va = &args;
-> +
-> +	printk(KERN_CRIT "EXT2-fs (%s): error: %s: %pV\n",
-> +	       sb->s_id, function, &vaf);
-> +
->  	va_end(args);
->  
->  	if (test_opt(sb, ERRORS_PANIC))
-> @@ -76,12 +81,16 @@ void ext2_error (struct super_block * sb, const char * function,
->  void ext2_msg(struct super_block *sb, const char *prefix,
->  		const char *fmt, ...)
->  {
-> +	struct va_format vaf;
->  	va_list args;
->  
->  	va_start(args, fmt);
-> -	printk("%sEXT2-fs (%s): ", prefix, sb->s_id);
-> -	vprintk(fmt, args);
-> -	printk("\n");
-> +
-> +	vaf.fmt = fmt;
-> +	vaf.va = &args;
-> +
-> +	printk("%sEXT2-fs (%s): %pV\n", prefix, sb->s_id, &vaf);
-> +
->  	va_end(args);
->  }
->  
-> 
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> --- linux-next.orig/fs/fs-writeback.c	2010-11-07 22:01:06.000000000 +0800
+> +++ linux-next/fs/fs-writeback.c	2010-11-07 22:01:15.000000000 +0800
+> @@ -527,6 +527,7 @@ static int writeback_sb_inodes(struct su
+>  			 * buffers.  Skip this inode for now.
+>  			 */
+>  			redirty_tail(inode);
+> +			WARN_ON_ONCE(wbc->sync_mode == WB_SYNC_ALL);
+>  		}
+>  		spin_unlock(&inode_lock);
+>  		iput(inode);
+
+This is quite kernel-developer-unfriendly.
+
+Suppose the warning triggers.  Now some poor schmuck looks at the
+warning and doesn't have a *clue* why it was added.  He has to run off
+and grovel through git trees finding changelogs, which is a real pain
+if the code has been trivially altered since it was first added.
+
+As a general rule, a kernel developer should be able to look at a
+warning callsite and then work out why the warning was emitted!
+
+
+IOW, you owe us a code comment, please.
