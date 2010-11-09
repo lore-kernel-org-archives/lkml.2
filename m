@@ -1,81 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195Ab0KIEUx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 23:20:53 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:64778 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752807Ab0KIEUu convert rfc822-to-8bit (ORCPT
+	id S1753298Ab0KIEVB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 23:21:01 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:33775 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753209Ab0KIEUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 23:20:50 -0500
+	Mon, 8 Nov 2010 23:20:55 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=uOZ/cZUR7RnBnYxOTkgIECjBqNv4tWglBGObA9kXLqVqWofX3PejaF5DrlwTiD6F0G
-         hXFp8NjFzZfy10KShgPiKd9htLyUOgPjHIvoWuQXC1HcNrCquHfCqyIWCr0xi5vxInQ7
-         0354IKhdzg88HvBB6n+qf3R/tBiHuPS4yIyQ4=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Te0Pc6Zdf8TcyEq+CEvuBIa2MGQryMQw6uHfQO79IUkjYsxlGePEIadZPlCxKHLdAn
+         c6/hfrPH6VGlADhqp56+zvcUGBW0HGDd6nIq9gjg8QcqIPEBJikAhL/NavqCZcxLBgy7
+         jkpjnNNw3hQYrpSYfn9FpxzvpkbF9JH3nIuYg=
+Date: Tue, 9 Nov 2010 12:25:35 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Mike Waychison <mikew@google.com>, simon.kagstrom@netinsight.net,
+        davem@davemloft.net, nhorman@tuxdriver.com,
+        Matt Mackall <mpm@selenic.com>, adurbin@google.com,
+        linux-kernel@vger.kernel.org, chavey@google.com,
+        Greg KH <greg@kroah.com>,
+        =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
+        akpm@linux-foundation.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH v2 00/23] netoops support
+Message-ID: <20101109042535.GB5220@cr0.nay.redhat.com>
+References: <20101108203120.22479.19708.stgit@crlf.mtv.corp.google.com>
+ <87k4knqo91.fsf@basil.nowhere.org>
 MIME-Version: 1.0
-In-Reply-To: <1289250954.2790.11.camel@edumazet-laptop>
-References: <AANLkTinVyf4CpxdzEWUn7zTyOrAMKY3H9Dct-HfopiSD@mail.gmail.com>
-	<20101108200600.GG4032@linux.vnet.ibm.com>
-	<1289248166.2790.1.camel@edumazet-laptop>
-	<20101108204240.GA1585@arch.trippelsdorf.de>
-	<1289249191.2790.3.camel@edumazet-laptop>
-	<20101108205511.GB1585@arch.trippelsdorf.de>
-	<1289250954.2790.11.camel@edumazet-laptop>
-Date: Mon, 8 Nov 2010 23:20:49 -0500
-Message-ID: <AANLkTik6EXFDNw0uJfCSPj8gucQvFi3423kCG+pjS=vJ@mail.gmail.com>
-Subject: Re: [PATCH] inet: fix ip_mc_drop_socket()
-From: Miles Lane <miles.lane@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        David Miller <davem@davemloft.net>, paulmck@linux.vnet.ibm.com,
-        ilpo.jarvinen@helsinki.fi, LKML <linux-kernel@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87k4knqo91.fsf@basil.nowhere.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks good here.
+On Tue, Nov 09, 2010 at 02:28:26AM +0100, Andi Kleen wrote:
+>Mike Waychison <mikew@google.com> writes:
+>
+>I'm still not fully convinced this needs to be a fully separate
+>mechanism from netconsole.  It seems a lot of work to implement
+>basically log level.
+>
+>Maybe netconsole could be patched to support only dumping KERN_EMERG?
+>
 
-On Mon, Nov 8, 2010 at 4:15 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Hmm, I believe I found the bug.
+I tend to agree, IMHO, we can introduce another parameter like "oops_only"
+to netconsole.
+
+
+>But I guess the structured logging has some advantages, although
+>there have been certainly oops parsers (e.g. kerneloops.org) without it.
 >
-> Thanks guys !
->
-> [PATCH] inet: fix ip_mc_drop_socket()
->
-> commit 8723e1b4ad9be4444 (inet: RCU changes in inetdev_by_index())
-> forgot one call site in ip_mc_drop_socket()
->
-> We should not decrease idev refcount after inetdev_by_index() call,
-> since refcount is not increased anymore.
->
-> Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-> Reported-by: Miles Lane <miles.lane@gmail.com>
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> ---
->  net/ipv4/igmp.c |    4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
->
-> diff --git a/net/ipv4/igmp.c b/net/ipv4/igmp.c
-> index c8877c6..3c53c2d 100644
-> --- a/net/ipv4/igmp.c
-> +++ b/net/ipv4/igmp.c
-> @@ -2306,10 +2306,8 @@ void ip_mc_drop_socket(struct sock *sk)
->
->                in_dev = inetdev_by_index(net, iml->multi.imr_ifindex);
->                (void) ip_mc_leave_src(sk, iml, in_dev);
-> -               if (in_dev != NULL) {
-> +               if (in_dev != NULL)
->                        ip_mc_dec_group(in_dev, iml->multi.imr_multiaddr.s_addr);
-> -                       in_dev_put(in_dev);
-> -               }
->                /* decrease mem now to avoid the memleak warning */
->                atomic_sub(sizeof(*iml), &sk->sk_omem_alloc);
->                call_rcu(&iml->rcu, ip_mc_socklist_reclaim);
->
->
->
+
++1
