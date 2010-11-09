@@ -1,73 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825Ab0KIM6O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 07:58:14 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60582 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221Ab0KIM6L (ORCPT
+	id S1752019Ab0KIM6z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 07:58:55 -0500
+Received: from mtagate5.de.ibm.com ([195.212.17.165]:33508 "EHLO
+	mtagate5.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202Ab0KIM6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 07:58:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=ZQna/kMpfpuL+zEr7TI63fqvUez7WQ3GQnz+e6UzTzH/aMf2vNQbpQjlvrIkix/kbS
-         OHNeeY705v6ox+pJ/MPfvoX5oLQIuCyXkfUQ6KV1bYLg7f6mfB/XwN2t4OlrjHIDFFhv
-         1tauYNGP+ocQ1yNUsCj7zKPsP9qMXJn5/VthU=
-From: Marek Belisko <marek.belisko@gmail.com>
-To: Vincent Sanders <support@simtec.co.uk>
-Cc: Marek Belisko <marek.belisko@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] input: touchscreen: s3c2410: Add ABS_PRESSURE event sending.
-Date: Tue,  9 Nov 2010 14:00:16 +0100
-Message-Id: <1289307616-10336-1-git-send-email-marek.belisko@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Tue, 9 Nov 2010 07:58:50 -0500
+Date: Tue, 9 Nov 2010 13:58:42 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: markus@trippelsdorf.de, john stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@amd64.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>, avi@redhat.com,
+        mtosatti@redhat.com
+Subject: Re: [bisected] Clocksource tsc unstable git
+Message-ID: <20101109125842.GA8636@osiris.boeblingen.de.ibm.com>
+References: <20101026112052.GA1672@arch.trippelsdorf.de>
+ <20101026131843.GC17852@aftab>
+ <20101026135808.GB1672@arch.trippelsdorf.de>
+ <alpine.LFD.2.00.1010261747250.3115@localhost6.localdomain6>
+ <1288120736.2645.9.camel@localhost>
+ <20101027142622.GA1555@arch.trippelsdorf.de>
+ <20101027182608.GA1580@arch.trippelsdorf.de>
+ <1288208215.3673.16.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288208215.3673.16.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add sending of event ABS_PRESSURE for
-s3c24xx touchscreen.
+On Wed, Oct 27, 2010 at 09:36:55PM +0200, Peter Zijlstra wrote:
+> On Wed, 2010-10-27 at 20:26 +0200, markus@trippelsdorf.de wrote:
+> > 
+> > 34f971f6f7988be4d014eec3e3526bee6d007ffa is the first bad commit
+> > commit 34f971f6f7988be4d014eec3e3526bee6d007ffa
+> > Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Date:   Wed Sep 22 13:53:15 2010 +0200
+> > 
+> >     sched: Create special class for stop/migrate work
+> > 
+> >     In order to separate the stop/migrate work thread from the SCHED_FIFO
+> >     implementation, create a special class for it that is of higher priority than
+> >     SCHED_FIFO itself.
+> > 
+> >     This currently solves a problem where cpu-hotplug consumes so much cpu-time
+> >     that the SCHED_FIFO class gets throttled, but has the bandwidth replenishment
+> >     timer pending on the now dead cpu.
+> > 
+> >     It is also required for when we add the planned deadline scheduling class above
+> >     SCHED_FIFO, as the stop/migrate thread still needs to transcent those tasks.
+> > 
+> >     Tested-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+> >     Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> >     LKML-Reference: <1285165776.2275.1022.camel@laptop>
+> >     Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> > 
+> > Reverting the commit solves the kvm hang issue.
+> > (If this issue is related to my original tsc problem is of course open for
+> > debate, but I have a strong hunch it is.) 
+> 
+> Too weird,.. what does the hang look like?
+> 
+> Can you generate a sysrq-t dump? The thing I'm looking for is the
+> migration/# thread being runnable but not being current.
+> 
+> How can I reproduce this?
 
-Signed-off-by: Marek Belisko <marek.belisko@gmail.com>
----
- drivers/input/touchscreen/s3c2410_ts.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+I think there is a bug in pick_next_task_stop() in sched_stopclass.c:
 
-diff --git a/drivers/input/touchscreen/s3c2410_ts.c b/drivers/input/touchscreen/s3c2410_ts.c
-index 8feb7f3..a937105 100644
---- a/drivers/input/touchscreen/s3c2410_ts.c
-+++ b/drivers/input/touchscreen/s3c2410_ts.c
-@@ -126,6 +126,7 @@ static void touch_timer_fire(unsigned long data)
- 			input_report_abs(ts.input, ABS_Y, ts.yp);
- 
- 			input_report_key(ts.input, BTN_TOUCH, 1);
-+			input_report_abs(ts.input, ABS_PRESSURE, 1);
- 			input_sync(ts.input);
- 
- 			ts.xp = 0;
-@@ -140,6 +141,7 @@ static void touch_timer_fire(unsigned long data)
- 		ts.count = 0;
- 
- 		input_report_key(ts.input, BTN_TOUCH, 0);
-+		input_report_abs(ts.input, ABS_PRESSURE, 0);
- 		input_sync(ts.input);
- 
- 		writel(WAIT4INT | INT_DOWN, ts.io + S3C2410_ADCTSC);
-@@ -314,10 +316,12 @@ static int __devinit s3c2410ts_probe(struct platform_device *pdev)
- 	}
- 
- 	ts.input = input_dev;
--	ts.input->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
-+	ts.input->evbit[0] = BIT_MASK(EV_SYN) | BIT_MASK(EV_KEY) |
-+				BIT_MASK(EV_ABS);
- 	ts.input->keybit[BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH);
- 	input_set_abs_params(ts.input, ABS_X, 0, 0x3FF, 0, 0);
- 	input_set_abs_params(ts.input, ABS_Y, 0, 0x3FF, 0, 0);
-+	input_set_abs_params(ts.input, ABS_PRESSURE, 0, 1, 0, 0);
- 
- 	ts.input->name = "S3C24XX TouchScreen";
- 	ts.input->id.bustype = BUS_HOST;
--- 
-1.7.1
+If a stop-task scheduling class task (well... the migration thread ;) sets
+its state to TASK_INTERRUPTIBLE and then gets preempted it will never
+scheduled again, because pick_next_task_stop() ignores all tasks with a
+state != TASK_RUNNING:
 
+static struct task_struct *pick_next_task_stop(struct rq *rq)
+{
+	struct task_struct *stop = rq->stop;
+
+	if (stop && stop->state == TASK_RUNNING)
+		return stop;
+
+	return NULL;
+}
+
+At least I have two dumps of machines where all cpus but one are running
+the migration thread. Only the last one runs usual user space processes but
+has a preempted migration thread:
+
+>> trace 0x7e50cd40
+================================================================
+STACK TRACE FOR TASK: 0x7e50cd40 (migration/9)
+
+ STACK:
+ 0 schedule+1204 [0x55f754]
+ 1 preempt_schedule+102 [0x56031e]
+ 2 _raw_spin_unlock_irq+118 [0x563fa6]
+ 3 cpu_stopper_thread+144 [0x1ad854]
+ 4 kthread+166 [0x1685aa]
+ 5 kernel_thread_starter+6 [0x106bea]
+================================================================
+
+struct task_struct {
+        state = 0x1  /* TASK_INTERRUPTIBLE */
+...
+
+I would guess something like the below would probably fix it.
+Does that make any sense or did I miss something obvious?
+
+diff --git a/kernel/sched_stoptask.c b/kernel/sched_stoptask.c
+index 45bddc0..d5cf344 100644
+--- a/kernel/sched_stoptask.c
++++ b/kernel/sched_stoptask.c
+@@ -26,7 +26,8 @@ static struct task_struct *pick_next_task_stop(struct rq *rq)
+ {
+ 	struct task_struct *stop = rq->stop;
+ 
+-	if (stop && stop->state == TASK_RUNNING)
++	/* got preempted if on_rq == 1 -- ignore */
++	if (stop && ((stop->state == TASK_RUNNING) || stop->se.on_rq))
+ 		return stop;
+ 
+ 	return NULL;
