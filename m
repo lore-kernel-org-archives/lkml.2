@@ -1,177 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754377Ab0KIJsV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 04:48:21 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:64499 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753071Ab0KIJsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 04:48:19 -0500
-Message-ID: <4CD919E8.3010300@cn.fujitsu.com>
-Date: Tue, 09 Nov 2010 17:52:40 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	id S1754495Ab0KIJt3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 04:49:29 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33823 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754047Ab0KIJt1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 04:49:27 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=fCYhQz8qxHPYaArnetNOXhofiMuWe6G0dSBPTSsNbKCACvF9XhPQpFJGLs782zDifo
+         Sg2McN054uq7/62b70y4+49q9sqsyC0Z7XGCBxfcxJlqTagaZOV1JO/v1tgBPZNV4RfK
+         u5gCnDojycwU/rWyFZXBQ3PejpjuL35yfWnlA=
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/3] KVM: MMU: don not retry #PF for nonpaging guest
-References: <4CD28B5F.1040205@cn.fujitsu.com> <4CD28BCA.1060907@cn.fujitsu.com> <20101104103548.GE6018@redhat.com> <4CD39886.4050909@cn.fujitsu.com> <20101109080357.GI9036@redhat.com> <4CD90AE8.7070003@cn.fujitsu.com> <20101109092625.GK9036@redhat.com>
-In-Reply-To: <20101109092625.GK9036@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-09 17:48:46,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-09 17:48:46,
-	Serialize complete at 2010-11-09 17:48:46
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20101109093925.GA21814@linux-sh.org>
+References: <1289147348-31969-1-git-send-email-alchark@gmail.com>
+	<1289147348-31969-6-git-send-email-alchark@gmail.com>
+	<20101108041721.GA11605@linux-sh.org>
+	<20101108141407.GA25739@alchark-u3s.lan>
+	<20101108204315.GA12050@linux-sh.org>
+	<AANLkTikXffMT9ZiUpm2QAoW+KPJN3MBf55Dgruj1EJN0@mail.gmail.com>
+	<20101108213008.GB17708@linux-sh.org>
+	<20101108234239.GA20819@alchark-u3s.lan>
+	<20101108235407.GB18385@linux-sh.org>
+	<AANLkTim047K-RjLLcz3124Wm+-he8s5AirAsD6R_kitN@mail.gmail.com>
+	<20101109093925.GA21814@linux-sh.org>
+Date: Tue, 9 Nov 2010 12:49:25 +0300
+Message-ID: <AANLkTi=es0vAWeNjWMDEi8Es97uxsgb9A2aNovp7z8Uh@mail.gmail.com>
+Subject: Re: [PATCH 6/6 v4] ARM: Add support for the display controllers in
+ VT8500 and WM8505
+From: Alexey Charkov <alchark@gmail.com>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: linux-arm-kernel@lists.infradead.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2010 05:26 PM, Gleb Natapov wrote:
-> On Tue, Nov 09, 2010 at 04:48:40PM +0800, Xiao Guangrong wrote:
->> On 11/09/2010 04:03 PM, Gleb Natapov wrote:
->>> On Fri, Nov 05, 2010 at 01:39:18PM +0800, Xiao Guangrong wrote:
->>>> On 11/04/2010 06:35 PM, Gleb Natapov wrote:
->>>>> On Thu, Nov 04, 2010 at 06:32:42PM +0800, Xiao Guangrong wrote:
->>>>>> nonpaing guest's 'direct_map' is also true, retry #PF for those
->>>>>> guests is useless, so use 'tdp_enabled' instead
->>>>>>
->>>>> nonpaging guest will not attempt async pf. 
->>>>
->>>> Ah, my mistake, but why we can not attempt async pf for nonpaging guest?
->>>>
->>>>> And by checking tdp_enabled
->>>>> here instead of direct_map we will screw nested ntp.
->>>>>
->>>>
->>>> It looks like something broken: apfs can generated in L2 guest (nested ntp guest)
->>>> and be retried in L1 guest.
->>>>
->>> OK now when Xiao explained me the problem privately I can review this.
->>>
->>>> Below patch fix it and let nonpaging guest support async pf. I'll post it properly
->>>> if you like. :-)
->>>>
->>> Apf for nonpaging guest should be separate patch of course.
+2010/11/9 Paul Mundt <lethal@linux-sh.org>:
+> On Tue, Nov 09, 2010 at 03:03:01AM +0300, Alexey Charkov wrote:
+>> Is there anybody I should address specifically to get this merged?
 >>
->> Sure, i'll separate it when i post.
->>
->>>
->>>> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
->>>> index 7f20f2c..606978e 100644
->>>> --- a/arch/x86/include/asm/kvm_host.h
->>>> +++ b/arch/x86/include/asm/kvm_host.h
->>>> @@ -600,6 +600,7 @@ struct kvm_x86_ops {
->>>>  struct kvm_arch_async_pf {
->>>>  	u32 token;
->>>>  	gfn_t gfn;
->>>> +	bool softmmu;
->>>>  };
->>>>  
->>>>  extern struct kvm_x86_ops *kvm_x86_ops;
->>>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
->>>> index f3fad4f..48ca312 100644
->>>> --- a/arch/x86/kvm/mmu.c
->>>> +++ b/arch/x86/kvm/mmu.c
->>>>  static int kvm_arch_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn)
->>>> @@ -2602,6 +2607,7 @@ static int kvm_arch_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn)
->>>>  	struct kvm_arch_async_pf arch;
->>>>  	arch.token = (vcpu->arch.apf.id++ << 12) | vcpu->vcpu_id;
->>>>  	arch.gfn = gfn;
->>>> +	arch.softmmu = mmu_is_softmmu(vcpu);
->>>>  
->>> We can do:
->>>         if (mmu_is_nested(vcpu))
->>> 		gva = vcpu->mmu.gva_to_gpa(gva);
->>> And this should fix everything no?
->>>
->>
->> No, since it can't help us to avoid NPF when nested guest run again.
->>
-> Of course it will not prevent NPF if L2 guest touches it again, but from
-> correctness point of view it is OK. So if L1 will re-use the page for
-> L1 process the page will be already mapped. Not a huge gain I agree, but
-> fix is much more simple.
-> 
+> I've set up an fbdev tree now, so I'll just take this through there. It
+> looks like the ordering shouldn't be important, so this can be applied
+> independent of the rest, and it simply won't show up until the other bits
+> have settled in .38.
+>
 
-Um, it need hold mmu_lock, and we don't know 'gva''s mapping in PT10 is valid
-or not, also don't know whether it can be accessed later, so the general rule
-is lazily update it. 
+Yes, the different parts of the patch series are completely
+independent, apart from the corresponding platform definitions and
+memblock reservations that take place in PATCH 1/6 (which contains
+basic board code).
 
-The more important is that we can prefault for softmmu in the later patch,
-it means we can prefault 'gva' in PT20, so don't cook gva here.
-
->> More detailed:
->>
->>    +--------------+ nested guest VA
->> L2 | nested guest |
->>    +--------------+ nested guest PA       +    +
->>       |                                   |    |
->>    +--------------+ guest VA              |    |
->> L1 | guest        |                       |    |
->>    +--------------+ guest PA          +   |    V
->>       |                               |   |
->>    +--------------+ host VA           |   |
->> L0 | host         |                   |   |
->>    +--------------+ host PA           V   V
->>                                     PT10 PT20 PT21
->>
->> If do it like this way, we will prefault 'gva' in PT10, but L2 guest's
->> running not depends on it(PT10), the same NPF is avoid only we prefault
->> it in PT20.
->>
->>>>  	return kvm_setup_async_pf(vcpu, gva, gfn, &arch);
->>>>  }
->>>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->>>> index 2044302..d826d78 100644
->>>> --- a/arch/x86/kvm/x86.c
->>>> +++ b/arch/x86/kvm/x86.c
->>>> @@ -6172,9 +6172,10 @@ EXPORT_SYMBOL_GPL(kvm_set_rflags);
->>>>  
->>>>  void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu, struct kvm_async_pf *work)
->>>>  {
->>>> +	bool softmmu = mmu_is_softmmu(vcpu);
->>>>  	int r;
->>>>  
->>>> -	if (!vcpu->arch.mmu.direct_map || is_error_page(work->page))
->>>> +	if (softmmu || work->arch.softmmu || is_error_page(work->page))
->>>>  		return;
->>>>  
->>>>  	r = kvm_mmu_reload(vcpu);
->>>> diff --git a/arch/x86/kvm/x86.h b/arch/x86/kvm/x86.h
->>>> index 2cea414..48796c7 100644
->>>> --- a/arch/x86/kvm/x86.h
->>>> +++ b/arch/x86/kvm/x86.h
->>>> @@ -55,6 +55,11 @@ static inline bool mmu_is_nested(struct kvm_vcpu *vcpu)
->>>>  	return vcpu->arch.walk_mmu == &vcpu->arch.nested_mmu;
->>>>  }
->>>>  
->>>> +static inline bool mmu_is_softmmu(struct kvm_vcpu *vcpu)
->>>> +{
->>>> +	return !tdp_enabled || mmu_is_nested(vcpu);
->>>> +}
->>>> +
->>> Isn't this the same as checking vcpu->arch.mmu.direct_map? The only
->>> difference that this will be true for nonpaging mode too but this is
->>> even better since we can prefault in nonpaging mode.
->>>
->>
->> Um, maybe prefault in nonpaging mode is unreliable, 
->>
->> For shadow page: it doesn't know the CR0.PG is changed, for example, when apf is
->> generated CR0.PG = 1 and when apf is completed CR0.PG = 0, it can prefault in
->> different mmu context.
-> We can (and may be should) call kvm_clear_async_pf_completion_queue() on
-> CR0.PG 1->0 transaction.
-> 
-
-OK. i think it makes sense, i'll do it in the next version.
-
->>
->> For nested paging: if nested guest vcpu is nonpaging. it will prefault PT10's NPF
->> in PT20, it means apf is generated in L1 guest and prefault in L2 guest. 
-> I think for that L1 should be in nonpaging mode and it is impossible to
-> run nested guest while vcpu is nonpaging.
-
-You are right, this case is can't happen, please ignore it.
+Thanks,
+Alexey
