@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754387Ab0KITzW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 14:55:22 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:59798 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754198Ab0KITyh (ORCPT
+	id S1754273Ab0KITzo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 14:55:44 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:38880 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754099Ab0KITyd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 14:54:37 -0500
+	Tue, 9 Nov 2010 14:54:33 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=mbzMaI/knbxAl/F6hVFeQ6nmjweUZufPOsDZQ3KfTgWRh/nBRVJZ8MaEZoVYEOchGt
-         eFg03/M1VFyHMhDskViX1raY+8QCfeoDyrUbGX/W00ER6FbRLADA5i9nFMhW9uQ2dyvS
-         hgVQdljoHIYlm+wx6usSRdmZJg5EehOfeDtak=
+        b=dYZEg1f3SktY2MjEIXhtNCCVnC8w5EjXph8XVvCdIqXvPRm4WYTqlUJxatKHxxiQRW
+         /l8pFUv1McIvr/bG2AdIzMvYbOTVKlwTjsf2kMqOxZte+JQR3cn72STmUqOKYB3LobL/
+         7xiy76sfLIfnMGghSivc5RAf7h57A+Fk9IJnM=
 From: dirk.brandewie@gmail.com
 To: linux-kernel@vger.kernel.org
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>, x86@kernel.org,
-        linux-serial@vger.kernel.org
-Subject: [PATCH 3/6] serial/ce4100: Add PCI UART support for the ce4100
-Date: Tue,  9 Nov 2010 12:08:06 -0800
-Message-Id: <654d0e8f80dd959fd9c871ad1644126d58b2445b.1289331834.git.dirk.brandewie@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Subject: [PATCH 1/6] x86: Add CE4100 platform support
+Date: Tue,  9 Nov 2010 12:08:04 -0800
+Message-Id: <94720fd7f5564a12ebf202cf2c4f4c0d619aab35.1289331834.git.dirk.brandewie@gmail.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <cover.1289331834.git.dirk.brandewie@gmail.com>
 References: <cover.1289331834.git.dirk.brandewie@gmail.com>
@@ -27,103 +27,166 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-This patch adds support for the PCI UART on the ce4100.
+Add CE4100 platform support. CE4100 needs early setup like
+moorestown.
 
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
-CC: linux-serial@vger.kernel.org
 ---
- drivers/serial/8250_pci.c |   35 +++++++++++++++++++++++++++++++++++
- include/linux/pci_ids.h   |    1 +
- 2 files changed, 36 insertions(+), 0 deletions(-)
+ Documentation/x86/boot.txt       |    1 +
+ arch/x86/Kconfig                 |   11 +++++++++
+ arch/x86/include/asm/bootparam.h |    1 +
+ arch/x86/include/asm/setup.h     |    6 +++++
+ arch/x86/kernel/Makefile         |    2 +
+ arch/x86/kernel/ce4100.c         |   46 ++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/head32.c         |    3 ++
+ 7 files changed, 70 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/kernel/ce4100.c
 
-diff --git a/drivers/serial/8250_pci.c b/drivers/serial/8250_pci.c
-index 53be4d3..f98da48 100644
---- a/drivers/serial/8250_pci.c
-+++ b/drivers/serial/8250_pci.c
-@@ -957,6 +957,22 @@ pci_default_setup(struct serial_private *priv,
- 	return setup_port(priv, port, bar, offset, board->reg_shift);
- }
+diff --git a/Documentation/x86/boot.txt b/Documentation/x86/boot.txt
+index 30b43e1..bdeb81c 100644
+--- a/Documentation/x86/boot.txt
++++ b/Documentation/x86/boot.txt
+@@ -600,6 +600,7 @@ Protocol:	2.07+
+   0x00000001	lguest
+   0x00000002	Xen
+   0x00000003	Moorestown MID
++  0x00000004	CE4100 TV Platform
  
-+static int
-+ce4100_serial_setup(struct serial_private *priv,
-+		  const struct pciserial_board *board,
-+		  struct uart_port *port, int idx)
-+{
-+	int ret;
+ Field name:	hardware_subarch_data
+ Type:		write (subarch-dependent)
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index e832768..84236c9 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -377,6 +377,17 @@ config X86_ELAN
+ 
+ 	  If unsure, choose "PC-compatible" instead.
+ 
++config X86_INTEL_CE
++	bool "CE4100 TV platform"
++	depends on PCI
++	depends on PCI_GODIRECT
++	depends on X86_32
++	depends on X86_EXTENDED_PLATFORM
++	---help---
++	  Select for the Intel CE media processor (CE4100) SOC.
++	  This option compiles in support for the CE4100 SOC for settop
++	  boxes and media devices.
 +
-+	ret = setup_port(priv, port, 0, 0, board->reg_shift);
-+	port->iotype = UPIO_MEM32;
-+	port->type = PORT_XSCALE;
-+	port->flags = (port->flags | UPF_FIXED_PORT | UPF_FIXED_TYPE);
-+	port->regshift = 2;
-+
-+	return ret;
-+}
-+
- static int skip_tx_en_setup(struct serial_private *priv,
- 			const struct pciserial_board *board,
- 			struct uart_port *port, int idx)
-@@ -1072,6 +1088,13 @@ static struct pci_serial_quirk pci_serial_quirks[] __refdata = {
- 		.subdevice	= PCI_ANY_ID,
- 		.setup		= skip_tx_en_setup,
- 	},
-+	{
-+		.vendor		= PCI_VENDOR_ID_INTEL,
-+		.device		= PCI_DEVICE_ID_INTEL_CE4100_UART,
-+		.subvendor	= PCI_ANY_ID,
-+		.subdevice	= PCI_ANY_ID,
-+		.setup		= ce4100_serial_setup,
-+	},
- 	/*
- 	 * ITE
- 	 */
-@@ -1592,6 +1615,7 @@ enum pci_board_num_t {
- 	pbn_ADDIDATA_PCIe_2_3906250,
- 	pbn_ADDIDATA_PCIe_4_3906250,
- 	pbn_ADDIDATA_PCIe_8_3906250,
-+	pbn_ce4100_1_115200,
+ config X86_MRST
+        bool "Moorestown MID platform"
+ 	depends on PCI
+diff --git a/arch/x86/include/asm/bootparam.h b/arch/x86/include/asm/bootparam.h
+index 8e62185..c8bfe63 100644
+--- a/arch/x86/include/asm/bootparam.h
++++ b/arch/x86/include/asm/bootparam.h
+@@ -124,6 +124,7 @@ enum {
+ 	X86_SUBARCH_LGUEST,
+ 	X86_SUBARCH_XEN,
+ 	X86_SUBARCH_MRST,
++	X86_SUBARCH_CE4100,
+ 	X86_NR_SUBARCHS,
  };
+ 
+diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
+index d6763b1..db8aa19 100644
+--- a/arch/x86/include/asm/setup.h
++++ b/arch/x86/include/asm/setup.h
+@@ -53,6 +53,12 @@ extern void x86_mrst_early_setup(void);
+ static inline void x86_mrst_early_setup(void) { }
+ #endif
+ 
++#ifdef CONFIG_X86_INTEL_CE
++extern void x86_ce4100_early_setup(void);
++#else
++static inline void x86_ce4100_early_setup(void) { }
++#endif
++
+ #ifndef _SETUP
  
  /*
-@@ -2281,6 +2305,12 @@ static struct pciserial_board pci_boards[] __devinitdata = {
- 		.uart_offset	= 0x200,
- 		.first_offset	= 0x1000,
- 	},
-+	[pbn_ce4100_1_115200] = {
-+		.flags		= FL_BASE0,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.reg_shift      = 2,
-+	},
- };
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 9e13763..3cb25ab 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -101,6 +101,8 @@ obj-$(CONFIG_PARAVIRT_CLOCK)	+= pvclock.o
  
- static const struct pci_device_id softmodem_blacklist[] = {
-@@ -3760,6 +3790,11 @@ static struct pci_device_id serial_pci_tbl[] = {
- 	{	PCI_VENDOR_ID_NETMOS, PCI_DEVICE_ID_NETMOS_9865,
- 		0xA000, 0x3004,
- 		0, 0, pbn_b0_bt_4_115200 },
-+	/* Intel CE4100 */
-+	{	PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CE4100_UART,
-+		PCI_ANY_ID,  PCI_ANY_ID, 0, 0,
-+		pbn_ce4100_1_115200 },
+ obj-$(CONFIG_PCSPKR_PLATFORM)	+= pcspeaker.o
+ 
++obj-$(CONFIG_X86_INTEL_CE)	+= ce4100.o
 +
- 
- 	/*
- 	 * These entries match devices with class COMMUNICATION_SERIAL,
-diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index c6bcfe9..8fc40b6 100644
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -2629,6 +2629,7 @@
- #define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_ADDR_REV2  0x2db1
- #define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_RANK_REV2  0x2db2
- #define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_TC_REV2    0x2db3
-+#define PCI_DEVICE_ID_INTEL_CE4100_UART	0x2e66
- #define PCI_DEVICE_ID_INTEL_82855PM_HB	0x3340
- #define PCI_DEVICE_ID_INTEL_IOAT_TBG4	0x3429
- #define PCI_DEVICE_ID_INTEL_IOAT_TBG5	0x342a
+ microcode-y				:= microcode_core.o
+ microcode-$(CONFIG_MICROCODE_INTEL)	+= microcode_intel.o
+ microcode-$(CONFIG_MICROCODE_AMD)	+= microcode_amd.o
+diff --git a/arch/x86/kernel/ce4100.c b/arch/x86/kernel/ce4100.c
+new file mode 100644
+index 0000000..b8f1c48
+--- /dev/null
++++ b/arch/x86/kernel/ce4100.c
+@@ -0,0 +1,46 @@
++/*
++ * Intel CE4100  platform specific setup code
++ *
++ * (C) Copyright 2010 Intel Corporation
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/irq.h>
++#include <linux/module.h>
++
++#include <asm/setup.h>
++
++
++static int ce4100_i8042_detect(void)
++{
++	return 0;
++}
++
++static void __init sdv_arch_setup(void)
++{
++
++}
++
++
++static void __init sdv_find_smp_config(void)
++{
++}
++
++
++/*
++ * CE4100 specific x86_init function overrides and early setup
++ * calls.
++ */
++void __init x86_ce4100_early_setup(void)
++{
++	x86_init.oem.arch_setup = sdv_arch_setup;
++	x86_platform.i8042_detect = ce4100_i8042_detect;
++	x86_init.resources.probe_roms = x86_init_noop;
++	x86_init.mpparse.get_smp_config = x86_init_uint_noop;
++	x86_init.mpparse.find_smp_config = sdv_find_smp_config;
++}
+diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
+index 7633101..7f138b3 100644
+--- a/arch/x86/kernel/head32.c
++++ b/arch/x86/kernel/head32.c
+@@ -61,6 +61,9 @@ void __init i386_start_kernel(void)
+ 	case X86_SUBARCH_MRST:
+ 		x86_mrst_early_setup();
+ 		break;
++	case X86_SUBARCH_CE4100:
++		x86_ce4100_early_setup();
++		break;
+ 	default:
+ 		i386_default_early_setup();
+ 		break;
 -- 
 1.7.2.3
 
