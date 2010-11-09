@@ -1,85 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754505Ab0KICfZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 21:35:25 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:52819 "EHLO smtps.tip.net.au"
+	id S1754810Ab0KICjY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 21:39:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20606 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752992Ab0KICfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 21:35:24 -0500
-Date: Tue, 9 Nov 2010 13:35:17 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: <linuxppc-dev@ozlabs.org>, jbaron@redhat.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, "David S. Miller" <davem@davemloft.net>,
-        Anton Blanchard <anton@samba.org>,
-        Kumar Gala <kumar.gala@freescale.com>
-Subject: Re: [PATCH] powerpc: Add jump label support
-Message-Id: <20101109133517.b6be28bf.sfr@canb.auug.org.au>
-In-Reply-To: <45fbc3cd7f6ce404d1e25bf01695fb629d86189d.1289189560.git.michael@ellerman.id.au>
-References: <45fbc3cd7f6ce404d1e25bf01695fb629d86189d.1289189560.git.michael@ellerman.id.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__9_Nov_2010_13_35_17_+1100_+FnMtx325yVKvf=M"
+	id S1753818Ab0KICjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 21:39:24 -0500
+Date: Mon, 8 Nov 2010 21:39:20 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
+        "czoccolo@gmail.com" <czoccolo@gmail.com>
+Subject: Re: [patch 2/3]cfq-iosched: schedule dispatch for noidle queue
+Message-ID: <20101109023919.GB29847@redhat.com>
+References: <1289182038.23014.190.camel@sli10-conroe>
+ <20101108142842.GC16767@redhat.com>
+ <1289266267.23014.196.camel@sli10-conroe>
+ <20101109021540.GA29210@redhat.com>
+ <1289269716.23014.208.camel@sli10-conroe>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289269716.23014.208.camel@sli10-conroe>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__9_Nov_2010_13_35_17_+1100_+FnMtx325yVKvf=M
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Nov 09, 2010 at 10:28:36AM +0800, Shaohua Li wrote:
 
-Hi Michael,
+[..]
+> > > > Why do we have to wait for all requests to finish in device? Will driver
+> > > > most likely not ask for next request when 1-2 requests have completed
+> > > > and at that time we should expire the queue if queue is no more marked
+> > > > as "noidle"?
+> > > The issue is a queue is idle just because it's the last queue of the
+> > > service tree. Then a new queue is added and the idled queue should not
+> > > idle now. we should preempt the idled queue soon. does this make sense
+> > > to you?
+> > 
+> > If that's the case then you should just modify should_preempt() so that
+> > addition of a new queue could preempt an empty queue which has now become
+> > noidle.
+> > 
+> > You have also modified cfq_completed_request() function, which will wake
+> > up the worker thread and then try to dispatch a request. IMHO, in practice
+> > driver asks for new request almost immediately and you don't gain much
+> > by this additional wakeup.
+> > 
+> > So my point being, that we increased the code complexity for no visible
+> > performance improvement also increased thread wakeups resulting in more
+> > cpu consumption.
+> Ah, you are right, we only need modify should_preempt. Updated the patch as below.
+> 
 
-Just a trivial note ...
+Thanks. Jens has already applied the patches on for-2.6.38/core branch of
+block tree. I think you shall have to generate an incremental patch
+which revert the bits introduced in cfq_completed_request().
 
-On Mon,  8 Nov 2010 15:12:46 +1100 (EST) Michael Ellerman <michael@ellerman=
-.id.au> wrote:
->
-> diff --git a/arch/powerpc/include/asm/jump_label.h b/arch/powerpc/include=
-/asm/jump_label.h
-> new file mode 100644
-> index 0000000..feffb86
-> --- /dev/null
-> +++ b/arch/powerpc/include/asm/jump_label.h
-> @@ -0,0 +1,46 @@
-> +#ifndef _ASM_POWERPC_JUMP_LABEL_H
-> +#define _ASM_POWERPC_JUMP_LABEL_H
+Thanks
+Vivek
+
+> > If there was a visible performance gain in your testing then it would have
+> > made sense but you said that you did not notice any improvements. Then
+> > why to increase the complexity.
+> I only test some workloads and can't do all tests, but this is an
+> obvious bug I thought.
+> 
+> Thanks,
+> Shaohua
+> 
+> Subject: cfq-iosched: preempt an idle queue if it should not be idle any more
+> 
+> A queue is idle at cfq_dispatch_requests(), but it gets noidle later. Unless
+> other task explictly does unplug or all requests are drained, we will not
+> deliever requests to the disk even cfq_arm_slice_timer doesn't make the
+> queue idle. For example, cfq_should_idle() returns true because of
+> service_tree->count == 1, and then other queues are added. Note, I didn't
+> see obvious performance impacts so far with the patch, but just thought
+> this could be a problem.
+> 
+> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> 
+> ---
+>  block/cfq-iosched.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> Index: linux/block/cfq-iosched.c
+> ===================================================================
+> --- linux.orig/block/cfq-iosched.c	2010-11-09 10:20:38.000000000 +0800
+> +++ linux/block/cfq-iosched.c	2010-11-09 10:20:54.000000000 +0800
+> @@ -3265,6 +3265,10 @@ cfq_should_preempt(struct cfq_data *cfqd
+>  	if (cfq_class_rt(new_cfqq) && !cfq_class_rt(cfqq))
+>  		return true;
+>  
+> +	/* An idle queue should not be idle now for some reason */
+> +	if (RB_EMPTY_ROOT(&cfqq->sort_list) && !cfq_should_idle(cfqd, cfqq))
+> +		return true;
 > +
-> +/*
-> + * Copyright 2010 Michael Ellerman, IBM Corp.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; either version
-> + * 2 of the License, or (at your option) any later version.
-> + */
-> +
-> +#ifdef __KERNEL__
-
-You don't need this protection in a file that is not exported to user
-space.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__9_Nov_2010_13_35_17_+1100_+FnMtx325yVKvf=M
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJM2LNlAAoJEDMEi1NhKgbsC+0H/2ihZ22fwibF/Dc6lxK04fY0
-MG7bDLmDth0I4FFHoNucxoIULV/XQGgQ/z0+TCO3fbpHgg8SnqHSpOhedF4OjWtm
-JTKKvV2uF4KLIYsRVzkx+0bUByB0LcOEox2hmmCFVySxxsNkxDz4Z7vP/ziJgy9Y
-teuO3IeivTl/UGNMK5RigjzrEzfHwFThcy845ZUfG7fqVfF0F58TAuqDJ2HSFiqo
-hdh/VS9/VPCSKPJfV8xjAdgxkpmX3Z1EWWoeAUqKPbxcYATLrZlbIPQdcRbXBPYI
-QrzYv7S03tsKeokRQN+ogYto0Y4JODK00NjbgBLo1o6YmAVeS8MygQyxddVkFS4=
-=2Erw
------END PGP SIGNATURE-----
-
---Signature=_Tue__9_Nov_2010_13_35_17_+1100_+FnMtx325yVKvf=M--
+>  	if (!cfqd->active_cic || !cfq_cfqq_wait_request(cfqq))
+>  		return false;
+>  
+> 
+> 
