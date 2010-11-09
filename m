@@ -1,56 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755368Ab0KIVms (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 16:42:48 -0500
-Received: from threatwall.zlynx.org ([64.81.105.251]:32774 "EHLO zlynx.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754770Ab0KIVmo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 16:42:44 -0500
-X-Greylist: delayed 1248 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Nov 2010 16:42:44 EST
-Message-ID: <4CD9BB5B.2090206@acm.org>
-Date: Tue, 09 Nov 2010 14:21:31 -0700
-From: Zan Lynx <zlynx@acm.org>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1755242Ab0KIVo2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 16:44:28 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:14634 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752278Ab0KIVoZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 16:44:25 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAMtN2Ux5LcZK/2dsb2JhbACiJ3K+AoVKBA
+Date: Wed, 10 Nov 2010 08:44:20 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [patch 1/6] fs: icache RCU free inodes
+Message-ID: <20101109214420.GB3246@amd>
+References: <20101109124610.GB11477@amd>
+ <AANLkTi=b3dEmoTgrJ2xMTUzgM-mUQNNx6J9jeLq2=mtf@mail.gmail.com>
 MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: Jeff Layton <jlayton@redhat.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, esandeen@redhat.com, jmoyer@redhat.com,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] clear PageError bit in msync & fsync
-References: <20101109114422.3918e7f6@annuminas.surriel.com> <20101109142109.224267d0@corrin.poochiereds.net> <4CD9A209.6070807@redhat.com>
-In-Reply-To: <4CD9A209.6070807@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Envelope-From: zlynx@acm.org
-X-Spam-Id: 20101109/1PFvdG-0000a0-Uc-linux-kernel@vger.kernel.org:zlynx@acm.org:64.81.105.251
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=b3dEmoTgrJ2xMTUzgM-mUQNNx6J9jeLq2=mtf@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/9/10 12:33 PM, Rik van Riel wrote:
-> On 11/09/2010 02:21 PM, Jeff Layton wrote:
->
->> This does leave the page in sort of a funky state. The uptodate bit
->> will still probably be set, but the dirty bit won't be. The page will
->> be effectively "disconnected" from the backing store until someone
->> writes to it.
->>
->> I suppose though that this is the best that can reasonably be done in
->> this situation however...
->
-> I spent a few days looking for alternatives, and indeed I found
-> nothing better...
+On Tue, Nov 09, 2010 at 08:02:38AM -0800, Linus Torvalds wrote:
+> On Tue, Nov 9, 2010 at 4:46 AM, Nick Piggin <npiggin@kernel.dk> wrote:
+> > So here is the inode RCU code. It's obviously not worth doing until the
+> > actual rcu-walk path walking is in, but I'd like to get opinions on it.
+> > It would be nice to merge it in Al's tree at some point, though.
+> 
+> Remind me why it wasn't sufficient to just use SLAB_DESTROY_BY_RCU?
+> 
+> Especially if we still lock things for the actual (few) inode list
+> operations, the added complexity of actually freeing _individual_
+> inodes by RCU seems to be a bad thing.
 
-Just an off the top of my head crazy idea...
+Oh yes, the list operations themselves do not need RCU at all. Not
+even rapid hash lookups if you have fine grained hash locking --
+it just doesn't matter.
 
-Could you leave the error bit set on the page and treat it as a dirty 
-bit during a future msync, clearing the error bit at that point.
 
-The general idea would be to leave the error set unless an explicit 
-write was requested.
+> The only thing we care about is the pathname walk - there are no other
+> inode operations that are common enough to worry about. And the only
+> thing _that_ needs is the ability to look at the inode under RCU, and
+> SLAB_DESTROY_BY_RCU should be entirely sufficient for that.
+> 
+> But we had some discussion about this long ago, and I may have
+> forgotten some of the context.
 
--- 
-Zan Lynx
-zlynx@acm.org
+Yes, dentry->inode resolution is *the* only inode lookup we really
+care about, definitely.
 
-"Knowledge is Power.  Power Corrupts.  Study Hard.  Be Evil."
+The big problem with SLAB_DESTROY_BY_RCU there is that we don't
+have a reference on the dentry, so inode can go away. And we don't
+have anything to speculatively pin the inode and recheck it, because
+we're not allowed to store into it.
+
+When we *do* have an inode, it's really hairy inspecting the inode and
+calling i_ops etc. with no idea if it is there, in the middle of
+being freed, or allocated for someone else.
+
+What the plan was is to do the plain RCU approach, and get everybody
+happy with the concept of rcu-walk path walking (which is already
+enough complexity). At the _very_ worst case that DESTROY_BY_RCU
+must be implemented and no other viable alternatives, we can use
+i_lock for that. It takes away some benefit, but there would still
+be much fewer atomics and less contention on common paths.
+
+But I don't think RCU is actually going to hurt noticably. Definitely
+we need numbers before committing to such complexity off the bat.
+
