@@ -1,85 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab0KILH1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 06:07:27 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:41178 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755022Ab0KILHX (ORCPT
+	id S1755386Ab0KILRW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 06:17:22 -0500
+Received: from caiajhbdcahe.dreamhost.com ([208.97.132.74]:43603 "EHLO
+	homiemail-a38.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753034Ab0KILRT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 06:07:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:references:date:in-reply-to:message-id
-         :user-agent:mime-version:content-type;
-        b=TevMsnTKrcM0QfFAmMPE0i8+jhyEi6DJd/HJZ6uJeWfGNI8CcD+yefYBpt0yGANEap
-         0DI/kfOYABBaUvAgw1Ns7iK7uC+H/4TpQhn2hL6HPX3Ah2/42HIzANUYiTR9sa11pncv
-         JBnpylWeAt8OpaCnPEZT79eFQujN0f0Z2jLyY=
-From: Francis Moreau <francis.moro@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        linux-perf-users@vger.kernel.org
-Subject: Re: perf tools miscellaneous questions
-References: <fa.yHA7Aw03llqLWxPVYRnHvK5/dT8@ifi.uio.no>
-	<fa.13KEqWk+Dk+jLLdFlAoZtQ2Vjuw@ifi.uio.no> <m2lj59sc7a.fsf@gmail.com>
-	<20101107214025.GD11134@nowhere>
-Date: Tue, 09 Nov 2010 12:07:12 +0100
-In-Reply-To: <20101107214025.GD11134@nowhere> (Frederic Weisbecker's message
-	of "Sun, 7 Nov 2010 22:40:27 +0100")
-Message-ID: <m2y692vjq7.fsf@gmail.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 9 Nov 2010 06:17:19 -0500
+Subject: unmet dependencies
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: linux-kbuild <linux-kbuild@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 09 Nov 2010 08:17:08 -0300
+Message-ID: <1289301428.2260.1.camel@cowboy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Frederic Weisbecker <fweisbec@gmail.com> writes:
+Hi,
 
-> On Thu, Nov 04, 2010 at 09:52:09AM +0100, Francis Moreau wrote:
+Todays randconfig on Linus' latest tree is producing:
 
-[...]
+warning: (HAVE_TEXT_POKE_SMP && SMP) selects STOP_MACHINE which has
+unmet direct dependencies (SMP && MODULE_UNLOAD || HOTPLUG_CPU)
+warning: (MTD_NAND && MTD || MTD_DOC2000 && MTD || MTD_DOC2001 && MTD ||
+MTD_DOC2001PLUS && MTD) selects MTD_NAND_IDS which has unmet direct
+dependencies (MTD && MTD_NAND)
+warning: (IMA && SECURITY && !S390) selects TCG_TPM which has unmet
+direct dependencies (HAS_IOMEM && EXPERIMENTAL)
+warning: (SFC && NETDEVICES && NETDEV_10000 && PCI && INET || I2C_VIA &&
+I2C && PCI && EXPERIMENTAL || I2C_HYDRA && I2C && PCI && PPC_CHRP &&
+EXPERIMENTAL || I2C_GPIO && I2C && GENERIC_GPIO || I2C_IXP2000 && I2C &&
+ARCH_IXP2000 || I2C_SIMTEC && I2C || I2C_VERSATILE && I2C &&
+(ARCH_VERSATILE || ARCH_REALVIEW || ARCH_VEXPRESS) || I2C_PARPORT && I2C
+&& PARPORT || I2C_PARPORT_LIGHT && I2C || I2C_ACORN && I2C && ARCH_ACORN
+|| SCx200_I2C && I2C && SCx200_GPIO || VIDEO_BT848 && MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && VIDEO_DEV && PCI && I2C && VIDEO_V4L2 && INPUT
+&& VIDEO_IR || VIDEO_CX88 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_V4L2 && VIDEO_DEV && PCI && I2C && INPUT && VIDEO_IR ||
+VIDEO_CX23885 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 &&
+DVB_CORE && VIDEO_DEV && PCI && I2C && INPUT && IR_CORE || VIDEO_AU0828
+&& MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && I2C && INPUT && DVB_CORE &&
+USB && VIDEO_V4L2 || VIDEO_IVTV && MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && PCI && I2C && INPUT && VIDEO_IR
+|| VIDEO_CX18 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 &&
+DVB_CORE && PCI && I2C && EXPERIMENTAL && INPUT && VIDEO_IR ||
+VIDEO_SAA7164 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 &&
+DVB_CORE && PCI && I2C || DVB_PLUTO2 && MEDIA_SUPPORT &&
+DVB_CAPTURE_DRIVERS && DVB_CORE && PCI && I2C || DRM && HAS_IOMEM &&
+(AGP || AGP=n) && !EMULATED_CMPXCHG && MMU || FB_DDC && HAS_IOMEM && FB
+|| FB_VIA && HAS_IOMEM && FB && PCI && X86 || VIDEO_CX25821 && STAGING
+&& !STAGING_EXCLUDE_BUILD && DVB_CORE && VIDEO_DEV && PCI && I2C &&
+INPUT && BKL && VIDEO_IR) selects I2C_ALGOBIT which has unmet direct
+dependencies (I2C && I2C_HELPER_AUTO)
+warning: (I2C_PCA_PLATFORM && I2C || I2C_PCA_ISA && I2C && ISA) selects
+I2C_ALGOPCA which has unmet direct dependencies (I2C && I2C_HELPER_AUTO)
+warning: (GPIO_VX855 && GPIOLIB) selects MFD_VX855 which has unmet
+direct dependencies (MFD_SUPPORT && PCI)
+warning: (CRYPTO_LRW && CRYPTO && EXPERIMENTAL || CRYPTO_XTS && CRYPTO
+&& EXPERIMENTAL || CRYPTO_GHASH && CRYPTO) selects CRYPTO_GF128MUL which
+has unmet direct dependencies (CRYPTO && EXPERIMENTAL)
 
->> 
->> No problem, but yes this part should be documented somewhere. And I
->> think the syntax of event too, specially the modifier like 'u' or 'p'.
->
-> Ah that is documented in "man perf-list".
+Thanks,
+Davidlohr
 
-Ok, after updating my 3 weeks old kernel, modifiers are now documented.
-
-But I failed to generate it:
-
-    XMLTO perf-record.1
-xmlto: /home/fmoreau/linux-2.6/tools/perf/Documentation/perf-record.xml does not validate (status 3)
-
-BTW, what does 'skid' mean ? s(?) k(?) instruction delay ?
-
-[...]
-
-> I have the same problem. But running perf record with this :p works
-> for me. Which is what we want: pebs is useful for sampling, not
-> counting-only.
-
-That makes sense but I still have a problem:
-
-   $ perf record -e cache-misses:p -p $(pgrep test)
-
-  Error: perfcounter syscall returned with -1 (No space left on device)
-
-  Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
-
-
-> Ah and that won't work if you don't run some intel CPU I think.  Check
-> you have PEBS support in /proc/cpuinfo
-
-It seems so:
-
-   $ grep -qi pebs /proc/cpuinfo && echo pebs
-   pebs
-
-Thanks
--- 
-Francis
