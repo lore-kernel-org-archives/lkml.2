@@ -1,80 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755034Ab0KIKQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 05:16:29 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:59760 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754973Ab0KIKQY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 05:16:24 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Richard Cochran <richardcochran@gmail.com>
-Subject: Re: [PATCH RFC 1/8] Introduce dynamic clock devices
-Date: Mon, 8 Nov 2010 07:38:41 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Christoph Lameter <cl@linux.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-References: <cover.1288897198.git.richard.cochran@omicron.at> <031a33e771a3c8bd95ed2c88ede4820b7675ceca.1288897198.git.richard.cochran@omicron.at>
-In-Reply-To: <031a33e771a3c8bd95ed2c88ede4820b7675ceca.1288897198.git.richard.cochran@omicron.at>
+	id S1754895Ab0KIKTi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 05:19:38 -0500
+Received: from hera.kernel.org ([140.211.167.34]:57279 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754494Ab0KIKTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 05:19:37 -0500
+Message-ID: <4CD91FDD.3030603@kernel.org>
+Date: Tue, 09 Nov 2010 11:18:05 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Jan Kara <jack@suse.cz>
+CC: axboe@kernel.dk, hch@infradead.org, linux-kernel@vger.kernel.org,
+        petero2@telia.com, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        akpm@linux-foundation.org, adilger.kernel@dilger.ca, tytso@mit.edu,
+        mfasheh@suse.com, joel.becker@oracle.com, aelder@sgi.com,
+        dm-devel@redhat.com, drbd-dev@lists.linbit.com, neilb@suse.de,
+        leochen@broadcom.com, sbranden@broadcom.com, chris.mason@oracle.com,
+        swhiteho@redhat.com, shaggy@linux.vnet.ibm.com, joern@logfs.org,
+        konishi.ryusuke@lab.ntt.co.jp, reiserfs-devel@vger.kernel.org,
+        viro@zeniv.linux.org.uk
+Subject: Re: [PATCH 4/5] block: make blkdev_get/put() handle exclusive access
+References: <1288628129-12811-1-git-send-email-tj@kernel.org> <1288628129-12811-5-git-send-email-tj@kernel.org> <20101103150658.GA5627@quack.suse.cz>
+In-Reply-To: <20101103150658.GA5627@quack.suse.cz>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011080738.41871.arnd@arndb.de>
-X-Provags-ID: V02:K0:mKvYUMnKWpUqovuBu3ii9j42oIJPndyOlb3sj+3n12d
- UKxUCazZJXvWKxtU1lye/tDRUkh+ub9fjLXWqlhGjtM1aLZ8nu
- DAhoJv1Gkd5CVVAPvN3wjpgi4z4qOGNMm3F3cHJ8KAmI5hYzql
- Qee6ymFf4eZmLfCalfUIegkv8nljvnvR8ylPNlM5DGCHMYSXjC
- gxdH7vhd4e4L8584VzAMA==
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 09 Nov 2010 10:18:11 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 04 November 2010, Richard Cochran wrote:
-> This patch adds support for adding and removing clock devices. The clock
-> lifetime cycle is patterned after usb devices. Each clock is represented
-> by a standard character device. In addition, the driver may optionally
-> implemented custom character device operations.
-> 
-> The clock devices do not yet do anything useful. This patch merely
-> provides some needed infrastructure.
-> +/**
-> + * create_clock_device() - register a new clock
+Hello,
 
-I'd call this clock_device_create() etc, putting all clock_device functions
-in a common namespace with the clock_device_ prefix
+On 11/03/2010 04:06 PM, Jan Kara wrote:
+> On Mon 01-11-10 17:15:28, Tejun Heo wrote:
+>   The patch looks OK to me as far as ext3, ext4, and reiserfs are
+> concerned. One thing I wondered about when I looked at it - does someone
+> use the 'mode' argument of the blkdev_put() function (well, apart from the
+> exclusive flag)? Because I've looked at a few random disk ->release()
+> functions and none of them used it...
 
-> +#define MAX_CLKDEV BITS_PER_LONG
-> +static DECLARE_BITMAP(clocks_map, MAX_CLKDEV);
-> +static DEFINE_MUTEX(clocks_mux); /* protects 'clocks_map' */
+Yeah, I thought about removing @mode and make blkdev_put() take
+@holder for exclusive releases.  From what I can see, it doesn't seem
+like any implementation cares but it's customary to have access to
+@mode on ->release(), so I decided to keep it.  It's rather flaky as
+there's no mechanism to check or enforce it tho.
 
-Using "_mux" as a postfix for the name is highly unusual, this normally
-means multiplex, not mutual exlusion.
+Thanks.
 
-You could probably avoid the need for this mutex altogether if you use
-the atomic bit operations (e.g. test_and_set_bit).
-
-> +struct clock_device {
-> +	struct file_operations fops;
-> +	struct file_operations *driver_fops;
-> +	struct clock_device_operations *ops;
-> +	struct cdev cdev;
-> +	struct kref kref;
-> +	struct mutex mux;
-> +	void *priv;
-> +	int index;
-> +	bool zombie;
-> +};
-
-You should really not need the file_operations here, neither the
-struct nor the pointer. Just define a static file_operations
-structure containing clock_device_open and clock_device_release,
-and whatever else you might need, then add the driver's operations
-to clock_device_operations, and pass the clock_device pointer
-directly to them, instead of passing the file/inode pointers.
-
-	Arnd
-
+-- 
+tejun
