@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755281Ab0KIDI3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 22:08:29 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52941 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754877Ab0KIDI2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 22:08:28 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 43 of 66] don't leave orhpaned swap cache after ksm merging
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-In-Reply-To: <d5aefe85d1dab1bb7e99.1288798098@v2.random>
-References: <patchbomb.1288798055@v2.random> <d5aefe85d1dab1bb7e99.1288798098@v2.random>
-Message-Id: <20101109120747.BC4B.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1755384Ab0KIDIn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 22:08:43 -0500
+Received: from mga02.intel.com ([134.134.136.20]:22118 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755329Ab0KIDIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 22:08:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,173,1288594800"; 
+   d="scan'208";a="571560477"
+Subject: Re: [PATCH] iwl3945: Fix oops at module load
+From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        "Berg, Johannes" <johannes.berg@intel.com>
+In-Reply-To: <20101109014559.GA21551@basil.fritz.box>
+References: <1289253271-19981-1-git-send-email-andi@firstfloor.org>
+	 <1289254122.12056.86.camel@wwguy-huron>
+	 <20101109014559.GA21551@basil.fritz.box>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 08 Nov 2010 19:04:40 -0800
+Message-ID: <1289271880.12056.87.camel@wwguy-huron>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue,  9 Nov 2010 12:08:25 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Andrea Arcangeli <aarcange@redhat.com>
+On Mon, 2010-11-08 at 17:46 -0800, Andi Kleen wrote:
+> > I believe the fix already in
+> > http://git.kernel.org/?p=linux/kernel/git/iwlwifi/iwlwifi-2.6.git;a=summary
+> > commit#6e0922e0781884ff4eb3638f10a91b63b6120207
 > 
-> When swapcache is replaced by a ksm page don't leave orhpaned swap cache.
+> Thanks. Can that please be sent to Linus ASAP? It doesn't really
+> help my laptop if it's in some obscure git tree.
 > 
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> Reviewed-by: Rik van Riel <riel@redhat.com>
+Done, thanks to let me know
 
-This explanation seems to tell this is bugfix. If so, please separate
-this one from THP and will send mainline and -stable soon.
-
+Wey
+> 
 
 
