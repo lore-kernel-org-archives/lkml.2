@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520Ab0KIOUu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 09:20:50 -0500
-Received: from kroah.org ([198.145.64.141]:43202 "EHLO coco.kroah.org"
+	id S1753641Ab0KIOVf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 09:21:35 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:35575 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752156Ab0KIOUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 09:20:47 -0500
-Date: Tue, 9 Nov 2010 06:20:53 -0800
-From: Greg KH <greg@kroah.com>
-To: Am??rico Wang <xiyou.wangcong@gmail.com>
-Cc: Mike Waychison <mikew@google.com>, simon.kagstrom@netinsight.net,
-        davem@davemloft.net, nhorman@tuxdriver.com,
-        Matt Mackall <mpm@selenic.com>, adurbin@google.com,
-        linux-kernel@vger.kernel.org, chavey@google.com,
-        akpm@linux-foundation.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH v2 12/23] netpoll: Introduce netpoll_target configs
-Message-ID: <20101109142053.GA3067@kroah.com>
-References: <20101108203120.22479.19708.stgit@crlf.mtv.corp.google.com> <20101108203246.22479.60118.stgit@crlf.mtv.corp.google.com> <20101109033024.GA5220@cr0.nay.redhat.com> <20101109042732.GC5220@cr0.nay.redhat.com> <AANLkTingq8R8bc-4fwhBQomdhTgff+fN_vE-pc5zofKX@mail.gmail.com> <20101109090645.GG5220@cr0.nay.redhat.com>
+	id S1752233Ab0KIOVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 09:21:34 -0500
+Date: Tue, 9 Nov 2010 15:20:44 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Arjan van de Ven <arjan@infradead.org>
+Cc: Dan Rosenberg <drosenberg@vsecurity.com>, linux-kernel@vger.kernel.org,
+        security@kernel.org, stable@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Restrict unprivileged access to kernel syslog
+Message-ID: <20101109142044.GA4473@elte.hu>
+References: <1289273338.6287.128.camel@dan>
+ <20101109112350.GA29800@elte.hu>
+ <1289304672.6287.132.camel@dan>
+ <20101109042747.3f6ab07b@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101109090645.GG5220@cr0.nay.redhat.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20101109042747.3f6ab07b@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 09, 2010 at 05:06:45PM +0800, Am??rico Wang wrote:
-> On Tue, Nov 09, 2010 at 12:34:24AM -0800, Mike Waychison wrote:
-> >On Mon, Nov 8, 2010 at 8:27 PM, Am??rico Wang <xiyou.wangcong@gmail.com> wrote:
-> >> On Tue, Nov 09, 2010 at 11:30:24AM +0800, Am??rico Wang wrote:
-> >>>
-> >> ....
-> >>>
-> >>>So, either we need to de-modulize configfs or replace configfs API
-> >>>with sysfs API. Personally, I prefer the former one, I don't think
-> >>>configfs should be a module as long as it can provide API's
-> >>>for other subsystems, like debugfs.
-> >>>
-> >>
-> >> To clarify, I meant "as long as the API it provides can be used by
-> >> other core subsystems".
-> >>
-> >
-> >Ya, I see the problem with it being a tristate.
-> >
-> >Why not just make netconsole support being compiled in force configfs
-> >to be compiled in?  Or does that just set bad precedent?
+
+* Arjan van de Ven <arjan@infradead.org> wrote:
+
+> On Tue, 09 Nov 2010 07:11:12 -0500
+> Dan Rosenberg <drosenberg@vsecurity.com> wrote:
 > 
-> That is what netconsole does now, and this is fine, since netconsole is
-> a module too, however, after you move that code into netpoll, then netpoll
-> will have a dependence on it, we will have problems.
+> > 
+> > > 
+> > > The initialization to zero is implicit, no need to write it out.
+> > > 
+> > 
+> > I'll resend after the first round of comments.
+> > 
+> > > Also, it would also be useful to have a
+> > > CONFIG_SECURITY_RESTRICT_DMESG=y option introduced by your patch as
+> > > well, which flag allows a distro or user to disable unprivileged
+> > > syslog reading via the kernel config.
+> > 
+> > Are you suggesting having the existence of the sysctl depend on 
+> > CONFIG_SECURITY_RESTRICT_DMESG, or having a choice between a sysctl (when config 
+> > is disabled) and having restrictions always on (when config is enabled)?
 > 
-> I think we can let NETPOLL_TARGET depend on CONFIGFS_FS=y, but I still
-> see no reason why CONFIGFS_FS should be a module.
+> and/or have the sysctl default value depend on the config option
 
-No, just have the NETPOLL_TARGET set CONFIG_FS to y, don't force the
-code to always be that way if the user isn't going to want that option.
+Yeah. I think we should have the sysctl unconditionally as in Dan's current patch - 
+and make the default depend on the Kconfig setting (defaulting to off).
 
-So as it originally was should have been fine.
+I.e. essentially the same as the current patch, just a bit more configurability via 
+the Kconfig setting.
 
-thanks,
+Thanks,
 
-greg k-h
+	Ingo
