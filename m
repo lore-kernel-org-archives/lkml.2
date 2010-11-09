@@ -1,60 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351Ab0KIKwL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 05:52:11 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:48077 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755278Ab0KIKwI (ORCPT
+	id S1755358Ab0KIKww (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 05:52:52 -0500
+Received: from darkcity.gna.ch ([195.226.6.51]:56910 "EHLO mail.gna.ch"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755169Ab0KIKwt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 05:52:08 -0500
-Date: Tue, 9 Nov 2010 19:51:45 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Alexey Charkov <alchark@gmail.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 6/6 v3] ARM: Add support for the display controllers in VT8500 and WM8505
-Message-ID: <20101109105144.GA22389@linux-sh.org>
-References: <1289147348-31969-1-git-send-email-alchark@gmail.com> <1289147348-31969-6-git-send-email-alchark@gmail.com> <20101108041721.GA11605@linux-sh.org> <20101108141407.GA25739@alchark-u3s.lan> <20101108204315.GA12050@linux-sh.org> <20101109103312.GA2869@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101109103312.GA2869@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+	Tue, 9 Nov 2010 05:52:49 -0500
+X-Amavis-Alert: BAD HEADER SECTION, Improper folded header field made up
+	entirely of whitespace (char 09 hex): Face: ...MWASAkVVViQjzP\n
+	jycPrvgA\n\t\n R1goSzOnkp14Y[...]
+Subject: Re: Radeon RS780 - BUG: unable to handle kernel NULL pointer
+ dereference
+From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Thomas Hellstrom <thellstrom@vmware.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+In-Reply-To: <20101109103737.GA1767@arch.trippelsdorf.de>
+References: <20101108170221.GA1602@arch.trippelsdorf.de>
+	 <20101108170737.GA1617@arch.trippelsdorf.de>
+	 <20101108184301.GA1614@arch.trippelsdorf.de>
+	 <20101108190258.GA1623@arch.trippelsdorf.de>
+	 <AANLkTi=fo3rnBp8Fs6H+ivP6R+x=QDzBLyi+DmT-LNHV@mail.gmail.com>
+	 <4CD879BC.5060008@vmware.com> <20101109092920.GA1542@arch.trippelsdorf.de>
+	 <4CD91A07.1060308@vmware.com> <4CD91D58.7080508@vmware.com>
+	 <1289298777.10682.63.camel@thor.local>
+	 <20101109103737.GA1767@arch.trippelsdorf.de>
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
+ jycPrvgA	
+ R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 09 Nov 2010 11:52:27 +0100
+Message-ID: <1289299947.10682.68.camel@thor.local>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 09, 2010 at 10:33:12AM +0000, Russell King - ARM Linux wrote:
-> On Tue, Nov 09, 2010 at 05:43:16AM +0900, Paul Mundt wrote:
-> > > diff --git a/drivers/video/vt8500lcdfb.c b/drivers/video/vt8500lcdfb.c
-> > > new file mode 100644
-> > > index 0000000..640d8a3
-> > > --- /dev/null
-> > > +++ b/drivers/video/vt8500lcdfb.c
-> > > +#include <asm/irq.h>
-> > > +
-> > linux/irq.h is preferred here.
+On Die, 2010-11-09 at 11:37 +0100, Markus Trippelsdorf wrote: 
+> On Tue, Nov 09, 2010 at 11:32:57AM +0100, Michel Dänzer wrote:
+> > On Die, 2010-11-09 at 11:07 +0100, Thomas Hellstrom wrote: 
+> > > On 11/09/2010 10:53 AM, Thomas Hellstrom wrote:
+> > > > On 11/09/2010 10:29 AM, Markus Trippelsdorf wrote:
+> > > >> OK I've found the buggy commit by bisection:
+> > > >>
+> > > >> e376573f7267390f4e1bdc552564b6fb913bce76 is the first bad commit
+> > > >> commit e376573f7267390f4e1bdc552564b6fb913bce76
+> > > >> Author: Michel Dänzer<daenzer@vmware.com>
+> > > >> Date:   Thu Jul 8 12:43:28 2010 +1000
+> > > >>
+> > > >>      drm/radeon: fall back to GTT if bo creation/validation in VRAM 
+> > > >> fails.
+> > > >>
+> > > >>      This fixes a problem where on low VRAM cards we'd run out of 
+> > > >> space for validation.
+> > > >>
+> > > >>      [airlied: Tested on my M7, Thinkpad T42, compiz works with no 
+> > > >> problems.]
+> > > >>
+> > > >>      Signed-off-by: Michel Dänzer<daenzer@vmware.com>
+> > > >>      Cc: stable@kernel.org
+> > > >>      Signed-off-by: Dave Airlie<airlied@redhat.com>
+> > > >>
+> > > >> Please note that this is an old commit from 2.6.36-rc. When I revert 
+> > > >> it the
+> > > >> kernel no longer crashes. Instead I see the following in my dmesg:
+> > > >>
+> > > >
+> > > > Hmm, so this sounds like something in the Radeon eviction error path 
+> > > > is causing corruption.
+> > > > I had a similar problem with vmwgfx, when I tried to unref a BO 
+> > > > _after_ ttm_bo_init() failed.
+> > > > ttm_bo_init() is really supposed to call unref itself for various 
+> > > > reasons,  so calling unref() or kfree() after a failed ttm_bo_init() 
+> > > > will cause corruption.
+> > > >
+> > > > In any case, the error below also suggests something is a bit fragile 
+> > > > in the Radeon driver:
+> > > >
+> > > > First, an accelerated eviction may fail, like in the message below, 
+> > > > but then there must always be a backup plan, like unaccelerated 
+> > > > eviction to system. On BO creation, there are a number of placement 
+> > > > strategies, but if all else fails, it should be possible to initially 
+> > > > place the BO in system memory.
+> > > >
+> > > > Second, If bo validation fails during a command submission, due to 
+> > > > insufficient VRAM / TT, then the driver should retry the complete 
+> > > > validation cycle after first blocking all other validators and then 
+> > > > evicting everything not pinned, to avoid failures due to fragmentation.
+> > > >
+> > > > /Thomas
+> > > >
+> > > 
+> > > Indeed, it seems like the commit you mention just retries ttm_bo_init() 
+> > > after it previously failed. At that point the bo has been destroyed, so 
+> > > that is probably what's causing the BUG you are seeing.
+> > > 
+> > > Admittedly, ttm_bo_init() calling unref on failure is not properly 
+> > > documented in the function description.  The reason for doing so is to 
+> > > have a single path for freeing all BO resources already allocated on the 
+> > > point of failure.
+> > 
+> > Does the patch below fix the problem?
 > 
-> I assume you've read the comment at the top of linux/irq.h ?
+> Yes, indeed. I was just about to send the same patch to the list.
+> 
+> Thanks.
 
-I had forgotten about that. This comment predates git, so I'm unaware of
-what the context is, could you elaborate on it?
+Thank you for testing / confirming the fix, and to Thomas for the
+analysis of the problem.
 
-I'm aware this won't work for s390, but as that has NO_IOMEM in the
-first place it's a non-issue. I assume this was added at a time before
-ARM selected GENERIC_HARDIRQS, but this is no longer the case.
+I've submitted the fix to Dave with your Tested-by: added.
 
-The odd ones out that do support iomem are m68k and sparc32, both of
-which are being converted. Given that and that s390 remains special
-cased for now, what exactly is the concern?
 
-There is a reasonable expectation that we will start to see irq_data
-references in drivers, so it's not entirely obvious that the assertion
-made by the comment will remain true (all of the stragglers have work in
-progress patches already, as far as I'm aware).
+-- 
+Earthling Michel Dänzer           |                http://www.vmware.com
+Libre software enthusiast         |          Debian, X and DRI developer
