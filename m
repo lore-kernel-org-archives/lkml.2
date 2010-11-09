@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825Ab0KINvt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 08:51:49 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37000 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223Ab0KINvs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 08:51:48 -0500
-Date: Tue, 9 Nov 2010 13:51:29 +0000
-From: Wolfgang Spraul <wolfgang@sharism.cc>
-To: OpenWrt Development List <openwrt-devel@lists.openwrt.org>
-Cc: Arnaud Lacombe <lacombar@gmail.com>, Greg KH <greg@kroah.com>,
-        Elvis Dowson <elvis.dowson@mac.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Anca Emanuel <anca.emanuel@gmail.com>
-Subject: Re: [OpenWrt-Devel] Forked android kernel development from linux
- kernel mainline
-Message-ID: <20101109135129.GE14380@asus.wolf>
-References: <01784A8B-36A0-4E8A-9729-23C2B19351F8@mac.com>
- <20101107155757.GA13736@kroah.com>
- <AANLkTik=UWwRLOaHMfVifYiQPpSwoYuA6J1EoL5BOgJY@mail.gmail.com>
- <201011091427.09050.florian@openwrt.org>
+	id S1752508Ab0KINwO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 08:52:14 -0500
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:45484 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751439Ab0KINwM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 08:52:12 -0500
+Message-ID: <4CD9520A.9020906@fusionio.com>
+Date: Tue, 09 Nov 2010 14:52:10 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201011091427.09050.florian@openwrt.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Shaohua Li <shaohua.li@intel.com>
+CC: Vivek Goyal <vgoyal@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
+        "czoccolo@gmail.com" <czoccolo@gmail.com>
+Subject: Re: [patch 2/3]cfq-iosched: schedule dispatch for noidle queue
+References: <1289182038.23014.190.camel@sli10-conroe>	 <20101108142842.GC16767@redhat.com>	 <1289266267.23014.196.camel@sli10-conroe>	 <20101109021540.GA29210@redhat.com>	 <1289269716.23014.208.camel@sli10-conroe>	 <20101109023919.GB29847@redhat.com> <1289271496.23014.213.camel@sli10-conroe>
+In-Reply-To: <1289271496.23014.213.camel@sli10-conroe>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Florian and Greg,
-
-> > Just a small comment to say that Android is not the only one (but
-> > certainly the most visible, and thus easiest to bash on) not making
-> > effort to get their stuff in mainline. OpenWRT people are also
-> > maintaining their fork of the kernel, without even using git, and not
-> > contributing much to mainline (I'm certainly mistaken on that last
-> > comment).
+On 2010-11-09 03:58, Shaohua Li wrote:
+> On Tue, 2010-11-09 at 10:39 +0800, Vivek Goyal wrote:
+>> On Tue, Nov 09, 2010 at 10:28:36AM +0800, Shaohua Li wrote:
+>>
+>> [..]
+>>>>>> Why do we have to wait for all requests to finish in device? Will driver
+>>>>>> most likely not ask for next request when 1-2 requests have completed
+>>>>>> and at that time we should expire the queue if queue is no more marked
+>>>>>> as "noidle"?
+>>>>> The issue is a queue is idle just because it's the last queue of the
+>>>>> service tree. Then a new queue is added and the idled queue should not
+>>>>> idle now. we should preempt the idled queue soon. does this make sense
+>>>>> to you?
+>>>>
+>>>> If that's the case then you should just modify should_preempt() so that
+>>>> addition of a new queue could preempt an empty queue which has now become
+>>>> noidle.
+>>>>
+>>>> You have also modified cfq_completed_request() function, which will wake
+>>>> up the worker thread and then try to dispatch a request. IMHO, in practice
+>>>> driver asks for new request almost immediately and you don't gain much
+>>>> by this additional wakeup.
+>>>>
+>>>> So my point being, that we increased the code complexity for no visible
+>>>> performance improvement also increased thread wakeups resulting in more
+>>>> cpu consumption.
+>>> Ah, you are right, we only need modify should_preempt. Updated the patch as below.
+>>>
+>>
+>> Thanks. Jens has already applied the patches on for-2.6.38/core branch of
+>> block tree. I think you shall have to generate an incremental patch
+>> which revert the bits introduced in cfq_completed_request().
+> Jens, how to handle this? if you want to an incremental patch, here it
+> is.
 > 
-> You are a bit rude and mistaking at the same time. We did contribute back TI 
-> AR7, Mikrotik RB532, RDC R-321x, IXP4xx to name a few and a lot of various 
-> patches on different related projects.
+> Subject: cfq-iosched: don't schedule a dispatch for a non-idle queue
+> 
+> Vivek suggests we don't need schedule a dispatch when an idle queue
+> becomes nonidle. And he is right, cfq_should_preempt already covers
+> the logic.
 
-I'm speaking as a bystander here, but Lars-Peter Clausen took an enormous
-effort to get an entire new SoC, Ingenic's XBurst 4740, into mainline
-Linux, using the OpenWrt patch system as his development/staging area.
-A lot of that work was merged mainline in 2.6.36, some more is coming.
+Thanks Vivek, I agree with your analysis. I have applied this one as well.
 
-I think the mainline quality standards are high (nothing wrong with that),
-so it's not easy to get stuff up to that level. And there is not exactly
-much of a pull force either, if I may say so.
+-- 
+Jens Axboe
 
-I have worked on numerous projects, platforms and build systems over
-the years. The OpenWrt people and tools are some of the most upstream
-oriented and best ways to get upstream I have seen.
-
-The next big thing I will try to lend a helping hand to will be the
-kernel.org inclusion of the Milkymist SoC.
-A fairly clean and constantly re-based kernel is here
-https://github.com/tmatsuya/linux-2.6
-Linux 2.6.36+ is already booting, now it 'only' needs to go mainline ;-)
-http://lists.milkymist.org/pipermail/devel-milkymist.org/2010-October/000979.html
-
-Anybody mainline care to pull directly? That would be awesome. Otherwise
-my next best bet would be to go to OpenWrt first, hack it into SVN
-patches, then go from there. At least OpenWrt cares a lot to produce
-buildable and bootable images at any time, that's an excellent way to
-go for bigger and better things.
-
->From the perspective of someone looking from mainline, I can understand
-the frustration over not seeing a git repo that one can pull from at
-any time. But from the outside it looks a bit different. Patches are
-sometimes forced to live outside mainline for a long long time, years.
-And in those years the way OpenWrt is dealing with patches is still a
-very effective system to avoid bitrot.
-
-my 2c,
-Wolfgang
