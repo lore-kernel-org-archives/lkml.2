@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753165Ab0KINmf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 08:42:35 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47969 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751959Ab0KINmc (ORCPT
+	id S1753199Ab0KINoB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 08:44:01 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:35280 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751959Ab0KINoA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 08:42:32 -0500
-Date: Tue, 9 Nov 2010 13:40:50 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Sreedhara DS <sreedhara.ds@intel.com>, Alan Cox <alan@linux.intel.com>,
-        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH] intel_scu_ipc: fix signedness bug
-Message-ID: <20101109134050.1ad58680@lxorguk.ukuu.org.uk>
-In-Reply-To: <1288246119.5153.1.camel@mola>
-References: <1288246119.5153.1.camel@mola>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Nov 2010 08:44:00 -0500
+Date: Tue, 9 Nov 2010 14:43:55 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: john stultz <johnstul@us.ibm.com>
+Cc: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Clark Williams <williams@redhat.com>
+Subject: Re: [PATCH] Greatly improve TSC calibration using a delayed
+ workqueue
+Message-ID: <20101109134355.GA29433@basil.fritz.box>
+References: <1289003985-29060-1-git-send-email-johnstul@us.ibm.com>
+ <20101107204153.GA17592@basil.fritz.box>
+ <1289253887.2798.40.camel@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289253887.2798.40.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Oct 2010 14:08:39 +0800
-Axel Lin <axel.lin@gmail.com> wrote:
+> Interesting. Thanks for pointing that out! Couldn't I just start the
+> calibration after fs_initcall (when the hpet_late_init runs) to avoid
+> this as well? 
 
-> busy_loop() returns negative error code, thus change err variable
-> from u32 to int to properly propagate correct error code.
+Yes that probably would work.  Or use the barrier infrastructure 
+in workqueue.c
+
 > 
-> Also remove unneeded initialization for err and i variables.
+> > Another issue may be races against suspend, but that may be too
+> > obscure.
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> Yea, that seems fairly obscure. Basically you'd have to suspend in the
+> first second as the system came up. In that case the code will throw out
+> any calibration refinement that's over 1% off of the initial boot
+> calibration, so I think this is ok trade off.
 
-This was already partly fixed in my tree but added the other fixes.
+It may happen with opportunistic suspend if the system boots very fast.
 
-Thanks
-Alan
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
