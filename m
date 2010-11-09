@@ -1,145 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755009Ab0KIXBP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 18:01:15 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33172 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751265Ab0KIXBO (ORCPT
+	id S1754347Ab0KIXGg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 18:06:36 -0500
+Received: from bld-mail15.adl6.internode.on.net ([150.101.137.100]:51572 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751202Ab0KIXGe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 18:01:14 -0500
-Date: Tue, 9 Nov 2010 15:00:06 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Hellwig <hch@lst.de>, Jan Engelhardt <jengelh@medozas.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/5] writeback: stop background/kupdate works from
- livelocking other works
-Message-Id: <20101109150006.05892241.akpm@linux-foundation.org>
-In-Reply-To: <20101109222827.GJ4936@quack.suse.cz>
-References: <20101108230916.826791396@intel.com>
-	<20101108231726.993880740@intel.com>
-	<20101109131310.f442d210.akpm@linux-foundation.org>
-	<20101109222827.GJ4936@quack.suse.cz>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Nov 2010 18:06:34 -0500
+Date: Wed, 10 Nov 2010 10:06:27 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] dio: scale unaligned IO tracking via multiple lists
+Message-ID: <20101109230627.GP2715@dastard>
+References: <1289202023-15102-1-git-send-email-david@fromorbit.com>
+ <1289202023-15102-3-git-send-email-david@fromorbit.com>
+ <x491v6vakux.fsf@segfault.boston.devel.redhat.com>
+ <20101108231256.GS2715@dastard>
+ <x4962w6439y.fsf@segfault.boston.devel.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <x4962w6439y.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Nov 2010 23:28:27 +0100
-Jan Kara <jack@suse.cz> wrote:
-
->   Hi,
+On Tue, Nov 09, 2010 at 04:04:41PM -0500, Jeff Moyer wrote:
+> Dave Chinner <david@fromorbit.com> writes:
 > 
-> On Tue 09-11-10 13:13:10, Andrew Morton wrote:
-> > On Tue, 09 Nov 2010 07:09:19 +0800
-> > Wu Fengguang <fengguang.wu@intel.com> wrote:
-> > I find the description to be somewhat incomplete...
->   OK, so let me fill in the gaps ;)
+> > On Mon, Nov 08, 2010 at 10:36:06AM -0500, Jeff Moyer wrote:
+> >> Dave Chinner <david@fromorbit.com> writes:
+> >> 
+> >> > From: Dave Chinner <dchinner@redhat.com>
+> >> >
+> >> > To avoid concerns that a single list and lock tracking the unaligned
+> >> > IOs will not scale appropriately, create multiple lists and locks
+> >> > and chose them by hashing the unaligned block being zeroed.
+> >> >
+> >> > Signed-off-by: Dave Chinner <dchinner@redhat.com>
+> >> > ---
+> >> >  fs/direct-io.c |   49 ++++++++++++++++++++++++++++++++++++-------------
+> >> >  1 files changed, 36 insertions(+), 13 deletions(-)
+> >> >
+> >> > diff --git a/fs/direct-io.c b/fs/direct-io.c
+> >> > index 1a69efd..353ac52 100644
+> >> > --- a/fs/direct-io.c
+> >> > +++ b/fs/direct-io.c
+> >> > @@ -152,8 +152,28 @@ struct dio_zero_block {
+> >> >  	atomic_t	ref;		/* reference count */
+> >> >  };
+> >> >  
+> >> > -static DEFINE_SPINLOCK(dio_zero_block_lock);
+> >> > -static LIST_HEAD(dio_zero_block_list);
+> >> > +#define DIO_ZERO_BLOCK_NR	37LL
+> >> 
+> >> I'm always curious to know how these numbers are derived.  Why 37?
+> >
+> > It's a prime number large enough to give enough lists to minimise
+> > contention whilst providing decent distribution for 8 byte aligned
+> > addresses with low overhead. XFS uses the same sort of waitqueue
+> > hashing for global IO completion wait queues used by truncation
+> > and inode eviction (see xfs_ioend_wait()).
+> >
+> > Seemed reasonable (and simple!) just to copy that design pattern
+> > for another global IO completion wait queue....
 > 
-> > > From: Jan Kara <jack@suse.cz>
-> > > 
-> > > Background writeback are easily livelockable (from a definition of their
-> > > target).
-> > 
-> > *why* is background writeback easily livelockable?  Under which
-> > circumstances does this happen and how does it come about?
-> > 
-> > > This is inconvenient because it can make sync(1) stall forever waiting
-> > > on its queued work to be finished.
-> > 
-> > Again, why?  Because there are works queued from the flusher thread,
-> > but that thread is stuck in a livelocked state in <unspecified code
-> > location> so it is unable to service the other works?  But the pocess
-> > which called sync() will as a last resort itself perform all the
-> > required IO, will it not?  If so, how can it livelock?
->   New description which should address above questions:
-> Background writeback is easily livelockable in a loop in wb_writeback() by
-> a process continuously re-dirtying pages (or continuously appending to a
-> file). This is in fact intended as the target of background writeback is to
-> write dirty pages it can find as long as we are over
-> dirty_background_threshold.
+> OK.  I just had our performance team record some statistics for me on an
+> unmodified kernel during an OLTP-type workload.  I've attached the
+> systemtap script that I had them run.  I wanted to see just how common
+> the sub-page-block zeroing was, and I was frightened to find that, in a
+> 10 minute period , over 1.2 million calls were recorded.  If we're
+> lucky, my script is buggy.  Please give it a look-see.
 
-Well.  The objective of the kupdate function is utterly different.
+Well, it's just checking how many blocks are candidates for zeroing
+inside the dio_zero_block() function call. i.e. the function gets
+called on every newly allocated block at the start of an IO. Your
+result implies that there were 1.2 million IOs requiring allocation
+in ten minutes, because the next check in the dio_zero_block():
 
-> But the above behavior gets inconvenient at times because no other work
-> queued in the flusher thread's queue gets processed. In particular,
-> since e.g. sync(1) relies on flusher thread to do all the IO for it,
+        dio_blocks_per_fs_block = 1 << dio->blkfactor;
+        this_chunk_blocks = dio->block_in_file & (dio_blocks_per_fs_block - 1);
 
-That's fixable by doing the work synchronously within sync_inodes_sb(),
-rather than twiddling thumbs wasting a thread resource while waiting
-for kernel threads to do it.  As an added bonus, this even makes cpu
-time accounting more accurate ;)
+        if (!this_chunk_blocks)
+                return;
 
-Please remind me why we decided to hand the sync_inodes_sb() work off
-to other threads?
+determines if the IO is unaligned and zeroing is really necessary or
+not. Your script needs to take this into account, not just count the
+number of times the function is called with a new buffer.
 
-> sync(1) can hang forever waiting for flusher thread to do the work.
+> I'm all ears for next steps.  We can check to see how deep the hash
+> chains get.  We could also ask the folks at Intel to run this through
+> their database testing rig to get a quantification of the overhead.
 > 
-> Generally, when a flusher thread has some work queued, someone submitted
-> the work to achieve a goal more specific than what background writeback
-> does. Moreover by working on the specific work, we also reduce amount of
-> dirty pages which is exactly the target of background writeout. So it makes
-> sense to give specific work a priority over a generic page cleaning.
-> 
-> Thus we interrupt background writeback if there is some other work to do. We
-> return to the background writeback after completing all the queued work.
-> 
-> Is it better now?
-> 
-> > > Generally, when a flusher thread has
-> > > some work queued, someone submitted the work to achieve a goal more specific
-> > > than what background writeback does. So it makes sense to give it a priority
-> > > over a generic page cleaning.
-> > > 
-> > > Thus we interrupt background writeback if there is some other work to do. We
-> > > return to the background writeback after completing all the queued work.
-> > > 
-> > > Signed-off-by: Jan Kara <jack@suse.cz>
-> > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > > ---
-> > >  fs/fs-writeback.c |    9 +++++++++
-> > >  1 file changed, 9 insertions(+)
-> > > 
-> > > --- linux-next.orig/fs/fs-writeback.c	2010-11-07 21:56:42.000000000 +0800
-> > > +++ linux-next/fs/fs-writeback.c	2010-11-07 22:00:51.000000000 +0800
-> > > @@ -651,6 +651,15 @@ static long wb_writeback(struct bdi_writ
-> > >  			break;
-> > >  
-> > >  		/*
-> > > +		 * Background writeout and kupdate-style writeback are
-> > > +		 * easily livelockable. Stop them if there is other work
-> > > +		 * to do so that e.g. sync can proceed.
-> > > +		 */
-> > > +		if ((work->for_background || work->for_kupdate) &&
-> > > +		    !list_empty(&wb->bdi->work_list))
-> > > +			break;
-> > > +
-> > > +		/*
-> > >  		 * For background writeout, stop when we are below the
-> > >  		 * background dirty threshold
-> > >  		 */
-> > 
-> > So...  what prevents higher priority works (eg, sync(1)) from
-> > livelocking or seriously retarding background or kudate writeout?
->   If other work than background or kupdate writeout livelocks, it's a bug
-> which should be fixed (either by setting sensible nr_to_write or by tagging
-> like we do it for WB_SYNC_ALL writeback). Of course, higher priority work
-> can be running when background or kupdate writeout would need to run as
-> well. But the idea here is that the purpose of background/kupdate types of
-> writeout is to get rid of dirty data and any type of writeout does this so
-> working on it we also work on background/kupdate writeout only possibly
-> less efficiently.
+> What do you think?
 
-The kupdate function is a data-integrity/quality-of-service sort of
-thing.
+Let's run a fixed script first - if databases are really doing so
+much unaligned sub-block IO, then they need to be fixed as a matter
+of major priority because they are doing far more IO than they need
+to be....
 
-And what I'm asking is whether this change enables scenarios in which
-these threads can be kept so busy that the kupdate function gets
-interrupted so frequently that we can have dirty memory not being
-written back for arbitrarily long periods of time?
+Cheers,
 
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
