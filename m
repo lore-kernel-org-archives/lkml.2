@@ -1,85 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755211Ab0KIBXc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 20:23:32 -0500
-Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:53120 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754556Ab0KIBXa (ORCPT
+	id S1755191Ab0KIB2K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 20:28:10 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:52963 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754180Ab0KIB2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 20:23:30 -0500
-Date: Tue, 9 Nov 2010 12:22:54 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Josef Bacik <josef@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        xfs@oss.sgi.com, joel.becker@oracle.com, cmm@us.ibm.com,
-        cluster-devel@redhat.com
-Subject: Re: [PATCH 2/6] XFS: handle hole punching via fallocate properly
-Message-ID: <20101109012254.GE2715@dastard>
-References: <1289248327-16308-1-git-send-email-josef@redhat.com>
- <1289248327-16308-2-git-send-email-josef@redhat.com>
+	Mon, 8 Nov 2010 20:28:09 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=rufVdBVhNBUYMAZtN+K9mZpVWOooppEhpm7MedkCUY0T++l0pQq6Rvh9bzo0wvxYoa
+         I5AID0XQH7I5bhGTaj6U1qlHoDrG6iNmsHtsKWi6zuVnta3vp9ZVuU6uzaT8q07uYakT
+         QGTansElP1M31vpDjaqyfCCiEH8cry3VGxXUA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289248327-16308-2-git-send-email-josef@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1289265320-7025-1-git-send-email-gthelen@google.com>
+References: <1289265320-7025-1-git-send-email-gthelen@google.com>
+Date: Tue, 9 Nov 2010 10:28:08 +0900
+Message-ID: <AANLkTikDUkFgZ67tLeB080UhQByOc4yk4xmKTyEkJYq4@mail.gmail.com>
+Subject: Re: [PATCH] memcg: avoid overflow in memcg_hierarchical_free_pages()
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 08, 2010 at 03:32:03PM -0500, Josef Bacik wrote:
-> This patch simply allows XFS to handle the hole punching flag in fallocate
-> properly.  I've tested this with a little program that does a bunch of random
-> hole punching with FL_KEEP_SIZE and without it to make sure it does the right
-> thing.  Thanks,
-> 
-> Signed-off-by: Josef Bacik <josef@redhat.com>
-> ---
->  fs/xfs/linux-2.6/xfs_iops.c |   12 +++++++++---
->  1 files changed, 9 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/xfs/linux-2.6/xfs_iops.c b/fs/xfs/linux-2.6/xfs_iops.c
-> index 96107ef..99df347 100644
-> --- a/fs/xfs/linux-2.6/xfs_iops.c
-> +++ b/fs/xfs/linux-2.6/xfs_iops.c
-> @@ -516,6 +516,7 @@ xfs_vn_fallocate(
->  	loff_t		new_size = 0;
->  	xfs_flock64_t	bf;
->  	xfs_inode_t	*ip = XFS_I(inode);
-> +	int		cmd = XFS_IOC_RESVSP;
->  
->  	/* preallocation on directories not yet supported */
->  	error = -ENODEV;
-> @@ -528,17 +529,22 @@ xfs_vn_fallocate(
->  
->  	xfs_ilock(ip, XFS_IOLOCK_EXCL);
->  
-> +	if (mode & FALLOC_FL_PUNCH_HOLE)
-> +		cmd = XFS_IOC_UNRESVSP;
-> +
->  	/* check the new inode size is valid before allocating */
->  	if (!(mode & FALLOC_FL_KEEP_SIZE) &&
->  	    offset + len > i_size_read(inode)) {
-> -		new_size = offset + len;
-> +		if (cmd == XFS_IOC_UNRESVSP)
-> +			new_size = offset;
-> +		else
-> +			new_size = offset + len;
-
-What semantic is FALLOC_FL_KEEP_SIZE supposed to convey during a
-hole punch? Doesn't this just turn the hole punch operation into
-a truncate? If so, what's the point of punching the hole when you
-can just call ftruncate() to get the same result?
-
-I'd suggest that FALLOC_FL_PUNCH_HOLE should, by definition, not
-change the file size, and have no option to be able to change it.
-This needs to be defined and documented - can you include a man
-page update in this series that defines the expected behaviour
-of FALLOC_FL_PUNCH_HOLE?
-
-Cheers,
-
-Dave.
+On Tue, Nov 9, 2010 at 10:15 AM, Greg Thelen <gthelen@google.com> wrote:
+> Use page counts rather than byte counts to avoid overflowing
+> unsigned long local variables.
+>
+> Signed-off-by: Greg Thelen <gthelen@google.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 -- 
-Dave Chinner
-david@fromorbit.com
+Kind regards,
+Minchan Kim
