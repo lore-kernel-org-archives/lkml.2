@@ -1,142 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754725Ab0KIAaO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 19:30:14 -0500
-Received: from kroah.org ([198.145.64.141]:40769 "EHLO coco.kroah.org"
+	id S1753605Ab0KIAtI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 19:49:08 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:41882 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752186Ab0KIAaL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 19:30:11 -0500
-Date: Mon, 8 Nov 2010 16:28:29 -0800
-From: Greg KH <greg@kroah.com>
-To: Vladislav Bolkhovitin <vst@vlnb.net>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
-        Bart Van Assche <bart.vanassche@gmail.com>,
-        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
-        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Hannes Reinecke <hare@suse.de>,
-        Richard Sharpe <realrichardsharpe@gmail.com>,
-        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
-Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
-Message-ID: <20101109002829.GA22633@kroah.com>
-References: <20101011213235.GA11489@kroah.com>
- <4CB4AEB9.30501@vlnb.net>
- <20101012190345.GA25737@kroah.com>
- <4CB75E81.7000208@vlnb.net>
- <20101014200413.GA30831@kroah.com>
- <4CC1CA4D.1090609@vlnb.net>
- <20101022175624.GA13640@kroah.com>
- <4CC1DAA2.7030602@vlnb.net>
- <20101022185437.GA9103@kroah.com>
- <4CD8566D.1020202@vlnb.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CD8566D.1020202@vlnb.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751959Ab0KIAtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Nov 2010 19:49:07 -0500
+Date: Tue, 9 Nov 2010 11:49:00 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: failed to fetch the genesis tree
+Message-Id: <20101109114900.84679f9e.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__9_Nov_2010_11_49_00_+1100_EhZ1M6Vn6g7x8Kf+"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 08, 2010 at 10:58:37PM +0300, Vladislav Bolkhovitin wrote:
-> Greg KH, on 10/22/2010 10:54 PM wrote:
-> > On Fri, Oct 22, 2010 at 10:40:34PM +0400, Vladislav Bolkhovitin wrote:
-> >>>> +	unsigned int tgt_kobj_initialized:1;
-> >>>
-> >>> It's the middle of the merge window, and I'm about to go on vacation, so
-> >>> I didn't read this patch after this line.
-> >>>
-> >>> It's obvious that this patch is wrong, you shouldn't need to worry about
-> >>> this.  And even if you did, you don't need this flag.
-> >>>
-> >>> Why are you trying to do something that no one else needs?  Why make
-> >>> things harder than they have to be.
-> >>
-> >> I tried to explain that to you in http://lkml.org/lkml/2010/10/14/291
-> >> and mentioned there the need to create this flag to track
-> >> half-initialized kobjects. You agreed
-> >> (http://lkml.org/lkml/2010/10/14/299) that don't return half-initialized
-> >> objects is a regular kernel practice, but then requested to strictly
-> >> bound the larger object freeing to its kobject release(), which means
-> >> that all SYSFS creating functions now have to return half-initialized
-> >> SYSFS hierarchy in case of any error. Hence the flag to track it.
-> > 
-> > I agreed that you needed to do something about it, not that this is the
-> > correct way to do it.
-> > 
-> > Think for a second as to why your code path looks different from EVERY
-> > other kobject user in the kernel.  Perhaps it is incorrect?  You don't
-> > need all this completion mess, in fact, it's wrong.
-> > 
-> > Just do what everyone else does please, as that is the simpler, and
-> > correct, way to do it.
-> 
-> Hello Greg,
-> 
-> Why SCST objects are different from most other kernel objects and why
-> they can't be implemented the same way as them is exactly what I'm
-> trying to explain you. Let me try again from a bit different angle.
+--Signature=_Tue__9_Nov_2010_11_49_00_+1100_EhZ1M6Vn6g7x8Kf+
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm sorry, but I just don't buy it.
+Hi Paul,
 
-> SCST objects are different from the most other kernel objects, because
-> they are very complex, hence complex to initialize and delete with
-> dependencies in order how initialization and delete actions should be
-> performed.
+Fetching the genesis tree today produced this error:
 
-Then don't abuse kobjects with this "different" type of kobject, as that
-is not how the kobject code was designed to be used.
+fatal: '/pub/scm/linux/kernel/git/lethal/genesis-2.6.git' does not appear t=
+o be a git repository
 
-It was only designed to be used with the "sane" type of kernel objects
-:)
+I will use the version of the tree from next-20101029 for today.
 
-> Particularly, SCST objects have a lot of attributes and sub-objects,
-> so their kobjects can't be inited and exposed to SYSFS or removed from
-> it until they reach some point during initialization or delete
-> correspondingly, otherwise their attributes' reads and writes can
-> crash.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-That sounds like an implementation error.  No other kernel code has that
-problem from what I can see.
+--Signature=_Tue__9_Nov_2010_11_49_00_+1100_EhZ1M6Vn6g7x8Kf+
+Content-Type: application/pgp-signature
 
-> Note, SCST's kobjects are not the only kobjects in the kernel using the
-> completion based delete. See, for instance, ktype_cpufreq, ktype_cpuidle
-> or ext4_ktype.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-ext4 is using this to get stuff under the /sys/fs/ext4 location.  And
-even there, I don't think it is using kobjects correctly, but I really
-don't want to go audit that code at the moment.
+iQEcBAEBAgAGBQJM2Jp8AAoJEDMEi1NhKgbswtoH/js+EBLWicIei6szv7KBr0Zs
+mIMYsgkPQ+mCTa7MXKhk1yKyqtZLX7Q8p0E/Et17LzgoYYiUnAB6xXM8VuvzeFbp
+gkiDN/DF157CsrD6FMLqkPFz5NvEzgV78Nh3VVHiu7zgkqnl6DmAhzAhzwqkVWPb
++G09AePNJRCB6eXUxhJgVrU6vpMoap8L0f2CLGwlhsFAoJxST5K1HAswehdKECCo
+vJcDxXSybC3ibbUZJTkgyUlwf3x7nOi6tWu/yIvdnJHpNVttxhlkFysAAQNWK7bh
+JKpX5S49GYqoAkU9hAE8B9t+Hmb6FlToexfsSlSRwxDH3Fk+NpoCaxL5DFL6F3I=
+=rYXV
+-----END PGP SIGNATURE-----
 
-cpufreq and cpuidle is also probably incorrect, but again, I don't feel
-like auditing it right now.
-
-Basically, don't copy bad examples as a valid usage model for the code.
-
-> Also, elevator (struct elevator_queue) uses "registered" flag to see if
-> it was added to the SYSFS.
-
-It's wrong and should be fixed then.
-
-> > Oh, and why are you using a kobject at all anyway?  Shouldn't you be
-> > using a 'struct device'?
-> 
-> We need only to represent our internal SCST objects on the SYSFS. The
-> objects are not devices, but special entities for special purposes. For
-> instance, struct scst_session is a representation of SCSI I_T nexuses.
-> Struct scst_tgt_dev - I_T_L nexuses. Another example is struct scst_acg,
-> which is a representation of per initiator access control groups to
-> determine which initiators can see which LUNs. Hence, for such purpose
-> kobjects are fully sufficient.
-
-No, you should be using a struct device as you are putting stuff into
-the device tree.  NEVER put a kobject into the device tree, that is just
-wrong and will cause problems.
-
-thanks,
-
-greg k-h
+--Signature=_Tue__9_Nov_2010_11_49_00_+1100_EhZ1M6Vn6g7x8Kf+--
