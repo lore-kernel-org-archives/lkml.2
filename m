@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752518Ab0KIH6s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 02:58:48 -0500
-Received: from dallas.jonmasters.org ([72.29.103.172]:50451 "EHLO
-	dallas.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752812Ab0KIH6s (ORCPT
+	id S1753227Ab0KIH73 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 02:59:29 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:40483 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753071Ab0KIH71 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 02:58:48 -0500
-Subject: Re: PROBLEM: brcm80211 unable to survive suspend/resume cycle
-From: Jon Masters <jonathan@jonmasters.org>
-To: Greg KH <greg@kroah.com>
-Cc: devel <devel@linuxdriverproject.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101109032455.GA31048@kroah.com>
-References: <1289272437.3916.440.camel@constitution.bos.jonmasters.org>
-	 <20101109032455.GA31048@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: World Organi[sz]ation of Broken Dreams
-Date: Tue, 09 Nov 2010 02:58:56 -0500
-Message-ID: <1289289536.3916.465.camel@constitution.bos.jonmasters.org>
+	Tue, 9 Nov 2010 02:59:27 -0500
+Date: Tue, 9 Nov 2010 08:59:14 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Simon Guinot <sguinot@lacie.com>, lm-sensors@lm-sensors.org
+Subject: Re: [PATCH] hwmon: (gpio-fan) Fix fan_ctrl_init error path
+Message-ID: <20101109085914.05589cca@endymion.delvare>
+In-Reply-To: <1289279919.14461.7.camel@mola>
+References: <1289279919.14461.7.camel@mola>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 74.92.29.237
-X-SA-Exim-Mail-From: jonathan@jonmasters.org
-X-SA-Exim-Scanned: No (on dallas.jonmasters.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-08 at 19:24 -0800, Greg KH wrote:
-> On Mon, Nov 08, 2010 at 10:13:57PM -0500, Jon Masters wrote:
-> > Folks,
-> > 
-> > I reported this before, but let me open up a new thread for this now
-> > that this driver has landed in 2.6.37-rc1 and been out for a while. I am
-> > able to use this driver (more or less) for daily use on my netbook, but
-> > it is unable survive a suspend/resume cycle without being unloaded and
-> > then reloaded again on resume. That actually seems to work quite well.
-> > 
-> > I believe the problem is firmware related:
+Hi Alex,
+
+On Tue, 09 Nov 2010 13:18:39 +0800, Axel Lin wrote:
+> Remove sysfs entries before return -ENODEV.
 > 
-> <snip>
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/hwmon/gpio-fan.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
 > 
-> Did you copy the authors/developers on this bug report?
-> 
-> Please do that...
+> diff --git a/drivers/hwmon/gpio-fan.c b/drivers/hwmon/gpio-fan.c
+> index aa701a1..d2e66b4 100644
+> --- a/drivers/hwmon/gpio-fan.c
+> +++ b/drivers/hwmon/gpio-fan.c
+> @@ -388,11 +388,13 @@ static int fan_ctrl_init(struct gpio_fan_data *fan_data,
+>  	fan_data->speed_index = get_fan_speed_index(fan_data);
+>  	if (fan_data->speed_index < 0) {
+>  		err = -ENODEV;
+> -		goto err_free_gpio;
+> +		goto err_remove_sysfs;
+>  	}
+>  
+>  	return 0;
+>  
+> +err_remove_sysfs:
+> +	sysfs_remove_group(&pdev->dev.kobj, &gpio_fan_ctrl_group);
+>  err_free_gpio:
+>  	for (i = i - 1; i >= 0; i--)
+>  		gpio_free(ctrl[i]);
 
-I forwarded the mail to Brett right after I sent it because I had missed
-them the original CC. Apologies for that. I didn't think it necessary to
-send a followup but appreciate your mail - anyway, I think they got it.
+This is certainly better than the current situation, however the fact
+that you need to do this strongly suggests that the initialization
+order is wrong in the first place. Creating the sysfs attribute should
+be the last thing done by the function, after all the rest has been
+successful. Otherwise there is a small window during which user-space
+can access the attribute but the driver isn't ready to deal with the
+requests.
 
-Jon.
-
-
+-- 
+Jean Delvare
