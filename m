@@ -1,101 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754970Ab0KIBNO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Nov 2010 20:13:14 -0500
-Received: from bld-mail20.adl6.internode.on.net ([150.101.137.105]:38066 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754717Ab0KIBNM (ORCPT
+	id S1754858Ab0KIBOM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Nov 2010 20:14:12 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:42686 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751966Ab0KIBOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Nov 2010 20:13:12 -0500
-Date: Tue, 9 Nov 2010 12:12:22 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Josef Bacik <josef@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        xfs@oss.sgi.com, joel.becker@oracle.com, cmm@us.ibm.com,
-        cluster-devel@redhat.com
-Subject: Re: [PATCH 1/6] fs: add hole punching to fallocate
-Message-ID: <20101109011222.GD2715@dastard>
-References: <1289248327-16308-1-git-send-email-josef@redhat.com>
+	Mon, 8 Nov 2010 20:14:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=X5e2BD25MyETywiKYtjaZnacZoELScnr0vlLeMmTwllUnyvfiSDoH4IM+8IoPSdUTe
+         sUuv18kYa+04VPBTh/8w==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289248327-16308-1-git-send-email-josef@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Mon, 8 Nov 2010 17:14:08 -0800
+Message-ID: <AANLkTi=JKizQkRgY-ev21Cv_33hhxx7U9kpF_OQmp4ou@mail.gmail.com>
+Subject: [patch] fix per task latencytop accumulator
+From: Ken Chen <kenchen@google.com>
+To: linux-kernel@vger.kernel.org, arjan@linux.intel.com,
+        akpm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 08, 2010 at 03:32:02PM -0500, Josef Bacik wrote:
-> Hole punching has already been implemented by XFS and OCFS2, and has the
-> potential to be implemented on both BTRFS and EXT4 so we need a generic way to
-> get to this feature.  The simplest way in my mind is to add FALLOC_FL_PUNCH_HOLE
-> to fallocate() since it already looks like the normal fallocate() operation.
-> I've tested this patch with XFS and BTRFS to make sure XFS did what it's
-> supposed to do and that BTRFS failed like it was supposed to.  Thank you,
-> 
-> Signed-off-by: Josef Bacik <josef@redhat.com>
-> ---
->  fs/open.c              |    2 +-
->  include/linux/falloc.h |    1 +
->  2 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/open.c b/fs/open.c
-> index 4197b9e..ab8dedf 100644
-> --- a/fs/open.c
-> +++ b/fs/open.c
-> @@ -223,7 +223,7 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
->  		return -EINVAL;
->  
->  	/* Return error if mode is not supported */
-> -	if (mode && !(mode & FALLOC_FL_KEEP_SIZE))
-> +	if (mode && (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE)))
->  		return -EOPNOTSUPP;
->  
->  	if (!(file->f_mode & FMODE_WRITE))
-> diff --git a/include/linux/falloc.h b/include/linux/falloc.h
-> index 3c15510..851cba2 100644
-> --- a/include/linux/falloc.h
-> +++ b/include/linux/falloc.h
-> @@ -2,6 +2,7 @@
->  #define _FALLOC_H_
->  
->  #define FALLOC_FL_KEEP_SIZE	0x01 /* default is extend size */
-> +#define FALLOC_FL_PUNCH_HOLE	0X02 /* de-allocates range */
+Per task latencytop accumulator prematurely terminate due to erroneous
+placement on latency_record_count.  It should be incremented whenever a
+new record is allocated instead of increment on every latencytop event.
 
-Hole punching was not included originally in fallocate() for a
-variety of reasons. IIRC, they were along the lines of:
+Also fix search iterator to only search known record events instead of
+blindly search all pre-allocated space.
 
-	1 de-allocating of blocks in an allocation syscall is wrong.
-	  People wanted a new syscall for this functionality.
-	2 no glibc interface needs it
-	3 at the time, only XFS supported punching holes, so there
-	  is not need to support it in a generic interface
-	4 the use cases presented were not considered compelling
-	  enough to justify the additional complexity (!)
+Signed-off-by: Ken Chen <kenchen@google.com>
 
-In the end, I gave up arguing for it to be included because just
-getting the FALLOC_FL_KEEP_SIZE functionality was a hard enough
-battle.
 
-Anyway, #3 isn't the case any more, #4 was just an excuse not to
-support anything ext4 couldn't do and lots of apps are calling
-fallocate directly (because glibc can't use FALLOC_FL_KEEP_SIZE) so
-#2 isn't an issue, either. I guess that leaves #1 to be debated;
-I don't think there is any problem with doing what you propose.
+diff --git a/kernel/latencytop.c b/kernel/latencytop.c
+index 877fb30..17110a4 100644
+--- a/kernel/latencytop.c
++++ b/kernel/latencytop.c
+@@ -194,14 +194,7 @@ __account_scheduler_latency(
 
-What I will suggest is that this requires a generic xfstest to be
-written and support added to xfs_io to enable that test (and others)
-to issue hole punches. Something along the lines of test 242 which I
-wrote for testing all the edge case of XFS_IOC_ZERO_RANGE (*) would be
-good.
+ 	account_global_scheduler_latency(tsk, &lat);
 
-Cheers,
+-	/*
+-	 * short term hack; if we're > 32 we stop; future we recycle:
+-	 */
+-	tsk->latency_record_count++;
+-	if (tsk->latency_record_count >= LT_SAVECOUNT)
+-		goto out_unlock;
+-
+-	for (i = 0; i < LT_SAVECOUNT; i++) {
++	for (i = 0; i < tsk->latency_record_count; i++) {
+ 		struct latency_record *mylat;
+ 		int same = 1;
 
-Dave.
+@@ -227,8 +220,14 @@ __account_scheduler_latency(
+ 		}
+ 	}
 
-(*) fallocate() version:
-http://git.kernel.org/?p=linux/kernel/git/dgc/xfsdev.git;a=commitdiff;h=45f3e1831e3abc8bd12ec1e6c548f73a8dd9e36d
--- 
-Dave Chinner
-david@fromorbit.com
++	/*
++	 * short term hack; if we're > 32 we stop; future we recycle:
++	 */
++	if (tsk->latency_record_count >= LT_SAVECOUNT)
++		goto out_unlock;
++
+ 	/* Allocated a new one: */
+-	i = tsk->latency_record_count;
++	i = tsk->latency_record_count++;
+ 	memcpy(&tsk->latency_record[i], &lat, sizeof(struct latency_record));
+
+ out_unlock:
