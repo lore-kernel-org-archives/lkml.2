@@ -1,93 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755426Ab0KIMKN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 07:10:13 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:34680 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754515Ab0KIMKL (ORCPT
+	id S1755438Ab0KIMLQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 07:11:16 -0500
+Received: from mx1.vsecurity.com ([209.67.252.12]:63122 "EHLO
+	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754822Ab0KIMLP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 07:10:11 -0500
-Date: Tue, 9 Nov 2010 07:07:52 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Mike Waychison <mikew@google.com>
-Cc: simon.kagstrom@netinsight.net, davem@davemloft.net,
-        Matt Mackall <mpm@selenic.com>, adurbin@google.com,
-        linux-kernel@vger.kernel.org, chavey@google.com,
-        Greg KH <greg@kroah.com>,
-        =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        akpm@linux-foundation.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH v2 04/23] netconsole: Call netpoll_cleanup() in process
- context
-Message-ID: <20101109120752.GA18269@hmsreliant.think-freely.org>
-References: <20101108203120.22479.19708.stgit@crlf.mtv.corp.google.com>
- <20101108203159.22479.48774.stgit@crlf.mtv.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101108203159.22479.48774.stgit@crlf.mtv.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-Spam-Score: -2.9 (--)
+	Tue, 9 Nov 2010 07:11:15 -0500
+Subject: Re: [PATCH] Restrict unprivileged access to kernel syslog
+From: Dan Rosenberg <drosenberg@vsecurity.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, security@kernel.org, stable@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>
+In-Reply-To: <20101109112350.GA29800@elte.hu>
+References: <1289273338.6287.128.camel@dan> <20101109112350.GA29800@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 09 Nov 2010 07:11:12 -0500
+Message-ID: <1289304672.6287.132.camel@dan>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 08, 2010 at 12:32:00PM -0800, Mike Waychison wrote:
-> The netconsole driver currently deadlocks if a NETDEV_UNREGISTER event
-> is received while netconsole is in use, which in turn causes it to pin a
-> reference to the network device.  The first deadlock was dealt with in
-> 3b410a31 so that we wouldn't recursively grab RTNL, but even calling
-> __netpoll_cleanup isn't safe to do considering that we are in atomic
-> context.  __netpoll_cleanup assumes it can sleep and has several
-> sleeping calls, such as synchronize_rcu_bh and
-> cancel_rearming_delayed_work.
-> 
-> Fix this by deferring netpoll_cleanup using scheduling work that
-> operates in process context.  We have to grab a reference to the
-> config_item in this case as we need to pin the item in place until it is
-> operated on.
-> 
-> Signed-off-by: Mike Waychison <mikew@google.com>
-> ---
->  drivers/net/netconsole.c |   55 ++++++++++++++++++++++++++++++++++++++++------
->  1 files changed, 48 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
-> index 288a025..02ba5c4 100644
-> --- a/drivers/net/netconsole.c
-> +++ b/drivers/net/netconsole.c
-> @@ -106,6 +106,7 @@ struct netconsole_target {
->  #endif
->  	int			np_state;
->  	struct netpoll		np;
-> +	struct work_struct	cleanup_work;
->  };
->  
->  #ifdef	CONFIG_NETCONSOLE_DYNAMIC
-> @@ -166,6 +167,22 @@ static void netconsole_target_put(struct netconsole_target *nt)
->  
->  #endif	/* CONFIG_NETCONSOLE_DYNAMIC */
->  
-> +static void deferred_netpoll_cleanup(struct work_struct *work)
-> +{
-> +	struct netconsole_target *nt;
-> +	unsigned long flags;
-> +
-> +	nt = container_of(work, struct netconsole_target, cleanup_work);
-> +	netpoll_cleanup(&nt->np);
-> +
-> +	spin_lock_irqsave(&target_list_lock, flags);
-> +	BUG_ON(nt->np_state != NETPOLL_CLEANING);
-> +	nt->np_state = NETPOLL_DISABLED;
-> +	spin_unlock_irqrestore(&target_list_lock, flags);
-> +
-> +	netconsole_target_put(nt);
-> +}
-> +
-Where is the synchronization on the new work queue when the module is getting
-removed? The target get/put code does nothing to the module refcount, and
-cleanup_netconsole just deletes targets, it doesn't block or fail on netconsole
-refcounts, so you could run this work after the module has been removed and oops
-the system.
 
-Neil
- 
+> 
+> The initialization to zero is implicit, no need to write it out.
+> 
+
+I'll resend after the first round of comments.
+
+> Also, it would also be useful to have a CONFIG_SECURITY_RESTRICT_DMESG=y option 
+> introduced by your patch as well, which flag allows a distro or user to disable 
+> unprivileged syslog reading via the kernel config.
+
+Are you suggesting having the existence of the sysctl depend on
+CONFIG_SECURITY_RESTRICT_DMESG, or having a choice between a sysctl
+(when config is disabled) and having restrictions always on (when config
+is enabled)?
+
+-Dan
+
