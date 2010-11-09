@@ -1,97 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753621Ab0KIOXN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 09:23:13 -0500
-Received: from smtp-out-109.synserver.de ([212.40.180.109]:1438 "EHLO
-	smtp-out-108.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752224Ab0KIOXL (ORCPT
+	id S1753676Ab0KIOYN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 09:24:13 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64327 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751069Ab0KIOYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 09:23:11 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: markus@trippelsdorf.de
-X-SynServer-PPID: 13009
-Date: Tue, 9 Nov 2010 14:07:35 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, john stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@amd64.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>, avi@redhat.com,
-        mtosatti@redhat.com
-Subject: Re: [bisected] Clocksource tsc unstable git
-Message-ID: <20101109130735.GA1570@arch.trippelsdorf.de>
-References: <20101026112052.GA1672@arch.trippelsdorf.de>
- <20101026131843.GC17852@aftab>
- <20101026135808.GB1672@arch.trippelsdorf.de>
- <alpine.LFD.2.00.1010261747250.3115@localhost6.localdomain6>
- <1288120736.2645.9.camel@localhost>
- <20101027142622.GA1555@arch.trippelsdorf.de>
- <20101027182608.GA1580@arch.trippelsdorf.de>
- <1288208215.3673.16.camel@laptop>
- <20101109125842.GA8636@osiris.boeblingen.de.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101109125842.GA8636@osiris.boeblingen.de.ibm.com>
+	Tue, 9 Nov 2010 09:24:10 -0500
+Subject: Re: [PATCH 6/6] ARM: ftrace: enable function graph tracer
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Rabin Vincent <rabin@rab.in>
+Cc: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        linux-arm-kernel@lists.infradead.org, Tim Bird <tim.bird@am.sony.com>
+In-Reply-To: <20101109134644.GA3163@debian>
+References: <1289067954-5080-1-git-send-email-rabin@rab.in>
+	 <1289067954-5080-6-git-send-email-rabin@rab.in>
+	 <AANLkTin8UO9ixVep0jKK8H5roWEVRDJW4khUpT2TpPs+@mail.gmail.com>
+	 <20101108091858.GP16938@pengutronix.de>
+	 <AANLkTinmSn1fqKv8sCCP8d0-_0HsLrhtorXvHCovOYve@mail.gmail.com>
+	 <20101109134644.GA3163@debian>
+Content-Type: text/plain; charset="UTF-8"
+Organization: ARM Limited
+Date: Tue, 09 Nov 2010 14:22:53 +0000
+Message-ID: <1289312573.11461.18.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 09 Nov 2010 14:22:53.0829 (UTC) FILETIME=[98EB5B50:01CB8019]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 09, 2010 at 01:58:42PM +0100, Heiko Carstens wrote:
-> On Wed, Oct 27, 2010 at 09:36:55PM +0200, Peter Zijlstra wrote:
-> > On Wed, 2010-10-27 at 20:26 +0200, markus@trippelsdorf.de wrote:
-> > > 
-> > > 34f971f6f7988be4d014eec3e3526bee6d007ffa is the first bad commit
-> > > commit 34f971f6f7988be4d014eec3e3526bee6d007ffa
-> > > Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > > Date:   Wed Sep 22 13:53:15 2010 +0200
-> > > 
-> > >     sched: Create special class for stop/migrate work
-> > > 
-> > >     In order to separate the stop/migrate work thread from the SCHED_FIFO
-> > >     implementation, create a special class for it that is of higher priority than
-> > >     SCHED_FIFO itself.
-> > > 
-> > >     This currently solves a problem where cpu-hotplug consumes so much cpu-time
-> > >     that the SCHED_FIFO class gets throttled, but has the bandwidth replenishment
-> > >     timer pending on the now dead cpu.
-> > > 
-> > >     It is also required for when we add the planned deadline scheduling class above
-> > >     SCHED_FIFO, as the stop/migrate thread still needs to transcent those tasks.
-> > > 
-> > >     Tested-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-> > >     Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > >     LKML-Reference: <1285165776.2275.1022.camel@laptop>
-> > >     Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> > > 
-> > > Reverting the commit solves the kvm hang issue.
-> > > (If this issue is related to my original tsc problem is of course open for
-> > > debate, but I have a strong hunch it is.) 
-> > 
-> > Too weird,.. what does the hang look like?
-> > 
-> > Can you generate a sysrq-t dump? The thing I'm looking for is the
-> > migration/# thread being runnable but not being current.
-> > 
-> > How can I reproduce this?
+On Tue, 2010-11-09 at 13:46 +0000, Rabin Vincent wrote:
+> Subject: [PATCHv2] ARM: ftrace: enable function graph tracer
 > 
-> I think there is a bug in pick_next_task_stop() in sched_stopclass.c:
+> Add the options to enable the function graph tracer on ARM.  Function
+> graph tracer support requires frame pointers, so exclude Thumb-2 and
+> also make sure FRAME_POINTER gets enabled when FUNCTION_GRAPH_TRACER is
+> used, since FUNCTION_TRACER doesn't "select FRAME_POINTER" when
+> ARM_UNWIND is used.  Therefore, with GCC 4.4.0+, you get plain function
+> tracing without frame pointers, but you'll need them if you want
+> function graph tracing.
 > 
-> If a stop-task scheduling class task (well... the migration thread ;) sets
-> its state to TASK_INTERRUPTIBLE and then gets preempted it will never
-> scheduled again, because pick_next_task_stop() ignores all tasks with a
-> state != TASK_RUNNING:
-> ...
-> 
-> I would guess something like the below would probably fix it.
-> Does that make any sense or did I miss something obvious?
+> Signed-off-by: Rabin Vincent <rabin@rab.in>
 
-You missed the fact that Peter already has a patch that fixes the
-problem, but never bothered to post it in this thread.
+Looks ok to me.
 
-http://article.gmane.org/gmane.linux.kernel/1058018
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 
--- 
-Markus
