@@ -1,140 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740Ab0KIGfc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 01:35:32 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:43716 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752662Ab0KIGf3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 01:35:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=t6xAt9R27dW7yLAU+v1DFnnqSlP0+bCA21JSq/q193zZlyqZzToFSqpmKnILsAHLvm
-         h1uuSC49iCxC3bsOyKSTcV1bcJF35DPcP8T5txFga6pdtRFxNqQGlR1LkRuBpV10KbJJ
-         uxSlKbOuGonWxwFhYlRI3lZXxwM3y0ty6VTZY=
-Date: Mon, 8 Nov 2010 22:35:20 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        =?iso-8859-1?Q?Andr=E9?= Goddard Rosa <andre.goddard@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Helge Deller <deller@gmx.de>
-Subject: Re: [PATCH RFC] serio HIL MLC: don't deref null, don't leak and
- return proper error
-Message-ID: <20101109063520.GA10502@core.coreip.homeip.net>
-References: <alpine.LNX.2.00.1011072024100.26247@swampdragon.chaosbits.net>
+	id S1752839Ab0KIGk1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 01:40:27 -0500
+Received: from quartz.orcorp.ca ([139.142.54.143]:48040 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752717Ab0KIGk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 01:40:26 -0500
+Date: Mon, 8 Nov 2010 23:40:16 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: David Safford <safford@watson.ibm.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-crypto@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        James Morris <jmorris@namei.org>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        Mimi Zohar <zohar@us.ibm.com>
+Subject: Re: [PATCH v1.2 3/4] keys: add new trusted key-type
+Message-ID: <20101109064016.GF16307@obsidianresearch.com>
+References: <1289230246-3856-1-git-send-email-zohar@linux.vnet.ibm.com> <1289230246-3856-4-git-send-email-zohar@linux.vnet.ibm.com> <20101108170937.GA31501@obsidianresearch.com> <1289240313.6060.10.camel@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1011072024100.26247@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1289240313.6060.10.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 07, 2010 at 08:36:33PM +0100, Jesper Juhl wrote:
-> Hi,
-> 
-> While reviewing various users of kernel memory allocation functions I came 
-> across drivers/input/serio/hil_mlc.c::hil_mlc_register() and noticed that
->  - it calls kzalloc() buf fails to check for a NULL return before use.
->  - it makes several allocations and if one fails it doesn't free the 
->    previous ones.
->  - It doesn't return -ENOMEM in the failed memory allocation case (it just 
->    crashes).
-> This patch corrects all of the above and also reworks the only caller of 
-> this function that I could find 
-> (drivers/input/serio/hp_sdc_mlc.c::hp_sdc_mlc_out()) so that it now checks 
-> the return value of hil_mlc_register() and properly propagate it on 
-> failure and I also restructured the code to remove some labels and goto's 
-> to make it, IMHO nicer to read.
-> 
-> I have no hardware to test, so please review carefully and let me know if 
-> I've done something completely stupid. Please don't merge this RFC patch 
-> unless at least one or more people who know this code and can actually 
-> test it have ACK'ed it.
+On Mon, Nov 08, 2010 at 01:18:33PM -0500, David Safford wrote:
 
-I think Helge Deller (CCed) used to have access to such hardware...
+> This is strictly for convenience in initramfs, so that the trusted
+> key can be loaded and locked in a single command, with no need for
+> an additional application to extend a PCR. As the the TPM driver 
+> already has support for extend, it's a trivial addition.
 
-> 
-> Ohh and please do CC me on replies.
-> 
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  hil_mlc.c    |    5 +++++
->  hp_sdc_mlc.c |   18 +++++++++---------
->  2 files changed, 14 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/input/serio/hil_mlc.c b/drivers/input/serio/hil_mlc.c
-> index e5624d8..bfd3865 100644
-> --- a/drivers/input/serio/hil_mlc.c
-> +++ b/drivers/input/serio/hil_mlc.c
-> @@ -932,6 +932,11 @@ int hil_mlc_register(hil_mlc *mlc)
->  		hil_mlc_copy_di_scratch(mlc, i);
->  		mlc_serio = kzalloc(sizeof(*mlc_serio), GFP_KERNEL);
->  		mlc->serio[i] = mlc_serio;
-> +		if (!mlc->serio[i]) {
-> +			for (; i >= 0; i--)
-> +				kfree(mlc->serio[i]);
-> +			return -ENOMEM;
-> +		}
->  		snprintf(mlc_serio->name, sizeof(mlc_serio->name)-1, "HIL_SERIO%d", i);
->  		snprintf(mlc_serio->phys, sizeof(mlc_serio->phys)-1, "HIL%d", i);
->  		mlc_serio->id			= hil_mlc_serio_id;
-> diff --git a/drivers/input/serio/hp_sdc_mlc.c b/drivers/input/serio/hp_sdc_mlc.c
-> index 7d2b820..d50f067 100644
-> --- a/drivers/input/serio/hp_sdc_mlc.c
-> +++ b/drivers/input/serio/hp_sdc_mlc.c
-> @@ -305,6 +305,7 @@ static void hp_sdc_mlc_out(hil_mlc *mlc)
->  static int __init hp_sdc_mlc_init(void)
->  {
->  	hil_mlc *mlc = &hp_sdc_mlc;
-> +	int err;
->  
->  #ifdef __mc68000__
->  	if (!MACH_IS_HP300)
-> @@ -323,22 +324,21 @@ static int __init hp_sdc_mlc_init(void)
->  	mlc->out = &hp_sdc_mlc_out;
->  	mlc->priv = &hp_sdc_mlc_priv;
->  
-> -	if (hil_mlc_register(mlc)) {
-> +	err = hil_mlc_register(mlc);
-> +	if (err) {
->  		printk(KERN_WARNING PREFIX "Failed to register MLC structure with hil_mlc\n");
-> -		goto err0;
-> +		return err;
->  	}
->  
->  	if (hp_sdc_request_hil_irq(&hp_sdc_mlc_isr)) {
->  		printk(KERN_WARNING PREFIX "Request for raw HIL ISR hook denied\n");
-> -		goto err1;
-> +		if (hil_mlc_unregister(mlc))
-> +			printk(KERN_ERR PREFIX "Failed to unregister MLC structure with hil_mlc.\n"
-> +				"This is bad.  Could cause an oops.\n");
-> +		return -EBUSY;
->  	}
-> +
->  	return 0;
-> - err1:
-> -	if (hil_mlc_unregister(mlc))
-> -		printk(KERN_ERR PREFIX "Failed to unregister MLC structure with hil_mlc.\n"
-> -			"This is bad.  Could cause an oops.\n");
-> - err0:
-> -	return -EBUSY;
->  }
->  
->  static void __exit hp_sdc_mlc_exit(void)
-> 
-> 
-> 
-> -- 
-> Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-> Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
-> Plain text mails only, please.
-> 
+I guess I imagined that user space would want to extend some PCRs
+anyhow with data from the root filesystem before handing over
+control. This is not related to your patch at all, just overall how
+I'd expect the TPM to be used..
 
--- 
-Dmitry
+It just seems like really odd functionality. I'm not familiar with the
+KH api, but is there any chance now (or in future) that non-root could
+access this function?
+
+A few random observations
+ - I'm sure someone will say kdoc format should be used for those
+   function comments?
+ - Using a random value to extend the PCR effectively wastes it
+   and creates a tiny risk the random extend could result in 0.
+ - It would be nice to formally state the datablob is a
+   TPM_STORED_DATA with no embellishments. The expectation is
+   userspace can validate the sealInfo prior to loading the
+   key.
+ - I'm unclear on the merits of using raw random data from the TPM.
+   I'd feel much better if this was mixed with random
+   from the kernel pool too. Ideally using a FIPS DBRNG transform..
+ - Shouldn't all the TPM RPC functions live together in the TPM code
+   someplace? You've done a good job of adding many more general
+   primitives to build RPC's with.
+
+   FWIW, last time I worked with TPMs I built a RPC code generator
+   for this stuff, which if any more are added would be a really smart
+   direction to head in.
+
+Cheers,
+Jason
