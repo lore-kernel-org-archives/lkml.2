@@ -1,57 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754347Ab0KIUBd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 15:01:33 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:33026 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754099Ab0KIUBY (ORCPT
+	id S1754181Ab0KIUFJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 15:05:09 -0500
+Received: from relay02.digicable.hu ([92.249.128.188]:48317 "EHLO
+	relay02.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752437Ab0KIUFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 15:01:24 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=d+9AthJR8tWzvGiJFgdEr1CF6bjsAIJFut6j7Rdnp4455bRWr3wqksmB1H/AQzA6eq
-         Aipi9fxx9U6x+eD78T8zlTMPzDrHU7yqSoTTYo4UT+FTsKeyKRttS3jJqJ3A64Ku4i0q
-         fL1tlrSjTVRULQz9dEXZxVI37UVNWd4k95fIo=
-Date: Tue, 9 Nov 2010 22:01:18 +0200
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] include/linux/kernel.h: Move logging bits to
- include/linux/logging.h
-Message-ID: <20101109200118.GA13016@core2.telecom.by>
-References: <1289281110-8559-1-git-send-email-joe@perches.com>
- <AANLkTime8YvyHysZF5sX6V2mXWJ0FUtdecpVFgRGqYm6@mail.gmail.com>
- <1289328235.1823.108.camel@Joe-Laptop>
- <AANLkTi=rTw+ByhdGc9prjwvqt_TT=NmOYzEjns1LffLC@mail.gmail.com>
+	Tue, 9 Nov 2010 15:05:06 -0500
+Message-ID: <4CD9A96D.1010306@freemail.hu>
+Date: Tue, 09 Nov 2010 21:05:01 +0100
+From: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+To: Pete Zaitcev <zaitcev@redhat.com>
+CC: linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Developer support list for Wireshark 
+	<wireshark-dev@wireshark.org>
+Subject: Re: usbmon: size of different fields?
+References: <4CD8ECE4.1090206@freemail.hu> <20101109075056.59a2e7d8@lembas.zaitcev.lan>
+In-Reply-To: <20101109075056.59a2e7d8@lembas.zaitcev.lan>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=rTw+ByhdGc9prjwvqt_TT=NmOYzEjns1LffLC@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Original: 94.21.97.45
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 09, 2010 at 10:49:19AM -0800, Linus Torvalds wrote:
-> On Tue, Nov 9, 2010 at 10:43 AM, Joe Perches <joe@perches.com> wrote:
-> >
-> > diff from V1 - Don't add pr_<level>_once macros
-> >
-> >  include/linux/kernel.h  |  244 +--------------------------------------
-> >  include/linux/logging.h |  295 +++++++++++++++++++++++++++++++++++++++++++++++
-> >  2 files changed, 296 insertions(+), 243 deletions(-)
-> >  create mode 100644 include/linux/logging.h
+Pete Zaitcev wrote:
+> On Tue, 09 Nov 2010 07:40:36 +0100
+> NÃ©meth MÃ¡rton <nm127@freemail.hu> wrote:
 > 
-> So where do the extra 53 lines come from now?
+>> I'm looking at the struct mon_bin_hdr and struct mon_bin_isodesc in file
+>> f=drivers/usb/mon/mon_bin.c
 > 
-> This still is clearly not just code movement, and it's impossible for
-> me to see what actually changed. Something must have.
+> Actually you're supposed to be looking at Documentation/usb/usbmon.txt.
+> If there is a discrepancy between the usbmon.txt and mon_bin.c, I want
+> to know about it.
 
-Why linux_banner is moved?
-Why linux_proc_banner is moved?
-Why header is not named printk.h?
-Why random stuff like log_buf_kexec_setup() and hexdump is moved?
+There is only minor differences between Documentation/usb/usbmon.txt and
+drivers/usb/mon/mon_bin.c . These are as follows:
+ - the busnum field is u16 in txt and "unsigned short" in c file
+ - the field "length" (in txt) has different name "len_urb" (in c)
+
+The ISO description structure is missing from the txt description but
+this can be found in drivers/usb/mon/mon_bin.c .
+
+>> As far as I understand u64, s64, u32 and s32 have always fixed bit lengths.
+>>
+>> What about "unsigned char", "char", "unsigned int" and "int"? May their size in bits
+>> differ in different architecture?
+> 
+> No they may not. They sizes are always the same on any architecture,
+> as long as Linux supports it.
+
+So to summarize, the following table is valid on all architectures. Right?
+
+  type in Linux  | size in bits
+  ---------------+---------------
+  unsigned char  | 8bit
+  char           | 8bit
+  unsigned int   | 32bit
+  int            | 32bit
+
+>> I'm asking this because I was dealing with the USB packet dissectors for Wireshark
+>> and it is possible to capture the USB traffic on one computer and then transfer
+>> the file to another computer.
+> 
+> Do be careful here, because the struct you're talking about is a part
+> of API, not a network stream. Its field sizes are rigidly defined, but
+> the byte order is host! You MUST NOT attempt to store it in pcap files.
+
+OK, that's clear, the byte order of the API structure fields are in "host endian"
+order. The API structures are already saved by Wireshark into file for quite some
+time. There is already a discussion on endianness topic together with ISO descritors:
+
+  Wireshark Bug 5370 - Add support for USB isochronous
+  https://bugs.wireshark.org/bugzilla/show_bug.cgi?id=5370
+
+There is an other problem which I found about capturing ISO USB packets with
+mmap, this problem seems to be originated from Linux kernel:
+
+  Kernel Bug Tracker Bug 22182 - usbmon: completed ISO packet content is not fully arriving with mmap
+  https://bugzilla.kernel.org/show_bug.cgi?id=22182
+
+	MÃ¡rton NÃ©meth
