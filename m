@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755242Ab0KIVo2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 16:44:28 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:14634 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752278Ab0KIVoZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 16:44:25 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAMtN2Ux5LcZK/2dsb2JhbACiJ3K+AoVKBA
-Date: Wed, 10 Nov 2010 08:44:20 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [patch 1/6] fs: icache RCU free inodes
-Message-ID: <20101109214420.GB3246@amd>
-References: <20101109124610.GB11477@amd>
- <AANLkTi=b3dEmoTgrJ2xMTUzgM-mUQNNx6J9jeLq2=mtf@mail.gmail.com>
+	id S1755339Ab0KIVo5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 16:44:57 -0500
+Received: from cantor.suse.de ([195.135.220.2]:53280 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752278Ab0KIVoz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 16:44:55 -0500
+Date: Tue, 9 Nov 2010 22:44:52 +0100
+From: Jan Kara <jack@suse.cz>
+To: Rik van Riel <riel@redhat.com>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Jeff Layton <jlayton@redhat.com>,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        esandeen@redhat.com, jmoyer@redhat.com, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] clear PageError bit in msync & fsync
+Message-ID: <20101109214452.GH4936@quack.suse.cz>
+References: <20101109114422.3918e7f6@annuminas.surriel.com>
+ <20101109142109.224267d0@corrin.poochiereds.net>
+ <4CD9A209.6070807@redhat.com>
+ <20101109210715.GJ3099@thunk.org>
+ <4CD9BA08.2000002@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=b3dEmoTgrJ2xMTUzgM-mUQNNx6J9jeLq2=mtf@mail.gmail.com>
+In-Reply-To: <4CD9BA08.2000002@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 09, 2010 at 08:02:38AM -0800, Linus Torvalds wrote:
-> On Tue, Nov 9, 2010 at 4:46 AM, Nick Piggin <npiggin@kernel.dk> wrote:
-> > So here is the inode RCU code. It's obviously not worth doing until the
-> > actual rcu-walk path walking is in, but I'd like to get opinions on it.
-> > It would be nice to merge it in Al's tree at some point, though.
+On Tue 09-11-10 16:15:52, Rik van Riel wrote:
+> On 11/09/2010 04:07 PM, Ted Ts'o wrote:
+> >On Tue, Nov 09, 2010 at 02:33:29PM -0500, Rik van Riel wrote:
+> >>
+> >>There are essentially two possibilities:
+> >>1) the VM can potentially be filled up with uncleanable dirty pages, or
+> >>2) pages that hit an IO error are left in a clean state, so they can
+> >>    be reclaimed under memory pressure
+> >>
+> >>Alternative 1 could cause the entire system to deadlock, while
+> >>option 2 puts the onus on userland apps to rewrite the data
+> >>from a failed msync/fsync.
+> >>
+> >>Currently the VM has behaviour #2 which is preserved with my
+> >>patch.
+> >>
+> >>The only difference with my patch is, we won't keep returning
+> >>-EIO on subsequent, error free, msync or fsync calls to files
+> >>that had an IO error at some previous point in the past.
+> >
+> >Do we guarantee that the application will get EIO at least once?  I
+> >thought there were issues where the error bit could get lost if the
+> >page writeback was triggered by sync() run by a third-party
+> >application.
 > 
-> Remind me why it wasn't sufficient to just use SLAB_DESTROY_BY_RCU?
+> There is no such guarantee in the current kernel, either
+> with or without my patch.
 > 
-> Especially if we still lock things for the actual (few) inode list
-> operations, the added complexity of actually freeing _individual_
-> inodes by RCU seems to be a bad thing.
-
-Oh yes, the list operations themselves do not need RCU at all. Not
-even rapid hash lookups if you have fine grained hash locking --
-it just doesn't matter.
-
-
-> The only thing we care about is the pathname walk - there are no other
-> inode operations that are common enough to worry about. And the only
-> thing _that_ needs is the ability to look at the inode under RCU, and
-> SLAB_DESTROY_BY_RCU should be entirely sufficient for that.
+> A third application calling fsync or msync can get the
+> EIO cleared, so the application that did the write does
+> not see it.
 > 
-> But we had some discussion about this long ago, and I may have
-> forgotten some of the context.
+> The VM could also reclaim the PageError page due to
+> memory pressure, so the application calling fsync or
+> msync does not see it.
+  What should be done in this case is that we set AS_EIO in the
+page->mapping->flags like we currently do in fs/buffer.c.
 
-Yes, dentry->inode resolution is *the* only inode lookup we really
-care about, definitely.
+> I see no good way in which we could guarantee that
+> every process calling msync or fsync on a file that
+> had an IO error in the past gets EIO once - at least,
+> not without every one of them always getting EIO on
+> the file even after the IO path is good again...
+  Yes, this is rather hard to do...
 
-The big problem with SLAB_DESTROY_BY_RCU there is that we don't
-have a reference on the dentry, so inode can go away. And we don't
-have anything to speculatively pin the inode and recheck it, because
-we're not allowed to store into it.
+							Honza
 
-When we *do* have an inode, it's really hairy inspecting the inode and
-calling i_ops etc. with no idea if it is there, in the middle of
-being freed, or allocated for someone else.
-
-What the plan was is to do the plain RCU approach, and get everybody
-happy with the concept of rcu-walk path walking (which is already
-enough complexity). At the _very_ worst case that DESTROY_BY_RCU
-must be implemented and no other viable alternatives, we can use
-i_lock for that. It takes away some benefit, but there would still
-be much fewer atomics and less contention on common paths.
-
-But I don't think RCU is actually going to hurt noticably. Definitely
-we need numbers before committing to such complexity off the bat.
-
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
