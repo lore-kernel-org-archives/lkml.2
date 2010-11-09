@@ -1,42 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753863Ab0KIJWD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 04:22:03 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:7993 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752787Ab0KIJV5 (ORCPT
+	id S1753856Ab0KIJZH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 04:25:07 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:4836 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753030Ab0KIJZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 04:21:57 -0500
-Date: Tue, 9 Nov 2010 10:21:48 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Joe Perches <joe@perches.com>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 15/32] drivers/hwmon/it87.c: Use pr_fmt and pr_<level>
-Message-ID: <20101109102148.0bb0a283@endymion.delvare>
-In-Reply-To: <ca9c0c999e7108d20fab9d4be3b310736bbdd7a6.1287556801.git.joe@perches.com>
-References: <20101020035346.GA20178@ericsson.com>
-	<ca9c0c999e7108d20fab9d4be3b310736bbdd7a6.1287556801.git.joe@perches.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Nov 2010 04:25:02 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=AtF3BaxHIBSFIWrv9tsYkgzuWww9/fJ/uddPRvAU1ScSx2nvmfgKOQ1rIrTv/1Yck
+	Kfyw/LvwKpuBNr8v3y8zg==
+From: Greg Thelen <gthelen@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Minchan Kim <minchan.kim@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Greg Thelen <gthelen@google.com>
+Subject: [PATCH 1/6] memcg: add mem_cgroup parameter to mem_cgroup_page_stat()
+Date: Tue,  9 Nov 2010 01:24:26 -0800
+Message-Id: <1289294671-6865-2-git-send-email-gthelen@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1289294671-6865-1-git-send-email-gthelen@google.com>
+References: <1289294671-6865-1-git-send-email-gthelen@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Oct 2010 23:51:39 -0700, Joe Perches wrote:
-> Added #define pr_fmt KBUILD_MODNAME ": " fmt
-> Converted printks to pr_<level>
-> Coalesced any long formats
-> Removed prefixes from formats
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  drivers/hwmon/it87.c |   30 ++++++++++++++----------------
->  1 files changed, 14 insertions(+), 16 deletions(-)
+This new parameter can be used to query dirty memory usage
+from a given memcg rather than the current task's memcg.
 
-Applied, thanks.
+Signed-off-by: Greg Thelen <gthelen@google.com>
+---
+ include/linux/memcontrol.h |    6 ++++--
+ mm/memcontrol.c            |   37 +++++++++++++++++++++----------------
+ mm/page-writeback.c        |    2 +-
+ 3 files changed, 26 insertions(+), 19 deletions(-)
 
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 7a3d915..89a9278 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -157,7 +157,8 @@ static inline void mem_cgroup_dec_page_stat(struct page *page,
+ bool mem_cgroup_has_dirty_limit(void);
+ bool mem_cgroup_dirty_info(unsigned long sys_available_mem,
+ 			   struct dirty_info *info);
+-long mem_cgroup_page_stat(enum mem_cgroup_nr_pages_item item);
++long mem_cgroup_page_stat(struct mem_cgroup *mem,
++			  enum mem_cgroup_nr_pages_item item);
+ 
+ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+ 						gfp_t gfp_mask);
+@@ -351,7 +352,8 @@ static inline bool mem_cgroup_dirty_info(unsigned long sys_available_mem,
+ 	return false;
+ }
+ 
+-static inline long mem_cgroup_page_stat(enum mem_cgroup_nr_pages_item item)
++static inline long mem_cgroup_page_stat(struct mem_cgroup *mem,
++					enum mem_cgroup_nr_pages_item item)
+ {
+ 	return -ENOSYS;
+ }
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index d8a06d6..1bff7cf 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1245,22 +1245,20 @@ bool mem_cgroup_dirty_info(unsigned long sys_available_mem,
+ 	unsigned long available_mem;
+ 	struct mem_cgroup *memcg;
+ 	long value;
++	bool valid = false;
+ 
+ 	if (mem_cgroup_disabled())
+ 		return false;
+ 
+ 	rcu_read_lock();
+ 	memcg = mem_cgroup_from_task(current);
+-	if (!__mem_cgroup_has_dirty_limit(memcg)) {
+-		rcu_read_unlock();
+-		return false;
+-	}
++	if (!__mem_cgroup_has_dirty_limit(memcg))
++		goto done;
+ 	__mem_cgroup_dirty_param(&dirty_param, memcg);
+-	rcu_read_unlock();
+ 
+-	value = mem_cgroup_page_stat(MEMCG_NR_DIRTYABLE_PAGES);
++	value = mem_cgroup_page_stat(memcg, MEMCG_NR_DIRTYABLE_PAGES);
+ 	if (value < 0)
+-		return false;
++		goto done;
+ 
+ 	available_mem = min((unsigned long)value, sys_available_mem);
+ 
+@@ -1280,17 +1278,21 @@ bool mem_cgroup_dirty_info(unsigned long sys_available_mem,
+ 			(dirty_param.dirty_background_ratio *
+ 			       available_mem) / 100;
+ 
+-	value = mem_cgroup_page_stat(MEMCG_NR_RECLAIM_PAGES);
++	value = mem_cgroup_page_stat(memcg, MEMCG_NR_RECLAIM_PAGES);
+ 	if (value < 0)
+-		return false;
++		goto done;
+ 	info->nr_reclaimable = value;
+ 
+-	value = mem_cgroup_page_stat(MEMCG_NR_WRITEBACK);
++	value = mem_cgroup_page_stat(memcg, MEMCG_NR_WRITEBACK);
+ 	if (value < 0)
+-		return false;
++		goto done;
+ 	info->nr_writeback = value;
+ 
+-	return true;
++	valid = true;
++
++done:
++	rcu_read_unlock();
++	return valid;
+ }
+ 
+ static inline bool mem_cgroup_can_swap(struct mem_cgroup *memcg)
+@@ -1361,20 +1363,23 @@ memcg_hierarchical_free_pages(struct mem_cgroup *mem)
+ 
+ /*
+  * mem_cgroup_page_stat() - get memory cgroup file cache statistics
+- * @item:      memory statistic item exported to the kernel
++ * @mem:	optional memory cgroup to query.  If NULL, use current task's
++ *		cgroup.
++ * @item:	memory statistic item exported to the kernel
+  *
+  * Return the accounted statistic value or negative value if current task is
+  * root cgroup.
+  */
+-long mem_cgroup_page_stat(enum mem_cgroup_nr_pages_item item)
++long mem_cgroup_page_stat(struct mem_cgroup *mem,
++			  enum mem_cgroup_nr_pages_item item)
+ {
+ 	struct mem_cgroup *iter;
+-	struct mem_cgroup *mem;
+ 	long value;
+ 
+ 	get_online_cpus();
+ 	rcu_read_lock();
+-	mem = mem_cgroup_from_task(current);
++	if (!mem)
++		mem = mem_cgroup_from_task(current);
+ 	if (__mem_cgroup_has_dirty_limit(mem)) {
+ 		/*
+ 		 * If we're looking for dirtyable pages we need to evaluate
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index a477f59..dc3dbe3 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -135,7 +135,7 @@ static unsigned long dirty_writeback_pages(void)
+ {
+ 	unsigned long ret;
+ 
+-	ret = mem_cgroup_page_stat(MEMCG_NR_DIRTY_WRITEBACK_PAGES);
++	ret = mem_cgroup_page_stat(NULL, MEMCG_NR_DIRTY_WRITEBACK_PAGES);
+ 	if ((long)ret < 0)
+ 		ret = global_page_state(NR_UNSTABLE_NFS) +
+ 			global_page_state(NR_WRITEBACK);
 -- 
-Jean Delvare
+1.7.3.1
+
