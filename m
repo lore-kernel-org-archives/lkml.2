@@ -1,871 +1,1050 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751126Ab0KIFSY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 00:18:24 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:56459 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750701Ab0KIFSX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 00:18:23 -0500
-Subject: Re: [RFC v2 16/21] tcm: Add PSCSI subsystem plugin
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jens Axboe <axboe@kernel.dk>
-In-Reply-To: <4CD01EE2.20705@panasas.com>
-References: <1285195867-11728-1-git-send-email-nab@linux-iscsi.org>
-	 <4CD01EE2.20705@panasas.com>
-Content-Type: text/plain
-Date: Mon, 08 Nov 2010 21:13:07 -0800
-Message-Id: <1289279587.19946.69.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1751386Ab0KIFWV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 00:22:21 -0500
+Received: from mga03.intel.com ([143.182.124.21]:12274 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751002Ab0KIFWS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 00:22:18 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,173,1288594800"; 
+   d="scan'208";a="346277997"
+From: "Wang, Qi" <qi.wang@intel.com>
+To: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>
+CC: "Khor, Andrew Chih Howe" <andrew.chih.howe.khor@intel.com>,
+        "Wang, Yong Y" <yong.y.wang@intel.com>,
+        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        srinidhi kasagar <srinidhi.kasagar@stericsson.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 9 Nov 2010 13:21:11 +0800
+Subject: RE: [PATCH] EG20T: Update PCH_I2C driver to 2.6.36
+Thread-Topic: [PATCH] EG20T: Update PCH_I2C driver to 2.6.36
+Thread-Index: Act/xiYhdgg/b7NLSomIG7Q5HGpxSgAB3g6A
+Message-ID: <D5AB6E638E5A3E4B8F4406B113A5A19A3012F51E@shsmsx501.ccr.corp.intel.com>
+References: <4CD8CD32.5000909@dsn.okisemi.com>
+In-Reply-To: <4CD8CD32.5000909@dsn.okisemi.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-CN, en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id oA95MfvU020510
 
-<More follow up on Boaz comments from last week>
+Hi Jean,
 
-On Tue, 2010-11-02 at 16:23 +0200, Boaz Harrosh wrote:
-> On 09/23/2010 12:51 AM, Nicholas A. Bellinger wrote:
-> > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> > 
-> > This patch adds the PSCSI subsystem plugin for accessing struct scsi_device
-> > using struct request from upstream Linux/SCSI code.  This subsystem plugin
-> > follows a passthrough design, and does not provide and control CDB emulation
-> > for the registered struct scsi_device backstores.  This subsystem plugin also
-> > allows the export of both TYPE_DISk and non TYPE_DISK struct scsi_devices.
-> > 
-> > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-> > ---
-> >  drivers/target/target_core_pscsi.c | 1569 ++++++++++++++++++++++++++++++++++++
-> >  drivers/target/target_core_pscsi.h |   69 ++
-> >  2 files changed, 1638 insertions(+), 0 deletions(-)
-> >  create mode 100644 drivers/target/target_core_pscsi.c
-> >  create mode 100644 drivers/target/target_core_pscsi.h
-> > 
-> > diff --git a/drivers/target/target_core_pscsi.c b/drivers/target/target_core_pscsi.c
-> > new file mode 100644
-> > index 0000000..60f825d
-> > --- /dev/null
-> > +++ b/drivers/target/target_core_pscsi.c
+I verified this driver at our development board, and it passed our test programming. There's no functionality issue now. Also we together polish this code again.
 
-<SNIP>
+Would you please accept this driver?
 
-> > +}
-> > +
-> > +/*	pscsi_add_device_to_list():
-> > + *
-> > + *
-> > + */
-> > +static struct se_device *pscsi_add_device_to_list(
-> > +	struct se_hba *hba,
-> > +	struct se_subsystem_dev *se_dev,
-> > +	struct pscsi_dev_virt *pdv,
-> > +	struct scsi_device *sd,
-> > +	int dev_flags)
-> > +{
-> > +	struct se_device *dev;
-> > +
-> > +	/*
-> > +	 * Some pseudo SCSI HBAs do not fill in sector_size
-> > +	 * correctly. (See ide-scsi.c)  So go ahead and setup sane
-> > +	 * values.
-> > +	 */
-> > +	if (!sd->sector_size) {
-> > +		switch (sd->type) {
-> > +		case TYPE_DISK:
-> > +			sd->sector_size = 512;
-> > +			break;
-> > +		case TYPE_ROM:
-> > +			sd->sector_size = 2048;
-> > +			break;
-> > +		case TYPE_TAPE: /* The Tape may not be in the drive */
-> > +			break;
-> > +		case TYPE_MEDIUM_CHANGER: /* Control CDBs only */
-> > +			break;
-> > +		default:
-> > +			printk(KERN_ERR "Unable to set sector_size for %d\n",
-> > +					sd->type);
-> > +			return NULL;
-> 
-> What about sector-less devices? OSD, Scanners, printers ...
-> +		default:
-> +			break;
+Best Regards,
+Qi.
 
-Yes, this code was originally put in place for some anicent LLDs on v2.4
-and early v2.6 that did not properly set struct
-scsi_device->sector_sector TYPE_DISK or TYPE_ROM.  I have not come
-across this in a really, really long time so I think it may finally be
-safe to drop this old code.
-
-> 
-> > +		}
-> > +
-> > +		if (sd->sector_size) {
-> > +			printk(KERN_ERR "Set broken SCSI Device"
-> > +				" %d:%d:%d sector_size to %d\n", sd->channel,
-> > +				sd->id, sd->lun, sd->sector_size);
-> > +		}
-> > +	}
-> > +
-> > +	if (!sd->queue_depth) {
-> > +		sd->queue_depth = PSCSI_DEFAULT_QUEUEDEPTH;
-> > +
-> > +		printk(KERN_ERR "Set broken SCSI Device %d:%d:%d"
-> > +			" queue_depth to %d\n", sd->channel, sd->id,
-> > +				sd->lun, sd->queue_depth);
-> > +	}
-> > +	/*
-> > +	 * Set the pointer pdv->pdv_sd to from passed struct scsi_device,
-> > +	 * which has already been referenced with Linux SCSI code with
-> > +	 * scsi_device_get() in this file's pscsi_create_virtdevice().
-> > +	 *
-> > +	 * The passthrough operations called by the transport_add_device_*
-> > +	 * function below will require this pointer to be set for passthroug
-> > +	 *  ops.
-> > +	 *
-> > +	 * For the shutdown case in pscsi_free_device(), this struct
-> > +	 * scsi_device  reference is released with Linux SCSI code
-> > +	 * scsi_device_put() and the pdv->pdv_sd cleared.
-> > +	 */
-> > +	pdv->pdv_sd = sd;
-> > +
-> > +	dev = transport_add_device_to_core_hba(hba, &pscsi_template,
-> > +				se_dev, dev_flags, (void *)pdv);
-> > +	if (!(dev)) {
-> > +		pdv->pdv_sd = NULL;
-> > +		return NULL;
-> > +	}
-> > +
-> > +	/*
-> > +	 * For TYPE_TAPE, attempt to determine blocksize with MODE_SENSE.
-> > +	 */
-> > +	if (sd->type == TYPE_TAPE) {
-> 
-> Just as a future note:
-> One of the things I'm missing from LIO is the notion of SCSI_TYPE or SCSI
-> class. So things like this can be done in a plugin manner as per TYPE
-> Like in the Kernel we have the ULDs for that.
-
-Yes, this in pSCSI terms this is completely transparent in terms of
-device type, aside from the old work around you caught above..  ;)
-
-<SNIP>
-
-> > +static inline void pscsi_blk_init_request(
-> > +	struct se_task *task,
-> > +	struct pscsi_plugin_task *pt,
-> > +	struct request *req,
-> > +	int bidi_read)
-> > +{
-> > +	/*
-> > +	 * Defined as "scsi command" in include/linux/blkdev.h.
-> > +	 */
-> > +	req->cmd_type = REQ_TYPE_BLOCK_PC;
-> > +	/*
-> > +	 * For the extra BIDI-COMMAND READ struct request we do not
-> > +	 * need to setup the remaining structure members
-> > +	 */
-> > +	if (bidi_read)
-> > +		return;
-> > +	/*
-> > +	 * Setup the done function pointer for struct request,
-> > +	 * also set the end_io_data pointer.to struct se_task.
-> > +	 */
-> > +	req->end_io = pscsi_req_done;
-> > +	req->end_io_data = (void *)task;
-> > +	/*
-> > +	 * Load the referenced struct se_task's SCSI CDB into
-> > +	 * include/linux/blkdev.h:struct request->cmd
-> > +	 */
-> > +	req->cmd_len = scsi_command_size(pt->pscsi_cdb);
-> > +	req->cmd = &pt->pscsi_cdb[0];
-> 
-> Here!   req->cmd = TASK_CMD(task)->t_task_cdb;
-> 
-> I don't see in this patch the actual memcpy of TASK_CMD(task)->t_task_cdb into
-> pt->pscsi_cdb, which I suspect is done in Generic code through the use of
-> ->get_cdb(struct se_task *);?
-> 
-> If so then it means all the plugins have their own copy of the CDB? Now I finally
-> understand the get_max_cdb_len().
-> 
-> All that could be totally clean. All plugins use the TASK_CMD(task)->t_task_cdb
-> directly. Then get_max_cdb_len(), get_cdb(), the memcpy() and all these extra buffers
-> just magically go away.
-
-As described in the last response, the T_TASK(cmd)->t_task_cdb is used
-as a base for all CDBs, and is the primary storage for all *non*
-SCF_SCSI_DATA_SG_IO_CDB type ops.
-
-For all bulk SCF_SCSI_DATA_SG_IO_CDB, we will memcpy
-T_TASK(cmd)->t_task_cdb into the backend specific location (for
-TCM/pSCSI this is pt->pscsi_cdb[])  and then update the LBA+length when
-splitting the single received struct se_cmd across multiple struct
-se_task w/ backend descriptors due to backend struct
-se_dev_limits->limits.max_sectors limitations for underlying backend HW.
-
-> 
-> > +	/*
-> > +	 * Setup pointer for outgoing sense data.
-> > +	 */
-> > +	req->sense = (void *)&pt->pscsi_sense[0];
-> 
-> What about sense Surly that is generic just as cdb is. Could you use the
-> task's sense?
-> 
-
-Hmmmm, I am not sure we need to make this per struct se_task on the
-backend / subsystem plugin side.  For the IBLOCK and FILEIO code this
-will simply will be set to single outgoing se_cmd context sense buffer
-being propigated up to the TFO API (eg: no per task sense buffer).  Only
-pSCSI has an internal sense_buffer per struct pscsi_plugin_task because
-we need it to be setup for the struct request->sense code.
-
-> > +	req->sense_len = 0;
-> > +}
-> > +
-> > +/*
-> > + * Used for pSCSI data payloads for all *NON* SCF_SCSI_DATA_SG_IO_CDB
-> > +*/
-> > +static int pscsi_blk_get_request(struct se_task *task)
-> > +{
-> > +	struct pscsi_plugin_task *pt = (struct pscsi_plugin_task *) task->transport_req;
-> > +	struct pscsi_dev_virt *pdv = (struct pscsi_dev_virt *) task->se_dev->dev_ptr;
-> > +
-> > +	pt->pscsi_req = blk_get_request(pdv->pdv_sd->request_queue,
-> > +			(pt->pscsi_direction == DMA_TO_DEVICE), GFP_KERNEL);
-> > +	if (!(pt->pscsi_req) || IS_ERR(pt->pscsi_req)) {
-> > +		printk(KERN_ERR "PSCSI: blk_get_request() failed: %ld\n",
-> > +				IS_ERR(pt->pscsi_req));
-> > +		return PYX_TRANSPORT_LU_COMM_FAILURE;
-> > +	}
-> > +	/*
-> > +	 * Setup the newly allocated struct request for REQ_TYPE_BLOCK_PC,
-> > +	 * and setup rq callback, CDB and sense.
-> > +	 */
-> > +	pscsi_blk_init_request(task, pt, pt->pscsi_req, 0);
-> > +	return 0;
-> > +}
-> > +
-> > +/*      pscsi_do_task(): (Part of se_subsystem_api_t template)
-> > + *
-> > + *
-> > + */
-> > +static int pscsi_do_task(struct se_task *task)
-> > +{
-> > +	struct pscsi_plugin_task *pt = (struct pscsi_plugin_task *) task->transport_req;
-> > +	struct pscsi_dev_virt *pdv = (struct pscsi_dev_virt *) task->se_dev->dev_ptr;
-> > +	/*
-> > +	 * Set the struct request->timeout value based on peripheral
-> > +	 * device type from SCSI.
-> > +	 */
-> > +	if (pdv->pdv_sd->type == TYPE_DISK)
-> > +		pt->pscsi_req->timeout = PS_TIMEOUT_DISK;
-> > +	else
-> > +		pt->pscsi_req->timeout = PS_TIMEOUT_OTHER;
-> > +
-> > +	pt->pscsi_req->retries = PS_RETRY;
-> > +	/*
-> > +	 * Queue the struct request into the struct scsi_device->request_queue.
-> > +	 */
-> > +	blk_execute_rq_nowait(pdv->pdv_sd->request_queue, NULL,
-> > +			      pt->pscsi_req, 1, pscsi_req_done);
-> > +
-> 
-> /**
->  * blk_execute_rq_nowait - insert a request into queue for execution
->  * @q:		queue to insert the request in
->  * @bd_disk:	matching gendisk
->  * @rq:		request to insert
->  * @at_head:    insert request at head or tail of queue
->  * @done:	I/O completion handler
->  *
-> 
-> Surly you did not mean to use at_head==1? That is a very bad BUG. I bet
-> this plugin was never heavily used.
-> 
-
-Yikes..
-
-I have been keep folks who need pSCSI for TYPE_DISK for production on <=
-v2.6.27 kernels before alot of this TCM/pSCSI code got changed to use
-struct request directly..
-
-Fixing now to take the SAM Task attr into account, seriously thanks for
-catching this.
-
-<SNIP>
-
-> > +
-> > +#if 0
-> > +#define DEBUG_PSCSI(x...) printk(x)
-> > +#else
-> > +#define DEBUG_PSCSI(x...)
-> > +#endif
-> > +
-> > +static int __pscsi_map_task_SG(
-> > +	struct se_task *task,
-> > +	struct scatterlist *task_sg,
-> > +	u32 task_sg_num,
-> > +	int bidi_read)
-> > +{
-> > +	struct pscsi_plugin_task *pt = (struct pscsi_plugin_task *) task->transport_req;
-> > +	struct pscsi_dev_virt *pdv = (struct pscsi_dev_virt *) task->se_dev->dev_ptr;
-> > +	struct bio *bio = NULL, *hbio = NULL, *tbio = NULL;
-> > +	struct page *page;
-> > +	struct scatterlist *sg;
-> > +	u32 data_len = task->task_size, i, len, bytes, off;
-> > +	int nr_pages = (task->task_size + task_sg[0].offset +
-> 
-> Please forgive me I must be looking at an old patch but this is what I could find
-> in my mail box. 
-> 
-> 	task->task_size? there must be two of them one for write/uni one for bidi_rea
-
-Currently there is no need for BIDI read specific task->task_size
-because:
-
-*) For BIDI operation w/ IBLOCK and FILEIO, the commands are executed as
-multiple struct se_tasks.
-
-*) For BIDI operation w/ PSCSI, the operation is a passthrough and
-struct request does not need to know about size in
-pscsi_blk_init_request().
-
-> 
-> > +			PAGE_SIZE - 1) >> PAGE_SHIFT;
-> > +	int nr_vecs = 0, ret = 0;
-> > +	int rw = (TASK_CMD(task)->data_direction == DMA_TO_DEVICE);
-> > +
-> > +	if (!task->task_size)
-> 
-> dito
-> 
-> > +		return 0;
-> > +	/*
-> > +	 * For SCF_SCSI_DATA_SG_IO_CDB, Use fs/bio.c:bio_add_page() to setup
-> > +	 * the bio_vec maplist from TC< struct se_mem -> task->task_sg ->
-> > +	 * struct scatterlist memory.  The struct se_task->task_sg[] currently needs
-> > +	 * to be attached to struct bios for submission to Linux/SCSI using
-> > +	 * struct request to struct scsi_device->request_queue.
-> > +	 *
-> > +	 * Note that this will be changing post v2.6.28 as Target_Core_Mod/pSCSI
-> > +	 * is ported to upstream SCSI passthrough functionality that accepts
-> > +	 * struct scatterlist->page_link or struct page as a paraemeter.
-> > +	 */
-> > +	DEBUG_PSCSI("PSCSI: nr_pages: %d\n", nr_pages);
-> > +
-> > +	for_each_sg(task_sg, sg, task_sg_num, i) {
-> 
-> Good received from caller
-> 
-> > +		page = sg_page(sg);
-> > +		off = sg->offset;
-> > +		len = sg->length;
-> > +
-> > +		DEBUG_PSCSI("PSCSI: i: %d page: %p len: %d off: %d\n", i,
-> > +			page, len, off);
-> > +
-> > +		while (len > 0 && data_len > 0) {
-> > +			bytes = min_t(unsigned int, len, PAGE_SIZE - off);
-> > +			bytes = min(bytes, data_len);
-> > +
-> > +			if (!(bio)) {
-> > +				nr_vecs = min_t(int, BIO_MAX_PAGES, nr_pages);
-> > +				nr_pages -= nr_vecs;
-> > +				/*
-> > +				 * Calls bio_kmalloc() and sets bio->bi_end_io()
-> > +				 */
-> > +				bio = pscsi_get_bio(pdv, nr_vecs);
-> > +				if (!(bio))
-> > +					goto fail;
-> > +
-> > +				if (rw)
-> > +					bio->bi_rw |= REQ_WRITE;
-> > +
-> > +				DEBUG_PSCSI("PSCSI: Allocated bio: %p,"
-> > +					" dir: %s nr_vecs: %d\n", bio,
-> > +					(rw) ? "rw" : "r", nr_vecs);
-> > +				/*
-> > +				 * Set *hbio pointer to handle the case:
-> > +				 * nr_pages > BIO_MAX_PAGES, where additional
-> > +				 * bios need to be added to complete a given
-> > +				 * struct se_task
-> > +				 */
-> > +				if (!hbio)
-> > +					hbio = tbio = bio;
-> > +				else
-> > +					tbio = tbio->bi_next = bio;
-> > +			}
-> > +
-> > +			DEBUG_PSCSI("PSCSI: Calling bio_add_pc_page() i: %d"
-> > +				" bio: %p page: %p len: %d off: %d\n", i, bio,
-> > +				page, len, off);
-> > +
-> > +			ret = bio_add_pc_page(pdv->pdv_sd->request_queue,
-> > +					bio, page, bytes, off);
-> > +			if (ret != bytes)
-> > +				goto fail;
-> > +
-> > +			DEBUG_PSCSI("PSCSI: bio->bi_vcnt: %d nr_vecs: %d\n",
-> > +				bio->bi_vcnt, nr_vecs);
-> > +
-> > +			if (bio->bi_vcnt > nr_vecs) {
-> > +				DEBUG_PSCSI("PSCSI: Reached bio->bi_vcnt max:"
-> > +					" %d i: %d bio: %p, allocating another"
-> > +					" bio\n", bio->bi_vcnt, i, bio);
-> > +				/*
-> > +				 * Clear the pointer so that another bio will
-> > +				 * be allocated with pscsi_get_bio() above, the
-> > +				 * current bio has already been set *tbio and
-> > +				 * bio->bi_next.
-> > +				 */
-> > +				bio = NULL;
-> > +			}
-> > +
-> > +			page++;
-> > +			len -= bytes;
-> > +			data_len -= bytes;
-> > +			off = 0;
-> > +		}
-> > +	}
-> > +	/*
-> > +	 * Setup the primary pt->pscsi_req used for non BIDI and BIDI-COMMAND
-> > +	 * primary SCSI WRITE poayload mapped for struct se_task->task_sg[]
-> > +	 */
-> > +	if (!(bidi_read)) {
-> > +		/*
-> > +		 * Starting with v2.6.31, call blk_make_request() passing in *hbio to
-> > +		 * allocate the pSCSI task a struct request.
-> > +		 */
-> > +		pt->pscsi_req = blk_make_request(pdv->pdv_sd->request_queue,
-> > +					hbio, GFP_KERNEL);
-> > +		if (!(pt->pscsi_req)) {
-> > +			printk(KERN_ERR "pSCSI: blk_make_request() failed\n");
-> > +			goto fail;
-> > +		}
-> > +		/*
-> > +		 * Setup the newly allocated struct request for REQ_TYPE_BLOCK_PC,
-> > +		 * and setup rq callback, CDB and sense.
-> > +		 */
-> > +		pscsi_blk_init_request(task, pt, pt->pscsi_req, 0);
-> > +
-> > +		return task->task_sg_num;
-> 		return task_sg_num ??
-> > +	}
-> > +	/*
-> > +	 * Setup the secondary pt->pscsi_req_bidi used for the extra BIDI-COMMAND
-> > +	 * SCSI READ paylaod mapped for struct se_task->task_sg_bidi[]
-> > +	 */
-> > +	pt->pscsi_req_bidi = blk_make_request(pdv->pdv_sd->request_queue,
-> > +					hbio, GFP_KERNEL);
-> > +	if (!(pt->pscsi_req_bidi)) {
-> > +		printk(KERN_ERR "pSCSI: blk_make_request() failed for BIDI\n");
-> > +		goto fail;
-> > +	}
-> > +	pscsi_blk_init_request(task, pt, pt->pscsi_req_bidi, 1);
-> > +	/*
-> > +	 * Setup the magic BIDI-COMMAND ->next_req pointer to the original
-> > +	 * pt->pscsi_req.
-> > +	 */	
-> > +	pt->pscsi_req->next_rq = pt->pscsi_req_bidi;
-> > +
-> > +	return task->task_sg_num;
-> 
-> 	return task_sg_num ??
-> 
-
-This is no longer used in transport_generic_new_cmd() from
-task->transport_map_task() to signal anything other than a less than
-zero failure, so in the context of BIDI ops it does not matter.
-
-> > +fail:
-> > +	while (hbio) {
-> > +		bio = hbio;
-> > +		hbio = hbio->bi_next;
-> > +		bio->bi_next = NULL;
-> > +		bio_endio(bio, 0);
-> > +	}
-> > +	return ret;
-> > +}
-> > +
-> > +static int pscsi_map_task_SG(struct se_task *task)
-> > +{
-> > +	int ret;
-> > +	/*
-> > +	 * Setup the main struct request for the task->task_sg[] payload
-> > +	 */
-> > +
-> > +	ret = __pscsi_map_task_SG(task, task->task_sg, task->task_sg_num, 0);
-> > +	if (ret < 0)
-> > +		return ret;
-> > +
-> > +	if (!(task->task_sg_bidi))
-> > +		return ret;
-> > +	/*
-> > +	 * If present, set up the extra BIDI-COMMAND SCSI READ
-> > +	 * struct request and payload.
-> > +	 */
-> > +	return __pscsi_map_task_SG(task, task->task_sg_bidi,
-> > +				task->task_sg_num, 1);
-> 
-> The second __pscsi_map_task_SG can fail. Do you make sure to free
-> the successful first __pscsi_map_task_SG? 
-> 
-
-Yes, this is all handled by walking the T_TASK(cmd)->t_task_list in
-transport_free_dev_tasks().
-
-<SNIP>
-
-> > +static unsigned char *pscsi_get_cdb(struct se_task *task)
-> > +{
-> > +	struct pscsi_plugin_task *pt = (struct pscsi_plugin_task *) task->transport_req;
-> > +
-> > +	return pt->pscsi_cdb;
-> > +}
-> > +
-> > +/*	pscsi_get_sense_buffer():
-> > + *
-> > + *
-> > + */
-> > +static unsigned char *pscsi_get_sense_buffer(struct se_task *task)
-> > +{
-> > +	struct pscsi_plugin_task *pt = (struct pscsi_plugin_task *) task->transport_req;
-> 
-> All over these. Don't cast a void pointer.
-
-Yep, already dropped.
-
-> 
-> > +
-> > +	return (unsigned char *)&pt->pscsi_sense[0];
-> > +}
-> > +
-> > +/*	pscsi_get_blocksize():
-> > + *
-> > + *
-> > + */
-> > +static u32 pscsi_get_blocksize(struct se_device *dev)
-> > +{
-> > +	struct pscsi_dev_virt *pdv = (struct pscsi_dev_virt *) dev->dev_ptr;
-> > +	struct scsi_device *sd = (struct scsi_device *) pdv->pdv_sd;
-> > +
-> > +	return sd->sector_size;
-> > +}
-> > +
-> > +/*	pscsi_get_device_rev():
-> > + *
-> > + *
-> > + */
-> > +static u32 pscsi_get_device_rev(struct se_device *dev)
-> > +{
-> > +	struct pscsi_dev_virt *pdv = (struct pscsi_dev_virt *) dev->dev_ptr;
-> > +	struct scsi_device *sd = (struct scsi_device *) pdv->pdv_sd;
-> > +
-> > +	return (sd->scsi_level - 1) ? sd->scsi_level - 1 : 1;
-> > +}
-> > +
-> > +/*	pscsi_get_device_type():
-> > + *
-> > + *
-> > + */
-> > +static u32 pscsi_get_device_type(struct se_device *dev)
-> > +{
-> > +	struct pscsi_dev_virt *pdv = (struct pscsi_dev_virt *) dev->dev_ptr;
-> > +	struct scsi_device *sd = (struct scsi_device *) pdv->pdv_sd;
-> > +
-> > +	return sd->type;
-> > +}
-> > +
-> > +/*	pscsi_get_dma_length():
-> > + *
-> > + *
-> > + */
-> > +static u32 pscsi_get_dma_length(u32 task_size, struct se_device *dev)
-> > +{
-> > +	return PAGE_SIZE;
-> 
-> ??
-
-This is used to determine the sage of each individual struct se_mem
-size 
-
-> 
-> > +}
-> > +
-> > +/*	pscsi_get_max_sectors():
-> > + *
-> > + *
-> > + */
-> > +static u32 pscsi_get_max_sectors(struct se_device *dev)
-> > +{
-> > +	struct pscsi_dev_virt *pdv = (struct pscsi_dev_virt *) dev->dev_ptr;
-> > +	struct scsi_device *sd = (struct scsi_device *) pdv->pdv_sd;
-> > +
-> > +	return (sd->host->max_sectors > sd->request_queue->limits.max_sectors) ?
-> > +		sd->request_queue->limits.max_sectors : sd->host->max_sectors;
-> > +}
-> > +
-> > +/*	pscsi_get_queue_depth():
-> > + *
-> > + *
-> > + */
-> > +static u32 pscsi_get_queue_depth(struct se_device *dev)
-> > +{
-> > +	struct pscsi_dev_virt *pdv = (struct pscsi_dev_virt *) dev->dev_ptr;
-> > +	struct scsi_device *sd = (struct scsi_device *) pdv->pdv_sd;
-> > +
-> > +	return sd->queue_depth;
-> > +}
-> > +
-> > +/*	pscsi_handle_SAM_STATUS_failures():
-> > + *
-> > + *
-> > + */
-> > +static inline void pscsi_process_SAM_status(
-> > +	struct se_task *task,
-> > +	struct pscsi_plugin_task *pt)
-> > +{
-> > +	task->task_scsi_status = status_byte(pt->pscsi_result);
-> > +	if ((task->task_scsi_status)) {
-> > +		task->task_scsi_status <<= 1;
-> > +		printk(KERN_INFO "PSCSI Status Byte exception at task: %p CDB:"
-> > +			" 0x%02x Result: 0x%08x\n", task, pt->pscsi_cdb[0],
-> > +			pt->pscsi_result);
-> > +	}
-> > +
-> > +	switch (host_byte(pt->pscsi_result)) {
-> > +	case DID_OK:
-> > +		transport_complete_task(task, (!task->task_scsi_status));
-> > +		break;
-> > +	default:
-> > +		printk(KERN_INFO "PSCSI Host Byte exception at task: %p CDB:"
-> > +			" 0x%02x Result: 0x%08x\n", task, pt->pscsi_cdb[0],
-> > +			pt->pscsi_result);
-> > +		task->task_scsi_status = SAM_STAT_CHECK_CONDITION;
-> > +		task->task_error_status = PYX_TRANSPORT_UNKNOWN_SAM_OPCODE;
-> > +		TASK_CMD(task)->transport_error_status =
-> > +					PYX_TRANSPORT_UNKNOWN_SAM_OPCODE;
-> > +		transport_complete_task(task, 0);
-> > +		break;
-> > +	}
-> > +
-> > +	return;
-> > +}
-> > +
-> > +static void pscsi_req_done(struct request *req, int uptodate)
-> > +{
-> > +	struct se_task *task = (struct se_task *)req->end_io_data;
-> > +	struct pscsi_plugin_task *pt = (struct pscsi_plugin_task *)task->transport_req;
-> > +
-> > +	pt->pscsi_result = req->errors;
-> > +	pt->pscsi_resid = req->resid_len;
-> > +
-> > +	pscsi_process_SAM_status(task, pt);
-> > +
-> > +	if (req->next_rq != NULL) {
-> > +		__blk_put_request(req->q, req->next_rq);
-> > +		pt->pscsi_req_bidi = NULL;
-> 
-> 		req->next_rq = NULL
-> 
-> Actually pt->pscsi_req_bidi is never used, it's set and reset
-> only req->next_rq is used. You are fine without it. You have
-> pt->pscsi_req and pt->pscsi_req->next_rq;
-> 
-
-Dropping, thanks!
-
-> > +	}
-> > +
-> > +	__blk_put_request(req->q, req);
-> > +	pt->pscsi_req = NULL;
-> > +}
-> > +
-> > +static struct se_subsystem_api pscsi_template = {
-> > +	.name			= "pscsi",
-> > +	.type			= PSCSI,
-> > +	.transport_type		= TRANSPORT_PLUGIN_PHBA_PDEV,
-> > +	.external_submod	= 1,
-> > +	.cdb_none		= pscsi_CDB_none,
-> > +	.cdb_read_non_SG	= pscsi_CDB_read_non_SG,
-> > +	.cdb_read_SG		= pscsi_CDB_read_SG,
-> > +	.cdb_write_non_SG	= pscsi_CDB_write_non_SG,
-> > +	.cdb_write_SG		= pscsi_CDB_write_SG,
-> > +	.attach_hba		= pscsi_attach_hba,
-> > +	.detach_hba		= pscsi_detach_hba,
-> > +	.pmode_enable_hba	= pscsi_pmode_enable_hba,
-> > +	.activate_device	= pscsi_activate_device,
-> > +	.deactivate_device	= pscsi_deactivate_device,
-> > +	.allocate_virtdevice	= pscsi_allocate_virtdevice,
-> > +	.create_virtdevice	= pscsi_create_virtdevice,
-> > +	.free_device		= pscsi_free_device,
-> > +	.transport_complete	= pscsi_transport_complete,
-> > +	.allocate_request	= pscsi_allocate_request,
-> > +	.do_task		= pscsi_do_task,
-> > +	.free_task		= pscsi_free_task,
-> > +	.check_configfs_dev_params = pscsi_check_configfs_dev_params,
-> > +	.set_configfs_dev_params = pscsi_set_configfs_dev_params,
-> > +	.show_configfs_dev_params = pscsi_show_configfs_dev_params,
-> > +	.create_virtdevice_from_fd = NULL,
-> > +	.get_plugin_info	= pscsi_get_plugin_info,
-> > +	.get_hba_info		= pscsi_get_hba_info,
-> > +	.get_dev_info		= pscsi_get_dev_info,
-> > +	.check_lba		= pscsi_check_lba,
-> > +	.check_for_SG		= pscsi_check_for_SG,
-> > +	.get_cdb		= pscsi_get_cdb,
-> > +	.get_sense_buffer	= pscsi_get_sense_buffer,
-> > +	.get_blocksize		= pscsi_get_blocksize,
-> > +	.get_device_rev		= pscsi_get_device_rev,
-> > +	.get_device_type	= pscsi_get_device_type,
-> > +	.get_dma_length		= pscsi_get_dma_length,
-> > +	.get_max_sectors	= pscsi_get_max_sectors,
-> > +	.get_queue_depth	= pscsi_get_queue_depth,
-> > +	.write_pending		= NULL,
-> > +};
-> > +
-> > +int __init pscsi_module_init(void)
-> > +{
-> > +	int ret;
-> > +
-> > +	INIT_LIST_HEAD(&pscsi_template.sub_api_list);
-> > +
-> > +	ret = transport_subsystem_register(&pscsi_template, THIS_MODULE);
-> > +	if (ret < 0)
-> > +		return ret;
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +void pscsi_module_exit(void)
-> > +{
-> > +	transport_subsystem_release(&pscsi_template);
-> > +}
-> > +
-> > +MODULE_DESCRIPTION("TCM PSCSI subsystem plugin");
-> > +MODULE_AUTHOR("nab@Linux-iSCSI.org");
-> > +MODULE_LICENSE("GPL");
-> > +
-> > +module_init(pscsi_module_init);
-> > +module_exit(pscsi_module_exit);
-> > diff --git a/drivers/target/target_core_pscsi.h b/drivers/target/target_core_pscsi.h
-> > new file mode 100644
-> > index 0000000..d3c8972
-> > --- /dev/null
-> > +++ b/drivers/target/target_core_pscsi.h
-> > @@ -0,0 +1,69 @@
-> > +#ifndef TARGET_CORE_PSCSI_H
-> > +#define TARGET_CORE_PSCSI_H
-> > +
-> > +#define PSCSI_VERSION		"v4.0"
-> > +#define PSCSI_VIRTUAL_HBA_DEPTH	2048
-> > +
-> > +/* used in pscsi_find_alloc_len() */
-> > +#ifndef INQUIRY_DATA_SIZE
-> > +#define INQUIRY_DATA_SIZE	0x24
-> > +#endif
-> > +
-> > +/* used in pscsi_add_device_to_list() */
-> > +#define PSCSI_DEFAULT_QUEUEDEPTH	1
-> > +
-> > +#define PS_RETRY		5
-> > +#define PS_TIMEOUT_DISK		(15*HZ)
-> > +#define PS_TIMEOUT_OTHER	(500*HZ)
-> > +
-> > +extern struct se_global *se_global;
-> > +extern struct block_device *linux_blockdevice_claim(int, int, void *);
-> > +extern int linux_blockdevice_release(int, int, struct block_device *);
-> > +extern int linux_blockdevice_check(int, int);
-> > +
-> > +#include <linux/device.h>
-> > +#include <scsi/scsi_driver.h>
-> > +#include <scsi/scsi_device.h>
-> > +#include <linux/kref.h>
-> > +#include <linux/kobject.h>
-> > +
-> > +struct pscsi_plugin_task {
-> > +	unsigned char pscsi_cdb[TCM_MAX_COMMAND_SIZE];
-> > +	unsigned char pscsi_sense[SCSI_SENSE_BUFFERSIZE];
-> > +	int	pscsi_direction;
-> > +	int	pscsi_result;
-> > +	u32	pscsi_resid;
-> 
-> Scsi has two residual results. One inside each request. 
-> 
-> > +	struct request *pscsi_req;
-> > +	struct request *pscsi_req_bidi;
-> > +} ____cacheline_aligned;
-> > +
-> > +#define PDF_HAS_CHANNEL_ID	0x01
-> > +#define PDF_HAS_TARGET_ID	0x02
-> > +#define PDF_HAS_LUN_ID		0x04
-> > +#define PDF_HAS_VPD_UNIT_SERIAL 0x08
-> > +#define PDF_HAS_VPD_DEV_IDENT	0x10
-> > +#define PDF_HAS_VIRT_HOST_ID	0x20	
-> > +
-> > +struct pscsi_dev_virt {
-> > +	int	pdv_flags;
-> > +	int	pdv_host_id;
-> > +	int	pdv_channel_id;
-> > +	int	pdv_target_id;
-> > +	int	pdv_lun_id;
-> > +	struct block_device *pdv_bd;
-> > +	struct scsi_device *pdv_sd;
-> > +	struct se_hba *pdv_se_hba;
-> > +} ____cacheline_aligned;
-> > +
-> > +typedef enum phv_modes {
-> > +	PHV_VIRUTAL_HOST_ID,
-> > +	PHV_LLD_SCSI_HOST_NO
-> > +} phv_modes_t;
-> > +
-> > +struct pscsi_hba_virt {
-> > +	int			phv_host_id;
-> > +	phv_modes_t		phv_mode;
-> > +	struct Scsi_Host	*phv_lld_host;
-> > +} ____cacheline_aligned;
-> > +
-> > +#endif   /*** TARGET_CORE_PSCSI_H ***/
-> 
-> Nic all over these patches you have
-> +	struct pscsi_plugin_task *pt = (struct pscsi_plugin_task *) task->transport_req;
-> Don't cast void pointers, please. That would be a big fat change just search for transport_req.
-> 
-
-Yes sorry, these casts have all be removed.
-
-> OK So I'm stopping to review from email and will next go to the gitweb URL you sent me. Because
-> in all my mailbox patches I cannot find where the task->transport_req is set, which means I'm
-> missing some of them.
-
-task->transport_req is set to the backend depend task descriptor form
-the return pointer of struct se_subsystem_api->allocate_request() in
-transport_generic_get_task()
-
->  The thing I wanted to know is if there is a 1-to-1 lifetime association
-
-Correct.
-
-> between a plugin task like  pscsi_plugin_task and the task-> which holds it. (On ->transport_req)
-> If yes, you might consider an embedded se_task in each plugin_task and the use of container_of.
-> Faster, more robust and cleans code considerably.
-
-Yes, I have been thinking about converting this to a single allocation
-following what has been done for struct se_cmd allocations living in
-fabric dependent cmd descriptors.  I may have a look at see how easily
-this can be done for v4.0 backend code..
-
-Anyways, sending out a patch for the above items shortly.  Thanks for
-your comments Boaz!
-
---nab
-
+> -----Original Message-----
+> From: Tomoya MORINAGA [mailto:tomoya-linux@dsn.okisemi.com]
+> Sent: Tuesday, November 09, 2010 12:25 PM
+> To: Jean Delvare (PC drivers, core); Ben Dooks (embedded platforms); Samuel
+> Ortiz; Linus Walleij; Wolfram Sang; Ralf Baechle; srinidhi kasagar;
+> linux-i2c@vger.kernel.org; linux-kernel@vger.kernel.org
+> Cc: Wang, Qi; Khor, Andrew Chih Howe; Wang, Yong Y; Ewe, Kok Howg
+> Subject: [PATCH] EG20T: Update PCH_I2C driver to 2.6.36
+>
+> Hi Jean,
+>
+> I have got Intel's signature.
+> Please push it to kernel tree.
+>
+> Thanks,
+> Tomoya MORINAGA(OKI SEMICONDUCTOR CO., LTD.)
+> ---
+> I2C driver of EG20T PCH
+>
+> EG20T PCH is the platform controller hub that is going to be used in
+> Intel's upcoming general embedded platform. All IO peripherals in
+> EG20T PCH are actually devices sitting on AMBA bus.
+> EG20T PCH has I2C I/F. Using this I/F, it is able to access system
+> devices connected to I2C.
+>
+> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+> Reviewed-by: Linus Walleij <linus.walleij@stericsson.com>
+> Signed-off-by: Qi Wang <qi.wang@intel.com>
+> ---
+>  drivers/i2c/busses/Kconfig     |    8 +
+>  drivers/i2c/busses/Makefile    |    1 +
+>  drivers/i2c/busses/i2c-eg20t.c |  900
+> ++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 909 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/i2c/busses/i2c-eg20t.c
+>
+> diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+> index 6539ac2..fcce69c 100644
+> --- a/drivers/i2c/busses/Kconfig
+> +++ b/drivers/i2c/busses/Kconfig
+> @@ -627,6 +627,14 @@ config I2C_XILINX
+>         This driver can also be built as a module.  If so, the module
+>         will be called xilinx_i2c.
+>
+> +config I2C_EG20T
+> +        tristate "PCH I2C of Intel EG20T"
+> +        depends on PCI
+> +        help
+> +          This driver is for PCH(Platform controller Hub) I2C of EG20T which
+> +          is an IOH(Input/Output Hub) for x86 embedded processor.
+> +          This driver can access PCH I2C bus device.
+> +
+>  comment "External I2C/SMBus adapter drivers"
+>
+>  config I2C_PARPORT
+> diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
+> index c3ef492..e55e051 100644
+> --- a/drivers/i2c/busses/Makefile
+> +++ b/drivers/i2c/busses/Makefile
+> @@ -60,6 +60,7 @@ obj-$(CONFIG_I2C_STU300)    += i2c-stu300.o
+>  obj-$(CONFIG_I2C_VERSATILE)  += i2c-versatile.o
+>  obj-$(CONFIG_I2C_OCTEON)     += i2c-octeon.o
+>  obj-$(CONFIG_I2C_XILINX)     += i2c-xiic.o
+> +obj-$(CONFIG_I2C_EG20T)         += i2c-eg20t.o
+>
+>  # External I2C/SMBus adapter drivers
+>  obj-$(CONFIG_I2C_PARPORT)    += i2c-parport.o
+> diff --git a/drivers/i2c/busses/i2c-eg20t.c b/drivers/i2c/busses/i2c-eg20t.c
+> new file mode 100644
+> index 0000000..f835635
+> --- /dev/null
+> +++ b/drivers/i2c/busses/i2c-eg20t.c
+> @@ -0,0 +1,900 @@
+> +/*
+> + * Copyright (C) 2010 OKI SEMICONDUCTOR CO., LTD.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; version 2 of the License.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307,
+> USA.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/kernel.h>
+> +#include <linux/delay.h>
+> +#include <linux/init.h>
+> +#include <linux/errno.h>
+> +#include <linux/i2c.h>
+> +#include <linux/fs.h>
+> +#include <linux/io.h>
+> +#include <linux/types.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/jiffies.h>
+> +#include <linux/pci.h>
+> +#include <linux/mutex.h>
+> +#include <linux/ktime.h>
+> +
+> +#define PCH_EVENT_SET        0       /* I2C Interrupt Event Set Status */
+> +#define PCH_EVENT_NONE       1       /* I2C Interrupt Event Clear Status */
+> +#define PCH_MAX_CLK          100000  /* Maximum Clock speed in MHz */
+> +#define PCH_BUFFER_MODE_ENABLE       0x0002  /* flag for Buffer mode
+> enable */
+> +#define PCH_EEPROM_SW_RST_MODE_ENABLE        0x0008  /* EEPROM
+> SW RST enable flag */
+> +
+> +#define PCH_I2CSADR  0x00    /* I2C slave address register */
+> +#define PCH_I2CCTL   0x04    /* I2C control register */
+> +#define PCH_I2CSR    0x08    /* I2C status register */
+> +#define PCH_I2CDR    0x0C    /* I2C data register */
+> +#define PCH_I2CMON   0x10    /* I2C bus monitor register */
+> +#define PCH_I2CBC    0x14    /* I2C bus transfer rate setup counter */
+> +#define PCH_I2CMOD   0x18    /* I2C mode register */
+> +#define PCH_I2CBUFSLV        0x1C    /* I2C buffer mode slave address
+> register */
+> +#define PCH_I2CBUFSUB        0x20    /* I2C buffer mode subaddress register
+> */
+> +#define PCH_I2CBUFFOR        0x24    /* I2C buffer mode format register */
+> +#define PCH_I2CBUFCTL        0x28    /* I2C buffer mode control register */
+> +#define PCH_I2CBUFMSK        0x2C    /* I2C buffer mode interrupt mask
+> register */
+> +#define PCH_I2CBUFSTA        0x30    /* I2C buffer mode status register */
+> +#define PCH_I2CBUFLEV        0x34    /* I2C buffer mode level register */
+> +#define PCH_I2CESRFOR        0x38    /* EEPROM software reset mode
+> format register */
+> +#define PCH_I2CESRCTL        0x3C    /* EEPROM software reset mode ctrl
+> register */
+> +#define PCH_I2CESRMSK        0x40    /* EEPROM software reset mode */
+> +#define PCH_I2CESRSTA        0x44    /* EEPROM software reset mode
+> status register */
+> +#define PCH_I2CTMR   0x48    /* I2C timer register */
+> +#define PCH_I2CSRST  0xFC    /* I2C reset register */
+> +#define PCH_I2CNF    0xF8    /* I2C noise filter register */
+> +
+> +#define BUS_IDLE_TIMEOUT     20
+> +#define PCH_I2CCTL_I2CMEN    0x0080
+> +#define TEN_BIT_ADDR_DEFAULT 0xF000
+> +#define TEN_BIT_ADDR_MASK    0xF0
+> +#define PCH_START            0x0020
+> +#define PCH_ESR_START                0x0001
+> +#define PCH_BUFF_START               0x1
+> +#define PCH_REPSTART         0x0004
+> +#define PCH_ACK                      0x0008
+> +#define PCH_GETACK           0x0001
+> +#define CLR_REG                      0x0
+> +#define I2C_RD                       0x1
+> +#define I2CMCF_BIT           0x0080
+> +#define I2CMIF_BIT           0x0002
+> +#define I2CMAL_BIT           0x0010
+> +#define I2CBMFI_BIT          0x0001
+> +#define I2CBMAL_BIT          0x0002
+> +#define I2CBMNA_BIT          0x0004
+> +#define I2CBMTO_BIT          0x0008
+> +#define I2CBMIS_BIT          0x0010
+> +#define I2CESRFI_BIT         0X0001
+> +#define I2CESRTO_BIT         0x0002
+> +#define I2CESRFIIE_BIT               0x1
+> +#define I2CESRTOIE_BIT               0x2
+> +#define I2CBMDZ_BIT          0x0040
+> +#define I2CBMAG_BIT          0x0020
+> +#define I2CMBB_BIT           0x0020
+> +#define BUFFER_MODE_MASK     (I2CBMFI_BIT | I2CBMAL_BIT |
+> I2CBMNA_BIT | \
+> +                             I2CBMTO_BIT | I2CBMIS_BIT)
+> +#define I2C_ADDR_MSK         0xFF
+> +#define I2C_MSB_2B_MSK               0x300
+> +#define FAST_MODE_CLK                400
+> +#define FAST_MODE_EN         0x0001
+> +#define SUB_ADDR_LEN_MAX     4
+> +#define BUF_LEN_MAX          32
+> +#define PCH_BUFFER_MODE              0x1
+> +#define EEPROM_SW_RST_MODE   0x0002
+> +#define NORMAL_INTR_ENBL     0x0300
+> +#define EEPROM_RST_INTR_ENBL (I2CESRFIIE_BIT | I2CESRTOIE_BIT)
+> +#define EEPROM_RST_INTR_DISBL        0x0
+> +#define BUFFER_MODE_INTR_ENBL        0x001F
+> +#define BUFFER_MODE_INTR_DISBL       0x0
+> +#define NORMAL_MODE          0x0
+> +#define BUFFER_MODE          0x1
+> +#define EEPROM_SR_MODE               0x2
+> +#define I2C_TX_MODE          0x0010
+> +#define PCH_BUF_TX           0xFFF7
+> +#define PCH_BUF_RD           0x0008
+> +#define I2C_ERROR_MASK       (I2CESRTO_EVENT | I2CBMIS_EVENT |
+> I2CBMTO_EVENT | \
+> +                     I2CBMNA_EVENT | I2CBMAL_EVENT | I2CMAL_EVENT)
+> +#define I2CMAL_EVENT         0x0001
+> +#define I2CMCF_EVENT         0x0002
+> +#define I2CBMFI_EVENT                0x0004
+> +#define I2CBMAL_EVENT                0x0008
+> +#define I2CBMNA_EVENT                0x0010
+> +#define I2CBMTO_EVENT                0x0020
+> +#define I2CBMIS_EVENT                0x0040
+> +#define I2CESRFI_EVENT               0x0080
+> +#define I2CESRTO_EVENT               0x0100
+> +#define PCI_DEVICE_ID_PCH_I2C        0x8817
+> +
+> +#define pch_dbg(adap, fmt, arg...)  \
+> +     dev_dbg(adap->pch_adapter.dev.parent, "%s :" fmt, __func__, ##arg)
+> +
+> +#define pch_err(adap, fmt, arg...)  \
+> +     dev_err(adap->pch_adapter.dev.parent, "%s :" fmt, __func__, ##arg)
+> +
+> +#define pch_pci_err(pdev, fmt, arg...)  \
+> +     dev_err(&pdev->dev, "%s :" fmt, __func__, ##arg)
+> +
+> +#define pch_pci_dbg(pdev, fmt, arg...)  \
+> +     dev_dbg(&pdev->dev, "%s :" fmt, __func__, ##arg)
+> +
+> +/**
+> + * struct i2c_algo_pch_data - for I2C driver functionalities
+> + * @pch_adapter:             stores the reference to i2c_adapter structure
+> + * @p_adapter_info:          stores the reference to adapter_info structure
+> + * @pch_base_address:                specifies the remapped base address
+> + * @pch_buff_mode_en:                specifies if buffer mode is enabled
+> + * @pch_event_flag:          specifies occurrence of interrupt events
+> + * @pch_i2c_xfer_in_progress:        specifies whether the transfer is completed
+> + */
+> +struct i2c_algo_pch_data {
+> +     struct i2c_adapter pch_adapter;
+> +     struct adapter_info *p_adapter_info;
+> +     void __iomem *pch_base_address;
+> +     int pch_buff_mode_en;
+> +     u32 pch_event_flag;
+> +     bool pch_i2c_xfer_in_progress;
+> +};
+> +
+> +/**
+> + * struct adapter_info - This structure holds the adapter information for the
+> +                      PCH i2c controller
+> + * @pch_data:                stores a list of i2c_algo_pch_data
+> + * @pch_i2c_suspended:       specifies whether the system is suspended or not
+> + *                   perhaps with more lines and words.
+> + *
+> + * pch_data has as many elements as maximum I2C channels
+> + */
+> +struct adapter_info {
+> +     struct i2c_algo_pch_data pch_data;
+> +     bool pch_i2c_suspended;
+> +};
+> +
+> +
+> +static int pch_i2c_speed = 100; /* I2C bus speed in Kbps */
+> +static int pch_clk = 50000;  /* specifies I2C clock speed in KHz */
+> +static wait_queue_head_t pch_event;
+> +static DEFINE_MUTEX(pch_mutex);
+> +
+> +static struct pci_device_id __devinitdata pch_pcidev_id[] = {
+> +     {PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_PCH_I2C)},
+> +     {0,}
+> +};
+> +
+> +static irqreturn_t pch_i2c_handler(int irq, void *pData);
+> +
+> +static inline void pch_setbit(void __iomem *addr, u32 offset, u32 bitmask)
+> +{
+> +     u32 val;
+> +     val = ioread32(addr + offset);
+> +     val |= bitmask;
+> +     iowrite32(val, addr + offset);
+> +}
+> +
+> +static inline void pch_clrbit(void __iomem *addr, u32 offset, u32 bitmask)
+> +{
+> +     u32 val;
+> +     val = ioread32(addr + offset);
+> +     val &= (~bitmask);
+> +     iowrite32(val, addr + offset);
+> +}
+> +
+> +/**
+> + * pch_i2c_init() - hardware initialization of I2C module
+> + * @adap:    Pointer to struct i2c_algo_pch_data.
+> + */
+> +static void pch_i2c_init(struct i2c_algo_pch_data *adap)
+> +{
+> +     void __iomem *p = adap->pch_base_address;
+> +     u32 pch_i2cbc;
+> +     u32 pch_i2ctmr;
+> +     u32 reg_value;
+> +
+> +     /* reset I2C controller */
+> +     iowrite32(0x01, p + PCH_I2CSRST);
+> +     msleep(20);
+> +     iowrite32(0x0, p + PCH_I2CSRST);
+> +
+> +     /* Initialize I2C registers */
+> +     iowrite32(0x21, p + PCH_I2CNF);
+> +
+> +     pch_setbit(adap->pch_base_address, PCH_I2CCTL,
+> +                       PCH_I2CCTL_I2CMEN);
+> +
+> +     if (pch_i2c_speed != 400)
+> +             pch_i2c_speed = 100;
+> +
+> +     reg_value = PCH_I2CCTL_I2CMEN;
+> +     if (pch_i2c_speed == FAST_MODE_CLK) {
+> +             reg_value |= FAST_MODE_EN;
+> +             pch_dbg(adap, "Fast mode enabled\n");
+> +     }
+> +
+> +     if (pch_clk > PCH_MAX_CLK)
+> +             pch_clk = 62500;
+> +
+> +     pch_i2cbc = (pch_clk + (pch_i2c_speed * 4)) / pch_i2c_speed * 8;
+> +     /* Set transfer speed in I2CBC */
+> +     iowrite32(pch_i2cbc, p + PCH_I2CBC);
+> +
+> +     pch_i2ctmr = (pch_clk) / 8;
+> +     iowrite32(pch_i2ctmr, p + PCH_I2CTMR);
+> +
+> +     reg_value |= NORMAL_INTR_ENBL;  /* Enable interrupts in normal
+> mode */
+> +     iowrite32(reg_value, p + PCH_I2CCTL);
+> +
+> +     pch_dbg(adap,
+> +             "I2CCTL=%x pch_i2cbc=%x pch_i2ctmr=%x Enable interrupts\n",
+> +             ioread32(p + PCH_I2CCTL), pch_i2cbc, pch_i2ctmr);
+> +
+> +     init_waitqueue_head(&pch_event);
+> +}
+> +
+> +static inline bool ktime_lt(const ktime_t cmp1, const ktime_t cmp2)
+> +{
+> +     return cmp1.tv64 < cmp2.tv64;
+> +}
+> +
+> +/**
+> + * pch_i2c_wait_for_bus_idle() - check the status of bus.
+> + * @adap:    Pointer to struct i2c_algo_pch_data.
+> + * @timeout: waiting time counter (us).
+> + */
+> +static s32 pch_i2c_wait_for_bus_idle(struct i2c_algo_pch_data *adap,
+> +                              s32 timeout)
+> +{
+> +     void __iomem *p = adap->pch_base_address;
+> +
+> +     /* MAX timeout value is timeout*1000*1000nsec */
+> +     ktime_t ns_val = ktime_add_ns(ktime_get(), timeout*1000*1000);
+> +     do {
+> +             if ((ioread32(p + PCH_I2CSR) & I2CMBB_BIT) == 0)
+> +                     break;
+> +             msleep(20);
+> +     } while (ktime_lt(ktime_get(), ns_val));
+> +
+> +     pch_dbg(adap, "I2CSR = %x\n", ioread32(p + PCH_I2CSR));
+> +
+> +     if (timeout == 0) {
+> +             pch_err(adap, "%s: Timeout Error.return%d\n", __func__, -ETIME);
+> +             return -ETIME;
+> +     }
+> +
+> +     return 0;
+> +}
+> +
+> +/**
+> + * pch_i2c_start() - Generate I2C start condition in normal mode.
+> + * @adap:    Pointer to struct i2c_algo_pch_data.
+> + *
+> + * Generate I2C start condition in normal mode by setting I2CCTL.I2CMSTA to
+> 1.
+> + */
+> +static void pch_i2c_start(struct i2c_algo_pch_data *adap)
+> +{
+> +     void __iomem *p = adap->pch_base_address;
+> +     pch_dbg(adap, "I2CCTL = %x\n", ioread32(p + PCH_I2CCTL));
+> +     pch_setbit(adap->pch_base_address, PCH_I2CCTL, PCH_START);
+> +}
+> +
+> +/**
+> + * pch_i2c_wait_for_xfer_complete() - initiates a wait for the tx complete
+> event
+> + * @adap:    Pointer to struct i2c_algo_pch_data.
+> + */
+> +static s32 pch_i2c_wait_for_xfer_complete(struct i2c_algo_pch_data *adap)
+> +{
+> +     s32 ret;
+> +     ret = wait_event_timeout(pch_event,
+> +                     (adap->pch_event_flag != 0), msecs_to_jiffies(50));
+> +     if (ret < 0) {
+> +             pch_err(adap, "timeout: %x\n", adap->pch_event_flag);
+> +             return ret;
+> +     }
+> +
+> +     if (ret == 0) {
+> +             pch_err(adap, "timeout: %x\n", adap->pch_event_flag);
+> +             return -ETIMEDOUT;
+> +     }
+> +
+> +     if (adap->pch_event_flag & I2C_ERROR_MASK) {
+> +             pch_err(adap, "error bits set: %x\n", adap->pch_event_flag);
+> +             return -EIO;
+> +     }
+> +
+> +     adap->pch_event_flag = 0;
+> +
+> +     return 0;
+> +}
+> +
+> +/**
+> + * pch_i2c_getack() - to confirm ACK/NACK
+> + * @adap:    Pointer to struct i2c_algo_pch_data.
+> + */
+> +static s32 pch_i2c_getack(struct i2c_algo_pch_data *adap)
+> +{
+> +     u32 reg_val;
+> +     void __iomem *p = adap->pch_base_address;
+> +     reg_val = ioread32(p + PCH_I2CSR) & PCH_GETACK;
+> +
+> +     if (reg_val != 0) {
+> +             pch_err(adap, "return%d\n", -EPROTO);
+> +             return -EPROTO;
+> +     }
+> +
+> +     return 0;
+> +}
+> +
+> +/**
+> + * pch_i2c_stop() - generate stop condition in normal mode.
+> + * @adap:    Pointer to struct i2c_algo_pch_data.
+> + */
+> +static void pch_i2c_stop(struct i2c_algo_pch_data *adap)
+> +{
+> +     void __iomem *p = adap->pch_base_address;
+> +     pch_dbg(adap, "I2CCTL = %x\n", ioread32(p + PCH_I2CCTL));
+> +     /* clear the start bit */
+> +     pch_clrbit(adap->pch_base_address, PCH_I2CCTL, PCH_START);
+> +}
+> +
+> +/**
+> + * pch_i2c_repstart() - generate repeated start condition in normal mode
+> + * @adap:    Pointer to struct i2c_algo_pch_data.
+> + */
+> +static void pch_i2c_repstart(struct i2c_algo_pch_data *adap)
+> +{
+> +     void __iomem *p = adap->pch_base_address;
+> +     pch_dbg(adap, "I2CCTL = %x\n", ioread32(p + PCH_I2CCTL));
+> +     pch_setbit(adap->pch_base_address, PCH_I2CCTL, PCH_REPSTART);
+> +}
+> +
+> +/**
+> + * pch_i2c_writebytes() - write data to I2C bus in normal mode
+> + * @i2c_adap:        Pointer to the struct i2c_adapter.
+> + * @last:    specifies whether last message or not.
+> + *           In the case of compound mode it will be 1 for last message,
+> + *           otherwise 0.
+> + * @first:   specifies whether first message or not.
+> + *           1 for first message otherwise 0.
+> + */
+> +static s32 pch_i2c_writebytes(struct i2c_adapter *i2c_adap,
+> +                           struct i2c_msg *msgs, u32 last, u32 first)
+> +{
+> +     struct i2c_algo_pch_data *adap = i2c_adap->algo_data;
+> +     u8 *buf;
+> +     u32 length;
+> +     u32 addr;
+> +     u32 addr_2_msb;
+> +     u32 addr_8_lsb;
+> +     s32 wrcount;
+> +     void __iomem *p = adap->pch_base_address;
+> +
+> +     length = msgs->len;
+> +     buf = msgs->buf;
+> +     addr = msgs->addr;
+> +
+> +     /* enable master tx */
+> +     pch_setbit(adap->pch_base_address, PCH_I2CCTL, I2C_TX_MODE);
+> +
+> +     pch_dbg(adap, "I2CCTL = %x msgs->len = %d\n", ioread32(p +
+> PCH_I2CCTL),
+> +             length);
+> +
+> +     if (first) {
+> +             if (pch_i2c_wait_for_bus_idle(adap, BUS_IDLE_TIMEOUT) == -ETIME)
+> +                     return -ETIME;
+> +     }
+> +
+> +     if (msgs->flags & I2C_M_TEN) {
+> +             addr_2_msb = ((addr & I2C_MSB_2B_MSK) >> 7);
+> +             iowrite32(addr_2_msb | TEN_BIT_ADDR_MASK, p + PCH_I2CDR);
+> +             if (first)
+> +                     pch_i2c_start(adap);
+> +             if (pch_i2c_wait_for_xfer_complete(adap) == 0 &&
+> +                 pch_i2c_getack(adap) == 0) {
+> +                     addr_8_lsb = (addr & I2C_ADDR_MSK);
+> +                     iowrite32(addr_8_lsb, p + PCH_I2CDR);
+> +             } else {
+> +                     pch_i2c_stop(adap);
+> +                     return -ETIME;
+> +             }
+> +     } else {
+> +             /* set 7 bit slave address and R/W bit as 0 */
+> +             iowrite32(addr << 1, p + PCH_I2CDR);
+> +             if (first)
+> +                     pch_i2c_start(adap);
+> +     }
+> +
+> +     if ((pch_i2c_wait_for_xfer_complete(adap) == 0) &&
+> +         (pch_i2c_getack(adap) == 0)) {
+> +             for (wrcount = 0; wrcount < length; ++wrcount) {
+> +                     /* write buffer value to I2C data register */
+> +                     iowrite32(buf[wrcount], p + PCH_I2CDR);
+> +                     pch_dbg(adap, "writing %x to Data register\n",
+> +                             buf[wrcount]);
+> +
+> +                     if (pch_i2c_wait_for_xfer_complete(adap) != 0)
+> +                             return -ETIME;
+> +
+> +                     if (pch_i2c_getack(adap))
+> +                             return -EIO;
+> +             }
+> +
+> +             /* check if this is the last message */
+> +             if (last)
+> +                     pch_i2c_stop(adap);
+> +             else
+> +                     pch_i2c_repstart(adap);
+> +     } else {
+> +             pch_i2c_stop(adap);
+> +             return -EIO;
+> +     }
+> +
+> +     pch_dbg(adap, "return=%d\n", wrcount);
+> +
+> +     return wrcount;
+> +}
+> +
+> +/**
+> + * pch_i2c_sendack() - send ACK
+> + * @adap:    Pointer to struct i2c_algo_pch_data.
+> + */
+> +static void pch_i2c_sendack(struct i2c_algo_pch_data *adap)
+> +{
+> +     void __iomem *p = adap->pch_base_address;
+> +     pch_dbg(adap, "I2CCTL = %x\n", ioread32(p + PCH_I2CCTL));
+> +     pch_clrbit(adap->pch_base_address, PCH_I2CCTL, PCH_ACK);
+> +}
+> +
+> +/**
+> + * pch_i2c_sendnack() - send NACK
+> + * @adap:    Pointer to struct i2c_algo_pch_data.
+> + */
+> +static void pch_i2c_sendnack(struct i2c_algo_pch_data *adap)
+> +{
+> +     void __iomem *p = adap->pch_base_address;
+> +     pch_dbg(adap, "I2CCTL = %x\n", ioread32(p + PCH_I2CCTL));
+> +     pch_setbit(adap->pch_base_address, PCH_I2CCTL, PCH_ACK);
+> +}
+> +
+> +/**
+> + * pch_i2c_readbytes() - read data  from I2C bus in normal mode.
+> + * @i2c_adap:        Pointer to the struct i2c_adapter.
+> + * @msgs:    Pointer to i2c_msg structure.
+> + * @last:    specifies whether last message or not.
+> + * @first:   specifies whether first message or not.
+> + */
+> +s32 pch_i2c_readbytes(struct i2c_adapter *i2c_adap, struct i2c_msg *msgs,
+> +               u32 last, u32 first)
+> +{
+> +     struct i2c_algo_pch_data *adap = i2c_adap->algo_data;
+> +
+> +     u8 *buf;
+> +     u32 count;
+> +     u32 length;
+> +     u32 addr;
+> +     u32 addr_2_msb;
+> +     void __iomem *p = adap->pch_base_address;
+> +
+> +     length = msgs->len;
+> +     buf = msgs->buf;
+> +     addr = msgs->addr;
+> +
+> +     /* enable master reception */
+> +     pch_clrbit(adap->pch_base_address, PCH_I2CCTL, I2C_TX_MODE);
+> +
+> +     if (first) {
+> +             if (pch_i2c_wait_for_bus_idle(adap, BUS_IDLE_TIMEOUT) == -ETIME)
+> +                     return -ETIME;
+> +     }
+> +
+> +     if (msgs->flags & I2C_M_TEN) {
+> +             addr_2_msb = (((addr & I2C_MSB_2B_MSK) >> 7) | (I2C_RD));
+> +             iowrite32(addr_2_msb | TEN_BIT_ADDR_MASK, p + PCH_I2CDR);
+> +
+> +     } else {
+> +             /* 7 address bits + R/W bit */
+> +             addr = (((addr) << 1) | (I2C_RD));
+> +             iowrite32(addr, p + PCH_I2CDR);
+> +     }
+> +
+> +     /* check if it is the first message */
+> +     if (first)
+> +             pch_i2c_start(adap);
+> +
+> +     if ((pch_i2c_wait_for_xfer_complete(adap) == 0) &&
+> +         (pch_i2c_getack(adap) == 0)) {
+> +             pch_dbg(adap, "return %d\n", 0);
+> +
+> +             if (length == 0) {
+> +                     pch_i2c_stop(adap);
+> +                     ioread32(p + PCH_I2CDR); /* Dummy read needs */
+> +
+> +                     count = length;
+> +             } else {
+> +                     int read_index;
+> +                     int loop;
+> +                     pch_i2c_sendack(adap);
+> +
+> +                     /* Dummy read */
+> +                     for (loop = 1, read_index = 0; loop < length; loop++) {
+> +                             buf[read_index] = ioread32(p + PCH_I2CDR);
+> +
+> +                             if (loop != 1)
+> +                                     read_index++;
+> +
+> +                             if (pch_i2c_wait_for_xfer_complete(adap) != 0) {
+> +                                     pch_i2c_stop(adap);
+> +                                     return -ETIME;
+> +                             }
+> +                     }       /* end for */
+> +
+> +                     pch_i2c_sendnack(adap);
+> +
+> +                     buf[read_index] = ioread32(p + PCH_I2CDR);
+> +
+> +                     if (length != 1)
+> +                             read_index++;
+> +
+> +                     if (pch_i2c_wait_for_xfer_complete(adap) == 0) {
+> +                             if (last)
+> +                                     pch_i2c_stop(adap);
+> +                             else
+> +                                     pch_i2c_repstart(adap);
+> +
+> +                             buf[read_index++] = ioread32(p + PCH_I2CDR);
+> +                             count = read_index;
+> +                     } else {
+> +                             count = -ETIME;
+> +                     }
+> +
+> +             }
+> +     } else {
+> +             count = -ETIME;
+> +             pch_i2c_stop(adap);
+> +     }
+> +
+> +     return count;
+> +}
+> +
+> +/**
+> + * pch_i2c_cb_ch0() - Interrupt handler Call back function
+> + * @adap:    Pointer to struct i2c_algo_pch_data.
+> + */
+> +static void pch_i2c_cb_ch0(struct i2c_algo_pch_data *adap)
+> +{
+> +     u32 sts;
+> +     void __iomem *p = adap->pch_base_address;
+> +
+> +     sts = ioread32(p + PCH_I2CSR);
+> +     sts &= (I2CMAL_BIT | I2CMCF_BIT | I2CMIF_BIT);
+> +     if (sts & I2CMAL_BIT)
+> +             adap->pch_event_flag |= I2CMAL_EVENT;
+> +
+> +     if (sts & I2CMCF_BIT)
+> +             adap->pch_event_flag |= I2CMCF_EVENT;
+> +
+> +     /* clear the applicable bits */
+> +     pch_clrbit(adap->pch_base_address, PCH_I2CSR, sts);
+> +
+> +     pch_dbg(adap, "PCH_I2CSR = %x\n", ioread32(p + PCH_I2CSR));
+> +
+> +     wake_up(&pch_event);
+> +}
+> +
+> +/**
+> + * pch_i2c_handler() - interrupt handler for the PCH I2C controller
+> + * @irq:     irq number.
+> + * @pData:   cookie passed back to the handler function.
+> + */
+> +static irqreturn_t pch_i2c_handler(int irq, void *pData)
+> +{
+> +     s32 reg_val;
+> +
+> +     struct i2c_algo_pch_data *adap_data = (struct i2c_algo_pch_data
+> *)pData;
+> +     void __iomem *p = adap_data->pch_base_address;
+> +     u32 mode = ioread32(p + PCH_I2CMOD) & (BUFFER_MODE |
+> EEPROM_SR_MODE);
+> +
+> +     if (mode != NORMAL_MODE) {
+> +             pch_err(adap_data, "I2C mode is not supported\n");
+> +             return IRQ_NONE;
+> +     }
+> +
+> +     reg_val = ioread32(p + PCH_I2CSR);
+> +     if (reg_val & (I2CMAL_BIT | I2CMCF_BIT | I2CMIF_BIT))
+> +             pch_i2c_cb_ch0(adap_data);
+> +     else
+> +             return IRQ_NONE;
+> +
+> +     return IRQ_HANDLED;
+> +}
+> +
+> +/**
+> + * pch_i2c_xfer() - Reading adnd writing data through I2C bus
+> + * @i2c_adap:        Pointer to the struct i2c_adapter.
+> + * @msgs:    Pointer to i2c_msg structure.
+> + * @num:     number of messages.
+> + */
+> +static s32 pch_i2c_xfer(struct i2c_adapter *i2c_adap,
+> +                 struct i2c_msg *msgs, s32 num)
+> +{
+> +     struct i2c_msg *pmsg;
+> +     u32 i = 0;
+> +     u32 status;
+> +     u32 msglen;
+> +     u32 subaddrlen;
+> +     s32 ret;
+> +
+> +     struct i2c_algo_pch_data *adap = i2c_adap->algo_data;
+> +
+> +     ret = mutex_lock_interruptible(&pch_mutex);
+> +     if (ret)
+> +             return -ERESTARTSYS;
+> +
+> +     if (adap->p_adapter_info->pch_i2c_suspended) {
+> +             mutex_unlock(&pch_mutex);
+> +             return -EBUSY;
+> +     }
+> +
+> +     pch_dbg(adap, "adap->p_adapter_info->pch_i2c_suspended is %d\n",
+> +             adap->p_adapter_info->pch_i2c_suspended);
+> +     /* transfer not completed */
+> +     adap->pch_i2c_xfer_in_progress = true;
+> +
+> +     pmsg = &msgs[0];
+> +     pmsg->flags |= adap->pch_buff_mode_en;
+> +     status = pmsg->flags;
+> +     pch_dbg(adap,
+> +             "After invoking I2C_MODE_SEL :flag= 0x%x\n", status);
+> +     /* calculate sub address length and message length */
+> +     /* these are applicable only for buffer mode */
+> +     subaddrlen = pmsg->buf[0];
+> +     /* calculate actual message length excluding
+> +      * the sub address fields */
+> +     msglen = (pmsg->len) - (subaddrlen + 1);
+> +     if (status & (I2C_M_RD)) {
+> +             pch_dbg(adap, "invoking pch_i2c_readbytes\n");
+> +             ret = pch_i2c_readbytes(i2c_adap, pmsg, (i + 1 == num),
+> +                                (i == 0));
+> +     } else {
+> +             pch_dbg(adap, "invoking pch_i2c_writebytes\n");
+> +             ret = pch_i2c_writebytes(i2c_adap, pmsg, (i + 1 == num),
+> +                                 (i == 0));
+> +     }
+> +
+> +     adap->pch_i2c_xfer_in_progress = false; /* transfer completed */
+> +
+> +     mutex_unlock(&pch_mutex);
+> +
+> +     return ret;
+> +}
+> +
+> +/**
+> + * pch_i2c_func() - return the functionality of the I2C driver
+> + * @adap:    Pointer to struct i2c_algo_pch_data.
+> + */
+> +static u32 pch_i2c_func(struct i2c_adapter *adap)
+> +{
+> +     return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL |
+> I2C_FUNC_10BIT_ADDR;
+> +}
+> +
+> +static struct i2c_algorithm pch_algorithm = {
+> +     .master_xfer = pch_i2c_xfer,
+> +     .functionality = pch_i2c_func
+> +};
+> +
+> +/**
+> + * pch_i2c_disbl_int() - Disable PCH I2C interrupts
+> + * @adap:    Pointer to struct i2c_algo_pch_data.
+> + */
+> +static void pch_i2c_disbl_int(struct i2c_algo_pch_data *adap)
+> +{
+> +     void __iomem *p = adap->pch_base_address;
+> +
+> +     pch_clrbit(adap->pch_base_address, PCH_I2CCTL,
+> NORMAL_INTR_ENBL);
+> +
+> +     iowrite32(EEPROM_RST_INTR_DISBL, p + PCH_I2CESRMSK);
+> +
+> +     iowrite32(BUFFER_MODE_INTR_DISBL, p + PCH_I2CBUFMSK);
+> +}
+> +
+> +static int __devinit pch_i2c_probe(struct pci_dev *pdev,
+> +                            const struct pci_device_id *id)
+> +{
+> +     void __iomem *base_addr;
+> +     s32 ret;
+> +     struct adapter_info *adap_info;
+> +
+> +     pch_pci_dbg(pdev, "Entered.\n");
+> +
+> +     adap_info = kzalloc((sizeof(struct adapter_info)), GFP_KERNEL);
+> +     if (adap_info == NULL) {
+> +             pch_pci_err(pdev, "Memory allocation FAILED\n");
+> +             return -ENOMEM;
+> +     }
+> +
+> +     ret = pci_enable_device(pdev);
+> +     if (ret) {
+> +             pch_pci_err(pdev, "pci_enable_device FAILED\n");
+> +             goto err_pci_enable;
+> +     }
+> +
+> +     ret = pci_request_regions(pdev, KBUILD_MODNAME);
+> +     if (ret) {
+> +             pch_pci_err(pdev, "pci_request_regions FAILED\n");
+> +             goto err_pci_req;
+> +     }
+> +
+> +     base_addr = pci_iomap(pdev, 1, 0);
+> +
+> +     if (base_addr == NULL) {
+> +             pch_pci_err(pdev, "pci_iomap FAILED\n");
+> +             ret = -ENOMEM;
+> +             goto err_pci_iomap;
+> +     }
+> +
+> +     adap_info->pch_i2c_suspended = false;
+> +
+> +     adap_info->pch_data.p_adapter_info = adap_info;
+> +
+> +     adap_info->pch_data.pch_adapter.owner = THIS_MODULE;
+> +     adap_info->pch_data.pch_adapter.class = I2C_CLASS_HWMON;
+> +     strcpy(adap_info->pch_data.pch_adapter.name, KBUILD_MODNAME);
+> +     adap_info->pch_data.pch_adapter.algo = &pch_algorithm;
+> +     adap_info->pch_data.pch_adapter.algo_data =
+> +                                             &adap_info->pch_data;
+> +
+> +     /* (i * 0x80) + base_addr; */
+> +     adap_info->pch_data.pch_base_address = base_addr;
+> +
+> +     adap_info->pch_data.pch_adapter.dev.parent = &pdev->dev;
+> +
+> +     ret = i2c_add_adapter(&(adap_info->pch_data.pch_adapter));
+> +
+> +     if (ret) {
+> +             pch_pci_err(pdev, "i2c_add_adapter FAILED\n");
+> +             goto err_i2c_add_adapter;
+> +     }
+> +
+> +     pch_i2c_init(&adap_info->pch_data);
+> +     ret = request_irq(pdev->irq, pch_i2c_handler, IRQF_SHARED,
+> +               KBUILD_MODNAME, &adap_info->pch_data);
+> +     if (ret) {
+> +             pch_pci_err(pdev, "request_irq FAILED\n");
+> +             goto err_request_irq;
+> +     }
+> +
+> +     pci_set_drvdata(pdev, adap_info);
+> +     pch_pci_dbg(pdev, "returns %d.\n", ret);
+> +     return 0;
+> +
+> +err_request_irq:
+> +     i2c_del_adapter(&(adap_info->pch_data.pch_adapter));
+> +err_i2c_add_adapter:
+> +     pci_iounmap(pdev, base_addr);
+> +err_pci_iomap:
+> +     pci_release_regions(pdev);
+> +err_pci_req:
+> +     pci_disable_device(pdev);
+> +err_pci_enable:
+> +     kfree(adap_info);
+> +     return ret;
+> +}
+> +
+> +static void __devexit pch_i2c_remove(struct pci_dev *pdev)
+> +{
+> +     struct adapter_info *adap_info = pci_get_drvdata(pdev);
+> +
+> +     pch_i2c_disbl_int(&adap_info->pch_data);
+> +     free_irq(pdev->irq, &adap_info->pch_data);
+> +     i2c_del_adapter(&(adap_info->pch_data.pch_adapter));
+> +
+> +     if (adap_info->pch_data.pch_base_address) {
+> +             pci_iounmap(pdev, adap_info->pch_data.pch_base_address);
+> +             adap_info->pch_data.pch_base_address = 0;
+> +     }
+> +
+> +     pci_set_drvdata(pdev, NULL);
+> +
+> +     pci_release_regions(pdev);
+> +
+> +     pci_disable_device(pdev);
+> +     kfree(adap_info);
+> +}
+> +
+> +#ifdef CONFIG_PM
+> +static int pch_i2c_suspend(struct pci_dev *pdev, pm_message_t state)
+> +{
+> +     int ret;
+> +     struct adapter_info *adap_info = pci_get_drvdata(pdev);
+> +     void __iomem *p = adap_info->pch_data.pch_base_address;
+> +
+> +     adap_info->pch_i2c_suspended = true;
+> +
+> +     while ((adap_info->pch_data.pch_i2c_xfer_in_progress)) {
+> +             /* Wait until all channel transfers are completed */
+> +             msleep(20);
+> +     }
+> +     /* Disable the i2c interrupts */
+> +     pch_i2c_disbl_int(&adap_info->pch_data);
+> +
+> +     pch_pci_dbg(pdev, "I2CSR = %x I2CBUFSTA = %x I2CESRSTA = %x "
+> +             "invoked function pch_i2c_disbl_int successfully\n",
+> +             ioread32(p + PCH_I2CSR), ioread32(p + PCH_I2CBUFSTA),
+> +             ioread32(p + PCH_I2CESRSTA));
+> +
+> +     ret = pci_save_state(pdev);
+> +
+> +     if (ret) {
+> +             pch_pci_err(pdev, "pci_save_state\n");
+> +             return ret;
+> +     }
+> +
+> +     pci_enable_wake(pdev, PCI_D3hot, 0);
+> +     pci_disable_device(pdev);
+> +     pci_set_power_state(pdev, pci_choose_state(pdev, state));
+> +
+> +     return 0;
+> +}
+> +
+> +static int pch_i2c_resume(struct pci_dev *pdev)
+> +{
+> +     struct adapter_info *adap_info = pci_get_drvdata(pdev);
+> +
+> +     pci_set_power_state(pdev, PCI_D0);
+> +     pci_restore_state(pdev);
+> +
+> +     if (pci_enable_device(pdev) < 0) {
+> +             pch_pci_err(pdev, "pch_i2c_resume:pci_enable_device FAILED\n");
+> +             return -EIO;
+> +     }
+> +
+> +     pci_enable_wake(pdev, PCI_D3hot, 0);
+> +
+> +     pch_i2c_init(&adap_info->pch_data);
+> +
+> +     adap_info->pch_i2c_suspended = false;
+> +
+> +     return 0;
+> +}
+> +#else
+> +#define pch_i2c_suspend NULL
+> +#define pch_i2c_resume NULL
+> +#endif
+> +
+> +static struct pci_driver pch_pcidriver = {
+> +     .name = KBUILD_MODNAME,
+> +     .id_table = pch_pcidev_id,
+> +     .probe = pch_i2c_probe,
+> +     .remove = __devexit_p(pch_i2c_remove),
+> +     .suspend = pch_i2c_suspend,
+> +     .resume = pch_i2c_resume
+> +};
+> +
+> +static int __init pch_pci_init(void)
+> +{
+> +     return pci_register_driver(&pch_pcidriver);
+> +}
+> +module_init(pch_pci_init);
+> +
+> +static void __exit pch_pci_exit(void)
+> +{
+> +     pci_unregister_driver(&pch_pcidriver);
+> +}
+> +module_exit(pch_pci_exit);
+> +
+> +MODULE_DESCRIPTION("PCH I2C PCI Driver");
+> +MODULE_LICENSE("GPL");
+> +MODULE_AUTHOR("Tomoya MORINAGA.
+> <tomoya-linux@dsn.okisemi.com>");
+> +module_param(pch_i2c_speed, int, (S_IRUSR | S_IWUSR));
+> +module_param(pch_clk, int, (S_IRUSR | S_IWUSR));
+> --
+> 1.6.0.6
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
