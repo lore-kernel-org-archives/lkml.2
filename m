@@ -1,61 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700Ab0KJVJL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 16:09:11 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43162 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755918Ab0KJVJK (ORCPT
+	id S1756844Ab0KJVJv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 16:09:51 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:15251 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756519Ab0KJVJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 16:09:10 -0500
-Date: Wed, 10 Nov 2010 13:08:34 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Vasiliy Kulikov <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org,
-        =?ISO-8859-1?Q?Andr=E9?= Goddard Rosa <andre.goddard@gmail.com>,
-        Joe Perches <joe@perches.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lib: vsprintf: fix invalid arg check
-Message-Id: <20101110130834.02496b48.akpm@linux-foundation.org>
-In-Reply-To: <1289421490-23950-1-git-send-email-segooon@gmail.com>
-References: <1289421490-23950-1-git-send-email-segooon@gmail.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Nov 2010 16:09:50 -0500
+Date: Wed, 10 Nov 2010 21:58:08 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Frank Rowand <frank.rowand@am.sony.com>
+cc: Marcus Meissner <meissner@suse.de>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jason.wessel@windriver.com" <jason.wessel@windriver.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "tj@kernel.org" <tj@kernel.org>, "mort@sgi.com" <mort@sgi.com>,
+        "akpm@osdl.org" <akpm@osdl.org>,
+        "security@kernel.org" <security@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of
+ attacking
+In-Reply-To: <4CD36E41.50505@am.sony.com>
+Message-ID: <alpine.LNX.2.00.1011102141430.625@swampdragon.chaosbits.net>
+References: <20101104100914.GC25118@suse.de> <20101104114648.GA23381@elte.hu> <20101104122906.GH25118@suse.de> <4CD36E41.50505@am.sony.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Nov 2010 23:38:08 +0300
-Vasiliy Kulikov <segooon@gmail.com> wrote:
+On Thu, 4 Nov 2010, Frank Rowand wrote:
 
-> "size" is size_t.  If we want to check whether it was underflowed
-> then we should cast it to ssize_t instead of int.  When
-> sizeof(size_t) > sizeof(int) the code sees UINT_MAX as underflow,
-> but it is not.
+> On 11/04/10 05:29, Marcus Meissner wrote:
+> > On Thu, Nov 04, 2010 at 12:46:48PM +0100, Ingo Molnar wrote:
+> >>
+> >> * Marcus Meissner <meissner@suse.de> wrote:
+> >>
+> >>> Hi,
+> >>>
+> >>> Making /proc/kallsyms readable only for root makes it harder for attackers to 
+> >>> write generic kernel exploits by removing one source of knowledge where things are 
+> >>> in the kernel.
+> 
+> < snip >
+> 
+> >> So what does a distribution like Suse expect from this change alone? Those have 
+> >> public packages in rpms which can be downloaded by anyone, so it makes little sense 
+> >> to hide it - unless _all_ version information is hidden.
+> > 
+> > It is the first patch, mostly an acceptance test balloon.
+> > 
+> > There are several other files handing information out, but kallsyms has
+> > it all very nice and ready.
+> > 
+> > (timer_list, /proc/*/stat*, sl?binfo )
+> >  
+> >> So i'd like to see a _full_ version info sandboxing patch that thinks through all 
+> >> the angles and restricts uname -r kernel version info as well, and makes dmesg 
+> >> unaccessible to users - and closes a few other information holes as well that give 
+> >> away the exact kernel version - _that_ together will make it hard to blindly attack 
+> >> a very specific kernel version.
+> > 
+> > I am personally thinking of a "small steps" philosophy, one step after the other.
+> 
+> < snip >
+> 
+> The idea of trying to hide the kernel version is absurd.  The number of different
+> places that can provide a precise fingerprint of a kernel version, or a small range of
+> possible kernel versions is immense.  Closing all of those places makes use and
+> administration of a system more difficult, and encourages frequent use of su.
 > 
 
-Does this patch fix any actual observed problem?
+I agree. Hiding the kernel version is silly. But that's not what the 
+original patch was about. The original patch was about "Making 
+/proc/kallsyms readable only for root ..." and that (IMVHO) makes sense 
+for a number of reasons.
 
->  Compile tested.
-> 
+1. For those people running (popular) distro kernels, hiding the 
+information on /proc/kallsyms doesn't achieve much, true, an attacker can 
+get the information easily online. But it still makes it slightly more 
+involved for exploits to gain access to information about the addresses of 
+kernel functions - at the very least they now have to hard-code lists of 
+addresses for the kernels they target - not much pain, but the more pain 
+we can inflict upon these people without hurting legitimate users, the 
+better.
 
-I guess not.
+2. For people running niche-distros that attackers cannot be bothered to 
+target explicitly, but where they previously relied on obtaining these 
+addresses from /proc/kallsyms we have a real gain - the attackers can no 
+longer get the info they need.
 
-> --- a/lib/vsprintf.c
-> +++ b/lib/vsprintf.c
-> @@ -1290,7 +1290,7 @@ int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
->  
->  	/* Reject out-of-range values early.  Large positive sizes are
->  	   used for unknown buffer sizes. */
+3. For people running custom compiled kernels (and I personally know of a 
+few large businesses that do so and several individuals, and I'll bet real 
+money that there are more than you suspect "out there"), attacks relying 
+on /proc/kallsyms for info are completely defeated.
 
-Thousands of people would find that comment to be utterly mysterious. 
-I am one.
+4. Once we get (and I'm sure that's only a matter of time) randomization 
+of the addresses that kernel functions are loaded at, even popular distros 
+where the kernel version and config are known to attackers will gain a 
+valuable defence by ths patch. Attackers will then no longer be able to 
+just download the info from the distro repositories and hard-code 
+addresses since they will be randomized, but if they have access to 
+/proc/kallsyms they won't need to since they can then just look up the 
+addresses there - this patch closes that info path to them which is good.
 
-> -	if (WARN_ON_ONCE((int) size < 0))
-> +	if (WARN_ON_ONCE((ssize_t) size < 0))
->  		return 0;
->  
->  	str = buf;
+
+-- 
+Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
+Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
 
