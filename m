@@ -1,115 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770Ab0KJGdT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 01:33:19 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:33013 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752222Ab0KJGdS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 01:33:18 -0500
-Date: Wed, 10 Nov 2010 01:33:12 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@canonical.com>
-X-X-Sender: nico@xanadu.home
-To: Kay Sievers <kay.sievers@vrfy.org>
-cc: Greg Kroah-Hartman <gregkh@suse.de>, lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 29/49] vcs: add poll/fasync support
-In-Reply-To: <AANLkTinfLT0WYDHek8+QjYKfGC0rtJ3ZFhoZj2fD8-Ri@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1011100119140.13911@xanadu.home>
-References: <20101022175112.GC13489@kroah.com> <1287771688-14805-29-git-send-email-gregkh@suse.de> <AANLkTinVp4C9bRW6=EMHwh1UyeadFbOXKe1aDsxknJf8@mail.gmail.com> <alpine.LFD.2.00.1011092013290.13911@xanadu.home>
- <AANLkTinfLT0WYDHek8+QjYKfGC0rtJ3ZFhoZj2fD8-Ri@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754830Ab0KJGfq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 01:35:46 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:56066 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750948Ab0KJGfp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 01:35:45 -0500
+Date: Wed, 10 Nov 2010 07:35:42 +0100 (CET)
+From: Julia Lawall <julia@diku.dk>
+To: Emese Revfy <re.emese@gmail.com>
+Cc: Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
+        cocci@diku.dk
+Subject: Re: [Cocci] Re: status of constification
+In-Reply-To: <4CD9BF25.4090306@gmail.com>
+Message-ID: <Pine.LNX.4.64.1011100727370.352@ask.diku.dk>
+References: <20101108223844.GS5876@outflux.net> <4CD9BF25.4090306@gmail.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463811582-801402965-1289370794=:13911"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Tue, 9 Nov 2010, Emese Revfy wrote:
 
----1463811582-801402965-1289370794=:13911
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
-
-On Wed, 10 Nov 2010, Kay Sievers wrote:
-
-> On Wed, Nov 10, 2010 at 02:26, Nicolas Pitre
-> <nicolas.pitre@canonical.com> wrote:
-> > On Wed, 10 Nov 2010, Kay Sievers wrote:
+> 
+> > Hi,
 > >
-> >> On Fri, Oct 22, 2010 at 20:21, Greg Kroah-Hartman <gregkh@suse.de> wro=
-te:
-> >> > From: Nicolas Pitre <nico@fluxnic.net>
-> >> >
-> >> > The /dev/vcs* devices are used, amongst other things, by accessibili=
-ty
-> >> > applications such as BRLTTY to display the screen content onto refre=
-shable
-> >> > braille displays. =C2=A0Currently this is performed by constantly re=
-ading from
-> >> > /dev/vcsa0 whether or not the screen content has changed. =C2=A0Give=
-n the
-> >> > default braille refresh rate of 25 times per second, this easily qua=
-lifies
-> >> > as the biggest source of wake-up events preventing laptops from ente=
-ring
-> >> > deeper power saving states.
-> >> >
-> >> > To avoid this periodic polling, let's add support for select()/poll(=
-) and
-> >> > SIGIO with the /dev/vcs* devices. =C2=A0The implemented semantic is =
-to report
-> >> > data availability whenever the corresponding vt has seen some update=
- after
-> >> > the last read() operation. =C2=A0The application still has to lseek(=
-) back
-> >> > as usual in order to read() the new data.
-> >>
-> >> Shouldn't it raise POLLPRI/POLLERR then, when it's not about new data
-> >> to read? We do this for several files in the kernel where we just want
-> >> to wakup someone, but the pretty well-defined semantics of poll()
-> >> don't apply.
-> >
-> > Hmmm... =C2=A0Maybe POLLPRI, but POLLERR makes no sense.
->=20
-> I have no opinion about that, but it's what others do:
->   http://git.kernel.org/?p=3Dlinux/kernel/git/torvalds/linux-2.6.git;a=3D=
-commit;h=3D31b07093c44a7a442394d44423e21d783f5523b8
->   http://git.kernel.org/?p=3Dlinux/kernel/git/torvalds/linux-2.6.git;a=3D=
-commit;h=3D4508a7a734b111b8b7e39986237d84acb1168dd0
->=20
-> The POLLIN should definitely go, it's POSIX defined. What we do here
-> is more like an error that wakes up than a stream data to read. :)
+> > So, I'm trying to come up to speed on what's still outstanding in the
+> > effort to constify function pointers. I saw patches from Emese Revfy
+> > go in, and I saw Lionel Debroux's recent patches. What already-created
+> > work still needs attention? I know there's more code to be written,
+> > but I'm trying to find any patches that have already been written but
+> > have not gone upstream yet.
+> Hi, 
+> 
+> I will gladly break up my current patch for the next -rc by structure
+> type or maintainer (some preferred it one way or the other) and send
+> it in some time next week so that you can handle the upstream submission
+> process (I will continue to maintain my patch in grsecurity).
+> 
+> There are many structures that can be constified, you can use the following
+> command to find most of them (use it on an allyesconfig kernel preferably):
+> 
+> grep _ops System.map |grep -Ewi 'b|d' | awk '{print $3}' | \
+> while read i ; do cscope -d -L -1 $i | grep -E "struct[ \t]*([^ ]*)[ \t]*" \
+> --color=none -o | awk '{print $2}' ; done |sort -u
+> 
+> Also there are always new instances of structures going in that should have
+> been constified.
+> 
+> I tried to automate the whole process with Coccinelle but I abandoned it
+> because Coccinelle didn't support recursive header file inclusion at the time.
+> If someone feels like fixing Coccinelle then I would quickly finish my script
+> (it has a few bugs because I could never test it for real), but see the end
+> of the mail for the current version. I think it would be a good idea because
+> it would take a few hours only to generate a constification patch for a new
+> kernel. One thing that probably cannot be automated with Coccinelle is that
+> once the script determines that a given structure cannot be constified, it
+> cannot undo already emitted patches for the given structure so it must be
+> cleaned up by post processing script.
 
-OK.  What about this then?
------ >8
-Subject: [PATCH] vcs: make proper usage of the poll flags
+What would the right approach be?  It is not obvious to find 100% of the 
+header files, because some of them depend on information in Makefiles.  
+You can use that information by running the preprocessor on Coccinelle 
+first, but then the result is only useful for finding files that need 
+changing, but not actually making the changes because Coccinelle does not 
+relate the preprocessed code back to the original code.  But if you run 
+the preprocessor, you only get information for your current configuration, 
+which is probably not what you want.
 
-Kay Sievers pointed out that usage of POLLIN is well defined by POSIX,
-and the current usage here doesn't follow that definition.  So let's
-duplicate the same semantics as implemented by sysfs_poll() instead.
+Coccinelle could certainly get a new option -really_all_includes, or 
+something like that, that would recursively include among what it can find 
+and what has not been included already.  Would that be what is wanted?
 
-Signed-off-by: Nicolas Pitre <nicolas.pitre@canonical.com>
----
-diff --git a/drivers/tty/vt/vc_screen.c b/drivers/tty/vt/vc_screen.c
-index 273ab44..a93856e 100644
---- a/drivers/tty/vt/vc_screen.c
-+++ b/drivers/tty/vt/vc_screen.c
-@@ -553,12 +553,12 @@ static unsigned int
- vcs_poll(struct file *file, poll_table *wait)
- {
- =09struct vcs_poll_data *poll =3D vcs_poll_data_get(file);
--=09int ret =3D 0;
-+=09int ret =3D DEFAULT_POLLMASK|POLLERR|POLLPRI;
-=20
- =09if (poll) {
- =09=09poll_wait(file, &poll->waitq, wait);
--=09=09if (!poll->seen_last_update)
--=09=09=09ret =3D POLLIN | POLLRDNORM;
-+=09=09if (poll->seen_last_update)
-+=09=09=09ret =3D DEFAULT_POLLMASK;=20
- =09}
- =09return ret;
- }
----1463811582-801402965-1289370794=:13911--
+I guess that in practice the includes are only being used for type 
+information?  Wouldn't it be safe to run the semantic patch based on the 
+includes that are available?
+
+julia
+
+> 
+> --
+> Emese
+> 
+> 
+> // spatch.opt -sp_file $1 -include_headers -local_includes -all_includes -I "include/" -dir $2
+> 
+> @initialize:python@
+> noconst = []
+> 
+> @stc@
+> identifier idtype, y;
+> type t;
+> position p;
+> @@
+> struct idtype {
+> 	...
+> 	t (*y)(...);@p
+> 	...
+> };
+> 
+> @notjustfp@
+> identifier stc.idtype, y;
+> type t;
+> position p != stc.p;
+> @@
+> struct idtype {
+> 	...
+> 	t y;@p
+> 	...
+> };
+> 
+> @script:python depends on notjustfp@
+> @@
+> cocci.include_match(False)
+> 
+> @variable@
+> identifier stc.idtype, idvariant, id;
+> @@
+> (
+> 	struct idtype idvariant = {
+> 		...
+> 	};
+> |
+> 	struct idtype idvariant;
+> |
+> 	struct idtype *idvariant;
+> |
+> 	struct id {
+> 		...
+> 		struct idtype idvariant;
+> 		...
+> 	};
+> )
+> 
+> @script:python@
+> y << variable.idvariant;
+> @@
+> if y in noconst:
+> 	cocci.include_match(False)
+> 
+> @alreadyconst@
+> identifier stc.idtype, variable.idvariant, id;
+> @@
+> (
+> 	const struct idtype idvariant;
+> |
+> 	const struct idtype idvariant = {
+> 		...
+> 	};
+> |
+> 	const struct idtype *idvariant;
+> |
+> 	struct id {
+> 		...
+> 		const struct idtype idvariant;
+> 		...
+> 	};
+> )
+> 
+> @script:python depends on alreadyconst@
+> @@
+> cocci.include_match(False)
+> 
+> @fn_declaration@
+> identifier stc.idtype, variable.idvariant, fn;
+> type t;
+> @@
+> t fn(struct idtype *idvariant);
+> 
+> @fn_definition@
+> identifier stc.idtype, variable.idvariant, fn;
+> type t;
+> @@
+> t fn(struct idtype *idvariant)
+> {
+> 	...
+> }
+> 
+> // TODO: handle var.field1.field2, var->field1->field2
+> @assignement@
+> identifier variable.idvariant, x, idptr;
+> @@
+> (
+> 	idvariant.x = ...;
+> |
+> 	idvariant->x = ...;
+> |
+> 	idptr = &idvariant;
+> 	...
+> 	idptr->x = ...;
+> |
+> 	memcpy(&idvariant, ...);
+> |
+> 	memcpy(idvariant.x, ...);
+> |
+> 	memcpy(idvariant->x, ...);
+> |
+> 	idvariant = kzalloc(...);
+> |
+> 	idvariant = kmalloc(...);
+> )
+> 
+> @script:python depends on assignement@
+> x << stc.idtype;
+> y << variable.idvariant;
+> @@
+> print "Cannot be const: %s-%s" % (x, y)
+> noconst.append(y)
+> cocci.include_match(False)
+> 
+> @depends on stc && !fn_declaration && !fn_definition@
+> identifier stc.idtype, variable.idvariant, id;
+> @@
+> (
+> -struct idtype idvariant = {
+> +const struct idtype idvariant = {
+> 		...
+>  };
+> |
+> -struct idtype idvariant;
+> +const struct idtype idvariant;
+> |
+> -struct idtype *idvariant;
+> +const struct idtype *idvariant;
+> |
+> -struct idtype *idvariant = NULL;
+> +const struct idtype *idvariant = NULL;
+> |
+> struct id {
+> ...
+> -struct idtype idvariant;
+> +const struct idtype idvariant;
+> ...
+>  };
+> )
+> 
+> @depends on stc && fn_declaration && !fn_definition@
+> identifier stc.idtype, variable.idvariant, fn_declaration.fn;
+> type fn_declaration.t;
+> @@
+> t fn(
+> -struct idtype *idvariant
+> +const struct idtype *idvariant
+>  );
+> 
+> @depends on stc && !fn_declaration && fn_definition@
+> identifier stc.idtype, variable.idvariant, fn_definition.fn;
+> type fn_definition.t;
+> @@
+> t fn(
+> -struct idtype *idvariant
+> +const struct idtype *idvariant
+>  )
+>  {
+>  	...
+>  }
+> 
+> 
