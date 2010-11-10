@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757152Ab0KJRGF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 12:06:05 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:44838 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757081Ab0KJRGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 12:06:04 -0500
-Date: Wed, 10 Nov 2010 18:05:59 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        "Luck, Tony" <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
-        ying.huang@intel.com, tglx@linutronix.de, akpm@linux-foundation.org,
-        mchehab@redhat.com,
-        =?utf-8?B?RnLDqWTDqXJpYw==?= Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [RFC/Requirements/Design] h/w error reporting
-Message-ID: <20101110170559.GA15704@a1.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Ingo Molnar <mingo@elte.hu>, "Luck, Tony" <tony.luck@intel.com>,
-	linux-kernel@vger.kernel.org, ying.huang@intel.com,
-	tglx@linutronix.de, akpm@linux-foundation.org, mchehab@redhat.com,
-	=?utf-8?B?RnLDqWTDqXJpYw==?= Weisbecker <fweisbec@gmail.com>,
-	Arnaldo Carvalho de Melo <acme@redhat.com>,
-	Arjan van de Ven <arjan@infradead.org>,
-	Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-References: <4cd9edd7543527b78@agluck-desktop.sc.intel.com>
- <20101110101450.GA18481@elte.hu>
- <1289400056.12418.139.camel@gandalf.stny.rr.com>
- <1289400234.2191.129.camel@laptop>
- <1289401781.12418.145.camel@gandalf.stny.rr.com>
- <1289403019.2084.17.camel@laptop>
- <1289407960.12418.169.camel@gandalf.stny.rr.com>
+	id S1757180Ab0KJRJQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 12:09:16 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42690 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757149Ab0KJRJP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 12:09:15 -0500
+Date: Wed, 10 Nov 2010 18:09:12 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: amit.kucheria@canonical.com, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, eric@eukrea.com,
+        u.kleine-koenig@pengutronix.de,
+        Nguyen Dinh-R00091 <R00091@freescale.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv3 1/2] ARM: imx: Add core definitions for MX53
+Message-ID: <20101110170912.GC8950@pengutronix.de>
+References: <1288972551-21877-1-git-send-email-Dinh.Nguyen@freescale.com> <20101109214607.GG6017@pengutronix.de> <86A0E76937111F4C92FABEC0A20988510523D224@az33exm21> <20101110164640.GV6017@pengutronix.de> <AANLkTinmXin65ReWsUf02ia7FMvHfeqkVeaGu6Usmdw5@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1289407960.12418.169.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTinmXin65ReWsUf02ia7FMvHfeqkVeaGu6Usmdw5@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 18:07:40 up 130 days,  8:18, 40 users,  load average: 0.12, 0.13,
+	0.22
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 11:52:40AM -0500, Steven Rostedt wrote:
-> Also, lets not focus now on implementation. Let's try to concentrate on
-> what we want the tools to be able to do.
+On Wed, Nov 10, 2010 at 03:04:27PM -0200, Fabio Estevam wrote:
+> On Wed, Nov 10, 2010 at 2:46 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> ...
 > 
-> For example, I would like:
+> >> Agreed, but I was unsure how to proceed with adding clock code for mx53.
+> >> Should I merge mx53 clock code into clock-mx51 and rename clock-mx51?
+> >
+> > Yes, to something like clock-mx51-mx53.c
+> >
 > 
-> Very small entries, and pick and chose what I want in my entries.
+> Or maybe clock-mx5x.c would be more generic.
 > 
-> A way to read it fast to a file or over the network (splice).
-> 
-> The read backwards seems like a cool idea, but I would not want to throw
-> away the read forwards part either.
+> This way when any other MX5x processor gets added we don't need to
+> change the file name again.
 
-It would also be cool to be able to allocate those buffers as early as
-possible, even if before MCA is enabled, so that I won't have to copy
-MCE data which got logged before the tracing subsystem got enabled to
-the buffers proper.
+This can happen with mx5x also when the next MX5x is incompatible like
+we had with i.MX2x when i.MX25 came out. Anyway, in this case I don't
+care much.
+
+Sascha
+
 
 -- 
-Regards/Gruss,
-Boris.
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
