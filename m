@@ -1,41 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756773Ab0KJTtM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 14:49:12 -0500
-Received: from mailq1.tnnet.fi ([217.112.240.127]:48123 "EHLO mailq1.tnnet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755320Ab0KJTtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 14:49:10 -0500
-X-Greylist: delayed 500 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Nov 2010 14:49:10 EST
-Message-ID: <4CDAF540.5D31D8C6@users.sourceforge.net>
-Date: Wed, 10 Nov 2010 21:40:48 +0200
-From: Jari Ruusu <jariruusu@users.sourceforge.net>
-To: linux-crypto@nl.linux.org
-CC: linux-kernel@vger.kernel.org
-Subject: Announce loop-AES-v3.5a file/swap crypto package
-Content-Type: text/plain; charset=us-ascii
+	id S1756767Ab0KJTxk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 14:53:40 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:62769 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755320Ab0KJTxi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 14:53:38 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=WTwhNzQSoJ3CeAk4a1v/VYjVFW78RY4K44+QFIjMzOTdfX6r1FbwWCevF9z+aktJpG
+         Suerfl/2izMdCJba1mLKHz7/EfsjE4YGswIhGfRHMRlSNZOCVVeQgkLk23x28DdHOB9G
+         xivYZD/96jamN/hilsyjc7x2v3JyJPEI0ksZc=
+Message-ID: <4CDAF83D.9010209@gmail.com>
+Date: Wed, 10 Nov 2010 11:53:33 -0800
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Jesper Juhl <jj@chaosbits.net>
+CC: linux-kernel@vger.kernel.org, Roman Zippel <zippel@linux-m68k.org>,
+        linux-kbuild@vger.kernel.org
+Subject: Re: Lots of 'warning: <foo> selects <bar> which has unmet direct
+ dependencies <baz>' with latest git tree
+References: <alpine.LNX.2.00.1011102021340.625@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1011102021340.625@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-loop-AES changes since previous release:
-- Fixed device open/close reference count race, again. The fix in previous
-  version was not complete enough. Thanks to John Fitzgerald for
-  reporting/testing this problem.
-- Worked around block layer interface breakage on linux-2.6.37-rc kernels
-  (FLUSH/FUA changes).
-- Cleaned up lots of #ifdef spaghetti code for 2.6.37 and later kernels.
-- Added "lo_threads" option for 2.6.37 and later kernels. This can be used
-  to configure the number of helper threads for device backed loops.
+On 11/10/2010 11:25 AM, Jesper Juhl wrote:
+> Hi,
+>
+> For your information :
+>
+> I just did a fresh clone of Linus' tree and doing 'all[yes|mod]config'
+> gives me a ton of 'unmet direct dependencies' warnings (latest commit in
+> this clone is f6614b7bb405a9b35dd28baea989a749492c46b2, just so you know
+> where I'm at):
+>
+>
+> [jj@dragon src]$ git clone
+> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+> linux-2.6
+> Cloning into linux-2.6...
+>
+> remote: Counting objects: 1798826, done.
+> remote: Compressing objects: 100% (276733/276733), done.
+> remote: Total 1798826 (delta 1506575), reused 1798414 (delta 1506266)
+> Receiving objects: 100% (1798826/1798826), 353.05 MiB | 1.02 MiB/s, done.
+> Resolving deltas: 100% (1506575/1506575), done.
+> [jj@dragon src]$ cd linux-2.6
+> [jj@dragon linux-2.6]$ make allyesconfig
+> scripts/kconfig/conf --allyesconfig Kconfig
+> warning: (VIDEO_BT848&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_DEV&&  PCI&&  I2C&&  VIDEO_V4L2&&  INPUT&&  VIDEO_IR&&  VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_TVAUDIO which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO_V4L2&&  I2C)
+> warning: (VIDEO_BT848&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_DEV&&  PCI&&  I2C&&  VIDEO_V4L2&&  INPUT&&  VIDEO_IR&&  VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_TDA7432 which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO_V4L2&&  I2C)
+> warning: (VIDEO_MXB&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  PCI&&  VIDEO_V4L2&&  I2C&&  VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_TDA9840 which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  !VIDEO_HELPER_CHIPS_AUTO&&  I2C)
+> warning: (VIDEO_MXB&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  PCI&&  VIDEO_V4L2&&  I2C&&  VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_TEA6415C which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  !VIDEO_HELPER_CHIPS_AUTO&&  I2C)
+> warning: (VIDEO_MXB&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  PCI&&  VIDEO_V4L2&&  I2C&&  VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_TEA6420 which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  !VIDEO_HELPER_CHIPS_AUTO&&  I2C)
+> warning: (VIDEO_BT848&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_DEV&&  PCI&&  I2C&&  VIDEO_V4L2&&  INPUT&&  VIDEO_IR&&  VIDEO_HELPER_CHIPS_AUTO || VIDEO_IVTV&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  PCI&&  I2C&&  INPUT&&  VIDEO_IR || VIDEO_PVRUSB2&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  V4L_USB_DRIVERS&&  USB&&  VIDEO_V4L2&&  I2C&&  VIDEO_MEDIA || VIDEO_EM28XX&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  V4L_USB_DRIVERS&&  USB&&  VIDEO_DEV&&  I2C&&  INPUT&&  VIDEO_IR&&  VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_MSP3400 which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO_V4L2&&  I2C)
+> warning: (VIDEO_CX18&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  DVB_CORE&&  PCI&&  I2C&&  EXPERIMENTAL&&  INPUT&&  VIDEO_IR) selects VIDEO_CS5345 which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO_V4L2&&  I2C)
+> warning: (VIDEO_IVTV&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  PCI&&  I2C&&  INPUT&&  VIDEO_IR || VIDEO_PVRUSB2&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  V4L_USB_DRIVERS&&  USB&&  VIDEO_V4L2&&  I2C&&  VIDEO_MEDIA) selects VIDEO_CS53L32A which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO_V4L2&&  I2C)
+> warning: (VIDEO_IVTV&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  PCI&&  I2C&&  INPUT&&  VIDEO_IR) selects VIDEO_M52790 which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO_V4L2&&  I2C)
+> warning: (VIDEO_CX88&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  VIDEO_DEV&&  PCI&&  I2C&&  INPUT&&  VIDEO_IR&&  VIDEO_HELPER_CHIPS_AUTO || VIDEO_IVTV&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  PCI&&  I2C&&  INPUT&&  VIDEO_IR || VIDEO_PVRUSB2&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  V4L_USB_DRIVERS&&  USB&&  VIDEO_V4L2&&  I2C&&  VIDEO_MEDIA) selects VIDEO_WM8775 which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO_V4L2&&  I2C)
+> warning: (VIDEO_IVTV&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  PCI&&  I2C&&  INPUT&&  VIDEO_IR) selects VIDEO_WM8739 which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO_V4L2&&  I2C)
+> warning: (VIDEO_IVTV&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  PCI&&  I2C&&  INPUT&&  VIDEO_IR) selects VIDEO_VP27SMPX which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO_V4L2&&  I2C)
+> warning: (VIDEO_BT848&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_DEV&&  PCI&&  I2C&&  VIDEO_V4L2&&  INPUT&&  VIDEO_IR&&  VIDEO_HELPER_CHIPS_AUTO || VIDEO_SAA7134&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  VIDEO_DEV&&  PCI&&  I2C&&  VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_SAA6588 which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO_V4L2&&  I2C)
+> warning: (VIDEO_ZORAN_LML33&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  VIDEO_ZORAN_ZR36060&&  VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_BT819 which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO_V4L2&&  I2C)
+> warning: (VIDEO_ZORAN_LML33&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  VIDEO_ZORAN_ZR36060&&  VIDEO_HELPER_CHIPS_AUTO || VIDEO_ZORAN_AVS6EYES&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  VIDEO_ZORAN_ZR36060&&  EXPERIMENTAL&&  VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_BT856 which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO_V4L2&&  I2C)
+> warning: (VIDEO_ZORAN_AVS6EYES&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  VIDEO_ZORAN_ZR36060&&  EXPERIMENTAL&&  VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_BT866 which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO_V4L2&&  I2C)
+> warning: (VIDEO_ZORAN_AVS6EYES&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  VIDEO_ZORAN_ZR36060&&  EXPERIMENTAL&&  VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_KS0127 which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO_V4L2&&  I2C)
+> warning: (VIDEO_CAFE_CCIC&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  PCI&&  I2C&&  VIDEO_V4L2 || VIDEO_VIA_CAMERA&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  FB_VIA) selects VIDEO_OV7670 which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  I2C&&  VIDEO_V4L2)
+> warning: (VIDEO_EM28XX&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  V4L_USB_DRIVERS&&  USB&&  VIDEO_DEV&&  I2C&&  INPUT&&  VIDEO_IR&&  VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_MT9V011 which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  I2C&&  VIDEO_V4L2)
+> warning: (VIDEO_ZORAN_DC10&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  VIDEO_ZORAN_ZR36060&&  VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_SAA7110 which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO_V4L2&&  I2C)
+> warning: (VIDEO_ZORAN_BUZ&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  VIDEO_ZORAN_ZR36060&&  VIDEO_HELPER_CHIPS_AUTO || VIDEO_ZORAN_LML33R10&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  VIDEO_ZORAN_ZR36060&&  VIDEO_HELPER_CHIPS_AUTO || VIDEO_MXB&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  PCI&&  VIDEO_V4L2&&  I2C&&  VIDEO_HELPER_CHIPS_AUTO || VIDEO_IVTV&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  PCI&&  I2C&&  INPUT&&  VIDEO_IR || VIDEO_PVRUSB2&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  V4L_USB_DRIVERS&&  USB&&  VIDEO_V4L2&&  I2C&&  VIDEO_MEDIA || VIDEO_EM28XX&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  V4L_USB_DRIVERS&&  USB&&  VIDEO_DEV&&  I2C&&  INPUT&&  VIDEO_IR&&  VIDEO_HELPER_CHIPS_AUTO || VIDEO_USBVISION&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  V4L_USB_DRIVERS&&  USB&&  I2C&&  VIDEO_V4L2&&  VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_SAA711X which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTUR
+E_
+>   DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO_V4L2&&  I2C)
+> warning: (VIDEO_IVTV&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  PCI&&  I2C&&  INPUT&&  VIDEO_IR) selects VIDEO_SAA717X which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO_V4L2&&  I2C)
+> warning: (VIDEO_EM28XX&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  V4L_USB_DRIVERS&&  USB&&  VIDEO_DEV&&  I2C&&  INPUT&&  VIDEO_IR&&  VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_TVP5150 which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO_V4L2&&  I2C)
+> warning: (VIDEO_ZORAN_DC30&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  VIDEO_ZORAN&&  VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_VPX3220 which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO_V4L2&&  I2C)
+> warning: (VIDEO_CX23885&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  DVB_CORE&&  VIDEO_DEV&&  PCI&&  I2C&&  INPUT&&  IR_CORE || VIDEO_IVTV&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  PCI&&  I2C&&  INPUT&&  VIDEO_IR || VIDEO_PVRUSB2&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  V4L_USB_DRIVERS&&  USB&&  VIDEO_V4L2&&  I2C&&  VIDEO_MEDIA || VIDEO_CX231XX&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  V4L_USB_DRIVERS&&  USB&&  VIDEO_DEV&&  I2C&&  INPUT&&  VIDEO_IR || VIDEO_CX25821&&  STAGING&&  !STAGING_EXCLUDE_BUILD&&  DVB_CORE&&  VIDEO_DEV&&  PCI&&  I2C&&  INPUT&&  BKL&&  VIDEO_IR) selects VIDEO_CX25840 which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO_V4L2&&  I2C)
+> warning: (VIDEO_CX88_BLACKBIRD&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  VIDEO_CX88 || VIDEO_CX23885&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  DVB_CORE&&  VIDEO_DEV&&  PCI&&  I2C&&  INPUT&&  IR_CORE || VIDEO_IVTV&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  PCI&&  I2C&&  INPUT&&  VIDEO_IR || VIDEO_CX18&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  DVB_CORE&&  PCI&&  I2C&&  EXPERIMENTAL&&  INPUT&&  VIDEO_IR || VIDEO_PVRUSB2&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  V4L_USB_DRIVERS&&  USB&&  VIDEO_V4L2&&  I2C&&  VIDEO_MEDIA || VIDEO_CX231XX&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  V4L_USB_DRIVERS&&  USB&&  VIDEO_DEV&&  I2C&&  INPUT&&  VIDEO_IR || VIDEO_CX25821&&  STAGING&&  !STAGING_EXCLUDE_BUILD&&  DVB_CORE&&  VIDEO_DEV&&  PCI&&  I2C&&  INPUT&&  BKL&&  VIDEO_IR) selects VIDEO_CX2341X which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO
+_V
+>   4L2&&  VIDEO_V4L2_COMMON)
+> warning: (VIDEO_IVTV&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  PCI&&  I2C&&  INPUT&&  VIDEO_IR) selects VIDEO_SAA7127 which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO_V4L2&&  I2C)
+> warning: (VIDEO_ZORAN_BUZ&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  VIDEO_ZORAN_ZR36060&&  VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_SAA7185 which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO_V4L2&&  I2C)
+> warning: (VIDEO_ZORAN_LML33R10&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  VIDEO_ZORAN_ZR36060&&  VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_ADV7170 which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO_V4L2&&  I2C)
+> warning: (VIDEO_ZORAN_DC30&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  VIDEO_ZORAN&&  VIDEO_HELPER_CHIPS_AUTO || VIDEO_ZORAN_DC10&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  VIDEO_ZORAN_ZR36060&&  VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_ADV7175 which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO_V4L2&&  I2C)
+> warning: (VIDEO_IVTV&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  PCI&&  I2C&&  INPUT&&  VIDEO_IR) selects VIDEO_UPD64031A which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO_V4L2&&  I2C)
+> warning: (VIDEO_IVTV&&  MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  VIDEO_V4L2&&  PCI&&  I2C&&  INPUT&&  VIDEO_IR) selects VIDEO_UPD64083 which has unmet direct dependencies (MEDIA_SUPPORT&&  VIDEO_CAPTURE_DRIVERS&&  !VIDEO_HELPER_CHIPS_AUTO&&  VIDEO_V4L2&&  I2C)
+> #
+> # configuration written to .config
+> #
+>
+>
 
 
-bzip2 compressed tarball is here:
+yeah I see that with ubuntu 10.10 as well on the current
 
-    http://loop-aes.sourceforge.net/loop-AES/loop-AES-v3.5a.tar.bz2
-    md5sum 9477960fb543938cec4f63a0eb365b12
-
-    http://loop-aes.sourceforge.net/loop-AES/loop-AES-v3.5a.tar.bz2.sign
-
--- 
-Jari Ruusu  1024R/3A220F51 5B 4B F9 BB D3 3F 52 E9  DB 1D EB E3 24 0E A9 DD
+Justin P. Mattock
