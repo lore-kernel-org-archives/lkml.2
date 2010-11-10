@@ -1,131 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280Ab0KJR7e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 12:59:34 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:22032 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752684Ab0KJR7d (ORCPT
+	id S1755396Ab0KJSBQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 13:01:16 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:44768 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755341Ab0KJSBM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 12:59:33 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6163"; a="61462895"
-From: David Brown <davidb@codeaurora.org>
-To: linux-arm-msm@vger.kernel.org, Daniel Walker <dwalker@codeaurora.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        David Brown <davidb@codeaurora.org>,
-        Brian Swetland <swetland@google.com>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
-Subject: [PATCH v3] msm: smd: Reduce driver log chatter
-Date: Wed, 10 Nov 2010 09:59:29 -0800
-Message-Id: <1289411969-24650-1-git-send-email-davidb@codeaurora.org>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1289349036-16941-1-git-send-email-davidb@codeaurora.org>
-References: <1289349036-16941-1-git-send-email-davidb@codeaurora.org>
+	Wed, 10 Nov 2010 13:01:12 -0500
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH] x86, mrst: Add audio driver bindings
+To: x86@kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 10 Nov 2010 17:40:48 +0000
+Message-ID: <20101110174044.11340.78008.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MSM smd driver logs numerous messages during startup that are
-useful for debug purposes.  Change these to pr_debug() to match their
-purpose.
+From: Vinod Koul <vinod.koul@intel.com>
 
-Cc: Brian Swetland <swetland@google.com>
-Cc: Arve Hjønnevåg <arve@android.com>
-Signed-off-by: David Brown <davidb@codeaurora.org>
+This patch adds the sound card bindings for Moorestown (pmic_audio) and
+the Medfield platform (msic_audio) as IPC devices. This ensures they will be
+created at the right time.
+
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
-This addresses all of the feedback I've gotten so far.
 
- arch/arm/mach-msm/smd.c |   18 ++++++++++--------
- 1 files changed, 10 insertions(+), 8 deletions(-)
+ arch/x86/platform/mrst/mrst.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-msm/smd.c b/arch/arm/mach-msm/smd.c
-index f07dc7c..2673527 100644
---- a/arch/arm/mach-msm/smd.c
-+++ b/arch/arm/mach-msm/smd.c
-@@ -14,6 +14,8 @@
-  *
-  */
+
+diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
+index a3fe2fd..f2bc945 100644
+--- a/arch/x86/platform/mrst/mrst.c
++++ b/arch/x86/platform/mrst/mrst.c
+@@ -499,6 +499,11 @@ static void __init *lis331dl_platform_data(void *info)
+ 	return &intr2nd_pdata;
+ }
  
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++static void __init *no_platform_data(void *info)
++{
++	return NULL;
++}
 +
- #include <linux/platform_device.h>
- #include <linux/module.h>
- #include <linux/fs.h>
-@@ -89,7 +91,7 @@ static void smd_diag(void)
- 	x = smem_find(ID_DIAG_ERR_MSG, SZ_DIAG_ERR_MSG);
- 	if (x != 0) {
- 		x[SZ_DIAG_ERR_MSG - 1] = 0;
--		pr_info("smem: DIAG '%s'\n", x);
-+		pr_debug("DIAG '%s'\n", x);
- 	}
- }
+ static const struct devs_id __initconst device_ids[] = {
+ 	{"pmic_gpio", SFI_DEV_TYPE_SPI, 1, &pmic_gpio_platform_data},
+ 	{"spi_max3111", SFI_DEV_TYPE_SPI, 0, &max3111_platform_data},
+@@ -506,6 +511,8 @@ static const struct devs_id __initconst device_ids[] = {
+ 	{"i2c_max7315_2", SFI_DEV_TYPE_I2C, 1, &max7315_platform_data},
+ 	{"emc1403", SFI_DEV_TYPE_I2C, 1, &emc1403_platform_data},
+ 	{"i2c_accel", SFI_DEV_TYPE_I2C, 0, &lis331dl_platform_data},
++	{"pmic_audio", SFI_DEV_TYPE_IPC, 1, &no_platform_data},
++	{"msic_audio", SFI_DEV_TYPE_IPC, 1, &no_platform_data},
+ 	{},
+ };
  
-@@ -312,7 +314,7 @@ static void smd_state_change(struct smd_channel *ch,
- {
- 	ch->last_state = next;
- 
--	pr_info("SMD: ch %d %d -> %d\n", ch->n, last, next);
-+	pr_debug("ch %d %d -> %d\n", ch->n, last, next);
- 
- 	switch (next) {
- 	case SMD_SS_OPENING:
-@@ -601,7 +603,7 @@ static int smd_alloc_channel(const char *name, uint32_t cid, uint32_t type)
- 	ch->pdev.name = ch->name;
- 	ch->pdev.id = -1;
- 
--	pr_info("smd_alloc_channel() cid=%02d size=%05d '%s'\n",
-+	pr_debug("smd_alloc_channel() cid=%02d size=%05d '%s'\n",
- 		ch->n, ch->fifo_size, ch->name);
- 
- 	mutex_lock(&smd_creation_mutex);
-@@ -621,7 +623,7 @@ static void smd_channel_probe_worker(struct work_struct *work)
- 
- 	shared = smem_find(ID_CH_ALLOC_TBL, sizeof(*shared) * 64);
- 	if (!shared) {
--		pr_err("smd: cannot find allocation table\n");
-+		pr_err("cannot find allocation table\n");
- 		return;
- 	}
- 	for (n = 0; n < 64; n++) {
-@@ -725,7 +727,7 @@ int smd_close(smd_channel_t *ch)
- {
- 	unsigned long flags;
- 
--	pr_info("smd_close(%p)\n", ch);
-+	pr_debug("smd_close(%p)\n", ch);
- 
- 	if (ch == 0)
- 		return -1;
-@@ -939,7 +941,7 @@ int smsm_set_sleep_duration(uint32_t delay)
- int smd_core_init(void)
- {
- 	int r;
--	pr_info("smd_core_init()\n");
-+	pr_debug("smd_core_init()\n");
- 
- 	/* wait for essential items to be initialized */
- 	for (;;) {
-@@ -992,14 +994,14 @@ int smd_core_init(void)
- 	smsm_change_state(SMSM_STATE_APPS_DEM, ~0, 0);
- #endif
- 
--	pr_info("smd_core_init() done\n");
-+	pr_debug("smd_core_init() done\n");
- 
- 	return 0;
- }
- 
- static int __devinit msm_smd_probe(struct platform_device *pdev)
- {
--	pr_info("smd_init()\n");
-+	pr_debug("smd_init()\n");
- 
- 	/*
- 	 * If we haven't waited for the ARM9 to boot up till now,
--- 
-1.7.3.2
 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
