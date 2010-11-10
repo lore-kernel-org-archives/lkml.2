@@ -1,149 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451Ab0KJFyp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 00:54:45 -0500
-Received: from tango.tkos.co.il ([62.219.50.35]:44301 "EHLO tango.tkos.co.il"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751772Ab0KJFyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 00:54:43 -0500
-Date: Wed, 10 Nov 2010 07:54:20 +0200
-From: Baruch Siach <baruch@tkos.co.il>
-To: Indan Zupancic <indan@nul.nu>
-Cc: linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>,
-        Alex Gershgorin <agersh@rambler.ru>
-Subject: Re: [PATCHv2] drivers/misc: Altera Cyclone active serial
- implementation
-Message-ID: <20101110055419.GA26776@jasper.tkos.co.il>
-References: <f04cbe31c7e03a9d798b30526a5fed1cd8ee4c7a.1289297142.git.baruch@tkos.co.il>
- <0d1a323315dcf505e64fb5165ea41e95.squirrel@webmail.greenhost.nl>
- <20101109153550.GD29441@jasper.tkos.co.il>
- <dbd33aac54791d5b5f33f03325b6b4bc.squirrel@webmail.greenhost.nl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <dbd33aac54791d5b5f33f03325b6b4bc.squirrel@webmail.greenhost.nl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752684Ab0KJF7q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 00:59:46 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:37112 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752041Ab0KJF7n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 00:59:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=froiv8ytCi0Qve/75dUnbarrrFxSa/gKvilWYAKSJWov7vUg5qJ8mwoOyTIZOdgeec
+         IDexEYKQNZpEC6c3IY31ay/3AXQ0SElptR4bqxeIDxWt4pH+uD36vjXQxjN1jxmNwia2
+         GQlZ4zZW8prJzG0W1YlWECc892niO9m2RYTc0=
+Subject: Re: warnings in 2.6.37-rc1+
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Norbert Preining <preining@logic.at>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+In-Reply-To: <20101110054948.GA16612@gamma.logic.tuwien.ac.at>
+References: <20101110054948.GA16612@gamma.logic.tuwien.ac.at>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 10 Nov 2010 06:59:38 +0100
+Message-ID: <1289368778.2700.23.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Indan,
-
-On Tue, Nov 09, 2010 at 09:15:09PM +0100, Indan Zupancic wrote:
-> On Tue, November 9, 2010 16:35, Baruch Siach wrote:
-
-[snip]
-
-> >> > +static struct {
-> >> > +	int minor;
-> >> > +	struct cyclone_as_device *drvdata;
-> >> > +} cyclone_as_devs[AS_MAX_DEVS];
-> >> > +
-> >> > +static struct cyclone_as_device *get_as_dev(int minor)
-> >> > +{
-> >> > +	int i;
-> >> > +
-> >> > +	for (i = 0; i < ARRAY_SIZE(cyclone_as_devs); i++)
-> >>
-> >> To me AS_MAX_DEVS looks clearer than ARRAY_SIZE(cyclone_as_devs).
-> >
-> > Not to me. The fact that AS_MAX_DEVS happens to be equal to
-> > ARRAY_SIZE(cyclone_as_devs) is not relevant to the understanding of this
-> > procedure. It just forces the reader to lookup the AS_MAX_DEVS value, and
-> > distracts the reader's attention.
+Le mercredi 10 novembre 2010 à 14:49 +0900, Norbert Preining a écrit :
+> Hi all
 > 
-> Then just leave the AS_MAX_DEVS define away, it doesn't add anything.
-
-I use AS_MAX_DEVS to set the size of cyclone_as_devs. It documents why this 
-array is of that length.
-
-> Also change the:
+> (please keep in Cc, thanks)
 > 
-> +	if (pdata->id >= AS_MAX_DEVS)
-> +		return -ENODEV;
+> [ 1592.320059] ------------[ cut here ]------------
+> [ 1592.320077] WARNING: at net/ipv4/devinet.c:137 in_dev_finish_destroy+0x3d/0x6e()
+> [ 1592.320083] Hardware name: VGN-Z11VN_B
+> [ 1592.320088] Modules linked in: vboxnetadp vboxnetflt sco bnep rfcomm l2cap crc16 binfmt_misc dm_crypt dm_mod isofs btrfs zlib_deflate crc32c libcrc32c vfat fat hso fuse vboxdrv loop uinput snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_pcm_oss snd_mixer_oss snd_pcm snd_seq_dummy snd_seq_oss snd_seq_midi arc4 snd_rawmidi snd_seq_midi_event snd_seq iwlagn iwlcore mac80211 snd_timer btusb firewire_ohci firewire_core bluetooth snd_seq_device tpm_infineon sony_laptop snd soundcore crc_itu_t cfg80211 rfkill joydev snd_page_alloc
+> [ 1592.320207] Pid: 0, comm: kworker/0:0 Tainted: P        W   2.6.37-rc1+ #3
+> [ 1592.320213] Call Trace:
+> [ 1592.320218]  <IRQ>  [<ffffffff81035075>] warn_slowpath_common+0x80/0x98
+> [ 1592.320236]  [<ffffffff810350a2>] warn_slowpath_null+0x15/0x17
+> [ 1592.320245]  [<ffffffff81352ede>] in_dev_finish_destroy+0x3d/0x6e
+> [ 1592.320257]  [<ffffffff8132b5f7>] ipv4_dst_destroy+0x53/0x58
+> [ 1592.320266]  [<ffffffff81314c26>] dst_destroy+0x78/0xd6
+> [ 1592.320275]  [<ffffffff8132b340>] dst_free+0x1a/0x29
+> [ 1592.320283]  [<ffffffff8132b358>] dst_rcu_free+0x9/0xb
+> [ 1592.320292]  [<ffffffff8107b5fd>] __rcu_process_callbacks+0x173/0x265
+> [ 1592.320301]  [<ffffffff8107b72e>] rcu_process_callbacks+0x3f/0x60
+> [ 1592.320310]  [<ffffffff81039e1c>] __do_softirq+0x8f/0x140
+> [ 1592.320322]  [<ffffffff810563fa>] ? tick_program_event+0x21/0x23
+> [ 1592.320331]  [<ffffffff8100304c>] call_softirq+0x1c/0x28
+> [ 1592.320339]  [<ffffffff81004c23>] do_softirq+0x33/0x68
+> [ 1592.320347]  [<ffffffff8103a036>] irq_exit+0x36/0x8b
+> [ 1592.320358]  [<ffffffff81019699>] smp_apic_timer_interrupt+0x88/0x96
+> [ 1592.320366]  [<ffffffff81002b13>] apic_timer_interrupt+0x13/0x20
+> [ 1592.320371]  <EOI>  [<ffffffff811ae0ef>] ? acpi_idle_enter_simple+0xc8/0xfa
+> [ 1592.320389]  [<ffffffff811ae0ea>] ? acpi_idle_enter_simple+0xc3/0xfa
+> [ 1592.320401]  [<ffffffff812e053c>] cpuidle_idle_call+0x9e/0xd6
+> [ 1592.320408]  [<ffffffff81001484>] cpu_idle+0x56/0x9c
+> [ 1592.320418]  [<ffffffff813816c8>] start_secondary+0x199/0x19d
+> [ 1592.320426] ---[ end trace 5f7d0c35de1972f1 ]---
 > 
-> to
+> followed by a strange message:
+> [ 1592.320431] Freeing alive in_device ffff88013e49b200
 > 
-> +	if (pdata->id >= ARRAY_SIZE(cyclone_as_devs))
-> +		return -ENODEV;
+> happened several times, starting after a wake up from suspend to ram.
 > 
-> After all, what you're really checking is if the id falls within the
-> array.
+> Best wishes
 
-The current code seems more clear to me. AS_MAX_DEVS expresses the reason for 
-not letting id exceed this value, and for having -ENODEV as return value. The 
-cyclone_as_devs boundary check is just a side effect.
+Should be solved by a patch David will send to Linus in next round.
 
-[snip]
+http://git.kernel.org/?p=linux/kernel/git/davem/net-2.6.git;a=commitdiff;h=18943d292facbc70e6a36fc62399ae833f64671b
 
-> >> > +	/* writes must be page aligned */
-> >> > +	if (!AS_ALIGNED(*ppos) || !AS_ALIGNED(count))
-> >> > +		return -EINVAL;
-> 
-> As you're only incrementing ppos with the page size, is that first check
-> really needed? I don't think anything else can change ppos.
+Thanks
 
-I'd rather be on the safe side here. Future extensions (like read or lseek 
-implementations) may change *ppos.
 
-> >> > +	page_count = *ppos / AS_PAGE_SIZE;
-> >> > +
-> >> > +	page_buf = kmalloc(AS_PAGE_SIZE, GFP_KERNEL);
-> >> > +	if (page_buf == NULL)
-> >> > +		return -ENOMEM;
-> >> > +
-> >> > +	if (*ppos == 0) {
-> >> > +		u8 as_status;
-> >> > +
-> >> > +		xmit_cmd(drvdata->gpios, AS_WRITE_ENABLE);
-> >> > +		xmit_cmd(drvdata->gpios, AS_ERASE_BULK);
-> >> > +
-> >> > +		gpio_set_value(drvdata->gpios[ASIO_NCS].gpio, 0);
-> >> > +		xmit_byte(drvdata->gpios, AS_READ_STATUS);
-> >> > +		for (i = 0; i < AS_ERASE_TIMEOUT; i++) {
-> >> > +			as_status = recv_byte(drvdata->gpios);
-> >> > +			if ((as_status & AS_STATUS_WIP) == 0)
-> >> > +				break; /* erase done */
-> >> > +			if (msleep_interruptible(1000) > 0) {
-> >> > +				err = -EINTR;
-> >> > +				break;
-> >> > +			}
-> >> > +		}
-> >> > +		gpio_set_value(drvdata->gpios[ASIO_NCS].gpio, 1);
-> >> > +		if ((as_status & AS_STATUS_WIP) && err == 0)
-> >> > +			err = -EIO; /* erase timeout */
-> >> > +		if (err)
-> >> > +			goto out;
-> >> > +		ndelay(300);
-> >> > +	}
-> >>
-> >> I'd move this into its own function, erase_device() or something.
-> >
-> > OK.
-> >
-> >> (And drop the ndelay.)
-> >
-> > See above.
-> 
-> In that case I'd move it to just after the gpio_set*.
 
-OK. My original rationale was to skip the delay in case of error, but this 
-micro-optimization doesn't worth the code obfuscation.
 
-baruch
-
-> > Thanks,
-> >
-> > baruch
-> >
-> 
-> You're welcome.
-> 
-> Greetings,
-> 
-> Indan
-
--- 
-                                                     ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
