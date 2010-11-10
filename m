@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756627Ab0KJT3p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 14:29:45 -0500
-Received: from kroah.org ([198.145.64.141]:43462 "EHLO coco.kroah.org"
+	id S1756573Ab0KJTbT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 14:31:19 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:60780 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756386Ab0KJT3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 14:29:43 -0500
-Date: Wed, 10 Nov 2010 11:29:49 -0800
-From: Greg KH <greg@kroah.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Martin Wilck <martin.wilck@ts.fujitsu.com>, gerhard.wichert@ts.fujitsu.com,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH] fix size checks for mmap() on /proc/bus/pci files
-	(updated)
-Message-ID: <20101110192949.GB16140@kroah.com>
-References: <20101109084206.1b6ac66a@jbarnes-desktop> <1289383401-1357-1-git-send-email-martin.wilck@ts.fujitsu.com> <20101110104434.6ed20d33@jbarnes-x201>
+	id S1755143Ab0KJTbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 14:31:18 -0500
+Date: Wed, 10 Nov 2010 20:30:34 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Luck, Tony" <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        ying.huang@intel.com, bp@alien8.de, tglx@linutronix.de,
+        akpm@linux-foundation.org, mchehab@redhat.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [RFC/Requirements/Design] h/w error reporting
+Message-ID: <20101110193034.GA9414@elte.hu>
+References: <1289400056.12418.139.camel@gandalf.stny.rr.com>
+ <1289400234.2191.129.camel@laptop>
+ <1289401781.12418.145.camel@gandalf.stny.rr.com>
+ <1289403019.2084.17.camel@laptop>
+ <20101110174852.GB4001@elte.hu>
+ <1289412329.12418.177.camel@gandalf.stny.rr.com>
+ <1289413460.2084.27.camel@laptop>
+ <20101110184105.GH22410@elte.hu>
+ <1289415645.12418.180.camel@gandalf.stny.rr.com>
+ <20101110191127.GA6190@nowhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101110104434.6ed20d33@jbarnes-x201>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20101110191127.GA6190@nowhere>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 10:44:34AM -0800, Jesse Barnes wrote:
-> On Wed, 10 Nov 2010 11:03:21 +0100
-> Martin Wilck <martin.wilck@ts.fujitsu.com> wrote:
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+
+> On Wed, Nov 10, 2010 at 02:00:45PM -0500, Steven Rostedt wrote:
+> > On Wed, 2010-11-10 at 19:41 +0100, Ingo Molnar wrote:
+> > 
+> > > We'll need to embark on this incremental path instead of a rewrite-the-world 
+> > > thing. As a maintainer my task is to say 'no' to rewrite-the-world approaches 
+> > > - and we can and will do better here.
+> > 
+> > Thus you are saying that we stick to the status quo, and also ignore the fact 
+> > that perf was a rewrite-the-world from ftrace to begin with.
 > 
-> > The checks for valid mmaps of PCI resources made
-> > through /proc/bus/pci files that were introduced in
-> > 9eff02e2042f96fb2aedd02e032eca1c5333d767 have several problems:
-> > 
-> > 1. mmap() calls on /proc/bus/pci files are made with real file
-> > offsets > 0, whereas under /sys/bus/pci/devices, the start of the
-> > resource corresponds to offset 0. This may lead to false negatives in
-> > pci_mmap_fits(), which implicitly assumes the /sys/bus/pci/devices
-> > layout.
-> > 
-> > 2. The loop in proc_bus_pci_mmap doesn't skip empty resouces. This
-> > leads to false positives, because pci_mmap_fits() doesn't treat empty
-> > resources correctly (the calculated size is 1 <<
-> > (8*sizeof(resource_size_t)-PAGE_SHIFT) in this case!).
-> > 
-> > 3. If a user maps resources with BAR > 0, pci_mmap_fits will emit
-> > bogus WARNINGS for the first resources that don't fit until the
-> > correct one is found.
-> > 
-> > On many controllers the first 2-4 BARs are used, and the others are
-> > empty. In this case, an mmap attempt will first fail on the non-empty
-> > BARs (including the "right" BAR because of 1.) and emit bogus
-> > WARNINGS because of 3., and finally succeed on the first empty BAR
-> > because of 2. This is certainly not the intended behaviour.
-> > 
-> > This patch addresses all 3 issues.
-> > Updated with an enum type for the additional parameter for
-> > pci_mmap_fits().
-> > 
-> > Signed-off-by: Martin Wilck <martin.wilck@ts.fujitsu.com>
-> 
-> Thanks Martin, I'll push this into my for-linus branch for 2.6.37; may
-> as well cc: stable as well, since this is a long standing bug.
+> Perhaps you and Mathieu can summarize your requirements here and then explain why 
+> extending the current ABI wouldn't work. It's quite normal that people try to find 
+> a solution fully backward compatible in the first place. If it's not possible, 
+> fine, but then justify it.
 
-Please cc: stable, as it is something that -stable releases cares about.
+Yeah, that's pretty much the only reasonable approach really. It also makes every 
+single step testable and verifiable, and often optional as well:
 
-thanks,
+ - How much do we win from more compressed records? Do we win? Do we want _larger_,
+   less encoded records on some CPUs because their construction overhead and cache
+   behavior is better there?
 
-greg k-h
+ - How much does splice() help?
+
+ - How much do the sampling fast-path approaches help. How many apps will make use
+   of them?
+
+Those are all issues that are virtually undecidable individually if the approach is 
+an all-or-nothing flag-day thing.
+
+Fact is that the perf events based tool space is vibrant and alive, and new uses are 
+popping up every week. We'd be utter fools to not embark on an iterative approach 
+here. It does not even limit us in any way technically.
+
+The days of full tracing subsystem rewrites are over Steve, i'm afraid it is time 
+for us to grow up ;-)
+
+Thanks,
+
+	Ingo
