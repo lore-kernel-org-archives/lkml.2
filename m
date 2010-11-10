@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888Ab0KJIYH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 03:24:07 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:24056 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753199Ab0KJIYD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 03:24:03 -0500
-Date: Wed, 10 Nov 2010 09:12:25 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Greg KH <greg@kroah.com>
-cc: linux-kernel@vger.kernel.org, Randy Dunlap <randy.dunlap@oracle.com>,
-        devel@driverdev.osuosl.org, Dan Carpenter <error27@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Stephen Hemminger <shemminger@vyatta.com>
-Subject: Re: [PATCH 10/17][trivial] staging, bcm: Remove unnecessary casts
- of void ptr returning alloc function return values
-In-Reply-To: <20101110004543.GA28373@kroah.com>
-Message-ID: <alpine.LNX.2.00.1011100911430.28522@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1011082342560.23697@swampdragon.chaosbits.net> <20101110004543.GA28373@kroah.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754915Ab0KJIZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 03:25:29 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:34600 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752734Ab0KJIZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 03:25:28 -0500
+Date: Wed, 10 Nov 2010 09:25:16 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        kees.cook@canonical.com, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2] Restrict unprivileged access to kernel syslog
+Message-ID: <20101110082516.GB3341@elte.hu>
+References: <1289348309.7380.31.camel@dan>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289348309.7380.31.camel@dan>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Nov 2010, Greg KH wrote:
 
-> On Tue, Nov 09, 2010 at 12:09:51AM +0100, Jesper Juhl wrote:
-> > Hi,
-> > 
-> > The [vk][cmz]alloc(_node) family of functions return void pointers which
-> > it's completely unnecessary/pointless to cast to other pointer types since
-> > that happens implicitly.
-> > 
-> > This patch removes such casts from drivers/staging/bcm/
-> > 
-> > 
-> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > ---
-> >  CmHost.c       |    2 +-
-> >  InterfaceDld.c |   27 +++++++++++++--------------
-> >  Misc.c         |   12 +++++-------
-> >  3 files changed, 19 insertions(+), 22 deletions(-)
-> > 
-> > diff --git a/drivers/staging/bcm/CmHost.c b/drivers/staging/bcm/CmHost.c
+* Dan Rosenberg <drosenberg@vsecurity.com> wrote:
+
+> The kernel syslog contains debugging information that is often useful
+> during exploitation of other vulnerabilities, such as kernel heap
+> addresses.  Rather than futilely attempt to sanitize hundreds (or
+> thousands) of printk statements and simultaneously cripple useful
+> debugging functionality, it is far simpler to create an option that
+> prevents unprivileged users from reading the syslog.
 > 
-> This driver just got a major overhaul, and this patch doesn't apply
-> anymore.
+> This patch, loosely based on grsecurity's GRKERNSEC_DMESG, creates the
+> dmesg_restrict sysctl.  When set to "0", the default, no restrictions
+> are enforced.  When set to "1", only users with CAP_SYS_ADMIN can read
+> the kernel syslog via dmesg(8) or other mechanisms.
 > 
-> Care to redo it against the next linux-next tree?
+> v2 adds CONFIG_SECURITY_RESTRICT_DMESG.  When enabled, the default
+> sysctl value is set to "1".  When disabled, the default sysctl value is
+> set to "0".
 > 
+> Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+> CC: Linus Torvalds <torvalds@linux-foundation.org>
+> CC: Ingo Molnar <mingo@elte.hu>
+> CC: Kees Cook <kees.cook@canonical.com>
+> CC: stable <stable@kernel.org>
 
-Sure thing. I'll see if I can find the time to do that tonight when I get 
-home from work.
+Acked-by: Ingo Molnar <mingo@elte.hu>
 
--- 
-Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
+Linus, Andrew, any objections against pushing this trivial control flag upstream out 
+of band, after a bit of testing? It's not like it can break anything, and the flag 
+is very useful to distros.
 
+Thanks,
+
+	Ingo
