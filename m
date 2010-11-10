@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757285Ab0KJW0m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 17:26:42 -0500
-Received: from ms01.sssup.it ([193.205.80.99]:50166 "EHLO sssup.it"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757118Ab0KJW0l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 17:26:41 -0500
-Subject: Re: [RFC][PATCH 05/22] sched: SCHED_DEADLINE policy implementation
-From: Raistlin <raistlin@linux.it>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1289418317.2084.50.camel@laptop>
-References: <1288333128.8661.137.camel@Palantir>
-	 <1288333814.8661.146.camel@Palantir>  <1289418317.2084.50.camel@laptop>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-7/lmts6+eHWGtTyul6sg"
-Date: Wed, 10 Nov 2010 23:26:31 +0100
-Message-ID: <1289427991.13577.293.camel@Palantir>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1757233Ab0KJW20 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 17:28:26 -0500
+Received: from www.tglx.de ([62.245.132.106]:44162 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757118Ab0KJW2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 17:28:25 -0500
+Date: Wed, 10 Nov 2010 23:28:19 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andy Lutomirski <luto@mit.edu>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Improve clocksource unstable warning
+In-Reply-To: <80b5a10ac1a6ef51afca3c113b624bf1b5049452.1289427381.git.luto@mit.edu>
+Message-ID: <alpine.LFD.2.00.1011102327050.2900@localhost6.localdomain6>
+References: <80b5a10ac1a6ef51afca3c113b624bf1b5049452.1289427381.git.luto@mit.edu>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 10 Nov 2010, Andy Lutomirski wrote:
 
---=-7/lmts6+eHWGtTyul6sg
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> When the system goes out to lunch for a long time, the clocksource
+> watchdog might get false positives.  Clarify the warning so that
+> people stop blaming their system freezes on the timing code.
+> 
+> This change was Thomas Gleixner's suggestion.
+> 
+> Signed-off-by: Andy Lutomirski <luto@mit.edu>
+> ---
+> I've only compile-tested on 2.6.36, but it applies cleanly to Linus' tree
+> and it's rather trivial.
+> 
+>  kernel/time/clocksource.c |    6 ++++--
+>  1 files changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+> index c18d7ef..5b30aa2 100644
+> --- a/kernel/time/clocksource.c
+> +++ b/kernel/time/clocksource.c
+> @@ -215,8 +215,10 @@ static void __clocksource_unstable(struct clocksource *cs)
+>  
+>  static void clocksource_unstable(struct clocksource *cs, int64_t delta)
+>  {
+> -	printk(KERN_WARNING "Clocksource %s unstable (delta = %Ld ns)\n",
+> -	       cs->name, delta);
+> +	printk(KERN_WARNING "Clocksource %s unstable (delta = %Ld ns)%s\n",
+> +	       cs->name, delta,
+> +	       delta < -5000000000LL ?
 
-On Wed, 2010-11-10 at 20:45 +0100, Peter Zijlstra wrote:
-> On Fri, 2010-10-29 at 08:30 +0200, Raistlin wrote:
-> > @@ -4922,7 +4965,11 @@ recheck:
->=20
-> if you add:
->=20
-> QUILT_DIFF_OPTS=3D"-F ^[[:alpha:]\$_].*[^:]\$"
->=20
-> to your /etc/quilt.quiltrc, it won't see labels as functions.
->
-Mmm... Even if I don't use quilt at all and all this is the output of
-git-format-patch? :-O
+I'm ok with that change, but we should not hard code the
+delta. Instead we should look at the wrap around time of the
+clocksource which we use for reference.
 
-BTW, thanks, I'll figure it out! ;-P
+> +		 " or your system lagged for other reasons" : "");
+>  	__clocksource_unstable(cs);
+>  }
 
-Regards,
-Dario
---=20
-<<This happens because I choose it to happen!>> (Raistlin Majere)
-----------------------------------------------------------------------
-Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
+Thanks,
 
-http://blog.linux.it/raistlin / raistlin@ekiga.net /
-dario.faggioli@jabber.org
-
---=-7/lmts6+eHWGtTyul6sg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAkzbHBcACgkQk4XaBE3IOsQGnQCfdpiDs1fZpNZRz79PU7iJM9Vm
-xnUAn2DuGPjqY+X1hQy8yR7HbkMbTO6Z
-=OPqi
------END PGP SIGNATURE-----
-
---=-7/lmts6+eHWGtTyul6sg--
-
+	tglx
