@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756090Ab0KJTJm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 14:09:42 -0500
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:34402 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755525Ab0KJTJk (ORCPT
+	id S1756172Ab0KJTKv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 14:10:51 -0500
+Received: from casper.infradead.org ([85.118.1.10]:41655 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755947Ab0KJTKu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 14:09:40 -0500
-Date: Wed, 10 Nov 2010 20:09:33 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Dave Chinner <david@fromorbit.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, dave b <db.pub.mail@gmail.com>,
-        Sanjoy Mahajan <sanjoy@olin.edu>, Jesper Juhl <jj@chaosbits.net>,
-        Chris Mason <chris.mason@oracle.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Nick Piggin <npiggin@suse.de>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "Ted Ts'o" <tytso@mit.edu>,
-        Corrado Zoccolo <czoccolo@gmail.com>,
-        Shaohua Li <shaohua.li@intel.com>, Steven Barrett <damentz@gmail.com>
-Subject: Re: 2.6.36 io bring the system to its knees
-Message-ID: <20101110190933.GA1497@ucw.cz>
-References: <20101105014334.GF13830@dastard>
- <E1PELiI-0001Pj-8g@approx.mit.edu>
- <AANLkTimON_GL6vRF9=_U6oRFQ30EYssx3wv5xdNsU9JM@mail.gmail.com>
- <4CD696B4.6070002@kernel.dk>
- <AANLkTikNPEcwWjEQuC-_=9yH5DCCiwUAY265ggeygcSQ@mail.gmail.com>
- <20101110013255.GR2715@dastard>
- <20101110142037.GA1447@ucw.cz>
- <20101110142721.GA14496@elte.hu>
- <20101110145511.GA22073@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101110145511.GA22073@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 10 Nov 2010 14:10:50 -0500
+Subject: Re: [RFC][PATCH 03/22] sched: SCHED_DEADLINE data structures.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Raistlin <raistlin@linux.it>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
+        "p.faure" <p.faure@akatech.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        michael trimarchi <trimarchi@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>,
+        Tommaso Cucinotta <cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Nicola Manica <nicola.manica@disi.unitn.it>,
+        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
+        Harald Gustafsson <hgu1972@gmail.com>,
+        paulmck <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1288333680.8661.142.camel@Palantir>
+References: <1288333128.8661.137.camel@Palantir>
+	 <1288333680.8661.142.camel@Palantir>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 10 Nov 2010 20:10:39 +0100
+Message-ID: <1289416239.2084.39.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Fri, 2010-10-29 at 08:28 +0200, Raistlin wrote:
+> +       if (unlikely(prio >= MAX_DL_PRIO && prio < MAX_RT_PRIO))
 
-> > That is data that was freshly touched around the time the system went down, right?
-> > 
-> > I.e. data that was probably half-modified by user-space to begin with.
-> 
-> It's data that wasn't synced out yet, yes.  Which isn't the problem per
-> se.  With ext3/4 in ordered mode, or xfs, or btrfs the file size won't
-> be incremented until the data is written.  in ext3/4 in writeback mode
-> (or various non-journaling filesystems) however the inode size is
-> updated, and metadagta changes are logged.  Besides exposing stale
-> data which is a security risk in multi-user systems it also means the
-> inode looks modified (by size and timestamps), but contains other data
-> than actually written.
+Since MAX_DL_PRIO is 0, you can write that as: 
+  ((unsigned)prio) < MAX_RT_PRIO
 
-Well, afaict thats traditional unix behaviour... while it is not user
-friendly, I'd not call it 'corrupted filesytem'.
-								Pavel
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
