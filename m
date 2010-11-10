@@ -1,38 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755897Ab0KJMvc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 07:51:32 -0500
-Received: from ozlabs.org ([203.10.76.45]:55240 "EHLO ozlabs.org"
+	id S1755933Ab0KJMv6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 07:51:58 -0500
+Received: from cantor.suse.de ([195.135.220.2]:47269 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755784Ab0KJMvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 07:51:31 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Subject: Re: [PATCH] virtio: fix format of sysfs driver/vendor files
-Date: Wed, 10 Nov 2010 23:21:25 +1030
-User-Agent: KMail/1.13.5 (Linux/2.6.35-22-generic-pae; KDE/4.5.1; i686; ; )
-Cc: Greg KH <greg@kroah.com>, virtualization@lists.osdl.org,
+	id S1755784Ab0KJMv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 07:51:57 -0500
+Date: Wed, 10 Nov 2010 13:51:54 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: linux-mm@kvack.org
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         linux-kernel@vger.kernel.org
-References: <20101109222029.65f3e192@nehalam>
-In-Reply-To: <20101109222029.65f3e192@nehalam>
+Subject: [RFC PATCH] Make swap accounting default behavior configurable
+Message-ID: <20101110125154.GC5867@tiehlicka.suse.cz>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011102321.26288.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Nov 2010 04:50:29 pm Stephen Hemminger wrote:
-> The sysfs files for virtio produce the wrong format and are missing
-> the required newline. The output for virtio bus vendor/device should
-> have the same format as the corresponding entries for PCI devices.
-> 
-> Although this technically changes the ABI for sysfs, these files were
-> broken to start with!
+Hi,
+could you consider the patch bellow? It basically changes the default
+swap accounting behavior (when it is turned on in configuration) to be
+configurable as well. 
 
-Agreed, and I don't think anyone currently uses them.
+The rationale is described in the patch but in short it makes it much
+more easier to enable this feature in distribution kernels as the
+functionality can be provided in the general purpose kernel (with the
+option disabled) without any drawbacks and interested users can enable
+it. This is not possible currently.
 
-Applied,
-Rusty.
+I am aware that boot command line parameter name change is not ideal but
+the original semantic wasn't good enough and I don't like
+noswapaccount=yes|no very much. 
+
+If we really have to stick to it I can rework the patch to keep the name
+and just add the yes|no logic, though. Or we can keep the original one
+and add swapaccount paramete which would mean the oposite as the other
+one.
+
+The patch is based on the current Linus tree.
+
+Any thoughts?
+---
+
+>From c874f2c1ff1493e49611f19308434e564c2d37c6 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Wed, 10 Nov 2010 13:30:04 +0100
+Subject: [PATCH] Make swap accounting default behavior configurable
+
+Swap accounting can be configured by CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+configuration option and then it is turned on by default. There is
+a boot option (noswapaccount) which can disable this feature.
+
+This makes it hard for distributors to enable the configuration option
+as this feature leads to a bigger memory consumption and this is a no-go
+for general purpose distribution kernel. On the other hand swap
+accounting may be very usuful for some workloads.
+
+This patch adds a new configuration option which controls the default
+behavior (CGROUP_MEM_RES_CTLR_SWAP_ENABLED) and changes the original
+noswapaccount parameter to swapaccount=true|false which provides
+a more fine grained way to control this feature.
+
+The default behavior is unchanged (if CONFIG_CGROUP_MEM_RES_CTLR_SWAP is
+enabled then CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED is enabled as well)
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ init/Kconfig    |   13 +++++++++++++
+ mm/memcontrol.c |   19 ++++++++++++++-----
+ 2 files changed, 27 insertions(+), 5 deletions(-)
+
+diff --git a/init/Kconfig b/init/Kconfig
+index 88c1046..61d55a7 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -613,6 +613,19 @@ config CGROUP_MEM_RES_CTLR_SWAP
+ 	  if boot option "noswapaccount" is set, swap will not be accounted.
+ 	  Now, memory usage of swap_cgroup is 2 bytes per entry. If swap page
+ 	  size is 4096bytes, 512k per 1Gbytes of swap.
++config CGROUP_MEM_RES_CTLR_SWAP_ENABLED
++	bool "Memory Resource Controller Swap Extension enabled by default"
++	depends on CGROUP_MEM_RES_CTLR_SWAP
++	default y
++	help
++	  Memory Resource Controller Swap Extension comes with its price in
++	  a bigger memory consumption. General purpose distribution kernels
++	  which want to enable the feautre but keep it disabled by default
++	  and let the user enable it by swapaccount=true boot command line
++	  parameter should have this option unselected.
++	  For those who want to have the feature enabled by default should
++	  select this option (if, for some reason, they need to disable it
++	  then swapaccount=false does the trick).
+ 
+ menuconfig CGROUP_SCHED
+ 	bool "Group CPU scheduler"
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 9a99cfa..7c699b3 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -61,7 +61,14 @@ struct mem_cgroup *root_mem_cgroup __read_mostly;
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+ /* Turned on only when memory cgroup is enabled && really_do_swap_account = 1 */
+ int do_swap_account __read_mostly;
+-static int really_do_swap_account __initdata = 1; /* for remember boot option*/
++
++/* for remember boot option*/
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED
++static int really_do_swap_account __initdata = 1;
++#else
++static int really_do_swap_account __initdata = 0;
++#endif
++
+ #else
+ #define do_swap_account		(0)
+ #endif
+@@ -4909,11 +4916,13 @@ struct cgroup_subsys mem_cgroup_subsys = {
+ };
+ 
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+-
+-static int __init disable_swap_account(char *s)
++static int __init enable_swap_account(char *s)
+ {
+-	really_do_swap_account = 0;
++	if (!s || !strcmp(s, "true"))
++		really_do_swap_account = 1;
++	else if (!strcmp(s, "false"))
++		really_do_swap_account = 0;
+ 	return 1;
+ }
+-__setup("noswapaccount", disable_swap_account);
++__setup("swapaccount", enable_swap_account);
+ #endif
+-- 
+1.7.2.3
+
+
+-- 
+Michal Hocko
+L3 team 
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
