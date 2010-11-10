@@ -1,86 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756839Ab0KJQFW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 11:05:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49504 "EHLO mx1.redhat.com"
+	id S1756844Ab0KJQGK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 11:06:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40659 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756825Ab0KJQFS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 11:05:18 -0500
-Date: Wed, 10 Nov 2010 17:03:52 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 01 of 66] disable lumpy when compaction is enabled
-Message-ID: <20101110160352.GJ6809@random.random>
-References: <patchbomb.1288798055@v2.random>
- <ca2fea6527833aad8adc.1288798056@v2.random>
- <20101109121318.BC51.A69D9226@jp.fujitsu.com>
- <20101109213049.GC6809@random.random>
- <20101109213855.GM32723@csn.ul.ie>
- <20101109222240.GH6809@random.random>
- <20101110142704.GA19679@csn.ul.ie>
+	id S1756346Ab0KJQGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 11:06:08 -0500
+Date: Wed, 10 Nov 2010 11:05:16 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: fweisbec@gmail.com, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, akpm@linux-foundation.org,
+        sergey.senozhatsky@gmail.com
+Subject: Re: [PATCH v3] watchdog:  touch_nmi_watchdog should only touch local
+ cpu not every one
+Message-ID: <20101110160516.GZ4823@redhat.com>
+References: <1289240913-16677-1-git-send-email-dzickus@redhat.com>
+ <20101110074941.GD29493@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101110142704.GA19679@csn.ul.ie>
+In-Reply-To: <20101110074941.GD29493@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 02:27:04PM +0000, Mel Gorman wrote:
-> Agreed. Any performance increase from THP is not likely to offset the
-> cost of lumpy reclaim.
+On Wed, Nov 10, 2010 at 08:49:41AM +0100, Ingo Molnar wrote:
+> 
+> * Don Zickus <dzickus@redhat.com> wrote:
+> 
+> > I ran into a scenario where while one cpu was stuck and should have panic'd 
+> > because of the NMI watchdog, it didn't.  The reason was another cpu was spewing 
+> > stack dumps on to the console.  Upon investigation, I noticed that when writing to 
+> > the console and also when dumping the stack, the watchdog is touched.
+> > 
+> > This causes all the cpus to reset their NMI watchdog flags and the 'stuck' cpu 
+> > just spins forever.
+> 
+> Hm, the flip side is that if a CPU is stuck spewing backtraces, we will now make all 
+> the other CPUs a lot more noisy - which might only 'lock up' because this CPU is 
+> stuck spewing oopses, right?
 
-Exactly. Furthermore the improvement will still happen later by
-polling compaction once every 10 sec with khugepaged (this is also
-required in case some other guest or application quit releasing tons
-of ram maybe natively order 9 in the buddy without requiring any
-further compaction invocation).
+When you say the other CPUs will be a lot more noisy, is that because they
+are busy processing backtraces for the first cpu to spew?  I guess I don't
+understand how the other CPUs could have their interrupts off the whole
+time while the first cpu is spewing a backtrace (just trying to educate
+myself).
 
-What the default should be I don't know, but I like a default that
-fails without causing swap storms. If you want the swap storms and to
-drop all ptes regardless of their young bits, you should ask
-explicitly for it I think. Anybody asking for high order allocation
-and pretending to succeed despite the anti-frag and movable pageblocks
-migrated with compaction aren't enough to succeed should be able to
-handle a full graceful failure like THP does by design (or worst case
-to return error to userland). As far as I can tell tg3 atomic order 2
-allocation also provides for a graceful fallback for the same reason
-(however in new mainline it floods the dmesg with tons of printk,
-which it didn't used to with older kernels but it's not an actual
-regression).
-
-> Again agreed, I have no problem with lumpy reclaim being pushed aside.
-> I'm just less keen on it being disabled altogether. I have high hopes
-> for the series I'm working on that it can be extended slightly to suit
-> the needs of THP.
-
-Great. Well this is also why I disabled it with the smallest possible
-modification, to avoid stepping on your toes.
-
-> Nah, the first thing I did was eliminate being "my fault" :). It would
-> have surprised me because the patches in isolation worked fine. It
-> thought the inode changes might have had something to do with it so I
-> was chasing blind alleys for a while. Hopefully d065bd81 will prove to
-> be the real problem.
-
-Well I wasn't sure if you tested it already on that very workload, the
-patches weren't from you (even if you were in the signoffs). I
-mentioned it just in case, glad it's not related :).
+Cheers,
+Don
