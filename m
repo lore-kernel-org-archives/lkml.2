@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429Ab0KJBBN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 20:01:13 -0500
-Received: from cantor.suse.de ([195.135.220.2]:58212 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751379Ab0KJBBJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 20:01:09 -0500
-Date: Wed, 10 Nov 2010 02:01:07 +0100
-From: Jan Kara <jack@suse.cz>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH 8/9] fs/quota/dquot.c: Use printf extension %pV
-Message-ID: <20101110010107.GB12773@quack.suse.cz>
-References: <cover.1289348757.git.joe@perches.com>
- <8ee8a64dba59575938955a22ba3a390ba924b4c5.1289348757.git.joe@perches.com>
+	id S1754060Ab0KJBBT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 20:01:19 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:33992 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379Ab0KJBBQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 20:01:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=QxPCuD5qrOpXkRtfMVTCAGIrm2x6+Pll+P3v9KEOCgceun38c6ZCt5LMmRJXFWqEIq
+         13x+0y+soEjK1F7fiwvfVnYLev0WYBqoyr0lraraE7QhQYvJKEiXoPpb3gFq+2gD5jNF
+         azs/oxTMIs7Ru61gBBznrphPvaUpacnRQZtd0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8ee8a64dba59575938955a22ba3a390ba924b4c5.1289348757.git.joe@perches.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1289294671-6865-6-git-send-email-gthelen@google.com>
+References: <1289294671-6865-1-git-send-email-gthelen@google.com>
+	<1289294671-6865-6-git-send-email-gthelen@google.com>
+Date: Wed, 10 Nov 2010 10:01:14 +0900
+Message-ID: <AANLkTin9rfeipUsy1GaT1suP+ivES-cK5U2o26i4hCtE@mail.gmail.com>
+Subject: Re: [PATCH 5/6] memcg: simplify mem_cgroup_dirty_info()
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 09-11-10 16:35:22, Joe Perches wrote:
-> Using %pV reduces the number of printk calls and
-> eliminates any possible message interleaving from
-> other printk calls.
-  Thanks. Merged.
+On Tue, Nov 9, 2010 at 6:24 PM, Greg Thelen <gthelen@google.com> wrote:
+> Because mem_cgroup_page_stat() no longer returns negative numbers
 
-						Honza
+I tried to understand why mem_cgroup_page_stat doesn't return negative
+number any more for a while.
+I couldn't find answer by current patches 5/6.
+The answer is where 6/6.
+It would be better to change 6/6 with 5/6.
 
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  fs/quota/dquot.c |   12 ++++++++----
->  1 files changed, 8 insertions(+), 4 deletions(-)
-> 
-> diff --git a/fs/quota/dquot.c b/fs/quota/dquot.c
-> index 0fed41e..aad97ef 100644
-> --- a/fs/quota/dquot.c
-> +++ b/fs/quota/dquot.c
-> @@ -135,14 +135,18 @@ EXPORT_SYMBOL(dq_data_lock);
->  void __quota_error(struct super_block *sb, const char *func,
->  		  const char *fmt, ...)
->  {
-> +	struct va_format vaf;
->  	va_list args;
->  
->  	if (printk_ratelimit()) {
->  		va_start(args, fmt);
-> -		printk(KERN_ERR "Quota error (device %s): %s: ",
-> -		       sb->s_id, func);
-> -		vprintk(fmt, args);
-> -		printk("\n");
-> +
-> +		vaf.fmt = fmt;
-> +		vaf.va = &args;
-> +
-> +		printk(KERN_ERR "Quota error (device %s): %s: %pV\n",
-> +		       sb->s_id, func, &vaf);
-> +
->  		va_end(args);
->  	}
->  }
-> -- 
-> 1.7.3.1.g432b3.dirty
-> 
+
+> to indicate failure, mem_cgroup_dirty_info() does not need to check
+> for such failures.
+>
+> Signed-off-by: Greg Thelen <gthelen@google.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Kind regards,
+Minchan Kim
