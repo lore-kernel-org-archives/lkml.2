@@ -1,127 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757519Ab0KJXif (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 18:38:35 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:26089 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757507Ab0KJXid (ORCPT
+	id S1757499Ab0KJXkp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 18:40:45 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:18981 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757417Ab0KJXko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 18:38:33 -0500
-Message-ID: <4CDB2C94.4010007@oracle.com>
-Date: Wed, 10 Nov 2010 15:36:52 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Wed, 10 Nov 2010 18:40:44 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6163"; a="61504475"
+Date: Wed, 10 Nov 2010 15:40:42 -0800
+From: David Brown <davidb@codeaurora.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: tlinder <tlinder@codeaurora.org>, USB list <linux-usb@vger.kernel.org>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Michal Nazarewicz <m.nazarewicz@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC/PATCH 1/2] Add usb_endpoint_descriptor to be part of the
+ struct usb_ep
+Message-ID: <20101110234042.GA25770@huya.qualcomm.com>
+References: <1286092800-29107-1-git-send-email-tlinder@codeaurora.org>
+ <Pine.LNX.4.44L0.1010031201050.26676-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for November 10 (kernel/rcutiny)
-References: <20101110140719.139ebe51.sfr@canb.auug.org.au> <20101110091926.dc834e84.randy.dunlap@oracle.com> <20101110230708.GV4032@linux.vnet.ibm.com>
-In-Reply-To: <20101110230708.GV4032@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1010031201050.26676-100000@netrider.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/10 15:07, Paul E. McKenney wrote:
-> On Wed, Nov 10, 2010 at 09:19:26AM -0800, Randy Dunlap wrote:
->> On Wed, 10 Nov 2010 14:07:19 +1100 Stephen Rothwell wrote:
->>
->>> Hi all,
->>>
->>> Changes since 20101109:
->>
->>
->> when CONFIG_RCU_BOOST is not enabled:
->>
->> In file included from linux-next-20101110/kernel/rcutiny.c:53:
->> linux-next-20101110/kernel/rcutiny_plugin.h: In function 'rcu_preempt_cpu_qs':
->> linux-next-20101110/kernel/rcutiny_plugin.h:413: error: 'struct rcu_preempt_ctrlblk' has no member named 'n_normal_balk_blkd_tasks'
+On Sun, Oct 03, 2010 at 12:35:07PM -0400, Alan Stern wrote:
+
+> > Signed-off-by: Tatyana Linder <tlinder@codeaurora.org>
+> ...
 > 
-> Hello, Randy,
+> > diff --git a/drivers/usb/gadget/file_storage.c b/drivers/usb/gadget/file_storage.c
+> > index a857b7a..6264fba 100644
+> > --- a/drivers/usb/gadget/file_storage.c
+> > +++ b/drivers/usb/gadget/file_storage.c
+> > @@ -3,6 +3,7 @@
+> >   *
+> >   * Copyright (C) 2003-2008 Alan Stern
+> >   * All rights reserved.
+> > + * Copyright (C) 2010 Code Aurora Forum. All rights reserved.
+> >   *
+> >   * Redistribution and use in source and binary forms, with or without
+> >   * modification, are permitted provided that the following conditions
 > 
-> Good catch!  Could you please try the following patch?
+> Speaking for myself only, I don't think people should add their own 
+> copyright notices in files to which they have not made substantial 
+> changes.  A little code motion and a small API adjustment don't seem 
+> like large enough changes to justify this.  Some of the other files in 
+> this patch have even smaller changes!
 
-(you tested this build, didn't you?)
+BTW, we agree on this.  People aren't supposed to be putting these
+copyrights in, but they've gotten used to it up until now.
 
-> 							Thanx, Paul
+Tatyana, please be careful to not insert a Code Aurora Forum copyright
+unless you change a significant portion of the file.
 
-Yes, this builds.  Thanks.
-
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
-
-
-> ------------------------------------------------------------------------
-> 
-> diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
-> index 297aa35..8cd197c 100644
-> --- a/kernel/rcutiny_plugin.h
-> +++ b/kernel/rcutiny_plugin.h
-> @@ -297,9 +297,17 @@ static int rcu_boost(void)
->   * the current grace period, and, if so, tell the rcu_kthread_task to
->   * start boosting them.  If there is an expedited boost in progress,
->   * we wait for it to complete.
-> + *
-> + * If there are no blocked readers blocking the current grace period,
-> + * return 0 to let the caller know, otherwise return 1.  Note that this
-> + * return value is independent of whether or not boosting was done.
->   */
-> -static void rcu_initiate_boost(void)
-> +static int rcu_initiate_boost(void)
->  {
-> +	if (!rcu_preempt_blocked_readers_cgp()) {
-> +		RCU_TRACE(rcu_preempt_ctrlblk.n_normal_balk_blkd_tasks++);
-> +		return 0;
-> +	}
->  	if (rcu_preempt_ctrlblk.gp_tasks != NULL &&
->  	    rcu_preempt_ctrlblk.boost_tasks == NULL &&
->  	    rcu_preempt_ctrlblk.boosted_this_gp == 0 &&
-> @@ -309,6 +317,7 @@ static void rcu_initiate_boost(void)
->  		RCU_TRACE(rcu_preempt_ctrlblk.n_normal_boosts++);
->  	} else
->  		RCU_TRACE(rcu_initiate_boost_trace());
-> +	return 1;
->  }
->  
->  /*
-> @@ -353,10 +362,13 @@ static int rcu_boost(void)
->  }
->  
->  /*
-> - * If there is no RCU priority boosting, we don't initiate boosting.
-> + * If there is no RCU priority boosting, we don't initiate boosting,
-> + * but we do indicate whether there are blocked readers blocking the
-> + * current grace period.
->   */
-> -static void rcu_initiate_boost(void)
-> +static int rcu_initiate_boost(void)
->  {
-> +	return rcu_preempt_blocked_readers_cgp();
->  }
->  
->  /*
-> @@ -405,12 +417,12 @@ static void rcu_preempt_cpu_qs(void)
->  	/* If there is no GP then there is nothing more to do.  */
->  	if (!rcu_preempt_gp_in_progress())
->  		return;
-> -	/* If there are blocked readers, go check up on boosting. */
-> -	if (rcu_preempt_blocked_readers_cgp()) {
-> -		rcu_initiate_boost();
-> +	/*
-> +	 * Check up on boosting.  If there are no readers blocking the
-> +	 * current grace period, leave.
-> +	 */
-> +	if (rcu_initiate_boost())
->  		return;
-> -	} else
-> -		RCU_TRACE(rcu_preempt_ctrlblk.n_normal_balk_blkd_tasks++);
->  
->  	/* Advance callbacks. */
->  	rcu_preempt_ctrlblk.completed = rcu_preempt_ctrlblk.gpnum;
-
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+David
