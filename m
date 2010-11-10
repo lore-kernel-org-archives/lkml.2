@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757446Ab0KJXdX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 18:33:23 -0500
-Received: from ms01.sssup.it ([193.205.80.99]:49870 "EHLO sssup.it"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757268Ab0KJXdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 18:33:21 -0500
-X-Greylist: delayed 2173 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Nov 2010 18:33:21 EST
-Message-ID: <4CDB2BBD.6040408@sssup.it>
-Date: Thu, 11 Nov 2010 00:33:17 +0100
-From: Tommaso Cucinotta <tommaso.cucinotta@sssup.it>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Raistlin <raistlin@linux.it>, Ingo Molnar <mingo@elte.hu>,
+	id S1757487Ab0KJXiX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 18:38:23 -0500
+Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:51725 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757417Ab0KJXiW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 18:38:22 -0500
+Date: Thu, 11 Nov 2010 10:36:48 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Theodore Tso <tytso@MIT.EDU>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, dave b <db.pub.mail@gmail.com>,
+        Sanjoy Mahajan <sanjoy@olin.edu>, Jesper Juhl <jj@chaosbits.net>,
+        Chris Mason <chris.mason@oracle.com>, Ingo Molnar <mingo@elte.hu>,
+        Pekka Enberg <penberg@kernel.org>,
+        Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Nick Piggin <npiggin@suse.de>,
+        Arjan van de Ven <arjan@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH 02/22] sched: add extended scheduling interface
-References: <1288333128.8661.137.camel@Palantir>	 <1288333622.8661.141.camel@Palantir>  <1289410114.2084.23.camel@laptop> <1289417173.2084.43.camel@laptop>
-In-Reply-To: <1289417173.2084.43.camel@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        Corrado Zoccolo <czoccolo@gmail.com>,
+        Shaohua Li <shaohua.li@intel.com>, Steven Barrett <damentz@gmail.com>
+Subject: Re: 2.6.36 io bring the system to its knees
+Message-ID: <20101110233648.GY2715@dastard>
+References: <20101105014334.GF13830@dastard>
+ <E1PELiI-0001Pj-8g@approx.mit.edu>
+ <AANLkTimON_GL6vRF9=_U6oRFQ30EYssx3wv5xdNsU9JM@mail.gmail.com>
+ <4CD696B4.6070002@kernel.dk>
+ <AANLkTikNPEcwWjEQuC-_=9yH5DCCiwUAY265ggeygcSQ@mail.gmail.com>
+ <20101110013255.GR2715@dastard>
+ <C70A546B-6BC5-49CA-9E34-E69F494A71A0@mit.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C70A546B-6BC5-49CA-9E34-E69F494A71A0@mit.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 10/11/2010 20:26, Peter Zijlstra ha scritto:
->> I would suggest we add at least one more field so we can implement the
->> stochastic model from UNC, sched_runtime_dev or sched_runtime_var or
->> somesuch.
-> Oh, and their model has something akin to: sched_runtime_max, these
-> Gaussian bell curves go to inf. which is kinda bad for trying to compute
-> bounds.
-If I understand well the paper you're referring to, the actual admission 
-test would require also to specify a maximum acceptable expected 
-tardiness, and/or proper quantiles of the tardiness distribution, and 
-also it would require to solve a linear programming optimization problem 
-in order to check those bounds. You don't want this stuff to go into the 
-kernel, do you ?
+On Wed, Nov 10, 2010 at 09:33:29AM -0500, Theodore Tso wrote:
+> 
+> On Nov 9, 2010, at 8:32 PM, Dave Chinner wrote:
+> 
+> > Don't forget to mention data=writeback is not the default because if
+> > your system crashes or you lose power running in this mode it will
+> > *CORRUPT YOUR FILESYSTEM* and you *WILL LOSE DATA*. Not to mention
+> > the significant security issues (e.g stale data exposure) that also
+> > occur even if the filesystem is not corrupted by the crash. IOWs,
+> > data=writeback is the "fast but I'll eat your data" option for ext3.
+> 
+> This is strictly speaking not true.  Using data=writeback will not
+> cause you to lose any data --- at least, not any more than you
+> would without the feature.   If you have applications that write
+> files in an unsafe way, that data is going to be lost, one way or
+> another.  (i.e., with XFS in a similar situation you'll get a
+> zero-length file)   The difference is that in the case of a system
+> crash, there may be unwritten data revealed if you use
+> data=writeback.  This could be a security exposure, especially if
+> you are using your system in as time-sharing system, and where you
+> see the contents of deleted files belonging to another user.
 
-There are plenty of complex schedulability tests for complex (and also 
-distributed) RT applications modeled in a more or less complex way, 
-scheduled under a variety of scheduling policies, with models including 
-maximum and stochastic blocking times, task dependencies, offsets, and I 
-don't know whatever else. These tests may be part of a user-space 
-component. I would recommend to keep at the kernel level only a bare 
-minimal set of functionality.
+In theory, that's all that is _supposed_ to happen. However, my
+recent experience is that massive ext3 filesystem corruption occurs
+in data=writeback mode when the system crashes and that does not
+happen in ordered mode.
 
-Deadlines different from periods are already a first complexity that I'm 
-not sure we want to have in the interface. The easiest thing you can do 
-there is to consider simply the minimum among the relative deadline and 
-the period, but that would be equivalent to having only one parameter. 
-More importantly, realizing complex admission control tests raises the 
-issue of how to represent the "availability of RT CPU power" (as needed 
-by "higher-level" logic/middleware). As far as we keep simple 
-utilization-based admission tests (which might optionally be disabled), 
-we still have some chance of representing such quantity.
+Why do you think i posted the patches to change the default back to
+ordered mode a few months back? I basically trashed the root ext3
+partitions on three test machines (to the point where >5000 files
+across /sbin, /bin, /lib and /usr were corrupted or missing and I
+had to reinstall from scratch) when I'd forgotten to set the
+ordered-is-defult config option in the kernel i was testing.  And
+that is when the only thing being written to the root filesystems
+was log files...
 
-Apologies for my 2 poor cents. I hope to see here a discussion (and I'll 
-try to shut-up as much as possible :-) ).
+The worst part about this was that I also had ext3 filesystems
+corrupted by crashes in such a way that e2fsck didn't detect it but
+they would repeatedly trigger kernel crashes at runtime....
 
-     T.
+> So it is not an "eat your data" situation,
 
+My experience says otherwise....
+
+Cheers,
+
+Dave.
 -- 
-Tommaso Cucinotta, Computer Engineering PhD, Researcher
-ReTiS Lab, Scuola Superiore Sant'Anna, Pisa, Italy
-Tel +39 050 882 024, Fax +39 050 882 003
-http://retis.sssup.it/people/tommaso
-
+Dave Chinner
+david@fromorbit.com
