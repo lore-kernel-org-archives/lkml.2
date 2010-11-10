@@ -1,73 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755228Ab0KJT4l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 14:56:41 -0500
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:37416 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752734Ab0KJT4k (ORCPT
+	id S1755676Ab0KJUCy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 15:02:54 -0500
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:19200 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755372Ab0KJUCx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 14:56:40 -0500
-Message-ID: <4CDAF8E4.7030609@euromail.se>
-Date: Wed, 10 Nov 2010 20:56:20 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Wed, 10 Nov 2010 15:02:53 -0500
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bh8275dhz2dh2a8h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:de01egw02.freescale.net;RD:de01egw02.freescale.net;EFVD:NLI
+From: <Dinh.Nguyen@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
+        <s.hauer@pengutronix.de>, <u.kleine-koenig@pengutronix.de>,
+        <amit.kucheria@canonical.com>, <eric@eukrea.com>,
+        Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Subject: [PATCHv3] ARM: imx: Add support for low power suspend on MX51.
+Date: Wed, 10 Nov 2010 14:06:44 -0600
+Message-ID: <1289419604-4103-1-git-send-email-Dinh.Nguyen@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
 MIME-Version: 1.0
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-CC: Jean Delvare <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] hwmon: (applesmc) Fix checkpatch errors
-References: <1289415200-4928-1-git-send-email-guenter.roeck@ericsson.com> <4CDAE9D7.3060007@euromail.se> <20101110193930.GA31650@ericsson.com>
-In-Reply-To: <20101110193930.GA31650@ericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1PGGmN-0002dM-5z.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1PGGmN-0002dM-5z 56d311bfa35cd3196ee3d46d51517093
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> @@ -977,7 +975,11 @@ static ssize_t applesmc_key_at_index_show
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
->>>  static ssize_t applesmc_key_at_index_store(struct device *dev,
->>>  	struct device_attribute *attr, const char *sysfsbuf, size_t count)
->>>  {
->>> -	key_at_index = simple_strtoul(sysfsbuf, NULL, 10);
->>> +	unsigned long newkey;
->>> +
->>> +	if (strict_strtoul(sysfsbuf, 10, &newkey) < 0)
->>> +		return -EINVAL;
->>> +	key_at_index = newkey;
->>
->>
->> Crash alert - key_at_index is not range checked, and the remake uses this value
->> as an array index...
->>
-> Good that I made this change ;). I'll add the check and re-send.
+Adds initial low power suspend functionality to MX51.
+Supports "mem" and "standby" modes.
+
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+---
+ arch/arm/mach-mx5/Makefile           |    1 +
+ arch/arm/mach-mx5/pm.c               |   70 ++++++++++++++++++++++++++++++++++
+ arch/arm/plat-mxc/include/mach/mxc.h |    1 +
+ 3 files changed, 72 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-mx5/pm.c
+
+diff --git a/arch/arm/mach-mx5/Makefile b/arch/arm/mach-mx5/Makefile
+index 462f177..25b44d1 100644
+--- a/arch/arm/mach-mx5/Makefile
++++ b/arch/arm/mach-mx5/Makefile
+@@ -5,6 +5,7 @@
+ # Object file lists.
+ obj-y   := cpu.o mm.o clock-mx51.o devices.o
+ 
++obj-$(CONFIG_PM) += pm.o
+ obj-$(CONFIG_CPU_FREQ_IMX)    += cpu_op-mx51.o
+ obj-$(CONFIG_MACH_MX51_BABBAGE) += board-mx51_babbage.o
+ obj-$(CONFIG_MACH_MX51_3DS) += board-mx51_3ds.o
+diff --git a/arch/arm/mach-mx5/pm.c b/arch/arm/mach-mx5/pm.c
+new file mode 100644
+index 0000000..417cce1
+--- /dev/null
++++ b/arch/arm/mach-mx5/pm.c
+@@ -0,0 +1,70 @@
++/*
++ *  Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights Reserved.
++ *
++ * The code contained herein is licensed under the GNU General Public
++ * License. You may obtain a copy of the GNU General Public License
++ * Version 2 or later at the following locations:
++ *
++ * http://www.opensource.org/licenses/gpl-license.html
++ * http://www.gnu.org/copyleft/gpl.html
++ */
++#include <linux/suspend.h>
++#include <asm/mach/map.h>
++#include <mach/system.h>
++#include "crm_regs.h"
++
++static int mx5_suspend_enter(suspend_state_t state)
++{
++	u32 plat_lpc, arm_srpgcr, ccm_clpcr;
++
++	/* always allow platform to issue a deep sleep mode request */
++	ccm_clpcr = __raw_readl(MXC_CCM_CLPCR) & ~(MXC_CCM_CLPCR_LPM_MASK);
++
++	switch (state) {
++	case PM_SUSPEND_MEM:
++		ccm_clpcr |= (0x2 << MXC_CCM_CLPCR_LPM_OFFSET);
++		ccm_clpcr |= (0x3 << MXC_CCM_CLPCR_STBY_COUNT_OFFSET);
++		ccm_clpcr |= MXC_CCM_CLPCR_VSTBY;
++		ccm_clpcr |= MXC_CCM_CLPCR_SBYOS;
++		break;
++	case PM_SUSPEND_STANDBY:
++		ccm_clpcr |= (0x1 << MXC_CCM_CLPCR_LPM_OFFSET);
++		ccm_clpcr &= ~MXC_CCM_CLPCR_VSTBY;
++		ccm_clpcr &= ~MXC_CCM_CLPCR_SBYOS;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	plat_lpc |= MXC_CORTEXA8_PLAT_LPC_DSM
++		    | MXC_CORTEXA8_PLAT_LPC_DBG_DSM;
++	arm_srpgcr |= MXC_SRPGCR_PCR;
++
++	__raw_writel(plat_lpc, MXC_CORTEXA8_PLAT_LPC);
++	__raw_writel(arm_srpgcr, MXC_SRPG_ARM_SRPGCR);
++	__raw_writel(ccm_clpcr, MXC_CCM_CLPCR);
++
++	if (tzic_enable_wake(0) != 0)
++		return -EAGAIN;
++
++	cpu_do_idle();
++	return 0;
++}
++
++static int mx5_pm_valid(suspend_state_t state)
++{
++	return (state > PM_SUSPEND_ON && state <= PM_SUSPEND_MAX);
++}
++
++static const struct platform_suspend_ops mx5_suspend_ops = {
++	.valid = mx5_pm_valid,
++	.enter = mx5_suspend_enter,
++};
++
++static int __init mx5_pm_init(void)
++{
++	if (cpu_is_mx51())
++		suspend_set_ops(&mx5_suspend_ops);
++	return 0;
++}
++device_initcall(mx5_pm_init);
+diff --git a/arch/arm/plat-mxc/include/mach/mxc.h b/arch/arm/plat-mxc/include/mach/mxc.h
+index a42c720..dafacfd 100644
+--- a/arch/arm/plat-mxc/include/mach/mxc.h
++++ b/arch/arm/plat-mxc/include/mach/mxc.h
+@@ -37,6 +37,7 @@
+ 
+ #ifndef __ASSEMBLY__
+ extern unsigned int __mxc_cpu_type;
++int tzic_enable_wake(int is_idle);
+ #endif
+ 
+ #ifdef CONFIG_ARCH_MX1
+-- 
+1.6.0.4
 
 
-Indeed! The downside of remakes... sorry about that. :-)
-
-I guess the change should go into patch 4 already? There is also the option to
-put the bounds check in applesmc_get_entry_by_index, but I like the simplicity
-of "|| newkey >= smcreg.key_count".
-
-> This points to another problem, though. You allocate key_count entries,
-> ie cache[0]..cache[key_count-1]. Yet, the key searches are from 0..key_count,
-> ie span key_count+1 entries. Is that another problem ?
-
->
-
-> Seems to me you would either have to allocate key_count+1 entries, or terminate
-> the search at key_count - 1. Not sure which one would be correct. Let me know,
-> and I'll update the affected patch(es).
-
-
-If you are referring to the lower and upper bound functions, those use the
-one-past-the-last-element convention, so it is actually still 0..key_count - 1.
-I stayed very close to the stl reference implementation, which relies on the
-fact that when begin != end, (begin + (end - begin) / 2) < end.
-
-Cheers,
-Henrik
