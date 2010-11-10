@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754186Ab0KJRmR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 12:42:17 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:35781 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751556Ab0KJRmP (ORCPT
+	id S1754361Ab0KJRpP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 12:45:15 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:51279 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753028Ab0KJRpN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 12:42:15 -0500
-Date: Wed, 10 Nov 2010 18:42:10 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] x86: clear XD_DISABLED flag on Intel to regain NX
-Message-ID: <20101110174210.GA9011@basil.fritz.box>
-References: <20101109181157.GE5876@outflux.net>
- <20101109181501.GG5876@outflux.net>
- <87hbfpp390.fsf@basil.nowhere.org>
- <20101110164708.GN5876@outflux.net>
+	Wed, 10 Nov 2010 12:45:13 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Sc4EKy1WtSS4l2Ko8V+txWjtnghJNZyONreLQr2mllfaUcvpdpKjGqdj8x2iy03Rw6
+         CWW8ZUxNfmMsb2zQiIV6LWIKwLIuqVGnwBfV/8ftokgW/eqryuaRauqQz7zsaSzQqlIB
+         qGt85ElR1UgoanNU+o8blE7qEQ2+phptfKMEo=
+Date: Wed, 10 Nov 2010 18:45:07 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Joe Korty <joe.korty@ccur.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        mathieu.desnoyers@efficios.com, dhowells@redhat.com,
+        loic.minier@linaro.org, dhaval.giani@gmail.com, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, josh@joshtriplett.org,
+        houston.jim@comcast.net
+Subject: Re: [PATCH] a local-timer-free version of RCU
+Message-ID: <20101110174452.GC5360@nowhere>
+References: <20101104232148.GA28037@linux.vnet.ibm.com> <20101105210059.GA27317@tsunami.ccur.com> <4CD912E9.1080907@cn.fujitsu.com> <20101110155419.GC5750@nowhere> <1289410271.2084.25.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101110164708.GN5876@outflux.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1289410271.2084.25.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Right, which is why in this code it validates the CPU brand and its
-> family and model to make sure it's safe to read this MSR. The logic
-> is identical to the code in early_init_intel() that also accesses
-> MSR_IA32_MISC_ENABLE. I reviewed the CPU documentation and it seemed
-> to support that MSR_IA32_MISC_ENABLE would be available under those
-> conditions. That said, I only had a limited number of systems available
-> to test it on. If there are adjustments to be made, we can fix them.
-
-If you can even find out. The system will die silently.
-
-Usually the main culprits are simulators. VMs etc. Most do ignore unknown
-MSRs, but not all.
-
+On Wed, Nov 10, 2010 at 06:31:11PM +0100, Peter Zijlstra wrote:
+> On Wed, 2010-11-10 at 16:54 +0100, Frederic Weisbecker wrote:
+> > run the sched tick and if there was nothing to do
+> > for some time and we are in userspace, deactivate it. 
 > 
-> > I would rather move this code later into the early init code (before the
-> > second mapping is set up, which is still in time). There the exception
-> > handlers are up and you could handle a #GP if it happens.
+> Not for some time, immediately, have the tick track if it was useful, if
+> it was not, have it stop itself, like:
 > 
-> The problem is that the page tables are set up before early_init, and Peter
-> Anvin and I did not see a way to move the XD_DISABLE logic any later than
-> where I've put it. Though I should let Peter speak for himself here, as I'm
-> less familiar with that aspect of the code.
+> tick()
+> {
+>  int stop = 1;
+> 
+>  if (nr_running > 1)
+>   stop = 0;
+> 
+>  if(rcu_needs_cpu())
+>   stop = 0;
+> 
+>  ...
+> 
+> 
+>  if (stop)
+>   enter_nohz_mode();
 
-On x86-64 there are two kernel mappings: an early one and a final one.
-The final one is only set up in C code.
 
-On 32bit there's only a single one, but it could be changed (e.g. 
-only add NX later)
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+If we are in userspace then yeah, let's enter nohz immediately.
+But if we are in kernelspace, we should probably wait a bit before
+switching to nohz, like one HZ, as rcu critical sections are quite
+numerous.
+We probably don't want to reprogram the timer everytime we enter
+a new rcu_read_lock().
+
