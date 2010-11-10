@@ -1,131 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757467Ab0KJXEw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 18:04:52 -0500
-Received: from DMZ-MAILSEC-SCANNER-6.MIT.EDU ([18.7.68.35]:55583 "EHLO
-	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757427Ab0KJXEt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 18:04:49 -0500
-X-AuditID: 12074423-b7bd0ae000000a00-da-4cdb2510685f
-From: Andy Lutomirski <luto@MIT.EDU>
-To: Ben Skeggs <bskeggs@redhat.com>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Andy Lutomirski <luto@MIT.EDU>
-Subject: [PATCH 2/2] nouveau: Acknowledge HPD irq in handler, not bottom half
-Date: Wed, 10 Nov 2010 18:04:15 -0500
-Message-Id: <4cfbe0d94276d29512cd5945ac93818cdbb6e2f7.1289430026.git.luto@mit.edu>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <cover.1289430026.git.luto@mit.edu>
-References: <cover.1289430026.git.luto@mit.edu>
-In-Reply-To: <cover.1289430026.git.luto@mit.edu>
-References: <cover.1289430026.git.luto@mit.edu>
-X-Brightmail-Tracker: AAAAAA==
+	id S1757429Ab0KJXGK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 18:06:10 -0500
+Received: from ms01.sssup.it ([193.205.80.99]:43568 "EHLO sssup.it"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756496Ab0KJXGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 18:06:09 -0500
+Subject: Re: [RFC][PATCH 02/22] sched: add extended scheduling interface
+From: Raistlin <raistlin@linux.it>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
+        "p.faure" <p.faure@akatech.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        michael trimarchi <trimarchi@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>,
+        Tommaso Cucinotta <cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Nicola Manica <nicola.manica@disi.unitn.it>,
+        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
+        Harald Gustafsson <hgu1972@gmail.com>,
+        paulmck <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1289415017.2084.32.camel@laptop>
+References: <1288333128.8661.137.camel@Palantir>
+	 <1288333622.8661.141.camel@Palantir>  <1289415017.2084.32.camel@laptop>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-kCpOmpq8c7T/fH9D6pyu"
+Date: Wed, 10 Nov 2010 23:05:53 +0100
+Message-ID: <1289426753.13577.275.camel@Palantir>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The old code generated an interrupt storm bad enough to completely
-take down my system.
 
-Signed-off-by: Andy Lutomirski <luto@mit.edu>
----
- drivers/gpu/drm/nouveau/nouveau_drv.h  |    6 +++++
- drivers/gpu/drm/nouveau/nouveau_irq.c  |    1 +
- drivers/gpu/drm/nouveau/nv50_display.c |   35 +++++++++++++++++++++++--------
- 3 files changed, 33 insertions(+), 9 deletions(-)
+--=-kCpOmpq8c7T/fH9D6pyu
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/gpu/drm/nouveau/nouveau_drv.h b/drivers/gpu/drm/nouveau/nouveau_drv.h
-index b1be617..c926d88 100644
---- a/drivers/gpu/drm/nouveau/nouveau_drv.h
-+++ b/drivers/gpu/drm/nouveau/nouveau_drv.h
-@@ -531,6 +531,12 @@ struct drm_nouveau_private {
- 	struct work_struct irq_work;
- 	struct work_struct hpd_work;
- 
-+	struct {
-+		spinlock_t lock;
-+		uint32_t hpd0_bits;
-+		uint32_t hpd1_bits;
-+	} hpd_state;
-+
- 	struct list_head vbl_waiting;
- 
- 	struct {
-diff --git a/drivers/gpu/drm/nouveau/nouveau_irq.c b/drivers/gpu/drm/nouveau/nouveau_irq.c
-index 794b0ee..b62a601 100644
---- a/drivers/gpu/drm/nouveau/nouveau_irq.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_irq.c
-@@ -52,6 +52,7 @@ nouveau_irq_preinstall(struct drm_device *dev)
- 	if (dev_priv->card_type >= NV_50) {
- 		INIT_WORK(&dev_priv->irq_work, nv50_display_irq_handler_bh);
- 		INIT_WORK(&dev_priv->hpd_work, nv50_display_irq_hotplug_bh);
-+		spin_lock_init(&dev_priv->hpd_state.lock);
- 		INIT_LIST_HEAD(&dev_priv->vbl_waiting);
- 	}
- }
-diff --git a/drivers/gpu/drm/nouveau/nv50_display.c b/drivers/gpu/drm/nouveau/nv50_display.c
-index 83a7d27..014f69c 100644
---- a/drivers/gpu/drm/nouveau/nv50_display.c
-+++ b/drivers/gpu/drm/nouveau/nv50_display.c
-@@ -1012,11 +1012,18 @@ nv50_display_irq_hotplug_bh(struct work_struct *work)
- 	struct drm_connector *connector;
- 	const uint32_t gpio_reg[4] = { 0xe104, 0xe108, 0xe280, 0xe284 };
- 	uint32_t unplug_mask, plug_mask, change_mask;
--	uint32_t hpd0, hpd1 = 0;
-+	uint32_t hpd0, hpd1;
- 
--	hpd0 = nv_rd32(dev, NV50_PCONNECTOR_HOTPLUG_CTRL) & nv_rd32(dev, NV50_PCONNECTOR_HOTPLUG_INTR);
-+	spin_lock_irq(&dev_priv->hpd_state.lock);
-+	hpd0 = dev_priv->hpd_state.hpd0_bits;
-+	dev_priv->hpd_state.hpd0_bits = 0;
-+	hpd1 = dev_priv->hpd_state.hpd1_bits;
-+	dev_priv->hpd_state.hpd1_bits = 0;
-+	spin_unlock_irq(&dev_priv->hpd_state.lock);
-+
-+	hpd0 &= nv_rd32(dev, NV50_PCONNECTOR_HOTPLUG_INTR);
- 	if (dev_priv->chipset >= 0x90)
--		hpd1 = nv_rd32(dev, 0xe074) & nv_rd32(dev, 0xe070);
-+		hpd1 &= nv_rd32(dev, 0xe070);
- 
- 	plug_mask   = (hpd0 & 0x0000ffff) | (hpd1 << 16);
- 	unplug_mask = (hpd0 >> 16) | (hpd1 & 0xffff0000);
-@@ -1058,10 +1065,6 @@ nv50_display_irq_hotplug_bh(struct work_struct *work)
- 			helper->dpms(connector->encoder, DRM_MODE_DPMS_OFF);
- 	}
- 
--	nv_wr32(dev, NV50_PCONNECTOR_HOTPLUG_CTRL, nv_rd32(dev, NV50_PCONNECTOR_HOTPLUG_CTRL));
--	if (dev_priv->chipset >= 0x90)
--		nv_wr32(dev, 0xe074, nv_rd32(dev, 0xe074));
--
- 	drm_helper_hpd_irq_event(dev);
- }
- 
-@@ -1072,8 +1075,22 @@ nv50_display_irq_handler(struct drm_device *dev)
- 	uint32_t delayed = 0;
- 
- 	if (nv_rd32(dev, NV50_PMC_INTR_0) & NV50_PMC_INTR_0_HOTPLUG) {
--		if (!work_pending(&dev_priv->hpd_work))
--			queue_work(dev_priv->wq, &dev_priv->hpd_work);
-+		uint32_t hpd0_bits, hpd1_bits = 0;
-+
-+		hpd0_bits = nv_rd32(dev, NV50_PCONNECTOR_HOTPLUG_CTRL);
-+		nv_wr32(dev, NV50_PCONNECTOR_HOTPLUG_CTRL, hpd0_bits);
-+
-+		if (dev_priv->chipset >= 0x90) {
-+			hpd1_bits = nv_rd32(dev, 0xe074);
-+			nv_wr32(dev, 0xe074, hpd1_bits);
-+		}
-+
-+		spin_lock(&dev_priv->hpd_state.lock);
-+		dev_priv->hpd_state.hpd0_bits |= hpd0_bits;
-+		dev_priv->hpd_state.hpd1_bits |= hpd1_bits;
-+		spin_unlock(&dev_priv->hpd_state.lock);
-+
-+		queue_work(dev_priv->wq, &dev_priv->hpd_work);
- 	}
- 
- 	while (nv_rd32(dev, NV50_PMC_INTR_0) & NV50_PMC_INTR_0_DISPLAY) {
--- 
-1.7.3.2
+On Wed, 2010-11-10 at 19:50 +0100, Peter Zijlstra wrote: =20
+> > +int sched_setscheduler_ex(struct task_struct *p, int policy,
+> > +                         const struct sched_param *param,
+> > +                         const struct sched_param_ex *param_ex)
+> > +{
+> > +       return __sched_setscheduler(p, policy, param, param_ex, true);
+> > +}
+> > +EXPORT_SYMBOL_GPL(sched_setscheduler_ex);=20
+>=20
+> Do we really need to pass both params? Can't we simply create a struct
+> sched_param_ex new_param =3D { .sched_priority =3D param->sched_priority =
+};
+> on stack and pass that?
+>=20
+We can. I'll do that way.
+
+Thanks,
+Dario
+
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+----------------------------------------------------------------------
+Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
+
+http://blog.linux.it/raistlin / raistlin@ekiga.net /
+dario.faggioli@jabber.org
+
+--=-kCpOmpq8c7T/fH9D6pyu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkzbF0EACgkQk4XaBE3IOsQjnwCfVXH+FaG6+bH44iYJHOrqcrzk
+HssAoK5V1gegadqd92hjeJg+oBOu4Hts
+=n/6v
+-----END PGP SIGNATURE-----
+
+--=-kCpOmpq8c7T/fH9D6pyu--
 
