@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756078Ab0KJNog (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 08:44:36 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:45635 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755748Ab0KJNof (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 08:44:35 -0500
-Date: Wed, 10 Nov 2010 14:44:29 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andi Kleen <andi@halobates.de>, Andi Kleen <ak@linux.intel.com>,
-        Andi Kleen <andi@firstfloor.org>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: Public apology
-Message-ID: <20101110134429.GA7205@basil.fritz.box>
-References: <1289159606-17417-1-git-send-email-andi@firstfloor.org>
- <alpine.LFD.2.00.1011081824320.2900@localhost6.localdomain6>
- <4CD8664C.7090007@linux.intel.com>
- <alpine.LFD.2.00.1011082221160.2900@localhost6.localdomain6>
- <20101109151112.GC29433@basil.fritz.box>
- <alpine.LFD.2.00.1011091729220.2900@localhost6.localdomain6>
+	id S1756088Ab0KJNpE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 08:45:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18118 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755816Ab0KJNpC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 08:45:02 -0500
+Date: Wed, 10 Nov 2010 14:44:36 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: mingo@elte.hu, rostedt@goodmis.org, andi@firstfloor.org,
+        lwoodman@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] tracing,mm - add kernel pagefault tracepoint for x86
+ & x86_64
+Message-ID: <20101110134436.GD1949@jolsa.brq.redhat.com>
+References: <1289390172-9730-1-git-send-email-jolsa@redhat.com>
+ <1289390172-9730-2-git-send-email-jolsa@redhat.com>
+ <20101110132954.GA2101@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1011091729220.2900@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101110132954.GA2101@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Sorry for the late answer. Was out of the office]
-
-Hi Thomas,
-
-On Tue, Nov 09, 2010 at 09:54:57PM +0100, Thomas Gleixner wrote:
-> Andi,
+On Wed, Nov 10, 2010 at 08:29:54AM -0500, Christoph Hellwig wrote:
+> On Wed, Nov 10, 2010 at 12:56:11PM +0100, Jiri Olsa wrote:
+> > +	TP_printk("task=%lx, address=%lx, regs=%lx",
+> > +		(unsigned long)__entry->task, (unsigned long)__entry->address,
+> > +			__entry->regs)
 > 
-> On Tue, 9 Nov 2010, Andi Kleen wrote:
-> > Hi Thomas,
-> > 
-> > I just wanted to apologize for my earlier comments. As you pointed
-> > out I was wrong regarding the loss rate for 2010. And the comments
-> 
-> You certainly understand that I'm cautious and that I could read the
-> above as "... for 2010, but not for the time before."
+> How exactly do you use the information in this trace point?  Especially
+> the undecoded pt_regs doesn't seem very useful to me at all.
 
-I frankly don't know (clearly my recollection and accounting on this
-is untrustworthy). But I suspect you were right and I was wrong
-for before 2010 too.
+agreed, the registers pointer are not very useful in the trace file output,
+and could be taken away.. just wanted to be complete I guess
 
--Andi
+but I believe they are useful when you register the mm_kernel_pagefault
+tracepoint and process the information by yourself
+
+wbr,
+jirka
