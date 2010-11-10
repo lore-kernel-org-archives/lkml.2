@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755976Ab0KJSKp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 13:10:45 -0500
+	id S1756024Ab0KJSKr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 13:10:47 -0500
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:45389 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755726Ab0KJSKj (ORCPT
+	with ESMTP id S1755942Ab0KJSKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 13:10:39 -0500
+	Wed, 10 Nov 2010 13:10:43 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Fo6nBFiqaOy5Y8g6HWqC+2GMlKCV84v2FvQKWp4uRYnugmEkdv2Cb9b1FZe5lREsHv
-         9FWb12i2+XATmEhFNdbcDWuk+qlHRjqWKC4rsBHG1x3WitJwM+sSdFzdcjHcEZiJzSYK
-         c+EZOozBd8VqMUXN3ardJH/rKl0Gz3Ey5Kqu4=
+        b=XKTwjrDgTzIxMeQoQDFbZMe40iHyHm/ZIHsqxQl/xH9oHCSjyUbylbfP3AF7ZQierZ
+         s1GrdLnXnpT8XFSzS4YNxbcEeZ4B49HRBfCaDObOpLGImoHjKn7AaOfoQunQ97rh/q3Y
+         ugTBdzRv281QrlqPP3BFt3leqRPm28ws8mqAE=
 From: tzanussi@gmail.com
 To: linux-kernel@vger.kernel.org
 Cc: acme@ghostprotocols.net, mingo@elte.hu, fweisbec@gmail.com
-Subject: [PATCH 2/7] perf trace scripting: remove system-wide param from shell scripts
-Date: Wed, 10 Nov 2010 12:10:19 -0600
-Message-Id: <1289412624-4772-3-git-send-email-tzanussi@gmail.com>
+Subject: [PATCH 4/7] perf trace record: handle commands correctly
+Date: Wed, 10 Nov 2010 12:10:21 -0600
+Message-Id: <1289412624-4772-5-git-send-email-tzanussi@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1289412624-4772-1-git-send-email-tzanussi@gmail.com>
 References: <1289412624-4772-1-git-send-email-tzanussi@gmail.com>
@@ -28,139 +28,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tom Zanussi <tom.zanussi@linux.intel.com>
 
-Including -a unconditionally when recording doesn't allow for the
-option of running scripts without it.  Future patches will add add it
-back if needed at run-time.
+Because the perf-trace shell scripts hard-coded the use of the
+perf-record system-wide param, a perf trace record session was always
+system wide, even if it was given a command.
+
+If given a command, perf trace record now only records the events for
+the command, as users expect.
+
+If no command is given, or if the '-a' option is used, the recorded
+events are system-wide, as before.
+
+root@tropicana:~# perf trace record syscall-counts ls -al
+root@tropicana:~# perf trace
+              ls-23152 [000] 39984.890387: sys_enter: NR 12 (0, 0, 0, 0, 0, 0)
+              ls-23152 [000] 39984.890404: sys_enter: NR 9 (0, 0, 0, 0, 0, 0)
+
+root@tropicana:~# perf trace record syscall-counts -a ls -al
+root@tropicana:~# perf trace
+    npviewer.bin-22297 [000] 39831.102709: sys_enter: NR 168 (0, 0, 0, 0, 0, 0)
+              ls-23111 [000] 39831.107679: sys_enter: NR 59 (0, 0, 0, 0, 0, 0)
 
 Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
 Acked-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 ---
- tools/perf/scripts/perl/bin/failed-syscalls-record |    2 +-
- tools/perf/scripts/perl/bin/rw-by-file-record      |    2 +-
- tools/perf/scripts/perl/bin/rw-by-pid-record       |    2 +-
- tools/perf/scripts/perl/bin/rwtop-record           |    2 +-
- tools/perf/scripts/perl/bin/wakeup-latency-record  |    2 +-
- tools/perf/scripts/perl/bin/workqueue-stats-record |    2 +-
- .../python/bin/failed-syscalls-by-pid-record       |    2 +-
- .../scripts/python/bin/futex-contention-record     |    2 +-
- tools/perf/scripts/python/bin/netdev-times-record  |    2 +-
- .../perf/scripts/python/bin/sched-migration-record |    2 +-
- tools/perf/scripts/python/bin/sctop-record         |    2 +-
- .../python/bin/syscall-counts-by-pid-record        |    2 +-
- .../perf/scripts/python/bin/syscall-counts-record  |    2 +-
- 13 files changed, 13 insertions(+), 13 deletions(-)
+ tools/perf/builtin-trace.c |   32 ++++++++++++++++++++++++++++----
+ 1 files changed, 28 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/scripts/perl/bin/failed-syscalls-record b/tools/perf/scripts/perl/bin/failed-syscalls-record
-index eb5846b..8104895 100644
---- a/tools/perf/scripts/perl/bin/failed-syscalls-record
-+++ b/tools/perf/scripts/perl/bin/failed-syscalls-record
-@@ -1,2 +1,2 @@
- #!/bin/bash
--perf record -a -e raw_syscalls:sys_exit $@
-+perf record -e raw_syscalls:sys_exit $@
-diff --git a/tools/perf/scripts/perl/bin/rw-by-file-record b/tools/perf/scripts/perl/bin/rw-by-file-record
-index 5bfaae5..33efc86 100644
---- a/tools/perf/scripts/perl/bin/rw-by-file-record
-+++ b/tools/perf/scripts/perl/bin/rw-by-file-record
-@@ -1,3 +1,3 @@
- #!/bin/bash
--perf record -a -e syscalls:sys_enter_read -e syscalls:sys_enter_write $@
-+perf record -e syscalls:sys_enter_read -e syscalls:sys_enter_write $@
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 368e624..0de7fcb 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -10,6 +10,7 @@
+ #include "util/symbol.h"
+ #include "util/thread.h"
+ #include "util/trace-event.h"
++#include "util/parse-options.h"
+ #include "util/util.h"
  
-diff --git a/tools/perf/scripts/perl/bin/rw-by-pid-record b/tools/perf/scripts/perl/bin/rw-by-pid-record
-index 6e0b2f7..7cb9db2 100644
---- a/tools/perf/scripts/perl/bin/rw-by-pid-record
-+++ b/tools/perf/scripts/perl/bin/rw-by-pid-record
-@@ -1,2 +1,2 @@
- #!/bin/bash
--perf record -a -e syscalls:sys_enter_read -e syscalls:sys_exit_read -e syscalls:sys_enter_write -e syscalls:sys_exit_write $@
-+perf record -e syscalls:sys_enter_read -e syscalls:sys_exit_read -e syscalls:sys_enter_write -e syscalls:sys_exit_write $@
-diff --git a/tools/perf/scripts/perl/bin/rwtop-record b/tools/perf/scripts/perl/bin/rwtop-record
-index 6e0b2f7..7cb9db2 100644
---- a/tools/perf/scripts/perl/bin/rwtop-record
-+++ b/tools/perf/scripts/perl/bin/rwtop-record
-@@ -1,2 +1,2 @@
- #!/bin/bash
--perf record -a -e syscalls:sys_enter_read -e syscalls:sys_exit_read -e syscalls:sys_enter_write -e syscalls:sys_exit_write $@
-+perf record -e syscalls:sys_enter_read -e syscalls:sys_exit_read -e syscalls:sys_enter_write -e syscalls:sys_exit_write $@
-diff --git a/tools/perf/scripts/perl/bin/wakeup-latency-record b/tools/perf/scripts/perl/bin/wakeup-latency-record
-index 9f2acaa..464251a 100644
---- a/tools/perf/scripts/perl/bin/wakeup-latency-record
-+++ b/tools/perf/scripts/perl/bin/wakeup-latency-record
-@@ -1,5 +1,5 @@
- #!/bin/bash
--perf record -a -e sched:sched_switch -e sched:sched_wakeup $@
-+perf record -e sched:sched_switch -e sched:sched_wakeup $@
+ static char const		*script_name;
+@@ -17,6 +18,7 @@ static char const		*generate_script_lang;
+ static bool			debug_mode;
+ static u64			last_timestamp;
+ static u64			nr_unordered;
++extern const struct option	record_options[];
  
+ static int default_start_script(const char *script __unused,
+ 				int argc __unused,
+@@ -566,6 +568,20 @@ static const struct option options[] = {
+ 	OPT_END()
+ };
  
++static bool have_cmd(int argc, const char **argv)
++{
++	char **__argv = malloc(sizeof(const char *) * argc);
++
++	if (!__argv)
++		die("malloc");
++	memcpy(__argv, argv, sizeof(const char *) * argc);
++	argc = parse_options(argc, (const char **)__argv, record_options,
++			     NULL, PARSE_OPT_STOP_AT_NON_OPTION);
++	free(__argv);
++
++	return argc != 0;
++}
++
+ int cmd_trace(int argc, const char **argv, const char *prefix __used)
+ {
+ 	struct perf_session *session;
+@@ -663,21 +679,28 @@ int cmd_trace(int argc, const char **argv, const char *prefix __used)
+ 	}
  
-diff --git a/tools/perf/scripts/perl/bin/workqueue-stats-record b/tools/perf/scripts/perl/bin/workqueue-stats-record
-index 85301f2..8edda90 100644
---- a/tools/perf/scripts/perl/bin/workqueue-stats-record
-+++ b/tools/perf/scripts/perl/bin/workqueue-stats-record
-@@ -1,2 +1,2 @@
- #!/bin/bash
--perf record -a -e workqueue:workqueue_creation -e workqueue:workqueue_destruction -e workqueue:workqueue_execution -e workqueue:workqueue_insertion $@
-+perf record -e workqueue:workqueue_creation -e workqueue:workqueue_destruction -e workqueue:workqueue_execution -e workqueue:workqueue_insertion $@
-diff --git a/tools/perf/scripts/python/bin/failed-syscalls-by-pid-record b/tools/perf/scripts/python/bin/failed-syscalls-by-pid-record
-index eb5846b..8104895 100644
---- a/tools/perf/scripts/python/bin/failed-syscalls-by-pid-record
-+++ b/tools/perf/scripts/python/bin/failed-syscalls-by-pid-record
-@@ -1,2 +1,2 @@
- #!/bin/bash
--perf record -a -e raw_syscalls:sys_exit $@
-+perf record -e raw_syscalls:sys_exit $@
-diff --git a/tools/perf/scripts/python/bin/futex-contention-record b/tools/perf/scripts/python/bin/futex-contention-record
-index 5ecbb43..b1495c9 100644
---- a/tools/perf/scripts/python/bin/futex-contention-record
-+++ b/tools/perf/scripts/python/bin/futex-contention-record
-@@ -1,2 +1,2 @@
- #!/bin/bash
--perf record -a -e syscalls:sys_enter_futex -e syscalls:sys_exit_futex $@
-+perf record -e syscalls:sys_enter_futex -e syscalls:sys_exit_futex $@
-diff --git a/tools/perf/scripts/python/bin/netdev-times-record b/tools/perf/scripts/python/bin/netdev-times-record
-index d931a82..558754b 100644
---- a/tools/perf/scripts/python/bin/netdev-times-record
-+++ b/tools/perf/scripts/python/bin/netdev-times-record
-@@ -1,5 +1,5 @@
- #!/bin/bash
--perf record -a -e net:net_dev_xmit -e net:net_dev_queue		\
-+perf record -e net:net_dev_xmit -e net:net_dev_queue		\
- 		-e net:netif_receive_skb -e net:netif_rx		\
- 		-e skb:consume_skb -e skb:kfree_skb			\
- 		-e skb:skb_copy_datagram_iovec -e napi:napi_poll	\
-diff --git a/tools/perf/scripts/python/bin/sched-migration-record b/tools/perf/scripts/python/bin/sched-migration-record
-index 17a3e9b..7493fdd 100644
---- a/tools/perf/scripts/python/bin/sched-migration-record
-+++ b/tools/perf/scripts/python/bin/sched-migration-record
-@@ -1,2 +1,2 @@
- #!/bin/bash
--perf record -m 16384 -a -e sched:sched_wakeup -e sched:sched_wakeup_new -e sched:sched_switch -e sched:sched_migrate_task $@
-+perf record -m 16384 -e sched:sched_wakeup -e sched:sched_wakeup_new -e sched:sched_switch -e sched:sched_migrate_task $@
-diff --git a/tools/perf/scripts/python/bin/sctop-record b/tools/perf/scripts/python/bin/sctop-record
-index 1fc5998..4efbfaa 100644
---- a/tools/perf/scripts/python/bin/sctop-record
-+++ b/tools/perf/scripts/python/bin/sctop-record
-@@ -1,2 +1,2 @@
- #!/bin/bash
--perf record -a -e raw_syscalls:sys_enter $@
-+perf record -e raw_syscalls:sys_enter $@
-diff --git a/tools/perf/scripts/python/bin/syscall-counts-by-pid-record b/tools/perf/scripts/python/bin/syscall-counts-by-pid-record
-index 1fc5998..4efbfaa 100644
---- a/tools/perf/scripts/python/bin/syscall-counts-by-pid-record
-+++ b/tools/perf/scripts/python/bin/syscall-counts-by-pid-record
-@@ -1,2 +1,2 @@
- #!/bin/bash
--perf record -a -e raw_syscalls:sys_enter $@
-+perf record -e raw_syscalls:sys_enter $@
-diff --git a/tools/perf/scripts/python/bin/syscall-counts-record b/tools/perf/scripts/python/bin/syscall-counts-record
-index 1fc5998..4efbfaa 100644
---- a/tools/perf/scripts/python/bin/syscall-counts-record
-+++ b/tools/perf/scripts/python/bin/syscall-counts-record
-@@ -1,2 +1,2 @@
- #!/bin/bash
--perf record -a -e raw_syscalls:sys_enter $@
-+perf record -e raw_syscalls:sys_enter $@
+ 	if (suffix) {
++		bool system_wide = false;
++		int j = 0;
++
+ 		script_path = get_script_path(argv[2], suffix);
+ 		if (!script_path) {
+ 			fprintf(stderr, "script not found\n");
+ 			return -1;
+ 		}
+ 
++		if (!strcmp(suffix, RECORD_SUFFIX))
++			system_wide = !have_cmd(argc - 2, &argv[2]);
++
+ 		__argv = malloc((argc + 1) * sizeof(const char *));
+ 		if (!__argv)
+ 			die("malloc");
+-		__argv[0] = "/bin/sh";
+-		__argv[1] = script_path;
++		__argv[j++] = "/bin/sh";
++		__argv[j++] = script_path;
++		if (system_wide)
++			__argv[j++] = "-a";
+ 		for (i = 3; i < argc; i++)
+-			__argv[i - 1] = argv[i];
+-		__argv[argc - 1] = NULL;
++			__argv[j++] = argv[i];
++		__argv[j++] = NULL;
+ 
+ 		execvp("/bin/sh", (char **)__argv);
+ 		free(__argv);
 -- 
 Tom Zanussi, Intel Open Source Technology Center
 
