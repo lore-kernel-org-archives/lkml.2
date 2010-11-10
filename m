@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754751Ab0KJIPk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 03:15:40 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:41507 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752734Ab0KJIPh (ORCPT
+	id S1754888Ab0KJIYH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 03:24:07 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:24056 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753199Ab0KJIYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 03:15:37 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=IPIrSV//+h8LV/l6hPcP76QxZvmHzuDr0qa/s7tRnN1dw11GxaS7InxpyrgRFPH0A+
-         Goe1KpuZXqwPEE5H28bRvEfTIIMIItwyphcx+AjhFXhr5Wh2N14Lb3Y/4w48fAydrxz3
-         v2JVkleSEOkVp2GNZgqtc1nMmz+5n/j0WbdAE=
+	Wed, 10 Nov 2010 03:24:03 -0500
+Date: Wed, 10 Nov 2010 09:12:25 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Greg KH <greg@kroah.com>
+cc: linux-kernel@vger.kernel.org, Randy Dunlap <randy.dunlap@oracle.com>,
+        devel@driverdev.osuosl.org, Dan Carpenter <error27@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Stephen Hemminger <shemminger@vyatta.com>
+Subject: Re: [PATCH 10/17][trivial] staging, bcm: Remove unnecessary casts
+ of void ptr returning alloc function return values
+In-Reply-To: <20101110004543.GA28373@kroah.com>
+Message-ID: <alpine.LNX.2.00.1011100911430.28522@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1011082342560.23697@swampdragon.chaosbits.net> <20101110004543.GA28373@kroah.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTiky0LLnipJN3tCwcW6F2LEK-REEd=Ovo0ewMubR@mail.gmail.com>
-References: <4CD518C5.6000509@gmail.com>
-	<4CD7076D.80507@bluewatersys.com>
-	<AANLkTinJJG0K=BPS0CPzDWcgpRn_yPxZ819N408SwD6d@mail.gmail.com>
-	<4CD85489.8000503@bluewatersys.com>
-	<AANLkTim8rAQnVYpZdykd2VuL1N9CvkGj88Kf5qpSuJsC@mail.gmail.com>
-	<4CD9B09F.5090707@bluewatersys.com>
-	<AANLkTiky0LLnipJN3tCwcW6F2LEK-REEd=Ovo0ewMubR@mail.gmail.com>
-Date: Wed, 10 Nov 2010 09:15:36 +0100
-Message-ID: <AANLkTik+Vx8W1qXEZ=AqedRSj_D4-k70Xa4h-bnW2MRH@mail.gmail.com>
-Subject: Re: [PATCH 08/16 v2] pramfs: headers
-From: Marco Stornelli <marco.stornelli@gmail.com>
-To: Ryan Mallon <ryan@bluewatersys.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Embedded <linux-embedded@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Tim Bird <tim.bird@am.sony.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/11/9 Geert Uytterhoeven <geert@linux-m68k.org>:
-> On Tue, Nov 9, 2010 at 21:35, Ryan Mallon <ryan@bluewatersys.com> wrote:
->> You can still do all of those things without having a fixed endianess.
->> You just have to have one extra step of telling the external tools what
->> the endianess is. IMHO, it is better to have the overhead of the endian
->> conversion in the tools since it is less costly there than an the
->> embedded system.
->>
->> I'm just trying to understand why the fixed endianess rule cannot be
->> bent for such a specialised filesystem.
->
-> When it was decided that filesystems should be fixed-endian and support for
-> big-endian ext2 was dropped, the overhead of doing the fixed conversions was
-> deetermined negligible due to compiler optimization.
-> That was ages ago, and current embedded systems run circles around the
-> machines of those days.
->
-> Note that this is about metadata only. Actual file contents are always just
-> byte streams.
->
+On Tue, 9 Nov 2010, Greg KH wrote:
 
-I can add that the penalties in this case are  negligible due to the
-compensation of the very fast access of the media. In addition, from
-performance point of view I'm pretty happy (you can see the some
-benchmark on the project web site).
+> On Tue, Nov 09, 2010 at 12:09:51AM +0100, Jesper Juhl wrote:
+> > Hi,
+> > 
+> > The [vk][cmz]alloc(_node) family of functions return void pointers which
+> > it's completely unnecessary/pointless to cast to other pointer types since
+> > that happens implicitly.
+> > 
+> > This patch removes such casts from drivers/staging/bcm/
+> > 
+> > 
+> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > ---
+> >  CmHost.c       |    2 +-
+> >  InterfaceDld.c |   27 +++++++++++++--------------
+> >  Misc.c         |   12 +++++-------
+> >  3 files changed, 19 insertions(+), 22 deletions(-)
+> > 
+> > diff --git a/drivers/staging/bcm/CmHost.c b/drivers/staging/bcm/CmHost.c
+> 
+> This driver just got a major overhaul, and this patch doesn't apply
+> anymore.
+> 
+> Care to redo it against the next linux-next tree?
+> 
 
-Marco
+Sure thing. I'll see if I can find the time to do that tonight when I get 
+home from work.
+
+-- 
+Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
+Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
