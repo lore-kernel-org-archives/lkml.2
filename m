@@ -1,60 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756439Ab0KJOzs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 09:55:48 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:32804 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756190Ab0KJOzr (ORCPT
+	id S1756455Ab0KJO4n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 09:56:43 -0500
+Received: from astoria.ccjclearline.com ([64.235.106.9]:33149 "EHLO
+	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756201Ab0KJO4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 09:55:47 -0500
-Date: Wed, 10 Nov 2010 09:55:11 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Pavel Machek <pavel@ucw.cz>, Dave Chinner <david@fromorbit.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, dave b <db.pub.mail@gmail.com>,
-        Sanjoy Mahajan <sanjoy@olin.edu>, Jesper Juhl <jj@chaosbits.net>,
-        Chris Mason <chris.mason@oracle.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Nick Piggin <npiggin@suse.de>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "Ted Ts'o" <tytso@mit.edu>,
-        Corrado Zoccolo <czoccolo@gmail.com>,
-        Shaohua Li <shaohua.li@intel.com>, Steven Barrett <damentz@gmail.com>
-Subject: Re: 2.6.36 io bring the system to its knees
-Message-ID: <20101110145511.GA22073@infradead.org>
-References: <20101105014334.GF13830@dastard>
- <E1PELiI-0001Pj-8g@approx.mit.edu>
- <AANLkTimON_GL6vRF9=_U6oRFQ30EYssx3wv5xdNsU9JM@mail.gmail.com>
- <4CD696B4.6070002@kernel.dk>
- <AANLkTikNPEcwWjEQuC-_=9yH5DCCiwUAY265ggeygcSQ@mail.gmail.com>
- <20101110013255.GR2715@dastard>
- <20101110142037.GA1447@ucw.cz>
- <20101110142721.GA14496@elte.hu>
+	Wed, 10 Nov 2010 09:56:42 -0500
+Date: Wed, 10 Nov 2010 09:56:14 -0500 (EST)
+From: "Robert P. J. Day" <rpjday@crashcourse.ca>
+X-X-Sender: rpjday@localhost6.localdomain6
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: more possible aesthetic cleanup -- *lots* of power of 2 stuff
+Message-ID: <alpine.DEB.2.00.1011100956060.5730@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101110142721.GA14496@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - crashcourse.ca
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 03:27:21PM +0100, Ingo Molnar wrote:
-> That is data that was freshly touched around the time the system went down, right?
-> 
-> I.e. data that was probably half-modified by user-space to begin with.
 
-It's data that wasn't synced out yet, yes.  Which isn't the problem per
-se.  With ext3/4 in ordered mode, or xfs, or btrfs the file size won't
-be incremented until the data is written.  in ext3/4 in writeback mode
-(or various non-journaling filesystems) however the inode size is
-updated, and metadagta changes are logged.  Besides exposing stale
-data which is a security risk in multi-user systems it also means the
-inode looks modified (by size and timestamps), but contains other data
-than actually written.
+  following up on jesper's yeoman efforts to tidy up a lot of the
+*malloc calls, once upon a time, i whined enough to get the
+<linux/log2.h> header file added so that a lot of painful bit tests
+for power of 2 could be abbreviated.
 
+  the most useful test seems to have been:
+
+static inline __attribute__((const))
+bool is_power_of_2(unsigned long n)
+{
+        return (n != 0 && ((n & (n - 1)) == 0));
+}
+
+i wrote a short script that looks for various forms of the old power
+of 2 tests:
+
+===== start =====
+#!/bin/sh
+
+DIR=${1-*}
+
+echo -e "     x & (x - 1):\n"
+grep -Ern "([^\(\)]+) ?\& ?\(\1 ?- ?1\)" ${DIR}
+echo -e "     x & ((x) - 1):\n"
+grep -Ern "([^\(\)]+) ?\& ?\(\(\1\) ?- ?1\)" ${DIR}
+echo -e "     (x) & (x - 1):\n"
+grep -Ern "\(([^\(\)]+)\) ?\& ?\(\1 ?- ?1\)" ${DIR}
+echo -e "     (x) & ((x) - 1):\n"
+grep -Ern "\(([^\(\)]+)\) ?\& ?\(\(\1\) ?- ?1\)" ${DIR}
+===== end =====
+
+and, unsurprisingly, while i once submitted a fair bit of that
+cleanup, there's lots left -- just run the script at the top of the
+source tree (give an optional subdir to restrict the search).  there
+are even a few places where code is still defining that test for
+itself:
+
+drivers/net/bna/bna.h:50:#define BNA_POWER_OF_2(x) (((x) & ((x) - 1)) == 0)
+drivers/net/wireless/rt2x00/rt2x00reg.h:187:#define is_power_of_two(x)	( !((x) & ((x)-1)) )
+
+  if anyone wants to run the script on their favourite bit of the
+tree, have at it.
+
+rday
+
+p.s.  perhaps tests like this could be added to the checkpatch.pl
+script.  just a thought.
+
+-- 
+
+========================================================================
+Robert P. J. Day                               Waterloo, Ontario, CANADA
+                        http://crashcourse.ca
+
+Twitter:                                       http://twitter.com/rpjday
+LinkedIn:                               http://ca.linkedin.com/in/rpjday
+========================================================================
