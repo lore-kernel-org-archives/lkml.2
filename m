@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474Ab0KJS32 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 13:29:28 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:41399 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754148Ab0KJS31 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 13:29:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=tq/ib5g152i4fYelzMQYIvMn6wzGPYLaIzVOP9rlk4s8ieQrdYS39+fEge9xetAPFZ
-         CXTM72fpAx7l5vOxXIVW6aryBzFGjxddl+6WPM1Oqw8PXH3OFsVnB0NPlWfatdTCHVpI
-         J4+gQ8PsOIMFhdDQrBG5F0mEEKoSukUQuYjMs=
-From: Vasiliy Kulikov <segooon@gmail.com>
-To: kernel-janitors@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>, Jiri Pirko <jpirko@redhat.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3 RESEND] net: packet: fix information leak to userland
-Date: Wed, 10 Nov 2010 21:29:18 +0300
-Message-Id: <1289413760-12510-1-git-send-email-segooon@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1755524Ab0KJSap (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 13:30:45 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:45256 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754422Ab0KJSao (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 13:30:44 -0500
+X-IronPort-AV: E=Sophos;i="4.59,179,1288584000"; 
+   d="scan'208";a="11054584"
+Subject: Re: [PATCH V2] MAINTAINERS: Mark XEN lists as moderated
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Joe Perches <joe@perches.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+In-Reply-To: <1289411271.15905.78.camel@Joe-Laptop>
+References: <1289380840.28590.132.camel@Joe-Laptop>
+	 <1289399240.724.48.camel@zakaz.uk.xensource.com>
+	 <1289399731.28590.136.camel@Joe-Laptop>
+	 <1289401042.724.54.camel@zakaz.uk.xensource.com>
+	 <1289401337.15905.1.camel@Joe-Laptop>
+	 <1289410745.724.56.camel@zakaz.uk.xensource.com>
+	 <1289411271.15905.78.camel@Joe-Laptop>
+Content-Type: text/plain; charset="ISO-8859-1"
+Organization: Citrix Systems, Inc.
+Date: Wed, 10 Nov 2010 18:30:38 +0000
+Message-ID: <1289413838.14738.6.camel@localhost.localdomain>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-packet_getname_spkt() doesn't initialize all members of sa_data field of
-sockaddr struct if strlen(dev->name) < 13.  This structure is then copied
-to userland.  It leads to leaking of contents of kernel stack memory.
-We have to fully fill sa_data with strncpy() instead of strlcpy().
+On Wed, 2010-11-10 at 09:47 -0800, Joe Perches wrote:
+> Standardize list email address at the same time.
+>  
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-The same with packet_getname(): it doesn't initialize sll_pkttype field of
-sockaddr_ll.  Set it to zero.
+Acked-by: Ian Campbell <Ian.Campbell@citrix.com>
 
-Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
----
- Compile tested.
+> ---
+> On Wed, 2010-11-10 at 17:39 +0000, Ian Campbell wrote:
+> > It's been confirmed, non-subscribers are moderated for xen-devel.
+> 
+> changes from v1: Mark as moderated instead of subscribers-only
+> 
+>  MAINTAINERS |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 0094224..70604d5 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -6598,14 +6598,14 @@ F:	drivers/platform/x86
+>  
+>  XEN PCI SUBSYSTEM
+>  M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> -L:	xen-devel@lists.xensource.com
+> +L:	xen-devel@lists.xensource.com (moderated for non-subscribers)
+>  S:	Supported
+>  F:	arch/x86/pci/*xen*
+>  F:	drivers/pci/*xen*
+>  
+>  XEN SWIOTLB SUBSYSTEM
+>  M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> -L:	xen-devel@lists.xensource.com
+> +L:	xen-devel@lists.xensource.com (moderated for non-subscribers)
+>  S:	Supported
+>  F:	arch/x86/xen/*swiotlb*
+>  F:	drivers/xen/*swiotlb*
+> @@ -6613,7 +6613,7 @@ F:	drivers/xen/*swiotlb*
+>  XEN HYPERVISOR INTERFACE
+>  M:	Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+>  M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> -L:	xen-devel@lists.xen.org
+> +L:	xen-devel@lists.xensource.com (moderated for non-subscribers)
+>  L:	virtualization@lists.osdl.org
+>  S:	Supported
+>  F:	arch/x86/xen/
+> 
+> 
+> 
 
- net/packet/af_packet.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index 3616f27..0856a13 100644
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -1719,7 +1719,7 @@ static int packet_getname_spkt(struct socket *sock, struct sockaddr *uaddr,
- 	rcu_read_lock();
- 	dev = dev_get_by_index_rcu(sock_net(sk), pkt_sk(sk)->ifindex);
- 	if (dev)
--		strlcpy(uaddr->sa_data, dev->name, 15);
-+		strncpy(uaddr->sa_data, dev->name, 14);
- 	else
- 		memset(uaddr->sa_data, 0, 14);
- 	rcu_read_unlock();
-@@ -1742,6 +1742,7 @@ static int packet_getname(struct socket *sock, struct sockaddr *uaddr,
- 	sll->sll_family = AF_PACKET;
- 	sll->sll_ifindex = po->ifindex;
- 	sll->sll_protocol = po->num;
-+	sll->sll_pkttype = 0;
- 	rcu_read_lock();
- 	dev = dev_get_by_index_rcu(sock_net(sk), po->ifindex);
- 	if (dev) {
--- 
-1.7.0.4
 
