@@ -1,139 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538Ab0KJUU0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 15:20:26 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:57125 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755762Ab0KJUUZ (ORCPT
+	id S1756560Ab0KJUV0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 15:21:26 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:45196 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756254Ab0KJUVY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 15:20:25 -0500
-Message-ID: <4CDAFE6E.7050200@vlnb.net>
-Date: Wed, 10 Nov 2010 23:19:58 +0300
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+	Wed, 10 Nov 2010 15:21:24 -0500
 MIME-Version: 1.0
-To: Boaz Harrosh <bharrosh@panasas.com>
-CC: Greg KH <greg@kroah.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
-        Bart Van Assche <bart.vanassche@gmail.com>,
-        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
-        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Hannes Reinecke <hare@suse.de>,
-        Richard Sharpe <realrichardsharpe@gmail.com>,
-        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
-Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
-References: <20101011213235.GA11489@kroah.com> <4CB4AEB9.30501@vlnb.net> <20101012190345.GA25737@kroah.com> <4CB75E81.7000208@vlnb.net> <20101014200413.GA30831@kroah.com> <4CC1CA4D.1090609@vlnb.net> <20101022175624.GA13640@kroah.com> <4CC1DAA2.7030602@vlnb.net> <20101022185437.GA9103@kroah.com> <4CD8566D.1020202@vlnb.net> <20101109002829.GA22633@kroah.com> <4CD9A9B8.70708@vlnb.net> <4CDA6CD4.3010308@panasas.com>
-In-Reply-To: <4CDA6CD4.3010308@panasas.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:u0/88inD+RAUTfCttE3RQwe/lzBI0rNUnef6lJ9CvsP
- ddr4KhIWqMjr2ucNx/4l7djBELncmXNevkRD+Kam073jP0Mkmz
- OFgpEEVJcg60GYgtXHAEsSsF6EAHnJX9Ei3AhieGvBEzfVzB3U
- 7MBMDLKD9zApC3wc5yjCWxzaFS4f+9MmtXIEKKAJYRh2jpAGI2
- UBucbW1OcddUyiUcxeHFg==
+In-Reply-To: <20101110201600.GA14145@pengutronix.de>
+References: <1288897200-13008-1-git-send-email-dvhart@linux.intel.com>
+	<tip-4c115e951d80aff126468adaec7a6c7854f61ab8@git.kernel.org>
+	<20101110201600.GA14145@pengutronix.de>
+Date: Wed, 10 Nov 2010 12:21:21 -0800
+X-Google-Sender-Auth: 3Xoz9GjcD6n-akSEAHAKwXi8LGQ
+Message-ID: <AANLkTimH3faSEH_7Lea_M8OoO_dD5MaqjJ9ax_gTZ2C1@mail.gmail.com>
+Subject: Re: [tip:core/urgent] futex: Address compiler warnings in exit_robust_list
+From: Darren Hart <darren@dvhart.com>
+To: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        eric.dumazet@gmail.com, jkacur@redhat.com, dvhart@linux.intel.com,
+        peterz@infradead.org, matt@console-pimps.org, tglx@linutronix.de,
+        mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Boaz Harrosh, on 11/10/2010 12:58 PM wrote:
-> On 11/09/2010 10:06 PM, Vladislav Bolkhovitin wrote:
+2010/11/10 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
+> Hallo Thomas,
+>
+> On Wed, Nov 10, 2010 at 12:30:44PM +0000, tip-bot for Darren Hart wrote:
+>> Commit-ID:  4c115e951d80aff126468adaec7a6c7854f61ab8
+>> Gitweb:     http://git.kernel.org/tip/4c115e951d80aff126468adaec7a6c7854f61ab8
+>> Author:     Darren Hart <dvhart@linux.intel.com>
+>> AuthorDate: Thu, 4 Nov 2010 15:00:00 -0400
+>> Committer:  Thomas Gleixner <tglx@linutronix.de>
+>> CommitDate: Wed, 10 Nov 2010 13:27:50 +0100
 >>
->> Sorry, but what is incorrect in the working implementation without any
->> bugs doing its job in the simplest, smallest and clearest way?
+>> futex: Address compiler warnings in exit_robust_list
 >>
->> If those objects remade to free themselves in the kobjects release(),
->> what value would it add to them? Would the implementation be simpler,
->> smaller or clearer? Not, I believe, new implementation would be only
->> bigger and less clear. So, what's the point to do it to make the code worse?
+>> Since commit 1dcc41bb (futex: Change 3rd arg of fetch_robust_entry()
+>> to unsigned int*) some gcc versions decided to emit the following
+>> warning:
 >>
-> 
-> Totally theoretically speaking, since I have not inspected the code.
-> 
-> If today you wait for the count to reach zero, then unregister
-> and send an event to some other subsystem to free the object.
-> 
-> Is it not the same as if you take an extra refcount, unregister and
-> send the event at count=1. Then at that other place decrement the last
-> count to cause the object to be freed.
-> 
-> I agree that it is hard to do lockless. what some places do is have
-> an extra kref. The kobj has a single ref on it. everything takes the
-> other kref. when that reaches zero the unregister and event fires
-> and at free you decrement the only kobj ref to deallocate. This is one
-> way. In some situations you can manage with a single counter it all
-> depends.
+>> kernel/futex.c: In function ‘exit_robust_list’:
+>> kernel/futex.c:2492: warning: ‘next_pi’ may be used uninitialized in this function
+>>
+>> The commit did not introduce the warning as gcc should have warned
+>> before that commit as well. It's just gcc being silly.
+>>
+>> The code path really can't result in next_pi being unitialized (or
+>> should not), but let's keep the build clean. Annotate next_pi as an
+>> uninitialized_var.
+>>
+>> [ tglx: Addressed the same issue in futex_compat.c and massaged the
+>>       changelog ]
+>>
+>> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+>> Tested-by: Matt Fleming <matt@console-pimps.org>
+>> Tested-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> I don't care much (at least until someone claims this change to
+> introduce a regression), but I didn't test it.  I only suggested to use
+> uninitialized_var instead of = 0.
+>
 
-Thanks for sharing your thoughts with us. But the question isn't about
-if it's possible to implement what we need locklessly. The question is
-in two approaches how to synchronously delete objects with entries on SYSFS:
+Uwe, I added you after you said I could add the ARM platform and
+compiler to the list. I took that to mean you had confirmed that the
+patch fixed the warning on that platform. I apologize as this is
+apparently not the case.
 
-1. struct object_x {
-	...
-	struct kobject kobj;
-	struct completion *release_completion;
-};
-
-static void x_release(struct kobject *kobj)
-{
-	struct object_x *x;
-	struct completion *c;
-
-	x = container_of(kobj, struct object_x, kobj);
-	c = x->release_completion;
-	kfree(x);
-	complete_all(c);
-}
-
-void del_object(struct object_x *x)
-{
-	DECLARE_COMPLETION_ONSTACK(completion);
-
-	...
-	x->release_completion = &completion;
-	kobject_put(&x->kobj);
-	wait_for_completion(&completion);
-}
-
-and
-
-2. struct object_x {
-	...
-	struct kobject kobj;
-	struct completion release_completion;
-};
-
-static void x_release(struct kobject *kobj)
-{
-	struct object_x *x;
-
-	x = container_of(kobj, struct object_x, kobj);
-	complete_all(&x->release_completion);
-}
-
-void del_object(struct object_x *x)
-{
-	...
-	kobject_put(&x->kobj);
-	wait_for_completion(&completion);
-	...
-	kfree(x);
-}
-
-Greg asserts that (1) is the only correct approach while (2) is
-incorrect, and I'm trying to justify that (2) is correct too and
-sometimes could be better, i.e. simpler and clearer, because it
-decouples object_x from SYSFS and its kobj. Then kobj becomes an
-ordinary member of struct object_x without any special treatment and
-with the same lifetime rules as other members of struct object_x. While
-in (1) all lifetime of struct object_x is strictly attached to kobj, so
-it needs be specially handled with additional code for that if struct
-object_x has many other members which needed to be initialized/deleted
-_before and after_ kobj as we have in SCST.
-
-Vlad
+--
+Darren
