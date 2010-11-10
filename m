@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757022Ab0KJVc0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 16:32:26 -0500
-Received: from DMZ-MAILSEC-SCANNER-6.MIT.EDU ([18.7.68.35]:62276 "EHLO
-	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756993Ab0KJVcZ (ORCPT
+	id S1756933Ab0KJVeh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 16:34:37 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:50283 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756142Ab0KJVeg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 16:32:25 -0500
-X-AuditID: 12074423-b7bd0ae000000a00-be-4cdb0f683e2a
-From: Andy Lutomirski <luto@MIT.EDU>
-To: Ben Skeggs <bskeggs@redhat.com>, dri-devel@lists.freedesktop.org
-Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@MIT.EDU>
-Subject: [PATCH 1/2] Use existing defines for NV50 hotplug registers
-Date: Wed, 10 Nov 2010 16:32:04 -0500
-Message-Id: <8055e8485f28491fe6219c512e379b4b89bcd465.1289423199.git.luto@mit.edu>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <cover.1289423299.git.luto@mit.edu>
-References: <cover.1289423299.git.luto@mit.edu>
-In-Reply-To: <cover.1289423299.git.luto@mit.edu>
-References: <AANLkTimcEiBJtWx2tA=dqm6881g0B7NomXFsZauzfgy8@mail.gmail.com> <cover.1289423299.git.luto@mit.edu>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 10 Nov 2010 16:34:36 -0500
+X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=0Gcdu3wDtgIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=G1koFLn1gv4A7iRKHjMA:9 a=e_l8eaHGDtHmwEckP8QPlvm7O2UA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: RE: Tracing Requirements (was: [RFC/Requirements/Design] h/w error
+ reporting)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, "bp@alien8.de" <bp@alien8.de>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mchehab@redhat.com" <mchehab@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Arjan van de Ven <arjan@infradead.org>
+In-Reply-To: <1289423194.12418.195.camel@gandalf.stny.rr.com>
+References: <1289400056.12418.139.camel@gandalf.stny.rr.com>
+	 <1289400234.2191.129.camel@laptop>
+	 <1289401781.12418.145.camel@gandalf.stny.rr.com>
+	 <1289403019.2084.17.camel@laptop> <20101110174852.GB4001@elte.hu>
+	 <1289412329.12418.177.camel@gandalf.stny.rr.com>
+	 <1289413460.2084.27.camel@laptop> <20101110184105.GH22410@elte.hu>
+	 <1289415645.12418.180.camel@gandalf.stny.rr.com>
+	 <20101110191127.GA6190@nowhere> <20101110202316.GA32396@Krystal>
+	 <987664A83D2D224EAE907B061CE93D5301649A71DC@orsmsx505.amr.corp.intel.com>
+	 <1289423194.12418.195.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 10 Nov 2010 16:34:34 -0500
+Message-ID: <1289424874.12418.199.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This doesn't change code at all, but it makes it a lot easier
-to understand.
+On Wed, 2010-11-10 at 16:06 -0500, Steven Rostedt wrote:
 
-Signed-off-by: Andy Lutomirski <luto@mit.edu>
-Cc: <stable@kernel.org>
----
- drivers/gpu/drm/nouveau/nv50_display.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+> > Perhaps you could explain the use cases of your "flight recorder",
+> > because it seems that the name doesn't fit exactly, and this is
+> > causing me (and maybe others) some confusion.
 
-diff --git a/drivers/gpu/drm/nouveau/nv50_display.c b/drivers/gpu/drm/nouveau/nv50_display.c
-index 612fa6d..83a7d27 100644
---- a/drivers/gpu/drm/nouveau/nv50_display.c
-+++ b/drivers/gpu/drm/nouveau/nv50_display.c
-@@ -453,8 +453,8 @@ static int nv50_display_disable(struct drm_device *dev)
- 	nv_wr32(dev, NV50_PDISPLAY_INTR_EN, 0x00000000);
- 
- 	/* disable hotplug interrupts */
--	nv_wr32(dev, 0xe054, 0xffffffff);
--	nv_wr32(dev, 0xe050, 0x00000000);
-+	nv_wr32(dev, NV50_PCONNECTOR_HOTPLUG_CTRL, 0xffffffff);
-+	nv_wr32(dev, NV50_PCONNECTOR_HOTPLUG_INTR, 0x00000000);
- 	if (dev_priv->chipset >= 0x90) {
- 		nv_wr32(dev, 0xe074, 0xffffffff);
- 		nv_wr32(dev, 0xe070, 0x00000000);
-@@ -1014,7 +1014,7 @@ nv50_display_irq_hotplug_bh(struct work_struct *work)
- 	uint32_t unplug_mask, plug_mask, change_mask;
- 	uint32_t hpd0, hpd1 = 0;
- 
--	hpd0 = nv_rd32(dev, 0xe054) & nv_rd32(dev, 0xe050);
-+	hpd0 = nv_rd32(dev, NV50_PCONNECTOR_HOTPLUG_CTRL) & nv_rd32(dev, NV50_PCONNECTOR_HOTPLUG_INTR);
- 	if (dev_priv->chipset >= 0x90)
- 		hpd1 = nv_rd32(dev, 0xe074) & nv_rd32(dev, 0xe070);
- 
-@@ -1058,7 +1058,7 @@ nv50_display_irq_hotplug_bh(struct work_struct *work)
- 			helper->dpms(connector->encoder, DRM_MODE_DPMS_OFF);
- 	}
- 
--	nv_wr32(dev, 0xe054, nv_rd32(dev, 0xe054));
-+	nv_wr32(dev, NV50_PCONNECTOR_HOTPLUG_CTRL, nv_rd32(dev, NV50_PCONNECTOR_HOTPLUG_CTRL));
- 	if (dev_priv->chipset >= 0x90)
- 		nv_wr32(dev, 0xe074, nv_rd32(dev, 0xe074));
- 
--- 
-1.7.3.2
+> 2) overwrite mode (flight recorder) - when the writer reaches the
+> reader, it pushes the reader forward, and writes the new events over the
+> old ones. This way, new events are always existent, where as old events
+> are lost.
+
+Ah, I forgot to mention use cases.
+
+Even when recording a trace (lots of data, so it is saved to disk and
+not all in kernel memory) I like to know that if something happens and
+disables the trace, I have all the trace information up to the point of
+failure.
+
+With producer/consumer mode, you risk the reader being late and the
+events in the trace that led up to failure (or any other anomaly) were
+dropped.
+
+-- Steve
+
 
