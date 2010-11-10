@@ -1,84 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756630Ab0KJU4d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 15:56:33 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:62015 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753663Ab0KJU4c convert rfc822-to-8bit (ORCPT
+	id S1756827Ab0KJU4u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 15:56:50 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35309 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756651Ab0KJU4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 15:56:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=VXmvz2rTrtHNaNR2lOuQotP0gNzRpIFuXAl55eXKNf9GCTSHxwfaws9tqUUhSCXrEm
-         4/Pc69RzUp/R3Kl+u6ZGvnGoFii32WWvjnU+RoJGaOuw26naLzdRyidO2Elk898dKqAg
-         urRckKmdEvTORrnm1iOWX9fa0R2n0SoVJySKk=
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1011102147580.2900@localhost6.localdomain6>
-References: <AANLkTikA6hZDV0A30fku7VT7Z1P8OqxcsF-EK95pBdD=@mail.gmail.com>
- <4CD966D8.4000602@ladisch.de> <20101109153805.GB3146@kryptos.osrc.amd.com>
- <AANLkTi=cUGGpkgWcbX=KMxzu+E=Toy_O+LeLoAFFUAsh@mail.gmail.com>
- <20101109180123.GB31121@aftab> <AANLkTik107mFOqvxsBtBrc14RHwhkkZTOGgctxKPPNfW@mail.gmail.com>
- <AANLkTik1JdQRh_Gkz_240csVGp4sS0W8nzR5d9Pv1G-X@mail.gmail.com>
- <20101110185031.GB13539@aftab> <AANLkTimNuSJz0nXZCR2zu963VQ_Y9R8ix73+QbbUy7nt@mail.gmail.com>
- <alpine.LFD.2.00.1011102147580.2900@localhost6.localdomain6>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Wed, 10 Nov 2010 15:56:10 -0500
-X-Google-Sender-Auth: egcH1VUlIUN5d3Ty1_sRPGmF_SI
-Message-ID: <AANLkTimP1F=GsnEqp-koTdy4jfaxzKpetC3Suo1Yidcm@mail.gmail.com>
-Subject: Re: [FALSE ALARM] Re: HPET (?) related hangs and breakage in 2.6.35,36
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Borislav Petkov <bp@amd64.org>, Clemens Ladisch <clemens@ladisch.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86 <x86@kernel.org>,
-        =?ISO-8859-1?Q?J=F6rg_R=F6del?= <joerg.roedel@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 10 Nov 2010 15:56:48 -0500
+Date: Wed, 10 Nov 2010 20:55:32 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: Elvis Dowson <elvis.dowson@mac.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Forked android kernel development from linux kernel mainline
+Message-ID: <20101110205532.03060e6e@lxorguk.ukuu.org.uk>
+In-Reply-To: <20101110003524.GL3099@thunk.org>
+References: <20101109223225.5e261346@lxorguk.ukuu.org.uk>
+	<20101110003524.GL3099@thunk.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 3:52 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Wed, 10 Nov 2010, Andrew Lutomirski wrote:
->
->> On Wed, Nov 10, 2010 at 1:50 PM, Borislav Petkov <bp@amd64.org> wrote:
->> > On Wed, Nov 10, 2010 at 01:48:00PM -0500, Andrew Lutomirski wrote:
->> >> > Clocksource: tsc unstable (delta = -34355296774 ns)
->> >> > Switching: to clocksource hpet
->> >>
->> >> Please disregard -- this is a bug in nouveau (or drm) not hpet.  I'll
->> >> send a bug report to the maintainers.
->> >
->> > Interesting! Joerg was complaining about similar symptoms with .36 today
->> > too.
->>
->> Well, there is a clocksource sort-of-bug that could cause confusion:
->> when something totally unrelated to clocksources goes out to lunch,
->> the clocksource watchdog decides that the clocksource is unstable and
->> complains, steering everyone toward filing the wrong bug.
->
-> How should the clocksource watchdog code know that something went to
-> lunch? The fact that we need to monitor TSC at all is horrible enough,
-> adding further heuristics to detect extended lunch breaks would be
-> just a PITA.
+> alternative, and is higher priority than any other consideration.  If
+> a product had 33% less battery lifetime, but was developed in
+> mainline, would you buy that over a standard product?  OK, maybe a
 
-Could the clocksource watchdog detect when it gets woken up (i.e. when
-the hardware timer fires) instead of when it gets scheduled?  It is
-internal to the timing code, after all...
+That's if you believe the Google thing that it can't be done any other
+way. Which other vendors don't seem to be agree with.
 
-Alternatively, maybe the watchdog could just compare the TSC timestamp
-to the current value according to some other clock (PIT?  whatever
-clockevent is in use?) instead of just using the time passed into the
-delayed work in the first place.
+> OTOH, if the original poster thinks that he can develop changes to the
+> Android userspace that allow the use of an upstream kernel, and has
+> just as good battery lifetime, and with a system which is just as
+> debuggable and easy to maintain as the current android userspace, then
+> by all means, I would love for him to try to prove that he can.  And I
+> will certainly be happy to introduce him to the Android developers who
+> measure power usage in mobile devices using microwatt meters to see if
+> he really can do as good of a job using a stock kernel.
 
->
-> Maybe we could print a different warning when we see large negative
-> deltas, which is the main indicator for the system being stuck for
-> quite a time while TSC advances happily.
+Well actually there is a much better simple reason. One of the things you
+get by using a standard kernel is the ability to dump a true Android
+environment onto another device that's running something else as well.
 
-That would be an easy fix.
+I don't quite understand why people play some of the strange games they
+do but being able to dump them on arbitary Linux platforms is no doubt
+useful.
 
---Andy
+Alan
