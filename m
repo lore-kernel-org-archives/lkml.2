@@ -1,110 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753179Ab0KJAzj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 19:55:39 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:61416 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751379Ab0KJAzi convert rfc822-to-8bit (ORCPT
+	id S1753733Ab0KJAzo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 19:55:44 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49696 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753121Ab0KJAzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 19:55:38 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=eTw7UAb6pO2dpSFlbsWiDvrGiuQ/PhVO6MtvvJbxWac6rs6dtRBAxF0Meg5huKXpD2
-         NaNT7C49OIUtGg8zRrn9EaPR09zZNb3PG8/Crb0y32Gi5gf1a2HrqqMzEzmdpWcafSm6
-         vzqANeTl+lblnyUpBcCuKvYmLS/99f8tzn8p8=
+	Tue, 9 Nov 2010 19:55:39 -0500
 MIME-Version: 1.0
-In-Reply-To: <20101011173649.GC7116@kroah.com>
-References: <4C7CD95A.5040309@samsung.com>
-	<20100917150731.f1f44f3c.akpm@linux-foundation.org>
-	<AANLkTim2UhJAhOw1qHvZ9bbctR0tNSMvE61T=sxffHxO@mail.gmail.com>
-	<4CB26931.5040105@samsung.com>
-	<20101011173649.GC7116@kroah.com>
-Date: Wed, 10 Nov 2010 09:55:34 +0900
-Message-ID: <AANLkTi=vTkHJJ2dq5RZHHCwWYEBtY=Y7dPPh=Wzzx95f@mail.gmail.com>
-Subject: Re: [PATCH v2] misc: adds support the FSA9480 USB Switch
-From: Minkyu Kang <promsoft@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: Minkyu Kang <mk7.kang@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        kyungmin.park@samsung.com, Ben Dooks <ben-i2c@fluff.org>
+In-Reply-To: <20101109234852.GC5876@outflux.net>
+References: <20101025235804.GA11760@outflux.net> <AANLkTi=c4kt46Pa1FA-e8=36Vn0KcmZgHHKWKZ_bgvzL@mail.gmail.com>
+ <20101109205008.GU5876@outflux.net> <AANLkTint3yM44CouOvG_oA2K=_iC9AJuw-sJoB_HTUMT@mail.gmail.com>
+ <20101109234852.GC5876@outflux.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 9 Nov 2010 16:54:44 -0800
+Message-ID: <AANLkTinCLMGWWD=8do9pv0vnFMX8njYyNgsMS+VeRfpQ@mail.gmail.com>
+Subject: Re: [PATCH] ipc: explicitly clear stack memory in user structs
+To: Kees Cook <kees.cook@canonical.com>
+Cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
+        "David S. Miller" <davem@davemloft.net>,
+        Hugh Dickins <hughd@google.com>,
+        Manfred Spraul <manfred@colorfullife.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Greg KH,
-
-On 12 October 2010 02:36, Greg KH <greg@kroah.com> wrote:
-> On Mon, Oct 11, 2010 at 10:32:33AM +0900, Minkyu Kang wrote:
->> The FSA9480 is a USB port accessory detector and switch.
->> This patch adds support the FSA9480 USB Switch.
->>
->> Signed-off-by: Minkyu Kang <mk7.kang@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> ---
->> v2:
->>  use the threaded irq
->>  fix the sysfs
->>
->>  drivers/misc/Kconfig    |    9 +
->>  drivers/misc/Makefile   |    1 +
->>  drivers/misc/fsa9480.c  |  544 +++++++++++++++++++++++++++++++++++++++++++++++
->>  include/linux/fsa9480.h |   40 ++++
+On Tue, Nov 9, 2010 at 3:48 PM, Kees Cook <kees.cook@canonical.com> wrote:
 >
-> Why do you need a .h file here for a single driver?
-
-Because of platform data.
-
+>> I don't quite see where you got the particular collection of people from.
 >
-> You are creating new sysfs files, so you are required to add a new
-> Documentation/ABI file as well, please add that to this patch.
+> I used scripts/get_maintainer.pl
 
-ok.
+Hmm. I get totally different results. You had
 
->
-> And why are you exporting symbols from this driver, that should not be
-> needed at all.
+  linux-kernel@vger.kernel.org
+  Al Viro <viro@zeniv.linux.org.uk>,
+  Andrew Morton <akpm@linux-foundation.org>,
+  Jiri Slaby <jslaby@suse.cz>,
+  "David S. Miller" <davem@davemloft.net>
 
-It's for other drivers.
-For example.. When USB cable is connected, PMIC driver enable the
-power for each device. (USB, uart, audio and so on..)
-But if use the manual switch, PMIC driver can't know what device is enabled.
-So, this function was exported.
+and I get
 
->
->
->> +/*
->> + * fsa9480.c - FSA9480 micro USB switch device driver
->> + *
->> + * Copyright (C) 2010 Samsung Electronics
->> + * Minkyu Kang <mk7.kang@samsung.com>
->> + * Wonguk Jeong <wonguk.jeong@samsung.com>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License as published by
->> + * the Free Software Foundation; either version 2 of the License, or
->> + * (at your option) any later version.
->
-> Are you positive about that "any later version" portion of this?
+  Al Viro <viro@ZenIV.linux.org.uk>
+  Andrew Morton <akpm@linux-foundation.org>
+  Helge Deller <deller@gmx.de>
+  David Howells <dhowells@redhat.com>
+  Hugh Dickins <hughd@google.com>
+  linux-kernel@vger.kernel.org
 
-I will update the licence.
+so there is something odd going on there.
 
->
-> thanks,
->
-> greg k-h
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
-
-Thanks
-Minkyu Kang
--- 
-from. prom.
-www.promsoft.net
+                        Linus
