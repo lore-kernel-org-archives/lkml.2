@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757036Ab0KJVfD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 16:35:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26295 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756843Ab0KJVfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 16:35:01 -0500
-Subject: Re: [PATCH] fs/gfs2/glock.h: Add
- __attribute__((format(printf,2,3)) to gfs2_print_dbg
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-In-Reply-To: <1289423946.15905.103.camel@Joe-Laptop>
-References: <cover.1289348757.git.joe@perches.com>
-	 <5918196ac71b4e3184a534643cdf499b54416541.1289348757.git.joe@perches.com>
-	 <1289422527.2438.20.camel@dolmen>  <1289423946.15905.103.camel@Joe-Laptop>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Wed, 10 Nov 2010 21:35:00 +0000
-Message-ID: <1289424900.2438.21.camel@dolmen>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756933Ab0KJVie (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 16:38:34 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:11150 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753482Ab0KJVid (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 16:38:33 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=mglWuC3ru1kOFanhgobxc1fM+Xn9Ng4hZizv+kDRD0V7l4Phtk2jq5Ws7bLs1KMrCb
+         +XusA1KYjG+rSXAjkZkQ==
+Date: Wed, 10 Nov 2010 13:38:25 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Vasiliy Kulikov <segooon@gmail.com>, kernel-janitors@vger.kernel.org,
+        =?UTF-8?Q?Andr=C3=A9_Goddard_Rosa?= <andre.goddard@gmail.com>,
+        Joe Perches <joe@perches.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Bjorn Helgaas <bjorn.helgaas@hp.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lib: vsprintf: fix invalid arg check
+In-Reply-To: <20101110130834.02496b48.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.00.1011101335410.7756@chino.kir.corp.google.com>
+References: <1289421490-23950-1-git-send-email-segooon@gmail.com> <20101110130834.02496b48.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 10 Nov 2010, Andrew Morton wrote:
 
-Now in the GFS2 -nmw git tree. Thanks,
-
-Steve.
-
-On Wed, 2010-11-10 at 13:19 -0800, Joe Perches wrote:
-> Functions that use printf formatting, especially
-> those that use %pV, should have their uses of
-> printf format and arguments checked by the compiler.
+> > "size" is size_t.  If we want to check whether it was underflowed
+> > then we should cast it to ssize_t instead of int.  When
+> > sizeof(size_t) > sizeof(int) the code sees UINT_MAX as underflow,
+> > but it is not.
+> > 
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
-> No current uses report any error in an allyesconfig build.
->  
->  fs/gfs2/glock.h |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+> Does this patch fix any actual observed problem?
 > 
-> diff --git a/fs/gfs2/glock.h b/fs/gfs2/glock.h
-> index db1c26d..a12d117 100644
-> --- a/fs/gfs2/glock.h
-> +++ b/fs/gfs2/glock.h
-> @@ -212,6 +212,8 @@ int gfs2_glock_nq_num(struct gfs2_sbd *sdp,
->  int gfs2_glock_nq_m(unsigned int num_gh, struct gfs2_holder *ghs);
->  void gfs2_glock_dq_m(unsigned int num_gh, struct gfs2_holder *ghs);
->  void gfs2_glock_dq_uninit_m(unsigned int num_gh, struct gfs2_holder *ghs);
-> +
-> +__attribute__ ((format(printf, 2, 3)))
->  void gfs2_print_dbg(struct seq_file *seq, const char *fmt, ...);
->  
->  /**
+> >  Compile tested.
+> > 
 > 
+> I guess not.
+> 
+> > --- a/lib/vsprintf.c
+> > +++ b/lib/vsprintf.c
+> > @@ -1290,7 +1290,7 @@ int vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
+> >  
+> >  	/* Reject out-of-range values early.  Large positive sizes are
+> >  	   used for unknown buffer sizes. */
+> 
+> Thousands of people would find that comment to be utterly mysterious. 
+> I am one.
 > 
 
+vsprintf() and sprintf() pass INT_MAX for an unbounded buffer length, so 
+the cast to int here in the original code is correct.  The type of 
+interest is not of the passed size, but rather the return value of the 
+function.   The changelog is wrong: if sizeof(size_t) > sizeof(int) then 
+the return value overflows.
 
+> > -	if (WARN_ON_ONCE((int) size < 0))
+> > +	if (WARN_ON_ONCE((ssize_t) size < 0))
+> >  		return 0;
+> >  
+> >  	str = buf;
