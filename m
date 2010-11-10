@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757140Ab0KJREc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 12:04:32 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:63407 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757080Ab0KJREb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 12:04:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=W+RB+x76ADdKTREwnmBRYYQtR0TWwxcvt4k51zxpf5mtAx+rPiW6AKx6R37+kiHRqM
-         EhPY4WfG6gpOVbXOHnCLAVu45T7vfeIxcrBHWX+p3aAHqCwvnysZLUW4lklqrXO1Z0Nx
-         B06jC00UIr64Y/JoCthgu+kHGModCNGRvutpw=
+	id S1757152Ab0KJRGF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 12:06:05 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:44838 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757081Ab0KJRGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 12:06:04 -0500
+Date: Wed, 10 Nov 2010 18:05:59 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        "Luck, Tony" <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        ying.huang@intel.com, tglx@linutronix.de, akpm@linux-foundation.org,
+        mchehab@redhat.com,
+        =?utf-8?B?RnLDqWTDqXJpYw==?= Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [RFC/Requirements/Design] h/w error reporting
+Message-ID: <20101110170559.GA15704@a1.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Ingo Molnar <mingo@elte.hu>, "Luck, Tony" <tony.luck@intel.com>,
+	linux-kernel@vger.kernel.org, ying.huang@intel.com,
+	tglx@linutronix.de, akpm@linux-foundation.org, mchehab@redhat.com,
+	=?utf-8?B?RnLDqWTDqXJpYw==?= Weisbecker <fweisbec@gmail.com>,
+	Arnaldo Carvalho de Melo <acme@redhat.com>,
+	Arjan van de Ven <arjan@infradead.org>,
+	Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+References: <4cd9edd7543527b78@agluck-desktop.sc.intel.com>
+ <20101110101450.GA18481@elte.hu>
+ <1289400056.12418.139.camel@gandalf.stny.rr.com>
+ <1289400234.2191.129.camel@laptop>
+ <1289401781.12418.145.camel@gandalf.stny.rr.com>
+ <1289403019.2084.17.camel@laptop>
+ <1289407960.12418.169.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-In-Reply-To: <20101110164640.GV6017@pengutronix.de>
-References: <1288972551-21877-1-git-send-email-Dinh.Nguyen@freescale.com>
-	<20101109214607.GG6017@pengutronix.de>
-	<86A0E76937111F4C92FABEC0A20988510523D224@az33exm21>
-	<20101110164640.GV6017@pengutronix.de>
-Date: Wed, 10 Nov 2010 15:04:27 -0200
-Message-ID: <AANLkTinmXin65ReWsUf02ia7FMvHfeqkVeaGu6Usmdw5@mail.gmail.com>
-Subject: Re: [PATCHv3 1/2] ARM: imx: Add core definitions for MX53
-From: Fabio Estevam <festevam@gmail.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Nguyen Dinh-R00091 <R00091@freescale.com>, amit.kucheria@canonical.com,
-        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org, eric@eukrea.com,
-        u.kleine-koenig@pengutronix.de, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1289407960.12418.169.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 2:46 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-...
+On Wed, Nov 10, 2010 at 11:52:40AM -0500, Steven Rostedt wrote:
+> Also, lets not focus now on implementation. Let's try to concentrate on
+> what we want the tools to be able to do.
+> 
+> For example, I would like:
+> 
+> Very small entries, and pick and chose what I want in my entries.
+> 
+> A way to read it fast to a file or over the network (splice).
+> 
+> The read backwards seems like a cool idea, but I would not want to throw
+> away the read forwards part either.
 
->> Agreed, but I was unsure how to proceed with adding clock code for mx53.
->> Should I merge mx53 clock code into clock-mx51 and rename clock-mx51?
->
-> Yes, to something like clock-mx51-mx53.c
->
+It would also be cool to be able to allocate those buffers as early as
+possible, even if before MCA is enabled, so that I won't have to copy
+MCE data which got logged before the tracing subsystem got enabled to
+the buffers proper.
 
-Or maybe clock-mx5x.c would be more generic.
-
-This way when any other MX5x processor gets added we don't need to
-change the file name again.
-
-Regards,
-
-Fabio Estevam
+-- 
+Regards/Gruss,
+Boris.
