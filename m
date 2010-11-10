@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757108Ab0KJQ4L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 11:56:11 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:60602 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757049Ab0KJQ4I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 11:56:08 -0500
-Message-ID: <4CDACEA2.8010406@canonical.com>
-Date: Wed, 10 Nov 2010 08:56:02 -0800
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: wzt.wzt@gmail.com
-CC: linux-kernel@vger.kernel.org, apparmor@lists.ubuntu.com,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] APPARMOR: Fix memory leak of apparmor_init()
-References: <20101110080515.GA2722@localhost.localdomain>
-In-Reply-To: <20101110080515.GA2722@localhost.localdomain>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757120Ab0KJQ6j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 11:58:39 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:40734 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1757082Ab0KJQ6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 11:58:38 -0500
+X-Authenticated: #23875046
+X-Provags-ID: V01U2FsdGVkX1+3aQ5vlgC3XbmARtawz1qlMgzsQ9H9TtK9oO06TI
+	oW1iHbWqjTW2Oo
+Subject: Re: [PATCH 2/2 v2] Unify rest of FAT messages.
+From: Alexey Fisher <bug-track@fisher-privat.net>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: linux-kernel@vger.kernel.org, joe@perches.com
+In-Reply-To: <878w11p1wk.fsf@devron.myhome.or.jp>
+References: <1289321718-6373-1-git-send-email-bug-track@fisher-privat.net>
+	 <1289329470-14454-1-git-send-email-bug-track@fisher-privat.net>
+	 <87hbfppfu3.fsf@devron.myhome.or.jp> <1289392908.6057.44.camel@zwerg>
+	 <87d3qdp9oa.fsf@devron.myhome.or.jp> <1289401644.2438.34.camel@mini>
+	 <878w11p1wk.fsf@devron.myhome.or.jp>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 10 Nov 2010 17:58:32 +0100
+Message-ID: <1289408312.3636.10.camel@mini>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2010 12:05 AM, wzt.wzt@gmail.com wrote:
-> set_init_cxt() allocted sizeof(struct aa_task_cxt) bytes for cxt, 
-> if register_security() failed, it will cause memory leak.
+Am Donnerstag, den 11.11.2010, 01:40 +0900 schrieb OGAWA Hirofumi:
+> Alexey Fisher <bug-track@fisher-privat.net> writes:
 > 
-> Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
+> >> It clealy can happen on all FSes, not only FAT. And I don't want to push
+> >> it (notification stuff) from FAT tree. (need the review from other guys).
+> >
+> > I do not blame FAT. It was just one example/usecase.
 > 
-yep, thanks again Zhitong
+> Yes. It is why I said the below.
+> 
+> >> IMHO, it should be kernel wide (or subsystem wide) notification system
+> >> even if you target is FAT-fs only.  (yeah, it's hard to push to
+> >> linus-tree than one FS though).
+> >
+> > Sound complicated. I will not get time for this, right now. Any way, at
+> > least if this patch set go upstream it will help investigate some FS
+> > related issues. For my work (Computer Forensic) it will be really
+> > helpful.
+> 
+> Also, yes. It would be complicate more or less than one FS. And maybe I
+> can understand why you want to concentrate FAT.
+> 
+> But I'm afraid to implement for only FAT. If there is not any some sort
+> of agreement by others, it may have to re-implement. If that happen, FAT
+> can be bothered by compatible (or have to maintain both of old and new
+> for a while). Because the notified data are some sort of ABI, IMO.
+> 
+> This is why I'm careful about this, and can't say easily - "let's try it
+> on FAT".
 
-Signed-off-by: John Johansen <john.johansen@canonical.com>
+I'm not sure if we talk about same thing now :D
+By notification you mean the idea to notify userspace about error?
+correct?
+In my previous email i switched the point, it will be to complicate for
+now to work on notification system. For now i'll be happy to see grep
+friendly logs. Same like ext2,3,4 do
 
-> ---
->  security/apparmor/lsm.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
-> index cf1de44..b7106f1 100644
-> --- a/security/apparmor/lsm.c
-> +++ b/security/apparmor/lsm.c
-> @@ -922,7 +922,7 @@ static int __init apparmor_init(void)
->  	error = register_security(&apparmor_ops);
->  	if (error) {
->  		AA_ERROR("Unable to register AppArmor\n");
-> -		goto register_security_out;
-> +		goto set_init_cxt_out;
->  	}
->  
->  	/* Report that AppArmor successfully initialized */
-> @@ -936,6 +936,9 @@ static int __init apparmor_init(void)
->  
->  	return error;
->  
-> +set_init_cxt_out:
-> +	aa_free_task_context(current->real_cred->security);
-> +
->  register_security_out:
->  	aa_free_root_ns();
->  
-> @@ -944,7 +947,6 @@ alloc_out:
->  
->  	apparmor_enabled = 0;
->  	return error;
-> -
->  }
->  
->  security_initcall(apparmor_init);
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=4cf46b67eb6de94532c1bea11d2479d085229d0e
+
+In long term it will be good to have such notification system. So i will
+start new tread about it. 
 
