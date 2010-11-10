@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756460Ab0KJTYV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 14:24:21 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:57447 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756143Ab0KJTYT (ORCPT
+	id S1756562Ab0KJT0S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 14:26:18 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:57264 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756249Ab0KJT0R convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 14:24:19 -0500
-Date: Wed, 10 Nov 2010 20:23:23 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "Petkov, Borislav" <Borislav.Petkov@amd.com>
-Subject: Re: [PATCH 01/12] EDAC, MCE: Select extended error code mask
-Message-ID: <20101110192322.GC13539@aftab>
-References: <1289415741-15000-1-git-send-email-bp@amd64.org>
- <1289415741-15000-2-git-send-email-bp@amd64.org>
- <987664A83D2D224EAE907B061CE93D5301649A7081@orsmsx505.amr.corp.intel.com>
- <987664A83D2D224EAE907B061CE93D5301649A708E@orsmsx505.amr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <987664A83D2D224EAE907B061CE93D5301649A708E@orsmsx505.amr.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 10 Nov 2010 14:26:17 -0500
+Subject: Re: [RFC][PATCH 02/22] sched: add extended scheduling interface
+From: Peter Zijlstra <peterz@infradead.org>
+To: Raistlin <raistlin@linux.it>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
+        "p.faure" <p.faure@akatech.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        michael trimarchi <trimarchi@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>,
+        Tommaso Cucinotta <cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Nicola Manica <nicola.manica@disi.unitn.it>,
+        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
+        Harald Gustafsson <hgu1972@gmail.com>,
+        paulmck <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1289410114.2084.23.camel@laptop>
+References: <1288333128.8661.137.camel@Palantir>
+	 <1288333622.8661.141.camel@Palantir>  <1289410114.2084.23.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 10 Nov 2010 20:26:13 +0100
+Message-ID: <1289417173.2084.43.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 02:15:48PM -0500, Luck, Tony wrote:
-> > (MCi_STATUS[20:16]). Add a mask variable which default 0xf is overridden
-> > on F15h.
+On Wed, 2010-11-10 at 18:28 +0100, Peter Zijlstra wrote:
+> On Fri, 2010-10-29 at 08:27 +0200, Raistlin wrote:
+> > +struct sched_param_ex {
+> > +       int sched_priority;
+> > +       struct timespec sched_runtime;
+> > +       struct timespec sched_deadline;
+> > +       struct timespec sched_period;
+> > +       unsigned int sched_flags;
+> > +
+> > +       struct timespec curr_runtime;
+> > +       struct timespec used_runtime;
+> > +       struct timespec curr_deadline;
+> > +}; 
 > 
-> I failed to read the "overridden" part ...
-> Ignore the noise - I blame the cold medication I'm taking.
+> It would be better for alignment reasons to move the sched_flags field
+> next to the sched_priority field.
+> 
+> I would suggest we add at least one more field so we can implement the
+> stochastic model from UNC, sched_runtime_dev or sched_runtime_var or
+> somesuch.
 
-And yet it doesn't stop you from looking at my wobbly decoding stuff.
-Wait a sec, shouldn't you be relaxing instead? Ah well, kernel people...
+Oh, and their model has something akin to: sched_runtime_max, these
+Gaussian bell curves go to inf. which is kinda bad for trying to compute
+bounds.
 
-Thanks for looking into it.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+ 
