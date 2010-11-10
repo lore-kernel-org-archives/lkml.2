@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756499Ab0KJPB1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 10:01:27 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:38301 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756175Ab0KJPB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 10:01:26 -0500
-Date: Wed, 10 Nov 2010 16:00:57 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Greg KH <gregkh@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>, Lin Ming <ming.m.lin@intel.com>,
-        Stephane Eranian <eranian@google.com>,
-        "robert.richter" <robert.richter@amd.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        fweisbec <fweisbec@gmail.com>, paulus <paulus@samba.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: sysfs: Add an 'events' class. (was: Re: [RFC][PATCH] perf: sysfs
- type id)
-Message-ID: <20101110150057.GB14496@elte.hu>
-References: <1289339119.2191.92.camel@laptop>
- <20101109221338.GA19947@suse.de>
- <1289392037.2191.105.camel@laptop>
- <20101110133638.GC11388@elte.hu>
- <AANLkTikkV1pdseitAPkXTyK529vsvbaVb-RMiMY4Ao-+@mail.gmail.com>
+	id S1756520Ab0KJPBe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 10:01:34 -0500
+Received: from mo-p05-ob.rzone.de ([81.169.146.182]:21268 "EHLO
+	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756509Ab0KJPBd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 10:01:33 -0500
+X-Greylist: delayed 661 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Nov 2010 10:01:32 EST
+X-RZG-AUTH: :IW0NeWC7b/q2i6W/qstXb1SBUuFnrGohavlCkce+Ub5QXMSOpHp3KRgmmO6F
+X-RZG-CLASS-ID: mo05
+From: Stefan Roese <sr@denx.de>
+To: linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH] ppc44x:PHY fixup for USB on canyonlands board
+Date: Wed, 10 Nov 2010 15:50:15 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.35.7-sr; KDE/4.5.1; i686; ; )
+Cc: Rupjyoti Sarmah <rsarmah@amcc.com>, linuxppc-dev@ozlabs.org,
+        linux-kernel@vger.kernel.org, rsarmah@apm.com
+References: <201011101137.oAABbFoc015547@amcc.com>
+In-Reply-To: <201011101137.oAABbFoc015547@amcc.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikkV1pdseitAPkXTyK529vsvbaVb-RMiMY4Ao-+@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011101550.16093.sr@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Kay Sievers <kay.sievers@vrfy.org> wrote:
-
-> > Same here - calling events a 'bus' is like totally brain-dead IMHO. It implies 
-> > something hardware, while many events are not related to any hardware component 
-> > but are pure software abstractions: such as context-switches, or syscall 
-> > entries, or VM events.
+On Wednesday 10 November 2010 12:37:15 Rupjyoti Sarmah wrote:
+> This fix is a reset for USB PHY that requires some amount of time for power
+> to be stable on Canyonlands.
 > 
-> Please use a bus, regardless of the name, class is dead and you will need stuff 
-> tha can only happen at bus. We'll fix the name later.
+> Signed-off-by: Rupjyoti Sarmah <rsarmah@apm.com>
+> ---
+>  arch/powerpc/boot/dts/canyonlands.dts     |   11 ++++
+>  arch/powerpc/platforms/44x/44x.h          |    5 ++
+>  arch/powerpc/platforms/44x/Kconfig        |    7 ++
+>  arch/powerpc/platforms/44x/Makefile       |    1 +
+>  arch/powerpc/platforms/44x/ppc44x_fixup.c |   90
+> +++++++++++++++++++++++++++++ 5 files changed, 114 insertions(+), 0
+> deletions(-)
+>  create mode 100644 arch/powerpc/platforms/44x/ppc44x_fixup.c
+> 
+> diff --git a/arch/powerpc/boot/dts/canyonlands.dts
+> b/arch/powerpc/boot/dts/canyonlands.dts index a303703..d6e9ba2 100644
+> --- a/arch/powerpc/boot/dts/canyonlands.dts
+> +++ b/arch/powerpc/boot/dts/canyonlands.dts
+> @@ -171,6 +171,11 @@
+>  				      0x5 0x4>;     /* AHBDMA */
+>  		};
+> 
+> +		CPLD: cpld@e1000000 {
+> +			compatible = "apm, ppc460ex-bcsr";
+> +			reg = <4 0xe1000000 0x9>;
+> +		};
 
-When is that 'later' supposed to happen? git annotate says that the 
-renaming/unification comments/plans were added:
+This node should be moved to the EBC section. It would look something like 
+this then (note the reg property change here):
 
-46336009        (Kay Sievers    2007-06-08 13:36:37 -0700       105)  symlinks pointing to the unified /sys/devices tree.
+				CPLD: cpld@2,0 {
+					...
+					reg = <2 0x0 0x9>;
+				};
 
-... about 3 and a half years ago.
-
-> [...] No, /sys/devices/ is and stays as a hierarchy and will not be flat.
-
-Great :-)
-
-Btw., where will thinks like /sys/kernel/slab/ end up? It would be useful (in the 
-long run) to have:
-
-  /sys/kernel/slab/uid_cache/events/
-
-To describe/control events for the uid_cache SLAB cache alone.
-
-	Ingo
+Cheers,
+Stefan
