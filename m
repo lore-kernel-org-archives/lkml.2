@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751436Ab0KJAfh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 19:35:37 -0500
-Received: from mail.perches.com ([173.55.12.10]:4849 "EHLO mail.perches.com"
+	id S1754527Ab0KJAfk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 19:35:40 -0500
+Received: from mail.perches.com ([173.55.12.10]:4845 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753977Ab0KJAfc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 19:35:32 -0500
+	id S1753939Ab0KJAfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 19:35:31 -0500
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
-Cc: Jan Kara <jack@suse.cz>
-Subject: [PATCH 8/9] fs/quota/dquot.c: Use printf extension %pV
-Date: Tue,  9 Nov 2010 16:35:22 -0800
-Message-Id: <8ee8a64dba59575938955a22ba3a390ba924b4c5.1289348757.git.joe@perches.com>
+Cc: KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>,
+        linux-nilfs@vger.kernel.org
+Subject: [PATCH 7/9] fs/nilfs2/super.c: Use printf extension %pV
+Date: Tue,  9 Nov 2010 16:35:21 -0800
+Message-Id: <1addeb606bca88e09fb46b93be10c3a58e759348.1289348757.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <cover.1289348757.git.joe@perches.com>
 References: <cover.1289348757.git.joe@perches.com>
@@ -25,36 +26,56 @@ other printk calls.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- fs/quota/dquot.c |   12 ++++++++----
- 1 files changed, 8 insertions(+), 4 deletions(-)
+ fs/nilfs2/super.c |   23 ++++++++++++++++-------
+ 1 files changed, 16 insertions(+), 7 deletions(-)
 
-diff --git a/fs/quota/dquot.c b/fs/quota/dquot.c
-index 0fed41e..aad97ef 100644
---- a/fs/quota/dquot.c
-+++ b/fs/quota/dquot.c
-@@ -135,14 +135,18 @@ EXPORT_SYMBOL(dq_data_lock);
- void __quota_error(struct super_block *sb, const char *func,
- 		  const char *fmt, ...)
+diff --git a/fs/nilfs2/super.c b/fs/nilfs2/super.c
+index f804d41..bef8cc6 100644
+--- a/fs/nilfs2/super.c
++++ b/fs/nilfs2/super.c
+@@ -111,12 +111,17 @@ void nilfs_error(struct super_block *sb, const char *function,
+ 		 const char *fmt, ...)
+ {
+ 	struct nilfs_sb_info *sbi = NILFS_SB(sb);
++	struct va_format vaf;
+ 	va_list args;
+ 
+ 	va_start(args, fmt);
+-	printk(KERN_CRIT "NILFS error (device %s): %s: ", sb->s_id, function);
+-	vprintk(fmt, args);
+-	printk("\n");
++
++	vaf.fmt = fmt;
++	vaf.va = &args;
++
++	printk(KERN_CRIT "NILFS error (device %s): %s: %pV\n",
++	       sb->s_id, function, &vaf);
++
+ 	va_end(args);
+ 
+ 	if (!(sb->s_flags & MS_RDONLY)) {
+@@ -136,13 +141,17 @@ void nilfs_error(struct super_block *sb, const char *function,
+ void nilfs_warning(struct super_block *sb, const char *function,
+ 		   const char *fmt, ...)
  {
 +	struct va_format vaf;
  	va_list args;
  
- 	if (printk_ratelimit()) {
- 		va_start(args, fmt);
--		printk(KERN_ERR "Quota error (device %s): %s: ",
--		       sb->s_id, func);
--		vprintk(fmt, args);
--		printk("\n");
+ 	va_start(args, fmt);
+-	printk(KERN_WARNING "NILFS warning (device %s): %s: ",
+-	       sb->s_id, function);
+-	vprintk(fmt, args);
+-	printk("\n");
 +
-+		vaf.fmt = fmt;
-+		vaf.va = &args;
++	vaf.fmt = fmt;
++	vaf.va = &args;
 +
-+		printk(KERN_ERR "Quota error (device %s): %s: %pV\n",
-+		       sb->s_id, func, &vaf);
++	printk(KERN_WARNING "NILFS warning (device %s): %s: %pV\n",
++	       sb->s_id, function, &vaf);
 +
- 		va_end(args);
- 	}
+ 	va_end(args);
  }
+ 
 -- 
 1.7.3.1.g432b3.dirty
 
