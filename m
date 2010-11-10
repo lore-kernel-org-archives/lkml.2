@@ -1,458 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756421Ab0KJTQZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 14:16:25 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:51381 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755613Ab0KJTQY convert rfc822-to-8bit (ORCPT
+	id S1756496Ab0KJTQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 14:16:29 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:52091 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756002Ab0KJTQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 14:16:24 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=pxoFv0Oqpn1uTKLL5iZU8cERR8+PS9CoLRTMTSSqZ1SqFARZGneF124u+Pcx0QSgbf
-         vp1ff9ZzEBSrttL7qVag==
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimKokqHoQ0GGKuN1frbz7BrYJV9iQZ12Y111329@mail.gmail.com>
-References: <1281957914.1926.1249.camel@laptop>
-	<20100816182834.3541.42317.stgit@bumblebee1.mtv.corp.google.com>
-	<20100817152352.GA10785@amd>
-	<AANLkTimYJ3KfHfd9dFWinowm+J7KdM0dtt-wMU9Rv9=o@mail.gmail.com>
-	<AANLkTimKokqHoQ0GGKuN1frbz7BrYJV9iQZ12Y111329@mail.gmail.com>
-Date: Wed, 10 Nov 2010 11:16:21 -0800
-Message-ID: <AANLkTi=hFPFHyZC3tpkF4mOgUYa+B_eVPdeKq-BwVaB9@mail.gmail.com>
-Subject: Re: [PATCH] Fixed a mismatch between the users of radix_tree and the implementation.
-From: Salman Qazi <sqazi@google.com>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: paulmck@us.ibm.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        adurbin@google.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Wed, 10 Nov 2010 14:16:27 -0500
+X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=2Zzf6Ss2cq4A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=Mf1wP9fDpHvxvTNziVgA:9 a=iEOQVBC_XbCE7lvVLpu3-w9K0T8A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC/Requirements/Design] h/w error reporting
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, "Luck, Tony" <tony.luck@intel.com>,
+        linux-kernel@vger.kernel.org, ying.huang@intel.com, bp@alien8.de,
+        tglx@linutronix.de, akpm@linux-foundation.org, mchehab@redhat.com,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+In-Reply-To: <1289413460.2084.27.camel@laptop>
+References: <4cd9edd7543527b78@agluck-desktop.sc.intel.com>
+	 <20101110101450.GA18481@elte.hu>
+	 <1289400056.12418.139.camel@gandalf.stny.rr.com>
+	 <1289400234.2191.129.camel@laptop>
+	 <1289401781.12418.145.camel@gandalf.stny.rr.com>
+	 <1289403019.2084.17.camel@laptop>  <20101110174852.GB4001@elte.hu>
+	 <1289412329.12418.177.camel@gandalf.stny.rr.com>
+	 <1289413460.2084.27.camel@laptop>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 10 Nov 2010 14:16:24 -0500
+Message-ID: <1289416584.12418.184.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 30, 2010 at 4:27 PM, Salman Qazi <sqazi@google.com> wrote:
-> On Tue, Aug 17, 2010 at 2:28 PM, Salman Qazi <sqazi@google.com> wrote:
->>
->> On Tue, Aug 17, 2010 at 8:23 AM, Nick Piggin <npiggin@kernel.dk> wrote:
->> > On Mon, Aug 16, 2010 at 11:30:07AM -0700, Salman Qazi wrote:
->> >> Done.
->> >>
->> >> ---
->> >>
->> >> This matters for the lockless page cache, in particular find_get_pages implementation.
->> >>
->> >> In the following case, we get can get a deadlock:
->> >>
->> >>     0.  The radix tree contains two items, one has the index 0.
->> >>     1.  The reader (in this case find_get_pages) takes the rcu_read_lock.
->> >>     2.  The reader acquires slot(s) for item(s) including the index 0 item.
->> >>     3.  The non-zero index item is deleted, and as a consequence the other item
->> >>         is moved to the root of the tree.  The place where it used to be is
->> >>         queued for deletion after the readers finish.
->> >      3b. The zero item is deleted, removing it from the direct slot,
->> >          it remains in the rcu-delayed indirect node.
->> >>     4.  The reader looks at the index 0 slot, and finds that the page has 0 ref count
->> >>     5.  The reader looks at it again, hoping that the item will either be freed
->> >>         or the ref count will increase.  This never happens, as the slot it
->> >>         is looking at will never be updated.  Also, this slot can never be reclaimed
->> >>         because the reader is holding rcu_read_lock and is in an infinite loop.
->> >
->> > Good catch. Increasing memory footprint really sucks actually. 5MB is a
->> > lot of memory, and it also means another pointer dereference on small
->> > files.
->> >
->> > I actually do go to a lot of trouble already to have direct pointers.
->> > Unfortunately this is another little complexity, but I really think it's
->> > worthwhile.
->> >
->> > How about something like this?
->> > --
->> > Index: linux-2.6/include/linux/radix-tree.h
->> > ===================================================================
->> > --- linux-2.6.orig/include/linux/radix-tree.h   2010-08-18 00:01:19.000000000 +1000
->> > +++ linux-2.6/include/linux/radix-tree.h        2010-08-18 00:56:32.000000000 +1000
->> > @@ -34,19 +34,12 @@
->> >  * needed for RCU lookups (because root->height is unreliable). The only
->> >  * time callers need worry about this is when doing a lookup_slot under
->> >  * RCU.
->> > + *
->> > + * Indirect pointer in fact is also used to tag the last pointer of a node
->> > + * when it is shrunk, before we rcu free the node. See shrink code for
->> > + * details.
->> >  */
->> >  #define RADIX_TREE_INDIRECT_PTR        1
->> > -#define RADIX_TREE_RETRY ((void *)-1UL)
->> > -
->> > -static inline void *radix_tree_ptr_to_indirect(void *ptr)
->> > -{
->> > -       return (void *)((unsigned long)ptr | RADIX_TREE_INDIRECT_PTR);
->> > -}
->> > -
->> > -static inline void *radix_tree_indirect_to_ptr(void *ptr)
->> > -{
->> > -       return (void *)((unsigned long)ptr & ~RADIX_TREE_INDIRECT_PTR);
->> > -}
->> >
->> >  static inline int radix_tree_is_indirect_ptr(void *ptr)
->> >  {
->> > @@ -138,16 +131,29 @@ do {                                                                      \
->> >  *             removed.
->> >  *
->> >  * For use with radix_tree_lookup_slot().  Caller must hold tree at least read
->> > - * locked across slot lookup and dereference.  More likely, will be used with
->> > - * radix_tree_replace_slot(), as well, so caller will hold tree write locked.
->> > + * locked across slot lookup and dereference. Not required if write lock is
->> > + * held (ie. items cannot be concurrently inserted).
->> > + *
->> > + * radix_tree_deref_retry must be used to confirm validity of the pointer if
->> > + * only the read lock is held.
->> >  */
->> >  static inline void *radix_tree_deref_slot(void **pslot)
->> >  {
->> > -       void *ret = rcu_dereference(*pslot);
->> > -       if (unlikely(radix_tree_is_indirect_ptr(ret)))
->> > -               ret = RADIX_TREE_RETRY;
->> > -       return ret;
->> > +       return rcu_dereference(*pslot);
->> >  }
->> > +
->> > +/**
->> > + * radix_tree_deref_retry      - check radix_tree_deref_slot
->> > + * @arg:       pointer returned by radix_tree_deref_slot
->> > + * Returns:    0 if retry is not required, otherwise retry is required
->> > + *
->> > + * radix_tree_deref_retry must be used with radix_tree_deref_slot.
->> > + */
->> > +static inline int radix_tree_deref_retry(void *arg)
->> > +{
->> > +       return unlikely((unsigned long)arg & RADIX_TREE_INDIRECT_PTR);
->> > +}
->> > +
->> >  /**
->> >  * radix_tree_replace_slot     - replace item in a slot
->> >  * @pslot:     pointer to slot, returned by radix_tree_lookup_slot
->> > Index: linux-2.6/lib/radix-tree.c
->> > ===================================================================
->> > --- linux-2.6.orig/lib/radix-tree.c     2010-08-18 00:01:19.000000000 +1000
->> > +++ linux-2.6/lib/radix-tree.c  2010-08-18 00:47:55.000000000 +1000
->> > @@ -82,6 +82,16 @@ struct radix_tree_preload {
->> >  };
->> >  static DEFINE_PER_CPU(struct radix_tree_preload, radix_tree_preloads) = { 0, };
->> >
->> > +static inline void *ptr_to_indirect(void *ptr)
->> > +{
->> > +       return (void *)((unsigned long)ptr | RADIX_TREE_INDIRECT_PTR);
->> > +}
->> > +
->> > +static inline void *indirect_to_ptr(void *ptr)
->> > +{
->> > +       return (void *)((unsigned long)ptr & ~RADIX_TREE_INDIRECT_PTR);
->> > +}
->> > +
->> >  static inline gfp_t root_gfp_mask(struct radix_tree_root *root)
->> >  {
->> >        return root->gfp_mask & __GFP_BITS_MASK;
->> > @@ -263,7 +273,7 @@ static int radix_tree_extend(struct radi
->> >                        return -ENOMEM;
->> >
->> >                /* Increase the height.  */
->> > -               node->slots[0] = radix_tree_indirect_to_ptr(root->rnode);
->> > +               node->slots[0] = indirect_to_ptr(root->rnode);
->> >
->> >                /* Propagate the aggregated tag info into the new root */
->> >                for (tag = 0; tag < RADIX_TREE_MAX_TAGS; tag++) {
->> > @@ -274,7 +284,7 @@ static int radix_tree_extend(struct radi
->> >                newheight = root->height+1;
->> >                node->height = newheight;
->> >                node->count = 1;
->> > -               node = radix_tree_ptr_to_indirect(node);
->> > +               node = ptr_to_indirect(node);
->> >                rcu_assign_pointer(root->rnode, node);
->> >                root->height = newheight;
->> >        } while (height > root->height);
->> > @@ -307,7 +317,7 @@ int radix_tree_insert(struct radix_tree_
->> >                        return error;
->> >        }
->> >
->> > -       slot = radix_tree_indirect_to_ptr(root->rnode);
->> > +       slot = indirect_to_ptr(root->rnode);
->> >
->> >        height = root->height;
->> >        shift = (height-1) * RADIX_TREE_MAP_SHIFT;
->> > @@ -323,8 +333,7 @@ int radix_tree_insert(struct radix_tree_
->> >                                rcu_assign_pointer(node->slots[offset], slot);
->> >                                node->count++;
->> >                        } else
->> > -                               rcu_assign_pointer(root->rnode,
->> > -                                       radix_tree_ptr_to_indirect(slot));
->> > +                               rcu_assign_pointer(root->rnode, ptr_to_indirect(slot));
->> >                }
->> >
->> >                /* Go a level down */
->> > @@ -372,7 +381,7 @@ static void *radix_tree_lookup_element(s
->> >                        return NULL;
->> >                return is_slot ? (void *)&root->rnode : node;
->> >        }
->> > -       node = radix_tree_indirect_to_ptr(node);
->> > +       node = indirect_to_ptr(node);
->> >
->> >        height = node->height;
->> >        if (index > radix_tree_maxindex(height))
->> > @@ -391,7 +400,7 @@ static void *radix_tree_lookup_element(s
->> >                height--;
->> >        } while (height > 0);
->> >
->> > -       return is_slot ? (void *)slot:node;
->> > +       return is_slot ? (void *)slot : indirect_to_ptr(node);
->> >  }
->> >
->> >  /**
->> > @@ -453,7 +462,7 @@ void *radix_tree_tag_set(struct radix_tr
->> >        height = root->height;
->> >        BUG_ON(index > radix_tree_maxindex(height));
->> >
->> > -       slot = radix_tree_indirect_to_ptr(root->rnode);
->> > +       slot = indirect_to_ptr(root->rnode);
->> >        shift = (height - 1) * RADIX_TREE_MAP_SHIFT;
->> >
->> >        while (height > 0) {
->> > @@ -507,7 +516,7 @@ void *radix_tree_tag_clear(struct radix_
->> >
->> >        shift = (height - 1) * RADIX_TREE_MAP_SHIFT;
->> >        pathp->node = NULL;
->> > -       slot = radix_tree_indirect_to_ptr(root->rnode);
->> > +       slot = indirect_to_ptr(root->rnode);
->> >
->> >        while (height > 0) {
->> >                int offset;
->> > @@ -577,7 +586,7 @@ int radix_tree_tag_get(struct radix_tree
->> >
->> >        if (!radix_tree_is_indirect_ptr(node))
->> >                return (index == 0);
->> > -       node = radix_tree_indirect_to_ptr(node);
->> > +       node = indirect_to_ptr(node);
->> >
->> >        height = node->height;
->> >        if (index > radix_tree_maxindex(height))
->> > @@ -651,7 +660,7 @@ unsigned long radix_tree_range_tag_if_ta
->> >        }
->> >
->> >        shift = (height - 1) * RADIX_TREE_MAP_SHIFT;
->> > -       slot = radix_tree_indirect_to_ptr(root->rnode);
->> > +       slot = indirect_to_ptr(root->rnode);
->> >
->> >        for (;;) {
->> >                int offset;
->> > @@ -861,7 +870,7 @@ radix_tree_gang_lookup(struct radix_tree
->> >                results[0] = node;
->> >                return 1;
->> >        }
->> > -       node = radix_tree_indirect_to_ptr(node);
->> > +       node = indirect_to_ptr(node);
->> >
->> >        max_index = radix_tree_maxindex(node->height);
->> >
->> > @@ -880,7 +889,8 @@ radix_tree_gang_lookup(struct radix_tree
->> >                        slot = *(((void ***)results)[ret + i]);
->> >                        if (!slot)
->> >                                continue;
->> > -                       results[ret + nr_found] = rcu_dereference_raw(slot);
->> > +                       results[ret + nr_found] =
->> > +                               indirect_to_ptr(rcu_dereference_raw(slot));
->> >                        nr_found++;
->> >                }
->> >                ret += nr_found;
->> > @@ -929,7 +939,7 @@ radix_tree_gang_lookup_slot(struct radix
->> >                results[0] = (void **)&root->rnode;
->> >                return 1;
->> >        }
->> > -       node = radix_tree_indirect_to_ptr(node);
->> > +       node = indirect_to_ptr(node);
->> >
->> >        max_index = radix_tree_maxindex(node->height);
->> >
->> > @@ -1054,7 +1064,7 @@ radix_tree_gang_lookup_tag(struct radix_
->> >                results[0] = node;
->> >                return 1;
->> >        }
->> > -       node = radix_tree_indirect_to_ptr(node);
->> > +       node = indirect_to_ptr(node);
->> >
->> >        max_index = radix_tree_maxindex(node->height);
->> >
->> > @@ -1073,7 +1083,8 @@ radix_tree_gang_lookup_tag(struct radix_
->> >                        slot = *(((void ***)results)[ret + i]);
->> >                        if (!slot)
->> >                                continue;
->> > -                       results[ret + nr_found] = rcu_dereference_raw(slot);
->> > +                       results[ret + nr_found] =
->> > +                               indirect_to_ptr(rcu_dereference_raw(slot));
->> >                        nr_found++;
->> >                }
->> >                ret += nr_found;
->> > @@ -1123,7 +1134,7 @@ radix_tree_gang_lookup_tag_slot(struct r
->> >                results[0] = (void **)&root->rnode;
->> >                return 1;
->> >        }
->> > -       node = radix_tree_indirect_to_ptr(node);
->> > +       node = indirect_to_ptr(node);
->> >
->> >        max_index = radix_tree_maxindex(node->height);
->> >
->> > @@ -1159,7 +1170,7 @@ static inline void radix_tree_shrink(str
->> >                void *newptr;
->> >
->> >                BUG_ON(!radix_tree_is_indirect_ptr(to_free));
->> > -               to_free = radix_tree_indirect_to_ptr(to_free);
->> > +               to_free = indirect_to_ptr(to_free);
->> >
->> >                /*
->> >                 * The candidate node has more than one child, or its child
->> > @@ -1172,16 +1183,39 @@ static inline void radix_tree_shrink(str
->> >
->> >                /*
->> >                 * We don't need rcu_assign_pointer(), since we are simply
->> > -                * moving the node from one part of the tree to another. If
->> > -                * it was safe to dereference the old pointer to it
->> > +                * moving the node from one part of the tree to another: if it
->> > +                * was safe to dereference the old pointer to it
->> >                 * (to_free->slots[0]), it will be safe to dereference the new
->> > -                * one (root->rnode).
->> > +                * one (root->rnode) as far as dependent read barriers go.
->> >                 */
->> >                newptr = to_free->slots[0];
->> >                if (root->height > 1)
->> > -                       newptr = radix_tree_ptr_to_indirect(newptr);
->> > +                       newptr = ptr_to_indirect(newptr);
->> >                root->rnode = newptr;
->> >                root->height--;
->> > +
->> > +               /*
->> > +                * We have a dilemma here. The node's slot[0] must not be
->> > +                * NULLed in case there are concurrent lookups expecting to
->> > +                * find the item. However if this was a bottom-level node,
->> > +                * then it may be subject to the slot pointer being visible
->> > +                * to callers dereferencing it. If item corresponding to
->> > +                * slot[0] is subsequently deleted, these callers would expect
->> > +                * their slot to become empty sooner or later.
->> > +                *
->> > +                * For example, lockless pagecache will look up a slot, deref
->> > +                * the page pointer, and if the page is 0 refcount it means it
->> > +                * was concurrently deleted from pagecache so try the deref
->> > +                * again. Fortunately there is already a requirement for logic
->> > +                * to retry the entire slot lookup -- the indirect pointer
->> > +                * problem (replacing direct root node with an indirect pointer
->> > +                * also results in a stale slot). So tag the slot as indirect
->> > +                * to force callers to retry.
->> > +                */
->> > +               if (root->height == 0)
->> > +                       *((unsigned long *)&to_free->slots[0]) |=
->> > +                                               RADIX_TREE_INDIRECT_PTR;
->> > +
->> >                radix_tree_node_free(to_free);
->> >        }
->> >  }
->> > @@ -1218,7 +1252,7 @@ void *radix_tree_delete(struct radix_tre
->> >                root->rnode = NULL;
->> >                goto out;
->> >        }
->> > -       slot = radix_tree_indirect_to_ptr(slot);
->> > +       slot = indirect_to_ptr(slot);
->> >
->> >        shift = (height - 1) * RADIX_TREE_MAP_SHIFT;
->> >        pathp->node = NULL;
->> > @@ -1260,8 +1294,7 @@ void *radix_tree_delete(struct radix_tre
->> >                        radix_tree_node_free(to_free);
->> >
->> >                if (pathp->node->count) {
->> > -                       if (pathp->node ==
->> > -                                       radix_tree_indirect_to_ptr(root->rnode))
->> > +                       if (pathp->node == indirect_to_ptr(root->rnode))
->> >                                radix_tree_shrink(root);
->> >                        goto out;
->> >                }
->> > Index: linux-2.6/mm/filemap.c
->> > ===================================================================
->> > --- linux-2.6.orig/mm/filemap.c 2010-08-18 00:14:14.000000000 +1000
->> > +++ linux-2.6/mm/filemap.c      2010-08-18 01:07:20.000000000 +1000
->> > @@ -631,7 +631,9 @@ repeat:
->> >        pagep = radix_tree_lookup_slot(&mapping->page_tree, offset);
->> >        if (pagep) {
->> >                page = radix_tree_deref_slot(pagep);
->> > -               if (unlikely(!page || page == RADIX_TREE_RETRY))
->> > +               if (unlikely(!page))
->> > +                       goto out;
->> > +               if (radix_tree_deref_retry(page))
->> >                        goto repeat;
->> >
->> >                if (!page_cache_get_speculative(page))
->> > @@ -647,6 +649,7 @@ repeat:
->> >                        goto repeat;
->> >                }
->> >        }
->> > +out:
->> >        rcu_read_unlock();
->> >
->> >        return page;
->> > @@ -764,12 +767,11 @@ repeat:
->> >                page = radix_tree_deref_slot((void **)pages[i]);
->> >                if (unlikely(!page))
->> >                        continue;
->> > -               /*
->> > -                * this can only trigger if nr_found == 1, making livelock
->> > -                * a non issue.
->> > -                */
->> > -               if (unlikely(page == RADIX_TREE_RETRY))
->> > +               if (radix_tree_deref_retry(page)) {
->> > +                       if (ret)
->> > +                               start = pages[ret-1]->index;
->>
->> What does the line above do?
->>
->>
->> >                        goto restart;
->> > +               }
->> >
->> >                if (!page_cache_get_speculative(page))
->> >                        goto repeat;
->> > @@ -817,11 +819,7 @@ repeat:
->> >                page = radix_tree_deref_slot((void **)pages[i]);
->> >                if (unlikely(!page))
->> >                        continue;
->> > -               /*
->> > -                * this can only trigger if nr_found == 1, making livelock
->> > -                * a non issue.
->> > -                */
->> > -               if (unlikely(page == RADIX_TREE_RETRY))
->> > +               if (radix_tree_deref_retry(page))
->> >                        goto restart;
->> >
->> >                if (page->mapping == NULL || page->index != index)
->> > @@ -874,11 +872,7 @@ repeat:
->> >                page = radix_tree_deref_slot((void **)pages[i]);
->> >                if (unlikely(!page))
->> >                        continue;
->> > -               /*
->> > -                * this can only trigger if nr_found == 1, making livelock
->> > -                * a non issue.
->> > -                */
->> > -               if (unlikely(page == RADIX_TREE_RETRY))
->> > +               if (radix_tree_deref_retry(page))
->> >                        goto restart;
->> >
->> >                if (!page_cache_get_speculative(page))
->> >
->>
->> I just verified that your patch fixes the issue.  Thanks for doing this.
->
-> Are we going to proceed with this?
->
+On Wed, 2010-11-10 at 19:24 +0100, Peter Zijlstra wrote:
+> On Wed, 2010-11-10 at 13:05 -0500, Steven Rostedt wrote:
+> > 
+> > Peter said at LPC that the perf buffering system was not designed to
+> > handle high speed tracing. But he also said he does not like the way the
+> > ftrace buffering works. 
+> 
+> You're not very good at listening,
+
+Or I'm not good at rephrasing, but both are probably true ;-)
 
 
-This bug is still unresolved.  Can we please follow this patch through
-to conclusion?
+>  I said the perf infrastructure and
+> event handling mechanism isn't geared towards full throughput but
+> instead on sampling.
+
+OK, not the buffering, but the infrastructure. That's not much of a
+difference to this topic. Which is about the ABI which includes all from
+the user to the buffer.
+
+> 
+> There is lots of code between getting the event and landing it in the
+> buffer. The buffer itself is perfectly suited for high speed low
+> overhead stuffs, the perf data format possibly not because its not
+> bitfield happy.
+
+Well, we need to separate out the buffer in perf regardless, since it is
+very entwined in the code. Does it now support flight recorder mode?
+
+-- Steve
+
+
