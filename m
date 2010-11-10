@@ -1,40 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755739Ab0KJSkJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 13:40:09 -0500
-Received: from kroah.org ([198.145.64.141]:46739 "EHLO coco.kroah.org"
+	id S1755613Ab0KJSkI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 13:40:08 -0500
+Received: from kroah.org ([198.145.64.141]:46737 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753944Ab0KJSkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753516Ab0KJSkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 10 Nov 2010 13:40:07 -0500
-Date: Wed, 10 Nov 2010 10:40:04 -0800
+Date: Wed, 10 Nov 2010 10:39:40 -0800
 From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>, Dan Carpenter <error27@gmail.com>
-Subject: Re: linux-next: manual merge of the staging tree with the  tree
-Message-ID: <20101110184004.GB15089@kroah.com>
-References: <20101110132408.67f73665.sfr@canb.auug.org.au>
+To: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] fs, sysfs: Change sysfs_pathname function prototype.
+Message-ID: <20101110183940.GA15089@kroah.com>
+References: <AANLkTikDXtLrfjYkQrkGi44qi0cpp-C+Lxr5j1UkFd2G@mail.gmail.com> <20101109224450.GB21992@kroah.com> <AANLkTimHOAdUieTzFvNNhaPxwvas2wBDfSL8aPu764HZ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101110132408.67f73665.sfr@canb.auug.org.au>
+In-Reply-To: <AANLkTimHOAdUieTzFvNNhaPxwvas2wBDfSL8aPu764HZ@mail.gmail.com>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 01:24:08PM +1100, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> Today's linux-next merge of the staging tree got a conflict in
-> drivers/staging/intel_sst/intel_sst_app_interface.c between commits from
-> the staging.current tree and commit
-> d0f40c5041f9c48afbd8f7fbf8a5faa9e5dbd39a ("Staging: intel_sst: Use
-> pr_fmt, fix misspellings") from the staging tree.
-> 
-> I have just ignored the changes from the staging tree for today.
+On Wed, Nov 10, 2010 at 10:53:37AM +0600, Rakib Mullick wrote:
+> On Wed, Nov 10, 2010 at 4:44 AM, Greg KH <greg@kroah.com> wrote:
+> >
+> > If it's really not used then why would marking it inline help out any?
+> > Shouldn't we just delete the function instead?
+> >
+> As far as I can see, its been called recursively and also from
+> sysfs_add_one. Am I missing anything?
 
-Thanks, that works, when these patches go to Linus I'll handle the
-merge.
+If so, then what is the compiler warning that is being generated that
+you are trying to resolve?
+
+totally confused,
 
 greg k-h
