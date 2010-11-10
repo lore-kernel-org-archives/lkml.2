@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756751Ab0KJUxj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 15:53:39 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:36081 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754019Ab0KJUxh (ORCPT
+	id S1756550Ab0KJUy2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 15:54:28 -0500
+Received: from mga01.intel.com ([192.55.52.88]:28176 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754019Ab0KJUy1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 15:53:37 -0500
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Alexey Fisher <bug-track@fisher-privat.net>
-Cc: linux-kernel@vger.kernel.org, joe@perches.com
-Subject: Re: [PATCH 2/2 v2] Unify rest of FAT messages.
-References: <1289321718-6373-1-git-send-email-bug-track@fisher-privat.net>
-	<1289329470-14454-1-git-send-email-bug-track@fisher-privat.net>
-	<87hbfppfu3.fsf@devron.myhome.or.jp> <1289392908.6057.44.camel@zwerg>
-	<87d3qdp9oa.fsf@devron.myhome.or.jp> <1289401644.2438.34.camel@mini>
-	<878w11p1wk.fsf@devron.myhome.or.jp> <1289408312.3636.10.camel@mini>
-Date: Thu, 11 Nov 2010 05:53:32 +0900
-In-Reply-To: <1289408312.3636.10.camel@mini> (Alexey Fisher's message of "Wed,
-	10 Nov 2010 17:58:32 +0100")
-Message-ID: <8739r8q4s3.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+	Wed, 10 Nov 2010 15:54:27 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,180,1288594800"; 
+   d="scan'208";a="856262813"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+CC: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, "bp@alien8.de" <bp@alien8.de>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mchehab@redhat.com" <mchehab@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Arjan van de Ven <arjan@infradead.org>
+Date: Wed, 10 Nov 2010 12:54:21 -0800
+Subject: RE: Tracing Requirements (was: [RFC/Requirements/Design] h/w error
+	reporting)
+Thread-Topic: Tracing Requirements (was: [RFC/Requirements/Design] h/w error
+	reporting)
+Thread-Index: AcuBFR4HY9Vavc6FS8ykVEXaAcJYqAAA4ybg
+Message-ID: <987664A83D2D224EAE907B061CE93D5301649A71DC@orsmsx505.amr.corp.intel.com>
+References: <1289400056.12418.139.camel@gandalf.stny.rr.com>
+ <1289400234.2191.129.camel@laptop>
+ <1289401781.12418.145.camel@gandalf.stny.rr.com>
+ <1289403019.2084.17.camel@laptop> <20101110174852.GB4001@elte.hu>
+ <1289412329.12418.177.camel@gandalf.stny.rr.com>
+ <1289413460.2084.27.camel@laptop> <20101110184105.GH22410@elte.hu>
+ <1289415645.12418.180.camel@gandalf.stny.rr.com>
+ <20101110191127.GA6190@nowhere> <20101110202316.GA32396@Krystal>
+In-Reply-To: <20101110202316.GA32396@Krystal>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexey Fisher <bug-track@fisher-privat.net> writes:
+>- Perf does not support flight recorder tracing (concurrent read/write)
+>  - Sub-buffers are needed to support concurrent read/writes
 
->> Also, yes. It would be complicate more or less than one FS. And maybe I
->> can understand why you want to concentrate FAT.
->> 
->> But I'm afraid to implement for only FAT. If there is not any some sort
->> of agreement by others, it may have to re-implement. If that happen, FAT
->> can be bothered by compatible (or have to maintain both of old and new
->> for a while). Because the notified data are some sort of ABI, IMO.
->> 
->> This is why I'm careful about this, and can't say easily - "let's try it
->> on FAT".
->
-> I'm not sure if we talk about same thing now :D
-> By notification you mean the idea to notify userspace about error?
-> correct?
+When I hear somebody say "flight recorder" - I think of "black boxes"
+in airplanes that log data while the flight is running, and are only
+looked at offline later.  So I'm confused by the "concurrent read/write"
+requirement.
 
-Sure. I was talking about "to notify userspace". :)
+Perhaps you could explain the use cases of your "flight recorder",
+because it seems that the name doesn't fit exactly, and this is
+causing me (and maybe others) some confusion.
 
-> In my previous email i switched the point, it will be to complicate for
-> now to work on notification system. For now i'll be happy to see grep
-> friendly logs. Same like ext2,3,4 do
->
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=4cf46b67eb6de94532c1bea11d2479d085229d0e
->
-> In long term it will be good to have such notification system. So i will
-> start new tread about it. 
+Thanks
 
-OK, I see. I'll review patches. Looks good though.
-
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+-Tony
