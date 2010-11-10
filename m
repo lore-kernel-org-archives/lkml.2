@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757357Ab0KJW6K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 17:58:10 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:40734 "EHLO relay.sgi.com"
+	id S1757379Ab0KJW7V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 17:59:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23973 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756914Ab0KJW6J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 17:58:09 -0500
-From: Alex Elder <aelder@sgi.com>
-Message-Id: <201011102258.oAAMw2fT017804@stout.americas.sgi.com>
-Date: Wed, 10 Nov 2010 16:58:02 -0600
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS update for 2.6.37-rc2
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
-User-Agent: Heirloom mailx 12.4 7/29/08
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757010Ab0KJW7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 17:59:20 -0500
+Subject: Re: [PATCH 2/2] nouveau: Acknowledge HPD irq in handler, not
+ bottom half
+From: Ben Skeggs <bskeggs@redhat.com>
+Reply-To: bskeggs@redhat.com
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTinBTnJ0OjVkcYDQmYZ_HjqE4NCSHnCvD1_p_DJs@mail.gmail.com>
+References: <cover.1289423299.git.luto@mit.edu>
+	 <cb559f4c96f82d5bf0c132b3330aecd4885a0dda.1289423199.git.luto@mit.edu>
+	 <1289427037.9605.3.camel@nisroch>
+	 <AANLkTimfrVPaxgGXyLU-YTQBMNz_BBVMhfH+MO_CH2Cn@mail.gmail.com>
+	 <1289428526.9605.9.camel@nisroch>
+	 <AANLkTinBTnJ0OjVkcYDQmYZ_HjqE4NCSHnCvD1_p_DJs@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 11 Nov 2010 08:58:57 +1000
+Message-ID: <1289429937.9605.11.camel@nisroch>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please include the following patches in 2.6.37-rc2 (or if
-it's too late for that, 2.6.37-rc3).
+On Wed, 2010-11-10 at 17:51 -0500, Andrew Lutomirski wrote:
+> On Wed, Nov 10, 2010 at 5:35 PM, Ben Skeggs <bskeggs@redhat.com> wrote:
+> > On Wed, 2010-11-10 at 17:25 -0500, Andrew Lutomirski wrote:
+> >> On Wed, Nov 10, 2010 at 5:10 PM, Ben Skeggs <bskeggs@redhat.com> wrote:
+> >> > On Wed, 2010-11-10 at 16:32 -0500, Andy Lutomirski wrote:
+> >> >> The old code generated an interrupt storm bad enough to completely
+> >> >> take down my system.
+> >> >>
+> >> >> This only fixes the bits that are defined nouveau_regs.h.  Newer hardware
+> >> >> uses another register that isn't described, and I don't have that hardware
+> >> >> to test.
+> >> > Thanks for looking at this.  I'll take a closer look at the problem
+> >> > today and see what I can come up with too, that'll work with the newer
+> >> > hardware too.
+> >>
+> >> It should be as simple as adding an hpd1 field to the hpd_state and
+> >> making exactly the same change.  (It would be nice to put the register
+> >> definitions into nouveau_regs.h as well -- I didn't really want to
+> >> muck around with a bunch of magic numbers that I can't test.)
+> > Yes, it is.  I can confirm the problem on another card, but it doesn't
+> > actually cause any crashes here.  If you can rework the patch to support
+> > the newer chips too, that'd be great.
+> >
+> > As for magic numbers, the register names for those regs are wrong
+> > anyway.  The joy of reverse-engineering the support.  It doesn't really
+> > matter if you want to stick to them or go back to "magic" numbers.
+> 
+> That explains why INTR and CTRL seemed backwards :)  I'll leave the
+> magic numbers for the 0xe07? stuff.
+That sounds good, it'll all get a cleanup at some point and switched to
+"proper" (well, our best guess, you'd have to ask NVIDIA about the real
+ones) names.
 
-The first one simply drops a "this is an experimental feature"
-warning message; this has been planned for 2.6.37 since earlier this
-year.  The next two are simple cleanups, and the fourth makes use of
-the newly available hlist_add_fake().
+Ben.
+> 
+> Also, I accidentally dropped the "& enabled_bits" part -- I'll put that back.
+> 
+> Patch to follow after I boot and test it here.
+> 
+> --Andy
 
-The last four fix real bugs and are the most imporant.
 
-Thanks.
-
-					-Alex
-
-The following changes since commit f6614b7bb405a9b35dd28baea989a749492c46b2:
-
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/sfrench/cifs-2.6 (2010-11-09 10:34:48 -0800)
-
-are available in the git repository at:
-
-  git://oss.sgi.com/xfs/xfs for-linus
-
-Christoph Hellwig (5):
-      xfs: remove experimental tag from the delaylog option
-      xfs: tell lockdep about parent iolock usage in filestreams
-      xfs: fix a few compiler warnings with CONFIG_XFS_QUOTA=n
-      xfs: use hlist_add_fake
-      xfs: remove incorrect assert in xfs_vm_writepage
-
-Dave Chinner (2):
-      xfs: fix per-ag reference counting in inode reclaim tree walking
-      xfs: move delayed write buffer trace
-
-Kulikov Vasiliy (1):
-      xfs: xfs_ioctl: fix information leak to userland
-
- .../filesystems/xfs-delayed-logging-design.txt     |   11 -----------
- fs/xfs/linux-2.6/xfs_aops.c                        |    7 ++++---
- fs/xfs/linux-2.6/xfs_buf.c                         |    2 +-
- fs/xfs/linux-2.6/xfs_ioctl.c                       |    2 +-
- fs/xfs/linux-2.6/xfs_iops.c                        |    3 ++-
- fs/xfs/linux-2.6/xfs_super.c                       |    3 ---
- fs/xfs/linux-2.6/xfs_sync.c                        |    1 +
- fs/xfs/xfs_filestream.c                            |    8 +++++++-
- fs/xfs/xfs_mount.c                                 |    1 +
- fs/xfs/xfs_quota.h                                 |   20 ++++++++++++++++----
- 10 files changed, 33 insertions(+), 25 deletions(-)
