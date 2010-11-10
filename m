@@ -1,173 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100Ab0KJR0P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 12:26:15 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:3436 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932074Ab0KJR0M (ORCPT
+	id S1757287Ab0KJR2P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 12:28:15 -0500
+Received: from bhuna.collabora.co.uk ([93.93.128.226]:38361 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757275Ab0KJR2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 12:26:12 -0500
-Subject: [PATCH v2] PCI: fix pci_bus_alloc_resource() hang,
-	prefer positive decode
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: Bob Picco <bpicco@redhat.com>, Brian Bloniarz <phunge0@hotmail.com>,
-        Charles Butterfield <charles.butterfield@nextcentury.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        linux-pci@vger.kernel.org,
-        "Horst H. von Brand" <vonbrand@inf.utfsm.cl>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        Borislav Petkov <bp@amd64.org>, Stefan Becker <chemobejk@gmail.com>,
-        Chuck Ebbert <cebbert@redhat.com>,
-        Fabrice Bellet <fabrice@bellet.info>, Yinghai Lu <yinghai@kernel.org>,
-        Leann Ogasawara <leann.ogasawara@canonical.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 10 Nov 2010 10:26:07 -0700
-Message-ID: <20101110172607.2537.10985.stgit@bob.kio>
-User-Agent: StGit/0.15
+	Wed, 10 Nov 2010 12:28:14 -0500
+Message-ID: <4CDAD4D4.3070009@collabora.co.uk>
+Date: Wed, 10 Nov 2010 17:22:28 +0000
+From: Ian Molton <ian.molton@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100917 Icedove/3.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Anthony Liguori <anthony@codemonkey.ws>
+CC: QEMU Developers <qemu-devel@nongnu.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        virtualization@lists.osdl.org, Alon Levy <alevy@redhat.com>,
+        Avi Kivity <avi@redhat.com>
+Subject: Re: [Qemu-devel] Re: [PATCH] Implement a virtio GPU transport
+References: <1097264455.965471288612409433.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>	<4CCEC090.3050009@codemonkey.ws>	<4CD1A406.3090909@collabora.co.uk> <4CD1A73B.2010406@codemonkey.ws> <4CD44759.5020500@collabora.co.uk>
+In-Reply-To: <4CD44759.5020500@collabora.co.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Ping ?
 
-When a PCI bus has two resources with the same start/end, e.g.,
-
-    pci_bus 0000:04: resource 2 [mem 0xd0000000-0xd7ffffff pref]
-    pci_bus 0000:04: resource 7 [mem 0xd0000000-0xd7ffffff]
-
-the previous pci_bus_find_resource_prev() implementation would alternate
-between them forever:
-
-    pci_bus_find_resource_prev(... [mem 0xd0000000-0xd7ffffff pref])
-        returns [mem 0xd0000000-0xd7ffffff]
-    pci_bus_find_resource_prev(... [mem 0xd0000000-0xd7ffffff])
-        returns [mem 0xd0000000-0xd7ffffff pref]
-    pci_bus_find_resource_prev(... [mem 0xd0000000-0xd7ffffff pref])
-        returns [mem 0xd0000000-0xd7ffffff]
-    ...
-
-This happened because there was no ordering between two resources with the
-same start and end.  A resource that had the same start and end as the
-cursor, but was not itself the cursor, was considered to be before the
-cursor.
-
-This patch fixes the hang by making a fixed ordering between any two
-resources.
-
-In addition, it tries to allocate from positively decoded regions before
-using any subtractively decoded resources.  This means we will use a
-positive decode region before a subtractive decode one, even if it means
-using a smaller address.
-
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=22062
-Reported-by: Borislav Petkov <bp@amd64.org>
-Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
----
-
- drivers/pci/bus.c |   70 +++++++++++++++++++++++++++++++++++++----------------
- 1 files changed, 49 insertions(+), 21 deletions(-)
-
-
-diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-index 5624db8..003170e 100644
---- a/drivers/pci/bus.c
-+++ b/drivers/pci/bus.c
-@@ -64,17 +64,57 @@ void pci_bus_remove_resources(struct pci_bus *bus)
- 	}
- }
- 
-+static bool pci_bus_resource_better(struct resource *res1, bool pos1,
-+				    struct resource *res2, bool pos2)
-+{
-+	/* If exactly one is positive decode, always prefer that one */
-+	if (pos1 != pos2)
-+		return pos1 ? true : false;
-+
-+	/* Prefer the one that contains the highest address */
-+	if (res1->end != res2->end)
-+		return (res1->end > res2->end) ? true : false;
-+
-+	/* Otherwise, prefer the one with highest "center of gravity" */
-+	if (res1->start != res2->start)
-+		return (res1->start > res2->start) ? true : false;
-+
-+	/* Otherwise, choose one arbitrarily (but consistently) */
-+	return (res1 > res2) ? true : false;
-+}
-+
-+static bool pci_bus_resource_positive(struct pci_bus *bus, struct resource *res)
-+{
-+	struct pci_bus_resource *bus_res;
-+
-+	/*
-+	 * This relies on the fact that pci_bus.resource[] refers to P2P or
-+	 * CardBus bridge base/limit registers, which are always positively
-+	 * decoded.  The pci_bus.resources list contains host bridge or
-+	 * subtractively decoded resources.
-+	 */
-+	list_for_each_entry(bus_res, &bus->resources, list) {
-+		if (bus_res->res == res)
-+			return (bus_res->flags & PCI_SUBTRACTIVE_DECODE) ?
-+				false : true;
-+	}
-+	return true;
-+}
-+
- /*
-- * Find the highest-address bus resource below the cursor "res".  If the
-- * cursor is NULL, return the highest resource.
-+ * Find the next-best bus resource after the cursor "res".  If the cursor is
-+ * NULL, return the best resource.  "Best" means that we prefer positive
-+ * decode regions over subtractive decode, then those at higher addresses.
-  */
- static struct resource *pci_bus_find_resource_prev(struct pci_bus *bus,
- 						   unsigned int type,
- 						   struct resource *res)
- {
-+	bool res_pos, r_pos, prev_pos = false;
- 	struct resource *r, *prev = NULL;
- 	int i;
- 
-+	res_pos = pci_bus_resource_positive(bus, res);
- 	pci_bus_for_each_resource(bus, r, i) {
- 		if (!r)
- 			continue;
-@@ -82,26 +122,14 @@ static struct resource *pci_bus_find_resource_prev(struct pci_bus *bus,
- 		if ((r->flags & IORESOURCE_TYPE_BITS) != type)
- 			continue;
- 
--		/* If this resource is at or past the cursor, skip it */
--		if (res) {
--			if (r == res)
--				continue;
--			if (r->end > res->end)
--				continue;
--			if (r->end == res->end && r->start > res->start)
--				continue;
-+		r_pos = pci_bus_resource_positive(bus, r);
-+		if (!res || pci_bus_resource_better(res, res_pos, r, r_pos)) {
-+			if (!prev || pci_bus_resource_better(r, r_pos,
-+							     prev, prev_pos)) {
-+				prev = r;
-+				prev_pos = r_pos;
-+			}
- 		}
--
--		if (!prev)
--			prev = r;
--
--		/*
--		 * A small resource is higher than a large one that ends at
--		 * the same address.
--		 */
--		if (r->end > prev->end ||
--		    (r->end == prev->end && r->start > prev->start))
--			prev = r;
- 	}
- 
- 	return prev;
+On 05/11/10 18:05, Ian Molton wrote:
+> On 03/11/10 18:17, Anthony Liguori wrote:
+>> On 11/03/2010 01:03 PM, Ian Molton wrote:
+>
+>> Why is it better than using virtio-serial?
+>
+> For one thing, it enforces the PID in kernel so the guests processes
+> cant screw each other over by forging the PID passed to qemu.
+>
+>>> My current patch touches a tiny part of the qemu sources. It works
+>>> today.
+>>
+>> But it's not at all mergable in the current form. If you want to do the
+>> work of getting it into a mergable state (cleaning up the coding style,
+>> moving it to hw/, etc.) than I'm willing to consider it. But I don't
+>> think a custom virtio transport is the right thing to do here.
+>
+> Hm, I thought I'd indented everything in qemus odd way... Is there a
+> codingstyle document or a checkpatch-like tool for qemu?
+>
+> I'm happy to make the code meet qemus coding style.
+>
+>> However, if you want something that Just Works with the least amount of
+>> code possible, just split it into a separate process and we can stick it
+>> in a contrib/ directory or something.
+>
+> I dont see what splitting it into a seperate process buys us given we
+> still need the virtio-gl driver in order to enforce the PID. The virtio
+> driver is probably quite a bit more efficient at marshalling the data
+> too, given that it was designed alongside the userspace code.
+>
+>>>> I
+>>>> think we can consider integrating it into QEMU (or at least simplifying
+>>>> the execution of the backend) but integrating into QEMU is going to
+>>>> require an awful lot of the existing code to be rewritten.
+>
+> Why? aside from codingstyle, whats massively wrong with it thats going
+> to demand a total rewrite?
+>
+>>>> Keeping it
+>>>> separate has the advantage of allowing something to Just Work as an
+>>>> interim solution as we wait for proper support in Spice.
+>
+> Why does keeping it seperate make life easier? qemu is in a git repo.
+> when the time comes, if it reall is a total replacement, git-rm will
+> nuke it all.
+>
+>>> I dont know why you think integrating it into qemu is hard? I've
+>>> already done it.
+>>
+>> Adding a file that happens to compile as part of qemu even though it
+>> doesn't actually integrate with qemu in any meaningful way is not
+>> integrating. That's just build system manipulation.
+>
+> Uh? Either it compiles and works as part of qemu (which it does) or it
+> doesnt. How is that not integrated? I've added it to the configure
+> script too.
+>
+> -Ian
+>
 
