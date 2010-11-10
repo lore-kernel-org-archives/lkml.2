@@ -1,208 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230Ab0KJAD3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 19:03:29 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38774 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751526Ab0KJAD2 (ORCPT
+	id S1753034Ab0KJANM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 19:13:12 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:55572 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191Ab0KJANM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 19:03:28 -0500
-Message-Id: <201011100003.oAA03O3c015222@imap1.linux-foundation.org>
-Subject: mmotm 2010-11-09-15-31 uploaded
-To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-From: akpm@linux-foundation.org
-Date: Tue, 09 Nov 2010 15:31:15 -0800
+	Tue, 9 Nov 2010 19:13:12 -0500
+MIME-Version: 1.0
+In-Reply-To: <1287771688-14805-29-git-send-email-gregkh@suse.de>
+References: <20101022175112.GC13489@kroah.com> <1287771688-14805-29-git-send-email-gregkh@suse.de>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Wed, 10 Nov 2010 01:12:55 +0100
+Message-ID: <AANLkTinVp4C9bRW6=EMHwh1UyeadFbOXKe1aDsxknJf8@mail.gmail.com>
+Subject: Re: [PATCH 29/49] vcs: add poll/fasync support
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, Nicolas Pitre <nico@fluxnic.net>,
+        Nicolas Pitre <nicolas.pitre@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mm-of-the-moment snapshot 2010-11-09-15-31 has been uploaded to
+On Fri, Oct 22, 2010 at 20:21, Greg Kroah-Hartman <gregkh@suse.de> wrote:
+> From: Nicolas Pitre <nico@fluxnic.net>
+>
+> The /dev/vcs* devices are used, amongst other things, by accessibility
+> applications such as BRLTTY to display the screen content onto refreshable
+> braille displays.  Currently this is performed by constantly reading from
+> /dev/vcsa0 whether or not the screen content has changed.  Given the
+> default braille refresh rate of 25 times per second, this easily qualifies
+> as the biggest source of wake-up events preventing laptops from entering
+> deeper power saving states.
+>
+> To avoid this periodic polling, let's add support for select()/poll() and
+> SIGIO with the /dev/vcs* devices.  The implemented semantic is to report
+> data availability whenever the corresponding vt has seen some update after
+> the last read() operation.  The application still has to lseek() back
+> as usual in order to read() the new data.
 
-   http://userweb.kernel.org/~akpm/mmotm/
+Shouldn't it raise POLLPRI/POLLERR then, when it's not about new data
+to read? We do this for several files in the kernel where we just want
+to wakup someone, but the pretty well-defined semantics of poll()
+don't apply.
 
-and will soon be available at
-
-   git://zen-kernel.org/kernel/mmotm.git
-
-It contains the following patches against 2.6.37-rc1:
-
-origin.patch
-hpet-factor-timer-allocate-from-open.patch
-um-fix-ptrace-build-error.patch
-include-linux-fsh-needs-typesh.patch
-drivers-macintosh-adb-iopc-flags-should-be-unsigned-long.patch
-rapidio-use-resource_size.patch
-scripts-kernel-doc-escape-special-characters-for-xml-struct-output.patch
-include-linux-resourceh-needs-typesh.patch
-atomic-add-atomic_inc_not_zero_hint.patch
-atomic-add-atomic_inc_not_zero_hint-checkpatch-fixes.patch
-linux-next.patch
-next-remove-localversion.patch
-arch-x86-kernel-entry_64s-fix-build-with-gas-2161.patch
-arch-x86-kernel-entry_32s-i386-too.patch
-i-need-old-gcc.patch
-arch-alpha-kernel-systblss-remove-debug-check.patch
-drivers-misc-isl29020c-fix-signedness-bug.patch
-drivers-misc-isl29020c-dont-ignore-the-i2c_smbus_read_byte_data-return-value.patch
-drivers-misc-apds9802alsc-fix-signedness-bug.patch
-memcg-null-dereference-on-allocation-failure.patch
-drivers-misc-bh1770glcc-error-handling-in-bh1770_power_state_store.patch
-fuse-clear-attribute-cache-for-openo_trunc.patch
-kernel-range-fix-clean_sort_range-for-the-case-of-full-array.patch
-mm-vfs-revalidate-page-mapping-in-do_generic_file_read.patch
-latencytop-fix-per-task-accumulator.patch
-mm-vmap-area-cache.patch
-arch-arm-plat-omap-iovmmc-fix-end-address-of-vm-area-comparation-in-alloc_iovm_area.patch
-backlight-fix-88pm860x_bl-macro-collision.patch
-cciss-fix-botched-tag-masking-for-scsi-tape-commands.patch
-ibm_rtl-fix-printk-format-warning.patch
-arch-x86-kernel-apic-io_apicc-fix-warning.patch
-fs-btrfs-inodec-eliminate-memory-leak.patch
-btrfs-dont-dereference-extent_mapping-if-null.patch
-cpufreq-fix-ondemand-governor-powersave_bias-execution-time-misuse.patch
-drivers-dma-use-the-ccflag-y-instead-of-extra_cflags.patch
-drivers-dma-ioat-use-the-ccflag-y-instead-of-extra_cflags.patch
-powerpc-enable-arch_dma_addr_t_64bit-with-arch_phys_addr_t_64bit.patch
-debugfs-remove-module_exit.patch
-drivers-gpu-drm-radeon-atomc-fix-warning.patch
-drivers-media-video-gspca-cpia1c-fix-error-check.patch
-ecryptfs-fix-truncation-error-in-ecryptfs_read_update_atime.patch
-irq-use-per_cpu-kstat_irqs.patch
-irq-use-per_cpu-kstat_irqs-checkpatch-fixes.patch
-leds-route-kbd-leds-through-the-generic-leds-layer.patch
-led-class-always-implement-blinking.patch
-leds-driver-for-national-semiconductor-lp5521-chip.patch
-leds-driver-for-national-semiconductors-lp5523-chip.patch
-leds-update-lp552x-support-kconfig-and-makefile.patch
-documentation-led-drivers-lp5521-and-lp5523.patch
-leds-add-led-trigger-for-input-subsystem-led-events.patch
-gpio-led-properly-initialize-return-value.patch
-mips-enable-arch_dma_addr_t_64bit-with-highmem-64bit_phys_addr-64bit.patch
-isdn-capi-unregister-capictr-notifier-after-init-failure.patch
-isdn-capi-make-kcapi-use-a-separate-workqueue.patch
-net-avoid-limits-overflow.patch
-drivers-video-backlight-s6e63m0c-set-permissions-on-gamma_table-file-to-0444.patch
-backlight-fix-blanking-for-lms283gf05-lcd.patch
-backlight-fix-blanking-for-l4f00242t03-lcd.patch
-backlight-s6e63m0-unregister-backlight-device-and-remove-sysfs-attribute-file-in-s6e63m0_remove.patch
-backlight-s6e63m0-fix-section-mismatch.patch
-backlight-add-low-threshold-to-pwm-backlight.patch
-video-backlight-adp8860-fix-ambient-light-zone-overwrite-handling.patch
-drivers-video-backlight-adp8860_blc-check-strict_strtoul-return-value.patch
-btusb-patch-add_apple_macbookpro62.patch
-drivers-char-amiserialc-remove-unused-variable-icount.patch
-atmel_serial-fix-rts-high-after-initialization-in-rs485-mode.patch
-atmel_serial-fix-rts-high-after-initialization-in-rs485-mode-fix.patch
-drivers-message-fusion-mptsasc-fix-warning.patch
-hpsa-remove-incorrect-redefinition-of-pci_device_id_hp_cissf.patch
-drivers-block-makefile-replace-the-use-of-module-objs-with-module-y.patch
-drivers-block-aoe-makefile-replace-the-use-of-module-objs-with-module-y.patch
-vfs-remove-a-warning-on-open_fmode.patch
-vfs-add-__fmode_exec.patch
-n_hdlc-fix-read-and-write-locking.patch
-n_hdlc-fix-read-and-write-locking-update.patch
-mm.patch
-mm-smaps-export-mlock-information.patch
-mm-page-allocator-adjust-the-per-cpu-counter-threshold-when-memory-is-low.patch
-mm-vmstat-use-a-single-setter-function-and-callback-for-adjusting-percpu-thresholds.patch
-mm-vmstat-use-a-single-setter-function-and-callback-for-adjusting-percpu-thresholds-fix.patch
-mm-mempolicyc-add-rcu-read-lock-to-protect-pid-structure.patch
-mm-convert-sprintf_symbol-to-%ps.patch
-writeback-integrated-background-writeback-work.patch
-writeback-trace-wakeup-event-for-background-writeback.patch
-writeback-stop-background-kupdate-works-from-livelocking-other-works.patch
-writeback-avoid-livelocking-wb_sync_all-writeback.patch
-writeback-check-skipped-pages-on-wb_sync_all.patch
-sync_inode_metadata-fix-comment.patch
-define-madv_hugepage.patch
-frv-duplicate-output_buffer-of-e03.patch
-frv-duplicate-output_buffer-of-e03-checkpatch-fixes.patch
-add-the-common-dma_addr_t-typedef-to-include-linux-typesh.patch
-scripts-get_maintainerpl-make-rolestats-the-default.patch
-scripts-get_maintainerpl-use-git-fallback-more-often.patch
-maintainers-intel-gfx-is-a-subscribers-only-mailing-list.patch
-percpucounter-optimize-__percpu_counter_add-a-bit-through-the-use-of-this_cpu-operations.patch
-drivers-mmc-host-omapc-use-resource_size.patch
-drivers-mmc-host-omap_hsmmcc-use-resource_size.patch
-epoll-convert-max_user_watches-to-long.patch
-binfmt_elf-cleanups.patch
-rtc-add-real-time-clock-driver-for-nvidia-tegra.patch
-cyber2000fb-avoid-palette-corruption-at-higher-clocks.patch
-jbd-remove-dependency-on-__gfp_nofail.patch
-memcg-add-page_cgroup-flags-for-dirty-page-tracking.patch
-memcg-document-cgroup-dirty-memory-interfaces.patch
-memcg-document-cgroup-dirty-memory-interfaces-fix.patch
-memcg-create-extensible-page-stat-update-routines.patch
-memcg-add-lock-to-synchronize-page-accounting-and-migration.patch
-writeback-create-dirty_info-structure.patch
-memcg-add-dirty-page-accounting-infrastructure.patch
-memcg-add-kernel-calls-for-memcg-dirty-page-stats.patch
-memcg-add-dirty-limits-to-mem_cgroup.patch
-memcg-add-dirty-limits-to-mem_cgroup-use-native-word-to-represent-dirtyable-pages.patch
-memcg-add-dirty-limits-to-mem_cgroup-catch-negative-per-cpu-sums-in-dirty-info.patch
-memcg-add-dirty-limits-to-mem_cgroup-avoid-overflow-in-memcg_hierarchical_free_pages.patch
-memcg-add-dirty-limits-to-mem_cgroup-correct-memcg_hierarchical_free_pages-return-type.patch
-memcg-add-dirty-limits-to-mem_cgroup-avoid-free-overflow-in-memcg_hierarchical_free_pages.patch
-memcg-cpu-hotplug-lockdep-warning-fix.patch
-memcg-add-cgroupfs-interface-to-memcg-dirty-limits.patch
-memcg-break-out-event-counters-from-other-stats.patch
-memcg-check-memcg-dirty-limits-in-page-writeback.patch
-memcg-use-native-word-page-statistics-counters.patch
-memcg-use-native-word-page-statistics-counters-fix.patch
-memcg-add-mem_cgroup-parameter-to-mem_cgroup_page_stat.patch
-memcg-pass-mem_cgroup-to-mem_cgroup_dirty_info.patch
-memcg-make-throttle_vm_writeout-memcg-aware.patch
-memcg-make-throttle_vm_writeout-memcg-aware-fix.patch
-memcg-simplify-mem_cgroup_page_stat.patch
-memcg-simplify-mem_cgroup_dirty_info.patch
-memcg-make-mem_cgroup_page_stat-return-value-unsigned.patch
-memcg-use-zalloc-rather-than-mallocmemset.patch
-fs-proc-basec-kernel-latencytopc-convert-sprintf_symbol-to-%ps.patch
-fs-proc-basec-kernel-latencytopc-convert-sprintf_symbol-to-%ps-checkpatch-fixes.patch
-drivers-char-nozomic-fix-unused-variable-compiler-warning.patch
-rapidio-use-common-destid-storage-for-endpoints-and-switches.patch
-rapidio-integrate-rio_switch-into-rio_dev.patch
-fs-execc-provide-the-correct-process-pid-to-the-pipe-helper.patch
-nfc-driver-for-nxp-semiconductors-pn544-nfc-chip.patch
-nfc-driver-for-nxp-semiconductors-pn544-nfc-chip-update.patch
-remove-dma64_addr_t.patch
-pps-trivial-fixes.patch
-pps-declare-variables-where-they-are-used-in-switch.patch
-pps-fix-race-in-pps_fetch-handler.patch
-pps-unify-timestamp-gathering.patch
-pps-access-pps-device-by-direct-pointer.patch
-pps-convert-printk-pr_-to-dev_.patch
-pps-move-idr-stuff-to-ppsc.patch
-pps-add-async-pps-event-handler.patch
-pps-add-async-pps-event-handler-fix.patch
-pps-dont-disable-interrupts-when-using-spin-locks.patch
-pps-use-bug_on-for-kernel-api-safety-checks.patch
-pps-simplify-conditions-a-bit.patch
-ntp-add-hardpps-implementation.patch
-pps-capture-monotonic_raw-timestamps-as-well.patch
-pps-add-kernel-consumer-support.patch
-pps-add-parallel-port-pps-client.patch
-pps-add-parallel-port-pps-signal-generator.patch
-memstick-a-few-changes-to-core.patch
-memstick-add-support-for-legacy-memorysticks.patch
-memstick-add-driver-for-ricoh-r5c592-card-reader.patch
-memstick-add-driver-for-ricoh-r5c592-card-reader-fix.patch
-memstick-core-fix-device_register-error-handling.patch
-w1-ds2423-counter-driver-and-documentation.patch
-make-sure-nobodys-leaking-resources.patch
-journal_add_journal_head-debug.patch
-releasing-resources-with-children.patch
-make-frame_pointer-default=y.patch
-mutex-subsystem-synchro-test-module.patch
-mutex-subsystem-synchro-test-module-add-missing-header-file.patch
-slab-leaks3-default-y.patch
-put_bh-debug.patch
-add-debugging-aid-for-memory-initialisation-problems.patch
-workaround-for-a-pci-restoring-bug.patch
-prio_tree-debugging-patch.patch
-single_open-seq_release-leak-diagnostics.patch
-add-a-refcount-check-in-dput.patch
-getblk-handle-2tb-devices.patch
-memblock-add-input-size-checking-to-memblock_find_region.patch
-memblock-add-input-size-checking-to-memblock_find_region-fix.patch
+Kay
