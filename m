@@ -1,122 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755676Ab0KJL6V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 06:58:21 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:57073 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754366Ab0KJL6T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 06:58:19 -0500
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Alexey Fisher <bug-track@fisher-privat.net>
-Cc: <linux-kernel@vger.kernel.org>, joe@perches.com
-Subject: Re: [PATCH 1/2] Idd fat_msg() to unified kernel messages for FAT fs.
-References: <1289321718-6373-1-git-send-email-bug-track@fisher-privat.net>
-	<1289321718-6373-2-git-send-email-bug-track@fisher-privat.net>
-	<1289329124-14358-1-git-send-email-bug-track@fisher-privat.net>
-Date: Wed, 10 Nov 2010 20:33:27 +0900
-In-Reply-To: <1289329124-14358-1-git-send-email-bug-track@fisher-privat.net>
-	(Alexey Fisher's message of "Tue, 9 Nov 2010 19:58:44 +0100")
-Message-ID: <87lj51pg54.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+	id S1755708Ab0KJL7C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 06:59:02 -0500
+Received: from mx01.sz.bfs.de ([194.94.69.103]:23751 "EHLO mx01.sz.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753918Ab0KJL65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 06:58:57 -0500
+Message-ID: <4CDA88FE.8040801@bfs.de>
+Date: Wed, 10 Nov 2010 12:58:54 +0100
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.14) Gecko/20101013 SUSE/3.0.9 Thunderbird/3.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-2022-jp
+To: Vasiliy Kulikov <segooon@gmail.com>
+CC: David Miller <davem@davemloft.net>, kernel-janitors@vger.kernel.org,
+        jon.maloy@ericsson.com, allan.stephens@windriver.com,
+        tipc-discussion@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] net: tipc: fix information leak to userland
+References: <1288545032-16481-1-git-send-email-segooon@gmail.com> <20101109.092630.260076036.davem@davemloft.net> <20101109203317.GA24933@albatros>
+In-Reply-To: <20101109203317.GA24933@albatros>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexey Fisher <bug-track@fisher-privat.net> writes:
 
-> Add fat_msg() function to unify printkas. And use it
-> to report mounts and remounts.
 
-Sorry, I missed to see the intent of this. What's for?
+Am 09.11.2010 21:33, schrieb Vasiliy Kulikov:
+> On Tue, Nov 09, 2010 at 09:26 -0800, David Miller wrote:
+>> From: Vasiliy Kulikov <segooon@gmail.com>
+>> Date: Sun, 31 Oct 2010 20:10:32 +0300
+>>
+>>> Structure sockaddr_tipc is copied to userland with padding bytes after
+>>> "id" field in union field "name" unitialized.  It leads to leaking of
+>>> contents of kernel stack memory.  We have to initialize them to zero.
+>>>
+>>> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+>>
+>> Applied.
+>>
+>> Patches #1 and #2 were given feedback which I need you to integrate
+>> and submit new patches based upon, thanks.
+> 
+> About #2:
+> 
+> I still think that this:
+> 
+>     if (dev)
+>         strncpy(uaddr->sa_data, dev->name, 14);
+>     else
+>         memset(uaddr->sa_data, 0, 14);
+> 
+> is better than this:
+> 
+>     memset(uaddr->sa_data, 0, 14);
+>     dev = dev_get_by_index_rcu(sock_net(sk), pkt_sk(sk)->ifindex);
+>     if (dev)
+>         strlcpy(uaddr->sa_data, dev->name, 15);
+> 
+> Doesn't it?  Explicitly filling with zero on the same "if" level is
+> slightly easier to read and understand.
+> 
 
-Passed options and accepted options are not same, IMO, so reporting
-passed option are confusable. No?
+no problem with me, since i came up with the idea a simple explanation:
+IMHO the pattern clear/if/copy is more robust
 
-Thanks.
+NTL the core problem was that sizeof sa_data is 14 while dev->name is IFNAMESZ=15.
 
-> new dmesg looks like this:
-> [ 6264.957109] FAT-fs (sdg1): Mounted. Opts: uid=1000,gid=1000,shortname=mixed,dmask=0077,utf8=1,showexec,flush
-> [ 6402.175028] FAT-fs (sdg1): re-mounted. Opts: (null)
->
-> v2 - add prototype to fat.h;
->      炭se %pV; rename prefix to level;
->
-> Signed-off-by: Alexey Fisher <bug-track@fisher-privat.net>
-> ---
->  fs/fat/fat.h   |    2 ++
->  fs/fat/inode.c |   24 ++++++++++++++++++++++++
->  2 files changed, 26 insertions(+), 0 deletions(-)
->
-> diff --git a/fs/fat/fat.h b/fs/fat/fat.h
-> index d75a77f..c9e4553 100644
-> --- a/fs/fat/fat.h
-> +++ b/fs/fat/fat.h
-> @@ -345,4 +345,6 @@ void fat_cache_destroy(void);
->  /* helper for printk */
->  typedef unsigned long long	llu;
->  
-> +void fat_msg(struct super_block *sb, const char *level, const char *fmt, ...);
-> +
->  #endif /* !_FAT_H */
-> diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-> index ad6998a..a4e8f26 100644
-> --- a/fs/fat/inode.c
-> +++ b/fs/fat/inode.c
-> @@ -37,6 +37,24 @@
->  static int fat_default_codepage = CONFIG_FAT_DEFAULT_CODEPAGE;
->  static char fat_default_iocharset[] = CONFIG_FAT_DEFAULT_IOCHARSET;
->  
-> +/** 
-> + * fat_msg() - print preformated FAT specific messages.
-> + * this function is copy of ext4_msg() from fs/ext4/super.c
-> + */
-> +void __attribute__ ((format (printf, 3, 4)))
-> +fat_msg(struct super_block *sb, const char *level, const char *fmt, ...)
-> +{
-> +	struct va_format vaf;
-> +	va_list args;
-> +
-> +	va_start(args, fmt);
-> +	vaf.fmt = fmt;
-> +	vaf.va = &args;
-> +
-> +	printk("%sFAT-fs (%s): %pV\n", level, sb->s_id, &vaf);
-> +
-> +	va_end(args);
-> +}
->  
->  static int fat_add_cluster(struct inode *inode)
->  {
-> @@ -552,6 +570,8 @@ static int fat_remount(struct super_block *sb, int *flags, char *data)
->  {
->  	struct msdos_sb_info *sbi = MSDOS_SB(sb);
->  	*flags |= MS_NODIRATIME | (sbi->options.isvfat ? 0 : MS_NOATIME);
-> +
-> +	fat_msg(sb, KERN_INFO, "re-mounted. Opts: %s", data);
->  	return 0;
->  }
->  
-> @@ -1249,6 +1269,7 @@ int fat_fill_super(struct super_block *sb, void *data, int silent,
->  	unsigned int media;
->  	long error;
->  	char buf[50];
-> +	char *orig_data = kstrdup(data, GFP_KERNEL);
->  
->  	/*
->  	 * GFP_KERNEL is ok here, because while we do hold the
-> @@ -1502,6 +1523,9 @@ int fat_fill_super(struct super_block *sb, void *data, int silent,
->  		goto out_fail;
->  	}
->  
-> +	fat_msg(sb, KERN_INFO, "Mounted. Opts: %s", orig_data);
-> +	kfree(orig_data);
-> +
->  	return 0;
->  
->  out_invalid:
 
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+re,
+ wh
