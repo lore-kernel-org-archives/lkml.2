@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756902Ab0KJVPz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 16:15:55 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:64692 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756875Ab0KJVPx (ORCPT
+	id S1756870Ab0KJVPr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 16:15:47 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:45792 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756484Ab0KJVPq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 16:15:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:in-reply-to:references:user-agent:date
-         :message-id:mime-version:content-type;
-        b=BU0EAftzWrGSSoIeF6eKrySx0f/V8zLXL7eNMQ3IinFd/kPwWgZbd/XIhPJS905FD2
-         QvKEYr7yHtx3Xtr2En5KgxW3UnWz4wi+4r2R05HSHOHw0yyJ+jtMHg1rWix8X8uqVwYC
-         rPtAHgnlnUQOfevAdSTn+tXSUlWF61MMwMOyw=
-From: Ben Gamari <bgamari@gmail.com>
-To: Borislav Petkov <bp@amd64.org>, acme@infradead.org, fweisbec@gmail.com,
-        mingo@elte.hu, peterz@infradead.org, rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH 03/20] x86, mce: Add persistent MCE event
-In-Reply-To: <1288885016-18295-4-git-send-email-bp@amd64.org>
-References: <1288885016-18295-1-git-send-email-bp@amd64.org> <1288885016-18295-4-git-send-email-bp@amd64.org>
-User-Agent: Notmuch/0.3.1-158-g04cd99c (http://notmuchmail.org) Emacs/23.1.1 (x86_64-pc-linux-gnu)
-Date: Wed, 10 Nov 2010 16:15:47 -0500
-Message-ID: <87lj50vq0s.fsf@gmail.com>
+	Wed, 10 Nov 2010 16:15:46 -0500
+Date: Wed, 10 Nov 2010 14:15:40 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Maciej Szmigiero <mhej@o2.pl>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Anton Vorontsov <avorontsov@ru.mvista.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Ben Nizette <bn@niasdigital.com>
+Subject: Re: [GPIO]implement sleeping GPIO chip removal
+Message-ID: <20101110211540.GA7063@angua.secretlab.ca>
+References: <4CD6F049.10102@o2.pl>
+ <20101110050947.GC4110@angua.secretlab.ca>
+ <4CDABA03.2050000@o2.pl>
+ <alpine.LFD.2.00.1011102134350.2900@localhost6.localdomain6>
+ <4CDB0834.4080101@o2.pl>
+ <alpine.LFD.2.00.1011102203500.2900@localhost6.localdomain6>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1011102203500.2900@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  4 Nov 2010 16:36:39 +0100, Borislav Petkov <bp@amd64.org> wrote:
-> From: Borislav Petkov <borislav.petkov@amd.com>
+On Wed, Nov 10, 2010 at 10:07:05PM +0100, Thomas Gleixner wrote:
+> Can you please use a mail client which does proper line breaks at 78 ?
 > 
-> Add the necessary glue to enable the mce_record tracepoint on boot
-> turning it into a persistent event. This exports the MCE buffer
-> read-only to a userspace daemon which will hook into it through debugfs
-> when booting is finished.
+> On Wed, 10 Nov 2010, Maciej Szmigiero wrote:
+> > You misunderstood me.
 > 
-While MCE technically is a diagnostics service, do we want to start
-adding dependencies on debugfs in long-running, common-place daemons? I
-was under the impression we were to avoid using debugfs for anything
-other than values for one-off debugging.
+> No, I didnt.
+> 
+> > By "looping in hope that somebody will finally release the chip" I
+> > meant the only real way to handle a GPIO chip unplugging in the
+> > current kernel.  Which is way worse that preventing new requests,
+> > then waiting for existing one to be released.  And this is exactly
+> > what my patch does.
+> 
+> That still does not make it a good solution.
+> 
+> > I understand that it could be simplified by removing redundant code
+> > (as Grant Likely had suggested before), and moving it to completion
+> > interface instead of manipulating a task structure directly, but
+> > this doesn't mean that the whole GPIO code has to be rewritten just
+> > to add one functionality.
+> 
+> It's not about rewriting, it's about fixing the problem in the right
+> way and not just hacking around it.
+> 
+> If we see a shortcoming like this, we fix it and do not magically work
+> around it.
 
-Cheers,
++1
 
-- Ben
+Thomas is right.  kobject reference counting is the correct solution.
+Nack on this approach.
+
+g.
+
