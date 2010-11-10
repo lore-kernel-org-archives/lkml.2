@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757439Ab0KJXEe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 18:04:34 -0500
-Received: from DMZ-MAILSEC-SCANNER-7.MIT.EDU ([18.7.68.36]:48625 "EHLO
-	dmz-mailsec-scanner-7.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757209Ab0KJXEc (ORCPT
+	id S1757451Ab0KJXEj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 18:04:39 -0500
+Received: from DMZ-MAILSEC-SCANNER-6.MIT.EDU ([18.7.68.35]:48072 "EHLO
+	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757209Ab0KJXEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 18:04:32 -0500
-X-AuditID: 12074424-b7b0bae000000a05-f6-4cdb24ff9d6b
+	Wed, 10 Nov 2010 18:04:38 -0500
+X-AuditID: 12074423-b7bd0ae000000a00-c9-4cdb2505d1cc
 From: Andy Lutomirski <luto@MIT.EDU>
 To: Ben Skeggs <bskeggs@redhat.com>
 Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
         Andy Lutomirski <luto@MIT.EDU>
-Subject: [PATCH v2 0/2] Fix nouveau-related freezes
-Date: Wed, 10 Nov 2010 18:04:13 -0500
-Message-Id: <cover.1289430026.git.luto@mit.edu>
+Subject: [PATCH 1/2] Use existing defines for NV50 hotplug registers
+Date: Wed, 10 Nov 2010 18:04:14 -0500
+Message-Id: <8055e8485f28491fe6219c512e379b4b89bcd465.1289430026.git.luto@mit.edu>
 X-Mailer: git-send-email 1.7.3.2
-X-Brightmail-Tracker: AAAAARagEl4=
+In-Reply-To: <cover.1289430026.git.luto@mit.edu>
+References: <cover.1289430026.git.luto@mit.edu>
+In-Reply-To: <cover.1289430026.git.luto@mit.edu>
+References: <cover.1289430026.git.luto@mit.edu>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nouveau takes down my system quite reliably when any hotplug event occurs.
-The bug happens because the IRQ handler didn't acknowledge the hotplug
-state until the bottom half, so the card generated a new interrupt
-immediately, starving the bottom half and permanently starving that CPU
-(and hence the bottom half).
+This doesn't change code at all, but it makes it a lot easier
+to understand.
 
-Even with this fix, a lot of the IRQ code looks rather broken.
+Signed-off-by: Andy Lutomirski <luto@mit.edu>
+---
+ drivers/gpu/drm/nouveau/nv50_display.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-This is tested on 2.6.36 (and makes the system stable for me), but it also
-applies cleanly to 2.6.37 (untested, but surely also necessary).  Fedora 14's
-2.6.35 kernels seem to have to same problem for me, so I suspect that 2.6.35
-needs this fix as well.  (All of my tests are on an NV50 card.)
-
-Changes from v1:
- - Ignore unrequested hotplug bits (I accidentally removed that part).
- - Support newer hardware (untested -- Ben, can you check this?)
-
-Andy Lutomirski (2):
-  Use existing defines for NV50 hotplug registers
-  nouveau: Acknowledge HPD irq in handler, not bottom half
-
- drivers/gpu/drm/nouveau/nouveau_drv.h  |    6 +++++
- drivers/gpu/drm/nouveau/nouveau_irq.c  |    1 +
- drivers/gpu/drm/nouveau/nv50_display.c |   39 +++++++++++++++++++++++---------
- 3 files changed, 35 insertions(+), 11 deletions(-)
-
+diff --git a/drivers/gpu/drm/nouveau/nv50_display.c b/drivers/gpu/drm/nouveau/nv50_display.c
+index 612fa6d..83a7d27 100644
+--- a/drivers/gpu/drm/nouveau/nv50_display.c
++++ b/drivers/gpu/drm/nouveau/nv50_display.c
+@@ -453,8 +453,8 @@ static int nv50_display_disable(struct drm_device *dev)
+ 	nv_wr32(dev, NV50_PDISPLAY_INTR_EN, 0x00000000);
+ 
+ 	/* disable hotplug interrupts */
+-	nv_wr32(dev, 0xe054, 0xffffffff);
+-	nv_wr32(dev, 0xe050, 0x00000000);
++	nv_wr32(dev, NV50_PCONNECTOR_HOTPLUG_CTRL, 0xffffffff);
++	nv_wr32(dev, NV50_PCONNECTOR_HOTPLUG_INTR, 0x00000000);
+ 	if (dev_priv->chipset >= 0x90) {
+ 		nv_wr32(dev, 0xe074, 0xffffffff);
+ 		nv_wr32(dev, 0xe070, 0x00000000);
+@@ -1014,7 +1014,7 @@ nv50_display_irq_hotplug_bh(struct work_struct *work)
+ 	uint32_t unplug_mask, plug_mask, change_mask;
+ 	uint32_t hpd0, hpd1 = 0;
+ 
+-	hpd0 = nv_rd32(dev, 0xe054) & nv_rd32(dev, 0xe050);
++	hpd0 = nv_rd32(dev, NV50_PCONNECTOR_HOTPLUG_CTRL) & nv_rd32(dev, NV50_PCONNECTOR_HOTPLUG_INTR);
+ 	if (dev_priv->chipset >= 0x90)
+ 		hpd1 = nv_rd32(dev, 0xe074) & nv_rd32(dev, 0xe070);
+ 
+@@ -1058,7 +1058,7 @@ nv50_display_irq_hotplug_bh(struct work_struct *work)
+ 			helper->dpms(connector->encoder, DRM_MODE_DPMS_OFF);
+ 	}
+ 
+-	nv_wr32(dev, 0xe054, nv_rd32(dev, 0xe054));
++	nv_wr32(dev, NV50_PCONNECTOR_HOTPLUG_CTRL, nv_rd32(dev, NV50_PCONNECTOR_HOTPLUG_CTRL));
+ 	if (dev_priv->chipset >= 0x90)
+ 		nv_wr32(dev, 0xe074, nv_rd32(dev, 0xe074));
+ 
 -- 
 1.7.3.2
 
