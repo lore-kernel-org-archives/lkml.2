@@ -1,88 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756455Ab0KJO4n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 09:56:43 -0500
-Received: from astoria.ccjclearline.com ([64.235.106.9]:33149 "EHLO
-	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756201Ab0KJO4m (ORCPT
+	id S1756472Ab0KJO5V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 09:57:21 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:32832 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756208Ab0KJO5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 09:56:42 -0500
-Date: Wed, 10 Nov 2010 09:56:14 -0500 (EST)
-From: "Robert P. J. Day" <rpjday@crashcourse.ca>
-X-X-Sender: rpjday@localhost6.localdomain6
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: more possible aesthetic cleanup -- *lots* of power of 2 stuff
-Message-ID: <alpine.DEB.2.00.1011100956060.5730@localhost6.localdomain6>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 10 Nov 2010 09:57:20 -0500
+Date: Wed, 10 Nov 2010 09:57:12 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Theodore Tso <tytso@MIT.EDU>
+Cc: Dave Chinner <david@fromorbit.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, dave b <db.pub.mail@gmail.com>,
+        Sanjoy Mahajan <sanjoy@olin.edu>, Jesper Juhl <jj@chaosbits.net>,
+        Chris Mason <chris.mason@oracle.com>, Ingo Molnar <mingo@elte.hu>,
+        Pekka Enberg <penberg@kernel.org>,
+        Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Nick Piggin <npiggin@suse.de>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Corrado Zoccolo <czoccolo@gmail.com>,
+        Shaohua Li <shaohua.li@intel.com>, Steven Barrett <damentz@gmail.com>
+Subject: Re: 2.6.36 io bring the system to its knees
+Message-ID: <20101110145712.GB22073@infradead.org>
+References: <20101105014334.GF13830@dastard>
+ <E1PELiI-0001Pj-8g@approx.mit.edu>
+ <AANLkTimON_GL6vRF9=_U6oRFQ30EYssx3wv5xdNsU9JM@mail.gmail.com>
+ <4CD696B4.6070002@kernel.dk>
+ <AANLkTikNPEcwWjEQuC-_=9yH5DCCiwUAY265ggeygcSQ@mail.gmail.com>
+ <20101110013255.GR2715@dastard>
+ <C70A546B-6BC5-49CA-9E34-E69F494A71A0@mit.edu>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - crashcourse.ca
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C70A546B-6BC5-49CA-9E34-E69F494A71A0@mit.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Nov 10, 2010 at 09:33:29AM -0500, Theodore Tso wrote:
+> The chance that this occurs using data=writeback in ext4 is much less, BTW, because with delayed allocation we delay updating the inode until right before we write the block.  I have a plan for changing things so that we write the data blocks *first* and then update the metadata blocks second, which will mean that ext4 data=ordered will go away entirely, and we'll get both the safety and as well as avoiding the forced data page writeouts during journal commits.
 
-  following up on jesper's yeoman efforts to tidy up a lot of the
-*malloc calls, once upon a time, i whined enough to get the
-<linux/log2.h> header file added so that a lot of painful bit tests
-for power of 2 could be abbreviated.
+That's the scheme used by XFS and btrfs in one form or another.  Chris
+also had a patch to implement it for ext3, which unfortunately fell
+under the floor.
 
-  the most useful test seems to have been:
-
-static inline __attribute__((const))
-bool is_power_of_2(unsigned long n)
-{
-        return (n != 0 && ((n & (n - 1)) == 0));
-}
-
-i wrote a short script that looks for various forms of the old power
-of 2 tests:
-
-===== start =====
-#!/bin/sh
-
-DIR=${1-*}
-
-echo -e "     x & (x - 1):\n"
-grep -Ern "([^\(\)]+) ?\& ?\(\1 ?- ?1\)" ${DIR}
-echo -e "     x & ((x) - 1):\n"
-grep -Ern "([^\(\)]+) ?\& ?\(\(\1\) ?- ?1\)" ${DIR}
-echo -e "     (x) & (x - 1):\n"
-grep -Ern "\(([^\(\)]+)\) ?\& ?\(\1 ?- ?1\)" ${DIR}
-echo -e "     (x) & ((x) - 1):\n"
-grep -Ern "\(([^\(\)]+)\) ?\& ?\(\(\1\) ?- ?1\)" ${DIR}
-===== end =====
-
-and, unsurprisingly, while i once submitted a fair bit of that
-cleanup, there's lots left -- just run the script at the top of the
-source tree (give an optional subdir to restrict the search).  there
-are even a few places where code is still defining that test for
-itself:
-
-drivers/net/bna/bna.h:50:#define BNA_POWER_OF_2(x) (((x) & ((x) - 1)) == 0)
-drivers/net/wireless/rt2x00/rt2x00reg.h:187:#define is_power_of_two(x)	( !((x) & ((x)-1)) )
-
-  if anyone wants to run the script on their favourite bit of the
-tree, have at it.
-
-rday
-
-p.s.  perhaps tests like this could be added to the checkpatch.pl
-script.  just a thought.
-
--- 
-
-========================================================================
-Robert P. J. Day                               Waterloo, Ontario, CANADA
-                        http://crashcourse.ca
-
-Twitter:                                       http://twitter.com/rpjday
-LinkedIn:                               http://ca.linkedin.com/in/rpjday
-========================================================================
