@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932095Ab0KJWn2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 17:43:28 -0500
-Received: from xenotime.net ([72.52.115.56]:48855 "HELO xenotime.net"
+	id S1757346Ab0KJWn3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 17:43:29 -0500
+Received: from xenotime.net ([72.52.115.56]:57673 "HELO xenotime.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1757283Ab0KJWnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757311Ab0KJWnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 10 Nov 2010 17:43:25 -0500
 Date: Wed, 10 Nov 2010 11:53:50 -0800
 From: Randy Dunlap <rdunlap@xenotime.net>
 To: linux-kernel@vger.kernel.org
-Cc: Andres Salomon <dilinger@queued.net>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Jonathan Corbet <corbet@lwn.net>
-Subject: [PATCH 6/8] Documentation/development-process: more staging info
-Message-ID: <12894188301358@xenotime.net>
+Cc: Bernhard Walle <walle@corscience.de>
+Subject: [PATCH 3/8] Documentation/gpio.txt: explain poll/select usage
+Message-ID: <12894188303199@xenotime.net>
 In-Reply-To: <1289418830794@xenotime.net>
 X-Mailer: gregkh_patchbomb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andres Salomon <dilinger@queued.net>
+From: Bernhard Walle <walle@corscience.de>
 
-Document things that I would've liked to have known when submitting a driver
-to gregkh for staging.
+Add a bit more information how to use poll(2) on GPIO value files
+correctly. For me it was not clear that I need to poll(2) for
+POLLPRI|POLLERR or select(2) for exceptfds.
 
-Signed-off-by: Andres Salomon <dilinger@queued.net>
-Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Bernhard Walle <walle@corscience.de>
 Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 ---
- Documentation/development-process/2.Process |   23 ++++++++++++++----
- 1 file changed, 18 insertions(+), 5 deletions(-)
+ Documentation/gpio.txt |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- linux-2.6.37-rc1-git8.orig/Documentation/development-process/2.Process
-+++ linux-2.6.37-rc1-git8/Documentation/development-process/2.Process
-@@ -303,12 +303,25 @@ volatility of linux-next tends to make i
- See http://lwn.net/Articles/289013/ for more information on this topic, and
- stay tuned; much is still in flux where linux-next is involved.
+--- linux-2.6.37-rc1-git8.orig/Documentation/gpio.txt
++++ linux-2.6.37-rc1-git8/Documentation/gpio.txt
+@@ -617,6 +617,16 @@ and have the following read/write attrib
+ 		is configured as an output, this value may be written;
+ 		any nonzero value is treated as high.
  
--Besides the mmotm and linux-next trees, the kernel source tree now contains
--the drivers/staging/ directory and many sub-directories for drivers or
--filesystems that are on their way to being added to the kernel tree
--proper, but they remain in drivers/staging/ while they still need more
--work.
-+2.4.1: STAGING TREES
- 
-+The kernel source tree now contains the drivers/staging/ directory, where
-+many sub-directories for drivers or filesystems that are on their way to
-+being added to the kernel tree live.  They remain in drivers/staging while
-+they still need more work; once complete, they can be moved into the
-+kernel proper.  This is a way to keep track of drivers that aren't
-+up to Linux kernel coding or quality standards, but people may want to use
-+them and track development.
++		If the pin can be configured as interrupt-generating interrupt
++		and if it has been configured to generate interrupts (see the
++		description of "edge"), you can poll(2) on that file and
++		poll(2) will return whenever the interrupt was triggered. If
++		you use poll(2), set the events POLLPRI and POLLERR. If you
++		use select(2), set the file descriptor in exceptfds. After
++		poll(2) returns, either lseek(2) to the beginning of the sysfs
++		file and read the new value or close the file and re-open it
++		to read the value.
 +
-+Greg Kroah-Hartman currently (as of 2.6.36) maintains the staging tree.
-+Drivers that still need work are sent to him, with each driver having
-+its own subdirectory in drivers/staging/.  Along with the driver source
-+files, a TODO file should be present in the directory as well.  The TODO
-+file lists the pending work that the driver needs for acceptance into
-+the kernel proper, as well as a list of people that should be Cc'd for any
-+patches to the driver.  Staging drivers that don't currently build should
-+have their config entries depend upon CONFIG_BROKEN.  Once they can
-+be successfully built without outside patches, CONFIG_BROKEN can be removed.
- 
- 2.5: TOOLS
- 
+ 	"edge" ... reads as either "none", "rising", "falling", or
+ 		"both". Write these strings to select the signal edge(s)
+ 		that will make poll(2) on the "value" file return.
 
 
 -- 
