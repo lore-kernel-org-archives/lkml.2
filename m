@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176Ab0KJJBw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 04:01:52 -0500
-Received: from mga02.intel.com ([134.134.136.20]:33973 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753494Ab0KJJBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 04:01:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,177,1288594800"; 
-   d="scan'208";a="572016080"
-From: xiaohui.xin@intel.com
-To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, mingo@elte.hu, herbert@gondor.hengli.com.au,
-        jdike@linux.intel.com, davem@davemloft.net
-Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: Re: [PATCH v15 00/17] Provide a zero-copy method on KVM virtio-net.
-Date: Wed, 10 Nov 2010 17:23:28 +0800
-Message-Id: <1289381008-5484-1-git-send-email-xiaohui.xin@intel.com>
-X-Mailer: git-send-email 1.7.3
-In-Reply-To: <20101109.091516.112581012.davem@davemloft.net>
-References: <20101109.091516.112581012.davem@davemloft.net>
+	id S1755241Ab0KJJCW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 04:02:22 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60604 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754952Ab0KJJCR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 04:02:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=f56DHb+MO7w1MGzYpYpyv3elYK7fLyyQmC7qPA8bB87QIBbwCRNsFMDQ/u4m3wcSmm
+         J6xF9FQPV/ZzTP0Gjb516ZfsmBIB2P6NyWgSARl9g492lpm02Rx3bQH6byXlmqdRzYcn
+         KrW3+g+89XwJtiB8lHW2Uis8TwtTgqM6uFA7Y=
+From: Marek Belisko <marek.belisko@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Marek Belisko <marek.belisko@gmail.com>
+Subject: [PATCH] staging: ft100: Create common return point.
+Date: Wed, 10 Nov 2010 10:04:30 +0100
+Message-Id: <1289379870-14493-1-git-send-email-marek.belisko@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xin Xiaohui <xiaohui.xin@intel.com>
+When reg_ft1000_netdev() fails created kthread isn't stopped.
+So add return point for stopping thread.
 
->2) The idea to key off of skb->dev in skb_release_data() is
->   fundamentally flawed since many actions can change skb->dev on you,
->   which will end up causing a leak of your external data areas.
+Signed-off-by: Marek Belisko <marek.belisko@gmail.com>
+---
+ drivers/staging/ft1000/ft1000-usb/ft1000_usb.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-How about this one? If the destructor_arg is not a good candidate,
-then I have to add an apparent field in shinfo.
-
-Thanks
-Xiaohui
-
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 10ba67d..ad4636e 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -199,14 +199,15 @@ struct skb_shared_info {
- 	struct sk_buff	*frag_list;
- 	struct skb_shared_hwtstamps hwtstamps;
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
+index dcbc97c..99e3339 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
+@@ -178,15 +178,13 @@ static int ft1000_probe(struct usb_interface *interface,
  
-+	/* Intermediate layers must ensure that destructor_arg
-+	 * remains valid until skb destructor */
-+	void *		destructor_arg;
-+
- 	/*
- 	 * Warning : all fields before dataref are cleared in __alloc_skb()
- 	 */
- 	atomic_t	dataref;
- 
--	/* Intermediate layers must ensure that destructor_arg
--	 * remains valid until skb destructor */
--	void *		destructor_arg;
- 	/* must be last field, see pskb_expand_head() */
- 	skb_frag_t	frags[MAX_SKB_FRAGS];
- };
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index c83b421..eb040f4 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -343,6 +343,13 @@ static void skb_release_data(struct sk_buff *skb)
- 		if (skb_has_frags(skb))
- 			skb_drop_fraglist(skb);
- 
-+		if (skb_shinfo(skb)->destructor_arg) {
-+			struct skb_ext_page *ext_page =
-+				skb_shinfo(skb)->destructor_arg;
-+			if (ext_page->dtor)
-+				ext_page->dtor(ext_page);
-+		}
-+
- 		kfree(skb->head);
+ 	if (IS_ERR(pft1000info->pPollThread)) {
+ 		ret = PTR_ERR(pft1000info->pPollThread);
+-		goto err_load;
++		goto err_thread;
  	}
- }
+ 
+ 	msleep(500);
+ 
+ 	while (!pft1000info->CardReady) {
+ 		if (gPollingfailed) {
+-			if (pft1000info->pPollThread)
+-				kthread_stop(pft1000info->pPollThread);
+ 			ret = -EIO;
+ 			goto err_load;
+ 		}
+@@ -207,6 +205,8 @@ static int ft1000_probe(struct usb_interface *interface,
+ 	return 0;
+ 
+ err_load:
++	kthread_stop(pft1000info->pPollThread);
++err_thread:
+ 	kfree(pFileStart);
+ err_fw:
+ 	kfree(ft1000dev);
 -- 
-1.7.3
+1.7.1
 
