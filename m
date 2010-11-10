@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756105Ab0KJNxT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 08:53:19 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:54619 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756083Ab0KJNxP (ORCPT
+	id S1755945Ab0KJNzZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 08:55:25 -0500
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:60686 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751701Ab0KJNzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 08:53:15 -0500
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Alexey Fisher <bug-track@fisher-privat.net>
-Cc: linux-kernel@vger.kernel.org, joe@perches.com
-Subject: Re: [PATCH 2/2 v2] Unify rest of FAT messages.
-References: <1289321718-6373-1-git-send-email-bug-track@fisher-privat.net>
-	<1289329470-14454-1-git-send-email-bug-track@fisher-privat.net>
-	<87hbfppfu3.fsf@devron.myhome.or.jp> <1289392908.6057.44.camel@zwerg>
-Date: Wed, 10 Nov 2010 22:53:09 +0900
-In-Reply-To: <1289392908.6057.44.camel@zwerg> (Alexey Fisher's message of
-	"Wed, 10 Nov 2010 13:41:48 +0100")
-Message-ID: <87d3qdp9oa.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+	Wed, 10 Nov 2010 08:55:21 -0500
+Date: Wed, 10 Nov 2010 14:54:58 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: "Ted Ts'o" <tytso@mit.edu>, david@lang.hm,
+        Anca Emanuel <anca.emanuel@gmail.com>, Greg KH <greg@kroah.com>,
+        Elvis Dowson <elvis.dowson@mac.com>,
+        Janakiram Sistla <janakiram.sistla@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Forked android kernel development from linux kernel mainline
+Message-ID: <20101110135458.GB1553@ucw.cz>
+References: <01784A8B-36A0-4E8A-9729-23C2B19351F8@mac.com>
+ <AANLkTi=UxhRdcDaoKaYVWhPkp_e-uLF4=zhXs7gutkgx@mail.gmail.com>
+ <20101106181202.GA6927@kroah.com>
+ <20101106192259.GB2935@thunk.org>
+ <AANLkTikQoAbsKX=N-ST3KVqSxBnA6OhNvd7FehLDnn=V@mail.gmail.com>
+ <20101106234029.GC2935@thunk.org>
+ <alpine.DEB.2.00.1011061646170.29342@asgard.lang.hm>
+ <20101107000348.GF2935@thunk.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101107000348.GF2935@thunk.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexey Fisher <bug-track@fisher-privat.net> writes:
+On Sat 2010-11-06 20:03:48, Ted Ts'o wrote:
+> On Sat, Nov 06, 2010 at 04:52:26PM -0700, david@lang.hm wrote:
+> > also, none of these other patches resulted in device drivers
+> > developed for a distro being incompatible with mainline.
+> 
+> What, people can't delete a couple of single lines of code before
+> submitting the device driver upstream to mainline?  Here's the world's
+> tiniest violin playing, "my heart bleeds for you"....
 
-> Am Mittwoch, den 10.11.2010, 20:40 +0900 schrieb OGAWA Hirofumi:
->> Alexey Fisher <bug-track@fisher-privat.net> writes:
->> 
->> > Here is how it looks like after patch.
->> 
->> This is going to unify the all FSes (e.g. fat_msg() uses fs_msg("FAT", ...))?
->> If so, I think it's welcome. If not, umm, it looks like good but...
->
-> Yea, i thought about it. It will be better to have some kernel wide
-> fs_msg(). But before doing this i think one more step should be done -
-> some notification interface for userspace. 
-> If we get some fs errors userspace app should be notified so user too.
->
-> I work currently on one case, user lost all data on FAT drive. First
-> error messages was logged for some weeks, and only now some big data
-> lost. There war no errors from GUI.
+Deleting couple single liners is not a problem. Cleaning up 100KLoC
+patch for mainline *is* a problem.
 
-It clealy can happen on all FSes, not only FAT. And I don't want to push
-it (notification stuff) from FAT tree. (need the review from other guys).
+I know, I tried to do that work. Even getting it to staging quality
+was hard, and it was recently dropped due to security holes.
 
-IMHO, it should be kernel wide (or subsystem wide) notification system
-even if you target is FAT-fs only.  (yeah, it's hard to push to
-linus-tree than one FS though).
+Unfortunately google uses wakelocks as an excuse for not cleaning up
+stuff... "because readding those few lines would be too hard".
 
-Thanks.
+	 	  	   	     	   	    	Pavel
 -- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
