@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757326Ab0KJXNj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 18:13:39 -0500
-Received: from www.tglx.de ([62.245.132.106]:55230 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753973Ab0KJXNi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 18:13:38 -0500
-Date: Thu, 11 Nov 2010 00:12:22 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-cc: "Luck, Tony" <tony.luck@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, "bp@alien8.de" <bp@alien8.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mchehab@redhat.com" <mchehab@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: Tracing Requirements (was: [RFC/Requirements/Design] h/w error
- reporting)
-In-Reply-To: <20101110225115.GB9299@Krystal>
-Message-ID: <alpine.LFD.2.00.1011110004520.2900@localhost6.localdomain6>
-References: <1289401781.12418.145.camel@gandalf.stny.rr.com> <1289403019.2084.17.camel@laptop> <20101110174852.GB4001@elte.hu> <1289412329.12418.177.camel@gandalf.stny.rr.com> <1289413460.2084.27.camel@laptop> <20101110184105.GH22410@elte.hu>
- <1289415645.12418.180.camel@gandalf.stny.rr.com> <20101110191127.GA6190@nowhere> <20101110202316.GA32396@Krystal> <987664A83D2D224EAE907B061CE93D5301649A71DC@orsmsx505.amr.corp.intel.com> <20101110225115.GB9299@Krystal>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757339Ab0KJXPj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 18:15:39 -0500
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:43246 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753973Ab0KJXPg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 18:15:36 -0500
+Date: Thu, 11 Nov 2010 08:15:08 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Greg KH <gregkh@suse.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Thomas Gleixner <tglx@linutronix.de>, Maciej Szmigiero <mhej@o2.pl>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Anton Vorontsov <avorontsov@ru.mvista.com>,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Ben Nizette <bn@niasdigital.com>
+Subject: Re: [GPIO]implement sleeping GPIO chip removal
+Message-ID: <20101110231507.GA6758@linux-sh.org>
+References: <4CD6F049.10102@o2.pl> <20101110050947.GC4110@angua.secretlab.ca> <4CDABA03.2050000@o2.pl> <alpine.LFD.2.00.1011102134350.2900@localhost6.localdomain6> <4CDB0834.4080101@o2.pl> <alpine.LFD.2.00.1011102203500.2900@localhost6.localdomain6> <20101110211540.GA7063@angua.secretlab.ca> <20101110224516.GA19567@suse.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101110224516.GA19567@suse.de>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Nov 2010, Mathieu Desnoyers wrote:
-
-> * Luck, Tony (tony.luck@intel.com) wrote:
-> > >- Perf does not support flight recorder tracing (concurrent read/write)
-> > >  - Sub-buffers are needed to support concurrent read/writes
+On Wed, Nov 10, 2010 at 02:45:16PM -0800, Greg KH wrote:
+> On Wed, Nov 10, 2010 at 02:15:40PM -0700, Grant Likely wrote:
+> > On Wed, Nov 10, 2010 at 10:07:05PM +0100, Thomas Gleixner wrote:
+> > > > I understand that it could be simplified by removing redundant code
+> > > > (as Grant Likely had suggested before), and moving it to completion
+> > > > interface instead of manipulating a task structure directly, but
+> > > > this doesn't mean that the whole GPIO code has to be rewritten just
+> > > > to add one functionality.
+> > > 
+> > > It's not about rewriting, it's about fixing the problem in the right
+> > > way and not just hacking around it.
+> > > 
+> > > If we see a shortcoming like this, we fix it and do not magically work
+> > > around it.
 > > 
-> > When I hear somebody say "flight recorder" - I think of "black boxes"
-> > in airplanes that log data while the flight is running, and are only
-> > looked at offline later.  So I'm confused by the "concurrent read/write"
-> > requirement.
+> > +1
 > > 
-> > Perhaps you could explain the use cases of your "flight recorder",
-> > because it seems that the name doesn't fit exactly, and this is
-> > causing me (and maybe others) some confusion.
+> > Thomas is right.  kobject reference counting is the correct solution.
+> > Nack on this approach.
 > 
-> As Steven pointed out, the flight recorder buffers are set to overwrite the
-> oldest data when the buffer is filled. Therefore, the tracer can be used in
-> close-circuit mode (without extracting the data out of the memory buffers) to
-> keep a trace of the recent events. The trace can be extracted when an
-> interesting condition (trigger) occurs.
+> Only use a kobject if you want to be in the sysfs hierarchy (which I
+> don't think you want to do here.)  If you want proper reference
+> counting, use a 'struct kref' instead.
 > 
-> A typical use-case is to let it run on an end-user machine to enhance
-> application crash diagnosis with tracing information, albeit using a very small
-> fraction of the system resources to do so.
-> 
-> The reason why "concurrent read/write" is required is for server-class machines
-> which needs to continuously be able to gather trace data to report/find/locate
-> problematic scenarios happening. This means we're not only interested in one
-> single failure, but rather by a whole set of erroneous/warning conditions that
-> need to be reported. Stopping tracing every time data is gathered is
-> inappropriate, because it would hide errors/warnings that would be happening
-> during data collection.
-
-Aargh! Just because it can be done all in one with an insane amount of
-complexity does not mean that it's an absolute requirement and a good
-solution.
-
-So if you want to have both the flight recorder crash documentation
-and the ongoing monitoring then use two separate sessions with
-separate modes and be done with it.
-
-Cramming both into the same session is just insane.
-
-The first rule is "Keep It Simple!".  Period.
-
-Thanks,
-
-	tglx
+This is actually an interesting problem. The gpiolib code presently has
+its own hand-rolled sysfs support, which is entirely optional. If someone
+is going to go through and do some refactoring anyways it would be
+worthwile to see how much tidying up using a kobject would permit. 
+kobject-based refcounting could in effect be used like kref-refcounting
+with the sysfs interface disabled, too.
