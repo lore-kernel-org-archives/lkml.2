@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab0KJBBT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 20:01:19 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:33992 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751379Ab0KJBBQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 20:01:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=QxPCuD5qrOpXkRtfMVTCAGIrm2x6+Pll+P3v9KEOCgceun38c6ZCt5LMmRJXFWqEIq
-         13x+0y+soEjK1F7fiwvfVnYLev0WYBqoyr0lraraE7QhQYvJKEiXoPpb3gFq+2gD5jNF
-         azs/oxTMIs7Ru61gBBznrphPvaUpacnRQZtd0=
-MIME-Version: 1.0
-In-Reply-To: <1289294671-6865-6-git-send-email-gthelen@google.com>
-References: <1289294671-6865-1-git-send-email-gthelen@google.com>
-	<1289294671-6865-6-git-send-email-gthelen@google.com>
-Date: Wed, 10 Nov 2010 10:01:14 +0900
-Message-ID: <AANLkTin9rfeipUsy1GaT1suP+ivES-cK5U2o26i4hCtE@mail.gmail.com>
-Subject: Re: [PATCH 5/6] memcg: simplify mem_cgroup_dirty_info()
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753870Ab0KJBDf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 20:03:35 -0500
+Received: from mail.perches.com ([173.55.12.10]:4880 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752446Ab0KJBDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 20:03:32 -0500
+Subject: Re: [PATCH] ipc: explicitly clear stack memory in user structs
+From: Joe Perches <joe@perches.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Kees Cook <kees.cook@canonical.com>, Pekka Enberg <penberg@kernel.org>,
+        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
+        "David S. Miller" <davem@davemloft.net>,
+        Hugh Dickins <hughd@google.com>,
+        Manfred Spraul <manfred@colorfullife.com>
+In-Reply-To: <AANLkTinCLMGWWD=8do9pv0vnFMX8njYyNgsMS+VeRfpQ@mail.gmail.com>
+References: <20101025235804.GA11760@outflux.net>
+	 <AANLkTi=c4kt46Pa1FA-e8=36Vn0KcmZgHHKWKZ_bgvzL@mail.gmail.com>
+	 <20101109205008.GU5876@outflux.net>
+	 <AANLkTint3yM44CouOvG_oA2K=_iC9AJuw-sJoB_HTUMT@mail.gmail.com>
+	 <20101109234852.GC5876@outflux.net>
+	 <AANLkTinCLMGWWD=8do9pv0vnFMX8njYyNgsMS+VeRfpQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 09 Nov 2010 17:03:30 -0800
+Message-ID: <1289351010.28590.81.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 9, 2010 at 6:24 PM, Greg Thelen <gthelen@google.com> wrote:
-> Because mem_cgroup_page_stat() no longer returns negative numbers
+On Tue, 2010-11-09 at 16:54 -0800, Linus Torvalds wrote:
+> On Tue, Nov 9, 2010 at 3:48 PM, Kees Cook <kees.cook@canonical.com> wrote:
+> >> I don't quite see where you got the particular collection of people from.
+> > I used scripts/get_maintainer.pl
+> Hmm. I get totally different results. You had
+>   linux-kernel@vger.kernel.org
+>   Al Viro <viro@zeniv.linux.org.uk>,
+>   Andrew Morton <akpm@linux-foundation.org>,
+>   Jiri Slaby <jslaby@suse.cz>,
+>   "David S. Miller" <davem@davemloft.net>
+> and I get
+>   Al Viro <viro@ZenIV.linux.org.uk>
+>   Andrew Morton <akpm@linux-foundation.org>
+>   Helge Deller <deller@gmx.de>
+>   David Howells <dhowells@redhat.com>
+>   Hugh Dickins <hughd@google.com>
+>   linux-kernel@vger.kernel.org
+> so there is something odd going on there.
 
-I tried to understand why mem_cgroup_page_stat doesn't return negative
-number any more for a while.
-I couldn't find answer by current patches 5/6.
-The answer is where 6/6.
-It would be better to change 6/6 with 5/6.
+I'd like to know as well.
 
-
-> to indicate failure, mem_cgroup_dirty_info() does not need to check
-> for such failures.
->
-> Signed-off-by: Greg Thelen <gthelen@google.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-
--- 
-Kind regards,
-Minchan Kim
