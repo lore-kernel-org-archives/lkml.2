@@ -1,115 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755281Ab0KJJaE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 04:30:04 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:45241 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753745Ab0KJJaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 04:30:00 -0500
-Date: Wed, 10 Nov 2010 10:29:45 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: linux-kernel@vger.kernel.org, h.mitake@gmail.com,
-        Ma Ling <ling.ma@intel.com>, Zhao Yakui <yakui.zhao@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] perf bench: add --prefault option for causing page
- faults before benchmark
-Message-ID: <20101110092945.GD12238@elte.hu>
-References: <1288976785-15857-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
+	id S1755332Ab0KJJdx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 04:33:53 -0500
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:54921 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753290Ab0KJJdu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 04:33:50 -0500
+X-Sasl-enc: sA54FYu30Hjr5mmwEh4VWOAuNuBM6CbKFxLKft4A2gv7 1289381629
+From: Roberto Sassu <roberto.sassu@polito.it>
+Organization: Politecnico di Torino
+To: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Subject: Re: [PATCH 0/5] ecryptfs fixes
+Date: Wed, 10 Nov 2010 10:31:33 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.34.7-61.fc13.x86_64; KDE/4.5.2; x86_64; ; )
+Cc: kirkland@canonical.com, jmorris@namei.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+References: <201011031111.06669.roberto.sassu@polito.it> <20101109220144.GA3599@boyd.l.tihix.com>
+In-Reply-To: <20101109220144.GA3599@boyd.l.tihix.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288976785-15857-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011101031.34153.roberto.sassu@polito.it>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Tyler
 
-* Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp> wrote:
+thanks for accepting my patches. 
+There is another O_RDONLY test in the function ecryptfs_privileged_open(), in the file fs/ecryptfs/kthread.c,
+that is not actually fixed, because i need some explanations on the code.
+In this function the dentry_open() is called first time with flags (O_LARGEFILE | O_RDWR) or
+(O_LARGEFILE | O_RDONLY) depending on the options passed during the mount of the lower
+filesystem.
+If the dentry_open() fails, a lower_file pointer can be obtained from the function ecryptfs_threadfn()
+executed by the kernel kthread service. However, this option is available only if the lower filesystem
+is mounted in read-write mode.
+Can you explain me this?
+Thanks.
 
-> This patch adds --prefault option to perf bench mem memcpy.
-> If user specify this option to perf bench mem memcpy, overhead of
-> page faults will be removed from the score of memcpy().
+Roberto
+
+
+On Tuesday, November 09, 2010 11:01:44 pm Tyler Hicks wrote:
+> On Wed Nov 03, 2010 at 11:11:06AM +0100, Roberto Sassu <roberto.sassu@polito.it> wrote:
+> > This patch set applies to the latest kernel 2.6.37-rc1.
+> > 
+> > 
+> > Roberto Sassu (5):
+> >   ecryptfs: moved ECRYPTFS_SUPER_MAGIC definition to linux/magic.h
+> >   ecryptfs: missing initialization of the superblock 'magic' field
+> >   ecryptfs: test lower_file pointer when lower_file_mutex is locked
+> >   ecryptfs: fixed testing of file descriptor flags
+> >   ecryptfs: open lower files with kthread credentials
 > 
-> Example of usage:
-> | % ./perf bench mem memcpy -l 500MB
-> | # Running mem/memcpy benchmark...
-> | # Copying 500MB Bytes from 0x7fc036749010 to 0x7fc055b4a010 ...
-> |
-> |      628.526821 MB/Sec
-> | mitake@X201i:~/linux/.../tools/perf% ./perf bench mem memcpy -l 500MB --prefault
-> | # Running mem/memcpy benchmark...
-> | # Copying 500MB Bytes from 0x7ff1b45e2010 to 0x7ff1d39e3010 ...
-> |
-> |        4.849256 GB/Sec
-
-Ok, looks rather useful.
-
-We are rather close to being able to apply these bits. We need a resolution for the 
-arch/x86/lib/memcpy_64.S details. The ugliest are these kinds of #ifdefs:
-
-+#ifndef PERF_BENCH
- .Lmemcpy_e:
-        .previous
-+#endif
-
-What happens if we keep that label in place?
-
-This:
-
-+#ifndef PERF_BENCH
- ENTRY(__memcpy)
- ENTRY(memcpy)
-        CFI_STARTPROC
-+#else
-+	.globl  memcpy_x86_64_unrolled
-+memcpy_x86_64_unrolled:
-+#endif
-
-Could be removed if you defined an ENTRY() macro in perf, right?
-
-This:
-
-+#ifndef PERF_BENCH
-+
-        CFI_ENDPROC
- ENDPROC(memcpy)
- ENDPROC(__memcpy)
-
-Could be solved by defining ENDPROC()/etc. macros in perf, right?
-
-We could remove this #ifdef:
-
-+#ifndef PERF_BENCH
-+
- #include <linux/linkage.h>
-
- #include <asm/cpufeature.h>
- #include <asm/dwarf2.h>
-
-+#endif /* PERF_BENCH */
-
-if you added empty linkage.h, cpufeature.h and dwarf2.h files as 
-tools/perf/util/include/linux/linkage.h, tools/perf/util/include/asm/cpufeature.h.
-
-That linkage.h file could even contain a short perf version of the ENTRY() macro, 
-etc.
-
-That way we can avoid having to touch arch/x86/lib/memcpy_64.S altogether.
-
-Thanks,
-
-	Ingo
+> Hey Roberto - I pushed these patches to
+> git://git.kernel.org/pub/scm/linux/kernel/git/ecryptfs/ecryptfs-2.6.git#next
+> 
+> Thanks,
+> Tyler
+> 
+> > 
+> >  fs/ecryptfs/ecryptfs_kernel.h |    4 +---
+> >  fs/ecryptfs/file.c            |   20 +++++++++-----------
+> >  fs/ecryptfs/inode.c           |   32 ++++++++++++++------------------
+> >  fs/ecryptfs/kthread.c         |   17 +++++++++++++----
+> >  fs/ecryptfs/main.c            |    5 +++--
+> >  include/linux/magic.h         |    1 +
+> >  6 files changed, 41 insertions(+), 38 deletions(-)
+> > 
+> 
+> 
+> 
