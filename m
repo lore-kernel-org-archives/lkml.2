@@ -1,59 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757306Ab0KJWmo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 17:42:44 -0500
-Received: from DMZ-MAILSEC-SCANNER-1.MIT.EDU ([18.9.25.12]:53884 "EHLO
-	dmz-mailsec-scanner-1.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757198Ab0KJWmn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 17:42:43 -0500
-X-AuditID: 1209190c-b7ba9ae0000009f8-68-4cdb1fe2cc34
-From: Andy Lutomirski <luto@MIT.EDU>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@MIT.EDU>
-Subject: [PATCH v2] Improve clocksource unstable warning
-Date: Wed, 10 Nov 2010 17:42:26 -0500
-Message-Id: <b498b4d7b3a0c50a08e1547ff93d7ad1d4d49c35.1289428887.git.luto@mit.edu>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <alpine.LFD.2.00.1011102327050.2900@localhost6.localdomain6>
-References: <alpine.LFD.2.00.1011102327050.2900@localhost6.localdomain6>
-X-Brightmail-Tracker: AAAAAA==
+	id S1757359Ab0KJWna (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 17:43:30 -0500
+Received: from xenotime.net ([72.52.115.56]:52660 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1757312Ab0KJWnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 17:43:25 -0500
+Date: Wed, 10 Nov 2010 11:53:50 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: linux-kernel@vger.kernel.org
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>
+Subject: [PATCH 4/8] Documentation: change email address for Hans Koch
+Message-ID: <12894188301528@xenotime.net>
+In-Reply-To: <1289418830794@xenotime.net>
+X-Mailer: gregkh_patchbomb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the system goes out to lunch for a long time, the clocksource
-watchdog might get false positives.  Clarify the warning so that
-people stop blaming their system freezes on the timing code.
+From: Hans J. Koch <hjk@hansjkoch.de>
 
-This change was Thomas Gleixner's suggestion.
+My old mail address doesn't exist anymore. This changes all occurrences
+to my new address.
 
-Signed-off-by: Andy Lutomirski <luto@mit.edu>
+Signed-off-by: Hans J. Koch <hjk@hansjkoch.de>
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 ---
+ Documentation/DocBook/uio-howto.tmpl |    6 +++---
+ Documentation/hwmon/lm93             |    2 +-
+ Documentation/hwmon/max6650          |    2 +-
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
-This version compares directly (and tediously to avoid overflow) with
-max_idle_ns.
-
- kernel/time/clocksource.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-index c18d7ef..f8cef8b 100644
---- a/kernel/time/clocksource.c
-+++ b/kernel/time/clocksource.c
-@@ -215,8 +215,10 @@ static void __clocksource_unstable(struct clocksource *cs)
+--- linux-2.6.37-rc1-git8.orig/Documentation/DocBook/uio-howto.tmpl
++++ linux-2.6.37-rc1-git8/Documentation/DocBook/uio-howto.tmpl
+@@ -16,7 +16,7 @@
+ 	</orgname>
  
- static void clocksource_unstable(struct clocksource *cs, int64_t delta)
- {
--	printk(KERN_WARNING "Clocksource %s unstable (delta = %Ld ns)\n",
--	       cs->name, delta);
-+	printk(KERN_WARNING "Clocksource %s unstable (delta = %Ld ns)%s\n",
-+	       cs->name, delta,
-+	       (delta < 0 && (u64)-delta > watchdog->max_idle_ns) ?
-+		 " or your system lagged for other reasons" : "");
- 	__clocksource_unstable(cs);
- }
+ 	<address>
+-	   <email>hjk@linutronix.de</email>
++	   <email>hjk@hansjkoch.de</email>
+ 	</address>
+     </affiliation>
+ </author>
+@@ -114,7 +114,7 @@ GPL version 2.
  
+ <para>If you know of any translations for this document, or you are
+ interested in translating it, please email me
+-<email>hjk@linutronix.de</email>.
++<email>hjk@hansjkoch.de</email>.
+ </para>
+ </sect1>
+ 
+@@ -171,7 +171,7 @@ interested in translating it, please ema
+ <title>Feedback</title>
+ 	<para>Find something wrong with this document? (Or perhaps something
+ 	right?) I would love to hear from you. Please email me at
+-	<email>hjk@linutronix.de</email>.</para>
++	<email>hjk@hansjkoch.de</email>.</para>
+ </sect1>
+ </chapter>
+ 
+--- linux-2.6.37-rc1-git8.orig/Documentation/hwmon/lm93
++++ linux-2.6.37-rc1-git8/Documentation/hwmon/lm93
+@@ -11,7 +11,7 @@ Authors:
+ 	Mark M. Hoffman <mhoffman@lightlink.com>
+ 	Ported to 2.6 by Eric J. Bowersox <ericb@aspsys.com>
+ 	Adapted to 2.6.20 by Carsten Emde <ce@osadl.org>
+-	Modified for mainline integration by Hans J. Koch <hjk@linutronix.de>
++	Modified for mainline integration by Hans J. Koch <hjk@hansjkoch.de>
+ 
+ Module Parameters
+ -----------------
+--- linux-2.6.37-rc1-git8.orig/Documentation/hwmon/max6650
++++ linux-2.6.37-rc1-git8/Documentation/hwmon/max6650
+@@ -8,7 +8,7 @@ Supported chips:
+     Datasheet: http://pdfserv.maxim-ic.com/en/ds/MAX6650-MAX6651.pdf
+ 
+ Authors:
+-    Hans J. Koch <hjk@linutronix.de>
++    Hans J. Koch <hjk@hansjkoch.de>
+     John Morris <john.morris@spirentcom.com>
+     Claus Gindhart <claus.gindhart@kontron.com>
+ 
+
+
 -- 
-1.7.3.2
 
