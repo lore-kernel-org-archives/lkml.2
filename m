@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850Ab0KJRhV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 12:37:21 -0500
-Received: from b.mail.sonic.net ([64.142.19.5]:59022 "EHLO b.mail.sonic.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752663Ab0KJRhQ convert rfc822-to-8bit (ORCPT
+	id S1754394Ab0KJRjY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 12:39:24 -0500
+Received: from mtaout01-winn.ispmail.ntl.com ([81.103.221.47]:21717 "EHLO
+	mtaout01-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753392Ab0KJRjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 12:37:16 -0500
-Subject: Re: usbmon: size of different fields?
-Mime-Version: 1.0 (Apple Message framework v1082)
-Content-Type: text/plain; charset=iso-8859-1
-From: Guy Harris <guy@alum.mit.edu>
-In-Reply-To: <20101110082123.2dc1d361@lembas.zaitcev.lan>
-Date: Wed, 10 Nov 2010 09:36:58 -0800
-Cc: Developer support list for Wireshark 
-	<wireshark-dev@wireshark.org>,
-        linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <4F035C08-41FC-4898-93A2-96D86E3F31C1@alum.mit.edu>
-References: <4CD8ECE4.1090206@freemail.hu> <20101109075056.59a2e7d8@lembas.zaitcev.lan> <4CD9A96D.1010306@freemail.hu> <E6FD75ED-7E13-47DC-B9F9-6C8C09C3C4AC@alum.mit.edu> <20101110082123.2dc1d361@lembas.zaitcev.lan>
-To: Pete Zaitcev <zaitcev@redhat.com>
-X-Mailer: Apple Mail (2.1082)
+	Wed, 10 Nov 2010 12:39:23 -0500
+From: Ian Campbell <ijc@hellion.org.uk>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+In-Reply-To: <1289401337.15905.1.camel@Joe-Laptop>
+References: <1289380840.28590.132.camel@Joe-Laptop>
+	 <1289399240.724.48.camel@zakaz.uk.xensource.com>
+	 <1289399731.28590.136.camel@Joe-Laptop>
+	 <1289401042.724.54.camel@zakaz.uk.xensource.com>
+	 <1289401337.15905.1.camel@Joe-Laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 10 Nov 2010 17:39:05 +0000
+Message-ID: <1289410745.724.56.camel@zakaz.uk.xensource.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 62.200.22.2
+X-SA-Exim-Mail-From: ijc@hellion.org.uk
+Subject: Re: [PATCH] MAINTAINERS: Mark XEN lists subscribers-only
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on hopkins.hellion.org.uk)
+X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=fd6gu-_BvqYA:10 a=IkcTkHD0fZMA:10 a=mLnsDVdbAAAA:8 a=SEF7xSSsAAAA:8 a=mIlQpQLgpZN7fbM9lcwA:9 a=rpH-lbN-FfvlNikwn_EA:7 a=BwRQXRRU1luiqlmFK3WqZ6emvbsA:4 a=QEXdDO2ut3YA:10 a=9ElHw7gSeUoA:10 a=BvFtejatcY8A:10 a=a0e1tvW8ZkcZD2pv:21 a=8j2jaNO3yJ7QGu6Q:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Nov 10, 2010, at 7:21 AM, Pete Zaitcev wrote:
-
-> On Tue, 9 Nov 2010 13:23:28 -0800
-> Guy Harris <guy@alum.mit.edu> wrote:
->> On Nov 9, 2010, at 12:05 PM, Németh Márton wrote:
->> 
->>> OK, that's clear, the byte order of the API structure fields are in "host endian"
->>> order. The API structures are already saved by Wireshark into file for quite some
->>> time.
->> 
->> ...and tcpdump.  Support for capturing on USB on Linux has been in
->> libpcap since at least libpcap 1.0.
+On Wed, 2010-11-10 at 07:02 -0800, Joe Perches wrote:
+> On Wed, 2010-11-10 at 14:57 +0000, Ian Campbell wrote:
+> > On Wed, 2010-11-10 at 06:35 -0800, Joe Perches wrote:
+> > > On Wed, 2010-11-10 at 14:27 +0000, Ian Campbell wrote:
+> > > > AFAIK the Xen lists are "(moderated for non-subscribers)" rather than
+> > > > "(subscribers-only)".
+> > > My emails to that list bounced.
+> > Did you try and post to xen-devel@lists.xen.org?
 > 
-> I imagined that Nemeth wanted to implement an alternative to that.
+> Yes, that was the address used.
+> 
+> > That one doesn't really
+> > exist (Konrad was a little over-eager in switching MAINTAINERS to it).
+> > xen-devel@lists.xensource.com is the correct address. We are trying to
+> > get a xen.org alias setup but it doesn't exist yet.
+> > > From http://www.xen.org/support/community.html
+> > > (All lists require a subscription to post)
+> > This may be inaccurate, I'll see if we can confirm.
+> 
+> Thanks.
 
-I hadn't heard him propose that.
+It's been confirmed, non-subscribers are moderated for xen-devel.
 
-It might be a good idea...
+Thanks,
+Ian.
 
-> Surely he knows how libpcap works. In that case a new, host-independent
-> format may be introduced.
+-- 
+Ian Campbell
+Current Noise: Annihilator - Road To Ruin
 
-...and, if done, it would be ideal if it were also designed to be platform-dependent, so that it didn't have Linux implementation details leaking through; that could let it be used if other platforms offer a way to watch USB operations.
+"I'd crawl over an acre of 'Visual This++' and 'Integrated Development
+That' to get to gcc, Emacs, and gdb.  Thank you."
+(By Vance Petree, Virginia Power)
 
-Are the formats of the USB header and the isochronous descriptors guaranteed never to change?  If not, a new format should definitely be introduced, as, for example, with the mmapped buffer, we just pass to the capture callback a pointer to the item in that buffer.  However, given that the capture callback is just passed a single pointer to the packet data, access to the mmapped buffer would have to be done by constructing the new header in a mallocated buffer *AND* all the packet data will have to be copied to that buffer, so a lot more data copying will be done.
