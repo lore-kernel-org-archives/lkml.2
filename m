@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757120Ab0KJQ6j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 11:58:39 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:40734 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1757082Ab0KJQ6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 11:58:38 -0500
-X-Authenticated: #23875046
-X-Provags-ID: V01U2FsdGVkX1+3aQ5vlgC3XbmARtawz1qlMgzsQ9H9TtK9oO06TI
-	oW1iHbWqjTW2Oo
-Subject: Re: [PATCH 2/2 v2] Unify rest of FAT messages.
-From: Alexey Fisher <bug-track@fisher-privat.net>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: linux-kernel@vger.kernel.org, joe@perches.com
-In-Reply-To: <878w11p1wk.fsf@devron.myhome.or.jp>
-References: <1289321718-6373-1-git-send-email-bug-track@fisher-privat.net>
-	 <1289329470-14454-1-git-send-email-bug-track@fisher-privat.net>
-	 <87hbfppfu3.fsf@devron.myhome.or.jp> <1289392908.6057.44.camel@zwerg>
-	 <87d3qdp9oa.fsf@devron.myhome.or.jp> <1289401644.2438.34.camel@mini>
-	 <878w11p1wk.fsf@devron.myhome.or.jp>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 10 Nov 2010 17:58:32 +0100
-Message-ID: <1289408312.3636.10.camel@mini>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1757130Ab0KJRBk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 12:01:40 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45880 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757046Ab0KJRBj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 12:01:39 -0500
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinYZ2wPeeunFv4Ljm+D9SDLbgzTVmw_P9KQdK16@mail.gmail.com>
+References: <20101105014334.GF13830@dastard> <E1PELiI-0001Pj-8g@approx.mit.edu>
+ <AANLkTimON_GL6vRF9=_U6oRFQ30EYssx3wv5xdNsU9JM@mail.gmail.com>
+ <4CD696B4.6070002@kernel.dk> <AANLkTikNPEcwWjEQuC-_=9yH5DCCiwUAY265ggeygcSQ@mail.gmail.com>
+ <20101110013255.GR2715@dastard> <AANLkTinpLuzd5c+WqXoa_0Z=nv=mDgd-k4QZbBZHsQnD@mail.gmail.com>
+ <AANLkTinYZ2wPeeunFv4Ljm+D9SDLbgzTVmw_P9KQdK16@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 10 Nov 2010 08:55:07 -0800
+Message-ID: <AANLkTik1zyrP5DBGC+MmSKF2Eeep3fSu=-8TdOY8BTJj@mail.gmail.com>
+Subject: Re: 2.6.36 io bring the system to its knees
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Dave Chinner <david@fromorbit.com>, Jens Axboe <axboe@kernel.dk>,
+        dave b <db.pub.mail@gmail.com>, Sanjoy Mahajan <sanjoy@olin.edu>,
+        Jesper Juhl <jj@chaosbits.net>, Chris Mason <chris.mason@oracle.com>,
+        Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@kernel.org>,
+        Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Nick Piggin <npiggin@suse.de>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "Ted Ts'o" <tytso@mit.edu>,
+        Corrado Zoccolo <czoccolo@gmail.com>,
+        Shaohua Li <shaohua.li@intel.com>, Steven Barrett <damentz@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, den 11.11.2010, 01:40 +0900 schrieb OGAWA Hirofumi:
-> Alexey Fisher <bug-track@fisher-privat.net> writes:
-> 
-> >> It clealy can happen on all FSes, not only FAT. And I don't want to push
-> >> it (notification stuff) from FAT tree. (need the review from other guys).
-> >
-> > I do not blame FAT. It was just one example/usecase.
-> 
-> Yes. It is why I said the below.
-> 
-> >> IMHO, it should be kernel wide (or subsystem wide) notification system
-> >> even if you target is FAT-fs only.  (yeah, it's hard to push to
-> >> linus-tree than one FS though).
-> >
-> > Sound complicated. I will not get time for this, right now. Any way, at
-> > least if this patch set go upstream it will help investigate some FS
-> > related issues. For my work (Computer Forensic) it will be really
-> > helpful.
-> 
-> Also, yes. It would be complicate more or less than one FS. And maybe I
-> can understand why you want to concentrate FAT.
-> 
-> But I'm afraid to implement for only FAT. If there is not any some sort
-> of agreement by others, it may have to re-implement. If that happen, FAT
-> can be bothered by compatible (or have to maintain both of old and new
-> for a while). Because the notified data are some sort of ABI, IMO.
-> 
-> This is why I'm careful about this, and can't say easily - "let's try it
-> on FAT".
+On Wed, Nov 10, 2010 at 8:46 AM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
+>>
+>> You will lose data even with data=ordered. All the data that didn't
+>> get logged before the crash is lost anyway.
+>
+> Linus, are you using with data=writeback?
 
-I'm not sure if we talk about same thing now :D
-By notification you mean the idea to notify userspace about error?
-correct?
-In my previous email i switched the point, it will be to complicate for
-now to work on notification system. For now i'll be happy to see grep
-friendly logs. Same like ext2,3,4 do
+I used to, indeed. But since I upgrade computers fairly regularly, and
+all the distros have moved towards ext4, I'm no longer using ext3 at
+all.
 
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=4cf46b67eb6de94532c1bea11d2479d085229d0e
+But yes, to me ext3 was totally unusable with rotational media and
+"data=ordered". Not just bad. Total crap. Whenever the mail client
+wanted to write something out, the whole machine basically stopped.
 
-In long term it will be good to have such notification system. So i will
-start new tread about it. 
+Of course, part of that was that long ago I used reiserfs back when
+SuSE had it as the default. So I didn't think that the hickups were
+"normal" like a lot of people probably do. I knew better. So it was
+"bad latency, and I know it's the filesystem that is total crap".
 
+> Those of us, who did (without UPS), will never do it again.
+
+Before or after the change to make renaming on top of old files do the
+IO flushing?
+
+That made a big difference for some rather common cases.
+
+                            Linus
