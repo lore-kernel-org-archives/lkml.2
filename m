@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757377Ab0KJXoq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 18:44:46 -0500
-Received: from bld-mail20.adl6.internode.on.net ([150.101.137.105]:41106 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757009Ab0KJXop (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 18:44:45 -0500
-Date: Thu, 11 Nov 2010 10:43:52 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jens Axboe <axboe@kernel.dk>, dave b <db.pub.mail@gmail.com>,
-        Sanjoy Mahajan <sanjoy@olin.edu>, Jesper Juhl <jj@chaosbits.net>,
-        Chris Mason <chris.mason@oracle.com>, Ingo Molnar <mingo@elte.hu>,
-        Pekka Enberg <penberg@kernel.org>,
-        Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Nick Piggin <npiggin@suse.de>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "Ted Ts'o" <tytso@mit.edu>,
-        Corrado Zoccolo <czoccolo@gmail.com>,
-        Shaohua Li <shaohua.li@intel.com>, Steven Barrett <damentz@gmail.com>
-Subject: Re: 2.6.36 io bring the system to its knees
-Message-ID: <20101110234352.GA22876@dastard>
-References: <20101105014334.GF13830@dastard>
- <E1PELiI-0001Pj-8g@approx.mit.edu>
- <AANLkTimON_GL6vRF9=_U6oRFQ30EYssx3wv5xdNsU9JM@mail.gmail.com>
- <4CD696B4.6070002@kernel.dk>
- <AANLkTikNPEcwWjEQuC-_=9yH5DCCiwUAY265ggeygcSQ@mail.gmail.com>
- <20101110013255.GR2715@dastard>
- <AANLkTinpLuzd5c+WqXoa_0Z=nv=mDgd-k4QZbBZHsQnD@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinpLuzd5c+WqXoa_0Z=nv=mDgd-k4QZbBZHsQnD@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757432Ab0KJXqG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 18:46:06 -0500
+Received: from cantor.suse.de ([195.135.220.2]:46369 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757009Ab0KJXqF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 18:46:05 -0500
+Subject: Re: Patch added to scsi-rc-fixes-2.6:  [SCSI] host lock push-down
+From: James Bottomley <James.Bottomley@suse.de>
+To: Jeff Garzik <jeff@garzik.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4CDB2A81.5030100@garzik.org>
+References: <201011102240.oAAMe86a001486@hera.kernel.org>
+	 <4CDB2A81.5030100@garzik.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 10 Nov 2010 17:45:58 -0600
+Message-ID: <1289432759.3016.63.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 07:59:10AM -0800, Linus Torvalds wrote:
-> On Tue, Nov 9, 2010 at 5:32 PM, Dave Chinner <david@fromorbit.com> wrote:
+On Wed, 2010-11-10 at 18:28 -0500, Jeff Garzik wrote:
+> On 11/10/2010 05:40 PM, James Bottomley wrote:
+> > Your commit:
 > >
-> > Don't forget to mention data=writeback is not the default because if
-> > your system crashes or you lose power running in this mode it will
-> > *CORRUPT YOUR FILESYSTEM* and you *WILL LOSE DATA*.
+> >      [SCSI] host lock push-down
+> >
+> >      Move the mid-layer's ->queuecommand() invocation from being locked
+> >      with the host lock to being unlocked to facilitate speeding up the
+> >      critical path for drivers who don't need this lock taken anyway.
+> >
+> >      The patch below presents a simple SCSI host lock push-down as an
+> >      equivalent transformation.  No locking or other behavior should change
+> >      with this patch.  All existing bugs and locking orders are preserved.
+> >
+> >      Minimal code disturbance was attempted with this change.  Most drivers
+> >      needed only two one-line modifications for their host lock push-down.
+> >
+> >      Signed-off-by: Jeff Garzik<jgarzik@redhat.com>
+> >      Signed-off-by: James Bottomley<James.Bottomley@suse.de>
+> >
+> > has been added to the upstream SCSI tree
+> > You can find it here:
 > 
-> You will lose data even with data=ordered. All the data that didn't
-> get logged before the crash is lost anyway.
-> 
-> So your argument is kind of dishonest. The thing is, if you have a
-> crash or power outage or whatever, the only data you can really rely
-> on is always going to be the data that you fsync'ed before the crash.
-> Everything else is just gravy.
+> No comments on renaming ->queuecommand to something else?
 
-I crash kernels tens of times every day doing filesystem testing.
-With data=ordered I have not seen a corrupted root filesystem as a
-result of normal testing and crashing as long as I can remember.
-With data=writeback, I'll have corrupted root ext3 partitions in
-under a day. Hardly what I'd call stable or something you'd want
-to deploy in production.
+What we wondered about doing differently isn't really relevant for a
+change log ... that should just really be about what was done (to avoid
+confusion).
 
-Cheers,
+> The consequences are rather dire if this goes unnoticed, yes?
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+You mean if there's a missed in-tree driver?  Yes, but I took care to
+make sure all SCSI drivers were accounted for.  For out of tree drivers,
+as with the eh lock push down, it's caveat emptor.
+
+James
+
+
