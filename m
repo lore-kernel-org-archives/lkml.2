@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757379Ab0KJWs1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 17:48:27 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:42720 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757218Ab0KJWsZ convert rfc822-to-8bit (ORCPT
+	id S932078Ab0KJWtD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 17:49:03 -0500
+Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:39051 "EHLO
+	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757218Ab0KJWtB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 17:48:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=l6krxa5keYQfLUDq0EAuSuCapaC7DHz1A3Jq2ui1OsA6nm/8GQxhhCwepKnyHSbBlo
-         WKoGkYpTnY3IL7D8jBZHIQ19OJy0qqjT7NAF1yjUhgTY3QCE7bTJp7VBkqgGZ5ojFjEW
-         3DIZlsPwpUBRA5h0V2wO8wsg3kqt5I5ESNsCI=
+	Wed, 10 Nov 2010 17:49:01 -0500
+Message-ID: <4CDB2148.8080404@euromail.se>
+Date: Wed, 10 Nov 2010 23:48:40 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-In-Reply-To: <cover.1289348757.git.joe@perches.com>
-References: <cover.1289348757.git.joe@perches.com>
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Wed, 10 Nov 2010 14:48:02 -0800
-Message-ID: <AANLkTinhcbdm8YQOrFVdONODo6K6PcxHYtx5vqnap_3T@mail.gmail.com>
-Subject: Re: [PATCH 0/9] treewide: convert vprintk uses to %pV
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
-        cluster-devel@redhat.com, linux-nilfs@vger.kernel.org,
-        linux-nfs@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+CC: Jean Delvare <khali@linux-fr.org>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] hwmon: (applesmc) Introduce a register lookup table
+References: <1289429274-30289-1-git-send-email-guenter.roeck@ericsson.com>
+In-Reply-To: <1289429274-30289-1-git-send-email-guenter.roeck@ericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1PGJT8-0003UD-4x.
+X-Scan-Signature: ch-smtp01.sth.basefarm.net 1PGJT8-0003UD-4x 351e847fca3d98b7d9bfa0ba4462723c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 9, 2010 at 4:35 PM, Joe Perches <joe@perches.com> wrote:
-> Multiple secessive calls to printk can be interleaved.
-> Avoid this possible interleaving by using %pV
->
-> Joe Perches (9):
->  drivers/gpu/drm/drm_stub.c: Use printf extension %pV
->  drivers/isdn/mISDN: Use printf extension %pV
->  drivers/net/wireless/ath/debug.c: Use printf extension %pV
->  drivers/net/wireless/b43/main.c: Use printf extension %pV
->  drivers/net/wireless/b43legacy/main.c: Use printf extension %pV
->  fs/gfs2/glock.c: Use printf extension %pV
->  fs/nilfs2/super.c: Use printf extension %pV
->  fs/quota/dquot.c: Use printf extension %pV
->  net/sunrpc/svc.c: Use printf extension %pV
->
->  drivers/gpu/drm/drm_stub.c            |   14 +++++++--
->  drivers/isdn/mISDN/layer1.c           |   10 +++++--
->  drivers/isdn/mISDN/layer2.c           |   12 ++++++--
->  drivers/isdn/mISDN/tei.c              |   23 +++++++++++----
->  drivers/net/wireless/ath/debug.c      |    9 +++++-
->  drivers/net/wireless/b43/main.c       |   48 ++++++++++++++++++++++++--------
->  drivers/net/wireless/b43legacy/main.c |   47 ++++++++++++++++++++++++--------
->  fs/gfs2/glock.c                       |    9 +++++-
->  fs/nilfs2/super.c                     |   23 +++++++++++-----
->  fs/quota/dquot.c                      |   12 +++++---
->  net/sunrpc/svc.c                      |   12 +++++---
->  11 files changed, 161 insertions(+), 58 deletions(-)
+On 11/10/2010 11:47 PM, Guenter Roeck wrote:
 
-When was this added upstream BTW? I ask for backport considerations.
+> From: Henrik Rydberg <rydberg@euromail.se>
+> 
+> One main problem with the current driver is the inability to quickly
+> search for supported keys, resulting in detailed feature maps per
+> machine model which are cumbersome to maintain.
+> 
+> This patch adds a register lookup table, which enables binary search
+> for supported keys. The lookup also reduces the io frequency, so the
+> original mutex is replaced by locks around the actual io.
+> 
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> [guenter.roeck@ericsson.com: Added value range check to key_at_index_store()]
+> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> ---
+> Patch as applied, with added value range check to applesmc_key_at_index_store().
 
-  Luis
+
+Works nicely, much obliged. It's a wrap. :-)
+
+Thanks,
+Henrik
