@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756827Ab0KJU4u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 15:56:50 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35309 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756651Ab0KJU4s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 15:56:48 -0500
-Date: Wed, 10 Nov 2010 20:55:32 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Elvis Dowson <elvis.dowson@mac.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Forked android kernel development from linux kernel mainline
-Message-ID: <20101110205532.03060e6e@lxorguk.ukuu.org.uk>
-In-Reply-To: <20101110003524.GL3099@thunk.org>
-References: <20101109223225.5e261346@lxorguk.ukuu.org.uk>
-	<20101110003524.GL3099@thunk.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756519Ab0KJU6h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 15:58:37 -0500
+Received: from www.tglx.de ([62.245.132.106]:46285 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753654Ab0KJU6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 15:58:36 -0500
+Date: Wed, 10 Nov 2010 21:58:13 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andrew Lutomirski <luto@mit.edu>
+cc: Borislav Petkov <bp@amd64.org>, Clemens Ladisch <clemens@ladisch.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86 <x86@kernel.org>,
+        =?ISO-8859-15?Q?J=F6rg_R=F6del?= <joerg.roedel@amd.com>
+Subject: Re: [FALSE ALARM] Re: HPET (?) related hangs and breakage in
+ 2.6.35,36
+In-Reply-To: <AANLkTimP1F=GsnEqp-koTdy4jfaxzKpetC3Suo1Yidcm@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1011102157000.2900@localhost6.localdomain6>
+References: <AANLkTikA6hZDV0A30fku7VT7Z1P8OqxcsF-EK95pBdD=@mail.gmail.com> <4CD966D8.4000602@ladisch.de> <20101109153805.GB3146@kryptos.osrc.amd.com> <AANLkTi=cUGGpkgWcbX=KMxzu+E=Toy_O+LeLoAFFUAsh@mail.gmail.com> <20101109180123.GB31121@aftab>
+ <AANLkTik107mFOqvxsBtBrc14RHwhkkZTOGgctxKPPNfW@mail.gmail.com> <AANLkTik1JdQRh_Gkz_240csVGp4sS0W8nzR5d9Pv1G-X@mail.gmail.com> <20101110185031.GB13539@aftab> <AANLkTimNuSJz0nXZCR2zu963VQ_Y9R8ix73+QbbUy7nt@mail.gmail.com> <alpine.LFD.2.00.1011102147580.2900@localhost6.localdomain6>
+ <AANLkTimP1F=GsnEqp-koTdy4jfaxzKpetC3Suo1Yidcm@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-441092936-1289422695=:2900"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> alternative, and is higher priority than any other consideration.  If
-> a product had 33% less battery lifetime, but was developed in
-> mainline, would you buy that over a standard product?  OK, maybe a
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-That's if you believe the Google thing that it can't be done any other
-way. Which other vendors don't seem to be agree with.
+---1463795968-441092936-1289422695=:2900
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-> OTOH, if the original poster thinks that he can develop changes to the
-> Android userspace that allow the use of an upstream kernel, and has
-> just as good battery lifetime, and with a system which is just as
-> debuggable and easy to maintain as the current android userspace, then
-> by all means, I would love for him to try to prove that he can.  And I
-> will certainly be happy to introduce him to the Android developers who
-> measure power usage in mobile devices using microwatt meters to see if
-> he really can do as good of a job using a stock kernel.
+On Wed, 10 Nov 2010, Andrew Lutomirski wrote:
+> On Wed, Nov 10, 2010 at 3:52 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > On Wed, 10 Nov 2010, Andrew Lutomirski wrote:
+> >
+> >> On Wed, Nov 10, 2010 at 1:50 PM, Borislav Petkov <bp@amd64.org> wrote:
+> >> > On Wed, Nov 10, 2010 at 01:48:00PM -0500, Andrew Lutomirski wrote:
+> >> >> > Clocksource: tsc unstable (delta = -34355296774 ns)
+> >> >> > Switching: to clocksource hpet
+> >> >>
+> >> >> Please disregard -- this is a bug in nouveau (or drm) not hpet.  I'll
+> >> >> send a bug report to the maintainers.
+> >> >
+> >> > Interesting! Joerg was complaining about similar symptoms with .36 today
+> >> > too.
+> >>
+> >> Well, there is a clocksource sort-of-bug that could cause confusion:
+> >> when something totally unrelated to clocksources goes out to lunch,
+> >> the clocksource watchdog decides that the clocksource is unstable and
+> >> complains, steering everyone toward filing the wrong bug.
+> >
+> > How should the clocksource watchdog code know that something went to
+> > lunch? The fact that we need to monitor TSC at all is horrible enough,
+> > adding further heuristics to detect extended lunch breaks would be
+> > just a PITA.
+> 
+> Could the clocksource watchdog detect when it gets woken up (i.e. when
+> the hardware timer fires) instead of when it gets scheduled?  It is
+> internal to the timing code, after all...
+> 
+> Alternatively, maybe the watchdog could just compare the TSC timestamp
+> to the current value according to some other clock (PIT?  whatever
+> clockevent is in use?) instead of just using the time passed into the
+> delayed work in the first place.
 
-Well actually there is a much better simple reason. One of the things you
-get by using a standard kernel is the ability to dump a true Android
-environment onto another device that's running something else as well.
+It compares to some other clock. i.e. HPET in your case, but the
+extended lunch break was larger than the HPET wrap around time :(
 
-I don't quite understand why people play some of the strange games they
-do but being able to dump them on arbitary Linux platforms is no doubt
-useful.
+Thanks,
 
-Alan
+	tglx
+---1463795968-441092936-1289422695=:2900--
