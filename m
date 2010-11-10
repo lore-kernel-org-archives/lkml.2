@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756960Ab0KJQhf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 11:37:35 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57375 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756824Ab0KJQhe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 11:37:34 -0500
-Date: Wed, 10 Nov 2010 16:37:32 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Mattias Wallin <mattias.wallin@stericsson.com>
-Subject: Re: [PATCH] regulator: enable supply regulator only when use count
- is zero
-Message-ID: <20101110163732.GB6052@rakim.wolfsonmicro.main>
-References: <1289383582-10183-1-git-send-email-bengt.g.jonsson@stericsson.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289383582-10183-1-git-send-email-bengt.g.jonsson@stericsson.com>
-X-Cookie: Nihilism should commence with oneself.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756984Ab0KJQiR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 11:38:17 -0500
+Received: from xenotime.net ([72.52.115.56]:44824 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756910Ab0KJQiQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 11:38:16 -0500
+Date: Wed, 10 Nov 2010 08:38:14 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Marek Belisko <marek.belisko@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] staging: ft1000: Fix compilation warning.
+Message-Id: <20101110083814.55e222c4.rdunlap@xenotime.net>
+In-Reply-To: <1289384128-19823-1-git-send-email-marek.belisko@gmail.com>
+References: <1289384128-19823-1-git-send-email-marek.belisko@gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 11:06:22AM +0100, Bengt Jonsson wrote:
-> Supply regulators are disabled only when the last
-> reference count is removed on the child regulator
-> (the use count goes from 1 to 0). This patch changes
-> the behaviour of enable so the supply regulator is
-> enabled only when the use count of the child
-> regulator goes from 0 to 1.
+On Wed, 10 Nov 2010 11:15:26 +0100 Marek Belisko wrote:
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Signed-off-by: Marek Belisko <marek.belisko@gmail.com>
+> ---
+>  drivers/staging/ft1000/ft1000-usb/ft1000_usb.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 
-> +	if (rdev->use_count == 0) {
-> +		/* do we need to enable the supply regulator first */
-> +		if (rdev->supply) {
 
-This'd be a bit neater (and less invasive) as a single if statement with
-&&.
+a.  always include the warning or error message that the patch fixes
+
+b.  (quoting from another email yesterday:)
+
+so in your analysis of this compiler warning, was the warning correct & justified,
+or was it false?  I.e., is the init to NULL needed?
+
+If it was false, could we just silence the warning by using:
+
+	struct ft1000_info *unitialized_var(pft1000info);
+
+plus #include <linux/compiler.h> ?
+
+
+> diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
+> index 99e3339..b7c4602 100644
+> --- a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
+> +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
+> @@ -64,7 +64,7 @@ static int ft1000_probe(struct usb_interface *interface,
+>  	int i, ret = 0, size;
+>  
+>  	struct ft1000_device *ft1000dev;
+> -	struct ft1000_info *pft1000info;
+> +	struct ft1000_info *pft1000info = NULL;
+>  	const struct firmware *dsp_fw;
+>  
+>  	ft1000dev = kmalloc(sizeof(struct ft1000_device), GFP_KERNEL);
+> -- 
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
