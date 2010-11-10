@@ -1,74 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129Ab0KJA6j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 19:58:39 -0500
-Received: from sj-iport-5.cisco.com ([171.68.10.87]:62866 "EHLO
-	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104Ab0KJA6g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 19:58:36 -0500
-Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAG982UyrR7Hu/2dsb2JhbACDOZ8CcaEMijOQe4EigzVzBIRZhX2FDw
-X-IronPort-AV: E=Sophos;i="4.59,176,1288569600"; 
-   d="scan'208";a="283646932"
-From: Tom Lyon <pugs@cisco.com>
-Organization: Cisco Systems, Inc.
-To: Alex Williamson <alex.williamson@redhat.com>
-Subject: Re: [PATCH 0/2] vfio: virtualize INTX_DISABLE
-Date: Tue, 9 Nov 2010 16:59:04 -0800
-User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.5-desktop; KDE/4.4.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        kvm@vger.kernel.org
-References: <20101105171624.1638.33349.stgit@s20.home>
-In-Reply-To: <20101105171624.1638.33349.stgit@s20.home>
+	id S1753429Ab0KJBBN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 20:01:13 -0500
+Received: from cantor.suse.de ([195.135.220.2]:58212 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751379Ab0KJBBJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 20:01:09 -0500
+Date: Wed, 10 Nov 2010 02:01:07 +0100
+From: Jan Kara <jack@suse.cz>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH 8/9] fs/quota/dquot.c: Use printf extension %pV
+Message-ID: <20101110010107.GB12773@quack.suse.cz>
+References: <cover.1289348757.git.joe@perches.com>
+ <8ee8a64dba59575938955a22ba3a390ba924b4c5.1289348757.git.joe@perches.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011091659.04480.pugs@cisco.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8ee8a64dba59575938955a22ba3a390ba924b4c5.1289348757.git.joe@perches.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alex - I am rejecting these 2 patches.
+On Tue 09-11-10 16:35:22, Joe Perches wrote:
+> Using %pV reduces the number of printk calls and
+> eliminates any possible message interleaving from
+> other printk calls.
+  Thanks. Merged.
 
-For patch 1/2, I started with yours and found a couple of problems, but then I 
-got into the spirit and did a buinch more cleaning up. My patch to follow.
+						Honza
 
-For patch 2/2, the INTX stuff, I don't really see the problem.  If the user 
-turns on the bit, it'll result in at most one more interrupt, right?  If he 
-turns off the bit, then he doesn't want interrupts.
-
-On Friday, November 05, 2010 10:30:15 am Alex Williamson wrote:
-> Tom,
 > 
-> Since we use INTX_DISABLE internally for PCI 2.3 devices, it's probably
-> not a good idea to allow vfio users direct access to it.  In trying to
-> virtualize it, I stumbled on some config space virtualization issues.
-> I think we want vconfig and the value written to hardware to be different
-> when there are virtualized bits, but we lump them together.  I think this
-> is why I've never been able to rely on the memory enable bit of config
-> space through vfio.  With this first patch, all virtualized bits that
-> are writable are sticky in vconfig.  Non-writable bits come from either
-> the old value or the physical hardware depending on whether it's
-> virtualized.  This means we can get rid of a lot of duplicated setting
-> and reading of vconfig, and only add code for more complicated
-> behaviors.  This is tricky code, to please double check that I'm not
-> doing something stupid.  Thanks,
-> 
-> Alex
-> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 > ---
+>  fs/quota/dquot.c |   12 ++++++++----
+>  1 files changed, 8 insertions(+), 4 deletions(-)
 > 
-> Alex Williamson (2):
->       vfio: Virtualize PCI_COMMAND_INTX_DISABLE
->       vfio: Fix config space virtualization
+> diff --git a/fs/quota/dquot.c b/fs/quota/dquot.c
+> index 0fed41e..aad97ef 100644
+> --- a/fs/quota/dquot.c
+> +++ b/fs/quota/dquot.c
+> @@ -135,14 +135,18 @@ EXPORT_SYMBOL(dq_data_lock);
+>  void __quota_error(struct super_block *sb, const char *func,
+>  		  const char *fmt, ...)
+>  {
+> +	struct va_format vaf;
+>  	va_list args;
+>  
+>  	if (printk_ratelimit()) {
+>  		va_start(args, fmt);
+> -		printk(KERN_ERR "Quota error (device %s): %s: ",
+> -		       sb->s_id, func);
+> -		vprintk(fmt, args);
+> -		printk("\n");
+> +
+> +		vaf.fmt = fmt;
+> +		vaf.va = &args;
+> +
+> +		printk(KERN_ERR "Quota error (device %s): %s: %pV\n",
+> +		       sb->s_id, func, &vaf);
+> +
+>  		va_end(args);
+>  	}
+>  }
+> -- 
+> 1.7.3.1.g432b3.dirty
 > 
-> 
->  drivers/vfio/vfio_intrs.c      |   38 ++++++++----
->  drivers/vfio/vfio_main.c       |   14 ++++
->  drivers/vfio/vfio_pci_config.c |  131
-> ++++++++++++---------------------------- include/linux/vfio.h           | 
->   4 +
->  4 files changed, 84 insertions(+), 103 deletions(-)
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
