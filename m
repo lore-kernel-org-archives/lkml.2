@@ -1,169 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab0KJASc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 19:18:32 -0500
-Received: from mx1.vsecurity.com ([209.67.252.12]:50178 "EHLO
-	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752121Ab0KJASb (ORCPT
+	id S1752670Ab0KJAXN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 19:23:13 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:58873 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751418Ab0KJAXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 19:18:31 -0500
-Subject: [PATCH v2] Restrict unprivileged access to kernel syslog
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-To: linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, mingo@elte.hu, kees.cook@canonical.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 09 Nov 2010 19:18:29 -0500
-Message-ID: <1289348309.7380.31.camel@dan>
+	Tue, 9 Nov 2010 19:23:12 -0500
+Date: Wed, 10 Nov 2010 00:21:53 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Kees Cook <kees.cook@canonical.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [Security] [PATCH v3 0/4] x86: clear XD_DISABLED flag on Intel
+ to regain NX
+Message-ID: <20101110002153.7af92a1f@lxorguk.ukuu.org.uk>
+In-Reply-To: <20101109235314.GD5876@outflux.net>
+References: <20101109181157.GE5876@outflux.net>
+	<20101109183142.4ebfa737@lxorguk.ukuu.org.uk>
+	<20101109185604.GK5876@outflux.net>
+	<20101109225000.1b90e720@lxorguk.ukuu.org.uk>
+	<20101109235314.GD5876@outflux.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel syslog contains debugging information that is often useful
-during exploitation of other vulnerabilities, such as kernel heap
-addresses.  Rather than futilely attempt to sanitize hundreds (or
-thousands) of printk statements and simultaneously cripple useful
-debugging functionality, it is far simpler to create an option that
-prevents unprivileged users from reading the syslog.
+> Only Intel has this problem (it's the only CPU that defines this MSR), so
+> that'll reduce it. But Google is of no help to me on this; where can I find
+> these documents?
 
-This patch, loosely based on grsecurity's GRKERNSEC_DMESG, creates the
-dmesg_restrict sysctl.  When set to "0", the default, no restrictions
-are enforced.  When set to "1", only users with CAP_SYS_ADMIN can read
-the kernel syslog via dmesg(8) or other mechanisms.
-
-v2 adds CONFIG_SECURITY_RESTRICT_DMESG.  When enabled, the default
-sysctl value is set to "1".  When disabled, the default sysctl value is
-set to "0".
-
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Kees Cook <kees.cook@canonical.com>
-CC: stable <stable@kernel.org>
----
-
- Documentation/sysctl/kernel.txt |   11 +++++++++++
- include/linux/kernel.h          |    1 +
- kernel/printk.c                 |    6 ++++++
- kernel/sysctl.c                 |    9 +++++++++
- security/Kconfig                |   11 +++++++++++
- security/commoncap.c            |    2 ++
- 6 files changed, 40 insertions(+), 0 deletions(-)
-
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index 3894eaa..c6bac30 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -28,6 +28,7 @@ show up in /proc/sys/kernel:
- - core_uses_pid
- - ctrl-alt-del
- - dentry-state
-+- dmesg_restrict
- - domainname
- - hostname
- - hotplug
-@@ -213,6 +214,16 @@ to decide what to do with it.
- 
- ==============================================================
- 
-+dmesg_restrict:
-+
-+This toggle indicates whether unprivileged users are prevented 
-+from using dmesg(8) to view messages from the kernel's log
-+buffer.  By default, it is set to (0), resulting in no 
-+restrictions.  When set to (1), users must have CAP_SYS_ADMIN
-+to use dmesg(8).
-+
-+==============================================================
-+
- domainname & hostname:
- 
- These files can be used to set the NIS/YP domainname and the
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 450092c..f0d0088 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -293,6 +293,7 @@ extern bool printk_timed_ratelimit(unsigned long *caller_jiffies,
- 				   unsigned int interval_msec);
- 
- extern int printk_delay_msec;
-+extern int dmesg_restrict;
- 
- /*
-  * Print a one-time message (analogous to WARN_ONCE() et al):
-diff --git a/kernel/printk.c b/kernel/printk.c
-index b2ebaee..485d653 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -261,6 +261,12 @@ static inline void boot_delay_msec(void)
- }
- #endif
- 
-+#ifdef CONFIG_SECURITY_RESTRICT_DMESG
-+int dmesg_restrict = 1;
-+#else
-+int dmesg_restrict;
-+#endif
-+
- int do_syslog(int type, char __user *buf, int len, bool from_file)
- {
- 	unsigned i, j, limit, count;
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index c33a1ed..b65bf63 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -704,6 +704,15 @@ static struct ctl_table kern_table[] = {
- 	},
- #endif
- 	{
-+		.procname	= "dmesg_restrict",
-+		.data		= &dmesg_restrict,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec_minmax,
-+		.extra1		= &zero,
-+		.extra2		= &one,
-+	},
-+	{
- 		.procname	= "ngroups_max",
- 		.data		= &ngroups_max,
- 		.maxlen		= sizeof (int),
-diff --git a/security/Kconfig b/security/Kconfig
-index bd72ae6..6ca390e 100644
---- a/security/Kconfig
-+++ b/security/Kconfig
-@@ -39,6 +39,17 @@ config KEYS_DEBUG_PROC_KEYS
- 
- 	  If you are unsure as to whether this is required, answer N.
- 
-+config SECURITY_RESTRICT_DMESG
-+	bool "Restrict unprivileged access to the kernel syslog"
-+	help
-+	  This enforces restrictions on unprivileged users reading the kernel
-+	  syslog via dmesg(8).
-+
-+	  If this option is not selected, no restrictions will be enforced 
-+	  unless the dmesg_restrict sysctl is explicitly set to (1).
-+
-+	  If you are unsure how to answer this question, answer N.
-+
- config SECURITY
- 	bool "Enable different security models"
- 	depends on SYSFS
-diff --git a/security/commoncap.c b/security/commoncap.c
-index 5e632b4..04b80f9 100644
---- a/security/commoncap.c
-+++ b/security/commoncap.c
-@@ -895,6 +895,8 @@ int cap_syslog(int type, bool from_file)
- {
- 	if (type != SYSLOG_ACTION_OPEN && from_file)
- 		return 0;
-+	if (dmesg_restrict && !capable(CAP_SYS_ADMIN))
-+		return -EPERM;
- 	if ((type != SYSLOG_ACTION_READ_ALL &&
- 	     type != SYSLOG_ACTION_SIZE_BUFFER) && !capable(CAP_SYS_ADMIN))
- 		return -EPERM;
+www.intel.com 8)
 
 
+> > I'm not specifically aware of any but I do know for example that there
+> > are other CPU BIOS disablable features that some systems disable in the
+> > BIOS for good reason (an ancient example being the original Pentium
+> > REP MOVS optimisation on some steppings)
+> 
+> By definition there should be fewer errata CPUs than those than need their
+> BIOS ignored, so I still think this patch makes sense (especially since it
+> can trivially be worked around with the noexec=off boot option).
+
+We need to be sure because the last thing you want is even 1% of your 10%
+of users to sudden get magical random memory corruption from overriding
+something wrongly !
+
+It's definitely worth checking and worth doing because even if there is
+one (and I have no idea if there is) it'll tell you which steppings
+
+Alan
