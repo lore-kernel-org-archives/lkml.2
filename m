@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431Ab0KJAvZ (ORCPT <rfc822;w@1wt.eu>);
+	id S1753901Ab0KJAv1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 19:51:27 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:55852 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752442Ab0KJAvZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 9 Nov 2010 19:51:25 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:51385 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751406Ab0KJAvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 19:51:24 -0500
-Message-ID: <4CD9ECD2.3030805@cn.fujitsu.com>
-Date: Wed, 10 Nov 2010 08:52:34 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=IjJijTP2OMpsLYohvheWhppeKfUMPHSCyfMpC4JK+kzv2GMhgpAN5mUTvJth/eIJOJ
+         AMVzI+juzVTv4GZggi75RWk6v1u3G9MTkJccRgNyHTJebY5T62agsehaT3sdV+gMuuCx
+         +Kq6k7VOJPzF+pXVJ/HF1JqGM9g/gNz7q8LY0=
 MIME-Version: 1.0
-To: Paul Menage <menage@google.com>
-CC: "akpm >> Andrew Morton" <akpm@linux-foundation.org>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        containers@lists.linux-foundation.org
-Subject: Re: [PATCH 1/7] cgroups: Shrink struct cgroup_subsys
-References: <4CC146A4.9090505@cn.fujitsu.com>	<4CC146BA.7080009@cn.fujitsu.com>	<AANLkTikf-1kLStxqi5UjP=vn3pqVBHy0OA7ibeWTkJ5z@mail.gmail.com>	<4CD78946.5060405@cn.fujitsu.com> <AANLkTim6d1fQLZbkmZST3PTN0RMSs3m=oossF81pYBn9@mail.gmail.com>
-In-Reply-To: <AANLkTim6d1fQLZbkmZST3PTN0RMSs3m=oossF81pYBn9@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-10 08:51:47,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-10 08:51:51,
-	Serialize complete at 2010-11-10 08:51:51
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1289294671-6865-2-git-send-email-gthelen@google.com>
+References: <1289294671-6865-1-git-send-email-gthelen@google.com>
+	<1289294671-6865-2-git-send-email-gthelen@google.com>
+Date: Wed, 10 Nov 2010 09:51:23 +0900
+Message-ID: <AANLkTikteK-3gVghEu7egfUH+Ngfm1e7aQMyz1KBZ0nT@mail.gmail.com>
+Subject: Re: [PATCH 1/6] memcg: add mem_cgroup parameter to mem_cgroup_page_stat()
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Menage wrote:
-> On Sun, Nov 7, 2010 at 9:23 PM, Li Zefan <lizf@cn.fujitsu.com> wrote:
->> bool active;
->> bool disabled;
->> ...
->>
->> ?
->>
->> With alignment 5-8 bool values == 8 bytes in 64-bit machine, compared to
->> 4 bytes with the approach this patch takes.
-> 
-> I meant specifying it as:
-> 
-> bool active:1;
-> bool disabled:1;
-> 
+On Tue, Nov 9, 2010 at 6:24 PM, Greg Thelen <gthelen@google.com> wrote:
+> This new parameter can be used to query dirty memory usage
+> from a given memcg rather than the current task's memcg.
+>
+> Signed-off-by: Greg Thelen <gthelen@google.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-It won't compile, but unsigned char active:1 will do. ;)
 
-> i.e. keeping the bit-sized flags but also keeping the bool semantics.
-> Having said that, I'm not really sure why saving 12 bytes per
-> subsystem is worth a patch.
-
-Every thing that reduces code size (without sacrifice readability
-and maintain maintainability) should be worth.
-
-This is one of the reasons we accept patches that replacing
-kmalloc+memset with kzalloc, which just saves 8 bytes in my box.
+-- 
+Kind regards,
+Minchan Kim
