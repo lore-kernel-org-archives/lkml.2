@@ -1,115 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756744Ab0KJPvq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 10:51:46 -0500
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:57520 "EHLO
-	TX2EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756342Ab0KJPvp convert rfc822-to-8bit (ORCPT
+	id S1756828Ab0KJPwm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 10:52:42 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:40656 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756437Ab0KJPwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 10:51:45 -0500
-X-SpamScore: -36
-X-BigFish: VS-36(zz542N1432N98dN1447R9371Pzz1202hzz8275bhz2dh2a8h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:de01egw02.freescale.net;RD:de01egw02.freescale.net;EFVD:NLI
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCHv3 1/2] ARM: imx: Add core definitions for MX53
-Date: Wed, 10 Nov 2010 08:51:19 -0700
-Message-ID: <86A0E76937111F4C92FABEC0A20988510523D224@az33exm21>
-In-Reply-To: <20101109214607.GG6017@pengutronix.de>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCHv3 1/2] ARM: imx: Add core definitions for MX53
-Thread-Index: AcuAV6brtXgPpU38Tcev9bFRIK//yAAls4kA
-References: <1288972551-21877-1-git-send-email-Dinh.Nguyen@freescale.com> <20101109214607.GG6017@pengutronix.de>
-From: Nguyen Dinh-R00091 <R00091@freescale.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux@arm.linux.org.uk>, <u.kleine-koenig@pengutronix.de>,
-        <amit.kucheria@canonical.com>, <eric@eukrea.com>
-X-OriginatorOrg: freescale.com
+	Wed, 10 Nov 2010 10:52:40 -0500
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-crypto@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Subject: [PATCH v1.3 2/4] key: add tpm_send command
+Date: Wed, 10 Nov 2010 10:51:47 -0500
+Message-Id: <1289404309-15955-3-git-send-email-zohar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <1289404309-15955-1-git-send-email-zohar@linux.vnet.ibm.com>
+References: <1289404309-15955-1-git-send-email-zohar@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sascha,
+Add internal kernel tpm_send() command used to seal/unseal keys.
 
->-----Original Message-----
->From: Sascha Hauer [mailto:s.hauer@pengutronix.de]
->Sent: Tuesday, November 09, 2010 3:46 PM
->To: Nguyen Dinh-R00091
->Cc: linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
-linux@arm.linux.org.uk;
->u.kleine-koenig@pengutronix.de; amit.kucheria@canonical.com;
-eric@eukrea.com
->Subject: Re: [PATCHv3 1/2] ARM: imx: Add core definitions for MX53
->
->Hi Dinh,
->
->On Fri, Nov 05, 2010 at 10:55:50AM -0500, Dinh.Nguyen@freescale.com
-wrote:
->> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
->>
->> Add iomux, clocks,  and memory map for Freescale's MX53 SoC.
->> Add cpu_is_mx53 function to common.h.
->> Add 3 more banks of gpio's to mxc_gpio_ports.
->> Add MX53 phys offset address.
->>
->> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
->> ---
->>  arch/arm/mach-mx5/clock-mx53.c              |  857
-+++++++++++++++++++++++++++
->>  arch/arm/mach-mx5/devices.c                 |   27 +
->>  arch/arm/plat-mxc/include/mach/common.h     |    4 +
->>  arch/arm/plat-mxc/include/mach/iomux-mx53.h |  303 ++++++++++
->>  arch/arm/plat-mxc/include/mach/memory.h     |    1 +
->>  arch/arm/plat-mxc/include/mach/mx53.h       |  406 +++++++++++++
->>  6 files changed, 1598 insertions(+), 0 deletions(-)
->>  create mode 100644 arch/arm/mach-mx5/clock-mx53.c
->>  create mode 100644 arch/arm/plat-mxc/include/mach/iomux-mx53.h
->>  create mode 100644 arch/arm/plat-mxc/include/mach/mx53.h
->>
->> diff --git a/arch/arm/mach-mx5/clock-mx53.c
-b/arch/arm/mach-mx5/clock-mx53.c
->> new file mode 100644
->> index 0000000..d547cb8
->> --- /dev/null
->> +++ b/arch/arm/mach-mx5/clock-mx53.c
->
->Most of this code looks like it could be shared with clock-mx51.c
+Signed-off-by: David Safford <safford@watson.ibm.com>
+Reviewd-by: Mimi Zohar <zohar@watson.ibm.com>
+Acked-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Acked-by: Serge E. Hallyn <serge@hallyn.com>
+---
+ drivers/char/tpm/tpm.c |   17 +++++++++++++++++
+ include/linux/tpm.h    |    3 +++
+ 2 files changed, 20 insertions(+), 0 deletions(-)
 
-Agreed, but I was unsure how to proceed with adding clock code for mx53.
-Should I merge mx53 clock code into clock-mx51 and rename clock-mx51? 
-
->
->> +extern int mx53_revision(void);
->> +#endif
->> +
->> +#endif	/* ifndef __MACH_H__ */
->
->__MACH_MX53_H__
->
->> --
->> 1.6.0.4
->>
->>
->>
->
->--
->Pengutronix e.K.                           |
-|
->Industrial Linux Solutions                 | http://www.pengutronix.de/
-|
->Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0
-|
->Amtsgericht Hildesheim, HRA 2686           | Fax:
-+49-5121-206917-5555 |
-
-Thanks for the review,
-
-Dinh
-
+diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
+index 7c41335..5987d9c 100644
+--- a/drivers/char/tpm/tpm.c
++++ b/drivers/char/tpm/tpm.c
+@@ -780,6 +780,23 @@ int tpm_pcr_extend(u32 chip_num, int pcr_idx, const u8 *hash)
+ }
+ EXPORT_SYMBOL_GPL(tpm_pcr_extend);
+ 
++int tpm_send(u32 chip_num, char *cmd, int buflen)
++{
++	struct tpm_chip *chip;
++	int rc;
++
++	chip = tpm_chip_find_get(chip_num);
++	if (chip == NULL)
++		return -ENODEV;
++
++	rc = transmit_cmd(chip, (struct tpm_cmd_t *)cmd, buflen,
++			  "attempting tpm_cmd");
++
++	module_put(chip->dev->driver->owner);
++	return rc;
++}
++EXPORT_SYMBOL_GPL(tpm_send);
++
+ ssize_t tpm_show_pcrs(struct device *dev, struct device_attribute *attr,
+ 		      char *buf)
+ {
+diff --git a/include/linux/tpm.h b/include/linux/tpm.h
+index ac5d1c1..a0ecaa9 100644
+--- a/include/linux/tpm.h
++++ b/include/linux/tpm.h
+@@ -31,6 +31,7 @@
+ 
+ extern int tpm_pcr_read(u32 chip_num, int pcr_idx, u8 *res_buf);
+ extern int tpm_pcr_extend(u32 chip_num, int pcr_idx, const u8 *hash);
++extern int tpm_send(u32 chip_num, char *cmd, int buflen);
+ #else
+ static inline int tpm_pcr_read(u32 chip_num, int pcr_idx, u8 *res_buf) {
+ 	return -ENODEV;
+@@ -38,5 +39,7 @@ static inline int tpm_pcr_read(u32 chip_num, int pcr_idx, u8 *res_buf) {
+ static inline int tpm_pcr_extend(u32 chip_num, int pcr_idx, const u8 *hash) {
+ 	return -ENODEV;
+ }
++static inline int tpm_send(u32 chip_num, char *cmd, int buflen) {
++	return -ENODEV;
+ #endif
+ #endif
+-- 
+1.7.2.2
 
