@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018Ab0KJHpr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 02:45:47 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:42291 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752756Ab0KJHpq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 02:45:46 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=fmpn//RBbQONzUW52JBGEGb17r7XPEdwf4x0u/WJ40jMpYguCGG1pXh1BRhmT9/Idf
-         mWu6+Sg/vBBHBGFZFkF7FDj2JAEWcc+Su1ULjEYpM3u3BkRdYGog0f2YKIXh2apLSBut
-         wmDMK43XzsrbB05iP6iLTsmn43nxeariOXRIk=
-Subject: [PATCH 2/2] mfd: Include <linux/gpio.h> instead of <asm/gpio.h>
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        David Brownell <dbrownell@users.sourceforge.net>
-Content-Type: text/plain
-Date: Wed, 10 Nov 2010 15:49:41 +0800
-Message-Id: <1289375381.28822.6.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1753853Ab0KJHqo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 02:46:44 -0500
+Received: from mga02.intel.com ([134.134.136.20]:57832 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752962Ab0KJHqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 02:46:43 -0500
+Message-Id: <0d30dc$k4n8nm@orsmga001.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,177,1288594800"; 
+   d="scan'208";a="676045558"
+Date: Wed, 10 Nov 2010 07:46:40 +0000
+To: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
+Subject: Re: [bisected] i915 regression in post 2.6.36 kernels
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <201011100802.20332.johannes.hirte@fem.tu-ilmenau.de>
+References: <201011100802.20332.johannes.hirte@fem.tu-ilmenau.de>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As warned by checkpatch.pl, use #include <linux/gpio.h> instead of <asm/gpio.h>.
+On Wed, 10 Nov 2010 08:02:19 +0100, Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de> wrote:
+> With the latest kernel, I don't get any windows in KDE displayed. After
+> starting kdm, I get the background picture and the mouse cursor but not the
+> login window. I can login blindly and a ps on console shows me that the
+> expected KDE processes are started but still nothing is displayed. 
+> I've bisected this to:
+> 
+> 5c12a07e8073295ce8b57a822f811ac34e4f8420 is the first bad commit
+> commit 5c12a07e8073295ce8b57a822f811ac34e4f8420
+> Author: Chris Wilson <chris@chris-wilson.co.uk>
+> Date:   Wed Sep 22 11:22:30 2010 +0100
+> 
+>     drm/i915: Drop ring->lazy_request
+>     
+>     We are not currently using it as intended, so remove the complication.
+> 
+>     Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/mfd/tps65010.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+May I ask you to recheck your bisection, since that was later reverted.
+-Chris
 
-diff --git a/drivers/mfd/tps65010.c b/drivers/mfd/tps65010.c
-index d0016b6..83b75c5 100644
---- a/drivers/mfd/tps65010.c
-+++ b/drivers/mfd/tps65010.c
-@@ -34,7 +34,7 @@
- 
- #include <linux/i2c/tps65010.h>
- 
--#include <asm/gpio.h>
-+#include <linux/gpio.h>
- 
- 
- /*-------------------------------------------------------------------------*/
 -- 
-1.7.2
-
-
-
+Chris Wilson, Intel Open Source Technology Centre
