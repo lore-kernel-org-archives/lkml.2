@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756024Ab0KJNVv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 08:21:51 -0500
-Received: from mail.windriver.com ([147.11.1.11]:49521 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755857Ab0KJNVu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 08:21:50 -0500
-Message-ID: <4CDA9C5C.6010904@windriver.com>
-Date: Wed, 10 Nov 2010 07:21:32 -0600
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
+	id S1756028Ab0KJNXA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 08:23:00 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:39300 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755814Ab0KJNW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 08:22:59 -0500
+Date: Wed, 10 Nov 2010 14:22:46 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Borislav Petkov <bp@amd64.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Jesper Juhl <jj@chaosbits.net>,
+        "amd64-microcode@amd64.org" <amd64-microcode@amd64.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -tip] microcode, AMD: Cleanup code a bit
+Message-ID: <20101110132246.GA11388@elte.hu>
+References: <20101102175248.GA25781@aftab>
+ <20101110083121.GD3341@elte.hu>
+ <20101110113300.GA9518@aftab>
 MIME-Version: 1.0
-To: jovi zhang <bookjovi@gmail.com>
-CC: Martin Hicks <mort@sgi.com>, Dmitry Torokhov <dtor@mail.ru>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kdb: use macro instead of const number
-References: <AANLkTi=b+KWcYqXCteuiw0OnKqfSvWQCA+B-HUEy90R8@mail.gmail.com>
-In-Reply-To: <AANLkTi=b+KWcYqXCteuiw0OnKqfSvWQCA+B-HUEy90R8@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Nov 2010 13:21:33.0487 (UTC) FILETIME=[31AD7BF0:01CB80DA]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101110113300.GA9518@aftab>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 3 patches you have sent me so far all have white space that is
-completely mangled.  In the future, please use a mail client that does
-not mangle white space, or use "git send-email".
 
-I did fix up your patches so as to add them to the merge queue.  The
-code cleanup (this patch) will be deferred to the next merge window.
+* Borislav Petkov <bp@amd64.org> wrote:
 
-Please see my other comment about signed off by tags.
+> On Wed, Nov 10, 2010 at 03:31:21AM -0500, Ingo Molnar wrote:
+> > Hm, what tree is this against - it doesnt apply here:
+> 
+> Ah, there's this one other patch that goes before that, sorry for not
+> mentioning it to you - I guess you still cannot read minds :-)
+> 
+> http://marc.info/?l=linux-kernel&m=128864852428104
+> 
+> Anyway, I've applied the two ontop of tip/x86/microcode and uploaded
+> them to
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tip-microcode
 
+Ok, good. Please fix commit 35dc0ff46f77 if you want me to pull it, you should be in 
+the signoff chain as a submaintainer who pushes bits, i.e. your entry should be:
 
-On 11/10/2010 04:51 AM, jovi zhang wrote:
-> It's better to use macro KDB_BASE_CMD_MAX instead of 50
->
-> Signed-off-by: jovi zhang <bookjovi@gmail.com>
->   
+  Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 
-For a signed off tag, you want to make sure these are consistent for all
-the patches you send to any kernel maintainer or kernel mailing list. 
-You already have one patch in the kernel
-(85e00b55517a5696282b80836655e6b6f5702df0), and it does not match your
-signed-off-by line.
+not:
 
-If you are using git to make your patches, please edit the ~/.gitconfig
-and use something like:
-[user]
-        name = Jovi Zhang
-        email = bookjovi@gmail.com
+  Acked-by: Borislav Petkov <borislav.petkov@amd.com>
+
+Also, while touching up details, please remove the colon after the sentence:
+
+  35dc0ff46f77: microcode, AMD: Prefer vzalloc() over calls to vmalloc()+memset().
+
+All arch/x86 commit titles are open-ended sentences that start with a verb.
+
+Also, please use a 'x86, microcode, AMD: ' prefix.
 
 Thanks,
-Jason.
 
-> kernel/debug/kdb/kdb_main.c |    2 +-
-> 1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-> index 37755d6..3579105 100644
-> --- a/kernel/debug/kdb/kdb_main.c
-> +++ b/kernel/debug/kdb/kdb_main.c
-> @@ -78,7 +78,7 @@ static unsigned int kdb_continue_catastrophic;
-> static kdbtab_t *kdb_commands;
-> #define KDB_BASE_CMD_MAX 50
-> static int kdb_max_commands = KDB_BASE_CMD_MAX;
-> -static kdbtab_t kdb_base_commands[50];
-> +static kdbtab_t kdb_base_commands[KDB_BASE_CMD_MAX];
-> #define for_each_kdbcmd(cmd, num)                                      \
->        for ((cmd) = kdb_base_commands, (num) = 0;                      \
->             num < kdb_max_commands;                                    \
->   
-
+	Ingo
