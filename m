@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756506Ab0KJO5k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 09:57:40 -0500
-Received: from mtaout01-winn.ispmail.ntl.com ([81.103.221.47]:6100 "EHLO
-	mtaout01-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756391Ab0KJO5j (ORCPT
+	id S1756412Ab0KJPAd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 10:00:33 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64304 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755533Ab0KJPAc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 09:57:39 -0500
-X-Greylist: delayed 1776 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Nov 2010 09:57:38 EST
-From: Ian Campbell <ijc@hellion.org.uk>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-In-Reply-To: <1289399731.28590.136.camel@Joe-Laptop>
-References: <1289380840.28590.132.camel@Joe-Laptop>
-	 <1289399240.724.48.camel@zakaz.uk.xensource.com>
-	 <1289399731.28590.136.camel@Joe-Laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 10 Nov 2010 14:57:22 +0000
-Message-ID: <1289401042.724.54.camel@zakaz.uk.xensource.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 62.200.22.2
-X-SA-Exim-Mail-From: ijc@hellion.org.uk
-Subject: Re: [PATCH] MAINTAINERS: Mark XEN lists subscribers-only
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on hopkins.hellion.org.uk)
-X-Cloudmark-Analysis: v=1.1 cv=X0sWjjQ37bMP4yB/pNNinY3VxVB2n/hmdAjhihaCFGs= c=1 sm=0 a=fd6gu-_BvqYA:10 a=IkcTkHD0fZMA:10 a=mLnsDVdbAAAA:8 a=SEF7xSSsAAAA:8 a=EhL84oQtjh5Z3vbzFikA:9 a=FsaaDefLp7iPWeVkzMgA:7 a=_EwBGvv90qeNKA64oEdGlND049IA:4 a=QEXdDO2ut3YA:10 a=neE3X0FzesQA:10 a=9ElHw7gSeUoA:10 a=BvFtejatcY8A:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	Wed, 10 Nov 2010 10:00:32 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=lAwfP/leTYxjZCPi/uLePwxZNQvEvVkS1NPV64wy0Mgv6IbpPwVAtCBQHpG6KfhrtL
+         IQUeVJLKamGV7yF830V8AlfVGjmrU/7d1u9OM7vDbGaGJseulxA/N1k/eEg+dKztL0Jn
+         JK50wzGOTQ3Pum7wfzwIoG9gKqIDvgruLhgk0=
+Date: Wed, 10 Nov 2010 16:00:25 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Jiri Olsa <jolsa@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        rostedt@goodmis.org, andi@firstfloor.org, lwoodman@redhat.com,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 1/2] tracing,mm - add kernel pagefault tracepoint for
+	x86 & x86_64
+Message-ID: <20101110150021.GA5750@nowhere>
+References: <1289390172-9730-1-git-send-email-jolsa@redhat.com> <1289390172-9730-2-git-send-email-jolsa@redhat.com> <20101110132954.GA2101@infradead.org> <20101110134436.GD1949@jolsa.brq.redhat.com> <20101110135244.GA31638@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101110135244.GA31638@elte.hu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-10 at 06:35 -0800, Joe Perches wrote:
-> On Wed, 2010-11-10 at 14:27 +0000, Ian Campbell wrote:
-> > AFAIK the Xen lists are "(moderated for non-subscribers)" rather than
-> > "(subscribers-only)".
+On Wed, Nov 10, 2010 at 02:52:44PM +0100, Ingo Molnar wrote:
 > 
-> My emails to that list bounced.
-
-Did you try and post to xen-devel@lists.xen.org? That one doesn't really
-exist (Konrad was a little over-eager in switching MAINTAINERS to it).
-xen-devel@lists.xensource.com is the correct address. We are trying to
-get a xen.org alias setup but it doesn't exist yet.
-
-> From http://www.xen.org/support/community.html
+> * Jiri Olsa <jolsa@redhat.com> wrote:
 > 
-> (All lists require a subscription to post)
+> > On Wed, Nov 10, 2010 at 08:29:54AM -0500, Christoph Hellwig wrote:
+> > > On Wed, Nov 10, 2010 at 12:56:11PM +0100, Jiri Olsa wrote:
+> > > > +	TP_printk("task=%lx, address=%lx, regs=%lx",
+> > > > +		(unsigned long)__entry->task, (unsigned long)__entry->address,
+> > > > +			__entry->regs)
+> > > 
+> > > How exactly do you use the information in this trace point?  Especially
+> > > the undecoded pt_regs doesn't seem very useful to me at all.
+> > 
+> > agreed, the registers pointer are not very useful in the trace file output,
+> > and could be taken away.. just wanted to be complete I guess
+> > 
+> > but I believe they are useful when you register the mm_kernel_pagefault
+> > tracepoint and process the information by yourself
+> 
+> That would be expressed in a better and more generic fashion via adding 
+> PERF_SAMPLE_REGS to perf_event_sample_format, and add a ptregs dump in 
+> kernel/perf_event.c, perf_output_sample(). That way any tracepoint can request a 
+> (user-space)ptregs state snapshot, not just the pagefault ones.
+> 
+> Thanks,
+> 
+> 	Ingo
 
-This may be inaccurate, I'll see if we can confirm.
 
-Ian.
--- 
-Ian Campbell
-Current Noise: Wolf - Seize The Night
+We are going to have that with the dwarf based callchain patchset. I'm cooking
+this.
 
-It's not whether you win or lose, it's how you place the blame.
+Thanks.
 
