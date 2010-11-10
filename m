@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756261Ab0KJUeR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 15:34:17 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:39078 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754956Ab0KJUeP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 15:34:15 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [PATCH] acpi: Provide decls for standalone compilation of video.h without ACPI (v2)
-Date: Wed, 10 Nov 2010 21:33:16 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        Zhang Rui <rui.zhang@intel.com>, Len Brown <len.brown@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>
-References: <1283693757-8199-1-git-send-email-chris@chris-wilson.co.uk> <1283694709-8504-1-git-send-email-chris@chris-wilson.co.uk> <c6d829$pgdo6m@fmsmga001.fm.intel.com>
-In-Reply-To: <c6d829$pgdo6m@fmsmga001.fm.intel.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011102133.16416.rjw@sisk.pl>
+	id S1756418Ab0KJUiN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 15:38:13 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:43462 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755341Ab0KJUiL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 15:38:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=bFBhPRM42LeWHzPK7p7nHmM5Eq863fYDVCRCnqh1LZ0Jgg4Zrd9pPJr0++tjDBQVm3
+         tJJeuP0fBzRNonvBI15ggEVw2jNH7m+vh/FFYL8pMsqOgGkcZ5NoZsXm1tinKeP/RsDa
+         2u9X/vQI3PdVOagAW0WSfsSZvDgcxckpla4Fc=
+From: Vasiliy Kulikov <segooon@gmail.com>
+To: kernel-janitors@vger.kernel.org
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] fs: select: fix information leak to userspace
+Date: Wed, 10 Nov 2010 23:38:02 +0300
+Message-Id: <1289421483-23907-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 10, 2010, Chris Wilson wrote:
-> On Sun,  5 Sep 2010 14:51:49 +0100, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> > Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-> > Cc: Matthew Garrett <mjg@redhat.com>
-> > Cc: Zhang Rui <rui.zhang@intel.com>
-> > Cc: Len Brown <len.brown@intel.com>
-> 
-> Can one of you please pick up this patch and apply to acpi?
+On some architectures __kernel_suseconds_t is int.  On these archs
+struct timeval has padding bytes at the end.  This struct is copied to
+userspace with these padding bytes uninitialized.  This leads to leaking
+of contents of kernel stack memory.
 
-A link would help I guess.
+This bug was added with v2.6.27-rc5-286-gb773ad4.
 
-Thanks,
-Rafael
+Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+---
+ Compile tested.
+
+ fs/select.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/fs/select.c b/fs/select.c
+index b7b10aa..32cf018 100644
+--- a/fs/select.c
++++ b/fs/select.c
+@@ -306,6 +306,7 @@ static int poll_select_copy_remaining(struct timespec *end_time, void __user *p,
+ 		rts.tv_sec = rts.tv_nsec = 0;
+ 
+ 	if (timeval) {
++		memset(&rtv, 0, sizeof(rtv));
+ 		rtv.tv_sec = rts.tv_sec;
+ 		rtv.tv_usec = rts.tv_nsec / NSEC_PER_USEC;
+ 
+-- 
+1.7.0.4
+
