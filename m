@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663Ab0KJBe5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 20:34:57 -0500
-Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:41246 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751436Ab0KJBe4 (ORCPT
+	id S1752756Ab0KJBm2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 20:42:28 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:52086 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751978Ab0KJBm1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 20:34:56 -0500
-Date: Wed, 10 Nov 2010 12:32:55 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jens Axboe <axboe@kernel.dk>, dave b <db.pub.mail@gmail.com>,
-        Sanjoy Mahajan <sanjoy@olin.edu>, Jesper Juhl <jj@chaosbits.net>,
-        Chris Mason <chris.mason@oracle.com>, Ingo Molnar <mingo@elte.hu>,
-        Pekka Enberg <penberg@kernel.org>,
-        Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Nick Piggin <npiggin@suse.de>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "Ted Ts'o" <tytso@mit.edu>,
-        Corrado Zoccolo <czoccolo@gmail.com>,
-        Shaohua Li <shaohua.li@intel.com>, Steven Barrett <damentz@gmail.com>
-Subject: Re: 2.6.36 io bring the system to its knees
-Message-ID: <20101110013255.GR2715@dastard>
-References: <20101105014334.GF13830@dastard>
- <E1PELiI-0001Pj-8g@approx.mit.edu>
- <AANLkTimON_GL6vRF9=_U6oRFQ30EYssx3wv5xdNsU9JM@mail.gmail.com>
- <4CD696B4.6070002@kernel.dk>
- <AANLkTikNPEcwWjEQuC-_=9yH5DCCiwUAY265ggeygcSQ@mail.gmail.com>
+	Tue, 9 Nov 2010 20:42:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikNPEcwWjEQuC-_=9yH5DCCiwUAY265ggeygcSQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LFD.2.00.1011092013290.13911@xanadu.home>
+References: <20101022175112.GC13489@kroah.com> <1287771688-14805-29-git-send-email-gregkh@suse.de>
+ <AANLkTinVp4C9bRW6=EMHwh1UyeadFbOXKe1aDsxknJf8@mail.gmail.com> <alpine.LFD.2.00.1011092013290.13911@xanadu.home>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Wed, 10 Nov 2010 02:42:10 +0100
+Message-ID: <AANLkTinfLT0WYDHek8+QjYKfGC0rtJ3ZFhoZj2fD8-Ri@mail.gmail.com>
+Subject: Re: [PATCH 29/49] vcs: add poll/fasync support
+To: Nicolas Pitre <nicolas.pitre@canonical.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 07, 2010 at 07:50:13AM -0800, Linus Torvalds wrote:
-> On Sun, Nov 7, 2010 at 4:08 AM, Jens Axboe <axboe@kernel.dk> wrote:
-> >
-> > As already mentioned, ext3 is just not a good choice for this sort of
-> > thing. Did you have atimes enabled?
-> 
-> At least for ext3, more important than atimes is the "data=writeback"
-> setting. Especially since our atime default is sane these days (ie if
-> you don't specify anything, we end up using 'relatime').
-> 
-> If you compile your own kernel, answer "N" to the question
-> 
->   Default to 'data=ordered' in ext3?
-> 
-> at config time (CONFIG_EXT3_DEFAULTS_TO_ORDERED), or you can make sure
-> "data=writeback" is in the fstab (but I don't think everything honors
-> it for the root filesystem).
+On Wed, Nov 10, 2010 at 02:26, Nicolas Pitre
+<nicolas.pitre@canonical.com> wrote:
+> On Wed, 10 Nov 2010, Kay Sievers wrote:
+>
+>> On Fri, Oct 22, 2010 at 20:21, Greg Kroah-Hartman <gregkh@suse.de> wrote:
+>> > From: Nicolas Pitre <nico@fluxnic.net>
+>> >
+>> > The /dev/vcs* devices are used, amongst other things, by accessibility
+>> > applications such as BRLTTY to display the screen content onto refreshable
+>> > braille displays.  Currently this is performed by constantly reading from
+>> > /dev/vcsa0 whether or not the screen content has changed.  Given the
+>> > default braille refresh rate of 25 times per second, this easily qualifies
+>> > as the biggest source of wake-up events preventing laptops from entering
+>> > deeper power saving states.
+>> >
+>> > To avoid this periodic polling, let's add support for select()/poll() and
+>> > SIGIO with the /dev/vcs* devices.  The implemented semantic is to report
+>> > data availability whenever the corresponding vt has seen some update after
+>> > the last read() operation.  The application still has to lseek() back
+>> > as usual in order to read() the new data.
+>>
+>> Shouldn't it raise POLLPRI/POLLERR then, when it's not about new data
+>> to read? We do this for several files in the kernel where we just want
+>> to wakup someone, but the pretty well-defined semantics of poll()
+>> don't apply.
+>
+> Hmmm...  Maybe POLLPRI, but POLLERR makes no sense.
 
-Don't forget to mention data=writeback is not the default because if
-your system crashes or you lose power running in this mode it will
-*CORRUPT YOUR FILESYSTEM* and you *WILL LOSE DATA*. Not to mention
-the significant security issues (e.g stale data exposure) that also
-occur even if the filesystem is not corrupted by the crash. IOWs,
-data=writeback is the "fast but I'll eat your data" option for ext3.
+I have no opinion about that, but it's what others do:
+  http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=31b07093c44a7a442394d44423e21d783f5523b8
+  http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=4508a7a734b111b8b7e39986237d84acb1168dd0
 
-So I recommend that nobody follows this path because it only leads
-to worse trouble down the road.  Your best bet it to migrate away
-from ext3 to a filesystem that doesn't have such inherent ordering
-problems like ext4 or XFS....
+The POLLIN should definitely go, it's POSIX defined. What we do here
+is more like an error that wakes up than a stream data to read. :)
 
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Kay
