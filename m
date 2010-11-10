@@ -1,163 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531Ab0KJGaM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 01:30:12 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:34464 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107Ab0KJGaI convert rfc822-to-8bit (ORCPT
+	id S1753968Ab0KJGci (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 01:32:38 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:51626 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752222Ab0KJGcg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 01:30:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=phSYxOf/AscAUNykO47eqLtPMLMixAe10xGErwzNZoTC1cI4/AV8MflxwXQyccRWuJ
-         0jbi9wjzNUQXYniAepeqI1pOdkxKZwwRJmyoylIPTN8e7W2ABE4rwncvEjRHkIUfU+oW
-         1qBlKGKfTqzPwzwgjjvw7arJbc+RyLJN4bNNA=
+	Wed, 10 Nov 2010 01:32:36 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAGzL2Ux5LcZK/2dsb2JhbACiOnK7PYVKBA
+Date: Wed, 10 Nov 2010 17:32:29 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Nick Piggin <npiggin@kernel.dk>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [patch] mm: vmscan implement per-zone shrinkers
+Message-ID: <20101110063229.GA5700@amd>
+References: <20101109123246.GA11477@amd>
+ <20101110051813.GS2715@dastard>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=vTg1HPNvScvCTaK09pbTYunK-Spc-gKAhUrhu@mail.gmail.com>
-References: <AANLkTimm0d2fQMkdw9gA+rOqEcBHtJpAB9JRpYDKOxw=@mail.gmail.com>
-	<AANLkTi=bkzZd0c+kM4ZsQ-y0xmMedfB5AhTS+4ohen_P@mail.gmail.com>
-	<AANLkTi=vTg1HPNvScvCTaK09pbTYunK-Spc-gKAhUrhu@mail.gmail.com>
-Date: Wed, 10 Nov 2010 07:30:07 +0100
-Message-ID: <AANLkTi=3RO_ONhx9pebXG57GhrFVqcOFC3nG-MwstWyk@mail.gmail.com>
-Subject: Re: error in dmesg
-From: Sasa Ostrouska <casaxa@gmail.com>
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101110051813.GS2715@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 1:30 AM, Haojian Zhuang
-<haojian.zhuang@gmail.com> wrote:
-> On Wed, Nov 10, 2010 at 7:30 AM, Sasa Ostrouska <casaxa@gmail.com> wrote:
->> Sorry, I forgot to mntion that thi is on a 2.6.33.4 slackware 64bit linux.
->>
->>
->> On Wed, Nov 10, 2010 at 12:26 AM, Sasa Ostrouska <casaxa@gmail.com> wrote:
->>> Hi I get this eror during boot on my machine:
->>>
->>> TCP cubic registered
->>> Initializing XFRM netlink socket
->>> NET: Registered protocol family 17
->>> ata1: softreset failed (device not ready)
->>> ata3: softreset failed (device not ready)
->>> ata3: applying SB600 PMP SRST workaround and retrying
->>> ata1: applying SB600 PMP SRST workaround and retrying
->>> usb 1-1: New USB device found, idVendor=0424, idProduct=2502
->>> usb 1-1: New USB device strings: Mfr=0, Product=0, SerialNumber=0
->>> hub 1-1:1.0: USB hub found
->>> hub 1-1:1.0: 2 ports detected
->>> irq 16: nobody cared (try booting with the "irqpoll" option)
->>> Pid: 0, comm: swapper Not tainted 2.6.33.4 #3
->>> Call Trace:
->>>  <IRQ>  [<ffffffff81098d3b>] __report_bad_irq+0x2b/0xa0
->>>  [<ffffffff81098f3c>] note_interrupt+0x18c/0x1d0
->>>  [<ffffffff8106c54b>] ? sched_clock_tick+0x5b/0x90
->>>  [<ffffffff8109961d>] handle_fasteoi_irq+0xbd/0xf0
->>>  [<ffffffff81005ab2>] handle_irq+0x22/0x30
->>>  [<ffffffff81a0347c>] do_IRQ+0x6c/0xf0
->>>  [<ffffffff81a02f93>] ret_from_intr+0x0/0xa
->>>  <EOI>  [<ffffffff8100c058>] ? default_idle+0x38/0x80
->>>  [<ffffffff8100c123>] c1e_idle+0x83/0x100
->>>  [<ffffffff8106b3da>] ? atomic_notifier_call_chain+0x1a/0x20
->>>  [<ffffffff8100155d>] cpu_idle+0xad/0x100
->>>  [<ffffffff819fb727>] start_secondary+0x17b/0x17f
->>> handlers:
->>> [<ffffffff81865420>] (usb_hcd_irq+0x0/0x70)
->>> Disabling IRQ #16
->>> ata3: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
->>> ata3.00: ATA-8: WDC WD3200AAKS-00B3A0, 01.03A01, max UDMA/133
->>> ata3.00: 625142448 sectors, multi 16: LBA48 NCQ (depth 31/32), AA
->>> ata3.00: SB600 AHCI: limiting to 255 sectors per cmd
->>> ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
->>> ata3.00: SB600 AHCI: limiting to 255 sectors per cmd
->>> ata3.00: configured for UDMA/133
->>> ata1.00: ATA-8: WDC WD3200AAKS-00YGA0, 12.01C02, max UDMA/133
->>> ata1.00: 625142448 sectors, multi 16: LBA48 NCQ (depth 31/32), AA
->>> ata1.00: SB600 AHCI: limiting to 255 sectors per cmd
->>> ata1.00: SB600 AHCI: limiting to 255 sectors per cmd
->>> ata1.00: configured for UDMA/133
->>> scsi 0:0:0:0: Direct-Access     ATA      WDC WD3200AAKS-0 12.0 PQ: 0 ANSI: 5
->>> sd 0:0:0:0: [sda] 625142448 512-byte logical blocks: (320 GB/298 GiB)
->>> sd 0:0:0:0: [sda] Write Protect is off
->>> sd 0:0:0:0: [sda] Mode Sense: 00 3a 00 00
->>> sd 0:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn't
->>> support DPO or FUA
->>>  sda: sda1 sda2 sda3 sda4 < sda5 sda6 sda7 sda8 sda9 >
->>> sd 0:0:0:0: [sda] Attached SCSI disk
->>> usb 5-2: new low speed USB device using ohci_hcd and address 2
->>> ata2: softreset failed (device not ready)
->>> ata2: applying SB600 PMP SRST workaround and retrying
->>> usb 5-2: New USB device found, idVendor=413c, idProduct=3016
->>> usb 5-2: New USB device strings: Mfr=0, Product=2, SerialNumber=0
->>> usb 5-2: Product: Dell Premium USB Optical Mouse
->>> ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
->>> ata2.00: ATAPI: Optiarc DVD RW AD-7191S, 1.01, max UDMA/100
->>> ata2.00: SB600 AHCI: limiting to 255 sectors per cmd
->>> ata2.00: SB600 AHCI: limiting to 255 sectors per cmd
->>> ata2.00: configured for UDMA/100
->>> scsi 1:0:0:0: CD-ROM            Optiarc  DVD RW AD-7191S  1.01 PQ: 0 ANSI: 5
->>> sr0: scsi3-mmc drive: 48x/12x writer dvd-ram cd/rw xa/form2 cdda tray
->>> Uniform CD-ROM driver Revision: 3.20
->>> sr 1:0:0:0: Attached scsi CD-ROM sr0
->>> scsi 2:0:0:0: Direct-Access     ATA      WDC WD3200AAKS-0 01.0 PQ: 0 ANSI: 5
->>> sd 2:0:0:0: [sdb] 625142448 512-byte logical blocks: (320 GB/298 GiB)
->>> sd 2:0:0:0: [sdb] Write Protect is off
->>> sd 2:0:0:0: [sdb] Mode Sense: 00 3a 00 00
->>> sd 2:0:0:0: [sdb] Write cache: enabled, read cache: enabled, doesn't
->>> support DPO or FUA
->>>  sdb: sdb1
->>> sd 2:0:0:0: [sdb] Attached SCSI disk
->>> irq 17: nobody cared (try booting with the "irqpoll" option)
->>> Pid: 0, comm: swapper Not tainted 2.6.33.4 #3
->>> Call Trace:
->>>  <IRQ>  [<ffffffff81098d3b>] __report_bad_irq+0x2b/0xa0
->>>  [<ffffffff81098f3c>] note_interrupt+0x18c/0x1d0
->>>  [<ffffffff8106c54b>] ? sched_clock_tick+0x5b/0x90
->>>  [<ffffffff8109961d>] handle_fasteoi_irq+0xbd/0xf0
->>>  [<ffffffff81005ab2>] handle_irq+0x22/0x30
->>>  [<ffffffff81a0347c>] do_IRQ+0x6c/0xf0
->>>  [<ffffffff81a02f93>] ret_from_intr+0x0/0xa
->>>  <EOI>  [<ffffffff8100c058>] ? default_idle+0x38/0x80
->>>  [<ffffffff8100c123>] c1e_idle+0x83/0x100
->>>  [<ffffffff8106b3da>] ? atomic_notifier_call_chain+0x1a/0x20
->>>  [<ffffffff8100155d>] cpu_idle+0xad/0x100
->>>  [<ffffffff819fb727>] start_secondary+0x17b/0x17f
->>> handlers:
->>> [<ffffffff81865420>] (usb_hcd_irq+0x0/0x70)
->>> [<ffffffff81865420>] (usb_hcd_irq+0x0/0x70)
->>> Disabling IRQ #17
-> Did you return IRQ_HANDLED or IRQ_NONE for #16 & #17 in your irq handler?
->
+On Wed, Nov 10, 2010 at 04:18:13PM +1100, Dave Chinner wrote:
+> On Tue, Nov 09, 2010 at 11:32:46PM +1100, Nick Piggin wrote:
+> > Hi,
+> > 
+> > I'm doing some works that require per-zone shrinkers, I'd like to get
+> > the vmscan part signed off and merged by interested mm people, please.
+> > 
+> 
+> There are still plenty of unresolved issues with this general
+> approach to scaling object caches that I'd like to see sorted out
+> before we merge any significant shrinker API changes. Some things of
 
-I have no idea on how to do hat ? I have not touched anything, its a
-stock kernel.
-If you or somebody else can help me out with that I would appreciate.
+No changes, it just adds new APIs.
 
->>> registered taskstats version 1
->>> md: Waiting for all devices to be available before autodetect
->>> md: If you don't use raid, use raid=noautodetect
->>> md: Autodetecting RAID arrays.
->>> md: Scanned 0 and added 0 devices.
->>> md: autorun ...
->>> md: ... autorun DONE.
->>>
->>>
->>> Whats going wrong ?
->>>
->>> Rgds
->>> Saxa
->>>
->>> PS: CC me since I'm not on the list.
->>>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
->
+
+> the top of my head:
+> 
+> 	- how to solve impendence mismatches between VM scalability
+> 	  techniques and subsystem scalabilty techniques that result
+> 	  in shrinker cross-muliplication explosions. e.g. XFS
+> 	  tracks reclaimable inodes in per-allocation group trees,
+> 	  so we'd get AG x per-zone LRU trees using this shrinker
+> 	  method.  Think of the overhead on a 1000AG filesystem on a
+> 	  1000 node machine with 3-5 zones per node....
+
+That's an interesting question, but no reason to hold anything up.
+It's up to the subsystem to handle it, or if they can't handle it
+sanely, you can elect to get no different behaviour than today.
+
+I would say that per-zone is important for the above case, because it
+shrinks properly, based on memory pressure and pressure settings (eg.
+zone reclaim), and also obviously so that the reclaim threads are
+scanning node-local-memory so it doesn't have to pull objects from
+all over the interconnect.
+
+With 1000 nodes and 1000AG filesystem, probably NxM is overkill, but
+there is no reason you couldn't have one LRU per X AGs.
+
+All this is obviously implementation details -- pagecache reclaim does
+not want to know about this, so it doesn't affect the API.
+
+
+> 	- changes from global LRU behaviour to something that is not
+> 	  at all global - effect on workloads that depend on large
+> 	  scale caches that span multiple nodes is largely unknown.
+> 	  It will change IO patterns and affect system balance and
+> 	  performance of the system. How do we
+> 	  test/categorise/understand these problems and address such
+> 	  balance issues?
+
+You've brought this up before several times and I've answered it.
+
+The default configuration basically doesn't change much. Caches are
+allowed to fill up all zones and nodes, exactly the same as today.
+
+On the reclaim side, when you have a global shortage, it will evenly
+shrink objects from all zones, so it still approximates LRU behaviour
+because number of objects far exceeds number of zones. This is exactly
+how per-zone pagecache scanning works too.
+
+
+> 	- your use of this shrinker architecture for VFS
+> 	  inode/dentry cache scalability requires adding lists and
+> 	  locks to the MM struct zone for each object cache type
+> 	  (inode, dentry, etc). As such, it is not a generic
+> 	  solution because it cannot be used for per-instance caches
+> 	  like the per-mount inode caches XFS uses.
+
+Of course it doesn't. You can use kmalloc.
+
+ 
+> 	  i.e. nothing can actually use this infrastructure change
+> 	  without tying itself directly into the VM implementation,
+> 	  and even then not every existing shrinker can use this
+> 	  method of scaling. i.e. some level of abstraction from the
+> 	  VM implementation is needed in the shrinker API.
+
+"zones" is the abstraction. The thing which all allocation and
+management of memory is based on, everywhere you do any allocations
+in the kernel. A *shrinker* implementation, a thing which is called
+in response to memory shortage in a given zone, has to know about
+zones. End of story. "Tied to the memory management implementation"
+is true to the extent that it is part of the memory management
+implementation.
+ 
+
+> 	- it has been pointed out that slab caches are generally
+> 	  allocated out of a single zone per node, so per-zone
+> 	  shrinker granularity seems unnecessary.
+
+No they are not, that's just total FUD. Where was that "pointed out"?
+
+Slabs are generally allocated from every zone except for highmem and
+movable, and moreover there is nothing to prevent a shrinker
+implementation from needing to shrink highmem and movable pages as
+well.
+
+
+> 	- doesn't solve the unbound direct reclaim shrinker
+> 	  parallelism that is already causing excessive LRU lock
+> 	  contention on 8p single node systems. While
+> 	  per-LRU/per-node solves the larger scalability issue, it
+> 	  doesn't address scalability within the node. This is soon
+> 	  going to be 24p per node and that's more than enough to
+> 	  cause severe problems with a single lock and list...
+
+It doesn't aim to solve that. It doesn't prevent that from being
+solved either (and improving parallelism in a subsystem generally,
+you know, helps with lock contention due to lots of threads in there,
+right?).
+
+
+> > [And before anybody else kindly suggests per-node shrinkers, please go
+> > back and read all the discussion about this first.]
+> 
+> I don't care for any particular solution, but I want these issues
+> resolved before we make any move forward. per-node abstractions is
+> just one possible way that has been suggested to address some of
+> these issues, so it shouldn't be dismissed out of hand like this.
+
+Well if you listen to my follow ups to the FUD that keeps appearing,
+maybe we can "move forward".
+
