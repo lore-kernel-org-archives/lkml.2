@@ -1,260 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830Ab0KJGfq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 01:35:46 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:56066 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750948Ab0KJGfp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 01:35:45 -0500
-Date: Wed, 10 Nov 2010 07:35:42 +0100 (CET)
-From: Julia Lawall <julia@diku.dk>
-To: Emese Revfy <re.emese@gmail.com>
-Cc: Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
-        cocci@diku.dk
-Subject: Re: [Cocci] Re: status of constification
-In-Reply-To: <4CD9BF25.4090306@gmail.com>
-Message-ID: <Pine.LNX.4.64.1011100727370.352@ask.diku.dk>
-References: <20101108223844.GS5876@outflux.net> <4CD9BF25.4090306@gmail.com>
+	id S1754837Ab0KJGjY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 01:39:24 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:10541 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753406Ab0KJGjX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 01:39:23 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAGzL2Ux5LcZK/2dsb2JhbACiOnK7PYVKBA
+Date: Wed, 10 Nov 2010 17:39:18 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [patch] mm: vmscan implement per-zone shrinkers
+Message-ID: <20101110063918.GA5782@amd>
+References: <20101109123246.GA11477@amd>
+ <20101110051813.GS2715@dastard>
+ <20101110063229.GA5700@amd>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101110063229.GA5700@amd>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Nov 2010, Emese Revfy wrote:
+On Wed, Nov 10, 2010 at 05:32:29PM +1100, Nick Piggin wrote:
+> On Wed, Nov 10, 2010 at 04:18:13PM +1100, Dave Chinner wrote:
+> > On Tue, Nov 09, 2010 at 11:32:46PM +1100, Nick Piggin wrote:
+> > > Hi,
+> > > 
+> > > I'm doing some works that require per-zone shrinkers, I'd like to get
+> > > the vmscan part signed off and merged by interested mm people, please.
+> > > 
+> > 
+> > There are still plenty of unresolved issues with this general
+> > approach to scaling object caches that I'd like to see sorted out
+> > before we merge any significant shrinker API changes. Some things of
+> 
+> No changes, it just adds new APIs.
 
-> 
-> > Hi,
-> >
-> > So, I'm trying to come up to speed on what's still outstanding in the
-> > effort to constify function pointers. I saw patches from Emese Revfy
-> > go in, and I saw Lionel Debroux's recent patches. What already-created
-> > work still needs attention? I know there's more code to be written,
-> > but I'm trying to find any patches that have already been written but
-> > have not gone upstream yet.
-> Hi, 
-> 
-> I will gladly break up my current patch for the next -rc by structure
-> type or maintainer (some preferred it one way or the other) and send
-> it in some time next week so that you can handle the upstream submission
-> process (I will continue to maintain my patch in grsecurity).
-> 
-> There are many structures that can be constified, you can use the following
-> command to find most of them (use it on an allyesconfig kernel preferably):
-> 
-> grep _ops System.map |grep -Ewi 'b|d' | awk '{print $3}' | \
-> while read i ; do cscope -d -L -1 $i | grep -E "struct[ \t]*([^ ]*)[ \t]*" \
-> --color=none -o | awk '{print $2}' ; done |sort -u
-> 
-> Also there are always new instances of structures going in that should have
-> been constified.
-> 
-> I tried to automate the whole process with Coccinelle but I abandoned it
-> because Coccinelle didn't support recursive header file inclusion at the time.
-> If someone feels like fixing Coccinelle then I would quickly finish my script
-> (it has a few bugs because I could never test it for real), but see the end
-> of the mail for the current version. I think it would be a good idea because
-> it would take a few hours only to generate a constification patch for a new
-> kernel. One thing that probably cannot be automated with Coccinelle is that
-> once the script determines that a given structure cannot be constified, it
-> cannot undo already emitted patches for the given structure so it must be
-> cleaned up by post processing script.
+I might add that you've previously brought up and I answered every
+single issue below and you've not followed up on my answers. So just
+going back to the start and bringing them all up again is ridiculous.
+Please stop it.
 
-What would the right approach be?  It is not obvious to find 100% of the 
-header files, because some of them depend on information in Makefiles.  
-You can use that information by running the preprocessor on Coccinelle 
-first, but then the result is only useful for finding files that need 
-changing, but not actually making the changes because Coccinelle does not 
-relate the preprocessed code back to the original code.  But if you run 
-the preprocessor, you only get information for your current configuration, 
-which is probably not what you want.
+> > 	- it has been pointed out that slab caches are generally
+> > 	  allocated out of a single zone per node, so per-zone
+> > 	  shrinker granularity seems unnecessary.
+> 
+> No they are not, that's just total FUD. Where was that "pointed out"?
+> 
+> Slabs are generally allocated from every zone except for highmem and
+> movable, and moreover there is nothing to prevent a shrinker
+> implementation from needing to shrink highmem and movable pages as
+> well.
 
-Coccinelle could certainly get a new option -really_all_includes, or 
-something like that, that would recursively include among what it can find 
-and what has not been included already.  Would that be what is wanted?
+Perhaps you meant here that many nodes have only one populated zone.
+If that is _really_ a huge problem to add a couple of list heads per
+zone per node (which it isn't), then the subsystem can do per-node
+shrinking and just do zone_to_nid(zone) in the shrinker callback (but
+that would be retarded so it shouldn't).
 
-I guess that in practice the includes are only being used for type 
-information?  Wouldn't it be safe to run the semantic patch based on the 
-includes that are available?
+I answered Christoph's thread here, and I showed how a node based
+callback can result in significant imbalances between zones in a node,
+so it won't fly.
 
-julia
+If you think that nodes are sufficient, then you can get patches through
+mm to make pagecache reclaim per-node based, and changes to the
+shirnker API will naturally propogate through.
 
-> 
-> --
-> Emese
-> 
-> 
-> // spatch.opt -sp_file $1 -include_headers -local_includes -all_includes -I "include/" -dir $2
-> 
-> @initialize:python@
-> noconst = []
-> 
-> @stc@
-> identifier idtype, y;
-> type t;
-> position p;
-> @@
-> struct idtype {
-> 	...
-> 	t (*y)(...);@p
-> 	...
-> };
-> 
-> @notjustfp@
-> identifier stc.idtype, y;
-> type t;
-> position p != stc.p;
-> @@
-> struct idtype {
-> 	...
-> 	t y;@p
-> 	...
-> };
-> 
-> @script:python depends on notjustfp@
-> @@
-> cocci.include_match(False)
-> 
-> @variable@
-> identifier stc.idtype, idvariant, id;
-> @@
-> (
-> 	struct idtype idvariant = {
-> 		...
-> 	};
-> |
-> 	struct idtype idvariant;
-> |
-> 	struct idtype *idvariant;
-> |
-> 	struct id {
-> 		...
-> 		struct idtype idvariant;
-> 		...
-> 	};
-> )
-> 
-> @script:python@
-> y << variable.idvariant;
-> @@
-> if y in noconst:
-> 	cocci.include_match(False)
-> 
-> @alreadyconst@
-> identifier stc.idtype, variable.idvariant, id;
-> @@
-> (
-> 	const struct idtype idvariant;
-> |
-> 	const struct idtype idvariant = {
-> 		...
-> 	};
-> |
-> 	const struct idtype *idvariant;
-> |
-> 	struct id {
-> 		...
-> 		const struct idtype idvariant;
-> 		...
-> 	};
-> )
-> 
-> @script:python depends on alreadyconst@
-> @@
-> cocci.include_match(False)
-> 
-> @fn_declaration@
-> identifier stc.idtype, variable.idvariant, fn;
-> type t;
-> @@
-> t fn(struct idtype *idvariant);
-> 
-> @fn_definition@
-> identifier stc.idtype, variable.idvariant, fn;
-> type t;
-> @@
-> t fn(struct idtype *idvariant)
-> {
-> 	...
-> }
-> 
-> // TODO: handle var.field1.field2, var->field1->field2
-> @assignement@
-> identifier variable.idvariant, x, idptr;
-> @@
-> (
-> 	idvariant.x = ...;
-> |
-> 	idvariant->x = ...;
-> |
-> 	idptr = &idvariant;
-> 	...
-> 	idptr->x = ...;
-> |
-> 	memcpy(&idvariant, ...);
-> |
-> 	memcpy(idvariant.x, ...);
-> |
-> 	memcpy(idvariant->x, ...);
-> |
-> 	idvariant = kzalloc(...);
-> |
-> 	idvariant = kmalloc(...);
-> )
-> 
-> @script:python depends on assignement@
-> x << stc.idtype;
-> y << variable.idvariant;
-> @@
-> print "Cannot be const: %s-%s" % (x, y)
-> noconst.append(y)
-> cocci.include_match(False)
-> 
-> @depends on stc && !fn_declaration && !fn_definition@
-> identifier stc.idtype, variable.idvariant, id;
-> @@
-> (
-> -struct idtype idvariant = {
-> +const struct idtype idvariant = {
-> 		...
->  };
-> |
-> -struct idtype idvariant;
-> +const struct idtype idvariant;
-> |
-> -struct idtype *idvariant;
-> +const struct idtype *idvariant;
-> |
-> -struct idtype *idvariant = NULL;
-> +const struct idtype *idvariant = NULL;
-> |
-> struct id {
-> ...
-> -struct idtype idvariant;
-> +const struct idtype idvariant;
-> ...
->  };
-> )
-> 
-> @depends on stc && fn_declaration && !fn_definition@
-> identifier stc.idtype, variable.idvariant, fn_declaration.fn;
-> type fn_declaration.t;
-> @@
-> t fn(
-> -struct idtype *idvariant
-> +const struct idtype *idvariant
->  );
-> 
-> @depends on stc && !fn_declaration && fn_definition@
-> identifier stc.idtype, variable.idvariant, fn_definition.fn;
-> type fn_definition.t;
-> @@
-> t fn(
-> -struct idtype *idvariant
-> +const struct idtype *idvariant
->  )
->  {
->  	...
->  }
-> 
-> 
