@@ -1,82 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756729Ab0KJU26 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 15:28:58 -0500
-Received: from fieldses.org ([174.143.236.118]:57168 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756327Ab0KJU25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 15:28:57 -0500
-Date: Wed, 10 Nov 2010 15:28:53 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: nfsd, lease changes for 2.6.37
-Message-ID: <20101110202853.GC27237@fieldses.org>
+	id S1756801Ab0KJU34 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 15:29:56 -0500
+Received: from sj-iport-2.cisco.com ([171.71.176.71]:40269 "EHLO
+	sj-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756327Ab0KJU3z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 15:29:55 -0500
+Authentication-Results: sj-iport-2.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAFuP2kyrR7H+/2dsb2JhbACiNnGjN5tGhUoEhFqFfQ
+X-IronPort-AV: E=Sophos;i="4.59,179,1288569600"; 
+   d="scan'208";a="290357690"
+Message-ID: <4CDB00C2.2090200@cisco.com>
+Date: Wed, 10 Nov 2010 12:29:54 -0800
+From: Joe Eykholt <jeykholt@cisco.com>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.5; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Vladislav Bolkhovitin <vst@vlnb.net>
+CC: Boaz Harrosh <bharrosh@panasas.com>, Greg KH <greg@kroah.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
+        Bart Van Assche <bart.vanassche@gmail.com>,
+        James Smart <James.Smart@Emulex.Com>, Andy Yan <ayan@marvell.com>,
+        Chetan Loke <generationgnu@yahoo.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Hannes Reinecke <hare@suse.de>,
+        Richard Sharpe <realrichardsharpe@gmail.com>,
+        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
+Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
+References: <20101011213235.GA11489@kroah.com> <4CB4AEB9.30501@vlnb.net> <20101012190345.GA25737@kroah.com> <4CB75E81.7000208@vlnb.net> <20101014200413.GA30831@kroah.com> <4CC1CA4D.1090609@vlnb.net> <20101022175624.GA13640@kroah.com> <4CC1DAA2.7030602@vlnb.net> <20101022185437.GA9103@kroah.com> <4CD8566D.1020202@vlnb.net> <20101109002829.GA22633@kroah.com> <4CD9A9B8.70708@vlnb.net> <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net>
+In-Reply-To: <4CDAFE6E.7050200@vlnb.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull from:
 
-  git://linux-nfs.org/~bfields/linux.git for-2.6.37
 
-One nfsd 4.1 bugfix, and two more bits of mopup from the lease de-BKL
-work.  (The last of which is really just cleanup--but obvious enough I
-hoped to slip it past the functional-regressions-only-post-rc1
-filter....)
+On 11/10/10 12:19 PM, Vladislav Bolkhovitin wrote:
+> Boaz Harrosh, on 11/10/2010 12:58 PM wrote:
+>> On 11/09/2010 10:06 PM, Vladislav Bolkhovitin wrote:
+>>>
+>>> Sorry, but what is incorrect in the working implementation without any
+>>> bugs doing its job in the simplest, smallest and clearest way?
+>>>
+>>> If those objects remade to free themselves in the kobjects release(),
+>>> what value would it add to them? Would the implementation be simpler,
+>>> smaller or clearer? Not, I believe, new implementation would be only
+>>> bigger and less clear. So, what's the point to do it to make the code worse?
+>>>
+>>
+>> Totally theoretically speaking, since I have not inspected the code.
+>>
+>> If today you wait for the count to reach zero, then unregister
+>> and send an event to some other subsystem to free the object.
+>>
+>> Is it not the same as if you take an extra refcount, unregister and
+>> send the event at count=1. Then at that other place decrement the last
+>> count to cause the object to be freed.
+>>
+>> I agree that it is hard to do lockless. what some places do is have
+>> an extra kref. The kobj has a single ref on it. everything takes the
+>> other kref. when that reaches zero the unregister and event fires
+>> and at free you decrement the only kobj ref to deallocate. This is one
+>> way. In some situations you can manage with a single counter it all
+>> depends.
+> 
+> Thanks for sharing your thoughts with us. But the question isn't about
+> if it's possible to implement what we need locklessly. The question is
+> in two approaches how to synchronously delete objects with entries on SYSFS:
+> 
+> 1. struct object_x {
+> 	...
+> 	struct kobject kobj;
+> 	struct completion *release_completion;
+> };
+> 
+> static void x_release(struct kobject *kobj)
+> {
+> 	struct object_x *x;
+> 	struct completion *c;
+> 
+> 	x = container_of(kobj, struct object_x, kobj);
+> 	c = x->release_completion;
+> 	kfree(x);
+> 	complete_all(c);
+> }
+> 
+> void del_object(struct object_x *x)
+> {
+> 	DECLARE_COMPLETION_ONSTACK(completion);
+> 
+> 	...
+> 	x->release_completion = &completion;
+> 	kobject_put(&x->kobj);
+> 	wait_for_completion(&completion);
+> }
+> 
+> and
+> 
+> 2. struct object_x {
+> 	...
+> 	struct kobject kobj;
+> 	struct completion release_completion;
+> };
+> 
+> static void x_release(struct kobject *kobj)
+> {
+> 	struct object_x *x;
+> 
+> 	x = container_of(kobj, struct object_x, kobj);
+> 	complete_all(&x->release_completion);
+> }
+> 
+> void del_object(struct object_x *x)
+> {
+> 	...
+> 	kobject_put(&x->kobj);
+> 	wait_for_completion(&completion);
+> 	...
+> 	kfree(x);
+> }
 
---b.
+I'll admit I don't understand this all that well, but
+why not just have x_release() (based on (2))
+do free(x), and have del_object
+do the kobject_put(&x->kobj) as its very last thing?
+Then you don't need the completion.
 
-J. Bruce Fields (3):
-      nfsd4: fix 4.1 connection registration race
-      locks: fix leak on merging leases
-      locks: remove dead lease error-handling code
-
- fs/locks.c                      |   19 +++++++------------
- fs/nfsd/nfs4state.c             |   16 ++++++++++++----
- include/linux/sunrpc/svc_xprt.h |   18 ++++++++++++++----
- 3 files changed, 33 insertions(+), 20 deletions(-)
-
-commit 8896b93f42459b18b145c69d399b62870df48061
-Author: J. Bruce Fields <bfields@redhat.com>
-Date:   Wed Nov 3 18:09:18 2010 -0400
-
-    locks: remove dead lease error-handling code
-    
-    A minor oversight from f7347ce4ee7c65415f84be915c018473e7076f31,
-    "fasync: re-organize fasync entry insertion to allow it under a
-    spinlock": this cleanup-on-error was only needed to handle -ENOMEM.  Now
-    that we're preallocating it's unneeded.
-    
-    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-
-commit 3df057ac9afe83c4af84016df3baf3a0eb1d3d33
-Author: J. Bruce Fields <bfields@redhat.com>
-Date:   Wed Nov 3 16:49:44 2010 -0400
-
-    locks: fix leak on merging leases
-    
-    We must also free the passed-in lease in the case it wasn't used because
-    an existing lease was upgrade/downgraded or already existed.
-    
-    Note the nfsd caller doesn't care because it's fl_change callback
-    returns an error in those cases.
-    
-    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-
-commit 21b75b019983dfa5c2dda588f4b60b4ca69844a4
-Author: J. Bruce Fields <bfields@redhat.com>
-Date:   Tue Oct 26 10:07:17 2010 -0400
-
-    nfsd4: fix 4.1 connection registration race
-    
-    If a connection is closed just after a sequence or create_session
-    is sent over it, we could end up trying to register a callback that will
-    never get called since the xprt is already marked dead.
-    
-    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+> 
+> Greg asserts that (1) is the only correct approach while (2) is
+> incorrect, and I'm trying to justify that (2) is correct too and
+> sometimes could be better, i.e. simpler and clearer, because it
+> decouples object_x from SYSFS and its kobj. Then kobj becomes an
+> ordinary member of struct object_x without any special treatment and
+> with the same lifetime rules as other members of struct object_x. While
+> in (1) all lifetime of struct object_x is strictly attached to kobj, so
+> it needs be specially handled with additional code for that if struct
+> object_x has many other members which needed to be initialized/deleted
+> _before and after_ kobj as we have in SCST.
+> 
+> Vlad
