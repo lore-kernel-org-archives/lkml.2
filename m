@@ -1,55 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351Ab0KJSY1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 13:24:27 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:48375 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755192Ab0KJSY0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 13:24:26 -0500
-Subject: Re: [RFC/Requirements/Design] h/w error reporting
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "Luck, Tony" <tony.luck@intel.com>,
-        linux-kernel@vger.kernel.org, ying.huang@intel.com, bp@alien8.de,
-        tglx@linutronix.de, akpm@linux-foundation.org, mchehab@redhat.com,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
+	id S1755146Ab0KJS1w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 13:27:52 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:52919 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1754721Ab0KJS1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 13:27:51 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19jL0FFCKJjo1eqCFrERNa1SaKlcsqDnAzL5j8Jf4
+	wiy4V85p+SO5rW
+Subject: Re: 2.6.36 io bring the system to its knees
+From: Mike Galbraith <efault@gmx.de>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, Jens Axboe <axboe@kernel.dk>,
+        dave b <db.pub.mail@gmail.com>, Sanjoy Mahajan <sanjoy@olin.edu>,
+        Jesper Juhl <jj@chaosbits.net>, Chris Mason <chris.mason@oracle.com>,
+        Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@kernel.org>,
+        Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Nick Piggin <npiggin@suse.de>,
         Arjan van de Ven <arjan@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-In-Reply-To: <1289412329.12418.177.camel@gandalf.stny.rr.com>
-References: <4cd9edd7543527b78@agluck-desktop.sc.intel.com>
-	 <20101110101450.GA18481@elte.hu>
-	 <1289400056.12418.139.camel@gandalf.stny.rr.com>
-	 <1289400234.2191.129.camel@laptop>
-	 <1289401781.12418.145.camel@gandalf.stny.rr.com>
-	 <1289403019.2084.17.camel@laptop>  <20101110174852.GB4001@elte.hu>
-	 <1289412329.12418.177.camel@gandalf.stny.rr.com>
+        Thomas Gleixner <tglx@linutronix.de>, "Ted Ts'o" <tytso@mit.edu>,
+        Corrado Zoccolo <czoccolo@gmail.com>,
+        Shaohua Li <shaohua.li@intel.com>, Steven Barrett <damentz@gmail.com>
+In-Reply-To: <AANLkTinYZ2wPeeunFv4Ljm+D9SDLbgzTVmw_P9KQdK16@mail.gmail.com>
+References: <20101105014334.GF13830@dastard>
+	 <E1PELiI-0001Pj-8g@approx.mit.edu>
+	 <AANLkTimON_GL6vRF9=_U6oRFQ30EYssx3wv5xdNsU9JM@mail.gmail.com>
+	 <4CD696B4.6070002@kernel.dk>
+	 <AANLkTikNPEcwWjEQuC-_=9yH5DCCiwUAY265ggeygcSQ@mail.gmail.com>
+	 <20101110013255.GR2715@dastard>
+	 <AANLkTinpLuzd5c+WqXoa_0Z=nv=mDgd-k4QZbBZHsQnD@mail.gmail.com>
+	 <AANLkTinYZ2wPeeunFv4Ljm+D9SDLbgzTVmw_P9KQdK16@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 10 Nov 2010 19:24:20 +0100
-Message-ID: <1289413460.2084.27.camel@laptop>
+Date: Wed, 10 Nov 2010 11:27:31 -0700
+Message-ID: <1289413651.4382.15.camel@maggy.simson.net>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-10 at 13:05 -0500, Steven Rostedt wrote:
+On Wed, 2010-11-10 at 18:46 +0200, Alexey Dobriyan wrote:
+> On Wed, Nov 10, 2010 at 5:59 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> > On Tue, Nov 9, 2010 at 5:32 PM, Dave Chinner <david@fromorbit.com> wrote:
+> >>
+> >> Don't forget to mention data=writeback is not the default because if
+> >> your system crashes or you lose power running in this mode it will
+> >> *CORRUPT YOUR FILESYSTEM* and you *WILL LOSE DATA*.
+> >
+> > You will lose data even with data=ordered. All the data that didn't
+> > get logged before the crash is lost anyway.
 > 
-> Peter said at LPC that the perf buffering system was not designed to
-> handle high speed tracing. But he also said he does not like the way the
-> ftrace buffering works. 
+> Linus, are you using with data=writeback?
+> 
+> Those of us, who did (without UPS), will never do it again.
 
-You're not very good at listening, I said the perf infrastructure and
-event handling mechanism isn't geared towards full throughput but
-instead on sampling.
+I've been using it for a looong time on my desktop box.  Yeah, you can
+be bitten easier than ordered, and I have been, but it's never been
+anything major.  The risk for me is worth it, as data=ordered sucked
+really bad.
 
-There is lots of code between getting the event and landing it in the
-buffer. The buffer itself is perfectly suited for high speed low
-overhead stuffs, the perf data format possibly not because its not
-bitfield happy.
+If I didn't need to maintain compatibility with 30+ old kernels for
+regression testing, I'd upgrade desktop to ext4, and likely be happy.
 
+> Propability of non-trivial FS corruption becomes so much bigger.
+> I believe from my experience, average number of crashes before
+> one loses FS becomes single digit number.
 
+That's not my experience.  I've yet to have to rebuild my ext3 fs since
+upgrading box to shiny new opensuse 11.1 (however long ago and how many
+many explosions ago that was;)
+
+> With data=ordered, it's quite hard.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 
