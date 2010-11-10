@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870Ab0KJBxd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 20:53:33 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:60675 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751406Ab0KJBxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 20:53:32 -0500
-Date: Wed, 10 Nov 2010 12:53:21 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Eric Paris <eparis@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the fsnotify tree
-Message-Id: <20101110125321.79c5c8a2.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__10_Nov_2010_12_53_21_+1100_15_WvkKBcFSRqpda"
+	id S1754273Ab0KJBxi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 20:53:38 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:16225 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751406Ab0KJBxg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 20:53:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=l6twCC3tw4onOgcVzls4xA/uJNCbWxhf0hR0VQzfdaXVb+TLKj1CAO+7fBUnZ4AUsm
+         PVgx0GLyXcrJ6toJugOQ==
+MIME-Version: 1.0
+In-Reply-To: <4CD9ECD2.3030805@cn.fujitsu.com>
+References: <4CC146A4.9090505@cn.fujitsu.com> <4CC146BA.7080009@cn.fujitsu.com>
+ <AANLkTikf-1kLStxqi5UjP=vn3pqVBHy0OA7ibeWTkJ5z@mail.gmail.com>
+ <4CD78946.5060405@cn.fujitsu.com> <AANLkTim6d1fQLZbkmZST3PTN0RMSs3m=oossF81pYBn9@mail.gmail.com>
+ <4CD9ECD2.3030805@cn.fujitsu.com>
+From: Paul Menage <menage@google.com>
+Date: Tue, 9 Nov 2010 17:53:13 -0800
+Message-ID: <AANLkTinMr7VE4Os7rXWjiHWOVysv=oE0vHKduLWCN0bC@mail.gmail.com>
+Subject: Re: [PATCH 1/7] cgroups: Shrink struct cgroup_subsys
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: "akpm >> Andrew Morton" <akpm@linux-foundation.org>,
+        Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        containers@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__10_Nov_2010_12_53_21_+1100_15_WvkKBcFSRqpda
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Nov 9, 2010 at 4:52 PM, Li Zefan <lizf@cn.fujitsu.com> wrote:
+>>
+>> bool active:1;
+>> bool disabled:1;
+>>
+>
+> It won't compile, but unsigned char active:1 will do. ;)
 
-Hi Eric,
+Are you sure? I don't have a buildable kernel tree at the moment, but
+the following fragment compiled fine for me (with gcc 4.4.3):
 
-After merging the fsnotify tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+struct foo {
+  _Bool b1:1;
+  _Bool b2:1;
+};
 
-fs/notify/mark.c: In function 'fsnotify_add_mark':
-fs/notify/mark.c:230: error: 'struct fsnotify_group' has no member named 'f=
-anotify_data'
+and was sized at one byte. And "bool" is just a typedef of _Bool in
+the kernel headers.
 
-Caused by commit 0ed64ab6b338e4269c9f25de83781619ecd624f1 ("fsnotify:
-code and error path cleanup in fsnotify_add_mark").  This build has
-CONFIG_FANOTIFY not set.
+>
+> Every thing that reduces code size (without sacrifice readability
+> and maintain maintainability) should be worth.
 
-I have used the fsnotify tree from next-20101109 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Agreed, within reason. But this patch doesn't reduce code size - it
+makes the code fractionally more complicated and reduces the *binary*
+size by a few bytes.
 
---Signature=_Wed__10_Nov_2010_12_53_21_+1100_15_WvkKBcFSRqpda
-Content-Type: application/pgp-signature
+>
+> This is one of the reasons we accept patches that replacing
+> kmalloc+memset with kzalloc, which just saves 8 bytes in my box.
+>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Replacing two function calls with one function call is a code
+simplification and hence (generally) a good thing - the minuscule
+reduction in binary size reduction that comes with it is just noise.
 
-iQEcBAEBAgAGBQJM2fsRAAoJEDMEi1NhKgbsOsEH/2uC44+zUVtli9D0Ucxj5e8x
-BLwSkYPSExW57uZDdbLwJGTQfPzFFuAiEJ1/GgefTqKb/KlMB8SWld9is0IiOq6Y
-AIo6iy27uVy1WFNQuWoLnFWrnUeLv+3sQvyoXg4WvB4jb1Bk0spJP4Xop9bW3Uro
-WhSE2TugnJWSouWf0hC63Cn4RvTj7ijtlFk0KZZRIjLsX34YlsmVrSPj2I+IEgUf
-MVqsZMp4GVpF7Mo2fjkzXGuwmp1g3WucB7zOMAMvFU2MNZAjG9egm2Uhr9YW6fTk
-bfO7lcxGESsRmnsd8fVr7cDOmXbTzfQmZckH438dY7OaU5fCVreU6Bw6UkRSEBg=
-=B3rN
------END PGP SIGNATURE-----
-
---Signature=_Wed__10_Nov_2010_12_53_21_+1100_15_WvkKBcFSRqpda--
+Paul
