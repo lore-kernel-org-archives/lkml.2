@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756412Ab0KJPAd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 10:00:33 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64304 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755533Ab0KJPAc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 10:00:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=lAwfP/leTYxjZCPi/uLePwxZNQvEvVkS1NPV64wy0Mgv6IbpPwVAtCBQHpG6KfhrtL
-         IQUeVJLKamGV7yF830V8AlfVGjmrU/7d1u9OM7vDbGaGJseulxA/N1k/eEg+dKztL0Jn
-         JK50wzGOTQ3Pum7wfzwIoG9gKqIDvgruLhgk0=
-Date: Wed, 10 Nov 2010 16:00:25 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Jiri Olsa <jolsa@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-        rostedt@goodmis.org, andi@firstfloor.org, lwoodman@redhat.com,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 1/2] tracing,mm - add kernel pagefault tracepoint for
-	x86 & x86_64
-Message-ID: <20101110150021.GA5750@nowhere>
-References: <1289390172-9730-1-git-send-email-jolsa@redhat.com> <1289390172-9730-2-git-send-email-jolsa@redhat.com> <20101110132954.GA2101@infradead.org> <20101110134436.GD1949@jolsa.brq.redhat.com> <20101110135244.GA31638@elte.hu>
+	id S1756499Ab0KJPB1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 10:01:27 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:38301 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756175Ab0KJPB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 10:01:26 -0500
+Date: Wed, 10 Nov 2010 16:00:57 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Greg KH <gregkh@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>, Lin Ming <ming.m.lin@intel.com>,
+        Stephane Eranian <eranian@google.com>,
+        "robert.richter" <robert.richter@amd.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        fweisbec <fweisbec@gmail.com>, paulus <paulus@samba.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: sysfs: Add an 'events' class. (was: Re: [RFC][PATCH] perf: sysfs
+ type id)
+Message-ID: <20101110150057.GB14496@elte.hu>
+References: <1289339119.2191.92.camel@laptop>
+ <20101109221338.GA19947@suse.de>
+ <1289392037.2191.105.camel@laptop>
+ <20101110133638.GC11388@elte.hu>
+ <AANLkTikkV1pdseitAPkXTyK529vsvbaVb-RMiMY4Ao-+@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101110135244.GA31638@elte.hu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTikkV1pdseitAPkXTyK529vsvbaVb-RMiMY4Ao-+@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 02:52:44PM +0100, Ingo Molnar wrote:
-> 
-> * Jiri Olsa <jolsa@redhat.com> wrote:
-> 
-> > On Wed, Nov 10, 2010 at 08:29:54AM -0500, Christoph Hellwig wrote:
-> > > On Wed, Nov 10, 2010 at 12:56:11PM +0100, Jiri Olsa wrote:
-> > > > +	TP_printk("task=%lx, address=%lx, regs=%lx",
-> > > > +		(unsigned long)__entry->task, (unsigned long)__entry->address,
-> > > > +			__entry->regs)
-> > > 
-> > > How exactly do you use the information in this trace point?  Especially
-> > > the undecoded pt_regs doesn't seem very useful to me at all.
-> > 
-> > agreed, the registers pointer are not very useful in the trace file output,
-> > and could be taken away.. just wanted to be complete I guess
-> > 
-> > but I believe they are useful when you register the mm_kernel_pagefault
-> > tracepoint and process the information by yourself
-> 
-> That would be expressed in a better and more generic fashion via adding 
-> PERF_SAMPLE_REGS to perf_event_sample_format, and add a ptregs dump in 
-> kernel/perf_event.c, perf_output_sample(). That way any tracepoint can request a 
-> (user-space)ptregs state snapshot, not just the pagefault ones.
-> 
-> Thanks,
-> 
-> 	Ingo
 
+* Kay Sievers <kay.sievers@vrfy.org> wrote:
 
-We are going to have that with the dwarf based callchain patchset. I'm cooking
-this.
+> > Same here - calling events a 'bus' is like totally brain-dead IMHO. It implies 
+> > something hardware, while many events are not related to any hardware component 
+> > but are pure software abstractions: such as context-switches, or syscall 
+> > entries, or VM events.
+> 
+> Please use a bus, regardless of the name, class is dead and you will need stuff 
+> tha can only happen at bus. We'll fix the name later.
 
-Thanks.
+When is that 'later' supposed to happen? git annotate says that the 
+renaming/unification comments/plans were added:
 
+46336009        (Kay Sievers    2007-06-08 13:36:37 -0700       105)  symlinks pointing to the unified /sys/devices tree.
+
+... about 3 and a half years ago.
+
+> [...] No, /sys/devices/ is and stays as a hierarchy and will not be flat.
+
+Great :-)
+
+Btw., where will thinks like /sys/kernel/slab/ end up? It would be useful (in the 
+long run) to have:
+
+  /sys/kernel/slab/uid_cache/events/
+
+To describe/control events for the uid_cache SLAB cache alone.
+
+	Ingo
