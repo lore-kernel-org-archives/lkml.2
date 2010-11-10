@@ -1,154 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706Ab0KJAaj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 19:30:39 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:47729 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104Ab0KJAai convert rfc822-to-8bit (ORCPT
+	id S1753078Ab0KJAbK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 19:31:10 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:2311 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104Ab0KJAbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 19:30:38 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=lIowDHT2iue90zZI0SXqzCtK/q1G26GpyauRBnNGe/kd1wnJTysATBdjOozWkyZ8ZC
-         kEKSEtRuQB0v4trCtZddkGNLrXwm0pY1N+YJVHFizG9syntrIR74dTVzDQDUg52lIazd
-         6T4957MECBKWpVs7RjYgpaVxJ0njKP62kyK7s=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTi=bkzZd0c+kM4ZsQ-y0xmMedfB5AhTS+4ohen_P@mail.gmail.com>
-References: <AANLkTimm0d2fQMkdw9gA+rOqEcBHtJpAB9JRpYDKOxw=@mail.gmail.com>
-	<AANLkTi=bkzZd0c+kM4ZsQ-y0xmMedfB5AhTS+4ohen_P@mail.gmail.com>
-Date: Wed, 10 Nov 2010 08:30:35 +0800
-Message-ID: <AANLkTi=vTg1HPNvScvCTaK09pbTYunK-Spc-gKAhUrhu@mail.gmail.com>
-Subject: Re: error in dmesg
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Sasa Ostrouska <casaxa@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 9 Nov 2010 19:31:07 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6162"; a="61362487"
+From: David Brown <davidb@codeaurora.org>
+To: linux-arm-msm@vger.kernel.org, Daniel Walker <dwalker@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        David Brown <davidb@codeaurora.org>
+Subject: [PATCH] msm: smd: Reduce driver log chatter
+Date: Tue,  9 Nov 2010 16:30:36 -0800
+Message-Id: <1289349036-16941-1-git-send-email-davidb@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 7:30 AM, Sasa Ostrouska <casaxa@gmail.com> wrote:
-> Sorry, I forgot to mntion that thi is on a 2.6.33.4 slackware 64bit linux.
->
->
-> On Wed, Nov 10, 2010 at 12:26 AM, Sasa Ostrouska <casaxa@gmail.com> wrote:
->> Hi I get this eror during boot on my machine:
->>
->> TCP cubic registered
->> Initializing XFRM netlink socket
->> NET: Registered protocol family 17
->> ata1: softreset failed (device not ready)
->> ata3: softreset failed (device not ready)
->> ata3: applying SB600 PMP SRST workaround and retrying
->> ata1: applying SB600 PMP SRST workaround and retrying
->> usb 1-1: New USB device found, idVendor=0424, idProduct=2502
->> usb 1-1: New USB device strings: Mfr=0, Product=0, SerialNumber=0
->> hub 1-1:1.0: USB hub found
->> hub 1-1:1.0: 2 ports detected
->> irq 16: nobody cared (try booting with the "irqpoll" option)
->> Pid: 0, comm: swapper Not tainted 2.6.33.4 #3
->> Call Trace:
->>  <IRQ>  [<ffffffff81098d3b>] __report_bad_irq+0x2b/0xa0
->>  [<ffffffff81098f3c>] note_interrupt+0x18c/0x1d0
->>  [<ffffffff8106c54b>] ? sched_clock_tick+0x5b/0x90
->>  [<ffffffff8109961d>] handle_fasteoi_irq+0xbd/0xf0
->>  [<ffffffff81005ab2>] handle_irq+0x22/0x30
->>  [<ffffffff81a0347c>] do_IRQ+0x6c/0xf0
->>  [<ffffffff81a02f93>] ret_from_intr+0x0/0xa
->>  <EOI>  [<ffffffff8100c058>] ? default_idle+0x38/0x80
->>  [<ffffffff8100c123>] c1e_idle+0x83/0x100
->>  [<ffffffff8106b3da>] ? atomic_notifier_call_chain+0x1a/0x20
->>  [<ffffffff8100155d>] cpu_idle+0xad/0x100
->>  [<ffffffff819fb727>] start_secondary+0x17b/0x17f
->> handlers:
->> [<ffffffff81865420>] (usb_hcd_irq+0x0/0x70)
->> Disabling IRQ #16
->> ata3: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
->> ata3.00: ATA-8: WDC WD3200AAKS-00B3A0, 01.03A01, max UDMA/133
->> ata3.00: 625142448 sectors, multi 16: LBA48 NCQ (depth 31/32), AA
->> ata3.00: SB600 AHCI: limiting to 255 sectors per cmd
->> ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
->> ata3.00: SB600 AHCI: limiting to 255 sectors per cmd
->> ata3.00: configured for UDMA/133
->> ata1.00: ATA-8: WDC WD3200AAKS-00YGA0, 12.01C02, max UDMA/133
->> ata1.00: 625142448 sectors, multi 16: LBA48 NCQ (depth 31/32), AA
->> ata1.00: SB600 AHCI: limiting to 255 sectors per cmd
->> ata1.00: SB600 AHCI: limiting to 255 sectors per cmd
->> ata1.00: configured for UDMA/133
->> scsi 0:0:0:0: Direct-Access     ATA      WDC WD3200AAKS-0 12.0 PQ: 0 ANSI: 5
->> sd 0:0:0:0: [sda] 625142448 512-byte logical blocks: (320 GB/298 GiB)
->> sd 0:0:0:0: [sda] Write Protect is off
->> sd 0:0:0:0: [sda] Mode Sense: 00 3a 00 00
->> sd 0:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn't
->> support DPO or FUA
->>  sda: sda1 sda2 sda3 sda4 < sda5 sda6 sda7 sda8 sda9 >
->> sd 0:0:0:0: [sda] Attached SCSI disk
->> usb 5-2: new low speed USB device using ohci_hcd and address 2
->> ata2: softreset failed (device not ready)
->> ata2: applying SB600 PMP SRST workaround and retrying
->> usb 5-2: New USB device found, idVendor=413c, idProduct=3016
->> usb 5-2: New USB device strings: Mfr=0, Product=2, SerialNumber=0
->> usb 5-2: Product: Dell Premium USB Optical Mouse
->> ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
->> ata2.00: ATAPI: Optiarc DVD RW AD-7191S, 1.01, max UDMA/100
->> ata2.00: SB600 AHCI: limiting to 255 sectors per cmd
->> ata2.00: SB600 AHCI: limiting to 255 sectors per cmd
->> ata2.00: configured for UDMA/100
->> scsi 1:0:0:0: CD-ROM            Optiarc  DVD RW AD-7191S  1.01 PQ: 0 ANSI: 5
->> sr0: scsi3-mmc drive: 48x/12x writer dvd-ram cd/rw xa/form2 cdda tray
->> Uniform CD-ROM driver Revision: 3.20
->> sr 1:0:0:0: Attached scsi CD-ROM sr0
->> scsi 2:0:0:0: Direct-Access     ATA      WDC WD3200AAKS-0 01.0 PQ: 0 ANSI: 5
->> sd 2:0:0:0: [sdb] 625142448 512-byte logical blocks: (320 GB/298 GiB)
->> sd 2:0:0:0: [sdb] Write Protect is off
->> sd 2:0:0:0: [sdb] Mode Sense: 00 3a 00 00
->> sd 2:0:0:0: [sdb] Write cache: enabled, read cache: enabled, doesn't
->> support DPO or FUA
->>  sdb: sdb1
->> sd 2:0:0:0: [sdb] Attached SCSI disk
->> irq 17: nobody cared (try booting with the "irqpoll" option)
->> Pid: 0, comm: swapper Not tainted 2.6.33.4 #3
->> Call Trace:
->>  <IRQ>  [<ffffffff81098d3b>] __report_bad_irq+0x2b/0xa0
->>  [<ffffffff81098f3c>] note_interrupt+0x18c/0x1d0
->>  [<ffffffff8106c54b>] ? sched_clock_tick+0x5b/0x90
->>  [<ffffffff8109961d>] handle_fasteoi_irq+0xbd/0xf0
->>  [<ffffffff81005ab2>] handle_irq+0x22/0x30
->>  [<ffffffff81a0347c>] do_IRQ+0x6c/0xf0
->>  [<ffffffff81a02f93>] ret_from_intr+0x0/0xa
->>  <EOI>  [<ffffffff8100c058>] ? default_idle+0x38/0x80
->>  [<ffffffff8100c123>] c1e_idle+0x83/0x100
->>  [<ffffffff8106b3da>] ? atomic_notifier_call_chain+0x1a/0x20
->>  [<ffffffff8100155d>] cpu_idle+0xad/0x100
->>  [<ffffffff819fb727>] start_secondary+0x17b/0x17f
->> handlers:
->> [<ffffffff81865420>] (usb_hcd_irq+0x0/0x70)
->> [<ffffffff81865420>] (usb_hcd_irq+0x0/0x70)
->> Disabling IRQ #17
-Did you return IRQ_HANDLED or IRQ_NONE for #16 & #17 in your irq handler?
+The MSM smd driver logs numerous messages during startup that are
+useful for debug purposes.  Change these to pr_debug() to match their
+purpose.
 
->> registered taskstats version 1
->> md: Waiting for all devices to be available before autodetect
->> md: If you don't use raid, use raid=noautodetect
->> md: Autodetecting RAID arrays.
->> md: Scanned 0 and added 0 devices.
->> md: autorun ...
->> md: ... autorun DONE.
->>
->>
->> Whats going wrong ?
->>
->> Rgds
->> Saxa
->>
->> PS: CC me since I'm not on the list.
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Signed-off-by: David Brown <davidb@codeaurora.org>
+---
+ arch/arm/mach-msm/smd.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm/mach-msm/smd.c b/arch/arm/mach-msm/smd.c
+index f07dc7c..544e4de 100644
+--- a/arch/arm/mach-msm/smd.c
++++ b/arch/arm/mach-msm/smd.c
+@@ -89,7 +89,7 @@ static void smd_diag(void)
+ 	x = smem_find(ID_DIAG_ERR_MSG, SZ_DIAG_ERR_MSG);
+ 	if (x != 0) {
+ 		x[SZ_DIAG_ERR_MSG - 1] = 0;
+-		pr_info("smem: DIAG '%s'\n", x);
++		pr_debug("smem: DIAG '%s'\n", x);
+ 	}
+ }
+ 
+@@ -312,7 +312,7 @@ static void smd_state_change(struct smd_channel *ch,
+ {
+ 	ch->last_state = next;
+ 
+-	pr_info("SMD: ch %d %d -> %d\n", ch->n, last, next);
++	pr_debug("SMD: ch %d %d -> %d\n", ch->n, last, next);
+ 
+ 	switch (next) {
+ 	case SMD_SS_OPENING:
+@@ -601,7 +601,7 @@ static int smd_alloc_channel(const char *name, uint32_t cid, uint32_t type)
+ 	ch->pdev.name = ch->name;
+ 	ch->pdev.id = -1;
+ 
+-	pr_info("smd_alloc_channel() cid=%02d size=%05d '%s'\n",
++	pr_debug("smd_alloc_channel() cid=%02d size=%05d '%s'\n",
+ 		ch->n, ch->fifo_size, ch->name);
+ 
+ 	mutex_lock(&smd_creation_mutex);
+@@ -725,7 +725,7 @@ int smd_close(smd_channel_t *ch)
+ {
+ 	unsigned long flags;
+ 
+-	pr_info("smd_close(%p)\n", ch);
++	pr_debug("smd_close(%p)\n", ch);
+ 
+ 	if (ch == 0)
+ 		return -1;
+@@ -939,7 +939,7 @@ int smsm_set_sleep_duration(uint32_t delay)
+ int smd_core_init(void)
+ {
+ 	int r;
+-	pr_info("smd_core_init()\n");
++	pr_debug("smd_core_init()\n");
+ 
+ 	/* wait for essential items to be initialized */
+ 	for (;;) {
+@@ -992,14 +992,14 @@ int smd_core_init(void)
+ 	smsm_change_state(SMSM_STATE_APPS_DEM, ~0, 0);
+ #endif
+ 
+-	pr_info("smd_core_init() done\n");
++	pr_debug("smd_core_init() done\n");
+ 
+ 	return 0;
+ }
+ 
+ static int __devinit msm_smd_probe(struct platform_device *pdev)
+ {
+-	pr_info("smd_init()\n");
++	pr_debug("smd_init()\n");
+ 
+ 	/*
+ 	 * If we haven't waited for the ARM9 to boot up till now,
+-- 
+1.7.3.2
+
