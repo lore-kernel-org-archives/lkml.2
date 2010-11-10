@@ -1,52 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756725Ab0KJTsS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 14:48:18 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:52441 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756592Ab0KJTsR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 14:48:17 -0500
-X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=2Zzf6Ss2cq4A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=no1ZKv6X7v_0XrMO2scA:9 a=yawkVYHCzghKs_sDaqu8Y5GqKt4A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC/Requirements/Design] h/w error reporting
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Luck, Tony" <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
-        ying.huang@intel.com, bp@alien8.de, tglx@linutronix.de,
-        akpm@linux-foundation.org, mchehab@redhat.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Arjan van de Ven <arjan@infradead.org>
-In-Reply-To: <20101110193034.GA9414@elte.hu>
-References: <1289400056.12418.139.camel@gandalf.stny.rr.com>
-	 <1289400234.2191.129.camel@laptop>
-	 <1289401781.12418.145.camel@gandalf.stny.rr.com>
-	 <1289403019.2084.17.camel@laptop> <20101110174852.GB4001@elte.hu>
-	 <1289412329.12418.177.camel@gandalf.stny.rr.com>
-	 <1289413460.2084.27.camel@laptop> <20101110184105.GH22410@elte.hu>
-	 <1289415645.12418.180.camel@gandalf.stny.rr.com>
-	 <20101110191127.GA6190@nowhere>  <20101110193034.GA9414@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 10 Nov 2010 14:48:14 -0500
-Message-ID: <1289418494.12418.189.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756773Ab0KJTtM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 14:49:12 -0500
+Received: from mailq1.tnnet.fi ([217.112.240.127]:48123 "EHLO mailq1.tnnet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755320Ab0KJTtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 14:49:10 -0500
+X-Greylist: delayed 500 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Nov 2010 14:49:10 EST
+Message-ID: <4CDAF540.5D31D8C6@users.sourceforge.net>
+Date: Wed, 10 Nov 2010 21:40:48 +0200
+From: Jari Ruusu <jariruusu@users.sourceforge.net>
+To: linux-crypto@nl.linux.org
+CC: linux-kernel@vger.kernel.org
+Subject: Announce loop-AES-v3.5a file/swap crypto package
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-10 at 20:30 +0100, Ingo Molnar wrote:
+loop-AES changes since previous release:
+- Fixed device open/close reference count race, again. The fix in previous
+  version was not complete enough. Thanks to John Fitzgerald for
+  reporting/testing this problem.
+- Worked around block layer interface breakage on linux-2.6.37-rc kernels
+  (FLUSH/FUA changes).
+- Cleaned up lots of #ifdef spaghetti code for 2.6.37 and later kernels.
+- Added "lo_threads" option for 2.6.37 and later kernels. This can be used
+  to configure the number of helper threads for device backed loops.
 
->  - How much does splice() help?
 
-Probably more if we eventually fix the bug that causes a copy of the
-page when it is not needed.
+bzip2 compressed tarball is here:
 
--- Steve
+    http://loop-aes.sourceforge.net/loop-AES/loop-AES-v3.5a.tar.bz2
+    md5sum 9477960fb543938cec4f63a0eb365b12
 
+    http://loop-aes.sourceforge.net/loop-AES/loop-AES-v3.5a.tar.bz2.sign
 
+-- 
+Jari Ruusu  1024R/3A220F51 5B 4B F9 BB D3 3F 52 E9  DB 1D EB E3 24 0E A9 DD
