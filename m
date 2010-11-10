@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932141Ab0KJR3I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 12:29:08 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:49340 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932115Ab0KJR27 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 12:28:59 -0500
-Subject: Re: [RFC][PATCH 02/22] sched: add extended scheduling interface
-From: Peter Zijlstra <peterz@infradead.org>
-To: Raistlin <raistlin@linux.it>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1288333622.8661.141.camel@Palantir>
-References: <1288333128.8661.137.camel@Palantir>
-	 <1288333622.8661.141.camel@Palantir>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 10 Nov 2010 18:28:34 +0100
-Message-ID: <1289410114.2084.23.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752104Ab0KJRbB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 12:31:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59882 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751195Ab0KJRbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 12:31:00 -0500
+Date: Wed, 10 Nov 2010 09:28:42 -0800
+From: Greg KH <gregkh@suse.de>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Claudio Scordino <claudio@evidence.eu.com>, linux-serial@vger.kernel.org,
+        Grant Edwards <grant.b.edwards@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] Documentation about RS485 serial communications
+Message-ID: <20101110172842.GC12371@suse.de>
+References: <20100408111310.524f7354@lxorguk.ukuu.org.uk> <4CBD8EE4.5040808@evidence.eu.com> <i9ka0s$4ua$1@dough.gmane.org> <201010191727.53314.alexander.stein@systec-electronic.com> <i9kk4o$svc$1@dough.gmane.org> <4CC418A9.6090602@evidence.eu.com> <4CDA630F.4060903@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CDA630F.4060903@atmel.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-29 at 08:27 +0200, Raistlin wrote:
-> +struct sched_param_ex {
-> +       int sched_priority;
-> +       struct timespec sched_runtime;
-> +       struct timespec sched_deadline;
-> +       struct timespec sched_period;
-> +       unsigned int sched_flags;
-> +
-> +       struct timespec curr_runtime;
-> +       struct timespec used_runtime;
-> +       struct timespec curr_deadline;
-> +}; 
+On Wed, Nov 10, 2010 at 10:17:03AM +0100, Nicolas Ferre wrote:
+> Le 24/10/2010 13:29, Claudio Scordino :
+> 
+> [..]
+> 
+> > Hi all,
+> > 
+> > 	sorry for the misuse of the term "transceiver", and thank you
+> > for your corrections.
+> > 
+> > Hopefully, this new version of the document is slightly better.
+> 
+> Hi all,
+> 
+> This documentation is floating around for some time now. Claudio has
+> enhanced it and it is maybe time to merge it in mainline...
+> 
+> So, can serial people include it in their tree (Greg?) or should it go
+> through another path?
 
-It would be better for alignment reasons to move the sched_flags field
-next to the sched_priority field.
+I can take it, if someone resends it with the accumulated acks that I
+think it gathered over the review cycle.
 
-I would suggest we add at least one more field so we can implement the
-stochastic model from UNC, sched_runtime_dev or sched_runtime_var or
-somesuch.
+thanks,
 
-
+greg k-h
