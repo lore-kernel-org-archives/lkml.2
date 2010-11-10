@@ -1,83 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755693Ab0KJSln (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 13:41:43 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:43545 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754948Ab0KJSlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 13:41:42 -0500
-Date: Wed, 10 Nov 2010 19:41:05 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>, "Luck, Tony" <tony.luck@intel.com>,
-        linux-kernel@vger.kernel.org, ying.huang@intel.com, bp@alien8.de,
-        tglx@linutronix.de, akpm@linux-foundation.org, mchehab@redhat.com,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [RFC/Requirements/Design] h/w error reporting
-Message-ID: <20101110184105.GH22410@elte.hu>
-References: <4cd9edd7543527b78@agluck-desktop.sc.intel.com>
- <20101110101450.GA18481@elte.hu>
- <1289400056.12418.139.camel@gandalf.stny.rr.com>
- <1289400234.2191.129.camel@laptop>
- <1289401781.12418.145.camel@gandalf.stny.rr.com>
- <1289403019.2084.17.camel@laptop>
- <20101110174852.GB4001@elte.hu>
- <1289412329.12418.177.camel@gandalf.stny.rr.com>
- <1289413460.2084.27.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289413460.2084.27.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1754957Ab0KJSod (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 13:44:33 -0500
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:44916 "HELO
+	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753195Ab0KJSob (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 13:44:31 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=OJYnTBw+WzKxG/zF/mNOElM6DGHTc0ABo/OO4/9sfGUV1D5gT3X1gDG6ADAZyJlLIf0t/+RvyTLCfA9T3VnT3mZqQOZiDFv31YhHsPNJGFaJKBg5mhM6P+oM+n8J7I6I;
+Date: Wed, 10 Nov 2010 10:44:34 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Martin Wilck <martin.wilck@ts.fujitsu.com>
+Cc: gerhard.wichert@ts.fujitsu.com, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH] fix size checks for mmap() on /proc/bus/pci files
+ (updated)
+Message-ID: <20101110104434.6ed20d33@jbarnes-x201>
+In-Reply-To: <1289383401-1357-1-git-send-email-martin.wilck@ts.fujitsu.com>
+References: <20101109084206.1b6ac66a@jbarnes-desktop>
+	<1289383401-1357-1-git-send-email-martin.wilck@ts.fujitsu.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 69.89.22.128 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 10 Nov 2010 11:03:21 +0100
+Martin Wilck <martin.wilck@ts.fujitsu.com> wrote:
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-
-> On Wed, 2010-11-10 at 13:05 -0500, Steven Rostedt wrote:
+> The checks for valid mmaps of PCI resources made
+> through /proc/bus/pci files that were introduced in
+> 9eff02e2042f96fb2aedd02e032eca1c5333d767 have several problems:
 > 
-> > Peter said at LPC that the perf buffering system was not designed to handle high 
-> > speed tracing. But he also said he does not like the way the ftrace buffering 
-> > works.
+> 1. mmap() calls on /proc/bus/pci files are made with real file
+> offsets > 0, whereas under /sys/bus/pci/devices, the start of the
+> resource corresponds to offset 0. This may lead to false negatives in
+> pci_mmap_fits(), which implicitly assumes the /sys/bus/pci/devices
+> layout.
 > 
-> You're not very good at listening, I said the perf infrastructure and event 
-> handling mechanism isn't geared towards full throughput but instead on sampling.
+> 2. The loop in proc_bus_pci_mmap doesn't skip empty resouces. This
+> leads to false positives, because pci_mmap_fits() doesn't treat empty
+> resources correctly (the calculated size is 1 <<
+> (8*sizeof(resource_size_t)-PAGE_SHIFT) in this case!).
+> 
+> 3. If a user maps resources with BAR > 0, pci_mmap_fits will emit
+> bogus WARNINGS for the first resources that don't fit until the
+> correct one is found.
+> 
+> On many controllers the first 2-4 BARs are used, and the others are
+> empty. In this case, an mmap attempt will first fail on the non-empty
+> BARs (including the "right" BAR because of 1.) and emit bogus
+> WARNINGS because of 3., and finally succeed on the first empty BAR
+> because of 2. This is certainly not the intended behaviour.
+> 
+> This patch addresses all 3 issues.
+> Updated with an enum type for the additional parameter for
+> pci_mmap_fits().
+> 
+> Signed-off-by: Martin Wilck <martin.wilck@ts.fujitsu.com>
 
-Note that even that is an implementational detail that can be changed: even with a 
-sampling model the sampling bits are in a flag word, so common combinations can be 
-checked for quickly and open-coded into flat fall-through code - if the sample 
-decoding ever shows up as overhead. (It doesnt even need any ABI changes.)
+Thanks Martin, I'll push this into my for-linus branch for 2.6.37; may
+as well cc: stable as well, since this is a long standing bug.
 
-So it's a non-issue.
-
-> There is lots of code between getting the event and landing it in the buffer. The 
-> buffer itself is perfectly suited for high speed low overhead stuffs, the perf 
-> data format possibly not because its not bitfield happy.
-
-Even that can be tweaked via allowing more compressed records. I doubt it will help 
-as much, but it's still an incremental change that can be validated carefully.
-
-Fact is that we have an ABI, happy users, happy tools and happy developers, so going 
-incrementally is important and allows us to validate and measure every step while 
-still having a full tool-space in place - and it will help everyone, in addition to 
-the ftrace/lttng usecases.
-
-We'll need to embark on this incremental path instead of a rewrite-the-world thing. 
-As a maintainer my task is to say 'no' to rewrite-the-world approaches - and we can 
-and will do better here.
-
-Thanks,
-
-	Ingo
+-- 
+Jesse Barnes, Intel Open Source Technology Center
