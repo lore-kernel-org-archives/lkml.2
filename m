@@ -1,56 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471Ab0KJSvg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 13:51:36 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:43099 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752714Ab0KJSvf (ORCPT
+	id S1755474Ab0KJSwi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 13:52:38 -0500
+Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:50930 "EHLO
+	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752714Ab0KJSwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 13:51:35 -0500
-Date: Wed, 10 Nov 2010 19:50:31 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Clemens Ladisch <clemens@ladisch.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86 <x86@kernel.org>,
-        =?iso-8859-1?Q?J=F6rg_R=F6del?= <joerg.roedel@amd.com>
-Subject: Re: [FALSE ALARM] Re: HPET (?) related hangs and breakage in
- 2.6.35,36
-Message-ID: <20101110185031.GB13539@aftab>
-References: <AANLkTikA6hZDV0A30fku7VT7Z1P8OqxcsF-EK95pBdD=@mail.gmail.com>
- <4CD966D8.4000602@ladisch.de>
- <20101109153805.GB3146@kryptos.osrc.amd.com>
- <AANLkTi=cUGGpkgWcbX=KMxzu+E=Toy_O+LeLoAFFUAsh@mail.gmail.com>
- <20101109180123.GB31121@aftab>
- <AANLkTik107mFOqvxsBtBrc14RHwhkkZTOGgctxKPPNfW@mail.gmail.com>
- <AANLkTik1JdQRh_Gkz_240csVGp4sS0W8nzR5d9Pv1G-X@mail.gmail.com>
+	Wed, 10 Nov 2010 13:52:37 -0500
+Message-ID: <4CDAE9D7.3060007@euromail.se>
+Date: Wed, 10 Nov 2010 19:52:07 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTik1JdQRh_Gkz_240csVGp4sS0W8nzR5d9Pv1G-X@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+CC: Jean Delvare <khali@linux-fr.org>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hwmon: (applesmc) Fix checkpatch errors
+References: <1289415200-4928-1-git-send-email-guenter.roeck@ericsson.com>
+In-Reply-To: <1289415200-4928-1-git-send-email-guenter.roeck@ericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1PGFmC-0001ZA-At.
+X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PGFmC-0001ZA-At 592c8433f0766755e834e47512fde267
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 01:48:00PM -0500, Andrew Lutomirski wrote:
-> > Clocksource: tsc unstable (delta = -34355296774 ns)
-> > Switching: to clocksource hpet
+On 11/10/2010 07:53 PM, Guenter Roeck wrote:
+
+> Fix all checkpatch errors and most of the warnings.
 > 
-> Please disregard -- this is a bug in nouveau (or drm) not hpet.  I'll
-> send a bug report to the maintainers.
+> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> ---
+>  drivers/hwmon/applesmc.c |   40 +++++++++++++++++++++-------------------
+>  1 files changed, 21 insertions(+), 19 deletions(-)
+> 
+> diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+> index 1e49b30..365761b 100644
+> --- a/drivers/hwmon/applesmc.c
+> +++ b/drivers/hwmon/applesmc.c
+> @@ -174,9 +174,8 @@ static int __wait_status(u8 val)
+>  
+>  	for (us = APPLESMC_MIN_WAIT; us < APPLESMC_MAX_WAIT; us <<= 1) {
+>  		udelay(us);
+> -		if ((inb(APPLESMC_CMD_PORT) & APPLESMC_STATUS_MASK) == val) {
+> +		if ((inb(APPLESMC_CMD_PORT) & APPLESMC_STATUS_MASK) == val)
+>  			return 0;
+> -		}
+>  	}
+>  
+>  	return -EIO;
+> @@ -431,7 +430,7 @@ static int applesmc_has_key(const char *key, bool *value)
+>  /*
+>   * applesmc_read_motion_sensor - Read motion sensor (X, Y or Z).
+>   */
+> -static int applesmc_read_motion_sensor(int index, s16* value)
+> +static int applesmc_read_motion_sensor(int index, s16 *value)
+>  {
+>  	u8 buffer[2];
+>  	int ret;
+> @@ -779,14 +778,12 @@ static ssize_t applesmc_store_fan_speed(struct device *dev,
+>  					const char *sysfsbuf, size_t count)
+>  {
+>  	int ret;
+> -	u32 speed;
+> +	unsigned long speed;
+>  	char newkey[5];
+>  	u8 buffer[2];
+>  
+> -	speed = simple_strtoul(sysfsbuf, NULL, 10);
+> -
+> -	if (speed > 0x4000) /* Bigger than a 14-bit value */
+> -		return -EINVAL;
+> +	if (strict_strtoul(sysfsbuf, 10, &speed) < 0 || speed >= 0x4000)
+> +		return -EINVAL;		/* Bigger than a 14-bit value */
 
-Interesting! Joerg was complaining about similar symptoms with .36 today
-too.
 
--- 
-Regards/Gruss,
-Boris.
+Thanks for the bug fix, I forgot to include it.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+>
+>  	sprintf(newkey, fan_speed_fmt[to_option(attr)], to_index(attr));
+>  
+> @@ -822,10 +819,11 @@ static ssize_t applesmc_store_fan_manual(struct device *dev,
+>  {
+>  	int ret;
+>  	u8 buffer[2];
+> -	u32 input;
+> +	unsigned long input;
+>  	u16 val;
+>  
+> -	input = simple_strtoul(sysfsbuf, NULL, 10);
+> +	if (strict_strtoul(sysfsbuf, 10, &input) < 0)
+> +		return -EINVAL;
+>  
+>  	ret = applesmc_read_key(FANS_MANUAL, buffer, 2);
+>  	val = (buffer[0] << 8 | buffer[1]);
+> @@ -977,7 +975,11 @@ static ssize_t applesmc_key_at_index_show(struct device *dev,
+>  static ssize_t applesmc_key_at_index_store(struct device *dev,
+>  	struct device_attribute *attr, const char *sysfsbuf, size_t count)
+>  {
+> -	key_at_index = simple_strtoul(sysfsbuf, NULL, 10);
+> +	unsigned long newkey;
+> +
+> +	if (strict_strtoul(sysfsbuf, 10, &newkey) < 0)
+> +		return -EINVAL;
+> +	key_at_index = newkey;
+
+
+Crash alert - key_at_index is not range checked, and the remake uses this value
+as an array index...
+
+>  	return count;
+>  }
+> @@ -1193,24 +1195,24 @@ static __initdata struct dmi_system_id applesmc_whitelist[] = {
+>  	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookAir") },
+>  	},
+>  	{ applesmc_dmi_match, "Apple MacBook Pro", {
+> -	  DMI_MATCH(DMI_BOARD_VENDOR,"Apple"),
+> -	  DMI_MATCH(DMI_PRODUCT_NAME,"MacBookPro") },
+> +	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+> +	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro") },
+>  	},
+>  	{ applesmc_dmi_match, "Apple MacBook", {
+> -	  DMI_MATCH(DMI_BOARD_VENDOR,"Apple"),
+> -	  DMI_MATCH(DMI_PRODUCT_NAME,"MacBook") },
+> +	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+> +	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBook") },
+>  	},
+>  	{ applesmc_dmi_match, "Apple Macmini", {
+> -	  DMI_MATCH(DMI_BOARD_VENDOR,"Apple"),
+> -	  DMI_MATCH(DMI_PRODUCT_NAME,"Macmini") },
+> +	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+> +	  DMI_MATCH(DMI_PRODUCT_NAME, "Macmini") },
+>  	},
+>  	{ applesmc_dmi_match, "Apple MacPro", {
+>  	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+>  	  DMI_MATCH(DMI_PRODUCT_NAME, "MacPro") },
+>  	},
+>  	{ applesmc_dmi_match, "Apple iMac", {
+> -	  DMI_MATCH(DMI_BOARD_VENDOR,"Apple"),
+> -	  DMI_MATCH(DMI_PRODUCT_NAME,"iMac") },
+> +	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+> +	  DMI_MATCH(DMI_PRODUCT_NAME, "iMac") },
+>  	},
+>  	{ .ident = NULL }
+>  };
+
+
+Thanks,
+Henrik
