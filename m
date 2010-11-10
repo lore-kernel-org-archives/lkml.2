@@ -1,93 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756460Ab0KJOtk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 09:49:40 -0500
-Received: from queueout04-winn.ispmail.ntl.com ([81.103.221.58]:63826 "EHLO
-	queueout04-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756371Ab0KJOtF (ORCPT
+	id S1756374Ab0KJOxS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 09:53:18 -0500
+Received: from casper.infradead.org ([85.118.1.10]:54945 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756173Ab0KJOxR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 09:49:05 -0500
-From: Ian Campbell <ijc@hellion.org.uk>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1289380840.28590.132.camel@Joe-Laptop>
-References: <1289380840.28590.132.camel@Joe-Laptop>
+	Wed, 10 Nov 2010 09:53:17 -0500
+Subject: Re: [RFC PATCH 2/2] perf stat: Use event group to simulate PMI on
+ PMI-less hardware counter
+From: Peter Zijlstra <peterz@infradead.org>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Matt Fleming <matt@console-pimps.org>,
+        "Zhang, Rui" <rui.zhang@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+In-Reply-To: <1289400319.2479.39.camel@localhost>
+References: <1289369725.2430.39.camel@minggr.sh.intel.com>
+	 <1289391709.2191.102.camel@laptop>  <1289400319.2479.39.camel@localhost>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 10 Nov 2010 14:27:20 +0000
-Message-ID: <1289399240.724.48.camel@zakaz.uk.xensource.com>
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 10 Nov 2010 15:53:04 +0100
+Message-ID: <1289400784.2191.134.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 62.200.22.2
-X-SA-Exim-Mail-From: ijc@hellion.org.uk
-Subject: Re: [PATCH] MAINTAINERS: Mark XEN lists subscribers-only
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on hopkins.hellion.org.uk)
-X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=fd6gu-_BvqYA:10 a=IkcTkHD0fZMA:10 a=IJv9LcIfAAAA:8 a=yPCof4ZbAAAA:8 a=SEF7xSSsAAAA:8 a=tHz9FfFoAAAA:8 a=mLnsDVdbAAAA:8 a=dlI4R5ZWAAAA:8 a=VwQbUJbxAAAA:8 a=W0vUJOdyAAAA:8 a=liAA5opg9DaImOLo6IsA:9 a=UykPPTgvidHpO1TEjTcA:7 a=D47EOPkdHPV5_vW9sp5D-9SStFoA:4 a=QEXdDO2ut3YA:10 a=x8gzFH9gYPwA:10 a=K6kUPx8HyhEA:10 a=7DSvI1NPTFQA:10 a=6O0IECtVFhoA:10 a=viDM6Qac857pQ_Wh:21 a=oreaulfsZZ44oZs4:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AFAIK the Xen lists are "(moderated for non-subscribers)" rather than
-"(subscribers-only)".
-
-I think they also whitelist upon successful moderation but that doesn't
-seem to normally be expressed in the MAINTAINERS file.
-
-Ian.
-
-On Wed, 2010-11-10 at 01:20 -0800, Joe Perches wrote:
-> Standardize mailing address address at the same time.
->  
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  MAINTAINERS |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
+On Wed, 2010-11-10 at 22:45 +0800, Lin Ming wrote:
+> On Wed, 2010-11-10 at 20:21 +0800, Peter Zijlstra wrote:
+> > On Wed, 2010-11-10 at 14:15 +0800, Lin Ming wrote:
+> > > Some hardware counters(for example, Intel RAPL) can't generate interrupt
+> > > when overflow. So we need to simulate the interrupt to periodically
+> > > record the counter values. Otherwise, the counter may overflow and the
+> > > wrong value is read.
+> > > 
+> > > This patch uses event group to simulate PMI as suggested by Peter
+> > > Zijlstra, http://marc.info/?l=linux-kernel&m=128220854801819&w=2
+> > > 
+> > > create_group_counters() will create a group with 2 events, one hrtimer
+> > > based event as the group leader, and the other event to count. The
+> > > hrtimer is fired periodically, so the sibling event can record its
+> > > counter value periodically as well.
+> > 
+> > I'm terribly confused here....
+> > 
+> >  - you introduce perf_event_attr:pmi_simulate, but then you never
+> > implement it -- nor do we need it afaict.
 > 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 0094224..70604d5 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -6598,14 +6598,14 @@ F:	drivers/platform/x86
->  
->  XEN PCI SUBSYSTEM
->  M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> -L:	xen-devel@lists.xensource.com
-> +L:	xen-devel@lists.xensource.com (subscribers-only)
->  S:	Supported
->  F:	arch/x86/pci/*xen*
->  F:	drivers/pci/*xen*
->  
->  XEN SWIOTLB SUBSYSTEM
->  M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> -L:	xen-devel@lists.xensource.com
-> +L:	xen-devel@lists.xensource.com (subscribers-only)
->  S:	Supported
->  F:	arch/x86/xen/*swiotlb*
->  F:	drivers/xen/*swiotlb*
-> @@ -6613,7 +6613,7 @@ F:	drivers/xen/*swiotlb*
->  XEN HYPERVISOR INTERFACE
->  M:	Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
->  M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> -L:	xen-devel@lists.xen.org
-> +L:	xen-devel@lists.xensource.com (subscribers-only)
->  L:	virtualization@lists.osdl.org
->  S:	Supported
->  F:	arch/x86/xen/
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+> Someone need to simluate pmi will use it in future.
 
--- 
-Ian Campbell
-Current Noise: Wolf - Make Friends With Your Nightmares
+Maybe, but simply adding an ABI just in case doesn't seem like a good
+idea. The proposed idea was to group with a software hrtimer-based event
+and use the hrtimer's sample to read the hardware group sibling using
+PERF_SAMPLE_READ.
 
-Is it possible that software is not like anything else, that it is meant to
-be discarded:  that the whole point is to always see it as a soap bubble?
+That should be possible using today's interface.
+
+> > 
+> > 
+> >  - you use grouped counters for perf-stat, perf-stat doesn't use
+> > sampling so I don't see a need to group events to simulate the PMI.
+> > 
+> 
+> Aha, sorry, actually, I mean to periodically read the PMI-less counter
+> and reset it to zero each time to avoid overflow.
+> 
+> Well, seems I have done this in the wrong way.
+> Let me re-think about it.
+
+Right, so you're wanting to avoid overflowing the hardware counter? This
+is only a problem for short hardware counters without a pmi, SH and the
+like currently cascade 2 32bit counters to create 64bit hardware
+counters and avoid the overflow case that way.
+
+Another thing they can do is simply use the system tick to fold the
+32bit counters into a the 64bit counter.
+
+Again, this doesn't need any changes to the ABI and generic code.
+
+
 
