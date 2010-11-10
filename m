@@ -1,63 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756136Ab0KJSMs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 13:12:48 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:53385 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756036Ab0KJSMo (ORCPT
+	id S1756002Ab0KJSNa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 13:13:30 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:26552 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755519Ab0KJSN3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 13:12:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=cLzQJNFbgR08Ei8ZHiY9qxlWHy+0qRYi/NSuMWVefLaCWrS4N1uO6BVvccsUDWZNQi
-         jVu5hSjhV8UnDXtIFx9RalR4AcE7GBw/Gzn8cSH5kgDWQAv7GZ2fyKxrfNmn6R5W6VB+
-         6rA0j2yvEsh0hVVfwGpDNTwzZ3iK90frSX16k=
-From: Vasiliy Kulikov <segooon@gmail.com>
-To: kernel-janitors@vger.kernel.org
-Cc: Joerg Reuter <jreuter@yaina.de>, Ralf Baechle <ralf@linux-mips.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-hams@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] net: ax25: fix information leak to userland
-Date: Wed, 10 Nov 2010 21:12:36 +0300
-Message-Id: <1289412757-11411-1-git-send-email-segooon@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Wed, 10 Nov 2010 13:13:29 -0500
+Message-ID: <4CDAE069.4040007@oracle.com>
+Date: Wed, 10 Nov 2010 10:11:53 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: Steffen Klassert <steffen.klassert@secunet.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org
+Subject: Re: Linux 2.6.37-rc1 (pcrypt fault)
+References: <AANLkTimr3rW67HxgOUyReEW8dmmSsd4b7-Ns57mXzS1w@mail.gmail.com> <20101103141519.0a6f5906.randy.dunlap@oracle.com> <20101110112143.GB1868@secunet.com>
+In-Reply-To: <20101110112143.GB1868@secunet.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometimes ax25_getname() doesn't initialize all members of fsa_digipeater
-field of fsa struct, also the struct has padding bytes between
-sax25_call and sax25_ndigis fields.  This structure is then copied to
-userland.  It leads to leaking of contents of kernel stack memory.
+On 11/10/10 03:21, Steffen Klassert wrote:
+> On Wed, Nov 03, 2010 at 02:15:19PM -0700, Randy Dunlap wrote:
+>>
+>> modprobe pcrypt; rmmod pcrypt ==>
+>>
+>>
+>> [   76.081639] calling  pcrypt_init+0x0/0x107 [pcrypt] @ 3016
+>> Nov  3 13:02:15 control kernel: [   76.089883] initcall pcrypt_init+0x0/0x107 [pcrypt] returned 0 after 2476 usecs
+>> [   76.081639] calling  pcrypt_i
+>>
+>>
+>> [   79.940445] general protection fault: 0000 [#1] SMP DEBUG_PAGEALLOC
+> 
+> Looks like a use after free of the padata instance.
+> Does the patch below fix it?
 
-Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
----
- Compile tested.
+Yes, it does.  Thanks.
 
- net/ax25/af_ax25.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Tested-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-diff --git a/net/ax25/af_ax25.c b/net/ax25/af_ax25.c
-index 26eaebf..bb86d29 100644
---- a/net/ax25/af_ax25.c
-+++ b/net/ax25/af_ax25.c
-@@ -1392,6 +1392,7 @@ static int ax25_getname(struct socket *sock, struct sockaddr *uaddr,
- 	ax25_cb *ax25;
- 	int err = 0;
- 
-+	memset(fsa, 0, sizeof(fsa));
- 	lock_sock(sk);
- 	ax25 = ax25_sk(sk);
- 
-@@ -1403,7 +1404,6 @@ static int ax25_getname(struct socket *sock, struct sockaddr *uaddr,
- 
- 		fsa->fsa_ax25.sax25_family = AF_AX25;
- 		fsa->fsa_ax25.sax25_call   = ax25->dest_addr;
--		fsa->fsa_ax25.sax25_ndigis = 0;
- 
- 		if (ax25->digipeat != NULL) {
- 			ndigi = ax25->digipeat->ndigi;
+
+> Thanks for reporting,
+> 
+> Steffen
+> 
+> 
+> Subject: [PATCH] crypto: pcrypt - Fix use after free on padata_free
+> 
+> kobject_put is called from padata_free for the padata kobject.
+> The kobject's release function frees the padata instance,
+> so don't call kobject_put for the padata kobject from pcrypt.
+> 
+> Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+> ---
+>  crypto/pcrypt.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/crypto/pcrypt.c b/crypto/pcrypt.c
+> index de30782..75586f1 100644
+> --- a/crypto/pcrypt.c
+> +++ b/crypto/pcrypt.c
+> @@ -504,7 +504,6 @@ err:
+>  
+>  static void pcrypt_fini_padata(struct padata_pcrypt *pcrypt)
+>  {
+> -	kobject_put(&pcrypt->pinst->kobj);
+>  	free_cpumask_var(pcrypt->cb_cpumask->mask);
+>  	kfree(pcrypt->cb_cpumask);
+>  
+
+
 -- 
-1.7.0.4
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
