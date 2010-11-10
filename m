@@ -1,52 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757339Ab0KJWn2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 17:43:28 -0500
-Received: from xenotime.net ([72.52.115.56]:43595 "HELO xenotime.net"
+	id S1757351Ab0KJWom (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 17:44:42 -0500
+Received: from xenotime.net ([72.52.115.56]:47323 "HELO xenotime.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1757310Ab0KJWnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757301Ab0KJWnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 10 Nov 2010 17:43:25 -0500
 Date: Wed, 10 Nov 2010 11:53:50 -0800
 From: Randy Dunlap <rdunlap@xenotime.net>
 To: linux-kernel@vger.kernel.org
-Cc: Dan Carpenter <error27@gmail.com>
-Cc: Joel Becker <joel.becker@oracle.com>
-Subject: [PATCH 2/8] Documentation: make configfs example code simpler, clearer
-Message-ID: <12894188301399@xenotime.net>
-In-Reply-To: <1289418830794@xenotime.net>
+Subject: [for review: PATCH 1/8] kernel-doc: escape xml for structs
+Message-ID: <1289418830794@xenotime.net>
+In-Reply-To: 
 X-Mailer: gregkh_patchbomb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Carpenter <error27@gmail.com>
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-If "p" is NULL then it will cause an oops when we pass it to
-simple_strtoul().  In this case "p" can not be NULL so I removed the
-check.  I also changed the check a little to make it more explicit that
-we are testing whether p points to the NUL char.
+scripts/kernel-doc was leaving unescaped '<', '>', and '&' in
+generated xml output for structs.  This causes xml parser errors.
+Convert these characters to "&lt;", "&gt;", and "&amp;" as needed
+to prevent errors.
+Most of the conversion was already done; complete it just before
+output.
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-Acked-by: Joel Becker <joel.becker@oracle.com>
+Documentation/DocBook/device-drivers.xml:41883: parser error : StartTag: invalid element name
+#define INPUT_KEYMAP_BY_INDEX	(1 << 0)
+
 Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 ---
-V2: Added some parenthesis to make the precedence more clear.
+ scripts/kernel-doc |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
----
- Documentation/filesystems/configfs/configfs_example_explicit.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- linux-2.6.37-rc1-git8.orig/Documentation/filesystems/configfs/configfs_example_explicit.c
-+++ linux-2.6.37-rc1-git8/Documentation/filesystems/configfs/configfs_example_explicit.c
-@@ -89,7 +89,7 @@ static ssize_t childless_storeme_write(s
- 	char *p = (char *) page;
+--- linux-2.6.37-rc1-git8.orig/scripts/kernel-doc
++++ linux-2.6.37-rc1-git8/scripts/kernel-doc
+@@ -5,7 +5,7 @@ use strict;
+ ## Copyright (c) 1998 Michael Zucchi, All Rights Reserved        ##
+ ## Copyright (C) 2000, 1  Tim Waugh <twaugh@redhat.com>          ##
+ ## Copyright (C) 2001  Simon Huggins                             ##
+-## Copyright (C) 2005-2009  Randy Dunlap                         ##
++## Copyright (C) 2005-2010  Randy Dunlap                         ##
+ ## 								 ##
+ ## #define enhancements by Armin Kuster <akuster@mvista.com>	 ##
+ ## Copyright (c) 2000 MontaVista Software, Inc.			 ##
+@@ -453,7 +453,7 @@ sub output_highlight {
+     if ($output_mode eq "html" || $output_mode eq "xml") {
+ 	$contents = local_unescape($contents);
+ 	# convert data read & converted thru xml_escape() into &xyz; format:
+-	$contents =~ s/\\\\\\/&/g;
++	$contents =~ s/\\\\\\/\&/g;
+     }
+ #   print STDERR "contents b4:$contents\n";
+     eval $dohighlight;
+@@ -770,7 +770,11 @@ sub output_struct_xml(%) {
+     print $args{'type'} . " " . $args{'struct'} . " {\n";
+     foreach $parameter (@{$args{'parameterlist'}}) {
+ 	if ($parameter =~ /^#/) {
+-	    print "$parameter\n";
++	    my $prm = $parameter;
++	    # convert data read & converted thru xml_escape() into &xyz; format:
++	    # This allows us to have #define macros interspersed in a struct.
++	    $prm =~ s/\\\\\\/\&/g;
++	    print "$prm\n";
+ 	    next;
+ 	}
  
- 	tmp = simple_strtoul(p, &p, 10);
--	if (!p || (*p && (*p != '\n')))
-+	if ((*p != '\0') && (*p != '\n'))
- 		return -EINVAL;
+@@ -1701,6 +1705,8 @@ sub push_parameter($$$) {
+ 	}
+ 	}
  
- 	if (tmp > INT_MAX)
++	$param = xml_escape($param);
++
+ 	# strip spaces from $param so that it is one continous string
+ 	# on @parameterlist;
+ 	# this fixes a problem where check_sections() cannot find
 
 
 -- 
