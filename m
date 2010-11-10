@@ -1,37 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755774Ab0KJMJD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 07:09:03 -0500
-Received: from mga01.intel.com ([192.55.52.88]:2039 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755697Ab0KJMJC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 07:09:02 -0500
-Message-Id: <c6d829$pgdo6m@fmsmga001.fm.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,177,1288594800"; 
-   d="scan'208";a="856088802"
-Date: Wed, 10 Nov 2010 12:08:58 +0000
-To: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] acpi: Provide decls for standalone compilation of video.h without ACPI (v2)
-Cc: Matthew Garrett <mjg@redhat.com>, Zhang Rui <rui.zhang@intel.com>,
-        Len Brown <len.brown@intel.com>
-In-Reply-To: <1283694709-8504-1-git-send-email-chris@chris-wilson.co.uk>
-References: <1283693757-8199-1-git-send-email-chris@chris-wilson.co.uk> <1283694709-8504-1-git-send-email-chris@chris-wilson.co.uk>
-From: Chris Wilson <chris@chris-wilson.co.uk>
+	id S1755709Ab0KJMSY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 07:18:24 -0500
+Received: from denmail01-v4020.amcc.com ([192.195.68.30]:47266 "EHLO
+	denmail01.apm.COM" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754344Ab0KJMSV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 07:18:21 -0500
+X-Greylist: delayed 2448 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Nov 2010 07:18:21 EST
+Date: Wed, 10 Nov 2010 17:07:15 +0530
+From: Rupjyoti Sarmah <rsarmah@amcc.com>
+Message-Id: <201011101137.oAABbFoc015547@amcc.com>
+To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ppc44x:PHY fixup for USB on canyonlands board
+Cc: rsarmah@apm.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun,  5 Sep 2010 14:51:49 +0100, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-> Cc: Matthew Garrett <mjg@redhat.com>
-> Cc: Zhang Rui <rui.zhang@intel.com>
-> Cc: Len Brown <len.brown@intel.com>
+This fix is a reset for USB PHY that requires some amount of time for power to be stable on Canyonlands.
 
-Can one of you please pick up this patch and apply to acpi?
+Signed-off-by: Rupjyoti Sarmah <rsarmah@apm.com>
+---
+ arch/powerpc/boot/dts/canyonlands.dts     |   11 ++++
+ arch/powerpc/platforms/44x/44x.h          |    5 ++
+ arch/powerpc/platforms/44x/Kconfig        |    7 ++
+ arch/powerpc/platforms/44x/Makefile       |    1 +
+ arch/powerpc/platforms/44x/ppc44x_fixup.c |   90 +++++++++++++++++++++++++++++
+ 5 files changed, 114 insertions(+), 0 deletions(-)
+ create mode 100644 arch/powerpc/platforms/44x/ppc44x_fixup.c
 
-Thanks,
--Chris
-
+diff --git a/arch/powerpc/boot/dts/canyonlands.dts b/arch/powerpc/boot/dts/canyonlands.dts
+index a303703..d6e9ba2 100644
+--- a/arch/powerpc/boot/dts/canyonlands.dts
++++ b/arch/powerpc/boot/dts/canyonlands.dts
+@@ -171,6 +171,11 @@
+ 				      0x5 0x4>;     /* AHBDMA */
+ 		};
+ 
++		CPLD: cpld@e1000000 {
++			compatible = "apm, ppc460ex-bcsr";
++			reg = <4 0xe1000000 0x9>;
++		};
++
+ 		POB0: opb {
+ 			compatible = "ibm,opb-460ex", "ibm,opb";
+ 			#address-cells = <1>;
+@@ -320,6 +325,12 @@
+ 				interrupts = <0x3 0x4>;
+ 			};
+ 
++			GPIO0: gpio@ef600b00 {
++				compatible = "apm,ppc44x-gpio-base";
++				reg = <0xef600b00 0x00000048>;
++				gpio-controller;
++			};
++
+ 			ZMII0: emac-zmii@ef600d00 {
+ 				compatible = "ibm,zmii-460ex", "ibm,zmii";
+ 				reg = <0xef600d00 0x0000000c>;
+diff --git a/arch/powerpc/platforms/44x/44x.h b/arch/powerpc/platforms/44x/44x.h
+index dbc4d2b..bc2ab7a 100644
+--- a/arch/powerpc/platforms/44x/44x.h
++++ b/arch/powerpc/platforms/44x/44x.h
+@@ -4,4 +4,9 @@
+ extern u8 as1_readb(volatile u8 __iomem  *addr);
+ extern void as1_writeb(u8 data, volatile u8 __iomem *addr);
+ 
++#define BCSR_USB_EN	0x11
++#define GPIO0_OSRH	0xC
++#define GPIO0_TSRH	0x14
++#define GPIO0_ISR1H	0x34
++
+ #endif /* __POWERPC_PLATFORMS_44X_44X_H */
+diff --git a/arch/powerpc/platforms/44x/Kconfig b/arch/powerpc/platforms/44x/Kconfig
+index 0f979c5..9ca4aaa 100644
+--- a/arch/powerpc/platforms/44x/Kconfig
++++ b/arch/powerpc/platforms/44x/Kconfig
+@@ -117,12 +117,19 @@ config CANYONLANDS
+ 	default n
+ 	select PPC44x_SIMPLE
+ 	select 460EX
++	select 44X_FIXUP
+ 	select PCI
+ 	select PPC4xx_PCI_EXPRESS
+ 	select IBM_NEW_EMAC_RGMII
+ 	select IBM_NEW_EMAC_ZMII
+ 	help
+ 	  This option enables support for the AMCC PPC460EX evaluation board.
++config 44X_FIXUP
++	bool "4xx_fixup"
++	depends on 44x
++	default n
++	help
++	  This option enables supporting APM PPC4XX based evaluation board fixups.
+ 
+ config GLACIER
+ 	bool "Glacier"
+diff --git a/arch/powerpc/platforms/44x/Makefile b/arch/powerpc/platforms/44x/Makefile
+index 82ff326..d4bfb97 100644
+--- a/arch/powerpc/platforms/44x/Makefile
++++ b/arch/powerpc/platforms/44x/Makefile
+@@ -1,6 +1,7 @@
+ obj-$(CONFIG_44x)	:= misc_44x.o idle.o
+ obj-$(CONFIG_PPC44x_SIMPLE) += ppc44x_simple.o
+ obj-$(CONFIG_EBONY)	+= ebony.o
++obj-$(CONFIG_44X_FIXUP) += ppc44x_fixup.o
+ obj-$(CONFIG_SAM440EP) 	+= sam440ep.o
+ obj-$(CONFIG_WARP)	+= warp.o
+ obj-$(CONFIG_XILINX_VIRTEX_5_FXT) += virtex.o
+diff --git a/arch/powerpc/platforms/44x/ppc44x_fixup.c b/arch/powerpc/platforms/44x/ppc44x_fixup.c
+new file mode 100644
+index 0000000..4e254eb
+--- /dev/null
++++ b/arch/powerpc/platforms/44x/ppc44x_fixup.c
+@@ -0,0 +1,90 @@
++/*
++ * This contain fixup code for Applied Micro ppc44x series of processors.
++ *
++ * Copyright (c) 2010, Applied Micro Circuits Corporation
++ * Author: Rupjyoti Sarmah <rsarmah@apm.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation; either version 2 of
++ * the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++ * MA 02111-1307 USA
++ *
++ */
++
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/io.h>
++#include <linux/of.h>
++#include "44x.h"
++
++/* PHY fixup code on Canyonlands kit. */
++
++static int __init ppc460ex_canyonlands_fixup(void)
++{
++	u8 __iomem *bcsr ;
++	void __iomem  *vaddr;
++	struct device_node *np;
++	u32 val ;
++
++	np = of_find_compatible_node(NULL, NULL, "apm, ppc460ex-bcsr");
++	if (!np) {
++		printk(KERN_ERR "failed did not find apm, ppc460ex bcsr node\n");
++		return -ENODEV;
++		}
++
++	bcsr = of_iomap(np, 0);
++	of_node_put(np);
++
++	if (!bcsr) {
++		printk(KERN_CRIT "Could not remap bcsr\n");
++		return -ENODEV;
++	}
++
++	clrbits8(&bcsr[7], BCSR_USB_EN);
++	udelay(100000);
++
++	setbits8(&bcsr[7], BCSR_USB_EN);
++	udelay(100000);
++
++	clrbits8(&bcsr[7], BCSR_USB_EN);
++	udelay(100000);
++
++	np = of_find_compatible_node(NULL, NULL, "apm,ppc44x-gpio-base");
++
++	/* configure multiplexed gpio16 and gpio19 */
++
++	vaddr = of_iomap(np, 0);
++	if (!vaddr) {
++		printk(KERN_CRIT "Could not get gpio node address\n");
++		return -ENODEV;
++	}
++
++	/* configure gpio16 and gpio19 as alternate1 */
++
++	/* GPIO0_ISR1H for alternate 1 settings */
++	val = in_be32(vaddr + GPIO0_ISR1H);
++	out_be32((vaddr + GPIO0_ISR1H), val | 0x4200000);
++
++	/* GPIO0_OSRH for alternate 1 settings */
++	val = in_be32(vaddr + GPIO0_OSRH);
++	out_be32((vaddr + GPIO0_OSRH), val | 0x42000000);
++
++	/* GPIO0_TSRH for alternate 1 settings */
++	val = in_be32(vaddr + GPIO0_TSRH);
++	out_be32((vaddr + GPIO0_TSRH), val | 0x42000000);
++	of_node_put(np);
++	return 0;
++
++}
++arch_initcall(ppc460ex_canyonlands_fixup);
++
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+1.5.6.3
+
