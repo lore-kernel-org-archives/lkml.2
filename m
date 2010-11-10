@@ -1,302 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754394Ab0KJBJS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 20:09:18 -0500
-Received: from sj-iport-5.cisco.com ([171.68.10.87]:1943 "EHLO
-	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753665Ab0KJBJO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 20:09:14 -0500
-Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-AV: E=Sophos;i="4.59,176,1288569600"; 
-   d="scan'208";a="283653732"
-Date: Tue, 09 Nov 2010 17:09:42 -0800
-From: Tom Lyon <pugs@cisco.com>
-To: alex.williamson@redhat.com
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: [PATCH] vfio: fix config virtualization, esp command byte
-Message-ID: <4cd9f0d6.jnHBr6PBphKwDwhM%pugs@cisco.com>
-User-Agent: Heirloom mailx 12.2 01/07/07
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1754424Ab0KJBKZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 20:10:25 -0500
+Received: from ozlabs.org ([203.10.76.45]:37158 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753786Ab0KJBKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 20:10:25 -0500
+Subject: Re: [RFC][PATCH] perf: sysfs type id
+From: Michael Ellerman <michael@ellerman.id.au>
+Reply-To: michael@ellerman.id.au
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTikGHNkUN6t9rPhdE6XOQiqb5xAzH_9eY6L9h2H2@mail.gmail.com>
+References: <1289339119.2191.92.camel@laptop>
+	 <20101109221338.GA19947@suse.de> <1289345811.10536.8.camel@concordia>
+	 <AANLkTi=UftgQn0ydRd2wszqFtpRrkEcW7dzfapKKix_V@mail.gmail.com>
+	 <1289350360.22787.9.camel@concordia>
+	 <AANLkTikGHNkUN6t9rPhdE6XOQiqb5xAzH_9eY6L9h2H2@mail.gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-vALCAD5vY40ugUvwnVY9"
+Date: Wed, 10 Nov 2010 12:10:23 +1100
+Message-ID: <1289351423.22787.22.camel@concordia>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleans up config space virtualization, especialy handling of bytes
-which have some virtual and some real bits, like PCI_COMMAND.
 
-Alex, I hope you can test this with your setups.
+--=-vALCAD5vY40ugUvwnVY9
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Tom Lyon <pugs@cisco.com>
----
- drivers/vfio/vfio_pci_config.c |  166 +++++++++++++---------------------------
- 1 files changed, 53 insertions(+), 113 deletions(-)
+On Wed, 2010-11-10 at 01:57 +0100, Kay Sievers wrote:
+> Stay on the list please, with any possible reply. Thanks!
 
-diff --git a/drivers/vfio/vfio_pci_config.c b/drivers/vfio/vfio_pci_config.c
-index 8304316..7132ac4 100644
---- a/drivers/vfio/vfio_pci_config.c
-+++ b/drivers/vfio/vfio_pci_config.c
-@@ -745,6 +745,8 @@ static int vfio_virt_init(struct vfio_dev *vdev)
-  */
- static void vfio_bar_restore(struct vfio_dev *vdev)
- {
-+	if (vdev->pdev->is_virtfn)
-+		return;
- 	printk(KERN_WARNING "%s: reset recovery - restoring bars\n", __func__);
- 
- #define do_bar(off, which) \
-@@ -815,26 +817,15 @@ static inline int vfio_read_config_byte(struct vfio_dev *vdev,
- static inline int vfio_write_config_byte(struct vfio_dev *vdev,
- 					int pos, u8 val)
- {
--	vdev->vconfig[pos] = val;
- 	return pci_user_write_config_byte(vdev->pdev, pos, val);
- }
- 
- /* handle virtualized fields in the basic config space */
--static u8 vfio_virt_basic(struct vfio_dev *vdev, int write,
--				u16 pos, u16 off, u8 val, u8 newval)
-+static void vfio_virt_basic(struct vfio_dev *vdev, int write, u16 pos, u8 *rbp)
- {
--	switch (off) {
--	/*
--	 * vendor and device are virt because they don't
--	 * show up otherwise for sr-iov vfs
--	 */
--	case PCI_VENDOR_ID:
--	case PCI_VENDOR_ID + 1:
--	case PCI_DEVICE_ID:
--	case PCI_DEVICE_ID + 1:
--		/* read only */
--		val = vdev->vconfig[pos];
--		break;
-+	u8 val;
-+
-+	switch (pos) {
- 	case PCI_COMMAND:
- 		/*
- 		 * If the real mem or IO enable bits are zero
-@@ -842,100 +833,58 @@ static u8 vfio_virt_basic(struct vfio_dev *vdev, int write,
- 		 * Restore the real BARs before allowing those
- 		 * bits to re-enable
- 		 */
-+		val = vdev->vconfig[pos];
- 		if (vdev->pdev->is_virtfn)
- 			val |= PCI_COMMAND_MEMORY;
- 		if (write) {
--			int upd = 0;
--
--			upd = (newval & PCI_COMMAND_MEMORY) >
--			      (val & PCI_COMMAND_MEMORY);
--			upd += (newval & PCI_COMMAND_IO) >
--			       (val & PCI_COMMAND_IO);
--			if (upd)
--				vfio_bar_restore(vdev);
--			vfio_write_config_byte(vdev, pos, newval);
--		}
--		break;
--	case PCI_BASE_ADDRESS_0:
--	case PCI_BASE_ADDRESS_0+1:
--	case PCI_BASE_ADDRESS_0+2:
--	case PCI_BASE_ADDRESS_0+3:
--	case PCI_BASE_ADDRESS_1:
--	case PCI_BASE_ADDRESS_1+1:
--	case PCI_BASE_ADDRESS_1+2:
--	case PCI_BASE_ADDRESS_1+3:
--	case PCI_BASE_ADDRESS_2:
--	case PCI_BASE_ADDRESS_2+1:
--	case PCI_BASE_ADDRESS_2+2:
--	case PCI_BASE_ADDRESS_2+3:
--	case PCI_BASE_ADDRESS_3:
--	case PCI_BASE_ADDRESS_3+1:
--	case PCI_BASE_ADDRESS_3+2:
--	case PCI_BASE_ADDRESS_3+3:
--	case PCI_BASE_ADDRESS_4:
--	case PCI_BASE_ADDRESS_4+1:
--	case PCI_BASE_ADDRESS_4+2:
--	case PCI_BASE_ADDRESS_4+3:
--	case PCI_BASE_ADDRESS_5:
--	case PCI_BASE_ADDRESS_5+1:
--	case PCI_BASE_ADDRESS_5+2:
--	case PCI_BASE_ADDRESS_5+3:
--	case PCI_ROM_ADDRESS:
--	case PCI_ROM_ADDRESS+1:
--	case PCI_ROM_ADDRESS+2:
--	case PCI_ROM_ADDRESS+3:
--		if (write) {
--			vdev->vconfig[pos] = newval;
--			vdev->bardirty = 1;
--		} else {
--			if (vdev->bardirty)
--				vfio_bar_fixup(vdev);
--			val = vdev->vconfig[pos];
-+
-+			if (((val & PCI_COMMAND_MEMORY) >
-+				(*rbp & PCI_COMMAND_MEMORY)) ||
-+			    ((val & PCI_COMMAND_IO) >
-+				(*rbp & PCI_COMMAND_IO)))
-+					vfio_bar_restore(vdev);
-+			*rbp &= ~(PCI_COMMAND_MEMORY + PCI_COMMAND_IO);
-+			*rbp |= val & (PCI_COMMAND_MEMORY + PCI_COMMAND_IO);
- 		}
-+		vdev->vconfig[pos] = val;
- 		break;
--	default:
-+	case PCI_BASE_ADDRESS_0 ... PCI_BASE_ADDRESS_5 + 3:
-+	case PCI_ROM_ADDRESS ... PCI_ROM_ADDRESS + 3:
- 		if (write)
--			vdev->vconfig[pos] = newval;
--		else
--			val = vdev->vconfig[pos];
-+			vdev->bardirty = 1;
-+		else if (vdev->bardirty)
-+			vfio_bar_fixup(vdev);
- 		break;
- 	}
--	return val;
- }
- 
- /*
-  * handle virtualized fields in msi capability
-  * easy, except for multiple-msi fields in flags byte
-  */
--static u8 vfio_virt_msi(struct vfio_dev *vdev, int write,
--				u16 pos, u16 off, u8 val, u8 newval)
-+static void vfio_virt_msi(struct vfio_dev *vdev, int write,
-+				u16 pos, u16 off, u8 *rbp)
- {
--	if (off == PCI_MSI_FLAGS) {
--		u8 num;
-+	u8 val;
-+	u8 num;
- 
-+	val = vdev->vconfig[pos];
-+	if (off == PCI_MSI_FLAGS) {
- 		if (write) {
- 			if (!vdev->ev_msi)
--				newval &= ~PCI_MSI_FLAGS_ENABLE;
--			num = (newval & PCI_MSI_FLAGS_QSIZE) >> 4;
-+				val &= ~PCI_MSI_FLAGS_ENABLE;
-+			num = (val & PCI_MSI_FLAGS_QSIZE) >> 4;
- 			if (num > vdev->msi_qmax)
- 				num = vdev->msi_qmax;
--			newval &= ~PCI_MSI_FLAGS_QSIZE;
--			newval |= num << 4;
--			vfio_write_config_byte(vdev, pos, newval);
-+			val &= ~PCI_MSI_FLAGS_QSIZE;
-+			val |= num << 4;
-+			*rbp = val;
- 		} else {
--			if (vfio_read_config_byte(vdev, pos, &val) < 0)
--				return 0;
- 			val &= ~PCI_MSI_FLAGS_QMASK;
- 			val |= vdev->msi_qmax << 1;
- 		}
--		return val;
- 	}
--
--	if (write)
--		vdev->vconfig[pos] = newval;
--	else
--		val = vdev->vconfig[pos];
--	return val;
-+	vdev->vconfig[pos] = val;
- }
- 
- static int vfio_config_rwbyte(int write,
-@@ -950,6 +899,7 @@ static int vfio_config_rwbyte(int write,
- 	struct perm_bits *perm;
- 	u8 wr, virt;
- 	int ret;
-+	u8 realbits = 0;
- 
- 	cap = map[pos];
- 	if (cap == 0xFF) {	/* unknown region */
-@@ -989,7 +939,7 @@ static int vfio_config_rwbyte(int write,
- 	}
- 	if (write && !wr)		/* no writeable bits */
- 		return 0;
--	if (!virt) {
-+	if (!virt) {			/* no virtual bits */
- 		if (write) {
- 			if (copy_from_user(&val, buf, 1))
- 				return -EFAULT;
-@@ -1018,54 +968,44 @@ static int vfio_config_rwbyte(int write,
- 		if (copy_from_user(&newval, buf, 1))
- 			return -EFAULT;
- 	}
--	/*
--	 * We get here if there are some virt bits
--	 * handle remaining real bits, if any
--	 */
--	if (~virt) {
--		u8 rbits = (~virt) & wr;
- 
--		ret = vfio_read_config_byte(vdev, pos, &val);
-+	if (~virt) {	/* mix of real and virt bits */
-+		/* update vconfig with latest hw bits */
-+		ret = vfio_read_config_byte(vdev, pos, &realbits);
- 		if (ret < 0)
- 			return ret;
--		if (write && rbits) {
--			val &= ~rbits;
--			val |= (newval & rbits);
--			vfio_write_config_byte(vdev, pos, val);
--		}
-+		vdev->vconfig[pos] =
-+			(vdev->vconfig[pos] & virt) | (realbits & ~virt);
- 	}
-+
-+	/* update vconfig with writeable bits */
-+	vdev->vconfig[pos] =
-+		(vdev->vconfig[pos] & ~wr) | (newval & wr);
-+
- 	/*
--	 * Now handle entirely virtual fields
-+	 * Now massage virtual fields
- 	 */
- 	if (pos < PCI_CFG_SPACE_SIZE) {
- 		switch (cap) {
- 		case PCI_CAP_ID_BASIC:	/* virtualize BARs */
--			val = vfio_virt_basic(vdev, write,
--						pos, off, val, newval);
-+			vfio_virt_basic(vdev, write, pos, &realbits);
- 			break;
- 		case PCI_CAP_ID_MSI:	/* virtualize (parts of) MSI */
--			val = vfio_virt_msi(vdev, write,
--						pos, off, val, newval);
--			break;
--		default:
--			if (write)
--				vdev->vconfig[pos] = newval;
--			else
--				val = vdev->vconfig[pos];
-+			vfio_virt_msi(vdev, write, pos, off, &realbits);
- 			break;
- 		}
- 	} else {
- 		/* no virt fields yet in ecaps */
- 		switch (cap) {	/* extended capabilities */
- 		default:
--			if (write)
--				vdev->vconfig[pos] = newval;
--			else
--				val = vdev->vconfig[pos];
- 			break;
- 		}
- 	}
--	if (!write && copy_to_user(buf, &val, 1))
-+	if (write && ~virt) {
-+		realbits = (realbits & virt) | (vdev->vconfig[pos] & ~virt);
-+		vfio_write_config_byte(vdev, pos, realbits);
-+	}
-+	if (!write && copy_to_user(buf, &vdev->vconfig[pos], 1))
- 		return -EFAULT;
- 	return 0;
- }
--- 
-1.6.0.2
+You dropped the CC when you replied, or is my mailer being weird?
+
+> On Wed, Nov 10, 2010 at 01:52, Michael Ellerman <michael@ellerman.id.au> =
+wrote:
+> > On Wed, 2010-11-10 at 00:45 +0100, Kay Sievers wrote:
+> >> On Wed, Nov 10, 2010 at 00:36, Michael Ellerman <michael@ellerman.id.a=
+u> wrote:
+> >> > On Tue, 2010-11-09 at 14:13 -0800, Greg KH wrote:
+> >> >> On Tue, Nov 09, 2010 at 10:45:19PM +0100, Peter Zijlstra wrote:
+> >> >> > The below is a RFC patch adding dynamic type ids to perf.
+> >> >> >
+> >> >> > We need to represent PMUs in sysfs because we want to allow multi=
+ple
+> >> >> > (loadable) PMUs and need a way to identify them.
+> >> >> >
+> >> >> > This patch creates a new device class "pmu" and adds a single att=
+ribute
+> >> >> > "type" to it. This device attribute will expose the dynamic type =
+id as
+> >> >> > required by perf_event_attr::type.
+> >> >> >
+> >> >> > The sysfs layout looks like:
+> >> >> >
+> >> >> > [root@westmere ~]# cd /sys/class/pmu/
+> >> >>
+> >> >> You missed the embedded track at Plumbers where we talked about nev=
+er
+> >> >> adding another class to the kernel.  Please use bus_id instead for =
+this.
+> >> >
+> >> > At least in the examples I've seen creating a bus requires a lot mor=
+e
+> >> > code than a class. Or is there a shortcut I don't know about when it=
+'s a
+> >> > virtual bus?
+> >>
+> >> What do you mean? Instead of registering a class you register a bus?
+> >
+> > Yeah. From what I've seen doing the latter is a lot more involved.
+> >
+> >> Instead of assigning a class to the device, you assign the bus before
+> >> you add it. Other than this you do the same with the device.
+> >
+> > Sure. My point is creating a bus (from what I've seen) is not as easy a=
+s
+> > creating a bus. No one said kernel hacking should be easy, but if the
+> > advice is "use a bus not a class" it'd be good if they were
+> > approximately equivalent in effort.
+> >
+> > My code to use a class is ~=3D:
+> >
+> > struct class foo_class;
+> > foo_class =3D class_create(THIS_MODULE, "foo");
+> > device =3D device_create(foo_class, NULL, dev, "foo0");
+>=20
+> device_create must not be used for devices without a dev_t.
+> device_destroy, which is the counterpart can not work.
+
+It has a dev_t, that's the third argument?
+
+> If you use device_del/device_unregister, you need to use
+> device_add/device_register.
+
+I don't use them.
+
+> The pseudo-convenience device_register/device_unregister should also
+> not be used.
+
+Why are they in the tree if they shouldn't be used?
+
+So far you are failing to dispel my notion that sysfs is a place where
+mortals dare not tread ;)
+
+> > And I'm looking at eg. drivers/usb/serial/bus.c as an example bus.
+> >
+> > But in my case (and I think perf too), we don't need a bus that probes
+> > etc. it's just a virtual bus that groups things, so it seems like it
+> > should be simple.
+> >
+> > Anyway I feel like I'm missing something, so hopefully you can clue me
+> > in :)
+>=20
+> Buses without drivers do not probe at all, they behave like classes.
+
+OK, good, that would seem to be a prerequisite for replacing the latter
+with the former.
+
+I'm just not clear on how that actually works in the code. For example I
+have a device which is on a bus (that's how it got probed), how do I
+also put it on another bus (my virtual bus replacing my class) ?
+
+cheers
+
+
+
+--=-vALCAD5vY40ugUvwnVY9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkzZ8P8ACgkQdSjSd0sB4dLr1wCfYvDCzg8W++E2ZSjITHCCp3Rc
+QugAnRC65YgxYH9gW/hqObBLpSw/CEFw
+=T8iH
+-----END PGP SIGNATURE-----
+
+--=-vALCAD5vY40ugUvwnVY9--
 
