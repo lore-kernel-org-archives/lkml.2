@@ -1,81 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756665Ab0KJVFe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 16:05:34 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:39796 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753971Ab0KJVFc convert rfc822-to-8bit (ORCPT
+	id S1756772Ab0KJVGj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 16:06:39 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:46729 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756157Ab0KJVGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 16:05:32 -0500
-Subject: Re: [RFC][PATCH] perf: sysfs type id
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Lin Ming <ming.m.lin@intel.com>,
-        "robert.richter" <robert.richter@amd.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        fweisbec <fweisbec@gmail.com>, paulus <paulus@samba.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@vrfy.org>, "H. Peter Anvin" <hpa@zytor.com>
-In-Reply-To: <AANLkTiku7UsVoYv_+6r79rvGPJU7OU=VGDiaYo0H=82y@mail.gmail.com>
-References: <1289339119.2191.92.camel@laptop>
-	 <AANLkTi=ojOnLyRO4hTgYdCCXLsN0wUeTcme=5h8-mjdz@mail.gmail.com>
-	 <1289398207.2191.117.camel@laptop> <1289398763.2191.121.camel@laptop>
-	 <AANLkTimQ7w38wzrYT4MgjHFr6LCVj2M5fB11-n3XCD2w@mail.gmail.com>
-	 <1289421164.2084.56.camel@laptop>
-	 <AANLkTiku7UsVoYv_+6r79rvGPJU7OU=VGDiaYo0H=82y@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 10 Nov 2010 22:05:35 +0100
-Message-ID: <1289423135.2084.63.camel@laptop>
+	Wed, 10 Nov 2010 16:06:38 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=0Gcdu3wDtgIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=UtajeTem1ScSQ7R5zokA:9 a=Kd_FedTKPxJZQJdbPVcA:7 a=A3hQ13xklIJRR0ToLKQUpWSn-YAA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: RE: Tracing Requirements (was: [RFC/Requirements/Design] h/w error
+ reporting)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, "bp@alien8.de" <bp@alien8.de>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mchehab@redhat.com" <mchehab@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Arjan van de Ven <arjan@infradead.org>
+In-Reply-To: <987664A83D2D224EAE907B061CE93D5301649A71DC@orsmsx505.amr.corp.intel.com>
+References: <1289400056.12418.139.camel@gandalf.stny.rr.com>
+	 <1289400234.2191.129.camel@laptop>
+	 <1289401781.12418.145.camel@gandalf.stny.rr.com>
+	 <1289403019.2084.17.camel@laptop> <20101110174852.GB4001@elte.hu>
+	 <1289412329.12418.177.camel@gandalf.stny.rr.com>
+	 <1289413460.2084.27.camel@laptop> <20101110184105.GH22410@elte.hu>
+	 <1289415645.12418.180.camel@gandalf.stny.rr.com>
+	 <20101110191127.GA6190@nowhere> <20101110202316.GA32396@Krystal>
+	 <987664A83D2D224EAE907B061CE93D5301649A71DC@orsmsx505.amr.corp.intel.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 10 Nov 2010 16:06:34 -0500
+Message-ID: <1289423194.12418.195.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-10 at 21:53 +0100, Stephane Eranian wrote:
-> On Wed, Nov 10, 2010 at 9:32 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Wed, 2010-11-10 at 21:08 +0100, Stephane Eranian wrote:
-> >> Would that be by passing the full filename to the tool?
-> >
-> > possible, or something like <pmu-name>:<event-name>, cpu:cycles would
-> > map to /sys/class/pmu/cpu/events/cycles (given the previous patch).
-> >
-> >
-> Ok, but I think you're proposal is missing one bit. You are addressing
-> the class (or type) of PMU, but you are not addressing the naming of
-> an instance.
+On Wed, 2010-11-10 at 12:54 -0800, Luck, Tony wrote:
+> >- Perf does not support flight recorder tracing (concurrent read/write)
+> >  - Sub-buffers are needed to support concurrent read/writes
 > 
-> Let's take an example, suppose you have counters on a graphic card.
-> Your system has two such graphic cards. In your scheme you would
-> end up with a sys/class/pmu/gfx/.....
+> When I hear somebody say "flight recorder" - I think of "black boxes"
+> in airplanes that log data while the flight is running, and are only
+> looked at offline later.  So I'm confused by the "concurrent read/write"
+> requirement.
 > 
-> But now, suppose I want to count cycles on the first graphic card.
-> Seems to me you need to expose the instances as well. The instance
-> number needs to be passed in the attr struct somehow.
-> 
-> You can either create multiple subdir under gfx, or have this info somewhere
-> else in the sysfs tree, if people really care about class vs. instance.
-> 
-> I can see users doing:
-> $ perf stat -e gfx@1::cycles ...  -> sys/class/gfx/1/event/cycles
-> 
-> The reason I am using :: here is because libpfm4 is already using
-> this as a separator for PMU type vs. event.
+> Perhaps you could explain the use cases of your "flight recorder",
+> because it seems that the name doesn't fit exactly, and this is
+> causing me (and maybe others) some confusion.
 
+Hmm, I had this argument with Mathieu before, but I guess I mistakenly
+let him win ;-)
 
-right, so the idea is to have these pmu devices hooked into the existing
-sysfs topology, my proposed patch misses that bit because I wanted to
-get something out before having to dig through the topology code trying
-to figure out how all that works.
+I call "flight recorder" mode "overwrite" mode. Basically there's two
+modes. They only have meaning when the ring buffer is full and a write
+takes place.
 
-So the 'cpu' pmu device would be linked from:
+1) produce/consumer mode - When the writer reaches the reader, all new
+events are discarded. This means that you lose the latest events while
+you keep older events around.
 
-  /sys/devices/system/cpu/pmu -> /sys/class/pmu/cpu
+2) overwrite mode (flight recorder) - when the writer reaches the
+reader, it pushes the reader forward, and writes the new events over the
+old ones. This way, new events are always existent, where as old events
+are lost.
 
-and gfx things would be linked like:
+1 is much easier to implement than 2, especially when doing it in a
+lockless way.
 
-  /sys/devices/pci0000:00/0000:00:1e.0/0000:0b:01.0/drm/card0/pmu -> /sys/class/pmu/radeon0
+I guess I should have fought harder to keep the terminology of
+"overwrite" mode. This is the third time is the last week I had to
+explain what "flight recorder" mode was. Where as, overwrite mode was a
+bit more obvious.
+
+-- Steve
 
 
