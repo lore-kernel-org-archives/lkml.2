@@ -1,81 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755621Ab0KJLwM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 06:52:12 -0500
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:46933 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754351Ab0KJLwK convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 06:52:10 -0500
-From: Carmine IASCONE <carmine.iascone@st.com>
-To: Greg KH <gregkh@suse.de>, Jiri Slaby <jirislaby@gmail.com>
-Cc: Matteo DAMENO <matteo.dameno@st.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        mems applications <mems.applications@st.com>,
-        Alan Cox <alan.cox@intel.com>
-Date: Wed, 10 Nov 2010 12:51:21 +0100
-Subject: RE: [PATCH] staging: lis331dlh: add lis331dlh driver
-Thread-Topic: [PATCH] staging: lis331dlh: add lis331dlh driver
-Thread-Index: AcuANj2P1zNdm1tUSriqewqEIELf1QAkPLtA
-Message-ID: <3B4B64FC2A10C148B521CFCC54F4F7E49FA33DB115@SAFEX1MAIL3.st.com>
-References: <> <1289323527-5501-1-git-send-email-carmine.iascone@st.com>
- <20101109173540.GA20370@suse.de>
-In-Reply-To: <20101109173540.GA20370@suse.de>
-Accept-Language: it-IT, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: it-IT, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755627Ab0KJLxX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 06:53:23 -0500
+Received: from tango.tkos.co.il ([62.219.50.35]:49676 "EHLO tango.tkos.co.il"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754404Ab0KJLxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 06:53:21 -0500
+Date: Wed, 10 Nov 2010 13:52:55 +0200
+From: Baruch Siach <baruch@tkos.co.il>
+To: Indan Zupancic <indan@nul.nu>
+Cc: linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>,
+        Alex Gershgorin <agersh@rambler.ru>
+Subject: Re: [PATCHv2] drivers/misc: Altera Cyclone active serial
+ implementation
+Message-ID: <20101110115255.GE26776@jasper.tkos.co.il>
+References: <f04cbe31c7e03a9d798b30526a5fed1cd8ee4c7a.1289297142.git.baruch@tkos.co.il>
+ <0d1a323315dcf505e64fb5165ea41e95.squirrel@webmail.greenhost.nl>
+ <20101109153550.GD29441@jasper.tkos.co.il>
+ <dbd33aac54791d5b5f33f03325b6b4bc.squirrel@webmail.greenhost.nl>
+ <20101110055419.GA26776@jasper.tkos.co.il>
+ <39a033e053cd6dee4faf7bb8d1083993.squirrel@webmail.greenhost.nl>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <39a033e053cd6dee4faf7bb8d1083993.squirrel@webmail.greenhost.nl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg, Hi JS,
-Matteo and I have started to develop linux device drivers for our STMicroelectronics sensors about one year ago. Our main target is the Android platform (mobile phone or tablet pc), and for this reason the drivers are thought to be used on I2C bus. The drivers are enough stable, we have several customers that are using them, and also with the advice of these customers, we would like to make available them for all the linux community, merging them in the kernel upstream to be used in all linux supported platforms.
-The drivers have had a initial review by Alan Cox, that gives us some very precious advices to improve the style and robustness of the drivers. 
-We are newbies in patch generation and submission: we have followed the instructions in the Greg's video on you tube to create this first patch, so sorry if there is something that we missed. We thought to put the driver in staging directory, because before merging them in the main tree we would like to have a general revision, and also because in this first release we haven't managed the device interrupts yet. At the end the right position for these drivers could be drivers/input/misc.
-How do we proceed now? Do we need to generate a new patch adding the TODO file? Please advice.
+Hi Indan,
 
-Our email references are:
-
-Carmine Iascone <carmine.iascone@st.com>
-Matteo Dameno <matteo.dameno@st.com>
-
-Best regards,
-Carmine
-
-
------Original Message-----
-From: Greg KH [mailto:gregkh@suse.de] 
-Sent: Tuesday, November 09, 2010 6:36 PM
-To: mems applications
-Cc: Carmine IASCONE; Matteo DAMENO; devel@driverdev.osuosl.org; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: lis331dlh: add lis331dlh driver
-
-On Tue, Nov 09, 2010 at 06:25:27PM +0100, mems applications wrote:
-> Add STMicroelectronics LIS331DLH digital accelerometer device driver
+On Wed, Nov 10, 2010 at 11:59:17AM +0100, Indan Zupancic wrote:
+> On Wed, November 10, 2010 06:54, Baruch Siach wrote:
+> > On Tue, Nov 09, 2010 at 09:15:09PM +0100, Indan Zupancic wrote:
+> >> On Tue, November 9, 2010 16:35, Baruch Siach wrote:
+> >
+> > [snip]
+> >
+> >> >> > +static struct {
+> >> >> > +	int minor;
+> >> >> > +	struct cyclone_as_device *drvdata;
+> >> >> > +} cyclone_as_devs[AS_MAX_DEVS];
+> >> >> > +
+> >> >> > +static struct cyclone_as_device *get_as_dev(int minor)
+> >> >> > +{
+> >> >> > +	int i;
+> >> >> > +
+> >> >> > +	for (i = 0; i < ARRAY_SIZE(cyclone_as_devs); i++)
+> >> >>
+> >> >> To me AS_MAX_DEVS looks clearer than ARRAY_SIZE(cyclone_as_devs).
+> >> >
+> >> > Not to me. The fact that AS_MAX_DEVS happens to be equal to
+> >> > ARRAY_SIZE(cyclone_as_devs) is not relevant to the understanding of this
+> >> > procedure. It just forces the reader to lookup the AS_MAX_DEVS value, and
+> >> > distracts the reader's attention.
+> >>
+> >> Then just leave the AS_MAX_DEVS define away, it doesn't add anything.
+> >
+> > I use AS_MAX_DEVS to set the size of cyclone_as_devs. It documents why
+> > this array is of that length.
 > 
-> From: Carmine Iascone <carmine.iascone@st.com>
-> ---
->  drivers/staging/Kconfig               |    2 +
->  drivers/staging/Makefile              |    1 +
->  drivers/staging/lis331dlh/Kconfig     |    7 +
->  drivers/staging/lis331dlh/Makefile    |    1 +
->  drivers/staging/lis331dlh/lis331dlh.c |  836 +++++++++++++++++++++++++++++++++
->  drivers/staging/lis331dlh/lis331dlh.h |   83 ++++
->  6 files changed, 930 insertions(+), 0 deletions(-)
+> The array size _is_ the limit of the number of devices. AS_MAX_DEVS now
+> looks like some magical number coming from nowhere. But its source is
+> that array size. So you can put the raw number in the array declaration
+> and it's as clear as defining AS_MAX_DEVS a few lines higher.
 
-Why is this a staging driver?  What is keeping it from being merged to
-the main portion of the kernel tree?
+Well, I beg to differ. To me the AS_MAX_DEVS define gives a meaning to a 
+number. It says that the cyclone_as_devs array size (and, hence, the number of 
+supported devices) is an arbitrary design decision, and not something that is 
+inherent to the active serial protocol, like the delay values. I'd keep this 
+define event if its only use is for the cyclone_as_devs size.
 
-Can you please provide a TODO file that lists the things left to do on
-it, and provide some email addresses to contact you for it?  Look at the
-other TODO files in drivers/staging/*/TODO for examples.
+> >> Also change the:
+> >>
+> >> +	if (pdata->id >= AS_MAX_DEVS)
+> >> +		return -ENODEV;
+> >>
+> >> to
+> >>
+> >> +	if (pdata->id >= ARRAY_SIZE(cyclone_as_devs))
+> >> +		return -ENODEV;
+> >>
+> >> After all, what you're really checking is if the id falls within the
+> >> array.
+> >
+> > The current code seems more clear to me. AS_MAX_DEVS expresses the reason
+> > for not letting id exceed this value, and for having -ENODEV as return value.
+> > The cyclone_as_devs boundary check is just a side effect.
+> 
+> (I agree that the current code looks more clear, I'm just trying to point
+> out the inconsistency in the usage of AS_MAX_DEVS.)
+> 
+> But as you said above, if the "fact that AS_MAX_DEVS happens to be equal
+> to ARRAY_SIZE(cyclone_as_devs) is not relevant to the understanding of
+> this procedure", then you have to add an explicit array boundary check
+> to make sure that the dev falls within the array, no? Otherwise, to see
+> that the code is correct, you do have to understand that AS_MAX_DEVS
+> happens to be equal to ARRAY_SIZE(cyclone_as_devs), which is something
+> you wanted to avoid.
 
-thanks,
+I said this in the context of the get_as_dev code which indeed iterates 
+through the cyclone_as_devs elements, and thus needs the number of elements.  
+No further knowledge is required.
 
-greg k-h
+Here, I chose to emphasize in the code that we verify the AS_MAX_DEVS limit, 
+for the reasons stated above. Later, I rely on the side effect of this check 
+when I access cyclone_as_devs elements. Although this does look a little less 
+clear, I prefer this way on the other.
+
+> Sorry for my nagging.
+
+Not a problem :).
+
+baruch
+
+> > [snip]
+> >
+> >> >> > +	/* writes must be page aligned */
+> >> >> > +	if (!AS_ALIGNED(*ppos) || !AS_ALIGNED(count))
+> >> >> > +		return -EINVAL;
+> >>
+> >> As you're only incrementing ppos with the page size, is that first check
+> >> really needed? I don't think anything else can change ppos.
+> >
+> > I'd rather be on the safe side here. Future extensions (like read or lseek
+> > implementations) may change *ppos.
+> 
+> Yes, that is a good precaution, it's very easy to forget this check then.
+> 
+> But the only thing that makes writing work is the erase device when the
+> first page is written, so non-streamed writes not starting at address 0
+> will fail anyway. That said, that's a lot less subtle than the alignment
+> thing, so just leave it as it is.
+> 
+> >> >> > +	page_count = *ppos / AS_PAGE_SIZE;
+> >> >> > +
+> >> >> > +	page_buf = kmalloc(AS_PAGE_SIZE, GFP_KERNEL);
+> >> >> > +	if (page_buf == NULL)
+> >> >> > +		return -ENOMEM;
+> >> >> > +
+> >> >> > +	if (*ppos == 0) {
+> >> >> > +		u8 as_status;
+> >> >> > +
+> >> >> > +		xmit_cmd(drvdata->gpios, AS_WRITE_ENABLE);
+> >> >> > +		xmit_cmd(drvdata->gpios, AS_ERASE_BULK);
+> >> >> > +
+> >> >> > +		gpio_set_value(drvdata->gpios[ASIO_NCS].gpio, 0);
+> >> >> > +		xmit_byte(drvdata->gpios, AS_READ_STATUS);
+> >> >> > +		for (i = 0; i < AS_ERASE_TIMEOUT; i++) {
+> >> >> > +			as_status = recv_byte(drvdata->gpios);
+> >> >> > +			if ((as_status & AS_STATUS_WIP) == 0)
+> >> >> > +				break; /* erase done */
+> >> >> > +			if (msleep_interruptible(1000) > 0) {
+> >> >> > +				err = -EINTR;
+> >> >> > +				break;
+> >> >> > +			}
+> >> >> > +		}
+> >> >> > +		gpio_set_value(drvdata->gpios[ASIO_NCS].gpio, 1);
+> >> >> > +		if ((as_status & AS_STATUS_WIP) && err == 0)
+> >> >> > +			err = -EIO; /* erase timeout */
+> >> >> > +		if (err)
+> >> >> > +			goto out;
+> >> >> > +		ndelay(300);
+> >> >> > +	}
+> >> >>
+> >> >> I'd move this into its own function, erase_device() or something.
+> >> >
+> >> > OK.
+> >> >
+> >> >> (And drop the ndelay.)
+> >> >
+> >> > See above.
+> >>
+> >> In that case I'd move it to just after the gpio_set*.
+> >
+> > OK. My original rationale was to skip the delay in case of error, but this
+> > micro-optimization doesn't worth the code obfuscation.
+> 
+> There's nothing preventing the caller to do another command on the device
+> within 300ns, except a slow CPU, so it seems this delay is always needed.
+> 
+> Greetings,
+> 
+> Indan
+> 
+> 
+
+-- 
+                                                     ~. .~   Tk Open Systems
+=}------------------------------------------------ooO--U--Ooo------------{=
+   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
