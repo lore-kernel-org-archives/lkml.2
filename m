@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753595Ab0KJGUc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 01:20:32 -0500
-Received: from mail.vyatta.com ([76.74.103.46]:60044 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752770Ab0KJGUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 01:20:31 -0500
-Date: Tue, 9 Nov 2010 22:20:29 -0800
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Greg KH <greg@kroah.com>, Rusty Russell <rusty@rustcorp.com.au>
-Cc: virtualization@lists.osdl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] virtio: fix format of sysfs driver/vendor files
-Message-ID: <20101109222029.65f3e192@nehalam>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754077Ab0KJGXO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 01:23:14 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:54667 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752358Ab0KJGXN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 01:23:13 -0500
+Date: Tue, 9 Nov 2010 23:23:10 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: David Brownell <david-b@pacbell.net>
+Cc: davinci-linux-open-source@linux.davincidsp.com,
+        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        rpurdie@rpsys.net, Cyril Chemparathy <cyril@ti.com>,
+        spi-devel-general@lists.sourceforge.net,
+        linux-arm-kernel@lists.infradead.org, lrg@slimlogic.co.uk
+Subject: Re: [PATCH v4 08/12] gpio: add ti-ssp gpio driver
+Message-ID: <20101110062310.GB7431@angua.secretlab.ca>
+References: <20101110044530.GB4110@angua.secretlab.ca>
+ <79124.87409.qm@web180307.mail.gq1.yahoo.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <79124.87409.qm@web180307.mail.gq1.yahoo.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sysfs files for virtio produce the wrong format and are missing
-the required newline. The output for virtio bus vendor/device should
-have the same format as the corresponding entries for PCI devices.
+On Tue, Nov 09, 2010 at 10:16:22PM -0800, David Brownell wrote:
+> 
+> > I thought the point of this device was that a single [SSP] device
+> > hosted a
+> > pair of multi-function serial interfaces, with each
+> > implementing a
+> > separate function.
+> 
+> function chosen based on what the board needs.
+> Codec interface, SPI, GPIO, etc.
+> 
+>   If so, then it makes sense for the
+> > base driver to
+> > register child devices of the appropriate kinds.
+> 
+> I'd normally say board setup registers them; a
+> "core"driver can't know what children would be needed.
+> 
+> But the point I was making was about code factoring
+> not driver setup.  When  the functions don't have
+> much commonality, they might as well just write to
+> the relevant registers instead of expecting to have
+> a non-register programming interface (of dubious
+> generality of a "core" driver, but much complexity).
+> 
+> Easier just to have children use registers directly,
+> in several similar cases.  Less overhead, too.
 
-Although this technically changes the ABI for sysfs, these files were
-broken to start with!
+I guess it depends on how much overlap/interlock there is between the
+multiple channels.  If there is shared context, then that is a
+stronger argument for a shared api.  Cyril, what say you?
 
-Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+g.
 
-
---- a/drivers/virtio/virtio.c	2010-11-09 21:39:31.713916249 -0800
-+++ b/drivers/virtio/virtio.c	2010-11-09 21:40:16.072089461 -0800
-@@ -9,19 +9,19 @@ static ssize_t device_show(struct device
- 			   struct device_attribute *attr, char *buf)
- {
- 	struct virtio_device *dev = container_of(_d,struct virtio_device,dev);
--	return sprintf(buf, "%hu", dev->id.device);
-+	return sprintf(buf, "0x%04x\n", dev->id.device);
- }
- static ssize_t vendor_show(struct device *_d,
- 			   struct device_attribute *attr, char *buf)
- {
- 	struct virtio_device *dev = container_of(_d,struct virtio_device,dev);
--	return sprintf(buf, "%hu", dev->id.vendor);
-+	return sprintf(buf, "0x%04x\n", dev->id.vendor);
- }
- static ssize_t status_show(struct device *_d,
- 			   struct device_attribute *attr, char *buf)
- {
- 	struct virtio_device *dev = container_of(_d,struct virtio_device,dev);
--	return sprintf(buf, "0x%08x", dev->config->get_status(dev));
-+	return sprintf(buf, "0x%08x\n", dev->config->get_status(dev));
- }
- static ssize_t modalias_show(struct device *_d,
- 			     struct device_attribute *attr, char *buf)
