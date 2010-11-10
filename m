@@ -1,97 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756111Ab0KJNpM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 08:45:12 -0500
-Received: from caiajhbdcaib.dreamhost.com ([208.97.132.81]:50325 "EHLO
-	homiemail-a3.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756092Ab0KJNpI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 08:45:08 -0500
-Subject: Re: [PATCH] mce: fix RCU lockdep from mce_poll()
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: Andi Kleen <andi@firstfloor.org>, paulmck@linux.vnet.ibm.com
-Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101108131708.GC2580@linux.vnet.ibm.com>
-References: <1288993499.2065.4.camel@cowboy>
-	 <20101106185350.GA23824@basil.fritz.box>
-	 <20101107133950.GV15561@linux.vnet.ibm.com>
-	 <1289215819.2318.3.camel@cowboy> <20101108131708.GC2580@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 10 Nov 2010 10:44:55 -0300
-Message-ID: <1289396695.2208.0.camel@cowboy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8BIT
+	id S1756045Ab0KJNrI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 08:47:08 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36464 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755816Ab0KJNrF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 08:47:05 -0500
+Date: Wed, 10 Nov 2010 14:47:01 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: john stultz <johnstul@us.ibm.com>
+Cc: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Clark Williams <williams@redhat.com>
+Subject: Re: [PATCH] Greatly improve TSC calibration using a delayed
+ workqueue
+Message-ID: <20101110134700.GB7205@basil.fritz.box>
+References: <1289003985-29060-1-git-send-email-johnstul@us.ibm.com>
+ <20101107204153.GA17592@basil.fritz.box>
+ <1289253887.2798.40.camel@localhost.localdomain>
+ <20101109134355.GA29433@basil.fritz.box>
+ <1289338900.9434.51.camel@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289338900.9434.51.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-08 at 05:17 -0800, Paul E. McKenney wrote:
-> On Mon, Nov 08, 2010 at 08:30:19AM -0300, Davidlohr Bueso wrote:
-> > On Sun, 2010-11-07 at 05:39 -0800, Paul E. McKenney wrote:
-> > > On Sat, Nov 06, 2010 at 07:53:50PM +0100, Andi Kleen wrote:
-> > > > On Fri, Nov 05, 2010 at 06:44:59PM -0300, Davidlohr Bueso wrote:
-> > > > > Hi,
-> > > > > 
-> > > > > Please review this patch, I am not very familiar with MCE/RCU so I'm not sure that this is the correct fix (otherwise consider it a bug report :)).
-> > > > > This does "fix" the message though and I can use MCE normally.
-> > > > 
-> > > > The patch is certainly not correct. The variable needs to be read
-> > > > independently of the mutex.
-> > > 
-> > > This code is simply checking the value of the pointer, and therefore
-> > > need not protect any actual dereferences.  So why not replace the
-> > > rcu_dereference_check_mce() with rcu_access_pointer()?  If this is
-> > > OK, please see the patch below.
-> > > 
-> > > BTW, assigning the value returned by rcu_access_pointer() into a
-> > > variable often indicates a bug.  ;-)
-> > > 
-> > > 							Thanx, Paul
-> > > 
-> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > 
-> > > diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> > > index 7a35b72..4d29d50 100644
-> > > --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> > > +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> > > @@ -1625,7 +1625,7 @@ out:
-> > >  static unsigned int mce_poll(struct file *file, poll_table *wait)
-> > >  {
-> > >  	poll_wait(file, &mce_wait, wait);
-> > > -	if (rcu_dereference_check_mce(mcelog.next))
-> > > +	if (rcu_access_pointer(mcelog.next))
-> > 
-> > this doesn't compile (mcelog.next is an index):
-> > 
-> > arch/x86/kernel/cpu/mcheck/mce.c: In function ‘mce_poll’:
-> > arch/x86/kernel/cpu/mcheck/mce.c:1628: error: invalid type argument of
-> > ‘unary *’ (have ‘unsigned int’)
-> > arch/x86/kernel/cpu/mcheck/mce.c:1628: warning: type defaults to ‘int’
-> > in declaration of ‘_________p1’
-> > arch/x86/kernel/cpu/mcheck/mce.c:1628: error: invalid type argument of
-> > ‘unary *’ (have ‘unsigned int’)
-> > arch/x86/kernel/cpu/mcheck/mce.c:1628: warning: type defaults to ‘int’
-> > in declaration of ‘type name’
-> > arch/x86/kernel/cpu/mcheck/mce.c:1628: warning: cast to pointer from
-> > integer of different size
-> > arch/x86/kernel/cpu/mcheck/mce.c:1628: error: invalid type argument of
-> > ‘unary *’ (have ‘unsigned int’)
-> > arch/x86/kernel/cpu/mcheck/mce.c:1628: warning: type defaults to ‘int’
-> > in declaration of ‘type name’
-> > make[4]: *** [arch/x86/kernel/cpu/mcheck/mce.o] Error 1
-> > 
-> > 
-> > Since the mutex is independent, what about this patch?
+On Tue, Nov 09, 2010 at 01:41:40PM -0800, john stultz wrote:
+> > It may happen with opportunistic suspend if the system boots very fast.
 > 
-> Looks good to me!
+> Right, but a system using opportunistic suspend will have a hard enough
+> time keeping close NTP sync on its own given the frequent switching
+> between the fine-grained ntp adjusted clocksource during run-time and
+> the coarse non-adjusted RTC/persisitent_clock while suspended.
 > 
-> Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> So I think such a system would be fine it falls back to using just the
+> boot-calibration for TSC freq rather then the refined calibration freq
+> calculated by this patch (which will happen automatically if the refined
+> calibration is off by 1%).
 > 
+> Does that seem like a reasonable tradeoff?
 
-Andi, any further thoughts?
+Yes it sounds good to me.  Some inaccuracy in this case is fine I guess.
+Just major inaccuracy or a crash or hang wouldn't be good.
 
-Thanks,
-Davidlohr
-
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
