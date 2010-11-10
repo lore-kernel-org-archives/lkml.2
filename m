@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab0KJMsl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 07:48:41 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:24048 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755817Ab0KJMsi (ORCPT
+	id S1755953Ab0KJMsv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 07:48:51 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:19080 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755926Ab0KJMsq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 07:48:38 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6162"; a="61338798"
+	Wed, 10 Nov 2010 07:48:46 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6162"; a="61428857"
 From: Trilok Soni <tsoni@codeaurora.org>
 To: linux-kernel@vger.kernel.org
 Cc: linux-input@vger.kernel.org, rtc-linux@googlegroups.com,
-        linux-arm-msm@vger.kernel.org, Trilok Soni <tsoni@codeaurora.org>,
+        linux-arm-msm@vger.kernel.org, Anirudh Ghayal <aghayal@codeaurora.org>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [RFC v1 PATCH 2/6] input: pm8058_keypad: Qualcomm PMIC8058 keypad controller driver
-Date: Wed, 10 Nov 2010 18:17:57 +0530
-Message-Id: <1289393281-4459-3-git-send-email-tsoni@codeaurora.org>
+Subject: [RFC v1 PATCH 5/6] input: pmic8058-othc: Add support for PM8058 based OTHC
+Date: Wed, 10 Nov 2010 18:18:00 +0530
+Message-Id: <1289393281-4459-6-git-send-email-tsoni@codeaurora.org>
 X-Mailer: git-send-email 1.7.0.2
 In-Reply-To: <1289393281-4459-1-git-send-email-tsoni@codeaurora.org>
 References: <1289393281-4459-1-git-send-email-tsoni@codeaurora.org>
@@ -23,61 +23,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add Qualcomm PMIC8058 based keypad controller driver
-supporting upto 18x8 matrix configuration.
+From: Anirudh Ghayal <aghayal@codeaurora.org>
+
+One-touch headset controller is a hardware module in Qualcomm's PMIC8058.
+It supports headset insert/remove and switch press/release detection events
+over 3 MIC BIAS lines. The MIC BIAS lines can be configured to support
+headset detection or act as regular BIAS lines.
 
 Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Signed-off-by: Trilok Soni <tsoni@codeaurora.org>
+Signed-off-by: Anirudh Ghayal <aghayal@codeaurora.org>
 ---
- drivers/input/keyboard/Kconfig           |   11 +
- drivers/input/keyboard/Makefile          |    1 +
- drivers/input/keyboard/pmic8058-keypad.c |  769 ++++++++++++++++++++++++++++++
- include/linux/input/pmic8058-keypad.h    |   58 +++
- 4 files changed, 839 insertions(+), 0 deletions(-)
- create mode 100644 drivers/input/keyboard/pmic8058-keypad.c
- create mode 100644 include/linux/input/pmic8058-keypad.h
+ drivers/input/misc/Kconfig          |   10 +
+ drivers/input/misc/Makefile         |    1 +
+ drivers/input/misc/pmic8058-othc.c  |  544 +++++++++++++++++++++++++++++++++++
+ include/linux/input/pmic8058-othc.h |  117 ++++++++
+ 4 files changed, 672 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/input/misc/pmic8058-othc.c
+ create mode 100644 include/linux/input/pmic8058-othc.h
 
-diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
-index b8c51b9..d536acb 100644
---- a/drivers/input/keyboard/Kconfig
-+++ b/drivers/input/keyboard/Kconfig
-@@ -364,6 +364,17 @@ config KEYBOARD_PXA930_ROTARY
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index aeb9165..df6097c 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -359,6 +359,16 @@ config INPUT_PMIC8058_PWRKEY
  	  To compile this driver as a module, choose M here: the
- 	  module will be called pxa930_rotary.
+ 	  module will be called pmic8058-pwrkey.
  
-+config KEYBOARD_PMIC8058
-+	tristate "Qualcomm PMIC8058 keypad support"
++config INPUT_PMIC8058_OTHC
++	tristate "Qualcomm PMIC8058 OTHC support"
 +	depends on PMIC8058
 +	help
-+	  Say Y here if you want to enable the driver for the PMIC8058
-+	  keypad provided as a reference design from Qualcomm. This is intended
-+	  to support upto 18x8 matrix based keypad design.
++	  Say Y here if you want support PMIC8058 One-touch Headset Controller
++	  (OTHC)
 +
-+	  To compile this driver as a module, choose M here: the module will
-+	  be called pmic8058-keypad.
++	  To compile this driver as a module, choose M here: the
++	  module will be called pmic8058-othc.
 +
- config KEYBOARD_SAMSUNG
- 	tristate "Samsung keypad support"
- 	depends on SAMSUNG_DEV_KEYPAD
-diff --git a/drivers/input/keyboard/Makefile b/drivers/input/keyboard/Makefile
-index a34452e..9ff8dbe 100644
---- a/drivers/input/keyboard/Makefile
-+++ b/drivers/input/keyboard/Makefile
-@@ -34,6 +34,7 @@ obj-$(CONFIG_KEYBOARD_OMAP4)		+= omap4-keypad.o
- obj-$(CONFIG_KEYBOARD_OPENCORES)	+= opencores-kbd.o
- obj-$(CONFIG_KEYBOARD_PXA27x)		+= pxa27x_keypad.o
- obj-$(CONFIG_KEYBOARD_PXA930_ROTARY)	+= pxa930_rotary.o
-+obj-$(CONFIG_KEYBOARD_PMIC8058)		+= pmic8058-keypad.o
- obj-$(CONFIG_KEYBOARD_QT2160)		+= qt2160.o
- obj-$(CONFIG_KEYBOARD_SAMSUNG)		+= samsung-keypad.o
- obj-$(CONFIG_KEYBOARD_SH_KEYSC)		+= sh_keysc.o
-diff --git a/drivers/input/keyboard/pmic8058-keypad.c b/drivers/input/keyboard/pmic8058-keypad.c
+ config INPUT_GPIO_ROTARY_ENCODER
+ 	tristate "Rotary encoders connected to GPIO pins"
+ 	depends on GPIOLIB && GENERIC_GPIO
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index c4357a0..a713370 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -29,6 +29,7 @@ obj-$(CONFIG_INPUT_PCAP)		+= pcap_keys.o
+ obj-$(CONFIG_INPUT_PCF50633_PMU)	+= pcf50633-input.o
+ obj-$(CONFIG_INPUT_PCF8574)		+= pcf8574_keypad.o
+ obj-$(CONFIG_INPUT_PCSPKR)		+= pcspkr.o
++obj-$(CONFIG_INPUT_PMIC8058_OTHC)	+= pmic8058-othc.o
+ obj-$(CONFIG_INPUT_POWERMATE)		+= powermate.o
+ obj-$(CONFIG_INPUT_PWM_BEEPER)		+= pwm-beeper.o
+ obj-$(CONFIG_INPUT_PMIC8058_PWRKEY)	+= pmic8058-pwrkey.o
+diff --git a/drivers/input/misc/pmic8058-othc.c b/drivers/input/misc/pmic8058-othc.c
 new file mode 100644
-index 0000000..77ddda6
+index 0000000..78f157a
 --- /dev/null
-+++ b/drivers/input/keyboard/pmic8058-keypad.c
-@@ -0,0 +1,769 @@
-+/* Copyright (c) 2009-2010, Code Aurora Forum. All rights reserved.
++++ b/drivers/input/misc/pmic8058-othc.c
+@@ -0,0 +1,544 @@
++/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
@@ -92,767 +95,542 @@ index 0000000..77ddda6
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 + * 02110-1301, USA.
-+ *
 + */
++
++#define pr_fmt(fmt) "%s:" fmt, __func__
 +
 +#include <linux/module.h>
-+#include <linux/platform_device.h>
++#include <linux/init.h>
 +#include <linux/kernel.h>
-+#include <linux/interrupt.h>
 +#include <linux/slab.h>
++#include <linux/interrupt.h>
 +#include <linux/input.h>
-+#include <linux/bitops.h>
++#include <linux/platform_device.h>
++#include <linux/pm.h>
++
 +#include <linux/mfd/pmic8058.h>
-+#include <linux/delay.h>
++#include <linux/input/pmic8058-othc.h>
 +
-+#include <linux/input/pmic8058-keypad.h>
++#define PM8058_OTHC_LOW_CURR_MASK	0xF0
++#define PM8058_OTHC_HIGH_CURR_MASK	0x0F
++#define PM8058_OTHC_EN_SIG_MASK		0x3F
++#define PM8058_OTHC_HYST_PREDIV_MASK	0xC7
++#define PM8058_OTHC_CLK_PREDIV_MASK	0xF8
++#define PM8058_OTHC_HYST_CLK_MASK	0x0F
++#define PM8058_OTHC_PERIOD_CLK_MASK	0xF0
 +
-+#define PM8058_MAX_ROWS		18
-+#define PM8058_MAX_COLS		8
-+#define PM8058_ROW_SHIFT	3
-+#define PM8058_MATRIX_MAX_SIZE	(PM8058_MAX_ROWS * PM8058_MAX_COLS)
++#define PM8058_OTHC_LOW_CURR_SHIFT	0x4
++#define PM8058_OTHC_EN_SIG_SHIFT	0x6
++#define PM8058_OTHC_HYST_PREDIV_SHIFT	0x3
++#define PM8058_OTHC_HYST_CLK_SHIFT	0x4
 +
-+#define PM8058_MIN_ROWS		5
-+#define PM8058_MIN_COLS		5
-+
-+#define MAX_SCAN_DELAY		128
-+#define MIN_SCAN_DELAY		1
-+
-+/* in nanoseconds */
-+#define MAX_ROW_HOLD_DELAY	122000
-+#define MIN_ROW_HOLD_DELAY	30500
-+
-+#define MAX_DEBOUNCE_TIME	20
-+#define MIN_DEBOUNCE_TIME	5
-+
-+#define KEYP_CTRL			0x148
-+
-+#define KEYP_CTRL_EVNTS			BIT(0)
-+#define KEYP_CTRL_EVNTS_MASK		0x3
-+
-+#define KEYP_CTRL_SCAN_COLS_SHIFT	5
-+#define KEYP_CTRL_SCAN_COLS_MIN		5
-+#define KEYP_CTRL_SCAN_COLS_BITS	0x3
-+
-+#define KEYP_CTRL_SCAN_ROWS_SHIFT	2
-+#define KEYP_CTRL_SCAN_ROWS_MIN		5
-+#define KEYP_CTRL_SCAN_ROWS_BITS	0x7
-+
-+#define KEYP_CTRL_KEYP_EN		BIT(7)
-+
-+#define KEYP_SCAN			0x149
-+
-+#define KEYP_SCAN_READ_STATE		BIT(0)
-+#define KEYP_SCAN_DBOUNCE_SHIFT		1
-+#define KEYP_SCAN_PAUSE_SHIFT		3
-+#define KEYP_SCAN_ROW_HOLD_SHIFT	6
-+
-+#define KEYP_TEST			0x14A
-+
-+#define KEYP_TEST_CLEAR_RECENT_SCAN	BIT(6)
-+#define KEYP_TEST_CLEAR_OLD_SCAN	BIT(5)
-+#define KEYP_TEST_READ_RESET		BIT(4)
-+#define KEYP_TEST_DTEST_EN		BIT(3)
-+#define KEYP_TEST_ABORT_READ		BIT(0)
-+
-+#define KEYP_TEST_DBG_SELECT_SHIFT	1
-+
-+/* bits of these registers represent
-+ * '0' for key press
-+ * '1' for key release
-+ */
-+#define KEYP_RECENT_DATA		0x14B
-+#define KEYP_OLD_DATA			0x14C
-+
-+#define KEYP_CLOCK_FREQ			32768
++#define PM8058_OTHC_LOW_CURR_MIRROR	10
++#define PM8058_OTHC_HIGH_CURR_MIRROR	100
++#define PM8058_OTHC_CLK_SRC_SHIFT	10
 +
 +/**
-+ * struct pmic8058_kp - internal keypad data structure
-+ * @pdata - keypad platform data pointer
-+ * @input - input device pointer for keypad
-+ * @key_sense_irq - key press/release irq number
-+ * @key_stuck_irq - key stuck notification irq number
-+ * @keycodes - array to hold the key codes
-+ * @dev - parent device pointer
-+ * @keystate - present key press/release state
-+ * @stuckstate - present state when key stuck irq
-+ * @pm_chip - parent MFD core device
-+ * @ctrl_reg - control register value
++ * struct pm8058_othc - othc driver data structure
++ * @othc_ipd: input device for othc
++ * @othc_pdata:	a pointer to the platform data
++ * @othc_base: base address of the OTHC controller
++ * @othc_irq_sw: switch detect irq number
++ * @othc_irq_ir: headset jack detect irq number
++ * @othc_sw_state: current state of the switch
++ * @othc_ir_state: current state of the headset
++ * @switch_reject: indicates if valid switch press
++ * @switch_debounce_ms: the debounce time for the switch
++ * @lock: spin lock variable
++ * @timer: timer for switch debounce time
++ * @pm_chip: pointer to the pm8058 parent chip
 + */
-+struct pmic8058_kp {
-+	const struct pmic8058_keypad_data *pdata;
-+	struct input_dev *input;
-+	int key_sense_irq;
-+	int key_stuck_irq;
-+
-+	unsigned short *keycodes;
-+
-+	struct device *dev;
-+	u16 keystate[PM8058_MAX_ROWS];
-+	u16 stuckstate[PM8058_MAX_ROWS];
-+
-+	struct pm8058_chip	*pm_chip;
-+
-+	u8			ctrl_reg;
++struct pm8058_othc {
++	struct input_dev *othc_ipd;
++	struct pmic8058_othc_config_pdata *othc_pdata;
++	int othc_base;
++	int othc_irq_sw;
++	int othc_irq_ir;
++	bool othc_sw_state;
++	bool othc_ir_state;
++	bool switch_reject;
++	unsigned long switch_debounce_ms;
++	spinlock_t lock;
++	struct timer_list timer;
++	struct pm8058_chip *pm_chip;
 +};
 +
-+static int pmic8058_kp_write_u8(struct pmic8058_kp *kp,
-+				 u8 data, u16 reg)
-+{
-+	int rc;
++static struct pm8058_othc *config[OTHC_MICBIAS_MAX];
 +
-+	rc = pm8058_write(kp->pm_chip, reg, &data, 1);
-+	if (rc < 0)
-+		dev_warn(kp->dev, "Error writing pmic8058: %X - ret %X\n",
-+				reg, rc);
-+	return rc;
-+}
-+
-+static int pmic8058_kp_read(struct pmic8058_kp *kp,
-+				 u8 *data, u16 reg, unsigned num_bytes)
-+{
-+	int rc;
-+
-+	rc = pm8058_read(kp->pm_chip, reg, data, num_bytes);
-+	if (rc < 0)
-+		dev_warn(kp->dev, "Error reading pmic8058: %X - ret %X\n",
-+				reg, rc);
-+
-+	return rc;
-+}
-+
-+static int pmic8058_kp_read_u8(struct pmic8058_kp *kp,
-+				 u8 *data, u16 reg)
-+{
-+	int rc;
-+
-+	rc = pmic8058_kp_read(kp, data, reg, 1);
-+	if (rc < 0)
-+		dev_warn(kp->dev, "Error reading pmic8058: %X - ret %X\n",
-+				reg, rc);
-+	return rc;
-+}
-+
-+static u8 pmic8058_col_state(struct pmic8058_kp *kp, u8 col)
-+{
-+	/* all keys pressed on that particular row? */
-+	if (col == 0x00)
-+		return 1 << kp->pdata->num_cols;
-+	else
-+		return col & ((1 << kp->pdata->num_cols) - 1);
-+}
-+
-+/*
-+ * Synchronous read protocol for RevB0 onwards:
++/**
++ * pm8058_micbias_enable() - Enables/Disables the MIC_BIAS
++ * @micbias:	MIC BIAS line which needs to be enabled
++ * @enable:	operational state for the MIC BIAS line
 + *
-+ * 1. Write '1' to ReadState bit in KEYP_SCAN register
-+ * 2. Wait 2*32KHz clocks, so that HW can successfully enter read mode
-+ *    synchronously
-+ * 3. Read rows in old array first if events are more than one
-+ * 4. Read rows in recent array
-+ * 5. Wait 4*32KHz clocks
-+ * 6. Write '0' to ReadState bit of KEYP_SCAN register so that hw can
-+ *    synchronously exit read mode.
++ * The API pm8058_micbias_enable()  configures the MIC_BIAS. Only the lines
++ * which are not used for headset detection can be configured using this API.
++ * The API returns an error code if it fails to configure, else it returns 0.
 + */
-+static int pmic8058_chk_sync_read(struct pmic8058_kp *kp)
++int pm8058_micbias_enable(enum othc_micbias micbias,
++		enum othc_micbias_enable enable)
 +{
 +	int rc;
-+	u8 scan_val;
-+
-+	rc = pmic8058_kp_read_u8(kp, &scan_val, KEYP_SCAN);
-+	if (rc < 0)
-+		return rc;
-+
-+	scan_val |= 0x1;
-+
-+	rc = pmic8058_kp_write_u8(kp, scan_val, KEYP_SCAN);
-+	if (rc < 0)
-+		return rc;
-+
-+	/* 2 * 32KHz clocks */
-+	udelay((2 * DIV_ROUND_UP(USEC_PER_SEC, KEYP_CLOCK_FREQ)) + 1);
-+
-+	return rc;
-+}
-+
-+static int pmic8058_kp_read_data(struct pmic8058_kp *kp, u16 *state,
-+					u16 data_reg, int read_rows)
-+{
-+	int rc, row;
-+	u8 new_data[PM8058_MAX_ROWS];
-+
-+	rc = pmic8058_kp_read(kp, new_data, data_reg, read_rows);
-+
-+	if (!rc) {
-+		for (row = 0; row < kp->pdata->num_rows; row++) {
-+			dev_dbg(kp->dev, "new_data[%d] = %d\n", row,
-+						new_data[row]);
-+			state[row] = pmic8058_col_state(kp, new_data[row]);
-+		}
-+	}
-+
-+	return rc;
-+}
-+
-+static int pmic8058_kp_read_matrix(struct pmic8058_kp *kp, u16 *new_state,
-+					 u16 *old_state)
-+{
-+	int rc, read_rows;
-+	u8 scan_val;
-+
-+	read_rows = kp->pdata->num_rows;
-+
-+	pmic8058_chk_sync_read(kp);
-+
-+	if (old_state) {
-+		rc = pmic8058_kp_read_data(kp, old_state, KEYP_OLD_DATA,
-+						read_rows);
-+		if (rc < 0)
-+			return rc;
-+	}
-+
-+	rc = pmic8058_kp_read_data(kp, new_state, KEYP_RECENT_DATA,
-+					 read_rows);
-+	if (rc < 0)
-+		return rc;
-+
-+	/* 4 * 32KHz clocks */
-+	udelay((4 * DIV_ROUND_UP(USEC_PER_SEC, KEYP_CLOCK_FREQ)) + 1);
-+
-+	rc = pmic8058_kp_read_u8(kp, &scan_val, KEYP_SCAN);
-+	if (rc < 0)
-+		return rc;
-+	scan_val &= 0xFE;
-+	rc = pmic8058_kp_write_u8(kp, scan_val, KEYP_SCAN);
-+	if (rc < 0)
-+		return rc;
-+
-+	return rc;
-+}
-+
-+static void __pmic8058_kp_scan_matrix(struct pmic8058_kp *kp, u16 *new_state,
-+					 u16 *old_state)
-+{
-+	int row, col, code;
-+
-+	for (row = 0; row < kp->pdata->num_rows; row++) {
-+		int bits_changed = new_state[row] ^ old_state[row];
-+
-+		if (!bits_changed)
-+			continue;
-+
-+		for (col = 0; col < kp->pdata->num_cols; col++) {
-+			if (!(bits_changed & (1 << col)))
-+				continue;
-+
-+			dev_dbg(kp->dev, "key [%d:%d] %s\n", row, col,
-+					!(new_state[row] & (1 << col)) ?
-+					"pressed" : "released");
-+
-+			code = MATRIX_SCAN_CODE(row, col, PM8058_ROW_SHIFT);
-+			input_event(kp->input, EV_MSC, MSC_SCAN, code);
-+			input_report_key(kp->input,
-+					kp->keycodes[code],
-+					!(new_state[row] & (1 << col)));
-+
-+			input_sync(kp->input);
-+		}
-+	}
-+}
-+
-+static int pmic8058_detect_ghost_keys(struct pmic8058_kp *kp, u16 *new_state)
-+{
-+	int row, found_first = -1;
-+	u16 check, row_state;
-+
-+	check = 0;
-+	for (row = 0; row < kp->pdata->num_rows; row++) {
-+		row_state = (~new_state[row]) &
-+				 ((1 << kp->pdata->num_cols) - 1);
-+
-+		if (hweight16(row_state) > 1) {
-+			if (found_first == -1)
-+				found_first = row;
-+			if (check & row_state) {
-+				dev_dbg(kp->dev, "detected ghost key on row[%d]"
-+					 " and row[%d]\n", found_first, row);
-+				return 1;
-+			}
-+		}
-+		check |= row_state;
-+	}
-+	return 0;
-+}
-+
-+static int pmic8058_kp_scan_matrix(struct pmic8058_kp *kp, unsigned int events)
-+{
-+	u16 new_state[PM8058_MAX_ROWS];
-+	u16 old_state[PM8058_MAX_ROWS];
-+	int rc;
-+
-+	switch (events) {
-+	case 0x1:
-+		rc = pmic8058_kp_read_matrix(kp, new_state, NULL);
-+		if (rc < 0)
-+			return rc;
-+
-+		/* detecting ghost key is not an error */
-+		if (pmic8058_detect_ghost_keys(kp, new_state))
-+			return 0;
-+		__pmic8058_kp_scan_matrix(kp, new_state, kp->keystate);
-+		memcpy(kp->keystate, new_state, sizeof(new_state));
-+	break;
-+	case 0x3: /* two events - eventcounter is gray-coded */
-+		rc = pmic8058_kp_read_matrix(kp, new_state, old_state);
-+		if (rc < 0)
-+			return rc;
-+
-+		__pmic8058_kp_scan_matrix(kp, old_state, kp->keystate);
-+		__pmic8058_kp_scan_matrix(kp, new_state, old_state);
-+		memcpy(kp->keystate, new_state, sizeof(new_state));
-+	break;
-+	case 0x2:
-+		dev_dbg(kp->dev, "Some key events were lost\n");
-+		rc = pmic8058_kp_read_matrix(kp, new_state, old_state);
-+		if (rc < 0)
-+			return rc;
-+		__pmic8058_kp_scan_matrix(kp, old_state, kp->keystate);
-+		__pmic8058_kp_scan_matrix(kp, new_state, old_state);
-+		memcpy(kp->keystate, new_state, sizeof(new_state));
-+	break;
-+	default:
-+		rc = -EINVAL;
-+	}
-+	return rc;
-+}
-+
-+/*
-+ * NOTE: We are reading recent and old data registers blindly
-+ * whenever key-stuck interrupt happens, because events counter doesn't
-+ * get updated when this interrupt happens due to key stuck doesn't get
-+ * considered as key state change.
-+ *
-+ * We are not using old data register contents after they are being read
-+ * because it might report the key which was pressed before the key being stuck
-+ * as stuck key because it's pressed status is stored in the old data
-+ * register.
-+ */
-+static irqreturn_t pmic8058_kp_stuck_irq(int irq, void *data)
-+{
-+	u16 new_state[PM8058_MAX_ROWS];
-+	u16 old_state[PM8058_MAX_ROWS];
-+	int rc;
-+	struct pmic8058_kp *kp = data;
-+
-+	rc = pmic8058_kp_read_matrix(kp, new_state, old_state);
-+	if (rc < 0) {
-+		dev_err(kp->dev, "failed to read keypad matrix\n");
-+		return IRQ_HANDLED;
-+	}
-+
-+	__pmic8058_kp_scan_matrix(kp, new_state, kp->stuckstate);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static irqreturn_t pmic8058_kp_irq(int irq, void *data)
-+{
-+	struct pmic8058_kp *kp = data;
-+	u8 ctrl_val, events;
-+	int rc;
-+
-+	rc = pmic8058_kp_read(kp, &ctrl_val, KEYP_CTRL, 1);
-+	if (rc < 0) {
-+		dev_err(kp->dev, "failed to read keyp_ctrl register\n");
-+		return IRQ_HANDLED;
-+	}
-+
-+	events = ctrl_val & KEYP_CTRL_EVNTS_MASK;
-+
-+	rc = pmic8058_kp_scan_matrix(kp, events);
-+	if (rc < 0)
-+		dev_err(kp->dev, "failed to scan matrix\n");
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int pmic8058_kpd_init(struct pmic8058_kp *kp)
-+{
-+	int bits, rc, cycles;
-+	u8 scan_val = 0, ctrl_val = 0;
-+	static u8 row_bits[] = {
-+		0, 1, 2, 3, 4, 4, 5, 5, 6, 6, 6, 7, 7, 7,
-+	};
-+
-+	/* Find column bits */
-+	if (kp->pdata->num_cols < KEYP_CTRL_SCAN_COLS_MIN)
-+		bits = 0;
-+	else
-+		bits = kp->pdata->num_cols - KEYP_CTRL_SCAN_COLS_MIN;
-+	ctrl_val = (bits & KEYP_CTRL_SCAN_COLS_BITS) <<
-+		KEYP_CTRL_SCAN_COLS_SHIFT;
-+
-+	/* Find row bits */
-+	if (kp->pdata->num_rows < KEYP_CTRL_SCAN_ROWS_MIN)
-+		bits = 0;
-+	else
-+		bits = row_bits[kp->pdata->num_rows - KEYP_CTRL_SCAN_ROWS_MIN];
-+
-+	ctrl_val |= (bits << KEYP_CTRL_SCAN_ROWS_SHIFT);
-+
-+	rc = pmic8058_kp_write_u8(kp, ctrl_val, KEYP_CTRL);
-+	if (rc < 0)
-+		return rc;
-+
-+	bits = (kp->pdata->debounce_ms / 5) - 1;
-+
-+	scan_val |= (bits << KEYP_SCAN_DBOUNCE_SHIFT);
-+
-+	bits = fls(kp->pdata->scan_delay_ms) - 1;
-+	scan_val |= (bits << KEYP_SCAN_PAUSE_SHIFT);
-+
-+	/* Row hold time is a multiple of 32KHz cycles. */
-+	cycles = (kp->pdata->row_hold_ns * KEYP_CLOCK_FREQ) / NSEC_PER_SEC;
-+
-+	scan_val |= (cycles << KEYP_SCAN_ROW_HOLD_SHIFT);
-+
-+	rc = pmic8058_kp_write_u8(kp, scan_val, KEYP_SCAN);
-+
-+	return rc;
-+}
-+
-+static int pmic8058_kp_enable(struct pmic8058_kp *kp)
-+{
-+	int rc;
-+
-+	kp->ctrl_reg |= KEYP_CTRL_KEYP_EN;
-+
-+	rc = pmic8058_kp_write_u8(kp, kp->ctrl_reg, KEYP_CTRL);
-+	if (rc < 0)
-+		return rc;
-+
-+	enable_irq(kp->key_sense_irq);
-+	enable_irq(kp->key_stuck_irq);
-+
-+	return rc;
-+}
-+
-+static int pmic8058_kp_disable(struct pmic8058_kp *kp)
-+{
-+	int rc;
-+
-+	kp->ctrl_reg &= ~KEYP_CTRL_KEYP_EN;
-+
-+	rc = pmic8058_kp_write_u8(kp, kp->ctrl_reg, KEYP_CTRL);
-+	if (rc < 0)
-+		return rc;
-+
-+	disable_irq(kp->key_sense_irq);
-+	disable_irq(kp->key_stuck_irq);
-+
-+	return rc;
-+}
-+
-+static int pmic8058_kp_open(struct input_dev *dev)
-+{
-+	struct pmic8058_kp *kp = input_get_drvdata(dev);
-+
-+	return pmic8058_kp_enable(kp);
-+}
-+
-+static void pmic8058_kp_close(struct input_dev *dev)
-+{
-+	struct pmic8058_kp *kp = input_get_drvdata(dev);
-+
-+	pmic8058_kp_disable(kp);
-+}
-+
-+/*
-+ * keypad controller should be initialized in the following sequence
-+ * only, otherwise it might get into FSM stuck state.
-+ *
-+ * - Initialize keypad control parameters, like no. of rows, columns,
-+ *   timing values etc.,
-+ * - configure rows and column gpios pull up/down.
-+ * - set irq edge type.
-+ * - enable the keypad controller.
-+ */
-+static int __devinit pmic8058_kp_probe(struct platform_device *pdev)
-+{
-+	struct pmic8058_keypad_data *pdata = pdev->dev.platform_data;
-+	const struct matrix_keymap_data *keymap_data;
-+	struct pmic8058_kp *kp;
-+	int rc;
-+	unsigned short *keycodes;
-+	u8 ctrl_val;
-+	struct pm8058_chip	*pm_chip;
-+
-+	pm_chip = platform_get_drvdata(pdev);
-+	if (pm_chip == NULL) {
-+		dev_err(&pdev->dev, "no parent data passed in\n");
-+		return -EFAULT;
-+	}
-+
-+	/* Check PMIC8058 version. A0 version is not supported */
-+	if (pm8058_rev(pm_chip) == PM_8058_REV_1p0) {
-+		dev_err(&pdev->dev, "PMIC8058 1.0 version is not supported\n");
++	u8 reg;
++	struct pm8058_othc *dd = config[micbias];
++
++	if (dd == NULL) {
++		pr_err("MIC_BIAS not registered, cannot enable\n");
 +		return -ENODEV;
 +	}
 +
-+	if (!pdata || !pdata->num_cols || !pdata->num_rows ||
-+		pdata->num_cols > PM8058_MAX_COLS ||
-+		pdata->num_rows > PM8058_MAX_ROWS ||
-+		pdata->num_cols < PM8058_MIN_COLS ||
-+		pdata->num_rows < PM8058_MIN_ROWS) {
-+		dev_err(&pdev->dev, "invalid platform data\n");
++	if (dd->othc_pdata->micbias_capability != OTHC_MICBIAS) {
++		pr_err("MIC_BIAS enable capability not supported\n");
 +		return -EINVAL;
 +	}
 +
-+	if (pdata->rows_gpio_start < 0 || pdata->cols_gpio_start < 0) {
-+		dev_err(&pdev->dev, "invalid gpio_start platform data\n");
-+		return -EINVAL;
++	rc = pm8058_read(dd->pm_chip, dd->othc_base + 1, &reg, 1);
++	if (rc < 0) {
++		pr_err("PM8058 read failed\n");
++		return rc;
 +	}
 +
-+	if (!pdata->scan_delay_ms || pdata->scan_delay_ms > MAX_SCAN_DELAY
-+		|| pdata->scan_delay_ms < MIN_SCAN_DELAY ||
-+		!is_power_of_2(pdata->scan_delay_ms)) {
-+		dev_err(&pdev->dev, "invalid keypad scan time supplied\n");
-+		return -EINVAL;
++	reg &= PM8058_OTHC_EN_SIG_MASK;
++	reg |= (enable << PM8058_OTHC_EN_SIG_SHIFT);
++
++	rc = pm8058_write(dd->pm_chip, dd->othc_base + 1, &reg, 1);
++	if (rc < 0) {
++		pr_err("PM8058 write failed\n");
++		return rc;
 +	}
 +
-+	if (!pdata->row_hold_ns || pdata->row_hold_ns > MAX_ROW_HOLD_DELAY
-+		|| pdata->row_hold_ns < MIN_ROW_HOLD_DELAY ||
-+		((pdata->row_hold_ns % MIN_ROW_HOLD_DELAY) != 0)) {
-+		dev_err(&pdev->dev, "invalid keypad row hold time supplied\n");
-+		return -EINVAL;
++	return rc;
++}
++EXPORT_SYMBOL(pm8058_micbias_enable);
++
++#ifdef CONFIG_PM
++static int pm8058_othc_suspend(struct device *dev)
++{
++	struct pm8058_othc *dd = dev_get_drvdata(dev);
++
++	if (dd->othc_pdata->micbias_capability == OTHC_MICBIAS_HSED) {
++		if (device_may_wakeup(dev)) {
++			enable_irq_wake(dd->othc_irq_sw);
++			enable_irq_wake(dd->othc_irq_ir);
++		}
 +	}
 +
-+	if (!pdata->debounce_ms
-+		|| ((pdata->debounce_ms % 5) != 0)
-+		|| pdata->debounce_ms > MAX_DEBOUNCE_TIME
-+		|| pdata->debounce_ms < MIN_DEBOUNCE_TIME) {
-+		dev_err(&pdev->dev, "invalid debounce time supplied\n");
-+		return -EINVAL;
++	return 0;
++}
++
++static int pm8058_othc_resume(struct device *dev)
++{
++	struct pm8058_othc *dd = dev_get_drvdata(dev);
++
++	if (dd->othc_pdata->micbias_capability == OTHC_MICBIAS_HSED) {
++		if (device_may_wakeup(dev)) {
++			disable_irq_wake(dd->othc_irq_sw);
++			disable_irq_wake(dd->othc_irq_ir);
++		}
 +	}
 +
-+	keymap_data = pdata->keymap_data;
-+	if (!keymap_data) {
-+		dev_err(&pdev->dev, "no keymap data supplied\n");
-+		return -EINVAL;
++	return 0;
++}
++
++static const struct dev_pm_ops pm8058_othc_pm_ops = {
++	.suspend = pm8058_othc_suspend,
++	.resume = pm8058_othc_resume,
++};
++#endif
++
++static int __devexit pm8058_othc_remove(struct platform_device *pd)
++{
++	struct pm8058_othc *dd = platform_get_drvdata(pd);
++
++	if (dd->othc_pdata->micbias_capability == OTHC_MICBIAS_HSED) {
++		device_init_wakeup(&pd->dev, 0);
++		free_irq(dd->othc_irq_sw, dd);
++		free_irq(dd->othc_irq_ir, dd);
++		del_timer_sync(&dd->timer);
++		input_unregister_device(dd->othc_ipd);
 +	}
 +
-+	kp = kzalloc(sizeof(*kp), GFP_KERNEL);
-+	if (!kp)
-+		return -ENOMEM;
++	kfree(dd);
 +
-+	keycodes = kzalloc(PM8058_MATRIX_MAX_SIZE * sizeof(*keycodes),
-+				 GFP_KERNEL);
-+	if (!keycodes) {
++	return 0;
++}
++
++static void pm8058_othc_timer(unsigned long handle)
++{
++	unsigned long flags;
++	struct pm8058_othc *dd = (struct pm8058_othc *)handle;
++
++	spin_lock_irqsave(&dd->lock, flags);
++	dd->switch_reject = false;
++	spin_unlock_irqrestore(&dd->lock, flags);
++}
++
++static irqreturn_t pm8058_no_sw(int irq, void *dev_id)
++{
++	struct pm8058_othc *dd = dev_id;
++	unsigned long flags;
++
++	/*
++	 * Due to a hardware bug, spurious switch interrutps are seen while
++	 * inserting the headset slowly. A timer based logic rejects these
++	 * switch interrutps.
++	 */
++	spin_lock_irqsave(&dd->lock, flags);
++	if (dd->switch_reject == true) {
++		spin_unlock_irqrestore(&dd->lock, flags);
++		return IRQ_HANDLED;
++	}
++	spin_unlock_irqrestore(&dd->lock, flags);
++
++	if (dd->othc_sw_state == false) {
++		dd->othc_sw_state = true;
++		input_report_key(dd->othc_ipd, KEY_MEDIA, 1);
++	} else if (dd->othc_sw_state == true) {
++		dd->othc_sw_state = false;
++		input_report_key(dd->othc_ipd, KEY_MEDIA, 0);
++	}
++	input_sync(dd->othc_ipd);
++
++	return IRQ_HANDLED;
++}
++
++static irqreturn_t pm8058_nc_ir(int irq, void *dev_id)
++{
++	unsigned long flags;
++	struct pm8058_othc *dd = dev_id;
++
++	spin_lock_irqsave(&dd->lock, flags);
++	dd->switch_reject = true;
++	spin_unlock_irqrestore(&dd->lock, flags);
++
++	mod_timer(&dd->timer, jiffies +
++		msecs_to_jiffies(dd->switch_debounce_ms));
++
++	if (dd->othc_ir_state == false) {
++		dd->othc_ir_state = true;
++		input_report_key(dd->othc_ipd, SW_HEADPHONE_INSERT, 1);
++	} else {
++		dd->othc_ir_state = false;
++		input_report_key(dd->othc_ipd, SW_HEADPHONE_INSERT, 0);
++	}
++
++	input_sync(dd->othc_ipd);
++
++	return IRQ_HANDLED;
++}
++
++static int pm8058_configure_othc(struct pm8058_othc *dd)
++{
++	int rc;
++	u8 reg, value;
++	u32 value1;
++	u16 base_addr = dd->othc_base;
++	struct othc_hsed_config *hsed_config = dd->othc_pdata->hsed_config;
++
++	/* Control Register 1*/
++	rc = pm8058_read(dd->pm_chip, base_addr, &reg, 1);
++	if (rc < 0) {
++		pr_err("PM8058 read failed\n");
++		return rc;
++	}
++
++	if (hsed_config->othc_headset == OTHC_HEADSET_NO) {
++		/* set iDAC high current threshold */
++		value = (hsed_config->othc_highcurr_thresh_uA /
++					PM8058_OTHC_HIGH_CURR_MIRROR) - 2;
++		reg =  (reg & PM8058_OTHC_HIGH_CURR_MASK) | value;
++	} else {
++		/* set iDAC low current threshold */
++		value = (hsed_config->othc_lowcurr_thresh_uA /
++					PM8058_OTHC_LOW_CURR_MIRROR) - 1;
++		reg &= PM8058_OTHC_LOW_CURR_MASK;
++		reg |= (value << PM8058_OTHC_LOW_CURR_SHIFT);
++	}
++
++	rc = pm8058_write(dd->pm_chip, base_addr, &reg, 1);
++	if (rc < 0) {
++		pr_err("PM8058 read failed\n");
++		return rc;
++	}
++
++	/* Control register 2*/
++	rc = pm8058_read(dd->pm_chip, base_addr + 1, &reg, 1);
++	if (rc < 0) {
++		pr_err("PM8058 read failed\n");
++		return rc;
++	}
++
++	value = dd->othc_pdata->micbias_enable;
++	reg &= PM8058_OTHC_EN_SIG_MASK;
++	reg |= (value << PM8058_OTHC_EN_SIG_SHIFT);
++
++	value = 0;
++	value1 = (hsed_config->othc_hyst_prediv_us <<
++				PM8058_OTHC_CLK_SRC_SHIFT) / USEC_PER_SEC;
++	while (value1 != 0) {
++		value1 = value1 >> 1;
++		value++;
++	}
++	if (value > 7) {
++		pr_err("Invalid input argument - othc_hyst_prediv_us\n");
++		return -EINVAL;
++	}
++	reg &= PM8058_OTHC_HYST_PREDIV_MASK;
++	reg |= (value << PM8058_OTHC_HYST_PREDIV_SHIFT);
++
++	value = 0;
++	value1 = (hsed_config->othc_period_clkdiv_us <<
++				PM8058_OTHC_CLK_SRC_SHIFT) / USEC_PER_SEC;
++	while (value1 != 1) {
++		value1 = value1 >> 1;
++		value++;
++	}
++	if (value > 8) {
++		pr_err("Invalid input argument - othc_period_clkdiv_us\n");
++		return -EINVAL;
++	}
++	reg = (reg &  PM8058_OTHC_CLK_PREDIV_MASK) | (value - 1);
++
++	rc = pm8058_write(dd->pm_chip, base_addr + 1, &reg, 1);
++	if (rc < 0) {
++		pr_err("PM8058 read failed\n");
++		return rc;
++	}
++
++	/* Control register 3 */
++	rc = pm8058_read(dd->pm_chip, base_addr + 2 , &reg, 1);
++	if (rc < 0) {
++		pr_err("PM8058 read failed\n");
++		return rc;
++	}
++
++	value = hsed_config->othc_hyst_clk_us /
++					hsed_config->othc_hyst_prediv_us;
++	if (value > 15) {
++		pr_err("Invalid input argument - othc_hyst_prediv_us\n");
++		return -EINVAL;
++	}
++	reg &= PM8058_OTHC_HYST_CLK_MASK;
++	reg |= value << PM8058_OTHC_HYST_CLK_SHIFT;
++
++	value = hsed_config->othc_period_clk_us /
++					hsed_config->othc_period_clkdiv_us;
++	if (value > 15) {
++		pr_err("Invalid input argument - othc_hyst_prediv_us\n");
++		return -EINVAL;
++	}
++	reg = (reg & PM8058_OTHC_PERIOD_CLK_MASK) | value;
++
++	rc = pm8058_write(dd->pm_chip, base_addr + 2, &reg, 1);
++	if (rc < 0) {
++		pr_err("PM8058 read failed\n");
++		return rc;
++	}
++
++	return 0;
++}
++
++static int
++pm8058_othc_configure_hsed(struct pm8058_othc *dd, struct platform_device *pd)
++{
++	int rc;
++	struct input_dev *ipd;
++	struct pmic8058_othc_config_pdata *pdata = pd->dev.platform_data;
++	struct othc_hsed_config *hsed_config = pdata->hsed_config;
++
++	ipd = input_allocate_device();
++	if (ipd == NULL) {
++		dev_err(&pd->dev, "Memory allocate to input device failed!\n");
 +		rc = -ENOMEM;
-+		goto err_alloc_mem;
++		goto fail_input_alloc;
 +	}
 +
-+	platform_set_drvdata(pdev, kp);
-+
-+	kp->pdata	= pdata;
-+	kp->dev		= &pdev->dev;
-+	kp->keycodes	= keycodes;
-+	kp->pm_chip	= pm_chip;
-+
-+	kp->input = input_allocate_device();
-+	if (!kp->input) {
-+		dev_err(&pdev->dev, "unable to allocate input device\n");
-+		rc = -ENOMEM;
-+		goto err_alloc_device;
-+	}
-+
-+	kp->key_sense_irq = platform_get_irq(pdev, 0);
-+	if (kp->key_sense_irq < 0) {
-+		dev_err(&pdev->dev, "unable to get keypad sense irq\n");
++	dd->othc_irq_sw = platform_get_irq(pd, 0);
++	dd->othc_irq_ir = platform_get_irq(pd, 1);
++	if (dd->othc_irq_ir < 0 || dd->othc_irq_sw < 0) {
++		dev_err(&pd->dev, "othc resource:IRQ_IR absent!\n");
 +		rc = -ENXIO;
-+		goto err_get_irq;
++		goto fail_othc_config;
 +	}
 +
-+	kp->key_stuck_irq = platform_get_irq(pdev, 1);
-+	if (kp->key_stuck_irq < 0) {
-+		dev_err(&pdev->dev, "unable to get keypad stuck irq\n");
-+		rc = -ENXIO;
-+		goto err_get_irq;
++	ipd->name = "pmic8058_othc";
++	ipd->phys = "pmic8058_othc/input0";
++	ipd->dev.parent = &pd->dev;
++
++	input_set_capability(ipd, EV_SW, SW_HEADPHONE_INSERT);
++	input_set_capability(ipd, EV_KEY, KEY_MEDIA);
++
++	input_set_drvdata(ipd, dd);
++
++	dd->othc_ipd = ipd;
++	dd->othc_sw_state = false;
++	dd->othc_ir_state = false;
++	spin_lock_init(&dd->lock);
++	dd->switch_debounce_ms = hsed_config->switch_debounce_ms;
++	setup_timer(&dd->timer, pm8058_othc_timer, (unsigned long) dd);
++
++	rc = pm8058_configure_othc(dd);
++	if (rc < 0)
++		goto fail_othc_config;
++
++	rc = input_register_device(ipd);
++	if (rc) {
++		dev_err(&pd->dev, "Register OTHC device failed!\n");
++		goto fail_othc_config;
 +	}
 +
-+	if (pdata->input_name)
-+		kp->input->name = pdata->input_name;
-+	else
-+		kp->input->name = "PMIC8058 keypad";
-+
-+	if (pdata->input_phys_device)
-+		kp->input->phys = pdata->input_phys_device;
-+	else
-+		kp->input->phys = "pmic8058_keypad/input0";
-+
-+	kp->input->dev.parent	= &pdev->dev;
-+
-+	kp->input->id.bustype	= BUS_I2C;
-+	kp->input->id.version	= 0x0001;
-+	kp->input->id.product	= 0x0001;
-+	kp->input->id.vendor	= 0x0001;
-+
-+	kp->input->evbit[0]	= BIT_MASK(EV_KEY);
-+
-+	if (pdata->rep)
-+		__set_bit(EV_REP, kp->input->evbit);
-+
-+	kp->input->keycode	= keycodes;
-+	kp->input->keycodemax	= PM8058_MATRIX_MAX_SIZE;
-+	kp->input->keycodesize	= sizeof(*keycodes);
-+	kp->input->open		= pmic8058_kp_open;
-+	kp->input->close	= pmic8058_kp_close;
-+
-+	matrix_keypad_build_keymap(keymap_data, PM8058_ROW_SHIFT,
-+					kp->input->keycode, kp->input->keybit);
-+
-+	input_set_capability(kp->input, EV_MSC, MSC_SCAN);
-+	input_set_drvdata(kp->input, kp);
-+
-+	/* initialize keypad state */
-+	memset(kp->keystate, 0xff, sizeof(kp->keystate));
-+	memset(kp->stuckstate, 0xff, sizeof(kp->stuckstate));
-+
-+	rc = pmic8058_kpd_init(kp);
++	/* Check if the headset is already inserted during boot up */
++	rc = pm8058_irq_get_rt_status(dd->pm_chip, dd->othc_irq_ir);
 +	if (rc < 0) {
-+		dev_err(&pdev->dev, "unable to initialize keypad controller\n");
-+		goto err_kpd_init;
++		dev_err(&pd->dev, "Unable to get headset status at boot!\n");
++		goto fail_ir_irq;
++	}
++	if (rc) {
++		dev_dbg(&pd->dev, "Headset inserted during boot up!\n");
++		dd->othc_ir_state = true;
++		input_report_switch(dd->othc_ipd, SW_HEADPHONE_INSERT, 1);
++		input_sync(dd->othc_ipd);
 +	}
 +
-+	rc = request_any_context_irq(kp->key_sense_irq, pmic8058_kp_irq,
-+				 IRQF_TRIGGER_RISING, "pmic-keypad", kp);
++	rc = request_any_context_irq(dd->othc_irq_ir, pm8058_nc_ir,
++		IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
++					"pm8058_othc_ir", dd);
 +	if (rc < 0) {
-+		dev_err(&pdev->dev, "failed to request keypad sense irq\n");
-+		goto err_req_sense_irq;
++		dev_err(&pd->dev, "Request pm8058_othc_ir IRQ failed!\n");
++		goto fail_ir_irq;
 +	}
-+	/* kp->open will enable the irq */
-+	disable_irq(kp->key_sense_irq);
 +
-+	rc = request_any_context_irq(kp->key_stuck_irq, pmic8058_kp_stuck_irq,
-+				 IRQF_TRIGGER_RISING, "pmic-keypad-stuck", kp);
++	rc = request_any_context_irq(dd->othc_irq_sw, pm8058_no_sw,
++		IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
++					"pm8058_othc_sw", dd);
 +	if (rc < 0) {
-+		dev_err(&pdev->dev, "failed to request keypad stuck irq\n");
-+		goto err_req_stuck_irq;
-+	}
-+	/* kp->open will enable the irq */
-+	disable_irq(kp->key_stuck_irq);
-+
-+	rc = pmic8058_kp_read_u8(kp, &ctrl_val, KEYP_CTRL);
-+	if (rc < 0) {
-+		dev_err(&pdev->dev, "failed to read KEYP_CTRL register\n");
-+		goto err_pmic_reg_read;
++		dev_err(&pd->dev, "Request pm8058_othc_sw IRQ failed!\n");
++		goto fail_sw_irq;
 +	}
 +
-+	kp->ctrl_reg = ctrl_val;
-+
-+	rc = input_register_device(kp->input);
-+	if (rc < 0) {
-+		dev_err(&pdev->dev, "unable to register keypad input device\n");
-+		goto err_reg_input_dev;
-+	}
-+
-+	device_init_wakeup(&pdev->dev, pdata->wakeup);
++	device_init_wakeup(&pd->dev, hsed_config->othc_wakeup);
 +
 +	return 0;
 +
-+err_reg_input_dev:
-+err_pmic_reg_read:
-+	free_irq(kp->key_stuck_irq, NULL);
-+err_req_stuck_irq:
-+	free_irq(kp->key_sense_irq, NULL);
-+err_req_sense_irq:
-+err_kpd_init:
-+err_get_irq:
-+	input_free_device(kp->input);
-+err_alloc_device:
-+	kfree(keycodes);
-+err_alloc_mem:
-+	kfree(kp);
++fail_sw_irq:
++	free_irq(dd->othc_irq_ir, dd);
++fail_ir_irq:
++	input_unregister_device(ipd);
++	dd->othc_ipd = NULL;
++fail_othc_config:
++	input_free_device(ipd);
++fail_input_alloc:
 +	return rc;
 +}
 +
-+static int __devexit pmic8058_kp_remove(struct platform_device *pdev)
++static int __devinit pm8058_othc_probe(struct platform_device *pd)
 +{
-+	struct pmic8058_kp *kp = platform_get_drvdata(pdev);
++	int rc;
++	struct pm8058_othc *dd;
++	struct pm8058_chip *chip;
++	struct resource *res;
++	struct pmic8058_othc_config_pdata *pdata = pd->dev.platform_data;
 +
-+	device_init_wakeup(&pdev->dev, 0);
-+	free_irq(kp->key_stuck_irq, NULL);
-+	free_irq(kp->key_sense_irq, NULL);
-+	input_unregister_device(kp->input);
-+	kfree(kp->input->keycode);
-+	kfree(kp);
++	chip = platform_get_drvdata(pd);
++	if (chip == NULL) {
++		dev_err(&pd->dev, "Invalid driver information!\n");
++		return  -EINVAL;
++	}
 +
++	/* PMIC8058 version A0 not supported */
++	if (pm8058_rev(chip) == PM_8058_REV_1p0) {
++		dev_err(&pd->dev, "PMIC8058 version not supported!\n");
++		return -ENODEV;
++	}
++
++	if (pdata == NULL) {
++		dev_err(&pd->dev, "Platform data not present!\n");
++		return -EINVAL;
++	}
++
++	dd = kzalloc(sizeof(*dd), GFP_KERNEL);
++	if (dd == NULL) {
++		dev_err(&pd->dev, "Unable to allocate memory!\n");
++		return -ENOMEM;
++	}
++
++	res = platform_get_resource_byname(pd, IORESOURCE_IO, "othc_base");
++	if (res == NULL) {
++		dev_err(&pd->dev, "OTHC Base address, resource absent!\n");
++		rc = -ENXIO;
++		goto fail_get_res;
++	}
++
++	dd->othc_pdata = pdata;
++	dd->pm_chip = chip;
++	dd->othc_base = res->start;
++
++	platform_set_drvdata(pd, dd);
++
++	if (pdata->micbias_capability == OTHC_MICBIAS_HSED) {
++		/* HSED to be supported on this MICBIAS line */
++		if (pdata->hsed_config != NULL) {
++			rc = pm8058_othc_configure_hsed(dd, pd);
++			if (rc < 0)
++				goto fail_get_res;
++		} else {
++			dev_err(&pd->dev, "HSED config data absent!\n");
++			rc = -EINVAL;
++			goto fail_get_res;
++		}
++	}
++
++	/* Store the local driver data structure */
++	if (dd->othc_pdata->micbias_select < OTHC_MICBIAS_MAX)
++		config[dd->othc_pdata->micbias_select] = dd;
++
++	dev_dbg(&pd->dev, "Device %s:%d successfully registered\n",
++						pd->name, pd->id);
 +	return 0;
++
++fail_get_res:
++	kfree(dd);
++	return rc;
 +}
 +
-+#ifdef CONFIG_PM
-+static int pmic8058_kp_suspend(struct device *dev)
-+{
-+	struct pmic8058_kp *kp = dev_get_drvdata(dev);
-+
-+	if (device_may_wakeup(dev))
-+		enable_irq_wake(kp->key_sense_irq);
-+
-+	return 0;
-+}
-+
-+static int pmic8058_kp_resume(struct device *dev)
-+{
-+	struct pmic8058_kp *kp = dev_get_drvdata(dev);
-+
-+	if (device_may_wakeup(dev))
-+		disable_irq_wake(kp->key_sense_irq);
-+
-+	return 0;
-+}
-+
-+static const struct dev_pm_ops pm8058_kp_pm_ops = {
-+	.suspend	= pmic8058_kp_suspend,
-+	.resume		= pmic8058_kp_resume,
-+};
-+#endif
-+
-+static struct platform_driver pmic8058_kp_driver = {
-+	.probe		= pmic8058_kp_probe,
-+	.remove		= __devexit_p(pmic8058_kp_remove),
-+	.driver		= {
-+		.name = "pm8058-keypad",
++static struct platform_driver pm8058_othc_driver = {
++	.driver = {
++		.name = "pm8058-othc",
 +		.owner = THIS_MODULE,
 +#ifdef CONFIG_PM
-+		.pm = &pm8058_kp_pm_ops,
++		.pm = &pm8058_othc_pm_ops,
 +#endif
 +	},
++	.probe = pm8058_othc_probe,
++	.remove = __devexit_p(pm8058_othc_remove),
 +};
 +
-+static int __init pmic8058_kp_init(void)
++static int __init pm8058_othc_init(void)
 +{
-+	return platform_driver_register(&pmic8058_kp_driver);
++	return platform_driver_register(&pm8058_othc_driver);
 +}
-+module_init(pmic8058_kp_init);
 +
-+static void __exit pmic8058_kp_exit(void)
++static void __exit pm8058_othc_exit(void)
 +{
-+	platform_driver_unregister(&pmic8058_kp_driver);
++	platform_driver_unregister(&pm8058_othc_driver);
 +}
-+module_exit(pmic8058_kp_exit);
 +
++module_init(pm8058_othc_init);
++module_exit(pm8058_othc_exit);
++
++MODULE_ALIAS("platform:pmic8058_othc");
++MODULE_DESCRIPTION("PMIC8058 OTHC");
 +MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION("PMIC8058 keypad driver");
-+MODULE_VERSION("1.0");
-+MODULE_ALIAS("platform:pmic8058_keypad");
-+MODULE_AUTHOR("Trilok Soni <tsoni@codeaurora.org>");
-diff --git a/include/linux/input/pmic8058-keypad.h b/include/linux/input/pmic8058-keypad.h
++MODULE_AUTHOR("Anirudh Ghayal <aghayal@codeaurora.org>");
+diff --git a/include/linux/input/pmic8058-othc.h b/include/linux/input/pmic8058-othc.h
 new file mode 100644
-index 0000000..901f6cc
+index 0000000..341ac7c
 --- /dev/null
-+++ b/include/linux/input/pmic8058-keypad.h
-@@ -0,0 +1,58 @@
-+/* Copyright (c) 2009-2010, Code Aurora Forum. All rights reserved.
++++ b/include/linux/input/pmic8058-othc.h
+@@ -0,0 +1,117 @@
++/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
@@ -869,47 +647,106 @@ index 0000000..901f6cc
 + * 02110-1301, USA.
 + */
 +
-+#ifndef __PMIC8058_KEYPAD_H__
-+#define __PMIC8058_KEYPAD_H__
-+
-+#include <linux/input/matrix_keypad.h>
++#ifndef __PMIC8058_OTHC_H__
++#define __PMIC8058_OTHC_H__
 +
 +/**
-+ * struct pmic8058_keypad_data - platform data for keypad
-+ * @keymap_data - matrix keymap data
-+ * @input_name - input device name
-+ * @input_phys_device - input device name
-+ * @num_cols - number of columns of keypad
-+ * @num_rows - number of row of keypad
-+ * @rows_gpio_start - starting PMIC gpio number for rows
-+ * @cols_gpio_start - starting PMIC gpio number for cols
-+ * @debounce_ms - debounce period in milliseconds
-+ * @scan_delay_ms - scan delay in milliseconds
-+ * @row_hold_ns - row hold period in nanoseconds
-+ * @wakeup - configure keypad as wakeup
-+ * @rep - enable or disable key repeat bit
++ * enum othc_micbias_enable - MIC BIAS operational states
++ *
++ * This enum describes the different configurations of the BIAS line.
 + */
-+struct pmic8058_keypad_data {
-+	const struct matrix_keymap_data *keymap_data;
-+
-+	const char *input_name;
-+	const char *input_phys_device;
-+
-+	unsigned int num_cols;
-+	unsigned int num_rows;
-+
-+	unsigned int rows_gpio_start;
-+	unsigned int cols_gpio_start;
-+
-+	unsigned int debounce_ms;
-+	unsigned int scan_delay_ms;
-+	unsigned int row_hold_ns;
-+
-+	bool wakeup;
-+	bool rep;
++enum othc_micbias_enable {
++	/* Turn off BIAS */
++	OTHC_SIGNAL_OFF,
++	/* Turn on BIAS if TCXO_EN is high */
++	OTHC_SIGNAL_TCXO,
++	/* Turn on BIAS if TCXO_EN or PWN is high */
++	OTHC_SIGNAL_PWM_TCXO,
++	/* Turn on BIAS always */
++	OTHC_SIGNAL_ALWAYS_ON,
 +};
 +
-+#endif /*__PMIC8058_KEYPAD_H__ */
++/**
++ * enum othc_headset_type - Different type of supported headset
++ *
++ * This enum describes the different types of supported headsets.
++ */
++enum othc_headset_type {
++	OTHC_HEADSET_NO,
++	OTHC_HEADSET_NC,
++};
++
++/**
++ * enum othc_micbias -  Lists the number of MIC BIAS lines.
++ *
++ * This enum lists all the total number of BIAS lines.
++ */
++enum othc_micbias {
++	OTHC_MICBIAS_0,
++	OTHC_MICBIAS_1,
++	OTHC_MICBIAS_2,
++	OTHC_MICBIAS_MAX,
++};
++
++/**
++ * enum othc_micbias_capability - Capability of the MIC BIAS line
++ *
++ * This enum describes the capability of the MIC BIAS line, it can either be
++ * used for headset or a regular speaker MIC BIAS.
++ */
++enum othc_micbias_capability {
++	OTHC_MICBIAS,
++	OTHC_MICBIAS_HSED,
++};
++
++/**
++ * struct othc_hsed_config - headset specific configuration structure
++ * @othc_headset: type of headset
++ * @othc_lowcurr_thresh_uA: low current threshold for the headset
++ * @othc_highcurr_thresh_uA: high  current threshold for the headset
++ * @othc_hyst_prediv_us: hysterisis time pre-divider
++ * @othc_period_clkdiv_us: pwm period pre-divider
++ * @othc_hyst_clk_us: hysterisis clock period
++ * @othc_hyst_clk_us: hysterisis clock period
++ * @othc_period_clk_us: pwm clock period
++ * @othc_wakeup: wakeup capability
++ * @switch_debounce_ms: specifies the switch debounce time
++ *
++ * This structure provides the configurable parameters for headset. This is a
++ * part of the platform data.
++ */
++struct othc_hsed_config {
++	enum othc_headset_type othc_headset;
++	u16 othc_lowcurr_thresh_uA;
++	u16 othc_highcurr_thresh_uA;
++	u32 othc_hyst_prediv_us;
++	u32 othc_period_clkdiv_us;
++	u32 othc_hyst_clk_us;
++	u32 othc_period_clk_us;
++	int othc_wakeup;
++	unsigned long switch_debounce_ms;
++};
++
++/**
++ * struct pmic8058_othc_config_pdata - platform data for OTHC
++ * @micbias_select: selects the MIC BIAS
++ * @micbias_enable: default operational configuration of the MIC BIAS
++ * @micbias_capability: capability supported by the MIC BIAS
++ * @hsed_config: pointer to headset configuration
++ *
++ * This structure is the platform data provided to the OTHC driver
++ */
++struct pmic8058_othc_config_pdata {
++	enum othc_micbias micbias_select;
++	enum othc_micbias_enable micbias_enable;
++	enum othc_micbias_capability micbias_capability;
++	struct othc_hsed_config *hsed_config;
++};
++
++int pm8058_micbias_enable(enum othc_micbias micbias,
++				enum othc_micbias_enable enable);
++
++#endif /* __PMIC8058_OTHC_H__ */
 -- 
 1.7.0.2
 
