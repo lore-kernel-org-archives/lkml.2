@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755003Ab0KJKkI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 05:40:08 -0500
-Received: from dallas.jonmasters.org ([72.29.103.172]:47922 "EHLO
-	dallas.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753140Ab0KJKkG (ORCPT
+	id S1754069Ab0KJKvl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 05:51:41 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:47937 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041Ab0KJKvi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 05:40:06 -0500
-Subject: Re: PROBLEM: first read of /dev/mcelog fails
-From: Jon Masters <jonathan@jonmasters.org>
-To: andi@firstfloor.org
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <1289385151.3916.554.camel@constitution.bos.jonmasters.org>
-References: <1289385151.3916.554.camel@constitution.bos.jonmasters.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: World Organi[sz]ation of Broken Dreams
-Date: Wed, 10 Nov 2010 05:40:06 -0500
-Message-ID: <1289385606.3916.555.camel@constitution.bos.jonmasters.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 74.92.29.237
-X-SA-Exim-Mail-From: jonathan@jonmasters.org
-X-SA-Exim-Scanned: No (on dallas.jonmasters.org); SAEximRunCond expanded to false
+	Wed, 10 Nov 2010 05:51:38 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=kqV7178St56mpLxz+0tPwxOzPWEDCsBWlNJMaSpSZLWl3/Pqf1/pWNeQGSKwhikmEY
+         J5lOT/ROjEyteLwc/Too3bc+82Od0cCPjLwPKAkY9ss5UtedT39Zg0bwkIE34XpHTjAN
+         kpJc/Hk7dq9FNXt2J0RTXOG8GPwqjvT61bW4E=
+MIME-Version: 1.0
+Date: Wed, 10 Nov 2010 18:51:37 +0800
+Message-ID: <AANLkTi=b+KWcYqXCteuiw0OnKqfSvWQCA+B-HUEy90R8@mail.gmail.com>
+Subject: [PATCH] kdb: use macro instead of const number
+From: jovi zhang <bookjovi@gmail.com>
+To: Jason Wessel <jason.wessel@windriver.com>, Martin Hicks <mort@sgi.com>,
+        Dmitry Torokhov <dtor@mail.ru>, Rusty Russell <rusty@rustcorp.com.au>,
+        kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-10 at 05:32 -0500, Jon Masters wrote:
+It's better to use macro KDB_BASE_CMD_MAX instead of 50
 
-> I recently took some time to look at the daemon side of mcelog. I found
-> a few issues with that[0] that I will detail in a separate mail, but I
-> am more concerned that in recent kernels, the first read() of the mcelog
-> device performed by mcelog after boot always fails. 100% reproducible on
-> several machines - mcelog client always bombs out in process() due to
-> getting a "no such device" error from the kernel read attempt.
-> The /dev/mcelog device exists, but the first read fails.
-> 
-> Can you do a fresh boot, run mcelog, and see what I mean?
+Signed-off-by: jovi zhang <bookjovi@gmail.com>
+kernel/debug/kdb/kdb_main.c |    2 +-
+1 files changed, 1 insertions(+), 1 deletions(-)
 
-(most distros won't see this because they still run mcelog in a cron
-script - as mentioned in your recent paper - and ignore the error)
-
-Thanks,
-
-Jon.
-
-
+diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+index 37755d6..3579105 100644
+--- a/kernel/debug/kdb/kdb_main.c
++++ b/kernel/debug/kdb/kdb_main.c
+@@ -78,7 +78,7 @@ static unsigned int kdb_continue_catastrophic;
+static kdbtab_t *kdb_commands;
+#define KDB_BASE_CMD_MAX 50
+static int kdb_max_commands = KDB_BASE_CMD_MAX;
+-static kdbtab_t kdb_base_commands[50];
++static kdbtab_t kdb_base_commands[KDB_BASE_CMD_MAX];
+#define for_each_kdbcmd(cmd, num)                                      \
+       for ((cmd) = kdb_base_commands, (num) = 0;                      \
+            num < kdb_max_commands;                                    \
