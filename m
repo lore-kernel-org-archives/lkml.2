@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756520Ab0KJPBe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 10:01:34 -0500
-Received: from mo-p05-ob.rzone.de ([81.169.146.182]:21268 "EHLO
-	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756509Ab0KJPBd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 10:01:33 -0500
-X-Greylist: delayed 661 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Nov 2010 10:01:32 EST
-X-RZG-AUTH: :IW0NeWC7b/q2i6W/qstXb1SBUuFnrGohavlCkce+Ub5QXMSOpHp3KRgmmO6F
-X-RZG-CLASS-ID: mo05
-From: Stefan Roese <sr@denx.de>
-To: linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH] ppc44x:PHY fixup for USB on canyonlands board
-Date: Wed, 10 Nov 2010 15:50:15 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.35.7-sr; KDE/4.5.1; i686; ; )
-Cc: Rupjyoti Sarmah <rsarmah@amcc.com>, linuxppc-dev@ozlabs.org,
-        linux-kernel@vger.kernel.org, rsarmah@apm.com
-References: <201011101137.oAABbFoc015547@amcc.com>
-In-Reply-To: <201011101137.oAABbFoc015547@amcc.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+	id S1756538Ab0KJPCT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 10:02:19 -0500
+Received: from mail.perches.com ([173.55.12.10]:4920 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756463Ab0KJPCS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 10:02:18 -0500
+Subject: Re: [PATCH] MAINTAINERS: Mark XEN lists subscribers-only
+From: Joe Perches <joe@perches.com>
+To: Ian Campbell <ijc@hellion.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+In-Reply-To: <1289401042.724.54.camel@zakaz.uk.xensource.com>
+References: <1289380840.28590.132.camel@Joe-Laptop>
+	 <1289399240.724.48.camel@zakaz.uk.xensource.com>
+	 <1289399731.28590.136.camel@Joe-Laptop>
+	 <1289401042.724.54.camel@zakaz.uk.xensource.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 10 Nov 2010 07:02:17 -0800
+Message-ID: <1289401337.15905.1.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011101550.16093.sr@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 10 November 2010 12:37:15 Rupjyoti Sarmah wrote:
-> This fix is a reset for USB PHY that requires some amount of time for power
-> to be stable on Canyonlands.
-> 
-> Signed-off-by: Rupjyoti Sarmah <rsarmah@apm.com>
-> ---
->  arch/powerpc/boot/dts/canyonlands.dts     |   11 ++++
->  arch/powerpc/platforms/44x/44x.h          |    5 ++
->  arch/powerpc/platforms/44x/Kconfig        |    7 ++
->  arch/powerpc/platforms/44x/Makefile       |    1 +
->  arch/powerpc/platforms/44x/ppc44x_fixup.c |   90
-> +++++++++++++++++++++++++++++ 5 files changed, 114 insertions(+), 0
-> deletions(-)
->  create mode 100644 arch/powerpc/platforms/44x/ppc44x_fixup.c
-> 
-> diff --git a/arch/powerpc/boot/dts/canyonlands.dts
-> b/arch/powerpc/boot/dts/canyonlands.dts index a303703..d6e9ba2 100644
-> --- a/arch/powerpc/boot/dts/canyonlands.dts
-> +++ b/arch/powerpc/boot/dts/canyonlands.dts
-> @@ -171,6 +171,11 @@
->  				      0x5 0x4>;     /* AHBDMA */
->  		};
-> 
-> +		CPLD: cpld@e1000000 {
-> +			compatible = "apm, ppc460ex-bcsr";
-> +			reg = <4 0xe1000000 0x9>;
-> +		};
+On Wed, 2010-11-10 at 14:57 +0000, Ian Campbell wrote:
+> On Wed, 2010-11-10 at 06:35 -0800, Joe Perches wrote:
+> > On Wed, 2010-11-10 at 14:27 +0000, Ian Campbell wrote:
+> > > AFAIK the Xen lists are "(moderated for non-subscribers)" rather than
+> > > "(subscribers-only)".
+> > My emails to that list bounced.
+> Did you try and post to xen-devel@lists.xen.org?
 
-This node should be moved to the EBC section. It would look something like 
-this then (note the reg property change here):
+Yes, that was the address used.
 
-				CPLD: cpld@2,0 {
-					...
-					reg = <2 0x0 0x9>;
-				};
+> That one doesn't really
+> exist (Konrad was a little over-eager in switching MAINTAINERS to it).
+> xen-devel@lists.xensource.com is the correct address. We are trying to
+> get a xen.org alias setup but it doesn't exist yet.
+> > From http://www.xen.org/support/community.html
+> > (All lists require a subscription to post)
+> This may be inaccurate, I'll see if we can confirm.
 
-Cheers,
-Stefan
+Thanks.
+
