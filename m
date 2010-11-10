@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756039Ab0KJTID (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 14:08:03 -0500
-Received: from mail.bluewatersys.com ([202.124.120.130]:47605 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754879Ab0KJTIA (ORCPT
+	id S1756090Ab0KJTJm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 14:09:42 -0500
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:34402 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755525Ab0KJTJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 14:08:00 -0500
-Message-ID: <4CDAEDCD.5050603@bluewatersys.com>
-Date: Thu, 11 Nov 2010 08:09:01 +1300
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+	Wed, 10 Nov 2010 14:09:40 -0500
+Date: Wed, 10 Nov 2010 20:09:33 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Dave Chinner <david@fromorbit.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, dave b <db.pub.mail@gmail.com>,
+        Sanjoy Mahajan <sanjoy@olin.edu>, Jesper Juhl <jj@chaosbits.net>,
+        Chris Mason <chris.mason@oracle.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Nick Piggin <npiggin@suse.de>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "Ted Ts'o" <tytso@mit.edu>,
+        Corrado Zoccolo <czoccolo@gmail.com>,
+        Shaohua Li <shaohua.li@intel.com>, Steven Barrett <damentz@gmail.com>
+Subject: Re: 2.6.36 io bring the system to its knees
+Message-ID: <20101110190933.GA1497@ucw.cz>
+References: <20101105014334.GF13830@dastard>
+ <E1PELiI-0001Pj-8g@approx.mit.edu>
+ <AANLkTimON_GL6vRF9=_U6oRFQ30EYssx3wv5xdNsU9JM@mail.gmail.com>
+ <4CD696B4.6070002@kernel.dk>
+ <AANLkTikNPEcwWjEQuC-_=9yH5DCCiwUAY265ggeygcSQ@mail.gmail.com>
+ <20101110013255.GR2715@dastard>
+ <20101110142037.GA1447@ucw.cz>
+ <20101110142721.GA14496@elte.hu>
+ <20101110145511.GA22073@infradead.org>
 MIME-Version: 1.0
-To: Marco Stornelli <marco.stornelli@gmail.com>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Embedded <linux-embedded@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Tim Bird <tim.bird@am.sony.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 08/16 v2] pramfs: headers
-References: <4CD518C5.6000509@gmail.com>	<4CD7076D.80507@bluewatersys.com>	<AANLkTinJJG0K=BPS0CPzDWcgpRn_yPxZ819N408SwD6d@mail.gmail.com>	<4CD85489.8000503@bluewatersys.com>	<AANLkTim8rAQnVYpZdykd2VuL1N9CvkGj88Kf5qpSuJsC@mail.gmail.com>	<4CD9B09F.5090707@bluewatersys.com>	<AANLkTiky0LLnipJN3tCwcW6F2LEK-REEd=Ovo0ewMubR@mail.gmail.com> <AANLkTik+Vx8W1qXEZ=AqedRSj_D4-k70Xa4h-bnW2MRH@mail.gmail.com>
-In-Reply-To: <AANLkTik+Vx8W1qXEZ=AqedRSj_D4-k70Xa4h-bnW2MRH@mail.gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101110145511.GA22073@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2010 09:15 PM, Marco Stornelli wrote:
-> 2010/11/9 Geert Uytterhoeven <geert@linux-m68k.org>:
->> On Tue, Nov 9, 2010 at 21:35, Ryan Mallon <ryan@bluewatersys.com> wrote:
->>> You can still do all of those things without having a fixed endianess.
->>> You just have to have one extra step of telling the external tools what
->>> the endianess is. IMHO, it is better to have the overhead of the endian
->>> conversion in the tools since it is less costly there than an the
->>> embedded system.
->>>
->>> I'm just trying to understand why the fixed endianess rule cannot be
->>> bent for such a specialised filesystem.
->>
->> When it was decided that filesystems should be fixed-endian and support for
->> big-endian ext2 was dropped, the overhead of doing the fixed conversions was
->> deetermined negligible due to compiler optimization.
->> That was ages ago, and current embedded systems run circles around the
->> machines of those days.
->>
->> Note that this is about metadata only. Actual file contents are always just
->> byte streams.
->>
+Hi!
+
+> > That is data that was freshly touched around the time the system went down, right?
+> > 
+> > I.e. data that was probably half-modified by user-space to begin with.
 > 
-> I can add that the penalties in this case are  negligible due to the
-> compensation of the very fast access of the media. In addition, from
-> performance point of view I'm pretty happy (you can see the some
-> benchmark on the project web site).
+> It's data that wasn't synced out yet, yes.  Which isn't the problem per
+> se.  With ext3/4 in ordered mode, or xfs, or btrfs the file size won't
+> be incremented until the data is written.  in ext3/4 in writeback mode
+> (or various non-journaling filesystems) however the inode size is
+> updated, and metadagta changes are logged.  Besides exposing stale
+> data which is a security risk in multi-user systems it also means the
+> inode looks modified (by size and timestamps), but contains other data
+> than actually written.
 
-Thanks for the explanation guys.
-
-~Ryan
+Well, afaict thats traditional unix behaviour... while it is not user
+friendly, I'd not call it 'corrupted filesytem'.
+								Pavel
 
 -- 
-Bluewater Systems Ltd - ARM Technology Solution Centre
-
-Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
-ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
-http://www.bluewatersys.com	New Zealand
-Phone: +64 3 3779127		Freecall: Australia 1800 148 751
-Fax:   +64 3 3779135			  USA 1800 261 2934
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
