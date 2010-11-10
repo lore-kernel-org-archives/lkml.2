@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab0KJVPr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 16:15:47 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:45792 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756484Ab0KJVPq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 16:15:46 -0500
-Date: Wed, 10 Nov 2010 14:15:40 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Maciej Szmigiero <mhej@o2.pl>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Anton Vorontsov <avorontsov@ru.mvista.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Jonathan Cameron <jic23@cam.ac.uk>,
-        Ben Nizette <bn@niasdigital.com>
-Subject: Re: [GPIO]implement sleeping GPIO chip removal
-Message-ID: <20101110211540.GA7063@angua.secretlab.ca>
-References: <4CD6F049.10102@o2.pl>
- <20101110050947.GC4110@angua.secretlab.ca>
- <4CDABA03.2050000@o2.pl>
- <alpine.LFD.2.00.1011102134350.2900@localhost6.localdomain6>
- <4CDB0834.4080101@o2.pl>
- <alpine.LFD.2.00.1011102203500.2900@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1011102203500.2900@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756850Ab0KJVTJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 16:19:09 -0500
+Received: from mail.perches.com ([173.55.12.10]:4935 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754076Ab0KJVTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 16:19:08 -0500
+Subject: [PATCH] fs/gfs2/glock.h: Add __attribute__((format(printf,2,3)) to
+ gfs2_print_dbg
+From: Joe Perches <joe@perches.com>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
+In-Reply-To: <1289422527.2438.20.camel@dolmen>
+References: <cover.1289348757.git.joe@perches.com>
+	 <5918196ac71b4e3184a534643cdf499b54416541.1289348757.git.joe@perches.com>
+	 <1289422527.2438.20.camel@dolmen>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 10 Nov 2010 13:19:06 -0800
+Message-ID: <1289423946.15905.103.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 10:07:05PM +0100, Thomas Gleixner wrote:
-> Can you please use a mail client which does proper line breaks at 78 ?
-> 
-> On Wed, 10 Nov 2010, Maciej Szmigiero wrote:
-> > You misunderstood me.
-> 
-> No, I didnt.
-> 
-> > By "looping in hope that somebody will finally release the chip" I
-> > meant the only real way to handle a GPIO chip unplugging in the
-> > current kernel.  Which is way worse that preventing new requests,
-> > then waiting for existing one to be released.  And this is exactly
-> > what my patch does.
-> 
-> That still does not make it a good solution.
-> 
-> > I understand that it could be simplified by removing redundant code
-> > (as Grant Likely had suggested before), and moving it to completion
-> > interface instead of manipulating a task structure directly, but
-> > this doesn't mean that the whole GPIO code has to be rewritten just
-> > to add one functionality.
-> 
-> It's not about rewriting, it's about fixing the problem in the right
-> way and not just hacking around it.
-> 
-> If we see a shortcoming like this, we fix it and do not magically work
-> around it.
+Functions that use printf formatting, especially
+those that use %pV, should have their uses of
+printf format and arguments checked by the compiler.
 
-+1
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+No current uses report any error in an allyesconfig build.
+ 
+ fs/gfs2/glock.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Thomas is right.  kobject reference counting is the correct solution.
-Nack on this approach.
+diff --git a/fs/gfs2/glock.h b/fs/gfs2/glock.h
+index db1c26d..a12d117 100644
+--- a/fs/gfs2/glock.h
++++ b/fs/gfs2/glock.h
+@@ -212,6 +212,8 @@ int gfs2_glock_nq_num(struct gfs2_sbd *sdp,
+ int gfs2_glock_nq_m(unsigned int num_gh, struct gfs2_holder *ghs);
+ void gfs2_glock_dq_m(unsigned int num_gh, struct gfs2_holder *ghs);
+ void gfs2_glock_dq_uninit_m(unsigned int num_gh, struct gfs2_holder *ghs);
++
++__attribute__ ((format(printf, 2, 3)))
+ void gfs2_print_dbg(struct seq_file *seq, const char *fmt, ...);
+ 
+ /**
 
-g.
 
