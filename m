@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab0KJCdd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 21:33:33 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:58142 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287Ab0KJCdb (ORCPT
+	id S1753665Ab0KJCg7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 21:36:59 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:43269 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751386Ab0KJCg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 21:33:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=LJa/bALrLYJZ8kdcthGQH5S4bfAOiur/z5SVcN81ORCzu8D1p7RbS+B8ZpZsc/eGD0
-         0d40hlsXC/iRYhywqztMEvvqFxc/+833EDDlRUR9Rgo+dzSxolBLMZ6vrkIDx1FpO9Bk
-         G6lHAXTeN8G1gYnm47NNVjLTIsz0XMrVYLC7I=
-Subject: [PATCH] rtc: rtc-omap - fix a memory leak
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: "Mark A. Greer" <mgreer@mvista.com>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain
-Date: Wed, 10 Nov 2010 10:37:20 +0800
-Message-Id: <1289356640.13311.1.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Nov 2010 21:36:58 -0500
+Date: Tue, 9 Nov 2010 21:36:56 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+cc: linux-kernel@vger.kernel.org, <linux-usb@vger.kernel.org>,
+        David Brownell <dbrownell@users.sourceforge.net>
+Subject: Re: [PATCH 6/6] ce4100: Add support for CE4100 EHCI IP block to EHCI
+ driver
+In-Reply-To: <4CD9C4A7.3060603@gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1011092134180.14099-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-request_mem_region() will call kzalloc to allocate memory for struct resource.
-release_resource() unregisters the resource but does not free the allocated
-memory, thus use release_mem_region() instead to fix the memory leak.
+On Tue, 9 Nov 2010, Dirk Brandewie wrote:
 
-Also add a missing iounmap() in omap_rtc_remove().
+> In a previous patch in this series GregKH asked that the PCI ID not be added 
+> to pci_ids.h for ID's that are only used by a single file.  
+> Here is an updated version of the EHCI controller patch.
+> 
+> Subject: [PATCH] ce4100: Add support for CE4100 EHCI IP block to EHCI driver
+> 
+> This patch adds support for the EHCI IP block present on the Intel
+> CE4100.
+> 
+> Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
+> CC: linux-usb@vger.kernel.org
+> CC: David Brownell <dbrownell@users.sourceforge.net>
+> ---
+>  drivers/usb/host/ehci-pci.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/usb/host/ehci-pci.c b/drivers/usb/host/ehci-pci.c
+> index a1e8d27..da2b196 100644
+> --- a/drivers/usb/host/ehci-pci.c
+> +++ b/drivers/usb/host/ehci-pci.c
+> @@ -124,6 +124,10 @@ static int ehci_pci_setup(struct usb_hcd *hcd)
+>  			ehci_info(ehci, "disable lpm for langwell/penwell\n");
+>  			ehci->has_lpm = 0;
+>  		}
+> +		if (pdev->device == 0x2e70) {
+> +			hcd->has_tt = 1;
+> +			tdi_reset(ehci);
+> +		}
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/rtc/rtc-omap.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+I think Greg meant that it's okay to use a symbolic constant for the
+PCI ID (it helps tell people what hardware is being handled).  Just
+don't add that constant to the pci_ids.h file.
 
-diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
-index 73377b0..e72b523 100644
---- a/drivers/rtc/rtc-omap.c
-+++ b/drivers/rtc/rtc-omap.c
-@@ -429,13 +429,14 @@ fail1:
- fail0:
- 	iounmap(rtc_base);
- fail:
--	release_resource(mem);
-+	release_mem_region(mem->start, resource_size(mem));
- 	return -EIO;
- }
- 
- static int __exit omap_rtc_remove(struct platform_device *pdev)
- {
- 	struct rtc_device	*rtc = platform_get_drvdata(pdev);
-+	struct resource		*mem = dev_get_drvdata(&rtc->dev);
- 
- 	device_init_wakeup(&pdev->dev, 0);
- 
-@@ -447,8 +448,9 @@ static int __exit omap_rtc_remove(struct platform_device *pdev)
- 	if (omap_rtc_timer != omap_rtc_alarm)
- 		free_irq(omap_rtc_alarm, rtc);
- 
--	release_resource(dev_get_drvdata(&rtc->dev));
- 	rtc_device_unregister(rtc);
-+	iounmap(rtc_base);
-+	release_mem_region(mem->start, resource_size(mem));
- 	return 0;
- }
- 
--- 
-1.7.2
-
-
+Alan Stern
 
