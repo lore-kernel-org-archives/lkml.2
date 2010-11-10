@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757401Ab0KJXUc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 18:20:32 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:57910 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757279Ab0KJXUb (ORCPT
+	id S1757422Ab0KJX2N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 18:28:13 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:45492 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757010Ab0KJX2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 18:20:31 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=0Gcdu3wDtgIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=sdKRNInUc8Rz3hFnJc4A:9 a=6zHIh4lOpUtwIZkLsGHNAnS76q0A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: Tracing Requirements (was: [RFC/Requirements/Design] h/w error
- reporting)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, "bp@alien8.de" <bp@alien8.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mchehab@redhat.com" <mchehab@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Arjan van de Ven <arjan@infradead.org>
-In-Reply-To: <alpine.LFD.2.00.1011110004520.2900@localhost6.localdomain6>
-References: <1289401781.12418.145.camel@gandalf.stny.rr.com>
-	 <1289403019.2084.17.camel@laptop> <20101110174852.GB4001@elte.hu>
-	 <1289412329.12418.177.camel@gandalf.stny.rr.com>
-	 <1289413460.2084.27.camel@laptop> <20101110184105.GH22410@elte.hu>
-	 <1289415645.12418.180.camel@gandalf.stny.rr.com>
-	 <20101110191127.GA6190@nowhere> <20101110202316.GA32396@Krystal>
-	 <987664A83D2D224EAE907B061CE93D5301649A71DC@orsmsx505.amr.corp.intel.com>
-	 <20101110225115.GB9299@Krystal>
-	 <alpine.LFD.2.00.1011110004520.2900@localhost6.localdomain6>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 10 Nov 2010 18:20:27 -0500
-Message-ID: <1289431227.12418.211.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 10 Nov 2010 18:28:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=MSdoPs3EQrUg+ulNPv9lWb/8fo1b6x7fNo4bPz3O3zEZ33HR2wtTtvYcDMJDtnL1yx
+         jijzKo9Z/8r2tJyNuSQFtT2MZ4bryuY1Lwfiw8g+PAbxy1QSd4ZA4YYNeBIQCsrxPSXJ
+         E4H46Qtpp37r8GYGG+41t8bGqCpBR4JAnM7yU=
+Message-ID: <4CDB2A81.5030100@garzik.org>
+Date: Wed, 10 Nov 2010 18:28:01 -0500
+From: Jeff Garzik <jeff@garzik.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: James Bottomley <jejb@kernel.org>
+CC: linux-scsi <linux-scsi@vger.kernel.org>,
+        James Bottomley <James.Bottomley@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Patch added to scsi-rc-fixes-2.6:  [SCSI] host lock push-down
+References: <201011102240.oAAMe86a001486@hera.kernel.org>
+In-Reply-To: <201011102240.oAAMe86a001486@hera.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-11 at 00:12 +0100, Thomas Gleixner wrote:
+On 11/10/2010 05:40 PM, James Bottomley wrote:
+> Your commit:
+>
+>      [SCSI] host lock push-down
+>
+>      Move the mid-layer's ->queuecommand() invocation from being locked
+>      with the host lock to being unlocked to facilitate speeding up the
+>      critical path for drivers who don't need this lock taken anyway.
+>
+>      The patch below presents a simple SCSI host lock push-down as an
+>      equivalent transformation.  No locking or other behavior should change
+>      with this patch.  All existing bugs and locking orders are preserved.
+>
+>      Minimal code disturbance was attempted with this change.  Most drivers
+>      needed only two one-line modifications for their host lock push-down.
+>
+>      Signed-off-by: Jeff Garzik<jgarzik@redhat.com>
+>      Signed-off-by: James Bottomley<James.Bottomley@suse.de>
+>
+> has been added to the upstream SCSI tree
+> You can find it here:
 
-> Cramming both into the same session is just insane.
+No comments on renaming ->queuecommand to something else?
 
-That just doubled the overhead of the tracer.
+The consequences are rather dire if this goes unnoticed, yes?
 
-> 
-> The first rule is "Keep It Simple!".  Period.
+	Jeff
 
-It's not that complex. Both Mathieu and I have implemented it. Really,
-I've seen a lot more complex code. Just because it does not fit into the
-CS101 course does not mean that it is totally complex.
 
--- Steve
-
+In http://marc.info/?l=linux-ide&m=128891665713984&w=2 I wrote:
+> An alternate arrangement, not presented by this patch, might
+> be preferred:  in order to make it clear that queuecommand
+> locking has changed, one could s/queuecommand/queuecommand_nl/ in
+> Scsi_Host_Template, in order to guarantee that drivers are either
+> (a) upgraded or (b) broken at compile time.  Compile-time detection of
+> new locking may be desirable, and I'll volunteer to change my patch to
+> do that, if community members prefer that route instead of below.
 
