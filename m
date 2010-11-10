@@ -1,662 +1,935 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755432Ab0KJK6n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 05:58:43 -0500
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:45972 "EHLO
+	id S1755498Ab0KJK6t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 05:58:49 -0500
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:46006 "EHLO
 	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752747Ab0KJK6m (ORCPT
+	by vger.kernel.org with ESMTP id S1752747Ab0KJK6p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 05:58:42 -0500
+	Wed, 10 Nov 2010 05:58:45 -0500
 From: "Henrik Rydberg" <rydberg@euromail.se>
 To: Guenter Roeck <guenter.roeck@ericsson.com>,
         Jean Delvare <khali@linux-fr.org>
 Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
         Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH 05/11] hwmon: applesmc: Dynamic creation of temperature files (rev3)
-Date: Wed, 10 Nov 2010 11:58:04 +0100
-Message-Id: <1289386685-9988-2-git-send-email-rydberg@euromail.se>
+Subject: [PATCH 04/11] hwmon: applesmc: Introduce a register lookup table (rev3)
+Date: Wed, 10 Nov 2010 11:58:03 +0100
+Message-Id: <1289386685-9988-1-git-send-email-rydberg@euromail.se>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1289386685-9988-1-git-send-email-rydberg@euromail.se>
-References: <1289386685-9988-1-git-send-email-rydberg@euromail.se>
 X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1PG8Nn-0004zq-7L.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PG8Nn-0004zq-7L af5b4baad45afbb3e3c158d174eb2d2b
+X-Scan-Result: No virus found in message 1PG8NZ-0004tG-9X.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1PG8NZ-0004tG-9X 2ca36389dbeeaa427aae9fc606f6d59b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current driver creates temperature files based on a list
-of temperature keys given per device. Apart from slow adaption
-to new machine models, the number of sensors also depends on
-the number of processors. This patch looks up the temperature
-keys dynamically, thereby supporting all models.
+One main problem with the current driver is the inability to quickly
+search for supported keys, resulting in detailed feature maps per
+machine model which are cumbersome to maintain.
+
+This patch adds a register lookup table, which enables binary search
+for supported keys. The lookup also reduces the io frequency, so the
+original mutex is replaced by locks around the actual io.
 
 Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 ---
- drivers/hwmon/applesmc.c |  500 ++++++++++-----------------------------------
- 1 files changed, 111 insertions(+), 389 deletions(-)
+ drivers/hwmon/applesmc.c |  534 +++++++++++++++++++++++++---------------------
+ 1 files changed, 292 insertions(+), 242 deletions(-)
 
 diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
-index 3963fd5..7a6ffd1 100644
+index 5f67e39..3963fd5 100644
 --- a/drivers/hwmon/applesmc.c
 +++ b/drivers/hwmon/applesmc.c
-@@ -84,94 +84,6 @@
- #define FAN_TARGET_SPEED	"F0Tg" /* r-w fpe2 (2 bytes) */
- #define FAN_POSITION		"F0ID" /* r-o char[16] */
+@@ -32,6 +32,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/input-polldev.h>
+ #include <linux/kernel.h>
++#include <linux/slab.h>
+ #include <linux/module.h>
+ #include <linux/timer.h>
+ #include <linux/dmi.h>
+@@ -51,6 +52,7 @@
  
--/*
-- * Temperature sensors keys (sp78 - 2 bytes).
-- */
--static const char *temperature_sensors_sets[][41] = {
--/* Set 0: Macbook Pro */
--	{ "TA0P", "TB0T", "TC0D", "TC0P", "TG0H", "TG0P", "TG0T", "Th0H",
--	  "Th1H", "Tm0P", "Ts0P", "Ts1P", NULL },
--/* Set 1: Macbook2 set */
--	{ "TB0T", "TC0D", "TC0P", "TM0P", "TN0P", "TN1P", "TTF0", "Th0H",
--	  "Th0S", "Th1H", NULL },
--/* Set 2: Macbook set */
--	{ "TB0T", "TC0D", "TC0P", "TM0P", "TN0P", "TN1P", "Th0H", "Th0S",
--	  "Th1H", "Ts0P", NULL },
--/* Set 3: Macmini set */
--	{ "TC0D", "TC0P", NULL },
--/* Set 4: Mac Pro (2 x Quad-Core) */
--	{ "TA0P", "TCAG", "TCAH", "TCBG", "TCBH", "TC0C", "TC0D", "TC0P",
--	  "TC1C", "TC1D", "TC2C", "TC2D", "TC3C", "TC3D", "THTG", "TH0P",
--	  "TH1P", "TH2P", "TH3P", "TMAP", "TMAS", "TMBS", "TM0P", "TM0S",
--	  "TM1P", "TM1S", "TM2P", "TM2S", "TM3S", "TM8P", "TM8S", "TM9P",
--	  "TM9S", "TN0H", "TS0C", NULL },
--/* Set 5: iMac */
--	{ "TC0D", "TA0P", "TG0P", "TG0D", "TG0H", "TH0P", "Tm0P", "TO0P",
--	  "Tp0C", NULL },
--/* Set 6: Macbook3 set */
--	{ "TB0T", "TC0D", "TC0P", "TM0P", "TN0P", "TTF0", "TW0P", "Th0H",
--	  "Th0S", "Th1H", NULL },
--/* Set 7: Macbook Air */
--	{ "TB0T", "TB1S", "TB1T", "TB2S", "TB2T", "TC0D", "TC0P", "TCFP",
--	  "TTF0", "TW0P", "Th0H", "Tp0P", "TpFP", "Ts0P", "Ts0S", NULL },
--/* Set 8: Macbook Pro 4,1 (Penryn) */
--	{ "TB0T", "TC0D", "TC0P", "TG0D", "TG0H", "TTF0", "TW0P", "Th0H",
--	  "Th1H", "Th2H", "Tm0P", "Ts0P", NULL },
--/* Set 9: Macbook Pro 3,1 (Santa Rosa) */
--	{ "TALP", "TB0T", "TC0D", "TC0P", "TG0D", "TG0H", "TTF0", "TW0P",
--	  "Th0H", "Th1H", "Th2H", "Tm0P", "Ts0P", NULL },
--/* Set 10: iMac 5,1 */
--	{ "TA0P", "TC0D", "TC0P", "TG0D", "TH0P", "TO0P", "Tm0P", NULL },
--/* Set 11: Macbook 5,1 */
--	{ "TB0T", "TB1T", "TB2T", "TB3T", "TC0D", "TC0P", "TN0D", "TN0P",
--	  "TTF0", "Th0H", "Th1H", "ThFH", "Ts0P", "Ts0S", NULL },
--/* Set 12: Macbook Pro 5,1 */
--	{ "TB0T", "TB1T", "TB2T", "TB3T", "TC0D", "TC0F", "TC0P", "TG0D",
--	  "TG0F", "TG0H", "TG0P", "TG0T", "TG1H", "TN0D", "TN0P", "TTF0",
--	  "Th2H", "Tm0P", "Ts0P", "Ts0S", NULL },
--/* Set 13: iMac 8,1 */
--	{ "TA0P", "TC0D", "TC0H", "TC0P", "TG0D", "TG0H", "TG0P", "TH0P",
--	  "TL0P", "TO0P", "TW0P", "Tm0P", "Tp0P", NULL },
--/* Set 14: iMac 6,1 */
--	{ "TA0P", "TC0D", "TC0H", "TC0P", "TG0D", "TG0H", "TG0P", "TH0P",
--	  "TO0P", "Tp0P", NULL },
--/* Set 15: MacBook Air 2,1 */
--	{ "TB0T", "TB1S", "TB1T", "TB2S", "TB2T", "TC0D", "TN0D", "TTF0",
--	  "TV0P", "TVFP", "TW0P", "Th0P", "Tp0P", "Tp1P", "TpFP", "Ts0P",
--	  "Ts0S", NULL },
--/* Set 16: Mac Pro 3,1 (2 x Quad-Core) */
--	{ "TA0P", "TCAG", "TCAH", "TCBG", "TCBH", "TC0C", "TC0D", "TC0P",
--	  "TC1C", "TC1D", "TC2C", "TC2D", "TC3C", "TC3D", "TH0P", "TH1P",
--	  "TH2P", "TH3P", "TMAP", "TMAS", "TMBS", "TM0P", "TM0S", "TM1P",
--	  "TM1S", "TM2P", "TM2S", "TM3S", "TM8P", "TM8S", "TM9P", "TM9S",
--	  "TN0C", "TN0D", "TN0H", "TS0C", "Tp0C", "Tp1C", "Tv0S", "Tv1S",
--	  NULL },
--/* Set 17: iMac 9,1 */
--	{ "TA0P", "TC0D", "TC0H", "TC0P", "TG0D", "TG0H", "TH0P", "TL0P",
--	  "TN0D", "TN0H", "TN0P", "TO0P", "Tm0P", "Tp0P", NULL },
--/* Set 18: MacBook Pro 2,2 */
--	{ "TB0T", "TC0D", "TC0P", "TG0H", "TG0P", "TG0T", "TM0P", "TTF0",
--	  "Th0H", "Th1H", "Tm0P", "Ts0P", NULL },
--/* Set 19: Macbook Pro 5,3 */
--	{ "TB0T", "TB1T", "TB2T", "TB3T", "TC0D", "TC0F", "TC0P", "TG0D",
--	  "TG0F", "TG0H", "TG0P", "TG0T", "TN0D", "TN0P", "TTF0", "Th2H",
--	  "Tm0P", "Ts0P", "Ts0S", NULL },
--/* Set 20: MacBook Pro 5,4 */
--	{ "TB0T", "TB1T", "TB2T", "TB3T", "TC0D", "TC0F", "TC0P", "TN0D",
--	  "TN0P", "TTF0", "Th2H", "Ts0P", "Ts0S", NULL },
--/* Set 21: MacBook Pro 6,2 */
--	{ "TB0T", "TB1T", "TB2T", "TC0C", "TC0D", "TC0P", "TC1C", "TG0D",
--	  "TG0P", "TG0T", "TMCD", "TP0P", "TPCD", "Th1H", "Th2H", "Tm0P",
--	  "Ts0P", "Ts0S", NULL },
--/* Set 22: MacBook Pro 7,1 */
--	{ "TB0T", "TB1T", "TB2T", "TC0D", "TC0P", "TN0D", "TN0P", "TN0S",
--	  "TN1D", "TN1F", "TN1G", "TN1S", "Th1H", "Ts0P", "Ts0S", NULL },
--/* Set 23: MacBook Air 3,1 */
--	{ "TB0T", "TB1T", "TB2T", "TC0D", "TC0E", "TC0P", "TC1E", "TCZ3",
--	  "TCZ4", "TCZ5", "TG0E", "TG1E", "TG2E", "TGZ3", "TGZ4", "TGZ5",
--	  "TH0F", "TH0O", "TM0P" },
--};
--
- /* List of keys used to read/write fan speeds */
- static const char* fan_speed_keys[] = {
- 	FAN_ACTUAL_SPEED,
-@@ -192,6 +104,8 @@ static const char* fan_speed_keys[] = {
- #define SENSOR_Y 1
- #define SENSOR_Z 2
+ #define APPLESMC_MAX_DATA_LENGTH 32
  
-+#define to_index(attr) (to_sensor_dev_attr(attr)->index)
-+
- /* Structure to be passed to DMI_MATCH function */
- struct dmi_match_data {
- /* Indicates whether this computer has an accelerometer. */
-@@ -202,6 +116,20 @@ struct dmi_match_data {
++/* wait up to 32 ms for a status change. */
+ #define APPLESMC_MIN_WAIT	0x0040
+ #define APPLESMC_MAX_WAIT	0x8000
+ 
+@@ -200,6 +202,25 @@ struct dmi_match_data {
  	int temperature_set;
  };
  
-+/* Dynamic device node attributes */
-+struct applesmc_dev_attr {
-+	struct sensor_device_attribute sda;	/* hwmon attributes */
-+	char name[32];				/* room for node file name */
++/* AppleSMC entry - cached register information */
++struct applesmc_entry {
++	char key[5];		/* four-letter key code */
++	u8 valid;		/* set when entry is successfully read once */
++	u8 len;			/* bounded by APPLESMC_MAX_DATA_LENGTH */
++	char type[5];		/* four-letter type code */
++	u8 flags;		/* 0x10: func; 0x40: write; 0x80: read */
 +};
 +
-+/* Dynamic device node group */
-+struct applesmc_node_group {
-+	char *format;				/* format string */
-+	void *show;				/* show function */
-+	void *store;				/* store function */
-+	struct applesmc_dev_attr *nodes;	/* dynamic node array */
++/* Register lookup and registers common to all SMCs */
++static struct applesmc_registers {
++	struct mutex mutex;		/* register read/write mutex */
++	unsigned int key_count;		/* number of SMC registers */
++	bool init_complete;		/* true when fully initialized */
++	struct applesmc_entry *cache;	/* cached key entries */
++} smcreg = {
++	.mutex = __MUTEX_INITIALIZER(smcreg.mutex),
 +};
 +
- /* AppleSMC entry - cached register information */
- struct applesmc_entry {
- 	char key[5];		/* four-letter key code */
-@@ -215,6 +143,9 @@ struct applesmc_entry {
- static struct applesmc_registers {
- 	struct mutex mutex;		/* register read/write mutex */
- 	unsigned int key_count;		/* number of SMC registers */
-+	unsigned int temp_count;	/* number of temperature registers */
-+	unsigned int temp_begin;	/* temperature lower index bound */
-+	unsigned int temp_end;		/* temperature upper index bound */
- 	bool init_complete;		/* true when fully initialized */
- 	struct applesmc_entry *cache;	/* cached key entries */
- } smcreg = {
-@@ -239,9 +170,6 @@ static unsigned int applesmc_light;
- /* The number of fans handled by the driver */
- static unsigned int fans_handled;
+ static const int debug;
+ static struct platform_device *pdev;
+ static s16 rest_x;
+@@ -221,8 +242,6 @@ static unsigned int fans_handled;
+ /* Indicates which temperature sensors set to use. */
+ static unsigned int applesmc_temperature_set;
  
--/* Indicates which temperature sensors set to use. */
--static unsigned int applesmc_temperature_set;
+-static DEFINE_MUTEX(applesmc_lock);
 -
  /*
   * Last index written to key_at_index sysfs file, and value to use for all other
   * key_at_index_* sysfs files.
-@@ -592,9 +520,17 @@ static int applesmc_init_smcreg_try(void)
- 	if (!s->cache)
- 		return -ENOMEM;
+@@ -245,16 +264,10 @@ static int __wait_status(u8 val)
+ 	for (us = APPLESMC_MIN_WAIT; us < APPLESMC_MAX_WAIT; us <<= 1) {
+ 		udelay(us);
+ 		if ((inb(APPLESMC_CMD_PORT) & APPLESMC_STATUS_MASK) == val) {
+-			if (debug)
+-				printk(KERN_DEBUG
+-					"Waited %d us for status %x\n",
+-					2 * us - APPLESMC_MIN_WAIT, val);
+ 			return 0;
+ 		}
+ 	}
  
-+	ret = applesmc_get_lower_bound(&s->temp_begin, "T");
-+	if (ret)
-+		return ret;
-+	ret = applesmc_get_lower_bound(&s->temp_end, "U");
-+	if (ret)
-+		return ret;
-+	s->temp_count = s->temp_end - s->temp_begin;
+-	pr_warn("wait status failed: %x != %x\n", val, inb(APPLESMC_CMD_PORT));
+-
+ 	return -EIO;
+ }
+ 
+@@ -272,156 +285,228 @@ static int send_command(u8 cmd)
+ 		if ((inb(APPLESMC_CMD_PORT) & APPLESMC_STATUS_MASK) == 0x0c)
+ 			return 0;
+ 	}
+-	pr_warn("command failed: %x -> %x\n", cmd, inb(APPLESMC_CMD_PORT));
+ 	return -EIO;
+ }
+ 
+-/*
+- * applesmc_read_key - reads len bytes from a given key, and put them in buffer.
+- * Returns zero on success or a negative error on failure. Callers must
+- * hold applesmc_lock.
+- */
+-static int applesmc_read_key(const char* key, u8* buffer, u8 len)
++static int send_argument(const char *key)
+ {
+ 	int i;
+ 
+-	if (len > APPLESMC_MAX_DATA_LENGTH) {
+-		pr_err("%s(): cannot read more than %d bytes\n",
+-		       __func__, APPLESMC_MAX_DATA_LENGTH);
+-		return -EINVAL;
+-	}
+-
+-	if (send_command(APPLESMC_READ_CMD))
+-		return -EIO;
+-
+ 	for (i = 0; i < 4; i++) {
+ 		outb(key[i], APPLESMC_DATA_PORT);
+ 		if (__wait_status(0x04))
+ 			return -EIO;
+ 	}
+-	if (debug)
+-		printk(KERN_DEBUG "<%s", key);
++	return 0;
++}
 +
- 	s->init_complete = true;
++static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
++{
++	int i;
++
++	if (send_command(cmd) || send_argument(key)) {
++		pr_warn("%s: read arg fail\n", key);
++		return -EIO;
++	}
  
--	pr_info("key=%d\n", s->key_count);
-+	pr_info("key=%d temp=%d\n", s->key_count, s->temp_count);
+ 	outb(len, APPLESMC_DATA_PORT);
+-	if (debug)
+-		printk(KERN_DEBUG ">%x", len);
+ 
+ 	for (i = 0; i < len; i++) {
+-		if (__wait_status(0x05))
++		if (__wait_status(0x05)) {
++			pr_warn("%s: read data fail\n", key);
+ 			return -EIO;
++		}
+ 		buffer[i] = inb(APPLESMC_DATA_PORT);
+-		if (debug)
+-			printk(KERN_DEBUG "<%x", buffer[i]);
+ 	}
+-	if (debug)
+-		printk(KERN_DEBUG "\n");
  
  	return 0;
  }
-@@ -775,32 +711,38 @@ out:
- static ssize_t applesmc_show_sensor_label(struct device *dev,
- 			struct device_attribute *devattr, char *sysfsbuf)
- {
--	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
--	const char *key =
--		temperature_sensors_sets[applesmc_temperature_set][attr->index];
-+	int index = smcreg.temp_begin + to_index(devattr);
-+	const struct applesmc_entry *entry;
- 
--	return snprintf(sysfsbuf, PAGE_SIZE, "%s\n", key);
-+	entry = applesmc_get_entry_by_index(index);
-+	if (IS_ERR(entry))
-+		return PTR_ERR(entry);
-+
-+	return snprintf(sysfsbuf, PAGE_SIZE, "%s\n", entry->key);
- }
- 
- /* Displays degree Celsius * 1000 */
- static ssize_t applesmc_show_temperature(struct device *dev,
- 			struct device_attribute *devattr, char *sysfsbuf)
- {
-+	int index = smcreg.temp_begin + to_index(devattr);
-+	const struct applesmc_entry *entry;
- 	int ret;
- 	u8 buffer[2];
- 	unsigned int temp;
--	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
--	const char* key =
--		temperature_sensors_sets[applesmc_temperature_set][attr->index];
- 
--	ret = applesmc_read_key(key, buffer, 2);
--	temp = buffer[0]*1000;
--	temp += (buffer[1] >> 6) * 250;
-+	entry = applesmc_get_entry_by_index(index);
-+	if (IS_ERR(entry))
-+		return PTR_ERR(entry);
- 
-+	ret = applesmc_read_entry(entry, buffer, 2);
- 	if (ret)
- 		return ret;
--	else
--		return snprintf(sysfsbuf, PAGE_SIZE, "%u\n", temp);
-+
-+	temp = buffer[0]*1000;
-+	temp += (buffer[1] >> 6) * 250;
-+
-+	return snprintf(sysfsbuf, PAGE_SIZE, "%u\n", temp);
- }
- 
- static ssize_t applesmc_show_fan_speed(struct device *dev,
-@@ -1156,263 +1098,10 @@ static const struct attribute_group fan_attribute_groups[] = {
- 	{ .attrs = fan4_attributes },
- };
  
 -/*
-- * Temperature sensors sysfs entries.
+- * applesmc_write_key - writes len bytes from buffer to a given key.
+- * Returns zero on success or a negative error on failure. Callers must
+- * hold applesmc_lock.
 - */
--static SENSOR_DEVICE_ATTR(temp1_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 0);
--static SENSOR_DEVICE_ATTR(temp2_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 1);
--static SENSOR_DEVICE_ATTR(temp3_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 2);
--static SENSOR_DEVICE_ATTR(temp4_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 3);
--static SENSOR_DEVICE_ATTR(temp5_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 4);
--static SENSOR_DEVICE_ATTR(temp6_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 5);
--static SENSOR_DEVICE_ATTR(temp7_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 6);
--static SENSOR_DEVICE_ATTR(temp8_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 7);
--static SENSOR_DEVICE_ATTR(temp9_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 8);
--static SENSOR_DEVICE_ATTR(temp10_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 9);
--static SENSOR_DEVICE_ATTR(temp11_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 10);
--static SENSOR_DEVICE_ATTR(temp12_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 11);
--static SENSOR_DEVICE_ATTR(temp13_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 12);
--static SENSOR_DEVICE_ATTR(temp14_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 13);
--static SENSOR_DEVICE_ATTR(temp15_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 14);
--static SENSOR_DEVICE_ATTR(temp16_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 15);
--static SENSOR_DEVICE_ATTR(temp17_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 16);
--static SENSOR_DEVICE_ATTR(temp18_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 17);
--static SENSOR_DEVICE_ATTR(temp19_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 18);
--static SENSOR_DEVICE_ATTR(temp20_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 19);
--static SENSOR_DEVICE_ATTR(temp21_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 20);
--static SENSOR_DEVICE_ATTR(temp22_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 21);
--static SENSOR_DEVICE_ATTR(temp23_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 22);
--static SENSOR_DEVICE_ATTR(temp24_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 23);
--static SENSOR_DEVICE_ATTR(temp25_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 24);
--static SENSOR_DEVICE_ATTR(temp26_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 25);
--static SENSOR_DEVICE_ATTR(temp27_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 26);
--static SENSOR_DEVICE_ATTR(temp28_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 27);
--static SENSOR_DEVICE_ATTR(temp29_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 28);
--static SENSOR_DEVICE_ATTR(temp30_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 29);
--static SENSOR_DEVICE_ATTR(temp31_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 30);
--static SENSOR_DEVICE_ATTR(temp32_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 31);
--static SENSOR_DEVICE_ATTR(temp33_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 32);
--static SENSOR_DEVICE_ATTR(temp34_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 33);
--static SENSOR_DEVICE_ATTR(temp35_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 34);
--static SENSOR_DEVICE_ATTR(temp36_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 35);
--static SENSOR_DEVICE_ATTR(temp37_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 36);
--static SENSOR_DEVICE_ATTR(temp38_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 37);
--static SENSOR_DEVICE_ATTR(temp39_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 38);
--static SENSOR_DEVICE_ATTR(temp40_label, S_IRUGO,
--					applesmc_show_sensor_label, NULL, 39);
--static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 0);
--static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 1);
--static SENSOR_DEVICE_ATTR(temp3_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 2);
--static SENSOR_DEVICE_ATTR(temp4_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 3);
--static SENSOR_DEVICE_ATTR(temp5_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 4);
--static SENSOR_DEVICE_ATTR(temp6_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 5);
--static SENSOR_DEVICE_ATTR(temp7_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 6);
--static SENSOR_DEVICE_ATTR(temp8_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 7);
--static SENSOR_DEVICE_ATTR(temp9_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 8);
--static SENSOR_DEVICE_ATTR(temp10_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 9);
--static SENSOR_DEVICE_ATTR(temp11_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 10);
--static SENSOR_DEVICE_ATTR(temp12_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 11);
--static SENSOR_DEVICE_ATTR(temp13_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 12);
--static SENSOR_DEVICE_ATTR(temp14_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 13);
--static SENSOR_DEVICE_ATTR(temp15_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 14);
--static SENSOR_DEVICE_ATTR(temp16_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 15);
--static SENSOR_DEVICE_ATTR(temp17_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 16);
--static SENSOR_DEVICE_ATTR(temp18_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 17);
--static SENSOR_DEVICE_ATTR(temp19_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 18);
--static SENSOR_DEVICE_ATTR(temp20_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 19);
--static SENSOR_DEVICE_ATTR(temp21_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 20);
--static SENSOR_DEVICE_ATTR(temp22_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 21);
--static SENSOR_DEVICE_ATTR(temp23_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 22);
--static SENSOR_DEVICE_ATTR(temp24_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 23);
--static SENSOR_DEVICE_ATTR(temp25_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 24);
--static SENSOR_DEVICE_ATTR(temp26_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 25);
--static SENSOR_DEVICE_ATTR(temp27_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 26);
--static SENSOR_DEVICE_ATTR(temp28_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 27);
--static SENSOR_DEVICE_ATTR(temp29_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 28);
--static SENSOR_DEVICE_ATTR(temp30_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 29);
--static SENSOR_DEVICE_ATTR(temp31_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 30);
--static SENSOR_DEVICE_ATTR(temp32_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 31);
--static SENSOR_DEVICE_ATTR(temp33_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 32);
--static SENSOR_DEVICE_ATTR(temp34_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 33);
--static SENSOR_DEVICE_ATTR(temp35_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 34);
--static SENSOR_DEVICE_ATTR(temp36_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 35);
--static SENSOR_DEVICE_ATTR(temp37_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 36);
--static SENSOR_DEVICE_ATTR(temp38_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 37);
--static SENSOR_DEVICE_ATTR(temp39_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 38);
--static SENSOR_DEVICE_ATTR(temp40_input, S_IRUGO,
--					applesmc_show_temperature, NULL, 39);
--
--static struct attribute *label_attributes[] = {
--	&sensor_dev_attr_temp1_label.dev_attr.attr,
--	&sensor_dev_attr_temp2_label.dev_attr.attr,
--	&sensor_dev_attr_temp3_label.dev_attr.attr,
--	&sensor_dev_attr_temp4_label.dev_attr.attr,
--	&sensor_dev_attr_temp5_label.dev_attr.attr,
--	&sensor_dev_attr_temp6_label.dev_attr.attr,
--	&sensor_dev_attr_temp7_label.dev_attr.attr,
--	&sensor_dev_attr_temp8_label.dev_attr.attr,
--	&sensor_dev_attr_temp9_label.dev_attr.attr,
--	&sensor_dev_attr_temp10_label.dev_attr.attr,
--	&sensor_dev_attr_temp11_label.dev_attr.attr,
--	&sensor_dev_attr_temp12_label.dev_attr.attr,
--	&sensor_dev_attr_temp13_label.dev_attr.attr,
--	&sensor_dev_attr_temp14_label.dev_attr.attr,
--	&sensor_dev_attr_temp15_label.dev_attr.attr,
--	&sensor_dev_attr_temp16_label.dev_attr.attr,
--	&sensor_dev_attr_temp17_label.dev_attr.attr,
--	&sensor_dev_attr_temp18_label.dev_attr.attr,
--	&sensor_dev_attr_temp19_label.dev_attr.attr,
--	&sensor_dev_attr_temp20_label.dev_attr.attr,
--	&sensor_dev_attr_temp21_label.dev_attr.attr,
--	&sensor_dev_attr_temp22_label.dev_attr.attr,
--	&sensor_dev_attr_temp23_label.dev_attr.attr,
--	&sensor_dev_attr_temp24_label.dev_attr.attr,
--	&sensor_dev_attr_temp25_label.dev_attr.attr,
--	&sensor_dev_attr_temp26_label.dev_attr.attr,
--	&sensor_dev_attr_temp27_label.dev_attr.attr,
--	&sensor_dev_attr_temp28_label.dev_attr.attr,
--	&sensor_dev_attr_temp29_label.dev_attr.attr,
--	&sensor_dev_attr_temp30_label.dev_attr.attr,
--	&sensor_dev_attr_temp31_label.dev_attr.attr,
--	&sensor_dev_attr_temp32_label.dev_attr.attr,
--	&sensor_dev_attr_temp33_label.dev_attr.attr,
--	&sensor_dev_attr_temp34_label.dev_attr.attr,
--	&sensor_dev_attr_temp35_label.dev_attr.attr,
--	&sensor_dev_attr_temp36_label.dev_attr.attr,
--	&sensor_dev_attr_temp37_label.dev_attr.attr,
--	&sensor_dev_attr_temp38_label.dev_attr.attr,
--	&sensor_dev_attr_temp39_label.dev_attr.attr,
--	&sensor_dev_attr_temp40_label.dev_attr.attr,
--	NULL
--};
--
--static struct attribute *temperature_attributes[] = {
--	&sensor_dev_attr_temp1_input.dev_attr.attr,
--	&sensor_dev_attr_temp2_input.dev_attr.attr,
--	&sensor_dev_attr_temp3_input.dev_attr.attr,
--	&sensor_dev_attr_temp4_input.dev_attr.attr,
--	&sensor_dev_attr_temp5_input.dev_attr.attr,
--	&sensor_dev_attr_temp6_input.dev_attr.attr,
--	&sensor_dev_attr_temp7_input.dev_attr.attr,
--	&sensor_dev_attr_temp8_input.dev_attr.attr,
--	&sensor_dev_attr_temp9_input.dev_attr.attr,
--	&sensor_dev_attr_temp10_input.dev_attr.attr,
--	&sensor_dev_attr_temp11_input.dev_attr.attr,
--	&sensor_dev_attr_temp12_input.dev_attr.attr,
--	&sensor_dev_attr_temp13_input.dev_attr.attr,
--	&sensor_dev_attr_temp14_input.dev_attr.attr,
--	&sensor_dev_attr_temp15_input.dev_attr.attr,
--	&sensor_dev_attr_temp16_input.dev_attr.attr,
--	&sensor_dev_attr_temp17_input.dev_attr.attr,
--	&sensor_dev_attr_temp18_input.dev_attr.attr,
--	&sensor_dev_attr_temp19_input.dev_attr.attr,
--	&sensor_dev_attr_temp20_input.dev_attr.attr,
--	&sensor_dev_attr_temp21_input.dev_attr.attr,
--	&sensor_dev_attr_temp22_input.dev_attr.attr,
--	&sensor_dev_attr_temp23_input.dev_attr.attr,
--	&sensor_dev_attr_temp24_input.dev_attr.attr,
--	&sensor_dev_attr_temp25_input.dev_attr.attr,
--	&sensor_dev_attr_temp26_input.dev_attr.attr,
--	&sensor_dev_attr_temp27_input.dev_attr.attr,
--	&sensor_dev_attr_temp28_input.dev_attr.attr,
--	&sensor_dev_attr_temp29_input.dev_attr.attr,
--	&sensor_dev_attr_temp30_input.dev_attr.attr,
--	&sensor_dev_attr_temp31_input.dev_attr.attr,
--	&sensor_dev_attr_temp32_input.dev_attr.attr,
--	&sensor_dev_attr_temp33_input.dev_attr.attr,
--	&sensor_dev_attr_temp34_input.dev_attr.attr,
--	&sensor_dev_attr_temp35_input.dev_attr.attr,
--	&sensor_dev_attr_temp36_input.dev_attr.attr,
--	&sensor_dev_attr_temp37_input.dev_attr.attr,
--	&sensor_dev_attr_temp38_input.dev_attr.attr,
--	&sensor_dev_attr_temp39_input.dev_attr.attr,
--	&sensor_dev_attr_temp40_input.dev_attr.attr,
--	NULL
--};
--
--static const struct attribute_group temperature_attributes_group =
--	{ .attrs = temperature_attributes };
--
--static const struct attribute_group label_attributes_group = {
--	.attrs = label_attributes
-+static struct applesmc_node_group temp_group[] = {
-+	{ "temp%d_label", applesmc_show_sensor_label },
-+	{ "temp%d_input", applesmc_show_temperature },
-+	{ }
- };
- 
- /* Module stuff */
-@@ -1422,7 +1111,6 @@ static const struct attribute_group label_attributes_group = {
-  */
- static int applesmc_dmi_match(const struct dmi_system_id *id)
+-static int applesmc_write_key(const char* key, u8* buffer, u8 len)
++static int write_smc(u8 cmd, const char *key, const u8 *buffer, u8 len)
  {
--	int i = 0;
- 	struct dmi_match_data* dmi_data = id->driver_data;
- 	pr_info("%s detected:\n", id->ident);
- 	applesmc_accelerometer = dmi_data->accelerometer;
-@@ -1432,13 +1120,65 @@ static int applesmc_dmi_match(const struct dmi_system_id *id)
- 	pr_info(" - Model %s light sensors and backlight\n",
- 		applesmc_light ? "with" : "without");
+ 	int i;
  
--	applesmc_temperature_set =  dmi_data->temperature_set;
--	while (temperature_sensors_sets[applesmc_temperature_set][i] != NULL)
--		i++;
--	pr_info(" - Model with %d temperature sensors\n", i);
- 	return 1;
+-	if (len > APPLESMC_MAX_DATA_LENGTH) {
+-		pr_err("%s(): cannot write more than %d bytes\n",
+-		       __func__, APPLESMC_MAX_DATA_LENGTH);
+-		return -EINVAL;
+-	}
+-
+-	if (send_command(APPLESMC_WRITE_CMD))
++	if (send_command(cmd) || send_argument(key)) {
++		pr_warn("%s: write arg fail\n", key);
+ 		return -EIO;
+-
+-	for (i = 0; i < 4; i++) {
+-		outb(key[i], APPLESMC_DATA_PORT);
+-		if (__wait_status(0x04))
+-			return -EIO;
+ 	}
+ 
+ 	outb(len, APPLESMC_DATA_PORT);
+ 
+ 	for (i = 0; i < len; i++) {
+-		if (__wait_status(0x04))
++		if (__wait_status(0x04)) {
++			pr_warn("%s: write data fail\n", key);
+ 			return -EIO;
++		}
+ 		outb(buffer[i], APPLESMC_DATA_PORT);
+ 	}
+ 
+ 	return 0;
  }
  
-+/*
-+ * applesmc_destroy_nodes - remove files and free associated memory
-+ */
-+static void applesmc_destroy_nodes(struct applesmc_node_group *groups)
++static int read_register_count(unsigned int *count)
 +{
-+	struct applesmc_node_group *grp;
-+	struct applesmc_dev_attr *node;
++	__be32 be;
++	int ret;
 +
-+	for (grp = groups; grp->nodes; grp++) {
-+		for (node = grp->nodes; node->sda.dev_attr.attr.name; node++)
-+			sysfs_remove_file(&pdev->dev.kobj,
-+					  &node->sda.dev_attr.attr);
-+		kfree(grp->nodes);
-+		grp->nodes = NULL;
-+	}
++	ret = read_smc(APPLESMC_READ_CMD, KEY_COUNT_KEY, (u8 *)&be, 4);
++	if (ret)
++		return ret;
++
++	*count = be32_to_cpu(be);
++	return 0;
 +}
 +
-+/*
-+ * applesmc_create_nodes - create a two-dimensional group of sysfs files
-+ */
-+static int applesmc_create_nodes(struct applesmc_node_group *groups, int num)
-+{
-+	struct applesmc_node_group *grp;
-+	struct applesmc_dev_attr *node;
-+	struct attribute *attr;
-+	int ret, i;
+ /*
+- * applesmc_get_key_at_index - get key at index, and put the result in key
+- * (char[6]). Returns zero on success or a negative error on failure. Callers
+- * must hold applesmc_lock.
++ * Serialized I/O
++ *
++ * Returns zero on success or a negative error on failure.
++ * All functions below are concurrency safe - callers should NOT hold lock.
+  */
+-static int applesmc_get_key_at_index(int index, char* key)
 +
-+	for (grp = groups; grp->format; grp++) {
-+		grp->nodes = kcalloc(num + 1, sizeof(*node), GFP_KERNEL);
-+		if (!grp->nodes) {
-+			ret = -ENOMEM;
-+			goto out;
-+		}
-+		for (i = 0; i < num; i++) {
-+			node = &grp->nodes[i];
-+			sprintf(node->name, grp->format, i + 1);
-+			node->sda.index = i;
-+			node->sda.dev_attr.show = grp->show;
-+			node->sda.dev_attr.store = grp->store;
-+			attr = &node->sda.dev_attr.attr;
-+			attr->name = node->name;
-+			attr->mode = S_IRUGO | (grp->store ? S_IWUSR : 0);
-+			ret = sysfs_create_file(&pdev->dev.kobj, attr);
-+			if (ret) {
-+				attr->name = NULL;
-+				goto out;
-+			}
-+		}
-+	}
-+
-+	return 0;
-+out:
-+	applesmc_destroy_nodes(groups);
++static int applesmc_read_entry(const struct applesmc_entry *entry,
++			       u8 *buf, u8 len)
+ {
+-	int i;
+-	u8 readkey[4];
+-	readkey[0] = index >> 24;
+-	readkey[1] = index >> 16;
+-	readkey[2] = index >> 8;
+-	readkey[3] = index;
++	int ret;
+ 
+-	if (send_command(APPLESMC_GET_KEY_BY_INDEX_CMD))
+-		return -EIO;
++	if (entry->len != len)
++		return -EINVAL;
++	mutex_lock(&smcreg.mutex);
++	ret = read_smc(APPLESMC_READ_CMD, entry->key, buf, len);
++	mutex_unlock(&smcreg.mutex);
+ 
+-	for (i = 0; i < 4; i++) {
+-		outb(readkey[i], APPLESMC_DATA_PORT);
+-		if (__wait_status(0x04))
+-			return -EIO;
 +	return ret;
 +}
 +
- /* Create accelerometer ressources */
- static int applesmc_create_accelerometer(void)
++static int applesmc_write_entry(const struct applesmc_entry *entry,
++				const u8 *buf, u8 len)
++{
++	int ret;
++
++	if (entry->len != len)
++		return -EINVAL;
++	mutex_lock(&smcreg.mutex);
++	ret = write_smc(APPLESMC_WRITE_CMD, entry->key, buf, len);
++	mutex_unlock(&smcreg.mutex);
++	return ret;
++}
++
++static const struct applesmc_entry *applesmc_get_entry_by_index(int index)
++{
++	struct applesmc_entry *cache = &smcreg.cache[index];
++	u8 key[4], info[6];
++	__be32 be;
++	int ret = 0;
++
++	if (cache->valid)
++		return cache;
++
++	mutex_lock(&smcreg.mutex);
++
++	if (cache->valid)
++		goto out;
++	be = cpu_to_be32(index);
++	ret = read_smc(APPLESMC_GET_KEY_BY_INDEX_CMD, (u8 *)&be, key, 4);
++	if (ret)
++		goto out;
++	ret = read_smc(APPLESMC_GET_KEY_TYPE_CMD, key, info, 6);
++	if (ret)
++		goto out;
++
++	memcpy(cache->key, key, 4);
++	cache->len = info[0];
++	memcpy(cache->type, &info[1], 4);
++	cache->flags = info[5];
++	cache->valid = 1;
++
++out:
++	mutex_unlock(&smcreg.mutex);
++	if (ret)
++		return ERR_PTR(ret);
++	return cache;
++}
++
++static int applesmc_get_lower_bound(unsigned int *lo, const char *key)
++{
++	int begin = 0, end = smcreg.key_count;
++	const struct applesmc_entry *entry;
++
++	while (begin != end) {
++		int middle = begin + (end - begin) / 2;
++		entry = applesmc_get_entry_by_index(middle);
++		if (IS_ERR(entry))
++			return PTR_ERR(entry);
++		if (strcmp(entry->key, key) < 0)
++			begin = middle + 1;
++		else
++			end = middle;
+ 	}
+ 
+-	outb(4, APPLESMC_DATA_PORT);
++	*lo = begin;
++	return 0;
++}
+ 
+-	for (i = 0; i < 4; i++) {
+-		if (__wait_status(0x05))
+-			return -EIO;
+-		key[i] = inb(APPLESMC_DATA_PORT);
++static int applesmc_get_upper_bound(unsigned int *hi, const char *key)
++{
++	int begin = 0, end = smcreg.key_count;
++	const struct applesmc_entry *entry;
++
++	while (begin != end) {
++		int middle = begin + (end - begin) / 2;
++		entry = applesmc_get_entry_by_index(middle);
++		if (IS_ERR(entry))
++			return PTR_ERR(entry);
++		if (strcmp(key, entry->key) < 0)
++			end = middle;
++		else
++			begin = middle + 1;
+ 	}
+-	key[4] = 0;
+ 
++	*hi = begin;
+ 	return 0;
+ }
+ 
+-/*
+- * applesmc_get_key_type - get key type, and put the result in type (char[6]).
+- * Returns zero on success or a negative error on failure. Callers must
+- * hold applesmc_lock.
+- */
+-static int applesmc_get_key_type(char* key, char* type)
++static const struct applesmc_entry *applesmc_get_entry_by_key(const char *key)
  {
-@@ -1663,7 +1403,6 @@ static int __init applesmc_init(void)
+-	int i;
++	int begin, end;
++	int ret;
+ 
+-	if (send_command(APPLESMC_GET_KEY_TYPE_CMD))
+-		return -EIO;
++	ret = applesmc_get_lower_bound(&begin, key);
++	if (ret)
++		return ERR_PTR(ret);
++	ret = applesmc_get_upper_bound(&end, key);
++	if (ret)
++		return ERR_PTR(ret);
++	if (end - begin != 1)
++		return ERR_PTR(-EINVAL);
+ 
+-	for (i = 0; i < 4; i++) {
+-		outb(key[i], APPLESMC_DATA_PORT);
+-		if (__wait_status(0x04))
+-			return -EIO;
+-	}
++	return applesmc_get_entry_by_index(begin);
++}
+ 
+-	outb(6, APPLESMC_DATA_PORT);
++static int applesmc_read_key(const char *key, u8 *buffer, u8 len)
++{
++	const struct applesmc_entry *entry;
+ 
+-	for (i = 0; i < 6; i++) {
+-		if (__wait_status(0x05))
+-			return -EIO;
+-		type[i] = inb(APPLESMC_DATA_PORT);
+-	}
+-	type[5] = 0;
++	entry = applesmc_get_entry_by_key(key);
++	if (IS_ERR(entry))
++		return PTR_ERR(entry);
+ 
+-	return 0;
++	return applesmc_read_entry(entry, buffer, len);
++}
++
++static int applesmc_write_key(const char *key, const u8 *buffer, u8 len)
++{
++	const struct applesmc_entry *entry;
++
++	entry = applesmc_get_entry_by_key(key);
++	if (IS_ERR(entry))
++		return PTR_ERR(entry);
++
++	return applesmc_write_entry(entry, buffer, len);
+ }
+ 
+ /*
+- * applesmc_read_motion_sensor - Read motion sensor (X, Y or Z). Callers must
+- * hold applesmc_lock.
++ * applesmc_read_motion_sensor - Read motion sensor (X, Y or Z).
+  */
+ static int applesmc_read_motion_sensor(int index, s16* value)
+ {
+@@ -458,12 +543,10 @@ static void applesmc_device_init(void)
+ 	if (!applesmc_accelerometer)
+ 		return;
+ 
+-	mutex_lock(&applesmc_lock);
+-
+ 	for (total = INIT_TIMEOUT_MSECS; total > 0; total -= INIT_WAIT_MSECS) {
+ 		if (!applesmc_read_key(MOTION_SENSOR_KEY, buffer, 2) &&
+ 				(buffer[0] != 0x00 || buffer[1] != 0x00))
+-			goto out;
++			return;
+ 		buffer[0] = 0xe0;
+ 		buffer[1] = 0x00;
+ 		applesmc_write_key(MOTION_SENSOR_KEY, buffer, 2);
+@@ -471,34 +554,93 @@ static void applesmc_device_init(void)
+ 	}
+ 
+ 	pr_warn("failed to init the device\n");
+-
+-out:
+-	mutex_unlock(&applesmc_lock);
+ }
+ 
+ /*
+- * applesmc_get_fan_count - get the number of fans. Callers must NOT hold
+- * applesmc_lock.
++ * applesmc_get_fan_count - get the number of fans.
+  */
+ static int applesmc_get_fan_count(void)
  {
  	int ret;
- 	int count;
--	int i;
+ 	u8 buffer[1];
  
- 	if (!dmi_check_system(applesmc_whitelist)) {
- 		pr_warn("supported laptop not found!\n");
-@@ -1722,24 +1461,9 @@ static int __init applesmc_init(void)
- 		fans_handled++;
- 	}
+-	mutex_lock(&applesmc_lock);
+-
+ 	ret = applesmc_read_key(FANS_COUNT, buffer, 1);
  
--	for (i = 0;
--	     temperature_sensors_sets[applesmc_temperature_set][i] != NULL;
--	     i++) {
--		if (temperature_attributes[i] == NULL ||
--		    label_attributes[i] == NULL) {
--			pr_err("More temperature sensors in temperature_sensors_sets (at least %i) than available sysfs files in temperature_attributes (%i), please report this bug\n",
--			       i, i-1);
--			goto out_temperature;
--		}
--		ret = sysfs_create_file(&pdev->dev.kobj,
--						temperature_attributes[i]);
--		if (ret)
--			goto out_temperature;
--		ret = sysfs_create_file(&pdev->dev.kobj,
--						label_attributes[i]);
--		if (ret)
--			goto out_temperature;
--	}
-+	ret = applesmc_create_nodes(temp_group, smcreg.temp_count);
+-	mutex_unlock(&applesmc_lock);
+ 	if (ret)
+ 		return ret;
+ 	else
+ 		return buffer[0];
+ }
+ 
++/*
++ * applesmc_init_smcreg_try - Try to initialize register cache. Idempotent.
++ */
++static int applesmc_init_smcreg_try(void)
++{
++	struct applesmc_registers *s = &smcreg;
++	int ret;
++
++	if (s->init_complete)
++		return 0;
++
++	ret = read_register_count(&s->key_count);
 +	if (ret)
-+		goto out_fans;
++		return ret;
++
++	if (!s->cache)
++		s->cache = kcalloc(s->key_count, sizeof(*s->cache), GFP_KERNEL);
++	if (!s->cache)
++		return -ENOMEM;
++
++	s->init_complete = true;
++
++	pr_info("key=%d\n", s->key_count);
++
++	return 0;
++}
++
++/*
++ * applesmc_init_smcreg - Initialize register cache.
++ *
++ * Retries until initialization is successful, or the operation times out.
++ *
++ */
++static int applesmc_init_smcreg(void)
++{
++	int ms, ret;
++
++	for (ms = 0; ms < INIT_TIMEOUT_MSECS; ms += INIT_WAIT_MSECS) {
++		ret = applesmc_init_smcreg_try();
++		if (!ret) {
++			if (ms)
++				pr_info("init_smcreg() took %d ms\n", ms);
++			return 0;
++		}
++		msleep(INIT_WAIT_MSECS);
++	}
++
++	kfree(smcreg.cache);
++	smcreg.cache = NULL;
++
++	return ret;
++}
++
++static void applesmc_destroy_smcreg(void)
++{
++	kfree(smcreg.cache);
++	smcreg.cache = NULL;
++	smcreg.init_complete = false;
++}
++
+ /* Device model stuff */
+ static int applesmc_probe(struct platform_device *dev)
+ {
++	int ret;
++
++	ret = applesmc_init_smcreg();
++	if (ret)
++		return ret;
++
+ 	applesmc_device_init();
  
- 	if (applesmc_accelerometer) {
- 		ret = applesmc_create_accelerometer();
-@@ -1789,8 +1513,7 @@ out_accelerometer:
- 	if (applesmc_accelerometer)
- 		applesmc_release_accelerometer();
- out_temperature:
--	sysfs_remove_group(&pdev->dev.kobj, &label_attributes_group);
--	sysfs_remove_group(&pdev->dev.kobj, &temperature_attributes_group);
-+	applesmc_destroy_nodes(temp_group);
- out_fans:
- 	while (fans_handled)
- 		sysfs_remove_group(&pdev->dev.kobj,
-@@ -1821,8 +1544,7 @@ static void __exit applesmc_exit(void)
+ 	return 0;
+@@ -507,10 +649,8 @@ static int applesmc_probe(struct platform_device *dev)
+ /* Synchronize device with memorized backlight state */
+ static int applesmc_pm_resume(struct device *dev)
+ {
+-	mutex_lock(&applesmc_lock);
+ 	if (applesmc_light)
+ 		applesmc_write_key(BACKLIGHT_KEY, backlight_state, 2);
+-	mutex_unlock(&applesmc_lock);
+ 	return 0;
+ }
+ 
+@@ -551,20 +691,15 @@ static void applesmc_idev_poll(struct input_polled_dev *dev)
+ 	struct input_dev *idev = dev->input;
+ 	s16 x, y;
+ 
+-	mutex_lock(&applesmc_lock);
+-
+ 	if (applesmc_read_motion_sensor(SENSOR_X, &x))
+-		goto out;
++		return;
+ 	if (applesmc_read_motion_sensor(SENSOR_Y, &y))
+-		goto out;
++		return;
+ 
+ 	x = -x;
+ 	input_report_abs(idev, ABS_X, x - rest_x);
+ 	input_report_abs(idev, ABS_Y, y - rest_y);
+ 	input_sync(idev);
+-
+-out:
+-	mutex_unlock(&applesmc_lock);
+ }
+ 
+ /* Sysfs Files */
+@@ -581,8 +716,6 @@ static ssize_t applesmc_position_show(struct device *dev,
+ 	int ret;
+ 	s16 x, y, z;
+ 
+-	mutex_lock(&applesmc_lock);
+-
+ 	ret = applesmc_read_motion_sensor(SENSOR_X, &x);
+ 	if (ret)
+ 		goto out;
+@@ -594,7 +727,6 @@ static ssize_t applesmc_position_show(struct device *dev,
+ 		goto out;
+ 
+ out:
+-	mutex_unlock(&applesmc_lock);
+ 	if (ret)
+ 		return ret;
+ 	else
+@@ -604,18 +736,19 @@ out:
+ static ssize_t applesmc_light_show(struct device *dev,
+ 				struct device_attribute *attr, char *sysfsbuf)
+ {
++	const struct applesmc_entry *entry;
+ 	static int data_length;
+ 	int ret;
+ 	u8 left = 0, right = 0;
+-	u8 buffer[10], query[6];
+-
+-	mutex_lock(&applesmc_lock);
++	u8 buffer[10];
+ 
+ 	if (!data_length) {
+-		ret = applesmc_get_key_type(LIGHT_SENSOR_LEFT_KEY, query);
+-		if (ret)
+-			goto out;
+-		data_length = clamp_val(query[0], 0, 10);
++		entry = applesmc_get_entry_by_key(LIGHT_SENSOR_LEFT_KEY);
++		if (IS_ERR(entry))
++			return PTR_ERR(entry);
++		if (entry->len > 10)
++			return -ENXIO;
++		data_length = entry->len;
+ 		pr_info("light sensor data length set to %d\n", data_length);
  	}
- 	if (applesmc_accelerometer)
- 		applesmc_release_accelerometer();
--	sysfs_remove_group(&pdev->dev.kobj, &label_attributes_group);
--	sysfs_remove_group(&pdev->dev.kobj, &temperature_attributes_group);
-+	applesmc_destroy_nodes(temp_group);
- 	while (fans_handled)
- 		sysfs_remove_group(&pdev->dev.kobj,
+ 
+@@ -632,7 +765,6 @@ static ssize_t applesmc_light_show(struct device *dev,
+ 	right = buffer[2];
+ 
+ out:
+-	mutex_unlock(&applesmc_lock);
+ 	if (ret)
+ 		return ret;
+ 	else
+@@ -661,14 +793,10 @@ static ssize_t applesmc_show_temperature(struct device *dev,
+ 	const char* key =
+ 		temperature_sensors_sets[applesmc_temperature_set][attr->index];
+ 
+-	mutex_lock(&applesmc_lock);
+-
+ 	ret = applesmc_read_key(key, buffer, 2);
+ 	temp = buffer[0]*1000;
+ 	temp += (buffer[1] >> 6) * 250;
+ 
+-	mutex_unlock(&applesmc_lock);
+-
+ 	if (ret)
+ 		return ret;
+ 	else
+@@ -691,12 +819,9 @@ static ssize_t applesmc_show_fan_speed(struct device *dev,
+ 	newkey[3] = fan_speed_keys[sensor_attr->nr][3];
+ 	newkey[4] = 0;
+ 
+-	mutex_lock(&applesmc_lock);
+-
+ 	ret = applesmc_read_key(newkey, buffer, 2);
+ 	speed = ((buffer[0] << 8 | buffer[1]) >> 2);
+ 
+-	mutex_unlock(&applesmc_lock);
+ 	if (ret)
+ 		return ret;
+ 	else
+@@ -725,13 +850,10 @@ static ssize_t applesmc_store_fan_speed(struct device *dev,
+ 	newkey[3] = fan_speed_keys[sensor_attr->nr][3];
+ 	newkey[4] = 0;
+ 
+-	mutex_lock(&applesmc_lock);
+-
+ 	buffer[0] = (speed >> 6) & 0xff;
+ 	buffer[1] = (speed << 2) & 0xff;
+ 	ret = applesmc_write_key(newkey, buffer, 2);
+ 
+-	mutex_unlock(&applesmc_lock);
+ 	if (ret)
+ 		return ret;
+ 	else
+@@ -746,12 +868,9 @@ static ssize_t applesmc_show_fan_manual(struct device *dev,
+ 	u8 buffer[2];
+ 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+ 
+-	mutex_lock(&applesmc_lock);
+-
+ 	ret = applesmc_read_key(FANS_MANUAL, buffer, 2);
+ 	manual = ((buffer[0] << 8 | buffer[1]) >> attr->index) & 0x01;
+ 
+-	mutex_unlock(&applesmc_lock);
+ 	if (ret)
+ 		return ret;
+ 	else
+@@ -770,8 +889,6 @@ static ssize_t applesmc_store_fan_manual(struct device *dev,
+ 
+ 	input = simple_strtoul(sysfsbuf, NULL, 10);
+ 
+-	mutex_lock(&applesmc_lock);
+-
+ 	ret = applesmc_read_key(FANS_MANUAL, buffer, 2);
+ 	val = (buffer[0] << 8 | buffer[1]);
+ 	if (ret)
+@@ -788,7 +905,6 @@ static ssize_t applesmc_store_fan_manual(struct device *dev,
+ 	ret = applesmc_write_key(FANS_MANUAL, buffer, 2);
+ 
+ out:
+-	mutex_unlock(&applesmc_lock);
+ 	if (ret)
+ 		return ret;
+ 	else
+@@ -810,12 +926,9 @@ static ssize_t applesmc_show_fan_position(struct device *dev,
+ 	newkey[3] = FAN_POSITION[3];
+ 	newkey[4] = 0;
+ 
+-	mutex_lock(&applesmc_lock);
+-
+ 	ret = applesmc_read_key(newkey, buffer, 16);
+ 	buffer[16] = 0;
+ 
+-	mutex_unlock(&applesmc_lock);
+ 	if (ret)
+ 		return ret;
+ 	else
+@@ -831,18 +944,14 @@ static ssize_t applesmc_calibrate_show(struct device *dev,
+ static ssize_t applesmc_calibrate_store(struct device *dev,
+ 	struct device_attribute *attr, const char *sysfsbuf, size_t count)
+ {
+-	mutex_lock(&applesmc_lock);
+ 	applesmc_calibrate();
+-	mutex_unlock(&applesmc_lock);
+ 
+ 	return count;
+ }
+ 
+ static void applesmc_backlight_set(struct work_struct *work)
+ {
+-	mutex_lock(&applesmc_lock);
+ 	applesmc_write_key(BACKLIGHT_KEY, backlight_state, 2);
+-	mutex_unlock(&applesmc_lock);
+ }
+ static DECLARE_WORK(backlight_work, &applesmc_backlight_set);
+ 
+@@ -865,13 +974,10 @@ static ssize_t applesmc_key_count_show(struct device *dev,
+ 	u8 buffer[4];
+ 	u32 count;
+ 
+-	mutex_lock(&applesmc_lock);
+-
+ 	ret = applesmc_read_key(KEY_COUNT_KEY, buffer, 4);
+ 	count = ((u32)buffer[0]<<24) + ((u32)buffer[1]<<16) +
+ 						((u32)buffer[2]<<8) + buffer[3];
+ 
+-	mutex_unlock(&applesmc_lock);
+ 	if (ret)
+ 		return ret;
+ 	else
+@@ -881,113 +987,53 @@ static ssize_t applesmc_key_count_show(struct device *dev,
+ static ssize_t applesmc_key_at_index_read_show(struct device *dev,
+ 				struct device_attribute *attr, char *sysfsbuf)
+ {
+-	char key[5];
+-	char info[6];
++	const struct applesmc_entry *entry;
+ 	int ret;
+ 
+-	mutex_lock(&applesmc_lock);
+-
+-	ret = applesmc_get_key_at_index(key_at_index, key);
+-
+-	if (ret || !key[0]) {
+-		mutex_unlock(&applesmc_lock);
+-
+-		return -EINVAL;
+-	}
+-
+-	ret = applesmc_get_key_type(key, info);
+-
+-	if (ret) {
+-		mutex_unlock(&applesmc_lock);
+-
++	entry = applesmc_get_entry_by_index(key_at_index);
++	if (IS_ERR(entry))
++		return PTR_ERR(entry);
++	ret = applesmc_read_entry(entry, sysfsbuf, entry->len);
++	if (ret)
+ 		return ret;
+-	}
+ 
+-	/*
+-	 * info[0] maximum value (APPLESMC_MAX_DATA_LENGTH) is much lower than
+-	 * PAGE_SIZE, so we don't need any checks before writing to sysfsbuf.
+-	 */
+-	ret = applesmc_read_key(key, sysfsbuf, info[0]);
+-
+-	mutex_unlock(&applesmc_lock);
+-
+-	if (!ret) {
+-		return info[0];
+-	} else {
+-		return ret;
+-	}
++	return entry->len;
+ }
+ 
+ static ssize_t applesmc_key_at_index_data_length_show(struct device *dev,
+ 				struct device_attribute *attr, char *sysfsbuf)
+ {
+-	char key[5];
+-	char info[6];
+-	int ret;
+-
+-	mutex_lock(&applesmc_lock);
++	const struct applesmc_entry *entry;
+ 
+-	ret = applesmc_get_key_at_index(key_at_index, key);
++	entry = applesmc_get_entry_by_index(key_at_index);
++	if (IS_ERR(entry))
++		return PTR_ERR(entry);
+ 
+-	if (ret || !key[0]) {
+-		mutex_unlock(&applesmc_lock);
+-
+-		return -EINVAL;
+-	}
+-
+-	ret = applesmc_get_key_type(key, info);
+-
+-	mutex_unlock(&applesmc_lock);
+-
+-	if (!ret)
+-		return snprintf(sysfsbuf, PAGE_SIZE, "%d\n", info[0]);
+-	else
+-		return ret;
++	return snprintf(sysfsbuf, PAGE_SIZE, "%d\n", entry->len);
+ }
+ 
+ static ssize_t applesmc_key_at_index_type_show(struct device *dev,
+ 				struct device_attribute *attr, char *sysfsbuf)
+ {
+-	char key[5];
+-	char info[6];
+-	int ret;
+-
+-	mutex_lock(&applesmc_lock);
+-
+-	ret = applesmc_get_key_at_index(key_at_index, key);
+-
+-	if (ret || !key[0]) {
+-		mutex_unlock(&applesmc_lock);
+-
+-		return -EINVAL;
+-	}
+-
+-	ret = applesmc_get_key_type(key, info);
++	const struct applesmc_entry *entry;
+ 
+-	mutex_unlock(&applesmc_lock);
++	entry = applesmc_get_entry_by_index(key_at_index);
++	if (IS_ERR(entry))
++		return PTR_ERR(entry);
+ 
+-	if (!ret)
+-		return snprintf(sysfsbuf, PAGE_SIZE, "%s\n", info+1);
+-	else
+-		return ret;
++	return snprintf(sysfsbuf, PAGE_SIZE, "%s\n", entry->type);
+ }
+ 
+ static ssize_t applesmc_key_at_index_name_show(struct device *dev,
+ 				struct device_attribute *attr, char *sysfsbuf)
+ {
+-	char key[5];
+-	int ret;
+-
+-	mutex_lock(&applesmc_lock);
++	const struct applesmc_entry *entry;
+ 
+-	ret = applesmc_get_key_at_index(key_at_index, key);
++	entry = applesmc_get_entry_by_index(key_at_index);
++	if (IS_ERR(entry))
++		return PTR_ERR(entry);
+ 
+-	mutex_unlock(&applesmc_lock);
+-
+-	if (!ret && key[0])
+-		return snprintf(sysfsbuf, PAGE_SIZE, "%s\n", key);
+-	else
+-		return -EINVAL;
++	return snprintf(sysfsbuf, PAGE_SIZE, "%s\n", entry->key);
+ }
+ 
+ static ssize_t applesmc_key_at_index_show(struct device *dev,
+@@ -999,12 +1045,8 @@ static ssize_t applesmc_key_at_index_show(struct device *dev,
+ static ssize_t applesmc_key_at_index_store(struct device *dev,
+ 	struct device_attribute *attr, const char *sysfsbuf, size_t count)
+ {
+-	mutex_lock(&applesmc_lock);
+-
+ 	key_at_index = simple_strtoul(sysfsbuf, NULL, 10);
+ 
+-	mutex_unlock(&applesmc_lock);
+-
+ 	return count;
+ }
+ 
+@@ -1646,10 +1688,15 @@ static int __init applesmc_init(void)
+ 		goto out_driver;
+ 	}
+ 
+-	ret = sysfs_create_file(&pdev->dev.kobj, &dev_attr_name.attr);
++	/* create register cache */
++	ret = applesmc_init_smcreg();
+ 	if (ret)
+ 		goto out_device;
+ 
++	ret = sysfs_create_file(&pdev->dev.kobj, &dev_attr_name.attr);
++	if (ret)
++		goto out_smcreg;
++
+ 	/* Create key enumeration sysfs files */
+ 	ret = sysfs_create_group(&pdev->dev.kobj, &key_enumeration_group);
+ 	if (ret)
+@@ -1751,6 +1798,8 @@ out_fans:
+ 	sysfs_remove_group(&pdev->dev.kobj, &key_enumeration_group);
+ out_name:
+ 	sysfs_remove_file(&pdev->dev.kobj, &dev_attr_name.attr);
++out_smcreg:
++	applesmc_destroy_smcreg();
+ out_device:
+ 	platform_device_unregister(pdev);
+ out_driver:
+@@ -1779,6 +1828,7 @@ static void __exit applesmc_exit(void)
  				   &fan_attribute_groups[--fans_handled]);
+ 	sysfs_remove_group(&pdev->dev.kobj, &key_enumeration_group);
+ 	sysfs_remove_file(&pdev->dev.kobj, &dev_attr_name.attr);
++	applesmc_destroy_smcreg();
+ 	platform_device_unregister(pdev);
+ 	platform_driver_unregister(&applesmc_driver);
+ 	release_region(APPLESMC_DATA_PORT, APPLESMC_NR_PORTS);
 -- 
 1.7.1
 
