@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753644Ab0KJGQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 01:16:28 -0500
-Received: from nm5-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.204]:38878 "HELO
-	nm5-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751997Ab0KJGQ0 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 01:16:26 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 471709.33651.bm@omp1052.mail.sp2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=B3LlQ4sfBRHb4y9TjUREcM7G4Uuz+B6J+B1rTe9dzSghV+0yhu5ZOs7bqPHgXCn8wn781GVa+hTuh0Wxtr5JBR73pAWW8jjOdruoK2sZSyaseiCEiYnyBlQ4N4f0b7FtI9WDVRnRL0a3mjZEHidf2kQyDXVZeNaxLBR5bOR3erA=;
-Message-ID: <79124.87409.qm@web180307.mail.gq1.yahoo.com>
-X-YMail-OSG: ppeiUucVM1njS8ZAcsDaWXYfPDQcnoKAPQBVKiKLfltOMBJ
- ciV7_MBl7Dnu.vSpkC2wFhrDUlCNnx8yRaLpCA.W8Km7g6u_YuZKESch2bdi
- pTxZry3x3uAy6tP44C6axpYqxFrnCXzDaqHoNULpFBDNiyoPo2urCDbuLlfi
- m.G_k2k56Wqf0wig89xtNlbf3dkol3DOa_2afH6lO_7fy4WXnNKE8ZwVkq1R
- fqAhdA8dyT4asYeGpEDKcHZBvX5wHZ0BuP_VWEv6cldZBt.cKLSZ0L9O..Cl
- EtIhew4RBXyl83m3KifM1Thf4vbsHDRWkRd9TAPwsK0id2QNzLhl4r44-
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.284920
-Date: Tue, 9 Nov 2010 22:16:22 -0800 (PST)
-From: David Brownell <david-b@pacbell.net>
-Subject: Re: [PATCH v4 08/12] gpio: add ti-ssp gpio driver
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: davinci-linux-open-source@linux.davincidsp.com,
-        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        rpurdie@rpsys.net, Cyril Chemparathy <cyril@ti.com>,
-        spi-devel-general@lists.sourceforge.net,
-        linux-arm-kernel@lists.infradead.org, lrg@slimlogic.co.uk
-In-Reply-To: <20101110044530.GB4110@angua.secretlab.ca>
+	id S1753269Ab0KJGQS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 01:16:18 -0500
+Received: from relay1.sgi.com ([192.48.179.29]:48672 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751997Ab0KJGQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 01:16:17 -0500
+Date: Wed, 10 Nov 2010 00:15:07 -0600
+From: Robin Holt <holt@sgi.com>
+To: eric.dumazet@gmail.com
+Cc: David Miller <davem@davemloft.net>, holt@sgi.com,
+        akpm@linux-foundation.org, w@1wt.eu, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net
+Subject: Re: [Patch] Limit sysctl_tcp_mem and sysctl_udp_mem initializers
+ to prevent integer overflows.
+Message-ID: <20101110061507.GF4330@sgi.com>
+References: <20101002112405.951704198@gulag1.americas.sgi.com>
+ <20101002112419.248437367@gulag1.americas.sgi.com>
+ <1286025736.2582.1827.camel@edumazet-laptop>
+ <20101005.145055.63017205.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101005.145055.63017205.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 05, 2010 at 02:50:55PM -0700, David Miller wrote:
+> From: Eric Dumazet <eric.dumazet@gmail.com>
+> Date: Sat, 02 Oct 2010 15:22:16 +0200
+> 
+> > [PATCH] net: avoid limits overflow
+> > 
+> > Robin Holt tried to boot a 16TB machine and found some limits were
+> > reached : sysctl_tcp_mem[2], sysctl_udp_mem[2]
+> > 
+> > We can switch infrastructure to use long "instead" of "int", now
+> > atomic_long_t primitives are available for free.
+> > 
+> > Reported-by: Robin Holt <holt@sgi.com>
+> > Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> 
+> Eric please resubmit this when the sysctl fix is resolved.
 
-> I thought the point of this device was that a single [SSP] device
-> hosted a
-> pair of multi-function serial interfaces, with each
-> implementing a
-> separate function.
+It looks like the sysctl fix is upstream.  Has this been resubmitted
+and I missed it?
 
-function chosen based on what the board needs.
-Codec interface, SPI, GPIO, etc.
-
-  If so, then it makes sense for the
-> base driver to
-> register child devices of the appropriate kinds.
-
-I'd normally say board setup registers them; a
-"core"driver can't know what children would be needed.
-
-But the point I was making was about code factoring
-not driver setup.  When  the functions don't have
-much commonality, they might as well just write to
-the relevant registers instead of expecting to have
-a non-register programming interface (of dubious
-generality of a "core" driver, but much complexity).
-
-Easier just to have children use registers directly,
-in several similar cases.  Less overhead, too.
-
-- Dave
-
+Robin
