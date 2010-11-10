@@ -1,46 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756863Ab0KJQMB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 11:12:01 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:55611 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756463Ab0KJQMA (ORCPT
+	id S1756872Ab0KJQNB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 11:13:01 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:50899 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756825Ab0KJQNA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 11:12:00 -0500
-From: Andi Kleen <andi@firstfloor.org>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] x86: clear XD_DISABLED flag on Intel to regain NX
-References: <20101109181157.GE5876@outflux.net>
-	<20101109181501.GG5876@outflux.net>
-Date: Wed, 10 Nov 2010 17:11:55 +0100
-In-Reply-To: <20101109181501.GG5876@outflux.net> (Kees Cook's message of "Tue,
-	9 Nov 2010 10:15:01 -0800")
-Message-ID: <87hbfpp390.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Wed, 10 Nov 2010 11:13:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ALOqbZ8PRoISa4iOKUv3ct/3hZ1NLpDxyKyOqcLXCDRgvFn9DX+V8IJj/+WxxqAit0
+         QTdrGeTJ85S/ENRHe+3HiljexwWmrVLRKDbEiNQQ6Ss4++RJvXpgCib0uurFT/sEOEmA
+         m9by+X5d2Z16FdjMGdjlhv3laBPK1o0tg+Nf0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20101110160004.GA9092@gondor.retis>
+References: <1288333128.8661.137.camel@Palantir>
+	<1288333622.8661.141.camel@Palantir>
+	<20101110160004.GA9092@gondor.retis>
+Date: Wed, 10 Nov 2010 17:12:56 +0100
+Message-ID: <AANLkTing2SPvnHUg4tHtn4rp9XYhq3Wip5nFWNVg16W3@mail.gmail.com>
+Subject: Re: [RFC][PATCH 02/22] sched: add extended scheduling interface
+From: Dhaval Giani <dhaval.giani@gmail.com>
+To: Raistlin <raistlin@linux.it>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
+        "p.faure" <p.faure@akatech.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        michael trimarchi <trimarchi@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>,
+        Tommaso Cucinotta <cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Nicola Manica <nicola.manica@disi.unitn.it>,
+        Luca Abeni <luca.abeni@unitn.it>,
+        Harald Gustafsson <hgu1972@gmail.com>,
+        paulmck <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kees Cook <kees.cook@canonical.com> writes:
-> +
-> +verify_cpu_clear_xd:
-> +	movl	$MSR_IA32_MISC_ENABLE, %ecx
-> +	rdmsr
-> +	btrl	$2, %edx		# clear MSR_IA32_MISC_ENABLE_XD_DISABLE
-> +	jnc	verify_cpu_check	# only write MSR if bit was
-> changed
+On Wed, Nov 10, 2010 at 5:00 PM, Dhaval Giani <dhaval@retis.sssup.it> wrote:
+>> +/*
+>> + * Extended scheduling parameters data structure.
+>> + *
+>> + * This is needed because the original struct sched_param can not be
+>> + * altered without introducing ABI issues with legacy applications
+>> + * (e.g., in sched_getparam()).
+>> + *
+>> + * However, the possibility of specifying more than just a priority for
+>> + * the tasks may be useful for a wide variety of application fields, e.g.,
+>> + * multimedia, streaming, automation and control, and many others.
+>> + *
+>> + * This variant (sched_param_ex) is meant at describing a so-called
+>> + * sporadic time-constrained task. In such model a task is specified by:
+>> + *  - the activation period or minimum instance inter-arrival time;
+>> + *  - the maximum (or average, depending on the actual scheduling
+>> + *    discipline) computation time of all instances, a.k.a. runtime;
+>> + *  - the deadline (relative to the actual activation time) of each
+>> + *    instance.
+>> + * Very briefly, a periodic (sporadic) task asks for the execution of
+>> + * some specific computation --which is typically called an instance--
+>> + * (at most) every period. Moreover, each instance typically lasts no more
+>> + * than the runtime and must be completed by time instant t equal to
+>> + * the instance activation time + the deadline.
+>> + *
+>> + * This is reflected by the actual fields of the sched_param_ex structure:
+>> + *
+>> + *  @sched_priority     task's priority (might still be useful)
+>> + *  @sched_deadline     representative of the task's deadline
+>> + *  @sched_runtime      representative of the task's runtime
+>> + *  @sched_period       representative of the task's period
+>> + *  @sched_flags        for customizing the scheduler behaviour
+>> + *
+>> + * There are other fields, which may be useful for implementing (in
+>> + * user-space) advanced scheduling behaviours, e.g., feedback scheduling:
+>> + *
+>> + *  @curr_runtime       task's currently available runtime
+>> + *  @used_runtime       task's totally used runtime
+>> + *  @curr_deadline      task's current absolute deadline
+>> + *
+>> + * Given this task model, there are a multiplicity of scheduling algorithms
+>> + * and policies, that can be used to ensure all the tasks will make their
+>> + * timing constraints.
+>> + */
+>> +struct sched_param_ex {
+>> +     int sched_priority;
+>> +     struct timespec sched_runtime;
+>> +     struct timespec sched_deadline;
+>> +     struct timespec sched_period;
+>> +     unsigned int sched_flags;
+>> +
+>> +     struct timespec curr_runtime;
+>> +     struct timespec used_runtime;
+>> +     struct timespec curr_deadline;
 
-Strictly it's still a bit dangerous to read this MSR without knowing
-about the CPU for sure. If you guess wrong you'll die here.
+Can we expose soem of these details via schedstats as opposed to a syscall?
 
-I would rather move this code later into the early init code (before the
-second mapping is set up, which is still in time). There the exception
-handlers are up and you could handle a #GP if it happens.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Dhaval
