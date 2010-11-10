@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757533Ab0KJXvV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 18:51:21 -0500
-Received: from smtp-out-135.synserver.de ([212.40.180.135]:1045 "EHLO
-	smtp-out-133.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757322Ab0KJXvU (ORCPT
+	id S1757543Ab0KJXwN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 18:52:13 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:59311 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757322Ab0KJXwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 18:51:20 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 3497
-Message-ID: <4CDB2FE2.2050203@metafoo.de>
-Date: Thu, 11 Nov 2010 00:50:58 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+	Wed, 10 Nov 2010 18:52:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=Nbo4YKfX3DB6whphhDIVxcIg/EUqP8s2pv5pyQtpZzYnsVfL2852a7Gr7WUoVr6eut
+         WGEXZjBnKZVaKP28j/C0tW1/Fr7Qr1dIlGc/3qpxfzF09f2Xcad9MeHlLST+JWZPq3/F
+         lZpmM9YBgFzrTfG4wf+T3zNmld3uuMaBVs+b8=
+Message-ID: <4CDB3028.6080605@garzik.org>
+Date: Wed, 10 Nov 2010 18:52:08 -0500
+From: Jeff Garzik <jeff@garzik.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Trilok Soni <tsoni@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, rtc-linux@googlegroups.com,
-        linux-arm-msm@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>
-Subject: Re: [RFC v1 PATCH 3/6] led: pmic8058: Add PMIC8058 leds driver
-References: <1289393281-4459-1-git-send-email-tsoni@codeaurora.org> <1289393281-4459-4-git-send-email-tsoni@codeaurora.org> <4CDB0451.3090303@metafoo.de> <20101110232840.GA2121@core.coreip.homeip.net>
-In-Reply-To: <20101110232840.GA2121@core.coreip.homeip.net>
-X-Enigmail-Version: 0.95.0
-Content-Type: text/plain; charset=ISO-8859-1
+To: James Bottomley <James.Bottomley@suse.de>
+CC: linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Patch added to scsi-rc-fixes-2.6:  [SCSI] host lock push-down
+References: <201011102240.oAAMe86a001486@hera.kernel.org> <4CDB2A81.5030100@garzik.org> <1289432759.3016.63.camel@mulgrave.site>
+In-Reply-To: <1289432759.3016.63.camel@mulgrave.site>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Torokhov wrote:
-> On Wed, Nov 10, 2010 at 09:45:05PM +0100, Lars-Peter Clausen wrote:
->> Trilok Soni wrote:
->>> +
->>> +static void led_kp_set(struct pmic8058_led_data *led, enum led_brightness value)
->>> +{
->>> +	int rc;
->>> +	u8 level;
->>> +	unsigned long flags;
->>> +
->>> +	spin_lock_irqsave(&led->value_lock, flags);
->> This function is only ever called from within the workqueue so there is no need for
->> locking.
+On 11/10/2010 06:45 PM, James Bottomley wrote:
+> On Wed, 2010-11-10 at 18:28 -0500, Jeff Garzik wrote:
+>> On 11/10/2010 05:40 PM, James Bottomley wrote:
+>>> Your commit:
+>>>
+>>>       [SCSI] host lock push-down
+>>>
+>>>       Move the mid-layer's ->queuecommand() invocation from being locked
+>>>       with the host lock to being unlocked to facilitate speeding up the
+>>>       critical path for drivers who don't need this lock taken anyway.
+>>>
+>>>       The patch below presents a simple SCSI host lock push-down as an
+>>>       equivalent transformation.  No locking or other behavior should change
+>>>       with this patch.  All existing bugs and locking orders are preserved.
+>>>
+>>>       Minimal code disturbance was attempted with this change.  Most drivers
+>>>       needed only two one-line modifications for their host lock push-down.
+>>>
+>>>       Signed-off-by: Jeff Garzik<jgarzik@redhat.com>
+>>>       Signed-off-by: James Bottomley<James.Bottomley@suse.de>
+>>>
+>>> has been added to the upstream SCSI tree
+>>> You can find it here:
 >>
-> 
-> That is a common misconception, unfortunately. The same work may
-> be executing on several CPUs at the same time if it was scheduled on
-> multi-threaded work queue.
-> 
+>> No comments on renaming ->queuecommand to something else?
+>
+> What we wondered about doing differently isn't really relevant for a
+> change log ... that should just really be about what was done (to avoid
+> confusion).
 
-Hm, right my fault.
-Still the comment above is still valid, because the original workqueue handler was
-locked by a mutex. But the comment regarding the mutex should have been:
- You can remove the mutex if you queue the work on the system_nrt_wq workqueue
+Wasn't referring to the changelog (perhaps shouldn't have quoted that); 
+just asking the question generally.
 
-> ...
-> 
->>> +	schedule_work(&led->work);
-> 
-> And sure enough, keventd is such workqueue.
-> 
-> Now, whether having the same work run simultaneously is OK or not is a
-> different question altogether...
-> 
 
-- Lars
+>> The consequences are rather dire if this goes unnoticed, yes?
+>
+> You mean if there's a missed in-tree driver?  Yes, but I took care to
+> make sure all SCSI drivers were accounted for.  For out of tree drivers,
+> as with the eh lock push down, it's caveat emptor.
+
+Thinking about out-of-tree drivers, yes.
+
+	Jeff
+
+
