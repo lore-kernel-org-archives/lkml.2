@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757022Ab0KJVkp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 16:40:45 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:15628 "EHLO
+	id S1757099Ab0KJVo1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 16:44:27 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:15679 "EHLO
 	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753482Ab0KJVko (ORCPT
+	with ESMTP id S1756993Ab0KJVo0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 16:40:44 -0500
-Date: Wed, 10 Nov 2010 22:29:02 +0100 (CET)
+	Wed, 10 Nov 2010 16:44:26 -0500
+Date: Wed, 10 Nov 2010 22:32:44 +0100 (CET)
 From: Jesper Juhl <jj@chaosbits.net>
-To: Stefan Weil <weil@mail.berlios.de>
-cc: David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix spelling in MODULE_ALIAS
-In-Reply-To: <1289164471-9080-1-git-send-email-weil@mail.berlios.de>
-Message-ID: <alpine.LNX.2.00.1011102227590.625@swampdragon.chaosbits.net>
-References: <1289164471-9080-1-git-send-email-weil@mail.berlios.de>
+To: linux-kernel@vger.kernel.org
+cc: linux-nfs@vger.kernel.org, netdev@vger.kernel.org,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] SUNRPC: Simplify rpc_alloc_iostats by removing pointless
+ local variable
+In-Reply-To: <alpine.LNX.2.00.1011072205370.26247@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1011102229370.625@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1011072205370.26247@swampdragon.chaosbits.net>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -24,35 +27,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 7 Nov 2010, Stefan Weil wrote:
+On Sun, 7 Nov 2010, Jesper Juhl wrote:
 
-> platfrom -> platform
+> Hi,
 > 
-> Cc: David Brownell <dbrownell@users.sourceforge.net>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Cc: linux-usb@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Stefan Weil <weil@mail.berlios.de>
+> We can simplify net/sunrpc/stats.c::rpc_alloc_iostats() a bit by getting 
+> rid of the unneeded local variable 'new'.
+> 
+> 
+> Please CC me on replies.
+> 
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 > ---
->  drivers/usb/host/ohci-jz4740.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+>  stats.c |    4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
 > 
-> diff --git a/drivers/usb/host/ohci-jz4740.c b/drivers/usb/host/ohci-jz4740.c
-> index 10e1872..931d588 100644
-> --- a/drivers/usb/host/ohci-jz4740.c
-> +++ b/drivers/usb/host/ohci-jz4740.c
-> @@ -273,4 +273,4 @@ static struct platform_driver ohci_hcd_jz4740_driver = {
->  	},
->  };
+> diff --git 
+> a/net/sunrpc/stats.c b/net/sunrpc/stats.c
+> index f71a731..80df89d 100644
+> --- a/net/sunrpc/stats.c
+> +++ b/net/sunrpc/stats.c
+> @@ -115,9 +115,7 @@ EXPORT_SYMBOL_GPL(svc_seq_show);
+>   */
+>  struct rpc_iostats *rpc_alloc_iostats(struct rpc_clnt *clnt)
+>  {
+> -	struct rpc_iostats *new;
+> -	new = kcalloc(clnt->cl_maxproc, sizeof(struct rpc_iostats), GFP_KERNEL);
+> -	return new;
+> +	return kcalloc(clnt->cl_maxproc, sizeof(struct rpc_iostats), GFP_KERNEL);
+>  }
+>  EXPORT_SYMBOL_GPL(rpc_alloc_iostats);
 >  
-> -MODULE_ALIAS("platfrom:jz4740-ohci");
-> +MODULE_ALIAS("platform:jz4740-ohci");
+> 
 > 
 
-Looks fine to me.
-
-Reviewed-by: Jesper Juhl <jj@chaosbits.net>
-
+Ok, no response to this for a couple of days.
+Is there some problem or did it just get missed?
+Could someone merge this and push it up-stream, please, if there are no 
+problems with it...
+ 
 
 -- 
 Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
