@@ -1,91 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756811Ab0KJVBw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 16:01:52 -0500
-Received: from moh1-ve2.go2.pl ([193.17.41.132]:42596 "EHLO moh1-ve2.go2.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756185Ab0KJVBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 16:01:51 -0500
-Message-ID: <4CDB0834.4080101@o2.pl>
-Date: Wed, 10 Nov 2010 22:01:40 +0100
-From: Maciej Szmigiero <mhej@o2.pl>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.11) Gecko/20101024 Lightning/1.0b3pre Thunderbird/3.1.5
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Anton Vorontsov <avorontsov@ru.mvista.com>,
+	id S1756665Ab0KJVFe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 16:05:34 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:39796 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753971Ab0KJVFc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 16:05:32 -0500
+Subject: Re: [RFC][PATCH] perf: sysfs type id
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Lin Ming <ming.m.lin@intel.com>,
+        "robert.richter" <robert.richter@amd.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        fweisbec <fweisbec@gmail.com>, paulus <paulus@samba.org>,
         Greg Kroah-Hartman <gregkh@suse.de>,
-        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Jonathan Cameron <jic23@cam.ac.uk>,
-        Ben Nizette <bn@niasdigital.com>
-Subject: Re: [GPIO]implement sleeping GPIO chip removal
-References: <4CD6F049.10102@o2.pl> <20101110050947.GC4110@angua.secretlab.ca> <4CDABA03.2050000@o2.pl> <alpine.LFD.2.00.1011102134350.2900@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1011102134350.2900@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-O2-Trust: 2, 64
-X-O2-SPF: neutral
+        Kay Sievers <kay.sievers@vrfy.org>, "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <AANLkTiku7UsVoYv_+6r79rvGPJU7OU=VGDiaYo0H=82y@mail.gmail.com>
+References: <1289339119.2191.92.camel@laptop>
+	 <AANLkTi=ojOnLyRO4hTgYdCCXLsN0wUeTcme=5h8-mjdz@mail.gmail.com>
+	 <1289398207.2191.117.camel@laptop> <1289398763.2191.121.camel@laptop>
+	 <AANLkTimQ7w38wzrYT4MgjHFr6LCVj2M5fB11-n3XCD2w@mail.gmail.com>
+	 <1289421164.2084.56.camel@laptop>
+	 <AANLkTiku7UsVoYv_+6r79rvGPJU7OU=VGDiaYo0H=82y@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 10 Nov 2010 22:05:35 +0100
+Message-ID: <1289423135.2084.63.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 10.11.2010 21:42, Thomas Gleixner pisze:
-> On Wed, 10 Nov 2010, Maciej Szmigiero wrote:
->> W dniu 10.11.2010 10:49, Thomas Gleixner pisze:
->>> Maybe because it open codes a sloppy refcounting with a loop and magic
->>> sleeps instead of converting the code to kobjects and proper
->>> refcounting ?
->>>
->>
->> The only way to do GPIO chip removal in the current code is to busy-loop.
->> "Sloppy" (as you called it) waiting is still more CPU-friendly than looping 
->> in hope that somebody will finally release the chip.
->> If you would like to implement it as kobject then go ahead and post the code
->> so it can be used in drivers.
+On Wed, 2010-11-10 at 21:53 +0100, Stephane Eranian wrote:
+> On Wed, Nov 10, 2010 at 9:32 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Wed, 2010-11-10 at 21:08 +0100, Stephane Eranian wrote:
+> >> Would that be by passing the full filename to the tool?
+> >
+> > possible, or something like <pmu-name>:<event-name>, cpu:cycles would
+> > map to /sys/class/pmu/cpu/events/cycles (given the previous patch).
+> >
+> >
+> Ok, but I think you're proposal is missing one bit. You are addressing
+> the class (or type) of PMU, but you are not addressing the naming of
+> an instance.
 > 
-> Wait a moment. You are getting something backwards here.
+> Let's take an example, suppose you have counters on a graphic card.
+> Your system has two such graphic cards. In your scheme you would
+> end up with a sys/class/pmu/gfx/.....
 > 
-> Fact is that the current code is not designed for easy hotunplugging
-> and therefor requires looping.
+> But now, suppose I want to count cycles on the first graphic card.
+> Seems to me you need to expose the instances as well. The instance
+> number needs to be passed in the attr struct somehow.
 > 
-> So _you_ propose a work-around to replace the busy-loop by a sleeping
-> loop with "hope that ....". Hope is the least thing what counts in
-> programming.
+> You can either create multiple subdir under gfx, or have this info somewhere
+> else in the sysfs tree, if people really care about class vs. instance.
 > 
-> Now a reviewer tells you that your idea of replacing the busy-loop by
-> a sleeping in hope loop is flawed, because it does not solve the
-> underlying design problem of the GPIO code. And you get a suggestion
-> how to solve it correctly.
+> I can see users doing:
+> $ perf stat -e gfx@1::cycles ...  -> sys/class/gfx/1/event/cycles
 > 
-> Now you go and request from that reviewer to implement that? That's
-> not how it works.
-> 
-> You sent a flawed patch in the first place and people try to tell you
-> how to do it right. Then it's on you to either go and do it right or
-> at least ask politely for help and pointers.
-> 
-> Thanks,
-> 
-> 	tglx
-> 
-
-You misunderstood me.
-By "looping in hope that somebody will finally release the chip" I meant the only
-real way to handle a GPIO chip unplugging in the current kernel.
-Which is way worse that preventing new requests, then waiting for existing one to be released.
-And this is exactly what my patch does.
-
-I understand that it could be simplified by removing redundant code (as Grant Likely had suggested before), and
-moving it to completion interface instead of manipulating a task structure directly, but this doesn't mean
-that the whole GPIO code has to be rewritten just to add one functionality.
-
-Best regards,
-Maciej Szmigiero
+> The reason I am using :: here is because libpfm4 is already using
+> this as a separator for PMU type vs. event.
 
 
+right, so the idea is to have these pmu devices hooked into the existing
+sysfs topology, my proposed patch misses that bit because I wanted to
+get something out before having to dig through the topology code trying
+to figure out how all that works.
 
+So the 'cpu' pmu device would be linked from:
 
+  /sys/devices/system/cpu/pmu -> /sys/class/pmu/cpu
 
+and gfx things would be linked like:
+
+  /sys/devices/pci0000:00/0000:00:1e.0/0000:0b:01.0/drm/card0/pmu -> /sys/class/pmu/radeon0
 
 
