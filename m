@@ -1,41 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849Ab0KJUcl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 15:32:41 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:34527 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753451Ab0KJUck convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 15:32:40 -0500
-Subject: Re: [RFC][PATCH] perf: sysfs type id
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Lin Ming <ming.m.lin@intel.com>,
-        "robert.richter" <robert.richter@amd.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        fweisbec <fweisbec@gmail.com>, paulus <paulus@samba.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@vrfy.org>, "H. Peter Anvin" <hpa@zytor.com>
-In-Reply-To: <AANLkTimQ7w38wzrYT4MgjHFr6LCVj2M5fB11-n3XCD2w@mail.gmail.com>
-References: <1289339119.2191.92.camel@laptop>
-	 <AANLkTi=ojOnLyRO4hTgYdCCXLsN0wUeTcme=5h8-mjdz@mail.gmail.com>
-	 <1289398207.2191.117.camel@laptop> <1289398763.2191.121.camel@laptop>
-	 <AANLkTimQ7w38wzrYT4MgjHFr6LCVj2M5fB11-n3XCD2w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 10 Nov 2010 21:32:44 +0100
-Message-ID: <1289421164.2084.56.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756261Ab0KJUeR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 15:34:17 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:39078 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754956Ab0KJUeP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 15:34:15 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [PATCH] acpi: Provide decls for standalone compilation of video.h without ACPI (v2)
+Date: Wed, 10 Nov 2010 21:33:16 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        Zhang Rui <rui.zhang@intel.com>, Len Brown <len.brown@intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>
+References: <1283693757-8199-1-git-send-email-chris@chris-wilson.co.uk> <1283694709-8504-1-git-send-email-chris@chris-wilson.co.uk> <c6d829$pgdo6m@fmsmga001.fm.intel.com>
+In-Reply-To: <c6d829$pgdo6m@fmsmga001.fm.intel.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011102133.16416.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-10 at 21:08 +0100, Stephane Eranian wrote:
-> Would that be by passing the full filename to the tool?
+On Wednesday, November 10, 2010, Chris Wilson wrote:
+> On Sun,  5 Sep 2010 14:51:49 +0100, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> > Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+> > Cc: Matthew Garrett <mjg@redhat.com>
+> > Cc: Zhang Rui <rui.zhang@intel.com>
+> > Cc: Len Brown <len.brown@intel.com>
+> 
+> Can one of you please pick up this patch and apply to acpi?
 
-possible, or something like <pmu-name>:<event-name>, cpu:cycles would
-map to /sys/class/pmu/cpu/events/cycles (given the previous patch).
+A link would help I guess.
 
-
+Thanks,
+Rafael
