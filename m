@@ -1,90 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757433Ab0KJXHE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 18:07:04 -0500
-Received: from ms01.sssup.it ([193.205.80.99]:43595 "EHLO sssup.it"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756496Ab0KJXHC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 18:07:02 -0500
-Subject: Re: [RFC][PATCH 03/22] sched: SCHED_DEADLINE data structures.
-From: Raistlin <raistlin@linux.it>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1289415550.2084.38.camel@laptop>
-References: <1288333128.8661.137.camel@Palantir>
-	 <1288333680.8661.142.camel@Palantir>  <1289415550.2084.38.camel@laptop>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-oSww6cs74NbB3M7KW+aZ"
-Date: Wed, 10 Nov 2010 23:06:52 +0100
-Message-ID: <1289426812.13577.276.camel@Palantir>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1757455Ab0KJXHR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 18:07:17 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:56731 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757357Ab0KJXHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 18:07:11 -0500
+Date: Wed, 10 Nov 2010 15:07:08 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for November 10 (kernel/rcutiny)
+Message-ID: <20101110230708.GV4032@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20101110140719.139ebe51.sfr@canb.auug.org.au>
+ <20101110091926.dc834e84.randy.dunlap@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101110091926.dc834e84.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Nov 10, 2010 at 09:19:26AM -0800, Randy Dunlap wrote:
+> On Wed, 10 Nov 2010 14:07:19 +1100 Stephen Rothwell wrote:
+> 
+> > Hi all,
+> > 
+> > Changes since 20101109:
+> 
+> 
+> when CONFIG_RCU_BOOST is not enabled:
+> 
+> In file included from linux-next-20101110/kernel/rcutiny.c:53:
+> linux-next-20101110/kernel/rcutiny_plugin.h: In function 'rcu_preempt_cpu_qs':
+> linux-next-20101110/kernel/rcutiny_plugin.h:413: error: 'struct rcu_preempt_ctrlblk' has no member named 'n_normal_balk_blkd_tasks'
 
---=-oSww6cs74NbB3M7KW+aZ
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Hello, Randy,
 
-On Wed, 2010-11-10 at 19:59 +0100, Peter Zijlstra wrote:
-> On Fri, 2010-10-29 at 08:28 +0200, Raistlin wrote:
-> > +       /*
-> > +        * Bandwidth enforcement timer. Each -deadline task has its
-> > +        * own bandwidth to be enforced, thus we need one timer per tas=
-k.
-> > +        */
-> > +       struct hrtimer dl_timer;=20
->=20
-> This is for the bandwidth replenishment right?=20
-Yep.
+Good catch!  Could you please try the following patch?
 
-> Not the runtime throttle?
->=20
-Not, that is done on tick basis, or by means of hrtick, if enabled.
+							Thanx, Paul
 
-> The throttle thing should only need a single timer per rq as only the
-> current task will be consuming runtime.
->
-Sure, and that's what the hrtick does (again, if enabled).
+------------------------------------------------------------------------
 
-Thanks,
-Dario
-
---=20
-<<This happens because I choose it to happen!>> (Raistlin Majere)
-----------------------------------------------------------------------
-Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
-
-http://blog.linux.it/raistlin / raistlin@ekiga.net /
-dario.faggioli@jabber.org
-
---=-oSww6cs74NbB3M7KW+aZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAkzbF3wACgkQk4XaBE3IOsQJgwCggRN4Tf+oz6Zq2WbPYxmh2k9J
-PSMAnA422s+09uJZ04oQuyWPTI+Yn4Yp
-=aNJ3
------END PGP SIGNATURE-----
-
---=-oSww6cs74NbB3M7KW+aZ--
-
+diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
+index 297aa35..8cd197c 100644
+--- a/kernel/rcutiny_plugin.h
++++ b/kernel/rcutiny_plugin.h
+@@ -297,9 +297,17 @@ static int rcu_boost(void)
+  * the current grace period, and, if so, tell the rcu_kthread_task to
+  * start boosting them.  If there is an expedited boost in progress,
+  * we wait for it to complete.
++ *
++ * If there are no blocked readers blocking the current grace period,
++ * return 0 to let the caller know, otherwise return 1.  Note that this
++ * return value is independent of whether or not boosting was done.
+  */
+-static void rcu_initiate_boost(void)
++static int rcu_initiate_boost(void)
+ {
++	if (!rcu_preempt_blocked_readers_cgp()) {
++		RCU_TRACE(rcu_preempt_ctrlblk.n_normal_balk_blkd_tasks++);
++		return 0;
++	}
+ 	if (rcu_preempt_ctrlblk.gp_tasks != NULL &&
+ 	    rcu_preempt_ctrlblk.boost_tasks == NULL &&
+ 	    rcu_preempt_ctrlblk.boosted_this_gp == 0 &&
+@@ -309,6 +317,7 @@ static void rcu_initiate_boost(void)
+ 		RCU_TRACE(rcu_preempt_ctrlblk.n_normal_boosts++);
+ 	} else
+ 		RCU_TRACE(rcu_initiate_boost_trace());
++	return 1;
+ }
+ 
+ /*
+@@ -353,10 +362,13 @@ static int rcu_boost(void)
+ }
+ 
+ /*
+- * If there is no RCU priority boosting, we don't initiate boosting.
++ * If there is no RCU priority boosting, we don't initiate boosting,
++ * but we do indicate whether there are blocked readers blocking the
++ * current grace period.
+  */
+-static void rcu_initiate_boost(void)
++static int rcu_initiate_boost(void)
+ {
++	return rcu_preempt_blocked_readers_cgp();
+ }
+ 
+ /*
+@@ -405,12 +417,12 @@ static void rcu_preempt_cpu_qs(void)
+ 	/* If there is no GP then there is nothing more to do.  */
+ 	if (!rcu_preempt_gp_in_progress())
+ 		return;
+-	/* If there are blocked readers, go check up on boosting. */
+-	if (rcu_preempt_blocked_readers_cgp()) {
+-		rcu_initiate_boost();
++	/*
++	 * Check up on boosting.  If there are no readers blocking the
++	 * current grace period, leave.
++	 */
++	if (rcu_initiate_boost())
+ 		return;
+-	} else
+-		RCU_TRACE(rcu_preempt_ctrlblk.n_normal_balk_blkd_tasks++);
+ 
+ 	/* Advance callbacks. */
+ 	rcu_preempt_ctrlblk.completed = rcu_preempt_ctrlblk.gpnum;
