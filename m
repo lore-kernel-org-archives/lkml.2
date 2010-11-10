@@ -1,36 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756327Ab0KJOr2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 09:47:28 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:43912 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755300Ab0KJOr0 (ORCPT
+	id S1756350Ab0KJOsl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 09:48:41 -0500
+Received: from exprod5og110.obsmtp.com ([64.18.0.20]:46214 "HELO
+	exprod5og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756232Ab0KJOsk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 09:47:26 -0500
-Date: Wed, 10 Nov 2010 15:47:21 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Andi Kleen <andi@firstfloor.org>, Al Viro <viro@ZenIV.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [patch 1/6] fs: icache RCU free inodes
-Message-ID: <20101110144721.GC7205@basil.fritz.box>
-References: <20101109124610.GB11477@amd>
- <87lj52pokp.fsf@basil.nowhere.org>
- <20101109213619.GA3246@amd>
+	Wed, 10 Nov 2010 09:48:40 -0500
+From: Rupjyoti Sarmah <rsarmah@apm.com>
+References: <201011101137.oAABbFoc015547@amcc.com> <20101110141914.GC26193@zod.rchland.ibm.com>
+In-Reply-To: <20101110141914.GC26193@zod.rchland.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101109213619.GA3246@amd>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: AcuA4kuhreQqVf+KRsWpq8EX/v1OAgAAvbiQ
+Date: Wed, 10 Nov 2010 20:13:04 +0530
+Message-ID: <59d17e399e4efb295e802572f16cc395@mail.gmail.com>
+Subject: RE: [PATCH] ppc44x:PHY fixup for USB on canyonlands board
+To: Josh Boyer <jwboyer@linux.vnet.ibm.com>
+Cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It is in the inode_init_once pile, so yes it has to be returned
-> to the allocator initialized.
+>Is this just for canyonlands?  If so, it's probably better off in a
+>caynonlands specific file, or a function that gets called in the common
+>platform file if the model matches canyonlands.  It seems a bit overkill
+>to introduce an entire new file and Kconfig option for this.
 
-The kmem_cache_create()s in the file systems don't pass constructors
-today. So I don't see how this could work reliably.
 
--Andi
+We want to have a file that will have fixup codes for all the ppc44x
+specific boards. Within this ppc44x_fixup.c file we would like to place
+any fixup code that
+might come later for any of the ppc44x based boards. Although I released
+it only with Canyonlands code, it would be ppc44x specific file.
+
+Do let me know if that is ok.
+
+Regards,
+Rup
