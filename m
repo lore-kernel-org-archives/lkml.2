@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756696Ab0KJP3l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 10:29:41 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55553 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756246Ab0KJP3k (ORCPT
+	id S1756713Ab0KJPaf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 10:30:35 -0500
+Received: from casper.infradead.org ([85.118.1.10]:34694 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756267Ab0KJPaf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 10:29:40 -0500
-Date: Wed, 10 Nov 2010 07:26:38 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Dan Rosenberg <drosenberg@vsecurity.com>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, kees.cook@canonical.com
-Subject: Re: [PATCH v2] Restrict unprivileged access to kernel syslog
-Message-Id: <20101110072638.b0e5473d.akpm@linux-foundation.org>
-In-Reply-To: <20101110082516.GB3341@elte.hu>
-References: <1289348309.7380.31.camel@dan>
-	<20101110082516.GB3341@elte.hu>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Wed, 10 Nov 2010 10:30:35 -0500
+Subject: Re: [RFC/Requirements/Design] h/w error reporting
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@elte.hu>, "Luck, Tony" <tony.luck@intel.com>,
+        linux-kernel@vger.kernel.org, ying.huang@intel.com, bp@alien8.de,
+        tglx@linutronix.de, akpm@linux-foundation.org, mchehab@redhat.com,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+In-Reply-To: <1289401781.12418.145.camel@gandalf.stny.rr.com>
+References: <4cd9edd7543527b78@agluck-desktop.sc.intel.com>
+	 <20101110101450.GA18481@elte.hu>
+	 <1289400056.12418.139.camel@gandalf.stny.rr.com>
+	 <1289400234.2191.129.camel@laptop>
+	 <1289401781.12418.145.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 10 Nov 2010 16:30:19 +0100
+Message-ID: <1289403019.2084.17.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Nov 2010 09:25:16 +0100 Ingo Molnar <mingo@elte.hu> wrote:
+On Wed, 2010-11-10 at 10:09 -0500, Steven Rostedt wrote:
+> 
+> > sure the second way is the only way out, but you still need to come up
+> > with a trace data format and a control ABI.
+> 
+> Great! Let's start with that then. Could you list some of the basic
+> needs of perf? 
 
-> 
-> * Dan Rosenberg <drosenberg@vsecurity.com> wrote:
-> 
-> > The kernel syslog contains debugging information that is often useful
-> > during exploitation of other vulnerabilities, such as kernel heap
-> > addresses.  Rather than futilely attempt to sanitize hundreds (or
-> > thousands) of printk statements and simultaneously cripple useful
-> > debugging functionality, it is far simpler to create an option that
-> > prevents unprivileged users from reading the syslog.
-> > 
-> > This patch, loosely based on grsecurity's GRKERNSEC_DMESG, creates the
-> > dmesg_restrict sysctl.  When set to "0", the default, no restrictions
-> > are enforced.  When set to "1", only users with CAP_SYS_ADMIN can read
-> > the kernel syslog via dmesg(8) or other mechanisms.
-> > 
-> > v2 adds CONFIG_SECURITY_RESTRICT_DMESG.  When enabled, the default
-> > sysctl value is set to "1".  When disabled, the default sysctl value is
-> > set to "0".
-> > 
-> > Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-> > CC: Linus Torvalds <torvalds@linux-foundation.org>
-> > CC: Ingo Molnar <mingo@elte.hu>
-> > CC: Kees Cook <kees.cook@canonical.com>
-> > CC: stable <stable@kernel.org>
-> 
-> Acked-by: Ingo Molnar <mingo@elte.hu>
-> 
-> Linus, Andrew, any objections against pushing this trivial control flag upstream out 
-> of band, after a bit of testing? It's not like it can break anything, and the flag 
-> is very useful to distros.
-> 
+Needs for what? I've already got a full control ABI and I can already
+redirect output to other buffers ;-)
 
-OK by me, apart from ...
+I don't have enumeration of what all is redirected to what, I pretend
+that people know wth they're doing.. so if you want session lists of
+what tracepoints are active on which buffers and the like you'll have to
+come up with something for that.
 
-a) I'd question the need for the config option.  Are distros really
-   so lame that they can't trust themselves to poke a number into
-   procfs at boot time?
+As for the buffer, I prefer a u64 aligned data stream, but the very
+least I need is frame encapsulation. What I don't want _ever_ is stupid
+sub-buffers. And no they're not needed, see the discussion about sync
+markers a while back.
 
-b) we have "dmesg_restrict" and "CONFIG_RESTRICT_DMESG".  Less
-   dyslexia, please.
+I also don't want to support the stupid concurrent read/write from tail.
+
+What I do want is both mmap() and splice(), this means buffer size needs
+to be specified at buffer creation.
+
+I currently support overwrite (flight-recorder) and non-overwrite modes
+depending on PROT_WRITE, I guess that can easily be pushed into the
+buffer create call.
+
+As to the mmap() part, it needs a control page to expose the head/tail
+pointers and some data.
+
+And as you know I need to write > PAGE_SIZE entries.
