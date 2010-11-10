@@ -1,176 +1,419 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755476Ab0KJK7g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 05:59:36 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:45031 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752747Ab0KJK7e (ORCPT
+	id S1754315Ab0KJLBM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 06:01:12 -0500
+Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:53463 "EHLO
+	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751072Ab0KJLBL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 05:59:34 -0500
-Message-ID: <39a033e053cd6dee4faf7bb8d1083993.squirrel@webmail.greenhost.nl>
-In-Reply-To: <20101110055419.GA26776@jasper.tkos.co.il>
-References: <f04cbe31c7e03a9d798b30526a5fed1cd8ee4c7a.1289297142.git.baruch@tkos.co.il>
-    <0d1a323315dcf505e64fb5165ea41e95.squirrel@webmail.greenhost.nl>
-    <20101109153550.GD29441@jasper.tkos.co.il>
-    <dbd33aac54791d5b5f33f03325b6b4bc.squirrel@webmail.greenhost.nl>
-    <20101110055419.GA26776@jasper.tkos.co.il>
-Date: Wed, 10 Nov 2010 11:59:17 +0100 (CET)
-Subject: Re: [PATCHv2] drivers/misc: Altera Cyclone active serial 
-     implementation
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Baruch Siach" <baruch@tkos.co.il>
-Cc: linux-kernel@vger.kernel.org, "Greg KH" <greg@kroah.com>,
-        "Alex Gershgorin" <agersh@rambler.ru>
-User-Agent: SquirrelMail/1.4.17
-MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.0
-X-Scan-Signature: eb84bc049aa50d59c182d1adb242eeac
+	Wed, 10 Nov 2010 06:01:11 -0500
+From: "Henrik Rydberg" <rydberg@euromail.se>
+To: Guenter Roeck <guenter.roeck@ericsson.com>,
+        Jean Delvare <khali@linux-fr.org>
+Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+        Henrik Rydberg <rydberg@euromail.se>
+Subject: [PATCH 07/11] hwmon: applesmc: Extract all features generically (rev3)
+Date: Wed, 10 Nov 2010 11:58:05 +0100
+Message-Id: <1289386685-9988-3-git-send-email-rydberg@euromail.se>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1289386685-9988-1-git-send-email-rydberg@euromail.se>
+References: <1289386685-9988-1-git-send-email-rydberg@euromail.se>
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1PG8O1-0000E2-51.
+X-Scan-Signature: ch-smtp01.sth.basefarm.net 1PG8O1-0000E2-51 00547494b4979dc00a08d62f3ef908de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Baruch,
+With temperature keys being determined automatically, the dmi match
+data is only used to assign features that can easily be detected from
+the smc. This patch removes the dmi match data altogether, and reduces
+the match table to the main machine models.
 
-Last comment, then I'll shut up. :-)
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+---
+ drivers/hwmon/applesmc.c |  241 +++++++++++----------------------------------
+ 1 files changed, 59 insertions(+), 182 deletions(-)
 
-On Wed, November 10, 2010 06:54, Baruch Siach wrote:
-> Hi Indan,
->
-> On Tue, Nov 09, 2010 at 09:15:09PM +0100, Indan Zupancic wrote:
->> On Tue, November 9, 2010 16:35, Baruch Siach wrote:
->
-> [snip]
->
->> >> > +static struct {
->> >> > +	int minor;
->> >> > +	struct cyclone_as_device *drvdata;
->> >> > +} cyclone_as_devs[AS_MAX_DEVS];
->> >> > +
->> >> > +static struct cyclone_as_device *get_as_dev(int minor)
->> >> > +{
->> >> > +	int i;
->> >> > +
->> >> > +	for (i = 0; i < ARRAY_SIZE(cyclone_as_devs); i++)
->> >>
->> >> To me AS_MAX_DEVS looks clearer than ARRAY_SIZE(cyclone_as_devs).
->> >
->> > Not to me. The fact that AS_MAX_DEVS happens to be equal to
->> > ARRAY_SIZE(cyclone_as_devs) is not relevant to the understanding of this
->> > procedure. It just forces the reader to lookup the AS_MAX_DEVS value, and
->> > distracts the reader's attention.
->>
->> Then just leave the AS_MAX_DEVS define away, it doesn't add anything.
->
-> I use AS_MAX_DEVS to set the size of cyclone_as_devs. It documents why
-> this array is of that length.
-
-The array size _is_ the limit of the number of devices. AS_MAX_DEVS now
-looks like some magical number coming from nowhere. But its source is
-that array size. So you can put the raw number in the array declaration
-and it's as clear as defining AS_MAX_DEVS a few lines higher.
-
->> Also change the:
->>
->> +	if (pdata->id >= AS_MAX_DEVS)
->> +		return -ENODEV;
->>
->> to
->>
->> +	if (pdata->id >= ARRAY_SIZE(cyclone_as_devs))
->> +		return -ENODEV;
->>
->> After all, what you're really checking is if the id falls within the
->> array.
->
-> The current code seems more clear to me. AS_MAX_DEVS expresses the reason
-> for not letting id exceed this value, and for having -ENODEV as return value.
-> The cyclone_as_devs boundary check is just a side effect.
-
-(I agree that the current code looks more clear, I'm just trying to point
-out the inconsistency in the usage of AS_MAX_DEVS.)
-
-But as you said above, if the "fact that AS_MAX_DEVS happens to be equal
-to ARRAY_SIZE(cyclone_as_devs) is not relevant to the understanding of
-this procedure", then you have to add an explicit array boundary check
-to make sure that the dev falls within the array, no? Otherwise, to see
-that the code is correct, you do have to understand that AS_MAX_DEVS
-happens to be equal to ARRAY_SIZE(cyclone_as_devs), which is something
-you wanted to avoid.
-
-Sorry for my nagging.
-
-> [snip]
->
->> >> > +	/* writes must be page aligned */
->> >> > +	if (!AS_ALIGNED(*ppos) || !AS_ALIGNED(count))
->> >> > +		return -EINVAL;
->>
->> As you're only incrementing ppos with the page size, is that first check
->> really needed? I don't think anything else can change ppos.
->
-> I'd rather be on the safe side here. Future extensions (like read or lseek
-> implementations) may change *ppos.
-
-Yes, that is a good precaution, it's very easy to forget this check then.
-
-But the only thing that makes writing work is the erase device when the
-first page is written, so non-streamed writes not starting at address 0
-will fail anyway. That said, that's a lot less subtle than the alignment
-thing, so just leave it as it is.
-
->> >> > +	page_count = *ppos / AS_PAGE_SIZE;
->> >> > +
->> >> > +	page_buf = kmalloc(AS_PAGE_SIZE, GFP_KERNEL);
->> >> > +	if (page_buf == NULL)
->> >> > +		return -ENOMEM;
->> >> > +
->> >> > +	if (*ppos == 0) {
->> >> > +		u8 as_status;
->> >> > +
->> >> > +		xmit_cmd(drvdata->gpios, AS_WRITE_ENABLE);
->> >> > +		xmit_cmd(drvdata->gpios, AS_ERASE_BULK);
->> >> > +
->> >> > +		gpio_set_value(drvdata->gpios[ASIO_NCS].gpio, 0);
->> >> > +		xmit_byte(drvdata->gpios, AS_READ_STATUS);
->> >> > +		for (i = 0; i < AS_ERASE_TIMEOUT; i++) {
->> >> > +			as_status = recv_byte(drvdata->gpios);
->> >> > +			if ((as_status & AS_STATUS_WIP) == 0)
->> >> > +				break; /* erase done */
->> >> > +			if (msleep_interruptible(1000) > 0) {
->> >> > +				err = -EINTR;
->> >> > +				break;
->> >> > +			}
->> >> > +		}
->> >> > +		gpio_set_value(drvdata->gpios[ASIO_NCS].gpio, 1);
->> >> > +		if ((as_status & AS_STATUS_WIP) && err == 0)
->> >> > +			err = -EIO; /* erase timeout */
->> >> > +		if (err)
->> >> > +			goto out;
->> >> > +		ndelay(300);
->> >> > +	}
->> >>
->> >> I'd move this into its own function, erase_device() or something.
->> >
->> > OK.
->> >
->> >> (And drop the ndelay.)
->> >
->> > See above.
->>
->> In that case I'd move it to just after the gpio_set*.
->
-> OK. My original rationale was to skip the delay in case of error, but this
-> micro-optimization doesn't worth the code obfuscation.
-
-There's nothing preventing the caller to do another command on the device
-within 300ns, except a slow CPU, so it seems this delay is always needed.
-
-Greetings,
-
-Indan
-
+diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+index a2a1bb3..ddf7060 100644
+--- a/drivers/hwmon/applesmc.c
++++ b/drivers/hwmon/applesmc.c
+@@ -106,16 +106,6 @@ static const char* fan_speed_keys[] = {
+ 
+ #define to_index(attr) (to_sensor_dev_attr(attr)->index)
+ 
+-/* Structure to be passed to DMI_MATCH function */
+-struct dmi_match_data {
+-/* Indicates whether this computer has an accelerometer. */
+-	int accelerometer;
+-/* Indicates whether this computer has light sensors and keyboard backlight. */
+-	int light;
+-/* Indicates which temperature sensors set to use. */
+-	int temperature_set;
+-};
+-
+ /* Dynamic device node attributes */
+ struct applesmc_dev_attr {
+ 	struct sensor_device_attribute sda;	/* hwmon attributes */
+@@ -146,6 +136,9 @@ static struct applesmc_registers {
+ 	unsigned int temp_count;	/* number of temperature registers */
+ 	unsigned int temp_begin;	/* temperature lower index bound */
+ 	unsigned int temp_end;		/* temperature upper index bound */
++	int num_light_sensors;		/* number of light sensors */
++	bool has_accelerometer;		/* has motion sensor */
++	bool has_key_backlight;		/* has keyboard backlight */
+ 	bool init_complete;		/* true when fully initialized */
+ 	struct applesmc_entry *cache;	/* cached key entries */
+ } smcreg = {
+@@ -161,12 +154,6 @@ static u8 backlight_state[2];
+ static struct device *hwmon_dev;
+ static struct input_polled_dev *applesmc_idev;
+ 
+-/* Indicates whether this computer has an accelerometer. */
+-static unsigned int applesmc_accelerometer;
+-
+-/* Indicates whether this computer has light sensors and keyboard backlight. */
+-static unsigned int applesmc_light;
+-
+ /* The number of fans handled by the driver */
+ static unsigned int fans_handled;
+ 
+@@ -433,6 +420,18 @@ static int applesmc_write_key(const char *key, const u8 *buffer, u8 len)
+ 	return applesmc_write_entry(entry, buffer, len);
+ }
+ 
++static int applesmc_has_key(const char *key, bool *value)
++{
++	const struct applesmc_entry *entry;
++
++	entry = applesmc_get_entry_by_key(key);
++	if (IS_ERR(entry) && PTR_ERR(entry) != -EINVAL)
++		return PTR_ERR(entry);
++
++	*value = !IS_ERR(entry);
++	return 0;
++}
++
+ /*
+  * applesmc_read_motion_sensor - Read motion sensor (X, Y or Z).
+  */
+@@ -468,7 +467,7 @@ static void applesmc_device_init(void)
+ 	int total;
+ 	u8 buffer[2];
+ 
+-	if (!applesmc_accelerometer)
++	if (!smcreg.has_accelerometer)
+ 		return;
+ 
+ 	for (total = INIT_TIMEOUT_MSECS; total > 0; total -= INIT_WAIT_MSECS) {
+@@ -506,6 +505,7 @@ static int applesmc_get_fan_count(void)
+ static int applesmc_init_smcreg_try(void)
+ {
+ 	struct applesmc_registers *s = &smcreg;
++	bool left_light_sensor, right_light_sensor;
+ 	int ret;
+ 
+ 	if (s->init_complete)
+@@ -528,9 +528,27 @@ static int applesmc_init_smcreg_try(void)
+ 		return ret;
+ 	s->temp_count = s->temp_end - s->temp_begin;
+ 
++	ret = applesmc_has_key(LIGHT_SENSOR_LEFT_KEY, &left_light_sensor);
++	if (ret)
++		return ret;
++	ret = applesmc_has_key(LIGHT_SENSOR_RIGHT_KEY, &right_light_sensor);
++	if (ret)
++		return ret;
++	ret = applesmc_has_key(MOTION_SENSOR_KEY, &s->has_accelerometer);
++	if (ret)
++		return ret;
++	ret = applesmc_has_key(BACKLIGHT_KEY, &s->has_key_backlight);
++	if (ret)
++		return ret;
++
++	s->num_light_sensors = left_light_sensor + right_light_sensor;
+ 	s->init_complete = true;
+ 
+-	pr_info("key=%d temp=%d\n", s->key_count, s->temp_count);
++	pr_info("key=%d temp=%d acc=%d lux=%d kbd=%d\n",
++	       s->key_count, s->temp_count,
++	       s->has_accelerometer,
++	       s->num_light_sensors,
++	       s->has_key_backlight);
+ 
+ 	return 0;
+ }
+@@ -585,7 +603,7 @@ static int applesmc_probe(struct platform_device *dev)
+ /* Synchronize device with memorized backlight state */
+ static int applesmc_pm_resume(struct device *dev)
+ {
+-	if (applesmc_light)
++	if (smcreg.has_key_backlight)
+ 		applesmc_write_key(BACKLIGHT_KEY, backlight_state, 2);
+ 	return 0;
+ }
+@@ -1113,23 +1131,6 @@ static struct applesmc_node_group temp_group[] = {
+ /* Module stuff */
+ 
+ /*
+- * applesmc_dmi_match - found a match.  return one, short-circuiting the hunt.
+- */
+-static int applesmc_dmi_match(const struct dmi_system_id *id)
+-{
+-	struct dmi_match_data* dmi_data = id->driver_data;
+-	pr_info("%s detected:\n", id->ident);
+-	applesmc_accelerometer = dmi_data->accelerometer;
+-	pr_info(" - Model %s accelerometer\n",
+-		applesmc_accelerometer ? "with" : "without");
+-	applesmc_light = dmi_data->light;
+-	pr_info(" - Model %s light sensors and backlight\n",
+-		applesmc_light ? "with" : "without");
+-
+-	return 1;
+-}
+-
+-/*
+  * applesmc_destroy_nodes - remove files and free associated memory
+  */
+ static void applesmc_destroy_nodes(struct applesmc_node_group *groups)
+@@ -1243,165 +1244,38 @@ static void applesmc_release_accelerometer(void)
+ 	input_free_polled_device(applesmc_idev);
+ 	sysfs_remove_group(&pdev->dev.kobj, &accelerometer_attributes_group);
+ }
+-
+-static __initdata struct dmi_match_data applesmc_dmi_data[] = {
+-/* MacBook Pro: accelerometer, backlight and temperature set 0 */
+-	{ .accelerometer = 1, .light = 1, .temperature_set = 0 },
+-/* MacBook2: accelerometer and temperature set 1 */
+-	{ .accelerometer = 1, .light = 0, .temperature_set = 1 },
+-/* MacBook: accelerometer and temperature set 2 */
+-	{ .accelerometer = 1, .light = 0, .temperature_set = 2 },
+-/* MacMini: temperature set 3 */
+-	{ .accelerometer = 0, .light = 0, .temperature_set = 3 },
+-/* MacPro: temperature set 4 */
+-	{ .accelerometer = 0, .light = 0, .temperature_set = 4 },
+-/* iMac: temperature set 5 */
+-	{ .accelerometer = 0, .light = 0, .temperature_set = 5 },
+-/* MacBook3, MacBook4: accelerometer and temperature set 6 */
+-	{ .accelerometer = 1, .light = 0, .temperature_set = 6 },
+-/* MacBook Air: accelerometer, backlight and temperature set 7 */
+-	{ .accelerometer = 1, .light = 1, .temperature_set = 7 },
+-/* MacBook Pro 4: accelerometer, backlight and temperature set 8 */
+-	{ .accelerometer = 1, .light = 1, .temperature_set = 8 },
+-/* MacBook Pro 3: accelerometer, backlight and temperature set 9 */
+-	{ .accelerometer = 1, .light = 1, .temperature_set = 9 },
+-/* iMac 5: light sensor only, temperature set 10 */
+-	{ .accelerometer = 0, .light = 0, .temperature_set = 10 },
+-/* MacBook 5: accelerometer, backlight and temperature set 11 */
+-	{ .accelerometer = 1, .light = 1, .temperature_set = 11 },
+-/* MacBook Pro 5: accelerometer, backlight and temperature set 12 */
+-	{ .accelerometer = 1, .light = 1, .temperature_set = 12 },
+-/* iMac 8: light sensor only, temperature set 13 */
+-	{ .accelerometer = 0, .light = 0, .temperature_set = 13 },
+-/* iMac 6: light sensor only, temperature set 14 */
+-	{ .accelerometer = 0, .light = 0, .temperature_set = 14 },
+-/* MacBook Air 2,1: accelerometer, backlight and temperature set 15 */
+-	{ .accelerometer = 1, .light = 1, .temperature_set = 15 },
+-/* MacPro3,1: temperature set 16 */
+-	{ .accelerometer = 0, .light = 0, .temperature_set = 16 },
+-/* iMac 9,1: light sensor only, temperature set 17 */
+-	{ .accelerometer = 0, .light = 0, .temperature_set = 17 },
+-/* MacBook Pro 2,2: accelerometer, backlight and temperature set 18 */
+-	{ .accelerometer = 1, .light = 1, .temperature_set = 18 },
+-/* MacBook Pro 5,3: accelerometer, backlight and temperature set 19 */
+-	{ .accelerometer = 1, .light = 1, .temperature_set = 19 },
+-/* MacBook Pro 5,4: accelerometer, backlight and temperature set 20 */
+-	{ .accelerometer = 1, .light = 1, .temperature_set = 20 },
+-/* MacBook Pro 6,2: accelerometer, backlight and temperature set 21 */
+-	{ .accelerometer = 1, .light = 1, .temperature_set = 21 },
+-/* MacBook Pro 7,1: accelerometer, backlight and temperature set 22 */
+-	{ .accelerometer = 1, .light = 1, .temperature_set = 22 },
+-/* MacBook Air 3,1: accelerometer, backlight and temperature set 23 */
+-	{ .accelerometer = 0, .light = 0, .temperature_set = 23 },
+-};
++static int applesmc_dmi_match(const struct dmi_system_id *id)
++{
++	return 1;
++}
+ 
+ /* Note that DMI_MATCH(...,"MacBook") will match "MacBookPro1,1".
+  * So we need to put "Apple MacBook Pro" before "Apple MacBook". */
+ static __initdata struct dmi_system_id applesmc_whitelist[] = {
+-	{ applesmc_dmi_match, "Apple MacBook Air 3", {
+-	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+-	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookAir3") },
+-		&applesmc_dmi_data[23]},
+-	{ applesmc_dmi_match, "Apple MacBook Air 2", {
+-	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+-	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookAir2") },
+-		&applesmc_dmi_data[15]},
+ 	{ applesmc_dmi_match, "Apple MacBook Air", {
+ 	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+ 	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookAir") },
+-		&applesmc_dmi_data[7]},
+-	{ applesmc_dmi_match, "Apple MacBook Pro 7", {
+-	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+-	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro7") },
+-		&applesmc_dmi_data[22]},
+-	{ applesmc_dmi_match, "Apple MacBook Pro 5,4", {
+-	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+-	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro5,4") },
+-		&applesmc_dmi_data[20]},
+-	{ applesmc_dmi_match, "Apple MacBook Pro 5,3", {
+-	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+-	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro5,3") },
+-		&applesmc_dmi_data[19]},
+-	{ applesmc_dmi_match, "Apple MacBook Pro 6", {
+-	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+-	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro6") },
+-		&applesmc_dmi_data[21]},
+-	{ applesmc_dmi_match, "Apple MacBook Pro 5", {
+-	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+-	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro5") },
+-		&applesmc_dmi_data[12]},
+-	{ applesmc_dmi_match, "Apple MacBook Pro 4", {
+-	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+-	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro4") },
+-		&applesmc_dmi_data[8]},
+-	{ applesmc_dmi_match, "Apple MacBook Pro 3", {
+-	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+-	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro3") },
+-		&applesmc_dmi_data[9]},
+-	{ applesmc_dmi_match, "Apple MacBook Pro 2,2", {
+-	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple Computer, Inc."),
+-	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro2,2") },
+-		&applesmc_dmi_data[18]},
++	},
+ 	{ applesmc_dmi_match, "Apple MacBook Pro", {
+ 	  DMI_MATCH(DMI_BOARD_VENDOR,"Apple"),
+ 	  DMI_MATCH(DMI_PRODUCT_NAME,"MacBookPro") },
+-		&applesmc_dmi_data[0]},
+-	{ applesmc_dmi_match, "Apple MacBook (v2)", {
+-	  DMI_MATCH(DMI_BOARD_VENDOR,"Apple"),
+-	  DMI_MATCH(DMI_PRODUCT_NAME,"MacBook2") },
+-		&applesmc_dmi_data[1]},
+-	{ applesmc_dmi_match, "Apple MacBook (v3)", {
+-	  DMI_MATCH(DMI_BOARD_VENDOR,"Apple"),
+-	  DMI_MATCH(DMI_PRODUCT_NAME,"MacBook3") },
+-		&applesmc_dmi_data[6]},
+-	{ applesmc_dmi_match, "Apple MacBook 4", {
+-	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+-	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBook4") },
+-		&applesmc_dmi_data[6]},
+-	{ applesmc_dmi_match, "Apple MacBook 5", {
+-	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+-	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBook5") },
+-		&applesmc_dmi_data[11]},
++	},
+ 	{ applesmc_dmi_match, "Apple MacBook", {
+ 	  DMI_MATCH(DMI_BOARD_VENDOR,"Apple"),
+ 	  DMI_MATCH(DMI_PRODUCT_NAME,"MacBook") },
+-		&applesmc_dmi_data[2]},
++	},
+ 	{ applesmc_dmi_match, "Apple Macmini", {
+ 	  DMI_MATCH(DMI_BOARD_VENDOR,"Apple"),
+ 	  DMI_MATCH(DMI_PRODUCT_NAME,"Macmini") },
+-		&applesmc_dmi_data[3]},
+-	{ applesmc_dmi_match, "Apple MacPro2", {
+-	  DMI_MATCH(DMI_BOARD_VENDOR,"Apple"),
+-	  DMI_MATCH(DMI_PRODUCT_NAME,"MacPro2") },
+-		&applesmc_dmi_data[4]},
+-	{ applesmc_dmi_match, "Apple MacPro3", {
+-	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+-	  DMI_MATCH(DMI_PRODUCT_NAME, "MacPro3") },
+-		&applesmc_dmi_data[16]},
++	},
+ 	{ applesmc_dmi_match, "Apple MacPro", {
+ 	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+ 	  DMI_MATCH(DMI_PRODUCT_NAME, "MacPro") },
+-		&applesmc_dmi_data[4]},
+-	{ applesmc_dmi_match, "Apple iMac 9,1", {
+-	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple Inc."),
+-	  DMI_MATCH(DMI_PRODUCT_NAME, "iMac9,1") },
+-		&applesmc_dmi_data[17]},
+-	{ applesmc_dmi_match, "Apple iMac 8", {
+-	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+-	  DMI_MATCH(DMI_PRODUCT_NAME, "iMac8") },
+-		&applesmc_dmi_data[13]},
+-	{ applesmc_dmi_match, "Apple iMac 6", {
+-	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+-	  DMI_MATCH(DMI_PRODUCT_NAME, "iMac6") },
+-		&applesmc_dmi_data[14]},
+-	{ applesmc_dmi_match, "Apple iMac 5", {
+-	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+-	  DMI_MATCH(DMI_PRODUCT_NAME, "iMac5") },
+-		&applesmc_dmi_data[10]},
++	},
+ 	{ applesmc_dmi_match, "Apple iMac", {
+ 	  DMI_MATCH(DMI_BOARD_VENDOR,"Apple"),
+ 	  DMI_MATCH(DMI_PRODUCT_NAME,"iMac") },
+-		&applesmc_dmi_data[5]},
++	},
+ 	{ .ident = NULL }
+ };
+ 
+@@ -1471,18 +1345,20 @@ static int __init applesmc_init(void)
+ 	if (ret)
+ 		goto out_fans;
+ 
+-	if (applesmc_accelerometer) {
++	if (smcreg.has_accelerometer) {
+ 		ret = applesmc_create_accelerometer();
+ 		if (ret)
+ 			goto out_temperature;
+ 	}
+ 
+-	if (applesmc_light) {
++	if (smcreg.num_light_sensors) {
+ 		/* Add light sensor file */
+ 		ret = sysfs_create_file(&pdev->dev.kobj, &dev_attr_light.attr);
+ 		if (ret)
+ 			goto out_accelerometer;
++	}
+ 
++	if (smcreg.has_key_backlight) {
+ 		/* Create the workqueue */
+ 		applesmc_led_wq = create_singlethread_workqueue("applesmc-led");
+ 		if (!applesmc_led_wq) {
+@@ -1507,16 +1383,16 @@ static int __init applesmc_init(void)
+ 	return 0;
+ 
+ out_light_ledclass:
+-	if (applesmc_light)
++	if (smcreg.has_key_backlight)
+ 		led_classdev_unregister(&applesmc_backlight);
+ out_light_wq:
+-	if (applesmc_light)
++	if (smcreg.has_key_backlight)
+ 		destroy_workqueue(applesmc_led_wq);
+ out_light_sysfs:
+-	if (applesmc_light)
++	if (smcreg.num_light_sensors)
+ 		sysfs_remove_file(&pdev->dev.kobj, &dev_attr_light.attr);
+ out_accelerometer:
+-	if (applesmc_accelerometer)
++	if (smcreg.has_accelerometer)
+ 		applesmc_release_accelerometer();
+ out_temperature:
+ 	applesmc_destroy_nodes(temp_group);
+@@ -1543,12 +1419,13 @@ out:
+ static void __exit applesmc_exit(void)
+ {
+ 	hwmon_device_unregister(hwmon_dev);
+-	if (applesmc_light) {
++	if (smcreg.has_key_backlight) {
+ 		led_classdev_unregister(&applesmc_backlight);
+ 		destroy_workqueue(applesmc_led_wq);
+-		sysfs_remove_file(&pdev->dev.kobj, &dev_attr_light.attr);
+ 	}
+-	if (applesmc_accelerometer)
++	if (smcreg.num_light_sensors)
++		sysfs_remove_file(&pdev->dev.kobj, &dev_attr_light.attr);
++	if (smcreg.has_accelerometer)
+ 		applesmc_release_accelerometer();
+ 	applesmc_destroy_nodes(temp_group);
+ 	while (fans_handled)
+-- 
+1.7.1
 
