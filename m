@@ -1,47 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847Ab0KJRqS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 12:46:18 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52630
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754114Ab0KJRqR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 12:46:17 -0500
-Date: Wed, 10 Nov 2010 09:46:41 -0800 (PST)
-Message-Id: <20101110.094641.193701683.davem@davemloft.net>
-To: xiaohui.xin@intel.com
-Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, mingo@elte.hu, herbert@gondor.hengli.com.au,
-        jdike@linux.intel.com
-Subject: Re: [PATCH v15 00/17] Provide a zero-copy method on KVM virtio-net.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1289381008-5484-1-git-send-email-xiaohui.xin@intel.com>
-References: <20101109.091516.112581012.davem@davemloft.net>
-	<1289381008-5484-1-git-send-email-xiaohui.xin@intel.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1754770Ab0KJRry (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 12:47:54 -0500
+Received: from mail.perches.com ([173.55.12.10]:4926 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753152Ab0KJRrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 12:47:53 -0500
+Subject: [PATCH V2] MAINTAINERS: Mark XEN lists as moderated
+From: Joe Perches <joe@perches.com>
+To: Ian Campbell <ijc@hellion.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+In-Reply-To: <1289410745.724.56.camel@zakaz.uk.xensource.com>
+References: <1289380840.28590.132.camel@Joe-Laptop>
+	 <1289399240.724.48.camel@zakaz.uk.xensource.com>
+	 <1289399731.28590.136.camel@Joe-Laptop>
+	 <1289401042.724.54.camel@zakaz.uk.xensource.com>
+	 <1289401337.15905.1.camel@Joe-Laptop>
+	 <1289410745.724.56.camel@zakaz.uk.xensource.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 10 Nov 2010 09:47:51 -0800
+Message-ID: <1289411271.15905.78.camel@Joe-Laptop>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: xiaohui.xin@intel.com
-Date: Wed, 10 Nov 2010 17:23:28 +0800
+Standardize list email address at the same time.
+ 
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+On Wed, 2010-11-10 at 17:39 +0000, Ian Campbell wrote:
+> It's been confirmed, non-subscribers are moderated for xen-devel.
 
-> From: Xin Xiaohui <xiaohui.xin@intel.com>
-> 
->>2) The idea to key off of skb->dev in skb_release_data() is
->>   fundamentally flawed since many actions can change skb->dev on you,
->>   which will end up causing a leak of your external data areas.
-> 
-> How about this one? If the destructor_arg is not a good candidate,
-> then I have to add an apparent field in shinfo.
+changes from v1: Mark as moderated instead of subscribers-only
 
-If destructor_arg is actually a net_device pointer or similar,
-you will need to take a reference count on it or similar.
+ MAINTAINERS |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Which means --> good bye performance especially on SMP.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 0094224..70604d5 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6598,14 +6598,14 @@ F:	drivers/platform/x86
+ 
+ XEN PCI SUBSYSTEM
+ M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+-L:	xen-devel@lists.xensource.com
++L:	xen-devel@lists.xensource.com (moderated for non-subscribers)
+ S:	Supported
+ F:	arch/x86/pci/*xen*
+ F:	drivers/pci/*xen*
+ 
+ XEN SWIOTLB SUBSYSTEM
+ M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+-L:	xen-devel@lists.xensource.com
++L:	xen-devel@lists.xensource.com (moderated for non-subscribers)
+ S:	Supported
+ F:	arch/x86/xen/*swiotlb*
+ F:	drivers/xen/*swiotlb*
+@@ -6613,7 +6613,7 @@ F:	drivers/xen/*swiotlb*
+ XEN HYPERVISOR INTERFACE
+ M:	Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+ M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+-L:	xen-devel@lists.xen.org
++L:	xen-devel@lists.xensource.com (moderated for non-subscribers)
+ L:	virtualization@lists.osdl.org
+ S:	Supported
+ F:	arch/x86/xen/
 
-You're going to be adding new serialization points and at
-least two new atomics per packet.
+
