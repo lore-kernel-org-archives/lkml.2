@@ -1,81 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755650Ab0KJO15 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 09:27:57 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:52648 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751072Ab0KJO14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 09:27:56 -0500
-Date: Wed, 10 Nov 2010 15:27:21 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Dave Chinner <david@fromorbit.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, dave b <db.pub.mail@gmail.com>,
-        Sanjoy Mahajan <sanjoy@olin.edu>, Jesper Juhl <jj@chaosbits.net>,
-        Chris Mason <chris.mason@oracle.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Nick Piggin <npiggin@suse.de>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "Ted Ts'o" <tytso@mit.edu>,
-        Corrado Zoccolo <czoccolo@gmail.com>,
-        Shaohua Li <shaohua.li@intel.com>, Steven Barrett <damentz@gmail.com>
-Subject: Re: 2.6.36 io bring the system to its knees
-Message-ID: <20101110142721.GA14496@elte.hu>
-References: <20101105014334.GF13830@dastard>
- <E1PELiI-0001Pj-8g@approx.mit.edu>
- <AANLkTimON_GL6vRF9=_U6oRFQ30EYssx3wv5xdNsU9JM@mail.gmail.com>
- <4CD696B4.6070002@kernel.dk>
- <AANLkTikNPEcwWjEQuC-_=9yH5DCCiwUAY265ggeygcSQ@mail.gmail.com>
- <20101110013255.GR2715@dastard>
- <20101110142037.GA1447@ucw.cz>
+	id S1756002Ab0KJObR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 09:31:17 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:47489 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753923Ab0KJObQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 09:31:16 -0500
+Date: Wed, 10 Nov 2010 14:31:10 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Minkyu Kang <promsoft@gmail.com>
+Cc: Greg KH <greg@kroah.com>, Minkyu Kang <mk7.kang@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, kyungmin.park@samsung.com,
+        Ben Dooks <ben-i2c@fluff.org>
+Subject: Re: [PATCH v2] misc: adds support the FSA9480 USB Switch
+Message-ID: <20101110143110.GA5043@sirena.org.uk>
+References: <4C7CD95A.5040309@samsung.com> <20100917150731.f1f44f3c.akpm@linux-foundation.org> <AANLkTim2UhJAhOw1qHvZ9bbctR0tNSMvE61T=sxffHxO@mail.gmail.com> <4CB26931.5040105@samsung.com> <20101011173649.GC7116@kroah.com> <AANLkTi=vTkHJJ2dq5RZHHCwWYEBtY=Y7dPPh=Wzzx95f@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101110142037.GA1447@ucw.cz>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <AANLkTi=vTkHJJ2dq5RZHHCwWYEBtY=Y7dPPh=Wzzx95f@mail.gmail.com>
+X-Cookie: What fools these morals be!
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Nov 10, 2010 at 09:55:34AM +0900, Minkyu Kang wrote:
+> Dear Greg KH,
 
-* Pavel Machek <pavel@ucw.cz> wrote:
+> > And why are you exporting symbols from this driver, that should not be
+> > needed at all.
 
-> Hi!
-> 
-> > > > As already mentioned, ext3 is just not a good choice for this sort of
-> > > > thing. Did you have atimes enabled?
-> > > 
-> > > At least for ext3, more important than atimes is the "data=writeback"
-> > > setting. Especially since our atime default is sane these days (ie if
-> > > you don't specify anything, we end up using 'relatime').
-> > > 
-> > > If you compile your own kernel, answer "N" to the question
-> > > 
-> > >   Default to 'data=ordered' in ext3?
-> > > 
-> > > at config time (CONFIG_EXT3_DEFAULTS_TO_ORDERED), or you can make sure
-> > > "data=writeback" is in the fstab (but I don't think everything honors
-> > > it for the root filesystem).
-> > 
-> > Don't forget to mention data=writeback is not the default because if your system 
-> > crashes or you lose power running in this mode it will *CORRUPT YOUR FILESYSTEM* 
-> > and you *WILL LOSE DATA*. Not to mention
-> 
-> You will lose your data, but the filesystem should still be consistent, right? 
-> Metadata are still journaled.
+> It's for other drivers.
+> For example.. When USB cable is connected, PMIC driver enable the
+> power for each device. (USB, uart, audio and so on..)
+> But if use the manual switch, PMIC driver can't know what device is enabled.
+> So, this function was exported.
 
-That is data that was freshly touched around the time the system went down, right?
-
-I.e. data that was probably half-modified by user-space to begin with.
-
-	Ingo
+This seems like it would require the PMIC driver to have knowledge of
+the USB switch driver which would be likely to give a system which is
+rather board specific.  For PMIC supply management integration the
+regulator API would be more normal.
