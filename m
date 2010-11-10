@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755829Ab0KJMd0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 07:33:26 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:41097 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755527Ab0KJMdZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 07:33:25 -0500
-Subject: Re: [PATCH] Fix implicit declaration of 'in_irq' in linux/highmem.h
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20101110113106.11019.13707.stgit@e102109-lin.cambridge.arm.com>
-References: <20101110113106.11019.13707.stgit@e102109-lin.cambridge.arm.com>
+	id S1755787Ab0KJMlx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 07:41:53 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:48062 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1754148Ab0KJMlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 07:41:51 -0500
+X-Authenticated: #23875046
+X-Provags-ID: V01U2FsdGVkX1/kysguEKzkztNtH2IIF3nWfAOg558/BJS/oVjsvm
+	yOIMXINWW4V+Uf
+Subject: Re: [PATCH 2/2 v2] Unify rest of FAT messages.
+From: Alexey Fisher <bug-track@fisher-privat.net>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: linux-kernel@vger.kernel.org, joe@perches.com
+In-Reply-To: <87hbfppfu3.fsf@devron.myhome.or.jp>
+References: <1289321718-6373-1-git-send-email-bug-track@fisher-privat.net>
+	 <1289329470-14454-1-git-send-email-bug-track@fisher-privat.net>
+	 <87hbfppfu3.fsf@devron.myhome.or.jp>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 10 Nov 2010 13:33:19 +0100
-Message-ID: <1289392399.2191.107.camel@laptop>
+Date: Wed, 10 Nov 2010 13:41:48 +0100
+Message-ID: <1289392908.6057.44.camel@zwerg>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-10 at 11:31 +0000, Catalin Marinas wrote:
-> Commit 3e4d3af introduced the kmap_atomic_idx_push() function which
-> warns on in_irq() with CONFIG_DEBUG_HIGHMEM enabled. This patch includes
-> linux/hardirq.h for the in_irq definition.
-
-Ah, indeed. The whole KS/LPC thing made me forget about this issue.
-Somehow it only triggered on ARM.
-
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> ---
->  include/linux/highmem.h |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+Am Mittwoch, den 10.11.2010, 20:40 +0900 schrieb OGAWA Hirofumi:
+> Alexey Fisher <bug-track@fisher-privat.net> writes:
 > 
-> diff --git a/include/linux/highmem.h b/include/linux/highmem.h
-> index e913819..b676c58 100644
-> --- a/include/linux/highmem.h
-> +++ b/include/linux/highmem.h
-> @@ -5,6 +5,7 @@
->  #include <linux/kernel.h>
->  #include <linux/mm.h>
->  #include <linux/uaccess.h>
-> +#include <linux/hardirq.h>
->  
->  #include <asm/cacheflush.h>
->  
+> > Here is how it looks like after patch.
 > 
+> This is going to unify the all FSes (e.g. fat_msg() uses fs_msg("FAT", ...))?
+> If so, I think it's welcome. If not, umm, it looks like good but...
 
+Yea, i thought about it. It will be better to have some kernel wide
+fs_msg(). But before doing this i think one more step should be done -
+some notification interface for userspace. 
+If we get some fs errors userspace app should be notified so user too.
+
+I work currently on one case, user lost all data on FAT drive. First
+error messages was logged for some weeks, and only now some big data
+lost. There war no errors from GUI.
+
+---
+Regards,
+        Alexey
 
