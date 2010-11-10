@@ -1,83 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756726Ab0KJPu4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 10:50:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56144 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756388Ab0KJPuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 10:50:55 -0500
-Date: Wed, 10 Nov 2010 16:44:30 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Prasad <prasad@linux.vnet.ibm.com>, Roland McGrath <roland@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Q: perf_event && event->owner
-Message-ID: <20101110154430.GA1454@redhat.com>
-References: <20101108145754.GB3434@redhat.com> <20101108201108.GA6777@nowhere> <20101109155714.GA1903@redhat.com> <1289321804.2191.57.camel@laptop> <20101109165805.GA6971@redhat.com> <1289322469.2191.59.camel@laptop> <20101109174219.GA8279@redhat.com> <1289325703.2191.60.camel@laptop> <20101109185748.GA12138@redhat.com> <1289402233.2084.5.camel@laptop>
+	id S1756744Ab0KJPvq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 10:51:46 -0500
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:57520 "EHLO
+	TX2EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756342Ab0KJPvp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 10:51:45 -0500
+X-SpamScore: -36
+X-BigFish: VS-36(zz542N1432N98dN1447R9371Pzz1202hzz8275bhz2dh2a8h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:de01egw02.freescale.net;RD:de01egw02.freescale.net;EFVD:NLI
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-Class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289402233.2084.5.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCHv3 1/2] ARM: imx: Add core definitions for MX53
+Date: Wed, 10 Nov 2010 08:51:19 -0700
+Message-ID: <86A0E76937111F4C92FABEC0A20988510523D224@az33exm21>
+In-Reply-To: <20101109214607.GG6017@pengutronix.de>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCHv3 1/2] ARM: imx: Add core definitions for MX53
+Thread-Index: AcuAV6brtXgPpU38Tcev9bFRIK//yAAls4kA
+References: <1288972551-21877-1-git-send-email-Dinh.Nguyen@freescale.com> <20101109214607.GG6017@pengutronix.de>
+From: Nguyen Dinh-R00091 <R00091@freescale.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux@arm.linux.org.uk>, <u.kleine-koenig@pengutronix.de>,
+        <amit.kucheria@canonical.com>, <eric@eukrea.com>
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10, Peter Zijlstra wrote:
->
-> On Tue, 2010-11-09 at 19:57 +0100, Oleg Nesterov wrote:
-> > Either sys_perf_open() should do get_task_struct() like we currently
-> > do, or perf_event_exit_task() should clear event->owner and then
-> > perf_release() should do something like
-> >
-> >         rcu_read_lock();
-> >         owner = event->owner;
-> >         if (owner)
-> >                 get_task_struct(owner);
-> >         rcu_read_unlock();
-> >
-> >         if (owner) {
-> >                 mutex_lock(&event->owner->perf_event_mutex);
-> >                 list_del_init(&event->owner_entry);
-> >                 mutex_unlock(&event->owner->perf_event_mutex);
-> >                 put_task_struct(owner);
-> >         }
-> >
-> > Probably this can be simplified...
->
-> I think that's still racy, suppose we do:
->
-> void perf_event_exit_task(struct task_struct *child)
-> {
-> 	struct perf_event *event, *tmp;
-> 	int ctxn;
->
-> 	mutex_lock(&child->perf_event_mutex);
-> 	list_for_each_entry_safe(event, tmp, &child->perf_event_list,
-> 				 owner_entry) {
-> 		event->owner = NULL;
-> 		list_del_init(&event->owner_entry);
-> 	}
-> 	mutex_unlock(&child->perf_event_mutex);
->
-> 	for_each_task_context_nr(ctxn)
-> 		perf_event_exit_task_context(child, ctxn);
-> }
->
->
-> and the close() races with an exit, then couldn't we observe
-> event->owner after the last put_task_struct()?
+Hi Sascha,
 
-I think no. Note that we do not just free task_struct via rcu callback.
-Instead, delayed_put_task_struct() drops the (may be) last reference.
+>-----Original Message-----
+>From: Sascha Hauer [mailto:s.hauer@pengutronix.de]
+>Sent: Tuesday, November 09, 2010 3:46 PM
+>To: Nguyen Dinh-R00091
+>Cc: linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
+linux@arm.linux.org.uk;
+>u.kleine-koenig@pengutronix.de; amit.kucheria@canonical.com;
+eric@eukrea.com
+>Subject: Re: [PATCHv3 1/2] ARM: imx: Add core definitions for MX53
+>
+>Hi Dinh,
+>
+>On Fri, Nov 05, 2010 at 10:55:50AM -0500, Dinh.Nguyen@freescale.com
+wrote:
+>> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+>>
+>> Add iomux, clocks,  and memory map for Freescale's MX53 SoC.
+>> Add cpu_is_mx53 function to common.h.
+>> Add 3 more banks of gpio's to mxc_gpio_ports.
+>> Add MX53 phys offset address.
+>>
+>> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+>> ---
+>>  arch/arm/mach-mx5/clock-mx53.c              |  857
++++++++++++++++++++++++++++
+>>  arch/arm/mach-mx5/devices.c                 |   27 +
+>>  arch/arm/plat-mxc/include/mach/common.h     |    4 +
+>>  arch/arm/plat-mxc/include/mach/iomux-mx53.h |  303 ++++++++++
+>>  arch/arm/plat-mxc/include/mach/memory.h     |    1 +
+>>  arch/arm/plat-mxc/include/mach/mx53.h       |  406 +++++++++++++
+>>  6 files changed, 1598 insertions(+), 0 deletions(-)
+>>  create mode 100644 arch/arm/mach-mx5/clock-mx53.c
+>>  create mode 100644 arch/arm/plat-mxc/include/mach/iomux-mx53.h
+>>  create mode 100644 arch/arm/plat-mxc/include/mach/mx53.h
+>>
+>> diff --git a/arch/arm/mach-mx5/clock-mx53.c
+b/arch/arm/mach-mx5/clock-mx53.c
+>> new file mode 100644
+>> index 0000000..d547cb8
+>> --- /dev/null
+>> +++ b/arch/arm/mach-mx5/clock-mx53.c
+>
+>Most of this code looks like it could be shared with clock-mx51.c
 
-But the code is racy, yes. owner != NULL case is fine. But
-perf_release() can see event->owner == NULL before list_del() was
-completed. perf_event_exit_task() needs wmb() in between, I think.
+Agreed, but I was unsure how to proceed with adding clock code for mx53.
+Should I merge mx53 clock code into clock-mx51 and rename clock-mx51? 
 
-Oleg.
+>
+>> +extern int mx53_revision(void);
+>> +#endif
+>> +
+>> +#endif	/* ifndef __MACH_H__ */
+>
+>__MACH_MX53_H__
+>
+>> --
+>> 1.6.0.4
+>>
+>>
+>>
+>
+>--
+>Pengutronix e.K.                           |
+|
+>Industrial Linux Solutions                 | http://www.pengutronix.de/
+|
+>Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0
+|
+>Amtsgericht Hildesheim, HRA 2686           | Fax:
++49-5121-206917-5555 |
+
+Thanks for the review,
+
+Dinh
+
 
