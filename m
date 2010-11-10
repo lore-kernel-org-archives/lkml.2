@@ -1,72 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757129Ab0KJVrE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 16:47:04 -0500
-Received: from skyrme.org ([193.175.80.135]:44539 "EHLO skyrme.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757074Ab0KJVrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 16:47:03 -0500
-X-Greylist: delayed 2443 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Nov 2010 16:47:02 EST
-From: Oskar Schirmer <oskar@scara.com>
-To: Steve French <sfrench@samba.org>
-Cc: stable@kernel.org, linux-cifs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Suresh Jayaraman <sjayaraman@suse.de>,
-        Andrew Hendry <andrew.hendry@gmail.com>,
-        Oskar Schirmer <oskar@scara.com>
-Subject: [PATCH] cifs: fix another memleak, in cifs_root_iget
-Date: Wed, 10 Nov 2010 21:06:13 +0000
-Message-Id: <1289423173-7044-1-git-send-email-oskar@scara.com>
-X-Mailer: git-send-email 1.6.0.3
+	id S1757174Ab0KJVri (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 16:47:38 -0500
+Received: from DMZ-MAILSEC-SCANNER-3.MIT.EDU ([18.9.25.14]:44852 "EHLO
+	dmz-mailsec-scanner-3.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757085Ab0KJVrh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 16:47:37 -0500
+X-Greylist: delayed 899 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Nov 2010 16:47:37 EST
+X-AuditID: 1209190e-b7b3bae000000a71-62-4cdb0f6db0ed
+From: Andy Lutomirski <luto@MIT.EDU>
+To: Ben Skeggs <bskeggs@redhat.com>, dri-devel@lists.freedesktop.org
+Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@MIT.EDU>
+Subject: [PATCH 2/2] nouveau: Acknowledge HPD irq in handler, not bottom half
+Date: Wed, 10 Nov 2010 16:32:05 -0500
+Message-Id: <cb559f4c96f82d5bf0c132b3330aecd4885a0dda.1289423199.git.luto@mit.edu>
+X-Mailer: git-send-email 1.7.3.2
+In-Reply-To: <cover.1289423299.git.luto@mit.edu>
+References: <cover.1289423299.git.luto@mit.edu>
+In-Reply-To: <cover.1289423299.git.luto@mit.edu>
+References: <AANLkTimcEiBJtWx2tA=dqm6881g0B7NomXFsZauzfgy8@mail.gmail.com> <cover.1289423299.git.luto@mit.edu>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cifs_root_iget allocates full_path through
-cifs_build_path_to_root, but fails to kfree it upon
-cifs_get_inode_info* failure.
+The old code generated an interrupt storm bad enough to completely
+take down my system.
 
-Make all failure exit paths traverse clean up
-handling at the end of the function.
+This only fixes the bits that are defined nouveau_regs.h.  Newer hardware
+uses another register that isn't described, and I don't have that hardware
+to test.
 
-Signed-off-by: Oskar Schirmer <oskar@scara.com>
-Cc: stable@kernel.org
+Signed-off-by: Andy Lutomirski <luto@mit.edu>
+Cc: <stable@kernel.org>
 ---
- fs/cifs/inode.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/nouveau/nouveau_drv.h  |    5 +++++
+ drivers/gpu/drm/nouveau/nouveau_irq.c  |    1 +
+ drivers/gpu/drm/nouveau/nv50_display.c |   17 +++++++++++++----
+ 3 files changed, 19 insertions(+), 4 deletions(-)
 
-diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
-index ef3a55b..ff7d299 100644
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -881,8 +881,10 @@ struct inode *cifs_root_iget(struct super_block *sb, unsigned long ino)
- 		rc = cifs_get_inode_info(&inode, full_path, NULL, sb,
- 						xid, NULL);
+diff --git a/drivers/gpu/drm/nouveau/nouveau_drv.h b/drivers/gpu/drm/nouveau/nouveau_drv.h
+index b1be617..b6c62cc 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_drv.h
++++ b/drivers/gpu/drm/nouveau/nouveau_drv.h
+@@ -531,6 +531,11 @@ struct drm_nouveau_private {
+ 	struct work_struct irq_work;
+ 	struct work_struct hpd_work;
  
--	if (!inode)
--		return ERR_PTR(rc);
-+	if (!inode) {
-+		inode = ERR_PTR(rc);
-+		goto out;
-+	}
++	struct {
++		spinlock_t lock;
++		uint32_t hpd0_bits;
++	} hpd_state;
++
+ 	struct list_head vbl_waiting;
  
- #ifdef CONFIG_CIFS_FSCACHE
- 	/* populate tcon->resource_id */
-@@ -898,13 +900,11 @@ struct inode *cifs_root_iget(struct super_block *sb, unsigned long ino)
- 		inode->i_uid = cifs_sb->mnt_uid;
- 		inode->i_gid = cifs_sb->mnt_gid;
- 	} else if (rc) {
--		kfree(full_path);
--		_FreeXid(xid);
- 		iget_failed(inode);
--		return ERR_PTR(rc);
-+		inode = ERR_PTR(rc);
+ 	struct {
+diff --git a/drivers/gpu/drm/nouveau/nouveau_irq.c b/drivers/gpu/drm/nouveau/nouveau_irq.c
+index 794b0ee..b62a601 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_irq.c
++++ b/drivers/gpu/drm/nouveau/nouveau_irq.c
+@@ -52,6 +52,7 @@ nouveau_irq_preinstall(struct drm_device *dev)
+ 	if (dev_priv->card_type >= NV_50) {
+ 		INIT_WORK(&dev_priv->irq_work, nv50_display_irq_handler_bh);
+ 		INIT_WORK(&dev_priv->hpd_work, nv50_display_irq_hotplug_bh);
++		spin_lock_init(&dev_priv->hpd_state.lock);
+ 		INIT_LIST_HEAD(&dev_priv->vbl_waiting);
+ 	}
+ }
+diff --git a/drivers/gpu/drm/nouveau/nv50_display.c b/drivers/gpu/drm/nouveau/nv50_display.c
+index 83a7d27..0df08e3 100644
+--- a/drivers/gpu/drm/nouveau/nv50_display.c
++++ b/drivers/gpu/drm/nouveau/nv50_display.c
+@@ -1014,7 +1014,12 @@ nv50_display_irq_hotplug_bh(struct work_struct *work)
+ 	uint32_t unplug_mask, plug_mask, change_mask;
+ 	uint32_t hpd0, hpd1 = 0;
+ 
+-	hpd0 = nv_rd32(dev, NV50_PCONNECTOR_HOTPLUG_CTRL) & nv_rd32(dev, NV50_PCONNECTOR_HOTPLUG_INTR);
++	spin_lock_irq(&dev_priv->hpd_state.lock);
++	hpd0 = dev_priv->hpd_state.hpd0_bits;
++	dev_priv->hpd_state.hpd0_bits = 0;
++	spin_unlock_irq(&dev_priv->hpd_state.lock);
++
++	hpd0 &= nv_rd32(dev, NV50_PCONNECTOR_HOTPLUG_INTR);
+ 	if (dev_priv->chipset >= 0x90)
+ 		hpd1 = nv_rd32(dev, 0xe074) & nv_rd32(dev, 0xe070);
+ 
+@@ -1058,7 +1063,6 @@ nv50_display_irq_hotplug_bh(struct work_struct *work)
+ 			helper->dpms(connector->encoder, DRM_MODE_DPMS_OFF);
  	}
  
--
-+out:
- 	kfree(full_path);
- 	/* can not call macro FreeXid here since in a void func
- 	 * TODO: This is no longer true
+-	nv_wr32(dev, NV50_PCONNECTOR_HOTPLUG_CTRL, nv_rd32(dev, NV50_PCONNECTOR_HOTPLUG_CTRL));
+ 	if (dev_priv->chipset >= 0x90)
+ 		nv_wr32(dev, 0xe074, nv_rd32(dev, 0xe074));
+ 
+@@ -1072,8 +1076,13 @@ nv50_display_irq_handler(struct drm_device *dev)
+ 	uint32_t delayed = 0;
+ 
+ 	if (nv_rd32(dev, NV50_PMC_INTR_0) & NV50_PMC_INTR_0_HOTPLUG) {
+-		if (!work_pending(&dev_priv->hpd_work))
+-			queue_work(dev_priv->wq, &dev_priv->hpd_work);
++		uint32_t hpd0_bits = nv_rd32(dev, NV50_PCONNECTOR_HOTPLUG_CTRL);
++		nv_wr32(dev, NV50_PCONNECTOR_HOTPLUG_CTRL, hpd0_bits);
++		spin_lock(&dev_priv->hpd_state.lock);
++		dev_priv->hpd_state.hpd0_bits |= hpd0_bits;
++		spin_unlock(&dev_priv->hpd_state.lock);
++
++		queue_work(dev_priv->wq, &dev_priv->hpd_work);
+ 	}
+ 
+ 	while (nv_rd32(dev, NV50_PMC_INTR_0) & NV50_PMC_INTR_0_DISPLAY) {
 -- 
-1.7.0.4
+1.7.3.2
 
